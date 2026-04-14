@@ -36,7 +36,9 @@ const nanoBananaProvider = {
     let contents;
 
     if (req.referenceImagePath) {
-      const refPath = req.referenceImagePath.replace('file://', '');
+      // 절대 경로에서 파일명 추출 → 현재 서버의 tmp/images/에서 찾기
+      const filename = req.referenceImagePath.replace('file://', '').split('/').pop();
+      const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
       const imageData = fs.readFileSync(refPath);
       const base64 = imageData.toString('base64');
 

@@ -57,7 +57,9 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
     if (!referenceBase64 && characterId) {
       const character = await characterRepo.findById(characterId);
       if (character?.reference_image_url) {
-        const refPath = character.reference_image_url.replace('file://', '');
+        // 절대 경로 또는 file:// 경로에서 파일명만 추출하여 현재 서버의 tmp/images/ 에서 찾기
+        const filename = character.reference_image_url.split('/').pop();
+        const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
         if (fs.existsSync(refPath)) {
           referenceBase64 = fs.readFileSync(refPath).toString('base64');
           referenceSource = 'character';
