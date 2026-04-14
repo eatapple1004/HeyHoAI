@@ -1,0 +1,44 @@
+const express = require('express');
+const path = require('path');
+const { env } = require('./config');
+const characterRoutes = require('./characters/character.route');
+const imageRoutes = require('./images/image.route');
+const videoRoutes = require('./videos/video.route');
+const publishingRoutes = require('./publishing/publishing.route');
+const visualRoutes = require('./visuals/visual.route');
+const generateRoutes = require('./generate/generate.route');
+const { errorHandler } = require('./middleware/errorHandler');
+
+const app = express();
+
+app.use(express.json());
+
+// 정적 파일 서빙
+app.use('/images', express.static(path.join(process.cwd(), 'tmp', 'images')));
+
+// 페이지 라우팅
+app.get('/heyhoai/image/generater/page', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// Routes
+app.use('/api/characters', characterRoutes);
+app.use('/api', imageRoutes);
+app.use('/api', videoRoutes);
+app.use('/api', publishingRoutes);
+app.use('/api', visualRoutes);
+app.use('/api/generate', generateRoutes);
+
+// Health check
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Error handler
+app.use(errorHandler);
+
+app.listen(env.PORT, () => {
+  console.log(`Server running on port ${env.PORT}`);
+});
+
+module.exports = app;

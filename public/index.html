@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - Image Generator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+  }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--accent2); }
+  header .status { font-size: 12px; color: var(--green); }
+
+  /* Layout */
+  .container {
+    display: grid; grid-template-columns: 380px 1fr;
+    height: calc(100vh - 53px);
+  }
+  @media (max-width: 900px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  /* Left Panel */
+  .panel {
+    padding: 20px; border-right: 1px solid var(--border);
+    overflow-y: auto; background: var(--surface);
+  }
+  .panel h2 {
+    font-size: 13px; font-weight: 700; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .section { margin-bottom: 24px; }
+
+  /* Character Select */
+  .char-select {
+    width: 100%; padding: 10px 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 14px; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238888a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+  }
+  .char-select:focus { outline: none; border-color: var(--accent); }
+
+  /* Character Reference Preview */
+  .char-ref-preview {
+    margin-top: 10px; display: none; align-items: center; gap: 10px;
+    padding: 10px; background: var(--surface2); border-radius: 8px;
+  }
+  .char-ref-preview.show { display: flex; }
+  .char-ref-preview img {
+    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
+  }
+  .char-ref-preview .info { font-size: 12px; color: var(--dim); }
+  .char-ref-preview .name { font-size: 13px; color: var(--text); font-weight: 600; }
+
+  /* Upload */
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 8px;
+    padding: 20px; text-align: center; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .upload-area:hover { border-color: var(--accent); }
+  .upload-area.has-file { border-color: var(--green); border-style: solid; }
+  .upload-area input { display: none; }
+  .upload-area .icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-area .label { font-size: 13px; color: var(--dim); }
+  .upload-preview {
+    margin-top: 10px; display: none; position: relative;
+  }
+  .upload-preview.show { display: block; }
+  .upload-preview img {
+    width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px;
+  }
+  .upload-preview .remove {
+    position: absolute; top: 4px; right: 4px;
+    background: var(--red); color: white; border: none; border-radius: 50%;
+    width: 24px; height: 24px; cursor: pointer; font-size: 14px;
+  }
+
+  /* Model Select */
+  .model-group { display: flex; gap: 8px; }
+  .model-btn {
+    flex: 1; padding: 8px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--surface2);
+    color: var(--dim); font-size: 13px; cursor: pointer;
+    text-align: center; transition: all 0.2s;
+  }
+  .model-btn.active { border-color: var(--accent); color: var(--accent2); background: rgba(108,92,231,0.1); }
+  .model-btn .name { font-weight: 600; }
+  .model-btn .desc { font-size: 11px; margin-top: 2px; }
+
+  /* Count */
+  .count-group { display: flex; gap: 8px; }
+  .count-btn {
+    width: 40px; height: 36px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--surface2);
+    color: var(--dim); font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .count-btn.active { border-color: var(--accent); color: var(--accent2); }
+
+  /* Prompt */
+  .prompt-area {
+    width: 100%; min-height: 180px; padding: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 13px;
+    font-family: inherit; resize: vertical; line-height: 1.6;
+  }
+  .prompt-area:focus { outline: none; border-color: var(--accent); }
+  .prompt-area::placeholder { color: var(--dim); }
+
+  /* Generate Button */
+  .generate-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #a29bfe);
+    color: white; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .generate-btn:hover { opacity: 0.9; }
+  .generate-btn:disabled {
+    opacity: 0.5; cursor: not-allowed;
+    background: var(--border);
+  }
+  .generate-btn .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+    vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Right Panel - Gallery */
+  .gallery-panel { padding: 20px; overflow-y: auto; }
+  .gallery-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .gallery-header h2 { font-size: 16px; font-weight: 700; }
+  .gallery-count { font-size: 12px; color: var(--dim); }
+
+  .gallery-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .gallery-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .gallery-item:hover { border-color: var(--accent); }
+  .gallery-item img {
+    width: 100%; aspect-ratio: 4/5; object-fit: cover;
+  }
+  .gallery-item .meta {
+    padding: 8px 10px; font-size: 11px; color: var(--dim);
+    display: flex; justify-content: space-between;
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 100;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  .loading-overlay.show { display: flex; }
+  .loading-overlay .text { font-size: 16px; color: var(--text); }
+  .loading-overlay .spinner-large {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85); z-index: 200;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-overlay img {
+    max-width: 90vw; max-height: 90vh; object-fit: contain;
+    border-radius: 8px;
+  }
+  .modal-overlay .close {
+    position: absolute; top: 16px; right: 20px;
+    background: none; border: none; color: white;
+    font-size: 28px; cursor: pointer;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; z-index: 300;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); color: white; }
+  .toast.error { background: var(--red); color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HeyHoAI Image Generator</h1>
+  <span class="status">Nano Banana Pro</span>
+</header>
+
+<div class="container">
+  <!-- Left Panel -->
+  <div class="panel">
+
+    <!-- Character Selection -->
+    <div class="section">
+      <h2>1. Character</h2>
+      <select class="char-select" id="characterSelect">
+        <option value="">-- No Character (Reference Only) --</option>
+      </select>
+      <div class="char-ref-preview" id="charPreview">
+        <img id="charPreviewImg" src="" alt="">
+        <div>
+          <div class="name" id="charPreviewName"></div>
+          <div class="info">Reference image will be used</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reference Image Upload -->
+    <div class="section">
+      <h2>2. Reference Image (Optional)</h2>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">+</div>
+        <div class="label">Click to upload reference image</div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      <div class="upload-preview" id="uploadPreview">
+        <img id="uploadPreviewImg" src="" alt="">
+        <button class="remove" onclick="clearUpload()">&times;</button>
+      </div>
+    </div>
+
+    <!-- Model Selection -->
+    <div class="section">
+      <h2>3. Model</h2>
+      <div class="model-group">
+        <div class="model-btn active" data-model="pro" onclick="selectModel(this)">
+          <div class="name">Pro</div>
+          <div class="desc">High quality</div>
+        </div>
+        <div class="model-btn" data-model="flash" onclick="selectModel(this)">
+          <div class="name">Flash</div>
+          <div class="desc">Fast & cheap</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Count -->
+    <div class="section">
+      <h2>4. Count</h2>
+      <div class="count-group">
+        <div class="count-btn active" data-count="1" onclick="selectCount(this)">1</div>
+        <div class="count-btn" data-count="2" onclick="selectCount(this)">2</div>
+        <div class="count-btn" data-count="3" onclick="selectCount(this)">3</div>
+        <div class="count-btn" data-count="4" onclick="selectCount(this)">4</div>
+      </div>
+    </div>
+
+    <!-- Prompt -->
+    <div class="section">
+      <h2>5. Prompt</h2>
+      <textarea class="prompt-area" id="promptInput" placeholder="Describe the image you want to generate...
+
+Example:
+ultra realistic photo of a young Korean woman sitting in the backseat of a car, natural skin texture, visible pores, soft natural lighting from window, looking outside with a calm expression..."></textarea>
+    </div>
+
+    <!-- Generate Button -->
+    <button class="generate-btn" id="generateBtn" onclick="generate()">
+      Generate Image
+    </button>
+  </div>
+
+  <!-- Right Panel - Gallery -->
+  <div class="gallery-panel">
+    <div class="gallery-header">
+      <h2>Generated Images</h2>
+      <span class="gallery-count" id="galleryCount"></span>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner-large"></div>
+  <div class="text" id="loadingText">Generating...</div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <button class="close">&times;</button>
+  <img id="modalImg" src="" alt="">
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedModel = 'pro';
+  let selectedCount = 1;
+  let uploadedFile = null;
+
+  // ── Load Characters ──
+  async function loadCharacters() {
+    try {
+      const res = await fetch('/api/characters');
+      const data = await res.json();
+      const select = document.getElementById('characterSelect');
+      if (data.success && data.data) {
+        const chars = Array.isArray(data.data) ? data.data : data.data;
+        chars.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          opt.dataset.refUrl = c.reference_image_url || '';
+          select.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load characters:', e);
+    }
+  }
+
+  document.getElementById('characterSelect').addEventListener('change', function () {
+    const preview = document.getElementById('charPreview');
+    const selected = this.options[this.selectedIndex];
+    if (this.value && selected.dataset.refUrl) {
+      const url = selected.dataset.refUrl.replace('file://', '');
+      const filename = url.split('/').pop();
+      document.getElementById('charPreviewImg').src = '/images/' + filename;
+      document.getElementById('charPreviewName').textContent = selected.textContent;
+      preview.classList.add('show');
+    } else {
+      preview.classList.remove('show');
+    }
+  });
+
+  // ── File Upload ──
+  document.getElementById('fileInput').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    uploadedFile = file;
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      document.getElementById('uploadPreviewImg').src = ev.target.result;
+      document.getElementById('uploadPreview').classList.add('show');
+      document.getElementById('uploadArea').classList.add('has-file');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function clearUpload() {
+    uploadedFile = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadPreview').classList.remove('show');
+    document.getElementById('uploadArea').classList.remove('has-file');
+  }
+
+  // ── Model & Count ──
+  function selectModel(el) {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedModel = el.dataset.model;
+  }
+
+  function selectCount(el) {
+    document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedCount = parseInt(el.dataset.count);
+  }
+
+  // ── Generate ──
+  async function generate() {
+    const prompt = document.getElementById('promptInput').value.trim();
+    if (!prompt) { showToast('Please enter a prompt', 'error'); return; }
+
+    const characterId = document.getElementById('characterSelect').value;
+    const btn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating...';
+    loading.classList.add('show');
+    document.getElementById('loadingText').textContent =
+      `Generating ${selectedCount} image${selectedCount > 1 ? 's' : ''}...`;
+
+    try {
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('model', selectedModel);
+      formData.append('count', selectedCount);
+      if (characterId) formData.append('characterId', characterId);
+      if (uploadedFile) formData.append('referenceImage', uploadedFile);
+
+      const res = await fetch('/api/generate', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        const successCount = data.results.filter(r => r.success).length;
+        const failCount = data.results.filter(r => !r.success).length;
+
+        let msg = `${successCount} image${successCount > 1 ? 's' : ''} generated`;
+        if (failCount > 0) msg += ` (${failCount} blocked)`;
+        showToast(msg, successCount > 0 ? 'success' : 'error');
+
+        loadGallery();
+      } else {
+        showToast(data.error || 'Generation failed', 'error');
+      }
+    } catch (e) {
+      showToast('Network error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Generate Image';
+      loading.classList.remove('show');
+    }
+  }
+
+  // ── Gallery ──
+  async function loadGallery() {
+    try {
+      const res = await fetch('/api/generate/images');
+      const data = await res.json();
+      const grid = document.getElementById('galleryGrid');
+      grid.innerHTML = '';
+
+      if (data.success && data.data.length > 0) {
+        document.getElementById('galleryCount').textContent = data.data.length + ' images';
+        data.data.forEach(img => {
+          const item = document.createElement('div');
+          item.className = 'gallery-item';
+          item.onclick = () => openModal(img.url);
+          item.innerHTML = `
+            <img src="${img.url}" alt="" loading="lazy">
+            <div class="meta">
+              <span>${img.size}</span>
+              <span>${new Date(img.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          `;
+          grid.appendChild(item);
+        });
+      } else {
+        document.getElementById('galleryCount').textContent = '';
+        grid.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;">No images yet. Generate your first image!</div>';
+      }
+    } catch (e) {
+      console.error('Failed to load gallery:', e);
+    }
+  }
+
+  // ── Modal ──
+  function openModal(url) {
+    document.getElementById('modalImg').src = url;
+    document.getElementById('modal').classList.add('show');
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // ── Toast ──
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + type + ' show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // ── Init ──
+  loadCharacters();
+  loadGallery();
+</script>
+</body>
+</html>

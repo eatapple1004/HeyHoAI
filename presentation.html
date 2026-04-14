@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - Instagram AI Character System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a2e;
+    --border: #2a2a3e;
+    --text: #e4e4ed;
+    --text-dim: #8888a0;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --pink: #fd79a8;
+    --green: #00b894;
+    --orange: #fdcb6e;
+    --blue: #74b9ff;
+    --red: #ff7675;
+    --cyan: #81ecec;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav .logo { font-weight: 800; font-size: 18px; color: var(--accent2); }
+  nav .links { display: flex; gap: 24px; }
+  nav .links a {
+    color: var(--text-dim); text-decoration: none; font-size: 13px;
+    font-weight: 500; transition: color 0.2s;
+  }
+  nav .links a:hover { color: var(--text); }
+
+  /* ── Sections ── */
+  section {
+    min-height: 100vh;
+    padding: 100px 60px 60px;
+    position: relative;
+  }
+  @media (max-width: 768px) { section { padding: 80px 20px 40px; } }
+
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 42px; font-weight: 800; line-height: 1.2;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--text), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .section-desc {
+    font-size: 16px; color: var(--text-dim); max-width: 600px;
+    margin-bottom: 48px;
+  }
+
+  /* ── Hero ── */
+  #hero {
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; text-align: center;
+    background: radial-gradient(ellipse at 50% 30%, rgba(108,92,231,0.15), transparent 70%);
+  }
+  #hero .section-title { font-size: 56px; max-width: 800px; }
+  #hero .section-desc { max-width: 650px; text-align: center; }
+  .hero-badges { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .badge {
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  .badge.purple { border-color: var(--accent); color: var(--accent2); }
+  .badge.green { border-color: var(--green); color: var(--green); }
+  .badge.pink { border-color: var(--pink); color: var(--pink); }
+  .badge.blue { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Architecture Diagram ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) { .arch-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .arch-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .arch-card .icon { font-size: 32px; margin-bottom: 12px; }
+  .arch-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .arch-card p { font-size: 12px; color: var(--text-dim); }
+  .arch-card .tech {
+    margin-top: 12px; font-size: 11px; color: var(--accent2);
+    font-weight: 600;
+  }
+  .arch-span-4 { grid-column: 1 / -1; }
+  .arch-span-2 { grid-column: span 2; }
+
+  /* ── Sequence Flow ── */
+  .sequence-container {
+    max-width: 1000px; margin: 0 auto;
+  }
+  .seq-flow {
+    position: relative;
+    padding-left: 40px;
+  }
+  .seq-flow::before {
+    content: '';
+    position: absolute; left: 15px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent), var(--pink), var(--green), var(--blue));
+  }
+  .seq-step {
+    position: relative;
+    margin-bottom: 32px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: border-color 0.2s;
+  }
+  .seq-step:hover { border-color: var(--accent); }
+  .seq-step::before {
+    content: attr(data-step);
+    position: absolute; left: -40px; top: 20px;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    border: 3px solid var(--bg);
+  }
+  .seq-step .step-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 8px;
+  }
+  .seq-step .step-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 4px; text-transform: uppercase;
+  }
+  .tag-api { background: rgba(108,92,231,0.2); color: var(--accent2); }
+  .tag-ai { background: rgba(253,121,168,0.2); color: var(--pink); }
+  .tag-db { background: rgba(0,184,148,0.2); color: var(--green); }
+  .tag-safety { background: rgba(253,203,110,0.2); color: var(--orange); }
+  .tag-publish { background: rgba(116,185,255,0.2); color: var(--blue); }
+
+  .seq-step h4 { font-size: 15px; font-weight: 700; }
+  .seq-step p { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  .seq-step .step-detail {
+    margin-top: 12px; padding: 12px; background: var(--surface2);
+    border-radius: 8px; font-size: 12px; color: var(--text-dim);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ── Pipeline Diagram ── */
+  .pipeline {
+    display: flex; align-items: stretch; gap: 0;
+    max-width: 1100px; margin: 0 auto 48px;
+    overflow-x: auto; padding-bottom: 12px;
+  }
+  .pipe-stage {
+    flex: 1; min-width: 180px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    position: relative;
+    text-align: center;
+  }
+  .pipe-stage:first-child { border-radius: 12px 0 0 12px; }
+  .pipe-stage:last-child { border-radius: 0 12px 12px 0; }
+  .pipe-stage::after {
+    content: '';
+    position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+    border: 10px solid transparent;
+    border-left: 10px solid var(--accent);
+    z-index: 1;
+  }
+  .pipe-stage:last-child::after { display: none; }
+  .pipe-stage .pipe-icon { font-size: 28px; margin-bottom: 8px; }
+  .pipe-stage h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .pipe-stage p { font-size: 11px; color: var(--text-dim); }
+
+  /* ── Folder Structure ── */
+  .folder-tree {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 32px;
+    max-width: 700px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+  .folder-tree .dir { color: var(--accent2); font-weight: 600; }
+  .folder-tree .file { color: var(--text-dim); }
+  .folder-tree .comment { color: var(--text-dim); opacity: 0.5; }
+
+  /* ── DB Schema ── */
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .db-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .db-table-header {
+    padding: 12px 16px;
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .db-table-header .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .db-table-body { padding: 12px 16px; }
+  .db-col {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .db-col .col-name { color: var(--text); }
+  .db-col .col-type { color: var(--text-dim); font-size: 11px; }
+  .db-col.pk .col-name { color: var(--orange); font-weight: 600; }
+  .db-col.fk .col-name { color: var(--blue); }
+
+  /* ── Status Flow ── */
+  .status-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; flex-wrap: wrap;
+    max-width: 900px; margin: 0 auto 40px;
+  }
+  .status-node {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 700;
+    border: 2px solid;
+    text-align: center;
+  }
+  .status-arrow {
+    font-size: 20px; color: var(--text-dim);
+  }
+  .s-draft { border-color: var(--text-dim); color: var(--text-dim); }
+  .s-approved { border-color: var(--green); color: var(--green); }
+  .s-scheduled { border-color: var(--blue); color: var(--blue); }
+  .s-publishing { border-color: var(--orange); color: var(--orange); }
+  .s-published { border-color: var(--accent); color: var(--accent2); background: rgba(108,92,231,0.1); }
+  .s-failed { border-color: var(--red); color: var(--red); }
+  .s-rejected { border-color: var(--red); color: var(--red); opacity: 0.7; }
+
+  /* ── Cost Table ── */
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .cost-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .cost-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+  .cost-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .cost-row:last-child { border-bottom: none; }
+  .cost-row .label { color: var(--text-dim); }
+  .cost-row .value { font-weight: 600; }
+  .cost-row.total { border-top: 2px solid var(--accent); padding-top: 12px; margin-top: 6px; }
+  .cost-row.total .label { color: var(--text); font-weight: 700; }
+  .cost-row.total .value { color: var(--accent2); font-size: 18px; }
+
+  /* ── Safety ── */
+  .safety-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .safety-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .safety-card h3 {
+    font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .safety-card ul {
+    list-style: none; padding: 0;
+  }
+  .safety-card li {
+    font-size: 12px; color: var(--text-dim);
+    padding: 4px 0; padding-left: 16px; position: relative;
+  }
+  .safety-card li::before {
+    content: ''; position: absolute; left: 0; top: 10px;
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .safety-card.block li::before { background: var(--red); }
+  .safety-card.allow li::before { background: var(--green); }
+  .safety-card.guard li::before { background: var(--orange); }
+
+  /* ── API Table ── */
+  .api-table {
+    width: 100%; max-width: 1100px; margin: 0 auto;
+    border-collapse: collapse;
+  }
+  .api-table th {
+    text-align: left; padding: 10px 16px;
+    font-size: 11px; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 2px solid var(--border);
+  }
+  .api-table td {
+    padding: 10px 16px; font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .api-table tr:hover { background: rgba(108,92,231,0.05); }
+  .method {
+    font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 4px; font-family: 'SF Mono', monospace;
+  }
+  .method.get { background: rgba(0,184,148,0.15); color: var(--green); }
+  .method.post { background: rgba(108,92,231,0.15); color: var(--accent2); }
+  .method.patch { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .method.put { background: rgba(116,185,255,0.15); color: var(--blue); }
+  .api-path { font-family: 'SF Mono', monospace; font-size: 12px; color: var(--text); }
+
+  /* ── Tech Stack ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .stack-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .stack-item:hover { transform: translateY(-2px); }
+  .stack-item .s-icon { font-size: 28px; margin-bottom: 8px; }
+  .stack-item h4 { font-size: 13px; font-weight: 700; }
+  .stack-item p { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── Divider ── */
+  .divider {
+    width: 60px; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--pink));
+    margin: 48px 0;
+  }
+
+  /* ── Footer ── */
+  footer {
+    padding: 40px 60px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 13px; color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="logo">HeyHoAI</div>
+  <div class="links">
+    <a href="#hero">Overview</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#sequence">Sequence</a>
+    <a href="#database">Database</a>
+    <a href="#api">API</a>
+    <a href="#safety">Safety</a>
+    <a href="#cost">Cost</a>
+  </div>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section id="hero">
+  <div class="section-label">Instagram AI Character Auto-Operation System</div>
+  <h1 class="section-title">HeyHoAI</h1>
+  <p class="section-desc">
+    AI 캐릭터 생성부터 이미지/영상 생성, 캡션 작성, Instagram 게시까지
+    전 과정을 자동화하는 Node.js 기반 백엔드 시스템
+  </p>
+  <div class="hero-badges">
+    <span class="badge purple">Claude API</span>
+    <span class="badge pink">FLUX / DALL-E</span>
+    <span class="badge blue">Runway / Kling</span>
+    <span class="badge green">Instagram Graph API</span>
+  </div>
+</section>
+
+<!-- ═══════════════ TECH STACK ═══════════════ -->
+<section id="stack">
+  <div class="section-label">Tech Stack</div>
+  <h2 class="section-title">기술 스택</h2>
+  <p class="section-desc">프로덕션 레벨 운영을 위한 기술 구성</p>
+
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="s-icon">&#9881;</div>
+      <h4>Node.js</h4>
+      <p>Runtime</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#9889;</div>
+      <h4>Express</h4>
+      <p>API Server</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#128024;</div>
+      <h4>PostgreSQL</h4>
+      <p>Aurora Serverless v2</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#129302;</div>
+      <h4>Claude API</h4>
+      <p>Character &amp; Caption</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#127912;</div>
+      <h4>FLUX / fal.ai</h4>
+      <p>Image Generation</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#127910;</div>
+      <h4>Runway / Kling</h4>
+      <p>Video Generation</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#128247;</div>
+      <h4>Instagram</h4>
+      <p>Graph API</p>
+    </div>
+    <div class="stack-item">
+      <div class="s-icon">&#9729;</div>
+      <h4>AWS</h4>
+      <p>RDS / S3 / EC2</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ARCHITECTURE ═══════════════ -->
+<section id="architecture">
+  <div class="section-label">System Design</div>
+  <h2 class="section-title">Architecture</h2>
+  <p class="section-desc">Provider Abstraction 기반 계층 분리 아키텍처</p>
+
+  <div class="arch-grid">
+    <div class="arch-card arch-span-4" style="border-color: var(--accent); background: linear-gradient(135deg, var(--surface), rgba(108,92,231,0.08));">
+      <div class="icon">&#128421;</div>
+      <h3>API Gateway (Express)</h3>
+      <p>REST API endpoints + Auth Middleware + Rate Limiter + Zod Validation</p>
+      <div class="tech">src/index.js &rarr; routes &rarr; controllers</div>
+    </div>
+
+    <div class="arch-card">
+      <div class="icon">&#129302;</div>
+      <h3>Character Service</h3>
+      <p>AI 캐릭터 페르소나 생성, CRUD, 안전성 검증</p>
+      <div class="tech">Claude API (Sonnet)</div>
+    </div>
+    <div class="arch-card">
+      <div class="icon">&#127912;</div>
+      <h3>Image Service</h3>
+      <p>캐릭터 이미지 후보 생성, Master 선택, Provider 추상화</p>
+      <div class="tech">Replicate / fal.ai</div>
+    </div>
+    <div class="arch-card">
+      <div class="icon">&#127910;</div>
+      <h3>Video Service</h3>
+      <p>Image-to-Video 변환, Reels 규격 영상 생성</p>
+      <div class="tech">Runway / Kling / Minimax</div>
+    </div>
+    <div class="arch-card">
+      <div class="icon">&#128230;</div>
+      <h3>Publishing Service</h3>
+      <p>콘텐츠 묶기, 캡션 생성, 검수, 예약 게시</p>
+      <div class="tech">Claude + IG Graph API</div>
+    </div>
+
+    <div class="arch-card arch-span-2">
+      <div class="icon">&#128737;</div>
+      <h3>Safety Layer</h3>
+      <p>NSFW 필터, 미성년 암시 차단, 브랜드 안전성, 프롬프트 정화 &mdash; 모든 생성물이 게시 전 반드시 통과</p>
+      <div class="tech">Prompt Guard + Blocked Terms + Age Gate</div>
+    </div>
+    <div class="arch-card arch-span-2">
+      <div class="icon">&#128451;</div>
+      <h3>Data Layer</h3>
+      <p>PostgreSQL (Aurora Serverless v2), S3 (미디어 저장), Redis (추후 Job Queue)</p>
+      <div class="tech">AWS ap-northeast-2 (Seoul)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PIPELINE ═══════════════ -->
+<section id="pipeline">
+  <div class="section-label">End-to-End Flow</div>
+  <h2 class="section-title">Pipeline Overview</h2>
+  <p class="section-desc">캐릭터 생성부터 Instagram 게시까지 6단계 파이프라인</p>
+
+  <div class="pipeline">
+    <div class="pipe-stage">
+      <div class="pipe-icon">&#129302;</div>
+      <h4>1. Character</h4>
+      <p>Claude API로<br>페르소나 생성</p>
+    </div>
+    <div class="pipe-stage">
+      <div class="pipe-icon">&#127912;</div>
+      <h4>2. Image</h4>
+      <p>4장 후보 생성<br>Master 선택</p>
+    </div>
+    <div class="pipe-stage">
+      <div class="pipe-icon">&#127910;</div>
+      <h4>3. Video</h4>
+      <p>Image-to-Video<br>Reels 영상</p>
+    </div>
+    <div class="pipe-stage">
+      <div class="pipe-icon">&#128172;</div>
+      <h4>4. Caption</h4>
+      <p>캡션 + 해시태그<br>자동 생성</p>
+    </div>
+    <div class="pipe-stage">
+      <div class="pipe-icon">&#9989;</div>
+      <h4>5. Review</h4>
+      <p>검수 승인<br>예약 설정</p>
+    </div>
+    <div class="pipe-stage">
+      <div class="pipe-icon">&#128247;</div>
+      <h4>6. Publish</h4>
+      <p>Instagram<br>자동 게시</p>
+    </div>
+  </div>
+
+  <!-- Content Status Flow -->
+  <div style="text-align:center; margin-bottom: 24px;">
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:24px;">Content Status Lifecycle</h3>
+  </div>
+  <div class="status-flow">
+    <div class="status-node s-draft">draft</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-approved">approved</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-scheduled">scheduled</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-publishing">publishing</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-published">published</div>
+  </div>
+  <div class="status-flow" style="margin-top: 12px;">
+    <div class="status-node s-draft">draft</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-rejected">rejected</div>
+    <div style="width: 40px;"></div>
+    <div class="status-node s-publishing">publishing</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-failed">failed</div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-node s-scheduled">retry</div>
+  </div>
+</section>
+
+<!-- ═══════════════ SEQUENCE ═══════════════ -->
+<section id="sequence">
+  <div class="section-label">Sequence Diagram</div>
+  <h2 class="section-title">Processing Flow</h2>
+  <p class="section-desc">API 호출부터 Instagram 게시까지의 상세 시퀀스</p>
+
+  <div class="sequence-container">
+    <div class="seq-flow">
+
+      <div class="seq-step" data-step="1">
+        <div class="step-header">
+          <span class="step-tag tag-api">API</span>
+          <h4>POST /api/characters</h4>
+        </div>
+        <p>캐릭터 컨셉, 톤, 주제를 입력받아 생성 요청</p>
+        <div class="step-detail">
+          Input: { concept, tone, topics[] }<br>
+          &rarr; characterPrompt.builder.js &rarr; Claude API 호출
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="2">
+        <div class="step-header">
+          <span class="step-tag tag-ai">AI</span>
+          <h4>Claude API &rarr; Character Profile JSON</h4>
+        </div>
+        <p>페르소나, 외형, IG 프로필, 음성 가이드, 브랜드 안전 규칙 생성</p>
+        <div class="step-detail">
+          Output: { name, age(23+), personality[], visualDescription,<br>
+          &nbsp;&nbsp;instagramProfile, voiceGuidelines, brandSafety }
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="3">
+        <div class="step-header">
+          <span class="step-tag tag-safety">SAFETY</span>
+          <h4>Character Validation</h4>
+        </div>
+        <p>Zod 스키마 검증 + 28개 Blocked Terms 전수 스캔 + Age Gate (23세 미만 거부)</p>
+        <div class="step-detail">
+          Pass &rarr; DB 저장 &rarr; Step 4<br>
+          Fail &rarr; 재생성 (최대 2회) &rarr; 실패 시 422 반환
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="4">
+        <div class="step-header">
+          <span class="step-tag tag-api">API</span>
+          <h4>POST /api/characters/:id/images/generate</h4>
+        </div>
+        <p>캐릭터 프로필 기반 이미지 4장 생성 요청</p>
+        <div class="step-detail">
+          imagePrompt.builder.js: persona.visualDescription &rarr; 4가지 Scene Variation<br>
+          - scene_0: cafe | scene_1: street | scene_2: studio (master) | scene_3: rooftop<br>
+          + SAFETY_NEGATIVE_PROMPT 자동 주입 + SAFETY_POSITIVE_ENFORCEMENT 접미
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="5">
+        <div class="step-header">
+          <span class="step-tag tag-ai">PROVIDER</span>
+          <h4>Image Provider &rarr; 4 Candidates</h4>
+        </div>
+        <p>Replicate(FLUX) 또는 fal.ai에 4회 병렬 호출, 개별 재시도 2회</p>
+        <div class="step-detail">
+          Promise.allSettled() &rarr; 성공한 것만 DB 저장<br>
+          전부 실패 시 Job status &rarr; failed, 502 반환
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="6">
+        <div class="step-header">
+          <span class="step-tag tag-db">DB</span>
+          <h4>Master Image 선정</h4>
+        </div>
+        <p>scene_2 (스튜디오 headshot) 우선 &rarr; 트랜잭션으로 기존 master 강등 + 새 master 지정</p>
+        <div class="step-detail">
+          image_assets.status: 'candidate' &rarr; 'master' (1개)<br>
+          수동 변경: PUT /api/characters/:id/images/:imageId/master
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="7">
+        <div class="step-header">
+          <span class="step-tag tag-api">API</span>
+          <h4>POST /api/characters/:id/videos/generate</h4>
+        </div>
+        <p>Master Image 기반 Instagram Reels 영상 생성</p>
+        <div class="step-detail">
+          videoPrompt.builder.js: Style Preset + Motion Prompt 조립<br>
+          Styles: slow_motion | natural | dynamic | cinematic | loop<br>
+          Output: 1080x1920, 3~10초, 9:16 비율
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="8">
+        <div class="step-header">
+          <span class="step-tag tag-ai">PROVIDER</span>
+          <h4>Video Provider &rarr; Submit + Poll</h4>
+        </div>
+        <p>Runway/Kling/Minimax에 비동기 제출, 5초 간격 폴링 (최대 10분)</p>
+        <div class="step-detail">
+          submit() &rarr; providerJobId 수신<br>
+          poll() &rarr; queued &rarr; processing &rarr; completed<br>
+          실패 시 재시도 2회 (5초, 10초 대기)
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="9">
+        <div class="step-header">
+          <span class="step-tag tag-api">API</span>
+          <h4>POST /api/contents</h4>
+        </div>
+        <p>이미지/영상을 게시 단위 콘텐츠로 묶기 + 캡션 자동 생성</p>
+        <div class="step-detail">
+          captionPrompt.builder.js: persona.voiceGuidelines 기반 캡션 생성<br>
+          Claude API &rarr; { caption, hashtags(10~20개), callToAction, altText }<br>
+          해시태그: 스팸 태그 자동 제거 + 30개 제한 + NSFW 태그 필터
+        </div>
+      </div>
+
+      <div class="seq-step" data-step="10">
+        <div class="step-header">
+          <span class="step-tag tag-publish">REVIEW</span>
+          <h4>approve &rarr; schedule &rarr; publish</h4>
+        </div>
+        <p>검수 승인 &rarr; 예약 게시 &rarr; Instagram Graph API로 실제 게시</p>
+        <div class="step-detail">
+          POST /contents/:id/approve &rarr; status: approved<br>
+          POST /contents/:id/schedule &rarr; publish_jobs 생성<br>
+          POST /contents/:id/publish-now &rarr; 즉시 게시 (approve+schedule+execute)
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOLDER STRUCTURE ═══════════════ -->
+<section id="folder">
+  <div class="section-label">Project Structure</div>
+  <h2 class="section-title">Folder Layout</h2>
+  <p class="section-desc">도메인별 계층 분리 구조</p>
+
+  <div class="folder-tree">
+<span class="dir">src/</span>
+  <span class="dir">characters/</span>                    <span class="comment"># 캐릭터 도메인</span>
+    <span class="file">character.route.js</span>
+    <span class="file">character.controller.js</span>
+    <span class="file">character.service.js</span>          <span class="comment"># 생성 + 재시도 오케스트레이션</span>
+    <span class="file">character.validator.js</span>         <span class="comment"># Zod + Safety 검증</span>
+    <span class="file">character.repository.js</span>
+    <span class="dir">prompts/</span>
+      <span class="file">characterPrompt.builder.js</span>  <span class="comment"># Claude 프롬프트 조립</span>
+    <span class="dir">providers/</span>
+      <span class="file">claudeCharacter.provider.js</span>
+  <span class="dir">images/</span>                          <span class="comment"># 이미지 도메인</span>
+    <span class="file">imageGeneration.service.js</span>     <span class="comment"># 후보 생성 + Master 선택</span>
+    <span class="file">imagePrompt.builder.js</span>         <span class="comment"># Scene Variation 프롬프트</span>
+    <span class="file">imageAsset.repository.js</span>
+    <span class="file">generationJob.repository.js</span>
+    <span class="dir">providers/</span>
+      <span class="file">replicate.provider.js</span>
+      <span class="file">fal.provider.js</span>
+  <span class="dir">videos/</span>                          <span class="comment"># 영상 도메인</span>
+    <span class="file">videoGeneration.service.js</span>     <span class="comment"># Submit + Poll 패턴</span>
+    <span class="file">videoPrompt.builder.js</span>         <span class="comment"># Style Preset 기반</span>
+    <span class="file">videoAsset.repository.js</span>
+    <span class="dir">providers/</span>
+      <span class="file">runway.provider.js</span>
+      <span class="file">kling.provider.js</span>
+      <span class="file">minimax.provider.js</span>
+  <span class="dir">publishing/</span>                      <span class="comment"># 게시 도메인</span>
+    <span class="file">content.service.js</span>             <span class="comment"># 콘텐츠 CRUD + 검수</span>
+    <span class="file">caption.service.js</span>             <span class="comment"># Claude 캡션 생성</span>
+    <span class="file">publishJob.service.js</span>          <span class="comment"># 예약/실행/재시도</span>
+    <span class="file">content.repository.js</span>
+    <span class="file">publishJob.repository.js</span>
+    <span class="dir">prompts/</span>
+      <span class="file">captionPrompt.builder.js</span>
+  <span class="dir">config/</span>
+    <span class="file">index.js</span>                       <span class="comment"># Env + Zod 검증</span>
+  <span class="dir">db/</span>
+    <span class="file">client.js</span>                      <span class="comment"># PG Pool</span>
+    <span class="file">migrate.js</span>                     <span class="comment"># 7개 테이블 마이그레이션</span>
+  <span class="dir">middleware/</span>
+    <span class="file">errorHandler.js</span>
+  <span class="file">index.js</span>                         <span class="comment"># Express 앱 진입점</span>
+  </div>
+</section>
+
+<!-- ═══════════════ DATABASE ═══════════════ -->
+<section id="database">
+  <div class="section-label">Data Model</div>
+  <h2 class="section-title">Database Schema</h2>
+  <p class="section-desc">7개 테이블, PostgreSQL (Aurora Serverless v2)</p>
+
+  <div class="db-grid">
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--accent)"></span> characters
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col"><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+        <div class="db-col"><span class="col-name">concept</span><span class="col-type">VARCHAR(200)</span></div>
+        <div class="db-col"><span class="col-name">persona</span><span class="col-type">JSONB</span></div>
+        <div class="db-col"><span class="col-name">status</span><span class="col-type">VARCHAR(20)</span></div>
+        <div class="db-col"><span class="col-name">created_at</span><span class="col-type">TIMESTAMPTZ</span></div>
+      </div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--pink)"></span> generation_jobs
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col fk"><span class="col-name">character_id</span><span class="col-type">FK &rarr; characters</span></div>
+        <div class="db-col"><span class="col-name">provider</span><span class="col-type">VARCHAR(50)</span></div>
+        <div class="db-col"><span class="col-name">candidate_count</span><span class="col-type">INT</span></div>
+        <div class="db-col"><span class="col-name">master_image_id</span><span class="col-type">UUID</span></div>
+        <div class="db-col"><span class="col-name">status</span><span class="col-type">VARCHAR(20)</span></div>
+      </div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--green)"></span> image_assets
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col fk"><span class="col-name">character_id</span><span class="col-type">FK &rarr; characters</span></div>
+        <div class="db-col fk"><span class="col-name">job_id</span><span class="col-type">FK &rarr; gen_jobs</span></div>
+        <div class="db-col"><span class="col-name">prompt</span><span class="col-type">TEXT</span></div>
+        <div class="db-col"><span class="col-name">image_url</span><span class="col-type">TEXT</span></div>
+        <div class="db-col"><span class="col-name">variation_label</span><span class="col-type">VARCHAR(50)</span></div>
+        <div class="db-col"><span class="col-name">status</span><span class="col-type">candidate | master</span></div>
+      </div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--orange)"></span> video_generation_jobs
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col fk"><span class="col-name">character_id</span><span class="col-type">FK &rarr; characters</span></div>
+        <div class="db-col fk"><span class="col-name">source_image_id</span><span class="col-type">FK &rarr; images</span></div>
+        <div class="db-col"><span class="col-name">provider</span><span class="col-type">VARCHAR(50)</span></div>
+        <div class="db-col"><span class="col-name">video_style</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="db-col"><span class="col-name">motion_prompt</span><span class="col-type">TEXT</span></div>
+        <div class="db-col"><span class="col-name">status / attempt</span><span class="col-type">VARCHAR / INT</span></div>
+      </div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--blue)"></span> video_assets
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col fk"><span class="col-name">character_id</span><span class="col-type">FK &rarr; characters</span></div>
+        <div class="db-col fk"><span class="col-name">source_image_id</span><span class="col-type">FK &rarr; images</span></div>
+        <div class="db-col"><span class="col-name">video_url</span><span class="col-type">TEXT</span></div>
+        <div class="db-col"><span class="col-name">duration_ms</span><span class="col-type">INT</span></div>
+        <div class="db-col"><span class="col-name">video_style</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="db-col"><span class="col-name">status</span><span class="col-type">ready | published</span></div>
+      </div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--cyan)"></span> contents
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col fk"><span class="col-name">character_id</span><span class="col-type">FK &rarr; characters</span></div>
+        <div class="db-col"><span class="col-name">media_type</span><span class="col-type">image | video | carousel</span></div>
+        <div class="db-col"><span class="col-name">media_asset_ids</span><span class="col-type">UUID[]</span></div>
+        <div class="db-col"><span class="col-name">caption</span><span class="col-type">TEXT (max 2200)</span></div>
+        <div class="db-col"><span class="col-name">hashtags</span><span class="col-type">TEXT[] (max 30)</span></div>
+        <div class="db-col"><span class="col-name">status</span><span class="col-type">draft &rarr; published</span></div>
+      </div>
+    </div>
+
+    <div class="db-table">
+      <div class="db-table-header">
+        <span class="dot" style="background:var(--red)"></span> publish_jobs
+      </div>
+      <div class="db-table-body">
+        <div class="db-col pk"><span class="col-name">id</span><span class="col-type">UUID PK</span></div>
+        <div class="db-col fk"><span class="col-name">content_id</span><span class="col-type">FK &rarr; contents</span></div>
+        <div class="db-col fk"><span class="col-name">character_id</span><span class="col-type">FK &rarr; characters</span></div>
+        <div class="db-col"><span class="col-name">scheduled_at</span><span class="col-type">TIMESTAMPTZ</span></div>
+        <div class="db-col"><span class="col-name">ig_media_id</span><span class="col-type">VARCHAR(200)</span></div>
+        <div class="db-col"><span class="col-name">ig_permalink</span><span class="col-type">VARCHAR(500)</span></div>
+        <div class="db-col"><span class="col-name">status / attempt</span><span class="col-type">VARCHAR / INT</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ API ═══════════════ -->
+<section id="api">
+  <div class="section-label">REST API</div>
+  <h2 class="section-title">API Endpoints</h2>
+  <p class="section-desc">4개 도메인, 23개 엔드포인트</p>
+
+  <table class="api-table">
+    <thead>
+      <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="3" style="font-weight:700; color:var(--accent2); padding-top:16px;">Characters</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/characters</td><td>AI 캐릭터 생성</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/characters</td><td>캐릭터 목록</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/characters/:id</td><td>캐릭터 상세</td></tr>
+      <tr><td><span class="method patch">PATCH</span></td><td class="api-path">/api/characters/:id</td><td>캐릭터 수정</td></tr>
+
+      <tr><td colspan="3" style="font-weight:700; color:var(--pink); padding-top:16px;">Images</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/characters/:id/images/generate</td><td>이미지 후보 4장 생성</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/characters/:id/images</td><td>이미지 목록</td></tr>
+      <tr><td><span class="method put">PUT</span></td><td class="api-path">/api/characters/:id/images/:imageId/master</td><td>대표 이미지 수동 변경</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/images/:id</td><td>이미지 상세</td></tr>
+
+      <tr><td colspan="3" style="font-weight:700; color:var(--blue); padding-top:16px;">Videos</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/characters/:id/videos/generate</td><td>Reels 영상 생성</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/characters/:id/videos</td><td>영상 목록</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/videos/:id</td><td>영상 상세</td></tr>
+
+      <tr><td colspan="3" style="font-weight:700; color:var(--green); padding-top:16px;">Publishing</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/contents</td><td>콘텐츠 생성 + 캡션 자동 생성</td></tr>
+      <tr><td><span class="method get">GET</span></td><td class="api-path">/api/contents/:id</td><td>콘텐츠 상세</td></tr>
+      <tr><td><span class="method patch">PATCH</span></td><td class="api-path">/api/contents/:id</td><td>캡션/해시태그 수정</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/contents/:id/regenerate-caption</td><td>캡션 재생성</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/contents/:id/approve</td><td>검수 승인</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/contents/:id/reject</td><td>검수 거부</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/contents/:id/schedule</td><td>예약 게시</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/contents/:id/publish-now</td><td>즉시 게시</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/publish-jobs/:id/retry</td><td>실패 재시도</td></tr>
+      <tr><td><span class="method post">POST</span></td><td class="api-path">/api/publish-jobs/:id/cancel</td><td>예약 취소</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════ SAFETY ═══════════════ -->
+<section id="safety">
+  <div class="section-label">Content Policy</div>
+  <h2 class="section-title">Safety & Moderation</h2>
+  <p class="section-desc">3단계 안전 장치: 프롬프트 가드 + 금지어 스캔 + 해시태그 필터</p>
+
+  <div class="safety-grid">
+    <div class="safety-card block">
+      <h3><span style="color:var(--red)">&#10006;</span> 절대 차단</h3>
+      <ul>
+        <li>미성년 암시 (child, teen, school uniform, loli)</li>
+        <li>누드/노출 (nude, naked, lingerie, see-through)</li>
+        <li>성적 표현 (sexual, fetish, erotic, seductive)</li>
+        <li>폭력/유해 (violence, weapon, blood, drug)</li>
+        <li>스팸 해시태그 (f4f, l4l, followback)</li>
+        <li>IG 제한 태그 (nsfw, onlyfans, boudoir)</li>
+      </ul>
+    </div>
+
+    <div class="safety-card allow">
+      <h3><span style="color:var(--green)">&#10004;</span> 허용 기준</h3>
+      <ul>
+        <li>캐릭터 나이: 23세 이상만 허용</li>
+        <li>의상: 일상복, 비즈니스 캐주얼</li>
+        <li>포즈: 자연스러운 일상 포즈</li>
+        <li>표정: 밝고 건전한 표정</li>
+        <li>배경: 카페, 거리, 스튜디오, 자연</li>
+        <li>톤: 친근하고 브랜드 세이프</li>
+      </ul>
+    </div>
+
+    <div class="safety-card guard">
+      <h3><span style="color:var(--orange)">&#9888;</span> 자동 가드</h3>
+      <ul>
+        <li>모든 이미지 prompt에 negative prompt 강제 주입</li>
+        <li>모든 prompt에 "clearly adult, age 25+, SFW" 접미</li>
+        <li>모든 영상 prompt에 "fully clothed throughout" 주입</li>
+        <li>해시태그 30개 자동 제한 + 중복 제거</li>
+        <li>캡션 2200자 제한 (Instagram 규격)</li>
+        <li>캐릭터 생성 실패 시 최대 2회 자동 재생성</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ COST ═══════════════ -->
+<section id="cost">
+  <div class="section-label">Cost Estimation</div>
+  <h2 class="section-title">100 Accounts / Daily</h2>
+  <p class="section-desc">100개 계정 x 1일 1게시 기준 월간 운영 비용</p>
+
+  <div class="cost-grid">
+    <div class="cost-card">
+      <h3 style="color:var(--pink);">&#127912; 이미지 게시 (50건/일)</h3>
+      <div class="cost-row"><span class="label">이미지 4장 생성 (Replicate FLUX)</span><span class="value">$0.16</span></div>
+      <div class="cost-row"><span class="label">캡션 생성 (Claude Sonnet)</span><span class="value">$0.01</span></div>
+      <div class="cost-row"><span class="label">건당 소계</span><span class="value">$0.17</span></div>
+      <div class="cost-row total"><span class="label">월간 (1,500건)</span><span class="value">$255</span></div>
+    </div>
+
+    <div class="cost-card">
+      <h3 style="color:var(--blue);">&#127910; 릴스 게시 (50건/일)</h3>
+      <div class="cost-row"><span class="label">소스 이미지 1장 (Replicate)</span><span class="value">$0.04</span></div>
+      <div class="cost-row"><span class="label">영상 5초 (Runway Gen-4)</span><span class="value">$0.25</span></div>
+      <div class="cost-row"><span class="label">캡션 생성 (Claude Sonnet)</span><span class="value">$0.01</span></div>
+      <div class="cost-row"><span class="label">건당 소계</span><span class="value">$0.30</span></div>
+      <div class="cost-row total"><span class="label">월간 (1,500건)</span><span class="value">$450</span></div>
+    </div>
+
+    <div class="cost-card">
+      <h3 style="color:var(--green);">&#9729; 인프라</h3>
+      <div class="cost-row"><span class="label">Aurora Serverless v2 (Seoul)</span><span class="value">$15~</span></div>
+      <div class="cost-row"><span class="label">EC2 (t4g.micro)</span><span class="value">$8</span></div>
+      <div class="cost-row"><span class="label">S3 (미디어 저장)</span><span class="value">$10</span></div>
+      <div class="cost-row"><span class="label">Redis (ElastiCache)</span><span class="value">$13</span></div>
+      <div class="cost-row total"><span class="label">월간</span><span class="value">~$50</span></div>
+    </div>
+
+    <div class="cost-card" style="border-color: var(--accent); background: linear-gradient(135deg, var(--surface), rgba(108,92,231,0.08));">
+      <h3 style="color:var(--accent2);">&#128176; 총 비용 요약</h3>
+      <div class="cost-row"><span class="label">API 비용 (이미지+영상+캡션)</span><span class="value">$705</span></div>
+      <div class="cost-row"><span class="label">인프라 비용</span><span class="value">$50</span></div>
+      <div class="cost-row total"><span class="label">월간 총액</span><span class="value">~$755</span></div>
+      <div class="cost-row" style="border: none; padding-top: 8px;">
+        <span class="label" style="color:var(--text);">원화 환산 (1$=1,380원)</span>
+        <span class="value" style="color:var(--accent2); font-size: 22px;">약 104만원</span>
+      </div>
+      <div class="cost-row" style="border: none;">
+        <span class="label">계정당 월 비용</span>
+        <span class="value" style="color:var(--green);">~10,400원</span>
+      </div>
+      <div style="margin-top: 16px; padding: 12px; background: var(--surface2); border-radius: 8px; font-size: 12px; color: var(--text-dim);">
+        &#128161; 최저가 조합 (fal.ai + Minimax): <strong style="color:var(--green);">월 ~52만원</strong>까지 절감 가능
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer>
+  <p>HeyHoAI &mdash; Instagram AI Character Auto-Operation System</p>
+  <p style="margin-top:4px; font-size:11px;">Node.js + Express + PostgreSQL + Claude API + Provider Abstraction</p>
+</footer>
+
+</body>
+</html>
