@@ -149,10 +149,20 @@
   .gallery-panel { padding: 20px; overflow-y: auto; }
   .gallery-header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
   }
   .gallery-header h2 { font-size: 16px; font-weight: 700; }
+  .gallery-controls { display: flex; align-items: center; gap: 8px; }
   .gallery-count { font-size: 12px; color: var(--dim); }
+  .sort-select {
+    padding: 6px 28px 6px 10px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 12px; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238888a0' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+  .sort-select:focus { outline: none; border-color: var(--accent); }
 
   .gallery-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -381,7 +391,21 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   <div class="gallery-panel">
     <div class="gallery-header">
       <h2>Generated Images</h2>
-      <span class="gallery-count" id="galleryCount"></span>
+      <div class="gallery-controls">
+        <select class="sort-select" id="sortSelect" onchange="loadGallery()">
+          <option value="newest">Latest</option>
+          <option value="oldest">Oldest</option>
+          <option value="natural_high">Natural (High)</option>
+          <option value="natural_low">Natural (Low)</option>
+          <option value="sexual_high">Sexual (High)</option>
+          <option value="sexual_low">Sexual (Low)</option>
+          <option value="postrate_high">Post Rate (High)</option>
+          <option value="postrate_low">Post Rate (Low)</option>
+          <option value="posted_first">Posted First</option>
+          <option value="unposted_first">Unposted First</option>
+        </select>
+        <span class="gallery-count" id="galleryCount"></span>
+      </div>
     </div>
     <div class="gallery-grid" id="galleryGrid"></div>
   </div>
@@ -579,17 +603,31 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     }
   }
 
-  // ── Gallery (DB 기반) ──
-  async function loadGallery() {
-    try {
-      const res = await fetch('/api/generate/reviews');
-      const data = await res.json();
-      const grid = document.getElementById('galleryGrid');
-      grid.innerHTML = '';
+  // ── Gallery (DB 기반 + 무한 스크롤) ──
+  let galleryOffset = 0;
+  const galleryLimit = 30;
+  let galleryLoading = false;
+  let galleryDone = false;
 
-      // DB에 리뷰가 있으면 DB 기반, 없으면 파일 기반 fallback
+  async function loadGallery(reset = true) {
+    if (galleryLoading) return;
+    if (!reset && galleryDone) return;
+
+    galleryLoading = true;
+    const grid = document.getElementById('galleryGrid');
+
+    if (reset) {
+      grid.innerHTML = '';
+      galleryOffset = 0;
+      galleryDone = false;
+    }
+
+    try {
+      const sort = document.getElementById('sortSelect').value;
+      const res = await fetch(`/api/generate/reviews?sort=${sort}&limit=${galleryLimit}&offset=${galleryOffset}`);
+      const data = await res.json();
+
       if (data.success && data.data.length > 0) {
-        document.getElementById('galleryCount').textContent = data.data.length + ' images';
         data.data.forEach(item => {
           const filename = item.file_path?.split('/').pop();
           const div = document.createElement('div');
@@ -604,34 +642,30 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
           `;
           grid.appendChild(div);
         });
+
+        galleryOffset += data.data.length;
+        if (data.data.length < galleryLimit) galleryDone = true;
+
+        document.getElementById('galleryCount').textContent = galleryOffset + ' images' + (galleryDone ? '' : '+');
+      } else if (reset) {
+        document.getElementById('galleryCount').textContent = '';
+        grid.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;">No images yet. Generate your first image!</div>';
       } else {
-        // fallback: 파일 기반
-        const fres = await fetch('/api/generate/images');
-        const fdata = await fres.json();
-        if (fdata.success && fdata.data.length > 0) {
-          document.getElementById('galleryCount').textContent = fdata.data.length + ' images';
-          fdata.data.forEach(img => {
-            const div = document.createElement('div');
-            div.className = 'gallery-item';
-            div.onclick = () => { document.getElementById('reviewImg').src = img.url; document.getElementById('reviewModal').classList.add('show'); };
-            div.innerHTML = `
-              <img src="${img.url}" alt="" loading="lazy">
-              <div class="meta">
-                <span>${img.size}</span>
-                <span>${new Date(img.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            `;
-            grid.appendChild(div);
-          });
-        } else {
-          document.getElementById('galleryCount').textContent = '';
-          grid.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;">No images yet. Generate your first image!</div>';
-        }
+        galleryDone = true;
       }
     } catch (e) {
       console.error('Failed to load gallery:', e);
+    } finally {
+      galleryLoading = false;
     }
   }
+
+  // 무한 스크롤
+  document.querySelector('.gallery-panel').addEventListener('scroll', function () {
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
+      loadGallery(false);
+    }
+  });
 
   // ── Review Modal ──
   let currentReview = null;

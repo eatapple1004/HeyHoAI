@@ -41,7 +41,7 @@ async function update(idx, fields) {
   return result.rows[0] || null;
 }
 
-async function findAll({ posted, limit = 50, offset = 0 } = {}) {
+async function findAll({ posted, sort = 'newest', limit = 50, offset = 0 } = {}) {
   let where = '';
   const params = [];
   let i = 1;
@@ -51,6 +51,20 @@ async function findAll({ posted, limit = 50, offset = 0 } = {}) {
     params.push(posted);
   }
 
+  const sortMap = {
+    newest: 'r.created_at DESC',
+    oldest: 'r.created_at ASC',
+    natural_high: 'r.natural_score DESC',
+    natural_low: 'r.natural_score ASC',
+    sexual_high: 'r.sexual_score DESC',
+    sexual_low: 'r.sexual_score ASC',
+    postrate_high: 'r.post_rate DESC',
+    postrate_low: 'r.post_rate ASC',
+    posted_first: 'r.posted DESC, r.created_at DESC',
+    unposted_first: 'r.posted ASC, r.created_at DESC',
+  };
+  const orderBy = sortMap[sort] || sortMap.newest;
+
   const result = await query(
     `SELECT r.*, gr.file_path, gr.model, p.prompt_text, c.name as character_name
      FROM reviews r
@@ -58,7 +72,7 @@ async function findAll({ posted, limit = 50, offset = 0 } = {}) {
      JOIN prompts p ON p.idx = r.prompt_idx
      LEFT JOIN characters c ON c.id = gr.character_id
      ${where}
-     ORDER BY r.created_at DESC LIMIT $${i++} OFFSET $${i}`,
+     ORDER BY ${orderBy} LIMIT $${i++} OFFSET $${i}`,
     [...params, limit, offset]
   );
   return result.rows;
