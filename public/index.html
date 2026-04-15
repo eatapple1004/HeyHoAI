@@ -187,22 +187,101 @@
     border-radius: 50%; animation: spin 0.8s linear infinite;
   }
 
-  /* Modal */
-  .modal-overlay {
+  /* Review Modal */
+  .review-overlay {
     display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.85); z-index: 200;
     align-items: center; justify-content: center; padding: 20px;
   }
-  .modal-overlay.show { display: flex; }
-  .modal-overlay img {
-    max-width: 90vw; max-height: 90vh; object-fit: contain;
-    border-radius: 8px;
-  }
-  .modal-overlay .close {
+  .review-overlay.show { display: flex; }
+  .review-overlay .close {
     position: absolute; top: 16px; right: 20px;
     background: none; border: none; color: white;
-    font-size: 28px; cursor: pointer;
+    font-size: 28px; cursor: pointer; z-index: 210;
   }
+  .review-container {
+    display: grid; grid-template-columns: 1fr 360px;
+    max-width: 1100px; width: 100%; max-height: 90vh;
+    background: var(--surface); border-radius: 12px; overflow: hidden;
+  }
+  @media (max-width: 900px) {
+    .review-container { grid-template-columns: 1fr; max-height: 95vh; overflow-y: auto; }
+  }
+  .review-image {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); padding: 16px; overflow: hidden;
+  }
+  .review-image img {
+    max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px;
+  }
+  .review-panel {
+    padding: 20px; overflow-y: auto; border-left: 1px solid var(--border);
+  }
+  .review-panel h3 {
+    font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--accent2);
+  }
+  .review-section { margin-bottom: 18px; }
+  .review-section label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .review-prompt {
+    font-size: 12px; color: var(--dim); background: var(--surface2);
+    padding: 10px; border-radius: 6px; max-height: 100px;
+    overflow-y: auto; line-height: 1.5; word-break: break-word;
+  }
+  .review-info {
+    font-size: 12px; color: var(--dim); display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .review-info span { background: var(--surface2); padding: 3px 8px; border-radius: 4px; }
+
+  /* Slider */
+  .slider-group { display: flex; align-items: center; gap: 10px; }
+  .slider-group input[type=range] {
+    flex: 1; height: 6px; -webkit-appearance: none; appearance: none;
+    background: var(--surface2); border-radius: 3px; outline: none;
+  }
+  .slider-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    background: var(--accent); border-radius: 50%; cursor: pointer;
+  }
+  .slider-value {
+    min-width: 36px; text-align: center; font-size: 14px; font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Toggle */
+  .toggle-group { display: flex; align-items: center; gap: 10px; }
+  .toggle {
+    width: 44px; height: 24px; background: var(--surface2);
+    border-radius: 12px; position: relative; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; background: white;
+    border-radius: 50%; transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(20px); }
+  .toggle-label { font-size: 13px; color: var(--text); }
+
+  /* Review Memo */
+  .review-memo {
+    width: 100%; min-height: 60px; padding: 8px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: inherit;
+    resize: vertical;
+  }
+  .review-memo:focus { outline: none; border-color: var(--accent); }
+
+  /* Review Save Button */
+  .review-save-btn {
+    width: 100%; padding: 10px; border: none; border-radius: 8px;
+    background: var(--accent); color: white; font-size: 14px;
+    font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+  }
+  .review-save-btn:hover { opacity: 0.9; }
 
   /* Toast */
   .toast {
@@ -314,10 +393,66 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   <div class="text" id="loadingText">Generating...</div>
 </div>
 
-<!-- Image Modal -->
-<div class="modal-overlay" id="modal" onclick="closeModal()">
-  <button class="close">&times;</button>
-  <img id="modalImg" src="" alt="">
+<!-- Review Modal -->
+<div class="review-overlay" id="reviewModal">
+  <button class="close" onclick="closeReview()">&times;</button>
+  <div class="review-container">
+    <div class="review-image">
+      <img id="reviewImg" src="" alt="">
+    </div>
+    <div class="review-panel">
+      <h3>Review</h3>
+
+      <div class="review-section">
+        <label>Prompt</label>
+        <div class="review-prompt" id="reviewPrompt">-</div>
+      </div>
+
+      <div class="review-section">
+        <label>Info</label>
+        <div class="review-info" id="reviewInfo"></div>
+      </div>
+
+      <div class="review-section">
+        <label>Natural Score (0~10)</label>
+        <div class="slider-group">
+          <input type="range" min="0" max="10" step="0.5" value="0" id="naturalScore" oninput="document.getElementById('naturalVal').textContent=this.value">
+          <span class="slider-value" id="naturalVal">0</span>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <label>Sexual Score (0~10)</label>
+        <div class="slider-group">
+          <input type="range" min="0" max="10" step="0.5" value="0" id="sexualScore" oninput="document.getElementById('sexualVal').textContent=this.value">
+          <span class="slider-value" id="sexualVal">0</span>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <label>Post Rate (0~100%)</label>
+        <div class="slider-group">
+          <input type="range" min="0" max="100" step="1" value="0" id="postRate" oninput="document.getElementById('postRateVal').textContent=this.value+'%'">
+          <span class="slider-value" id="postRateVal">0%</span>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <label>Posted</label>
+        <div class="toggle-group">
+          <div class="toggle" id="postedToggle" onclick="togglePosted()"></div>
+          <span class="toggle-label" id="postedLabel">No</span>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <label>Memo</label>
+        <textarea class="review-memo" id="reviewMemo" placeholder="Add notes..."></textarea>
+      </div>
+
+      <button class="review-save-btn" onclick="saveReview()">Save Review</button>
+    </div>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -444,47 +579,132 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     }
   }
 
-  // ── Gallery ──
+  // ── Gallery (DB 기반) ──
   async function loadGallery() {
     try {
-      const res = await fetch('/api/generate/images');
+      const res = await fetch('/api/generate/reviews');
       const data = await res.json();
       const grid = document.getElementById('galleryGrid');
       grid.innerHTML = '';
 
+      // DB에 리뷰가 있으면 DB 기반, 없으면 파일 기반 fallback
       if (data.success && data.data.length > 0) {
         document.getElementById('galleryCount').textContent = data.data.length + ' images';
-        data.data.forEach(img => {
-          const item = document.createElement('div');
-          item.className = 'gallery-item';
-          item.onclick = () => openModal(img.url);
-          item.innerHTML = `
-            <img src="${img.url}" alt="" loading="lazy">
+        data.data.forEach(item => {
+          const filename = item.file_path?.split('/').pop();
+          const div = document.createElement('div');
+          div.className = 'gallery-item';
+          div.onclick = () => openReview(item);
+          div.innerHTML = `
+            <img src="/images/${filename}" alt="" loading="lazy">
             <div class="meta">
-              <span>${img.size}</span>
-              <span>${new Date(img.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <span>${item.posted ? 'Posted' : 'N:' + (item.natural_score||0) + ' S:' + (item.sexual_score||0)}</span>
+              <span>${item.character_name || 'No char'}</span>
             </div>
           `;
-          grid.appendChild(item);
+          grid.appendChild(div);
         });
       } else {
-        document.getElementById('galleryCount').textContent = '';
-        grid.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;">No images yet. Generate your first image!</div>';
+        // fallback: 파일 기반
+        const fres = await fetch('/api/generate/images');
+        const fdata = await fres.json();
+        if (fdata.success && fdata.data.length > 0) {
+          document.getElementById('galleryCount').textContent = fdata.data.length + ' images';
+          fdata.data.forEach(img => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.onclick = () => { document.getElementById('reviewImg').src = img.url; document.getElementById('reviewModal').classList.add('show'); };
+            div.innerHTML = `
+              <img src="${img.url}" alt="" loading="lazy">
+              <div class="meta">
+                <span>${img.size}</span>
+                <span>${new Date(img.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            `;
+            grid.appendChild(div);
+          });
+        } else {
+          document.getElementById('galleryCount').textContent = '';
+          grid.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;">No images yet. Generate your first image!</div>';
+        }
       }
     } catch (e) {
       console.error('Failed to load gallery:', e);
     }
   }
 
-  // ── Modal ──
-  function openModal(url) {
-    document.getElementById('modalImg').src = url;
-    document.getElementById('modal').classList.add('show');
+  // ── Review Modal ──
+  let currentReview = null;
+
+  function openReview(item) {
+    currentReview = item;
+    const filename = item.file_path?.split('/').pop();
+    document.getElementById('reviewImg').src = '/images/' + filename;
+    document.getElementById('reviewPrompt').textContent = item.prompt_text || '-';
+    document.getElementById('reviewInfo').innerHTML = `
+      <span>${item.model || '-'}</span>
+      <span>${item.character_name || 'No character'}</span>
+      <span>Result #${item.result_idx}</span>
+    `;
+
+    document.getElementById('naturalScore').value = item.natural_score || 0;
+    document.getElementById('naturalVal').textContent = item.natural_score || 0;
+    document.getElementById('sexualScore').value = item.sexual_score || 0;
+    document.getElementById('sexualVal').textContent = item.sexual_score || 0;
+    document.getElementById('postRate').value = item.post_rate || 0;
+    document.getElementById('postRateVal').textContent = (item.post_rate || 0) + '%';
+
+    const toggle = document.getElementById('postedToggle');
+    if (item.posted) { toggle.classList.add('on'); } else { toggle.classList.remove('on'); }
+    document.getElementById('postedLabel').textContent = item.posted ? 'Yes' : 'No';
+
+    document.getElementById('reviewMemo').value = item.memo || '';
+
+    document.getElementById('reviewModal').classList.add('show');
   }
-  function closeModal() {
-    document.getElementById('modal').classList.remove('show');
+
+  function closeReview() {
+    document.getElementById('reviewModal').classList.remove('show');
+    currentReview = null;
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  function togglePosted() {
+    const toggle = document.getElementById('postedToggle');
+    toggle.classList.toggle('on');
+    document.getElementById('postedLabel').textContent = toggle.classList.contains('on') ? 'Yes' : 'No';
+  }
+
+  async function saveReview() {
+    if (!currentReview) return;
+
+    const body = {
+      naturalScore: parseFloat(document.getElementById('naturalScore').value),
+      sexualScore: parseFloat(document.getElementById('sexualScore').value),
+      postRate: parseFloat(document.getElementById('postRate').value),
+      posted: document.getElementById('postedToggle').classList.contains('on'),
+      memo: document.getElementById('reviewMemo').value,
+    };
+
+    try {
+      const res = await fetch('/api/generate/reviews/' + currentReview.idx, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Review saved', 'success');
+        closeReview();
+        loadGallery();
+      } else {
+        showToast(data.error || 'Failed to save', 'error');
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
+    }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReview(); });
 
   // ── Toast ──
   function showToast(msg, type = 'success') {

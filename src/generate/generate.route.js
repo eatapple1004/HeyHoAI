@@ -6,6 +6,9 @@ const crypto = require('crypto');
 const { GoogleGenAI } = require('@google/genai');
 const { env } = require('../config');
 const characterRepo = require('../characters/character.repository');
+const promptRepo = require('./prompt.repository');
+const resultRepo = require('./result.repository');
+const reviewRepo = require('./review.repository');
 
 const router = Router();
 
@@ -20,18 +23,10 @@ const storage = multer.diskStorage({
     cb(null, `${crypto.randomUUID()}${ext}`);
   },
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 /**
  * POST /api/generate
- * 웹 UI에서 이미지 생성 요청
- *
- * body (multipart/form-data):
- *   - characterId (optional): 캐릭터 ID
- *   - referenceImage (optional): 업로드 파일
- *   - prompt: 프롬프트 텍스트
- *   - model: 'pro' | 'flash' (기본: pro)
- *   - count: 생성 장수 (기본: 1, 최대: 4)
  */
 router.post('/', upload.single('referenceImage'), async (req, res, next) => {
   try {
@@ -45,34 +40,40 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
     // Reference 이미지 결정
     let referenceBase64 = null;
     let referenceSource = 'none';
+    let referenceImagePath = null;
 
-    // 1) 업로드된 이미지가 있으면 우선 사용
     if (req.file) {
       const fileData = fs.readFileSync(req.file.path);
       referenceBase64 = fileData.toString('base64');
       referenceSource = 'upload';
+      referenceImagePath = `tmp/uploads/${path.basename(req.file.path)}`;
     }
 
-    // 2) 캐릭터가 선택되었고 업로드 이미지가 없으면 캐릭터 대표 이미지 사용
     if (!referenceBase64 && characterId) {
       const character = await characterRepo.findById(characterId);
       if (character?.reference_image_url) {
-        // 절대 경로 또는 file:// 경로에서 파일명만 추출하여 현재 서버의 tmp/images/ 에서 찾기
         const filename = character.reference_image_url.split('/').pop();
         const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
         if (fs.existsSync(refPath)) {
           referenceBase64 = fs.readFileSync(refPath).toString('base64');
           referenceSource = 'character';
+          referenceImagePath = `tmp/images/${filename}`;
         }
       }
     }
 
-    // 3) 캐릭터 선택 + 업로드 이미지 둘 다 있으면 업로드 이미지 사용 (이미 1에서 처리됨)
-
-    // 모델 선택
     const modelId = model === 'flash'
       ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
+
+    // ─── 프롬프트 DB 저장 ───
+    const savedPrompt = await promptRepo.insert({
+      characterId: characterId || null,
+      promptText: prompt,
+      model: modelId,
+      referenceImagePath,
+      tags: [referenceSource, model],
+    });
 
     const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
     const outputDir = path.join(process.cwd(), 'tmp', 'images');
@@ -82,7 +83,6 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
 
     for (let i = 0; i < generateCount; i++) {
       try {
-        // 프롬프트 조립
         let contents;
         if (referenceBase64) {
           contents = [
@@ -120,12 +120,30 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
 
           const textPart = parts.find((p) => p.text);
 
+          // ─── 결과물 DB 저장 ───
+          const savedResult = await resultRepo.insert({
+            promptIdx: savedPrompt.idx,
+            characterId: characterId || null,
+            filePath: `tmp/images/${filename}`,
+            fileSizeKb: Math.round(buffer.length / 1024),
+            model: modelId,
+            metadata: { description: textPart?.text || '', finishReason },
+          });
+
+          // ─── 리뷰 기본값 생성 ───
+          const savedReview = await reviewRepo.insert({
+            resultIdx: savedResult.idx,
+            promptIdx: savedPrompt.idx,
+          });
+
           results.push({
             success: true,
             filename,
             url: `/images/${filename}`,
             size: Math.round(buffer.length / 1024) + 'KB',
             description: textPart?.text || '',
+            resultIdx: savedResult.idx,
+            reviewIdx: savedReview.idx,
           });
         } else {
           results.push({
@@ -140,6 +158,7 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
 
     res.json({
       success: true,
+      promptIdx: savedPrompt.idx,
       model: modelId,
       referenceSource,
       characterId: characterId || null,
@@ -151,10 +170,66 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
   }
 });
 
-/**
- * GET /api/generate/images
- * 생성된 이미지 목록
- */
+// ─── 프롬프트 목록 ───
+router.get('/prompts', async (req, res, next) => {
+  try {
+    const { limit, offset } = req.query;
+    const data = await promptRepo.findAll({
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ─── 프롬프트 상세 + 결과물 ───
+router.get('/prompts/:idx', async (req, res, next) => {
+  try {
+    const prompt = await promptRepo.findByIdx(req.params.idx);
+    if (!prompt) return res.status(404).json({ success: false, error: 'Prompt not found' });
+    const results = await resultRepo.findByPromptIdx(prompt.idx);
+    res.json({ success: true, data: { prompt, results } });
+  } catch (err) { next(err); }
+});
+
+// ─── 결과물 목록 ───
+router.get('/results', async (req, res, next) => {
+  try {
+    const { limit, offset } = req.query;
+    const data = await resultRepo.findAll({
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ─── 리뷰 목록 ───
+router.get('/reviews', async (req, res, next) => {
+  try {
+    const { posted, limit, offset } = req.query;
+    const data = await reviewRepo.findAll({
+      posted: posted !== undefined ? posted === 'true' : undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ─── 리뷰 수정 ───
+router.patch('/reviews/:idx', async (req, res, next) => {
+  try {
+    const { naturalScore, sexualScore, postRate, posted, memo } = req.body;
+    const review = await reviewRepo.update(parseInt(req.params.idx), {
+      naturalScore, sexualScore, postRate, posted, memo,
+    });
+    if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
+    res.json({ success: true, data: review });
+  } catch (err) { next(err); }
+});
+
+// ─── 생성된 이미지 목록 (파일 기반) ───
 router.get('/images', (_req, res) => {
   const outputDir = path.join(process.cwd(), 'tmp', 'images');
   if (!fs.existsSync(outputDir)) return res.json({ success: true, data: [] });

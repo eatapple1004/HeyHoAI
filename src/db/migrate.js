@@ -320,6 +320,59 @@ async function migrate() {
     ADD COLUMN IF NOT EXISTS reference_image_id UUID REFERENCES image_assets(id),
     ADD COLUMN IF NOT EXISTS reference_image_url TEXT;
   `);
+
+  // ─── 프롬프트 테이블 ───
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS prompts (
+        idx             SERIAL PRIMARY KEY,
+        character_id    UUID REFERENCES characters(id),
+        prompt_text     TEXT NOT NULL,
+        model           VARCHAR(100),
+        reference_image_path TEXT,
+        tags            TEXT[] DEFAULT '{}',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_prompts_character ON prompts(character_id);
+  `);
+
+  // ─── 결과물 테이블 ───
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS generation_results (
+        idx             SERIAL PRIMARY KEY,
+        prompt_idx      INT NOT NULL REFERENCES prompts(idx),
+        character_id    UUID REFERENCES characters(id),
+        file_path       TEXT NOT NULL,
+        file_size_kb    INT,
+        width           INT,
+        height          INT,
+        model           VARCHAR(100),
+        metadata        JSONB DEFAULT '{}',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_gen_results_prompt ON generation_results(prompt_idx);
+    CREATE INDEX IF NOT EXISTS idx_gen_results_character ON generation_results(character_id);
+  `);
+
+  // ─── 리뷰 테이블 ───
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+        idx             SERIAL PRIMARY KEY,
+        result_idx      INT NOT NULL REFERENCES generation_results(idx),
+        prompt_idx      INT NOT NULL REFERENCES prompts(idx),
+        natural_score   DECIMAL(3,1) DEFAULT 0,
+        sexual_score    DECIMAL(3,1) DEFAULT 0,
+        post_rate       DECIMAL(5,2) DEFAULT 0,
+        posted          BOOLEAN NOT NULL DEFAULT false,
+        reviewer        VARCHAR(100) DEFAULT 'system',
+        memo            TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_reviews_result ON reviews(result_idx);
+    CREATE INDEX IF NOT EXISTS idx_reviews_prompt ON reviews(prompt_idx);
+    CREATE INDEX IF NOT EXISTS idx_reviews_posted ON reviews(posted);
+  `);
+
   console.log('Migrations completed.');
 }
 
