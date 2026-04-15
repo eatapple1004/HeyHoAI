@@ -20,6 +20,9 @@ app.use('/images', express.static(path.join(process.cwd(), 'tmp', 'images')));
 app.get('/heyhoai/image/generater/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
+app.get('/heyhoai/character/page', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'character.html'));
+});
 
 // Routes
 app.use('/api/characters', characterRoutes);

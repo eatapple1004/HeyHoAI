@@ -4,6 +4,7 @@ const controller = require('./character.controller');
 const router = Router();
 
 router.post('/', controller.create);
+router.post('/register', controller.register);
 router.get('/', controller.list);
 router.get('/:id', controller.getById);
 router.put('/:id/reference-image', controller.setReferenceImage);
