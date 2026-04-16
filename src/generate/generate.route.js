@@ -160,6 +160,11 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
             errorMessage: errorMsg,
             metadata: { finishReason },
           });
+          await reviewRepo.insert({
+            resultIdx: failedResult.idx,
+            promptIdx: savedPrompt.idx,
+            memo: errorMsg,
+          });
           results.push({
             success: false,
             error: errorMsg,
@@ -174,6 +179,13 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
           model: modelId,
           errorMessage: errorMsg,
         }).catch(() => null);
+        if (failedResult) {
+          await reviewRepo.insert({
+            resultIdx: failedResult.idx,
+            promptIdx: savedPrompt.idx,
+            memo: errorMsg,
+          }).catch(() => {});
+        }
         results.push({
           success: false,
           error: errorMsg,
@@ -242,9 +254,10 @@ router.get('/results', async (req, res, next) => {
 // ─── 리뷰 목록 ───
 router.get('/reviews', async (req, res, next) => {
   try {
-    const { posted, sort, limit, offset } = req.query;
+    const { posted, status, sort, limit, offset } = req.query;
     const data = await reviewRepo.findAll({
       posted: posted !== undefined ? posted === 'true' : undefined,
+      status: status || undefined,
       sort: sort || 'newest',
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,

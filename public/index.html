@@ -404,6 +404,12 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     <div class="gallery-header">
       <h2>Generated Images</h2>
       <div class="gallery-controls">
+
+        <select class="sort-select" id="statusFilter" onchange="loadGallery()" style="width:90px;">
+          <option value="">All</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+        </select>
         <select class="sort-select" id="sortSelect" onchange="loadGallery()">
           <option value="newest">Latest</option>
           <option value="oldest">Oldest</option>
@@ -669,7 +675,10 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
 
     try {
       const sort = document.getElementById('sortSelect').value;
-      const res = await fetch(`/api/generate/reviews?sort=${sort}&limit=${galleryLimit}&offset=${galleryOffset}`);
+      const status = document.getElementById('statusFilter').value;
+      let url = `/api/generate/reviews?sort=${sort}&limit=${galleryLimit}&offset=${galleryOffset}`;
+      if (status) url += `&status=${status}`;
+      const res = await fetch(url);
       const data = await res.json();
 
       if (data.success && data.data.length > 0) {

@@ -41,15 +41,21 @@ async function update(idx, fields) {
   return result.rows[0] || null;
 }
 
-async function findAll({ posted, sort = 'newest', limit = 50, offset = 0 } = {}) {
-  let where = '';
+async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0 } = {}) {
+  const conditions = [];
   const params = [];
   let i = 1;
 
   if (posted !== undefined) {
-    where = `WHERE r.posted = $${i++}`;
+    conditions.push(`r.posted = $${i++}`);
     params.push(posted);
   }
+  if (status) {
+    conditions.push(`gr.status = $${i++}`);
+    params.push(status);
+  }
+
+  const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
   const sortMap = {
     newest: 'r.created_at DESC',
