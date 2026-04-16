@@ -373,6 +373,92 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_reviews_posted ON reviews(posted);
   `);
 
+  // ─── 스타일 프리셋 테이블 ───
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS style_presets (
+        idx             SERIAL PRIMARY KEY,
+        name            VARCHAR(100) NOT NULL UNIQUE,
+        category        VARCHAR(50) NOT NULL,
+        prefix          TEXT NOT NULL,
+        suffix          TEXT NOT NULL,
+        negative_prompt TEXT DEFAULT '',
+        description     TEXT DEFAULT '',
+        sort_order      INT NOT NULL DEFAULT 0,
+        is_active       BOOLEAN NOT NULL DEFAULT true,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  // 스타일 시드 데이터
+  await pool.query(`
+    INSERT INTO style_presets (name, category, prefix, suffix, negative_prompt, description, sort_order) VALUES
+      ('Natural', 'photography',
+       'raw candid photo, iPhone camera, unedited, everyday life moment,',
+       'natural skin texture, slight grain, realistic imperfections, no retouching, Instagram style, casual mood',
+       'studio lighting, heavy makeup, over-retouched, artificial, posed, professional lighting',
+       'Natural everyday snapshot feel', 1),
+
+      ('Fashion', 'photography',
+       'editorial fashion photography, high-end designer outfit focus, Vogue magazine aesthetic, clothing as main subject,',
+       'professional fashion lighting, sharp fabric details, clothing texture emphasis, fashion magazine quality, full outfit visible, styling details prominent',
+       'casual, low quality, blurry fabric, bad proportions, amateur',
+       'Clothing and outfit as the main focus', 2),
+
+      ('Dynamic', 'photography',
+       'dynamic action shot, energetic composition, motion captured mid-movement, dramatic angle,',
+       'motion blur on edges, vivid saturated colors, high contrast, dramatic lighting, cinematic energy, sense of speed',
+       'static, boring, flat, dull colors, stiff pose',
+       'Energetic movement and action', 3),
+
+      ('Cinematic', 'photography',
+       'cinematic film still, anamorphic lens, movie scene composition, Hollywood production quality,',
+       'shallow depth of field, cinematic color grading, teal and orange tones, film grain, dramatic shadows, widescreen framing, bokeh',
+       'flat lighting, amateur, snapshot, bright even lighting',
+       'Movie scene aesthetic', 4),
+
+      ('Portrait', 'photography',
+       'professional portrait photography, studio lighting setup, 85mm lens, subject-focused,',
+       'soft bokeh background, catchlight in eyes, skin detail visible, professional retouching, studio quality, sharp focus on face',
+       'wide angle, distorted, full body, busy background',
+       'Professional portrait with studio quality', 5),
+
+      ('Street', 'photography',
+       'street photography, urban environment, candid moment captured, documentary style,',
+       'natural street lighting, urban texture, environmental context, authentic atmosphere, gritty detail, real-life moment',
+       'studio, posed, artificial, clean background',
+       'Urban street photography style', 6),
+
+      ('Glamour', 'photography',
+       'glamour photography, beauty lighting, magazine cover quality, alluring aesthetic,',
+       'soft diffused lighting, glowing skin, beauty retouching, glossy finish, professional makeup visible, elegant pose',
+       'casual, everyday, harsh shadows, unflattering angle',
+       'Beauty and glamour magazine style', 7),
+
+      ('Film', 'photography',
+       '35mm film photography, Kodak Portra 400 film stock, analog camera shot,',
+       'warm film tones, natural grain, slightly faded highlights, organic color palette, analog texture, nostalgic warmth, soft contrast',
+       'digital, clean, sharp, HDR, oversaturated',
+       'Analog film photography look', 8),
+
+      ('3D Render', 'digital',
+       '3D rendered character, octane render, volumetric lighting, CGI quality,',
+       'smooth 3D surface, subsurface scattering on skin, ray traced shadows, ambient occlusion, photorealistic 3D render, Unreal Engine quality',
+       'flat, 2D, hand drawn, sketch, painting',
+       '3D CGI render style', 9),
+
+      ('Anime', 'illustration',
+       'anime style illustration, Japanese animation aesthetic, cel shading,',
+       'vibrant anime colors, clean linework, expressive anime eyes, detailed anime hair, studio quality animation frame',
+       'realistic, photograph, 3D render, western cartoon',
+       'Japanese anime illustration style', 10)
+    ON CONFLICT (name) DO NOTHING;
+  `);
+
+  // prompts 테이블에 style 컬럼 추가
+  await pool.query(`
+    ALTER TABLE prompts ADD COLUMN IF NOT EXISTS style_preset VARCHAR(100);
+  `);
+
   console.log('Migrations completed.');
 }
 

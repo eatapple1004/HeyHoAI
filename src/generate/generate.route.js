@@ -9,6 +9,7 @@ const characterRepo = require('../characters/character.repository');
 const promptRepo = require('./prompt.repository');
 const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
+const styleRepo = require('./stylePreset.repository');
 
 const router = Router();
 
@@ -30,12 +31,16 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
  */
 router.post('/', upload.single('referenceImage'), async (req, res, next) => {
   try {
-    const { characterId, prompt, model = 'pro', count = '1' } = req.body;
+    const { characterId, prompt, model = 'pro', count = '1', style = 'none' } = req.body;
     const generateCount = Math.min(parseInt(count, 10) || 1, 4);
 
     if (!prompt || prompt.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
     }
+
+    // 스타일 프리셋 적용
+    const styled = await styleRepo.applyStyle(style, prompt);
+    const finalPrompt = styled.prompt;
 
     // Reference 이미지 결정
     let referenceBase64 = null;
@@ -69,10 +74,10 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
     // ─── 프롬프트 DB 저장 ───
     const savedPrompt = await promptRepo.insert({
       characterId: characterId || null,
-      promptText: prompt,
+      promptText: finalPrompt,
       model: modelId,
       referenceImagePath,
-      tags: [referenceSource, model],
+      tags: [referenceSource, model, styled.styleName].filter(Boolean),
     });
 
     const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
@@ -91,13 +96,13 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
               parts: [
                 { inlineData: { mimeType: 'image/png', data: referenceBase64 } },
                 {
-                  text: `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${prompt}`,
+                  text: `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${finalPrompt}`,
                 },
               ],
             },
           ];
         } else {
-          contents = prompt;
+          contents = finalPrompt;
         }
 
         const response = await ai.models.generateContent({
@@ -160,14 +165,23 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
       success: true,
       promptIdx: savedPrompt.idx,
       model: modelId,
+      style: styled.styleName,
       referenceSource,
       characterId: characterId || null,
-      prompt,
+      prompt: finalPrompt,
       results,
     });
   } catch (err) {
     next(err);
   }
+});
+
+// ─── 스타일 프리셋 목록 ───
+router.get('/styles', async (_req, res, next) => {
+  try {
+    const data = await styleRepo.findAll();
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
 });
 
 // ─── 프롬프트 목록 ───

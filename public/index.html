@@ -364,9 +364,18 @@
       </div>
     </div>
 
+    <!-- Style Preset -->
+    <div class="section">
+      <h2>4. Style</h2>
+      <select class="char-select" id="styleSelect">
+        <option value="none">-- No Style --</option>
+      </select>
+      <div id="styleDesc" style="margin-top:6px;font-size:11px;color:var(--dim);display:none;"></div>
+    </div>
+
     <!-- Count -->
     <div class="section">
-      <h2>4. Count</h2>
+      <h2>5. Count</h2>
       <div class="count-group">
         <div class="count-btn active" data-count="1" onclick="selectCount(this)">1</div>
         <div class="count-btn" data-count="2" onclick="selectCount(this)">2</div>
@@ -377,7 +386,7 @@
 
     <!-- Prompt -->
     <div class="section">
-      <h2>5. Prompt</h2>
+      <h2>6. Prompt</h2>
       <textarea class="prompt-area" id="promptInput" placeholder="Describe the image you want to generate...
 
 Example:
@@ -489,6 +498,38 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   let selectedModel = 'pro';
   let selectedCount = 1;
   let uploadedFile = null;
+  let stylesData = [];
+
+  // ── Load Styles ──
+  async function loadStyles() {
+    try {
+      const res = await fetch('/api/generate/styles');
+      const data = await res.json();
+      if (data.success) {
+        stylesData = data.data;
+        const select = document.getElementById('styleSelect');
+        data.data.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.name;
+          opt.textContent = s.name + ' — ' + s.description;
+          select.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load styles:', e);
+    }
+  }
+
+  document.getElementById('styleSelect').addEventListener('change', function () {
+    const desc = document.getElementById('styleDesc');
+    const style = stylesData.find(s => s.name === this.value);
+    if (style) {
+      desc.textContent = 'Prefix: ' + style.prefix.slice(0, 80) + '...';
+      desc.style.display = 'block';
+    } else {
+      desc.style.display = 'none';
+    }
+  });
 
   // ── Load Characters ──
   async function loadCharacters() {
@@ -579,6 +620,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       formData.append('prompt', prompt);
       formData.append('model', selectedModel);
       formData.append('count', selectedCount);
+      formData.append('style', document.getElementById('styleSelect').value);
       if (characterId) formData.append('characterId', characterId);
       if (uploadedFile) formData.append('referenceImage', uploadedFile);
 
@@ -753,6 +795,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
 
   // ── Init ──
   loadCharacters();
+  loadStyles();
   loadGallery();
 </script>
 </body>
