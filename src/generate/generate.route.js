@@ -78,6 +78,7 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
       model: modelId,
       referenceImagePath,
       tags: [referenceSource, model, styled.styleName].filter(Boolean),
+      stylePreset: styled.styleName !== 'none' ? styled.styleName : null,
     });
 
     const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });

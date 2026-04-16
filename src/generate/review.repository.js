@@ -66,7 +66,7 @@ async function findAll({ posted, sort = 'newest', limit = 50, offset = 0 } = {})
   const orderBy = sortMap[sort] || sortMap.newest;
 
   const result = await query(
-    `SELECT r.*, gr.file_path, gr.model, p.prompt_text, c.name as character_name
+    `SELECT r.*, gr.file_path, gr.model, p.prompt_text, p.style_preset, c.name as character_name
      FROM reviews r
      JOIN generation_results gr ON gr.idx = r.result_idx
      JOIN prompts p ON p.idx = r.prompt_idx

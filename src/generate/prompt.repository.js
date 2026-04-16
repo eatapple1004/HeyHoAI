@@ -1,10 +1,10 @@
 const { query } = require('../db/client');
 
-async function insert({ characterId, promptText, model, referenceImagePath, tags }) {
+async function insert({ characterId, promptText, model, referenceImagePath, tags, stylePreset }) {
   const result = await query(
-    `INSERT INTO prompts (character_id, prompt_text, model, reference_image_path, tags)
-     VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-    [characterId || null, promptText, model || null, referenceImagePath || null, tags || []]
+    `INSERT INTO prompts (character_id, prompt_text, model, reference_image_path, tags, style_preset)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+    [characterId || null, promptText, model || null, referenceImagePath || null, tags || [], stylePreset || null]
   );
   return result.rows[0];
 }
