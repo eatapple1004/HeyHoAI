@@ -152,13 +152,33 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
             reviewIdx: savedReview.idx,
           });
         } else {
+          const errorMsg = `Blocked: ${finishReason || 'unknown'}`;
+          const failedResult = await resultRepo.insertFailed({
+            promptIdx: savedPrompt.idx,
+            characterId: characterId || null,
+            model: modelId,
+            errorMessage: errorMsg,
+            metadata: { finishReason },
+          });
           results.push({
             success: false,
-            error: `Blocked: ${finishReason || 'unknown'}`,
+            error: errorMsg,
+            resultIdx: failedResult.idx,
           });
         }
       } catch (err) {
-        results.push({ success: false, error: err.message.slice(0, 200) });
+        const errorMsg = err.message.slice(0, 200);
+        const failedResult = await resultRepo.insertFailed({
+          promptIdx: savedPrompt.idx,
+          characterId: characterId || null,
+          model: modelId,
+          errorMessage: errorMsg,
+        }).catch(() => null);
+        results.push({
+          success: false,
+          error: errorMsg,
+          resultIdx: failedResult?.idx,
+        });
       }
     }
 

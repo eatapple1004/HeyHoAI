@@ -459,6 +459,17 @@ async function migrate() {
     ALTER TABLE prompts ADD COLUMN IF NOT EXISTS style_preset VARCHAR(100);
   `);
 
+  // generation_results에 status, error 컬럼 추가
+  await pool.query(`
+    ALTER TABLE generation_results
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'success',
+    ADD COLUMN IF NOT EXISTS error_message TEXT;
+  `);
+  // file_path NOT NULL 제약 제거 (실패 시 파일 없음)
+  await pool.query(`
+    ALTER TABLE generation_results ALTER COLUMN file_path DROP NOT NULL;
+  `);
+
   console.log('Migrations completed.');
 }
 

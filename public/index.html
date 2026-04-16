@@ -675,16 +675,22 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       if (data.success && data.data.length > 0) {
         data.data.forEach(item => {
           const filename = item.file_path?.split('/').pop();
+          const isFailed = item.result_status === 'failed';
           const div = document.createElement('div');
           div.className = 'gallery-item';
+          div.style.cssText = isFailed ? 'border-color:var(--red);opacity:0.7;' : '';
           div.onclick = () => openReview(item);
-          div.innerHTML = `
-            <img src="/images/${filename}" alt="" loading="lazy">
-            <div class="meta">
-              <span>${item.posted ? 'Posted' : 'N:' + (item.natural_score||0) + ' S:' + (item.sexual_score||0)}</span>
-              <span>${item.character_name || 'No char'}</span>
-            </div>
-          `;
+          div.innerHTML = isFailed
+            ? `<div style="width:100%;aspect-ratio:4/5;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:16px;text-align:center;">
+                <span style="font-size:28px;">&#10006;</span>
+                <span style="font-size:11px;color:var(--red);">${item.error_message?.slice(0,50) || 'Failed'}</span>
+              </div>
+              <div class="meta"><span style="color:var(--red);">FAILED</span><span>${item.character_name || 'No char'}</span></div>`
+            : `<img src="/images/${filename}" alt="" loading="lazy">
+              <div class="meta">
+                <span>${item.posted ? 'Posted' : 'N:' + (item.natural_score||0) + ' S:' + (item.sexual_score||0)}</span>
+                <span>${item.character_name || 'No char'}</span>
+              </div>`;
           grid.appendChild(div);
         });
 
@@ -725,6 +731,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       <span>${item.character_name || 'No character'}</span>
       <span>${item.style_preset ? 'Style: ' + item.style_preset : 'No style'}</span>
       <span>Result #${item.result_idx}</span>
+      ${item.result_status === 'failed' ? '<span style="color:var(--red);font-weight:700;">FAILED: ' + (item.error_message || 'unknown') + '</span>' : ''}
     `;
 
     document.getElementById('naturalScore').value = item.natural_score || 0;
