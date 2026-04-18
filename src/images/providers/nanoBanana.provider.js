@@ -47,7 +47,7 @@ const nanoBananaProvider = {
           role: 'user',
           parts: [
             { inlineData: { mimeType: 'image/png', data: base64 } },
-            { text: `Use this image as visual reference for the character's appearance and features.\n\nCreate a new photo with similar look:\n${fullPrompt}` },
+            { text: `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${fullPrompt}` },
           ],
         },
       ];
