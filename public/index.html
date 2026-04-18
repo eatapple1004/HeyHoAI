@@ -293,6 +293,15 @@
   }
   .review-save-btn:hover { opacity: 0.9; }
 
+  .review-btn-group { display: flex; gap: 8px; }
+  .review-download-btn {
+    flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface2); color: var(--text); font-size: 14px;
+    font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
+    transition: border-color 0.2s;
+  }
+  .review-download-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
   /* Toast */
   .toast {
     position: fixed; bottom: 20px; right: 20px; z-index: 300;
@@ -492,7 +501,10 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
         <textarea class="review-memo" id="reviewMemo" placeholder="Add notes..."></textarea>
       </div>
 
-      <button class="review-save-btn" onclick="saveReview()">Save Review</button>
+      <div class="review-btn-group">
+        <button class="review-save-btn" style="flex:1;" onclick="saveReview()">Save Review</button>
+        <a class="review-download-btn" id="downloadBtn" href="" download>Download</a>
+      </div>
     </div>
   </div>
 </div>
@@ -755,6 +767,16 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     document.getElementById('postedLabel').textContent = item.posted ? 'Yes' : 'No';
 
     document.getElementById('reviewMemo').value = item.memo || '';
+
+    const isFailed = item.result_status === 'failed';
+    const dlBtn = document.getElementById('downloadBtn');
+    if (isFailed) {
+      dlBtn.style.display = 'none';
+    } else {
+      dlBtn.style.display = 'block';
+      dlBtn.href = '/images/' + filename;
+      dlBtn.download = filename;
+    }
 
     document.getElementById('reviewModal').classList.add('show');
   }
