@@ -87,117 +87,119 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
 
     const results = [];
 
+    const MAX_RETRIES = 3;
+
     for (let i = 0; i < generateCount; i++) {
-      try {
-        let contents;
-        if (referenceBase64) {
-          contents = [
-            {
-              role: 'user',
-              parts: [
-                { inlineData: { mimeType: 'image/png', data: referenceBase64 } },
-                {
-                  text: `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${finalPrompt}`,
-                },
+      let success = false;
+      let lastError = null;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES && !success; attempt++) {
+        try {
+          let contents;
+          if (referenceBase64) {
+            contents = [
+              {
+                role: 'user',
+                parts: [
+                  { inlineData: { mimeType: 'image/png', data: referenceBase64 } },
+                  {
+                    text: `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${finalPrompt}`,
+                  },
+                ],
+              },
+            ];
+          } else {
+            contents = finalPrompt;
+          }
+
+          const response = await ai.models.generateContent({
+            model: modelId,
+            contents,
+            config: {
+              responseModalities: ['TEXT', 'IMAGE'],
+              safetySettings: [
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
               ],
             },
-          ];
-        } else {
-          contents = finalPrompt;
+          });
+
+          const parts = response.candidates?.[0]?.content?.parts || [];
+          const finishReason = response.candidates?.[0]?.finishReason;
+          const img = parts.find((p) => p.inlineData);
+
+          if (img) {
+            const imageId = crypto.randomUUID();
+            const ext = img.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
+            const filename = `${imageId}.${ext}`;
+            const filePath = path.join(outputDir, filename);
+            const buffer = Buffer.from(img.inlineData.data, 'base64');
+            fs.writeFileSync(filePath, buffer);
+
+            const textPart = parts.find((p) => p.text);
+
+            const savedResult = await resultRepo.insert({
+              promptIdx: savedPrompt.idx,
+              characterId: characterId || null,
+              filePath: `tmp/images/${filename}`,
+              fileSizeKb: Math.round(buffer.length / 1024),
+              model: modelId,
+              metadata: { description: textPart?.text || '', finishReason, attempt },
+            });
+
+            const savedReview = await reviewRepo.insert({
+              resultIdx: savedResult.idx,
+              promptIdx: savedPrompt.idx,
+            });
+
+            results.push({
+              success: true,
+              filename,
+              url: `/images/${filename}`,
+              size: Math.round(buffer.length / 1024) + 'KB',
+              description: textPart?.text || '',
+              resultIdx: savedResult.idx,
+              reviewIdx: savedReview.idx,
+              attempt,
+            });
+            success = true;
+          } else {
+            lastError = `Blocked: ${finishReason || 'unknown'}`;
+            if (attempt < MAX_RETRIES) {
+              console.log(`[Generate] Image ${i+1} attempt ${attempt}/${MAX_RETRIES} blocked (${finishReason}), retrying...`);
+            }
+          }
+        } catch (err) {
+          lastError = err.message.slice(0, 200);
+          if (attempt < MAX_RETRIES) {
+            console.log(`[Generate] Image ${i+1} attempt ${attempt}/${MAX_RETRIES} error, retrying...`);
+          }
         }
+      }
 
-        const response = await ai.models.generateContent({
-          model: modelId,
-          contents,
-          config: {
-            responseModalities: ['TEXT', 'IMAGE'],
-            safetySettings: [
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-            ],
-          },
-        });
-
-        const parts = response.candidates?.[0]?.content?.parts || [];
-        const finishReason = response.candidates?.[0]?.finishReason;
-        const img = parts.find((p) => p.inlineData);
-
-        if (img) {
-          const imageId = crypto.randomUUID();
-          const ext = img.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
-          const filename = `${imageId}.${ext}`;
-          const filePath = path.join(outputDir, filename);
-          const buffer = Buffer.from(img.inlineData.data, 'base64');
-          fs.writeFileSync(filePath, buffer);
-
-          const textPart = parts.find((p) => p.text);
-
-          // ─── 결과물 DB 저장 ───
-          const savedResult = await resultRepo.insert({
-            promptIdx: savedPrompt.idx,
-            characterId: characterId || null,
-            filePath: `tmp/images/${filename}`,
-            fileSizeKb: Math.round(buffer.length / 1024),
-            model: modelId,
-            metadata: { description: textPart?.text || '', finishReason },
-          });
-
-          // ─── 리뷰 기본값 생성 ───
-          const savedReview = await reviewRepo.insert({
-            resultIdx: savedResult.idx,
-            promptIdx: savedPrompt.idx,
-          });
-
-          results.push({
-            success: true,
-            filename,
-            url: `/images/${filename}`,
-            size: Math.round(buffer.length / 1024) + 'KB',
-            description: textPart?.text || '',
-            resultIdx: savedResult.idx,
-            reviewIdx: savedReview.idx,
-          });
-        } else {
-          const errorMsg = `Blocked: ${finishReason || 'unknown'}`;
-          const failedResult = await resultRepo.insertFailed({
-            promptIdx: savedPrompt.idx,
-            characterId: characterId || null,
-            model: modelId,
-            errorMessage: errorMsg,
-            metadata: { finishReason },
-          });
-          await reviewRepo.insert({
-            resultIdx: failedResult.idx,
-            promptIdx: savedPrompt.idx,
-            memo: errorMsg,
-          });
-          results.push({
-            success: false,
-            error: errorMsg,
-            resultIdx: failedResult.idx,
-          });
-        }
-      } catch (err) {
-        const errorMsg = err.message.slice(0, 200);
+      // 3회 모두 실패한 경우에만 실패 기록
+      if (!success) {
         const failedResult = await resultRepo.insertFailed({
           promptIdx: savedPrompt.idx,
           characterId: characterId || null,
           model: modelId,
-          errorMessage: errorMsg,
+          errorMessage: `${lastError} (after ${MAX_RETRIES} attempts)`,
+          metadata: { attempts: MAX_RETRIES },
         }).catch(() => null);
         if (failedResult) {
           await reviewRepo.insert({
             resultIdx: failedResult.idx,
             promptIdx: savedPrompt.idx,
-            memo: errorMsg,
+            memo: `${lastError} (${MAX_RETRIES} attempts)`,
           }).catch(() => {});
         }
         results.push({
           success: false,
-          error: errorMsg,
+          error: `${lastError} (after ${MAX_RETRIES} attempts)`,
           resultIdx: failedResult?.idx,
+          attempts: MAX_RETRIES,
         });
       }
     }
