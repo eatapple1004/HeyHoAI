@@ -470,6 +470,11 @@ async function migrate() {
     ALTER TABLE generation_results ALTER COLUMN file_path DROP NOT NULL;
   `);
 
+  // reviews에 active 컬럼 추가 (소프트 삭제)
+  await pool.query(`
+    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+  `);
+
   console.log('Migrations completed.');
 }
 

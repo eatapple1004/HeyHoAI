@@ -314,6 +314,15 @@ router.patch('/reviews/:idx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── 리뷰 삭제 (소프트 삭제) ───
+router.delete('/reviews/:idx', async (req, res, next) => {
+  try {
+    const review = await reviewRepo.deactivate(parseInt(req.params.idx));
+    if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
+    res.json({ success: true, data: review });
+  } catch (err) { next(err); }
+});
+
 // ─── 생성된 이미지 목록 (파일 기반) ───
 router.get('/images', (_req, res) => {
   const outputDir = path.join(process.cwd(), 'tmp', 'images');

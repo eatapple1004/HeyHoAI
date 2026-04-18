@@ -42,7 +42,7 @@ async function update(idx, fields) {
 }
 
 async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0 } = {}) {
-  const conditions = [];
+  const conditions = ['r.active = true'];
   const params = [];
   let i = 1;
 
@@ -55,7 +55,7 @@ async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0
     params.push(status);
   }
 
-  const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+  const where = 'WHERE ' + conditions.join(' AND ');
 
   const sortMap = {
     newest: 'r.created_at DESC',
@@ -84,4 +84,12 @@ async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0
   return result.rows;
 }
 
-module.exports = { insert, findByIdx, findByResultIdx, update, findAll };
+async function deactivate(idx) {
+  const result = await query(
+    'UPDATE reviews SET active = false, updated_at = now() WHERE idx = $1 RETURNING *',
+    [idx]
+  );
+  return result.rows[0] || null;
+}
+
+module.exports = { insert, findByIdx, findByResultIdx, update, deactivate, findAll };

@@ -502,8 +502,9 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       </div>
 
       <div class="review-btn-group">
-        <button class="review-save-btn" style="flex:1;" onclick="saveReview()">Save Review</button>
+        <button class="review-save-btn" style="flex:2;" onclick="saveReview()">Save Review</button>
         <a class="review-download-btn" id="downloadBtn" href="" download>Download</a>
+        <button class="review-download-btn" style="color:var(--red);" onclick="deleteReview()">Delete</button>
       </div>
     </div>
   </div>
@@ -816,6 +817,25 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
         loadGallery();
       } else {
         showToast(data.error || 'Failed to save', 'error');
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
+    }
+  }
+
+  async function deleteReview() {
+    if (!currentReview) return;
+    if (!confirm('Remove this image from the gallery?')) return;
+
+    try {
+      const res = await fetch('/api/generate/reviews/' + currentReview.idx, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Removed from gallery', 'success');
+        closeReview();
+        loadGallery();
+      } else {
+        showToast(data.error || 'Failed', 'error');
       }
     } catch (e) {
       showToast('Network error', 'error');
