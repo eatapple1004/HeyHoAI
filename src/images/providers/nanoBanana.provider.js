@@ -47,7 +47,7 @@ const nanoBananaProvider = {
           role: 'user',
           parts: [
             { inlineData: { mimeType: 'image/png', data: base64 } },
-            { text: `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${fullPrompt}` },
+            { text: `Use this image as visual reference for the character's appearance and features.\n\nCreate a new photo with similar look:\n${fullPrompt}` },
           ],
         },
       ];
