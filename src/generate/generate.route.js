@@ -42,29 +42,38 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
     const styled = await styleRepo.applyStyle(style, prompt);
     const finalPrompt = styled.prompt;
 
-    // Reference 이미지 결정
-    let referenceBase64 = null;
+    // Reference 이미지 결정 (캐릭터 얼굴 + 추가 이미지 동시 지원)
+    let characterRefBase64 = null;  // 캐릭터 대표 이미지 (얼굴)
+    let uploadRefBase64 = null;     // 업로드된 추가 이미지
     let referenceSource = 'none';
     let referenceImagePath = null;
 
-    if (req.file) {
-      const fileData = fs.readFileSync(req.file.path);
-      referenceBase64 = fileData.toString('base64');
-      referenceSource = 'upload';
-      referenceImagePath = `tmp/uploads/${path.basename(req.file.path)}`;
-    }
-
-    if (!referenceBase64 && characterId) {
+    // 1) 캐릭터 대표 이미지 (얼굴 레퍼런스)
+    if (characterId) {
       const character = await characterRepo.findById(characterId);
       if (character?.reference_image_url) {
         const filename = character.reference_image_url.split('/').pop();
         const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
         if (fs.existsSync(refPath)) {
-          referenceBase64 = fs.readFileSync(refPath).toString('base64');
-          referenceSource = 'character';
+          characterRefBase64 = fs.readFileSync(refPath).toString('base64');
           referenceImagePath = `tmp/images/${filename}`;
         }
       }
+    }
+
+    // 2) 업로드된 추가 이미지
+    if (req.file) {
+      const fileData = fs.readFileSync(req.file.path);
+      uploadRefBase64 = fileData.toString('base64');
+    }
+
+    // 소스 결정
+    if (characterRefBase64 && uploadRefBase64) {
+      referenceSource = 'character+upload';
+    } else if (characterRefBase64) {
+      referenceSource = 'character';
+    } else if (uploadRefBase64) {
+      referenceSource = 'upload';
     }
 
     const modelId = model === 'flash'
@@ -96,18 +105,34 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
       for (let attempt = 1; attempt <= MAX_RETRIES && !success; attempt++) {
         try {
           let contents;
-          if (referenceBase64) {
-            contents = [
-              {
-                role: 'user',
-                parts: [
-                  { inlineData: { mimeType: 'image/png', data: referenceBase64 } },
-                  {
-                    text: `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${finalPrompt}`,
-                  },
-                ],
-              },
-            ];
+          const hasAnyRef = characterRefBase64 || uploadRefBase64;
+
+          if (hasAnyRef) {
+            const parts = [];
+
+            // 캐릭터 대표 이미지 (얼굴 레퍼런스)
+            if (characterRefBase64) {
+              parts.push({ inlineData: { mimeType: 'image/png', data: characterRefBase64 } });
+            }
+
+            // 업로드된 추가 이미지 (포즈/구도/스타일 레퍼런스)
+            if (uploadRefBase64) {
+              parts.push({ inlineData: { mimeType: 'image/png', data: uploadRefBase64 } });
+            }
+
+            // 프롬프트 텍스트
+            let promptText;
+            if (characterRefBase64 && uploadRefBase64) {
+              promptText = `The FIRST image is the face reference — generate a photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\nThe SECOND image is the style/pose/scene reference — use it as a guide for the composition, outfit, pose, and setting.\n\n${finalPrompt}`;
+            } else if (characterRefBase64) {
+              promptText = `Generate a new photo of this EXACT SAME person. Keep the same face, same hair, same body type, same features. This person must be clearly recognizable as the same individual.\n\n${finalPrompt}`;
+            } else {
+              promptText = `Use this image as a reference for the style, pose, and composition.\n\n${finalPrompt}`;
+            }
+
+            parts.push({ text: promptText });
+
+            contents = [{ role: 'user', parts }];
           } else {
             contents = finalPrompt;
           }
