@@ -349,7 +349,7 @@
       <h2>2. Reference Images (Optional, max 14)</h2>
       <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
         <div class="icon">+</div>
-        <div class="label">Click to add reference images</div>
+        <div class="label">Click or drag & drop images here</div>
         <input type="file" id="fileInput" accept="image/*" multiple>
       </div>
       <div id="uploadPreviews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
@@ -582,16 +582,39 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     }
   });
 
-  // ── File Upload (Multiple) ──
+  // ── File Upload (Multiple + Drag & Drop) ──
   document.getElementById('fileInput').addEventListener('change', function (e) {
-    const files = Array.from(e.target.files);
+    addFiles(Array.from(e.target.files));
+    this.value = '';
+  });
+
+  // Drag & Drop
+  const uploadArea = document.getElementById('uploadArea');
+  uploadArea.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    this.style.borderColor = 'var(--accent)';
+    this.style.background = 'rgba(108,92,231,0.1)';
+  });
+  uploadArea.addEventListener('dragleave', function (e) {
+    e.preventDefault();
+    this.style.borderColor = '';
+    this.style.background = '';
+  });
+  uploadArea.addEventListener('drop', function (e) {
+    e.preventDefault();
+    this.style.borderColor = '';
+    this.style.background = '';
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    addFiles(files);
+  });
+
+  function addFiles(files) {
     files.forEach(file => {
       if (uploadedFiles.length >= 14) { showToast('Maximum 14 images', 'error'); return; }
       uploadedFiles.push(file);
     });
     renderUploadPreviews();
-    this.value = '';
-  });
+  }
 
   function renderUploadPreviews() {
     const container = document.getElementById('uploadPreviews');
