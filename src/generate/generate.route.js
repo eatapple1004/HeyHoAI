@@ -29,7 +29,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 /**
  * POST /api/generate
  */
-router.post('/', upload.single('referenceImage'), async (req, res, next) => {
+router.post('/', upload.array('referenceImages', 14), async (req, res, next) => {
   try {
     const { characterId, prompt, model = 'pro', count = '1', style = 'none' } = req.body;
     const generateCount = Math.min(parseInt(count, 10) || 1, 4);
@@ -42,38 +42,36 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
     const styled = await styleRepo.applyStyle(style, prompt);
     const finalPrompt = styled.prompt;
 
-    // Reference 이미지 결정 (캐릭터 얼굴 + 추가 이미지 동시 지원)
-    let characterRefBase64 = null;  // 캐릭터 대표 이미지 (얼굴)
-    let uploadRefBase64 = null;     // 업로드된 추가 이미지
+    // Reference 이미지 결정 (최대 14개)
+    const referenceImages = []; // { base64, source }
     let referenceSource = 'none';
     let referenceImagePath = null;
 
-    // 1) 캐릭터 대표 이미지 (얼굴 레퍼런스)
+    // 1) 캐릭터 대표 이미지
     if (characterId) {
       const character = await characterRepo.findById(characterId);
       if (character?.reference_image_url) {
         const filename = character.reference_image_url.split('/').pop();
         const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
         if (fs.existsSync(refPath)) {
-          characterRefBase64 = fs.readFileSync(refPath).toString('base64');
+          referenceImages.push({ base64: fs.readFileSync(refPath).toString('base64'), source: 'character' });
           referenceImagePath = `tmp/images/${filename}`;
         }
       }
     }
 
-    // 2) 업로드된 추가 이미지
-    if (req.file) {
-      const fileData = fs.readFileSync(req.file.path);
-      uploadRefBase64 = fileData.toString('base64');
+    // 2) 업로드된 이미지들 (최대 14개)
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        if (referenceImages.length < 14) {
+          referenceImages.push({ base64: fs.readFileSync(file.path).toString('base64'), source: 'upload' });
+        }
+      });
     }
 
-    // 소스 결정
-    if (characterRefBase64 && uploadRefBase64) {
-      referenceSource = 'character+upload';
-    } else if (characterRefBase64) {
-      referenceSource = 'character';
-    } else if (uploadRefBase64) {
-      referenceSource = 'upload';
+    if (referenceImages.length > 0) {
+      referenceSource = referenceImages.map(r => r.source).includes('character') && referenceImages.map(r => r.source).includes('upload')
+        ? 'character+upload' : referenceImages[0].source;
     }
 
     const modelId = model === 'flash'
@@ -96,136 +94,124 @@ router.post('/', upload.single('referenceImage'), async (req, res, next) => {
 
     const results = [];
 
-    const MAX_RETRIES = 3;
-
     for (let i = 0; i < generateCount; i++) {
-      let success = false;
-      let lastError = null;
+      try {
+        let contents;
+        if (referenceImages.length > 0) {
+          const parts = [];
+          const fictionalPrefix = 'This is an AI-generated fictional character, not a real person.';
 
-      for (let attempt = 1; attempt <= MAX_RETRIES && !success; attempt++) {
-        try {
-          let contents;
-          const hasAnyRef = characterRefBase64 || uploadRefBase64;
-
-          if (hasAnyRef) {
-            const parts = [];
-
-            // 캐릭터 대표 이미지 (얼굴 레퍼런스)
-            if (characterRefBase64) {
-              parts.push({ inlineData: { mimeType: 'image/png', data: characterRefBase64 } });
-            }
-
-            // 업로드된 추가 이미지 (포즈/구도/스타일 레퍼런스)
-            if (uploadRefBase64) {
-              parts.push({ inlineData: { mimeType: 'image/png', data: uploadRefBase64 } });
-            }
-
-            // 프롬프트 텍스트
-            let promptText;
-            const fictionalPrefix = 'This is an AI-generated fictional character, not a real person.';
-            if (characterRefBase64 && uploadRefBase64) {
-              promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\nThe second image is the style/pose/scene reference — use it as a guide for the composition, outfit, pose, and setting.\n\n${finalPrompt}`;
-            } else if (characterRefBase64) {
-              promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
-            } else {
-              promptText = `Use this image as a reference for the style, pose, and composition.\n\n${finalPrompt}`;
-            }
-
-            parts.push({ text: promptText });
-
-            contents = [{ role: 'user', parts }];
-          } else {
-            contents = finalPrompt;
-          }
-
-          const response = await ai.models.generateContent({
-            model: modelId,
-            contents,
-            config: {
-              responseModalities: ['TEXT', 'IMAGE'],
-              safetySettings: [
-                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-              ],
-            },
+          // 모든 레퍼런스 이미지 추가
+          referenceImages.forEach((ref, idx) => {
+            parts.push({ inlineData: { mimeType: 'image/png', data: ref.base64 } });
           });
 
-          const parts = response.candidates?.[0]?.content?.parts || [];
-          const finishReason = response.candidates?.[0]?.finishReason;
-          const img = parts.find((p) => p.inlineData);
-
-          if (img) {
-            const imageId = crypto.randomUUID();
-            const ext = img.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
-            const filename = `${imageId}.${ext}`;
-            const filePath = path.join(outputDir, filename);
-            const buffer = Buffer.from(img.inlineData.data, 'base64');
-            fs.writeFileSync(filePath, buffer);
-
-            const textPart = parts.find((p) => p.text);
-
-            const savedResult = await resultRepo.insert({
-              promptIdx: savedPrompt.idx,
-              characterId: characterId || null,
-              filePath: `tmp/images/${filename}`,
-              fileSizeKb: Math.round(buffer.length / 1024),
-              model: modelId,
-              metadata: { description: textPart?.text || '', finishReason, attempt },
-            });
-
-            const savedReview = await reviewRepo.insert({
-              resultIdx: savedResult.idx,
-              promptIdx: savedPrompt.idx,
-            });
-
-            results.push({
-              success: true,
-              filename,
-              url: `/images/${filename}`,
-              size: Math.round(buffer.length / 1024) + 'KB',
-              description: textPart?.text || '',
-              resultIdx: savedResult.idx,
-              reviewIdx: savedReview.idx,
-              attempt,
-            });
-            success = true;
+          // 프롬프트 텍스트
+          let promptText;
+          if (referenceImages.length === 1) {
+            promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
           } else {
-            lastError = `Blocked: ${finishReason || 'unknown'}`;
-            if (attempt < MAX_RETRIES) {
-              console.log(`[Generate] Image ${i+1} attempt ${attempt}/${MAX_RETRIES} blocked (${finishReason}), retrying...`);
-            }
+            promptText = `${fictionalPrefix} Use these ${referenceImages.length} reference images. The first image is the main character reference. Generate a new photo maintaining consistency with all references.\n\n${finalPrompt}`;
           }
-        } catch (err) {
-          lastError = err.message.slice(0, 200);
-          if (attempt < MAX_RETRIES) {
-            console.log(`[Generate] Image ${i+1} attempt ${attempt}/${MAX_RETRIES} error, retrying...`);
-          }
-        }
-      }
 
-      // 3회 모두 실패한 경우에만 실패 기록
-      if (!success) {
+          parts.push({ text: promptText });
+          contents = [{ role: 'user', parts }];
+        } else {
+          contents = finalPrompt;
+        }
+
+        const response = await ai.models.generateContent({
+          model: modelId,
+          contents,
+          config: {
+            responseModalities: ['TEXT', 'IMAGE'],
+            safetySettings: [
+              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            ],
+          },
+        });
+
+        const parts = response.candidates?.[0]?.content?.parts || [];
+        const finishReason = response.candidates?.[0]?.finishReason;
+        const img = parts.find((p) => p.inlineData);
+
+        if (img) {
+          const imageId = crypto.randomUUID();
+          const ext = img.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
+          const filename = `${imageId}.${ext}`;
+          const filePath = path.join(outputDir, filename);
+          const buffer = Buffer.from(img.inlineData.data, 'base64');
+          fs.writeFileSync(filePath, buffer);
+
+          const textPart = parts.find((p) => p.text);
+
+          // ─── 결과물 DB 저장 ───
+          const savedResult = await resultRepo.insert({
+            promptIdx: savedPrompt.idx,
+            characterId: characterId || null,
+            filePath: `tmp/images/${filename}`,
+            fileSizeKb: Math.round(buffer.length / 1024),
+            model: modelId,
+            metadata: { description: textPart?.text || '', finishReason },
+          });
+
+          // ─── 리뷰 기본값 생성 ───
+          const savedReview = await reviewRepo.insert({
+            resultIdx: savedResult.idx,
+            promptIdx: savedPrompt.idx,
+          });
+
+          results.push({
+            success: true,
+            filename,
+            url: `/images/${filename}`,
+            size: Math.round(buffer.length / 1024) + 'KB',
+            description: textPart?.text || '',
+            resultIdx: savedResult.idx,
+            reviewIdx: savedReview.idx,
+          });
+        } else {
+          const errorMsg = `Blocked: ${finishReason || 'unknown'}`;
+          const failedResult = await resultRepo.insertFailed({
+            promptIdx: savedPrompt.idx,
+            characterId: characterId || null,
+            model: modelId,
+            errorMessage: errorMsg,
+            metadata: { finishReason },
+          });
+          await reviewRepo.insert({
+            resultIdx: failedResult.idx,
+            promptIdx: savedPrompt.idx,
+            memo: errorMsg,
+          });
+          results.push({
+            success: false,
+            error: errorMsg,
+            resultIdx: failedResult.idx,
+          });
+        }
+      } catch (err) {
+        const errorMsg = err.message.slice(0, 200);
         const failedResult = await resultRepo.insertFailed({
           promptIdx: savedPrompt.idx,
           characterId: characterId || null,
           model: modelId,
-          errorMessage: `${lastError} (after ${MAX_RETRIES} attempts)`,
-          metadata: { attempts: MAX_RETRIES },
+          errorMessage: errorMsg,
         }).catch(() => null);
         if (failedResult) {
           await reviewRepo.insert({
             resultIdx: failedResult.idx,
             promptIdx: savedPrompt.idx,
-            memo: `${lastError} (${MAX_RETRIES} attempts)`,
+            memo: errorMsg,
           }).catch(() => {});
         }
         results.push({
           success: false,
-          error: `${lastError} (after ${MAX_RETRIES} attempts)`,
+          error: errorMsg,
           resultIdx: failedResult?.idx,
-          attempts: MAX_RETRIES,
         });
       }
     }
@@ -309,15 +295,6 @@ router.patch('/reviews/:idx', async (req, res, next) => {
     const review = await reviewRepo.update(parseInt(req.params.idx), {
       naturalScore, sexualScore, postRate, posted, memo,
     });
-    if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
-    res.json({ success: true, data: review });
-  } catch (err) { next(err); }
-});
-
-// ─── 리뷰 삭제 (소프트 삭제) ───
-router.delete('/reviews/:idx', async (req, res, next) => {
-  try {
-    const review = await reviewRepo.deactivate(parseInt(req.params.idx));
     if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
     res.json({ success: true, data: review });
   } catch (err) { next(err); }
