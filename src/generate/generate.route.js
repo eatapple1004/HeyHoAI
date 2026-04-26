@@ -291,9 +291,9 @@ router.get('/reviews', async (req, res, next) => {
 // ─── 리뷰 수정 ───
 router.patch('/reviews/:idx', async (req, res, next) => {
   try {
-    const { naturalScore, sexualScore, postRate, posted, memo } = req.body;
+    const { naturalScore, sexualScore, postRate, posted, hookLevel, memo } = req.body;
     const review = await reviewRepo.update(parseInt(req.params.idx), {
-      naturalScore, sexualScore, postRate, posted, memo,
+      naturalScore, sexualScore, postRate, posted, hookLevel, memo,
     });
     if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
     res.json({ success: true, data: review });

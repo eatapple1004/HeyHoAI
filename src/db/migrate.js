@@ -475,6 +475,11 @@ async function migrate() {
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
   `);
 
+  // reviews에 hook_level 컬럼 추가 (관심도/반응 예측 0~10)
+  await pool.query(`
+    ALTER TABLE reviews ADD COLUMN IF NOT EXISTS hook_level DECIMAL(3,1) DEFAULT 0;
+  `);
+
   console.log('Migrations completed.');
 }
 

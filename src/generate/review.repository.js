@@ -28,6 +28,7 @@ async function update(idx, fields) {
   if (fields.sexualScore !== undefined) { sets.push(`sexual_score = $${i++}`); params.push(fields.sexualScore); }
   if (fields.postRate !== undefined) { sets.push(`post_rate = $${i++}`); params.push(fields.postRate); }
   if (fields.posted !== undefined) { sets.push(`posted = $${i++}`); params.push(fields.posted); }
+  if (fields.hookLevel !== undefined) { sets.push(`hook_level = $${i++}`); params.push(fields.hookLevel); }
   if (fields.memo !== undefined) { sets.push(`memo = $${i++}`); params.push(fields.memo); }
 
   if (sets.length === 0) return findByIdx(idx);
@@ -68,6 +69,8 @@ async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0
     postrate_low: 'r.post_rate ASC',
     posted_first: 'r.posted DESC, r.created_at DESC',
     unposted_first: 'r.posted ASC, r.created_at DESC',
+    hook_high: 'r.hook_level DESC',
+    hook_low: 'r.hook_level ASC',
   };
   const orderBy = sortMap[sort] || sortMap.newest;
 

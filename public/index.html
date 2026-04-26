@@ -427,6 +427,8 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
           <option value="postrate_low">Post Rate (Low)</option>
           <option value="posted_first">Posted First</option>
           <option value="unposted_first">Unposted First</option>
+          <option value="hook_high">Hook Level (High)</option>
+          <option value="hook_low">Hook Level (Low)</option>
         </select>
         <span class="gallery-count" id="galleryCount"></span>
       </div>
@@ -482,6 +484,14 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
         <div class="slider-group">
           <input type="range" min="0" max="100" step="1" value="0" id="postRate" oninput="document.getElementById('postRateVal').textContent=this.value+'%'">
           <span class="slider-value" id="postRateVal">0%</span>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <label>Hook Level (0~10)</label>
+        <div class="slider-group">
+          <input type="range" min="0" max="10" step="0.5" value="0" id="hookLevel" oninput="document.getElementById('hookVal').textContent=this.value">
+          <span class="slider-value" id="hookVal">0</span>
         </div>
       </div>
 
@@ -800,6 +810,8 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     document.getElementById('sexualVal').textContent = item.sexual_score || 0;
     document.getElementById('postRate').value = item.post_rate || 0;
     document.getElementById('postRateVal').textContent = (item.post_rate || 0) + '%';
+    document.getElementById('hookLevel').value = item.hook_level || 0;
+    document.getElementById('hookVal').textContent = item.hook_level || 0;
 
     const toggle = document.getElementById('postedToggle');
     if (item.posted) { toggle.classList.add('on'); } else { toggle.classList.remove('on'); }
@@ -838,6 +850,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       naturalScore: parseFloat(document.getElementById('naturalScore').value),
       sexualScore: parseFloat(document.getElementById('sexualScore').value),
       postRate: parseFloat(document.getElementById('postRate').value),
+      hookLevel: parseFloat(document.getElementById('hookLevel').value),
       posted: document.getElementById('postedToggle').classList.contains('on'),
       memo: document.getElementById('reviewMemo').value,
     };
