@@ -491,6 +491,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   <div class="review-container">
     <div class="review-image">
       <img id="reviewImg" src="" alt="">
+      <video id="reviewVideo" src="" controls style="display:none;max-width:100%;max-height:80vh;border-radius:8px;"></video>
     </div>
     <div class="review-panel">
       <h3>Review</h3>
@@ -864,11 +865,17 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
                 <span style="font-size:11px;color:var(--red);">${item.error_message?.slice(0,50) || 'Failed'}</span>
               </div>
               <div class="meta"><span style="color:var(--red);">FAILED</span><span>${item.character_name || 'No char'}</span></div>`
-            : `<img src="/images/${filename}" alt="" loading="lazy">
-              <div class="meta">
-                <span>${item.posted ? 'Posted' : 'N:' + (item.natural_score||0) + ' S:' + (item.sexual_score||0)}</span>
-                <span>${item.character_name || 'No char'}</span>
-              </div>`;
+            : filename?.endsWith('.mp4')
+              ? `<video src="/images/${filename}" style="width:100%;aspect-ratio:4/5;object-fit:cover;" muted loop onmouseenter="this.play()" onmouseleave="this.pause()"></video>
+                <div class="meta">
+                  <span>Video</span>
+                  <span>${item.character_name || 'No char'}</span>
+                </div>`
+              : `<img src="/images/${filename}" alt="" loading="lazy">
+                <div class="meta">
+                  <span>${item.posted ? 'Posted' : 'N:' + (item.natural_score||0) + ' S:' + (item.sexual_score||0)}</span>
+                  <span>${item.character_name || 'No char'}</span>
+                </div>`;
           grid.appendChild(div);
         });
 
@@ -902,7 +909,14 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   function openReview(item) {
     currentReview = item;
     const filename = item.file_path?.split('/').pop();
-    document.getElementById('reviewImg').src = '/images/' + filename;
+    const isVideo = filename?.endsWith('.mp4');
+    document.getElementById('reviewImg').style.display = isVideo ? 'none' : 'block';
+    document.getElementById('reviewVideo').style.display = isVideo ? 'block' : 'none';
+    if (isVideo) {
+      document.getElementById('reviewVideo').src = '/images/' + filename;
+    } else {
+      document.getElementById('reviewImg').src = '/images/' + filename;
+    }
     document.getElementById('reviewPrompt').textContent = item.prompt_text || '-';
     document.getElementById('reviewInfo').innerHTML = `
       <span>${item.model || '-'}</span>
