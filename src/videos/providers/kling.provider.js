@@ -1,6 +1,25 @@
+const jwt = require('jsonwebtoken');
 const { env } = require('../../config');
 
 const KLING_API = 'https://api.klingai.com/v1';
+
+/**
+ * Kling API JWT 토큰 생성
+ * Access Key + Secret Key → JWT 토큰 (30분 유효)
+ */
+function generateToken() {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: env.KLING_ACCESS_KEY,
+    exp: now + 1800, // 30분
+    nbf: now - 5,
+    iat: now,
+  };
+  return jwt.sign(payload, env.KLING_SECRET_KEY, {
+    algorithm: 'HS256',
+    header: { alg: 'HS256', typ: 'JWT' },
+  });
+}
 
 /** @type {import('./types').VideoProvider} */
 const klingProvider = {
@@ -8,10 +27,12 @@ const klingProvider = {
   maxDurationSec: 10,
 
   async submit(req) {
+    const token = generateToken();
+
     const res = await fetch(`${KLING_API}/videos/image2video`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${env.KLING_API_KEY}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -36,8 +57,10 @@ const klingProvider = {
   },
 
   async poll(providerJobId) {
+    const token = generateToken();
+
     const res = await fetch(`${KLING_API}/videos/image2video/${providerJobId}`, {
-      headers: { Authorization: `Bearer ${env.KLING_API_KEY}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {

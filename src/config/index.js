@@ -19,7 +19,8 @@ const envSchema = z.object({
   // Video providers (최소 하나는 필요)
   RUNWAY_API_KEY: z.string().optional(),
   RUNWAY_MODEL: z.string().default('gen4_turbo'),
-  KLING_API_KEY: z.string().optional(),
+  KLING_ACCESS_KEY: z.string().optional(),
+  KLING_SECRET_KEY: z.string().optional(),
   KLING_MODEL: z.string().default('kling-v2'),
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
