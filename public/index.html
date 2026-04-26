@@ -810,10 +810,17 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       const data = await res.json();
 
       if (data.success) {
-        showToast('Video generated! ' + data.duration + 's', 'success');
+        showToast('Video generated! ' + data.duration + 's (' + (data.units || '?') + ' units)', 'success');
         loadGallery();
       } else {
-        showToast(data.error || 'Video generation failed', 'error');
+        const source = data.source || 'unknown';
+        const msg = source === 'kling_submit' ? '[Kling 제출 실패] ' + data.error
+          : source === 'kling_generation' ? '[Kling 생성 실패] ' + (data.reason || data.error)
+          : source === 'timeout' ? '[타임아웃] 5분 초과'
+          : source === 'server' ? '[서버 에러] ' + data.error
+          : data.error || 'Video generation failed';
+        showToast(msg, 'error');
+        if (data.source) console.log('Video error detail:', data);
       }
     } catch (e) {
       showToast('Network error: ' + e.message, 'error');

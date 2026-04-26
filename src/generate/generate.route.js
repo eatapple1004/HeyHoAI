@@ -353,18 +353,23 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
     }
 
     // 제출
+    console.log('[Video] Submitting to Kling:', endpoint, 'mode:', mode, 'duration:', duration);
     const submitRes = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const submitData = await submitRes.json();
+    console.log('[Video] Submit response:', submitRes.status, JSON.stringify(submitData).slice(0, 300));
 
     if (!submitData.data?.task_id) {
-      return res.status(400).json({ success: false, error: submitData.message || 'Failed to submit' });
+      const errorDetail = `Kling submit failed (${submitRes.status}): ${submitData.message || submitData.code || 'Unknown'}`;
+      console.error('[Video]', errorDetail);
+      return res.status(400).json({ success: false, error: errorDetail, source: 'kling_submit' });
     }
 
     const taskId = submitData.data.task_id;
+    console.log('[Video] Task ID:', taskId);
     const pollEndpoint = req.file
       ? `https://api.klingai.com/v1/videos/image2video/${taskId}`
       : `https://api.klingai.com/v1/videos/text2video/${taskId}`;
@@ -378,10 +383,13 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
       });
       const pollData = await pollRes.json();
       const status = pollData.data?.task_status;
+      const statusMsg = pollData.data?.task_status_msg || '';
+      console.log(`[Video] Poll ${i+1}: ${status} ${statusMsg}`);
 
       if (status === 'succeed') {
         const videoUrl = pollData.data.task_result?.videos?.[0]?.url;
         const videoDuration = pollData.data.task_result?.videos?.[0]?.duration;
+        const unitsUsed = pollData.data.final_unit_deduction;
 
         // 비디오 다운로드
         const videoRes = await fetch(videoUrl);
@@ -403,26 +411,57 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
           filePath: `tmp/images/${filename}`,
           fileSizeKb: Math.round(videoBuf.length / 1024),
           model: 'kling-v3',
-          metadata: { type: 'video', duration: videoDuration, mode, taskId },
+          metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed },
         });
         await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
 
+        console.log(`[Video] ✅ Complete: ${filename} (${videoDuration}s, ${unitsUsed} units)`);
         return res.json({
           success: true,
           url: `/images/${filename}`,
           duration: videoDuration,
           size: Math.round(videoBuf.length / 1024) + 'KB',
+          units: unitsUsed,
         });
       }
 
       if (status === 'failed') {
-        return res.status(500).json({ success: false, error: pollData.data.task_status_msg || 'Video generation failed' });
+        const errorDetail = `Kling generation failed: ${statusMsg || 'Unknown reason'} (task: ${taskId})`;
+        console.error('[Video] ❌', errorDetail);
+
+        // 실패도 DB에 기록
+        const savedPrompt = await promptRepo.insert({
+          promptText: prompt, model: 'kling-v3', tags: ['video', 'failed', mode],
+        }).catch(() => null);
+        if (savedPrompt) {
+          const savedResult = await resultRepo.insertFailed({
+            promptIdx: savedPrompt.idx, model: 'kling-v3',
+            errorMessage: errorDetail, metadata: { taskId, statusMsg },
+          }).catch(() => null);
+          if (savedResult) {
+            await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx, memo: errorDetail }).catch(() => {});
+          }
+        }
+
+        return res.json({
+          success: false,
+          error: errorDetail,
+          source: 'kling_generation',
+          taskId,
+          reason: statusMsg,
+        });
       }
     }
 
-    res.status(408).json({ success: false, error: 'Video generation timed out' });
+    console.error('[Video] ⏰ Timeout after 5min, task:', taskId);
+    res.json({ success: false, error: 'Video generation timed out (5min)', source: 'timeout', taskId });
   } catch (err) {
-    next(err);
+    console.error('[Video] Server error:', err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      source: 'server',
+    });
   }
 });
 
