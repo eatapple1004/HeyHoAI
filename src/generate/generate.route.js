@@ -300,13 +300,139 @@ router.patch('/reviews/:idx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── 비디오 생성 (Kling V3) ───
+router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
+  try {
+    const jwt = require('jsonwebtoken');
+    const { prompt, duration = '5', mode = 'std' } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ success: false, error: 'Prompt is required' });
+    }
+
+    const { env } = require('../config');
+    if (!env.KLING_ACCESS_KEY || !env.KLING_SECRET_KEY) {
+      return res.status(400).json({ success: false, error: 'Kling API keys not configured' });
+    }
+
+    function generateToken() {
+      const now = Math.floor(Date.now() / 1000);
+      return jwt.sign({
+        iss: env.KLING_ACCESS_KEY,
+        exp: now + 1800, nbf: now - 5, iat: now,
+      }, env.KLING_SECRET_KEY, { algorithm: 'HS256' });
+    }
+
+    const token = generateToken();
+    let endpoint, body;
+
+    if (req.file) {
+      // Image-to-Video
+      const imageBase64 = fs.readFileSync(req.file.path).toString('base64');
+      endpoint = 'https://api.klingai.com/v1/videos/image2video';
+      body = {
+        model_name: 'kling-v3',
+        image: imageBase64,
+        prompt,
+        negative_prompt: 'ugly, deformed, blurry, static',
+        duration,
+        mode,
+        aspect_ratio: '9:16',
+      };
+    } else {
+      // Text-to-Video
+      endpoint = 'https://api.klingai.com/v1/videos/text2video';
+      body = {
+        model_name: 'kling-v3',
+        prompt,
+        negative_prompt: 'ugly, deformed, blurry, static',
+        duration,
+        mode,
+        aspect_ratio: '9:16',
+      };
+    }
+
+    // 제출
+    const submitRes = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const submitData = await submitRes.json();
+
+    if (!submitData.data?.task_id) {
+      return res.status(400).json({ success: false, error: submitData.message || 'Failed to submit' });
+    }
+
+    const taskId = submitData.data.task_id;
+    const pollEndpoint = req.file
+      ? `https://api.klingai.com/v1/videos/image2video/${taskId}`
+      : `https://api.klingai.com/v1/videos/text2video/${taskId}`;
+
+    // 폴링 (최대 5분)
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 10000));
+      const pollToken = generateToken();
+      const pollRes = await fetch(pollEndpoint, {
+        headers: { 'Authorization': 'Bearer ' + pollToken },
+      });
+      const pollData = await pollRes.json();
+      const status = pollData.data?.task_status;
+
+      if (status === 'succeed') {
+        const videoUrl = pollData.data.task_result?.videos?.[0]?.url;
+        const videoDuration = pollData.data.task_result?.videos?.[0]?.duration;
+
+        // 비디오 다운로드
+        const videoRes = await fetch(videoUrl);
+        const videoBuf = Buffer.from(await videoRes.arrayBuffer());
+        const videoId = crypto.randomUUID();
+        const outputDir = path.join(process.cwd(), 'tmp', 'images');
+        fs.mkdirSync(outputDir, { recursive: true });
+        const filename = `${videoId}.mp4`;
+        fs.writeFileSync(path.join(outputDir, filename), videoBuf);
+
+        // DB 저장
+        const savedPrompt = await promptRepo.insert({
+          promptText: prompt,
+          model: 'kling-v3',
+          tags: ['video', mode, duration + 's'],
+        });
+        const savedResult = await resultRepo.insert({
+          promptIdx: savedPrompt.idx,
+          filePath: `tmp/images/${filename}`,
+          fileSizeKb: Math.round(videoBuf.length / 1024),
+          model: 'kling-v3',
+          metadata: { type: 'video', duration: videoDuration, mode, taskId },
+        });
+        await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
+
+        return res.json({
+          success: true,
+          url: `/images/${filename}`,
+          duration: videoDuration,
+          size: Math.round(videoBuf.length / 1024) + 'KB',
+        });
+      }
+
+      if (status === 'failed') {
+        return res.status(500).json({ success: false, error: pollData.data.task_status_msg || 'Video generation failed' });
+      }
+    }
+
+    res.status(408).json({ success: false, error: 'Video generation timed out' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── 생성된 이미지 목록 (파일 기반) ───
 router.get('/images', (_req, res) => {
   const outputDir = path.join(process.cwd(), 'tmp', 'images');
   if (!fs.existsSync(outputDir)) return res.json({ success: true, data: [] });
 
   const files = fs.readdirSync(outputDir)
-    .filter((f) => /\.(png|jpg|jpeg)$/i.test(f))
+    .filter((f) => /\.(png|jpg|jpeg|mp4)$/i.test(f))
     .map((f) => {
       const stat = fs.statSync(path.join(outputDir, f));
       return {

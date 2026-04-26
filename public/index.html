@@ -355,9 +355,24 @@
       <div id="uploadPreviews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
     </div>
 
-    <!-- Model Selection -->
+    <!-- Generation Mode -->
     <div class="section">
-      <h2>3. Model</h2>
+      <h2>3. Mode</h2>
+      <div class="model-group">
+        <div class="model-btn active" data-mode="image" onclick="selectMode(this)">
+          <div class="name">Image</div>
+          <div class="desc">Generate image</div>
+        </div>
+        <div class="model-btn" data-mode="video" onclick="selectMode(this)">
+          <div class="name">Video</div>
+          <div class="desc">Kling V3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Selection (Image only) -->
+    <div class="section" id="modelSection">
+      <h2>4. Model</h2>
       <div class="model-group">
         <div class="model-btn active" data-model="pro" onclick="selectModel(this)">
           <div class="name">Pro</div>
@@ -370,9 +385,36 @@
       </div>
     </div>
 
+    <!-- Video Settings (Video only) -->
+    <div class="section" id="videoSection" style="display:none;">
+      <h2>4. Video Settings</h2>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;color:var(--dim);">Duration</label>
+        <div class="model-group" style="margin-top:4px;">
+          <div class="model-btn active" data-duration="5" onclick="selectDuration(this)">
+            <div class="name">5s</div>
+          </div>
+          <div class="model-btn" data-duration="10" onclick="selectDuration(this)">
+            <div class="name">10s</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--dim);">Quality</label>
+        <div class="model-group" style="margin-top:4px;">
+          <div class="model-btn active" data-vmode="std" onclick="selectVMode(this)">
+            <div class="name">Standard</div>
+          </div>
+          <div class="model-btn" data-vmode="pro" onclick="selectVMode(this)">
+            <div class="name">Pro</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Style Preset -->
     <div class="section">
-      <h2>4. Style</h2>
+      <h2>5. Style</h2>
       <select class="char-select" id="styleSelect">
         <option value="none">-- No Style --</option>
       </select>
@@ -381,7 +423,7 @@
 
     <!-- Count -->
     <div class="section">
-      <h2>5. Count</h2>
+      <h2>6. Count</h2>
       <div class="count-group">
         <div class="count-btn active" data-count="1" onclick="selectCount(this)">1</div>
         <div class="count-btn" data-count="2" onclick="selectCount(this)">2</div>
@@ -392,7 +434,7 @@
 
     <!-- Prompt -->
     <div class="section">
-      <h2>6. Prompt</h2>
+      <h2>7. Prompt</h2>
       <textarea class="prompt-area" id="promptInput" placeholder="Describe the image you want to generate...
 
 Example:
@@ -521,9 +563,36 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
 <div class="toast" id="toast"></div>
 
 <script>
+  let selectedMode = 'image';
   let selectedModel = 'pro';
   let selectedCount = 1;
+  let selectedDuration = '5';
+  let selectedVMode = 'std';
   let uploadedFiles = [];
+
+  // ── Mode Selection ──
+  function selectMode(el) {
+    document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedMode = el.dataset.mode;
+
+    const isVideo = selectedMode === 'video';
+    document.getElementById('modelSection').style.display = isVideo ? 'none' : 'block';
+    document.getElementById('videoSection').style.display = isVideo ? 'block' : 'none';
+    document.getElementById('generateBtn').textContent = isVideo ? 'Generate Video' : 'Generate Image';
+  }
+
+  function selectDuration(el) {
+    document.querySelectorAll('[data-duration]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedDuration = el.dataset.duration;
+  }
+
+  function selectVMode(el) {
+    document.querySelectorAll('[data-vmode]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedVMode = el.dataset.vmode;
+  }
   let stylesData = [];
 
   // ── Load Styles ──
@@ -670,6 +739,10 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     const prompt = document.getElementById('promptInput').value.trim();
     if (!prompt) { showToast('Please enter a prompt', 'error'); return; }
 
+    if (selectedMode === 'video') {
+      return generateVideo(prompt);
+    }
+
     const characterId = document.getElementById('characterSelect').value;
     const btn = document.getElementById('generateBtn');
     const loading = document.getElementById('loading');
@@ -710,7 +783,42 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       showToast('Network error: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
-      btn.innerHTML = 'Generate Image';
+      btn.innerHTML = selectedMode === 'video' ? 'Generate Video' : 'Generate Image';
+      loading.classList.remove('show');
+    }
+  }
+
+  // ── Video Generation ──
+  async function generateVideo(prompt) {
+    const btn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating Video...';
+    loading.classList.add('show');
+    document.getElementById('loadingText').textContent = 'Generating video (1~3 min)...';
+
+    try {
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('duration', selectedDuration);
+      formData.append('mode', selectedVMode);
+      if (uploadedFiles.length > 0) formData.append('sourceImage', uploadedFiles[0]);
+
+      const res = await fetch('/api/generate/video', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('Video generated! ' + data.duration + 's', 'success');
+        loadGallery();
+      } else {
+        showToast(data.error || 'Video generation failed', 'error');
+      }
+    } catch (e) {
+      showToast('Network error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Generate Video';
       loading.classList.remove('show');
     }
   }

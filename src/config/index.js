@@ -21,7 +21,7 @@ const envSchema = z.object({
   RUNWAY_MODEL: z.string().default('gen4_turbo'),
   KLING_ACCESS_KEY: z.string().optional(),
   KLING_SECRET_KEY: z.string().optional(),
-  KLING_MODEL: z.string().default('kling-v2'),
+  KLING_MODEL: z.string().default('kling-v3'),
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
 });
