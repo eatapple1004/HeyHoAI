@@ -31,7 +31,7 @@ async function findById(id) {
  * @returns {Promise<{ rows: object[]; total: number }>}
  */
 async function findAll({ status, limit = 20, offset = 0 } = {}) {
-  const conditions = [];
+  const conditions = ["status != 'archived'"];
   const params = [];
   let paramIndex = 1;
 
@@ -40,7 +40,7 @@ async function findAll({ status, limit = 20, offset = 0 } = {}) {
     params.push(status);
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = 'WHERE ' + conditions.join(' AND ');
 
   const countResult = await query(`SELECT COUNT(*) FROM characters ${where}`, params);
   const total = parseInt(countResult.rows[0].count, 10);

@@ -288,12 +288,29 @@
           </div>
           <div class="char-card-actions">
             <a class="char-action-btn" href="/heyhoai/image/generater/page">Generate</a>
+            <button class="char-action-btn danger" onclick="deleteCharacter('${c.id}', '${c.name}')">Delete</button>
           </div>
         `;
         grid.appendChild(card);
       });
     } catch (e) {
       console.error('Failed to load characters:', e);
+    }
+  }
+
+  async function deleteCharacter(id, name) {
+    if (!confirm('Delete character "' + name + '"?')) return;
+    try {
+      const res = await fetch('/api/characters/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Character deleted', 'success');
+        loadCharacters();
+      } else {
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
     }
   }
 

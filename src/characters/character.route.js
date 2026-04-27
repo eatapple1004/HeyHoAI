@@ -9,5 +9,6 @@ router.get('/', controller.list);
 router.get('/:id', controller.getById);
 router.put('/:id/reference-image', controller.setReferenceImage);
 router.delete('/:id/reference-image', controller.clearReferenceImage);
+router.delete('/:id', controller.deleteCharacter);
 
 module.exports = router;

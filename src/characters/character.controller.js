@@ -166,4 +166,21 @@ async function register(req, res, next) {
   });
 }
 
-module.exports = { create, getById, list, setReferenceImage, clearReferenceImage, register };
+/**
+ * DELETE /api/characters/:id
+ * 캐릭터 삭제 (소프트 삭제 - status → archived)
+ */
+async function deleteCharacter(req, res, next) {
+  try {
+    const characterRepo = require('./character.repository');
+    const character = await characterRepo.updateStatus(req.params.id, 'archived');
+    if (!character) {
+      return res.status(404).json({ success: false, error: 'Character not found' });
+    }
+    res.json({ success: true, data: character });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, getById, list, setReferenceImage, clearReferenceImage, register, deleteCharacter };
