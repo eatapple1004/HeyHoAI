@@ -183,4 +183,52 @@ async function deleteCharacter(req, res, next) {
   }
 }
 
-module.exports = { create, getById, list, setReferenceImage, clearReferenceImage, register, deleteCharacter };
+/**
+ * POST /api/characters/register-with-image
+ * 생성된 이미지 파일명으로 캐릭터 등록
+ */
+async function registerWithImage(req, res, next) {
+  try {
+    const { name, concept, imageFilename } = req.body;
+    if (!name || !concept || !imageFilename) {
+      return res.status(400).json({ success: false, error: 'Name, concept, and imageFilename are required' });
+    }
+
+    const characterRepo = require('./character.repository');
+
+    const persona = {
+      name,
+      age: 25,
+      gender: 'Female',
+      nationality: 'Korean',
+      occupation: 'Content Creator',
+      personality: ['natural', 'casual', 'friendly'],
+      backstory: concept,
+      visualDescription: {
+        bodyType: 'slim',
+        hairStyle: 'long',
+        hairColor: 'dark',
+        eyeColor: 'dark brown',
+        skinTone: 'fair',
+        distinctiveFeatures: '',
+        defaultOutfit: 'casual everyday style',
+      },
+      instagramProfile: { username: name.toLowerCase().replace(/\s+/g, '_'), bio: concept },
+      voiceGuidelines: { tone: 'casual', vocabulary: 'simple', emojiStyle: 'minimal', captionLength: 'short' },
+      brandSafety: { approvedThemes: ['lifestyle'], bannedTopics: ['politics'], targetAudience: '18-35' },
+    };
+
+    const saved = await characterRepo.insert({ name, concept, persona });
+
+    // 선택한 이미지를 대표 이미지로 설정
+    const imageUrl = `/images/${imageFilename}`;
+    await characterRepo.setReferenceImage(saved.id, null, imageUrl);
+    saved.reference_image_url = imageUrl;
+
+    res.status(201).json({ success: true, data: saved });
+  } catch (e) {
+    next(e);
+  }
+}
+
+module.exports = { create, getById, list, setReferenceImage, clearReferenceImage, register, registerWithImage, deleteCharacter };

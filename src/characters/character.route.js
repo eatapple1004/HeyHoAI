@@ -5,6 +5,7 @@ const router = Router();
 
 router.post('/', controller.create);
 router.post('/register', controller.register);
+router.post('/register-with-image', controller.registerWithImage);
 router.get('/', controller.list);
 router.get('/:id', controller.getById);
 router.put('/:id/reference-image', controller.setReferenceImage);
