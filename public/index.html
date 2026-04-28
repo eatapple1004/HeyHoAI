@@ -410,6 +410,18 @@
           </div>
         </div>
       </div>
+      <div style="margin-top:10px;">
+        <label style="font-size:12px;color:var(--dim);">Audio</label>
+        <div class="model-group" style="margin-top:4px;">
+          <div class="model-btn active" data-audio="off" onclick="selectAudio(this)">
+            <div class="name">Off</div>
+          </div>
+          <div class="model-btn" data-audio="on" onclick="selectAudio(this)">
+            <div class="name">On</div>
+            <div class="desc">Voice + SFX</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Style Preset -->
@@ -569,6 +581,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   let selectedCount = 1;
   let selectedDuration = '5';
   let selectedVMode = 'std';
+  let selectedAudio = false;
   let uploadedFiles = [];
 
   // ── Mode Selection ──
@@ -593,6 +606,12 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     document.querySelectorAll('[data-vmode]').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     selectedVMode = el.dataset.vmode;
+  }
+
+  function selectAudio(el) {
+    document.querySelectorAll('[data-audio]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedAudio = el.dataset.audio === 'on';
   }
   let stylesData = [];
 
@@ -804,6 +823,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       formData.append('prompt', prompt);
       formData.append('duration', selectedDuration);
       formData.append('mode', selectedVMode);
+      formData.append('withAudio', selectedAudio ? 'true' : 'false');
       if (uploadedFiles.length > 0) formData.append('sourceImage', uploadedFiles[0]);
 
       const res = await fetch('/api/generate/video', { method: 'POST', body: formData });

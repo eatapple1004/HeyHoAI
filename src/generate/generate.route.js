@@ -304,7 +304,8 @@ router.patch('/reviews/:idx', async (req, res, next) => {
 router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
   try {
     const jwt = require('jsonwebtoken');
-    const { prompt, duration = '5', mode = 'std' } = req.body;
+    const { prompt, duration = '5', mode = 'std', withAudio = 'false' } = req.body;
+    const enableAudio = withAudio === 'true';
 
     if (!prompt) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
@@ -338,6 +339,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         duration,
         mode,
         aspect_ratio: '9:16',
+        ...(enableAudio && { with_audio: true }),
       };
     } else {
       // Text-to-Video
@@ -349,11 +351,12 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         duration,
         mode,
         aspect_ratio: '9:16',
+        ...(enableAudio && { with_audio: true }),
       };
     }
 
     // 제출
-    console.log('[Video] Submitting to Kling:', endpoint, 'mode:', mode, 'duration:', duration);
+    console.log('[Video] Submitting to Kling:', endpoint, 'mode:', mode, 'duration:', duration, 'audio:', enableAudio);
     const submitRes = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -404,14 +407,14 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         const savedPrompt = await promptRepo.insert({
           promptText: prompt,
           model: 'kling-v3',
-          tags: ['video', mode, duration + 's'],
+          tags: ['video', mode, duration + 's', ...(enableAudio ? ['audio'] : [])],
         });
         const savedResult = await resultRepo.insert({
           promptIdx: savedPrompt.idx,
           filePath: `tmp/images/${filename}`,
           fileSizeKb: Math.round(videoBuf.length / 1024),
           model: 'kling-v3',
-          metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed },
+          metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed, audio: enableAudio },
         });
         await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
 
@@ -431,7 +434,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
 
         // 실패도 DB에 기록
         const savedPrompt = await promptRepo.insert({
-          promptText: prompt, model: 'kling-v3', tags: ['video', 'failed', mode],
+          promptText: prompt, model: 'kling-v3', tags: ['video', 'failed', mode, ...(enableAudio ? ['audio'] : [])],
         }).catch(() => null);
         if (savedPrompt) {
           const savedResult = await resultRepo.insertFailed({
