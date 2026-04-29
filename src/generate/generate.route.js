@@ -402,7 +402,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         let audioDebugInfo = { step: 'skip', reason: 'audio off' };
         if (enableAudio && videoUrl) {
           audioDebugInfo = { step: 'submit' };
-          alog.info( Starting for video:', videoIdFromKling, 'url:', videoUrl?.slice(0, 80));
+          alog.info('Starting for video:', videoIdFromKling, 'url:', videoUrl?.slice(0, 80));
           try {
             const audioToken = generateToken();
             const audioBody = {
@@ -412,7 +412,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
               bgm_prompt: '',
               asmr_mode: false,
             };
-            alog.info( Request body:', JSON.stringify(audioBody).slice(0, 500));
+            alog.info('Request body:', JSON.stringify(audioBody).slice(0, 500));
 
             const audioSubmitRes = await fetch('https://api.klingai.com/v1/audio/video-to-audio', {
               method: 'POST',
@@ -420,7 +420,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
               body: JSON.stringify(audioBody),
             });
             const audioSubmitRaw = await audioSubmitRes.text();
-            alog.info( Submit raw response:', audioSubmitRes.status, audioSubmitRaw.slice(0, 500));
+            alog.info('Submit raw response:', audioSubmitRes.status, audioSubmitRaw.slice(0, 500));
 
             let audioSubmitData;
             try { audioSubmitData = JSON.parse(audioSubmitRaw); } catch { audioSubmitData = {}; }
@@ -428,7 +428,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
             const audioTaskId = audioSubmitData.data?.task_id;
             if (audioTaskId) {
               audioDebugInfo = { step: 'polling', audioTaskId };
-              alog.info( Task ID:', audioTaskId);
+              alog.info('Task ID:', audioTaskId);
 
               // 오디오 폴링 (최대 3분)
               for (let j = 0; j < 18; j++) {
@@ -447,13 +447,13 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
                 if (aStatus === 'succeed') {
                   // 전체 결과 구조 로깅
                   const taskResult = aPollData.data?.task_result;
-                  alog.info( Full task_result keys:', taskResult ? Object.keys(taskResult) : 'null');
-                  alog.info( Full task_result:', JSON.stringify(taskResult).slice(0, 1000));
+                  alog.info('Full task_result keys:', taskResult ? Object.keys(taskResult) : 'null');
+                  alog.info('Full task_result:', JSON.stringify(taskResult).slice(0, 1000));
 
                   const audioResult = taskResult?.audios?.[0];
                   if (audioResult) {
-                    alog.info( audioResult keys:', Object.keys(audioResult));
-                    alog.info( audioResult:', JSON.stringify(audioResult).slice(0, 500));
+                    alog.info('audioResult keys:', Object.keys(audioResult));
+                    alog.info('audioResult:', JSON.stringify(audioResult).slice(0, 500));
                   }
 
                   // 가능한 모든 필드명 시도
@@ -465,26 +465,26 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
                     || null;
 
                   audioDebugInfo = { step: 'done', audioMp3Url: audioMp3Url?.slice(0, 80), audioResultKeys: audioResult ? Object.keys(audioResult) : [] };
-                  alog.info( ✅ Resolved URL:', audioMp3Url ? audioMp3Url.slice(0, 80) : 'NONE');
+                  alog.info('✅ Resolved URL:', audioMp3Url ? audioMp3Url.slice(0, 80) : 'NONE');
                   break;
                 }
                 if (aStatus === 'failed') {
                   const failMsg = aPollData.data?.task_status_msg || 'unknown';
                   audioDebugInfo = { step: 'failed', reason: failMsg };
-                  alog.warn( ❌ Failed:', failMsg);
+                  alog.warn('❌ Failed:', failMsg);
                   break;
                 }
               }
             } else {
               audioDebugInfo = { step: 'submit_failed', response: audioSubmitRaw.slice(0, 200) };
-              alog.warn( ⚠️ No task_id in submit response');
+              alog.warn('⚠️ No task_id in submit response');
             }
           } catch (audioErr) {
             audioDebugInfo = { step: 'error', message: audioErr.message };
-            alog.warn( ⚠️ Error:', audioErr.message);
+            alog.warn('⚠️ Error:', audioErr.message);
           }
         }
-        alog.info( Final debug:', JSON.stringify(audioDebugInfo));
+        alog.info('Final debug:', JSON.stringify(audioDebugInfo));
 
         // 비디오 다운로드
         const videoResFetch = await fetch(videoUrl);
@@ -502,20 +502,20 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
           const tempAudioPath = path.join(outputDir, `_tmp_a_${videoId}.mp3`);
 
           fs.writeFileSync(tempVideoPath, videoBuf);
-          alog.info( Downloading audio from:', audioMp3Url.slice(0, 80));
+          alog.info('Downloading audio from:', audioMp3Url.slice(0, 80));
           const audioResFetch = await fetch(audioMp3Url);
           const audioBuf = Buffer.from(await audioResFetch.arrayBuffer());
           fs.writeFileSync(tempAudioPath, audioBuf);
-          alog.info( Audio file size:', audioBuf.length, 'bytes');
+          alog.info('Audio file size:', audioBuf.length, 'bytes');
 
           try {
             const ffResult = execSync(`ffmpeg -i "${tempVideoPath}" -i "${tempAudioPath}" -c:v copy -c:a aac -shortest -y "${videoFilePath}" 2>&1`, { timeout: 30000 });
-            alog.info( ✅ ffmpeg merge done, output:', ffResult.toString().slice(-200));
+            alog.info('✅ ffmpeg merge done, output:', ffResult.toString().slice(-200));
             const mergedSize = fs.statSync(videoFilePath).size;
             const videoOnlySize = videoBuf.length;
-            alog.info( Size check - video only:', videoOnlySize, 'merged:', mergedSize, 'diff:', mergedSize - videoOnlySize);
+            alog.info('Size check - video only:', videoOnlySize, 'merged:', mergedSize, 'diff:', mergedSize - videoOnlySize);
           } catch (ffErr) {
-            alog.warn( ⚠️ ffmpeg failed:', ffErr.stderr?.toString().slice(-300) || ffErr.message);
+            alog.warn('⚠️ ffmpeg failed:', ffErr.stderr?.toString().slice(-300) || ffErr.message);
             fs.writeFileSync(videoFilePath, videoBuf);
           }
 
@@ -527,7 +527,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
           try { fs.unlinkSync(tempVideoPath); } catch {}
           try { fs.unlinkSync(tempAudioPath); } catch {}
         } else {
-          alog.info( No audio URL - saving video without audio');
+          alog.info('No audio URL - saving video without audio');
           fs.writeFileSync(videoFilePath, videoBuf);
         }
 
