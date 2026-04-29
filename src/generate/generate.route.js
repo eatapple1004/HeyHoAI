@@ -408,7 +408,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
             const audioBody = {
               video_id: videoIdFromKling || '',
               video_url: videoUrl,
-              sound_effect_prompt: prompt,
+              sound_effect_prompt: prompt.slice(0, 200),
               bgm_prompt: '',
               asmr_mode: false,
             };
