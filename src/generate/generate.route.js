@@ -339,7 +339,6 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         duration,
         mode,
         aspect_ratio: '9:16',
-        ...(enableAudio && { generate_audio: true }),
       };
     } else {
       // Text-to-Video
@@ -351,7 +350,6 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         duration,
         mode,
         aspect_ratio: '9:16',
-        ...(enableAudio && { generate_audio: true }),
       };
     }
 
@@ -390,9 +388,65 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
       console.log(`[Video] Poll ${i+1}: ${status} ${statusMsg}`);
 
       if (status === 'succeed') {
-        const videoUrl = pollData.data.task_result?.videos?.[0]?.url;
+        let videoUrl = pollData.data.task_result?.videos?.[0]?.url;
+        const videoIdFromKling = pollData.data.task_result?.videos?.[0]?.id;
         const videoDuration = pollData.data.task_result?.videos?.[0]?.duration;
         const unitsUsed = pollData.data.final_unit_deduction;
+
+        // ─── 오디오 생성 (별도 API: POST /v1/audio/video-to-audio) ───
+        if (enableAudio && videoUrl) {
+          console.log('[Video] Starting audio generation for video:', videoIdFromKling);
+          try {
+            const audioToken = generateToken();
+            const audioBody = {
+              video_id: videoIdFromKling || '',
+              video_url: videoUrl,
+              sound_effect_prompt: prompt,
+              bgm_prompt: '',
+              asmr_mode: false,
+            };
+            const audioSubmitRes = await fetch('https://api.klingai.com/v1/audio/video-to-audio', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + audioToken, 'Content-Type': 'application/json' },
+              body: JSON.stringify(audioBody),
+            });
+            const audioSubmitData = await audioSubmitRes.json();
+            console.log('[Video] Audio submit response:', audioSubmitRes.status, JSON.stringify(audioSubmitData).slice(0, 300));
+
+            const audioTaskId = audioSubmitData.data?.task_id;
+            if (audioTaskId) {
+              // 오디오 폴링 (최대 3분)
+              for (let j = 0; j < 18; j++) {
+                await new Promise(r => setTimeout(r, 10000));
+                const aPollToken = generateToken();
+                const aPollRes = await fetch(`https://api.klingai.com/v1/audio/video-to-audio/${audioTaskId}`, {
+                  headers: { 'Authorization': 'Bearer ' + aPollToken },
+                });
+                const aPollData = await aPollRes.json();
+                const aStatus = aPollData.data?.task_status;
+                console.log(`[Video] Audio poll ${j+1}: ${aStatus}`);
+
+                if (aStatus === 'succeed') {
+                  // 오디오 합성된 비디오 URL 사용
+                  const audioResult = aPollData.data?.task_result?.audios?.[0];
+                  if (audioResult?.video_url) {
+                    videoUrl = audioResult.video_url;
+                    console.log('[Video] ✅ Audio merged into video');
+                  }
+                  break;
+                }
+                if (aStatus === 'failed') {
+                  console.warn('[Video] ⚠️ Audio generation failed, using video without audio');
+                  break;
+                }
+              }
+            } else {
+              console.warn('[Video] ⚠️ Audio submit failed, using video without audio');
+            }
+          } catch (audioErr) {
+            console.warn('[Video] ⚠️ Audio error:', audioErr.message, '- using video without audio');
+          }
+        }
 
         // 비디오 다운로드
         const videoRes = await fetch(videoUrl);

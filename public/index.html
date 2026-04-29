@@ -816,7 +816,9 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Generating Video...';
     loading.classList.add('show');
-    document.getElementById('loadingText').textContent = 'Generating video (1~3 min)...';
+    document.getElementById('loadingText').textContent = selectedAudio
+      ? 'Generating video + audio (2~5 min)...'
+      : 'Generating video (1~3 min)...';
 
     try {
       const formData = new FormData();
