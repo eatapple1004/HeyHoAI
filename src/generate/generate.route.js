@@ -394,6 +394,10 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         const unitsUsed = pollData.data.final_unit_deduction;
 
         // ─── 오디오 생성 (별도 API: POST /v1/audio/video-to-audio) ───
+        // Kling API는 비디오와 오디오를 별도 파일로 반환함
+        // video_url = 원본 비디오 (무음), url_mp3 = 오디오만
+        // → ffmpeg로 합쳐야 함
+        let audioMp3Url = null;
         if (enableAudio && videoUrl) {
           console.log('[Video] Starting audio generation for video:', videoIdFromKling);
           try {
@@ -424,15 +428,12 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
                 });
                 const aPollData = await aPollRes.json();
                 const aStatus = aPollData.data?.task_status;
-                console.log(`[Video] Audio poll ${j+1}: ${aStatus}`);
+                console.log(`[Video] Audio poll ${j+1}: ${aStatus}`, JSON.stringify(aPollData.data?.task_result || {}).slice(0, 300));
 
                 if (aStatus === 'succeed') {
-                  // 오디오 합성된 비디오 URL 사용
                   const audioResult = aPollData.data?.task_result?.audios?.[0];
-                  if (audioResult?.video_url) {
-                    videoUrl = audioResult.video_url;
-                    console.log('[Video] ✅ Audio merged into video');
-                  }
+                  audioMp3Url = audioResult?.url_mp3 || audioResult?.url_wav || null;
+                  console.log('[Video] ✅ Audio generated:', audioMp3Url ? 'OK' : 'no url');
                   break;
                 }
                 if (aStatus === 'failed') {
@@ -449,13 +450,39 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         }
 
         // 비디오 다운로드
-        const videoRes = await fetch(videoUrl);
-        const videoBuf = Buffer.from(await videoRes.arrayBuffer());
+        const videoResFetch = await fetch(videoUrl);
+        const videoBuf = Buffer.from(await videoResFetch.arrayBuffer());
         const videoId = crypto.randomUUID();
         const outputDir = path.join(process.cwd(), 'tmp', 'images');
         fs.mkdirSync(outputDir, { recursive: true });
         const filename = `${videoId}.mp4`;
-        fs.writeFileSync(path.join(outputDir, filename), videoBuf);
+        const videoFilePath = path.join(outputDir, filename);
+
+        if (audioMp3Url) {
+          // 오디오 다운로드 후 ffmpeg로 합치기
+          const { execSync } = require('child_process');
+          const tempVideoPath = path.join(outputDir, `_tmp_v_${videoId}.mp4`);
+          const tempAudioPath = path.join(outputDir, `_tmp_a_${videoId}.mp3`);
+
+          fs.writeFileSync(tempVideoPath, videoBuf);
+          const audioResFetch = await fetch(audioMp3Url);
+          const audioBuf = Buffer.from(await audioResFetch.arrayBuffer());
+          fs.writeFileSync(tempAudioPath, audioBuf);
+
+          try {
+            execSync(`ffmpeg -i "${tempVideoPath}" -i "${tempAudioPath}" -c:v copy -c:a aac -shortest -y "${videoFilePath}"`, { timeout: 30000 });
+            console.log('[Video] ✅ Video + Audio merged with ffmpeg');
+          } catch (ffErr) {
+            console.warn('[Video] ⚠️ ffmpeg merge failed:', ffErr.message, '- saving video without audio');
+            fs.writeFileSync(videoFilePath, videoBuf);
+          }
+
+          // 임시 파일 정리
+          try { fs.unlinkSync(tempVideoPath); } catch {}
+          try { fs.unlinkSync(tempAudioPath); } catch {}
+        } else {
+          fs.writeFileSync(videoFilePath, videoBuf);
+        }
 
         // DB 저장
         const savedPrompt = await promptRepo.insert({
