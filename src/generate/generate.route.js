@@ -5,6 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { GoogleGenAI } = require('@google/genai');
 const { env } = require('../config');
+const logger = require('../lib/logger');
 const characterRepo = require('../characters/character.repository');
 const promptRepo = require('./prompt.repository');
 const resultRepo = require('./result.repository');
@@ -302,6 +303,8 @@ router.patch('/reviews/:idx', async (req, res, next) => {
 
 // ─── 비디오 생성 (Kling V3) ───
 router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
+  const vlog = logger('Video');
+  const alog = logger('Audio');
   try {
     const jwt = require('jsonwebtoken');
     const { prompt, duration = '5', mode = 'std', withAudio = 'false' } = req.body;
@@ -354,23 +357,23 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
     }
 
     // 제출
-    console.log('[Video] Submitting to Kling:', endpoint, 'mode:', mode, 'duration:', duration, 'audio:', enableAudio);
+    vlog.info('Submitting to Kling:', endpoint, 'mode:', mode, 'duration:', duration, 'audio:', enableAudio);
     const submitRes = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const submitData = await submitRes.json();
-    console.log('[Video] Submit response:', submitRes.status, JSON.stringify(submitData).slice(0, 300));
+    vlog.info('Submit response:', submitRes.status, JSON.stringify(submitData).slice(0, 300));
 
     if (!submitData.data?.task_id) {
       const errorDetail = `Kling submit failed (${submitRes.status}): ${submitData.message || submitData.code || 'Unknown'}`;
-      console.error('[Video]', errorDetail);
+      vlog.error(errorDetail);
       return res.status(400).json({ success: false, error: errorDetail, source: 'kling_submit' });
     }
 
     const taskId = submitData.data.task_id;
-    console.log('[Video] Task ID:', taskId);
+    vlog.info('Task ID:', taskId);
     const pollEndpoint = req.file
       ? `https://api.klingai.com/v1/videos/image2video/${taskId}`
       : `https://api.klingai.com/v1/videos/text2video/${taskId}`;
@@ -385,7 +388,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
       const pollData = await pollRes.json();
       const status = pollData.data?.task_status;
       const statusMsg = pollData.data?.task_status_msg || '';
-      console.log(`[Video] Poll ${i+1}: ${status} ${statusMsg}`);
+      vlog.info(`Poll ${i+1}: ${status} ${statusMsg}`);
 
       if (status === 'succeed') {
         let videoUrl = pollData.data.task_result?.videos?.[0]?.url;
@@ -399,7 +402,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         let audioDebugInfo = { step: 'skip', reason: 'audio off' };
         if (enableAudio && videoUrl) {
           audioDebugInfo = { step: 'submit' };
-          console.log('[Audio] Starting for video:', videoIdFromKling, 'url:', videoUrl?.slice(0, 80));
+          alog.info( Starting for video:', videoIdFromKling, 'url:', videoUrl?.slice(0, 80));
           try {
             const audioToken = generateToken();
             const audioBody = {
@@ -409,7 +412,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
               bgm_prompt: '',
               asmr_mode: false,
             };
-            console.log('[Audio] Request body:', JSON.stringify(audioBody).slice(0, 500));
+            alog.info( Request body:', JSON.stringify(audioBody).slice(0, 500));
 
             const audioSubmitRes = await fetch('https://api.klingai.com/v1/audio/video-to-audio', {
               method: 'POST',
@@ -417,7 +420,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
               body: JSON.stringify(audioBody),
             });
             const audioSubmitRaw = await audioSubmitRes.text();
-            console.log('[Audio] Submit raw response:', audioSubmitRes.status, audioSubmitRaw.slice(0, 500));
+            alog.info( Submit raw response:', audioSubmitRes.status, audioSubmitRaw.slice(0, 500));
 
             let audioSubmitData;
             try { audioSubmitData = JSON.parse(audioSubmitRaw); } catch { audioSubmitData = {}; }
@@ -425,7 +428,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
             const audioTaskId = audioSubmitData.data?.task_id;
             if (audioTaskId) {
               audioDebugInfo = { step: 'polling', audioTaskId };
-              console.log('[Audio] Task ID:', audioTaskId);
+              alog.info( Task ID:', audioTaskId);
 
               // 오디오 폴링 (최대 3분)
               for (let j = 0; j < 18; j++) {
@@ -435,7 +438,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
                   headers: { 'Authorization': 'Bearer ' + aPollToken },
                 });
                 const aPollRaw = await aPollRes.text();
-                console.log(`[Audio] Poll ${j+1} raw:`, aPollRaw.slice(0, 500));
+                alog.info(`Poll ${j+1} raw:`, aPollRaw.slice(0, 500));
 
                 let aPollData;
                 try { aPollData = JSON.parse(aPollRaw); } catch { continue; }
@@ -444,13 +447,13 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
                 if (aStatus === 'succeed') {
                   // 전체 결과 구조 로깅
                   const taskResult = aPollData.data?.task_result;
-                  console.log('[Audio] Full task_result keys:', taskResult ? Object.keys(taskResult) : 'null');
-                  console.log('[Audio] Full task_result:', JSON.stringify(taskResult).slice(0, 1000));
+                  alog.info( Full task_result keys:', taskResult ? Object.keys(taskResult) : 'null');
+                  alog.info( Full task_result:', JSON.stringify(taskResult).slice(0, 1000));
 
                   const audioResult = taskResult?.audios?.[0];
                   if (audioResult) {
-                    console.log('[Audio] audioResult keys:', Object.keys(audioResult));
-                    console.log('[Audio] audioResult:', JSON.stringify(audioResult).slice(0, 500));
+                    alog.info( audioResult keys:', Object.keys(audioResult));
+                    alog.info( audioResult:', JSON.stringify(audioResult).slice(0, 500));
                   }
 
                   // 가능한 모든 필드명 시도
@@ -462,26 +465,26 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
                     || null;
 
                   audioDebugInfo = { step: 'done', audioMp3Url: audioMp3Url?.slice(0, 80), audioResultKeys: audioResult ? Object.keys(audioResult) : [] };
-                  console.log('[Audio] ✅ Resolved URL:', audioMp3Url ? audioMp3Url.slice(0, 80) : 'NONE');
+                  alog.info( ✅ Resolved URL:', audioMp3Url ? audioMp3Url.slice(0, 80) : 'NONE');
                   break;
                 }
                 if (aStatus === 'failed') {
                   const failMsg = aPollData.data?.task_status_msg || 'unknown';
                   audioDebugInfo = { step: 'failed', reason: failMsg };
-                  console.warn('[Audio] ❌ Failed:', failMsg);
+                  alog.warn( ❌ Failed:', failMsg);
                   break;
                 }
               }
             } else {
               audioDebugInfo = { step: 'submit_failed', response: audioSubmitRaw.slice(0, 200) };
-              console.warn('[Audio] ⚠️ No task_id in submit response');
+              alog.warn( ⚠️ No task_id in submit response');
             }
           } catch (audioErr) {
             audioDebugInfo = { step: 'error', message: audioErr.message };
-            console.warn('[Audio] ⚠️ Error:', audioErr.message);
+            alog.warn( ⚠️ Error:', audioErr.message);
           }
         }
-        console.log('[Audio] Final debug:', JSON.stringify(audioDebugInfo));
+        alog.info( Final debug:', JSON.stringify(audioDebugInfo));
 
         // 비디오 다운로드
         const videoResFetch = await fetch(videoUrl);
@@ -499,20 +502,20 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
           const tempAudioPath = path.join(outputDir, `_tmp_a_${videoId}.mp3`);
 
           fs.writeFileSync(tempVideoPath, videoBuf);
-          console.log('[Audio] Downloading audio from:', audioMp3Url.slice(0, 80));
+          alog.info( Downloading audio from:', audioMp3Url.slice(0, 80));
           const audioResFetch = await fetch(audioMp3Url);
           const audioBuf = Buffer.from(await audioResFetch.arrayBuffer());
           fs.writeFileSync(tempAudioPath, audioBuf);
-          console.log('[Audio] Audio file size:', audioBuf.length, 'bytes');
+          alog.info( Audio file size:', audioBuf.length, 'bytes');
 
           try {
             const ffResult = execSync(`ffmpeg -i "${tempVideoPath}" -i "${tempAudioPath}" -c:v copy -c:a aac -shortest -y "${videoFilePath}" 2>&1`, { timeout: 30000 });
-            console.log('[Audio] ✅ ffmpeg merge done, output:', ffResult.toString().slice(-200));
+            alog.info( ✅ ffmpeg merge done, output:', ffResult.toString().slice(-200));
             const mergedSize = fs.statSync(videoFilePath).size;
             const videoOnlySize = videoBuf.length;
-            console.log('[Audio] Size check - video only:', videoOnlySize, 'merged:', mergedSize, 'diff:', mergedSize - videoOnlySize);
+            alog.info( Size check - video only:', videoOnlySize, 'merged:', mergedSize, 'diff:', mergedSize - videoOnlySize);
           } catch (ffErr) {
-            console.warn('[Audio] ⚠️ ffmpeg failed:', ffErr.stderr?.toString().slice(-300) || ffErr.message);
+            alog.warn( ⚠️ ffmpeg failed:', ffErr.stderr?.toString().slice(-300) || ffErr.message);
             fs.writeFileSync(videoFilePath, videoBuf);
           }
 
@@ -524,7 +527,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
           try { fs.unlinkSync(tempVideoPath); } catch {}
           try { fs.unlinkSync(tempAudioPath); } catch {}
         } else {
-          console.log('[Audio] No audio URL - saving video without audio');
+          alog.info( No audio URL - saving video without audio');
           fs.writeFileSync(videoFilePath, videoBuf);
         }
 
@@ -544,7 +547,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
 
         const finalSize = fs.existsSync(videoFilePath) ? fs.statSync(videoFilePath).size : videoBuf.length;
-        console.log(`[Video] ✅ Complete: ${filename} (${videoDuration}s, ${unitsUsed} units, audio: ${!!audioMp3Url})`);
+        vlog.info(`Complete: ${filename} (${videoDuration}s, ${unitsUsed} units, audio: ${!!audioMp3Url})`);
         return res.json({
           success: true,
           url: `/images/${filename}`,
@@ -557,7 +560,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
 
       if (status === 'failed') {
         const errorDetail = `Kling generation failed: ${statusMsg || 'Unknown reason'} (task: ${taskId})`;
-        console.error('[Video] ❌', errorDetail);
+        vlog.error(errorDetail);
 
         // 실패도 DB에 기록
         const savedPrompt = await promptRepo.insert({
@@ -583,10 +586,10 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
       }
     }
 
-    console.error('[Video] ⏰ Timeout after 5min, task:', taskId);
+    vlog.error('Timeout after 5min, task:', taskId);
     res.json({ success: false, error: 'Video generation timed out (5min)', source: 'timeout', taskId });
   } catch (err) {
-    console.error('[Video] Server error:', err.message);
+    vlog.error('Server error:', err.message);
     res.status(500).json({
       success: false,
       error: err.message,
@@ -612,6 +615,56 @@ router.get('/images', (_req, res) => {
       };
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  res.json({ success: true, data: files });
+});
+
+// ─── 로그 조회 API ───
+router.get('/logs', (req, res) => {
+  const logDir = path.join(process.cwd(), 'logs');
+  if (!fs.existsSync(logDir)) return res.json({ success: true, data: [] });
+
+  const { date, tag, level, lines = '200' } = req.query;
+  const logDate = date || new Date().toISOString().slice(0, 10);
+  const logFile = path.join(logDir, `${logDate}.log`);
+
+  if (!fs.existsSync(logFile)) {
+    // 사용 가능한 로그 파일 목록
+    const available = fs.readdirSync(logDir).filter(f => f.endsWith('.log')).sort().reverse();
+    return res.json({ success: true, data: [], available });
+  }
+
+  let content = fs.readFileSync(logFile, 'utf-8').split('\n').filter(Boolean);
+
+  // 태그 필터
+  if (tag) {
+    content = content.filter(line => line.includes(`[${tag}]`));
+  }
+
+  // 레벨 필터
+  if (level) {
+    content = content.filter(line => line.includes(` ${level.toUpperCase()} `));
+  }
+
+  // 최근 N줄
+  const limit = parseInt(lines, 10) || 200;
+  content = content.slice(-limit);
+
+  res.json({ success: true, date: logDate, count: content.length, data: content });
+});
+
+// ─── 로그 파일 목록 ───
+router.get('/logs/files', (_req, res) => {
+  const logDir = path.join(process.cwd(), 'logs');
+  if (!fs.existsSync(logDir)) return res.json({ success: true, data: [] });
+
+  const files = fs.readdirSync(logDir)
+    .filter(f => f.endsWith('.log'))
+    .map(f => {
+      const stat = fs.statSync(path.join(logDir, f));
+      return { name: f, size: Math.round(stat.size / 1024) + 'KB', modified: stat.mtime.toISOString() };
+    })
+    .sort((a, b) => b.name.localeCompare(a.name));
 
   res.json({ success: true, data: files });
 });

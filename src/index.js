@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { env } = require('./config');
+const log = require('./lib/logger')('Server');
 const characterRoutes = require('./characters/character.route');
 const imageRoutes = require('./images/image.route');
 const videoRoutes = require('./videos/video.route');
@@ -23,6 +24,9 @@ app.get('/heyhoai/image/generater/page', (_req, res) => {
 app.get('/heyhoai/character/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'character.html'));
 });
+app.get('/heyhoai/logs/page', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'logs.html'));
+});
 
 // Routes
 app.use('/api/characters', characterRoutes);
@@ -41,7 +45,7 @@ app.get('/health', (_req, res) => {
 app.use(errorHandler);
 
 app.listen(env.PORT, () => {
-  console.log(`Server running on port ${env.PORT}`);
+  log.info(`Running on port ${env.PORT}`);
 });
 
 module.exports = app;

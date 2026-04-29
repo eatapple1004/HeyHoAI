@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { env } = require('../config');
+const log = require('../lib/logger')('DB');
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
@@ -7,7 +8,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected DB pool error:', err);
+  log.error('Pool error:', err.message);
 });
 
 /**
@@ -19,7 +20,7 @@ async function query(text, params) {
   const result = await pool.query(text, params);
   const duration = Date.now() - start;
   if (env.NODE_ENV === 'development') {
-    console.log('[DB]', { text: text.slice(0, 80), duration: `${duration}ms`, rows: result.rowCount });
+    log.debug(text.slice(0, 80), `${duration}ms`, `rows:${result.rowCount}`);
   }
   return result;
 }

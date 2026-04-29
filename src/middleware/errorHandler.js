@@ -1,4 +1,5 @@
 const { ZodError } = require('zod');
+const log = require('../lib/logger')('Error');
 
 function errorHandler(err, _req, res, _next) {
   // Zod 검증 에러
@@ -24,7 +25,7 @@ function errorHandler(err, _req, res, _next) {
 
   // Anthropic API 에러
   if (err.status && err.error) {
-    console.error('[Anthropic API Error]', err.message);
+    log.error('Anthropic API:', err.message);
     return res.status(502).json({
       success: false,
       error: 'AI provider error',
@@ -33,7 +34,7 @@ function errorHandler(err, _req, res, _next) {
   }
 
   // 기타 에러
-  console.error('[Unhandled Error]', err);
+  log.error('Unhandled:', err.message, err.stack?.slice(0, 300));
   res.status(500).json({
     success: false,
     error: 'Internal server error',
