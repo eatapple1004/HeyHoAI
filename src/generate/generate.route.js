@@ -339,7 +339,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         duration,
         mode,
         aspect_ratio: '9:16',
-        ...(enableAudio && { with_audio: true }),
+        ...(enableAudio && { generate_audio: true }),
       };
     } else {
       // Text-to-Video
@@ -351,7 +351,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         duration,
         mode,
         aspect_ratio: '9:16',
-        ...(enableAudio && { with_audio: true }),
+        ...(enableAudio && { generate_audio: true }),
       };
     }
 
