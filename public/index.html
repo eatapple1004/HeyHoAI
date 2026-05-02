@@ -973,7 +973,9 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     }
 
     document.getElementById('reviewPrompt').textContent = item.prompt_text || '-';
+    const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '-';
     document.getElementById('reviewInfo').innerHTML = `
+      <span>${createdAt}</span>
       <span>${item.model || '-'}</span>
       <span>${item.character_name || 'No character'}</span>
       <span>${item.style_preset ? 'Style: ' + item.style_preset : 'No style'}</span>
