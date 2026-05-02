@@ -466,6 +466,11 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       <h2>Generated Images</h2>
       <div class="gallery-controls">
 
+        <select class="sort-select" id="typeFilter" onchange="loadGallery()" style="width:80px;">
+          <option value="">All</option>
+          <option value="image">Image</option>
+          <option value="video">Video</option>
+        </select>
         <select class="sort-select" id="statusFilter" onchange="loadGallery()" style="width:90px;">
           <option value="">All</option>
           <option value="success">Success</option>
@@ -509,8 +514,16 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     <div class="review-panel">
       <h3>Review</h3>
 
+      <div class="review-section" id="reviewRefSection" style="display:none;">
+        <label>Reference Image</label>
+        <img id="reviewRefImg" src="" alt="" style="max-width:100%;max-height:120px;object-fit:contain;border-radius:6px;background:var(--surface2);">
+      </div>
+
       <div class="review-section">
-        <label>Prompt</label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">
+          Prompt
+          <button onclick="copyPrompt()" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--dim);font-size:11px;padding:2px 8px;cursor:pointer;">Copy</button>
+        </label>
         <div class="review-prompt" id="reviewPrompt">-</div>
       </div>
 
@@ -876,8 +889,10 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     try {
       const sort = document.getElementById('sortSelect').value;
       const status = document.getElementById('statusFilter').value;
+      const typeFilter = document.getElementById('typeFilter').value;
       let url = `/api/generate/reviews?sort=${sort}&limit=${galleryLimit}&offset=${galleryOffset}`;
       if (status) url += `&status=${status}`;
+      if (typeFilter) url += `&type=${typeFilter}`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -947,6 +962,16 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     } else {
       document.getElementById('reviewImg').src = '/images/' + filename;
     }
+    // 레퍼런스 이미지
+    const refSection = document.getElementById('reviewRefSection');
+    if (item.reference_image_path) {
+      const refFilename = item.reference_image_path.split('/').pop();
+      document.getElementById('reviewRefImg').src = '/images/' + refFilename;
+      refSection.style.display = 'block';
+    } else {
+      refSection.style.display = 'none';
+    }
+
     document.getElementById('reviewPrompt').textContent = item.prompt_text || '-';
     document.getElementById('reviewInfo').innerHTML = `
       <span>${item.model || '-'}</span>
@@ -982,6 +1007,12 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     }
 
     document.getElementById('reviewModal').classList.add('show');
+  }
+
+  function copyPrompt() {
+    const text = document.getElementById('reviewPrompt').textContent;
+    if (!text || text === '-') return;
+    navigator.clipboard.writeText(text).then(() => showToast('Prompt copied', 'success'));
   }
 
   function closeReview() {

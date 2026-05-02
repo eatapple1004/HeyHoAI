@@ -42,7 +42,7 @@ async function update(idx, fields) {
   return result.rows[0] || null;
 }
 
-async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0 } = {}) {
+async function findAll({ posted, status, type, sort = 'newest', limit = 50, offset = 0 } = {}) {
   const conditions = ['r.active = true'];
   const params = [];
   let i = 1;
@@ -54,6 +54,11 @@ async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0
   if (status) {
     conditions.push(`gr.status = $${i++}`);
     params.push(status);
+  }
+  if (type === 'video') {
+    conditions.push(`gr.file_path LIKE '%.mp4'`);
+  } else if (type === 'image') {
+    conditions.push(`gr.file_path NOT LIKE '%.mp4'`);
   }
 
   const where = 'WHERE ' + conditions.join(' AND ');
@@ -75,7 +80,7 @@ async function findAll({ posted, status, sort = 'newest', limit = 50, offset = 0
   const orderBy = sortMap[sort] || sortMap.newest;
 
   const result = await query(
-    `SELECT r.*, gr.file_path, gr.model, gr.status as result_status, gr.error_message, p.prompt_text, p.style_preset, c.name as character_name
+    `SELECT r.*, gr.file_path, gr.model, gr.status as result_status, gr.error_message, gr.metadata, p.prompt_text, p.style_preset, p.reference_image_path, c.name as character_name
      FROM reviews r
      JOIN generation_results gr ON gr.idx = r.result_idx
      JOIN prompts p ON p.idx = r.prompt_idx
