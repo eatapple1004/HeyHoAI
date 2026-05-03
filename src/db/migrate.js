@@ -319,8 +319,28 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_social_accounts_status ON social_accounts(status);
   `;
 
+  const CREATE_ACCOUNT_MEDIA_TABLE = `
+    CREATE TABLE IF NOT EXISTS account_media (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        account_id      UUID NOT NULL REFERENCES social_accounts(id) ON DELETE CASCADE,
+        file_path       TEXT NOT NULL,
+        media_type      VARCHAR(20) NOT NULL DEFAULT 'image',
+        caption         TEXT,
+        hashtags        TEXT[] DEFAULT '{}',
+        status          VARCHAR(20) NOT NULL DEFAULT 'ready',
+        posted_at       TIMESTAMPTZ,
+        post_url        TEXT,
+        metadata        JSONB DEFAULT '{}',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_account_media_account ON account_media(account_id);
+    CREATE INDEX IF NOT EXISTS idx_account_media_status ON account_media(status);
+  `;
+
   console.log('Running migrations...');
   await pool.query(CREATE_SOCIAL_ACCOUNTS_TABLE);
+  await pool.query(CREATE_ACCOUNT_MEDIA_TABLE);
   await pool.query(CREATE_CHARACTERS_TABLE);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);

@@ -59,6 +59,32 @@
     color: var(--dim); font-size: 13px; padding: 20px 0; text-align: center;
   }
 
+  .media-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
+  }
+  .media-item {
+    position: relative; border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; background: var(--surface2);
+  }
+  .media-item img, .media-item video {
+    width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block;
+  }
+  .media-item .media-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 6px 8px; background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .media-item .media-status {
+    font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px;
+  }
+  .media-status-ready { background: rgba(0,184,148,0.2); color: var(--green); }
+  .media-status-posted { background: rgba(108,92,231,0.2); color: var(--accent2); }
+  .media-item .media-delete {
+    background: none; border: none; color: var(--red); font-size: 14px;
+    cursor: pointer; opacity: 0.7; transition: opacity 0.2s;
+  }
+  .media-item .media-delete:hover { opacity: 1; }
+
   .toast { position: fixed; bottom: 20px; right: 20px; z-index: 300; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .toast.success { background: var(--green); color: white; }
@@ -84,7 +110,21 @@
     <div style="color:var(--dim);">Loading...</div>
   </div>
 
-  <!-- 관리 섹션들 - 여기에 순차적으로 추가 -->
+  <!-- Media Gallery -->
+  <div class="section-card">
+    <h3 style="display:flex;justify-content:space-between;align-items:center;">
+      Media
+      <label style="padding:6px 14px;background:var(--accent);border-radius:6px;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+        Upload
+        <input type="file" accept="image/*,video/mp4" multiple style="display:none;" onchange="uploadFiles(this.files)">
+      </label>
+    </h3>
+    <div class="media-grid" id="mediaGrid">
+      <div class="placeholder">No media yet. Upload or register from Generate page.</div>
+    </div>
+  </div>
+
+  <!-- Coming Soon -->
   <div class="section-card">
     <h3>Quick Post</h3>
     <div class="placeholder">Coming soon</div>
@@ -97,11 +137,6 @@
 
   <div class="section-card">
     <h3>Post History</h3>
-    <div class="placeholder">Coming soon</div>
-  </div>
-
-  <div class="section-card">
-    <h3>Settings</h3>
     <div class="placeholder">Coming soon</div>
   </div>
 </div>
@@ -155,7 +190,80 @@
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
 
+  async function loadMedia() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/media');
+      const data = await res.json();
+      const grid = document.getElementById('mediaGrid');
+
+      if (!data.success || !data.data || data.data.length === 0) {
+        grid.innerHTML = '<div class="placeholder">No media yet. Upload or register from Generate page.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      data.data.forEach(m => {
+        const filename = m.file_path?.split('/').pop();
+        const isVideo = m.media_type === 'video';
+        const statusClass = m.status === 'posted' ? 'media-status-posted' : 'media-status-ready';
+        const div = document.createElement('div');
+        div.className = 'media-item';
+        div.innerHTML = `
+          ${isVideo
+            ? '<video src="/images/' + filename + '" muted loop onmouseenter="this.play()" onmouseleave="this.pause()"></video>'
+            : '<img src="/images/' + filename + '" alt="" loading="lazy">'}
+          <div class="media-overlay">
+            <span class="media-status ${statusClass}">${m.status}</span>
+            <button class="media-delete" onclick="deleteMedia('${m.id}')" title="Delete">&times;</button>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    } catch (e) {
+      console.error('Failed to load media:', e);
+    }
+  }
+
+  async function uploadFiles(files) {
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/accounts/' + accountId + '/media/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Uploaded: ' + file.name, 'success');
+        } else {
+          showToast(data.error || 'Upload failed', 'error');
+        }
+      } catch (e) {
+        showToast('Upload error', 'error');
+      }
+    }
+    loadMedia();
+  }
+
+  async function deleteMedia(mediaId) {
+    if (!confirm('Delete this media?')) return;
+    try {
+      const res = await fetch('/api/accounts/media/' + mediaId, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Deleted', 'success');
+        loadMedia();
+      } else {
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      showToast('Error', 'error');
+    }
+  }
+
   loadAccount();
+  loadMedia();
 </script>
 </body>
 </html>

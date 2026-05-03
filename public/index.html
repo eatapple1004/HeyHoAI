@@ -594,6 +594,14 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
         <textarea class="review-memo" id="reviewMemo" placeholder="Add notes..."></textarea>
       </div>
 
+      <div class="review-section" id="registerSection" style="display:none;">
+        <label>Register to Account</label>
+        <div style="display:flex;gap:6px;">
+          <select class="sort-select" id="registerAccountSelect" style="flex:1;"></select>
+          <button onclick="registerToAccount()" style="padding:6px 14px;background:var(--accent);border:none;border-radius:6px;color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Register</button>
+        </div>
+      </div>
+
       <div class="review-btn-group">
         <button class="review-save-btn" style="flex:2;" onclick="saveReview()">Save Review</button>
         <a class="review-download-btn" id="downloadBtn" href="" download>Download</a>
@@ -1029,7 +1037,64 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       dlBtn.download = filename;
     }
 
+    // Register section (성공한 결과물만)
+    const regSection = document.getElementById('registerSection');
+    if (item.result_status !== 'failed' && item.file_path) {
+      regSection.style.display = 'block';
+      loadAccountsForRegister();
+    } else {
+      regSection.style.display = 'none';
+    }
+
     document.getElementById('reviewModal').classList.add('show');
+  }
+
+  // ── Register to Account ──
+  let accountsForRegister = [];
+
+  async function loadAccountsForRegister() {
+    try {
+      const res = await fetch('/api/accounts?status=active');
+      const data = await res.json();
+      accountsForRegister = data.success ? data.data : [];
+      const sel = document.getElementById('registerAccountSelect');
+      sel.innerHTML = '';
+      if (accountsForRegister.length === 0) {
+        sel.innerHTML = '<option value="">No accounts</option>';
+        return;
+      }
+      accountsForRegister.forEach(acc => {
+        const opt = document.createElement('option');
+        opt.value = acc.id;
+        opt.textContent = `${acc.platform} - @${acc.username || acc.display_name}`;
+        sel.appendChild(opt);
+      });
+    } catch (e) {}
+  }
+
+  async function registerToAccount() {
+    if (!currentReview) return;
+    const accountId = document.getElementById('registerAccountSelect').value;
+    if (!accountId) { showToast('Select an account', 'error'); return; }
+
+    const filePath = currentReview.file_path;
+    const mediaType = filePath?.endsWith('.mp4') ? 'video' : 'image';
+
+    try {
+      const res = await fetch(`/api/accounts/${accountId}/media/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath, mediaType }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Registered to account', 'success');
+      } else {
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      showToast('Error: ' + e.message, 'error');
+    }
   }
 
   function copyPrompt() {

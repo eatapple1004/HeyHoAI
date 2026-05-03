@@ -1,10 +1,23 @@
 const { Router } = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const accountRepo = require('./account.repository');
+const mediaRepo = require('./accountMedia.repository');
 const zernio = require('./zernio.client');
 const logger = require('../lib/logger');
 const log = logger('Account');
 
 const router = Router();
+
+const uploadDir = path.join(process.cwd(), 'tmp', 'images');
+fs.mkdirSync(uploadDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (_req, file, cb) => cb(null, `${crypto.randomUUID()}${path.extname(file.originalname)}`),
+});
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 /**
  * GET /api/accounts/sync
@@ -94,6 +107,101 @@ router.delete('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// ══════════════════════════════════════
+// Account Media
+// ══════════════════════════════════════
+
+/**
+ * GET /api/accounts/:id/media
+ */
+router.get('/:id/media', async (req, res, next) => {
+  try {
+    const { status, limit, offset } = req.query;
+    const media = await mediaRepo.findByAccountId(req.params.id, {
+      status: status || undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+    const count = await mediaRepo.countByAccountId(req.params.id);
+    res.json({ success: true, data: media, total: count });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/accounts/:id/media/upload
+ * 이미지 직접 업로드
+ */
+router.post('/:id/media/upload', upload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'File is required' });
+    const account = await accountRepo.findById(req.params.id);
+    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
+
+    const filename = req.file.filename;
+    const mediaType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+    const { caption, hashtags } = req.body;
+
+    const media = await mediaRepo.insert({
+      accountId: req.params.id,
+      filePath: `tmp/images/${filename}`,
+      mediaType,
+      caption: caption || null,
+      hashtags: hashtags ? JSON.parse(hashtags) : [],
+    });
+
+    log.info(`Media uploaded: ${filename} → account ${account.username}`);
+    res.status(201).json({ success: true, data: media });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/accounts/:id/media/register
+ * Generate 페이지에서 기존 이미지를 계정에 등록
+ */
+router.post('/:id/media/register', async (req, res, next) => {
+  try {
+    const { filePath, mediaType, caption, hashtags } = req.body;
+    if (!filePath) return res.status(400).json({ success: false, error: 'filePath is required' });
+
+    const account = await accountRepo.findById(req.params.id);
+    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
+
+    const media = await mediaRepo.insert({
+      accountId: req.params.id,
+      filePath,
+      mediaType: mediaType || 'image',
+      caption: caption || null,
+      hashtags: hashtags || [],
+    });
+
+    log.info(`Media registered: ${filePath} → account ${account.username}`);
+    res.status(201).json({ success: true, data: media });
+  } catch (err) { next(err); }
+});
+
+/**
+ * PATCH /api/accounts/media/:mediaId
+ */
+router.patch('/media/:mediaId', async (req, res, next) => {
+  try {
+    const { caption, hashtags, status } = req.body;
+    const media = await mediaRepo.update(req.params.mediaId, { caption, hashtags, status });
+    if (!media) return res.status(404).json({ success: false, error: 'Media not found' });
+    res.json({ success: true, data: media });
+  } catch (err) { next(err); }
+});
+
+/**
+ * DELETE /api/accounts/media/:mediaId
+ */
+router.delete('/media/:mediaId', async (req, res, next) => {
+  try {
+    const media = await mediaRepo.remove(req.params.mediaId);
+    if (!media) return res.status(404).json({ success: false, error: 'Media not found' });
+    res.json({ success: true, data: media });
+  } catch (err) { next(err); }
 });
 
 module.exports = router;
