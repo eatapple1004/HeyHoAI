@@ -464,33 +464,49 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   <div class="gallery-panel">
     <div class="gallery-header">
       <h2>Generated Images</h2>
-      <div class="gallery-controls">
-
-        <select class="sort-select" id="typeFilter" onchange="loadGallery()" style="width:80px;">
-          <option value="">All</option>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-        </select>
-        <select class="sort-select" id="statusFilter" onchange="loadGallery()" style="width:90px;">
-          <option value="">All</option>
-          <option value="success">Success</option>
-          <option value="failed">Failed</option>
-        </select>
-        <select class="sort-select" id="sortSelect" onchange="loadGallery()">
-          <option value="newest">Latest</option>
-          <option value="oldest">Oldest</option>
-          <option value="natural_high">Natural (High)</option>
-          <option value="natural_low">Natural (Low)</option>
-          <option value="sexual_high">Sexual (High)</option>
-          <option value="sexual_low">Sexual (Low)</option>
-          <option value="postrate_high">Post Rate (High)</option>
-          <option value="postrate_low">Post Rate (Low)</option>
-          <option value="posted_first">Posted First</option>
-          <option value="unposted_first">Unposted First</option>
-          <option value="hook_high">Hook Level (High)</option>
-          <option value="hook_low">Hook Level (Low)</option>
-        </select>
-        <span class="gallery-count" id="galleryCount"></span>
+      <div class="gallery-controls" style="flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;">Type</span>
+          <select class="sort-select" id="typeFilter" onchange="loadGallery()" style="width:80px;">
+            <option value="">All</option>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;">Status</span>
+          <select class="sort-select" id="statusFilter" onchange="loadGallery()" style="width:90px;">
+            <option value="">All</option>
+            <option value="success">Success</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;">Review</span>
+          <select class="sort-select" id="reviewFilter" onchange="loadGallery()" style="width:100px;">
+            <option value="">All</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="unreviewed">Unreviewed</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;">Sort</span>
+          <select class="sort-select" id="sortSelect" onchange="loadGallery()">
+            <option value="newest">Latest</option>
+            <option value="oldest">Oldest</option>
+            <option value="natural_high">Natural (High)</option>
+            <option value="natural_low">Natural (Low)</option>
+            <option value="sexual_high">Sexual (High)</option>
+            <option value="sexual_low">Sexual (Low)</option>
+            <option value="postrate_high">Post Rate (High)</option>
+            <option value="postrate_low">Post Rate (Low)</option>
+            <option value="posted_first">Posted First</option>
+            <option value="unposted_first">Unposted First</option>
+            <option value="hook_high">Hook Level (High)</option>
+            <option value="hook_low">Hook Level (Low)</option>
+          </select>
+        </div>
+        <span class="gallery-count" id="galleryCount" style="align-self:flex-end;"></span>
       </div>
     </div>
     <div class="gallery-grid" id="galleryGrid"></div>
@@ -892,9 +908,11 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       const sort = document.getElementById('sortSelect').value;
       const status = document.getElementById('statusFilter').value;
       const typeFilter = document.getElementById('typeFilter').value;
+      const reviewFilter = document.getElementById('reviewFilter').value;
       let url = `/api/generate/reviews?sort=${sort}&limit=${galleryLimit}&offset=${galleryOffset}`;
       if (status) url += `&status=${status}`;
       if (typeFilter) url += `&type=${typeFilter}`;
+      if (reviewFilter) url += `&reviewed=${reviewFilter}`;
       const res = await fetch(url);
       const data = await res.json();
 

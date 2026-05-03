@@ -42,7 +42,7 @@ async function update(idx, fields) {
   return result.rows[0] || null;
 }
 
-async function findAll({ posted, status, type, sort = 'newest', limit = 50, offset = 0 } = {}) {
+async function findAll({ posted, status, type, reviewed, sort = 'newest', limit = 50, offset = 0 } = {}) {
   const conditions = ['r.active = true'];
   const params = [];
   let i = 1;
@@ -59,6 +59,11 @@ async function findAll({ posted, status, type, sort = 'newest', limit = 50, offs
     conditions.push(`gr.file_path LIKE '%.mp4'`);
   } else if (type === 'image') {
     conditions.push(`gr.file_path NOT LIKE '%.mp4'`);
+  }
+  if (reviewed === 'reviewed') {
+    conditions.push(`(r.natural_score > 0 OR r.sexual_score > 0 OR r.post_rate > 0 OR r.hook_level > 0 OR r.memo IS NOT NULL)`);
+  } else if (reviewed === 'unreviewed') {
+    conditions.push(`r.natural_score = 0 AND r.sexual_score = 0 AND r.post_rate = 0 AND r.hook_level = 0 AND r.memo IS NULL`);
   }
 
   const where = 'WHERE ' + conditions.join(' AND ');

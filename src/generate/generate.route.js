@@ -277,11 +277,12 @@ router.get('/results', async (req, res, next) => {
 // ─── 리뷰 목록 ───
 router.get('/reviews', async (req, res, next) => {
   try {
-    const { posted, status, type, sort, limit, offset } = req.query;
+    const { posted, status, type, reviewed, sort, limit, offset } = req.query;
     const data = await reviewRepo.findAll({
       posted: posted !== undefined ? posted === 'true' : undefined,
       status: status || undefined,
       type: type || undefined,
+      reviewed: reviewed || undefined,
       sort: sort || 'newest',
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
