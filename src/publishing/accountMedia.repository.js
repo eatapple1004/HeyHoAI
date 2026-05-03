@@ -60,4 +60,23 @@ async function countByAccountId(accountId) {
   return parseInt(result.rows[0].count, 10);
 }
 
-module.exports = { insert, findByAccountId, findById, update, remove, countByAccountId };
+async function setBase(accountId, mediaId) {
+  // 기존 base 해제
+  await query('UPDATE account_media SET is_base = false WHERE account_id = $1 AND is_base = true', [accountId]);
+  // 새 base 설정
+  const result = await query(
+    'UPDATE account_media SET is_base = true, updated_at = now() WHERE id = $1 AND account_id = $2 RETURNING *',
+    [mediaId, accountId]
+  );
+  return result.rows[0] || null;
+}
+
+async function findBase(accountId) {
+  const result = await query(
+    'SELECT * FROM account_media WHERE account_id = $1 AND is_base = true LIMIT 1',
+    [accountId]
+  );
+  return result.rows[0] || null;
+}
+
+module.exports = { insert, findByAccountId, findById, update, remove, countByAccountId, setBase, findBase };

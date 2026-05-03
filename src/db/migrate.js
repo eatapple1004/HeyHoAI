@@ -338,9 +338,27 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_account_media_status ON account_media(status);
   `;
 
+  const CREATE_REEL_TEMPLATES_TABLE = `
+    CREATE TABLE IF NOT EXISTS reel_templates (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        account_id      UUID NOT NULL REFERENCES social_accounts(id) ON DELETE CASCADE,
+        name            VARCHAR(200) NOT NULL,
+        prompt          TEXT NOT NULL,
+        duration        VARCHAR(10) DEFAULT '5',
+        mode            VARCHAR(10) DEFAULT 'std',
+        source_media_id UUID REFERENCES account_media(id),
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_reel_templates_account ON reel_templates(account_id);
+  `;
+
   console.log('Running migrations...');
   await pool.query(CREATE_SOCIAL_ACCOUNTS_TABLE);
   await pool.query(CREATE_ACCOUNT_MEDIA_TABLE);
+  await pool.query(CREATE_REEL_TEMPLATES_TABLE);
+
+  // account_media에 is_base 컬럼 추가
+  await pool.query(`ALTER TABLE account_media ADD COLUMN IF NOT EXISTS is_base BOOLEAN DEFAULT false;`);
   await pool.query(CREATE_CHARACTERS_TABLE);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
