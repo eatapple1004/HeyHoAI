@@ -24,6 +24,9 @@ const envSchema = z.object({
   KLING_MODEL: z.string().default('kling-v3'),
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
+
+  // Publishing (Zernio)
+  ZERNIO_API_KEY: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);
