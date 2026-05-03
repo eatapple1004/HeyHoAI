@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - Accounts</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--accent2); }
+  header nav { display: flex; gap: 16px; }
+  header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+  header nav a:hover, header nav a.active { color: var(--accent2); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .top-bar h2 { font-size: 18px; font-weight: 700; }
+  .sync-btn {
+    padding: 10px 20px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #a29bfe);
+    color: white; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+  }
+  .sync-btn:hover { opacity: 0.9; }
+  .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .info-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: var(--dim); line-height: 1.6;
+  }
+  .info-box a { color: var(--accent2); }
+
+  .account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+  .account-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; transition: border-color 0.2s;
+  }
+  .account-card:hover { border-color: var(--accent); }
+  .account-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .account-avatar {
+    width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+    background: var(--surface2); border: 2px solid var(--border);
+  }
+  .account-info { flex: 1; }
+  .account-name { font-size: 15px; font-weight: 700; }
+  .account-username { font-size: 12px; color: var(--dim); margin-top: 2px; }
+  .account-platform {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+  }
+  .platform-instagram { background: rgba(225,48,108,0.15); color: #e1306c; }
+  .platform-tiktok { background: rgba(0,0,0,0.15); color: #fff; }
+  .platform-youtube { background: rgba(255,0,0,0.15); color: #ff0000; }
+  .platform-twitter { background: rgba(29,161,242,0.15); color: #1da1f2; }
+  .platform-default { background: rgba(108,92,231,0.15); color: var(--accent2); }
+
+  .account-stats { display: flex; gap: 16px; margin: 12px 0; font-size: 12px; color: var(--dim); }
+  .account-stats .stat-value { font-weight: 700; color: var(--text); }
+
+  .account-status {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600;
+  }
+  .status-active { background: rgba(0,184,148,0.15); color: var(--green); }
+  .status-paused { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .status-disabled { background: rgba(255,118,117,0.15); color: var(--red); }
+
+  .account-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .acc-btn {
+    flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface2); color: var(--dim); font-size: 12px;
+    cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .acc-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .acc-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+  .empty { color: var(--dim); font-size: 14px; padding: 60px; text-align: center; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 300; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); color: white; }
+  .toast.error { background: var(--red); color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HeyHoAI</h1>
+  <nav>
+    <a href="/heyhoai/image/generater/page">Image Generator</a>
+    <a href="/heyhoai/character/page">Characters</a>
+    <a href="/heyhoai/accounts/page" class="active">Accounts</a>
+    <a href="/heyhoai/logs/page">Logs</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="top-bar">
+    <h2>Social Accounts</h2>
+    <button class="sync-btn" id="syncBtn" onclick="syncAccounts()">Sync from Zernio</button>
+  </div>
+
+  <div class="info-box">
+    Zernio 대시보드에서 인스타그램 계정을 먼저 연결한 후 "Sync from Zernio" 버튼을 눌러 동기화하세요.<br>
+    <a href="https://zernio.com/dashboard" target="_blank">Zernio Dashboard</a>
+  </div>
+
+  <div class="account-grid" id="accountGrid">
+    <div class="empty">Loading...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function platformClass(platform) {
+    const map = { instagram: 'platform-instagram', tiktok: 'platform-tiktok', youtube: 'platform-youtube', twitter: 'platform-twitter' };
+    return map[platform] || 'platform-default';
+  }
+
+  function statusClass(status) {
+    const map = { active: 'status-active', paused: 'status-paused', disabled: 'status-disabled' };
+    return map[status] || 'status-active';
+  }
+
+  function formatFollowers(n) {
+    if (!n) return '0';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  async function loadAccounts() {
+    try {
+      const res = await fetch('/api/accounts');
+      const data = await res.json();
+      const grid = document.getElementById('accountGrid');
+
+      if (!data.success || !data.data || data.data.length === 0) {
+        grid.innerHTML = '<div class="empty">No accounts yet. Connect accounts in Zernio Dashboard, then click "Sync from Zernio".</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      data.data.forEach(acc => {
+        const card = document.createElement('div');
+        card.className = 'account-card';
+        card.innerHTML = `
+          <div class="account-card-header">
+            ${acc.profile_image
+              ? '<img class="account-avatar" src="' + acc.profile_image + '" alt="">'
+              : '<div class="account-avatar" style="display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--dim);">' + (acc.platform?.[0]?.toUpperCase() || '?') + '</div>'}
+            <div class="account-info">
+              <div class="account-name">${acc.display_name || acc.username || 'Unknown'}</div>
+              <div class="account-username">@${acc.username || acc.account_id}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="account-platform ${platformClass(acc.platform)}">${acc.platform}</span>
+            <span class="account-status ${statusClass(acc.status)}">${acc.status}</span>
+          </div>
+          <div class="account-stats">
+            <div>Followers <span class="stat-value">${formatFollowers(acc.followers)}</span></div>
+            <div>Added <span class="stat-value">${new Date(acc.created_at).toLocaleDateString('ko-KR')}</span></div>
+          </div>
+          <div class="account-actions">
+            <button class="acc-btn" onclick="toggleStatus('${acc.id}', '${acc.status}')">
+              ${acc.status === 'active' ? 'Pause' : 'Activate'}
+            </button>
+            <button class="acc-btn danger" onclick="removeAccount('${acc.id}', '${acc.display_name || acc.username}')">Remove</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    } catch (e) {
+      console.error('Failed to load accounts:', e);
+    }
+  }
+
+  async function syncAccounts() {
+    const btn = document.getElementById('syncBtn');
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+    try {
+      const res = await fetch('/api/accounts/sync', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.synced + ' accounts synced', 'success');
+        loadAccounts();
+      } else {
+        showToast(data.error || 'Sync failed', 'error');
+      }
+    } catch (e) {
+      showToast('Network error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sync from Zernio';
+    }
+  }
+
+  async function toggleStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+    try {
+      const res = await fetch('/api/accounts/' + id + '/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Status changed to ' + newStatus, 'success');
+        loadAccounts();
+      } else {
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      showToast('Error', 'error');
+    }
+  }
+
+  async function removeAccount(id, name) {
+    if (!confirm('Remove account "' + name + '"?')) return;
+    try {
+      const res = await fetch('/api/accounts/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Account removed', 'success');
+        loadAccounts();
+      } else {
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      showToast('Error', 'error');
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + type + ' show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  loadAccounts();
+</script>
+</body>
+</html>

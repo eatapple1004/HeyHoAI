@@ -8,6 +8,7 @@ const videoRoutes = require('./videos/video.route');
 const publishingRoutes = require('./publishing/publishing.route');
 const visualRoutes = require('./visuals/visual.route');
 const generateRoutes = require('./generate/generate.route');
+const accountRoutes = require('./publishing/account.route');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -27,6 +28,9 @@ app.get('/heyhoai/character/page', (_req, res) => {
 app.get('/heyhoai/logs/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'logs.html'));
 });
+app.get('/heyhoai/accounts/page', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'accounts.html'));
+});
 
 // Routes
 app.use('/api/characters', characterRoutes);
@@ -35,6 +39,7 @@ app.use('/api', videoRoutes);
 app.use('/api', publishingRoutes);
 app.use('/api', visualRoutes);
 app.use('/api/generate', generateRoutes);
+app.use('/api/accounts', accountRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

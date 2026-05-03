@@ -300,7 +300,27 @@ ON CONFLICT (category_id, key) DO NOTHING;
 `;
 
 async function migrate() {
+  const CREATE_SOCIAL_ACCOUNTS_TABLE = `
+    CREATE TABLE IF NOT EXISTS social_accounts (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        platform        VARCHAR(30) NOT NULL,
+        account_id      VARCHAR(200) NOT NULL,
+        username        VARCHAR(200),
+        display_name    VARCHAR(200),
+        profile_image   TEXT,
+        followers       INT DEFAULT 0,
+        status          VARCHAR(20) NOT NULL DEFAULT 'active',
+        metadata        JSONB DEFAULT '{}',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(platform, account_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_social_accounts_platform ON social_accounts(platform);
+    CREATE INDEX IF NOT EXISTS idx_social_accounts_status ON social_accounts(status);
+  `;
+
   console.log('Running migrations...');
+  await pool.query(CREATE_SOCIAL_ACCOUNTS_TABLE);
   await pool.query(CREATE_CHARACTERS_TABLE);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
