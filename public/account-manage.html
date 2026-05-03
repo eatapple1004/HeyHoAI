@@ -144,7 +144,13 @@
 
   <!-- 1. Base Photo -->
   <div class="section-card">
-    <h3>1. Base Photo</h3>
+    <h3 style="display:flex;justify-content:space-between;align-items:center;">
+      1. Base Photo
+      <label style="padding:6px 14px;background:var(--accent);border-radius:6px;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+        Upload Base Photo
+        <input type="file" accept="image/*" style="display:none;" onchange="uploadBasePhoto(this.files[0])">
+      </label>
+    </h3>
     <div id="basePhotoArea">
       <div class="placeholder">Loading...</div>
     </div>
@@ -289,7 +295,7 @@
         <div class="base-photo-display">
           <div class="no-base">No base photo</div>
           <div>
-            <div style="font-size:13px;color:var(--dim);">Upload a photo or select from media below, then set as base.</div>
+            <div style="font-size:13px;color:var(--dim);">Upload Base Photo 버튼으로 사진을 올리거나,<br>All Media에서 ★ 버튼으로 지정하세요.</div>
           </div>
         </div>`;
     }
@@ -308,6 +314,24 @@
       loadMedia();
     } else {
       showToast(data.error || 'Failed', 'error');
+    }
+  }
+
+  async function uploadBasePhoto(file) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/media/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        await setAsBase(data.data.id);
+        loadMedia();
+      } else {
+        showToast(data.error || 'Upload failed', 'error');
+      }
+    } catch (e) {
+      showToast('Upload error', 'error');
     }
   }
 
