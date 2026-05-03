@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - Account Management</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--accent2); }
+  header nav { display: flex; gap: 16px; }
+  header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+  header nav a:hover, header nav a.active { color: var(--accent2); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; transition: color 0.2s; }
+  .back-link:hover { color: var(--accent2); }
+
+  .account-header {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;
+  }
+  .account-header .avatar {
+    width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+    background: var(--surface2); border: 2px solid var(--border);
+  }
+  .account-header .info { flex: 1; }
+  .account-header .name { font-size: 20px; font-weight: 700; }
+  .account-header .username { font-size: 13px; color: var(--dim); margin-top: 4px; }
+  .account-header .badges { display: flex; gap: 8px; margin-top: 8px; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+  }
+  .badge-platform { background: rgba(225,48,108,0.15); color: #e1306c; }
+  .badge-status-active { background: rgba(0,184,148,0.15); color: var(--green); }
+  .badge-status-paused { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .badge-status-disabled { background: rgba(255,118,117,0.15); color: var(--red); }
+  .account-header .stats { font-size: 12px; color: var(--dim); margin-top: 8px; }
+  .account-header .stats strong { color: var(--text); }
+
+  .section-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 16px;
+  }
+  .section-card h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent2); margin-bottom: 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .section-card .placeholder {
+    color: var(--dim); font-size: 13px; padding: 20px 0; text-align: center;
+  }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 300; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); color: white; }
+  .toast.error { background: var(--red); color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HeyHoAI</h1>
+  <nav>
+    <a href="/heyhoai/image/generater/page">Image Generator</a>
+    <a href="/heyhoai/character/page">Characters</a>
+    <a href="/heyhoai/accounts/page" class="active">Accounts</a>
+    <a href="/heyhoai/logs/page">Logs</a>
+  </nav>
+</header>
+
+<div class="container">
+  <a class="back-link" href="/heyhoai/accounts/page">&larr; Back to Accounts</a>
+
+  <div class="account-header" id="accountHeader">
+    <div style="color:var(--dim);">Loading...</div>
+  </div>
+
+  <!-- 관리 섹션들 - 여기에 순차적으로 추가 -->
+  <div class="section-card">
+    <h3>Quick Post</h3>
+    <div class="placeholder">Coming soon</div>
+  </div>
+
+  <div class="section-card">
+    <h3>Scheduled Posts</h3>
+    <div class="placeholder">Coming soon</div>
+  </div>
+
+  <div class="section-card">
+    <h3>Post History</h3>
+    <div class="placeholder">Coming soon</div>
+  </div>
+
+  <div class="section-card">
+    <h3>Settings</h3>
+    <div class="placeholder">Coming soon</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const accountId = window.location.pathname.split('/')[3];
+
+  async function loadAccount() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId);
+      const data = await res.json();
+      if (!data.success) {
+        document.getElementById('accountHeader').innerHTML = '<div style="color:var(--red);">Account not found</div>';
+        return;
+      }
+      const acc = data.data;
+      document.title = `HeyHoAI - ${acc.display_name || acc.username}`;
+
+      const statusClass = acc.status === 'active' ? 'badge-status-active'
+        : acc.status === 'paused' ? 'badge-status-paused' : 'badge-status-disabled';
+
+      document.getElementById('accountHeader').innerHTML = `
+        ${acc.profile_image
+          ? '<img class="avatar" src="' + acc.profile_image + '" alt="">'
+          : '<div class="avatar" style="display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--dim);">' + (acc.platform?.[0]?.toUpperCase() || '?') + '</div>'}
+        <div class="info">
+          <div class="name">${acc.display_name || acc.username || 'Unknown'}</div>
+          <div class="username">@${acc.username || acc.account_id}</div>
+          <div class="badges">
+            <span class="badge badge-platform">${acc.platform}</span>
+            <span class="badge ${statusClass}">${acc.status}</span>
+          </div>
+          <div class="stats">
+            Followers <strong>${acc.followers?.toLocaleString() || 0}</strong>
+            &nbsp;&middot;&nbsp;
+            Added <strong>${new Date(acc.created_at).toLocaleDateString('ko-KR')}</strong>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      document.getElementById('accountHeader').innerHTML = '<div style="color:var(--red);">Failed to load account</div>';
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + type + ' show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  loadAccount();
+</script>
+</body>
+</html>

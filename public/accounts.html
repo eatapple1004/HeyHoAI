@@ -172,6 +172,7 @@
             <div>Added <span class="stat-value">${new Date(acc.created_at).toLocaleDateString('ko-KR')}</span></div>
           </div>
           <div class="account-actions">
+            <a class="acc-btn" href="/heyhoai/accounts/${acc.id}/manage" style="text-decoration:none;font-weight:600;background:rgba(108,92,231,0.1);border-color:var(--accent);color:var(--accent2);">Manage</a>
             <button class="acc-btn" onclick="toggleStatus('${acc.id}', '${acc.status}')">
               ${acc.status === 'active' ? 'Pause' : 'Activate'}
             </button>
