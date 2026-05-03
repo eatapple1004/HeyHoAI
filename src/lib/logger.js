@@ -7,14 +7,21 @@ fs.mkdirSync(LOG_DIR, { recursive: true });
 const LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
 const LOG_LEVEL = LEVELS[(process.env.LOG_LEVEL || 'debug').toLowerCase()] || 0;
 
-// 날짜별 로그 파일 (YYYY-MM-DD.log)
+// 한국 시간(KST, UTC+9) 기준
+function toKST(date) {
+  return new Date(date.getTime() + 9 * 60 * 60 * 1000);
+}
+
+// 날짜별 로그 파일 (YYYY-MM-DD.log, KST 기준)
 function getLogFile() {
-  const date = new Date().toISOString().slice(0, 10);
+  const kst = toKST(new Date());
+  const date = kst.toISOString().slice(0, 10);
   return path.join(LOG_DIR, `${date}.log`);
 }
 
 function timestamp() {
-  return new Date().toISOString();
+  const kst = toKST(new Date());
+  return kst.toISOString().replace('Z', '+09:00');
 }
 
 function formatArgs(args) {
