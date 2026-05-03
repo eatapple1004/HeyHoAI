@@ -435,7 +435,7 @@
     </div>
 
     <!-- Count -->
-    <div class="section">
+    <div class="section" id="countSection">
       <h2>6. Count</h2>
       <div class="count-group">
         <div class="count-btn active" data-count="1" onclick="selectCount(this)">1</div>
@@ -607,7 +607,9 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     const isVideo = selectedMode === 'video';
     document.getElementById('modelSection').style.display = isVideo ? 'none' : 'block';
     document.getElementById('videoSection').style.display = isVideo ? 'block' : 'none';
+    document.getElementById('countSection').style.display = isVideo ? 'none' : 'block';
     document.getElementById('generateBtn').textContent = isVideo ? 'Generate Video' : 'Generate Image';
+    if (isVideo) { selectedCount = 1; document.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('active', b.dataset.count === '1')); }
   }
 
   function selectDuration(el) {
