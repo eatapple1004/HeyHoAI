@@ -1034,7 +1034,18 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   function copyPrompt() {
     const text = document.getElementById('reviewPrompt').textContent;
     if (!text || text === '-') return;
-    navigator.clipboard.writeText(text).then(() => showToast('Prompt copied', 'success'));
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => showToast('Prompt copied', 'success'));
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Prompt copied', 'success');
+    }
   }
 
   function closeReview() {
