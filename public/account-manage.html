@@ -91,6 +91,16 @@
   }
   .media-select-item.selected .check-mark { display: flex; }
 
+  .status-btn {
+    flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface2); color: var(--dim); font-size: 11px; font-weight: 600;
+    cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .status-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .status-btn.active-ready { border-color: var(--dim); color: var(--text); background: rgba(136,136,160,0.15); }
+  .status-btn.active-to_post { border-color: var(--orange); color: var(--orange); background: rgba(253,203,110,0.15); }
+  .status-btn.active-posted { border-color: var(--green); color: var(--green); background: rgba(0,184,148,0.15); }
+
   .media-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
   }
@@ -214,7 +224,25 @@
     <button onclick="runBatchReels()" class="action-btn" id="batchBtn">Generate Batch Reels</button>
   </div>
 
-  <!-- 5. All Media -->
+  <!-- 5. Post Queue -->
+  <div class="section-card">
+    <h3 style="display:flex;justify-content:space-between;align-items:center;">
+      5. Post Queue
+      <span style="font-size:12px;color:var(--dim);font-weight:400;" id="postQueueCount"></span>
+    </h3>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <select class="form-select" id="postQueueFilter" onchange="loadPostQueue()" style="width:120px;">
+        <option value="to_post">To Post</option>
+        <option value="posted">Posted</option>
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="media-grid" id="postQueueGrid">
+      <div class="placeholder">No items in queue</div>
+    </div>
+  </div>
+
+  <!-- 6. All Media -->
   <div class="section-card">
     <h3 style="display:flex;justify-content:space-between;align-items:center;">
       All Media
@@ -230,11 +258,47 @@
 </div>
 
 <!-- Preview Modal -->
-<div id="previewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:200;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:12px;">
-  <button onclick="closePreview()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:white;font-size:28px;cursor:pointer;">&times;</button>
-  <img id="previewImg" src="" style="display:none;max-width:90vw;max-height:80vh;object-fit:contain;border-radius:8px;">
-  <video id="previewVideo" src="" controls style="display:none;max-width:90vw;max-height:80vh;border-radius:8px;"></video>
-  <div id="previewInfo" style="font-size:12px;color:var(--dim);text-align:center;max-width:500px;"></div>
+<div id="previewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:200;align-items:center;justify-content:center;padding:20px;">
+  <button onclick="closePreview()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:white;font-size:28px;cursor:pointer;z-index:210;">&times;</button>
+  <div style="display:grid;grid-template-columns:1fr 300px;max-width:1000px;width:100%;max-height:90vh;background:var(--surface);border-radius:12px;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:center;background:var(--bg);padding:16px;overflow:hidden;">
+      <img id="previewImg" src="" style="display:none;max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;">
+      <video id="previewVideo" src="" controls style="display:none;max-width:100%;max-height:80vh;border-radius:8px;"></video>
+    </div>
+    <div style="padding:20px;overflow-y:auto;border-left:1px solid var(--border);">
+      <h3 style="font-size:15px;font-weight:700;color:var(--accent2);margin-bottom:16px;">Media Info</h3>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Status</label>
+        <div style="display:flex;gap:6px;" id="previewStatusBtns">
+          <button class="status-btn" data-status="ready" onclick="setMediaStatus('ready')">Ready</button>
+          <button class="status-btn" data-status="to_post" onclick="setMediaStatus('to_post')">To Post</button>
+          <button class="status-btn" data-status="posted" onclick="setMediaStatus('posted')">Posted</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Caption</label>
+        <textarea id="previewCaption" class="form-input" placeholder="Add caption..." style="min-height:60px;font-size:12px;"></textarea>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Hashtags</label>
+        <input id="previewHashtags" class="form-input" placeholder="#hashtag1 #hashtag2" style="font-size:12px;">
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Info</label>
+        <div id="previewInfo" style="font-size:11px;color:var(--dim);line-height:1.6;"></div>
+      </div>
+
+      <div style="display:flex;gap:6px;">
+        <button onclick="saveMediaInfo()" class="action-btn" style="flex:2;">Save</button>
+        <a id="previewDownload" href="" download style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px;text-align:center;text-decoration:none;">DL</a>
+        <button onclick="deletePreviewMedia()" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--red);font-size:13px;cursor:pointer;">Del</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -559,36 +623,156 @@
   }
 
   // ── Preview Modal ──
+  let currentPreviewMedia = null;
+
   function openPreview(m) {
+    currentPreviewMedia = m;
     const filename = m.file_path?.split('/').pop();
     const isVideo = m.media_type === 'video';
-    const modal = document.getElementById('previewModal');
     const img = document.getElementById('previewImg');
     const video = document.getElementById('previewVideo');
-    const info = document.getElementById('previewInfo');
 
     img.style.display = isVideo ? 'none' : 'block';
     video.style.display = isVideo ? 'block' : 'none';
-
     if (isVideo) { video.src = '/images/' + filename; }
     else { img.src = '/images/' + filename; }
 
-    const created = m.created_at ? new Date(m.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '';
-    info.innerHTML = `${created}${m.caption ? '<br>' + m.caption.slice(0, 200) : ''}`;
+    // Status buttons
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.className = 'status-btn' + (btn.dataset.status === m.status ? ` active-${m.status}` : '');
+    });
 
-    modal.style.display = 'flex';
+    // Caption & hashtags
+    document.getElementById('previewCaption').value = m.caption || '';
+    document.getElementById('previewHashtags').value = (m.hashtags || []).join(' ');
+
+    // Info
+    const created = m.created_at ? new Date(m.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '';
+    const meta = getMeta(m);
+    document.getElementById('previewInfo').innerHTML = [
+      created,
+      m.media_type,
+      meta.source || '',
+      m.is_base ? 'BASE PHOTO' : '',
+    ].filter(Boolean).join(' &middot; ');
+
+    // Download
+    document.getElementById('previewDownload').href = '/images/' + filename;
+    document.getElementById('previewDownload').download = filename;
+
+    document.getElementById('previewModal').style.display = 'flex';
   }
 
   function closePreview() {
-    const modal = document.getElementById('previewModal');
-    modal.style.display = 'none';
+    document.getElementById('previewModal').style.display = 'none';
     document.getElementById('previewVideo').pause();
     document.getElementById('previewVideo').src = '';
+    currentPreviewMedia = null;
   }
 
   document.getElementById('previewModal').addEventListener('click', function(e) {
     if (e.target === this) closePreview();
   });
+
+  async function setMediaStatus(status) {
+    if (!currentPreviewMedia) return;
+    try {
+      const res = await fetch('/api/accounts/media/' + currentPreviewMedia.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentPreviewMedia.status = status;
+        document.querySelectorAll('.status-btn').forEach(btn => {
+          btn.className = 'status-btn' + (btn.dataset.status === status ? ` active-${status}` : '');
+        });
+        showToast('Status: ' + status, 'success');
+        loadMedia();
+        loadPostQueue();
+      }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function saveMediaInfo() {
+    if (!currentPreviewMedia) return;
+    const caption = document.getElementById('previewCaption').value.trim();
+    const hashtagsRaw = document.getElementById('previewHashtags').value.trim();
+    const hashtags = hashtagsRaw ? hashtagsRaw.split(/\s+/).filter(h => h.startsWith('#')) : [];
+
+    try {
+      const res = await fetch('/api/accounts/media/' + currentPreviewMedia.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption, hashtags }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Saved', 'success');
+        currentPreviewMedia.caption = caption;
+        currentPreviewMedia.hashtags = hashtags;
+        loadMedia();
+      } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function deletePreviewMedia() {
+    if (!currentPreviewMedia) return;
+    if (!confirm('Delete this media?')) return;
+    try {
+      const res = await fetch('/api/accounts/media/' + currentPreviewMedia.id, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Deleted', 'success');
+        closePreview();
+        loadMedia();
+        loadPostQueue();
+      }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  // ── Post Queue ──
+  async function loadPostQueue() {
+    const filter = document.getElementById('postQueueFilter').value;
+    const items = allMedia.filter(m => {
+      if (filter && m.status !== filter) return false;
+      return m.status === 'to_post' || m.status === 'posted';
+    });
+
+    // filter가 빈 값이면 to_post + posted 모두
+    const filtered = filter
+      ? allMedia.filter(m => m.status === filter)
+      : allMedia.filter(m => m.status === 'to_post' || m.status === 'posted');
+
+    const grid = document.getElementById('postQueueGrid');
+    document.getElementById('postQueueCount').textContent = filtered.length + ' items';
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="placeholder">No items. Mark media as "To Post" from preview.</div>';
+      return;
+    }
+
+    grid.innerHTML = '';
+    filtered.forEach(m => {
+      const filename = m.file_path?.split('/').pop();
+      const isVideo = m.media_type === 'video';
+      const div = document.createElement('div');
+      div.className = 'media-item';
+      div.style.cursor = 'pointer';
+      div.onclick = () => openPreview(m);
+      div.innerHTML = `
+        ${isVideo
+          ? '<video src="/images/' + filename + '" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>'
+          : '<img src="/images/' + filename + '" alt="" loading="lazy">'}
+        <div class="media-overlay">
+          <span class="media-status ${m.status === 'posted' ? 'media-status-posted' : 'media-status-ready'}" style="${m.status === 'to_post' ? 'background:rgba(253,203,110,0.2);color:var(--orange);' : ''}">${m.status}</span>
+          ${m.caption ? '<span style="font-size:10px;color:white;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + m.caption.slice(0, 20) + '</span>' : ''}
+        </div>
+      `;
+      grid.appendChild(div);
+    });
+  }
 
   async function loadMedia() {
     try {
@@ -626,6 +810,7 @@
         grid.appendChild(div);
       });
       loadCategoryGrids();
+      loadPostQueue();
     } catch (e) {
       console.error('Failed to load media:', e);
     }
