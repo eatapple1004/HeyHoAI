@@ -91,6 +91,20 @@
   }
   .media-select-item.selected .check-mark { display: flex; }
 
+  .prompt-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; font-size: 12px; color: var(--text); cursor: pointer;
+    transition: all 0.2s; max-width: 250px;
+  }
+  .prompt-tag:hover { border-color: var(--accent); color: var(--accent2); }
+  .prompt-tag .tag-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prompt-tag .tag-delete {
+    background: none; border: none; color: var(--dim); font-size: 14px;
+    cursor: pointer; padding: 0 2px; line-height: 1;
+  }
+  .prompt-tag .tag-delete:hover { color: var(--red); }
+
   .status-btn {
     flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px;
     background: var(--surface2); color: var(--dim); font-size: 11px; font-weight: 600;
@@ -169,13 +183,22 @@
   <!-- 2. Outfit Variations -->
   <div class="section-card">
     <h3>2. Outfit Variations</h3>
+
+    <!-- Saved Prompts -->
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Saved Outfit Prompts</label>
+      <div id="outfitPromptList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+    </div>
+
+    <!-- Prompt Input -->
     <div style="margin-bottom:12px;">
       <textarea id="outfitPrompt" class="form-input" placeholder="Describe the outfit and setting...&#10;&#10;Example: wearing a white summer dress, sitting at an outdoor cafe, holding iced coffee, natural sunlight" style="min-height:70px;"></textarea>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
       <select id="outfitCount" class="form-select"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
       <select id="outfitModel" class="form-select"><option value="pro">Pro</option><option value="flash">Flash</option></select>
       <button onclick="generateOutfits()" class="action-btn" id="outfitBtn">Generate Outfits</button>
+      <button onclick="saveOutfitPrompt()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--dim);font-size:12px;cursor:pointer;white-space:nowrap;">Save Prompt</button>
     </div>
     <div id="outfitResults"></div>
     <div style="margin-top:14px;">
@@ -418,6 +441,58 @@
   function changeBasePhoto() {
     showToast('Click "Set Base" on any photo in All Media below', 'success');
     document.getElementById('mediaGrid').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── Outfit Prompts ──
+  async function loadOutfitPrompts() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/outfit-prompts');
+      const data = await res.json();
+      const list = document.getElementById('outfitPromptList');
+      if (!data.data || data.data.length === 0) {
+        list.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved prompts yet. Write a prompt and click "Save Prompt".</span>';
+        return;
+      }
+      list.innerHTML = '';
+      data.data.forEach(p => {
+        const tag = document.createElement('div');
+        tag.className = 'prompt-tag';
+        tag.onclick = () => { document.getElementById('outfitPrompt').value = p.prompt; };
+        tag.innerHTML = `
+          <span class="tag-name" title="${p.prompt}">${p.name}</span>
+          <button class="tag-delete" onclick="event.stopPropagation();deleteOutfitPrompt('${p.id}')" title="Delete">&times;</button>
+        `;
+        list.appendChild(tag);
+      });
+    } catch (e) {}
+  }
+
+  async function saveOutfitPrompt() {
+    const prompt = document.getElementById('outfitPrompt').value.trim();
+    if (!prompt) { showToast('Enter a prompt first', 'error'); return; }
+    const name = prompt.slice(0, 60);
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/outfit-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, prompt }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Prompt saved', 'success');
+        loadOutfitPrompts();
+      } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function deleteOutfitPrompt(id) {
+    if (!confirm('Delete this prompt?')) return;
+    try {
+      const res = await fetch('/api/accounts/outfit-prompts/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) { showToast('Deleted', 'success'); loadOutfitPrompts(); }
+      else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
   }
 
   // ── Outfit Generation ──
@@ -868,6 +943,7 @@
 
   loadAccount();
   loadBasePhoto();
+  loadOutfitPrompts();
   loadMedia().then(() => { loadReelSourceSelect(); renderBatchSelectGrid(); });
   loadTemplates();
 </script>

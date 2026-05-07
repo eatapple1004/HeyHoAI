@@ -113,6 +113,7 @@ router.delete('/:id', async (req, res, next) => {
 // Workflow: Base Photo, Outfits, Reels
 // ══════════════════════════════════════
 const reelTemplateRepo = require('./reelTemplate.repository');
+const outfitPromptRepo = require('./outfitPrompt.repository');
 
 /**
  * POST /api/accounts/:id/base-photo
@@ -331,6 +332,45 @@ router.delete('/reel-templates/:templateId', async (req, res, next) => {
     const t = await reelTemplateRepo.remove(req.params.templateId);
     if (!t) return res.status(404).json({ success: false, error: 'Template not found' });
     res.json({ success: true, data: t });
+  } catch (err) { next(err); }
+});
+
+// ── Outfit Prompts ──
+
+router.get('/:id/outfit-prompts', async (req, res, next) => {
+  try {
+    const prompts = await outfitPromptRepo.findByAccountId(req.params.id);
+    res.json({ success: true, data: prompts });
+  } catch (err) { next(err); }
+});
+
+router.post('/:id/outfit-prompts', async (req, res, next) => {
+  try {
+    const { name, prompt } = req.body;
+    if (!prompt) return res.status(400).json({ success: false, error: 'Prompt is required' });
+    const saved = await outfitPromptRepo.insert({
+      accountId: req.params.id,
+      name: name || prompt.slice(0, 60),
+      prompt,
+    });
+    res.status(201).json({ success: true, data: saved });
+  } catch (err) { next(err); }
+});
+
+router.patch('/outfit-prompts/:promptId', async (req, res, next) => {
+  try {
+    const { name, prompt } = req.body;
+    const updated = await outfitPromptRepo.update(req.params.promptId, { name, prompt });
+    if (!updated) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, data: updated });
+  } catch (err) { next(err); }
+});
+
+router.delete('/outfit-prompts/:promptId', async (req, res, next) => {
+  try {
+    const deleted = await outfitPromptRepo.remove(req.params.promptId);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, data: deleted });
   } catch (err) { next(err); }
 });
 
