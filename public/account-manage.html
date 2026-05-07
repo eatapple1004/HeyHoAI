@@ -602,9 +602,12 @@
       div.className = 'media-item';
       div.style.cursor = 'pointer';
       div.onclick = () => openPreview(m);
-      div.innerHTML = isVideo
-        ? `<video src="/images/${filename}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>`
-        : `<img src="/images/${filename}" alt="" loading="lazy">`;
+      div.innerHTML = `
+        ${isVideo
+          ? `<video src="/images/${filename}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>`
+          : `<img src="/images/${filename}" alt="" loading="lazy">`}
+        <div style="padding:4px 8px;font-size:10px;font-weight:600;color:${isVideo ? 'var(--orange)' : 'var(--green)'};text-transform:uppercase;">${m.media_type}</div>
+      `;
       grid.appendChild(div);
     });
   }
@@ -769,6 +772,7 @@
           <span class="media-status ${m.status === 'posted' ? 'media-status-posted' : 'media-status-ready'}" style="${m.status === 'to_post' ? 'background:rgba(253,203,110,0.2);color:var(--orange);' : ''}">${m.status}</span>
           ${m.caption ? '<span style="font-size:10px;color:white;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + m.caption.slice(0, 20) + '</span>' : ''}
         </div>
+        <div style="padding:4px 8px;font-size:10px;font-weight:600;color:${isVideo ? 'var(--orange)' : 'var(--green)'};text-transform:uppercase;">${m.media_type}</div>
       `;
       grid.appendChild(div);
     });
@@ -806,6 +810,7 @@
               <button class="media-delete" onclick="event.stopPropagation();deleteMedia('${m.id}')" title="Delete">&times;</button>
             </span>
           </div>
+          <div style="padding:4px 8px;font-size:10px;font-weight:600;color:${isVideo ? 'var(--orange)' : 'var(--green)'};text-transform:uppercase;">${m.media_type}</div>
         `;
         grid.appendChild(div);
       });
