@@ -105,6 +105,31 @@
   }
   .prompt-tag .tag-delete:hover { color: var(--red); }
 
+  .queue-card {
+    display: flex; gap: 12px; padding: 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .queue-card:hover { border-color: var(--accent); }
+  .queue-card .queue-thumb {
+    width: 80px; height: 80px; border-radius: 6px; object-fit: cover;
+    background: var(--bg); flex-shrink: 0;
+  }
+  .queue-card .queue-pair { display: flex; gap: 6px; flex-shrink: 0; }
+  .queue-card .queue-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+  .queue-card .queue-caption {
+    font-size: 12px; color: var(--dim); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; max-width: 300px;
+  }
+  .queue-card .queue-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .queue-card .q-btn {
+    padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--surface); color: var(--dim); font-size: 11px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .queue-card .q-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .queue-card .q-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
   .status-btn {
     flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px;
     background: var(--surface2); color: var(--dim); font-size: 11px; font-weight: 600;
@@ -263,14 +288,34 @@
       6. Post Queue
       <span style="font-size:12px;color:var(--dim);font-weight:400;" id="postQueueCount"></span>
     </h3>
+
+    <!-- Add to Queue -->
+    <div style="margin-bottom:16px;padding:14px;background:var(--surface2);border-radius:8px;">
+      <label class="form-label">Add to Queue (Image + Reel bundle)</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;">
+          <label class="form-label" style="font-size:10px;">Image</label>
+          <select id="queueImageSelect" class="form-select" style="width:100%;"></select>
+        </div>
+        <div style="flex:1;min-width:150px;">
+          <label class="form-label" style="font-size:10px;">Reel</label>
+          <select id="queueReelSelect" class="form-select" style="width:100%;"></select>
+        </div>
+      </div>
+      <button onclick="addToQueue()" class="action-btn">Add to Queue</button>
+    </div>
+
+    <!-- Queue Filter -->
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <select class="form-select" id="postQueueFilter" onchange="loadPostQueue()" style="width:120px;">
-        <option value="to_post">To Post</option>
-        <option value="posted">Posted</option>
         <option value="">All</option>
+        <option value="ready">Ready</option>
+        <option value="posted">Posted</option>
       </select>
     </div>
-    <div class="media-grid" id="postQueueGrid">
+
+    <!-- Queue List -->
+    <div id="postQueueList">
       <div class="placeholder">No items in queue</div>
     </div>
   </div>
@@ -884,47 +929,138 @@
   }
 
   // ── Post Queue ──
+  function loadQueueSelects() {
+    const imgSel = document.getElementById('queueImageSelect');
+    const reelSel = document.getElementById('queueReelSelect');
+    imgSel.innerHTML = '<option value="">-- Select Image --</option>';
+    reelSel.innerHTML = '<option value="">-- Select Reel --</option>';
+
+    allMedia.filter(m => m.media_type === 'image').forEach(m => {
+      const filename = m.file_path?.split('/').pop();
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = (m.is_base ? '[BASE] ' : '') + filename;
+      imgSel.appendChild(opt);
+    });
+    allMedia.filter(m => m.media_type === 'video').forEach(m => {
+      const filename = m.file_path?.split('/').pop();
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = filename;
+      reelSel.appendChild(opt);
+    });
+  }
+
+  async function addToQueue() {
+    const imageMediaId = document.getElementById('queueImageSelect').value || null;
+    const reelMediaId = document.getElementById('queueReelSelect').value || null;
+    if (!imageMediaId && !reelMediaId) { showToast('Select at least an image or reel', 'error'); return; }
+
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/post-queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageMediaId, reelMediaId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Added to queue', 'success');
+        loadPostQueue();
+      } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
   async function loadPostQueue() {
     const filter = document.getElementById('postQueueFilter').value;
-    const items = allMedia.filter(m => {
-      if (filter && m.status !== filter) return false;
-      return m.status === 'to_post' || m.status === 'posted';
-    });
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/post-queue' + (filter ? '?status=' + filter : ''));
+      const data = await res.json();
+      const list = document.getElementById('postQueueList');
+      const items = data.data || [];
 
-    // filter가 빈 값이면 to_post + posted 모두
-    const filtered = filter
-      ? allMedia.filter(m => m.status === filter)
-      : allMedia.filter(m => m.status === 'to_post' || m.status === 'posted');
+      document.getElementById('postQueueCount').textContent = items.length + ' items';
 
-    const grid = document.getElementById('postQueueGrid');
-    document.getElementById('postQueueCount').textContent = filtered.length + ' items';
+      if (items.length === 0) {
+        list.innerHTML = '<div class="placeholder">No items in queue. Add image + reel bundles above.</div>';
+        return;
+      }
 
-    if (filtered.length === 0) {
-      grid.innerHTML = '<div class="placeholder">No items. Mark media as "To Post" from preview.</div>';
-      return;
+      list.innerHTML = '';
+      items.forEach(item => {
+        const imgFile = item.image_path?.split('/').pop();
+        const reelFile = item.reel_path?.split('/').pop();
+        const statusColor = item.status === 'posted' ? 'var(--green)' : item.status === 'ready' ? 'var(--dim)' : 'var(--orange)';
+
+        const card = document.createElement('div');
+        card.className = 'queue-card';
+        card.innerHTML = `
+          <div class="queue-pair">
+            ${imgFile
+              ? `<img class="queue-thumb" src="/images/${imgFile}" alt="Image" title="Image">`
+              : '<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No img</div>'}
+            ${reelFile
+              ? `<video class="queue-thumb" src="/images/${reelFile}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" title="Reel"></video>`
+              : '<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No reel</div>'}
+          </div>
+          <div class="queue-body">
+            <div>
+              <span style="font-size:11px;font-weight:600;color:${statusColor};text-transform:uppercase;">${item.status}</span>
+              <span style="font-size:10px;color:var(--dim);margin-left:6px;">${new Date(item.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+            </div>
+            <div class="queue-caption">${item.caption || '<span style="color:var(--dim);font-style:italic;">No caption</span>'}</div>
+            <div class="queue-actions">
+              <button class="q-btn" onclick="editQueueItem('${item.id}')">Edit</button>
+              ${item.status !== 'posted' ? `<button class="q-btn" onclick="markQueuePosted('${item.id}')">Mark Posted</button>` : ''}
+              <button class="q-btn danger" onclick="deleteQueueItem('${item.id}')">Delete</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    } catch (e) {
+      console.error('Failed to load post queue:', e);
     }
+  }
 
-    grid.innerHTML = '';
-    filtered.forEach(m => {
-      const filename = m.file_path?.split('/').pop();
-      const isVideo = m.media_type === 'video';
-      const div = document.createElement('div');
-      div.className = 'media-item';
-      div.style.cursor = 'pointer';
-      div.onclick = () => openPreview(m);
-      div.innerHTML = `
-        ${isVideo
-          ? '<video src="/images/' + filename + '" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" style="width:100%;aspect-ratio:1/1;object-fit:cover;"></video>'
-          : '<img src="/images/' + filename + '" alt="" loading="lazy">'}
-        <div class="media-overlay">
-          <span style="display:flex;gap:4px;align-items:center;">
-            <span class="media-status ${m.status === 'posted' ? 'media-status-posted' : 'media-status-ready'}" style="${m.status === 'to_post' ? 'background:rgba(253,203,110,0.2);color:var(--orange);' : ''}">${m.status}</span>
-            <span style="font-size:9px;font-weight:700;color:${isVideo ? 'var(--orange)' : 'var(--green)'};text-transform:uppercase;">${m.media_type}</span>
-          </span>
-        </div>
-      `;
-      grid.appendChild(div);
-    });
+  async function editQueueItem(queueId) {
+    const caption = window.prompt('Caption:');
+    if (caption === null) return;
+    const hashtagsRaw = window.prompt('Hashtags (space separated):');
+    const hashtags = hashtagsRaw ? hashtagsRaw.split(/\s+/).filter(h => h.startsWith('#')) : [];
+
+    try {
+      const res = await fetch('/api/accounts/post-queue/' + queueId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption, hashtags }),
+      });
+      const data = await res.json();
+      if (data.success) { showToast('Updated', 'success'); loadPostQueue(); }
+      else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function markQueuePosted(queueId) {
+    try {
+      const res = await fetch('/api/accounts/post-queue/' + queueId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'posted', postedAt: new Date().toISOString() }),
+      });
+      const data = await res.json();
+      if (data.success) { showToast('Marked as posted', 'success'); loadPostQueue(); }
+      else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function deleteQueueItem(queueId) {
+    if (!confirm('Delete this queue item?')) return;
+    try {
+      const res = await fetch('/api/accounts/post-queue/' + queueId, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) { showToast('Deleted', 'success'); loadPostQueue(); }
+      else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
   }
 
   async function loadMedia() {
@@ -968,6 +1104,7 @@
         grid.appendChild(div);
       });
       loadCategoryGrids();
+      loadQueueSelects();
       loadPostQueue();
     } catch (e) {
       console.error('Failed to load media:', e);

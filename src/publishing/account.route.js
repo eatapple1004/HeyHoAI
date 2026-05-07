@@ -474,6 +474,50 @@ router.post('/:id/batch-reels', async (req, res, next) => {
 });
 
 // ══════════════════════════════════════
+// Post Queue
+// ══════════════════════════════════════
+const postQueueRepo = require('./postQueue.repository');
+
+router.get('/:id/post-queue', async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    const items = await postQueueRepo.findByAccountId(req.params.id, { status: status || undefined });
+    res.json({ success: true, data: items });
+  } catch (err) { next(err); }
+});
+
+router.post('/:id/post-queue', async (req, res, next) => {
+  try {
+    const { imageMediaId, reelMediaId, caption, hashtags } = req.body;
+    if (!imageMediaId && !reelMediaId) {
+      return res.status(400).json({ success: false, error: 'At least imageMediaId or reelMediaId is required' });
+    }
+    const item = await postQueueRepo.insert({
+      accountId: req.params.id, imageMediaId, reelMediaId, caption, hashtags,
+    });
+    log.info(`Post queue added: image=${imageMediaId}, reel=${reelMediaId}`);
+    res.status(201).json({ success: true, data: item });
+  } catch (err) { next(err); }
+});
+
+router.patch('/post-queue/:queueId', async (req, res, next) => {
+  try {
+    const { caption, hashtags, status } = req.body;
+    const item = await postQueueRepo.update(req.params.queueId, { caption, hashtags, status });
+    if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, data: item });
+  } catch (err) { next(err); }
+});
+
+router.delete('/post-queue/:queueId', async (req, res, next) => {
+  try {
+    const item = await postQueueRepo.remove(req.params.queueId);
+    if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, data: item });
+  } catch (err) { next(err); }
+});
+
+// ══════════════════════════════════════
 // Account Media
 // ══════════════════════════════════════
 
