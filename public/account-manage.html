@@ -129,6 +129,14 @@
   }
   .queue-card .q-btn:hover { border-color: var(--accent); color: var(--accent2); }
   .queue-card .q-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .queue-card .q-btn.active-confirmed { border-color: var(--green); color: var(--green); background: rgba(0,184,148,0.1); }
+  .queue-card .q-btn.active-pending { border-color: var(--orange); color: var(--orange); background: rgba(253,203,110,0.1); }
+  .queue-card .q-btn.active-rejected { border-color: var(--red); color: var(--red); background: rgba(255,118,117,0.1); }
+  .queue-caption-input {
+    width: 100%; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 11px; font-family: inherit; resize: none;
+  }
+  .queue-caption-input:focus { outline: none; border-color: var(--accent); }
 
   .status-btn {
     flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px;
@@ -306,12 +314,14 @@
     </div>
 
     <!-- Queue Filter -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <select class="form-select" id="postQueueFilter" onchange="loadPostQueue()" style="width:120px;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+      <select class="form-select" id="postQueueFilter" onchange="loadPostQueue()">
         <option value="">All</option>
-        <option value="ready">Ready</option>
-        <option value="posted">Posted</option>
+        <option value="pending">Pending (보류)</option>
+        <option value="confirmed">Confirmed (확정)</option>
+        <option value="rejected">Rejected (탈락)</option>
       </select>
+      <span style="font-size:11px;color:var(--dim);">확정 항목은 매일 18:00 KST 자동 업로드 (FIFO)</span>
     </div>
 
     <!-- Queue List -->
@@ -320,7 +330,18 @@
     </div>
   </div>
 
-  <!-- 7. All Media -->
+  <!-- 7. Upload History -->
+  <div class="section-card">
+    <h3 style="display:flex;justify-content:space-between;align-items:center;">
+      7. Upload History
+      <span style="font-size:12px;color:var(--dim);font-weight:400;" id="uploadHistoryCount"></span>
+    </h3>
+    <div id="uploadHistoryList">
+      <div class="placeholder">No uploads yet</div>
+    </div>
+  </div>
+
+  <!-- 8. All Media -->
   <div class="section-card">
     <h3 style="display:flex;justify-content:space-between;align-items:center;">
       All Media
@@ -928,7 +949,10 @@
     } catch (e) { showToast('Error', 'error'); }
   }
 
-  // ── Post Queue ──
+  // ── Post Queue + Upload History ──
+  const STATUS_COLORS = { pending: 'var(--orange)', confirmed: 'var(--green)', rejected: 'var(--red)', posted: 'var(--accent2)' };
+  const STATUS_LABELS = { pending: '보류', confirmed: '확정', rejected: '탈락', posted: '업로드 완료' };
+
   function loadQueueSelects() {
     const imgSel = document.getElementById('queueImageSelect');
     const reelSel = document.getElementById('queueReelSelect');
@@ -976,79 +1000,113 @@
       const res = await fetch('/api/accounts/' + accountId + '/post-queue' + (filter ? '?status=' + filter : ''));
       const data = await res.json();
       const list = document.getElementById('postQueueList');
-      const items = data.data || [];
+      const items = (data.data || []).filter(i => i.status !== 'posted');
 
       document.getElementById('postQueueCount').textContent = items.length + ' items';
 
       if (items.length === 0) {
-        list.innerHTML = '<div class="placeholder">No items in queue. Add image + reel bundles above.</div>';
+        list.innerHTML = '<div class="placeholder">No items in queue.</div>';
         return;
       }
 
       list.innerHTML = '';
-      items.forEach(item => {
-        const imgFile = item.image_path?.split('/').pop();
-        const reelFile = item.reel_path?.split('/').pop();
-        const statusColor = item.status === 'posted' ? 'var(--green)' : item.status === 'ready' ? 'var(--dim)' : 'var(--orange)';
-
-        const card = document.createElement('div');
-        card.className = 'queue-card';
-        card.innerHTML = `
-          <div class="queue-pair">
-            ${imgFile
-              ? `<img class="queue-thumb" src="/images/${imgFile}" alt="Image" title="Image">`
-              : '<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No img</div>'}
-            ${reelFile
-              ? `<video class="queue-thumb" src="/images/${reelFile}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" title="Reel"></video>`
-              : '<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No reel</div>'}
-          </div>
-          <div class="queue-body">
-            <div>
-              <span style="font-size:11px;font-weight:600;color:${statusColor};text-transform:uppercase;">${item.status}</span>
-              <span style="font-size:10px;color:var(--dim);margin-left:6px;">${new Date(item.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
-            </div>
-            <div class="queue-caption">${item.caption || '<span style="color:var(--dim);font-style:italic;">No caption</span>'}</div>
-            <div class="queue-actions">
-              <button class="q-btn" onclick="editQueueItem('${item.id}')">Edit</button>
-              ${item.status !== 'posted' ? `<button class="q-btn" onclick="markQueuePosted('${item.id}')">Mark Posted</button>` : ''}
-              <button class="q-btn danger" onclick="deleteQueueItem('${item.id}')">Delete</button>
-            </div>
-          </div>
-        `;
-        list.appendChild(card);
-      });
-    } catch (e) {
-      console.error('Failed to load post queue:', e);
-    }
+      items.forEach(item => renderQueueCard(list, item, false));
+    } catch (e) { console.error('Failed to load post queue:', e); }
   }
 
-  async function editQueueItem(queueId) {
-    const caption = window.prompt('Caption:');
-    if (caption === null) return;
-    const hashtagsRaw = window.prompt('Hashtags (space separated):');
-    const hashtags = hashtagsRaw ? hashtagsRaw.split(/\s+/).filter(h => h.startsWith('#')) : [];
+  async function loadUploadHistory() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/post-queue?status=posted');
+      const data = await res.json();
+      const list = document.getElementById('uploadHistoryList');
+      const items = data.data || [];
 
+      document.getElementById('uploadHistoryCount').textContent = items.length + ' items';
+
+      if (items.length === 0) {
+        list.innerHTML = '<div class="placeholder">No uploads yet.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      items.forEach(item => renderQueueCard(list, item, true));
+    } catch (e) { console.error('Failed to load upload history:', e); }
+  }
+
+  function renderQueueCard(container, item, isHistory) {
+    const imgFile = item.image_path?.split('/').pop();
+    const reelFile = item.reel_path?.split('/').pop();
+    const sc = STATUS_COLORS[item.status] || 'var(--dim)';
+    const sl = STATUS_LABELS[item.status] || item.status;
+
+    const card = document.createElement('div');
+    card.className = 'queue-card';
+    card.innerHTML = `
+      <div class="queue-pair">
+        ${imgFile
+          ? `<img class="queue-thumb" src="/images/${imgFile}" alt="Image">`
+          : '<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No img</div>'}
+        ${reelFile
+          ? `<video class="queue-thumb" src="/images/${reelFile}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()"></video>`
+          : '<div class="queue-thumb" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No reel</div>'}
+      </div>
+      <div class="queue-body">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:700;color:${sc};">${sl}</span>
+          <span style="font-size:10px;color:var(--dim);">${new Date(item.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+          ${item.posted_at ? '<span style="font-size:10px;color:var(--green);">posted ' + new Date(item.posted_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + '</span>' : ''}
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:4px;">
+          <div style="flex:1;">
+            <label style="font-size:9px;color:var(--dim);">IMAGE CAPTION</label>
+            <textarea class="queue-caption-input" rows="2" id="imgCap_${item.id}" ${isHistory ? 'disabled' : ''}>${item.image_caption || ''}</textarea>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:9px;color:var(--dim);">REEL CAPTION</label>
+            <textarea class="queue-caption-input" rows="2" id="reelCap_${item.id}" ${isHistory ? 'disabled' : ''}>${item.reel_caption || ''}</textarea>
+          </div>
+        </div>
+        ${!isHistory ? `
+        <div class="queue-actions">
+          <button class="q-btn ${item.status === 'pending' ? 'active-pending' : ''}" onclick="setQueueStatus('${item.id}','pending')">보류</button>
+          <button class="q-btn ${item.status === 'confirmed' ? 'active-confirmed' : ''}" onclick="setQueueStatus('${item.id}','confirmed')">확정</button>
+          <button class="q-btn ${item.status === 'rejected' ? 'active-rejected' : ''}" onclick="setQueueStatus('${item.id}','rejected')">탈락</button>
+          <button class="q-btn" onclick="saveQueueCaptions('${item.id}')">Save</button>
+          <button class="q-btn danger" onclick="deleteQueueItem('${item.id}')">Del</button>
+        </div>` : `
+        <div class="queue-actions">
+          ${item.image_post_url ? '<a class="q-btn" href="' + item.image_post_url + '" target="_blank" style="text-decoration:none;">Image Link</a>' : ''}
+          ${item.reel_post_url ? '<a class="q-btn" href="' + item.reel_post_url + '" target="_blank" style="text-decoration:none;">Reel Link</a>' : ''}
+        </div>`}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  async function setQueueStatus(queueId, status) {
     try {
       const res = await fetch('/api/accounts/post-queue/' + queueId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ caption, hashtags }),
+        body: JSON.stringify({ status }),
       });
       const data = await res.json();
-      if (data.success) { showToast('Updated', 'success'); loadPostQueue(); }
+      if (data.success) { showToast(STATUS_LABELS[status], 'success'); loadPostQueue(); }
       else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error', 'error'); }
   }
 
-  async function markQueuePosted(queueId) {
+  async function saveQueueCaptions(queueId) {
+    const imageCaption = document.getElementById('imgCap_' + queueId)?.value || '';
+    const reelCaption = document.getElementById('reelCap_' + queueId)?.value || '';
     try {
       const res = await fetch('/api/accounts/post-queue/' + queueId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'posted', postedAt: new Date().toISOString() }),
+        body: JSON.stringify({ imageCaption, reelCaption }),
       });
       const data = await res.json();
-      if (data.success) { showToast('Marked as posted', 'success'); loadPostQueue(); }
+      if (data.success) { showToast('Captions saved', 'success'); }
       else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error', 'error'); }
   }
@@ -1106,6 +1164,7 @@
       loadCategoryGrids();
       loadQueueSelects();
       loadPostQueue();
+      loadUploadHistory();
     } catch (e) {
       console.error('Failed to load media:', e);
     }

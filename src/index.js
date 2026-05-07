@@ -54,6 +54,10 @@ app.use(errorHandler);
 
 app.listen(env.PORT, () => {
   log.info(`Running on port ${env.PORT}`);
+
+  // 자동 업로드 스케줄러 시작
+  const { startScheduler } = require('./publishing/scheduler');
+  startScheduler();
 });
 
 module.exports = app;

@@ -306,7 +306,6 @@ router.post('/:id/generate-reel', async (req, res, next) => {
           accountId: req.params.id,
           imageMediaId: mediaId,
           reelMediaId: media.id,
-          caption: prompt,
         });
         log.info(`Auto-queued: image=${mediaId} + reel=${media.id}`);
 
@@ -467,7 +466,6 @@ router.post('/:id/batch-reels', async (req, res, next) => {
               accountId: req.params.id,
               imageMediaId: mId,
               reelMediaId: media.id,
-              caption: template.prompt,
             });
 
             results.push({ mediaId: mId, success: true, media });
@@ -506,12 +504,12 @@ router.get('/:id/post-queue', async (req, res, next) => {
 
 router.post('/:id/post-queue', async (req, res, next) => {
   try {
-    const { imageMediaId, reelMediaId, caption, hashtags } = req.body;
+    const { imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags } = req.body;
     if (!imageMediaId && !reelMediaId) {
       return res.status(400).json({ success: false, error: 'At least imageMediaId or reelMediaId is required' });
     }
     const item = await postQueueRepo.insert({
-      accountId: req.params.id, imageMediaId, reelMediaId, caption, hashtags,
+      accountId: req.params.id, imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags,
     });
     log.info(`Post queue added: image=${imageMediaId}, reel=${reelMediaId}`);
     res.status(201).json({ success: true, data: item });
@@ -520,10 +518,22 @@ router.post('/:id/post-queue', async (req, res, next) => {
 
 router.patch('/post-queue/:queueId', async (req, res, next) => {
   try {
-    const { caption, hashtags, status } = req.body;
-    const item = await postQueueRepo.update(req.params.queueId, { caption, hashtags, status });
+    const { imageCaption, reelCaption, hashtags, status } = req.body;
+    const item = await postQueueRepo.update(req.params.queueId, { imageCaption, reelCaption, hashtags, status });
     if (!item) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: item });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/accounts/:id/publish-now
+ * 수동으로 즉시 업로드 트리거
+ */
+router.post('/:id/publish-now', async (req, res, next) => {
+  try {
+    const { publishConfirmedItems } = require('./scheduler');
+    await publishConfirmedItems();
+    res.json({ success: true, message: 'Publish triggered' });
   } catch (err) { next(err); }
 });
 

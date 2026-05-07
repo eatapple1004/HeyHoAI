@@ -391,6 +391,14 @@ async function migrate() {
 
   // account_media에 is_base 컬럼 추가
   await pool.query(`ALTER TABLE account_media ADD COLUMN IF NOT EXISTS is_base BOOLEAN DEFAULT false;`);
+
+  // post_queue 캡션 분리 + 업로드 결과
+  await pool.query(`
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_caption TEXT;
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS reel_caption TEXT;
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_post_url TEXT;
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS reel_post_url TEXT;
+  `);
   await pool.query(CREATE_CHARACTERS_TABLE);
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
