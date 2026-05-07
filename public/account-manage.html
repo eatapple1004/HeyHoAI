@@ -180,36 +180,46 @@
     </div>
   </div>
 
-  <!-- 2. Outfit Variations -->
+  <!-- 2. Outfit Prompt Manage -->
   <div class="section-card">
-    <h3>2. Outfit Variations</h3>
-
-    <!-- Saved Prompts -->
-    <div style="margin-bottom:14px;">
-      <label class="form-label">Saved Outfit Prompts</label>
-      <div id="outfitPromptList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
-    </div>
-
-    <!-- Prompt Input -->
+    <h3>2. Outfit Prompts</h3>
     <div style="margin-bottom:12px;">
-      <textarea id="outfitPrompt" class="form-input" placeholder="Describe the outfit and setting...&#10;&#10;Example: wearing a white summer dress, sitting at an outdoor cafe, holding iced coffee, natural sunlight" style="min-height:70px;"></textarea>
+      <textarea id="outfitPromptInput" class="form-input" placeholder="Describe the outfit and setting...&#10;&#10;Example: wearing a white summer dress, sitting at an outdoor cafe, holding iced coffee, natural sunlight" style="min-height:70px;"></textarea>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-      <select id="outfitCount" class="form-select"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button onclick="saveOutfitPrompt()" class="action-btn">Add Prompt</button>
+    </div>
+    <div id="outfitPromptList"></div>
+  </div>
+
+  <!-- 3. Outfit Variations -->
+  <div class="section-card">
+    <h3>3. Outfit Variations</h3>
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label class="form-label" style="margin:0;">Select prompts to generate</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim);cursor:pointer;">
+          <input type="checkbox" id="selectAllOutfits" onchange="toggleSelectAllOutfits()"> Select All
+        </label>
+      </div>
+      <div id="outfitCheckList"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+      <select id="outfitCount" class="form-select"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+      <span style="font-size:11px;color:var(--dim);">per prompt</span>
       <select id="outfitModel" class="form-select"><option value="pro">Pro</option><option value="flash">Flash</option></select>
-      <button onclick="generateOutfits()" class="action-btn" id="outfitBtn">Generate Outfits</button>
-      <button onclick="saveOutfitPrompt()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--dim);font-size:12px;cursor:pointer;white-space:nowrap;">Save Prompt</button>
+      <button onclick="processOutfits()" class="action-btn" id="outfitBtn">Process</button>
     </div>
-    <div id="outfitResults"></div>
-    <div style="margin-top:14px;">
+    <div id="outfitProgress" style="font-size:12px;color:var(--dim);margin-bottom:10px;display:none;"></div>
+    <div>
       <label class="form-label">Generated Outfits</label>
       <div class="media-grid" id="outfitGrid"></div>
     </div>
   </div>
 
-  <!-- 3. Reel Generation -->
+  <!-- 4. Batch Reels -->
   <div class="section-card">
-    <h3>3. Reel Generation</h3>
+    <h3>4. Reel Generation</h3>
     <div style="margin-bottom:8px;font-size:12px;color:var(--dim);">Select a photo below, enter a motion prompt, and generate a reel.</div>
     <div style="margin-bottom:12px;">
       <label class="form-label">Source Photo</label>
@@ -235,7 +245,7 @@
 
   <!-- 4. Batch Reels -->
   <div class="section-card">
-    <h3>4. Batch Reels (from Template)</h3>
+    <h3>5. Batch Reels (from Template)</h3>
     <div style="margin-bottom:12px;">
       <label class="form-label">Reel Template</label>
       <select id="batchTemplateSelect" class="form-select" style="width:100%;"></select>
@@ -247,10 +257,10 @@
     <button onclick="runBatchReels()" class="action-btn" id="batchBtn">Generate Batch Reels</button>
   </div>
 
-  <!-- 5. Post Queue -->
+  <!-- 6. Post Queue -->
   <div class="section-card">
     <h3 style="display:flex;justify-content:space-between;align-items:center;">
-      5. Post Queue
+      6. Post Queue
       <span style="font-size:12px;color:var(--dim);font-weight:400;" id="postQueueCount"></span>
     </h3>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -265,7 +275,7 @@
     </div>
   </div>
 
-  <!-- 6. All Media -->
+  <!-- 7. All Media -->
   <div class="section-card">
     <h3 style="display:flex;justify-content:space-between;align-items:center;">
       All Media
@@ -444,44 +454,98 @@
   }
 
   // ── Outfit Prompts ──
+  let outfitPrompts = [];
+
   async function loadOutfitPrompts() {
     try {
       const res = await fetch('/api/accounts/' + accountId + '/outfit-prompts');
       const data = await res.json();
-      const list = document.getElementById('outfitPromptList');
-      if (!data.data || data.data.length === 0) {
-        list.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved prompts yet. Write a prompt and click "Save Prompt".</span>';
-        return;
-      }
-      list.innerHTML = '';
-      data.data.forEach(p => {
-        const tag = document.createElement('div');
-        tag.className = 'prompt-tag';
-        tag.onclick = () => { document.getElementById('outfitPrompt').value = p.prompt; };
-        tag.innerHTML = `
-          <span class="tag-name" title="${p.prompt}">${p.name}</span>
-          <button class="tag-delete" onclick="event.stopPropagation();deleteOutfitPrompt('${p.id}')" title="Delete">&times;</button>
-        `;
-        list.appendChild(tag);
-      });
+      outfitPrompts = data.data || [];
+      renderOutfitPromptList();
+      renderOutfitCheckList();
     } catch (e) {}
   }
 
+  function renderOutfitPromptList() {
+    const list = document.getElementById('outfitPromptList');
+    if (outfitPrompts.length === 0) {
+      list.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:10px;">No prompts yet. Add one above.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    outfitPrompts.forEach(p => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;';
+      row.innerHTML = `
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.prompt}">${p.prompt}</div>
+        </div>
+        <button onclick="editOutfitPrompt('${p.id}')" style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;">Edit</button>
+        <button onclick="deleteOutfitPrompt('${p.id}')" style="background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;">&times;</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function renderOutfitCheckList() {
+    const list = document.getElementById('outfitCheckList');
+    if (outfitPrompts.length === 0) {
+      list.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:10px;">No prompts. Add prompts in section 2 first.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    outfitPrompts.forEach(p => {
+      const row = document.createElement('label');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:border-color 0.2s;';
+      row.innerHTML = `
+        <input type="checkbox" class="outfit-check" value="${p.id}" data-prompt="${encodeURIComponent(p.prompt)}">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+          <div style="font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.prompt.slice(0, 80)}</div>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function toggleSelectAllOutfits() {
+    const checked = document.getElementById('selectAllOutfits').checked;
+    document.querySelectorAll('.outfit-check').forEach(cb => cb.checked = checked);
+  }
+
   async function saveOutfitPrompt() {
-    const prompt = document.getElementById('outfitPrompt').value.trim();
+    const prompt = document.getElementById('outfitPromptInput').value.trim();
     if (!prompt) { showToast('Enter a prompt first', 'error'); return; }
-    const name = prompt.slice(0, 60);
     try {
       const res = await fetch('/api/accounts/' + accountId + '/outfit-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, prompt }),
+        body: JSON.stringify({ name: prompt.slice(0, 60), prompt }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Prompt saved', 'success');
+        showToast('Prompt added', 'success');
+        document.getElementById('outfitPromptInput').value = '';
         loadOutfitPrompts();
       } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function editOutfitPrompt(id) {
+    const p = outfitPrompts.find(x => x.id === id);
+    if (!p) return;
+    const newPrompt = window.prompt('Edit prompt:', p.prompt);
+    if (newPrompt === null || newPrompt.trim() === '') return;
+    try {
+      const res = await fetch('/api/accounts/outfit-prompts/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newPrompt.slice(0, 60), prompt: newPrompt }),
+      });
+      const data = await res.json();
+      if (data.success) { showToast('Updated', 'success'); loadOutfitPrompts(); }
+      else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error', 'error'); }
   }
 
@@ -495,39 +559,46 @@
     } catch (e) { showToast('Error', 'error'); }
   }
 
-  // ── Outfit Generation ──
-  async function generateOutfits() {
-    const prompt = document.getElementById('outfitPrompt').value.trim();
-    if (!prompt) { showToast('Enter outfit prompt', 'error'); return; }
+  // ── Outfit Batch Process ──
+  async function processOutfits() {
+    const checked = document.querySelectorAll('.outfit-check:checked');
+    if (checked.length === 0) { showToast('Select at least one prompt', 'error'); return; }
+
+    const count = document.getElementById('outfitCount').value;
+    const model = document.getElementById('outfitModel').value;
+    const prompts = [...checked].map(cb => decodeURIComponent(cb.dataset.prompt));
 
     const btn = document.getElementById('outfitBtn');
-    btn.disabled = true; btn.textContent = 'Generating...';
+    const progress = document.getElementById('outfitProgress');
+    btn.disabled = true;
+    progress.style.display = 'block';
 
-    try {
-      const res = await fetch('/api/accounts/' + accountId + '/generate-outfits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          count: document.getElementById('outfitCount').value,
-          model: document.getElementById('outfitModel').value,
-        }),
-      });
-      const data = await res.json();
-      const container = document.getElementById('outfitResults');
-      if (data.success) {
-        const ok = data.results.filter(r => r.success).length;
-        showToast(`${ok} outfit(s) generated`, 'success');
-        loadMedia();
-        loadReelSourceSelect();
-      } else {
-        showToast(data.error || 'Failed', 'error');
-      }
-    } catch (e) {
-      showToast('Error: ' + e.message, 'error');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Generate Outfits';
+    let total = prompts.length;
+    let done = 0;
+    let successCount = 0;
+
+    for (const prompt of prompts) {
+      done++;
+      progress.textContent = `Processing ${done}/${total}: ${prompt.slice(0, 40)}...`;
+      try {
+        const res = await fetch('/api/accounts/' + accountId + '/generate-outfits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, count, model }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          successCount += data.results.filter(r => r.success).length;
+        }
+      } catch (e) {}
     }
+
+    progress.textContent = `Done! ${successCount} images generated from ${total} prompts.`;
+    showToast(`${successCount} outfits generated`, 'success');
+    btn.disabled = false;
+    btn.textContent = 'Process';
+    loadMedia();
+    loadReelSourceSelect();
   }
 
   // ── Reel Source Select ──
