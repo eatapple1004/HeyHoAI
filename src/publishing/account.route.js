@@ -301,8 +301,17 @@ router.post('/:id/generate-reel', async (req, res, next) => {
           log.info(`Reel template saved: ${template.name}`);
         }
 
+        // 자동 Post Queue 등록 (image + reel 묶음)
+        const queueItem = await postQueueRepo.insert({
+          accountId: req.params.id,
+          imageMediaId: mediaId,
+          reelMediaId: media.id,
+          caption: prompt,
+        });
+        log.info(`Auto-queued: image=${mediaId} + reel=${media.id}`);
+
         log.info(`Reel complete: ${filename}`);
-        return res.json({ success: true, media, template });
+        return res.json({ success: true, media, template, queueItem });
       }
 
       if (status === 'failed') {
@@ -452,6 +461,15 @@ router.post('/:id/batch-reels', async (req, res, next) => {
               caption: template.prompt,
               metadata: { source: 'batch_reel', templateId, sourceMediaId: mId, taskId },
             });
+
+            // 자동 Post Queue 등록
+            await postQueueRepo.insert({
+              accountId: req.params.id,
+              imageMediaId: mId,
+              reelMediaId: media.id,
+              caption: template.prompt,
+            });
+
             results.push({ mediaId: mId, success: true, media });
             done = true;
             break;
