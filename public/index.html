@@ -740,10 +740,27 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
     this.style.borderColor = '';
     this.style.background = '';
   });
-  uploadArea.addEventListener('drop', function (e) {
+  uploadArea.addEventListener('drop', async function (e) {
     e.preventDefault();
     this.style.borderColor = '';
     this.style.background = '';
+
+    // 갤러리에서 드래그한 이미지인지 확인
+    const galleryFilename = e.dataTransfer.getData('application/x-gallery-image');
+    if (galleryFilename) {
+      try {
+        const res = await fetch('/images/' + galleryFilename);
+        const blob = await res.blob();
+        const file = new File([blob], galleryFilename, { type: blob.type });
+        addFiles([file]);
+        showToast('Added to reference', 'success');
+      } catch (err) {
+        showToast('Failed to add image', 'error');
+      }
+      return;
+    }
+
+    // 일반 파일 드롭
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
     addFiles(files);
   });
@@ -945,11 +962,20 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
                   <span>Video</span>
                   <span>${item.character_name || 'No char'}</span>
                 </div>`
-              : `<img src="/images/${filename}" alt="" loading="lazy">
+              : `<img src="/images/${filename}" alt="" loading="lazy" draggable="true">
                 <div class="meta">
                   <span>${item.posted ? 'Posted' : 'N:' + (item.natural_score||0) + ' S:' + (item.sexual_score||0)}</span>
                   <span>${item.character_name || 'No char'}</span>
                 </div>`;
+
+          // 이미지 드래그 → 레퍼런스 추가
+          if (!isFailed && !filename?.endsWith('.mp4')) {
+            div.draggable = true;
+            div.addEventListener('dragstart', (e) => {
+              e.dataTransfer.setData('text/plain', '/images/' + filename);
+              e.dataTransfer.setData('application/x-gallery-image', filename);
+            });
+          }
           grid.appendChild(div);
         });
 
