@@ -97,6 +97,27 @@ router.patch('/:id/status', async (req, res, next) => {
 });
 
 /**
+ * PATCH /api/accounts/:id/default-captions
+ */
+router.patch('/:id/default-captions', async (req, res, next) => {
+  try {
+    const { defaultImageCaption, defaultReelCaption } = req.body;
+    const account = await accountRepo.findById(req.params.id);
+    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
+
+    const metadata = account.metadata || {};
+    if (defaultImageCaption !== undefined) metadata.defaultImageCaption = defaultImageCaption;
+    if (defaultReelCaption !== undefined) metadata.defaultReelCaption = defaultReelCaption;
+
+    const { query: dbQuery } = require('../db/client');
+    await dbQuery('UPDATE social_accounts SET metadata = $1, updated_at = now() WHERE id = $2', [JSON.stringify(metadata), req.params.id]);
+
+    log.info(`Default captions saved for account ${req.params.id}`);
+    res.json({ success: true, data: metadata });
+  } catch (err) { next(err); }
+});
+
+/**
  * DELETE /api/accounts/:id
  */
 router.delete('/:id', async (req, res, next) => {
@@ -301,11 +322,15 @@ router.post('/:id/generate-reel', async (req, res, next) => {
           log.info(`Reel template saved: ${template.name}`);
         }
 
-        // 자동 Post Queue 등록 (image + reel 묶음)
+        // 자동 Post Queue 등록 (image + reel 묶음, 기본 캡션 적용)
+        const accForCaption = await accountRepo.findById(req.params.id);
+        const accMeta = accForCaption?.metadata || {};
         const queueItem = await postQueueRepo.insert({
           accountId: req.params.id,
           imageMediaId: mediaId,
           reelMediaId: media.id,
+          imageCaption: accMeta.defaultImageCaption || null,
+          reelCaption: accMeta.defaultReelCaption || null,
         });
         log.info(`Auto-queued: image=${mediaId} + reel=${media.id}`);
 
@@ -461,11 +486,15 @@ router.post('/:id/batch-reels', async (req, res, next) => {
               metadata: { source: 'batch_reel', templateId, sourceMediaId: mId, taskId },
             });
 
-            // 자동 Post Queue 등록
+            // 자동 Post Queue 등록 (기본 캡션 적용)
+            const batchAcc = await accountRepo.findById(req.params.id);
+            const batchMeta = batchAcc?.metadata || {};
             await postQueueRepo.insert({
               accountId: req.params.id,
               imageMediaId: mId,
               reelMediaId: media.id,
+              imageCaption: batchMeta.defaultImageCaption || null,
+              reelCaption: batchMeta.defaultReelCaption || null,
             });
 
             results.push({ mediaId: mId, success: true, media });

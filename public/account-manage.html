@@ -213,6 +213,25 @@
     </div>
   </div>
 
+  <!-- Default Captions -->
+  <div class="section-card">
+    <h3>Default Captions</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label class="form-label">Image Caption (게시물용)</label>
+        <textarea id="defaultImageCaption" class="form-input" placeholder="이미지 게시물에 기본으로 사용할 캡션..." style="min-height:80px;"></textarea>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label class="form-label">Reel Caption (릴스용)</label>
+        <textarea id="defaultReelCaption" class="form-input" placeholder="릴스에 기본으로 사용할 캡션..." style="min-height:80px;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="saveDefaultCaptions()" class="action-btn">Save Captions</button>
+      <span style="font-size:11px;color:var(--dim);align-self:center;">Queue에 추가될 때 자동으로 적용됩니다</span>
+    </div>
+  </div>
+
   <!-- 2. Outfit Prompt Manage -->
   <div class="section-card">
     <h3>2. Outfit Prompts</h3>
@@ -517,6 +536,34 @@
   function changeBasePhoto() {
     showToast('Click "Set Base" on any photo in All Media below', 'success');
     document.getElementById('mediaGrid').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── Default Captions ──
+  async function loadDefaultCaptions() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId);
+      const data = await res.json();
+      if (data.success && data.data?.metadata) {
+        const meta = typeof data.data.metadata === 'string' ? JSON.parse(data.data.metadata) : data.data.metadata;
+        document.getElementById('defaultImageCaption').value = meta.defaultImageCaption || '';
+        document.getElementById('defaultReelCaption').value = meta.defaultReelCaption || '';
+      }
+    } catch (e) {}
+  }
+
+  async function saveDefaultCaptions() {
+    const defaultImageCaption = document.getElementById('defaultImageCaption').value;
+    const defaultReelCaption = document.getElementById('defaultReelCaption').value;
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/default-captions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ defaultImageCaption, defaultReelCaption }),
+      });
+      const data = await res.json();
+      if (data.success) { showToast('Captions saved', 'success'); }
+      else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
   }
 
   // ── Outfit Prompts ──
@@ -1210,6 +1257,7 @@
 
   loadAccount();
   loadBasePhoto();
+  loadDefaultCaptions();
   loadOutfitPrompts();
   loadMedia().then(() => { loadReelSourceSelect(); renderBatchSelectGrid(); });
   loadTemplates();
