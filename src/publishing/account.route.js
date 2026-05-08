@@ -284,7 +284,7 @@ router.post('/:id/generate-reel', async (req, res, next) => {
     log.info(`Reel task: ${taskId}`);
 
     // 폴링
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 60; i++) {
       await new Promise(r => setTimeout(r, 10000));
       const pollToken = generateToken();
       const pollRes = await fetch(`https://api.klingai.com/v1/videos/image2video/${taskId}`, {
@@ -343,7 +343,7 @@ router.post('/:id/generate-reel', async (req, res, next) => {
       }
     }
 
-    res.json({ success: false, error: 'Timeout after 5min' });
+    res.json({ success: false, error: 'Timeout after 10min' });
   } catch (err) { next(err); }
 });
 
@@ -461,7 +461,7 @@ router.post('/:id/batch-reels', async (req, res, next) => {
 
         // 폴링
         let done = false;
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 60; i++) {
           await new Promise(r => setTimeout(r, 10000));
           const pollToken = generateToken();
           const pollRes = await fetch(`https://api.klingai.com/v1/videos/image2video/${taskId}`, {

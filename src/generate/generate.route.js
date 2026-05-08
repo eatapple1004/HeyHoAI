@@ -381,7 +381,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
       : `https://api.klingai.com/v1/videos/text2video/${taskId}`;
 
     // 폴링 (최대 5분)
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 60; i++) {
       await new Promise(r => setTimeout(r, 10000));
       const pollToken = generateToken();
       const pollRes = await fetch(pollEndpoint, {
@@ -587,7 +587,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
       }
     }
 
-    vlog.error('Timeout after 5min, task:', taskId);
+    vlog.error('Timeout after 10min, task:', taskId);
     res.json({ success: false, error: 'Video generation timed out (5min)', source: 'timeout', taskId });
   } catch (err) {
     vlog.error('Server error:', err.message);
