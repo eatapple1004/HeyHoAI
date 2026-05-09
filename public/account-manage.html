@@ -1290,11 +1290,17 @@
           </div>
         </div>
         ${!isHistory ? `
+        <div style="margin-bottom:4px;">
+          <label style="font-size:9px;color:var(--dim);">BGM</label>
+          <select class="form-select" id="bgm_${item.id}" style="width:100%;font-size:11px;padding:4px 8px;">
+            <option value="">-- No BGM --</option>
+          </select>
+        </div>
         <div class="queue-actions">
           <button class="q-btn ${item.status === 'pending' ? 'active-pending' : ''}" onclick="setQueueStatus('${item.id}','pending')">보류</button>
           <button class="q-btn ${item.status === 'confirmed' ? 'active-confirmed' : ''}" onclick="setQueueStatus('${item.id}','confirmed')">확정</button>
           <button class="q-btn ${item.status === 'rejected' ? 'active-rejected' : ''}" onclick="setQueueStatus('${item.id}','rejected')">탈락</button>
-          <button class="q-btn" onclick="saveQueueCaptions('${item.id}')">Save</button>
+          <button class="q-btn" onclick="saveQueueItem('${item.id}')">Save</button>
           <button class="q-btn danger" onclick="deleteQueueItem('${item.id}')">Del</button>
         </div>` : `
         <div class="queue-actions">
@@ -1304,6 +1310,21 @@
       </div>
     `;
     container.appendChild(card);
+
+    // BGM 드롭다운 옵션 채우기
+    if (!isHistory) {
+      const bgmSel = document.getElementById('bgm_' + item.id);
+      if (bgmSel) {
+        allMedia.filter(m => m.media_type === 'audio').forEach(m => {
+          const fn = m.file_path?.split('/').pop();
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = '♪ ' + fn;
+          if (m.id === item.bgm_media_id) opt.selected = true;
+          bgmSel.appendChild(opt);
+        });
+      }
+    }
   }
 
   async function setQueueStatus(queueId, status) {
@@ -1319,17 +1340,18 @@
     } catch (e) { showToast('Error', 'error'); }
   }
 
-  async function saveQueueCaptions(queueId) {
+  async function saveQueueItem(queueId) {
     const imageCaption = document.getElementById('imgCap_' + queueId)?.value || '';
     const reelCaption = document.getElementById('reelCap_' + queueId)?.value || '';
+    const bgmMediaId = document.getElementById('bgm_' + queueId)?.value || null;
     try {
       const res = await fetch('/api/accounts/post-queue/' + queueId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageCaption, reelCaption }),
+        body: JSON.stringify({ imageCaption, reelCaption, bgmMediaId }),
       });
       const data = await res.json();
-      if (data.success) { showToast('Captions saved', 'success'); }
+      if (data.success) { showToast('Saved', 'success'); loadPostQueue(); }
       else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error', 'error'); }
   }
