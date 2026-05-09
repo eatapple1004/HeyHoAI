@@ -105,6 +105,27 @@
   }
   .prompt-tag .tag-delete:hover { color: var(--red); }
 
+  .queue-thumb-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px;
+    max-height: 200px; overflow-y: auto; padding: 4px 0;
+  }
+  .queue-thumb-item {
+    position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 6px;
+    overflow: hidden; cursor: pointer; border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .queue-thumb-item:hover { border-color: var(--accent); }
+  .queue-thumb-item.selected { border-color: var(--green); }
+  .queue-thumb-item img, .queue-thumb-item video {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .queue-thumb-item .thumb-check {
+    position: absolute; top: 3px; right: 3px; width: 18px; height: 18px;
+    background: var(--green); border-radius: 50%; display: none;
+    align-items: center; justify-content: center; font-size: 10px; color: white;
+  }
+  .queue-thumb-item.selected .thumb-check { display: flex; }
+
   .queue-card {
     display: flex; gap: 12px; padding: 14px; background: var(--surface2);
     border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px;
@@ -319,14 +340,24 @@
     <!-- Add to Queue -->
     <div style="margin-bottom:16px;padding:14px;background:var(--surface2);border-radius:8px;">
       <label class="form-label">Add to Queue (Image + Reel bundle)</label>
-      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:150px;">
-          <label class="form-label" style="font-size:10px;">Image</label>
-          <select id="queueImageSelect" class="form-select" style="width:100%;"></select>
+      <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label class="form-label" style="margin:0;">Image</label>
+            <label style="padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--dim);font-size:10px;cursor:pointer;">
+              + Upload <input type="file" accept="image/*" style="display:none;" onchange="uploadAndSelectQueue(this.files[0], 'image')">
+            </label>
+          </div>
+          <div class="queue-thumb-grid" id="queueImageGrid"></div>
         </div>
-        <div style="flex:1;min-width:150px;">
-          <label class="form-label" style="font-size:10px;">Reel</label>
-          <select id="queueReelSelect" class="form-select" style="width:100%;"></select>
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label class="form-label" style="margin:0;">Reel</label>
+            <label style="padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--dim);font-size:10px;cursor:pointer;">
+              + Upload <input type="file" accept="video/mp4" style="display:none;" onchange="uploadAndSelectQueue(this.files[0], 'video')">
+            </label>
+          </div>
+          <div class="queue-thumb-grid" id="queueReelGrid"></div>
         </div>
       </div>
       <button onclick="addToQueue()" class="action-btn">Add to Queue</button>
@@ -1000,42 +1031,74 @@
   const STATUS_COLORS = { pending: 'var(--orange)', confirmed: 'var(--green)', rejected: 'var(--red)', posted: 'var(--accent2)' };
   const STATUS_LABELS = { pending: '보류', confirmed: '확정', rejected: '탈락', posted: '업로드 완료' };
 
-  function loadQueueSelects() {
-    const imgSel = document.getElementById('queueImageSelect');
-    const reelSel = document.getElementById('queueReelSelect');
-    imgSel.innerHTML = '<option value="">-- Select Image --</option>';
-    reelSel.innerHTML = '<option value="">-- Select Reel --</option>';
+  let selectedQueueImageId = null;
+  let selectedQueueReelId = null;
 
-    allMedia.filter(m => m.media_type === 'image').forEach(m => {
+  function loadQueueSelects() {
+    renderQueueThumbGrid('queueImageGrid', allMedia.filter(m => m.media_type === 'image'), 'image');
+    renderQueueThumbGrid('queueReelGrid', allMedia.filter(m => m.media_type === 'video'), 'video');
+  }
+
+  function renderQueueThumbGrid(gridId, items, type) {
+    const grid = document.getElementById(gridId);
+    const selectedId = type === 'image' ? selectedQueueImageId : selectedQueueReelId;
+
+    if (items.length === 0) {
+      grid.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px;">No ' + type + 's</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    items.forEach(m => {
       const filename = m.file_path?.split('/').pop();
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = (m.is_base ? '[BASE] ' : '') + filename;
-      imgSel.appendChild(opt);
-    });
-    allMedia.filter(m => m.media_type === 'video').forEach(m => {
-      const filename = m.file_path?.split('/').pop();
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = filename;
-      reelSel.appendChild(opt);
+      const isVideo = m.media_type === 'video';
+      const div = document.createElement('div');
+      div.className = 'queue-thumb-item' + (m.id === selectedId ? ' selected' : '');
+      div.onclick = () => {
+        if (type === 'image') selectedQueueImageId = (selectedQueueImageId === m.id ? null : m.id);
+        else selectedQueueReelId = (selectedQueueReelId === m.id ? null : m.id);
+        loadQueueSelects();
+      };
+      div.innerHTML = `
+        ${isVideo
+          ? '<video src="/images/' + filename + '" muted></video>'
+          : '<img src="/images/' + filename + '" alt="">'}
+        <div class="thumb-check">&#10003;</div>
+      `;
+      grid.appendChild(div);
     });
   }
 
+  async function uploadAndSelectQueue(file, type) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/media/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Uploaded', 'success');
+        if (type === 'image') selectedQueueImageId = data.data.id;
+        else selectedQueueReelId = data.data.id;
+        await loadMedia();
+      } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Upload error', 'error'); }
+  }
+
   async function addToQueue() {
-    const imageMediaId = document.getElementById('queueImageSelect').value || null;
-    const reelMediaId = document.getElementById('queueReelSelect').value || null;
-    if (!imageMediaId && !reelMediaId) { showToast('Select at least an image or reel', 'error'); return; }
+    if (!selectedQueueImageId && !selectedQueueReelId) { showToast('Select at least an image or reel', 'error'); return; }
 
     try {
       const res = await fetch('/api/accounts/' + accountId + '/post-queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageMediaId, reelMediaId }),
+        body: JSON.stringify({ imageMediaId: selectedQueueImageId, reelMediaId: selectedQueueReelId }),
       });
       const data = await res.json();
       if (data.success) {
         showToast('Added to queue', 'success');
+        selectedQueueImageId = null;
+        selectedQueueReelId = null;
+        loadQueueSelects();
         loadPostQueue();
       } else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error', 'error'); }
