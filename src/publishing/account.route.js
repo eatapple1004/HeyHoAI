@@ -605,7 +605,8 @@ router.post('/:id/media/upload', upload.single('file'), async (req, res, next) =
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
 
     const filename = req.file.filename;
-    const mediaType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+    const mediaType = req.file.mimetype.startsWith('video') ? 'video'
+      : req.file.mimetype.startsWith('audio') ? 'audio' : 'image';
     const { caption, hashtags } = req.body;
 
     const media = await mediaRepo.insert({
