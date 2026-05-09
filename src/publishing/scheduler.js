@@ -28,6 +28,13 @@ async function publishConfirmedItems() {
         const zernioAccountId = acc.zernio_account_id;
         log.info(`Publishing queue ${item.id} for account ${acc.account_id}`);
 
+        // 기본 캡션 fallback
+        const accountRepo = require('./account.repository');
+        const account = await accountRepo.findById(acc.account_id);
+        const accMeta = account?.metadata || {};
+        const imageCaption = item.image_caption || accMeta.defaultImageCaption || '';
+        const reelCaption = item.reel_caption || accMeta.defaultReelCaption || '';
+
         let imagePostUrl = null;
         let reelPostUrl = null;
         const baseUrl = `http://localhost:${env.PORT}`;
@@ -39,7 +46,7 @@ async function publishConfirmedItems() {
             const imageUrl = `${baseUrl}/images/${imageFilename}`;
             const post = await zernio.postToInstagram({
               accountId: zernioAccountId,
-              content: (item.image_caption || '') + '\n' + (item.hashtags || []).join(' '),
+              content: imageCaption + '\n' + (item.hashtags || []).join(' '),
               mediaItems: [{ type: 'image', url: imageUrl }],
             });
             imagePostUrl = post?.platformPostUrl || post?._id || 'posted';
@@ -79,7 +86,7 @@ async function publishConfirmedItems() {
             const reelUrl = `${baseUrl}/images/${reelFilename}`;
             const post = await zernio.postReelToInstagram({
               accountId: zernioAccountId,
-              content: (item.reel_caption || '') + '\n' + (item.hashtags || []).join(' '),
+              content: reelCaption + '\n' + (item.hashtags || []).join(' '),
               videoUrl: reelUrl,
             });
             reelPostUrl = post?.platformPostUrl || post?._id || 'posted';
