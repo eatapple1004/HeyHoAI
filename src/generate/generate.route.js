@@ -303,6 +303,15 @@ router.patch('/reviews/:idx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── 리뷰 삭제 (soft delete) ───
+router.delete('/reviews/:idx', async (req, res, next) => {
+  try {
+    const review = await reviewRepo.deactivate(parseInt(req.params.idx));
+    if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
+    res.json({ success: true, data: review });
+  } catch (err) { next(err); }
+});
+
 // ─── 비디오 생성 (Kling V3) ───
 router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
   const vlog = logger('Video');
