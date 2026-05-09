@@ -37,7 +37,7 @@ async function publishConfirmedItems() {
 
         let imagePostUrl = null;
         let reelPostUrl = null;
-        const baseUrl = `http://localhost:${env.PORT}`;
+        const baseUrl = env.PUBLIC_URL || `http://13.209.72.131:${env.PORT}`;
 
         // 1) 이미지 → 게시물 업로드
         if (item.image_path) {
