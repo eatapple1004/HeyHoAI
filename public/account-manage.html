@@ -293,10 +293,9 @@
   <!-- 4. Batch Reels -->
   <div class="section-card">
     <h3>4. Reel Generation</h3>
-    <div style="margin-bottom:8px;font-size:12px;color:var(--dim);">Select a photo below, enter a motion prompt, and generate a reel.</div>
     <div style="margin-bottom:12px;">
       <label class="form-label">Source Photo</label>
-      <select id="reelSourceSelect" class="form-select" style="width:100%;"></select>
+      <div class="queue-thumb-grid" id="reelSourceGrid" style="max-height:160px;"></div>
     </div>
     <div style="margin-bottom:12px;">
       <label class="form-label">Motion Prompt</label>
@@ -746,27 +745,35 @@
   }
 
   // ── Reel Source Select ──
-  async function loadReelSourceSelect() {
-    const sel = document.getElementById('reelSourceSelect');
-    sel.innerHTML = '<option value="">Select a photo...</option>';
-    const res = await fetch('/api/accounts/' + accountId + '/media');
-    const data = await res.json();
-    if (data.data) {
-      allMedia = data.data;
-      data.data.filter(m => m.media_type === 'image').forEach(m => {
-        const filename = m.file_path?.split('/').pop();
-        const label = m.is_base ? '[BASE] ' : '';
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = label + filename + (m.caption ? ' — ' + m.caption.slice(0, 40) : '');
-        sel.appendChild(opt);
-      });
+  let selectedReelSourceId = null;
+
+  function loadReelSourceSelect() {
+    const grid = document.getElementById('reelSourceGrid');
+    const images = allMedia.filter(m => m.media_type === 'image');
+    if (images.length === 0) {
+      grid.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px;">No images</div>';
+      return;
     }
+    grid.innerHTML = '';
+    images.forEach(m => {
+      const filename = m.file_path?.split('/').pop();
+      const div = document.createElement('div');
+      div.className = 'queue-thumb-item' + (m.id === selectedReelSourceId ? ' selected' : '');
+      div.onclick = () => {
+        selectedReelSourceId = (selectedReelSourceId === m.id ? null : m.id);
+        loadReelSourceSelect();
+      };
+      div.innerHTML = `
+        <img src="/images/${filename}" alt="">
+        <div class="thumb-check">&#10003;</div>
+      `;
+      grid.appendChild(div);
+    });
   }
 
   // ── Reel Generation ──
   async function generateReel() {
-    const mediaId = document.getElementById('reelSourceSelect').value;
+    const mediaId = selectedReelSourceId;
     const prompt = document.getElementById('reelPrompt').value.trim();
     if (!mediaId) { showToast('Select source photo', 'error'); return; }
     if (!prompt) { showToast('Enter motion prompt', 'error'); return; }
