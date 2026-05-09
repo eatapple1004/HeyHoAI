@@ -566,6 +566,18 @@ router.post('/:id/publish-now', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * POST /api/accounts/post-queue/:queueId/publish
+ * 개별 Queue 아이템 즉시 업로드
+ */
+router.post('/post-queue/:queueId/publish', async (req, res, next) => {
+  try {
+    const { publishSingleItem } = require('./scheduler');
+    const result = await publishSingleItem(req.params.queueId);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
 router.delete('/post-queue/:queueId', async (req, res, next) => {
   try {
     const item = await postQueueRepo.remove(req.params.queueId);

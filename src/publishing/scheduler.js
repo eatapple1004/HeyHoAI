@@ -148,4 +148,89 @@ function startScheduler() {
   log.info('Scheduler started (daily 18:00 KST)');
 }
 
-module.exports = { publishConfirmedItems, startScheduler };
+/**
+ * 개별 Queue 아이템 즉시 업로드
+ */
+async function publishSingleItem(queueId) {
+  const item = await postQueueRepo.findById(queueId);
+  if (!item) throw Object.assign(new Error('Queue item not found'), { statusCode: 404 });
+
+  const accountRepo = require('./account.repository');
+  const account = await accountRepo.findById(item.account_id);
+  if (!account) throw Object.assign(new Error('Account not found'), { statusCode: 404 });
+
+  const zernioAccountId = account.account_id;
+  const accMeta = account.metadata || {};
+  const imageCaption = item.image_caption || accMeta.defaultImageCaption || '';
+  const reelCaption = item.reel_caption || accMeta.defaultReelCaption || '';
+  const baseUrl = env.PUBLIC_URL || `http://13.209.72.131:${env.PORT}`;
+
+  let imagePostUrl = null;
+  let reelPostUrl = null;
+
+  log.info(`Publishing single queue ${queueId}`);
+
+  // 1) 이미지
+  if (item.image_path) {
+    try {
+      const imageFilename = item.image_path.split('/').pop();
+      const post = await zernio.postToInstagram({
+        accountId: zernioAccountId,
+        content: imageCaption + '\n' + (item.hashtags || []).join(' '),
+        mediaItems: [{ type: 'image', url: `${baseUrl}/images/${imageFilename}` }],
+      });
+      imagePostUrl = post?.platformPostUrl || post?._id || 'posted';
+      log.info(`Image posted: ${imagePostUrl}`);
+    } catch (err) {
+      log.error(`Image post failed: ${err.message}`);
+    }
+  }
+
+  // 2) 릴스 + BGM
+  if (item.reel_path) {
+    try {
+      let reelFilename = item.reel_path.split('/').pop();
+
+      if (item.bgm_path) {
+        try {
+          const { execSync } = require('child_process');
+          const crypto = require('crypto');
+          const reelFullPath = path.join(process.cwd(), item.reel_path);
+          const bgmFullPath = path.join(process.cwd(), item.bgm_path);
+          const mergedFilename = `merged_${crypto.randomUUID()}.mp4`;
+          const mergedPath = path.join(process.cwd(), 'tmp', 'images', mergedFilename);
+
+          if (fs.existsSync(reelFullPath) && fs.existsSync(bgmFullPath)) {
+            execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
+            reelFilename = mergedFilename;
+            log.info(`BGM merged: ${mergedFilename}`);
+          }
+        } catch (ffErr) {
+          log.warn(`BGM merge failed: ${ffErr.message}`);
+        }
+      }
+
+      const post = await zernio.postReelToInstagram({
+        accountId: zernioAccountId,
+        content: reelCaption + '\n' + (item.hashtags || []).join(' '),
+        videoUrl: `${baseUrl}/images/${reelFilename}`,
+      });
+      reelPostUrl = post?.platformPostUrl || post?._id || 'posted';
+      log.info(`Reel posted: ${reelPostUrl}`);
+    } catch (err) {
+      log.error(`Reel post failed: ${err.message}`);
+    }
+  }
+
+  await postQueueRepo.update(queueId, {
+    status: 'posted',
+    postedAt: new Date().toISOString(),
+    imagePostUrl,
+    reelPostUrl,
+  });
+
+  log.info(`Queue ${queueId} published`);
+  return { imagePostUrl, reelPostUrl };
+}
+
+module.exports = { publishConfirmedItems, publishSingleItem, startScheduler };
