@@ -1,10 +1,10 @@
 const { query } = require('../db/client');
 
-async function insert({ accountId, imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags }) {
+async function insert({ accountId, imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags, bgmMediaId }) {
   const result = await query(
-    `INSERT INTO post_queue (account_id, image_media_id, reel_media_id, image_caption, reel_caption, hashtags, status)
-     VALUES ($1,$2,$3,$4,$5,$6,'pending') RETURNING *`,
-    [accountId, imageMediaId || null, reelMediaId || null, imageCaption || null, reelCaption || null, hashtags || []]
+    `INSERT INTO post_queue (account_id, image_media_id, reel_media_id, image_caption, reel_caption, hashtags, bgm_media_id, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending') RETURNING *`,
+    [accountId, imageMediaId || null, reelMediaId || null, imageCaption || null, reelCaption || null, hashtags || [], bgmMediaId || null]
   );
   return result.rows[0];
 }
@@ -20,10 +20,12 @@ async function findByAccountId(accountId, { status, limit = 50, offset = 0 } = {
   const result = await query(
     `SELECT pq.*,
        img.file_path as image_path,
-       reel.file_path as reel_path
+       reel.file_path as reel_path,
+       bgm.file_path as bgm_path
      FROM post_queue pq
      LEFT JOIN account_media img ON img.id = pq.image_media_id
      LEFT JOIN account_media reel ON reel.id = pq.reel_media_id
+     LEFT JOIN account_media bgm ON bgm.id = pq.bgm_media_id
      ${where}
      ORDER BY pq.created_at DESC LIMIT $${i++} OFFSET $${i}`,
     [...params, limit, offset]
@@ -35,10 +37,12 @@ async function findById(id) {
   const result = await query(
     `SELECT pq.*,
        img.file_path as image_path,
-       reel.file_path as reel_path
+       reel.file_path as reel_path,
+       bgm.file_path as bgm_path
      FROM post_queue pq
      LEFT JOIN account_media img ON img.id = pq.image_media_id
      LEFT JOIN account_media reel ON reel.id = pq.reel_media_id
+     LEFT JOIN account_media bgm ON bgm.id = pq.bgm_media_id
      WHERE pq.id = $1`,
     [id]
   );
@@ -53,10 +57,12 @@ async function findNextConfirmed(accountId) {
     `SELECT pq.*,
        img.file_path as image_path,
        reel.file_path as reel_path,
+       bgm.file_path as bgm_path,
        sa.account_id as zernio_account_id
      FROM post_queue pq
      LEFT JOIN account_media img ON img.id = pq.image_media_id
      LEFT JOIN account_media reel ON reel.id = pq.reel_media_id
+     LEFT JOIN account_media bgm ON bgm.id = pq.bgm_media_id
      LEFT JOIN social_accounts sa ON sa.id = pq.account_id
      WHERE pq.account_id = $1 AND pq.status = 'confirmed'
      ORDER BY pq.created_at ASC LIMIT 1`,
@@ -90,6 +96,7 @@ async function update(id, fields) {
   if (fields.postedAt !== undefined) { sets.push(`posted_at = $${i++}`); params.push(fields.postedAt); }
   if (fields.imagePostUrl !== undefined) { sets.push(`image_post_url = $${i++}`); params.push(fields.imagePostUrl); }
   if (fields.reelPostUrl !== undefined) { sets.push(`reel_post_url = $${i++}`); params.push(fields.reelPostUrl); }
+  if (fields.bgmMediaId !== undefined) { sets.push(`bgm_media_id = $${i++}`); params.push(fields.bgmMediaId); }
 
   if (sets.length === 0) return findById(id);
   sets.push('updated_at = now()');

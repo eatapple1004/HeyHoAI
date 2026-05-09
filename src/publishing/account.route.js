@@ -533,12 +533,12 @@ router.get('/:id/post-queue', async (req, res, next) => {
 
 router.post('/:id/post-queue', async (req, res, next) => {
   try {
-    const { imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags } = req.body;
+    const { imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags, bgmMediaId } = req.body;
     if (!imageMediaId && !reelMediaId) {
       return res.status(400).json({ success: false, error: 'At least imageMediaId or reelMediaId is required' });
     }
     const item = await postQueueRepo.insert({
-      accountId: req.params.id, imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags,
+      accountId: req.params.id, imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags, bgmMediaId,
     });
     log.info(`Post queue added: image=${imageMediaId}, reel=${reelMediaId}`);
     res.status(201).json({ success: true, data: item });
@@ -547,8 +547,8 @@ router.post('/:id/post-queue', async (req, res, next) => {
 
 router.patch('/post-queue/:queueId', async (req, res, next) => {
   try {
-    const { imageCaption, reelCaption, hashtags, status } = req.body;
-    const item = await postQueueRepo.update(req.params.queueId, { imageCaption, reelCaption, hashtags, status });
+    const { imageCaption, reelCaption, hashtags, status, bgmMediaId } = req.body;
+    const item = await postQueueRepo.update(req.params.queueId, { imageCaption, reelCaption, hashtags, status, bgmMediaId });
     if (!item) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: item });
   } catch (err) { next(err); }

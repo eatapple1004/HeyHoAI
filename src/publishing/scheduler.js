@@ -49,10 +49,33 @@ async function publishConfirmedItems() {
           }
         }
 
-        // 2) 릴스 → 릴스 업로드
+        // 2) 릴스 → BGM 합치기 → 릴스 업로드
         if (item.reel_path) {
           try {
-            const reelFilename = item.reel_path.split('/').pop();
+            let reelFilename = item.reel_path.split('/').pop();
+
+            // BGM이 있으면 ffmpeg로 합치기
+            if (item.bgm_path) {
+              try {
+                const { execSync } = require('child_process');
+                const crypto = require('crypto');
+                const reelFullPath = path.join(process.cwd(), item.reel_path);
+                const bgmFullPath = path.join(process.cwd(), item.bgm_path);
+                const mergedFilename = `merged_${crypto.randomUUID()}.mp4`;
+                const mergedPath = path.join(process.cwd(), 'tmp', 'images', mergedFilename);
+
+                if (fs.existsSync(reelFullPath) && fs.existsSync(bgmFullPath)) {
+                  execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
+                  reelFilename = mergedFilename;
+                  log.info(`BGM merged: ${mergedFilename}`);
+                } else {
+                  log.warn('BGM or reel file not found, uploading without BGM');
+                }
+              } catch (ffErr) {
+                log.warn(`BGM merge failed: ${ffErr.message}, uploading without BGM`);
+              }
+            }
+
             const reelUrl = `${baseUrl}/images/${reelFilename}`;
             const post = await zernio.postReelToInstagram({
               accountId: zernioAccountId,
