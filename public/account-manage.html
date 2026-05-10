@@ -233,17 +233,27 @@
     <div style="color:var(--dim);">Loading...</div>
   </div>
 
-  <!-- 1. Base Photo -->
+  <!-- 1. Photos -->
   <div class="section-card">
     <h3 style="display:flex;justify-content:space-between;align-items:center;">
-      1. Base Photo
-      <label style="padding:6px 14px;background:var(--accent);border-radius:6px;color:white;font-size:12px;font-weight:600;cursor:pointer;">
-        Upload Base Photo
-        <input type="file" accept="image/*" style="display:none;" onchange="uploadBasePhoto(this.files[0])">
-      </label>
+      1. Photos
+      <div style="display:flex;gap:6px;">
+        <label style="padding:6px 14px;background:var(--accent);border-radius:6px;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+          Upload Base Photo
+          <input type="file" accept="image/*" style="display:none;" onchange="uploadBasePhoto(this.files[0])">
+        </label>
+        <label style="padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;">
+          + Add Photos
+          <input type="file" accept="image/*" multiple style="display:none;" onchange="uploadPhotos(this.files)">
+        </label>
+      </div>
     </h3>
     <div id="basePhotoArea">
       <div class="placeholder">Loading...</div>
+    </div>
+    <div style="margin-top:14px;">
+      <label class="form-label">All Photos</label>
+      <div class="queue-thumb-grid" id="photoGrid" style="max-height:240px;"></div>
     </div>
   </div>
 
@@ -575,6 +585,42 @@
     } else {
       showToast(data.error || 'Failed', 'error');
     }
+  }
+
+  async function uploadPhotos(files) {
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/accounts/' + accountId + '/media/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!data.success) showToast(data.error || 'Failed', 'error');
+      } catch (e) { showToast('Upload error', 'error'); }
+    }
+    showToast(files.length + ' photo(s) uploaded', 'success');
+    loadMedia();
+  }
+
+  function renderPhotoGrid() {
+    const grid = document.getElementById('photoGrid');
+    const photos = allMedia.filter(m => m.media_type === 'image');
+    if (photos.length === 0) {
+      grid.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px;">No photos yet</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    photos.forEach(m => {
+      const filename = m.file_path?.split('/').pop();
+      const div = document.createElement('div');
+      div.className = 'queue-thumb-item' + (m.is_base ? ' selected' : '');
+      div.style.cursor = 'pointer';
+      div.onclick = () => openPreview(m);
+      div.innerHTML = `
+        <img src="/images/${filename}" alt="">
+        ${m.is_base ? '<div class="thumb-check">B</div>' : ''}
+      `;
+      grid.appendChild(div);
+    });
   }
 
   async function uploadBasePhoto(file) {
@@ -1422,6 +1468,7 @@
         grid.appendChild(div);
       });
       loadCategoryGrids();
+      renderPhotoGrid();
       loadQueueSelects();
       loadPostQueue();
       loadUploadHistory();
