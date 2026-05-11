@@ -482,8 +482,9 @@
         <div id="previewInfo" style="font-size:11px;color:var(--dim);line-height:1.6;"></div>
       </div>
 
-      <div style="display:flex;gap:6px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button onclick="saveMediaInfo()" class="action-btn" style="flex:2;">Save</button>
+        <button id="previewSetBaseBtn" onclick="setBaseFromPreview()" style="flex:1;padding:8px;border:1px solid var(--green);border-radius:6px;background:rgba(0,184,148,0.1);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;display:none;">Set as Base</button>
         <a id="previewDownload" href="" download style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px;text-align:center;text-decoration:none;">Download</a>
         <button onclick="deletePreviewMedia()" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--red);font-size:13px;cursor:pointer;">Del</button>
       </div>
@@ -1096,6 +1097,10 @@
     document.getElementById('previewDownload').href = '/images/' + filename;
     document.getElementById('previewDownload').download = filename;
 
+    // Set as Base (이미지이고 현재 base가 아닌 경우만)
+    const baseBtn = document.getElementById('previewSetBaseBtn');
+    baseBtn.style.display = (m.media_type === 'image' && !m.is_base) ? 'block' : 'none';
+
     document.getElementById('previewModal').style.display = 'flex';
   }
 
@@ -1151,6 +1156,12 @@
         loadMedia();
       } else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function setBaseFromPreview() {
+    if (!currentPreviewMedia) return;
+    await setAsBase(currentPreviewMedia.id);
+    closePreview();
   }
 
   async function deletePreviewMedia() {
