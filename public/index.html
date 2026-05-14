@@ -619,6 +619,7 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   let selectedMode = 'image';
   let selectedModel = 'pro';
   let selectedCount = 1;
+  let lastGeneratedResultIdxs = new Set();
   let selectedDuration = '5';
   let selectedVMode = 'std';
   let selectedAudio = false;
@@ -850,6 +851,8 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
         const successCount = data.results.filter(r => r.success).length;
         const failCount = data.results.filter(r => !r.success).length;
 
+        lastGeneratedResultIdxs = new Set(data.results.map(r => r.resultIdx).filter(Boolean));
+
         let msg = `${successCount} image${successCount > 1 ? 's' : ''} generated`;
         if (failCount > 0) msg += ` (${failCount} blocked)`;
         showToast(msg, successCount > 0 ? 'success' : 'error');
@@ -891,6 +894,10 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
       const data = await res.json();
 
       if (data.success) {
+        // 비디오 파일명으로 추적
+        const videoFilename = data.url?.split('/').pop();
+        lastGeneratedResultIdxs = new Set();
+        if (videoFilename) lastGeneratedResultIdxs._videoFilename = videoFilename;
         showToast('Video generated! ' + data.duration + 's (' + (data.units || '?') + ' units)', 'success');
         loadGallery();
       } else {
@@ -947,9 +954,12 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
         data.data.forEach(item => {
           const filename = item.file_path?.split('/').pop();
           const isFailed = item.result_status === 'failed';
+          const isNew = lastGeneratedResultIdxs.has(item.result_idx)
+            || (lastGeneratedResultIdxs._videoFilename && filename === lastGeneratedResultIdxs._videoFilename);
           const div = document.createElement('div');
           div.className = 'gallery-item';
-          div.style.cssText = isFailed ? 'border-color:var(--red);opacity:0.7;' : '';
+          div.style.cssText = isFailed ? 'border-color:var(--red);opacity:0.7;'
+            : isNew ? 'border-color:var(--green);border-width:3px;' : '';
           div.onclick = () => openReview(item);
           div.innerHTML = isFailed
             ? `<div style="width:100%;aspect-ratio:4/5;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:16px;text-align:center;">
