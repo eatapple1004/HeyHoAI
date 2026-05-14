@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
   destination: uploadDir,
   filename: (_req, file, cb) => cb(null, `${crypto.randomUUID()}${path.extname(file.originalname)}`),
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 /**
  * GET /api/accounts/sync
