@@ -1361,6 +1361,7 @@
           <button class="q-btn" onclick="publishQueueItem('${item.id}')" style="font-weight:700;">Upload</button>
           <button class="q-btn danger" onclick="deleteQueueItem('${item.id}')">Del</button>
         </div>` : `
+        ${item.bgm_path ? '<div style="font-size:10px;color:var(--accent2);margin-bottom:4px;">♪ ' + item.bgm_path.split('/').pop() + '</div>' : '<div style="font-size:10px;color:var(--dim);margin-bottom:4px;">No BGM</div>'}
         <div class="queue-actions">
           ${item.image_post_url ? '<a class="q-btn" href="' + item.image_post_url + '" target="_blank" style="text-decoration:none;">Image Link</a>' : ''}
           ${item.reel_post_url ? '<a class="q-btn" href="' + item.reel_post_url + '" target="_blank" style="text-decoration:none;">Reel Link</a>' : ''}
