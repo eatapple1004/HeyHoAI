@@ -1359,12 +1359,15 @@
           <button class="q-btn ${item.status === 'rejected' ? 'active-rejected' : ''}" onclick="setQueueStatus('${item.id}','rejected')">탈락</button>
           <button class="q-btn" onclick="saveQueueItem('${item.id}')">Save</button>
           <button class="q-btn" onclick="publishQueueItem('${item.id}')" style="font-weight:700;">Upload</button>
+          <button class="q-btn" onclick="duplicateQueueItem('${item.id}')">Dup</button>
           <button class="q-btn danger" onclick="deleteQueueItem('${item.id}')">Del</button>
         </div>` : `
         ${item.bgm_path ? '<div style="font-size:10px;color:var(--accent2);margin-bottom:4px;">♪ ' + item.bgm_path.split('/').pop() + '</div>' : '<div style="font-size:10px;color:var(--dim);margin-bottom:4px;">No BGM</div>'}
         <div class="queue-actions">
           ${item.image_post_url ? '<a class="q-btn" href="' + item.image_post_url + '" target="_blank" style="text-decoration:none;">Image Link</a>' : ''}
           ${item.reel_post_url ? '<a class="q-btn" href="' + item.reel_post_url + '" target="_blank" style="text-decoration:none;">Reel Link</a>' : ''}
+          <button class="q-btn" onclick="reuploadQueueItem('${item.id}')" style="font-weight:700;">Reupload</button>
+          <button class="q-btn" onclick="duplicateQueueItem('${item.id}')">Duplicate</button>
         </div>`}
       </div>
     `;
@@ -1427,6 +1430,31 @@
         loadUploadHistory();
       } else { showToast(data.error || 'Failed', 'error'); }
     } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  }
+
+  async function reuploadQueueItem(queueId) {
+    if (!confirm('Reupload this item?')) return;
+    showToast('Reuploading...', 'success');
+    try {
+      const res = await fetch('/api/accounts/post-queue/' + queueId + '/reupload', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Reupload complete', 'success');
+        loadPostQueue();
+        loadUploadHistory();
+      } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  }
+
+  async function duplicateQueueItem(queueId) {
+    try {
+      const res = await fetch('/api/accounts/post-queue/' + queueId + '/duplicate', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Duplicated to queue', 'success');
+        loadPostQueue();
+      } else { showToast(data.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
   }
 
   async function deleteQueueItem(queueId) {

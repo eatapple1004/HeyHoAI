@@ -578,6 +578,49 @@ router.post('/post-queue/:queueId/publish', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * POST /api/accounts/post-queue/:queueId/duplicate
+ * Queue 아이템 복제 (pending 상태로)
+ */
+router.post('/post-queue/:queueId/duplicate', async (req, res, next) => {
+  try {
+    const original = await postQueueRepo.findById(req.params.queueId);
+    if (!original) return res.status(404).json({ success: false, error: 'Not found' });
+
+    const copy = await postQueueRepo.insert({
+      accountId: original.account_id,
+      imageMediaId: original.image_media_id,
+      reelMediaId: original.reel_media_id,
+      imageCaption: original.image_caption,
+      reelCaption: original.reel_caption,
+      hashtags: original.hashtags,
+      bgmMediaId: original.bgm_media_id,
+    });
+    log.info(`Queue duplicated: ${req.params.queueId} → ${copy.id}`);
+    res.status(201).json({ success: true, data: copy });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/accounts/post-queue/:queueId/reupload
+ * posted 상태를 리셋하고 다시 업로드
+ */
+router.post('/post-queue/:queueId/reupload', async (req, res, next) => {
+  try {
+    // 상태 리셋
+    await postQueueRepo.update(req.params.queueId, {
+      status: 'confirmed',
+      postedAt: null,
+      imagePostUrl: null,
+      reelPostUrl: null,
+    });
+    // 즉시 업로드
+    const { publishSingleItem } = require('./scheduler');
+    const result = await publishSingleItem(req.params.queueId);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
 router.delete('/post-queue/:queueId', async (req, res, next) => {
   try {
     const item = await postQueueRepo.remove(req.params.queueId);
