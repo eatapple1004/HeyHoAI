@@ -72,7 +72,7 @@ async function publishConfirmedItems() {
                 const mergedPath = path.join(process.cwd(), 'tmp', 'images', mergedFilename);
 
                 if (fs.existsSync(reelFullPath) && fs.existsSync(bgmFullPath)) {
-                  execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
+                  execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -map 0:v -map 1:a -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
                   reelFilename = mergedFilename;
                   log.info(`BGM merged: ${mergedFilename}`);
                 } else {
@@ -201,7 +201,7 @@ async function publishSingleItem(queueId) {
           const mergedPath = path.join(process.cwd(), 'tmp', 'images', mergedFilename);
 
           if (fs.existsSync(reelFullPath) && fs.existsSync(bgmFullPath)) {
-            execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
+            execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -map 0:v -map 1:a -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
             reelFilename = mergedFilename;
             log.info(`BGM merged: ${mergedFilename}`);
           }
