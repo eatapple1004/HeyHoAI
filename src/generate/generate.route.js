@@ -313,13 +313,15 @@ router.delete('/reviews/:idx', async (req, res, next) => {
 });
 
 // ─── 비디오 생성 (Kling V3) ───
-router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
+router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), async (req, res, next) => {
   const vlog = logger('Video');
   const alog = logger('Audio');
   try {
     const jwt = require('jsonwebtoken');
     const { prompt, duration = '5', mode = 'std', withAudio = 'false' } = req.body;
     const enableAudio = withAudio === 'true';
+    const sourceFile = req.files?.sourceImage?.[0];
+    const endFrameFile = req.files?.endFrameImage?.[0];
 
     if (!prompt) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
@@ -341,9 +343,9 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
     const token = generateToken();
     let endpoint, body;
 
-    if (req.file) {
+    if (sourceFile) {
       // Image-to-Video
-      const imageBase64 = fs.readFileSync(req.file.path).toString('base64');
+      const imageBase64 = fs.readFileSync(sourceFile.path).toString('base64');
       endpoint = 'https://api.klingai.com/v1/videos/image2video';
       body = {
         model_name: 'kling-v3',
@@ -354,6 +356,11 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
         mode,
         aspect_ratio: '9:16',
       };
+      // End Frame
+      if (endFrameFile) {
+        body.image_tail = fs.readFileSync(endFrameFile.path).toString('base64');
+        vlog.info('End frame attached');
+      }
     } else {
       // Text-to-Video
       endpoint = 'https://api.klingai.com/v1/videos/text2video';
@@ -385,7 +392,7 @@ router.post('/video', upload.single('sourceImage'), async (req, res, next) => {
 
     const taskId = submitData.data.task_id;
     vlog.info('Task ID:', taskId);
-    const pollEndpoint = req.file
+    const pollEndpoint = sourceFile
       ? `https://api.klingai.com/v1/videos/image2video/${taskId}`
       : `https://api.klingai.com/v1/videos/text2video/${taskId}`;
 

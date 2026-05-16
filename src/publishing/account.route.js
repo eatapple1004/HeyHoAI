@@ -243,7 +243,7 @@ router.post('/:id/generate-outfits', async (req, res, next) => {
  */
 router.post('/:id/generate-reel', async (req, res, next) => {
   try {
-    const { mediaId, prompt, duration = '5', mode = 'std', saveTemplate = false, templateName = '' } = req.body;
+    const { mediaId, prompt, endFrameMediaId, duration = '5', mode = 'std', saveTemplate = false, templateName = '' } = req.body;
     if (!prompt) return res.status(400).json({ success: false, error: 'Prompt is required' });
     if (!mediaId) return res.status(400).json({ success: false, error: 'mediaId is required' });
 
@@ -265,15 +265,28 @@ router.post('/:id/generate-reel', async (req, res, next) => {
     const imageBase64 = fs.readFileSync(imagePath).toString('base64');
     const token = generateToken();
 
+    // End Frame
+    const klingBody = {
+      model_name: 'kling-v3', image: imageBase64, prompt,
+      negative_prompt: 'ugly, deformed, blurry, static',
+      duration, mode, aspect_ratio: '9:16',
+    };
+    if (endFrameMediaId) {
+      const endMedia = await mediaRepo.findById(endFrameMediaId);
+      if (endMedia) {
+        const endPath = path.join(process.cwd(), endMedia.file_path);
+        if (fs.existsSync(endPath)) {
+          klingBody.image_tail = fs.readFileSync(endPath).toString('base64');
+          log.info(`End frame attached: ${endFrameMediaId}`);
+        }
+      }
+    }
+
     log.info(`Reel generation started for media ${mediaId}`);
     const submitRes = await fetch('https://api.klingai.com/v1/videos/image2video', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model_name: 'kling-v3', image: imageBase64, prompt,
-        negative_prompt: 'ugly, deformed, blurry, static',
-        duration, mode, aspect_ratio: '9:16',
-      }),
+      body: JSON.stringify(klingBody),
     });
     const submitData = await submitRes.json();
     if (!submitData.data?.task_id) {
