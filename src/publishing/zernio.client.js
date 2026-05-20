@@ -130,11 +130,10 @@ async function postStoryToInstagram({ accountId, mediaUrl, mediaType = 'image' }
 async function getAccountDetail(accountId) {
   log.info('Fetching account detail:', accountId);
   const res = await fetch(`${BASE_URL}/accounts`, { headers: headers() });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Account detail failed:', res.status);
-    throw new Error(data.message || `Failed ${res.status}`);
-  }
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { throw new Error(`Zernio returned non-JSON (${res.status})`); }
+  if (!res.ok) throw new Error(data.message || `Failed ${res.status}`);
   const account = (data.accounts || []).find(a => a._id === accountId);
   if (!account) throw new Error('Account not found in Zernio');
   return account;
@@ -146,11 +145,10 @@ async function getAccountDetail(accountId) {
 async function getPosts(accountId, { limit = 30 } = {}) {
   log.info('Fetching posts:', accountId);
   const res = await fetch(`${BASE_URL}/posts?platform=instagram&accountId=${accountId}&limit=${limit}`, { headers: headers() });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Posts fetch failed:', res.status, JSON.stringify(data).slice(0, 300));
-    throw new Error(data.message || `Posts failed ${res.status}`);
-  }
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { throw new Error(`Zernio returned non-JSON (${res.status})`); }
+  if (!res.ok) throw new Error(data.message || `Posts failed ${res.status}`);
   return data;
 }
 
