@@ -1,30 +1,37 @@
+const Zernio = require('@zernio/node').default;
 const { env } = require('../config');
 const logger = require('../lib/logger');
 const log = logger('Zernio');
 
-const BASE_URL = 'https://zernio.com/api/v1';
+let client = null;
 
-function headers() {
-  if (!env.ZERNIO_API_KEY) throw new Error('ZERNIO_API_KEY not configured');
-  return {
-    'Authorization': `Bearer ${env.ZERNIO_API_KEY}`,
-    'Content-Type': 'application/json',
-  };
+function getClient() {
+  if (!client) {
+    if (!env.ZERNIO_API_KEY) throw new Error('ZERNIO_API_KEY not configured');
+    client = new Zernio({ apiKey: env.ZERNIO_API_KEY });
+  }
+  return client;
 }
 
 /**
- * Zernio에 연결된 계정 목록 조회
+ * 연결된 계정 목록 조회
  */
 async function listAccounts() {
   log.info('Fetching accounts');
-  const res = await fetch(`${BASE_URL}/accounts`, { headers: headers() });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('List accounts failed:', res.status, JSON.stringify(data));
-    throw new Error(data.message || `Zernio API error ${res.status}`);
-  }
+  const { data } = await getClient().accounts.listAccounts();
   log.info('Accounts found:', data.accounts?.length || 0);
   return data.accounts || [];
+}
+
+/**
+ * 계정 상세 정보 (목록에서 추출)
+ */
+async function getAccountDetail(accountId) {
+  log.info('Fetching account detail:', accountId);
+  const { data } = await getClient().accounts.listAccounts();
+  const account = (data.accounts || []).find(a => a._id === accountId);
+  if (!account) throw new Error('Account not found in Zernio');
+  return account;
 }
 
 /**
@@ -44,17 +51,8 @@ async function postToInstagram({ accountId, content, mediaItems, scheduledFor, t
     body.publishNow = true;
   }
 
-  log.info('Posting to Instagram:', accountId, 'media:', mediaItems?.length, 'scheduled:', !!scheduledFor);
-  const res = await fetch(`${BASE_URL}/posts`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Post failed:', res.status, JSON.stringify(data).slice(0, 500));
-    throw new Error(data.message || `Zernio post failed ${res.status}`);
-  }
+  log.info('Posting to Instagram:', accountId, 'media:', mediaItems?.length);
+  const { data } = await getClient().posts.createPost({ body });
   log.info('Post success:', data.post?._id, 'status:', data.post?.status);
   return data.post;
 }
@@ -81,16 +79,7 @@ async function postReelToInstagram({ accountId, content, videoUrl, shareToFeed =
   }
 
   log.info('Posting Reel to Instagram:', accountId);
-  const res = await fetch(`${BASE_URL}/posts`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Reel post failed:', res.status, JSON.stringify(data).slice(0, 500));
-    throw new Error(data.message || `Zernio reel failed ${res.status}`);
-  }
+  const { data } = await getClient().posts.createPost({ body });
   log.info('Reel success:', data.post?._id);
   return data.post;
 }
@@ -110,33 +99,8 @@ async function postStoryToInstagram({ accountId, mediaUrl, mediaType = 'image' }
   };
 
   log.info('Posting Story to Instagram:', accountId);
-  const res = await fetch(`${BASE_URL}/posts`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Story post failed:', res.status, JSON.stringify(data).slice(0, 500));
-    throw new Error(data.message || `Zernio story failed ${res.status}`);
-  }
+  const { data } = await getClient().posts.createPost({ body });
   return data.post;
-}
-
-/**
- * 계정 상세 정보 (accounts 목록에서 해당 계정 추출)
- * Analytics 애드온 없이도 기본 데이터 제공
- */
-async function getAccountDetail(accountId) {
-  log.info('Fetching account detail:', accountId);
-  const res = await fetch(`${BASE_URL}/accounts`, { headers: headers() });
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch { throw new Error(`Zernio returned non-JSON (${res.status})`); }
-  if (!res.ok) throw new Error(data.message || `Failed ${res.status}`);
-  const account = (data.accounts || []).find(a => a._id === accountId);
-  if (!account) throw new Error('Account not found in Zernio');
-  return account;
 }
 
 /**
@@ -144,15 +108,14 @@ async function getAccountDetail(accountId) {
  */
 async function getPosts(accountId, { limit = 30 } = {}) {
   log.info('Fetching posts:', accountId);
-  const res = await fetch(`${BASE_URL}/posts?platform=instagram&accountId=${accountId}&limit=${limit}`, { headers: headers() });
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch { throw new Error(`Zernio returned non-JSON (${res.status})`); }
-  if (!res.ok) throw new Error(data.message || `Posts failed ${res.status}`);
+  const { data } = await getClient().posts.listPosts({
+    query: { platform: 'instagram', accountId, limit },
+  });
   return data;
 }
 
 module.exports = {
-  listAccounts, postToInstagram, postReelToInstagram, postStoryToInstagram,
-  getAccountDetail, getPosts,
+  listAccounts, getAccountDetail,
+  postToInstagram, postReelToInstagram, postStoryToInstagram,
+  getPosts,
 };
