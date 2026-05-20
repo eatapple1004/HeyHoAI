@@ -425,18 +425,16 @@
           </div>
         </div>
       </div>
-      <div style="margin-top:10px;" id="endFrameSection" style="display:none;">
+      <div style="margin-top:10px;" id="endFrameSection">
         <label style="font-size:12px;color:var(--dim);">End Frame (optional)</label>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-          <label style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:12px;cursor:pointer;">
-            Select Image
-            <input type="file" accept="image/*" id="endFrameInput" style="display:none;" onchange="setEndFrame(this.files[0])">
-          </label>
-          <span id="endFrameName" style="font-size:11px;color:var(--dim);">None</span>
-          <button onclick="clearEndFrame()" style="background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;display:none;" id="endFrameClear">&times;</button>
+        <div class="upload-area" id="endFrameDropArea" onclick="document.getElementById('endFrameInput').click()" style="margin-top:4px;padding:14px;">
+          <div class="icon" style="font-size:18px;">+</div>
+          <div class="label">Click or drag image here for end frame</div>
+          <input type="file" accept="image/*" id="endFrameInput" style="display:none;" onchange="setEndFrame(this.files[0])">
         </div>
-        <div id="endFramePreview" style="margin-top:6px;display:none;">
-          <img id="endFramePreviewImg" src="" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+        <div id="endFramePreview" style="margin-top:6px;display:none;position:relative;display:inline-block;">
+          <img id="endFramePreviewImg" src="" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid var(--green);">
+          <button onclick="clearEndFrame()" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;">&times;</button>
         </div>
       </div>
     </div>
@@ -675,12 +673,11 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   function setEndFrame(file) {
     if (!file) return;
     endFrameFile = file;
-    document.getElementById('endFrameName').textContent = file.name;
-    document.getElementById('endFrameClear').style.display = 'inline';
     const reader = new FileReader();
     reader.onload = (e) => {
       document.getElementById('endFramePreviewImg').src = e.target.result;
-      document.getElementById('endFramePreview').style.display = 'block';
+      document.getElementById('endFramePreview').style.display = 'inline-block';
+      document.getElementById('endFrameDropArea').classList.add('has-file');
     };
     reader.readAsDataURL(file);
   }
@@ -688,10 +685,46 @@ ultra realistic photo of a young Korean woman sitting in the backseat of a car, 
   function clearEndFrame() {
     endFrameFile = null;
     document.getElementById('endFrameInput').value = '';
-    document.getElementById('endFrameName').textContent = 'None';
-    document.getElementById('endFrameClear').style.display = 'none';
     document.getElementById('endFramePreview').style.display = 'none';
+    document.getElementById('endFrameDropArea').classList.remove('has-file');
   }
+
+  // End Frame Drag & Drop
+  const endFrameDrop = document.getElementById('endFrameDropArea');
+  endFrameDrop.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.style.borderColor = 'var(--accent)';
+    this.style.background = 'rgba(108,92,231,0.1)';
+  });
+  endFrameDrop.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.style.borderColor = '';
+    this.style.background = '';
+  });
+  endFrameDrop.addEventListener('drop', async function(e) {
+    e.preventDefault();
+    this.style.borderColor = '';
+    this.style.background = '';
+
+    // 갤러리에서 드래그한 이미지
+    const galleryFilename = e.dataTransfer.getData('application/x-gallery-image');
+    if (galleryFilename) {
+      try {
+        const res = await fetch('/images/' + galleryFilename);
+        const blob = await res.blob();
+        const file = new File([blob], galleryFilename, { type: blob.type });
+        setEndFrame(file);
+        showToast('End frame set', 'success');
+      } catch (err) {
+        showToast('Failed to set end frame', 'error');
+      }
+      return;
+    }
+
+    // 일반 파일 드롭
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) setEndFrame(files[0]);
+  });
   let stylesData = [];
 
   // ── Load Styles ──
