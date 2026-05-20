@@ -124,62 +124,37 @@ async function postStoryToInstagram({ accountId, mediaUrl, mediaType = 'image' }
 }
 
 /**
- * 인스타그램 계정 인사이트
+ * 계정 상세 정보 (accounts 목록에서 해당 계정 추출)
+ * Analytics 애드온 없이도 기본 데이터 제공
  */
-async function getAccountInsights(accountId) {
-  log.info('Fetching account insights:', accountId);
-  const res = await fetch(`${BASE_URL}/accounts/${accountId}/instagram/account-insights`, { headers: headers() });
+async function getAccountDetail(accountId) {
+  log.info('Fetching account detail:', accountId);
+  const res = await fetch(`${BASE_URL}/accounts`, { headers: headers() });
   const data = await res.json();
   if (!res.ok) {
-    log.error('Account insights failed:', res.status, JSON.stringify(data).slice(0, 300));
-    throw new Error(data.message || `Insights failed ${res.status}`);
+    log.error('Account detail failed:', res.status);
+    throw new Error(data.message || `Failed ${res.status}`);
   }
-  return data;
+  const account = (data.accounts || []).find(a => a._id === accountId);
+  if (!account) throw new Error('Account not found in Zernio');
+  return account;
 }
 
 /**
- * 팔로워 히스토리
+ * 게시물 목록 조회
  */
-async function getFollowerHistory(accountId) {
-  log.info('Fetching follower history:', accountId);
-  const res = await fetch(`${BASE_URL}/accounts/${accountId}/instagram/follower-history`, { headers: headers() });
+async function getPosts(accountId, { limit = 30 } = {}) {
+  log.info('Fetching posts:', accountId);
+  const res = await fetch(`${BASE_URL}/posts?platform=instagram&accountId=${accountId}&limit=${limit}`, { headers: headers() });
   const data = await res.json();
   if (!res.ok) {
-    log.error('Follower history failed:', res.status, JSON.stringify(data).slice(0, 300));
-    throw new Error(data.message || `Follower history failed ${res.status}`);
-  }
-  return data;
-}
-
-/**
- * 게시물 분석
- */
-async function getPostAnalytics(platform = 'instagram') {
-  log.info('Fetching post analytics:', platform);
-  const res = await fetch(`${BASE_URL}/analytics?platform=${platform}`, { headers: headers() });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Post analytics failed:', res.status, JSON.stringify(data).slice(0, 300));
-    throw new Error(data.message || `Analytics failed ${res.status}`);
-  }
-  return data;
-}
-
-/**
- * 인구통계
- */
-async function getDemographics(accountId) {
-  log.info('Fetching demographics:', accountId);
-  const res = await fetch(`${BASE_URL}/accounts/${accountId}/instagram/demographics`, { headers: headers() });
-  const data = await res.json();
-  if (!res.ok) {
-    log.error('Demographics failed:', res.status, JSON.stringify(data).slice(0, 300));
-    throw new Error(data.message || `Demographics failed ${res.status}`);
+    log.error('Posts fetch failed:', res.status, JSON.stringify(data).slice(0, 300));
+    throw new Error(data.message || `Posts failed ${res.status}`);
   }
   return data;
 }
 
 module.exports = {
   listAccounts, postToInstagram, postReelToInstagram, postStoryToInstagram,
-  getAccountInsights, getFollowerHistory, getPostAnalytics, getDemographics,
+  getAccountDetail, getPosts,
 };

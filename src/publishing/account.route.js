@@ -119,36 +119,20 @@ router.patch('/:id/default-captions', async (req, res, next) => {
 
 // ── Analytics ──
 
-router.get('/:id/analytics/insights', async (req, res, next) => {
+router.get('/:id/analytics/detail', async (req, res, next) => {
   try {
     const account = await accountRepo.findById(req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
-    const data = await zernio.getAccountInsights(account.account_id);
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-});
-
-router.get('/:id/analytics/followers', async (req, res, next) => {
-  try {
-    const account = await accountRepo.findById(req.params.id);
-    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
-    const data = await zernio.getFollowerHistory(account.account_id);
+    const data = await zernio.getAccountDetail(account.account_id);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
 router.get('/:id/analytics/posts', async (req, res, next) => {
   try {
-    const data = await zernio.getPostAnalytics('instagram');
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-});
-
-router.get('/:id/analytics/demographics', async (req, res, next) => {
-  try {
     const account = await accountRepo.findById(req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
-    const data = await zernio.getDemographics(account.account_id);
+    const data = await zernio.getPosts(account.account_id);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 });
