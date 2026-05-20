@@ -34,6 +34,9 @@ app.get('/heyhoai/accounts/page', (_req, res) => {
 app.get('/heyhoai/accounts/:id/manage', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'account-manage.html'));
 });
+app.get('/heyhoai/accounts/:id/analytics', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'account-analytics.html'));
+});
 
 // Routes
 app.use('/api/characters', characterRoutes);

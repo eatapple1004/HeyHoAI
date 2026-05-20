@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - Analytics</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--accent2); }
+  header nav { display: flex; gap: 16px; }
+  header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+  header nav a:hover, header nav a.active { color: var(--accent2); }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; transition: color 0.2s; }
+  .back-link:hover { color: var(--accent2); }
+
+  .account-header {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;
+  }
+  .account-header .avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--surface2); border: 2px solid var(--border); }
+  .account-header .info { flex: 1; }
+  .account-header .name { font-size: 18px; font-weight: 700; }
+  .account-header .username { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .stat-card .stat-value { font-size: 28px; font-weight: 800; color: var(--text); }
+  .stat-card .stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  .stat-card .stat-change { font-size: 12px; margin-top: 4px; }
+  .stat-card .stat-change.up { color: var(--green); }
+  .stat-card .stat-change.down { color: var(--red); }
+
+  .section-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 16px;
+  }
+  .section-card h3 { font-size: 15px; font-weight: 700; color: var(--accent2); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+  .chart-bar-container { display: flex; flex-direction: column; gap: 6px; }
+  .chart-bar-row { display: flex; align-items: center; gap: 8px; }
+  .chart-bar-label { width: 80px; font-size: 11px; color: var(--dim); text-align: right; flex-shrink: 0; }
+  .chart-bar { height: 20px; background: var(--accent); border-radius: 4px; min-width: 2px; transition: width 0.3s; }
+  .chart-bar-value { font-size: 11px; color: var(--text); font-weight: 600; min-width: 40px; }
+
+  .follower-chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding-top: 10px; }
+  .follower-bar { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; transition: height 0.3s; position: relative; }
+  .follower-bar:hover { background: var(--accent2); }
+  .follower-bar .bar-tip {
+    display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 2px 6px; font-size: 10px; white-space: nowrap;
+  }
+  .follower-bar:hover .bar-tip { display: block; }
+
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .demo-grid { grid-template-columns: 1fr; } }
+
+  .placeholder { color: var(--dim); font-size: 13px; padding: 20px; text-align: center; }
+  .refresh-btn {
+    padding: 8px 16px; background: var(--accent); border: none; border-radius: 6px;
+    color: white; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .error-msg { color: var(--red); font-size: 12px; padding: 10px; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 300; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); color: white; }
+  .toast.error { background: var(--red); color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HeyHoAI</h1>
+  <nav>
+    <a href="/heyhoai/image/generater/page">Image Generator</a>
+    <a href="/heyhoai/character/page">Characters</a>
+    <a href="/heyhoai/accounts/page" class="active">Accounts</a>
+    <a href="/heyhoai/logs/page">Logs</a>
+  </nav>
+</header>
+
+<div class="container">
+  <a class="back-link" href="/heyhoai/accounts/page">&larr; Back to Accounts</a>
+
+  <div class="account-header" id="accountHeader">
+    <div style="color:var(--dim);">Loading...</div>
+  </div>
+
+  <!-- Overview Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-value">-</div><div class="stat-label">Loading...</div></div>
+  </div>
+
+  <!-- Follower History -->
+  <div class="section-card">
+    <h3 style="display:flex;justify-content:space-between;align-items:center;">
+      Follower History
+      <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+    </h3>
+    <div id="followerChart" class="follower-chart">
+      <div class="placeholder">Loading...</div>
+    </div>
+    <div id="followerLabels" style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--dim);"></div>
+  </div>
+
+  <!-- Demographics -->
+  <div class="section-card">
+    <h3>Audience Demographics</h3>
+    <div class="demo-grid">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px;">AGE & GENDER</div>
+        <div id="demoAge" class="chart-bar-container"><div class="placeholder">Loading...</div></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px;">TOP COUNTRIES</div>
+        <div id="demoCountry" class="chart-bar-container"><div class="placeholder">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Insights Detail -->
+  <div class="section-card">
+    <h3>Account Insights (Raw)</h3>
+    <pre id="rawInsights" style="font-size:11px;color:var(--dim);background:var(--surface2);padding:12px;border-radius:6px;overflow-x:auto;max-height:300px;overflow-y:auto;">Loading...</pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const accountId = window.location.pathname.split('/')[3];
+
+  async function loadAccount() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId);
+      const data = await res.json();
+      if (!data.success) return;
+      const acc = data.data;
+      document.title = `HeyHoAI - ${acc.display_name || acc.username} Analytics`;
+      document.getElementById('accountHeader').innerHTML = `
+        ${acc.profile_image
+          ? '<img class="avatar" src="' + acc.profile_image + '" alt="">'
+          : '<div class="avatar" style="display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--dim);">' + (acc.platform?.[0]?.toUpperCase() || '?') + '</div>'}
+        <div class="info">
+          <div class="name">${acc.display_name || acc.username} — Analytics</div>
+          <div class="username">@${acc.username || acc.account_id}</div>
+        </div>
+      `;
+    } catch (e) {}
+  }
+
+  async function loadInsights() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/analytics/insights');
+      const data = await res.json();
+      if (!data.success) { document.getElementById('statsGrid').innerHTML = '<div class="error-msg">Failed to load insights</div>'; return; }
+
+      const insights = data.data;
+      document.getElementById('rawInsights').textContent = JSON.stringify(insights, null, 2);
+
+      // 주요 지표 카드
+      const metrics = insights.data || insights.metrics || insights;
+      const cards = [];
+
+      const extract = (obj, keys) => {
+        for (const k of keys) { if (obj[k] !== undefined) return obj[k]; }
+        return null;
+      };
+
+      const reach = extract(metrics, ['reach', 'accounts_reached', 'total_reach']);
+      const impressions = extract(metrics, ['impressions', 'total_impressions']);
+      const follows = extract(metrics, ['follows', 'new_follows', 'follower_count']);
+      const engagement = extract(metrics, ['total_interactions', 'engagement', 'accounts_engaged']);
+      const profileViews = extract(metrics, ['profile_views', 'profile_link_taps']);
+
+      if (reach !== null) cards.push({ value: formatNum(reach), label: 'Reach' });
+      if (impressions !== null) cards.push({ value: formatNum(impressions), label: 'Impressions' });
+      if (follows !== null) cards.push({ value: formatNum(follows), label: 'Followers' });
+      if (engagement !== null) cards.push({ value: formatNum(engagement), label: 'Engagement' });
+      if (profileViews !== null) cards.push({ value: formatNum(profileViews), label: 'Profile Views' });
+
+      if (cards.length === 0) {
+        // fallback: 모든 숫자 키를 카드로
+        Object.entries(typeof metrics === 'object' ? metrics : {}).forEach(([k, v]) => {
+          if (typeof v === 'number') cards.push({ value: formatNum(v), label: k.replace(/_/g, ' ') });
+        });
+      }
+
+      const grid = document.getElementById('statsGrid');
+      if (cards.length === 0) {
+        grid.innerHTML = '<div class="placeholder">No metric data available</div>';
+      } else {
+        grid.innerHTML = cards.map(c => `
+          <div class="stat-card">
+            <div class="stat-value">${c.value}</div>
+            <div class="stat-label">${c.label}</div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      document.getElementById('statsGrid').innerHTML = '<div class="error-msg">' + e.message + '</div>';
+      document.getElementById('rawInsights').textContent = 'Error: ' + e.message;
+    }
+  }
+
+  async function loadFollowers() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/analytics/followers');
+      const data = await res.json();
+      const chart = document.getElementById('followerChart');
+      const labels = document.getElementById('followerLabels');
+
+      const history = data.data?.history || data.data?.data || (Array.isArray(data.data) ? data.data : []);
+
+      if (!history || history.length === 0) {
+        chart.innerHTML = '<div class="placeholder">No follower history yet</div>';
+        return;
+      }
+
+      const values = history.map(h => h.follower_count || h.followers || h.count || 0);
+      const max = Math.max(...values, 1);
+
+      chart.innerHTML = '';
+      history.forEach((h, i) => {
+        const pct = (values[i] / max) * 100;
+        const date = h.date || h.recorded_at || '';
+        const bar = document.createElement('div');
+        bar.className = 'follower-bar';
+        bar.style.height = pct + '%';
+        bar.innerHTML = '<div class="bar-tip">' + (date ? date.slice(5, 10) + ': ' : '') + values[i].toLocaleString() + '</div>';
+        chart.appendChild(bar);
+      });
+
+      // 날짜 라벨
+      if (history.length > 1) {
+        const first = history[0].date || history[0].recorded_at || '';
+        const last = history[history.length - 1].date || history[history.length - 1].recorded_at || '';
+        labels.innerHTML = '<span>' + first.slice(0, 10) + '</span><span>' + last.slice(0, 10) + '</span>';
+      }
+    } catch (e) {
+      document.getElementById('followerChart').innerHTML = '<div class="error-msg">' + e.message + '</div>';
+    }
+  }
+
+  async function loadDemographics() {
+    try {
+      const res = await fetch('/api/accounts/' + accountId + '/analytics/demographics');
+      const data = await res.json();
+
+      const demo = data.data?.data || data.data || {};
+      const ageGender = demo.age || demo.audience_gender_age || {};
+      const countries = demo.country || demo.audience_country || {};
+
+      // Age & Gender
+      const ageContainer = document.getElementById('demoAge');
+      const ageEntries = Object.entries(typeof ageGender === 'object' ? ageGender : {});
+      if (ageEntries.length === 0) {
+        ageContainer.innerHTML = '<div class="placeholder">No data (min 100 followers)</div>';
+      } else {
+        const maxAge = Math.max(...ageEntries.map(([, v]) => typeof v === 'number' ? v : 0), 1);
+        ageContainer.innerHTML = ageEntries.slice(0, 10).map(([k, v]) => {
+          const val = typeof v === 'number' ? v : 0;
+          return `<div class="chart-bar-row">
+            <div class="chart-bar-label">${k}</div>
+            <div class="chart-bar" style="width:${(val / maxAge) * 100}%"></div>
+            <div class="chart-bar-value">${val.toLocaleString()}</div>
+          </div>`;
+        }).join('');
+      }
+
+      // Countries
+      const countryContainer = document.getElementById('demoCountry');
+      const countryEntries = Object.entries(typeof countries === 'object' ? countries : {}).sort((a, b) => b[1] - a[1]);
+      if (countryEntries.length === 0) {
+        countryContainer.innerHTML = '<div class="placeholder">No data (min 100 followers)</div>';
+      } else {
+        const maxCountry = Math.max(...countryEntries.map(([, v]) => v), 1);
+        countryContainer.innerHTML = countryEntries.slice(0, 10).map(([k, v]) => `
+          <div class="chart-bar-row">
+            <div class="chart-bar-label">${k}</div>
+            <div class="chart-bar" style="width:${(v / maxCountry) * 100}%;background:var(--green);"></div>
+            <div class="chart-bar-value">${v.toLocaleString()}</div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      document.getElementById('demoAge').innerHTML = '<div class="error-msg">' + e.message + '</div>';
+      document.getElementById('demoCountry').innerHTML = '';
+    }
+  }
+
+  function formatNum(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + type + ' show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function loadAll() {
+    loadInsights();
+    loadFollowers();
+    loadDemographics();
+  }
+
+  loadAccount();
+  loadAll();
+</script>
+</body>
+</html>

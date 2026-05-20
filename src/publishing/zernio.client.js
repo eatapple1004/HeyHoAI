@@ -123,4 +123,63 @@ async function postStoryToInstagram({ accountId, mediaUrl, mediaType = 'image' }
   return data.post;
 }
 
-module.exports = { listAccounts, postToInstagram, postReelToInstagram, postStoryToInstagram };
+/**
+ * 인스타그램 계정 인사이트
+ */
+async function getAccountInsights(accountId) {
+  log.info('Fetching account insights:', accountId);
+  const res = await fetch(`${BASE_URL}/accounts/${accountId}/instagram/account-insights`, { headers: headers() });
+  const data = await res.json();
+  if (!res.ok) {
+    log.error('Account insights failed:', res.status, JSON.stringify(data).slice(0, 300));
+    throw new Error(data.message || `Insights failed ${res.status}`);
+  }
+  return data;
+}
+
+/**
+ * 팔로워 히스토리
+ */
+async function getFollowerHistory(accountId) {
+  log.info('Fetching follower history:', accountId);
+  const res = await fetch(`${BASE_URL}/accounts/${accountId}/instagram/follower-history`, { headers: headers() });
+  const data = await res.json();
+  if (!res.ok) {
+    log.error('Follower history failed:', res.status, JSON.stringify(data).slice(0, 300));
+    throw new Error(data.message || `Follower history failed ${res.status}`);
+  }
+  return data;
+}
+
+/**
+ * 게시물 분석
+ */
+async function getPostAnalytics(platform = 'instagram') {
+  log.info('Fetching post analytics:', platform);
+  const res = await fetch(`${BASE_URL}/analytics?platform=${platform}`, { headers: headers() });
+  const data = await res.json();
+  if (!res.ok) {
+    log.error('Post analytics failed:', res.status, JSON.stringify(data).slice(0, 300));
+    throw new Error(data.message || `Analytics failed ${res.status}`);
+  }
+  return data;
+}
+
+/**
+ * 인구통계
+ */
+async function getDemographics(accountId) {
+  log.info('Fetching demographics:', accountId);
+  const res = await fetch(`${BASE_URL}/accounts/${accountId}/instagram/demographics`, { headers: headers() });
+  const data = await res.json();
+  if (!res.ok) {
+    log.error('Demographics failed:', res.status, JSON.stringify(data).slice(0, 300));
+    throw new Error(data.message || `Demographics failed ${res.status}`);
+  }
+  return data;
+}
+
+module.exports = {
+  listAccounts, postToInstagram, postReelToInstagram, postStoryToInstagram,
+  getAccountInsights, getFollowerHistory, getPostAnalytics, getDemographics,
+};
