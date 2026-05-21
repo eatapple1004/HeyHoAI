@@ -29,11 +29,14 @@
   /* Progress */
   .progress-bar { display: flex; gap: 4px; margin-bottom: 28px; }
   .progress-step {
-    flex: 1; height: 6px; border-radius: 3px; background: var(--surface2);
-    transition: background 0.3s;
+    flex: 1; height: 32px; border-radius: 6px; background: var(--surface2);
+    transition: all 0.3s; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 600; color: var(--dim);
+    border: 1px solid transparent;
   }
-  .progress-step.done { background: var(--green); }
-  .progress-step.active { background: var(--accent); }
+  .progress-step:hover { border-color: var(--accent); color: var(--accent2); }
+  .progress-step.done { background: rgba(0,184,148,0.15); color: var(--green); border-color: var(--green); }
+  .progress-step.active { background: rgba(108,92,231,0.15); color: var(--accent2); border-color: var(--accent); }
 
   /* Steps */
   .step-card {
@@ -119,11 +122,11 @@
   <div class="flow-desc">캐릭터의 첫 인상을 만드는 자기소개 영상을 단계별로 제작합니다.</div>
 
   <div class="progress-bar">
-    <div class="progress-step active" id="prog1"></div>
-    <div class="progress-step" id="prog2"></div>
-    <div class="progress-step" id="prog3"></div>
-    <div class="progress-step" id="prog4"></div>
-    <div class="progress-step" id="prog5"></div>
+    <div class="progress-step active" id="prog1" onclick="goStep(1)">1. Profile</div>
+    <div class="progress-step" id="prog2" onclick="goStep(2)">2. Photo</div>
+    <div class="progress-step" id="prog3" onclick="goStep(3)">3. Style</div>
+    <div class="progress-step" id="prog4" onclick="goStep(4)">4. BGM</div>
+    <div class="progress-step" id="prog5" onclick="goStep(5)">5. Result</div>
   </div>
 
   <!-- Step 1: 프로필 정보 -->
