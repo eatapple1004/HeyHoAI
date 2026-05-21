@@ -1248,20 +1248,33 @@
         } else {
           const start = clip.trimStart || 0;
           const dur = Math.max(0.1, (clip.trimEnd || clip.mediaDuration) - start);
+          // Always provide a silent anullsrc as a second input so every segment ends up with
+          // a video stream + a stereo aac audio stream (uniform across all segments → concat -c copy works).
+          // If the source has audio we mix it under the silent track; if not, [0:a] is empty and we fall back
+          // to the silent track via amix=duration=first.
           await ffmpeg.exec([
-            '-y', '-ss', String(start), '-t', String(dur), '-i', inputName,
-            '-vf', fitFilter(w, h), '-r', String(fps),
+            '-y',
+            '-ss', String(start), '-t', String(dur), '-i', inputName,
+            '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+            '-filter_complex',
+              `[0:v]${fitFilter(w, h)},fps=${fps}[vout];` +
+              `[1:a]anull[silent];` +
+              `[0:a?][silent]amix=inputs=2:duration=first:dropout_transition=0,aresample=44100[aout]`,
+            '-map', '[vout]', '-map', '[aout]',
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
             '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-            '-af', 'aresample=async=1', outName,
+            '-shortest', outName,
           ]).catch(async () => {
+            // amix sometimes refuses optional missing input. Hard fallback: silent audio only.
             await ffmpeg.exec([
-              '-y', '-ss', String(start), '-t', String(dur), '-i', inputName,
+              '-y',
+              '-ss', String(start), '-t', String(dur), '-i', inputName,
               '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
               '-vf', fitFilter(w, h), '-r', String(fps),
               '-map', '0:v:0', '-map', '1:a:0',
               '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-              '-c:a', 'aac', '-b:a', '128k', '-shortest', outName,
+              '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+              '-shortest', outName,
             ]);
           });
         }
