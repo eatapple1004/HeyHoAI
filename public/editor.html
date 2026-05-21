@@ -145,6 +145,66 @@
   }
   .trim-handle:hover { background: var(--accent); }
 
+  /* BGM library + waveform trim */
+  .bgm-source-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .bgm-source-tabs button {
+    flex: 1; padding: 6px 10px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--dim);
+    border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .bgm-source-tabs button.active {
+    background: rgba(108,92,231,0.15); color: var(--accent2); border-color: var(--accent);
+  }
+  .bgm-list {
+    max-height: 220px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .bgm-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 6px;
+  }
+  .bgm-item .bgm-item-name {
+    flex: 1; min-width: 0; font-size: 12px; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bgm-item .bgm-item-size { font-size: 10px; color: var(--dim); }
+  .bgm-item button {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    width: 28px; height: 28px; border-radius: 4px; font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-family: inherit;
+  }
+  .bgm-item button:hover { border-color: var(--accent); color: var(--accent2); }
+  .bgm-item button.use-btn { width: auto; padding: 0 10px; font-size: 11px; }
+  .bgm-item.selected { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent); }
+
+  .bgm-upload-area {
+    border: 2px dashed var(--border); border-radius: 8px; padding: 20px;
+    text-align: center; cursor: pointer; transition: border-color 0.2s;
+    color: var(--dim); font-size: 13px;
+  }
+  .bgm-upload-area:hover { border-color: var(--accent); color: var(--accent2); }
+  .bgm-upload-area input { display: none; }
+
+  .bgm-selected {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .bgm-selected .bgm-name {
+    font-size: 12px; color: var(--text); font-weight: 600; word-break: break-all;
+  }
+  .bgm-waveform-wrap {
+    position: relative; height: 64px; background: #000;
+    border-radius: 6px; overflow: hidden; user-select: none; touch-action: none;
+  }
+  .bgm-waveform-wrap canvas { display: block; width: 100%; height: 100%; }
+  .bgm-waveform-wrap .bgm-trim-fill {
+    position: absolute; top: 0; bottom: 0;
+    background: rgba(108,92,231,0.18);
+    box-shadow: inset 0 2px 0 var(--accent2), inset 0 -2px 0 var(--accent2);
+    pointer-events: none;
+  }
+
   /* Dual-thumb range slider */
   .dual-range {
     position: relative; height: 28px; flex: 1;
@@ -634,13 +694,11 @@
     if (files.length) await addMediaFiles(files);
   });
 
-  $('bgmInput').addEventListener('change', (e) => {
+  $('bgmInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (state.bgm) URL.revokeObjectURL(state.bgm.url);
-    state.bgm = { file, name: file.name, url: URL.createObjectURL(file), volume: 0.8 };
     e.target.value = '';
-    renderBgmInspector();
+    await selectBgmFromFile(file);
   });
 
   $('aspectSelect').addEventListener('change', () => renderDesignStage());
@@ -1157,30 +1215,280 @@
   }
 
   // ---------- BGM ----------
+  let bgmLibrary = [];
+  let bgmSourceTab = 'library';      // 'library' | 'upload'
+  let bgmPreviewAudio = null;        // currently playing preview audio
+
+  async function loadBgmLibrary() {
+    try {
+      const res = await fetch('/api/generate/bgm/list');
+      const json = await res.json();
+      bgmLibrary = (json && json.data) || [];
+    } catch (e) {
+      log('BGM 라이브러리 로드 실패: ' + e.message, 'err');
+      bgmLibrary = [];
+    }
+    renderBgmInspector();
+  }
+
+  async function decodeBgmBuffer(arrayBuffer) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new Ctx();
+    try {
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+      const channel = audioBuffer.getChannelData(0);
+      const samples = 240;
+      const blockSize = Math.max(1, Math.floor(channel.length / samples));
+      const peaks = new Float32Array(samples);
+      for (let i = 0; i < samples; i++) {
+        let max = 0;
+        const off = i * blockSize;
+        for (let j = 0; j < blockSize; j++) {
+          const v = Math.abs(channel[off + j] || 0);
+          if (v > max) max = v;
+        }
+        peaks[i] = max;
+      }
+      audioCtx.close();
+      return { duration: audioBuffer.duration, peaks };
+    } catch (e) {
+      audioCtx.close();
+      throw e;
+    }
+  }
+
+  function resetBgmPreview() {
+    if (bgmPreviewAudio) { try { bgmPreviewAudio.pause(); } catch {} bgmPreviewAudio = null; }
+  }
+
+  async function selectBgmFromServer(item) {
+    resetBgmPreview();
+    if (state.bgm && state.bgm.fileUrl) URL.revokeObjectURL(state.bgm.fileUrl);
+    log(`BGM 디코딩: ${item.filename}`);
+    try {
+      const buf = await fetch(item.url).then(r => r.arrayBuffer());
+      const { duration, peaks } = await decodeBgmBuffer(buf);
+      state.bgm = {
+        source: 'server', name: item.filename, url: item.url, file: null, fileUrl: null,
+        volume: 0.8, duration, trimStart: 0, trimEnd: duration, peaks,
+      };
+      renderBgmInspector();
+    } catch (e) {
+      log('BGM 디코딩 실패: ' + e.message, 'err');
+    }
+  }
+
+  async function selectBgmFromFile(file) {
+    resetBgmPreview();
+    if (state.bgm && state.bgm.fileUrl) URL.revokeObjectURL(state.bgm.fileUrl);
+    log(`BGM 디코딩: ${file.name}`);
+    try {
+      const buf = await file.arrayBuffer();
+      const { duration, peaks } = await decodeBgmBuffer(buf);
+      state.bgm = {
+        source: 'upload', name: file.name, url: null, file,
+        fileUrl: URL.createObjectURL(file),
+        volume: 0.8, duration, trimStart: 0, trimEnd: duration, peaks,
+      };
+      renderBgmInspector();
+    } catch (e) {
+      log('BGM 디코딩 실패: ' + e.message, 'err');
+    }
+  }
+
+  function drawWaveform(canvas, peaks) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || 300;
+    const h = canvas.clientHeight || 64;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(162,155,254,0.7)';
+    const barW = w / peaks.length;
+    const mid = h / 2;
+    for (let i = 0; i < peaks.length; i++) {
+      const v = peaks[i];
+      const half = Math.max(1, v * (h * 0.45));
+      ctx.fillRect(i * barW, mid - half, Math.max(0.5, barW - 0.5), half * 2);
+    }
+  }
+
   function renderBgmInspector() {
     const box = $('bgmInspector');
-    if (!state.bgm) {
-      box.innerHTML = '<div class="empty-text">BGM이 추가되지 않았습니다.</div>';
-      return;
-    }
     box.innerHTML = '';
-    const name = document.createElement('div'); name.className = 'bgm-name'; name.textContent = state.bgm.name;
-    box.appendChild(name);
 
-    const vRow = document.createElement('div'); vRow.className = 'row'; vRow.style.marginTop = '10px';
-    const vL = document.createElement('label'); vL.textContent = '볼륨';
-    vRow.appendChild(vL);
+    // Source tabs
+    const tabs = document.createElement('div'); tabs.className = 'bgm-source-tabs';
+    const mkTab = (key, label) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      if (bgmSourceTab === key) b.classList.add('active');
+      b.onclick = () => { bgmSourceTab = key; resetBgmPreview(); renderBgmInspector(); };
+      return b;
+    };
+    tabs.appendChild(mkTab('library', '라이브러리'));
+    tabs.appendChild(mkTab('upload', '업로드'));
+    box.appendChild(tabs);
+
+    if (bgmSourceTab === 'library') {
+      const list = document.createElement('div'); list.className = 'bgm-list';
+      if (bgmLibrary.length === 0) {
+        list.innerHTML = '<div class="empty-text">서버에 저장된 BGM이 없습니다.</div>';
+      } else {
+        for (const item of bgmLibrary) {
+          const row = document.createElement('div'); row.className = 'bgm-item';
+          if (state.bgm && state.bgm.source === 'server' && state.bgm.name === item.filename) {
+            row.classList.add('selected');
+          }
+          const n = document.createElement('div'); n.className = 'bgm-item-name'; n.textContent = item.filename;
+          const s = document.createElement('div'); s.className = 'bgm-item-size'; s.textContent = item.size;
+          const playBtn = document.createElement('button');
+          playBtn.textContent = '▶';
+          let audio = null;
+          playBtn.onclick = () => {
+            if (audio && !audio.paused) {
+              audio.pause(); playBtn.textContent = '▶'; return;
+            }
+            resetBgmPreview();
+            audio = new Audio(item.url);
+            bgmPreviewAudio = audio;
+            audio.onended = () => { playBtn.textContent = '▶'; };
+            audio.play().then(() => { playBtn.textContent = '⏸'; }).catch(err => log('재생 실패: ' + err.message, 'err'));
+          };
+          const useBtn = document.createElement('button');
+          useBtn.className = 'use-btn'; useBtn.textContent = '선택';
+          useBtn.onclick = () => selectBgmFromServer(item);
+          row.appendChild(n); row.appendChild(s); row.appendChild(playBtn); row.appendChild(useBtn);
+          list.appendChild(row);
+        }
+      }
+      box.appendChild(list);
+
+      const refresh = document.createElement('div');
+      refresh.style.cssText = 'text-align:right;margin-top:6px;';
+      const reBtn = document.createElement('button');
+      reBtn.style.cssText = 'background:transparent;border:none;color:var(--dim);font-size:11px;cursor:pointer;font-family:inherit;';
+      reBtn.textContent = '↻ 새로고침';
+      reBtn.onclick = loadBgmLibrary;
+      refresh.appendChild(reBtn);
+      box.appendChild(refresh);
+    } else {
+      const drop = document.createElement('label'); drop.className = 'bgm-upload-area';
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'audio/*';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) await selectBgmFromFile(file);
+      };
+      const txt = document.createElement('div'); txt.textContent = '＋ 오디오 파일 선택';
+      drop.appendChild(input); drop.appendChild(txt);
+      box.appendChild(drop);
+    }
+
+    if (!state.bgm) return;
+
+    const sel = document.createElement('div'); sel.className = 'bgm-selected';
+
+    const nm = document.createElement('div'); nm.className = 'bgm-name';
+    nm.textContent = state.bgm.name + (state.bgm.source === 'server' ? ' (라이브러리)' : ' (업로드)');
+    sel.appendChild(nm);
+
+    // Waveform + trim handles
+    const wrap = document.createElement('div'); wrap.className = 'bgm-waveform-wrap';
+    const canvas = document.createElement('canvas'); wrap.appendChild(canvas);
+    const fill = document.createElement('div'); fill.className = 'bgm-trim-fill'; wrap.appendChild(fill);
+    const startHandle = document.createElement('div'); startHandle.className = 'trim-handle';
+    const endHandle = document.createElement('div'); endHandle.className = 'trim-handle';
+    wrap.appendChild(startHandle); wrap.appendChild(endHandle);
+    sel.appendChild(wrap);
+
+    const tRow = document.createElement('div'); tRow.className = 'row';
+    tRow.innerHTML = `<label>구간</label>`;
+    const tVal = document.createElement('span'); tVal.className = 'value'; tVal.style.width = '160px';
+    tRow.appendChild(tVal);
+    sel.appendChild(tRow);
+
+    const fmt = (s) => {
+      const m = Math.floor(s / 60);
+      const ss = (s - m * 60).toFixed(1);
+      return `${m}:${ss.padStart(4, '0')}`;
+    };
+
+    const updateTrim = () => {
+      const total = state.bgm.duration || 0.1;
+      const sp = (state.bgm.trimStart / total) * 100;
+      const ep = (state.bgm.trimEnd / total) * 100;
+      startHandle.style.left = sp + '%';
+      endHandle.style.left = ep + '%';
+      fill.style.left = sp + '%';
+      fill.style.right = (100 - ep) + '%';
+      tVal.textContent = `${fmt(state.bgm.trimStart)}–${fmt(state.bgm.trimEnd)} (${(state.bgm.trimEnd - state.bgm.trimStart).toFixed(1)}s)`;
+    };
+
+    const bindHandle = (handleEl, which) => {
+      handleEl.onpointerdown = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const rect = wrap.getBoundingClientRect();
+        let raf = false;
+        const apply = (clientX) => {
+          const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+          const t = (x / rect.width) * state.bgm.duration;
+          if (which === 'start') {
+            state.bgm.trimStart = Math.max(0, Math.min(t, state.bgm.trimEnd - 0.5));
+          } else {
+            state.bgm.trimEnd = Math.min(state.bgm.duration, Math.max(t, state.bgm.trimStart + 0.5));
+          }
+        };
+        const move = (mv) => {
+          apply(mv.clientX);
+          if (raf) return;
+          raf = true;
+          requestAnimationFrame(() => { raf = false; updateTrim(); });
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          updateTrim();
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      };
+    };
+    bindHandle(startHandle, 'start');
+    bindHandle(endHandle, 'end');
+
+    // Defer drawing until canvas has a size in the layout
+    requestAnimationFrame(() => {
+      drawWaveform(canvas, state.bgm.peaks);
+      updateTrim();
+    });
+
+    // Volume
+    const vRow = document.createElement('div'); vRow.className = 'row';
+    vRow.innerHTML = `<label>볼륨</label>`;
     const slider = document.createElement('input');
     slider.type = 'range'; slider.min = '0'; slider.max = '1'; slider.step = '0.05'; slider.value = state.bgm.volume;
-    const pct = document.createElement('span'); pct.className = 'value'; pct.textContent = Math.round(state.bgm.volume * 100) + '%';
-    slider.oninput = () => { state.bgm.volume = parseFloat(slider.value); pct.textContent = Math.round(state.bgm.volume * 100) + '%'; };
+    const pct = document.createElement('span'); pct.className = 'value';
+    pct.textContent = Math.round(state.bgm.volume * 100) + '%';
+    slider.oninput = () => {
+      state.bgm.volume = parseFloat(slider.value);
+      pct.textContent = Math.round(state.bgm.volume * 100) + '%';
+    };
     vRow.appendChild(slider); vRow.appendChild(pct);
-    box.appendChild(vRow);
+    sel.appendChild(vRow);
 
     const remove = document.createElement('button');
     remove.className = 'remove-btn'; remove.textContent = '× BGM 제거';
-    remove.onclick = () => { URL.revokeObjectURL(state.bgm.url); state.bgm = null; renderBgmInspector(); };
-    box.appendChild(remove);
+    remove.onclick = () => {
+      if (state.bgm && state.bgm.fileUrl) URL.revokeObjectURL(state.bgm.fileUrl);
+      state.bgm = null;
+      renderBgmInspector();
+    };
+    sel.appendChild(remove);
+
+    box.appendChild(sel);
   }
 
   function renderAll() {
@@ -1309,7 +1617,21 @@
           }
         }
         if (hasBgm) {
-          await ffmpeg.writeFile('bgm.audio', await fetchFile(state.bgm.file));
+          const bgmSource = state.bgm.file || state.bgm.url;  // File for upload, URL for server lib
+          await ffmpeg.writeFile('bgm.original', await fetchFile(bgmSource));
+          const bStart = state.bgm.trimStart || 0;
+          const bEnd = state.bgm.trimEnd || state.bgm.duration || 0;
+          const bDur = Math.max(0.1, bEnd - bStart);
+          // Pre-trim BGM so stream_loop can repeat just the chosen segment
+          await ffmpeg.exec([
+            '-y',
+            '-ss', String(bStart),
+            '-t', String(bDur),
+            '-i', 'bgm.original',
+            '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2',
+            'bgm.audio',
+          ]);
+          await ffmpeg.deleteFile('bgm.original').catch(() => {});
           inputs.push('-stream_loop', '-1', '-i', 'bgm.audio');
         }
 
@@ -1405,6 +1727,8 @@
 
   // Init
   renderAll();
+  renderBgmInspector();
+  loadBgmLibrary();
 </script>
 
 </body>
