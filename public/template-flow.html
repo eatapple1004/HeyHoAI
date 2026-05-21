@@ -232,14 +232,10 @@
     <h3>자기소개 사진 생성 (5장)</h3>
     <div class="step-desc">각 장면별 프롬프트를 작성하고 사진을 생성하세요. 프롬프트 수정 후 재생성 가능합니다.</div>
 
-    <!-- 프롬프트 세트 저장/불러오기 -->
+    <!-- 저장된 개별 프롬프트 라이브러리 -->
     <div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:8px;">
-      <label class="form-label" style="margin-bottom:6px;">Prompt Presets</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="promptPresetTags"></div>
-      <div style="display:flex;gap:6px;margin-top:8px;">
-        <input class="form-input" id="promptPresetName" placeholder="프리셋 이름" style="flex:1;padding:6px 10px;font-size:12px;">
-        <button onclick="savePromptPreset()" style="padding:6px 14px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">Save Prompts</button>
-      </div>
+      <label class="form-label" style="margin-bottom:6px;">Saved Prompts (click to add as slot)</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="savedSlotPromptTags"></div>
     </div>
 
     <div id="photoSlots"></div>
@@ -341,11 +337,11 @@
 
   // ── Photo Slots ──
   let photoSlots = [
-    { id: 1, prompt: 'close-up portrait, looking at camera, soft smile, studio lighting, white background', results: [], selectedUrl: null },
-    { id: 2, prompt: 'medium shot, casual outfit, sitting at a trendy cafe, natural daylight', results: [], selectedUrl: null },
-    { id: 3, prompt: 'full body shot, street fashion, walking in city, golden hour lighting', results: [], selectedUrl: null },
-    { id: 4, prompt: 'close-up, laughing naturally, candid moment, soft bokeh background', results: [], selectedUrl: null },
-    { id: 5, prompt: 'lifestyle shot, relaxing at home, cozy atmosphere, warm tones', results: [], selectedUrl: null },
+    { id: 1, prompt: 'close-up portrait, looking at camera, soft smile, studio lighting, white background', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
+    { id: 2, prompt: 'medium shot, casual outfit, sitting at a trendy cafe, natural daylight', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
+    { id: 3, prompt: 'full body shot, street fashion, walking in city, golden hour lighting', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
+    { id: 4, prompt: 'close-up, laughing naturally, candid moment, soft bokeh background', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
+    { id: 5, prompt: 'lifestyle shot, relaxing at home, cozy atmosphere, warm tones', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
   ];
   let slotIdCounter = 6;
 
@@ -358,12 +354,24 @@
       div.innerHTML = `
         <div class="slot-num">${idx + 1}</div>
         <div class="slot-body">
-          <textarea class="slot-prompt" id="slotPrompt_${slot.id}" placeholder="장면 설명...">${slot.prompt}</textarea>
+          <div style="display:flex;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <textarea class="slot-prompt" id="slotPrompt_${slot.id}" placeholder="장면 설명...">${slot.prompt}</textarea>
+            </div>
+            <div class="slot-example" id="slotExample_${slot.id}" onclick="document.getElementById('slotExInput_${slot.id}').click()" title="예시 사진 등록">
+              ${slot.exampleUrl ? '<img src="' + slot.exampleUrl + '">' : '+ 예시'}
+              <input type="file" accept="image/*" id="slotExInput_${slot.id}" style="display:none;" onchange="setSlotExample(${slot.id}, this.files[0])">
+            </div>
+          </div>
           <div class="slot-actions">
             <button class="slot-btn gen" id="slotGenBtn_${slot.id}" onclick="generateSlotPhoto(${slot.id})">Generate</button>
             <button class="slot-btn" onclick="generateSlotPhoto(${slot.id}, true)">Regenerate</button>
+            <button class="slot-btn" onclick="saveSlotPrompt(${slot.id})" style="color:var(--green);">Save</button>
             ${photoSlots.length > 5 ? '<button class="slot-btn del" onclick="removePhotoSlot(' + slot.id + ')">Delete</button>' : ''}
-            <span class="slot-status" id="slotStatus_${slot.id}">${slot.results.length > 0 ? slot.results.length + ' generated' : ''}</span>
+            <span class="slot-status" id="slotStatus_${slot.id}">
+              ${slot.savedId ? '<span style="color:var(--green);font-size:9px;">saved</span>' : ''}
+              ${slot.results.length > 0 ? slot.results.length + ' generated' : ''}
+            </span>
           </div>
           <div class="slot-result" id="slotResult_${slot.id}"></div>
         </div>
@@ -382,6 +390,54 @@
         });
       }
     });
+  }
+
+  function setSlotExample(slotId, file) {
+    if (!file) return;
+    const slot = photoSlots.find(s => s.id === slotId);
+    if (!slot) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      slot.exampleUrl = e.target.result;
+      renderPhotoSlots();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveSlotPrompt(slotId) {
+    const slot = photoSlots.find(s => s.id === slotId);
+    if (!slot) return;
+    const promptEl = document.getElementById('slotPrompt_' + slotId);
+    const prompt = promptEl ? promptEl.value.trim() : slot.prompt;
+    if (!prompt) { showToast('Prompt is empty', 'error'); return; }
+
+    try {
+      if (slot.savedId) {
+        // 업데이트
+        const res = await fetch('/api/template-data/' + slot.savedId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: prompt.slice(0, 60), data: { prompt, exampleUrl: slot.exampleUrl || null } }),
+        });
+        const result = await res.json();
+        if (result.success) { showToast('Updated', 'success'); }
+        else { showToast(result.error || 'Failed', 'error'); }
+      } else {
+        // 새로 저장
+        const res = await fetch('/api/template-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateType: 'single-photo-prompt', name: prompt.slice(0, 60), data: { prompt, exampleUrl: slot.exampleUrl || null } }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          slot.savedId = result.data.id;
+          showToast('Saved', 'success');
+          loadSavedSlotPrompts();
+          renderPhotoSlots();
+        } else { showToast(result.error || 'Failed', 'error'); }
+      }
+    } catch (e) { showToast('Error', 'error'); }
   }
 
   function addPhotoSlot() {
@@ -635,92 +691,66 @@
     }
   }
 
-  // ── Prompt Presets ──
-  let promptPresets = [];
+  // ── Saved Individual Prompts ──
+  let savedSlotPrompts = [];
 
-  async function loadPromptPresets() {
+  async function loadSavedSlotPrompts() {
     try {
-      const res = await fetch('/api/template-data?templateType=photo-prompts');
+      const res = await fetch('/api/template-data?templateType=single-photo-prompt');
       const data = await res.json();
-      promptPresets = data.data || [];
-      renderPromptPresetTags();
+      savedSlotPrompts = data.data || [];
+      renderSavedSlotPromptTags();
     } catch (e) {}
   }
 
-  function renderPromptPresetTags() {
-    const container = document.getElementById('promptPresetTags');
-    if (promptPresets.length === 0) {
-      container.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved presets. Write prompts and click Save Prompts.</span>';
+  function renderSavedSlotPromptTags() {
+    const container = document.getElementById('savedSlotPromptTags');
+    if (savedSlotPrompts.length === 0) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved prompts yet. Use Save button on each slot.</span>';
       return;
     }
     container.innerHTML = '';
-    promptPresets.forEach(p => {
+    savedSlotPrompts.forEach(p => {
+      const d = typeof p.data === 'string' ? JSON.parse(p.data) : p.data;
       const tag = document.createElement('div');
-      tag.className = 'prompt-tag';
-      tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;';
-      tag.onclick = () => applyPromptPreset(p);
+      tag.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;max-width:250px;';
+      tag.onclick = () => addSavedPromptAsSlot(p);
       tag.innerHTML = `
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;">${p.name}</span>
-        <span style="font-size:10px;color:var(--dim);">(${(p.data?.prompts || []).length})</span>
-        <button onclick="event.stopPropagation();deletePromptPreset('${p.id}')" style="background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;">&times;</button>
+        ${d.exampleUrl ? '<img src="' + d.exampleUrl + '" style="width:30px;height:30px;border-radius:4px;object-fit:cover;flex-shrink:0;">' : ''}
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${p.name}</span>
+        <button onclick="event.stopPropagation();deleteSavedSlotPrompt('${p.id}')" style="background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">&times;</button>
       `;
       container.appendChild(tag);
     });
   }
 
-  function collectCurrentPrompts() {
-    return photoSlots.map(s => {
-      const el = document.getElementById('slotPrompt_' + s.id);
-      return el ? el.value.trim() : s.prompt;
-    });
-  }
-
-  async function savePromptPreset() {
-    const name = document.getElementById('promptPresetName').value.trim();
-    if (!name) { showToast('Enter preset name', 'error'); return; }
-    const prompts = collectCurrentPrompts().filter(Boolean);
-    if (prompts.length === 0) { showToast('No prompts to save', 'error'); return; }
-
-    try {
-      const res = await fetch('/api/template-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateType: 'photo-prompts', name, data: { prompts } }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        showToast('Prompt preset saved', 'success');
-        document.getElementById('promptPresetName').value = '';
-        loadPromptPresets();
-      } else { showToast(result.error || 'Failed', 'error'); }
-    } catch (e) { showToast('Error', 'error'); }
-  }
-
-  function applyPromptPreset(preset) {
-    const prompts = preset.data?.prompts || (typeof preset.data === 'string' ? JSON.parse(preset.data).prompts : []);
-    if (!prompts || prompts.length === 0) return;
-
-    photoSlots = prompts.map((p, i) => ({
-      id: i + 1,
-      prompt: p,
+  function addSavedPromptAsSlot(saved) {
+    const d = typeof saved.data === 'string' ? JSON.parse(saved.data) : saved.data;
+    photoSlots.push({
+      id: slotIdCounter++,
+      prompt: d.prompt || '',
+      exampleUrl: d.exampleUrl || null,
       results: [],
       selectedUrl: null,
-    }));
-    slotIdCounter = photoSlots.length + 1;
+      savedId: saved.id,
+    });
     renderPhotoSlots();
-    showToast('Preset loaded: ' + preset.name, 'success');
+    showToast('Added: ' + saved.name, 'success');
   }
 
-  async function deletePromptPreset(id) {
-    if (!confirm('Delete this preset?')) return;
+  async function deleteSavedSlotPrompt(id) {
+    if (!confirm('Delete this saved prompt?')) return;
     try {
       await fetch('/api/template-data/' + id, { method: 'DELETE' });
+      // 슬롯에서도 참조 해제
+      photoSlots.forEach(s => { if (s.savedId === id) s.savedId = null; });
       showToast('Deleted', 'success');
-      loadPromptPresets();
+      loadSavedSlotPrompts();
+      renderPhotoSlots();
     } catch (e) { showToast('Error', 'error'); }
   }
 
-  loadPromptPresets();
+  loadSavedSlotPrompts();
 
   // Photo slots 초기 렌더
   renderPhotoSlots();
