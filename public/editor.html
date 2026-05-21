@@ -179,12 +179,19 @@
   .bgm-item.selected { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent); }
 
   .bgm-upload-area {
+    display: block;
     border: 2px dashed var(--border); border-radius: 8px; padding: 20px;
     text-align: center; cursor: pointer; transition: border-color 0.2s;
     color: var(--dim); font-size: 13px;
+    position: relative; overflow: hidden;
   }
   .bgm-upload-area:hover { border-color: var(--accent); color: var(--accent2); }
-  .bgm-upload-area input { display: none; }
+  .bgm-upload-area input[type="file"] {
+    position: absolute !important;
+    width: 1px !important; height: 1px !important;
+    opacity: 0 !important; pointer-events: none !important;
+    left: -9999px !important; top: -9999px !important;
+  }
 
   .bgm-selected {
     margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
