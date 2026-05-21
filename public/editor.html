@@ -110,17 +110,23 @@
   .trim-editor { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
   .trim-thumbs { display: flex; gap: 8px; }
   .trim-thumb-box { flex: 1; min-width: 0; }
+  .trim-thumb-frame {
+    width: 100%; background: #000; border-radius: 6px;
+    border: 1px solid var(--border); overflow: hidden; position: relative;
+    aspect-ratio: 16 / 9;
+  }
   .trim-thumb-img {
-    width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px;
-    background: #000; border: 1px solid var(--border);
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
   }
   .trim-thumb-label { font-size: 11px; color: var(--dim); text-align: center; margin-top: 4px; }
   .trim-strip {
-    position: relative; height: 56px; border-radius: 6px; overflow: hidden;
+    position: relative; height: 64px; border-radius: 6px; overflow: hidden;
     background: #000; user-select: none; touch-action: none;
   }
   .trim-strip-bg { position: absolute; inset: 0; display: flex; }
-  .trim-strip-bg img { flex: 1; min-width: 0; height: 100%; object-fit: cover; opacity: 0.55; }
+  .trim-strip-bg img { flex: 1; min-width: 0; height: 100%; object-fit: contain; opacity: 0.65; }
   .trim-strip-bg .strip-placeholder { flex: 1; background: var(--surface2); }
   .trim-strip-fill {
     position: absolute; top: 0; bottom: 0;
@@ -1028,11 +1034,18 @@
       const thumbs = document.createElement('div'); thumbs.className = 'trim-thumbs';
       const mkThumbBox = (labelText, time) => {
         const box2 = document.createElement('div'); box2.className = 'trim-thumb-box';
+        const frame = document.createElement('div'); frame.className = 'trim-thumb-frame';
         const img = document.createElement('img'); img.className = 'trim-thumb-img';
+        img.onload = () => {
+          if (img.naturalWidth && img.naturalHeight) {
+            frame.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+          }
+        };
         img.src = frameNearestTime(clip.stripFrames, time) || clip.thumbDataUrl || '';
+        frame.appendChild(img);
         const lbl = document.createElement('div'); lbl.className = 'trim-thumb-label';
         lbl.textContent = `${labelText} ${time.toFixed(2)}s`;
-        box2.appendChild(img); box2.appendChild(lbl);
+        box2.appendChild(frame); box2.appendChild(lbl);
         return { box: box2, img, lbl };
       };
       const startThumb = mkThumbBox('시작', clip.trimStart);
