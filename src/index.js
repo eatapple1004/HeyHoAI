@@ -43,6 +43,11 @@ app.get('/heyhoai/accounts/:id/manage', (_req, res) => {
 app.get('/heyhoai/accounts/:id/analytics', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'account-analytics.html'));
 });
+app.get('/heyhoai/editor/page', (_req, res) => {
+  res.set('Cross-Origin-Opener-Policy', 'same-origin');
+  res.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  res.sendFile(path.join(__dirname, '..', 'public', 'editor.html'));
+});
 
 // Routes
 app.use('/api/characters', characterRoutes);

@@ -103,6 +103,15 @@
   }
   .photo-slot .slot-result img.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
   .photo-slot .slot-status { font-size: 10px; color: var(--dim); margin-left: auto; }
+  .photo-slot .slot-example {
+    width: 80px; height: 80px; border-radius: 8px; object-fit: cover;
+    border: 2px dashed var(--border); cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--dim); text-align: center; background: var(--bg);
+    overflow: hidden;
+  }
+  .photo-slot .slot-example img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-slot .slot-example:hover { border-color: var(--accent); }
 
   .preview-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .preview-thumb {
@@ -146,6 +155,7 @@
     <a href="/heyhoai/character/page">Characters</a>
     <a href="/heyhoai/accounts/page">Accounts</a>
     <a href="/heyhoai/templates/page" class="active">Templates</a>
+    <a href="/heyhoai/editor/page">Editor</a>
     <a href="/heyhoai/logs/page">Logs</a>
   </nav>
 </header>
