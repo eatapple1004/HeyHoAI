@@ -18,6 +18,11 @@ app.use(express.json());
 // 정적 파일 서빙
 app.use('/images', express.static(path.join(process.cwd(), 'tmp', 'images')));
 
+// ffmpeg.wasm self-host (Workers must be same-origin)
+app.use('/vendor/ffmpeg', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/ffmpeg/dist/esm')));
+app.use('/vendor/ffmpeg-util', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/util/dist/esm')));
+app.use('/vendor/ffmpeg-core', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/core/dist/esm')));
+
 // 페이지 라우팅
 app.get('/heyhoai/image/generater/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
