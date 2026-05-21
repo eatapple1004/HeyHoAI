@@ -222,6 +222,16 @@
     <h3>자기소개 사진 생성 (5장)</h3>
     <div class="step-desc">각 장면별 프롬프트를 작성하고 사진을 생성하세요. 프롬프트 수정 후 재생성 가능합니다.</div>
 
+    <!-- 프롬프트 세트 저장/불러오기 -->
+    <div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:8px;">
+      <label class="form-label" style="margin-bottom:6px;">Prompt Presets</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="promptPresetTags"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input class="form-input" id="promptPresetName" placeholder="프리셋 이름" style="flex:1;padding:6px 10px;font-size:12px;">
+        <button onclick="savePromptPreset()" style="padding:6px 14px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">Save Prompts</button>
+      </div>
+    </div>
+
     <div id="photoSlots"></div>
 
     <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
@@ -614,6 +624,93 @@
       el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
     }
   }
+
+  // ── Prompt Presets ──
+  let promptPresets = [];
+
+  async function loadPromptPresets() {
+    try {
+      const res = await fetch('/api/template-data?templateType=photo-prompts');
+      const data = await res.json();
+      promptPresets = data.data || [];
+      renderPromptPresetTags();
+    } catch (e) {}
+  }
+
+  function renderPromptPresetTags() {
+    const container = document.getElementById('promptPresetTags');
+    if (promptPresets.length === 0) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved presets. Write prompts and click Save Prompts.</span>';
+      return;
+    }
+    container.innerHTML = '';
+    promptPresets.forEach(p => {
+      const tag = document.createElement('div');
+      tag.className = 'prompt-tag';
+      tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;';
+      tag.onclick = () => applyPromptPreset(p);
+      tag.innerHTML = `
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;">${p.name}</span>
+        <span style="font-size:10px;color:var(--dim);">(${(p.data?.prompts || []).length})</span>
+        <button onclick="event.stopPropagation();deletePromptPreset('${p.id}')" style="background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;">&times;</button>
+      `;
+      container.appendChild(tag);
+    });
+  }
+
+  function collectCurrentPrompts() {
+    return photoSlots.map(s => {
+      const el = document.getElementById('slotPrompt_' + s.id);
+      return el ? el.value.trim() : s.prompt;
+    });
+  }
+
+  async function savePromptPreset() {
+    const name = document.getElementById('promptPresetName').value.trim();
+    if (!name) { showToast('Enter preset name', 'error'); return; }
+    const prompts = collectCurrentPrompts().filter(Boolean);
+    if (prompts.length === 0) { showToast('No prompts to save', 'error'); return; }
+
+    try {
+      const res = await fetch('/api/template-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateType: 'photo-prompts', name, data: { prompts } }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast('Prompt preset saved', 'success');
+        document.getElementById('promptPresetName').value = '';
+        loadPromptPresets();
+      } else { showToast(result.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  function applyPromptPreset(preset) {
+    const prompts = preset.data?.prompts || (typeof preset.data === 'string' ? JSON.parse(preset.data).prompts : []);
+    if (!prompts || prompts.length === 0) return;
+
+    photoSlots = prompts.map((p, i) => ({
+      id: i + 1,
+      prompt: p,
+      results: [],
+      selectedUrl: null,
+    }));
+    slotIdCounter = photoSlots.length + 1;
+    renderPhotoSlots();
+    showToast('Preset loaded: ' + preset.name, 'success');
+  }
+
+  async function deletePromptPreset(id) {
+    if (!confirm('Delete this preset?')) return;
+    try {
+      await fetch('/api/template-data/' + id, { method: 'DELETE' });
+      showToast('Deleted', 'success');
+      loadPromptPresets();
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  loadPromptPresets();
 
   // Photo slots 초기 렌더
   renderPhotoSlots();
