@@ -19,7 +19,7 @@
   header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
   header nav a:hover, header nav a.active { color: var(--accent2); }
 
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
   .page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
   .page-desc { font-size: 13px; color: var(--dim); margin-bottom: 20px; }
 
@@ -41,40 +41,95 @@
   .toolbar .spacer { flex: 1; }
   .toolbar .status { font-size: 12px; color: var(--dim); }
 
-  .workspace { display: grid; grid-template-columns: 1fr 360px; gap: 18px; }
-  @media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } }
+  .workspace { display: grid; grid-template-columns: 1fr 380px; gap: 18px; }
+  @media (max-width: 1000px) { .workspace { grid-template-columns: 1fr; } }
 
   .preview-pane {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 18px; display: flex; flex-direction: column; align-items: center;
-    min-height: 480px;
+    min-height: 480px; gap: 14px;
   }
-  .preview-pane .preview-box {
-    background: #000; border-radius: 8px; max-width: 100%; max-height: 60vh;
-    display: flex; align-items: center; justify-content: center; color: var(--dim);
-    font-size: 12px;
+  .design-stage-wrap {
+    position: relative; max-width: 100%;
+    display: flex; align-items: center; justify-content: center;
   }
-  .preview-pane video, .preview-pane img { max-width: 100%; max-height: 60vh; border-radius: 8px; display: block; }
-  .preview-pane .empty { padding: 100px 40px; text-align: center; color: var(--dim); font-size: 13px; }
-  .preview-pane .preview-caption { margin-top: 12px; font-size: 12px; color: var(--dim); }
+  .design-stage {
+    position: relative; background: #000;
+    box-shadow: 0 0 0 1px var(--border);
+    overflow: hidden;
+    /* aspect-ratio set dynamically */
+  }
+  .design-stage .stage-bg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; opacity: 0.65;
+  }
+  .design-stage .stage-empty {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--dim); font-size: 12px; text-align: center; padding: 20px;
+  }
+  .text-overlay {
+    position: absolute; user-select: none; cursor: move;
+    padding: 2px 4px; white-space: pre; transform: translate(-50%, -50%);
+    line-height: 1.1;
+  }
+  .text-overlay.selected { outline: 1px dashed var(--accent2); outline-offset: 4px; }
+
+  .preview-pane video { max-width: 100%; max-height: 50vh; border-radius: 8px; display: block; background: #000; }
+  .preview-caption { font-size: 12px; color: var(--dim); }
 
   .side-pane { display: flex; flex-direction: column; gap: 14px; }
   .panel {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
   }
-  .panel h3 { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .panel .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
-  .panel .row label { color: var(--dim); width: 80px; }
+  .panel h3 { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between; }
+  .panel h3 .h3-action { font-size: 11px; color: var(--dim); cursor: pointer; }
+  .panel h3 .h3-action:hover { color: var(--accent2); }
+  .panel .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+  .panel .row label { color: var(--dim); width: 80px; flex-shrink: 0; }
   .panel input[type="number"], .panel input[type="text"] {
     background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-    padding: 6px 10px; border-radius: 6px; font-size: 12px; width: 80px;
+    padding: 6px 10px; border-radius: 6px; font-size: 12px;
     font-family: inherit;
   }
-  .panel input[type="range"] { flex: 1; }
+  .panel input[type="number"] { width: 70px; }
+  .panel input[type="text"] { flex: 1; }
+  .panel input[type="color"] {
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    width: 36px; height: 28px; cursor: pointer;
+  }
+  .panel input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .panel .value { font-size: 11px; color: var(--text); width: 56px; text-align: right; }
   .panel .bgm-name { font-size: 12px; color: var(--text); word-break: break-all; }
   .panel .empty-text { font-size: 12px; color: var(--dim); }
   .panel .remove-btn {
     background: transparent; border: none; color: var(--red); font-size: 12px; cursor: pointer; padding: 0;
+    margin-top: 4px;
+  }
+
+  /* Dual-thumb range slider */
+  .dual-range {
+    position: relative; height: 28px; flex: 1;
+  }
+  .dual-range .track {
+    position: absolute; top: 13px; left: 0; right: 0; height: 4px;
+    background: var(--surface2); border-radius: 2px;
+  }
+  .dual-range .track-fill {
+    position: absolute; top: 13px; height: 4px; background: var(--accent); border-radius: 2px;
+  }
+  .dual-range input[type="range"] {
+    position: absolute; top: 0; left: 0; width: 100%; height: 28px;
+    background: transparent; appearance: none; -webkit-appearance: none; pointer-events: none;
+    margin: 0;
+  }
+  .dual-range input[type="range"]::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid var(--surface); pointer-events: auto; cursor: pointer;
+  }
+  .dual-range input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--accent2);
+    border: 2px solid var(--surface); pointer-events: auto; cursor: pointer;
   }
 
   .timeline-section { margin-top: 18px; }
@@ -117,6 +172,26 @@
   }
   .clip .clip-actions button:hover { background: var(--accent); }
 
+  .text-list { display: flex; flex-direction: column; gap: 8px; }
+  .text-row {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .text-row:hover { border-color: var(--accent); }
+  .text-row.selected { border-color: var(--accent2); box-shadow: 0 0 0 2px rgba(108,92,231,0.3); }
+  .text-row .text-preview {
+    font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; margin-bottom: 4px;
+  }
+  .text-row .text-meta { font-size: 10px; color: var(--dim); display: flex; gap: 10px; justify-content: space-between; }
+
+  .add-btn {
+    background: var(--surface2); border: 1px dashed var(--border); color: var(--accent2);
+    padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; width: 100%;
+    font-family: inherit; font-weight: 600;
+  }
+  .add-btn:hover { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+
   .log-pane {
     margin-top: 14px; background: var(--surface); border: 1px solid var(--border);
     border-radius: 12px; padding: 14px; font-family: ui-monospace, Menlo, monospace;
@@ -150,7 +225,7 @@
 
 <div class="container">
   <div class="page-title">Video Editor</div>
-  <div class="page-desc">사진과 영상을 타임라인에 올려 이어붙이고, BGM을 추가해 영상을 만드세요. 모든 인코딩은 브라우저(로컬)에서 처리됩니다.</div>
+  <div class="page-desc">사진/영상을 타임라인에 올려 이어붙이고, BGM과 텍스트를 추가하세요. 모든 인코딩은 브라우저(로컬)에서 처리됩니다.</div>
 
   <div class="toolbar">
     <label class="file-btn">
@@ -161,6 +236,7 @@
       <input type="file" id="bgmInput" accept="audio/*">
       <span>♪ BGM 추가</span>
     </label>
+    <button id="addTextBtn">＋ 텍스트 추가</button>
     <label>출력 비율</label>
     <select id="aspectSelect">
       <option value="9:16">세로 9:16 (1080×1920)</option>
@@ -177,10 +253,15 @@
 
   <div class="workspace">
     <div class="preview-pane">
-      <div class="preview-box" id="previewBox">
-        <div class="empty">렌더링 후 미리보기가 여기에 표시됩니다.</div>
+      <div class="design-stage-wrap">
+        <div class="design-stage" id="designStage">
+          <div class="stage-empty" id="stageEmpty">미리보기 영역 — 클립을 추가하면 첫 프레임이 배경으로 표시됩니다. 텍스트를 끌어 위치를 정하세요.</div>
+        </div>
       </div>
-      <div class="preview-caption" id="previewCaption"></div>
+      <div id="renderedPreviewWrap" style="display:none;width:100%;text-align:center;">
+        <video id="renderedVideo" controls></video>
+        <div class="preview-caption" id="previewCaption"></div>
+      </div>
     </div>
 
     <div class="side-pane">
@@ -188,6 +269,12 @@
         <h3>선택된 클립</h3>
         <div id="clipInspector">
           <div class="empty-text">타임라인에서 클립을 선택하세요.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>선택된 텍스트</h3>
+        <div id="textInspector">
+          <div class="empty-text">텍스트를 추가하거나 선택하세요.</div>
         </div>
       </div>
       <div class="panel">
@@ -206,6 +293,13 @@
     </div>
   </div>
 
+  <div class="timeline-section">
+    <h3>텍스트</h3>
+    <div id="textList" class="panel">
+      <div class="empty-text" id="textListEmpty">「텍스트 추가」 버튼으로 새 텍스트를 만드세요.</div>
+    </div>
+  </div>
+
   <div class="log-pane" id="logPane">
     <div class="log-line">로그가 여기에 표시됩니다.</div>
   </div>
@@ -216,9 +310,11 @@
   import { fetchFile, toBlobURL } from '/vendor/ffmpeg-util/index.js';
 
   const state = {
-    clips: [],          // { id, type: 'image'|'video', file, name, url, duration, trimStart, trimEnd, mediaDuration }
+    clips: [],          // { id, type, file, name, url, duration, trimStart, trimEnd, mediaDuration, thumbDataUrl }
     bgm: null,          // { file, name, url, volume }
-    selectedId: null,
+    texts: [],          // { id, text, fontSize, color, fontWeight, xPct, yPct, startTime, endTime }
+    selectedClipId: null,
+    selectedTextId: null,
     rendering: false,
     outputUrl: null,
   };
@@ -231,6 +327,7 @@
     $('logPane').appendChild(el);
     $('logPane').scrollTop = $('logPane').scrollHeight;
   };
+  const uid = () => Math.random().toString(36).slice(2, 10);
 
   // ---------- FFmpeg setup ----------
   const ffmpeg = new FFmpeg();
@@ -262,8 +359,23 @@
   }
   loadFFmpeg();
 
-  // ---------- Media handling ----------
-  function uid() { return Math.random().toString(36).slice(2, 10); }
+  // ---------- Helpers ----------
+  function getAspect() {
+    const v = $('aspectSelect').value;
+    if (v === '9:16') return { w: 1080, h: 1920 };
+    if (v === '1:1') return { w: 1080, h: 1080 };
+    return { w: 1920, h: 1080 };
+  }
+  function fitFilter(w, h) {
+    return `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1`;
+  }
+  function clipUsedDuration(c) {
+    if (c.type === 'image') return c.duration;
+    return Math.max(0, (c.trimEnd ?? c.mediaDuration) - (c.trimStart ?? 0));
+  }
+  function totalDuration() {
+    return state.clips.reduce((s, c) => s + clipUsedDuration(c), 0);
+  }
 
   function getVideoDuration(file) {
     return new Promise((resolve) => {
@@ -275,6 +387,26 @@
     });
   }
 
+  function getVideoFirstFrame(file) {
+    return new Promise((resolve) => {
+      const v = document.createElement('video');
+      v.preload = 'metadata'; v.muted = true; v.playsInline = true;
+      v.crossOrigin = 'anonymous';
+      v.onloadeddata = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+          canvas.getContext('2d').drawImage(v, 0, 0);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        } catch { resolve(null); }
+      };
+      v.onerror = () => resolve(null);
+      v.src = URL.createObjectURL(file);
+      v.currentTime = 0.1;
+    });
+  }
+
+  // ---------- Media import ----------
   $('mediaInput').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files || []);
     for (const file of files) {
@@ -286,23 +418,22 @@
       const clip = {
         id: uid(),
         type: isVideo ? 'video' : 'image',
-        file,
-        name: file.name,
-        url,
-        duration: isVideo ? 0 : 3,    // for images: how long to show
-        trimStart: 0,
-        trimEnd: 0,
+        file, name: file.name, url,
+        duration: isVideo ? 0 : 3,
+        trimStart: 0, trimEnd: 0,
         mediaDuration: 0,
+        thumbDataUrl: isImage ? url : null,
       };
       if (isVideo) {
         clip.mediaDuration = await getVideoDuration(file);
         clip.duration = clip.mediaDuration;
         clip.trimEnd = clip.mediaDuration;
+        clip.thumbDataUrl = await getVideoFirstFrame(file);
       }
       state.clips.push(clip);
     }
     e.target.value = '';
-    renderTimeline();
+    renderAll();
   });
 
   $('bgmInput').addEventListener('change', (e) => {
@@ -314,73 +445,270 @@
     renderBgmInspector();
   });
 
-  // ---------- Timeline UI ----------
+  $('aspectSelect').addEventListener('change', () => renderDesignStage());
+
+  // ---------- Text overlays ----------
+  $('addTextBtn').onclick = () => {
+    const total = totalDuration() || 3;
+    const t = {
+      id: uid(),
+      text: '텍스트',
+      fontSize: 64,
+      color: '#ffffff',
+      fontWeight: 700,
+      xPct: 50, yPct: 50,
+      startTime: 0,
+      endTime: total,
+    };
+    state.texts.push(t);
+    state.selectedTextId = t.id;
+    renderAll();
+  };
+
+  function clampText(t) {
+    const total = Math.max(0.1, totalDuration());
+    t.startTime = Math.max(0, Math.min(t.startTime, total - 0.1));
+    t.endTime = Math.max(t.startTime + 0.1, Math.min(t.endTime, total));
+    t.xPct = Math.max(0, Math.min(100, t.xPct));
+    t.yPct = Math.max(0, Math.min(100, t.yPct));
+  }
+
+  function renderTextList() {
+    const box = $('textList');
+    if (state.texts.length === 0) {
+      box.innerHTML = '<div class="empty-text" id="textListEmpty">「텍스트 추가」 버튼으로 새 텍스트를 만드세요.</div>';
+      return;
+    }
+    box.innerHTML = '<div class="text-list"></div>';
+    const list = box.querySelector('.text-list');
+    for (const t of state.texts) {
+      const row = document.createElement('div');
+      row.className = 'text-row' + (t.id === state.selectedTextId ? ' selected' : '');
+      row.innerHTML = `
+        <div class="text-preview">${t.text || '(빈 텍스트)'}</div>
+        <div class="text-meta">
+          <span>${t.fontSize}px · ${t.color}</span>
+          <span>${t.startTime.toFixed(1)}s → ${t.endTime.toFixed(1)}s</span>
+        </div>
+      `;
+      row.onclick = () => { state.selectedTextId = t.id; renderAll(); };
+      list.appendChild(row);
+    }
+  }
+
+  function renderTextInspector() {
+    const box = $('textInspector');
+    const t = state.texts.find(x => x.id === state.selectedTextId);
+    if (!t) {
+      box.innerHTML = '<div class="empty-text">텍스트를 추가하거나 선택하세요.</div>';
+      return;
+    }
+    const total = Math.max(0.1, totalDuration());
+    box.innerHTML = '';
+
+    const mkRow = (label, node, value) => {
+      const r = document.createElement('div'); r.className = 'row';
+      const l = document.createElement('label'); l.textContent = label;
+      r.appendChild(l); r.appendChild(node);
+      if (value !== undefined) {
+        const v = document.createElement('span'); v.className = 'value'; v.textContent = value;
+        r.appendChild(v);
+      }
+      return r;
+    };
+
+    const txt = document.createElement('input');
+    txt.type = 'text'; txt.value = t.text;
+    txt.oninput = () => { t.text = txt.value; renderTextList(); renderDesignStage(); };
+    box.appendChild(mkRow('내용', txt));
+
+    const size = document.createElement('input');
+    size.type = 'range'; size.min = '12'; size.max = '240'; size.step = '1'; size.value = t.fontSize;
+    const sizeRow = mkRow('크기', size, t.fontSize + 'px');
+    size.oninput = () => { t.fontSize = parseInt(size.value); sizeRow.querySelector('.value').textContent = t.fontSize + 'px'; renderDesignStage(); renderTextList(); };
+    box.appendChild(sizeRow);
+
+    const col = document.createElement('input');
+    col.type = 'color'; col.value = t.color;
+    col.oninput = () => { t.color = col.value; renderDesignStage(); renderTextList(); };
+    box.appendChild(mkRow('색상', col));
+
+    const xR = document.createElement('input');
+    xR.type = 'range'; xR.min = '0'; xR.max = '100'; xR.step = '0.5'; xR.value = t.xPct;
+    const xRow = mkRow('가로 위치', xR, t.xPct.toFixed(0) + '%');
+    xR.oninput = () => { t.xPct = parseFloat(xR.value); xRow.querySelector('.value').textContent = t.xPct.toFixed(0) + '%'; renderDesignStage(); };
+    box.appendChild(xRow);
+
+    const yR = document.createElement('input');
+    yR.type = 'range'; yR.min = '0'; yR.max = '100'; yR.step = '0.5'; yR.value = t.yPct;
+    const yRow = mkRow('세로 위치', yR, t.yPct.toFixed(0) + '%');
+    yR.oninput = () => { t.yPct = parseFloat(yR.value); yRow.querySelector('.value').textContent = t.yPct.toFixed(0) + '%'; renderDesignStage(); };
+    box.appendChild(yRow);
+
+    // Timing - dual range
+    const dr = document.createElement('div'); dr.className = 'dual-range';
+    const track = document.createElement('div'); track.className = 'track';
+    const fill = document.createElement('div'); fill.className = 'track-fill';
+    const minR = document.createElement('input');
+    minR.type = 'range'; minR.min = '0'; minR.max = String(total); minR.step = '0.1'; minR.value = t.startTime;
+    const maxR = document.createElement('input');
+    maxR.type = 'range'; maxR.min = '0'; maxR.max = String(total); maxR.step = '0.1'; maxR.value = t.endTime;
+    dr.appendChild(track); dr.appendChild(fill); dr.appendChild(minR); dr.appendChild(maxR);
+
+    const tRow = document.createElement('div'); tRow.className = 'row';
+    const tL = document.createElement('label'); tL.textContent = '노출 구간';
+    tRow.appendChild(tL); tRow.appendChild(dr);
+    const tV = document.createElement('span'); tV.className = 'value'; tV.style.width = '120px';
+    tV.textContent = `${t.startTime.toFixed(1)}–${t.endTime.toFixed(1)}s`;
+    tRow.appendChild(tV);
+    box.appendChild(tRow);
+
+    const updateFill = () => {
+      const a = parseFloat(minR.value), b = parseFloat(maxR.value);
+      fill.style.left = (a / total * 100) + '%';
+      fill.style.right = (100 - b / total * 100) + '%';
+    };
+    minR.oninput = () => {
+      if (parseFloat(minR.value) >= parseFloat(maxR.value) - 0.1) minR.value = (parseFloat(maxR.value) - 0.1).toFixed(1);
+      t.startTime = parseFloat(minR.value); clampText(t);
+      tV.textContent = `${t.startTime.toFixed(1)}–${t.endTime.toFixed(1)}s`;
+      updateFill(); renderTextList();
+    };
+    maxR.oninput = () => {
+      if (parseFloat(maxR.value) <= parseFloat(minR.value) + 0.1) maxR.value = (parseFloat(minR.value) + 0.1).toFixed(1);
+      t.endTime = parseFloat(maxR.value); clampText(t);
+      tV.textContent = `${t.startTime.toFixed(1)}–${t.endTime.toFixed(1)}s`;
+      updateFill(); renderTextList();
+    };
+    updateFill();
+
+    const del = document.createElement('button');
+    del.className = 'remove-btn'; del.textContent = '× 텍스트 삭제';
+    del.onclick = () => {
+      state.texts = state.texts.filter(x => x.id !== t.id);
+      if (state.selectedTextId === t.id) state.selectedTextId = null;
+      renderAll();
+    };
+    box.appendChild(del);
+  }
+
+  // ---------- Design stage ----------
+  function renderDesignStage() {
+    const wrap = $('designStage');
+    const aspect = getAspect();
+    const ratio = aspect.w / aspect.h;
+    const maxW = Math.min(560, wrap.parentElement.clientWidth || 560);
+    const maxH = 480;
+    let w = maxW, h = maxW / ratio;
+    if (h > maxH) { h = maxH; w = maxH * ratio; }
+    wrap.style.width = w + 'px';
+    wrap.style.height = h + 'px';
+
+    // Clear (preserve empty placeholder if no clips)
+    wrap.innerHTML = '';
+
+    if (state.clips.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'stage-empty';
+      empty.textContent = '미리보기 영역 — 클립을 추가하면 첫 프레임이 배경으로 표시됩니다. 텍스트를 끌어 위치를 정하세요.';
+      wrap.appendChild(empty);
+    } else {
+      const bg = state.clips[0];
+      if (bg.thumbDataUrl) {
+        const img = document.createElement('img');
+        img.className = 'stage-bg';
+        img.src = bg.thumbDataUrl;
+        wrap.appendChild(img);
+      }
+    }
+
+    for (const t of state.texts) {
+      const el = document.createElement('div');
+      el.className = 'text-overlay' + (t.id === state.selectedTextId ? ' selected' : '');
+      el.style.left = t.xPct + '%';
+      el.style.top = t.yPct + '%';
+      const scaledFontPx = t.fontSize * (h / aspect.h);
+      el.style.fontSize = scaledFontPx + 'px';
+      el.style.color = t.color;
+      el.style.fontWeight = String(t.fontWeight);
+      el.textContent = t.text || '텍스트';
+      el.dataset.id = t.id;
+
+      el.onpointerdown = (ev) => {
+        ev.preventDefault();
+        state.selectedTextId = t.id;
+        renderAll();
+        const rect = wrap.getBoundingClientRect();
+        const move = (mv) => {
+          const px = mv.clientX - rect.left;
+          const py = mv.clientY - rect.top;
+          t.xPct = Math.max(0, Math.min(100, (px / rect.width) * 100));
+          t.yPct = Math.max(0, Math.min(100, (py / rect.height) * 100));
+          el.style.left = t.xPct + '%';
+          el.style.top = t.yPct + '%';
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          renderTextInspector();
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      };
+      wrap.appendChild(el);
+    }
+  }
+
+  // ---------- Timeline ----------
   function renderTimeline() {
     const tl = $('timeline');
     tl.innerHTML = '';
     if (state.clips.length === 0) {
       tl.innerHTML = '<div class="empty">상단의 「사진/영상 추가」 버튼으로 클립을 추가하세요.</div>';
-      renderInspector();
       return;
     }
     for (const clip of state.clips) {
       const el = document.createElement('div');
-      el.className = 'clip' + (clip.id === state.selectedId ? ' selected' : '');
+      el.className = 'clip' + (clip.id === state.selectedClipId ? ' selected' : '');
       el.dataset.id = clip.id;
 
       const thumb = document.createElement('div');
       thumb.className = 'clip-thumb';
-      if (clip.type === 'image') {
+      if (clip.thumbDataUrl) {
         const img = document.createElement('img');
-        img.src = clip.url;
+        img.src = clip.thumbDataUrl;
         thumb.appendChild(img);
-      } else {
+      } else if (clip.type === 'video') {
         const v = document.createElement('video');
-        v.src = clip.url;
-        v.muted = true;
+        v.src = clip.url; v.muted = true;
         thumb.appendChild(v);
       }
       el.appendChild(thumb);
 
       const type = document.createElement('div');
-      type.className = 'clip-type';
-      type.textContent = clip.type;
+      type.className = 'clip-type'; type.textContent = clip.type;
       el.appendChild(type);
 
       const name = document.createElement('div');
-      name.className = 'clip-name';
-      name.textContent = clip.name;
+      name.className = 'clip-name'; name.textContent = clip.name;
       el.appendChild(name);
 
       const dur = document.createElement('div');
       dur.className = 'clip-duration';
-      const usedDuration = clip.type === 'image' ? clip.duration : Math.max(0, clip.trimEnd - clip.trimStart);
-      dur.textContent = usedDuration.toFixed(1) + 's';
+      dur.textContent = clipUsedDuration(clip).toFixed(1) + 's';
       el.appendChild(dur);
 
       const actions = document.createElement('div');
       actions.className = 'clip-actions';
-      const leftBtn = document.createElement('button');
-      leftBtn.textContent = '←';
-      leftBtn.title = '왼쪽으로';
-      leftBtn.onclick = (ev) => { ev.stopPropagation(); moveClip(clip.id, -1); };
-      const rightBtn = document.createElement('button');
-      rightBtn.textContent = '→';
-      rightBtn.title = '오른쪽으로';
-      rightBtn.onclick = (ev) => { ev.stopPropagation(); moveClip(clip.id, +1); };
-      const delBtn = document.createElement('button');
-      delBtn.textContent = '×';
-      delBtn.title = '삭제';
-      delBtn.onclick = (ev) => { ev.stopPropagation(); removeClip(clip.id); };
-      actions.appendChild(leftBtn);
-      actions.appendChild(rightBtn);
-      actions.appendChild(delBtn);
+      const lb = document.createElement('button'); lb.textContent = '←'; lb.onclick = (ev) => { ev.stopPropagation(); moveClip(clip.id, -1); };
+      const rb = document.createElement('button'); rb.textContent = '→'; rb.onclick = (ev) => { ev.stopPropagation(); moveClip(clip.id, +1); };
+      const db = document.createElement('button'); db.textContent = '×'; db.onclick = (ev) => { ev.stopPropagation(); removeClip(clip.id); };
+      actions.appendChild(lb); actions.appendChild(rb); actions.appendChild(db);
       el.appendChild(actions);
 
-      el.onclick = () => { state.selectedId = clip.id; renderTimeline(); };
+      el.onclick = () => { state.selectedClipId = clip.id; renderAll(); };
       tl.appendChild(el);
     }
-    renderInspector();
   }
 
   function moveClip(id, delta) {
@@ -389,81 +717,110 @@
     if (target < 0 || target >= state.clips.length) return;
     const [c] = state.clips.splice(idx, 1);
     state.clips.splice(target, 0, c);
-    renderTimeline();
+    renderAll();
   }
-
   function removeClip(id) {
     const idx = state.clips.findIndex(c => c.id === id);
     if (idx < 0) return;
     URL.revokeObjectURL(state.clips[idx].url);
     state.clips.splice(idx, 1);
-    if (state.selectedId === id) state.selectedId = null;
-    renderTimeline();
+    if (state.selectedClipId === id) state.selectedClipId = null;
+    renderAll();
   }
 
-  // ---------- Inspector ----------
-  function renderInspector() {
+  // ---------- Clip inspector ----------
+  function renderClipInspector() {
     const box = $('clipInspector');
-    const clip = state.clips.find(c => c.id === state.selectedId);
+    const clip = state.clips.find(c => c.id === state.selectedClipId);
     if (!clip) {
       box.innerHTML = '<div class="empty-text">타임라인에서 클립을 선택하세요.</div>';
       return;
     }
     box.innerHTML = '';
     if (clip.type === 'image') {
-      const row = document.createElement('div');
-      row.className = 'row';
-      row.innerHTML = `<label>노출 시간</label>`;
-      const input = document.createElement('input');
-      input.type = 'number'; input.min = '0.5'; input.max = '60'; input.step = '0.5';
-      input.value = clip.duration;
-      input.oninput = () => { clip.duration = Math.max(0.5, parseFloat(input.value) || 0.5); renderTimeline(); };
-      row.appendChild(input);
-      const unit = document.createElement('span');
-      unit.style.cssText = 'color:var(--dim);font-size:12px;';
-      unit.textContent = '초';
-      row.appendChild(unit);
+      const row = document.createElement('div'); row.className = 'row';
+      const l = document.createElement('label'); l.textContent = '노출 시간';
+      row.appendChild(l);
+      const slider = document.createElement('input');
+      slider.type = 'range'; slider.min = '0.5'; slider.max = '30'; slider.step = '0.1'; slider.value = clip.duration;
+      const val = document.createElement('span'); val.className = 'value'; val.textContent = clip.duration.toFixed(1) + 's';
+      slider.oninput = () => {
+        clip.duration = parseFloat(slider.value);
+        val.textContent = clip.duration.toFixed(1) + 's';
+        renderTimeline();
+        rebalanceTexts();
+      };
+      row.appendChild(slider); row.appendChild(val);
       box.appendChild(row);
     } else {
-      const total = clip.mediaDuration || 0;
-      const dRow = document.createElement('div');
-      dRow.className = 'row';
-      dRow.innerHTML = `<label>전체 길이</label><span style="font-size:12px;color:var(--dim)">${total.toFixed(2)}s</span>`;
-      box.appendChild(dRow);
+      const total = clip.mediaDuration || 0.1;
+      const info = document.createElement('div'); info.className = 'row';
+      info.innerHTML = `<label>전체 길이</label><span class="value">${total.toFixed(2)}s</span>`;
+      box.appendChild(info);
 
-      const sRow = document.createElement('div');
-      sRow.className = 'row';
-      sRow.innerHTML = `<label>시작</label>`;
-      const sInput = document.createElement('input');
-      sInput.type = 'number'; sInput.min = '0'; sInput.max = String(total); sInput.step = '0.1';
-      sInput.value = clip.trimStart;
-      sInput.oninput = () => {
-        clip.trimStart = Math.max(0, Math.min(parseFloat(sInput.value) || 0, clip.trimEnd - 0.1));
-        renderTimeline();
+      const trRow = document.createElement('div'); trRow.className = 'row';
+      const trL = document.createElement('label'); trL.textContent = '트림';
+      trRow.appendChild(trL);
+
+      const dr = document.createElement('div'); dr.className = 'dual-range';
+      const track = document.createElement('div'); track.className = 'track';
+      const fill = document.createElement('div'); fill.className = 'track-fill';
+      const minR = document.createElement('input');
+      minR.type = 'range'; minR.min = '0'; minR.max = String(total); minR.step = '0.05'; minR.value = clip.trimStart;
+      const maxR = document.createElement('input');
+      maxR.type = 'range'; maxR.min = '0'; maxR.max = String(total); maxR.step = '0.05'; maxR.value = clip.trimEnd;
+      dr.appendChild(track); dr.appendChild(fill); dr.appendChild(minR); dr.appendChild(maxR);
+      trRow.appendChild(dr);
+
+      const val = document.createElement('span'); val.className = 'value'; val.style.width = '120px';
+      val.textContent = `${clip.trimStart.toFixed(1)}–${clip.trimEnd.toFixed(1)}s`;
+      trRow.appendChild(val);
+      box.appendChild(trRow);
+
+      const updateFill = () => {
+        const a = parseFloat(minR.value), b = parseFloat(maxR.value);
+        fill.style.left = (a / total * 100) + '%';
+        fill.style.right = (100 - b / total * 100) + '%';
       };
-      sRow.appendChild(sInput);
-      box.appendChild(sRow);
-
-      const eRow = document.createElement('div');
-      eRow.className = 'row';
-      eRow.innerHTML = `<label>끝</label>`;
-      const eInput = document.createElement('input');
-      eInput.type = 'number'; eInput.min = '0'; eInput.max = String(total); eInput.step = '0.1';
-      eInput.value = clip.trimEnd;
-      eInput.oninput = () => {
-        clip.trimEnd = Math.min(total, Math.max(parseFloat(eInput.value) || total, clip.trimStart + 0.1));
-        renderTimeline();
+      minR.oninput = () => {
+        if (parseFloat(minR.value) >= parseFloat(maxR.value) - 0.1) minR.value = (parseFloat(maxR.value) - 0.1).toFixed(2);
+        clip.trimStart = parseFloat(minR.value);
+        val.textContent = `${clip.trimStart.toFixed(1)}–${clip.trimEnd.toFixed(1)}s`;
+        updateFill(); renderTimeline(); rebalanceTexts();
       };
-      eRow.appendChild(eInput);
-      box.appendChild(eRow);
+      maxR.oninput = () => {
+        if (parseFloat(maxR.value) <= parseFloat(minR.value) + 0.1) maxR.value = (parseFloat(minR.value) + 0.1).toFixed(2);
+        clip.trimEnd = parseFloat(maxR.value);
+        val.textContent = `${clip.trimStart.toFixed(1)}–${clip.trimEnd.toFixed(1)}s`;
+        updateFill(); renderTimeline(); rebalanceTexts();
+      };
+      updateFill();
 
-      const uRow = document.createElement('div');
-      uRow.className = 'row';
-      uRow.innerHTML = `<label>사용 길이</label><span style="font-size:12px;color:var(--text)">${Math.max(0, clip.trimEnd - clip.trimStart).toFixed(2)}s</span>`;
-      box.appendChild(uRow);
+      const useRow = document.createElement('div'); useRow.className = 'row';
+      const useLabel = document.createElement('label'); useLabel.textContent = '사용 길이';
+      useRow.appendChild(useLabel);
+      const useVal = document.createElement('span'); useVal.className = 'value';
+      useVal.textContent = clipUsedDuration(clip).toFixed(2) + 's';
+      useRow.appendChild(useVal);
+      box.appendChild(useRow);
+
+      const upd = () => { useVal.textContent = clipUsedDuration(clip).toFixed(2) + 's'; };
+      minR.addEventListener('input', upd);
+      maxR.addEventListener('input', upd);
     }
   }
 
+  function rebalanceTexts() {
+    const total = Math.max(0.1, totalDuration());
+    for (const t of state.texts) {
+      if (t.endTime > total) t.endTime = total;
+      if (t.startTime >= t.endTime - 0.1) t.startTime = Math.max(0, t.endTime - 0.1);
+    }
+    renderTextList();
+    renderTextInspector();
+  }
+
+  // ---------- BGM ----------
   function renderBgmInspector() {
     const box = $('bgmInspector');
     if (!state.bgm) {
@@ -471,167 +828,194 @@
       return;
     }
     box.innerHTML = '';
-    const name = document.createElement('div');
-    name.className = 'bgm-name';
-    name.textContent = state.bgm.name;
+    const name = document.createElement('div'); name.className = 'bgm-name'; name.textContent = state.bgm.name;
     box.appendChild(name);
 
-    const vRow = document.createElement('div');
-    vRow.className = 'row';
-    vRow.style.marginTop = '10px';
-    vRow.innerHTML = `<label>볼륨</label>`;
+    const vRow = document.createElement('div'); vRow.className = 'row'; vRow.style.marginTop = '10px';
+    const vL = document.createElement('label'); vL.textContent = '볼륨';
+    vRow.appendChild(vL);
     const slider = document.createElement('input');
-    slider.type = 'range'; slider.min = '0'; slider.max = '1'; slider.step = '0.05';
-    slider.value = state.bgm.volume;
-    const pct = document.createElement('span');
-    pct.style.cssText = 'color:var(--dim);font-size:12px;width:36px;text-align:right;';
-    pct.textContent = Math.round(state.bgm.volume * 100) + '%';
-    slider.oninput = () => {
-      state.bgm.volume = parseFloat(slider.value);
-      pct.textContent = Math.round(state.bgm.volume * 100) + '%';
-    };
-    vRow.appendChild(slider);
-    vRow.appendChild(pct);
+    slider.type = 'range'; slider.min = '0'; slider.max = '1'; slider.step = '0.05'; slider.value = state.bgm.volume;
+    const pct = document.createElement('span'); pct.className = 'value'; pct.textContent = Math.round(state.bgm.volume * 100) + '%';
+    slider.oninput = () => { state.bgm.volume = parseFloat(slider.value); pct.textContent = Math.round(state.bgm.volume * 100) + '%'; };
+    vRow.appendChild(slider); vRow.appendChild(pct);
     box.appendChild(vRow);
 
     const remove = document.createElement('button');
-    remove.className = 'remove-btn';
-    remove.textContent = '× BGM 제거';
-    remove.style.marginTop = '10px';
-    remove.onclick = () => {
-      URL.revokeObjectURL(state.bgm.url);
-      state.bgm = null;
-      renderBgmInspector();
-    };
+    remove.className = 'remove-btn'; remove.textContent = '× BGM 제거';
+    remove.onclick = () => { URL.revokeObjectURL(state.bgm.url); state.bgm = null; renderBgmInspector(); };
     box.appendChild(remove);
   }
 
+  function renderAll() {
+    renderTimeline();
+    renderClipInspector();
+    renderDesignStage();
+    renderTextList();
+    renderTextInspector();
+  }
+  window.addEventListener('resize', () => renderDesignStage());
+
+  // ---------- Text PNG rendering ----------
+  async function makeTextPNG(text, outW, outH) {
+    const canvas = document.createElement('canvas');
+    canvas.width = outW; canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    ctx.font = `${text.fontWeight} ${text.fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif`;
+    ctx.fillStyle = text.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 8;
+    const x = outW * (text.xPct / 100);
+    const y = outH * (text.yPct / 100);
+    const lines = (text.text || '').split('\n');
+    const lh = text.fontSize * 1.2;
+    const yStart = y - ((lines.length - 1) * lh) / 2;
+    lines.forEach((ln, i) => ctx.fillText(ln, x, yStart + i * lh));
+    return new Promise(r => canvas.toBlob(b => r(b), 'image/png'));
+  }
+
   // ---------- Render pipeline ----------
-  function getAspectSize() {
-    const v = $('aspectSelect').value;
-    if (v === '9:16') return { w: 1080, h: 1920 };
-    if (v === '1:1') return { w: 1080, h: 1080 };
-    return { w: 1920, h: 1080 };
-  }
-
-  // Build a scale+pad filter so we keep aspect, with letterbox/pillarbox to fit target
-  function fitFilter(w, h) {
-    return `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1`;
-  }
-
   async function renderVideo() {
     if (state.rendering) return;
     if (!ffmpegReady) { log('FFmpeg 아직 준비 안됨', 'err'); return; }
     if (state.clips.length === 0) { log('클립을 먼저 추가하세요.', 'err'); return; }
 
     state.rendering = true;
-    $('renderBtn').disabled = true;
-    $('downloadBtn').disabled = true;
-    $('progressBar').classList.add('active');
-    $('progressFill').style.width = '0%';
+    $('renderBtn').disabled = true; $('downloadBtn').disabled = true;
+    $('progressBar').classList.add('active'); $('progressFill').style.width = '0%';
     $('statusText').textContent = '렌더링 중…';
 
-    const { w, h } = getAspectSize();
+    const { w, h } = getAspect();
     const fps = 30;
-    const segmentFiles = [];
+    const segments = [];
 
     try {
-      // Step 1 — normalize every clip to MP4 (same codec/res/fps/sar)
+      // Step 1 — normalize clips
       for (let i = 0; i < state.clips.length; i++) {
         const clip = state.clips[i];
         const outName = `seg_${String(i).padStart(3, '0')}.mp4`;
         const inputName = `in_${i}.${clip.type === 'image' ? 'img' : 'mp4'}`;
-
         log(`[${i + 1}/${state.clips.length}] ${clip.type} → 정규화`);
         await ffmpeg.writeFile(inputName, await fetchFile(clip.file));
 
         if (clip.type === 'image') {
           const dur = clip.duration;
           await ffmpeg.exec([
-            '-y',
-            '-loop', '1',
-            '-t', String(dur),
-            '-i', inputName,
-            '-f', 'lavfi',
-            '-t', String(dur),
-            '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-            '-vf', fitFilter(w, h),
-            '-r', String(fps),
+            '-y', '-loop', '1', '-t', String(dur), '-i', inputName,
+            '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+            '-vf', fitFilter(w, h), '-r', String(fps),
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-            '-c:a', 'aac', '-b:a', '128k',
-            '-shortest',
-            outName,
+            '-c:a', 'aac', '-b:a', '128k', '-shortest', outName,
           ]);
         } else {
           const start = clip.trimStart || 0;
           const dur = Math.max(0.1, (clip.trimEnd || clip.mediaDuration) - start);
           await ffmpeg.exec([
-            '-y',
-            '-ss', String(start),
-            '-t', String(dur),
-            '-i', inputName,
-            '-vf', fitFilter(w, h),
-            '-r', String(fps),
+            '-y', '-ss', String(start), '-t', String(dur), '-i', inputName,
+            '-vf', fitFilter(w, h), '-r', String(fps),
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
             '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-            // ensure audio exists even if source has none
-            '-af', 'aresample=async=1',
-            outName,
+            '-af', 'aresample=async=1', outName,
           ]).catch(async () => {
-            // Source had no audio at all — re-encode with synthesized silence
             await ffmpeg.exec([
-              '-y',
-              '-ss', String(start),
-              '-t', String(dur),
-              '-i', inputName,
-              '-f', 'lavfi',
-              '-t', String(dur),
-              '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-              '-vf', fitFilter(w, h),
-              '-r', String(fps),
+              '-y', '-ss', String(start), '-t', String(dur), '-i', inputName,
+              '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+              '-vf', fitFilter(w, h), '-r', String(fps),
               '-map', '0:v:0', '-map', '1:a:0',
               '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-              '-c:a', 'aac', '-b:a', '128k',
-              '-shortest',
-              outName,
+              '-c:a', 'aac', '-b:a', '128k', '-shortest', outName,
             ]);
           });
         }
-        segmentFiles.push(outName);
+        segments.push(outName);
         await ffmpeg.deleteFile(inputName).catch(() => {});
       }
 
-      // Step 2 — concat list
-      const listTxt = segmentFiles.map(n => `file '${n}'`).join('\n');
-      await ffmpeg.writeFile('concat.txt', new TextEncoder().encode(listTxt));
-
+      // Step 2 — concat
       log('병합 중…');
-      const concatOut = state.bgm ? 'concat.mp4' : 'output.mp4';
-      await ffmpeg.exec([
-        '-y',
-        '-f', 'concat', '-safe', '0', '-i', 'concat.txt',
-        '-c', 'copy',
-        concatOut,
-      ]);
+      const listTxt = segments.map(n => `file '${n}'`).join('\n');
+      await ffmpeg.writeFile('concat.txt', new TextEncoder().encode(listTxt));
+      await ffmpeg.exec(['-y', '-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'concat.mp4']);
 
-      // Step 3 — add BGM if present
-      if (state.bgm) {
-        log('BGM 추가 중…');
-        await ffmpeg.writeFile('bgm.audio', await fetchFile(state.bgm.file));
-        const vol = state.bgm.volume.toFixed(2);
-        await ffmpeg.exec([
+      // Step 3 — text overlays + BGM in one final pass (if any)
+      const hasTexts = state.texts.length > 0;
+      const hasBgm = !!state.bgm;
+      let finalOut = 'output.mp4';
+
+      if (hasTexts || hasBgm) {
+        const inputs = ['-i', 'concat.mp4'];
+
+        // text PNGs as inputs
+        const textPngNames = [];
+        if (hasTexts) {
+          log(`텍스트 ${state.texts.length}개 생성…`);
+          for (let i = 0; i < state.texts.length; i++) {
+            const name = `text_${i}.png`;
+            const blob = await makeTextPNG(state.texts[i], w, h);
+            await ffmpeg.writeFile(name, new Uint8Array(await blob.arrayBuffer()));
+            inputs.push('-loop', '1', '-i', name);
+            textPngNames.push(name);
+          }
+        }
+        if (hasBgm) {
+          await ffmpeg.writeFile('bgm.audio', await fetchFile(state.bgm.file));
+          inputs.push('-stream_loop', '-1', '-i', 'bgm.audio');
+        }
+
+        const bgmIdx = 1 + (hasTexts ? state.texts.length : 0); // input index of bgm
+        const filters = [];
+        let vLabel = '[0:v]';
+        if (hasTexts) {
+          for (let i = 0; i < state.texts.length; i++) {
+            const tx = state.texts[i];
+            const inIdx = 1 + i; // input index of this text png
+            const out = (i === state.texts.length - 1 && !hasBgm) ? '[vout]' : `[v${i + 1}]`;
+            filters.push(`${vLabel}[${inIdx}:v]overlay=0:0:enable='between(t,${tx.startTime.toFixed(2)},${tx.endTime.toFixed(2)})'${out}`);
+            vLabel = `[v${i + 1}]`;
+          }
+        }
+        // If we go through filter chain but last didn't get [vout], rename
+        const vFinalLabel = hasTexts ? '[vout]' : '[0:v]';
+        if (hasTexts) {
+          // Adjust last filter to output [vout]
+          const last = filters.pop();
+          filters.push(last.replace(/\[v\d+\]$/, '[vout]'));
+        }
+
+        let aFinalLabel;
+        if (hasBgm) {
+          const vol = state.bgm.volume.toFixed(2);
+          filters.push(`[0:a]volume=0.4[a0]`);
+          filters.push(`[${bgmIdx}:a]volume=${vol}[a1]`);
+          filters.push(`[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+          aFinalLabel = '[aout]';
+        } else {
+          aFinalLabel = '[0:a]';
+        }
+
+        const args = [
           '-y',
-          '-i', 'concat.mp4',
-          '-stream_loop', '-1', '-i', 'bgm.audio',
-          '-filter_complex',
-            `[0:a]volume=0.4[a0];[1:a]volume=${vol}[a1];[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[aout]`,
-          '-map', '0:v:0', '-map', '[aout]',
-          '-c:v', 'copy',
+          ...inputs,
+          '-filter_complex', filters.join('; '),
+          '-map', vFinalLabel,
+          '-map', aFinalLabel,
+          '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
           '-c:a', 'aac', '-b:a', '160k',
           '-shortest',
-          'output.mp4',
-        ]);
+          finalOut,
+        ];
+        log('최종 합성 중…');
+        await ffmpeg.exec(args);
+
+        for (const n of textPngNames) await ffmpeg.deleteFile(n).catch(() => {});
         await ffmpeg.deleteFile('bgm.audio').catch(() => {});
+        await ffmpeg.deleteFile('concat.mp4').catch(() => {});
+      } else {
+        // No texts and no bgm — concat.mp4 IS the output
+        const data = await ffmpeg.readFile('concat.mp4');
+        await ffmpeg.writeFile('output.mp4', data);
         await ffmpeg.deleteFile('concat.mp4').catch(() => {});
       }
 
@@ -640,19 +1024,13 @@
       if (state.outputUrl) URL.revokeObjectURL(state.outputUrl);
       state.outputUrl = URL.createObjectURL(blob);
 
-      // Preview
-      const box = $('previewBox');
-      box.innerHTML = '';
-      const v = document.createElement('video');
-      v.src = state.outputUrl;
-      v.controls = true;
-      v.autoplay = false;
-      box.appendChild(v);
+      $('renderedPreviewWrap').style.display = 'block';
+      $('renderedVideo').src = state.outputUrl;
       $('previewCaption').textContent = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)} MB`;
 
-      // Cleanup intermediate
-      for (const n of segmentFiles) await ffmpeg.deleteFile(n).catch(() => {});
+      for (const n of segments) await ffmpeg.deleteFile(n).catch(() => {});
       await ffmpeg.deleteFile('concat.txt').catch(() => {});
+      await ffmpeg.deleteFile('output.mp4').catch(() => {});
 
       $('downloadBtn').disabled = false;
       log('완료', 'ok');
@@ -675,6 +1053,9 @@
     a.download = `heyhoai-${Date.now()}.mp4`;
     a.click();
   };
+
+  // Init
+  renderAll();
 </script>
 
 </body>
