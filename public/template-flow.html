@@ -262,9 +262,19 @@
       <div id="step3NoImages" style="display:none;font-size:12px;color:var(--dim);padding:10px;">Step 2에서 먼저 사진을 생성하세요.</div>
     </div>
 
+    <!-- 모션 프롬프트 라이브러리 -->
+    <div class="form-group">
+      <label class="form-label">Saved Motion Prompts (click to use)</label>
+      <div id="motionPromptTags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+    </div>
+
     <div class="form-group">
       <label class="form-label">모션 프롬프트</label>
       <textarea class="form-input" id="introMotion" placeholder="예: slowly looking at camera, gentle smile, slight head tilt, soft hair movement, natural breathing">slowly looking at camera, gentle smile, slight head tilt, soft hair movement, natural breathing, confident but approachable expression</textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input class="form-input" id="motionPromptSaveName" placeholder="프롬프트 이름" style="flex:1;padding:6px 10px;font-size:12px;">
+        <button onclick="saveMotionPrompt()" style="padding:6px 14px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">Save</button>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">영상 길이</label>
@@ -907,6 +917,72 @@
   }
 
   loadBgmLibrary();
+
+  // ── Motion Prompts Library ──
+  let motionPrompts = [];
+
+  async function loadMotionPrompts() {
+    try {
+      const res = await fetch('/api/template-data?templateType=motion-prompt');
+      const data = await res.json();
+      motionPrompts = data.data || [];
+      renderMotionPromptTags();
+    } catch (e) {}
+  }
+
+  function renderMotionPromptTags() {
+    const container = document.getElementById('motionPromptTags');
+    if (motionPrompts.length === 0) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved prompts. Write and click Save.</span>';
+      return;
+    }
+    container.innerHTML = '';
+    motionPrompts.forEach(p => {
+      const d = typeof p.data === 'string' ? JSON.parse(p.data) : p.data;
+      const tag = document.createElement('div');
+      tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;max-width:250px;';
+      tag.onclick = () => {
+        document.getElementById('introMotion').value = d.prompt || '';
+        showToast('Loaded: ' + p.name, 'success');
+      };
+      tag.innerHTML = `
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${p.name}</span>
+        <button onclick="event.stopPropagation();deleteMotionPrompt('${p.id}')" style="background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">&times;</button>
+      `;
+      container.appendChild(tag);
+    });
+  }
+
+  async function saveMotionPrompt() {
+    const prompt = document.getElementById('introMotion').value.trim();
+    if (!prompt) { showToast('Enter a prompt first', 'error'); return; }
+    const name = document.getElementById('motionPromptSaveName').value.trim() || prompt.slice(0, 40);
+
+    try {
+      const res = await fetch('/api/template-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateType: 'motion-prompt', name, data: { prompt } }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast('Motion prompt saved', 'success');
+        document.getElementById('motionPromptSaveName').value = '';
+        loadMotionPrompts();
+      } else { showToast(result.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function deleteMotionPrompt(id) {
+    if (!confirm('Delete this prompt?')) return;
+    try {
+      await fetch('/api/template-data/' + id, { method: 'DELETE' });
+      showToast('Deleted', 'success');
+      loadMotionPrompts();
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  loadMotionPrompts();
 
   function selectIntroDuration(d) {
     introDuration = d;
