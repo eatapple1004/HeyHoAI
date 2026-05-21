@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - Templates</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--accent2); }
+  header nav { display: flex; gap: 16px; }
+  header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; }
+  header nav a:hover, header nav a.active { color: var(--accent2); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .page-desc { font-size: 13px; color: var(--dim); margin-bottom: 28px; }
+
+  .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+  .template-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .template-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .template-card .card-banner {
+    height: 140px; display: flex; align-items: center; justify-content: center;
+    font-size: 48px; background: linear-gradient(135deg, var(--surface2), var(--bg));
+  }
+  .template-card .card-body { padding: 18px; }
+  .template-card .card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .template-card .card-desc { font-size: 12px; color: var(--dim); line-height: 1.6; }
+  .template-card .card-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .template-card .tag {
+    padding: 2px 10px; border-radius: 4px; font-size: 10px; font-weight: 600;
+    background: rgba(108,92,231,0.1); color: var(--accent2);
+  }
+  .template-card .card-footer {
+    padding: 12px 18px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .template-card .steps { font-size: 11px; color: var(--dim); }
+  .template-card .start-btn {
+    padding: 6px 16px; background: var(--accent); border: none; border-radius: 6px;
+    color: white; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+
+  .coming-soon {
+    opacity: 0.5; pointer-events: none; position: relative;
+  }
+  .coming-soon::after {
+    content: 'COMING SOON'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); background: var(--surface);
+    padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    color: var(--dim); border: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HeyHoAI</h1>
+  <nav>
+    <a href="/heyhoai/image/generater/page">Image Generator</a>
+    <a href="/heyhoai/character/page">Characters</a>
+    <a href="/heyhoai/accounts/page">Accounts</a>
+    <a href="/heyhoai/templates/page" class="active">Templates</a>
+    <a href="/heyhoai/logs/page">Logs</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="page-title">Video Templates</div>
+  <div class="page-desc">밈, 유행, 자기소개 등 영상 유형별 제작 플로우를 따라 콘텐츠를 만들어보세요.</div>
+
+  <div class="template-grid">
+
+    <!-- 자기소개 -->
+    <div class="template-card" onclick="location.href='/heyhoai/templates/self-intro'">
+      <div class="card-banner">&#128075;</div>
+      <div class="card-body">
+        <div class="card-title">자기소개</div>
+        <div class="card-desc">캐릭터의 첫 인상을 만드는 자기소개 릴스. 프로필 사진, 이름, 취미, 한마디를 단계별로 구성합니다.</div>
+        <div class="card-tags">
+          <span class="tag">Reel</span>
+          <span class="tag">Image + Video</span>
+          <span class="tag">BGM</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="steps">5 Steps</span>
+        <button class="start-btn">Start</button>
+      </div>
+    </div>
+
+    <!-- 의상 변환 -->
+    <div class="template-card coming-soon">
+      <div class="card-banner">&#128087;</div>
+      <div class="card-body">
+        <div class="card-title">Outfit Change</div>
+        <div class="card-desc">음악에 맞춰 의상이 바뀌는 트렌드 릴스. 여러 벌의 의상 사진을 빠르게 전환합니다.</div>
+        <div class="card-tags">
+          <span class="tag">Reel</span>
+          <span class="tag">Trend</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="steps">4 Steps</span>
+        <button class="start-btn">Start</button>
+      </div>
+    </div>
+
+    <!-- Before/After -->
+    <div class="template-card coming-soon">
+      <div class="card-banner">&#10024;</div>
+      <div class="card-body">
+        <div class="card-title">Before / After</div>
+        <div class="card-desc">변신 전후를 보여주는 릴스. 드라마틱한 전환 효과로 시선을 사로잡습니다.</div>
+        <div class="card-tags">
+          <span class="tag">Reel</span>
+          <span class="tag">Viral</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="steps">3 Steps</span>
+        <button class="start-btn">Start</button>
+      </div>
+    </div>
+
+    <!-- POV -->
+    <div class="template-card coming-soon">
+      <div class="card-banner">&#128064;</div>
+      <div class="card-body">
+        <div class="card-title">POV</div>
+        <div class="card-desc">시점 기반 스토리텔링 릴스. 텍스트 오버레이와 함께 감성적인 영상을 만듭니다.</div>
+        <div class="card-tags">
+          <span class="tag">Reel</span>
+          <span class="tag">Story</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="steps">4 Steps</span>
+        <button class="start-btn">Start</button>
+      </div>
+    </div>
+
+    <!-- Dance -->
+    <div class="template-card coming-soon">
+      <div class="card-banner">&#128131;</div>
+      <div class="card-body">
+        <div class="card-title">Dance Challenge</div>
+        <div class="card-desc">유행하는 댄스 챌린지 릴스. 기본 사진에 댄스 모션을 적용합니다.</div>
+        <div class="card-tags">
+          <span class="tag">Reel</span>
+          <span class="tag">Challenge</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="steps">3 Steps</span>
+        <button class="start-btn">Start</button>
+      </div>
+    </div>
+
+    <!-- Slideshow -->
+    <div class="template-card coming-soon">
+      <div class="card-banner">&#127912;</div>
+      <div class="card-body">
+        <div class="card-title">Photo Slideshow</div>
+        <div class="card-desc">여러 장의 사진을 BGM과 함께 슬라이드쇼 릴스로 만듭니다.</div>
+        <div class="card-tags">
+          <span class="tag">Reel</span>
+          <span class="tag">Carousel</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="steps">3 Steps</span>
+        <button class="start-btn">Start</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

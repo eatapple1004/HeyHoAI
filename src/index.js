@@ -25,6 +25,12 @@ app.get('/heyhoai/image/generater/page', (_req, res) => {
 app.get('/heyhoai/character/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'character.html'));
 });
+app.get('/heyhoai/templates/page', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'templates.html'));
+});
+app.get('/heyhoai/templates/:templateId', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'template-flow.html'));
+});
 app.get('/heyhoai/logs/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'logs.html'));
 });
