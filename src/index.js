@@ -51,6 +51,7 @@ app.use('/api', videoRoutes);
 app.use('/api', publishingRoutes);
 app.use('/api', visualRoutes);
 app.use('/api/generate', generateRoutes);
+app.use('/api/template-data', require('./generate/template.route'));
 app.use('/api/accounts', accountRoutes);
 
 // Health check

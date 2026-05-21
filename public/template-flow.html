@@ -156,6 +156,15 @@
   <div class="flow-title">&#128075; 자기소개 릴스</div>
   <div class="flow-desc">캐릭터의 첫 인상을 만드는 자기소개 영상을 단계별로 제작합니다.</div>
 
+  <!-- Save / Load -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <select class="form-input" id="savedTemplateSelect" style="flex:1;min-width:150px;" onchange="loadSavedTemplate()">
+      <option value="">-- 저장된 데이터 불러오기 --</option>
+    </select>
+    <button onclick="saveTemplateData()" style="padding:8px 16px;background:var(--green);border:none;border-radius:6px;color:white;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+    <button onclick="deleteSavedTemplate()" style="padding:8px 16px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--red);font-size:12px;cursor:pointer;">Delete</button>
+  </div>
+
   <div class="progress-bar">
     <div class="progress-step active" id="prog1" onclick="goStep(1)">1. Profile</div>
     <div class="progress-step" id="prog2" onclick="goStep(2)">2. Photo</div>
@@ -478,6 +487,122 @@
   }
 
   loadCharacters();
+  loadSavedTemplates();
+
+  // ── Save / Load ──
+  let savedTemplates = [];
+
+  async function loadSavedTemplates() {
+    try {
+      const res = await fetch('/api/template-data?templateType=self-intro');
+      const data = await res.json();
+      savedTemplates = data.data || [];
+      const sel = document.getElementById('savedTemplateSelect');
+      sel.innerHTML = '<option value="">-- 저장된 데이터 불러오기 --</option>';
+      savedTemplates.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name + ' (' + new Date(t.updated_at).toLocaleDateString('ko-KR') + ')';
+        sel.appendChild(opt);
+      });
+    } catch (e) {}
+  }
+
+  function collectData() {
+    return {
+      characterId: document.getElementById('introCharSelect').value || null,
+      name: document.getElementById('introName').value,
+      age: document.getElementById('introAge').value,
+      country: document.getElementById('introCountry').value,
+      mbti: document.getElementById('introMbti').value,
+      photoSlots: photoSlots.map(s => ({ prompt: document.getElementById('slotPrompt_' + s.id)?.value || s.prompt, results: s.results, selectedUrl: s.selectedUrl })),
+      motion: document.getElementById('introMotion').value,
+      duration: introDuration,
+      mode: introMode,
+    };
+  }
+
+  function applyData(d) {
+    if (d.characterId) {
+      document.getElementById('introCharSelect').value = d.characterId;
+      onCharacterSelect();
+    }
+    if (d.name) document.getElementById('introName').value = d.name;
+    if (d.age) document.getElementById('introAge').value = d.age;
+    if (d.country) document.getElementById('introCountry').value = d.country;
+    if (d.mbti) document.getElementById('introMbti').value = d.mbti;
+    if (d.photoSlots) {
+      photoSlots = d.photoSlots.map((s, i) => ({
+        id: i + 1,
+        prompt: s.prompt || '',
+        results: s.results || [],
+        selectedUrl: s.selectedUrl || null,
+      }));
+      slotIdCounter = photoSlots.length + 1;
+      renderPhotoSlots();
+    }
+    if (d.motion) document.getElementById('introMotion').value = d.motion;
+    if (d.duration) { introDuration = d.duration; selectIntroDuration(d.duration); }
+    if (d.mode) { introMode = d.mode; selectIntroMode(d.mode); }
+  }
+
+  async function saveTemplateData() {
+    const charName = document.getElementById('introName').value.trim() || 'Untitled';
+    const data = collectData();
+    const existingId = document.getElementById('savedTemplateSelect').value;
+
+    try {
+      let res;
+      if (existingId) {
+        res = await fetch('/api/template-data/' + existingId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: charName, data }),
+        });
+      } else {
+        res = await fetch('/api/template-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateType: 'self-intro', name: charName, characterId: data.characterId, data }),
+        });
+      }
+      const result = await res.json();
+      if (result.success) {
+        showToast('Saved', 'success');
+        await loadSavedTemplates();
+        document.getElementById('savedTemplateSelect').value = result.data.id;
+      } else { showToast(result.error || 'Failed', 'error'); }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function loadSavedTemplate() {
+    const id = document.getElementById('savedTemplateSelect').value;
+    if (!id) return;
+    try {
+      const res = await fetch('/api/template-data/' + id);
+      const result = await res.json();
+      if (result.success && result.data?.data) {
+        const d = typeof result.data.data === 'string' ? JSON.parse(result.data.data) : result.data.data;
+        applyData(d);
+        showToast('Loaded', 'success');
+      }
+    } catch (e) { showToast('Error', 'error'); }
+  }
+
+  async function deleteSavedTemplate() {
+    const id = document.getElementById('savedTemplateSelect').value;
+    if (!id) { showToast('Select a saved data first', 'error'); return; }
+    if (!confirm('Delete this saved data?')) return;
+    try {
+      const res = await fetch('/api/template-data/' + id, { method: 'DELETE' });
+      const result = await res.json();
+      if (result.success) {
+        showToast('Deleted', 'success');
+        document.getElementById('savedTemplateSelect').value = '';
+        loadSavedTemplates();
+      }
+    } catch (e) { showToast('Error', 'error'); }
+  }
 
   function goStep(n) {
     document.getElementById('step' + currentStep).classList.remove('active');

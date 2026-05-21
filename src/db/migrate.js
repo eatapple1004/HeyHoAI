@@ -382,7 +382,22 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_post_queue_status ON post_queue(status);
   `;
 
+  const CREATE_TEMPLATE_DATA_TABLE = `
+    CREATE TABLE IF NOT EXISTS template_data (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        template_type   VARCHAR(50) NOT NULL,
+        character_id    UUID REFERENCES characters(id),
+        name            VARCHAR(200) NOT NULL,
+        data            JSONB NOT NULL DEFAULT '{}',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_template_data_type ON template_data(template_type);
+    CREATE INDEX IF NOT EXISTS idx_template_data_character ON template_data(character_id);
+  `;
+
   console.log('Running migrations...');
+  await pool.query(CREATE_TEMPLATE_DATA_TABLE);
   await pool.query(CREATE_SOCIAL_ACCOUNTS_TABLE);
   await pool.query(CREATE_ACCOUNT_MEDIA_TABLE);
   await pool.query(CREATE_REEL_TEMPLATES_TABLE);
