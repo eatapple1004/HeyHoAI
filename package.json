@@ -18,6 +18,9 @@
   "description": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
+    "@ffmpeg/core": "^0.12.6",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
     "@google/genai": "^1.48.0",
     "@zernio/node": "^0.2.157",
     "dotenv": "^17.4.0",

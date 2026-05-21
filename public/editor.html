@@ -212,8 +212,8 @@
 </div>
 
 <script type="module">
-  import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
-  import { fetchFile, toBlobURL } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js';
+  import { FFmpeg } from '/vendor/ffmpeg/index.js';
+  import { fetchFile, toBlobURL } from '/vendor/ffmpeg-util/index.js';
 
   const state = {
     clips: [],          // { id, type: 'image'|'video', file, name, url, duration, trimStart, trimEnd, mediaDuration }
@@ -245,11 +245,11 @@
   });
 
   async function loadFFmpeg() {
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+    const baseURL = '/vendor/ffmpeg-core';
     try {
       await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        coreURL: `${baseURL}/ffmpeg-core.js`,
+        wasmURL: `${baseURL}/ffmpeg-core.wasm`,
       });
       ffmpegReady = true;
       $('statusText').textContent = 'Ready';
