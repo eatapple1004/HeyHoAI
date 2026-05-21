@@ -240,14 +240,8 @@
 
     <div id="photoSlots"></div>
 
-    <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
+    <div style="margin-top:14px;">
       <button onclick="addPhotoSlot()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--dim);font-size:12px;cursor:pointer;">+ Add Slot</button>
-      <select class="form-input" id="photoModel" style="width:auto;">
-        <option value="pro">Gemini Pro</option>
-        <option value="flash">Gemini Flash</option>
-        <option value="gpt-image-2">GPT Image 2</option>
-        <option value="gpt-image-1.5">GPT Image 1.5</option>
-      </select>
     </div>
 
     <div class="btn-group">
@@ -337,11 +331,11 @@
 
   // ── Photo Slots ──
   let photoSlots = [
-    { id: 1, prompt: 'close-up portrait, looking at camera, soft smile, studio lighting, white background', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
-    { id: 2, prompt: 'medium shot, casual outfit, sitting at a trendy cafe, natural daylight', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
-    { id: 3, prompt: 'full body shot, street fashion, walking in city, golden hour lighting', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
-    { id: 4, prompt: 'close-up, laughing naturally, candid moment, soft bokeh background', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
-    { id: 5, prompt: 'lifestyle shot, relaxing at home, cozy atmosphere, warm tones', results: [], selectedUrl: null, exampleUrl: null, savedId: null },
+    { id: 1, prompt: 'close-up portrait, looking at camera, soft smile, studio lighting, white background', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
+    { id: 2, prompt: 'medium shot, casual outfit, sitting at a trendy cafe, natural daylight', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
+    { id: 3, prompt: 'full body shot, street fashion, walking in city, golden hour lighting', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
+    { id: 4, prompt: 'close-up, laughing naturally, candid moment, soft bokeh background', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
+    { id: 5, prompt: 'lifestyle shot, relaxing at home, cozy atmosphere, warm tones', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
   ];
   let slotIdCounter = 6;
 
@@ -364,8 +358,15 @@
             </div>
           </div>
           <div class="slot-actions">
+            <select class="slot-btn" id="slotModel_${slot.id}" style="padding:4px 6px;font-size:10px;color:var(--text);background:var(--bg);min-width:90px;">
+              <option value="pro" ${(slot.model || 'pro') === 'pro' ? 'selected' : ''}>Gemini Pro</option>
+              <option value="flash" ${slot.model === 'flash' ? 'selected' : ''}>Gemini Flash</option>
+              <option value="gpt-image-2" ${slot.model === 'gpt-image-2' ? 'selected' : ''}>GPT-2</option>
+              <option value="gpt-image-2-high" ${slot.model === 'gpt-image-2-high' ? 'selected' : ''}>GPT-2 HD</option>
+              <option value="gpt-image-1.5" ${slot.model === 'gpt-image-1.5' ? 'selected' : ''}>GPT-1.5</option>
+            </select>
             <button class="slot-btn gen" id="slotGenBtn_${slot.id}" onclick="generateSlotPhoto(${slot.id})">Generate</button>
-            <button class="slot-btn" onclick="generateSlotPhoto(${slot.id}, true)">Regenerate</button>
+            <button class="slot-btn" onclick="generateSlotPhoto(${slot.id}, true)" title="이전 결과 삭제 후 새로 생성">Regen</button>
             <button class="slot-btn" onclick="saveSlotPrompt(${slot.id})" style="color:var(--green);">Save</button>
             ${photoSlots.length > 5 ? '<button class="slot-btn del" onclick="removePhotoSlot(' + slot.id + ')">Delete</button>' : ''}
             <span class="slot-status" id="slotStatus_${slot.id}">
@@ -460,7 +461,9 @@
 
     // 캐릭터 레퍼런스
     const charId = document.getElementById('introCharSelect').value;
-    const model = document.getElementById('photoModel').value;
+    const slotModelEl = document.getElementById('slotModel_' + slotId);
+    const model = slotModelEl ? slotModelEl.value : 'pro';
+    slot.model = model;
 
     const btn = document.getElementById('slotGenBtn_' + slotId);
     const status = document.getElementById('slotStatus_' + slotId);
