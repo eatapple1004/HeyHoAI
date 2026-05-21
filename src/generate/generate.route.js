@@ -123,10 +123,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
             });
             imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
           } else {
-            const genResult = await openai.images.generate({
-              ...gptParams,
-              response_format: 'b64_json',
-            });
+            const genResult = await openai.images.generate(gptParams);
             imageBuffer = Buffer.from(genResult.data[0].b64_json, 'base64');
           }
         } else {
