@@ -134,6 +134,36 @@
 
   .timeline-section { margin-top: 18px; }
   .timeline-section h3 { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .result-section {
+    margin-top: 18px; display: none;
+  }
+  .result-section.visible { display: block; }
+  .result-section h3 {
+    font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px; display: flex; gap: 18px; align-items: flex-start;
+  }
+  @media (max-width: 800px) { .result-card { flex-direction: column; } }
+  .result-card video {
+    max-width: 100%; max-height: 60vh; border-radius: 8px; background: #000;
+    flex-shrink: 0;
+  }
+  .result-side {
+    display: flex; flex-direction: column; gap: 12px; flex: 1; min-width: 180px;
+  }
+  .result-meta {
+    font-size: 12px; color: var(--dim); font-family: ui-monospace, Menlo, monospace;
+  }
+  .primary-btn {
+    background: var(--accent); border: 1px solid var(--accent); color: white;
+    padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .primary-btn:hover { background: var(--accent2); }
   .timeline {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 16px; min-height: 140px; display: flex; gap: 10px; overflow-x: auto;
@@ -268,10 +298,6 @@
           <div class="stage-empty" id="stageEmpty">미리보기 영역 — 클립을 추가하면 첫 프레임이 배경으로 표시됩니다. 텍스트를 끌어 위치를 정하세요.</div>
         </div>
       </div>
-      <div id="renderedPreviewWrap" style="display:none;width:100%;text-align:center;">
-        <video id="renderedVideo" controls></video>
-        <div class="preview-caption" id="previewCaption"></div>
-      </div>
     </div>
 
     <div class="side-pane">
@@ -296,10 +322,21 @@
     </div>
   </div>
 
+  <div class="result-section" id="resultSection">
+    <h3>렌더링 결과</h3>
+    <div class="result-card">
+      <video id="renderedVideo" controls></video>
+      <div class="result-side">
+        <div class="result-meta" id="previewCaption"></div>
+        <button id="resultDownloadBtn" class="primary-btn">다운로드</button>
+      </div>
+    </div>
+  </div>
+
   <div class="timeline-section">
     <h3>타임라인</h3>
     <div class="timeline" id="timeline">
-      <div class="empty">상단의 「사진/영상 추가」 버튼으로 클립을 추가하세요.</div>
+      <div class="empty">상단의 「사진/영상 추가」 버튼을 누르거나 파일을 여기로 끌어다 놓으세요.</div>
     </div>
   </div>
 
@@ -1140,9 +1177,10 @@
       if (state.outputUrl) URL.revokeObjectURL(state.outputUrl);
       state.outputUrl = URL.createObjectURL(blob);
 
-      $('renderedPreviewWrap').style.display = 'block';
+      $('resultSection').classList.add('visible');
       $('renderedVideo').src = state.outputUrl;
       $('previewCaption').textContent = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)} MB`;
+      $('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       for (const n of segments) await ffmpeg.deleteFile(n).catch(() => {});
       await ffmpeg.deleteFile('concat.txt').catch(() => {});
@@ -1162,13 +1200,15 @@
   }
 
   $('renderBtn').onclick = renderVideo;
-  $('downloadBtn').onclick = () => {
+  const downloadOutput = () => {
     if (!state.outputUrl) return;
     const a = document.createElement('a');
     a.href = state.outputUrl;
     a.download = `heyhoai-${Date.now()}.mp4`;
     a.click();
   };
+  $('downloadBtn').onclick = downloadOutput;
+  $('resultDownloadBtn').onclick = downloadOutput;
 
   // Init
   renderAll();
