@@ -253,8 +253,14 @@
   <!-- Step 3: 영상 스타일 -->
   <div class="step-card" id="step3">
     <div class="step-num">Step 3 / 5</div>
-    <h3>영상 스타일 설정</h3>
-    <div class="step-desc">자기소개 영상의 모션과 분위기를 설정합니다.</div>
+    <h3>영상 만들기</h3>
+    <div class="step-desc">Step 2에서 생성한 사진 중 하나를 선택하고 영상을 생성합니다.</div>
+
+    <div class="form-group">
+      <label class="form-label">소스 이미지 선택</label>
+      <div id="step3ImageGrid" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      <div id="step3NoImages" style="display:none;font-size:12px;color:var(--dim);padding:10px;">Step 2에서 먼저 사진을 생성하세요.</div>
+    </div>
 
     <div class="form-group">
       <label class="form-label">모션 프롬프트</label>
@@ -683,6 +689,8 @@
     } catch (e) { showToast('Error', 'error'); }
   }
 
+  let selectedStep3ImageUrl = null;
+
   function goStep(n) {
     document.getElementById('step' + currentStep).classList.remove('active');
     document.getElementById('step' + n).classList.add('active');
@@ -692,6 +700,42 @@
       const el = document.getElementById('prog' + i);
       el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
     }
+
+    // Step 3 진입 시 이미지 그리드 렌더
+    if (n === 3) renderStep3ImageGrid();
+  }
+
+  function renderStep3ImageGrid() {
+    const grid = document.getElementById('step3ImageGrid');
+    const noImages = document.getElementById('step3NoImages');
+
+    // Step 2에서 생성/선택된 이미지 수집
+    const images = [];
+    photoSlots.forEach((slot, idx) => {
+      slot.results.forEach(r => {
+        images.push({ url: r.url, slotIdx: idx + 1, selected: r.url === selectedStep3ImageUrl });
+      });
+    });
+
+    if (images.length === 0) {
+      grid.innerHTML = '';
+      noImages.style.display = 'block';
+      return;
+    }
+
+    noImages.style.display = 'none';
+    grid.innerHTML = '';
+    images.forEach(img => {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:relative;cursor:pointer;border:3px solid ' + (img.selected ? 'var(--green)' : 'transparent') + ';border-radius:10px;overflow:hidden;transition:border-color 0.2s;';
+      div.onclick = () => { selectedStep3ImageUrl = img.url; renderStep3ImageGrid(); };
+      div.innerHTML = `
+        <img src="${img.url}" style="width:100px;height:100px;object-fit:cover;display:block;">
+        <div style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.6);color:white;font-size:9px;padding:1px 5px;border-radius:3px;">#${img.slotIdx}</div>
+        ${img.selected ? '<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;">&#10003;</div>' : ''}
+      `;
+      grid.appendChild(div);
+    });
   }
 
   // ── Saved Individual Prompts ──
@@ -784,17 +828,15 @@
 
     if (!name) { showToast('이름을 입력하세요', 'error'); goStep(1); return; }
 
-    const selectedPhotos = photoSlots.filter(s => s.selectedUrl);
-    if (selectedPhotos.length === 0) { showToast('Step 2에서 사진을 생성하세요', 'error'); goStep(2); return; }
+    if (!selectedStep3ImageUrl) { showToast('Step 3에서 소스 이미지를 선택하세요', 'error'); goStep(3); return; }
     if (!motion) { showToast('모션 프롬프트를 입력하세요', 'error'); goStep(3); return; }
 
     goStep(5);
     document.getElementById('resultArea').innerHTML = '<div style="color:var(--dim);"><div class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;margin-bottom:10px;"></div><br>영상 생성 중... (1~7분 소요)</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
 
     try {
-      // 1) 비디오 생성 (첫 번째 선택 사진 + 모션 프롬프트)
-      const firstPhotoUrl = selectedPhotos[0].selectedUrl;
-      const imgRes = await fetch(firstPhotoUrl);
+      // 1) 비디오 생성 (Step 3에서 선택한 사진 + 모션 프롬프트)
+      const imgRes = await fetch(selectedStep3ImageUrl);
       const imgBlob = await imgRes.blob();
       const imgFile = new File([imgBlob], 'source.png', { type: imgBlob.type });
 
@@ -818,7 +860,7 @@
         if (country) resultHtml += ` | ${country}`;
         if (mbti) resultHtml += ` | ${mbti}`;
         resultHtml += `</div>`;
-        resultHtml += `<div style="margin-top:8px;font-size:12px;color:var(--dim);">Generated photos: ${selectedPhotos.length}장</div>`;
+        resultHtml += `<div style="margin-top:8px;font-size:12px;color:var(--dim);">Source: <img src="${selectedStep3ImageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;"></div>`;
 
         document.getElementById('resultArea').innerHTML = resultHtml;
         document.getElementById('downloadResult').href = data.url;
