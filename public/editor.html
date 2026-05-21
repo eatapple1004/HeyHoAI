@@ -895,7 +895,7 @@
       const l = document.createElement('label'); l.textContent = '노출 시간';
       row.appendChild(l);
       const slider = document.createElement('input');
-      slider.type = 'range'; slider.min = '0.5'; slider.max = '30'; slider.step = '0.1'; slider.value = clip.duration;
+      slider.type = 'range'; slider.min = '0.5'; slider.max = '4'; slider.step = '0.1'; slider.value = Math.min(clip.duration, 4);
       const val = document.createElement('span'); val.className = 'value'; val.textContent = clip.duration.toFixed(1) + 's';
       slider.oninput = () => {
         clip.duration = parseFloat(slider.value);
@@ -1124,18 +1124,15 @@
           for (let i = 0; i < state.texts.length; i++) {
             const tx = state.texts[i];
             const inIdx = 1 + i; // input index of this text png
-            const out = (i === state.texts.length - 1 && !hasBgm) ? '[vout]' : `[v${i + 1}]`;
-            filters.push(`${vLabel}[${inIdx}:v]overlay=0:0:enable='between(t,${tx.startTime.toFixed(2)},${tx.endTime.toFixed(2)})'${out}`);
+            filters.push(`${vLabel}[${inIdx}:v]overlay=0:0:enable='between(t,${tx.startTime.toFixed(2)},${tx.endTime.toFixed(2)})'[v${i + 1}]`);
             vLabel = `[v${i + 1}]`;
           }
-        }
-        // If we go through filter chain but last didn't get [vout], rename
-        const vFinalLabel = hasTexts ? '[vout]' : '[0:v]';
-        if (hasTexts) {
-          // Adjust last filter to output [vout]
+          // Rename the last produced label to [vout]
           const last = filters.pop();
           filters.push(last.replace(/\[v\d+\]$/, '[vout]'));
         }
+        // -map references: bracketed = filter graph label, non-bracketed = input stream
+        const vFinalLabel = hasTexts ? '[vout]' : '0:v';
 
         let aFinalLabel;
         if (hasBgm) {
@@ -1145,7 +1142,7 @@
           filters.push(`[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
           aFinalLabel = '[aout]';
         } else {
-          aFinalLabel = '[0:a]';
+          aFinalLabel = '0:a';
         }
 
         const args = [
