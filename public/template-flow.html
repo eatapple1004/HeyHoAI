@@ -69,6 +69,41 @@
   .upload-area.has-file { border-color: var(--green); border-style: solid; }
   .upload-area input { display: none; }
 
+  .photo-slot {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .photo-slot .slot-num {
+    width: 28px; height: 28px; background: var(--accent); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 4px;
+  }
+  .photo-slot .slot-body { flex: 1; min-width: 0; }
+  .photo-slot .slot-prompt {
+    width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit;
+    resize: none; min-height: 50px;
+  }
+  .photo-slot .slot-prompt:focus { outline: none; border-color: var(--accent); }
+  .photo-slot .slot-actions { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+  .photo-slot .slot-btn {
+    padding: 5px 12px; border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--dim); font-size: 11px; cursor: pointer;
+  }
+  .photo-slot .slot-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .photo-slot .slot-btn.gen { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+  .photo-slot .slot-btn.gen:disabled { opacity: 0.5; cursor: not-allowed; }
+  .photo-slot .slot-btn.del:hover { border-color: var(--red); color: var(--red); }
+  .photo-slot .slot-result {
+    margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .photo-slot .slot-result img {
+    width: 80px; height: 80px; object-fit: cover; border-radius: 6px;
+    border: 2px solid var(--green); cursor: pointer;
+  }
+  .photo-slot .slot-result img.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .photo-slot .slot-status { font-size: 10px; color: var(--dim); margin-left: auto; }
+
   .preview-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   .preview-thumb {
     width: 80px; height: 80px; border-radius: 8px; object-fit: cover;
@@ -159,16 +194,12 @@
       <input class="form-input" id="introAge" placeholder="예: 21">
     </div>
     <div class="form-group">
-      <label class="form-label">한줄 소개</label>
-      <input class="form-input" id="introTagline" placeholder="예: Seoul based digital creator">
+      <label class="form-label">국가</label>
+      <input class="form-input" id="introCountry" placeholder="예: South Korea">
     </div>
     <div class="form-group">
-      <label class="form-label">취미/관심사</label>
-      <input class="form-input" id="introHobbies" placeholder="예: fashion, cafe, travel">
-    </div>
-    <div class="form-group">
-      <label class="form-label">한마디 (CTA)</label>
-      <input class="form-input" id="introCTA" placeholder="예: Follow me for daily vibes!">
+      <label class="form-label">MBTI</label>
+      <input class="form-input" id="introMbti" placeholder="예: ENFP">
     </div>
 
     <div class="btn-group">
@@ -176,18 +207,23 @@
     </div>
   </div>
 
-  <!-- Step 2: 프로필 사진 -->
+  <!-- Step 2: 사진 생성 (5장) -->
   <div class="step-card" id="step2">
     <div class="step-num">Step 2 / 5</div>
-    <h3>프로필 사진 선택</h3>
-    <div class="step-desc">자기소개에 사용할 대표 사진을 업로드하세요. 여러 장 가능합니다.</div>
+    <h3>자기소개 사진 생성 (5장)</h3>
+    <div class="step-desc">각 장면별 프롬프트를 작성하고 사진을 생성하세요. 프롬프트 수정 후 재생성 가능합니다.</div>
 
-    <div class="upload-area" id="introUploadArea" onclick="document.getElementById('introPhotoInput').click()">
-      <div style="font-size:24px;margin-bottom:6px;">+</div>
-      <div style="font-size:12px;color:var(--dim);">Click to upload photos</div>
-      <input type="file" accept="image/*" multiple id="introPhotoInput" onchange="addIntroPhotos(this.files)">
+    <div id="photoSlots"></div>
+
+    <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
+      <button onclick="addPhotoSlot()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--dim);font-size:12px;cursor:pointer;">+ Add Slot</button>
+      <select class="form-input" id="photoModel" style="width:auto;">
+        <option value="pro">Gemini Pro</option>
+        <option value="flash">Gemini Flash</option>
+        <option value="gpt-image-2">GPT Image 2</option>
+        <option value="gpt-image-1.5">GPT Image 1.5</option>
+      </select>
     </div>
-    <div class="preview-grid" id="introPhotoPreview"></div>
 
     <div class="btn-group">
       <button class="btn-prev" onclick="goStep(1)">&larr; Back</button>
@@ -268,12 +304,125 @@
 
 <script>
   let currentStep = 1;
-  let introPhotos = [];
   let introBgmFile = null;
   let introDuration = '5';
   let introMode = 'std';
   let characters = [];
   let selectedCharacter = null;
+
+  // ── Photo Slots ──
+  let photoSlots = [
+    { id: 1, prompt: 'close-up portrait, looking at camera, soft smile, studio lighting, white background', results: [], selectedUrl: null },
+    { id: 2, prompt: 'medium shot, casual outfit, sitting at a trendy cafe, natural daylight', results: [], selectedUrl: null },
+    { id: 3, prompt: 'full body shot, street fashion, walking in city, golden hour lighting', results: [], selectedUrl: null },
+    { id: 4, prompt: 'close-up, laughing naturally, candid moment, soft bokeh background', results: [], selectedUrl: null },
+    { id: 5, prompt: 'lifestyle shot, relaxing at home, cozy atmosphere, warm tones', results: [], selectedUrl: null },
+  ];
+  let slotIdCounter = 6;
+
+  function renderPhotoSlots() {
+    const container = document.getElementById('photoSlots');
+    container.innerHTML = '';
+    photoSlots.forEach((slot, idx) => {
+      const div = document.createElement('div');
+      div.className = 'photo-slot';
+      div.innerHTML = `
+        <div class="slot-num">${idx + 1}</div>
+        <div class="slot-body">
+          <textarea class="slot-prompt" id="slotPrompt_${slot.id}" placeholder="장면 설명...">${slot.prompt}</textarea>
+          <div class="slot-actions">
+            <button class="slot-btn gen" id="slotGenBtn_${slot.id}" onclick="generateSlotPhoto(${slot.id})">Generate</button>
+            <button class="slot-btn" onclick="generateSlotPhoto(${slot.id}, true)">Regenerate</button>
+            ${photoSlots.length > 5 ? '<button class="slot-btn del" onclick="removePhotoSlot(' + slot.id + ')">Delete</button>' : ''}
+            <span class="slot-status" id="slotStatus_${slot.id}">${slot.results.length > 0 ? slot.results.length + ' generated' : ''}</span>
+          </div>
+          <div class="slot-result" id="slotResult_${slot.id}"></div>
+        </div>
+      `;
+      container.appendChild(div);
+
+      // 기존 결과 렌더
+      if (slot.results.length > 0) {
+        const resultDiv = document.getElementById('slotResult_' + slot.id);
+        slot.results.forEach(r => {
+          const img = document.createElement('img');
+          img.src = r.url;
+          img.className = r.url === slot.selectedUrl ? 'selected' : '';
+          img.onclick = () => { slot.selectedUrl = r.url; renderPhotoSlots(); };
+          resultDiv.appendChild(img);
+        });
+      }
+    });
+  }
+
+  function addPhotoSlot() {
+    photoSlots.push({ id: slotIdCounter++, prompt: '', results: [], selectedUrl: null });
+    renderPhotoSlots();
+  }
+
+  function removePhotoSlot(id) {
+    photoSlots = photoSlots.filter(s => s.id !== id);
+    renderPhotoSlots();
+  }
+
+  async function generateSlotPhoto(slotId, regen = false) {
+    const slot = photoSlots.find(s => s.id === slotId);
+    if (!slot) return;
+
+    const promptEl = document.getElementById('slotPrompt_' + slotId);
+    slot.prompt = promptEl.value.trim();
+    if (!slot.prompt) { showToast('프롬프트를 입력하세요', 'error'); return; }
+
+    // 캐릭터 레퍼런스
+    const charId = document.getElementById('introCharSelect').value;
+    const model = document.getElementById('photoModel').value;
+
+    const btn = document.getElementById('slotGenBtn_' + slotId);
+    const status = document.getElementById('slotStatus_' + slotId);
+    btn.disabled = true;
+    status.textContent = 'Generating...';
+
+    try {
+      const formData = new FormData();
+      formData.append('prompt', slot.prompt);
+      formData.append('model', model);
+      formData.append('count', '1');
+      if (charId) formData.append('characterId', charId);
+
+      // 캐릭터 레퍼런스 이미지
+      if (selectedCharacter?.reference_image_url) {
+        const filename = selectedCharacter.reference_image_url.split('/').pop();
+        try {
+          const imgRes = await fetch('/images/' + filename);
+          const blob = await imgRes.blob();
+          formData.append('referenceImages', new File([blob], filename, { type: blob.type }));
+        } catch (e) {}
+      }
+
+      const res = await fetch('/api/generate', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        const success = data.results.filter(r => r.success);
+        if (regen) slot.results = []; // 재생성 시 이전 결과 제거
+        success.forEach(r => slot.results.push(r));
+        if (success.length > 0 && !slot.selectedUrl) {
+          slot.selectedUrl = success[0].url;
+        }
+        status.textContent = slot.results.length + ' generated';
+        showToast('Photo generated', 'success');
+      } else {
+        status.textContent = 'Failed';
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      status.textContent = 'Error';
+      showToast('Error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      renderPhotoSlots();
+    }
+  }
 
   // ── 캐릭터 로드 ──
   async function loadCharacters() {
@@ -324,9 +473,8 @@
     // 자동 채움
     document.getElementById('introName').value = selectedCharacter.name || '';
     document.getElementById('introAge').value = persona.age || '';
-    document.getElementById('introTagline').value = persona.instagramProfile?.bio || selectedCharacter.concept || '';
-    document.getElementById('introHobbies').value = (persona.personality || []).join(', ');
-    document.getElementById('introCTA').value = '';
+    document.getElementById('introCountry').value = persona.nationality || '';
+    document.getElementById('introMbti').value = persona.mbti || '';
   }
 
   loadCharacters();
@@ -342,27 +490,8 @@
     }
   }
 
-  function addIntroPhotos(files) {
-    Array.from(files).forEach(f => introPhotos.push(f));
-    renderIntroPhotos();
-  }
-
-  function renderIntroPhotos() {
-    const container = document.getElementById('introPhotoPreview');
-    container.innerHTML = '';
-    introPhotos.forEach((f, i) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        img.className = 'preview-thumb';
-        img.onclick = () => { introPhotos.splice(i, 1); renderIntroPhotos(); };
-        container.appendChild(img);
-      };
-      reader.readAsDataURL(f);
-    });
-    document.getElementById('introUploadArea').classList.toggle('has-file', introPhotos.length > 0);
-  }
+  // Photo slots 초기 렌더
+  renderPhotoSlots();
 
   function setIntroBgm(file) {
     if (!file) return;
@@ -386,40 +515,45 @@
 
   async function generateIntro() {
     const name = document.getElementById('introName').value.trim();
-    const age = document.getElementById('introAge').value.trim();
-    const tagline = document.getElementById('introTagline').value.trim();
-    const hobbies = document.getElementById('introHobbies').value.trim();
-    const cta = document.getElementById('introCTA').value.trim();
     const motion = document.getElementById('introMotion').value.trim();
 
     if (!name) { showToast('이름을 입력하세요', 'error'); goStep(1); return; }
-    if (introPhotos.length === 0) { showToast('사진을 업로드하세요', 'error'); goStep(2); return; }
+
+    const selectedPhotos = photoSlots.filter(s => s.selectedUrl);
+    if (selectedPhotos.length === 0) { showToast('Step 2에서 사진을 생성하세요', 'error'); goStep(2); return; }
     if (!motion) { showToast('모션 프롬프트를 입력하세요', 'error'); goStep(3); return; }
 
     goStep(5);
     document.getElementById('resultArea').innerHTML = '<div style="color:var(--dim);"><div class="spinner" style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;margin-bottom:10px;"></div><br>영상 생성 중... (1~7분 소요)</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
 
     try {
-      // 1) 비디오 생성 (첫 번째 사진 + 모션 프롬프트)
+      // 1) 비디오 생성 (첫 번째 선택 사진 + 모션 프롬프트)
+      const firstPhotoUrl = selectedPhotos[0].selectedUrl;
+      const imgRes = await fetch(firstPhotoUrl);
+      const imgBlob = await imgRes.blob();
+      const imgFile = new File([imgBlob], 'source.png', { type: imgBlob.type });
+
       const formData = new FormData();
       formData.append('prompt', `Self introduction video of ${name}. ${motion}`);
       formData.append('duration', introDuration);
       formData.append('mode', introMode);
-      formData.append('sourceImage', introPhotos[0]);
+      formData.append('sourceImage', imgFile);
 
       const res = await fetch('/api/generate/video', { method: 'POST', body: formData });
       const data = await res.json();
 
       if (data.success) {
         let resultHtml = `<video src="${data.url}" controls autoplay loop style="max-width:100%;max-height:400px;border-radius:12px;"></video>`;
+        const age = document.getElementById('introAge').value.trim();
+        const country = document.getElementById('introCountry').value.trim();
+        const mbti = document.getElementById('introMbti').value.trim();
         resultHtml += `<div style="margin-top:12px;font-size:13px;color:var(--text);">`;
         resultHtml += `<strong>${name}</strong>`;
         if (age) resultHtml += ` | ${age}`;
-        resultHtml += `<br>`;
-        if (tagline) resultHtml += `${tagline}<br>`;
-        if (hobbies) resultHtml += `Interests: ${hobbies}<br>`;
-        if (cta) resultHtml += `<br><em>${cta}</em>`;
+        if (country) resultHtml += ` | ${country}`;
+        if (mbti) resultHtml += ` | ${mbti}`;
         resultHtml += `</div>`;
+        resultHtml += `<div style="margin-top:8px;font-size:12px;color:var(--dim);">Generated photos: ${selectedPhotos.length}장</div>`;
 
         document.getElementById('resultArea').innerHTML = resultHtml;
         document.getElementById('downloadResult').href = data.url;
