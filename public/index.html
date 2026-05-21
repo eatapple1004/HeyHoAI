@@ -376,7 +376,8 @@
     <!-- Model Selection (Image only) -->
     <div class="section" id="modelSection">
       <h2>4. Model</h2>
-      <div class="model-group">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">Gemini</div>
+      <div class="model-group" style="margin-bottom:8px;">
         <div class="model-btn active" data-model="pro" onclick="selectModel(this)">
           <div class="name">Pro</div>
           <div class="desc">High quality</div>
@@ -384,6 +385,17 @@
         <div class="model-btn" data-model="flash" onclick="selectModel(this)">
           <div class="name">Flash</div>
           <div class="desc">Fast & cheap</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">GPT Image</div>
+      <div class="model-group">
+        <div class="model-btn" data-model="gpt-image-2" onclick="selectModel(this)">
+          <div class="name">GPT-2</div>
+          <div class="desc">Best quality</div>
+        </div>
+        <div class="model-btn" data-model="gpt-image-1.5" onclick="selectModel(this)">
+          <div class="name">GPT-1.5</div>
+          <div class="desc">Balanced</div>
         </div>
       </div>
     </div>

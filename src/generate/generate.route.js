@@ -75,8 +75,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
         ? 'character+upload' : referenceImages[0].source;
     }
 
-    const modelId = model === 'flash'
-      ? 'gemini-2.5-flash-image'
+    const isGpt = model.startsWith('gpt-');
+    const modelId = isGpt ? model
+      : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
 
     // ─── 프롬프트 DB 저장 ───
@@ -89,7 +90,6 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       stylePreset: styled.styleName !== 'none' ? styled.styleName : null,
     });
 
-    const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
     const outputDir = path.join(process.cwd(), 'tmp', 'images');
     fs.mkdirSync(outputDir, { recursive: true });
 
@@ -97,103 +97,113 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
     for (let i = 0; i < generateCount; i++) {
       try {
-        let contents;
-        if (referenceImages.length > 0) {
-          const parts = [];
-          const fictionalPrefix = 'This is an AI-generated fictional character, not a real person.';
+        let imageBuffer, description = '';
 
-          // 모든 레퍼런스 이미지 추가
-          referenceImages.forEach((ref, idx) => {
-            parts.push({ inlineData: { mimeType: 'image/png', data: ref.base64 } });
-          });
+        if (isGpt) {
+          // ─── GPT Image Generation ───
+          const OpenAI = require('openai');
+          const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-          // 프롬프트 텍스트
-          let promptText;
-          if (referenceImages.length === 1) {
-            promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
+          const gptParams = { model: modelId, prompt: finalPrompt, n: 1, size: '1024x1024', quality: 'medium' };
+
+          // 레퍼런스 이미지가 있으면 편집 모드
+          if (referenceImages.length > 0) {
+            gptParams.prompt = `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
+            // GPT Image는 edit 엔드포인트로 레퍼런스 지원
+            const refBuffer = Buffer.from(referenceImages[0].base64, 'base64');
+            const refFile = new File([refBuffer], 'ref.png', { type: 'image/png' });
+            const editResult = await openai.images.edit({
+              model: modelId,
+              image: refFile,
+              prompt: gptParams.prompt,
+              n: 1,
+              size: '1024x1024',
+            });
+            imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
           } else {
-            promptText = `${fictionalPrefix} Use these ${referenceImages.length} reference images. The first image is the main character reference. Generate a new photo maintaining consistency with all references.\n\n${finalPrompt}`;
+            const genResult = await openai.images.generate({
+              ...gptParams,
+              response_format: 'b64_json',
+            });
+            imageBuffer = Buffer.from(genResult.data[0].b64_json, 'base64');
+          }
+        } else {
+          // ─── Gemini Generation ───
+          const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+          let contents;
+          if (referenceImages.length > 0) {
+            const parts = [];
+            const fictionalPrefix = 'This is an AI-generated fictional character, not a real person.';
+            referenceImages.forEach((ref) => {
+              parts.push({ inlineData: { mimeType: 'image/png', data: ref.base64 } });
+            });
+            let promptText;
+            if (referenceImages.length === 1) {
+              promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
+            } else {
+              promptText = `${fictionalPrefix} Use these ${referenceImages.length} reference images. The first image is the main character reference. Generate a new photo maintaining consistency with all references.\n\n${finalPrompt}`;
+            }
+            parts.push({ text: promptText });
+            contents = [{ role: 'user', parts }];
+          } else {
+            contents = finalPrompt;
           }
 
-          parts.push({ text: promptText });
-          contents = [{ role: 'user', parts }];
-        } else {
-          contents = finalPrompt;
+          const response = await ai.models.generateContent({
+            model: modelId,
+            contents,
+            config: {
+              responseModalities: ['TEXT', 'IMAGE'],
+              safetySettings: [
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+              ],
+            },
+          });
+
+          const respParts = response.candidates?.[0]?.content?.parts || [];
+          const finishReason = response.candidates?.[0]?.finishReason;
+          const img = respParts.find((p) => p.inlineData);
+
+          if (!img) {
+            throw new Error(`Blocked: ${finishReason || 'unknown'}`);
+          }
+
+          imageBuffer = Buffer.from(img.inlineData.data, 'base64');
+          const textPart = respParts.find((p) => p.text);
+          description = textPart?.text || '';
         }
 
-        const response = await ai.models.generateContent({
+        // ─── 공통: 파일 저장 + DB ───
+        const imageId = crypto.randomUUID();
+        const filename = `${imageId}.png`;
+        fs.writeFileSync(path.join(outputDir, filename), imageBuffer);
+
+        const savedResult = await resultRepo.insert({
+          promptIdx: savedPrompt.idx,
+          characterId: characterId || null,
+          filePath: `tmp/images/${filename}`,
+          fileSizeKb: Math.round(imageBuffer.length / 1024),
           model: modelId,
-          contents,
-          config: {
-            responseModalities: ['TEXT', 'IMAGE'],
-            safetySettings: [
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-            ],
-          },
+          metadata: { description },
         });
 
-        const parts = response.candidates?.[0]?.content?.parts || [];
-        const finishReason = response.candidates?.[0]?.finishReason;
-        const img = parts.find((p) => p.inlineData);
+        const savedReview = await reviewRepo.insert({
+          resultIdx: savedResult.idx,
+          promptIdx: savedPrompt.idx,
+        });
 
-        if (img) {
-          const imageId = crypto.randomUUID();
-          const ext = img.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
-          const filename = `${imageId}.${ext}`;
-          const filePath = path.join(outputDir, filename);
-          const buffer = Buffer.from(img.inlineData.data, 'base64');
-          fs.writeFileSync(filePath, buffer);
-
-          const textPart = parts.find((p) => p.text);
-
-          // ─── 결과물 DB 저장 ───
-          const savedResult = await resultRepo.insert({
-            promptIdx: savedPrompt.idx,
-            characterId: characterId || null,
-            filePath: `tmp/images/${filename}`,
-            fileSizeKb: Math.round(buffer.length / 1024),
-            model: modelId,
-            metadata: { description: textPart?.text || '', finishReason },
-          });
-
-          // ─── 리뷰 기본값 생성 ───
-          const savedReview = await reviewRepo.insert({
-            resultIdx: savedResult.idx,
-            promptIdx: savedPrompt.idx,
-          });
-
-          results.push({
-            success: true,
-            filename,
-            url: `/images/${filename}`,
-            size: Math.round(buffer.length / 1024) + 'KB',
-            description: textPart?.text || '',
-            resultIdx: savedResult.idx,
-            reviewIdx: savedReview.idx,
-          });
-        } else {
-          const errorMsg = `Blocked: ${finishReason || 'unknown'}`;
-          const failedResult = await resultRepo.insertFailed({
-            promptIdx: savedPrompt.idx,
-            characterId: characterId || null,
-            model: modelId,
-            errorMessage: errorMsg,
-            metadata: { finishReason },
-          });
-          await reviewRepo.insert({
-            resultIdx: failedResult.idx,
-            promptIdx: savedPrompt.idx,
-            memo: errorMsg,
-          });
-          results.push({
-            success: false,
-            error: errorMsg,
-            resultIdx: failedResult.idx,
-          });
-        }
+        results.push({
+          success: true,
+          filename,
+          url: `/images/${filename}`,
+          size: Math.round(imageBuffer.length / 1024) + 'KB',
+          description,
+          resultIdx: savedResult.idx,
+          reviewIdx: savedReview.idx,
+        });
       } catch (err) {
         const errorMsg = err.message.slice(0, 200);
         const failedResult = await resultRepo.insertFailed({

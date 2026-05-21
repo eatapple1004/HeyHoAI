@@ -25,6 +25,9 @@ const envSchema = z.object({
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
 
+  // OpenAI (GPT Image)
+  OPENAI_API_KEY: z.string().optional(),
+
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
 });
