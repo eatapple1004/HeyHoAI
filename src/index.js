@@ -17,6 +17,7 @@ app.use(express.json({ limit: '50mb' }));
 
 // 정적 파일 서빙
 app.use('/images', express.static(path.join(process.cwd(), 'tmp', 'images')));
+app.use('/bgm', express.static(path.join(process.cwd(), 'tmp', 'bgm')));
 
 // ffmpeg.wasm self-host (Workers must be same-origin)
 app.use('/vendor/ffmpeg', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/ffmpeg/dist/esm')));

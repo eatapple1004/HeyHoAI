@@ -624,6 +624,42 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
   }
 });
 
+// ─── BGM 관리 ───
+const bgmDir = path.join(process.cwd(), 'tmp', 'bgm');
+fs.mkdirSync(bgmDir, { recursive: true });
+
+const bgmUpload = multer({
+  storage: multer.diskStorage({
+    destination: bgmDir,
+    filename: (_req, file, cb) => cb(null, file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')),
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
+
+router.post('/bgm/upload', bgmUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, error: 'File required' });
+  res.json({ success: true, data: { filename: req.file.filename, url: `/bgm/${req.file.filename}` } });
+});
+
+router.get('/bgm/list', (_req, res) => {
+  if (!fs.existsSync(bgmDir)) return res.json({ success: true, data: [] });
+  const files = fs.readdirSync(bgmDir)
+    .filter(f => /\.(mp3|wav|m4a|ogg|aac)$/i.test(f))
+    .map(f => {
+      const stat = fs.statSync(path.join(bgmDir, f));
+      return { filename: f, url: `/bgm/${f}`, size: Math.round(stat.size / 1024) + 'KB', createdAt: stat.mtime.toISOString() };
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  res.json({ success: true, data: files });
+});
+
+router.delete('/bgm/:filename', (req, res) => {
+  const filePath = path.join(bgmDir, req.params.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Not found' });
+  fs.unlinkSync(filePath);
+  res.json({ success: true });
+});
+
 // ─── 생성된 이미지 목록 (파일 기반) ───
 router.get('/images', (_req, res) => {
   const outputDir = path.join(process.cwd(), 'tmp', 'images');
