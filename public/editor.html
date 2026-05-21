@@ -137,16 +137,26 @@
   .timeline {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 16px; min-height: 140px; display: flex; gap: 10px; overflow-x: auto;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .timeline.file-drop-active {
+    border-color: var(--accent); background: rgba(108,92,231,0.08);
   }
   .timeline .empty {
     width: 100%; text-align: center; color: var(--dim); font-size: 13px;
     padding: 40px 20px; border: 2px dashed var(--border); border-radius: 8px;
   }
+  .drop-indicator {
+    flex-shrink: 0; width: 3px; background: var(--accent2); border-radius: 2px;
+    margin: 0 -1px; align-self: stretch;
+  }
   .clip {
     flex-shrink: 0; width: 140px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px; cursor: pointer; transition: border-color 0.15s;
+    border-radius: 8px; padding: 8px; cursor: grab; transition: border-color 0.15s, opacity 0.15s;
     position: relative;
   }
+  .clip:active { cursor: grabbing; }
+  .clip.dragging { opacity: 0.4; }
   .clip:hover { border-color: var(--accent); }
   .clip.selected { border-color: var(--accent2); box-shadow: 0 0 0 2px rgba(108,92,231,0.3); }
   .clip .clip-thumb {
@@ -407,8 +417,7 @@
   }
 
   // ---------- Media import ----------
-  $('mediaInput').addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files || []);
+  async function addMediaFiles(files) {
     for (const file of files) {
       const isVideo = file.type.startsWith('video/');
       const isImage = file.type.startsWith('image/');
@@ -432,8 +441,40 @@
       }
       state.clips.push(clip);
     }
-    e.target.value = '';
     renderAll();
+  }
+
+  $('mediaInput').addEventListener('change', async (e) => {
+    await addMediaFiles(Array.from(e.target.files || []));
+    e.target.value = '';
+  });
+
+  // External file drop (anywhere on the page → timeline)
+  let dragFileDepth = 0;
+  const isFileDrag = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
+  window.addEventListener('dragenter', (e) => {
+    if (!isFileDrag(e)) return;
+    dragFileDepth++;
+    $('timeline').classList.add('file-drop-active');
+  });
+  window.addEventListener('dragleave', (e) => {
+    if (!isFileDrag(e)) return;
+    dragFileDepth--;
+    if (dragFileDepth <= 0) {
+      dragFileDepth = 0;
+      $('timeline').classList.remove('file-drop-active');
+    }
+  });
+  window.addEventListener('dragover', (e) => {
+    if (isFileDrag(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+  });
+  window.addEventListener('drop', async (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    dragFileDepth = 0;
+    $('timeline').classList.remove('file-drop-active');
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length) await addMediaFiles(files);
   });
 
   $('bgmInput').addEventListener('change', (e) => {
@@ -681,23 +722,27 @@
   }
 
   // ---------- Timeline ----------
+  let dragClipId = null;
+
   function renderTimeline() {
     const tl = $('timeline');
     tl.innerHTML = '';
     if (state.clips.length === 0) {
-      tl.innerHTML = '<div class="empty">상단의 「사진/영상 추가」 버튼으로 클립을 추가하세요.</div>';
+      tl.innerHTML = '<div class="empty">상단의 「사진/영상 추가」 버튼을 누르거나 파일을 여기로 끌어다 놓으세요.</div>';
       return;
     }
     for (const clip of state.clips) {
       const el = document.createElement('div');
       el.className = 'clip' + (clip.id === state.selectedClipId ? ' selected' : '');
       el.dataset.id = clip.id;
+      el.draggable = true;
 
       const thumb = document.createElement('div');
       thumb.className = 'clip-thumb';
       if (clip.thumbDataUrl) {
         const img = document.createElement('img');
         img.src = clip.thumbDataUrl;
+        img.draggable = false;
         thumb.appendChild(img);
       } else if (clip.type === 'video') {
         const v = document.createElement('video');
@@ -721,25 +766,75 @@
 
       const actions = document.createElement('div');
       actions.className = 'clip-actions';
-      const lb = document.createElement('button'); lb.textContent = '←'; lb.onclick = (ev) => { ev.stopPropagation(); moveClip(clip.id, -1); };
-      const rb = document.createElement('button'); rb.textContent = '→'; rb.onclick = (ev) => { ev.stopPropagation(); moveClip(clip.id, +1); };
       const db = document.createElement('button'); db.textContent = '×'; db.onclick = (ev) => { ev.stopPropagation(); removeClip(clip.id); };
-      actions.appendChild(lb); actions.appendChild(rb); actions.appendChild(db);
+      actions.appendChild(db);
       el.appendChild(actions);
 
       el.onclick = () => { state.selectedClipId = clip.id; renderAll(); };
+
+      el.ondragstart = (ev) => {
+        dragClipId = clip.id;
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/x-clip-id', clip.id);
+        setTimeout(() => el.classList.add('dragging'), 0);
+      };
+      el.ondragend = () => {
+        dragClipId = null;
+        el.classList.remove('dragging');
+        clearDropIndicator();
+      };
       tl.appendChild(el);
     }
   }
 
-  function moveClip(id, delta) {
-    const idx = state.clips.findIndex(c => c.id === id);
-    const target = idx + delta;
-    if (target < 0 || target >= state.clips.length) return;
-    const [c] = state.clips.splice(idx, 1);
-    state.clips.splice(target, 0, c);
-    renderAll();
+  function clearDropIndicator() {
+    document.querySelectorAll('.drop-indicator').forEach(n => n.remove());
   }
+
+  function computeDropIndex(ev) {
+    const tl = $('timeline');
+    const items = Array.from(tl.querySelectorAll('.clip'));
+    let idx = items.length;
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      if (ev.clientX < r.left + r.width / 2) { idx = i; break; }
+    }
+    return idx;
+  }
+
+  function bindTimelineReorder() {
+    const tl = $('timeline');
+    tl.addEventListener('dragover', (ev) => {
+      if (!dragClipId) return;
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = 'move';
+      const idx = computeDropIndex(ev);
+      clearDropIndicator();
+      const ind = document.createElement('div');
+      ind.className = 'drop-indicator';
+      const items = Array.from(tl.querySelectorAll('.clip'));
+      if (idx >= items.length) tl.appendChild(ind);
+      else tl.insertBefore(ind, items[idx]);
+    });
+    tl.addEventListener('dragleave', (ev) => {
+      if (!tl.contains(ev.relatedTarget)) clearDropIndicator();
+    });
+    tl.addEventListener('drop', (ev) => {
+      if (!dragClipId) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const fromIdx = state.clips.findIndex(c => c.id === dragClipId);
+      let toIdx = computeDropIndex(ev);
+      clearDropIndicator();
+      if (fromIdx < 0) return;
+      const [moved] = state.clips.splice(fromIdx, 1);
+      if (toIdx > fromIdx) toIdx--;
+      state.clips.splice(toIdx, 0, moved);
+      renderAll();
+    });
+  }
+  bindTimelineReorder();
+
   function removeClip(id) {
     const idx = state.clips.findIndex(c => c.id === id);
     if (idx < 0) return;
