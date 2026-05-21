@@ -636,21 +636,42 @@
 
       el.onpointerdown = (ev) => {
         ev.preventDefault();
+        // Update selection without rebuilding the stage (so we keep dragging this exact element)
         state.selectedTextId = t.id;
-        renderAll();
+        wrap.querySelectorAll('.text-overlay').forEach(n => {
+          n.classList.toggle('selected', n.dataset.id === t.id);
+        });
+        renderTextList();
+        renderTextInspector();
+
         const rect = wrap.getBoundingClientRect();
+        let pendingX = t.xPct, pendingY = t.yPct;
+        let rafScheduled = false;
+
+        const applyFrame = () => {
+          rafScheduled = false;
+          t.xPct = pendingX;
+          t.yPct = pendingY;
+          el.style.left = pendingX + '%';
+          el.style.top = pendingY + '%';
+        };
+
         const move = (mv) => {
           const px = mv.clientX - rect.left;
           const py = mv.clientY - rect.top;
-          t.xPct = Math.max(0, Math.min(100, (px / rect.width) * 100));
-          t.yPct = Math.max(0, Math.min(100, (py / rect.height) * 100));
-          el.style.left = t.xPct + '%';
-          el.style.top = t.yPct + '%';
+          pendingX = Math.max(0, Math.min(100, (px / rect.width) * 100));
+          pendingY = Math.max(0, Math.min(100, (py / rect.height) * 100));
+          if (!rafScheduled) {
+            rafScheduled = true;
+            requestAnimationFrame(applyFrame);
+          }
         };
         const up = () => {
           window.removeEventListener('pointermove', move);
           window.removeEventListener('pointerup', up);
-          renderTextInspector();
+          if (rafScheduled) applyFrame();
+          renderTextList();      // refresh meta line
+          renderTextInspector(); // refresh x/y slider values
         };
         window.addEventListener('pointermove', move);
         window.addEventListener('pointerup', up);
