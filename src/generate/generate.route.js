@@ -76,7 +76,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     }
 
     const isGpt = model.startsWith('gpt-');
-    const modelId = isGpt ? model
+    const gptQuality = model === 'gpt-image-2-high' ? 'high' : 'medium';
+    const gptModelName = model.replace('-high', '');
+    const modelId = isGpt ? gptModelName
       : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
 
@@ -104,7 +106,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           const OpenAI = require('openai');
           const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-          const gptParams = { model: modelId, prompt: finalPrompt, n: 1, size: '1024x1024', quality: 'medium' };
+          const gptParams = { model: modelId, prompt: finalPrompt, n: 1, size: '1024x1024', quality: gptQuality };
 
           // 레퍼런스 이미지가 있으면 편집 모드
           if (referenceImages.length > 0) {
