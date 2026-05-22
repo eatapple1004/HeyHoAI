@@ -594,6 +594,15 @@ async function migrate() {
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS hook_level DECIMAL(3,1) DEFAULT 0;
   `);
 
+  // video_generation_jobs / video_assets의 source_image_id NOT NULL 제거
+  // (image_assets에 master가 없어도 character.reference_image_url 폴백으로 진행 가능하도록)
+  await pool.query(`
+    ALTER TABLE video_generation_jobs ALTER COLUMN source_image_id DROP NOT NULL;
+  `).catch((e) => console.warn('[migrate] drop NOT NULL on video_generation_jobs.source_image_id skipped:', e.message));
+  await pool.query(`
+    ALTER TABLE video_assets ALTER COLUMN source_image_id DROP NOT NULL;
+  `).catch((e) => console.warn('[migrate] drop NOT NULL on video_assets.source_image_id skipped:', e.message));
+
   console.log('Migrations completed.');
 }
 

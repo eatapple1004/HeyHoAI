@@ -28,7 +28,7 @@ async function insert(data) {
     [
       data.characterId,
       data.jobId,
-      data.sourceImageId,
+      data.sourceImageId || null,
       data.motionPrompt,
       data.negativePrompt,
       data.provider,
