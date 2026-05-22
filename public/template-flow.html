@@ -839,14 +839,22 @@
     // Map quality toggle to a video style (Pro → cinematic, Standard → natural)
     const videoStyle = introMode === 'pro' ? 'cinematic' : 'natural';
 
-    // Pass selected source image id if we have one
+    // Step 2에서 선택한 사진은 image_assets에 등록 안 돼 있어서 UUID가 없음.
+    // 대신 그 사진의 URL을 그대로 sourceImageUrl로 전송하면, 서버가 그걸 직접 source로 사용함.
     let sourceImageId = null;
+    let sourceImageUrl = null;
     if (selectedStep3ImageUrl) {
+      let matched = false;
       photoSlots.forEach(slot => {
         slot.results.forEach(r => {
-          if (r.url === selectedStep3ImageUrl && r.id) sourceImageId = r.id;
+          if (r.url === selectedStep3ImageUrl && r.id) { sourceImageId = r.id; matched = true; }
         });
       });
+      if (!matched) {
+        sourceImageUrl = selectedStep3ImageUrl.startsWith('http')
+          ? selectedStep3ImageUrl
+          : window.location.origin + selectedStep3ImageUrl;
+      }
     }
 
     const btn = document.getElementById('generateVideoBtn');
@@ -857,6 +865,7 @@
     try {
       const body = { prompt, durationSec, videoStyle };
       if (sourceImageId) body.sourceImageId = sourceImageId;
+      else if (sourceImageUrl) body.sourceImageUrl = sourceImageUrl;
 
       const res = await fetch(`/api/characters/${encodeURIComponent(characterId)}/videos/generate`, {
         method: 'POST',
