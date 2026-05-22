@@ -89,7 +89,7 @@ async function withRetry(fn, retries = MAX_RETRIES) {
  * @returns {Promise<{ job: object; video: object }>}
  */
 async function generateForCharacter(characterId, opts = {}) {
-  const {
+  let {
     provider: providerName = 'runway',
     videoStyle = 'natural',
     prompt: userPrompt,
@@ -129,7 +129,21 @@ async function generateForCharacter(characterId, opts = {}) {
     }
   }
 
-  const provider = getProvider(providerName);
+  // 요청된 provider에 키가 없으면 키 있는 다른 provider로 폴백
+  let provider = getProvider(providerName);
+  if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
+    const fallback = ['kling', 'minimax', 'runway']
+      .map((n) => providers[n])
+      .find((p) => p && (typeof p.isConfigured !== 'function' || p.isConfigured()) && p.name !== providerName);
+    if (!fallback) {
+      throw Object.assign(
+        new Error(`No video provider is configured. Set RUNWAY_API_KEY or KLING_ACCESS_KEY/KLING_SECRET_KEY or MINIMAX_API_KEY in the server .env`),
+        { statusCode: 503 }
+      );
+    }
+    provider = fallback;
+    providerName = fallback.name;
+  }
 
   // 3) Motion prompt 조립
   const promptResult = buildVideoPrompt({

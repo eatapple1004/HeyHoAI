@@ -7,7 +7,15 @@ const runwayProvider = {
   name: 'runway',
   maxDurationSec: 10,
 
+  isConfigured() { return !!env.RUNWAY_API_KEY; },
+
   async submit(req) {
+    if (!env.RUNWAY_API_KEY) {
+      throw Object.assign(
+        new Error('Runway API key not configured (set RUNWAY_API_KEY in .env)'),
+        { statusCode: 503 }
+      );
+    }
     const res = await fetch(`${RUNWAY_API}/image_to_video`, {
       method: 'POST',
       headers: {

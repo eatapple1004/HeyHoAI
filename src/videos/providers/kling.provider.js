@@ -26,7 +26,15 @@ const klingProvider = {
   name: 'kling',
   maxDurationSec: 10,
 
+  isConfigured() { return !!(env.KLING_ACCESS_KEY && env.KLING_SECRET_KEY); },
+
   async submit(req) {
+    if (!env.KLING_ACCESS_KEY || !env.KLING_SECRET_KEY) {
+      throw Object.assign(
+        new Error('Kling API keys not configured (set KLING_ACCESS_KEY and KLING_SECRET_KEY)'),
+        { statusCode: 503 }
+      );
+    }
     const token = generateToken();
 
     const res = await fetch(`${KLING_API}/videos/image2video`, {
