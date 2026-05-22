@@ -2,13 +2,14 @@ const { ZodError } = require('zod');
 const log = require('../lib/logger')('Error');
 
 function errorHandler(err, _req, res, _next) {
-  // Zod 검증 에러
+  // Zod 검증 에러 (zod 4: err.issues; zod 3 호환: err.errors)
   if (err instanceof ZodError) {
+    const issues = err.issues || err.errors || [];
     return res.status(400).json({
       success: false,
       error: 'Validation error',
-      details: err.errors.map((e) => ({
-        path: e.path.join('.'),
+      details: issues.map((e) => ({
+        path: Array.isArray(e.path) ? e.path.join('.') : String(e.path || ''),
         message: e.message,
       })),
     });
