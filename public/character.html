@@ -90,6 +90,12 @@
   <div class="form-card">
     <h2>New Character</h2>
 
+    <!-- Mode Tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <button onclick="setCreateMode('generate')" id="modeGenBtn" style="flex:1;padding:10px;border:2px solid var(--accent);border-radius:8px;background:rgba(108,92,231,0.1);color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;">AI Generate</button>
+      <button onclick="setCreateMode('upload')" id="modeUpBtn" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;">Upload Image</button>
+    </div>
+
     <div class="form-group">
       <label>Name</label>
       <input type="text" class="form-input" id="charName" placeholder="Character name">
@@ -100,21 +106,40 @@
       <textarea class="form-input" id="charConcept" placeholder="Brief description of the character..."></textarea>
     </div>
 
-    <div class="form-group">
-      <label>Appearance Prompt</label>
-      <textarea class="form-input" id="charPrompt" placeholder="Describe the character's appearance for ID photo generation...
+    <!-- Mode 1: AI Generate -->
+    <div id="generateMode">
+      <div class="form-group">
+        <label>Appearance Prompt</label>
+        <textarea class="form-input" id="charPrompt" placeholder="Describe the character's appearance for ID photo generation...
 
 Example: 25 year old korean woman, long straight black hair, large expressive eyes, v-line jawline, fair skin, natural makeup, gentle smile"></textarea>
+      </div>
+
+      <button class="submit-btn" id="generateBtn" onclick="generateCandidates()">Generate 4 Candidates</button>
+
+      <div class="candidate-section" id="candidateSection">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">Select one as reference image</label>
+        <div class="candidate-grid" id="candidateGrid"></div>
+        <button class="submit-btn" id="saveBtn" onclick="saveCharacter()" style="margin-top:14px;" disabled>Save Character</button>
+      </div>
     </div>
 
-    <!-- Step 1: Generate -->
-    <button class="submit-btn" id="generateBtn" onclick="generateCandidates()">Generate 4 Candidates</button>
+    <!-- Mode 2: Upload Image -->
+    <div id="uploadMode" style="display:none;">
+      <div class="form-group">
+        <label>Reference Image</label>
+        <div id="uploadDropArea" style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('charImageInput').click()">
+          <div style="font-size:28px;margin-bottom:8px;">+</div>
+          <div style="font-size:13px;color:var(--dim);">Click or drag image here</div>
+          <input type="file" accept="image/*" id="charImageInput" style="display:none;" onchange="previewUploadImage(this.files[0])">
+        </div>
+        <div id="uploadPreview" style="display:none;margin-top:10px;text-align:center;">
+          <img id="uploadPreviewImg" src="" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--green);">
+          <button onclick="clearUploadImage()" style="display:block;margin:8px auto 0;background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;">Remove</button>
+        </div>
+      </div>
 
-    <!-- Step 2: Select -->
-    <div class="candidate-section" id="candidateSection">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">Select one as reference image</label>
-      <div class="candidate-grid" id="candidateGrid"></div>
-      <button class="submit-btn" id="saveBtn" onclick="saveCharacter()" style="margin-top:14px;" disabled>Save Character</button>
+      <button class="submit-btn" onclick="saveUploadCharacter()">Save Character</button>
     </div>
   </div>
 
@@ -131,6 +156,82 @@ Example: 25 year old korean woman, long straight black hair, large expressive ey
 <script>
   let candidates = [];
   let selectedIdx = -1;
+  let createMode = 'generate';
+  let uploadedCharImage = null;
+
+  function setCreateMode(mode) {
+    createMode = mode;
+    document.getElementById('generateMode').style.display = mode === 'generate' ? 'block' : 'none';
+    document.getElementById('uploadMode').style.display = mode === 'upload' ? 'block' : 'none';
+    document.getElementById('modeGenBtn').style.borderColor = mode === 'generate' ? 'var(--accent)' : 'var(--border)';
+    document.getElementById('modeGenBtn').style.background = mode === 'generate' ? 'rgba(108,92,231,0.1)' : 'var(--surface2)';
+    document.getElementById('modeGenBtn').style.color = mode === 'generate' ? 'var(--accent2)' : 'var(--dim)';
+    document.getElementById('modeUpBtn').style.borderColor = mode === 'upload' ? 'var(--accent)' : 'var(--border)';
+    document.getElementById('modeUpBtn').style.background = mode === 'upload' ? 'rgba(108,92,231,0.1)' : 'var(--surface2)';
+    document.getElementById('modeUpBtn').style.color = mode === 'upload' ? 'var(--accent2)' : 'var(--dim)';
+  }
+
+  function previewUploadImage(file) {
+    if (!file) return;
+    uploadedCharImage = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('uploadPreviewImg').src = e.target.result;
+      document.getElementById('uploadPreview').style.display = 'block';
+      document.getElementById('uploadDropArea').style.borderColor = 'var(--green)';
+      document.getElementById('uploadDropArea').style.borderStyle = 'solid';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearUploadImage() {
+    uploadedCharImage = null;
+    document.getElementById('charImageInput').value = '';
+    document.getElementById('uploadPreview').style.display = 'none';
+    document.getElementById('uploadDropArea').style.borderColor = 'var(--border)';
+    document.getElementById('uploadDropArea').style.borderStyle = 'dashed';
+  }
+
+  // Upload 드래그 & 드롭
+  const uploadDrop = document.getElementById('uploadDropArea');
+  uploadDrop.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = 'var(--accent)'; });
+  uploadDrop.addEventListener('dragleave', function(e) { e.preventDefault(); this.style.borderColor = uploadedCharImage ? 'var(--green)' : 'var(--border)'; });
+  uploadDrop.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.style.borderColor = 'var(--border)';
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) previewUploadImage(files[0]);
+  });
+
+  async function saveUploadCharacter() {
+    const name = document.getElementById('charName').value.trim();
+    const concept = document.getElementById('charConcept').value.trim();
+    if (!name) { showToast('Name is required', 'error'); return; }
+    if (!concept) { showToast('Concept is required', 'error'); return; }
+    if (!uploadedCharImage) { showToast('Please upload an image', 'error'); return; }
+
+    // 1) 이미지 업로드
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('concept', concept);
+    formData.append('referenceImage', uploadedCharImage);
+
+    try {
+      const res = await fetch('/api/characters/register', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Character created: ' + data.data.name, 'success');
+        document.getElementById('charName').value = '';
+        document.getElementById('charConcept').value = '';
+        clearUploadImage();
+        loadCharacters();
+      } else {
+        showToast(data.error || 'Failed', 'error');
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
+    }
+  }
 
   // ── Generate 4 Candidates ──
   async function generateCandidates() {
