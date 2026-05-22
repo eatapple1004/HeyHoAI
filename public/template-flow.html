@@ -141,6 +141,14 @@
     max-width: 100%; max-height: 400px; border-radius: 12px; margin-bottom: 16px;
   }
 
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .toast { position: fixed; bottom: 20px; right: 20px; z-index: 300; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .toast.success { background: var(--green); color: white; }
@@ -292,7 +300,9 @@
       </div>
     </div>
 
-    <button class="submit-btn" id="generateVideoBtn" onclick="generateIntroVideo()" style="margin-top:8px;">영상 생성</button>
+    <button id="generateVideoBtn" onclick="generateIntroVideo()" style="width:100%;margin-top:8px;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#a29bfe);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+      <span style="font-size:16px;">▶</span> 영상 생성
+    </button>
 
     <div id="introVideoResult" style="display:none;margin-top:18px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
       <div style="font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">생성된 영상</div>
