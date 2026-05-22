@@ -178,7 +178,7 @@
   <div class="progress-bar">
     <div class="progress-step active" id="prog1" onclick="goStep(1)">1. Profile</div>
     <div class="progress-step" id="prog2" onclick="goStep(2)">2. Photo</div>
-    <div class="progress-step" id="prog3" onclick="goStep(3)">3. Style</div>
+    <div class="progress-step" id="prog3" onclick="goStep(3)">3. Video</div>
     <div class="progress-step" id="prog4" onclick="goStep(4)">4. BGM</div>
     <div class="progress-step" id="prog5" onclick="goStep(5)">5. Result</div>
   </div>
@@ -278,6 +278,18 @@
       <div style="display:flex;gap:8px;">
         <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid var(--accent);border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" id="modeStd" onclick="selectIntroMode('std')">Standard</label>
         <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" id="modePro" onclick="selectIntroMode('pro')">Pro</label>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="generateVideoBtn" onclick="generateIntroVideo()" style="margin-top:8px;">영상 생성</button>
+
+    <div id="introVideoResult" style="display:none;margin-top:18px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+      <div style="font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">생성된 영상</div>
+      <video id="introVideoPlayer" controls style="width:100%;max-height:480px;background:#000;border-radius:8px;"></video>
+      <div id="introVideoMeta" style="font-size:11px;color:var(--dim);margin-top:8px;font-family:ui-monospace,Menlo,monospace;"></div>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button id="introVideoDownloadBtn" style="flex:1;padding:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">다운로드</button>
+        <button onclick="generateIntroVideo()" style="flex:1;padding:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
       </div>
     </div>
 
@@ -595,6 +607,7 @@
       motion: document.getElementById('introMotion').value,
       duration: introDuration,
       mode: introMode,
+      generatedVideoUrl: generatedIntroVideoUrl,
     };
   }
 
@@ -620,6 +633,20 @@
     if (d.motion) document.getElementById('introMotion').value = d.motion;
     if (d.duration) { introDuration = d.duration; selectIntroDuration(d.duration); }
     if (d.mode) { introMode = d.mode; selectIntroMode(d.mode); }
+    if (d.generatedVideoUrl) {
+      generatedIntroVideoUrl = d.generatedVideoUrl;
+      const player = document.getElementById('introVideoPlayer');
+      player.src = d.generatedVideoUrl;
+      document.getElementById('introVideoResult').style.display = 'block';
+      document.getElementById('generateVideoBtn').textContent = '영상 다시 생성';
+      document.getElementById('introVideoDownloadBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = d.generatedVideoUrl;
+        a.download = `intro-${Date.now()}.mp4`;
+        a.target = '_blank';
+        a.click();
+      };
+    }
   }
 
   async function saveTemplateData() {
@@ -773,6 +800,80 @@
     introMode = m;
     document.getElementById('modeStd').style.borderColor = m === 'std' ? 'var(--accent)' : 'var(--border)';
     document.getElementById('modePro').style.borderColor = m === 'pro' ? 'var(--accent)' : 'var(--border)';
+  }
+
+  // ── Video Generation ──
+  let generatedIntroVideoUrl = null;
+
+  async function generateIntroVideo() {
+    const characterId = document.getElementById('introCharSelect').value;
+    if (!characterId) { showToast('Step 1에서 캐릭터를 먼저 선택하세요', 'error'); return; }
+
+    const prompt = document.getElementById('introMotion').value.trim();
+    if (!prompt) { showToast('모션 프롬프트를 입력하세요', 'error'); return; }
+
+    const durationSec = parseInt(introDuration, 10) || 5;
+    // Map quality toggle to a video style (Pro → cinematic, Standard → natural)
+    const videoStyle = introMode === 'pro' ? 'cinematic' : 'natural';
+
+    // Pass selected source image id if we have one
+    let sourceImageId = null;
+    if (selectedStep3ImageUrl) {
+      photoSlots.forEach(slot => {
+        slot.results.forEach(r => {
+          if (r.url === selectedStep3ImageUrl && r.id) sourceImageId = r.id;
+        });
+      });
+    }
+
+    const btn = document.getElementById('generateVideoBtn');
+    const resultBox = document.getElementById('introVideoResult');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>영상 생성 중… (수십 초 이상 소요)';
+
+    try {
+      const body = { prompt, durationSec, videoStyle };
+      if (sourceImageId) body.sourceImageId = sourceImageId;
+
+      const res = await fetch(`/api/characters/${encodeURIComponent(characterId)}/videos/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.error || 'Generation failed', 'error');
+        return;
+      }
+
+      const url = data.data && data.data.video && data.data.video.videoUrl;
+      if (!url) {
+        showToast('영상 URL을 받지 못했습니다', 'error');
+        return;
+      }
+
+      generatedIntroVideoUrl = url;
+      const player = document.getElementById('introVideoPlayer');
+      player.src = url;
+      const meta = data.data.video;
+      const durMs = meta.durationMs || 0;
+      document.getElementById('introVideoMeta').textContent =
+        `${(durMs / 1000).toFixed(1)}s · ${meta.videoStyle || ''} · ${data.data.job.provider}`;
+      resultBox.style.display = 'block';
+      document.getElementById('introVideoDownloadBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `intro-${Date.now()}.mp4`;
+        a.target = '_blank';
+        a.click();
+      };
+      showToast('영상 생성 완료', 'success');
+    } catch (e) {
+      showToast('Error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = generatedIntroVideoUrl ? '영상 다시 생성' : '영상 생성';
+    }
   }
 
   async function generateIntro() {
