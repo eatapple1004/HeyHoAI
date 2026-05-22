@@ -19,7 +19,8 @@
   header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; }
   header nav a:hover, header nav a.active { color: var(--accent2); }
 
-  .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; transition: max-width 0.3s; }
+  .container.wide { max-width: 1400px; }
   .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; }
   .back-link:hover { color: var(--accent2); }
 
@@ -332,43 +333,42 @@
 
     <div class="btn-group">
       <button class="btn-prev" onclick="goStep(3)">&larr; Back</button>
-      <button class="btn-next" onclick="generateIntro()" id="generateBtn">Generate &rarr;</button>
+      <button class="btn-next" onclick="goStep(5)">Next &rarr;</button>
     </div>
   </div>
 
   <!-- Step 5: 에디터 -->
-  <div class="step-card" id="step5">
+  <div class="step-card" id="step5" style="max-width:none;">
     <div class="step-num">Step 5 / 5</div>
     <h3>릴스 에디터</h3>
-    <div class="step-desc">생성된 영상과 사진, BGM을 조합하여 릴스를 편집합니다.</div>
+    <div class="step-desc">이전 단계에서 만든 사진, 영상, BGM을 활용하여 릴스를 편집합니다.</div>
 
-    <!-- 생성 상태 -->
-    <div id="step5GenStatus" style="margin-bottom:14px;">
-      <div style="color:var(--dim);font-size:13px;">Step 4에서 Generate 버튼을 눌러 영상을 먼저 생성하세요.</div>
-    </div>
-
-    <!-- 에디터에 넘길 소스 -->
-    <div id="step5Sources" style="display:none;margin-bottom:14px;">
-      <label class="form-label">사용 가능한 소스</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <div id="step5VideoThumb" style="display:none;">
-          <video id="step5Video" src="" muted style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid var(--green);"></video>
-          <div style="font-size:10px;color:var(--green);text-align:center;">Video</div>
+    <!-- 소스 요약 -->
+    <div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:8px;">
+      <label class="form-label" style="margin-bottom:8px;">Available Sources</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+        <div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">PHOTOS</div>
+          <div id="step5Photos" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
         </div>
-        <div id="step5ImageThumbs" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        <div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">VIDEOS</div>
+          <div id="step5Videos" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">BGM</div>
+          <div id="step5Bgm" style="font-size:11px;color:var(--dim);"></div>
+        </div>
       </div>
-      <div id="step5BgmInfo" style="font-size:11px;color:var(--dim);"></div>
     </div>
 
     <!-- 에디터 iframe -->
-    <div id="step5EditorWrap" style="display:none;">
-      <iframe id="step5Editor" src="" style="width:100%;height:80vh;border:1px solid var(--border);border-radius:12px;" allow="cross-origin-isolated"></iframe>
+    <div id="step5EditorWrap">
+      <iframe id="step5Editor" src="" style="width:100%;height:85vh;border:1px solid var(--border);border-radius:12px;" allow="cross-origin-isolated"></iframe>
     </div>
 
-    <!-- 에디터 열기 버튼 -->
-    <div class="btn-group">
+    <div class="btn-group" style="margin-top:14px;">
       <button class="btn-prev" onclick="goStep(4)">&larr; Back</button>
-      <button class="btn-next" onclick="openEditorWithSources()" id="openEditorBtn">Open Editor</button>
     </div>
   </div>
 </div>
@@ -749,8 +749,13 @@
       el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
     }
 
+    // 컨테이너 너비 (Step 5는 에디터라 넓게)
+    document.querySelector('.container').classList.toggle('wide', n === 5);
+
     // Step 3 진입 시 이미지 그리드 렌더
     if (n === 3) renderStep3ImageGrid();
+    // Step 5 진입 시 에디터 로드
+    if (n === 5) loadEditorWithSources();
   }
 
   function renderStep3ImageGrid() {
@@ -1016,110 +1021,46 @@
     document.getElementById('modePro').style.borderColor = m === 'pro' ? 'var(--accent)' : 'var(--border)';
   }
 
-  let generatedVideoUrl = null;
+  function loadEditorWithSources() {
+    // 소스 요약 표시
+    const photosDiv = document.getElementById('step5Photos');
+    const videosDiv = document.getElementById('step5Videos');
+    const bgmDiv = document.getElementById('step5Bgm');
 
-  async function generateIntro() {
-    const name = document.getElementById('introName').value.trim();
-    const motion = document.getElementById('introMotion').value.trim();
-
-    if (!name) { showToast('이름을 입력하세요', 'error'); goStep(1); return; }
-    if (!selectedStep3ImageUrl) { showToast('Step 3에서 소스 이미지를 선택하세요', 'error'); goStep(3); return; }
-    if (!motion) { showToast('모션 프롬프트를 입력하세요', 'error'); goStep(3); return; }
-
-    goStep(5);
-    document.getElementById('step5GenStatus').innerHTML = '<div style="color:var(--dim);"><div style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;margin-bottom:10px;"></div><br>영상 생성 중... (1~7분 소요)</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-    document.getElementById('step5Sources').style.display = 'none';
-    document.getElementById('step5EditorWrap').style.display = 'none';
-
-    try {
-      const imgRes = await fetch(selectedStep3ImageUrl);
-      const imgBlob = await imgRes.blob();
-      const imgFile = new File([imgBlob], 'source.png', { type: imgBlob.type });
-
-      const formData = new FormData();
-      formData.append('prompt', `Self introduction video of ${name}. ${motion}`);
-      formData.append('duration', introDuration);
-      formData.append('mode', introMode);
-      formData.append('sourceImage', imgFile);
-
-      const res = await fetch('/api/generate/video', { method: 'POST', body: formData });
-      const data = await res.json();
-
-      if (data.success) {
-        generatedVideoUrl = data.url;
-        showStep5Sources();
-        showToast('영상 생성 완료! Open Editor로 편집하세요', 'success');
-      } else {
-        document.getElementById('step5GenStatus').innerHTML = `<div style="color:var(--red);">생성 실패: ${data.error || 'Unknown'}</div>`;
-        showToast('생성 실패', 'error');
-      }
-    } catch (e) {
-      document.getElementById('step5GenStatus').innerHTML = `<div style="color:var(--red);">Error: ${e.message}</div>`;
-      showToast('Error', 'error');
-    }
-  }
-
-  function showStep5Sources() {
-    document.getElementById('step5GenStatus').innerHTML = '<div style="color:var(--green);font-weight:600;">영상 생성 완료! Open Editor 버튼을 눌러 편집하세요.</div>';
-    document.getElementById('step5Sources').style.display = 'block';
-
-    // 비디오
-    if (generatedVideoUrl) {
-      document.getElementById('step5Video').src = generatedVideoUrl;
-      document.getElementById('step5VideoThumb').style.display = 'inline-block';
-    }
-
-    // Step 2 이미지들
-    const thumbs = document.getElementById('step5ImageThumbs');
-    thumbs.innerHTML = '';
+    // Photos (Step 2 결과)
+    const imageUrls = [];
+    photosDiv.innerHTML = '';
     photoSlots.forEach(slot => {
       slot.results.forEach(r => {
-        const div = document.createElement('div');
-        div.innerHTML = `
-          <img src="${r.url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--dim);text-align:center;">Photo</div>
-        `;
-        thumbs.appendChild(div);
+        imageUrls.push(r.url);
+        const img = document.createElement('img');
+        img.src = r.url;
+        img.style.cssText = 'width:50px;height:50px;object-fit:cover;border-radius:4px;border:1px solid var(--border);';
+        photosDiv.appendChild(img);
       });
     });
+    if (imageUrls.length === 0) photosDiv.innerHTML = '<span style="font-size:11px;color:var(--dim);">None</span>';
+
+    // Videos (Step 3에서 선택된 이미지 기반 생성물은 아직 없으므로 갤러리에서 가져올 수 있음)
+    videosDiv.innerHTML = '<span style="font-size:11px;color:var(--dim);">Use editor to import</span>';
 
     // BGM
-    const bgmInfo = document.getElementById('step5BgmInfo');
     if (selectedBgmUrl) {
-      bgmInfo.innerHTML = '♪ BGM: ' + selectedBgmUrl.split('/').pop();
+      bgmDiv.innerHTML = '♪ ' + selectedBgmUrl.split('/').pop();
     } else {
-      bgmInfo.innerHTML = 'No BGM selected';
-    }
-  }
-
-  function openEditorWithSources() {
-    if (!generatedVideoUrl) {
-      showToast('먼저 Generate로 영상을 생성하세요', 'error');
-      return;
+      bgmDiv.innerHTML = '<span style="font-size:11px;">None</span>';
     }
 
-    // 에디터에 전달할 파라미터 구성
+    // 에디터 로드
     const params = new URLSearchParams();
-    params.set('video', generatedVideoUrl);
     if (selectedBgmUrl) params.set('bgm', selectedBgmUrl);
-
-    // Step 2 이미지들
-    const imageUrls = [];
-    photoSlots.forEach(slot => {
-      slot.results.forEach(r => imageUrls.push(r.url));
-    });
     if (imageUrls.length > 0) params.set('images', imageUrls.join(','));
 
-    // 프로필 정보
     const name = document.getElementById('introName').value.trim();
     if (name) params.set('name', name);
 
     const editorUrl = '/heyhoai/editor/page?' + params.toString();
     document.getElementById('step5Editor').src = editorUrl;
-    document.getElementById('step5EditorWrap').style.display = 'block';
-
-    // 스크롤
-    document.getElementById('step5EditorWrap').scrollIntoView({ behavior: 'smooth' });
   }
 
   function showToast(msg, type = 'success') {
