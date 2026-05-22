@@ -484,8 +484,27 @@
     status.textContent = 'Generating...';
 
     try {
+      // Strong identity preface from the selected character's persona
+      // so the model doesn't drift toward the example scene's gender/age.
+      let finalPrompt = slot.prompt;
+      const persona = selectedCharacter?.persona || {};
+      const gender = (persona.gender || '').trim().toLowerCase();   // e.g. "female"
+      const age = persona.age;
+      const nationality = (persona.nationality || '').trim();        // e.g. "Korean"
+      if (gender || age || nationality) {
+        const parts = [];
+        if (age) parts.push(`${age}-year-old`);
+        if (nationality) parts.push(nationality);
+        if (gender) parts.push(gender);
+        const descriptor = parts.join(' ');
+        finalPrompt =
+          `IDENTITY LOCK: subject is a ${descriptor} matching the provided face reference. ` +
+          `do not change gender, age, ethnicity, or facial features under any circumstance. ` +
+          slot.prompt;
+      }
+
       const formData = new FormData();
-      formData.append('prompt', slot.prompt);
+      formData.append('prompt', finalPrompt);
       formData.append('model', model);
       formData.append('count', '1');
       if (charId) formData.append('characterId', charId);
