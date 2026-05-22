@@ -158,21 +158,29 @@ async function generateForCharacter(characterId, opts = {}) {
   const height = 1920;
 
   // 5) Job 생성
-  const job = await videoJobRepo.insert({
-    characterId,
-    sourceImageId: sourceImage.id,
-    provider: providerName,
-    videoStyle,
-    motionPrompt: promptResult.motionPrompt,
-  });
+  //    source_image_id NOT NULL DB 제약을 아직 안 푼 환경에서도 동작하도록,
+  //    sourceImage.id가 없으면 DB 잡/에셋 트래킹을 건너뛰고 provider만 호출한다.
+  const trackInDb = !!sourceImage.id;
+  let job = null;
+
+  if (trackInDb) {
+    job = await videoJobRepo.insert({
+      characterId,
+      sourceImageId: sourceImage.id,
+      provider: providerName,
+      videoStyle,
+      motionPrompt: promptResult.motionPrompt,
+    });
+  }
 
   try {
     const video = await withRetry(async (attempt) => {
-      // Job 상태 업데이트
-      await videoJobRepo.updateStatus(job.id, {
-        status: 'submitting',
-        attempt: attempt + 1,
-      });
+      if (trackInDb) {
+        await videoJobRepo.updateStatus(job.id, {
+          status: 'submitting',
+          attempt: attempt + 1,
+        });
+      }
 
       // 6) Provider에 제출
       const submitResult = await provider.submit({
@@ -185,46 +193,70 @@ async function generateForCharacter(characterId, opts = {}) {
         style: videoStyle,
       });
 
-      await videoJobRepo.updateStatus(job.id, {
-        status: 'generating',
-        providerJobId: submitResult.providerJobId,
-      });
+      if (trackInDb) {
+        await videoJobRepo.updateStatus(job.id, {
+          status: 'generating',
+          providerJobId: submitResult.providerJobId,
+        });
+      }
 
       // 7) 완료까지 폴링
       const pollResult = await pollUntilDone(provider, submitResult.providerJobId);
 
-      // 8) 결과 저장
-      const asset = await videoAssetRepo.insert({
-        characterId,
-        jobId: job.id,
-        sourceImageId: sourceImage.id,
-        motionPrompt: promptResult.motionPrompt,
-        negativePrompt: promptResult.negativePrompt,
-        provider: providerName,
-        providerJobId: submitResult.providerJobId,
-        videoUrl: pollResult.videoUrl,
-        width,
-        height,
-        durationMs: pollResult.durationMs || durationSec * 1000,
-        videoStyle,
-        metadata: pollResult.metadata,
-      });
-
-      return asset;
+      // 8) 결과 저장 (DB tracking이 켜진 경우만)
+      if (trackInDb) {
+        return await videoAssetRepo.insert({
+          characterId,
+          jobId: job.id,
+          sourceImageId: sourceImage.id,
+          motionPrompt: promptResult.motionPrompt,
+          negativePrompt: promptResult.negativePrompt,
+          provider: providerName,
+          providerJobId: submitResult.providerJobId,
+          videoUrl: pollResult.videoUrl,
+          width,
+          height,
+          durationMs: pollResult.durationMs || durationSec * 1000,
+          videoStyle,
+          metadata: pollResult.metadata,
+        });
+      }
+      // DB tracking 없으면 응답에 필요한 최소 필드만 합성해서 반환
+      return {
+        id: null,
+        character_id: characterId,
+        source_image_id: null,
+        video_url: pollResult.videoUrl,
+        duration_ms: pollResult.durationMs || durationSec * 1000,
+        video_style: videoStyle,
+        status: 'ready',
+      };
     });
 
     // 9) Job 완료
-    const completedJob = await videoJobRepo.updateStatus(job.id, {
-      status: 'completed',
-      videoAssetId: video.id,
-    });
+    let completedJob = null;
+    if (trackInDb) {
+      completedJob = await videoJobRepo.updateStatus(job.id, {
+        status: 'completed',
+        videoAssetId: video.id,
+      });
+    } else {
+      completedJob = {
+        id: null,
+        status: 'completed',
+        provider: providerName,
+        attempt: 1,
+      };
+    }
 
     return { job: completedJob, video };
   } catch (err) {
-    await videoJobRepo.updateStatus(job.id, {
-      status: 'failed',
-      error: err.message,
-    }).catch(() => {});
+    if (trackInDb) {
+      await videoJobRepo.updateStatus(job.id, {
+        status: 'failed',
+        error: err.message,
+      }).catch(() => {});
+    }
 
     throw err;
   }
