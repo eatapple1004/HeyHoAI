@@ -104,13 +104,16 @@ async function generateForCharacter(characterId, opts = {}) {
   }
 
   // 2) 소스 이미지 확인
-  //    우선순위: 명시된 sourceImageId → image_assets의 master → character.reference_image_url 폴백
+  //    우선순위: sourceImageId → sourceImageUrl(임의 URL) → image_assets master → character.reference_image_url
   let sourceImage;
+  const { sourceImageUrl } = opts;
   if (sourceImageId) {
     sourceImage = await imageAssetRepo.findById(sourceImageId);
     if (!sourceImage || sourceImage.character_id !== characterId) {
       throw Object.assign(new Error('Source image not found for this character'), { statusCode: 404 });
     }
+  } else if (sourceImageUrl) {
+    sourceImage = { id: null, character_id: characterId, image_url: sourceImageUrl };
   } else {
     const images = await imageAssetRepo.findByCharacterId(characterId, { status: 'master' });
     sourceImage = images[0];
