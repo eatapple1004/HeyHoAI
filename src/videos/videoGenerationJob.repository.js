@@ -17,7 +17,7 @@ async function insert(data) {
        (character_id, source_image_id, provider, video_style, motion_prompt, status)
      VALUES ($1,$2,$3,$4,$5,'pending')
      RETURNING *`,
-    [data.characterId, data.sourceImageId, data.provider, data.videoStyle, data.motionPrompt]
+    [data.characterId, data.sourceImageId || null, data.provider, data.videoStyle, data.motionPrompt]
   );
   return result.rows[0];
 }

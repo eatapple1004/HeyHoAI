@@ -103,7 +103,8 @@ async function generateForCharacter(characterId, opts = {}) {
     throw Object.assign(new Error(`Character ${characterId} not found`), { statusCode: 404 });
   }
 
-  // 2) 소스 이미지 확인 (지정이 없으면 master image 사용)
+  // 2) 소스 이미지 확인
+  //    우선순위: 명시된 sourceImageId → image_assets의 master → character.reference_image_url 폴백
   let sourceImage;
   if (sourceImageId) {
     sourceImage = await imageAssetRepo.findById(sourceImageId);
@@ -113,9 +114,13 @@ async function generateForCharacter(characterId, opts = {}) {
   } else {
     const images = await imageAssetRepo.findByCharacterId(characterId, { status: 'master' });
     sourceImage = images[0];
+    if (!sourceImage && character.reference_image_url) {
+      // image_assets에 등록된 master는 없지만 캐릭터 생성 시 등록된 reference 이미지가 있다면 그걸로 진행
+      sourceImage = { id: null, character_id: characterId, image_url: character.reference_image_url };
+    }
     if (!sourceImage) {
       throw Object.assign(
-        new Error('No master image found. Generate images first.'),
+        new Error('No source image available. Set a reference image for this character or generate one first.'),
         { statusCode: 400 }
       );
     }
