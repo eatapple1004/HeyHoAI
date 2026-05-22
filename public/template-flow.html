@@ -1109,9 +1109,18 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data;
+      try { data = JSON.parse(raw); }
+      catch {
+        // Server returned HTML (likely 404/500 from Express default handler).
+        const snippet = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+        showToast(`Server ${res.status}: ${snippet || res.statusText}`, 'error');
+        return;
+      }
       if (!data.success) {
-        showToast(data.error || 'Generation failed', 'error');
+        const msg = data.error || (data.errors && JSON.stringify(data.errors)) || 'Generation failed';
+        showToast(`HTTP ${res.status}: ${msg}`, 'error');
         return;
       }
 
