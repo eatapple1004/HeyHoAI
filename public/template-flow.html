@@ -406,14 +406,8 @@
   let selectedCharacter = null;
 
   // ── Photo Slots ──
-  let photoSlots = [
-    { id: 1, prompt: 'close-up portrait, looking at camera, soft smile, studio lighting, white background', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
-    { id: 2, prompt: 'medium shot, casual outfit, sitting at a trendy cafe, natural daylight', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
-    { id: 3, prompt: 'full body shot, street fashion, walking in city, golden hour lighting', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
-    { id: 4, prompt: 'close-up, laughing naturally, candid moment, soft bokeh background', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
-    { id: 5, prompt: 'lifestyle shot, relaxing at home, cozy atmosphere, warm tones', results: [], selectedUrl: null, exampleUrl: null, savedId: null, model: 'pro' },
-  ];
-  let slotIdCounter = 6;
+  let photoSlots = [];
+  let slotIdCounter = 1;
 
   function renderPhotoSlots() {
     const container = document.getElementById('photoSlots');
@@ -444,7 +438,7 @@
             <button class="slot-btn gen" id="slotGenBtn_${slot.id}" onclick="generateSlotPhoto(${slot.id})">Generate</button>
             <button class="slot-btn" onclick="generateSlotPhoto(${slot.id}, true)" title="이전 결과 삭제 후 새로 생성">Regen</button>
             <button class="slot-btn" onclick="saveSlotPrompt(${slot.id})" style="color:var(--green);">Save</button>
-            ${photoSlots.length > 5 ? '<button class="slot-btn del" onclick="removePhotoSlot(' + slot.id + ')">Delete</button>' : ''}
+            <button class="slot-btn del" onclick="removePhotoSlot(${slot.id})">Delete</button>
             <span class="slot-status" id="slotStatus_${slot.id}">
               ${slot.savedId ? '<span style="color:var(--green);font-size:9px;">saved</span>' : ''}
               ${slot.results.length > 0 ? slot.results.length + ' generated' : ''}
