@@ -3,7 +3,7 @@ const { z } = require('zod');
 const generateVideoRequestSchema = z.object({
   provider: z.enum(['runway', 'kling', 'minimax']).default('runway'),
   videoStyle: z.enum(['slow_motion', 'natural', 'dynamic', 'cinematic', 'loop']).default('natural'),
-  prompt: z.string().max(500).optional(),
+  prompt: z.string().max(4000).optional(),
   durationSec: z.number().int().min(3).max(10).optional(), // provider 지원 범위 내에서
   sourceImageId: z.string().uuid().optional(),              // 지정 안 하면 master image 사용
 });
