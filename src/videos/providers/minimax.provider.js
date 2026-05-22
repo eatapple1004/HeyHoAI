@@ -7,7 +7,15 @@ const minimaxProvider = {
   name: 'minimax',
   maxDurationSec: 6,
 
+  isConfigured() { return !!env.MINIMAX_API_KEY; },
+
   async submit(req) {
+    if (!env.MINIMAX_API_KEY) {
+      throw Object.assign(
+        new Error('Minimax API key not configured (set MINIMAX_API_KEY)'),
+        { statusCode: 503 }
+      );
+    }
     const res = await fetch(`${MINIMAX_API}/video_generation`, {
       method: 'POST',
       headers: {
