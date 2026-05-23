@@ -10,6 +10,24 @@ import { FFmpeg } from '/vendor/ffmpeg/index.js';
 import { fetchFile, toBlobURL } from '/vendor/ffmpeg-util/index.js';
 
 export async function initEditor(opts = {}) {
+  // Early diagnostics so we can tell from the log pane alone whether initEditor
+  // even started running and whether it can reach the DOM elements it expects.
+  console.log('[editor] initEditor called with opts:', opts);
+  try {
+    const logPaneEl = document.getElementById('logPane');
+    if (logPaneEl) {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.textContent = '[editor] init 시작';
+      logPaneEl.appendChild(line);
+    } else {
+      console.error('[editor] #logPane not found — wrong DOM context');
+    }
+    const statusEl = document.getElementById('statusText');
+    if (statusEl) statusEl.textContent = 'init…';
+  } catch (e) {
+    console.error('[editor] pre-init diagnostics failed:', e);
+  }
 
   const state = {
     clips: [],          // { id, type, file, name, url, duration, trimStart, trimEnd, mediaDuration, thumbDataUrl }
@@ -45,6 +63,8 @@ export async function initEditor(opts = {}) {
 
   async function loadFFmpeg() {
     const baseURL = '/vendor/ffmpeg-core';
+    log('FFmpeg.load() 호출…');
+    console.log('[editor] starting ffmpeg.load');
     try {
       await ffmpeg.load({
         coreURL: `${baseURL}/ffmpeg-core.js`,
@@ -54,9 +74,11 @@ export async function initEditor(opts = {}) {
       $('statusText').textContent = 'Ready';
       $('renderBtn').disabled = false;
       log('FFmpeg loaded.', 'ok');
+      console.log('[editor] ffmpeg ready');
     } catch (e) {
       $('statusText').textContent = 'FFmpeg 로딩 실패';
-      log('FFmpeg load error: ' + e.message, 'err');
+      log('FFmpeg load error: ' + (e && e.message ? e.message : String(e)), 'err');
+      console.error('[editor] ffmpeg load failed:', e);
     }
   }
   loadFFmpeg();
