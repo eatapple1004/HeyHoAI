@@ -1336,16 +1336,13 @@ export async function initEditor(opts = {}) {
           const bStart = state.bgm.trimStart || 0;
           const bEnd = state.bgm.trimEnd || state.bgm.duration || 0;
           const bDur = Math.max(0.1, bEnd - bStart);
-          // 한 번의 ffmpeg 호출로 [bStart, bEnd] 추출 → 필요 시 반복 → totalSec 잘라 정확히
-          // finite 오디오 생성. -stream_loop/-t 조합의 호환성 이슈를 피하기 위해 filter chain만 사용.
-          // aloop size는 한 사이클의 최대 샘플 수 — 여유롭게 60초 분량으로 설정.
-          const loopSize = Math.ceil(60 * 44100);
+          // [bStart, bEnd] 추출 → totalSec 이내로 자르기. 반복(loop) 없음:
+          // BGM 구간이 영상보다 짧으면 그만큼만 재생되고 나머지는 무음으로 남는다.
           const afilter =
             `atrim=start=${bStart}:duration=${bDur},asetpts=PTS-STARTPTS,` +
-            `aloop=loop=-1:size=${loopSize},` +
             `atrim=duration=${totalSec},asetpts=PTS-STARTPTS,` +
             `aresample=44100`;
-          log(`BGM 준비: ${bStart.toFixed(1)}s에서 ${bDur.toFixed(1)}s 구간 → 영상 ${totalSec.toFixed(2)}s에 맞춤`);
+          log(`BGM 준비: ${bStart.toFixed(1)}s에서 ${bDur.toFixed(1)}s 구간 → 영상 ${totalSec.toFixed(2)}s에 맞춤 (반복 없음)`);
           await run([
             '-y',
             '-i', 'bgm.original',
