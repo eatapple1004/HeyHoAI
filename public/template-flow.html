@@ -459,6 +459,15 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- 이미지 라이트박스 -->
+<div id="imgLightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px;cursor:zoom-out;">
+  <img id="imgLightboxImg" style="max-width:95vw;max-height:85vh;border-radius:8px;display:block;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+  <div style="display:flex;gap:10px;">
+    <a id="imgLightboxDownload" href="" download style="padding:8px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;text-decoration:none;font-family:inherit;">⬇ 다운로드</a>
+    <button onclick="closeImageLightbox()" style="padding:8px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">닫기 (Esc)</button>
+  </div>
+</div>
+
 <script>
   let currentStep = 1;
   let introBgmFile = null;
@@ -491,6 +500,12 @@
             </div>
           </div>
           <div class="slot-actions">
+            <select class="slot-btn" id="slotModel_${slot.id}" style="padding:5px 8px;font-size:11px;">
+              <option value="pro" ${slot.model === 'pro' ? 'selected' : ''}>Gemini Pro</option>
+              <option value="flash" ${slot.model === 'flash' ? 'selected' : ''}>Gemini Flash</option>
+              <option value="gpt-image-2" ${slot.model === 'gpt-image-2' ? 'selected' : ''}>GPT Image 2</option>
+              <option value="gpt-image-1.5" ${slot.model === 'gpt-image-1.5' ? 'selected' : ''}>GPT Image 1.5</option>
+            </select>
             <button class="slot-btn gen" id="slotGenBtn_${slot.id}" onclick="generateSlotPhoto(${slot.id})">Generate</button>
             <button class="slot-btn" onclick="generateSlotPhoto(${slot.id}, true)">Regenerate</button>
             <button class="slot-btn" onclick="saveSlotPrompt(${slot.id})" style="color:var(--green);">Save</button>
@@ -514,7 +529,15 @@
           const img = document.createElement('img');
           img.src = r.url;
           img.className = r.url === slot.selectedUrl ? 'selected' : '';
-          img.onclick = () => { slot.selectedUrl = r.url; renderPhotoSlots(); };
+          // 클릭: 선택 + 라이트박스로 크게 보기
+          img.title = '클릭: 선택하고 크게 보기';
+          img.style.cursor = 'zoom-in';
+          img.onclick = () => {
+            slot.selectedUrl = r.url;
+            renderPhotoSlots();
+            openImageLightbox(r.url);
+          };
+
           const dl = document.createElement('a');
           dl.href = r.url;
           dl.download = (r.url.split('/').pop() || 'photo') + '';
@@ -579,9 +602,39 @@
   }
 
   function addPhotoSlot() {
-    photoSlots.push({ id: slotIdCounter++, prompt: '', results: [], selectedUrl: null });
+    photoSlots.push({ id: slotIdCounter++, prompt: '', results: [], selectedUrl: null, model: 'pro' });
     renderPhotoSlots();
   }
+
+  // ── 이미지 라이트박스 ──
+  function openImageLightbox(url) {
+    const box = document.getElementById('imgLightbox');
+    const img = document.getElementById('imgLightboxImg');
+    const dl = document.getElementById('imgLightboxDownload');
+    if (!box || !img) return;
+    img.src = url;
+    if (dl) {
+      dl.href = url;
+      dl.download = (url.split('/').pop() || 'photo').split('?')[0];
+    }
+    box.style.display = 'flex';
+  }
+  function closeImageLightbox() {
+    const box = document.getElementById('imgLightbox');
+    if (!box) return;
+    box.style.display = 'none';
+    const img = document.getElementById('imgLightboxImg');
+    if (img) img.src = '';
+  }
+  // 배경 클릭 / Esc 로도 닫기
+  document.addEventListener('click', (ev) => {
+    const box = document.getElementById('imgLightbox');
+    if (!box || box.style.display === 'none') return;
+    if (ev.target === box) closeImageLightbox();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') closeImageLightbox();
+  });
 
   function removePhotoSlot(id) {
     photoSlots = photoSlots.filter(s => s.id !== id);
@@ -598,7 +651,11 @@
 
     // 캐릭터 레퍼런스
     const charId = document.getElementById('introCharSelect').value;
-    const model = document.getElementById('photoModel').value;
+    // 슬롯별 모델 셀렉터를 우선 사용, 없으면 (구버전 호환) 상단 글로벌 photoModel을 폴백.
+    const slotModelEl = document.getElementById('slotModel_' + slotId);
+    const globalModelEl = document.getElementById('photoModel');
+    const model = slotModelEl ? slotModelEl.value : (globalModelEl ? globalModelEl.value : 'pro');
+    slot.model = model;
 
     const btn = document.getElementById('slotGenBtn_' + slotId);
     const status = document.getElementById('slotStatus_' + slotId);
