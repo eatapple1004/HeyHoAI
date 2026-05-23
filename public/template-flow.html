@@ -283,9 +283,19 @@
       <div id="step3NoImages" style="display:none;font-size:12px;color:var(--dim);padding:10px;">Step 2에서 먼저 사진을 생성하세요.</div>
     </div>
 
+    <!-- 저장된 모션 프롬프트 -->
+    <div class="form-group">
+      <label class="form-label">Saved Motion Prompts (click to use)</label>
+      <div id="motionPromptTags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+    </div>
+
     <div class="form-group">
       <label class="form-label">모션 프롬프트</label>
       <textarea class="form-input" id="introMotion" placeholder="예: slowly looking at camera, gentle smile, slight head tilt, soft hair movement, natural breathing">slowly looking at camera, gentle smile, slight head tilt, soft hair movement, natural breathing, confident but approachable expression</textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input class="form-input" id="motionPromptSaveName" placeholder="프롬프트 이름" style="flex:1;padding:6px 10px;font-size:12px;">
+        <button onclick="saveMotionPrompt()" style="padding:6px 14px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;">Save</button>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">영상 길이</label>
@@ -961,6 +971,78 @@
   }
 
   loadSavedSlotPrompts();
+
+  // ── Saved Motion Prompts (Step 3) ──
+  let savedMotionPrompts = [];
+
+  async function loadMotionPrompts() {
+    try {
+      const res = await fetch('/api/template-data?templateType=motion-prompt');
+      const data = await res.json();
+      savedMotionPrompts = data.data || [];
+      renderMotionPromptTags();
+    } catch (e) { /* ignore */ }
+  }
+
+  function renderMotionPromptTags() {
+    const container = document.getElementById('motionPromptTags');
+    if (!container) return;
+    if (savedMotionPrompts.length === 0) {
+      container.innerHTML = '<span style="font-size:11px;color:var(--dim);">No saved motion prompts yet. Type one and press Save.</span>';
+      return;
+    }
+    container.innerHTML = '';
+    savedMotionPrompts.forEach(p => {
+      const tag = document.createElement('div');
+      tag.style.cssText =
+        'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;font-size:11px;color:var(--text);cursor:pointer;';
+      tag.onclick = () => {
+        const ta = document.getElementById('introMotion');
+        if (ta) ta.value = (p.data && p.data.prompt) || p.name || '';
+      };
+      const label = document.createElement('span');
+      label.textContent = p.name || '(unnamed)';
+      const del = document.createElement('span');
+      del.textContent = '×';
+      del.style.cssText = 'color:var(--dim);font-size:13px;line-height:1;';
+      del.onclick = async (ev) => {
+        ev.stopPropagation();
+        try {
+          await fetch('/api/template-data/' + p.id, { method: 'DELETE' });
+          showToast('Deleted', 'success');
+          loadMotionPrompts();
+        } catch (e) { showToast('Error', 'error'); }
+      };
+      tag.appendChild(label);
+      tag.appendChild(del);
+      container.appendChild(tag);
+    });
+  }
+
+  async function saveMotionPrompt() {
+    const promptEl = document.getElementById('introMotion');
+    const nameEl = document.getElementById('motionPromptSaveName');
+    const prompt = (promptEl?.value || '').trim();
+    const name = (nameEl?.value || '').trim() || prompt.slice(0, 40);
+    if (!prompt) { showToast('프롬프트 내용이 비어있습니다', 'error'); return; }
+    try {
+      const res = await fetch('/api/template-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateType: 'motion-prompt', name, data: { prompt } }),
+      });
+      const j = await res.json();
+      if (j.success) {
+        if (nameEl) nameEl.value = '';
+        showToast('Saved', 'success');
+        loadMotionPrompts();
+      } else {
+        showToast(j.error || 'Save failed', 'error');
+      }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  }
+
+  loadMotionPrompts();
 
   // Photo slots 초기 렌더
   renderPhotoSlots();
