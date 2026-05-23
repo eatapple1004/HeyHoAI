@@ -19,7 +19,8 @@
   header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; }
   header nav a:hover, header nav a.active { color: var(--accent2); }
 
-  .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; transition: max-width 0.25s ease; }
+  .container.wide { max-width: 1480px; padding: 24px; }
   .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; }
   .back-link:hover { color: var(--accent2); }
 
@@ -339,12 +340,8 @@
   <!-- Step 5: 결과 -->
   <div class="step-card" id="step5">
     <div class="step-num">Step 5 / 5</div>
-    <h3>결과 확인</h3>
-    <div class="step-desc">자기소개 릴스가 생성되었습니다.</div>
-
-    <div class="result-area" id="resultArea">
-      <div style="color:var(--dim);">Generating...</div>
-    </div>
+    <h3>릴스 편집</h3>
+    <div class="step-desc">이전 단계에서 만든 사진/영상/BGM이 타임라인에 자동으로 올라옵니다. 자유롭게 배치·트림·텍스트를 추가한 뒤 「영상 렌더링」을 눌러 결과를 받으세요.</div>
 
     <!-- 인라인 에디터 (editor.html과 동일한 컴포넌트를 editor-core.js로 부팅) -->
     <div id="step5EditorWrap">
@@ -435,7 +432,6 @@
 
     <div class="btn-group" style="margin-top:14px;">
       <button class="btn-prev" onclick="goStep(4)">&larr; Back</button>
-      <a class="btn-next" id="downloadResult" href="" download style="text-align:center;text-decoration:none;">Download</a>
     </div>
   </div>
 </div>
@@ -843,6 +839,10 @@
       const el = document.getElementById('prog' + i);
       el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
     }
+
+    // Step 5(에디터)는 좌우 폭이 넓어야 타임라인/사이드 패널이 들어가므로 wide 모드로 전환
+    const container = document.querySelector('body > .container');
+    if (container) container.classList.toggle('wide', n === 5);
   }
 
   // ── Saved Individual Prompts ──
