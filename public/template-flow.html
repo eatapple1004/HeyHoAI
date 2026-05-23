@@ -1034,18 +1034,28 @@
     });
     const videoUrls = generatedIntroVideoUrl ? [generatedIntroVideoUrl] : [];
 
+    // Step 4의 BGM은 File 객체(introBgmFile)로 저장돼 있음. 에디터는 URL을 받으니
+    // 객체 URL로 한 번 감싸서 넘긴다 (이름은 원본 파일명 보존).
+    let initialBgmUrl = null;
+    let initialBgmName = null;
+    if (introBgmFile) {
+      initialBgmUrl = URL.createObjectURL(introBgmFile);
+      initialBgmName = introBgmFile.name;
+    }
+
     // Boot the embedded editor once (subsequent visits keep its in-memory state).
     if (step5EditorBooted) return;
     step5EditorBooted = true;
 
     const initialClipUrls = [...imageUrls, ...videoUrls];
-    console.log('[step5] loading editor module, clips=', initialClipUrls.length, 'bgm=', selectedBgmUrl);
+    console.log('[step5] loading editor module, clips=', initialClipUrls.length, 'bgm=', initialBgmName);
     try {
       const mod = await import('/editor-core.js');
       console.log('[step5] editor-core module loaded, calling initEditor');
       await mod.initEditor({
         initialClipUrls,
-        initialBgmUrl: selectedBgmUrl || null,
+        initialBgmUrl,
+        initialBgmName,
       });
       console.log('[step5] initEditor returned');
     } catch (e) {
