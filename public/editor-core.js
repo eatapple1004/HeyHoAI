@@ -992,24 +992,65 @@ export async function initEditor(opts = {}) {
     tRow.appendChild(tVal);
     sel.appendChild(tRow);
 
+    // 트림 구간 미리듣기 + 영상 길이에 맞춤
+    const actionRow = document.createElement('div');
+    actionRow.style.cssText = 'display:flex;gap:8px;';
+
+    const previewBtn = document.createElement('button');
+    previewBtn.style.cssText =
+      'padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;';
+    previewBtn.textContent = '▶ 구간 미리듣기';
+    let previewTimer = null;
+    const stopPreview = () => {
+      if (bgmPreviewAudio) { try { bgmPreviewAudio.pause(); } catch {} bgmPreviewAudio = null; }
+      if (previewTimer) { clearInterval(previewTimer); previewTimer = null; }
+      previewBtn.textContent = '▶ 구간 미리듣기';
+    };
+    previewBtn.onclick = () => {
+      if (bgmPreviewAudio && !bgmPreviewAudio.paused) {
+        stopPreview();
+        return;
+      }
+      resetBgmPreview();          // 라이브러리 미리듣기와 충돌 방지
+      const srcUrl = state.bgm.fileUrl || state.bgm.url;
+      if (!srcUrl) return;
+      const audio = new Audio(srcUrl);
+      bgmPreviewAudio = audio;
+      const s = state.bgm.trimStart || 0;
+      const e = state.bgm.trimEnd || state.bgm.duration || 0;
+      audio.currentTime = s;
+      audio.volume = state.bgm.volume != null ? state.bgm.volume : 0.8;
+      audio.play()
+        .then(() => { previewBtn.textContent = '⏸ 정지'; })
+        .catch((err) => log('미리듣기 실패: ' + err.message, 'err'));
+      audio.onended = stopPreview;
+      // 트림 끝점에 도달하면 정지
+      previewTimer = setInterval(() => {
+        if (!bgmPreviewAudio) return;
+        if (bgmPreviewAudio.currentTime >= e) stopPreview();
+      }, 100);
+    };
+    actionRow.appendChild(previewBtn);
+
     // "영상 길이에 맞춤" — 현재 타임라인 길이만큼만 BGM에서 선택. 시작점은 유지하되 폭만 영상 길이로.
     const fitBtn = document.createElement('button');
     fitBtn.style.cssText =
-      'align-self:flex-start;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;';
+      'padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;';
     fitBtn.textContent = '영상 길이에 맞춤';
     fitBtn.onclick = () => {
       const videoSec = totalDuration();
       if (videoSec <= 0) { log('타임라인에 클립이 없습니다.', 'err'); return; }
       const total = state.bgm.duration || 0;
       const wantedDur = Math.min(videoSec, total);
-      // 현재 시작점을 유지하되, 끝점이 BGM 길이를 넘으면 시작점을 뒤로 당김
       let s = state.bgm.trimStart || 0;
       if (s + wantedDur > total) s = Math.max(0, total - wantedDur);
       state.bgm.trimStart = s;
       state.bgm.trimEnd = s + wantedDur;
+      stopPreview();
       renderBgmInspector();
     };
-    sel.appendChild(fitBtn);
+    actionRow.appendChild(fitBtn);
+    sel.appendChild(actionRow);
 
     const fmt = (s) => {
       const m = Math.floor(s / 60);
