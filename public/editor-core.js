@@ -1287,33 +1287,51 @@ export async function initEditor(opts = {}) {
   loadBgmLibrary();
 
   // ── Auto-populate from previous-step media ─────────────────────────────
-  if (Array.isArray(opts.initialClipUrls) && opts.initialClipUrls.length) {
-    const fetched = [];
-    for (const url of opts.initialClipUrls) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) continue;
-        const blob = await res.blob();
-        const name = (url.split('/').pop() || 'media').split('?')[0];
-        let type = blob.type;
-        if (!type) {
-          if (/\.(mp4|mov|webm)$/i.test(name)) type = 'video/mp4';
-          else if (/\.(png)$/i.test(name)) type = 'image/png';
-          else if (/\.(jpg|jpeg)$/i.test(name)) type = 'image/jpeg';
-        }
-        fetched.push(new File([blob], name, { type: type || 'application/octet-stream' }));
-      } catch (e) { /* skip */ }
-    }
-    if (fetched.length) await addMediaFiles(fetched);
-  }
-  if (opts.initialBgmUrl) {
-    try {
-      const res = await fetch(opts.initialBgmUrl);
-      if (res.ok) {
-        const blob = await res.blob();
-        const name = opts.initialBgmName || (opts.initialBgmUrl.split('/').pop() || 'bgm.mp3').split('?')[0];
-        await selectBgmFromFile(new File([blob], name, { type: blob.type || 'audio/mpeg' }));
+  //  loadFFmpeg가 끝나기 전에 무거운 fetch/디코딩을 시작하면 메인 스레드가 점유돼
+  //  FFmpeg 워커 메시지 콜백이 밀려 "FFmpeg 로딩 중…" 상태에서 멈춰 보이는 문제가 있었다.
+  //  → ffmpegReady를 기다린 뒤 fire-and-forget로 실행한다.
+  const autoPopulate = async () => {
+    await new Promise((resolve) => {
+      if (ffmpegReady) return resolve();
+      const t0 = Date.now();
+      const check = () => {
+        if (ffmpegReady) return resolve();
+        // FFmpeg가 실패해도(또는 매우 느려도) 30초 후엔 그냥 진행한다.
+        if (Date.now() - t0 > 30000) return resolve();
+        setTimeout(check, 200);
+      };
+      check();
+    });
+
+    if (Array.isArray(opts.initialClipUrls) && opts.initialClipUrls.length) {
+      const fetched = [];
+      for (const url of opts.initialClipUrls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const name = (url.split('/').pop() || 'media').split('?')[0];
+          let type = blob.type;
+          if (!type) {
+            if (/\.(mp4|mov|webm)$/i.test(name)) type = 'video/mp4';
+            else if (/\.(png)$/i.test(name)) type = 'image/png';
+            else if (/\.(jpg|jpeg)$/i.test(name)) type = 'image/jpeg';
+          }
+          fetched.push(new File([blob], name, { type: type || 'application/octet-stream' }));
+        } catch (e) { log('Auto-populate fetch error: ' + e.message, 'err'); }
       }
-    } catch (e) { /* skip */ }
-  }
+      if (fetched.length) await addMediaFiles(fetched);
+    }
+    if (opts.initialBgmUrl) {
+      try {
+        const res = await fetch(opts.initialBgmUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const name = opts.initialBgmName || (opts.initialBgmUrl.split('/').pop() || 'bgm.mp3').split('?')[0];
+          await selectBgmFromFile(new File([blob], name, { type: blob.type || 'audio/mpeg' }));
+        }
+      } catch (e) { log('Auto-populate BGM error: ' + e.message, 'err'); }
+    }
+  };
+  autoPopulate(); // fire-and-forget — initEditor 자체는 즉시 resolve
 }
