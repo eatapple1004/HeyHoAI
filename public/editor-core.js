@@ -1113,6 +1113,16 @@ export async function initEditor(opts = {}) {
     const fps = 30;
     const segments = [];
 
+    // ffmpeg.wasm exec는 비정상 종료(non-zero exit)에도 promise를 reject하지 않는다.
+    // 이걸 일반 try/catch로 잡으려면 exit code를 직접 확인해 throw 해줘야 한다.
+    const run = async (args) => {
+      const code = await ffmpeg.exec(args);
+      if (code !== 0) {
+        throw new Error(`ffmpeg exited with code ${code}`);
+      }
+      return code;
+    };
+
     try {
       // Step 1 — normalize clips
       for (let i = 0; i < state.clips.length; i++) {
@@ -1124,35 +1134,62 @@ export async function initEditor(opts = {}) {
 
         if (clip.type === 'image') {
           const dur = clip.duration;
-          await ffmpeg.exec([
+          await run([
             '-y', '-loop', '1', '-t', String(dur), '-i', inputName,
             '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
             '-vf', fitFilter(w, h), '-r', String(fps),
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-            '-c:a', 'aac', '-b:a', '128k', '-shortest', outName,
+            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+            '-shortest', outName,
           ]);
         } else {
           const start = clip.trimStart || 0;
           const dur = Math.max(0.1, (clip.trimEnd || clip.mediaDuration) - start);
-          // Always provide a silent anullsrc as a second input so every segment ends up with
-          // a video stream + a stereo aac audio stream (uniform across all segments → concat -c copy works).
-          // If the source has audio we mix it under the silent track; if not, [0:a] is empty and we fall back
-          // to the silent track via amix=duration=first.
-          await ffmpeg.exec([
-            '-y',
-            '-ss', String(start), '-t', String(dur), '-i', inputName,
-            '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-            '-filter_complex',
-              `[0:v]${fitFilter(w, h)},fps=${fps}[vout];` +
-              `[1:a]anull[silent];` +
-              `[0:a?][silent]amix=inputs=2:duration=first:dropout_transition=0,aresample=44100[aout]`,
-            '-map', '[vout]', '-map', '[aout]',
-            '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-            '-shortest', outName,
-          ]).catch(async () => {
-            // amix sometimes refuses optional missing input. Hard fallback: silent audio only.
-            await ffmpeg.exec([
+          // 영상에 오디오가 있는지 미리 판단 (브라우저 video 엘리먼트 기준).
+          // (ffmpeg.wasm에서 amix=inputs=2 + [0:a?] 패턴은 오디오가 없을 때 abort 함)
+          let hasAudio = false;
+          try {
+            const probe = document.createElement('video');
+            probe.preload = 'metadata'; probe.muted = true;
+            probe.src = clip.url;
+            await new Promise((res) => {
+              probe.onloadedmetadata = res;
+              probe.onerror = res;
+              setTimeout(res, 3000);
+            });
+            // 브라우저별 비표준 시그널을 가능한 한 모아 본다
+            hasAudio = !!(probe.mozHasAudio || probe.webkitAudioDecodedByteCount || (probe.audioTracks && probe.audioTracks.length > 0));
+          } catch {}
+
+          if (hasAudio) {
+            // 원본 오디오 + silent track을 amix → 결과는 항상 stereo aac 44.1k
+            await run([
+              '-y',
+              '-ss', String(start), '-t', String(dur), '-i', inputName,
+              '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+              '-filter_complex',
+                `[0:v]${fitFilter(w, h)},fps=${fps}[vout];` +
+                `[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0,aresample=44100[aout]`,
+              '-map', '[vout]', '-map', '[aout]',
+              '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+              '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+              '-shortest', outName,
+            ]).catch(async (err) => {
+              log('원본 오디오 mix 실패, silent로 폴백: ' + err.message, 'err');
+              await run([
+                '-y',
+                '-ss', String(start), '-t', String(dur), '-i', inputName,
+                '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+                '-vf', fitFilter(w, h), '-r', String(fps),
+                '-map', '0:v:0', '-map', '1:a:0',
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+                '-shortest', outName,
+              ]);
+            });
+          } else {
+            // 오디오 없음: anullsrc 단독으로 silent 트랙만 붙임
+            await run([
               '-y',
               '-ss', String(start), '-t', String(dur), '-i', inputName,
               '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
@@ -1162,7 +1199,7 @@ export async function initEditor(opts = {}) {
               '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
               '-shortest', outName,
             ]);
-          });
+          }
         }
         segments.push(outName);
         await ffmpeg.deleteFile(inputName).catch(() => {});
@@ -1185,7 +1222,7 @@ export async function initEditor(opts = {}) {
           labels.push(`[${i}:v:0][${i}:a:0]`);
         }
         const concatFilter = `${labels.join('')}concat=n=${segments.length}:v=1:a=1[vout][aout]`;
-        await ffmpeg.exec([
+        await run([
           '-y',
           ...concatInputs,
           '-filter_complex', concatFilter,
@@ -1222,17 +1259,18 @@ export async function initEditor(opts = {}) {
           const bStart = state.bgm.trimStart || 0;
           const bEnd = state.bgm.trimEnd || state.bgm.duration || 0;
           const bDur = Math.max(0.1, bEnd - bStart);
-          // Pre-trim BGM so stream_loop can repeat just the chosen segment
-          await ffmpeg.exec([
+          // Pre-trim BGM so stream_loop can repeat just the chosen segment.
+          // 출력 확장자가 정상적인 컨테이너여야 함 (.audio 같은 확장자는 'Unable to find suitable output format'로 죽음).
+          await run([
             '-y',
             '-ss', String(bStart),
             '-t', String(bDur),
             '-i', 'bgm.original',
             '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2',
-            'bgm.audio',
+            'bgm.m4a',
           ]);
           await ffmpeg.deleteFile('bgm.original').catch(() => {});
-          inputs.push('-stream_loop', '-1', '-i', 'bgm.audio');
+          inputs.push('-stream_loop', '-1', '-i', 'bgm.m4a');
         }
 
         const bgmIdx = 1 + (hasTexts ? state.texts.length : 0); // input index of bgm
@@ -1275,10 +1313,10 @@ export async function initEditor(opts = {}) {
           finalOut,
         ];
         log('최종 합성 중…');
-        await ffmpeg.exec(args);
+        await run(args);
 
         for (const n of textPngNames) await ffmpeg.deleteFile(n).catch(() => {});
-        await ffmpeg.deleteFile('bgm.audio').catch(() => {});
+        await ffmpeg.deleteFile('bgm.m4a').catch(() => {});
         await ffmpeg.deleteFile('concat.mp4').catch(() => {});
       } else {
         // No texts and no bgm — concat.mp4 IS the output
