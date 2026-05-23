@@ -1129,12 +1129,26 @@ export async function initEditor(opts = {}) {
     };
 
     try {
+      // 시작 전 타임라인 전체 길이를 미리 확인 — 의도와 다르게 길면 즉시 중단할 기회
+      const totalSec = totalDuration();
+      log(`타임라인 ${state.clips.length}개 클립, 총 ${totalSec.toFixed(2)}초`);
+      state.clips.forEach((c, i) => {
+        log(`  [${i + 1}] ${c.type} ${c.name || ''} — ${clipUsedDuration(c).toFixed(2)}s`);
+      });
+      if (totalSec > 600) {
+        const ok = confirm(`타임라인 총 길이가 ${(totalSec / 60).toFixed(1)}분으로 매우 깁니다. 정말 계속할까요?`);
+        if (!ok) {
+          log('사용자가 렌더링 취소', 'err');
+          throw new Error('User cancelled');
+        }
+      }
+
       // Step 1 — normalize clips
       for (let i = 0; i < state.clips.length; i++) {
         const clip = state.clips[i];
         const outName = `seg_${String(i).padStart(3, '0')}.mp4`;
         const inputName = `in_${i}.${clip.type === 'image' ? 'img' : 'mp4'}`;
-        log(`[${i + 1}/${state.clips.length}] ${clip.type} → 정규화`);
+        log(`[${i + 1}/${state.clips.length}] ${clip.type} → 정규화 (${clipUsedDuration(clip).toFixed(2)}s)`);
         await ffmpeg.writeFile(inputName, await fetchFile(clip.file));
 
         // 모든 세그먼트가 동일한 video stream 파라미터를 갖도록 filter_complex 패턴을 통일
