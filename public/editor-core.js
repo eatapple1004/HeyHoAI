@@ -1326,7 +1326,9 @@ export async function initEditor(opts = {}) {
             const name = `text_${i}.png`;
             const blob = await makeTextPNG(state.texts[i], w, h);
             await ffmpeg.writeFile(name, new Uint8Array(await blob.arrayBuffer()));
-            inputs.push('-loop', '1', '-i', name);
+            // -loop 1 만 쓰면 입력이 무한 비디오 스트림이 되어 overlay 필터의 기본 동작상
+            // 출력도 무한히 늘어남(영상 길이를 한참 넘김). -t totalSec로 입력 자체를 영상 길이로 캡.
+            inputs.push('-loop', '1', '-t', String(totalSec), '-i', name);
             textPngNames.push(name);
           }
         }
