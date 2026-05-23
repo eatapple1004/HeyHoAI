@@ -1169,10 +1169,32 @@ export async function initEditor(opts = {}) {
       }
 
       // Step 2 — concat
+      // 세그먼트마다 정규화 인코딩 파라미터가 미묘하게 달라 -c copy 가 거부할 때가 있어
+      // (예: timebase, SAR, pix_fmt profile 차이) concat 'filter' 로 한 번 더 인코딩한다.
+      // 약간 느리지만 어떤 조합이어도 결과 mp4를 보장.
       log('병합 중…');
-      const listTxt = segments.map(n => `file '${n}'`).join('\n');
-      await ffmpeg.writeFile('concat.txt', new TextEncoder().encode(listTxt));
-      await ffmpeg.exec(['-y', '-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'concat.mp4']);
+      if (segments.length === 1) {
+        // 외계 케이스(클립 1개): 그냥 복사
+        const data = await ffmpeg.readFile(segments[0]);
+        await ffmpeg.writeFile('concat.mp4', data);
+      } else {
+        const concatInputs = [];
+        const labels = [];
+        for (let i = 0; i < segments.length; i++) {
+          concatInputs.push('-i', segments[i]);
+          labels.push(`[${i}:v:0][${i}:a:0]`);
+        }
+        const concatFilter = `${labels.join('')}concat=n=${segments.length}:v=1:a=1[vout][aout]`;
+        await ffmpeg.exec([
+          '-y',
+          ...concatInputs,
+          '-filter_complex', concatFilter,
+          '-map', '[vout]', '-map', '[aout]',
+          '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+          '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+          'concat.mp4',
+        ]);
+      }
 
       // Step 3 — text overlays + BGM in one final pass (if any)
       const hasTexts = state.texts.length > 0;
