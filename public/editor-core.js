@@ -1331,36 +1331,31 @@ export async function initEditor(opts = {}) {
           }
         }
         if (hasBgm) {
-          const bgmSource = state.bgm.file || state.bgm.url;  // File for upload, URL for server lib
+          const bgmSource = state.bgm.file || state.bgm.url;
           await ffmpeg.writeFile('bgm.original', await fetchFile(bgmSource));
           const bStart = state.bgm.trimStart || 0;
           const bEnd = state.bgm.trimEnd || state.bgm.duration || 0;
           const bDur = Math.max(0.1, bEnd - bStart);
-          // 1) 사용자가 선택한 BGM 구간만 추출 (.m4a로 컨테이너 명시)
+          // 한 번의 ffmpeg 호출로 [bStart, bEnd] 추출 → 필요 시 반복 → totalSec 잘라 정확히
+          // finite 오디오 생성. -stream_loop/-t 조합의 호환성 이슈를 피하기 위해 filter chain만 사용.
+          // aloop size는 한 사이클의 최대 샘플 수 — 여유롭게 60초 분량으로 설정.
+          const loopSize = Math.ceil(60 * 44100);
+          const afilter =
+            `atrim=start=${bStart}:duration=${bDur},asetpts=PTS-STARTPTS,` +
+            `aloop=loop=-1:size=${loopSize},` +
+            `atrim=duration=${totalSec},asetpts=PTS-STARTPTS,` +
+            `aresample=44100`;
+          log(`BGM 준비: ${bStart.toFixed(1)}s에서 ${bDur.toFixed(1)}s 구간 → 영상 ${totalSec.toFixed(2)}s에 맞춤`);
           await run([
             '-y',
-            '-ss', String(bStart),
-            '-t', String(bDur),
             '-i', 'bgm.original',
-            '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2',
-            'bgm.segment.m4a',
-          ]);
-          await ffmpeg.deleteFile('bgm.original').catch(() => {});
-
-          // 2) 영상 총 길이만큼만 — 부족하면 반복(stream_loop), 넘치면 자름(-t).
-          //    -c:a copy는 일부 ffmpeg 빌드에서 stream_loop와 같이 쓰면 첫 iteration만
-          //    muxing되는 알려진 이슈가 있어 안전하게 재인코딩한다.
-          await run([
-            '-y',
-            '-stream_loop', '-1',
-            '-i', 'bgm.segment.m4a',
-            '-t', String(totalSec),
+            '-af', afilter,
             '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2',
             'bgm.m4a',
           ]);
-          await ffmpeg.deleteFile('bgm.segment.m4a').catch(() => {});
+          await ffmpeg.deleteFile('bgm.original').catch(() => {});
 
-          // 최종 패스에서 BGM은 더 이상 무한이 아니라 정확히 totalSec짜리 → loop 옵션 불필요
+          // 최종 패스에서 BGM은 finite (정확히 totalSec) → loop 옵션 불필요
           inputs.push('-i', 'bgm.m4a');
         }
 
