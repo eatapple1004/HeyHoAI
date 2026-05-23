@@ -86,9 +86,13 @@ export async function initEditor(opts = {}) {
   // ---------- Helpers ----------
   function getAspect() {
     const v = $('aspectSelect').value;
-    if (v === '9:16') return { w: 1080, h: 1920 };
-    if (v === '1:1') return { w: 1080, h: 1080 };
-    return { w: 1920, h: 1080 };
+    const qEl = $('qualitySelect');
+    const quality = qEl ? qEl.value : '1080';
+    const baseLong = quality === '720' ? 1280 : 1920;
+    const baseShort = quality === '720' ? 720 : 1080;
+    if (v === '9:16') return { w: baseShort, h: baseLong };
+    if (v === '1:1') return { w: baseShort, h: baseShort };
+    return { w: baseLong, h: baseShort };
   }
   function fitFilter(w, h) {
     return `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1`;
@@ -280,6 +284,7 @@ export async function initEditor(opts = {}) {
   });
 
   $('aspectSelect').addEventListener('change', () => renderDesignStage());
+  if ($('qualitySelect')) $('qualitySelect').addEventListener('change', () => renderDesignStage());
 
   // ---------- Text overlays ----------
   $('addTextBtn').onclick = () => {
@@ -1132,12 +1137,17 @@ export async function initEditor(opts = {}) {
         log(`[${i + 1}/${state.clips.length}] ${clip.type} → 정규화`);
         await ffmpeg.writeFile(inputName, await fetchFile(clip.file));
 
+        // 모든 세그먼트가 동일한 video stream 파라미터를 갖도록 filter_complex 패턴을 통일
+        //   → 이후 concat demuxer + -c copy 로 재인코딩 없이 합칠 수 있음
+        const vFilter = `[0:v]${fitFilter(w, h)},fps=${fps},setsar=1[vout]`;
+
         if (clip.type === 'image') {
           const dur = clip.duration;
           await run([
             '-y', '-loop', '1', '-t', String(dur), '-i', inputName,
             '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-            '-vf', fitFilter(w, h), '-r', String(fps),
+            '-filter_complex', `${vFilter};[1:a]anull[aout]`,
+            '-map', '[vout]', '-map', '[aout]',
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
             '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
             '-shortest', outName,
@@ -1161,76 +1171,69 @@ export async function initEditor(opts = {}) {
             hasAudio = !!(probe.mozHasAudio || probe.webkitAudioDecodedByteCount || (probe.audioTracks && probe.audioTracks.length > 0));
           } catch {}
 
-          if (hasAudio) {
-            // 원본 오디오 + silent track을 amix → 결과는 항상 stereo aac 44.1k
+          const aFilter = hasAudio
+            ? `[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0,aresample=44100[aout]`
+            : `[1:a]anull[aout]`;
+
+          await run([
+            '-y',
+            '-ss', String(start), '-t', String(dur), '-i', inputName,
+            '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+            '-filter_complex', `${vFilter};${aFilter}`,
+            '-map', '[vout]', '-map', '[aout]',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+            '-shortest', outName,
+          ]).catch(async (err) => {
+            // hasAudio 잘못 판단했을 경우 silent로 폴백
+            log('amix 실패, silent로 재시도: ' + err.message, 'err');
             await run([
               '-y',
               '-ss', String(start), '-t', String(dur), '-i', inputName,
               '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-              '-filter_complex',
-                `[0:v]${fitFilter(w, h)},fps=${fps}[vout];` +
-                `[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0,aresample=44100[aout]`,
+              '-filter_complex', `${vFilter};[1:a]anull[aout]`,
               '-map', '[vout]', '-map', '[aout]',
               '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
               '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
               '-shortest', outName,
-            ]).catch(async (err) => {
-              log('원본 오디오 mix 실패, silent로 폴백: ' + err.message, 'err');
-              await run([
-                '-y',
-                '-ss', String(start), '-t', String(dur), '-i', inputName,
-                '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-                '-vf', fitFilter(w, h), '-r', String(fps),
-                '-map', '0:v:0', '-map', '1:a:0',
-                '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-                '-shortest', outName,
-              ]);
-            });
-          } else {
-            // 오디오 없음: anullsrc 단독으로 silent 트랙만 붙임
-            await run([
-              '-y',
-              '-ss', String(start), '-t', String(dur), '-i', inputName,
-              '-f', 'lavfi', '-t', String(dur), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-              '-vf', fitFilter(w, h), '-r', String(fps),
-              '-map', '0:v:0', '-map', '1:a:0',
-              '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-              '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-              '-shortest', outName,
             ]);
-          }
+          });
         }
         segments.push(outName);
         await ffmpeg.deleteFile(inputName).catch(() => {});
       }
 
-      // Step 2 — concat
-      // 세그먼트마다 정규화 인코딩 파라미터가 미묘하게 달라 -c copy 가 거부할 때가 있어
-      // (예: timebase, SAR, pix_fmt profile 차이) concat 'filter' 로 한 번 더 인코딩한다.
-      // 약간 느리지만 어떤 조합이어도 결과 mp4를 보장.
+      // Step 2 — concat (demuxer + -c copy: 재인코딩 없음, 매우 빠름)
+      //  모든 세그먼트가 동일한 filter_complex 패턴으로 인코딩되어 stream 파라미터가 같다.
+      //  혹시 -c copy가 거부하면 filter-based concat으로 폴백한다.
       log('병합 중…');
       if (segments.length === 1) {
-        // 외계 케이스(클립 1개): 그냥 복사
         const data = await ffmpeg.readFile(segments[0]);
         await ffmpeg.writeFile('concat.mp4', data);
       } else {
-        const concatInputs = [];
-        const labels = [];
-        for (let i = 0; i < segments.length; i++) {
-          concatInputs.push('-i', segments[i]);
-          labels.push(`[${i}:v:0][${i}:a:0]`);
+        const listTxt = segments.map(n => `file '${n}'`).join('\n');
+        await ffmpeg.writeFile('concat.txt', new TextEncoder().encode(listTxt));
+        try {
+          await run(['-y', '-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'concat.mp4']);
+        } catch (err) {
+          log('concat -c copy 실패, filter로 재인코딩 폴백: ' + err.message, 'err');
+          const concatInputs = [];
+          const labels = [];
+          for (let i = 0; i < segments.length; i++) {
+            concatInputs.push('-i', segments[i]);
+            labels.push(`[${i}:v:0][${i}:a:0]`);
+          }
+          const concatFilter = `${labels.join('')}concat=n=${segments.length}:v=1:a=1[vout][aout]`;
+          await run([
+            '-y',
+            ...concatInputs,
+            '-filter_complex', concatFilter,
+            '-map', '[vout]', '-map', '[aout]',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+            'concat.mp4',
+          ]);
         }
-        const concatFilter = `${labels.join('')}concat=n=${segments.length}:v=1:a=1[vout][aout]`;
-        await run([
-          '-y',
-          ...concatInputs,
-          '-filter_complex', concatFilter,
-          '-map', '[vout]', '-map', '[aout]',
-          '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-          '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-          'concat.mp4',
-        ]);
       }
 
       // Step 3 — text overlays + BGM in one final pass (if any)
@@ -1301,13 +1304,18 @@ export async function initEditor(opts = {}) {
           aFinalLabel = '0:a';
         }
 
+        // 텍스트 오버레이가 없으면 비디오 스트림은 재인코딩 없이 copy → 큰 속도 향상
+        const videoCodecArgs = hasTexts
+          ? ['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p']
+          : ['-c:v', 'copy'];
+
         const args = [
           '-y',
           ...inputs,
           '-filter_complex', filters.join('; '),
           '-map', vFinalLabel,
           '-map', aFinalLabel,
-          '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+          ...videoCodecArgs,
           '-c:a', 'aac', '-b:a', '160k',
           '-shortest',
           finalOut,
