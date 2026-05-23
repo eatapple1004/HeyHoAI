@@ -1347,16 +1347,15 @@ export async function initEditor(opts = {}) {
           ]);
           await ffmpeg.deleteFile('bgm.original').catch(() => {});
 
-          // 2) 영상 총 길이만큼만 — 부족하면 반복(stream_loop), 넘치면 자름(-t)
-          //    → 결과는 정확히 totalSec 짜리 finite 오디오 파일.
-          //    이 단계가 없으면 stream_loop된 무한 입력 + amix duration=first 조합이
-          //    -shortest를 무력화시켜 출력이 BGM 길이만큼 길어지는 경우가 있음.
+          // 2) 영상 총 길이만큼만 — 부족하면 반복(stream_loop), 넘치면 자름(-t).
+          //    -c:a copy는 일부 ffmpeg 빌드에서 stream_loop와 같이 쓰면 첫 iteration만
+          //    muxing되는 알려진 이슈가 있어 안전하게 재인코딩한다.
           await run([
             '-y',
             '-stream_loop', '-1',
             '-i', 'bgm.segment.m4a',
             '-t', String(totalSec),
-            '-c:a', 'copy',
+            '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2',
             'bgm.m4a',
           ]);
           await ffmpeg.deleteFile('bgm.segment.m4a').catch(() => {});
