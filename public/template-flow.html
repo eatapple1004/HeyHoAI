@@ -843,6 +843,9 @@
     // Step 5(에디터)는 좌우 폭이 넓어야 타임라인/사이드 패널이 들어가므로 wide 모드로 전환
     const container = document.querySelector('body > .container');
     if (container) container.classList.toggle('wide', n === 5);
+
+    // Step 5 진입 시 임베디드 에디터 부팅 + 이전 단계 결과물 자동 로드
+    if (n === 5) loadEditorWithSources();
   }
 
   // ── Saved Individual Prompts ──
