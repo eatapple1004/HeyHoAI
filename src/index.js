@@ -23,6 +23,11 @@ app.use('/vendor/ffmpeg', express.static(path.join(process.cwd(), 'node_modules/
 app.use('/vendor/ffmpeg-util', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/util/dist/esm')));
 app.use('/vendor/ffmpeg-core', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/core/dist/esm')));
 
+// public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
+// .html 등 페이지 자체는 /heyhoai/* 라우트에서 sendFile로 서빙하므로
+// 일반 진입 경로와는 겹치지 않는다.
+app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));
+
 // 페이지 라우팅
 app.get('/heyhoai/image/generater/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
