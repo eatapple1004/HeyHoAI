@@ -992,6 +992,25 @@ export async function initEditor(opts = {}) {
     tRow.appendChild(tVal);
     sel.appendChild(tRow);
 
+    // "영상 길이에 맞춤" — 현재 타임라인 길이만큼만 BGM에서 선택. 시작점은 유지하되 폭만 영상 길이로.
+    const fitBtn = document.createElement('button');
+    fitBtn.style.cssText =
+      'align-self:flex-start;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;';
+    fitBtn.textContent = '영상 길이에 맞춤';
+    fitBtn.onclick = () => {
+      const videoSec = totalDuration();
+      if (videoSec <= 0) { log('타임라인에 클립이 없습니다.', 'err'); return; }
+      const total = state.bgm.duration || 0;
+      const wantedDur = Math.min(videoSec, total);
+      // 현재 시작점을 유지하되, 끝점이 BGM 길이를 넘으면 시작점을 뒤로 당김
+      let s = state.bgm.trimStart || 0;
+      if (s + wantedDur > total) s = Math.max(0, total - wantedDur);
+      state.bgm.trimStart = s;
+      state.bgm.trimEnd = s + wantedDur;
+      renderBgmInspector();
+    };
+    sel.appendChild(fitBtn);
+
     const fmt = (s) => {
       const m = Math.floor(s / 60);
       const ss = (s - m * 60).toFixed(1);
@@ -1276,18 +1295,33 @@ export async function initEditor(opts = {}) {
           const bStart = state.bgm.trimStart || 0;
           const bEnd = state.bgm.trimEnd || state.bgm.duration || 0;
           const bDur = Math.max(0.1, bEnd - bStart);
-          // Pre-trim BGM so stream_loop can repeat just the chosen segment.
-          // 출력 확장자가 정상적인 컨테이너여야 함 (.audio 같은 확장자는 'Unable to find suitable output format'로 죽음).
+          // 1) 사용자가 선택한 BGM 구간만 추출 (.m4a로 컨테이너 명시)
           await run([
             '-y',
             '-ss', String(bStart),
             '-t', String(bDur),
             '-i', 'bgm.original',
             '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2',
-            'bgm.m4a',
+            'bgm.segment.m4a',
           ]);
           await ffmpeg.deleteFile('bgm.original').catch(() => {});
-          inputs.push('-stream_loop', '-1', '-i', 'bgm.m4a');
+
+          // 2) 영상 총 길이만큼만 — 부족하면 반복(stream_loop), 넘치면 자름(-t)
+          //    → 결과는 정확히 totalSec 짜리 finite 오디오 파일.
+          //    이 단계가 없으면 stream_loop된 무한 입력 + amix duration=first 조합이
+          //    -shortest를 무력화시켜 출력이 BGM 길이만큼 길어지는 경우가 있음.
+          await run([
+            '-y',
+            '-stream_loop', '-1',
+            '-i', 'bgm.segment.m4a',
+            '-t', String(totalSec),
+            '-c:a', 'copy',
+            'bgm.m4a',
+          ]);
+          await ffmpeg.deleteFile('bgm.segment.m4a').catch(() => {});
+
+          // 최종 패스에서 BGM은 더 이상 무한이 아니라 정확히 totalSec짜리 → loop 옵션 불필요
+          inputs.push('-i', 'bgm.m4a');
         }
 
         const bgmIdx = 1 + (hasTexts ? state.texts.length : 0); // input index of bgm
