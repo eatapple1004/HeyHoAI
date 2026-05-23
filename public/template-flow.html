@@ -1160,6 +1160,9 @@
   }
 
   let step5EditorBooted = false;
+  let step5EditorHandle = null;          // { loadMedia(opts) } returned by initEditor
+  const step5LoadedClipUrls = new Set(); // 이미 에디터에 넘긴 URL들 (재진입 시 중복 방지)
+  let step5LoadedBgmName = null;
 
   async function loadEditorWithSources() {
     // 이전 단계의 결과물 URL 수집 (사진 슬롯 전부 + Step 3 생성 영상)
@@ -1168,8 +1171,9 @@
       slot.results.forEach(r => imageUrls.push(r.url));
     });
     const videoUrls = generatedIntroVideoUrl ? [generatedIntroVideoUrl] : [];
+    const allClipUrls = [...imageUrls, ...videoUrls];
 
-    // Step 4의 BGM은 File 객체(introBgmFile)로 저장돼 있음. 에디터는 URL을 받으니
+    // Step 4의 BGM은 File 객체(introBgmFile)로 저장됨. 에디터는 URL을 받으니
     // 객체 URL로 한 번 감싸서 넘긴다 (이름은 원본 파일명 보존).
     let initialBgmUrl = null;
     let initialBgmName = null;
@@ -1178,25 +1182,46 @@
       initialBgmName = introBgmFile.name;
     }
 
-    // Boot the embedded editor once (subsequent visits keep its in-memory state).
-    if (step5EditorBooted) return;
-    step5EditorBooted = true;
+    if (!step5EditorBooted) {
+      // 최초 진입: 에디터 부팅 + 모든 미디어를 초기 자동 채움으로 전달
+      step5EditorBooted = true;
+      console.log('[step5] loading editor module, clips=', allClipUrls.length, 'bgm=', initialBgmName);
+      try {
+        const mod = await import('/editor-core.js');
+        console.log('[step5] editor-core module loaded, calling initEditor');
+        step5EditorHandle = await mod.initEditor({
+          initialClipUrls: allClipUrls,
+          initialBgmUrl,
+          initialBgmName,
+        });
+        console.log('[step5] initEditor returned');
+        allClipUrls.forEach(u => step5LoadedClipUrls.add(u));
+        if (initialBgmName) step5LoadedBgmName = initialBgmName;
+      } catch (e) {
+        console.error('[step5] editor boot failed:', e);
+        showToast('에디터 부팅 실패: ' + (e && e.message ? e.message : e), 'error');
+        step5EditorBooted = false;
+      }
+      return;
+    }
 
-    const initialClipUrls = [...imageUrls, ...videoUrls];
-    console.log('[step5] loading editor module, clips=', initialClipUrls.length, 'bgm=', initialBgmName);
+    // 재진입: 이미 부팅된 에디터에 새로 생긴 미디어만 추가
+    if (!step5EditorHandle || typeof step5EditorHandle.loadMedia !== 'function') return;
+    const newClipUrls = allClipUrls.filter(u => !step5LoadedClipUrls.has(u));
+    const bgmChanged = !!(initialBgmName && initialBgmName !== step5LoadedBgmName);
+    if (newClipUrls.length === 0 && !bgmChanged) return;
+    console.log('[step5] re-entry: adding new clips=', newClipUrls.length, 'bgmChanged=', bgmChanged);
     try {
-      const mod = await import('/editor-core.js');
-      console.log('[step5] editor-core module loaded, calling initEditor');
-      await mod.initEditor({
-        initialClipUrls,
-        initialBgmUrl,
-        initialBgmName,
+      await step5EditorHandle.loadMedia({
+        initialClipUrls: newClipUrls,
+        initialBgmUrl: bgmChanged ? initialBgmUrl : null,
+        initialBgmName: bgmChanged ? initialBgmName : null,
       });
-      console.log('[step5] initEditor returned');
+      newClipUrls.forEach(u => step5LoadedClipUrls.add(u));
+      if (bgmChanged) step5LoadedBgmName = initialBgmName;
     } catch (e) {
-      console.error('[step5] editor boot failed:', e);
-      showToast('에디터 부팅 실패: ' + (e && e.message ? e.message : e), 'error');
-      step5EditorBooted = false;
+      console.error('[step5] loadMedia failed:', e);
+      showToast('미디어 추가 실패: ' + (e && e.message ? e.message : e), 'error');
     }
   }
 

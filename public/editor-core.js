@@ -1312,22 +1312,25 @@ export async function initEditor(opts = {}) {
   //  loadFFmpeg가 끝나기 전에 무거운 fetch/디코딩을 시작하면 메인 스레드가 점유돼
   //  FFmpeg 워커 메시지 콜백이 밀려 "FFmpeg 로딩 중…" 상태에서 멈춰 보이는 문제가 있었다.
   //  → ffmpegReady를 기다린 뒤 fire-and-forget로 실행한다.
-  const autoPopulate = async () => {
-    await new Promise((resolve) => {
+  //  필요한 시점에 호스트 페이지가 호출 가능하도록 loadMedia 함수를 반환한다.
+  //  initialClipUrls / initialBgmUrl 이 비어있으면 아무것도 하지 않음.
+  const waitForFFmpeg = () => new Promise((resolve) => {
+    if (ffmpegReady) return resolve();
+    const t0 = Date.now();
+    const check = () => {
       if (ffmpegReady) return resolve();
-      const t0 = Date.now();
-      const check = () => {
-        if (ffmpegReady) return resolve();
-        // FFmpeg가 실패해도(또는 매우 느려도) 30초 후엔 그냥 진행한다.
-        if (Date.now() - t0 > 30000) return resolve();
-        setTimeout(check, 200);
-      };
-      check();
-    });
+      // FFmpeg가 실패해도(또는 매우 느려도) 30초 후엔 그냥 진행한다.
+      if (Date.now() - t0 > 30000) return resolve();
+      setTimeout(check, 200);
+    };
+    check();
+  });
 
-    if (Array.isArray(opts.initialClipUrls) && opts.initialClipUrls.length) {
+  async function loadMedia(more = {}) {
+    await waitForFFmpeg();
+    if (Array.isArray(more.initialClipUrls) && more.initialClipUrls.length) {
       const fetched = [];
-      for (const url of opts.initialClipUrls) {
+      for (const url of more.initialClipUrls) {
         try {
           const res = await fetch(url);
           if (!res.ok) continue;
@@ -1344,16 +1347,20 @@ export async function initEditor(opts = {}) {
       }
       if (fetched.length) await addMediaFiles(fetched);
     }
-    if (opts.initialBgmUrl) {
+    if (more.initialBgmUrl) {
       try {
-        const res = await fetch(opts.initialBgmUrl);
+        const res = await fetch(more.initialBgmUrl);
         if (res.ok) {
           const blob = await res.blob();
-          const name = opts.initialBgmName || (opts.initialBgmUrl.split('/').pop() || 'bgm.mp3').split('?')[0];
+          const name = more.initialBgmName || (more.initialBgmUrl.split('/').pop() || 'bgm.mp3').split('?')[0];
           await selectBgmFromFile(new File([blob], name, { type: blob.type || 'audio/mpeg' }));
         }
       } catch (e) { log('Auto-populate BGM error: ' + e.message, 'err'); }
     }
-  };
-  autoPopulate(); // fire-and-forget — initEditor 자체는 즉시 resolve
+  }
+
+  loadMedia(opts); // fire-and-forget — initEditor 자체는 즉시 resolve
+
+  // 호스트 페이지(template-flow)가 재진입 시 신규 미디어만 추가로 넣을 수 있게 핸들 반환
+  return { loadMedia };
 }
