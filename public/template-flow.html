@@ -1067,14 +1067,18 @@
     step5EditorBooted = true;
 
     const initialClipUrls = [...imageUrls, ...videoUrls];
+    console.log('[step5] loading editor module, clips=', initialClipUrls.length, 'bgm=', selectedBgmUrl);
     try {
       const mod = await import('/editor-core.js');
+      console.log('[step5] editor-core module loaded, calling initEditor');
       await mod.initEditor({
         initialClipUrls,
         initialBgmUrl: selectedBgmUrl || null,
       });
+      console.log('[step5] initEditor returned');
     } catch (e) {
-      showToast('에디터 부팅 실패: ' + e.message, 'error');
+      console.error('[step5] editor boot failed:', e);
+      showToast('에디터 부팅 실패: ' + (e && e.message ? e.message : e), 'error');
       step5EditorBooted = false;
     }
   }
