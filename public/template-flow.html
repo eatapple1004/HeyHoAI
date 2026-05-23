@@ -274,8 +274,14 @@
   <!-- Step 3: 영상 스타일 -->
   <div class="step-card" id="step3">
     <div class="step-num">Step 3 / 5</div>
-    <h3>영상 스타일 설정</h3>
-    <div class="step-desc">자기소개 영상의 모션과 분위기를 설정합니다.</div>
+    <h3>영상 만들기</h3>
+    <div class="step-desc">Step 2에서 생성한 사진 중 하나를 선택하고 영상을 생성합니다.</div>
+
+    <div class="form-group">
+      <label class="form-label">소스 이미지 선택</label>
+      <div id="step3ImageGrid" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      <div id="step3NoImages" style="display:none;font-size:12px;color:var(--dim);padding:10px;">Step 2에서 먼저 사진을 생성하세요.</div>
+    </div>
 
     <div class="form-group">
       <label class="form-label">모션 프롬프트</label>
@@ -448,6 +454,7 @@
 
   // ── Photo Slots ──
   let photoSlots = [];
+  let selectedStep3ImageUrl = null;
   let slotIdCounter = 1;
 
   function renderPhotoSlots() {
@@ -844,8 +851,54 @@
     const container = document.querySelector('body > .container');
     if (container) container.classList.toggle('wide', n === 5);
 
+    // Step 3 진입 시 Step 2에서 생성된 사진들을 소스 선택 그리드에 채워준다
+    if (n === 3) renderStep3ImageGrid();
+
     // Step 5 진입 시 임베디드 에디터 부팅 + 이전 단계 결과물 자동 로드
     if (n === 5) loadEditorWithSources();
+  }
+
+  function renderStep3ImageGrid() {
+    const grid = document.getElementById('step3ImageGrid');
+    const noImages = document.getElementById('step3NoImages');
+    if (!grid || !noImages) return;
+
+    // 모든 photoSlot 결과 사진을 모은다 (각 슬롯 idx도 표시)
+    const images = [];
+    photoSlots.forEach((slot, idx) => {
+      (slot.results || []).forEach(r => {
+        if (r && r.url) images.push({ url: r.url, slotIdx: idx + 1 });
+      });
+    });
+
+    if (images.length === 0) {
+      grid.innerHTML = '';
+      noImages.style.display = 'block';
+      return;
+    }
+    noImages.style.display = 'none';
+    grid.innerHTML = '';
+
+    // 이전에 선택된 이미지가 더 이상 존재하지 않으면 초기화
+    if (selectedStep3ImageUrl && !images.some(img => img.url === selectedStep3ImageUrl)) {
+      selectedStep3ImageUrl = null;
+    }
+
+    images.forEach(img => {
+      const div = document.createElement('div');
+      const selected = img.url === selectedStep3ImageUrl;
+      div.style.cssText =
+        'position:relative;cursor:pointer;border:3px solid ' +
+        (selected ? 'var(--green)' : 'transparent') +
+        ';border-radius:10px;overflow:hidden;transition:border-color 0.2s;';
+      div.onclick = () => { selectedStep3ImageUrl = img.url; renderStep3ImageGrid(); };
+      div.innerHTML = `
+        <img src="${img.url}" style="width:100px;height:100px;object-fit:cover;display:block;">
+        <div style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.6);color:white;font-size:9px;padding:1px 5px;border-radius:3px;">#${img.slotIdx}</div>
+        ${selected ? '<div style="position:absolute;top:4px;right:4px;width:20px;height:20px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;">&#10003;</div>' : ''}
+      `;
+      grid.appendChild(div);
+    });
   }
 
   // ── Saved Individual Prompts ──
