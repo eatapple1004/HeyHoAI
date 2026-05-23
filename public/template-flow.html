@@ -1027,40 +1027,12 @@
   let step5EditorBooted = false;
 
   async function loadEditorWithSources() {
-    // 소스 요약 표시
-    const photosDiv = document.getElementById('step5Photos');
-    const videosDiv = document.getElementById('step5Videos');
-    const bgmDiv = document.getElementById('step5Bgm');
-
+    // 이전 단계의 결과물 URL 수집 (사진 슬롯 전부 + Step 3 생성 영상)
     const imageUrls = [];
-    photosDiv.innerHTML = '';
     photoSlots.forEach(slot => {
-      slot.results.forEach(r => {
-        imageUrls.push(r.url);
-        const img = document.createElement('img');
-        img.src = r.url;
-        img.style.cssText = 'width:50px;height:50px;object-fit:cover;border-radius:4px;border:1px solid var(--border);';
-        photosDiv.appendChild(img);
-      });
+      slot.results.forEach(r => imageUrls.push(r.url));
     });
-    if (imageUrls.length === 0) photosDiv.innerHTML = '<span style="font-size:11px;color:var(--dim);">None</span>';
-
-    const videoUrls = [];
-    videosDiv.innerHTML = '';
-    if (generatedIntroVideoUrl) {
-      videoUrls.push(generatedIntroVideoUrl);
-      const v = document.createElement('video');
-      v.src = generatedIntroVideoUrl; v.muted = true;
-      v.style.cssText = 'width:50px;height:50px;object-fit:cover;border-radius:4px;border:1px solid var(--border);';
-      videosDiv.appendChild(v);
-    }
-    if (videoUrls.length === 0) videosDiv.innerHTML = '<span style="font-size:11px;color:var(--dim);">None</span>';
-
-    if (selectedBgmUrl) {
-      bgmDiv.innerHTML = '♪ ' + selectedBgmUrl.split('/').pop();
-    } else {
-      bgmDiv.innerHTML = '<span style="font-size:11px;">None</span>';
-    }
+    const videoUrls = generatedIntroVideoUrl ? [generatedIntroVideoUrl] : [];
 
     // Boot the embedded editor once (subsequent visits keep its in-memory state).
     if (step5EditorBooted) return;
