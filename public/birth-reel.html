@@ -157,7 +157,7 @@
     <div class="progress-step" id="prog2" onclick="goStep(2)">2. 아빠</div>
     <div class="progress-step" id="prog3" onclick="goStep(3)">3. 결혼식</div>
     <div class="progress-step" id="prog4" onclick="goStep(4)">4. 출산</div>
-    <div class="progress-step" id="prog5" onclick="goStep(5)">5. 아기</div>
+    <div class="progress-step" id="prog5" onclick="goStep(5)">5. 대표 캐릭터</div>
     <div class="progress-step" id="prog6" onclick="goStep(6)">6. 영상</div>
   </div>
 
@@ -223,9 +223,9 @@ const STEP_CONFIG = {
   },
   baby: {
     num: 5, title: '대표 캐릭터 사진',
-    desc: '엄마/아빠를 레퍼런스로 가족의 특징을 닮은 아기/대표 캐릭터를 생성합니다.',
+    desc: '엄마/아빠를 레퍼런스로 두 사람의 특징을 자연스럽게 물려받은 대표 캐릭터를 생성합니다 (아기가 아닌, 가족을 대표하는 인물).',
     refs: ['mom', 'dad'],
-    placeholder: 'ex) cute newborn baby with features inspired by the parents, soft skin, gentle smile, wrapped in a soft blanket, soft warm lighting, close-up portrait',
+    placeholder: 'ex) representative young-adult character of the family, inheriting facial features from both parents (similar eye shape, hair, complexion), Korean, natural makeup, soft studio light, portrait',
   },
 };
 
@@ -365,7 +365,7 @@ function renderVideoStep() {
     <div class="form-group">
       <label class="form-label">소스 사진</label>
       <div class="ref-list">
-        ${baby ? `<div class="ref-item"><img src="${baby}"><div class="ref-label">baby</div></div>` : '<div class="ref-item missing">Step 5에서 사진을 선택하세요</div>'}
+        ${baby ? `<div class="ref-item"><img src="${baby}"><div class="ref-label">대표</div></div>` : '<div class="ref-item missing">Step 5에서 사진을 선택하세요</div>'}
       </div>
     </div>
 
