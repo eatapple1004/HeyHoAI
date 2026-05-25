@@ -593,23 +593,32 @@ let step7EditorBooted = false;
 let step7EditorHandle = null;
 const step7LoadedClipUrls = new Set();
 
+// 단계별 기본 노출 시간(초). 영상(Step 6)은 mediaDuration을 그대로 쓰므로 override 없음.
+const STEP7_DEFAULT_DURATIONS = {
+  mom:      4,
+  dad:      4,
+  wedding:  4,
+  hospital: 1,
+  baby:     null,   // 대표 캐릭터는 사용자가 결정 (필요 시 값 지정)
+};
+
 async function loadEditorWithSources() {
-  // 이전 단계의 결과물 URL 모음 (Steps 1~5 선택 사진 + Step 6 생성 영상)
-  const imageUrls = [];
+  // 이전 단계의 결과물을 {url, duration} 형태로 모음 (1~5 사진 + 6 영상)
+  const items = [];
   for (const k of ['mom', 'dad', 'wedding', 'hospital', 'baby']) {
-    if (state[k] && state[k].selectedUrl) imageUrls.push(state[k].selectedUrl);
+    const url = state[k] && state[k].selectedUrl;
+    if (!url) continue;
+    const dur = STEP7_DEFAULT_DURATIONS[k];
+    items.push(dur != null ? { url, duration: dur } : { url });
   }
-  const videoUrls = state.video.resultUrl ? [state.video.resultUrl] : [];
-  const allClipUrls = [...imageUrls, ...videoUrls];
+  if (state.video.resultUrl) items.push({ url: state.video.resultUrl });
 
   if (!step7EditorBooted) {
     step7EditorBooted = true;
     try {
       const mod = await import('/editor-core.js');
-      step7EditorHandle = await mod.initEditor({
-        initialClipUrls: allClipUrls,
-      });
-      allClipUrls.forEach((u) => step7LoadedClipUrls.add(u));
+      step7EditorHandle = await mod.initEditor({ initialClipUrls: items });
+      items.forEach((it) => step7LoadedClipUrls.add(it.url));
     } catch (e) {
       showToast('에디터 부팅 실패: ' + (e && e.message ? e.message : e), 'error');
       step7EditorBooted = false;
@@ -617,13 +626,13 @@ async function loadEditorWithSources() {
     return;
   }
 
-  // 재진입: 새로 생긴 미디어만 추가
+  // 재진입: 새로 생긴 미디어만 추가 (duration override 그대로 전달)
   if (!step7EditorHandle || typeof step7EditorHandle.loadMedia !== 'function') return;
-  const newUrls = allClipUrls.filter((u) => !step7LoadedClipUrls.has(u));
-  if (newUrls.length === 0) return;
+  const newItems = items.filter((it) => !step7LoadedClipUrls.has(it.url));
+  if (newItems.length === 0) return;
   try {
-    await step7EditorHandle.loadMedia({ initialClipUrls: newUrls });
-    newUrls.forEach((u) => step7LoadedClipUrls.add(u));
+    await step7EditorHandle.loadMedia({ initialClipUrls: newItems });
+    newItems.forEach((it) => step7LoadedClipUrls.add(it.url));
   } catch (e) {
     showToast('미디어 추가 실패: ' + (e && e.message ? e.message : e), 'error');
   }

@@ -1484,14 +1484,21 @@ export async function initEditor(opts = {}) {
 
   async function loadMedia(more = {}) {
     await waitForFFmpeg();
+    // initialClipUrls 는 string[] 또는 {url, duration?, name?}[] 양쪽 모두 허용.
+    // duration이 주어지면 이미지 클립의 노출 시간을 그 값으로 덮어쓴다 (영상은 무시).
     if (Array.isArray(more.initialClipUrls) && more.initialClipUrls.length) {
       const fetched = [];
-      for (const url of more.initialClipUrls) {
+      const durations = []; // fetched와 같은 인덱스에 정렬 — null이면 기본값 유지
+      for (const item of more.initialClipUrls) {
+        const url = typeof item === 'string' ? item : (item && item.url);
+        if (!url) continue;
+        const wantDur = typeof item === 'object' && item && typeof item.duration === 'number' ? item.duration : null;
         try {
           const res = await fetch(url);
           if (!res.ok) continue;
           const blob = await res.blob();
-          const name = (url.split('/').pop() || 'media').split('?')[0];
+          const name = (typeof item === 'object' && item && item.name) ||
+                       (url.split('/').pop() || 'media').split('?')[0];
           let type = blob.type;
           if (!type) {
             if (/\.(mp4|mov|webm)$/i.test(name)) type = 'video/mp4';
@@ -1499,9 +1506,24 @@ export async function initEditor(opts = {}) {
             else if (/\.(jpg|jpeg)$/i.test(name)) type = 'image/jpeg';
           }
           fetched.push(new File([blob], name, { type: type || 'application/octet-stream' }));
+          durations.push(wantDur);
         } catch (e) { log('Auto-populate fetch error: ' + e.message, 'err'); }
       }
-      if (fetched.length) await addMediaFiles(fetched);
+      if (fetched.length) {
+        const before = state.clips.length;
+        await addMediaFiles(fetched);
+        // 갓 추가된 클립들에 대해 duration override 적용 (이미지에 한정)
+        let touched = false;
+        for (let i = 0; i < fetched.length; i++) {
+          const clip = state.clips[before + i];
+          const want = durations[i];
+          if (clip && clip.type === 'image' && typeof want === 'number' && want > 0) {
+            clip.duration = want;
+            touched = true;
+          }
+        }
+        if (touched) { renderTimeline(); renderClipInspector(); }
+      }
     }
     if (more.initialBgmUrl) {
       try {
