@@ -287,8 +287,17 @@ function renderGenStep(key) {
     </div>` : ''}
 
     <div class="form-group">
+      <label class="form-label">저장된 프롬프트 (클릭해서 불러오기)</label>
+      <div id="savedPromptTags_${key}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+    </div>
+
+    <div class="form-group">
       <label class="form-label">프롬프트</label>
       <textarea class="form-input" id="prompt_${key}" placeholder="${cfg.placeholder}">${data.prompt}</textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input class="form-input" id="promptSaveName_${key}" placeholder="프롬프트 이름" style="flex:1;padding:6px 10px;font-size:12px;">
+        <button onclick="savePromptForStep('${key}')" style="padding:6px 14px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;">Save</button>
+      </div>
       <div class="model-row">
         <label style="font-size:11px;color:var(--dim);">모델:</label>
         <select id="model_${key}">
@@ -361,8 +370,17 @@ function renderVideoStep() {
     </div>
 
     <div class="form-group">
+      <label class="form-label">저장된 모션 프롬프트 (클릭해서 불러오기)</label>
+      <div id="savedPromptTags_video" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+    </div>
+
+    <div class="form-group">
       <label class="form-label">모션 프롬프트</label>
       <textarea class="form-input" id="motionPrompt">${data.motionPrompt}</textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input class="form-input" id="promptSaveName_video" placeholder="프롬프트 이름" style="flex:1;padding:6px 10px;font-size:12px;">
+        <button onclick="savePromptForStep('video')" style="padding:6px 14px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;">Save</button>
+      </div>
     </div>
 
     <div class="form-group">
@@ -409,6 +427,84 @@ function renderStep(n) {
   const key = STEPS[n - 1];
   if (n <= 5) renderGenStep(key);
   else renderVideoStep();
+  // 단계 전환 후 저장된 프롬프트 태그 다시 그리기
+  loadSavedPromptsForStep(key);
+}
+
+// ── Per-step saved prompts ────────────────────────────────────────────
+// 저장 형식: /api/template-data with templateType = 'birth-reel-prompt-' + step
+const savedPrompts = {};   // key → array of {id, name, data:{prompt}}
+
+async function loadSavedPromptsForStep(key) {
+  try {
+    const res = await fetch('/api/template-data?templateType=birth-reel-prompt-' + key);
+    const json = await res.json();
+    savedPrompts[key] = (json.data || []).map(d => ({ id: d.id, name: d.name, data: d.data || {} }));
+    renderSavedPromptTags(key);
+  } catch (e) { /* ignore */ }
+}
+
+function renderSavedPromptTags(key) {
+  const wrap = $('savedPromptTags_' + key);
+  if (!wrap) return;
+  const list = savedPrompts[key] || [];
+  if (list.length === 0) {
+    wrap.innerHTML = '<span style="font-size:11px;color:var(--dim);">아직 저장된 프롬프트가 없습니다.</span>';
+    return;
+  }
+  wrap.innerHTML = '';
+  list.forEach((p) => {
+    const tag = document.createElement('div');
+    tag.style.cssText =
+      'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;font-size:11px;color:var(--text);cursor:pointer;';
+    tag.onclick = () => {
+      const ta = key === 'video' ? $('motionPrompt') : $('prompt_' + key);
+      if (ta) ta.value = (p.data && p.data.prompt) || p.name || '';
+      if (key === 'video') state.video.motionPrompt = ta ? ta.value : state.video.motionPrompt;
+      else state[key].prompt = ta ? ta.value : state[key].prompt;
+    };
+    const label = document.createElement('span');
+    label.textContent = p.name || '(unnamed)';
+    const del = document.createElement('span');
+    del.textContent = '×';
+    del.style.cssText = 'color:var(--dim);font-size:13px;line-height:1;';
+    del.onclick = async (ev) => {
+      ev.stopPropagation();
+      if (!confirm('삭제할까요?')) return;
+      try {
+        await fetch('/api/template-data/' + p.id, { method: 'DELETE' });
+        showToast('삭제됨', 'success');
+        loadSavedPromptsForStep(key);
+      } catch (e) { showToast('Error', 'error'); }
+    };
+    tag.appendChild(label);
+    tag.appendChild(del);
+    wrap.appendChild(tag);
+  });
+}
+
+async function savePromptForStep(key) {
+  // 현재 textarea의 값을 그대로 저장
+  const ta = key === 'video' ? $('motionPrompt') : $('prompt_' + key);
+  const nameEl = $('promptSaveName_' + key);
+  const prompt = (ta && ta.value || '').trim();
+  const name = (nameEl && nameEl.value || '').trim() || prompt.slice(0, 40);
+  if (!prompt) { showToast('프롬프트 내용이 비어있습니다', 'error'); return; }
+  try {
+    const res = await fetch('/api/template-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateType: 'birth-reel-prompt-' + key, name, data: { prompt } }),
+    });
+    const j = await res.json();
+    if (j.success) {
+      if (nameEl) nameEl.value = '';
+      showToast('저장됨', 'success');
+      loadSavedPromptsForStep(key);
+    } else {
+      showToast(j.error || '저장 실패', 'error');
+    }
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 // ── Image generation ───────────────────────────────────────────────────
