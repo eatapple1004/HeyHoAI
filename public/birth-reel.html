@@ -121,7 +121,13 @@
   }
 
   .video-result video { width: 100%; max-height: 480px; background: #000; border-radius: 8px; }
+
+  /* Step 7에서만 컨테이너를 넓혀 에디터가 좌우로 펴지도록 */
+  .container { transition: max-width 0.25s ease; }
+  .container.wide { max-width: 1480px; padding: 24px; }
+  #step7 .container { max-width: none; margin: 0; padding: 0; }
 </style>
+<link rel="stylesheet" href="/editor-core.css">
 </head>
 <body>
 
@@ -159,15 +165,16 @@
     <div class="progress-step" id="prog4" onclick="goStep(4)">4. 출산</div>
     <div class="progress-step" id="prog5" onclick="goStep(5)">5. 대표 캐릭터</div>
     <div class="progress-step" id="prog6" onclick="goStep(6)">6. 영상</div>
+    <div class="progress-step" id="prog7" onclick="goStep(7)">7. 편집</div>
   </div>
 
-  <!-- 공통: 어느 캐릭터를 기본 ID 잠금으로 쓸지 (선택 사항) -->
   <div class="step-card active" id="step1"></div>
   <div class="step-card" id="step2"></div>
   <div class="step-card" id="step3"></div>
   <div class="step-card" id="step4"></div>
   <div class="step-card" id="step5"></div>
   <div class="step-card" id="step6"></div>
+  <div class="step-card" id="step7" style="max-width:none;"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -183,7 +190,7 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────
-const STEPS = ['mom', 'dad', 'wedding', 'hospital', 'baby', 'video'];
+const STEPS = ['mom', 'dad', 'wedding', 'hospital', 'baby', 'video', 'editor'];
 const state = {
   mom:       { prompt: '', model: 'pro', results: [], selectedUrl: null },
   dad:       { prompt: '', model: 'pro', results: [], selectedUrl: null },
@@ -275,10 +282,15 @@ function goStep(n) {
   $('step' + currentStep).classList.remove('active');
   $('step' + n).classList.add('active');
   currentStep = n;
-  for (let i = 1; i <= 6; i++) {
-    $('prog' + i).className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
+  for (let i = 1; i <= 7; i++) {
+    const el = $('prog' + i);
+    if (el) el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
   }
+  // Step 7(에디터)는 좌우 폭이 넓어야 타임라인/사이드 패널이 들어가므로 wide 모드로 전환
+  const container = document.querySelector('body > .container');
+  if (container) container.classList.toggle('wide', n === 7);
   renderStep(n);
+  if (n === 7) loadEditorWithSources();
 }
 
 // ── Render: image gen steps (1~5) ──────────────────────────────────────
@@ -321,7 +333,7 @@ function renderGenStep(key) {
   }
 
   stepEl.innerHTML = `
-    <div class="step-num">Step ${cfg.num} / 6</div>
+    <div class="step-num">Step ${cfg.num} / 7</div>
     <h3>${cfg.title}</h3>
     <div class="step-desc">${cfg.desc}</div>
 
@@ -366,7 +378,7 @@ function renderGenStep(key) {
 
     <div class="btn-group">
       ${cfg.num > 1 ? `<button class="btn-prev" onclick="goStep(${cfg.num - 1})">&larr; Back</button>` : ''}
-      <button class="btn-next" onclick="goStep(${cfg.num + 1})">${cfg.num < 6 ? 'Next &rarr;' : 'Done'}</button>
+      <button class="btn-next" onclick="goStep(${cfg.num + 1})">Next &rarr;</button>
     </div>
   `;
   renderStepResults(key);
@@ -405,7 +417,7 @@ function renderVideoStep() {
   const baby = state.baby.selectedUrl;
   const stepEl = $('step6');
   stepEl.innerHTML = `
-    <div class="step-num">Step 6 / 6</div>
+    <div class="step-num">Step 6 / 7</div>
     <h3>대표 캐릭터 영상</h3>
     <div class="step-desc">Step 5에서 선택한 대표 사진을 첫 프레임으로 영상을 생성합니다.</div>
 
@@ -462,6 +474,7 @@ function renderVideoStep() {
 
     <div class="btn-group">
       <button class="btn-prev" onclick="goStep(5)">&larr; Back</button>
+      <button class="btn-next" onclick="goStep(7)">편집 단계로 &rarr;</button>
     </div>
   `;
 }
@@ -474,13 +487,156 @@ function setBabyCharacterRef(id) {
   renderGenStep('baby');
 }
 
+// ── Render: editor step (7) ───────────────────────────────────────────
+function renderEditorStep() {
+  const stepEl = $('step7');
+  if (stepEl.dataset.rendered === '1') return; // 마크업은 한 번만 주입
+  stepEl.dataset.rendered = '1';
+  stepEl.innerHTML = `
+    <div class="step-num">Step 7 / 7</div>
+    <h3>릴스 편집</h3>
+    <div class="step-desc">이전 단계에서 만든 사진과 영상이 타임라인에 자동으로 올라옵니다. 편집 후 「영상 렌더링」을 눌러 완성하세요.</div>
+
+    <div id="step7EditorWrap">
+      <div class="toolbar">
+        <label class="file-btn">
+          <input type="file" id="mediaInput" accept="image/*,video/*" multiple>
+          <span>＋ 사진/영상 추가</span>
+        </label>
+        <label class="file-btn">
+          <input type="file" id="bgmInput" accept="audio/*">
+          <span>♪ BGM 추가</span>
+        </label>
+        <button id="addTextBtn">＋ 텍스트 추가</button>
+        <label>출력 비율</label>
+        <select id="aspectSelect">
+          <option value="9:16">세로 9:16</option>
+          <option value="1:1">정사각 1:1</option>
+          <option value="16:9">가로 16:9</option>
+        </select>
+        <label>품질</label>
+        <select id="qualitySelect">
+          <option value="1080">고품질 1080p</option>
+          <option value="720">빠른 모드 720p</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="status" id="statusText">FFmpeg 로딩 중…</span>
+        <button id="renderBtn" class="primary" disabled>영상 렌더링</button>
+        <button id="downloadBtn" disabled>다운로드</button>
+      </div>
+
+      <div class="progress" id="progressBar"><div class="bar" id="progressFill"></div></div>
+
+      <div class="workspace">
+        <div class="preview-pane">
+          <div class="design-stage-wrap">
+            <div class="design-stage" id="designStage">
+              <div class="stage-empty" id="stageEmpty">미리보기 영역 — 클립을 추가하면 첫 프레임이 배경으로 표시됩니다. 텍스트를 끌어 위치를 정하세요.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-pane">
+          <div class="panel">
+            <h3>선택된 클립</h3>
+            <div id="clipInspector"><div class="empty-text">타임라인에서 클립을 선택하세요.</div></div>
+          </div>
+          <div class="panel">
+            <h3>선택된 텍스트</h3>
+            <div id="textInspector"><div class="empty-text">텍스트를 추가하거나 선택하세요.</div></div>
+          </div>
+          <div class="panel">
+            <h3>BGM</h3>
+            <div id="bgmInspector"><div class="empty-text">BGM이 추가되지 않았습니다.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-section" id="resultSection">
+        <h3>렌더링 결과</h3>
+        <div class="result-card">
+          <video id="renderedVideo" controls></video>
+          <div class="result-side">
+            <div class="result-meta" id="previewCaption"></div>
+            <button id="resultDownloadBtn" class="primary-btn">다운로드</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-section">
+        <h3>타임라인</h3>
+        <div class="timeline" id="timeline">
+          <div class="empty">상단의 「사진/영상 추가」 버튼을 누르거나 파일을 여기로 끌어다 놓으세요.</div>
+        </div>
+      </div>
+
+      <div class="timeline-section">
+        <h3>텍스트</h3>
+        <div id="textList" class="panel">
+          <div class="empty-text" id="textListEmpty">「텍스트 추가」 버튼으로 새 텍스트를 만드세요.</div>
+        </div>
+      </div>
+
+      <div class="log-pane" id="logPane">
+        <div class="log-line">로그가 여기에 표시됩니다.</div>
+      </div>
+    </div>
+
+    <div class="btn-group" style="margin-top:14px;">
+      <button class="btn-prev" onclick="goStep(6)">&larr; Back</button>
+    </div>
+  `;
+}
+
+// ── Embedded editor boot + auto-populate ──────────────────────────────
+let step7EditorBooted = false;
+let step7EditorHandle = null;
+const step7LoadedClipUrls = new Set();
+
+async function loadEditorWithSources() {
+  // 이전 단계의 결과물 URL 모음 (Steps 1~5 선택 사진 + Step 6 생성 영상)
+  const imageUrls = [];
+  for (const k of ['mom', 'dad', 'wedding', 'hospital', 'baby']) {
+    if (state[k] && state[k].selectedUrl) imageUrls.push(state[k].selectedUrl);
+  }
+  const videoUrls = state.video.resultUrl ? [state.video.resultUrl] : [];
+  const allClipUrls = [...imageUrls, ...videoUrls];
+
+  if (!step7EditorBooted) {
+    step7EditorBooted = true;
+    try {
+      const mod = await import('/editor-core.js');
+      step7EditorHandle = await mod.initEditor({
+        initialClipUrls: allClipUrls,
+      });
+      allClipUrls.forEach((u) => step7LoadedClipUrls.add(u));
+    } catch (e) {
+      showToast('에디터 부팅 실패: ' + (e && e.message ? e.message : e), 'error');
+      step7EditorBooted = false;
+    }
+    return;
+  }
+
+  // 재진입: 새로 생긴 미디어만 추가
+  if (!step7EditorHandle || typeof step7EditorHandle.loadMedia !== 'function') return;
+  const newUrls = allClipUrls.filter((u) => !step7LoadedClipUrls.has(u));
+  if (newUrls.length === 0) return;
+  try {
+    await step7EditorHandle.loadMedia({ initialClipUrls: newUrls });
+    newUrls.forEach((u) => step7LoadedClipUrls.add(u));
+  } catch (e) {
+    showToast('미디어 추가 실패: ' + (e && e.message ? e.message : e), 'error');
+  }
+}
+
 // ── Render dispatch ────────────────────────────────────────────────────
 function renderStep(n) {
   const key = STEPS[n - 1];
   if (n <= 5) renderGenStep(key);
-  else renderVideoStep();
-  // 단계 전환 후 저장된 프롬프트 태그 다시 그리기
-  loadSavedPromptsForStep(key);
+  else if (n === 6) renderVideoStep();
+  else if (n === 7) renderEditorStep();
+  // 단계 전환 후 저장된 프롬프트 태그 다시 그리기 (1~5, 6만 해당)
+  if (n <= 6) loadSavedPromptsForStep(key);
 }
 
 // ── Per-step saved prompts ────────────────────────────────────────────
