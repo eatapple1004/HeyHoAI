@@ -968,11 +968,70 @@ export async function initEditor(opts = {}) {
       input.type = 'file'; input.accept = 'audio/*';
       input.onchange = async (e) => {
         const file = e.target.files[0];
-        if (file) await selectBgmFromFile(file);
+        if (file) {
+          await selectBgmFromFile(file);
+          renderBgmInspector();
+        }
       };
       const txt = document.createElement('div'); txt.textContent = '＋ 오디오 파일 선택';
       drop.appendChild(input); drop.appendChild(txt);
       box.appendChild(drop);
+
+      if (state.bgm && state.bgm.source === 'upload' && state.bgm.file) {
+        const saveRow = document.createElement('div');
+        saveRow.style.cssText = 'display:flex;gap:6px;margin-top:8px;align-items:center;';
+
+        const origName = state.bgm.file.name || 'bgm';
+        const dot = origName.lastIndexOf('.');
+        const baseDefault = dot > 0 ? origName.slice(0, dot) : origName;
+        const ext = dot > 0 ? origName.slice(dot) : '';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = baseDefault;
+        nameInput.placeholder = 'BGM 이름';
+        nameInput.style.cssText = 'flex:1;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;';
+
+        const extLabel = document.createElement('span');
+        extLabel.textContent = ext;
+        extLabel.style.cssText = 'color:var(--dim);font-size:11px;';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '라이브러리에 저장';
+        saveBtn.style.cssText = 'padding:6px 12px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;';
+        saveBtn.onclick = async () => {
+          const rawName = (nameInput.value || '').trim();
+          if (!rawName) { log('이름을 입력해주세요.', 'err'); return; }
+          const safe = rawName.replace(/[^a-zA-Z0-9._\-가-힣\s]/g, '_').slice(0, 80);
+          const finalName = safe + ext;
+          saveBtn.disabled = true; saveBtn.textContent = '저장 중...';
+          try {
+            const renamed = new File([state.bgm.file], finalName, { type: state.bgm.file.type || 'audio/mpeg' });
+            const fd = new FormData();
+            fd.append('file', renamed);
+            const res = await fetch('/api/generate/bgm/upload', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (!json.success) throw new Error(json.error || 'upload failed');
+            log(`BGM 저장됨: ${json.data.filename}`);
+            await loadBgmLibrary();
+            state.bgm.name = json.data.filename;
+            state.bgm.source = 'server';
+            state.bgm.url = json.data.url;
+            if (state.bgm.fileUrl) { URL.revokeObjectURL(state.bgm.fileUrl); state.bgm.fileUrl = null; }
+            state.bgm.file = null;
+            bgmSourceTab = 'library';
+            renderBgmInspector();
+          } catch (e) {
+            log('BGM 저장 실패: ' + e.message, 'err');
+            saveBtn.disabled = false; saveBtn.textContent = '라이브러리에 저장';
+          }
+        };
+
+        saveRow.appendChild(nameInput);
+        saveRow.appendChild(extLabel);
+        saveRow.appendChild(saveBtn);
+        box.appendChild(saveRow);
+      }
     }
 
     if (!state.bgm) return;
