@@ -189,7 +189,7 @@ const state = {
   dad:       { prompt: '', model: 'pro', results: [], selectedUrl: null },
   wedding:   { prompt: '', model: 'pro', results: [], selectedUrl: null },
   hospital:  { prompt: '', model: 'pro', results: [], selectedUrl: null },
-  baby:      { prompt: '', model: 'pro', results: [], selectedUrl: null },
+  baby:      { prompt: '', model: 'pro', results: [], selectedUrl: null, characterRefId: null },
   video:     { motionPrompt: 'gentle smile, slow camera push-in, soft ambient light', duration: '5', mode: 'std', resultUrl: null },
 };
 let currentStep = 1;
@@ -228,6 +228,25 @@ const STEP_CONFIG = {
     placeholder: 'ex) representative young-adult character of the family, inheriting facial features from both parents (similar eye shape, hair, complexion), Korean, natural makeup, soft studio light, portrait',
   },
 };
+
+// ── Characters list (for Step 5 representative-character reference) ────
+let charactersCache = [];
+async function loadCharacters() {
+  try {
+    const res = await fetch('/api/characters');
+    const j = await res.json();
+    charactersCache = (j && j.data) || [];
+  } catch (e) { charactersCache = []; }
+}
+function charById(id) { return charactersCache.find((c) => c.id === id) || null; }
+function charRefUrlFor(id) {
+  const c = charById(id);
+  if (!c || !c.reference_image_url) return null;
+  // reference_image_url may be a relative /images/... path or a filename — normalize to relative
+  const u = c.reference_image_url;
+  if (u.startsWith('http') || u.startsWith('/')) return u;
+  return '/images/' + u.split('/').pop();
+}
 
 // ── DOM helpers ────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
@@ -268,12 +287,38 @@ function renderGenStep(key) {
   const data = state[key];
   const stepEl = $('step' + cfg.num);
 
-  // Reference image preview area
+  // Reference image preview area (이전 단계 결과)
   const refsHtml = cfg.refs.map((rk) => {
     const sel = state[rk] && state[rk].selectedUrl;
     if (sel) return `<div class="ref-item"><img src="${sel}"><div class="ref-label">${rk}</div></div>`;
     return `<div class="ref-item missing">${rk} 미선택</div>`;
   }).join('');
+
+  // Step 5 전용: Characters 리스트에서 추가 레퍼런스 선택
+  let characterPickerHtml = '';
+  if (key === 'baby') {
+    const opts = ['<option value="">-- 선택 안 함 --</option>']
+      .concat(charactersCache.map((c) => {
+        const sel = data.characterRefId === c.id ? ' selected' : '';
+        return `<option value="${c.id}"${sel}>${c.name}</option>`;
+      }))
+      .join('');
+    const refUrl = data.characterRefId ? charRefUrlFor(data.characterRefId) : null;
+    characterPickerHtml = `
+      <div class="form-group">
+        <label class="form-label">캐릭터 레퍼런스 (선택 사항)</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select class="form-input" id="characterRefSelect" style="flex:1;" onchange="setBabyCharacterRef(this.value)">${opts}</select>
+          <div class="ref-list" style="margin-top:0;">
+            ${refUrl
+              ? `<div class="ref-item"><img src="${refUrl}"><div class="ref-label">char</div></div>`
+              : `<div class="ref-item missing">없음</div>`}
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:4px;">선택한 캐릭터의 reference 이미지가 엄마/아빠와 함께 레퍼런스로 전달됩니다.</div>
+      </div>
+    `;
+  }
 
   stepEl.innerHTML = `
     <div class="step-num">Step ${cfg.num} / 6</div>
@@ -285,6 +330,8 @@ function renderGenStep(key) {
       <label class="form-label">레퍼런스 이미지 (이전 단계 결과)</label>
       <div class="ref-list">${refsHtml}</div>
     </div>` : ''}
+
+    ${characterPickerHtml}
 
     <div class="form-group">
       <label class="form-label">저장된 프롬프트 (클릭해서 불러오기)</label>
@@ -421,6 +468,11 @@ function renderVideoStep() {
 
 function setVideoDuration(d) { state.video.duration = d; renderVideoStep(); }
 function setVideoMode(m) { state.video.mode = m; renderVideoStep(); }
+function setBabyCharacterRef(id) {
+  state.baby.characterRefId = id || null;
+  // 화면 우측의 썸네일만 갱신하면 되지만 간단히 전체 재렌더
+  renderGenStep('baby');
+}
 
 // ── Render dispatch ────────────────────────────────────────────────────
 function renderStep(n) {
@@ -526,6 +578,11 @@ async function generateStepImage(key) {
     const sel = state[rk] && state[rk].selectedUrl;
     if (!sel) { showToast(`먼저 ${rk} 단계에서 사진을 선택하세요`, 'error'); return; }
     refUrls.push(sel);
+  }
+  // Step 5 한정: 선택한 캐릭터의 reference 이미지를 추가 ref로 같이 전달
+  if (key === 'baby' && data.characterRefId) {
+    const curl = charRefUrlFor(data.characterRefId);
+    if (curl) refUrls.push(curl);
   }
 
   const btn = $('genBtn_' + key);
@@ -706,7 +763,7 @@ async function deleteTemplateData() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
-renderStep(1);
+loadCharacters().then(() => renderStep(1));
 loadSavedList();
 </script>
 
