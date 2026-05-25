@@ -594,18 +594,29 @@ let step7EditorHandle = null;
 const step7LoadedClipUrls = new Set();
 
 // 단계별 기본 노출 시간(초). 영상(Step 6)은 mediaDuration을 그대로 쓰므로 override 없음.
+// baby(대표 캐릭터 사진)는 영상 생성에만 쓰이고 타임라인에는 올리지 않음.
+const STEP7_TIMELINE_KEYS = ['mom', 'dad', 'wedding', 'hospital'];
 const STEP7_DEFAULT_DURATIONS = {
   mom:      4,
   dad:      4,
   wedding:  4,
   hospital: 1,
-  baby:     null,   // 대표 캐릭터는 사용자가 결정 (필요 시 값 지정)
 };
 
+// 사전 정의된 텍스트 오버레이 — 각 사진 클립 구간에 맞춤
+//   엄마(0~4s) / 아빠(4~8s) / 결혼식(8~12s) / 병원(12~13s)
+//   영상은 13s 이후로 들어가며 텍스트 없음.
+const STEP7_DEFAULT_TEXTS = [
+  { text: 'started with my mom (20)', startTime: 0,  endTime: 4  },
+  { text: 'met my dad (25)',          startTime: 4,  endTime: 8  },
+  { text: 'They fell in Love ❤️',     startTime: 8,  endTime: 12 },
+  { text: 'They had me',              startTime: 12, endTime: 13 },
+];
+
 async function loadEditorWithSources() {
-  // 이전 단계의 결과물을 {url, duration} 형태로 모음 (1~5 사진 + 6 영상)
+  // 이전 단계의 결과물을 {url, duration} 형태로 모음 (사진 4종 + 6 영상)
   const items = [];
-  for (const k of ['mom', 'dad', 'wedding', 'hospital', 'baby']) {
+  for (const k of STEP7_TIMELINE_KEYS) {
     const url = state[k] && state[k].selectedUrl;
     if (!url) continue;
     const dur = STEP7_DEFAULT_DURATIONS[k];
@@ -617,7 +628,10 @@ async function loadEditorWithSources() {
     step7EditorBooted = true;
     try {
       const mod = await import('/editor-core.js');
-      step7EditorHandle = await mod.initEditor({ initialClipUrls: items });
+      step7EditorHandle = await mod.initEditor({
+        initialClipUrls: items,
+        initialTexts: STEP7_DEFAULT_TEXTS,
+      });
       items.forEach((it) => step7LoadedClipUrls.add(it.url));
     } catch (e) {
       showToast('에디터 부팅 실패: ' + (e && e.message ? e.message : e), 'error');
@@ -626,7 +640,7 @@ async function loadEditorWithSources() {
     return;
   }
 
-  // 재진입: 새로 생긴 미디어만 추가 (duration override 그대로 전달)
+  // 재진입: 새로 생긴 미디어만 추가 (텍스트는 첫 부팅에만 자동 셋팅)
   if (!step7EditorHandle || typeof step7EditorHandle.loadMedia !== 'function') return;
   const newItems = items.filter((it) => !step7LoadedClipUrls.has(it.url));
   if (newItems.length === 0) return;

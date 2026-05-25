@@ -1525,6 +1525,25 @@ export async function initEditor(opts = {}) {
         if (touched) { renderTimeline(); renderClipInspector(); }
       }
     }
+    // 사전 정의된 텍스트 오버레이도 같이 받기 (호스트 페이지에서 자동 셋팅)
+    if (Array.isArray(more.initialTexts) && more.initialTexts.length) {
+      for (const t of more.initialTexts) {
+        if (!t || typeof t.text !== 'string') continue;
+        state.texts.push({
+          id: uid(),
+          text: t.text,
+          fontSize: typeof t.fontSize === 'number' ? t.fontSize : 64,
+          color: t.color || '#ffffff',
+          fontWeight: t.fontWeight || 700,
+          xPct: typeof t.xPct === 'number' ? t.xPct : 50,
+          yPct: typeof t.yPct === 'number' ? t.yPct : 50,
+          startTime: typeof t.startTime === 'number' ? t.startTime : 0,
+          endTime: typeof t.endTime === 'number' ? t.endTime : (state.clips.reduce((s, c) => s + clipUsedDuration(c), 0) || 3),
+        });
+      }
+      renderTextList();
+      renderDesignStage();
+    }
     if (more.initialBgmUrl) {
       try {
         const res = await fetch(more.initialBgmUrl);
