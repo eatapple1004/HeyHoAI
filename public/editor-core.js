@@ -356,9 +356,15 @@ export async function initEditor(opts = {}) {
       return r;
     };
 
-    const txt = document.createElement('input');
-    txt.type = 'text'; txt.value = t.text;
+    const txt = document.createElement('textarea');
+    txt.value = t.text;
+    txt.rows = 2;
+    txt.placeholder = '여러 줄도 가능 (Enter / Shift+Enter)';
+    txt.style.cssText =
+      'flex:1;min-height:42px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);' +
+      'color:var(--text);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;line-height:1.35;';
     txt.oninput = () => { t.text = txt.value; renderTextList(); renderDesignStage(); };
+    // Enter는 줄바꿈(textarea 기본 동작). 추가로 Shift+Enter도 같은 동작이라 별도 처리 없음.
     box.appendChild(mkRow('내용', txt));
 
     const size = document.createElement('input');
