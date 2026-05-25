@@ -39,6 +39,9 @@ app.get('/heyhoai/character/page', (_req, res) => {
 app.get('/heyhoai/templates/page', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'templates.html'));
 });
+app.get('/heyhoai/templates/birth-reel', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'birth-reel.html'));
+});
 app.get('/heyhoai/templates/:templateId', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'template-flow.html'));
 });
