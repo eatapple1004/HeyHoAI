@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeyHoAI - 아기 성장 릴스</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--accent2); }
+  header nav { display: flex; gap: 16px; }
+  header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; }
+  header nav a:hover, header nav a.active { color: var(--accent2); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; }
+  .back-link:hover { color: var(--accent2); }
+
+  .flow-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .flow-desc { font-size: 13px; color: var(--dim); margin-bottom: 24px; }
+
+  .placeholder-card {
+    background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;
+    padding: 60px 30px; text-align: center; color: var(--dim);
+  }
+  .placeholder-card h3 { font-size: 16px; font-weight: 700; color: var(--accent2); margin-bottom: 10px; }
+  .placeholder-card p { font-size: 13px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HeyHoAI</h1>
+  <nav>
+    <a href="/heyhoai/image/generater/page">Image Generator</a>
+    <a href="/heyhoai/character/page">Characters</a>
+    <a href="/heyhoai/accounts/page">Accounts</a>
+    <a href="/heyhoai/templates/page" class="active">Templates</a>
+    <a href="/heyhoai/editor/page">Editor</a>
+    <a href="/heyhoai/logs/page">Logs</a>
+  </nav>
+</header>
+
+<div class="container">
+  <a class="back-link" href="/heyhoai/templates/page">&larr; Back to Templates</a>
+
+  <div class="flow-title">&#127868; 아기 성장 릴스</div>
+  <div class="flow-desc">아기가 자라는 모습을 단계별로 담아내는 릴스 플로우입니다.</div>
+
+  <div class="placeholder-card">
+    <h3>준비 중</h3>
+    <p>이 템플릿은 단계 구성을 정한 뒤 채워 넣을 예정입니다.<br>지금은 자리만 잡혀 있어요.</p>
+  </div>
+</div>
+
+</body>
+</html>
