@@ -21,7 +21,7 @@
 
   .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; transition: max-width 0.25s ease; }
   .container.wide { max-width: 1480px; padding: 24px; }
-  #step8 .container { max-width: none; margin: 0; padding: 0; }
+  #step7 .container { max-width: none; margin: 0; padding: 0; }
   .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; }
   .back-link:hover { color: var(--accent2); }
 
@@ -150,8 +150,7 @@
     <div class="progress-step" id="prog4" onclick="goStep(4)">4. 학생</div>
     <div class="progress-step" id="prog5" onclick="goStep(5)">5. 청년 / 액션</div>
     <div class="progress-step" id="prog6" onclick="goStep(6)">6. 성인 / 라이프</div>
-    <div class="progress-step" id="prog7" onclick="goStep(7)">7. 영상</div>
-    <div class="progress-step" id="prog8" onclick="goStep(8)">8. 편집</div>
+    <div class="progress-step" id="prog7" onclick="goStep(7)">7. 편집</div>
   </div>
 
   <div class="step-card active" id="step1"></div>
@@ -160,8 +159,7 @@
   <div class="step-card" id="step4"></div>
   <div class="step-card" id="step5"></div>
   <div class="step-card" id="step6"></div>
-  <div class="step-card" id="step7"></div>
-  <div class="step-card" id="step8" style="max-width:none;"></div>
+  <div class="step-card" id="step7" style="max-width:none;"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -255,8 +253,8 @@ const PHASES = [
   },
 ];
 
-const VIDEO_STEP = { num: 7, title: '대표 영상 만들기', desc: '아래에서 한 사진을 선택해 image-to-video로 5~10초 영상을 만듭니다 (선택 사항).' };
-const EDITOR_STEP = { num: 8, title: '편집', desc: '모든 사진과 텍스트 오버레이가 자동 셋팅됩니다. BGM을 골라 영상 렌더링을 누르세요.' };
+const EDITOR_STEP = { num: 7, title: '편집', desc: '모든 사진과 텍스트 오버레이가 자동 셋팅됩니다. BGM을 골라 영상 렌더링을 누르세요.' };
+const TOTAL_STEPS = 7;
 
 // ── 에디터 자동 셋팅: 슬롯 ID 순으로 사진을 깔고, 그 위에 텍스트 오버레이 배치
 // 시작 시간은 누적 클립 길이에서 계산되어 영상 컷과 자막 싱크를 맞춥니다.
@@ -282,7 +280,6 @@ const state = {
   characterId: null,
   // 각 슬롯ID → { prompt, model, results: [{url,...}], selectedUrl }
   slots: {},
-  video: { motionPrompt: 'subtle camera push-in, gentle natural breathing, soft eye contact', duration: '5', mode: 'std', resultUrl: null },
 };
 PHASES.forEach((p) => p.slots.forEach((s) => {
   state.slots[s.id] = { prompt: s.placeholder, model: 'pro', results: [], selectedUrl: null };
@@ -336,13 +333,13 @@ function goStep(n) {
   $('step' + currentStep).classList.remove('active');
   $('step' + n).classList.add('active');
   currentStep = n;
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
     const el = $('prog' + i); if (el) el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
   }
   const container = document.querySelector('body > .container');
-  if (container) container.classList.toggle('wide', n === 8);
+  if (container) container.classList.toggle('wide', n === TOTAL_STEPS);
   renderStep(n);
-  if (n === 8) loadEditorWithSources();
+  if (n === TOTAL_STEPS) loadEditorWithSources();
 }
 
 // ── Step 1: 캐릭터 ───────────────────────────────────────────────────
@@ -353,7 +350,7 @@ function renderCharacterStep() {
   const c = getSelectedCharacter();
   const refUrl = characterRefUrl();
   $('step1').innerHTML = `
-    <div class="step-num">Step 1 / 8</div>
+    <div class="step-num">Step 1 / 7</div>
     <h3>캐릭터 선택</h3>
     <div class="step-desc">모든 단계에서 reference로 사용할 캐릭터 한 명을 선택하세요. 캐릭터의 reference 이미지를 모든 생성에 함께 보내 얼굴 일관성을 유지합니다.</div>
 
@@ -388,7 +385,12 @@ function renderPhaseStep(phase) {
         <div class="slot-num">${idx + 1}</div>
         <div class="body">
           <div class="label">${sdef.label} <span style="color:var(--dim);font-weight:400;">· ${sdef.duration}s</span></div>
+          <div id="savedTags_${sdef.id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;"></div>
           <textarea id="prompt_${sdef.id}" placeholder="${sdef.placeholder}">${sdata.prompt}</textarea>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input id="promptSaveName_${sdef.id}" placeholder="프롬프트 이름" style="flex:1;padding:5px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:11px;font-family:inherit;">
+            <button onclick="savePromptForSlot('${sdef.id}')" style="padding:5px 12px;background:var(--green);border:none;border-radius:6px;color:white;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">Save Prompt</button>
+          </div>
           <div class="actions">
             <select id="model_${sdef.id}">
               <option value="pro" ${sdata.model === 'pro' ? 'selected' : ''}>Gemini Pro</option>
@@ -407,7 +409,7 @@ function renderPhaseStep(phase) {
   }).join('');
 
   stepEl.innerHTML = `
-    <div class="step-num">Step ${phase.num} / 8</div>
+    <div class="step-num">Step ${phase.num} / 7</div>
     <h3>${phase.title}</h3>
     <div class="step-desc">${phase.desc}</div>
     ${slotsHtml}
@@ -416,7 +418,70 @@ function renderPhaseStep(phase) {
       <button class="btn-next" onclick="goStep(${phase.num + 1})">Next &rarr;</button>
     </div>
   `;
-  phase.slots.forEach((s) => renderSlotResults(s.id));
+  phase.slots.forEach((s) => {
+    renderSlotResults(s.id);
+    loadSavedPromptsForSlot(s.id);
+  });
+}
+
+// ── 슬롯별 저장된 프롬프트 (삭제 불가, 누적만) ──────────────────────
+const savedSlotPrompts = {}; // slotId → [{id, name, data:{prompt}}]
+
+async function loadSavedPromptsForSlot(slotId) {
+  try {
+    const res = await fetch('/api/template-data?templateType=baby-growth-prompt-' + slotId);
+    const json = await res.json();
+    savedSlotPrompts[slotId] = (json.data || []).map((d) => ({ id: d.id, name: d.name, data: d.data || {} }));
+    renderSavedTagsForSlot(slotId);
+  } catch { /* ignore */ }
+}
+
+function renderSavedTagsForSlot(slotId) {
+  const wrap = $('savedTags_' + slotId); if (!wrap) return;
+  const list = savedSlotPrompts[slotId] || [];
+  if (list.length === 0) {
+    wrap.innerHTML = '<span style="font-size:10px;color:var(--dim);">아직 저장된 프롬프트가 없습니다.</span>';
+    return;
+  }
+  wrap.innerHTML = '';
+  list.forEach((p) => {
+    const tag = document.createElement('div');
+    tag.title = '클릭해서 프롬프트 불러오기';
+    tag.style.cssText =
+      'display:inline-flex;align-items:center;padding:3px 9px;background:var(--bg);border:1px solid var(--border);' +
+      'border-radius:12px;font-size:10px;color:var(--text);cursor:pointer;';
+    tag.textContent = p.name || '(unnamed)';
+    tag.onclick = () => {
+      const ta = $('prompt_' + slotId);
+      if (ta) {
+        ta.value = (p.data && p.data.prompt) || p.name || '';
+        state.slots[slotId].prompt = ta.value;
+      }
+    };
+    wrap.appendChild(tag);
+  });
+}
+
+async function savePromptForSlot(slotId) {
+  const ta = $('prompt_' + slotId);
+  const nameEl = $('promptSaveName_' + slotId);
+  const prompt = (ta && ta.value || '').trim();
+  const name = (nameEl && nameEl.value || '').trim() || prompt.slice(0, 40);
+  if (!prompt) { showToast('프롬프트 내용이 비어있습니다', 'error'); return; }
+  try {
+    const res = await fetch('/api/template-data', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateType: 'baby-growth-prompt-' + slotId, name, data: { prompt } }),
+    });
+    const j = await res.json();
+    if (j.success) {
+      if (nameEl) nameEl.value = '';
+      showToast('프롬프트 저장됨', 'success');
+      loadSavedPromptsForSlot(slotId);
+    } else {
+      showToast(j.error || '저장 실패', 'error');
+    }
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 function renderSlotResults(slotId) {
@@ -476,126 +541,17 @@ async function generateSlot(slotId, regen = false) {
   finally { if (btn) { btn.disabled = false; btn.innerHTML = 'Generate'; } }
 }
 
-// ── Step 7: 영상 만들기 ─────────────────────────────────────────────
-function allSelectedThumbs() {
-  const items = [];
-  PHASES.forEach((p) => p.slots.forEach((s) => {
-    const sdata = state.slots[s.id];
-    if (sdata.selectedUrl) items.push({ id: s.id, label: s.label, url: sdata.selectedUrl });
-  }));
-  return items;
-}
-let videoSourceSlotId = null;
-
-function renderVideoStep() {
-  const thumbs = allSelectedThumbs();
-  const thumbsHtml = thumbs.map((t) => `
-    <div onclick="setVideoSource('${t.id}')" style="cursor:pointer;border:3px solid ${videoSourceSlotId === t.id ? 'var(--green)' : 'transparent'};border-radius:10px;overflow:hidden;">
-      <img src="${t.url}" style="width:100px;height:100px;object-fit:cover;display:block;">
-      <div style="background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 4px;text-align:center;">${t.label}</div>
-    </div>
-  `).join('');
-
-  const v = state.video;
-  $('step7').innerHTML = `
-    <div class="step-num">Step 7 / 8</div>
-    <h3>${VIDEO_STEP.title}</h3>
-    <div class="step-desc">${VIDEO_STEP.desc}</div>
-
-    <div class="form-group">
-      <label class="form-label">소스 사진 선택</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${thumbs.length > 0 ? thumbsHtml : '<div style="font-size:12px;color:var(--dim);">먼저 위 단계들에서 사진을 생성하고 선택하세요.</div>'}
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">모션 프롬프트</label>
-      <textarea class="form-input" id="motionPrompt">${v.motionPrompt}</textarea>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">영상 길이</label>
-      <div style="display:flex;gap:8px;">
-        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.duration === '5' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoDuration('5')">5초</label>
-        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.duration === '10' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoDuration('10')">10초</label>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">품질</label>
-      <div style="display:flex;gap:8px;">
-        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.mode === 'std' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoMode('std')">Standard</label>
-        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.mode === 'pro' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoMode('pro')">Pro</label>
-      </div>
-    </div>
-
-    <button class="btn-next" id="videoGenBtn" onclick="generateVideo()" style="width:100%;${videoSourceSlotId ? '' : 'opacity:0.5;pointer-events:none;'}">▶ 영상 생성</button>
-
-    ${v.resultUrl ? `
-      <div class="form-group video-result" style="margin-top:18px;">
-        <label class="form-label">생성된 영상</label>
-        <video src="${v.resultUrl}" controls></video>
-        <div style="margin-top:8px;display:flex;gap:8px;">
-          <a href="${v.resultUrl}" download class="btn-next" style="text-align:center;text-decoration:none;background:var(--surface2);color:var(--text);border:1px solid var(--border);">⬇ 다운로드</a>
-          <button class="btn-next" onclick="generateVideo()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);">다시 생성</button>
-        </div>
-      </div>` : ''}
-
-    <div class="btn-group">
-      <button class="btn-prev" onclick="goStep(6)">&larr; Back</button>
-      <button class="btn-next" onclick="goStep(8)">편집 단계로 &rarr;</button>
-    </div>
-  `;
-}
-function setVideoSource(slotId) { videoSourceSlotId = slotId; renderVideoStep(); }
-function setVideoDuration(d) { state.video.duration = d; renderVideoStep(); }
-function setVideoMode(m) { state.video.mode = m; renderVideoStep(); }
-
-async function generateVideo() {
-  const motionEl = $('motionPrompt');
-  if (motionEl) state.video.motionPrompt = motionEl.value.trim();
-  if (!state.video.motionPrompt) { showToast('모션 프롬프트를 입력하세요', 'error'); return; }
-  if (!videoSourceSlotId) { showToast('소스 사진을 먼저 선택하세요', 'error'); return; }
-  if (!state.characterId) { showToast('Step 1에서 캐릭터를 선택하세요', 'error'); return; }
-
-  const sourceUrl = (state.slots[videoSourceSlotId] && state.slots[videoSourceSlotId].selectedUrl) || null;
-  if (!sourceUrl) { showToast('해당 슬롯에 선택된 사진이 없습니다', 'error'); return; }
-  const sourceImageUrl = sourceUrl.startsWith('http') ? sourceUrl : window.location.origin + sourceUrl;
-
-  const btn = $('videoGenBtn'); if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; btn.innerHTML = '<span class="spinner"></span>영상 생성 중… (수십 초~수 분)'; }
-  try {
-    const body = {
-      prompt: state.video.motionPrompt,
-      durationSec: parseInt(state.video.duration, 10) || 5,
-      videoStyle: state.video.mode === 'pro' ? 'cinematic' : 'natural',
-      sourceImageUrl,
-    };
-    const res = await fetch(`/api/characters/${encodeURIComponent(state.characterId)}/videos/generate`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
-    const raw = await res.text();
-    let data; try { data = JSON.parse(raw); } catch { showToast(`Server ${res.status}: ${raw.slice(0, 160)}`, 'error'); return; }
-    if (!data.success) { showToast(`HTTP ${res.status}: ${data.error || '생성 실패'}`, 'error'); return; }
-    const url = data.data && data.data.video && data.data.video.videoUrl;
-    if (!url) { showToast('영상 URL을 받지 못했습니다', 'error'); return; }
-    state.video.resultUrl = url;
-    showToast('영상 생성 완료', 'success');
-    renderVideoStep();
-  } catch (e) { showToast('Error: ' + e.message, 'error'); }
-}
-
-// ── Step 8: 에디터 (자동 셋팅) ─────────────────────────────────────
+// ── Step 7: 에디터 (자동 셋팅) ─────────────────────────────────────
 function renderEditorStep() {
-  const stepEl = $('step8');
+  const stepEl = $('step7');
   if (stepEl.dataset.rendered === '1') return;
   stepEl.dataset.rendered = '1';
   stepEl.innerHTML = `
-    <div class="step-num">Step 8 / 8</div>
+    <div class="step-num">Step 7 / 7</div>
     <h3>편집</h3>
     <div class="step-desc">선택한 사진들이 인생 단계 순서로 타임라인에 깔리고, 영상의 자막 13개가 시간에 맞춰 미리 배치됩니다. BGM은 BGM 패널에서 직접 골라 추가하세요.</div>
 
-    <div id="step8EditorWrap">
+    <div id="step7EditorWrap">
       <div class="toolbar">
         <label class="file-btn"><input type="file" id="mediaInput" accept="image/*,video/*" multiple><span>＋ 사진/영상 추가</span></label>
         <label class="file-btn"><input type="file" id="bgmInput" accept="audio/*"><span>♪ BGM 추가</span></label>
@@ -659,7 +615,7 @@ function renderEditorStep() {
     </div>
 
     <div class="btn-group" style="margin-top:14px;">
-      <button class="btn-prev" onclick="goStep(7)">&larr; Back</button>
+      <button class="btn-prev" onclick="goStep(6)">&larr; Back</button>
     </div>
   `;
 }
@@ -676,7 +632,7 @@ async function loadEditorWithSources() {
     const sdata = state.slots[s.id];
     if (sdata.selectedUrl) items.push({ url: sdata.selectedUrl, duration: s.duration, name: s.id + '.png' });
   }));
-  if (state.video.resultUrl) items.push({ url: state.video.resultUrl, name: 'video.mp4' });
+  // (영상 생성 단계 없음 — 사진만으로 구성)
 
   if (!editorBooted) {
     editorBooted = true;
@@ -704,8 +660,7 @@ async function loadEditorWithSources() {
 function renderStep(n) {
   if (n === 1) renderCharacterStep();
   else if (n >= 2 && n <= 6) renderPhaseStep(PHASES[n - 2]);
-  else if (n === 7) renderVideoStep();
-  else if (n === 8) renderEditorStep();
+  else if (n === 7) renderEditorStep();
 }
 
 // ── Save / Load ───────────────────────────────────────────────────────
@@ -715,8 +670,7 @@ function collectData() {
     const pEl = $('prompt_' + s.id); if (pEl) state.slots[s.id].prompt = pEl.value.trim();
     const mEl = $('model_' + s.id); if (mEl) state.slots[s.id].model = mEl.value;
   }));
-  const motionEl = $('motionPrompt'); if (motionEl) state.video.motionPrompt = motionEl.value.trim();
-  return JSON.parse(JSON.stringify({ characterId: state.characterId, slots: state.slots, video: state.video }));
+  return JSON.parse(JSON.stringify({ characterId: state.characterId, slots: state.slots }));
 }
 async function loadSavedList() {
   try {
@@ -739,7 +693,6 @@ async function loadTemplateData(id) {
     const d = json.data.data || {};
     if (d.characterId) state.characterId = d.characterId;
     if (d.slots) Object.entries(d.slots).forEach(([k, v]) => { if (state.slots[k]) Object.assign(state.slots[k], v); });
-    if (d.video) Object.assign(state.video, d.video);
     savedTemplateId = id;
     renderStep(currentStep);
     showToast('불러오기 완료', 'success');
