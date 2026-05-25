@@ -19,20 +19,99 @@
   header nav a { color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500; }
   header nav a:hover, header nav a.active { color: var(--accent2); }
 
-  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; transition: max-width 0.25s ease; }
+  .container.wide { max-width: 1480px; padding: 24px; }
+  #step8 .container { max-width: none; margin: 0; padding: 0; }
   .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); text-decoration: none; font-size: 13px; margin-bottom: 20px; }
   .back-link:hover { color: var(--accent2); }
 
   .flow-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-  .flow-desc { font-size: 13px; color: var(--dim); margin-bottom: 24px; }
+  .flow-desc { font-size: 13px; color: var(--dim); margin-bottom: 24px; line-height: 1.6; }
 
-  .placeholder-card {
-    background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;
-    padding: 60px 30px; text-align: center; color: var(--dim);
+  .progress-bar { display: flex; gap: 4px; margin-bottom: 28px; flex-wrap: wrap; }
+  .progress-step {
+    flex: 1 1 80px; min-height: 36px; border-radius: 6px; background: var(--surface2);
+    transition: all 0.3s; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 600; color: var(--dim);
+    border: 1px solid transparent; padding: 4px 6px; text-align: center; line-height: 1.15;
   }
-  .placeholder-card h3 { font-size: 16px; font-weight: 700; color: var(--accent2); margin-bottom: 10px; }
-  .placeholder-card p { font-size: 13px; line-height: 1.7; }
+  .progress-step:hover { border-color: var(--accent); color: var(--accent2); }
+  .progress-step.done { background: rgba(0,184,148,0.15); color: var(--green); border-color: var(--green); }
+  .progress-step.active { background: rgba(108,92,231,0.15); color: var(--accent2); border-color: var(--accent); }
+
+  .step-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 16px; display: none;
+  }
+  .step-card.active { display: block; }
+  .step-card h3 { font-size: 16px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; }
+  .step-card .step-num { font-size: 12px; color: var(--dim); margin-bottom: 16px; }
+  .step-card .step-desc { font-size: 13px; color: var(--dim); margin-bottom: 16px; line-height: 1.6; }
+
+  .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .form-input {
+    width: 100%; padding: 10px 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 13px; font-family: inherit;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  textarea.form-input { min-height: 80px; resize: vertical; }
+  .form-group { margin-bottom: 14px; }
+
+  .char-preview { display: flex; gap: 12px; align-items: center; padding: 12px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
+  .char-preview img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+  .char-preview .meta { flex: 1; min-width: 0; }
+  .char-preview .meta .name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .char-preview .meta .concept { font-size: 11px; color: var(--dim); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .slot {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .slot .slot-num { width: 28px; height: 28px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 2px; }
+  .slot .body { flex: 1; min-width: 0; }
+  .slot .label { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .slot textarea {
+    width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit;
+    resize: none; min-height: 60px;
+  }
+  .slot textarea:focus { outline: none; border-color: var(--accent); }
+  .slot .actions { display: flex; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+  .slot select, .slot button {
+    padding: 5px 12px; border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--dim); font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .slot button.gen { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+  .slot button.gen:disabled { opacity: 0.5; cursor: not-allowed; }
+  .slot .results { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .slot .results .result-item {
+    position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: zoom-in;
+  }
+  .slot .results .result-item.selected { border-color: var(--green); box-shadow: 0 0 0 2px var(--green); }
+  .slot .results .result-item img { width: 80px; height: 80px; object-fit: cover; display: block; }
+  .slot .results .result-item .dl {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.6); color: #fff; width: 20px; height: 20px;
+    border-radius: 4px; text-decoration: none; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .btn-group { display: flex; gap: 8px; margin-top: 20px; }
+  .btn-prev { padding: 10px 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--dim); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-next { flex: 1; padding: 10px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #a29bfe); color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 300; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); color: white; }
+  .toast.error { background: var(--red); color: white; }
+
+  .video-result video { width: 100%; max-height: 480px; background: #000; border-radius: 8px; }
 </style>
+<link rel="stylesheet" href="/editor-core.css">
 </head>
 <body>
 
@@ -52,13 +131,646 @@
   <a class="back-link" href="/heyhoai/templates/page">&larr; Back to Templates</a>
 
   <div class="flow-title">&#127868; 아기 성장 릴스</div>
-  <div class="flow-desc">아기가 자라는 모습을 단계별로 담아내는 릴스 플로우입니다.</div>
+  <div class="flow-desc">한 캐릭터의 인생을 12초 안에 압축하는 성장 몽타주 릴스.<br>
+    아기 → 어린이 → 학생 → 청년 → 성인의 각 단계에서 사진을 생성하고, 마지막 에디터에서 노래와 자막을 입혀 완성합니다.</div>
 
-  <div class="placeholder-card">
-    <h3>준비 중</h3>
-    <p>이 템플릿은 단계 구성을 정한 뒤 채워 넣을 예정입니다.<br>지금은 자리만 잡혀 있어요.</p>
+  <!-- Saved -->
+  <div class="form-group" style="display:flex;gap:8px;align-items:center;">
+    <select class="form-input" id="savedSelect" style="flex:1;">
+      <option value="">-- 저장된 데이터 불러오기 --</option>
+    </select>
+    <button onclick="saveTemplateData()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--green);color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Save</button>
+    <button onclick="deleteTemplateData()" style="padding:10px 16px;border:none;border-radius:8px;background:transparent;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Delete</button>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-step active" id="prog1" onclick="goStep(1)">1. 캐릭터</div>
+    <div class="progress-step" id="prog2" onclick="goStep(2)">2. 유아기</div>
+    <div class="progress-step" id="prog3" onclick="goStep(3)">3. 어린이</div>
+    <div class="progress-step" id="prog4" onclick="goStep(4)">4. 학생</div>
+    <div class="progress-step" id="prog5" onclick="goStep(5)">5. 청년 / 액션</div>
+    <div class="progress-step" id="prog6" onclick="goStep(6)">6. 성인 / 라이프</div>
+    <div class="progress-step" id="prog7" onclick="goStep(7)">7. 영상</div>
+    <div class="progress-step" id="prog8" onclick="goStep(8)">8. 편집</div>
+  </div>
+
+  <div class="step-card active" id="step1"></div>
+  <div class="step-card" id="step2"></div>
+  <div class="step-card" id="step3"></div>
+  <div class="step-card" id="step4"></div>
+  <div class="step-card" id="step5"></div>
+  <div class="step-card" id="step6"></div>
+  <div class="step-card" id="step7"></div>
+  <div class="step-card" id="step8" style="max-width:none;"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 이미지 라이트박스 -->
+<div id="imgLightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px;cursor:zoom-out;">
+  <img id="imgLightboxImg" style="max-width:95vw;max-height:85vh;border-radius:8px;display:block;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+  <div style="display:flex;gap:10px;">
+    <a id="imgLightboxDownload" href="" download style="padding:8px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;text-decoration:none;font-family:inherit;">⬇ 다운로드</a>
+    <button onclick="closeImageLightbox()" style="padding:8px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">닫기 (Esc)</button>
   </div>
 </div>
+
+<script>
+// ── Phase config ──────────────────────────────────────────────────────
+// 각 인생 단계마다 사전 정의된 슬롯들 (참조 영상 기준).
+//  slot.duration  : 에디터에서 이 슬롯의 사진 클립 길이 (초)
+//  slot.placeholder: 프롬프트 자동 채움 (사용자가 수정 가능)
+const PHASES = [
+  {
+    key: 'baby', num: 2, title: '유아기 (0~3세)',
+    desc: '아기/유아 시절. "he\'s so perfect" / "Blah Blah Blah" 자막이 깔리는 구간.',
+    slots: [
+      { id: 'baby-crouch',  label: '아기 (앉아있는 모습)',
+        duration: 1.0,
+        placeholder: 'cute korean toddler around 2 years old wearing soft green sweater, squatting on a patterned rug, looking at camera with curious eyes, indoor warm light, photo' },
+      { id: 'baby-ukulele', label: '아기 (우쿨렐레)',
+        duration: 2.0,
+        placeholder: 'korean toddler around 2 years old holding a small wooden ukulele, sitting on wooden floor in a playroom with bookshelves behind, indoor natural light, photo' },
+    ],
+  },
+  {
+    key: 'child', num: 3, title: '어린이 (5~7세)',
+    desc: '"Oh, I wish" / "korean" / "bow gor 5-6 year" 자막 구간.',
+    slots: [
+      { id: 'child-seaside',  label: '어린이 (바닷가)',
+        duration: 1.0,
+        placeholder: 'korean boy around 6 years old at the seaside in front of stones, blue hoodie and beige cap, making peace sign by eye, small smile, soft overcast light, photo' },
+      { id: 'child-dinosaur', label: '어린이 (공룡 티셔츠)',
+        duration: 0.5,
+        placeholder: 'korean boy around 5-6 years old standing in garden with potted plants behind, light blue t-shirt with cartoon dinosaur print, blue baseball cap worn backwards, photo' },
+    ],
+  },
+  {
+    key: 'teen', num: 4, title: '학생 (13~18세)',
+    desc: '"You\'de wake up sleeping study" / "one day," 자막 구간.',
+    slots: [
+      { id: 'teen-hoodie-sleep',  label: '학생 (후드, 자는 모습)',
+        duration: 1.5,
+        placeholder: 'korean high school student around 16, sleeping with head on arm on a desk, dark gray hoodie, open textbook beneath arm, indoor warm light, photo' },
+      { id: 'teen-uniform-sleep', label: '학생 (교복, 자는 모습)',
+        duration: 1.0,
+        placeholder: 'korean high school student in navy school uniform jacket with red striped tie, sleeping with head against the window frame at classroom desk, soft daylight through window, photo' },
+    ],
+  },
+  {
+    key: 'young', num: 5, title: '청년 / 액션',
+    desc: '"Run / To / Me" 자막 구간 + 첫 스튜디오 포트레잇.',
+    slots: [
+      { id: 'young-run',    label: '청년 (운동장 달리기)',
+        duration: 1.0,
+        placeholder: 'young korean man around 20 running on dirt sports field, white t-shirt and dark navy track pants, motion of running pose, daylight with apartment buildings background, photo' },
+      { id: 'young-studio', label: '청년 (스튜디오 의자)',
+        duration: 0.5,
+        placeholder: 'young korean man around 22, slim athletic build, black sleeveless top and black trousers, sitting on a wooden chair, plain light gray studio background, hands relaxed on knees, frontal portrait, photo' },
+    ],
+  },
+  {
+    key: 'adult', num: 6, title: '성인 / 라이프스타일',
+    desc: '8~12초 빠른 컷 구간. 같은 인물의 다양한 장면을 빠르게 전환합니다.',
+    slots: [
+      { id: 'adult-gloves',         label: '스튜디오 (검은 가죽 장갑)',          duration: 0.3,
+        placeholder: 'side profile portrait of young korean man, white tank top, black leather gloved hand resting under his chin, plain light gray studio background, sharp light, photo' },
+      { id: 'adult-bed-tablet',     label: '침대 (태블릿 드로잉)',              duration: 0.3,
+        placeholder: 'young korean man sitting on hotel bed cross-legged, fitted black t-shirt and black shorts, drawing on tablet with stylus, warm bedside lamp light, beige curtains behind, photo' },
+      { id: 'adult-coat-day',       label: '롱코트 (낮 거리)',                 duration: 0.3,
+        placeholder: 'young korean man walking through a modern minimalist building corridor, long black coat over black turtleneck, black trousers, glancing up, soft cloudy daylight, photo' },
+      { id: 'adult-silk-shirt',     label: '실크 셔츠 (소파)',                 duration: 0.3,
+        placeholder: 'young korean man sitting on a dark velvet sofa in a hotel suite, glossy black silk shirt, arm draped over the back of the sofa, beige curtains behind, warm low light, photo' },
+      { id: 'adult-gym-selfie',     label: '체육관 (헤드폰 셀카)',             duration: 0.3,
+        placeholder: 'mirror selfie of young korean man in gym locker room, dark navy zip-up training top, black cap worn forward, large over-ear black headphones, holding iPhone for selfie, photo' },
+      { id: 'adult-coat-night',     label: '롱코트 (밤 거리)',                 duration: 0.3,
+        placeholder: 'young korean man standing in an apartment complex pedestrian street at night, long black coat, hands in pockets, warm building lights behind, looking at camera with slight smirk, photo' },
+      { id: 'adult-kitchen-night',  label: '주방 (밤)',                       duration: 0.3,
+        placeholder: 'young korean man standing in a modern dark kitchen at night, fitted black t-shirt, head slightly tilted down, soft warm under-cabinet light, city lights visible through window, photo' },
+      { id: 'adult-driving-night',  label: '운전 (밤)',                       duration: 0.3,
+        placeholder: 'young korean man driving a luxury SUV at night, black t-shirt, left hand resting on steering wheel, looking through windshield, blurred city neon lights outside windows, photo' },
+      { id: 'adult-turtleneck',     label: '터틀넥 클로즈업',                   duration: 1.0,
+        placeholder: 'frontal close-up portrait of young korean man, black turtleneck sweater, soft natural makeup, dark side-swept hair, plain white studio background, sharp focus, photo' },
+    ],
+  },
+];
+
+const VIDEO_STEP = { num: 7, title: '대표 영상 만들기', desc: '아래에서 한 사진을 선택해 image-to-video로 5~10초 영상을 만듭니다 (선택 사항).' };
+const EDITOR_STEP = { num: 8, title: '편집', desc: '모든 사진과 텍스트 오버레이가 자동 셋팅됩니다. BGM을 골라 영상 렌더링을 누르세요.' };
+
+// ── 에디터 자동 셋팅: 슬롯 ID 순으로 사진을 깔고, 그 위에 텍스트 오버레이 배치
+// 시작 시간은 누적 클립 길이에서 계산되어 영상 컷과 자막 싱크를 맞춥니다.
+const PRESET_TEXTS = [
+  { text: "he's so perfect",     startTime: 0.0, endTime: 1.0, fontSize: 56, xPct: 50, yPct: 14, fontWeight: 600 },
+  { text: "Blah",                 startTime: 1.0, endTime: 3.0, fontSize: 80, xPct: 40, yPct: 22, fontWeight: 800 },
+  { text: "Blah",                 startTime: 1.0, endTime: 3.0, fontSize: 80, xPct: 62, yPct: 56, fontWeight: 800 },
+  { text: "Blah",                 startTime: 1.0, endTime: 3.0, fontSize: 80, xPct: 42, yPct: 78, fontWeight: 800 },
+  { text: "Oh, I wish",           startTime: 3.0, endTime: 4.5, fontSize: 52, xPct: 70, yPct: 82 },
+  { text: "korean",               startTime: 4.0, endTime: 4.5, fontSize: 30, xPct: 36, yPct: 24 },
+  { text: "bow gor 5-6 year",     startTime: 4.0, endTime: 4.5, fontSize: 28, xPct: 70, yPct: 76 },
+  { text: "You'de wake up",       startTime: 4.5, endTime: 6.0, fontSize: 64, xPct: 50, yPct: 12, fontWeight: 700 },
+  { text: "sleeping\nstudy",      startTime: 4.5, endTime: 6.0, fontSize: 52, xPct: 70, yPct: 56, fontWeight: 700 },
+  { text: "one day,",             startTime: 6.0, endTime: 7.0, fontSize: 56, xPct: 50, yPct: 72, fontWeight: 700 },
+  { text: "Run",                  startTime: 7.0, endTime: 8.0, fontSize: 96, xPct: 80, yPct: 28, color: '#000000', fontWeight: 900 },
+  { text: "To",                   startTime: 7.2, endTime: 8.0, fontSize: 96, xPct: 80, yPct: 55, color: '#000000', fontWeight: 900 },
+  { text: "Me",                   startTime: 7.4, endTime: 8.0, fontSize: 96, xPct: 80, yPct: 82, color: '#000000', fontWeight: 900 },
+  // 8.0초 이후 (성인 라이프) 빠른 컷 구간은 텍스트 없음
+];
+
+// ── State ─────────────────────────────────────────────────────────────
+const state = {
+  characterId: null,
+  // 각 슬롯ID → { prompt, model, results: [{url,...}], selectedUrl }
+  slots: {},
+  video: { motionPrompt: 'subtle camera push-in, gentle natural breathing, soft eye contact', duration: '5', mode: 'std', resultUrl: null },
+};
+PHASES.forEach((p) => p.slots.forEach((s) => {
+  state.slots[s.id] = { prompt: s.placeholder, model: 'pro', results: [], selectedUrl: null };
+}));
+
+let currentStep = 1;
+let savedTemplateId = null;
+let charactersCache = [];
+
+// ── Helpers ───────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+function showToast(msg, type = 'success') {
+  const t = $('toast'); t.textContent = msg; t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function getSelectedCharacter() { return charactersCache.find((c) => c.id === state.characterId) || null; }
+function characterRefUrl() {
+  const c = getSelectedCharacter();
+  if (!c || !c.reference_image_url) return null;
+  const u = c.reference_image_url;
+  if (u.startsWith('http') || u.startsWith('/')) return u;
+  return '/images/' + u.split('/').pop();
+}
+
+async function loadCharacters() {
+  try {
+    const res = await fetch('/api/characters');
+    const j = await res.json();
+    charactersCache = (j && j.data) || [];
+  } catch { charactersCache = []; }
+}
+
+// ── Lightbox ──────────────────────────────────────────────────────────
+function openImageLightbox(url) {
+  const box = $('imgLightbox'); const img = $('imgLightboxImg'); const dl = $('imgLightboxDownload');
+  img.src = url;
+  if (dl) { dl.href = url; dl.download = (url.split('/').pop() || 'photo').split('?')[0]; }
+  box.style.display = 'flex';
+}
+function closeImageLightbox() {
+  const box = $('imgLightbox'); if (!box) return;
+  box.style.display = 'none';
+  const img = $('imgLightboxImg'); if (img) img.src = '';
+}
+document.addEventListener('click', (ev) => { const box = $('imgLightbox'); if (box && box.style.display !== 'none' && ev.target === box) closeImageLightbox(); });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeImageLightbox(); });
+
+// ── Navigation ────────────────────────────────────────────────────────
+function goStep(n) {
+  $('step' + currentStep).classList.remove('active');
+  $('step' + n).classList.add('active');
+  currentStep = n;
+  for (let i = 1; i <= 8; i++) {
+    const el = $('prog' + i); if (el) el.className = 'progress-step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+  const container = document.querySelector('body > .container');
+  if (container) container.classList.toggle('wide', n === 8);
+  renderStep(n);
+  if (n === 8) loadEditorWithSources();
+}
+
+// ── Step 1: 캐릭터 ───────────────────────────────────────────────────
+function renderCharacterStep() {
+  const opts = ['<option value="">-- 선택 안 함 --</option>']
+    .concat(charactersCache.map((c) => `<option value="${c.id}"${state.characterId === c.id ? ' selected' : ''}>${c.name}</option>`))
+    .join('');
+  const c = getSelectedCharacter();
+  const refUrl = characterRefUrl();
+  $('step1').innerHTML = `
+    <div class="step-num">Step 1 / 8</div>
+    <h3>캐릭터 선택</h3>
+    <div class="step-desc">모든 단계에서 reference로 사용할 캐릭터 한 명을 선택하세요. 캐릭터의 reference 이미지를 모든 생성에 함께 보내 얼굴 일관성을 유지합니다.</div>
+
+    <div class="form-group">
+      <label class="form-label">캐릭터</label>
+      <select class="form-input" id="charSelect" onchange="setCharacter(this.value)">${opts}</select>
+    </div>
+
+    ${c ? `
+      <div class="char-preview">
+        ${refUrl ? `<img src="${refUrl}">` : '<div style="width:64px;height:64px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);">No image</div>'}
+        <div class="meta">
+          <div class="name">${c.name}</div>
+          <div class="concept">${c.concept || ''}</div>
+        </div>
+      </div>` : '<div style="font-size:12px;color:var(--dim);padding:10px;">캐릭터를 먼저 만든 다음 이 페이지로 돌아오세요. (좌측 상단 Characters 메뉴)</div>'}
+
+    <div class="btn-group">
+      <button class="btn-next" onclick="goStep(2)">Next &rarr;</button>
+    </div>
+  `;
+}
+function setCharacter(id) { state.characterId = id || null; renderCharacterStep(); }
+
+// ── Steps 2~6: 인생 단계별 사진 생성 ────────────────────────────────
+function renderPhaseStep(phase) {
+  const stepEl = $('step' + phase.num);
+  const slotsHtml = phase.slots.map((sdef, idx) => {
+    const sdata = state.slots[sdef.id];
+    return `
+      <div class="slot">
+        <div class="slot-num">${idx + 1}</div>
+        <div class="body">
+          <div class="label">${sdef.label} <span style="color:var(--dim);font-weight:400;">· ${sdef.duration}s</span></div>
+          <textarea id="prompt_${sdef.id}" placeholder="${sdef.placeholder}">${sdata.prompt}</textarea>
+          <div class="actions">
+            <select id="model_${sdef.id}">
+              <option value="pro" ${sdata.model === 'pro' ? 'selected' : ''}>Gemini Pro</option>
+              <option value="flash" ${sdata.model === 'flash' ? 'selected' : ''}>Gemini Flash</option>
+              <option value="gpt-image-2" ${sdata.model === 'gpt-image-2' ? 'selected' : ''}>GPT Image 2</option>
+              <option value="gpt-image-1.5" ${sdata.model === 'gpt-image-1.5' ? 'selected' : ''}>GPT Image 1.5</option>
+            </select>
+            <button class="gen" id="gen_${sdef.id}" onclick="generateSlot('${sdef.id}')">Generate</button>
+            <button onclick="generateSlot('${sdef.id}', true)">Regen</button>
+            <span style="font-size:10px;color:var(--dim);margin-left:auto;">${sdata.results.length > 0 ? sdata.results.length + ' generated' : ''}</span>
+          </div>
+          <div class="results" id="results_${sdef.id}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  stepEl.innerHTML = `
+    <div class="step-num">Step ${phase.num} / 8</div>
+    <h3>${phase.title}</h3>
+    <div class="step-desc">${phase.desc}</div>
+    ${slotsHtml}
+    <div class="btn-group">
+      <button class="btn-prev" onclick="goStep(${phase.num - 1})">&larr; Back</button>
+      <button class="btn-next" onclick="goStep(${phase.num + 1})">Next &rarr;</button>
+    </div>
+  `;
+  phase.slots.forEach((s) => renderSlotResults(s.id));
+}
+
+function renderSlotResults(slotId) {
+  const wrap = $('results_' + slotId); if (!wrap) return;
+  const data = state.slots[slotId];
+  wrap.innerHTML = '';
+  data.results.forEach((r) => {
+    const item = document.createElement('div');
+    item.className = 'result-item' + (r.url === data.selectedUrl ? ' selected' : '');
+    const img = document.createElement('img');
+    img.src = r.url;
+    img.onclick = () => { data.selectedUrl = r.url; renderSlotResults(slotId); openImageLightbox(r.url); };
+    item.appendChild(img);
+    const dl = document.createElement('a');
+    dl.href = r.url; dl.download = (r.url.split('/').pop() || 'photo').split('?')[0]; dl.className = 'dl'; dl.textContent = '⬇';
+    dl.onclick = (ev) => ev.stopPropagation();
+    item.appendChild(dl);
+    wrap.appendChild(item);
+  });
+}
+
+async function generateSlot(slotId, regen = false) {
+  const data = state.slots[slotId];
+  const pEl = $('prompt_' + slotId); const mEl = $('model_' + slotId);
+  data.prompt = pEl ? pEl.value.trim() : data.prompt;
+  data.model = mEl ? mEl.value : data.model;
+  if (!data.prompt) { showToast('프롬프트를 입력하세요', 'error'); return; }
+  if (!state.characterId) { showToast('Step 1에서 캐릭터를 먼저 선택하세요', 'error'); return; }
+
+  const btn = $('gen_' + slotId); if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>생성 중…'; }
+  try {
+    const formData = new FormData();
+    formData.append('prompt', data.prompt);
+    formData.append('model', data.model);
+    formData.append('count', '1');
+    formData.append('characterId', state.characterId);
+    // 캐릭터의 reference 이미지를 첨부 (모든 단계에서 같은 얼굴 유지)
+    const refUrl = characterRefUrl();
+    if (refUrl) {
+      try {
+        const r = await fetch(refUrl);
+        const blob = await r.blob();
+        const filename = (refUrl.split('/').pop() || 'ref').split('?')[0];
+        formData.append('referenceImages', new File([blob], filename, { type: blob.type }));
+      } catch {}
+    }
+    const res = await fetch('/api/generate', { method: 'POST', body: formData });
+    const json = await res.json();
+    if (!json.success) { showToast(json.error || '생성 실패', 'error'); return; }
+    const success = (json.results || []).filter((r) => r.success);
+    if (regen) data.results = [];
+    success.forEach((r) => data.results.push(r));
+    if (success.length > 0 && !data.selectedUrl) data.selectedUrl = success[0].url;
+    showToast('생성 완료', 'success');
+    renderSlotResults(slotId);
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = 'Generate'; } }
+}
+
+// ── Step 7: 영상 만들기 ─────────────────────────────────────────────
+function allSelectedThumbs() {
+  const items = [];
+  PHASES.forEach((p) => p.slots.forEach((s) => {
+    const sdata = state.slots[s.id];
+    if (sdata.selectedUrl) items.push({ id: s.id, label: s.label, url: sdata.selectedUrl });
+  }));
+  return items;
+}
+let videoSourceSlotId = null;
+
+function renderVideoStep() {
+  const thumbs = allSelectedThumbs();
+  const thumbsHtml = thumbs.map((t) => `
+    <div onclick="setVideoSource('${t.id}')" style="cursor:pointer;border:3px solid ${videoSourceSlotId === t.id ? 'var(--green)' : 'transparent'};border-radius:10px;overflow:hidden;">
+      <img src="${t.url}" style="width:100px;height:100px;object-fit:cover;display:block;">
+      <div style="background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 4px;text-align:center;">${t.label}</div>
+    </div>
+  `).join('');
+
+  const v = state.video;
+  $('step7').innerHTML = `
+    <div class="step-num">Step 7 / 8</div>
+    <h3>${VIDEO_STEP.title}</h3>
+    <div class="step-desc">${VIDEO_STEP.desc}</div>
+
+    <div class="form-group">
+      <label class="form-label">소스 사진 선택</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${thumbs.length > 0 ? thumbsHtml : '<div style="font-size:12px;color:var(--dim);">먼저 위 단계들에서 사진을 생성하고 선택하세요.</div>'}
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">모션 프롬프트</label>
+      <textarea class="form-input" id="motionPrompt">${v.motionPrompt}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">영상 길이</label>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.duration === '5' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoDuration('5')">5초</label>
+        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.duration === '10' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoDuration('10')">10초</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">품질</label>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.mode === 'std' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoMode('std')">Standard</label>
+        <label style="flex:1;padding:10px;background:var(--surface2);border:2px solid ${v.mode === 'pro' ? 'var(--accent)' : 'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;font-size:13px;" onclick="setVideoMode('pro')">Pro</label>
+      </div>
+    </div>
+
+    <button class="btn-next" id="videoGenBtn" onclick="generateVideo()" style="width:100%;${videoSourceSlotId ? '' : 'opacity:0.5;pointer-events:none;'}">▶ 영상 생성</button>
+
+    ${v.resultUrl ? `
+      <div class="form-group video-result" style="margin-top:18px;">
+        <label class="form-label">생성된 영상</label>
+        <video src="${v.resultUrl}" controls></video>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <a href="${v.resultUrl}" download class="btn-next" style="text-align:center;text-decoration:none;background:var(--surface2);color:var(--text);border:1px solid var(--border);">⬇ 다운로드</a>
+          <button class="btn-next" onclick="generateVideo()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);">다시 생성</button>
+        </div>
+      </div>` : ''}
+
+    <div class="btn-group">
+      <button class="btn-prev" onclick="goStep(6)">&larr; Back</button>
+      <button class="btn-next" onclick="goStep(8)">편집 단계로 &rarr;</button>
+    </div>
+  `;
+}
+function setVideoSource(slotId) { videoSourceSlotId = slotId; renderVideoStep(); }
+function setVideoDuration(d) { state.video.duration = d; renderVideoStep(); }
+function setVideoMode(m) { state.video.mode = m; renderVideoStep(); }
+
+async function generateVideo() {
+  const motionEl = $('motionPrompt');
+  if (motionEl) state.video.motionPrompt = motionEl.value.trim();
+  if (!state.video.motionPrompt) { showToast('모션 프롬프트를 입력하세요', 'error'); return; }
+  if (!videoSourceSlotId) { showToast('소스 사진을 먼저 선택하세요', 'error'); return; }
+  if (!state.characterId) { showToast('Step 1에서 캐릭터를 선택하세요', 'error'); return; }
+
+  const sourceUrl = (state.slots[videoSourceSlotId] && state.slots[videoSourceSlotId].selectedUrl) || null;
+  if (!sourceUrl) { showToast('해당 슬롯에 선택된 사진이 없습니다', 'error'); return; }
+  const sourceImageUrl = sourceUrl.startsWith('http') ? sourceUrl : window.location.origin + sourceUrl;
+
+  const btn = $('videoGenBtn'); if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; btn.innerHTML = '<span class="spinner"></span>영상 생성 중… (수십 초~수 분)'; }
+  try {
+    const body = {
+      prompt: state.video.motionPrompt,
+      durationSec: parseInt(state.video.duration, 10) || 5,
+      videoStyle: state.video.mode === 'pro' ? 'cinematic' : 'natural',
+      sourceImageUrl,
+    };
+    const res = await fetch(`/api/characters/${encodeURIComponent(state.characterId)}/videos/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const raw = await res.text();
+    let data; try { data = JSON.parse(raw); } catch { showToast(`Server ${res.status}: ${raw.slice(0, 160)}`, 'error'); return; }
+    if (!data.success) { showToast(`HTTP ${res.status}: ${data.error || '생성 실패'}`, 'error'); return; }
+    const url = data.data && data.data.video && data.data.video.videoUrl;
+    if (!url) { showToast('영상 URL을 받지 못했습니다', 'error'); return; }
+    state.video.resultUrl = url;
+    showToast('영상 생성 완료', 'success');
+    renderVideoStep();
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+// ── Step 8: 에디터 (자동 셋팅) ─────────────────────────────────────
+function renderEditorStep() {
+  const stepEl = $('step8');
+  if (stepEl.dataset.rendered === '1') return;
+  stepEl.dataset.rendered = '1';
+  stepEl.innerHTML = `
+    <div class="step-num">Step 8 / 8</div>
+    <h3>편집</h3>
+    <div class="step-desc">선택한 사진들이 인생 단계 순서로 타임라인에 깔리고, 영상의 자막 13개가 시간에 맞춰 미리 배치됩니다. BGM은 BGM 패널에서 직접 골라 추가하세요.</div>
+
+    <div id="step8EditorWrap">
+      <div class="toolbar">
+        <label class="file-btn"><input type="file" id="mediaInput" accept="image/*,video/*" multiple><span>＋ 사진/영상 추가</span></label>
+        <label class="file-btn"><input type="file" id="bgmInput" accept="audio/*"><span>♪ BGM 추가</span></label>
+        <button id="addTextBtn">＋ 텍스트 추가</button>
+        <label>출력 비율</label>
+        <select id="aspectSelect">
+          <option value="9:16">세로 9:16</option>
+          <option value="1:1">정사각 1:1</option>
+          <option value="16:9">가로 16:9</option>
+        </select>
+        <label>품질</label>
+        <select id="qualitySelect">
+          <option value="1080">고품질 1080p</option>
+          <option value="720">빠른 모드 720p</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="status" id="statusText">FFmpeg 로딩 중…</span>
+        <button id="renderBtn" class="primary" disabled>영상 렌더링</button>
+        <button id="downloadBtn" disabled>다운로드</button>
+      </div>
+
+      <div class="progress" id="progressBar"><div class="bar" id="progressFill"></div></div>
+
+      <div class="workspace">
+        <div class="preview-pane">
+          <div class="design-stage-wrap">
+            <div class="design-stage" id="designStage">
+              <div class="stage-empty" id="stageEmpty">미리보기 영역 — 클립을 추가하면 첫 프레임이 배경으로 표시됩니다. 텍스트를 끌어 위치를 정하세요.</div>
+            </div>
+          </div>
+        </div>
+        <div class="side-pane">
+          <div class="panel"><h3>선택된 클립</h3><div id="clipInspector"><div class="empty-text">타임라인에서 클립을 선택하세요.</div></div></div>
+          <div class="panel"><h3>선택된 텍스트</h3><div id="textInspector"><div class="empty-text">텍스트를 추가하거나 선택하세요.</div></div></div>
+          <div class="panel"><h3>BGM</h3><div id="bgmInspector"><div class="empty-text">BGM이 추가되지 않았습니다.</div></div></div>
+        </div>
+      </div>
+
+      <div class="result-section" id="resultSection">
+        <h3>렌더링 결과</h3>
+        <div class="result-card">
+          <video id="renderedVideo" controls></video>
+          <div class="result-side">
+            <div class="result-meta" id="previewCaption"></div>
+            <button id="resultDownloadBtn" class="primary-btn">다운로드</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline-section">
+        <h3>타임라인</h3>
+        <div class="timeline" id="timeline"><div class="empty">상단의 「사진/영상 추가」 버튼을 누르거나 파일을 여기로 끌어다 놓으세요.</div></div>
+      </div>
+
+      <div class="timeline-section">
+        <h3>텍스트</h3>
+        <div id="textList" class="panel"><div class="empty-text" id="textListEmpty">「텍스트 추가」 버튼으로 새 텍스트를 만드세요.</div></div>
+      </div>
+
+      <div class="log-pane" id="logPane"><div class="log-line">로그가 여기에 표시됩니다.</div></div>
+    </div>
+
+    <div class="btn-group" style="margin-top:14px;">
+      <button class="btn-prev" onclick="goStep(7)">&larr; Back</button>
+    </div>
+  `;
+}
+
+// 에디터 부팅 + 자동 채움
+let editorBooted = false;
+let editorHandle = null;
+const loadedUrls = new Set();
+
+async function loadEditorWithSources() {
+  // 모든 인생 단계의 선택된 사진을 PHASES 순서대로 모음
+  const items = [];
+  PHASES.forEach((p) => p.slots.forEach((s) => {
+    const sdata = state.slots[s.id];
+    if (sdata.selectedUrl) items.push({ url: sdata.selectedUrl, duration: s.duration, name: s.id + '.png' });
+  }));
+  if (state.video.resultUrl) items.push({ url: state.video.resultUrl, name: 'video.mp4' });
+
+  if (!editorBooted) {
+    editorBooted = true;
+    try {
+      const mod = await import('/editor-core.js');
+      editorHandle = await mod.initEditor({
+        initialClipUrls: items,
+        initialTexts: PRESET_TEXTS,
+      });
+      items.forEach((it) => loadedUrls.add(it.url));
+    } catch (e) { showToast('에디터 부팅 실패: ' + e.message, 'error'); editorBooted = false; }
+    return;
+  }
+
+  if (!editorHandle || typeof editorHandle.loadMedia !== 'function') return;
+  const newItems = items.filter((it) => !loadedUrls.has(it.url));
+  if (newItems.length === 0) return;
+  try {
+    await editorHandle.loadMedia({ initialClipUrls: newItems });
+    newItems.forEach((it) => loadedUrls.add(it.url));
+  } catch (e) { showToast('미디어 추가 실패: ' + e.message, 'error'); }
+}
+
+// ── Dispatch ──────────────────────────────────────────────────────────
+function renderStep(n) {
+  if (n === 1) renderCharacterStep();
+  else if (n >= 2 && n <= 6) renderPhaseStep(PHASES[n - 2]);
+  else if (n === 7) renderVideoStep();
+  else if (n === 8) renderEditorStep();
+}
+
+// ── Save / Load ───────────────────────────────────────────────────────
+function collectData() {
+  // 현재 표시 중인 step의 textarea들을 state에 한 번 더 반영
+  PHASES.forEach((p) => p.slots.forEach((s) => {
+    const pEl = $('prompt_' + s.id); if (pEl) state.slots[s.id].prompt = pEl.value.trim();
+    const mEl = $('model_' + s.id); if (mEl) state.slots[s.id].model = mEl.value;
+  }));
+  const motionEl = $('motionPrompt'); if (motionEl) state.video.motionPrompt = motionEl.value.trim();
+  return JSON.parse(JSON.stringify({ characterId: state.characterId, slots: state.slots, video: state.video }));
+}
+async function loadSavedList() {
+  try {
+    const res = await fetch('/api/template-data?templateType=baby-growth');
+    const json = await res.json();
+    const sel = $('savedSelect');
+    sel.innerHTML = '<option value="">-- 저장된 데이터 불러오기 --</option>';
+    (json.data || []).forEach((d) => {
+      const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; sel.appendChild(opt);
+    });
+    sel.onchange = () => loadTemplateData(sel.value);
+  } catch {}
+}
+async function loadTemplateData(id) {
+  if (!id) return;
+  try {
+    const res = await fetch('/api/template-data/' + id);
+    const json = await res.json();
+    if (!json.success) return;
+    const d = json.data.data || {};
+    if (d.characterId) state.characterId = d.characterId;
+    if (d.slots) Object.entries(d.slots).forEach(([k, v]) => { if (state.slots[k]) Object.assign(state.slots[k], v); });
+    if (d.video) Object.assign(state.video, d.video);
+    savedTemplateId = id;
+    renderStep(currentStep);
+    showToast('불러오기 완료', 'success');
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+async function saveTemplateData() {
+  const name = prompt('저장 이름', '성장 릴스 ' + new Date().toLocaleDateString());
+  if (!name) return;
+  try {
+    const data = collectData();
+    const res = await fetch('/api/template-data', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateType: 'baby-growth', name, data }),
+    });
+    const j = await res.json();
+    if (j.success) { savedTemplateId = j.data.id; showToast('저장 완료', 'success'); loadSavedList(); }
+    else showToast(j.error || '저장 실패', 'error');
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+async function deleteTemplateData() {
+  const sel = $('savedSelect'); const id = sel.value || savedTemplateId;
+  if (!id) { showToast('삭제할 항목을 선택하세요', 'error'); return; }
+  if (!confirm('정말 삭제할까요?')) return;
+  try { await fetch('/api/template-data/' + id, { method: 'DELETE' }); showToast('삭제됨', 'success'); savedTemplateId = null; loadSavedList(); }
+  catch { showToast('Error', 'error'); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+loadCharacters().then(() => renderStep(1));
+loadSavedList();
+</script>
 
 </body>
 </html>
