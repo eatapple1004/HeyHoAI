@@ -232,6 +232,14 @@
       <input class="form-input" id="introCountry" placeholder="예: South Korea">
     </div>
     <div class="form-group">
+      <label class="form-label">엄마 국적</label>
+      <input class="form-input" id="introMotherCountry" placeholder="예: South Korea">
+    </div>
+    <div class="form-group">
+      <label class="form-label">아빠 국적</label>
+      <input class="form-input" id="introFatherCountry" placeholder="예: USA">
+    </div>
+    <div class="form-group">
       <label class="form-label">MBTI</label>
       <input class="form-input" id="introMbti" placeholder="예: ENFP">
     </div>
@@ -670,14 +678,24 @@
       const gender = (persona.gender || '').trim().toLowerCase();   // e.g. "female"
       const age = persona.age;
       const nationality = (persona.nationality || '').trim();        // e.g. "Korean"
-      if (gender || age || nationality) {
+      const motherCountry = (document.getElementById('introMotherCountry')?.value || '').trim();
+      const fatherCountry = (document.getElementById('introFatherCountry')?.value || '').trim();
+      if (gender || age || nationality || motherCountry || fatherCountry) {
         const parts = [];
         if (age) parts.push(`${age}-year-old`);
         if (nationality) parts.push(nationality);
         if (gender) parts.push(gender);
-        const descriptor = parts.join(' ');
+        const descriptor = parts.join(' ') || 'person';
+        let heritage = '';
+        if (motherCountry && fatherCountry) {
+          heritage = ` of mixed heritage (mother: ${motherCountry}, father: ${fatherCountry})`;
+        } else if (motherCountry) {
+          heritage = ` (mother is ${motherCountry})`;
+        } else if (fatherCountry) {
+          heritage = ` (father is ${fatherCountry})`;
+        }
         finalPrompt =
-          `IDENTITY LOCK: subject is a ${descriptor} matching the provided face reference. ` +
+          `IDENTITY LOCK: subject is a ${descriptor}${heritage} matching the provided face reference. ` +
           `do not change gender, age, ethnicity, or facial features under any circumstance. ` +
           slot.prompt;
       }
@@ -773,6 +791,8 @@
     document.getElementById('introName').value = selectedCharacter.name || '';
     document.getElementById('introAge').value = persona.age || '';
     document.getElementById('introCountry').value = persona.nationality || '';
+    document.getElementById('introMotherCountry').value = persona.motherNationality || '';
+    document.getElementById('introFatherCountry').value = persona.fatherNationality || '';
     document.getElementById('introMbti').value = persona.mbti || '';
   }
 
@@ -804,6 +824,8 @@
       name: document.getElementById('introName').value,
       age: document.getElementById('introAge').value,
       country: document.getElementById('introCountry').value,
+      motherCountry: document.getElementById('introMotherCountry').value,
+      fatherCountry: document.getElementById('introFatherCountry').value,
       mbti: document.getElementById('introMbti').value,
       photoSlots: photoSlots.map(s => ({ prompt: document.getElementById('slotPrompt_' + s.id)?.value || s.prompt, results: s.results, selectedUrl: s.selectedUrl })),
       motion: document.getElementById('introMotion').value,
@@ -821,6 +843,8 @@
     if (d.name) document.getElementById('introName').value = d.name;
     if (d.age) document.getElementById('introAge').value = d.age;
     if (d.country) document.getElementById('introCountry').value = d.country;
+    if (d.motherCountry) document.getElementById('introMotherCountry').value = d.motherCountry;
+    if (d.fatherCountry) document.getElementById('introFatherCountry').value = d.fatherCountry;
     if (d.mbti) document.getElementById('introMbti').value = d.mbti;
     if (d.photoSlots) {
       photoSlots = d.photoSlots.map((s, i) => ({
