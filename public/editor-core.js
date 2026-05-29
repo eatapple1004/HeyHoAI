@@ -948,7 +948,67 @@ export async function initEditor(opts = {}) {
           const useBtn = document.createElement('button');
           useBtn.className = 'use-btn'; useBtn.textContent = '선택';
           useBtn.onclick = () => selectBgmFromServer(item);
-          row.appendChild(n); row.appendChild(s); row.appendChild(playBtn); row.appendChild(useBtn);
+
+          const renameBtn = document.createElement('button');
+          renameBtn.textContent = '✎';
+          renameBtn.title = '이름 변경';
+          renameBtn.style.cssText = 'background:transparent;border:1px solid var(--border);color:var(--dim);padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;';
+          renameBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const dot = item.filename.lastIndexOf('.');
+            const baseDefault = dot > 0 ? item.filename.slice(0, dot) : item.filename;
+            const next = prompt('새 이름 (확장자 제외):', baseDefault);
+            if (next == null) return;
+            const trimmed = next.trim();
+            if (!trimmed) { log('이름이 비어있습니다.', 'err'); return; }
+            try {
+              const res = await fetch('/api/generate/bgm/' + encodeURIComponent(item.filename), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newName: trimmed }),
+              });
+              const json = await res.json();
+              if (!json.success) throw new Error(json.error || 'rename failed');
+              log(`이름 변경: ${item.filename} → ${json.data.filename}`);
+              // 현재 선택된 BGM이 이름 바뀐 거면 같이 업데이트
+              if (state.bgm && state.bgm.source === 'server' && state.bgm.name === item.filename) {
+                state.bgm.name = json.data.filename;
+                state.bgm.url = json.data.url;
+              }
+              await loadBgmLibrary();
+              renderBgmInspector();
+            } catch (err) {
+              log('이름 변경 실패: ' + err.message, 'err');
+            }
+          };
+
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '🗑';
+          delBtn.title = '삭제';
+          delBtn.style.cssText = 'background:transparent;border:1px solid var(--border);color:var(--red);padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;';
+          delBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if (!confirm(`'${item.filename}' 을 정말 삭제하시겠습니까?`)) return;
+            try {
+              const res = await fetch('/api/generate/bgm/' + encodeURIComponent(item.filename), { method: 'DELETE' });
+              const json = await res.json();
+              if (!json.success) throw new Error(json.error || 'delete failed');
+              log(`삭제됨: ${item.filename}`);
+              // 현재 선택된 BGM이 삭제 대상이면 해제
+              if (state.bgm && state.bgm.source === 'server' && state.bgm.name === item.filename) {
+                resetBgmPreview();
+                state.bgm = null;
+              }
+              await loadBgmLibrary();
+              renderBgmInspector();
+            } catch (err) {
+              log('삭제 실패: ' + err.message, 'err');
+            }
+          };
+
+          row.appendChild(n); row.appendChild(s);
+          row.appendChild(playBtn); row.appendChild(useBtn);
+          row.appendChild(renameBtn); row.appendChild(delBtn);
           list.appendChild(row);
         }
       }

@@ -660,6 +660,34 @@ router.delete('/bgm/:filename', (req, res) => {
   res.json({ success: true });
 });
 
+router.patch('/bgm/:filename', (req, res) => {
+  const oldName = req.params.filename;
+  const rawNew = (req.body && req.body.newName) || '';
+  if (!rawNew) return res.status(400).json({ success: false, error: 'newName required' });
+
+  const srcPath = path.join(bgmDir, oldName);
+  if (!fs.existsSync(srcPath)) return res.status(404).json({ success: false, error: 'Not found' });
+
+  // 원본 확장자 유지, 입력값에 동일/다른 확장자가 들어와도 무시
+  const oldExt = path.extname(oldName);
+  const requestedBase = rawNew.replace(/\.(mp3|wav|m4a|ogg|aac)$/i, '');
+  const safeBase = requestedBase.replace(/[^a-zA-Z0-9._\-가-힣\s]/g, '_').trim().slice(0, 80);
+  if (!safeBase) return res.status(400).json({ success: false, error: 'invalid name' });
+  const newName = safeBase + oldExt;
+
+  if (newName === oldName) return res.json({ success: true, data: { filename: newName, url: `/bgm/${newName}` } });
+
+  const destPath = path.join(bgmDir, newName);
+  if (fs.existsSync(destPath)) return res.status(409).json({ success: false, error: 'name already in use' });
+
+  try {
+    fs.renameSync(srcPath, destPath);
+    res.json({ success: true, data: { filename: newName, url: `/bgm/${newName}` } });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // ─── 생성된 이미지 목록 (파일 기반) ───
 router.get('/images', (_req, res) => {
   const outputDir = path.join(process.cwd(), 'tmp', 'images');
