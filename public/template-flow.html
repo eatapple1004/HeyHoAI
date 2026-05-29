@@ -1261,11 +1261,26 @@
 
     // Step 4의 BGM은 File 객체(introBgmFile)로 저장됨. 에디터는 URL을 받으니
     // 객체 URL로 한 번 감싸서 넘긴다 (이름은 원본 파일명 보존).
+    // 없으면 서버 라이브러리에서 'introduce myself' 파일을 찾아 기본값으로 사용.
     let initialBgmUrl = null;
     let initialBgmName = null;
     if (introBgmFile) {
       initialBgmUrl = URL.createObjectURL(introBgmFile);
       initialBgmName = introBgmFile.name;
+    } else {
+      try {
+        const res = await fetch('/api/generate/bgm/list');
+        const json = await res.json();
+        const items = (json && json.data) || [];
+        const match = items.find(it => /introduce[\s_-]*myself/i.test(it.filename));
+        if (match) {
+          initialBgmUrl = match.url;
+          initialBgmName = match.filename;
+          console.log('[step5] auto-selecting library BGM:', match.filename);
+        }
+      } catch (e) {
+        console.warn('[step5] library lookup for default BGM failed:', e);
+      }
     }
 
     if (!step5EditorBooted) {

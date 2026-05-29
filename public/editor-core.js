@@ -1665,11 +1665,17 @@ export async function initEditor(opts = {}) {
     }
     if (more.initialBgmUrl) {
       try {
-        const res = await fetch(more.initialBgmUrl);
-        if (res.ok) {
-          const blob = await res.blob();
+        const isServerUrl = /^\/bgm\//.test(more.initialBgmUrl);
+        if (isServerUrl) {
           const name = more.initialBgmName || (more.initialBgmUrl.split('/').pop() || 'bgm.mp3').split('?')[0];
-          await selectBgmFromFile(new File([blob], name, { type: blob.type || 'audio/mpeg' }));
+          await selectBgmFromServer({ filename: name, url: more.initialBgmUrl });
+        } else {
+          const res = await fetch(more.initialBgmUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            const name = more.initialBgmName || (more.initialBgmUrl.split('/').pop() || 'bgm.mp3').split('?')[0];
+            await selectBgmFromFile(new File([blob], name, { type: blob.type || 'audio/mpeg' }));
+          }
         }
       } catch (e) { log('Auto-populate BGM error: ' + e.message, 'err'); }
     }
