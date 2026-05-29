@@ -1631,13 +1631,20 @@ export async function initEditor(opts = {}) {
       if (fetched.length) {
         const before = state.clips.length;
         await addMediaFiles(fetched);
-        // 갓 추가된 클립들에 대해 duration override 적용 (이미지에 한정)
+        // 갓 추가된 클립들에 대해 duration override 적용
+        //  - 이미지: clip.duration 을 그 값으로 설정
+        //  - 영상: trimStart=0, trimEnd=min(want, mediaDuration) 로 잘라서 노출 길이 맞춤
         let touched = false;
         for (let i = 0; i < fetched.length; i++) {
           const clip = state.clips[before + i];
           const want = durations[i];
-          if (clip && clip.type === 'image' && typeof want === 'number' && want > 0) {
+          if (!clip || typeof want !== 'number' || !(want > 0)) continue;
+          if (clip.type === 'image') {
             clip.duration = want;
+            touched = true;
+          } else if (clip.type === 'video') {
+            clip.trimStart = 0;
+            clip.trimEnd = Math.min(want, clip.mediaDuration || want);
             touched = true;
           }
         }

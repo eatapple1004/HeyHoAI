@@ -1251,13 +1251,14 @@
   let step5LoadedBgmName = null;
 
   async function loadEditorWithSources() {
-    // 이전 단계의 결과물 URL 수집 (사진 슬롯 전부 + Step 3 생성 영상)
-    const imageUrls = [];
+    // 이전 단계의 결과물 수집 (Step 3 생성 영상이 맨 앞, 이어서 사진 슬롯 전부)
+    // 자기소개 릴스 디폴트: 영상 2.5초, 사진 각 0.5초.
+    const clips = [];
+    if (generatedIntroVideoUrl) clips.push({ url: generatedIntroVideoUrl, duration: 2.5 });
     photoSlots.forEach(slot => {
-      slot.results.forEach(r => imageUrls.push(r.url));
+      slot.results.forEach(r => clips.push({ url: r.url, duration: 0.5 }));
     });
-    const videoUrls = generatedIntroVideoUrl ? [generatedIntroVideoUrl] : [];
-    const allClipUrls = [...imageUrls, ...videoUrls];
+    const allClipUrls = clips;
 
     // Step 4의 BGM은 File 객체(introBgmFile)로 저장됨. 에디터는 URL을 받으니
     // 객체 URL로 한 번 감싸서 넘긴다 (이름은 원본 파일명 보존).
@@ -1296,7 +1297,7 @@
           initialBgmName,
         });
         console.log('[step5] initEditor returned');
-        allClipUrls.forEach(u => step5LoadedClipUrls.add(u));
+        allClipUrls.forEach(c => step5LoadedClipUrls.add(c.url));
         if (initialBgmName) step5LoadedBgmName = initialBgmName;
       } catch (e) {
         console.error('[step5] editor boot failed:', e);
@@ -1308,17 +1309,17 @@
 
     // 재진입: 이미 부팅된 에디터에 새로 생긴 미디어만 추가
     if (!step5EditorHandle || typeof step5EditorHandle.loadMedia !== 'function') return;
-    const newClipUrls = allClipUrls.filter(u => !step5LoadedClipUrls.has(u));
+    const newClips = allClipUrls.filter(c => !step5LoadedClipUrls.has(c.url));
     const bgmChanged = !!(initialBgmName && initialBgmName !== step5LoadedBgmName);
-    if (newClipUrls.length === 0 && !bgmChanged) return;
-    console.log('[step5] re-entry: adding new clips=', newClipUrls.length, 'bgmChanged=', bgmChanged);
+    if (newClips.length === 0 && !bgmChanged) return;
+    console.log('[step5] re-entry: adding new clips=', newClips.length, 'bgmChanged=', bgmChanged);
     try {
       await step5EditorHandle.loadMedia({
-        initialClipUrls: newClipUrls,
+        initialClipUrls: newClips,
         initialBgmUrl: bgmChanged ? initialBgmUrl : null,
         initialBgmName: bgmChanged ? initialBgmName : null,
       });
-      newClipUrls.forEach(u => step5LoadedClipUrls.add(u));
+      newClips.forEach(c => step5LoadedClipUrls.add(c.url));
       if (bgmChanged) step5LoadedBgmName = initialBgmName;
     } catch (e) {
       console.error('[step5] loadMedia failed:', e);
