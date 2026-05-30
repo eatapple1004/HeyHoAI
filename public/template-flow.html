@@ -973,31 +973,43 @@
     if (n === 5) loadEditorWithSources();
   }
 
-  // 저장된 프롬프트 → 슬롯 자동 채움. 슬롯이 비어있고 한번도 안 채웠을 때만 실행.
-  // savedSlotPrompts가 아직 로드 중이면 로드 끝까지 대기 후 채움.
+  // 저장된 프롬프트 → 슬롯 자동 채움. 세션당 첫 Step 2 진입에서 1회만 실행.
+  // 이미 슬롯에 들어있는 프롬프트는 건드리지 않고, 라이브러리에 있지만 슬롯에 없는 것만 끝에 추가.
   async function tryAutoFillSlotsFromSavedPrompts() {
     if (autoFilledSlotsOnce) return;
-    if (photoSlots.length > 0) { autoFilledSlotsOnce = true; return; }
     // 라이브러리가 아직 비어있으면 한 번 더 시도
     if (savedSlotPrompts.length === 0) {
       await loadSavedSlotPrompts();
     }
-    if (savedSlotPrompts.length === 0) return;
-    if (photoSlots.length > 0) { autoFilledSlotsOnce = true; return; }
     autoFilledSlotsOnce = true;
+    if (savedSlotPrompts.length === 0) return;
+
+    // 현재 슬롯들의 프롬프트(편집 중인 textarea 값 포함) 셋
+    const existingPrompts = new Set(
+      photoSlots.map(s => {
+        const ta = document.getElementById('slotPrompt_' + s.id);
+        return ((ta ? ta.value : s.prompt) || '').trim();
+      }).filter(p => p)
+    );
+
+    let added = 0;
     savedSlotPrompts.forEach(p => {
       const d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {});
+      const promptText = (d.prompt || '').trim();
+      if (!promptText) return;
+      if (existingPrompts.has(promptText)) return;   // 이미 있는 건 건너뜀
       photoSlots.push({
         id: slotIdCounter++,
-        prompt: d.prompt || '',
+        prompt: promptText,
         exampleUrl: d.exampleUrl || null,
         results: [],
         selectedUrl: null,
         savedId: p.id,
         model: 'pro',
       });
+      added++;
     });
-    renderPhotoSlots();
+    if (added > 0) renderPhotoSlots();
   }
 
   function renderStep3ImageGrid() {
@@ -1052,23 +1064,6 @@
       const data = await res.json();
       savedSlotPrompts = data.data || [];
       renderSavedSlotPromptTags();
-      // 첫 진입: 저장된 프롬프트가 있고 photoSlots가 아직 비어있으면 전부 슬롯으로 자동 채움
-      if (!autoFilledSlotsOnce && savedSlotPrompts.length > 0 && photoSlots.length === 0) {
-        autoFilledSlotsOnce = true;
-        savedSlotPrompts.forEach(p => {
-          const d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {});
-          photoSlots.push({
-            id: slotIdCounter++,
-            prompt: d.prompt || '',
-            exampleUrl: d.exampleUrl || null,
-            results: [],
-            selectedUrl: null,
-            savedId: p.id,
-            model: 'pro',
-          });
-        });
-        renderPhotoSlots();
-      }
     } catch (e) {}
   }
   let autoFilledSlotsOnce = false;
