@@ -963,11 +963,41 @@
     const container = document.querySelector('body > .container');
     if (container) container.classList.toggle('wide', n === 5);
 
+    // Step 2 진입 시 저장된 프롬프트로 슬롯 자동 채움 (한 번만)
+    if (n === 2) tryAutoFillSlotsFromSavedPrompts();
+
     // Step 3 진입 시 Step 2에서 생성된 사진들을 소스 선택 그리드에 채워준다
     if (n === 3) renderStep3ImageGrid();
 
     // Step 5 진입 시 임베디드 에디터 부팅 + 이전 단계 결과물 자동 로드
     if (n === 5) loadEditorWithSources();
+  }
+
+  // 저장된 프롬프트 → 슬롯 자동 채움. 슬롯이 비어있고 한번도 안 채웠을 때만 실행.
+  // savedSlotPrompts가 아직 로드 중이면 로드 끝까지 대기 후 채움.
+  async function tryAutoFillSlotsFromSavedPrompts() {
+    if (autoFilledSlotsOnce) return;
+    if (photoSlots.length > 0) { autoFilledSlotsOnce = true; return; }
+    // 라이브러리가 아직 비어있으면 한 번 더 시도
+    if (savedSlotPrompts.length === 0) {
+      await loadSavedSlotPrompts();
+    }
+    if (savedSlotPrompts.length === 0) return;
+    if (photoSlots.length > 0) { autoFilledSlotsOnce = true; return; }
+    autoFilledSlotsOnce = true;
+    savedSlotPrompts.forEach(p => {
+      const d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {});
+      photoSlots.push({
+        id: slotIdCounter++,
+        prompt: d.prompt || '',
+        exampleUrl: d.exampleUrl || null,
+        results: [],
+        selectedUrl: null,
+        savedId: p.id,
+        model: 'pro',
+      });
+    });
+    renderPhotoSlots();
   }
 
   function renderStep3ImageGrid() {
