@@ -265,6 +265,7 @@
 
     <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
       <button onclick="addPhotoSlot()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--dim);font-size:12px;cursor:pointer;">+ Add Slot</button>
+      <button onclick="shufflePhotoSlots()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--dim);font-size:12px;cursor:pointer;" title="슬롯 순서를 랜덤으로 섞기">🔀 순서 섞기</button>
       <select class="form-input" id="photoModel" style="width:auto;">
         <option value="pro">Gemini Pro</option>
         <option value="flash">Gemini Flash</option>
@@ -611,6 +612,21 @@
 
   function addPhotoSlot() {
     photoSlots.push({ id: slotIdCounter++, prompt: '', results: [], selectedUrl: null, model: 'pro' });
+    renderPhotoSlots();
+  }
+
+  function shufflePhotoSlots() {
+    if (photoSlots.length < 2) return;
+    // textarea의 현재 입력값을 slot.prompt로 동기화한 뒤 셔플 (안 그러면 입력 중인 값이 사라짐)
+    photoSlots.forEach(s => {
+      const ta = document.getElementById('slotPrompt_' + s.id);
+      if (ta) s.prompt = ta.value;
+    });
+    // Fisher–Yates
+    for (let i = photoSlots.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [photoSlots[i], photoSlots[j]] = [photoSlots[j], photoSlots[i]];
+    }
     renderPhotoSlots();
   }
 
@@ -1006,8 +1022,26 @@
       const data = await res.json();
       savedSlotPrompts = data.data || [];
       renderSavedSlotPromptTags();
+      // 첫 진입: 저장된 프롬프트가 있고 photoSlots가 아직 비어있으면 전부 슬롯으로 자동 채움
+      if (!autoFilledSlotsOnce && savedSlotPrompts.length > 0 && photoSlots.length === 0) {
+        autoFilledSlotsOnce = true;
+        savedSlotPrompts.forEach(p => {
+          const d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {});
+          photoSlots.push({
+            id: slotIdCounter++,
+            prompt: d.prompt || '',
+            exampleUrl: d.exampleUrl || null,
+            results: [],
+            selectedUrl: null,
+            savedId: p.id,
+            model: 'pro',
+          });
+        });
+        renderPhotoSlots();
+      }
     } catch (e) {}
   }
+  let autoFilledSlotsOnce = false;
 
   function renderSavedSlotPromptTags() {
     const container = document.getElementById('savedSlotPromptTags');
