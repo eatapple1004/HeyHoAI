@@ -1,4 +1,6 @@
 const { pool } = require('./client');
+const { env } = require('../config');
+const { hashPassword } = require('../auth/password');
 
 const CREATE_CHARACTERS_TABLE = `
 CREATE TABLE IF NOT EXISTS characters (
@@ -603,7 +605,65 @@ async function migrate() {
     ALTER TABLE video_assets ALTER COLUMN source_image_id DROP NOT NULL;
   `).catch((e) => console.warn('[migrate] drop NOT NULL on video_assets.source_image_id skipped:', e.message));
 
+  // ─── 인증/멀티테넌시: users 테이블 + 루트 테이블 user_id ───
+  await migrateAuth();
+
   console.log('Migrations completed.');
+}
+
+/**
+ * users 테이블을 만들고, 기본 관리자 계정을 보장하며,
+ * 루트 테이블(characters, social_accounts, prompts)에 user_id를 추가한 뒤
+ * 기존 데이터를 관리자 계정으로 backfill 한다. (멱등)
+ */
+async function migrateAuth() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email         VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        display_name  VARCHAR(100),
+        role          VARCHAR(20) NOT NULL DEFAULT 'user',
+        status        VARCHAR(20) NOT NULL DEFAULT 'active',
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+  `);
+
+  // 기본 관리자 계정 보장 (없을 때만 생성)
+  const adminEmail = env.ADMIN_EMAIL.toLowerCase();
+  await pool.query(
+    `INSERT INTO users (email, password_hash, display_name, role)
+     VALUES ($1, $2, $3, 'admin')
+     ON CONFLICT (email) DO NOTHING`,
+    [adminEmail, hashPassword(env.ADMIN_PASSWORD), 'Administrator']
+  );
+  const adminRes = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
+  const adminId = adminRes.rows[0].id;
+  console.log(`[migrate] admin user: ${adminEmail} (${adminId})`);
+
+  // 루트 테이블에 user_id 추가 + backfill + NOT NULL + FK + 인덱스
+  for (const table of ['characters', 'social_accounts', 'prompts', 'template_data']) {
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS user_id UUID;`);
+    await pool.query(`UPDATE ${table} SET user_id = $1 WHERE user_id IS NULL;`, [adminId]);
+    await pool.query(`ALTER TABLE ${table} ALTER COLUMN user_id SET NOT NULL;`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_${table}_user ON ${table}(user_id);`);
+
+    // FK는 IF NOT EXISTS 미지원 → 존재 여부 확인 후 조건부 추가
+    const fkName = `fk_${table}_user`;
+    const fkExists = await pool.query(
+      `SELECT 1 FROM information_schema.table_constraints
+       WHERE constraint_name = $1 AND table_name = $2`,
+      [fkName, table]
+    );
+    if (fkExists.rowCount === 0) {
+      await pool.query(
+        `ALTER TABLE ${table} ADD CONSTRAINT ${fkName}
+         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;`
+      );
+    }
+  }
 }
 
 if (require.main === module) {

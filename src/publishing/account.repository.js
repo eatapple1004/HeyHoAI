@@ -1,9 +1,9 @@
 const { query } = require('../db/client');
 
-async function insert({ platform, accountId, username, displayName, profileImage, followers, metadata }) {
+async function insert({ userId, platform, accountId, username, displayName, profileImage, followers, metadata }) {
   const result = await query(
-    `INSERT INTO social_accounts (platform, account_id, username, display_name, profile_image, followers, metadata)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
+    `INSERT INTO social_accounts (user_id, platform, account_id, username, display_name, profile_image, followers, metadata)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT (platform, account_id) DO UPDATE SET
        username = EXCLUDED.username,
        display_name = EXCLUDED.display_name,
@@ -12,16 +12,17 @@ async function insert({ platform, accountId, username, displayName, profileImage
        metadata = EXCLUDED.metadata,
        updated_at = now()
      RETURNING *`,
-    [platform, accountId, username, displayName, profileImage, followers || 0, JSON.stringify(metadata || {})]
+    [userId, platform, accountId, username, displayName, profileImage, followers || 0, JSON.stringify(metadata || {})]
   );
   return result.rows[0];
 }
 
-async function findAll({ platform, status } = {}) {
+async function findAll({ userId, platform, status } = {}) {
   const conditions = [];
   const params = [];
   let i = 1;
 
+  if (userId) { conditions.push(`user_id = $${i++}`); params.push(userId); }
   if (platform) { conditions.push(`platform = $${i++}`); params.push(platform); }
   if (status) { conditions.push(`status = $${i++}`); params.push(status); }
 

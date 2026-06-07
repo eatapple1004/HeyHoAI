@@ -1,4 +1,5 @@
 const repo = require('./visualAttribute.repository');
+const { assertCharacterOwned } = require('../middleware/ownership');
 
 /** GET /api/visuals/categories */
 async function listCategories(req, res, next) {
@@ -46,6 +47,7 @@ async function compilePrompt(req, res, next) {
 async function createPreset(req, res, next) {
   try {
     const { characterId } = req.params;
+    await assertCharacterOwned(characterId, req.user.id);
     const compiledPrompt = await repo.compilePrompt(req.body.attributeIds);
     const preset = await repo.insertPreset({
       characterId,
@@ -59,6 +61,7 @@ async function createPreset(req, res, next) {
 /** GET /api/characters/:characterId/visual-presets */
 async function listPresets(req, res, next) {
   try {
+    await assertCharacterOwned(req.params.characterId, req.user.id);
     const presets = await repo.findPresetsByCharacter(req.params.characterId);
     res.json({ success: true, data: presets });
   } catch (err) { next(err); }

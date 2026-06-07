@@ -11,6 +11,7 @@ const promptRepo = require('./prompt.repository');
 const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
 const styleRepo = require('./stylePreset.repository');
+const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 
 const router = Router();
 
@@ -50,6 +51,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
     // 1) 캐릭터 대표 이미지
     if (characterId) {
+      await assertCharacterOwned(characterId, req.user.id);
       const character = await characterRepo.findById(characterId);
       if (character?.reference_image_url) {
         const filename = character.reference_image_url.split('/').pop();
@@ -84,6 +86,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
     // ─── 프롬프트 DB 저장 ───
     const savedPrompt = await promptRepo.insert({
+      userId: req.user.id,
       characterId: characterId || null,
       promptText: finalPrompt,
       model: modelId,
@@ -254,6 +257,7 @@ router.get('/prompts', async (req, res, next) => {
   try {
     const { limit, offset } = req.query;
     const data = await promptRepo.findAll({
+      userId: req.user.id,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
     });
@@ -266,6 +270,7 @@ router.get('/prompts/:idx', async (req, res, next) => {
   try {
     const prompt = await promptRepo.findByIdx(req.params.idx);
     if (!prompt) return res.status(404).json({ success: false, error: 'Prompt not found' });
+    await assertPromptOwned(prompt.idx, req.user.id);
     const results = await resultRepo.findByPromptIdx(prompt.idx);
     res.json({ success: true, data: { prompt, results } });
   } catch (err) { next(err); }
@@ -276,6 +281,7 @@ router.get('/results', async (req, res, next) => {
   try {
     const { limit, offset } = req.query;
     const data = await resultRepo.findAll({
+      userId: req.user.id,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
     });
@@ -288,6 +294,7 @@ router.get('/reviews', async (req, res, next) => {
   try {
     const { posted, status, type, reviewed, sort, limit, offset } = req.query;
     const data = await reviewRepo.findAll({
+      userId: req.user.id,
       posted: posted !== undefined ? posted === 'true' : undefined,
       status: status || undefined,
       type: type || undefined,
@@ -303,6 +310,7 @@ router.get('/reviews', async (req, res, next) => {
 // ─── 리뷰 수정 ───
 router.patch('/reviews/:idx', async (req, res, next) => {
   try {
+    await assertReviewOwned(parseInt(req.params.idx), req.user.id);
     const { naturalScore, sexualScore, postRate, posted, hookLevel, memo } = req.body;
     const review = await reviewRepo.update(parseInt(req.params.idx), {
       naturalScore, sexualScore, postRate, posted, hookLevel, memo,
@@ -315,6 +323,7 @@ router.patch('/reviews/:idx', async (req, res, next) => {
 // ─── 리뷰 삭제 (soft delete) ───
 router.delete('/reviews/:idx', async (req, res, next) => {
   try {
+    await assertReviewOwned(parseInt(req.params.idx), req.user.id);
     const review = await reviewRepo.deactivate(parseInt(req.params.idx));
     if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
     res.json({ success: true, data: review });
@@ -559,6 +568,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
 
         // DB 저장
         const savedPrompt = await promptRepo.insert({
+          userId: req.user.id,
           promptText: prompt,
           model: 'kling-v3',
           tags: ['video', mode, duration + 's', ...(enableAudio ? ['audio'] : [])],
@@ -590,6 +600,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
 
         // 실패도 DB에 기록
         const savedPrompt = await promptRepo.insert({
+          userId: req.user.id,
           promptText: prompt, model: 'kling-v3', tags: ['video', 'failed', mode, ...(enableAudio ? ['audio'] : [])],
         }).catch(() => null);
         if (savedPrompt) {

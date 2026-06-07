@@ -8,6 +8,13 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
+  // Auth (JWT + 쿠키 기반 세션)
+  JWT_SECRET: z.string().min(16, 'JWT_SECRET is required (16자 이상)'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
+  ADMIN_EMAIL: z.string().email().default('admin@heyhoai.local'),
+  ADMIN_PASSWORD: z.string().min(8).default('changeme1234'),
+  COOKIE_SECURE: z.coerce.boolean().default(false), // 프로덕션 HTTPS 환경에서 true
+
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),
   REPLICATE_MODEL: z.string().default('black-forest-labs/flux-1.1-pro'),
