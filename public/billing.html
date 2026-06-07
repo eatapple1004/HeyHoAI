@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI — Billing</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
+
+  .status{display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;
+    background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(255,126,182,.1));border:1px solid var(--border2);border-radius:20px;padding:22px 26px;margin-bottom:38px}
+  .status .plan{font-size:13px;color:var(--dim)}
+  .status .plan b{color:var(--accent2);font-size:15px}
+  .status .renew{font-size:12px;color:var(--faint);margin-top:2px}
+  .status .bal{display:flex;align-items:baseline;gap:9px}
+  .status .bal .num{font-family:'Sora';font-size:36px;font-weight:800;letter-spacing:-1px}
+  .status .bal .lbl{font-size:13px;color:var(--dim)}
+
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:46px;align-items:start}
+  @media(max-width:760px){.plans{grid-template-columns:1fr}}
+  .plan-card{padding:26px;display:flex;flex-direction:column;position:relative}
+  .plan-card.featured{border-color:rgba(124,108,255,.5);box-shadow:0 0 0 1px rgba(124,108,255,.4),0 30px 70px -30px rgba(124,108,255,.5)}
+  .plan-card .ribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;font-size:10px;font-weight:800;letter-spacing:.6px;padding:5px 13px;border-radius:9px;text-transform:uppercase}
+  .plan-card .pname{font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:5px}
+  .plan-card .price{font-family:'Sora';font-size:34px;font-weight:800;letter-spacing:-1.5px}
+  .plan-card .price span{font-size:13px;font-weight:500;color:var(--faint)}
+  .plan-card .credits-inc{font-size:13px;color:var(--gold);font-weight:600;margin:10px 0 16px}
+  .plan-card ul{list-style:none;font-size:13px;color:var(--dim);flex:1;margin-bottom:20px}
+  .plan-card ul li{padding:4px 0;display:flex;gap:8px}
+  .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700}
+  .plan-card .btn{width:100%}
+  .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
+
+  .packs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:760px){.packs{grid-template-columns:1fr}}
+  .pack-card{padding:22px;text-align:center;transition:transform .2s}
+  .pack-card:hover{transform:translateY(-4px)}
+  .pack-card .amt{font-family:'Sora';font-size:24px;font-weight:800;color:var(--gold)}
+  .pack-card .amt small{font-size:12px;color:var(--dim);font-weight:500}
+  .pack-card .ppc{font-size:11px;color:var(--faint);margin:4px 0 12px}
+  .pack-card .price{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:14px}
+  .pack-card .btn{width:100%}
+
+  .note{font-size:12.5px;color:var(--faint);margin-top:20px;text-align:center}
+  .note b{color:var(--dim)}
+
+  /* billing cycle toggle */
+  .cycle{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:4px;margin-bottom:22px}
+  .cycle button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:13px;font-weight:600;padding:8px 16px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s}
+  .cycle button.on{background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff}
+  .cycle .save{font-size:10px;font-weight:800;background:rgba(94,224,214,.18);color:var(--cyan);padding:2px 6px;border-radius:6px;letter-spacing:.3px}
+  .cycle button.on .save{background:rgba(255,255,255,.24);color:#fff}
+  .plan-card .price .pv{font-size:34px;font-weight:800;letter-spacing:-1.5px;color:var(--text)}
+  .plan-card .cyc-note{font-size:11.5px;color:var(--faint);margin:-10px 0 14px;min-height:14px}
+
+  /* toggle switch */
+  .sw{position:relative;width:46px;height:26px;flex:none}
+  .sw input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;margin:0}
+  .sw .tr{position:absolute;inset:0;background:var(--border2);border-radius:99px;transition:.2s}
+  .sw .kn{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
+  .sw input:checked~.tr{background:linear-gradient(120deg,var(--accent),var(--pink))}
+  .sw input:checked~.kn{left:23px}
+
+  /* feature rows (auto top-up, manage) */
+  .frow{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:20px 24px;margin-bottom:14px}
+  .frow .lead{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .frow .desc{font-size:12.5px;color:var(--dim);margin-top:4px;max-width:560px}
+  .cfg{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+  .cfg.off{opacity:.35;pointer-events:none}
+  .cfg label{font-size:12.5px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .cfg select{font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:9px 12px;font-size:13px;cursor:pointer}
+  .manage{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .pausebox{background:rgba(94,224,214,.08);border:1px solid rgba(94,224,214,.25);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px;color:var(--dim)}
+  .pausebox b{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a onclick="location.href='/gallery.html'">Gallery</a>
+      <a class="active">Billing</a>
+      <a onclick="location.href='/business.html'">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span>42</span> credits</div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="fade d1">Billing &amp; Credits</h1>
+  <div class="sub fade d1">Subscribe for monthly credits, or top up anytime. Credits never expire while subscribed.</div>
+
+  <div class="status fade d2">
+    <div><div class="plan">Current plan: <b>Creator</b></div><div class="renew">Renews 2026-07-06 · 200 credits / month</div></div>
+    <div class="bal"><span class="num">◈ 42</span><span class="lbl">credits left</span></div>
+  </div>
+
+  <div class="section-label fade d2">Subscription</div>
+  <div class="cycle fade d2">
+    <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
+    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 20%</span></button>
+  </div>
+  <div class="plans fade d3">
+    <div class="plan-card glass" data-m="0" data-y="0" data-yt="">
+      <div class="pname">Free</div><div class="price">$<span class="pv">0</span><span> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc">10 credits (one-time)</div>
+      <ul><li>Try both modes</li><li>Watermarked output</li><li>Standard queue</li></ul>
+      <button class="btn btn-ghost" onclick="alert('다운그레이드 확인')">Downgrade</button>
+    </div>
+    <div class="plan-card glass featured" data-m="19" data-y="15" data-yt="$182 billed yearly · save $46">
+      <div class="ribbon">Current</div>
+      <div class="pname">Creator</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc">200 credits / month</div>
+      <ul><li>No watermark</li><li>Reels included</li><li>Priority queue</li><li>HD download</li></ul>
+      <button class="btn current">Your plan</button>
+    </div>
+    <div class="plan-card glass" data-m="79" data-y="63" data-yt="$758 billed yearly · save $190">
+      <div class="pname">Brand</div><div class="price">$<span class="pv">79</span><span> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc">1,000 credits / month</div>
+      <ul><li>Commercial license</li><li>Shopping + on-model</li><li>Bulk generation</li><li>Team seats (soon)</li></ul>
+      <button class="btn btn-primary" onclick="checkout('plan','Brand')">Upgrade</button>
+    </div>
+  </div>
+
+  <div class="section-label fade d3">Top-up credit packs (one-time)</div>
+  <div class="packs fade d4">
+    <div class="pack-card glass"><div class="amt">◈ 50</div><div class="ppc">$0.10 / credit</div><div class="price">$5</div><button class="btn btn-ghost" onclick="checkout('pack','50 credits — $5')">Buy</button></div>
+    <div class="pack-card glass"><div class="amt">◈ 200 <small>+20 bonus</small></div><div class="ppc">$0.082 / credit</div><div class="price">$18</div><button class="btn btn-primary" onclick="checkout('pack','220 credits — $18')">Buy</button></div>
+    <div class="pack-card glass"><div class="amt">◈ 500 <small>+80 bonus</small></div><div class="ppc">$0.069 / credit</div><div class="price">$40</div><button class="btn btn-ghost" onclick="checkout('pack','580 credits — $40')">Buy</button></div>
+  </div>
+
+  <div class="note">1 photo set (4 imgs) = <b>◈ 2</b> · 1 reel (5s) = <b>◈ 6</b>. Payments secured by Stripe.</div>
+
+  <div class="section-label fade d4" style="margin-top:46px">Wallet automation</div>
+  <div class="frow glass fade d4">
+    <div>
+      <div class="lead">⚡ Auto top-up</div>
+      <div class="desc">Never run out mid-generation. When your balance drops below the threshold, we auto-buy a pack so your renders never stop.</div>
+      <div class="cfg off" id="topupCfg">
+        <label>When below
+          <select><option>20 credits</option><option>50 credits</option><option>100 credits</option></select>
+        </label>
+        <label>auto-buy
+          <select><option>50 credits — $5</option><option selected>220 credits — $18</option><option>580 credits — $40</option></select>
+        </label>
+      </div>
+    </div>
+    <label class="sw"><input type="checkbox" id="topupSw" onchange="toggleTopup(this)"><span class="tr"></span><span class="kn"></span></label>
+  </div>
+
+  <div class="section-label fade d4" style="margin-top:38px">Manage subscription</div>
+  <div class="frow glass fade d4">
+    <div style="width:100%">
+      <div class="lead">Need a break?</div>
+      <div class="desc">Pause keeps your account, gallery and trained faces — billing stops and resumes whenever you're back. Most people pause instead of cancelling.</div>
+      <div class="manage">
+        <button class="btn btn-ghost" onclick="pauseFlow()">⏸ Pause subscription</button>
+        <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">Cancel</button>
+      </div>
+      <div class="pausebox hidden" id="pauseBox">⏸ <b>Subscription paused</b> — no charges until you resume. Your 42 credits and gallery stay safe.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let CYCLE='m';
+function setCycle(c,btn){
+  CYCLE=c;
+  document.querySelectorAll('.cycle button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.plan-card[data-m]').forEach(card=>{
+    card.querySelector('.pv').textContent=card.getAttribute('data-'+c);
+    card.querySelector('.cyc-note').textContent = c==='y' ? card.getAttribute('data-yt') : '';
+  });
+}
+function toggleTopup(el){
+  document.getElementById('topupCfg').classList.toggle('off',!el.checked);
+}
+function pauseFlow(){
+  document.getElementById('pauseBox').classList.remove('hidden');
+}
+function cancelFlow(){
+  // retention: offer pause before letting them cancel
+  if(confirm("Cancelling stops your monthly credits and Pro features.\n\nWant to PAUSE instead? Keep your account, gallery & trained faces — billing just stops until you're back.\n\n[ OK = Pause ]   [ Cancel = continue to cancel ]")){
+    pauseFlow();
+  }else{
+    alert('Cancellation flow (mock) → /api/billing/cancel');
+  }
+}
+function checkout(type,label){
+  const cyc = type==='plan' ? (CYCLE==='y'?' (annual)':' (monthly)') : '';
+  alert('Stripe Checkout (mock)\n\n'+(type==='plan'?'구독: ':'크레딧팩: ')+label+cyc+'\n→ /api/billing/checkout 호출 후 결제창으로 이동');
+}
+</script>
+</body>
+</html>

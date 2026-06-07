@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI · Affiliate</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:920px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
+
+  .reflink{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:20px 24px;margin-bottom:26px}
+  .reflink .lbl{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .reflink .link{font-family:'Sora';font-size:18px;font-weight:700;color:var(--accent2)}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:40px}
+  .stat{padding:20px;text-align:center}
+  .stat .n{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
+  .stat .n.gold{color:var(--gold)}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
+
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:38px}
+  .stepc{padding:22px}
+  .stepc .sn{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--pink));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;margin-bottom:13px}
+  .stepc h3{font-size:15px;font-weight:700;margin-bottom:6px}
+  .stepc p{font-size:13px;color:var(--dim);line-height:1.55}
+
+  .payout{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:20px 24px}
+  .payout .pi{font-size:13px;color:var(--dim)}
+  .payout .pi b{color:var(--text);font-size:15px;display:block;margin-top:2px;font-family:'Sora';font-weight:700}
+
+  @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a onclick="location.href='/gallery.html'">Gallery</a>
+      <a onclick="location.href='/billing.html'">Billing</a>
+      <a onclick="location.href='/business.html'">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="fade d1">Affiliate program</h1>
+  <div class="sub fade d1">Refer creators &amp; brands — earn <b style="color:var(--cyan)">30% recurring</b> commission for 12 months on everyone you bring in.</div>
+
+  <div class="reflink glass fade d2">
+    <div><div class="lbl">Your referral link</div><div class="link" id="refLink">heyhoai.com/r/yedam</div></div>
+    <button class="btn btn-primary" onclick="copyRef()">⧉ Copy link</button>
+  </div>
+
+  <div class="stats fade d2">
+    <div class="stat glass"><div class="n">128</div><div class="l">Clicks</div></div>
+    <div class="stat glass"><div class="n">34</div><div class="l">Sign-ups</div></div>
+    <div class="stat glass"><div class="n">19</div><div class="l">Active subs</div></div>
+    <div class="stat glass"><div class="n gold">$412</div><div class="l">Earned</div></div>
+  </div>
+
+  <div class="section-label fade d3">How it works</div>
+  <div class="steps fade d3">
+    <div class="stepc glass"><div class="sn">1</div><h3>Share your link</h3><p>Drop it in your bio, videos or DMs. Every click is tracked to you for 60 days.</p></div>
+    <div class="stepc glass"><div class="sn">2</div><h3>They subscribe</h3><p>When your referral upgrades to Creator or Brand, they're tied to your account.</p></div>
+    <div class="stepc glass"><div class="sn">3</div><h3>You earn 30%</h3><p>Get 30% of their payments — every month, for a full 12 months. Stacks with every referral.</p></div>
+  </div>
+
+  <div class="payout glass fade d4">
+    <div class="pi">Next payout<b>2026-07-01</b></div>
+    <div class="pi">Pending<b style="color:var(--gold)">$86</b></div>
+    <div class="pi">Lifetime earned<b>$1,240</b></div>
+    <div class="pi">Payout method<b>Stripe / PayPal</b></div>
+  </div>
+</div>
+
+<script>
+function copyRef(){
+  const t=document.getElementById('refLink').textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText('https://'+t).catch(()=>{});
+  alert('복사됨: https://'+t);
+}
+</script>
+</body>
+</html>

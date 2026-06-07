@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI · Gallery</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:26px}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
+  .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
+  .head .count{font-size:13px;color:var(--faint)}
+  .head .count b{color:var(--accent2)}
+
+  .filter-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px}
+  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
+  .chip:hover{color:var(--text)}
+  .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .item{border-radius:16px;overflow:hidden;position:relative;aspect-ratio:4/5;border:1px solid var(--border);transition:transform .2s}
+  .item:hover{transform:translateY(-4px)}
+  .item .thumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:42px}
+  .item .badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;letter-spacing:.4px;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);color:#fff;text-transform:uppercase}
+  .item .play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;border:1px solid rgba(255,255,255,.3)}
+  .item .info{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 11px;background:linear-gradient(transparent,rgba(0,0,0,.82))}
+  .item .info .nm{font-size:12.5px;font-weight:600}
+  .item .info .dt{font-size:10.5px;color:rgba(255,255,255,.6);margin-top:2px}
+  .item .actions{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:9px;backdrop-filter:blur(2px)}
+  .item:hover .actions{opacity:1}
+  .item .actions button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;font-family:inherit;font-size:11.5px;font-weight:600;padding:8px 12px;border-radius:9px;cursor:pointer}
+  .item .actions button:hover{background:var(--accent);border-color:var(--accent)}
+  .item .actions button.del:hover{background:#ff5f6e;border-color:#ff5f6e}
+
+  .empty{text-align:center;padding:80px 20px;color:var(--faint)}
+  .empty .ico{font-size:42px;margin-bottom:14px}
+  .empty h3{font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px}
+  .empty p{font-size:14px;margin-bottom:22px}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a class="active">Gallery</a>
+      <a onclick="location.href='/billing.html'">Billing</a>
+      <a onclick="location.href='/business.html'">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span></div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="head fade d1">
+    <div><h1>Your Gallery</h1><div class="sub">Everything you've created — download or post anytime.</div></div>
+    <div class="count"><b id="cnt">0</b> creations</div>
+  </div>
+
+  <div class="filter-row fade d1" id="filterRow"></div>
+  <div class="grid fade d2" id="grid"></div>
+
+  <div class="empty hidden" id="empty">
+    <div class="ico">🖼️</div><h3>Nothing here yet</h3>
+    <p>Generate your first photo or reel to fill your gallery.</p>
+    <a href="/studio.html" class="btn btn-primary">Open Studio →</a>
+  </div>
+</div>
+
+<script>
+const ITEMS=[
+  {id:1,name:'Travel Mood — Golden Hour',type:'photo',mode:'influencer',date:'2026-06-06',emoji:'🌅',grad:'g1'},
+  {id:2,name:'GRWM',type:'reel',mode:'influencer',date:'2026-06-06',emoji:'💋',grad:'g3'},
+  {id:3,name:'Editorial Glam',type:'photo',mode:'influencer',date:'2026-06-05',emoji:'💄',grad:'g6'},
+  {id:4,name:'Studio Lookbook',type:'photo',mode:'shopping',date:'2026-06-05',emoji:'📷',grad:'g2'},
+  {id:5,name:'Cozy Cafe Portrait',type:'photo',mode:'influencer',date:'2026-06-04',emoji:'☕',grad:'g8'},
+  {id:6,name:'Lookbook Reel',type:'reel',mode:'shopping',date:'2026-06-04',emoji:'👜',grad:'g5'},
+  {id:7,name:'Lifestyle Mood Shot',type:'photo',mode:'shopping',date:'2026-06-03',emoji:'🌿',grad:'g4'},
+  {id:8,name:'Outfit Transition',type:'reel',mode:'influencer',date:'2026-06-03',emoji:'✨',grad:'g6'},
+  {id:9,name:'Street Style Candid',type:'photo',mode:'influencer',date:'2026-06-02',emoji:'🏙️',grad:'g7'},
+  {id:10,name:'Y2K Film Selfie',type:'photo',mode:'influencer',date:'2026-06-02',emoji:'📸',grad:'g2'},
+];
+let filter='All';
+const FILTERS=['All','Photos','Reels','Influencer','Shopping'];
+
+function renderFilters(){
+  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<div class="chip ${filter===f?'active':''}" onclick="setFilter('${f}')">${f}</div>`).join('');
+}
+function match(it){
+  if(filter==='All')return true;
+  if(filter==='Photos')return it.type==='photo';
+  if(filter==='Reels')return it.type==='reel';
+  if(filter==='Influencer')return it.mode==='influencer';
+  if(filter==='Shopping')return it.mode==='shopping';
+  return true;
+}
+function render(){
+  const list=ITEMS.filter(match);
+  document.getElementById('cnt').textContent=list.length;
+  const grid=document.getElementById('grid'),empty=document.getElementById('empty');
+  if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  grid.innerHTML=list.map(it=>`
+    <div class="item ${it.grad}">
+      <div class="thumb">${it.emoji}</div>
+      <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>
+      ${it.type==='reel'?'<div class="play">▶</div>':''}
+      <div class="info"><div class="nm">${it.name}</div><div class="dt">${it.date} · ${it.mode}</div></div>
+      <div class="actions">
+        <button onclick="alert('다운로드: ${it.name}')">⬇</button>
+        <button onclick="alert('인스타 게시')">↗</button>
+        <button class="del" onclick="alert('삭제 확인 (소프트 삭제)')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function setFilter(f){filter=f;renderFilters();render();}
+renderFilters();render();
+</script>
+</body>
+</html>
