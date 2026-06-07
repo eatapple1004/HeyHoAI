@@ -7,9 +7,20 @@ const accountRepo = require('./account.repository');
 const mediaRepo = require('./accountMedia.repository');
 const zernio = require('./zernio.client');
 const logger = require('../lib/logger');
+const { assertAccountOwned, assertAccountResourceOwned } = require('../middleware/ownership');
 const log = logger('Account');
 
 const router = Router();
+
+// 모든 /:id/... 라우트에서 계정 소유권 자동 검증
+router.param('id', async (req, _res, next, id) => {
+  try {
+    await assertAccountOwned(id, req.user.id);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const uploadDir = path.join(process.cwd(), 'tmp', 'images');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -23,13 +34,14 @@ const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
  * GET /api/accounts/sync
  * Zernio에서 연결된 계정 목록을 가져와 DB에 동기화
  */
-router.post('/sync', async (_req, res, next) => {
+router.post('/sync', async (req, res, next) => {
   try {
     const accounts = await zernio.listAccounts();
     const synced = [];
 
     for (const acc of accounts) {
       const saved = await accountRepo.insert({
+        userId: req.user.id,
         platform: acc.platform,
         accountId: acc._id,
         username: acc.username,
@@ -57,6 +69,7 @@ router.get('/', async (req, res, next) => {
   try {
     const { platform, status } = req.query;
     const accounts = await accountRepo.findAll({
+      userId: req.user.id,
       platform: platform || undefined,
       status: status || undefined,
     });
@@ -395,6 +408,7 @@ router.get('/:id/reel-templates', async (req, res, next) => {
  */
 router.delete('/reel-templates/:templateId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('reel_templates', req.params.templateId, req.user.id);
     const t = await reelTemplateRepo.remove(req.params.templateId);
     if (!t) return res.status(404).json({ success: false, error: 'Template not found' });
     res.json({ success: true, data: t });
@@ -425,6 +439,7 @@ router.post('/:id/outfit-prompts', async (req, res, next) => {
 
 router.patch('/outfit-prompts/:promptId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('outfit_prompts', req.params.promptId, req.user.id);
     const { name, prompt } = req.body;
     const updated = await outfitPromptRepo.update(req.params.promptId, { name, prompt });
     if (!updated) return res.status(404).json({ success: false, error: 'Not found' });
@@ -434,6 +449,7 @@ router.patch('/outfit-prompts/:promptId', async (req, res, next) => {
 
 router.delete('/outfit-prompts/:promptId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('outfit_prompts', req.params.promptId, req.user.id);
     const deleted = await outfitPromptRepo.remove(req.params.promptId);
     if (!deleted) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: deleted });
@@ -451,6 +467,7 @@ router.post('/:id/batch-reels', async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'templateId and mediaIds[] are required' });
     }
 
+    await assertAccountResourceOwned('reel_templates', templateId, req.user.id);
     const template = await reelTemplateRepo.findById(templateId);
     if (!template) return res.status(404).json({ success: false, error: 'Template not found' });
 
@@ -580,6 +597,7 @@ router.post('/:id/post-queue', async (req, res, next) => {
 
 router.patch('/post-queue/:queueId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const { imageCaption, reelCaption, hashtags, status, bgmMediaId } = req.body;
     const item = await postQueueRepo.update(req.params.queueId, { imageCaption, reelCaption, hashtags, status, bgmMediaId });
     if (!item) return res.status(404).json({ success: false, error: 'Not found' });
@@ -605,6 +623,7 @@ router.post('/:id/publish-now', async (req, res, next) => {
  */
 router.post('/post-queue/:queueId/publish', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const { publishSingleItem } = require('./scheduler');
     const result = await publishSingleItem(req.params.queueId);
     res.json({ success: true, data: result });
@@ -617,6 +636,7 @@ router.post('/post-queue/:queueId/publish', async (req, res, next) => {
  */
 router.post('/post-queue/:queueId/duplicate', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const original = await postQueueRepo.findById(req.params.queueId);
     if (!original) return res.status(404).json({ success: false, error: 'Not found' });
 
@@ -640,6 +660,7 @@ router.post('/post-queue/:queueId/duplicate', async (req, res, next) => {
  */
 router.post('/post-queue/:queueId/reupload', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     // 상태 리셋
     await postQueueRepo.update(req.params.queueId, {
       status: 'confirmed',
@@ -656,6 +677,7 @@ router.post('/post-queue/:queueId/reupload', async (req, res, next) => {
 
 router.delete('/post-queue/:queueId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const item = await postQueueRepo.remove(req.params.queueId);
     if (!item) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: item });
@@ -740,6 +762,7 @@ router.post('/:id/media/register', async (req, res, next) => {
  */
 router.patch('/media/:mediaId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('account_media', req.params.mediaId, req.user.id);
     const { caption, hashtags, status } = req.body;
     const media = await mediaRepo.update(req.params.mediaId, { caption, hashtags, status });
     if (!media) return res.status(404).json({ success: false, error: 'Media not found' });
@@ -752,6 +775,7 @@ router.patch('/media/:mediaId', async (req, res, next) => {
  */
 router.delete('/media/:mediaId', async (req, res, next) => {
   try {
+    await assertAccountResourceOwned('account_media', req.params.mediaId, req.user.id);
     const media = await mediaRepo.remove(req.params.mediaId);
     if (!media) return res.status(404).json({ success: false, error: 'Media not found' });
     res.json({ success: true, data: media });

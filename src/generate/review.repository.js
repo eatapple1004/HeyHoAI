@@ -42,10 +42,13 @@ async function update(idx, fields) {
   return result.rows[0] || null;
 }
 
-async function findAll({ posted, status, type, reviewed, sort = 'newest', limit = 50, offset = 0 } = {}) {
+async function findAll({ userId, posted, status, type, reviewed, sort = 'newest', limit = 50, offset = 0 } = {}) {
   const conditions = ['r.active = true'];
   const params = [];
   let i = 1;
+
+  conditions.push(`p.user_id = $${i++}`);
+  params.push(userId);
 
   if (posted !== undefined) {
     conditions.push(`r.posted = $${i++}`);

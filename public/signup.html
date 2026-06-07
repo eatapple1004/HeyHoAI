@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회원가입 · HeyHoAI</title>
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a2e;
+    --border: #2a2a3e; --text: #e4e4ed; --dim: #8888a0;
+    --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
+    --red: #ff7675; --orange: #fdcb6e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .card { width: 360px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 32px; }
+  .brand { font-size: 22px; font-weight: 800; color: var(--accent2); text-align: center; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: var(--dim); text-align: center; margin-bottom: 24px; }
+  label { display: block; font-size: 12px; color: var(--dim); margin: 14px 0 6px; }
+  input { width: 100%; padding: 11px 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px; }
+  input:focus { outline: none; border-color: var(--accent); }
+  .hint { font-size: 11px; color: var(--dim); margin-top: 5px; }
+  button { width: 100%; margin-top: 22px; padding: 12px; background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  button:hover { background: var(--accent2); }
+  button:disabled { opacity: .6; cursor: not-allowed; }
+  .err { margin-top: 14px; color: var(--red); font-size: 13px; min-height: 18px; text-align: center; }
+  .foot { margin-top: 18px; text-align: center; font-size: 13px; color: var(--dim); }
+  .foot a { color: var(--accent2); text-decoration: none; }
+</style>
+</head>
+<body>
+  <form class="card" id="form">
+    <div class="brand">HeyHoAI</div>
+    <div class="sub">새 계정을 만드세요</div>
+    <label for="displayName">이름 (선택)</label>
+    <input id="displayName" type="text" autocomplete="name">
+    <label for="email">이메일</label>
+    <input id="email" type="email" autocomplete="email" required>
+    <label for="password">비밀번호</label>
+    <input id="password" type="password" autocomplete="new-password" required>
+    <div class="hint">8자 이상 입력하세요</div>
+    <button type="submit" id="submit">회원가입</button>
+    <div class="err" id="err"></div>
+    <div class="foot">이미 계정이 있으신가요? <a id="loginLink" href="/login">로그인</a></div>
+  </form>
+<script>
+  const params = new URLSearchParams(location.search);
+  const next = params.get('next') || '/heyhoai/character/page';
+  document.getElementById('loginLink').href = '/login?next=' + encodeURIComponent(next);
+
+  const form = document.getElementById('form');
+  const err = document.getElementById('err');
+  const btn = document.getElementById('submit');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: document.getElementById('displayName').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          password: document.getElementById('password').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || '회원가입 실패');
+      location.href = next;
+    } catch (e2) {
+      err.textContent = e2.message;
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 const { generateForCharacter, listVideos, getVideo } = require('./videoGeneration.service');
 const { generateVideoRequestSchema } = require('./video.validator');
 const videoJobRepo = require('./videoGenerationJob.repository');
+const { assertCharacterOwned } = require('../middleware/ownership');
 
 /**
  * POST /api/characters/:characterId/videos/generate
@@ -8,6 +9,7 @@ const videoJobRepo = require('./videoGenerationJob.repository');
 async function generate(req, res, next) {
   try {
     const { characterId } = req.params;
+    await assertCharacterOwned(characterId, req.user.id);
     const opts = generateVideoRequestSchema.parse(req.body || {});
 
     const result = await generateForCharacter(characterId, opts);
@@ -42,6 +44,7 @@ async function generate(req, res, next) {
 async function listByCharacter(req, res, next) {
   try {
     const { characterId } = req.params;
+    await assertCharacterOwned(characterId, req.user.id);
     const { status } = req.query;
     const videos = await listVideos(characterId, { status });
 
@@ -57,6 +60,7 @@ async function listByCharacter(req, res, next) {
 async function getById(req, res, next) {
   try {
     const video = await getVideo(req.params.id);
+    await assertCharacterOwned(video.character_id, req.user.id);
     res.json({ success: true, data: video });
   } catch (err) {
     next(err);
@@ -68,6 +72,7 @@ async function getById(req, res, next) {
  */
 async function listJobs(req, res, next) {
   try {
+    await assertCharacterOwned(req.params.characterId, req.user.id);
     const jobs = await videoJobRepo.findByCharacterId(req.params.characterId);
     res.json({ success: true, data: jobs });
   } catch (err) {
@@ -84,6 +89,7 @@ async function getJob(req, res, next) {
     if (!job) {
       return res.status(404).json({ success: false, error: 'Job not found' });
     }
+    await assertCharacterOwned(job.character_id, req.user.id);
     res.json({ success: true, data: job });
   } catch (err) {
     next(err);

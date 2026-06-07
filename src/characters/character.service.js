@@ -14,9 +14,10 @@ const MAX_RETRIES = 2;
  * 5. 실패 시 최대 MAX_RETRIES 재시도
  *
  * @param {{ concept: string; tone: string; topics: string[] }} input
+ * @param {string} userId 소유자(회원) ID
  * @returns {Promise<object>} 저장된 캐릭터 row
  */
-async function createCharacter(input) {
+async function createCharacter(input, userId) {
   let lastError;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -35,6 +36,7 @@ async function createCharacter(input) {
 
       // 4) DB 저장
       const saved = await characterRepo.insert({
+        userId,
         name: profile.name,
         concept: input.concept,
         persona: profile,
@@ -67,9 +69,9 @@ async function createCharacter(input) {
  * ID로 캐릭터 조회
  * @param {string} id
  */
-async function getCharacter(id) {
+async function getCharacter(id, userId) {
   const character = await characterRepo.findById(id);
-  if (!character) {
+  if (!character || (userId && character.user_id !== userId)) {
     throw new NotFoundError(`Character ${id} not found`);
   }
   return character;
