@@ -281,7 +281,9 @@ router.post('/:id/generate-reel', async (req, res, next) => {
     if (!mediaId) return res.status(400).json({ success: false, error: 'mediaId is required' });
 
     const sourceMedia = await mediaRepo.findById(mediaId);
-    if (!sourceMedia) return res.status(404).json({ success: false, error: 'Media not found' });
+    if (!sourceMedia || sourceMedia.account_id !== req.params.id) {
+      return res.status(404).json({ success: false, error: 'Media not found' });
+    }
 
     const jwt = require('jsonwebtoken');
     const { env } = require('../config');
@@ -306,7 +308,7 @@ router.post('/:id/generate-reel', async (req, res, next) => {
     };
     if (endFrameMediaId) {
       const endMedia = await mediaRepo.findById(endFrameMediaId);
-      if (endMedia) {
+      if (endMedia && endMedia.account_id === req.params.id) {
         const endPath = path.join(process.cwd(), endMedia.file_path);
         if (fs.existsSync(endPath)) {
           klingBody.image_tail = fs.readFileSync(endPath).toString('base64');
@@ -483,7 +485,10 @@ router.post('/:id/batch-reels', async (req, res, next) => {
     for (const mId of mediaIds) {
       try {
         const sourceMedia = await mediaRepo.findById(mId);
-        if (!sourceMedia) { results.push({ mediaId: mId, success: false, error: 'Not found' }); continue; }
+        if (!sourceMedia || sourceMedia.account_id !== req.params.id) {
+          results.push({ mediaId: mId, success: false, error: 'Not found' });
+          continue;
+        }
 
         const imagePath = path.join(process.cwd(), sourceMedia.file_path);
         if (!fs.existsSync(imagePath)) { results.push({ mediaId: mId, success: false, error: 'File not found' }); continue; }
