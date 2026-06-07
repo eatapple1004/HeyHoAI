@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>HeyHoAI · Studio</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
+<script src="/saas-auth.js" defer></script>
 <style>
   .wrap{max-width:1080px;margin:0 auto;padding:36px 24px 210px;position:relative;z-index:2}
 
@@ -146,9 +147,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span id="creditBalance">48</span> credits
-      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
-    </div>
+    <div class="credits" id="saasUserBox"></div>
   </div>
 </nav>
 
@@ -202,27 +201,12 @@
 
 <div class="gen-bar">
   <div class="addons">
-    <span class="addon-label hidden" id="variantLabel">A/B</span>
-    <div class="seg hidden" id="variantSeg">
-      <button class="on" data-v="1" onclick="pickVariant(this)">1</button>
-      <button data-v="3" onclick="pickVariant(this)">×3</button>
-      <button data-v="5" onclick="pickVariant(this)">×5</button>
-    </div>
-    <span class="divider-v hidden" id="variantDiv"></span>
     <span class="addon-label">Quality</span>
     <div class="seg" id="qualitySeg">
-      <button class="on" data-q="std" data-c="0" onclick="pickQuality(this)">Standard</button>
-      <button data-q="hd" data-c="1" onclick="pickQuality(this)">HD <i>+1</i></button>
-      <button data-q="4k" data-c="2" onclick="pickQuality(this)">4K <i>+2</i></button>
+      <button class="on" data-q="std" data-m="flash" onclick="pickQuality(this)">Standard</button>
+      <button data-q="hd" data-m="pro" onclick="pickQuality(this)">HD</button>
+      <button data-q="4k" data-m="gpt-image-2-high" onclick="pickQuality(this)">Ultra</button>
     </div>
-    <span class="divider-v"></span>
-    <button class="addon-toggle" id="aWatermark" data-c="1" onclick="toggleAddon(this)">🚫 Remove watermark <i>+1</i></button>
-    <button class="addon-toggle" id="aPriority" data-c="1" onclick="toggleAddon(this)">⚡ Priority <i>+1</i></button>
-    <span class="divider-v"></span>
-    <button class="addon-toggle" id="aCaption" data-c="1" onclick="toggleCaption(this)">📝 Caption + hashtags <i>+1</i></button>
-    <select class="addon-lang hidden" id="captionLang" onchange="updateBar()">
-      <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
-    </select>
   </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
@@ -251,69 +235,80 @@
   </div>
 </div>
 
+<input type="file" id="subjectFile" accept="image/png,image/jpeg" style="display:none" onchange="uploadSubject(this)" />
+
 <script>
-const MOCK_SUBJECTS={
-  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:'linear-gradient(135deg,#7c6cff,#ff7eb6)'}],
-  shopping:[{id:'p1',name:'White Dress',emoji:'👗',grad:'linear-gradient(135deg,#5ee0d6,#7c6cff)'},
-            {id:'p2',name:'Sneakers',emoji:'👟',grad:'linear-gradient(135deg,#ffce7a,#ff7eb6)'}]
-};
-const MOCK_RECIPES={
+// ═══ 실제 백엔드 연결 ═══
+// Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
+const PRODUCT_TAG='[product]';
+
+// 템플릿 → 실제 프롬프트/스타일 매핑 (style은 DB style_presets의 이름)
+const TEMPLATES={
   influencer:[
-    {id:'r1',cat:'Style',name:'Travel Mood — Golden Hour',type:'image',cost:2,emoji:'🌅',grad:'linear-gradient(150deg,#ffce7a,#ff7eb6)'},
-    {id:'r2',cat:'Style',name:'Y2K Film Selfie',type:'image',cost:2,emoji:'📸',grad:'linear-gradient(150deg,#a99bff,#5ee0d6)'},
-    {id:'r3',cat:'Style',name:'Cozy Cafe Portrait',type:'image',cost:2,emoji:'☕',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)'},
-    {id:'r4',cat:'Style',name:'Editorial Glam',type:'image',cost:2,emoji:'💄',grad:'linear-gradient(150deg,#ff7eb6,#7c6cff)'},
-    {id:'r5',cat:'Trend',name:'GRWM (Get Ready With Me)',type:'reel',cost:6,emoji:'💋',grad:'linear-gradient(150deg,#ff7eb6,#ff9a6b)'},
-    {id:'r6',cat:'Trend',name:'Day in My Life',type:'reel',cost:6,emoji:'🎬',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-    {id:'r7',cat:'Trend',name:'Outfit Transition',type:'reel',cost:6,emoji:'✨',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)'},
-    {id:'r8',cat:'Style',name:'Street Style Candid',type:'image',cost:2,emoji:'🏙️',grad:'linear-gradient(150deg,#9a9ab2,#5ee0d6)'}
+    {id:'r1',cat:'Style',name:'Travel Mood — Golden Hour',type:'image',style:'Natural',emoji:'🌅',grad:'linear-gradient(150deg,#ffce7a,#ff7eb6)',
+      prompt:'golden hour on a rooftop terrace, warm orange sunlight, candid travel snapshot, wind in hair, looking into the distance, city skyline in background'},
+    {id:'r2',cat:'Style',name:'Y2K Film Selfie',type:'image',style:'Film',emoji:'📸',grad:'linear-gradient(150deg,#a99bff,#5ee0d6)',
+      prompt:'y2k style mirror selfie, compact digital camera with flash, retro 2000s fashion, playful pose, slight motion blur'},
+    {id:'r3',cat:'Style',name:'Cozy Cafe Portrait',type:'image',style:'Portrait',emoji:'☕',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+      prompt:'cozy indoor cafe, warm ambient lighting, holding a coffee cup with both hands, soft natural smile, window light from the side'},
+    {id:'r4',cat:'Style',name:'Editorial Glam',type:'image',style:'Glamour',emoji:'💄',grad:'linear-gradient(150deg,#ff7eb6,#7c6cff)',
+      prompt:'high-end editorial look, designer outfit, dramatic studio lighting, confident expression, magazine cover quality'},
+    {id:'r8',cat:'Style',name:'Street Style Candid',type:'image',style:'Street',emoji:'🏙️',grad:'linear-gradient(150deg,#9a9ab2,#5ee0d6)',
+      prompt:'modern urban street, walking candid shot, stylish streetwear outfit, city buildings in background, natural daylight'},
+    {id:'r5',cat:'Trend',name:'GRWM (Get Ready With Me)',type:'reel',style:'Natural',emoji:'💋',grad:'linear-gradient(150deg,#ff7eb6,#ff9a6b)',
+      prompt:'getting ready in front of a vanity mirror, applying makeup, soft morning light, casual intimate vlog feel, subtle natural movement'},
+    {id:'r6',cat:'Trend',name:'Day in My Life',type:'reel',style:'Natural',emoji:'🎬',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)',
+      prompt:'casual day in my life moment, walking through a sunlit room holding a coffee, smiling at camera, handheld camera feel, natural movement'},
+    {id:'r7',cat:'Trend',name:'Outfit Transition',type:'reel',style:'Fashion',emoji:'✨',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)',
+      prompt:'fashion outfit showcase, slow turn to show the full outfit, confident pose transition, studio backdrop, smooth camera motion'}
   ],
   shopping:[
-    {id:'sr1',cat:'화보',name:'Studio Lookbook',type:'image',cost:2,emoji:'📷',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)'},
-    {id:'sr2',cat:'감성',name:'Lifestyle Mood Shot',type:'image',cost:2,emoji:'🌿',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-    {id:'sr3',cat:'착용',name:'On-Model Wear (Beta)',type:'image',cost:3,emoji:'🧍',grad:'linear-gradient(150deg,#ff9a6b,#ff7eb6)'},
-    {id:'sr4',cat:'화보',name:'Flat-lay Detail',type:'image',cost:2,emoji:'🪞',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)'},
-    {id:'sr5',cat:'감성',name:'Product Reel — Aesthetic',type:'reel',cost:6,emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#7c6cff)'},
-    {id:'sr6',cat:'화보',name:'Lookbook Reel',type:'reel',cost:6,emoji:'👜',grad:'linear-gradient(150deg,#ff7eb6,#ff5f8f)'}
+    {id:'sr1',cat:'화보',name:'Studio Lookbook',type:'image',style:'Fashion',emoji:'📷',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)',
+      prompt:'clean studio product photography, the product on a minimal pedestal, soft even lighting, premium lookbook style'},
+    {id:'sr2',cat:'감성',name:'Lifestyle Mood Shot',type:'image',style:'Natural',emoji:'🌿',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)',
+      prompt:'the product placed in a cozy lifestyle scene, morning light through a window, plants and natural textures around, aesthetic instagram mood'},
+    {id:'sr3',cat:'착용',name:'On-Model Wear (Beta)',type:'image',style:'Fashion',emoji:'🧍',grad:'linear-gradient(150deg,#ff9a6b,#ff7eb6)',
+      prompt:'a model wearing/using the product naturally, full body shot, fashion editorial styling, clean background'},
+    {id:'sr4',cat:'화보',name:'Flat-lay Detail',type:'image',style:'Portrait',emoji:'🪞',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)',
+      prompt:'flat-lay composition of the product from above, styled props around it, detail texture visible, soft shadows'},
+    {id:'sr5',cat:'감성',name:'Product Reel — Aesthetic',type:'reel',style:'Cinematic',emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#7c6cff)',
+      prompt:'slow cinematic camera orbit around the product, soft light sweeping across, premium aesthetic mood, shallow depth of field'},
+    {id:'sr6',cat:'화보',name:'Lookbook Reel',type:'reel',style:'Fashion',emoji:'👜',grad:'linear-gradient(150deg,#ff7eb6,#ff5f8f)',
+      prompt:'fashion lookbook video, the product showcased with smooth panning camera, studio lighting, elegant presentation'}
+  ],
+  // UGC(립싱크 아바타)는 백엔드 미지원 — UI만 표시
+  ugc:[
+    {id:'u1',cat:'Talking',name:'Talking-Head Testimonial',type:'reel',emoji:'🗣️',grad:'linear-gradient(150deg,#7c6cff,#ff7eb6)',soon:true},
+    {id:'u2',cat:'Demo',name:'Product Demo',type:'reel',emoji:'📦',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)',soon:true},
+    {id:'u3',cat:'Talking',name:'Problem → Solution',type:'reel',emoji:'💡',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)',soon:true},
+    {id:'u4',cat:'Reaction',name:'Unboxing Reaction',type:'reel',emoji:'🎁',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)',soon:true},
+    {id:'u5',cat:'Talking',name:'Street Interview',type:'reel',emoji:'🎤',grad:'linear-gradient(150deg,#ff9a6b,#ff5f8f)',soon:true},
+    {id:'u6',cat:'Demo',name:'Hook + CTA Ad',type:'reel',emoji:'🎯',grad:'linear-gradient(150deg,#9b7bff,#5ee0d6)',soon:true}
   ]
 };
-let state={mode:'influencer',subjectId:null,recipeId:null,filter:'All'};
-let credits=48;
 
-// ── add-on captions (Claude — multilingual) ──
-const LANG_NAME={en:'English',ko:'한국어',ja:'日本語',es:'Español',pt:'Português',zh:'中文'};
-const CAPTIONS={
-  en:{c:"Golden hour hits different ✨ Living for these candid little moments.",t:"#goldenhour #ootd #aesthetic #contentcreator #reels #explore"},
-  ko:{c:"골든아워는 역시 달라요 ✨ 자연스러운 순간을 그대로 담았어요.",t:"#골든아워 #데일리룩 #감성사진 #일상스타그램 #릴스추천"},
-  ja:{c:"ゴールデンアワーはやっぱり特別 ✨ 自然な瞬間をそのまま。",t:"#ゴールデンアワー #コーデ #エモい #日常 #リール"},
-  es:{c:"La hora dorada se siente distinta ✨ Viviendo estos pequeños momentos.",t:"#horadorada #ootd #aesthetic #reels #contenido"},
-  pt:{c:"A hora dourada é diferente ✨ Vivendo esses pequenos momentos.",t:"#horadourada #ootd #aesthetic #reels #conteudo"},
-  zh:{c:"黄金时刻就是不一样 ✨ 记录这些自然的小瞬间。",t:"#黄金时刻 #穿搭 #ins风 #日常 #短视频"}
-};
-const Q_LABEL={std:'',hd:' · HD','4k':' · 4K'};
+let state={mode:'influencer',subjectId:null,recipeId:null,filter:'All'};
+let SUBJECTS={influencer:[],shopping:[],ugc:[]};
+let generating=false;
+
+// ── 캐릭터 로드 (influencer = 일반, shopping = [product] 컨셉) ──
+async function loadSubjects(){
+  try{
+    const res=await fetch('/api/characters?limit=100');
+    const data=await res.json();
+    const all=(data.data||[]).filter(c=>c.status!=='archived');
+    SUBJECTS.influencer=all.filter(c=>!(c.concept||'').startsWith(PRODUCT_TAG));
+    SUBJECTS.shopping=all.filter(c=>(c.concept||'').startsWith(PRODUCT_TAG));
+  }catch(e){console.error('characters load failed',e);}
+  renderSubjects();
+}
 
 function curQuality(){return document.querySelector('#qualitySeg .on').dataset.q;}
-function extras(){let c=0;const q=document.querySelector('#qualitySeg .on');if(q)c+=+q.dataset.c;
-  document.querySelectorAll('.addons .addon-toggle.on').forEach(b=>c+=+b.dataset.c);return c;}
+function curModel(){return document.querySelector('#qualitySeg .on').dataset.m;}
 function pickQuality(b){document.querySelectorAll('#qualitySeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');updateBar();}
-function toggleAddon(b){b.classList.toggle('on');updateBar();}
-function toggleCaption(b){b.classList.toggle('on');
-  document.getElementById('captionLang').classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
+const Q_LABEL={std:'Standard',hd:'HD','4k':'Ultra'};
 
-// ── UGC Ads mode ──
-MOCK_SUBJECTS.ugc=[
-  {id:'av0',name:'My Face',emoji:'🧑🏻',grad:'linear-gradient(135deg,#7c6cff,#ff7eb6)'},
-  {id:'av1',name:'Spokesperson · Mia',emoji:'👩🏻',grad:'linear-gradient(135deg,#ff7eb6,#ffce7a)'},
-  {id:'av2',name:'Spokesperson · Leo',emoji:'👨🏽',grad:'linear-gradient(135deg,#5ee0d6,#7c6cff)'}
-];
-MOCK_RECIPES.ugc=[
-  {id:'u1',cat:'Talking',name:'Talking-Head Testimonial',type:'reel',cost:8,emoji:'🗣️',grad:'linear-gradient(150deg,#7c6cff,#ff7eb6)'},
-  {id:'u2',cat:'Demo',name:'Product Demo',type:'reel',cost:8,emoji:'📦',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-  {id:'u3',cat:'Talking',name:'Problem → Solution',type:'reel',cost:8,emoji:'💡',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)'},
-  {id:'u4',cat:'Reaction',name:'Unboxing Reaction',type:'reel',cost:8,emoji:'🎁',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)'},
-  {id:'u5',cat:'Talking',name:'Street Interview',type:'reel',cost:8,emoji:'🎤',grad:'linear-gradient(150deg,#ff9a6b,#ff5f8f)'},
-  {id:'u6',cat:'Demo',name:'Hook + CTA Ad',type:'reel',cost:8,emoji:'🎯',grad:'linear-gradient(150deg,#9b7bff,#5ee0d6)'}
-];
+// ── UGC 스크립트 (mock 유지 — 백엔드 미지원) ──
 const SCRIPTS={
   energetic:"Okay STOP scrolling 🛑 I found the thing that actually works. 7 days, zero effort, real results — and I have the receipts. Link's right there, go go go!",
   trust:"I was skeptical too. But after two weeks of using this every day, I genuinely can't go back. Here's exactly what changed — and why I'd recommend it to anyone.",
@@ -321,11 +316,8 @@ const SCRIPTS={
   luxury:"Some things are simply worth the upgrade. Crafted to feel effortless, designed to last. This is the difference quality makes."
 };
 function aiWriteScript(){document.getElementById('scriptTA').value=SCRIPTS[document.getElementById('toneSel').value];}
-function curVariants(){const b=document.querySelector('#variantSeg .on');return b?+b.dataset.v:1;}
-function pickVariant(b){document.querySelectorAll('#variantSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');updateBar();}
-function brandOn(){return !document.getElementById('bkOn').classList.contains('hidden');}
 
-// brand kit modal
+// brand kit modal (시각용 — 생성 파이프라인 연결은 추후)
 function openBrandkit(){document.getElementById('brandkitModal').classList.add('open');}
 function closeBrandkit(){document.getElementById('brandkitModal').classList.remove('open');}
 function pickSwatch(el){el.parentNode.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));el.classList.add('sel');}
@@ -333,8 +325,8 @@ function saveBrandkit(){document.getElementById('bkOn').classList.remove('hidden
 
 const STEP1={
   influencer:['Add your face','Upload a clear selfie — we keep your identity across every shot.'],
-  shopping:['Add your product','Upload a product photo — background removed automatically.'],
-  ugc:['Add your spokesperson','Use your own face or pick an AI spokesperson to talk for you.']
+  shopping:['Add your product','Upload a product photo — we keep it consistent across scenes.'],
+  ugc:['Add your spokesperson','Coming soon — lip-synced AI spokesperson.']
 };
 function setMode(m){
   state={mode:m,subjectId:null,recipeId:null,filter:'All'};
@@ -342,103 +334,158 @@ function setMode(m){
   const ugc=(m==='ugc');
   document.getElementById('step1Title').textContent=STEP1[m][0];
   document.getElementById('step1Hint').textContent=STEP1[m][1];
-  // script step (UGC only)
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
-  // step numbering + template step copy
   document.getElementById('snTemplate').textContent=ugc?'3':'2';
   document.getElementById('snResult').textContent=ugc?'4':'3';
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
-  document.getElementById('step2Hint').textContent=ugc?'Lip-synced to your script automatically.':'No prompt needed — just choose a look.';
-  // A/B variant control (UGC only) — reset to 1 when leaving
-  ['variantLabel','variantSeg','variantDiv'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!ugc));
-  if(!ugc){document.querySelectorAll('#variantSeg button').forEach(x=>x.classList.remove('on'));document.querySelector('#variantSeg button[data-v="1"]').classList.add('on');}
+  document.getElementById('step2Hint').textContent=ugc?'🚧 Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
   document.getElementById('resultStep').classList.add('hidden');
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderSubjects(){
-  const subs=MOCK_SUBJECTS[state.mode];
+  const subs=SUBJECTS[state.mode]||[];
   const ul={influencer:'Upload selfie',shopping:'Upload product',ugc:'Upload face'}[state.mode];
-  let h=`<div class="upload-box" onclick="mockUpload()"><div class="plus">＋</div><div class="label">${ul}</div><div class="sub">JPG / PNG · 1 photo</div></div>`;
-  h+=subs.map(s=>`<div class="subject-card ${state.subjectId===s.id?'selected':''}" onclick="pickSubject('${s.id}')">
-      <div class="thumb" style="background:${s.grad}">${s.emoji}</div><div class="check">✓</div><div class="name">${s.name}</div></div>`).join('');
+  let h=`<div class="upload-box" onclick="document.getElementById('subjectFile').click()"><div class="plus">＋</div><div class="label">${ul}</div><div class="sub">JPG / PNG · 1 photo</div></div>`;
+  h+=subs.map(s=>{
+    const thumb=s.reference_image_url
+      ?`<div class="thumb" style="background:url('${esc(s.reference_image_url)}') center/cover"></div>`
+      :`<div class="thumb" style="background:linear-gradient(135deg,#7c6cff,#5ee0d6)">🙂</div>`;
+    const nm=esc((s.name||'').replace(PRODUCT_TAG,'').trim()||s.name);
+    return `<div class="subject-card ${state.subjectId===s.id?'selected':''}" onclick="pickSubject('${s.id}')">
+      ${thumb}<div class="check">✓</div><div class="name">${nm}</div></div>`;
+  }).join('');
   document.getElementById('subjectRow').innerHTML=h;
 }
 function renderFilters(){
-  const cats=['All',...new Set(MOCK_RECIPES[state.mode].map(r=>r.cat))];
+  const cats=['All',...new Set(TEMPLATES[state.mode].map(r=>r.cat))];
   document.getElementById('filterRow').innerHTML=cats.map(c=>`<div class="chip ${state.filter===c?'active':''}" onclick="setFilter('${c}')">${c}</div>`).join('');
 }
 function renderRecipes(){
-  const rs=MOCK_RECIPES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
+  const rs=TEMPLATES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
   document.getElementById('recipeGrid').innerHTML=rs.map(r=>`
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
       <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${r.emoji}</div>
-      <div class="meta"><div class="rname">${r.name}</div><div class="cost">◈ ${r.cost} credits</div></div></div>`).join('');
+      <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'🚧 Coming soon':esc(r.style)+' style'}</div></div></div>`).join('');
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
 function pickRecipe(id){state.recipeId=id;renderRecipes();updateBar();}
-function mockUpload(){
-  const id='u'+Date.now();
-  MOCK_SUBJECTS[state.mode].push({id,name:state.mode==='influencer'?'New Face':'New Product',emoji:state.mode==='influencer'?'🙂':'📦',grad:'linear-gradient(135deg,#7c6cff,#5ee0d6)'});
-  state.subjectId=id;renderSubjects();updateBar();
+
+// ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
+async function uploadSubject(inp){
+  const f=inp.files[0];inp.value='';
+  if(!f)return;
+  if(state.mode==='ugc'){alert('UGC 모드는 준비 중입니다.');return;}
+  const isProduct=state.mode==='shopping';
+  const name=prompt(isProduct?'제품 이름을 입력하세요':'이름을 입력하세요',isProduct?'New Product':'My Face');
+  if(!name)return;
+  const fd=new FormData();
+  fd.append('name',name);
+  fd.append('concept',isProduct?PRODUCT_TAG+' '+name:'social media influencer');
+  fd.append('referenceImage',f);
+  try{
+    const res=await fetch('/api/characters/register',{method:'POST',body:fd});
+    const data=await res.json();
+    if(!res.ok||!data.success){alert('업로드 실패: '+(data.error||res.status));return;}
+    await loadSubjects();
+    state.subjectId=data.data.id;
+    renderSubjects();updateBar();
+  }catch(e){alert('업로드 중 오류가 발생했습니다.');}
 }
-function curRecipe(){return MOCK_RECIPES[state.mode].find(r=>r.id===state.recipeId);}
+
+function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
+function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
 function updateBar(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
+  if(generating){btn.disabled=true;return;}
+  if(state.mode==='ugc'){btn.disabled=true;s.textContent='🚧 UGC ads — coming soon.';return;}
   if(state.subjectId&&r){
     btn.disabled=false;
-    const v=curVariants(),ex=extras(),total=r.cost*v+ex;
-    const o = v>1 ? `${v} ad variants` : (r.type==='reel'?'1 reel':'4 photos');
-    let note='';
-    if(v>1&&ex>0) note=` <span style="color:var(--faint)">(${r.cost}×${v} + add-ons ${ex})</span>`;
-    else if(v>1) note=` <span style="color:var(--faint)">(${r.cost} × ${v} variants)</span>`;
-    else if(ex>0) note=` <span style="color:var(--faint)">(base ${r.cost} + add-ons ${ex})</span>`;
-    s.innerHTML=`<b>${r.name}</b> → ${o} · cost <span class="cost">◈ ${total}</span>${note}`;
+    const o=r.type==='reel'?'1 reel (5s)':'4 photos';
+    s.innerHTML=`<b>${r.name}</b> → ${o} · <span class="cost">${Q_LABEL[curQuality()]}</span>${r.type==='reel'?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
   } else {
     btn.disabled=true;
     s.textContent=!state.subjectId?'Select a face/product first.':'Now pick a template.';
   }
 }
-function generate(){
-  const r=curRecipe();if(!r)return;
-  const v=curVariants(),total=r.cost*v+extras();
-  if(credits<total){alert('크레딧 부족 → 충전 필요 (402)');return;}
-  credits-=total;document.getElementById('creditBalance').textContent=credits;
+
+// ── 실제 생성 ──
+async function generate(){
+  const r=curRecipe(),subj=curSubject();
+  if(!r||!subj||generating)return;
+  if(r.soon){alert('UGC 모드는 준비 중입니다.');return;}
+
+  generating=true;updateBar();
+  const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
   document.getElementById('resultsGrid').innerHTML='';
-  const oldCap=document.getElementById('captionResult');if(oldCap)oldCap.remove();
-  const priority=document.getElementById('aPriority').classList.contains('on');
   const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
-  lb.querySelector('div:last-child').textContent=priority?'Generating… ⚡ priority lane (~6s)':'Generating… this takes ~20s';
-  document.getElementById('resultHint').textContent='';step.scrollIntoView({behavior:'smooth'});
-  setTimeout(()=>{
+  lb.querySelector('div:last-child').textContent=r.type==='reel'
+    ?'Generating reel… 보통 2~5분 걸려요. 페이지를 닫지 마세요.'
+    :'Generating photos… 30초~1분 정도 걸려요.';
+  document.getElementById('resultHint').textContent='';
+  step.scrollIntoView({behavior:'smooth'});
+
+  try{
+    if(r.type==='reel') await generateReel(r,subj);
+    else await generateImages(r,subj);
+  }catch(e){
+    console.error(e);
+    document.getElementById('resultHint').textContent='⚠ 생성 중 오류가 발생했습니다. 다시 시도해 주세요.';
+  }finally{
     lb.classList.add('hidden');
-    const n = v>1 ? v : (r.type==='reel'?1:4);
-    const qSuffix=Q_LABEL[curQuality()];
-    const brand=brandOn();
-    const g=['linear-gradient(150deg,#7c6cff,#ff7eb6)','linear-gradient(150deg,#5ee0d6,#7c6cff)','linear-gradient(150deg,#ffce7a,#ff9a6b)','linear-gradient(150deg,#a99bff,#5ee0d6)'];
-    let h='';for(let i=0;i<n;i++){
-      const vBadge = v>1 ? `<span class="type-badge" style="top:10px;right:10px;left:auto">Variant ${String.fromCharCode(65+i)}</span>` : '';
-      const qBadge = qSuffix ? `<span class="type-badge" style="top:10px;left:10px">${qSuffix.replace(' · ','')}</span>` : '';
-      const bBadge = brand ? `<span class="type-badge" style="bottom:10px;left:10px;top:auto">🎨 Brand</span>` : '';
-      h+=`<div class="result-card"><div class="img" style="background:${g[i%4]}">${r.type==='reel'?'▶':'🖼️'}</div>
-        ${qBadge}${vBadge}${bBadge}
-        <div class="actions"><button onclick="alert('다운로드')">⬇ Download</button><button onclick="alert('인스타 게시')">↗ Post</button></div></div>`;}
-    document.getElementById('resultsGrid').innerHTML=h;
-    if(document.getElementById('aCaption').classList.contains('on'))renderCaption();
-    const noun = v>1 ? 'ad variants' : (r.type==='reel'?'reel':'photos');
-    document.getElementById('resultHint').textContent=`${n} ${noun}${qSuffix} ready · ◈ ${total} used`;
-  },priority?700:1800);
+    generating=false;btn.textContent='Generate ✨';updateBar();
+  }
 }
-function renderCaption(){
-  const lang=document.getElementById('captionLang').value,cap=CAPTIONS[lang]||CAPTIONS.en;
-  const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
-  box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]}</div>
-    <div class="ctext">${cap.c}</div><div class="tags">${cap.t}</div>
-    <button class="btn btn-ghost copy" onclick="alert('복사됨')">⧉ Copy</button>`;
-  document.getElementById('resultStep').appendChild(box);
+
+async function generateImages(r,subj){
+  const res=await fetch('/api/generate',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({characterId:subj.id,prompt:r.prompt,model:curModel(),count:4,style:r.style})
+  });
+  const data=await res.json();
+  if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
+  const ok=(data.results||[]).filter(x=>x.success);
+  const fail=(data.results||[]).length-ok.length;
+  document.getElementById('resultsGrid').innerHTML=ok.map(x=>`
+    <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover" alt="">
+      <div class="actions">
+        <a href="${esc(x.url)}" download><button>⬇ Download</button></a>
+        <button onclick="window.open('${esc(x.url)}','_blank')">⤢ View</button>
+      </div></div>`).join('');
+  document.getElementById('resultHint').textContent=
+    `${ok.length} photos ready · ${Q_LABEL[curQuality()]}${fail?` · ${fail} failed`:''} — Gallery에 자동 저장됨`;
 }
+
+async function generateReel(r,subj){
+  if(!subj.reference_image_url){
+    document.getElementById('resultHint').textContent='⚠ 레퍼런스 이미지가 없는 대상은 릴스를 만들 수 없어요. 사진을 먼저 업로드해 주세요.';
+    return;
+  }
+  // 캐릭터 레퍼런스 이미지를 소스 프레임으로 사용해 Kling 비디오 생성
+  const imgRes=await fetch(subj.reference_image_url);
+  if(!imgRes.ok)throw new Error('reference image fetch failed');
+  const blob=await imgRes.blob();
+  const fd=new FormData();
+  fd.append('prompt',r.prompt);
+  fd.append('duration','5');
+  fd.append('mode',curQuality()==='std'?'std':'high');
+  fd.append('sourceImage',blob,'reference.png');
+  const res=await fetch('/api/generate/video',{method:'POST',body:fd});
+  const data=await res.json();
+  if(!res.ok||!data.success)throw new Error(data.error||'video generate failed');
+  document.getElementById('resultsGrid').innerHTML=`
+    <div class="result-card"><video class="img" src="${esc(data.url)}" controls loop style="object-fit:cover"></video>
+      <div class="actions">
+        <a href="${esc(data.url)}" download><button>⬇ Download</button></a>
+        <button onclick="window.open('${esc(data.url)}','_blank')">⤢ View</button>
+      </div></div>`;
+  document.getElementById('resultHint').textContent=`1 reel ready (${data.duration||5}s) — Gallery에 자동 저장됨`;
+}
+
 setMode('influencer');
+loadSubjects();
 </script>
 </body>
 </html>
