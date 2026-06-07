@@ -41,6 +41,14 @@ const envSchema = z.object({
 
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
+
+  // Billing (Lemon Squeezy — 크레딧 팩 결제)
+  LEMONSQUEEZY_API_KEY: z.string().optional(),
+  LEMONSQUEEZY_STORE_ID: z.string().optional(),
+  LEMONSQUEEZY_WEBHOOK_SECRET: z.string().optional(),
+  LS_VARIANT_PACK50: z.string().optional(),
+  LS_VARIANT_PACK220: z.string().optional(),
+  LS_VARIANT_PACK580: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);

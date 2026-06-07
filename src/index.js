@@ -16,6 +16,10 @@ const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+// Lemon Squeezy webhook은 서명 검증을 위해 raw body가 필요 → express.json보다 먼저 마운트
+const { webhookHandler } = require('./billing/billing.route');
+app.post('/api/billing/webhook', express.raw({ type: '*/*' }), webhookHandler);
+
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
@@ -88,6 +92,8 @@ app.use('/api', requireAuth, visualRoutes);
 app.use('/api/generate', requireAuth, generateRoutes);
 app.use('/api/template-data', requireAuth, require('./generate/template.route'));
 app.use('/api/accounts', requireAuth, accountRoutes);
+app.use('/api/credits', requireAuth, require('./credits/credit.route'));
+app.use('/api/billing', requireAuth, require('./billing/billing.route').router);
 
 // Health check
 app.get('/health', (_req, res) => {

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>HeyHoAI — Billing</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
+<script src="/saas-auth.js" defer></script>
 <style>
   .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
@@ -93,7 +94,8 @@
       <a class="active">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits</div>
+    <div class="credits"><span class="coin">◈</span> <span id="navBalance">—</span> credits</div>
+    <div class="credits" id="saasUserBox"></div>
   </div>
 </nav>
 
@@ -101,9 +103,13 @@
   <h1 class="fade d1">Billing &amp; Credits</h1>
   <div class="sub fade d1">Subscribe for monthly credits, or top up anytime. Credits never expire while subscribed.</div>
 
+  <div id="purchasedBanner" class="hidden" style="background:rgba(94,224,214,.12);border:1px solid rgba(94,224,214,.35);color:var(--cyan);font-size:13.5px;font-weight:600;padding:14px 18px;border-radius:14px;margin-bottom:20px">
+    ✅ 결제가 완료됐어요! 크레딧 반영까지 몇 초 걸릴 수 있어요. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">새로고침</a>
+  </div>
+
   <div class="status fade d2">
-    <div><div class="plan">Current plan: <b>Creator</b></div><div class="renew">Renews 2026-07-06 · 200 credits / month</div></div>
-    <div class="bal"><span class="num">◈ 42</span><span class="lbl">credits left</span></div>
+    <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">크레딧 팩으로 충전해서 사용 — 구독은 준비 중</div></div>
+    <div class="bal"><span class="num">◈ <span id="balNum">—</span></span><span class="lbl">credits left</span></div>
   </div>
 
   <div class="section-label fade d2">Subscription</div>
@@ -117,33 +123,33 @@
       <div class="cyc-note"></div>
       <div class="credits-inc">10 credits (one-time)</div>
       <ul><li>Try both modes</li><li>Watermarked output</li><li>Standard queue</li></ul>
-      <button class="btn btn-ghost" onclick="alert('다운그레이드 확인')">Downgrade</button>
+      <button class="btn btn-ghost" onclick="subSoon()">Coming soon</button>
     </div>
     <div class="plan-card glass featured" data-m="19" data-y="15" data-yt="$182 billed yearly · save $46">
-      <div class="ribbon">Current</div>
+      <div class="ribbon">Coming soon</div>
       <div class="pname">Creator</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">200 credits / month</div>
       <ul><li>No watermark</li><li>Reels included</li><li>Priority queue</li><li>HD download</li></ul>
-      <button class="btn current">Your plan</button>
+      <button class="btn btn-primary" onclick="subSoon()">Coming soon</button>
     </div>
     <div class="plan-card glass" data-m="79" data-y="63" data-yt="$758 billed yearly · save $190">
       <div class="pname">Brand</div><div class="price">$<span class="pv">79</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">1,000 credits / month</div>
       <ul><li>Commercial license</li><li>Shopping + on-model</li><li>Bulk generation</li><li>Team seats (soon)</li></ul>
-      <button class="btn btn-primary" onclick="checkout('plan','Brand')">Upgrade</button>
+      <button class="btn btn-ghost" onclick="subSoon()">Coming soon</button>
     </div>
   </div>
 
   <div class="section-label fade d3">Top-up credit packs (one-time)</div>
   <div class="packs fade d4">
-    <div class="pack-card glass"><div class="amt">◈ 50</div><div class="ppc">$0.10 / credit</div><div class="price">$5</div><button class="btn btn-ghost" onclick="checkout('pack','50 credits — $5')">Buy</button></div>
-    <div class="pack-card glass"><div class="amt">◈ 200 <small>+20 bonus</small></div><div class="ppc">$0.082 / credit</div><div class="price">$18</div><button class="btn btn-primary" onclick="checkout('pack','220 credits — $18')">Buy</button></div>
-    <div class="pack-card glass"><div class="amt">◈ 500 <small>+80 bonus</small></div><div class="ppc">$0.069 / credit</div><div class="price">$40</div><button class="btn btn-ghost" onclick="checkout('pack','580 credits — $40')">Buy</button></div>
+    <div class="pack-card glass"><div class="amt">◈ 50</div><div class="ppc">$0.10 / credit</div><div class="price">$5</div><button class="btn btn-ghost" onclick="buyPack('pack50',this)">Buy</button></div>
+    <div class="pack-card glass"><div class="amt">◈ 200 <small>+20 bonus</small></div><div class="ppc">$0.082 / credit</div><div class="price">$18</div><button class="btn btn-primary" onclick="buyPack('pack220',this)">Buy</button></div>
+    <div class="pack-card glass"><div class="amt">◈ 500 <small>+80 bonus</small></div><div class="ppc">$0.069 / credit</div><div class="price">$40</div><button class="btn btn-ghost" onclick="buyPack('pack580',this)">Buy</button></div>
   </div>
 
-  <div class="note">1 photo set (4 imgs) = <b>◈ 2</b> · 1 reel (5s) = <b>◈ 6</b>. Payments secured by Stripe.</div>
+  <div class="note">1 photo set (4 imgs) = <b>◈ 2</b> · 1 reel (5s) = <b>◈ 6</b>. Payments secured by Lemon Squeezy.</div>
 
   <div class="section-label fade d4" style="margin-top:46px">Wallet automation</div>
   <div class="frow glass fade d4">
@@ -177,6 +183,7 @@
 </div>
 
 <script>
+// ═══ 실제 연결: /api/credits (잔액) + /api/billing (Lemon Squeezy 결제) ═══
 let CYCLE='m';
 function setCycle(c,btn){
   CYCLE=c;
@@ -187,24 +194,56 @@ function setCycle(c,btn){
     card.querySelector('.cyc-note').textContent = c==='y' ? card.getAttribute('data-yt') : '';
   });
 }
+function subSoon(){alert('월 구독은 준비 중이에요. 지금은 크레딧 팩으로 충전해서 사용해 주세요!');}
 function toggleTopup(el){
-  document.getElementById('topupCfg').classList.toggle('off',!el.checked);
+  el.checked=false;
+  document.getElementById('topupCfg').classList.add('off');
+  alert('자동 충전은 준비 중이에요.');
 }
-function pauseFlow(){
-  document.getElementById('pauseBox').classList.remove('hidden');
+function pauseFlow(){subSoon();}
+function cancelFlow(){subSoon();}
+
+async function loadBalance(){
+  try{
+    const res=await fetch('/api/credits');
+    const data=await res.json();
+    if(!data.success)return;
+    const bal=data.data.unlimited?'∞':data.data.balance;
+    document.getElementById('balNum').textContent=bal;
+    document.getElementById('navBalance').textContent=bal;
+    if(data.data.unlimited){
+      document.getElementById('planName').textContent='Admin';
+      document.getElementById('planNote').textContent='관리자 계정 — 과금 면제';
+    }
+  }catch(e){console.error(e);}
 }
-function cancelFlow(){
-  // retention: offer pause before letting them cancel
-  if(confirm("Cancelling stops your monthly credits and Pro features.\n\nWant to PAUSE instead? Keep your account, gallery & trained faces — billing just stops until you're back.\n\n[ OK = Pause ]   [ Cancel = continue to cancel ]")){
-    pauseFlow();
-  }else{
-    alert('Cancellation flow (mock) → /api/billing/cancel');
+
+async function buyPack(packId,btn){
+  btn.disabled=true;const orig=btn.textContent;btn.textContent='Loading…';
+  try{
+    const res=await fetch('/api/billing/checkout',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({packId})});
+    const data=await res.json();
+    if(!res.ok||!data.success){
+      alert(data.error||'결제 페이지를 열 수 없습니다.');
+      return;
+    }
+    window.location.href=data.data.url; // Lemon Squeezy 결제 페이지로
+  }catch(e){
+    alert('결제 페이지 연결에 실패했습니다.');
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
   }
 }
-function checkout(type,label){
-  const cyc = type==='plan' ? (CYCLE==='y'?' (annual)':' (monthly)') : '';
-  alert('Stripe Checkout (mock)\n\n'+(type==='plan'?'구독: ':'크레딧팩: ')+label+cyc+'\n→ /api/billing/checkout 호출 후 결제창으로 이동');
+
+// 결제 완료 후 돌아온 경우 (?purchased=packXX)
+if(new URLSearchParams(location.search).get('purchased')){
+  document.getElementById('purchasedBanner').classList.remove('hidden');
+  // webhook 반영이 약간 늦을 수 있으니 잠시 후 한 번 더
+  setTimeout(loadBalance,3000);
 }
+loadBalance();
 </script>
 </body>
 </html>

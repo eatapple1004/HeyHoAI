@@ -608,7 +608,51 @@ async function migrate() {
   // ─── 인증/멀티테넌시: users 테이블 + 루트 테이블 user_id ───
   await migrateAuth();
 
+  // ─── 크레딧/결제 ───
+  await migrateCredits();
+
   console.log('Migrations completed.');
+}
+
+/**
+ * 크레딧 시스템: users.credit_balance + 크레딧 원장 + 결제 기록 테이블. (멱등)
+ */
+async function migrateCredits() {
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS credit_balance INT NOT NULL DEFAULT 0;
+  `);
+
+  // 크레딧 원장 — 모든 증감 기록 (감사 추적용)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS credit_ledger (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount        INT NOT NULL,            -- 양수=적립, 음수=차감
+        balance_after INT NOT NULL,
+        type          VARCHAR(30) NOT NULL,    -- signup_bonus | generation | refund | purchase | admin_adjust
+        description   TEXT DEFAULT '',
+        ref_id        TEXT,                    -- 관련 리소스/주문 ID
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_id, created_at DESC);
+  `);
+
+  // 결제 기록 — PG 주문 멱등 처리용 (provider+order_id UNIQUE)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS payments (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider    VARCHAR(30) NOT NULL,      -- lemonsqueezy
+        order_id    TEXT NOT NULL,
+        product     VARCHAR(50),               -- pack50 | pack220 | pack580
+        amount_usd  DECIMAL(10,2),
+        credits     INT NOT NULL,
+        raw         JSONB DEFAULT '{}',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(provider, order_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id, created_at DESC);
+  `);
 }
 
 /**
