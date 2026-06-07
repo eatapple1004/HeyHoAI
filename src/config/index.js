@@ -13,7 +13,11 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   ADMIN_EMAIL: z.string().email().default('admin@heyhoai.local'),
   ADMIN_PASSWORD: z.string().min(8).default('changeme1234'),
-  COOKIE_SECURE: z.coerce.boolean().default(false), // 프로덕션 HTTPS 환경에서 true
+  // z.coerce.boolean()은 "false" 문자열도 true로 바꾸므로 명시적으로 비교한다
+  COOKIE_SECURE: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'), // 프로덕션 HTTPS 환경에서 true
 
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),
