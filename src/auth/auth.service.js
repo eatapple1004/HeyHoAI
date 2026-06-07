@@ -33,6 +33,11 @@ async function signup({ email, password, displayName }) {
     displayName: displayName ? String(displayName).trim() : null,
     role: 'user',
   });
+
+  // 가입 보너스 크레딧 (실패해도 가입 자체는 성공 처리)
+  const creditService = require('../credits/credit.service');
+  await creditService.grantSignupBonus(user.id).catch(() => {});
+
   return user;
 }
 

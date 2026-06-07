@@ -84,6 +84,14 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
 
+    // ─── 크레딧 차감 (admin 면제, 부족 시 402) ───
+    const creditService = require('../credits/credit.service');
+    const charge = await creditService.chargeForGeneration(
+      req.user,
+      creditService.imageCost(model),
+      `사진 생성 (${model}, ${generateCount}장)`
+    );
+
     // ─── 프롬프트 DB 저장 ───
     const savedPrompt = await promptRepo.insert({
       userId: req.user.id,
@@ -229,6 +237,10 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       }
     }
 
+    // 전부 실패하면 환불
+    const okCount = results.filter((r) => r.success).length;
+    if (okCount === 0 && charge) await charge.refund();
+
     res.json({
       success: true,
       promptIdx: savedPrompt.idx,
@@ -238,6 +250,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       characterId: characterId || null,
       prompt: finalPrompt,
       results,
+      credits: charge
+        ? { charged: okCount === 0 ? 0 : charge.amount, balance: await creditService.getBalance(req.user.id) }
+        : null,
     });
   } catch (err) {
     next(err);
@@ -334,6 +349,8 @@ router.delete('/reviews/:idx', async (req, res, next) => {
 router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), async (req, res, next) => {
   const vlog = logger('Video');
   const alog = logger('Audio');
+  const creditService = require('../credits/credit.service');
+  let charge = null; // 크레딧 차감 내역 (실패 시 환불용)
   try {
     const jwt = require('jsonwebtoken');
     const { prompt, duration = '5', mode = 'std', withAudio = 'false' } = req.body;
@@ -349,6 +366,13 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
     if (!env.KLING_ACCESS_KEY || !env.KLING_SECRET_KEY) {
       return res.status(400).json({ success: false, error: 'Kling API keys not configured' });
     }
+
+    // ─── 크레딧 차감 (admin 면제, 부족 시 402) ───
+    charge = await creditService.chargeForGeneration(
+      req.user,
+      creditService.videoCost(duration, mode),
+      `릴스 생성 (${duration}s, ${mode})`
+    );
 
     function generateToken() {
       const now = Math.floor(Date.now() / 1000);
@@ -405,6 +429,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
     if (!submitData.data?.task_id) {
       const errorDetail = `Kling submit failed (${submitRes.status}): ${submitData.message || submitData.code || 'Unknown'}`;
       vlog.error(errorDetail);
+      if (charge) await charge.refund();
       return res.status(400).json({ success: false, error: errorDetail, source: 'kling_submit' });
     }
 
@@ -613,6 +638,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
           }
         }
 
+        if (charge) await charge.refund();
         return res.json({
           success: false,
           error: errorDetail,
@@ -624,10 +650,12 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
     }
 
     vlog.error('Timeout after 10min, task:', taskId);
+    if (charge) await charge.refund();
     res.json({ success: false, error: 'Video generation timed out (5min)', source: 'timeout', taskId });
   } catch (err) {
     vlog.error('Server error:', err.message);
-    res.status(500).json({
+    if (charge) await charge.refund();
+    res.status(err.statusCode || 500).json({
       success: false,
       error: err.message,
       source: 'server',

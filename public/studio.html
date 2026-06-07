@@ -147,6 +147,9 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
+    <div class="credits"><span class="coin">◈</span> <span id="creditBalance">—</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+    </div>
     <div class="credits" id="saasUserBox"></div>
   </div>
 </nav>
@@ -290,6 +293,27 @@ const TEMPLATES={
 let state={mode:'influencer',subjectId:null,recipeId:null,filter:'All'};
 let SUBJECTS={influencer:[],shopping:[],ugc:[]};
 let generating=false;
+let CREDITS={balance:null,unlimited:false,costs:null};
+
+// ── 크레딧 잔액/가격표 로드 ──
+async function loadCredits(){
+  try{
+    const res=await fetch('/api/credits');
+    const data=await res.json();
+    if(!data.success)return;
+    CREDITS=data.data;
+    document.getElementById('creditBalance').textContent=CREDITS.unlimited?'∞':CREDITS.balance;
+  }catch(e){console.error('credits load failed',e);}
+  updateBar();
+}
+function genCost(r){
+  const c=CREDITS.costs;
+  if(!c||!r)return null;
+  if(r.type==='reel')return (c.video&&c.video[5]||6)+(curQuality()!=='std'?c.videoHighSurcharge:0);
+  const s=c.imageModelSurcharge?c.imageModelSurcharge[curModel()]:0;
+  return c.imageBase+(s===undefined?1:s);
+}
+function notEnough(cost){return !CREDITS.unlimited&&CREDITS.balance!==null&&cost!==null&&CREDITS.balance<cost;}
 
 // ── 캐릭터 로드 (influencer = 일반, shopping = [product] 컨셉) ──
 async function loadSubjects(){
@@ -401,9 +425,16 @@ function updateBar(){
   if(generating){btn.disabled=true;return;}
   if(state.mode==='ugc'){btn.disabled=true;s.textContent='🚧 UGC ads — coming soon.';return;}
   if(state.subjectId&&r){
+    const cost=genCost(r);
+    const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
+    if(notEnough(cost)){
+      btn.disabled=true;
+      s.innerHTML=`<b>${r.name}</b>${costTxt} — <span style="color:#ff7eb6">크레딧 부족 (보유 ◈${CREDITS.balance})</span> <a href="/billing.html" style="color:var(--accent2)">충전하기 →</a>`;
+      return;
+    }
     btn.disabled=false;
     const o=r.type==='reel'?'1 reel (5s)':'4 photos';
-    s.innerHTML=`<b>${r.name}</b> → ${o} · <span class="cost">${Q_LABEL[curQuality()]}</span>${r.type==='reel'?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
+    s.innerHTML=`<b>${r.name}</b> → ${o} · ${Q_LABEL[curQuality()]}${costTxt}${r.type==='reel'?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
   } else {
     btn.disabled=true;
     s.textContent=!state.subjectId?'Select a face/product first.':'Now pick a template.';
@@ -432,10 +463,15 @@ async function generate(){
     else await generateImages(r,subj);
   }catch(e){
     console.error(e);
-    document.getElementById('resultHint').textContent='⚠ 생성 중 오류가 발생했습니다. 다시 시도해 주세요.';
+    if(e.code402){
+      document.getElementById('resultHint').innerHTML='⚠ 크레딧이 부족합니다. <a href="/billing.html" style="color:var(--accent2)">충전하러 가기 →</a>';
+    }else{
+      document.getElementById('resultHint').textContent='⚠ 생성 중 오류가 발생했습니다. 다시 시도해 주세요.';
+    }
   }finally{
     lb.classList.add('hidden');
-    generating=false;btn.textContent='Generate ✨';updateBar();
+    generating=false;btn.textContent='Generate ✨';
+    loadCredits(); // 잔액 갱신 (updateBar 포함)
   }
 }
 
@@ -445,6 +481,7 @@ async function generateImages(r,subj){
     body:JSON.stringify({characterId:subj.id,prompt:r.prompt,model:curModel(),count:4,style:r.style})
   });
   const data=await res.json();
+  if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
   const ok=(data.results||[]).filter(x=>x.success);
   const fail=(data.results||[]).length-ok.length;
@@ -474,6 +511,7 @@ async function generateReel(r,subj){
   fd.append('sourceImage',blob,'reference.png');
   const res=await fetch('/api/generate/video',{method:'POST',body:fd});
   const data=await res.json();
+  if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'video generate failed');
   document.getElementById('resultsGrid').innerHTML=`
     <div class="result-card"><video class="img" src="${esc(data.url)}" controls loop style="object-fit:cover"></video>
@@ -486,6 +524,7 @@ async function generateReel(r,subj){
 
 setMode('influencer');
 loadSubjects();
+loadCredits();
 </script>
 </body>
 </html>
