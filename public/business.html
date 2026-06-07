@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI · Business</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:26px}
+
+  .tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:4px;margin-bottom:28px;flex-wrap:wrap}
+  .tabs button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+  .tabs button.on{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
+
+  .panel{display:none}
+  .panel.on{display:block;animation:fadeUp .5s cubic-bezier(.2,.7,.3,1)}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+  .card{padding:22px 24px;margin-bottom:18px}
+  .card h3{font-size:15.5px;font-weight:700;margin-bottom:5px}
+  .card p{font-size:13px;color:var(--dim);line-height:1.55}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  /* API */
+  .keybox{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:13px 16px;margin-top:12px;flex-wrap:wrap}
+  .keybox code{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--cyan)}
+  pre{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;margin-top:12px}
+  pre code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--dim);line-height:1.65;white-space:pre}
+  .tok{color:var(--accent2)}.str{color:var(--gold)}
+  .meter{height:8px;border-radius:6px;background:var(--surface2);overflow:hidden;margin-top:10px}
+  .meter>i{display:block;height:100%;width:38%;background:linear-gradient(90deg,var(--accent),var(--pink))}
+
+  /* team */
+  .member{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--border)}
+  .member:last-child{border-bottom:0}
+  .ava{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .member .nm{font-size:14px;font-weight:600}
+  .member .em{font-size:12px;color:var(--faint)}
+  .role{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:rgba(124,108,255,.16);color:var(--accent2)}
+  .role.owner{background:rgba(255,206,122,.18);color:var(--gold)}
+  .pool{display:flex;align-items:baseline;gap:8px}
+  .pool .n{font-family:'Sora';font-size:30px;font-weight:800;color:var(--gold)}
+
+  /* white-label */
+  ul.feat{list-style:none;font-size:13.5px;color:var(--dim);margin-top:6px}
+  ul.feat li{padding:6px 0;display:flex;gap:9px}
+  ul.feat li::before{content:'✓';color:var(--cyan);font-weight:700}
+
+  /* analytics */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .stat{padding:18px;text-align:center}
+  .stat .n{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-1px}
+  .stat .d{font-size:11.5px;color:var(--cyan);margin-top:3px}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:5px}
+  .chart{display:flex;align-items:flex-end;gap:10px;height:150px;padding:16px 4px 0}
+  .bar{flex:1;background:linear-gradient(180deg,var(--accent),rgba(124,108,255,.25));border-radius:7px 7px 0 0;position:relative;min-height:6px}
+  .bar span{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:11px;color:var(--faint)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px}
+  .cal .dh{font-size:11px;color:var(--faint);text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .cal .day{min-height:64px;border:1px solid var(--border);border-radius:10px;padding:7px;background:rgba(255,255,255,.02)}
+  .cal .dn{font-size:11px;color:var(--faint)}
+  .post{font-size:10px;font-weight:600;padding:3px 6px;border-radius:6px;margin-top:5px;color:#fff;line-height:1.3}
+  .post.r{background:linear-gradient(120deg,var(--accent),#9b7bff)}
+  .post.p{background:linear-gradient(120deg,var(--pink),#ff9a6b)}
+
+  @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.cal{grid-template-columns:repeat(7,1fr);gap:4px}.cal .day{min-height:48px;padding:4px}}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a onclick="location.href='/gallery.html'">Gallery</a>
+      <a onclick="location.href='/billing.html'">Billing</a>
+      <a class="active">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="fade d1">For teams &amp; brands</h1>
+  <div class="sub fade d1">Embed HeyHoAI in your store, scale across a team, resell to clients, and schedule everything.</div>
+
+  <div class="tabs fade d2">
+    <button class="on" id="tApi" onclick="setTab('api')">🔌 API &amp; Shopify</button>
+    <button id="tTeam" onclick="setTab('team')">👥 Team</button>
+    <button id="tWl" onclick="setTab('wl')">🏷️ White-label</button>
+    <button id="tAna" onclick="setTab('ana')">📅 Schedule &amp; Analytics</button>
+  </div>
+
+  <!-- API & SHOPIFY -->
+  <div class="panel on" id="pApi">
+    <div class="card glass">
+      <div class="row"><div><h3>API access</h3><p>Generate content programmatically — same engine, your workflow.</p></div>
+        <span class="role owner">Brand plan</span></div>
+      <div class="keybox"><code id="apiKey">sk_live_••••••••••••••••3f9a</code>
+        <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="reveal()">Reveal</button>
+          <button class="btn btn-ghost" onclick="alert('재발급 (mock)')">Regenerate</button></div></div>
+      <pre><code><span class="tok">POST</span> https://api.heyhoai.com/v1/render
+<span class="tok">Authorization:</span> Bearer <span class="str">sk_live_...</span>
+
+{
+  <span class="tok">"subject_id"</span>: <span class="str">"prod_8821"</span>,
+  <span class="tok">"recipe"</span>: <span class="str">"lookbook-studio"</span>,
+  <span class="tok">"count"</span>: 4
+}</code></pre>
+      <div style="margin-top:16px;font-size:12.5px;color:var(--dim)">Usage this month · <b style="color:var(--text)">3,810 / 10,000</b> calls</div>
+      <div class="meter"><i></i></div>
+    </div>
+    <div class="card glass">
+      <div class="row"><div><h3>🛍️ Shopify app</h3><p>Bulk-generate lookbooks, on-model shots and reels straight from your product catalog. Auto-syncs new products.</p></div>
+        <button class="btn btn-primary" onclick="alert('Shopify 설치 (mock)')">Install on Shopify</button></div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="panel" id="pTeam">
+    <div class="card glass">
+      <div class="row" style="margin-bottom:8px"><h3>Team members</h3>
+        <button class="btn btn-primary" onclick="alert('초대 메일 전송 (mock)')">+ Invite member</button></div>
+      <div class="member"><div class="ava g6">🧑🏻</div><div style="flex:1"><div class="nm">You</div><div class="em">yedam@heyhoai.com</div></div><span class="role owner">Owner</span></div>
+      <div class="member"><div class="ava g2">👩🏻</div><div style="flex:1"><div class="nm">Mina Park</div><div class="em">mina@brand.co</div></div><span class="role">Editor</span></div>
+      <div class="member"><div class="ava g7">👨🏽</div><div style="flex:1"><div class="nm">Dan Lee</div><div class="em">dan@brand.co</div></div><span class="role">Editor</span></div>
+      <div class="member"><div class="ava g4">🧑🏼</div><div style="flex:1"><div class="nm">Sora Kim</div><div class="em">sora@brand.co</div></div><span class="role">Viewer</span></div>
+    </div>
+    <div class="card glass">
+      <div class="row"><div><h3>Shared credit pool</h3><p>One balance for the whole team. Top-ups and limits managed by the owner.</p></div>
+        <div class="pool"><span class="n">◈ 1,000</span><span style="color:var(--dim);font-size:13px">/ month</span></div></div>
+    </div>
+  </div>
+
+  <!-- WHITE-LABEL -->
+  <div class="panel" id="pWl">
+    <div class="card glass">
+      <h3>🏷️ White-label for agencies</h3>
+      <p>Resell HeyHoAI under your own brand. Your domain, your logo, your pricing — we stay invisible.</p>
+      <ul class="feat">
+        <li>Custom domain &amp; full logo / color theming</li>
+        <li>Separate client workspaces with isolated galleries</li>
+        <li>Your own markup on credits &amp; plans</li>
+        <li>Consolidated billing &amp; per-client usage reports</li>
+        <li>Priority support + onboarding</li>
+      </ul>
+      <div class="row" style="margin-top:18px">
+        <div style="font-size:13px;color:var(--dim)">From <b style="color:var(--text);font-family:'Sora';font-size:17px">$499</b> / mo + usage</div>
+        <button class="btn btn-primary" onclick="alert('화이트라벨 문의 (mock) → sales')">Request white-label</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE & ANALYTICS -->
+  <div class="panel" id="pAna">
+    <div class="stats">
+      <div class="stat glass"><div class="n">214</div><div class="d">▲ 18%</div><div class="l">Posts published</div></div>
+      <div class="stat glass"><div class="n">1.2M</div><div class="d">▲ 24%</div><div class="l">Reach</div></div>
+      <div class="stat glass"><div class="n">6.8%</div><div class="d">▲ 1.3pt</div><div class="l">Engagement</div></div>
+      <div class="stat glass"><div class="n">3.1k</div><div class="d">▲ 9%</div><div class="l">Link clicks</div></div>
+    </div>
+    <div class="card glass">
+      <div class="section-label">Engagement · last 7 days</div>
+      <div class="chart">
+        <div class="bar" style="height:55%"><span>Mon</span></div>
+        <div class="bar" style="height:72%"><span>Tue</span></div>
+        <div class="bar" style="height:48%"><span>Wed</span></div>
+        <div class="bar" style="height:88%"><span>Thu</span></div>
+        <div class="bar" style="height:66%"><span>Fri</span></div>
+        <div class="bar" style="height:95%"><span>Sat</span></div>
+        <div class="bar" style="height:78%"><span>Sun</span></div>
+      </div>
+    </div>
+    <div class="card glass">
+      <div class="row" style="margin-bottom:6px"><div class="section-label" style="margin:0">Content calendar</div>
+        <button class="btn btn-ghost" onclick="alert('자동 게시 예약 (mock)')">+ Schedule post</button></div>
+      <div class="cal">
+        <div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
+        <div class="day"><div class="dn">9</div><div class="post r">Reel · 6pm</div></div>
+        <div class="day"><div class="dn">10</div></div>
+        <div class="day"><div class="dn">11</div><div class="post p">Photo · 12pm</div></div>
+        <div class="day"><div class="dn">12</div><div class="post r">UGC ad · 7pm</div></div>
+        <div class="day"><div class="dn">13</div></div>
+        <div class="day"><div class="dn">14</div><div class="post p">Carousel · 11am</div></div>
+        <div class="day"><div class="dn">15</div><div class="post r">Reel · 8pm</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PANELS={api:['tApi','pApi'],team:['tTeam','pTeam'],wl:['tWl','pWl'],ana:['tAna','pAna']};
+function setTab(t){
+  for(const k in PANELS){
+    document.getElementById(PANELS[k][0]).classList.toggle('on',k===t);
+    document.getElementById(PANELS[k][1]).classList.toggle('on',k===t);
+  }
+}
+let revealed=false;
+function reveal(){revealed=!revealed;document.getElementById('apiKey').textContent=revealed?'sk_live_demo_not_a_real_key_4f2a':'sk_live_••••••••••••••••3f9a';}
+</script>
+</body>
+</html>

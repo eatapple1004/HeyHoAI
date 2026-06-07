@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI — Your face. Any look. Auto content.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#07070c; --bg2:#0c0c14; --surface:#13131d; --border:rgba(255,255,255,0.08);
+    --border2:rgba(255,255,255,0.14); --text:#edecf5; --dim:#9a9ab2; --faint:#6a6a85;
+    --accent:#7c6cff; --accent2:#a99bff; --pink:#ff7eb6; --cyan:#5ee0d6; --gold:#ffce7a;
+    --r:18px;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  ::selection{background:rgba(124,108,255,.35)}
+  a{text-decoration:none;color:inherit}
+
+  /* ambient mesh */
+  .mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;animation:float 18s ease-in-out infinite}
+  .blob.b1{width:520px;height:520px;background:radial-gradient(circle,#7c6cff,transparent 70%);top:-160px;left:-120px}
+  .blob.b2{width:480px;height:480px;background:radial-gradient(circle,#ff7eb6,transparent 70%);top:120px;right:-140px;animation-delay:-6s}
+  .blob.b3{width:420px;height:420px;background:radial-gradient(circle,#5ee0d6,transparent 70%);top:780px;left:30%;opacity:.3;animation-delay:-11s}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-40px) scale(1.08)}}
+  .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;position:relative;z-index:2}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(7,7,12,.6);border-bottom:1px solid var(--border)}
+  .nav-in{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .brand{font-family:'Sora';font-weight:800;font-size:19px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 0 14px var(--accent)}
+  .brand span{background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .nav-links{display:flex;gap:30px}
+  .nav-links a{font-size:14px;color:var(--dim);font-weight:500;transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+  .nav-cta{display:flex;gap:10px;align-items:center}
+  @media(max-width:760px){.nav-links{display:none}}
+
+  .btn{font-family:inherit;font-weight:600;font-size:14px;border-radius:12px;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .btn-ghost{background:transparent;color:var(--text);padding:10px 16px;border:1px solid var(--border2)}
+  .btn-ghost:hover{background:rgba(255,255,255,.06)}
+  .btn-primary{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;padding:11px 20px;box-shadow:0 8px 24px -8px var(--accent)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px -10px var(--accent)}
+  .btn-lg{padding:15px 28px;font-size:15px;border-radius:14px}
+
+  /* hero */
+  .hero{padding:96px 0 60px;text-align:center}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--accent2);
+    background:rgba(124,108,255,.1);border:1px solid rgba(124,108,255,.28);padding:7px 15px;border-radius:30px;margin-bottom:26px}
+  .pill .live{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{font-family:'Sora';font-weight:800;font-size:clamp(40px,6.4vw,76px);line-height:1.04;letter-spacing:-2px;margin-bottom:22px}
+  h1 .grad{background:linear-gradient(110deg,#fff 10%,var(--accent2) 50%,var(--pink) 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .lead{font-size:clamp(16px,2vw,20px);color:var(--dim);max-width:620px;margin:0 auto 36px;font-weight:400}
+  .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+  .micro{font-size:13px;color:var(--faint)}
+  .micro b{color:var(--dim)}
+
+  .fade{opacity:0;transform:translateY(24px);animation:fadeUp .9s cubic-bezier(.2,.7,.3,1) forwards}
+  .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}.d5{animation-delay:.5s}
+  @keyframes fadeUp{to{opacity:1;transform:none}}
+
+  /* hero showcase */
+  .showcase{margin-top:64px;position:relative}
+  .browser{max-width:1000px;margin:0 auto;background:linear-gradient(180deg,#15151f,#0e0e16);border:1px solid var(--border2);
+    border-radius:22px;box-shadow:0 50px 120px -40px rgba(124,108,255,.45),0 0 0 1px rgba(255,255,255,.03);overflow:hidden}
+  .browser-bar{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+  .browser-bar i{width:11px;height:11px;border-radius:50%;display:block}
+  .browser-bar .r{background:#ff5f57}.browser-bar .y{background:#febc2e}.browser-bar .g{background:#28c840}
+  .browser-bar .url{margin-left:14px;font-size:12px;color:var(--faint);background:rgba(255,255,255,.04);padding:5px 14px;border-radius:8px;border:1px solid var(--border)}
+  .showgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px}
+  @media(max-width:760px){.showgrid{grid-template-columns:repeat(2,1fr)}}
+  .tile{aspect-ratio:3/4;border-radius:14px;position:relative;overflow:hidden;border:1px solid var(--border);transition:transform .3s}
+  .tile:hover{transform:translateY(-6px) scale(1.02)}
+  .tile .lbl{position:absolute;left:10px;bottom:10px;right:10px;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .tile .badge{position:absolute;top:9px;left:9px;font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;gap:4px}
+  .tile .av{position:absolute;top:8px;right:9px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.7)}
+
+  /* logo strip */
+  .strip{margin-top:70px;text-align:center}
+  .strip p{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin-bottom:22px}
+  .logos{display:flex;justify-content:center;gap:46px;flex-wrap:wrap;opacity:.6}
+  .logos span{font-family:'Sora';font-weight:700;font-size:19px;color:var(--dim);letter-spacing:-.5px}
+
+  /* sections */
+  section{padding:100px 0;position:relative}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:14px;text-align:center}
+  .h2{font-family:'Sora';font-weight:800;font-size:clamp(30px,4vw,46px);letter-spacing:-1.2px;text-align:center;line-height:1.1;margin-bottom:16px}
+  .sub{font-size:17px;color:var(--dim);text-align:center;max-width:560px;margin:0 auto 56px}
+
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:var(--r);padding:30px 26px;position:relative;transition:border-color .25s,transform .25s}
+  .step:hover{border-color:var(--border2);transform:translateY(-4px)}
+  .step .n{font-family:'Sora';font-weight:800;font-size:15px;color:#fff;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--pink));margin-bottom:18px;box-shadow:0 8px 20px -6px var(--accent)}
+  .step h3{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:8px}
+  .step p{font-size:14.5px;color:var(--dim)}
+
+  /* feature split */
+  .feat{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:30px}
+  @media(max-width:860px){.feat{grid-template-columns:1fr}}
+  .fcard{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:22px;padding:34px;overflow:hidden;position:relative}
+  .fcard .tag{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
+  .fcard h3{font-family:'Sora';font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px}
+  .fcard p{font-size:14.5px;color:var(--dim);margin-bottom:22px}
+  .fcard ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+  .fcard li{font-size:14px;color:var(--text);display:flex;gap:10px;align-items:center}
+  .fcard li .ck{color:var(--cyan);font-weight:800}
+  .fmini{display:flex;gap:10px;margin-top:24px}
+  .fmini .mt{flex:1;aspect-ratio:3/4;border-radius:12px;border:1px solid var(--border)}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:10px}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{text-align:center;padding:26px 14px;border:1px solid var(--border);border-radius:var(--r);background:rgba(255,255,255,.02)}
+  .stat .big{font-family:'Sora';font-weight:800;font-size:38px;letter-spacing:-1px;background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .stat .cap{font-size:13px;color:var(--dim);margin-top:4px}
+
+  /* pricing */
+  .prices{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:20px;align-items:start}
+  @media(max-width:860px){.prices{grid-template-columns:1fr;max-width:420px;margin-inline:auto}}
+  .price{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:20px;padding:30px}
+  .price.pop{border-color:rgba(124,108,255,.5);box-shadow:0 0 0 1px rgba(124,108,255,.4),0 30px 70px -30px rgba(124,108,255,.5);position:relative}
+  .price.pop::before{content:'MOST POPULAR';position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--accent),var(--pink));font-size:10px;font-weight:800;letter-spacing:.6px;padding:5px 13px;border-radius:9px;color:#fff}
+  .price .pn{font-family:'Sora';font-weight:700;font-size:17px;margin-bottom:6px}
+  .price .pp{font-family:'Sora';font-weight:800;font-size:40px;letter-spacing:-1.5px}
+  .price .pp small{font-size:14px;font-weight:500;color:var(--faint)}
+  .price .cr{color:var(--gold);font-size:13.5px;font-weight:600;margin:10px 0 18px}
+  .price ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:24px}
+  .price li{font-size:13.5px;color:var(--dim);display:flex;gap:9px}
+  .price li .ck{color:var(--cyan)}
+  .price .btn{width:100%;justify-content:center}
+
+  /* CTA */
+  .cta-band{margin:30px auto 0;max-width:920px;text-align:center;padding:60px 32px;border-radius:28px;
+    background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(255,126,182,.12));border:1px solid var(--border2);position:relative;overflow:hidden}
+  .cta-band h2{font-family:'Sora';font-weight:800;font-size:clamp(28px,4vw,42px);letter-spacing:-1px;margin-bottom:14px}
+  .cta-band p{color:var(--dim);margin-bottom:28px}
+
+  /* footer */
+  footer{border-top:1px solid var(--border);padding:54px 0 40px;margin-top:60px}
+  .foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px}
+  .foot-col h4{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+  .foot-col a{display:block;font-size:14px;color:var(--dim);margin-bottom:9px;transition:color .2s}
+  .foot-col a:hover{color:var(--text)}
+  .foot-bot{margin-top:40px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--faint)}
+
+  /* gradient helpers for tiles */
+  .g1{background:linear-gradient(150deg,#ffce7a,#ff7eb6)}.g2{background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
+  .g3{background:linear-gradient(150deg,#ff7eb6,#7c6cff)}.g4{background:linear-gradient(150deg,#5ee0d6,#7c6cff)}
+  .g5{background:linear-gradient(150deg,#ffce7a,#ff5f8f)}.g6{background:linear-gradient(150deg,#a99bff,#ff7eb6)}
+  .g7{background:linear-gradient(150deg,#5ee0d6,#9b7bff)}.g8{background:linear-gradient(150deg,#ff9a6b,#ffce7a)}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand"><span class="dot"></span><span>HeyHoAI</span></div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#modes">For creators &amp; brands</a>
+      <a href="#pricing">Pricing</a>
+      <a href="/gallery.html">Gallery</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/login.html" class="btn btn-ghost">Log in</a>
+      <a href="/login.html" class="btn btn-primary">Start free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero wrap">
+  <div class="pill fade d1"><span class="live"></span> No prompt engineering. Ever.</div>
+  <h1 class="fade d2">Your face. Any look.<br><span class="grad">Content on autopilot.</span></h1>
+  <p class="lead fade d3">Upload one selfie or one product photo, pick a template, and HeyHoAI generates studio-grade photos and reels — keeping your identity perfectly consistent across every shot.</p>
+  <div class="hero-cta fade d4">
+    <a href="/login.html" class="btn btn-primary btn-lg">Create your first post →</a>
+    <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
+  </div>
+  <div class="micro fade d4">✨ <b>10 free credits</b> on sign-up · No credit card required</div>
+
+  <!-- SHOWCASE -->
+  <div class="showcase fade d5">
+    <div class="browser">
+      <div class="browser-bar">
+        <i class="r"></i><i class="y"></i><i class="g"></i>
+        <span class="url">heyhoai.com/studio</span>
+      </div>
+      <div class="showgrid">
+        <div class="tile g1"><span class="badge">▶ REEL</span><img class="av" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Crect width='22' height='22' fill='%23222'/%3E%3C/svg%3E"><span class="lbl">Travel · Golden Hour</span></div>
+        <div class="tile g2"><span class="badge">▦ PHOTO</span><span class="lbl">Editorial Glam</span></div>
+        <div class="tile g3"><span class="badge">▶ REEL</span><span class="lbl">GRWM</span></div>
+        <div class="tile g4"><span class="badge">▦ PHOTO</span><span class="lbl">Cozy Cafe</span></div>
+        <div class="tile g5"><span class="badge">▦ PHOTO</span><span class="lbl">Studio Lookbook</span></div>
+        <div class="tile g6"><span class="badge">▶ REEL</span><span class="lbl">Outfit Transition</span></div>
+        <div class="tile g7"><span class="badge">▦ PHOTO</span><span class="lbl">Lifestyle Mood</span></div>
+        <div class="tile g8"><span class="badge">▦ PHOTO</span><span class="lbl">Street Style</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- LOGO STRIP -->
+<div class="strip wrap">
+  <p>Powered by best-in-class models</p>
+  <div class="logos">
+    <span>Nano&nbsp;Banana</span><span>FLUX</span><span>Runway</span><span>Kling</span><span>Claude</span>
+  </div>
+</div>
+
+<!-- HOW -->
+<section id="how" class="wrap">
+  <div class="eyebrow">How it works</div>
+  <h2 class="h2">Three steps. Zero prompts.</h2>
+  <p class="sub">The hard part — prompt engineering, lighting, consistency — is baked into every template. You just choose.</p>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3>Add your subject</h3><p>One selfie (creators) or one product shot (brands). We lock the identity so it stays you across every frame.</p></div>
+    <div class="step"><div class="n">2</div><h3>Pick a template</h3><p>Browse curated looks and trending reel formats. Filter by style — no prompt writing, no settings to fiddle with.</p></div>
+    <div class="step"><div class="n">3</div><h3>Generate &amp; post</h3><p>Get a full set of photos or a ready reel in seconds. Download, or publish straight to Instagram.</p></div>
+  </div>
+</section>
+
+<!-- MODES -->
+<section id="modes" class="wrap">
+  <div class="eyebrow">One engine, two superpowers</div>
+  <h2 class="h2">Built for creators <span style="color:var(--faint)">&amp;</span> brands</h2>
+  <p class="sub">Whether you're growing a personal brand or selling products, the same template magic works for you.</p>
+  <div class="feat">
+    <div class="fcard">
+      <div class="tag">😎 For Influencers</div>
+      <h3>Show up daily — without the shoots</h3>
+      <p>Turn one selfie into an endless feed. Travel sets, GRWM reels, editorial portraits — all unmistakably you.</p>
+      <ul>
+        <li><span class="ck">✓</span> Identity-locked across every image</li>
+        <li><span class="ck">✓</span> Trending reel formats, refreshed weekly</li>
+        <li><span class="ck">✓</span> Feed photos + reels in one click</li>
+      </ul>
+      <div class="fmini"><div class="mt g3"></div><div class="mt g4"></div><div class="mt g6"></div></div>
+    </div>
+    <div class="fcard">
+      <div class="tag">🛍️ For Shopping &amp; Brands</div>
+      <h3>Studio-grade product content, no studio</h3>
+      <p>Drop in a product photo and get lookbooks, lifestyle moods, and on-model shots — background removed automatically.</p>
+      <ul>
+        <li><span class="ck">✓</span> Lookbook, lifestyle &amp; on-model sets</li>
+        <li><span class="ck">✓</span> Auto background removal</li>
+        <li><span class="ck">✓</span> Commercial license included</li>
+      </ul>
+      <div class="fmini"><div class="mt g5"></div><div class="mt g8"></div><div class="mt g1"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="wrap" style="padding-top:20px">
+  <div class="stats">
+    <div class="stat"><div class="big">~20s</div><div class="cap">to a full post</div></div>
+    <div class="stat"><div class="big">40+</div><div class="cap">curated templates</div></div>
+    <div class="stat"><div class="big">1</div><div class="cap">photo to start</div></div>
+    <div class="stat"><div class="big">0</div><div class="cap">prompts to write</div></div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="wrap">
+  <div class="eyebrow">Pricing</div>
+  <h2 class="h2">Start free. Scale when you grow.</h2>
+  <p class="sub">Monthly credits with your plan, top up anytime. 1 photo set = 2 credits · 1 reel = 6 credits.</p>
+  <div class="prices">
+    <div class="price">
+      <div class="pn">Free</div><div class="pp">$0<small> /mo</small></div>
+      <div class="cr">◈ 10 credits to try</div>
+      <ul><li><span class="ck">✓</span> Both modes</li><li><span class="ck">✓</span> Standard quality</li><li><span class="ck">✓</span> Watermarked</li></ul>
+      <a href="/login.html" class="btn btn-ghost">Get started</a>
+    </div>
+    <div class="price pop">
+      <div class="pn">Creator</div><div class="pp">$19<small> /mo</small></div>
+      <div class="cr">◈ 200 credits / month</div>
+      <ul><li><span class="ck">✓</span> No watermark</li><li><span class="ck">✓</span> Reels included</li><li><span class="ck">✓</span> Priority queue</li><li><span class="ck">✓</span> HD downloads</li></ul>
+      <a href="/login.html" class="btn btn-primary">Start creating</a>
+    </div>
+    <div class="price">
+      <div class="pn">Brand</div><div class="pp">$79<small> /mo</small></div>
+      <div class="cr">◈ 1,000 credits / month</div>
+      <ul><li><span class="ck">✓</span> Commercial license</li><li><span class="ck">✓</span> On-model try-on</li><li><span class="ck">✓</span> Bulk generation</li></ul>
+      <a href="/login.html" class="btn btn-ghost">Choose Brand</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="wrap" style="padding-top:20px">
+  <div class="cta-band">
+    <h2>Your next 30 posts are one selfie away.</h2>
+    <p>Join creators and brands making content on autopilot.</p>
+    <a href="/login.html" class="btn btn-primary btn-lg">Start free — 10 credits →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="wrap">
+  <div class="foot-grid">
+    <div class="foot-col" style="max-width:260px">
+      <div class="brand" style="margin-bottom:14px"><span class="dot"></span><span>HeyHoAI</span></div>
+      <p style="font-size:13.5px;color:var(--faint)">Your face. Any look. Content on autopilot.</p>
+    </div>
+    <div class="foot-col"><h4>Product</h4><a href="#how">How it works</a><a href="#modes">For creators</a><a href="#pricing">Pricing</a><a href="/studio.html">Studio</a></div>
+    <div class="foot-col"><h4>Company</h4><a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a></div>
+    <div class="foot-col"><h4>Legal</h4><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Content policy</a></div>
+  </div>
+  <div class="foot-bot"><span>© 2026 HeyHoAI. All rights reserved.</span><span>Made for creators, everywhere.</span></div>
+</footer>
+</body>
+</html>

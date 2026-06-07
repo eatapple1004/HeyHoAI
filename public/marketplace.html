@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI · Marketplace</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:28px}
+
+  /* creator revenue-share banner */
+  .creator-cta{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+    background:linear-gradient(120deg,rgba(124,108,255,.2),rgba(255,126,182,.12));border:1px solid var(--border2);border-radius:20px;padding:22px 26px;margin-bottom:34px}
+  .creator-cta .ct{font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:5px}
+  .creator-cta .cd{font-size:13px;color:var(--dim);max-width:580px;line-height:1.55}
+  .creator-cta .pct{color:var(--cyan);font-weight:700}
+
+  /* tabs */
+  .tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:4px;margin-bottom:22px}
+  .tabs button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:13.5px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+  .tabs button.on{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
+
+  /* filters */
+  .filter-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-size:12.5px;font-weight:600;padding:7px 15px;border-radius:30px;cursor:pointer;transition:.2s}
+  .chip:hover{color:var(--text)}
+  .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
+
+  /* card grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:18px}
+  .card{border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);transition:.22s;display:flex;flex-direction:column}
+  .card:hover{transform:translateY(-5px);border-color:var(--border2)}
+  .card .preview{height:172px;display:flex;align-items:center;justify-content:center;font-size:46px;position:relative}
+  .card .badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;letter-spacing:.4px;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);color:#fff;text-transform:uppercase}
+  .card .badge.excl{background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27}
+  .card .meta{padding:14px 16px;display:flex;flex-direction:column;gap:7px;flex:1}
+  .card .rname{font-size:14px;font-weight:600}
+  .card .creator{font-size:12px;color:var(--faint)}
+  .card .creator b{color:var(--accent2);font-weight:600}
+  .card .statline{font-size:11.5px;color:var(--dim)}
+  .card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px}
+  .card .price{font-size:13.5px;font-weight:700;color:var(--gold)}
+  .card .price small{color:var(--dim);font-weight:500;font-size:11px}
+  .card .foot .btn{padding:8px 16px;font-size:12.5px}
+
+  .affil-link{margin-top:30px;font-size:13px;color:var(--dim);text-align:center}
+  .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
+
+  @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card .preview{height:130px;font-size:34px}}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a class="active">Market</a>
+      <a onclick="location.href='/gallery.html'">Gallery</a>
+      <a onclick="location.href='/billing.html'">Billing</a>
+      <a onclick="location.href='/business.html'">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="fade d1">Marketplace</h1>
+  <div class="sub fade d1">Templates and AI models crafted by top creators — and earn when yours get used.</div>
+
+  <div class="creator-cta glass fade d2">
+    <div>
+      <div class="ct">🎨 Sell your templates &amp; models</div>
+      <div class="cd">Publish a template or virtual model and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="alert('크리에이터 신청 (mock) → /api/marketplace/apply')">Become a creator</button>
+  </div>
+
+  <div class="tabs fade d2">
+    <button class="on" id="tabTemplates" onclick="setTab('templates')">🧩 Templates</button>
+    <button id="tabModels" onclick="setTab('models')">👤 Virtual Models</button>
+  </div>
+
+  <div class="filter-row fade d3" id="filterRow"></div>
+  <div class="grid fade d3" id="grid"></div>
+
+  <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
+</div>
+
+<script>
+const TEMPLATES=[
+  {name:'Golden Hour Pro',cat:'Influencer',creator:'@lindastudio',price:2,uses:'12.4k',rating:'4.9',emoji:'🌅',grad:'g1',badge:'Photo'},
+  {name:'GRWM Cinematic',cat:'Influencer',creator:'@mireels',price:6,uses:'8.1k',rating:'4.8',emoji:'💋',grad:'g6',badge:'Reel'},
+  {name:'Lookbook Studio',cat:'Shopping',creator:'@studio.kr',price:2,uses:'6.7k',rating:'4.9',emoji:'📷',grad:'g2',badge:'Photo'},
+  {name:'UGC Testimonial Hook',cat:'UGC',creator:'@adcraft',price:8,uses:'4.2k',rating:'4.7',emoji:'🗣️',grad:'g3',badge:'Ad'},
+  {name:'Y2K Film Pack',cat:'Influencer',creator:'@retrofilm',price:2,uses:'9.9k',rating:'4.8',emoji:'📸',grad:'g4',badge:'Photo'},
+  {name:'Product Demo Pro',cat:'UGC',creator:'@adcraft',price:8,uses:'3.5k',rating:'4.6',emoji:'📦',grad:'g7',badge:'Ad'},
+  {name:'Aesthetic Cafe',cat:'Influencer',creator:'@cozyvibes',price:2,uses:'7.3k',rating:'4.9',emoji:'☕',grad:'g8',badge:'Photo'},
+  {name:'Flat-lay Detail',cat:'Shopping',creator:'@studio.kr',price:2,uses:'2.9k',rating:'4.7',emoji:'🪞',grad:'g5',badge:'Photo'}
+];
+const MODELS=[
+  {name:'Mia — Lifestyle',tier:'Standard',price:'◈ 3',unit:'/use',uses:'18.2k',rating:'4.9',emoji:'👩🏻',grad:'g6'},
+  {name:'Leo — Streetwear',tier:'Standard',price:'◈ 3',unit:'/use',uses:'11.5k',rating:'4.8',emoji:'👨🏽',grad:'g2'},
+  {name:'Aria — Luxury',tier:'Exclusive',price:'$49',unit:'/mo',uses:'5.1k',rating:'5.0',emoji:'💃🏻',grad:'g5'},
+  {name:'Kai — Fitness',tier:'Standard',price:'◈ 3',unit:'/use',uses:'7.8k',rating:'4.7',emoji:'🏋🏻',grad:'g7'},
+  {name:'Yuna — Beauty',tier:'Exclusive',price:'$49',unit:'/mo',uses:'9.0k',rating:'4.9',emoji:'💄',grad:'g3'},
+  {name:'Noah — Casual',tier:'Standard',price:'◈ 3',unit:'/use',uses:'4.4k',rating:'4.6',emoji:'🧑🏼',grad:'g4'}
+];
+let tab='templates',filter='All';
+function setTab(t){tab=t;filter='All';
+  document.getElementById('tabTemplates').classList.toggle('on',t==='templates');
+  document.getElementById('tabModels').classList.toggle('on',t==='models');render();}
+function setFilter(f){filter=f;render();}
+function render(){
+  const fr=document.getElementById('filterRow'),grid=document.getElementById('grid');
+  if(tab==='templates'){
+    fr.style.display='';
+    const cats=['All','Influencer','Shopping','UGC'];
+    fr.innerHTML=cats.map(c=>`<div class="chip ${filter===c?'active':''}" onclick="setFilter('${c}')">${c}</div>`).join('');
+    grid.innerHTML=TEMPLATES.filter(t=>filter==='All'||t.cat===filter).map(t=>`
+      <div class="card">
+        <div class="preview ${t.grad}"><span class="badge">${t.badge}</span>${t.emoji}</div>
+        <div class="meta">
+          <div class="rname">${t.name}</div>
+          <div class="creator">by <b>${t.creator}</b></div>
+          <div class="statline">⭐ ${t.rating} · ${t.uses} uses</div>
+          <div class="foot"><div class="price">◈ ${t.price}<small> /use</small></div>
+            <button class="btn btn-primary" onclick="use('${t.name}')">Use</button></div>
+        </div></div>`).join('');
+  } else {
+    fr.style.display='none';
+    grid.innerHTML=MODELS.map(m=>`
+      <div class="card">
+        <div class="preview ${m.grad}"><span class="badge ${m.tier==='Exclusive'?'excl':''}">${m.tier}</span>${m.emoji}</div>
+        <div class="meta">
+          <div class="rname">${m.name}</div>
+          <div class="statline">⭐ ${m.rating} · ${m.uses} licensed</div>
+          <div class="foot"><div class="price">${m.price}<small> ${m.unit}</small></div>
+            <button class="btn btn-primary" onclick="lic('${m.name}')">License</button></div>
+        </div></div>`).join('');
+  }
+}
+function use(n){alert('템플릿 사용 (mock): '+n+'\n→ Studio로 이동해 적용 + 크리에이터에게 수익 분배');}
+function lic(n){alert('가상모델 라이선스 (mock): '+n);}
+render();
+</script>
+</body>
+</html>
