@@ -1,5 +1,6 @@
 const { createCharacter, getCharacter, listCharacters } = require('./character.service');
 const { createCharacterRequestSchema } = require('./character.validator');
+const { assertCharacterOwned } = require('../middleware/ownership');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -19,7 +20,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 async function create(req, res, next) {
   try {
     const input = createCharacterRequestSchema.parse(req.body);
-    const character = await createCharacter(input);
+    const character = await createCharacter(input, req.user.id);
 
     res.status(201).json({
       success: true,
@@ -35,7 +36,7 @@ async function create(req, res, next) {
  */
 async function getById(req, res, next) {
   try {
-    const character = await getCharacter(req.params.id);
+    const character = await getCharacter(req.params.id, req.user.id);
 
     res.json({
       success: true,
@@ -53,6 +54,7 @@ async function list(req, res, next) {
   try {
     const { status, limit, offset } = req.query;
     const result = await listCharacters({
+      userId: req.user.id,
       status,
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
@@ -80,6 +82,7 @@ async function setReferenceImage(req, res, next) {
   try {
     const { id } = req.params;
     const { imageId } = req.body;
+    await assertCharacterOwned(id, req.user.id);
 
     const characterRepo = require('./character.repository');
     const imageAssetRepo = require('../images/imageAsset.repository');
@@ -102,6 +105,7 @@ async function setReferenceImage(req, res, next) {
  */
 async function clearReferenceImage(req, res, next) {
   try {
+    await assertCharacterOwned(req.params.id, req.user.id);
     const characterRepo = require('./character.repository');
     const character = await characterRepo.clearReferenceImage(req.params.id);
     res.json({ success: true, data: character });
@@ -150,7 +154,7 @@ async function register(req, res, next) {
         brandSafety: { approvedThemes: ['lifestyle'], bannedTopics: ['politics'], targetAudience: '18-35' },
       };
 
-      const saved = await characterRepo.insert({ name, concept, persona });
+      const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona });
 
       // 대표 이미지 설정
       if (req.file) {
@@ -172,6 +176,7 @@ async function register(req, res, next) {
  */
 async function deleteCharacter(req, res, next) {
   try {
+    await assertCharacterOwned(req.params.id, req.user.id);
     const characterRepo = require('./character.repository');
     const character = await characterRepo.updateStatus(req.params.id, 'archived');
     if (!character) {
@@ -218,7 +223,7 @@ async function registerWithImage(req, res, next) {
       brandSafety: { approvedThemes: ['lifestyle'], bannedTopics: ['politics'], targetAudience: '18-35' },
     };
 
-    const saved = await characterRepo.insert({ name, concept, persona });
+    const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona });
 
     // 선택한 이미지를 대표 이미지로 설정
     const imageUrl = `/images/${imageFilename}`;

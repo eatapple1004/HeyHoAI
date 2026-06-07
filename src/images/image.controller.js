@@ -2,6 +2,7 @@ const { generateForCharacter, setMasterImage } = require('./imageGeneration.serv
 const { generateImagesRequestSchema } = require('./image.validator');
 const imageAssetRepo = require('./imageAsset.repository');
 const jobRepo = require('./generationJob.repository');
+const { assertCharacterOwned } = require('../middleware/ownership');
 
 /**
  * POST /api/characters/:characterId/images/generate
@@ -10,6 +11,7 @@ const jobRepo = require('./generationJob.repository');
 async function generate(req, res, next) {
   try {
     const { characterId } = req.params;
+    await assertCharacterOwned(characterId, req.user.id);
     const opts = generateImagesRequestSchema.parse(req.body || {});
 
     const result = await generateForCharacter(characterId, opts);
@@ -45,6 +47,7 @@ async function generate(req, res, next) {
 async function listByCharacter(req, res, next) {
   try {
     const { characterId } = req.params;
+    await assertCharacterOwned(characterId, req.user.id);
     const { status } = req.query;
     const images = await imageAssetRepo.findByCharacterId(characterId, { status });
 
@@ -67,6 +70,7 @@ async function getById(req, res, next) {
     if (!image) {
       return res.status(404).json({ success: false, error: 'Image not found' });
     }
+    await assertCharacterOwned(image.character_id, req.user.id);
 
     res.json({ success: true, data: image });
   } catch (err) {
@@ -81,6 +85,7 @@ async function getById(req, res, next) {
 async function setMaster(req, res, next) {
   try {
     const { characterId, imageId } = req.params;
+    await assertCharacterOwned(characterId, req.user.id);
     const image = await setMasterImage(characterId, imageId);
 
     res.json({ success: true, data: image });
@@ -95,6 +100,7 @@ async function setMaster(req, res, next) {
  */
 async function listJobs(req, res, next) {
   try {
+    await assertCharacterOwned(req.params.characterId, req.user.id);
     const jobs = await jobRepo.findByCharacterId(req.params.characterId);
     res.json({ success: true, data: jobs });
   } catch (err) {

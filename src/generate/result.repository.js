@@ -31,14 +31,15 @@ async function findByPromptIdx(promptIdx) {
   return result.rows;
 }
 
-async function findAll({ limit = 50, offset = 0 } = {}) {
+async function findAll({ userId, limit = 50, offset = 0 } = {}) {
   const result = await query(
     `SELECT gr.*, p.prompt_text, c.name as character_name
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
      LEFT JOIN characters c ON c.id = gr.character_id
-     ORDER BY gr.created_at DESC LIMIT $1 OFFSET $2`,
-    [limit, offset]
+     WHERE p.user_id = $1
+     ORDER BY gr.created_at DESC LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
   );
   return result.rows;
 }

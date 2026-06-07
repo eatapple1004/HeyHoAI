@@ -5,12 +5,12 @@ const { query } = require('../db/client');
  * @param {{ name: string; concept: string; persona: object }} data
  * @returns {Promise<object>} 저장된 row
  */
-async function insert({ name, concept, persona }) {
+async function insert({ userId, name, concept, persona }) {
   const result = await query(
-    `INSERT INTO characters (name, concept, persona, status)
-     VALUES ($1, $2, $3, 'active')
+    `INSERT INTO characters (user_id, name, concept, persona, status)
+     VALUES ($1, $2, $3, $4, 'active')
      RETURNING *`,
-    [name, concept, JSON.stringify(persona)]
+    [userId, name, concept, JSON.stringify(persona)]
   );
   return result.rows[0];
 }
@@ -30,10 +30,15 @@ async function findById(id) {
  * @param {{ status?: string; limit?: number; offset?: number }} opts
  * @returns {Promise<{ rows: object[]; total: number }>}
  */
-async function findAll({ status, limit = 20, offset = 0 } = {}) {
+async function findAll({ userId, status, limit = 20, offset = 0 } = {}) {
   const conditions = ["status != 'archived'"];
   const params = [];
   let paramIndex = 1;
+
+  if (userId) {
+    conditions.push(`user_id = $${paramIndex++}`);
+    params.push(userId);
+  }
 
   if (status) {
     conditions.push(`status = $${paramIndex++}`);
