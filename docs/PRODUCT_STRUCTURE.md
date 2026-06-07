@@ -247,7 +247,7 @@ GET    /api/studio/gallery         완료 결과물 갤러리
 | 파일 | 역할 |
 |---|---|
 | `landing.html` | 마케팅 랜딩 (영어), CTA→가입 |
-| `login.html` | 로그인/가입 |
+| `saas-login.html` | 로그인/가입 |
 | `app.html` (대시보드) | 모드 선택(인플루언서/쇼핑몰), 내 subject·갤러리 진입 |
 | `studio.html` | ① subject 업로드/선택 → ② 양식 갤러리에서 recipe 클릭 → ③ 생성 → ④ 결과 |
 | `gallery.html` | 결과물 보관함·다운로드 |
@@ -285,7 +285,7 @@ src/
   recipes/     recipe.route.js  recipe.repository.js  seeds/recipes.influencer.js  seeds/recipes.shopping.js
   studio/      studio.route.js  studio.controller.js  studio.service.js  renderJob.repository.js
 src/db/migrate.js   ← 위 6개 테이블 + 시드 추가
-public/      landing.html login.html app.html studio.html gallery.html billing.html
+public/      landing.html saas-login.html app.html studio.html gallery.html billing.html
 ```
 
 ---

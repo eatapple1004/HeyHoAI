@@ -39,11 +39,11 @@
 
 ## 1. `landing.html` — 마케팅 랜딩 (영어)
 
-> 비로그인 방문자 첫 화면. 모든 CTA는 `/login.html`로 유도. 자체 CSS 독립 페이지.
+> 비로그인 방문자 첫 화면. 모든 CTA는 `/saas-login.html`로 유도. 자체 CSS 독립 페이지.
 
 ### 1.1 네비게이션
 - 메뉴 ⚙️: **How it works**(#how), **For creators & brands**(#modes), **Pricing**(#pricing) — 같은 페이지 내 부드러운 스크롤. **Gallery** → `/gallery.html`.
-- 우측 ⚙️: **Log in**(외곽선) · **Start free**(보라) — 둘 다 `/login.html`.
+- 우측 ⚙️: **Log in**(외곽선) · **Start free**(보라) — 둘 다 `/saas-login.html`.
 
 ### 1.2 히어로
 - **라이브 뱃지** 📄 — `● No prompt engineering. Ever.` 시안 점이 깜빡임(pulse).
@@ -85,7 +85,7 @@
 
 ---
 
-## 2. `login.html` — 로그인 / 회원가입
+## 2. `saas-login.html` — 로그인 / 회원가입
 
 > 중앙 글래스 카드. 로그인↔가입 한 카드에서 전환.
 

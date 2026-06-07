@@ -89,7 +89,7 @@ FRONT(public) ─REST/api─> PRODUCT LAYER(신규) ─내부호출─> ENGINE(�
 
 ## 7. 남은 작업 (권장 순서)
 
-1. **auth** — 회원가입/로그인(JWT) + `authMiddleware`. (login.html의 mock 제출을 실 API로)
+1. **auth** — 회원가입/로그인(JWT) + `authMiddleware`. (saas-login.html의 mock 제출을 실 API로)
 2. **DB 마이그레이션** — 신규 6테이블(`users, credit_ledger, payments, subjects, recipes, render_jobs`) + `generation_costs`(costMeter에 SQL 준비됨). 기존 6테이블 재사용.
 3. **studio 오케스트레이터** — `studio.service`가 subject×recipe로 엔진 호출 + 크레딧 차감 + `costMeter.meterGeneration()` 적재. (studio.html 생성바의 비용 로직과 1:1 매칭)
 4. **billing/Stripe** — 구독·크레딧팩·자동충전·pause (billing.html UI와 매칭).
