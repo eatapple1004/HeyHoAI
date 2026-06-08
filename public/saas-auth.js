@@ -47,4 +47,29 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+
+  // ── 전역 토스트 (alert 대체) ──
+  function ensureToastHost() {
+    let host = document.getElementById('toastHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'toastHost';
+      host.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none';
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+  // window.toast(message, type) — type: 'info'(기본) | 'success' | 'error'
+  window.toast = function (msg, type) {
+    const host = ensureToastHost();
+    const t = document.createElement('div');
+    const color = type === 'error' ? '#ff7eb6' : type === 'success' ? '#5ee0d6' : '#fff';
+    t.textContent = msg;
+    t.style.cssText = 'pointer-events:auto;max-width:90vw;font-size:13.5px;font-weight:600;color:' + color
+      + ';background:rgba(19,19,29,.94);border:1px solid var(--border2,#2a2a3e);border-radius:12px;padding:12px 18px;'
+      + 'box-shadow:0 16px 40px -12px rgba(0,0,0,.7);opacity:0;transform:translateY(8px);transition:.22s';
+    host.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; setTimeout(() => t.remove(), 250); }, 2600);
+  };
 })();
