@@ -369,6 +369,7 @@
   </div>
 </div>
 
+<script src="/js/pricing.js?v=1"></script>
 <script src="/js/hh.js?v=2"></script>
 <script>
 const GRAD={g1:'linear-gradient(150deg,#ffce7a,#ff7eb6)',g2:'linear-gradient(150deg,#7c6cff,#5ee0d6)',g3:'linear-gradient(150deg,#ff7eb6,#7c6cff)',g4:'linear-gradient(150deg,#5ee0d6,#7c6cff)',g5:'linear-gradient(150deg,#ffce7a,#ff5f8f)',g6:'linear-gradient(150deg,#a99bff,#ff7eb6)',g7:'linear-gradient(150deg,#5ee0d6,#9b7bff)',g8:'linear-gradient(150deg,#ff9a6b,#ffce7a)'};
@@ -709,7 +710,10 @@ function generate(){
 }
 // ── P1-A + 티어-라우팅: 인라인 페이월 + 결과 업셀 ──
 // 플랜 사다리(P2 확정): 같은 유저를 작업 신호에 맞는 티어로 라우팅 → LTV 1.7~2배
-const PLANS={
+// 가격 정본은 /js/pricing.js (window.PRICING). 여기선 참조만 — 숫자 변경은 pricing.js에서.
+const PLANS=(window.PRICING&&window.PRICING.plans)?{
+  creator:window.PRICING.plans.creator, pro:window.PRICING.plans.pro, brand:window.PRICING.plans.brand
+}:{ // fallback (pricing.js 미로드 시)
   creator:{name:'Creator',price:19,cr:250,line:'No watermark · HD · ◈250/mo'},
   pro:{name:'Pro',price:39,cr:600,line:'Brand kit · 4K · multilingual captions always-on · ◈600/mo'},
   brand:{name:'Brand',price:79,cr:1400,line:'Commercial license · premium AI models · team seats · ◈1,400/mo'}

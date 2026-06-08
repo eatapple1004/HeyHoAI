@@ -321,26 +321,26 @@
   <p class="sub">Monthly credits with your plan, top up anytime. Photo sets from ◈2 · reels from ◈6 · UGC ads ◈8.</p>
   <div class="prices">
     <div class="price">
-      <div class="pn">Free</div><div class="pp">$0<small> /mo</small></div>
-      <div class="cr">◈ 10 credits to try</div>
+      <div class="pn">Free</div><div class="pp">$<span data-dp="plans.free.price">0</span><small> /mo</small></div>
+      <div class="cr">◈ <span data-dp="plans.free.cr">10</span> credits to try</div>
       <ul><li><span class="ck">✓</span> All modes</li><li><span class="ck">✓</span> First result watermark-free</li><li><span class="ck">✓</span> Personal license</li></ul>
       <a href="/studio.html" class="btn btn-ghost">Get started</a>
     </div>
     <div class="price">
-      <div class="pn">Creator</div><div class="pp">$19<small> /mo</small></div>
-      <div class="cr">◈ 250 credits / month</div>
+      <div class="pn">Creator</div><div class="pp">$<span data-dp="plans.creator.price">19</span><small> /mo</small></div>
+      <div class="cr">◈ <span data-dp="plans.creator.cr" data-fmt="1">250</span> credits / month</div>
       <ul><li><span class="ck">✓</span> No watermark</li><li><span class="ck">✓</span> Reels + HD</li><li><span class="ck">✓</span> Priority queue</li><li><span class="ck">✓</span> Personal license</li></ul>
       <a href="/studio.html" class="btn btn-ghost">Start creating</a>
     </div>
     <div class="price pop">
-      <div class="pn">Pro</div><div class="pp">$39<small> /mo</small></div>
-      <div class="cr">◈ 600 credits / month</div>
+      <div class="pn">Pro</div><div class="pp">$<span data-dp="plans.pro.price">39</span><small> /mo</small></div>
+      <div class="cr">◈ <span data-dp="plans.pro.cr" data-fmt="1">600</span> credits / month</div>
       <ul><li><span class="ck">✓</span> Everything in Creator</li><li><span class="ck">✓</span> Brand kit</li><li><span class="ck">✓</span> 4K + multilingual captions</li><li><span class="ck">✓</span> Personal license</li></ul>
       <a href="/studio.html" class="btn btn-primary">Start with Pro</a>
     </div>
     <div class="price">
-      <div class="pn">Brand</div><div class="pp">$79<small> /mo</small></div>
-      <div class="cr">◈ 1,400 credits / month</div>
+      <div class="pn">Brand</div><div class="pp">$<span data-dp="plans.brand.price">79</span><small> /mo</small></div>
+      <div class="cr">◈ <span data-dp="plans.brand.cr" data-fmt="1">1,400</span> credits / month</div>
       <ul><li><span class="ck">✓</span> Everything in Pro</li><li><span class="ck">✓</span> Commercial license</li><li><span class="ck">✓</span> On-model + bulk</li><li><span class="ck">✓</span> Premium AI models</li></ul>
       <a href="/billing.html" class="btn btn-ghost">Choose Brand</a>
     </div>
@@ -371,6 +371,7 @@
   <div class="foot-bot"><span>© 2026 Doppia. All rights reserved.</span><span>Made for creators, everywhere.</span></div>
 </footer>
 
+<script src="/js/pricing.js?v=1"></script>
 <script>
 const AUD={
   creators:{h1:'Your face. Any look.|Content on autopilot.',lead:'Upload one selfie, pick a template, and get studio-grade photos and reels — unmistakably you, in seconds.',cta:'Create your first post →',href:'/studio.html'},

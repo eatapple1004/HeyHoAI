@@ -141,14 +141,14 @@
     <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 20%</span></button>
   </div>
   <div class="plans fade d3">
-    <div class="plan-card glass" data-m="0" data-y="0" data-yt="">
+    <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
       <div class="pname">Free</div><div class="price">$<span class="pv">0</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">10 credits (one-time)</div>
       <ul><li>Try all modes</li><li>First result watermark-free</li><li>Then watermarked</li></ul>
       <button class="btn btn-ghost" onclick="HH.toast('Downgraded (mock)')">Downgrade</button>
     </div>
-    <div class="plan-card glass" data-m="19" data-y="15" data-yt="$180/yr billed annually · save $48">
+    <div class="plan-card glass" data-plan="creator" data-m="19" data-y="15" data-yt="$180/yr billed annually · save $48">
       <div class="pname">Creator</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">250 credits / month</div>
@@ -156,7 +156,7 @@
       <ul><li>No watermark</li><li>Reels + HD</li><li>Priority queue</li><li>Personal license</li></ul>
       <button class="btn current">Your plan</button>
     </div>
-    <div class="plan-card glass featured" data-m="39" data-y="31" data-yt="$372/yr billed annually · save $96">
+    <div class="plan-card glass featured" data-plan="pro" data-m="39" data-y="31" data-yt="$372/yr billed annually · save $96">
       <div class="ribbon">Most popular</div>
       <div class="pname">Pro</div><div class="price">$<span class="pv">39</span><span> /mo</span></div>
       <div class="cyc-note"></div>
@@ -165,7 +165,7 @@
       <ul><li>Everything in Creator</li><li>🎨 Brand kit</li><li>Multilingual captions on</li><li>4K + personal license</li></ul>
       <button class="btn btn-primary" onclick="checkout('plan','Pro')">Upgrade</button>
     </div>
-    <div class="plan-card glass" data-m="79" data-y="63" data-yt="$756/yr billed annually · save $192">
+    <div class="plan-card glass" data-plan="brand" data-m="79" data-y="63" data-yt="$756/yr billed annually · save $192">
       <div class="pname">Brand</div><div class="price">$<span class="pv">79</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">1,400 credits / month</div>
@@ -182,8 +182,8 @@
       <div class="tb-desc">Shared credit pool, per-seat roles, and one invoice — sits between Brand and full White-label. Add or remove seats anytime.</div>
     </div>
     <div class="tb-price">
-      <div class="tbp">$199<span> /mo</span></div>
-      <div class="tb-meta">3 seats included · shared pool ◈2,000 · +$15 / extra seat · SSO &amp; invoicing</div>
+      <div class="tbp">$<span data-dp="team.price">199</span><span> /mo</span></div>
+      <div class="tb-meta"><span data-dp="team.seats">3</span> seats included · shared pool ◈<span data-dp="team.pool" data-fmt="1">2,000</span> · +$<span data-dp="team.extraSeat">15</span> / extra seat · SSO &amp; invoicing</div>
       <div class="tb-cta">
         <button class="btn btn-primary" onclick="joinTeamBeta()">Join Team beta</button>
         <button class="btn btn-ghost" onclick="location.href='/business.html'">Manage team →</button>
@@ -192,12 +192,7 @@
   </div>
 
   <div class="section-label fade d3">Top-up credit packs (one-time)</div>
-  <div class="packs fade d4">
-    <div class="pack-card glass"><div class="amt">◈ 50</div><div class="ppc">$0.10 / credit</div><div class="price">$5</div><button class="btn btn-ghost" onclick="checkout('pack','50 credits — $5')">Buy</button></div>
-    <div class="pack-card glass"><div class="amt">◈ 200 <small>+20 bonus</small></div><div class="ppc">$0.082 / credit</div><div class="price">$18</div><button class="btn btn-primary" onclick="checkout('pack','220 credits — $18')">Buy</button></div>
-    <div class="pack-card glass"><div class="amt">◈ 500 <small>+80 bonus</small></div><div class="ppc">$0.069 / credit</div><div class="price">$40</div><button class="btn btn-ghost" onclick="checkout('pack','580 credits — $40')">Buy</button></div>
-    <div class="pack-card glass best"><span class="ptag">BEST VALUE · AGENCIES</span><div class="amt">◈ 1,500 <small>+250 bonus</small></div><div class="ppc">$0.063 / credit</div><div class="price">$110</div><button class="btn btn-primary" onclick="checkout('pack','1,750 credits — $110')">Buy</button></div>
-  </div>
+  <div class="packs fade d4" id="packsGrid"></div>
   <div style="font-size:12.5px;color:var(--faint);margin-top:12px;text-align:center">A subscription is always cheaper per credit — Brand is just <b style="color:var(--gold)">$0.056/credit</b> and renews monthly. Packs are for one-off top-ups.</div>
 
   <div class="section-label fade d4" style="margin-top:40px">What credits buy</div>
@@ -250,6 +245,7 @@
   </div>
 </div>
 
+<script src="/js/pricing.js?v=1"></script>
 <script src="/js/hh.js?v=2"></script>
 <script>
 let CYCLE='m';
@@ -276,6 +272,27 @@ function checkout(type,label){
   HH.toast('Stripe Checkout (mock): '+label+cyc);
 }
 function joinTeamBeta(){HH.toast("You're on the Team beta list — we'll email priority access (mock)");}
+// 가격 정본(/js/pricing.js)에서 플랜·팩·상태 렌더 → 숫자 변경은 pricing.js 한 곳에서
+function syncBillingPricing(){
+  if(!window.PRICING)return; var P=window.PRICING;
+  ['free','creator','pro','brand'].forEach(function(k){
+    var p=P.plans[k], card=document.querySelector('.plan-card[data-plan="'+k+'"]'); if(!card||!p)return;
+    card.setAttribute('data-m',p.price); card.setAttribute('data-y',p.priceY);
+    if(k!=='free') card.setAttribute('data-yt','$'+(p.priceY*12)+'/yr billed annually · save $'+((p.price-p.priceY)*12));
+    var ci=card.querySelector('.credits-inc'); if(ci) ci.textContent=P.fmt(p.cr)+(k==='free'?' credits (one-time)':' credits / month');
+  });
+  var rn=document.querySelector('.status .renew'); if(rn) rn.textContent='Renews 2026-07-06 · '+P.fmt(P.plans.creator.cr)+' credits / month';
+  var pk=document.getElementById('packsGrid');
+  if(pk) pk.innerHTML=P.packs.map(function(p){
+    var total=p.cr+p.bonus, bonus=p.bonus?(' <small>+'+p.bonus+' bonus</small>'):'';
+    var label=P.fmt(total)+' credits — $'+p.price;
+    return '<div class="pack-card glass'+(p.best?' best':'')+'">'+(p.best?'<span class="ptag">BEST VALUE · AGENCIES</span>':'')+
+      '<div class="amt">◈ '+P.fmt(p.cr)+bonus+'</div><div class="ppc">$'+p.ppc+' / credit</div><div class="price">$'+p.price+'</div>'+
+      '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="checkout(\'pack\',\''+label+'\')">Buy</button></div>';
+  }).join('');
+  setCycle(CYCLE||'m', document.querySelector('.cycle button[data-cyc="'+(CYCLE||'m')+'"]'));
+}
+syncBillingPricing();
 // 정직한 신규 오퍼: 첫 방문 후 24h 안에만 노출 (실제 카운트다운, 가짜 상시 긴급 X)
 (function initOffer(){
   var h=HH.offerHoursLeft&&HH.offerHoursLeft(), b=document.getElementById('offerBanner');
