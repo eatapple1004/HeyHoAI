@@ -65,6 +65,12 @@
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
+  <!-- 사진→릴스 넛지 -->
+  <div class="nudge fade d1" id="reelNudge" style="display:none">
+    <span>🎬 <b>사진을 릴스로</b> 만들어 보세요 — 릴스는 사진보다 도달이 훨씬 높아요.</span>
+    <span class="nudge-hint">사진 카드의 <b>→ Reel</b> 버튼을 누르면 됩니다.</span>
+  </div>
+
   <div class="filter-row fade d1" id="filterRow"></div>
   <div class="grid fade d2" id="grid"></div>
 
@@ -74,6 +80,34 @@
     <a href="/studio.html" class="btn btn-primary">Open Studio →</a>
   </div>
 </div>
+
+<!-- 릴스 생성 모달 -->
+<div class="modal-bg" id="reelModal" onclick="if(event.target===this)closeReel()">
+  <div class="modal">
+    <button class="x" onclick="closeReel()">✕</button>
+    <h3>🎬 사진을 릴스로</h3>
+    <div class="msub">이 사진을 움직이는 5초 릴스로 만들어요. 움직임을 설명해 주세요.</div>
+    <img id="reelSrcPreview" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px" alt="">
+    <textarea id="reelPrompt" placeholder="예: 카메라가 천천히 줌인하며 부드럽게 흔들리는 머리카락" style="width:100%;min-height:72px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px"></textarea>
+    <button class="btn btn-primary" style="width:100%" id="reelGoBtn" onclick="createReel()">릴스 만들기 · <span id="reelCost">◈ —</span></button>
+    <div id="reelProgress" style="display:none;margin-top:14px;text-align:center;color:var(--dim);font-size:13px">
+      <div class="spin" style="width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;margin:8px auto 12px"></div>
+      릴스 생성 중… 보통 2~5분 걸려요. 이 창을 닫지 마세요.
+    </div>
+  </div>
+</div>
+<style>
+  .nudge{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;background:linear-gradient(120deg,rgba(124,108,255,.12),rgba(255,126,182,.07));border:1px solid var(--border2);border-radius:14px;padding:14px 18px;margin-bottom:20px;font-size:13.5px;color:var(--text)}
+  .nudge .nudge-hint{color:var(--dim);font-size:12.5px}
+  .modal-bg{position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
+  .modal-bg.open{display:flex}
+  .modal{width:min(440px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative}
+  .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
+  .modal .msub{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.5}
+  .modal .x{position:absolute;top:15px;right:18px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .item .actions button.reel:hover{background:var(--accent);border-color:var(--accent)}
+</style>
 
 <script>
 // ═══ 실제 데이터 연결: GET /api/generate/results ═══
@@ -125,13 +159,58 @@ function render(){
       <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>
       <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}</div></div>
       <div class="actions">
+        ${it.type==='photo'?`<button class="reel" onclick="openReel('${esc(it.url)}','${esc(it.name)}')">→ Reel</button>`:''}
         <a href="${esc(it.url)}" download><button>⬇</button></a>
         <button onclick="window.open('${esc(it.url)}','_blank')">⤢</button>
       </div>
     </div>`).join('');
+  // 사진이 하나라도 있으면 넛지 표시
+  document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
 }
 function setFilter(f){filter=f;renderFilters();render();}
-renderFilters();load();
+
+// ── 사진 → 릴스 (기존 /api/generate/video 재사용) ──
+let REEL_SRC=null,reelBusy=false;
+let REEL_COST=6;
+async function loadReelCost(){
+  try{const d=(await(await fetch('/api/credits')).json()).data;
+    if(d.costs&&d.costs.video)REEL_COST=d.costs.video[5]||6;}catch(e){}
+}
+function openReel(url,name){
+  REEL_SRC=url;
+  document.getElementById('reelSrcPreview').src=url;
+  document.getElementById('reelPrompt').value='';
+  document.getElementById('reelCost').textContent='◈ '+REEL_COST;
+  document.getElementById('reelProgress').style.display='none';
+  document.getElementById('reelGoBtn').style.display='';
+  document.getElementById('reelModal').classList.add('open');
+}
+function closeReel(){if(!reelBusy)document.getElementById('reelModal').classList.remove('open');}
+async function createReel(){
+  if(reelBusy||!REEL_SRC)return;
+  const prompt=document.getElementById('reelPrompt').value.trim()
+    ||'gentle natural motion, subtle camera movement, cinematic';
+  reelBusy=true;
+  document.getElementById('reelGoBtn').style.display='none';
+  document.getElementById('reelProgress').style.display='';
+  try{
+    const blob=await(await fetch(REEL_SRC)).blob();
+    const fd=new FormData();
+    fd.append('prompt',prompt);fd.append('duration','5');fd.append('mode','std');
+    fd.append('sourceImage',blob,'source.png');
+    const res=await fetch('/api/generate/video',{method:'POST',body:fd});
+    const data=await res.json();
+    if(res.status===402){toast('크레딧이 부족해요. Billing에서 충전해 주세요.','error');setTimeout(()=>location.href='/billing.html',1200);return;}
+    if(!res.ok||!data.success){toast(data.error||'릴스 생성에 실패했어요.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';return;}
+    toast('릴스가 만들어졌어요! 🎬','success');
+    closeReelForce();
+    await load(); // 새 릴스가 갤러리에 반영
+  }catch(e){toast('릴스 생성 중 오류가 발생했어요.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';}
+  finally{reelBusy=false;}
+}
+function closeReelForce(){reelBusy=false;document.getElementById('reelModal').classList.remove('open');}
+
+loadReelCost();renderFilters();load();
 </script>
 </body>
 </html>
