@@ -137,6 +137,9 @@ app.listen(env.PORT, () => {
   // 자동 업로드 스케줄러 시작
   const { startScheduler } = require('./publishing/scheduler');
   startScheduler();
+
+  // 비동기 릴스 생성 폴러 시작
+  require('./generate/videoJob.service').startPoller();
 });
 
 module.exports = app;
