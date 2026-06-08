@@ -65,7 +65,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span class="cr-bal">42</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -80,7 +80,7 @@
       <div class="ct">🎨 Sell your templates &amp; models</div>
       <div class="cd">Publish a template or virtual model and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
     </div>
-    <button class="btn btn-primary btn-lg" onclick="alert('크리에이터 신청 (mock) → /api/marketplace/apply')">Become a creator</button>
+    <button class="btn btn-primary btn-lg" onclick="HH.toast('크리에이터 신청 (mock)')">Become a creator</button>
   </div>
 
   <div class="tabs fade d2">
@@ -94,6 +94,7 @@
   <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
 </div>
 
+<script src="/js/hh.js"></script>
 <script>
 const TEMPLATES=[
   {name:'Golden Hour Pro',cat:'Influencer',creator:'@lindastudio',price:2,uses:'12.4k',rating:'4.9',emoji:'🌅',grad:'g1',badge:'Photo'},
@@ -147,8 +148,8 @@ function render(){
         </div></div>`).join('');
   }
 }
-function use(n){alert('템플릿 사용 (mock): '+n+'\n→ Studio로 이동해 적용 + 크리에이터에게 수익 분배');}
-function lic(n){alert('가상모델 라이선스 (mock): '+n);}
+function use(n){HH.toast('템플릿 사용 (mock): '+n);}
+function lic(n){HH.toast('가상모델 라이선스 (mock): '+n);}
 render();
 </script>
 </body>

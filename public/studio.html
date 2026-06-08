@@ -22,7 +22,7 @@
     .step-head{flex-wrap:wrap;gap:0 13px}
     .step-head h2{white-space:nowrap}
     .step-head .hint{flex-basis:100%;margin-left:43px;margin-top:2px}
-    .wrap{padding-bottom:300px}
+    .wrap{padding-bottom:150px}
   }
 
   /* subjects */
@@ -87,7 +87,12 @@
   .caption-box .ctext{font-size:14.5px;color:var(--text);line-height:1.6;margin-bottom:9px}
   .caption-box .tags{font-size:13px;color:var(--cyan);font-weight:500;line-height:1.7}
   .caption-box .copy{margin-top:13px;padding:8px 14px;font-size:12px}
-  @media(max-width:600px){.gen-main{flex-direction:column;align-items:stretch}.gen-main .btn{width:100%}}
+  @media(max-width:600px){
+    .gen-main{flex-direction:column;align-items:stretch}.gen-main .btn{width:100%}
+    .gen-bar .addons{display:none}
+    .gen-bar.open .addons{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+    .gen-main .addon-trigger{display:block;width:100%;order:-1}
+  }
 
   /* results */
   .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
@@ -102,11 +107,46 @@
   .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
   @keyframes spin{to{transform:rotate(360deg)}}
 
+  /* P0: 터치에서 결과 액션 상시 노출 + NEW 배지 + 결과후 CTA + 크레딧 힌트 */
+  @media (hover:none){.result-card .actions{opacity:1;background:linear-gradient(transparent,rgba(0,0,0,.6))}}
+  .recipe-card .new-badge{position:absolute;top:10px;right:10px;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:3px 8px;border-radius:8px;background:linear-gradient(120deg,var(--pink),#ff9a6b);color:#1a1a27}
+  .after-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+  .cred-hint{font-size:12px;color:var(--faint);margin:0 0 26px}
+  .cred-hint b{color:var(--gold)}
+
+  /* P1-A: 워터마크 + 결과 업셀 배너 + 페이월/업셀 시트 */
+  .result-card .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;font-size:15px;color:rgba(255,255,255,.45);transform:rotate(-22deg);letter-spacing:1px;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+  .upsell-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:20px;padding:15px 20px;border-radius:14px;background:linear-gradient(120deg,rgba(124,108,255,.16),rgba(255,126,182,.1));border:1px solid var(--border2)}
+  .upsell-banner .ut{font-size:13.5px;color:var(--dim)}
+  .upsell-banner .ut b{color:var(--text)}
+  .upsell-banner .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .upsell-banner .uchip{font-family:inherit;font-size:12px;font-weight:600;padding:8px 13px;border-radius:9px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}
+  .upsell-banner .uchip.primary{background:linear-gradient(120deg,var(--accent),#9b7bff);border-color:transparent;color:#fff}
+  .pw-need{font-size:13.5px;color:var(--dim);margin-bottom:18px;line-height:1.5}
+  .pw-need b{color:var(--gold)}
+  .pw-opt{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  .pw-auto{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+  .pw-auto input{accent-color:var(--accent)}
+
+  /* P1-B: Sample 배지 + Value 배지 + (P1-D) 모바일 옵션 토글 */
+  .subject-card .sample-badge{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(4px)}
+  .recipe-card .pop-badge{position:absolute;bottom:10px;left:10px;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:3px 8px;border-radius:8px;background:linear-gradient(120deg,var(--cyan),#7c6cff);color:#04141a}
+  .addon-trigger{display:none;font-family:inherit;font-size:13px;font-weight:600;padding:11px 14px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer}
+  .addon-trigger .badge-n{color:var(--accent2)}
+  .streak{font-size:13px;font-weight:700;color:var(--gold);margin-right:6px;padding-right:10px;border-right:1px solid var(--border)}
+  .pro-tag{font-size:9px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:6px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;margin-left:4px}
+
   /* topbar (mode toggle + brand kit) */
   .topbar{display:flex;align-items:center;gap:14px;margin-bottom:32px;flex-wrap:wrap}
   .topbar .mode-toggle{margin-bottom:0}
   .brandkit-btn{margin-left:auto}
   .bk-on{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--cyan);background:rgba(94,224,214,.16);padding:2px 7px;border-radius:6px}
+
+  /* industry (vertical) picker — Product 모드 전용 */
+  .ind-row{display:flex;gap:8px;flex-wrap:wrap;margin:-8px 0 30px}
+  .ind{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-size:13px;font-weight:600;padding:9px 15px;border-radius:11px;cursor:pointer;transition:.18s}
+  .ind:hover{color:var(--text);border-color:var(--border2)}
+  .ind.active{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;border-color:transparent;box-shadow:0 8px 20px -8px var(--accent)}
 
   /* script step (UGC) */
   .script-box{display:flex;flex-direction:column;gap:12px;max-width:760px}
@@ -146,7 +186,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span id="creditBalance">48</span> credits
+    <div class="credits"><span class="streak" id="streakChip">🔥 1</span><span class="coin">◈</span> <span id="creditBalance" class="cr-bal">48</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -156,11 +196,15 @@
   <div class="topbar fade d1">
     <div class="mode-toggle">
       <button id="modeInfluencer" class="active" onclick="setMode('influencer')">😎 Influencer</button>
-      <button id="modeShopping" onclick="setMode('shopping')">🛍️ Shopping</button>
+      <button id="modeShopping" onclick="setMode('product')">🛍️ Product</button>
       <button id="modeUgc" onclick="setMode('ugc')">📢 UGC Ads</button>
     </div>
-    <button class="addon-toggle brandkit-btn" id="brandkitBtn" onclick="openBrandkit()">🎨 Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
+    <button class="addon-toggle brandkit-btn" id="brandkitBtn" onclick="openBrandkit()">🎨 Brand kit <span class="pro-tag">PRO</span><span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
+
+  <div class="ind-row fade d1 hidden" id="indRow"></div>
+
+  <p class="cred-hint fade d1">◈ <b>credits</b> go further than you think — photo set = ◈2 · reel = ◈6</p>
 
   <div class="step fade d2">
     <div class="step-head"><div class="step-num" id="snSubject">1</div><h2 id="step1Title">Add your face</h2>
@@ -197,6 +241,8 @@
       <span class="hint" id="resultHint"></span></div>
     <div id="loadingBox" class="loading hidden"><div class="spinner"></div><div>Generating… this takes ~20s</div></div>
     <div class="results-grid" id="resultsGrid"></div>
+    <div class="upsell-banner hidden" id="upsellBanner"></div>
+    <div class="after-cta hidden" id="afterCta"></div>
   </div>
 </div>
 
@@ -225,8 +271,43 @@
     </select>
   </div>
   <div class="gen-main">
+    <button class="addon-trigger" id="addonTrigger" onclick="document.querySelector('.gen-bar').classList.toggle('open')">⚙ Options <span class="badge-n" id="addonN"></span></button>
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate ✨</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
+  <div class="modal">
+    <button class="x" onclick="closePaywall()">✕</button>
+    <h3>거의 다 됐어요 ✨</h3>
+    <div class="pw-need" id="pwNeed"></div>
+    <div class="pw-opt">
+      <button class="btn btn-primary" onclick="paywallTopup()">◈220 충전하고 지금 완성 — $18</button>
+      <button class="btn btn-ghost" onclick="paywallSub()">Creator 구독 · 월 ◈200 — $19</button>
+    </div>
+    <label class="pw-auto"><input type="checkbox" id="pwAuto" checked> ⚡ 다음부터 자동충전 (끊김 방지)</label>
+  </div>
+</div>
+
+<div class="modal-bg" id="upsellModal" onclick="if(event.target===this)closeUpsell()">
+  <div class="modal">
+    <button class="x" onclick="closeUpsell()">✕</button>
+    <h3 id="upTitle">워터마크 제거</h3>
+    <div class="pw-need" id="upDesc"></div>
+    <div class="pw-opt">
+      <button class="btn btn-ghost" onclick="upsellOnce()">이 결과만 ◈1</button>
+      <button class="btn btn-primary" onclick="upsellSub()">Creator $19 · 영구 제거 + HD</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="dailyModal" onclick="if(event.target===this)closeDaily()">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:42px;margin-bottom:4px">🔥</div>
+    <h3>Day <span id="dailyDay">1</span> streak</h3>
+    <div class="pw-need">매일 오면 무료 크레딧 — 연속할수록 더! (3일 +◈2 · 7일 +◈3)</div>
+    <button class="btn btn-primary" style="width:100%" onclick="claimDaily()">오늘 보너스 받기 +◈</button>
   </div>
 </div>
 
@@ -234,9 +315,9 @@
   <div class="modal">
     <button class="x" onclick="closeBrandkit()">✕</button>
     <h3>🎨 Brand kit</h3>
-    <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand.</div>
+    <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand. <b style="color:var(--gold)">Included in Pro &amp; Brand.</b></div>
     <div class="field"><label>Logo</label>
-      <div class="logo-drop" onclick="alert('로고 업로드 (mock)')">＋ Upload logo (PNG, transparent)</div></div>
+      <div class="logo-drop" onclick="HH.toast('로고 업로드 (mock)')">＋ Upload logo (PNG, transparent)</div></div>
     <div class="field"><label>Brand colors</label>
       <div class="swatches" id="bkSwatches">
         <div class="swatch sel" style="background:#7c6cff" onclick="pickSwatch(this)"></div>
@@ -251,34 +332,100 @@
   </div>
 </div>
 
+<script src="/js/hh.js"></script>
 <script>
+const GRAD={g1:'linear-gradient(150deg,#ffce7a,#ff7eb6)',g2:'linear-gradient(150deg,#7c6cff,#5ee0d6)',g3:'linear-gradient(150deg,#ff7eb6,#7c6cff)',g4:'linear-gradient(150deg,#5ee0d6,#7c6cff)',g5:'linear-gradient(150deg,#ffce7a,#ff5f8f)',g6:'linear-gradient(150deg,#a99bff,#ff7eb6)',g7:'linear-gradient(150deg,#5ee0d6,#9b7bff)',g8:'linear-gradient(150deg,#ff9a6b,#ffce7a)'};
+
 const MOCK_SUBJECTS={
-  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:'linear-gradient(135deg,#7c6cff,#ff7eb6)'}],
-  shopping:[{id:'p1',name:'White Dress',emoji:'👗',grad:'linear-gradient(135deg,#5ee0d6,#7c6cff)'},
-            {id:'p2',name:'Sneakers',emoji:'👟',grad:'linear-gradient(135deg,#ffce7a,#ff7eb6)'}]
+  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:GRAD.g3}]
 };
 const MOCK_RECIPES={
   influencer:[
-    {id:'r1',cat:'Style',name:'Travel Mood — Golden Hour',type:'image',cost:2,emoji:'🌅',grad:'linear-gradient(150deg,#ffce7a,#ff7eb6)'},
-    {id:'r2',cat:'Style',name:'Y2K Film Selfie',type:'image',cost:2,emoji:'📸',grad:'linear-gradient(150deg,#a99bff,#5ee0d6)'},
-    {id:'r3',cat:'Style',name:'Cozy Cafe Portrait',type:'image',cost:2,emoji:'☕',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)'},
-    {id:'r4',cat:'Style',name:'Editorial Glam',type:'image',cost:2,emoji:'💄',grad:'linear-gradient(150deg,#ff7eb6,#7c6cff)'},
-    {id:'r5',cat:'Trend',name:'GRWM (Get Ready With Me)',type:'reel',cost:6,emoji:'💋',grad:'linear-gradient(150deg,#ff7eb6,#ff9a6b)'},
-    {id:'r6',cat:'Trend',name:'Day in My Life',type:'reel',cost:6,emoji:'🎬',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-    {id:'r7',cat:'Trend',name:'Outfit Transition',type:'reel',cost:6,emoji:'✨',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)'},
-    {id:'r8',cat:'Style',name:'Street Style Candid',type:'image',cost:2,emoji:'🏙️',grad:'linear-gradient(150deg,#9a9ab2,#5ee0d6)'}
-  ],
-  shopping:[
-    {id:'sr1',cat:'화보',name:'Studio Lookbook',type:'image',cost:2,emoji:'📷',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)'},
-    {id:'sr2',cat:'감성',name:'Lifestyle Mood Shot',type:'image',cost:2,emoji:'🌿',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-    {id:'sr3',cat:'착용',name:'On-Model Wear (Beta)',type:'image',cost:3,emoji:'🧍',grad:'linear-gradient(150deg,#ff9a6b,#ff7eb6)'},
-    {id:'sr4',cat:'화보',name:'Flat-lay Detail',type:'image',cost:2,emoji:'🪞',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)'},
-    {id:'sr5',cat:'감성',name:'Product Reel — Aesthetic',type:'reel',cost:6,emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#7c6cff)'},
-    {id:'sr6',cat:'화보',name:'Lookbook Reel',type:'reel',cost:6,emoji:'👜',grad:'linear-gradient(150deg,#ff7eb6,#ff5f8f)'}
+    {id:'aurora-grwm',cat:'Reels',name:'GRWM Aurora Reel',type:'reel',cost:6,emoji:'💄',grad:GRAD.g4,new:true},
+    {id:'photodump-9',cat:'Feed',name:'Candid Photo Dump',type:'image',cost:2,emoji:'🎞️',grad:GRAD.g2},
+    {id:'outfit-onmodel',cat:'Fashion',name:'Fit Check On-Model',type:'image',cost:4,emoji:'👗',grad:GRAD.g6},
+    {id:'lipsync-trend',cat:'Reels',name:'Trending Lip-Sync',type:'reel',cost:8,emoji:'🎤',grad:GRAD.g7,new:true},
+    {id:'golden-hour',cat:'Travel',name:'Golden Hour Anywhere',type:'image',cost:3,emoji:'🌅',grad:GRAD.g8},
+    {id:'blurcore-bts',cat:'Story',name:'Blurcore BTS Story',type:'reel',cost:6,emoji:'📲',grad:GRAD.g3}
   ]
 };
-let state={mode:'influencer',subjectId:null,recipeId:null,filter:'All'};
-let credits=48;
+
+// ── Product 버티컬 7종 (Fashion·Beauty·Jewelry·Food·Home·Tech·Pet) ──
+const VERTICALS={
+  fashion:{label:'Fashion',emoji:'👗',subjectTitle:'Add your product',subjectHint:"One flat photo — front or back, on the floor or a table. Background removed and rebuilt into a studio look.",uploadLabel:'Upload product photo',
+    subjects:[{id:'fa1',name:'Knit sweater',emoji:'🧥',grad:GRAD.g2},{id:'fa2',name:'Leather sneakers',emoji:'👟',grad:GRAD.g7}],
+    recipes:[
+      {id:'fx-onmodel',cat:'OnModel',name:'On-Model Studio',type:'image',cost:6,emoji:'🧍',grad:GRAD.g2},
+      {id:'fx-lookbook',cat:'Lookbook',name:'Editorial Lookbook',type:'image',cost:2,emoji:'📖',grad:GRAD.g5},
+      {id:'fx-lifestyle',cat:'Lifestyle',name:'Lifestyle Scene Pack',type:'image',cost:2,emoji:'🌿',grad:GRAD.g8},
+      {id:'fx-grwm',cat:'Reel',name:'GRWM Drop Reel',type:'reel',cost:6,emoji:'💄',grad:GRAD.g6},
+      {id:'fx-360',cat:'Reel',name:'360 Detail Spin',type:'reel',cost:8,emoji:'🔄',grad:GRAD.g3},
+      {id:'fx-macro',cat:'Detail',name:'Macro Texture Shots',type:'image',cost:3,emoji:'🔍',grad:GRAD.g4}
+    ]},
+  beauty:{label:'Beauty',emoji:'💄',subjectTitle:'Add your product',subjectHint:"Drop one clear photo of your cosmetic or skincare product — we'll handle the rest.",uploadLabel:'Upload product photo',
+    subjects:[{id:'be1',name:'Serum dropper',emoji:'🧴',grad:GRAD.g2},{id:'be2',name:'Lipstick',emoji:'💋',grad:GRAD.g6}],
+    recipes:[
+      {id:'be-hero',cat:'Hero',name:'Dewy Glass Hero',type:'image',cost:2,emoji:'✨',grad:GRAD.g2},
+      {id:'be-swatch',cat:'Texture',name:'Macro Swatch Lab',type:'image',cost:4,emoji:'🔬',grad:GRAD.g4},
+      {id:'be-onmodel',cat:'OnModel',name:'On-Model Glow Drop',type:'image',cost:6,emoji:'🧖',grad:GRAD.g7},
+      {id:'be-unbox',cat:'Reel',name:'ASMR Unbox Reel',type:'reel',cost:6,emoji:'🎧',grad:GRAD.g1},
+      {id:'be-routine',cat:'Reel',name:'GRWM Routine Reel',type:'reel',cost:6,emoji:'🪞',grad:GRAD.g5},
+      {id:'be-shelfie',cat:'Lifestyle',name:'Aesthetic Shelfie',type:'image',cost:2,emoji:'🪻',grad:GRAD.g3}
+    ]},
+  jewelry:{label:'Jewelry',emoji:'💎',subjectTitle:'Add your piece',subjectHint:"One clear photo of a ring, necklace or watch — we lock every facet, stone and engraving so detail stays identical.",uploadLabel:'Upload jewelry photo',
+    subjects:[{id:'jw1',name:'Solitaire ring',emoji:'💍',grad:GRAD.g2},{id:'jw2',name:'Dress watch',emoji:'⌚',grad:GRAD.g6}],
+    recipes:[
+      {id:'jw-facet',cat:'Macro',name:'Facet Macro',type:'image',cost:5,emoji:'🔬',grad:GRAD.g2},
+      {id:'jw-wrist',cat:'OnModel',name:'Wrist & Hand',type:'image',cost:6,emoji:'🤲',grad:GRAD.g4},
+      {id:'jw-studio',cat:'Studio',name:'Velvet Studio Set',type:'image',cost:2,emoji:'🖤',grad:GRAD.g7},
+      {id:'jw-light',cat:'Reel',name:'Light Play Reel',type:'reel',cost:6,emoji:'✨',grad:GRAD.g3},
+      {id:'jw-unbox',cat:'Reel',name:'Unbox ASMR Reel',type:'reel',cost:8,emoji:'🎁',grad:GRAD.g5},
+      {id:'jw-gilded',cat:'Editorial',name:'Gilded Editorial',type:'image',cost:3,emoji:'🥂',grad:GRAD.g8}
+    ]},
+  food:{label:'Food & Cafe',emoji:'🍔',subjectTitle:'Add your dish',subjectHint:"One phone photo of your food or drink — good lighting helps, but we'll fix the rest.",uploadLabel:'Upload food photo',
+    subjects:[{id:'fo1',name:'Iced latte',emoji:'🧋',grad:GRAD.g3},{id:'fo2',name:'Smash burger',emoji:'🍔',grad:GRAD.g6}],
+    recipes:[
+      {id:'fo-topdown',cat:'Studio',name:'Top-Down Hero',type:'image',cost:2,emoji:'📸',grad:GRAD.g1},
+      {id:'fo-steam',cat:'Macro',name:'Drip & Steam Macro',type:'image',cost:4,emoji:'💧',grad:GRAD.g6},
+      {id:'fo-cafe',cat:'Lifestyle',name:'Golden-Hour Cafe Mood',type:'image',cost:3,emoji:'☕',grad:GRAD.g4},
+      {id:'fo-asmr',cat:'Reel',name:'Sizzle & Steam ASMR',type:'reel',cost:6,emoji:'🔥',grad:GRAD.g8,new:true},
+      {id:'fo-spin',cat:'Reel',name:'360 Glaze Spin',type:'reel',cost:6,emoji:'🌀',grad:GRAD.g5},
+      {id:'fo-menu',cat:'Bundle',name:'Full Menu Pack',type:'image',cost:8,emoji:'🗂️',grad:GRAD.g2}
+    ]},
+  home:{label:'Home & Living',emoji:'🛋️',subjectTitle:'Add your product',subjectHint:"One clean photo of your furniture, decor or homeware — we'll style the room around it.",uploadLabel:'Upload product photo',
+    subjects:[{id:'ho1',name:'Accent chair',emoji:'🪑',grad:GRAD.g3},{id:'ho2',name:'Vase set',emoji:'🏺',grad:GRAD.g6}],
+    recipes:[
+      {id:'ho-room',cat:'Scene',name:'Quiet Luxe Room',type:'image',cost:2,emoji:'🕯️',grad:GRAD.g3},
+      {id:'ho-golden',cat:'Lifestyle',name:'Golden Hour Corner',type:'image',cost:2,emoji:'🌅',grad:GRAD.g7},
+      {id:'ho-macro',cat:'Detail',name:'Macro Texture Pop',type:'image',cost:3,emoji:'🔍',grad:GRAD.g8},
+      {id:'ho-flatlay',cat:'Flatlay',name:'Tonal Flatlay Set',type:'image',cost:2,emoji:'🎨',grad:GRAD.g6},
+      {id:'ho-reveal',cat:'Reel',name:'Empty-to-Styled Reveal',type:'reel',cost:6,emoji:'✨',grad:GRAD.g2},
+      {id:'ho-asmr',cat:'Reel',name:'Slow ASMR Detail',type:'reel',cost:6,emoji:'🌿',grad:GRAD.g4}
+    ]},
+  tech:{label:'Tech',emoji:'📱',subjectTitle:'Add your gadget',subjectHint:"Drop one clean shot of your device, gadget or accessory — we handle the lighting, angles and scenes.",uploadLabel:'Upload product photo',
+    subjects:[{id:'te1',name:'Earbuds',emoji:'🎧',grad:GRAD.g3},{id:'te2',name:'Smartwatch',emoji:'⌚',grad:GRAD.g6}],
+    recipes:[
+      {id:'te-hero',cat:'Hero',name:'Void Hero Cut',type:'image',cost:2,emoji:'🖤',grad:GRAD.g8},
+      {id:'te-spec',cat:'Feature',name:'Spec Callout Grid',type:'image',cost:2,emoji:'📐',grad:GRAD.g2},
+      {id:'te-macro',cat:'Macro',name:'Macro Tactile Zoom',type:'image',cost:4,emoji:'🔬',grad:GRAD.g1},
+      {id:'te-desk',cat:'Lifestyle',name:'Desk Setup Flatlay',type:'image',cost:3,emoji:'🪴',grad:GRAD.g5},
+      {id:'te-unbox',cat:'Reel',name:'Unbox ASMR Reel',type:'reel',cost:6,emoji:'📦',grad:GRAD.g4},
+      {id:'te-spin',cat:'Reel',name:'360 Glow Spin',type:'reel',cost:6,emoji:'🌀',grad:GRAD.g7}
+    ]},
+  pet:{label:'Pet',emoji:'🐾',subjectTitle:'Add your pet product',subjectHint:"One clean photo of the toy, treat or accessory — we'll bring the pets and the cuddles.",uploadLabel:'Upload pet product photo',
+    subjects:[{id:'pe1',name:'Squeaky toy',emoji:'🧸',grad:GRAD.g3},{id:'pe2',name:'Salmon treats',emoji:'🐟',grad:GRAD.g6}],
+    recipes:[
+      {id:'pe-cuddle',cat:'Lifestyle',name:'Cuddle Hour',type:'image',cost:2,emoji:'🐶',grad:GRAD.g3},
+      {id:'pe-zoomies',cat:'Reel',name:'Wait For The Zoomies',type:'reel',cost:6,emoji:'💨',grad:GRAD.g5},
+      {id:'pe-pov',cat:'Reel',name:'Pet POV Taste Test',type:'reel',cost:6,emoji:'👀',grad:GRAD.g6},
+      {id:'pe-crunch',cat:'Detail',name:'Macro Crunch',type:'image',cost:4,emoji:'🔬',grad:GRAD.g8},
+      {id:'pe-onpet',cat:'OnPet',name:'On-Pet Fit',type:'image',cost:5,emoji:'🦮',grad:GRAD.g2},
+      {id:'pe-talk',cat:'UGC',name:'Talking Pet Skit',type:'reel',cost:8,emoji:'🗣️',grad:GRAD.g7}
+    ]}
+};
+const VKEYS=['fashion','beauty','jewelry','food','home','tech','pet'];
+let state={mode:'influencer',vertical:'fashion',subjectId:null,recipeId:null,filter:'All'};
+let credits=HH.credits;
 
 // ── add-on captions (Claude — multilingual) ──
 const LANG_NAME={en:'English',ko:'한국어',ja:'日本語',es:'Español',pt:'Português',zh:'中文'};
@@ -333,15 +480,21 @@ function saveBrandkit(){document.getElementById('bkOn').classList.remove('hidden
 
 const STEP1={
   influencer:['Add your face','Upload a clear selfie — we keep your identity across every shot.'],
-  shopping:['Add your product','Upload a product photo — background removed automatically.'],
   ugc:['Add your spokesperson','Use your own face or pick an AI spokesperson to talk for you.']
 };
 function setMode(m){
-  state={mode:m,subjectId:null,recipeId:null,filter:'All'};
-  ['Influencer','Shopping','Ugc'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
-  const ugc=(m==='ugc');
-  document.getElementById('step1Title').textContent=STEP1[m][0];
-  document.getElementById('step1Hint').textContent=STEP1[m][1];
+  const v=state.vertical||'fashion';
+  state={mode:m,vertical:v,subjectId:null,recipeId:null,filter:'All'};
+  localStorage.setItem('hh_lastMode',m);localStorage.setItem('hh_lastVertical',v);
+  document.getElementById('modeInfluencer').classList.toggle('active',m==='influencer');
+  document.getElementById('modeShopping').classList.toggle('active',m==='product');
+  document.getElementById('modeUgc').classList.toggle('active',m==='ugc');
+  const ugc=(m==='ugc'), product=(m==='product');
+  // industry picker (Product 모드 전용)
+  document.getElementById('indRow').classList.toggle('hidden',!product);
+  if(product){ applyVertical(v); }
+  else { document.getElementById('step1Title').textContent=STEP1[m][0];
+         document.getElementById('step1Hint').textContent=STEP1[m][1]; }
   // script step (UGC only)
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
   // step numbering + template step copy
@@ -353,14 +506,31 @@ function setMode(m){
   ['variantLabel','variantSeg','variantDiv'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!ugc));
   if(!ugc){document.querySelectorAll('#variantSeg button').forEach(x=>x.classList.remove('on'));document.querySelector('#variantSeg button[data-v="1"]').classList.add('on');}
   document.getElementById('resultStep').classList.add('hidden');
-  renderSubjects();renderFilters();renderRecipes();updateBar();
+  renderIndustries();renderSubjects();renderFilters();renderRecipes();updateBar();
+}
+function applyVertical(key){
+  const vv=VERTICALS[key];
+  MOCK_SUBJECTS.product=vv.subjects;
+  MOCK_RECIPES.product=vv.recipes;
+  document.getElementById('step1Title').textContent=vv.subjectTitle;
+  document.getElementById('step1Hint').textContent=vv.subjectHint;
+}
+function setVertical(key){
+  state.vertical=key;state.subjectId=null;state.recipeId=null;state.filter='All';
+  localStorage.setItem('hh_lastVertical',key);
+  applyVertical(key);
+  renderIndustries();renderSubjects();renderFilters();renderRecipes();updateBar();
+}
+function renderIndustries(){
+  if(state.mode!=='product')return;
+  document.getElementById('indRow').innerHTML=VKEYS.map(k=>`<div class="ind ${state.vertical===k?'active':''}" onclick="setVertical('${k}')">${VERTICALS[k].emoji} ${VERTICALS[k].label}</div>`).join('');
 }
 function renderSubjects(){
   const subs=MOCK_SUBJECTS[state.mode];
-  const ul={influencer:'Upload selfie',shopping:'Upload product',ugc:'Upload face'}[state.mode];
+  const ul = state.mode==='product' ? VERTICALS[state.vertical].uploadLabel : {influencer:'Upload selfie',ugc:'Upload face'}[state.mode];
   let h=`<div class="upload-box" onclick="mockUpload()"><div class="plus">＋</div><div class="label">${ul}</div><div class="sub">JPG / PNG · 1 photo</div></div>`;
   h+=subs.map(s=>`<div class="subject-card ${state.subjectId===s.id?'selected':''}" onclick="pickSubject('${s.id}')">
-      <div class="thumb" style="background:${s.grad}">${s.emoji}</div><div class="check">✓</div><div class="name">${s.name}</div></div>`).join('');
+      <div class="thumb" style="background:${s.grad}">${s.emoji}</div><div class="check">✓</div>${!s.own?'<span class="sample-badge">Sample</span>':''}<div class="name">${s.name}</div></div>`).join('');
   document.getElementById('subjectRow').innerHTML=h;
 }
 function renderFilters(){
@@ -369,9 +539,11 @@ function renderFilters(){
 }
 function renderRecipes(){
   const rs=MOCK_RECIPES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
+  const minC=Math.min.apply(null,rs.map(r=>r.cost));
+  const minId=(rs.find(r=>r.cost===minC)||{}).id;
   document.getElementById('recipeGrid').innerHTML=rs.map(r=>`
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
-      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${r.emoji}</div>
+      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${r.new?'<span class="new-badge">NEW</span>':''}${r.id===minId?'<span class="pop-badge">★ Value</span>':''}${r.emoji}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">◈ ${r.cost} credits</div></div></div>`).join('');
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
@@ -379,11 +551,13 @@ function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
 function pickRecipe(id){state.recipeId=id;renderRecipes();updateBar();}
 function mockUpload(){
   const id='u'+Date.now();
-  MOCK_SUBJECTS[state.mode].push({id,name:state.mode==='influencer'?'New Face':'New Product',emoji:state.mode==='influencer'?'🙂':'📦',grad:'linear-gradient(135deg,#7c6cff,#5ee0d6)'});
+  const face=(state.mode==='influencer'||state.mode==='ugc');
+  MOCK_SUBJECTS[state.mode].push({id,name:face?'New Face':'New Product',emoji:face?'🙂':'📦',grad:GRAD.g4,own:true});
   state.subjectId=id;renderSubjects();updateBar();
 }
 function curRecipe(){return MOCK_RECIPES[state.mode].find(r=>r.id===state.recipeId);}
 function updateBar(){
+  const aN=document.getElementById('addonN');if(aN)aN.textContent=extras()?('· ◈'+extras()):'';
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   if(state.subjectId&&r){
     btn.disabled=false;
@@ -401,9 +575,10 @@ function updateBar(){
 }
 function generate(){
   const r=curRecipe();if(!r)return;
+  credits=HH.credits;
   const v=curVariants(),total=r.cost*v+extras();
-  if(credits<total){alert('크레딧 부족 → 충전 필요 (402)');return;}
-  credits-=total;document.getElementById('creditBalance').textContent=credits;
+  if(credits<total){openPaywall(r,v,total);return;}
+  credits-=total;HH.credits=credits;document.getElementById('creditBalance').textContent=credits;
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
   document.getElementById('resultsGrid').innerHTML='';
   const oldCap=document.getElementById('captionResult');if(oldCap)oldCap.remove();
@@ -422,23 +597,86 @@ function generate(){
       const qBadge = qSuffix ? `<span class="type-badge" style="top:10px;left:10px">${qSuffix.replace(' · ','')}</span>` : '';
       const bBadge = brand ? `<span class="type-badge" style="bottom:10px;left:10px;top:auto">🎨 Brand</span>` : '';
       h+=`<div class="result-card"><div class="img" style="background:${g[i%4]}">${r.type==='reel'?'▶':'🖼️'}</div>
-        ${qBadge}${vBadge}${bBadge}
-        <div class="actions"><button onclick="alert('다운로드')">⬇ Download</button><button onclick="alert('인스타 게시')">↗ Post</button></div></div>`;}
+        ${(HH.plan==='free'&&localStorage.getItem('hh_firstDone'))?'<span class="wm">HeyHoAI ◈</span>':''}${qBadge}${vBadge}${bBadge}
+        <div class="actions"><button onclick="HH.toast('다운로드 시작 (mock)')">⬇ Download</button><button onclick="HH.toast('인스타그램 공유 (mock)')">↗ Post</button></div></div>`;}
     document.getElementById('resultsGrid').innerHTML=h;
     if(document.getElementById('aCaption').classList.contains('on'))renderCaption();
     const noun = v>1 ? 'ad variants' : (r.type==='reel'?'reel':'photos');
     document.getElementById('resultHint').textContent=`${n} ${noun}${qSuffix} ready · ◈ ${total} used`;
+    showAfterCta();showUpsell();
+    localStorage.setItem('hh_firstDone','1');
   },priority?700:1800);
 }
+// ── P1-A: 인라인 페이월 + 결과 업셀 ──
+let pwPending=null;
+function openPaywall(r,v,total){
+  pwPending={r,v,total};
+  document.getElementById('pwNeed').innerHTML=`<b>${r.name}</b>${v>1?' ×'+v:''} = ◈${total} 필요 · 현재 ◈${credits} → ◈<b>${total-credits}</b> 부족`;
+  document.getElementById('paywallModal').classList.add('open');
+}
+function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
+function paywallTopup(){HH.add(220);if(document.getElementById('pwAuto').checked)HH.toast('⚡ 자동충전 켜짐');closePaywall();generate();}
+function paywallSub(){HH.add(200);HH.plan='creator';closePaywall();HH.toast('Creator 구독 시작 (mock)');generate();}
+function showUpsell(){
+  const el=document.getElementById('upsellBanner');
+  if(HH.plan!=='free'||!localStorage.getItem('hh_firstDone')){el.classList.add('hidden');return;}
+  el.classList.remove('hidden');
+  el.innerHTML=`<div class="ut">🔒 무료 결과물엔 <b>워터마크</b>가 들어가요 — 게시용으로 깨끗하게</div>`+
+    `<div class="chips"><button class="uchip" onclick="openUpsell('hd')">🔼 HD +1</button>`+
+    `<button class="uchip" onclick="openUpsell('caption')">📝 Caption +1</button>`+
+    `<button class="uchip primary" onclick="openUpsell('wm')">✨ 워터마크 제거</button></div>`;
+}
+const UP={wm:['워터마크 제거','게시해도 되는 깨끗한 결과물로 받으세요.'],hd:['HD로 받기','더 선명한 고해상도로 다시 받기.'],caption:['캡션 + 해시태그','AI가 6개국어로 캡션·해시태그 자동 작성.']};
+function openUpsell(kind){const m=UP[kind]||UP.wm;document.getElementById('upTitle').textContent=m[0];document.getElementById('upDesc').textContent=m[1];document.getElementById('upsellModal').classList.add('open');}
+function closeUpsell(){document.getElementById('upsellModal').classList.remove('open');}
+function upsellOnce(){HH.toast('적용됨 (mock · ◈1 사용)');closeUpsell();}
+function upsellSub(){HH.plan='creator';closeUpsell();HH.toast('Creator 구독 — 워터마크 영구 제거 (mock)');
+  document.getElementById('upsellBanner').classList.add('hidden');
+  document.querySelectorAll('.result-card .wm').forEach(w=>w.remove());}
+function showAfterCta(){
+  const el=document.getElementById('afterCta');el.classList.remove('hidden');
+  el.innerHTML=`<button class="btn btn-ghost" onclick="makeAnother()">↺ Make another</button>`+
+    `<button class="btn btn-primary" onclick="HH.toast('한 주치 5세트 자동 생성 — 곧 제공 (mock)')">🗓 Turn into a week's set</button>`;
+}
+function makeAnother(){state.recipeId=null;renderRecipes();updateBar();document.getElementById('recipeGrid').scrollIntoView({behavior:'smooth'});}
 function renderCaption(){
   const lang=document.getElementById('captionLang').value,cap=CAPTIONS[lang]||CAPTIONS.en;
   const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
   box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]}</div>
     <div class="ctext">${cap.c}</div><div class="tags">${cap.t}</div>
-    <button class="btn btn-ghost copy" onclick="alert('복사됨')">⧉ Copy</button>`;
+    <button class="btn btn-ghost copy" onclick="HH.toast('캡션 복사됨')">⧉ Copy</button>`;
   document.getElementById('resultStep').appendChild(box);
 }
-setMode('influencer');
+// ── P1-15: 연속 생성 스트릭 + 데일리 보너스 ──
+function dstr(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function renderStreak(){document.getElementById('streakChip').textContent='🔥 '+(parseInt(localStorage.getItem('hh_streak')||'1',10));}
+function checkDailyBonus(){
+  renderStreak();
+  const today=dstr(new Date()), last=localStorage.getItem('hh_lastClaim');
+  if(last!==today){document.getElementById('dailyDay').textContent=localStorage.getItem('hh_streak')||'1';document.getElementById('dailyModal').classList.add('open');}
+}
+function claimDaily(){
+  const today=dstr(new Date()), last=localStorage.getItem('hh_lastClaim');
+  const y=new Date();y.setDate(y.getDate()-1);
+  let streak=parseInt(localStorage.getItem('hh_streak')||'0',10);
+  streak=(last===dstr(y))?streak+1:1;
+  const bonus=streak>=7?3:(streak>=3?2:1);
+  localStorage.setItem('hh_streak',streak);localStorage.setItem('hh_lastClaim',today);
+  HH.add(bonus);renderStreak();
+  document.getElementById('dailyModal').classList.remove('open');
+  HH.toast('🔥 '+streak+'일 연속 · +◈'+bonus+' 받았어요');
+}
+function closeDaily(){document.getElementById('dailyModal').classList.remove('open');}
+
+(function initStudio(){
+  const p=new URLSearchParams(location.search);
+  let m=p.get('mode')||localStorage.getItem('hh_lastMode')||'influencer';
+  if(['influencer','product','ugc'].indexOf(m)<0)m='influencer';
+  const ver=p.get('vertical')||localStorage.getItem('hh_lastVertical');
+  if(m==='product'&&ver&&VERTICALS[ver])state.vertical=ver;
+  setMode(m);
+  checkDailyBonus();
+})();
 </script>
 </body>
 </html>

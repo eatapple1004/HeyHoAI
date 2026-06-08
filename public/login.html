@@ -48,24 +48,24 @@
 
   <div id="signupBonus" class="bonus hidden">🎁 Sign up &amp; get 10 free credits</div>
 
+  <button class="btn-social" onclick="HH.toast('→ Google OAuth (mock)')"><b style="color:#fff">G</b> Continue with Google</button>
+  <div class="divider">or with email</div>
+
   <form onsubmit="return submitForm(event)">
     <div class="field hidden" id="nameField"><label>Name</label><input type="text" placeholder="Your name" /></div>
     <div class="field"><label>Email</label><input type="email" placeholder="you@example.com" required /></div>
     <div class="field"><label>Password</label><input type="password" placeholder="••••••••" required /></div>
-    <div class="field hidden" id="confirmField"><label>Confirm password</label><input type="password" placeholder="••••••••" /></div>
     <div class="terms hidden" id="termsRow">
       <input type="checkbox" id="agree" />
-      <span>I confirm this is my own face/content and I agree to the <a onclick="alert('약관')">Terms</a> &amp; <a onclick="alert('개인정보처리방침')">Privacy Policy</a>.</span>
+      <span>I have the rights to the content I upload and agree to the <a onclick="HH.toast('약관 (mock)')">Terms</a> &amp; <a onclick="HH.toast('개인정보처리방침 (mock)')">Privacy</a>.</span>
     </div>
     <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Log in</button>
   </form>
 
-  <div class="divider">OR</div>
-  <button class="btn-social" onclick="alert('→ Google OAuth (mock)')"><b style="color:#fff">G</b> Continue with Google</button>
-
   <div class="foot" id="footText">New here? <a onclick="setTab('signup')">Create an account</a></div>
 </div>
 
+<script src="/js/hh.js"></script>
 <script>
 let tab='login';
 function setTab(t){
@@ -74,7 +74,6 @@ function setTab(t){
   document.getElementById('tabSignup').classList.toggle('active',t==='signup');
   const su=t==='signup';
   document.getElementById('nameField').classList.toggle('hidden',!su);
-  document.getElementById('confirmField').classList.toggle('hidden',!su);
   document.getElementById('termsRow').classList.toggle('hidden',!su);
   document.getElementById('signupBonus').classList.toggle('hidden',!su);
   document.getElementById('submitBtn').textContent=su?'Create account':'Log in';
@@ -84,10 +83,12 @@ function setTab(t){
 }
 function submitForm(e){
   e.preventDefault();
-  if(tab==='signup'&&!document.getElementById('agree').checked){alert('약관에 동의해 주세요.');return false;}
-  alert((tab==='signup'?'회원가입':'로그인')+' 성공 (mock) → /studio.html');
-  window.location.href='/studio.html';return false;
+  if(tab==='signup'&&!document.getElementById('agree').checked){HH.toast('약관에 동의해 주세요.','warn');return false;}
+  if(tab==='signup')HH.credits=10; // 신규 가입 = 10 무료크레딧
+  HH.toast((tab==='signup'?'회원가입':'로그인')+' 성공 (mock)');
+  setTimeout(function(){window.location.href='/studio.html';},700);return false;
 }
+if(new URLSearchParams(location.search).get('signup'))setTab('signup');
 </script>
 </body>
 </html>
