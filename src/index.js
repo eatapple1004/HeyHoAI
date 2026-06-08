@@ -100,6 +100,7 @@ app.use('/api/accounts', requireAuth, accountRoutes);
 app.use('/api/credits', requireAuth, require('./credits/credit.route'));
 app.use('/api/billing', requireAuth, require('./billing/billing.route').router);
 app.use('/api/brand-kit', requireAuth, require('./brandkit/brandkit.route').router);
+app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.route').router);
 
 // Health check
 app.get('/health', (_req, res) => {
