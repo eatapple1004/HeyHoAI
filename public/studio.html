@@ -275,18 +275,69 @@ const TEMPLATES={
       prompt:'fashion outfit showcase, slow turn to show the full outfit, confident pose transition, studio backdrop, smooth camera motion'}
   ],
   shopping:[
-    {id:'sr1',cat:'화보',name:'Studio Lookbook',type:'image',style:'Fashion',emoji:'📷',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)',
-      prompt:'clean studio product photography, the product on a minimal pedestal, soft even lighting, premium lookbook style'},
-    {id:'sr2',cat:'감성',name:'Lifestyle Mood Shot',type:'image',style:'Natural',emoji:'🌿',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)',
-      prompt:'the product placed in a cozy lifestyle scene, morning light through a window, plants and natural textures around, aesthetic instagram mood'},
-    {id:'sr3',cat:'착용',name:'On-Model Wear (Beta)',type:'image',style:'Fashion',emoji:'🧍',grad:'linear-gradient(150deg,#ff9a6b,#ff7eb6)',
-      prompt:'a model wearing/using the product naturally, full body shot, fashion editorial styling, clean background'},
-    {id:'sr4',cat:'화보',name:'Flat-lay Detail',type:'image',style:'Portrait',emoji:'🪞',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)',
-      prompt:'flat-lay composition of the product from above, styled props around it, detail texture visible, soft shadows'},
-    {id:'sr5',cat:'감성',name:'Product Reel — Aesthetic',type:'reel',style:'Cinematic',emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#7c6cff)',
-      prompt:'slow cinematic camera orbit around the product, soft light sweeping across, premium aesthetic mood, shallow depth of field'},
-    {id:'sr6',cat:'화보',name:'Lookbook Reel',type:'reel',style:'Fashion',emoji:'👜',grad:'linear-gradient(150deg,#ff7eb6,#ff5f8f)',
-      prompt:'fashion lookbook video, the product showcased with smooth panning camera, studio lighting, elegant presentation'}
+    // ── Fashion 👗 ──
+    {id:'fa1',cat:'Fashion',name:'Studio Lookbook',type:'image',style:'Fashion',emoji:'📷',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)',
+      prompt:'clean studio fashion photography, the apparel on a model, soft even lighting, premium lookbook style, full outfit visible'},
+    {id:'fa2',cat:'Fashion',name:'Street Style',type:'image',style:'Street',emoji:'🏙️',grad:'linear-gradient(150deg,#9a9ab2,#5ee0d6)',
+      prompt:'street style fashion shot, the outfit worn naturally on a modern urban street, candid editorial, daylight'},
+    {id:'fa3',cat:'Fashion',name:'On-Model Wear',type:'image',style:'Fashion',emoji:'🧍',grad:'linear-gradient(150deg,#ff9a6b,#ff7eb6)',
+      prompt:'a model wearing the apparel, full body editorial styling, clean studio background, fashion magazine quality'},
+    {id:'fa4',cat:'Fashion',name:'Lookbook Reel',type:'reel',style:'Fashion',emoji:'👜',grad:'linear-gradient(150deg,#ff7eb6,#ff5f8f)',
+      prompt:'fashion lookbook video, smooth panning to show the full outfit, studio lighting, elegant presentation'},
+    // ── Beauty 💄 ──
+    {id:'be1',cat:'Beauty',name:'Product Hero',type:'image',style:'Glamour',emoji:'💄',grad:'linear-gradient(150deg,#ff7eb6,#7c6cff)',
+      prompt:'beauty product hero shot, the cosmetic on a glossy reflective surface, soft glowing light, luxurious premium feel'},
+    {id:'be2',cat:'Beauty',name:'Swatch Detail',type:'image',style:'Portrait',emoji:'🎨',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)',
+      prompt:'macro swatch of the makeup product, rich texture and color visible, clean minimal aesthetic, soft light'},
+    {id:'be3',cat:'Beauty',name:'Vanity Flatlay',type:'image',style:'Natural',emoji:'🌸',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+      prompt:'beauty flat-lay on a vanity, the product styled with petals and brushes, soft natural daylight, aesthetic'},
+    {id:'be4',cat:'Beauty',name:'Application Reel',type:'reel',style:'Cinematic',emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)',
+      prompt:'close-up cinematic reel of the beauty product being swatched/applied, soft light sweep, glossy premium mood'},
+    // ── Jewelry 💍 ──
+    {id:'je1',cat:'Jewelry',name:'Macro Sparkle',type:'image',style:'Glamour',emoji:'💎',grad:'linear-gradient(150deg,#13131d,#a99bff)',
+      prompt:'macro jewelry photography, the piece sparkling under focused light on black velvet, luxury, crisp reflections'},
+    {id:'je2',cat:'Jewelry',name:'On-Model',type:'image',style:'Portrait',emoji:'💍',grad:'linear-gradient(150deg,#e6e6f0,#ffce7a)',
+      prompt:'jewelry worn on a model neck and hand, elegant close-up, soft bokeh, premium editorial'},
+    {id:'je3',cat:'Jewelry',name:'White Studio',type:'image',style:'Fashion',emoji:'✨',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)',
+      prompt:'jewelry on clean white studio background, crisp reflections, e-commerce premium catalog shot'},
+    {id:'je4',cat:'Jewelry',name:'Rotation Reel',type:'reel',style:'Cinematic',emoji:'🔆',grad:'linear-gradient(150deg,#13131d,#7c6cff)',
+      prompt:'slow cinematic rotation of the jewelry piece, light catching the facets, luxurious premium mood'},
+    // ── Food 🍽️ ──
+    {id:'fo1',cat:'Food',name:'Overhead Flatlay',type:'image',style:'Natural',emoji:'🍽️',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+      prompt:'overhead food flat-lay, the dish styled with props on a rustic table, natural window light, appetizing'},
+    {id:'fo2',cat:'Food',name:'Hero Close-up',type:'image',style:'Cinematic',emoji:'🍔',grad:'linear-gradient(150deg,#ff5f8f,#ff9a6b)',
+      prompt:'appetizing food hero close-up, steam and texture detail, warm restaurant lighting, shallow depth of field'},
+    {id:'fo3',cat:'Food',name:'Cafe Scene',type:'image',style:'Natural',emoji:'☕',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+      prompt:'the food or drink in a cozy cafe scene, lifestyle mood, soft daylight, instagram aesthetic'},
+    {id:'fo4',cat:'Food',name:'Steam Reel',type:'reel',style:'Cinematic',emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#ff9a6b)',
+      prompt:'cinematic food reel, slow motion steam rising or sauce pour, mouth-watering close-up, warm light'},
+    // ── Home 🏠 ──
+    {id:'ho1',cat:'Home',name:'Styled Interior',type:'image',style:'Natural',emoji:'🛋️',grad:'linear-gradient(150deg,#5ee0d6,#e6e6f0)',
+      prompt:'the home product styled in a bright minimalist interior, natural light, cozy premium lifestyle'},
+    {id:'ho2',cat:'Home',name:'Detail Texture',type:'image',style:'Portrait',emoji:'🪵',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)',
+      prompt:'close-up of the home product material and texture, soft shadows, premium catalog detail'},
+    {id:'ho3',cat:'Home',name:'Flat-lay Set',type:'image',style:'Natural',emoji:'🕯️',grad:'linear-gradient(150deg,#e6e6f0,#5ee0d6)',
+      prompt:'styled flat-lay of the home goods with complementary props, aesthetic neutral tones, soft daylight'},
+    {id:'ho4',cat:'Home',name:'Room Reel',type:'reel',style:'Cinematic',emoji:'🎞️',grad:'linear-gradient(150deg,#7c6cff,#5ee0d6)',
+      prompt:'slow pan across a styled room featuring the home product, warm ambient light, cozy premium mood'},
+    // ── Tech 📱 ──
+    {id:'te1',cat:'Tech',name:'Studio Hero',type:'image',style:'Cinematic',emoji:'📱',grad:'linear-gradient(150deg,#13131d,#5ee0d6)',
+      prompt:'sleek tech product hero shot on a minimal pedestal, dramatic rim lighting, futuristic high-end commercial'},
+    {id:'te2',cat:'Tech',name:'Lifestyle Use',type:'image',style:'Natural',emoji:'💻',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)',
+      prompt:'the gadget used in a modern lifestyle setting, clean minimal desk, natural light, aspirational'},
+    {id:'te3',cat:'Tech',name:'Detail Macro',type:'image',style:'Portrait',emoji:'🔌',grad:'linear-gradient(150deg,#9a9ab2,#5ee0d6)',
+      prompt:'macro detail of the tech product design and ports, crisp sharp focus, premium product photography'},
+    {id:'te4',cat:'Tech',name:'Spin Reel',type:'reel',style:'Cinematic',emoji:'🎞️',grad:'linear-gradient(150deg,#13131d,#7c6cff)',
+      prompt:'cinematic tech product reel, slow orbit with light sweeps, high-end commercial, futuristic'},
+    // ── Pet 🐾 ──
+    {id:'pe1',cat:'Pet',name:'Happy Pet',type:'image',style:'Natural',emoji:'🐶',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)',
+      prompt:'a happy pet with or using the product, bright cheerful lifestyle scene, natural light, joyful'},
+    {id:'pe2',cat:'Pet',name:'Product Hero',type:'image',style:'Portrait',emoji:'🦴',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+      prompt:'clean pet product hero shot, playful props around it, soft studio light, premium'},
+    {id:'pe3',cat:'Pet',name:'Cozy Scene',type:'image',style:'Natural',emoji:'🐾',grad:'linear-gradient(150deg,#5ee0d6,#ffce7a)',
+      prompt:'the pet product in a cozy warm home scene, inviting lifestyle mood, soft daylight'},
+    {id:'pe4',cat:'Pet',name:'Play Reel',type:'reel',style:'Dynamic',emoji:'🎾',grad:'linear-gradient(150deg,#ffce7a,#ff7eb6)',
+      prompt:'energetic reel of a pet playing with the product, dynamic motion, joyful bright mood'}
   ],
   // UGC(립싱크 아바타)는 백엔드 미지원 — UI만 표시
   ugc:[
@@ -428,8 +479,10 @@ const STEP1={
   shopping:['Add your product','Upload a product photo — we keep it consistent across scenes.'],
   ugc:['Add your spokesperson','Coming soon — lip-synced AI spokesperson.']
 };
-function setMode(m){
-  state={mode:m,subjectId:null,recipeId:null,filter:'All'};
+function setMode(m,initialVertical){
+  // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
+  const defFilter=m==='shopping'?(initialVertical&&VERTICAL_EMOJI[initialVertical]?initialVertical:'Fashion'):'All';
+  state={mode:m,subjectId:null,recipeId:null,filter:defFilter};
   ['Influencer','Shopping','Ugc'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
   const ugc=(m==='ugc');
   document.getElementById('step1Title').textContent=STEP1[m][0];
@@ -457,9 +510,14 @@ function renderSubjects(){
   }).join('');
   document.getElementById('subjectRow').innerHTML=h;
 }
+const VERTICAL_EMOJI={Fashion:'👗',Beauty:'💄',Jewelry:'💍',Food:'🍽️',Home:'🏠',Tech:'📱',Pet:'🐾'};
 function renderFilters(){
   const cats=['All',...new Set(TEMPLATES[state.mode].map(r=>r.cat))];
-  document.getElementById('filterRow').innerHTML=cats.map(c=>`<div class="chip ${state.filter===c?'active':''}" onclick="setFilter('${c}')">${c}</div>`).join('');
+  const isShop=state.mode==='shopping';
+  document.getElementById('filterRow').innerHTML=cats.map(c=>{
+    const label=isShop&&VERTICAL_EMOJI[c]?VERTICAL_EMOJI[c]+' '+c:c;
+    return `<div class="chip ${state.filter===c?'active':''}" onclick="setFilter('${c}')">${label}</div>`;
+  }).join('');
 }
 function renderRecipes(){
   const rs=TEMPLATES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
@@ -643,7 +701,23 @@ function applyPendingTemplate(){
   document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-setMode('influencer');
+// 딥링크 부팅: ?mode=shopping&vertical=Food (랜딩 버티컬 칩에서 진입)
+function bootFromUrl(){
+  const q=new URLSearchParams(location.search);
+  const m=q.get('mode');
+  const v=q.get('vertical')||q.get('v');
+  const modeMap={influencer:'influencer',shopping:'shopping',product:'shopping',ugc:'ugc'};
+  const mode=modeMap[(m||'').toLowerCase()];
+  if(mode){
+    // 버티컬은 대문자 첫글자로 정규화 (food→Food)
+    const vert=v?v.charAt(0).toUpperCase()+v.slice(1).toLowerCase():undefined;
+    setMode(mode,vert);
+    return true;
+  }
+  return false;
+}
+
+if(!bootFromUrl()) setMode('influencer');
 loadSubjects();
 loadCredits();
 loadBrandkit();

@@ -61,6 +61,10 @@
   .lead{font-size:clamp(16px,2vw,20px);color:var(--dim);max-width:620px;margin:0 auto 36px;font-weight:400}
   .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
   .micro{font-size:13px;color:var(--faint)}
+  .vert-chips{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:22px}
+  .vert-chips .vc-label{font-size:12.5px;color:var(--faint);font-weight:600;margin-right:2px}
+  .vert-chips a{font-size:13px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:8px 14px;border-radius:30px;text-decoration:none;transition:.18s}
+  .vert-chips a:hover{color:var(--accent2);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.1)}
   .micro b{color:var(--dim)}
 
   .fade{opacity:0;transform:translateY(24px);animation:fadeUp .9s cubic-bezier(.2,.7,.3,1) forwards}
@@ -190,6 +194,18 @@
     <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
   </div>
   <div class="micro fade d4">✨ <b>10 free credits</b> on sign-up · No credit card required</div>
+
+  <!-- VERTICAL DEEP-LINKS -->
+  <div class="vert-chips fade d4">
+    <span class="vc-label">Selling a product? Jump in:</span>
+    <a href="/studio.html?mode=shopping&vertical=Fashion">👗 Fashion</a>
+    <a href="/studio.html?mode=shopping&vertical=Beauty">💄 Beauty</a>
+    <a href="/studio.html?mode=shopping&vertical=Jewelry">💍 Jewelry</a>
+    <a href="/studio.html?mode=shopping&vertical=Food">🍽️ Food</a>
+    <a href="/studio.html?mode=shopping&vertical=Home">🏠 Home</a>
+    <a href="/studio.html?mode=shopping&vertical=Tech">📱 Tech</a>
+    <a href="/studio.html?mode=shopping&vertical=Pet">🐾 Pet</a>
+  </div>
 
   <!-- SHOWCASE -->
   <div class="showcase fade d5">
