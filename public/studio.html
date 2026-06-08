@@ -147,7 +147,9 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span id="creditBalance">—</span> credits
+    <select id="ctxSel" onchange="switchContext(this.value)" title="작업 컨텍스트"
+      style="font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:7px 10px;font-size:12.5px;cursor:pointer;display:none"></select>
+    <div class="credits"><span class="coin">◈</span> <span id="creditBalance">—</span> <span id="creditCtxLabel">credits</span>
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
     <div class="credits" id="saasUserBox"></div>
@@ -302,7 +304,7 @@ let SUBJECTS={influencer:[],shopping:[],ugc:[]};
 let generating=false;
 let CREDITS={balance:null,unlimited:false,costs:null};
 
-// ── 크레딧 잔액/가격표 로드 ──
+// ── 크레딧 잔액/가격표 로드 (컨텍스트 반영) ──
 async function loadCredits(){
   try{
     const res=await fetch('/api/credits');
@@ -310,8 +312,31 @@ async function loadCredits(){
     if(!data.success)return;
     CREDITS=data.data;
     document.getElementById('creditBalance').textContent=CREDITS.unlimited?'∞':CREDITS.balance;
+    const isTeam=CREDITS.context&&CREDITS.context.type==='team';
+    document.getElementById('creditCtxLabel').textContent=isTeam?('· '+CREDITS.context.teamName):'credits';
   }catch(e){console.error('credits load failed',e);}
   updateBar();
+}
+
+// ── 작업 컨텍스트 전환기 (개인/팀) ──
+async function loadContextSwitcher(){
+  try{
+    const [teamsR,ctxR]=await Promise.all([fetch('/api/teams'),fetch('/api/teams/context')]);
+    const teams=(await teamsR.json()).data||[];
+    const ctx=(await ctxR.json()).data||{type:'personal'};
+    const sel=document.getElementById('ctxSel');
+    if(!teams.length){sel.style.display='none';return;}
+    const curId=ctx.type==='team'?ctx.teamId:'';
+    sel.innerHTML='<option value="">👤 Personal</option>'+
+      teams.map(t=>`<option value="${t.id}" ${t.id===curId?'selected':''}>👥 ${esc(t.name)} (${t.my_role})</option>`).join('');
+    sel.style.display='';
+  }catch(e){}
+}
+async function switchContext(teamId){
+  try{
+    await fetch('/api/teams/context',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({teamId:teamId||null})});
+    await loadCredits();
+  }catch(e){}
 }
 function genCost(r){
   const c=CREDITS.costs;
@@ -622,6 +647,7 @@ setMode('influencer');
 loadSubjects();
 loadCredits();
 loadBrandkit();
+loadContextSwitcher();
 applyPendingTemplate();
 </script>
 </body>

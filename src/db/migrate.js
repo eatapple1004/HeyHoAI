@@ -632,7 +632,33 @@ async function migrate() {
   // ─── 팀 (Phase 1: 멤버십/초대) ───
   await migrateTeams();
 
+  // ─── 팀 (Phase 2: 공유 크레딧 풀 + 활성 컨텍스트) ───
+  await migrateTeamCredits();
+
   console.log('Migrations completed.');
+}
+
+/**
+ * 팀 Phase 2: teams.credit_balance + team_credit_ledger + users.active_team_id. (멱등)
+ */
+async function migrateTeamCredits() {
+  await pool.query(`ALTER TABLE teams ADD COLUMN IF NOT EXISTS credit_balance INT NOT NULL DEFAULT 0;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_team_id UUID REFERENCES teams(id) ON DELETE SET NULL;`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS team_credit_ledger (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id       UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        actor_id      UUID REFERENCES users(id) ON DELETE SET NULL, -- 차감/충전 행위자
+        amount        INT NOT NULL,            -- 양수=충전, 음수=차감
+        balance_after INT NOT NULL,
+        type          VARCHAR(30) NOT NULL,    -- transfer_in | generation | refund | transfer_out
+        description   TEXT DEFAULT '',
+        ref_id        TEXT,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_team_ledger_team ON team_credit_ledger(team_id, created_at DESC);
+  `);
 }
 
 /**
