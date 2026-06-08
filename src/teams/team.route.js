@@ -1,7 +1,30 @@
 const { Router } = require('express');
 const svc = require('./team.service');
+const teamCredit = require('./team.credit');
+const { query } = require('../db/client');
 
 const router = Router();
+
+/** GET /api/teams/context — 현재 작업 컨텍스트 (개인/팀) */
+router.get('/context', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await teamCredit.resolveContext(req.user.id) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** PUT /api/teams/context { teamId|null } — 컨텍스트 전환 */
+router.put('/context', async (req, res, next) => {
+  try {
+    const { teamId } = req.body || {};
+    if (teamId) {
+      await svc.assertRole(teamId, req.user.id, 'viewer'); // 멤버 확인
+      await query('UPDATE users SET active_team_id = $1 WHERE id = $2', [teamId, req.user.id]);
+    } else {
+      await query('UPDATE users SET active_team_id = NULL WHERE id = $1', [req.user.id]);
+    }
+    res.json({ success: true, data: await teamCredit.resolveContext(req.user.id) });
+  } catch (err) { handle(err, res, next); }
+});
 
 /** POST /api/teams { name } — 팀 생성 */
 router.post('/', async (req, res, next) => {
@@ -36,13 +59,34 @@ router.post('/invites/:code/accept', async (req, res, next) => {
   } catch (err) { handle(err, res, next); }
 });
 
-/** GET /api/teams/:id — 팀 상세 + 멤버 (멤버만) */
+/** GET /api/teams/:id — 팀 상세 + 멤버 + 풀 잔액 (멤버만) */
 router.get('/:id', async (req, res, next) => {
   try {
-    await svc.assertRole(req.params.id, req.user.id, 'viewer');
+    const myRole = await svc.assertRole(req.params.id, req.user.id, 'viewer');
     const team = await svc.getTeam(req.params.id);
     const members = await svc.listMembers(req.params.id);
-    res.json({ success: true, data: { ...team, members } });
+    const creditBalance = await teamCredit.getBalance(req.params.id);
+    res.json({ success: true, data: { ...team, members, credit_balance: creditBalance, my_role: myRole } });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** POST /api/teams/:id/credits/transfer { amount } — 개인→팀 풀 이체 (owner) */
+router.post('/:id/credits/transfer', async (req, res, next) => {
+  try {
+    await svc.assertRole(req.params.id, req.user.id, 'owner');
+    const amount = parseInt((req.body || {}).amount, 10);
+    if (!(amount > 0)) return res.status(400).json({ success: false, error: '이체 금액은 1 이상이어야 합니다.' });
+    const result = await teamCredit.transferFromUser(req.user.id, req.params.id, amount);
+    res.json({ success: true, data: result });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** GET /api/teams/:id/credits/ledger — 팀 크레딧 내역 (멤버) */
+router.get('/:id/credits/ledger', async (req, res, next) => {
+  try {
+    await svc.assertRole(req.params.id, req.user.id, 'viewer');
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    res.json({ success: true, data: await teamCredit.getLedger(req.params.id, limit) });
   } catch (err) { handle(err, res, next); }
 });
 

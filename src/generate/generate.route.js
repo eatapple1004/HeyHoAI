@@ -93,13 +93,20 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
 
-    // ─── 크레딧 차감 (admin 면제, 부족 시 402) ───
+    // ─── 크레딧 차감 (개인=admin면제, 팀=풀차감/viewer 403, 부족 시 402) ───
     const creditService = require('../credits/credit.service');
-    const charge = await creditService.chargeForGeneration(
-      req.user,
-      creditService.imageCost(model),
-      `사진 생성 (${model}, ${generateCount}장)`
-    );
+    const teamCredit = require('../teams/team.credit');
+    let charge;
+    try {
+      charge = await teamCredit.chargeGeneration(
+        req.user,
+        creditService.imageCost(model),
+        `사진 생성 (${model}, ${generateCount}장)`
+      );
+    } catch (e) {
+      if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
+      throw e;
+    }
 
     // ─── 프롬프트 DB 저장 ───
     const savedPrompt = await promptRepo.insert({
@@ -260,7 +267,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       prompt: finalPrompt,
       results,
       credits: charge
-        ? { charged: okCount === 0 ? 0 : charge.amount, balance: await creditService.getBalance(req.user.id) }
+        ? { charged: okCount === 0 ? 0 : charge.amount, balance: await teamCredit.contextBalance(req.user.id) }
         : null,
     });
   } catch (err) {
@@ -295,8 +302,9 @@ router.post('/caption', async (req, res, next) => {
       if (character?.persona) persona = character.persona;
     }
 
-    // 크레딧 차감 (admin 면제, 부족 시 402)
-    charge = await creditService.chargeForGeneration(
+    // 크레딧 차감 (컨텍스트별: 개인=admin면제 / 팀=풀, viewer 403)
+    const teamCredit = require('../teams/team.credit');
+    charge = await teamCredit.chargeGeneration(
       req.user,
       creditService.COSTS.caption,
       `캡션 생성 (${CAPTION_LANGS[lang]})`
@@ -413,6 +421,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
   const vlog = logger('Video');
   const alog = logger('Audio');
   const creditService = require('../credits/credit.service');
+  const teamCredit = require('../teams/team.credit');
   let charge = null; // 크레딧 차감 내역 (실패 시 환불용)
   try {
     const jwt = require('jsonwebtoken');
@@ -430,12 +439,17 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
       return res.status(400).json({ success: false, error: 'Kling API keys not configured' });
     }
 
-    // ─── 크레딧 차감 (admin 면제, 부족 시 402) ───
-    charge = await creditService.chargeForGeneration(
-      req.user,
-      creditService.videoCost(duration, mode),
-      `릴스 생성 (${duration}s, ${mode})`
-    );
+    // ─── 크레딧 차감 (개인=admin면제, 팀=풀차감/viewer 403, 부족 시 402) ───
+    try {
+      charge = await teamCredit.chargeGeneration(
+        req.user,
+        creditService.videoCost(duration, mode),
+        `릴스 생성 (${duration}s, ${mode})`
+      );
+    } catch (e) {
+      if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
+      throw e;
+    }
 
     function generateToken() {
       const now = Math.floor(Date.now() / 1000);

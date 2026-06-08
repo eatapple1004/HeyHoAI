@@ -5,17 +5,24 @@ const router = express.Router();
 
 /**
  * GET /api/credits
- * 현재 잔액 + 가격표. admin은 unlimited=true (과금 면제)
+ * 현재 작업 컨텍스트(개인/팀)의 잔액 + 가격표. admin은 unlimited=true (과금 면제)
  */
 router.get('/', async (req, res, next) => {
   try {
-    const balance = await creditService.getBalance(req.user.id);
+    const teamCredit = require('../teams/team.credit');
+    const ctx = await teamCredit.resolveContext(req.user.id);
+    const isTeam = ctx.type === 'team';
+    const balance = isTeam ? await teamCredit.getBalance(ctx.teamId) : await creditService.getBalance(req.user.id);
     res.json({
       success: true,
       data: {
         balance,
-        unlimited: req.user.role === 'admin',
+        // 팀 컨텍스트에선 admin이라도 팀 풀에서 차감 (개인 면제는 개인 컨텍스트에서만)
+        unlimited: !isTeam && req.user.role === 'admin',
         costs: creditService.COSTS,
+        context: isTeam
+          ? { type: 'team', teamId: ctx.teamId, teamName: ctx.teamName, role: ctx.role }
+          : { type: 'personal' },
       },
     });
   } catch (err) {

@@ -152,8 +152,15 @@
         <div id="memberList"></div>
       </div>
       <div class="card glass">
-        <div class="row"><div><h3>Shared credit pool</h3><p>팀 공유 크레딧 잔액으로 생성하는 기능을 준비 중이에요. (Phase 2)</p></div>
-          <div class="pool"><span class="n" style="color:var(--faint)">Coming soon</span></div></div>
+        <div class="row"><div><h3>Shared credit pool</h3><p>팀 공유 잔액으로 생성하면 모든 멤버가 함께 씁니다. 스튜디오 우상단에서 작업 컨텍스트를 팀으로 바꾸세요.</p></div>
+          <div class="pool"><span class="n" id="poolBal">◈ —</span></div></div>
+        <div class="row" id="poolFund" style="margin-top:14px;display:none">
+          <div style="font-size:13px;color:var(--dim)">내 개인 크레딧을 팀 풀로 이체</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="transferAmt" type="number" min="1" placeholder="금액" style="width:110px;font-family:inherit;background:rgba(0,0,0,.25);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:8px 10px;font-size:13px">
+            <button class="btn btn-primary" onclick="transferToPool(this)">Transfer →</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -257,9 +264,12 @@ async function loadTeamDetail(){
   try{
     const d=await(await fetch('/api/teams/'+CUR)).json();
     if(!d.success)return;
-    const team=d.data,myRole=(TEAMS.find(t=>t.id===CUR)||{}).my_role;
+    const team=d.data,myRole=team.my_role||(TEAMS.find(t=>t.id===CUR)||{}).my_role;
     const isOwner=myRole==='owner';
     document.getElementById('inviteBtn').style.display=isOwner?'':'none';
+    // 공유 풀 잔액 + 충전(owner)
+    document.getElementById('poolBal').textContent='◈ '+(team.credit_balance!=null?team.credit_balance:0);
+    document.getElementById('poolFund').style.display=isOwner?'':'none';
     const av=['🧑🏻','👩🏻','👨🏽','🧑🏼','👩🏽','🧑🏽'];
     document.getElementById('memberList').innerHTML=team.members.map((m,i)=>{
       const name=esc(m.display_name||m.email.split('@')[0]);
@@ -312,6 +322,18 @@ async function leaveTeam(){
   if(!confirm('이 팀에서 나가시겠어요?'))return;
   try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+ME.id,{method:'DELETE'})).json();
     if(d.success){CUR=null;loadTeams();}else alert(d.error||'실패');}catch(e){}
+}
+async function transferToPool(btn){
+  const amt=parseInt(document.getElementById('transferAmt').value,10);
+  if(!(amt>0)){alert('이체 금액을 입력하세요.');return;}
+  btn.disabled=true;
+  try{
+    const d=await(await fetch('/api/teams/'+CUR+'/credits/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt})})).json();
+    if(!d.success){alert(d.error||'이체 실패');return;}
+    document.getElementById('transferAmt').value='';
+    loadTeamDetail();
+  }catch(e){alert('이체 실패');}
+  finally{btn.disabled=false;}
 }
 </script>
 </body>
