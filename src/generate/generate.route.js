@@ -42,7 +42,16 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
     // 스타일 프리셋 적용
     const styled = await styleRepo.applyStyle(style, prompt);
-    const finalPrompt = styled.prompt;
+    let finalPrompt = styled.prompt;
+
+    // 브랜드킷: 활성화 시 브랜드 색상을 톤 힌트로 주입
+    if (req.body.brandKit === 'true' || req.body.brandKit === true) {
+      const { getBrandKit } = require('../brandkit/brandkit.route');
+      const bk = await getBrandKit(req.user.id);
+      if (bk.enabled && bk.primary_color) {
+        finalPrompt += `, subtle brand color accent of ${bk.primary_color} in the styling and tones, cohesive on-brand aesthetic`;
+      }
+    }
 
     // Reference 이미지 결정 (최대 14개)
     const referenceImages = []; // { base64, source }

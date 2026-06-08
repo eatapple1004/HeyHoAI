@@ -228,18 +228,20 @@
     <h3>🎨 Brand kit</h3>
     <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand.</div>
     <div class="field"><label>Logo</label>
-      <div class="logo-drop" onclick="alert('로고 업로드 (mock)')">＋ Upload logo (PNG, transparent)</div></div>
+      <div class="logo-drop" id="bkLogoDrop" onclick="document.getElementById('bkLogoFile').click()">＋ Upload logo (PNG, transparent)</div>
+      <input type="file" id="bkLogoFile" accept="image/png,image/jpeg" style="display:none" onchange="uploadLogo(this)" /></div>
     <div class="field"><label>Brand colors</label>
       <div class="swatches" id="bkSwatches">
-        <div class="swatch sel" style="background:#7c6cff" onclick="pickSwatch(this)"></div>
-        <div class="swatch" style="background:#ff7eb6" onclick="pickSwatch(this)"></div>
-        <div class="swatch" style="background:#5ee0d6" onclick="pickSwatch(this)"></div>
-        <div class="swatch" style="background:#ffce7a" onclick="pickSwatch(this)"></div>
-        <div class="swatch" style="background:#13131d" onclick="pickSwatch(this)"></div>
+        <div class="swatch sel" style="background:#7c6cff" data-c="#7c6cff" onclick="pickSwatch(this)"></div>
+        <div class="swatch" style="background:#ff7eb6" data-c="#ff7eb6" onclick="pickSwatch(this)"></div>
+        <div class="swatch" style="background:#5ee0d6" data-c="#5ee0d6" onclick="pickSwatch(this)"></div>
+        <div class="swatch" style="background:#ffce7a" data-c="#ffce7a" onclick="pickSwatch(this)"></div>
+        <div class="swatch" style="background:#13131d" data-c="#13131d" onclick="pickSwatch(this)"></div>
       </div></div>
     <div class="field"><label>Brand font</label>
-      <select class="tone-sel" style="width:100%"><option>Inter</option><option>Sora</option><option>Playfair Display</option><option>Montserrat</option></select></div>
+      <select class="tone-sel" id="bkFont" style="width:100%"><option>Inter</option><option>Sora</option><option>Playfair Display</option><option>Montserrat</option></select></div>
     <button class="btn btn-primary" style="width:100%" onclick="saveBrandkit()">Save &amp; apply to all outputs</button>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5">브랜드 색상이 생성 결과의 톤에 반영됩니다. 로고 워터마크 합성은 곧 추가될 예정이에요.</div>
   </div>
 </div>
 
@@ -350,11 +352,51 @@ const SCRIPTS={
 };
 function aiWriteScript(){document.getElementById('scriptTA').value=SCRIPTS[document.getElementById('toneSel').value];}
 
-// brand kit modal (시각용 — 생성 파이프라인 연결은 추후)
+// ── brand kit (실제 저장 + 생성 시 색상 주입) ──
+let BRANDKIT={enabled:false,primary_color:null,font_name:null,logo_url:null};
+function brandOn(){return BRANDKIT.enabled;}
+async function loadBrandkit(){
+  try{
+    const res=await fetch('/api/brand-kit');const data=await res.json();
+    if(data.success){BRANDKIT=data.data;reflectBrandkit();}
+  }catch(e){}
+}
+function reflectBrandkit(){
+  document.getElementById('bkOn').classList.toggle('hidden',!BRANDKIT.enabled);
+  document.getElementById('brandkitBtn').classList.toggle('on',BRANDKIT.enabled);
+  if(BRANDKIT.primary_color){
+    document.querySelectorAll('#bkSwatches .swatch').forEach(s=>s.classList.toggle('sel',s.dataset.c===BRANDKIT.primary_color));
+  }
+  if(BRANDKIT.font_name)document.getElementById('bkFont').value=BRANDKIT.font_name;
+  if(BRANDKIT.logo_url){
+    const d=document.getElementById('bkLogoDrop');
+    d.innerHTML=`<img src="${esc(BRANDKIT.logo_url)}" style="max-height:46px;max-width:100%;object-fit:contain"> <span style="display:block;font-size:11px;margin-top:6px">로고 변경</span>`;
+  }
+}
 function openBrandkit(){document.getElementById('brandkitModal').classList.add('open');}
 function closeBrandkit(){document.getElementById('brandkitModal').classList.remove('open');}
 function pickSwatch(el){el.parentNode.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));el.classList.add('sel');}
-function saveBrandkit(){document.getElementById('bkOn').classList.remove('hidden');document.getElementById('brandkitBtn').classList.add('on');closeBrandkit();}
+async function uploadLogo(inp){
+  const f=inp.files[0];inp.value='';if(!f)return;
+  const fd=new FormData();fd.append('logo',f);
+  try{
+    const res=await fetch('/api/brand-kit/logo',{method:'POST',body:fd});
+    const data=await res.json();
+    if(data.success){BRANDKIT=data.data;reflectBrandkit();}
+    else alert('로고 업로드 실패');
+  }catch(e){alert('로고 업로드 중 오류');}
+}
+async function saveBrandkit(){
+  const sel=document.querySelector('#bkSwatches .swatch.sel');
+  try{
+    const res=await fetch('/api/brand-kit',{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({primaryColor:sel?sel.dataset.c:null,fontName:document.getElementById('bkFont').value,enabled:true})});
+    const data=await res.json();
+    if(data.success){BRANDKIT=data.data;reflectBrandkit();}
+  }catch(e){}
+  closeBrandkit();
+}
 
 const STEP1={
   influencer:['Add your face','Upload a clear selfie — we keep your identity across every shot.'],
@@ -488,7 +530,7 @@ async function generate(){
 async function generateImages(r,subj){
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:r.prompt,model:curModel(),count:4,style:r.style})
+    body:JSON.stringify({characterId:subj.id,prompt:r.prompt,model:curModel(),count:4,style:r.style,brandKit:brandOn()})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
@@ -559,6 +601,7 @@ async function generateCaptionBlock(r,subj){
 setMode('influencer');
 loadSubjects();
 loadCredits();
+loadBrandkit();
 </script>
 </body>
 </html>
