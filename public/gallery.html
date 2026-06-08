@@ -37,6 +37,46 @@
   .empty .ico{font-size:42px;margin-bottom:14px}
   .empty h3{font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px}
   .empty p{font-size:14px;margin-bottom:22px}
+
+  /* reel maker */
+  .makereel{font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:11px;cursor:pointer;border:1px solid var(--border2);background:rgba(124,108,255,.12);color:var(--accent2);transition:all .2s}
+  .makereel:hover{background:rgba(124,108,255,.2)}
+  .makereel.active{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;border-color:transparent}
+  .item.selectmode{cursor:pointer}
+  .item.selectmode.dis{opacity:.32;cursor:not-allowed;filter:grayscale(.4)}
+  .item.sel{outline:3px solid var(--accent);outline-offset:-3px}
+  .selcheck{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;z-index:3}
+  .item.sel .selcheck{background:linear-gradient(135deg,var(--accent),var(--pink));border-color:#fff}
+
+  /* reel assemble bar */
+  .reel-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;width:min(960px,calc(100% - 48px));
+    background:rgba(19,19,29,.86);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:18px;padding:14px 18px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
+  .reel-bar .rb-info{font-size:13.5px;color:var(--dim)}
+  .reel-bar .rb-info b{color:var(--text);font-size:16px;font-family:'Sora'}
+  .seg{display:inline-flex;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:3px;flex-wrap:wrap}
+  .seg button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:12px;font-weight:600;padding:6px 11px;border-radius:7px;cursor:pointer;transition:.18s}
+  .seg button.on{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
+  .rmusic{font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:8px 10px;font-size:12.5px;cursor:pointer}
+  .reel-bar .btn{margin-left:auto}
+
+  /* preview modal */
+  .modal-bg{position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
+  .modal-bg.open{display:flex}
+  .modal{width:min(420px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:24px;position:relative}
+  .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:16px}
+  .modal .x{position:absolute;top:14px;right:16px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
+  .rprev{aspect-ratio:9/16;max-height:300px;margin:0 auto 14px;border-radius:14px;position:relative;display:flex;align-items:center;justify-content:center;font-size:64px;overflow:hidden}
+  .rprev .pplay{position:absolute;width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;border:1px solid rgba(255,255,255,.4)}
+  .rprev .rtag{position:absolute;bottom:10px;left:10px;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.5);color:#fff}
+  .rstrip{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+  .rstrip .rt{width:38px;height:50px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .rmeta{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:16px}
+  .rmeta b{color:var(--text)}
+  @media (hover:none){.item .actions{opacity:1;background:linear-gradient(transparent,rgba(0,0,0,.55))}}
+  .reel-nudge{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px;padding:15px 20px;border-radius:14px;background:linear-gradient(120deg,rgba(124,108,255,.16),rgba(255,126,182,.1));border:1px solid var(--border2)}
+  .reel-nudge span{font-size:13.5px;color:var(--dim)}
+  .reel-nudge span b{color:var(--text)}
 </style>
 </head>
 <body>
@@ -53,18 +93,22 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span id="cred" class="cr-bal">42</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span></div>
   </div>
 </nav>
 
 <div class="wrap">
   <div class="head fade d1">
-    <div><h1>Your Gallery</h1><div class="sub">Everything you've created — download or post anytime.</div></div>
-    <div class="count"><b id="cnt">0</b> creations</div>
+    <div><h1>Your Gallery</h1><div class="sub">Everything you've created — download, post, or combine into a reel.</div></div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="makereel" id="makeReelBtn" onclick="toggleSelectMode()">🎬 Make a reel</button>
+      <div class="count"><b id="cnt">0</b> creations</div>
+    </div>
   </div>
 
   <div class="filter-row fade d1" id="filterRow"></div>
+  <div class="reel-nudge hidden fade d1" id="reelNudge"></div>
   <div class="grid fade d2" id="grid"></div>
 
   <div class="empty hidden" id="empty">
@@ -74,6 +118,32 @@
   </div>
 </div>
 
+<div class="reel-bar hidden" id="reelBar">
+  <div class="rb-info"><b id="selCount">0</b> photos selected</div>
+  <div class="seg" id="reelTpl">
+    <button class="on" data-t="dump" onclick="pickReelTpl(this)">Photo Dump</button>
+    <button data-t="transition" onclick="pickReelTpl(this)">Outfit Transition</button>
+    <button data-t="ba" onclick="pickReelTpl(this)">Before → After</button>
+    <button data-t="dayinlife" onclick="pickReelTpl(this)">Day in My Life</button>
+  </div>
+  <select class="rmusic" id="reelMusic">
+    <option>Dreamy</option><option>Upbeat</option><option>Chill</option><option>Cinematic</option>
+  </select>
+  <button class="btn btn-primary" id="assembleBtn" disabled onclick="assemble()">Assemble reel ✨ ◈1</button>
+</div>
+
+<div class="modal-bg" id="reelModal" onclick="if(event.target===this)closeReel()">
+  <div class="modal">
+    <button class="x" onclick="closeReel()">✕</button>
+    <h3>🎬 Reel preview</h3>
+    <div class="rprev g3" id="rprev"><span id="rprevEmoji">🌅</span><div class="pplay">▶</div><span class="rtag" id="rprevTag">▶ Photo Dump</span></div>
+    <div class="rstrip" id="rstrip"></div>
+    <div class="rmeta" id="rmeta"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="saveReel()">Save to gallery</button>
+  </div>
+</div>
+
+<script src="/js/hh.js"></script>
 <script>
 const ITEMS=[
   {id:1,name:'Travel Mood — Golden Hour',type:'photo',mode:'influencer',date:'2026-06-06',emoji:'🌅',grad:'g1'},
@@ -88,6 +158,8 @@ const ITEMS=[
   {id:10,name:'Y2K Film Selfie',type:'photo',mode:'influencer',date:'2026-06-02',emoji:'📸',grad:'g2'},
 ];
 let filter='All';
+let selectMode=false;
+const selected=new Set();
 const FILTERS=['All','Photos','Reels','Influencer','Shopping'];
 
 function renderFilters(){
@@ -105,22 +177,80 @@ function render(){
   const list=ITEMS.filter(match);
   document.getElementById('cnt').textContent=list.length;
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
+  const photos=ITEMS.filter(i=>i.type==='photo').length, nudge=document.getElementById('reelNudge');
+  if(photos>=2&&!selectMode){nudge.classList.remove('hidden');nudge.innerHTML='<span>🎬 Turn your <b>'+photos+'</b> photos into a reel — just ◈1</span><button class="btn btn-primary" onclick="toggleSelectMode()">Make a reel →</button>';}
+  else nudge.classList.add('hidden');
   if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
-  grid.innerHTML=list.map(it=>`
-    <div class="item ${it.grad}">
+  grid.innerHTML=list.map(it=>{
+    const selectable=selectMode&&it.type==='photo';
+    const isSel=selected.has(it.id);
+    const cls='item '+it.grad+(selectMode?' selectmode':'')+(isSel?' sel':'')+(selectMode&&it.type!=='photo'?' dis':'');
+    return `<div class="${cls}" ${selectable?`onclick="toggleSelect(${it.id})"`:''}>
       <div class="thumb">${it.emoji}</div>
       <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>
       ${it.type==='reel'?'<div class="play">▶</div>':''}
+      ${selectable?`<div class="selcheck">${isSel?'✓':''}</div>`:''}
       <div class="info"><div class="nm">${it.name}</div><div class="dt">${it.date} · ${it.mode}</div></div>
-      <div class="actions">
-        <button onclick="alert('다운로드: ${it.name}')">⬇</button>
-        <button onclick="alert('인스타 게시')">↗</button>
-        <button class="del" onclick="alert('삭제 확인 (소프트 삭제)')">🗑</button>
-      </div>
-    </div>`).join('');
+      ${!selectMode?`<div class="actions">
+        <button onclick="HH.toast('다운로드: ${it.name}')">⬇</button>
+        <button onclick="HH.toast('인스타그램 공유 (mock)')">↗</button>
+        <button class="del" onclick="HH.toast('삭제됨 (소프트 삭제)')">🗑</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
 }
 function setFilter(f){filter=f;renderFilters();render();}
+
+// ── reel maker (사진 조합 → 자동 릴스) ──
+const REEL_TPL={dump:'Photo Dump',transition:'Outfit Transition',ba:'Before → After',dayinlife:'Day in My Life'};
+function toggleSelectMode(){
+  selectMode=!selectMode;selected.clear();
+  const btn=document.getElementById('makeReelBtn');
+  btn.classList.toggle('active',selectMode);
+  btn.textContent=selectMode?'✕ Cancel':'🎬 Make a reel';
+  document.getElementById('reelBar').classList.toggle('hidden',!selectMode);
+  document.querySelector('.wrap').style.paddingBottom=selectMode?'160px':'';
+  updateReelBar();render();
+}
+function toggleSelect(id){
+  if(selected.has(id))selected.delete(id);else selected.add(id);
+  updateReelBar();render();
+}
+function updateReelBar(){
+  document.getElementById('selCount').textContent=selected.size;
+  document.getElementById('assembleBtn').disabled=selected.size<2;
+}
+function pickReelTpl(b){document.querySelectorAll('#reelTpl button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+function curReelTpl(){return document.querySelector('#reelTpl .on').dataset.t;}
+function assemble(){
+  const photos=ITEMS.filter(it=>selected.has(it.id));
+  if(photos.length<2)return;
+  const first=photos[0],tpl=REEL_TPL[curReelTpl()],music=document.getElementById('reelMusic').value;
+  document.getElementById('rprev').className='rprev '+first.grad;
+  document.getElementById('rprevEmoji').textContent=first.emoji;
+  document.getElementById('rprevTag').textContent='▶ '+tpl;
+  document.getElementById('rstrip').innerHTML=photos.map(p=>`<div class="rt ${p.grad}">${p.emoji}</div>`).join('');
+  document.getElementById('rmeta').innerHTML=`<b>${photos.length} photos</b> · ${tpl}<br>Music: <b>${music}</b> · Transitions: beat-synced · Auto-captions: on`;
+  document.getElementById('reelModal').classList.add('open');
+}
+function closeReel(){document.getElementById('reelModal').classList.remove('open');}
+function saveReel(){
+  const photos=ITEMS.filter(it=>selected.has(it.id));
+  const tpl=REEL_TPL[curReelTpl()];
+  const newId=Math.max.apply(null,ITEMS.map(i=>i.id))+1;
+  const today=new Date().toISOString().slice(0,10);
+  ITEMS.unshift({id:newId,name:tpl+' Reel',type:'reel',mode:photos[0].mode,date:today,emoji:'🎬',grad:photos[0].grad});
+  HH.spend(1);
+  closeReel();
+  selectMode=false;selected.clear();
+  const btn=document.getElementById('makeReelBtn');btn.classList.remove('active');btn.textContent='🎬 Make a reel';
+  document.getElementById('reelBar').classList.add('hidden');
+  document.querySelector('.wrap').style.paddingBottom='';
+  filter='All';renderFilters();render();
+  HH.toast('릴스가 갤러리에 추가됐어요 ✨ (◈1 사용)');
+}
+
 renderFilters();render();
 </script>
 </body>
