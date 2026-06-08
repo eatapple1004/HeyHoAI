@@ -19,6 +19,10 @@ const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'), // 프로덕션 HTTPS 환경에서 true
 
+  // 외부 공개 주소 (도메인). 인스타 발행 시 미디어 URL·발행 링크 등에 사용.
+  // 예: https://doppia.ai — 미설정 시 폴백 IP 사용
+  PUBLIC_URL: z.string().url().optional(),
+
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),
   REPLICATE_MODEL: z.string().default('black-forest-labs/flux-1.1-pro'),
