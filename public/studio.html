@@ -136,6 +136,11 @@
   .addon-trigger{display:none;font-family:inherit;font-size:13px;font-weight:600;padding:11px 14px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer}
   .addon-trigger .badge-n{color:var(--accent2)}
   .streak{font-size:13px;font-weight:700;color:var(--gold);margin-right:6px;padding-right:10px;border-right:1px solid var(--border)}
+  .plan-chip{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:7px;margin-right:8px;cursor:pointer;border:1px solid var(--border2)}
+  .plan-chip.free{color:var(--dim)}
+  .plan-chip.creator{color:var(--accent2);border-color:rgba(124,108,255,.4)}
+  .plan-chip.pro{color:var(--gold);border-color:rgba(255,206,122,.45)}
+  .plan-chip.brand{color:var(--cyan);border-color:rgba(94,224,214,.45)}
   .pro-tag{font-size:9px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:6px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;margin-left:4px}
   .up-tier-badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 9px;border-radius:7px;margin-bottom:10px}
   .up-tier-badge.creator{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
@@ -203,7 +208,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="streak" id="streakChip">🔥 1</span><span class="coin">◈</span> <span id="creditBalance" class="cr-bal">48</span> credits
+    <div class="credits"><span class="plan-chip free" id="planChip" onclick="location.href='/billing.html'" title="Your plan — upgrade anytime">Free</span><span class="streak" id="streakChip">🔥 1</span><span class="coin">◈</span> <span id="creditBalance" class="cr-bal">48</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -364,7 +369,7 @@
   </div>
 </div>
 
-<script src="/js/hh.js"></script>
+<script src="/js/hh.js?v=2"></script>
 <script>
 const GRAD={g1:'linear-gradient(150deg,#ffce7a,#ff7eb6)',g2:'linear-gradient(150deg,#7c6cff,#5ee0d6)',g3:'linear-gradient(150deg,#ff7eb6,#7c6cff)',g4:'linear-gradient(150deg,#5ee0d6,#7c6cff)',g5:'linear-gradient(150deg,#ffce7a,#ff5f8f)',g6:'linear-gradient(150deg,#a99bff,#ff7eb6)',g7:'linear-gradient(150deg,#5ee0d6,#9b7bff)',g8:'linear-gradient(150deg,#ff9a6b,#ffce7a)'};
 
@@ -736,7 +741,7 @@ function openPaywall(r,v,total){
 function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
 function paywallTopup(){HH.add(220);if(document.getElementById('pwAuto').checked)HH.toast('⚡ Auto top-up on');closePaywall();generate();}
 function paywallTopupSmall(){HH.add(50);closePaywall();generate();}
-function paywallSub(){const p=PLANS[recommendTier()];HH.add(p.cr);HH.plan=p.name.toLowerCase();closePaywall();HH.toast(`${p.name} subscription started (mock)`);generate();}
+function paywallSub(){const p=PLANS[recommendTier()];HH.add(p.cr);HH.plan=p.name.toLowerCase();renderPlan();closePaywall();HH.toast(`${p.name} subscription started (mock)`);generate();}
 function showUpsell(){
   const el=document.getElementById('upsellBanner');
   if(!localStorage.getItem('hh_firstDone')){el.classList.add('hidden');return;}
@@ -790,7 +795,7 @@ function upsellOnce(){
   HH.toast('Applied (mock · ◈1 used)');closeUpsell();
 }
 function upsellSub(){
-  const p=PLANS[upTarget];HH.plan=upTarget;HH.add(p.cr);closeUpsell();
+  const p=PLANS[upTarget];HH.plan=upTarget;HH.add(p.cr);renderPlan();closeUpsell();
   document.getElementById('upsellBanner').classList.add('hidden');
   document.querySelectorAll('.result-card .wm').forEach(w=>w.remove());
   HH.toast(`${p.name} subscription started — +◈${p.cr.toLocaleString()} (mock)`);
@@ -841,6 +846,7 @@ function renderCaption(){
 // ── P1-15: 연속 생성 스트릭 + 데일리 보너스 ──
 function dstr(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function renderStreak(){document.getElementById('streakChip').textContent='🔥 '+(parseInt(localStorage.getItem('hh_streak')||'1',10));}
+function renderPlan(){const p=(HH.plan||'free'),el=document.getElementById('planChip');if(!el)return;el.className='plan-chip '+p;el.textContent=p.charAt(0).toUpperCase()+p.slice(1);}
 function checkDailyBonus(){
   renderStreak();
   const today=dstr(new Date()), last=localStorage.getItem('hh_lastClaim');
@@ -866,7 +872,8 @@ function closeDaily(){document.getElementById('dailyModal').classList.remove('op
   const ver=p.get('vertical')||localStorage.getItem('hh_lastVertical');
   if(m==='product'&&ver&&VERTICALS[ver])state.vertical=ver;
   setMode(m);
-  checkDailyBonus();
+  renderPlan();
+  if(localStorage.getItem('hh_firstDone')) checkDailyBonus(); // 첫 성공(aha) 이후 재방문에만 스트릭 모달
 })();
 </script>
 </body>

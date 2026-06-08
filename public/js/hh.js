@@ -45,6 +45,10 @@
     '.hh-toast.warn{border-color:rgba(255,206,122,.4)}';
   var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
   window.HH = HH;
+  // 첫 방문 타임스탬프 — 정직한 신규 오퍼 윈도우 계산용 (가짜 상시 긴급배너 방지)
+  if (!localStorage.getItem('hh_first_seen')) localStorage.setItem('hh_first_seen', Date.now());
+  HH.firstSeen = function () { return parseInt(localStorage.getItem('hh_first_seen'), 10) || Date.now(); };
+  HH.offerHoursLeft = function () { return (HH.firstSeen() + 24 * 3600 * 1000 - Date.now()) / 3600000; };
   if (document.readyState !== 'loading') HH.setNav();
   else document.addEventListener('DOMContentLoaded', HH.setNav);
 })();

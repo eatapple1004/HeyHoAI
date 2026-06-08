@@ -99,6 +99,10 @@
   .manage{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
   .pausebox{background:rgba(94,224,214,.08);border:1px solid rgba(94,224,214,.25);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px;color:var(--dim)}
   .pausebox b{color:var(--cyan)}
+  .cancelbox{background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-top:14px}
+  .cancelbox .cbh{font-size:14px;font-weight:700;margin-bottom:6px}
+  .cancelbox .cbb{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:14px}
+  .cancelbox .cbcta{display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -128,7 +132,7 @@
     <div class="bal"><span class="num">◈ 42</span><span class="lbl">credits left</span></div>
   </div>
 
-  <div class="offer-banner fade d2">⏰ <b>First 24h only</b> — upgrade now for <b>50% off</b> your first month
+  <div class="offer-banner fade d2" id="offerBanner" style="display:none">⏰ <b id="offerTime"></b> — <b>50% off</b> your first month
     <button class="btn btn-primary" onclick="checkout('plan','Pro · first month 50%')">Claim 50% →</button></div>
 
   <div class="section-label fade d2">Subscription</div>
@@ -233,12 +237,20 @@
         <button class="btn btn-ghost" onclick="pauseFlow()">⏸ Pause subscription</button>
         <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">Cancel</button>
       </div>
-      <div class="pausebox hidden" id="pauseBox">⏸ <b>Subscription paused</b> — no charges until you resume. Your 42 credits and gallery stay safe.</div>
+      <div class="pausebox hidden" id="pauseBox">⏸ <b>Subscription paused</b> — no charges until you resume. Your credits and gallery stay safe.</div>
+      <div class="cancelbox hidden" id="cancelBox">
+        <div class="cbh">Before you cancel…</div>
+        <div class="cbb">You'll lose your monthly credits, watermark-free exports and Pro features. Your gallery &amp; trained faces stay — but the perks stop. Most creators pause instead: it keeps everything and stops charges until you're back.</div>
+        <div class="cbcta">
+          <button class="btn btn-primary" onclick="hideCancel();pauseFlow()">⏸ Pause instead (recommended)</button>
+          <button class="btn btn-ghost" onclick="reallyCancel()" style="color:var(--faint)">Cancel anyway</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<script src="/js/hh.js"></script>
+<script src="/js/hh.js?v=2"></script>
 <script>
 let CYCLE='m';
 function setCycle(c,btn){
@@ -256,19 +268,19 @@ function toggleTopup(el){
 function pauseFlow(){
   document.getElementById('pauseBox').classList.remove('hidden');
 }
-function cancelFlow(){
-  // retention: offer pause before letting them cancel
-  if(confirm("Cancelling stops your monthly credits and Pro features.\n\nWant to PAUSE instead? Keep your account, gallery & trained faces — billing just stops until you're back.\n\n[ OK = Pause ]   [ Cancel = continue to cancel ]")){
-    pauseFlow();
-  }else{
-    HH.toast('Cancellation flow (mock)');
-  }
-}
+function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
+function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
+function reallyCancel(){ hideCancel(); HH.toast('Subscription cancelled (mock) — your gallery & faces are kept'); }
 function checkout(type,label){
   const cyc = type==='plan' ? (CYCLE==='y'?' (annual)':' (monthly)') : '';
   HH.toast('Stripe Checkout (mock): '+label+cyc);
 }
 function joinTeamBeta(){HH.toast("You're on the Team beta list — we'll email priority access (mock)");}
+// 정직한 신규 오퍼: 첫 방문 후 24h 안에만 노출 (실제 카운트다운, 가짜 상시 긴급 X)
+(function initOffer(){
+  var h=HH.offerHoursLeft&&HH.offerHoursLeft(), b=document.getElementById('offerBanner');
+  if(b&&h>0){document.getElementById('offerTime').textContent='First 24h — '+Math.max(1,Math.ceil(h))+'h left';b.style.display='';}
+})();
 </script>
 </body>
 </html>

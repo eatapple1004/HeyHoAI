@@ -145,8 +145,9 @@
   .stat .cap{font-size:13px;color:var(--dim);margin-top:4px}
 
   /* pricing */
-  .prices{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:20px;align-items:start}
-  @media(max-width:860px){.prices{grid-template-columns:1fr;max-width:420px;margin-inline:auto}}
+  .prices{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px;align-items:start}
+  @media(max-width:980px){.prices{grid-template-columns:repeat(2,1fr);max-width:680px;margin-inline:auto}}
+  @media(max-width:520px){.prices{grid-template-columns:1fr;max-width:420px}}
   .price{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:20px;padding:30px}
   .price.pop{border-color:rgba(124,108,255,.5);box-shadow:0 0 0 1px rgba(124,108,255,.4),0 30px 70px -30px rgba(124,108,255,.5);position:relative}
   .price.pop::before{content:'MOST POPULAR';position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--accent),var(--pink));font-size:10px;font-weight:800;letter-spacing:.6px;padding:5px 13px;border-radius:9px;color:#fff}
@@ -196,7 +197,7 @@
     </div>
     <div class="nav-cta">
       <a href="/saas-login.html" class="btn btn-ghost">Log in</a>
-      <a href="/saas-login.html" class="btn btn-primary">Start free</a>
+      <a href="/studio.html" class="btn btn-primary">Start free</a>
     </div>
   </div>
 </nav>
@@ -212,7 +213,7 @@
   <h1 class="fade d2" id="heroH1">Your face. Any look.<br><span class="grad">Content on autopilot.</span></h1>
   <p class="lead fade d3" id="heroLead">Upload one selfie or one product photo, pick a template, and Doppia generates studio-grade photos and reels — keeping your identity perfectly consistent across every shot.</p>
   <div class="hero-cta fade d4">
-    <a href="/saas-login.html" class="btn btn-primary btn-lg" id="heroCta">Create your first post →</a>
+    <a href="/studio.html" class="btn btn-primary btn-lg" id="heroCta">Create your first post →</a>
     <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
   </div>
   <div class="micro fade d4">✨ <b>10 free credits</b> (≈ 1 reel or 5 photo sets) on sign-up · No credit card required</div>
@@ -323,21 +324,28 @@
       <div class="pn">Free</div><div class="pp">$0<small> /mo</small></div>
       <div class="cr">◈ 10 credits to try</div>
       <ul><li><span class="ck">✓</span> All modes</li><li><span class="ck">✓</span> First result watermark-free</li><li><span class="ck">✓</span> Personal license</li></ul>
-      <a href="/saas-login.html" class="btn btn-ghost">Get started</a>
+      <a href="/studio.html" class="btn btn-ghost">Get started</a>
     </div>
-    <div class="price pop">
+    <div class="price">
       <div class="pn">Creator</div><div class="pp">$19<small> /mo</small></div>
       <div class="cr">◈ 250 credits / month</div>
       <ul><li><span class="ck">✓</span> No watermark</li><li><span class="ck">✓</span> Reels + HD</li><li><span class="ck">✓</span> Priority queue</li><li><span class="ck">✓</span> Personal license</li></ul>
-      <a href="/saas-login.html" class="btn btn-primary">Start creating</a>
+      <a href="/studio.html" class="btn btn-ghost">Start creating</a>
+    </div>
+    <div class="price pop">
+      <div class="pn">Pro</div><div class="pp">$39<small> /mo</small></div>
+      <div class="cr">◈ 600 credits / month</div>
+      <ul><li><span class="ck">✓</span> Everything in Creator</li><li><span class="ck">✓</span> Brand kit</li><li><span class="ck">✓</span> 4K + multilingual captions</li><li><span class="ck">✓</span> Personal license</li></ul>
+      <a href="/studio.html" class="btn btn-primary">Start with Pro</a>
     </div>
     <div class="price">
       <div class="pn">Brand</div><div class="pp">$79<small> /mo</small></div>
       <div class="cr">◈ 1,400 credits / month</div>
       <ul><li><span class="ck">✓</span> Everything in Pro</li><li><span class="ck">✓</span> Commercial license</li><li><span class="ck">✓</span> On-model + bulk</li><li><span class="ck">✓</span> Premium AI models</li></ul>
-      <a href="/saas-login.html" class="btn btn-ghost">Choose Brand</a>
+      <a href="/billing.html" class="btn btn-ghost">Choose Brand</a>
     </div>
   </div>
+  <p class="sub" style="text-align:center;margin-top:18px;font-size:13px">Selling products or running ads? <b style="color:var(--text)">Commercial license</b> is included with Brand — and Studio offers it right when you publish. <a href="/business.html" style="color:var(--accent)">Teams &amp; agencies →</a></p>
 </section>
 
 <!-- CTA -->
@@ -345,7 +353,7 @@
   <div class="cta-band">
     <h2>Your next 30 posts are one selfie away.</h2>
     <p>Join creators and brands making content on autopilot.</p>
-    <a href="/saas-login.html" class="btn btn-primary btn-lg">Start free — 10 credits →</a>
+    <a href="/studio.html" class="btn btn-primary btn-lg">Start free — 10 credits →</a>
   </div>
 </section>
 
@@ -365,8 +373,8 @@
 
 <script>
 const AUD={
-  creators:{h1:'Your face. Any look.|Content on autopilot.',lead:'Upload one selfie, pick a template, and get studio-grade photos and reels — unmistakably you, in seconds.',cta:'Create your first post →',href:'/saas-login.html'},
-  brands:{h1:'One product photo.|A full content studio.',lead:'Drop in a product shot — fashion, beauty, food, home and more — and get lookbooks, on-model sets and reels. No studio, no shoot.',cta:'Create product content →',href:'/saas-login.html?aud=brands'},
+  creators:{h1:'Your face. Any look.|Content on autopilot.',lead:'Upload one selfie, pick a template, and get studio-grade photos and reels — unmistakably you, in seconds.',cta:'Create your first post →',href:'/studio.html'},
+  brands:{h1:'One product photo.|A full content studio.',lead:'Drop in a product shot — fashion, beauty, food, home and more — and get lookbooks, on-model sets and reels. No studio, no shoot.',cta:'Create product content →',href:'/studio.html?mode=product'},
   business:{h1:'Content at scale.|API · teams · white-label.',lead:'Embed Doppia in your store, generate across a team, and resell to clients. Built for brands and agencies.',cta:'Explore Business →',href:'/business.html'}
 };
 function switchAud(a,btn){
