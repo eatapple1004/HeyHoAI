@@ -187,35 +187,21 @@
   <!-- SCHEDULE & ANALYTICS -->
   <div class="panel" id="pAna">
     <div class="stats">
-      <div class="stat glass"><div class="n">214</div><div class="d">▲ 18%</div><div class="l">Posts published</div></div>
-      <div class="stat glass"><div class="n">1.2M</div><div class="d">▲ 24%</div><div class="l">Reach</div></div>
-      <div class="stat glass"><div class="n">6.8%</div><div class="d">▲ 1.3pt</div><div class="l">Engagement</div></div>
-      <div class="stat glass"><div class="n">3.1k</div><div class="d">▲ 9%</div><div class="l">Link clicks</div></div>
+      <div class="stat glass"><div class="n" id="aPublished">—</div><div class="l">Posts published</div></div>
+      <div class="stat glass"><div class="n" id="aAccounts">—</div><div class="l">Connected accounts</div></div>
+      <div class="stat glass"><div class="n" id="aQueued">—</div><div class="l">In queue</div></div>
+      <div class="stat glass"><div class="n" id="aScheduled">—</div><div class="l">Scheduled</div></div>
     </div>
     <div class="card glass">
-      <div class="section-label">Engagement · last 7 days</div>
-      <div class="chart">
-        <div class="bar" style="height:55%"><span>Mon</span></div>
-        <div class="bar" style="height:72%"><span>Tue</span></div>
-        <div class="bar" style="height:48%"><span>Wed</span></div>
-        <div class="bar" style="height:88%"><span>Thu</span></div>
-        <div class="bar" style="height:66%"><span>Fri</span></div>
-        <div class="bar" style="height:95%"><span>Sat</span></div>
-        <div class="bar" style="height:78%"><span>Sun</span></div>
-      </div>
+      <div class="section-label">Posts published · last 7 days</div>
+      <div class="chart" id="anaChart"></div>
     </div>
     <div class="card glass">
-      <div class="row" style="margin-bottom:6px"><div class="section-label" style="margin:0">Content calendar</div>
-        <button class="btn btn-ghost" onclick="alert('자동 게시 예약 (mock)')">+ Schedule post</button></div>
-      <div class="cal">
-        <div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
-        <div class="day"><div class="dn">9</div><div class="post r">Reel · 6pm</div></div>
-        <div class="day"><div class="dn">10</div></div>
-        <div class="day"><div class="dn">11</div><div class="post p">Photo · 12pm</div></div>
-        <div class="day"><div class="dn">12</div><div class="post r">UGC ad · 7pm</div></div>
-        <div class="day"><div class="dn">13</div></div>
-        <div class="day"><div class="dn">14</div><div class="post p">Carousel · 11am</div></div>
-        <div class="day"><div class="dn">15</div><div class="post r">Reel · 8pm</div></div>
+      <div class="row" style="margin-bottom:6px"><div class="section-label" style="margin:0">Content calendar · this week</div>
+        <button class="btn btn-ghost" onclick="location.href='/heyhoai/accounts/page'">+ Schedule post</button></div>
+      <div class="cal" id="anaCal"></div>
+      <div id="anaEmpty" style="display:none;color:var(--faint);font-size:13px;padding:16px 0;text-align:center">
+        이번 주 예약/게시된 콘텐츠가 없어요. <a onclick="location.href='/heyhoai/accounts/page'" style="color:var(--accent2);cursor:pointer">계정에서 콘텐츠를 큐에 추가</a>하세요.
       </div>
     </div>
   </div>
@@ -229,6 +215,58 @@ function setTab(t){
     document.getElementById(PANELS[k][1]).classList.toggle('on',k===t);
   }
   if(t==='team')loadTeams();
+  if(t==='ana')loadAnalytics();
+}
+
+// ═══ 예약 발행 + 분석 (실데이터) ═══
+async function loadAnalytics(){
+  try{
+    const ov=(await(await fetch('/api/dashboard/overview')).json()).data;
+    document.getElementById('aPublished').textContent=ov.published;
+    document.getElementById('aAccounts').textContent=ov.accounts;
+    document.getElementById('aQueued').textContent=ov.queued;
+    document.getElementById('aScheduled').textContent=ov.scheduled;
+    renderChart(ov.daily);
+  }catch(e){}
+  try{
+    const cal=(await(await fetch('/api/dashboard/calendar')).json()).data;
+    renderCalendar(cal);
+  }catch(e){}
+}
+function ymd(d){return d.toISOString().slice(0,10);}
+function renderChart(daily){
+  // 최근 7일(오늘 포함) 막대
+  const map={};(daily||[]).forEach(d=>map[d.day]=d.count);
+  const days=[];const now=new Date();
+  for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d);}
+  const max=Math.max(1,...days.map(d=>map[ymd(d)]||0));
+  const wd=['일','월','화','수','목','금','토'];
+  document.getElementById('anaChart').innerHTML=days.map(d=>{
+    const c=map[ymd(d)]||0;const h=Math.round(c/max*100);
+    return `<div class="bar" style="height:${Math.max(h,4)}%" title="${ymd(d)}: ${c}건"><span>${wd[d.getDay()]}</span></div>`;
+  }).join('');
+}
+function renderCalendar(items){
+  // 이번 주(월~일) 그리드
+  const now=new Date();const dow=(now.getDay()+6)%7; // 월=0
+  const monday=new Date(now);monday.setDate(now.getDate()-dow);monday.setHours(0,0,0,0);
+  const week=[];for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);week.push(d);}
+  const byDay={};(items||[]).forEach(it=>{const k=(it.effectiveAt||'').slice(0,10);(byDay[k]=byDay[k]||[]).push(it);});
+  const hdr=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let any=false;
+  const cells=week.map((d,i)=>{
+    const list=byDay[ymd(d)]||[];if(list.length)any=true;
+    const posts=list.slice(0,3).map(it=>{
+      const cls=it.type==='reel'?'r':'p';
+      const t=(it.scheduledAt||it.postedAt)?new Date(it.scheduledAt||it.postedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
+      const label=(it.type==='reel'?'Reel':'Photo')+(it.status==='posted'?' ✓':'')+(t?' · '+t:'');
+      return `<div class="post ${cls}" title="@${it.username||''} · ${it.status}">${label}</div>`;
+    }).join('');
+    return `<div class="day"><div class="dn">${d.getDate()}</div>${posts}</div>`;
+  }).join('');
+  document.getElementById('anaCal').innerHTML=hdr.map(h=>`<div class="dh">${h}</div>`).join('')+cells;
+  document.getElementById('anaCal').style.display=any?'':'none';
+  document.getElementById('anaEmpty').style.display=any?'none':'';
 }
 let revealed=false;
 function reveal(){revealed=!revealed;document.getElementById('apiKey').textContent=revealed?'sk_live_demo_not_a_real_key_4f2a':'sk_live_••••••••••••••••3f9a';}
