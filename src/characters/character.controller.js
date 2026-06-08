@@ -6,6 +6,12 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
+/** 활성 작업 컨텍스트의 팀 id (개인이면 null) */
+async function activeTeamId(userId) {
+  const ctx = await require('../teams/team.credit').resolveContext(userId);
+  return ctx.type === 'team' ? ctx.teamId : null;
+}
+
 const uploadDir = path.join(process.cwd(), 'tmp', 'images');
 fs.mkdirSync(uploadDir, { recursive: true });
 const storage = multer.diskStorage({
@@ -20,7 +26,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 async function create(req, res, next) {
   try {
     const input = createCharacterRequestSchema.parse(req.body);
-    const character = await createCharacter(input, req.user.id);
+    const character = await createCharacter(input, req.user.id, await activeTeamId(req.user.id));
 
     res.status(201).json({
       success: true,
@@ -53,8 +59,10 @@ async function getById(req, res, next) {
 async function list(req, res, next) {
   try {
     const { status, limit, offset } = req.query;
+    const teamId = await activeTeamId(req.user.id);
     const result = await listCharacters({
-      userId: req.user.id,
+      userId: teamId ? undefined : req.user.id,
+      teamId,
       status,
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
@@ -154,7 +162,7 @@ async function register(req, res, next) {
         brandSafety: { approvedThemes: ['lifestyle'], bannedTopics: ['politics'], targetAudience: '18-35' },
       };
 
-      const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona });
+      const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona, teamId: await activeTeamId(req.user.id) });
 
       // 대표 이미지 설정
       if (req.file) {
@@ -223,7 +231,7 @@ async function registerWithImage(req, res, next) {
       brandSafety: { approvedThemes: ['lifestyle'], bannedTopics: ['politics'], targetAudience: '18-35' },
     };
 
-    const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona });
+    const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona, teamId: await activeTeamId(req.user.id) });
 
     // 선택한 이미지를 대표 이미지로 설정
     const imageUrl = `/images/${imageFilename}`;
