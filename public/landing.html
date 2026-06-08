@@ -61,6 +61,13 @@
   .lead{font-size:clamp(16px,2vw,20px);color:var(--dim);max-width:620px;margin:0 auto 36px;font-weight:400}
   .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
   .micro{font-size:13px;color:var(--faint)}
+  .aud-toggle{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:5px;margin-bottom:22px}
+  .aud-toggle button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;transition:.2s}
+  .aud-toggle button.on{background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;box-shadow:0 8px 18px -8px var(--accent)}
+  .proof{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .proof-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 14px}
+  .proof-stat b{font-family:'Sora';font-size:24px;font-weight:800;letter-spacing:-.5px;color:var(--text)}
+  .proof-stat span{font-size:12px;color:var(--faint)}
   .vert-chips{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:22px}
   .vert-chips .vc-label{font-size:12.5px;color:var(--faint);font-weight:600;margin-right:2px}
   .vert-chips a{font-size:13px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:8px 14px;border-radius:30px;text-decoration:none;transition:.18s}
@@ -186,14 +193,27 @@
 
 <!-- HERO -->
 <header class="hero wrap">
-  <div class="pill fade d1"><span class="live"></span> No prompt engineering. Ever.</div>
-  <h1 class="fade d2">Your face. Any look.<br><span class="grad">Content on autopilot.</span></h1>
-  <p class="lead fade d3">Upload one selfie or one product photo, pick a template, and Doppia generates studio-grade photos and reels — keeping your identity perfectly consistent across every shot.</p>
+  <div class="aud-toggle fade d1" id="audToggle">
+    <button class="on" data-aud="creators" onclick="setAudience('creators')">😎 Creators</button>
+    <button data-aud="brands" onclick="setAudience('brands')">🛍️ Brands &amp; Sellers</button>
+    <button data-aud="business" onclick="setAudience('business')">🏢 Business</button>
+  </div>
+  <div class="pill fade d1"><span class="live"></span> <span id="heroPill">No prompt engineering. Ever.</span></div>
+  <h1 class="fade d2" id="heroH1">Your face. Any look.<br><span class="grad">Content on autopilot.</span></h1>
+  <p class="lead fade d3" id="heroLead">Upload one selfie or one product photo, pick a template, and Doppia generates studio-grade photos and reels — keeping your identity perfectly consistent across every shot.</p>
   <div class="hero-cta fade d4">
-    <a href="/saas-login.html" class="btn btn-primary btn-lg">Create your first post →</a>
+    <a href="/saas-login.html" class="btn btn-primary btn-lg" id="heroCta">Create your first post →</a>
     <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
   </div>
   <div class="micro fade d4">✨ <b>10 free credits</b> on sign-up · No credit card required</div>
+
+  <!-- SOCIAL PROOF -->
+  <div class="proof fade d4">
+    <div class="proof-stat"><b>12,000+</b><span>creators &amp; brands</span></div>
+    <div class="proof-stat"><b>2.4M</b><span>posts generated</span></div>
+    <div class="proof-stat"><b>4.9★</b><span>avg. rating</span></div>
+    <div class="proof-stat"><b>7</b><span>industries</span></div>
+  </div>
 
   <!-- VERTICAL DEEP-LINKS -->
   <div class="vert-chips fade d4">
@@ -338,5 +358,37 @@
   </div>
   <div class="foot-bot"><span>© 2026 Doppia. All rights reserved.</span><span>Made for creators, everywhere.</span></div>
 </footer>
+
+<script>
+// ── 청중 토글: 히어로 문구/CTA를 대상에 맞게 ──
+const AUDIENCE={
+  creators:{
+    pill:'No prompt engineering. Ever.',
+    h1:'Your face. Any look.<br><span class="grad">Content on autopilot.</span>',
+    lead:'Upload one selfie, pick a template, and Doppia generates studio-grade photos and reels — your identity perfectly consistent across every shot.',
+    cta:'Create your first post →', href:'/studio.html'
+  },
+  brands:{
+    pill:'One product photo. Endless content.',
+    h1:'Your product. Any scene.<br><span class="grad">Sell with stunning shots.</span>',
+    lead:'Upload one product photo, pick a vertical, and Doppia generates lookbooks, lifestyle shots and reels — consistent branding across Fashion, Beauty, Food, Tech and more.',
+    cta:'Shoot your product →', href:'/studio.html?mode=shopping&vertical=Fashion'
+  },
+  business:{
+    pill:'Scale content across your team.',
+    h1:'Your brand. At scale.<br><span class="grad">Content for the whole team.</span>',
+    lead:'Shared credits, team roles, scheduled publishing and a brand dashboard — run content production across accounts and clients from one place.',
+    cta:'Explore for teams →', href:'/business.html'
+  }
+};
+function setAudience(a){
+  const d=AUDIENCE[a];if(!d)return;
+  document.querySelectorAll('#audToggle button').forEach(b=>b.classList.toggle('on',b.dataset.aud===a));
+  document.getElementById('heroPill').textContent=d.pill;
+  document.getElementById('heroH1').innerHTML=d.h1;
+  document.getElementById('heroLead').textContent=d.lead;
+  const cta=document.getElementById('heroCta');cta.textContent=d.cta;cta.href=d.href;
+}
+</script>
 </body>
 </html>
