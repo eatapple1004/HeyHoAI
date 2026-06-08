@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>HeyHoAI · Business</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
+<script src="/saas-auth.js" defer></script>
 <style>
   .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
@@ -81,9 +82,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a class="active">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
-      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
-    </div>
+    <div class="credits" id="saasUserBox"></div>
   </div>
 </nav>
 
@@ -125,17 +124,37 @@
 
   <!-- TEAM -->
   <div class="panel" id="pTeam">
-    <div class="card glass">
-      <div class="row" style="margin-bottom:8px"><h3>Team members</h3>
-        <button class="btn btn-primary" onclick="alert('초대 메일 전송 (mock)')">+ Invite member</button></div>
-      <div class="member"><div class="ava g6">🧑🏻</div><div style="flex:1"><div class="nm">You</div><div class="em">yedam@heyhoai.com</div></div><span class="role owner">Owner</span></div>
-      <div class="member"><div class="ava g2">👩🏻</div><div style="flex:1"><div class="nm">Mina Park</div><div class="em">mina@brand.co</div></div><span class="role">Editor</span></div>
-      <div class="member"><div class="ava g7">👨🏽</div><div style="flex:1"><div class="nm">Dan Lee</div><div class="em">dan@brand.co</div></div><span class="role">Editor</span></div>
-      <div class="member"><div class="ava g4">🧑🏼</div><div style="flex:1"><div class="nm">Sora Kim</div><div class="em">sora@brand.co</div></div><span class="role">Viewer</span></div>
+    <!-- 팀 없을 때 -->
+    <div class="card glass" id="teamEmpty" style="display:none">
+      <div class="row"><div><h3>아직 팀이 없어요</h3><p>팀을 만들고 멤버를 초대해 함께 콘텐츠를 만들어 보세요.</p></div>
+        <button class="btn btn-primary" onclick="createTeam()">+ Create team</button></div>
     </div>
-    <div class="card glass">
-      <div class="row"><div><h3>Shared credit pool</h3><p>One balance for the whole team. Top-ups and limits managed by the owner.</p></div>
-        <div class="pool"><span class="n">◈ 1,000</span><span style="color:var(--dim);font-size:13px">/ month</span></div></div>
+    <!-- 팀 있을 때 -->
+    <div id="teamView" style="display:none">
+      <div class="card glass">
+        <div class="row" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <h3 style="margin:0">Team members</h3>
+            <select id="teamSel" onchange="selectTeam(this.value)" style="font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:7px 10px;font-size:13px;cursor:pointer"></select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" onclick="createTeam()">+ New team</button>
+            <button class="btn btn-primary" id="inviteBtn" onclick="makeInvite()">+ Invite member</button>
+          </div>
+        </div>
+        <div id="inviteBox" style="display:none;background:rgba(94,224,214,.08);border:1px solid rgba(94,224,214,.25);border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:13px">
+          <div style="color:var(--dim);margin-bottom:6px">초대 링크 (14일 유효, <b id="invRole">editor</b> 권한). 이 링크를 공유하세요:</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="invUrl" readonly style="flex:1;font-family:inherit;background:rgba(0,0,0,.25);border:1px solid var(--border2);color:var(--accent2);border-radius:8px;padding:8px 10px;font-size:12.5px">
+            <button class="btn btn-ghost" onclick="copyInvite(this)">⧉ Copy</button>
+          </div>
+        </div>
+        <div id="memberList"></div>
+      </div>
+      <div class="card glass">
+        <div class="row"><div><h3>Shared credit pool</h3><p>팀 공유 크레딧 잔액으로 생성하는 기능을 준비 중이에요. (Phase 2)</p></div>
+          <div class="pool"><span class="n" style="color:var(--faint)">Coming soon</span></div></div>
+      </div>
     </div>
   </div>
 
@@ -202,9 +221,98 @@ function setTab(t){
     document.getElementById(PANELS[k][0]).classList.toggle('on',k===t);
     document.getElementById(PANELS[k][1]).classList.toggle('on',k===t);
   }
+  if(t==='team')loadTeams();
 }
 let revealed=false;
 function reveal(){revealed=!revealed;document.getElementById('apiKey').textContent=revealed?'sk_live_demo_not_a_real_key_4f2a':'sk_live_••••••••••••••••3f9a';}
+
+// ═══ 팀 관리 (Phase 1) ═══
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let TEAMS=[],CUR=null,ME=null;
+const ROLE_CLS={owner:'role owner',editor:'role',viewer:'role'};
+
+async function loadMe(){ if(ME)return ME; try{const d=await(await fetch('/api/auth/me')).json();if(d.success)ME=d.data;}catch(e){} return ME; }
+
+async function loadTeams(){
+  await loadMe();
+  try{
+    const d=await(await fetch('/api/teams')).json();
+    if(!d.success)return;
+    TEAMS=d.data;
+    if(!TEAMS.length){
+      document.getElementById('teamEmpty').style.display='';
+      document.getElementById('teamView').style.display='none';
+      return;
+    }
+    document.getElementById('teamEmpty').style.display='none';
+    document.getElementById('teamView').style.display='';
+    if(!CUR||!TEAMS.some(t=>t.id===CUR))CUR=TEAMS[0].id;
+    document.getElementById('teamSel').innerHTML=TEAMS.map(t=>`<option value="${t.id}" ${t.id===CUR?'selected':''}>${esc(t.name)} (${t.member_count})</option>`).join('');
+    loadTeamDetail();
+  }catch(e){}
+}
+function selectTeam(id){CUR=id;document.getElementById('inviteBox').style.display='none';loadTeamDetail();}
+
+async function loadTeamDetail(){
+  try{
+    const d=await(await fetch('/api/teams/'+CUR)).json();
+    if(!d.success)return;
+    const team=d.data,myRole=(TEAMS.find(t=>t.id===CUR)||{}).my_role;
+    const isOwner=myRole==='owner';
+    document.getElementById('inviteBtn').style.display=isOwner?'':'none';
+    const av=['🧑🏻','👩🏻','👨🏽','🧑🏼','👩🏽','🧑🏽'];
+    document.getElementById('memberList').innerHTML=team.members.map((m,i)=>{
+      const name=esc(m.display_name||m.email.split('@')[0]);
+      const isMe=ME&&m.user_id===ME.id;
+      let ctrl=`<span class="${ROLE_CLS[m.role]}">${m.role}</span>`;
+      if(isOwner&&m.user_id!==team.owner_id){
+        ctrl=`<select onchange="changeRole('${m.user_id}',this.value)" style="font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer">
+            <option value="editor" ${m.role==='editor'?'selected':''}>Editor</option>
+            <option value="viewer" ${m.role==='viewer'?'selected':''}>Viewer</option></select>
+          <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="removeMember('${m.user_id}')">Remove</button>`;
+      } else if(isMe&&m.user_id!==team.owner_id){
+        ctrl=`<span class="${ROLE_CLS[m.role]}">${m.role}</span> <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="leaveTeam()">Leave</button>`;
+      }
+      return `<div class="member"><div class="ava g${(i%8)+1}">${av[i%av.length]}</div>
+        <div style="flex:1"><div class="nm">${name}${isMe?' (나)':''}</div><div class="em">${esc(m.email)}</div></div>
+        <div style="display:flex;gap:8px;align-items:center">${ctrl}</div></div>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function createTeam(){
+  const name=prompt('팀 이름을 입력하세요','My Team');
+  if(!name)return;
+  try{const d=await(await fetch('/api/teams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})})).json();
+    if(d.success){CUR=d.data.id;loadTeams();}else alert(d.error||'생성 실패');}catch(e){alert('생성 실패');}
+}
+async function makeInvite(){
+  const role=prompt('초대할 권한 (editor 또는 viewer)','editor');
+  if(!role)return;
+  try{
+    const d=await(await fetch('/api/teams/'+CUR+'/invites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:role.toLowerCase()})})).json();
+    if(!d.success){alert(d.error||'실패');return;}
+    document.getElementById('invRole').textContent=d.data.role;
+    document.getElementById('invUrl').value=d.data.url;
+    document.getElementById('inviteBox').style.display='';
+  }catch(e){alert('초대 생성 실패');}
+}
+function copyInvite(btn){const v=document.getElementById('invUrl').value;
+  navigator.clipboard.writeText(v).then(()=>{const o=btn.textContent;btn.textContent='✓ Copied';setTimeout(()=>btn.textContent=o,1500);}).catch(()=>{});}
+async function changeRole(uid,role){
+  try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+uid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role})})).json();
+    if(!d.success)alert(d.error||'실패');loadTeamDetail();}catch(e){}
+}
+async function removeMember(uid){
+  if(!confirm('이 멤버를 팀에서 내보낼까요?'))return;
+  try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+uid,{method:'DELETE'})).json();
+    if(d.success)loadTeams();else alert(d.error||'실패');}catch(e){}
+}
+async function leaveTeam(){
+  if(!confirm('이 팀에서 나가시겠어요?'))return;
+  try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+ME.id,{method:'DELETE'})).json();
+    if(d.success){CUR=null;loadTeams();}else alert(d.error||'실패');}catch(e){}
+}
 </script>
 </body>
 </html>

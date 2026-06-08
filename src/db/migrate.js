@@ -629,7 +629,51 @@ async function migrate() {
   // ─── 어필리에이트 (추천 → 크레딧 보상) ───
   await migrateAffiliate();
 
+  // ─── 팀 (Phase 1: 멤버십/초대) ───
+  await migrateTeams();
+
   console.log('Migrations completed.');
+}
+
+/**
+ * 팀 Phase 1: teams + team_members + team_invites. 기존 데이터 모델은 건드리지 않음. (멱등)
+ */
+async function migrateTeams() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS teams (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name        VARCHAR(120) NOT NULL,
+        owner_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_teams_owner ON teams(owner_id);
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS team_members (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id     UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role        VARCHAR(10) NOT NULL DEFAULT 'editor', -- owner | editor | viewer
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(team_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS team_invites (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id     UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        code        VARCHAR(20) NOT NULL UNIQUE,
+        role        VARCHAR(10) NOT NULL DEFAULT 'editor',
+        created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+        expires_at  TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '14 days'),
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_team_invites_team ON team_invites(team_id);
+  `);
 }
 
 /**
