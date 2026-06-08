@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>HeyHoAI · Affiliate</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
+<script src="/saas-auth.js" defer></script>
 <style>
   .wrap{max-width:920px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
@@ -48,49 +49,68 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span id="navBalance">—</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
+    <div class="credits" id="saasUserBox"></div>
   </div>
 </nav>
 
 <div class="wrap">
   <h1 class="fade d1">Affiliate program</h1>
-  <div class="sub fade d1">Refer creators &amp; brands — earn <b style="color:var(--cyan)">30% recurring</b> commission for 12 months on everyone you bring in.</div>
+  <div class="sub fade d1">Refer creators &amp; brands — earn <b style="color:var(--cyan)">30% in credits</b> on every credit pack your referrals buy.</div>
 
   <div class="reflink glass fade d2">
-    <div><div class="lbl">Your referral link</div><div class="link" id="refLink">heyhoai.com/r/yedam</div></div>
-    <button class="btn btn-primary" onclick="copyRef()">⧉ Copy link</button>
+    <div><div class="lbl">Your referral link</div><div class="link" id="refLink">…</div></div>
+    <button class="btn btn-primary" onclick="copyRef(this)">⧉ Copy link</button>
   </div>
 
   <div class="stats fade d2">
-    <div class="stat glass"><div class="n">128</div><div class="l">Clicks</div></div>
-    <div class="stat glass"><div class="n">34</div><div class="l">Sign-ups</div></div>
-    <div class="stat glass"><div class="n">19</div><div class="l">Active subs</div></div>
-    <div class="stat glass"><div class="n gold">$412</div><div class="l">Earned</div></div>
+    <div class="stat glass"><div class="n" id="stClicks">—</div><div class="l">Clicks</div></div>
+    <div class="stat glass"><div class="n" id="stSignups">—</div><div class="l">Sign-ups</div></div>
+    <div class="stat glass"><div class="n gold" id="stEarned">—</div><div class="l">Earned (◈)</div></div>
+    <div class="stat glass"><div class="n">30%</div><div class="l">Commission</div></div>
   </div>
 
   <div class="section-label fade d3">How it works</div>
   <div class="steps fade d3">
     <div class="stepc glass"><div class="sn">1</div><h3>Share your link</h3><p>Drop it in your bio, videos or DMs. Every click is tracked to you for 60 days.</p></div>
-    <div class="stepc glass"><div class="sn">2</div><h3>They subscribe</h3><p>When your referral upgrades to Creator or Brand, they're tied to your account.</p></div>
-    <div class="stepc glass"><div class="sn">3</div><h3>You earn 30%</h3><p>Get 30% of their payments — every month, for a full 12 months. Stacks with every referral.</p></div>
+    <div class="stepc glass"><div class="sn">2</div><h3>They sign up &amp; buy</h3><p>When someone joins via your link and buys a credit pack, they're tied to your account.</p></div>
+    <div class="stepc glass"><div class="sn">3</div><h3>You earn 30% in credits</h3><p>Get 30% of every credit pack they purchase — paid straight into your balance to spend on generations.</p></div>
   </div>
 
   <div class="payout glass fade d4">
-    <div class="pi">Next payout<b>2026-07-01</b></div>
-    <div class="pi">Pending<b style="color:var(--gold)">$86</b></div>
-    <div class="pi">Lifetime earned<b>$1,240</b></div>
-    <div class="pi">Payout method<b>Stripe / PayPal</b></div>
+    <div class="pi">Reward type<b>Account credits (◈)</b></div>
+    <div class="pi">Commission rate<b style="color:var(--gold)">30%</b></div>
+    <div class="pi">Tracking window<b>60 days</b></div>
+    <div class="pi">Cash payout<b style="color:var(--faint)">Coming soon</b></div>
   </div>
 </div>
 
 <script>
-function copyRef(){
-  const t=document.getElementById('refLink').textContent;
-  if(navigator.clipboard)navigator.clipboard.writeText('https://'+t).catch(()=>{});
-  alert('복사됨: https://'+t);
+// ═══ 실제 연결: /api/affiliate ═══
+let REF_URL='';
+async function loadBalance(){
+  try{const d=await(await fetch('/api/credits')).json();if(d.success)document.getElementById('navBalance').textContent=d.data.unlimited?'∞':d.data.balance;}catch(e){}
 }
+async function load(){
+  try{
+    const d=await(await fetch('/api/affiliate')).json();
+    if(!d.success)return;
+    REF_URL=location.origin+'/r/'+d.data.code;
+    document.getElementById('refLink').textContent=location.host+'/r/'+d.data.code;
+    document.getElementById('stClicks').textContent=d.data.clicks;
+    document.getElementById('stSignups').textContent=d.data.signups;
+    document.getElementById('stEarned').textContent='◈ '+d.data.earnedCredits;
+  }catch(e){}
+}
+function copyRef(btn){
+  if(!REF_URL)return;
+  const done=()=>{const o=btn.textContent;btn.textContent='✓ Copied';setTimeout(()=>btn.textContent=o,1500);};
+  if(navigator.clipboard)navigator.clipboard.writeText(REF_URL).then(done).catch(()=>alert(REF_URL));
+  else alert(REF_URL);
+}
+loadBalance();load();
 </script>
 </body>
 </html>
