@@ -423,7 +423,37 @@ router.delete('/reviews/:idx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ─── 비디오 생성 (Kling V3) ───
+// ─── 비동기 릴스 생성 (제출 → jobId, 백그라운드 폴링) ───
+// Cloudflare 100초 타임아웃 회피용. 스튜디오/갤러리가 이 경로를 사용.
+const videoJobService = require('./videoJob.service');
+
+router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }]), async (req, res, next) => {
+  try {
+    const { prompt, duration = '5', mode = 'std' } = req.body;
+    const sourceFile = req.files?.sourceImage?.[0];
+    const result = await videoJobService.submit({
+      user: req.user, prompt, duration, mode,
+      sourceImagePath: sourceFile ? sourceFile.path : null,
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
+router.get('/video/jobs/:id', async (req, res, next) => {
+  try {
+    const job = await videoJobService.getJob(req.params.id, req.user.id);
+    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+    res.json({
+      success: true,
+      data: { status: job.status, url: job.result_url, error: job.error, duration: job.duration },
+    });
+  } catch (err) { next(err); }
+});
+
+// ─── 비디오 생성 (Kling V3) — 동기 (운영툴/오디오용, 기존 유지) ───
 router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), async (req, res, next) => {
   const vlog = logger('Video');
   const alog = logger('Audio');

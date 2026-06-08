@@ -698,17 +698,32 @@ async function generateReel(r,subj){
   fd.append('duration','5');
   fd.append('mode',curQuality()==='std'?'std':'high');
   fd.append('sourceImage',blob,'reference.png');
-  const res=await fetch('/api/generate/video',{method:'POST',body:fd});
+  // 비동기: 제출 → jobId → 상태 폴링 (Cloudflare 100초 타임아웃 회피)
+  const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
-  if(!res.ok||!data.success)throw new Error(data.error||'video generate failed');
+  if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
+  const url=await pollVideoJob(data.jobId);
   document.getElementById('resultsGrid').innerHTML=`
-    <div class="result-card"><video class="img" src="${esc(data.url)}" controls loop style="object-fit:cover"></video>
+    <div class="result-card"><video class="img" src="${esc(url)}" controls loop style="object-fit:cover"></video>
       <div class="actions">
-        <a href="${esc(data.url)}" download><button>⬇ Download</button></a>
-        <button onclick="window.open('${esc(data.url)}','_blank')">⤢ View</button>
+        <a href="${esc(url)}" download><button>⬇ Download</button></a>
+        <button onclick="window.open('${esc(url)}','_blank')">⤢ View</button>
       </div></div>`;
-  document.getElementById('resultHint').textContent=`1 reel ready (${data.duration||5}s) — Gallery에 자동 저장됨`;
+  document.getElementById('resultHint').textContent=`1 reel ready — Gallery에 자동 저장됨`;
+}
+
+// 릴스 잡 상태를 완료까지 폴링 (최대 ~12분)
+async function pollVideoJob(jobId){
+  for(let i=0;i<90;i++){
+    await new Promise(r=>setTimeout(r,8000));
+    let d;
+    try{ d=(await(await fetch('/api/generate/video/jobs/'+jobId)).json()).data; }catch(e){ continue; }
+    if(!d)continue;
+    if(d.status==='succeeded')return d.url;
+    if(d.status==='failed')throw new Error(d.error||'릴스 생성 실패');
+  }
+  throw new Error('릴스 생성이 너무 오래 걸려요. 갤러리에서 잠시 후 확인해 주세요.');
 }
 
 // ── 캡션 + 해시태그 (Claude) ──

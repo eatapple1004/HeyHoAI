@@ -643,6 +643,29 @@ async function migrate() {
   await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS team_id UUID REFERENCES teams(id) ON DELETE SET NULL;`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_prompts_team ON prompts(team_id);`);
 
+  // ─── 비동기 릴스 생성 잡 큐 (Cloudflare 100초 타임아웃 회피) ───
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS video_jobs (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        team_id       UUID REFERENCES teams(id) ON DELETE SET NULL,
+        prompt        TEXT NOT NULL,
+        duration      VARCHAR(5)  NOT NULL DEFAULT '5',
+        mode          VARCHAR(10) NOT NULL DEFAULT 'std',
+        task_id       TEXT,                    -- Kling task_id
+        charge_amount INT NOT NULL DEFAULT 0,  -- 실패 시 환불액
+        status        VARCHAR(20) NOT NULL DEFAULT 'processing', -- processing | succeeded | failed
+        result_idx    INT,                     -- generation_results.idx
+        result_url    TEXT,
+        error         TEXT,
+        attempts      INT NOT NULL DEFAULT 0,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_video_jobs_status ON video_jobs(status);
+    CREATE INDEX IF NOT EXISTS idx_video_jobs_user ON video_jobs(user_id, created_at DESC);
+  `);
+
   console.log('Migrations completed.');
 }
 
