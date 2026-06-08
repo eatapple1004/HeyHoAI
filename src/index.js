@@ -37,6 +37,11 @@ app.use('/vendor/ffmpeg-core', express.static(path.join(process.cwd(), 'node_mod
 // 일반 진입 경로와는 겹치지 않는다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));
 
+// 메인페이지 — SaaS 랜딩
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'landing.html'));
+});
+
 // 공개 인증 페이지 (게이팅 없음)
 app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
