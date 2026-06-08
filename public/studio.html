@@ -289,6 +289,7 @@
     <h3>거의 다 됐어요 ✨</h3>
     <div class="pw-need" id="pwNeed"></div>
     <div class="pw-opt">
+      <button class="btn btn-ghost" id="pwSmallBtn" onclick="paywallTopupSmall()">◈50만 빠르게 — $5</button>
       <button class="btn btn-primary" onclick="paywallTopup()">◈220 충전하고 지금 완성 — $18</button>
       <button class="btn btn-ghost" id="pwSubBtn" onclick="paywallSub()">Creator 구독 · 월 ◈250 — $19</button>
     </div>
@@ -634,10 +635,13 @@ function openPaywall(r,v,total){
   document.getElementById('pwNeed').innerHTML=`<b>${r.name}</b>${v>1?' ×'+v:''} = ◈${total} 필요 · 현재 ◈${credits} → ◈<b>${total-credits}</b> 부족`;
   const p=PLANS[recommendTier()];
   document.getElementById('pwSubBtn').textContent=`${p.name} 구독 · 월 ◈${p.cr.toLocaleString()} — $${p.price}`;
+  // 소액 $5(◈50)은 그걸로 충분히 풀릴 때만 노출 (작은 부족분 = 최소 마찰)
+  document.getElementById('pwSmallBtn').style.display=(total-credits<=50)?'':'none';
   document.getElementById('paywallModal').classList.add('open');
 }
 function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
 function paywallTopup(){HH.add(220);if(document.getElementById('pwAuto').checked)HH.toast('⚡ 자동충전 켜짐');closePaywall();generate();}
+function paywallTopupSmall(){HH.add(50);closePaywall();generate();}
 function paywallSub(){const p=PLANS[recommendTier()];HH.add(p.cr);HH.plan=p.name.toLowerCase();closePaywall();HH.toast(`${p.name} 구독 시작 (mock)`);generate();}
 function showUpsell(){
   const el=document.getElementById('upsellBanner');

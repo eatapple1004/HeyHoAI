@@ -48,6 +48,16 @@
   .affil-link{margin-top:30px;font-size:13px;color:var(--dim);text-align:center}
   .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
 
+  /* virtual model license explainer */
+  .lic-explain{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;font-size:13px;color:var(--dim);line-height:1.6}
+  .lic-explain b{color:var(--text)}
+  .lic-tiers{display:flex;gap:26px;flex-wrap:wrap;margin-top:9px;font-size:12.5px}
+  .lic-tiers .t-std{color:var(--accent2)}
+  .lic-tiers .t-exc{color:var(--gold)}
+  .card .badge.off{left:auto;right:10px;background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
+  .card .lic-note{font-size:11px;color:var(--faint)}
+  .card .lic-note.exc{color:var(--gold);font-weight:600}
+
   @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card .preview{height:130px;font-size:34px}}
 
   /* seller onboarding modal */
@@ -105,6 +115,7 @@
   </div>
 
   <div class="filter-row fade d3" id="filterRow"></div>
+  <div class="lic-explain fade d3" id="licBanner" style="display:none"></div>
   <div class="grid fade d3" id="grid"></div>
 
   <div class="affil-link fade d4">Already selling? <a onclick="location.href='/earnings.html'">View your creator earnings →</a> &nbsp;·&nbsp; Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
@@ -153,12 +164,16 @@ const TEMPLATES=[
   {name:'Flat-lay Detail',cat:'Shopping',creator:'@studio.kr',price:2,uses:'2.9k',rating:'4.7',emoji:'🪞',grad:'g5',badge:'Photo'}
 ];
 const MODELS=[
-  {name:'Mia — Lifestyle',tier:'Standard',price:'◈ 3',unit:'/use',uses:'18.2k',rating:'4.9',emoji:'👩🏻',grad:'g6'},
-  {name:'Leo — Streetwear',tier:'Standard',price:'◈ 3',unit:'/use',uses:'11.5k',rating:'4.8',emoji:'👨🏽',grad:'g2'},
-  {name:'Aria — Luxury',tier:'Exclusive',price:'$49',unit:'/mo',uses:'5.1k',rating:'5.0',emoji:'💃🏻',grad:'g5'},
-  {name:'Kai — Fitness',tier:'Standard',price:'◈ 3',unit:'/use',uses:'7.8k',rating:'4.7',emoji:'🏋🏻',grad:'g7'},
-  {name:'Yuna — Beauty',tier:'Exclusive',price:'$49',unit:'/mo',uses:'9.0k',rating:'4.9',emoji:'💄',grad:'g3'},
-  {name:'Noah — Casual',tier:'Standard',price:'◈ 3',unit:'/use',uses:'4.4k',rating:'4.6',emoji:'🧑🏼',grad:'g4'}
+  {name:'Mia — Lifestyle',tier:'Standard',price:'◈ 3',unit:'/use',uses:'18.2k',rating:'4.9',emoji:'👩🏻',grad:'g6',official:true},
+  {name:'Leo — Streetwear',tier:'Standard',price:'◈ 3',unit:'/use',uses:'11.5k',rating:'4.8',emoji:'👨🏽',grad:'g2',official:true},
+  {name:'Kai — Fitness',tier:'Standard',price:'◈ 3',unit:'/use',uses:'7.8k',rating:'4.7',emoji:'🏋🏻',grad:'g7',official:true},
+  {name:'Noah — Casual',tier:'Standard',price:'◈ 3',unit:'/use',uses:'4.4k',rating:'4.6',emoji:'🧑🏼',grad:'g4',official:true},
+  {name:'Theo — Athleisure',tier:'Standard',price:'◈ 3',unit:'/use',uses:'3.1k',rating:'4.7',emoji:'🏃🏽',grad:'g1',official:true},
+  {name:'Rin — Editorial',tier:'Standard',price:'◈ 4',unit:'/use',uses:'2.6k',rating:'4.8',emoji:'🧑🏻‍🎤',grad:'g8',official:true},
+  {name:'Aria — Luxury',tier:'Exclusive',price:'$49',unit:'/mo',uses:'5.1k',rating:'5.0',emoji:'💃🏻',grad:'g5',official:true},
+  {name:'Yuna — Beauty',tier:'Exclusive',price:'$49',unit:'/mo',uses:'9.0k',rating:'4.9',emoji:'💄',grad:'g3',official:true},
+  {name:'Sena — High Fashion',tier:'Exclusive',price:'$69',unit:'/mo',uses:'2.2k',rating:'5.0',emoji:'👠',grad:'g6',official:true},
+  {name:'Iris — Skincare',tier:'Exclusive',price:'$59',unit:'/mo',uses:'3.8k',rating:'4.9',emoji:'🧴',grad:'g2',official:true}
 ];
 let tab='templates',filter='All';
 function setTab(t){tab=t;filter='All';
@@ -167,8 +182,9 @@ function setTab(t){tab=t;filter='All';
 function setFilter(f){filter=f;render();}
 function render(){
   const fr=document.getElementById('filterRow'),grid=document.getElementById('grid');
+  const lb=document.getElementById('licBanner');
   if(tab==='templates'){
-    fr.style.display='';
+    fr.style.display='';lb.style.display='none';
     const cats=['All','Influencer','Shopping','UGC'];
     fr.innerHTML=cats.map(c=>`<div class="chip ${filter===c?'active':''}" onclick="setFilter('${c}')">${c}</div>`).join('');
     grid.innerHTML=TEMPLATES.filter(t=>filter==='All'||t.cat===filter).map(t=>`
@@ -183,12 +199,19 @@ function render(){
         </div></div>`).join('');
   } else {
     fr.style.display='none';
+    lb.style.display='';
+    lb.innerHTML=`<div><b>Official HeyHoAI models</b> — consistent AI faces you can use commercially. No real person, no release forms, no model fees.</div>
+      <div class="lic-tiers">
+        <span><b class="t-std">Standard</b> · pay ◈ per use · non-exclusive (others can license too)</span>
+        <span><b class="t-exc">Exclusive</b> · $/mo · locked to you — pulled from the marketplace while you hold it</span>
+      </div>`;
     grid.innerHTML=MODELS.map(m=>`
       <div class="card">
-        <div class="preview ${m.grad}"><span class="badge ${m.tier==='Exclusive'?'excl':''}">${m.tier}</span>${m.emoji}</div>
+        <div class="preview ${m.grad}"><span class="badge ${m.tier==='Exclusive'?'excl':''}">${m.tier}</span>${m.official?'<span class="badge off">Official</span>':''}${m.emoji}</div>
         <div class="meta">
           <div class="rname">${m.name}</div>
           <div class="statline">⭐ ${m.rating} · ${m.uses} licensed</div>
+          <div class="lic-note ${m.tier==='Exclusive'?'exc':''}">${m.tier==='Exclusive'?'🔒 Exclusive — yours only':'Non-exclusive license'}</div>
           <div class="foot"><div class="price">${m.price}<small> ${m.unit}</small></div>
             <button class="btn btn-primary" onclick="lic('${m.name}')">License</button></div>
         </div></div>`).join('');

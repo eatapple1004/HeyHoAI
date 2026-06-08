@@ -66,6 +66,20 @@
   .sim .out{font-size:14px;color:var(--dim)}
   .sim .out b{color:var(--cyan);font-family:'Sora';font-size:22px}
 
+  /* private library */
+  .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:6px}
+  .lib-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);transition:.2s}
+  .lib-card:hover{border-color:var(--border2);transform:translateY(-3px)}
+  .lib-card .thumb{height:104px;display:flex;align-items:center;justify-content:center;font-size:34px}
+  .lib-card .lm{padding:12px 14px}
+  .lib-card .ln{font-size:13.5px;font-weight:600}
+  .lib-card .lt{font-size:11px;color:var(--faint);margin-top:3px}
+  .lib-card .lf{display:flex;align-items:center;justify-content:space-between;margin-top:11px}
+  .lib-card .share{font-size:11px;font-weight:600;color:var(--cyan)}
+  .lib-card .share.solo{color:var(--faint)}
+  .lib-card .use{font-size:11px;color:var(--dim)}
+  .lib-tag{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:rgba(255,206,122,.18);color:var(--gold);margin-top:4px}
+
   /* analytics */
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
   .stat{padding:18px;text-align:center}
@@ -114,6 +128,7 @@
     <button class="on" id="tApi" onclick="setTab('api')">🔌 API &amp; Shopify</button>
     <button id="tTeam" onclick="setTab('team')">👥 Team</button>
     <button id="tWl" onclick="setTab('wl')">🏷️ White-label</button>
+    <button id="tLib" onclick="setTab('lib')">🗂️ Private library</button>
     <button id="tAna" onclick="setTab('ana')">📅 Schedule &amp; Analytics</button>
   </div>
 
@@ -238,6 +253,19 @@
     </div>
   </div>
 
+  <!-- PRIVATE LIBRARY -->
+  <div class="panel" id="pLib">
+    <div class="card glass">
+      <div class="row"><div><h3>🗂️ Private template library</h3><p>Your team's own recipes &amp; brand kits — reusable across every client workspace, never published to the public marketplace.</p>
+        <span class="lib-tag">Brand &amp; White-label feature</span></div>
+        <button class="btn btn-primary" onclick="HH.toast('Saved current Studio recipe to private library (mock)')">+ Save from Studio</button></div>
+    </div>
+    <div class="card glass">
+      <div class="section-label">Private templates · shared with your team</div>
+      <div class="lib-grid" id="libGrid"></div>
+    </div>
+  </div>
+
   <!-- SCHEDULE & ANALYTICS -->
   <div class="panel" id="pAna">
     <div class="stats">
@@ -277,7 +305,21 @@
 
 <script src="/js/hh.js"></script>
 <script>
-const PANELS={api:['tApi','pApi'],team:['tTeam','pTeam'],wl:['tWl','pWl'],ana:['tAna','pAna']};
+const PANELS={api:['tApi','pApi'],team:['tTeam','pTeam'],wl:['tWl','pWl'],lib:['tLib','pLib'],ana:['tAna','pAna']};
+const LIB=[
+  {n:'Acme — Lookbook',t:'Product · Photo',g:'g2',shared:true,uses:'142 uses'},
+  {n:'Acme — Reels Hook',t:'UGC · Reel',g:'g6',shared:true,uses:'88 uses'},
+  {n:'Nova Beauty — GRWM',t:'Influencer · Reel',g:'g3',shared:true,uses:'67 uses'},
+  {n:'Café Mori — Menu',t:'Food · Photo',g:'g7',shared:false,uses:'31 uses'},
+  {n:'Acme — Brand kit v2',t:'🎨 Brand kit',g:'g1',shared:true,uses:'applied to all'},
+  {n:'Luxe Jewelry — 360',t:'Jewelry · Reel',g:'g5',shared:false,uses:'12 uses'}
+];
+document.getElementById('libGrid').innerHTML=LIB.map(l=>`
+  <div class="lib-card">
+    <div class="thumb ${l.g}">${l.t.includes('Brand kit')?'🎨':(l.t.includes('Reel')?'▶':'🖼️')}</div>
+    <div class="lm"><div class="ln">${l.n}</div><div class="lt">${l.t}</div>
+      <div class="lf"><span class="share ${l.shared?'':'solo'}">${l.shared?'👥 Shared with team':'🔒 Owner only'}</span><span class="use">${l.uses}</span></div>
+    </div></div>`).join('');
 function setTab(t){
   for(const k in PANELS){
     document.getElementById(PANELS[k][0]).classList.toggle('on',k===t);
