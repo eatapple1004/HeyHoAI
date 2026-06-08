@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI — 프로젝트 개요</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:920px;margin:0 auto;padding:48px 24px 100px;position:relative;z-index:2}
+  .hero{text-align:center;margin-bottom:48px}
+  .hero .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);background:rgba(124,108,255,.14);padding:6px 14px;border-radius:20px;margin-bottom:18px}
+  .hero h1{font-family:'Sora';font-size:38px;font-weight:800;letter-spacing:-1.5px;margin-bottom:12px}
+  .hero p{color:var(--dim);font-size:15.5px;line-height:1.6;max-width:620px;margin:0 auto}
+  .hero .date{color:var(--faint);font-size:12.5px;margin-top:14px}
+
+  section{margin-bottom:46px}
+  h2{font-family:'Sora';font-size:21px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  h2 .em{font-size:22px}
+  .sec-sub{color:var(--dim);font-size:13.5px;margin-bottom:20px}
+
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;padding:20px 22px}
+  .flow .step{font-size:13px;font-weight:600;color:var(--text);background:rgba(124,108,255,.1);border:1px solid rgba(124,108,255,.25);padding:9px 14px;border-radius:10px}
+  .flow .arr{color:var(--faint);font-size:16px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px}
+  .feat{border:1px solid var(--border);border-radius:16px;padding:20px;background:var(--surface);transition:.2s}
+  .feat:hover{border-color:var(--border2);transform:translateY(-3px)}
+  .feat .ic{font-size:26px;margin-bottom:12px}
+  .feat h3{font-size:15px;font-weight:700;margin-bottom:6px}
+  .feat p{font-size:12.5px;color:var(--dim);line-height:1.55}
+  .feat .pr{display:inline-block;margin-top:10px;font-size:10.5px;font-weight:700;color:var(--cyan);background:rgba(94,224,214,.12);padding:3px 8px;border-radius:6px}
+
+  .status-done{color:var(--cyan)}
+  .status-pending{color:var(--gold)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--border)}
+  th{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  td .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px}
+  .b-done{background:rgba(94,224,214,.14);color:var(--cyan)}
+  .b-wait{background:rgba(255,206,122,.16);color:var(--gold)}
+  .b-hold{background:rgba(255,126,182,.14);color:var(--pink)}
+
+  .stack{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:7px 13px;border-radius:9px}
+
+  .note{background:linear-gradient(135deg,rgba(255,206,122,.1),rgba(255,126,182,.06));border:1px solid rgba(255,206,122,.3);border-radius:16px;padding:20px 22px}
+  .note h3{font-size:14.5px;font-weight:700;margin-bottom:12px;color:var(--gold)}
+  .note ul{list-style:none;font-size:13.5px;color:var(--dim);line-height:1.5}
+  .note li{padding:5px 0;display:flex;gap:9px}
+  .note li::before{content:'→';color:var(--gold)}
+  .note code{font-family:ui-monospace,monospace;font-size:12px;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:5px;color:var(--accent2)}
+
+  .pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .page-link{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:11px;padding:12px 14px;text-decoration:none;transition:.18s}
+  .page-link:hover{border-color:var(--accent);color:var(--accent2)}
+  .page-link .e{font-size:16px}
+
+  .foot{text-align:center;color:var(--faint);font-size:12px;margin-top:60px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="tag">Project Overview</div>
+    <h1>HeyHoAI</h1>
+    <p>AI로 인플루언서·쇼핑·광고 콘텐츠를 만들어 인스타그램에 자동 발행하는 SaaS. mock UI로 시작해 인증·결제·팀 협업까지 실제로 동작하는 서비스로 완성했습니다.</p>
+    <div class="date">최종 업데이트 · 2026-06-08</div>
+  </div>
+
+  <!-- 한눈에 흐름 -->
+  <section>
+    <h2><span class="em">🧭</span> 사용자 흐름</h2>
+    <div class="sec-sub">방문자가 콘텐츠를 만들어 발행하기까지</div>
+    <div class="flow">
+      <span class="step">랜딩 방문</span><span class="arr">→</span>
+      <span class="step">가입 · 로그인</span><span class="arr">→</span>
+      <span class="step">스튜디오에서 생성</span><span class="arr">→</span>
+      <span class="step">갤러리 저장</span><span class="arr">→</span>
+      <span class="step">계정 큐 · 자동 발행</span>
+    </div>
+  </section>
+
+  <!-- 핵심 기능 -->
+  <section>
+    <h2><span class="em">✨</span> 완성된 기능</h2>
+    <div class="sec-sub">mock이던 화면을 전부 실제 백엔드에 연결</div>
+    <div class="grid">
+      <div class="feat"><div class="ic">🔐</div><h3>인증 · 멀티테넌시</h3><p>JWT 쿠키 로그인 + 계정별 데이터 완전 격리.</p><span class="pr">PR #1</span></div>
+      <div class="feat"><div class="ic">🎨</div><h3>스튜디오 생성</h3><p>캐릭터(얼굴/제품) + 템플릿 → Gemini/GPT 사진, Kling 릴스 실생성.</p><span class="pr">PR #5</span></div>
+      <div class="feat"><div class="ic">🖼️</div><h3>갤러리</h3><p>생성물을 실제 이미지/비디오로 모아보기 · 다운로드.</p><span class="pr">PR #5</span></div>
+      <div class="feat"><div class="ic">📝</div><h3>캡션 · 해시태그</h3><p>Claude로 6개국어 캡션+해시태그 자동 생성.</p><span class="pr">PR #9</span></div>
+      <div class="feat"><div class="ic">🎯</div><h3>브랜드킷</h3><p>로고·색상·폰트 저장 → 생성 결과 톤에 브랜드 색 반영.</p><span class="pr">PR #9</span></div>
+      <div class="feat"><div class="ic">💳</div><h3>크레딧 · 결제</h3><p>크레딧 차감/환불 + Lemon Squeezy 결제(국내외 카드).</p><span class="pr">PR #6</span></div>
+      <div class="feat"><div class="ic">🛒</div><h3>마켓플레이스</h3><p>템플릿 판매 + 크리에이터 70% 수익분배.</p><span class="pr">PR #10</span></div>
+      <div class="feat"><div class="ic">🔗</div><h3>어필리에이트</h3><p>추천 링크 → 가입·구매 추적 → 30% 크레딧 커미션.</p><span class="pr">PR #11</span></div>
+      <div class="feat"><div class="ic">👥</div><h3>팀 협업</h3><p>멤버 초대·권한 + 공유 크레딧 풀 + 공유 캐릭터/갤러리.</p><span class="pr">PR #12–15</span></div>
+      <div class="feat"><div class="ic">📊</div><h3>브랜드 대시보드</h3><p>게시·큐·예약 집계 + 7일 차트 + 주간 캘린더.</p><span class="pr">PR #16</span></div>
+    </div>
+  </section>
+
+  <!-- 팀 협업 상세 -->
+  <section>
+    <h2><span class="em">👥</span> 팀 협업 (4단계로 구현)</h2>
+    <div class="sec-sub">개인 모드는 그대로 두고, "팀 컨텍스트"로 전환하면 함께 작업</div>
+    <table>
+      <tr><th>단계</th><th>내용</th><th>핵심</th></tr>
+      <tr><td>Phase 1</td><td>멤버십 · 초대</td><td>Owner/Editor/Viewer 권한, 초대 링크(메일 불필요)</td></tr>
+      <tr><td>Phase 2</td><td>공유 크레딧 풀</td><td>팀 모드 생성비는 팀 잔액에서 차감, Owner가 충전</td></tr>
+      <tr><td>Phase 3a</td><td>공유 캐릭터</td><td>팀 얼굴/제품을 멤버 모두가 사용</td></tr>
+      <tr><td>Phase 3b</td><td>공유 갤러리</td><td>팀 생성물을 멤버 모두가 조회</td></tr>
+    </table>
+  </section>
+
+  <!-- 전체 현황표 -->
+  <section>
+    <h2><span class="em">📋</span> 전체 현황</h2>
+    <table>
+      <tr><th>기능</th><th>상태</th><th>비고</th></tr>
+      <tr><td>인증 · 멀티테넌시 · 결제</td><td><span class="badge b-done">완료</span></td><td>결제는 LS 키 입력 시 동작</td></tr>
+      <tr><td>캡션 · 브랜드킷</td><td><span class="badge b-done">완료</span></td><td>로고 워터마크 합성만 추후</td></tr>
+      <tr><td>마켓플레이스</td><td><span class="badge b-done">완료</span></td><td>Virtual Models는 준비 중</td></tr>
+      <tr><td>어필리에이트</td><td><span class="badge b-done">완료</span></td><td>현금 정산은 추후</td></tr>
+      <tr><td>팀 협업</td><td><span class="badge b-done">완료</span></td><td>1·2·3a·3b 전 단계</td></tr>
+      <tr><td>대시보드(예약·분석)</td><td><span class="badge b-done">완료</span></td><td>도달/참여율은 Zernio 연동 필요</td></tr>
+      <tr><td>API 키 · Shopify</td><td><span class="badge b-hold">보류</span></td><td>Shopify Partner OAuth 필요</td></tr>
+      <tr><td>화이트라벨</td><td><span class="badge b-hold">보류</span></td><td>멀티테넌트 인프라 필요</td></tr>
+      <tr><td>UGC 립싱크 광고</td><td><span class="badge b-hold">보류</span></td><td>HeyGen/D-ID 유료 API 필요</td></tr>
+    </table>
+  </section>
+
+  <!-- 기술 스택 -->
+  <section>
+    <h2><span class="em">🛠️</span> 기술 스택</h2>
+    <div class="stack">
+      <span class="chip">Node.js · Express</span>
+      <span class="chip">PostgreSQL</span>
+      <span class="chip">JWT 쿠키 인증</span>
+      <span class="chip">Gemini · GPT Image</span>
+      <span class="chip">Kling (비디오)</span>
+      <span class="chip">Claude (캡션)</span>
+      <span class="chip">Lemon Squeezy (결제)</span>
+      <span class="chip">Zernio (인스타 발행)</span>
+      <span class="chip">PM2 · AWS EC2</span>
+    </div>
+  </section>
+
+  <!-- 오픈 전 체크 -->
+  <section>
+    <div class="note">
+      <h3>🚦 실서비스 오픈 전 체크리스트</h3>
+      <ul>
+        <li>Lemon Squeezy 키 6개를 <code>.env</code>에 입력 (결제 실동작)</li>
+        <li>서버 <code>ADMIN_PASSWORD</code> 기본값(changeme1234) 변경</li>
+        <li><code>JWT_SECRET</code> 운영용 랜덤 값 확인</li>
+        <li>스키마 변경 배포 시 <code>npm run migrate</code> 실행</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 페이지 바로가기 -->
+  <section>
+    <h2><span class="em">🔖</span> 페이지 바로가기</h2>
+    <div class="pages">
+      <a class="page-link" href="/landing.html"><span class="e">🏠</span> 랜딩</a>
+      <a class="page-link" href="/studio.html"><span class="e">🎨</span> 스튜디오</a>
+      <a class="page-link" href="/gallery.html"><span class="e">🖼️</span> 갤러리</a>
+      <a class="page-link" href="/marketplace.html"><span class="e">🛒</span> 마켓</a>
+      <a class="page-link" href="/billing.html"><span class="e">💳</span> 결제</a>
+      <a class="page-link" href="/affiliate.html"><span class="e">🔗</span> 어필리에이트</a>
+      <a class="page-link" href="/business.html"><span class="e">👥</span> 비즈니스</a>
+      <a class="page-link" href="/heyhoai/accounts/page"><span class="e">📷</span> 계정 관리</a>
+    </div>
+  </section>
+
+  <div class="foot">
+    HeyHoAI · mock SaaS → 실서비스 전환 완료 (PR #1–#16)<br>
+    이 페이지는 <code style="font-size:11px">/project-overview.html</code> 에서 볼 수 있어요.
+  </div>
+</div>
+</body>
+</html>
