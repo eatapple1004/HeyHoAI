@@ -249,6 +249,17 @@
 
 <input type="file" id="subjectFile" accept="image/png,image/jpeg" style="display:none" onchange="uploadSubject(this)" />
 
+<!-- 데일리 보너스 모달 -->
+<div class="modal-bg" id="streakModal" onclick="if(event.target===this)closeStreak()">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🔥</div>
+    <h3 id="streakTitle">연속 1일!</h3>
+    <div class="msub" id="streakSub">데일리 보너스 ◈1을 받았어요.</div>
+    <div id="streakDots" style="display:flex;gap:7px;justify-content:center;margin:18px 0 22px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="closeStreak()">계속 만들기 ✨</button>
+  </div>
+</div>
+
 <!-- 인라인 페이월 -->
 <div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
   <div class="modal">
@@ -718,6 +729,24 @@ function applyPendingTemplate(){
   document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
+// ── 데일리 보너스 / 스트릭 ──
+async function dailyCheckin(){
+  try{
+    const d=(await(await fetch('/api/credits/checkin',{method:'POST'})).json()).data;
+    if(d&&d.claimedToday&&d.granted>0){
+      document.getElementById('streakTitle').textContent=`🔥 연속 ${d.streak}일!`;
+      document.getElementById('streakSub').innerHTML=`데일리 보너스 <b style="color:var(--gold)">◈${d.granted}</b>을 받았어요.`;
+      const dots=[];for(let i=1;i<=Math.max(5,d.streak);i++){
+        const on=i<=d.streak;dots.push(`<span style="width:11px;height:11px;border-radius:50%;background:${on?'linear-gradient(135deg,var(--accent),var(--pink))':'var(--border2)'}"></span>`);
+      }
+      document.getElementById('streakDots').innerHTML=dots.slice(0,10).join('');
+      document.getElementById('streakModal').classList.add('open');
+      loadCredits(); // 잔액 갱신
+    }
+  }catch(e){}
+}
+function closeStreak(){document.getElementById('streakModal').classList.remove('open');}
+
 // ── 인라인 페이월 ──
 let PACKS_CACHE=null;
 async function openPaywall(cost){
@@ -773,6 +802,7 @@ loadCredits();
 loadBrandkit();
 loadContextSwitcher();
 applyPendingTemplate();
+dailyCheckin();
 </script>
 </body>
 </html>
