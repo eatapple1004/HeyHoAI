@@ -799,6 +799,13 @@ async function migrateCredits() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS credit_balance INT NOT NULL DEFAULT 0;
   `);
 
+  // 스트릭 / 데일리 보너스 (리텐션)
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_count INT NOT NULL DEFAULT 0;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_best  INT NOT NULL DEFAULT 0;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bonus_at DATE;
+  `);
+
   // 크레딧 원장 — 모든 증감 기록 (감사 추적용)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS credit_ledger (

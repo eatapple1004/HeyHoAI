@@ -31,6 +31,20 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * POST /api/credits/checkin
+ * 일일 출석 → 스트릭/데일리 보너스. (첫 생성 경험 있는 사용자만)
+ */
+router.post('/checkin', async (req, res, next) => {
+  try {
+    const streakService = require('./streak.service');
+    const result = await streakService.checkin(req.user.id, req.user.role);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /api/credits/ledger?limit=50
  * 크레딧 거래 내역
  */
