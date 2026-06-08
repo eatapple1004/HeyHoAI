@@ -31,15 +31,18 @@ async function findByPromptIdx(promptIdx) {
   return result.rows;
 }
 
-async function findAll({ userId, limit = 50, offset = 0 } = {}) {
+async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
+  // 팀 컨텍스트면 팀 소유 프롬프트의 결과물, 개인이면 본인 & 비팀
+  const where = teamId ? 'p.team_id = $1' : 'p.user_id = $1 AND p.team_id IS NULL';
+  const owner = teamId || userId;
   const result = await query(
     `SELECT gr.*, p.prompt_text, c.name as character_name
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
      LEFT JOIN characters c ON c.id = gr.character_id
-     WHERE p.user_id = $1
+     WHERE ${where}
      ORDER BY gr.created_at DESC LIMIT $2 OFFSET $3`,
-    [userId, limit, offset]
+    [owner, limit, offset]
   );
   return result.rows;
 }
