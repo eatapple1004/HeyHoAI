@@ -12,6 +12,7 @@ const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
 const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
+const teamCredit = require('../teams/team.credit');
 
 const router = Router();
 
@@ -108,7 +109,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       throw e;
     }
 
-    // ─── 프롬프트 DB 저장 ───
+    // ─── 프롬프트 DB 저장 (활성 팀 컨텍스트면 팀 소유) ───
+    const genTeamId = await teamCredit.activeTeamId(req.user.id);
     const savedPrompt = await promptRepo.insert({
       userId: req.user.id,
       characterId: characterId || null,
@@ -117,6 +119,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       referenceImagePath,
       tags: [referenceSource, model, styled.styleName].filter(Boolean),
       stylePreset: styled.styleName !== 'none' ? styled.styleName : null,
+      teamId: genTeamId,
     });
 
     const outputDir = path.join(process.cwd(), 'tmp', 'images');
@@ -342,8 +345,10 @@ router.get('/styles', async (_req, res, next) => {
 router.get('/prompts', async (req, res, next) => {
   try {
     const { limit, offset } = req.query;
+    const teamId = await teamCredit.activeTeamId(req.user.id);
     const data = await promptRepo.findAll({
-      userId: req.user.id,
+      userId: teamId ? undefined : req.user.id,
+      teamId,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
     });
@@ -366,8 +371,10 @@ router.get('/prompts/:idx', async (req, res, next) => {
 router.get('/results', async (req, res, next) => {
   try {
     const { limit, offset } = req.query;
+    const teamId = await teamCredit.activeTeamId(req.user.id);
     const data = await resultRepo.findAll({
-      userId: req.user.id,
+      userId: teamId ? undefined : req.user.id,
+      teamId,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
     });
@@ -668,12 +675,13 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
           fs.writeFileSync(videoFilePath, videoBuf);
         }
 
-        // DB 저장
+        // DB 저장 (활성 팀 컨텍스트면 팀 소유)
         const savedPrompt = await promptRepo.insert({
           userId: req.user.id,
           promptText: prompt,
           model: 'kling-v3',
           tags: ['video', mode, duration + 's', ...(enableAudio ? ['audio'] : [])],
+          teamId: await teamCredit.activeTeamId(req.user.id),
         });
         const savedResult = await resultRepo.insert({
           promptIdx: savedPrompt.idx,
@@ -704,6 +712,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
         const savedPrompt = await promptRepo.insert({
           userId: req.user.id,
           promptText: prompt, model: 'kling-v3', tags: ['video', 'failed', mode, ...(enableAudio ? ['audio'] : [])],
+          teamId: await teamCredit.activeTeamId(req.user.id),
         }).catch(() => null);
         if (savedPrompt) {
           const savedResult = await resultRepo.insertFailed({

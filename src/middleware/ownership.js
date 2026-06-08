@@ -85,7 +85,10 @@ async function assertPublishJobOwned(publishJobId, userId) {
  */
 async function assertPromptOwned(idx, userId) {
   const result = await query(
-    'SELECT 1 FROM prompts WHERE idx = $1 AND user_id = $2',
+    `SELECT 1 FROM prompts p WHERE p.idx = $1 AND (
+       p.user_id = $2
+       OR (p.team_id IS NOT NULL AND p.team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
+     )`,
     [idx, userId]
   );
   if (result.rowCount === 0) {
@@ -101,7 +104,10 @@ async function assertPromptOwned(idx, userId) {
 async function assertReviewOwned(idx, userId) {
   const result = await query(
     `SELECT 1 FROM reviews r JOIN prompts p ON p.idx = r.prompt_idx
-     WHERE r.idx = $1 AND p.user_id = $2`,
+     WHERE r.idx = $1 AND (
+       p.user_id = $2
+       OR (p.team_id IS NOT NULL AND p.team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
+     )`,
     [idx, userId]
   );
   if (result.rowCount === 0) {

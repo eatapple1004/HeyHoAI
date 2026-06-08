@@ -148,6 +148,12 @@ async function contextBalance(userId) {
   return require('../credits/credit.service').getBalance(userId);
 }
 
+/** 활성 팀 id (개인이면 null) — 데이터 태깅용 */
+async function activeTeamId(userId) {
+  const ctx = await resolveContext(userId);
+  return ctx.type === 'team' ? ctx.teamId : null;
+}
+
 module.exports = {
   getBalance,
   getLedger,
@@ -155,6 +161,7 @@ module.exports = {
   charge,
   chargeGeneration,
   contextBalance,
+  activeTeamId,
   transferFromUser,
   resolveContext,
 };

@@ -639,6 +639,10 @@ async function migrate() {
   await pool.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS team_id UUID REFERENCES teams(id) ON DELETE SET NULL;`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_characters_team ON characters(team_id);`);
 
+  // ─── 팀 (Phase 3b: 공유 갤러리 — 프롬프트/결과물) ───
+  await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS team_id UUID REFERENCES teams(id) ON DELETE SET NULL;`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_prompts_team ON prompts(team_id);`);
+
   console.log('Migrations completed.');
 }
 
