@@ -249,6 +249,17 @@
 
 <input type="file" id="subjectFile" accept="image/png,image/jpeg" style="display:none" onchange="uploadSubject(this)" />
 
+<!-- 인라인 페이월 -->
+<div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
+  <div class="modal">
+    <button class="x" onclick="closePaywall()">✕</button>
+    <h3>💎 크레딧이 필요해요</h3>
+    <div class="msub" id="pwSub">이 생성에는 크레딧이 더 필요합니다.</div>
+    <div id="pwPacks" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:12px;text-align:center">결제 후 돌아오면 잔액이 채워져요. 그 자리에서 다시 Generate를 누르면 됩니다.</div>
+  </div>
+</div>
+
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -459,8 +470,8 @@ async function uploadLogo(inp){
     const res=await fetch('/api/brand-kit/logo',{method:'POST',body:fd});
     const data=await res.json();
     if(data.success){BRANDKIT=data.data;reflectBrandkit();}
-    else alert('로고 업로드 실패');
-  }catch(e){alert('로고 업로드 중 오류');}
+    else toast('로고 업로드 실패','error');
+  }catch(e){toast('로고 업로드 중 오류','error');}
 }
 async function saveBrandkit(){
   const sel=document.querySelector('#bkSwatches .swatch.sel');
@@ -534,7 +545,7 @@ function pickRecipe(id){state.recipeId=id;renderRecipes();updateBar();}
 async function uploadSubject(inp){
   const f=inp.files[0];inp.value='';
   if(!f)return;
-  if(state.mode==='ugc'){alert('UGC 모드는 준비 중입니다.');return;}
+  if(state.mode==='ugc'){toast('UGC 모드는 준비 중입니다.');return;}
   const isProduct=state.mode==='shopping';
   const name=prompt(isProduct?'제품 이름을 입력하세요':'이름을 입력하세요',isProduct?'New Product':'My Face');
   if(!name)return;
@@ -545,11 +556,11 @@ async function uploadSubject(inp){
   try{
     const res=await fetch('/api/characters/register',{method:'POST',body:fd});
     const data=await res.json();
-    if(!res.ok||!data.success){alert('업로드 실패: '+(data.error||res.status));return;}
+    if(!res.ok||!data.success){toast('업로드 실패: '+(data.error||res.status),'error');return;}
     await loadSubjects();
     state.subjectId=data.data.id;
     renderSubjects();updateBar();
-  }catch(e){alert('업로드 중 오류가 발생했습니다.');}
+  }catch(e){toast('업로드 중 오류가 발생했습니다.','error');}
 }
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
@@ -562,8 +573,9 @@ function updateBar(){
     const cost=genCost(r);
     const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
     if(notEnough(cost)){
-      btn.disabled=true;
-      s.innerHTML=`<b>${r.name}</b>${costTxt} — <span style="color:#ff7eb6">크레딧 부족 (보유 ◈${CREDITS.balance})</span> <a href="/billing.html" style="color:var(--accent2)">충전하기 →</a>`;
+      // 버튼은 활성 — 누르면 인라인 페이월 (전환 동선)
+      btn.disabled=false;
+      s.innerHTML=`<b>${r.name}</b>${costTxt} — <span style="color:#ff7eb6">크레딧 부족 (보유 ◈${CREDITS.balance})</span> <a onclick="openPaywall(${cost})" style="color:var(--accent2);cursor:pointer">충전하기 →</a>`;
       return;
     }
     btn.disabled=false;
@@ -579,7 +591,10 @@ function updateBar(){
 async function generate(){
   const r=curRecipe(),subj=curSubject();
   if(!r||!subj||generating)return;
-  if(r.soon){alert('UGC 모드는 준비 중입니다.');return;}
+  if(r.soon){toast('UGC 모드는 준비 중입니다.');return;}
+  // 잔액 부족이면 생성 대신 페이월
+  const cost=genCost(r);
+  if(notEnough(cost)){openPaywall(cost);return;}
 
   generating=true;updateBar();
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
@@ -599,9 +614,11 @@ async function generate(){
   }catch(e){
     console.error(e);
     if(e.code402){
-      document.getElementById('resultHint').innerHTML='⚠ 크레딧이 부족합니다. <a href="/billing.html" style="color:var(--accent2)">충전하러 가기 →</a>';
+      document.getElementById('resultHint').textContent='';
+      openPaywall(genCost(r));
     }else{
       document.getElementById('resultHint').textContent='⚠ 생성 중 오류가 발생했습니다. 다시 시도해 주세요.';
+      toast('생성 중 오류가 발생했습니다.','error');
     }
   }finally{
     lb.classList.add('hidden');
@@ -699,6 +716,39 @@ function applyPendingTemplate(){
   state.recipeId=id;state.filter='All';
   renderFilters();renderRecipes();updateBar();
   document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ── 인라인 페이월 ──
+let PACKS_CACHE=null;
+async function openPaywall(cost){
+  const bal=(CREDITS&&CREDITS.balance!=null)?CREDITS.balance:0;
+  const short=Math.max(0,(cost||0)-bal);
+  document.getElementById('pwSub').innerHTML=
+    `필요 <b style="color:var(--gold)">◈ ${cost||0}</b> · 보유 ◈ ${bal}`+(short?` · <span style="color:#ff7eb6">${short} 부족</span>`:'');
+  const box=document.getElementById('pwPacks');
+  box.innerHTML='<div style="color:var(--dim);font-size:13px;text-align:center;padding:8px">불러오는 중…</div>';
+  document.getElementById('paywallModal').classList.add('open');
+  try{
+    if(!PACKS_CACHE){PACKS_CACHE=(await(await fetch('/api/billing/packs')).json()).data;}
+    const packs=PACKS_CACHE.packs||[];
+    if(!PACKS_CACHE.configured){
+      box.innerHTML=`<div style="color:var(--dim);font-size:13px;text-align:center;padding:8px;line-height:1.6">결제가 아직 설정되지 않았어요.<br><a href="/billing.html" style="color:var(--accent2)">Billing 페이지</a>에서 관리하세요.</div>`;
+      return;
+    }
+    box.innerHTML=packs.map(p=>`
+      <button class="btn ${p.id==='pack220'?'btn-primary':'btn-ghost'}" style="width:100%;display:flex;justify-content:space-between;align-items:center" onclick="buyPack('${p.id}',this)">
+        <span>${esc(p.label)}</span><span style="font-weight:700">$${p.usd}</span></button>`).join('')
+      +`<a href="/billing.html" style="text-align:center;font-size:12.5px;color:var(--accent2);margin-top:4px">전체 요금제 보기 →</a>`;
+  }catch(e){ box.innerHTML='<div style="color:#ff7eb6;font-size:13px;text-align:center">불러오기 실패</div>'; }
+}
+function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
+async function buyPack(packId,btn){
+  btn.disabled=true;const o=btn.innerHTML;btn.innerHTML='Loading…';
+  try{
+    const d=await(await fetch('/api/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
+    if(!d.success){toast(d.error||'결제 페이지를 열 수 없어요.','error');btn.disabled=false;btn.innerHTML=o;return;}
+    window.location.href=d.data.url;
+  }catch(e){toast('결제 연결 실패','error');btn.disabled=false;btn.innerHTML=o;}
 }
 
 // 딥링크 부팅: ?mode=shopping&vertical=Food (랜딩 버티컬 칩에서 진입)
