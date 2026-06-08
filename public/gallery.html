@@ -200,9 +200,9 @@ function render(){
       ${selectable?`<div class="selcheck">${isSel?'✓':''}</div>`:''}
       <div class="info"><div class="nm">${it.name}</div><div class="dt">${it.date} · ${it.mode}</div></div>
       ${!selectMode?`<div class="actions">
-        <button onclick="HH.toast('다운로드: ${it.name}')">⬇</button>
-        <button onclick="HH.toast('인스타그램 공유 (mock)')">↗</button>
-        <button class="del" onclick="HH.toast('삭제됨 (소프트 삭제)')">🗑</button>
+        <button onclick="HH.toast('Downloading: ${it.name}')">⬇</button>
+        <button onclick="HH.toast('Shared to Instagram (mock)')">↗</button>
+        <button class="del" onclick="HH.toast('Deleted (soft delete)')">🗑</button>
       </div>`:''}
     </div>`;
   }).join('');
@@ -255,7 +255,7 @@ function saveReel(){
   document.getElementById('reelBar').classList.add('hidden');
   document.querySelector('.wrap').style.paddingBottom='';
   filter='All';renderFilters();render();
-  HH.toast('릴스가 갤러리에 추가됐어요 ✨ (◈1 사용)');
+  HH.toast('Reel added to your gallery ✨ (◈1 used)');
 }
 
 renderFilters();render();

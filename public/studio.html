@@ -299,14 +299,14 @@
 <div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
   <div class="modal">
     <button class="x" onclick="closePaywall()">✕</button>
-    <h3>거의 다 됐어요 ✨</h3>
+    <h3>Almost there ✨</h3>
     <div class="pw-need" id="pwNeed"></div>
     <div class="pw-opt">
-      <button class="btn btn-ghost" id="pwSmallBtn" onclick="paywallTopupSmall()">◈50만 빠르게 — $5</button>
-      <button class="btn btn-primary" onclick="paywallTopup()">◈220 충전하고 지금 완성 — $18</button>
-      <button class="btn btn-ghost" id="pwSubBtn" onclick="paywallSub()">Creator 구독 · 월 ◈250 — $19</button>
+      <button class="btn btn-ghost" id="pwSmallBtn" onclick="paywallTopupSmall()">Just ◈50 — $5</button>
+      <button class="btn btn-primary" onclick="paywallTopup()">Top up ◈220 & finish now — $18</button>
+      <button class="btn btn-ghost" id="pwSubBtn" onclick="paywallSub()">Creator — ◈250/mo — $19</button>
     </div>
-    <label class="pw-auto"><input type="checkbox" id="pwAuto" checked> ⚡ 다음부터 자동충전 (끊김 방지)</label>
+    <label class="pw-auto"><input type="checkbox" id="pwAuto" checked> ⚡ Auto top-up next time (never run out)</label>
   </div>
 </div>
 
@@ -314,11 +314,11 @@
   <div class="modal">
     <button class="x" onclick="closeUpsell()">✕</button>
     <span class="up-tier-badge creator" id="upTierBadge">Creator · $19/mo</span>
-    <h3 id="upTitle">워터마크 제거</h3>
+    <h3 id="upTitle">Remove watermark</h3>
     <div class="pw-need" id="upDesc"></div>
     <div class="pw-opt">
-      <button class="btn btn-ghost" id="upOnceBtn" onclick="upsellOnce()">이 결과만 ◈1</button>
-      <button class="btn btn-primary" id="upSubBtn" onclick="upsellSub()">Creator $19/mo로 업그레이드</button>
+      <button class="btn btn-ghost" id="upOnceBtn" onclick="upsellOnce()">Just this one — ◈1</button>
+      <button class="btn btn-primary" id="upSubBtn" onclick="upsellSub()">Upgrade to Creator — $19/mo</button>
     </div>
   </div>
 </div>
@@ -338,8 +338,8 @@
   <div class="modal" style="text-align:center">
     <div style="font-size:42px;margin-bottom:4px">🔥</div>
     <h3>Day <span id="dailyDay">1</span> streak</h3>
-    <div class="pw-need">매일 오면 무료 크레딧 — 연속할수록 더! (3일 +◈2 · 7일 +◈3)</div>
-    <button class="btn btn-primary" style="width:100%" onclick="claimDaily()">오늘 보너스 받기 +◈</button>
+    <div class="pw-need">Free credits every day you show up — more for longer streaks! (Day 3 +◈2 · Day 7 +◈3)</div>
+    <button class="btn btn-primary" style="width:100%" onclick="claimDaily()">Claim today's bonus +◈</button>
   </div>
 </div>
 
@@ -349,7 +349,7 @@
     <h3>🎨 Brand kit</h3>
     <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand. <b style="color:var(--gold)">Included in Pro &amp; Brand.</b></div>
     <div class="field"><label>Logo</label>
-      <div class="logo-drop" onclick="HH.toast('로고 업로드 (mock)')">＋ Upload logo (PNG, transparent)</div></div>
+      <div class="logo-drop" onclick="HH.toast('Logo uploaded (mock)')">＋ Upload logo (PNG, transparent)</div></div>
     <div class="field"><label>Brand colors</label>
       <div class="swatches" id="bkSwatches">
         <div class="swatch sel" style="background:#7c6cff" onclick="pickSwatch(this)"></div>
@@ -693,7 +693,7 @@ function generate(){
       const bBadge = brand ? `<span class="type-badge" style="bottom:10px;left:10px;top:auto">🎨 Brand</span>` : '';
       h+=`<div class="result-card"><div class="img" style="background:${g[i%4]}">${r.type==='reel'?'▶':'🖼️'}</div>
         ${(HH.plan==='free'&&localStorage.getItem('hh_firstDone'))?'<span class="wm">Doppia ◈</span>':''}${qBadge}${vBadge}${bBadge}
-        <div class="actions"><button onclick="HH.toast('다운로드 시작 (mock)')">⬇ Download</button><button onclick="HH.toast('인스타그램 공유 (mock)')">↗ Post</button></div></div>`;}
+        <div class="actions"><button onclick="HH.toast('Download started (mock)')">⬇ Download</button><button onclick="HH.toast('Shared to Instagram (mock)')">↗ Post</button></div></div>`;}
     document.getElementById('resultsGrid').innerHTML=h;
     if(document.getElementById('aCaption').classList.contains('on'))renderCaption();
     const noun = v>1 ? 'ad variants' : (r.type==='reel'?'reel':'photos');
@@ -705,31 +705,38 @@ function generate(){
 // ── P1-A + 티어-라우팅: 인라인 페이월 + 결과 업셀 ──
 // 플랜 사다리(P2 확정): 같은 유저를 작업 신호에 맞는 티어로 라우팅 → LTV 1.7~2배
 const PLANS={
-  creator:{name:'Creator',price:19,cr:250,line:'워터마크 영구 제거 · HD · 매월 ◈250'},
-  pro:{name:'Pro',price:39,cr:600,line:'브랜드킷 · 4K · 다국어 캡션 always-on · 매월 ◈600'},
-  brand:{name:'Brand',price:79,cr:1400,line:'상업 라이선스 · 프리미엄 AI 모델 · 팀 좌석 · 매월 ◈1,400'}
+  creator:{name:'Creator',price:19,cr:250,line:'No watermark · HD · ◈250/mo'},
+  pro:{name:'Pro',price:39,cr:600,line:'Brand kit · 4K · multilingual captions always-on · ◈600/mo'},
+  brand:{name:'Brand',price:79,cr:1400,line:'Commercial license · premium AI models · team seats · ◈1,400/mo'}
 };
 const PLAN_RANK={free:0,creator:1,pro:2,brand:3};
-// 이번 생성의 신호로 권장 티어 결정: 상업용(UGC/Product)→Brand, 브랜드킷·4K→Pro, 그외→Creator
+// 상업 모드(제품/UGC) 여부 — Brand 상업권은 여기서 '결제 순간'이 아니라 다운로드/게시 등 명시 의도에서 권유
+function isCommercialMode(){return state.mode==='product'||state.mode==='ugc';}
+// 작업 신호로 권장 티어 결정 (모드만으로 Brand 강요 X):
+//  - 대량 광고 배치(변형 ≥10)=명백한 상업 대량 → Brand
+//  - 4K/브랜드킷/캡션/반복(변형 ≥3)/스트릭 ≥3 = 파워·프리미엄 사용 → Pro
+//  - 그 외 → Creator. 상업권 자체는 showUpsell의 컨텍스트 칩으로 Brand 2단계 제시.
 function recommendTier(){
-  if(state.mode==='ugc'||state.mode==='product') return 'brand';
-  if(curQuality()==='4k'||brandOn()) return 'pro';
+  if(curVariants()>=10) return 'brand';
+  const captionOn=document.getElementById('aCaption')&&document.getElementById('aCaption').classList.contains('on');
+  const streak=parseInt(localStorage.getItem('hh_streak')||'0',10);
+  if(curQuality()==='4k'||brandOn()||captionOn||curVariants()>=3||streak>=3) return 'pro';
   return 'creator';
 }
 let pwPending=null;
 function openPaywall(r,v,total){
   pwPending={r,v,total};
-  document.getElementById('pwNeed').innerHTML=`<b>${r.name}</b>${v>1?' ×'+v:''} = ◈${total} 필요 · 현재 ◈${credits} → ◈<b>${total-credits}</b> 부족`;
+  document.getElementById('pwNeed').innerHTML=`<b>${r.name}</b>${v>1?' ×'+v:''} = ◈${total} needed · you have ◈${credits} → ◈<b>${total-credits}</b> short`;
   const p=PLANS[recommendTier()];
-  document.getElementById('pwSubBtn').textContent=`${p.name} 구독 · 월 ◈${p.cr.toLocaleString()} — $${p.price}`;
+  document.getElementById('pwSubBtn').textContent=`${p.name} — ◈${p.cr.toLocaleString()}/mo — $${p.price}`;
   // 소액 $5(◈50)은 그걸로 충분히 풀릴 때만 노출 (작은 부족분 = 최소 마찰)
   document.getElementById('pwSmallBtn').style.display=(total-credits<=50)?'':'none';
   document.getElementById('paywallModal').classList.add('open');
 }
 function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
-function paywallTopup(){HH.add(220);if(document.getElementById('pwAuto').checked)HH.toast('⚡ 자동충전 켜짐');closePaywall();generate();}
+function paywallTopup(){HH.add(220);if(document.getElementById('pwAuto').checked)HH.toast('⚡ Auto top-up on');closePaywall();generate();}
 function paywallTopupSmall(){HH.add(50);closePaywall();generate();}
-function paywallSub(){const p=PLANS[recommendTier()];HH.add(p.cr);HH.plan=p.name.toLowerCase();closePaywall();HH.toast(`${p.name} 구독 시작 (mock)`);generate();}
+function paywallSub(){const p=PLANS[recommendTier()];HH.add(p.cr);HH.plan=p.name.toLowerCase();closePaywall();HH.toast(`${p.name} subscription started (mock)`);generate();}
 function showUpsell(){
   const el=document.getElementById('upsellBanner');
   if(!localStorage.getItem('hh_firstDone')){el.classList.add('hidden');return;}
@@ -739,28 +746,32 @@ function showUpsell(){
   el.classList.remove('hidden');
   let lead,chips;
   if(rec==='brand'){
-    lead=`💼 이 콘텐츠를 <b>광고·판매</b>에 쓰려면 <b>상업 라이선스</b>가 필요해요`;
-    chips=`<button class="uchip primary" onclick="openTierUpsell('brand')">🔓 Brand로 잠금 해제 · $79</button>`;
+    lead=`💼 Using this for <b>ads or sales</b>? You'll need a <b>commercial license</b>`;
+    chips=`<button class="uchip primary" onclick="openTierUpsell('brand')">🔓 Unlock with Brand · $79</button>`;
   }else if(rec==='pro'){
-    const why=(brandOn()&&curQuality()==='4k')?'브랜드킷·4K':(brandOn()?'브랜드킷':'4K');
-    lead=`✨ <b>${why}</b>는 <b>Pro</b> 기능이에요 — 모든 출력에 브랜드를 입히세요`;
-    chips=`<button class="uchip primary" onclick="openTierUpsell('pro')">⬆ Pro로 업그레이드 · $39</button>`;
+    const why=(brandOn()&&curQuality()==='4k')?'Brand kit & 4K':(brandOn()?'Brand kit':'4K');
+    lead=`✨ <b>${why}</b> is a <b>Pro</b> feature — put your brand on every output`;
+    chips=`<button class="uchip primary" onclick="openTierUpsell('pro')">⬆ Upgrade to Pro · $39</button>`;
   }else{
-    lead=`🔒 무료 결과물엔 <b>워터마크</b>가 들어가요 — 게시용으로 깨끗하게`;
+    lead=`🔒 Free results carry a <b>watermark</b> — get clean ones to post`;
     chips=`<button class="uchip" onclick="openTierUpsell('creator','hd')">🔼 HD +1</button>`+
       `<button class="uchip" onclick="openTierUpsell('creator','caption')">📝 Caption +1</button>`+
-      `<button class="uchip primary" onclick="openTierUpsell('creator','wm')">✨ 워터마크 제거</button>`;
+      `<button class="uchip primary" onclick="openTierUpsell('creator','wm')">✨ Remove watermark</button>`;
+  }
+  // 상업 모드(제품/UGC)면 commercial license를 Brand 2단계로 컨텍스트 제시 (이미 brand 권장이면 생략)
+  if(rec!=='brand'&&isCommercialMode()&&(PLAN_RANK[HH.plan]||0)<PLAN_RANK.brand){
+    chips+=`<button class="uchip" onclick="openTierUpsell('brand')">💼 Selling or advertising? Commercial license → Brand</button>`;
   }
   el.innerHTML=`<div class="ut">${lead}</div><div class="chips">${chips}</div>`;
 }
 // 티어별 모달 카피: [제목, 설명]
 const TIER_PITCH={
-  creator:['게시용으로 깨끗하게','무료 워터마크를 없애고 HD로 받으세요.'],
-  pro:['Pro로 업그레이드','브랜드킷·4K·다국어 캡션은 Pro 기능이에요. 모든 출력에 브랜드를 입히세요.'],
-  brand:['상업 라이선스가 필요해요','광고·판매에 쓰는 콘텐츠는 Brand의 상업 라이선스로 안전하게. 프리미엄 모델까지 사용하세요.']
+  creator:['Get clean, postable results','Remove the free watermark and get HD.'],
+  pro:['Upgrade to Pro','Brand kit, 4K and multilingual captions are Pro features. Put your brand on every output.'],
+  brand:['You need a commercial license',"Content used in ads or sales is covered by Brand's commercial license — plus premium models."]
 };
 // 단발(◈1) 보정만 가능한 항목별 카피 (creator 티어 칩에서만 사용)
-const ONCE_PITCH={wm:['워터마크 제거','게시해도 되는 깨끗한 결과물로.'],hd:['HD로 받기','더 선명한 고해상도로 다시 받기.'],caption:['캡션 + 해시태그','AI가 6개국어로 캡션·해시태그 자동 작성.']};
+const ONCE_PITCH={wm:['Remove watermark','Get a clean result you can post.'],hd:['Get it in HD','Re-render in sharper high resolution.'],caption:['Caption + hashtags','AI writes captions & hashtags in 6 languages.']};
 let upTarget='creator',upOnceKind=null;
 function openTierUpsell(tier,onceKind){
   upTarget=tier;upOnceKind=onceKind||null;
@@ -768,21 +779,21 @@ function openTierUpsell(tier,onceKind){
   const badge=document.getElementById('upTierBadge');
   badge.className='up-tier-badge '+tier;badge.textContent=`${p.name} · $${p.price}/mo`;
   document.getElementById('upTitle').textContent=pitch[0];
-  document.getElementById('upDesc').innerHTML=`${pitch[1]}<br><span style="color:var(--faint);font-size:12px">${p.name} 구독: ${p.line}</span>`;
-  const sub=document.getElementById('upSubBtn');sub.textContent=`${p.name} $${p.price}/mo로 업그레이드`;
+  document.getElementById('upDesc').innerHTML=`${pitch[1]}<br><span style="color:var(--faint);font-size:12px">${p.name} plan: ${p.line}</span>`;
+  const sub=document.getElementById('upSubBtn');sub.textContent=`Upgrade to ${p.name} — $${p.price}/mo`;
   document.getElementById('upOnceBtn').style.display=onceKind?'':'none';
   document.getElementById('upsellModal').classList.add('open');
 }
 function closeUpsell(){document.getElementById('upsellModal').classList.remove('open');}
 function upsellOnce(){
   if(upOnceKind==='wm')document.querySelectorAll('.result-card .wm').forEach(w=>w.remove());
-  HH.toast('적용됨 (mock · ◈1 사용)');closeUpsell();
+  HH.toast('Applied (mock · ◈1 used)');closeUpsell();
 }
 function upsellSub(){
   const p=PLANS[upTarget];HH.plan=upTarget;HH.add(p.cr);closeUpsell();
   document.getElementById('upsellBanner').classList.add('hidden');
   document.querySelectorAll('.result-card .wm').forEach(w=>w.remove());
-  HH.toast(`${p.name} 구독 시작 — +◈${p.cr.toLocaleString()} (mock)`);
+  HH.toast(`${p.name} subscription started — +◈${p.cr.toLocaleString()} (mock)`);
 }
 function showAfterCta(){
   const el=document.getElementById('afterCta');el.classList.remove('hidden');
@@ -824,7 +835,7 @@ function renderCaption(){
   const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
   box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]} · <span style="color:var(--accent2)">${THEME_LABEL[theme]}</span></div>
     <div class="ctext">${cap.c}</div><div class="tags">${cap.t}</div>
-    <button class="btn btn-ghost copy" onclick="HH.toast('캡션 복사됨')">⧉ Copy</button>`;
+    <button class="btn btn-ghost copy" onclick="HH.toast('Caption copied')">⧉ Copy</button>`;
   document.getElementById('resultStep').appendChild(box);
 }
 // ── P1-15: 연속 생성 스트릭 + 데일리 보너스 ──
@@ -844,7 +855,7 @@ function claimDaily(){
   localStorage.setItem('hh_streak',streak);localStorage.setItem('hh_lastClaim',today);
   HH.add(bonus);renderStreak();
   document.getElementById('dailyModal').classList.remove('open');
-  HH.toast('🔥 '+streak+'일 연속 · +◈'+bonus+' 받았어요');
+  HH.toast('🔥 '+streak+'-day streak · +◈'+bonus+' claimed');
 }
 function closeDaily(){document.getElementById('dailyModal').classList.remove('open');}
 

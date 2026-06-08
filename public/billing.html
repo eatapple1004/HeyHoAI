@@ -124,7 +124,7 @@
   <div class="sub fade d1">Subscribe for monthly credits, or top up anytime. Credits never expire while subscribed.</div>
 
   <div class="status fade d2">
-    <div><div class="plan">Current plan: <b>Creator</b></div><div class="renew">Renews 2026-07-06 · 200 credits / month</div></div>
+    <div><div class="plan">Current plan: <b>Creator</b></div><div class="renew">Renews 2026-07-06 · 250 credits / month</div></div>
     <div class="bal"><span class="num">◈ 42</span><span class="lbl">credits left</span></div>
   </div>
 
@@ -142,7 +142,7 @@
       <div class="cyc-note"></div>
       <div class="credits-inc">10 credits (one-time)</div>
       <ul><li>Try all modes</li><li>First result watermark-free</li><li>Then watermarked</li></ul>
-      <button class="btn btn-ghost" onclick="HH.toast('다운그레이드 (mock)')">Downgrade</button>
+      <button class="btn btn-ghost" onclick="HH.toast('Downgraded (mock)')">Downgrade</button>
     </div>
     <div class="plan-card glass" data-m="19" data-y="15" data-yt="$180/yr billed annually · save $48">
       <div class="pname">Creator</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
@@ -166,7 +166,7 @@
       <div class="cyc-note"></div>
       <div class="credits-inc">1,400 credits / month</div>
       <div class="cr-eq">≈ 700 sets or 233 reels</div>
-      <ul><li>Commercial license</li><li>On-model + bulk</li><li>Team seats &amp; API</li><li>Premium AI models</li></ul>
+      <ul><li>Everything in Pro</li><li>Commercial license</li><li>On-model + bulk</li><li>Team seats &amp; API · premium models</li></ul>
       <button class="btn btn-primary" onclick="checkout('plan','Brand')">Upgrade</button>
     </div>
   </div>
@@ -261,7 +261,7 @@ function cancelFlow(){
   if(confirm("Cancelling stops your monthly credits and Pro features.\n\nWant to PAUSE instead? Keep your account, gallery & trained faces — billing just stops until you're back.\n\n[ OK = Pause ]   [ Cancel = continue to cancel ]")){
     pauseFlow();
   }else{
-    HH.toast('해지 절차 (mock)');
+    HH.toast('Cancellation flow (mock)');
   }
 }
 function checkout(type,label){
