@@ -8,6 +8,7 @@ const COSTS = {
   imageModelSurcharge: { flash: 0, pro: 1, 'gpt-image-2': 1, 'gpt-image-2-high': 2 },
   video: { 5: 6, 10: 12 }, // 릴스 (duration 초)
   videoHighSurcharge: 2, // mode=high 추가
+  caption: 1, // 캡션 + 해시태그 생성 (애드온)
 };
 
 /** 이미지 생성 1회 비용 */

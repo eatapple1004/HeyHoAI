@@ -210,6 +210,11 @@
       <button data-q="hd" data-m="pro" onclick="pickQuality(this)">HD</button>
       <button data-q="4k" data-m="gpt-image-2-high" onclick="pickQuality(this)">Ultra</button>
     </div>
+    <span class="divider-v"></span>
+    <button class="addon-toggle" id="aCaption" onclick="toggleCaption(this)">📝 Caption + hashtags <i>+1</i></button>
+    <select class="addon-lang hidden" id="captionLang">
+      <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
+    </select>
   </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
@@ -309,9 +314,10 @@ async function loadCredits(){
 function genCost(r){
   const c=CREDITS.costs;
   if(!c||!r)return null;
-  if(r.type==='reel')return (c.video&&c.video[5]||6)+(curQuality()!=='std'?c.videoHighSurcharge:0);
+  const cap=captionOn()?(c.caption||1):0;
+  if(r.type==='reel')return (c.video&&c.video[5]||6)+(curQuality()!=='std'?c.videoHighSurcharge:0)+cap;
   const s=c.imageModelSurcharge?c.imageModelSurcharge[curModel()]:0;
-  return c.imageBase+(s===undefined?1:s);
+  return c.imageBase+(s===undefined?1:s)+cap;
 }
 function notEnough(cost){return !CREDITS.unlimited&&CREDITS.balance!==null&&cost!==null&&CREDITS.balance<cost;}
 
@@ -331,6 +337,9 @@ function curQuality(){return document.querySelector('#qualitySeg .on').dataset.q
 function curModel(){return document.querySelector('#qualitySeg .on').dataset.m;}
 function pickQuality(b){document.querySelectorAll('#qualitySeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');updateBar();}
 const Q_LABEL={std:'Standard',hd:'HD','4k':'Ultra'};
+function captionOn(){return document.getElementById('aCaption').classList.contains('on');}
+function toggleCaption(b){b.classList.toggle('on');
+  document.getElementById('captionLang').classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
 
 // ── UGC 스크립트 (mock 유지 — 백엔드 미지원) ──
 const SCRIPTS={
@@ -461,6 +470,7 @@ async function generate(){
   try{
     if(r.type==='reel') await generateReel(r,subj);
     else await generateImages(r,subj);
+    if(captionOn()) await generateCaptionBlock(r,subj);
   }catch(e){
     console.error(e);
     if(e.code402){
@@ -520,6 +530,30 @@ async function generateReel(r,subj){
         <button onclick="window.open('${esc(data.url)}','_blank')">⤢ View</button>
       </div></div>`;
   document.getElementById('resultHint').textContent=`1 reel ready (${data.duration||5}s) — Gallery에 자동 저장됨`;
+}
+
+// ── 캡션 + 해시태그 (Claude) ──
+async function generateCaptionBlock(r,subj){
+  const lang=document.getElementById('captionLang').value;
+  const ctx=`${r.name}. ${r.prompt||''}`.slice(0,500);
+  const old=document.getElementById('captionResult');if(old)old.remove();
+  const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
+  box.innerHTML=`<div class="ch">📝 Caption + hashtags</div><div class="ctext" style="color:var(--dim)">✨ 캡션 생성 중…</div>`;
+  document.getElementById('resultStep').appendChild(box);
+  try{
+    const res=await fetch('/api/generate/caption',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({context:ctx,language:lang,characterId:subj.id,mediaType:r.type==='reel'?'video':'image'})});
+    const data=await res.json();
+    if(!res.ok||!data.success){box.querySelector('.ctext').textContent='⚠ 캡션 생성에 실패했어요.';return;}
+    const tags=(data.data.hashtags||[]).map(t=>'#'+t).join(' ');
+    const full=data.data.caption+(data.data.callToAction?'\n\n'+data.data.callToAction:'')+'\n\n'+tags;
+    box.innerHTML=`<div class="ch">📝 Caption + hashtags</div>
+      <div class="ctext">${esc(data.data.caption)}</div>
+      ${data.data.callToAction?`<div class="ctext" style="color:var(--dim);font-size:13px">${esc(data.data.callToAction)}</div>`:''}
+      <div class="tags">${esc(tags)}</div>
+      <button class="btn btn-ghost copy" onclick="navigator.clipboard.writeText(this.dataset.t).then(()=>{this.textContent='✓ 복사됨'})" data-t="${esc(full)}">⧉ Copy</button>`;
+  }catch(e){box.querySelector('.ctext').textContent='⚠ 캡션 생성 중 오류가 발생했어요.';}
 }
 
 setMode('influencer');
