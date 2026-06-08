@@ -14,8 +14,13 @@ function forbidden(message = 'Forbidden') {
  */
 async function assertCharacterOwned(characterId, userId) {
   if (!characterId) throw forbidden('characterId is required');
+  // 개인 소유(team_id NULL & 본인) 또는 그 캐릭터가 속한 팀의 멤버면 접근 허용
   const result = await query(
-    'SELECT 1 FROM characters WHERE id = $1 AND user_id = $2',
+    `SELECT 1 FROM characters c
+     WHERE c.id = $1 AND (
+       c.user_id = $2
+       OR (c.team_id IS NOT NULL AND c.team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
+     )`,
     [characterId, userId]
   );
   if (result.rowCount === 0) {

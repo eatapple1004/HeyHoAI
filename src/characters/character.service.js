@@ -17,7 +17,7 @@ const MAX_RETRIES = 2;
  * @param {string} userId 소유자(회원) ID
  * @returns {Promise<object>} 저장된 캐릭터 row
  */
-async function createCharacter(input, userId) {
+async function createCharacter(input, userId, teamId = null) {
   let lastError;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -40,6 +40,7 @@ async function createCharacter(input, userId) {
         name: profile.name,
         concept: input.concept,
         persona: profile,
+        teamId,
       });
 
       return { ...saved, persona: profile };
@@ -71,8 +72,14 @@ async function createCharacter(input, userId) {
  */
 async function getCharacter(id, userId) {
   const character = await characterRepo.findById(id);
-  if (!character || (userId && character.user_id !== userId)) {
-    throw new NotFoundError(`Character ${id} not found`);
+  if (!character) throw new NotFoundError(`Character ${id} not found`);
+  if (userId && character.user_id !== userId) {
+    // 본인 소유가 아니면 그 캐릭터 팀의 멤버일 때만 허용
+    const { query } = require('../db/client');
+    const ok = character.team_id
+      ? (await query('SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2', [character.team_id, userId])).rowCount > 0
+      : false;
+    if (!ok) throw new NotFoundError(`Character ${id} not found`);
   }
   return character;
 }

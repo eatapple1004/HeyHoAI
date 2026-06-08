@@ -5,12 +5,12 @@ const { query } = require('../db/client');
  * @param {{ name: string; concept: string; persona: object }} data
  * @returns {Promise<object>} 저장된 row
  */
-async function insert({ userId, name, concept, persona }) {
+async function insert({ userId, name, concept, persona, teamId = null }) {
   const result = await query(
-    `INSERT INTO characters (user_id, name, concept, persona, status)
-     VALUES ($1, $2, $3, $4, 'active')
+    `INSERT INTO characters (user_id, name, concept, persona, status, team_id)
+     VALUES ($1, $2, $3, $4, 'active', $5)
      RETURNING *`,
-    [userId, name, concept, JSON.stringify(persona)]
+    [userId, name, concept, JSON.stringify(persona), teamId]
   );
   return result.rows[0];
 }
@@ -30,13 +30,18 @@ async function findById(id) {
  * @param {{ status?: string; limit?: number; offset?: number }} opts
  * @returns {Promise<{ rows: object[]; total: number }>}
  */
-async function findAll({ userId, status, limit = 20, offset = 0 } = {}) {
+async function findAll({ userId, teamId, status, limit = 20, offset = 0 } = {}) {
   const conditions = ["status != 'archived'"];
   const params = [];
   let paramIndex = 1;
 
-  if (userId) {
-    conditions.push(`user_id = $${paramIndex++}`);
+  if (teamId) {
+    // 팀 컨텍스트: 해당 팀 소유 캐릭터만
+    conditions.push(`team_id = $${paramIndex++}`);
+    params.push(teamId);
+  } else if (userId) {
+    // 개인 컨텍스트: 본인 소유 & 팀에 속하지 않은 캐릭터만 (기존 동작 보존)
+    conditions.push(`user_id = $${paramIndex++} AND team_id IS NULL`);
     params.push(userId);
   }
 

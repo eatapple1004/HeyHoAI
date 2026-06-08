@@ -635,6 +635,10 @@ async function migrate() {
   // ─── 팀 (Phase 2: 공유 크레딧 풀 + 활성 컨텍스트) ───
   await migrateTeamCredits();
 
+  // ─── 팀 (Phase 3a: 공유 캐릭터) ───
+  await pool.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS team_id UUID REFERENCES teams(id) ON DELETE SET NULL;`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_characters_team ON characters(team_id);`);
+
   console.log('Migrations completed.');
 }
 
