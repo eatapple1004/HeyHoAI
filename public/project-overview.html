@@ -6,11 +6,11 @@
 <title>Doppia — 프로젝트 개요</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
-  .wrap{max-width:920px;margin:0 auto;padding:48px 24px 100px;position:relative;z-index:2}
-  .hero{text-align:center;margin-bottom:48px}
+  .wrap{max-width:940px;margin:0 auto;padding:48px 24px 100px;position:relative;z-index:2}
+  .hero{text-align:center;margin-bottom:46px}
   .hero .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);background:rgba(124,108,255,.14);padding:6px 14px;border-radius:20px;margin-bottom:18px}
-  .hero h1{font-family:'Sora';font-size:38px;font-weight:800;letter-spacing:-1.5px;margin-bottom:12px}
-  .hero p{color:var(--dim);font-size:15.5px;line-height:1.6;max-width:620px;margin:0 auto}
+  .hero h1{font-family:'Sora';font-size:40px;font-weight:800;letter-spacing:-1.5px;margin-bottom:12px}
+  .hero p{color:var(--dim);font-size:15.5px;line-height:1.6;max-width:640px;margin:0 auto}
   .hero .date{color:var(--faint);font-size:12.5px;margin-top:14px}
 
   section{margin-bottom:46px}
@@ -22,7 +22,7 @@
   .flow .step{font-size:13px;font-weight:600;color:var(--text);background:rgba(124,108,255,.1);border:1px solid rgba(124,108,255,.25);padding:9px 14px;border-radius:10px}
   .flow .arr{color:var(--faint);font-size:16px}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
   .feat{border:1px solid var(--border);border-radius:16px;padding:20px;background:var(--surface);transition:.2s}
   .feat:hover{border-color:var(--border2);transform:translateY(-3px)}
   .feat .ic{font-size:26px;margin-bottom:12px}
@@ -30,15 +30,11 @@
   .feat p{font-size:12.5px;color:var(--dim);line-height:1.55}
   .feat .pr{display:inline-block;margin-top:10px;font-size:10.5px;font-weight:700;color:var(--cyan);background:rgba(94,224,214,.12);padding:3px 8px;border-radius:6px}
 
-  .status-done{color:var(--cyan)}
-  .status-pending{color:var(--gold)}
-
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--border)}
   th{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
   td .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px}
   .b-done{background:rgba(94,224,214,.14);color:var(--cyan)}
-  .b-wait{background:rgba(255,206,122,.16);color:var(--gold)}
   .b-hold{background:rgba(255,126,182,.14);color:var(--pink)}
 
   .stack{display:flex;flex-wrap:wrap;gap:8px}
@@ -56,6 +52,11 @@
   .page-link:hover{border-color:var(--accent);color:var(--accent2)}
   .page-link .e{font-size:16px}
 
+  .count-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:22px}
+  .count-pill{display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:14px 22px;min-width:96px}
+  .count-pill b{font-family:'Sora';font-size:26px;font-weight:800;color:var(--accent2)}
+  .count-pill span{font-size:11.5px;color:var(--faint)}
+
   .foot{text-align:center;color:var(--faint);font-size:12px;margin-top:60px;line-height:1.7}
 </style>
 </head>
@@ -67,68 +68,88 @@
   <div class="hero">
     <div class="tag">Project Overview</div>
     <h1>Doppia</h1>
-    <p>AI로 인플루언서·쇼핑·광고 콘텐츠를 만들어 인스타그램에 자동 발행하는 SaaS. mock UI로 시작해 인증·결제·팀 협업까지 실제로 동작하는 서비스로 완성했습니다.</p>
-    <div class="date">최종 업데이트 · 2026-06-08</div>
+    <p>셀카 또는 제품 사진 1장 + 템플릿 선택 → 스튜디오급 사진·릴스를 자동 생성하고 인스타그램에 발행하는 SaaS. mock UI로 시작해 인증·결제·팀 협업·수익화 UX까지 실제로 동작하는 서비스로 완성했습니다.</p>
+    <div class="date">최종 업데이트 · 2026-06-09 · 세션1(백엔드 실연결) + 세션2(UX·수익화) 통합</div>
+    <div class="count-bar">
+      <div class="count-pill"><b>24</b><span>머지된 PR</span></div>
+      <div class="count-pill"><b>2</b><span>작업 세션</span></div>
+      <div class="count-pill"><b>7</b><span>제품 버티컬</span></div>
+      <div class="count-pill"><b>4</b><span>팀 협업 단계</span></div>
+    </div>
   </div>
 
-  <!-- 한눈에 흐름 -->
+  <!-- 흐름 -->
   <section>
     <h2><span class="em">🧭</span> 사용자 흐름</h2>
     <div class="sec-sub">방문자가 콘텐츠를 만들어 발행하기까지</div>
     <div class="flow">
-      <span class="step">랜딩 방문</span><span class="arr">→</span>
+      <span class="step">랜딩 (청중별)</span><span class="arr">→</span>
       <span class="step">가입 · 로그인</span><span class="arr">→</span>
-      <span class="step">스튜디오에서 생성</span><span class="arr">→</span>
-      <span class="step">갤러리 저장</span><span class="arr">→</span>
+      <span class="step">스튜디오 생성 (버티컬·크레딧)</span><span class="arr">→</span>
+      <span class="step">갤러리 (사진→릴스)</span><span class="arr">→</span>
       <span class="step">계정 큐 · 자동 발행</span>
     </div>
   </section>
 
-  <!-- 핵심 기능 -->
+  <!-- 세션 1 -->
   <section>
-    <h2><span class="em">✨</span> 완성된 기능</h2>
-    <div class="sec-sub">mock이던 화면을 전부 실제 백엔드에 연결</div>
+    <h2><span class="em">⚙️</span> 세션 1 — 백엔드 실연결</h2>
+    <div class="sec-sub">mock 화면을 실제 서버 기능에 연결</div>
     <div class="grid">
       <div class="feat"><div class="ic">🔐</div><h3>인증 · 멀티테넌시</h3><p>JWT 쿠키 로그인 + 계정별 데이터 완전 격리.</p><span class="pr">PR #1</span></div>
-      <div class="feat"><div class="ic">🎨</div><h3>스튜디오 생성</h3><p>캐릭터(얼굴/제품) + 템플릿 → Gemini/GPT 사진, Kling 릴스 실생성.</p><span class="pr">PR #5</span></div>
-      <div class="feat"><div class="ic">🖼️</div><h3>갤러리</h3><p>생성물을 실제 이미지/비디오로 모아보기 · 다운로드.</p><span class="pr">PR #5</span></div>
-      <div class="feat"><div class="ic">📝</div><h3>캡션 · 해시태그</h3><p>Claude로 6개국어 캡션+해시태그 자동 생성.</p><span class="pr">PR #9</span></div>
-      <div class="feat"><div class="ic">🎯</div><h3>브랜드킷</h3><p>로고·색상·폰트 저장 → 생성 결과 톤에 브랜드 색 반영.</p><span class="pr">PR #9</span></div>
-      <div class="feat"><div class="ic">💳</div><h3>크레딧 · 결제</h3><p>크레딧 차감/환불 + Lemon Squeezy 결제(국내외 카드).</p><span class="pr">PR #6</span></div>
+      <div class="feat"><div class="ic">🎨</div><h3>스튜디오 생성</h3><p>캐릭터 + 템플릿 → Gemini/GPT 사진, Kling 릴스 실생성.</p><span class="pr">PR #5</span></div>
+      <div class="feat"><div class="ic">🖼️</div><h3>갤러리</h3><p>생성물 모아보기 · 다운로드.</p><span class="pr">PR #5</span></div>
+      <div class="feat"><div class="ic">📝</div><h3>캡션 · 해시태그</h3><p>Claude로 6개국어 캡션 자동 생성.</p><span class="pr">PR #9</span></div>
+      <div class="feat"><div class="ic">🎯</div><h3>브랜드킷</h3><p>로고·색·폰트 → 결과 톤에 반영.</p><span class="pr">PR #9</span></div>
+      <div class="feat"><div class="ic">💳</div><h3>크레딧 · 결제</h3><p>크레딧 차감/환불 + Lemon Squeezy 결제.</p><span class="pr">PR #6</span></div>
       <div class="feat"><div class="ic">🛒</div><h3>마켓플레이스</h3><p>템플릿 판매 + 크리에이터 70% 수익분배.</p><span class="pr">PR #10</span></div>
-      <div class="feat"><div class="ic">🔗</div><h3>어필리에이트</h3><p>추천 링크 → 가입·구매 추적 → 30% 크레딧 커미션.</p><span class="pr">PR #11</span></div>
-      <div class="feat"><div class="ic">👥</div><h3>팀 협업</h3><p>멤버 초대·권한 + 공유 크레딧 풀 + 공유 캐릭터/갤러리.</p><span class="pr">PR #12–15</span></div>
-      <div class="feat"><div class="ic">📊</div><h3>브랜드 대시보드</h3><p>게시·큐·예약 집계 + 7일 차트 + 주간 캘린더.</p><span class="pr">PR #16</span></div>
+      <div class="feat"><div class="ic">🔗</div><h3>어필리에이트</h3><p>추천 링크 → 30% 크레딧 커미션.</p><span class="pr">PR #11</span></div>
+      <div class="feat"><div class="ic">👥</div><h3>팀 협업</h3><p>멤버·권한 + 공유 크레딧 풀 + 공유 캐릭터/갤러리.</p><span class="pr">PR #12–15</span></div>
+      <div class="feat"><div class="ic">📊</div><h3>브랜드 대시보드</h3><p>게시·큐·예약 집계 + 7일 차트 + 캘린더.</p><span class="pr">PR #16</span></div>
+    </div>
+  </section>
+
+  <!-- 세션 2 -->
+  <section>
+    <h2><span class="em">✨</span> 세션 2 — UX · 수익화 (실연결 위 재구현)</h2>
+    <div class="sec-sub">친구 협업본의 mock UX를 우리 실연결 위에 진짜로 구현 + Doppia 리브랜딩</div>
+    <div class="grid">
+      <div class="feat"><div class="ic">🛍️</div><h3>제품 버티컬 7종</h3><p>Fashion·Beauty·Jewelry·Food·Home·Tech·Pet — 버티컬별 템플릿 + 랜딩 딥링크.</p><span class="pr">PR #19</span></div>
+      <div class="feat"><div class="ic">💎</div><h3>인라인 페이월</h3><p>크레딧 부족 시 그 자리서 충전 동선 (이탈 방지).</p><span class="pr">PR #20</span></div>
+      <div class="feat"><div class="ic">🔔</div><h3>토스트 알림</h3><p>alert → 전역 인라인 토스트.</p><span class="pr">PR #20</span></div>
+      <div class="feat"><div class="ic">🎬</div><h3>사진 → 릴스</h3><p>갤러리 사진을 골라 릴스로 자동 변환 + 넛지.</p><span class="pr">PR #21</span></div>
+      <div class="feat"><div class="ic">🎯</div><h3>청중 토글</h3><p>Creators/Brands/Business별 히어로·CTA + 소셜프루프.</p><span class="pr">PR #22</span></div>
+      <div class="feat"><div class="ic">🔥</div><h3>스트릭 · 데일리 보너스</h3><p>연속 출석 보너스 크레딧 (리텐션, KST 기준).</p><span class="pr">PR #23</span></div>
+      <div class="feat"><div class="ic">★</div><h3>Best value 배지 · 모바일</h3><p>크레딧당 산출 최고 배지 + 모바일 gen-bar 시트.</p><span class="pr">PR #24</span></div>
+      <div class="feat"><div class="ic">🪄</div><h3>Doppia 리브랜딩</h3><p>전 페이지 표시명 전환 + 세션2 문서/유틸 도입.</p><span class="pr">PR #18</span></div>
     </div>
   </section>
 
   <!-- 팀 협업 상세 -->
   <section>
-    <h2><span class="em">👥</span> 팀 협업 (4단계로 구현)</h2>
-    <div class="sec-sub">개인 모드는 그대로 두고, "팀 컨텍스트"로 전환하면 함께 작업</div>
+    <h2><span class="em">👥</span> 팀 협업 (4단계)</h2>
+    <div class="sec-sub">개인 모드는 그대로, "팀 컨텍스트"로 전환하면 함께 작업</div>
     <table>
       <tr><th>단계</th><th>내용</th><th>핵심</th></tr>
-      <tr><td>Phase 1</td><td>멤버십 · 초대</td><td>Owner/Editor/Viewer 권한, 초대 링크(메일 불필요)</td></tr>
-      <tr><td>Phase 2</td><td>공유 크레딧 풀</td><td>팀 모드 생성비는 팀 잔액에서 차감, Owner가 충전</td></tr>
+      <tr><td>Phase 1</td><td>멤버십 · 초대</td><td>Owner/Editor/Viewer 권한, 초대 링크</td></tr>
+      <tr><td>Phase 2</td><td>공유 크레딧 풀</td><td>팀 모드 생성비는 팀 잔액에서 차감</td></tr>
       <tr><td>Phase 3a</td><td>공유 캐릭터</td><td>팀 얼굴/제품을 멤버 모두가 사용</td></tr>
       <tr><td>Phase 3b</td><td>공유 갤러리</td><td>팀 생성물을 멤버 모두가 조회</td></tr>
     </table>
   </section>
 
-  <!-- 전체 현황표 -->
+  <!-- 남은 것 -->
   <section>
-    <h2><span class="em">📋</span> 전체 현황</h2>
+    <h2><span class="em">🔴</span> 남은 것 — 외부 연동 필요</h2>
+    <div class="sec-sub">새 인프라/계약이 필요해 별도 결정 대기</div>
     <table>
-      <tr><th>기능</th><th>상태</th><th>비고</th></tr>
-      <tr><td>인증 · 멀티테넌시 · 결제</td><td><span class="badge b-done">완료</span></td><td>결제는 LS 키 입력 시 동작</td></tr>
-      <tr><td>캡션 · 브랜드킷</td><td><span class="badge b-done">완료</span></td><td>로고 워터마크 합성만 추후</td></tr>
-      <tr><td>마켓플레이스</td><td><span class="badge b-done">완료</span></td><td>Virtual Models는 준비 중</td></tr>
-      <tr><td>어필리에이트</td><td><span class="badge b-done">완료</span></td><td>현금 정산은 추후</td></tr>
-      <tr><td>팀 협업</td><td><span class="badge b-done">완료</span></td><td>1·2·3a·3b 전 단계</td></tr>
-      <tr><td>대시보드(예약·분석)</td><td><span class="badge b-done">완료</span></td><td>도달/참여율은 Zernio 연동 필요</td></tr>
-      <tr><td>API 키 · Shopify</td><td><span class="badge b-hold">보류</span></td><td>Shopify Partner OAuth 필요</td></tr>
-      <tr><td>화이트라벨</td><td><span class="badge b-hold">보류</span></td><td>멀티테넌트 인프라 필요</td></tr>
-      <tr><td>UGC 립싱크 광고</td><td><span class="badge b-hold">보류</span></td><td>HeyGen/D-ID 유료 API 필요</td></tr>
+      <tr><th>기능</th><th>상태</th><th>필요 조건</th></tr>
+      <tr><td>Pro $39 구독 티어 + 게이팅</td><td><span class="badge b-hold">보류</span></td><td>Lemon Squeezy 구독 상품 (현재는 크레딧 팩만)</td></tr>
+      <tr><td>24h 50% 오퍼</td><td><span class="badge b-hold">보류</span></td><td>구독 모델에 의존</td></tr>
+      <tr><td>워터마크 업셀 (첫장 클린)</td><td><span class="badge b-hold">보류</span></td><td>이미지 합성 라이브러리</td></tr>
+      <tr><td>셀러 입구 (earnings)</td><td><span class="badge b-hold">보류</span></td><td>마켓 수익 정산 연동</td></tr>
+      <tr><td>UGC 립싱크 광고</td><td><span class="badge b-hold">보류</span></td><td>HeyGen/D-ID 유료 API</td></tr>
+      <tr><td>API 키 · Shopify · 화이트라벨</td><td><span class="badge b-hold">보류</span></td><td>Shopify OAuth · 멀티테넌트 인프라</td></tr>
     </table>
   </section>
 
@@ -177,7 +198,7 @@
   </section>
 
   <div class="foot">
-    Doppia · mock SaaS → 실서비스 전환 완료 (PR #1–#16)<br>
+    Doppia · mock SaaS → 실서비스 전환 (세션1+2, PR #1–#24)<br>
     이 페이지는 <code style="font-size:11px">/project-overview.html</code> 에서 볼 수 있어요.
   </div>
 </div>
