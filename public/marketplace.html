@@ -49,6 +49,22 @@
   .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
 
   @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card .preview{height:130px;font-size:34px}}
+
+  /* seller onboarding modal */
+  .modal-bg{position:fixed;inset:0;z-index:120;background:rgba(8,8,14,.72);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative;animation:fadeUp .35s cubic-bezier(.2,.7,.3,1);max-height:90vh;overflow-y:auto}
+  .modal .x{position:absolute;top:16px;right:16px;background:transparent;border:0;color:var(--faint);font-size:18px;cursor:pointer}
+  .modal h3{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:6px}
+  .modal .msub{font-size:13px;color:var(--dim);line-height:1.55;margin-bottom:18px}
+  .modal label{display:block;font-size:12px;font-weight:600;color:var(--faint);margin:14px 0 6px}
+  .modal input,.modal select{width:100%;font-family:inherit;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px}
+  .seg2{display:flex;gap:8px}
+  .seg2 button{flex:1;font-family:inherit;font-size:13px;font-weight:600;padding:11px;border-radius:10px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer}
+  .seg2 button.on{background:linear-gradient(120deg,var(--accent),#9b7bff);border-color:transparent;color:#fff}
+  .uploadbox{border:1.5px dashed var(--border2);border-radius:12px;padding:18px;text-align:center;font-size:13px;color:var(--dim);cursor:pointer;line-height:1.7}
+  .uploadbox small{color:var(--faint);font-size:11px}
+  .hidden{display:none}
 </style>
 </head>
 <body>
@@ -80,7 +96,7 @@
       <div class="ct">🎨 Sell your templates &amp; models</div>
       <div class="cd">Publish a template or virtual model and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
     </div>
-    <button class="btn btn-primary btn-lg" onclick="HH.toast('크리에이터 신청 (mock)')">Become a creator</button>
+    <button class="btn btn-primary btn-lg" onclick="openSell()">Become a creator</button>
   </div>
 
   <div class="tabs fade d2">
@@ -91,7 +107,37 @@
   <div class="filter-row fade d3" id="filterRow"></div>
   <div class="grid fade d3" id="grid"></div>
 
-  <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
+  <div class="affil-link fade d4">Already selling? <a onclick="location.href='/earnings.html'">View your creator earnings →</a> &nbsp;·&nbsp; Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
+</div>
+
+<div class="modal-bg" id="sellModal" onclick="if(event.target===this)closeSell()">
+  <div class="modal">
+    <button class="x" onclick="closeSell()">✕</button>
+    <div id="sellForm">
+      <h3>🎨 Become a creator</h3>
+      <p class="msub">Publish templates or virtual models and earn <b style="color:var(--cyan)">70% revenue share</b>. Apply below — our curation team reviews within 3 business days.</p>
+      <label>Creator handle</label>
+      <input id="seHandle" placeholder="@yourhandle">
+      <label>What do you want to sell?</label>
+      <div class="seg2">
+        <button class="on" data-k="template" onclick="pickSell(this)">🧩 Templates</button>
+        <button data-k="model" onclick="pickSell(this)">👤 Virtual model</button>
+      </div>
+      <label>Category</label>
+      <select id="seCat"><option>Influencer</option><option>Shopping / Product</option><option>UGC Ads</option><option>Beauty</option><option>Other</option></select>
+      <label>Sample work</label>
+      <div class="uploadbox" onclick="HH.toast('File picker (mock)')">+ Upload 1–3 samples<br><small>JPG / PNG / MP4</small></div>
+      <label>Portfolio / social link (optional)</label>
+      <input id="seLink" placeholder="https://instagram.com/...">
+      <button class="btn btn-primary" style="width:100%;margin-top:18px" onclick="submitSell()">Submit application</button>
+    </div>
+    <div id="sellDone" class="hidden" style="text-align:center">
+      <div style="font-size:42px;margin-bottom:4px">✅</div>
+      <h3>Application received</h3>
+      <p class="msub">Thanks <b id="seDoneHandle">@you</b> — our curation team will review your samples and email you within 3 business days. Approved creators get a seller dashboard and 70% revenue share.</p>
+      <button class="btn btn-primary" style="width:100%" onclick="closeSell()">Done</button>
+    </div>
+  </div>
 </div>
 
 <script src="/js/hh.js"></script>
@@ -148,8 +194,20 @@ function render(){
         </div></div>`).join('');
   }
 }
-function use(n){HH.toast('템플릿 사용 (mock): '+n);}
-function lic(n){HH.toast('가상모델 라이선스 (mock): '+n);}
+function use(n){HH.toast('Added to studio (mock): '+n);}
+function lic(n){HH.toast('Model licensed (mock): '+n);}
+// seller onboarding
+let sellKind='template';
+function openSell(){document.getElementById('sellForm').classList.remove('hidden');document.getElementById('sellDone').classList.add('hidden');document.getElementById('sellModal').classList.add('open');}
+function closeSell(){document.getElementById('sellModal').classList.remove('open');}
+function pickSell(b){document.querySelectorAll('.seg2 button').forEach(x=>x.classList.remove('on'));b.classList.add('on');sellKind=b.dataset.k;}
+function submitSell(){
+  const h=(document.getElementById('seHandle').value||'').trim();
+  if(!h){HH.toast('Enter your creator handle first',{type:'warn'});return;}
+  document.getElementById('seDoneHandle').textContent=h.startsWith('@')?h:'@'+h;
+  document.getElementById('sellForm').classList.add('hidden');
+  document.getElementById('sellDone').classList.remove('hidden');
+}
 render();
 </script>
 </body>

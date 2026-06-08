@@ -38,6 +38,17 @@
   .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700}
   .plan-card .btn{width:100%}
   .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
+  /* team band */
+  .team-band{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 26px;margin-bottom:46px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(94,224,214,.08),rgba(124,108,255,.08))}
+  .team-band .tb-tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 10px;border-radius:7px;background:rgba(94,224,214,.16);color:var(--cyan);margin-bottom:8px}
+  .team-band .tb-title{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
+  .team-band .tb-desc{font-size:13px;color:var(--dim);max-width:440px;line-height:1.5}
+  .team-band .tb-price{text-align:right;min-width:240px}
+  .team-band .tbp{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
+  .team-band .tbp span{font-size:13px;font-weight:500;color:var(--faint)}
+  .team-band .tb-meta{font-size:12px;color:var(--dim);margin:4px 0 12px}
+  .team-band .tb-cta{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  @media(max-width:620px){.team-band .tb-price{text-align:left;min-width:0}.team-band .tb-cta{justify-content:flex-start}}
 
   .packs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   @media(max-width:760px){.packs{grid-template-columns:1fr}}
@@ -157,6 +168,22 @@
     </div>
   </div>
 
+  <div class="team-band glass fade d3">
+    <div class="tb-info">
+      <div class="tb-tag">👥 TEAM</div>
+      <div class="tb-title">Scaling across a team or agency?</div>
+      <div class="tb-desc">Shared credit pool, per-seat roles, and one invoice — sits between Brand and full White-label. Add or remove seats anytime.</div>
+    </div>
+    <div class="tb-price">
+      <div class="tbp">$199<span> /mo</span></div>
+      <div class="tb-meta">3 seats included · shared pool ◈2,000 · +$15 / extra seat · SSO &amp; invoicing</div>
+      <div class="tb-cta">
+        <button class="btn btn-primary" onclick="joinTeamBeta()">Join Team beta</button>
+        <button class="btn btn-ghost" onclick="location.href='/business.html'">Manage team →</button>
+      </div>
+    </div>
+  </div>
+
   <div class="section-label fade d3">Top-up credit packs (one-time)</div>
   <div class="packs fade d4">
     <div class="pack-card glass"><div class="amt">◈ 50</div><div class="ppc">$0.10 / credit</div><div class="price">$5</div><button class="btn btn-ghost" onclick="checkout('pack','50 credits — $5')">Buy</button></div>
@@ -236,6 +263,7 @@ function checkout(type,label){
   const cyc = type==='plan' ? (CYCLE==='y'?' (annual)':' (monthly)') : '';
   HH.toast('Stripe Checkout (mock): '+label+cyc);
 }
+function joinTeamBeta(){HH.toast("You're on the Team beta list — we'll email priority access (mock)");}
 </script>
 </body>
 </html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HeyHoAI · Creator earnings</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<style>
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
+  .sub b{color:var(--cyan)}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+  .stat{padding:20px;text-align:center}
+  .stat .n{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
+  .stat .n.gold{color:var(--gold)}
+  .stat .d{font-size:11.5px;color:var(--cyan);margin-top:3px}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
+
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+  .row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:12px}
+
+  .items{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:38px}
+  .irow{display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 0.9fr;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .irow:last-child{border-bottom:0}
+  .irow.head{background:rgba(255,255,255,.03);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+  .irow .nm{display:flex;align-items:center;gap:11px;font-weight:600}
+  .irow .ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+  .irow .sub2{font-size:11px;color:var(--faint);font-weight:500}
+  .irow .gold{color:var(--gold);font-weight:700;font-family:'Sora'}
+  .pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.4px}
+  .pill.live{background:rgba(94,224,214,.16);color:var(--cyan)}
+  .pill.review{background:rgba(255,206,122,.18);color:var(--gold)}
+  .r-amt{text-align:right}
+
+  .payout{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:20px 24px}
+  .payout .pi{font-size:13px;color:var(--dim)}
+  .payout .pi b{color:var(--text);font-size:15px;display:block;margin-top:2px;font-family:'Sora';font-weight:700}
+
+  .affil-link{margin-top:28px;font-size:13px;color:var(--dim);text-align:center}
+  .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
+
+  @media(max-width:640px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .irow{grid-template-columns:1.6fr 1fr 1fr;font-size:12.5px}
+    .irow .col-uses,.irow.head .col-uses{display:none}
+    .irow .col-rev{text-align:right}
+  }
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a onclick="location.href='/gallery.html'">Gallery</a>
+      <a onclick="location.href='/billing.html'">Billing</a>
+      <a onclick="location.href='/business.html'">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span class="cr-bal">42</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="fade d1">Creator earnings</h1>
+  <div class="sub fade d1">Track every template &amp; model you've published. You keep <b>70% revenue share</b> on every use — paid out monthly.</div>
+
+  <div class="stats fade d2">
+    <div class="stat glass"><div class="n gold">$2,184</div><div class="d">▲ 22%</div><div class="l">Lifetime earned</div></div>
+    <div class="stat glass"><div class="n">$386</div><div class="d">▲ 14%</div><div class="l">This month</div></div>
+    <div class="stat glass"><div class="n">$214</div><div class="l">Pending payout</div></div>
+    <div class="stat glass"><div class="n">6</div><div class="l">Items live</div></div>
+  </div>
+
+  <div class="row-head fade d3">
+    <div class="section-label" style="margin:0">Your published items</div>
+    <button class="btn btn-primary" onclick="location.href='/marketplace.html'">+ Publish new</button>
+  </div>
+  <div class="items glass fade d3" id="itemList"></div>
+
+  <div class="payout glass fade d4">
+    <div class="pi">Next payout<b>2026-07-01</b></div>
+    <div class="pi">Pending<b style="color:var(--gold)">$214</b></div>
+    <div class="pi">Revenue share<b>70%</b></div>
+    <div class="pi">Payout method<b>Stripe / PayPal</b></div>
+  </div>
+
+  <div class="affil-link fade d4">Also referring others? <a onclick="location.href='/affiliate.html'">See your affiliate earnings →</a></div>
+</div>
+
+<script src="/js/hh.js"></script>
+<script>
+const ITEMS=[
+  {name:'Golden Hour Pro',type:'Template · Photo',uses:'12.4k',rev:'$884',status:'live',emoji:'🌅',grad:'g1'},
+  {name:'Mia — Lifestyle',type:'Virtual model',uses:'18.2k',rev:'$612',status:'live',emoji:'👩🏻',grad:'g6'},
+  {name:'GRWM Cinematic',type:'Template · Reel',uses:'8.1k',rev:'$401',status:'live',emoji:'💋',grad:'g3'},
+  {name:'UGC Testimonial Hook',type:'Template · Ad',uses:'4.2k',rev:'$208',status:'live',emoji:'🗣️',grad:'g7'},
+  {name:'Aesthetic Cafe',type:'Template · Photo',uses:'7.3k',rev:'$79',status:'live',emoji:'☕',grad:'g8'},
+  {name:'Y2K Film Pack',type:'Template · Photo',uses:'—',rev:'—',status:'review',emoji:'📸',grad:'g4'}
+];
+document.getElementById('itemList').innerHTML =
+  `<div class="irow head"><div>Item</div><div class="col-uses">Uses</div><div class="r-amt col-rev">Your earnings</div><div class="r-amt">Status</div></div>`+
+  ITEMS.map(i=>`<div class="irow">
+    <div class="nm"><div class="ic ${i.grad}">${i.emoji}</div><div>${i.name}<div class="sub2">${i.type}</div></div></div>
+    <div class="col-uses">${i.uses}</div>
+    <div class="r-amt col-rev gold">${i.rev}</div>
+    <div class="r-amt"><span class="pill ${i.status}">${i.status==='live'?'Live':'In review'}</span></div>
+  </div>`).join('');
+</script>
+</body>
+</html>
