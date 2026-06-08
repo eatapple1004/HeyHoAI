@@ -3,15 +3,15 @@
 구성: **Cloudflare(주황 프록시, Full Strict)** → **nginx(443, Origin 인증서)** → **Doppia 앱(127.0.0.1:3000, PM2)**
 
 > EC2에는 다른 앱이 자기 포트로 같이 떠 있음 — nginx는 도메인(server_name)으로 구분하므로
-> doppia.ai 트래픽만 :3000으로 보내고, 다른 앱(다른 포트)은 그대로 둠. `<EC2_IP>`는 EC2 퍼블릭 IP.
+> doppia.ai 트래픽만 :3000으로 보내고, 다른 앱(다른 포트)은 그대로 둠. `13.209.72.131`는 EC2 퍼블릭 IP.
 
 ---
 
 ## 1. Cloudflare — doppia.ai 존 추가 + DNS
 1. Cloudflare에 **doppia.ai** 사이트 추가 → 도메인 등록기관 네임서버를 Cloudflare 것으로 변경.
 2. DNS 레코드 (둘 다 **Proxied / 주황 구름**):
-   - `A`  `@`    → `<EC2_IP>`
-   - `A`  `www`  → `<EC2_IP>`
+   - `A`  `@`    → `13.209.72.131`
+   - `A`  `www`  → `13.209.72.131`
    > EC2 퍼블릭 IP는 재부팅 시 바뀔 수 있음 → **Elastic IP(고정 IP)** 할당 후 그 값 사용 권장.
 
 ## 2. Cloudflare — SSL/TLS
