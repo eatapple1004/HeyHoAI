@@ -1,4 +1,4 @@
-/* HeyHoAI — 공유 클라이언트 상태 + 토스트 (mock)
+/* Doppia — 공유 클라이언트 상태 + 토스트 (mock)
  * 모든 페이지가 <script src="/js/hh.js"></script>로 포함.
  * - 크레딧 단일 소스(localStorage 'hh_credits', 신규=10) → 페이지 간 잔액 불일치 제거
  * - HH.toast(): alert 대체 인라인 토스트 (한국어 alert 혼재 정리)

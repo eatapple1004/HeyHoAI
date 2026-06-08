@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI · Studio</title>
+<title>Doppia · Studio</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
   .wrap{max-width:1080px;margin:0 auto;padding:36px 24px 210px;position:relative;z-index:2}
@@ -195,7 +195,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b><span class="sfx">· Studio</span></div>
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b><span class="sfx">· Studio</span></div>
     <div class="nav-links">
       <a class="active">Studio</a>
       <a onclick="location.href='/marketplace.html'">Market</a>
@@ -692,7 +692,7 @@ function generate(){
       const qBadge = qSuffix ? `<span class="type-badge" style="top:10px;left:10px">${qSuffix.replace(' · ','')}</span>` : '';
       const bBadge = brand ? `<span class="type-badge" style="bottom:10px;left:10px;top:auto">🎨 Brand</span>` : '';
       h+=`<div class="result-card"><div class="img" style="background:${g[i%4]}">${r.type==='reel'?'▶':'🖼️'}</div>
-        ${(HH.plan==='free'&&localStorage.getItem('hh_firstDone'))?'<span class="wm">HeyHoAI ◈</span>':''}${qBadge}${vBadge}${bBadge}
+        ${(HH.plan==='free'&&localStorage.getItem('hh_firstDone'))?'<span class="wm">Doppia ◈</span>':''}${qBadge}${vBadge}${bBadge}
         <div class="actions"><button onclick="HH.toast('다운로드 시작 (mock)')">⬇ Download</button><button onclick="HH.toast('인스타그램 공유 (mock)')">↗ Post</button></div></div>`;}
     document.getElementById('resultsGrid').innerHTML=h;
     if(document.getElementById('aCaption').classList.contains('on'))renderCaption();
