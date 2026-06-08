@@ -42,7 +42,16 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
     // 스타일 프리셋 적용
     const styled = await styleRepo.applyStyle(style, prompt);
-    const finalPrompt = styled.prompt;
+    let finalPrompt = styled.prompt;
+
+    // 브랜드킷: 활성화 시 브랜드 색상을 톤 힌트로 주입
+    if (req.body.brandKit === 'true' || req.body.brandKit === true) {
+      const { getBrandKit } = require('../brandkit/brandkit.route');
+      const bk = await getBrandKit(req.user.id);
+      if (bk.enabled && bk.primary_color) {
+        finalPrompt += `, subtle brand color accent of ${bk.primary_color} in the styling and tones, cohesive on-brand aesthetic`;
+      }
+    }
 
     // Reference 이미지 결정 (최대 14개)
     const referenceImages = []; // { base64, source }
@@ -255,6 +264,60 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
         : null,
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+// ─── 캡션 + 해시태그 생성 (Claude, 다국어) ───
+const CAPTION_LANGS = { en: 'English', ko: 'Korean', ja: 'Japanese', es: 'Spanish', pt: 'Portuguese', zh: 'Chinese' };
+
+router.post('/caption', async (req, res, next) => {
+  const creditService = require('../credits/credit.service');
+  let charge = null;
+  try {
+    const { context, language = 'en', characterId, mediaType = 'image' } = req.body || {};
+    if (!context || !String(context).trim()) {
+      return res.status(400).json({ success: false, error: 'context is required' });
+    }
+    const lang = CAPTION_LANGS[language] ? language : 'en';
+
+    // 캐릭터가 있으면 그 persona를, 없으면 일반 크리에이터 persona를 사용
+    let persona = {
+      name: 'Creator',
+      personality: ['natural', 'friendly', 'authentic'],
+      voiceGuidelines: { tone: 'casual', emojiStyle: 'moderate', captionLength: 'short' },
+      brandSafety: { targetAudience: '18-35' },
+      instagramProfile: {},
+    };
+    if (characterId) {
+      await assertCharacterOwned(characterId, req.user.id);
+      const character = await characterRepo.findById(characterId);
+      if (character?.persona) persona = character.persona;
+    }
+
+    // 크레딧 차감 (admin 면제, 부족 시 402)
+    charge = await creditService.chargeForGeneration(
+      req.user,
+      creditService.COSTS.caption,
+      `캡션 생성 (${CAPTION_LANGS[lang]})`
+    );
+
+    const { generateCaption } = require('../publishing/caption.service');
+    const result = await generateCaption({
+      persona,
+      mediaType,
+      mediaContext: String(context).slice(0, 1000),
+      language: CAPTION_LANGS[lang],
+    });
+
+    res.json({
+      success: true,
+      data: { caption: result.caption, hashtags: result.hashtags, callToAction: result.callToAction },
+      credits: charge ? { charged: charge.amount, balance: await creditService.getBalance(req.user.id) } : null,
+    });
+  } catch (err) {
+    if (charge) await charge.refund();
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
 });

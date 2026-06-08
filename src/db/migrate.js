@@ -611,6 +611,18 @@ async function migrate() {
   // ─── 크레딧/결제 ───
   await migrateCredits();
 
+  // ─── 브랜드킷 ───
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS brand_kits (
+        user_id       UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        logo_url      TEXT,
+        primary_color VARCHAR(20),
+        font_name     VARCHAR(50),
+        enabled       BOOLEAN NOT NULL DEFAULT false,
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
   console.log('Migrations completed.');
 }
 
