@@ -16,6 +16,10 @@ const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+// Cloudflare/nginx 등 리버스 프록시 뒤에서 req.protocol/secure가 X-Forwarded-Proto를 따르도록.
+// (HTTPS 도메인에서 secure 쿠키, 결제 redirect/팀 초대 링크가 https로 정확히 생성됨)
+app.set('trust proxy', 1);
+
 // Lemon Squeezy webhook은 서명 검증을 위해 raw body가 필요 → express.json보다 먼저 마운트
 const { webhookHandler } = require('./billing/billing.route');
 app.post('/api/billing/webhook', express.raw({ type: '*/*' }), webhookHandler);
