@@ -86,17 +86,14 @@ async function addCredits(userId, amount, opts) {
 }
 
 /**
- * 생성 비용 차감. admin은 과금하지 않는다(기존 운영 플로우 보존).
+ * 범용 크레딧 차감. admin은 과금하지 않는다(기존 운영 플로우 보존).
  * @returns {Promise<{amount:number, balanceAfter:number, refund:Function}|null>}
  *   null = 과금 면제(admin). refund()는 실패 시 전액 환불.
  */
-async function chargeForGeneration(user, amount, description, refId = null) {
+async function charge(user, amount, { type = 'generation', description = '', refId = null } = {}) {
   if (!user || user.role === 'admin') return null;
-  const balanceAfter = await applyDelta(user.id, -amount, {
-    type: 'generation',
-    description,
-    refId,
-  });
+  if (amount <= 0) return null;
+  const balanceAfter = await applyDelta(user.id, -amount, { type, description, refId });
   let refunded = false;
   return {
     amount,
@@ -111,6 +108,11 @@ async function chargeForGeneration(user, amount, description, refId = null) {
       }).catch(() => {});
     },
   };
+}
+
+/** 생성 비용 차감 (charge의 generation 래퍼) */
+function chargeForGeneration(user, amount, description, refId = null) {
+  return charge(user, amount, { type: 'generation', description, refId });
 }
 
 /** 가입 보너스 지급 */
@@ -129,6 +131,7 @@ module.exports = {
   getBalance,
   getLedger,
   addCredits,
+  charge,
   chargeForGeneration,
   grantSignupBonus,
 };

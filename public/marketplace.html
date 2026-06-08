@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>HeyHoAI · Marketplace</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
+<script src="/saas-auth.js" defer></script>
 <style>
   .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
@@ -65,9 +66,10 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span id="navBalance">—</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
+    <div class="credits" id="saasUserBox"></div>
   </div>
 </nav>
 
@@ -77,10 +79,10 @@
 
   <div class="creator-cta glass fade d2">
     <div>
-      <div class="ct">🎨 Sell your templates &amp; models</div>
-      <div class="cd">Publish a template or virtual model and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
+      <div class="ct">🎨 Sell your templates</div>
+      <div class="cd">Publish a template and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
     </div>
-    <button class="btn btn-primary btn-lg" onclick="alert('크리에이터 신청 (mock) → /api/marketplace/apply')">Become a creator</button>
+    <button class="btn btn-primary btn-lg" id="creatorBtn" onclick="creatorAction()">Become a creator</button>
   </div>
 
   <div class="tabs fade d2">
@@ -94,62 +96,134 @@
   <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
 </div>
 
+<!-- 템플릿 게시 모달 -->
+<div class="modal-bg" id="pubModal" onclick="if(event.target===this)closePub()" style="position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px">
+  <div class="modal glass" style="width:min(480px,100%);border-radius:20px;padding:26px;position:relative">
+    <button class="x" onclick="closePub()" style="position:absolute;top:15px;right:18px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none">✕</button>
+    <h3 style="font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px">🧩 Publish a template</h3>
+    <div style="font-size:13px;color:var(--dim);margin-bottom:18px">사용자가 이 템플릿을 쓸 때마다 사용료의 70%를 받습니다.</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input id="pName" placeholder="Template name" class="fld">
+      <textarea id="pPrompt" placeholder="Prompt — 어떤 장면/스타일을 만들지 설명" class="fld" style="min-height:80px;resize:vertical"></textarea>
+      <div style="display:flex;gap:10px">
+        <select id="pCat" class="fld"><option>Influencer</option><option>Shopping</option></select>
+        <select id="pType" class="fld"><option value="image">Photo</option><option value="reel">Reel</option></select>
+      </div>
+      <div style="display:flex;gap:10px">
+        <select id="pStyle" class="fld"><option>Natural</option><option>Fashion</option><option>Portrait</option><option>Glamour</option><option>Cinematic</option><option>Film</option><option>Street</option></select>
+        <input id="pEmoji" placeholder="🎨" maxlength="4" class="fld" style="width:70px;text-align:center">
+        <input id="pPrice" type="number" min="0" max="100" value="0" class="fld" style="width:120px" title="사용료(크레딧)">
+      </div>
+      <div style="font-size:11.5px;color:var(--faint)">사용료 ◈는 생성 비용과 별도로 사용자에게 부과됩니다. 0이면 무료 템플릿.</div>
+      <button class="btn btn-primary" style="width:100%" onclick="publishTemplate(this)">Publish</button>
+    </div>
+  </div>
+</div>
+<style>.fld{font-family:inherit;background:rgba(0,0,0,.25);border:1px solid var(--border2);color:var(--text);border-radius:11px;padding:11px 13px;font-size:14px;flex:1}.fld:focus{outline:none;border-color:var(--accent)}</style>
+
 <script>
-const TEMPLATES=[
-  {name:'Golden Hour Pro',cat:'Influencer',creator:'@lindastudio',price:2,uses:'12.4k',rating:'4.9',emoji:'🌅',grad:'g1',badge:'Photo'},
-  {name:'GRWM Cinematic',cat:'Influencer',creator:'@mireels',price:6,uses:'8.1k',rating:'4.8',emoji:'💋',grad:'g6',badge:'Reel'},
-  {name:'Lookbook Studio',cat:'Shopping',creator:'@studio.kr',price:2,uses:'6.7k',rating:'4.9',emoji:'📷',grad:'g2',badge:'Photo'},
-  {name:'UGC Testimonial Hook',cat:'UGC',creator:'@adcraft',price:8,uses:'4.2k',rating:'4.7',emoji:'🗣️',grad:'g3',badge:'Ad'},
-  {name:'Y2K Film Pack',cat:'Influencer',creator:'@retrofilm',price:2,uses:'9.9k',rating:'4.8',emoji:'📸',grad:'g4',badge:'Photo'},
-  {name:'Product Demo Pro',cat:'UGC',creator:'@adcraft',price:8,uses:'3.5k',rating:'4.6',emoji:'📦',grad:'g7',badge:'Ad'},
-  {name:'Aesthetic Cafe',cat:'Influencer',creator:'@cozyvibes',price:2,uses:'7.3k',rating:'4.9',emoji:'☕',grad:'g8',badge:'Photo'},
-  {name:'Flat-lay Detail',cat:'Shopping',creator:'@studio.kr',price:2,uses:'2.9k',rating:'4.7',emoji:'🪞',grad:'g5',badge:'Photo'}
-];
-const MODELS=[
-  {name:'Mia — Lifestyle',tier:'Standard',price:'◈ 3',unit:'/use',uses:'18.2k',rating:'4.9',emoji:'👩🏻',grad:'g6'},
-  {name:'Leo — Streetwear',tier:'Standard',price:'◈ 3',unit:'/use',uses:'11.5k',rating:'4.8',emoji:'👨🏽',grad:'g2'},
-  {name:'Aria — Luxury',tier:'Exclusive',price:'$49',unit:'/mo',uses:'5.1k',rating:'5.0',emoji:'💃🏻',grad:'g5'},
-  {name:'Kai — Fitness',tier:'Standard',price:'◈ 3',unit:'/use',uses:'7.8k',rating:'4.7',emoji:'🏋🏻',grad:'g7'},
-  {name:'Yuna — Beauty',tier:'Exclusive',price:'$49',unit:'/mo',uses:'9.0k',rating:'4.9',emoji:'💄',grad:'g3'},
-  {name:'Noah — Casual',tier:'Standard',price:'◈ 3',unit:'/use',uses:'4.4k',rating:'4.6',emoji:'🧑🏼',grad:'g4'}
-];
-let tab='templates',filter='All';
+// ═══ 실제 연결: /api/marketplace ═══
+let tab='templates',filter='All',IS_CREATOR=false,TEMPLATES=[];
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const GRAD=['g1','g2','g3','g4','g5','g6','g7','g8'];
+function gradFor(id){let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))%GRAD.length;return GRAD[h];}
+function fmtUses(n){return n>=1000?(n/1000).toFixed(1)+'k':String(n);}
+
+async function loadBalance(){
+  try{const d=await(await fetch('/api/credits')).json();if(d.success)document.getElementById('navBalance').textContent=d.data.unlimited?'∞':d.data.balance;}catch(e){}
+}
+async function loadMe(){
+  try{const d=await(await fetch('/api/marketplace/me')).json();if(d.success){IS_CREATOR=d.data.isCreator;reflectCreator();}}catch(e){}
+}
+function reflectCreator(){
+  document.getElementById('creatorBtn').textContent=IS_CREATOR?'+ Publish template':'Become a creator';
+}
+function creatorAction(){ IS_CREATOR ? openPub() : applyCreator(); }
+async function applyCreator(){
+  if(!confirm('크리에이터로 등록하시겠어요? 나만의 템플릿을 게시하고 수익을 받을 수 있어요.'))return;
+  try{const d=await(await fetch('/api/marketplace/apply',{method:'POST'})).json();
+    if(d.success){IS_CREATOR=true;reflectCreator();alert('크리에이터로 등록됐어요! 이제 "+ Publish template"로 템플릿을 올릴 수 있어요.');}}catch(e){alert('신청 실패');}
+}
+
+async function loadTemplates(){
+  const q=filter==='All'?'':('?category='+encodeURIComponent(filter));
+  try{const d=await(await fetch('/api/marketplace/templates'+q)).json();if(d.success){TEMPLATES=d.data;render();}}catch(e){}
+}
 function setTab(t){tab=t;filter='All';
   document.getElementById('tabTemplates').classList.toggle('on',t==='templates');
-  document.getElementById('tabModels').classList.toggle('on',t==='models');render();}
-function setFilter(f){filter=f;render();}
+  document.getElementById('tabModels').classList.toggle('on',t==='models');
+  if(t==='templates')loadTemplates();else render();}
+function setFilter(f){filter=f;loadTemplates();}
 function render(){
   const fr=document.getElementById('filterRow'),grid=document.getElementById('grid');
   if(tab==='templates'){
     fr.style.display='';
     const cats=['All','Influencer','Shopping','UGC'];
-    fr.innerHTML=cats.map(c=>`<div class="chip ${filter===c?'active':''}" onclick="setFilter('${c}')">${c}</div>`).join('');
-    grid.innerHTML=TEMPLATES.filter(t=>filter==='All'||t.cat===filter).map(t=>`
+    fr.innerHTML=cats.map(c=>`<div class="chip ${filter===c?'active':''}" onclick="setFilter('${c}')">${esc(c)}</div>`).join('');
+    if(!TEMPLATES.length){grid.innerHTML=`<div style="grid-column:1/-1;color:var(--faint);padding:40px 0;text-align:center">템플릿이 없어요.</div>`;return;}
+    grid.innerHTML=TEMPLATES.map(t=>`
       <div class="card">
-        <div class="preview ${t.grad}"><span class="badge">${t.badge}</span>${t.emoji}</div>
+        <div class="preview ${gradFor(t.id)}"><span class="badge">${t.type==='reel'?'Reel':'Photo'}</span>${esc(t.emoji||'🎨')}</div>
         <div class="meta">
-          <div class="rname">${t.name}</div>
-          <div class="creator">by <b>${t.creator}</b></div>
-          <div class="statline">⭐ ${t.rating} · ${t.uses} uses</div>
-          <div class="foot"><div class="price">◈ ${t.price}<small> /use</small></div>
-            <button class="btn btn-primary" onclick="use('${t.name}')">Use</button></div>
+          <div class="rname">${esc(t.name)}</div>
+          <div class="creator">by <b>${esc(t.creator_handle)}</b>${t.is_official?' · ✓ official':''}${t.mine?' · 나':''}</div>
+          <div class="statline">${fmtUses(t.usage_count)} uses</div>
+          <div class="foot"><div class="price">${t.price_credits>0?'◈ '+t.price_credits+'<small> /use</small>':'<small style="color:var(--cyan)">Free</small>'}</div>
+            ${t.mine?`<button class="btn btn-ghost" onclick="unpublish('${t.id}',this)">Remove</button>`:`<button class="btn btn-primary" onclick="useTemplate('${t.id}',this)">Use</button>`}</div>
         </div></div>`).join('');
   } else {
     fr.style.display='none';
-    grid.innerHTML=MODELS.map(m=>`
-      <div class="card">
-        <div class="preview ${m.grad}"><span class="badge ${m.tier==='Exclusive'?'excl':''}">${m.tier}</span>${m.emoji}</div>
-        <div class="meta">
-          <div class="rname">${m.name}</div>
-          <div class="statline">⭐ ${m.rating} · ${m.uses} licensed</div>
-          <div class="foot"><div class="price">${m.price}<small> ${m.unit}</small></div>
-            <button class="btn btn-primary" onclick="lic('${m.name}')">License</button></div>
-        </div></div>`).join('');
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--faint)">
+      <div style="font-size:40px;margin-bottom:14px">👤</div>
+      <div style="font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px">Virtual Models — Coming soon</div>
+      <div style="font-size:14px">다른 크리에이터의 AI 모델을 라이선스해 쓰는 기능을 준비 중이에요.</div></div>`;
   }
 }
-function use(n){alert('템플릿 사용 (mock): '+n+'\n→ Studio로 이동해 적용 + 크리에이터에게 수익 분배');}
-function lic(n){alert('가상모델 라이선스 (mock): '+n);}
-render();
+async function useTemplate(id,btn){
+  btn.disabled=true;const o=btn.textContent;btn.textContent='…';
+  try{
+    const d=await(await fetch('/api/marketplace/templates/'+id+'/use',{method:'POST'})).json();
+    if(!d.success){alert(d.error||'사용할 수 없습니다.');btn.disabled=false;btn.textContent=o;return;}
+    // 스튜디오에서 적용하도록 전달
+    sessionStorage.setItem('mkTemplate',JSON.stringify(d.data));
+    location.href='/studio.html';
+  }catch(e){alert('오류가 발생했습니다.');btn.disabled=false;btn.textContent=o;}
+}
+async function unpublish(id,btn){
+  if(!confirm('이 템플릿을 마켓에서 내릴까요?'))return;
+  btn.disabled=true;
+  try{const d=await(await fetch('/api/marketplace/templates/'+id,{method:'DELETE'})).json();
+    if(d.success)loadTemplates();else alert(d.error||'실패');}catch(e){alert('실패');}
+}
+
+// 게시 모달
+function openPub(){document.getElementById('pubModal').style.display='flex';}
+function closePub(){document.getElementById('pubModal').style.display='none';}
+async function publishTemplate(btn){
+  const body={
+    name:document.getElementById('pName').value.trim(),
+    prompt:document.getElementById('pPrompt').value.trim(),
+    category:document.getElementById('pCat').value,
+    type:document.getElementById('pType').value,
+    style:document.getElementById('pStyle').value,
+    emoji:document.getElementById('pEmoji').value.trim()||'🎨',
+    priceCredits:parseInt(document.getElementById('pPrice').value,10)||0,
+  };
+  if(!body.name||!body.prompt){alert('이름과 프롬프트를 입력해 주세요.');return;}
+  btn.disabled=true;btn.textContent='Publishing…';
+  try{
+    const d=await(await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+    if(!d.success){alert(d.error||'게시 실패');return;}
+    closePub();
+    ['pName','pPrompt','pEmoji'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('pPrice').value='0';
+    setTab('templates');
+  }catch(e){alert('게시 중 오류');}
+  finally{btn.disabled=false;btn.textContent='Publish';}
+}
+
+loadBalance();loadMe();loadTemplates();
 </script>
 </body>
 </html>

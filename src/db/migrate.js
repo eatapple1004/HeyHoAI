@@ -623,7 +623,54 @@ async function migrate() {
     );
   `);
 
+  // ─── 마켓플레이스 (템플릿 판매 + 수익분배) ───
+  await migrateMarketplace();
+
   console.log('Migrations completed.');
+}
+
+/**
+ * 마켓플레이스: 크리에이터 플래그 + 템플릿 카탈로그. 비어있을 때만 공식 템플릿 시드. (멱등)
+ */
+async function migrateMarketplace() {
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_creator BOOLEAN NOT NULL DEFAULT false;`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS marketplace_templates (
+        id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        creator_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+        creator_handle VARCHAR(80) NOT NULL DEFAULT '@heyhoai',
+        name           VARCHAR(120) NOT NULL,
+        category       VARCHAR(20) NOT NULL,   -- Influencer | Shopping | UGC
+        type           VARCHAR(10) NOT NULL DEFAULT 'image', -- image | reel
+        style          VARCHAR(50) NOT NULL DEFAULT 'Natural',
+        prompt         TEXT NOT NULL,
+        emoji          VARCHAR(8) DEFAULT '🎨',
+        price_credits  INT NOT NULL DEFAULT 0,  -- 크리에이터 사용료(생성비와 별도)
+        usage_count    INT NOT NULL DEFAULT 0,
+        status         VARCHAR(20) NOT NULL DEFAULT 'active',
+        is_official    BOOLEAN NOT NULL DEFAULT false,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_marketplace_category ON marketplace_templates(category, status);
+    CREATE INDEX IF NOT EXISTS idx_marketplace_creator ON marketplace_templates(creator_id);
+  `);
+
+  // 공식 템플릿 시드 (한 번만)
+  const existing = await pool.query(`SELECT 1 FROM marketplace_templates WHERE is_official LIMIT 1`);
+  if (existing.rowCount === 0) {
+    await pool.query(`
+      INSERT INTO marketplace_templates (creator_handle, name, category, type, style, emoji, price_credits, usage_count, is_official, prompt) VALUES
+        ('@heyhoai', 'Golden Hour Pro',     'Influencer', 'image', 'Natural',   '🌅', 0, 1240, true, 'golden hour on a rooftop terrace, warm orange sunlight, candid travel snapshot, wind in hair, looking into the distance, city skyline in background'),
+        ('@heyhoai', 'Y2K Film Selfie',     'Influencer', 'image', 'Film',      '📸', 0,  990, true, 'y2k style mirror selfie, compact digital camera with flash, retro 2000s fashion, playful pose, slight motion blur'),
+        ('@heyhoai', 'Aesthetic Cafe',      'Influencer', 'image', 'Portrait',  '☕', 0,  730, true, 'cozy indoor cafe, warm ambient lighting, holding a coffee cup with both hands, soft natural smile, window light from the side'),
+        ('@heyhoai', 'Editorial Glam',      'Influencer', 'image', 'Glamour',   '💄', 0,  610, true, 'high-end editorial look, designer outfit, dramatic studio lighting, confident expression, magazine cover quality'),
+        ('@heyhoai', 'GRWM Cinematic',      'Influencer', 'reel',  'Natural',   '💋', 0,  810, true, 'getting ready in front of a vanity mirror, applying makeup, soft morning light, casual intimate vlog feel, subtle natural movement'),
+        ('@heyhoai', 'Lookbook Studio',     'Shopping',   'image', 'Fashion',   '📷', 0,  670, true, 'clean studio product photography, the product on a minimal pedestal, soft even lighting, premium lookbook style'),
+        ('@heyhoai', 'Lifestyle Mood Shot', 'Shopping',   'image', 'Natural',   '🌿', 0,  430, true, 'the product placed in a cozy lifestyle scene, morning light through a window, plants and natural textures around, aesthetic instagram mood'),
+        ('@heyhoai', 'Product Reel',        'Shopping',   'reel',  'Cinematic', '🎞️', 0,  350, true, 'slow cinematic camera orbit around the product, soft light sweeping across, premium aesthetic mood, shallow depth of field')
+    `);
+  }
 }
 
 /**

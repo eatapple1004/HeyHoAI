@@ -598,10 +598,31 @@ async function generateCaptionBlock(r,subj){
   }catch(e){box.querySelector('.ctext').textContent='⚠ 캡션 생성 중 오류가 발생했어요.';}
 }
 
+// 마켓플레이스에서 "Use"로 넘어온 템플릿 적용
+function applyPendingTemplate(){
+  let raw;try{raw=sessionStorage.getItem('mkTemplate');}catch(e){return;}
+  if(!raw)return;
+  sessionStorage.removeItem('mkTemplate');
+  let t;try{t=JSON.parse(raw);}catch(e){return;}
+  const mode={Influencer:'influencer',Shopping:'shopping',UGC:'ugc'}[t.category]||'influencer';
+  if(mode==='ugc'){return;} // UGC는 미지원
+  const id='mk_'+(t.id||Date.now());
+  // 이미 주입돼 있으면 중복 방지
+  if(!TEMPLATES[mode].some(r=>r.id===id)){
+    TEMPLATES[mode].unshift({id,cat:'⭐ From Market',name:t.name,type:t.type||'image',
+      style:t.style||'Natural',emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ff7eb6)',prompt:t.prompt});
+  }
+  setMode(mode);
+  state.recipeId=id;state.filter='All';
+  renderFilters();renderRecipes();updateBar();
+  document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 setMode('influencer');
 loadSubjects();
 loadCredits();
 loadBrandkit();
+applyPendingTemplate();
 </script>
 </body>
 </html>
