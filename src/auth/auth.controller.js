@@ -25,6 +25,15 @@ async function signup(req, res, next) {
   try {
     const { email, password, displayName } = req.body || {};
     const user = await authService.signup({ email, password, displayName });
+
+    // 추천 쿠키가 있으면 추천 관계 연결 (실패해도 가입은 성공)
+    const refCode = req.cookies && req.cookies.ref;
+    if (refCode) {
+      const affiliateService = require('../affiliate/affiliate.service');
+      await affiliateService.linkReferral(refCode, user.id).catch(() => {});
+      res.clearCookie('ref', { path: '/' });
+    }
+
     setAuthCookie(res, user);
     res.status(201).json({ success: true, data: user });
   } catch (err) {

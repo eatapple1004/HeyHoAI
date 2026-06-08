@@ -42,6 +42,20 @@ app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'landing.html'));
 });
 
+// 추천 링크 — 클릭 기록 + 쿠키 60일 후 랜딩으로 (공개)
+app.get('/r/:code', async (req, res) => {
+  const affiliateService = require('./affiliate/affiliate.service');
+  try {
+    const ok = await affiliateService.recordClick(req.params.code);
+    if (ok) {
+      res.cookie(affiliateService.REF_COOKIE, req.params.code, {
+        httpOnly: true, sameSite: 'lax', maxAge: affiliateService.REF_COOKIE_MAX_AGE, path: '/',
+      });
+    }
+  } catch { /* 추적 실패해도 진행 */ }
+  res.redirect('/');
+});
+
 // 공개 인증 페이지 (게이팅 없음)
 app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
@@ -101,6 +115,7 @@ app.use('/api/credits', requireAuth, require('./credits/credit.route'));
 app.use('/api/billing', requireAuth, require('./billing/billing.route').router);
 app.use('/api/brand-kit', requireAuth, require('./brandkit/brandkit.route').router);
 app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.route').router);
+app.use('/api/affiliate', requireAuth, require('./affiliate/affiliate.route').router);
 
 // Health check
 app.get('/health', (_req, res) => {

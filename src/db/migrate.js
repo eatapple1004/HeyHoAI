@@ -626,7 +626,47 @@ async function migrate() {
   // ─── 마켓플레이스 (템플릿 판매 + 수익분배) ───
   await migrateMarketplace();
 
+  // ─── 어필리에이트 (추천 → 크레딧 보상) ───
+  await migrateAffiliate();
+
   console.log('Migrations completed.');
+}
+
+/**
+ * 어필리에이트: users.referral_code(고유) + referrals + referral_clicks. (멱등)
+ */
+async function migrateAffiliate() {
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(12);`);
+  // 신규 가입자는 자동으로 코드 발급 (랜덤 8자 hex)
+  await pool.query(`ALTER TABLE users ALTER COLUMN referral_code SET DEFAULT substr(md5(gen_random_uuid()::text), 1, 8);`);
+  // 기존 사용자 backfill (id+email 해시 앞 8자)
+  await pool.query(`UPDATE users SET referral_code = substr(md5(id::text || email), 1, 8) WHERE referral_code IS NULL;`);
+  // 고유 인덱스 (없을 때만)
+  const idx = await pool.query(`SELECT 1 FROM pg_indexes WHERE indexname = 'idx_users_referral_code'`);
+  if (idx.rowCount === 0) {
+    await pool.query(`CREATE UNIQUE INDEX idx_users_referral_code ON users(referral_code);`);
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS referrals (
+        id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        referrer_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        referred_user_id  UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        code              VARCHAR(12) NOT NULL,
+        commission_earned INT NOT NULL DEFAULT 0,   -- 누적 지급 크레딧
+        created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS referral_clicks (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        code        VARCHAR(12) NOT NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_referral_clicks_code ON referral_clicks(code);
+  `);
 }
 
 /**

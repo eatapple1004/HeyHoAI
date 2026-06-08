@@ -180,6 +180,13 @@ async function webhookHandler(req, res) {
       refId: orderId,
     });
     log.info(`✅ Order ${orderId}: +◈${pack.credits} → user ${userId}`);
+
+    // 추천인 커미션 (크레딧으로 지급 — 실패해도 결제엔 영향 없음)
+    const affiliateService = require('../affiliate/affiliate.service');
+    await affiliateService.payCommission(userId, pack.credits, orderId).catch((e) =>
+      log.warn('Referral commission failed:', e.message)
+    );
+
     res.json({ success: true });
   } catch (err) {
     log.error('Webhook error:', err.message);
