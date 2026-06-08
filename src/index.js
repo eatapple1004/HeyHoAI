@@ -117,6 +117,7 @@ app.use('/api/brand-kit', requireAuth, require('./brandkit/brandkit.route').rout
 app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.route').router);
 app.use('/api/affiliate', requireAuth, require('./affiliate/affiliate.route').router);
 app.use('/api/teams', requireAuth, require('./teams/team.route').router);
+app.use('/api/dashboard', requireAuth, require('./dashboard/dashboard.route').router);
 
 // Health check
 app.get('/health', (_req, res) => {
