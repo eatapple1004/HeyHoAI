@@ -91,6 +91,7 @@
     .gen-main{flex-direction:column;align-items:stretch}.gen-main .btn{width:100%}
     .gen-bar .addons{display:none}
     .gen-bar.open .addons{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+    .gen-bar.open .seg{flex-wrap:wrap;justify-content:center}
     .gen-main .addon-trigger{display:block;width:100%;order:-1}
   }
 
@@ -131,6 +132,7 @@
   /* P1-B: Sample 배지 + Value 배지 + (P1-D) 모바일 옵션 토글 */
   .subject-card .sample-badge{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(4px)}
   .recipe-card .pop-badge{position:absolute;bottom:10px;left:10px;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:3px 8px;border-radius:8px;background:linear-gradient(120deg,var(--cyan),#7c6cff);color:#04141a}
+  .recipe-card .val-reason{font-size:10.5px;color:var(--accent2);font-weight:600;margin-top:4px}
   .addon-trigger{display:none;font-family:inherit;font-size:13px;font-weight:600;padding:11px 14px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer}
   .addon-trigger .badge-n{color:var(--accent2)}
   .streak{font-size:13px;font-weight:700;color:var(--gold);margin-right:6px;padding-right:10px;border-right:1px solid var(--border)}
@@ -171,6 +173,17 @@
   .modal .x{position:absolute;top:15px;right:18px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
   .swatches{display:flex;gap:10px}
   .swatch{width:38px;height:38px;border-radius:10px;border:2px solid var(--border2);cursor:pointer;transition:.15s}
+  /* week's set bundle */
+  .modal.wide{width:min(640px,100%)}
+  .wk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:4px 0 16px}
+  .wk-day{border:1px solid var(--border2);border-radius:11px;padding:10px 5px;text-align:center;background:rgba(255,255,255,.02)}
+  .wk-day .wd{font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px}
+  .wk-day .wk-ic{font-size:18px;margin:7px 0 5px}
+  .wk-day .wk-nm{font-size:9px;color:var(--dim);line-height:1.25;min-height:22px}
+  .wk-day .wk-c{font-size:10px;color:var(--gold);font-weight:700;margin-top:5px}
+  .wk-cost{font-size:14px;color:var(--dim);margin-bottom:16px}
+  .wk-cost b{color:var(--text);font-family:'Sora';font-size:18px}
+  @media(max-width:560px){.wk-grid{grid-template-columns:repeat(4,1fr)}}
   .swatch.sel{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.2)}
   .logo-drop{border:1.5px dashed var(--border2);border-radius:12px;padding:18px;text-align:center;color:var(--dim);font-size:13px;cursor:pointer}
   .logo-drop:hover{border-color:var(--accent);color:var(--accent2)}
@@ -310,6 +323,17 @@
   </div>
 </div>
 
+<div class="modal-bg" id="weekModal" onclick="if(event.target===this)closeWeek()">
+  <div class="modal wide">
+    <button class="x" onclick="closeWeek()">✕</button>
+    <h3>🗓 Your week, planned</h3>
+    <div class="msub">We turn this look into a full week of on-brand posts — different angles & formats for each day. One click, no prompts.</div>
+    <div class="wk-grid" id="weekGrid"></div>
+    <div class="wk-cost" id="weekCost"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="genWeek()">Generate week's set</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="dailyModal" onclick="if(event.target===this)closeDaily()">
   <div class="modal" style="text-align:center">
     <div style="font-size:42px;margin-bottom:4px">🔥</div>
@@ -437,14 +461,73 @@ let credits=HH.credits;
 
 // ── add-on captions (Claude — multilingual) ──
 const LANG_NAME={en:'English',ko:'한국어',ja:'日本語',es:'Español',pt:'Português',zh:'中文'};
-const CAPTIONS={
-  en:{c:"Golden hour hits different ✨ Living for these candid little moments.",t:"#goldenhour #ootd #aesthetic #contentcreator #reels #explore"},
-  ko:{c:"골든아워는 역시 달라요 ✨ 자연스러운 순간을 그대로 담았어요.",t:"#골든아워 #데일리룩 #감성사진 #일상스타그램 #릴스추천"},
-  ja:{c:"ゴールデンアワーはやっぱり特別 ✨ 自然な瞬間をそのまま。",t:"#ゴールデンアワー #コーデ #エモい #日常 #リール"},
-  es:{c:"La hora dorada se siente distinta ✨ Viviendo estos pequeños momentos.",t:"#horadorada #ootd #aesthetic #reels #contenido"},
-  pt:{c:"A hora dourada é diferente ✨ Vivendo esses pequenos momentos.",t:"#horadourada #ootd #aesthetic #reels #conteudo"},
-  zh:{c:"黄金时刻就是不一样 ✨ 记录这些自然的小瞬间。",t:"#黄金时刻 #穿搭 #ins风 #日常 #短视频"}
+// 버티컬·모드별 맞춤 캡션 (다국어). theme = captionTheme()로 결정.
+const CAP_THEMES={
+  influencer:{
+    en:{c:"Golden hour hits different ✨ Living for these candid little moments.",t:"#goldenhour #ootd #aesthetic #contentcreator #reels #explore"},
+    ko:{c:"골든아워는 역시 달라요 ✨ 자연스러운 순간을 그대로 담았어요.",t:"#골든아워 #데일리룩 #감성사진 #일상스타그램 #릴스추천"},
+    ja:{c:"ゴールデンアワーはやっぱり特別 ✨ 自然な瞬間をそのまま。",t:"#ゴールデンアワー #コーデ #エモい #日常 #リール"},
+    es:{c:"La hora dorada se siente distinta ✨ Viviendo estos pequeños momentos.",t:"#horadorada #ootd #aesthetic #reels #contenido"},
+    pt:{c:"A hora dourada é diferente ✨ Vivendo esses pequenos momentos.",t:"#horadourada #ootd #aesthetic #reels #conteudo"},
+    zh:{c:"黄金时刻就是不一样 ✨ 记录这些自然的小瞬间。",t:"#黄金时刻 #穿搭 #ins风 #日常 #短视频"}
+  },
+  beauty:{
+    en:{c:"This glow is unreal ✨ One drop and my skin drinks it right up.",t:"#skincare #glowup #beauty #skincareroutine #glassskin #beautytok"},
+    ko:{c:"이 광채 실화예요? ✨ 한 방울이면 피부가 쫙 흡수해요.",t:"#스킨케어 #광채피부 #뷰티 #피부관리 #물광피부"},
+    ja:{c:"このツヤ、本物✨ 一滴で肌がぐんぐん吸い込む。",t:"#スキンケア #美容 #ツヤ肌 #毛穴ケア #コスメ"},
+    es:{c:"Este brillo es irreal ✨ Una gota y mi piel lo absorbe al instante.",t:"#skincare #glow #belleza #rutinadebelleza #piel"},
+    pt:{c:"Esse glow é surreal ✨ Uma gota e a pele absorve na hora.",t:"#skincare #glow #beleza #rotinadebeleza #pele"},
+    zh:{c:"这个光泽太真实了✨ 一滴肌肤瞬间吸收。",t:"#护肤 #美妆 #水光肌 #护肤日常 #种草"}
+  },
+  jewelry:{
+    en:{c:"Some things are simply worth it 💎 Made to catch the light, built to last.",t:"#jewelry #finejewelry #luxury #handcrafted #jewelrygram #details"},
+    ko:{c:"이런 건 그냥 가질 가치가 있어요 💎 빛을 머금게, 오래 가도록.",t:"#주얼리 #쥬얼리 #럭셔리 #핸드메이드 #데일리주얼리"},
+    ja:{c:"やっぱり本物は違う 💎 光をまとい、長く愛せる一品。",t:"#ジュエリー #アクセサリー #ラグジュアリー #上質 #大人女子"},
+    es:{c:"Algunas cosas valen la pena 💎 Hechas para brillar y durar.",t:"#joyeria #joyas #lujo #hechoamano #detalles"},
+    pt:{c:"Algumas coisas valem a pena 💎 Feitas para brilhar e durar.",t:"#joias #joalheria #luxo #feitoamao #detalhes"},
+    zh:{c:"有些东西就是值得💎 为捕捉光线而生，经久耐看。",t:"#珠宝 #轻奢 #首饰 #手工 #细节控"}
+  },
+  food:{
+    en:{c:"POV: your new favorite corner café ☕ Cozy, golden, worth the detour.",t:"#cafe #coffee #foodie #cafehopping #aesthetic #foodphotography"},
+    ko:{c:"인생 카페 발견 ☕ 아늑하고 분위기 좋은 곳, 일부러 찾아갈 가치 있어요.",t:"#카페 #카페스타그램 #커피 #감성카페 #맛집"},
+    ja:{c:"今日のお気に入りカフェ ☕ 居心地よくて、わざわざ行く価値あり。",t:"#カフェ #コーヒー #カフェ巡り #グルメ #おしゃれカフェ"},
+    es:{c:"POV: tu nuevo café favorito ☕ Acogedor y que vale el viaje.",t:"#cafe #coffee #foodie #cafelover #gastronomia"},
+    pt:{c:"POV: seu novo café favorito ☕ Aconchegante e vale a viagem.",t:"#cafe #coffee #foodie #cafeteria #gastronomia"},
+    zh:{c:"POV：你的新晋宝藏咖啡馆☕ 温馨又出片，值得专程打卡。",t:"#咖啡 #咖啡馆 #美食 #探店 #种草"}
+  },
+  pet:{
+    en:{c:"He approves of the new gear 🐾 Tap if your floof deserves the best too.",t:"#petsofinstagram #dogsofinstagram #petcare #cutepets #pettok"},
+    ko:{c:"우리 댕댕이 인증 완료 🐾 우리 애기도 좋은 것만 주고 싶잖아요.",t:"#반려견 #댕댕이 #멍스타그램 #반려동물 #펫스타그램"},
+    ja:{c:"うちの子もお気に入り🐾 大切な家族には良いものを。",t:"#ペット #犬のいる暮らし #わんすたぐらむ #愛犬 #ねこすたぐらむ"},
+    es:{c:"Le encanta lo nuevo 🐾 Tu peludo también merece lo mejor.",t:"#mascotas #perrosdeinstagram #petlovers #mascotasfelices"},
+    pt:{c:"Ele aprovou o novo item 🐾 Seu pet também merece o melhor.",t:"#pets #cachorrosdoinstagram #petlovers #amopets"},
+    zh:{c:"主子已认证🐾 家里的毛孩子也值得最好的。",t:"#宠物 #萌宠 #汪星人 #喵星人 #宠物日常"}
+  },
+  product:{
+    en:{c:"New drop, zero studio needed 🛍️ Swipe to see it from every angle.",t:"#newdrop #shopnow #productphotography #smallbusiness #ecommerce #musthave"},
+    ko:{c:"신상 입고 📦 스튜디오 없이 이 퀄리티, 다양한 각도로 보여드려요.",t:"#신상 #쇼핑몰 #제품사진 #소상공인 #온라인쇼핑 #득템"},
+    ja:{c:"新作入荷 🛍️ スタジオなしでこの仕上がり。いろんな角度でどうぞ。",t:"#新作 #通販 #商品撮影 #ネットショップ #おすすめ"},
+    es:{c:"Nuevo lanzamiento 🛍️ Sin estudio. Desliza para verlo en detalle.",t:"#novedades #tienda #fotografiadeproducto #emprendimiento #compraonline"},
+    pt:{c:"Novidade na loja 🛍️ Sem estúdio. Arraste para ver de todos os ângulos.",t:"#novidade #loja #fotografiadeproduto #empreendedorismo #compraonline"},
+    zh:{c:"上新啦🛍️ 无需影棚也有大片感，多角度展示。",t:"#上新 #网店 #产品摄影 #小店 #好物推荐"}
+  },
+  ugc:{
+    en:{c:"I did NOT expect this to actually work 😳 Honest review after 7 days — link in bio.",t:"#ad #ugc #honestreview #tiktokmademebuyit #musthave #review"},
+    ko:{c:"솔직히 이게 진짜 될 줄 몰랐어요 😳 7일 써본 리얼 후기, 링크는 프로필에.",t:"#광고 #내돈내산 #솔직후기 #추천템 #리뷰 #꿀템"},
+    ja:{c:"正直ここまで効くとは😳 7日使った本音レビュー、リンクはプロフから。",t:"#PR #UGC #正直レビュー #購入品 #おすすめ #レビュー"},
+    es:{c:"No esperaba que funcionara de verdad 😳 Reseña honesta tras 7 días — link en bio.",t:"#publicidad #ugc #reseñahonesta #lorecomiendo #review"},
+    pt:{c:"Não esperava que funcionasse mesmo 😳 Review honesto após 7 dias — link na bio.",t:"#publi #ugc #reviewhonesto #recomendo #review"},
+    zh:{c:"真没想到这个居然有用😳 用了7天的真实测评，链接在主页。",t:"#广告 #测评 #真实体验 #好物 #种草 #推荐"}
+  }
 };
+const THEME_LABEL={influencer:'Lifestyle',beauty:'Beauty',jewelry:'Jewelry',food:'Food & Café',pet:'Pet',product:'Product',ugc:'UGC Ad'};
+function captionTheme(){
+  if(state.mode==='ugc')return 'ugc';
+  if(state.mode==='influencer')return 'influencer';
+  const v=state.vertical;
+  if(CAP_THEMES[v])return v; // beauty/jewelry/food/pet match vertical keys directly
+  return 'product'; // fashion/home/tech → generic product
+}
 const Q_LABEL={std:'',hd:' · HD','4k':' · 4K'};
 
 function curQuality(){return document.querySelector('#qualitySeg .on').dataset.q;}
@@ -547,12 +630,16 @@ function renderFilters(){
 }
 function renderRecipes(){
   const rs=MOCK_RECIPES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
-  const minC=Math.min.apply(null,rs.map(r=>r.cost));
-  const minId=(rs.find(r=>r.cost===minC)||{}).id;
-  document.getElementById('recipeGrid').innerHTML=rs.map(r=>`
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
-      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${r.new?'<span class="new-badge">NEW</span>':''}${r.id===minId?'<span class="pop-badge">★ Value</span>':''}${r.emoji}</div>
-      <div class="meta"><div class="rname">${r.name}</div><div class="cost">◈ ${r.cost} credits</div></div></div>`).join('');
+  // 가치 = 크레딧당 산출물 (photo=4장/reel=1개) → 최고가 '베스트 밸류' 추천
+  const val=r=>(r.type==='reel'?1:4)/r.cost;
+  let bestId=null,bestV=-1;rs.forEach(r=>{const v=val(r);if(v>bestV){bestV=v;bestId=r.id;}});
+  document.getElementById('recipeGrid').innerHTML=rs.map(r=>{
+    const isVal=r.id===bestId;
+    const reason=r.type==='reel'?`Lowest ◈ per reel`:`4 photos for ◈${r.cost} — most per credit`;
+    return `<div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
+      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${r.new?'<span class="new-badge">NEW</span>':''}${isVal?'<span class="pop-badge" title="Most content per credit">★ Best value</span>':''}${r.emoji}</div>
+      <div class="meta"><div class="rname">${r.name}</div><div class="cost">◈ ${r.cost} credits</div>${isVal?`<div class="val-reason">💡 ${reason}</div>`:''}</div></div>`;
+  }).join('');
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
@@ -700,13 +787,42 @@ function upsellSub(){
 function showAfterCta(){
   const el=document.getElementById('afterCta');el.classList.remove('hidden');
   el.innerHTML=`<button class="btn btn-ghost" onclick="makeAnother()">↺ Make another</button>`+
-    `<button class="btn btn-primary" onclick="HH.toast('한 주치 5세트 자동 생성 — 곧 제공 (mock)')">🗓 Turn into a week's set</button>`;
+    `<button class="btn btn-ghost" onclick="upscaleAction()">⬆ Upscale to 4K</button>`+
+    `<button class="btn btn-primary" onclick="openWeekSet()">🗓 Turn into a week's set</button>`;
+}
+// P4-1: 결과 직후 4K 업스케일 next-action — 4K는 Pro 기능이라 티어-라우팅으로 연결
+function upscaleAction(){
+  if((PLAN_RANK[HH.plan]||0)>=PLAN_RANK.pro){HH.toast('Upscaling this result to 4K (mock)');return;}
+  openTierUpsell('pro');
 }
 function makeAnother(){state.recipeId=null;renderRecipes();updateBar();document.getElementById('recipeGrid').scrollIntoView({behavior:'smooth'});}
+// ── week's set 번들: 현재 모드 레시피로 7일치 계획 + 20% 묶음 할인 ──
+let weekTotal=0;
+const WK_DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function openWeekSet(){
+  const r=curRecipe();if(!r){HH.toast('Generate something first');return;}
+  const recipes=(MOCK_RECIPES[state.mode]&&MOCK_RECIPES[state.mode].length)?MOCK_RECIPES[state.mode]:[r];
+  const plan=WK_DAYS.map((d,i)=>{const rr=recipes[i%recipes.length];return {day:d,name:rr.name,type:rr.type,cost:rr.cost};});
+  const raw=plan.reduce((s,p)=>s+p.cost,0);
+  weekTotal=Math.round(raw*0.8); // 20% 묶음 할인
+  document.getElementById('weekGrid').innerHTML=plan.map(p=>
+    `<div class="wk-day"><div class="wd">${p.day}</div><div class="wk-ic">${p.type==='reel'?'▶':'🖼️'}</div><div class="wk-nm">${p.name}</div><div class="wk-c">◈${p.cost}</div></div>`).join('');
+  document.getElementById('weekCost').innerHTML=`<b>◈${weekTotal}</b> for a full week · 7 posts <span style="color:var(--faint)">(was ◈${raw} — save 20%)</span>`;
+  document.getElementById('weekModal').classList.add('open');
+}
+function closeWeek(){document.getElementById('weekModal').classList.remove('open');}
+function genWeek(){
+  credits=HH.credits;
+  if(credits<weekTotal){HH.toast(`◈${weekTotal} needed — ◈${weekTotal-credits} short. Top up to schedule your week.`,{type:'warn'});return;}
+  HH.credits=credits-weekTotal;document.getElementById('creditBalance').textContent=HH.credits;
+  closeWeek();HH.toast("Week's set queued — 7 posts added to your content calendar (mock)");
+}
 function renderCaption(){
-  const lang=document.getElementById('captionLang').value,cap=CAPTIONS[lang]||CAPTIONS.en;
+  const lang=document.getElementById('captionLang').value;
+  const theme=captionTheme(),set=CAP_THEMES[theme]||CAP_THEMES.product;
+  const cap=set[lang]||set.en;
   const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
-  box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]}</div>
+  box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]} · <span style="color:var(--accent2)">${THEME_LABEL[theme]}</span></div>
     <div class="ctext">${cap.c}</div><div class="tags">${cap.t}</div>
     <button class="btn btn-ghost copy" onclick="HH.toast('캡션 복사됨')">⧉ Copy</button>`;
   document.getElementById('resultStep').appendChild(box);
