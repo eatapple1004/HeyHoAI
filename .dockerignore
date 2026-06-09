@@ -1,0 +1,35 @@
+# 빌드 컨텍스트에서 제외 (이미지 경량화 + 시크릿 유출 방지)
+
+# 의존성: 이미지 내부에서 npm ci 로 설치하므로 컨텍스트로 보내지 않는다
+node_modules
+
+# VCS / 환경
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# 런타임 산출물 / 임시물 (이미지 내부에서 mkdir 로 생성)
+tmp
+logs
+*.log
+
+# 문서·발표·핸드오프 (런타임 불필요)
+docs
+presentation.html
+HANDOFF.md
+*.md
+*.txt
+
+# 에디터 / OS
+.DS_Store
+.vscode
+.idea
+
+# PM2 (Docker 런타임에서는 미사용)
+ecosystem.config.js
+
+# 컨테이너 메타
+Dockerfile
+.dockerignore

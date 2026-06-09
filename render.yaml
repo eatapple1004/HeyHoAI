@@ -1,0 +1,95 @@
+# Render Blueprint — Doppia (HeyHoAI)
+# Web Service(Docker) + Managed Postgres.
+# 가격/시크릿 값은 절대 커밋하지 않는다. sync:false = 대시보드에서 수동 주입.
+# 참고: src/config/index.js 가 실제 env 스키마의 단일 진실원본(SoT).
+#       .env.example 과 일부 키 이름이 다르므로(KLING/GEMINI) 아래는 config 기준.
+
+databases:
+  - name: doppia-db
+    databaseName: doppia
+    plan: starter # 추정 placeholder — 실제 플랜은 트래픽/COGS 확정 후 조정
+    # ipAllowList 비우면 Render 내부 네트워크만 허용(기본 권장)
+
+services:
+  - type: web
+    name: doppia
+    runtime: docker
+    plan: starter # 추정 placeholder
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: false # 명령서 철칙: 자동 실배포 금지. 수동 트리거만.
+    region: singapore # doppia.ai 주요 타깃 리전 가정(필요시 변경)
+    envVars:
+      # --- 서버 ---
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000" # Dockerfile EXPOSE / index.js env.PORT 와 일치
+
+      # --- DB (Managed Postgres 에서 연결 문자열 자동 주입) ---
+      - key: DATABASE_URL
+        fromDatabase:
+          name: doppia-db
+          property: connectionString
+
+      # --- 인증 (JWT + 쿠키) ---
+      - key: JWT_SECRET
+        sync: false # 16자 이상 랜덤 시크릿. 대시보드에서 주입.
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: COOKIE_SECURE
+        value: "true" # 프로덕션 HTTPS 환경
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # --- LLM (Anthropic) ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-sonnet-4-20250514
+
+      # --- 결제 (Stripe) — 키만 주입, 가격 숫자는 코드에 하드코딩하지 않음 ---
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # --- 이미지 프로바이더 (최소 1개 필요) ---
+      - key: REPLICATE_API_TOKEN
+        sync: false
+      - key: REPLICATE_MODEL
+        value: black-forest-labs/flux-1.1-pro
+      - key: FAL_API_KEY
+        sync: false
+      - key: FAL_MODEL
+        value: fal-ai/flux/dev
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_IMAGE_MODEL
+        value: gemini-2.5-flash-image
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # --- 비디오 프로바이더 (최소 1개 필요) ---
+      - key: RUNWAY_API_KEY
+        sync: false
+      - key: RUNWAY_MODEL
+        value: gen4_turbo
+      - key: KLING_ACCESS_KEY
+        sync: false
+      - key: KLING_SECRET_KEY
+        sync: false
+      - key: KLING_MODEL
+        value: kling-v3
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: MINIMAX_MODEL
+        value: video-01
+
+      # --- 퍼블리싱 (Zernio / Instagram) ---
+      - key: ZERNIO_API_KEY
+        sync: false

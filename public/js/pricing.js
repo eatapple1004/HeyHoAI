@@ -30,6 +30,8 @@
     team: { price: 199, seats: 3, pool: 2000, extraSeat: 15 },
     // 신규 24h 첫 결제 할인율(%)
     firstMonthOff: 50,
+    // 추정 placeholder 표식 — 서버(/api/pricing)가 실값으로 덮어쓸 때까지 true
+    estimated: true,
 
     // path 조회: PRICING.get('creator.cr') → 250
     get: function (path) {
@@ -49,8 +51,27 @@
     });
   }
 
+  // 서버 주도 단일 소스: /api/pricing 성공 시 임베드 값을 서버 값으로 덮어쓰고 재적용.
+  // 실패(정적 호스팅·오프라인 등) 시 위 임베드 PRICING을 그대로 동기 폴백으로 사용.
+  function hydrateFromServer() {
+    if (typeof fetch !== 'function') return;
+    fetch('/api/pricing', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (s) {
+        if (!s || typeof s !== 'object') return;
+        if (s.plans) PRICING.plans = s.plans;
+        if (s.packs) PRICING.packs = s.packs;
+        if (s.team) PRICING.team = s.team;
+        if (typeof s.firstMonthOff === 'number') PRICING.firstMonthOff = s.firstMonthOff;
+        if (typeof s.estimated === 'boolean') PRICING.estimated = s.estimated;
+        applyDP();
+      })
+      .catch(function () { /* 조용히 폴백 */ });
+  }
+
   window.PRICING = PRICING;
   window.applyDP = applyDP;
   if (document.readyState !== 'loading') applyDP();
   else document.addEventListener('DOMContentLoaded', applyDP);
+  hydrateFromServer();
 })();
