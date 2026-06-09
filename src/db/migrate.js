@@ -898,12 +898,13 @@ async function migrateAuth() {
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `);
 
-  // 기본 관리자 계정 보장 (없을 때만 생성)
+  // 기본 관리자 계정 보장 + 비밀번호를 ADMIN_PASSWORD로 회전.
+  // (.env의 ADMIN_PASSWORD를 강력한 값으로 바꾸고 migrate를 실행하면 라이브 admin 비번이 교체됨)
   const adminEmail = env.ADMIN_EMAIL.toLowerCase();
   await pool.query(
     `INSERT INTO users (email, password_hash, display_name, role)
      VALUES ($1, $2, $3, 'admin')
-     ON CONFLICT (email) DO NOTHING`,
+     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = now()`,
     [adminEmail, hashPassword(env.ADMIN_PASSWORD), 'Administrator']
   );
   const adminRes = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
