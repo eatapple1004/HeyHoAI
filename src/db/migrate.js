@@ -844,6 +844,22 @@ async function migrateCredits() {
     CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_id, created_at DESC);
   `);
 
+  // 엑심베이 등 redirect형 PG 주문 추적 (ready 시 pending 생성 → status_url에서 paid)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS billing_orders (
+        order_id    TEXT PRIMARY KEY,
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider    VARCHAR(30) NOT NULL DEFAULT 'eximbay',
+        pack_id     VARCHAR(50) NOT NULL,
+        credits     INT NOT NULL,
+        amount_usd  DECIMAL(10,2) NOT NULL,
+        status      VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending | paid | failed
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_billing_orders_user ON billing_orders(user_id, created_at DESC);
+  `);
+
   // 결제 기록 — PG 주문 멱등 처리용 (provider+order_id UNIQUE)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS payments (

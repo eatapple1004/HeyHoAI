@@ -24,6 +24,16 @@ app.set('trust proxy', 1);
 const { webhookHandler } = require('./billing/billing.route');
 app.post('/api/billing/webhook', express.raw({ type: '*/*' }), webhookHandler);
 
+// Eximbay status_url(서버 알림)은 원본 쿼리스트링 본문이 필요 → express.json보다 먼저, 공개(인증 X)
+app.post('/api/billing/eximbay/status', express.text({ type: '*/*' }), async (req, res) => {
+  try {
+    await require('./billing/eximbay.service').handleStatus(typeof req.body === 'string' ? req.body : '');
+  } catch (e) {
+    require('./lib/logger')('Eximbay').error('status handler:', e.message);
+  }
+  res.send('OK'); // Eximbay에 200 응답 (재전송 방지)
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
@@ -117,6 +127,7 @@ app.use('/api/template-data', requireAuth, require('./generate/template.route'))
 app.use('/api/accounts', requireAuth, accountRoutes);
 app.use('/api/credits', requireAuth, require('./credits/credit.route'));
 app.use('/api/billing', requireAuth, require('./billing/billing.route').router);
+app.use('/api/billing/eximbay', requireAuth, require('./billing/eximbay.route').router);
 app.use('/api/brand-kit', requireAuth, require('./brandkit/brandkit.route').router);
 app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.route').router);
 app.use('/api/affiliate', requireAuth, require('./affiliate/affiliate.route').router);
