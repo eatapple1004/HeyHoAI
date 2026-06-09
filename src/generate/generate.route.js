@@ -13,6 +13,9 @@ const reviewRepo = require('./review.repository');
 const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 const teamCredit = require('../teams/team.credit');
+const { query } = require('../db/client');
+const { applyWatermark } = require('../lib/watermark');
+const { isWatermarkExempt } = require('../lib/entitlements');
 
 const router = Router();
 
@@ -125,6 +128,13 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const outputDir = path.join(process.cwd(), 'tmp', 'images');
     fs.mkdirSync(outputDir, { recursive: true });
 
+    // ─── 워터마크 게이팅 (무료 티어) ───
+    // Pro/admin은 항상 클린. 무료 사용자는 계정 첫 장만 클린(1회 제공) → 이후 전부 워터마크.
+    const uwm = await query('SELECT plan, first_clean_used FROM users WHERE id = $1', [req.user.id]);
+    const exempt = isWatermarkExempt({ role: req.user.role, plan: uwm.rows[0]?.plan });
+    let freebieAvailable = !exempt && !(uwm.rows[0]?.first_clean_used);
+    let freebieConsumed = false;
+
     const results = [];
 
     for (let i = 0; i < generateCount; i++) {
@@ -205,6 +215,18 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           description = textPart?.text || '';
         }
 
+        // ─── 워터마크: 면제 대상이 아니고 무료 1회 제공도 소진했으면 합성 ───
+        let watermarked = false;
+        if (!exempt) {
+          if (freebieAvailable) {
+            freebieAvailable = false; // 이 한 장은 클린(무료 제공 소진)
+            freebieConsumed = true;
+          } else {
+            imageBuffer = await applyWatermark(imageBuffer);
+            watermarked = true;
+          }
+        }
+
         // ─── 공통: 파일 저장 + DB ───
         const imageId = crypto.randomUUID();
         const filename = `${imageId}.png`;
@@ -230,6 +252,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           url: `/images/${filename}`,
           size: Math.round(imageBuffer.length / 1024) + 'KB',
           description,
+          watermarked,
           resultIdx: savedResult.idx,
           reviewIdx: savedReview.idx,
         });
@@ -259,6 +282,11 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 전부 실패하면 환불
     const okCount = results.filter((r) => r.success).length;
     if (okCount === 0 && charge) await charge.refund();
+
+    // 무료 1회 클린 제공을 실제로 사용했으면 소진 기록
+    if (freebieConsumed && okCount > 0) {
+      await query('UPDATE users SET first_clean_used = true WHERE id = $1', [req.user.id]).catch(() => {});
+    }
 
     res.json({
       success: true,

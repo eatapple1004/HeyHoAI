@@ -776,6 +776,12 @@ async function migrateAffiliate() {
 async function migrateMarketplace() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_creator BOOLEAN NOT NULL DEFAULT false;`);
 
+  // 플랜(구독 티어) + 워터마크 무료 1회 제공 소진 플래그
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) NOT NULL DEFAULT 'free'; -- free | pro
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS first_clean_used BOOLEAN NOT NULL DEFAULT false;
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS marketplace_templates (
         id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
