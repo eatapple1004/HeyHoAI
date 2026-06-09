@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doppia 템플릿 한눈에</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07070c;color:#edecf5;font-family:Inter,-apple-system,'Apple SD Gothic Neo',sans-serif;padding:26px 26px 40px}
+h1{font-family:Sora,sans-serif;font-size:23px;font-weight:800;letter-spacing:-.5px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.sub{color:#9a9ab2;font-size:13px}
+.legend{font-size:11.5px;color:#9a9ab2}
+.legend b{color:#edecf5}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:10px;font-weight:800;margin:0 2px}
+.tp{background:rgba(94,224,214,.16);color:#5ee0d6}
+.tr{background:rgba(255,126,182,.18);color:#ff7eb6}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1000px){.cats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){.cats{grid-template-columns:1fr}}
+.cat{border:1px solid rgba(255,255,255,.09);border-radius:14px;background:#11111a;overflow:hidden}
+.cat-h{font-family:Sora;font-size:13.5px;font-weight:800;padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(90deg,rgba(124,108,255,.16),transparent)}
+.cat-h .c{color:#6a6a85;font-size:10.5px;font-weight:600}
+.row{display:flex;align-items:center;gap:8px;padding:7px 13px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
+.row:last-child{border-bottom:0}
+.row .ic{width:18px;text-align:center;flex:none;font-size:12px}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .cost{flex:none;font-size:11px;font-weight:800;color:#ffce7a}
+.row.reel .ic{color:#ff7eb6}.row.img .ic{color:#5ee0d6}
+.foot{margin-top:18px;font-size:11.5px;color:#6a6a85;line-height:1.7}
+.foot b{color:#9a9ab2}
+</style></head><body>
+<div class="top">
+  <div><h1>Doppia 템플릿 한눈에 — 54개</h1><div class="sub">9개 카탈로그 (인플루언서 + 7버티컬 + UGC) · 각 6개</div></div>
+  <div class="legend"><span class="tag tp">📷 사진</span> 보통 4장 &nbsp; <span class="tag tr">🎬 릴스</span> 짧은영상 &nbsp; · &nbsp; <b>◈</b> = 크레딧(가격)</div>
+</div>
+<div class="cats" id="cats"></div>
+<div class="foot">
+<b>요약</b> — 가장 싼 진입 = 📷◈2 · 릴스는 ◈6~8(사진보다 비쌈) · UGC는 전부 🎬◈8(가격 단조 → v2에서 1~2샷 싼 티어 권고)<br>
+<b>⚠️ AI 난이도 높음</b> — 손가락(손·손목 착용), 말하는 입(토킹펫·UGC 토킹헤드), 글자(스펙 콜아웃·풀 메뉴팩) → 사람검수/오버레이 권장
+</div>
+<script>
+const DATA=[
+ ["😎 인플루언서","influencer",[["GRWM 오로라","r",6],["캔디드 포토덤프","p",2],["핏체크 온모델","p",4],["트렌드 립싱크","r",8],["골든아워 애니웨어","p",3],["블러코어 BTS","r",6]]],
+ ["👗 패션","product",[["온모델 스튜디오","p",6],["에디토리얼 룩북","p",2],["라이프스타일 씬","p",2],["GRWM 드롭 릴스","r",6],["360 디테일 스핀","r",8],["매크로 텍스처","p",3]]],
+ ["💄 뷰티","product",[["듀이 글래스 히어로","p",2],["매크로 스와치 랩","p",4],["온모델 글로우","p",6],["ASMR 언박싱","r",6],["GRWM 루틴","r",6],["감성 쉘피","p",2]]],
+ ["💎 주얼리","product",[["패싯 매크로","p",5],["손·손목 착용","p",6],["벨벳 스튜디오","p",2],["라이트플레이 릴스","r",6],["언박싱 ASMR","r",8],["길디드 에디토리얼","p",3]]],
+ ["🍽️ 푸드 & 카페","product",[["탑다운 히어로","p",2],["드립&스팀 매크로","p",4],["골든아워 카페","p",3],["지글&스팀 ASMR","r",6],["360 글레이즈 스핀","r",6],["풀 메뉴팩(8컷)","p",8]]],
+ ["🛋️ 홈 & 리빙","product",[["콰이엇 럭스룸","p",2],["골든아워 코너","p",2],["매크로 텍스처팝","p",3],["토널 플랫레이","p",2],["빈방→꾸민방 변신","r",6],["슬로우 ASMR 디테일","r",6]]],
+ ["📱 테크","product",[["보이드 히어로","p",2],["스펙 콜아웃 그리드","p",2],["매크로 택타일","p",4],["데스크 셋업","p",3],["언박싱 ASMR","r",6],["360 글로우 스핀","r",6]]],
+ ["🐾 펫","product",[["커들 아워","p",2],["줌이 기다려","r",6],["펫 POV 시식","r",6],["매크로 크런치","p",4],["온펫 핏(착용)","p",5],["토킹펫 스킷","r",8]]],
+ ["📢 UGC 광고","ugc",[["토킹헤드 후기","r",8],["제품 시연","r",8],["문제→해결","r",8],["언박싱 리액션","r",8],["길거리 인터뷰","r",8],["훅+CTA","r",8]]],
+];
+document.getElementById("cats").innerHTML=DATA.map(([h,mode,items])=>
+ `<div class="cat"><div class="cat-h">${h} <span class="c">· ${items.length}개 · ${mode}</span></div>`+
+ items.map(([n,t,c])=>`<div class="row ${t==="r"?"reel":"img"}"><span class="ic">${t==="r"?"🎬":"📷"}</span><span class="nm">${n}</span><span class="cost">◈${c}</span></div>`).join("")+
+ `</div>`).join("");
+</script>
+</body></html>
