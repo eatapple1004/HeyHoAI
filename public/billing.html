@@ -218,20 +218,42 @@ async function loadBalance(){
   }catch(e){console.error(e);}
 }
 
+// ── 결제 수단 결정: Eximbay 우선, 미설정 시 Lemon Squeezy ──
+let EXIMBAY=null; // {configured, sdkUrl}
+let sdkLoaded=false;
+async function loadPayConfig(){
+  try{ EXIMBAY=(await(await fetch('/api/billing/eximbay/config')).json()).data; }catch(e){ EXIMBAY={configured:false}; }
+}
+function loadEximbaySDK(){
+  return new Promise((resolve,reject)=>{
+    if(sdkLoaded)return resolve();
+    const s=document.createElement('script');
+    s.src=EXIMBAY.sdkUrl;s.onload=()=>{sdkLoaded=true;resolve();};s.onerror=reject;
+    document.head.appendChild(s);
+  });
+}
+
 async function buyPack(packId,btn){
   btn.disabled=true;const orig=btn.textContent;btn.textContent='Loading…';
   try{
-    const res=await fetch('/api/billing/checkout',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({packId})});
-    const data=await res.json();
-    if(!res.ok||!data.success){
-      alert(data.error||'결제 페이지를 열 수 없습니다.');
-      return;
+    if(EXIMBAY&&EXIMBAY.configured){
+      // Eximbay: ready → SDK 결제창
+      const d=await(await fetch('/api/billing/eximbay/ready',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
+      if(!d.success){alert(d.error||'결제 준비에 실패했습니다.');return;}
+      await loadEximbaySDK();
+      EXIMBAY.request_pay=window.EXIMBAY.request_pay; // 명시
+      window.EXIMBAY.request_pay({
+        fgkey:d.data.fgkey, payment:d.data.payment, merchant:d.data.merchant,
+        buyer:d.data.buyer, url:d.data.url, settings:{ display_type:'P' },
+      });
+    }else{
+      // Lemon Squeezy 폴백
+      const data=await(await fetch('/api/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
+      if(!data.success){alert(data.error||'결제 페이지를 열 수 없습니다.');return;}
+      window.location.href=data.data.url;
     }
-    window.location.href=data.data.url; // Lemon Squeezy 결제 페이지로
   }catch(e){
-    alert('결제 페이지 연결에 실패했습니다.');
+    alert('결제 연결에 실패했습니다.');
   }finally{
     btn.disabled=false;btn.textContent=orig;
   }
@@ -240,9 +262,10 @@ async function buyPack(packId,btn){
 // 결제 완료 후 돌아온 경우 (?purchased=packXX)
 if(new URLSearchParams(location.search).get('purchased')){
   document.getElementById('purchasedBanner').classList.remove('hidden');
-  // webhook 반영이 약간 늦을 수 있으니 잠시 후 한 번 더
+  // status_url 반영이 약간 늦을 수 있으니 잠시 후 한 번 더
   setTimeout(loadBalance,3000);
 }
+loadPayConfig();
 loadBalance();
 </script>
 </body>

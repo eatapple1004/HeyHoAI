@@ -812,13 +812,9 @@ async function openPaywall(cost){
   }catch(e){ box.innerHTML='<div style="color:#ff7eb6;font-size:13px;text-align:center">불러오기 실패</div>'; }
 }
 function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
-async function buyPack(packId,btn){
-  btn.disabled=true;const o=btn.innerHTML;btn.innerHTML='Loading…';
-  try{
-    const d=await(await fetch('/api/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
-    if(!d.success){toast(d.error||'결제 페이지를 열 수 없어요.','error');btn.disabled=false;btn.innerHTML=o;return;}
-    window.location.href=d.data.url;
-  }catch(e){toast('결제 연결 실패','error');btn.disabled=false;btn.innerHTML=o;}
+function buyPack(packId){
+  // 실제 결제는 Billing 페이지(Eximbay SDK)에서 처리
+  location.href='/billing.html?pack='+encodeURIComponent(packId);
 }
 
 // 딥링크 부팅: ?mode=shopping&vertical=Food (랜딩 버티컬 칩에서 진입)

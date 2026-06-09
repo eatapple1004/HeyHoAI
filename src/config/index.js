@@ -53,6 +53,11 @@ const envSchema = z.object({
   LS_VARIANT_PACK50: z.string().optional(),
   LS_VARIANT_PACK220: z.string().optional(),
   LS_VARIANT_PACK580: z.string().optional(),
+
+  // Billing (Eximbay — 해외/국내 카드 PG)
+  EXIMBAY_API_KEY: z.string().optional(),        // Basic 인증용 API 키
+  EXIMBAY_MID: z.string().optional(),            // 가맹점 ID
+  EXIMBAY_ENV: z.enum(['test', 'production']).default('test'),
 });
 
 const env = envSchema.parse(process.env);
