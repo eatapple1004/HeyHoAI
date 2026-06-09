@@ -1,5 +1,7 @@
 # 🔌 백엔드/플랫폼 총지휘 — 세션 명령서
 
+> ⚠️ **이 도메인은 개발자(eatapple1004) 전담.** Claude 총지휘 세션을 띄우지 말 것(충돌). 이 문서는 **개발자에게 넘기는 요구·인터페이스 명세 + Chief 추적용.** Chief가 받을 것=`/api/pricing`·게이팅 강제·크레딧 원장·결제. 진척은 `docs/BACKEND_HANDOFF.md`로 추적.
+
 > 너는 **Doppia 백엔드/플랫폼 도메인 총지휘(orchestrator) 세션**이다. 작업 디렉터리 `~/HeyHoAI`, 브랜치 `feat/ux-monetization-v2`(PR #8). 세션끼리 메모리는 공유 안 되므로 **공유 백본 = 레포 파일시스템.** 이 도메인의 백본 체크리스트는 `docs/BACKEND_HANDOFF.md`이고, 이 도메인의 진행보드는 `docs/섹션명령서/backend/_STATUS.md`(아래 §3에서 생성)다.
 
 ## 0) 역할

@@ -21,7 +21,7 @@
 ## D. 도메인 현황 (Chief 롤업 시작점)
 - 🎨 **템플릿 = 사실상 완료** — `node scripts/consolidate_recipes.js` → **11/11 OK·76개**, general+headshot `studio.html` 와이어링됨. (검증만 하면 됨.)
 - 🖥️ **프론트 = mock 완료 + 감사 F1~F6 적용·리뷰 통과**(결제 영문화·recommendTier 신호재배선·교차페이지 수치정합·게이트 위치·랜딩 Pro+상업rung·가짜배너/뒤집힌 confirm 제거). 남음: 시각증거(업로드 FileReader echo), i18n(영어우선 보류).
-- 🔌 **백엔드·⚙️엔진 = 미연결.** `docs/BACKEND_HANDOFF.md`가 단일 체크리스트(.env·크레딧원장·실생성·Stripe·게이팅강제·/api/pricing·costMeter).
+- 🔌 **백엔드·⚙️엔진 = 개발자(eatapple1004) 전담 · 우리 Claude 세션 안 띄움.** Chief는 **추적·인터페이스만**: 받을 것(`/api/pricing`·게이팅 강제·generate API)·줄 것(recipes·프론트 신호·`docs/BACKEND_HANDOFF.md`). `ENGINE_/BACKEND_총지휘.md`는 개발자에게 넘기는 요구·인터페이스 명세로 사용. **엔진/백엔드 총지휘 세션 생성 금지**(개발자와 충돌). 진척은 `BACKEND_HANDOFF.md` 체크리스트로 추적.
 - 📈 **그로스** = ①라이브 재배포(B) ②PG/카드사 가맹(설명문 `판매 상품 설명` 작성됨) ③가격확정(엔진 대기) ④스토어/Shopify 리스팅.
 - 🛒마켓/🛡️T&S = **보류**(코어5 E2E 후 활성, 유저 발행은 출시 2차로 결정됨).
 
