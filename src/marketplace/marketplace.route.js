@@ -43,6 +43,58 @@ router.get('/me', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * GET /api/marketplace/earnings — 셀러(크리에이터) 정산 대시보드
+ * royalty 원장(type='royalty', ref_id=템플릿id)을 집계해 총수익·템플릿별 수익·최근 내역 반환.
+ */
+router.get('/earnings', async (req, res, next) => {
+  try {
+    const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
+    const isCreator = u.rows[0]?.is_creator || false;
+
+    // 총 수익 + 적립 건수
+    const totals = await query(
+      `SELECT COALESCE(SUM(amount), 0)::int AS total_earned, COUNT(*)::int AS payout_count
+       FROM credit_ledger WHERE user_id = $1 AND type = 'royalty'`,
+      [req.user.id]
+    );
+
+    // 템플릿별 수익 (ref_id=템플릿 UUID를 TEXT로 저장 → 캐스팅 조인)
+    const byTemplate = await query(
+      `SELECT mt.id, mt.name, mt.emoji, mt.category, mt.type, mt.price_credits, mt.usage_count,
+              COALESCE(SUM(cl.amount), 0)::int AS earned,
+              COUNT(cl.id)::int AS uses_paid
+       FROM marketplace_templates mt
+       LEFT JOIN credit_ledger cl
+         ON cl.ref_id = mt.id::text AND cl.user_id = $1 AND cl.type = 'royalty'
+       WHERE mt.creator_id = $1
+       GROUP BY mt.id
+       ORDER BY earned DESC, mt.created_at DESC`,
+      [req.user.id]
+    );
+
+    // 최근 적립 내역
+    const recent = await query(
+      `SELECT amount, description, created_at
+       FROM credit_ledger WHERE user_id = $1 AND type = 'royalty'
+       ORDER BY created_at DESC LIMIT 20`,
+      [req.user.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        isCreator,
+        creatorShare: CREATOR_SHARE,
+        totalEarned: totals.rows[0].total_earned,
+        payoutCount: totals.rows[0].payout_count,
+        templates: byTemplate.rows,
+        recent: recent.rows,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 /** POST /api/marketplace/apply — 크리에이터 신청(즉시 승인) */
 router.post('/apply', async (req, res, next) => {
   try {
