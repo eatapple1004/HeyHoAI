@@ -133,6 +133,7 @@ app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.rout
 app.use('/api/affiliate', requireAuth, require('./affiliate/affiliate.route').router);
 app.use('/api/teams', requireAuth, require('./teams/team.route').router);
 app.use('/api/dashboard', requireAuth, require('./dashboard/dashboard.route').router);
+app.use('/api/subscription', requireAuth, require('./subscription/subscription.route').router);
 
 // Health check
 app.get('/health', (_req, res) => {
