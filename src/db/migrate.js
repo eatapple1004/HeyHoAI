@@ -778,8 +778,11 @@ async function migrateMarketplace() {
 
   // 플랜(구독 티어) + 워터마크 무료 1회 제공 소진 플래그
   await pool.query(`
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) NOT NULL DEFAULT 'free'; -- free | pro
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) NOT NULL DEFAULT 'free'; -- free | creator | pro | brand
     ALTER TABLE users ADD COLUMN IF NOT EXISTS first_clean_used BOOLEAN NOT NULL DEFAULT false;
+    -- 구독 티어 부가: 24h 업그레이드 오퍼 시작 시각 + 구독 갱신 예정일(결제 연동 시 사용)
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS pro_offer_started_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_renews_at TIMESTAMPTZ;
   `);
 
   await pool.query(`
