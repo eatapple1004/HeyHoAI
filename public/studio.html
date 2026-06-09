@@ -220,6 +220,7 @@
       <button id="modeInfluencer" class="active" onclick="setMode('influencer')">😎 Influencer</button>
       <button id="modeShopping" onclick="setMode('product')">🛍️ Product</button>
       <button id="modeUgc" onclick="setMode('ugc')">📢 UGC Ads</button>
+      <button id="modeHeadshot" onclick="setMode('headshot')">💼 Headshot</button>
     </div>
     <button class="addon-toggle brandkit-btn" id="brandkitBtn" onclick="openBrandkit()">🎨 Brand kit <span class="pro-tag">PRO</span><span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
@@ -375,7 +376,8 @@
 const GRAD={g1:'linear-gradient(150deg,#ffce7a,#ff7eb6)',g2:'linear-gradient(150deg,#7c6cff,#5ee0d6)',g3:'linear-gradient(150deg,#ff7eb6,#7c6cff)',g4:'linear-gradient(150deg,#5ee0d6,#7c6cff)',g5:'linear-gradient(150deg,#ffce7a,#ff5f8f)',g6:'linear-gradient(150deg,#a99bff,#ff7eb6)',g7:'linear-gradient(150deg,#5ee0d6,#9b7bff)',g8:'linear-gradient(150deg,#ff9a6b,#ffce7a)'};
 
 const MOCK_SUBJECTS={
-  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:GRAD.g3}]
+  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:GRAD.g3}],
+  headshot:[{id:'hs1',name:'My Face',emoji:'🧑🏻',grad:GRAD.g3}]
 };
 const MOCK_RECIPES={
   influencer:[
@@ -459,9 +461,29 @@ const VERTICALS={
       {id:'pe-crunch',cat:'Detail',name:'Macro Crunch',type:'image',cost:4,emoji:'🔬',grad:GRAD.g8},
       {id:'pe-onpet',cat:'OnPet',name:'On-Pet Fit',type:'image',cost:5,emoji:'🦮',grad:GRAD.g2},
       {id:'pe-talk',cat:'UGC',name:'Talking Pet Skit',type:'reel',cost:8,emoji:'🗣️',grad:GRAD.g7}
+    ]},
+  general:{label:'General',emoji:'📦',subjectTitle:'Add your product',subjectHint:"Any product that doesn't fit the other categories — candles, stationery, supplements, F&B, plants, gadgets. One clean photo, we build the rest.",uploadLabel:'Upload product photo',
+    subjects:[{id:'ge1',name:'Scented candle',emoji:'🕯️',grad:GRAD.g5},{id:'ge2',name:'Water bottle',emoji:'🍶',grad:GRAD.g2}],
+    recipes:[
+      {id:'ge-hero',cat:'Hero',name:'Clean Hero Pack',type:'image',cost:2,emoji:'📦',grad:GRAD.g2},
+      {id:'ge-life',cat:'Lifestyle',name:'Lifestyle-in-Context',type:'image',cost:2,emoji:'🏠',grad:GRAD.g8},
+      {id:'ge-pack',cat:'Packaging',name:'Packaging & Unboxing',type:'image',cost:2,emoji:'🎁',grad:GRAD.g5},
+      {id:'ge-macro',cat:'Detail',name:'Macro Detail',type:'image',cost:2,emoji:'🔬',grad:GRAD.g4},
+      {id:'ge-flat',cat:'FlatLay',name:'Flat-Lay Grid',type:'image',cost:2,emoji:'🧩',grad:GRAD.g7},
+      {id:'ge-drop',cat:'Reel',name:'Any-Product Drop Reel',type:'reel',cost:4,emoji:'🚀',grad:GRAD.g1},
+      {id:'ge-360',cat:'Reel',name:'Universal 360 Spin',type:'reel',cost:6,emoji:'🌀',grad:GRAD.g3}
     ]}
 };
-const VKEYS=['fashion','beauty','jewelry','food','home','tech','pet'];
+const VKEYS=['fashion','beauty','jewelry','food','home','tech','pet','general'];
+MOCK_RECIPES.headshot=[
+  {id:'hs-linkedin',cat:'Corporate',name:'LinkedIn Classic',type:'image',cost:2,emoji:'💼',grad:GRAD.g2},
+  {id:'hs-exec',cat:'Corporate',name:'Executive Authority',type:'image',cost:2,emoji:'🖤',grad:GRAD.g7},
+  {id:'hs-swap',cat:'Personal Brand',name:'Background & Wardrobe Swap',type:'image',cost:2,emoji:'🔁',grad:GRAD.g4},
+  {id:'hs-team',cat:'Team',name:'Team Page Consistent',type:'image',cost:2,emoji:'👥',grad:GRAD.g3},
+  {id:'hs-warm',cat:'Personal Brand',name:'Approachable Brand',type:'image',cost:2,emoji:'☀️',grad:GRAD.g8},
+  {id:'hs-speak',cat:'Reel',name:'Speaking Profile Reel',type:'reel',cost:2,emoji:'🎙️',grad:GRAD.g6},
+  {id:'hs-about',cat:'Reel',name:'About-Page Intro Reel',type:'reel',cost:4,emoji:'🎬',grad:GRAD.g5}
+];
 let state={mode:'influencer',vertical:'fashion',subjectId:null,recipeId:null,filter:'All'};
 let credits=HH.credits;
 
@@ -530,6 +552,7 @@ const THEME_LABEL={influencer:'Lifestyle',beauty:'Beauty',jewelry:'Jewelry',food
 function captionTheme(){
   if(state.mode==='ugc')return 'ugc';
   if(state.mode==='influencer')return 'influencer';
+  if(state.mode==='headshot')return 'influencer';
   const v=state.vertical;
   if(CAP_THEMES[v])return v; // beauty/jewelry/food/pet match vertical keys directly
   return 'product'; // fashion/home/tech → generic product
@@ -577,7 +600,8 @@ function saveBrandkit(){document.getElementById('bkOn').classList.remove('hidden
 
 const STEP1={
   influencer:['Add your face','Upload a clear selfie — we keep your identity across every shot.'],
-  ugc:['Add your spokesperson','Use your own face or pick an AI spokesperson to talk for you.']
+  ugc:['Add your spokesperson','Use your own face or pick an AI spokesperson to talk for you.'],
+  headshot:['Add your face','Upload a clear selfie — we turn it into studio-grade professional headshots.']
 };
 function setMode(m){
   const v=state.vertical||'fashion';
@@ -586,6 +610,7 @@ function setMode(m){
   document.getElementById('modeInfluencer').classList.toggle('active',m==='influencer');
   document.getElementById('modeShopping').classList.toggle('active',m==='product');
   document.getElementById('modeUgc').classList.toggle('active',m==='ugc');
+  document.getElementById('modeHeadshot').classList.toggle('active',m==='headshot');
   const ugc=(m==='ugc'), product=(m==='product');
   // industry picker (Product 모드 전용)
   document.getElementById('indRow').classList.toggle('hidden',!product);
@@ -624,7 +649,7 @@ function renderIndustries(){
 }
 function renderSubjects(){
   const subs=MOCK_SUBJECTS[state.mode];
-  const ul = state.mode==='product' ? VERTICALS[state.vertical].uploadLabel : {influencer:'Upload selfie',ugc:'Upload face'}[state.mode];
+  const ul = state.mode==='product' ? VERTICALS[state.vertical].uploadLabel : {influencer:'Upload selfie',ugc:'Upload face',headshot:'Upload selfie'}[state.mode];
   let h=`<div class="upload-box" onclick="mockUpload()"><div class="plus">＋</div><div class="label">${ul}</div><div class="sub">JPG / PNG · 1 photo</div></div>`;
   h+=subs.map(s=>`<div class="subject-card ${state.subjectId===s.id?'selected':''}" onclick="pickSubject('${s.id}')">
       <div class="thumb" style="background:${s.grad}">${s.emoji}</div><div class="check">✓</div>${!s.own?'<span class="sample-badge">Sample</span>':''}<div class="name">${s.name}</div></div>`).join('');
@@ -872,7 +897,7 @@ function closeDaily(){document.getElementById('dailyModal').classList.remove('op
 (function initStudio(){
   const p=new URLSearchParams(location.search);
   let m=p.get('mode')||localStorage.getItem('hh_lastMode')||'influencer';
-  if(['influencer','product','ugc'].indexOf(m)<0)m='influencer';
+  if(['influencer','product','ugc','headshot'].indexOf(m)<0)m='influencer';
   const ver=p.get('vertical')||localStorage.getItem('hh_lastVertical');
   if(m==='product'&&ver&&VERTICALS[ver])state.vertical=ver;
   setMode(m);
