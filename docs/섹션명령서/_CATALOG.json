@@ -1,0 +1,103 @@
+[
+  {
+    "key": "influencer",
+    "name": "인플루언서",
+    "mode": "face",
+    "status": "OK",
+    "file": "recipes.influencer.v2.js",
+    "count": 6,
+    "issues": []
+  },
+  {
+    "key": "fashion",
+    "name": "패션",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.fashion.v2.js",
+    "count": 7,
+    "issues": []
+  },
+  {
+    "key": "beauty",
+    "name": "뷰티",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.beauty.v2.js",
+    "count": 8,
+    "issues": []
+  },
+  {
+    "key": "jewelry",
+    "name": "주얼리",
+    "mode": "product",
+    "status": "draft(이슈)",
+    "file": "recipes.jewelry.v2.js",
+    "count": 6,
+    "issues": [
+      "가격사다리: 싼 릴스(≤◈4) 없음"
+    ]
+  },
+  {
+    "key": "food",
+    "name": "푸드&카페",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.food.v2.js",
+    "count": 7,
+    "issues": []
+  },
+  {
+    "key": "home",
+    "name": "홈&리빙",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.home.v2.js",
+    "count": 6,
+    "issues": []
+  },
+  {
+    "key": "tech",
+    "name": "테크",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.tech.v2.js",
+    "count": 7,
+    "issues": []
+  },
+  {
+    "key": "pet",
+    "name": "펫",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.pet.v2.js",
+    "count": 6,
+    "issues": []
+  },
+  {
+    "key": "ugc",
+    "name": "UGC광고",
+    "mode": "avatar",
+    "status": "OK",
+    "file": "recipes.ugc.v2.js",
+    "count": 7,
+    "issues": []
+  },
+  {
+    "key": "general",
+    "name": "General/기타제품",
+    "mode": "product",
+    "status": "pending(없음)",
+    "file": "—",
+    "count": 0,
+    "issues": []
+  },
+  {
+    "key": "headshot",
+    "name": "헤드샷/퍼스널",
+    "mode": "face",
+    "status": "pending(없음)",
+    "file": "—",
+    "count": 0,
+    "issues": []
+  }
+]
