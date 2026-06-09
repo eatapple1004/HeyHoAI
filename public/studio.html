@@ -682,6 +682,10 @@ async function generateImages(r,subj){
       </div></div>`).join('');
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${Q_LABEL[curQuality()]}${fail?` · ${fail} failed`:''} — Gallery에 자동 저장됨`;
+  // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
+  if(ok.some(x=>x.watermarked)){
+    toast('Watermark added on the free plan — upgrade to Pro for clean images ✨');
+  }
 }
 
 async function generateReel(r,subj){
