@@ -107,6 +107,22 @@
     ✅ 결제가 완료됐어요! 크레딧 반영까지 몇 초 걸릴 수 있어요. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">새로고침</a>
   </div>
 
+  <!-- 24h 업그레이드 오퍼 배너 (free 사용자 한정, /api/subscription 연동) -->
+  <div id="offerBanner" class="hidden" style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+       background:linear-gradient(120deg,rgba(255,176,90,.18),rgba(255,126,182,.14));border:1px solid var(--gold);border-radius:18px;padding:18px 22px;margin-bottom:24px">
+    <div>
+      <div style="font-family:'Sora';font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px">
+        ⚡ Launch offer — Pro <s style="color:var(--faint);font-weight:600">$<span id="offerList">39</span></s>
+        <b style="color:var(--gold)">$<span id="offerPrice">27</span></b><span style="font-size:13px;color:var(--dim);font-weight:600">/mo</span>
+        <span style="background:var(--gold);color:#1a1a27;font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;margin-left:6px"><span id="offerPct">30</span>% OFF</span>
+      </div>
+      <div style="font-size:13px;color:var(--dim)">No watermark · 600 credits/mo · HD — ends in
+        <b id="offerCountdown" style="color:var(--text);font-variant-numeric:tabular-nums">--:--:--</b>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="offerCta" onclick="upgradeToPro(this)">Upgrade to Pro</button>
+  </div>
+
   <div class="status fade d2">
     <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">크레딧 팩으로 충전해서 사용 — 구독은 준비 중</div></div>
     <div class="bal"><span class="num">◈ <span id="balNum">—</span></span><span class="lbl">credits left</span></div>
@@ -265,8 +281,76 @@ if(new URLSearchParams(location.search).get('purchased')){
   // status_url 반영이 약간 늦을 수 있으니 잠시 후 한 번 더
   setTimeout(loadBalance,3000);
 }
+// ═══ 24h 업그레이드 오퍼 (/api/subscription) ═══
+function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
+let offerTimer=null;
+function fmtHMS(s){
+  s=Math.max(0,s|0);
+  const h=String(Math.floor(s/3600)).padStart(2,'0');
+  const m=String(Math.floor((s%3600)/60)).padStart(2,'0');
+  const sec=String(s%60).padStart(2,'0');
+  return `${h}:${m}:${sec}`;
+}
+function startCountdown(seconds){
+  if(offerTimer)clearInterval(offerTimer);
+  let left=seconds;
+  const el=document.getElementById('offerCountdown');
+  el.textContent=fmtHMS(left);
+  offerTimer=setInterval(()=>{
+    left-=1;
+    if(left<=0){ clearInterval(offerTimer); document.getElementById('offerBanner').classList.add('hidden'); return; }
+    el.textContent=fmtHMS(left);
+  },1000);
+}
+async function loadSubscription(){
+  try{
+    let sub=(await(await fetch('/api/subscription')).json()).data;
+    if(!sub)return;
+    // free 사용자가 빌링 페이지를 처음 보면 24h 오퍼 시작(멱등)
+    if(sub.plan==='free' && !sub.offer.active){
+      try{ sub=(await(await fetch('/api/subscription/offer/start',{method:'POST'})).json()).data || sub; }catch(e){}
+    }
+    // 실제 플랜 반영 (admin/unlimited는 loadBalance가 별도 처리)
+    if(sub.plan!=='free' && sub.planName){
+      document.getElementById('planName').textContent=sub.planName;
+      if(sub.renewsAt){
+        document.getElementById('planNote').textContent='다음 갱신 '+new Date(sub.renewsAt).toLocaleDateString();
+      }
+    }
+    // 오퍼 배너
+    const banner=document.getElementById('offerBanner');
+    if(sub.offer && sub.offer.active){
+      document.getElementById('offerList').textContent=sub.offer.listPrice;
+      document.getElementById('offerPrice').textContent=sub.offer.offerPrice;
+      document.getElementById('offerPct').textContent=sub.offer.discountPct;
+      banner.classList.remove('hidden');
+      startCountdown(sub.offer.secondsLeft);
+    }else{
+      banner.classList.add('hidden');
+    }
+  }catch(e){console.error(e);}
+}
+async function upgradeToPro(btn){
+  btn.disabled=true;const orig=btn.textContent;btn.textContent='…';
+  try{
+    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:'pro'})});
+    const d=await res.json();
+    if(d.success){
+      notify('Pro로 업그레이드됐어요! 🎉');
+      if(offerTimer)clearInterval(offerTimer);
+      loadSubscription();loadBalance();
+    }else if(d.comingSoon){
+      notify('구독 결제는 곧 오픈됩니다 — 가맹점 심사 통과 후 활성화돼요.');
+    }else{
+      notify(d.error||'업그레이드에 실패했어요.','error');
+    }
+  }catch(e){ notify('업그레이드 연결에 실패했어요.','error'); }
+  finally{ btn.disabled=false;btn.textContent=orig; }
+}
+
 loadPayConfig();
 loadBalance();
+loadSubscription();
 </script>
 </body>
 </html>
