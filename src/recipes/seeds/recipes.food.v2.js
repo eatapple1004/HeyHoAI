@@ -4,7 +4,7 @@
  *
  * v1→v2 변경 내역:
  *  - 360 Glaze Spin 제거 (Sizzle & Steam ASMR와 근접 중복)
- *  - Full Menu Pack ◈8→◈6 재정가 (8샷 기준; 12–16 메뉴 확장 시 ◈8 복원)
+ *  - Full Menu Pack ◈8 cut→replace → Menu / Price Card ◈3 (count 6; 정직 재정가, 12–16 메뉴 확장 시 ◈4+)
  *  - ADD: Menu / Price Card (text_overlay 레이어 방식, 텍스트 SAFETY_NEGATIVE 우회)
  *  - ADD: Serving & Table Lifestyle (인물 손·테이블 맥락, 소셜 콘텐츠용)
  *  - ADD: Single-Dish Sizzle (◈2 1-shot 최저가 릴)
@@ -78,7 +78,7 @@ module.exports = [
   },
 
   /* ─────────────────────────────────────────────
-     2. Drip & Steam Macro  |  image_set ◈4  |  KEEP
+     2. Drip & Steam Macro  |  image_set ◈2  |  KEEP (◈4→◈2 재정가)
      음료·디저트 식욕 자극 클로즈업 — 전환율 최고 정지 이미지
   ───────────────────────────────────────────── */
   {
@@ -145,7 +145,7 @@ module.exports = [
   },
 
   /* ─────────────────────────────────────────────
-     3. Golden-Hour Cafe Mood  |  image_set ◈3  |  KEEP
+     3. Golden-Hour Cafe Mood  |  image_set ◈2  |  KEEP (◈3→◈2 재정가)
      분위기 판매형 카페·브런치 라이프스타일 세트
   ───────────────────────────────────────────── */
   {
@@ -212,7 +212,7 @@ module.exports = [
   },
 
   /* ─────────────────────────────────────────────
-     4. Serving & Table Lifestyle  |  image_set ◈3  |  NEW
+     4. Serving & Table Lifestyle  |  image_set ◈2  |  NEW ⚠️(손·needs_human_review)
      손·테이블 맥락 라이프스타일 — 현대 레스토랑 소셜 콘텐츠 핵심 JTBD
   ───────────────────────────────────────────── */
   {
@@ -224,6 +224,10 @@ module.exports = [
     "credit_cost": 2,
     "sort_order": 4,
     "rationale": "레스토랑·카페 소셜에서 '실제 서빙 순간'이 가장 저장·공유율이 높음; 손·테이블·주변 맥락을 더해 인간적 온기와 현장감을 전달.",
+    "meta": {
+      "flags": ["needs_human_review"],
+      "review_reason": "손(hand) 렌더링 — 융합·추가 손가락·기형 손 위험. 단일 손·정확히 5손가락·얼굴 미노출(제품 모드) 보장을 위해 사람 검수 필요."
+    },
     "config": {
       "schema_version": 1,
       "mode": "product",
@@ -279,7 +283,7 @@ module.exports = [
   },
 
   /* ─────────────────────────────────────────────
-     5. Menu / Price Card  |  image_set ◈6  |  NEW
+     5. Menu / Price Card  |  image_set ◈3  |  NEW 🅣(text_overlay)
      텍스트 오버레이 방식 — SAFETY_NEGATIVE 'text'/'logo' 미포함
      모델은 요리 그리드 배경만 생성; 메뉴명·가격 텍스트는 결정론적 오버레이 레이어
   ───────────────────────────────────────────── */
@@ -424,7 +428,7 @@ module.exports = [
   },
 
   /* ─────────────────────────────────────────────
-     7. Sizzle & Steam ASMR  |  reel ◈6  |  KEEP (360 Glaze 흡수)
+     7. Sizzle & Steam ASMR  |  reel ◈6  |  KEEP (360 Glaze 흡수) ⚠️(360 모핑·needs_human_review)
      3-shot 시네마틱 릴 — 알고리즘 히어로 ASMR
   ───────────────────────────────────────────── */
   {
@@ -436,6 +440,10 @@ module.exports = [
     "credit_cost": 6,
     "sort_order": 7,
     "rationale": "알고리즘 쇼트폼을 노리는 레스토랑·길거리음식 브랜드; 스팀·글레이즈·풀백 3-shot ASMR 릴이 카탈로그 모션 히어로. 360 Glaze Spin(중복)을 흡수해 통합.",
+    "meta": {
+      "flags": ["needs_human_review"],
+      "review_reason": "풀백/오빗 모션 중 토핑·패싯·dish geometry 모핑 위험. 프레임 간 일관성 유지를 위해 사람 검수 필요."
+    },
     "config": {
       "schema_version": 1,
       "mode": "product",

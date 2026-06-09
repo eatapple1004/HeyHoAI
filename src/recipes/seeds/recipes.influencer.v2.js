@@ -205,7 +205,7 @@ module.exports = [
   },
   {
     "mode": "influencer",
-    "category": "Reels",
+    "category": "Reel",
     "name": "GRWM Aurora Reel",
     "output_type": "reel",
     "credit_cost": 6,
@@ -277,7 +277,7 @@ module.exports = [
   },
   {
     "mode": "influencer",
-    "category": "Reels",
+    "category": "Reel",
     "name": "Day-in-Life Reel",
     "output_type": "reel",
     "credit_cost": 4,
@@ -343,7 +343,7 @@ module.exports = [
   },
   {
     "mode": "influencer",
-    "category": "Reels",
+    "category": "Reel",
     "name": "Product Haul Reel",
     "output_type": "reel",
     "credit_cost": 6,
@@ -377,8 +377,8 @@ module.exports = [
           "texture:skin_natural",
           "context:lifestyle_indoor"
         ],
-        "extra_positive": "influencer product haul reel, creator casually presenting and reacting to a product, authentic try-on and unboxing energy, clean bright key light (soft box), warm neutral background, direct-to-camera engagement, natural persuasive enthusiasm, 85mm portrait lens look",
-        "negative": "extra fingers, deformed hands, single hand showing exactly five fingers, melted or fused fingers, floating disembodied hand, warped face, plastic skin, harsh shadows, cluttered background, identity drift between shots"
+        "extra_positive": "influencer product haul reel, creator casually presenting and reacting to a product, authentic try-on and unboxing energy, clean bright key light (soft box), warm neutral background, direct-to-camera engagement, natural persuasive enthusiasm, 85mm portrait lens look, the product-holding hand is a single well-formed hand with exactly five natural fingers and an anatomically correct grip",
+        "negative": "extra fingers, missing fingers, deformed hands, melted or fused fingers, six fingers, floating disembodied hand, warped face, plastic skin, harsh shadows, cluttered background, identity drift between shots"
       },
       "shot_strategy": "list",
       "shots": [

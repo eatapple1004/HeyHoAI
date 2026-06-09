@@ -14,7 +14,7 @@
     "mode": "product",
     "status": "OK",
     "file": "recipes.fashion.v2.js",
-    "count": 7,
+    "count": 8,
     "issues": []
   },
   {
@@ -30,12 +30,10 @@
     "key": "jewelry",
     "name": "주얼리",
     "mode": "product",
-    "status": "draft(이슈)",
+    "status": "OK",
     "file": "recipes.jewelry.v2.js",
-    "count": 6,
-    "issues": [
-      "가격사다리: 싼 릴스(≤◈4) 없음"
-    ]
+    "count": 7,
+    "issues": []
   },
   {
     "key": "food",
@@ -86,18 +84,18 @@
     "key": "general",
     "name": "General/기타제품",
     "mode": "product",
-    "status": "pending(없음)",
-    "file": "—",
-    "count": 0,
+    "status": "OK",
+    "file": "recipes.general.v2.js",
+    "count": 7,
     "issues": []
   },
   {
     "key": "headshot",
     "name": "헤드샷/퍼스널",
     "mode": "face",
-    "status": "pending(없음)",
-    "file": "—",
-    "count": 0,
+    "status": "OK",
+    "file": "recipes.headshot.v2.js",
+    "count": 7,
     "issues": []
   }
 ]

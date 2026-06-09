@@ -7,6 +7,11 @@
  *     (SAFETY_NEGATIVE 충돌 방지 — 모델이 clean callout zone만 렌더링하고 텍스트 오버레이는 결정론적 레이어로 처리)
  *   - In-hand Quick Demo (신규): 2-shot partial-hand demo reel, ◈4, meta.flags=['experimental']
  *     (in-hand framing 도입 — partial/cropped hand로 AI-risk 최소화)
+ *   - Tech Unbox ASMR: 이름 전역 고유화 (구 'Unbox ASMR Reel' — jewelry.v2와 충돌 → vertical 접두).
+ *
+ * v2 검증·확정 (2026-06-10): 7개 keep 확정. Quick Hero Snap(1샷 ◈2 진입 릴) add 후보는 보류
+ *   — 기존 In-hand Quick Demo가 이미 ◈4 싼 릴스 티어를 채워 influencer/fashion/home/pet와 동일,
+ *     강제 결손 아님. 가격 사다리 I2 I2 I2 I2 · R4 R6 R6 (위반 0) 그대로 확정.
  */
 module.exports = [
   {
@@ -331,7 +336,7 @@ module.exports = [
     "mode": "product",
     "vertical": "tech",
     "category": "Reel",
-    "name": "Unbox ASMR Reel",
+    "name": "Tech Unbox ASMR",
     "output_type": "reel",
     "credit_cost": 6,
     "sort_order": 6,

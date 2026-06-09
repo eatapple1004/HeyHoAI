@@ -1,19 +1,27 @@
 /**
- * Doppia recipe seed — fashion (product mode), v2 (7 templates).
+ * Doppia recipe seed — fashion (product mode), v2 (8 templates).
  * 통합 스키마 v1 (docs/TEMPLATE_STRUCTURE.md: A2 layered + A5 shot-list). recipes 테이블에 INSERT.
  *
- * v2 변경 요약:
- *  - Editorial Lookbook → On-Model Studio 스타일 배리언트로 병합(슬롯 해제)
- *  - On-Model Studio 재가격 ◈6→◈5 (product_composite 4-shot 캐논 적용)
- *  - Fit & Size On-Body 신규 추가 (on_model_tryon ◈5; 최우선 전환 프레임)
- *  - Quick-Drop Teaser Reel 신규 추가 (2-shot ◈4; 저가 릴 요건 충족)
- *  - 360 Detail Spin 재가격 ◈8→◈6 + 범위 product turntable 한정 (AI 리스크 완화)
- *  - Macro Texture Shots 유지 ◈3 (품질 프리미엄 업차지)
- *  - Lifestyle Scene Pack 유지 ◈2 (≥1 ◈2 이미지 항목 요건 충족)
- *  - GRWM Drop Reel 유지 ◈6 (≤◈6 릴 요건 충족)
+ * 가격 사다리(확정): I2 I2 I5 I5 · R4 R4 R6 R6
+ *   = Lifestyle◈2 · Macro◈2 · On-Model Studio◈5 · Fit&Size◈5
+ *   · Quick-Drop◈4 · Outfit Transition◈4 · GRWM◈6 · 360◈6
+ * 비용공식(시드 캐논): image product_composite=ceil(count×0.5) · image on_model_tryon=count+1
+ *   · reel=shots×2.  (4컷 composite=◈2, 온모델4컷=◈5, 2샷릴=◈4, 3샷릴=◈6 — 위반 0)
  *
- * 엔진 제약: SAFETY_NEGATIVE가 모든 렌더에 'text'/'logo' 주입 → look.negative에서 제외하고
- *   config.text_overlay=true + meta.render_notes로 결정론적 오버레이 레이어 처리.
+ * v2 발굴·선별·강화 결정 이력:
+ *  - Editorial Lookbook → On-Model Studio 스타일 배리언트로 병합(슬롯 해제)
+ *  - On-Model Studio 재가격 ◈6→◈5 (on_model_tryon 4-shot 캐논)
+ *  - Fit & Size On-Body 신규 (on_model_tryon ◈5; 최우선 전환 프레임)
+ *  - Quick-Drop Teaser Reel 신규 (2-shot ◈4; 저가 릴 요건 충족)
+ *  - Outfit Transition Reel 신규 add (2-shot ◈4; 틱톡 1순위 패션 포맷·전환 직결, 세트 공백 메움)
+ *  - 360 Product Spin 재가격 ◈8→◈6 + product turntable 한정 (온모델 360 모핑 리스크 차단)
+ *  - Macro Texture Shots 재가격 ◈3→◈2 (base 4-shot 레이트로 정렬; ◈2 진입 1종 추가)
+ *  - Lifestyle Scene Pack 유지 ◈2 (≥1 ◈2 이미지 항목 요건 충족)
+ *  - GRWM Drop Reel 유지 ◈6 (keep; Outfit Transition과 무드 일부 중복하나 얼굴/손 GRWM 무드는 별개)
+ *
+ * 엔진 제약: SAFETY_NEGATIVE가 모든 렌더에 'text'/'logo' 주입 → 🅣(글자/사이즈 콜아웃) 템플릿은
+ *   글자를 AI로 그리지 말고 look.negative에서 text/logo 제외 + config.text_overlay=true +
+ *   meta.overlay_spec로 결정론적 오버레이 레이어 처리(Fit & Size On-Body).
  */
 module.exports = [
   // ─── 1. On-Model Studio ──────────────────────────────────────────────────
@@ -233,7 +241,7 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 2,
     "sort_order": 4,
-    "rationale": "Premium and craft brands justifying price: extreme close-ups of weave, stitching and hardware that communicate quality and material on the PDP. ◈3 premium upcharge over base 4-shot rate reflects focus-stack processing overhead.",
+    "rationale": "Premium and craft brands justifying price: extreme close-ups of weave, stitching and hardware that communicate quality and material on the PDP. Priced at the base 4-shot rate (◈2) to keep a low-cost entry image item in the catalog.",
     "config": {
       "schema_version": 1,
       "mode": "product",
@@ -352,7 +360,75 @@ module.exports = [
     }
   },
 
-  // ─── 6. GRWM Drop Reel ───────────────────────────────────────────────────
+  // ─── 6. Outfit Transition Reel ───────────────────────────────────────────
+  {
+    "mode": "product",
+    "vertical": "fashion",
+    "category": "Reel",
+    "name": "Outfit Transition Reel",
+    "output_type": "reel",
+    "credit_cost": 4,
+    "sort_order": 6,
+    "rationale": "Fashion sellers chasing the #1 TikTok/Reels fashion format: a snap-transition reel that flips Look A to Look B in two beats — feed-native conversion energy that fills the one gap (outfit transition) the rest of the catalog leaves open.",
+    "meta": {
+      "flags": ["experimental", "needs_human_review"],
+      "render_notes": "Snap transition is the highest garment-morph risk in the set: garment color/print/seams/hardware must stay identical to reference across BOTH looks AND through the transition frame (no garment warp during transition). Hands-snap gesture risks finger distortion — queue for human QA. If morph artifacts appear at the A→B beat, fall back from whip to a hard cut."
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "reel",
+        "count": 2,
+        "aspect_ratio": "9:16"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Fashion",
+        "attributes": [
+          "lighting:studio_softbox",
+          "color:neutral_true",
+          "texture:fabric_weave",
+          "context:seamless_studio"
+        ],
+        "extra_positive": "two-look outfit transition reel, snap/whip transition from Look A to Look B, uploaded garment featured as the hero look, garment color/print/seams/hardware identical to reference in every frame and through the transition, energetic feed-native vertical 9:16 styling, confident natural model, clean light grey studio or minimal lifestyle backdrop",
+        "negative": "warped or morphing garment during transition, color or print shift between looks, mismatched seams, garment floating off body, extra fingers, fused fingers, distorted hands, plastic skin, flickering identity, jittery unstable motion, watermark, duplicated limbs, harsh shadows"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "clean light grey studio or minimal backdrop, Look A established",
+          "pose": "front-on in first styling (Look A), arm raised mid finger-snap to trigger the swap — natural hands, five fingers",
+          "composition": "full_body"
+        },
+        {
+          "scene": "identical framing, Look B revealed after the snap",
+          "pose": "front-on in second styling (Look B), confident settled stance — garment color/print unchanged, no warp",
+          "composition": "full_body"
+        }
+      ],
+      "reel": {
+        "per_shot_motion": [
+          "hold on Look A then a fast whip-pan blur as the hand crosses frame on the snap",
+          "whip resolves onto Look B with a subtle settle, garment crisp and stable"
+        ],
+        "duration_per_shot": 3,
+        "transition": "whip",
+        "music_mood": "upbeat",
+        "captions": "auto"
+      },
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+
+  // ─── 7. GRWM Drop Reel ───────────────────────────────────────────────────
   {
     "mode": "product",
     "vertical": "fashion",
@@ -360,7 +436,7 @@ module.exports = [
     "name": "GRWM Drop Reel",
     "output_type": "reel",
     "credit_cost": 6,
-    "sort_order": 6,
+    "sort_order": 7,
     "rationale": "Creators and DTC brands launching a drop: a get-ready-with-me styling reel that rides TikTok/Reels trends to announce new product without a shoot.",
     "meta": {
       "flags": ["experimental", "needs_human_review"],
@@ -426,7 +502,7 @@ module.exports = [
     }
   },
 
-  // ─── 7. 360 Product Spin ─────────────────────────────────────────────────
+  // ─── 8. 360 Product Spin ─────────────────────────────────────────────────
   {
     "mode": "product",
     "vertical": "fashion",
@@ -434,7 +510,7 @@ module.exports = [
     "name": "360 Product Spin",
     "output_type": "reel",
     "credit_cost": 6,
-    "sort_order": 7,
+    "sort_order": 8,
     "rationale": "E-commerce sellers reducing returns: a clean rotating product turntable reel (garment only — not on-model) that shows drape and construction from every angle on the PDP. Scoped to product turntable to avoid on-model 360 morph risk.",
     "meta": {
       "flags": ["experimental"],

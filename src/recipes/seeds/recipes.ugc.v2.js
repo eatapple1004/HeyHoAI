@@ -10,6 +10,16 @@
  * - 크레딧 전체 재조정: ◈2 / ◈2 / ◈4 / ◈4 / ◈6 / ◈8 사다리 완성
  * - lip-sync 위험 레시피에 meta.flags + 강화된 negative 적용
  * - text_overlay 정적 광고에 적용 (SAFETY_NEGATIVE 'text'/'logo' 충돌 방지)
+ *
+ * v2 검증·확정 (2026-06-10) — 4축 검증 통과, 7개 그대로 확정:
+ * - (a) 커버리지: 7개 ↔ 7개 JTBD 1:1 정합, 중복 0 (Static·POV·Hook+CTA·Unboxing·Problem→Solution·Talking-Head·Demo).
+ * - (b) 가격사다리/비용공식: I2 · R2 R4 R4 R6 R6 R8 — image=count×0.5, reel=shots×2 전수 일치, ◈2 진입+◈2 릴 충족, 위반 0.
+ * - (c) lip-sync 5종: 전부 flags:[experimental, needs_human_review] + anti-desync negative.
+ *       Unboxing Shot1 / Product Demo Shot2 는 얼굴없는 무음 B-roll 로 분리하여 립싱크 의존도↓.
+ * - (d) 🅣 Static: text_overlay:true, look.negative 에 'text'/'logo' 미포함 — imagePrompt.builder.js
+ *       SAFETY_NEGATIVE_PROMPT 가 'text'/'logo' 를 전역 주입하므로 중복/충돌 방지 (검증 완료).
+ * - 이름 전역 고유: 7개 모두 전 v2 시드(59개 이름) 대비 충돌 없음.
+ * - keep 7 / cut 0 / merge 0 / add 0 (Text-Hook Static Carousel 은 Static 의 variant 로 흡수 권장).
  */
 module.exports = [
   // ─────────────────────────────────────────────

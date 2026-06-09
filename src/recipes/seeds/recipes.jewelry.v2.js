@@ -1,5 +1,5 @@
 /**
- * Doppia recipe seed — jewelry (product mode), 6 templates — v2.
+ * Doppia recipe seed — jewelry (product mode), 7 templates — v2.
  * 통합 스키마 v1. recipes 테이블에 INSERT.
  *
  * v2 changelog vs v1:
@@ -9,7 +9,19 @@
  *  - Wrist & Hand: repriced ◈6 → ◈5 (on_model_tryon 4-shot special);
  *      AI-risk flags + hardened finger negative + cropped-hand framing note.
  *  - Light Play Reel: kept at ◈6 (3-shot reel, pricing already correct).
- *  - Unbox ASMR Reel: cut from 4 → 3 shots to reprice ◈8 → ◈6.
+ *  - Unbox ASMR Reel → renamed "Jewelry Unbox ASMR" (was duplicating tech's
+ *      "Unbox ASMR Reel" — names must be globally unique); cut 4 → 3 shots ◈8 → ◈6.
+ *  - Sparkle Snap added (NEW): 1-shot ◈2 cheap reel. Jewelry was the ONLY
+ *      catalog with no ≤◈4 reel; this closes the price-ladder gap and gives
+ *      Kai a low-cost retention-drip clip. Ladder now I2 I2 I2 I5 · R2 R6 R6.
+ *
+ * v2 validation decisions (4-axis: coverage / 2026-trend / cost-value / AI-risk):
+ *  - KEEP 6 originals — they cover all 5 conversion JTBDs (macro / sizing /
+ *      try-on / sparkle / unboxing) and pass the cost formula.
+ *  - ADD Sparkle Snap (cheap-reel gap, validator-flagged) — adopted.
+ *  - DECLINE Stack & Layering and Spec/Material Card — deferred to v3. Spec Card
+ *      duplicates Scale & Sizing's 🅣 overlay mechanic; Stack & Layering is a
+ *      genuine AOV idea but not blocking. Kept set tight at 7 (6–8 range).
  */
 module.exports = [
   // ─── 1. FACET MACRO ──────────────────────────────────────────────────────────
@@ -276,7 +288,65 @@ module.exports = [
     }
   },
 
-  // ─── 5. LIGHT PLAY REEL (3 shots = ◈6) ──────────────────────────────────────
+  // ─── 5. SPARKLE SNAP (1 shot = ◈2, cheap reel) ──────────────────────────────
+  {
+    "mode": "product",
+    "vertical": "jewelry",
+    "category": "Reel",
+    "name": "Sparkle Snap",
+    "output_type": "reel",
+    "credit_cost": 2,
+    "sort_order": 5,
+    "rationale": "The cheapest reel slot — a single slow push-in where one bar of light crosses the facets and the stone ignites. Designed for instant Stories/Shorts posting and low-cost retention drip. Closes jewelry's price-ladder gap (the only catalog that had no ≤◈4 reel). No hands, product only — low AI-risk.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "reel",
+        "count": 1,
+        "aspect_ratio": "9:16"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Cinematic",
+        "attributes": [
+          "lighting:single_moving_highlight",
+          "color:warm_gold_sparkle",
+          "texture:facet_fire_dispersion",
+          "context:dark_reflective_stage"
+        ],
+        "extra_positive": "single-shot cinematic jewelry sparkle clip, 100mm macro look, one slow specular highlight bar traveling across the facets to ignite rainbow fire and dispersion at the peak, deep dark reflective stage with soft falloff, the stone and metal finish identical to the reference, hypnotic luxury mood, ready-to-post vertical short",
+        "negative": "flickering product, warped or morphing stone, jittery motion, duplicated piece, blown highlights, color banding, distorted metal, text artifacts, watermark, plastic look, motion smearing on edges"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "dark reflective stage, single moving spotlight",
+          "pose": "front macro of the center stone as one light bar crosses the facets",
+          "composition": "closeup"
+        }
+      ],
+      "reel": {
+        "per_shot_motion": [
+          "slow push-in zoom as the highlight sweeps across and the sparkle settles at peak"
+        ],
+        "duration_per_shot": 4,
+        "transition": "none",
+        "music_mood": "luxe ambient shimmer",
+        "captions": "auto"
+      },
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+
+  // ─── 6. LIGHT PLAY REEL (3 shots = ◈6) ──────────────────────────────────────
   {
     "mode": "product",
     "vertical": "jewelry",
@@ -284,7 +354,7 @@ module.exports = [
     "name": "Light Play Reel",
     "output_type": "reel",
     "credit_cost": 6,
-    "sort_order": 5,
+    "sort_order": 6,
     "rationale": "A scroll-stopping sparkle reel for IG and TikTok that sells the fire and brilliance of a stone better than any still can. 3 shots at ◈6 is the sweet spot for social engagement vs cost.",
     "config": {
       "schema_version": 1,
@@ -346,16 +416,16 @@ module.exports = [
     }
   },
 
-  // ─── 6. UNBOX ASMR REEL (3 shots = ◈6, down from 4-shot ◈8) ─────────────────
+  // ─── 7. JEWELRY UNBOX ASMR (3 shots = ◈6, down from 4-shot ◈8) ──────────────
   {
     "mode": "product",
     "vertical": "jewelry",
     "category": "Reel",
-    "name": "Unbox ASMR Reel",
+    "name": "Jewelry Unbox ASMR",
     "output_type": "reel",
     "credit_cost": 6,
-    "sort_order": 6,
-    "rationale": "The high-conversion gifting reel: the tactile box-open moment drives high-AOV purchases. Cut from 4→3 shots to reprice ◈8→◈6 while keeping the core narrative: closed box → reveal → hero piece. Hands-in-frame carries same finger AI-risk as Wrist & Hand — flag for QA.",
+    "sort_order": 7,
+    "rationale": "The high-conversion gifting reel: the tactile box-open moment drives high-AOV purchases. Cut from 4→3 shots to reprice ◈8→◈6 while keeping the core narrative: closed box → reveal → hero piece. Renamed from 'Unbox ASMR Reel' to keep names globally unique (tech catalog owns that name). Hands-in-frame carries same finger AI-risk as Wrist & Hand — flag for QA.",
     "meta": {
       "flags": ["experimental", "needs_human_review"],
       "render_notes": "Shots 2–3 include hands. QA must verify: correct finger count, no fused fingers, natural knuckle joints. Prefer gloved-hand or finger-tip-only framing where possible to reduce artifact risk."

@@ -1,5 +1,5 @@
 /**
- * Doppia recipe seed — beauty (product/brand mode), v2, 6 templates.
+ * Doppia recipe seed — beauty (product/brand mode), v2, 8 templates.
  * 스키마 v1 (docs/TEMPLATE_STRUCTURE.md: A2 layered + A5 shot-list). recipes 테이블에 INSERT.
  *
  * v2 변경 사항:
