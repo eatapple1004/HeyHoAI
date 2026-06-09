@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Seller earnings</title>
+<link rel="stylesheet" href="/css/theme.css?v=2" />
+<script src="/saas-auth.js" defer></script>
+<style>
+  .wrap{max-width:920px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:38px}
+  .stat{padding:20px;text-align:center}
+  .stat .n{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
+  .stat .n.gold{color:var(--gold)}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
+
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+
+  /* 크리에이터 신청 CTA */
+  .apply{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:24px 26px;margin-bottom:30px}
+  .apply .ai b{font-family:'Sora';font-size:17px;font-weight:700;display:block;margin-bottom:4px}
+  .apply .ai p{font-size:13px;color:var(--dim);line-height:1.5}
+
+  /* 템플릿별 수익 표 */
+  .tbl{width:100%;border-collapse:collapse;margin-bottom:40px}
+  .tbl th{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .tbl th.r,.tbl td.r{text-align:right}
+  .tbl td{padding:14px;border-bottom:1px solid var(--line);font-size:14px}
+  .tbl .tname{font-weight:600}
+  .tbl .tmeta{font-size:12px;color:var(--faint);margin-top:2px}
+  .tbl .earned{font-family:'Sora';font-weight:700;color:var(--gold)}
+  .empty{text-align:center;padding:40px;color:var(--faint);font-size:14px}
+
+  /* 최근 적립 */
+  .feed{display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px}
+  .row .rd{font-size:13.5px}
+  .row .rt{font-size:12px;color:var(--faint);margin-top:2px}
+  .row .ra{font-family:'Sora';font-weight:700;color:var(--gold);white-space:nowrap}
+
+  @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.tbl .hide-sm{display:none}}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
+    <div class="nav-links">
+      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a onclick="location.href='/gallery.html'">Gallery</a>
+      <a onclick="location.href='/billing.html'">Billing</a>
+      <a onclick="location.href='/business.html'">Business</a>
+    </div>
+    <div class="credits"><span class="coin">◈</span> <span id="navBalance">—</span> credits
+      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+    </div>
+    <div class="credits" id="saasUserBox"></div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1 class="fade d1">Seller earnings</h1>
+  <div class="sub fade d1">Publish templates on the marketplace and earn <b style="color:var(--gold)" id="shareLbl">70%</b> in credits every time someone uses a paid template of yours.</div>
+
+  <!-- 크리에이터가 아니면 신청 CTA -->
+  <div class="apply glass fade d2" id="applyBox" style="display:none">
+    <div class="ai"><b>Become a seller</b><p>Get instant approval, publish your prompts as templates, and start earning credits from every paid use.</p></div>
+    <button class="btn btn-primary" id="applyBtn" onclick="apply(this)">Become a seller →</button>
+  </div>
+
+  <div class="stats fade d2">
+    <div class="stat glass"><div class="n gold" id="stEarned">—</div><div class="l">Total earned (◈)</div></div>
+    <div class="stat glass"><div class="n" id="stPayouts">—</div><div class="l">Paid uses</div></div>
+    <div class="stat glass"><div class="n" id="stTemplates">—</div><div class="l">Published</div></div>
+    <div class="stat glass"><div class="n" id="stShare">70%</div><div class="l">Your share</div></div>
+  </div>
+
+  <div class="section-label fade d3">Earnings by template</div>
+  <table class="tbl fade d3" id="tplTable">
+    <thead>
+      <tr>
+        <th>Template</th>
+        <th class="r hide-sm">Price (◈)</th>
+        <th class="r hide-sm">Total uses</th>
+        <th class="r">Paid uses</th>
+        <th class="r">Earned (◈)</th>
+      </tr>
+    </thead>
+    <tbody id="tplBody"></tbody>
+  </table>
+  <div class="empty" id="tplEmpty" style="display:none">No published templates yet — publish one from the <a style="color:var(--accent)" onclick="location.href='/marketplace.html'">Market</a> to start earning.</div>
+
+  <div class="section-label fade d4">Recent payouts</div>
+  <div class="feed fade d4" id="feed"></div>
+  <div class="empty" id="feedEmpty" style="display:none">No payouts yet. Earnings appear here as people use your paid templates.</div>
+</div>
+
+<script>
+// ═══ 실제 연결: /api/marketplace/earnings ═══
+async function loadBalance(){
+  try{const d=await(await fetch('/api/credits')).json();if(d.success)document.getElementById('navBalance').textContent=d.data.unlimited?'∞':d.data.balance;}catch(e){}
+}
+function fmtDate(s){try{return new Date(s).toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(e){return '';}}
+async function load(){
+  try{
+    const d=await(await fetch('/api/marketplace/earnings')).json();
+    if(!d.success)return;
+    const x=d.data;
+    const pct=Math.round((x.creatorShare||0.7)*100)+'%';
+    document.getElementById('shareLbl').textContent=pct;
+    document.getElementById('stShare').textContent=pct;
+    document.getElementById('stEarned').textContent='◈ '+x.totalEarned;
+    document.getElementById('stPayouts').textContent=x.payoutCount;
+    document.getElementById('stTemplates').textContent=(x.templates||[]).length;
+    document.getElementById('applyBox').style.display=x.isCreator?'none':'flex';
+
+    // 템플릿별 수익
+    const body=document.getElementById('tplBody');
+    if(!x.templates||!x.templates.length){
+      document.getElementById('tplTable').style.display='none';
+      document.getElementById('tplEmpty').style.display='block';
+    }else{
+      body.innerHTML=x.templates.map(t=>`
+        <tr>
+          <td><div class="tname">${t.emoji||'🎨'} ${esc(t.name)}</div><div class="tmeta">${esc(t.category)} · ${t.type==='reel'?'Reel':'Image'}</div></td>
+          <td class="r hide-sm">${t.price_credits>0?'◈ '+t.price_credits:'Free'}</td>
+          <td class="r hide-sm">${t.usage_count}</td>
+          <td class="r">${t.uses_paid}</td>
+          <td class="r earned">◈ ${t.earned}</td>
+        </tr>`).join('');
+    }
+
+    // 최근 적립
+    const feed=document.getElementById('feed');
+    if(!x.recent||!x.recent.length){
+      document.getElementById('feedEmpty').style.display='block';
+    }else{
+      feed.innerHTML=x.recent.map(r=>`
+        <div class="row glass">
+          <div><div class="rd">${esc(r.description||'Template royalty')}</div><div class="rt">${fmtDate(r.created_at)}</div></div>
+          <div class="ra">+◈ ${r.amount}</div>
+        </div>`).join('');
+    }
+  }catch(e){}
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function apply(btn){
+  btn.disabled=true;btn.textContent='…';
+  try{
+    const d=await(await fetch('/api/marketplace/apply',{method:'POST'})).json();
+    if(d.success){if(window.toast)toast('You\'re now a seller — publish your first template!');load();}
+    else{btn.disabled=false;btn.textContent='Become a seller →';}
+  }catch(e){btn.disabled=false;btn.textContent='Become a seller →';}
+}
+loadBalance();load();
+</script>
+</body>
+</html>
