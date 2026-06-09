@@ -12,7 +12,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET is required (16자 이상)'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   ADMIN_EMAIL: z.string().email().default('admin@heyhoai.local'),
-  ADMIN_PASSWORD: z.string().min(8).default('changeme1234'),
+  // 기본값 없음(필수) + 알려진 약한 기본 비번 거부 — 미설정/약한 값이면 부팅 실패(fail-closed)
+  ADMIN_PASSWORD: z
+    .string()
+    .min(12, 'ADMIN_PASSWORD는 12자 이상이어야 합니다')
+    .refine((v) => v !== 'changeme1234', 'ADMIN_PASSWORD를 기본값에서 반드시 변경하세요'),
   // z.coerce.boolean()은 "false" 문자열도 true로 바꾸므로 명시적으로 비교한다
   COOKIE_SECURE: z
     .string()
