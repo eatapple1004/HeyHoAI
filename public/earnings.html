@@ -7,41 +7,53 @@
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <script src="/saas-auth.js" defer></script>
 <style>
-  .wrap{max-width:920px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
   .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
-
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:38px}
-  .stat{padding:20px;text-align:center}
-  .stat .n{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
-  .stat .n.gold{color:var(--gold)}
-  .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
-
-  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+  .sub b{color:var(--gold)}
 
   /* 크리에이터 신청 CTA */
   .apply{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:24px 26px;margin-bottom:30px}
   .apply .ai b{font-family:'Sora';font-size:17px;font-weight:700;display:block;margin-bottom:4px}
   .apply .ai p{font-size:13px;color:var(--dim);line-height:1.5}
 
-  /* 템플릿별 수익 표 */
-  .tbl{width:100%;border-collapse:collapse;margin-bottom:40px}
-  .tbl th{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
-  .tbl th.r,.tbl td.r{text-align:right}
-  .tbl td{padding:14px;border-bottom:1px solid var(--line);font-size:14px}
-  .tbl .tname{font-weight:600}
-  .tbl .tmeta{font-size:12px;color:var(--faint);margin-top:2px}
-  .tbl .earned{font-family:'Sora';font-weight:700;color:var(--gold)}
-  .empty{text-align:center;padding:40px;color:var(--faint);font-size:14px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+  .stat{padding:20px;text-align:center}
+  .stat .n{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
+  .stat .n.gold{color:var(--gold)}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
 
-  /* 최근 적립 */
-  .feed{display:flex;flex-direction:column;gap:10px}
-  .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px}
-  .row .rd{font-size:13.5px}
-  .row .rt{font-size:12px;color:var(--faint);margin-top:2px}
-  .row .ra{font-family:'Sora';font-weight:700;color:var(--gold);white-space:nowrap}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+  .row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:12px}
 
-  @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.tbl .hide-sm{display:none}}
+  .items{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:38px}
+  .irow{display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 0.9fr;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .irow:last-child{border-bottom:0}
+  .irow.head{background:rgba(255,255,255,.03);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+  .irow .nm{display:flex;align-items:center;gap:11px;font-weight:600}
+  .irow .ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:rgba(255,255,255,.06)}
+  .irow .sub2{font-size:11px;color:var(--faint);font-weight:500}
+  .irow .gold{color:var(--gold);font-weight:700;font-family:'Sora'}
+  .pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.4px}
+  .pill.live{background:rgba(94,224,214,.16);color:var(--cyan)}
+  .pill.review{background:rgba(255,206,122,.18);color:var(--gold)}
+  .r-amt{text-align:right}
+  .empty{text-align:center;padding:34px;color:var(--faint);font-size:14px}
+  .empty a{color:var(--accent)}
+
+  .payout{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:20px 24px}
+  .payout .pi{font-size:13px;color:var(--dim)}
+  .payout .pi b{color:var(--text);font-size:15px;display:block;margin-top:2px;font-family:'Sora';font-weight:700}
+
+  .affil-link{margin-top:28px;font-size:13px;color:var(--dim);text-align:center}
+  .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
+
+  @media(max-width:640px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .irow{grid-template-columns:1.6fr 1fr 1fr;font-size:12.5px}
+    .irow .col-uses,.irow.head .col-uses{display:none}
+    .irow .col-rev{text-align:right}
+  }
 </style>
 </head>
 <body>
@@ -67,7 +79,7 @@
 
 <div class="wrap">
   <h1 class="fade d1">Seller earnings</h1>
-  <div class="sub fade d1">Publish templates on the marketplace and earn <b style="color:var(--gold)" id="shareLbl">70%</b> in credits every time someone uses a paid template of yours.</div>
+  <div class="sub fade d1">Track every template you've published. You keep <b id="shareLbl">70%</b> in credits on every paid use — paid straight into your balance.</div>
 
   <!-- 크리에이터가 아니면 신청 CTA -->
   <div class="apply glass fade d2" id="applyBox" style="display:none">
@@ -82,32 +94,29 @@
     <div class="stat glass"><div class="n" id="stShare">70%</div><div class="l">Your share</div></div>
   </div>
 
-  <div class="section-label fade d3">Earnings by template</div>
-  <table class="tbl fade d3" id="tplTable">
-    <thead>
-      <tr>
-        <th>Template</th>
-        <th class="r hide-sm">Price (◈)</th>
-        <th class="r hide-sm">Total uses</th>
-        <th class="r">Paid uses</th>
-        <th class="r">Earned (◈)</th>
-      </tr>
-    </thead>
-    <tbody id="tplBody"></tbody>
-  </table>
-  <div class="empty" id="tplEmpty" style="display:none">No published templates yet — publish one from the <a style="color:var(--accent)" onclick="location.href='/marketplace'">Market</a> to start earning.</div>
+  <div class="row-head fade d3">
+    <div class="section-label" style="margin:0">Your published items</div>
+    <button class="btn btn-primary" onclick="location.href='/marketplace'">+ Publish new</button>
+  </div>
+  <div class="items glass fade d3" id="itemList"></div>
+  <div class="empty" id="itemEmpty" style="display:none">No published templates yet — publish one from the <a onclick="location.href='/marketplace'">Market</a> to start earning.</div>
 
-  <div class="section-label fade d4">Recent payouts</div>
-  <div class="feed fade d4" id="feed"></div>
-  <div class="empty" id="feedEmpty" style="display:none">No payouts yet. Earnings appear here as people use your paid templates.</div>
+  <div class="payout glass fade d4">
+    <div class="pi">Reward type<b>Account credits (◈)</b></div>
+    <div class="pi">Total earned<b style="color:var(--gold)" id="pTotal">◈ —</b></div>
+    <div class="pi">Revenue share<b>70%</b></div>
+    <div class="pi">Cash payout<b style="color:var(--faint)">Coming soon</b></div>
+  </div>
+
+  <div class="affil-link fade d4">Also referring others? <a onclick="location.href='/affiliate'">See your affiliate earnings →</a></div>
 </div>
 
 <script>
-// ═══ 실제 연결: /api/marketplace/earnings ═══
+// ═══ 실제 연결: /api/marketplace/earnings (그들 디자인 + 크레딧 모델 실데이터) ═══
 async function loadBalance(){
   try{const d=await(await fetch('/api/credits')).json();if(d.success)document.getElementById('navBalance').textContent=d.data.unlimited?'∞':d.data.balance;}catch(e){}
 }
-function fmtDate(s){try{return new Date(s).toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(e){return '';}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 async function load(){
   try{
     const d=await(await fetch('/api/marketplace/earnings')).json();
@@ -119,38 +128,26 @@ async function load(){
     document.getElementById('stEarned').textContent='◈ '+x.totalEarned;
     document.getElementById('stPayouts').textContent=x.payoutCount;
     document.getElementById('stTemplates').textContent=(x.templates||[]).length;
+    document.getElementById('pTotal').textContent='◈ '+x.totalEarned;
     document.getElementById('applyBox').style.display=x.isCreator?'none':'flex';
 
-    // 템플릿별 수익
-    const body=document.getElementById('tplBody');
-    if(!x.templates||!x.templates.length){
-      document.getElementById('tplTable').style.display='none';
-      document.getElementById('tplEmpty').style.display='block';
+    const list=document.getElementById('itemList');
+    const items=x.templates||[];
+    if(!items.length){
+      list.style.display='none';
+      document.getElementById('itemEmpty').style.display='block';
     }else{
-      body.innerHTML=x.templates.map(t=>`
-        <tr>
-          <td><div class="tname">${t.emoji||'🎨'} ${esc(t.name)}</div><div class="tmeta">${esc(t.category)} · ${t.type==='reel'?'Reel':'Image'}</div></td>
-          <td class="r hide-sm">${t.price_credits>0?'◈ '+t.price_credits:'Free'}</td>
-          <td class="r hide-sm">${t.usage_count}</td>
-          <td class="r">${t.uses_paid}</td>
-          <td class="r earned">◈ ${t.earned}</td>
-        </tr>`).join('');
-    }
-
-    // 최근 적립
-    const feed=document.getElementById('feed');
-    if(!x.recent||!x.recent.length){
-      document.getElementById('feedEmpty').style.display='block';
-    }else{
-      feed.innerHTML=x.recent.map(r=>`
-        <div class="row glass">
-          <div><div class="rd">${esc(r.description||'Template royalty')}</div><div class="rt">${fmtDate(r.created_at)}</div></div>
-          <div class="ra">+◈ ${r.amount}</div>
+      list.innerHTML=
+        `<div class="irow head"><div>Item</div><div class="col-uses">Total uses</div><div class="r-amt col-rev">Your earnings</div><div class="r-amt">Status</div></div>`+
+        items.map(t=>`<div class="irow">
+          <div class="nm"><div class="ic">${t.emoji||'🎨'}</div><div>${esc(t.name)}<div class="sub2">${esc(t.category)} · ${t.type==='reel'?'Reel':'Photo'}${t.price_credits>0?' · ◈'+t.price_credits:' · Free'}</div></div></div>
+          <div class="col-uses">${t.usage_count}</div>
+          <div class="r-amt col-rev gold">◈ ${t.earned}</div>
+          <div class="r-amt"><span class="pill live">Live</span></div>
         </div>`).join('');
     }
   }catch(e){}
 }
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 async function apply(btn){
   btn.disabled=true;btn.textContent='…';
   try{
