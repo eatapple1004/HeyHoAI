@@ -37,7 +37,7 @@ async function ready({ user, packId, baseUrl }) {
   const merchant = { mid: env.EXIMBAY_MID };
   const buyer = { name: user.email ? user.email.split('@')[0] : 'customer', email: user.email || 'customer@doppia.ai' };
   const url = {
-    return_url: `${baseUrl}/billing.html?purchased=${pack.id}`,
+    return_url: `${baseUrl}/billing?purchased=${pack.id}`,
     status_url: `${baseUrl}/api/billing/eximbay/status`,
   };
 

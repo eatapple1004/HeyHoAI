@@ -75,7 +75,7 @@ router.post('/checkout', async (req, res, next) => {
               custom: { user_id: req.user.id, pack_id: pack.id, credits: String(pack.credits) },
             },
             product_options: {
-              redirect_url: `${req.protocol}://${req.get('host')}/billing.html?purchased=${pack.id}`,
+              redirect_url: `${req.protocol}://${req.get('host')}/billing?purchased=${pack.id}`,
             },
           },
           relationships: {

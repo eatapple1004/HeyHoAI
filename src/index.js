@@ -1,6 +1,7 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const fs = require('fs');
 const { env } = require('./config');
 const log = require('./lib/logger')('Server');
 const characterRoutes = require('./characters/character.route');
@@ -46,9 +47,24 @@ app.use('/vendor/ffmpeg', express.static(path.join(process.cwd(), 'node_modules/
 app.use('/vendor/ffmpeg-util', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/util/dist/esm')));
 app.use('/vendor/ffmpeg-core', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/core/dist/esm')));
 
+// ─── 클린 URL: 확장자 없이 path로 페이지 로드 ───
+// `/studio` → public/studio.html 서빙, `/studio.html` → 301 `/studio` (쿼리스트링 보존).
+// 단일 세그먼트 GET만 대상이며, 정적 자원(css/js, /css/* 등 다중 세그먼트·확장자)은 건드리지 않는다.
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+app.get(/^\/([a-z0-9-]+)(\.html)?$/i, (req, res, next) => {
+  const name = req.params[0];
+  if (req.params[1]) {
+    // `.html`로 들어오면 확장자 없는 정규 URL로 영구 리다이렉트
+    const q = req.originalUrl.indexOf('?');
+    return res.redirect(301, `/${name}${q >= 0 ? req.originalUrl.slice(q) : ''}`);
+  }
+  const file = path.join(PUBLIC_DIR, `${name}.html`);
+  if (fs.existsSync(file)) return res.sendFile(file);
+  next();
+});
+
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
-// .html 등 페이지 자체는 /heyhoai/* 라우트에서 sendFile로 서빙하므로
-// 일반 진입 경로와는 겹치지 않는다.
+// .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));
 
 // 메인페이지 — SaaS 랜딩

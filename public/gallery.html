@@ -47,13 +47,13 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
+    <div class="brand" onclick="location.href='/landing'"><span class="dot"></span><b>Doppia</b></div>
     <div class="nav-links">
-      <a onclick="location.href='/studio.html'">Studio</a>
-      <a onclick="location.href='/marketplace.html'">Market</a>
+      <a onclick="location.href='/studio'">Studio</a>
+      <a onclick="location.href='/marketplace'">Market</a>
       <a class="active">Gallery</a>
-      <a onclick="location.href='/billing.html'">Billing</a>
-      <a onclick="location.href='/business.html'">Business</a>
+      <a onclick="location.href='/billing'">Billing</a>
+      <a onclick="location.href='/business'">Business</a>
     </div>
     <div class="credits" id="saasUserBox"></div>
   </div>
@@ -77,7 +77,7 @@
   <div class="empty hidden" id="empty">
     <div class="ico">🖼️</div><h3>Nothing here yet</h3>
     <p>Generate your first photo or reel to fill your gallery.</p>
-    <a href="/studio.html" class="btn btn-primary">Open Studio →</a>
+    <a href="/studio" class="btn btn-primary">Open Studio →</a>
   </div>
 </div>
 
@@ -201,7 +201,7 @@ async function createReel(){
     // 비동기: 제출 → jobId → 폴링 (Cloudflare 100초 타임아웃 회피)
     const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
     const data=await res.json();
-    if(res.status===402){toast('크레딧이 부족해요. Billing에서 충전해 주세요.','error');setTimeout(()=>location.href='/billing.html',1200);return;}
+    if(res.status===402){toast('크레딧이 부족해요. Billing에서 충전해 주세요.','error');setTimeout(()=>location.href='/billing',1200);return;}
     if(!res.ok||!data.success){toast(data.error||'릴스 생성에 실패했어요.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';return;}
     const url=await pollReelJob(data.jobId);
     toast('릴스가 만들어졌어요! 🎬','success');
