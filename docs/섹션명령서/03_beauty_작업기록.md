@@ -72,6 +72,20 @@
 
 ---
 
+## 2026-06-11 · 프롬프트 네거티브 이관 ✅ (프롬프트 정밀화 총지휘 직접 수행)
+> 배경: 11개 워커가 시드를 끝냈으나 **beauty만 미이관**으로 적발(死필드 16·extra_negative 0). 워커 미수행분을 총지휘가 직접 이관. 사용자(Chief) 승인: "지금 총지휘가 이관"(현 16개 구성 유지 전제).
+
+- **이관:** 16/16 템플릿 `look.negative`(死) → `look.extra_negative`(resolver L148 live). dead negative/positive 키 = **0**(node 파싱 검증).
+- **SAFETY dedup:** 전역 자동주입어 제거 — `watermark`(16), `lowres`(16, ≈low quality), `text`/`distorted label text→distorted label`, `smudged logo`(logo), `extra fingers`·`malformed hands`(SAFETY mutated hands/bad anatomy 커버). 고신호 SAFETY 토큰 실측 0건(주석 포함 0).
+- **text_overlay 4개**(Before/After Result Reel·Shade Range Grid·Region Result Reel·Teeth Shade Card): `baked-in … text` 네거티브 항목 제거 → extra_negative에 bare `text`/`logo` **0건**. render_notes도 `look.extra_negative` 기준으로 정정.
+- **손 노출(On-Model·GRWM·On-Skin Patch):** SAFETY가 막는 generic 대신 §99 권장 `six fingers, fused or webbed fingers` 유지. Region Result Reel은 SAFETY 미커버 `malformed toes, fused or webbed digits` 보존.
+- **게이트 재검증:** `grep -c '"negative":'` = **0/11 전 섹션** ✅ · `node scripts/consolidate_recipes.js` EXIT 0·중복이름 0·비용/이름/스키마 불변 ✅.
+  - ⚠️ consolidate 잔존 이슈 = **개수16(권장6~8)** — 프롬프트 영역 밖 **포트폴리오 결정**(8→16 확장은 위 A/B 분석 기반, Chief 별도 판단). 네거티브 이관 회귀 아님.
+- **불변 확인:** name·credit_cost·output_type·shots·reel·guards 무수정(카드계약·비용 불변). extra_positive 16개 그대로 유지(이번 작업은 네거티브 이관 한정).
+- **git:** 총지휘 로컬 검증·기록. push 보류(Chief 승인 후).
+
+---
+
 ## 다음 액션 (대기 — 총지휘/사용자 지시 필요)
 - [ ] 갭 로스터 확장(8→16) 승인 여부 → 승인 시 P0 3개 시드화 → P1 5개 → consolidate 재검증.
 - [ ] 승인 시 통합 뷰 동기화(`docs/템플릿_한국어_카탈로그.md` v2, `public/_overview.html`).

@@ -53,6 +53,22 @@
 
 ---
 
+## 2026-06-10 · 死필드 네거티브 이관 ✅ (브리프 `PROMPT_프롬프트정밀화_명령서.md`, 담당=general)
+
+> 핵심 임무 = 死필드 `look.negative`(resolver 미파싱) → live 필드 `look.extra_negative`(resolver L148 소비)로 8개 전부 이관 + SAFETY 중복 제거 + text_overlay 정제. **이로써 위 핸드오프 ⑥의 "네거티브 미적용" 절반이 general 한정 시드측에서 해소**(가드 소비는 여전히 엔진 과제).
+
+- **이관 대상:** 8/8 템플릿. `grep -c '"negative":' recipes.general.v2.js` = **0**(死필드 잔여 0), `"extra_negative":` 8개. `node -e require` OK, `consolidate_recipes.js` general **OK(8)**·중복 0·비용 정합 통과(카드계약·비용·이름 불변).
+- **정제 규칙 적용:** SAFETY_NEGATIVE_PROMPT(`imagePrompt.builder.js:16-29`, 전역 자동주입)와 중복되는 `watermark`·`text`/`logo`/`lettering`·`blurry` 토큰을 extra_negative에서 제거 → 섹션 특화 결함만 잔존.
+  - 제거: `fabricated text on product`(1·8), `garbled fake lettering`(3·5), `fabricated engraved text`(4), `watermark`(2·4·5·6·7·8), `blurry`(4, `blurry soft focus`→`soft missed focus`로 리프레이즈).
+  - 🅣 text_overlay(3 Packaging·5 Flat-Lay): text/logo/lettering 토큰 0 확인(오버레이 레이어가 캡션 처리).
+- **섹션 특화 보강(가드 정합, 非text):** label_lock군에 `distorted or warped label`(1·8), reflection_control군에 `reflections of crew or equipment`(4)·`refraction glare on transparent or metallic surfaces`(7), reel 프레임 일관성에 `flickering between frames`·`product morphing between shots`(6), packaging에 `dented or damaged box`(3).
+- **적대적 검증(멀티에이전트 8 감사관, 템플릿 1:1):** **8/8 pass** — SAFETY 중복 잔존 0 / 정당화 안 된 결함 누락 0 / text_overlay 위반 0. 감사관들이 resolver L148 조립(`joinClean([preset.negative, look.extra_negative, SAFETY_NEGATIVE_PROMPT])`)·SAFETY 토큰셋 독립 재확인.
+- **헤더 주석 정정:** 시드 상단 "look.negative를 쓴다(8개 시드 공통)" 정합 메모를 "extra_negative로 이관 완료" 상태로 갱신(파일 내부 일관성).
+- **📊 구조화 export(명령서 §5.8):** `scripts/export_recipe_prompts.js` 미존재(총지휘 신설 예정) → 일괄 export 시 general extra_negative 반영 필요(보류·총지휘 인계).
+- **git:** 파일만 저장(commit/push 금지). 카드계약·비용·이름 불변 → 카드 재export 불필요.
+
+---
+
 ## ⚙️ ENGINE 도메인 핸드오프 (총지휘→Chief→개발자 라우팅 필요)
 
 > ⚠️ 엔진=개발자(eatapple1004) 전담(`_HANDOFF_to_CHIEF.md` D항). 아래는 **시드 단독으로 안 듣는, 개발자에게 넘길 요구**. 워커가 엔진 코드 수정 안 함.

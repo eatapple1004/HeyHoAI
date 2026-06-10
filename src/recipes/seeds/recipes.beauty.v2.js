@@ -1,6 +1,12 @@
 /**
- * Doppia recipe seed — beauty (product/brand mode), v2, 8 templates.
+ * Doppia recipe seed — beauty (product/brand mode), v2.1, 16 templates.
  * 스키마 v1 (docs/TEMPLATE_STRUCTURE.md: A2 layered + A5 shot-list). recipes 테이블에 INSERT.
+ *
+ * v2.1 변경 (2026-06-11, 프롬프트 정밀화 총지휘 직접 이관):
+ *  - 死필드 look.negative → 엔진이 읽는 look.extra_negative 로 16/16 전 템플릿 이관(resolver L148 live).
+ *  - SAFETY_NEGATIVE_PROMPT 전역 중복어 제거: watermark/lowres/text/logo/extra fingers/malformed hands 등.
+ *  - text_overlay 4개(Before/After·Shade Range Grid·Region Result Reel·Teeth Shade Card)는 'baked-in text' 항목 제거(SAFETY 전역 차단).
+ *  - 손 노출 템플릿은 SAFETY가 막는 generic 대신 섹션 특화 'six fingers / fused or webbed' 유지.
  *
  * v2 변경 사항:
  *  - ASMR Unbox Reel 제거 (GRWM와 중복). GRWM을 4-shot으로 확장하여 언박싱 오프닝 흡수.
@@ -45,7 +51,7 @@ module.exports = [
           "context:seamless_studio_sweep"
         ],
         "extra_positive": "premium beauty hero product photography, single product on a frosted acrylic riser, fresh water droplets and condensation beading on the bottle, glossy wet reflection pooled beneath, soft gradient seamless backdrop, large softbox key from camera-left with a crisp specular rim light from behind to define the glass edge, shot on 100mm macro at f/8, tack-sharp label, airy luminous high-key mood, color-accurate brand packaging",
-        "negative": "warped or melted bottle, distorted label text, gibberish typography, double product, extra caps, smudged logo, plastic-looking liquid, harsh blown highlights, muddy shadows, fingerprints, dust, cluttered background, watermark, lowres, oversaturated"
+        "extra_negative": "warped or melted bottle, distorted label, gibberish typography, double product, extra caps, plastic-looking liquid, harsh blown highlights, muddy shadows, fingerprints, dust, cluttered background, oversaturated"
       },
       "shot_strategy": "list",
       "shots": [
@@ -114,7 +120,7 @@ module.exports = [
           "context:matte_acrylic_lab_surface"
         ],
         "extra_positive": "extreme macro beauty texture photography, generous swatch of the product smeared and dolloped on a smooth matte acrylic tile, glistening creamy emulsion with soft peaks and elastic strings being pulled, low raking sidelight to carve out every ridge and bubble, true-to-life color rendition, shot on 100mm macro lens at f/11 with focus stacking, clinical yet luxurious lab aesthetic, the product bottle softly out of focus behind the swatch",
-        "negative": "flat lifeless texture, fake CGI gloss, color shift, off-tone swatch, dust, hair, lint, fingerprints, dirty surface, warped product label, hard ugly shadows, overexposed whites, watermark, lowres, plastic sheen"
+        "extra_negative": "flat lifeless texture, fake CGI gloss, color shift, off-tone swatch, dust, hair, lint, fingerprints, dirty surface, warped product label, hard ugly shadows, overexposed whites, plastic sheen"
       },
       "shot_strategy": "list",
       "shots": [
@@ -185,7 +191,7 @@ module.exports = [
           "context:on_model_studio"
         ],
         "extra_positive": "on-model beauty editorial, fresh-faced model with luminous dewy skin and natural glowing makeup holding and applying the product near the face, large beauty dish softbox key for clean wraparound light with a faint catchlight, soft gradient warm-neutral backdrop, shot on 85mm at f/2.8 for a flattering crop, realistic pores and subtle highlight on cheekbones, product held label-forward and color-accurate, aspirational clean-girl aesthetic",
-        "negative": "extra fingers, malformed hands, six fingers, plastic waxy skin, over-smoothed airbrushed face, warped product, distorted label text, double product, uncanny eyes, harsh shadows, oily greasy shine, blemished retouch artifacts, watermark, lowres, oversaturated skin, inconsistent face across shots"
+        "extra_negative": "six fingers, fused or webbed fingers, plastic waxy skin, over-smoothed airbrushed face, warped product, distorted label, double product, uncanny eyes, harsh shadows, oily greasy shine, blemished retouch artifacts, oversaturated skin, inconsistent face across shots"
       },
       "shot_strategy": "list",
       "shots": [
@@ -232,7 +238,7 @@ module.exports = [
     "meta": {
       "flags": ["experimental", "needs_human_review"],
       "ai_risk": "SAME face identity across before/after shots is critical. Engine must lock subject identity between frames. Risk: subtle facial morph, skin tone drift. Human review required before publishing.",
-      "render_notes": "Before/After 레이블은 text_overlay 레이어로 삽입. SAFETY_NEGATIVE의 'text'/'logo' 제거 필요 없음(look.negative에 미포함)."
+      "render_notes": "Before/After 레이블은 text_overlay 레이어로 합성. SAFETY_NEGATIVE가 'text'/'logo'를 전역 차단하므로 look.extra_negative에서 제외(이관 시 'baked-in before/after text' 항목 제거)."
     },
     "text_overlay": true,
     "config": {
@@ -257,7 +263,7 @@ module.exports = [
           "context:clean_studio_neutral_backdrop"
         ],
         "extra_positive": "split-narrative before-and-after beauty reel, SAME person in both frames with locked facial identity, consistent neutral studio lighting and backdrop across both shots, before frame shows natural bare skin with visible texture, after frame shows visibly smoother more luminous skin with a healthy dewy glow after product use, subtle realistic improvement — not extreme — believable skin transformation, true-to-life color rendition, head-and-shoulders framing",
-        "negative": "different person in before vs after, facial morph or identity drift between frames, skin tone change, face shape change, extreme unnatural skin smoothing, plastic airbrushed look, uncanny valley, harsh shadows, inconsistent lighting between shots, extra fingers, malformed hands, watermark, lowres, before/after text baked into the image"
+        "extra_negative": "different person in before vs after, facial morph or identity drift between frames, skin tone change, face shape change, extreme unnatural skin smoothing, plastic airbrushed look, uncanny valley, harsh shadows, inconsistent lighting between shots"
       },
       "shot_strategy": "list",
       "shots": [
@@ -328,7 +334,7 @@ module.exports = [
           "context:bathroom_vanity_mirror"
         ],
         "extra_positive": "morning skincare GRWM routine reel with an unboxing opening, fresh premium matte box reveal on the counter leading into the full routine, fresh-faced model at a bright vanity mirror with soft window light and a subtle ring-light catchlight, product used in sequence step by step, dewy luminous skin, clean-girl aesthetic, vertical phone-shot social feel but crisp, product label always color-accurate and readable, airy bright bathroom setting with greenery",
-        "negative": "extra fingers, malformed hands, six fingers, plastic waxy skin, over-airbrushed face, warped product, distorted label text, double product, uncanny mirror reflection mismatch, harsh shadows, dingy bathroom, clutter, watermark, lowres, morphing product between frames, inconsistent product between shots"
+        "extra_negative": "six fingers, fused or webbed fingers, plastic waxy skin, over-airbrushed face, warped product, distorted label, double product, uncanny mirror reflection mismatch, harsh shadows, dingy bathroom, clutter, morphing product between frames, inconsistent product between shots"
       },
       "shot_strategy": "list",
       "shots": [
@@ -406,7 +412,7 @@ module.exports = [
           "context:seamless_studio_sweep"
         ],
         "extra_positive": "single-shot beauty reel, hero product on a frosted riser with water droplets catching a crisp rim light, slow cinematic push-in revealing the full product with a final soft lens flare, premium beauty editorial motion, tack-sharp packaging, high-key luminous mood",
-        "negative": "warped product, distorted label text, jittery shaky motion, harsh flash, cluttered background, watermark, lowres, morphing product"
+        "extra_negative": "warped product, distorted label, jittery shaky motion, harsh flash, cluttered background, morphing product"
       },
       "shot_strategy": "list",
       "shots": [
@@ -466,7 +472,7 @@ module.exports = [
           "context:bathroom_shelf_vignette"
         ],
         "extra_positive": "aesthetic shelfie lifestyle flat-lay, product styled on a travertine or oak bathroom shelf among curated tonal props — a ceramic tray, a small vase with dried pampas, folded linen, an unlit candle, soft morning window light raking from the side casting gentle long shadows, warm beige-cream palette, calm slow-living mood, shot on 50mm at f/4, product is the clear focal point and color-accurate, shallow tasteful clutter",
-        "negative": "warped product, distorted label text, double product, cluttered messy shelf, clashing colors, harsh midday light, plastic props, dust, fingerprints, tilted horizon, watermark, lowres, oversaturated"
+        "extra_negative": "warped product, distorted label, double product, cluttered messy shelf, clashing colors, harsh midday light, plastic props, dust, fingerprints, tilted horizon, oversaturated"
       },
       "shot_strategy": "list",
       "shots": [
@@ -511,7 +517,7 @@ module.exports = [
     "sort_order": 8,
     "rationale": "성분·클레임 카드는 교육형 콘텐츠로 PDPage와 광고 캐러셀 슬롯에서 신뢰도를 높이는 필수 포맷. 텍스트는 overlay 레이어로 삽입 — ENGINE SAFETY_NEGATIVE 충돌 없음.",
     "meta": {
-      "render_notes": "성분명·클레임 텍스트를 이미지에 직접 굽지 않음. config.text_overlay=true → 렌더 후 overlay 파이프라인에서 텍스트·아이콘 레이어 합성. look.negative에 'text'/'logo' 미포함(SAFETY_NEGATIVE와 중복 금지).",
+      "render_notes": "성분명·클레임 텍스트를 이미지에 직접 굽지 않음. config.text_overlay=true → 렌더 후 overlay 파이프라인에서 텍스트·아이콘 레이어 합성. look.extra_negative에 'text'/'logo' 미포함(SAFETY가 전역 차단)(SAFETY_NEGATIVE와 중복 금지).",
       "text_overlay_fields": ["ingredient_name", "claim_headline", "percentage_callout", "brand_logo_position"]
     },
     "text_overlay": true,
@@ -537,7 +543,7 @@ module.exports = [
           "context:clean_studio_with_ingredient_prop"
         ],
         "extra_positive": "clean beauty ingredient editorial, product centered on a pure white or very pale tonal surface, a single key ingredient prop nearby — a fresh botanical sprig, a small glass vial of serum, or a magnified molecular texture inset — soft diffused flat light for maximum clarity and color accuracy, clinical-yet-luxurious aesthetic with generous negative space reserved for overlay text layers, no baked-in text or labels beyond the product packaging itself",
-        "negative": "cluttered busy background, harsh shadows, fingerprints, dust, warped product, distorted packaging, double product, oversaturated, lowres, watermark, busy pattern behind product, colored gel lighting"
+        "extra_negative": "cluttered busy background, harsh shadows, fingerprints, dust, warped product, distorted packaging, double product, oversaturated, busy pattern behind product, colored gel lighting"
       },
       "shot_strategy": "list",
       "shots": [
@@ -583,7 +589,7 @@ module.exports = [
     "rationale": "색조(립·파데·아이섀도) 셀러에게 셰이드 라인업은 구매 결정의 핵심 신호 — 6-shot 그리드로 전 컬러 라인업을 한 세트에 담아 PDP 캐러셀과 광고 셀에 바로 투입 가능. text_overlay로 셰이드명 삽입.",
     "meta": {
       "provisional": true,
-      "render_notes": "각 컷의 셰이드명·번호는 text_overlay 레이어로 합성(이미지에 굽지 않음). 6컷은 각각 다른 셰이드 컬러를 렌더링하되 제품 폼팩터·조명·구도는 동일하게 유지. look.negative에 'text'/'logo' 미포함.",
+      "render_notes": "각 컷의 셰이드명·번호는 text_overlay 레이어로 합성(이미지에 굽지 않음). 6컷은 각각 다른 셰이드 컬러를 렌더링하되 제품 폼팩터·조명·구도는 동일하게 유지. look.extra_negative에 'text'/'logo' 미포함(SAFETY가 전역 차단).",
       "text_overlay_fields": ["shade_name", "shade_number", "hex_swatch"]
     },
     "config": {
@@ -609,7 +615,7 @@ module.exports = [
           "context:seamless_studio_sweep"
         ],
         "extra_positive": "beauty shade range grid photography, single product unit per frame on a pure white seamless surface, each frame showcases a different shade variant with true-to-pigment color accuracy, consistent flat overhead softbox lighting across all 6 frames for color fidelity, product label squared to camera, slight perspective showing the shade swatch or bullet tip, neutral white-grey backdrop with subtle cast shadow beneath the product, clinical precision meets editorial elegance, shot on 100mm at f/8, consistent cropping and framing across all 6 shots for grid assembly",
-        "negative": "color shift or inaccurate pigment rendering, inconsistent lighting across frames, warped product, distorted label, double product, harsh shadows, busy background, props cluttering the frame, watermark, lowres, oversaturated, baked-in shade text on the image"
+        "extra_negative": "color shift or inaccurate pigment rendering, inconsistent lighting across frames, warped product, distorted label, double product, harsh shadows, busy background, props cluttering the frame, oversaturated"
       },
       "shot_strategy": "list",
       "shots": [
@@ -667,7 +673,7 @@ module.exports = [
       "provisional": true,
       "flags": ["experimental", "needs_human_review"],
       "ai_risk": "동일 부위·동일 라이팅 일관성 유지 필수. 피부·모발 렌더 오류 및 부위 형태 왜곡 가능. 손가락 또는 발가락 포함 시 추가 오류 리스크. 퍼블리시 전 사람 검수 필수.",
-      "render_notes": "before/after 텍스트 라벨은 text_overlay 레이어로 합성. look.negative에 'text'/'logo' 미포함. 비얼굴 부위(헤어·바디·네일·립)에 한정 — 얼굴 전체 컷은 Before/After Result Reel 템플릿 사용."
+      "render_notes": "before/after 텍스트 라벨은 text_overlay 레이어로 합성. look.extra_negative에 'text'/'logo' 미포함(SAFETY가 전역 차단). 비얼굴 부위(헤어·바디·네일·립)에 한정 — 얼굴 전체 컷은 Before/After Result Reel 템플릿 사용."
     },
     "config": {
       "schema_version": 1,
@@ -692,7 +698,7 @@ module.exports = [
           "context:clean_studio_or_minimal_neutral_backdrop"
         ],
         "extra_positive": "non-facial region before-and-after beauty reel, SAME body region (hair / body skin / nails / lips) in both frames with consistent framing, IDENTICAL soft directional lighting and neutral backdrop across both shots, before frame shows the natural untreated state, after frame shows visibly improved result after product application — realistic and believable improvement, true-to-life color and texture, tight crop on the target region only, product featured near the region in at least one frame",
-        "negative": "different body region between frames, inconsistent lighting or backdrop, extreme unnatural result, plastic airbrushed skin or hair, uncanny texture, malformed fingers or toes, extra digits, harsh shadows, background clutter, watermark, lowres, baked-in before/after text on the image, full face shot (use Before/After Result Reel for face)"
+        "extra_negative": "different body region between frames, inconsistent lighting or backdrop, extreme unnatural result, plastic airbrushed skin or hair, uncanny texture, malformed toes, fused or webbed digits, harsh shadows, background clutter, full face shot (use Before/After Result Reel for face)"
       },
       "shot_strategy": "list",
       "shots": [
@@ -761,7 +767,7 @@ module.exports = [
           "context:seamless_studio_sweep"
         ],
         "extra_positive": "beauty gift set group hero photography, all SKUs in the set arranged together in a clean composed layout on a pure white seamless surface, each product upright and evenly lit, matching labels all squared to camera or elegantly angled, soft overhead softbox plus fill for shadow control, generous negative space around the group, premium editorial beauty aesthetic, shot on 85mm at f/8 for full group sharpness, consistent color-accurate packaging rendering across all items, gift-worthy elegantly styled composition",
-        "negative": "missing or extra products, mismatched product count versus the actual set, warped products, distorted labels, double products, harsh ugly shadows, cluttered background, floating products, inconsistent scale between items, watermark, lowres, oversaturated"
+        "extra_negative": "missing or extra products, mismatched product count versus the actual set, warped products, distorted labels, double products, harsh ugly shadows, cluttered background, floating products, inconsistent scale between items, oversaturated"
       },
       "shot_strategy": "list",
       "shots": [
@@ -830,7 +836,7 @@ module.exports = [
           "context:matte_acrylic_surface"
         ],
         "extra_positive": "beauty stick product photography showcasing twist-up silhouette and swipe texture, stick fully twisted up exposing the bullet at full height, creamy or waxy formula catching a raking sidelight to reveal texture and sheen, a clean swatch arc smeared beside the product on a smooth matte surface showing the true pigment and finish, true-to-color rendition of the formula, shot on 100mm macro at f/8, one shot with the cap off showing the bullet profile, one macro on the swatch alone for texture detail, premium editorial aesthetic",
-        "negative": "warped or melted stick bullet, twisted bullet too short or hidden, color-shifted swatch, dirty smear surface, fingerprints, lint, hair, harsh specular hot-spot, flat lifeless texture, fake CGI sheen, distorted product casing, double product, watermark, lowres"
+        "extra_negative": "warped or melted stick bullet, twisted bullet too short or hidden, color-shifted swatch, dirty smear surface, fingerprints, lint, hair, harsh specular hot-spot, flat lifeless texture, fake CGI sheen, distorted product casing, double product"
       },
       "shot_strategy": "list",
       "shots": [
@@ -899,7 +905,7 @@ module.exports = [
           "context:studio_seamless_or_marble_tile"
         ],
         "extra_positive": "beauty compact powder product photography, compact open showing the powder pan surface in full detail — silky smooth pressed powder or blush with a subtle shimmer or matte velvet finish catching a soft overhead light with a thin rim to define the compact edge, powder puff or brush applicator resting in or beside the compact in at least one frame, outer case design shown closed in one frame, macro shot on the powder surface texture in one frame revealing pigment and finish, true-to-color powder shade rendering, shot on 100mm at f/8, premium editorial feel",
-        "negative": "powder pan surface invisible or in shadow, cracked or broken powder, dirty compact case, smudged mirror, harsh specular that wipes out texture, warped compact case, color-shifted powder, double product, lint or hair on powder, fingerprints, watermark, lowres"
+        "extra_negative": "powder pan surface invisible or in shadow, cracked or broken powder, dirty compact case, smudged mirror, harsh specular that wipes out texture, warped compact case, color-shifted powder, double product, lint or hair on powder, fingerprints"
       },
       "shot_strategy": "list",
       "shots": [
@@ -968,7 +974,7 @@ module.exports = [
           "context:studio_backlit_mist_capture"
         ],
         "extra_positive": "beauty spray mist product reel, product bottle held upright with the nozzle pressed — a billowing fine mist plume erupting from the tip caught mid-air, backlit or contre-jour rim light making the mist droplets glow and scatter in a dramatic luminous cloud, dark gradient or neutral seamless backdrop for contrast, slow-motion feel, the product label clearly readable, premium editorial mist photography, cinematic frozen-moment aesthetic",
-        "negative": "no visible mist plume, weak or invisible spray, harsh front flash, background clutter, warped product bottle, distorted label, double product, muddy mist color, overly diffused no-detail cloud, watermark, lowres, jittery motion"
+        "extra_negative": "no visible mist plume, weak or invisible spray, harsh front flash, background clutter, warped product bottle, distorted label, double product, muddy mist color, overly diffused no-detail cloud, jittery motion"
       },
       "shot_strategy": "list",
       "shots": [
@@ -1033,7 +1039,7 @@ module.exports = [
           "context:clean_studio_or_minimal_neutral"
         ],
         "extra_positive": "beauty patch or sheet mask product photography, product adhered directly onto skin — either applied on the under-eye area or cheek (face-partial crop) or on the back of the hand, patch sitting flush against the skin with no lifting edges, soft beauty key light revealing the patch texture and skin surface, true-to-color patch appearance, one shot showing the product packaging beside the applied patch, clean minimal studio backdrop, fresh skincare editorial aesthetic, shot on 85mm at f/4",
-        "negative": "extra fingers, malformed hands, six fingers, lifting or wrinkled patch edges, patch not making contact with skin, uncanny skin texture, harsh shadows, background clutter, warped product packaging, distorted label, watermark, lowres, oversaturated skin tone"
+        "extra_negative": "six fingers, fused or webbed fingers, lifting or wrinkled patch edges, patch not making contact with skin, uncanny skin texture, harsh shadows, background clutter, warped product packaging, distorted label, oversaturated skin tone"
       },
       "shot_strategy": "list",
       "shots": [
@@ -1079,7 +1085,7 @@ module.exports = [
     "rationale": "치아미백 제품은 셰이드 진행 단계가 핵심 전환 신호 — 전·후 셰이드 단계 비교 카드 4장으로 결과를 시각화. 셰이드 가이드 텍스트는 text_overlay. 얼굴 노출 없이 치아·입술 부위만 크롭.",
     "meta": {
       "provisional": true,
-      "render_notes": "셰이드 가이드 번호·텍스트(예: A1, B3)는 text_overlay 레이어로 합성. look.negative에 'text'/'logo' 미포함. 치아 렌더링 특성상 자연스러운 치아 형태·색조 정확도 확인 필수.",
+      "render_notes": "셰이드 가이드 번호·텍스트(예: A1, B3)는 text_overlay 레이어로 합성. look.extra_negative에 'text'/'logo' 미포함(SAFETY가 전역 차단). 치아 렌더링 특성상 자연스러운 치아 형태·색조 정확도 확인 필수.",
       "text_overlay_fields": ["shade_code", "shade_label", "step_indicator"],
       "flags": ["needs_human_review"],
       "ai_risk": "치아 렌더링 시 비자연스러운 치아 형태·과도한 화이트닝 표현 가능. 셰이드 단계가 현실적이고 점진적으로 표현되는지 검수 필요."
@@ -1107,7 +1113,7 @@ module.exports = [
           "context:clean_clinical_studio"
         ],
         "extra_positive": "teeth whitening shade card beauty photography, tight crop on the mouth/smile area only — no full face — showing natural teeth at a specific whitening shade stage, soft flat clinical overhead light for accurate color rendition, each of the 4 frames shows a progressively lighter shade stage from initial baseline to final bright result, realistic gradual whitening — not extreme bleached white — natural-looking enamel sheen, product packaging placed beside or below the smile crop in at least one frame, clean white clinical backdrop, shade step progression is clear and believable",
-        "negative": "unnaturally bleached chalky white teeth, fake CGI teeth, extreme over-whitening, unnatural tooth shape or size, visible full face (crop to mouth and smile only), harsh shadows, yellow cast, background clutter, warped product, distorted label, watermark, lowres, baked-in shade text on the image"
+        "extra_negative": "unnaturally bleached chalky white teeth, fake CGI teeth, extreme over-whitening, unnatural tooth shape or size, visible full face (crop to mouth and smile only), harsh shadows, yellow cast, background clutter, warped product, distorted label"
       },
       "shot_strategy": "list",
       "shots": [

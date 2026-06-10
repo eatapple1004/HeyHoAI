@@ -170,6 +170,24 @@
 
 > 테크 워커가 작업할 때마다 여기에 **바로바로** 누적 기록(최신이 위). 총지휘는 이 섹션 + `_STATUS.md`(자동) + `_CATALOG.json`(자동)으로 현황 파악. 시드 변경은 자동채널이 잡지만 **분석·제안·미결정 사항은 자동채널이 못 잡으므로 여기로만 전달됨.**
 
+### 2026-06-10 · 프롬프트 정밀화(extra_positive + reel music_mood) — ✅ 완료(시드 반영)
+- **의도:** §3 품질 갭 — 7개 extra_positive에 (1)reference-lock (2)제품 identity/no-morph lock (멀티샷·릴) (3)카메라 디테일(렌즈·F·focus) (4)구조화된 lighting·mood 보강. 릴 3개 music_mood를 감정어 → 구조화(genre+BPM+instruments+energy+reference). negative는 이미 이관 완료라 미접촉.
+- **바꾼 필드:** 7개 `config.look.extra_positive` 전부 갱신 + 릴 3개 `config.reel.music_mood` 구조화. name·credit_cost·output_type·shots·flags·attributes **불변**.
+- **방법(품질 보증):** draft → 적대적 verify 워크플로우(14 에이전트, 7템플릿×2단계). 각 verify가 8개 제약 감사 — reference-lock 존재, identity-lock(360은 emphatic), QUALITY_SUFFIX 단어 미중복(8k/sharp focus/professional photography/natural lighting/Instagram), 인물안전문구 미주입(product모드 personInFrame=false→엔진이 'brand-safe, SFW' 자동), Spec Grid는 빈 콜아웃 존만 확보·텍스트 렌더 지시 금지, In-hand는 부분손 설계 유지(풀5손가락 요청 금지), 영어·55~95단어, 릴 music_mood 구조화. 7개 全 approved(주로 bloat 트림).
+- **엔진 정합 근거:** `recipeResolver.js` L132-148(positive 조립순 + extra_positive 소비 + product모드 'brand-safe, SFW'), `imagePrompt.builder.js` L16-33(QUALITY_SUFFIX 항상 append → 중복 회피). Studio/Macro/Lifestyle 프리셋은 DB(migrate.js) 미정의→빈 prefix/suffix, Cinematic(Unbox)만 anamorphic/grade 주입→중복 회피.
+- **템플릿별 핵심 변경:** Void=4샷 일관성+ref-lock 선두 · Spec Grid=콜아웃 존 확보 문구 강화+ref-lock(텍스트/로고 렌더 지시 無) · Macro=ref-lock(anodizing/grain direction)+focus-stacking 표현 정제 · Desk=f2.8 명시+ref-lock+props 종속화 · In-hand=부분손 설계 유지하며 ref-lock+양샷 제품 일관성, music_mood=lo-fi house 95-110BPM · Unbox=50mm/f2.0+rack-focus+ref-lock, music_mood=ambient ASMR foley 70-85BPM · 360=**최강 no-morph lock**(every frame)+85mm f8+ref-lock, music_mood=tech-house 110-120BPM.
+- **검증:** `node -e require` 7개 로드·전 필드 present ✓ · extra_positive 87~95단어·全 ref-lock+CRITICAL idLock ✓ · `grep -c '"negative":'`=**0 유지** ✓ · QUALITY_SUFFIX/인물안전 중복 scan clean ✓ · Spec Grid 텍스트렌더 지시 無 ✓ · `consolidate_recipes.js` **tech OK 7·중복0·비용공식 통과** ✓. 파일만 저장(commit/push 안 함).
+- **🔔 총지휘 인계:** music_mood 구조화 포맷(genre/BPM/instruments/energy/reference)을 tech 릴 3개에 선적용 — 타 섹션 릴도 동일 포맷 통일 권고. 구조화 prompt export(§5.8)는 여전히 미신설(이전 로그 인계분 유효).
+
+### 2026-06-10 · 죽은 필드 네거티브 이관(look.negative → look.extra_negative) — ✅ 완료(시드 반영)
+- **의도:** resolver(`recipeResolver.js` L148)는 네거티브를 `look.extra_negative`에서만 읽는데 tech 7개 전부 死필드 `look.negative`에 보유 → 커스텀 네거티브가 엔진에 안 닿던 상태. 7개 全 살아있는 필드로 이관 + 정제.
+- **바꾼 필드:** 7개 템플릿 `config.look.negative` → `config.look.extra_negative` (rename + 정제). extra_positive·shots·name·credit_cost·output_type·flags **불변**(카드계약·비용·디자인 불변).
+- **정제 근거(SAFETY 중복 제거):** `imagePrompt.builder.js` L27 `SAFETY_NEGATIVE_PROMPT`가 전역 주입하는 `watermark/text/logo/deformed/blurry/low quality/extra limbs/extra fingers/mutated hands/bad anatomy` + minor/nsfw/violence군을 각 네거티브에서 제거. 제거 예: `fake logos`·`text artifacts`·`gibberish UI text`(Void), `watermarks`(Spec), `text or logos invented`(Macro), `fake brand logos`·`baked-in text`(Desk), `extra limbs`·`natural hand deformity`(In-hand), `extra fingers`·`malformed hands`·`gibberish`(Unbox), `fake logos`·`baked-in text`(360). 대신 SAFETY가 못 막는 제품 특화 결함 보강(distorted brand label, wrong proportions, blown specular highlights, duplicated reflection, inconsistent product between frames 등).
+- **🅣 Spec Callout Grid:** text_overlay=true → extra_negative에 `text`/`logo` **미포함 유지**(전역 SAFETY가 처리). callout-zone 특화 결함만(arrows touching product, callout zone obstructed). `meta.render_notes`의 "look.negative" 문구도 `look.extra_negative`로 갱신(파일 자기정합).
+- **⚠️ In-hand Quick Demo:** 부분 손 크롭 설계 유지 — 손 특화 네거티브는 methodology §hand 규칙대로 보존(six fingers, fused/webbed digits, floating hand, melting fingers)하되 SAFETY 정확중복(`extra limbs`, `natural hand deformity`)만 제거. experimental 플래그·게시 전 사람 검수 권고 유지.
+- **검증:** `grep -c '"negative":' recipes.tech.v2.js` = **0** ✓ · `"extra_negative":` = 7 ✓ · `"positive":` = 0 ✓ · `node -e require` 7개 로드 ✓ · `node scripts/consolidate_recipes.js` → **tech OK 7개·중복0·비용공식 통과**(beauty/pet 개수 이슈는 본 섹션 무관·기존). 파일만 저장(commit/push 안 함).
+- **🔔 총지휘 인계:** (1) 다른 섹션(beauty16·fashion8·food7·home7·jewelry8·pet12·ugc7·headshot7·general 잔여·influencer 잔여4)은 아직 `look.negative` 死필드 보유 — 동일 이관 필요. (2) §5.8 구조화 prompt export(section·id·name·type·cost·extra_positive·extra_negative·shots·flags CSV/Excel)는 `scripts/export_recipe_prompts.js` 미신설·기존 산출물 0 → 총지휘 일괄 export 시 tech 반영 요망(워커가 임의 포맷 CSV 생성 보류).
+
 ### 2026-06-10 · 커버리지 감사(현행 7개 충분성 분석) — ⏳ 제안, 미구현, 결정 대기
 - **결론:** 현행 7개로 **테크 전 클러스터 충족 불가**(10개 클러스터 평균 만족도 ~4/10, 크로스컷 2.5/10). 7개가 '단일 유닛·전원OFF·클린 스튜디오·정적' 가정에 갇힘.
 - **8대 blocker 갭(다클러스터 공통):** ①컬러웨이 라인업 ②앱/화면UI 연동 ③기능 ON 모션(점등·스핀·전개) ④실크기 스케일 ⑤온모델 착용 ⑥멀티팩 knolling ⑦방수/아웃도어/러기드 ⑧설치/장착 컨텍스트.

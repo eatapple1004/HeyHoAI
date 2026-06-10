@@ -18,11 +18,11 @@
  * 엔진 제약: SAFETY_NEGATIVE_PROMPT가 모든 렌더에 'text'/'logo' 주입(src/images/imagePrompt.builder.js)
  *   → 🅣(Packaging·Flat-Lay) 템플릿은 라벨/브랜드/캡션 글자를 AI로 그리지 말 것.
  *     config.text_overlay=true + meta.overlay_spec로 렌더 후 결정론적 오버레이 레이어에서 합성하고,
- *     look.negative에는 'text'/'logo'를 넣지 않는다(이중처리 방지, fashion v2 Fit&Size 패턴과 동일).
+ *     look.extra_negative에는 'text'/'logo'를 넣지 않는다(이중처리 방지, fashion v2 Fit&Size 패턴과 동일).
  *
  * catch-all 형태보존: 제품 형태가 미지이므로 특정 형태(예: 의류 drape)를 가정하지 말고
  *   "uploaded product, identical to reference in shape/color/material/finish"로 형태를 강하게 잠그고,
- *   negative에 "invented product, shape morphing, added parts not in reference"를 공통 주입한다.
+ *   extra_negative에 "invented product, shape morphing, added parts not in reference"를 공통 주입한다.
  *
  * ── 만족 가드(Satisfaction Guards) 규약 (v2.1, "구멍 18종 → 대다수 만족권 진입" 설계 반영) ──
  * 각 템플릿 config.guards[]에 선언. 노스킬 셀러가 손대지 않아도 디폴트 ON이어야 함.
@@ -39,9 +39,11 @@
  *   ③ scale_cue overlay 합성  ④ 멀티/추가 업로드 모드(다면 라벨·착용 before/after)  ⑤ 사이니지·악기 '디자인 면' 한정 SAFETY text/logo 네거티브 예외
  *   ⑥ config.guards[] 소비.  (seed는 prompt-space 최선 + 가드 선언으로 준비해 둠.)
  *
- * ⚠️ 리졸버 정합 메모: recipeResolver.js는 negative를 look.extra_negative에서 읽는데(현 라인 148) 시드는
- *   look.negative를 쓴다(8개 시드 공통). consolidate가 매핑하지 않으면 시드 negative 미적용 → 엔진/총지휘가
- *   negative↔extra_negative 정합 필요(전 버티컬 공통 이슈, 본 시드는 sibling 컨벤션 유지하며 핵심 가드는 extra_positive에도 중복 주입).
+ * ✅ 리졸버 정합(이관 완료 2026-06-10): recipeResolver.js는 negative를 look.extra_negative에서 읽는다(라인 148).
+ *   본 시드 8개 템플릿 全부 死필드 look.negative → live 필드 look.extra_negative로 이관 완료(look.negative 비움).
+ *   이관 시 SAFETY 중복 제거: text/logo/watermark/extra fingers/nsfw/deformed 등은 SAFETY_NEGATIVE_PROMPT가
+ *   전역 자동 주입하므로(src/images/imagePrompt.builder.js) extra_negative에는 섹션 특화 결함만 남김.
+ *   text_overlay 템플릿(Packaging·Flat-Lay)은 'text'/'logo'/'lettering' 미포함(오버레이가 처리).
  */
 module.exports = [
   // ─── 1. Clean Hero Pack ──────────────────────────────────────────────────
@@ -80,7 +82,7 @@ module.exports = [
           "context:seamless_studio"
         ],
         "extra_positive": "uploaded product on a clean light-grey/white seamless background, identical shape/color/material/finish to reference, single product only (never duplicate or invent extra copies), keep any printed label/marking/engraving exactly as in the reference and do not fabricate lettering, commercial e-commerce hero product photography, large soft octabox key with gentle fill and a subtle contact shadow, 100mm at f/8 crisp edge-to-edge, true-to-life material, centered catalog framing",
-        "negative": "invented product, shape morphing, added parts not in reference, color shift, warped geometry, plastic fake look, harsh shadows, blown highlights, duplicated product, cluttered background, reflections of crew, fabricated text on product"
+        "extra_negative": "invented product, shape morphing, added parts not in reference, color shift, warped geometry, plastic fake look, harsh shadows, blown highlights, duplicated product, distorted or warped label, cluttered background, reflections of crew"
       },
       "shot_strategy": "list",
       "shots": [
@@ -150,7 +152,7 @@ module.exports = [
           "context:lifestyle_real"
         ],
         "extra_positive": "uploaded product styled in candid real-life settings, warm natural window light, lived-in aspirational interiors, film color grade with gentle grain, 35mm at f/2.0, shallow depth with soft bokeh, product shape/color/material identical to reference, single product (no invented duplicates), label kept identical to reference, props complement but never obscure the product",
-        "negative": "invented product, shape morphing, added parts not in reference, color shift, sterile studio look, harsh flash, overprocessed HDR, duplicated objects, product detail loss, busy distracting clutter, watermark, fabricated text on product, human face or fingers in frame"
+        "extra_negative": "invented product, shape morphing, added parts not in reference, color shift, sterile studio look, harsh flash, overprocessed HDR, duplicated objects, product detail loss, busy distracting clutter, human face or fingers in frame"
       },
       "shot_strategy": "list",
       "shots": [
@@ -227,7 +229,7 @@ module.exports = [
           "context:gifting_tabletop"
         ],
         "extra_positive": "premium unboxing sequence of the uploaded product, clean tabletop, soft diffused daylight, tasteful kraft/box/ribbon packaging, gifting aesthetic, product identical to reference, single product set, label area left blank for overlay or kept exactly as reference, 50mm at f/4, inviting warm mood",
-        "negative": "invented product, shape morphing, added parts not in reference, color shift, messy crumpled packaging, plastic fake look, harsh shadows, duplicated items, cluttered background, garbled fake lettering"
+        "extra_negative": "invented product, shape morphing, added parts not in reference, color shift, messy crumpled packaging, dented or damaged box, plastic fake look, harsh shadows, duplicated items, cluttered background"
       },
       "shot_strategy": "list",
       "shots": [
@@ -297,7 +299,7 @@ module.exports = [
           "context:dark_seamless"
         ],
         "extra_positive": "extreme macro detail of the uploaded product, raking side light revealing surface relief and material grain, 100mm macro at f/8 with focus-stack sharpness, true-to-material color, premium tactile feel, surface/finish/material identical to reference, preserve any engraved/embossed/printed mark exactly as in the reference (do not redraw lettering), reflection-controlled matte lighting for metal and glass",
-        "negative": "invented texture not on reference, shape morphing, added parts not in reference, color shift, blurry soft focus, plastic look, oversharpening halos, dust noise, material morphing, duplicated features, watermark, fabricated engraved text, blown specular highlights"
+        "extra_negative": "invented texture not on reference, shape morphing, added parts not in reference, color shift, soft missed focus, plastic look, oversharpening halos, dust noise, material morphing, duplicated features, blown specular highlights, reflections of crew or equipment"
       },
       "shot_strategy": "list",
       "shots": [
@@ -376,7 +378,7 @@ module.exports = [
           "context:flatlay_surface"
         ],
         "extra_positive": "top-down flat-lay of the uploaded product, clean styled surface (linen/wood/paper), soft even top light, knolling-style arrangement, product and any set components identical to reference with the exact same component count (no added or missing items), balanced negative space for overlay captions, 50mm equivalent at f/8 sharp throughout",
-        "negative": "invented product or components, shape morphing, added parts not in reference, color shift, tilted perspective drift, harsh shadows, plastic look, duplicated items, missing components, cluttered overlap, garbled fake lettering, watermark"
+        "extra_negative": "invented product or components, shape morphing, added parts not in reference, color shift, tilted perspective drift, harsh shadows, plastic look, duplicated items, missing components, cluttered overlap"
       },
       "shot_strategy": "list",
       "shots": [
@@ -444,7 +446,7 @@ module.exports = [
           "context:seamless_studio"
         ],
         "extra_positive": "crisp product-drop teaser, clean white/light-grey studio, product identical to reference and consistent across both shots, bold confident framing, minimal aesthetic, vertical 9:16 social format",
-        "negative": "invented product, shape morphing, added parts not in reference, color shift between shots, plastic look, jittery unstable motion, product morphing, harsh shadows, busy background, watermark"
+        "extra_negative": "invented product, shape morphing, added parts not in reference, color shift between shots, plastic look, jittery unstable motion, product morphing between shots, flickering between frames, harsh shadows, busy background"
       },
       "shot_strategy": "list",
       "shots": [
@@ -514,7 +516,7 @@ module.exports = [
           "context:turntable_studio"
         ],
         "extra_positive": "smooth 360-degree rotation of the uploaded product on a turntable (product only — no model/hands), e-commerce turntable product video, perfectly even wraparound lighting, light-grey seamless background, product shape/color/material identical to reference at every angle, stable centered framing, no morphing during the spin",
-        "negative": "invented product, morphing or warping product, color shift during rotation, geometry distortion, added parts not in reference, wobbling unstable spin, motion blur smearing detail, background flicker, duplicated product, model or hands in frame, watermark"
+        "extra_negative": "invented product, morphing or warping product, color shift during rotation, geometry distortion, added parts not in reference, wobbling unstable spin, motion blur smearing detail, background flicker, duplicated product, model or hands in frame, refraction glare on transparent or metallic surfaces"
       },
       "shot_strategy": "list",
       "shots": [
@@ -600,7 +602,7 @@ module.exports = [
           "context:spacious_studio"
         ],
         "extra_positive": "the complete large single product photographed in full within a clean spacious studio sweep, entire body fully in frame with generous margin and never cropped, true real-world scale conveyed by an unobtrusive size reference, multi-part structure (frame, wheels, strings, legs, joints, folds) preserved exactly from the reference with the correct counts and no missing or invented parts, shape/color/material/finish identical to reference, any printed label or marking kept exactly as reference, matte reflection-controlled lighting, commercial product photography",
-        "negative": "scale normalization, shrunk to a small tabletop prop, cropped or cut-off product, partial product out of frame, invented parts, missing components, duplicated wheels/strings/legs, morphing multi-part geometry, warped frame, added parts not in reference, fabricated text on product, plastic fake look, busy distracting background, blown highlights, reflections of crew, watermark"
+        "extra_negative": "scale normalization, shrunk to a small tabletop prop, cropped or cut-off product, partial product out of frame, invented parts, missing components, duplicated wheels/strings/legs, morphing multi-part geometry, warped frame, added parts not in reference, distorted or warped label, plastic fake look, busy distracting background, blown highlights, reflections of crew"
       },
       "shot_strategy": "list",
       "shots": [

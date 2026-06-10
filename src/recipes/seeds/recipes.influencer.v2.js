@@ -39,8 +39,8 @@ module.exports = [
           "texture:grain_film",
           "context:street_urban"
         ],
-        "extra_positive": "candid photo-dump aesthetic, shot on a 35mm point-and-shoot with faint on-camera flash, slightly imperfect framing, motion-blur edges, authentic unposed energy, Fuji film color science, subtle grain, true-to-life skin",
-        "negative": "extra fingers, deformed hands, warped face, plastic over-retouched skin, studio polish, perfect symmetry, stiff posed look, text artifacts, watermark, oversaturation, identity drift"
+        "extra_positive": "CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, candid photo-dump aesthetic, shot on a 35mm point-and-shoot with a fixed wide-ish prime around 28-35mm at f4-f5.6 for deep-ish casual focus, faint on-camera flash falloff with hard near-subject shadows, slightly imperfect off-kilter framing, mild handheld motion-blur edges, authentic unposed energy, Fuji film color science, subtle organic grain, true-to-life unretouched skin, single well-formed hand on the phone with exactly five natural fingers, anatomically correct grip and visible fingernails, nostalgic spontaneous mood",
+        "extra_negative": "warped or asymmetric face, plastic over-retouched skin, studio-polished glamour finish, perfect airbrushed symmetry, stiff posed look, oversaturation, identity drift between shots, six fingers, fused or webbed digits, missing fingers, malformed grip"
       },
       "shot_strategy": "list",
       "shots": [
@@ -105,8 +105,8 @@ module.exports = [
           "texture:fabric_detail",
           "context:minimal_studio"
         ],
-        "extra_positive": "OOTD fit-check editorial, full-length fashion photography, large soft north-facing window key with subtle bounce fill, 85mm at f4 for true fabric drape, crisp garment texture and seams, neutral concrete or seamless backdrop, magazine styling, accurate body proportions",
-        "negative": "extra fingers, deformed hands, warped face, distorted body proportions, melted or smeared garment texture, wardrobe inconsistency between shots, plastic skin, text artifacts, watermark, identity drift"
+        "extra_positive": "CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, identical wardrobe and styling across all four shots, OOTD fit-check editorial look, large soft window key with subtle bounce fill, 85mm at f4 for true fabric drape with shallow background separation, crisp garment texture and seams, magazine styling, accurate body proportions, on the cuff closeup a single well-formed hand with exactly five natural fingers, anatomically correct grip, visible fingernails",
+        "extra_negative": "distorted body proportions, melted or smeared garment texture, warped seams, color shift or mismatched print on fabric, stiff unnatural drape, wardrobe inconsistency between shots, plastic skin, warped face, identity drift between shots, six fingers, fused or webbed digits, missing fingers, malformed grip"
       },
       "shot_strategy": "list",
       "shots": [
@@ -171,8 +171,8 @@ module.exports = [
           "texture:grain_film",
           "context:outdoor_scenic"
         ],
-        "extra_positive": "magic-hour travel mood, warm low-angle sun with golden backlit hair rim and gentle lens flare, long soft shadows, Kodak Portra warmth, dreamy wanderlust atmosphere, 50mm at f2, creamy bokeh, sun-kissed natural skin",
-        "negative": "extra fingers, deformed hands, warped face, harsh midday shadows, blue cold cast, overexposed sky clipping, plastic skin, double sun, text artifacts, watermark, identity drift"
+        "extra_positive": "CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, magic-hour travel mood, warm low-angle sun with golden backlit hair rim and gentle lens flare, long soft shadows, Kodak Portra warmth, dreamy wanderlust atmosphere, 50mm prime at f2, shallow depth of field with creamy bokeh and sharp eye focus, sun-kissed natural skin, single well-formed hand with exactly five natural fingers and anatomically correct grip on the drink in the cafe shot, visible fingernails",
+        "extra_negative": "harsh midday top-down shadows, blue cold color cast, overexposed clipped sky, double sun or duplicated lens flare, muddy underexposed shadows, plastic skin, warped face, identity drift between shots, six fingers, fused or webbed digits, malformed grip on the glass"
       },
       "shot_strategy": "list",
       "shots": [
@@ -237,8 +237,8 @@ module.exports = [
           "texture:skin_dewy",
           "context:vanity_indoor"
         ],
-        "extra_positive": "beauty influencer GRWM aesthetic, iridescent aurora pastel color wash (lilac-mint-peach) bouncing off the mirror, soft beauty-dish key with hair-light rim, shot on 50mm at f1.8, shallow depth of field, clean creamy bokeh, glossy reflective vanity surface",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic skin, over-smoothed CGI look, harsh flash, blown highlights, text artifacts, watermark, duplicate features, identity drift between shots"
+        "extra_positive": "CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, identical face geometry from bare-skin opener through full-glam reveal, beauty influencer GRWM aesthetic, iridescent aurora pastel color wash (lilac-mint-peach) bouncing off the mirror, soft beauty-dish key with hair-light rim, shot on 50mm at f1.8 with a macro pass for the fingertip blush moment, shallow depth of field, clean creamy bokeh, glossy reflective vanity surface, single well-formed hand, exactly five natural fingers, anatomically correct grip dabbing blush onto the cheek, visible fingernails, polished editorial mood",
+        "extra_negative": "asymmetric or mismatched eyes, plastic over-smoothed CGI skin, harsh on-camera flash, blown-out highlights, duplicate facial features, mouth or tooth morph between frames, patchy cakey makeup, warped face, identity drift between shots, six fingers, fused or webbed digits, missing fingers, floating disembodied hand, malformed grip"
       },
       "shot_strategy": "list",
       "shots": [
@@ -266,7 +266,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "whip",
-        "music_mood": "upbeat dreamy synth-pop",
+        "music_mood": "dreamy synth-pop, 110-122 bpm, airy analog synth pads with plucked arpeggios soft side-chained kick and shimmer hi-hats, bright uplifting build that swells on the final reveal, reference vibe early Dua Lipa meets glossy beauty-vlog intro",
         "captions": "auto"
       },
       "provider": {
@@ -309,8 +309,8 @@ module.exports = [
           "texture:grain_film",
           "context:lifestyle_mixed"
         ],
-        "extra_positive": "day-in-life vlog aesthetic, two-beat morning-to-evening arc, authentic candid energy, 35mm handheld framing, warm natural light morphing into ambient evening glow, true-to-life skin tones, unposed organic expressions",
-        "negative": "extra fingers, deformed hands, warped face, plastic retouched skin, overly polished studio look, text artifacts, watermark, identity drift between shots, inconsistent lighting within a single shot"
+        "extra_positive": "CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, day-in-life vlog aesthetic, two-beat morning-to-evening arc, authentic candid energy, 35mm handheld framing with shallow f/2 depth of field and soft falloff bokeh, warm natural light morphing into ambient evening glow, true-to-life skin tones, unposed organic expressions, single well-formed hand cradling the coffee cup, exactly five natural fingers, anatomically correct grip, visible fingernails",
+        "extra_negative": "plastic retouched skin, overly polished studio look, flickering or inconsistent lighting within a single shot, warped face, mouth or tooth morph between frames, identity drift between shots, six fingers, fused or webbed digits, malformed grip on the cup"
       },
       "shot_strategy": "list",
       "shots": [
@@ -332,7 +332,7 @@ module.exports = [
         ],
         "duration_per_shot": 4,
         "transition": "cut",
-        "music_mood": "mellow lo-fi indie",
+        "music_mood": "mellow lo-fi indie, 70-85 bpm, warm Rhodes/electric piano, muted nylon guitar, soft vinyl-crackle drums and mellow upright bass, low-key intimate energy lifting slightly toward the evening beat, reference vibe early Tom Misch meets a cozy chillhop study mix",
         "captions": "auto"
       },
       "provider": {
@@ -352,7 +352,16 @@ module.exports = [
     "meta": {
       "change": "new",
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "Shot 2 features a hand holding the product close to face. Engine safety-negative already strips text/logo from product; if brand mark is required on-screen, post-process via deterministic text-overlay layer after render (config.text_overlay=true). Review hand anatomy on every output — reject if fingers are malformed."
+      "overlay_spec": {
+        "layer": "composited_above_render",
+        "position": "title badge upper-third, caption lower-third, both within reserved uncluttered safe zones clear of face and product-holding hand",
+        "elements": [
+          { "type": "brand_badge", "role": "logo/wordmark", "anchor": "top-right", "safe_margin_pct": 8, "appears_on_shots": [1, 2, 3], "note": "deterministic post-process glyph layer, not AI-rendered" },
+          { "type": "caption", "role": "product name / hook text", "anchor": "bottom-center", "safe_margin_pct": 10, "max_lines": 2, "per_shot_text": ["intro hook", "reaction callout", "CTA"], "note": "deterministic post-process glyph layer, not AI-rendered" },
+          { "type": "cta_chip", "role": "swipe/shop prompt", "anchor": "bottom-right", "appears_on_shots": [3], "note": "deterministic post-process glyph layer" }
+        ]
+      },
+      "render_notes": "Shot 2 features a hand holding the product close to face. Engine safety-negative already strips text/logo from product; if brand mark is required on-screen, post-process via deterministic text-overlay layer after render (config.text_overlay=true). The AI does NOT draw glyphs — all badge/caption/CTA text is composited in the post-process overlay layer (overlay_spec), so standalone text/logo terms are intentionally kept OUT of extra_negative (global SAFETY_NEGATIVE handles them). extra_positive reserves clean uncluttered upper-third and lower-third zones for the composited badge and caption; verify these zones stay clear of the face and the product-holding hand on every frame. Review hand anatomy on every output — reject if fingers are malformed. Also verify product shape/label stays consistent across all three frames (secondary reference lock)."
     },
     "config": {
       "schema_version": 1,
@@ -377,8 +386,8 @@ module.exports = [
           "texture:skin_natural",
           "context:lifestyle_indoor"
         ],
-        "extra_positive": "influencer product haul reel, creator casually presenting and reacting to a product, authentic try-on and unboxing energy, clean bright key light (soft box), warm neutral background, direct-to-camera engagement, natural persuasive enthusiasm, 85mm portrait lens look, the product-holding hand is a single well-formed hand with exactly five natural fingers and an anatomically correct grip",
-        "negative": "extra fingers, missing fingers, deformed hands, melted or fused fingers, six fingers, floating disembodied hand, warped face, plastic skin, harsh shadows, cluttered background, identity drift between shots"
+        "extra_positive": "CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, identical product held consistently as secondary reference across shots, influencer product haul reel with authentic try-on and unboxing energy and natural persuasive enthusiasm, 85mm portrait lens look at f/2.0 with shallow depth of field keeping the creator's eyes and the product crisp while the background falls into soft creamy bokeh, slight push-in framing with subtle parallax, clean bright soft-box key with gentle fill and soft rim separation, warm neutral seamless background, direct-to-camera engagement and genuine wide-eyed reaction, single well-formed product-holding hand with exactly five natural fingers, anatomically correct grip and visible fingernails, undistorted product label held legibly toward camera, clean uncluttered upper-third and lower-third zones reserved for a composited brand badge and caption",
+        "extra_negative": "missing fingers, six fingers, fused or webbed digits, melted or fused fingers, floating disembodied hand, malformed grip, warped product shape, distorted label, warped face, plastic skin, harsh shadows, cluttered distracting background, identity drift between shots, product shape inconsistency between frames"
       },
       "shot_strategy": "list",
       "shots": [
@@ -406,7 +415,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "cut",
-        "music_mood": "bright upbeat lifestyle",
+        "music_mood": "upbeat lifestyle pop, 110-122 bpm, plucky clean electric guitar plus bright synth keys, claps and shaker percussion and a warm rounded sub-bass, energetic-but-friendly inviting energy that lifts on the shot-2 reaction beat, reference vibe of polished TikTok and Instagram unboxing creator content",
         "captions": "auto"
       },
       "provider": {

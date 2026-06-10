@@ -13,7 +13,10 @@
  *
  * AI-risk note: home 카탈로그는 손/얼굴/텍스트가 기본적으로 없어 AI 생성 위험 최저.
  * SAFETY_NEGATIVE가 'text'/'logo' 자동 주입 → Scale & Dimensions Frame은
- * look.negative 에서 text/logo 제외하고 text_overlay:true + meta.render_notes 로 처리.
+ * look.extra_negative 에서 text/logo 제외하고 text_overlay:true + meta.render_notes 로 처리.
+ *
+ * v2.1 변경: 네거티브를 死필드 look.negative → 엔진이 읽는 look.extra_negative 로 전 템플릿 이관,
+ *            SAFETY 전역 중복어(text/watermark/logo) 제거, 섹션 특화 결함만 보존.
  */
 module.exports = [
   /* ─────────────────────────────────────────────────────────────────────
@@ -56,8 +59,8 @@ module.exports = [
           "texture:matte_plaster_linen_oak",
           "context:aspirational_apartment_room"
         ],
-        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; limewash walls, oak floor, sheer linen curtains diffusing daylight; warm afternoon sun raking through window with long shadows and gentle lens flare, dust motes; one statement plant and a stack of art books for scale; product kept exact in shape/material/color as the styled hero; soft realistic contact shadows on the floor; range from calm minimalist morning light to cozy golden-hour warmth",
-        "negative": "warped or duplicated product, distorted proportions, cluttered busy room, harsh flash, blown highlights, text artifacts, watermark, logos, fake reflections, floating furniture, melted edges, plastic CGI look, oversaturated colors, cold blue cast"
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; limewash walls, oak floor, sheer linen curtains diffusing daylight; warm afternoon sun raking through window with long shadows and gentle lens flare, dust motes; one statement plant and a stack of art books for scale; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on the floor; range from calm minimalist morning light to cozy golden-hour warmth",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered busy room, harsh flash, blown highlights, fake reflections, floating furniture, melted edges, plastic CGI look, oversaturated colors, cold blue cast"
       },
       "shot_strategy": "list",
       "shots": [
@@ -140,7 +143,7 @@ module.exports = [
           "context:seamless_neutral_macro_and_styled_topdown"
         ],
         "extra_positive": "100mm macro lens at f/8 with focus stacking for texture shots; raking side light reveals weave/grain/glaze; ultra-fine surface detail with visible fibers/wood grain/ceramic crackle; true-to-life material color; AND 90-degree top-down flatlay on 50mm with soft even diffused overhead light, tonal color story props (linen, stone, dried botanicals, ceramic) all in the same palette family; product kept exact in shape/material/color as hero throughout; premium homeware magazine quality",
-        "negative": "soft out-of-focus subject, warped or duplicated product, invented patterns, plastic CGI sheen, blown highlights crushing texture, text artifacts, watermark, logos, color shift away from real material, oversharpen halos, noise, distorted proportions, tilted flatlay angle, clashing colors, props overlapping the hero"
+        "extra_negative": "soft out-of-focus subject, warped or duplicated product, invented patterns, plastic CGI sheen, blown highlights crushing texture, color shift away from real material, oversharpen halos, noise, distorted proportions, tilted flatlay angle, clashing colors, props overlapping the hero"
       },
       "shot_strategy": "list",
       "shots": [
@@ -201,7 +204,17 @@ module.exports = [
     "text_overlay": true,
     "meta": {
       "v2_change": "NEW template",
-      "render_notes": "Post-render overlay pipeline injects dimension callouts (e.g. W120cm × D45cm × H75cm) with arrow annotations onto each image. DO NOT embed any text or numbers into the diffusion prompt — the overlay layer handles all typography. SAFETY_NEGATIVE auto-injects 'text,logo' which correctly suppresses model-generated glyphs; look.negative intentionally omits 'text'/'logo' to avoid double-injection conflicts."
+      "render_notes": "Post-render overlay pipeline injects dimension callouts (e.g. W120cm × D45cm × H75cm) with arrow annotations onto each image. DO NOT embed any text or numbers into the diffusion prompt — the overlay layer handles all typography. SAFETY_NEGATIVE auto-injects 'text,logo' which correctly suppresses model-generated glyphs; look.extra_negative intentionally omits 'text'/'logo' to avoid double-injection conflicts.",
+      "overlay_spec": {
+        "layer": "post_render_dimension_overlay",
+        "elements": [
+          { "type": "dimension_callout", "axis": "width", "position": "width_axis_arrow", "example": "W120cm" },
+          { "type": "dimension_callout", "axis": "depth", "position": "depth_axis_arrow", "example": "D45cm" },
+          { "type": "dimension_callout", "axis": "height", "position": "height_axis_arrow", "example": "H75cm" }
+        ],
+        "font": "system_sans",
+        "note": "AI는 치수 글자·화살표를 그리지 않음 — SAFETY_NEGATIVE_PROMPT가 'text'/'logo'를 전역 차단. 측정 콜아웃·치수 화살표는 렌더 후 오버레이 레이어로 합성하며 extra_negative에 text/logo 미포함."
+      }
     },
     "config": {
       "schema_version": 1,
@@ -224,8 +237,8 @@ module.exports = [
           "texture:clean_matte_walls_floor",
           "context:scale_reference_room"
         ],
-        "extra_positive": "product placed in a clean neutral room with clear spatial context, clean white or greige matte walls, light oak or concrete floor, soft even diffused light from overhead, room includes a standard two-seat sofa or known-size object nearby for spatial scale reference, product exact in shape/material/color, wide enough angle to see the full product and surrounding floor space, architectural interior product photography, zero clutter, precise clean edges, realistic contact shadow",
-        "negative": "warped or duplicated product, distorted proportions, cluttered room, unknown floating objects, harsh flash, blown highlights, fake reflections, melted edges, plastic CGI look, oversaturated colors"
+        "extra_positive": "product placed in a clean neutral room with clear spatial context, clean white or greige matte walls, light oak or concrete floor, soft even diffused light from overhead, room includes a standard two-seat sofa or known-size object nearby for spatial scale reference, product exact in shape/material/color, wide enough angle to see the full product and surrounding floor space, architectural interior product photography, zero clutter, precise clean edges, realistic contact shadow, generous clean floor and wall margin kept uncluttered as a reserved area for composited dimension callouts and measurement arrows",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered room, unknown floating objects, harsh flash, blown highlights, fake reflections, melted edges, plastic CGI look, oversaturated colors"
       },
       "shot_strategy": "list",
       "shots": [
@@ -277,7 +290,7 @@ module.exports = [
     "rationale": "Lighting product sellers (lamps, candles, LED strips, pendants) who need a compelling before/after reel showing the product OFF in ambient daylight and then ON emitting warm light at night. Closes the home catalog lighting-ON gap — the single most-requested shot type for home lighting SKUs. Two shots give maximum contrast: cool/neutral day ambient vs. warm glowing night scene with the product as the light source.",
     "meta": {
       "provisional": true,
-      "flags": ["needs_human_review"],
+      "flags": ["experimental", "needs_human_review"],
       "v2_change": "REPLACES Quick Warmth Snap — QWS duplicated Room & Warmth mood, added no unique value at ◈4; Day-to-Night fills the lighting-ON catalog gap instead",
       "render_notes": "ENGINE BLOCKER: shot 2 requires the product to emit light (lamp glow, candle flame, LED strip illumination). The current nano-banana render pipeline does not have an emissive/night-glow path — the product must be the active light source in shot 2, not merely lit by ambient light. This template should be held in preview/manual-QA until an emissive render mode is available. Human review required before enabling for automated generation."
     },
@@ -302,8 +315,8 @@ module.exports = [
           "texture:matte_home_surfaces_natural",
           "context:home_interior_lighting_reveal"
         ],
-        "extra_positive": "two-shot day-to-night lighting reveal reel, 50mm lens at f/2.8; shot 1: soft cool neutral daylight ambient, product UNLIT/OFF — lamp shade or candle wick dark, room lit only by window light, product shape clearly visible but not glowing; shot 2: same scene at night, room dark, product turned ON and actively emitting warm amber light — visible glow halo, light cone or candleflame, warm pool of light spilling onto surrounding surfaces, product is the light source, aspirational cozy evening atmosphere; product kept exact in shape/material/color across both shots, consistent room geometry",
-        "negative": "unlit lamp that should be glowing in night shot, dead black screen in night shot, candle wick dark when product should be lit, lamp shade with no light emission in night shot, harsh cold flash replacing product glow, warped or duplicated product, inconsistent room geometry between shots, blown highlights, text artifacts, watermark, logos, plastic CGI look, distorted proportions, flicker, morphing surfaces, day scene too dark, night scene too bright"
+        "extra_positive": "SAME product in both shots — identical geometry, material and color, only its lighting state changes (off to on), no morph or drift between day and night; two-shot day-to-night lighting reveal reel, 50mm lens at f/2.8; shot 1: soft cool neutral daylight ambient, product UNLIT/OFF — lamp shade or candle wick dark, room lit only by window light, product shape clearly visible but not glowing; shot 2: same scene at night, room dark, product turned ON and actively emitting warm amber light — visible glow halo, light cone or candleflame, warm pool of light spilling onto surrounding surfaces, product is the light source, aspirational cozy evening atmosphere; product kept exact in shape/material/color across both shots, consistent room geometry",
+        "extra_negative": "unlit lamp that should be glowing in night shot, dead black screen in night shot, candle wick dark when product should be lit, lamp shade with no light emission in night shot, harsh cold flash replacing product glow, warped or duplicated product, inconsistent room geometry between shots, blown highlights, plastic CGI look, distorted proportions, flicker, morphing surfaces, day scene too dark, night scene too bright"
       },
       "shot_strategy": "list",
       "shots": [
@@ -372,8 +385,8 @@ module.exports = [
           "texture:matte_plaster_oak_linen",
           "context:apartment_makeover"
         ],
-        "extra_positive": "cinematic interior reel, shot on 24mm wide lens at f/4, smooth gimbal movement, soft natural window light, an empty bare corner transforming into a warm fully-styled room, product kept exact in shape/material/color as the centerpiece of the reveal, aspirational home makeover mood, realistic shadows and consistent space across shots",
-        "negative": "warped or duplicated product, room geometry changing between shots, jittery shaky motion, harsh flash, text artifacts, watermark, logos, plastic CGI look, distorted proportions, flickering, morphing walls, inconsistent lighting between cuts"
+        "extra_positive": "SAME product across all shots — locked geometry, material and color, consistent room geometry, no morph or drift; cinematic interior reel, shot on 24mm wide lens at f/4, smooth gimbal movement, soft natural window light, an empty bare corner transforming into a warm fully-styled room, product kept exact in shape/material/color as the centerpiece of the reveal, aspirational home makeover mood, realistic shadows and consistent space across shots",
+        "extra_negative": "warped or duplicated product, room geometry changing between shots, jittery shaky motion, harsh flash, plastic CGI look, distorted proportions, flickering, morphing walls, inconsistent lighting between cuts"
       },
       "shot_strategy": "list",
       "shots": [
@@ -448,8 +461,8 @@ module.exports = [
           "texture:tactile_surface_detail",
           "context:calm_neutral_macro_set"
         ],
-        "extra_positive": "slow cinematic ASMR macro reel, shot on 100mm macro lens at f/4, ultra slow gliding camera over the product surface, soft directional key light revealing weave, grain and glaze, shallow rolling focus, dust-free pristine surfaces, true-to-life material color, calm meditative luxury mood, product kept exact in shape/material/color, buttery smooth slow motion",
-        "negative": "fast or jerky motion, warped or duplicated product, invented surface patterns, plastic CGI sheen, blown highlights, text artifacts, watermark, logos, focus hunting, flicker, color shift away from real material, distorted proportions"
+        "extra_positive": "slow cinematic ASMR macro reel, shot on 100mm macro lens at f/4, ultra slow gliding camera over the product surface, soft directional key light revealing weave, grain and glaze, shallow rolling focus, dust-free pristine surfaces, true-to-life material color, calm meditative luxury mood, product kept exact in shape/material/color with locked identity across all reel frames, buttery smooth slow motion",
+        "extra_negative": "fast or jerky motion, warped or duplicated product, invented surface patterns, plastic CGI sheen, blown highlights, focus hunting, flicker, color shift away from real material, distorted proportions"
       },
       "shot_strategy": "list",
       "shots": [
@@ -504,7 +517,9 @@ module.exports = [
     "rationale": "Home product sellers with multiple color or finish variants (55-60% of home SKUs) who need a clean comparison grid showing all options side-by-side. Each of the 4 shots renders the same product in one of its color/finish variants on a neutral background — buyers can see every option without clicking through individual PDPs. Variant integrity is preserved: no colors are invented, only the seller's actual options are rendered.",
     "meta": {
       "provisional": true,
-      "v2_change": "NEW template — fills multi-variant comparison gap (55-60% of home SKUs)"
+      "flags": ["experimental", "needs_human_review"],
+      "v2_change": "NEW template — fills multi-variant comparison gap (55-60% of home SKUs)",
+      "render_notes": "High-difficulty: engine must re-render the SAME product in each of the seller's actual color/finish variants WITHOUT inventing colors or drifting the silhouette. Validate variant fidelity on sample SKUs before enabling for automated generation."
     },
     "config": {
       "schema_version": 1,
@@ -527,8 +542,8 @@ module.exports = [
           "texture:clean_matte_surface",
           "context:product_variant_comparison"
         ],
-        "extra_positive": "clean product variant comparison grid, each shot one color or finish option of the same product, soft even diffused overhead studio light, pure white or light greige seamless background, product centered with generous negative space, consistent camera angle and distance across all 4 shots for easy comparison, true-to-material color accuracy — preserve exact variant color/finish as supplied, no invented colors, no color drift between shots, precise contact shadow, crisp clean edges, commercial catalog quality",
-        "negative": "invented or fantasy colors not in the seller's actual variant range, color drift or shift from the real product finish, warped or duplicated product, mixed products in a single frame, cluttered background, inconsistent camera angle between shots, harsh shadows, blown highlights, text artifacts, watermark, logos, plastic CGI sheen, distorted proportions, props overlapping the product, multiple variants combined into a single image"
+        "extra_positive": "SAME product silhouette and geometry across all 4 shots — only the color or finish variant changes, never the shape, angle or framing; clean product variant comparison grid, each shot one color or finish option of the same product, soft even diffused overhead studio light, pure white or light greige seamless background, product centered with generous negative space, consistent camera angle and distance across all 4 shots for easy comparison, true-to-material color accuracy — preserve exact variant color/finish as supplied, no invented colors, no color drift between shots, precise contact shadow, crisp clean edges, commercial catalog quality",
+        "extra_negative": "invented or fantasy colors not in the seller's actual variant range, color drift or shift from the real product finish, warped or duplicated product, mixed products in a single frame, cluttered background, inconsistent camera angle between shots, harsh shadows, blown highlights, plastic CGI sheen, distorted proportions, props overlapping the product, multiple variants combined into a single image"
       },
       "shot_strategy": "list",
       "shots": [
