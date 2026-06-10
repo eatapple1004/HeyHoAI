@@ -1,14 +1,19 @@
 const { query } = require('../db/client');
 const { PLANS, planKey, entitlementsFor, isPro } = require('../lib/entitlements');
+const { PRICING } = require('../pricing/pricing.config');
 
-// 구독 가격 (월, USD) — public/js/pricing.js 와 일치
-const PRICES = { creator: 19, pro: 39, brand: 79 };
+// 구독 가격 (월, USD) — pricing.config 단일소스에서 파생
+const PRICES = {
+  creator: PRICING.plans.creator.price,
+  pro: PRICING.plans.pro.price,
+  brand: PRICING.plans.brand.price,
+};
 
-// 24시간 첫 업그레이드 오퍼
+// 24시간 첫 업그레이드 오퍼 — 할인율은 pricing.config.firstMonthOff(단일소스)
 const OFFER = {
-  windowMs: 24 * 60 * 60 * 1000, // 24h
-  discountPct: 30,               // 30% 할인
-  plan: 'pro',                   // 대상 플랜
+  windowMs: 24 * 60 * 60 * 1000,        // 24h
+  discountPct: PRICING.firstMonthOff,    // 50% (pricing.config 기준)
+  plan: 'pro',                           // 대상 플랜
 };
 
 /** 오퍼 할인가 (정가 → 할인가, 정수 USD) */
