@@ -35,10 +35,12 @@
   .item .actions button:hover{background:var(--accent);border-color:var(--accent)}
   .item .actions button.del:hover{background:#ff5f6e;border-color:#ff5f6e}
 
-  .empty{text-align:center;padding:80px 20px;color:var(--faint)}
+  .empty{text-align:center;padding:72px 20px;color:var(--faint)}
   .empty .ico{font-size:42px;margin-bottom:14px}
   .empty h3{font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px}
   .empty p{font-size:14px;margin-bottom:22px}
+  .empty-hooks{display:flex;flex-direction:column;gap:10px;max-width:340px;margin:30px auto 0}
+  .empty-hooks .eh{display:flex;align-items:center;gap:10px;text-align:left;font-size:13px;color:var(--dim);background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:13px 16px}
 </style>
 </head>
 <body>
@@ -75,9 +77,14 @@
   <div class="grid fade d2" id="grid"></div>
 
   <div class="empty hidden" id="empty">
-    <div class="ico">🖼️</div><h3>Nothing here yet</h3>
-    <p>Generate your first photo or reel to fill your gallery.</p>
+    <div class="ico">🖼️</div><h3>Your gallery is waiting</h3>
+    <p>Your very first result comes out watermark-free — make something you can post today.</p>
     <a href="/studio" class="btn btn-primary">Open Studio →</a>
+    <div class="empty-hooks">
+      <div class="eh">🔥 Come back daily — your streak earns free credits</div>
+      <div class="eh">🗓 Turn one look into a full week's set in a tap</div>
+      <div class="eh">✨ 7 industries · 48+ templates ready, zero prompts</div>
+    </div>
   </div>
 </div>
 
