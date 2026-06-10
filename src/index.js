@@ -132,6 +132,9 @@ app.get('/heyhoai/editor/page', requirePage, (_req, res) => {
 // 인증 라우트 (공개)
 app.use('/api/auth', authRoutes);
 
+// 가격 단일 소스 (공개 — landing 등 비로그인 페이지도 사용)
+app.use('/api/pricing', require('./pricing/pricing.route'));
+
 // 비즈니스 API (모두 로그인 필요)
 app.use('/api/characters', requireAuth, characterRoutes);
 app.use('/api', requireAuth, imageRoutes);
