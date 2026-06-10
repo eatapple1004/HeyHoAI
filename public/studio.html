@@ -639,7 +639,7 @@ async function generate(){
   document.getElementById('resultsGrid').innerHTML='';
   const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
   lb.querySelector('div:last-child').textContent=r.type==='reel'
-    ?'Generating reel… 보통 2~5분 걸려요. 페이지를 닫지 마세요.'
+    ?'Generating reel… 보통 2~5분 걸려요. 창을 닫아도 갤러리에 자동 저장돼요.'
     :'Generating photos… 30초~1분 정도 걸려요.';
   document.getElementById('resultHint').textContent='';
   step.scrollIntoView({behavior:'smooth'});
