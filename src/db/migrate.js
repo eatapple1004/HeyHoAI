@@ -920,6 +920,16 @@ async function migrateAuth() {
   const adminId = adminRes.rows[0].id;
   console.log(`[migrate] admin user: ${adminEmail} (${adminId})`);
 
+  // 백필: 잘못 저장된 캐릭터 얼굴 URL을 웹 경로로 교정 (멱등)
+  // file:///Users/.../tmp/images/X.png 또는 절대경로 → /images/X.png (파일명만 남기고 /images/ 접두)
+  const fixRef = await pool.query(
+    `UPDATE characters
+     SET reference_image_url = '/images/' || regexp_replace(reference_image_url, '^.*/', ''),
+         updated_at = now()
+     WHERE reference_image_url ~ '^(file://|/Users/|/home/|/private/)'`
+  );
+  if (fixRef.rowCount > 0) console.log(`[migrate] 캐릭터 얼굴 URL 교정: ${fixRef.rowCount}건`);
+
   // 루트 테이블에 user_id 추가 + backfill + NOT NULL + FK + 인덱스
   for (const table of ['characters', 'social_accounts', 'prompts', 'template_data']) {
     await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS user_id UUID;`);
