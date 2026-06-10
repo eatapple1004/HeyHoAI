@@ -1,0 +1,182 @@
+[
+  {
+    "key": "influencer",
+    "name": "인플루언서",
+    "mode": "face",
+    "status": "OK",
+    "file": "recipes.influencer.v2.js",
+    "count": 6,
+    "issues": [],
+    "flags": [
+      "Product Haul Reel [experimental,needs_human_review]"
+    ],
+    "overlay": []
+  },
+  {
+    "key": "fashion",
+    "name": "패션",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.fashion.v2.js",
+    "count": 8,
+    "issues": [],
+    "flags": [
+      "On-Model Studio [experimental,needs_human_review]",
+      "Fit & Size On-Body [experimental,needs_human_review]",
+      "Outfit Transition Reel [experimental,needs_human_review]",
+      "GRWM Drop Reel [experimental,needs_human_review]",
+      "360 Product Spin [experimental]"
+    ],
+    "overlay": []
+  },
+  {
+    "key": "beauty",
+    "name": "뷰티",
+    "mode": "product",
+    "status": "draft(이슈)",
+    "file": "recipes.beauty.v2.js",
+    "count": 16,
+    "issues": [
+      "개수 16 (권장 6~8)"
+    ],
+    "flags": [
+      "On-Model Glow Drop [experimental,needs_human_review]",
+      "Before/After Result Reel [experimental,needs_human_review]",
+      "GRWM Routine Reel [needs_human_review]",
+      "Region Result Reel [experimental,needs_human_review]",
+      "On-Skin Patch Hero [needs_human_review]",
+      "Teeth Shade Card [needs_human_review]"
+    ],
+    "overlay": [
+      "Before/After Result Reel",
+      "Ingredient Claim Card"
+    ]
+  },
+  {
+    "key": "jewelry",
+    "name": "주얼리",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.jewelry.v2.js",
+    "count": 8,
+    "issues": [],
+    "flags": [
+      "Wrist & Hand [experimental,needs_human_review]",
+      "Neck & Ear Try-On [experimental,needs_human_review]",
+      "Jewelry Unbox ASMR [experimental,needs_human_review]"
+    ],
+    "overlay": [
+      "Scale & Spec Overlay"
+    ]
+  },
+  {
+    "key": "food",
+    "name": "푸드&카페",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.food.v2.js",
+    "count": 7,
+    "issues": [],
+    "flags": [
+      "Serving & Table Lifestyle [needs_human_review]",
+      "Sizzle & Steam ASMR [needs_human_review]"
+    ],
+    "overlay": [
+      "Menu / Price Card"
+    ]
+  },
+  {
+    "key": "home",
+    "name": "홈&리빙",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.home.v2.js",
+    "count": 7,
+    "issues": [],
+    "flags": [
+      "Day-to-Night Lighting Reveal [needs_human_review]"
+    ],
+    "overlay": [
+      "Scale & Dimensions Frame"
+    ]
+  },
+  {
+    "key": "tech",
+    "name": "테크",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.tech.v2.js",
+    "count": 7,
+    "issues": [],
+    "flags": [
+      "In-hand Quick Demo [experimental]"
+    ],
+    "overlay": [
+      "Spec Callout Grid"
+    ]
+  },
+  {
+    "key": "pet",
+    "name": "펫",
+    "mode": "product",
+    "status": "draft(이슈)",
+    "file": "recipes.pet.v2.js",
+    "count": 12,
+    "issues": [
+      "개수 12 (권장 6~8)"
+    ],
+    "flags": [
+      "On-Pet Fit [experimental,needs_human_review]",
+      "Talking Pet Skit [experimental,needs_human_review]",
+      "Hands-On Pour & Unbox Reel [needs_human_review]"
+    ],
+    "overlay": []
+  },
+  {
+    "key": "ugc",
+    "name": "UGC광고",
+    "mode": "avatar",
+    "status": "OK",
+    "file": "recipes.ugc.v2.js",
+    "count": 7,
+    "issues": [],
+    "flags": [
+      "Hook + CTA Ad [experimental,needs_human_review]",
+      "Unboxing Reaction [experimental,needs_human_review]",
+      "Problem → Solution [experimental,needs_human_review]",
+      "Talking-Head Testimonial [experimental,needs_human_review]",
+      "Product Demo [experimental,needs_human_review]"
+    ],
+    "overlay": []
+  },
+  {
+    "key": "general",
+    "name": "General/기타제품",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.general.v2.js",
+    "count": 8,
+    "issues": [],
+    "flags": [
+      "Packaging & Unboxing [text_overlay]",
+      "Flat-Lay Grid [text_overlay]",
+      "Universal 360 Spin [experimental]",
+      "Large-Format Hero [experimental,needs_human_review,oversize]"
+    ],
+    "overlay": []
+  },
+  {
+    "key": "headshot",
+    "name": "헤드샷/퍼스널",
+    "mode": "face",
+    "status": "OK",
+    "file": "recipes.headshot.v2.js",
+    "count": 7,
+    "issues": [],
+    "flags": [
+      "Speaking Profile Reel [needs_human_review]",
+      "About-Page Intro Reel [needs_human_review]"
+    ],
+    "overlay": []
+  }
+]

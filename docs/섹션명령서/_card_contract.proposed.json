@@ -1,0 +1,1708 @@
+{
+  "_note": "PROPOSAL — FE/backend 비준 전. id/카드스키마/소비방식 미동결(게이트 A2a/A4/A5).",
+  "generated_rule": {
+    "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
+    "id": "slug(name) — PROVISIONAL"
+  },
+  "total": 93,
+  "new_count": 58,
+  "provisional_count": 18,
+  "drift_guard": {
+    "seed_total": 93,
+    "status_total": 93,
+    "ok": true
+  },
+  "id_collisions": [],
+  "cards": {
+    "influencer": [
+      {
+        "id": "candid-photo-dump",
+        "cat": "Feed",
+        "name": "Candid Photo Dump",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "fit-check-on-model",
+        "cat": "Fashion",
+        "name": "Fit Check On-Model",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "golden-hour-anywhere",
+        "cat": "Travel",
+        "name": "Golden Hour Anywhere",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "grwm-aurora-reel",
+        "cat": "Reel",
+        "name": "GRWM Aurora Reel",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "day-in-life-reel",
+        "cat": "Reel",
+        "name": "Day-in-Life Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "product-haul-reel",
+        "cat": "Reel",
+        "name": "Product Haul Reel",
+        "type": "reel",
+        "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      }
+    ],
+    "fashion": [
+      {
+        "id": "on-model-studio",
+        "cat": "OnModel",
+        "name": "On-Model Studio",
+        "type": "image",
+        "cost": 5,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "fit-and-size-on-body",
+        "cat": "OnModel",
+        "name": "Fit & Size On-Body",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "lifestyle-scene-pack",
+        "cat": "Lifestyle",
+        "name": "Lifestyle Scene Pack",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "macro-texture-shots",
+        "cat": "Detail",
+        "name": "Macro Texture Shots",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "quick-drop-teaser-reel",
+        "cat": "Reel",
+        "name": "Quick-Drop Teaser Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "outfit-transition-reel",
+        "cat": "Reel",
+        "name": "Outfit Transition Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "grwm-drop-reel",
+        "cat": "Reel",
+        "name": "GRWM Drop Reel",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      },
+      {
+        "id": "360-product-spin",
+        "cat": "Reel",
+        "name": "360 Product Spin",
+        "type": "reel",
+        "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock"
+        ]
+      }
+    ],
+    "beauty": [
+      {
+        "id": "dewy-glass-hero",
+        "cat": "Hero",
+        "name": "Dewy Glass Hero",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "macro-swatch-lab",
+        "cat": "Texture",
+        "name": "Macro Swatch Lab",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "on-model-glow-drop",
+        "cat": "OnModel",
+        "name": "On-Model Glow Drop",
+        "type": "image",
+        "cost": 5,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "before-after-result-reel",
+        "cat": "Reel",
+        "name": "Before/After Result Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": true,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "grwm-routine-reel",
+        "cat": "Reel",
+        "name": "GRWM Routine Reel",
+        "type": "reel",
+        "cost": 8,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "quick-glow-snap",
+        "cat": "Reel",
+        "name": "Quick Glow Snap",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "aesthetic-shelfie",
+        "cat": "Lifestyle",
+        "name": "Aesthetic Shelfie",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ingredient-claim-card",
+        "cat": "InfoCard",
+        "name": "Ingredient Claim Card",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": true,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "shade-range-grid",
+        "cat": "Shade",
+        "name": "Shade Range Grid",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "region-result-reel",
+        "cat": "Reel",
+        "name": "Region Result Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": true,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "gift-set-group-hero",
+        "cat": "Hero",
+        "name": "Gift Set Group Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "glide-stick-swipe",
+        "cat": "Texture",
+        "name": "Glide Stick Swipe",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "compact-powder-pop",
+        "cat": "Texture",
+        "name": "Compact Powder Pop",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "mist-burst-reel",
+        "cat": "Reel",
+        "name": "Mist Burst Reel",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "on-skin-patch-hero",
+        "cat": "OnModel",
+        "name": "On-Skin Patch Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "teeth-shade-card",
+        "cat": "Shade",
+        "name": "Teeth Shade Card",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock"
+        ]
+      }
+    ],
+    "jewelry": [
+      {
+        "id": "surface-macro",
+        "cat": "Macro",
+        "name": "Surface Macro",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "studio-and-editorial",
+        "cat": "Studio",
+        "name": "Studio & Editorial",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "scale-and-spec-overlay",
+        "cat": "Sizing",
+        "name": "Scale & Spec Overlay",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": true,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "wrist-and-hand",
+        "cat": "OnModel",
+        "name": "Wrist & Hand",
+        "type": "image",
+        "cost": 5,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "neck-and-ear-try-on",
+        "cat": "OnModel",
+        "name": "Neck & Ear Try-On",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "set-and-stack-stylist",
+        "cat": "Styling",
+        "name": "Set & Stack Stylist",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "lumen-reel",
+        "cat": "Reel",
+        "name": "Lumen Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "jewelry-unbox-asmr",
+        "cat": "Reel",
+        "name": "Jewelry Unbox ASMR",
+        "type": "reel",
+        "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      }
+    ],
+    "food": [
+      {
+        "id": "top-down-hero",
+        "cat": "Studio",
+        "name": "Top-Down Hero",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      },
+      {
+        "id": "drip-and-steam-macro",
+        "cat": "Macro",
+        "name": "Drip & Steam Macro",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      },
+      {
+        "id": "golden-hour-cafe-mood",
+        "cat": "Lifestyle",
+        "name": "Golden-Hour Cafe Mood",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      },
+      {
+        "id": "serving-and-table-lifestyle",
+        "cat": "Lifestyle",
+        "name": "Serving & Table Lifestyle",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      },
+      {
+        "id": "menu-price-card",
+        "cat": "Menu",
+        "name": "Menu / Price Card",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": true,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      },
+      {
+        "id": "single-dish-sizzle",
+        "cat": "Reel",
+        "name": "Single-Dish Sizzle",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      },
+      {
+        "id": "sizzle-and-steam-asmr",
+        "cat": "Reel",
+        "name": "Sizzle & Steam ASMR",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      }
+    ],
+    "home": [
+      {
+        "id": "room-and-warmth-styled",
+        "cat": "Scene",
+        "name": "Room & Warmth Styled",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "material-detail-suite",
+        "cat": "Detail",
+        "name": "Material Detail Suite",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "scale-and-dimensions-frame",
+        "cat": "Info",
+        "name": "Scale & Dimensions Frame",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": true,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "day-to-night-lighting-reveal",
+        "cat": "Reel",
+        "name": "Day-to-Night Lighting Reveal",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": true,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "empty-to-styled-reveal",
+        "cat": "Reel",
+        "name": "Empty-to-Styled Reveal",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "slow-asmr-detail",
+        "cat": "Reel",
+        "name": "Slow ASMR Detail",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "variant-showcase-grid",
+        "cat": "Detail",
+        "name": "Variant Showcase Grid",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      }
+    ],
+    "tech": [
+      {
+        "id": "void-hero-cut",
+        "cat": "Hero",
+        "name": "Void Hero Cut",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "spec-callout-grid",
+        "cat": "Feature",
+        "name": "Spec Callout Grid",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": true,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "macro-tactile-zoom",
+        "cat": "Macro",
+        "name": "Macro Tactile Zoom",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "desk-setup-flatlay",
+        "cat": "Lifestyle",
+        "name": "Desk Setup Flatlay",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "in-hand-quick-demo",
+        "cat": "Reel",
+        "name": "In-hand Quick Demo",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "tech-unbox-asmr",
+        "cat": "Reel",
+        "name": "Tech Unbox ASMR",
+        "type": "reel",
+        "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "360-glow-spin",
+        "cat": "Reel",
+        "name": "360 Glow Spin",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "count_lock",
+          "scale_cue",
+          "emissive_render"
+        ]
+      }
+    ],
+    "pet": [
+      {
+        "id": "pet-product-hero",
+        "cat": "Hero",
+        "name": "Pet Product Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "cuddle-hour",
+        "cat": "Lifestyle",
+        "name": "Cuddle Hour",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "macro-crunch",
+        "cat": "Detail",
+        "name": "Macro Crunch",
+        "type": "image",
+        "cost": 2,
+        "new": false,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "on-pet-fit",
+        "cat": "OnPet",
+        "name": "On-Pet Fit",
+        "type": "image",
+        "cost": 5,
+        "new": false,
+        "provisional": true,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "wait-for-the-zoomies",
+        "cat": "Reel",
+        "name": "Wait For The Zoomies",
+        "type": "reel",
+        "cost": 4,
+        "new": false,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "talking-pet-skit",
+        "cat": "UGC",
+        "name": "Talking Pet Skit",
+        "type": "reel",
+        "cost": 4,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "single-hero-sizzle-reel",
+        "cat": "Reel",
+        "name": "Single-Hero Sizzle Reel",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "hands-on-pour-and-unbox-reel",
+        "cat": "Reel",
+        "name": "Hands-On Pour & Unbox Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": true,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "device-ui-mockup-set",
+        "cat": "Tech",
+        "name": "Device UI Mockup Set",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "in-room-scale-set",
+        "cat": "Scale",
+        "name": "In-Room Scale Set",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "habitat-scene-set",
+        "cat": "Lifestyle",
+        "name": "Habitat Scene Set",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "pet-wearable-spec-sheet",
+        "cat": "Spec",
+        "name": "Pet Wearable Spec Sheet",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": true,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "emissive_render",
+          "count_lock"
+        ]
+      }
+    ],
+    "ugc": [
+      {
+        "id": "static-ugc-photo-ad",
+        "cat": "Static",
+        "name": "Static UGC Photo Ad",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "tiktok-discovery-pov",
+        "cat": "Discovery",
+        "name": "TikTok Discovery POV",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "hook-cta-ad",
+        "cat": "Demo",
+        "name": "Hook + CTA Ad",
+        "type": "reel",
+        "cost": 4,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "unboxing-reaction",
+        "cat": "Reaction",
+        "name": "Unboxing Reaction",
+        "type": "reel",
+        "cost": 4,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "problem-solution",
+        "cat": "Talking",
+        "name": "Problem → Solution",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "talking-head-testimonial",
+        "cat": "Talking",
+        "name": "Talking-Head Testimonial",
+        "type": "reel",
+        "cost": 6,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "product-demo",
+        "cat": "Demo",
+        "name": "Product Demo",
+        "type": "reel",
+        "cost": 8,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      }
+    ],
+    "general": [
+      {
+        "id": "clean-hero-pack",
+        "cat": "Hero",
+        "name": "Clean Hero Pack",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "lifestyle-in-context",
+        "cat": "Lifestyle",
+        "name": "Lifestyle-in-Context",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "packaging-and-unboxing",
+        "cat": "Packaging",
+        "name": "Packaging & Unboxing",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "text_overlay"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "macro-detail",
+        "cat": "Detail",
+        "name": "Macro Detail",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "flat-lay-grid",
+        "cat": "FlatLay",
+        "name": "Flat-Lay Grid",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "text_overlay"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "any-product-drop-reel",
+        "cat": "Reel",
+        "name": "Any-Product Drop Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "universal-360-spin",
+        "cat": "Reel",
+        "name": "Universal 360 Spin",
+        "type": "reel",
+        "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "large-format-hero",
+        "cat": "Hero",
+        "name": "Large-Format Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review",
+          "oversize"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock",
+          "emissive_render"
+        ]
+      }
+    ],
+    "headshot": [
+      {
+        "id": "linkedin-classic",
+        "cat": "Headshot",
+        "name": "LinkedIn Classic",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "executive-authority",
+        "cat": "Headshot",
+        "name": "Executive Authority",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "background-and-wardrobe-swap",
+        "cat": "Headshot",
+        "name": "Background & Wardrobe Swap",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "team-page-consistent",
+        "cat": "Headshot",
+        "name": "Team Page Consistent",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "approachable-brand",
+        "cat": "Headshot",
+        "name": "Approachable Brand",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "speaking-profile-reel",
+        "cat": "Reel",
+        "name": "Speaking Profile Reel",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "about-page-intro-reel",
+        "cat": "Reel",
+        "name": "About-Page Intro Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      }
+    ]
+  }
+}
