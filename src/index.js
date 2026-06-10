@@ -153,6 +153,7 @@ app.use('/api/affiliate', requireAuth, require('./affiliate/affiliate.route').ro
 app.use('/api/teams', requireAuth, require('./teams/team.route').router);
 app.use('/api/dashboard', requireAuth, require('./dashboard/dashboard.route').router);
 app.use('/api/subscription', requireAuth, require('./subscription/subscription.route').router);
+app.use('/api/recipes', requireAuth, require('./recipes/recipe.route'));
 
 // Health check
 app.get('/health', (_req, res) => {
