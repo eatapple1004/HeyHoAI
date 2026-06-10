@@ -164,9 +164,9 @@ async function register(req, res, next) {
 
       const saved = await characterRepo.insert({ userId: req.user.id, name, concept, persona, teamId: await activeTeamId(req.user.id) });
 
-      // 대표 이미지 설정
+      // 대표 이미지 설정 — /images/ 웹 경로로 저장 (file:// 절대경로는 브라우저 로드 불가)
       if (req.file) {
-        const refUrl = `file://${req.file.path}`;
+        const refUrl = `/images/${req.file.filename}`;
         await characterRepo.setReferenceImage(saved.id, null, refUrl);
         saved.reference_image_url = refUrl;
       }
