@@ -60,7 +60,7 @@ async function accept(){
     const d=await res.json();
     if(!res.ok||!d.success){document.getElementById('msg').className='msg err';document.getElementById('msg').textContent=d.error||'합류 실패';btn.disabled=false;btn.textContent='팀 합류하기';return;}
     document.getElementById('msg').textContent=d.data.already?'이미 이 팀의 멤버예요. 이동합니다…':'합류 완료! 이동합니다…';
-    setTimeout(()=>location.href='/business.html',1200);
+    setTimeout(()=>location.href='/business',1200);
   }catch(e){btn.disabled=false;btn.textContent='팀 합류하기';}
 }
 load();

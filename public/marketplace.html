@@ -58,16 +58,16 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
+    <div class="brand" onclick="location.href='/landing'"><span class="dot"></span><b>Doppia</b></div>
     <div class="nav-links">
-      <a onclick="location.href='/studio.html'">Studio</a>
+      <a onclick="location.href='/studio'">Studio</a>
       <a class="active">Market</a>
-      <a onclick="location.href='/gallery.html'">Gallery</a>
-      <a onclick="location.href='/billing.html'">Billing</a>
-      <a onclick="location.href='/business.html'">Business</a>
+      <a onclick="location.href='/gallery'">Gallery</a>
+      <a onclick="location.href='/billing'">Billing</a>
+      <a onclick="location.href='/business'">Business</a>
     </div>
     <div class="credits"><span class="coin">◈</span> <span id="navBalance">—</span> credits
-      <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
+      <span class="buy" onclick="location.href='/billing'">+ Buy</span>
     </div>
     <div class="credits" id="saasUserBox"></div>
   </div>
@@ -83,7 +83,7 @@
       <div class="cd">Publish a template and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-lg" onclick="location.href='/earnings.html'">📊 Earnings</button>
+      <button class="btn btn-ghost btn-lg" onclick="location.href='/earnings'">📊 Earnings</button>
       <button class="btn btn-primary btn-lg" id="creatorBtn" onclick="creatorAction()">Become a creator</button>
     </div>
   </div>
@@ -96,7 +96,7 @@
   <div class="filter-row fade d3" id="filterRow"></div>
   <div class="grid fade d3" id="grid"></div>
 
-  <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
+  <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate'">Join the affiliate program →</a></div>
 </div>
 
 <!-- 템플릿 게시 모달 -->
@@ -190,7 +190,7 @@ async function useTemplate(id,btn){
     if(!d.success){alert(d.error||'사용할 수 없습니다.');btn.disabled=false;btn.textContent=o;return;}
     // 스튜디오에서 적용하도록 전달
     sessionStorage.setItem('mkTemplate',JSON.stringify(d.data));
-    location.href='/studio.html';
+    location.href='/studio';
   }catch(e){alert('오류가 발생했습니다.');btn.disabled=false;btn.textContent=o;}
 }
 async function unpublish(id,btn){

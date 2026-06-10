@@ -95,7 +95,7 @@ router.post('/:id/invites', async (req, res, next) => {
   try {
     await svc.assertRole(req.params.id, req.user.id, 'owner');
     const inv = await svc.createInvite(req.params.id, (req.body || {}).role, req.user.id);
-    const url = `${req.protocol}://${req.get('host')}/join-team.html?code=${inv.code}`;
+    const url = `${req.protocol}://${req.get('host')}/join-team?code=${inv.code}`;
     res.status(201).json({ success: true, data: { ...inv, url } });
   } catch (err) { handle(err, res, next); }
 });

@@ -38,7 +38,7 @@
 <div class="grain"></div>
 
 <div class="card fade d1">
-  <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
+  <div class="brand" onclick="location.href='/landing'"><span class="dot"></span><b>Doppia</b></div>
   <div class="tagline">Your face. Any look. Content on autopilot.</div>
 
   <div class="tabs">
@@ -89,7 +89,7 @@ function showErr(msg){
 }
 function nextUrl(){
   const next=new URLSearchParams(location.search).get('next');
-  return next&&next.startsWith('/')?next:'/studio.html';
+  return next&&next.startsWith('/')?next:'/studio';
 }
 async function submitForm(e){
   e.preventDefault();showErr('');
