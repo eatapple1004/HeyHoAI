@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI · Marketplace</title>
+<title>Doppia · Marketplace</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
   .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
@@ -48,7 +48,33 @@
   .affil-link{margin-top:30px;font-size:13px;color:var(--dim);text-align:center}
   .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
 
+  /* virtual model license explainer */
+  .lic-explain{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;font-size:13px;color:var(--dim);line-height:1.6}
+  .lic-explain b{color:var(--text)}
+  .lic-tiers{display:flex;gap:26px;flex-wrap:wrap;margin-top:9px;font-size:12.5px}
+  .lic-tiers .t-std{color:var(--accent2)}
+  .lic-tiers .t-exc{color:var(--gold)}
+  .card .badge.off{left:auto;right:10px;background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
+  .card .lic-note{font-size:11px;color:var(--faint)}
+  .card .lic-note.exc{color:var(--gold);font-weight:600}
+
   @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr);gap:12px}.card .preview{height:130px;font-size:34px}}
+
+  /* seller onboarding modal */
+  .modal-bg{position:fixed;inset:0;z-index:120;background:rgba(8,8,14,.72);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative;animation:fadeUp .35s cubic-bezier(.2,.7,.3,1);max-height:90vh;overflow-y:auto}
+  .modal .x{position:absolute;top:16px;right:16px;background:transparent;border:0;color:var(--faint);font-size:18px;cursor:pointer}
+  .modal h3{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:6px}
+  .modal .msub{font-size:13px;color:var(--dim);line-height:1.55;margin-bottom:18px}
+  .modal label{display:block;font-size:12px;font-weight:600;color:var(--faint);margin:14px 0 6px}
+  .modal input,.modal select{width:100%;font-family:inherit;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px}
+  .seg2{display:flex;gap:8px}
+  .seg2 button{flex:1;font-family:inherit;font-size:13px;font-weight:600;padding:11px;border-radius:10px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer}
+  .seg2 button.on{background:linear-gradient(120deg,var(--accent),#9b7bff);border-color:transparent;color:#fff}
+  .uploadbox{border:1.5px dashed var(--border2);border-radius:12px;padding:18px;text-align:center;font-size:13px;color:var(--dim);cursor:pointer;line-height:1.7}
+  .uploadbox small{color:var(--faint);font-size:11px}
+  .hidden{display:none}
 </style>
 </head>
 <body>
@@ -57,7 +83,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
     <div class="nav-links">
       <a onclick="location.href='/studio.html'">Studio</a>
       <a class="active">Market</a>
@@ -65,7 +91,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span class="cr-bal">42</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -77,10 +103,10 @@
 
   <div class="creator-cta glass fade d2">
     <div>
-      <div class="ct">🎨 Sell your templates &amp; models</div>
-      <div class="cd">Publish a template or virtual model and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
+      <div class="ct">🎨 Creator program — opening soon</div>
+      <div class="cd">Soon you'll be able to publish your own templates &amp; models and earn <span class="pct">70% revenue share</span> every time someone uses them. Join the waitlist and we'll invite you first.</div>
     </div>
-    <button class="btn btn-primary btn-lg" onclick="alert('크리에이터 신청 (mock) → /api/marketplace/apply')">Become a creator</button>
+    <button class="btn btn-primary btn-lg" onclick="openSell()">Join the waitlist</button>
   </div>
 
   <div class="tabs fade d2">
@@ -89,11 +115,43 @@
   </div>
 
   <div class="filter-row fade d3" id="filterRow"></div>
+  <div class="lic-explain fade d3" id="licBanner" style="display:none"></div>
   <div class="grid fade d3" id="grid"></div>
 
-  <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
+  <div class="affil-link fade d4">Curious how creators earn? <a onclick="location.href='/earnings.html'">Preview the earnings dashboard →</a> &nbsp;·&nbsp; Want to earn by referring others? <a onclick="location.href='/affiliate.html'">Join the affiliate program →</a></div>
 </div>
 
+<div class="modal-bg" id="sellModal" onclick="if(event.target===this)closeSell()">
+  <div class="modal">
+    <button class="x" onclick="closeSell()">✕</button>
+    <div id="sellForm">
+      <h3>🎨 Creator program — early access</h3>
+      <p class="msub">Publishing your own templates &amp; models (with <b style="color:var(--cyan)">70% revenue share</b>) is coming soon. Join the waitlist and we'll invite you first when it opens.</p>
+      <label>Creator handle</label>
+      <input id="seHandle" placeholder="@yourhandle">
+      <label>What do you want to sell?</label>
+      <div class="seg2">
+        <button class="on" data-k="template" onclick="pickSell(this)">🧩 Templates</button>
+        <button data-k="model" onclick="pickSell(this)">👤 Virtual model</button>
+      </div>
+      <label>Category</label>
+      <select id="seCat"><option>Influencer</option><option>Shopping / Product</option><option>UGC Ads</option><option>Beauty</option><option>Other</option></select>
+      <label>Sample work</label>
+      <div class="uploadbox" onclick="HH.toast('File picker (mock)')">+ Upload 1–3 samples<br><small>JPG / PNG / MP4</small></div>
+      <label>Portfolio / social link (optional)</label>
+      <input id="seLink" placeholder="https://instagram.com/...">
+      <button class="btn btn-primary" style="width:100%;margin-top:18px" onclick="submitSell()">Join the waitlist</button>
+    </div>
+    <div id="sellDone" class="hidden" style="text-align:center">
+      <div style="font-size:42px;margin-bottom:4px">✅</div>
+      <h3>You're on the waitlist 🎉</h3>
+      <p class="msub">Thanks <b id="seDoneHandle">@you</b> — we'll email you the moment creator publishing opens, with early access and 70% revenue share.</p>
+      <button class="btn btn-primary" style="width:100%" onclick="closeSell()">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/hh.js?v=2"></script>
 <script>
 const TEMPLATES=[
   {name:'Golden Hour Pro',cat:'Influencer',creator:'@lindastudio',price:2,uses:'12.4k',rating:'4.9',emoji:'🌅',grad:'g1',badge:'Photo'},
@@ -106,12 +164,16 @@ const TEMPLATES=[
   {name:'Flat-lay Detail',cat:'Shopping',creator:'@studio.kr',price:2,uses:'2.9k',rating:'4.7',emoji:'🪞',grad:'g5',badge:'Photo'}
 ];
 const MODELS=[
-  {name:'Mia — Lifestyle',tier:'Standard',price:'◈ 3',unit:'/use',uses:'18.2k',rating:'4.9',emoji:'👩🏻',grad:'g6'},
-  {name:'Leo — Streetwear',tier:'Standard',price:'◈ 3',unit:'/use',uses:'11.5k',rating:'4.8',emoji:'👨🏽',grad:'g2'},
-  {name:'Aria — Luxury',tier:'Exclusive',price:'$49',unit:'/mo',uses:'5.1k',rating:'5.0',emoji:'💃🏻',grad:'g5'},
-  {name:'Kai — Fitness',tier:'Standard',price:'◈ 3',unit:'/use',uses:'7.8k',rating:'4.7',emoji:'🏋🏻',grad:'g7'},
-  {name:'Yuna — Beauty',tier:'Exclusive',price:'$49',unit:'/mo',uses:'9.0k',rating:'4.9',emoji:'💄',grad:'g3'},
-  {name:'Noah — Casual',tier:'Standard',price:'◈ 3',unit:'/use',uses:'4.4k',rating:'4.6',emoji:'🧑🏼',grad:'g4'}
+  {name:'Mia — Lifestyle',tier:'Standard',price:'◈ 3',unit:'/use',uses:'18.2k',rating:'4.9',emoji:'👩🏻',grad:'g6',official:true},
+  {name:'Leo — Streetwear',tier:'Standard',price:'◈ 3',unit:'/use',uses:'11.5k',rating:'4.8',emoji:'👨🏽',grad:'g2',official:true},
+  {name:'Kai — Fitness',tier:'Standard',price:'◈ 3',unit:'/use',uses:'7.8k',rating:'4.7',emoji:'🏋🏻',grad:'g7',official:true},
+  {name:'Noah — Casual',tier:'Standard',price:'◈ 3',unit:'/use',uses:'4.4k',rating:'4.6',emoji:'🧑🏼',grad:'g4',official:true},
+  {name:'Theo — Athleisure',tier:'Standard',price:'◈ 3',unit:'/use',uses:'3.1k',rating:'4.7',emoji:'🏃🏽',grad:'g1',official:true},
+  {name:'Rin — Editorial',tier:'Standard',price:'◈ 4',unit:'/use',uses:'2.6k',rating:'4.8',emoji:'🧑🏻‍🎤',grad:'g8',official:true},
+  {name:'Aria — Luxury',tier:'Exclusive',price:'$49',unit:'/mo',uses:'5.1k',rating:'5.0',emoji:'💃🏻',grad:'g5',official:true},
+  {name:'Yuna — Beauty',tier:'Exclusive',price:'$49',unit:'/mo',uses:'9.0k',rating:'4.9',emoji:'💄',grad:'g3',official:true},
+  {name:'Sena — High Fashion',tier:'Exclusive',price:'$69',unit:'/mo',uses:'2.2k',rating:'5.0',emoji:'👠',grad:'g6',official:true},
+  {name:'Iris — Skincare',tier:'Exclusive',price:'$59',unit:'/mo',uses:'3.8k',rating:'4.9',emoji:'🧴',grad:'g2',official:true}
 ];
 let tab='templates',filter='All';
 function setTab(t){tab=t;filter='All';
@@ -120,8 +182,9 @@ function setTab(t){tab=t;filter='All';
 function setFilter(f){filter=f;render();}
 function render(){
   const fr=document.getElementById('filterRow'),grid=document.getElementById('grid');
+  const lb=document.getElementById('licBanner');
   if(tab==='templates'){
-    fr.style.display='';
+    fr.style.display='';lb.style.display='none';
     const cats=['All','Influencer','Shopping','UGC'];
     fr.innerHTML=cats.map(c=>`<div class="chip ${filter===c?'active':''}" onclick="setFilter('${c}')">${c}</div>`).join('');
     grid.innerHTML=TEMPLATES.filter(t=>filter==='All'||t.cat===filter).map(t=>`
@@ -136,19 +199,38 @@ function render(){
         </div></div>`).join('');
   } else {
     fr.style.display='none';
+    lb.style.display='';
+    lb.innerHTML=`<div><b>Official Doppia models</b> — consistent AI faces you can use commercially. No real person, no release forms, no model fees.</div>
+      <div class="lic-tiers">
+        <span><b class="t-std">Standard</b> · pay ◈ per use · non-exclusive (others can license too)</span>
+        <span><b class="t-exc">Exclusive</b> · $/mo · locked to you — pulled from the marketplace while you hold it</span>
+      </div>`;
     grid.innerHTML=MODELS.map(m=>`
       <div class="card">
-        <div class="preview ${m.grad}"><span class="badge ${m.tier==='Exclusive'?'excl':''}">${m.tier}</span>${m.emoji}</div>
+        <div class="preview ${m.grad}"><span class="badge ${m.tier==='Exclusive'?'excl':''}">${m.tier}</span>${m.official?'<span class="badge off">Official</span>':''}${m.emoji}</div>
         <div class="meta">
           <div class="rname">${m.name}</div>
           <div class="statline">⭐ ${m.rating} · ${m.uses} licensed</div>
+          <div class="lic-note ${m.tier==='Exclusive'?'exc':''}">${m.tier==='Exclusive'?'🔒 Exclusive — yours only':'Non-exclusive license'}</div>
           <div class="foot"><div class="price">${m.price}<small> ${m.unit}</small></div>
             <button class="btn btn-primary" onclick="lic('${m.name}')">License</button></div>
         </div></div>`).join('');
   }
 }
-function use(n){alert('템플릿 사용 (mock): '+n+'\n→ Studio로 이동해 적용 + 크리에이터에게 수익 분배');}
-function lic(n){alert('가상모델 라이선스 (mock): '+n);}
+function use(n){HH.toast('Added to studio (mock): '+n);}
+function lic(n){HH.toast('Model licensed (mock): '+n);}
+// seller onboarding
+let sellKind='template';
+function openSell(){document.getElementById('sellForm').classList.remove('hidden');document.getElementById('sellDone').classList.add('hidden');document.getElementById('sellModal').classList.add('open');}
+function closeSell(){document.getElementById('sellModal').classList.remove('open');}
+function pickSell(b){document.querySelectorAll('.seg2 button').forEach(x=>x.classList.remove('on'));b.classList.add('on');sellKind=b.dataset.k;}
+function submitSell(){
+  const h=(document.getElementById('seHandle').value||'').trim();
+  if(!h){HH.toast('Enter your creator handle first',{type:'warn'});return;}
+  document.getElementById('seDoneHandle').textContent=h.startsWith('@')?h:'@'+h;
+  document.getElementById('sellForm').classList.add('hidden');
+  document.getElementById('sellDone').classList.remove('hidden');
+}
 render();
 </script>
 </body>

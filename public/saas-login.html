@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI — Sign in</title>
+<title>Doppia — Sign in</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
   body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -38,7 +38,7 @@
 <div class="grain"></div>
 
 <div class="card fade d1">
-  <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+  <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
   <div class="tagline">Your face. Any look. Content on autopilot.</div>
 
   <div class="tabs">
@@ -55,7 +55,7 @@
     <div class="field hidden" id="confirmField"><label>Confirm password</label><input type="password" placeholder="••••••••" /></div>
     <div class="terms hidden" id="termsRow">
       <input type="checkbox" id="agree" />
-      <span>I confirm this is my own face/content and I agree to the <a onclick="alert('약관')">Terms</a> &amp; <a onclick="alert('개인정보처리방침')">Privacy Policy</a>.</span>
+      <span>I confirm this is my own face/content and I agree to the <a onclick="alert('Terms of Service (mock)')">Terms</a> &amp; <a onclick="alert('Privacy Policy (mock)')">Privacy Policy</a>.</span>
     </div>
     <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Log in</button>
   </form>
@@ -84,8 +84,8 @@ function setTab(t){
 }
 function submitForm(e){
   e.preventDefault();
-  if(tab==='signup'&&!document.getElementById('agree').checked){alert('약관에 동의해 주세요.');return false;}
-  alert((tab==='signup'?'회원가입':'로그인')+' 성공 (mock) → /studio.html');
+  if(tab==='signup'&&!document.getElementById('agree').checked){alert('Please agree to the terms first.');return false;}
+  alert((tab==='signup'?'Account created':'Logged in')+' (mock) → /studio.html');
   window.location.href='/studio.html';return false;
 }
 </script>

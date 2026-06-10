@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI · Business</title>
+<title>Doppia · Business</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
   .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
@@ -46,6 +46,39 @@
   ul.feat{list-style:none;font-size:13.5px;color:var(--dim);margin-top:6px}
   ul.feat li{padding:6px 0;display:flex;gap:9px}
   ul.feat li::before{content:'✓';color:var(--cyan);font-weight:700}
+  .wl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:6px 0 18px}
+  @media(max-width:900px){.wl-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.wl-grid{grid-template-columns:1fr}}
+  .wl-card{padding:22px 18px 20px;display:flex;flex-direction:column;position:relative}
+  .wl-card.featured{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .wl-card .tier{font-family:'Sora';font-size:15px;font-weight:700}
+  .wl-card .pr{font-family:'Sora';font-size:23px;font-weight:800;color:var(--gold);margin:8px 0 1px}
+  .wl-card .pr small{font-size:12px;color:var(--dim);font-weight:500}
+  .wl-card .ws{font-size:12px;color:var(--cyan);margin-bottom:12px}
+  .wl-card ul.feat{margin:0 0 16px;flex:1}
+  .wl-card ul.feat li{font-size:12px;padding:4px 0;color:var(--dim)}
+  .wl-card .btn{width:100%}
+  .wl-badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.6px;padding:3px 10px;border-radius:7px;background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;white-space:nowrap}
+  .sim .simrow{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .sim .f{display:flex;flex-direction:column;gap:5px}
+  .sim .f label{font-size:11.5px;color:var(--faint)}
+  .sim input{font-family:inherit;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-size:15px;width:150px}
+  .sim .out{font-size:14px;color:var(--dim)}
+  .sim .out b{color:var(--cyan);font-family:'Sora';font-size:22px}
+
+  /* private library */
+  .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:6px}
+  .lib-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);transition:.2s}
+  .lib-card:hover{border-color:var(--border2);transform:translateY(-3px)}
+  .lib-card .thumb{height:104px;display:flex;align-items:center;justify-content:center;font-size:34px}
+  .lib-card .lm{padding:12px 14px}
+  .lib-card .ln{font-size:13.5px;font-weight:600}
+  .lib-card .lt{font-size:11px;color:var(--faint);margin-top:3px}
+  .lib-card .lf{display:flex;align-items:center;justify-content:space-between;margin-top:11px}
+  .lib-card .share{font-size:11px;font-weight:600;color:var(--cyan)}
+  .lib-card .share.solo{color:var(--faint)}
+  .lib-card .use{font-size:11px;color:var(--dim)}
+  .lib-tag{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:rgba(255,206,122,.18);color:var(--gold);margin-top:4px}
 
   /* analytics */
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
@@ -73,7 +106,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
     <div class="nav-links">
       <a onclick="location.href='/studio.html'">Studio</a>
       <a onclick="location.href='/marketplace.html'">Market</a>
@@ -81,7 +114,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a class="active">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span class="cr-bal">42</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -89,12 +122,13 @@
 
 <div class="wrap">
   <h1 class="fade d1">For teams &amp; brands</h1>
-  <div class="sub fade d1">Embed HeyHoAI in your store, scale across a team, resell to clients, and schedule everything.</div>
+  <div class="sub fade d1">Embed Doppia in your store, scale across a team, resell to clients, and schedule everything.</div>
 
   <div class="tabs fade d2">
     <button class="on" id="tApi" onclick="setTab('api')">🔌 API &amp; Shopify</button>
     <button id="tTeam" onclick="setTab('team')">👥 Team</button>
     <button id="tWl" onclick="setTab('wl')">🏷️ White-label</button>
+    <button id="tLib" onclick="setTab('lib')">🗂️ Private library</button>
     <button id="tAna" onclick="setTab('ana')">📅 Schedule &amp; Analytics</button>
   </div>
 
@@ -105,8 +139,8 @@
         <span class="role owner">Brand plan</span></div>
       <div class="keybox"><code id="apiKey">sk_live_••••••••••••••••3f9a</code>
         <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="reveal()">Reveal</button>
-          <button class="btn btn-ghost" onclick="alert('재발급 (mock)')">Regenerate</button></div></div>
-      <pre><code><span class="tok">POST</span> https://api.heyhoai.com/v1/render
+          <button class="btn btn-ghost" onclick="HH.toast('API key regenerated (mock)')">Regenerate</button></div></div>
+      <pre><code><span class="tok">POST</span> https://api.doppia.ai/v1/render
 <span class="tok">Authorization:</span> Bearer <span class="str">sk_live_...</span>
 
 {
@@ -119,7 +153,7 @@
     </div>
     <div class="card glass">
       <div class="row"><div><h3>🛍️ Shopify app</h3><p>Bulk-generate lookbooks, on-model shots and reels straight from your product catalog. Auto-syncs new products.</p></div>
-        <button class="btn btn-primary" onclick="alert('Shopify 설치 (mock)')">Install on Shopify</button></div>
+        <button class="btn btn-primary" onclick="HH.toast('Installing on Shopify (mock)')">Install on Shopify</button></div>
     </div>
   </div>
 
@@ -127,34 +161,108 @@
   <div class="panel" id="pTeam">
     <div class="card glass">
       <div class="row" style="margin-bottom:8px"><h3>Team members</h3>
-        <button class="btn btn-primary" onclick="alert('초대 메일 전송 (mock)')">+ Invite member</button></div>
-      <div class="member"><div class="ava g6">🧑🏻</div><div style="flex:1"><div class="nm">You</div><div class="em">yedam@heyhoai.com</div></div><span class="role owner">Owner</span></div>
+        <button class="btn btn-primary" onclick="HH.toast('Invite sent (mock)')">+ Invite member</button></div>
+      <div class="member"><div class="ava g6">🧑🏻</div><div style="flex:1"><div class="nm">You</div><div class="em">yedam@doppia.ai</div></div><span class="role owner">Owner</span></div>
       <div class="member"><div class="ava g2">👩🏻</div><div style="flex:1"><div class="nm">Mina Park</div><div class="em">mina@brand.co</div></div><span class="role">Editor</span></div>
       <div class="member"><div class="ava g7">👨🏽</div><div style="flex:1"><div class="nm">Dan Lee</div><div class="em">dan@brand.co</div></div><span class="role">Editor</span></div>
       <div class="member"><div class="ava g4">🧑🏼</div><div style="flex:1"><div class="nm">Sora Kim</div><div class="em">sora@brand.co</div></div><span class="role">Viewer</span></div>
     </div>
     <div class="card glass">
       <div class="row"><div><h3>Shared credit pool</h3><p>One balance for the whole team. Top-ups and limits managed by the owner.</p></div>
-        <div class="pool"><span class="n">◈ 1,000</span><span style="color:var(--dim);font-size:13px">/ month</span></div></div>
+        <div class="pool"><span class="n">◈ 2,000</span><span style="color:var(--dim);font-size:13px">/ month</span></div></div>
+      <div class="row" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:13px;color:var(--dim)">Team plan · <b style="color:var(--text)">3 seats</b> included · <b style="color:var(--text)">+$15</b> / extra seat · pool tops up monthly</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="HH.toast('Add seat — billed +$15/mo (mock)')">+ Add seat</button>
+          <button class="btn btn-primary" onclick="location.href='/billing.html'">Increase pool</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- WHITE-LABEL -->
   <div class="panel" id="pWl">
     <div class="card glass">
-      <h3>🏷️ White-label for agencies</h3>
-      <p>Resell HeyHoAI under your own brand. Your domain, your logo, your pricing — we stay invisible.</p>
-      <ul class="feat">
-        <li>Custom domain &amp; full logo / color theming</li>
-        <li>Separate client workspaces with isolated galleries</li>
-        <li>Your own markup on credits &amp; plans</li>
-        <li>Consolidated billing &amp; per-client usage reports</li>
-        <li>Priority support + onboarding</li>
-      </ul>
-      <div class="row" style="margin-top:18px">
-        <div style="font-size:13px;color:var(--dim)">From <b style="color:var(--text);font-family:'Sora';font-size:17px">$499</b> / mo + usage</div>
-        <button class="btn btn-primary" onclick="alert('화이트라벨 문의 (mock) → sales')">Request white-label</button>
+      <h3>🏷️ Resell Doppia under your own brand</h3>
+      <p>Your domain, your logo, your pricing — we stay invisible. Pick a tier and start in minutes, no sales call.</p>
+    </div>
+    <div class="wl-grid">
+      <div class="wl-card glass">
+        <div class="tier">Agency Lite</div>
+        <div class="pr">$199<small> / mo</small></div>
+        <div class="ws">3 client workspaces</div>
+        <ul class="feat">
+          <li>Logo &amp; color theming</li>
+          <li>Light white-label (heyhoai badge hidden)</li>
+          <li>Up to 15% credit markup</li>
+          <li>Shared usage report</li>
+        </ul>
+        <button class="btn btn-ghost" onclick="wlStart('Agency Lite')">Start 14-day trial</button>
       </div>
+      <div class="wl-card glass">
+        <div class="tier">Starter</div>
+        <div class="pr">$499<small> / mo</small></div>
+        <div class="ws">10 client workspaces</div>
+        <ul class="feat">
+          <li>Custom domain + full theming</li>
+          <li>Isolated client galleries</li>
+          <li>Your own markup on credits</li>
+          <li>Per-client usage reports</li>
+        </ul>
+        <button class="btn btn-ghost" onclick="wlStart('Starter')">Start 14-day trial</button>
+      </div>
+      <div class="wl-card glass featured">
+        <span class="wl-badge">MOST POPULAR</span>
+        <div class="tier">Growth</div>
+        <div class="pr">$999<small> / mo</small></div>
+        <div class="ws">30 client workspaces</div>
+        <ul class="feat">
+          <li>Everything in Starter</li>
+          <li>Lower credit cost (better margin)</li>
+          <li>Consolidated billing &amp; invoicing</li>
+          <li>Priority support + onboarding</li>
+        </ul>
+        <button class="btn btn-primary" onclick="wlStart('Growth')">Start 14-day trial</button>
+      </div>
+      <div class="wl-card glass">
+        <div class="tier">Scale</div>
+        <div class="pr">$1,999<small> / mo</small></div>
+        <div class="ws">Unlimited workspaces</div>
+        <ul class="feat">
+          <li>Everything in Growth</li>
+          <li>Best credit cost &amp; markup</li>
+          <li>SSO + dedicated success manager</li>
+          <li>API white-label included</li>
+        </ul>
+        <button class="btn btn-ghost" onclick="wlStart('Scale')">Start 14-day trial</button>
+      </div>
+    </div>
+    <div class="card glass">
+      <h3>📊 Your markup, your margin</h3>
+      <p>See what you keep after our credit cost. Set your client's monthly bill and their expected usage.</p>
+      <div class="sim">
+        <div class="simrow">
+          <div class="f"><label>You bill the client ($ / mo)</label><input id="wlBill" type="number" value="800" oninput="wlSim()"></div>
+          <div class="f"><label>Their usage (credits / mo)</label><input id="wlCr" type="number" value="2000" oninput="wlSim()"></div>
+          <div class="out" id="wlOut"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card glass" style="text-align:center">
+      <p style="margin:0">Need 30+ clients, custom rights, or a procurement contract? <a onclick="HH.toast('Sales contact form — mock')" style="color:var(--accent);cursor:pointer;font-weight:600">Talk to sales →</a></p>
+    </div>
+  </div>
+
+  <!-- PRIVATE LIBRARY -->
+  <div class="panel" id="pLib">
+    <div class="card glass">
+      <div class="row"><div><h3>🗂️ Private template library</h3><p>Your team's own recipes &amp; brand kits — reusable across every client workspace, never published to the public marketplace.</p>
+        <span class="lib-tag">Brand &amp; White-label feature</span></div>
+        <button class="btn btn-primary" onclick="HH.toast('Saved current Studio recipe to private library (mock)')">+ Save from Studio</button></div>
+    </div>
+    <div class="card glass">
+      <div class="section-label">Private templates · shared with your team</div>
+      <div class="lib-grid" id="libGrid"></div>
     </div>
   </div>
 
@@ -180,7 +288,7 @@
     </div>
     <div class="card glass">
       <div class="row" style="margin-bottom:6px"><div class="section-label" style="margin:0">Content calendar</div>
-        <button class="btn btn-ghost" onclick="alert('자동 게시 예약 (mock)')">+ Schedule post</button></div>
+        <button class="btn btn-ghost" onclick="HH.toast('Post scheduled (mock)')">+ Schedule post</button></div>
       <div class="cal">
         <div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
         <div class="day"><div class="dn">9</div><div class="post r">Reel · 6pm</div></div>
@@ -195,8 +303,23 @@
   </div>
 </div>
 
+<script src="/js/hh.js?v=2"></script>
 <script>
-const PANELS={api:['tApi','pApi'],team:['tTeam','pTeam'],wl:['tWl','pWl'],ana:['tAna','pAna']};
+const PANELS={api:['tApi','pApi'],team:['tTeam','pTeam'],wl:['tWl','pWl'],lib:['tLib','pLib'],ana:['tAna','pAna']};
+const LIB=[
+  {n:'Acme — Lookbook',t:'Product · Photo',g:'g2',shared:true,uses:'142 uses'},
+  {n:'Acme — Reels Hook',t:'UGC · Reel',g:'g6',shared:true,uses:'88 uses'},
+  {n:'Nova Beauty — GRWM',t:'Influencer · Reel',g:'g3',shared:true,uses:'67 uses'},
+  {n:'Café Mori — Menu',t:'Food · Photo',g:'g7',shared:false,uses:'31 uses'},
+  {n:'Acme — Brand kit v2',t:'🎨 Brand kit',g:'g1',shared:true,uses:'applied to all'},
+  {n:'Luxe Jewelry — 360',t:'Jewelry · Reel',g:'g5',shared:false,uses:'12 uses'}
+];
+document.getElementById('libGrid').innerHTML=LIB.map(l=>`
+  <div class="lib-card">
+    <div class="thumb ${l.g}">${l.t.includes('Brand kit')?'🎨':(l.t.includes('Reel')?'▶':'🖼️')}</div>
+    <div class="lm"><div class="ln">${l.n}</div><div class="lt">${l.t}</div>
+      <div class="lf"><span class="share ${l.shared?'':'solo'}">${l.shared?'👥 Shared with team':'🔒 Owner only'}</span><span class="use">${l.uses}</span></div>
+    </div></div>`).join('');
 function setTab(t){
   for(const k in PANELS){
     document.getElementById(PANELS[k][0]).classList.toggle('on',k===t);
@@ -205,6 +328,16 @@ function setTab(t){
 }
 let revealed=false;
 function reveal(){revealed=!revealed;document.getElementById('apiKey').textContent=revealed?'sk_live_demo_not_a_real_key_4f2a':'sk_live_••••••••••••••••3f9a';}
+// White-label self-serve + margin simulator
+function wlStart(tier){HH.toast(`${tier} white-label — 14-day trial started (mock)`);}
+const WL_COST_PER_CR=0.04; // our wholesale cost per credit ($) — agency keeps the rest
+function wlSim(){
+  const bill=parseFloat(document.getElementById('wlBill').value)||0;
+  const cr=parseInt(document.getElementById('wlCr').value)||0;
+  const cost=cr*WL_COST_PER_CR, margin=bill-cost, pct=bill>0?Math.round(margin/bill*100):0;
+  document.getElementById('wlOut').innerHTML=`Your margin <b>$${margin.toFixed(0)}</b><br><span style="font-size:12px">${pct}% kept · our cost $${cost.toFixed(0)}/mo</span>`;
+}
+wlSim();
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI · Studio</title>
+<title>Doppia · Studio</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
   .wrap{max-width:1080px;margin:0 auto;padding:36px 24px 210px;position:relative;z-index:2}
@@ -22,7 +22,7 @@
     .step-head{flex-wrap:wrap;gap:0 13px}
     .step-head h2{white-space:nowrap}
     .step-head .hint{flex-basis:100%;margin-left:43px;margin-top:2px}
-    .wrap{padding-bottom:300px}
+    .wrap{padding-bottom:150px}
   }
 
   /* subjects */
@@ -87,7 +87,13 @@
   .caption-box .ctext{font-size:14.5px;color:var(--text);line-height:1.6;margin-bottom:9px}
   .caption-box .tags{font-size:13px;color:var(--cyan);font-weight:500;line-height:1.7}
   .caption-box .copy{margin-top:13px;padding:8px 14px;font-size:12px}
-  @media(max-width:600px){.gen-main{flex-direction:column;align-items:stretch}.gen-main .btn{width:100%}}
+  @media(max-width:600px){
+    .gen-main{flex-direction:column;align-items:stretch}.gen-main .btn{width:100%}
+    .gen-bar .addons{display:none}
+    .gen-bar.open .addons{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+    .gen-bar.open .seg{flex-wrap:wrap;justify-content:center}
+    .gen-main .addon-trigger{display:block;width:100%;order:-1}
+  }
 
   /* results */
   .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
@@ -102,11 +108,63 @@
   .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
   @keyframes spin{to{transform:rotate(360deg)}}
 
+  /* P0: 터치에서 결과 액션 상시 노출 + NEW 배지 + 결과후 CTA + 크레딧 힌트 */
+  @media (hover:none){.result-card .actions{opacity:1;background:linear-gradient(transparent,rgba(0,0,0,.6))}}
+  .recipe-card .new-badge{position:absolute;top:10px;right:10px;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:3px 8px;border-radius:8px;background:linear-gradient(120deg,var(--pink),#ff9a6b);color:#1a1a27}
+  .after-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+  .cred-hint{font-size:12px;color:var(--faint);margin:0 0 26px}
+  .cred-hint b{color:var(--gold)}
+
+  /* P1-A: 워터마크 + 결과 업셀 배너 + 페이월/업셀 시트 */
+  .result-card .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;font-size:15px;color:rgba(255,255,255,.45);transform:rotate(-22deg);letter-spacing:1px;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+  .upsell-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:20px;padding:15px 20px;border-radius:14px;background:linear-gradient(120deg,rgba(124,108,255,.16),rgba(255,126,182,.1));border:1px solid var(--border2)}
+  .upsell-banner .ut{font-size:13.5px;color:var(--dim)}
+  .upsell-banner .ut b{color:var(--text)}
+  .upsell-banner .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .upsell-banner .uchip{font-family:inherit;font-size:12px;font-weight:600;padding:8px 13px;border-radius:9px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}
+  .upsell-banner .uchip.primary{background:linear-gradient(120deg,var(--accent),#9b7bff);border-color:transparent;color:#fff}
+  .pw-need{font-size:13.5px;color:var(--dim);margin-bottom:18px;line-height:1.5}
+  .pw-need b{color:var(--gold)}
+  .pw-opt{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  .pw-auto{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+  .pw-auto input{accent-color:var(--accent)}
+
+  /* P1-B: Sample 배지 + Value 배지 + (P1-D) 모바일 옵션 토글 */
+  .subject-card .sample-badge{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(4px)}
+  .recipe-card .pop-badge{position:absolute;bottom:10px;left:10px;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:3px 8px;border-radius:8px;background:linear-gradient(120deg,var(--cyan),#7c6cff);color:#04141a}
+  .recipe-card .val-reason{font-size:10.5px;color:var(--accent2);font-weight:600;margin-top:4px}
+  /* preview affordances (mock — 엔진 미착지, '프리뷰/의도' 카피) */
+  .recipe-card .ov-badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:800;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:rgba(19,19,29,.72);color:#fff;border:1px solid rgba(255,255,255,.22)}
+  .recipe-card .chip-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .g-chip{font-size:9.5px;font-weight:700;letter-spacing:.2px;padding:2.5px 7px;border-radius:7px;background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border2);cursor:help}
+  .g-chip.ov{color:var(--accent2);border-color:rgba(124,108,255,.4)}
+  .g-chip.prev{color:var(--gold);border-color:rgba(255,206,122,.35)}
+  .prev-note{grid-column:1/-1;font-size:12px;color:var(--gold);background:rgba(255,206,122,.08);border:1px solid rgba(255,206,122,.25);border-radius:11px;padding:9px 13px;margin-bottom:2px}
+  .addon-trigger{display:none;font-family:inherit;font-size:13px;font-weight:600;padding:11px 14px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer}
+  .addon-trigger .badge-n{color:var(--accent2)}
+  .streak{font-size:13px;font-weight:700;color:var(--gold);margin-right:6px;padding-right:10px;border-right:1px solid var(--border)}
+  .plan-chip{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:7px;margin-right:8px;cursor:pointer;border:1px solid var(--border2)}
+  .plan-chip.free{color:var(--dim)}
+  .plan-chip.creator{color:var(--accent2);border-color:rgba(124,108,255,.4)}
+  .plan-chip.pro{color:var(--gold);border-color:rgba(255,206,122,.45)}
+  .plan-chip.brand{color:var(--cyan);border-color:rgba(94,224,214,.45)}
+  .pro-tag{font-size:9px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:6px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;margin-left:4px}
+  .up-tier-badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 9px;border-radius:7px;margin-bottom:10px}
+  .up-tier-badge.creator{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
+  .up-tier-badge.pro{background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27}
+  .up-tier-badge.brand{background:linear-gradient(120deg,#5ee0d6,#7c6cff);color:#0c0c14}
+
   /* topbar (mode toggle + brand kit) */
   .topbar{display:flex;align-items:center;gap:14px;margin-bottom:32px;flex-wrap:wrap}
   .topbar .mode-toggle{margin-bottom:0}
   .brandkit-btn{margin-left:auto}
   .bk-on{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--cyan);background:rgba(94,224,214,.16);padding:2px 7px;border-radius:6px}
+
+  /* industry (vertical) picker — Product 모드 전용 */
+  .ind-row{display:flex;gap:8px;flex-wrap:wrap;margin:-8px 0 30px}
+  .ind{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-size:13px;font-weight:600;padding:9px 15px;border-radius:11px;cursor:pointer;transition:.18s}
+  .ind:hover{color:var(--text);border-color:var(--border2)}
+  .ind.active{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;border-color:transparent;box-shadow:0 8px 20px -8px var(--accent)}
 
   /* script step (UGC) */
   .script-box{display:flex;flex-direction:column;gap:12px;max-width:760px}
@@ -127,9 +185,22 @@
   .modal .x{position:absolute;top:15px;right:18px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
   .swatches{display:flex;gap:10px}
   .swatch{width:38px;height:38px;border-radius:10px;border:2px solid var(--border2);cursor:pointer;transition:.15s}
+  /* week's set bundle */
+  .modal.wide{width:min(640px,100%)}
+  .wk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:4px 0 16px}
+  .wk-day{border:1px solid var(--border2);border-radius:11px;padding:10px 5px;text-align:center;background:rgba(255,255,255,.02)}
+  .wk-day .wd{font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px}
+  .wk-day .wk-ic{font-size:18px;margin:7px 0 5px}
+  .wk-day .wk-nm{font-size:9px;color:var(--dim);line-height:1.25;min-height:22px}
+  .wk-day .wk-c{font-size:10px;color:var(--gold);font-weight:700;margin-top:5px}
+  .wk-cost{font-size:14px;color:var(--dim);margin-bottom:16px}
+  .wk-cost b{color:var(--text);font-family:'Sora';font-size:18px}
+  @media(max-width:560px){.wk-grid{grid-template-columns:repeat(4,1fr)}}
   .swatch.sel{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.2)}
   .logo-drop{border:1.5px dashed var(--border2);border-radius:12px;padding:18px;text-align:center;color:var(--dim);font-size:13px;cursor:pointer}
   .logo-drop:hover{border-color:var(--accent);color:var(--accent2)}
+  .lf-slots{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);cursor:pointer}
+  .lf-block{font-size:12.5px;color:var(--gold);background:rgba(255,206,122,.08);border:1px solid rgba(255,206,122,.3);border-radius:11px;padding:11px 13px;margin-bottom:14px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -138,7 +209,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b><span class="sfx">· Studio</span></div>
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b><span class="sfx">· Studio</span></div>
     <div class="nav-links">
       <a class="active">Studio</a>
       <a onclick="location.href='/marketplace.html'">Market</a>
@@ -146,7 +217,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span id="creditBalance">48</span> credits
+    <div class="credits"><span class="plan-chip free" id="planChip" onclick="location.href='/billing.html'" title="Your plan — upgrade anytime">Free</span><span class="streak" id="streakChip">🔥 1</span><span class="coin">◈</span> <span id="creditBalance" class="cr-bal">48</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -156,11 +227,17 @@
   <div class="topbar fade d1">
     <div class="mode-toggle">
       <button id="modeInfluencer" class="active" onclick="setMode('influencer')">😎 Influencer</button>
-      <button id="modeShopping" onclick="setMode('shopping')">🛍️ Shopping</button>
+      <button id="modeShopping" onclick="setMode('product')">🛍️ Product</button>
       <button id="modeUgc" onclick="setMode('ugc')">📢 UGC Ads</button>
+      <button id="modeHeadshot" onclick="setMode('headshot')">💼 Headshot</button>
     </div>
-    <button class="addon-toggle brandkit-btn" id="brandkitBtn" onclick="openBrandkit()">🎨 Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
+    <button class="addon-toggle brandkit-btn" id="brandkitBtn" onclick="openBrandkit()">🎨 Brand kit <span class="pro-tag">PRO</span><span class="bk-on hidden" id="bkOn">ON</span></button>
+    <button class="addon-toggle hidden" id="ugcBridgeBtn" onclick="openUgcBridge()">🌉 Use as UGC ad <span class="pro-tag" style="background:rgba(94,224,214,.18);color:var(--cyan)">PREVIEW</span></button>
   </div>
+
+  <div class="ind-row fade d1 hidden" id="indRow"></div>
+
+  <p class="cred-hint fade d1">◈ <b>credits</b> go further than you think — photo set = ◈2 · reel = ◈6</p>
 
   <div class="step fade d2">
     <div class="step-head"><div class="step-num" id="snSubject">1</div><h2 id="step1Title">Add your face</h2>
@@ -197,6 +274,8 @@
       <span class="hint" id="resultHint"></span></div>
     <div id="loadingBox" class="loading hidden"><div class="spinner"></div><div>Generating… this takes ~20s</div></div>
     <div class="results-grid" id="resultsGrid"></div>
+    <div class="upsell-banner hidden" id="upsellBanner"></div>
+    <div class="after-cta hidden" id="afterCta"></div>
   </div>
 </div>
 
@@ -207,6 +286,8 @@
       <button class="on" data-v="1" onclick="pickVariant(this)">1</button>
       <button data-v="3" onclick="pickVariant(this)">×3</button>
       <button data-v="5" onclick="pickVariant(this)">×5</button>
+      <button data-v="10" onclick="pickVariant(this)">×10</button>
+      <button data-v="25" onclick="pickVariant(this)">×25</button>
     </div>
     <span class="divider-v hidden" id="variantDiv"></span>
     <span class="addon-label">Quality</span>
@@ -223,10 +304,60 @@
     <select class="addon-lang hidden" id="captionLang" onchange="updateBar()">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
+    <span class="divider-v hidden" id="lfDiv"></span>
+    <button class="addon-toggle hidden" id="aLargeFmt" onclick="openLargeFmt()">▭ Large-format <i>preview</i></button>
   </div>
   <div class="gen-main">
+    <button class="addon-trigger" id="addonTrigger" onclick="document.querySelector('.gen-bar').classList.toggle('open')">⚙ Options <span class="badge-n" id="addonN"></span></button>
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate ✨</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
+  <div class="modal">
+    <button class="x" onclick="closePaywall()">✕</button>
+    <h3>Almost there ✨</h3>
+    <div class="pw-need" id="pwNeed"></div>
+    <div class="pw-opt">
+      <button class="btn btn-ghost" id="pwSmallBtn" onclick="paywallTopupSmall()">Just ◈50 — $5</button>
+      <button class="btn btn-primary" onclick="paywallTopup()">Top up ◈220 & finish now — $18</button>
+      <button class="btn btn-ghost" id="pwSubBtn" onclick="paywallSub()">Creator — ◈250/mo — $19</button>
+    </div>
+    <label class="pw-auto"><input type="checkbox" id="pwAuto" checked> ⚡ Auto top-up next time (never run out)</label>
+  </div>
+</div>
+
+<div class="modal-bg" id="upsellModal" onclick="if(event.target===this)closeUpsell()">
+  <div class="modal">
+    <button class="x" onclick="closeUpsell()">✕</button>
+    <span class="up-tier-badge creator" id="upTierBadge">Creator · $19/mo</span>
+    <h3 id="upTitle">Remove watermark</h3>
+    <div class="pw-need" id="upDesc"></div>
+    <div class="pw-opt">
+      <button class="btn btn-ghost" id="upOnceBtn" onclick="upsellOnce()">Just this one — ◈1</button>
+      <button class="btn btn-primary" id="upSubBtn" onclick="upsellSub()">Upgrade to Creator — $19/mo</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="weekModal" onclick="if(event.target===this)closeWeek()">
+  <div class="modal wide">
+    <button class="x" onclick="closeWeek()">✕</button>
+    <h3>🗓 Your week, planned</h3>
+    <div class="msub">We turn this look into a full week of on-brand posts — different angles & formats for each day. One click, no prompts.</div>
+    <div class="wk-grid" id="weekGrid"></div>
+    <div class="wk-cost" id="weekCost"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="genWeek()">Generate week's set</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="dailyModal" onclick="if(event.target===this)closeDaily()">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:42px;margin-bottom:4px">🔥</div>
+    <h3>Day <span id="dailyDay">1</span> streak</h3>
+    <div class="pw-need">Free credits every day you show up — more for longer streaks! (Day 3 +◈2 · Day 7 +◈3)</div>
+    <button class="btn btn-primary" style="width:100%" onclick="claimDaily()">Claim today's bonus +◈</button>
   </div>
 </div>
 
@@ -234,9 +365,9 @@
   <div class="modal">
     <button class="x" onclick="closeBrandkit()">✕</button>
     <h3>🎨 Brand kit</h3>
-    <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand.</div>
+    <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand. <b style="color:var(--gold)">Included in Pro &amp; Brand.</b></div>
     <div class="field"><label>Logo</label>
-      <div class="logo-drop" onclick="alert('로고 업로드 (mock)')">＋ Upload logo (PNG, transparent)</div></div>
+      <div class="logo-drop" onclick="HH.toast('Logo uploaded (mock)')">＋ Upload logo (PNG, transparent)</div></div>
     <div class="field"><label>Brand colors</label>
       <div class="swatches" id="bkSwatches">
         <div class="swatch sel" style="background:#7c6cff" onclick="pickSwatch(this)"></div>
@@ -251,45 +382,163 @@
   </div>
 </div>
 
+<div class="modal-bg" id="ugcBridgeModal" onclick="if(event.target===this)closeUgcBridge()">
+  <div class="modal">
+    <button class="x" onclick="closeUgcBridge()">✕</button>
+    <h3>🌉 Bridge to a UGC ad</h3>
+    <div class="msub">Turn this product into a creator-style ad. Pick an ad <b>format</b> and the <b>source category</b> — we merge both. <b style="color:var(--cyan)">Preview</b> — fidelity merge lands with the engine.</div>
+    <div class="field"><label>Ad format</label>
+      <select class="tone-sel" style="width:100%" id="ubFormat"></select></div>
+    <div class="field"><label>Source category</label>
+      <select class="tone-sel" style="width:100%" id="ubVertical"></select></div>
+    <button class="btn btn-primary" style="width:100%" onclick="confirmUgcBridge()">Continue in UGC Ads →</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="largeFmtModal" onclick="if(event.target===this)closeLargeFmt()">
+  <div class="modal">
+    <button class="x" onclick="closeLargeFmt()">✕</button>
+    <h3>▭ Large-format options</h3>
+    <div class="msub">Posters, signage and banners. Pick an output ratio and editable text slots. <b style="color:var(--gold)">Preview</b> — large renders are mock until the engine lands.</div>
+    <div class="field"><label>Aspect ratio</label>
+      <div class="seg" id="lfAspect" style="flex-wrap:wrap">
+        <button class="on" data-a="1:1" onclick="pickAspect(this)">1:1</button>
+        <button data-a="4:5" onclick="pickAspect(this)">4:5</button>
+        <button data-a="16:9" onclick="pickAspect(this)">16:9</button>
+        <button data-a="A2-poster" onclick="pickAspect(this)">A2 poster</button>
+      </div></div>
+    <div class="field"><label>Print size</label>
+      <div class="seg" id="lfSize" style="flex-wrap:wrap">
+        <button class="on" data-mm="1000" onclick="pickPrintSize(this)">≤ 1 m</button>
+        <button data-mm="2000" onclick="pickPrintSize(this)">1–2 m</button>
+        <button data-mm="4000" onclick="pickPrintSize(this)">2–4 m</button>
+      </div></div>
+    <div class="field"><label class="lf-slots"><input type="checkbox" id="lfSlots"> Add editable text slots (headline / price)</label></div>
+    <div class="lf-block hidden" id="lfBlock">⚠️ Prints over 1 m aren't supported yet — we'd rather tell you straight than fake the resolution. We'll email you when large-format lands.</div>
+    <button class="btn btn-primary" style="width:100%" id="lfApplyBtn" onclick="applyLargeFmt()">Apply to this template</button>
+  </div>
+</div>
+
+<script src="/js/pricing.js?v=1"></script>
+<script src="/js/hh.js?v=2"></script>
+<script src="/js/recipes.generated.js?v=1"></script>
 <script>
+const GRAD={g1:'linear-gradient(150deg,#ffce7a,#ff7eb6)',g2:'linear-gradient(150deg,#7c6cff,#5ee0d6)',g3:'linear-gradient(150deg,#ff7eb6,#7c6cff)',g4:'linear-gradient(150deg,#5ee0d6,#7c6cff)',g5:'linear-gradient(150deg,#ffce7a,#ff5f8f)',g6:'linear-gradient(150deg,#a99bff,#ff7eb6)',g7:'linear-gradient(150deg,#5ee0d6,#9b7bff)',g8:'linear-gradient(150deg,#ff9a6b,#ffce7a)'};
+// 카드 데이터 = 시드 계약(recipes.generated.js · window.RECIPES). DOM/JS에 카드 하드코딩 금지 —
+// 78→~93 재export 시 `node scripts/export_recipe_cards.js`만 다시 돌리면 studio가 자동 반영.
+// cost는 카드의 credit_cost 단일원(pricing.js 아님). guards/flags=PREVIEW 전용(엔진 resolver L148 미착지 → '보장' 카피 금지).
+const RC=(k)=>(window.RECIPES&&window.RECIPES.cards&&window.RECIPES.cards[k])?window.RECIPES.cards[k].slice():[];
+
 const MOCK_SUBJECTS={
-  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:'linear-gradient(135deg,#7c6cff,#ff7eb6)'}],
-  shopping:[{id:'p1',name:'White Dress',emoji:'👗',grad:'linear-gradient(135deg,#5ee0d6,#7c6cff)'},
-            {id:'p2',name:'Sneakers',emoji:'👟',grad:'linear-gradient(135deg,#ffce7a,#ff7eb6)'}]
+  influencer:[{id:'s1',name:'My Face',emoji:'🧑🏻',grad:GRAD.g3}],
+  headshot:[{id:'hs1',name:'My Face',emoji:'🧑🏻',grad:GRAD.g3}]
 };
 const MOCK_RECIPES={
-  influencer:[
-    {id:'r1',cat:'Style',name:'Travel Mood — Golden Hour',type:'image',cost:2,emoji:'🌅',grad:'linear-gradient(150deg,#ffce7a,#ff7eb6)'},
-    {id:'r2',cat:'Style',name:'Y2K Film Selfie',type:'image',cost:2,emoji:'📸',grad:'linear-gradient(150deg,#a99bff,#5ee0d6)'},
-    {id:'r3',cat:'Style',name:'Cozy Cafe Portrait',type:'image',cost:2,emoji:'☕',grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)'},
-    {id:'r4',cat:'Style',name:'Editorial Glam',type:'image',cost:2,emoji:'💄',grad:'linear-gradient(150deg,#ff7eb6,#7c6cff)'},
-    {id:'r5',cat:'Trend',name:'GRWM (Get Ready With Me)',type:'reel',cost:6,emoji:'💋',grad:'linear-gradient(150deg,#ff7eb6,#ff9a6b)'},
-    {id:'r6',cat:'Trend',name:'Day in My Life',type:'reel',cost:6,emoji:'🎬',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-    {id:'r7',cat:'Trend',name:'Outfit Transition',type:'reel',cost:6,emoji:'✨',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)'},
-    {id:'r8',cat:'Style',name:'Street Style Candid',type:'image',cost:2,emoji:'🏙️',grad:'linear-gradient(150deg,#9a9ab2,#5ee0d6)'}
-  ],
-  shopping:[
-    {id:'sr1',cat:'화보',name:'Studio Lookbook',type:'image',cost:2,emoji:'📷',grad:'linear-gradient(150deg,#e6e6f0,#a99bff)'},
-    {id:'sr2',cat:'감성',name:'Lifestyle Mood Shot',type:'image',cost:2,emoji:'🌿',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-    {id:'sr3',cat:'착용',name:'On-Model Wear (Beta)',type:'image',cost:3,emoji:'🧍',grad:'linear-gradient(150deg,#ff9a6b,#ff7eb6)'},
-    {id:'sr4',cat:'화보',name:'Flat-lay Detail',type:'image',cost:2,emoji:'🪞',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)'},
-    {id:'sr5',cat:'감성',name:'Product Reel — Aesthetic',type:'reel',cost:6,emoji:'🎞️',grad:'linear-gradient(150deg,#a99bff,#7c6cff)'},
-    {id:'sr6',cat:'화보',name:'Lookbook Reel',type:'reel',cost:6,emoji:'👜',grad:'linear-gradient(150deg,#ff7eb6,#ff5f8f)'}
-  ]
+  influencer:RC('influencer')
 };
-let state={mode:'influencer',subjectId:null,recipeId:null,filter:'All'};
-let credits=48;
+
+// ── Product 버티컬 7종 (Fashion·Beauty·Jewelry·Food·Home·Tech·Pet) ──
+const VERTICALS={
+  fashion:{label:'Fashion',emoji:'👗',subjectTitle:'Add your product',subjectHint:"One flat photo — front or back, on the floor or a table. Background removed and rebuilt into a studio look.",uploadLabel:'Upload product photo',
+    subjects:[{id:'fa1',name:'Knit sweater',emoji:'🧥',grad:GRAD.g2},{id:'fa2',name:'Leather sneakers',emoji:'👟',grad:GRAD.g7}],
+    recipes:RC('fashion')},
+  beauty:{label:'Beauty',emoji:'💄',subjectTitle:'Add your product',subjectHint:"Drop one clear photo of your cosmetic or skincare product — we'll handle the rest.",uploadLabel:'Upload product photo',
+    subjects:[{id:'be1',name:'Serum dropper',emoji:'🧴',grad:GRAD.g2},{id:'be2',name:'Lipstick',emoji:'💋',grad:GRAD.g6}],
+    recipes:RC('beauty')},
+  jewelry:{label:'Jewelry',emoji:'💎',subjectTitle:'Add your piece',subjectHint:"One clear photo of a ring, necklace or watch — we lock every facet, stone and engraving so detail stays identical.",uploadLabel:'Upload jewelry photo',
+    subjects:[{id:'jw1',name:'Solitaire ring',emoji:'💍',grad:GRAD.g2},{id:'jw2',name:'Dress watch',emoji:'⌚',grad:GRAD.g6}],
+    recipes:RC('jewelry')},
+  food:{label:'Food & Cafe',emoji:'🍔',subjectTitle:'Add your dish',subjectHint:"One phone photo of your food or drink — good lighting helps, but we'll fix the rest.",uploadLabel:'Upload food photo',
+    subjects:[{id:'fo1',name:'Iced latte',emoji:'🧋',grad:GRAD.g3},{id:'fo2',name:'Smash burger',emoji:'🍔',grad:GRAD.g6}],
+    recipes:RC('food')},
+  home:{label:'Home & Living',emoji:'🛋️',subjectTitle:'Add your product',subjectHint:"One clean photo of your furniture, decor or homeware — we'll style the room around it.",uploadLabel:'Upload product photo',
+    subjects:[{id:'ho1',name:'Accent chair',emoji:'🪑',grad:GRAD.g3},{id:'ho2',name:'Vase set',emoji:'🏺',grad:GRAD.g6}],
+    recipes:RC('home')},
+  tech:{label:'Tech',emoji:'📱',subjectTitle:'Add your gadget',subjectHint:"Drop one clean shot of your device, gadget or accessory — we handle the lighting, angles and scenes.",uploadLabel:'Upload product photo',
+    subjects:[{id:'te1',name:'Earbuds',emoji:'🎧',grad:GRAD.g3},{id:'te2',name:'Smartwatch',emoji:'⌚',grad:GRAD.g6}],
+    recipes:RC('tech')},
+  pet:{label:'Pet',emoji:'🐾',subjectTitle:'Add your pet product',subjectHint:"One clean photo of the toy, treat or accessory — we'll bring the pets and the cuddles.",uploadLabel:'Upload pet product photo',
+    subjects:[{id:'pe1',name:'Squeaky toy',emoji:'🧸',grad:GRAD.g3},{id:'pe2',name:'Salmon treats',emoji:'🐟',grad:GRAD.g6}],
+    recipes:RC('pet')},
+  general:{label:'General',emoji:'📦',subjectTitle:'Add your product',subjectHint:"Any product that doesn't fit the other categories — candles, stationery, supplements, F&B, plants, gadgets. One clean photo, we build the rest.",uploadLabel:'Upload product photo',
+    subjects:[{id:'ge1',name:'Scented candle',emoji:'🕯️',grad:GRAD.g5},{id:'ge2',name:'Water bottle',emoji:'🍶',grad:GRAD.g2}],
+    recipes:RC('general')}
+};
+const VKEYS=['fashion','beauty','jewelry','food','home','tech','pet','general'];
+MOCK_RECIPES.headshot=RC('headshot');
+let state={mode:'influencer',vertical:'fashion',subjectId:null,recipeId:null,filter:'All'};
+let credits=HH.credits;
 
 // ── add-on captions (Claude — multilingual) ──
 const LANG_NAME={en:'English',ko:'한국어',ja:'日本語',es:'Español',pt:'Português',zh:'中文'};
-const CAPTIONS={
-  en:{c:"Golden hour hits different ✨ Living for these candid little moments.",t:"#goldenhour #ootd #aesthetic #contentcreator #reels #explore"},
-  ko:{c:"골든아워는 역시 달라요 ✨ 자연스러운 순간을 그대로 담았어요.",t:"#골든아워 #데일리룩 #감성사진 #일상스타그램 #릴스추천"},
-  ja:{c:"ゴールデンアワーはやっぱり特別 ✨ 自然な瞬間をそのまま。",t:"#ゴールデンアワー #コーデ #エモい #日常 #リール"},
-  es:{c:"La hora dorada se siente distinta ✨ Viviendo estos pequeños momentos.",t:"#horadorada #ootd #aesthetic #reels #contenido"},
-  pt:{c:"A hora dourada é diferente ✨ Vivendo esses pequenos momentos.",t:"#horadourada #ootd #aesthetic #reels #conteudo"},
-  zh:{c:"黄金时刻就是不一样 ✨ 记录这些自然的小瞬间。",t:"#黄金时刻 #穿搭 #ins风 #日常 #短视频"}
+// 버티컬·모드별 맞춤 캡션 (다국어). theme = captionTheme()로 결정.
+const CAP_THEMES={
+  influencer:{
+    en:{c:"Golden hour hits different ✨ Living for these candid little moments.",t:"#goldenhour #ootd #aesthetic #contentcreator #reels #explore"},
+    ko:{c:"골든아워는 역시 달라요 ✨ 자연스러운 순간을 그대로 담았어요.",t:"#골든아워 #데일리룩 #감성사진 #일상스타그램 #릴스추천"},
+    ja:{c:"ゴールデンアワーはやっぱり特別 ✨ 自然な瞬間をそのまま。",t:"#ゴールデンアワー #コーデ #エモい #日常 #リール"},
+    es:{c:"La hora dorada se siente distinta ✨ Viviendo estos pequeños momentos.",t:"#horadorada #ootd #aesthetic #reels #contenido"},
+    pt:{c:"A hora dourada é diferente ✨ Vivendo esses pequenos momentos.",t:"#horadourada #ootd #aesthetic #reels #conteudo"},
+    zh:{c:"黄金时刻就是不一样 ✨ 记录这些自然的小瞬间。",t:"#黄金时刻 #穿搭 #ins风 #日常 #短视频"}
+  },
+  beauty:{
+    en:{c:"This glow is unreal ✨ One drop and my skin drinks it right up.",t:"#skincare #glowup #beauty #skincareroutine #glassskin #beautytok"},
+    ko:{c:"이 광채 실화예요? ✨ 한 방울이면 피부가 쫙 흡수해요.",t:"#스킨케어 #광채피부 #뷰티 #피부관리 #물광피부"},
+    ja:{c:"このツヤ、本物✨ 一滴で肌がぐんぐん吸い込む。",t:"#スキンケア #美容 #ツヤ肌 #毛穴ケア #コスメ"},
+    es:{c:"Este brillo es irreal ✨ Una gota y mi piel lo absorbe al instante.",t:"#skincare #glow #belleza #rutinadebelleza #piel"},
+    pt:{c:"Esse glow é surreal ✨ Uma gota e a pele absorve na hora.",t:"#skincare #glow #beleza #rotinadebeleza #pele"},
+    zh:{c:"这个光泽太真实了✨ 一滴肌肤瞬间吸收。",t:"#护肤 #美妆 #水光肌 #护肤日常 #种草"}
+  },
+  jewelry:{
+    en:{c:"Some things are simply worth it 💎 Made to catch the light, built to last.",t:"#jewelry #finejewelry #luxury #handcrafted #jewelrygram #details"},
+    ko:{c:"이런 건 그냥 가질 가치가 있어요 💎 빛을 머금게, 오래 가도록.",t:"#주얼리 #쥬얼리 #럭셔리 #핸드메이드 #데일리주얼리"},
+    ja:{c:"やっぱり本物は違う 💎 光をまとい、長く愛せる一品。",t:"#ジュエリー #アクセサリー #ラグジュアリー #上質 #大人女子"},
+    es:{c:"Algunas cosas valen la pena 💎 Hechas para brillar y durar.",t:"#joyeria #joyas #lujo #hechoamano #detalles"},
+    pt:{c:"Algumas coisas valem a pena 💎 Feitas para brilhar e durar.",t:"#joias #joalheria #luxo #feitoamao #detalhes"},
+    zh:{c:"有些东西就是值得💎 为捕捉光线而生，经久耐看。",t:"#珠宝 #轻奢 #首饰 #手工 #细节控"}
+  },
+  food:{
+    en:{c:"POV: your new favorite corner café ☕ Cozy, golden, worth the detour.",t:"#cafe #coffee #foodie #cafehopping #aesthetic #foodphotography"},
+    ko:{c:"인생 카페 발견 ☕ 아늑하고 분위기 좋은 곳, 일부러 찾아갈 가치 있어요.",t:"#카페 #카페스타그램 #커피 #감성카페 #맛집"},
+    ja:{c:"今日のお気に入りカフェ ☕ 居心地よくて、わざわざ行く価値あり。",t:"#カフェ #コーヒー #カフェ巡り #グルメ #おしゃれカフェ"},
+    es:{c:"POV: tu nuevo café favorito ☕ Acogedor y que vale el viaje.",t:"#cafe #coffee #foodie #cafelover #gastronomia"},
+    pt:{c:"POV: seu novo café favorito ☕ Aconchegante e vale a viagem.",t:"#cafe #coffee #foodie #cafeteria #gastronomia"},
+    zh:{c:"POV：你的新晋宝藏咖啡馆☕ 温馨又出片，值得专程打卡。",t:"#咖啡 #咖啡馆 #美食 #探店 #种草"}
+  },
+  pet:{
+    en:{c:"He approves of the new gear 🐾 Tap if your floof deserves the best too.",t:"#petsofinstagram #dogsofinstagram #petcare #cutepets #pettok"},
+    ko:{c:"우리 댕댕이 인증 완료 🐾 우리 애기도 좋은 것만 주고 싶잖아요.",t:"#반려견 #댕댕이 #멍스타그램 #반려동물 #펫스타그램"},
+    ja:{c:"うちの子もお気に入り🐾 大切な家族には良いものを。",t:"#ペット #犬のいる暮らし #わんすたぐらむ #愛犬 #ねこすたぐらむ"},
+    es:{c:"Le encanta lo nuevo 🐾 Tu peludo también merece lo mejor.",t:"#mascotas #perrosdeinstagram #petlovers #mascotasfelices"},
+    pt:{c:"Ele aprovou o novo item 🐾 Seu pet também merece o melhor.",t:"#pets #cachorrosdoinstagram #petlovers #amopets"},
+    zh:{c:"主子已认证🐾 家里的毛孩子也值得最好的。",t:"#宠物 #萌宠 #汪星人 #喵星人 #宠物日常"}
+  },
+  product:{
+    en:{c:"New drop, zero studio needed 🛍️ Swipe to see it from every angle.",t:"#newdrop #shopnow #productphotography #smallbusiness #ecommerce #musthave"},
+    ko:{c:"신상 입고 📦 스튜디오 없이 이 퀄리티, 다양한 각도로 보여드려요.",t:"#신상 #쇼핑몰 #제품사진 #소상공인 #온라인쇼핑 #득템"},
+    ja:{c:"新作入荷 🛍️ スタジオなしでこの仕上がり。いろんな角度でどうぞ。",t:"#新作 #通販 #商品撮影 #ネットショップ #おすすめ"},
+    es:{c:"Nuevo lanzamiento 🛍️ Sin estudio. Desliza para verlo en detalle.",t:"#novedades #tienda #fotografiadeproducto #emprendimiento #compraonline"},
+    pt:{c:"Novidade na loja 🛍️ Sem estúdio. Arraste para ver de todos os ângulos.",t:"#novidade #loja #fotografiadeproduto #empreendedorismo #compraonline"},
+    zh:{c:"上新啦🛍️ 无需影棚也有大片感，多角度展示。",t:"#上新 #网店 #产品摄影 #小店 #好物推荐"}
+  },
+  ugc:{
+    en:{c:"I did NOT expect this to actually work 😳 Honest review after 7 days — link in bio.",t:"#ad #ugc #honestreview #tiktokmademebuyit #musthave #review"},
+    ko:{c:"솔직히 이게 진짜 될 줄 몰랐어요 😳 7일 써본 리얼 후기, 링크는 프로필에.",t:"#광고 #내돈내산 #솔직후기 #추천템 #리뷰 #꿀템"},
+    ja:{c:"正直ここまで効くとは😳 7日使った本音レビュー、リンクはプロフから。",t:"#PR #UGC #正直レビュー #購入品 #おすすめ #レビュー"},
+    es:{c:"No esperaba que funcionara de verdad 😳 Reseña honesta tras 7 días — link en bio.",t:"#publicidad #ugc #reseñahonesta #lorecomiendo #review"},
+    pt:{c:"Não esperava que funcionasse mesmo 😳 Review honesto após 7 dias — link na bio.",t:"#publi #ugc #reviewhonesto #recomendo #review"},
+    zh:{c:"真没想到这个居然有用😳 用了7天的真实测评，链接在主页。",t:"#广告 #测评 #真实体验 #好物 #种草 #推荐"}
+  }
 };
+const THEME_LABEL={influencer:'Lifestyle',beauty:'Beauty',jewelry:'Jewelry',food:'Food & Café',pet:'Pet',product:'Product',ugc:'UGC Ad'};
+function captionTheme(){
+  if(state.mode==='ugc')return 'ugc';
+  if(state.mode==='influencer')return 'influencer';
+  if(state.mode==='headshot')return 'influencer';
+  const v=state.vertical;
+  if(CAP_THEMES[v])return v; // beauty/jewelry/food/pet match vertical keys directly
+  return 'product'; // fashion/home/tech → generic product
+}
 const Q_LABEL={std:'',hd:' · HD','4k':' · 4K'};
 
 function curQuality(){return document.querySelector('#qualitySeg .on').dataset.q;}
@@ -306,14 +555,7 @@ MOCK_SUBJECTS.ugc=[
   {id:'av1',name:'Spokesperson · Mia',emoji:'👩🏻',grad:'linear-gradient(135deg,#ff7eb6,#ffce7a)'},
   {id:'av2',name:'Spokesperson · Leo',emoji:'👨🏽',grad:'linear-gradient(135deg,#5ee0d6,#7c6cff)'}
 ];
-MOCK_RECIPES.ugc=[
-  {id:'u1',cat:'Talking',name:'Talking-Head Testimonial',type:'reel',cost:8,emoji:'🗣️',grad:'linear-gradient(150deg,#7c6cff,#ff7eb6)'},
-  {id:'u2',cat:'Demo',name:'Product Demo',type:'reel',cost:8,emoji:'📦',grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)'},
-  {id:'u3',cat:'Talking',name:'Problem → Solution',type:'reel',cost:8,emoji:'💡',grad:'linear-gradient(150deg,#ffce7a,#ff9a6b)'},
-  {id:'u4',cat:'Reaction',name:'Unboxing Reaction',type:'reel',cost:8,emoji:'🎁',grad:'linear-gradient(150deg,#a99bff,#ff7eb6)'},
-  {id:'u5',cat:'Talking',name:'Street Interview',type:'reel',cost:8,emoji:'🎤',grad:'linear-gradient(150deg,#ff9a6b,#ff5f8f)'},
-  {id:'u6',cat:'Demo',name:'Hook + CTA Ad',type:'reel',cost:8,emoji:'🎯',grad:'linear-gradient(150deg,#9b7bff,#5ee0d6)'}
-];
+MOCK_RECIPES.ugc=RC('ugc');
 const SCRIPTS={
   energetic:"Okay STOP scrolling 🛑 I found the thing that actually works. 7 days, zero effort, real results — and I have the receipts. Link's right there, go go go!",
   trust:"I was skeptical too. But after two weeks of using this every day, I genuinely can't go back. Here's exactly what changed — and why I'd recommend it to anyone.",
@@ -333,15 +575,24 @@ function saveBrandkit(){document.getElementById('bkOn').classList.remove('hidden
 
 const STEP1={
   influencer:['Add your face','Upload a clear selfie — we keep your identity across every shot.'],
-  shopping:['Add your product','Upload a product photo — background removed automatically.'],
-  ugc:['Add your spokesperson','Use your own face or pick an AI spokesperson to talk for you.']
+  ugc:['Add your spokesperson','Use your own face or pick an AI spokesperson to talk for you.'],
+  headshot:['Add your face','Upload a clear selfie — we turn it into studio-grade professional headshots.']
 };
 function setMode(m){
-  state={mode:m,subjectId:null,recipeId:null,filter:'All'};
-  ['Influencer','Shopping','Ugc'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
-  const ugc=(m==='ugc');
-  document.getElementById('step1Title').textContent=STEP1[m][0];
-  document.getElementById('step1Hint').textContent=STEP1[m][1];
+  const v=state.vertical||'fashion';
+  state={mode:m,vertical:v,subjectId:null,recipeId:null,filter:'All'};
+  localStorage.setItem('hh_lastMode',m);localStorage.setItem('hh_lastVertical',v);
+  document.getElementById('modeInfluencer').classList.toggle('active',m==='influencer');
+  document.getElementById('modeShopping').classList.toggle('active',m==='product');
+  document.getElementById('modeUgc').classList.toggle('active',m==='ugc');
+  document.getElementById('modeHeadshot').classList.toggle('active',m==='headshot');
+  const ugc=(m==='ugc'), product=(m==='product');
+  // industry picker (Product 모드 전용)
+  document.getElementById('indRow').classList.toggle('hidden',!product);
+  document.getElementById('ugcBridgeBtn').classList.toggle('hidden',!product); // UGC 브리지(2축: 포맷×버티컬) — product에서만
+  if(product){ applyVertical(v); }
+  else { document.getElementById('step1Title').textContent=STEP1[m][0];
+         document.getElementById('step1Hint').textContent=STEP1[m][1]; }
   // script step (UGC only)
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
   // step numbering + template step copy
@@ -353,14 +604,31 @@ function setMode(m){
   ['variantLabel','variantSeg','variantDiv'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!ugc));
   if(!ugc){document.querySelectorAll('#variantSeg button').forEach(x=>x.classList.remove('on'));document.querySelector('#variantSeg button[data-v="1"]').classList.add('on');}
   document.getElementById('resultStep').classList.add('hidden');
-  renderSubjects();renderFilters();renderRecipes();updateBar();
+  renderIndustries();renderSubjects();renderFilters();renderRecipes();updateBar();
+}
+function applyVertical(key){
+  const vv=VERTICALS[key];
+  MOCK_SUBJECTS.product=vv.subjects;
+  MOCK_RECIPES.product=vv.recipes;
+  document.getElementById('step1Title').textContent=vv.subjectTitle;
+  document.getElementById('step1Hint').textContent=vv.subjectHint;
+}
+function setVertical(key){
+  state.vertical=key;state.subjectId=null;state.recipeId=null;state.filter='All';
+  localStorage.setItem('hh_lastVertical',key);
+  applyVertical(key);
+  renderIndustries();renderSubjects();renderFilters();renderRecipes();updateBar();
+}
+function renderIndustries(){
+  if(state.mode!=='product')return;
+  document.getElementById('indRow').innerHTML=VKEYS.map(k=>`<div class="ind ${state.vertical===k?'active':''}" onclick="setVertical('${k}')">${VERTICALS[k].emoji} ${VERTICALS[k].label}</div>`).join('');
 }
 function renderSubjects(){
   const subs=MOCK_SUBJECTS[state.mode];
-  const ul={influencer:'Upload selfie',shopping:'Upload product',ugc:'Upload face'}[state.mode];
+  const ul = state.mode==='product' ? VERTICALS[state.vertical].uploadLabel : {influencer:'Upload selfie',ugc:'Upload face',headshot:'Upload selfie'}[state.mode];
   let h=`<div class="upload-box" onclick="mockUpload()"><div class="plus">＋</div><div class="label">${ul}</div><div class="sub">JPG / PNG · 1 photo</div></div>`;
   h+=subs.map(s=>`<div class="subject-card ${state.subjectId===s.id?'selected':''}" onclick="pickSubject('${s.id}')">
-      <div class="thumb" style="background:${s.grad}">${s.emoji}</div><div class="check">✓</div><div class="name">${s.name}</div></div>`).join('');
+      <div class="thumb" style="background:${s.grad}">${s.emoji}</div><div class="check">✓</div>${!s.own?'<span class="sample-badge">Sample</span>':''}<div class="name">${s.name}</div></div>`).join('');
   document.getElementById('subjectRow').innerHTML=h;
 }
 function renderFilters(){
@@ -369,22 +637,47 @@ function renderFilters(){
 }
 function renderRecipes(){
   const rs=MOCK_RECIPES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
-  document.getElementById('recipeGrid').innerHTML=rs.map(r=>`
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
-      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${r.emoji}</div>
-      <div class="meta"><div class="rname">${r.name}</div><div class="cost">◈ ${r.cost} credits</div></div></div>`).join('');
+  // 가치 = 크레딧당 산출물 (photo=4장/reel=1개) → 최고가 '베스트 밸류' 추천
+  const val=r=>(r.type==='reel'?1:4)/r.cost;
+  let bestId=null,bestV=-1;rs.forEach(r=>{const v=val(r);if(v>bestV){bestV=v;bestId=r.id;}});
+  // 확장 로스터 고지 — 계약 per-card provisional 기반(정확). '의도/프리뷰'만, '보장' 아님
+  const provN=rs.filter(r=>r.provisional).length;
+  const note=provN?`<div class="prev-note">⚗️ ${provN} new look${provN>1?'s':''} here ${provN>1?'are':'is'} in <b>preview (beta)</b> — fidelity guards still landing, so treat them as provisional (not a final listing yet).</div>`:'';
+  document.getElementById('recipeGrid').innerHTML=note+rs.map(r=>{
+    const isVal=r.id===bestId;
+    const reason=r.type==='reel'?`Lowest ◈ per reel`:`4 photos for ◈${r.cost} — most per credit`;
+    const flags=r.flags||[], guards=r.guards||[];
+    const isPrev=flags.indexOf('experimental')>=0||flags.indexOf('needs_human_review')>=0;
+    const isOver=flags.indexOf('oversize')>=0;
+    const ovBadge=r.text_overlay?`<span class="ov-badge" title="Includes an editable text overlay (preview)">🅣</span>`:'';
+    const chips=[
+      r.provisional?`<span class="g-chip prev" title="New/beta look — in preview while fidelity guards land; not a permanent listing yet">⚗️ Beta</span>`:'',
+      guards.length?`<span class="g-chip" title="Fidelity protections in progress (preview): ${guards.join(', ')}">🛡 ${guards.length}</span>`:'',
+      r.text_overlay?`<span class="g-chip ov" title="Editable text overlay — preview">🅣 Text</span>`:'',
+      isOver?`<span class="g-chip prev" title="Large-format — aspect & editable slots (preview); prints &gt;1m are an honest hard-block for now">▭ Large-format</span>`:'',
+      isPrev&&!isOver&&!r.provisional?`<span class="g-chip prev" title="Preview — engine fidelity still landing, output may vary">Preview</span>`:''
+    ].filter(Boolean).join('');
+    return `<div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
+      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${ovBadge}${r.new?'<span class="new-badge">NEW</span>':''}${isVal?'<span class="pop-badge" title="Most content per credit">★ Best value</span>':''}${r.emoji}</div>
+      <div class="meta"><div class="rname">${r.name}</div><div class="cost">◈ ${r.cost} credits</div>${chips?`<div class="chip-row">${chips}</div>`:''}${isVal?`<div class="val-reason">💡 ${reason}</div>`:''}</div></div>`;
+  }).join('');
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
 function pickRecipe(id){state.recipeId=id;renderRecipes();updateBar();}
 function mockUpload(){
   const id='u'+Date.now();
-  MOCK_SUBJECTS[state.mode].push({id,name:state.mode==='influencer'?'New Face':'New Product',emoji:state.mode==='influencer'?'🙂':'📦',grad:'linear-gradient(135deg,#7c6cff,#5ee0d6)'});
+  const face=(state.mode==='influencer'||state.mode==='ugc');
+  MOCK_SUBJECTS[state.mode].push({id,name:face?'New Face':'New Product',emoji:face?'🙂':'📦',grad:GRAD.g4,own:true});
   state.subjectId=id;renderSubjects();updateBar();
 }
 function curRecipe(){return MOCK_RECIPES[state.mode].find(r=>r.id===state.recipeId);}
 function updateBar(){
+  const aN=document.getElementById('addonN');if(aN)aN.textContent=extras()?('· ◈'+extras()):'';
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
+  const over=!!(r&&(r.flags||[]).indexOf('oversize')>=0); // oversize 플래그 → 대형포맷 토글 노출
+  document.getElementById('aLargeFmt').classList.toggle('hidden',!over);
+  document.getElementById('lfDiv').classList.toggle('hidden',!over);
   if(state.subjectId&&r){
     btn.disabled=false;
     const v=curVariants(),ex=extras(),total=r.cost*v+ex;
@@ -401,9 +694,11 @@ function updateBar(){
 }
 function generate(){
   const r=curRecipe();if(!r)return;
+  window.__lastPayload=buildPayload(); // envelope 초안 (mock 검수용 — 실제 전송은 백엔드 연동 시)
+  credits=HH.credits;
   const v=curVariants(),total=r.cost*v+extras();
-  if(credits<total){alert('크레딧 부족 → 충전 필요 (402)');return;}
-  credits-=total;document.getElementById('creditBalance').textContent=credits;
+  if(credits<total){openPaywall(r,v,total);return;}
+  credits-=total;HH.credits=credits;document.getElementById('creditBalance').textContent=credits;
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
   document.getElementById('resultsGrid').innerHTML='';
   const oldCap=document.getElementById('captionResult');if(oldCap)oldCap.remove();
@@ -422,23 +717,258 @@ function generate(){
       const qBadge = qSuffix ? `<span class="type-badge" style="top:10px;left:10px">${qSuffix.replace(' · ','')}</span>` : '';
       const bBadge = brand ? `<span class="type-badge" style="bottom:10px;left:10px;top:auto">🎨 Brand</span>` : '';
       h+=`<div class="result-card"><div class="img" style="background:${g[i%4]}">${r.type==='reel'?'▶':'🖼️'}</div>
-        ${qBadge}${vBadge}${bBadge}
-        <div class="actions"><button onclick="alert('다운로드')">⬇ Download</button><button onclick="alert('인스타 게시')">↗ Post</button></div></div>`;}
+        ${(HH.plan==='free'&&localStorage.getItem('hh_firstDone'))?'<span class="wm">Doppia ◈</span>':''}${qBadge}${vBadge}${bBadge}
+        <div class="actions"><button onclick="HH.toast('Download started (mock)')">⬇ Download</button><button onclick="HH.toast('Shared to Instagram (mock)')">↗ Post</button></div></div>`;}
     document.getElementById('resultsGrid').innerHTML=h;
     if(document.getElementById('aCaption').classList.contains('on'))renderCaption();
     const noun = v>1 ? 'ad variants' : (r.type==='reel'?'reel':'photos');
     document.getElementById('resultHint').textContent=`${n} ${noun}${qSuffix} ready · ◈ ${total} used`;
+    showAfterCta();showUpsell();
+    localStorage.setItem('hh_firstDone','1');
   },priority?700:1800);
 }
+// ── P1-A + 티어-라우팅: 인라인 페이월 + 결과 업셀 ──
+// 플랜 사다리(P2 확정): 같은 유저를 작업 신호에 맞는 티어로 라우팅 → LTV 1.7~2배
+// 가격 정본은 /js/pricing.js (window.PRICING). 여기선 참조만 — 숫자 변경은 pricing.js에서.
+const PLANS=(window.PRICING&&window.PRICING.plans)?{
+  creator:window.PRICING.plans.creator, pro:window.PRICING.plans.pro, brand:window.PRICING.plans.brand
+}:{ // fallback (pricing.js 미로드 시)
+  creator:{name:'Creator',price:19,cr:250,line:'No watermark · HD · ◈250/mo'},
+  pro:{name:'Pro',price:39,cr:600,line:'Brand kit · 4K · multilingual captions always-on · ◈600/mo'},
+  brand:{name:'Brand',price:79,cr:1400,line:'Commercial license · premium AI models · team seats · ◈1,400/mo'}
+};
+const PLAN_RANK={free:0,creator:1,pro:2,brand:3};
+// 상업 모드(제품/UGC) 여부 — Brand 상업권은 여기서 '결제 순간'이 아니라 다운로드/게시 등 명시 의도에서 권유
+function isCommercialMode(){return state.mode==='product'||state.mode==='ugc';}
+// 작업 신호로 권장 티어 결정 (모드만으로 Brand 강요 X):
+//  - 대량 광고 배치(변형 ≥10)=명백한 상업 대량 → Brand
+//  - 4K/브랜드킷/캡션/반복(변형 ≥3)/스트릭 ≥3 = 파워·프리미엄 사용 → Pro
+//  - 그 외 → Creator. 상업권 자체는 showUpsell의 컨텍스트 칩으로 Brand 2단계 제시.
+function recommendTier(){
+  if(curVariants()>=10) return 'brand';
+  const captionOn=document.getElementById('aCaption')&&document.getElementById('aCaption').classList.contains('on');
+  const streak=parseInt(localStorage.getItem('hh_streak')||'0',10);
+  if(curQuality()==='4k'||brandOn()||captionOn||curVariants()>=3||streak>=3) return 'pro';
+  return 'creator';
+}
+let pwPending=null;
+function openPaywall(r,v,total){
+  pwPending={r,v,total};
+  document.getElementById('pwNeed').innerHTML=`<b>${r.name}</b>${v>1?' ×'+v:''} = ◈${total} needed · you have ◈${credits} → ◈<b>${total-credits}</b> short`;
+  const p=PLANS[recommendTier()];
+  document.getElementById('pwSubBtn').textContent=`${p.name} — ◈${p.cr.toLocaleString()}/mo — $${p.price}`;
+  // 소액 $5(◈50)은 그걸로 충분히 풀릴 때만 노출 (작은 부족분 = 최소 마찰)
+  document.getElementById('pwSmallBtn').style.display=(total-credits<=50)?'':'none';
+  document.getElementById('paywallModal').classList.add('open');
+}
+function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
+function paywallTopup(){HH.add(220);if(document.getElementById('pwAuto').checked)HH.toast('⚡ Auto top-up on');closePaywall();generate();}
+function paywallTopupSmall(){HH.add(50);closePaywall();generate();}
+function paywallSub(){const p=PLANS[recommendTier()];HH.add(p.cr);HH.plan=p.name.toLowerCase();renderPlan();closePaywall();HH.toast(`${p.name} subscription started (mock)`);generate();}
+function showUpsell(){
+  const el=document.getElementById('upsellBanner');
+  if(!localStorage.getItem('hh_firstDone')){el.classList.add('hidden');return;}
+  const rec=recommendTier();
+  // 이미 권장 티어 이상이면(무료 제외) 업셀 숨김
+  if(HH.plan!=='free'&&(PLAN_RANK[HH.plan]||0)>=PLAN_RANK[rec]){el.classList.add('hidden');return;}
+  el.classList.remove('hidden');
+  let lead,chips;
+  if(rec==='brand'){
+    lead=`💼 Using this for <b>ads or sales</b>? You'll need a <b>commercial license</b>`;
+    chips=`<button class="uchip primary" onclick="openTierUpsell('brand')">🔓 Unlock with Brand · $79</button>`;
+  }else if(rec==='pro'){
+    const why=(brandOn()&&curQuality()==='4k')?'Brand kit & 4K':(brandOn()?'Brand kit':'4K');
+    lead=`✨ <b>${why}</b> is a <b>Pro</b> feature — put your brand on every output`;
+    chips=`<button class="uchip primary" onclick="openTierUpsell('pro')">⬆ Upgrade to Pro · $39</button>`;
+  }else{
+    lead=`🔒 Free results carry a <b>watermark</b> — get clean ones to post`;
+    chips=`<button class="uchip" onclick="openTierUpsell('creator','hd')">🔼 HD +1</button>`+
+      `<button class="uchip" onclick="openTierUpsell('creator','caption')">📝 Caption +1</button>`+
+      `<button class="uchip primary" onclick="openTierUpsell('creator','wm')">✨ Remove watermark</button>`;
+  }
+  // 상업 모드(제품/UGC)면 commercial license를 Brand 2단계로 컨텍스트 제시 (이미 brand 권장이면 생략)
+  if(rec!=='brand'&&isCommercialMode()&&(PLAN_RANK[HH.plan]||0)<PLAN_RANK.brand){
+    chips+=`<button class="uchip" onclick="openTierUpsell('brand')">💼 Selling or advertising? Commercial license → Brand</button>`;
+  }
+  el.innerHTML=`<div class="ut">${lead}</div><div class="chips">${chips}</div>`;
+}
+// 티어별 모달 카피: [제목, 설명]
+const TIER_PITCH={
+  creator:['Get clean, postable results','Remove the free watermark and get HD.'],
+  pro:['Upgrade to Pro','Brand kit, 4K and multilingual captions are Pro features. Put your brand on every output.'],
+  brand:['You need a commercial license',"Content used in ads or sales is covered by Brand's commercial license — plus premium models."]
+};
+// 단발(◈1) 보정만 가능한 항목별 카피 (creator 티어 칩에서만 사용)
+const ONCE_PITCH={wm:['Remove watermark','Get a clean result you can post.'],hd:['Get it in HD','Re-render in sharper high resolution.'],caption:['Caption + hashtags','AI writes captions & hashtags in 6 languages.']};
+let upTarget='creator',upOnceKind=null;
+function openTierUpsell(tier,onceKind){
+  upTarget=tier;upOnceKind=onceKind||null;
+  const p=PLANS[tier],pitch=onceKind?ONCE_PITCH[onceKind]:TIER_PITCH[tier];
+  const badge=document.getElementById('upTierBadge');
+  badge.className='up-tier-badge '+tier;badge.textContent=`${p.name} · $${p.price}/mo`;
+  document.getElementById('upTitle').textContent=pitch[0];
+  document.getElementById('upDesc').innerHTML=`${pitch[1]}<br><span style="color:var(--faint);font-size:12px">${p.name} plan: ${p.line}</span>`;
+  const sub=document.getElementById('upSubBtn');sub.textContent=`Upgrade to ${p.name} — $${p.price}/mo`;
+  document.getElementById('upOnceBtn').style.display=onceKind?'':'none';
+  document.getElementById('upsellModal').classList.add('open');
+}
+function closeUpsell(){document.getElementById('upsellModal').classList.remove('open');}
+function upsellOnce(){
+  if(upOnceKind==='wm')document.querySelectorAll('.result-card .wm').forEach(w=>w.remove());
+  HH.toast('Applied (mock · ◈1 used)');closeUpsell();
+}
+function upsellSub(){
+  const p=PLANS[upTarget];HH.plan=upTarget;HH.add(p.cr);renderPlan();closeUpsell();
+  document.getElementById('upsellBanner').classList.add('hidden');
+  document.querySelectorAll('.result-card .wm').forEach(w=>w.remove());
+  HH.toast(`${p.name} subscription started — +◈${p.cr.toLocaleString()} (mock)`);
+}
+function showAfterCta(){
+  const el=document.getElementById('afterCta');el.classList.remove('hidden');
+  el.innerHTML=`<button class="btn btn-ghost" onclick="makeAnother()">↺ Make another</button>`+
+    `<button class="btn btn-ghost" onclick="upscaleAction()">⬆ Upscale to 4K</button>`+
+    `<button class="btn btn-primary" onclick="openWeekSet()">🗓 Turn into a week's set</button>`;
+}
+// P4-1: 결과 직후 4K 업스케일 next-action — 4K는 Pro 기능이라 티어-라우팅으로 연결
+function upscaleAction(){
+  if((PLAN_RANK[HH.plan]||0)>=PLAN_RANK.pro){HH.toast('Upscaling this result to 4K (mock)');return;}
+  openTierUpsell('pro');
+}
+function makeAnother(){state.recipeId=null;renderRecipes();updateBar();document.getElementById('recipeGrid').scrollIntoView({behavior:'smooth'});}
+// ── week's set 번들: 현재 모드 레시피로 7일치 계획 + 20% 묶음 할인 ──
+let weekTotal=0;
+const WK_DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function openWeekSet(){
+  const r=curRecipe();if(!r){HH.toast('Generate something first');return;}
+  const recipes=(MOCK_RECIPES[state.mode]&&MOCK_RECIPES[state.mode].length)?MOCK_RECIPES[state.mode]:[r];
+  const plan=WK_DAYS.map((d,i)=>{const rr=recipes[i%recipes.length];return {day:d,name:rr.name,type:rr.type,cost:rr.cost};});
+  const raw=plan.reduce((s,p)=>s+p.cost,0);
+  weekTotal=Math.round(raw*0.8); // 20% 묶음 할인
+  document.getElementById('weekGrid').innerHTML=plan.map(p=>
+    `<div class="wk-day"><div class="wd">${p.day}</div><div class="wk-ic">${p.type==='reel'?'▶':'🖼️'}</div><div class="wk-nm">${p.name}</div><div class="wk-c">◈${p.cost}</div></div>`).join('');
+  document.getElementById('weekCost').innerHTML=`<b>◈${weekTotal}</b> for a full week · 7 posts <span style="color:var(--faint)">(was ◈${raw} — save 20%)</span>`;
+  document.getElementById('weekModal').classList.add('open');
+}
+function closeWeek(){document.getElementById('weekModal').classList.remove('open');}
+function genWeek(){
+  credits=HH.credits;
+  if(credits<weekTotal){HH.toast(`◈${weekTotal} needed — ◈${weekTotal-credits} short. Top up to schedule your week.`,{type:'warn'});return;}
+  HH.credits=credits-weekTotal;document.getElementById('creditBalance').textContent=HH.credits;
+  closeWeek();HH.toast("Week's set queued — 7 posts added to your content calendar (mock)");
+}
 function renderCaption(){
-  const lang=document.getElementById('captionLang').value,cap=CAPTIONS[lang]||CAPTIONS.en;
+  const lang=document.getElementById('captionLang').value;
+  const theme=captionTheme(),set=CAP_THEMES[theme]||CAP_THEMES.product;
+  const cap=set[lang]||set.en;
   const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
-  box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]}</div>
+  box.innerHTML=`<div class="ch">📝 Caption + hashtags · ${LANG_NAME[lang]} · <span style="color:var(--accent2)">${THEME_LABEL[theme]}</span></div>
     <div class="ctext">${cap.c}</div><div class="tags">${cap.t}</div>
-    <button class="btn btn-ghost copy" onclick="alert('복사됨')">⧉ Copy</button>`;
+    <button class="btn btn-ghost copy" onclick="HH.toast('Caption copied')">⧉ Copy</button>`;
   document.getElementById('resultStep').appendChild(box);
 }
-setMode('influencer');
+// ── P1-15: 연속 생성 스트릭 + 데일리 보너스 ──
+function dstr(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function renderStreak(){document.getElementById('streakChip').textContent='🔥 '+(parseInt(localStorage.getItem('hh_streak')||'1',10));}
+function renderPlan(){const p=(HH.plan||'free'),el=document.getElementById('planChip');if(!el)return;el.className='plan-chip '+p;el.textContent=p.charAt(0).toUpperCase()+p.slice(1);}
+function checkDailyBonus(){
+  renderStreak();
+  const today=dstr(new Date()), last=localStorage.getItem('hh_lastClaim');
+  if(last!==today){document.getElementById('dailyDay').textContent=localStorage.getItem('hh_streak')||'1';document.getElementById('dailyModal').classList.add('open');}
+}
+function claimDaily(){
+  const today=dstr(new Date()), last=localStorage.getItem('hh_lastClaim');
+  const y=new Date();y.setDate(y.getDate()-1);
+  let streak=parseInt(localStorage.getItem('hh_streak')||'0',10);
+  streak=(last===dstr(y))?streak+1:1;
+  const bonus=streak>=7?3:(streak>=3?2:1);
+  localStorage.setItem('hh_streak',streak);localStorage.setItem('hh_lastClaim',today);
+  HH.add(bonus);renderStreak();
+  document.getElementById('dailyModal').classList.remove('open');
+  HH.toast('🔥 '+streak+'-day streak · +◈'+bonus+' claimed');
+}
+function closeDaily(){document.getElementById('dailyModal').classList.remove('open');}
+
+// ── Global affordances (mock · PROVISIONAL) — 핸드오프 B + 페이로드 envelope ──
+// 엔진(resolver L148·mergeUGC·oversize) 미착지 → UI는 mock, 카피는 '프리뷰/의도'. '보장' 금지.
+let lfState={aspect:'1:1',sizeMm:1000,slots:false};
+function openUgcBridge(){
+  const fmt=document.getElementById('ubFormat'),ver=document.getElementById('ubVertical');
+  fmt.innerHTML=RC('ugc').map(u=>`<option value="${u.id}">${u.name} · ◈${u.cost}</option>`).join('');
+  ver.innerHTML=VKEYS.map(k=>`<option value="${k}" ${k===state.vertical?'selected':''}>${VERTICALS[k].emoji} ${VERTICALS[k].label}</option>`).join('');
+  document.getElementById('ugcBridgeModal').classList.add('open');
+}
+function closeUgcBridge(){document.getElementById('ugcBridgeModal').classList.remove('open');}
+function confirmUgcBridge(){
+  const ugc_format_id=document.getElementById('ubFormat').value;
+  const source_vertical=document.getElementById('ubVertical').value;
+  state.ugcBridge={ugc_format_id,source_vertical}; // 2축 PROVISIONAL 페이로드 (A2d/A5 동결 후 키 확정)
+  closeUgcBridge();
+  setMode('ugc');
+  const f=RC('ugc').find(u=>u.id===ugc_format_id);
+  if(f){state.recipeId=f.id;renderRecipes();updateBar();}
+  HH.toast(`🌉 Bridged ${VERTICALS[source_vertical]?VERTICALS[source_vertical].label:source_vertical} → ${f?f.name:'UGC ad'} (preview)`);
+}
+function openLargeFmt(){document.getElementById('largeFmtModal').classList.add('open');}
+function closeLargeFmt(){document.getElementById('largeFmtModal').classList.remove('open');}
+function pickAspect(b){document.querySelectorAll('#lfAspect button').forEach(x=>x.classList.remove('on'));b.classList.add('on');lfState.aspect=b.dataset.a;}
+function pickPrintSize(b){
+  document.querySelectorAll('#lfSize button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  lfState.sizeMm=+b.dataset.mm;
+  const blocked=lfState.sizeMm>1000; // >1m = 정직한 하드블록 (가짜 해상도 약속 금지)
+  document.getElementById('lfBlock').classList.toggle('hidden',!blocked);
+  document.getElementById('lfApplyBtn').disabled=blocked;
+}
+function applyLargeFmt(){
+  lfState.slots=document.getElementById('lfSlots').checked;
+  state.largeFmt={aspect:lfState.aspect,editable_slots:lfState.slots}; // PROVISIONAL
+  closeLargeFmt();
+  HH.toast(`▭ ${lfState.aspect}${lfState.slots?' · editable slots':''} applied (preview)`);
+}
+// generate() 페이로드 envelope 초안 — guards/ugc/large_format = PROVISIONAL (백엔드 /api·엔진 동결 전)
+function buildPayload(){
+  const r=curRecipe();if(!r)return null;
+  return {
+    subject_id:state.subjectId, mode:state.mode, vertical:state.mode==='product'?state.vertical:undefined,
+    recipe_id:r.id, recipe_name:r.name, type:r.type, credit_cost:r.cost,
+    variants:curVariants(), quality:curQuality(),
+    addons:{watermark_remove:document.getElementById('aWatermark').classList.contains('on'),
+      priority:document.getElementById('aPriority').classList.contains('on'),
+      caption:document.getElementById('aCaption').classList.contains('on'),
+      caption_lang:document.getElementById('captionLang').value, brandkit:brandOn()},
+    _provisional:{ // ⚠ 엔진/백엔드 미동결 — 키명·소비방식 미확정
+      provisional:r.provisional===true, // 확장 베타 카드 — 다운스트림 마케팅/공유 영구카피 금지
+      text_overlay:r.text_overlay||false, guards:r.guards||[],
+      ugc_bridge:state.ugcBridge||null, large_format:state.largeFmt||null }
+  };
+}
+// 딥링크 ?recipe=<id> — 백엔드 /api/recipes 계약 동결 전 mock(로컬 RECIPES 조회)
+function selectRecipeById(rid){
+  const cards=window.RECIPES&&window.RECIPES.cards;if(!cards)return false;
+  for(const k of Object.keys(cards)){
+    const card=(cards[k]||[]).find(c=>c.id===rid);
+    if(card){
+      if(k==='influencer'||k==='headshot'||k==='ugc'){setMode(k);} else {setMode('product');setVertical(k);}
+      state.recipeId=rid;renderRecipes();updateBar();
+      const g=document.getElementById('recipeGrid');if(g)g.scrollIntoView({behavior:'smooth'});
+      // 영구화 금지 게이트: 베타(provisional) 카드는 딥링크를 영구 퍼머링크로 취급 X — 프리뷰 고지
+      if(card.provisional) HH.toast('⚗️ Beta look (preview) — this template is still being finalized',{type:'warn'});
+      return true;
+    }
+  }
+  return false;
+}
+
+(function initStudio(){
+  const p=new URLSearchParams(location.search);
+  let m=p.get('mode')||localStorage.getItem('hh_lastMode')||'influencer';
+  if(['influencer','product','ugc','headshot'].indexOf(m)<0)m='influencer';
+  const ver=p.get('vertical')||localStorage.getItem('hh_lastVertical');
+  if(m==='product'&&ver&&VERTICALS[ver])state.vertical=ver;
+  setMode(m);
+  const rid=p.get('recipe'); if(rid) selectRecipeById(rid); // 딥링크 mock
+  renderPlan();
+  if(localStorage.getItem('hh_firstDone')) checkDailyBonus(); // 첫 성공(aha) 이후 재방문에만 스트릭 모달
+})();
 </script>
 </body>
 </html>

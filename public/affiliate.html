@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI · Affiliate</title>
+<title>Doppia · Affiliate</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
   .wrap{max-width:920px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
@@ -40,7 +40,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
     <div class="nav-links">
       <a onclick="location.href='/studio.html'">Studio</a>
       <a onclick="location.href='/marketplace.html'">Market</a>
@@ -48,7 +48,7 @@
       <a onclick="location.href='/billing.html'">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits
+    <div class="credits"><span class="coin">◈</span> <span class="cr-bal">42</span> credits
       <span class="buy" onclick="location.href='/billing.html'">+ Buy</span>
     </div>
   </div>
@@ -59,7 +59,7 @@
   <div class="sub fade d1">Refer creators &amp; brands — earn <b style="color:var(--cyan)">30% recurring</b> commission for 12 months on everyone you bring in.</div>
 
   <div class="reflink glass fade d2">
-    <div><div class="lbl">Your referral link</div><div class="link" id="refLink">heyhoai.com/r/yedam</div></div>
+    <div><div class="lbl">Your referral link</div><div class="link" id="refLink">doppia.ai/r/yedam</div></div>
     <button class="btn btn-primary" onclick="copyRef()">⧉ Copy link</button>
   </div>
 
@@ -85,11 +85,12 @@
   </div>
 </div>
 
+<script src="/js/hh.js?v=2"></script>
 <script>
 function copyRef(){
   const t=document.getElementById('refLink').textContent;
   if(navigator.clipboard)navigator.clipboard.writeText('https://'+t).catch(()=>{});
-  alert('복사됨: https://'+t);
+  HH.toast('Referral link copied: https://'+t);
 }
 </script>
 </body>

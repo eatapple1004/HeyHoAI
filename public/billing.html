@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HeyHoAI — Billing</title>
+<title>Doppia — Billing</title>
 <link rel="stylesheet" href="/css/theme.css?v=2" />
 <style>
-  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
+  .offer-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;text-align:center;margin-bottom:34px;padding:14px 22px;border-radius:14px;background:linear-gradient(120deg,rgba(255,206,122,.16),rgba(255,126,182,.12));border:1px solid var(--border2);font-size:13.5px;color:var(--dim)}
+  .offer-banner b{color:var(--text)}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
   .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
 
@@ -21,9 +23,10 @@
 
   .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
 
-  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:46px;align-items:start}
-  @media(max-width:760px){.plans{grid-template-columns:1fr}}
-  .plan-card{padding:26px;display:flex;flex-direction:column;position:relative}
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:46px;align-items:start}
+  @media(max-width:920px){.plans{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.plans{grid-template-columns:1fr}}
+  .plan-card{padding:22px;display:flex;flex-direction:column;position:relative}
   .plan-card.featured{border-color:rgba(124,108,255,.5);box-shadow:0 0 0 1px rgba(124,108,255,.4),0 30px 70px -30px rgba(124,108,255,.5)}
   .plan-card .ribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;font-size:10px;font-weight:800;letter-spacing:.6px;padding:5px 13px;border-radius:9px;text-transform:uppercase}
   .plan-card .pname{font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:5px}
@@ -35,19 +38,38 @@
   .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700}
   .plan-card .btn{width:100%}
   .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
+  /* team band */
+  .team-band{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 26px;margin-bottom:46px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(94,224,214,.08),rgba(124,108,255,.08))}
+  .team-band .tb-tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 10px;border-radius:7px;background:rgba(94,224,214,.16);color:var(--cyan);margin-bottom:8px}
+  .team-band .tb-title{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
+  .team-band .tb-desc{font-size:13px;color:var(--dim);max-width:440px;line-height:1.5}
+  .team-band .tb-price{text-align:right;min-width:240px}
+  .team-band .tbp{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
+  .team-band .tbp span{font-size:13px;font-weight:500;color:var(--faint)}
+  .team-band .tb-meta{font-size:12px;color:var(--dim);margin:4px 0 12px}
+  .team-band .tb-cta{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  @media(max-width:620px){.team-band .tb-price{text-align:left;min-width:0}.team-band .tb-cta{justify-content:flex-start}}
 
-  .packs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-  @media(max-width:760px){.packs{grid-template-columns:1fr}}
-  .pack-card{padding:22px;text-align:center;transition:transform .2s}
+  .packs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:860px){.packs{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:480px){.packs{grid-template-columns:1fr}}
+  .pack-card{padding:22px;text-align:center;transition:transform .2s;position:relative}
   .pack-card:hover{transform:translateY(-4px)}
+  .pack-card.best{border-color:rgba(255,206,122,.5);box-shadow:0 0 0 1px rgba(255,206,122,.35)}
+  .pack-card .ptag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;white-space:nowrap}
   .pack-card .amt{font-family:'Sora';font-size:24px;font-weight:800;color:var(--gold)}
   .pack-card .amt small{font-size:12px;color:var(--dim);font-weight:500}
   .pack-card .ppc{font-size:11px;color:var(--faint);margin:4px 0 12px}
   .pack-card .price{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:14px}
   .pack-card .btn{width:100%}
 
-  .note{font-size:12.5px;color:var(--faint);margin-top:20px;text-align:center}
+  .note{font-size:12.5px;color:var(--faint);margin-top:14px;text-align:center}
   .note b{color:var(--dim)}
+  .cr-eq{font-size:11.5px;color:var(--faint);margin:-12px 0 14px}
+  .costtable{display:grid;grid-template-columns:repeat(2,1fr);gap:0 28px;padding:14px 22px}
+  .costtable div{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);padding:7px 0;border-bottom:1px solid var(--border)}
+  .costtable div b{color:var(--gold)}
+  @media(max-width:600px){.costtable{grid-template-columns:1fr}}
 
   /* billing cycle toggle */
   .cycle{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:4px;margin-bottom:22px}
@@ -77,6 +99,10 @@
   .manage{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
   .pausebox{background:rgba(94,224,214,.08);border:1px solid rgba(94,224,214,.25);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px;color:var(--dim)}
   .pausebox b{color:var(--cyan)}
+  .cancelbox{background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-top:14px}
+  .cancelbox .cbh{font-size:14px;font-weight:700;margin-bottom:6px}
+  .cancelbox .cbb{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:14px}
+  .cancelbox .cbcta{display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -85,7 +111,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>HeyHoAI</b></div>
+    <div class="brand" onclick="location.href='/landing.html'"><span class="dot"></span><b>Doppia</b></div>
     <div class="nav-links">
       <a onclick="location.href='/studio.html'">Studio</a>
       <a onclick="location.href='/marketplace.html'">Market</a>
@@ -93,7 +119,7 @@
       <a class="active">Billing</a>
       <a onclick="location.href='/business.html'">Business</a>
     </div>
-    <div class="credits"><span class="coin">◈</span> <span>42</span> credits</div>
+    <div class="credits"><span class="coin">◈</span> <span class="cr-bal">42</span> credits</div>
   </div>
 </nav>
 
@@ -102,9 +128,12 @@
   <div class="sub fade d1">Subscribe for monthly credits, or top up anytime. Credits never expire while subscribed.</div>
 
   <div class="status fade d2">
-    <div><div class="plan">Current plan: <b>Creator</b></div><div class="renew">Renews 2026-07-06 · 200 credits / month</div></div>
-    <div class="bal"><span class="num">◈ 42</span><span class="lbl">credits left</span></div>
+    <div><div class="plan">Current plan: <b>Creator</b></div><div class="renew">Renews 2026-07-06 · 250 credits / month</div></div>
+    <div class="bal"><span class="num">◈ <span class="cr-bal">10</span></span><span class="lbl">credits left</span></div>
   </div>
+
+  <div class="offer-banner fade d2" id="offerBanner" style="display:none">⏰ <b id="offerTime"></b> — <b>50% off</b> your first month
+    <button class="btn btn-primary" onclick="checkout('plan','Pro · first month 50%')">Claim 50% →</button></div>
 
   <div class="section-label fade d2">Subscription</div>
   <div class="cycle fade d2">
@@ -112,38 +141,70 @@
     <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 20%</span></button>
   </div>
   <div class="plans fade d3">
-    <div class="plan-card glass" data-m="0" data-y="0" data-yt="">
+    <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
       <div class="pname">Free</div><div class="price">$<span class="pv">0</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">10 credits (one-time)</div>
-      <ul><li>Try both modes</li><li>Watermarked output</li><li>Standard queue</li></ul>
-      <button class="btn btn-ghost" onclick="alert('다운그레이드 확인')">Downgrade</button>
+      <ul><li>Try all modes</li><li>First result watermark-free</li><li>Then watermarked</li></ul>
+      <button class="btn btn-ghost" onclick="HH.toast('Downgraded (mock)')">Downgrade</button>
     </div>
-    <div class="plan-card glass featured" data-m="19" data-y="15" data-yt="$182 billed yearly · save $46">
-      <div class="ribbon">Current</div>
+    <div class="plan-card glass" data-plan="creator" data-m="19" data-y="15" data-yt="$180/yr billed annually · save $48">
       <div class="pname">Creator</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
       <div class="cyc-note"></div>
-      <div class="credits-inc">200 credits / month</div>
-      <ul><li>No watermark</li><li>Reels included</li><li>Priority queue</li><li>HD download</li></ul>
+      <div class="credits-inc">250 credits / month</div>
+      <div class="cr-eq">≈ 125 sets or 41 reels</div>
+      <ul><li>No watermark</li><li>Reels + HD</li><li>Priority queue</li><li>Personal license</li></ul>
       <button class="btn current">Your plan</button>
     </div>
-    <div class="plan-card glass" data-m="79" data-y="63" data-yt="$758 billed yearly · save $190">
+    <div class="plan-card glass featured" data-plan="pro" data-m="39" data-y="31" data-yt="$372/yr billed annually · save $96">
+      <div class="ribbon">Most popular</div>
+      <div class="pname">Pro</div><div class="price">$<span class="pv">39</span><span> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc">600 credits / month</div>
+      <div class="cr-eq">≈ 300 sets or 100 reels</div>
+      <ul><li>Everything in Creator</li><li>🎨 Brand kit</li><li>Multilingual captions on</li><li>4K + personal license</li></ul>
+      <button class="btn btn-primary" onclick="checkout('plan','Pro')">Upgrade</button>
+    </div>
+    <div class="plan-card glass" data-plan="brand" data-m="79" data-y="63" data-yt="$756/yr billed annually · save $192">
       <div class="pname">Brand</div><div class="price">$<span class="pv">79</span><span> /mo</span></div>
       <div class="cyc-note"></div>
-      <div class="credits-inc">1,000 credits / month</div>
-      <ul><li>Commercial license</li><li>Shopping + on-model</li><li>Bulk generation</li><li>Team seats (soon)</li></ul>
+      <div class="credits-inc">1,400 credits / month</div>
+      <div class="cr-eq">≈ 700 sets or 233 reels</div>
+      <ul><li>Everything in Pro</li><li>Commercial license</li><li>On-model + bulk</li><li>Team seats &amp; API · premium models</li></ul>
       <button class="btn btn-primary" onclick="checkout('plan','Brand')">Upgrade</button>
     </div>
   </div>
 
-  <div class="section-label fade d3">Top-up credit packs (one-time)</div>
-  <div class="packs fade d4">
-    <div class="pack-card glass"><div class="amt">◈ 50</div><div class="ppc">$0.10 / credit</div><div class="price">$5</div><button class="btn btn-ghost" onclick="checkout('pack','50 credits — $5')">Buy</button></div>
-    <div class="pack-card glass"><div class="amt">◈ 200 <small>+20 bonus</small></div><div class="ppc">$0.082 / credit</div><div class="price">$18</div><button class="btn btn-primary" onclick="checkout('pack','220 credits — $18')">Buy</button></div>
-    <div class="pack-card glass"><div class="amt">◈ 500 <small>+80 bonus</small></div><div class="ppc">$0.069 / credit</div><div class="price">$40</div><button class="btn btn-ghost" onclick="checkout('pack','580 credits — $40')">Buy</button></div>
+  <div class="team-band glass fade d3">
+    <div class="tb-info">
+      <div class="tb-tag">👥 TEAM</div>
+      <div class="tb-title">Scaling across a team or agency?</div>
+      <div class="tb-desc">Shared credit pool, per-seat roles, and one invoice — sits between Brand and full White-label. Add or remove seats anytime.</div>
+    </div>
+    <div class="tb-price">
+      <div class="tbp">$<span data-dp="team.price">199</span><span> /mo</span></div>
+      <div class="tb-meta"><span data-dp="team.seats">3</span> seats included · shared pool ◈<span data-dp="team.pool" data-fmt="1">2,000</span> · +$<span data-dp="team.extraSeat">15</span> / extra seat · SSO &amp; invoicing</div>
+      <div class="tb-cta">
+        <button class="btn btn-primary" onclick="joinTeamBeta()">Join Team beta</button>
+        <button class="btn btn-ghost" onclick="location.href='/business.html'">Manage team →</button>
+      </div>
+    </div>
   </div>
 
-  <div class="note">1 photo set (4 imgs) = <b>◈ 2</b> · 1 reel (5s) = <b>◈ 6</b>. Payments secured by Stripe.</div>
+  <div class="section-label fade d3">Top-up credit packs (one-time)</div>
+  <div class="packs fade d4" id="packsGrid"></div>
+  <div style="font-size:12.5px;color:var(--faint);margin-top:12px;text-align:center">A subscription is always cheaper per credit — Brand is just <b style="color:var(--gold)">$0.056/credit</b> and renews monthly. Packs are for one-off top-ups.</div>
+
+  <div class="section-label fade d4" style="margin-top:40px">What credits buy</div>
+  <div class="costtable glass fade d4">
+    <div><span>Photo set (4 imgs)</span><b>◈ 2</b></div>
+    <div><span>On-model / composite set</span><b>◈ 4–6</b></div>
+    <div><span>Macro / detail shots</span><b>◈ 3–5</b></div>
+    <div><span>Reel (5s)</span><b>◈ 6</b></div>
+    <div><span>UGC ad video</span><b>◈ 8</b></div>
+    <div><span>Add-on (HD/4K/caption…)</span><b>+◈ 1–2</b></div>
+  </div>
+  <div class="note">◈2 is the <b>starting</b> price — richer renders cost more. Payments secured by Stripe.</div>
 
   <div class="section-label fade d4" style="margin-top:46px">Wallet automation</div>
   <div class="frow glass fade d4">
@@ -171,11 +232,21 @@
         <button class="btn btn-ghost" onclick="pauseFlow()">⏸ Pause subscription</button>
         <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">Cancel</button>
       </div>
-      <div class="pausebox hidden" id="pauseBox">⏸ <b>Subscription paused</b> — no charges until you resume. Your 42 credits and gallery stay safe.</div>
+      <div class="pausebox hidden" id="pauseBox">⏸ <b>Subscription paused</b> — no charges until you resume. Your credits and gallery stay safe.</div>
+      <div class="cancelbox hidden" id="cancelBox">
+        <div class="cbh">Before you cancel…</div>
+        <div class="cbb">You'll lose your monthly credits, watermark-free exports and Pro features. Your gallery &amp; trained faces stay — but the perks stop. Most creators pause instead: it keeps everything and stops charges until you're back.</div>
+        <div class="cbcta">
+          <button class="btn btn-primary" onclick="hideCancel();pauseFlow()">⏸ Pause instead (recommended)</button>
+          <button class="btn btn-ghost" onclick="reallyCancel()" style="color:var(--faint)">Cancel anyway</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
+<script src="/js/pricing.js?v=1"></script>
+<script src="/js/hh.js?v=2"></script>
 <script>
 let CYCLE='m';
 function setCycle(c,btn){
@@ -193,18 +264,40 @@ function toggleTopup(el){
 function pauseFlow(){
   document.getElementById('pauseBox').classList.remove('hidden');
 }
-function cancelFlow(){
-  // retention: offer pause before letting them cancel
-  if(confirm("Cancelling stops your monthly credits and Pro features.\n\nWant to PAUSE instead? Keep your account, gallery & trained faces — billing just stops until you're back.\n\n[ OK = Pause ]   [ Cancel = continue to cancel ]")){
-    pauseFlow();
-  }else{
-    alert('Cancellation flow (mock) → /api/billing/cancel');
-  }
-}
+function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
+function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
+function reallyCancel(){ hideCancel(); HH.toast('Subscription cancelled (mock) — your gallery & faces are kept'); }
 function checkout(type,label){
   const cyc = type==='plan' ? (CYCLE==='y'?' (annual)':' (monthly)') : '';
-  alert('Stripe Checkout (mock)\n\n'+(type==='plan'?'구독: ':'크레딧팩: ')+label+cyc+'\n→ /api/billing/checkout 호출 후 결제창으로 이동');
+  HH.toast('Stripe Checkout (mock): '+label+cyc);
 }
+function joinTeamBeta(){HH.toast("You're on the Team beta list — we'll email priority access (mock)");}
+// 가격 정본(/js/pricing.js)에서 플랜·팩·상태 렌더 → 숫자 변경은 pricing.js 한 곳에서
+function syncBillingPricing(){
+  if(!window.PRICING)return; var P=window.PRICING;
+  ['free','creator','pro','brand'].forEach(function(k){
+    var p=P.plans[k], card=document.querySelector('.plan-card[data-plan="'+k+'"]'); if(!card||!p)return;
+    card.setAttribute('data-m',p.price); card.setAttribute('data-y',p.priceY);
+    if(k!=='free') card.setAttribute('data-yt','$'+(p.priceY*12)+'/yr billed annually · save $'+((p.price-p.priceY)*12));
+    var ci=card.querySelector('.credits-inc'); if(ci) ci.textContent=P.fmt(p.cr)+(k==='free'?' credits (one-time)':' credits / month');
+  });
+  var rn=document.querySelector('.status .renew'); if(rn) rn.textContent='Renews 2026-07-06 · '+P.fmt(P.plans.creator.cr)+' credits / month';
+  var pk=document.getElementById('packsGrid');
+  if(pk) pk.innerHTML=P.packs.map(function(p){
+    var total=p.cr+p.bonus, bonus=p.bonus?(' <small>+'+p.bonus+' bonus</small>'):'';
+    var label=P.fmt(total)+' credits — $'+p.price;
+    return '<div class="pack-card glass'+(p.best?' best':'')+'">'+(p.best?'<span class="ptag">BEST VALUE · AGENCIES</span>':'')+
+      '<div class="amt">◈ '+P.fmt(p.cr)+bonus+'</div><div class="ppc">$'+p.ppc+' / credit</div><div class="price">$'+p.price+'</div>'+
+      '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="checkout(\'pack\',\''+label+'\')">Buy</button></div>';
+  }).join('');
+  setCycle(CYCLE||'m', document.querySelector('.cycle button[data-cyc="'+(CYCLE||'m')+'"]'));
+}
+syncBillingPricing();
+// 정직한 신규 오퍼: 첫 방문 후 24h 안에만 노출 (실제 카운트다운, 가짜 상시 긴급 X)
+(function initOffer(){
+  var h=HH.offerHoursLeft&&HH.offerHoursLeft(), b=document.getElementById('offerBanner');
+  if(b&&h>0){document.getElementById('offerTime').textContent='First 24h — '+Math.max(1,Math.ceil(h))+'h left';b.style.display='';}
+})();
 </script>
 </body>
 </html>
