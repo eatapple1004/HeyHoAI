@@ -301,6 +301,24 @@
   </div>
 </div>
 
+<!-- 템플릿 상세 모달 (설명 + 샘플 이미지) -->
+<div class="modal-bg" id="recipeModal" onclick="if(event.target===this)closeRecipeModal()">
+  <div class="modal">
+    <button class="x" onclick="closeRecipeModal()">✕</button>
+    <div class="rm-preview" id="rmPreview"></div>
+    <div class="rm-head"><h3 id="rmName" style="margin:0"></h3><span class="rm-badge" id="rmBadge"></span></div>
+    <div class="rm-desc" id="rmDesc"></div>
+    <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">이 템플릿 선택</button>
+  </div>
+</div>
+<style>
+  .rm-preview{height:200px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:56px;margin-bottom:16px;position:relative;overflow:hidden}
+  .rm-preview .ph{position:absolute;bottom:9px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.3px}
+  .rm-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+  .rm-badge{font-size:10.5px;font-weight:700;color:var(--accent2);background:rgba(124,108,255,.16);padding:3px 9px;border-radius:7px;flex-shrink:0}
+  .rm-desc{font-size:13.5px;color:var(--dim);line-height:1.65;margin-bottom:18px;white-space:pre-wrap}
+</style>
+
 <script src="/js/recipes.generated.js?v=1"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
@@ -508,7 +526,7 @@ function renderRecipes(){
   document.getElementById('recipeGrid').innerHTML=rs.map(r=>{
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="같은 비용에 사진 4장 — 크레딧당 산출 최고">★ Best value</span>`:'';
     return `
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
+    <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="openRecipeModal('${r.id}')">
       <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.emoji}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'🚧 Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
@@ -516,6 +534,31 @@ function renderRecipes(){
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
 function pickRecipe(id){state.recipeId=(state.recipeId===id?null:id);renderRecipes();updateBar();} // 같은 카드 재클릭 시 선택 해제(토글)
+
+// 템플릿 설명(서버 rationale) 캐시 + 상세 모달
+let RECIPE_DESC={};
+async function loadRecipeDesc(){
+  try{const d=(await(await fetch('/api/recipes')).json()).data||[];d.forEach(r=>{RECIPE_DESC[r.id]=r.description||'';});}catch(e){}
+}
+let modalRecipeId=null;
+function openRecipeModal(id){
+  const r=(TEMPLATES[state.mode]||[]).find(x=>x.id===id);if(!r)return;
+  modalRecipeId=id;
+  document.getElementById('rmName').textContent=r.name;
+  document.getElementById('rmBadge').textContent=r.type==='reel'?'▶ Reel':'▦ Photo';
+  document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'설명이 아직 준비되지 않았어요.';
+  const pv=document.getElementById('rmPreview');
+  pv.style.background=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
+  pv.innerHTML=`${r.emoji||'🎨'}<div class="ph">샘플 이미지 준비 중</div>`; // 샘플 이미지 없으니 자리만
+  document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ 선택됨 — 선택 해제':'이 템플릿 선택';
+  document.getElementById('recipeModal').classList.add('open');
+}
+function closeRecipeModal(){document.getElementById('recipeModal').classList.remove('open');}
+function selectFromModal(){
+  if(!modalRecipeId)return;
+  state.recipeId=(state.recipeId===modalRecipeId?null:modalRecipeId); // 모달에서 선택/해제 토글
+  renderRecipes();updateBar();closeRecipeModal();
+}
 
 // ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
 async function uploadSubject(inp){
@@ -777,7 +820,7 @@ async function openPaywall(cost){
       return;
     }
     box.innerHTML=packs.map(p=>`
-      <button class="btn ${p.id==='pack220'?'btn-primary':'btn-ghost'}" style="width:100%;display:flex;justify-content:space-between;align-items:center" onclick="buyPack('${p.id}',this)">
+      <button class="btn ${p.id==='pack700'?'btn-primary':'btn-ghost'}" style="width:100%;display:flex;justify-content:space-between;align-items:center" onclick="buyPack('${p.id}',this)">
         <span>${esc(p.label)}</span><span style="font-weight:700">$${p.usd}</span></button>`).join('')
       +`<a href="/billing" style="text-align:center;font-size:12.5px;color:var(--accent2);margin-top:4px">전체 요금제 보기 →</a>`;
   }catch(e){ box.innerHTML='<div style="color:#ff7eb6;font-size:13px;text-align:center">불러오기 실패</div>'; }
@@ -810,6 +853,7 @@ loadSubjects();
 loadCredits();
 loadBrandkit();
 loadContextSwitcher();
+loadRecipeDesc();
 applyPendingTemplate();
 dailyCheckin();
 </script>
