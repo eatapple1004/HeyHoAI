@@ -514,7 +514,7 @@ function renderRecipes(){
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
-function pickRecipe(id){state.recipeId=id;renderRecipes();updateBar();}
+function pickRecipe(id){state.recipeId=(state.recipeId===id?null:id);renderRecipes();updateBar();} // 같은 카드 재클릭 시 선택 해제(토글)
 
 // ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
 async function uploadSubject(inp){
