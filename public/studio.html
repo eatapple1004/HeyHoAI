@@ -542,6 +542,8 @@ async function loadRecipeDesc(){
 }
 let modalRecipeId=null;
 function openRecipeModal(id){
+  // 이미 선택된 카드를 다시 클릭하면 모달 없이 선택만 해제
+  if(state.recipeId===id){state.recipeId=null;renderRecipes();updateBar();return;}
   const r=(TEMPLATES[state.mode]||[]).find(x=>x.id===id);if(!r)return;
   modalRecipeId=id;
   document.getElementById('rmName').textContent=r.name;
