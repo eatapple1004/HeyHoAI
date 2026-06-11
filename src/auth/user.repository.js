@@ -38,4 +38,29 @@ async function insert({ email, passwordHash, displayName = null, role = 'user' }
   return result.rows[0];
 }
 
-module.exports = { findByEmail, findById, insert };
+/** google_id로 사용자 조회 */
+async function findByGoogleId(googleId) {
+  const result = await query('SELECT * FROM users WHERE google_id = $1', [googleId]);
+  return result.rows[0] || null;
+}
+
+/** Google OAuth 신규 사용자 생성 (비밀번호 없음) */
+async function insertGoogle({ email, googleId, displayName = null, avatarUrl = null, role = 'user' }) {
+  const result = await query(
+    `INSERT INTO users (email, password_hash, display_name, role, google_id, avatar_url)
+     VALUES ($1, NULL, $2, $3, $4, $5)
+     RETURNING id, email, display_name, role, status, created_at`,
+    [String(email).toLowerCase(), displayName, role, googleId, avatarUrl]
+  );
+  return result.rows[0];
+}
+
+/** 기존(이메일) 계정에 google_id 연결 */
+async function linkGoogle(userId, googleId, avatarUrl = null) {
+  await query(
+    `UPDATE users SET google_id = $2, avatar_url = COALESCE($3, avatar_url), updated_at = now() WHERE id = $1`,
+    [userId, googleId, avatarUrl]
+  );
+}
+
+module.exports = { findByEmail, findById, insert, findByGoogleId, insertGoogle, linkGoogle };

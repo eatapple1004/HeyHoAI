@@ -27,6 +27,12 @@ const envSchema = z.object({
   // 예: https://doppia.ai — 미설정 시 폴백 IP 사용
   PUBLIC_URL: z.string().url().optional(),
 
+  // Google OAuth (소셜 로그인) — 미설정 시 비활성. 콘솔에서 OAuth 클라이언트 생성 후 입력.
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  // redirect_uri 미지정 시 PUBLIC_URL(또는 요청 host) + /api/auth/google/callback 사용
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
+
   // Image providers (최소 하나는 필요)
   REPLICATE_API_TOKEN: z.string().optional(),
   REPLICATE_MODEL: z.string().default('black-forest-labs/flux-1.1-pro'),
