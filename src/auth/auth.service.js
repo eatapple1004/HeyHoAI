@@ -61,4 +61,42 @@ async function login({ email, password }) {
   return safe;
 }
 
-module.exports = { signup, login };
+/**
+ * Google OAuth 로그인/가입. google_id → 이메일계정 연결 → 신규생성 순.
+ * @param {{ googleId: string, email: string, displayName?: string, avatarUrl?: string }} g
+ * @returns {Promise<{ user: object, isNew: boolean }>}
+ */
+async function loginWithGoogle({ googleId, email, displayName, avatarUrl }) {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!googleId || !normalized) throw httpError(400, 'Google 계정 정보가 올바르지 않습니다.');
+
+  // 1) 이미 google_id로 연결된 계정
+  let user = await userRepo.findByGoogleId(googleId);
+  if (user) {
+    if (user.status !== 'active') throw httpError(403, '비활성화된 계정입니다.');
+    const { password_hash, ...safe } = user;
+    return { user: safe, isNew: false };
+  }
+
+  // 2) 같은 이메일의 기존 계정이 있으면 google 연결
+  const existing = await userRepo.findByEmail(normalized);
+  if (existing) {
+    if (existing.status !== 'active') throw httpError(403, '비활성화된 계정입니다.');
+    await userRepo.linkGoogle(existing.id, googleId, avatarUrl || null);
+    const { password_hash, ...safe } = existing;
+    return { user: safe, isNew: false };
+  }
+
+  // 3) 신규 생성 + 가입 보너스
+  user = await userRepo.insertGoogle({
+    email: normalized,
+    googleId,
+    displayName: displayName ? String(displayName).trim() : null,
+    avatarUrl: avatarUrl || null,
+  });
+  const creditService = require('../credits/credit.service');
+  await creditService.grantSignupBonus(user.id).catch(() => {});
+  return { user, isNew: true };
+}
+
+module.exports = { signup, login, loginWithGoogle };

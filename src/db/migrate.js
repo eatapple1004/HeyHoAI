@@ -776,6 +776,14 @@ async function migrateAffiliate() {
 async function migrateMarketplace() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_creator BOOLEAN NOT NULL DEFAULT false;`);
 
+  // 소셜 로그인(Google): 비번 없는 OAuth 사용자 허용 + google_id 연결
+  await pool.query(`
+    ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(64);
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+  `);
+
   // 플랜(구독 티어) + 워터마크 무료 1회 제공 소진 플래그
   await pool.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) NOT NULL DEFAULT 'free'; -- free | creator | pro | brand
