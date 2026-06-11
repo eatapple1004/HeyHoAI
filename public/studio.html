@@ -367,9 +367,10 @@ async function switchContext(teamId){
 }
 function genCost(r){
   const c=CREDITS.costs;
-  if(!c||!r)return null;
+  if(!c)return null;
   const cap=captionOn()?(c.caption||1):0;
-  if(r.type==='reel')return (c.video&&c.video[5]||6)+(curQuality()!=='std'?c.videoHighSurcharge:0)+cap;
+  const type=r?r.type:'image'; // 템플릿 없이 프롬프트만이면 사진
+  if(type==='reel')return (c.video&&c.video[5]||6)+(curQuality()!=='std'?c.videoHighSurcharge:0)+cap;
   const s=c.imageModelSurcharge?c.imageModelSurcharge[curModel()]:0;
   return c.imageBase+(s===undefined?1:s)+cap;
 }
@@ -545,47 +546,50 @@ function updateBar(){
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
   if(generating){btn.disabled=true;return;}
   if(state.mode==='ugc'){btn.disabled=true;s.textContent='🚧 UGC ads — coming soon.';return;}
-  if(state.subjectId&&r){
-    const cost=genCost(r);
-    const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
-    if(notEnough(cost)){
-      // 버튼은 활성 — 누르면 인라인 페이월 (전환 동선)
-      btn.disabled=false;
-      s.innerHTML=`<b>${r.name}</b>${costTxt} — <span style="color:#ff7eb6">크레딧 부족 (보유 ◈${CREDITS.balance})</span> <a onclick="openPaywall(${cost})" style="color:var(--accent2);cursor:pointer">충전하기 →</a>`;
-      return;
-    }
+  const extra=extraPromptText();
+  // 대상은 필수, 템플릿·프롬프트는 둘 중 하나 이상이면 생성 가능
+  if(!state.subjectId){btn.disabled=true;s.textContent='Select a face/product first.';return;}
+  if(!r&&!extra){btn.disabled=true;s.textContent='템플릿을 고르거나 프롬프트를 입력하세요.';return;}
+  const cost=genCost(r);
+  const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
+  const title=r?`<b>${r.name}</b>${extra?' <span style="color:var(--accent2)">+ 내 프롬프트</span>':''}`:'<b>내 프롬프트</b>';
+  if(notEnough(cost)){
     btn.disabled=false;
-    const o=r.type==='reel'?'1 reel (5s)':'4 photos';
-    const extraTxt=extraPromptText()?' <span style="color:var(--accent2)">+ 내 프롬프트</span>':'';
-    s.innerHTML=`<b>${r.name}</b>${extraTxt} → ${o} · ${Q_LABEL[curQuality()]}${costTxt}${r.type==='reel'?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
-  } else {
-    btn.disabled=true;
-    s.textContent=!state.subjectId?'Select a face/product first.':'Now pick a template.';
+    s.innerHTML=`${title}${costTxt} — <span style="color:#ff7eb6">크레딧 부족 (보유 ◈${CREDITS.balance})</span> <a onclick="openPaywall(${cost})" style="color:var(--accent2);cursor:pointer">충전하기 →</a>`;
+    return;
   }
+  btn.disabled=false;
+  const isReel=r&&r.type==='reel';
+  const o=isReel?'1 reel (5s)':'4 photos';
+  s.innerHTML=`${title} → ${o} · ${Q_LABEL[curQuality()]}${costTxt}${isReel?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
 }
 
 // ── 실제 생성 ──
 async function generate(){
   const r=curRecipe(),subj=curSubject();
-  if(!r||!subj||generating)return;
-  if(r.soon){toast('UGC 모드는 준비 중입니다.');return;}
+  const extra=extraPromptText();
+  // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
+  if(!subj||generating)return;
+  if(!r&&!extra)return;
+  if(r&&r.soon){toast('UGC 모드는 준비 중입니다.');return;}
   // 잔액 부족이면 생성 대신 페이월
   const cost=genCost(r);
   if(notEnough(cost)){openPaywall(cost);return;}
+  const isReel=r&&r.type==='reel'; // 템플릿 없이 프롬프트만이면 사진
 
   generating=true;updateBar();
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
   document.getElementById('resultsGrid').innerHTML='';
   const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
-  lb.querySelector('div:last-child').textContent=r.type==='reel'
+  lb.querySelector('div:last-child').textContent=isReel
     ?'Generating reel… 보통 2~5분 걸려요. 창을 닫아도 갤러리에 자동 저장돼요.'
     :'Generating photos… 30초~1분 정도 걸려요.';
   document.getElementById('resultHint').textContent='';
   step.scrollIntoView({behavior:'smooth'});
 
   try{
-    if(r.type==='reel') await generateReel(r,subj);
+    if(isReel) await generateReel(r,subj);
     else await generateImages(r,subj);
     if(captionOn()) await generateCaptionBlock(r,subj);
   }catch(e){
@@ -611,7 +615,9 @@ function extraPromptText(){const el=document.getElementById('extraPrompt');retur
 // 사용자가 추가한 프롬프트가 있으면 템플릿 고정 프롬프트 뒤에 더한다.
 async function resolvePromptFor(r,subj){
   let base;
-  if(r.prompt){
+  if(!r){
+    base={prompt:'',style:'none'}; // 템플릿 없음 — 프롬프트만으로 생성
+  }else if(r.prompt){
     base={prompt:r.prompt,style:r.style||'none'};
   }else{
     const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
@@ -620,7 +626,7 @@ async function resolvePromptFor(r,subj){
     base={prompt:d.data.generate.prompt,style:'none'}; // resolver가 스타일 프리셋을 이미 반영 → style none
   }
   const extra=extraPromptText();
-  if(extra)base.prompt=base.prompt+', '+extra; // 템플릿 프롬프트 + 사용자 추가분
+  if(extra)base.prompt=base.prompt?base.prompt+', '+extra:extra; // 템플릿 프롬프트 + 사용자 추가분 (템플릿 없으면 프롬프트만)
   return base;
 }
 async function generateImages(r,subj){
@@ -694,7 +700,7 @@ async function pollVideoJob(jobId){
 // ── 캡션 + 해시태그 (Claude) ──
 async function generateCaptionBlock(r,subj){
   const lang=document.getElementById('captionLang').value;
-  const ctx=`${r.name}. ${r.prompt||''}`.slice(0,500);
+  const ctx=`${r?r.name+'. ':''}${extraPromptText()||(r&&r.prompt)||''}`.slice(0,500);
   const old=document.getElementById('captionResult');if(old)old.remove();
   const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
   box.innerHTML=`<div class="ch">📝 Caption + hashtags</div><div class="ctext" style="color:var(--dim)">✨ 캡션 생성 중…</div>`;
