@@ -27,12 +27,13 @@ const PRICING = {
     brand:   { name: 'Brand',   price: 79, priceY: 63, cr: 1400, license: 'Commercial',
                line: 'Commercial license · premium AI models · team seats · ◈1,400/mo' }
   },
-  // 일회성 크레딧 팩 (cr=기본, bonus=보너스, price=$, ppc=크레딧당 단가 표기)
+  // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$, ppc=크레딧당 단가 표기)
+  // 바닥 $0.08/cr — 실원가 기준 최악 마진 50%+ 보장(docs/가격_재설계.md). billing.route.js PACKS와 일치.
   packs: [
-    { cr: 50,   bonus: 0,   price: 5,   ppc: '0.10' },
-    { cr: 200,  bonus: 20,  price: 18,  ppc: '0.082' },
-    { cr: 500,  bonus: 80,  price: 40,  ppc: '0.069' },
-    { cr: 1500, bonus: 250, price: 110, ppc: '0.063', best: true }
+    { id: 'pack50',  cr: 50,  bonus: 0,   price: 5,  ppc: '0.100' },
+    { id: 'pack120', cr: 100, bonus: 20,  price: 11, ppc: '0.092' },
+    { id: 'pack300', cr: 250, bonus: 50,  price: 26, ppc: '0.087' },
+    { id: 'pack700', cr: 600, bonus: 100, price: 56, ppc: '0.080', best: true }
   ],
   // 팀 플랜
   team: { price: 199, seats: 3, pool: 2000, extraSeat: 15 },

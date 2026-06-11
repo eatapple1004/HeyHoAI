@@ -8,13 +8,14 @@
  * 엔진(src/images,videos,generate)은 건드리지 않는다. studio 오케스트레이터가
  * 생성 직후 meterGeneration()을 호출해 cost 레코드를 만들고 logCost()로 적재한다.
  *
- * 원가 기준(docs/PRODUCT_STRUCTURE.md 실측): 이미지 4장 ≈ $0.16($0.04/장), 5초 릴스 ≈ $0.25.
+ * 원가 기준(docs/가격_재설계.md, 2026-06 실단가 검증): 이미지 4장 ≈ $0.156($0.039/장),
+ * 릴스 5초 ≈ $0.25(Runway gen4_turbo, 5cr/초×$0.01). ⚠️ Kling v3 1080p는 $0.63/5초로 Runway 2.5배 → 기본 미사용.
  */
 
-// 프로바이더별 단위 원가(USD)
+// 프로바이더별 단위 원가(USD) — 2026-06 공식 단가 검증치
 const PROVIDER_COSTS = {
-  image: { 'nano-banana': 0.04, flux: 0.05, replicate: 0.055, fal: 0.035 }, // 장당
-  reel:  { kling: 0.25, runway: 0.30, minimax: 0.22 },                       // 5초 1편당
+  image: { 'nano-banana': 0.039, flux: 0.04, replicate: 0.04, fal: 0.03 }, // 장당
+  reel:  { runway: 0.25, minimax: 0.22, kling: 0.63 },                     // 5초 1편당 (runway 기본, kling 고가)
   upscale: { hd: 0.01, '4k': 0.03 },                                        // 장당 업스케일 가산
   caption: { claude: 0.003 },                                               // 캡션 1세트(Claude)
   lipsync: { default: 0.12 },                                               // UGC 립싱크+TTS 가산(영상 1편)
@@ -48,7 +49,7 @@ function estimateJobCost(job) {
   } = job;
 
   const unit = outputType === 'reel'
-    ? (PROVIDER_COSTS.reel[provider] ?? PROVIDER_COSTS.reel.kling)
+    ? (PROVIDER_COSTS.reel[provider] ?? PROVIDER_COSTS.reel.runway)
     : (PROVIDER_COSTS.image[provider] ?? PROVIDER_COSTS.image['nano-banana']);
 
   let perRender = unit * count;

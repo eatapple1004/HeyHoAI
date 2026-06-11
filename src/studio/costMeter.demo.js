@@ -5,14 +5,14 @@
  */
 const { meterGeneration } = require('./costMeter');
 
-// studio.html의 크레딧 가격을 그대로 반영한 시나리오
+// 새 크레딧 가격(docs/가격_재설계.md): 사진 4cr, 릴스5초 8cr/10초 16cr, Runway 기본.
 const SCENARIOS = [
-  { label: 'Photo set (4) · Standard',        outputType: 'image', provider: 'nano-banana', creditsCharged: 2 },
-  { label: 'Photo set (4) · HD',              outputType: 'image', provider: 'nano-banana', quality: 'hd',  creditsCharged: 3 },
-  { label: 'Photo set (4) · 4K + caption',    outputType: 'image', provider: 'nano-banana', quality: '4k', caption: true, creditsCharged: 5 },
-  { label: 'Reel 5s · Kling',                 outputType: 'reel',  provider: 'kling',  creditsCharged: 6 },
-  { label: 'Reel 5s · Runway + priority',     outputType: 'reel',  provider: 'runway', creditsCharged: 7 },
-  { label: 'UGC ad · A/B ×3 (Kling lipsync)', outputType: 'reel',  provider: 'kling', ugc: true, variants: 3, caption: true, creditsCharged: 24 },
+  { label: 'Photo set (4) · Standard',        outputType: 'image', provider: 'nano-banana', creditsCharged: 4 },
+  { label: 'Photo set (4) · HD',              outputType: 'image', provider: 'nano-banana', quality: 'hd',  creditsCharged: 5 },
+  { label: 'Photo set (4) · 4K + caption',    outputType: 'image', provider: 'nano-banana', quality: '4k', caption: true, creditsCharged: 8 },
+  { label: 'Reel 5s · Runway (기본)',          outputType: 'reel',  provider: 'runway', creditsCharged: 8 },
+  { label: 'Reel 10s · Runway',               outputType: 'reel',  provider: 'runway', count: 1, creditsCharged: 16 },
+  { label: 'Reel 5s · Kling (고가옵션)',       outputType: 'reel',  provider: 'kling',  creditsCharged: 8 },
   // 의도적 과소책정 — 적자 감지 확인용
   { label: 'UGC ad · UNDERPRICED (1cr)',      outputType: 'reel',  provider: 'runway', ugc: true, creditsCharged: 1 },
 ];

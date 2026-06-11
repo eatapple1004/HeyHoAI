@@ -208,14 +208,14 @@
 
   <div class="section-label fade d4" style="margin-top:40px">What credits buy</div>
   <div class="costtable glass fade d4">
-    <div><span>Photo set (4 imgs)</span><b>◈ 2</b></div>
-    <div><span>On-model / composite set</span><b>◈ 4–6</b></div>
-    <div><span>Macro / detail shots</span><b>◈ 3–5</b></div>
-    <div><span>Reel (5s)</span><b>◈ 6</b></div>
-    <div><span>UGC ad video</span><b>◈ 8</b></div>
-    <div><span>Add-on (HD/4K/caption…)</span><b>+◈ 1–2</b></div>
+    <div><span>Photo set (4 imgs)</span><b>◈ 4</b></div>
+    <div><span>On-model / composite set</span><b>◈ 5–6</b></div>
+    <div><span>Macro / detail shots</span><b>◈ 4–5</b></div>
+    <div><span>Reel (5s)</span><b>◈ 8</b></div>
+    <div><span>Reel (10s)</span><b>◈ 16</b></div>
+    <div><span>Add-on (HD/4K/caption…)</span><b>+◈ 1–3</b></div>
   </div>
-  <div class="note">◈2 is the <b>starting</b> price — richer renders cost more. Payments secured by Eximbay.</div>
+  <div class="note">◈4 is the <b>starting</b> price — richer renders cost more. Payments secured by Eximbay.</div>
 
   <div class="section-label fade d4" style="margin-top:46px">Wallet automation</div>
   <div class="frow glass fade d4">
@@ -281,7 +281,7 @@ function setCycle(c,btn){
 }
 
 // 가격 단일소스(/js/pricing.js → window.PRICING)에서 플랜·팩 렌더
-const PACK_ID={50:'pack50',200:'pack220',500:'pack580'};
+const PACK_ID={50:'pack50',120:'pack120',300:'pack300',700:'pack700'};
 function syncBillingPricing(){
   if(!window.PRICING)return; const P=window.PRICING;
   ['free','creator','pro','brand'].forEach(function(k){
@@ -293,7 +293,7 @@ function syncBillingPricing(){
   const pk=document.getElementById('packsGrid');
   if(pk) pk.innerHTML=P.packs.map(function(p){
     const total=p.cr+p.bonus, bonus=p.bonus?(' <small>+'+p.bonus+' bonus</small>'):'';
-    const id=PACK_ID[p.cr];
+    const id=p.id||PACK_ID[p.cr];
     const btn = id
       ? '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="buyPack(\''+id+'\',this)">Buy</button>'
       : '<button class="btn btn-ghost" disabled style="opacity:.5">Coming soon</button>';

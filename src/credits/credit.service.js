@@ -3,10 +3,12 @@ const { pool, query } = require('../db/client');
 // ─── 크레딧 가격표 (docs/UI_기능설명서.md 부록 A 기준) ───
 const SIGNUP_BONUS = 10;
 
+// 실원가 기준(docs/가격_재설계.md): 사진 4장 ≈ $0.16($0.039/장), 릴스 5초 ≈ $0.25(Runway).
+// 1cr=$0.10 기준가 → 사진 "1장=1cr"(4cr), 릴스 5초 8cr / 10초 16cr 로 기준가 마진 60~69% 확보.
 const COSTS = {
-  imageBase: 2, // 사진 생성 요청당 (최대 4장)
+  imageBase: 4, // 사진 생성 요청당 (4장 = 1장당 1cr)
   imageModelSurcharge: { flash: 0, pro: 1, 'gpt-image-2': 1, 'gpt-image-2-high': 2 },
-  video: { 5: 6, 10: 12 }, // 릴스 (duration 초)
+  video: { 5: 8, 10: 16 }, // 릴스 (duration 초)
   videoHighSurcharge: 2, // mode=high 추가
   caption: 1, // 캡션 + 해시태그 생성 (애드온)
 };
