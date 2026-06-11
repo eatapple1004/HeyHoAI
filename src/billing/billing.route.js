@@ -7,18 +7,20 @@ const log = require('../lib/logger')('Billing');
 
 const router = express.Router();
 
-// ─── 크레딧 팩 정의 (UI 부록 A 기준 / Lemon Squeezy variant와 매핑) ───
+// ─── 크레딧 팩 정의 (docs/가격_재설계.md / pricing.config.js packs와 일치 / LS variant 매핑) ───
 const PACKS = [
-  { id: 'pack50', credits: 50, usd: 5, label: '◈ 50' },
-  { id: 'pack220', credits: 220, usd: 18, label: '◈ 200 + 20 bonus' },
-  { id: 'pack580', credits: 580, usd: 40, label: '◈ 500 + 80 bonus' },
+  { id: 'pack50',  credits: 50,  usd: 5,  label: '◈ 50' },
+  { id: 'pack120', credits: 120, usd: 11, label: '◈ 100 + 20 bonus' },
+  { id: 'pack300', credits: 300, usd: 26, label: '◈ 250 + 50 bonus' },
+  { id: 'pack700', credits: 700, usd: 56, label: '◈ 600 + 100 bonus' },
 ];
 
 function variantIdFor(packId) {
   const map = {
-    pack50: env.LS_VARIANT_PACK50,
-    pack220: env.LS_VARIANT_PACK220,
-    pack580: env.LS_VARIANT_PACK580,
+    pack50:  env.LS_VARIANT_PACK50,
+    pack120: env.LS_VARIANT_PACK120,
+    pack300: env.LS_VARIANT_PACK300,
+    pack700: env.LS_VARIANT_PACK700,
   };
   return map[packId] || null;
 }
