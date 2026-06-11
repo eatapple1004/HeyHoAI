@@ -67,14 +67,14 @@
   .gen-bar .summary .cost{color:var(--gold);font-weight:700}
   .gen-main{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .gen-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
-  /* 한 줄 커스텀 프롬프트 (선택) — 템플릿 고정 프롬프트에 더해짐 */
-  .prompt-row{display:flex;align-items:center;gap:10px}
-  .prompt-row .pico{font-size:15px;flex-shrink:0;opacity:.8}
-  .prompt-input{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13.5px;transition:border-color .15s}
-  .prompt-input:focus{outline:none;border-color:var(--accent);background:rgba(124,108,255,.05)}
-  .prompt-input::placeholder{color:var(--faint)}
-  .prompt-clear{flex-shrink:0;background:none;border:none;color:var(--faint);font-size:15px;cursor:pointer;padding:4px}
+  /* 한 줄 커스텀 프롬프트 (선택) — 템플릿 고정 프롬프트에 더해짐. 은은하게(인라인) */
+  .prompt-row{display:flex;align-items:center;gap:8px}
+  .prompt-input{flex:1;min-width:0;background:transparent;border:none;border-radius:0;padding:4px 2px;color:var(--dim);font-family:inherit;font-size:13px}
+  .prompt-input:focus{outline:none;color:var(--text)}
+  .prompt-input::placeholder{color:var(--faint);opacity:.65}
+  .prompt-clear{flex-shrink:0;background:none;border:none;color:var(--faint);font-size:13px;cursor:pointer;padding:2px 4px}
   .prompt-clear:hover{color:var(--text)}
+  .prompt-clear.hidden{display:none}
   .opts-btn{display:none;font-family:inherit;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:13px;font-weight:600;padding:11px 14px;border-radius:11px;cursor:pointer}
   .opts-btn.on{color:var(--accent2);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.1)}
   /* best value 배지 */
@@ -240,11 +240,10 @@
     </select>
   </div>
   <div class="prompt-row">
-    <span class="pico">✏️</span>
     <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
-      placeholder="프롬프트 추가 (선택) — 예: 빨간 니트, 창가 자연광, 살짝 미소. 비워두면 템플릿만 사용해요"
+      placeholder="프롬프트 추가 (선택) — 비워두면 템플릿만 사용"
       oninput="updateBar()">
-    <button class="prompt-clear" title="지우기" onclick="document.getElementById('extraPrompt').value='';updateBar()">✕</button>
+    <button class="prompt-clear hidden" id="extraClear" title="지우기" onclick="document.getElementById('extraPrompt').value='';document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
   </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
@@ -543,6 +542,7 @@ function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId)
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
 function updateBar(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
+  const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
   if(generating){btn.disabled=true;return;}
   if(state.mode==='ugc'){btn.disabled=true;s.textContent='🚧 UGC ads — coming soon.';return;}
   if(state.subjectId&&r){
