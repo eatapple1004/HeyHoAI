@@ -16,8 +16,13 @@
  * - (b) 가격사다리/비용공식: I2 · R2 R4 R4 R6 R6 R8 — image=count×0.5, reel=shots×2 전수 일치, ◈2 진입+◈2 릴 충족, 위반 0.
  * - (c) lip-sync 5종: 전부 flags:[experimental, needs_human_review] + anti-desync negative.
  *       Unboxing Shot1 / Product Demo Shot2 는 얼굴없는 무음 B-roll 로 분리하여 립싱크 의존도↓.
- * - (d) 🅣 Static: text_overlay:true, look.negative 에 'text'/'logo' 미포함 — imagePrompt.builder.js
+ * - (d) 🅣 Static: text_overlay:true, look.extra_negative 에 'text'/'logo' 미포함 — imagePrompt.builder.js
  *       SAFETY_NEGATIVE_PROMPT 가 'text'/'logo' 를 전역 주입하므로 중복/충돌 방지 (검증 완료).
+ *
+ * v2.1 이관 (2026-06-10) — 死필드 look.negative → look.extra_negative(resolver L148 live) 7/7 이관.
+ *   SAFETY 전역주입 토큰(watermark·text·logo·extra fingers·deformed 등) 중복 제거,
+ *   UGC 특화 결함(lip-sync desync·tooth morph·identity drift·plastic skin·six fingers·distorted label)만 유지.
+ *   extra_positive 에 identity-lock·five-finger hand 보강. Static 에 meta.overlay_spec 추가.
  * - 이름 전역 고유: 7개 모두 전 v2 시드(59개 이름) 대비 충돌 없음.
  * - keep 7 / cut 0 / merge 0 / add 0 (Text-Hook Static Carousel 은 Static 의 variant 로 흡수 권장).
  */
@@ -33,9 +38,17 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 2,
     "sort_order": 1,
-    "rationale": "가장 저렴한 UGC 진입 포맷. 립싱크 리스크 없이 creator 얼굴+제품을 4컷 정적 광고세트로 생성. 헤드라인/CTA 텍스트는 text_overlay 레이어로 합성하므로 negative에 'text'/'logo' 불포함.",
+    "rationale": "가장 저렴한 UGC 진입 포맷. 립싱크 리스크 없이 creator 얼굴+제품을 4컷 정적 광고세트로 생성. 헤드라인/CTA 텍스트는 text_overlay 레이어로 합성하므로 extra_negative에 'text'/'logo' 불포함.",
     "meta": {
-      "render_notes": "text_overlay=true: Shot 1 상단에 headline(예: 'obsessed with this'), Shot 4 하단에 CTA(예: 'link in bio →') 를 렌더 후 합성 레이어로 추가. SAFETY_NEGATIVE의 'text'/'logo' 가 이미지 생성 단계에서 인젝션되므로 look.negative에는 해당 토큰 제외."
+      "render_notes": "text_overlay=true: Shot 1 상단에 headline(예: 'obsessed with this'), Shot 4 하단에 CTA(예: 'link in bio →') 를 렌더 후 합성 레이어로 추가. SAFETY_NEGATIVE의 'text'/'logo' 가 이미지 생성 단계에서 전역 인젝션되므로 look.extra_negative에는 해당 토큰 제외(중복 방지).",
+      "overlay_spec": {
+        "layer": "post_render_text",
+        "elements": [
+          { "shot": 1, "type": "headline", "position": "top_center", "example": "obsessed with this" },
+          { "shot": 4, "type": "cta", "position": "bottom_center", "example": "link in bio →" }
+        ],
+        "note": "AI는 글자를 그리지 않음 — SAFETY_NEGATIVE_PROMPT가 'text'/'logo'를 전역 차단. 위 요소는 렌더 후 별도 레이어로 합성하며 extra_negative에 text/logo 미포함."
+      }
     },
     "config": {
       "schema_version": 1,
@@ -60,8 +73,8 @@ module.exports = [
           "context:home_interior_bokeh"
         ],
         "wardrobe": "casual everyday outfit matching the product category",
-        "extra_positive": "authentic iPhone-shot UGC still, creator holding product naturally, genuine micro-expression (soft smile or focused look), product label visible and sharp, shallow depth-of-field background bokeh, photo feels like an organic social post not a studio shoot",
-        "negative": "studio overlit look, fake smile, floating disconnected product, distorted product shape, extra fingers, warped hands, duplicate person, plastic waxy skin, dead eyes, garish background, overposed model stiffness"
+        "extra_positive": "authentic iPhone-shot UGC still, phone main camera ~26mm equivalent at f1.8, natural HDR and shallow phone-lens bokeh, faint handheld imperfection; soft natural window key with gentle bounce fill and warm neutral tones, an organic social-post feel rather than a studio shoot; creator holds the product naturally with a genuine warm micro-expression, the product label crisp and sharp, true-to-life skin and candid unposed energy; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; the product-holding hand is a single well-formed hand with exactly five natural fingers and an anatomically correct grip; consistent creator identity across all four shots; clean uncluttered margins reserved for a composited headline and CTA caption",
+        "extra_negative": "studio overlit infomercial look, fake forced smile, floating disconnected product, distorted or warped product shape, missing fingers, six fingers, fused or webbed digits, malformed grip, duplicated person, plastic waxy skin, dead lifeless eyes, garish cluttered background, overposed stiff model, identity drift between the four shots"
       },
       "shot_strategy": "list",
       "shots": [
@@ -130,8 +143,8 @@ module.exports = [
           "context:home_table_or_desk_casual"
         ],
         "wardrobe": "casual everyday outfit",
-        "extra_positive": "POV discovery moment — creator reaches toward the product sitting on a surface, picks it up with genuine curiosity, turns it to inspect and reacts with a delighted or surprised expression; no speaking, all reaction expressed through face and body; wide eyes, open mouth of surprise or delight, light head tilt; handheld documentary feel",
-        "negative": "talking mouth forming words, lip movement suggesting speech, open-mouth talking pose, frozen blank expression, extra fingers, warped product, studio setup, plastic skin, watermark, posed model stiffness"
+        "extra_positive": "POV discovery moment shot on a phone main camera ~26mm equivalent, f1.8, natural HDR, autofocus snapping from the surface to the product as it lifts, slight handheld sway; soft side daylight from a nearby window as key with gentle bounce fill, true-to-life skin; creator reaches for the product resting on a home surface, picks it up and turns it to inspect — wide eyes, open-mouthed gasp, light head tilt, no speaking, all reaction read through face and body; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; well-formed hands, five natural fingers gripping it cleanly, consistent creator identity throughout; candid, unposed documentary feel",
+        "extra_negative": "talking mouth forming words, lip movement suggesting speech, open-mouth talking pose, frozen blank expression, missing fingers, six fingers, fused or webbed digits, warped or distorted product, sterile studio setup, plastic waxy skin, posed model stiffness, identity drift across the clip"
       },
       "shot_strategy": "list",
       "shots": [
@@ -147,7 +160,7 @@ module.exports = [
         ],
         "duration_per_shot": 4,
         "transition": "cut",
-        "music_mood": "playful_viral_trending",
+        "music_mood": "playful viral trending pop",
         "captions": "auto"
       },
       "provider": {
@@ -194,8 +207,8 @@ module.exports = [
           "texture:skin_natural_pores",
           "context:clean_modern_interior"
         ],
-        "extra_positive": "high-energy direct-response UGC ad, spokesperson delivers a single scroll-stopping hook line in shot 1, then drives hard CTA in shot 2 while holding product; maximum 1–2 sentences per shot; crisp lip-sync on each short line, energetic delivery, emphatic hand gestures, product clearly visible in shot 2",
-        "negative": "no lip-sync desync, no tooth morph, no warped mouth, no identity drift, low energy flat delivery, frozen mouth, extra fingers, warped product, plastic skin, watermark, glitched caption text, dim muddy lighting"
+        "extra_positive": "high-energy direct-response UGC ad shot on a phone main camera ~26mm equivalent, f1.8, natural HDR, slight handheld sway with quick autofocus snap; bright punchy practical key (a window or daylight bulb), soft bounce fill, clean bold simple background; shot 1 closeup: spokesperson points at camera with wide eyes delivering one scroll-stopping hook line; shot 2 medium: product raised beside face for a hard CTA with a big smile, pointing to bio; confident, emphatic delivery with crisp lip-sync, 1–2 sentences per shot; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; locked facial identity across both shots, true-to-life skin, well-formed pointing and product-holding hand with five natural fingers",
+        "extra_negative": "lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, low-energy flat delivery, frozen stiff mouth, missing fingers, six fingers, fused or webbed digits, warped or distorted product, plastic waxy skin, dim muddy lighting"
       },
       "shot_strategy": "list",
       "shots": [
@@ -217,7 +230,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "whip",
-        "music_mood": "high_energy_trap_pop",
+        "music_mood": "high-energy punchy trap-pop",
         "captions": "auto"
       },
       "provider": {
@@ -265,8 +278,8 @@ module.exports = [
           "context:home_floor_or_table"
         ],
         "wardrobe": "casual loungewear",
-        "extra_positive": "genuine first-look unboxing UGC, shot 1 is top-down B-roll of hands opening the package (no face, no talking), shot 2 is face reaction with wide-eyed gasp and maximum 1-sentence verbal reaction; authentic surprised facial expressions, real hands peeling tape and lifting items out, product clearly visible",
-        "negative": "no lip-sync desync, no tooth morph, no warped mouth, no identity drift, warped packaging, distorted product, extra fingers, mangled hands, fake-looking surprise, frozen mouth, plastic skin, watermark, glitched text on box"
+        "extra_positive": "genuine first-look unboxing UGC; shot 1 top-down phone B-roll, shot on a phone main camera ~26mm equivalent, f1.8, autofocus snapping to the box, no face, soft daylight from a nearby window keying the package on the cozy floor, real hands peeling tape and lifting the flaps open; shot 2 same daylit setting, handheld medium shot at chest height with slight sway, creator face in frame, wide-eyed gasp and a single-sentence reaction, item held up into the light; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; consistent creator identity across both shots; unboxing hands well-formed with exactly five natural fingers and an anatomically correct grip; eager, true-to-life energy",
+        "extra_negative": "lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, warped or crushed packaging, distorted product, missing fingers, six fingers, fused or webbed digits, malformed grip, floating disembodied hand, fake-looking exaggerated surprise, frozen stiff mouth, plastic waxy skin, smeared or warped packaging print"
       },
       "shot_strategy": "list",
       "shots": [
@@ -288,7 +301,7 @@ module.exports = [
         ],
         "duration_per_shot": 4,
         "transition": "whip",
-        "music_mood": "playful_excited_pop",
+        "music_mood": "playful excited pop",
         "captions": "auto"
       },
       "provider": {
@@ -335,8 +348,8 @@ module.exports = [
           "texture:skin_natural_pores",
           "context:home_interior_realistic"
         ],
-        "extra_positive": "two-act UGC ad with clear emotional shift; shot 1: frustrated/relatable face, cool desaturated light, 1-sentence problem statement; shot 2: curious/skeptical holding product, transitional warm light, 1-sentence pivot ('so I tried this'); shot 3: relieved/happy, bright warm light, 1-sentence payoff + CTA; maximum 1–2 sentences per shot, believable emotional arc expressed through expression and lighting, not overacting",
-        "negative": "no lip-sync desync, no tooth morph, no warped mouth, no identity drift, overacted fake emotion, frozen mouth, extra fingers, warped face, plastic skin, watermark, garbled captions, theatrical soap-opera lighting"
+        "extra_positive": "three-shot UGC reel with a clear emotional arc, shot on a phone main camera ~26mm equivalent, f1.8, natural HDR, slight handheld sway, autofocus snap; shot 1 closeup: frustrated relatable face, hand on forehead, dim cluttered room under cool flat overcast window light, desaturated, 1-sentence problem line; shot 2 medium: skeptical-curious holding product as the light warms with soft daylight bounce fill, 1-sentence pivot ('so I tried this'); shot 3 medium: relieved and happy in a bright living room, warm golden window key, still holding product, 1-sentence payoff + CTA; practical cool-to-warm light shift carried by expression, not theatrical; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; locked facial identity across all three shots, natural well-formed hands with five fingers",
+        "extra_negative": "lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, overacted theatrical fake emotion, frozen stiff mouth, missing fingers, six fingers, fused or webbed digits, warped face, plastic waxy skin, soap-opera melodramatic lighting, inconsistent lighting within a single shot"
       },
       "shot_strategy": "list",
       "shots": [
@@ -364,7 +377,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "fade",
-        "music_mood": "tense_then_uplifting",
+        "music_mood": "tense build, uplifting release",
         "captions": "auto"
       },
       "provider": {
@@ -412,8 +425,8 @@ module.exports = [
           "texture:skin_natural_pores",
           "context:home_interior_bokeh"
         ],
-        "extra_positive": "authentic self-shot iPhone front-camera UGC look, spokesperson speaking directly to camera, natural eye contact and micro-expressions, hand gestures while talking; maximum 1–2 sentences per shot; shot 1: relatable confession hook with open hand gesture; shot 2: product held beside face, core benefit delivery; shot 3: confident soft recommendation nod pointing toward link/bio; perfectly synced mouth shapes to the spoken line, clean lip-sync, subtle head nods and blinks",
-        "negative": "no lip-sync desync, no tooth morph, no warped mouth, no identity drift, stiff frozen mouth, robotic delivery, extra fingers, warped face, plastic waxy skin, dead eyes, on-screen watermark, garbled caption text, studio overlit infomercial look, duplicated person"
+        "extra_positive": "authentic self-shot iPhone selfie held at arm's length, ~24mm front camera, f1.8, natural HDR, autofocus snap, slight handheld micro-sway; soft window key camera-left in shot 1, warm lamp fill and shallow home-interior bokeh in shot 2, golden afternoon glow in shot 3; spokesperson speaking directly to camera with natural eye contact, micro-expressions and subtle blinks, max 1–2 sentences per shot, clean lip-sync; shot 1 relatable confession hook with open hand gesture, shot 2 product held beside face delivering core benefit with a genuine smile, shot 3 confident nod and soft recommendation pointing toward link/bio; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; consistent locked creator identity across all three shots, warm true-to-life skin; gesturing hand is a single well-formed hand with five natural fingers",
+        "extra_negative": "lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, stiff frozen mouth, robotic unnatural delivery, missing fingers, six fingers, fused or webbed digits, warped face, plastic waxy skin, dead lifeless eyes, studio overlit infomercial look, duplicated person"
       },
       "shot_strategy": "list",
       "shots": [
@@ -441,7 +454,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "cut",
-        "music_mood": "warm_lofi_confident",
+        "music_mood": "warm confident lo-fi",
         "captions": "auto"
       },
       "provider": {
@@ -488,8 +501,8 @@ module.exports = [
           "texture:skin_natural_pores",
           "context:bright_desk_or_bathroom"
         ],
-        "extra_positive": "hands-on UGC demonstration, spokesperson talks while physically using the product, alternating between face-to-camera lines and over-the-shoulder demo angles; maximum 1–2 sentences per talking shot; tight lip-sync on talking shots, natural step-by-step hand motion, real product interaction, product label visible and sharp",
-        "negative": "no lip-sync desync, no tooth morph, no warped mouth, no identity drift, warped product, distorted label text, extra fingers, melted hands, floating disconnected product, frozen mouth, plastic skin, watermark, glitched UI text"
+        "extra_positive": "hands-on UGC demonstration alternating face-to-camera lines with over-the-shoulder hand macro; talking shots on a ~26mm phone main camera at f1.8 with natural HDR, slight handheld sway and autofocus snapping to the face, cutting to tight phone macro on the hands operating the product (no face in that shot); soft diffused window daylight key with gentle bounce fill at the desk, crisp daylight in the tiled bathroom; real step-by-step interaction, product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; operating hands well-formed with exactly five natural fingers and an anatomically correct grip; consistent locked facial identity across the talking shots, tight lip-sync; clean, energetic, trustworthy tone",
+        "extra_negative": "lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, warped or distorted product, distorted or warped product label, missing fingers, six fingers, fused or webbed digits, melted or fused fingers, floating disembodied hand, floating disconnected product, frozen stiff mouth, plastic waxy skin, garbled glitchy on-screen graphics"
       },
       "shot_strategy": "list",
       "shots": [
@@ -523,7 +536,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "whip",
-        "music_mood": "upbeat_clean_energetic",
+        "music_mood": "upbeat clean energetic pop",
         "captions": "auto"
       },
       "provider": {

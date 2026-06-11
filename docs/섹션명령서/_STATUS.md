@@ -55,7 +55,8 @@ _없음_
 - Sizzle & Steam ASMR [needs_human_review]
 
 **home**
-- Day-to-Night Lighting Reveal [needs_human_review]
+- Day-to-Night Lighting Reveal [experimental,needs_human_review]
+- Variant Showcase Grid [experimental,needs_human_review]
 
 **tech**
 - In-hand Quick Demo [experimental]

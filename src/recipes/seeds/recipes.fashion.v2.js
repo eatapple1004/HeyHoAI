@@ -60,8 +60,8 @@ module.exports = [
           "texture:fabric_weave",
           "context:seamless_studio"
         ],
-        "extra_positive": "uploaded garment worn by a natural-looking model, garment fit and proportions identical to reference (same color, print, seams, hardware, neckline), commercial e-commerce on-model photography, large octabox key light camera-left with a fill scrim camera-right and a soft hair light, light grey seamless cyclorama, shot on 85mm f/4 full-frame, true-to-life fabric drape and stitching, relaxed natural model expression, clean catalog styling; editorial variant: single hard directional source raking across set, desaturated muted palette, confident editorial posing, architectural negative space",
-        "negative": "warped or melted garment, mismatched color or print, extra seams, distorted hands, extra fingers, fused fingers, plastic skin, mannequin look, harsh shadows, blown highlights, duplicated limbs, garment floating off body, watermark"
+        "extra_positive": "CRITICAL: the exact same garment and the same model across all four shots — garment fit, color, print, seams, hardware and neckline locked identical to the reference, no morph or drift between shots. Uploaded garment worn by a natural-looking model, commercial e-commerce on-model photography, large octabox key light camera-left with a fill scrim camera-right and a soft hair/rim light, light grey seamless cyclorama, shot on 85mm f/4 full-frame, true-to-life fabric drape and visible stitching, relaxed natural model expression, clean catalog styling; on the detail/adjusting shot keep a single well-formed hand with exactly five natural fingers, anatomically correct grip and visible fingernails; editorial variant: single hard directional source raking across set, desaturated muted palette, confident editorial posing, architectural negative space",
+        "extra_negative": "warped or melted garment, mismatched color or print, extra seams, stiff unnatural drape, garment floating off body, mannequin look, blown highlights, harsh shadows, six fingers, fused or webbed digits"
       },
       "shot_strategy": "list",
       "shots": [
@@ -135,8 +135,8 @@ module.exports = [
           "texture:fabric_weave",
           "context:seamless_studio"
         ],
-        "extra_positive": "uploaded garment worn by a natural proportioned model showing true fit, identical color/print/seams/hardware to reference, even studio light for maximum garment clarity, poses emphasize how garment sits on body at chest/waist/hip/hem, real fabric drape showing relaxed and fitted zones",
-        "negative": "warped garment, color mismatch, extra fingers, fused fingers, distorted hands, plastic skin, loose ill-fitting drape, garment floating off body, mannequin look, harsh shadows, blown highlights, duplicated limbs, watermark"
+        "extra_positive": "CRITICAL: the exact same garment and same model across all four shots, color/print/seams/hardware locked identical to the reference, no fit or proportion drift between shots. Uploaded garment worn by a natural proportioned model showing true real-world fit, broad even softbox key with a low fill ratio for flat shadow-free garment clarity, shot on 50mm f/5.6 full-frame for honest undistorted proportions, poses emphasize how the garment sits on the body at chest, waist, hip and hem, real fabric drape revealing relaxed and fitted zones; keep clean uncluttered margins along the frame edges reserved for the composited measurement callouts and size label (text added post-render, not drawn); on the closeup keep a single well-formed hand with exactly five natural fingers and visible fingernails",
+        "extra_negative": "warped garment, color mismatch, loose ill-fitting drape, garment floating off body, mannequin look, blown highlights, harsh shadows, six fingers, fused or webbed digits"
       },
       "shot_strategy": "list",
       "shots": [
@@ -199,8 +199,8 @@ module.exports = [
           "texture:grain_film",
           "context:lifestyle_real"
         ],
-        "extra_positive": "uploaded garment worn in candid real-life lifestyle moments, golden natural light, lived-in aspirational scenes, film color grade with gentle grain, shot on 35mm full-frame at f/2.0, authentic relaxed body language, shallow depth of field with soft bokeh, garment color/print/details kept identical to reference",
-        "negative": "warped garment, color mismatch, extra fingers, distorted hands, plastic skin, studio sterile look, harsh on-camera flash, watermark, overprocessed HDR, duplicated objects, garment detail loss"
+        "extra_positive": "CRITICAL: the exact same garment across all four scenes — color, print and construction details locked identical to the reference, no garment morph or detail loss between shots. Uploaded garment worn in candid real-life lifestyle moments, soft golden-hour window light as key with open-shade fill, lived-in aspirational scenes, shot on 35mm full-frame at f/2.0 with shallow depth of field and soft natural bokeh, authentic relaxed body language, true-to-reference garment color and print throughout",
+        "extra_negative": "warped garment, color mismatch, studio sterile catalog look, harsh on-camera flash, duplicated objects, garment detail loss"
       },
       "shot_strategy": "list",
       "shots": [
@@ -263,8 +263,8 @@ module.exports = [
           "texture:macro_fiber",
           "context:dark_seamless"
         ],
-        "extra_positive": "extreme macro detail shots of the uploaded garment, raking side light to reveal weave and surface relief, 100mm macro lens at f/8 with focus stacking sharpness, true-to-material color, visible fiber, stitch and hardware texture, premium tactile feel, garment material and color identical to reference",
-        "negative": "warped texture, invented patterns not on reference, color shift, blurry soft focus, plastic look, watermark, oversharpening halos, dust noise, fabric morphing, duplicated stitches"
+        "extra_positive": "extreme macro detail of the uploaded garment, hard raking sidelight grazing across the surface to reveal weave, nap and surface relief, 100mm macro lens at f/8 with focus stacking for edge-to-edge sharpness, true-to-material color, visible individual fibers, stitch tension and hardware finish, premium tactile feel, clean seamless backdrop with controlled falloff, material weave, color and pattern identical to the reference with no invented texture",
+        "extra_negative": "warped texture, invented patterns not on the reference, color shift, soft or missed focus, plastic-looking material, oversharpening halos, dust and lint specks, fabric morphing, duplicated stitches"
       },
       "shot_strategy": "list",
       "shots": [
@@ -327,8 +327,8 @@ module.exports = [
           "texture:fabric_weave",
           "context:seamless_studio"
         ],
-        "extra_positive": "crisp product drop teaser, clean white/light grey studio, garment color and details identical to reference, bold confident framing, minimal aesthetic, vertical 9:16 social format",
-        "negative": "warped garment, color shift between shots, extra fingers, distorted hands, plastic skin, watermark, jittery unstable motion, garment morphing, harsh shadows, busy background"
+        "extra_positive": "CRITICAL: the exact same garment in both the overhead flat-lay and the worn reveal — color, print and details locked identical to the reference, no change between shots. Crisp product-drop teaser, clean white/light-grey studio with a large soft key and gentle gradient falloff, shot on 50mm f/4 for honest proportions, bold confident centered framing, minimal premium aesthetic, vertical 9:16 social format with clean negative space for captions",
+        "extra_negative": "warped garment, color shift between shots, garment morphing, jittery unstable motion, harsh shadows, busy cluttered background"
       },
       "shot_strategy": "list",
       "shots": [
@@ -350,7 +350,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "cut",
-        "music_mood": "upbeat",
+        "music_mood": "punchy modern pop/hip-hop, 120-128 BPM, tight kick + clap + bright synth hook, high anticipation building to the reveal, TikTok product-drop energy",
         "captions": "auto"
       },
       "provider": {
@@ -395,8 +395,8 @@ module.exports = [
           "texture:fabric_weave",
           "context:seamless_studio"
         ],
-        "extra_positive": "two-look outfit transition reel, snap/whip transition from Look A to Look B, uploaded garment featured as the hero look, garment color/print/seams/hardware identical to reference in every frame and through the transition, energetic feed-native vertical 9:16 styling, confident natural model, clean light grey studio or minimal lifestyle backdrop",
-        "negative": "warped or morphing garment during transition, color or print shift between looks, mismatched seams, garment floating off body, extra fingers, fused fingers, distorted hands, plastic skin, flickering identity, jittery unstable motion, watermark, duplicated limbs, harsh shadows"
+        "extra_positive": "CRITICAL: the same person and the same hero garment held identical through the entire A-to-B transition — color, print, seams and hardware locked to the reference, no garment warp or identity drift across the swap frame. Two-look outfit transition reel, uploaded garment featured as the hero Look, soft broad key with subtle rim separation, shot on 35mm f/4 vertical 9:16, energetic feed-native styling, confident natural model, clean light-grey studio or minimal lifestyle backdrop; on the finger-snap keep a single well-formed hand with exactly five natural fingers and an anatomically correct gesture",
+        "extra_negative": "warped or morphing garment during the transition, color or print shift between looks, mismatched seams, garment floating off body, identity drift or flicker between looks, jittery unstable motion, harsh shadows, six fingers, fused or webbed digits"
       },
       "shot_strategy": "list",
       "shots": [
@@ -418,7 +418,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "whip",
-        "music_mood": "upbeat",
+        "music_mood": "high-energy hip-hop/pop, 125-135 BPM, hard 808 bass + crisp hi-hats + vocal chop, snap hit landing on the A-to-B transition beat, viral TikTok transition energy",
         "captions": "auto"
       },
       "provider": {
@@ -463,8 +463,8 @@ module.exports = [
           "texture:fabric_detail",
           "context:bedroom_vanity"
         ],
-        "extra_positive": "get-ready-with-me styling reel featuring the uploaded garment, bright airy creator-bedroom aesthetic, vertical social-first framing, glossy upbeat mood, garment color and details preserved exactly across every shot, natural model with on-trend energy",
-        "negative": "warped garment, color shift between shots, extra fingers, fused fingers, distorted hands, plastic skin, flickering identity, watermark, jittery unstable motion, garment morphing, harsh shadows"
+        "extra_positive": "CRITICAL: the same creator/model and the same garment across all three shots — color and details locked identical to the reference, no morph or identity drift between shots. Get-ready-with-me styling reel featuring the uploaded garment, bright airy creator-bedroom aesthetic, soft ring-light key with warm ambient fill, shot on 35mm f/2.8 vertical social-first framing, upbeat on-trend energy; on the pick-up shot keep a single well-formed hand with exactly five natural fingers and visible fingernails",
+        "extra_negative": "warped garment, color shift between shots, garment morphing, identity drift or flicker between shots, jittery unstable motion, six fingers, fused or webbed digits"
       },
       "shot_strategy": "list",
       "shots": [
@@ -492,7 +492,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "whip",
-        "music_mood": "upbeat",
+        "music_mood": "bright bubbly pop, 110-120 BPM, plucky synth + finger-snaps + airy vocal, feel-good get-ready energy, GRWM creator-vlog vibe",
         "captions": "auto"
       },
       "provider": {
@@ -537,8 +537,8 @@ module.exports = [
           "texture:fabric_weave",
           "context:turntable_studio"
         ],
-        "extra_positive": "smooth 360-degree rotation of the uploaded garment on a turntable (product only — no model), e-commerce turntable product video, perfectly even wraparound studio lighting, light grey seamless background, garment color/print/seams/hardware identical to reference at every angle, crisp true-to-life fabric texture, stable centered framing, no warped fabric in turntable",
-        "negative": "warped or morphing garment, color shift during rotation, geometry distortion, extra seams, watermark, wobbling unstable spin, motion blur smearing detail, background color flicker, duplicated product, live model in frame"
+        "extra_positive": "CRITICAL: the exact same garment geometry, color, print, seams and hardware locked identical to the reference at every rotation angle — no morph, stretch or detail drift between angles. Smooth 360-degree e-commerce turntable presentation of the uploaded garment, product only with no model or hands in frame, perfectly even wraparound softbox lighting with no hot spots, light-grey seamless background, shot on 50mm f/8 for low distortion, crisp true-to-life fabric texture and accurate silhouette, stable perfectly centered framing",
+        "extra_negative": "warped or morphing garment, color shift during rotation, geometry distortion, extra seams, wobbling unstable spin, motion blur smearing detail, background color flicker, duplicated product, live model in frame"
       },
       "shot_strategy": "list",
       "shots": [
@@ -566,7 +566,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "cut",
-        "music_mood": "minimal_clean",
+        "music_mood": "sleek minimal electronic, 100-110 BPM, soft pad + subtle pulse + light percussion, calm premium product-showcase energy, clean e-commerce reference vibe",
         "captions": "auto"
       },
       "provider": {

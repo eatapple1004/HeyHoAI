@@ -97,3 +97,80 @@
 - **B)** rework 2개(Zoomies 2샷·On-Pet 풀바디 옵션화) 시드 반영
 - **C)** must 3개만 최소확장(9개)
 적용 시 §3-4 비용사다리·77개 이름 grep 재검증 후 `_결과.md`·`_카탈로그.md`·`_overview.html` 동기화 + consolidate 재실행.
+
+---
+
+## 6) 프롬프트 정밀화 — 死필드 negative 이관 (2026-06-10, prompt-negatives 워커)
+
+> 명령서: `docs/섹션명령서/PROMPT_프롬프트정밀화_명령서.md`. 작업단위 = pet 12개 전부.
+> 진실원천 `recipes.pet.v2.js` 수정. **파일만 저장(commit/push 금지).**
+
+### 의도
+`look.negative`(死필드, resolver 미파싱 → 엔진에 안 닿음) 12/12개를 `look.extra_negative`(resolver L148 live 필드)로 **이관 + 정제**. 이관 전에는 live `/api/recipes`가 커스텀 네거티브 없이(SAFETY만) 생성 중이었음.
+
+### 바꾼 필드 (템플릿별)
+| # | 템플릿 | 핵심 정제 |
+|---|---|---|
+| 1 | Pet Product Hero | SAFETY `blurry` 제거; `distorted packaging/wrong proportions/blown highlights` 보강 |
+| 2 | Cuddle Hour | SAFETY `watermark/blurry/deformed/extra limbs` 제거 → 펫특화 `extra or missing legs/fused paws/unnatural fur` |
+| 3 | Macro Crunch | `watermark` 제거; 음식특화 `over-sharpened halos/unappetizing dull color/blown specular` 보강 |
+| 4 | On-Pet Fit | **negative에 잘못 섞인 긍정문 제거**(`no warped muzzle`·`correct limb count`·`natural fur no melting`); SAFETY `deformed/extra limbs/watermark` 제거 → `distorted pet anatomy/warped muzzle/fabric fused or melting into fur` |
+| 5 | Wait For The Zoomies | `watermark/deformed` 제거; 릴 identity `product drifting or morphing between frames` 추가 |
+| 6 | Talking Pet Skit | **긍정문 4건 제거**(`no warped muzzle`·`correct limb count`·`natural fur no melting`·`no human-like mouth morph`); `lip-sync desync/tooth morph/pet identity drift` 정렬 |
+| 7 | Single-Hero Sizzle Reel | SAFETY 중복 없음; `product morphing mid-action` 보강 |
+| 8 | Hands-On Pour & Unbox Reel | SAFETY `extra fingers/deformed hand/watermark` 제거 → 명령서 §3 손가락 가드 `six or more fingers, fused or webbed fingers` |
+| 9 | Device UI Mockup Set 🅣 | `text` 포함 `readable screen text` 제거(전역 SAFETY 처리) → `screen showing rendered content instead of blank placeholder` |
+| 10 | In-Room Scale Set 🅣 | SAFETY 중복 없음; `incorrect scale relative to surrounding furniture` 보강 |
+| 11 | Habitat Scene Set | negative 속 지시문 정리(`no animals…` → `unrequested live animals introducing morph risk`); `murky dirty water` 추가 |
+| 12 | Pet Wearable Spec Sheet 🅣 | SAFETY 중복 없음; `warped buckles or D-ring hardware` 보강 |
+
+### 근거
+- dedup 대상 = **SAFETY_NEGATIVE_PROMPT 뿐**: pet 시드가 쓰는 style_preset(`Editorial/Lifestyle/Macro`)이 DB `style_presets` 시드에 부재 → resolver L100에서 preset = 빈 기본값(`preset.negative=''`). 즉 합성 negative = `'' + extra_negative + SAFETY`.
+- text_overlay 4개(#1·9·10·12): extra_negative에서 text/logo 제외 + 각 `render_notes`에 "SAFETY_NEGATIVE가 text/logo 전역 처리" 명시(명령서 §🅣).
+
+### 검증 (DoD)
+- `grep -c '"negative":' recipes.pet.v2.js` = **0** ✅ (extra_negative=12, 死 look.positive=0)
+- extra_negative 값 내 SAFETY 중복 스캔(watermark/text/logo/deformed/blurry/extra fingers/…) = **0건** ✅
+- `node scripts/consolidate_recipes.js` = pet **중복0·이름고유·node로딩 통과**. 잔존 "이슈"는 개수 12(권장 6~8) **사전 권고뿐**(승인대기 포트폴리오, 내 변경과 무관·이름/비용/스키마 불변).
+- `git diff` = negative/extra_negative·render_notes·헤더 changelog만. 카드계약(name/credit_cost/output_type/count/style_preset) **불변**.
+
+### ⚠️ 총지휘 인계(후속, 이번 스코프 외)
+- **[엔진/시드 정합]** pet의 `style_preset` 값 `Editorial/Lifestyle/Macro`가 DB `style_presets`에 미존재(시드는 Natural/Fashion/Cinematic/Portrait/… 만). 현재 preset.prefix/suffix/negative가 전부 공백으로 적용됨 — **pet 한정 아닌 전 섹션 가능성**. 엔진/시드 총지휘 확인 필요.
+- **[품질갭 task #2/#3]** extra_positive 정밀화(릴/토킹 identity 첫머리 `CRITICAL: same product/pet…`, #8 손 긍정 `single well-formed hand, exactly five natural fingers`)와 text_overlay `meta.overlay_spec` 추가는 이번 negative 이관 스코프 밖 — 미반영.
+- **[export]** 명령서 §5.8 구조화 CSV/Excel export는 `scripts/export_recipe_prompts.js`(신설 예정) 일괄 처리 대기 — 단독 생성 안 함.
+
+### 적대적 리뷰 (3렌즈) + 보정
+3개 독립 리뷰어(SAFETY중복 / 긍정문·text·logo누출 / 섹션완전성)로 적대적 검증 후 반영:
+- ✅ **긍정문 누출 0건**(#4·#6 정제 확인) · **text_overlay text/logo 누출 0건**.
+- 🔧 **SAFETY 중복 제거**: #2·#4·#5의 `extra or missing legs/paws` → SAFETY `extra limbs`와 중복이라 제거(각 항목의 `(warped/distorted) pet anatomy` 캐치올이 결손 커버).
+- 🔧 **identity 가드 추가**: #5 Zoomies에 `pet identity drift between frames` 추가(#6 패턴 정합, 2샷 연속성) · #8에 `hand features changing between frames` 추가.
+- 🟡 **기각(근거 있음)**: #8 손가락 가드(`six or more fingers, fused or webbed fingers, wrong finger count`)는 리뷰어가 SAFETY 중복으로 지적했으나 **명령서 §3이 손 노출 템플릿에 대해 `six fingers, fused/webbed digits`를 extra_negative에 넣도록 명시적으로 지시** → 손 렌더 고위험 보강 의도로 **유지**(명령서 직접 지시 > 일반 dedup).
+- 재검증: `grep '"negative":'`=0 · SAFETY중복 스캔 0 · node 12개 로딩 · consolidate 통과.
+
+---
+
+## 7) 프롬프트 정밀화 — extra_positive + overlay_spec (2026-06-10, 동일 워커)
+
+> 명령서 task #2/#3(품질갭). negative 이관(§6)에 이어 진행. 진실원천 `recipes.pet.v2.js`. **파일만 저장.**
+
+### 바꾼 것
+- **extra_positive 12/12 정밀화** — 하우스 톤(fashion On-Model 골드스탠다드) 정합: lens+F-stop, key/fill/rim 라이팅, reference lock("identical to reference … shape/color/proportions/label/hardware") 명시.
+- **identity 보강** — 멀티프레임 #4·5·6·8 첫머리 `CRITICAL: same product/pet across all frames, no morph/drift`.
+- **손 긍정** — #8 `single well-formed hand, exactly five natural fingers, anatomically correct grip`(손톱 문구는 fingertip-crop과 모순이라 제외 — 아래 검증 참조).
+- **text_overlay 4개(#1·9·10·12)** — extra_positive에 합성영역 확보 문구 + `meta.overlay_spec`(fashion/general 형태 `layer/elements/font/position`) 추가.
+
+### 판단으로 보류한 것 (근거)
+- **music_mood 구조화(bpm/악기)**: 명령서 §3 🟡 nice-to-have이나 **11섹션 어디도 미적용**(전부 짧은 감정 디스크립터) + 다운스트림 태그 정합 위험 → 하우스 일관성 우선으로 **보류**. 현행 pet music_mood는 이미 동일 스타일.
+
+### 적대적 리뷰(3렌즈: 모순/방법론/품질) + 보정
+- 🔧 **#8 모순(HIGH)**: `visible fingernails` ↔ `fingertips out of frame` 직접 모순 → 손톱 문구 제거 + `50mm f/5.6` 보강.
+- 🔧 **#5·#6 lens/f-stop 누락(HIGH)**: `50mm f/2.8`(#5), `35mm f/2.8`(#6) + 라이팅 key/fill 보강.
+- 🔧 **#6 비대칭(MED)**: negative의 lip-sync/tooth morph(프레임간) 대응 → positive에 `consistent mouth and tooth shape across both frames` 추가. 이후 97단어 → 필러 트리밍.
+- 🔧 **#11 방어갭(MED)**: live animals positive 미명시 → `plants and static substrate only, no live animals in frame` 추가.
+- 🔧 **#10 f-stop(LOW)**: `at f/8` 추가.
+- 🟡 **기각**: quality렌즈 "CRITICAL이 문장 중간에 묻힘"은 **사실오류**(#4·5·6·8 전부 `CRITICAL:`로 시작) · 펫 해부학 명시 "중복 제거"는 morph 방지 의도라 유지 · #2 rim light 강제는 자연광 씬에 부자연이라 보류.
+
+### 검증
+- node 로딩 12개 · 死필드 0 · identity 프리픽스 #4·5·6·8 ✅ · overlay_spec 4/4 ✅
+- `grep '"negative":'`=**0** 유지 · extra_positive 최대 단어수 ≤90(하우스 norm) · `consolidate` 통과(중복0, pet "이슈"=개수12 권고뿐)
+- 카드계약(name/credit_cost/output_type/count) 불변.

@@ -44,8 +44,8 @@ module.exports = [
           "texture:food_fresh",
           "context:tabletop_flatlay"
         ],
-        "extra_positive": "appetizing food photography shot perpendicular from directly above, 50mm lens look, even diffused overhead softbox with a large bounce card filling shadows, garnish crisp and freshly plated, subtle natural prop styling (linen napkin, single utensil, scattered ingredients) arranged with negative space, sharp edge-to-edge focus, commercial menu-hero quality",
-        "negative": "tilted horizon, perspective distortion, harsh specular hotspots, blown highlights, color cast, warped or melted food, duplicated dishes, plastic-looking food, soggy wilted garnish, text artifacts, watermark, logo, fingers in frame, dirty plate rim, messy crumbs"
+        "extra_positive": "appetizing food photography shot perpendicular from directly above, the plated dish identical to the uploaded reference with the same ingredients, plating, garnish, color and proportions, never inventing or substituting different food, 50mm lens at f/8 for deep depth of field, even diffused overhead softbox with a large bounce card filling shadows, garnish crisp and freshly plated, subtle natural prop styling (linen napkin, single utensil, scattered ingredients) arranged with negative space, sharp edge-to-edge focus, commercial menu-hero quality",
+        "extra_negative": "tilted horizon, perspective distortion, harsh specular hotspots, blown highlights, color cast, warped or melted food, duplicated dishes, plastic CGI-looking food, soggy wilted garnish, unappetizing dull color, stray fingers or hands in frame, dirty plate rim, smudged plate edge, messy stray crumbs"
       },
       "shot_strategy": "list",
       "shots": [
@@ -111,8 +111,8 @@ module.exports = [
           "texture:glossy_wet",
           "context:dark_moody"
         ],
-        "extra_positive": "extreme macro food photography, 100mm macro lens at f/4 with razor-thin depth of field, dramatic side and back rim light catching translucent steam and glistening condensation, slow-motion sauce or chocolate dripping mid-air, frozen splash droplets, melting cheese pull or glaze sheen, deep moody background falloff, mouth-watering tactile detail",
-        "negative": "flat even lighting, dull matte surface, dry lifeless food, fake CGI steam, plastic droplets, motion blur on the dish itself, over-sharpened halos, noise grain in shadows, warped product, extra hands, text, watermark, oversaturated neon color clipping, dust spots"
+        "extra_positive": "extreme macro food photography, 100mm macro lens at f/4 with razor-thin depth of field, the dish identical to the uploaded reference in texture, ingredients and color, every macro detail drawn from the actual reference food rather than a fabricated substitute, dramatic side and back rim light catching translucent steam and glistening condensation, slow-motion sauce or chocolate dripping mid-air, frozen splash droplets, melting cheese pull or glaze sheen, deep moody background falloff, mouth-watering tactile detail",
+        "extra_negative": "flat even lighting, dull matte surface, dry lifeless food, fake CGI steam, plastic-looking droplets, frozen unnatural splash, motion blur on the dish itself, over-sharpened halos, noise grain in shadows, warped product, oversaturated neon color clipping, dust spots, stray hands in frame"
       },
       "shot_strategy": "list",
       "shots": [
@@ -178,8 +178,8 @@ module.exports = [
           "texture:soft_haze",
           "context:cafe_indoor"
         ],
-        "extra_positive": "cozy lifestyle cafe photography, late-afternoon golden sunlight raking through a window casting long warm shadows and soft lens haze, 35mm film look with gentle grain and creamy bokeh, product placed naturally in a lived-in cafe scene with steam and warm ambiance, shallow depth of field, inviting aspirational mood",
-        "negative": "cold blue cast, flat overcast light, clinical studio look, harsh flash, sterile empty background, overexposed window blowout, plastic food, warped product, cluttered messy table, text overlays, watermark, people's faces, hands, oversharpening, HDR halos"
+        "extra_positive": "cozy lifestyle cafe photography, the dish rendered identical to the uploaded reference with the exact same color, plating, garnish and proportions, late-afternoon golden sunlight raking through a window casting long warm shadows and soft lens haze, 35mm film look at f/2 with gentle grain and creamy bokeh, product placed naturally in a lived-in cafe scene with steam and warm ambiance, shallow depth of field, inviting aspirational mood",
+        "extra_negative": "cold blue color cast, flat overcast light, clinical studio look, harsh flash, sterile empty background, overexposed window blowout, plastic CGI food, warped or melted food, unappetizing dull color, cluttered messy table, people's faces in frame, hands in frame, oversharpening halos, HDR glow"
       },
       "shot_strategy": "list",
       "shots": [
@@ -249,8 +249,8 @@ module.exports = [
           "texture:food_fresh",
           "context:restaurant_table"
         ],
-        "extra_positive": "modern restaurant table lifestyle photography, hands gracefully placing or serving the dish on a beautifully set table, soft warm directional window light, linen napkins, wine glasses or water glasses in the background bokeh, casual elegant dining atmosphere, shallow depth of field, genuine human moment, fresh vibrant food, editorial food magazine quality",
-        "negative": "faces or heads in frame, ugly or unmanicured hands, dirty nails, awkward stiff pose, flat lighting, sterile studio look, warped or melted food, plastic food, text artifacts, watermark, logo, cluttered foreground, oversharpening, harsh flash shadows, empty soulless table"
+        "extra_positive": "modern restaurant table lifestyle photography, hands gracefully placing or serving the dish on a beautifully set table, the served dish identical to the uploaded reference with the same food, plating, color and proportions, a single well-formed hand with exactly five natural fingers and an anatomically correct grip, neatly manicured fingernails, soft warm directional window light, linen napkins, wine glasses or water glasses in the background bokeh, casual elegant dining atmosphere, shot on a 50mm lens at f/2.8, shallow depth of field, genuine human moment, fresh vibrant food, editorial food magazine quality",
+        "extra_negative": "faces or heads in frame, ugly or unmanicured hands, dirty fingernails, six fingers, fused or webbed digits, awkward stiff hand grip, flat lighting, sterile studio look, warped or melted food, plastic CGI food, unappetizing color, cluttered foreground, oversharpening, harsh flash shadows, empty soulless table"
       },
       "shot_strategy": "list",
       "shots": [
@@ -297,7 +297,7 @@ module.exports = [
     "sort_order": 5,
     "rationale": "레스토랑·카페가 가장 자주 요청하는 메뉴판·가격표 소셜 카드; 텍스트 오버레이 파이프라인으로 SAFETY_NEGATIVE 제약 우회, 12 메뉴 항목까지 확장 가능.",
     "meta": {
-      "render_notes": "AI 모델은 요리 그리드 배경 이미지(빈 플레이트/음식 배열)만 생성합니다. 메뉴명·가격·섹션 헤더 등 모든 텍스트는 생성 후 결정론적 텍스트 오버레이 레이어(Doppia 렌더 파이프라인)가 합성합니다. 이 템플릿에서 look.negative에 'text' 및 'logo'를 포함하지 마십시오 — 포함 시 SAFETY_NEGATIVE가 중복 적용되어 배경 이미지에서 메뉴 아이템 플레이트가 억제됩니다.",
+      "render_notes": "AI 모델은 요리 그리드 배경 이미지(빈 플레이트/음식 배열)만 생성합니다. 메뉴명·가격·섹션 헤더 등 모든 텍스트는 생성 후 결정론적 텍스트 오버레이 레이어(Doppia 렌더 파이프라인)가 합성합니다. 'text'/'logo'는 SAFETY_NEGATIVE_PROMPT가 전역 자동 주입으로 이미 처리하므로 look.extra_negative(엔진이 읽는 live 필드)에 'text' 및 'logo'를 다시 넣지 마십시오 — 중복 주입 시 배경 이미지에서 메뉴 아이템 플레이트까지 억제됩니다.",
       "text_overlay_fields": ["menu_item_name", "price", "section_header", "currency_symbol"],
       "max_menu_items": 16
     },
@@ -323,8 +323,8 @@ module.exports = [
           "texture:food_fresh",
           "context:menu_grid_layout"
         ],
-        "extra_positive": "clean commercial menu card background, multiple beautifully plated dishes arranged in a symmetrical grid layout on a neutral surface, consistent even overhead softbox lighting across all dishes, generous negative space between items for text overlay, each dish sharp and appetizing, cohesive color palette, professional restaurant menu photography aesthetic, space reserved for price and name label overlays",
-        "negative": "tilted horizon, inconsistent lighting across dishes, cluttered background, warped or melted food, plastic food, wilted garnish, harsh hotspots, color cast, messy arrangement, extra hands, dirty plates, overlapping dishes"
+        "extra_positive": "clean commercial menu card background, multiple beautifully plated dishes arranged in a symmetrical grid layout on a neutral surface, each dish faithful to its uploaded reference photo with no invented or altered food, distinct dish per cell with no accidental duplicate or cloned plate repeated across cells, consistent even overhead softbox lighting across all dishes, top-down 50mm lens at f/8 for even edge-to-edge focus across the grid, generous negative space between items reserved for price and name label overlays, each dish appetizing, cohesive color palette, professional restaurant menu photography aesthetic",
+        "extra_negative": "tilted horizon, inconsistent lighting across dishes, cluttered background, warped or melted food, plastic CGI food, wilted garnish, harsh hotspots, color cast, messy uneven arrangement, duplicated identical dishes across grid cells, dishes overlapping into label zones, insufficient negative space for overlays, unappetizing color, stray hands in frame, dirty plates"
       },
       "shot_strategy": "list",
       "shots": [
@@ -400,8 +400,8 @@ module.exports = [
           "texture:glossy_wet",
           "context:dark_moody"
         ],
-        "extra_positive": "single hero dish cinematic food moment, 100mm macro lens, warm key light with soft rim catching steam and sheen, glistening sauce or glaze, shallow depth of field, slow deliberate motion revealing texture, premium appetite-trigger close-up, short punchy social reel energy",
-        "negative": "flat lighting, dry dull food, fake plastic steam, CGI look, jittery shaky framing, harsh blown highlights, frozen lifeless motion, warped product, extra hands, text artifacts, watermark, color banding, oversaturated clipping"
+        "extra_positive": "single hero dish cinematic food moment, the exact dish from the uploaded reference photo kept identical and stable across the entire clip with no morphing into a different food mid-motion, 100mm macro lens at f/2.8-f/4, warm key light with soft rim catching steam and sheen, glistening sauce or glaze, shallow depth of field, slow deliberate motion revealing texture, premium appetite-trigger close-up, short punchy social reel energy",
+        "extra_negative": "flat lighting, dry dull food, fake plastic CGI steam, plastic CGI look, jittery shaky framing, harsh blown highlights, frozen lifeless motion, warped product, food geometry morphing mid-clip, toppings shifting during motion, flickering, stutter, unappetizing color, color banding, oversaturated clipping, stray hands in frame"
       },
       "shot_strategy": "list",
       "shots": [
@@ -417,7 +417,7 @@ module.exports = [
         ],
         "duration_per_shot": 4,
         "transition": "none",
-        "music_mood": "warm ASMR sizzle, low ambient",
+        "music_mood": "lo-fi culinary ASMR groove, 70-85 BPM, warm sizzle foley and soft kick with mellow Rhodes and muted upright bass, intimate low-energy appetizing ambience, reference Bonobo 'Kerala' texture",
         "captions": "auto"
       },
       "provider": {
@@ -465,8 +465,8 @@ module.exports = [
           "texture:glossy_wet",
           "context:dark_moody"
         ],
-        "extra_positive": "cinematic food ASMR, macro 100mm lens, warm directional key with a soft rim, live rising steam and audible-looking sizzle, glistening juices and bubbling surfaces, shallow depth of field with creamy falloff, slow deliberate reveal of texture, premium close-up appetite trigger; third shot: pull-back hero reveal showing glaze sheen sweeping across the dish surface as camera orbits, consistent dish geometry throughout",
-        "negative": "flat lighting, dry dull food, fake plastic steam, CGI look, jittery shaky framing, harsh blown highlights, frozen lifeless motion, warped product, morphing toppings or facets between shots, inconsistent dish geometry across frames, extra hands, text artifacts, watermark, color banding, oversaturated clipping"
+        "extra_positive": "cinematic food ASMR, CRITICAL: same dish identity across all three shots, locked geometry and plating, no morph or drift, dish identical to the uploaded reference; macro 100mm lens at f/2.8, warm directional key with a soft rim, live rising steam and audible-looking sizzle, glistening juices and bubbling surfaces, shallow depth of field with creamy falloff, slow deliberate reveal of texture, premium close-up appetite trigger; third shot: pull-back hero reveal showing glaze sheen sweeping across the dish surface as camera orbits, consistent dish geometry throughout",
+        "extra_negative": "flat lighting, dry dull food, fake plastic CGI steam, plastic CGI look, jittery shaky framing, harsh blown highlights, frozen lifeless motion, warped product, morphing toppings or facets between shots, inconsistent dish geometry across frames, flickering, stutter, unappetizing color, color banding, oversaturated clipping, stray hands in frame"
       },
       "shot_strategy": "list",
       "shots": [
@@ -494,7 +494,7 @@ module.exports = [
         ],
         "duration_per_shot": 3,
         "transition": "cut",
-        "music_mood": "warm ASMR sizzle, low ambient",
+        "music_mood": "ambient ASMR foley, 60 BPM, layered close-mic sizzle and gentle crackle over warm low pad and soft sub hum, intimate slow-build energy, reference Samsung 'Sizzle' food spots and Bon Appetit kitchen ASMR",
         "captions": "auto"
       },
       "provider": {

@@ -43,8 +43,8 @@ module.exports = [
           "texture:skin_natural",
           "context:grey_seamless_studio"
         ],
-        "extra_positive": "professional corporate headshot, clean light-grey seamless studio backdrop, soft clamshell key with a subtle hair light, 85mm at f4 flattering compression, shoulders-to-chest crop, confident trustworthy expression, sharp catchlight eyes in focus, true-to-life skin, polished but natural retouch, identity preserved consistently across all four shots",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, blown highlights, busy or colorful background, text artifacts, watermark, casual streetwear, film grain, golden hour glamour"
+        "extra_positive": "CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, professional corporate headshot, clean evenly-lit light-grey seamless studio backdrop, soft flattering clamshell key with a subtle separating hair light, 85mm at f4 flattering portrait compression, eye-level shoulders-to-chest crop, confident trustworthy expression, crisp catchlight eyes sharp and in focus, true-to-life skin tones, polished but natural retouch, clean corporate mood",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, blown highlights, busy or colorful background, casual streetwear, film grain, golden hour glamour"
       },
       "shot_strategy": "list",
       "shots": [
@@ -109,8 +109,8 @@ module.exports = [
           "texture:skin_natural",
           "context:dark_gradient_backdrop"
         ],
-        "extra_positive": "high-end executive author portrait, charcoal-to-deep-navy gradient backdrop, dramatic directional side key light with a crisp rim light separating the subject from the dark background, 85mm at f4 flattering compression, shoulders-up authoritative framing, composed serious-but-warm expression, immaculate sharp catchlights in focus, true-to-life skin with polished but natural retouch, magazine author-photo gravitas, identity preserved consistently across all four shots",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, busy background, blown highlights, flat frontal flash, casual streetwear, film grain, golden hour, bright cheerful background, casual clothing, text artifacts, watermark"
+        "extra_positive": "CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, high-end executive author portrait, smooth charcoal-to-deep-navy gradient backdrop, dramatic directional side key light camera-left with a crisp controlled rim light camera-right cleanly separating the subject from the dark background, balanced shadow falloff that retains full facial detail in the shadow side, 85mm at f4 flattering compression, shoulders-up authoritative framing with a subtle low camera angle for added stature, composed serious-but-warm expression with a strong steady gaze, immaculate sharp catchlights, sharp eyes in focus, true-to-life skin with polished but natural retouch, refined editorial magazine author-photo gravitas, dark moody corporate tone",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, flat frontal flash, blown highlights, muddy crushed shadows losing facial detail, busy or bright cheerful background, casual streetwear or casual clothing, film grain, golden hour glamour"
       },
       "shot_strategy": "list",
       "shots": [
@@ -175,8 +175,8 @@ module.exports = [
           "texture:natural skin texture, polished but realistic retouch",
           "context:multi-background professional headshot set, same person across all shots"
         ],
-        "extra_positive": "professional corporate headshot of the same individual repeated across four shots with consistent facial identity, each shot using a different background and a different professional outfit, soft clamshell key with subtle hair light and clean window fill, 85mm at f4 flattering compression, sharp eyes in focus, confident and approachable expression, true-to-life skin with polished but natural retouch, neutral business mood, identity preserved across all four shots",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, busy background, text artifacts, watermark, casual streetwear, film grain, golden hour glamour lighting, trendy filters, lens distortion, blown highlights"
+        "extra_positive": "CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, professional corporate headshot set, each shot pairing a clearly different professional background with a different tailored outfit while the face stays identical, soft clamshell key with a subtle hair light and clean window fill, 85mm at f4 flattering compression, shoulders-to-chest crop with a flattering near-eye-level camera angle, sharp catchlight eyes in focus, confident and approachable expression, true-to-life skin with polished but natural retouch, clean neutral business mood",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, face inconsistency across the different backgrounds, glasses glare distortion, harsh shadows, busy background, lens distortion, trendy filters, casual streetwear, film grain, golden hour glamour lighting, blown highlights"
       },
       "shot_strategy": "list",
       "shots": [
@@ -241,8 +241,8 @@ module.exports = [
           "texture:skin_natural",
           "context:uniform_soft_grey_backdrop"
         ],
-        "extra_positive": "standardized team-page headshot, fixed soft even frontal key, uniform mid-grey seamless backdrop, consistent shoulders-up crop and level eye-line, 85mm at f4 flattering compression held identical across shots, neutral friendly expression, consistent lighting/background/crop across team members, uniform framing repeatable for an entire team directory, true-to-life skin, polished natural retouch, identity preserved across all four shots",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, inconsistent lighting or backdrop tone, varying crop or eye-line, non-uniform framing, dramatic or harsh shadows, busy background, casual streetwear, film grain, golden hour, glasses glare distortion, text artifacts, watermark"
+        "extra_positive": "CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift, standardized team-page headshot, fixed soft even frontal key light with gentle wraparound fill and no harsh shadows, uniform mid-grey seamless backdrop evenly lit corner to corner, consistent shoulders-up crop and level eye-line shot at eye level, 85mm at f4 flattering compression held identical across shots, neutral friendly expression, consistent lighting/background/crop across team members, uniform framing repeatable for an entire team directory, clean corporate trustworthy finish, sharp catchlight eyes, true-to-life skin, polished natural retouch",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, inconsistent lighting or backdrop tone, varying crop or eye-line, non-uniform framing, dramatic or harsh shadows, busy background, glasses glare distortion, casual streetwear, film grain, golden hour"
       },
       "shot_strategy": "list",
       "shots": [
@@ -307,8 +307,8 @@ module.exports = [
           "texture:skin_natural",
           "context:bright_airy_interior_bokeh"
         ],
-        "extra_positive": "warm approachable personal-brand headshot, soft natural window light wrapping the face, bright airy interior with gentle background bokeh, smart-casual soft blazer or fine knit, genuine friendly smile, 85mm at f4 flattering compression, shoulders-up crop, professional yet warm coach-and-creator energy, sharp catchlight eyes in focus, true-to-life skin, polished but natural retouch, identity preserved consistently across all four shots",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, busy background, text artifacts, watermark, casual streetwear, film grain, cold corporate flash, blown highlights"
+        "extra_positive": "CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, warm approachable personal-brand headshot, soft natural window light gently wrapping the face, bright airy interior with a clean creamy background bokeh, smart-casual soft blazer or fine knit, genuine friendly smile, 85mm at f4 flattering compression, shoulders-up crop at a natural eye-level angle, professional yet warm coach-and-creator energy, sharp catchlight eyes in focus, true-to-life skin, polished but natural retouch",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, busy background, cold corporate flash, blown highlights, casual streetwear, film grain"
       },
       "shot_strategy": "list",
       "shots": [
@@ -376,8 +376,8 @@ module.exports = [
           "texture:natural skin micro-texture, polished but not plastic",
           "context:professional studio headshot intro for About page / LinkedIn"
         ],
-        "extra_positive": "professional corporate moving headshot, light-grey seamless studio backdrop, soft clamshell key with subtle hair light, 85mm at f4 flattering compression, shoulders-up closeup crop, front-facing confident approachable expression with a gentle smile holding the gaze, sharp eyes in focus, true-to-life skin, polished but natural retouch, trustworthy business mood, identity preserved and stable throughout",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, lens distortion, harsh shadows, blown highlights, busy background, text artifacts, watermark, casual streetwear, film grain, golden hour, trendy filter, lip-sync, large head rotation"
+        "extra_positive": "CRITICAL: the exact same individual in every frame, locked facial identity and bone structure, no face morph or identity drift, professional corporate moving headshot, clean light-grey seamless studio backdrop, soft clamshell key with a subtle hair light, 85mm at f4 flattering compression, shoulders-up closeup crop framed straight-on at eye level, front-facing confident approachable expression with a gentle warming smile holding the gaze, sharp catchlight eyes in focus, true-to-life skin, polished but natural retouch, trustworthy corporate mood, smooth stable micro-motion with a slow natural blink and a very slow gentle push-in, head held steady and unchanged throughout",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, lip-sync mouth desync, mouth or tooth morph between frames, large head rotation, jittery unstable motion, frame-to-frame flicker, glasses glare distortion, lens distortion, harsh shadows, blown highlights, busy background, casual streetwear, film grain, golden hour, trendy filter"
       },
       "shot_strategy": "list",
       "shots": [
@@ -393,7 +393,7 @@ module.exports = [
         ],
         "duration_per_shot": 4,
         "transition": "cut",
-        "music_mood": "calm professional ambient",
+        "music_mood": "ambient corporate underscore, 70-85 BPM, felt piano + warm synth pads + soft low strings, low-energy confident and unobtrusive, reference: LinkedIn brand-film intro score",
         "captions": "none"
       },
       "provider": {
@@ -439,8 +439,8 @@ module.exports = [
           "texture:skin_natural",
           "context:grey_seamless_studio"
         ],
-        "extra_positive": "moving about-page profile reel, two gentle beats from a front-facing pose to a soft three-quarter within about fifteen degrees, clean light-grey seamless studio backdrop, soft clamshell key with subtle hair light, 85mm at f4 flattering portrait compression, shoulders-up crop, confident approachable professional expression, sharp catchlight eyes, true-to-life skin, smooth stable micro-motion, identity locked and consistent across both shots",
-        "negative": "extra fingers, deformed hands, warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, lip-sync mouth distortion, large or fast head rotation, full head turn, jittery unstable motion, glasses glare distortion, flickering lens reflection across the turn, harsh shadows, busy background, casual streetwear, film grain, golden hour, text artifacts, watermark"
+        "extra_positive": "CRITICAL: the exact same individual in both shots, locked facial identity and bone structure, no face morph or identity drift across any frame, moving about-page profile reel, two gentle beats cutting from a steady front-facing pose into a soft three-quarter held within about fifteen degrees, clean light-grey seamless studio backdrop, soft clamshell key with a subtle hair light, 85mm at f4 flattering portrait compression, shoulders-up crop tightening from closeup to a calm medium framing, confident approachable professional expression, sharp catchlight eyes in focus, true-to-life skin with polished but natural retouch, smooth stable micro-motion only with a slow natural blink and faint warming smile, corporate clean and trustworthy mood",
+        "extra_negative": "warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, lip-sync mouth distortion, mouth or tooth morph between frames, large or fast head rotation, full head turn, jittery unstable motion, flickering lens reflection across the turn, glasses glare distortion, harsh shadows, busy background, casual streetwear, film grain, golden hour"
       },
       "shot_strategy": "list",
       "shots": [
@@ -462,7 +462,7 @@ module.exports = [
         ],
         "duration_per_shot": 4,
         "transition": "cut",
-        "music_mood": "calm professional ambient",
+        "music_mood": "ambient corporate underscore, 70-85 BPM, felt piano + warm synth pads + soft low strings, low-energy confident, reference: LinkedIn brand-film score",
         "captions": "none"
       },
       "provider": {

@@ -19,6 +19,15 @@
  *  - ADD 10: "In-Room Scale Set" — image_set 4컷◈2, text_overlay, 룸 스케일 컨텍스트
  *  - ADD 11: "Habitat Scene Set" — image_set 4컷◈2, 수조/비바리움/테라리움
  *  - ADD 12: "Pet Wearable Spec Sheet" — image_set 4컷◈2, text_overlay, 사이즈가이드/각인 매크로
+ *
+ * v2.1 → prompt-negatives (死필드 이관, 2026-06-10):
+ *  - MIGRATE: every template negative moved from dead field look.negative → look.extra_negative
+ *             (the only negative field resolver L148 actually reads; look.negative was unparsed = not reaching the engine).
+ *  - REFINE : stripped SAFETY_NEGATIVE_PROMPT duplicates (deformed/blurry/watermark/text/logo/extra fingers/bad anatomy);
+ *             removed stray positive phrasings that had leaked into the negative list (e.g. "correct limb count",
+ *             "no warped muzzle", "natural fur no melting"); kept only pet/section-specific defects.
+ *  - HARDEN: identity-drift guards on reels (product/pet morph between frames); hand-anatomy guards on the hands-on reel
+ *             (six+ fingers, fused/webbed); text_overlay templates leave text/logo to global SAFETY (noted in render_notes).
  */
 module.exports = [
   /* ─────────────────────────────────────────────────────────
@@ -34,8 +43,14 @@ module.exports = [
     "sort_order": 1,
     "rationale": "The missing safe ◈2 entry: a clean editorial still-life of the pet product alone — packaging, treat, collar, toy. Gives every seller a trust-building hero image without any pet compositing or morph risk.",
     "meta": {
-      "render_notes": "text_overlay=true — any sizing / spec text must be composited in post; do NOT embed in the render prompt",
-      "flags": []
+      "render_notes": "text_overlay=true — any sizing / spec text must be composited in post; do NOT embed in the render prompt. SAFETY_NEGATIVE_PROMPT globally blocks text/logo, so they are intentionally omitted from extra_negative.",
+      "flags": [],
+      "overlay_spec": {
+        "layer": "text_overlay",
+        "elements": ["size_badge", "spec_callouts"],
+        "font": "system_sans",
+        "position": "edge_margin"
+      }
     },
     "config": {
       "schema_version": 1,
@@ -59,8 +74,8 @@ module.exports = [
           "texture:product_surface_crisp",
           "context:minimal_studio_or_lifestyle_surface"
         ],
-        "extra_positive": "clean editorial product hero shot of the uploaded pet product; pure white or soft linen backdrop, soft-box beauty-dish lighting, 50mm or 100mm lens look, shadow-caster below the product, packaging and branding crisp and fully readable, magazine-level product photography, no pets in frame, pure product star",
-        "negative": "blurry product, warped or melted product shape, altered product color, duplicated product, pet anatomy in frame, dirty or cluttered background, harsh reflections, oversaturated HDR, plastic sheen"
+        "extra_positive": "uploaded pet product as the hero, identical to reference (same shape, color, label, proportions, material finish); clean editorial product photography on a pure white or soft linen backdrop, soft-box beauty-dish key light with a fill scrim and a subtle rim for edge separation, shot on 100mm f/8 for full front-to-back sharpness, a soft contact shadow grounding the product, packaging and branding crisp and fully readable, magazine-grade still life, no pets in frame, pure product star; keep a clean uncluttered margin reserved for a composited spec or size badge",
+        "extra_negative": "warped or melted product shape, distorted packaging, wrong proportions, altered product color, duplicated product, pet anatomy in frame, dirty or cluttered background, harsh blown specular reflections, oversaturated HDR, plastic sheen, blown highlights"
       },
       "shot_strategy": "list",
       "shots": [
@@ -128,8 +143,8 @@ module.exports = [
           "texture:fur_soft_detail",
           "context:cozy_home_interior"
         ],
-        "extra_positive": "the uploaded pet product placed naturally beside a happy, photogenic dog or cat in a sunlit cozy home; soft golden window light, shallow depth of field, 50mm f/1.8 look, gentle bokeh, lived-in warm domestic mood, product remains crisp and true-to-shape with original colors intact, heart-warming candid pet-and-product moment",
-        "negative": "deformed or extra limbs on pet, fused paws, warped or melted product, altered product color, duplicated product, watermark, plastic-looking fur, dead glassy eyes, oversaturated HDR, cluttered messy background, blurry product"
+        "extra_positive": "uploaded pet product, identical to reference (same shape, color, proportions), placed naturally beside a happy, photogenic dog or cat in a sunlit cozy home; soft golden window key light with gentle fill, shallow depth of field on 50mm f/1.8, creamy bokeh, lived-in warm domestic mood, the pet naturally proportioned with correct limb and paw count and soft realistic fur, heart-warming candid pet-and-product moment, product staying crisp and true-to-shape with original colors intact",
+        "extra_negative": "warped or distorted pet anatomy, fused paws, unnatural stiff fur flow, plastic-looking fur, dead glassy eyes, warped or melted product, altered product color, duplicated product, cluttered messy background, oversaturated HDR"
       },
       "shot_strategy": "list",
       "shots": [
@@ -197,8 +212,8 @@ module.exports = [
           "texture:crunchy_surface_detail",
           "context:dark_food_studio"
         ],
-        "extra_positive": "extreme macro food photography of the uploaded pet treat; 100mm macro lens, razor-sharp surface texture, visible crunchy grain and ingredient detail, raking sidelight carving out depth, crumbs and a clean splash of natural elements, dark moody studio backdrop, premium gourmet pet-treat presentation, true-to-life product color and form",
-        "negative": "soft out-of-focus product, warped or recolored treat, altered shape, fake plastic texture, watermark, oversaturated cartoonish color, dust spots, busy background, duplicated product"
+        "extra_positive": "extreme macro food photography of the uploaded pet treat, identical to reference in shape and color; 100mm macro lens at f/8 with focus-stacking for razor-sharp front-to-back surface detail, raking hard sidelight carving out crunchy grain and ingredient texture, a clean scatter of matching crumbs and natural ingredient cues, dark moody studio backdrop with deep falloff, premium gourmet pet-treat presentation, appetizing true-to-life color and form",
+        "extra_negative": "missed focus on the key surface texture, warped or recolored treat, altered shape, fake plastic CGI texture, over-sharpened halos, oversaturated cartoonish color, unappetizing dull color, dust spots, busy distracting background, duplicated product, blown specular highlights"
       },
       "shot_strategy": "list",
       "shots": [
@@ -269,8 +284,8 @@ module.exports = [
           "texture:fur_and_fabric_detail",
           "context:outdoor_park_and_studio"
         ],
-        "extra_positive": "realistic on-pet product worn by a well-groomed photogenic dog; the uploaded wearable (collar, harness, bandana or apparel) fitted naturally with correct drape, buckle and proportion; soft natural light, 85mm portrait look, clean catalog-ready styling, accurate product color and hardware, believable contact with the fur, correct limb count, natural fur flow",
-        "negative": "product floating off the body, wrong scale or fit, warped buckles or straps, recolored or altered product, deformed pet anatomy, extra or missing limbs, fused fabric into fur, no warped muzzle, correct limb count, natural fur no melting, watermark, harsh shadows, plastic fur"
+        "extra_positive": "CRITICAL: the worn product stays identical to reference (same color, hardware, proportions) and the same well-formed dog across every shot, no morph or drift; realistic on-pet wearable (collar, harness, bandana or apparel) on a well-groomed photogenic dog, fitted naturally with correct drape, buckle and proportion; soft natural light, 85mm portrait look at f/4, clean catalog-ready styling, accurate product color and hardware, believable contact with the fur, the dog anatomically correct with four legs, correct paw count and a single natural muzzle, natural fur flow",
+        "extra_negative": "product floating off the body, wrong scale or fit, warped or stretched buckles and straps, recolored or altered product, distorted pet anatomy, warped muzzle, fabric fused or melting into fur, plastic-looking fur, harsh unflattering shadows"
       },
       "shot_strategy": "list",
       "shots": [
@@ -341,8 +356,8 @@ module.exports = [
           "texture:fur_motion_detail",
           "context:home_or_backyard"
         ],
-        "extra_positive": "playful pet-toy interaction reel; shot 1 builds anticipation showing the product as hero teaser; shot 2 is a close joyful reaction — pet actively engaging with the toy (pawing, nosing, biting gently) in tight medium-shot; bright airy daylight, handheld feel, crisp fur detail, product stays accurate in shape and color across every frame",
-        "negative": "warped or stretched product, altered product color, deformed pet anatomy, extra legs, motion-blur smearing the product into mush, watermark, choppy unnatural movement, dull flat lighting, plastic fur"
+        "extra_positive": "CRITICAL: the same dog and the same product, identical to reference in shape and color, across both frames — locked pet identity, no morph or drift; playful pet-toy interaction reel, shot 1 builds anticipation with the product as hero teaser, shot 2 is a close joyful reaction as the pet paws, noses and gently mouths the toy in tight medium-shot; bright natural daylight key with soft fill, handheld energy, shot on 50mm f/2.8, crisp realistic fur, the dog naturally proportioned with correct limb count",
+        "extra_negative": "warped or stretched product, altered product color, product drifting or morphing between frames, pet identity drift between frames, distorted pet anatomy, motion-blur smearing the product into mush, choppy unnatural movement, dull flat lighting, plastic-looking fur"
       },
       "shot_strategy": "list",
       "shots": [
@@ -412,8 +427,8 @@ module.exports = [
           "texture:fur_detail",
           "context:home_ugc_setting"
         ],
-        "extra_positive": "funny UGC talking-pet skit ad; shot 1 is a clean product B-roll reveal establishing the item; shot 2 shows an expressive dog or cat with subtle minimal mouth movement appearing to speak ONE or TWO short sentences to camera; bright friendly selfie-style indoor light, vlog framing, relatable home setting, charming comedic energy, product stays accurate in shape and color across both frames",
-        "negative": "grotesque or uncanny mouth deformation, no warped muzzle, correct limb count, natural fur no melting, no human-like mouth morph, extra eyes or teeth, warped or recolored product, watermark, jittery flicker, dull lighting, plastic fur, lip-sync drift smearing the muzzle"
+        "extra_positive": "CRITICAL: the same pet and the same product, identical to reference in shape and color, across both frames — locked pet identity, no morph or drift; UGC talking-pet skit, shot 1 a clean product B-roll reveal, shot 2 an expressive dog or cat with subtle minimal mouth movement appearing to speak ONE or TWO short sentences to camera; bright friendly selfie-style indoor light with soft fill, shot on 35mm f/2.8, vlog framing, the pet keeping a single natural muzzle with consistent mouth and tooth shape across both frames",
+        "extra_negative": "grotesque uncanny mouth or muzzle warping, human-like mouth morph, extra eyes or teeth, tooth morph, lip-sync desync smearing the muzzle, pet identity drift between frames, melting or plastic-looking fur, warped or recolored product, jittery flicker, dull flat lighting"
       },
       "shot_strategy": "list",
       "shots": [
@@ -482,8 +497,8 @@ module.exports = [
           "texture:product_surface_crisp",
           "context:minimal_studio_surface"
         ],
-        "extra_positive": "single cinematic close-up of the uploaded pet product performing one satisfying action — water flowing from a dispenser, treats dropping, a button click, lid opening; ultra-clean minimal backdrop, product perfectly accurate in shape and color, slow motion feel, ASMR-adjacent tactile quality, no pets in frame",
-        "negative": "warped or melted product, altered product color, duplicated product, pet anatomy in frame, cluttered background, harsh reflections, oversaturated HDR, shaky motion"
+        "extra_positive": "single cinematic close-up of the uploaded pet product, identical to reference in shape and color, performing one satisfying action — water flowing from a dispenser, treats dropping, a button click, a lid opening; ultra-clean minimal backdrop, soft directional studio light with a gentle rim, shot on 100mm f/4 with a slow rack focus onto the action point, slow-motion feel, ASMR-adjacent tactile quality, no pets in frame",
+        "extra_negative": "warped or melted product, altered product color, duplicated product, product morphing mid-action, pet anatomy in frame, cluttered background, harsh blown reflections, oversaturated HDR, shaky or stuttering motion"
       },
       "shot_strategy": "list",
       "shots": [
@@ -548,8 +563,8 @@ module.exports = [
           "texture:product_surface_and_hand_skin",
           "context:kitchen_counter_or_studio_surface"
         ],
-        "extra_positive": "clean hands-on demo reel of the uploaded pet product; partial hand crop (wrist to mid-finger, fingertips cropped out of frame) pouring, scooping or unboxing the product; kitchen counter or minimal studio surface, bright natural light, product perfectly accurate in color and shape, satisfying tactile demo energy",
-        "negative": "extra fingers, fused fingers, wrong finger count, deformed hand, full hand with all five fingers visible, pet anatomy in frame, warped or recolored product, duplicated product, cluttered messy background, harsh shadows, watermark"
+        "extra_positive": "CRITICAL: the same product, identical to reference in shape and color, across both frames; clean hands-on demo reel where a single well-formed hand — exactly five natural fingers, anatomically correct grip — is cropped partially (wrist to mid-finger, fingertips out of frame) pouring, scooping or unboxing the product; kitchen counter or minimal studio surface, bright natural light, shot on 50mm f/5.6, satisfying tactile demo energy, product staying perfectly accurate in color and shape",
+        "extra_negative": "six or more fingers, fused or webbed fingers, wrong finger count, all fingertips fully visible in frame, hand features changing between frames, pet anatomy in frame, warped or recolored product, duplicated product, cluttered messy background, harsh shadows"
       },
       "shot_strategy": "list",
       "shots": [
@@ -597,7 +612,13 @@ module.exports = [
     "meta": {
       "provisional": true,
       "flags": [],
-      "render_notes": "text_overlay=true — device screens must be rendered blank/off or with a minimal glowing rectangle placeholder. All UI content (app screenshots, GPS maps, LCD readouts) must be composited in post via text_overlay pipeline. Do NOT generate readable screen text in the render prompt."
+      "render_notes": "text_overlay=true — device screens must be rendered blank/off or with a minimal glowing rectangle placeholder. All UI content (app screenshots, GPS maps, LCD readouts) must be composited in post via text_overlay pipeline. Do NOT generate readable screen text in the render prompt. SAFETY_NEGATIVE_PROMPT globally blocks text/logo, so they are intentionally omitted from extra_negative.",
+      "overlay_spec": {
+        "layer": "text_overlay",
+        "elements": ["app_ui_screenshot", "screen_readout"],
+        "font": "system_sans",
+        "position": "device_screen"
+      }
     },
     "config": {
       "schema_version": 1,
@@ -621,8 +642,8 @@ module.exports = [
           "texture:device_plastic_metal_glass",
           "context:minimal_tech_surface_or_desk"
         ],
-        "extra_positive": "clean tech product photography of the uploaded pet device; device screen rendered as blank glowing rectangle placeholder for UI compositing; crisp soft-box lighting, cool-toned modern tech aesthetic, accurate device body shape and color, 50mm lens look, no pets in frame",
-        "negative": "readable screen text generated by AI, garbled or hallucinated UI elements, warped device body, altered device color, duplicated device, pet anatomy in frame, dirty cluttered background, harsh reflections, plastic sheen"
+        "extra_positive": "clean tech product photography of the uploaded pet device, identical to reference (same body shape, color, ports, proportions); device screen rendered as a blank glowing rectangle placeholder with a clean uncluttered area reserved for composited UI, crisp cool-toned soft-box key light with a subtle blue rim, shot on 50mm f/8, modern minimalist tech aesthetic, no pets in frame",
+        "extra_negative": "screen showing rendered content instead of a blank glowing placeholder, garbled hallucinated on-screen graphics, warped device body, altered device color, duplicated device, distorted device proportions, pet anatomy in frame, dirty cluttered background, harsh blown reflections, plastic sheen"
       },
       "shot_strategy": "list",
       "shots": [
@@ -670,7 +691,13 @@ module.exports = [
     "meta": {
       "provisional": true,
       "flags": [],
-      "render_notes": "text_overlay=true — all size callouts, dimension annotations, and scale cue labels must be composited in post. Render the product accurately sized relative to the room furniture; do NOT generate measurement text or dimension arrows inside the render prompt."
+      "render_notes": "text_overlay=true — all size callouts, dimension annotations, and scale cue labels must be composited in post. Render the product accurately sized relative to the room furniture; do NOT generate measurement text or dimension arrows inside the render prompt. SAFETY_NEGATIVE_PROMPT globally blocks text/logo, so they are intentionally omitted from extra_negative.",
+      "overlay_spec": {
+        "layer": "text_overlay",
+        "elements": ["dimension_callouts", "scale_label"],
+        "font": "system_sans",
+        "position": "edge_margin"
+      }
     },
     "config": {
       "schema_version": 1,
@@ -694,8 +721,8 @@ module.exports = [
           "texture:product_and_room_material",
           "context:living_room_or_pet_corner"
         ],
-        "extra_positive": "the uploaded pet product placed in a real living space at accurate scale relative to surrounding furniture; room environment provides natural size reference, product true-to-color and true-to-shape, warm interior ambient light, inviting home mood, no pets in frame unless product is pet furniture",
-        "negative": "warped or shrunken product, altered product color, duplicated product, floating product, distorted room perspective, pet anatomy in frame (unless product is pet furniture), cluttered distracting background, harsh flash lighting, oversaturated HDR"
+        "extra_positive": "uploaded pet product, identical to reference in shape and color, placed in a real living space at accurate scale relative to the surrounding furniture; the room environment provides a natural size reference, shot on a 28-35mm wide lens at f/8 for honest spatial proportion, warm interior ambient light, inviting home mood, clean edge margins reserved for composited dimension callouts, no pets in frame unless the product is pet furniture",
+        "extra_negative": "warped or shrunken product, incorrect scale relative to surrounding furniture, altered product color, duplicated product, floating product, distorted room perspective, pet anatomy in frame (unless product is pet furniture), cluttered distracting background, harsh flash lighting, oversaturated HDR"
       },
       "shot_strategy": "list",
       "shots": [
@@ -765,8 +792,8 @@ module.exports = [
           "texture:water_glass_moss_substrate",
           "context:aquarium_vivarium_terrarium_habitat"
         ],
-        "extra_positive": "the uploaded product installed or placed naturally inside a beautifully lit aquarium, vivarium or terrarium; lush aquatic plants or earthy moss and rock substrate, atmospheric habitat mood, product accurate in shape and color, cinematic nature-documentary feel, no exaggerated CGI look, genuine ecosystem ambiance",
-        "negative": "warped or recolored product, duplicated product, cartoonish oversaturated color, fake plastic vegetation, anachronistic objects, no animals generating morph risk unless essential and explicitly requested, cluttered ugly background, harsh flash lighting, broken glass distortion artifacts"
+        "extra_positive": "uploaded product, identical to reference in shape and color, installed or placed naturally inside a beautifully lit aquarium, vivarium or terrarium; lush aquatic plants or earthy moss and rock substrate, atmospheric backlit habitat glow with soft ambient fill, shot on 60mm macro at f/5.6 with clean water clarity, cinematic nature-documentary feel, genuine ecosystem ambiance, plants and static substrate only with no live animals in frame, photoreal lighting without exaggerated CGI",
+        "extra_negative": "warped or recolored product, duplicated product, cartoonish oversaturated color, fake plastic-looking vegetation, anachronistic out-of-place objects, unrequested live animals introducing morph risk, murky dirty water, cluttered ugly background, harsh flash lighting, broken glass distortion artifacts"
       },
       "shot_strategy": "list",
       "shots": [
@@ -814,7 +841,13 @@ module.exports = [
     "meta": {
       "provisional": true,
       "flags": [],
-      "render_notes": "text_overlay=true — all dimension callouts, engraving preview text, size-range tables, and measurement arrows must be composited in post. Render the product flat or on a neutral surface; do NOT generate measurement numbers or engraving text inside the render prompt. This template is the designated spec-info delegate for 'On-Pet Fit' (sort_order 4)."
+      "render_notes": "text_overlay=true — all dimension callouts, engraving preview text, size-range tables, and measurement arrows must be composited in post. Render the product flat or on a neutral surface; do NOT generate measurement numbers or engraving text inside the render prompt. SAFETY_NEGATIVE_PROMPT globally blocks text/logo, so they are intentionally omitted from extra_negative. This template is the designated spec-info delegate for 'On-Pet Fit' (sort_order 4).",
+      "overlay_spec": {
+        "layer": "text_overlay",
+        "elements": ["measurement_callouts", "size_table", "engraving_preview"],
+        "font": "system_sans",
+        "position": "edge_margin"
+      }
     },
     "config": {
       "schema_version": 1,
@@ -838,8 +871,8 @@ module.exports = [
           "texture:fabric_metal_leather_hardware_detail",
           "context:flat_lay_spec_studio"
         ],
-        "extra_positive": "clean flat-lay spec photography of the uploaded pet wearable (harness, halter, collar or ID tag); product laid perfectly flat on white or light grey surface, all hardware buckles and adjustment points visible, product accurate in color and stitching, overhead even lighting, catalog-grade clarity, no pets in frame",
-        "negative": "warped or stretched product, altered color or texture, duplicated product, pet anatomy in frame, wrinkled or bunched fabric obscuring hardware, harsh shadows creating ambiguity, uneven lighting, plastic sheen on metal hardware, cluttered background"
+        "extra_positive": "clean flat-lay spec photography of the uploaded pet wearable (harness, halter, collar or ID tag), identical to reference (same color, stitching, hardware, proportions); product laid perfectly flat on a white or light grey surface, all buckles and adjustment points clearly visible, even overhead key light with a soft fill to keep hardware legible, shot on 50mm f/8 top-down, catalog-grade clarity, clean margins reserved for composited dimension lines and engraving callouts, no pets in frame",
+        "extra_negative": "warped or stretched product, altered color or texture, duplicated product, warped buckles or D-ring hardware, pet anatomy in frame, wrinkled or bunched fabric obscuring hardware, harsh shadows creating ambiguity, uneven lighting, plastic sheen on metal hardware, cluttered background"
       },
       "shot_strategy": "list",
       "shots": [
