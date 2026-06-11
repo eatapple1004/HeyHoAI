@@ -1,0 +1,880 @@
+
+══════════════════ 01 INFLUENCER (6) ══════════════════
+
+■ Candid Photo Dump  (image_set · ◈2)
+POSITIVE: CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, candid photo-dump aesthetic, shot on a 35mm point-and-shoot with a fixed wide-ish prime around 28-35mm at f4-f5.6 for deep-ish casual focus, faint on-camera flash falloff with hard near-subject shadows, slightly imperfect off-kilter framing, mild handheld motion-blur edges, authentic unposed energy, Fuji film color science, subtle organic grain, true-to-life unretouched skin, single well-formed hand on the phone with exactly five natural fingers, anatomically correct grip and visible fingernails, nostalgic spontaneous mood
+NEGATIVE: warped or asymmetric face, plastic over-retouched skin, studio-polished glamour finish, perfect airbrushed symmetry, stiff posed look, oversaturation, identity drift between shots, six fingers, fused or webbed digits, missing fingers, malformed grip
+SHOTS:
+ 1) mid-laugh glancing off-camera, hair caught in motion / city sidewalk at midday, blurred passers-by behind / medium_shot
+ 2) candid bite of food, eyes down, relaxed / diner booth with neon sign reflection / closeup
+ 3) walking toward camera, slight motion blur / crosswalk with flash-lit night street / full_body
+ 4) casual phone-up mirror selfie, soft smirk / thrift-store mirror selfie corner / medium_shot
+
+■ Fit Check On-Model  (image_set · ◈2)
+POSITIVE: CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, identical wardrobe and styling across all four shots, OOTD fit-check editorial look, large soft window key with subtle bounce fill, 85mm at f4 for true fabric drape with shallow background separation, crisp garment texture and seams, magazine styling, accurate body proportions, on the cuff closeup a single well-formed hand with exactly five natural fingers, anatomically correct grip, visible fingernails
+NEGATIVE: distorted body proportions, melted or smeared garment texture, warped seams, color shift or mismatched print on fabric, stiff unnatural drape, wardrobe inconsistency between shots, plastic skin, warped face, identity drift between shots, six fingers, fused or webbed digits, missing fingers, malformed grip
+SHOTS:
+ 1) straight-on confident stance, full outfit visible / minimal seamless studio, soft window light / full_body
+ 2) 3/4 turn showing the silhouette and bag / concrete-wall studio corner / full_body
+ 3) mid-stride walking shot, coat in motion / neutral backdrop, low angle / full_body
+ 4) hands adjusting cuff, accessories in focus / studio detail vignette / closeup
+
+■ Golden Hour Anywhere  (image_set · ◈2)
+POSITIVE: CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, magic-hour travel mood, warm low-angle sun with golden backlit hair rim and gentle lens flare, long soft shadows, Kodak Portra warmth, dreamy wanderlust atmosphere, 50mm prime at f2, shallow depth of field with creamy bokeh and sharp eye focus, sun-kissed natural skin, single well-formed hand with exactly five natural fingers and anatomically correct grip on the drink in the cafe shot, visible fingernails
+NEGATIVE: harsh midday top-down shadows, blue cold color cast, overexposed clipped sky, double sun or duplicated lens flare, muddy underexposed shadows, plastic skin, warped face, identity drift between shots, six fingers, fused or webbed digits, malformed grip on the glass
+SHOTS:
+ 1) walking barefoot along the shoreline, candid / open beach at golden hour, ocean waves and sun-flare / full_body
+ 2) leaning on railing, gazing at the horizon / rooftop terrace overlooking a city skyline at sunset / medium_shot
+ 3) looking back over shoulder, hair in warm light / field of tall grass backlit by the setting sun / medium_shot
+ 4) holding a drink, soft contented smile / seaside cafe window catching the last light / closeup
+
+■ GRWM Aurora Reel  (reel · ◈6)
+POSITIVE: CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, identical face geometry from bare-skin opener through full-glam reveal, beauty influencer GRWM aesthetic, iridescent aurora pastel color wash (lilac-mint-peach) bouncing off the mirror, soft beauty-dish key with hair-light rim, shot on 50mm at f1.8 with a macro pass for the fingertip blush moment, shallow depth of field, clean creamy bokeh, glossy reflective vanity surface, single well-formed hand, exactly five natural fingers, anatomically correct grip dabbing blush onto the cheek, visible fingernails, polished editorial mood
+NEGATIVE: asymmetric or mismatched eyes, plastic over-smoothed CGI skin, harsh on-camera flash, blown-out highlights, duplicate facial features, mouth or tooth morph between frames, patchy cakey makeup, warped face, identity drift between shots, six fingers, fused or webbed digits, missing fingers, floating disembodied hand, malformed grip
+SHOTS:
+ 1) leaning toward mirror, fresh bare face, soft inviting eye contact / bright vanity mirror framed by warm bulb lights, aurora pastel glow / closeup
+ 2) applying liquid blush with fingertip, eyes down in focus / mid-routine at the vanity, brushes and palette in frame / closeup
+ 3) confident final turn, hand on hip, satisfied smile / full outfit-and-makeup reveal in a bedroom full-length mirror / full_body
+MOTION: [1] slow push-in toward the mirror reflection  [2] macro tilt following the brush across the cheek  [3] orbit reveal circling to the styled final look
+  music_mood: dreamy synth-pop, 110-122 bpm, airy analog synth pads with plucked arpeggios soft side-chained kick and shimmer hi-hats, bright uplifting build that swells on the final reveal, reference vibe early Dua Lipa meets glossy beauty-vlog intro · transition: whip · dur/shot: 3s
+
+■ Day-in-Life Reel  (reel · ◈4)
+POSITIVE: CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, day-in-life vlog aesthetic, two-beat morning-to-evening arc, authentic candid energy, 35mm handheld framing with shallow f/2 depth of field and soft falloff bokeh, warm natural light morphing into ambient evening glow, true-to-life skin tones, unposed organic expressions, single well-formed hand cradling the coffee cup, exactly five natural fingers, anatomically correct grip, visible fingernails
+NEGATIVE: plastic retouched skin, overly polished studio look, flickering or inconsistent lighting within a single shot, warped face, mouth or tooth morph between frames, identity drift between shots, six fingers, fused or webbed digits, malformed grip on the cup
+SHOTS:
+ 1) relaxed candid sip, soft morning eye contact with camera / sun-lit kitchen or cafe in the morning, coffee cup in hand / medium_shot
+ 2) mid-laugh candid, golden-hour or neon ambient wrap / evening — city street or rooftop with ambient warm lights / medium_shot
+MOTION: [1] gentle slow zoom-in, handheld warmth  [2] slow drift pull-back with bokeh city lights
+  music_mood: mellow lo-fi indie, 70-85 bpm, warm Rhodes/electric piano, muted nylon guitar, soft vinyl-crackle drums and mellow upright bass, low-key intimate energy lifting slightly toward the evening beat, reference vibe early Tom Misch meets a cozy chillhop study mix · transition: cut · dur/shot: 4s
+
+■ Product Haul Reel  (reel · ◈6 · 🅣 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: same person across all frames, locked facial identity, consistent features, no morph or drift, identical product held consistently as secondary reference across shots, influencer product haul reel with authentic try-on and unboxing energy and natural persuasive enthusiasm, 85mm portrait lens look at f/2.0 with shallow depth of field keeping the creator's eyes and the product crisp while the background falls into soft creamy bokeh, slight push-in framing with subtle parallax, clean bright soft-box key with gentle fill and soft rim separation, warm neutral seamless background, direct-to-camera engagement and genuine wide-eyed reaction, single well-formed product-holding hand with exactly five natural fingers, anatomically correct grip and visible fingernails, undistorted product label held legibly toward camera, clean uncluttered upper-third and lower-third zones reserved for a composited brand badge and caption
+NEGATIVE: missing fingers, six fingers, fused or webbed digits, melted or fused fingers, floating disembodied hand, malformed grip, warped product shape, distorted label, warped face, plastic skin, harsh shadows, cluttered distracting background, identity drift between shots, product shape inconsistency between frames
+SHOTS:
+ 1) direct-to-camera intro, gesturing toward product with open hand, enthusiastic expression / bright minimal studio or clean home interior, product on surface in foreground / medium_shot
+ 2) one hand holds product toward camera, eyes wide with genuine reaction / close-in on creator and product — holding it up at chest height near face / closeup
+ 3) relaxed CTA pose, thumbs-up or soft point to camera, warm close / same clean interior, product set aside — creator wrapping up with a smile / medium_shot
+MOTION: [1] slow push-in on creator and product  [2] gentle tilt down from face to product then back up  [3] slow pull-back ending on the creator's full expression
+  music_mood: upbeat lifestyle pop, 110-122 bpm, plucky clean electric guitar plus bright synth keys, claps and shaker percussion and a warm rounded sub-bass, energetic-but-friendly inviting energy that lifts on the shot-2 reaction beat, reference vibe of polished TikTok and Instagram unboxing creator content · transition: cut · dur/shot: 3s
+
+══════════════════ 02 FASHION (8) ══════════════════
+
+■ On-Model Studio  (image_set · ◈5 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: the exact same garment and the same model across all four shots — garment fit, color, print, seams, hardware and neckline locked identical to the reference, no morph or drift between shots. Uploaded garment worn by a natural-looking model, commercial e-commerce on-model photography, large octabox key light camera-left with a fill scrim camera-right and a soft hair/rim light, light grey seamless cyclorama, shot on 85mm f/4 full-frame, true-to-life fabric drape and visible stitching, relaxed natural model expression, clean catalog styling; on the detail/adjusting shot keep a single well-formed hand with exactly five natural fingers, anatomically correct grip and visible fingernails; editorial variant: single hard directional source raking across set, desaturated muted palette, confident editorial posing, architectural negative space
+NEGATIVE: warped or melted garment, mismatched color or print, extra seams, stiff unnatural drape, garment floating off body, mannequin look, blown highlights, harsh shadows, six fingers, fused or webbed digits
+SHOTS:
+ 1) front-facing, garment squared to camera, arms relaxed at sides / light grey seamless studio cyclorama, soft even key / full_body
+ 2) three-quarter turn showing garment side and drape / same studio, subtle floor shadow / full_body
+ 3) model mid-stride walking toward camera, natural movement / neutral studio, slightly tighter framing / medium_shot
+ 4) detail crop of collar/cuff/hem on body, hands lightly adjusting garment — natural hands, five fingers, no fused digits / clean studio, focused on fabric and fit / closeup
+
+■ Fit & Size On-Body  (image_set · ◈5 · 🅣 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: the exact same garment and same model across all four shots, color/print/seams/hardware locked identical to the reference, no fit or proportion drift between shots. Uploaded garment worn by a natural proportioned model showing true real-world fit, broad even softbox key with a low fill ratio for flat shadow-free garment clarity, shot on 50mm f/5.6 full-frame for honest undistorted proportions, poses emphasize how the garment sits on the body at chest, waist, hip and hem, real fabric drape revealing relaxed and fitted zones; keep clean uncluttered margins along the frame edges reserved for the composited measurement callouts and size label (text added post-render, not drawn); on the closeup keep a single well-formed hand with exactly five natural fingers and visible fingernails
+NEGATIVE: warped garment, color mismatch, loose ill-fitting drape, garment floating off body, mannequin look, blown highlights, harsh shadows, six fingers, fused or webbed digits
+SHOTS:
+ 1) front-facing full stance, arms slightly out showing chest and waist fit / light grey seamless studio, even flat key / full_body
+ 2) three-quarter rear turn showing back yoke, seat and hem length / same studio / full_body
+ 3) side profile showing silhouette, shoulder seam, torso and hip fit / same studio, tighter frame / medium_shot
+ 4) closeup of waistband or neckline on body showing seam placement and fabric hug — natural hands, five fingers / same studio, macro zone / closeup
+
+■ Lifestyle Scene Pack  (image_set · ◈2)
+POSITIVE: CRITICAL: the exact same garment across all four scenes — color, print and construction details locked identical to the reference, no garment morph or detail loss between shots. Uploaded garment worn in candid real-life lifestyle moments, soft golden-hour window light as key with open-shade fill, lived-in aspirational scenes, shot on 35mm full-frame at f/2.0 with shallow depth of field and soft natural bokeh, authentic relaxed body language, true-to-reference garment color and print throughout
+NEGATIVE: warped garment, color mismatch, studio sterile catalog look, harsh on-camera flash, duplicated objects, garment detail loss
+SHOTS:
+ 1) walking candidly, mid-stride, looking off-frame / sunlit city sidewalk with soft bokeh storefronts / full_body
+ 2) seated at table with coffee, relaxed natural posture / cozy cafe by a bright window, warm tones / medium_shot
+ 3) standing, hands in pockets, soft genuine smile / leafy park path at golden hour / full_body
+ 4) leaning by window, garment detail catching light / minimalist sunlit apartment, linen and plants / closeup
+
+■ Macro Texture Shots  (image_set · ◈2)
+POSITIVE: extreme macro detail of the uploaded garment, hard raking sidelight grazing across the surface to reveal weave, nap and surface relief, 100mm macro lens at f/8 with focus stacking for edge-to-edge sharpness, true-to-material color, visible individual fibers, stitch tension and hardware finish, premium tactile feel, clean seamless backdrop with controlled falloff, material weave, color and pattern identical to the reference with no invented texture
+NEGATIVE: warped texture, invented patterns not on the reference, color shift, soft or missed focus, plastic-looking material, oversharpening halos, dust and lint specks, fabric morphing, duplicated stitches
+SHOTS:
+ 1) macro of fabric weave and surface grain / dark seamless surface, hard raking side light / closeup
+ 2) macro of seam and topstitching detail / soft directional light on neutral backdrop / closeup
+ 3) macro of buttons/zipper/hardware finish / focused spotlight on hardware / closeup
+ 4) macro of hem, edge finish and material drape fold / low-angle grazing light / closeup
+
+■ Quick-Drop Teaser Reel  (reel · ◈4)
+POSITIVE: CRITICAL: the exact same garment in both the overhead flat-lay and the worn reveal — color, print and details locked identical to the reference, no change between shots. Crisp product-drop teaser, clean white/light-grey studio with a large soft key and gentle gradient falloff, shot on 50mm f/4 for honest proportions, bold confident centered framing, minimal premium aesthetic, vertical 9:16 social format with clean negative space for captions
+NEGATIVE: warped garment, color shift between shots, garment morphing, jittery unstable motion, harsh shadows, busy cluttered background
+SHOTS:
+ 1) product overhead flat-lay, perfectly centered, accessories arranged / clean white studio floor, garment flat-lay from directly above / medium_shot
+ 2) garment worn front-on, arms relaxed, final reveal moment / same studio standing, full reveal / full_body
+MOTION: [1] slow overhead push-in from wide to medium on the flat-lay  [2] fast cut reveal with subtle zoom-out on full-body worn look
+  music_mood: punchy modern pop/hip-hop, 120-128 BPM, tight kick + clap + bright synth hook, high anticipation building to the reveal, TikTok product-drop energy · transition: cut · dur/shot: 3s
+
+■ Outfit Transition Reel  (reel · ◈4 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: the same person and the same hero garment held identical through the entire A-to-B transition — color, print, seams and hardware locked to the reference, no garment warp or identity drift across the swap frame. Two-look outfit transition reel, uploaded garment featured as the hero Look, soft broad key with subtle rim separation, shot on 35mm f/4 vertical 9:16, energetic feed-native styling, confident natural model, clean light-grey studio or minimal lifestyle backdrop; on the finger-snap keep a single well-formed hand with exactly five natural fingers and an anatomically correct gesture
+NEGATIVE: warped or morphing garment during the transition, color or print shift between looks, mismatched seams, garment floating off body, identity drift or flicker between looks, jittery unstable motion, harsh shadows, six fingers, fused or webbed digits
+SHOTS:
+ 1) front-on in first styling (Look A), arm raised mid finger-snap to trigger the swap — natural hands, five fingers / clean light grey studio or minimal backdrop, Look A established / full_body
+ 2) front-on in second styling (Look B), confident settled stance — garment color/print unchanged, no warp / identical framing, Look B revealed after the snap / full_body
+MOTION: [1] hold on Look A then a fast whip-pan blur as the hand crosses frame on the snap  [2] whip resolves onto Look B with a subtle settle, garment crisp and stable
+  music_mood: high-energy hip-hop/pop, 125-135 BPM, hard 808 bass + crisp hi-hats + vocal chop, snap hit landing on the A-to-B transition beat, viral TikTok transition energy · transition: whip · dur/shot: 3s
+
+■ GRWM Drop Reel  (reel · ◈6 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: the same creator/model and the same garment across all three shots — color and details locked identical to the reference, no morph or identity drift between shots. Get-ready-with-me styling reel featuring the uploaded garment, bright airy creator-bedroom aesthetic, soft ring-light key with warm ambient fill, shot on 35mm f/2.8 vertical social-first framing, upbeat on-trend energy; on the pick-up shot keep a single well-formed hand with exactly five natural fingers and visible fingernails
+NEGATIVE: warped garment, color shift between shots, garment morphing, identity drift or flicker between shots, jittery unstable motion, six fingers, fused or webbed digits
+SHOTS:
+ 1) product flat-lay front view, hands entering frame to pick it up — natural hands, five fingers / bright bedroom, garment laid out flat on bed beside accessories / medium_shot
+ 2) garment held up to body, styled three-quarter angle / in front of full-length mirror, soft ring-light glow / full_body
+ 3) final styled reveal, garment worn front-on with a turn — no warped fabric during turn / tidy room, confident outfit-complete moment / full_body
+MOTION: [1] slow top-down push-in on the flat-lay  [2] smooth tilt-up from hem to neckline as garment is held to body  [3] playful 180-degree orbit reveal of the full styled look
+  music_mood: bright bubbly pop, 110-120 BPM, plucky synth + finger-snaps + airy vocal, feel-good get-ready energy, GRWM creator-vlog vibe · transition: whip · dur/shot: 3s
+
+■ 360 Product Spin  (reel · ◈6 · [experimental])
+POSITIVE: CRITICAL: the exact same garment geometry, color, print, seams and hardware locked identical to the reference at every rotation angle — no morph, stretch or detail drift between angles. Smooth 360-degree e-commerce turntable presentation of the uploaded garment, product only with no model or hands in frame, perfectly even wraparound softbox lighting with no hot spots, light-grey seamless background, shot on 50mm f/8 for low distortion, crisp true-to-life fabric texture and accurate silhouette, stable perfectly centered framing
+NEGATIVE: warped or morphing garment, color shift during rotation, geometry distortion, extra seams, wobbling unstable spin, motion blur smearing detail, background color flicker, duplicated product, live model in frame
+SHOTS:
+ 1) product front view, centered, squared to camera / grey seamless turntable studio, even soft light / full_body
+ 2) product 3/4 front angle, drape and side seam visible / same studio, rotation continues / full_body
+ 3) product profile/side and back view showing silhouette and construction / same studio, midway through spin / medium_shot
+MOTION: [1] slow clockwise turntable rotation, front to 3/4  [2] continuous smooth orbit, 3/4 to side  [3] steady rotation, side through to back, settling on construction detail
+  music_mood: sleek minimal electronic, 100-110 BPM, soft pad + subtle pulse + light percussion, calm premium product-showcase energy, clean e-commerce reference vibe · transition: cut · dur/shot: 3s
+
+══════════════════ 03 BEAUTY (16) ══════════════════
+
+■ Dewy Glass Hero  (image_set · ◈2)
+POSITIVE: premium beauty hero product photography, single product on a frosted acrylic riser, fresh water droplets and condensation beading on the bottle, glossy wet reflection pooled beneath, soft gradient seamless backdrop, large softbox key from camera-left with a crisp specular rim light from behind to define the glass edge, shot on 100mm macro at f/8, tack-sharp label, airy luminous high-key mood, color-accurate brand packaging
+NEGATIVE: warped or melted bottle, distorted label, gibberish typography, double product, extra caps, plastic-looking liquid, harsh blown highlights, muddy shadows, fingerprints, dust, cluttered background, oversaturated
+SHOTS:
+ 1) front view, label squared to camera, upright and centered / frosted acrylic riser on a cool white seamless sweep, fine water droplets on the glass / medium_shot
+ 2) 3/4 hero angle showing cap and dropper bulb / wet glossy surface with a soft mirror reflection, pale blue gradient backdrop / medium_shot
+ 3) detail crop on the pipette and a hanging drop / macro on the dropper tip with a single suspended serum droplet, shallow depth / closeup
+ 4) styled hero with subtle prop, product dominant / minimal white podium with a soft cast shadow, faint eucalyptus sprig out of focus / medium_shot
+
+■ Macro Swatch Lab  (image_set · ◈2)
+POSITIVE: extreme macro beauty texture photography, generous swatch of the product smeared and dolloped on a smooth matte acrylic tile, glistening creamy emulsion with soft peaks and elastic strings being pulled, low raking sidelight to carve out every ridge and bubble, true-to-life color rendition, shot on 100mm macro lens at f/11 with focus stacking, clinical yet luxurious lab aesthetic, the product bottle softly out of focus behind the swatch
+NEGATIVE: flat lifeless texture, fake CGI gloss, color shift, off-tone swatch, dust, hair, lint, fingerprints, dirty surface, warped product label, hard ugly shadows, overexposed whites, plastic sheen
+SHOTS:
+ 1) detail of a single creamy peak with elastic strings pulled upward / smooth matte white acrylic tile with a thick dollop of cream / closeup
+ 2) macro along the smear showing soft sheen and ridges / neutral grey lab surface, swatch smeared in a long arc / closeup
+ 3) detail on light refracting through the gel bead / glass slide with a translucent gel drop, raking light through it / closeup
+ 4) styled detail, swatch sharp and product as backdrop / matte tile with the swatch beside the softly defocused product bottle / medium_shot
+
+■ On-Model Glow Drop  (image_set · ◈5 · [experimental,needs_human_review])
+POSITIVE: on-model beauty editorial, fresh-faced model with luminous dewy skin and natural glowing makeup holding and applying the product near the face, large beauty dish softbox key for clean wraparound light with a faint catchlight, soft gradient warm-neutral backdrop, shot on 85mm at f/2.8 for a flattering crop, realistic pores and subtle highlight on cheekbones, product held label-forward and color-accurate, aspirational clean-girl aesthetic
+NEGATIVE: six fingers, fused or webbed fingers, plastic waxy skin, over-smoothed airbrushed face, warped product, distorted label, double product, uncanny eyes, harsh shadows, oily greasy shine, blemished retouch artifacts, oversaturated skin, inconsistent face across shots
+SHOTS:
+ 1) model holding the product beside the cheek, label to camera, soft gaze / warm-neutral studio gradient, soft wraparound beauty light / closeup
+ 2) model dispensing a drop onto fingertip, product visible / clean studio, gentle daylight feel / closeup
+ 3) model patting product onto cheek, dewy glow catching the light / soft pastel backdrop / closeup
+ 4) model presenting the product toward camera at shoulder height / minimal studio with subtle bokeh / medium_shot
+
+■ Before/After Result Reel  (reel · ◈4 · 🅣 · [experimental,needs_human_review])
+POSITIVE: split-narrative before-and-after beauty reel, SAME person in both frames with locked facial identity, consistent neutral studio lighting and backdrop across both shots, before frame shows natural bare skin with visible texture, after frame shows visibly smoother more luminous skin with a healthy dewy glow after product use, subtle realistic improvement — not extreme — believable skin transformation, true-to-life color rendition, head-and-shoulders framing
+NEGATIVE: different person in before vs after, facial morph or identity drift between frames, skin tone change, face shape change, extreme unnatural skin smoothing, plastic airbrushed look, uncanny valley, harsh shadows, inconsistent lighting between shots
+SHOTS:
+ 1) same model, natural bare skin, slight texture visible, direct gaze, relaxed expression / clean neutral studio, consistent soft beauty key light — BEFORE state / closeup
+ 2) same model, same angle, visibly smoother and more luminous skin post-product, same expression / identical setup — same light, same backdrop, same framing — AFTER state / closeup
+MOTION: [1] subtle slow push-in on the before face  [2] cut to after with a brief hold and slow pull-back revealing the glow
+  music_mood: clean optimistic beauty ambient · transition: cut · dur/shot: 3s
+
+■ GRWM Routine Reel  (reel · ◈8 · [needs_human_review])
+POSITIVE: morning skincare GRWM routine reel with an unboxing opening, fresh premium matte box reveal on the counter leading into the full routine, fresh-faced model at a bright vanity mirror with soft window light and a subtle ring-light catchlight, product used in sequence step by step, dewy luminous skin, clean-girl aesthetic, vertical phone-shot social feel but crisp, product label always color-accurate and readable, airy bright bathroom setting with greenery
+NEGATIVE: six fingers, fused or webbed fingers, plastic waxy skin, over-airbrushed face, warped product, distorted label, double product, uncanny mirror reflection mismatch, harsh shadows, dingy bathroom, clutter, morphing product between frames, inconsistent product between shots
+SHOTS:
+ 1) manicured hands lifting the lid to reveal the product seated in foam, product emerging label-forward / premium matte product box opening on the marble vanity counter, satin tissue, soft top diffused light — ASMR unbox opening / closeup
+ 2) product front view on counter as the routine opens, hand reaching in / bright marble vanity with greenery, product standing on the counter / medium_shot
+ 3) detail of pump or drop being dispensed, product label visible / at the mirror dispensing the product onto fingertips / closeup
+ 4) closeup on dewy cheek with the finished glow, product held beside face / model patting product into glowing skin, mirror catchlight / closeup
+MOTION: [1] slow push-in on the sealed box, lid lift reveal with gentle tilt  [2] gentle push-in on the counter product  [3] slow pan following the dispense onto fingertips  [4] soft tilt-up to the glowing face then settle on the held product
+  music_mood: upbeat clean-girl morning pop · transition: whip · dur/shot: 3s
+
+■ Quick Glow Snap  (reel · ◈2)
+POSITIVE: single-shot beauty reel, hero product on a frosted riser with water droplets catching a crisp rim light, slow cinematic push-in revealing the full product with a final soft lens flare, premium beauty editorial motion, tack-sharp packaging, high-key luminous mood
+NEGATIVE: warped product, distorted label, jittery shaky motion, harsh flash, cluttered background, morphing product
+SHOTS:
+ 1) product centered upright, label squared to camera, full-body product reveal / frosted acrylic riser on a cool white seamless sweep, water droplets on the bottle, soft rim light creating a lens flare on the edge / medium_shot
+MOTION: [1] slow cinematic push-in from mid to close, ending with a soft lens flare bloom on the bottle edge
+  music_mood: clean beauty ambient with a subtle swell · transition: fade · dur/shot: 4s
+
+■ Aesthetic Shelfie  (image_set · ◈2)
+POSITIVE: aesthetic shelfie lifestyle flat-lay, product styled on a travertine or oak bathroom shelf among curated tonal props — a ceramic tray, a small vase with dried pampas, folded linen, an unlit candle, soft morning window light raking from the side casting gentle long shadows, warm beige-cream palette, calm slow-living mood, shot on 50mm at f/4, product is the clear focal point and color-accurate, shallow tasteful clutter
+NEGATIVE: warped product, distorted label, double product, cluttered messy shelf, clashing colors, harsh midday light, plastic props, dust, fingerprints, tilted horizon, oversaturated
+SHOTS:
+ 1) product front-facing as the hero of the vignette / travertine shelf with ceramic tray and dried pampas in soft window light / medium_shot
+ 2) product 3/4 angle nestled among tonal props / oak shelf with folded linen and an unlit candle / medium_shot
+ 3) top-down styled flat-lay, product centered / flat overhead of the shelf surface with props arranged around it / medium_shot
+ 4) detail crop on the product with bokeh props behind / shelf edge with morning light and soft shadow play, vase out of focus / closeup
+
+■ Ingredient Claim Card  (image_set · ◈2 · 🅣)
+POSITIVE: clean beauty ingredient editorial, product centered on a pure white or very pale tonal surface, a single key ingredient prop nearby — a fresh botanical sprig, a small glass vial of serum, or a magnified molecular texture inset — soft diffused flat light for maximum clarity and color accuracy, clinical-yet-luxurious aesthetic with generous negative space reserved for overlay text layers, no baked-in text or labels beyond the product packaging itself
+NEGATIVE: cluttered busy background, harsh shadows, fingerprints, dust, warped product, distorted packaging, double product, oversaturated, busy pattern behind product, colored gel lighting
+SHOTS:
+ 1) product centered-left, generous right-side negative space for ingredient claim block / pure white surface, product front-facing with ample blank space on the right side for text overlay / medium_shot
+ 2) product and ingredient prop side by side, product dominant, prop soft-focus / pale cream surface, fresh botanical ingredient (e.g., centella leaf, retinol crystal vial) beside the product / medium_shot
+ 3) product sharp in foreground, ingredient texture bokeh behind / white background, extreme macro inset feel — ingredient texture fills the background out of focus / closeup
+ 4) overhead product label facing camera, clean minimal composition / minimal flat-lay, product top-down on white with a single dried botanical at the edge / medium_shot
+
+■ Shade Range Grid  (image_set · ◈3 · 🅣)
+POSITIVE: beauty shade range grid photography, single product unit per frame on a pure white seamless surface, each frame showcases a different shade variant with true-to-pigment color accuracy, consistent flat overhead softbox lighting across all 6 frames for color fidelity, product label squared to camera, slight perspective showing the shade swatch or bullet tip, neutral white-grey backdrop with subtle cast shadow beneath the product, clinical precision meets editorial elegance, shot on 100mm at f/8, consistent cropping and framing across all 6 shots for grid assembly
+NEGATIVE: color shift or inaccurate pigment rendering, inconsistent lighting across frames, warped product, distorted label, double product, harsh shadows, busy background, props cluttering the frame, oversaturated
+SHOTS:
+ 1) product upright front-facing, label to camera, shade tip or swatch visible / pure white seamless, product shade variant 1 — lightest tone in the range / medium_shot
+ 2) same angle and crop as shot 1 for grid consistency / identical seamless setup, product shade variant 2 / medium_shot
+ 3) same angle and crop as shot 1 for grid consistency / identical seamless setup, product shade variant 3 / medium_shot
+ 4) same angle and crop as shot 1 for grid consistency / identical seamless setup, product shade variant 4 / medium_shot
+ 5) same angle and crop as shot 1 for grid consistency / identical seamless setup, product shade variant 5 / medium_shot
+ 6) same angle and crop as shot 1 for grid consistency / identical seamless setup, product shade variant 6 — deepest tone in the range / medium_shot
+
+■ Region Result Reel  (reel · ◈4 · 🅣 · [experimental,needs_human_review])
+POSITIVE: non-facial region before-and-after beauty reel, SAME body region (hair / body skin / nails / lips) in both frames with consistent framing, IDENTICAL soft directional lighting and neutral backdrop across both shots, before frame shows the natural untreated state, after frame shows visibly improved result after product application — realistic and believable improvement, true-to-life color and texture, tight crop on the target region only, product featured near the region in at least one frame
+NEGATIVE: different body region between frames, inconsistent lighting or backdrop, extreme unnatural result, plastic airbrushed skin or hair, uncanny texture, malformed toes, fused or webbed digits, harsh shadows, background clutter, full face shot (use Before/After Result Reel for face)
+SHOTS:
+ 1) tight crop on the target body region (hair / body skin / nails / lips), natural untreated appearance, product placed nearby / clean neutral backdrop, consistent soft sidelight — BEFORE state of the target region / closeup
+ 2) same crop on the same region, visibly improved post-product result, same angle / identical framing, identical lighting, identical backdrop — AFTER state of the target region / closeup
+MOTION: [1] slow push-in on the before region with a gentle hold  [2] cut to after with a brief hold and subtle pull-back revealing the result
+  music_mood: clean optimistic beauty ambient · transition: cut · dur/shot: 3s
+
+■ Gift Set Group Hero  (image_set · ◈2)
+POSITIVE: beauty gift set group hero photography, all SKUs in the set arranged together in a clean composed layout on a pure white seamless surface, each product upright and evenly lit, matching labels all squared to camera or elegantly angled, soft overhead softbox plus fill for shadow control, generous negative space around the group, premium editorial beauty aesthetic, shot on 85mm at f/8 for full group sharpness, consistent color-accurate packaging rendering across all items, gift-worthy elegantly styled composition
+NEGATIVE: missing or extra products, mismatched product count versus the actual set, warped products, distorted labels, double products, harsh ugly shadows, cluttered background, floating products, inconsistent scale between items, oversaturated
+SHOTS:
+ 1) full group front-facing, labels toward camera, evenly spaced and height-aligned / pure white seamless, all set products arranged in a symmetrical hero group, subtle cast shadows / medium_shot
+ 2) 3/4 angle showing product depth and packaging volume, hero item forward / white surface, products arranged in a staggered depth formation / medium_shot
+ 3) top-down bird's eye, clean symmetrical grid layout / overhead flat-lay, all products arranged artfully from above / medium_shot
+ 4) lifestyle group shot with gift box context, products arranged inside the open box / products nestled inside or beside premium gift box with satin ribbon and tissue / medium_shot
+
+■ Glide Stick Swipe  (image_set · ◈2)
+POSITIVE: beauty stick product photography showcasing twist-up silhouette and swipe texture, stick fully twisted up exposing the bullet at full height, creamy or waxy formula catching a raking sidelight to reveal texture and sheen, a clean swatch arc smeared beside the product on a smooth matte surface showing the true pigment and finish, true-to-color rendition of the formula, shot on 100mm macro at f/8, one shot with the cap off showing the bullet profile, one macro on the swatch alone for texture detail, premium editorial aesthetic
+NEGATIVE: warped or melted stick bullet, twisted bullet too short or hidden, color-shifted swatch, dirty smear surface, fingerprints, lint, hair, harsh specular hot-spot, flat lifeless texture, fake CGI sheen, distorted product casing, double product
+SHOTS:
+ 1) product upright cap-off, bullet fully extended, slight 3/4 angle to show silhouette / matte white acrylic surface, stick fully twisted up, cap placed beside it, raking sidelight carving the bullet profile / medium_shot
+ 2) stick resting at a diagonal beside its swatch, product label visible / matte surface, stick at an angle with a fresh swipe arc beside it / medium_shot
+ 3) detail of swatch surface texture, sheen and pigment richness / macro on the swatch alone — thick pigment arc on matte tile with raking sidelight / closeup
+ 4) top-down view of stick with cap beside it and swatch below, clean composition / overhead flat-lay, stick and swatch arranged together on the surface / medium_shot
+
+■ Compact Powder Pop  (image_set · ◈2)
+POSITIVE: beauty compact powder product photography, compact open showing the powder pan surface in full detail — silky smooth pressed powder or blush with a subtle shimmer or matte velvet finish catching a soft overhead light with a thin rim to define the compact edge, powder puff or brush applicator resting in or beside the compact in at least one frame, outer case design shown closed in one frame, macro shot on the powder surface texture in one frame revealing pigment and finish, true-to-color powder shade rendering, shot on 100mm at f/8, premium editorial feel
+NEGATIVE: powder pan surface invisible or in shadow, cracked or broken powder, dirty compact case, smudged mirror, harsh specular that wipes out texture, warped compact case, color-shifted powder, double product, lint or hair on powder, fingerprints
+SHOTS:
+ 1) compact open hero, pan surface center-frame, label and case edge in view / white seamless, compact open and facing camera, full pan visible under soft overhead light with a faint rim / medium_shot
+ 2) styled shot with applicator in or beside compact, 3/4 angle / marble or matte tile surface, compact open with puff or brush applicator resting on the pan / medium_shot
+ 3) extreme closeup on the powder surface texture / macro on the powder pan surface alone, raking sidelight carving fine shimmer particles or velvety texture / closeup
+ 4) compact closed, front face of case to camera showing packaging design / seamless, compact closed — outer case design shot / medium_shot
+
+■ Mist Burst Reel  (reel · ◈2)
+POSITIVE: beauty spray mist product reel, product bottle held upright with the nozzle pressed — a billowing fine mist plume erupting from the tip caught mid-air, backlit or contre-jour rim light making the mist droplets glow and scatter in a dramatic luminous cloud, dark gradient or neutral seamless backdrop for contrast, slow-motion feel, the product label clearly readable, premium editorial mist photography, cinematic frozen-moment aesthetic
+NEGATIVE: no visible mist plume, weak or invisible spray, harsh front flash, background clutter, warped product bottle, distorted label, double product, muddy mist color, overly diffused no-detail cloud, jittery motion
+SHOTS:
+ 1) product upright in hand or on riser, nozzle pressed, full mist burst at peak bloom / dark seamless backdrop, product bottle held at mid-height with nozzle pressed, dramatic backlit mist plume erupting from the tip catching the rim light / medium_shot
+MOTION: [1] slow cinematic push-in as the mist plume blooms, brief hold on peak burst, gentle settle
+  music_mood: fresh airy beauty ambient with a subtle swell · transition: fade · dur/shot: 4s
+
+■ On-Skin Patch Hero  (image_set · ◈2 · [needs_human_review])
+POSITIVE: beauty patch or sheet mask product photography, product adhered directly onto skin — either applied on the under-eye area or cheek (face-partial crop) or on the back of the hand, patch sitting flush against the skin with no lifting edges, soft beauty key light revealing the patch texture and skin surface, true-to-color patch appearance, one shot showing the product packaging beside the applied patch, clean minimal studio backdrop, fresh skincare editorial aesthetic, shot on 85mm at f/4
+NEGATIVE: six fingers, fused or webbed fingers, lifting or wrinkled patch edges, patch not making contact with skin, uncanny skin texture, harsh shadows, background clutter, warped product packaging, distorted label, oversaturated skin tone
+SHOTS:
+ 1) hand dorsal view with patch adhered, product packaging placed beside the hand / clean neutral backdrop, patch applied on the back of the hand skin surface, soft beauty key light / closeup
+ 2) tight crop on the skin region with patch, no full face — patch flush against skin / minimal studio, patch applied on the under-eye or cheek area — face partial crop only / closeup
+ 3) product hero with the patch displayed flat beside it, showing patch texture / white or pale surface, product packaging front-facing beside a single detached patch / medium_shot
+ 4) patch held by fingertips showing the hydrogel or sheet texture, product in soft focus behind / hand holding the patch by the tab before application, product packaging in background / closeup
+
+■ Teeth Shade Card  (image_set · ◈2 · 🅣 · [needs_human_review])
+POSITIVE: teeth whitening shade card beauty photography, tight crop on the mouth/smile area only — no full face — showing natural teeth at a specific whitening shade stage, soft flat clinical overhead light for accurate color rendition, each of the 4 frames shows a progressively lighter shade stage from initial baseline to final bright result, realistic gradual whitening — not extreme bleached white — natural-looking enamel sheen, product packaging placed beside or below the smile crop in at least one frame, clean white clinical backdrop, shade step progression is clear and believable
+NEGATIVE: unnaturally bleached chalky white teeth, fake CGI teeth, extreme over-whitening, unnatural tooth shape or size, visible full face (crop to mouth and smile only), harsh shadows, yellow cast, background clutter, warped product, distorted label
+SHOTS:
+ 1) neutral closed-lip smile revealing teeth, shade at starting point, product packaging below frame edge / clinical white backdrop, tight smile crop — baseline shade (before treatment, initial natural tooth color) / closeup
+ 2) same smile crop, same framing, teeth one shade brighter than baseline / same clinical setup — shade step 2 (early progress, subtle brightening) / closeup
+ 3) same smile crop, teeth noticeably brighter, realistic gradation / same clinical setup — shade step 3 (mid progress, noticeable brightening) / closeup
+ 4) same smile crop at final shade, product label visible in the frame / same clinical setup — final shade result (post-treatment, target brightness achieved), product packaging beside the smile / closeup
+
+══════════════════ 04 JEWELRY (8) ══════════════════
+
+■ Surface Macro  (image_set · ◈2)
+POSITIVE: extreme macro product photography, single hero piece, 100mm macro lens at f/8 focus-stacked for edge-to-edge tack-sharp depth, lighting adapts to the surface of the uploaded piece — for faceted gemstones a dark-field pin spotlight rakes across the facets to ignite crisp internal fire and dispersion with razor-sharp facet edges and clean specular highlights; for pearls, cabochons, jade, amber, opal, wood, resin and enamel a soft raking directional grazing light reveals luster, orient, chatoyance and natural grain without blowing out the surface, controlled highlight rolloff preserving full surface detail; fine engraving, prongs and hallmarks tack sharp, micro-reflections on polished metal, seamless reflective base, identical to the reference — every facet, stone luster, color and engraving true to the reference with exact proportions
+NEGATIVE: warped or duplicated stone, distorted prongs, melted or pitted metal, asymmetric facets, over-glossed plastic look on matte or organic surfaces, fake mirror sheen on pearls, lost luster, dull lifeless reflections, fingerprints, dust specks, blown-out specular highlights, extra gems, color shift on metal, soft out-of-focus facet edges
+SHOTS:
+ 1) detail macro of the hero stone or pearl, top-down into the table facet or onto the luster crown / reflective neutral riser, surface-adaptive key light / closeup
+ 2) 3/4 angle showing crown facets or orient and the setting / drill hole / gradient backdrop with single raking light / closeup
+ 3) side profile of the band or body, engraving, hallmark or grain visible / neutral base with faint reflection / closeup
+ 4) front macro, full piece centered showing brilliance or luster / macro set, controlled key light / closeup
+
+■ Studio & Editorial  (image_set · ◈2)
+POSITIVE: premium jewelry studio and editorial photography, 100mm lens at f/8–f/11 for catalog shots transitioning to 85mm f/4 editorial warmth, shots move from clean velvet display catalog hero to a warm directional golden-hour window still-life vignette, large overhead softbox key with a tight grazing kicker rim to define facets and metal edges in the studio catalog frames, soft low-angle golden-hour window light raking in from frame-left as the directional key for the editorial frames, rich deep-emerald velvet surface, then champagne palette with marble veneer and draped silk props, controlled reflections, long elegant shadows in editorial shots, the product rendered identical to the reference in every frame with exact proportions, color and stones preserved, luxury lookbook mood
+NEGATIVE: distorted product, duplicated piece, lint or hair on velvet, dust specks, blown specular highlights, harsh color cast, gaudy props, cluttered composition, warped reflections in glass, plastic sheen, missing stones, dull lifeless metal
+SHOTS:
+ 1) front view, product perfectly centered, clean catalog hero / deep emerald velvet pad, soft gradient backdrop, large softbox key / medium_shot
+ 2) product on display prop, 3/4 angle showing dimension / velvet ring pillow or bust display, diffused kicker light / medium_shot
+ 3) piece as editorial hero on silk with elegant negative space, long shadow / marble surface with draped champagne silk, golden window light from the left / medium_shot
+ 4) styled flat-lay, piece at center with curated props, magazine crop / linen and marble flat composition, soft top light, minimal brass prop / full_body
+
+■ Scale & Spec Overlay  (image_set · ◈2 · 🅣)
+POSITIVE: clean catalog product photography for size and spec reference, 100mm macro lens at f/11, flat soft overhead diffused light with no harsh shadows, piece placed beside a universally recognizable coin or precision ruler edge for scale OR isolated on clean negative space reserved for a composited spec/material badge or caption, matte white seamless surface, the jewelry piece rendered identical to the reference in exact proportions with true-to-reference metal color, finish, stone count, cut and hallmark detail, clinical accuracy, e-commerce info-card feel, balanced framing that offsets the piece to keep a generous lower-third margin of clean uncluttered negative space empty and unobstructed for one composited badge or caption
+NEGATIVE: distorted scale of product, stretched or compressed proportions, warped ruler, missing coin or reference object when scale is shown, harsh shadows obscuring edges, reflections hiding the size or the reserved badge area, cluttered background crowding the badge zone, misleading crop, plastic sheen, color shift on metal, extra gems, duplicated piece
+SHOTS:
+ 1) piece laid flat beside a coin (quarter-size) with 2 cm gap, top-down orthographic angle / matte white seamless surface, soft overhead diffused light / medium_shot
+ 2) piece resting against the ruler, diameter or length measurable from shot / white surface, ruler edge entering from the left of frame / closeup
+ 3) piece centered high in frame, lower third kept clean for a spec/material/cert badge / clean light grey surface, generous negative space at the bottom / medium_shot
+ 4) piece slightly angled to show depth/thickness, clean side margin for a badge / white surface, shallow sidelight for gentle edge definition / closeup
+
+■ Wrist & Hand  (image_set · ◈5 · [experimental,needs_human_review])
+POSITIVE: elegant on-model hand and wrist jewelry photography at f/2.8, soft north-facing window light with a subtle silver bounce fill, well-manicured natural hand with realistic skin texture and pores, single well-formed hand, exactly five natural fingers, anatomically correct grip, visible fingernail, fingers clearly separated and naturally curved, the jewelry piece worn correctly and rendered identical to the reference with exact proportions, color, metal finish and stones preserved, shallow rolling depth of field, refined editorial styling, neutral silk or marble surfaces in background
+NEGATIVE: six fingers, incorrect finger count, missing fingers, fused, melted or webbed fingers, floating fingers detached from hand, claw-like or talon fingers, warped knuckle joints, two hands unless intentional, malformed wrist, plastic skin texture, oversharpened skin, distorted jewelry, wrong number of stones, duplicated piece, harsh shadows obscuring the piece
+SHOTS:
+ 1) ring worn on finger, tight crop at knuckle level — fingers gently curved, only 2–3 fingers visible in clean partial-hand crop / soft daylight by window, neutral linen background / closeup
+ 2) wrist raised showing bracelet — wrist-level crop, hand softly cupped just entering frame from below / warm interior with creamy bokeh / closeup
+ 3) hand resting palm-down on silk, ring visible on one finger, relaxed natural pose — crop stops at mid-palm / silk fabric surface, diffused light / closeup
+ 4) wrist-level horizontal shot of bracelet or watch on wrist only — hand cropped out below frame / minimal beige studio, gentle shadow / medium_shot
+
+■ Neck & Ear Try-On  (image_set · ◈5 · [experimental,needs_human_review])
+POSITIVE: elegant on-model neck and ear jewelry photography, soft north-facing window light with a subtle silver bounce fill, well-groomed model with realistic skin texture, wardrobe: minimal neutral off-white/nude top to avoid color cast on the skin, the necklace draped naturally on the décolletage with a correctly seated clasp and an unbroken evenly-tapering chain, or the earring worn correctly on a realistic ear lobe with natural attachment, the jewelry piece rendered identical to the reference with exact proportions, metal color and stones, refined editorial styling, framing crops the face out — jaw-down for neck shots and an ear-and-jaw profile for ear shots, no eyes or full face in frame
+NEGATIVE: full face in frame, distorted or asymmetric face, more than two ears, extra or duplicated earrings, floating earring detached from the lobe, malformed ear, broken or duplicated necklace chain, distorted clasp, melted or plastic skin, distorted jewelry, wrong number of stones, duplicated piece, harsh shadows, oversharpened skin
+SHOTS:
+ 1) necklace draped on the décolletage, jaw-down crop — face out of frame, chain and pendant sitting naturally / soft daylight by window, neutral top worn low / medium_shot
+ 2) pendant resting at the sternum, close neck-level crop showing drape and clasp / warm interior with creamy bokeh / closeup
+ 3) drop earring on the ear lobe, ear-and-jaw profile crop — only the ear region, no full face / soft side light, hair tucked back / closeup
+ 4) hoop or huggie on the lobe, tight profile crop of a single ear / neutral studio, gentle shadow / closeup
+
+■ Set & Stack Stylist  (image_set · ◈2)
+POSITIVE: CRITICAL: every instance identical to the reference, locked product identity, no morph or drift across pieces, premium jewelry styling flat-lay, 100mm lens at f/8, soft diffused studio light, the uploaded piece coordinated into a curated multi-piece look — a ring stack on a velvet riser, layered necklaces cascading on a marble flat or neck form, a bangle or bracelet stack, or a matched parure laid out together — keep exact proportions, color, metal finish and stones on every piece, elegant negative space, lookbook styling mood, tasteful complementary props
+NEGATIVE: inconsistent piece identity across instances, mismatched or warped duplicates, distorted product, cluttered overcrowded composition, too many pieces, lint or hair on velvet, dust specks, blown specular highlights, gaudy props, warped reflections, plastic sheen, missing stones, dull lifeless metal
+SHOTS:
+ 1) ring stack — 3 to 5 coordinated rings nested together, hero ring to front / velvet riser, soft key light / closeup
+ 2) layered necklaces cascading at staggered lengths, coordinated set / marble flat or neck form, diffused light / medium_shot
+ 3) bangle or bracelet stack arranged in a row, shallow depth of field on the hero / neutral surface with silk accent / closeup
+ 4) full coordinated parure laid out together (e.g. necklace + earrings + ring), magazine crop / linen flat-lay with minimal props / full_body
+
+■ Lumen Reel  (reel · ◈4)
+POSITIVE: CRITICAL: same product across all frames, locked identity, no morph or drift, cinematic jewelry motion reel, 100mm macro look, a single controlled light bar travels across the piece — igniting rainbow facet fire and dispersion on faceted stones, or rolling soft luster, orient and chatoyance across pearls, cabochons, jade and polished metal on non-faceted pieces — deep dark reflective stage with soft falloff, the stone luster and metal finish identical to the reference with true-to-reference metal and stone color and accurate white balance, clean macro clarity, vertical 9:16 social framing edge-to-edge with no letterbox or widescreen bars, neutral natural color free of stylized teal-and-orange grading, hypnotic luxury mood, ready-to-post vertical short
+NEGATIVE: flickering product, warped or morphing stone, jittery motion, duplicated piece, blown specular highlights, color banding, distorted metal, fake mirror sheen on pearls, lost luster, dull lifeless reflections, plastic look, motion smearing on edges, color-grading cast, teal and orange color tint, letterbox or widescreen bars, heavy film grain, color shift on metal, inaccurate stone color
+SHOTS:
+ 1) front macro as the light bar sweeps across to ignite facets or roll luster / dark reflective stage, single moving spotlight / closeup
+ 2) slow pull-back, full-piece glamour reveal as sparkle or luster settles / reflective base with soft falloff / medium_shot
+MOTION: [1] slow specular highlight / luster sweep across the surface  [2] slow pull-back dolly with sparkle or luster settling
+  music_mood: luxury ambient electronica, 70-85 BPM, shimmering synth pads with glassy bell plucks, sub-bass swells and soft vinyl-style textures, slow hypnotic build with restrained energy, reference FKJ x Tycho luxe-boutique ambient · transition: fade · dur/shot: 3s
+
+■ Jewelry Unbox ASMR  (reel · ◈6 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: same product across all frames, locked identity, no morph or drift, premium ASMR jewelry unboxing reel, 85mm macro look at f/2.8, warm soft key with practical candle-glow fill, hands with realistic skin gently opening a luxury leatherette box revealing satin lining, intimate tactile mood, the jewelry piece identical to the reference resting in the box with exact proportions, color and stones preserved, clean surfaces, aspirational gifting atmosphere, single well-formed hand, exactly five natural fingers naturally separated, anatomically correct grip, visible fingernail, natural knuckle joints, neutral true-to-life white balance with faithful metal and gemstone color, no teal-orange color cast, full vertical 9:16 framing edge to edge with no letterbox bars
+NEGATIVE: six fingers, missing fingers, fused, melted or webbed fingers, claw-like fingers, malformed wrist, plastic skin, warped product, duplicated piece, jittery motion, distorted box geometry, harsh light, melted metal, missing stones, motion smearing, teal and orange color grading, color cast, letterbox or black bars, widescreen crop, heavy film grain, heavy vignette
+SHOTS:
+ 1) static beauty shot of the closed box, anticipation / warm-lit table, closed luxury leatherette box with ribbon, no hands yet / medium_shot
+ 2) fingertips only lifting the lid — tight crop shows lid edge and satin lining opening / soft key light, satin-lined interior revealed / closeup
+ 3) detail macro of the piece settled in the cushion, final hero reveal — no hands / box interior glowing, piece nested in satin cushion / closeup
+MOTION: [1] slow push-in on the closed box  [2] top-down tilt as the lid lifts, fingertips entering at the edge  [3] gentle rack focus onto the nested piece, slow zoom in
+  music_mood: soft ASMR ambient, 60-75 BPM, delicate glass chimes, soft felt mallets, warm sub-pad and faint vinyl-crackle texture, low intimate energy with a gentle build, reference tactile unboxing ASMR with airy Brian Eno-style ambient warmth · transition: cut · dur/shot: 3s
+
+══════════════════ 05 FOOD (7) ══════════════════
+
+■ Top-Down Hero  (image_set · ◈2)
+POSITIVE: appetizing food photography shot perpendicular from directly above, the plated dish identical to the uploaded reference with the same ingredients, plating, garnish, color and proportions, never inventing or substituting different food, 50mm lens at f/8 for deep depth of field, even diffused overhead softbox with a large bounce card filling shadows, garnish crisp and freshly plated, subtle natural prop styling (linen napkin, single utensil, scattered ingredients) arranged with negative space, sharp edge-to-edge focus, commercial menu-hero quality
+NEGATIVE: tilted horizon, perspective distortion, harsh specular hotspots, blown highlights, color cast, warped or melted food, duplicated dishes, plastic CGI-looking food, soggy wilted garnish, unappetizing dull color, stray fingers or hands in frame, dirty plate rim, smudged plate edge, messy stray crumbs
+SHOTS:
+ 1) perfect 90-degree top-down, dish centered, front-facing garnish up / matte light-grey ceramic surface, minimal styling, generous negative space / medium_shot
+ 2) top-down, dish offset to thirds with prop balance / warm oak wood tabletop with a folded linen napkin and one fork / medium_shot
+ 3) top-down flat-lay, ingredients radiating outward / dark slate board with scattered raw ingredients (herbs, citrus, spices) framing the dish / medium_shot
+ 4) tighter top-down crop showing plating detail and texture / clean white marble counter, bright airy styling / closeup
+
+■ Drip & Steam Macro  (image_set · ◈2)
+POSITIVE: extreme macro food photography, 100mm macro lens at f/4 with razor-thin depth of field, the dish identical to the uploaded reference in texture, ingredients and color, every macro detail drawn from the actual reference food rather than a fabricated substitute, dramatic side and back rim light catching translucent steam and glistening condensation, slow-motion sauce or chocolate dripping mid-air, frozen splash droplets, melting cheese pull or glaze sheen, deep moody background falloff, mouth-watering tactile detail
+NEGATIVE: flat even lighting, dull matte surface, dry lifeless food, fake CGI steam, plastic-looking droplets, frozen unnatural splash, motion blur on the dish itself, over-sharpened halos, noise grain in shadows, warped product, oversaturated neon color clipping, dust spots, stray hands in frame
+SHOTS:
+ 1) detail macro of rising steam curling off a hot drink or dish surface / dark charcoal backdrop, single hard rim light from behind / closeup
+ 2) mid-pour sauce/glaze/syrup drip caught mid-air over the food / moody low-key set, spotlit / closeup
+ 3) macro of beaded condensation running down a chilled glass or icy surface / cold-toned background with backlight / closeup
+ 4) extreme texture macro — cheese pull, crumb, or glossy frosting peak / warm dark wood, dramatic chiaroscuro / closeup
+
+■ Golden-Hour Cafe Mood  (image_set · ◈2)
+POSITIVE: cozy lifestyle cafe photography, the dish rendered identical to the uploaded reference with the exact same color, plating, garnish and proportions, late-afternoon golden sunlight raking through a window casting long warm shadows and soft lens haze, 35mm film look at f/2 with gentle grain and creamy bokeh, product placed naturally in a lived-in cafe scene with steam and warm ambiance, shallow depth of field, inviting aspirational mood
+NEGATIVE: cold blue color cast, flat overcast light, clinical studio look, harsh flash, sterile empty background, overexposed window blowout, plastic CGI food, warped or melted food, unappetizing dull color, cluttered messy table, people's faces in frame, hands in frame, oversharpening halos, HDR glow
+SHOTS:
+ 1) product placed naturally with soft shadow, front 3/4 view / rustic wooden cafe table beside a sunlit window, golden light streaming in / medium_shot
+ 2) product staged on a saucer with a small dessert prop / marble bar counter with espresso machine bokeh behind / medium_shot
+ 3) product in a relaxed everyday-use vignette / cozy window seat with a book and trailing plant, warm haze / medium_shot
+ 4) tight intimate crop of the product catching the golden light / outdoor cafe terrace, sun flare and greenery / closeup
+
+■ Serving & Table Lifestyle  (image_set · ◈2 · [needs_human_review])
+POSITIVE: modern restaurant table lifestyle photography, hands gracefully placing or serving the dish on a beautifully set table, the served dish identical to the uploaded reference with the same food, plating, color and proportions, a single well-formed hand with exactly five natural fingers and an anatomically correct grip, neatly manicured fingernails, soft warm directional window light, linen napkins, wine glasses or water glasses in the background bokeh, casual elegant dining atmosphere, shot on a 50mm lens at f/2.8, shallow depth of field, genuine human moment, fresh vibrant food, editorial food magazine quality
+NEGATIVE: faces or heads in frame, ugly or unmanicured hands, dirty fingernails, six fingers, fused or webbed digits, awkward stiff hand grip, flat lighting, sterile studio look, warped or melted food, plastic CGI food, unappetizing color, cluttered foreground, oversharpening, harsh flash shadows, empty soulless table
+SHOTS:
+ 1) two hands placing the plated dish onto the table from above, confident serving motion / elegant restaurant table with linen and glassware, warm window light / medium_shot
+ 2) one hand reaching in from the side to present the dish, natural moment / rustic wooden bistro table, casual dining setup / medium_shot
+ 3) dish freshly set on the table, a hand withdrawing gracefully, steam rising / outdoor terrace table with greenery bokeh, golden afternoon light / medium_shot
+ 4) tight over-table crop of the hero dish surrounded by a full table setting / intimate table for two, candle and glassware in soft bokeh / medium_shot
+
+■ Menu / Price Card  (image_set · ◈3 · 🅣)
+POSITIVE: clean commercial menu card background, multiple beautifully plated dishes arranged in a symmetrical grid layout on a neutral surface, each dish faithful to its uploaded reference photo with no invented or altered food, distinct dish per cell with no accidental duplicate or cloned plate repeated across cells, consistent even overhead softbox lighting across all dishes, top-down 50mm lens at f/8 for even edge-to-edge focus across the grid, generous negative space between items reserved for price and name label overlays, each dish appetizing, cohesive color palette, professional restaurant menu photography aesthetic
+NEGATIVE: tilted horizon, inconsistent lighting across dishes, cluttered background, warped or melted food, plastic CGI food, wilted garnish, harsh hotspots, color cast, messy uneven arrangement, duplicated identical dishes across grid cells, dishes overlapping into label zones, insufficient negative space for overlays, unappetizing color, stray hands in frame, dirty plates
+SHOTS:
+ 1) top-down, dishes evenly spaced with empty label zones below each / light grey neutral surface, overhead softbox, 4-dish grid (2×2) with generous margins / medium_shot
+ 2) top-down, alternating dish + drink grid, consistent hero framing / same neutral surface, 4-dish grid featuring drinks column alongside mains / medium_shot
+ 3) top-down, two hero dishes side-by-side with wide label space below / warm oak surface, 2-dish hero row — signature items only / medium_shot
+ 4) top-down grid with candle-warmth color treatment, label zones intact / dark slate surface, 4-dish grid — evening/dinner section mood / medium_shot
+ 5) top-down centered, large negative header zone above for 'Today's Special' overlay / clean white marble, single featured dish of the day format / medium_shot
+ 6) top-down, three-across arrangement, footer zone for price row overlay / neutral surface, horizontal 3-dish row — dessert / drinks section / medium_shot
+
+■ Single-Dish Sizzle  (reel · ◈2)
+POSITIVE: single hero dish cinematic food moment, the exact dish from the uploaded reference photo kept identical and stable across the entire clip with no morphing into a different food mid-motion, 100mm macro lens at f/2.8-f/4, warm key light with soft rim catching steam and sheen, glistening sauce or glaze, shallow depth of field, slow deliberate motion revealing texture, premium appetite-trigger close-up, short punchy social reel energy
+NEGATIVE: flat lighting, dry dull food, fake plastic CGI steam, plastic CGI look, jittery shaky framing, harsh blown highlights, frozen lifeless motion, warped product, food geometry morphing mid-clip, toppings shifting during motion, flickering, stutter, unappetizing color, color banding, oversaturated clipping, stray hands in frame
+SHOTS:
+ 1) slow macro push-in from side angle, steam rising, sauce glistening / dark moody set, single warm key light, freshly plated hero dish / closeup
+MOTION: [1] slow macro push-in catching steam and glaze in warm light
+  music_mood: lo-fi culinary ASMR groove, 70-85 BPM, warm sizzle foley and soft kick with mellow Rhodes and muted upright bass, intimate low-energy appetizing ambience, reference Bonobo 'Kerala' texture · transition: none · dur/shot: 4s
+
+■ Sizzle & Steam ASMR  (reel · ◈6 · [needs_human_review])
+POSITIVE: cinematic food ASMR, CRITICAL: same dish identity across all three shots, locked geometry and plating, no morph or drift, dish identical to the uploaded reference; macro 100mm lens at f/2.8, warm directional key with a soft rim, live rising steam and audible-looking sizzle, glistening juices and bubbling surfaces, shallow depth of field with creamy falloff, slow deliberate reveal of texture, premium close-up appetite trigger; third shot: pull-back hero reveal showing glaze sheen sweeping across the dish surface as camera orbits, consistent dish geometry throughout
+NEGATIVE: flat lighting, dry dull food, fake plastic CGI steam, plastic CGI look, jittery shaky framing, harsh blown highlights, frozen lifeless motion, warped product, morphing toppings or facets between shots, inconsistent dish geometry across frames, flickering, stutter, unappetizing color, color banding, oversaturated clipping, stray hands in frame
+SHOTS:
+ 1) macro hold on the sizzling surface with rising steam / dark moody set, single warm key light, hot dish just plated / closeup
+ 2) detail of bubbling sauce / melting glaze / juices pooling, glaze sheen sweeping across as light rakes / low-key background with spotlight on the food / closeup
+ 3) pull-back reveal of the finished dish, steam still rising, glaze gleaming under the rim light / warm wooden table, soft rim light, full hero presentation / medium_shot
+MOTION: [1] slow macro push-in on the steam  [2] slow lateral drift across the bubbling surface, light raking the glaze  [3] smooth pull-back dolly revealing the full dish, glaze sheen peaking
+  music_mood: ambient ASMR foley, 60 BPM, layered close-mic sizzle and gentle crackle over warm low pad and soft sub hum, intimate slow-build energy, reference Samsung 'Sizzle' food spots and Bon Appetit kitchen ASMR · transition: cut · dur/shot: 3s
+
+══════════════════ 06 HOME (7) ══════════════════
+
+■ Room & Warmth Styled  (image_set · ◈3)
+POSITIVE: shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; limewash walls, oak floor, sheer linen curtains diffusing daylight; warm afternoon sun raking through window with long shadows and gentle lens flare, dust motes; one statement plant and a stack of art books for scale; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on the floor; range from calm minimalist morning light to cozy golden-hour warmth
+NEGATIVE: warped or duplicated product, distorted proportions, cluttered busy room, harsh flash, blown highlights, fake reflections, floating furniture, melted edges, plastic CGI look, oversaturated colors, cold blue cast
+SHOTS:
+ 1) product front view, centered as room hero / minimalist living room corner with limewash wall and oak floor, soft morning diffuse light through sheer curtain / full_body
+ 2) product 3/4 angle showing depth and side profile / same room, soft window light from camera-left, art books and plant nearby for scale / medium_shot
+ 3) product styled in lived-in context with a throw and ceramic vase / cozy reading nook with neutral textiles and a warm floor lamp at dusk / medium_shot
+ 4) product anchored in full room scene, negative space around it / wide pulled-back interior establishing the whole calm room / full_body
+ 5) product front view bathed in low afternoon sun / windowsill corner at golden hour, long warm shadows and soft lens flare / medium_shot
+ 6) product as part of warm vignette, sun behind, shallow depth of field / sunlit shelf or side table with backlit plants and warm amber bokeh / closeup
+
+■ Material Detail Suite  (image_set · ◈3)
+POSITIVE: 100mm macro lens at f/8 with focus stacking for texture shots; raking side light reveals weave/grain/glaze; ultra-fine surface detail with visible fibers/wood grain/ceramic crackle; true-to-life material color; AND 90-degree top-down flatlay on 50mm with soft even diffused overhead light, tonal color story props (linen, stone, dried botanicals, ceramic) all in the same palette family; product kept exact in shape/material/color as hero throughout; premium homeware magazine quality
+NEGATIVE: soft out-of-focus subject, warped or duplicated product, invented patterns, plastic CGI sheen, blown highlights crushing texture, color shift away from real material, oversharpen halos, noise, distorted proportions, tilted flatlay angle, clashing colors, props overlapping the hero
+SHOTS:
+ 1) product surface detail extreme close-up showing weave/grain/glaze texture / neutral seamless macro surface, raking light from the left / closeup
+ 2) edge/seam detail revealing material finish and join quality / soft graduated grey background, grazing top light / closeup
+ 3) signature texture feature filling the frame / clean studio macro set, focus-stacked sharpness / closeup
+ 4) product centered hero with minimal tonal props around it / neutral linen surface, perfect 90-degree top-down, soft even overhead light / medium_shot
+ 5) product off-center with rule-of-thirds prop balance / warm stone tabletop, top-down, generous negative space / medium_shot
+ 6) full styled spread, product as the focal anchor / curated top-down surface with dried botanicals and ceramics in matching palette / full_body
+
+■ Scale & Dimensions Frame  (image_set · ◈2 · 🅣)
+POSITIVE: product placed in a clean neutral room with clear spatial context, clean white or greige matte walls, light oak or concrete floor, soft even diffused light from overhead, room includes a standard two-seat sofa or known-size object nearby for spatial scale reference, product exact in shape/material/color, wide enough angle to see the full product and surrounding floor space, architectural interior product photography, zero clutter, precise clean edges, realistic contact shadow, generous clean floor and wall margin kept uncluttered as a reserved area for composited dimension callouts and measurement arrows
+NEGATIVE: warped or duplicated product, distorted proportions, cluttered room, unknown floating objects, harsh flash, blown highlights, fake reflections, melted edges, plastic CGI look, oversaturated colors
+SHOTS:
+ 1) product front view centered, full product visible, room floor visible around it / clean neutral room, full-width view showing product and surrounding floor space with a standard sofa at the edge for scale / full_body
+ 2) product direct side profile against the wall, showing depth / same room, side view showing product depth and wall clearance / full_body
+ 3) product from 45-degree high angle, floor footprint clearly visible / overhead slightly tilted view showing product footprint on the floor / full_body
+ 4) top or near-top view of the product showing width reference / close crop on top surface or key dimension feature, clean light / medium_shot
+
+■ Day-to-Night Lighting Reveal  (reel · ◈4 · [experimental,needs_human_review])
+POSITIVE: SAME product in both shots — identical geometry, material and color, only its lighting state changes (off to on), no morph or drift between day and night; two-shot day-to-night lighting reveal reel, 50mm lens at f/2.8; shot 1: soft cool neutral daylight ambient, product UNLIT/OFF — lamp shade or candle wick dark, room lit only by window light, product shape clearly visible but not glowing; shot 2: same scene at night, room dark, product turned ON and actively emitting warm amber light — visible glow halo, light cone or candleflame, warm pool of light spilling onto surrounding surfaces, product is the light source, aspirational cozy evening atmosphere; product kept exact in shape/material/color across both shots, consistent room geometry
+NEGATIVE: unlit lamp that should be glowing in night shot, dead black screen in night shot, candle wick dark when product should be lit, lamp shade with no light emission in night shot, harsh cold flash replacing product glow, warped or duplicated product, inconsistent room geometry between shots, blown highlights, plastic CGI look, distorted proportions, flicker, morphing surfaces, day scene too dark, night scene too bright
+SHOTS:
+ 1) product front view, unlit, ambient daylight environment establishing the before state / home interior in soft neutral daylight — window light only, product in OFF/unlit state on side table or shelf / medium_shot
+ 2) product front view as active light source, warm glow emanating from it, cozy night atmosphere / same home interior at night, room dark, product turned ON and emitting warm amber light — glow halo, light spilling onto surrounding surface / medium_shot
+MOTION: [1] slow gentle push-in toward the unlit product in daylight  [2] slow hold with subtle breathing motion as warm glow fills the frame at night
+  music_mood: calm ambient evening · transition: fade · dur/shot: 3s
+
+■ Empty-to-Styled Reveal  (reel · ◈6)
+POSITIVE: SAME product across all shots — locked geometry, material and color, consistent room geometry, no morph or drift; cinematic interior reel, shot on 24mm wide lens at f/4, smooth gimbal movement, soft natural window light, an empty bare corner transforming into a warm fully-styled room, product kept exact in shape/material/color as the centerpiece of the reveal, aspirational home makeover mood, realistic shadows and consistent space across shots
+NEGATIVE: warped or duplicated product, room geometry changing between shots, jittery shaky motion, harsh flash, plastic CGI look, distorted proportions, flickering, morphing walls, inconsistent lighting between cuts
+SHOTS:
+ 1) empty space establishing shot, product not present / bare empty room corner with sheer-curtain daylight, nothing placed yet / full_body
+ 2) product front view dropping into the scene as hero / same corner, product appears as the centerpiece being placed / medium_shot
+ 3) product 3/4 angle in the finished cozy room / same corner now fully styled with rug, plant, books and warm lamp / full_body
+MOTION: [1] slow push-in across the empty corner  [2] match-cut settle as product lands in place  [3] gentle pull-back revealing the fully styled room
+  music_mood: warm uplifting lo-fi · transition: whip · dur/shot: 3s
+
+■ Slow ASMR Detail  (reel · ◈6)
+POSITIVE: slow cinematic ASMR macro reel, shot on 100mm macro lens at f/4, ultra slow gliding camera over the product surface, soft directional key light revealing weave, grain and glaze, shallow rolling focus, dust-free pristine surfaces, true-to-life material color, calm meditative luxury mood, product kept exact in shape/material/color with locked identity across all reel frames, buttery smooth slow motion
+NEGATIVE: fast or jerky motion, warped or duplicated product, invented surface patterns, plastic CGI sheen, blown highlights, focus hunting, flicker, color shift away from real material, distorted proportions
+SHOTS:
+ 1) extreme close-up gliding along the product texture / calm neutral macro set, soft key light grazing the surface / closeup
+ 2) detail of join/finish with rolling rack focus / same set, slow focus rolling across an edge or seam / closeup
+ 3) slow reveal of the product's hero detail / warm neutral backdrop, light catching the signature feature / closeup
+MOTION: [1] ultra-slow lateral glide across the surface  [2] slow rack focus pull along the edge  [3] gentle slow tilt revealing the hero detail with a light sweep
+  music_mood: calm ambient ASMR · transition: fade · dur/shot: 3s
+
+■ Variant Showcase Grid  (image_set · ◈2 · [experimental,needs_human_review])
+POSITIVE: SAME product silhouette and geometry across all 4 shots — only the color or finish variant changes, never the shape, angle or framing; clean product variant comparison grid, each shot one color or finish option of the same product, soft even diffused overhead studio light, pure white or light greige seamless background, product centered with generous negative space, consistent camera angle and distance across all 4 shots for easy comparison, true-to-material color accuracy — preserve exact variant color/finish as supplied, no invented colors, no color drift between shots, precise contact shadow, crisp clean edges, commercial catalog quality
+NEGATIVE: invented or fantasy colors not in the seller's actual variant range, color drift or shift from the real product finish, warped or duplicated product, mixed products in a single frame, cluttered background, inconsistent camera angle between shots, harsh shadows, blown highlights, plastic CGI sheen, distorted proportions, props overlapping the product, multiple variants combined into a single image
+SHOTS:
+ 1) product in variant 1 (first color/finish option), centered front view / clean neutral seamless studio, soft even overhead light / medium_shot
+ 2) product in variant 2 (second color/finish option), same angle as shot 1 / identical clean neutral seamless studio setup / medium_shot
+ 3) product in variant 3 (third color/finish option), same angle as shot 1 / identical clean neutral seamless studio setup / medium_shot
+ 4) product in variant 4 (fourth color/finish option), same angle as shot 1 / identical clean neutral seamless studio setup / medium_shot
+
+══════════════════ 07 TECH (7) ══════════════════
+
+■ Void Hero Cut  (image_set · ◈2)
+POSITIVE: CRITICAL: identical product across all 4 shots, locked geometry, no morph or shape/size drift between angles, identical to the reference product (same exact color, finish, materials, proportions, port and button layout and branding placement), no invented parts or added logos. 100mm macro lens, f8 deep focus, premium tech product hero shot on seamless matte-black infinity cove, dramatic single softbox key from upper left, subtle cool rim light defining edges, controlled specular highlights on aluminum and glass, soft contact shadow grounding the device, color-accurate, crisp product silhouette, glossy gadget-launch advertising look.
+NEGATIVE: warped product geometry, melted or rounded edges, duplicated ports, extra or missing buttons, distorted brand label, wrong proportions, harsh blown specular highlights, dusty smudged surface, fingerprints, busy distracting background, reflections of the camera or photographer, plastic CGI toy look, color shift on the device
+SHOTS:
+ 1) front-on hero angle, device perfectly upright and centered / infinite matte-black studio void, soft contact shadow beneath / medium_shot
+ 2) three-quarter angle showing face and side profile, slight low camera for stature / dark seamless cove with cool rim light raking the edge / medium_shot
+ 3) floating slightly above surface, dramatic levitation hero / black void with a single tight specular highlight band / medium_shot
+ 4) back/side three-quarter showing ports and detailing / dark backdrop with faint gradient glow behind the device / closeup
+
+■ Spec Callout Grid  (image_set · ◈2 · 🅣)
+POSITIVE: CRITICAL: identical product across all shots, locked geometry, no morph or shape/size drift, consistent angle family from frame to frame, 85mm lens at f9, crisp edge-to-edge definition, bright even diffused key with broad soft fill and gentle rim separation over a smooth gradient backdrop, device isolated on a generous negative-space panel with a clean uncluttered empty margin reserved for composited spec callouts, true-to-spec rendering of metal, glass and matte surfaces, identical to the reference product (same exact color, finish, materials, proportions, port/button layout and branding placement), no invented parts or added logos, calm tech-catalog mood
+NEGATIVE: warped geometry, extra or duplicated ports or buttons, distorted proportions, cluttered background intruding into the callout zone, harsh shadows, plastic CGI toy finish, lens flare, leader-line arrows touching or overlapping the product, callout zone filled or obstructed, blown specular highlights
+SHOTS:
+ 1) device front-on, offset left in frame leaving negative space / bright soft-gradient backdrop, large empty area to the right for callouts / medium_shot
+ 2) three-quarter angle highlighting the control surface and buttons / clean light-grey panel with even fill light / medium_shot
+ 3) slight top-down tilt emphasizing the top face of the device / minimal white seamless, top area open for headline callout / medium_shot
+ 4) detail framing on the port/charging area for a feature panel / soft cool backdrop with directional separation light / closeup
+
+■ Macro Tactile Zoom  (image_set · ◈2)
+POSITIVE: CRITICAL: identical product across all shots, locked geometry, no morph or shape/size drift, extreme macro tactile detail of the device, raking grazing light revealing micro-texture, brushed aluminum grain, anodized finish, mesh weave, soft-touch coating, fine engraving and seams, 100mm macro lens at f4 with razor-thin focus and creamy bokeh falloff, focus-stacked detail on the hero edge, texture, finish and material identical to the reference product (same exact color, anodizing, grain direction, port and button layout and branding placement), no invented parts or added logos, luxurious tech-craftsmanship mood
+NEGATIVE: soft mushy detail, out-of-focus hero subject, warped surface, fake or invented textures, repeating pattern artifacts, dust and lint, fingerprints, color noise, oversharpening halos, plastic CGI toy look, duplicated seams, smeared micro-detail, blown specular hotspots
+SHOTS:
+ 1) extreme closeup on the brushed metal / finish texture / dark macro set, single grazing light across the surface / closeup
+ 2) closeup on a physical button, dial or crown showing machining / intimate low-key macro with soft falloff / closeup
+ 3) closeup on speaker mesh / sensor / weave detail / macro set with cool rim accent / closeup
+ 4) closeup on a logo-free engraved edge / chamfer / seam / dark backdrop, shallow-focus macro / closeup
+
+■ Desk Setup Flatlay  (image_set · ◈2)
+POSITIVE: CRITICAL: identical product across all 4 shots, locked geometry, no morph or shape/size drift, device as the unambiguous hero. Shot on 35mm at f2.8, focus locked on the device, tack-sharp against gently blurred surroundings. Soft window daylight as key, low-contrast fill, faint rim along the device edge. Minimal desk flatlay on warm walnut with linen texture, small plant and notebook kept subordinate to the device. Identical to the reference product (same exact color, finish, materials, proportions, port/button layout and branding placement), no invented parts or added logos. Warm neutral, cozy work-from-home mood, tidy negative space.
+NEGATIVE: warped product, duplicated devices, cluttered messy desk, distracting bright props competing with the product, plastic CGI toy finish, blown-out overexposed window, harsh shadows, tangled extra cables, color cast on the device, off-scale or wrong-proportion props, product lost in the busy scene
+SHOTS:
+ 1) product centered as hero among tidy props, top-down / top-down walnut desk flatlay with plant, notebook and coffee / full_body
+ 2) product placed in use-context at a 45-degree eye-level angle / desk corner near a bright window, soft daylight / medium_shot
+ 3) product in foreground, props softly blurred behind / minimal desk vignette with shallow background bokeh / medium_shot
+ 4) detail of product resting beside a single complementary prop / styled desk surface with linen texture / closeup
+
+■ In-hand Quick Demo  (reel · ◈4 · [experimental])
+POSITIVE: CRITICAL: identical product across both shots, locked geometry, no morph or shape/size drift; identical to the reference (same exact color, finish, materials, proportions, port/button layout and branding placement), no invented parts or added logos; in-hand demo, partial-hand / wrist-entry framing, only the lower palm and thumb edge visible, any visible fingers well-formed and natural with no extra or fused digits, anatomically correct relaxed grip; 35mm at f/2.0, focus locked on device, slightly soft background; clean daylight, soft window key, gentle fill, subtle rim on the edge; crisp surface detail, creator-style vertical 9:16, effortless everyday mood
+NEGATIVE: full hand with all five fingers in frame, six fingers, fused or webbed digits, floating disconnected hand, melting or warped fingers, unnatural grip, warped product geometry, duplicated devices, jittery shaky motion, plastic CGI toy look, cluttered background, blown highlights, product slipping out of frame
+SHOTS:
+ 1) hand entering from the bottom edge holding the device at a natural grip angle, product face visible and sharp / clean daylight environment, partial wrist-entry from below frame / medium_shot
+ 2) device tilted slightly to reveal a key feature surface, only thumb and palm edge visible at the grip / same casual environment, slight camera drift / closeup
+MOTION: [1] slow push-in as hand lifts device into frame from below  [2] gentle tilt reveal with shallow drift, product stays center-sharp
+  music_mood: lo-fi house, 95-110 BPM, mellow Rhodes keys with soft boom-bap drums and warm sub-bass, bright relaxed everyday energy, reference-track vibe of a modern creator-vlog background groove · transition: cut · dur/shot: 3s
+
+■ Tech Unbox ASMR  (reel · ◈6)
+POSITIVE: CRITICAL: identical product across all 3 shots, locked geometry, no morph or shape/size drift, 50mm lens at f/2.0, slow rack-focus pulling onto the device as it is unveiled, ASMR unboxing reel on a dark moody tabletop, soft directional key with subtle glow, faint rim edge-lighting the silhouette, gentle fill holding shadow detail, hands-free framing, matte packaging easing open to a satisfying reveal, device identical to the reference product (same exact color, finish, materials, proportions, port/button layout and branding placement), no invented parts or added logos, shallow depth, vertical 9:16, premium gadget launch teaser mood
+NEGATIVE: warped product, duplicated devices, distorted geometry, jittery shaky motion, blown specular highlights, plastic CGI toy look, cluttered background, motion blur smearing the product, dull flat reveal, inconsistent product between frames, cheap-looking packaging
+SHOTS:
+ 1) sealed package front-on, anticipation framing / closed matte premium box on a dark tabletop, single glow light / closeup
+ 2) top-down lid-off reveal, device emerging from foam / box lid lifting to reveal the device nested inside / medium_shot
+ 3) final device hero, slow turn into the light / device lifted out, hero glow on dark backdrop / medium_shot
+MOTION: [1] slow push-in on the sealed box  [2] top-down lid lift with gentle parallax  [3] slow orbit reveal with light glint sweep
+  music_mood: genre: minimal ambient electronic with ASMR foley-forward layering; BPM: 70-85; instruments: soft sub-bass pads, muted synth swells, tactile foley (packaging crinkle, lid slide, button click, fabric brush) mixed front and center; energy: calm, hushed, anticipatory build to a single satisfying reveal accent; reference vibe: Apple product-teaser ASMR meets Tycho-style downtempo ambient · transition: cut · dur/shot: 3s
+
+■ 360 Glow Spin  (reel · ◈6)
+POSITIVE: CRITICAL: identical product across every frame of the spin, locked geometry, no morph or shape/size drift, consistent surface reflection through the rotation, shot on an 85mm macro lens at f/8 with deep edge-to-edge focus, 360-degree turntable product spin, sleek dark gradient void, rotating rim glow tracing the edges, key light raking the body with soft fill, glossy floor with a mirror reflection, controlled speculars sweeping as it turns, identical to the reference product (same exact color, finish, materials, proportions, port/button layout and branding placement), no invented parts or added logos, vertical 9:16, premium gadget-launch reveal
+NEGATIVE: warped or morphing geometry, duplicated ports, the device changing shape or size between frames, distorted brand label, jittery wobble or off-axis spin, blown specular highlights, plastic CGI toy finish, cluttered background, motion blur smear, color shift, inconsistent or duplicated reflection, flickering between frames
+SHOTS:
+ 1) front face rotating into a three-quarter view / reflective turntable in a dark gradient void, rim glow on / medium_shot
+ 2) side profile continuing the smooth 360 rotation / glossy floor with soft mirror reflection, sweeping highlight / medium_shot
+ 3) back and final return to front, completing the spin / dark void with rim light tracing the rear edge / medium_shot
+MOTION: [1] smooth clockwise turntable rotation, locked camera  [2] continuous rotation with highlight glint sweeping across body  [3] completing rotation, slow push-in on the hero front face
+  music_mood: genre: sleek minimal electronic / deep tech-house; BPM: 110-120; instruments: clean four-on-the-floor kick, sub bass, muted plucks, airy synth pads, subtle metallic percussion ticks; energy: smooth, controlled, confident build; reference-track vibe: Apple/flagship-gadget launch reveal, Tycho-meets-Bonobo polish · transition: fade · dur/shot: 3s
+
+══════════════════ 08 PET (12) ══════════════════
+
+■ Pet Product Hero  (image_set · ◈2 · 🅣)
+POSITIVE: uploaded pet product as the hero, identical to reference (same shape, color, label, proportions, material finish); clean editorial product photography on a pure white or soft linen backdrop, soft-box beauty-dish key light with a fill scrim and a subtle rim for edge separation, shot on 100mm f/8 for full front-to-back sharpness, a soft contact shadow grounding the product, packaging and branding crisp and fully readable, magazine-grade still life, no pets in frame, pure product star; keep a clean uncluttered margin reserved for a composited spec or size badge
+NEGATIVE: warped or melted product shape, distorted packaging, wrong proportions, altered product color, duplicated product, pet anatomy in frame, dirty or cluttered background, harsh blown specular reflections, oversaturated HDR, plastic sheen, blown highlights
+SHOTS:
+ 1) product front view perfectly centered, clean shadow below / pure white seamless studio, large soft-box left key light / closeup
+ 2) product 3/4 angle showing top and front, natural warm shadow / soft linen surface, warm diffused window light / medium_shot
+ 3) product top-down flat-lay, perfect symmetry / light grey backdrop, rim light for edge definition / closeup
+ 4) product side profile with a single natural prop hint (leaf or ribbon, no text) / minimal wooden table surface, soft bokeh background, morning light / medium_shot
+
+■ Cuddle Hour  (image_set · ◈2)
+POSITIVE: uploaded pet product, identical to reference (same shape, color, proportions), placed naturally beside a happy, photogenic dog or cat in a sunlit cozy home; soft golden window key light with gentle fill, shallow depth of field on 50mm f/1.8, creamy bokeh, lived-in warm domestic mood, the pet naturally proportioned with correct limb and paw count and soft realistic fur, heart-warming candid pet-and-product moment, product staying crisp and true-to-shape with original colors intact
+NEGATIVE: warped or distorted pet anatomy, fused paws, unnatural stiff fur flow, plastic-looking fur, dead glassy eyes, warped or melted product, altered product color, duplicated product, cluttered messy background, oversaturated HDR
+SHOTS:
+ 1) product front view resting on rug, fluffy dog nuzzling beside it / sunlit living-room rug with soft throw blanket, warm afternoon window light / medium_shot
+ 2) product 3/4 angle, cat curled around it sleepily / cozy bed with linen sheets, soft diffused daylight / medium_shot
+ 3) product styled centered, pet paw gently touching it / wooden floor near a window with houseplant bokeh / closeup
+ 4) product placed beside a content pet looking at camera / knit-blanket couch corner, golden hour glow / full_body
+
+■ Macro Crunch  (image_set · ◈2)
+POSITIVE: extreme macro food photography of the uploaded pet treat, identical to reference in shape and color; 100mm macro lens at f/8 with focus-stacking for razor-sharp front-to-back surface detail, raking hard sidelight carving out crunchy grain and ingredient texture, a clean scatter of matching crumbs and natural ingredient cues, dark moody studio backdrop with deep falloff, premium gourmet pet-treat presentation, appetizing true-to-life color and form
+NEGATIVE: missed focus on the key surface texture, warped or recolored treat, altered shape, fake plastic CGI texture, over-sharpened halos, oversaturated cartoonish color, unappetizing dull color, dust spots, busy distracting background, duplicated product, blown specular highlights
+SHOTS:
+ 1) product extreme macro front, surface texture filling frame / dark slate surface, single hard sidelight / closeup
+ 2) product 3/4 detail, edge crunch and crumbs in focus / moody studio with shallow falloff / closeup
+ 3) product detail surrounded by raw ingredient cues / dark backdrop with a scatter of matching ingredients / closeup
+ 4) single treat broken to reveal interior texture / clean dark table, top sidelight / closeup
+
+■ On-Pet Fit  (image_set · ◈5 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: the worn product stays identical to reference (same color, hardware, proportions) and the same well-formed dog across every shot, no morph or drift; realistic on-pet wearable (collar, harness, bandana or apparel) on a well-groomed photogenic dog, fitted naturally with correct drape, buckle and proportion; soft natural light, 85mm portrait look at f/4, clean catalog-ready styling, accurate product color and hardware, believable contact with the fur, the dog anatomically correct with four legs, correct paw count and a single natural muzzle, natural fur flow
+NEGATIVE: product floating off the body, wrong scale or fit, warped or stretched buckles and straps, recolored or altered product, distorted pet anatomy, warped muzzle, fabric fused or melting into fur, plastic-looking fur, harsh unflattering shadows
+SHOTS:
+ 1) product worn, pet standing front view full fit / clean light-grey studio backdrop, soft key light / full_body
+ 2) product worn, pet 3/4 profile showing fit and hardware / minimal studio, soft side light / medium_shot
+ 3) product worn, pet walking naturally / outdoor park path, soft overcast daylight / full_body
+ 4) detail of the worn product on neck/back, fit close-up / grassy lawn with bokeh / closeup
+
+■ Wait For The Zoomies  (reel · ◈4)
+POSITIVE: CRITICAL: the same dog and the same product, identical to reference in shape and color, across both frames — locked pet identity, no morph or drift; playful pet-toy interaction reel, shot 1 builds anticipation with the product as hero teaser, shot 2 is a close joyful reaction as the pet paws, noses and gently mouths the toy in tight medium-shot; bright natural daylight key with soft fill, handheld energy, shot on 50mm f/2.8, crisp realistic fur, the dog naturally proportioned with correct limb count
+NEGATIVE: warped or stretched product, altered product color, product drifting or morphing between frames, pet identity drift between frames, distorted pet anatomy, motion-blur smearing the product into mush, choppy unnatural movement, dull flat lighting, plastic-looking fur
+SHOTS:
+ 1) product held up front-and-center as the teaser hero, dog staring intently / tidy living room floor, bright morning daylight, dog sitting still and alert / medium_shot
+ 2) dog close-up joyfully interacting with the product — pawing, nosing or mouthing it, product clearly visible / same living room floor, product placed down / medium_shot
+MOTION: [1] slow tense push-in building anticipation  [2] gentle handheld hold on tight pet-toy interaction, slight drift in
+  music_mood: playful upbeat build-and-drop · transition: whip · dur/shot: 3s
+
+■ Talking Pet Skit  (reel · ◈4 · [experimental,needs_human_review])
+POSITIVE: CRITICAL: the same pet and the same product, identical to reference in shape and color, across both frames — locked pet identity, no morph or drift; UGC talking-pet skit, shot 1 a clean product B-roll reveal, shot 2 an expressive dog or cat with subtle minimal mouth movement appearing to speak ONE or TWO short sentences to camera; bright friendly selfie-style indoor light with soft fill, shot on 35mm f/2.8, vlog framing, the pet keeping a single natural muzzle with consistent mouth and tooth shape across both frames
+NEGATIVE: grotesque uncanny mouth or muzzle warping, human-like mouth morph, extra eyes or teeth, tooth morph, lip-sync desync smearing the muzzle, pet identity drift between frames, melting or plastic-looking fur, warped or recolored product, jittery flicker, dull flat lighting
+SHOTS:
+ 1) product 3/4 hero B-roll — no pet talking, pet noses into frame at end as hook / bright cozy living room table, friendly daylight, product centered as hero prop / medium_shot
+ 2) pet delivering max 2-sentence talking CTA, minimal mouth movement, product visible at side / same room low angle, pet face-to-camera close, product held beside it / closeup
+MOTION: [1] gentle push-in on product B-roll, pet nose entering frame at end  [2] soft handheld hold on talking pet face, barely perceptible sway
+  music_mood: quirky comedic upbeat · transition: cut · dur/shot: 3s
+
+■ Single-Hero Sizzle Reel  (reel · ◈2)
+POSITIVE: single cinematic close-up of the uploaded pet product, identical to reference in shape and color, performing one satisfying action — water flowing from a dispenser, treats dropping, a button click, a lid opening; ultra-clean minimal backdrop, soft directional studio light with a gentle rim, shot on 100mm f/4 with a slow rack focus onto the action point, slow-motion feel, ASMR-adjacent tactile quality, no pets in frame
+NEGATIVE: warped or melted product, altered product color, duplicated product, product morphing mid-action, pet anatomy in frame, cluttered background, harsh blown reflections, oversaturated HDR, shaky or stuttering motion
+SHOTS:
+ 1) product performing its key single action — dispensing, pouring, opening, or glowing — in tight close-up / pure white or soft grey seamless studio surface, gentle soft-box side light / closeup
+MOTION: [1] ultra-slow push-in following the product action, subtle rack focus on the action point
+  music_mood: minimal clean ASMR ambient · transition: none · dur/shot: 4s
+
+■ Hands-On Pour & Unbox Reel  (reel · ◈4 · [needs_human_review])
+POSITIVE: CRITICAL: the same product, identical to reference in shape and color, across both frames; clean hands-on demo reel where a single well-formed hand — exactly five natural fingers, anatomically correct grip — is cropped partially (wrist to mid-finger, fingertips out of frame) pouring, scooping or unboxing the product; kitchen counter or minimal studio surface, bright natural light, shot on 50mm f/5.6, satisfying tactile demo energy, product staying perfectly accurate in color and shape
+NEGATIVE: six or more fingers, fused or webbed fingers, wrong finger count, all fingertips fully visible in frame, hand features changing between frames, pet anatomy in frame, warped or recolored product, duplicated product, cluttered messy background, harsh shadows
+SHOTS:
+ 1) partial hand (cropped at mid-finger) opening or unboxing the product — lid lift or bag tear, product label facing camera / clean kitchen counter, bright natural window light, product package in background / closeup
+ 2) partial hand (cropped at mid-finger) pouring or scooping the product into the bowl, satisfying single-serving action / same counter, pet bowl in foreground / medium_shot
+MOTION: [1] gentle push-in following the hand unboxing action, product label staying sharp  [2] slow downward tilt following the pour or scoop into the bowl
+  music_mood: clean upbeat lifestyle · transition: cut · dur/shot: 3s
+
+■ Device UI Mockup Set  (image_set · ◈2 · 🅣)
+POSITIVE: clean tech product photography of the uploaded pet device, identical to reference (same body shape, color, ports, proportions); device screen rendered as a blank glowing rectangle placeholder with a clean uncluttered area reserved for composited UI, crisp cool-toned soft-box key light with a subtle blue rim, shot on 50mm f/8, modern minimalist tech aesthetic, no pets in frame
+NEGATIVE: screen showing rendered content instead of a blank glowing placeholder, garbled hallucinated on-screen graphics, warped device body, altered device color, duplicated device, distorted device proportions, pet anatomy in frame, dirty cluttered background, harsh blown reflections, plastic sheen
+SHOTS:
+ 1) device front view perfectly centered, screen facing camera as blank glow placeholder / white seamless studio, soft-box top-front light / closeup
+ 2) device 3/4 angle showing top and front, screen at angle with blank glow / dark matte surface, cool blue rim light / medium_shot
+ 3) device top-down flat-lay, screen blank centered / minimal desk surface with light grey backdrop / closeup
+ 4) device side profile in hand-free stand or propped, screen visible as blank placeholder, natural mood / soft lifestyle surface — linen or wood — warm diffused light / medium_shot
+
+■ In-Room Scale Set  (image_set · ◈2 · 🅣)
+POSITIVE: uploaded pet product, identical to reference in shape and color, placed in a real living space at accurate scale relative to the surrounding furniture; the room environment provides a natural size reference, shot on a 28-35mm wide lens at f/8 for honest spatial proportion, warm interior ambient light, inviting home mood, clean edge margins reserved for composited dimension callouts, no pets in frame unless the product is pet furniture
+NEGATIVE: warped or shrunken product, incorrect scale relative to surrounding furniture, altered product color, duplicated product, floating product, distorted room perspective, pet anatomy in frame (unless product is pet furniture), cluttered distracting background, harsh flash lighting, oversaturated HDR
+SHOTS:
+ 1) product placed naturally on floor in corner, furniture providing scale context, product facing camera / living room corner, sofa and bookshelf visible as scale reference, soft ambient light / full_body
+ 2) product centered on floor, wide shot showing full room scale relationship / open living room floor, TV unit in background as scale anchor / full_body
+ 3) product height comparison shot against door frame or wall, 3/4 angle / pet corner or laundry room wall, measuring-tape prop or door frame as scale hint / medium_shot
+ 4) product top-down flat showing footprint relative to floor tiles or rug pattern / top-down overhead room view, floor grid visible / closeup
+
+■ Habitat Scene Set  (image_set · ◈2)
+POSITIVE: uploaded product, identical to reference in shape and color, installed or placed naturally inside a beautifully lit aquarium, vivarium or terrarium; lush aquatic plants or earthy moss and rock substrate, atmospheric backlit habitat glow with soft ambient fill, shot on 60mm macro at f/5.6 with clean water clarity, cinematic nature-documentary feel, genuine ecosystem ambiance, plants and static substrate only with no live animals in frame, photoreal lighting without exaggerated CGI
+NEGATIVE: warped or recolored product, duplicated product, cartoonish oversaturated color, fake plastic-looking vegetation, anachronistic out-of-place objects, unrequested live animals introducing morph risk, murky dirty water, cluttered ugly background, harsh flash lighting, broken glass distortion artifacts
+SHOTS:
+ 1) product installed in habitat — filter, heater or decoration placed naturally among plants, full habitat context / freshwater planted aquarium, soft blue-green ambient light, lush aquatic plants background / medium_shot
+ 2) product close-up showing installation detail, blurred aquatic plants in bokeh background / same aquarium, tight focus on product / closeup
+ 3) product placed in terrarium — lighting unit, hide or decor — warm earthy habitat mood / terrarium or vivarium with earthy substrate, moss and wood decor, warm reptile lamp glow / medium_shot
+ 4) product top-down showing placement within the full habitat layout / top-down overhead aquarium or terrarium view, habitat fully styled / closeup
+
+■ Pet Wearable Spec Sheet  (image_set · ◈2 · 🅣)
+POSITIVE: clean flat-lay spec photography of the uploaded pet wearable (harness, halter, collar or ID tag), identical to reference (same color, stitching, hardware, proportions); product laid perfectly flat on a white or light grey surface, all buckles and adjustment points clearly visible, even overhead key light with a soft fill to keep hardware legible, shot on 50mm f/8 top-down, catalog-grade clarity, clean margins reserved for composited dimension lines and engraving callouts, no pets in frame
+NEGATIVE: warped or stretched product, altered color or texture, duplicated product, warped buckles or D-ring hardware, pet anatomy in frame, wrinkled or bunched fabric obscuring hardware, harsh shadows creating ambiguity, uneven lighting, plastic sheen on metal hardware, cluttered background
+SHOTS:
+ 1) product fully laid flat front view — all straps extended and hardware visible, symmetrical layout for dimension overlay / pure white seamless flat surface, overhead even studio light / full_body
+ 2) product 3/4 close showing adjustment buckle and D-ring hardware detail / white surface, angled sidelight for texture depth / closeup
+ 3) product back view flat lay showing back-clip or spine detail, fully extended / light grey surface, overhead even light / full_body
+ 4) extreme macro of the ID tag or engraving panel — surface texture and blank engraving zone clearly visible for text overlay compositing / white or soft marble surface, macro ring light / closeup
+
+══════════════════ 09 UGC (7) ══════════════════
+
+■ Static UGC Photo Ad  (image_set · ◈2 · 🅣)
+POSITIVE: authentic iPhone-shot UGC still, phone main camera ~26mm equivalent at f1.8, natural HDR and shallow phone-lens bokeh, faint handheld imperfection; soft natural window key with gentle bounce fill and warm neutral tones, an organic social-post feel rather than a studio shoot; creator holds the product naturally with a genuine warm micro-expression, the product label crisp and sharp, true-to-life skin and candid unposed energy; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; the product-holding hand is a single well-formed hand with exactly five natural fingers and an anatomically correct grip; consistent creator identity across all four shots; clean uncluttered margins reserved for a composited headline and CTA caption
+NEGATIVE: studio overlit infomercial look, fake forced smile, floating disconnected product, distorted or warped product shape, missing fingers, six fingers, fused or webbed digits, malformed grip, duplicated person, plastic waxy skin, dead lifeless eyes, garish cluttered background, overposed stiff model, identity drift between the four shots
+SHOTS:
+ 1) holding product at chest level, looking directly at camera with a warm genuine smile / bright living room, large window key light camera-left, soft plants bokeh / medium_shot
+ 2) both hands cradling or examining the product, product label facing camera / close on hands and product on a clean table surface, warm daylight side-light / closeup
+ 3) product integrated into a lifestyle moment (holding near face / in use context), relaxed expression / bedroom or bathroom vanity, soft natural light, clean tidy background / closeup
+ 4) product raised beside face, slight head tilt, inviting look toward camera / same living room as shot 1, cozy warm afternoon light / medium_shot
+
+■ TikTok Discovery POV  (reel · ◈2)
+POSITIVE: POV discovery moment shot on a phone main camera ~26mm equivalent, f1.8, natural HDR, autofocus snapping from the surface to the product as it lifts, slight handheld sway; soft side daylight from a nearby window as key with gentle bounce fill, true-to-life skin; creator reaches for the product resting on a home surface, picks it up and turns it to inspect — wide eyes, open-mouthed gasp, light head tilt, no speaking, all reaction read through face and body; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; well-formed hands, five natural fingers gripping it cleanly, consistent creator identity throughout; candid, unposed documentary feel
+NEGATIVE: talking mouth forming words, lip movement suggesting speech, open-mouth talking pose, frozen blank expression, missing fingers, six fingers, fused or webbed digits, warped or distorted product, sterile studio setup, plastic waxy skin, posed model stiffness, identity drift across the clip
+SHOTS:
+ 1) reaching toward product with genuine curiosity, picking it up, inspecting with wide eyes and a delighted gasp expression / casual home surface (table/counter/bed), product placed in front, soft daylight from the side / medium_shot
+MOTION: [1] handheld push-in following the hand reach, slight zoom as product lifts, hold on the delighted reaction face
+  music_mood: playful viral trending pop · transition: cut · dur/shot: 4s
+
+■ Hook + CTA Ad  (reel · ◈4 · [experimental,needs_human_review])
+POSITIVE: high-energy direct-response UGC ad shot on a phone main camera ~26mm equivalent, f1.8, natural HDR, slight handheld sway with quick autofocus snap; bright punchy practical key (a window or daylight bulb), soft bounce fill, clean bold simple background; shot 1 closeup: spokesperson points at camera with wide eyes delivering one scroll-stopping hook line; shot 2 medium: product raised beside face for a hard CTA with a big smile, pointing to bio; confident, emphatic delivery with crisp lip-sync, 1–2 sentences per shot; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; locked facial identity across both shots, true-to-life skin, well-formed pointing and product-holding hand with five natural fingers
+NEGATIVE: lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, low-energy flat delivery, frozen stiff mouth, missing fingers, six fingers, fused or webbed digits, warped or distorted product, plastic waxy skin, dim muddy lighting
+SHOTS:
+ 1) pointing finger at camera delivering the hook ('stop scrolling if you…'), wide eyes, 1 sentence, talking / clean modern room, bright punchy key light, bold simple background / closeup
+ 2) product as hero, delivering direct CTA ('tap the link now'), big smile and point to bio, 1 sentence / same setup, product raised beside face / medium_shot
+MOTION: [1] fast snap zoom-in on the hook line, lips synced to single sentence  [2] quick push-in as product lifts to frame, lip-synced CTA delivery
+  music_mood: high-energy punchy trap-pop · transition: whip · dur/shot: 3s
+
+■ Unboxing Reaction  (reel · ◈4 · [experimental,needs_human_review])
+POSITIVE: genuine first-look unboxing UGC; shot 1 top-down phone B-roll, shot on a phone main camera ~26mm equivalent, f1.8, autofocus snapping to the box, no face, soft daylight from a nearby window keying the package on the cozy floor, real hands peeling tape and lifting the flaps open; shot 2 same daylit setting, handheld medium shot at chest height with slight sway, creator face in frame, wide-eyed gasp and a single-sentence reaction, item held up into the light; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; consistent creator identity across both shots; unboxing hands well-formed with exactly five natural fingers and an anatomically correct grip; eager, true-to-life energy
+NEGATIVE: lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, warped or crushed packaging, distorted product, missing fingers, six fingers, fused or webbed digits, malformed grip, floating disembodied hand, fake-looking exaggerated surprise, frozen stiff mouth, plastic waxy skin, smeared or warped packaging print
+SHOTS:
+ 1) hands opening the box, lifting item out, product label facing up — pure B-roll, no talking / top-down over the package on a cozy floor/table, soft daylight, tape being peeled and flaps opening — NO face in frame / closeup
+ 2) wide-eyed gasp reaction holding the product up, maximum 1 sentence of enthusiastic verbal reaction, then pointing to bio / same setting, creator face now in frame, item held up in the light / medium_shot
+MOTION: [1] top-down push-in as the box opens and item lifts, no voice — music and sound effects only  [2] quick zoom on gasp reaction as product lifts, short 1-sentence lip-synced line then smile
+  music_mood: playful excited pop · transition: whip · dur/shot: 4s
+
+■ Problem → Solution  (reel · ◈6 · [experimental,needs_human_review])
+POSITIVE: three-shot UGC reel with a clear emotional arc, shot on a phone main camera ~26mm equivalent, f1.8, natural HDR, slight handheld sway, autofocus snap; shot 1 closeup: frustrated relatable face, hand on forehead, dim cluttered room under cool flat overcast window light, desaturated, 1-sentence problem line; shot 2 medium: skeptical-curious holding product as the light warms with soft daylight bounce fill, 1-sentence pivot ('so I tried this'); shot 3 medium: relieved and happy in a bright living room, warm golden window key, still holding product, 1-sentence payoff + CTA; practical cool-to-warm light shift carried by expression, not theatrical; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; locked facial identity across all three shots, natural well-formed hands with five fingers
+NEGATIVE: lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, overacted theatrical fake emotion, frozen stiff mouth, missing fingers, six fingers, fused or webbed digits, warped face, plastic waxy skin, soap-opera melodramatic lighting, inconsistent lighting within a single shot
+SHOTS:
+ 1) frustrated face, hand on forehead, 1-sentence problem statement ('if you also struggle with…'), sighing delivery / dim slightly cluttered room, cool flat overcast light, desaturated tones / closeup
+ 2) skeptical-but-curious, holding product and reading it aloud — 1-sentence pivot line ('so I actually tried this') / same room, light beginning to warm, product introduced / medium_shot
+ 3) relieved and happy, holding product, 1-sentence payoff + gesture toward link/bio / bright cheerful living room, warm golden light / medium_shot
+MOTION: [1] static slightly shaky handheld, heavy sigh, lips synced to 1-sentence problem line  [2] slow push-in as she inspects the product, lips synced to short pivot line  [3] slow pull-back on upbeat CTA, confident talking and gesture
+  music_mood: tense build, uplifting release · transition: fade · dur/shot: 3s
+
+■ Talking-Head Testimonial  (reel · ◈6 · [experimental,needs_human_review])
+POSITIVE: authentic self-shot iPhone selfie held at arm's length, ~24mm front camera, f1.8, natural HDR, autofocus snap, slight handheld micro-sway; soft window key camera-left in shot 1, warm lamp fill and shallow home-interior bokeh in shot 2, golden afternoon glow in shot 3; spokesperson speaking directly to camera with natural eye contact, micro-expressions and subtle blinks, max 1–2 sentences per shot, clean lip-sync; shot 1 relatable confession hook with open hand gesture, shot 2 product held beside face delivering core benefit with a genuine smile, shot 3 confident nod and soft recommendation pointing toward link/bio; product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; consistent locked creator identity across all three shots, warm true-to-life skin; gesturing hand is a single well-formed hand with five natural fingers
+NEGATIVE: lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, stiff frozen mouth, robotic unnatural delivery, missing fingers, six fingers, fused or webbed digits, warped face, plastic waxy skin, dead lifeless eyes, studio overlit infomercial look, duplicated person
+SHOTS:
+ 1) seated facing camera, leaning in slightly, delivering 1-sentence relatable hook with open hand gesture / bright living room, soft sofa and plants blurred behind, large window key light camera-left / closeup
+ 2) holding the product beside face, delivering 1-sentence core benefit — genuine smile / same living room, warm lamp fill, shallow depth bokeh / medium_shot
+ 3) wrapping up with a confident nod, 1-sentence soft recommendation, pointing toward link/bio / same living room, golden afternoon light, relaxed setting / medium_shot
+MOTION: [1] slow push-in on face during hook line, lips synced to 1-sentence hook  [2] static handheld micro-sway, talking with natural blinks, product in frame  [3] slow pull-back on CTA nod and point gesture
+  music_mood: warm confident lo-fi · transition: cut · dur/shot: 3s
+
+■ Product Demo  (reel · ◈8 · [experimental,needs_human_review])
+POSITIVE: hands-on UGC demonstration alternating face-to-camera lines with over-the-shoulder hand macro; talking shots on a ~26mm phone main camera at f1.8 with natural HDR, slight handheld sway and autofocus snapping to the face, cutting to tight phone macro on the hands operating the product (no face in that shot); soft diffused window daylight key with gentle bounce fill at the desk, crisp daylight in the tiled bathroom; real step-by-step interaction, product identical to the reference — exact shape, label, colorway and proportions, no relabeling or warping; operating hands well-formed with exactly five natural fingers and an anatomically correct grip; consistent locked facial identity across the talking shots, tight lip-sync; clean, energetic, trustworthy tone
+NEGATIVE: lip-sync desync, mouth or tooth morph, warped mouth shape, identity drift between shots, warped or distorted product, distorted or warped product label, missing fingers, six fingers, fused or webbed digits, melted or fused fingers, floating disembodied hand, floating disconnected product, frozen stiff mouth, plastic waxy skin, garbled glitchy on-screen graphics
+SHOTS:
+ 1) facing camera introducing the product held in one hand, 1-sentence intro talking / clean bright desk by window, soft diffused daylight, minimal props / medium_shot
+ 2) demonstrating step one, fingers interacting with product — B-roll with VO narration, no lip-sync / close over-the-shoulder onto hands operating the product on the desk — no face visible / closeup
+ 3) applying or using product on self, 1-sentence narration of the result mid-demo / bright bathroom or counter, crisp daylight, tiled background blurred / closeup
+ 4) presenting finished result with satisfied expression, 1-sentence verdict + CTA / back at the desk, result shown to camera, bright airy mood / medium_shot
+MOTION: [1] static talking shot, slight push-in, lips synced to 1-sentence intro  [2] top-down focus rack onto hands as they operate the product — no face, VO only  [3] handheld follow of the application motion, lip-synced 1-sentence narration  [4] slow push-in on the visible result with confident 1-sentence talking
+  music_mood: upbeat clean energetic pop · transition: whip · dur/shot: 3s
+
+══════════════════ 10 GENERAL (8) ══════════════════
+
+■ Clean Hero Pack  (image_set · ◈2)
+POSITIVE: uploaded product on a clean light-grey/white seamless background, identical shape/color/material/finish to reference, single product only (never duplicate or invent extra copies), keep any printed label/marking/engraving exactly as in the reference and do not fabricate lettering, commercial e-commerce hero product photography, large soft octabox key with gentle fill and a subtle contact shadow, 100mm at f/8 crisp edge-to-edge, true-to-life material, centered catalog framing
+NEGATIVE: invented product, shape morphing, added parts not in reference, color shift, warped geometry, plastic fake look, harsh shadows, blown highlights, duplicated product, distorted or warped label, cluttered background, reflections of crew
+SHOTS:
+ 1) product front view, squared to camera, centered / light-grey seamless studio, soft even key / medium_shot
+ 2) product 3/4 angle showing depth and side / same studio, slight floor shadow / medium_shot
+ 3) product top-down flat orientation, centered / same studio, overhead rig / medium_shot
+ 4) detail crop of the product's key feature/finish / same studio, tighter frame / closeup
+
+■ Lifestyle-in-Context  (image_set · ◈2)
+POSITIVE: uploaded product styled in candid real-life settings, warm natural window light, lived-in aspirational interiors, film color grade with gentle grain, 35mm at f/2.0, shallow depth with soft bokeh, product shape/color/material identical to reference, single product (no invented duplicates), label kept identical to reference, props complement but never obscure the product
+NEGATIVE: invented product, shape morphing, added parts not in reference, color shift, sterile studio look, harsh flash, overprocessed HDR, duplicated objects, product detail loss, busy distracting clutter, human face or fingers in frame
+SHOTS:
+ 1) product placed naturally beside a notebook and mug / sunlit wooden desk by a bright window, minimal props / medium_shot
+ 2) product on counter with a soft-focus plant behind / clean kitchen counter, morning light / medium_shot
+ 3) product on shelf as a lived-in accent / styled shelf with neutral linen and ceramics / medium_shot
+ 4) product close, soft bokeh living room behind / cozy sofa-side table, warm ambient glow / closeup
+
+■ Packaging & Unboxing  (image_set · ◈2 · 🅣 · [text_overlay])
+POSITIVE: premium unboxing sequence of the uploaded product, clean tabletop, soft diffused daylight, tasteful kraft/box/ribbon packaging, gifting aesthetic, product identical to reference, single product set, label area left blank for overlay or kept exactly as reference, 50mm at f/4, inviting warm mood
+NEGATIVE: invented product, shape morphing, added parts not in reference, color shift, messy crumpled packaging, dented or damaged box, plastic fake look, harsh shadows, duplicated items, cluttered background
+SHOTS:
+ 1) closed gift box with ribbon, product hidden inside / clean tabletop, soft daylight / medium_shot
+ 2) box half-open revealing tissue and product edge / same tabletop, lid lifting / medium_shot
+ 3) product fully revealed beside the open box and packaging / same tabletop / medium_shot
+ 4) hands-free product held-up gifting hero, no fingers in frame / warm close framing / closeup
+
+■ Macro Detail  (image_set · ◈2)
+POSITIVE: extreme macro detail of the uploaded product, raking side light revealing surface relief and material grain, 100mm macro at f/8 with focus-stack sharpness, true-to-material color, premium tactile feel, surface/finish/material identical to reference, preserve any engraved/embossed/printed mark exactly as in the reference (do not redraw lettering), reflection-controlled matte lighting for metal and glass
+NEGATIVE: invented texture not on reference, shape morphing, added parts not in reference, color shift, soft missed focus, plastic look, oversharpening halos, dust noise, material morphing, duplicated features, blown specular highlights, reflections of crew or equipment
+SHOTS:
+ 1) macro of the primary surface texture/grain / dark seamless surface, hard raking side light / closeup
+ 2) macro of the finish/coating or a seam edge / soft directional light, neutral backdrop / closeup
+ 3) macro of a key feature/hardware/engraved or embossed mark, preserved exactly from reference / focused spotlight, reflection-controlled / closeup
+ 4) macro of an edge/joint/material transition / low-angle grazing light / closeup
+
+■ Flat-Lay Grid  (image_set · ◈2 · 🅣 · [text_overlay])
+POSITIVE: top-down flat-lay of the uploaded product, clean styled surface (linen/wood/paper), soft even top light, knolling-style arrangement, product and any set components identical to reference with the exact same component count (no added or missing items), balanced negative space for overlay captions, 50mm equivalent at f/8 sharp throughout
+NEGATIVE: invented product or components, shape morphing, added parts not in reference, color shift, tilted perspective drift, harsh shadows, plastic look, duplicated items, missing components, cluttered overlap
+SHOTS:
+ 1) single product centered flat-lay / neutral linen surface, soft top light / medium_shot
+ 2) full set/bundle components arranged knolling-style, exact reference count preserved / same surface / medium_shot
+ 3) product with complementary props for context / styled surface with minimal props / medium_shot
+ 4) product beside a coin and a mug as a clear size reference, no hands in frame / same surface, scale reference beside product / medium_shot
+
+■ Any-Product Drop Reel  (reel · ◈4)
+POSITIVE: crisp product-drop teaser, clean white/light-grey studio, product identical to reference and consistent across both shots, bold confident framing, minimal aesthetic, vertical 9:16 social format
+NEGATIVE: invented product, shape morphing, added parts not in reference, color shift between shots, plastic look, jittery unstable motion, product morphing between shots, flickering between frames, harsh shadows, busy background
+SHOTS:
+ 1) overhead flat-lay, centered, props arranged / clean studio surface, product flat-lay from above / medium_shot
+ 2) product hero front-on, final reveal moment / same studio, hero standing/upright / medium_shot
+MOTION: [1] slow overhead push-in from wide to medium on the flat-lay  [2] fast cut reveal with a subtle zoom-out on the hero product
+  music_mood: upbeat · transition: cut · dur/shot: 3s
+
+■ Universal 360 Spin  (reel · ◈6 · [experimental])
+POSITIVE: smooth 360-degree rotation of the uploaded product on a turntable (product only — no model/hands), e-commerce turntable product video, perfectly even wraparound lighting, light-grey seamless background, product shape/color/material identical to reference at every angle, stable centered framing, no morphing during the spin
+NEGATIVE: invented product, morphing or warping product, color shift during rotation, geometry distortion, added parts not in reference, wobbling unstable spin, motion blur smearing detail, background flicker, duplicated product, model or hands in frame, refraction glare on transparent or metallic surfaces
+SHOTS:
+ 1) product front view, centered, squared to camera / grey seamless turntable studio, even soft light / medium_shot
+ 2) product 3/4 angle, depth and side visible / same studio, rotation continues / medium_shot
+ 3) product profile/side through to back showing construction / same studio, midway through spin / medium_shot
+MOTION: [1] slow clockwise turntable rotation, front to 3/4  [2] continuous smooth orbit, 3/4 to side  [3] steady rotation, side through to back, settling on a detail
+  music_mood: minimal_clean · transition: cut · dur/shot: 3s
+
+■ Large-Format Hero  (image_set · ◈2 · [experimental,needs_human_review,oversize])
+POSITIVE: the complete large single product photographed in full within a clean spacious studio sweep, entire body fully in frame with generous margin and never cropped, true real-world scale conveyed by an unobtrusive size reference, multi-part structure (frame, wheels, strings, legs, joints, folds) preserved exactly from the reference with the correct counts and no missing or invented parts, shape/color/material/finish identical to reference, any printed label or marking kept exactly as reference, matte reflection-controlled lighting, commercial product photography
+NEGATIVE: scale normalization, shrunk to a small tabletop prop, cropped or cut-off product, partial product out of frame, invented parts, missing components, duplicated wheels/strings/legs, morphing multi-part geometry, warped frame, added parts not in reference, distorted or warped label, plastic fake look, busy distracting background, blown highlights, reflections of crew
+SHOTS:
+ 1) full product front/side establishing hero, entire body in frame with margin, beside a subtle real-scale reference / clean spacious studio sweep, soft even key, ample headroom / full_body
+ 2) product 3/4 angle showing full depth and construction, complete body in frame / same spacious studio / full_body
+ 3) product in situ so its real size reads naturally against the surroundings / true-to-use environment (room/garage/stage/sidewalk) at correct scale / full_body
+ 4) detail of a key junction/control/finish (handle, saddle, headstock, wheel, joint) preserved exactly from reference / tighter contextual framing, reflection-controlled / medium_shot
+
+══════════════════ 11 HEADSHOT (7) ══════════════════
+
+■ LinkedIn Classic  (image_set · ◈2)
+POSITIVE: CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, professional corporate headshot, clean evenly-lit light-grey seamless studio backdrop, soft flattering clamshell key with a subtle separating hair light, 85mm at f4 flattering portrait compression, eye-level shoulders-to-chest crop, confident trustworthy expression, crisp catchlight eyes sharp and in focus, true-to-life skin tones, polished but natural retouch, clean corporate mood
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, blown highlights, busy or colorful background, casual streetwear, film grain, golden hour glamour
+SHOTS:
+ 1) front-facing, gentle confident smile, squared shoulders / light-grey seamless studio, soft even clamshell key / closeup
+ 2) front-facing neutral professional expression, chin slightly down / same studio, identical clamshell lighting / closeup
+ 3) slight three-quarter turn, soft smile, engaged eyes / same studio, subtle key from camera-left / medium_shot
+ 4) arms loosely crossed, relaxed authoritative stance / same studio, even clamshell key / medium_shot
+
+■ Executive Authority  (image_set · ◈2)
+POSITIVE: CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, high-end executive author portrait, smooth charcoal-to-deep-navy gradient backdrop, dramatic directional side key light camera-left with a crisp controlled rim light camera-right cleanly separating the subject from the dark background, balanced shadow falloff that retains full facial detail in the shadow side, 85mm at f4 flattering compression, shoulders-up authoritative framing with a subtle low camera angle for added stature, composed serious-but-warm expression with a strong steady gaze, immaculate sharp catchlights, sharp eyes in focus, true-to-life skin with polished but natural retouch, refined editorial magazine author-photo gravitas, dark moody corporate tone
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, flat frontal flash, blown highlights, muddy crushed shadows losing facial detail, busy or bright cheerful background, casual streetwear or casual clothing, film grain, golden hour glamour
+SHOTS:
+ 1) front-facing, composed serious expression, strong steady gaze / deep charcoal gradient backdrop, single directional key camera-left with a rim light camera-right / closeup
+ 2) three-quarter turn into the key light, chin level, confident authoritative bearing / same dark set, deeper three-quarter side lighting and dramatic shadow falloff / medium_shot
+ 3) front-facing, subtle resolute serious expression, editorial author mood / same set rendered as refined high-contrast black and white monochrome / closeup
+ 4) shoulders squared, faint confident composure, hands out of frame / same dark set, slight low camera angle for added stature / medium_shot
+
+■ Background & Wardrobe Swap  (image_set · ◈2)
+POSITIVE: CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, professional corporate headshot set, each shot pairing a clearly different professional background with a different tailored outfit while the face stays identical, soft clamshell key with a subtle hair light and clean window fill, 85mm at f4 flattering compression, shoulders-to-chest crop with a flattering near-eye-level camera angle, sharp catchlight eyes in focus, confident and approachable expression, true-to-life skin with polished but natural retouch, clean neutral business mood
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, face inconsistency across the different backgrounds, glasses glare distortion, harsh shadows, busy background, lens distortion, trendy filters, casual streetwear, film grain, golden hour glamour lighting, blown highlights
+SHOTS:
+ 1) shoulders-up, slight turn toward camera with a warm confident smile, wearing a tailored dark suit / clean light-grey seamless studio backdrop / closeup
+ 2) front-facing, neutral composed professional expression, wearing an open-collar dress shirt / bright white seamless background / closeup
+ 3) relaxed standing posture angled slightly off-axis, calm assured look, wearing a structured blazer / softly blurred modern office with glass walls and gentle bokeh / medium_shot
+ 4) easy three-quarter stance, friendly approachable smile, wearing a refined knit sweater / outdoor natural setting with soft green foliage bokeh / medium_shot
+
+■ Team Page Consistent  (image_set · ◈2)
+POSITIVE: CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift, standardized team-page headshot, fixed soft even frontal key light with gentle wraparound fill and no harsh shadows, uniform mid-grey seamless backdrop evenly lit corner to corner, consistent shoulders-up crop and level eye-line shot at eye level, 85mm at f4 flattering compression held identical across shots, neutral friendly expression, consistent lighting/background/crop across team members, uniform framing repeatable for an entire team directory, clean corporate trustworthy finish, sharp catchlight eyes, true-to-life skin, polished natural retouch
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, inconsistent lighting or backdrop tone, varying crop or eye-line, non-uniform framing, dramatic or harsh shadows, busy background, glasses glare distortion, casual streetwear, film grain, golden hour
+SHOTS:
+ 1) front-facing, neutral friendly expression, level eye-line, squared shoulders / uniform mid-grey seamless backdrop, fixed soft even frontal key / closeup
+ 2) front-facing, gentle closed-mouth smile, same crop and level eye-line / same fixed setup, identical lighting and backdrop / closeup
+ 3) barely-there left three-quarter micro-angle, same crop and eye-line, neutral expression / same fixed setup, identical lighting and backdrop / closeup
+ 4) barely-there right three-quarter micro-angle, same crop and eye-line, neutral expression / same fixed setup, identical lighting and backdrop / closeup
+
+■ Approachable Brand  (image_set · ◈2)
+POSITIVE: CRITICAL: the exact same individual in every shot, locked facial identity and bone structure, no face morph or identity drift between shots, warm approachable personal-brand headshot, soft natural window light gently wrapping the face, bright airy interior with a clean creamy background bokeh, smart-casual soft blazer or fine knit, genuine friendly smile, 85mm at f4 flattering compression, shoulders-up crop at a natural eye-level angle, professional yet warm coach-and-creator energy, sharp catchlight eyes in focus, true-to-life skin, polished but natural retouch
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, glasses glare distortion, harsh shadows, busy background, cold corporate flash, blown highlights, casual streetwear, film grain
+SHOTS:
+ 1) front-facing by the window, warm genuine smile, relaxed shoulders / bright window-lit interior, soft warm daylight wrap, gentle bokeh / closeup
+ 2) slight three-quarter turn, light easy smile, engaged friendly eyes / same airy interior, soft natural light, gentle background bokeh / medium_shot
+ 3) leaning in a touch at the desk, approachable engaged expression / tidy desk with softly blurred plants behind for in-context lifestyle feel / medium_shot
+ 4) calm warm closeup, soft confident smile / closer natural-light framing near the window, soft daylight on the face / closeup
+
+■ Speaking Profile Reel  (reel · ◈2 · [needs_human_review])
+POSITIVE: CRITICAL: the exact same individual in every frame, locked facial identity and bone structure, no face morph or identity drift, professional corporate moving headshot, clean light-grey seamless studio backdrop, soft clamshell key with a subtle hair light, 85mm at f4 flattering compression, shoulders-up closeup crop framed straight-on at eye level, front-facing confident approachable expression with a gentle warming smile holding the gaze, sharp catchlight eyes in focus, true-to-life skin, polished but natural retouch, trustworthy corporate mood, smooth stable micro-motion with a slow natural blink and a very slow gentle push-in, head held steady and unchanged throughout
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, lip-sync mouth desync, mouth or tooth morph between frames, large head rotation, jittery unstable motion, frame-to-frame flicker, glasses glare distortion, lens distortion, harsh shadows, blown highlights, busy background, casual streetwear, film grain, golden hour, trendy filter
+SHOTS:
+ 1) front-facing professional gentle smile holding the gaze / light-grey seamless studio backdrop with soft clamshell lighting / closeup
+MOTION: [1] micro motion only: slow natural blink, faint warming smile, barely perceptible nod, very slow push-in
+  music_mood: ambient corporate underscore, 70-85 BPM, felt piano + warm synth pads + soft low strings, low-energy confident and unobtrusive, reference: LinkedIn brand-film intro score · transition: cut · dur/shot: 4s
+
+■ About-Page Intro Reel  (reel · ◈4 · [needs_human_review])
+POSITIVE: CRITICAL: the exact same individual in both shots, locked facial identity and bone structure, no face morph or identity drift across any frame, moving about-page profile reel, two gentle beats cutting from a steady front-facing pose into a soft three-quarter held within about fifteen degrees, clean light-grey seamless studio backdrop, soft clamshell key with a subtle hair light, 85mm at f4 flattering portrait compression, shoulders-up crop tightening from closeup to a calm medium framing, confident approachable professional expression, sharp catchlight eyes in focus, true-to-life skin with polished but natural retouch, smooth stable micro-motion only with a slow natural blink and faint warming smile, corporate clean and trustworthy mood
+NEGATIVE: warped face, asymmetric eyes, plastic over-retouched skin, identity drift between shots, lip-sync mouth distortion, mouth or tooth morph between frames, large or fast head rotation, full head turn, jittery unstable motion, flickering lens reflection across the turn, glasses glare distortion, harsh shadows, busy background, casual streetwear, film grain, golden hour
+SHOTS:
+ 1) front-facing professional, gentle confident smile holding gaze, squared shoulders / light-grey seamless studio, soft clamshell key with subtle hair light / closeup
+ 2) gentle three-quarter turn within ~15 degrees, holding gaze, soft confident expression / same studio, identical clamshell lighting / medium_shot
+MOTION: [1] front-facing micro drift only — slow natural blink, faint warming smile, very slow push-in  [2] very gentle settle into a soft three-quarter within ~±15 degrees only — no full head turn, micro motion only
+  music_mood: ambient corporate underscore, 70-85 BPM, felt piano + warm synth pads + soft low strings, low-energy confident, reference: LinkedIn brand-film score · transition: cut · dur/shot: 4s
+
+──────────  총 93개 템플릿 / 11섹션  ──────────
