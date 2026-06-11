@@ -67,6 +67,14 @@
   .gen-bar .summary .cost{color:var(--gold);font-weight:700}
   .gen-main{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .gen-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  /* 한 줄 커스텀 프롬프트 (선택) — 템플릿 고정 프롬프트에 더해짐 */
+  .prompt-row{display:flex;align-items:center;gap:10px}
+  .prompt-row .pico{font-size:15px;flex-shrink:0;opacity:.8}
+  .prompt-input{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13.5px;transition:border-color .15s}
+  .prompt-input:focus{outline:none;border-color:var(--accent);background:rgba(124,108,255,.05)}
+  .prompt-input::placeholder{color:var(--faint)}
+  .prompt-clear{flex-shrink:0;background:none;border:none;color:var(--faint);font-size:15px;cursor:pointer;padding:4px}
+  .prompt-clear:hover{color:var(--text)}
   .opts-btn{display:none;font-family:inherit;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:13px;font-weight:600;padding:11px 14px;border-radius:11px;cursor:pointer}
   .opts-btn.on{color:var(--accent2);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.1)}
   /* best value 배지 */
@@ -230,6 +238,13 @@
     <select class="addon-lang hidden" id="captionLang">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
+  </div>
+  <div class="prompt-row">
+    <span class="pico">✏️</span>
+    <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
+      placeholder="프롬프트 추가 (선택) — 예: 빨간 니트, 창가 자연광, 살짝 미소. 비워두면 템플릿만 사용해요"
+      oninput="updateBar()">
+    <button class="prompt-clear" title="지우기" onclick="document.getElementById('extraPrompt').value='';updateBar()">✕</button>
   </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
@@ -541,7 +556,8 @@ function updateBar(){
     }
     btn.disabled=false;
     const o=r.type==='reel'?'1 reel (5s)':'4 photos';
-    s.innerHTML=`<b>${r.name}</b> → ${o} · ${Q_LABEL[curQuality()]}${costTxt}${r.type==='reel'?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
+    const extraTxt=extraPromptText()?' <span style="color:var(--accent2)">+ 내 프롬프트</span>':'';
+    s.innerHTML=`<b>${r.name}</b>${extraTxt} → ${o} · ${Q_LABEL[curQuality()]}${costTxt}${r.type==='reel'?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
   } else {
     btn.disabled=true;
     s.textContent=!state.subjectId?'Select a face/product first.':'Now pick a template.';
@@ -588,13 +604,24 @@ async function generate(){
   }
 }
 
-// 레시피 카드 → 실제 프롬프트: 마켓 주입분(r.prompt 보유)은 직접, 그 외는 /api/recipes/:id/resolve
+// 사용자가 한 줄로 추가한 커스텀 프롬프트 (선택)
+function extraPromptText(){const el=document.getElementById('extraPrompt');return el?el.value.trim():'';}
+
+// 레시피 카드 → 실제 프롬프트: 마켓 주입분(r.prompt 보유)은 직접, 그 외는 /api/recipes/:id/resolve.
+// 사용자가 추가한 프롬프트가 있으면 템플릿 고정 프롬프트 뒤에 더한다.
 async function resolvePromptFor(r,subj){
-  if(r.prompt)return{prompt:r.prompt,style:r.style||'none'};
-  const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
-  const d=await res.json();
-  if(!res.ok||!d.success)throw new Error(d.error||'레시피 해석에 실패했어요.');
-  return{prompt:d.data.generate.prompt,style:'none'}; // resolver가 스타일 프리셋을 이미 반영 → style none
+  let base;
+  if(r.prompt){
+    base={prompt:r.prompt,style:r.style||'none'};
+  }else{
+    const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
+    const d=await res.json();
+    if(!res.ok||!d.success)throw new Error(d.error||'레시피 해석에 실패했어요.');
+    base={prompt:d.data.generate.prompt,style:'none'}; // resolver가 스타일 프리셋을 이미 반영 → style none
+  }
+  const extra=extraPromptText();
+  if(extra)base.prompt=base.prompt+', '+extra; // 템플릿 프롬프트 + 사용자 추가분
+  return base;
 }
 async function generateImages(r,subj){
   const rp=await resolvePromptFor(r,subj);
