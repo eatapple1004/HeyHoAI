@@ -671,7 +671,7 @@ async function resolvePromptFor(r,subj){
     const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'레시피 해석에 실패했어요.');
-    base={prompt:d.data.generate.prompt,style:'none'}; // resolver가 스타일 프리셋을 이미 반영 → style none
+    base={prompt:d.data.generate.prompt,style:'none',count:d.data.generate.count}; // resolver가 스타일 프리셋을 이미 반영 → style none. count도 레시피값
   }
   const extra=extraPromptText();
   if(extra)base.prompt=base.prompt?base.prompt+', '+extra:extra; // 템플릿 프롬프트 + 사용자 추가분 (템플릿 없으면 프롬프트만)
@@ -679,9 +679,10 @@ async function resolvePromptFor(r,subj){
 }
 async function generateImages(r,subj){
   const rp=await resolvePromptFor(r,subj);
+  const count=Math.min(rp.count||4,4); // 레시피가 지정한 장수(예: 증명사진 시트=1), 서버 상한 4
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:4,style:rp.style,brandKit:brandOn()})
+    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:count,style:rp.style,brandKit:brandOn()})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}

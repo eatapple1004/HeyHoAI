@@ -96,6 +96,19 @@ function resolveRecipe(config, ctx) {
     if (userSlots[slot.key] !== undefined) setPath(cfg, slot.key, userSlots[slot.key]);
   }
 
+  // 2.5 전체 프롬프트 오버라이드: 템플릿이 완성 프롬프트를 직접 지정하면 구조 조립을 건너뛴다.
+  if (cfg.prompt_override) {
+    const outO = (cfg.output && cfg.output.type) || 'image_set';
+    const aspectO = (cfg.output && cfg.output.aspect_ratio) || '4:5';
+    const countO = (cfg.output && cfg.output.count) || 1;
+    const negO = [(cfg.look && cfg.look.extra_negative) || '', SAFETY_NEGATIVE_PROMPT].filter(Boolean).join(', ');
+    const jobsO = Array.from({ length: countO }, (_, i) => ({
+      variationLabel: `shot_${i}`, prompt: cfg.prompt_override, negativePrompt: negO,
+    }));
+    if (outO === 'reel') return { output_type: 'reel', aspect_ratio: aspectO, jobs: jobsO, credit_cost: jobsO.length * 2 };
+    return { output_type: outO, aspect_ratio: aspectO, jobs: jobsO, credit_cost: Math.ceil(jobsO.length * 0.5) };
+  }
+
   const look = cfg.look || {};
   const preset = presetMap[look.style_preset] || { prefix: '', suffix: '', negative: '' };
   const attrFrags = (look.attributes || [])
