@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 93→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 94→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 93,
-  "new_count": 58,
+  "total": 94,
+  "new_count": 59,
   "overlay_count": 6,
   "guarded_count": 73,
   "provisional_count": 18,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 93,
-    "contract_total": 93,
-    "catalog_total": 93,
-    "status_total": 93,
+    "fe_total": 94,
+    "contract_total": 94,
+    "catalog_total": 94,
+    "status_total": 94,
     "ok": true
   },
   "cards": {
@@ -112,6 +112,20 @@
         "guards": [],
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
+      },
+      {
+        "id": "summer-beach-coconut",
+        "cat": "Feed",
+        "name": "Summer Beach Coconut",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [],
+        "emoji": "📸",
+        "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       }
     ],
     "fashion": [
@@ -1012,6 +1026,7 @@
         "new": true,
         "provisional": true,
         "flags": [
+          "experimental",
           "needs_human_review"
         ],
         "text_overlay": false,
@@ -1079,7 +1094,10 @@
         "cost": 2,
         "new": true,
         "provisional": true,
-        "flags": [],
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
         "text_overlay": false,
         "guards": [
           "form_lock",

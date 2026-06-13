@@ -1,10 +1,10 @@
 # 레시피 종합 현황 (자동생성 · `node scripts/consolidate_recipes.js`)
 
-**9/11 섹션 OK · 총 93개 템플릿**
+**8/11 섹션 OK · 총 94개 템플릿**
 
 | 섹션 | 상태 | 개수 | 파일 |
 |---|---|---|---|
-| influencer (인플루언서) | OK | 6 | `recipes.influencer.v2.js` |
+| influencer (인플루언서) | draft(이슈) | 7 | `recipes.influencer.v2.js` |
 | fashion (패션) | OK | 8 | `recipes.fashion.v2.js` |
 | beauty (뷰티) | draft(이슈) | 16 | `recipes.beauty.v2.js` |
 | jewelry (주얼리) | OK | 8 | `recipes.jewelry.v2.js` |
@@ -17,6 +17,9 @@
 | headshot (헤드샷/퍼스널) | OK | 7 | `recipes.headshot.v2.js` |
 
 ## 이슈
+**influencer**
+- #7 Summer Beach Coconut: config.shots 누락
+
 **beauty**
 - 개수 16 (권장 6~8)
 

@@ -4,13 +4,13 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 93,
-  "new_count": 58,
+  "total": 94,
+  "new_count": 59,
   "provisional_count": 18,
   "drift_guard": {
-    "seed_total": 93,
+    "seed_total": 94,
     "status_total": 93,
-    "ok": true
+    "ok": false
   },
   "id_collisions": [],
   "cards": {
@@ -82,6 +82,17 @@
           "experimental",
           "needs_human_review"
         ],
+        "text_overlay": false
+      },
+      {
+        "id": "summer-beach-coconut",
+        "cat": "Feed",
+        "name": "Summer Beach Coconut",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
         "text_overlay": false
       }
     ],
@@ -899,6 +910,7 @@
         "new": true,
         "provisional": true,
         "flags": [
+          "experimental",
           "needs_human_review"
         ],
         "text_overlay": false,
@@ -960,7 +972,10 @@
         "cost": 2,
         "new": true,
         "provisional": true,
-        "flags": [],
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
         "text_overlay": false,
         "guards": [
           "form_lock",

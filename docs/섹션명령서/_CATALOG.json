@@ -3,10 +3,12 @@
     "key": "influencer",
     "name": "인플루언서",
     "mode": "face",
-    "status": "OK",
+    "status": "draft(이슈)",
     "file": "recipes.influencer.v2.js",
-    "count": 6,
-    "issues": [],
+    "count": 7,
+    "issues": [
+      "#7 Summer Beach Coconut: config.shots 누락"
+    ],
     "flags": [
       "Product Haul Reel [experimental,needs_human_review]"
     ],
