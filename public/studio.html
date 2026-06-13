@@ -679,10 +679,9 @@ async function resolvePromptFor(r,subj){
 }
 async function generateImages(r,subj){
   const rp=await resolvePromptFor(r,subj);
-  const count=Math.min(rp.count||4,4); // 레시피가 지정한 장수(예: 증명사진 시트=1), 서버 상한 4
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:count,style:rp.style,brandKit:brandOn()})
+    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:4,style:rp.style,brandKit:brandOn()})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
