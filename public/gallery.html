@@ -109,10 +109,15 @@
   <div class="modal view-modal">
     <button class="x" onclick="closeView()">✕</button>
     <div id="viewMedia" class="view-media"></div>
-    <div class="view-bar">
-      <div class="msub" id="viewMeta" style="margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-      <a id="viewDownload" href="#" download><button class="btn">⬇ Download</button></a>
-      <button class="btn" onclick="viewNewTab()">⤢ 새 탭</button>
+    <div class="view-card">
+      <div class="view-info">
+        <div class="view-tpl" id="viewTpl"></div>
+        <div class="view-sub" id="viewMeta"></div>
+      </div>
+      <div class="view-actions">
+        <a id="viewDownload" href="#" download><button class="btn">⬇ Download</button></a>
+        <button class="btn" onclick="viewNewTab()">⤢ 새 탭</button>
+      </div>
     </div>
   </div>
 </div>
@@ -131,8 +136,13 @@
   .view-modal{width:min(760px,100%);padding:16px}
   .view-media{margin-bottom:12px}
   .view-media img,.view-media video{width:100%;max-height:74vh;object-fit:contain;border-radius:12px;background:#000;display:block}
-  .view-bar{display:flex;align-items:center;gap:8px}
-  .view-bar .btn{white-space:nowrap}
+  .view-card{display:flex;align-items:center;gap:12px;background:var(--card,#171a26);border:1px solid var(--line,#262a3a);border-radius:14px;padding:12px 14px}
+  .view-info{flex:1;min-width:0}
+  .view-tpl{display:inline-flex;align-items:center;gap:6px;font-family:'Sora';font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent,#7c5cff),var(--accent2,#22d3ee));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .view-tpl.empty{color:var(--dim);font-weight:500;-webkit-text-fill-color:initial;background:none}
+  .view-sub{font-size:12px;color:var(--dim);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .view-actions{display:flex;gap:8px;flex-shrink:0}
+  .view-actions .btn{white-space:nowrap}
 </style>
 
 <script>
@@ -155,7 +165,7 @@ async function load(){
           idx:r.idx,
           url:'/images/'+fn,
           type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',
-          name:r.character_name||(r.prompt_text||'').slice(0,42)||'Generated',
+          name:r.character_name||'',
           date:(r.created_at||'').slice(0,10),
           model:r.model||'',
           template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||''
@@ -204,9 +214,15 @@ function openView(idx){
   document.getElementById('viewMedia').innerHTML = it.type==='reel'
     ? `<video src="${esc(it.url)}" controls autoplay loop playsinline></video>`
     : `<img src="${esc(it.url)}" alt="">`;
-  document.getElementById('viewMeta').innerHTML = esc(it.name)
-    + (it.date?' · '+esc(it.date):'')
-    + (it.template?` · <span style="color:var(--accent2)">템플릿: ${esc(it.template)}</span>`:'');
+  const tplEl=document.getElementById('viewTpl');
+  if(it.template){ tplEl.className='view-tpl'; tplEl.innerHTML='🧩 '+esc(it.template); }
+  else { tplEl.className='view-tpl empty'; tplEl.innerHTML='템플릿 정보 없음'; }
+  document.getElementById('viewMeta').innerHTML = [
+    it.type==='reel'?'릴스':'사진',
+    it.name?esc(it.name):'',
+    it.date?esc(it.date):'',
+    it.model?esc(it.model):''
+  ].filter(Boolean).join(' · ');
   document.getElementById('viewDownload').href = it.url;
   document.getElementById('viewModal').classList.add('open');
 }
