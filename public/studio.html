@@ -320,6 +320,19 @@
   .rm-desc{font-size:13.5px;color:var(--dim);line-height:1.65;margin-bottom:18px;white-space:pre-wrap}
 </style>
 
+<!-- 결과 이미지 라이트박스 (같은 페이지 내 확대 보기) -->
+<div class="modal-bg" id="imgModal" style="z-index:90" onclick="if(event.target===this)closeImageModal()">
+  <button class="img-close" onclick="closeImageModal()" title="닫기">✕</button>
+  <img id="imgModalImg" class="img-zoom" src="" alt="">
+  <a id="imgModalDl" class="img-dl" download href="#">⬇ 다운로드</a>
+</div>
+<style>
+  #imgModal .img-zoom{max-width:92vw;max-height:84vh;border-radius:12px;box-shadow:0 30px 90px -20px rgba(0,0,0,.85);object-fit:contain;background:#0c0c14}
+  #imgModal .img-close{position:fixed;top:18px;right:22px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:17px;width:40px;height:40px;border-radius:50%;cursor:pointer;z-index:91}
+  #imgModal .img-dl{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:11px;text-decoration:none;z-index:91}
+  #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
+</style>
+
 <script src="/js/recipes.generated.js?v=1"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
@@ -656,6 +669,14 @@ async function generate(){
   }
 }
 
+// 결과 이미지 라이트박스 (같은 페이지 내 확대 보기)
+function openImageModal(url){
+  document.getElementById('imgModalImg').src=url;
+  document.getElementById('imgModalDl').href=url;
+  document.getElementById('imgModal').classList.add('open');
+}
+function closeImageModal(){document.getElementById('imgModal').classList.remove('open');}
+
 // 사용자가 한 줄로 추가한 커스텀 프롬프트 (선택)
 function extraPromptText(){const el=document.getElementById('extraPrompt');return el?el.value.trim():'';}
 
@@ -689,10 +710,10 @@ async function generateImages(r,subj){
   const ok=(data.results||[]).filter(x=>x.success);
   const fail=(data.results||[]).length-ok.length;
   document.getElementById('resultsGrid').innerHTML=ok.map(x=>`
-    <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover" alt="">
+    <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(x.url)}')">
       <div class="actions">
         <a href="${esc(x.url)}" download><button>⬇ Download</button></a>
-        <button onclick="window.open('${esc(x.url)}','_blank')">⤢ View</button>
+        <button onclick="openImageModal('${esc(x.url)}')">⤢ 크게 보기</button>
       </div></div>`).join('');
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${M_LABEL[curModel()]}${fail?` · ${fail} failed`:''} — Gallery에 자동 저장됨`;
