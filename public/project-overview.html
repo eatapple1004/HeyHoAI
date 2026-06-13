@@ -10,7 +10,7 @@
   .hero{text-align:center;margin-bottom:46px}
   .hero .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);background:rgba(124,108,255,.14);padding:6px 14px;border-radius:20px;margin-bottom:18px}
   .hero h1{font-family:'Sora';font-size:40px;font-weight:800;letter-spacing:-1.5px;margin-bottom:12px}
-  .hero p{color:var(--dim);font-size:15.5px;line-height:1.6;max-width:640px;margin:0 auto}
+  .hero p{color:var(--dim);font-size:15.5px;line-height:1.6;max-width:660px;margin:0 auto}
   .hero .date{color:var(--faint);font-size:12.5px;margin-top:14px}
 
   section{margin-bottom:46px}
@@ -33,9 +33,10 @@
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--border)}
   th{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
-  td .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px}
+  td .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap}
   .b-done{background:rgba(94,224,214,.14);color:var(--cyan)}
   .b-hold{background:rgba(255,126,182,.14);color:var(--pink)}
+  .b-wait{background:rgba(255,206,122,.16);color:var(--gold)}
 
   .stack{display:flex;flex-wrap:wrap;gap:8px}
   .chip{font-size:12px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:7px 13px;border-radius:9px}
@@ -68,13 +69,13 @@
   <div class="hero">
     <div class="tag">Project Overview</div>
     <h1>Doppia</h1>
-    <p>셀카 또는 제품 사진 1장 + 템플릿 선택 → 스튜디오급 사진·릴스를 자동 생성하고 인스타그램에 발행하는 SaaS. mock UI로 시작해 인증·결제·팀 협업·수익화 UX까지 실제로 동작하는 서비스로 완성했습니다.</p>
-    <div class="date">최종 업데이트 · 2026-06-09 · 세션1(백엔드 실연결) + 세션2(UX·수익화) 통합</div>
+    <p>셀카 또는 제품 사진 1장 + 템플릿(또는 한 줄 프롬프트) → 스튜디오급 사진·릴스를 자동 생성하고 인스타그램에 발행하는 SaaS. mock UI에서 출발해 인증·생성 엔진·결제·팀 협업·수익화 UX까지 실제로 동작하는 서비스로 완성하고, 현재 정식 오픈을 준비 중입니다.</p>
+    <div class="date">최종 업데이트 · 2026-06-13 · 세션1(백엔드 실연결) + 세션2(UX·수익화) + 세션3(정식 오픈 준비)</div>
     <div class="count-bar">
-      <div class="count-pill"><b>24</b><span>머지된 PR</span></div>
-      <div class="count-pill"><b>2</b><span>작업 세션</span></div>
+      <div class="count-pill"><b>75</b><span>머지된 PR</span></div>
+      <div class="count-pill"><b>3</b><span>작업 세션</span></div>
       <div class="count-pill"><b>7</b><span>제품 버티컬</span></div>
-      <div class="count-pill"><b>4</b><span>팀 협업 단계</span></div>
+      <div class="count-pill"><b>78</b><span>템플릿</span></div>
     </div>
   </div>
 
@@ -84,8 +85,8 @@
     <div class="sec-sub">방문자가 콘텐츠를 만들어 발행하기까지</div>
     <div class="flow">
       <span class="step">랜딩 (청중별)</span><span class="arr">→</span>
-      <span class="step">가입 · 로그인</span><span class="arr">→</span>
-      <span class="step">스튜디오 생성 (버티컬·크레딧)</span><span class="arr">→</span>
+      <span class="step">가입 · 로그인 (이메일·Google)</span><span class="arr">→</span>
+      <span class="step">스튜디오 생성 (템플릿/프롬프트·크레딧)</span><span class="arr">→</span>
       <span class="step">갤러리 (사진→릴스)</span><span class="arr">→</span>
       <span class="step">계정 큐 · 자동 발행</span>
     </div>
@@ -101,7 +102,7 @@
       <div class="feat"><div class="ic">🖼️</div><h3>갤러리</h3><p>생성물 모아보기 · 다운로드.</p><span class="pr">PR #5</span></div>
       <div class="feat"><div class="ic">📝</div><h3>캡션 · 해시태그</h3><p>Claude로 6개국어 캡션 자동 생성.</p><span class="pr">PR #9</span></div>
       <div class="feat"><div class="ic">🎯</div><h3>브랜드킷</h3><p>로고·색·폰트 → 결과 톤에 반영.</p><span class="pr">PR #9</span></div>
-      <div class="feat"><div class="ic">💳</div><h3>크레딧 · 결제</h3><p>크레딧 차감/환불 + Lemon Squeezy 결제.</p><span class="pr">PR #6</span></div>
+      <div class="feat"><div class="ic">💳</div><h3>크레딧 원장</h3><p>크레딧 차감/환불 + 결제 연동 기반.</p><span class="pr">PR #6</span></div>
       <div class="feat"><div class="ic">🛒</div><h3>마켓플레이스</h3><p>템플릿 판매 + 크리에이터 70% 수익분배.</p><span class="pr">PR #10</span></div>
       <div class="feat"><div class="ic">🔗</div><h3>어필리에이트</h3><p>추천 링크 → 30% 크레딧 커미션.</p><span class="pr">PR #11</span></div>
       <div class="feat"><div class="ic">👥</div><h3>팀 협업</h3><p>멤버·권한 + 공유 크레딧 풀 + 공유 캐릭터/갤러리.</p><span class="pr">PR #12–15</span></div>
@@ -125,6 +126,24 @@
     </div>
   </section>
 
+  <!-- 세션 3 -->
+  <section>
+    <h2><span class="em">🚀</span> 세션 3 — 정식 오픈 준비</h2>
+    <div class="sec-sub">결제 PG 전환·생성 안정화·생성 UX 개편으로 실서비스 품질 끌어올리기</div>
+    <div class="grid">
+      <div class="feat"><div class="ic">🏦</div><h3>Eximbay 결제 연동</h3><p>국내 PG로 전환. ready→fgkey→팝업→검증→충전. 가맹점 심사 대기 중 사전 구축.</p><span class="pr">PR #28</span></div>
+      <div class="feat"><div class="ic">⏱️</div><h3>릴스 비동기 생성</h3><p>잡 큐 + 폴링으로 Cloudflare 100초 타임아웃 회피.</p><span class="pr">PR #27</span></div>
+      <div class="feat"><div class="ic">🔓</div><h3>Google 소셜 로그인</h3><p>OAuth redirect 코드 플로우. 기존 이메일 계정과 연동.</p><span class="pr">OAuth</span></div>
+      <div class="feat"><div class="ic">🧩</div><h3>레시피 리졸버</h3><p>템플릿 카드를 실제 프롬프트로 해석하는 엔드포인트(시드→config→jobs).</p><span class="pr">PR #46</span></div>
+      <div class="feat"><div class="ic">🖊️</div><h3>스튜디오 생성 개편</h3><p>한 줄 커스텀 프롬프트·템플릿 상세 모달·재클릭 해제·4장 생성.</p><span class="pr">PR #55–61</span></div>
+      <div class="feat"><div class="ic">🔍</div><h3>결과·갤러리 뷰어</h3><p>새 탭 대신 인페이지 모달(사진/릴스) + 사용 템플릿 카드 표시.</p><span class="pr">PR #62·70–75</span></div>
+      <div class="feat"><div class="ic">🪪</div><h3>한국 표준 증명사진</h3><p>LinkedIn Classic → 신원 고정 증명사진 프롬프트로 전환.</p><span class="pr">PR #59</span></div>
+      <div class="feat"><div class="ic">⏸️</div><h3>템플릿 보류 시스템</h3><p>품질 미검증 카드에 보류 배지 + 통과분만 노출(pass log).</p><span class="pr">PR #66–71</span></div>
+      <div class="feat"><div class="ic">🔗</div><h3>Clean URL</h3><p>주소창에서 <code style="font-size:11px">.html</code> 제거.</p><span class="pr">routing</span></div>
+      <div class="feat"><div class="ic">🐛</div><h3>얼굴 이미지 경로 수정</h3><p><code style="font-size:11px">file://</code> 절대경로 → <code style="font-size:11px">/images/</code> 웹경로 백필.</p><span class="pr">PR #36</span></div>
+    </div>
+  </section>
+
   <!-- 팀 협업 상세 -->
   <section>
     <h2><span class="em">👥</span> 팀 협업 (4단계)</h2>
@@ -138,14 +157,25 @@
     </table>
   </section>
 
+  <!-- 결제 -->
+  <section>
+    <h2><span class="em">💳</span> 결제 (PG 전환 중)</h2>
+    <div class="sec-sub">국내 결제를 위해 Eximbay로 전환. Lemon Squeezy는 폴백으로 코드 보존</div>
+    <table>
+      <tr><th>PG</th><th>상태</th><th>내용</th></tr>
+      <tr><td>Eximbay</td><td><span class="badge b-wait">심사 대기</span></td><td>메인 PG. 코드 준비 완료(ready→검증→충전), 가맹점 심사 통과 시 오픈</td></tr>
+      <tr><td>Lemon Squeezy</td><td><span class="badge b-done">연동 완료</span></td><td>checkout/webhook/멱등 실연동. 우선 오픈 보류(키 미설정)</td></tr>
+      <tr><td>구독 과금</td><td><span class="badge b-hold">보류</span></td><td>일회성 충전만 오픈 예정, 구독 webhook은 심사 후 연결</td></tr>
+    </table>
+  </section>
+
   <!-- 남은 것 -->
   <section>
     <h2><span class="em">🔴</span> 남은 것 — 외부 연동 필요</h2>
     <div class="sec-sub">새 인프라/계약이 필요해 별도 결정 대기</div>
     <table>
       <tr><th>기능</th><th>상태</th><th>필요 조건</th></tr>
-      <tr><td>Pro $39 구독 티어 + 게이팅</td><td><span class="badge b-hold">보류</span></td><td>Lemon Squeezy 구독 상품 (현재는 크레딧 팩만)</td></tr>
-      <tr><td>24h 50% 오퍼</td><td><span class="badge b-hold">보류</span></td><td>구독 모델에 의존</td></tr>
+      <tr><td>Pro $39 구독 티어 + 게이팅 + 24h 오퍼</td><td><span class="badge b-hold">보류</span></td><td>구독형 결제 모델 (Eximbay 구독 webhook)</td></tr>
       <tr><td>워터마크 업셀 (첫장 클린)</td><td><span class="badge b-hold">보류</span></td><td>이미지 합성 라이브러리</td></tr>
       <tr><td>셀러 입구 (earnings)</td><td><span class="badge b-hold">보류</span></td><td>마켓 수익 정산 연동</td></tr>
       <tr><td>UGC 립싱크 광고</td><td><span class="badge b-hold">보류</span></td><td>HeyGen/D-ID 유료 API</td></tr>
@@ -160,12 +190,14 @@
       <span class="chip">Node.js · Express</span>
       <span class="chip">PostgreSQL</span>
       <span class="chip">JWT 쿠키 인증</span>
+      <span class="chip">Google OAuth</span>
       <span class="chip">Gemini · GPT Image</span>
       <span class="chip">Kling (비디오)</span>
       <span class="chip">Claude (캡션)</span>
-      <span class="chip">Lemon Squeezy (결제)</span>
+      <span class="chip">Eximbay (결제)</span>
+      <span class="chip">Lemon Squeezy (폴백)</span>
       <span class="chip">Zernio (인스타 발행)</span>
-      <span class="chip">PM2 · AWS EC2</span>
+      <span class="chip">PM2 · AWS EC2 · Cloudflare</span>
     </div>
   </section>
 
@@ -174,9 +206,11 @@
     <div class="note">
       <h3>🚦 실서비스 오픈 전 체크리스트</h3>
       <ul>
-        <li>Lemon Squeezy 키 6개를 <code>.env</code>에 입력 (결제 실동작)</li>
-        <li>서버 <code>ADMIN_PASSWORD</code> 기본값(changeme1234) 변경</li>
+        <li>Eximbay 가맹점 심사 통과 → <code>EXIMBAY_API_KEY</code>·<code>EXIMBAY_MID</code> 입력 후 결제 검증</li>
+        <li>서버 <code>.env</code>에 <code>GOOGLE_CLIENT_ID</code>·<code>GOOGLE_CLIENT_SECRET</code> 입력 (Google 로그인)</li>
+        <li>서버 <code>ADMIN_PASSWORD</code> 기본값 변경 (12자 이상, fail-closed)</li>
         <li><code>JWT_SECRET</code> 운영용 랜덤 값 확인</li>
+        <li>Gemini 선불 크레딧 충전 (Standard/HD 사진 생성 차단 해소)</li>
         <li>스키마 변경 배포 시 <code>npm run migrate</code> 실행</li>
       </ul>
     </div>
@@ -198,7 +232,7 @@
   </section>
 
   <div class="foot">
-    Doppia · mock SaaS → 실서비스 전환 (세션1+2, PR #1–#24)<br>
+    Doppia · mock SaaS → 실서비스 전환 (세션1+2+3, PR #1–#75)<br>
     이 페이지는 <code style="font-size:11px">/project-overview</code> 에서 볼 수 있어요.
   </div>
 </div>
