@@ -130,7 +130,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
-        "held": true,
+        "held": false,
         "emoji": "📸",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       }

@@ -50,6 +50,14 @@
       "result": "pass",
       "tested_at": "2026-06-13",
       "note": "능동스캔: 워커 테스트통과 보고"
+    },
+    {
+      "id": "summer-beach-coconut",
+      "name": "Summer Beach Coconut",
+      "vertical": "influencer",
+      "result": "pass",
+      "tested_at": "2026-06-13",
+      "note": "사용자 요청 보류 해제"
     }
   ]
 }
