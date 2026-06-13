@@ -1,5 +1,8 @@
 /**
- * Doppia recipe seed — beauty (product/brand mode), v2.1, 16 templates.
+ * Doppia recipe seed — beauty (product/brand mode), v2.1, 24 templates.
+ *  - 16 base + hero family draft 8 (sort 17–24, 2026-06-13): provisional·미검증·자동 보류(held).
+ *    실생성 통과는 Dewy Glass Hero 1개뿐 → 나머지는 1:1 테스트 통과 시 _pass_log 등재로 보류 해제.
+ *    원본 리스크/플래그 = docs/섹션명령서/_beauty_hero_family_draft.json (meta.risk_notes로도 보존).
  * 스키마 v1 (docs/TEMPLATE_STRUCTURE.md: A2 layered + A5 shot-list). recipes 테이블에 INSERT.
  *
  * v2.1 변경 (2026-06-11, 프롬프트 정밀화 총지휘 직접 이관):
@@ -1142,6 +1145,607 @@ module.exports = [
         "image": "nano-banana",
         "video": "kling"
       }
+    }
+  },
+  // ───────────────────────────────────────────── beauty hero family draft (sort 17–24 · 미검증 · provisional · 자동 보류)
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Stone Plinth Luxe",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 17,
+    "rationale": "트래버틴 단상 위 하드 디렉셔널 그림자로 콰이어트 럭셔리를 연출하는 히어로 템플릿으로, 더마·클린·미니멀 브랜드가 무광·불투명 자/튜브/병을 정적이고 조각적으로 보여줄 때 쓴다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:hard_directional_single_source",
+          "color:warm_neutral_stone",
+          "texture:matte_opaque_sculptural",
+          "context:travertine_concrete_plinth"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging/label identical to the reference, do not fabricate lettering, one matte opaque product standing on a carved travertine and raw concrete plinth, quiet luxury still-life mood, hard directional single key light from camera-right casting a crisp sculptural shadow across the warm neutral stone, no water droplets and a completely dry surface, warm taupe and bone palette with soft sand undertones, gentle bounce fill to keep the matte packaging readable, shot on 100mm macro at f/8, tack-sharp label true to the reference, calm editorial high-end atmosphere, color-accurate brand packaging, fine stone grain and subtle tonal gradient on the seamless backdrop",
+        "extra_negative": "warped or melted tube, dented or crushed packaging, distorted label, double product, extra caps, wet glossy water droplets, condensation, plastic-looking sheen, harsh blown highlights crushing the matte surface, muddy lost shadows, fingerprints, dust, cluttered background, oversaturated, cold blue cast, fake glassy reflection beneath an opaque form, hands, fingers, human presence"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "single product centered on a flat travertine plinth against a warm neutral stone sweep, hard directional key from camera-right throwing one clean sculptural shadow to the left",
+          "pose": "upright and squared to camera, label facing front",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "product turned to a 3/4 hero angle on a stepped concrete block, raking warm light grazing the matte form to reveal its sculptural silhouette and edge",
+          "pose": "rotated three-quarters, slightly elevated on a low riser",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the cap and the matte finish where surface texture meets the printed label, hard light skimming to show the fine matte grain and seam",
+          "pose": "tight crop on the closure and signature detail, product stationary",
+          "composition": "closeup"
+        },
+        {
+          "scene": "styled quiet-luxury podium of layered stone slabs with a single sculptural pebble prop, soft sand backdrop and a long directional shadow anchoring the product",
+          "pose": "standing on the tallest plinth tier with a subtle prop offset to one side",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "needs_human_review"
+      ],
+      "ai_risk": "low",
+      "risk_notes": [
+        "hard_directional_light_may_clip_matte_detail",
+        "ensure_opaque_form_has_no_fabricated_glassy_reflection"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Liquid Splash Hero",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 18,
+    "rationale": "수분 세럼·바디워시·클렌저처럼 신선함과 액티브함을 강조하고 싶은 뷰티 브랜드가 다이내믹한 고속촬영 스플래시 히어로 컷을 만들 때 사용한다. 제품 둘레로 물·밀크 크라운이 공중에 얼어붙은 프레시 무드를 살린다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:high_speed_strobe_freeze_plus_rim",
+          "color:cool_fresh_aqua_white",
+          "texture:frozen_water_splash_crown_droplets",
+          "context:floating_liquid_on_clean_studio_sweep"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging/label identical to the reference, do not fabricate lettering, the product standing upright at the exact center while a dynamic crown of crystal-clear water and milky serum splash freezes mid-air around it, suspended droplets and beading mist captured at 1/8000 high-speed flash, fresh wet sheen on the bottle with a glossy reflection pooled beneath, cool aqua-white seamless gradient backdrop, large softbox key from camera-left with a crisp specular rim light from behind to define the glass edge and rim-light each flying droplet, shot on 100mm macro at f/9, tack-sharp label kept fully readable and unobscured, splash arcs framing but never covering the product front, airy luminous high-key mood, color-accurate brand packaging",
+        "extra_negative": "splash covering or hiding the label, droplets blurring the product front, warped or melted bottle, distorted label, double product, extra caps, hands, people, plastic or gelatinous fake-looking liquid, motion-blurred mushy splash, harsh blown highlights, muddy shadows, dirty water, fingerprints, dust, cluttered background, oversaturated"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "centered front view on a cool aqua-white seamless sweep, a symmetrical water-and-milk splash crown frozen mid-air behind and to the sides of the bottle, fresh droplets suspended in the air",
+          "pose": "product upright and squared to camera, label fully visible and unobscured by splash",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "dynamic 3/4 hero angle, an asymmetric ribbon of liquid arcs and wraps around the bottle with rim-lit flying droplets, condensation beading on the glass",
+          "pose": "bottle rotated three-quarters showing depth, splash sweeping behind without crossing the front face",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "extreme macro on the signature detail (cap, neck, or embossed logo) with a fine spray of micro-droplets and a single crisp water bead catching the rim light",
+          "pose": "tight crop on the hero detail, geometry locked and razor-sharp",
+          "composition": "closeup"
+        },
+        {
+          "scene": "styled hero on a wet glossy acrylic surface, a refined low splash erupting from the base with mirror reflection, soft aqua gradient backdrop and a few clean suspended droplets as accents",
+          "pose": "product centered on the reflective podium, controlled splash blooming around the base, label kept clear",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "liquid_synthesis_render_variance",
+        "splash_may_occlude_label",
+        "product_geometry_drift",
+        "possible_duplicate_product"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Botanical Dew",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 19,
+    "rationale": "신선한 아침 정원광과 잎·이슬 무드로 보태니컬·오가닉·클린뷰티(시카, 녹차, 로즈) 브랜드가 내추럴 프레시 히어로 컷을 뽑을 때 쓴다. 그린·뉴트럴 팔레트로 제품의 자연 유래·산뜻함을 강조하면서 식물 소품은 보조에 머물러 제품이 또렷하게 주연이 되도록 설계했다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:soft_morning_garden_backlight",
+          "color:fresh_green_neutral_palette",
+          "texture:dewy_droplets_on_leaves",
+          "context:botanical_natural_setting"
+        ],
+        "extra_positive": "premium clean-beauty hero product photography, single product resting on smooth river stones among fresh dewy green leaves and a few soft petals, tiny morning dew droplets beading on the foliage and a light condensation sheen on the bottle, soft diffused morning garden backlight glowing through the leaves from behind with a gentle softbox fill from camera-left, airy bright daylight mood with delicate leaf bokeh, shot on 100mm macro at f/8, tack-sharp color-accurate label kept fully legible and unobstructed, natural green and neutral palette true to the reference, botanical props arranged subtly to frame and never crowd the product; single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands",
+        "extra_negative": "warped or melted bottle, distorted label, double product, extra caps, plastic-looking leaves, fake-looking petals, overgrown foliage covering the product, oversaturated neon green, harsh blown highlights, muddy shadows, fingerprints, dust, cluttered background, dead or wilted leaves, soil smudges on bottle, green color cast spilling onto the packaging"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "product centered on a flat mossy stone with a soft fan of fresh dewy leaves behind it, gentle morning backlight glowing through the foliage",
+          "pose": "front view, label squared to camera and fully legible, bottle upright and crisp",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "product turned to a flattering hero angle, framed by a loose arc of dewy green leaves and a single soft petal, airy garden light with delicate leaf bokeh behind",
+          "pose": "3/4 hero angle showing the front face and side profile of the packaging",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "extreme close detail on the bottle's signature texture and cap, with fresh dew droplets and condensation beading on the glass, a blurred dewy leaf just at the edge of frame",
+          "pose": "macro on signature detail, product sharp and dominant, foliage softly out of focus",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product styled on a low natural stone podium nestled in a bed of fresh leaves and scattered dew, soft morning sun rays streaming from behind for a luminous botanical mood",
+          "pose": "styled hero presentation, bottle upright and clearly the focal point above the foliage",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "foliage_may_crowd_or_occlude_product",
+        "label_legibility_at_risk_behind_leaves",
+        "plastic_or_fake_looking_botanical_props",
+        "green_color_cast_spill_onto_packaging"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Noir Gold Hero",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 20,
+    "rationale": "럭셔리 안티에이징 세럼이나 골드/유리 패키징 향수를 파는 브랜드가 드라마틱한 오뜨 럭셔리 히어로 컷이 필요할 때 사용한다. 딥 차콜 배경과 골드 림라이트로 프리미엄·고급감을 강조하면서도 암부에서 라벨 디테일을 보존한다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:warm_gold_rim_plus_low_key_fill",
+          "color:dark_charcoal_black_with_gold",
+          "texture:glossy_reflection_polished_glass",
+          "context:dramatic_haute_luxury_dark_set"
+        ],
+        "extra_positive": "premium luxury beauty hero product photography, single product only, never duplicate or invent extra copies, packaging/label identical to the reference, do not fabricate lettering, single anti-aging serum or fragrance bottle on a black polished stone slab, deep charcoal-to-black gradient backdrop, dramatic haute couture mood, warm golden rim light raking from behind to trace the glass edge and gold cap, a soft controlled fill from camera-left lifting label detail out of the shadows, glossy mirror reflection pooled beneath the bottle, fine wisps of atmospheric haze catching the warm light, shot on 100mm macro at f/8, tack-sharp label, rich deep shadows with luminous warm highlights, color-accurate brand packaging true to the reference, opulent and editorial",
+        "extra_negative": "warped or melted bottle, distorted label, double product, extra caps, blown-out gold highlights, crushed pure-black label losing detail, muddy lifted blacks, plastic-looking liquid, harsh specular hotspots, fingerprints, dust, color cast on white packaging, oversaturated gold, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "single product centered on a black polished stone slab against a deep charcoal-to-black gradient, warm gold rim light from behind and a soft controlled fill lifting the label, mirror reflection pooled beneath",
+          "pose": "front view with the label squared to camera, fully legible despite the dark moody set",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "the bottle turned to a dramatic 3/4 hero angle on the dark set, golden rim light tracing the glass edge and cap, atmospheric haze catching the warm glow behind",
+          "pose": "3/4 hero angle showing depth and dimensional form, gold cap catching a warm specular highlight",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "extreme macro on the signature detail of the packaging, the gold cap engraving or embossed glass and the label edge, raking warm light revealing fine texture out of deep shadow",
+          "pose": "tight crop on the signature gold detail and label edge, true-to-reference finish",
+          "composition": "closeup"
+        },
+        {
+          "scene": "styled on a low dark podium with a single subtle luxury prop such as a smooth black river stone or a sheer drape of silk, deep shadows framing the product, opulent editorial mood",
+          "pose": "product standing on the podium as the clear hero, prop placed subtly off to one side and out of focus",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "dark_scene_label_legibility_risk",
+        "gold_highlight_clipping_risk",
+        "reflection_may_duplicate_product"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Cryo Frost Hero",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 21,
+    "rationale": "쿨링·진정·디퍼핑 라인(아이크림·세럼·미스트)을 운영하는 뷰티 브랜드가 아이시 블루 성에·콜드 베이퍼 무드로 청량·진정감을 강조한 히어로 컷이 필요할 때 사용한다. 결정 디테일과 차가운 색온도로 프레시한 효능 서사를 전달한다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:cool_directional_key_plus_icy_rim",
+          "color:icy_blue_cold_palette",
+          "texture:frost_crystals_cold_vapor",
+          "context:frozen_studio_sweep"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product staged on a clear glass ice block with crisp frost crystals and delicate ice cube fragments, cold vapor and chilled fog drifting low around the base, fine condensation frost feathering on cold surfaces while the label stays clean and frost-free, icy blue cool palette with crystalline sparkle, soft gradient seamless backdrop in pale glacier blue, directional cool softbox key from camera-left paired with a crisp icy specular rim light from behind to define edges, shot on 100mm macro at f/8, label stays color-accurate and true-to-reference, fresh refreshing cooling mood, accurate cold color temperature, color-accurate brand packaging, single product only, never duplicate or invent extra copies, packaging/label identical to the reference, do not fabricate lettering",
+        "extra_negative": "frost or ice obscuring the label, warm color cast, yellow tint, melted slushy mess, warped or melted bottle, distorted label, double product, extra caps, plastic-looking ice, fake cgi crystals, harsh blown highlights, muddy shadows, fingerprints, dust, cluttered background, oversaturated"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "product centered on a frosted glass ice block over a pale glacier-blue seamless sweep, cold vapor pooling low, icy crystalline sparkle catching the rim light, label squared to camera and kept frost-free",
+          "pose": "front view, label squared to camera, single product only, packaging identical to reference",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "hero 3/4 angle on a clear ice block surrounded by scattered ice cube fragments and drifting cold fog, icy blue palette, directional cool key with crisp specular rim defining the edge",
+          "pose": "rotated to a 3/4 hero angle, standing upright, single product only, no duplicates",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "extreme close on the signature detail with delicate frost crystals feathering on the cold surface beside it, fine condensation and crystalline sparkle, label area stays clean and legible",
+          "pose": "static, signature detail filling the frame, single product only",
+          "composition": "closeup"
+        },
+        {
+          "scene": "styled on a chiseled ice-cube podium with a single ice shard prop and low chilled mist, glacier-blue gradient backdrop, airy refreshing cooling mood, cold color temperature preserved",
+          "pose": "styled upright on the icy podium, single product only, packaging true to reference",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "frost/ice may creep over and obscure the label — negatives and per-shot scene notes enforce a frost-free, legible label zone",
+        "cold-vapor and translucent ice can render as plastic/CGI or introduce a warm cast — guarded via 'plastic-looking ice', 'fake cgi crystals', 'warm color cast', 'yellow tint' negatives",
+        "ice fragments risk reading as duplicate products — single-product guard and 'double product' negative applied"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Silk Drape Hero",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 22,
+    "rationale": "럭셔리 세럼·크림·향수 브랜드가 흐르는 실크/새틴 주름 위에 제품을 올려 우아한 주얼톤 히어로 컷을 뽑을 때 사용한다. 직물 드레이프가 제품을 받치되 가리지 않아 고급스러운 광택과 색감을 그대로 살려준다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:soft_directional_key_plus_satin_sheen",
+          "color:jewel_tone_emerald_burgundy_blush",
+          "texture:flowing_silk_satin_drape",
+          "context:luxury_fabric_still_life"
+        ],
+        "extra_positive": "premium beauty hero product photography, single luxury product resting on flowing draped silk and satin with elegant rolling folds, rich jewel-tone palette of emerald, burgundy and soft blush catching gentle highlights, lustrous fabric sheen with smooth gradient ripples cradling but never covering the product, soft directional key light from camera-left with a delicate satin specular glow to model the folds, subtle warm reflection of the cloth on the glossy packaging, shot on 100mm macro at f/8, tack-sharp label, opulent refined mood, color-accurate brand packaging true to the reference, single product only, never duplicate or invent extra copies, packaging/label identical to the reference, do not fabricate lettering",
+        "extra_negative": "fabric covering or obscuring the product, wrinkled messy cloth, cheap polyester look, warped or melted bottle, distorted label, double product, extra caps, plastic-looking sheen, harsh blown highlights on satin, muddy crushed shadows, lint, dust, fingerprints on glass, oversaturated jewel tones, cluttered background, human hands"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "product standing upright on smoothly draped emerald silk, soft folds fanning out behind it, refined luxury still life",
+          "pose": "front view with label squared to camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "product set on a gentle rise of burgundy satin, rolling folds sweeping diagonally to add depth, opulent hero staging",
+          "pose": "rotated to a flattering 3/4 hero angle",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "extreme close detail of the signature cap and label edge against blush satin sheen, fabric ripples softly out of focus",
+          "pose": "macro framing on the signature detail with shallow depth",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product styled on a low silk-draped podium with a single elegant prop such as a folded satin ribbon, jewel-tone palette, luminous luxury editorial",
+          "pose": "elevated centered hero placement",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "fabric_may_occlude_product",
+        "satin_specular_blowout",
+        "jewel_tone_oversaturation"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Sunlit Pop",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 23,
+    "rationale": "컬러풀한 색조 메이크업이나 SPF/선케어 브랜드의 마케터가 비비드하고 플레이풀한 모던 팝 무드의 히어로 컷이 필요할 때 쓰는 템플릿. 하드 햇살과 채도 높은 그라디언트 배경으로 영-비비드 감성을 살리면서도 라벨은 또렷하게 유지한다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:hard_direct_sun_sharp_shadow",
+          "color:vivid_saturated_gradient",
+          "texture:clean_matte_pop",
+          "context:colorful_paper_sweep"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product standing on a smooth colored paper sweep with a vivid saturated gradient backdrop blending sunny yellow into hot coral, hard direct sunlight raking from camera-right casting a single crisp graphic shadow with clean sharp edges, modern playful pop aesthetic, bright bold candy color palette kept clean and controlled, shot on 100mm macro at f/8, tack-sharp legible label true to reference, punchy high-contrast yet color-accurate brand packaging, glossy crisp specular highlight on the cap, airy summery editorial mood",
+        "extra_negative": "warped or melted bottle, distorted label, double product, duplicate copies, extra caps, oversaturated neon clipping, blown-out highlights, muddy crushed shadows, dull flat lighting, soft blurry shadow, fingerprints, dust, cluttered background, washed-out colors, color banding, people, hands"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "vivid yellow-to-coral gradient paper sweep under hard direct sun, single crisp graphic shadow falling to camera-left",
+          "pose": "product standing upright, front face and label squared to camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "saturated candy-color sweep with sharp summery sunlight, playful pop styling",
+          "pose": "product turned to a 3/4 hero angle showing front and side, hard shadow anchoring it",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "tight frame on the signature cap and label detail, raking hard sun revealing crisp specular highlight and clean edge",
+          "pose": "product centered, macro on the signature detail with the label fully legible",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product on a small colored acrylic block riser against the bold gradient, one simple geometric prop and a bright cast shadow",
+          "pose": "product staged on the podium, slight tilt, hero presentation",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "hard_shadow_intentional_may_read_as_error",
+        "oversaturation_risk_on_vivid_gradient",
+        "label_legibility_under_high_contrast"
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "beauty",
+    "category": "Hero",
+    "name": "Aqua Float",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 24,
+    "rationale": "아쿠아젤·수분·하이드라 라인이나 미스트 브랜드가 청량한 수분감과 클린 블루 무드의 히어로 이미지가 필요할 때 쓴다. 잔물결 수면 위 반사·코스틱으로 순수 워터 컨셉을 강조하되 라벨 면은 수면 위로 띄워 굴절 왜곡을 방지한다.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:cool_top_key_plus_aqua_caustics",
+          "color:clean_hydra_blue",
+          "texture:rippling_water_surface_wet_sheen",
+          "context:calm_pool_seamless_water"
+        ],
+        "extra_positive": "premium beauty hero product photography, single hydration product resting on a calm rippling water surface with its label face held above the waterline, crystal-clear shallow water with gentle concentric ripples, dancing caustic light patterns shimmering on the surface and base, dewy condensation and fine droplets beading on the upper bottle, pristine mirror-like reflection on the still water, soft cool gradient seamless backdrop in clean hydra blue, large softbox top key with a crisp specular rim to define the glass edge against the water, shot on 100mm macro at f/8, tack-sharp label, airy luminous high-key aquatic mood, refreshing pure-water freshness, color-accurate brand packaging, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering",
+        "extra_negative": "warped or melted bottle, distorted label, refraction-warped lettering, underwater label blur, double product, extra caps, murky or dirty water, muddy turbid pool, plastic-looking liquid, harsh blown highlights, oversaturated cyan, chaotic foam and spray, muddy shadows, fingerprints, dust, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "Product standing on a calm shallow water surface, label face squared to camera and held clearly above the waterline, gentle concentric ripples spreading out, soft caustic light on the water, clean hydra-blue seamless gradient behind",
+          "pose": "front view, label squared to camera, upright and centered",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "Hero three-quarter angle of the bottle half-resting on rippling water, glass edge catching a crisp specular rim, mirror reflection pooled on the still surface, dancing caustics around the base",
+          "pose": "rotated to a 3/4 hero angle, label still readable and above the waterline",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "Macro on the signature detail where the bottle meets the water, fresh droplets and condensation beading on the glass, fine surface ripples and shimmering caustic highlights, true-to-reference color",
+          "pose": "tight crop on the cap and shoulder of the bottle at the waterline, no submersion of the label",
+          "composition": "closeup"
+        },
+        {
+          "scene": "Styled aquatic podium, product on a frosted acrylic riser barely emerging from a thin sheet of water with subtle ripples, a single smooth pebble or water lily leaf as a minimal prop, airy high-key clean-blue studio mood",
+          "pose": "upright on the riser, label squared and lifted above the water",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    },
+    "meta": {
+      "provisional": true,
+      "flags": [
+        "experimental",
+        "needs_human_review"
+      ],
+      "ai_risk": "medium",
+      "risk_notes": [
+        "half_submerged_refraction_label_distortion",
+        "water_caustics_can_create_phantom_reflections_or_duplicate_product",
+        "transparent_aqua_gel_may_render_as_plastic_or_lose_form"
+      ]
     }
   }
 ];

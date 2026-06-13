@@ -37,9 +37,9 @@
     "mode": "product",
     "status": "draft(이슈)",
     "file": "recipes.beauty.v2.js",
-    "count": 16,
+    "count": 24,
     "issues": [
-      "개수 16 (권장 6~8)"
+      "개수 24 (권장 6~8)"
     ],
     "flags": [
       "On-Model Glow Drop [experimental,needs_human_review]",
@@ -47,7 +47,15 @@
       "GRWM Routine Reel [needs_human_review]",
       "Region Result Reel [experimental,needs_human_review]",
       "On-Skin Patch Hero [needs_human_review]",
-      "Teeth Shade Card [needs_human_review]"
+      "Teeth Shade Card [needs_human_review]",
+      "Stone Plinth Luxe [needs_human_review]",
+      "Liquid Splash Hero [experimental,needs_human_review]",
+      "Botanical Dew [experimental,needs_human_review]",
+      "Noir Gold Hero [experimental,needs_human_review]",
+      "Cryo Frost Hero [experimental,needs_human_review]",
+      "Silk Drape Hero [experimental,needs_human_review]",
+      "Sunlit Pop [experimental,needs_human_review]",
+      "Aqua Float [experimental,needs_human_review]"
     ],
     "overlay": [
       "Before/After Result Reel",
