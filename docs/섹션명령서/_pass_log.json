@@ -58,6 +58,14 @@
       "result": "pass",
       "tested_at": "2026-06-13",
       "note": "사용자 요청 보류 해제"
+    },
+    {
+      "id": "linkedin-classic",
+      "name": "LinkedIn Classic",
+      "vertical": "headshot",
+      "result": "pass",
+      "tested_at": "2026-06-13",
+      "note": "사용자 요청 보류 해제"
     }
   ]
 }
