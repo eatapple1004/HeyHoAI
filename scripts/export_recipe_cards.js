@@ -85,6 +85,7 @@ for (const v of FE_VERTICALS) {
       id: r.id, cat: r.cat, name: r.name, type: r.type === 'reel' ? 'reel' : 'image',
       cost: r.cost,                          // 시드 credit_cost 단일원
       new: !!r.new,
+      status: r.status || 'held',            // 출시 라이프사이클 held|testing|confirmed (보류 UI 배지용)
       provisional: r.provisional === true,   // 계약 per-card(확장 로스터) — '프리뷰/의도'만, 영구 마케팅카피 금지
       flags: r.flags || [],                  // experimental / needs_human_review / oversize
       text_overlay: r.text_overlay === true, // top-level (A5 혼합중첩 규약)

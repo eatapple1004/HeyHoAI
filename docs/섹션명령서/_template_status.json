@@ -1,0 +1,8 @@
+{
+  "_note": "템플릿 출시 라이프사이클 원장 — 사용자 결정(2026-06-13): 전 템플릿 출시 보류(held). 1:1 테스트 통과분만 confirmed로 승격해 출시. 기본값 held이므로 overrides에 없는 템플릿은 전부 held.",
+  "lifecycle": ["held", "testing", "confirmed"],
+  "default": "held",
+  "gate": "출시 = confirmed 상태만. confirmed 0 = 출시 0.",
+  "updated": "2026-06-13",
+  "overrides": {}
+}

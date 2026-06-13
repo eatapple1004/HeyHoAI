@@ -71,6 +71,8 @@
   .opts-btn.on{color:var(--accent2);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.1)}
   /* best value 배지 */
   .recipe-card .val-badge{position:absolute;top:10px;right:10px;left:auto;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:4px 8px;border-radius:8px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;text-transform:uppercase}
+  .recipe-card .hold-badge{position:absolute;bottom:10px;left:10px;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);color:#ffce7a;border:1px solid rgba(255,206,122,.55)}
+  .recipe-card.held .preview{opacity:.8}
 
   /* add-ons (quality upsell · fast-lane · caption) */
   .addons{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--border)}
@@ -301,7 +303,8 @@ function buildTemplates(){
   const C=(window.RECIPES&&window.RECIPES.cards)||{};
   const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
   const mk=(c,cat)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
-    emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All"});
+    emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",
+    status:c.status||"held",held:(c.status||"held")==="held"});
   const PRODUCT=["fashion","beauty","jewelry","food","home","tech","pet"];
   const shopping=[];
   PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v)))));
@@ -492,9 +495,11 @@ function renderRecipes(){
   const bestId=(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
   document.getElementById('recipeGrid').innerHTML=rs.map(r=>{
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="같은 비용에 사진 4장 — 크레딧당 산출 최고">★ Best value</span>`:'';
+    const onHold=r.held&&state.mode==='shopping';
+    const holdBadge=onHold?`<span class="hold-badge" title="테스트 전 — 출시 보류 중. 통과 시 해제됩니다.">⏸ 보류</span>`:'';
     return `
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
-      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.emoji}</div>
+    <div class="recipe-card ${onHold?'held':''} ${state.recipeId===r.id?'selected':''}" onclick="pickRecipe('${r.id}')">
+      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${holdBadge}${r.emoji}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'🚧 Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
 }

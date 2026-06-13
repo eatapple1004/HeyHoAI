@@ -17,6 +17,9 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const guards = require(path.join(SEEDS, 'product.guards.v2.js')); // ← resolvedGuards 실호출
+// 출시 라이프사이클 원장(held→testing→confirmed). overrides에 없으면 default=held.
+const ledger = (() => { try { return require(path.join(ROOT, 'docs/섹션명령서/_template_status.json')); } catch (e) { return { default: 'held', overrides: {} }; } })();
+const lifecycleStatus = (id) => (ledger.overrides && ledger.overrides[id] && ledger.overrides[id].status) || ledger.default || 'held';
 
 const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
 const PRODUCT = new Set(['fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'general']);
@@ -48,6 +51,7 @@ for (const v of VERTICALS) {
       cost: r.credit_cost,                                       // 시드 credit_cost 단일원(pricing.js 아님)
       new: isNew,
       provisional: !!(r.meta && r.meta.provisional),       // Chief: 확장분 provisional 표기
+      status: lifecycleStatus(id),                         // held | testing | confirmed (출시 라이프사이클)
       flags: (r.meta && r.meta.flags) || [],
       text_overlay: r.text_overlay === true,                     // top-level (consolidate와 동일 경로)
     };
