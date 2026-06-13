@@ -157,7 +157,8 @@ async function load(){
           type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',
           name:r.character_name||(r.prompt_text||'').slice(0,42)||'Generated',
           date:(r.created_at||'').slice(0,10),
-          model:r.model||''
+          model:r.model||'',
+          template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||''
         };
       });
   }catch(e){console.error('results load failed',e);}
@@ -180,14 +181,14 @@ function render(){
   grid.innerHTML=list.map(it=>`
     <div class="item">
       ${it.type==='reel'
-        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="openView('${esc(it.url)}','${esc(it.name)}','${esc(it.date)}','reel')"></video>`
-        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="openView('${esc(it.url)}','${esc(it.name)}','${esc(it.date)}','photo')">`}
+        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="openView(${it.idx})"></video>`
+        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="openView(${it.idx})">`}
       <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>
       <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}</div></div>
       <div class="actions">
         ${it.type==='photo'?`<button class="reel" onclick="openReel('${esc(it.url)}','${esc(it.name)}')">→ Reel</button>`:''}
         <a href="${esc(it.url)}" download><button>⬇</button></a>
-        <button onclick="openView('${esc(it.url)}','${esc(it.name)}','${esc(it.date)}','${it.type}')">⤢</button>
+        <button onclick="openView(${it.idx})">⤢</button>
       </div>
     </div>`).join('');
   // 사진이 하나라도 있으면 넛지 표시
@@ -197,13 +198,16 @@ function setFilter(f){filter=f;renderFilters();render();}
 
 // ── 결과물 뷰어 (새 탭 대신 모달 창) ──
 let VIEW_URL='';
-function openView(url,name,date,type){
-  VIEW_URL=url;
-  document.getElementById('viewMedia').innerHTML = type==='reel'
-    ? `<video src="${esc(url)}" controls autoplay loop playsinline></video>`
-    : `<img src="${esc(url)}" alt="">`;
-  document.getElementById('viewMeta').textContent = name + (date?' · '+date:'');
-  document.getElementById('viewDownload').href = url;
+function openView(idx){
+  const it=ITEMS.find(x=>x.idx===idx); if(!it)return;
+  VIEW_URL=it.url;
+  document.getElementById('viewMedia').innerHTML = it.type==='reel'
+    ? `<video src="${esc(it.url)}" controls autoplay loop playsinline></video>`
+    : `<img src="${esc(it.url)}" alt="">`;
+  document.getElementById('viewMeta').innerHTML = esc(it.name)
+    + (it.date?' · '+esc(it.date):'')
+    + (it.template?` · <span style="color:var(--accent2)">템플릿: ${esc(it.template)}</span>`:'');
+  document.getElementById('viewDownload').href = it.url;
   document.getElementById('viewModal').classList.add('open');
 }
 function closeView(){
