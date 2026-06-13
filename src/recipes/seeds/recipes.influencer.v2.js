@@ -424,4 +424,23 @@ module.exports = [
       }
     }
   }
+,
+  {
+    "mode": "influencer",
+    "category": "Feed",
+    "name": "Summer Beach Coconut",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 99,
+    "rationale": "여름 해변 코코넛 윙크 — 시네마틱 라이프스타일 피드 컷. 밝고 산뜻한 바캉스 무드의 인플루언서 피드용.",
+    "meta": { "change": "new", "render_notes": null },
+    "config": {
+      "schema_version": 1,
+      "mode": "influencer",
+      "prompt_override": "the same person from the reference photo, keep the exact same face and identity. realistic close-up portrait, long black hair with loose natural strands slightly moving in the breeze, pose: holding a fresh green coconut with both hands close to the chest, slightly leaning forward toward the camera, one eye closed in a playful wink, a straw placed between the lips, wearing a light mint sleeveless top, soft and airy summer clothing, outdoors on a sandy beach, wearing a wide straw hat creating a natural frame around the head, bright natural environment, camera: slightly high angle, close-up framing, shallow depth of field, soft background blur, lighting: soft natural daylight, warm sunlight with gentle diffusion, slight haze and light bloom, color: warm and slightly faded tones, soft contrast, film-like color grading, texture: slight softness, subtle grain, natural and unpolished feel, style: cinematic summer portrait, light airy and playful mood, natural lifestyle photography",
+      "output": { "type": "image_set", "count": 4, "aspect_ratio": "4:5" },
+      "subject": { "type": "face", "reference_strategy": "identity_lock", "min_refs": 1 },
+      "look": { "extra_negative": "harsh lighting, strong shadows, over-sharpened details, plastic look, artificial textures, distorted hands, unnatural pose" }
+    }
+  }
 ];
