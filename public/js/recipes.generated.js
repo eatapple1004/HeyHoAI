@@ -37,6 +37,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "📸",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -51,6 +52,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -65,6 +67,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🌅",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -79,6 +82,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -93,6 +97,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -110,6 +115,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -124,6 +130,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "📸",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       }
@@ -147,6 +154,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -168,6 +176,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -186,6 +195,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": false,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -204,6 +214,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -222,6 +233,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -243,6 +255,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -264,6 +277,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -284,6 +298,7 @@
           "single_sku",
           "label_lock"
         ],
+        "held": true,
         "emoji": "🔄",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       }
@@ -306,6 +321,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": false,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -326,6 +342,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -349,6 +366,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -372,6 +390,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -394,6 +413,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -414,6 +434,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -434,6 +455,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -454,6 +476,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🔖",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -474,6 +497,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🖼️",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -497,6 +521,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -517,6 +542,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -537,6 +563,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -557,6 +584,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -577,6 +605,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -599,6 +628,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -621,6 +651,7 @@
           "reflection_control",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🖼️",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       }
@@ -644,6 +675,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": false,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -665,6 +697,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "📸",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -686,6 +719,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🔖",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -710,6 +744,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -734,6 +769,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -755,6 +791,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "📸",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -776,6 +813,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -800,6 +838,7 @@
           "scale_cue",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       }
@@ -822,6 +861,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -842,6 +882,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -862,6 +903,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -884,6 +926,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -904,6 +947,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": true,
         "emoji": "🔖",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -924,6 +968,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -946,6 +991,7 @@
           "count_lock",
           "scale_cue"
         ],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       }
@@ -970,6 +1016,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -992,6 +1039,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1014,6 +1062,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔖",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1039,6 +1088,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -1061,6 +1111,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1083,6 +1134,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -1108,6 +1160,7 @@
           "reflection_control",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       }
@@ -1132,6 +1185,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1154,6 +1208,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔖",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -1176,6 +1231,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -1198,6 +1254,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🧩",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -1222,6 +1279,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -1244,6 +1302,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -1266,6 +1325,7 @@
           "scale_cue",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "💄",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       }
@@ -1289,6 +1349,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -1310,6 +1371,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -1331,6 +1393,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -1355,6 +1418,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -1376,6 +1440,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -1400,6 +1465,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🗣️",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1421,6 +1487,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -1444,6 +1511,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1465,6 +1533,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🖼️",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -1486,6 +1555,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -1507,6 +1577,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -1528,6 +1599,7 @@
           "emissive_render",
           "count_lock"
         ],
+        "held": true,
         "emoji": "🔖",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       }
@@ -1544,6 +1616,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🖼️",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1558,6 +1631,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1575,6 +1649,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1592,6 +1667,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -1609,6 +1685,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -1626,6 +1703,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🗣️",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -1643,6 +1721,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       }
@@ -1667,6 +1746,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -1689,6 +1769,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -1713,6 +1794,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🎁",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -1735,6 +1817,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },
@@ -1759,6 +1842,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🧩",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1781,6 +1865,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🎬",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1805,6 +1890,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "🔄",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -1831,6 +1917,7 @@
           "count_lock",
           "emissive_render"
         ],
+        "held": true,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       }
@@ -1847,6 +1934,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -1861,6 +1949,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -1875,6 +1964,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -1889,6 +1979,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1903,6 +1994,7 @@
         "flags": [],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
       },
@@ -1919,6 +2011,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -1935,6 +2028,7 @@
         ],
         "text_overlay": false,
         "guards": [],
+        "held": true,
         "emoji": "💼",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       }
