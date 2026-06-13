@@ -66,13 +66,17 @@
     "key": "jewelry",
     "name": "주얼리",
     "mode": "product",
-    "status": "OK",
+    "status": "draft(이슈)",
     "file": "recipes.jewelry.v2.js",
-    "count": 8,
-    "issues": [],
+    "count": 10,
+    "issues": [
+      "개수 10 (권장 6~8)"
+    ],
     "flags": [
-      "Wrist & Hand [experimental,needs_human_review]",
-      "Neck & Ear Try-On [experimental,needs_human_review]",
+      "Ring on Finger [experimental,needs_human_review]",
+      "Wrist Wear [experimental,needs_human_review]",
+      "Necklace on Neck [experimental,needs_human_review]",
+      "Earring on Ear [experimental,needs_human_review]",
       "Jewelry Unbox ASMR [experimental,needs_human_review]"
     ],
     "overlay": [

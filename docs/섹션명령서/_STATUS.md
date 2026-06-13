@@ -1,13 +1,13 @@
 # 레시피 종합 현황 (자동생성 · `node scripts/consolidate_recipes.js`)
 
-**8/11 섹션 OK · 총 102개 템플릿**
+**7/11 섹션 OK · 총 104개 템플릿**
 
 | 섹션 | 상태 | 개수 | 파일 |
 |---|---|---|---|
 | influencer (인플루언서) | draft(이슈) | 7 | `recipes.influencer.v2.js` |
 | fashion (패션) | OK | 8 | `recipes.fashion.v2.js` |
 | beauty (뷰티) | draft(이슈) | 24 | `recipes.beauty.v2.js` |
-| jewelry (주얼리) | OK | 8 | `recipes.jewelry.v2.js` |
+| jewelry (주얼리) | draft(이슈) | 10 | `recipes.jewelry.v2.js` |
 | food (푸드&카페) | OK | 7 | `recipes.food.v2.js` |
 | home (홈&리빙) | OK | 7 | `recipes.home.v2.js` |
 | tech (테크) | OK | 7 | `recipes.tech.v2.js` |
@@ -22,6 +22,9 @@
 
 **beauty**
 - 개수 24 (권장 6~8)
+
+**jewelry**
+- 개수 10 (권장 6~8)
 
 **pet**
 - 개수 12 (권장 6~8)
@@ -57,8 +60,10 @@ _없음_
 - Aqua Float [experimental,needs_human_review]
 
 **jewelry**
-- Wrist & Hand [experimental,needs_human_review]
-- Neck & Ear Try-On [experimental,needs_human_review]
+- Ring on Finger [experimental,needs_human_review]
+- Wrist Wear [experimental,needs_human_review]
+- Necklace on Neck [experimental,needs_human_review]
+- Earring on Ear [experimental,needs_human_review]
 - Jewelry Unbox ASMR [experimental,needs_human_review]
 
 **food**
