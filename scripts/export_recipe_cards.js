@@ -69,6 +69,9 @@ let contract;
 try { contract = JSON.parse(fs.readFileSync(CONTRACT, 'utf8')); }
 catch (e) { console.error('✗ 계약 JSON 읽기 실패:', CONTRACT, e.message); process.exit(1); }
 if (!contract.cards) { console.error('✗ 계약 JSON에 .cards 없음'); process.exit(1); }
+// 통과 로그(_pass_log.json)로 held 판정: 통과 id는 held=false(보류 해제), 나머지 held=true(보류 유지).
+let passedIds = new Set();
+try { passedIds = new Set((JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/섹션명령서/_pass_log.json'), 'utf8')).entries || []).map((e) => e.id)); } catch (e) {}
 
 // ── 카드 변환 (계약 필드 보존 + emoji/grad 파생) ──
 const FE_VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
@@ -89,6 +92,7 @@ for (const v of FE_VERTICALS) {
       flags: r.flags || [],                  // experimental / needs_human_review / oversize
       text_overlay: r.text_overlay === true, // top-level (A5 혼합중첩 규약)
       guards: r.guards || [],                // PREVIEW 전용 (resolver L148 미착지 — '보장' 카피 금지)
+      held: !passedIds.has(r.id),            // 출시 보류 — 통과(_pass_log)분만 false(해제). studio 조건부 '보류' 배지.
       emoji: pickEmoji(r), grad: pickGrad(r.id),
     };
   });

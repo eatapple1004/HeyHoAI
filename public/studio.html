@@ -348,7 +348,7 @@ function buildTemplates(){
   const C=(window.RECIPES&&window.RECIPES.cards)||{};
   const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
   const mk=(c,cat)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
-    emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All"});
+    emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",held:c.held});
   const PRODUCT=["fashion","beauty","jewelry","food","home","tech","pet"];
   const shopping=[];
   PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v)))));
@@ -544,7 +544,7 @@ function renderRecipes(){
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="같은 비용에 사진 4장 — 크레딧당 산출 최고">★ Best value</span>`:'';
     return `
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}" onclick="openRecipeModal('${r.id}')">
-      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}<span class="hold-badge">보류</span>${r.emoji}</div>
+      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">보류</span>'}${r.emoji}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'🚧 Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
 }
