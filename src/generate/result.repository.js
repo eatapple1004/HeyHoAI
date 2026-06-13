@@ -36,7 +36,7 @@ async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
   const where = teamId ? 'p.team_id = $1' : 'p.user_id = $1 AND p.team_id IS NULL';
   const owner = teamId || userId;
   const result = await query(
-    `SELECT gr.*, p.prompt_text, c.name as character_name
+    `SELECT gr.*, p.prompt_text, p.tags, c.name as character_name
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
      LEFT JOIN characters c ON c.id = gr.character_id

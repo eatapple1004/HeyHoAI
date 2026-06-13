@@ -703,7 +703,7 @@ async function generateImages(r,subj){
   const rp=await resolvePromptFor(r,subj);
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:4,style:rp.style,brandKit:brandOn()})
+    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:4,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'내 프롬프트'})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}

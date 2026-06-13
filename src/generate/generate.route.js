@@ -37,7 +37,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
  */
 router.post('/', upload.array('referenceImages', 14), async (req, res, next) => {
   try {
-    const { characterId, prompt, model = 'pro', count = '1', style = 'none' } = req.body;
+    const { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
     const generateCount = Math.min(parseInt(count, 10) || 1, 4);
 
     if (!prompt || prompt.trim().length === 0) {
@@ -120,7 +120,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       promptText: finalPrompt,
       model: modelId,
       referenceImagePath,
-      tags: [referenceSource, model, styled.styleName].filter(Boolean),
+      tags: [referenceSource, model, styled.styleName, templateName ? `tpl:${String(templateName).slice(0, 80)}` : null].filter(Boolean),
       stylePreset: styled.styleName !== 'none' ? styled.styleName : null,
       teamId: genTeamId,
     });
