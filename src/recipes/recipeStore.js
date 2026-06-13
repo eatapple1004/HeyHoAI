@@ -60,6 +60,7 @@ function list({ mode, vertical } = {}) {
       type: r.output_type === 'reel' ? 'reel' : 'image',
       credit_cost: r.credit_cost,
       section: r.section,
+      description: r.rationale || '',
     }));
 }
 

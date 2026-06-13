@@ -61,8 +61,9 @@ const envSchema = z.object({
   LEMONSQUEEZY_STORE_ID: z.string().optional(),
   LEMONSQUEEZY_WEBHOOK_SECRET: z.string().optional(),
   LS_VARIANT_PACK50: z.string().optional(),
-  LS_VARIANT_PACK220: z.string().optional(),
-  LS_VARIANT_PACK580: z.string().optional(),
+  LS_VARIANT_PACK120: z.string().optional(),
+  LS_VARIANT_PACK300: z.string().optional(),
+  LS_VARIANT_PACK700: z.string().optional(),
 
   // Billing (Eximbay — 해외/국내 카드 PG)
   EXIMBAY_API_KEY: z.string().optional(),        // Basic 인증용 API 키
