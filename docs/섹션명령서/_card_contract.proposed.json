@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 104,
-  "new_count": 70,
+  "total": 102,
+  "new_count": 67,
   "provisional_count": 26,
   "drift_guard": {
-    "seed_total": 104,
-    "status_total": 104,
+    "seed_total": 102,
+    "status_total": 102,
     "ok": true
   },
   "id_collisions": [],
@@ -771,12 +771,12 @@
         ]
       },
       {
-        "id": "ring-on-finger",
+        "id": "wrist-and-hand",
         "cat": "OnModel",
-        "name": "Ring on Finger",
+        "name": "Wrist & Hand",
         "type": "image",
         "cost": 5,
-        "new": true,
+        "new": false,
         "provisional": false,
         "flags": [
           "experimental",
@@ -793,53 +793,9 @@
         ]
       },
       {
-        "id": "wrist-wear",
+        "id": "neck-and-ear-try-on",
         "cat": "OnModel",
-        "name": "Wrist Wear",
-        "type": "image",
-        "cost": 5,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "scale_cue",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "necklace-on-neck",
-        "cat": "OnModel",
-        "name": "Necklace on Neck",
-        "type": "image",
-        "cost": 5,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "scale_cue",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "earring-on-ear",
-        "cat": "OnModel",
-        "name": "Earring on Ear",
+        "name": "Neck & Ear Try-On",
         "type": "image",
         "cost": 5,
         "new": true,

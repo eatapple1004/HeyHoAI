@@ -2,15 +2,15 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 104→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 102→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 104,
-  "new_count": 70,
+  "total": 102,
+  "new_count": 67,
   "overlay_count": 6,
-  "guarded_count": 83,
+  "guarded_count": 81,
   "provisional_count": 26,
   "provisional_verticals": [
     "beauty",
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 104,
-    "contract_total": 104,
-    "catalog_total": 104,
-    "status_total": 104,
+    "fe_total": 102,
+    "contract_total": 102,
+    "catalog_total": 102,
+    "status_total": 102,
     "ok": true
   },
   "cards": {
@@ -915,9 +915,34 @@
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
       {
-        "id": "ring-on-finger",
+        "id": "wrist-and-hand",
         "cat": "OnModel",
-        "name": "Ring on Finger",
+        "name": "Wrist & Hand",
+        "type": "image",
+        "cost": 5,
+        "new": false,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ],
+        "held": true,
+        "emoji": "🧍",
+        "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
+      },
+      {
+        "id": "neck-and-ear-try-on",
+        "cat": "OnModel",
+        "name": "Neck & Ear Try-On",
         "type": "image",
         "cost": 5,
         "new": true,
@@ -938,81 +963,6 @@
         "held": true,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
-      },
-      {
-        "id": "wrist-wear",
-        "cat": "OnModel",
-        "name": "Wrist Wear",
-        "type": "image",
-        "cost": 5,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "scale_cue",
-          "count_lock"
-        ],
-        "held": true,
-        "emoji": "🧍",
-        "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
-      },
-      {
-        "id": "necklace-on-neck",
-        "cat": "OnModel",
-        "name": "Necklace on Neck",
-        "type": "image",
-        "cost": 5,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "scale_cue",
-          "count_lock"
-        ],
-        "held": true,
-        "emoji": "🧍",
-        "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)"
-      },
-      {
-        "id": "earring-on-ear",
-        "cat": "OnModel",
-        "name": "Earring on Ear",
-        "type": "image",
-        "cost": 5,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "scale_cue",
-          "count_lock"
-        ],
-        "held": true,
-        "emoji": "🧍",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
       {
         "id": "set-and-stack-stylist",
