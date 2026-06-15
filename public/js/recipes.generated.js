@@ -674,7 +674,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -698,7 +698,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -722,7 +722,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -746,7 +746,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -770,7 +770,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -794,7 +794,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -818,7 +818,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -842,7 +842,7 @@
           "reflection_control",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       }
@@ -1129,7 +1129,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1204,7 +1204,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#5ee0d6,#9b7bff)"
       },
@@ -1229,7 +1229,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       },
@@ -1329,7 +1329,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -1379,7 +1379,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -1404,7 +1404,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -1429,7 +1429,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -1504,7 +1504,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
       },
@@ -1529,7 +1529,7 @@
           "scale_cue",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
       },
@@ -2758,7 +2758,7 @@
           "reflection_control",
           "emissive_render"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
@@ -2921,7 +2921,7 @@
           "scale_cue",
           "emissive_render"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🔬",
         "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
       },
@@ -3061,7 +3061,7 @@
           "emissive_render",
           "count_lock"
         ],
-        "held": true,
+        "held": false,
         "emoji": "🛋️",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)"
       },

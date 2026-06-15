@@ -154,6 +154,166 @@
       "result": "pass",
       "tested_at": "2026-06-15",
       "note": "Notion O"
+    },
+    {
+      "id": "stone-plinth-luxe",
+      "name": "Stone Plinth Luxe",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "liquid-splash-hero",
+      "name": "Liquid Splash Hero",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "botanical-dew",
+      "name": "Botanical Dew",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "noir-gold-hero",
+      "name": "Noir Gold Hero",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "cryo-frost-hero",
+      "name": "Cryo Frost Hero",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "silk-drape-hero",
+      "name": "Silk Drape Hero",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "sunlit-pop",
+      "name": "Sunlit Pop",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "aqua-float",
+      "name": "Aqua Float",
+      "vertical": "beauty",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "bracelet-editorial-campaign",
+      "name": "Bracelet Editorial Campaign",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "ring-monochrome-noir",
+      "name": "Ring Monochrome Noir",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "bracelet-monochrome-noir",
+      "name": "Bracelet Monochrome Noir",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "bracelet-in-bloom",
+      "name": "Bracelet In Bloom",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "bracelet-colorblock",
+      "name": "Bracelet Colorblock",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "ring-color-pop",
+      "name": "Ring Color Pop",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "bracelet-color-pop",
+      "name": "Bracelet Color Pop",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "ring-intimate",
+      "name": "Ring Intimate",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "bracelet-intimate",
+      "name": "Bracelet Intimate",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "patio-season-styled",
+      "name": "Patio Season Styled",
+      "vertical": "home",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "macro-tactile-zoom",
+      "name": "Macro Tactile Zoom",
+      "vertical": "tech",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
+    },
+    {
+      "id": "cuddle-hour",
+      "name": "Cuddle Hour",
+      "vertical": "pet",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O 2026-06-16"
     }
   ]
 }

@@ -251,6 +251,7 @@
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">⚙ Options</button>
+      <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="1장만 생성 — 빠른 테스트(시간·API비용 약 1/4)">🧪 1장</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate ✨</button>
     </div>
   </div>
@@ -610,7 +611,8 @@ async function uploadSubject(inp){
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
-function updateBar(){
+function updateBar(){ updateBarCore(); const _a=document.getElementById('genBtn'),_b=document.getElementById('genBtnOne'); if(_a&&_b){_b.disabled=_a.disabled; const _cr=curRecipe(); _b.style.display=(_cr&&_cr.type==='reel')?'none':'';} }
+function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
   if(generating){btn.disabled=true;return;}
@@ -634,7 +636,8 @@ function updateBar(){
 }
 
 // ── 실제 생성 ──
-async function generate(){
+async function generate(opts){
+  const genN=(opts&&opts.count)||4;
   const r=curRecipe(),subj=curSubject();
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
@@ -654,13 +657,13 @@ async function generate(){
   const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
   lb.querySelector('div:last-child').textContent=isReel
     ?'Generating reel… 보통 2~5분 걸려요. 창을 닫아도 갤러리에 자동 저장돼요.'
-    :'Generating photos… 30초~1분 정도 걸려요.';
+    :(genN===1?'1장 생성 중 (테스트)… ~15초.':'Generating photos… 30초~1분 정도 걸려요.');
   document.getElementById('resultHint').textContent='';
   step.scrollIntoView({behavior:'smooth'});
 
   try{
     if(isReel) await generateReel(r,subj);
-    else await generateImages(r,subj);
+    else await generateImages(r,subj,genN);
     if(captionOn()) await generateCaptionBlock(r,subj);
   }catch(e){
     console.error(e);
@@ -712,11 +715,12 @@ async function resolvePromptFor(r,subj){
   if(extra)base.prompt=base.prompt?base.prompt+', '+extra:extra; // 템플릿 프롬프트 + 사용자 추가분 (템플릿 없으면 프롬프트만)
   return base;
 }
-async function generateImages(r,subj){
+async function generateImages(r,subj,count){
+  count=count||4;
   const rp=await resolvePromptFor(r,subj);
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:4,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'내 프롬프트'})
+    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:count,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'내 프롬프트'})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
