@@ -85,3 +85,51 @@
 - ✅ **카드계약 불변**: git diff 변경키 = `extra_positive(14)·extra_negative(7→0)·music_mood(4)·render_notes(2)`만. `name·credit_cost·output_type·per_shot_motion·duration_per_shot·sort_order` **0 변경**(grep 확인). per_shot_motion(영상 모션 엔드포인트)·shots 미변경.
 
 **남은 품질갭(선택·총지휘 판단):** shots composition은 여전히 3값(closeup/medium_shot)뿐이나 각도/카메라 디테일은 extra_positive로 흡수 완료라 추가 불요. provisional 미검증분 = food엔 없음(beauty/home/pet 소관).
+
+---
+
+## 2026-06-13 · ➕ #8 Ingredient Callout 신설 + 🔧 엔진 `allow_text` 플래그
+**요청**: 음식 사진 → 그릇에 담긴 + 손글씨 재료 라벨/화살표. 재료명은 유저가 추가 프롬프트에 나열.
+
+**신규 템플릿**: `Ingredient Callout` (📷 image_set · 4컷 · ◈2 · category Callout · sort 8 · ⚠️ needs_human_review). food 7→8(6~8 norm 유지). 이름 전역 고유 ✓. extra_negative에 text/logo **미포함**(라벨을 그려야 하므로). `meta.user_prompt_hint`로 재료 나열 안내. studio `extraPromptText()`가 유저 재료명을 프롬프트에 append → 라벨로 렌더.
+
+**🔧 엔진 변경(공용 — `src/recipes/recipeResolver.js`)**: `config.allow_text:true`면 주입 SAFETY_NEGATIVE에서 **'text'/'logo'만 제외**(나머지 안전토큰 유지). 전역 SAFETY가 모든 렌더에 'text' 주입 → 평소엔 AI 글자 억제되는데, 이 플래그로 텍스트 렌더 템플릿만 해제. **하위호환**: 플래그 없으면 동작 불변. (구현: `const SAFETY = cfg.allow_text ? SAFETY_NEGATIVE_PROMPT에서 text/logo 제거 : 원본` → line 104·161에서 사용.) → **다른 텍스트-렌더 템플릿도 이 플래그 재사용 가능.**
+
+**검증**:
+- ✅ food 8개 로딩 · Ingredient Callout ◈2(4×0.5) · allow_text:true.
+- ✅ **allow_text 스코프 정확**: resolve 결과 Callout negative엔 text/logo **없음**, Top-Down Hero negative엔 **그대로 있음**(불변) · Callout에 child 등 안전토큰 **유지**.
+- ✅ 파이프라인 drift-guard 173 OK(food:8) · `pm2 restart` 후 서버 HTTP 200 · `getById("ingredient-callout")` OK(런타임 사용성).
+- ⚠️ **라벨 화질(철자·화살표 정확도)은 실제 생성으로만 확인** — nano-banana(Gemini)가 짧은 단어는 잘 그리나 AI 글자 한계 → needs_human_review. studio에서 음식 사진 업로드 + 재료명 입력 후 Generate로 최종 확인 권장.
+
+**제약 메모**: recipeResolver.js = 엔진 도메인 공용 파일. 변경은 하위호환이지만 **엔진/총지휘 비준 권장**. 파일만 저장(commit/push 없음).
+
+## 2026-06-13 · 🎯 T3 정밀 주석(비전검출+오버레이) — 코어 빌드+로컬 검증 통과
+**요청(사용자 선택)**: 재료 라벨이 "AI가 각 재료를 판단해 정확히 가리키게". 방식 **T3**(비전검출+sharp 오버레이), 진행=내가 빌드+로컬검증.
+**신규 서비스**: `src/images/ingredientAnnotate.service.js` — ① Gemini 비전(`gemini-2.5-flash`)이 음식 이미지+재료명 → 각 재료 중심좌표(0~1000) 검출 ② `sharp`가 손글씨풍 흰 라벨(검은 외곽 가독)+곡선 화살표를 그 좌표에 결정론적 합성. **글자=결정론(깨짐 0), 화살표=검출좌표(정확).** `annotate(buffer, [names]) → {buffer, detections}`.
+**검증 하니스**: `scripts/annotate_test.js`(사용자 승인 로컬검증 도구). nano-banana로 깨끗한 샌드위치 생성 → annotate.
+**결과**: 7/7 재료 검출·라벨링 **통과** — mozzarella→흰치즈, mortadella→핑크햄, sun-dried tomato→빨강, olive→트레이 올리브 등 **각 화살표가 실제 재료를 정확히 지목**(tmp/images/annotated_7of7.png). 가독성 OK(흰 cursive+검은 외곽).
+**상태**: 코어 동작 확인. 의존성 = `sharp`(설치됨)·`@google/genai`. 비전 모델 = `GEMINI_VISION_MODEL || gemini-2.5-flash`.
+**✅ 스튜디오 배선 완료 (3파일, feat only · commit/push 없음)**:
+- ① **템플릿**: 콜아웃을 '깨끗한 음식 생성'으로 전환(AI 글자 off — allow_text 제거, extra_negative에 text/letters/labels 억제) + `config.annotate_ingredients:true`.
+- ② **`generate.route.js`**: 루프 전 `recipeStore.getById(slug(templateName)).config.annotate_ingredients` + `req.body.ingredients`로 판정 → 각 생성 이미지에 `ingredientAnnotate.annotate()` 적용(워터마크·저장 전). 비콜아웃 템플릿엔 무영향(플래그 false).
+- ③ **`studio.html`**: generateImages가 `ingredients:extraPromptText()` 전달.
+- 검증: node --check route/service OK · food 8 · getById("ingredient-callout").annotate_ingredients=true · drift 173 OK · pm2 재시작 후 HTTP 200.
+- ⚠️ **끝단(인앱 생성)은 인증벽으로 로컬 완전검증 불가** — 서비스 단(annotate)은 실이미지로 검증됨(annotated_7of7.png). studio에서 로그인→콜아웃 선택→음식 업로드→추가프롬프트에 재료명→Generate로 최종 확인 필요.
+- **신규 파일**: `src/images/ingredientAnnotate.service.js`(엔진), `scripts/annotate_test.js`(검증 하니스). **엔진/FE 도메인 변경 = 총지휘 비준 권장.**
+
+### 2026-06-13 (2) · 🐞 라벨 중복 핫픽스 (스튜디오 실테스트 결과)
+**증상**(스튜디오 버거): 라벨이 **중복**(빵 빵·치즈 치즈·소고기 패티 ×2·토양상추 깨짐), 위치 어긋남.
+**원인**: 유저 재료명이 **이미지 생성 프롬프트에도 append**돼서(resolvePromptFor) Gemini-3-pro가 **라벨을 직접 그림** + 내 오버레이도 그림 → 2중. (T1 잔재: 재료명이 positive에 있으면 강한 모델은 라벨로 렌더.)
+**수정(4파일)**: `annotate_ingredients` 플래그를 카드까지 전파(`recipe_card_contract.js`·`export_recipe_cards.js` 카드필드 추가) → `studio.html` `mk()`가 카드에서 읽고, `resolvePromptFor`가 **콜아웃이면 재료명을 프롬프트에 append 안 함**(ingredients로만 전달). → AI는 깨끗한 음식만, 라벨은 오버레이 단일소스.
+**검증**: generated.js 카드 `ingredient-callout.annotate_ingredients=true` · drift 173 OK · pm2 재시작 HTTP 200. 끝단(인앱)은 인증벽이라 유저 하드리프레시 후 재테스트 필요.
+**남은 튜닝(필요 시)**: 비전 검출 정확도(비슷한 재료·다중 인스턴스) — 재테스트 후 어긋나면 detect 프롬프트 강화. 라벨 디자인(폰트·화살표).
+
+### 2026-06-13 (3) · ⏪ T3 전체 롤백 → T1(allow_text) 복귀 (사용자 결정)
+**사유**: T3(비전검출+오버레이)는 인앱 끝단(인증벽) 완전검증이 어렵고, 실스튜디오에서 AI라벨+오버레이 **2중 중복**이 났음. 사용자 판단 "이 영역은 어려움 → 맨 처음 텍스트 추가 버전으로".
+**롤백 내용**:
+- `recipes.food.v2.js` Ingredient Callout → **T1 복구**(`allow_text:true` + AI가 손글씨 라벨/화살표 직접 렌더, 프롬프트/네거티브 T1 원복). ◈2·food 8 불변.
+- **삭제**: `src/images/ingredientAnnotate.service.js`, `scripts/annotate_test.js`.
+- **원복**: `generate.route.js`(annotate 후처리 제거) · `recipe_card_contract.js`·`export_recipe_cards.js`(annotate_ingredients 카드필드 제거) · `studio.html`(mk/resolvePromptFor/ingredients 원복).
+- **유지**: `recipeResolver.js`의 `allow_text` 플래그 = T1이 쓰는 엔진 기능이라 보존.
+- 검증: 코드 잔재 0 · callout allow_text=true · drift 173 OK · pm2 재시작 HTTP 200.
+**현 상태 = T1**: 콜아웃은 AI가 라벨을 그림(유저가 추가프롬프트에 재료명 나열). "잘 만들어지나 화살표 정확도/글자 무보장"이 알려진 한계. 정밀 주석(T3)은 엔진 도메인 별도 과제로 보류.

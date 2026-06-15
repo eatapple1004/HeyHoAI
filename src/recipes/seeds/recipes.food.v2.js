@@ -502,5 +502,80 @@ module.exports = [
         "video": "kling"
       }
     }
+  },
+
+  /* ─────────────────────────────────────────────
+     8. Ingredient Callout  |  image_set ◈2  |  NEW (allow_text · ⚠️ needs_human_review)
+     음식 + 손글씨 재료 라벨/화살표(디컨스트럭트 콜아웃). 유저가 추가 프롬프트에
+     재료명만 나열 → AI가 각 재료에 라벨을 그림. config.allow_text=true 로 이 템플릿만
+     전역 SAFETY의 'text'/'logo' 억제를 해제(리졸버 분기). 글자=AI 렌더라 사람검수.
+  ───────────────────────────────────────────── */
+  {
+    "mode": "product",
+    "vertical": "food",
+    "category": "Callout",
+    "name": "Ingredient Callout",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 8,
+    "rationale": "재료 구성을 손글씨 라벨+화살표로 소개하는 디컨스트럭트 콜아웃; 유저가 추가 프롬프트에 재료명만 나열하면 각 재료에 라벨이 달려 메뉴 투명성·교육·바이럴 저장 콘텐츠로 강함.",
+    "meta": {
+      "flags": ["needs_human_review"],
+      "review_reason": "AI가 손글씨 텍스트 라벨을 직접 렌더 → 철자/배치 오류 가능. 재료명 정확성·화살표 위치 사람 검수 필요.",
+      "user_prompt_hint": "추가 프롬프트에 재료 이름만 콤마로 나열. 예: ciabatta, mortadella, mozzarella, sun-dried tomato, basil pesto, rucola, olive"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "allow_text": true,
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Studio",
+        "attributes": [
+          "lighting:soft_even_daylight",
+          "color:neutral_clean",
+          "texture:food_fresh",
+          "context:annotated_callout"
+        ],
+        "extra_positive": "appetizing food photographed on a plain plate or brushed oval metal tray against a clean light-grey seamless background, soft even daylight, slightly elevated 30 to 45 degree angle showing the dish and its components clearly, the food kept identical to the uploaded reference in shape, color and ingredients, a few loose components placed beside the dish on the tray for clarity, delicate hand-written WHITE cursive ingredient labels neatly placed in the empty background around the dish, each label connected by a thin hand-drawn curved arrow pointing precisely to the matching ingredient in the food, the labels spell exactly the ingredient names provided by the user, clean editorial deconstructed-ingredient annotation style, legible accurate spelling, balanced uncrowded label layout with generous negative space",
+        "extra_negative": "plastic-looking food, warped or melted food, duplicated dishes, soggy wilted garnish, fake CGI steam, cluttered or busy patterned background, gibberish or misspelled labels, illegible scribbles, overlapping crowded labels, arrows pointing at nothing, typed or printed computer font, neon glowing letters, oversaturated, harsh flash, faces or heads in frame, hands"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "brushed stainless oval tray on a light-grey seamless background, a few loose ingredients placed beside the dish",
+          "pose": "30 to 45 degree elevated view, white cursive labels in the background with thin curved arrows pointing to each ingredient",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "matte light-grey ceramic plate, clean negative space all around",
+          "pose": "near top-down, handwritten white labels arranged around the rim with delicate arrows to each component",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "warm oak serving board on a pale neutral background, scattered loose components for clarity",
+          "pose": "45 degree view, white cursive callouts with thin hand-drawn arrows to each ingredient",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "clean white marble surface, minimal styling, soft daylight",
+          "pose": "elevated three-quarter view, neat handwritten ingredient labels and thin pointing arrows",
+          "composition": "medium_shot"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
   }
 ];

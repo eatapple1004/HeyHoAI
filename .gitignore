@@ -5,3 +5,8 @@ tmp/uploads/
 .DS_Store
 tmp/
 logs/
+.siblings-test-backup/
+
+# LOCAL-ONLY (do not push) — 옛 기록 템플릿 추정 표시용
+public/js/recipe_sig.local.js
+scripts/build_recipe_sig.local.js

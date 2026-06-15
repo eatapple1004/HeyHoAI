@@ -573,5 +573,1550 @@ module.exports = [
         "video": "kling"
       }
     }
+  },
+
+
+  /* ───────────── EXPERIMENTAL: Room & Warmth 형제 20종 (로컬 테스트, 2026-06-14) ─────────────
+   * meta.experimental=true · 백업: .siblings-test-backup/ · 되돌리기=백업 복원. 카드계약/export 재생성 필요.
+   * ────────────────────────────────────────────────────────────────────────────────────── */
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Minimalist Warmth Study",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 101,
+    "rationale": "Interior and decor sellers seeking Scandinavian minimalist aesthetic where the product stands as the sole visual hero. Captures the same morning-to-golden-hour light journey as Room & Warmth Styled, but with deliberately pared negative space to maximize product visibility and emphasize design purity.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_diffuse_to_golden_raking_sparse_shadows",
+          "color:white_sage_neutral_with_warm_amber_accents",
+          "texture:smooth_plaster_bare_oak_zero_ornament",
+          "context:scandinavian_minimalist_gallery_room"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial lifestyle and Scandi interior magazine quality; clean white or soft sage walls with zero visible clutter, pristine bare light oak floor, absolutely minimal styling—no plants, no books, no textile layers, only the product as visual anchor; soft cool-toned morning light diffusing through a single frosted window creating gentle shadows that emphasize form and emptiness; product bathed in generous negative space with vast floor and wall margins left deliberately bare; transition through the set from cool morning diffuse to warm golden-hour raking light catching the product's edges and creating long architectural shadows; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows grounding the product to the floor; architectural minimalist aesthetic emphasizing purity, silence, and singular focus",
+        "extra_negative": "clutter, visible props, multiple objects competing for attention, warm or cozy styling contradicting minimalism, layered textiles or decor, plants or flowers, soft furnishings, busy wall treatments, colored paint, harsh studio flash, warm yellow morning cast conflicting with cool minimalist tone, floating product without ground shadow, color drift between shots, plastic CGI look, distorted proportions"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "serene white gallery room corner, soft diffuse morning light from frosted window, absolutely bare oak floor with subtle grain visible",
+          "pose": "product centered front view as sole visual element, positioned in vast empty floor space",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same minimalist room, soft light from camera-left, architectural shadows from the window frame emphasizing negative space",
+          "pose": "product 3/4 angle showing silhouette and depth, casting a gentle shadow on the floor",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back view of the entire stripped room—empty walls, bare floor, product a distant quiet focal point",
+          "pose": "product small but precisely centered within the expansive void",
+          "composition": "full_body"
+        },
+        {
+          "scene": "close approach to product in early golden-hour light, warm amber sun beginning to rake the floor and wall behind",
+          "pose": "product front view with developing long shadow stretching across the floor toward camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "late golden hour in the minimalist room, warm low sun creating dramatic raking shadows across the white wall",
+          "pose": "product silhouetted or rim-lit against the backlit wall, sole warm glow in the frame",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate closeup detail in final golden light, product surface catching warm amber, extreme negative space surrounding it",
+          "pose": "product surface or edge detail in shallow depth of field, warm light revealing material quality",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Japandi Warmth Nook",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 102,
+    "rationale": "East Asian minimalist aesthetic for home sellers seeking aspirational Japandi interiors—hinoki wood warmth, celadon ceramics, and lived-in craft textures in soft chiaroscuro light. Delivers both morning serenity and golden-hour richness across one cohesive 6-shot set without studio rental.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_filtered_morning_to_chiaroscuro_amber",
+          "color:warm_natural_wood_celadon_cream",
+          "texture:raw_hinoki_tatami_linen_crackle_glaze",
+          "context:japandi_artisan_nook_lived_in"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial lifestyle magazine premium quality; hinoki wood wall panels and pale ash flooring, raw-linen sliding screens diffusing filtered light; soft chiaroscuro side-light raking through paper screens casting geometric shadows, gentle dust-mote atmosphere; one hand-thrown celadon pot and a scroll art piece for warmth and depth; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on the wood floor; range from contemplative minimalist morning calm to warm amber evening glow revealing the product's craftsmanship and integration into lived space",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered busy nook, harsh flash or cold overhead lighting, blown highlights flattening texture, fake reflections in wood finish, floating or levitating furniture, melted edges, plastic CGI veneer, oversaturated or artificial colors, blue-cast cool light, plastic sheen on ceramics"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "minimalist japandi corner with hinoki wood wall, pale ash floor, soft morning diffuse light through linen screen filtering the soft window glow",
+          "pose": "product front view, centered as nook hero, morning serenity",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same nook, warm side-light from camera-left, geometric shadows from screen lattice, hand-thrown celadon pot and scroll art nearby for context",
+          "pose": "product 3/4 angle revealing depth and crafted profile",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate low-light reading corner with tatami texture, soft flickering candlelight, raw linen cushion, product nestled in lived-in arrangement",
+          "pose": "product styled as functional yet sculptural piece in intimate space",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide establishing shot of the full japandi room, hinoki panels, natural wood furniture, soft amber light pooling across floor",
+          "pose": "product anchored as focal point in serene whole-room composition, negative space and silence",
+          "composition": "full_body"
+        },
+        {
+          "scene": "late-afternoon chiaroscuro windowsill, warm golden light slicing through shoji screen, casting bold shadow lines across hinoki wall and product",
+          "pose": "product bathed in low angled sun, chiaroscuro half-light revealing material and craft detail",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "close tactile arrangement of celadon vessel, raw wood block, product and folded linen on pale surface, amber backlight from window",
+          "pose": "product as part of quiet curated still life, shallow focus on glaze and wood grain",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Mid-Century Modern Warmth Studio",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 103,
+    "rationale": "Furniture and lighting sellers targeting mid-century modern buyers who want the product shown in a period-authentic room — clean credenza lines, walnut and brass finishes, geometric textiles — warmed by the same morning-to-golden-hour light as Room & Warmth Styled.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_window_diffuse_to_golden_hour",
+          "color:olive_mustard_walnut_soft_grey",
+          "texture:walnut_brass_wool_geometric",
+          "context:mid_century_modern_living_room"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial interior and design magazine quality; mid-century modern living room with walnut credenza, tapered-leg furniture, brass accents, a geometric mid-tone wool rug and a period arc or globe pendant lamp; muted olive, mustard and soft-grey palette with warm walnut wood tones; soft morning daylight through a large window becoming warm golden-hour light raking across the brass and walnut finishes; period-correct ceramics and vintage-look books as restrained props, clean balanced geometric composition; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on the floor; heirloom mid-century mood emphasizing clean lines and warm patina",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered or maximalist room, anachronistic modern minimalism, harsh flash, blown highlights on brass, fake reflections, floating furniture, melted edges, plastic CGI look, oversaturated colors, cold blue cast, busy clashing patterns"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "mid-century living room with walnut credenza and soft morning diffuse light through a wide window",
+          "pose": "product front view centered as room hero on or beside the credenza",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same room, soft light from camera-left, geometric wool rug and tapered-leg chair nearby for scale and era context",
+          "pose": "product 3/4 angle showing clean silhouette and depth",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "cozy reading corner with a period arc lamp, walnut shelf and vintage books at late afternoon",
+          "pose": "product styled in lived-in mid-century context",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back view establishing the whole balanced mid-century room",
+          "pose": "product anchored in full room scene with clean negative space",
+          "composition": "full_body"
+        },
+        {
+          "scene": "windowsill or sideboard at golden hour, warm sun raking across brass and walnut surfaces",
+          "pose": "product bathed in low golden light, warm patina on nearby metal and wood",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "sunlit shelf with period ceramics and warm amber bokeh behind",
+          "pose": "product as part of warm mid-century vignette, shallow depth of field",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Bohemian Warmth Alcove",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 104,
+    "rationale": "Sellers of boho textiles, artisan goods, and global décor who need an editorial room scene showcasing layered textures and earth-toned craftsmanship. Merges the sensory richness of globally-inspired living with warm golden light to capture the 30% home-décor market seeking curated textiles and handmade goods.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:warm_golden_side_to_diffuse_afternoon",
+          "color:saturated_earth_sienna_mustard_terracotta",
+          "texture:layered_woven_macrame_kilim_rattan",
+          "context:bohemian_artisan_alcove_global"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial lifestyle and global-living magazine quality; woven kilim rug, hanging macramé plant hanger, terracotta and mustard ceramics, layered linen textiles in rust/ochre, rattan side table or basket; warm golden afternoon sun filtering through warm-toned sheer curtain with soft shadows and gentle lens flare; globally-sourced ikat or batik throw draped on low seating; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on the floor; range from bright golden-hour directional light to cozy interior ambient, rich saturated earth-tone palette throughout, artisan craftsmanship and global textile story as the narrative anchor",
+        "extra_negative": "dull or washed-out colors, flat lifeless textiles, plastic sheen on ceramics, missing weave detail in kilim or macramé, cold grey cast, harsh white flash, warped or duplicated product, floating furniture, melted edges, plastic CGI look, oversaturated neon colors, inventory-style flat styling, missing global narrative, clashing patterns with no cohesion"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "Bohemian alcove corner with hanging macramé plant hanger above, kilim rug on the floor, warm golden hour light streaming through sheer curtain from camera-left",
+          "pose": "product front view, centered as the artisan hero among draped global textiles",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same alcove, soft afternoon diffuse light, rattan side table with stacked ceramics in terracotta and mustard nearby for context",
+          "pose": "product 3/4 angle showing depth, styled among layered woven goods",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "cozy low seating nook with ikat or batik throw blanket, warm floor lamp creating ambient glow",
+          "pose": "product nestled into lived-in textile composition with ceramics and candles",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back establishing shot of the full bohemian corner — macramé, kilim rug, baskets, global textiles in warm golden light",
+          "pose": "product anchored as focal point in the richly-layered room, surrounded by global artisan goods",
+          "composition": "full_body"
+        },
+        {
+          "scene": "windowsill or shelf at golden hour with backlit rattan and terracotta, warm lens flare and bokeh from afternoon sun",
+          "pose": "product front view bathed in directional golden light, surrounded by woven baskets and earth-tone ceramics",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate detail of the textile nest — macramé, draped kilim edge, layered linen, warm amber bokeh background",
+          "pose": "product as part of the sensory close-up, touching or nestled among the woven narrative",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Bedroom Sanctuary Styled",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 105,
+    "rationale": "Bedding, pillow, and sleep-lighting sellers who need a serene bedroom scene with golden-hour morning light and sleep-ritual mood — without needing a bedroom set. Captures aspirational rest and comfort within a styled intimate space, covering morning wake-up light, layered bedding details, and nightstand vignettes.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:morning_golden_hour_soft_diffuse_to_dusk_warmth",
+          "color:warm_ivory_taupe_linen_ochre",
+          "texture:soft_linen_cotton_down_natural_fibers",
+          "context:serene_bedroom_sanctuary_sleep_ritual"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial lifestyle bedroom magazine quality; soft white linen walls and warm wood bed frame, sheer linen curtains filtering golden morning or dusk light with gentle lens flare and dust motes; layered bedding with visible texture weave, plump pillows, a folded throw blanket, small ceramic vessel or reading lamp on nightstand for scale; product kept exact in shape/material/color as the bedroom hero, identical across all six shots; soft realistic contact shadows on the bed surface and floor; range from serene cool-toned morning wake-up light to warm amber dusk comfort mood, bed linens arranged for inviting lived-in comfort",
+        "extra_negative": "warped or duplicated product, distorted bedding proportions, cluttered nightstand, harsh overhead flash, blown highlights crushing linen texture, fake reflections, melted pillow edges, plastic CGI sheen, oversaturated colors, cold cold-cast replacing warmth, tangled or matted fabric, pillow shapes that defy gravity"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "minimalist bedroom corner with soft morning light diffusing through sheer linen curtains, warm wood bed frame, white linen walls",
+          "pose": "product front view centered on the bed as bedroom hero, layered with other pillows",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same bedroom, soft window light from camera-left, nightstand with ceramic vessel and reading lamp nearby for scale",
+          "pose": "product 3/4 angle nestled into folded throw blanket, showing texture and depth",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "cozy bedside composition at golden hour dusk, warm amber light raking across pillow and linen",
+          "pose": "product hero with folded linen and small candle or lamp, intimate sleep ritual mood",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back bedroom establishing the whole serene room with bed, curtains, and soft morning light",
+          "pose": "product anchored in the center of the bed arrangement, negative space of calm bedroom around it",
+          "composition": "full_body"
+        },
+        {
+          "scene": "windowsill corner at golden dusk hour, long warm shadows and soft lens flare catching the linen texture",
+          "pose": "product front view bathed in low afternoon-to-evening sun, linen weave backlit",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate bedside macro composition with soft warm lamp light, pillow edge with visible stitch detail and soft down fill",
+          "pose": "product hero detail with layered linen and shadow play, shallow depth of field, warm glow pooling",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Kitchen & Dining Styled",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 106,
+    "rationale": "Tableware, dining furniture, and meal-lighting sellers who need aspirational scenes showing products styled for morning coffee through evening dinner — capturing the full arc of dining moments. Complements Room & Warmth Styled by zooming into the table; demonstrates tableware, dining chairs, and ambient lighting in lived-in meal contexts across warm daylight and golden-hour service scenes.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:warm_morning_to_golden_hour_dinner",
+          "color:warm_cream_terracotta_earth_tones",
+          "texture:linen_ceramic_glazed_wood_organic",
+          "context:styled_dining_table_meal_moments"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial tableware and lifestyle magazine quality; warm natural window light raking across a linen tablecloth, ceramic plates and glassware catching light, matte wood dining table with visible grain, soft afternoon sun creating long shadows and lens flare through diffused curtains; fresh bread, water pitcher, folded napkins, and a small potted herb as natural scene-setters; product kept exact in shape/material/color as the styled hero across all six shots — tableware maintains glaze finish, dining chairs keep their exact wood tone and upholstery, mood lighting holds consistent glow; soft realistic contact shadows pooling under dishes and furniture legs; progression from bright morning daylight (coffee setting) through warm golden hour (dinner service) with consistent table geometry",
+        "extra_negative": "unlit or dead-black dining scene lacking warm glow, harsh cold fluorescent or blue cast, glassware with unrealistic CGI reflections or false highlights, warped or duplicated tableware, cluttered busy tablescape with mismatched dishware styles, blown-out window glare washing out product detail, plastic-looking ceramics, floating dishware or furniture, melted edges, oversaturated food styling props, chairs with distorted proportions or floating legs, flickering or inconsistent lighting between shots"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "bright morning dining room, soft diffuse window light from camera-left, simple place setting with coffee cup and pastry, white linen tablecloth",
+          "pose": "tableware hero centered front view, coffee cup and plate as main focus",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "same table, side angle showing place setting depth and chair profile in soft morning light",
+          "pose": "dining chair 3/4 view with place setting visible, showing seat height and wood tone",
+          "composition": "full_body"
+        },
+        {
+          "scene": "intimate close crop on place setting details, ceramic plate glaze and folded napkin catching soft directional light",
+          "pose": "extreme close-up of tableware surface texture and ceramic detail",
+          "composition": "closeup"
+        },
+        {
+          "scene": "wide pulled-back establishing shot of the full styled dining table set for two, morning light streaming through curtains",
+          "pose": "table as anchor with chairs visible on both sides, product ecosystem in context",
+          "composition": "full_body"
+        },
+        {
+          "scene": "golden hour light slanting across the table at late afternoon, warm amber tones on wood and linens, dinner place setting with glassware",
+          "pose": "tableware and glasses catching warm sunset light, 3/4 view of the table setting",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate golden-hour close-up, backlit glassware and plate edges glowing warm, subtle bokeh of outdoor garden light, candlelight suggestion",
+          "pose": "glassware and ceramic catching low sun, luminous edges, product as warm light-catcher",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Study Nook Focus",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 107,
+    "rationale": "Work-from-home furniture and desk decor sellers who need both morning productivity focus shots and warm evening ambient WFH scenes — without needing a real office. Merges the functional workspace establishing shot with atmospheric reading/focus moments into one deeper 6-shot set covering natural daylight, task lighting, and full desk-setup angles.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_morning_diffuse_to_warm_task_lamp",
+          "color:warm_neutral_greige_cream",
+          "texture:matte_wood_paper_ceramics",
+          "context:productive_home_office_nook"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial workspace and lifestyle magazine quality; pale greige or soft cream walls, natural oak desk, soft linen desk chair, vintage task lamp with warm amber glass, stacked hardcover books and art books for scale and reference; soft morning diffuse light from left-side window with gentle lens flare and dust motes; workspace hero product kept exact in shape/material/color as the styled focal point, identical across all six shots; soft realistic contact shadows on desk surface and floor; range from crisp morning concentration light to cozy golden-hour evening workspace ambiance; desk accessories (ceramic pencil holder, wooden ruler, woven basket, potted plant) curated to match warm neutral palette",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered messy desk, harsh overhead flash, blown highlights on paper/wood, fake reflections, floating stationery, melted edges, plastic CGI look, oversaturated colors, cold blue cast, unlit dead-black corner, dull monitor glow, workspace too dim for work"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "minimalist home office corner with pale greige wall and natural oak desk, soft morning diffuse light through left-side window",
+          "pose": "product front view, centered as desk hero on the work surface",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same desk, soft window light raking from the left, open journal and ceramic pen holder nearby for scale",
+          "pose": "product 3/4 angle showing depth and side profile on work surface",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "cozy evening workspace with warm amber task lamp creating focused pool of light on desk",
+          "pose": "product styled in lived-in desk context with scattered books and stationery",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back establishing shot of the whole calm home office with desk, chair, shelves, and window",
+          "pose": "product anchored on the desk within full workspace scene, generous negative space around it",
+          "composition": "full_body"
+        },
+        {
+          "scene": "golden-hour late-afternoon sunlight streaming across the desk, long warm shadows and soft lens flare on the work surface",
+          "pose": "product front view bathed in low angled window light, creating dramatic shadow play on desk",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "warm side-lit detail of desk corner with backlit plants and warm amber task lamp glow, shallow depth of field",
+          "pose": "product as part of warm focused vignette, late-day light catching the materials and creating ambient texture",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Dappled Shadows Studio",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 108,
+    "rationale": "Home sellers and plant-forward brands seeking a distinctive light-as-texture aesthetic — afternoon dappled shadows cast by foliage create natural geometric patterns that become the visual hero, with the product anchored in this living, ever-shifting light geometry. Fills the shadow-patterning gap in home photography.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:dappled_afternoon_2to4pm_tree_shadow_geometry",
+          "color:warm_terracotta_cream_cast_against_cool_shadow_geometry",
+          "texture:matte_linen_ceramic_woven_with_shadow_texture_overlay",
+          "context:plant_forward_living_room_with_natural_light_play"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial botanical lifestyle magazine quality; afternoon window light (2-4 PM) filtered through tree leaves and potted plants creating distinctive dappled shadow patterns across walls, floor and surfaces; shadow geometry rendered as compositional hero — intricate leaf-shadow lattice and moving light patches; warm terracotta or cream matte surfaces (plaster walls, ceramic vessels, woven textiles) contrasting cool blue-grey shadows; product kept exact in shape/material/color as the calm anchor within the dynamic shadow field, identical across all six shots; soft realistic contact shadows grounding product to the dappled floor; plants and trailing vines strategically placed to cast secondary shadow patterns; range from wide establishing shot capturing full shadow choreography to intimate close-ups of shadow texture dancing across product surface; aspirational plant-filled room with natural light design sensibility",
+        "extra_negative": "flat harsh midday light without dapple, shadow patterns too thin or disappear entirely, burnt-out highlights destroying shadow geometry, muddy or indistinct shadow shapes, artificial or computer-generated shadow patterns, product overwhelmed or lost in shadow clutter, shadows too dark crushing detail, unnatural shadow colors (green or pink casts), product warped or duplicated, cluttered busy room, plastic CGI look, oversaturated colors, inconsistent shadow direction between shots, wilting or dead plants"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "bright living room wall with floor-to-ceiling window, tree foliage just outside, creating intricate dappled leaf shadows across the cream or terracotta wall and warm wood floor at 2-3 PM",
+          "pose": "product front view centered on the floor within the shadow pattern field, casting its own soft shadow",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same room, pulled back wide angle showing the entire choreography — full wall of moving shadow patterns, potted plants near window, the room geography establishing context",
+          "pose": "product placed mid-room as calm anchor, dapples playing across its surface and surroundings",
+          "composition": "full_body"
+        },
+        {
+          "scene": "product on a warm wooden shelf or side table, shadow patterns raking across the shelf surface and product side profile, direct afternoon light edge-lighting foliage silhouettes",
+          "pose": "product 3/4 angle, product edge crisp, shadow geometry dramatic on the shelf plane",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "close-up on product surface with refined dapple pattern cast directly across its top or front — shadow texture becomes tactile, leaf shapes just visible but soft, warm light pool adjacent",
+          "pose": "product hero shot showing surface detail with shadow pattern as texture overlay, product material clearly visible beneath the light play",
+          "composition": "closeup"
+        },
+        {
+          "scene": "trailing plant or hanging vines positioned to cast secondary delicate shadow lattice across the wall behind product, product positioned lower in frame, airy generous negative space",
+          "pose": "product 3/4 seated at table with layered linen and ceramic vessels nearby, shadow-lattice backdrop",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "detailed macro view of shadow edge meeting product corner — crystalline precision of leaf-shadow outline against matte product surface, warm-toned cloth nearby, minimal context",
+          "pose": "extreme close-up of the shadow-product boundary, revealing the delicate geometry intersection",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Industrial Warmth Loft",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 109,
+    "rationale": "Urban loft and warehouse buyers seeking to place products in an aspirational converted-industrial space where hard architectural bones are softened by golden warm light—single 6-shot set that covers morning diffuse through golden hour reveals with dramatic steel, exposed brick, and polished concrete.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:morning_diffuse_to_golden_hour_raking_steel",
+          "color:warm_amber_terracotta_concrete_cream",
+          "texture:raw_brick_polished_concrete_steel_patina",
+          "context:converted_loft_warehouse_industrial_warmth"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; exposed terracotta and cream brick walls with natural mortar variation, polished concrete floor catching warm light, raw steel beam shadows and structural details, Edison filament bulb on wire pendant or mounted on steel bracket, industrial wire shelving with soft styling; product as the hero anchor in the loft grid, golden afternoon sun raking through large factory windows creating dramatic long shadows and light pools across the concrete; warm amber and honey-colored light pools contrast the cool grey concrete and steel bones; authentic industrial patina and worn textures; product kept exact in shape/material/color as hero throughout all six shots—identical geometry, material fidelity, and color lock across entire set; soft realistic contact shadows on the concrete floor; range from calm morning diffuse establishing the raw industrial bones to cozy golden-hour warmth dramatizing the loft's conversion promise",
+        "extra_negative": "warped or duplicated product, distorted proportions, sterile or over-polished loft losing industrial character, fake distressing or invented patina, harsh fluorescent cold light, blown highlights crushing texture on brick/steel, plastic CGI look, melted edges, cluttered busy space, floating furniture, oversaturated golden cast, mismatched period elements, modern office aesthetic instead of converted warehouse"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "raw exposed brick wall corner (warm cream and terracotta), polished concrete floor, morning diffuse light through large factory-style windows, industrial steel structural beam visible in shadow",
+          "pose": "product front view centered on floor, establishing the loft's minimalist raw aesthetic",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same loft space, side angle showing the brick texture and steel beam edge, soft directional morning light from camera-left window",
+          "pose": "product 3/4 view showing depth and side profile against the brick",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "steel wire shelving unit with Edison bulb suspended above, warm afternoon light beginning to rake across the concrete and shelf edges",
+          "pose": "product styled on the industrial shelf with minimal objects—a small pot, rolled fabric for scale",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back establishing shot of the whole loft corner—high concrete ceiling, exposed brick back wall, polished floor, large warehouse window frame in distance",
+          "pose": "product anchored in the center of the industrial grid, negative space of raw concrete around it",
+          "composition": "full_body"
+        },
+        {
+          "scene": "detail view of brick wall edge and floor junction at golden hour, dramatic warm raking light creating sharp shadow lines across textured surfaces",
+          "pose": "product front view bathed in warm amber light, with brick texture and steel shadow frame beside it",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "closeup on polished concrete floor with product hero, golden light creating warm pool and dramatic contact shadow, concrete texture and light-catch detail visible",
+          "pose": "product as part of the golden-hour detail vignette, shallow depth of field on the warm concrete surface",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Seasonal Palette Studio",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 110,
+    "rationale": "Home product sellers who need proof their single SKU works across all four seasons with seasonal color restyles — no product change, only the supporting palette shifts. Demonstrates versatile decor identity and year-round styling appeal without requiring variant assets.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_diffuse_to_golden_with_seasonal_mood",
+          "color:four_season_palette_spring_summer_autumn_winter",
+          "texture:matte_plaster_linen_oak_with_seasonal_textiles",
+          "context:styled_apartment_room_4season_versatility"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; same minimalist apartment room across all six shots — identical wall finish, oak floor, sheer curtain — but the supporting palette, throw textiles, and accent props shift seasonally; SPRING SHOTS (1-2): soft pastels, blush linen throw, eucalyptus branches, pale ceramic vessels, cool diffuse morning light; SUMMER SHOTS (3-4): warm neutrals and crisp whites, lightweight cotton textiles, bright daylight, airy zero-clutter aesthetic; AUTUMN SHOTS (5-6): warm terracotta, mustard linen, harvest-toned ceramics, golden afternoon light with long raking shadows; product kept exact in shape/material/color as the styled hero throughout all shots — identical product geometry and finish across all four seasonal renderings, never morphing or drifting; soft realistic contact shadows on the floor; seamless seasonal mood transitions",
+        "extra_negative": "warped or duplicated product, inconsistent product silhouette across seasons, distorted proportions, cluttered busy room, harsh flash, blown highlights, fake reflections, floating furniture, melted edges, plastic CGI look, invented seasonal colors not matching the target palette, color shift in the product itself between shots, oversaturated overstyled aesthetic"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "spring palette — minimalist living room corner with limewash wall and oak floor, soft cool morning diffuse light through sheer curtain, blush linen throw draped over product side, pale eucalyptus branches in ceramic vase nearby",
+          "pose": "product front view, centered as spring room hero, gentle cream and pale pink textiles surrounding",
+          "composition": "full_body"
+        },
+        {
+          "scene": "spring palette — same room, soft window light from camera-left, pale ceramic vessels and blush-toned art books nearby for scale, light natural textures",
+          "pose": "product 3/4 angle showing depth and side profile in spring styling context",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "summer palette — bright clean daylight in the same room corner, lightweight white cotton throw, minimalist clear glass vessels, airy zero-clutter styling, crisp warm light",
+          "pose": "product styled in bright summery context with light textiles and minimal props",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "summer palette — wide pulled-back interior establishing the whole bright airy room, clean white walls, oak floor in morning sun",
+          "pose": "product anchored in full room scene with abundant natural light and negative space",
+          "composition": "full_body"
+        },
+        {
+          "scene": "autumn palette — same corner with golden afternoon light, mustard and terracotta linen throw, harvest-toned ceramic vessels, dried botanical branches, warm raking light creating long shadows",
+          "pose": "product front view bathed in warm autumn light, earth-toned textiles surrounding it",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "autumn palette — sunlit shelf with golden-hour backlit warm bokeh, burnt orange throw folded nearby, warm amber light, product positioned as part of warm autumn vignette with shallow depth of field",
+          "pose": "product as part of cozy autumn scene, sun from behind creating warm halo",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Entryway Welcome Styled",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 111,
+    "rationale": "Entry furniture and decor sellers who need a first-impression scene combining functional hallway styling with warm editorial lighting — shoe cabinets, mirrors, consoles, and welcome lighting positioned as the hero in an editorial entryway vignette, matching Room & Warmth's 35mm warm aesthetic but in the arrival context.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_entry_diffuse_to_afternoon_glow",
+          "color:warm_neutral_greige_amber",
+          "texture:matte_plaster_mirror_brass",
+          "context:aspirational_apartment_entryway"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial interior design magazine quality; limewash walls, white oak or light wood floor, round mirror or console as the hero piece anchoring the arrival zone; soft morning diffuse light from a window or skylight warming the entry, afternoon amber glow from a recessed sconce or pendant fixture casting subtle shadows; a pair of ceramic vessels, a narrow shoe rack or brass hooks for daily layers, fresh branch in a glass vase for life; product kept exact in shape/material/finish as the styled centerpiece, identical across all six shots; soft realistic contact shadow on the floor and wall; range from calm morning entry light to welcoming golden-hour glow perfect for opening the door",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered hallway with excessive shoes or coats, harsh flash washing out the entry, blown highlights, fake reflections on mirror, floating furniture not grounded to floor, melted edges, plastic CGI look, oversaturated colors, cold institutional lobby feel, people or hands in frame"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "minimalist entryway with limewash wall, light oak floor, white round mirror centered above a slender console",
+          "pose": "product front view, positioned as the hero of the arrival zone",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same entryway, soft morning window light from camera-left, casting warm shadows across the wall",
+          "pose": "product 3/4 angle showing mirror depth and console profile",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "detail close-up of the mirror frame or console surface with ceramic vessels, fresh botanical, and soft raking light",
+          "pose": "product surface detail with warm tactile styling props nearby",
+          "composition": "closeup"
+        },
+        {
+          "scene": "wide pulled-back view of the full entry wall establishing the calm minimalist arrival space",
+          "pose": "product anchored as the centerpiece of the entry, negative space around it",
+          "composition": "full_body"
+        },
+        {
+          "scene": "entryway at golden hour, afternoon sun streaming in from a high window or pendant sconce glowing warm amber",
+          "pose": "product front view bathed in warm directional light, casting a long shadow on the floor",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "corner detail with brass hook, glass vase with dried stems, and warm backlit amber bokeh from sconce or sunset through window",
+          "pose": "product as part of a warm welcome vignette, subtle light halo, shallow depth of field",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Holiday Warmth Styled",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 112,
+    "rationale": "Seasonal home decor and entertaining sellers who need aspirational holiday entertaining vignettes with candles, garland, and gold accents styled in the same editorial room context — capturing the Q4 gifting and entertaining surge in one 6-shot set identical in structure and lighting to Room & Warmth Styled, but themed for November through December high-intent seasonal buyers.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_window_diffuse_to_golden_hour_holiday",
+          "color:warm_rich_gold_berry_cream",
+          "texture:matte_plaster_linen_ceramic_velvet",
+          "context:aspirational_festive_entertaining_room"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality, same limewash walls and oak floor as Room & Warmth base; warm afternoon sun raking through window with long golden shadows, dust motes catching light; holiday props arranged with editorial restraint — cream pillar candles in glass holders, fresh garland with eucalyptus and dried citrus, gold-leaf ceramic vases and serving pieces, deep-red velvet ribbon accents, a styled coffee table with a festive but understated tablescape; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on floor and surfaces; range from calm minimalist morning light with early holiday styling through cozy golden-hour entertaining warmth; product is always the focal point anchor within the holiday scene, never overwhelmed by props",
+        "extra_negative": "garish or oversaturated holiday colors, plastic fake garland, mass-market tacky decorations, product warped or duplicated, distorted proportions, cluttered chaotic tablescape, harsh flash, blown highlights crushing the gold-leaf detail, fake reflections, floating furniture, melted edges, plastic CGI look, cold blue cast, props completely obscuring the product hero, mismatched ceramic finishes, sad drooping garland"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "minimalist living room corner with limewash wall and oak floor, soft morning diffuse light through sheer curtain, early holiday styling — single cream candle and fresh green garland beginning to frame the space",
+          "pose": "product front view, centered as room hero, candle or serving piece anchoring the scene",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same room, soft window light from camera-left, product 3/4 angle showing depth, styled with gold-leaf ceramic nearby and a folded velvet ribbon for scale and color accent",
+          "pose": "product 3/4 angle showing side profile and dimension",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "cozy entertaining nook at dusk, warm floor lamp, product as centerpiece of a styled holiday tablescape — gold candles, small ceramic vases, fresh garland, deep-red ribbon",
+          "pose": "product styled in lived-in entertaining context, surrounded by holiday props in editorial arrangement",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back interior establishing the whole calm room decorated for holiday entertaining, soft diffuse light",
+          "pose": "product anchored in full room scene with negative space, holiday styling visible but not dominating the frame",
+          "composition": "full_body"
+        },
+        {
+          "scene": "windowsill at golden hour, long warm golden shadows, soft lens flare, product front view bathed in low afternoon sun, flanked by cream candles and fresh evergreen",
+          "pose": "product front view as the golden-hour focal point, natural light making the product and candles glow",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "sunlit side table or console with backlit gold-leaf ceramics, product nestled within a festive but refined vignette, warm amber bokeh, product as part of the warm holiday glow",
+          "pose": "product as part of warm glow vignette, sun behind catching the ceramic glaze and fabric texture",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Morning Light Study",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 113,
+    "rationale": "Home office and WFH furniture sellers who need both a calm working morning environment and lifestyle proof that desk, chair, task lighting, and accessories create real productivity and beauty. Separate from aspirational living rooms — this is functional workspace styling without sacrifice of editorial quality.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "new_template",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:cool_neutral_morning_diffuse_natural_only",
+          "color:greige_off_white_warm_wood_neutral",
+          "texture:matte_timber_fabric_paper_ceramic",
+          "context:home_office_work_environment"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial workspace and home lifestyle magazine quality; clean minimalist home office with soft morning diffuse light through gauze curtain or privacy screen, cool-neutral natural window light ONLY (no golden hour, no evening glow, no warm sunset), pale greige or off-white walls, warm natural timber desk, task chair in neutral fabric, desk lamp on but daylight-dominant, stack of open books showing reading/work activity, ceramic mug, stationery (pen cup, notepad, ruler) artfully arranged as functional props, single potted plant for scale and calm, soft vertical shadow patterns from window mullions crossing the desk surface, product (desk/chair/lamp/accessory) kept exact in shape/material/color as the hero throughout all six shots, identical across all frames, soft realistic contact shadows on the desk and floor, range from wide establishing room shot down to intimate close-up of workspace detail, consistent cool-neutral editorial morning aesthetic throughout",
+        "extra_negative": "golden hour glow or sunset warmth, harsh direct sunlight creating hot spots, unlit or dark spaces, cluttered messy desk, artificial overhead flash, blown highlights washing out the workspace, fake CGI plastic look, oversaturated colors, blue cast, flicker, warped or duplicated product, floating furniture, melted edges, distorted proportions, people hands faces silhouettes, window reflections blown out"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "wide home office corner with soft morning diffuse light through large window with gauze curtain, pale greige walls, warm timber desk with neutral fabric task chair",
+          "pose": "full workspace establishing shot, product (desk or chair) centered as the hero, morning light illuminating the whole corner",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same office, medium pull-in from the window side, cool morning light raking across the desk surface",
+          "pose": "product 3/4 angle showing workspace depth and user positioning, light revealing material and form",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "desktop closeup showing arranged workspace: open book, ceramic mug, pen cup with stationery, product (lamp or accessory) lit by diffuse morning window light",
+          "pose": "product as part of the functional styled desk scene, slightly off-center with rule-of-thirds prop balance",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "window-side detail shot at the workspace edge, vertical shadow line from window frame crossing over the product and desk surface",
+          "pose": "product catching the cool morning side light with sharp shadow definition",
+          "composition": "closeup"
+        },
+        {
+          "scene": "wide rear view pulling back to show the full home office from across the room, complete view of desk setup with chair positioned at the workspace",
+          "pose": "product visible in the full room context with generous negative space, morning light from the left",
+          "composition": "full_body"
+        },
+        {
+          "scene": "intimate overhead detail of the desk surface near the product, showing texture of timber, paper, and materials, cool diffuse light creating soft surface definition",
+          "pose": "product detail from above with focus on material quality and workspace arrangement",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Blue Hour Serenity",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 114,
+    "rationale": "Evening and nighttime-focused home sellers who need aspirational blue-hour twilight scenes with the product as a cozy hero, complementing daytime Room & Warmth by showing the same room reimagined at dusk with 2-tone cool-periwinkle and warm-glow drama.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:blue_hour_twilight_meets_warm_lamp_glow",
+          "color:cool_periwinkle_dusk_and_warm_amber_accent",
+          "texture:soft_velvet_linen_glass_candlelight",
+          "context:intimate_evening_room_candlelit_cozy"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial lifestyle magazine twilight hour; blue-hour dusk 6-7PM exterior light filtering through gauze curtains casting cool periwinkle tone across the room, warm table lamps and candles glowing amber in the foreground creating 2-tone dramatic contrast; product as the cozy hero catching both cool dusk light and warm intimate glow; room soft-lit with string lights or amber pendant lamps, cast shadows from candlelight dancing gently; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on surfaces; mood accessories (lit candles, warm ceramic vessels, folded throws) arranged naturally around the product; range from cool-lit wide establishing shot of twilight room to warm intimate close-up of candlelit detail",
+        "extra_negative": "harsh overhead fluorescent light, blown highlights erasing candleglow, unlit candles in a candlelit scene, flat single-tone lighting, warped or duplicated product, distorted proportions, cluttered busy arrangement, fake plastic reflections, melted edges, CGI artificial look, oversaturated colors, dead or unlit props when product is about lighting or mood"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "wide room establishing at blue hour dusk, windows showing twilight periwinkle sky, interior lit only by warm table lamps and unlit candles scattered on surfaces",
+          "pose": "product front view centered on low table or shelf, catching both cool dusk window light and warm lamp glow nearby",
+          "composition": "full_body"
+        },
+        {
+          "scene": "cozy reading corner at dusk, product framed by lit table lamp with warm amber glow, cool periwinkle light from window behind",
+          "pose": "product 3/4 angle with lamp placed nearby, warm light spilling across surface",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate close-up on product surrounded by lit candles and folded linen throw, candlelight casting warm dancing shadows",
+          "pose": "product styled in a cozy vignette with mood accessories, shallow depth of field",
+          "composition": "closeup"
+        },
+        {
+          "scene": "nightfall view of the full room now dimmed except for warm glowing lamps and candles, cool periwinkle twilight fading outside the window",
+          "pose": "product as part of a fully-lit intimate room scene, anchored in negative space",
+          "composition": "full_body"
+        },
+        {
+          "scene": "candlelit detail: product nestled among lit candles, warm amber glow dominant, cool dusk window light rim-lighting the scene",
+          "pose": "product as the focal anchor of a warm-lit arrangement, candles flickering nearby",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "mood detail on product catching candlelight: soft warm glow on surface, deep shadows, intimate evening atmosphere, periwinkle-tinted ambient dusk light in background",
+          "pose": "product surface detail illuminated by candlelight, romantic intimate mood",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Rainy Window Styled",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 115,
+    "rationale": "Creators of tea sets, candles, and cozy companion products who need both an introspective grey-day mood and a styled vignette showing the product as part of a rainy-weather ritual. Captures the slow, high-intent buyer in moments of calm contemplation — window light diffused by rain, cool palette, companion objects (tea, books, blankets) that position the product as the emotional anchor.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_diffuse_rainy_overcast_window",
+          "color:cool_grey_muted_white_charcoal",
+          "texture:matte_ceramic_linen_wet_glass",
+          "context:introspective_rainy_window_nook"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial lifestyle magazine quality; rain-streaked and fogged window panes, overcast grey daylight diffused through cloudy skies; ultra-soft shadowless ambient light with cool white balance, no harsh direction, moody grey interior; one ceramic mug or companion object, stacked art books, a linen throw blanket for tactile scale; product kept exact in shape/material/color as the styled hero, identical across all six shots; soft realistic contact shadows on the interior surface; range from contemplative window-gazing establishing shots to intimate vignette styling with tea, candles, and blankets; no direct sun — all light filtered through rain and clouds, cool introspective mood",
+        "extra_negative": "sunny bright light, blown-out windows, clear skies, warm golden tones, cluttered busy scene, harsh shadows, warped or duplicated product, distorted proportions, fake reflections on glass, plastic CGI look, oversaturated colors, warm amber cast, melted edges"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "tall rain-streaked window with fogged glass, overcast grey sky visible outside, soft cool diffuse interior light",
+          "pose": "product front view, centered as window-nook hero, cool north-light setting",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same window corner, soft cool light from camera-left, linen throw blanket and ceramic companion object nearby for warmth contrast",
+          "pose": "product 3/4 angle showing depth, positioned within intimate nook",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "rainy windowsill styled scene with product, stacked art books, a lit candle, and the corner of a blanket draped over nearby chair",
+          "pose": "product as anchor in lived-in rainy-day vignette, surrounded by companion ritual objects",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back view of the full grey rainy-day interior, cool diffuse light from the window filling the space",
+          "pose": "product anchored in the full quiet nook, negative space of grey walls and furniture around it",
+          "composition": "full_body"
+        },
+        {
+          "scene": "windowsill at rain-time, window glass streaked with water droplets, muted grey afternoon light",
+          "pose": "product front view positioned on the sill, rain and grey sky framed just outside the glass",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate close study of the rain-covered window glass with subtle interior reflections, cool overcast daylight",
+          "pose": "product in soft focus warmth just inside the glass, contrast between cold rain-streaked exterior and cozy interior",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Patio Season Styled",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 116,
+    "rationale": "Outdoor furniture, patio, and garden product sellers who need a warm lifestyle scene showing their hero in an aspirational outdoor living context — covering spring/summer daylight in a planted terrace setting. Same editorial 35mm warmth as Room & Warmth Styled, but outdoor.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:bright_diffuse_daylight_to_golden_afternoon",
+          "color:warm_neutral_sage_terracotta_green",
+          "texture:weathered_wood_cushion_planter_stone",
+          "context:aspirational_patio_garden_space"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial outdoor lifestyle and garden magazine quality; generous planted patio with potted flora, weathered wood deck, natural stone pavers, linen and linen-look cushions, abundance of morning to afternoon daylight raking across the space with gentle shadows; product kept exact in shape/material/color as the styled hero, identical across all four shots; soft realistic contact shadows on the stone/wood floor; range from bright fresh morning light through warm golden-hour glow; relaxed seasoned outdoor furniture aesthetic; no people or hands in frame",
+        "extra_negative": "warped or duplicated product, distorted proportions, cluttered chaotic patio, harsh direct flash, blown highlights, fake reflections, floating furniture, melted edges, plastic CGI look, oversaturated colors, cold blue cast, barren or empty patio, unnatural plant placement, visible people or hands in frame"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "lush planted patio corner with terracotta planters, natural stone pavers, and soft morning diffuse light through tree leaves overhead",
+          "pose": "product front view, centered as patio hero among potted greenery",
+          "composition": "full_body"
+        },
+        {
+          "scene": "wooden deck seating area with neutral cushions and hanging plants, camera-left golden afternoon light",
+          "pose": "product 3/4 angle showing depth and side profile on the deck",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back view of the entire styled patio garden with multiple seating vignettes and abundant flora",
+          "pose": "product anchored in full patio scene with generous negative space around the living area",
+          "composition": "full_body"
+        },
+        {
+          "scene": "golden-hour close view on a side table with potted succulents, warm sunlight casting long leaf shadows across the surface",
+          "pose": "product as part of warm planted vignette, shallow depth of field, sun-dappled styling",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Styled Shelf Discovery",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 117,
+    "rationale": "Small decor and homeware sellers (candlesticks, vases, ceramics, bookends) who need to show their product styled into a curated shelf arrangement. Reveals how-to-style narrative: from full room establishing, to shelf focus, to close detail, then macro of the singular object as the hero — engagement driver for styling inspiration seekers.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_window_diffuse_to_golden_raking_shelf",
+          "color:warm_neutral_greige_with_saturated_ceramic_accent",
+          "texture:matte_ceramic_linen_wood_grain_on_shelf",
+          "context:styled_shelf_curation_editorial_sequence"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; warm daylight through sheer curtains diffusing soft light, afternoon sun raking across open shelving unit with wood frame and white-painted back; shelf contains stacked hardcover books, potted trailing plant, hand-thrown ceramic vase, brass candlestick, dried botanicals in glass vessel — all in warm neutral and earth-tone palette; product (vase, candlestick, ceramic, or bookend) kept exact in shape/material/color as the styled hero, identical across all six shots — locked geometry, never morphing or shifting; range from calm wide establishing of full room and bookcase, progressive framing to isolate the shelf unit, then tight focus on the product's position within the arrangement, then extreme macro of the product's surface texture and detail; soft realistic contact shadows on each shelf surface; aspirational curated lifestyle, how-to-style narrative arc, premium homeware editorial tone",
+        "extra_negative": "warped or duplicated product, distorted proportions, unbalanced shelf arrangement that looks chaotic or cluttered, harsh flash or overblown highlights in close detail, fake reflections, floating objects, melted edges, plastic CGI look, oversaturated colors, dead flat lighting, books with visible unreadable spines, color shift away from real ceramic glaze or material finish, product blending into background, macro shot with blown focus or chromatic aberration"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "minimalist home interior with built-in open wooden bookcase against white-painted wall, soft window daylight from camera-left diffusing through sheer linen curtain",
+          "pose": "wide pulled-back establishing shot showing the full room and entire bookcase unit with all shelf styling visible",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same room, closer view isolating the bookcase unit with product visible on one of the middle shelves amid books, plant, ceramics",
+          "pose": "bookcase front view, product 3/4 visible as one element in the styled arrangement",
+          "composition": "full_body"
+        },
+        {
+          "scene": "single shelf detail view, golden afternoon sun raking across the shelf edge creating warm light and shadow rhythm",
+          "pose": "product positioned mid-shelf surrounded by coordinating decor — stacked books, vase, candlestick visible together",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "same shelf, light tightens around the product with books and ceramic pieces visible but slightly soft",
+          "pose": "product takes visual priority within the shelf grouping, negative space around it increases",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "extreme close-up of the product on the shelf, warm afternoon sun grazing the ceramic or metal surface, soft bokeh of other shelf items behind",
+          "pose": "product front view filling most of frame, shallow depth of field isolates the hero object",
+          "composition": "closeup"
+        },
+        {
+          "scene": "macro detail of the product's surface — glaze texture, hand-thrown marks, or brass patina — backlit golden light",
+          "pose": "extreme magnification showing signature surface detail, weave or material finish",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Detail",
+    "name": "Textiles Raked Light",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 118,
+    "rationale": "Textile and soft-goods sellers who need both macro weave texture proof and authentic lived-in domestic context. Combines extreme raking light detail shots with styled room vignettes showing textiles on furniture and floors in warm natural light.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:raking_grazing_directional_to_warm_ambient",
+          "color:linen_cream_warm_stone_soft_earth",
+          "texture:visible_weave_fiber_authentic_matte",
+          "context:lived_in_domestic_textiles_on_furniture"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4 for establishing shots AND 100mm macro lens at f/5.6 for raking close-ups, editorial lifestyle textile photography; three shots show extreme detail: raking side light grazing the weave surface revealing every fiber of linen/wool/cotton, focus-stacked sharpness, hyper-detailed texture proof; three shots show the same textile in authentic domestic context — draped on cream linen sofa arm, folded throw on upholstered chair, rug layered on oak floor — all in a warm neutral room with limewash walls, soft daylight through sheer curtain, maybe a ceramic vase or wooden beam for scale; product kept exact in shape/material/color as styled hero throughout, identical across all six shots; soft realistic contact shadows; warm afternoon light with dust motes and gentle window glow creating aspirational cozy lived-in mood",
+        "extra_negative": "warped or duplicated textile, distorted weave pattern, plastic shiny CGI finish, focus-hunting or soft blur on detail shots, harsh flash, blown highlights crushing texture, color shift away from true linen/wool tone, invented patterns, cluttered competing surfaces, cold blue cast, sterilized studio look, floating unsupported textiles, melted edges"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "close neutral raking setup, dramatic grazing side light from the left",
+          "pose": "textile surface extreme macro close-up showing thread/weave structure under raking light",
+          "composition": "closeup"
+        },
+        {
+          "scene": "soft graduated grey macro backdrop, grazing top light at 45 degrees",
+          "pose": "textile weave detail filling the frame, fiber texture crystalline sharp",
+          "composition": "closeup"
+        },
+        {
+          "scene": "warm domestic living room corner, limewash wall and oak floor, soft window light",
+          "pose": "textile draped on cream linen sofa arm, raking afternoon light catching the weave",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "cozy upholstered chair with wooden frame, warm neutral room, daylight from camera-left",
+          "pose": "folded throw textile on chair arm showing layered depth and fold detail, soft shadows",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "oak wood floor with warm afternoon light, neutral rug anchoring the space",
+          "pose": "textile rug corner detail showing weave and fringe, product anchored in floor vignette",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back domestic room establishing full styled vignette at golden hour",
+          "pose": "multiple textiles visible as parts of warm composed interior — sofa, chair, floor — product family hero",
+          "composition": "full_body"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Scene",
+    "name": "Housewarming Move-In Ready",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 119,
+    "rationale": "Interior and furniture sellers targeting the high-intent housewarming spike — buyers in active move-in phase. Shows product transforming a bare new-home room from chaotic unpacking to fully styled golden-hour sanctuary, signaling readiness and new-life aspiration in one compact 4-shot narrative arc.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "editable_slot_of_room_warmth",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:soft_window_diffuse_to_golden_hour",
+          "color:warm_neutral_greige_amber_against_bare_walls",
+          "texture:matte_plaster_moving_boxes_linen_oak",
+          "context:new_home_move_in_transformation"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial real-estate and lifestyle magazine quality; progression from empty neutral walls with kraft moving boxes stacked in corner through half-styled staging to full golden-hour warmth; limewash walls emerging, oak floor, sheer linen curtains filtering afternoon sun; warm raking light with long shadows and gentle lens flare, dust motes dancing; one statement plant and art books for scale introduced mid-sequence; product kept exact in shape/material/color as the styled hero transforming the space across all four shots, identical product identity maintained; soft realistic contact shadows on the floor; narrative arc from chaos→placement→comfort→golden-hour sanctuary; celebration of new home readiness",
+        "extra_negative": "warped or duplicated product, distorted proportions, walls changing color or material between shots, product drifting position or scale, harsh flash, blown highlights, fake reflections, floating furniture, melted edges, plastic CGI look, oversaturated colors, cold blue cast, boxes disappearing too abruptly, room geometry shifting, inconsistent product styling between shots"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "bright empty room corner with stacked kraft moving boxes, neutral bare walls, soft window light through bare glass, floor bare or minimal matting",
+          "pose": "room establishing shot, no product yet, moving boxes foreground-right, space feels new and bare",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same room, moving boxes partially cleared, product placed center-stage in midst of unpacking, soft morning-to-midday diffuse light",
+          "pose": "product front view as anchor point appearing in the chaos, half-styled with one art book and plant nearby starting to define the space",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "same corner now with boxes moved to edge or away, warm afternoon light raking through window, styled elements around product — throw, ceramic vase, floor lamp — room taking shape",
+          "pose": "product 3/4 angle in evolving context, surrounded by warm-palette styling elements",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "same room at golden hour, fully styled reading nook or corner with rug, warm lamp, plant, linen-draped furniture, amber light spilling across floor with long shadows and gentle lens flare",
+          "pose": "product front view bathed in golden afternoon sun as the hero of completed sanctuary",
+          "composition": "full_body"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "home",
+    "category": "Lighting",
+    "name": "Twilight Corner Glow",
+    "output_type": "image_set",
+    "credit_cost": 3,
+    "sort_order": 120,
+    "rationale": "Lighting sellers (lamps, pendants, sconces, candles) who need to prove how their product looks switched ON in a real evening room — the glow, light cones, reflections and warm pools that day-lit catalog shots can never show. A static 6-shot complement to the Day-to-Night reel for premium lighting buyers.",
+    "meta": {
+      "experimental": true,
+      "sibling_of": "Room & Warmth Styled",
+      "classification": "new_template",
+      "source": "siblings-brainstorm-2026-06-14"
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 6,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Interior",
+        "attributes": [
+          "lighting:product_emissive_warm_twilight_glow",
+          "color:deep_blue_twilight_with_warm_amber_pools",
+          "texture:soft_glow_halo_reflective_surfaces",
+          "context:lit_evening_living_room"
+        ],
+        "extra_positive": "shot on 35mm full-frame, 35mm lens at f/4, editorial interior magazine quality; an aspirational evening living room at twilight (7-9 PM) with deep blue dusk light in the windows and the product as a switched-ON light source casting a warm amber glow; visible soft light cones, gentle halo bloom, warm pools of light on walls, floor and nearby surfaces, soft reflections on wood and ceramics; cozy intimate lived-in evening mood with the lit product as the unmistakable hero of the scene; product kept exact in shape/material/color and emitting a realistic warm glow, identical across all six shots; soft realistic contact shadows and believable falloff of light",
+        "extra_negative": "unlit or dead-black product, dull lifeless glow, daylight or bright flat lighting contradicting the evening mood, blown-out overexposed bulbs with no detail, harsh flash, warped or duplicated product, distorted proportions, fake plastic glow, banding in the gradient, melted edges, plastic CGI look, cold sterile cast, double light sources that confuse the hero"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "evening living room corner at twilight, deep blue dusk in the window, the product switched on casting a warm amber glow",
+          "pose": "product front view as the lit hero, warm light pooling around it",
+          "composition": "full_body"
+        },
+        {
+          "scene": "same room, camera-left, visible soft light cone and halo bloom from the product against the dim wall",
+          "pose": "product 3/4 angle showing the shape of its emitted light",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate seating nook lit only by the product and faint ambient dusk, warm reflections on a side table",
+          "pose": "product styled in cozy lived-in evening context, glow on nearby surfaces",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "wide pulled-back view of the whole dim room with the product as the single warm light anchor",
+          "pose": "product small but luminous, warm pool of light defining the space",
+          "composition": "full_body"
+        },
+        {
+          "scene": "close view of the product's warm light grazing a textured wall or shelf, deep shadow falloff",
+          "pose": "product edge and its light cone in shallow depth of field",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "intimate closeup of the lit product, warm glow detail, soft amber bokeh of other small lights behind",
+          "pose": "product surface and glow detail, shallow depth of field",
+          "composition": "closeup"
+        }
+      ],
+      "provider": {
+        "image": "nano-banana",
+        "video": "kling"
+      }
+    }
   }
 ];

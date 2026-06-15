@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const guards = require(path.join(SEEDS, 'product.guards.v2.js')); // ← resolvedGuards 실호출
 
-const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
+const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
 const PRODUCT = new Set(['fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'general']);
 
 const slug = (s) => String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');

@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 102,
-  "new_count": 67,
+  "total": 173,
+  "new_count": 139,
   "provisional_count": 26,
   "drift_guard": {
-    "seed_total": 102,
-    "status_total": 102,
+    "seed_total": 173,
+    "status_total": 173,
     "ok": true
   },
   "id_collisions": [],
@@ -771,12 +771,12 @@
         ]
       },
       {
-        "id": "wrist-and-hand",
+        "id": "ring-on-finger",
         "cat": "OnModel",
-        "name": "Wrist & Hand",
+        "name": "Ring on Finger",
         "type": "image",
         "cost": 5,
-        "new": false,
+        "new": true,
         "provisional": false,
         "flags": [
           "experimental",
@@ -793,9 +793,53 @@
         ]
       },
       {
-        "id": "neck-and-ear-try-on",
+        "id": "wrist-wear",
         "cat": "OnModel",
-        "name": "Neck & Ear Try-On",
+        "name": "Wrist Wear",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "necklace-on-neck",
+        "cat": "OnModel",
+        "name": "Necklace on Neck",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-on-ear",
+        "cat": "OnModel",
+        "name": "Earring on Ear",
         "type": "image",
         "cost": 5,
         "new": true,
@@ -858,6 +902,534 @@
         "name": "Jewelry Unbox ASMR",
         "type": "reel",
         "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-editorial-campaign",
+        "cat": "OnModelEditorial",
+        "name": "Ring Editorial Campaign",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-editorial-campaign",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Editorial Campaign",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-golden-hour",
+        "cat": "OnModelEditorial",
+        "name": "Ring Golden Hour",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-golden-hour",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Golden Hour",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-monochrome-noir",
+        "cat": "OnModelEditorial",
+        "name": "Ring Monochrome Noir",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-monochrome-noir",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Monochrome Noir",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-caf-candid",
+        "cat": "OnModelEditorial",
+        "name": "Ring Café Candid",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-caf-candid",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Café Candid",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-in-bloom",
+        "cat": "OnModelEditorial",
+        "name": "Ring In Bloom",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-in-bloom",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet In Bloom",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-colorblock",
+        "cat": "OnModelEditorial",
+        "name": "Ring Colorblock",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-colorblock",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Colorblock",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-color-pop",
+        "cat": "OnModelEditorial",
+        "name": "Ring Color Pop",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-color-pop",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Color Pop",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-scarf-portrait",
+        "cat": "OnModelEditorial",
+        "name": "Ring Scarf Portrait",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-scarf-portrait",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Scarf Portrait",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "ring-intimate",
+        "cat": "OnModelEditorial",
+        "name": "Ring Intimate",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "bracelet-intimate",
+        "cat": "OnModelEditorial",
+        "name": "Bracelet Intimate",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-campaign",
+        "cat": "OnModelEditorial",
+        "name": "Earring Campaign",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-golden-hour",
+        "cat": "OnModelEditorial",
+        "name": "Earring Golden Hour",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-monochrome",
+        "cat": "OnModelEditorial",
+        "name": "Earring Monochrome",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-scarf-portrait",
+        "cat": "OnModelEditorial",
+        "name": "Earring Scarf Portrait",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-color-pop",
+        "cat": "OnModelEditorial",
+        "name": "Earring Color Pop",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "reflection_control",
+          "scale_cue",
+          "count_lock"
+        ]
+      },
+      {
+        "id": "earring-intimate",
+        "cat": "OnModelEditorial",
+        "name": "Earring Intimate",
+        "type": "image",
+        "cost": 5,
         "new": true,
         "provisional": false,
         "flags": [
@@ -1005,6 +1577,296 @@
           "count_lock",
           "scale_cue"
         ]
+      },
+      {
+        "id": "ingredient-callout",
+        "cat": "Callout",
+        "name": "Ingredient Callout",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "count_lock",
+          "scale_cue"
+        ]
+      }
+    ],
+    "coffee": [
+      {
+        "id": "latte-art-top-down",
+        "cat": "Studio",
+        "name": "Latte Art Top-Down",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "cozy-cafe-moment",
+        "cat": "Lifestyle",
+        "name": "Cozy Cafe Moment",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "iced-coffee-condensation-hero",
+        "cat": "Macro",
+        "name": "Iced Coffee Condensation Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "signature-drink-menu-card",
+        "cat": "Menu",
+        "name": "Signature Drink Menu Card",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": true
+      },
+      {
+        "id": "single-cup-pour-reel",
+        "cat": "Reel",
+        "name": "Single-Cup Pour Reel",
+        "type": "reel",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "latte-pour-and-crema-reel",
+        "cat": "Reel",
+        "name": "Latte Pour & Crema Reel",
+        "type": "reel",
+        "cost": 4,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "cafe-steam-and-crema-asmr",
+        "cat": "Reel",
+        "name": "Cafe Steam & Crema ASMR",
+        "type": "reel",
+        "cost": 6,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "needs_human_review"
+        ],
+        "text_overlay": false
+      },
+      {
+        "id": "noir-marble-coffee",
+        "cat": "Editorial",
+        "name": "Noir Marble Coffee",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "slow-morning-coffee",
+        "cat": "Lifestyle",
+        "name": "Slow Morning Coffee",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "golden-hour-window",
+        "cat": "Lifestyle",
+        "name": "Golden Hour Window",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "analog-film-cafe",
+        "cat": "Lifestyle",
+        "name": "Analog Film Cafe",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "roastery-counter",
+        "cat": "Lifestyle",
+        "name": "Roastery Counter",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "daylight-brunch-flatlay",
+        "cat": "Lifestyle",
+        "name": "Daylight Brunch Flatlay",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "sunlit-terrace",
+        "cat": "Lifestyle",
+        "name": "Sunlit Terrace",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "minimalist-negative-space",
+        "cat": "Studio",
+        "name": "Minimalist Negative Space",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "rainy-window-mood",
+        "cat": "Lifestyle",
+        "name": "Rainy Window Mood",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "monochrome-fine-art",
+        "cat": "Editorial",
+        "name": "Monochrome Fine Art",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "marble-linen-still-life",
+        "cat": "Editorial",
+        "name": "Marble Linen Still Life",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "shadow-play-sunlight",
+        "cat": "Lifestyle",
+        "name": "Shadow Play Sunlight",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "botanical-coffee-beans",
+        "cat": "Macro",
+        "name": "Botanical Coffee Beans",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "pastel-dream",
+        "cat": "Studio",
+        "name": "Pastel Dream",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "vintage-heirloom",
+        "cat": "Editorial",
+        "name": "Vintage Heirloom",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "reflective-glass-surface",
+        "cat": "Studio",
+        "name": "Reflective Glass Surface",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
+      },
+      {
+        "id": "steam-and-light-macro",
+        "cat": "Macro",
+        "name": "Steam and Light Macro",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false
       }
     ],
     "home": [
@@ -1143,6 +2005,406 @@
           "experimental",
           "needs_human_review"
         ],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "minimalist-warmth-study",
+        "cat": "Scene",
+        "name": "Minimalist Warmth Study",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "japandi-warmth-nook",
+        "cat": "Scene",
+        "name": "Japandi Warmth Nook",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "mid-century-modern-warmth-studio",
+        "cat": "Scene",
+        "name": "Mid-Century Modern Warmth Studio",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "bohemian-warmth-alcove",
+        "cat": "Scene",
+        "name": "Bohemian Warmth Alcove",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "bedroom-sanctuary-styled",
+        "cat": "Scene",
+        "name": "Bedroom Sanctuary Styled",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "kitchen-and-dining-styled",
+        "cat": "Scene",
+        "name": "Kitchen & Dining Styled",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "study-nook-focus",
+        "cat": "Scene",
+        "name": "Study Nook Focus",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "dappled-shadows-studio",
+        "cat": "Scene",
+        "name": "Dappled Shadows Studio",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "industrial-warmth-loft",
+        "cat": "Scene",
+        "name": "Industrial Warmth Loft",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "seasonal-palette-studio",
+        "cat": "Scene",
+        "name": "Seasonal Palette Studio",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "entryway-welcome-styled",
+        "cat": "Scene",
+        "name": "Entryway Welcome Styled",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "holiday-warmth-styled",
+        "cat": "Scene",
+        "name": "Holiday Warmth Styled",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "morning-light-study",
+        "cat": "Scene",
+        "name": "Morning Light Study",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "blue-hour-serenity",
+        "cat": "Scene",
+        "name": "Blue Hour Serenity",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "rainy-window-styled",
+        "cat": "Scene",
+        "name": "Rainy Window Styled",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "patio-season-styled",
+        "cat": "Scene",
+        "name": "Patio Season Styled",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "styled-shelf-discovery",
+        "cat": "Scene",
+        "name": "Styled Shelf Discovery",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "textiles-raked-light",
+        "cat": "Detail",
+        "name": "Textiles Raked Light",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "housewarming-move-in-ready",
+        "cat": "Scene",
+        "name": "Housewarming Move-In Ready",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [],
+        "text_overlay": false,
+        "guards": [
+          "form_lock",
+          "single_sku",
+          "label_lock",
+          "scale_cue",
+          "count_lock",
+          "reflection_control",
+          "emissive_render"
+        ]
+      },
+      {
+        "id": "twilight-corner-glow",
+        "cat": "Lighting",
+        "name": "Twilight Corner Glow",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [],
         "text_overlay": false,
         "guards": [
           "form_lock",

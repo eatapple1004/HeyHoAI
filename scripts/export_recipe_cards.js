@@ -74,7 +74,7 @@ let passedIds = new Set();
 try { passedIds = new Set((JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/섹션명령서/_pass_log.json'), 'utf8')).entries || []).map((e) => e.id)); } catch (e) {}
 
 // ── 카드 변환 (계약 필드 보존 + emoji/grad 파생) ──
-const FE_VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
+const FE_VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
 const cards = {};
 let total = 0, newCount = 0, overlayCount = 0, guardCount = 0, provCount = 0, idSet = new Set(), collisions = [];
 const provVerts = new Set(); // 계약 per-card provisional 기반(확장 로스터) — 하드코딩 아님, 데이터에서 파생

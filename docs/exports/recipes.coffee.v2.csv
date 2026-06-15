@@ -1,0 +1,25 @@
+vertical,sort_order,name,category,output_type,count,credit_cost,aspect_ratio,text_overlay,flags,rationale
+coffee,1,Latte Art Top-Down,Studio,image_set,4,2,4:5,false,,카페·배달앱 메뉴 썸네일용 음료 표면 탑다운; 라떼아트·크레마·아이스 탑뷰를 작은 크기에서 즉시 인지시키는 가장 저렴한 ◈2 진입점.
+coffee,2,Cozy Cafe Moment,Lifestyle,image_set,4,2,4:5,false,,분위기를 파는 카페·홈카페 인스타 콘텐츠; 펼친 책·린넨·우드 코스터·부드러운 창광의 슬로우리빙 무드컷이 저장·공유와 리치를 견인하는 카탈로그의 시그니처 감성 세트.
+coffee,3,Iced Coffee Condensation Hero,Macro,image_set,4,2,4:5,false,,차가운 시그니처 음료의 군침 클로즈업; 맺힌 응결·빛나는 얼음·우유 스월 푸어의 밝고 신선한 매크로가 전환율 높은 정지 이미지(#2 다크 무디와 룩 대비로 카탈로그 폭 확보).
+coffee,4,Signature Drink Menu Card,Menu,image_set,6,3,4:5,true,,"카페가 가장 자주 요청하는 메뉴판·시그니처 음료 가격 카드; 음료 그리드 배경만 AI로 만들고 메뉴명·가격은 오버레이로 합성해 SAFETY_NEGATIVE 텍스트 제약을 우회, 최대 16개 음료까지 확장."
+coffee,5,Single-Cup Pour Reel,Reel,reel,1,2,9:16,false,,오늘의 음료·신메뉴 즉시 게시용 가장 저렴한 릴(◈2); 단일 시그니처 음료에 슬로우 매크로 푸시인으로 스팀·푸어·광택을 잡아 빠른 소셜 반응 확인에 최적인 데일리 드립.
+coffee,6,Latte Pour & Crema Reel,Reel,reel,2,4,9:16,false,needs_human_review,음료만의 시그니처 모션을 채우는 2샷 릴; 스팀밀크 푸어로 라떼아트가 형성되거나 우유가 얼음 위로 쏟아지는 밝은 하이키 컷이 카페 콘텐츠의 핵심 동력.
+coffee,7,Cafe Steam & Crema ASMR,Reel,reel,3,6,9:16,false,needs_human_review,알고리즘 쇼트폼을 노리는 카페 브랜드의 모션 히어로; 스팀·크레마 스월·풀백 리빌 3샷 ASMR 릴이 카탈로그의 시네마틱 정점이자 체류시간 확보용 콘텐츠.
+coffee,8,Noir Marble Coffee,Editorial,image_set,4,2,4:5,false,,"카페·스페셜티 브랜드의 프리미엄 캠페인용 고급 정물; 다크 마블·브러시드 브라스·드라마틱 측광의 에디토리얼 누아르 룩으로 어떤 커피든 '비싸 보이게' 연출해 브랜드 격을 올리는 럭셔리 히어로 세트(코지 무드 세트와 룩 대비로 카탈로그 상단 포지셔닝)."
+coffee,9,Slow Morning Coffee,Lifestyle,image_set,4,2,4:5,false,,"유저가 가진 어떤 커피 사진이든(핫·아이스, 라떼·아메리카노·콜드브루 등) 1장 올리면 레퍼런스 무드 그대로 — 펼친 책+우드 코스터+구겨진 린넨+측면 창광의 슬로우리빙 감성 한 컷으로 재현하는 시그니처 단일룩 세트. #2(분위기 다양 세트)와 달리 이 정확한 한 컷에 집중해 저장·공유 전환을 노린다."
+coffee,10,Golden Hour Window,Lifestyle,image_set,4,2,4:5,false,,"따뜻한 골든아워 역광으로 '진짜 카메라로 찍은' 감성을 극대화하는 실사 룩; 35mm 단렌즈·자연 플레어·긴 그림자가 인스타 저장·공유를 견인하는 어센틱 에디토리얼 한 컷."
+coffee,11,Analog Film Cafe,Lifestyle,image_set,4,2,4:5,false,,"디지털 티를 지우고 '진짜 필름으로 찍은' 향수 어린 실사 룩; Portra/CineStill 톤·그레인·할레이션이 어센틱 카페 무드를 만들어 브랜드 감성을 차별화하는 아날로그 세트."
+coffee,12,Roastery Counter,Lifestyle,image_set,4,2,4:5,false,,"'진짜 카페에서 찍은' 다큐멘터리 실사 룩; 우드·스테인리스 바와 에스프레소 머신 보케가 스페셜티 브랜드의 현장감·신뢰감을 주는 어센틱 환경 세트."
+coffee,13,Daylight Brunch Flatlay,Lifestyle,image_set,4,2,4:5,false,,"'진짜 브런치 테이블을 위에서 찍은' 자연광 플랫레이 실사 룩; 페이스트리·린넨·커틀러리와 부드러운 창광이 풍성한 라이프스타일을 파는 푸드 에디토리얼 세트."
+coffee,14,Sunlit Terrace,Lifestyle,image_set,4,2,4:5,false,,"'진짜 야외 테라스에서 찍은' 밝은 자연광 실사 룩; 초록 식물·거리 보케·dappled 햇살이 알프레스코 라이프스타일과 여행 감성을 파는 어센틱 아웃도어 세트."
+coffee,15,Minimalist Negative Space,Studio,image_set,4,2,4:5,false,,"음료 하나만 넓은 여백의 심리스 배경에 띄운 파인아트 미니멀 실사; 가게 단서 없이 여백·자연광 그림자로 감성과 프리미엄을 주는 절제형 세트."
+coffee,16,Rainy Window Mood,Lifestyle,image_set,4,2,4:5,false,,"비 오는 날의 멜랑콜리 코지 실사; 빗물 유리·블러 빗방울 보케·은은한 스팀이 감성 무드를 만드는 세트(매장 디테일 없이 유리·비·빛만)."
+coffee,17,Monochrome Fine Art,Editorial,image_set,4,2,4:5,false,,"색을 빼고 빛·톤·질감만 남긴 흑백 파인아트 실사; 드라마틱 측광과 은염 그레인이 타임리스한 격을 주는 갤러리형 세트(매장 단서 없음)."
+coffee,18,Marble Linen Still Life,Editorial,image_set,4,2,4:5,false,,"honed 마블+드레이프 린넨의 회화적 정물 실사; 부드러운 노스윈도 광과 절제된 스타일링이 조용한 럭셔리를 주는 테이블탑 세트(방·매장 안 보임)."
+coffee,19,Shadow Play Sunlight,Lifestyle,image_set,4,2,4:5,false,,"하드 햇살이 만드는 블라인드·잎새 그래픽 그림자의 빛·그림자 아트 실사; 강한 대비와 추상 광이 현대적 아트디렉션 감성을 주는 세트(매장 배경 없음)."
+coffee,20,Botanical Coffee Beans,Macro,image_set,4,2,4:5,false,,"원두·드라이 식물·러프한 자연 소재로 꾸민 어티즈널 실사 매크로; 흙빛 유기적 팔레트가 장인 감성·신선함을 주는 내추럴 스타일링 세트(클로즈 스타일링)."
+coffee,21,Pastel Dream,Studio,image_set,4,2,4:5,false,,"블러시·크림 파스텔의 드리미 라이프스타일 실사; 밝고 에어리한 디퓨즈드 광이 부드럽고 사랑스러운 감성을 주는 코리안-카페 소프트 세트(매장 단서 없음)."
+coffee,22,Vintage Heirloom,Editorial,image_set,4,2,4:5,false,,"앤틱 포슬린·은수저·에이징 우드의 올드월드 정물 실사; 회화적 창광과 세월의 파티나가 향수·타임리스 무드를 주는 클래식 세트(현대 매장 안 보임)."
+coffee,23,Reflective Glass Surface,Studio,image_set,4,2,4:5,false,,"글로시·젖은 유리면의 우아한 반영을 활용한 무디 미니멀 실사; 컨트롤드 스페큘러 광과 깔끔한 그라데이션이 현대적 에디토리얼 품격을 주는 세트(반영과 음료만)."
+coffee,24,Steam and Light Macro,Macro,image_set,4,2,4:5,false,,"백라이트로 피어오르는 스팀 위스프를 100mm로 잡는 인티메이트 매크로 실사; 다크 그라데이션과 림글로우가 감각적 정적 무드를 주는 추상 클로즈 세트(환경·매장 없음)."

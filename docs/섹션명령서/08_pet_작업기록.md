@@ -174,3 +174,36 @@
 - node 로딩 12개 · 死필드 0 · identity 프리픽스 #4·5·6·8 ✅ · overlay_spec 4/4 ✅
 - `grep '"negative":'`=**0** 유지 · extra_positive 최대 단어수 ≤90(하우스 norm) · `consolidate` 통과(중복0, pet "이슈"=개수12 권고뿐)
 - 카드계약(name/credit_cost/output_type/count) 불변.
+
+---
+
+## 8) 보고 — Pet Product Hero 테스트 통과 + 어울리는 제품 (2026-06-10, pet 워커 → 총지휘)
+
+### Pet Product Hero (#1) — 검증/QA 전 항목 PASS
+| 체크 | 결과 |
+|---|---|
+| node 로딩 | ✅ PASS |
+| output | image_set 4컷 4:5 |
+| 비용공식 ◈2 (count×0.5) | ✅ PASS |
+| shots수 = count (4/4) | ✅ PASS |
+| 死필드 `negative` 제거 + live `extra_negative` 이관(§6) | ✅ PASS |
+| 🅣 `text_overlay:true` + extra_negative text/logo 누출 0 | ✅ PASS |
+| extra_positive 정밀화 + `overlay_spec`(§7) | ✅ PASS |
+| consolidate 개별 이슈 | ✅ 0 (섹션 `draft(이슈)`는 **개수 12>8 권고**일 뿐 이 템플릿과 무관) |
+
+### 어울리는 제품 (best-fit) — *"펫·사람 없이 제품만 깨끗하게 보여줘도 사고 싶은 것"*
+펫 488품목 중 **절반 이상**을 커버하는 최광폭 ◈2 진입 템플릿. 포장·형태·브랜딩이 셀링포인트인 **비착용 하드굿즈** 전반:
+- 📦 **포장 소모재** — 사료백·습식캔·파우치, 간식·츄 패키지, 곤충젤리·발효매트
+- 🧴 **보틀·튜브** — 영양제·서플먼트, 샴푸·세정제, 페로몬 디퓨저, 탈취제
+- 🍽 **급여·급수 기구** — 식기·급수기·정수기·자동급식기·헤이넷
+- 🏠 **가구·하우징** — 캣타워·스크래처·하우스·크레이트·케이지·펜스
+- 🚗 **이동·여행** — 캐리어·이동장·유모차·카시트
+- ✂️ **그루밍 기기** — 브러시·발톱깎이·드라이어·이발기
+- 📟 **테크 외형** — GPS·펫카메라·스마트칼라·자동화장실 (기기 외형만)
+- 🦎 **사육 기자재** — 파충류 사육장·히터·UVB, 아쿠아 수조·여과기
+- 🎁 **기프트·DIY** — 구독박스·기프트셋·DIY 원료/키트·메모리얼 굿즈·ID태그 각인 클로즈
+
+### 경계 (Hero보다 다른 템플릿 권장)
+간식 식감→`Macro Crunch` · 착용 핏→`On-Pet Fit` · 펫 동반 감성→`Cuddle Hour` · 크기감(대용량백·캣타워)→`In-Room Scale Set` · 작동 화면(테크)→`Device UI Mockup Set` · 수조 서식지 무드→`Habitat Scene Set`.
+
+> 🅣 사이즈/스펙 글자는 AI 미생성 → `overlay_spec` 레이어로 합성.

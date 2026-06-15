@@ -1,0 +1,122 @@
+{
+  "_note": "통과 템플릿별 '어울리는 제품' 별도 저장. id는 _pass_log.json과 동일. status: full=워커 풀보고 저장됨, partial=스니펫 일부, pending=미수신.",
+  "updated": "2026-06-13",
+  "templates": {
+    "dewy-glass-hero": {
+      "vertical": "beauty", "name": "Dewy Glass Hero", "source_session": "Beauty recipes v2 schema",
+      "status": "full", "test_status": "PASS (2026-06-12)",
+      "fit_condition": "유리병 + (가급적)드로퍼/피펫 + 흐르는 액상(세럼·오일·에센스·토너) + 수분/프레시/글래스 무드",
+      "why_fit": "물방울·웻시트·하이키 글래스 룩=프레시·수분·프리미엄. 유리/투명 용기+흐르는 액상에서 라벨·웻리플렉션·드로퍼 행잉드롭 매크로(shot3)가 모두 자연스럽게 살아남.",
+      "ideal": [
+        {"group": "수분 세럼(HA)", "examples": ["The Ordinary HA 2%+B5", "Vichy Minéral 89", "L'Oréal Revitalift Filler 1.5% HA"]},
+        {"group": "비타민C/브라이트닝 세럼", "examples": ["The Ordinary Ascorbic 8%+Alpha Arbutin 2%", "COSRX Vitamin C 23", "Paula's Choice C15 Super Booster"]},
+        {"group": "레티놀/펩타이드 세럼", "examples": ["The Ordinary Retinol 1% in Squalane", "The Ordinary Multi-Peptide+HA", "Naturium Retinol Complex"]},
+        {"group": "나이아신아마이드/모공 세럼", "examples": ["The Ordinary Niacinamide 10%+Zinc 1%", "COSRX Niacinamide 15", "Paula's Choice 10% Niacinamide Booster"]},
+        {"group": "페이셜 오일(드로퍼)", "examples": ["Kiehl's Midnight Recovery", "Drunk Elephant Virgin Marula", "The Ordinary Rose Hip Seed Oil", "Sunday Riley Luna"]},
+        {"group": "K뷰티 앰플/글로우 세럼", "examples": ["Beauty of Joseon Glow Serum", "Mizon Snail Repair Ampoule", "numbuzin No.5 Vitamin", "SOME BY MI Galactomyces Glow"]},
+        {"group": "아이/립 세럼(드로퍼)", "examples": ["The Ordinary Caffeine 5%+EGCG"]}
+      ],
+      "good": [
+        {"group": "토너/에센스(유리)", "examples": ["SK-II FTE", "Missha Time Revolution First Essence 5X", "Tatcha The Essence", "Fresh Rose & HA Toner"]},
+        {"group": "페이스 미스트(유리 스프레이)", "examples": ["Caudalie Beauty Elixir", "Tatcha Dewy Skin Mist", "Chantecaille Pure Rosewater"]},
+        {"group": "향수(투명 글래스 플라콘)", "examples": ["Issey Miyake L'Eau d'Issey", "Armani Acqua di Gioia", "D&G Light Blue"]},
+        {"group": "펌프형 세럼/에센스", "examples": ["Glow Recipe Plum Plump HA", "The Ordinary Granactive Retinoid 2% Emulsion"]}
+      ],
+      "unfit": {"note": "무드/폼 불일치 → 형제 히어로 템플릿 라우팅", "examples": ["무광 튜브/자 크림", "스틱(립·선·데오)", "파우더/팩트", "사쳇/시트/패치", "고체바", "불투명 플라스틱 보틀"]},
+      "source": "web-verified (ideal 40/good 25), 03_beauty_작업기록.md 2026-06-12"
+    },
+    "top-down-hero": {
+      "vertical": "food", "name": "Top-Down Hero", "source_session": "Food recipes v2 specification",
+      "status": "full", "test_status": "PASS",
+      "fit_condition": "90° 탑다운에서 형태 왜곡 없이 전체 구성이 읽히는 평평/그릇·접시 담음 저높이 음식. 배달앱·메뉴보드 썸네일용.",
+      "best": [
+        {"group": "보울류", "examples": ["포케볼","그레인볼","비빔밥","덮밥","샐러드볼","라멘","국밥"], "why": "내용물이 위에서 전부 보임"},
+        {"group": "플레이팅 단품", "examples": ["파스타","리조또","카레","메인 플레이트"], "why": "접시 위 구성이 핵심"},
+        {"group": "평면 음식", "examples": ["피자","플랫브레드","단층 팬케이크"], "why": "본질적으로 평면"},
+        {"group": "배열형", "examples": ["김밥","롤","스시 플래터","디저트 플레이트","마카롱","쿠키","도넛 배열"], "why": "그리드/방사 배열 최적"},
+        {"group": "브런치 플레이트", "examples": ["계란·토스트·사이드 구성"], "why": "클래식 플랫레이"},
+        {"group": "음료 탑샷", "examples": ["라떼 표면(라떼아트)","아이스 음료 위"], "why": "표면 패턴 강조"}
+      ],
+      "ok": [
+        {"group": "키 큰/스택형", "examples": ["타워버거","팬케이크 스택"], "why": "높이 눌림 → 45°/측면"},
+        {"group": "스팀 히어로", "examples": ["뜨거운 국물"], "why": "측면 백라이트 → Drip & Steam Macro"}
+      ],
+      "avoid": [
+        {"group": "키 큰 음료·모션", "examples": ["생맥주","칵테일","측면 라떼아트","푸어"], "why": "형태/모션 손실 → Golden-Hour"},
+        {"group": "패키지/병/캔", "examples": ["밀키트","도시락","음료 캔"], "why": "위에선 뚜껑만"},
+        {"group": "수직 형태", "examples": ["아이스크림 콘","소프트콘"], "why": "수직 실루엣 소실"}
+      ]
+    },
+    "pet-product-hero": {
+      "vertical": "pet", "name": "Pet Product Hero", "source_session": "Pet v2 recipes validation",
+      "status": "full", "test_status": "PASS", "text_overlay": true,
+      "fit_summary": "펫·사람 없이 제품만 깨끗하게 보여줘도 사고 싶은 비착용 하드굿즈. 합성·모핑 위험 0. 상세 첫 컷·썸네일·신뢰 진입. 펫 488품목 절반↑ 커버 최광폭 ◈2.",
+      "fit_conditions": ["펫/사람 등장 불필요(모핑 위험만 추가)", "포장·형태·브랜딩·색이 셀링포인트", "정적 단독컷으로 품질·신뢰 전달", "식감·핏·크기·작동화면·서식지 무드가 결정적이지 않은 것"],
+      "product_groups": [
+        {"group": "포장 소모재 패키지", "examples": ["사료백","습식캔·파우치","간식·츄 패키지","곤충젤리·발효매트 포장","고양이모래 포장"], "why": "포장 디자인·브랜딩 가독이 구매 트리거, 내용물 합성 불필요"},
+        {"group": "보틀·튜브·용기류", "examples": ["영양제·서플먼트","샴푸·컨디셔너","페로몬 디퓨저","탈취제","치약"], "why": "라벨·성분 신뢰가 핵심 → 클린 히어로가 정직"},
+        {"group": "급여·급수 기구", "examples": ["식기·푸드볼","급수기·정수기","자동급식기","슬로우피더","헤이넷"], "why": "형태·재질이 제품 가치, 비착용 정적품"},
+        {"group": "가구·하우징", "examples": ["캣타워·스크래처","하우스·숨숨집","크레이트·켄넬","케이지","펜스·펫계단"], "why": "디자인·마감이 셀링(크기감 필요시 In-Room Scale 병행)"},
+        {"group": "이동·여행 하드굿즈", "examples": ["캐리어·이동장","유모차·웨건","카시트"], "why": "제품 단독 형태·구조 어필"},
+        {"group": "그루밍 기기·도구", "examples": ["브러시·빗","발톱깎이·그라인더","드라이어·블로워","이발기"], "why": "도구 형태·마감 정적 제시"},
+        {"group": "테크·스마트 기기 외형", "examples": ["GPS 트래커","펫 카메라","스마트칼라","자동화장실"], "why": "기기 외형만(작동 화면은 Device UI Mockup Set)"},
+        {"group": "종특화 사육 기자재", "examples": ["파충류 사육장·히터·UVB조명","아쿠아 수조·여과기·필터"], "why": "빈 하드웨어 단독컷(서식지 무드는 Habitat Scene Set)"},
+        {"group": "훈련·위생 소도구", "examples": ["클리커·호루라기·타겟스틱","배변봉투·디스펜서","배변패드(패키지)"], "why": "소형 제품 단독 정적컷"},
+        {"group": "기프트·DIY·번들", "examples": ["구독박스·기프트셋","DIY 원료·키트","메모리얼 굿즈(유골함·발도장키트)"], "why": "큐레이션·패키징 자체가 상품"},
+        {"group": "ID·각인 소품", "examples": ["ID태그·네임플레이트 각인 클로즈"], "why": "각인 디테일 가독(착용 맥락은 On-Pet Fit / Pet Wearable Spec Sheet)"}
+      ],
+      "boundary_use_other": [
+        {"need": "간식·사료 식감/원료", "use": "Macro Crunch"},
+        {"need": "웨어러블 착용 핏", "use": "On-Pet Fit"},
+        {"need": "펫 동반 감성 라이프스타일", "use": "Cuddle Hour"},
+        {"need": "대용량백·가구 크기감", "use": "In-Room Scale Set"},
+        {"need": "테크 작동 화면·UI", "use": "Device UI Mockup Set"},
+        {"need": "수조·테라리움 서식지 무드", "use": "Habitat Scene Set"}
+      ]
+    },
+    "void-hero-cut": {
+      "vertical": "tech", "name": "Void Hero Cut", "source_session": "Tech recipes v2 validation",
+      "status": "partial",
+      "fit_summary": "본진 = ①단일 히어로 유닛 ②다크·메탈·글래스·글로시 마감 ③빌드퀄이 프리미엄을 정당화하는 카테고리(오디오 이어폰 등). 워커 풀보고 대기.",
+      "products": []
+    },
+    "lifestyle-scene-pack": {
+      "vertical": "fashion", "name": "Lifestyle Scene Pack", "source_session": "Fashion recipes v2 validation",
+      "status": "full", "test_status": "PASS",
+      "fit_condition": "product_composite 전체 씬 합성 → 패션 3팩 중 최범용. 거리·카페·공원·집 캐주얼 일상 동경 맥락이 곧 구매 동기인 제품에 best. On-Model 차별점 = 신발(걷는 발컷)·가방(메는 컷)·모자/선글라스/스카프 착용까지 씬 편입(torso try-on 불가 영역).",
+      "best": [
+        {"group": "캐주얼 상의", "examples": ["티","옥스퍼드/린넨/데님 셔츠","플란넬","폴로"], "why": "4개 씬 전부 자연스러운 UGC 핵심"},
+        {"group": "니트·스웻", "examples": ["스웨터","가디건","후디","맨투맨"], "why": "골든아워·코지 카페/집 착석"},
+        {"group": "캐주얼 하의", "examples": ["데님","치노","조거","캐주얼 스커트"], "why": "워킹 씬 표준 하의"},
+        {"group": "캐주얼 아우터", "examples": ["데님자켓","트렌치","코트","패딩","바람막이"], "why": "골든아워 거리 워킹 시그니처"},
+        {"group": "원피스·점프수트", "examples": ["썬드레스","니트/랩 드레스","롬퍼","맥시"], "why": "거리·공원 햇살 워킹"},
+        {"group": "라운지·홈웨어", "examples": ["라운지셋업","로브","홈웨어 원피스"], "why": "미니멀 아파트 창가 씬"},
+        {"group": "유니섹스 스트리트", "examples": ["오버사이즈 셋업","카고","오버롤"], "why": "candid 거리·공원 무드"},
+        {"group": "신발(걷는 발컷)", "examples": ["스니커즈","로퍼","플랫","앵클/첼시 부츠"], "why": "발+다리+배경 함께(On-Model 불가)"},
+        {"group": "가방(메고/들고)", "examples": ["토트","크로스","백팩","에코백"], "why": "메는 모습=크기감·착용핏·일상활용"},
+        {"group": "착용 액세서리", "examples": ["모자","선글라스","스카프/숄"], "why": "얼굴·머리·목 착용비율+햇살톤"}
+      ],
+      "ok": [
+        {"group": "애슬레저·레깅스", "examples": ["트랙수트","요가팬츠"], "why": "코디/풀커버 전제, 공원 best·카페 약함"},
+        {"group": "여름·시즌", "examples": ["샌들","쇼츠","커버업","리조트","레인웨어"], "why": "계절·씬 의존"},
+        {"group": "스마트캐주얼 보조", "examples": ["블라우스","캐주얼 블레이저","벨트","장갑","타이츠"], "why": "격식·디테일↑ 적합도↓"}
+      ],
+      "weak": [
+        {"group": "포멀", "examples": ["정장수트","드레스셔츠","이브닝/웨딩 드레스","턱시도"], "why": "격식 디테일→스튜디오/오피스 적합"},
+        {"group": "매크로 텍스처 본질", "examples": ["캐시미어","실크 광택","트위드","레이스"], "why": "얕은심도+그레인이 디테일 뭉갬"},
+        {"group": "클리니컬 스펙", "examples": ["고어텍스","압박기어","안전화","작업복","테크니컬 러닝화"], "why": "스펙 신뢰 신호 못 줌"},
+        {"group": "격식·디테일 소품", "examples": ["클러치","넥타이/보타이","양말","헤어소품"], "why": "매듭·패턴·작은 디자인이 본질"},
+        {"group": "합성위험", "examples": ["시폰","오간자","복잡 프린트","모노그램","하드웨어 접점"], "why": "고스팅·패턴 휘어짐·손/버클 모핑"}
+      ],
+      "na": [
+        {"group": "노출·이너", "examples": ["란제리","이너","노출 비키니/수영복"], "why": "SAFETY_NEGATIVE 억제 + 일상씬 비논리"},
+        {"group": "타버티컬", "examples": ["주얼리","화장품","펫"], "why": "별도 버티컬"}
+      ],
+      "notes": ["패션워치·펫캐리어(사람착용)·향수=메커니즘 호환되나 버티컬 우선 제외", "우산·텀블러 등 소지형=제품 아님→씬 연출 prop로 분리(목록 오염 방지)", "키즈/아동복=아동생성 민감→정물 플랫레이 대안 / 마타니티=임부모델 가능 시 ok~best", "척도: na=차단·타버티컬·합성불가에만 한정, '합성되나 맥락/디테일 부적합'=weak"]
+    },
+    "surface-macro": {
+      "vertical": "jewelry", "name": "Surface Macro", "source_session": "Jewelry v2 recipes validation",
+      "status": "pending", "fit_summary": "", "products": []
+    }
+  }
+}

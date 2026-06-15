@@ -91,6 +91,13 @@ function resolveRecipe(config, ctx) {
   // 1. parent merge
   let cfg = parentConfig ? deepMerge(parentConfig, config) : { ...config };
 
+  // allow_text: 이 템플릿은 AI가 글자(예: 손글씨 재료 라벨)를 직접 그려야 하므로
+  // 전역 SAFETY_NEGATIVE에서 'text'/'logo'만 제외한다. (그 외 안전토큰은 유지)
+  // 플래그 없으면 원본 그대로 → 다른 모든 템플릿 동작 불변(하위호환).
+  const SAFETY = cfg.allow_text
+    ? SAFETY_NEGATIVE_PROMPT.split(/,\s*/).filter((t) => t !== 'text' && t !== 'logo').join(', ')
+    : SAFETY_NEGATIVE_PROMPT;
+
   // 2. editable_slots override
   for (const slot of cfg.editable_slots || []) {
     if (userSlots[slot.key] !== undefined) setPath(cfg, slot.key, userSlots[slot.key]);
@@ -101,7 +108,7 @@ function resolveRecipe(config, ctx) {
     const outO = (cfg.output && cfg.output.type) || 'image_set';
     const aspectO = (cfg.output && cfg.output.aspect_ratio) || '4:5';
     const countO = (cfg.output && cfg.output.count) || 1;
-    const negO = [(cfg.look && cfg.look.extra_negative) || '', SAFETY_NEGATIVE_PROMPT].filter(Boolean).join(', ');
+    const negO = [(cfg.look && cfg.look.extra_negative) || '', SAFETY].filter(Boolean).join(', ');
     const jobsO = Array.from({ length: countO }, (_, i) => ({
       variationLabel: `shot_${i}`, prompt: cfg.prompt_override, negativePrompt: negO,
     }));
@@ -158,7 +165,7 @@ function resolveRecipe(config, ctx) {
       QUALITY_SUFFIX,
     ]);
 
-    const negative = joinClean([preset.negative, look.extra_negative, SAFETY_NEGATIVE_PROMPT]);
+    const negative = joinClean([preset.negative, look.extra_negative, SAFETY]);
 
     return { variationLabel: `shot_${i}`, prompt: positive, negativePrompt: negative };
   };

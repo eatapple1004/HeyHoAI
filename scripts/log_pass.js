@@ -23,7 +23,7 @@ const LEDGER = path.join(ROOT, 'docs/섹션명령서/_template_status.json');
 // recipe_card_contract.js 와 동일한 slug (id 일치 보장)
 const slug = (s) => String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const today = () => new Date().toISOString().slice(0, 10);
-const VERTS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
+const VERTS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
 
 function loadLog() { try { return JSON.parse(fs.readFileSync(LOG, 'utf8')); } catch (e) { return { _note: '워커 통과 누적 로그', lifecycle_target: 'docs/섹션명령서/_template_status.json', updated: today(), entries: [] }; } }
 function saveLog(l) { l.updated = today(); fs.writeFileSync(LOG, JSON.stringify(l, null, 2) + '\n'); }

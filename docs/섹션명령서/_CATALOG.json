@@ -66,14 +66,42 @@
     "key": "jewelry",
     "name": "주얼리",
     "mode": "product",
-    "status": "OK",
+    "status": "draft(이슈)",
     "file": "recipes.jewelry.v2.js",
-    "count": 8,
-    "issues": [],
+    "count": 34,
+    "issues": [
+      "개수 34 (권장 6~8)"
+    ],
     "flags": [
-      "Wrist & Hand [experimental,needs_human_review]",
-      "Neck & Ear Try-On [experimental,needs_human_review]",
-      "Jewelry Unbox ASMR [experimental,needs_human_review]"
+      "Ring on Finger [experimental,needs_human_review]",
+      "Wrist Wear [experimental,needs_human_review]",
+      "Necklace on Neck [experimental,needs_human_review]",
+      "Earring on Ear [experimental,needs_human_review]",
+      "Jewelry Unbox ASMR [experimental,needs_human_review]",
+      "Ring Editorial Campaign [experimental,needs_human_review]",
+      "Bracelet Editorial Campaign [experimental,needs_human_review]",
+      "Ring Golden Hour [experimental,needs_human_review]",
+      "Bracelet Golden Hour [experimental,needs_human_review]",
+      "Ring Monochrome Noir [experimental,needs_human_review]",
+      "Bracelet Monochrome Noir [experimental,needs_human_review]",
+      "Ring Café Candid [experimental,needs_human_review]",
+      "Bracelet Café Candid [experimental,needs_human_review]",
+      "Ring In Bloom [experimental,needs_human_review]",
+      "Bracelet In Bloom [experimental,needs_human_review]",
+      "Ring Colorblock [experimental,needs_human_review]",
+      "Bracelet Colorblock [experimental,needs_human_review]",
+      "Ring Color Pop [experimental,needs_human_review]",
+      "Bracelet Color Pop [experimental,needs_human_review]",
+      "Ring Scarf Portrait [experimental,needs_human_review]",
+      "Bracelet Scarf Portrait [experimental,needs_human_review]",
+      "Ring Intimate [experimental,needs_human_review]",
+      "Bracelet Intimate [experimental,needs_human_review]",
+      "Earring Campaign [experimental,needs_human_review]",
+      "Earring Golden Hour [experimental,needs_human_review]",
+      "Earring Monochrome [experimental,needs_human_review]",
+      "Earring Scarf Portrait [experimental,needs_human_review]",
+      "Earring Color Pop [experimental,needs_human_review]",
+      "Earring Intimate [experimental,needs_human_review]"
     ],
     "overlay": [
       "Scale & Spec Overlay"
@@ -85,24 +113,45 @@
     "mode": "product",
     "status": "OK",
     "file": "recipes.food.v2.js",
-    "count": 7,
+    "count": 8,
     "issues": [],
     "flags": [
       "Serving & Table Lifestyle [needs_human_review]",
-      "Sizzle & Steam ASMR [needs_human_review]"
+      "Sizzle & Steam ASMR [needs_human_review]",
+      "Ingredient Callout [needs_human_review]"
     ],
     "overlay": [
       "Menu / Price Card"
     ]
   },
   {
+    "key": "coffee",
+    "name": "카페&커피",
+    "mode": "product",
+    "status": "draft(이슈)",
+    "file": "recipes.coffee.v2.js",
+    "count": 24,
+    "issues": [
+      "개수 24 (권장 6~8)"
+    ],
+    "flags": [
+      "Latte Pour & Crema Reel [needs_human_review]",
+      "Cafe Steam & Crema ASMR [needs_human_review]"
+    ],
+    "overlay": [
+      "Signature Drink Menu Card"
+    ]
+  },
+  {
     "key": "home",
     "name": "홈&리빙",
     "mode": "product",
-    "status": "OK",
+    "status": "draft(이슈)",
     "file": "recipes.home.v2.js",
-    "count": 7,
-    "issues": [],
+    "count": 27,
+    "issues": [
+      "개수 27 (권장 6~8)"
+    ],
     "flags": [
       "Day-to-Night Lighting Reveal [experimental,needs_human_review]",
       "Variant Showcase Grid [experimental,needs_human_review]"

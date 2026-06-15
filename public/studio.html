@@ -353,7 +353,7 @@ function buildTemplates(){
   const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
   const mk=(c,cat)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
     emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",held:c.held});
-  const PRODUCT=["fashion","beauty","jewelry","food","home","tech","pet"];
+  const PRODUCT=["fashion","beauty","jewelry","food","coffee","home","tech","pet"];
   const shopping=[];
   PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v)))));
   TEMPLATES={
@@ -531,7 +531,7 @@ function renderSubjects(){
   }).join('');
   document.getElementById('subjectRow').innerHTML=h;
 }
-const VERTICAL_EMOJI={Fashion:'👗',Beauty:'💄',Jewelry:'💍',Food:'🍽️',Home:'🏠',Tech:'📱',Pet:'🐾'};
+const VERTICAL_EMOJI={Fashion:'👗',Beauty:'💄',Jewelry:'💍',Food:'🍽️',Coffee:'☕',Home:'🏠',Tech:'📱',Pet:'🐾'};
 function renderFilters(){
   const cats=['All',...new Set(TEMPLATES[state.mode].map(r=>r.cat))];
   const isShop=state.mode==='shopping';
@@ -542,6 +542,9 @@ function renderFilters(){
 }
 function renderRecipes(){
   const rs=TEMPLATES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
+  // ★ 합격(보류 해제, held===false) 템플릿을 각 테마(cat) 상단으로 — 테마 그룹 순서는 원본 유지(안정 정렬)
+  const _catOrder=[]; rs.forEach(r=>{ if(!_catOrder.includes(r.cat))_catOrder.push(r.cat); });
+  rs.sort((a,b)=>{ const ci=_catOrder.indexOf(a.cat)-_catOrder.indexOf(b.cat); return ci!==0?ci:((a.held===false?0:1)-(b.held===false?0:1)); });
   // ★ Best value: 같은 비용에 4장이 나오는 사진 템플릿 중 첫 번째 (크레딧당 산출 최고)
   const bestId=(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
   document.getElementById('recipeGrid').innerHTML=rs.map(r=>{

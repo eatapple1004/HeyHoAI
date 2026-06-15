@@ -1,7 +1,7 @@
 {
   "_note": "워커 검증 통과 보고 누적 로그 (브랜치 독립 저장 · 유실 0). 사용자가 product 테마 템플릿을 1:1 검증 → 워커가 '통과' 보고 → 여기에 누적. PR #64(보류 라이프사이클 원장 _template_status.json)가 main에 머지되면 `node scripts/log_pass.js --sync`로 통과분을 confirmed로 일괄 반영(그 카드만 ⏸ 보류 해제).",
   "lifecycle_target": "docs/섹션명령서/_template_status.json",
-  "updated": "2026-06-13",
+  "updated": "2026-06-15",
   "entries": [
     {
       "id": "void-hero-cut",
@@ -66,6 +66,94 @@
       "result": "pass",
       "tested_at": "2026-06-13",
       "note": "사용자 요청 보류 해제"
+    },
+    {
+      "id": "ring-editorial-campaign",
+      "name": "Ring Editorial Campaign",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "ring-in-bloom",
+      "name": "Ring In Bloom",
+      "vertical": "jewelry",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "ingredient-callout",
+      "name": "Ingredient Callout",
+      "vertical": "food",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "minimalist-negative-space",
+      "name": "Minimalist Negative Space",
+      "vertical": "coffee",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "marble-linen-still-life",
+      "name": "Marble Linen Still Life",
+      "vertical": "coffee",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "botanical-coffee-beans",
+      "name": "Botanical Coffee Beans",
+      "vertical": "coffee",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "pastel-dream",
+      "name": "Pastel Dream",
+      "vertical": "coffee",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "reflective-glass-surface",
+      "name": "Reflective Glass Surface",
+      "vertical": "coffee",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "steam-and-light-macro",
+      "name": "Steam and Light Macro",
+      "vertical": "coffee",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "entryway-welcome-styled",
+      "name": "Entryway Welcome Styled",
+      "vertical": "home",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
+    },
+    {
+      "id": "morning-light-study",
+      "name": "Morning Light Study",
+      "vertical": "home",
+      "result": "pass",
+      "tested_at": "2026-06-15",
+      "note": "Notion O"
     }
   ]
 }

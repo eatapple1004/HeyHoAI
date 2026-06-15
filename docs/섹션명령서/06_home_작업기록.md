@@ -185,3 +185,45 @@ home 제품 전수 ≈ **180품목 / 7축**(가구·조명·데코오브제·테
 - ❌ **미반영(minor, 근거 있음)** — overlay_spec object-배열 형태: 리뷰어는 "general은 string배열"이라 했으나 **ugc.v2.js가 이미 object-배열(per-element position) 사용** → 하우스 두 변형 공존, 치수 콜아웃(W/D/H 축별 화살표)엔 ugc형이 적합. 리뷰어도 "intentional, not an error" 인정. overlay_spec.note에 이유 명시 → 현행 유지.
 
 **최종 재검증**: 死필드 grep=0 · provisional 2개 모두 `["experimental","needs_human_review"]` · `consolidate` home=OK(7)·중복0·비용불변.
+
+---
+
+## 8) Room & Warmth 형제 템플릿 브레인스톰 (2026-06-13, 5-lens workflow)
+
+> 사용자 요청: "Room & Warmth Styled가 마음에 듦 → 비슷한 템플릿 더." 5개 렌즈(미학스타일·빛/시간·공간타입·시즌·포맷)로 20개 발산 → 중복통합·신규vs슬롯 분류·가치순. **시드 미변경(아이디어 기록만).**
+
+**핵심 결론**: 20개 중 **18개 = Room & Warmth의 `editable_slot` 변형**(추가 비용 0, 카탈로그 비대화 X) · **신규 템플릿은 단 2개만 정당화**.
+
+### editable_slot 변형 (Room & Warmth 1개에 variant_config로 흡수 — 가치순)
+- **미학 스타일**: Minimalist/Scandi · Japandi · Mid-Century Modern · Bohemian · Industrial Loft
+- **방 타입**: Bedroom Sanctuary · Kitchen & Dining Hero · Study Nook · Entryway/Balcony · Patio(◈2 4컷)
+- **빛·날씨**: Dappled Garden(나뭇잎 그림자) · Blue Hour Serenity · Rainy Window/Morning Mist
+- **시즌·이벤트**: Seasonal Palette(봄/여름/가을/겨울) · Holiday Festive(Q4) · Housewarming(집들이)
+- **구도**: Styled Shelf Breakdown(선반 스타일링) · Domestic Macro Textiles(→Material Detail 슬롯, lived-in raking light)
+
+### 신규 템플릿 후보 (진짜 다른 JTBD — 2개)
+| 후보 | 타입/◈ | 왜 신규(슬롯 흡수 불가) |
+|---|---|---|
+| **Morning Light Study** | 📷6 ◈3 | WFH 홈오피스 "생산성+미" = '동경 거주'와 다른 JTBD. 골든아워 없이 *주광만*·쿨뉴트럴 톤 → Room & Warmth 무드와 상충 |
+| **Twilight Corner Glow** | 📷6 ◈3 | 조명 *점등(ON) 정적 탐색*. Day-to-Night(릴=토글 데모)와 보완: 이건 "이미 켜진 저녁을 산다"는 무드 정물 |
+
+**제안 우선순위(안티-비대화)**: Phase1 = 슬롯 18개를 Room & Warmth/Material Detail의 `variants[]` 메타로 점진 unlock(하드코드 X). 신규 2개는 가치 검증 후에만 별도 슬롯(추가 시 home 9개=32◈, 상한 내). → 사용자에겐 "1개 템플릿으로 20개 룩" 경험.
+
+> 근거 원본: 본 세션 워크플로 `room-warmth-siblings`(5렌즈 생성 + 합성). 상세 아이디어/프롬프트 방향은 워크플로 산출물 참조.
+
+---
+
+## 9) ⚠️ 로컬 테스트 반영 — 형제 20종 시드 materialize (2026-06-14, EXPERIMENTAL)
+
+> 사용자 요청("테스트해보게 싹 로컬에 반영, git 미터치")로 §8 형제 20종을 **풀 레시피로 시드에 임시 추가**해 studio에서 실제 확인. **이것은 영구 결정이 아니라 로컬 검증 상태다.** 정식 반영은 안티-비대화상 `variants[]` 슬롯 설계가 정답(§8).
+
+**상태**: `recipes.home.v2.js` = **27개**(기존 7 + 형제 20). 신규 20개 전부 `meta.experimental:true`, `meta.sibling_of:"Room & Warmth Styled"`, `sort_order 100+`. image_set 18×◈3 + 2×◈2(Patio·Housewarming). 이름 전역 고유 0충돌.
+
+**파이프라인 재생성(로컬)**: `consolidate_recipes.js`(_STATUS 총계) → `recipe_card_contract.js`(proposed.json, drift OK) → `export_recipe_cards.js`(recipes.generated.js). studio Shopping→Home 필터에 27카드 노출 확인(스크린샷). resolve 경로(`/api/recipes/:id/resolve`)도 6잡 프롬프트 정상 생성 검증.
+
+**⚠️ consolidate 부작용**: home 6~8 규율 위반(27개 → draft 표기). 이는 의도된 로컬 실험 상태.
+
+**되돌리기(git 미사용)**: 백업 디렉터리 `.siblings-test-backup/` 에 원본 5파일 보관 →
+`recipes.home.v2.js · _STATUS.md · _CATALOG.json · _card_contract.proposed.json · recipes.generated.js` 를 복원하면 7개 정식 상태로 원복. (복원 후 `consolidate` 재실행 권장.)
+
+**로컬 테스트 계정**(DB 생성): `sibtest@local.test` / `Test1234!` — studio 로그인용(로컬 전용, 정리 시 삭제 가능).

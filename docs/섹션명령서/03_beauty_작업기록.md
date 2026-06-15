@@ -86,6 +86,42 @@
 
 ---
 
+## 2026-06-12 · 보고 → 총지휘: Dewy Glass Hero 테스트 통과 ✅ + 적합 제품 정의
+> 사용자(테스트 주체)가 실제 제품 이미지로 Dewy Glass Hero 생성 테스트 → **통과 확인.** 첫 검증 통과 템플릿. (워커=템플릿 적합성 사고 담당; 프롬프트 생성은 beauty prompt.)
+
+### 테스트 결과
+- **Dewy Glass Hero ✅ PASS** — 실제 제품 1장 업로드 → 4컷 정상 생성, 무드(물방울·웻시트·글래스·하이키) 의도대로 출력. 사용자 승인.
+
+### 이 템플릿에 어울리는 제품 (적합성 정의)
+- **적합 조건:** 유리병 + (가급적)드로퍼/피펫 + 흐르는 액상 + "수분/프레시/글래스" 무드.
+- **⭐ 최적(4컷 다 빛남) — 드로퍼 유리병 액상 스킨케어:** 세럼(HA·비타민C·레티놀·나이아신아마이드·펩타이드·시카)·앰플·페이셜오일·글로우드롭·아이/립세럼.
+- **◎ 차선(정면·포디엄 위주) — 유리병이나 드로퍼X:** 토너·에센스워터·페이스미스트(유리 스프레이)·향수 플라콘·펌프형 세럼/에센스.
+- **△ 부적합(다른 템플릿):** 무광 튜브/자 크림·스틱·파우더·사쳇/시트·고체바·불투명 플라스틱.
+- **무드 보너스:** "글래스 스킨"·아쿠아/하이드라 K뷰티 라인에 특히 강함.
+
+### 검증된 실제 적합 제품(테스트 풀, 웹검증 ideal 40/good 25)
+- ⭐ The Ordinary HA 2%+B5 · Vichy Minéral 89 · COSRX Vitamin C 23 · Paula's Choice C15 · Kiehl's Midnight Recovery(오일) · Drunk Elephant Marula(오일) · Beauty of Joseon Glow Serum · Mizon 스네일 앰플 · numbuzin No.5 · SOME BY MI Galactomyces.
+- ◎ SK-II FTE · Missha 퍼스트에센스 · Tatcha The Essence · Fresh Rose Toner · 페이스미스트(Caudalie·Tatcha·Chantecaille) · 향수(L'Eau d'Issey·Acqua di Gioia·Light Blue).
+
+### 총지휘 액션 제안
+- Dewy Glass Hero = **검증 통과 → 출시 후보 확정 가능.** 적합 제품 매칭표(위)를 PDP 추천 로직/온보딩에 반영 검토.
+- 무드 미스 제품(무광·고체 등)은 형제 히어로 템플릿(Stone Plinth·Macro Swatch 등)으로 라우팅 — 미설계 상태.
+
+---
+
+## 2026-06-12 · 핸드오프 → 총지휘: Dewy 형제 히어로 패밀리 8종 초안 ✅ (사용자 승인 후 전달)
+> 사용자 지시("각각 템플릿 및 프롬프트 생성")로 Dewy Glass Hero 무드 형제 8종 생성. **역할 분리 준수: 나=스펙 정의+오케스트레이션+스키마 QA교정 / 프롬프트 텍스트 생성=하위 beauty prompt 에이전트.**
+
+- **생성물:** `docs/섹션명령서/_beauty_hero_family_draft.json` — 8개 시드용 레시피(📷4컷 ◈2 4:5, sort 17–24, 완성 프롬프트).
+  - 2 Stone Plinth Luxe · 3 Liquid Splash Hero · 4 Botanical Dew · 5 Noir Gold Hero · 6 Cryo Frost Hero · 7 Silk Drape Hero · 8 Sunlit Pop · 9 Aqua Float.
+- **생성/검증 파이프라인:** beauty prompt 생성 에이전트 8 + QA 8(워크플로). **품질=텍스트 양호**(무드·실패모드 negative·4컷 고유 scene·제품가드), **단 beauty prompt가 subject.type↔reference_strategy 8/8 스왑(QA 미검출) → 내가 전수 교정** + Sunlit Pop 'gibberish' 제거 + 비스키마키 정리. 현재 subject 정합·SAFETY 클린·◈2·4컷·이름 전역고유 확인.
+- **⚠️ 미검증 드래프트:** 실제 생성 통과는 Dewy 1개뿐. 8종은 미렌더. 리스크 3종(Liquid Splash·Aqua Float·Cryo Frost=액체/얼음+라벨가림) 테스트 권장.
+- **핸드오프:** 총지휘 세션(local_a9930914…)에 세션 메시지 전달 완료(2026-06-12). 요청=테스트 1–2개 지정 또는 채택 서브셋 결정.
+- **포트폴리오:** 시드 반영 시 beauty 16→24(권장 초과) → 채택/시드 확정은 총지휘. 워커는 파일 저장만.
+- **프로세스 교훈:** beauty prompt QA 체크리스트에 "subject.type=product / reference_strategy=product_composite" 명시 필요(이번 스왑 재발 방지).
+
+---
+
 ## 다음 액션 (대기 — 총지휘/사용자 지시 필요)
 - [ ] 갭 로스터 확장(8→16) 승인 여부 → 승인 시 P0 3개 시드화 → P1 5개 → consolidate 재검증.
 - [ ] 승인 시 통합 뷰 동기화(`docs/템플릿_한국어_카탈로그.md` v2, `public/_overview.html`).

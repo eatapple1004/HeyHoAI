@@ -7,8 +7,8 @@
  */
 const path = require('path');
 
-// 11개 섹션 (FE recipes.generated.js의 cards 키와 정합)
-const SECTIONS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
+// 12개 섹션 (FE recipes.generated.js의 cards 키와 정합)
+const SECTIONS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
 
 /** 카드 계약과 동일한 slug 규칙 (id = slug(name)) */
 function slug(s) {

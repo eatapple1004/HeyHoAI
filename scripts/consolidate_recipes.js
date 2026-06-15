@@ -14,7 +14,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const SECTIONS = [
   ['influencer','인플루언서','face'], ['fashion','패션','product'], ['beauty','뷰티','product'],
-  ['jewelry','주얼리','product'], ['food','푸드&카페','product'], ['home','홈&리빙','product'],
+  ['jewelry','주얼리','product'], ['food','푸드&카페','product'], ['coffee','카페&커피','product'], ['home','홈&리빙','product'],
   ['tech','테크','product'], ['pet','펫','product'], ['ugc','UGC광고','avatar'],
   ['general','General/기타제품','product'], ['headshot','헤드샷/퍼스널','face'],
 ];
