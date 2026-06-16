@@ -132,5 +132,6 @@ async function submitForm(e){
 // 이미 로그인된 상태면 바로 스튜디오로
 fetch('/api/auth/me').then(r=>{if(r.ok)window.location.href=nextUrl();}).catch(()=>{});
 </script>
+<script src="/js/biz-footer.js?v=1"></script>
 </body>
 </html>
