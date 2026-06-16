@@ -14,8 +14,8 @@
     bizNo: '649-22-01859',           // 사업자등록번호
     mailOrderNo: '신고 준비 중',      // 통신판매업신고번호 (TODO: 발급 후 'YYYY-지역-번호' 입력)
     address: '충청남도 천안시 서북구 공원로 176, 305동 4205호 (불당동, 천안불당시티프라디움 3차)',
-    tel: '고객센터 준비 중',          // TODO: 대표전화 입력
-    email: 'support@doppia.ai',      // TODO: 실제 운영 이메일 확인
+    tel: '010-9941-3546',            // 대표전화/고객센터
+    email: 'adamcompanyofficial@gmail.com', // 운영 이메일
     hosting: 'Amazon Web Services',  // 호스팅 제공자 (선택)
   };
 
