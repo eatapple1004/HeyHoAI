@@ -11,11 +11,12 @@
  */
 
 const PRICING = {
-  // --- 메타 (추정 표식) ---
-  estimated: true,
-  source: 'placeholder',
-  basis: 'costMeter(src/studio/costMeter.js) 추정 단가 기반 — 실프로바이더 청구 확정 전',
-  confirmTrigger: 'BACKEND_HANDOFF.md §6 실원가 로깅 후 운영가 확정',
+  // --- 메타 (확정 — 실원가 검증 완료) ---
+  estimated: false,
+  source: 'cost-validated',
+  basis: '실프로바이더 공식단가(2026-06: 이미지 $0.039/장·Runway 릴스 $0.25/5초) + 실청구(GCP 인보이스) 교차검증. '
+       + '전 SKU 기준가 마진 61~69%, 큰팩 최악 51%, 구독 최악(전량 단일이미지) 31% — 손실 SKU 없음. 근거: docs/가격_재설계.md',
+  confirmedOn: '2026-06-19',
 
   // 구독 플랜 (price=월, priceY=연간 환산 월요금, cr=월 크레딧)
   plans: {
