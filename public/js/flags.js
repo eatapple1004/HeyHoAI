@@ -1,0 +1,97 @@
+/*!
+ * flags.js — 런칭 노출 단일소스 (kill/keep 원장, 2026-06)
+ * ─────────────────────────────────────────────────────────────
+ * 규칙: launch:true  = main(prod) 노출
+ *       launch:false = main 숨김 / 로컬(localhost)은 항상 노출 + "🔒 main 보류|숨김" 배지
+ * 사용: ① 숨길 요소에 data-flag="키"  (동적 생성 요소도 자동 — MutationObserver)
+ *       ② 조건부 로직엔 window.featureOn('키')
+ * ⚠️ 프론트 숨김은 UX용. 돈·데이터 라우트는 백엔드(NODE_ENV)에서도 게이팅할 것.
+ */
+(function () {
+  var LAUNCH = {
+    // 🔴 런칭에서 숨기는 기능 (로컬엔 표시)
+    reels:        { launch: false, label: '숨김' }, // Kling 영상 — v1.1로 연기
+    brandkit:     { launch: false, label: '보류' }, // 로고/폰트 미적용 (반쪽)
+    marketplace:  { launch: false, label: '숨김' }, // 공급 없음
+    earnings:     { launch: false, label: '숨김' }, // 마켓/제휴 종속
+    teams:        { launch: false, label: '숨김' }, // 개인 유저 먼저
+    business:     { launch: false, label: '숨김' }, // B2B 연기
+    affiliate:    { launch: false, label: '숨김' }, // 성장기능, 임계 아님
+    // 모델 선택 단순화 — pro만 노출
+    'model-flash':{ launch: false, label: '숨김' },
+    'model-gpt':  { launch: false, label: '숨김' }
+  };
+
+  // 숨긴 기능의 '페이지'(직접 URL 접근). prod=홈으로 리다이렉트 / 로컬=상단 배너.
+  var PAGE_FLAG = { '/marketplace': 'marketplace', '/business': 'business', '/affiliate': 'affiliate', '/earnings': 'earnings', '/join-team': 'teams' };
+
+  // ?prod=1 → prod(숨김) 미리보기 강제 (어디서든 main에 뜰 모습 확인용). 안전: 숨기기만 함.
+  var _forceProd = (function () { try { return new URLSearchParams(location.search).get('prod') === '1'; } catch (e) { return false; } })();
+  // 로컬 프리뷰 편의: :3001 포트 = 'prod(숨김)' 전용 인스턴스 / 그 외 로컬 포트(:3002 등) = '로컬(노출+배지)'.
+  var _prodPort = (location.port === '3001');
+  var IS_LOCAL = !_forceProd && !_prodPort && ['localhost', '127.0.0.1', '[::1]', '::1', ''].indexOf(location.hostname) !== -1;
+
+  function cfg(n) { return LAUNCH[n] || { launch: true, label: '' }; }
+  function featureOn(n) { return IS_LOCAL || cfg(n).launch !== false; }
+
+  window.featureOn = featureOn;
+  window.__LAUNCH_FLAGS = LAUNCH;
+  window.__IS_LOCAL = IS_LOCAL;
+
+  function apply(el) {
+    if (!el || el.nodeType !== 1 || el.__flagged) return;
+    var n = el.getAttribute && el.getAttribute('data-flag');
+    if (!n) return;
+    el.__flagged = true;
+    var c = cfg(n);
+    if (!featureOn(n)) { el.style.display = 'none'; return; }      // main: 숨김
+    if (IS_LOCAL && c.launch === false) {                          // 로컬: 배지
+      el.setAttribute('data-prod-hidden', c.label || '숨김');
+    }
+  }
+  function sweep(root) {
+    var r = root || document;
+    if (r.querySelectorAll) r.querySelectorAll('[data-flag]').forEach(apply);
+  }
+  function injectCSS() {
+    if (!IS_LOCAL) return;
+    var s = document.createElement('style');
+    s.textContent =
+      '[data-prod-hidden]{position:relative;outline:1px dashed rgba(201,162,39,.7);outline-offset:2px}' +
+      '[data-prod-hidden]::after{content:"🔒 main "attr(data-prod-hidden);position:absolute;top:2px;right:2px;z-index:9;' +
+      'font-size:9px;font-weight:800;letter-spacing:.3px;padding:2px 6px;border-radius:6px;' +
+      'background:rgba(0,0,0,.72);color:#ffce7a;border:1px solid rgba(255,206,122,.55);pointer-events:none}';
+    document.head.appendChild(s);
+  }
+  function guardPage() {
+    var p = (location.pathname || '/').replace(/\.html$/, '').replace(/(.)\/$/, '$1');
+    var pf = PAGE_FLAG[p];
+    if (!pf) return false;
+    if (!featureOn(pf)) { location.replace('/'); return true; }   // prod: 숨긴 페이지 → 홈
+    if (IS_LOCAL && cfg(pf).launch === false) {                    // 로컬: 상단 배너
+      var b = document.createElement('div');
+      b.textContent = '🔒 이 페이지는 main에서 숨김 (' + pf + ')';
+      b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a27;color:#ffce7a;font:800 12px -apple-system,sans-serif;padding:7px 12px;text-align:center;border-bottom:1px solid rgba(255,206,122,.55)';
+      (document.body || document.documentElement).appendChild(b);
+    }
+    return false;
+  }
+  function init() {
+    if (guardPage()) return;
+    injectCSS();
+    sweep(document);
+    if (window.MutationObserver) {
+      new MutationObserver(function (muts) {
+        muts.forEach(function (m) {
+          m.addedNodes && Array.prototype.forEach.call(m.addedNodes, function (nd) {
+            if (nd.nodeType !== 1) return;
+            if (nd.hasAttribute && nd.hasAttribute('data-flag')) apply(nd);
+            sweep(nd);
+          });
+        });
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
