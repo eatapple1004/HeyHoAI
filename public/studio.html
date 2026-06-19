@@ -996,6 +996,27 @@ loadContextSwitcher();
 loadRecipeDesc();
 applyPendingTemplate();
 dailyCheckin();
+
+// ── 프롬프트 생성란(.gen-bar)이 하단 푸터(#bizf-block)를 가리지 않도록: 푸터가 화면에 올라오면 그 위에서 멈춤(도킹) ──
+(function(){
+  const bar=document.querySelector('.gen-bar');
+  if(!bar)return;
+  const GAP=12;        // 바와 푸터 사이 최소 간격
+  const BASE=22;       // 평소 떠 있는 위치(CSS bottom:22px)
+  let ticking=false;
+  function dock(){
+    ticking=false;
+    const footer=document.getElementById('bizf-block');
+    if(!footer){bar.style.bottom='';return;}            // 푸터 없으면 기본값
+    const footTop=footer.getBoundingClientRect().top;     // 푸터 상단의 화면상 위치
+    const lifted=window.innerHeight-footTop+GAP;          // 푸터 위 GAP에 바 하단을 맞춤
+    bar.style.bottom=Math.max(BASE,lifted)+'px';          // 푸터가 안 보이면 BASE(22), 보이면 그 위로
+  }
+  function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(dock);}}
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  dock(); setTimeout(dock,300);   // 초기 + 푸터 주입/레이아웃 이후 한 번 더
+})();
 </script>
 <script src="/js/biz-footer.js?v=1"></script>
 </body>
