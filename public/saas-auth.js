@@ -28,21 +28,39 @@
     const box = document.getElementById('saasUserBox');
     if (!box) return;
     box.innerHTML = '';
-    box.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    const initial = (me.display_name || me.email || '?').trim().charAt(0).toUpperCase();
 
-    const who = document.createElement('span');
-    who.textContent = me.display_name || me.email;
-    who.title = me.email;
-    who.style.cssText = 'color:var(--dim);font-size:13px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    // 아바타 트리거 버튼
+    const trigger = document.createElement('button');
+    trigger.className = 'acct-btn';
+    trigger.type = 'button';
+    trigger.setAttribute('aria-label', 'Account menu');
+    trigger.setAttribute('aria-haspopup', 'true');
+    trigger.innerHTML = '<span class="acct-ava"></span><span class="acct-caret">▾</span>';
+    trigger.querySelector('.acct-ava').textContent = initial;
 
-    const btn = document.createElement('button');
-    btn.textContent = 'Logout';
-    btn.style.cssText = 'padding:6px 12px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;';
-    btn.onclick = async () => {
+    // 프로필/세팅 드롭다운 메뉴
+    const menu = document.createElement('div');
+    menu.className = 'acct-menu';
+    menu.innerHTML =
+      '<div class="acct-id"><span class="acct-ava lg"></span>' +
+      '<div class="acct-meta"><div class="acct-name"></div><div class="acct-email"></div></div></div>' +
+      '<a class="acct-item" href="/billing">Billing &amp; credits</a>' +
+      '<button class="acct-item acct-logout" type="button">Log out</button>';
+    menu.querySelector('.acct-id .acct-ava').textContent = initial;
+    menu.querySelector('.acct-name').textContent = me.display_name || 'Your account';
+    menu.querySelector('.acct-email').textContent = me.email;
+    menu.querySelector('.acct-email').title = me.email;
+
+    trigger.onclick = (e) => { e.stopPropagation(); box.classList.toggle('open'); };
+    menu.onclick = (e) => e.stopPropagation();
+    document.addEventListener('click', () => box.classList.remove('open'));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') box.classList.remove('open'); });
+    menu.querySelector('.acct-logout').onclick = async () => {
       try { await origFetch('/api/auth/logout', { method: 'POST' }); } catch {}
       location.href = '/saas-login';
     };
-    box.append(who, btn);
+    box.append(trigger, menu);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -31,7 +31,11 @@ nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(
 .brand .dot{width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 0 14px var(--accent);flex-shrink:0}
 .brand b{font-weight:800;background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .brand .sfx{color:var(--dim);font-weight:700}
-@media(max-width:600px){.brand .sfx{display:none}}
+@media(max-width:600px){
+  .brand .sfx{display:none}
+  .nav-in{padding:11px 14px;gap:8px}
+  .credits{padding:6px 11px;font-size:12px;gap:6px}
+}
 .nav-links{display:flex;gap:28px}
 .nav-links a{font-size:14px;color:var(--dim);font-weight:500;transition:color .2s;cursor:pointer}
 .nav-links a:hover,.nav-links a.active{color:var(--text)}
@@ -54,6 +58,22 @@ nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(
 .credits{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);padding:7px 14px;border-radius:30px;font-size:13px;font-weight:600}
 .credits .coin{color:var(--gold)}
 .credits .buy{color:var(--accent2);cursor:pointer;font-size:12px;border-left:1px solid var(--border);padding-left:10px;margin-left:2px}
+/* 계정 — 아바타 버튼 + 프로필/세팅 드롭다운 (Logout은 메뉴 안으로 이동) */
+#saasUserBox{position:relative;background:none!important;border:none!important;padding:0!important}
+.acct-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;padding:3px 4px;border-radius:30px;transition:background .2s}
+.acct-btn:hover{background:rgba(255,255,255,.06)}
+.acct-ava{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.acct-caret{color:var(--faint);font-size:10px}
+.acct-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:224px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:8px;box-shadow:0 24px 60px -16px rgba(0,0,0,.7);display:none;z-index:60}
+#saasUserBox.open .acct-menu{display:block}
+.acct-id{display:flex;align-items:center;gap:10px;padding:8px 10px 12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.acct-ava.lg{width:38px;height:38px;font-size:15px}
+.acct-name{font-size:13.5px;font-weight:600;color:var(--text)}
+.acct-email{font-size:12px;color:var(--dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;color:var(--dim);font-family:inherit;font-size:13px;font-weight:500;padding:9px 10px;border-radius:9px;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.acct-item:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.acct-logout{color:var(--faint)}
+.acct-logout:hover{color:var(--pink);background:rgba(255,126,182,.08)}
 
 /* gradient tiles */
 .g1{background:linear-gradient(150deg,#ffce7a,#ff7eb6)}.g2{background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
