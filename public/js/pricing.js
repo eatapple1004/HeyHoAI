@@ -30,8 +30,8 @@
     team: { price: 199, seats: 3, pool: 2000, extraSeat: 15 },
     // 신규 24h 첫 결제 할인율(%)
     firstMonthOff: 50,
-    // 추정 placeholder 표식 — 서버(/api/pricing)가 실값으로 덮어쓸 때까지 true
-    estimated: true,
+    // 확정가 — 실원가 검증 완료(2026-06-19). 서버(/api/pricing)가 동일값으로 덮어씀.
+    estimated: false,
 
     // path 조회: PRICING.get('creator.cr') → 250
     get: function (path) {
