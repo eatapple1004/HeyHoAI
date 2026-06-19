@@ -17,9 +17,11 @@
     teams:        { launch: false, label: '숨김' }, // 개인 유저 먼저
     business:     { launch: false, label: '숨김' }, // B2B 연기
     affiliate:    { launch: false, label: '숨김' }, // 성장기능, 임계 아님
+    ugc:          { launch: false, label: '숨김' }, // UGC Ads 모드 — 준비 중
     // 모델 선택 단순화 — pro만 노출
     'model-flash':{ launch: false, label: '숨김' },
-    'model-gpt':  { launch: false, label: '숨김' }
+    'model-gpt':  { launch: false, label: '숨김' },
+    held:         { launch: false, label: '보류', noBadge: true } // 보류 템플릿 — prod 숨김 / 로컬은 카드 자체 보류배지
   };
 
   // 숨긴 기능의 '페이지'(직접 URL 접근). prod=홈으로 리다이렉트 / 로컬=상단 배너.
@@ -45,13 +47,25 @@
     el.__flagged = true;
     var c = cfg(n);
     if (!featureOn(n)) { el.style.display = 'none'; return; }      // main: 숨김
-    if (IS_LOCAL && c.launch === false) {                          // 로컬: 배지
+    if (IS_LOCAL && c.launch === false && !c.noBadge) {            // 로컬: 배지 (noBadge=카드 자체 배지 사용)
       el.setAttribute('data-prod-hidden', c.label || '숨김');
     }
   }
   function sweep(root) {
     var r = root || document;
     if (r.querySelectorAll) r.querySelectorAll('[data-flag]').forEach(apply);
+  }
+  // 숨긴 '페이지'로 가는 링크/버튼(href·onclick) 자동 태깅 — 페이지마다 수동 data-flag 불필요.
+  function autoLinks(root) {
+    var r = root || document;
+    if (!r.querySelectorAll) return;
+    r.querySelectorAll('a[href],a[onclick],button[onclick]').forEach(function (el) {
+      if (el.__flagged || el.hasAttribute('data-flag')) return;
+      var s = (el.getAttribute('href') || '') + ' ' + (el.getAttribute('onclick') || '');
+      for (var path in PAGE_FLAG) {
+        if (s.indexOf(path) !== -1) { el.setAttribute('data-flag', PAGE_FLAG[path]); apply(el); break; }
+      }
+    });
   }
   function injectCSS() {
     if (!IS_LOCAL) return;
@@ -80,6 +94,7 @@
     if (guardPage()) return;
     injectCSS();
     sweep(document);
+    autoLinks(document);
     if (window.MutationObserver) {
       new MutationObserver(function (muts) {
         muts.forEach(function (m) {
@@ -87,6 +102,7 @@
             if (nd.nodeType !== 1) return;
             if (nd.hasAttribute && nd.hasAttribute('data-flag')) apply(nd);
             sweep(nd);
+            autoLinks(nd);
           });
         });
       }).observe(document.documentElement, { childList: true, subtree: true });
