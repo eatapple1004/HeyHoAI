@@ -814,6 +814,16 @@ async function migrateMarketplace() {
     CREATE INDEX IF NOT EXISTS idx_marketplace_creator ON marketplace_templates(creator_id);
   `);
 
+  // 코어 확장(2026-06-21): 템플릿이 자기 툴을 가짐 + 공개/비공개 + Feed 인게이지먼트·예시미디어. (멱등·추가형)
+  await pool.query(`
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS tool VARCHAR(40);
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS visibility VARCHAR(10) NOT NULL DEFAULT 'public'; -- public | private
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS likes_count INT NOT NULL DEFAULT 0;
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS preview_media JSONB NOT NULL DEFAULT '[]'::jsonb;
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS negative_prompt TEXT;
+    CREATE INDEX IF NOT EXISTS idx_marketplace_visibility ON marketplace_templates(visibility, status);
+  `);
+
   // 공식 템플릿 시드 (한 번만)
   const existing = await pool.query(`SELECT 1 FROM marketplace_templates WHERE is_official LIMIT 1`);
   if (existing.rowCount === 0) {
