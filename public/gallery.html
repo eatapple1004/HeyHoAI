@@ -359,7 +359,7 @@ function tplCard(t,mine){
     :`by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`;
   const actions=mine
     ?`<button class="del" onclick="delTpl('${t.id}')">Delete</button><button onclick="tryTpl('${t.id}')">Use</button>`
-    :`<button onclick="tryTpl('${t.id}')">Try it</button>`;
+    :`<button onclick="tryTpl('${t.id}')">Try it</button><button class="del" onclick="reportTpl('${t.id}')" title="Report">⚐</button>`;
   return `<div class="item">
     ${thumb}
     <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}
@@ -401,6 +401,16 @@ async function delTpl(id){
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     toast('Template deleted');loadMyTemplates();
   }catch(e){toast('Delete failed: '+(e.message||e),'error');}
+}
+async function reportTpl(id){
+  if(!confirm('Report this template for review?'))return;
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id+'/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:'inappropriate'})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast(d.data&&d.data.takenDown?'Reported — template removed':'Reported. Thank you.');
+    if(d.data&&d.data.takenDown)loadFeed();
+  }catch(e){toast('Report failed: '+(e.message||e),'error');}
 }
 
 loadReelCost();renderFilters();load();

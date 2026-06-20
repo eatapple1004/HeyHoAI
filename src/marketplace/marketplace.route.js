@@ -226,4 +226,30 @@ router.post('/templates/:id/use', async (req, res, next) => {
   }
 });
 
+const REPORT_THRESHOLD = 3; // 서로 다른 신고자 N명 이상 → 자동 비공개(테이크다운)
+
+/** POST /api/marketplace/templates/:id/report — 공개 템플릿 신고(중복 무시). 누적 시 자동 테이크다운. */
+router.post('/templates/:id/report', async (req, res, next) => {
+  try {
+    const reason = String((req.body && req.body.reason) || 'other').slice(0, 40);
+    const tpl = await query(`SELECT id, creator_id, status FROM marketplace_templates WHERE id = $1`, [req.params.id]);
+    if (!tpl.rows[0]) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
+    if (tpl.rows[0].creator_id === req.user.id) return res.status(400).json({ success: false, error: '본인 템플릿은 신고할 수 없습니다.' });
+
+    await query(
+      `INSERT INTO template_reports (template_id, reporter_id, reason) VALUES ($1,$2,$3)
+       ON CONFLICT (template_id, reporter_id) DO NOTHING`,
+      [req.params.id, req.user.id, reason]
+    );
+    // 서로 다른 신고자 수 → 임계 초과 + 아직 active면 자동 비공개
+    const cnt = await query(`SELECT COUNT(DISTINCT reporter_id)::int AS n FROM template_reports WHERE template_id = $1`, [req.params.id]);
+    let takenDown = false;
+    if (cnt.rows[0].n >= REPORT_THRESHOLD && tpl.rows[0].status === 'active') {
+      await query(`UPDATE marketplace_templates SET status = 'taken_down' WHERE id = $1`, [req.params.id]);
+      takenDown = true;
+    }
+    res.json({ success: true, data: { reported: true, takenDown } });
+  } catch (err) { next(err); }
+});
+
 module.exports = { router };

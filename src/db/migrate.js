@@ -824,6 +824,19 @@ async function migrateMarketplace() {
     CREATE INDEX IF NOT EXISTS idx_marketplace_visibility ON marketplace_templates(visibility, status);
   `);
 
+  // T&S(2026-06-21): 신고 테이블 — 공개 Feed 모더레이션(서로 다른 신고자 누적 시 자동 비공개). (멱등)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS template_reports (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        template_id  UUID NOT NULL REFERENCES marketplace_templates(id) ON DELETE CASCADE,
+        reporter_id  UUID REFERENCES users(id) ON DELETE SET NULL,
+        reason       VARCHAR(40) NOT NULL DEFAULT 'other',
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (template_id, reporter_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_template_reports_tpl ON template_reports(template_id);
+  `);
+
   // 공식 템플릿 시드 (한 번만)
   const existing = await pool.query(`SELECT 1 FROM marketplace_templates WHERE is_official LIMIT 1`);
   if (existing.rowCount === 0) {
