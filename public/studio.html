@@ -250,7 +250,7 @@
   <!-- Custom 모드 생성란이 모드 탭 바로 밑에 고정될 자리 (placeGenBar가 .gen-bar를 여기로 이동) -->
   <div id="composeTop"></div>
 
-  <div class="step fade d2">
+  <div class="step fade d2" id="subjectStep">
     <div class="step-head"><div class="step-num" id="snSubject">1</div><h2 id="step1Title">Add your face</h2>
       <span class="hint" id="step1Hint">Upload a clear selfie — we keep your identity across every shot.</span></div>
     <div class="subject-row" id="subjectRow"></div>
@@ -624,20 +624,31 @@ const STEP1={
   ugc:['Add your spokesperson','Coming soon — lip-synced AI spokesperson.'],
   custom:['Add your face or product','Upload a reference — then write your own prompt below.']
 };
-// Custom: 생성란(.gen-bar)을 모드 탭 바로 밑(#composeTop)에 고정 / 그 외: 하단 플로팅 복귀
-let _genBarHome=null;
+// Custom: 생성란(.gen-bar)을 모드 탭 바로 밑(#composeTop)에 고정 + 레퍼런스 셀렉터를 compose 안으로 녹임 / 그 외: 원위치 복귀
+let _genBarHome=null,_subjHome=null;
 function placeGenBar(custom){
   const bar=document.querySelector('.gen-bar');
   const top=document.getElementById('composeTop');
   if(!bar||!top)return;
   bar.style.bottom=''; // 도킹 스크립트 잔여 인라인 bottom 제거
+  const subjStep=document.getElementById('subjectStep');
+  const subjRow=document.getElementById('subjectRow');
   if(custom){
     if(!_genBarHome)_genBarHome={parent:bar.parentNode,next:bar.nextSibling};
     top.appendChild(bar);
     bar.classList.add('gen-inline');
+    // 레퍼런스 셀렉터를 compose 블록 맨 위로 (Leonardo식) + 별도 Step1 숨김
+    if(subjRow){
+      if(!_subjHome)_subjHome={parent:subjRow.parentNode,next:subjRow.nextSibling};
+      bar.insertBefore(subjRow,bar.firstChild);
+      subjRow.classList.add('subj-in-compose');
+    }
+    if(subjStep)subjStep.classList.add('hidden');
   }else{
-    if(_genBarHome&&bar.parentNode!==_genBarHome.parent){_genBarHome.parent.insertBefore(bar,_genBarHome.next);}
+    if(_genBarHome&&bar.parentNode!==_genBarHome.parent)_genBarHome.parent.insertBefore(bar,_genBarHome.next);
     bar.classList.remove('gen-inline');
+    if(subjRow&&_subjHome&&subjRow.parentNode!==_subjHome.parent){_subjHome.parent.insertBefore(subjRow,_subjHome.next);subjRow.classList.remove('subj-in-compose');}
+    if(subjStep)subjStep.classList.remove('hidden');
   }
 }
 function setMode(m,initialVertical){
