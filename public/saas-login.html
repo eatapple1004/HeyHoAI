@@ -49,7 +49,7 @@
     <button id="tabSignup" onclick="setTab('signup')">Sign up</button>
   </div>
 
-  <div id="signupBonus" class="bonus hidden">🎁 Sign up &amp; get 10 free credits</div>
+  <div id="signupBonus" class="bonus hidden">Sign up &amp; get 10 free credits</div>
 
   <form onsubmit="return submitForm(event)">
     <div class="field hidden" id="nameField"><label>Name</label><input type="text" id="inName" placeholder="Your name" /></div>
@@ -101,8 +101,8 @@ async function submitForm(e){
   const email=document.getElementById('inEmail').value.trim();
   const password=document.getElementById('inPassword').value;
   if(tab==='signup'){
-    if(!document.getElementById('agree').checked){showErr('약관에 동의해 주세요.');return false;}
-    if(password!==document.getElementById('inConfirm').value){showErr('비밀번호가 일치하지 않습니다.');return false;}
+    if(!document.getElementById('agree').checked){showErr('Please agree to the terms.');return false;}
+    if(password!==document.getElementById('inConfirm').value){showErr('Passwords do not match.');return false;}
   }
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.textContent=tab==='signup'?'Creating…':'Logging in…';
@@ -114,12 +114,12 @@ async function submitForm(e){
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.success){
-      showErr(data.error||data.message||(tab==='signup'?'회원가입에 실패했습니다.':'이메일 또는 비밀번호가 올바르지 않습니다.'));
+      showErr(data.error||data.message||(tab==='signup'?'Sign-up failed.':'Incorrect email or password.'));
       return false;
     }
     window.location.href=nextUrl();
   }catch(err){
-    showErr('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+    showErr('Could not reach the server. Please try again shortly.');
   }finally{
     btn.disabled=false;btn.textContent=tab==='signup'?'Create account':'Log in';
   }
@@ -129,8 +129,8 @@ async function submitForm(e){
 (function(){
   const e=new URLSearchParams(location.search).get('error');
   if(!e)return;
-  const M={google_disabled:'Google 로그인이 아직 설정되지 않았어요.',google_denied:'Google 로그인이 취소됐어요.',google_state:'세션이 만료됐어요. 다시 시도해 주세요.',google_token:'Google 인증에 실패했어요.',google_profile:'Google 계정 정보를 가져오지 못했어요.',google_unverified:'이메일이 확인되지 않은 Google 계정이에요.'};
-  showErr(M[e]||'로그인 중 문제가 발생했어요. 다시 시도해 주세요.');
+  const M={google_disabled:'Google sign-in is not set up yet.',google_denied:'Google sign-in was cancelled.',google_state:'Your session expired. Please try again.',google_token:'Google authentication failed.',google_profile:'Could not retrieve your Google account details.',google_unverified:'This Google account has an unverified email.'};
+  showErr(M[e]||'Something went wrong during sign-in. Please try again.');
 })();
 // 이미 로그인된 상태면 바로 스튜디오로
 fetch('/api/auth/me').then(r=>{if(r.ok)window.location.href=nextUrl();}).catch(()=>{});

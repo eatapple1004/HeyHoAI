@@ -10,18 +10,18 @@
 (function () {
   var LAUNCH = {
     // 🔴 런칭에서 숨기는 기능 (로컬엔 표시)
-    reels:        { launch: false, label: '숨김' }, // Kling 영상 — v1.1로 연기
-    brandkit:     { launch: false, label: '보류' }, // 로고/폰트 미적용 (반쪽)
-    marketplace:  { launch: false, label: '숨김' }, // 공급 없음
-    earnings:     { launch: false, label: '숨김' }, // 마켓/제휴 종속
-    teams:        { launch: false, label: '숨김' }, // 개인 유저 먼저
-    business:     { launch: false, label: '숨김' }, // B2B 연기
-    affiliate:    { launch: false, label: '숨김' }, // 성장기능, 임계 아님
-    ugc:          { launch: false, label: '숨김' }, // UGC Ads 모드 — 준비 중
+    reels:        { launch: false, label: 'hidden' }, // Kling 영상 — v1.1로 연기
+    brandkit:     { launch: false, label: 'on hold' }, // 로고/폰트 미적용 (반쪽)
+    marketplace:  { launch: false, label: 'hidden' }, // 공급 없음
+    earnings:     { launch: false, label: 'hidden' }, // 마켓/제휴 종속
+    teams:        { launch: false, label: 'hidden' }, // 개인 유저 먼저
+    business:     { launch: false, label: 'hidden' }, // B2B 연기
+    affiliate:    { launch: false, label: 'hidden' }, // 성장기능, 임계 아님
+    ugc:          { launch: false, label: 'hidden' }, // UGC Ads 모드 — 준비 중
     // 모델 선택 단순화 — pro만 노출
-    'model-flash':{ launch: false, label: '숨김' },
-    'model-gpt':  { launch: false, label: '숨김' },
-    held:         { launch: false, label: '보류', noBadge: true } // 보류 템플릿 — prod 숨김 / 로컬은 카드 자체 보류배지
+    'model-flash':{ launch: false, label: 'hidden' },
+    'model-gpt':  { launch: false, label: 'hidden' },
+    held:         { launch: false, label: 'on hold', noBadge: true } // 보류 템플릿 — prod 숨김 / 로컬은 카드 자체 보류배지
   };
 
   // 숨긴 기능의 '페이지'(직접 URL 접근). prod=홈으로 리다이렉트 / 로컬=상단 배너.
@@ -84,7 +84,7 @@
     if (!featureOn(pf)) { location.replace('/'); return true; }   // prod: 숨긴 페이지 → 홈
     if (IS_LOCAL && cfg(pf).launch === false) {                    // 로컬: 상단 배너
       var b = document.createElement('div');
-      b.textContent = '이 페이지는 main에서 숨김 (' + pf + ')';
+      b.textContent = 'Hidden on main (' + pf + ')';
       b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a27;color:#ffce7a;font:800 12px -apple-system,sans-serif;padding:7px 12px;text-align:center;border-bottom:1px solid rgba(255,206,122,.55)';
       (document.body || document.documentElement).appendChild(b);
     }

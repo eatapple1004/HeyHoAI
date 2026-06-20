@@ -226,7 +226,7 @@
       <a onclick="location.href='/billing'">Billing</a>
       <a onclick="location.href='/business'">Business</a>
     </div>
-    <select id="ctxSel" onchange="switchContext(this.value)" title="작업 컨텍스트"
+    <select id="ctxSel" onchange="switchContext(this.value)" title="Workspace"
       style="font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:7px 10px;font-size:12.5px;cursor:pointer;display:none"></select>
     <div class="credits"><span class="coin">◈</span> <span id="creditBalance">—</span> <span id="creditCtxLabel">credits</span>
       <span class="buy" onclick="location.href='/billing'">+ Buy</span>
@@ -242,7 +242,7 @@
       <button id="modeShopping" onclick="setMode('shopping')">Shopping</button>
       <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">UGC Ads</button>
     </div>
-    <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">🎨 Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
+    <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
 
   <div class="step fade d2">
@@ -258,9 +258,9 @@
       <textarea class="script-ta" id="scriptTA" placeholder="e.g. I tried this for 7 days and the results genuinely shocked me…"></textarea>
       <div class="script-ctrls">
         <select class="tone-sel" id="toneSel">
-          <option value="energetic">⚡ Energetic</option>
-          <option value="trust">🤝 Trustworthy</option>
-          <option value="casual">😊 Casual</option>
+          <option value="energetic">Energetic</option>
+          <option value="trust">Trustworthy</option>
+          <option value="casual">Casual</option>
           <option value="luxury">Luxury</option>
         </select>
         <button class="addon-toggle" onclick="aiWriteScript()">AI write script</button>
@@ -293,22 +293,22 @@
       <button data-q="4k" data-m="gpt-image-2-high" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image HD <i>+2</i></button>
     </div>
     <span class="divider-v"></span>
-    <button class="addon-toggle" id="aCaption" onclick="toggleCaption(this)">📝 Caption + hashtags <i>+1</i></button>
+    <button class="addon-toggle" id="aCaption" onclick="toggleCaption(this)">Caption + hashtags <i>+1</i></button>
     <select class="addon-lang hidden" id="captionLang">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
   </div>
   <div class="prompt-row">
     <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
-      placeholder="프롬프트 추가 (선택) — 비워두면 템플릿만 사용"
+      placeholder="Add a prompt (optional) — leave empty to use the template only"
       oninput="updateBar()">
-    <button class="prompt-clear hidden" id="extraClear" title="지우기" onclick="document.getElementById('extraPrompt').value='';document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
+    <button class="prompt-clear hidden" id="extraClear" title="Clear" onclick="document.getElementById('extraPrompt').value='';document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
   </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <div class="gen-actions">
-      <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">⚙ Options</button>
-      <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="1장만 생성 — 빠른 테스트(시간·API비용 약 1/4)">🧪 1장</button>
+      <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
+      <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="Generate just one — a quick test (about 1/4 the time and API cost)">Test 1</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
   </div>
@@ -317,7 +317,7 @@
 <div class="modal-bg" id="brandkitModal" onclick="if(event.target===this)closeBrandkit()">
   <div class="modal">
     <button class="x" onclick="closeBrandkit()">✕</button>
-    <h3>🎨 Brand kit</h3>
+    <h3>Brand kit</h3>
     <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand.</div>
     <div class="field"><label>Logo</label>
       <div class="logo-drop" id="bkLogoDrop" onclick="document.getElementById('bkLogoFile').click()">＋ Upload logo (PNG, transparent)</div>
@@ -333,7 +333,7 @@
     <div class="field"><label>Brand font</label>
       <select class="tone-sel" id="bkFont" style="width:100%"><option>Inter</option><option>Sora</option><option>Playfair Display</option><option>Montserrat</option></select></div>
     <button class="btn btn-primary" style="width:100%" onclick="saveBrandkit()">Save &amp; apply to all outputs</button>
-    <div style="font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5">브랜드 색상이 생성 결과의 톤에 반영됩니다. 로고 워터마크 합성은 곧 추가될 예정이에요.</div>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5">Your brand colors shape the tone of every result. Logo watermarking is coming soon.</div>
   </div>
 </div>
 
@@ -342,11 +342,11 @@
 <!-- 데일리 보너스 모달 -->
 <div class="modal-bg" id="streakModal" onclick="if(event.target===this)closeStreak()">
   <div class="modal" style="text-align:center">
-    <div style="font-size:48px;margin-bottom:8px">🔥</div>
-    <h3 id="streakTitle">연속 1일!</h3>
-    <div class="msub" id="streakSub">데일리 보너스 ◈1을 받았어요.</div>
+    <div style="font-size:48px;margin-bottom:8px"></div>
+    <h3 id="streakTitle">1-day streak!</h3>
+    <div class="msub" id="streakSub">You earned a daily bonus of ◈1.</div>
     <div id="streakDots" style="display:flex;gap:7px;justify-content:center;margin:18px 0 22px"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="closeStreak()">계속 만들기</button>
+    <button class="btn btn-primary" style="width:100%" onclick="closeStreak()">Keep creating</button>
   </div>
 </div>
 
@@ -396,7 +396,7 @@
     <div class="rm-preview" id="rmPreview"></div>
     <div class="rm-head"><h3 id="rmName" style="margin:0"></h3><span class="rm-badge" id="rmBadge"></span></div>
     <div class="rm-desc" id="rmDesc"></div>
-    <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">이 템플릿 선택</button>
+    <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">Use this template</button>
   </div>
 </div>
 <style>
@@ -424,10 +424,10 @@
 </div>
 
 <div class="modal-bg" id="imgModal" style="z-index:90" onclick="if(event.target===this)closeImageModal()">
-  <button class="img-close" onclick="closeImageModal()" title="닫기">✕</button>
+  <button class="img-close" onclick="closeImageModal()" title="Close">✕</button>
   <div id="imgModalMedia"></div>
   <div id="imgModalTpl" class="img-tpl"></div>
-  <a id="imgModalDl" class="img-dl" download href="#">⬇ 다운로드</a>
+  <a id="imgModalDl" class="img-dl" download href="#">⬇ Download</a>
 </div>
 <style>
   #imgModal #imgModalMedia img,#imgModal #imgModalMedia video{max-width:92vw;max-height:80vh;border-radius:12px;box-shadow:0 30px 90px -20px rgba(0,0,0,.85);object-fit:contain;background:#0c0c14;display:block}
@@ -492,8 +492,8 @@ async function loadContextSwitcher(){
     const sel=document.getElementById('ctxSel');
     if(!teams.length){sel.style.display='none';return;}
     const curId=ctx.type==='team'?ctx.teamId:'';
-    sel.innerHTML='<option value="">👤 Personal</option>'+
-      teams.map(t=>`<option value="${t.id}" ${t.id===curId?'selected':''}>👥 ${esc(t.name)} (${t.my_role})</option>`).join('');
+    sel.innerHTML='<option value="">Personal</option>'+
+      teams.map(t=>`<option value="${t.id}" ${t.id===curId?'selected':''}>${esc(t.name)} (${t.my_role})</option>`).join('');
     sel.style.display='';
   }catch(e){}
 }
@@ -568,7 +568,7 @@ function reflectBrandkit(){
   if(BRANDKIT.font_name)document.getElementById('bkFont').value=BRANDKIT.font_name;
   if(BRANDKIT.logo_url){
     const d=document.getElementById('bkLogoDrop');
-    d.innerHTML=`<img src="${esc(BRANDKIT.logo_url)}" style="max-height:46px;max-width:100%;object-fit:contain"> <span style="display:block;font-size:11px;margin-top:6px">로고 변경</span>`;
+    d.innerHTML=`<img src="${esc(BRANDKIT.logo_url)}" style="max-height:46px;max-width:100%;object-fit:contain"> <span style="display:block;font-size:11px;margin-top:6px">Change logo</span>`;
   }
 }
 function openBrandkit(){document.getElementById('brandkitModal').classList.add('open');}
@@ -581,8 +581,8 @@ async function uploadLogo(inp){
     const res=await fetch('/api/brand-kit/logo',{method:'POST',body:fd});
     const data=await res.json();
     if(data.success){BRANDKIT=data.data;reflectBrandkit();}
-    else toast('로고 업로드 실패','error');
-  }catch(e){toast('로고 업로드 중 오류','error');}
+    else toast('Logo upload failed','error');
+  }catch(e){toast('Something went wrong uploading the logo','error');}
 }
 async function saveBrandkit(){
   const sel=document.querySelector('#bkSwatches .swatch.sel');
@@ -613,7 +613,7 @@ function setMode(m,initialVertical){
   document.getElementById('snTemplate').textContent=ugc?'3':'2';
   document.getElementById('snResult').textContent=ugc?'4':'3';
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
-  document.getElementById('step2Hint').textContent=ugc?'🚧 Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
+  document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
   document.getElementById('resultStep').classList.add('hidden');
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
@@ -674,11 +674,11 @@ function renderRecipes(){
   // ★ Best value: 같은 비용에 4장이 나오는 사진 템플릿 중 첫 번째 (크레딧당 산출 최고)
   const bestId=(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
   document.getElementById('recipeGrid').innerHTML=rs.map(r=>{
-    const valBadge=(r.id===bestId)?`<span class="val-badge" title="같은 비용에 사진 4장 — 크레딧당 산출 최고">★ Best value</span>`:'';
+    const valBadge=(r.id===bestId)?`<span class="val-badge" title="4 photos for the same cost — best value per credit">★ Best value</span>`:'';
     return `
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="openRecipeModal('${r.id}')">
-      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">보류</span>'}${r.emoji}</div>
-      <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'🚧 Coming soon':esc(r.cat||'Template')}</div></div></div>`;
+      <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
+      <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
@@ -698,11 +698,11 @@ function openRecipeModal(id){
   modalRecipeId=id;
   document.getElementById('rmName').textContent=r.name;
   document.getElementById('rmBadge').textContent=r.type==='reel'?'▶ Reel':'▦ Photo';
-  document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'설명이 아직 준비되지 않았어요.';
+  document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
   const pv=document.getElementById('rmPreview');
   pv.style.background=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
-  pv.innerHTML=`${r.emoji||'🎨'}<div class="ph">샘플 이미지 준비 중</div>`; // 샘플 이미지 없으니 자리만
-  document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ 선택됨 — 선택 해제':'이 템플릿 선택';
+  pv.innerHTML=`${r.emoji||'🎨'}<div class="ph">Sample image coming soon</div>`; // 샘플 이미지 없으니 자리만
+  document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ Selected — tap to deselect':'Use this template';
   document.getElementById('recipeModal').classList.add('open');
 }
 function closeRecipeModal(){document.getElementById('recipeModal').classList.remove('open');}
@@ -716,9 +716,9 @@ function selectFromModal(){
 async function uploadSubject(inp){
   const f=inp.files[0];inp.value='';
   if(!f)return;
-  if(state.mode==='ugc'){toast('UGC 모드는 준비 중입니다.');return;}
+  if(state.mode==='ugc'){toast('UGC mode is coming soon.');return;}
   const isProduct=state.mode==='shopping';
-  const name=prompt(isProduct?'제품 이름을 입력하세요':'이름을 입력하세요',isProduct?'New Product':'My Face');
+  const name=prompt(isProduct?'Enter a product name':'Enter a name',isProduct?'New Product':'My Face');
   if(!name)return;
   const fd=new FormData();
   fd.append('name',name);
@@ -727,11 +727,11 @@ async function uploadSubject(inp){
   try{
     const res=await fetch('/api/characters/register',{method:'POST',body:fd});
     const data=await res.json();
-    if(!res.ok||!data.success){toast('업로드 실패: '+(data.error||res.status),'error');return;}
+    if(!res.ok||!data.success){toast('Upload failed: '+(data.error||res.status),'error');return;}
     await loadSubjects();
     state.subjectId=data.data.id;
     renderSubjects();updateBar();closeSubjModal();
-  }catch(e){toast('업로드 중 오류가 발생했습니다.','error');}
+  }catch(e){toast('Something went wrong during upload.','error');}
 }
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
@@ -741,23 +741,23 @@ function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
   if(generating){btn.disabled=true;return;}
-  if(state.mode==='ugc'){btn.disabled=true;s.textContent='🚧 UGC ads — coming soon.';return;}
+  if(state.mode==='ugc'){btn.disabled=true;s.textContent='UGC ads — coming soon.';return;}
   const extra=extraPromptText();
   // 대상은 필수, 템플릿·프롬프트는 둘 중 하나 이상이면 생성 가능
   if(!state.subjectId){btn.disabled=true;s.textContent='Select a face/product first.';return;}
-  if(!r&&!extra){btn.disabled=true;s.textContent='템플릿을 고르거나 프롬프트를 입력하세요.';return;}
+  if(!r&&!extra){btn.disabled=true;s.textContent='Pick a template or enter a prompt.';return;}
   const cost=genCost(r);
   const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
-  const title=r?`<b>${r.name}</b>${extra?' <span style="color:var(--accent2)">+ 내 프롬프트</span>':''}`:'<b>내 프롬프트</b>';
+  const title=r?`<b>${r.name}</b>${extra?' <span style="color:var(--accent2)">+ my prompt</span>':''}`:'<b>My prompt</b>';
   if(notEnough(cost)){
     btn.disabled=false;
-    s.innerHTML=`${title}${costTxt} — <span style="color:#ff7eb6">크레딧 부족 (보유 ◈${CREDITS.balance})</span> <a onclick="openPaywall(${cost})" style="color:var(--accent2);cursor:pointer">충전하기 →</a>`;
+    s.innerHTML=`${title}${costTxt} — <span style="color:#ff7eb6">Not enough credits (you have ◈${CREDITS.balance})</span> <a onclick="openPaywall(${cost})" style="color:var(--accent2);cursor:pointer">Top up →</a>`;
     return;
   }
   btn.disabled=false;
   const isReel=r&&r.type==='reel';
   const o=isReel?'1 reel (5s)':'4 photos';
-  s.innerHTML=`${title} → ${o}${isReel?'':' · '+M_LABEL[curModel()]}${costTxt}${isReel?' <span style="color:var(--faint)">(릴스는 수 분 소요)</span>':''}`;
+  s.innerHTML=`${title} → ${o}${isReel?'':' · '+M_LABEL[curModel()]}${costTxt}${isReel?' <span style="color:var(--faint)">(reels take a few minutes)</span>':''}`;
 }
 
 // ── 실제 생성 ──
@@ -768,8 +768,8 @@ async function generate(opts){
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
   if(!subj||generating)return;
   if(!r&&!extra)return;
-  if(r&&r.soon){toast('UGC 모드는 준비 중입니다.');return;}
-  lastGenTemplate=r?r.name:'내 프롬프트'; // 뷰어 모달에 표시할 템플릿
+  if(r&&r.soon){toast('UGC mode is coming soon.');return;}
+  lastGenTemplate=r?r.name:'My prompt'; // 뷰어 모달에 표시할 템플릿
   // 잔액 부족이면 생성 대신 페이월
   const cost=genCost(r);
   if(notEnough(cost)){openPaywall(cost);return;}
@@ -781,8 +781,8 @@ async function generate(opts){
   document.getElementById('resultsGrid').innerHTML='';
   const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
   lb.querySelector('div:last-child').textContent=isReel
-    ?'Generating reel… 보통 2~5분 걸려요. 창을 닫아도 갤러리에 자동 저장돼요.'
-    :(genN===1?'1장 생성 중 (테스트)… ~15초.':'Generating photos… 30초~1분 정도 걸려요.');
+    ?'Generating reel… usually 2–5 minutes. You can close this — it saves to your gallery automatically.'
+    :(genN===1?'Generating 1 (test)… ~15s.':'Generating photos… this takes 30s–1 min.');
   document.getElementById('resultHint').textContent='';
   step.scrollIntoView({behavior:'smooth'});
 
@@ -796,8 +796,8 @@ async function generate(opts){
       document.getElementById('resultHint').textContent='';
       openPaywall(genCost(r));
     }else{
-      document.getElementById('resultHint').textContent='⚠ 생성 중 오류가 발생했습니다. 다시 시도해 주세요.';
-      toast('생성 중 오류가 발생했습니다.','error');
+      document.getElementById('resultHint').textContent='⚠ Something went wrong. Please try again.';
+      toast('Something went wrong while generating.','error');
     }
   }finally{
     lb.classList.add('hidden');
@@ -813,7 +813,7 @@ function openImageModal(url,type){
   document.getElementById('imgModalMedia').innerHTML = isReel
     ? `<video src="${esc(url)}" controls autoplay loop playsinline></video>`
     : `<img src="${esc(url)}" alt="">`;
-  document.getElementById('imgModalTpl').innerHTML = lastGenTemplate ? `템플릿: <b>${esc(lastGenTemplate)}</b>` : '';
+  document.getElementById('imgModalTpl').innerHTML = lastGenTemplate ? `Template: <b>${esc(lastGenTemplate)}</b>` : '';
   document.getElementById('imgModalDl').href=url;
   document.getElementById('imgModal').classList.add('open');
 }
@@ -833,7 +833,7 @@ async function resolvePromptFor(r,subj){
   }else{
     const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
     const d=await res.json();
-    if(!res.ok||!d.success)throw new Error(d.error||'레시피 해석에 실패했어요.');
+    if(!res.ok||!d.success)throw new Error(d.error||'Could not resolve the template.');
     base={prompt:d.data.generate.prompt,style:'none',count:d.data.generate.count}; // resolver가 스타일 프리셋을 이미 반영 → style none. count도 레시피값
   }
   const extra=extraPromptText();
@@ -845,7 +845,7 @@ async function generateImages(r,subj,count){
   const rp=await resolvePromptFor(r,subj);
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:count,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'내 프롬프트'})
+    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:curModel(),count:count,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'My prompt'})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
@@ -856,19 +856,19 @@ async function generateImages(r,subj,count){
     <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(x.url)}','photo')">
       <div class="actions">
         <a href="${esc(x.url)}" download><button>⬇ Download</button></a>
-        <button onclick="openImageModal('${esc(x.url)}','photo')">⤢ 크게 보기</button>
+        <button onclick="openImageModal('${esc(x.url)}','photo')">⤢ View large</button>
       </div></div>`).join('');
   document.getElementById('resultHint').textContent=
-    `${ok.length} photos ready · ${M_LABEL[curModel()]}${fail?` · ${fail} failed`:''} — Gallery에 자동 저장됨`;
+    `${ok.length} photos ready · ${M_LABEL[curModel()]}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
   if(ok.some(x=>x.watermarked)){
-    toast('Watermark added on the free plan — upgrade to Pro for clean images ✨');
+    toast('Watermark added on the free plan — upgrade to Pro for clean images');
   }
 }
 
 async function generateReel(r,subj){
   if(!subj.reference_image_url){
-    document.getElementById('resultHint').textContent='⚠ 레퍼런스 이미지가 없는 대상은 릴스를 만들 수 없어요. 사진을 먼저 업로드해 주세요.';
+    document.getElementById('resultHint').textContent='⚠ Reels need a reference image. Please upload a photo first.';
     return;
   }
   // 캐릭터 레퍼런스 이미지를 소스 프레임으로 사용해 Kling 비디오 생성
@@ -891,9 +891,9 @@ async function generateReel(r,subj){
     <div class="result-card"><video class="img" src="${esc(url)}" controls loop style="object-fit:cover"></video>
       <div class="actions">
         <a href="${esc(url)}" download><button>⬇ Download</button></a>
-        <button onclick="openImageModal('${esc(url)}','reel')">⤢ 크게 보기</button>
+        <button onclick="openImageModal('${esc(url)}','reel')">⤢ View large</button>
       </div></div>`;
-  document.getElementById('resultHint').textContent=`1 reel ready — Gallery에 자동 저장됨`;
+  document.getElementById('resultHint').textContent=`1 reel ready — saved to your gallery`;
 }
 
 // 릴스 잡 상태를 완료까지 폴링 (최대 ~12분)
@@ -904,9 +904,9 @@ async function pollVideoJob(jobId){
     try{ d=(await(await fetch('/api/generate/video/jobs/'+jobId)).json()).data; }catch(e){ continue; }
     if(!d)continue;
     if(d.status==='succeeded')return d.url;
-    if(d.status==='failed')throw new Error(d.error||'릴스 생성 실패');
+    if(d.status==='failed')throw new Error(d.error||'Reel generation failed');
   }
-  throw new Error('릴스 생성이 너무 오래 걸려요. 갤러리에서 잠시 후 확인해 주세요.');
+  throw new Error('This reel is taking a while. Check your gallery again shortly.');
 }
 
 // ── 캡션 + 해시태그 (Claude) ──
@@ -915,22 +915,22 @@ async function generateCaptionBlock(r,subj){
   const ctx=`${r?r.name+'. ':''}${extraPromptText()||(r&&r.prompt)||''}`.slice(0,500);
   const old=document.getElementById('captionResult');if(old)old.remove();
   const box=document.createElement('div');box.className='caption-box';box.id='captionResult';
-  box.innerHTML=`<div class="ch">📝 Caption + hashtags</div><div class="ctext" style="color:var(--dim)">✨ 캡션 생성 중…</div>`;
+  box.innerHTML=`<div class="ch">Caption + hashtags</div><div class="ctext" style="color:var(--dim)">Writing caption…</div>`;
   document.getElementById('resultStep').appendChild(box);
   try{
     const res=await fetch('/api/generate/caption',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({context:ctx,language:lang,characterId:subj.id,mediaType:r.type==='reel'?'video':'image'})});
     const data=await res.json();
-    if(!res.ok||!data.success){box.querySelector('.ctext').textContent='⚠ 캡션 생성에 실패했어요.';return;}
+    if(!res.ok||!data.success){box.querySelector('.ctext').textContent='⚠ Could not generate a caption.';return;}
     const tags=(data.data.hashtags||[]).map(t=>'#'+t).join(' ');
     const full=data.data.caption+(data.data.callToAction?'\n\n'+data.data.callToAction:'')+'\n\n'+tags;
-    box.innerHTML=`<div class="ch">📝 Caption + hashtags</div>
+    box.innerHTML=`<div class="ch">Caption + hashtags</div>
       <div class="ctext">${esc(data.data.caption)}</div>
       ${data.data.callToAction?`<div class="ctext" style="color:var(--dim);font-size:13px">${esc(data.data.callToAction)}</div>`:''}
       <div class="tags">${esc(tags)}</div>
-      <button class="btn btn-ghost copy" onclick="navigator.clipboard.writeText(this.dataset.t).then(()=>{this.textContent='✓ 복사됨'})" data-t="${esc(full)}">⧉ Copy</button>`;
-  }catch(e){box.querySelector('.ctext').textContent='⚠ 캡션 생성 중 오류가 발생했어요.';}
+      <button class="btn btn-ghost copy" onclick="navigator.clipboard.writeText(this.dataset.t).then(()=>{this.textContent='✓ Copied'})" data-t="${esc(full)}">⧉ Copy</button>`;
+  }catch(e){box.querySelector('.ctext').textContent='⚠ Something went wrong generating the caption.';}
 }
 
 // 마켓플레이스에서 "Use"로 넘어온 템플릿 적용
@@ -944,7 +944,7 @@ function applyPendingTemplate(){
   const id='mk_'+(t.id||Date.now());
   // 이미 주입돼 있으면 중복 방지
   if(!TEMPLATES[mode].some(r=>r.id===id)){
-    TEMPLATES[mode].unshift({id,cat:'⭐ From Market',name:t.name,type:t.type||'image',
+    TEMPLATES[mode].unshift({id,cat:'From Market',name:t.name,type:t.type||'image',
       style:t.style||'Natural',emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ff7eb6)',prompt:t.prompt});
   }
   setMode(mode);
@@ -958,8 +958,8 @@ async function dailyCheckin(){
   try{
     const d=(await(await fetch('/api/credits/checkin',{method:'POST'})).json()).data;
     if(d&&d.claimedToday&&d.granted>0){
-      document.getElementById('streakTitle').textContent=`🔥 연속 ${d.streak}일!`;
-      document.getElementById('streakSub').innerHTML=`데일리 보너스 <b style="color:var(--gold)">◈${d.granted}</b>을 받았어요.`;
+      document.getElementById('streakTitle').textContent=`${d.streak}-day streak!`;
+      document.getElementById('streakSub').innerHTML=`You earned a daily bonus of <b style="color:var(--gold)">◈${d.granted}</b>.`;
       const dots=[];for(let i=1;i<=Math.max(5,d.streak);i++){
         const on=i<=d.streak;dots.push(`<span style="width:11px;height:11px;border-radius:50%;background:${on?'linear-gradient(135deg,var(--accent),var(--pink))':'var(--border2)'}"></span>`);
       }

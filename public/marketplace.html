@@ -83,18 +83,18 @@
 
   <div class="creator-cta glass fade d2">
     <div>
-      <div class="ct">🎨 Sell your templates</div>
+      <div class="ct">Sell your templates</div>
       <div class="cd">Publish a template and earn <span class="pct">70% revenue share</span> every time someone uses it. We handle hosting, billing and curation — you keep creating.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-lg" onclick="location.href='/earnings'">📊 Earnings</button>
+      <button class="btn btn-ghost btn-lg" onclick="location.href='/earnings'">Earnings</button>
       <button class="btn btn-primary btn-lg" id="creatorBtn" onclick="creatorAction()">Become a creator</button>
     </div>
   </div>
 
   <div class="tabs fade d2">
-    <button class="on" id="tabTemplates" onclick="setTab('templates')">🧩 Templates</button>
-    <button id="tabModels" onclick="setTab('models')">👤 Virtual Models</button>
+    <button class="on" id="tabTemplates" onclick="setTab('templates')">Templates</button>
+    <button id="tabModels" onclick="setTab('models')">Virtual Models</button>
   </div>
 
   <div class="filter-row fade d3" id="filterRow"></div>
@@ -107,11 +107,11 @@
 <div class="modal-bg" id="pubModal" onclick="if(event.target===this)closePub()" style="position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px">
   <div class="modal glass" style="width:min(480px,100%);border-radius:20px;padding:26px;position:relative">
     <button class="x" onclick="closePub()" style="position:absolute;top:15px;right:18px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none">✕</button>
-    <h3 style="font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px">🧩 Publish a template</h3>
-    <div style="font-size:13px;color:var(--dim);margin-bottom:18px">사용자가 이 템플릿을 쓸 때마다 사용료의 70%를 받습니다.</div>
+    <h3 style="font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px">Publish a template</h3>
+    <div style="font-size:13px;color:var(--dim);margin-bottom:18px">Earn 70% of the usage fee every time someone uses this template.</div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <input id="pName" placeholder="Template name" class="fld">
-      <textarea id="pPrompt" placeholder="Prompt — 어떤 장면/스타일을 만들지 설명" class="fld" style="min-height:80px;resize:vertical"></textarea>
+      <textarea id="pPrompt" placeholder="Prompt — describe the scene and style to create" class="fld" style="min-height:80px;resize:vertical"></textarea>
       <div style="display:flex;gap:10px">
         <select id="pCat" class="fld"><option>Influencer</option><option>Shopping</option></select>
         <select id="pType" class="fld"><option value="image">Photo</option><option value="reel">Reel</option></select>
@@ -119,9 +119,9 @@
       <div style="display:flex;gap:10px">
         <select id="pStyle" class="fld"><option>Natural</option><option>Fashion</option><option>Portrait</option><option>Glamour</option><option>Cinematic</option><option>Film</option><option>Street</option></select>
         <input id="pEmoji" placeholder="🎨" maxlength="4" class="fld" style="width:70px;text-align:center">
-        <input id="pPrice" type="number" min="0" max="100" value="0" class="fld" style="width:120px" title="사용료(크레딧)">
+        <input id="pPrice" type="number" min="0" max="100" value="0" class="fld" style="width:120px" title="Usage fee (credits)">
       </div>
-      <div style="font-size:11.5px;color:var(--faint)">사용료 ◈는 생성 비용과 별도로 사용자에게 부과됩니다. 0이면 무료 템플릿.</div>
+      <div style="font-size:11.5px;color:var(--faint)">The ◈ usage fee is charged to users on top of generation cost. Set to 0 for a free template.</div>
       <button class="btn btn-primary" style="width:100%" onclick="publishTemplate(this)">Publish</button>
     </div>
   </div>
@@ -148,9 +148,9 @@ function reflectCreator(){
 }
 function creatorAction(){ IS_CREATOR ? openPub() : applyCreator(); }
 async function applyCreator(){
-  if(!confirm('크리에이터로 등록하시겠어요? 나만의 템플릿을 게시하고 수익을 받을 수 있어요.'))return;
+  if(!confirm('Become a creator? You can publish your own templates and earn from them.'))return;
   try{const d=await(await fetch('/api/marketplace/apply',{method:'POST'})).json();
-    if(d.success){IS_CREATOR=true;reflectCreator();alert('크리에이터로 등록됐어요! 이제 "+ Publish template"로 템플릿을 올릴 수 있어요.');}}catch(e){alert('신청 실패');}
+    if(d.success){IS_CREATOR=true;reflectCreator();alert('You are now a creator. Use "+ Publish template" to add your templates.');}}catch(e){alert('Application failed.');}
 }
 
 async function loadTemplates(){
@@ -168,13 +168,13 @@ function render(){
     fr.style.display='';
     const cats=['All','Influencer','Shopping','UGC'];
     fr.innerHTML=cats.map(c=>`<div class="chip ${filter===c?'active':''}" onclick="setFilter('${c}')">${esc(c)}</div>`).join('');
-    if(!TEMPLATES.length){grid.innerHTML=`<div style="grid-column:1/-1;color:var(--faint);padding:40px 0;text-align:center">템플릿이 없어요.</div>`;return;}
+    if(!TEMPLATES.length){grid.innerHTML=`<div style="grid-column:1/-1;color:var(--faint);padding:40px 0;text-align:center">No templates yet.</div>`;return;}
     grid.innerHTML=TEMPLATES.map(t=>`
       <div class="card">
         <div class="preview ${gradFor(t.id)}"><span class="badge">${t.type==='reel'?'Reel':'Photo'}</span>${esc(t.emoji||'🎨')}</div>
         <div class="meta">
           <div class="rname">${esc(t.name)}</div>
-          <div class="creator">by <b>${esc(t.creator_handle)}</b>${t.is_official?' · ✓ official':''}${t.mine?' · 나':''}</div>
+          <div class="creator">by <b>${esc(t.creator_handle)}</b>${t.is_official?' · ✓ official':''}${t.mine?' · Mine':''}</div>
           <div class="statline">${fmtUses(t.usage_count)} uses</div>
           <div class="foot"><div class="price">${t.price_credits>0?'◈ '+t.price_credits+'<small> /use</small>':'<small style="color:var(--cyan)">Free</small>'}</div>
             ${t.mine?`<button class="btn btn-ghost" onclick="unpublish('${t.id}',this)">Remove</button>`:`<button class="btn btn-primary" onclick="useTemplate('${t.id}',this)">Use</button>`}</div>
@@ -182,26 +182,25 @@ function render(){
   } else {
     fr.style.display='none';
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--faint)">
-      <div style="font-size:40px;margin-bottom:14px">👤</div>
       <div style="font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px">Virtual Models — Coming soon</div>
-      <div style="font-size:14px">다른 크리에이터의 AI 모델을 라이선스해 쓰는 기능을 준비 중이에요.</div></div>`;
+      <div style="font-size:14px">Licensing other creators' AI models is coming soon.</div></div>`;
   }
 }
 async function useTemplate(id,btn){
   btn.disabled=true;const o=btn.textContent;btn.textContent='…';
   try{
     const d=await(await fetch('/api/marketplace/templates/'+id+'/use',{method:'POST'})).json();
-    if(!d.success){alert(d.error||'사용할 수 없습니다.');btn.disabled=false;btn.textContent=o;return;}
+    if(!d.success){alert(d.error||'This template is unavailable.');btn.disabled=false;btn.textContent=o;return;}
     // 스튜디오에서 적용하도록 전달
     sessionStorage.setItem('mkTemplate',JSON.stringify(d.data));
     location.href='/studio';
-  }catch(e){alert('오류가 발생했습니다.');btn.disabled=false;btn.textContent=o;}
+  }catch(e){alert('Something went wrong.');btn.disabled=false;btn.textContent=o;}
 }
 async function unpublish(id,btn){
-  if(!confirm('이 템플릿을 마켓에서 내릴까요?'))return;
+  if(!confirm('Remove this template from the marketplace?'))return;
   btn.disabled=true;
   try{const d=await(await fetch('/api/marketplace/templates/'+id,{method:'DELETE'})).json();
-    if(d.success)loadTemplates();else alert(d.error||'실패');}catch(e){alert('실패');}
+    if(d.success)loadTemplates();else alert(d.error||'Failed.');}catch(e){alert('Failed.');}
 }
 
 // 게시 모달
@@ -217,16 +216,16 @@ async function publishTemplate(btn){
     emoji:document.getElementById('pEmoji').value.trim()||'🎨',
     priceCredits:parseInt(document.getElementById('pPrice').value,10)||0,
   };
-  if(!body.name||!body.prompt){alert('이름과 프롬프트를 입력해 주세요.');return;}
+  if(!body.name||!body.prompt){alert('Please enter a name and a prompt.');return;}
   btn.disabled=true;btn.textContent='Publishing…';
   try{
     const d=await(await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
-    if(!d.success){alert(d.error||'게시 실패');return;}
+    if(!d.success){alert(d.error||'Publishing failed.');return;}
     closePub();
     ['pName','pPrompt','pEmoji'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('pPrice').value='0';
     setTab('templates');
-  }catch(e){alert('게시 중 오류');}
+  }catch(e){alert('Error while publishing.');}
   finally{btn.disabled=false;btn.textContent='Publish';}
 }
 

@@ -73,21 +73,21 @@
 
   <!-- 사진→릴스 넛지 -->
   <div class="nudge fade d1" id="reelNudge" style="display:none">
-    <span>🎬 <b>사진을 릴스로</b> 만들어 보세요 — 릴스는 사진보다 도달이 훨씬 높아요.</span>
-    <span class="nudge-hint">사진 카드의 <b>→ Reel</b> 버튼을 누르면 됩니다.</span>
+    <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
+    <span class="nudge-hint">Just hit the <b>→ Reel</b> button on any photo card.</span>
   </div>
 
   <div class="filter-row fade d1" id="filterRow"></div>
   <div class="grid fade d2" id="grid"></div>
 
   <div class="empty hidden" id="empty">
-    <div class="ico">🖼️</div><h3>Your gallery is waiting</h3>
+    <div class="ico"></div><h3>Your gallery is waiting</h3>
     <p>Your very first result comes out watermark-free — make something you can post today.</p>
     <a href="/studio" class="btn btn-primary">Open Studio →</a>
     <div class="empty-hooks">
-      <div class="eh">🔥 Come back daily — your streak earns free credits</div>
-      <div class="eh">🗓 Turn one look into a full week's set in a tap</div>
-      <div class="eh">✨ 7 industries · 48+ templates ready, zero prompts</div>
+      <div class="eh">Come back daily — your streak earns free credits</div>
+      <div class="eh">Turn one look into a full week's set in a tap</div>
+      <div class="eh">7 industries · 48+ templates ready, zero prompts</div>
     </div>
   </div>
 </div>
@@ -96,14 +96,14 @@
 <div class="modal-bg" id="reelModal" onclick="if(event.target===this)closeReel()">
   <div class="modal">
     <button class="x" onclick="closeReel()">✕</button>
-    <h3>🎬 사진을 릴스로</h3>
-    <div class="msub">이 사진을 움직이는 5초 릴스로 만들어요. 움직임을 설명해 주세요.</div>
+    <h3>Turn photo into a Reel</h3>
+    <div class="msub">Turn this photo into a moving 5-second Reel. Describe the motion you want.</div>
     <img id="reelSrcPreview" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px" alt="">
-    <textarea id="reelPrompt" placeholder="예: 카메라가 천천히 줌인하며 부드럽게 흔들리는 머리카락" style="width:100%;min-height:72px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px"></textarea>
-    <button class="btn btn-primary" style="width:100%" id="reelGoBtn" onclick="createReel()">릴스 만들기 · <span id="reelCost">◈ —</span></button>
+    <textarea id="reelPrompt" placeholder="e.g. camera slowly zooms in while hair sways gently" style="width:100%;min-height:72px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px"></textarea>
+    <button class="btn btn-primary" style="width:100%" id="reelGoBtn" onclick="createReel()">Create Reel · <span id="reelCost">◈ —</span></button>
     <div id="reelProgress" style="display:none;margin-top:14px;text-align:center;color:var(--dim);font-size:13px">
       <div class="spin" style="width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;margin:8px auto 12px"></div>
-      릴스 생성 중… 보통 2~5분 걸려요. <b style="color:var(--text)">창을 닫아도 갤러리에 자동 저장</b>돼요.
+      Creating your Reel… usually takes 2-5 minutes. <b style="color:var(--text)">It saves to your gallery automatically even if you close this window.</b>
     </div>
   </div>
 </div>
@@ -120,7 +120,7 @@
       </div>
       <div class="view-actions">
         <a id="viewDownload" href="#" download><button class="btn">⬇ Download</button></a>
-        <button class="btn" onclick="viewNewTab()">⤢ 새 탭</button>
+        <button class="btn" onclick="viewNewTab()">⤢ New tab</button>
       </div>
     </div>
   </div>
@@ -170,7 +170,7 @@ function inferTemplate(promptText){
     const sc=hit/s.tokens.length;
     if(sc>score){score=sc;best=s.name;}
   }
-  return score>=0.82?best+' (추정)':'';
+  return score>=0.82?best+' (estimated)':'';
 }
 
 async function load(){
@@ -214,7 +214,7 @@ function render(){
         ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="openView(${it.idx})"></video>`
         :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="openView(${it.idx})">`}
       <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>
-      <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}${it.template?' · 🧩 '+esc(it.template):''}</div></div>
+      <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}${it.template?' · '+esc(it.template):''}</div></div>
       <div class="actions">
         ${it.type==='photo'?`<button class="reel" onclick="openReel('${esc(it.url)}','${esc(it.name)}')">→ Reel</button>`:''}
         <a href="${esc(it.url)}" download><button>⬇</button></a>
@@ -235,10 +235,10 @@ function openView(idx){
     ? `<video src="${esc(it.url)}" controls autoplay loop playsinline></video>`
     : `<img src="${esc(it.url)}" alt="">`;
   const tplEl=document.getElementById('viewTpl');
-  if(it.template){ tplEl.className='view-tpl'; tplEl.innerHTML='🧩 '+esc(it.template); }
-  else { tplEl.className='view-tpl empty'; tplEl.innerHTML='템플릿 정보 없음'; }
+  if(it.template){ tplEl.className='view-tpl'; tplEl.innerHTML=esc(it.template); }
+  else { tplEl.className='view-tpl empty'; tplEl.innerHTML='No template info'; }
   document.getElementById('viewMeta').innerHTML = [
-    it.type==='reel'?'릴스':'사진',
+    it.type==='reel'?'Reel':'Photo',
     it.name?esc(it.name):'',
     it.date?esc(it.date):'',
     it.model?esc(it.model):''
@@ -285,13 +285,13 @@ async function createReel(){
     // 비동기: 제출 → jobId → 폴링 (Cloudflare 100초 타임아웃 회피)
     const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
     const data=await res.json();
-    if(res.status===402){toast('크레딧이 부족해요. Billing에서 충전해 주세요.','error');setTimeout(()=>location.href='/billing',1200);return;}
-    if(!res.ok||!data.success){toast(data.error||'릴스 생성에 실패했어요.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';return;}
+    if(res.status===402){toast('Not enough credits. Top up in Billing.','error');setTimeout(()=>location.href='/billing',1200);return;}
+    if(!res.ok||!data.success){toast(data.error||'Failed to create the Reel.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';return;}
     const url=await pollReelJob(data.jobId);
-    toast('릴스가 만들어졌어요! 🎬','success');
+    toast('Your Reel is ready!','success');
     closeReelForce();
     await load(); // 새 릴스가 갤러리에 반영
-  }catch(e){toast(e.message||'릴스 생성 중 오류가 발생했어요.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';}
+  }catch(e){toast(e.message||'Something went wrong while creating the Reel.','error');document.getElementById('reelGoBtn').style.display='';document.getElementById('reelProgress').style.display='none';}
   finally{reelBusy=false;}
 }
 function closeReelForce(){reelBusy=false;document.getElementById('reelModal').classList.remove('open');}
@@ -302,9 +302,9 @@ async function pollReelJob(jobId){
     try{ d=(await(await fetch('/api/generate/video/jobs/'+jobId)).json()).data; }catch(e){ continue; }
     if(!d)continue;
     if(d.status==='succeeded')return d.url;
-    if(d.status==='failed')throw new Error(d.error||'릴스 생성 실패');
+    if(d.status==='failed')throw new Error(d.error||'Reel creation failed');
   }
-  throw new Error('릴스 생성이 너무 오래 걸려요. 잠시 후 갤러리를 새로고침해 주세요.');
+  throw new Error('The Reel is taking too long. Please refresh the gallery in a moment.');
 }
 
 loadReelCost();renderFilters();load();

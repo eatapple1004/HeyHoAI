@@ -95,10 +95,10 @@
   <div class="sub fade d1">Embed Doppia in your store, scale across a team, resell to clients, and schedule everything.</div>
 
   <div class="tabs fade d2">
-    <button class="on" id="tApi" onclick="setTab('api')">🔌 API &amp; Shopify</button>
-    <button id="tTeam" onclick="setTab('team')">👥 Team</button>
-    <button id="tWl" onclick="setTab('wl')">🏷️ White-label</button>
-    <button id="tAna" onclick="setTab('ana')">📅 Schedule &amp; Analytics</button>
+    <button class="on" id="tApi" onclick="setTab('api')">API &amp; Shopify</button>
+    <button id="tTeam" onclick="setTab('team')">Team</button>
+    <button id="tWl" onclick="setTab('wl')">White-label</button>
+    <button id="tAna" onclick="setTab('ana')">Schedule &amp; Analytics</button>
   </div>
 
   <!-- API & SHOPIFY -->
@@ -108,7 +108,7 @@
         <span class="role owner">Brand plan</span></div>
       <div class="keybox"><code id="apiKey">sk_live_••••••••••••••••3f9a</code>
         <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="reveal()">Reveal</button>
-          <button class="btn btn-ghost" onclick="alert('재발급 (mock)')">Regenerate</button></div></div>
+          <button class="btn btn-ghost" onclick="alert('Regenerate (mock)')">Regenerate</button></div></div>
       <pre><code><span class="tok">POST</span> https://api.heyhoai.com/v1/render
 <span class="tok">Authorization:</span> Bearer <span class="str">sk_live_...</span>
 
@@ -121,8 +121,8 @@
       <div class="meter"><i></i></div>
     </div>
     <div class="card glass">
-      <div class="row"><div><h3>🛍️ Shopify app</h3><p>Bulk-generate lookbooks, on-model shots and reels straight from your product catalog. Auto-syncs new products.</p></div>
-        <button class="btn btn-primary" onclick="alert('Shopify 설치 (mock)')">Install on Shopify</button></div>
+      <div class="row"><div><h3>Shopify app</h3><p>Bulk-generate lookbooks, on-model shots and reels straight from your product catalog. Auto-syncs new products.</p></div>
+        <button class="btn btn-primary" onclick="alert('Install on Shopify (mock)')">Install on Shopify</button></div>
     </div>
   </div>
 
@@ -130,7 +130,7 @@
   <div class="panel" id="pTeam">
     <!-- 팀 없을 때 -->
     <div class="card glass" id="teamEmpty" style="display:none">
-      <div class="row"><div><h3>아직 팀이 없어요</h3><p>팀을 만들고 멤버를 초대해 함께 콘텐츠를 만들어 보세요.</p></div>
+      <div class="row"><div><h3>No team yet</h3><p>Create a team and invite members to build content together.</p></div>
         <button class="btn btn-primary" onclick="createTeam()">+ Create team</button></div>
     </div>
     <!-- 팀 있을 때 -->
@@ -147,21 +147,21 @@
           </div>
         </div>
         <div id="inviteBox" style="display:none;background:rgba(94,224,214,.08);border:1px solid rgba(94,224,214,.25);border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:13px">
-          <div style="color:var(--dim);margin-bottom:6px">초대 링크 (14일 유효, <b id="invRole">editor</b> 권한). 이 링크를 공유하세요:</div>
+          <div style="color:var(--dim);margin-bottom:6px">Invite link (valid 14 days, <b id="invRole">editor</b> access). Share this link:</div>
           <div style="display:flex;gap:8px;align-items:center">
             <input id="invUrl" readonly style="flex:1;font-family:inherit;background:rgba(0,0,0,.25);border:1px solid var(--border2);color:var(--accent2);border-radius:8px;padding:8px 10px;font-size:12.5px">
-            <button class="btn btn-ghost" onclick="copyInvite(this)">⧉ Copy</button>
+            <button class="btn btn-ghost" onclick="copyInvite(this)">Copy</button>
           </div>
         </div>
         <div id="memberList"></div>
       </div>
       <div class="card glass">
-        <div class="row"><div><h3>Shared credit pool</h3><p>팀 공유 잔액으로 생성하면 모든 멤버가 함께 씁니다. 스튜디오 우상단에서 작업 컨텍스트를 팀으로 바꾸세요.</p></div>
+        <div class="row"><div><h3>Shared credit pool</h3><p>Generate from the shared team balance and every member draws from it. Switch your work context to the team from the top right of Studio.</p></div>
           <div class="pool"><span class="n" id="poolBal">◈ —</span></div></div>
         <div class="row" id="poolFund" style="margin-top:14px;display:none">
-          <div style="font-size:13px;color:var(--dim)">내 개인 크레딧을 팀 풀로 이체</div>
+          <div style="font-size:13px;color:var(--dim)">Transfer your personal credits to the team pool</div>
           <div style="display:flex;gap:8px;align-items:center">
-            <input id="transferAmt" type="number" min="1" placeholder="금액" style="width:110px;font-family:inherit;background:rgba(0,0,0,.25);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:8px 10px;font-size:13px">
+            <input id="transferAmt" type="number" min="1" placeholder="Amount" style="width:110px;font-family:inherit;background:rgba(0,0,0,.25);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:8px 10px;font-size:13px">
             <button class="btn btn-primary" onclick="transferToPool(this)">Transfer →</button>
           </div>
         </div>
@@ -172,7 +172,7 @@
   <!-- WHITE-LABEL -->
   <div class="panel" id="pWl">
     <div class="card glass">
-      <h3>🏷️ White-label for agencies</h3>
+      <h3>White-label for agencies</h3>
       <p>Resell Doppia under your own brand. Your domain, your logo, your pricing — we stay invisible.</p>
       <ul class="feat">
         <li>Custom domain &amp; full logo / color theming</li>
@@ -183,7 +183,7 @@
       </ul>
       <div class="row" style="margin-top:18px">
         <div style="font-size:13px;color:var(--dim)">From <b style="color:var(--text);font-family:'Sora';font-size:17px">$499</b> / mo + usage</div>
-        <button class="btn btn-primary" onclick="alert('화이트라벨 문의 (mock) → sales')">Request white-label</button>
+        <button class="btn btn-primary" onclick="alert('White-label inquiry (mock) → sales')">Request white-label</button>
       </div>
     </div>
   </div>
@@ -205,7 +205,7 @@
         <button class="btn btn-ghost" onclick="location.href='/heyhoai/accounts/page'">+ Schedule post</button></div>
       <div class="cal" id="anaCal"></div>
       <div id="anaEmpty" style="display:none;color:var(--faint);font-size:13px;padding:16px 0;text-align:center">
-        이번 주 예약/게시된 콘텐츠가 없어요. <a onclick="location.href='/heyhoai/accounts/page'" style="color:var(--accent2);cursor:pointer">계정에서 콘텐츠를 큐에 추가</a>하세요.
+        No scheduled or published content this week. <a onclick="location.href='/heyhoai/accounts/page'" style="color:var(--accent2);cursor:pointer">Add content to the queue from your accounts</a>.
       </div>
     </div>
   </div>
@@ -244,10 +244,10 @@ function renderChart(daily){
   const days=[];const now=new Date();
   for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d);}
   const max=Math.max(1,...days.map(d=>map[ymd(d)]||0));
-  const wd=['일','월','화','수','목','금','토'];
+  const wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   document.getElementById('anaChart').innerHTML=days.map(d=>{
     const c=map[ymd(d)]||0;const h=Math.round(c/max*100);
-    return `<div class="bar" style="height:${Math.max(h,4)}%" title="${ymd(d)}: ${c}건"><span>${wd[d.getDay()]}</span></div>`;
+    return `<div class="bar" style="height:${Math.max(h,4)}%" title="${ymd(d)}: ${c} posts"><span>${wd[d.getDay()]}</span></div>`;
   }).join('');
 }
 function renderCalendar(items){
@@ -326,55 +326,55 @@ async function loadTeamDetail(){
         ctrl=`<span class="${ROLE_CLS[m.role]}">${m.role}</span> <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="leaveTeam()">Leave</button>`;
       }
       return `<div class="member"><div class="ava g${(i%8)+1}">${av[i%av.length]}</div>
-        <div style="flex:1"><div class="nm">${name}${isMe?' (나)':''}</div><div class="em">${esc(m.email)}</div></div>
+        <div style="flex:1"><div class="nm">${name}${isMe?' (you)':''}</div><div class="em">${esc(m.email)}</div></div>
         <div style="display:flex;gap:8px;align-items:center">${ctrl}</div></div>`;
     }).join('');
   }catch(e){}
 }
 
 async function createTeam(){
-  const name=prompt('팀 이름을 입력하세요','My Team');
+  const name=prompt('Enter a team name','My Team');
   if(!name)return;
   try{const d=await(await fetch('/api/teams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})})).json();
-    if(d.success){CUR=d.data.id;loadTeams();}else alert(d.error||'생성 실패');}catch(e){alert('생성 실패');}
+    if(d.success){CUR=d.data.id;loadTeams();}else alert(d.error||'Failed to create team');}catch(e){alert('Failed to create team');}
 }
 async function makeInvite(){
-  const role=prompt('초대할 권한 (editor 또는 viewer)','editor');
+  const role=prompt('Role to invite (editor or viewer)','editor');
   if(!role)return;
   try{
     const d=await(await fetch('/api/teams/'+CUR+'/invites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:role.toLowerCase()})})).json();
-    if(!d.success){alert(d.error||'실패');return;}
+    if(!d.success){alert(d.error||'Failed');return;}
     document.getElementById('invRole').textContent=d.data.role;
     document.getElementById('invUrl').value=d.data.url;
     document.getElementById('inviteBox').style.display='';
-  }catch(e){alert('초대 생성 실패');}
+  }catch(e){alert('Failed to create invite');}
 }
 function copyInvite(btn){const v=document.getElementById('invUrl').value;
   navigator.clipboard.writeText(v).then(()=>{const o=btn.textContent;btn.textContent='✓ Copied';setTimeout(()=>btn.textContent=o,1500);}).catch(()=>{});}
 async function changeRole(uid,role){
   try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+uid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role})})).json();
-    if(!d.success)alert(d.error||'실패');loadTeamDetail();}catch(e){}
+    if(!d.success)alert(d.error||'Failed');loadTeamDetail();}catch(e){}
 }
 async function removeMember(uid){
-  if(!confirm('이 멤버를 팀에서 내보낼까요?'))return;
+  if(!confirm('Remove this member from the team?'))return;
   try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+uid,{method:'DELETE'})).json();
-    if(d.success)loadTeams();else alert(d.error||'실패');}catch(e){}
+    if(d.success)loadTeams();else alert(d.error||'Failed');}catch(e){}
 }
 async function leaveTeam(){
-  if(!confirm('이 팀에서 나가시겠어요?'))return;
+  if(!confirm('Leave this team?'))return;
   try{const d=await(await fetch('/api/teams/'+CUR+'/members/'+ME.id,{method:'DELETE'})).json();
-    if(d.success){CUR=null;loadTeams();}else alert(d.error||'실패');}catch(e){}
+    if(d.success){CUR=null;loadTeams();}else alert(d.error||'Failed');}catch(e){}
 }
 async function transferToPool(btn){
   const amt=parseInt(document.getElementById('transferAmt').value,10);
-  if(!(amt>0)){alert('이체 금액을 입력하세요.');return;}
+  if(!(amt>0)){alert('Enter an amount to transfer.');return;}
   btn.disabled=true;
   try{
     const d=await(await fetch('/api/teams/'+CUR+'/credits/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt})})).json();
-    if(!d.success){alert(d.error||'이체 실패');return;}
+    if(!d.success){alert(d.error||'Transfer failed');return;}
     document.getElementById('transferAmt').value='';
     loadTeamDetail();
-  }catch(e){alert('이체 실패');}
+  }catch(e){alert('Transfer failed');}
   finally{btn.disabled=false;}
 }
 </script>

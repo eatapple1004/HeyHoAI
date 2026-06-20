@@ -134,17 +134,17 @@
   <div class="sub fade d1">Subscribe for monthly credits, or top up anytime. Credits never expire while subscribed.</div>
 
   <div id="purchasedBanner" class="hidden" style="background:rgba(94,224,214,.12);border:1px solid rgba(94,224,214,.35);color:var(--cyan);font-size:13.5px;font-weight:600;padding:14px 18px;border-radius:14px;margin-bottom:20px">
-    ✅ 결제가 완료됐어요! 크레딧 반영까지 몇 초 걸릴 수 있어요. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">새로고침</a>
+    Payment complete. Your credits may take a few seconds to appear. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">Refresh</a>
   </div>
 
   <div class="status fade d2">
-    <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">크레딧 팩으로 충전해서 사용 — 구독은 준비 중</div></div>
+    <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">Top up with credit packs — subscriptions coming soon</div></div>
     <div class="bal"><span class="num">◈ <span id="balNum">—</span></span><span class="lbl">credits left</span></div>
   </div>
 
   <!-- 24h 첫 결제 오퍼 (실제 /api/subscription 연동, 50% off) -->
   <div class="offer-banner fade d2 hidden" id="offerBanner">
-    ⏰ <b id="offerCountdown">--:--:--</b> left —
+    <b id="offerCountdown">--:--:--</b> left —
     Pro <s>$<span id="offerList">39</span></s> <b>$<span id="offerPrice">20</span>/mo</b> ·
     <b><span id="offerPct">50</span>% off first month</b>
     <button class="btn btn-primary" id="offerCta" onclick="upgradeToPro(this)">Claim →</button>
@@ -177,7 +177,7 @@
       <div class="cyc-note"></div>
       <div class="credits-inc">600 credits / month</div>
       <div class="cr-eq">≈ 300 sets or 100 reels</div>
-      <ul><li>Everything in Creator</li><li>🎨 Brand kit</li><li>Multilingual captions on</li><li>4K + personal license</li></ul>
+      <ul><li>Everything in Creator</li><li>Brand kit</li><li>Multilingual captions on</li><li>4K + personal license</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Upgrade</button>
     </div>
     <div class="plan-card glass" data-plan="brand" data-m="79" data-y="63" data-yt="$756/yr billed annually · save $192">
@@ -192,7 +192,7 @@
 
   <div class="team-band glass fade d3">
     <div class="tb-info">
-      <div class="tb-tag">👥 TEAM</div>
+      <div class="tb-tag">TEAM</div>
       <div class="tb-title">Scaling across a team or agency?</div>
       <div class="tb-desc">Shared credit pool, per-seat roles, and one invoice — sits between Brand and full White-label. Add or remove seats anytime.</div>
     </div>
@@ -224,7 +224,7 @@
   <div class="section-label fade d4" style="margin-top:46px">Wallet automation</div>
   <div class="frow glass fade d4">
     <div>
-      <div class="lead">⚡ Auto top-up</div>
+      <div class="lead">Auto top-up</div>
       <div class="desc">Never run out mid-generation. When your balance drops below the threshold, we auto-buy a pack so your renders never stop.</div>
       <div class="cfg off" id="topupCfg">
         <label>When below
@@ -244,15 +244,15 @@
       <div class="lead">Need a break?</div>
       <div class="desc">Pause keeps your account, gallery and trained faces — billing stops and resumes whenever you're back. Most people pause instead of cancelling.</div>
       <div class="manage">
-        <button class="btn btn-ghost" onclick="pauseFlow()">⏸ Pause subscription</button>
+        <button class="btn btn-ghost" onclick="pauseFlow()">Pause subscription</button>
         <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">Cancel</button>
       </div>
-      <div class="pausebox hidden" id="pauseBox">⏸ <b>Subscription paused</b> — no charges until you resume. Your credits and gallery stay safe.</div>
+      <div class="pausebox hidden" id="pauseBox"><b>Subscription paused</b> — no charges until you resume. Your credits and gallery stay safe.</div>
       <div class="cancelbox hidden" id="cancelBox">
         <div class="cbh">Before you cancel…</div>
         <div class="cbb">You'll lose your monthly credits, watermark-free exports and Pro features. Your gallery &amp; trained faces stay — but the perks stop. Most creators pause instead.</div>
         <div class="cbcta">
-          <button class="btn btn-primary" onclick="hideCancel();pauseFlow()">⏸ Pause instead (recommended)</button>
+          <button class="btn btn-primary" onclick="hideCancel();pauseFlow()">Pause instead (recommended)</button>
           <button class="btn btn-ghost" onclick="reallyCancel()" style="color:var(--faint)">Cancel anyway</button>
         </div>
       </div>
@@ -264,13 +264,13 @@
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
-function planSoon(){ notify('플랜 변경은 곧 오픈됩니다 — 지금은 크레딧 팩으로 충전해 주세요.'); }
-function joinTeamBeta(){ notify("Team 베타 대기열에 등록됐어요 — 우선 액세스를 메일로 보내드릴게요."); }
+function planSoon(){ notify('Plan changes are coming soon — for now, top up with a credit pack.'); }
+function joinTeamBeta(){ notify("You're on the Team beta waitlist — we'll email you priority access."); }
 function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidden'); }
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
-function reallyCancel(){ hideCancel(); notify('구독 해지는 곧 지원됩니다 — 갤러리·학습된 얼굴은 유지됩니다.'); }
-function toggleTopup(el){ el.checked=false; document.getElementById('topupCfg').classList.add('off'); notify('자동 충전은 준비 중이에요.'); }
+function reallyCancel(){ hideCancel(); notify('Cancellation is coming soon — your gallery and trained faces are kept.'); }
+function toggleTopup(el){ el.checked=false; document.getElementById('topupCfg').classList.add('off'); notify('Auto top-up is coming soon.'); }
 
 let CYCLE='m';
 function setCycle(c,btn){
@@ -316,7 +316,7 @@ async function loadBalance(){
     document.getElementById('navBalance').textContent=bal;
     if(data.data.unlimited){
       document.getElementById('planName').textContent='Admin';
-      document.getElementById('planNote').textContent='관리자 계정 — 과금 면제';
+      document.getElementById('planNote').textContent='Admin account — billing exempt';
     }
   }catch(e){console.error(e);}
 }
@@ -339,15 +339,15 @@ async function buyPack(packId,btn){
   try{
     if(EXIMBAY&&EXIMBAY.configured){
       const d=await(await fetch('/api/billing/eximbay/ready',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
-      if(!d.success){notify(d.error||'결제 준비에 실패했습니다.','error');return;}
+      if(!d.success){notify(d.error||'Could not prepare payment.','error');return;}
       await loadEximbaySDK();
       window.EXIMBAY.request_pay({fgkey:d.data.fgkey,payment:d.data.payment,merchant:d.data.merchant,buyer:d.data.buyer,url:d.data.url,settings:{display_type:'P'}});
     }else{
       const data=await(await fetch('/api/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
-      if(!data.success){notify(data.error||'결제 페이지를 열 수 없습니다.','error');return;}
+      if(!data.success){notify(data.error||'Could not open the checkout page.','error');return;}
       window.location.href=data.data.url;
     }
-  }catch(e){ notify('결제 연결에 실패했습니다.','error'); }
+  }catch(e){ notify('Payment connection failed.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }
 }
 
@@ -368,7 +368,7 @@ async function loadSubscription(){
     }
     if(sub.plan!=='free' && sub.planName){
       document.getElementById('planName').textContent=sub.planName;
-      if(sub.renewsAt) document.getElementById('planNote').textContent='다음 갱신 '+new Date(sub.renewsAt).toLocaleDateString();
+      if(sub.renewsAt) document.getElementById('planNote').textContent='Renews '+new Date(sub.renewsAt).toLocaleDateString();
     }
     const banner=document.getElementById('offerBanner');
     if(sub.offer && sub.offer.active){
@@ -385,10 +385,10 @@ async function upgradeToPro(btn){
   try{
     const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:'pro'})});
     const d=await res.json();
-    if(d.success){ notify('Pro로 업그레이드됐어요! 🎉'); if(offerTimer)clearInterval(offerTimer); loadSubscription();loadBalance(); }
-    else if(d.comingSoon){ notify('구독 결제는 곧 오픈됩니다 — 가맹점 심사 통과 후 활성화돼요.'); }
-    else notify(d.error||'업그레이드에 실패했어요.','error');
-  }catch(e){ notify('업그레이드 연결에 실패했어요.','error'); }
+    if(d.success){ notify('Upgraded to Pro!'); if(offerTimer)clearInterval(offerTimer); loadSubscription();loadBalance(); }
+    else if(d.comingSoon){ notify('Subscription billing is coming soon — it activates once merchant review passes.'); }
+    else notify(d.error||'Upgrade failed.','error');
+  }catch(e){ notify('Upgrade connection failed.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }
 }
 
