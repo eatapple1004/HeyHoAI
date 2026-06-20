@@ -96,6 +96,7 @@
   .gen-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;width:min(1032px,calc(100% - 48px));
     background:rgba(19,19,29,.84);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:18px;padding:14px 20px;
     display:flex;flex-direction:column;gap:13px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
+  .gen-bar.gen-inline{position:static;transform:none;left:auto;right:auto;bottom:auto;width:100%;margin:0 0 8px;box-shadow:none}
   .gen-bar .summary{font-size:13.5px;color:var(--dim)}
   .gen-bar .summary b{color:var(--text)}
   .gen-bar .summary .cost{color:var(--gold);font-weight:700}
@@ -246,6 +247,9 @@
     <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
 
+  <!-- Custom 모드 생성란이 모드 탭 바로 밑에 고정될 자리 (placeGenBar가 .gen-bar를 여기로 이동) -->
+  <div id="composeTop"></div>
+
   <div class="step fade d2">
     <div class="step-head"><div class="step-num" id="snSubject">1</div><h2 id="step1Title">Add your face</h2>
       <span class="hint" id="step1Hint">Upload a clear selfie — we keep your identity across every shot.</span></div>
@@ -314,7 +318,7 @@
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
-      <button class="opts-btn" id="saveTplBtn" style="display:none" onclick="saveAsTemplate()">Save as template</button>
+      <button class="btn" id="saveTplBtn" style="display:none" onclick="saveAsTemplate()">Save as template</button>
       <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="Generate just one — a quick test (about 1/4 the time and API cost)">Test 1</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
@@ -620,6 +624,22 @@ const STEP1={
   ugc:['Add your spokesperson','Coming soon — lip-synced AI spokesperson.'],
   custom:['Add your face or product','Upload a reference — then write your own prompt below.']
 };
+// Custom: 생성란(.gen-bar)을 모드 탭 바로 밑(#composeTop)에 고정 / 그 외: 하단 플로팅 복귀
+let _genBarHome=null;
+function placeGenBar(custom){
+  const bar=document.querySelector('.gen-bar');
+  const top=document.getElementById('composeTop');
+  if(!bar||!top)return;
+  bar.style.bottom=''; // 도킹 스크립트 잔여 인라인 bottom 제거
+  if(custom){
+    if(!_genBarHome)_genBarHome={parent:bar.parentNode,next:bar.nextSibling};
+    top.appendChild(bar);
+    bar.classList.add('gen-inline');
+  }else{
+    if(_genBarHome&&bar.parentNode!==_genBarHome.parent){_genBarHome.parent.insertBefore(bar,_genBarHome.next);}
+    bar.classList.remove('gen-inline');
+  }
+}
 function setMode(m,initialVertical){
   // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
   const defFilter=m==='shopping'?(initialVertical&&VERTICAL_EMOJI[initialVertical]?initialVertical:'Fashion'):'All';
@@ -646,6 +666,7 @@ function setMode(m,initialVertical){
   document.getElementById('saveTplBtn').style.display=custom?'':'none';
   // 하단 프롬프트 칸: Custom 전용 — 템플릿 모드는 레시피 모달의 Add detail 사용
   document.getElementById('promptRow').style.display=custom?'':'none';
+  placeGenBar(custom);
   document.getElementById('resultStep').classList.add('hidden');
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
