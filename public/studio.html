@@ -646,9 +646,6 @@ function setMode(m,initialVertical){
   document.getElementById('saveTplBtn').style.display=custom?'':'none';
   // 하단 프롬프트 칸: Custom 전용 — 템플릿 모드는 레시피 모달의 Add detail 사용
   document.getElementById('promptRow').style.display=custom?'':'none';
-  // 하단 옵션줄(모델·캡션·언어): 템플릿 모드 완전히 숨김 / Custom은 강제 표시(툴 픽커). Options 토글은 불필요 → 숨김.
-  document.getElementById('addonsRow').style.display=custom?'flex':'none';
-  document.getElementById('optsBtn').style.display='none';
   document.getElementById('resultStep').classList.add('hidden');
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
