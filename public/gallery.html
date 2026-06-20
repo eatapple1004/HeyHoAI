@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doppia · Gallery</title>
+<title>Doppia · Library</title>
 <script src="/js/flags.js" defer></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
@@ -45,6 +45,12 @@
   .empty p{font-size:14px;margin-bottom:22px}
   .empty-hooks{display:flex;flex-direction:column;gap:10px;max-width:340px;margin:30px auto 0}
   .empty-hooks .eh{display:flex;align-items:center;gap:10px;text-align:left;font-size:13px;color:var(--dim);background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:13px 16px}
+  .tabbar{display:flex;gap:6px;margin-bottom:22px;border-bottom:1px solid var(--border)}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;padding:10px 14px;cursor:pointer;margin-bottom:-1px}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+  .item .badge.vis{left:auto;right:10px;background:rgba(124,108,255,.6)}
+  .item .badge.vis.private{background:rgba(0,0,0,.55)}
 </style>
 </head>
 <body>
@@ -57,7 +63,7 @@
     <div class="nav-links">
       <a onclick="location.href='/studio'">Studio</a>
       <a onclick="location.href='/marketplace'">Market</a>
-      <a class="active">Gallery</a>
+      <a class="active">Library</a>
       <a onclick="location.href='/billing'">Billing</a>
       <a onclick="location.href='/business'">Business</a>
     </div>
@@ -67,29 +73,54 @@
 
 <div class="wrap">
   <div class="head fade d1">
-    <div><h1>Your Gallery</h1><div class="sub">Everything you've created — download or post anytime.</div></div>
+    <div><h1>Your Library</h1><div class="sub">Your creations, your saved templates, and the community feed.</div></div>
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
-  <!-- 사진→릴스 넛지 -->
-  <div class="nudge fade d1" id="reelNudge" style="display:none">
-    <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
-    <span class="nudge-hint">Just hit the <b>→ Reel</b> button on any photo card.</span>
+  <div class="tabbar fade d1">
+    <button class="tab active" data-tab="creations" onclick="switchTab('creations')">My creations</button>
+    <button class="tab" data-tab="templates" onclick="switchTab('templates')">My templates</button>
+    <button class="tab" data-tab="feed" onclick="switchTab('feed')">Feed</button>
   </div>
 
-  <div class="filter-row fade d1" id="filterRow"></div>
-  <div class="grid fade d2" id="grid"></div>
-
-  <div class="empty hidden" id="empty">
-    <div class="ico"></div><h3>Your gallery is waiting</h3>
-    <p>Your very first result comes out watermark-free — make something you can post today.</p>
-    <a href="/studio" class="btn btn-primary">Open Studio →</a>
-    <div class="empty-hooks">
-      <div class="eh">Come back daily — your streak earns free credits</div>
-      <div class="eh">Turn one look into a full week's set in a tap</div>
-      <div class="eh">7 industries · 48+ templates ready, zero prompts</div>
+  <!-- My creations (생성 결과물) -->
+  <section id="tab-creations">
+    <div class="nudge fade d1" id="reelNudge" style="display:none">
+      <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
+      <span class="nudge-hint">Just hit the <b>→ Reel</b> button on any photo card.</span>
     </div>
-  </div>
+    <div class="filter-row fade d1" id="filterRow"></div>
+    <div class="grid fade d2" id="grid"></div>
+    <div class="empty hidden" id="empty">
+      <div class="ico"></div><h3>Your library is waiting</h3>
+      <p>Your very first result comes out watermark-free — make something you can post today.</p>
+      <a href="/studio" class="btn btn-primary">Open Studio →</a>
+      <div class="empty-hooks">
+        <div class="eh">Come back daily — your streak earns free credits</div>
+        <div class="eh">Turn one look into a full week's set in a tap</div>
+        <div class="eh">7 industries · 48+ templates ready, zero prompts</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- My templates (저장한 템플릿) -->
+  <section id="tab-templates" class="hidden">
+    <div class="grid fade d2" id="tplGrid"></div>
+    <div class="empty hidden" id="tplEmpty">
+      <div class="ico"></div><h3>No saved templates yet</h3>
+      <p>In Studio, build a look in Custom mode and hit "Save as template" — it shows up here.</p>
+      <a href="/studio" class="btn btn-primary">Open Studio →</a>
+    </div>
+  </section>
+
+  <!-- Feed (공개 커뮤니티 템플릿) -->
+  <section id="tab-feed" class="hidden">
+    <div class="grid fade d2" id="feedGrid"></div>
+    <div class="empty hidden" id="feedEmpty">
+      <div class="ico"></div><h3>The feed is just getting started</h3>
+      <p>Public templates from the community will appear here — try them with your own photo.</p>
+    </div>
+  </section>
 </div>
 
 <!-- 릴스 생성 모달 -->
@@ -305,6 +336,71 @@ async function pollReelJob(jobId){
     if(d.status==='failed')throw new Error(d.error||'Reel creation failed');
   }
   throw new Error('The Reel is taking too long. Please refresh the gallery in a moment.');
+}
+
+// ── Library 탭 (My creations / My templates / Feed) ──
+let tplLoaded=false, feedLoaded=false;
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.getElementById('tab-creations').classList.toggle('hidden',t!=='creations');
+  document.getElementById('tab-templates').classList.toggle('hidden',t!=='templates');
+  document.getElementById('tab-feed').classList.toggle('hidden',t!=='feed');
+  if(t==='templates'&&!tplLoaded){tplLoaded=true;loadMyTemplates();}
+  if(t==='feed'&&!feedLoaded){feedLoaded=true;loadFeed();}
+}
+function tplCard(t,mine){
+  const prev=(t.preview_media&&t.preview_media[0])||'';
+  const thumb=prev
+    ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="tryTpl('${t.id}')">`
+    :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#5ee0d6);cursor:pointer" onclick="tryTpl('${t.id}')">${esc(t.emoji||'🎨')}</div>`;
+  const vis=mine?`<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>`:'';
+  const meta=mine
+    ?`♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`
+    :`by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`;
+  const actions=mine
+    ?`<button class="del" onclick="delTpl('${t.id}')">Delete</button><button onclick="tryTpl('${t.id}')">Use</button>`
+    :`<button onclick="tryTpl('${t.id}')">Try it</button>`;
+  return `<div class="item">
+    ${thumb}
+    <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}
+    <div class="info"><div class="nm">${esc(t.name)}</div><div class="dt">${meta}</div></div>
+    <div class="actions">${actions}</div>
+  </div>`;
+}
+async function loadMyTemplates(){
+  const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty');
+  try{
+    const d=(await(await fetch('/api/marketplace/me')).json()).data||{};
+    const list=d.templates||[];
+    if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+    empty.classList.add('hidden');grid.innerHTML=list.map(t=>tplCard(t,true)).join('');
+  }catch(e){console.error('my templates load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+}
+async function loadFeed(){
+  const grid=document.getElementById('feedGrid'),empty=document.getElementById('feedEmpty');
+  try{
+    const d=(await(await fetch('/api/marketplace/templates?feed=1')).json()).data||[];
+    if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+    empty.classList.add('hidden');grid.innerHTML=d.map(t=>tplCard(t,false)).join('');
+  }catch(e){console.error('feed load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+}
+async function tryTpl(id){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id+'/use',{method:'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    sessionStorage.setItem('doppia_try_tpl',JSON.stringify(d.data));
+    location.href='/studio?try=1';
+  }catch(e){toast('Could not load template: '+(e.message||e),'error');}
+}
+async function delTpl(id){
+  if(!confirm('Delete this template?'))return;
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Template deleted');loadMyTemplates();
+  }catch(e){toast('Delete failed: '+(e.message||e),'error');}
 }
 
 loadReelCost();renderFilters();load();

@@ -222,7 +222,7 @@
     <div class="nav-links">
       <a class="active">Studio</a>
       <a onclick="location.href='/marketplace'">Market</a>
-      <a onclick="location.href='/gallery'">Gallery</a>
+      <a onclick="location.href='/gallery'">Library</a>
       <a onclick="location.href='/billing'">Billing</a>
       <a onclick="location.href='/business'">Business</a>
     </div>
@@ -1068,7 +1068,23 @@ function bootFromUrl(){
 }
 
 buildTemplates(); // window.RECIPES(93종) → TEMPLATES (setMode 렌더 전에 필수)
-if(!bootFromUrl()) setMode('influencer');
+// Library "Try it" → /studio?try=1 + sessionStorage(doppia_try_tpl) → Custom 모드 프리필
+function applyTryTemplate(){
+  try{
+    const raw=sessionStorage.getItem('doppia_try_tpl');
+    if(!raw)return false;
+    sessionStorage.removeItem('doppia_try_tpl');
+    const t=JSON.parse(raw);
+    setMode('custom');
+    const ep=document.getElementById('extraPrompt');
+    if(ep&&t.prompt){ep.value=t.prompt; const c=document.getElementById('extraClear'); if(c)c.classList.remove('hidden');}
+    const ts=document.getElementById('toolSel'); if(ts&&t.tool&&FE_TOOLS[t.tool])ts.value=t.tool;
+    updateBar();
+    if(window.toast)toast('Template loaded — pick a reference and generate');
+    return true;
+  }catch(e){return false;}
+}
+if(!applyTryTemplate() && !bootFromUrl()) setMode('influencer');
 loadSubjects();
 loadCredits();
 loadBrandkit();
