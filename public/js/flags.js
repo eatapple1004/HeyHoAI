@@ -72,7 +72,7 @@
     var s = document.createElement('style');
     s.textContent =
       '[data-prod-hidden]{position:relative;outline:1px dashed rgba(201,162,39,.7);outline-offset:2px}' +
-      '[data-prod-hidden]::after{content:"🔒 main "attr(data-prod-hidden);position:absolute;top:2px;right:2px;z-index:9;' +
+      '[data-prod-hidden]::after{content:"main "attr(data-prod-hidden);position:absolute;top:2px;right:2px;z-index:9;' +
       'font-size:9px;font-weight:800;letter-spacing:.3px;padding:2px 6px;border-radius:6px;' +
       'background:rgba(0,0,0,.72);color:#ffce7a;border:1px solid rgba(255,206,122,.55);pointer-events:none}';
     document.head.appendChild(s);
@@ -84,7 +84,7 @@
     if (!featureOn(pf)) { location.replace('/'); return true; }   // prod: 숨긴 페이지 → 홈
     if (IS_LOCAL && cfg(pf).launch === false) {                    // 로컬: 상단 배너
       var b = document.createElement('div');
-      b.textContent = '🔒 이 페이지는 main에서 숨김 (' + pf + ')';
+      b.textContent = '이 페이지는 main에서 숨김 (' + pf + ')';
       b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a27;color:#ffce7a;font:800 12px -apple-system,sans-serif;padding:7px 12px;text-align:center;border-bottom:1px solid rgba(255,206,122,.55)';
       (document.body || document.documentElement).appendChild(b);
     }

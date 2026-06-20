@@ -238,9 +238,9 @@
 <div class="wrap">
   <div class="topbar fade d1">
     <div class="mode-toggle">
-      <button id="modeInfluencer" class="active" onclick="setMode('influencer')">😎 Influencer</button>
-      <button id="modeShopping" onclick="setMode('shopping')">🛍️ Shopping</button>
-      <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">📢 UGC Ads</button>
+      <button id="modeInfluencer" class="active" onclick="setMode('influencer')">Influencer</button>
+      <button id="modeShopping" onclick="setMode('shopping')">Shopping</button>
+      <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">UGC Ads</button>
     </div>
     <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">🎨 Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
@@ -261,9 +261,9 @@
           <option value="energetic">⚡ Energetic</option>
           <option value="trust">🤝 Trustworthy</option>
           <option value="casual">😊 Casual</option>
-          <option value="luxury">💎 Luxury</option>
+          <option value="luxury">Luxury</option>
         </select>
-        <button class="addon-toggle" onclick="aiWriteScript()">✨ AI write script</button>
+        <button class="addon-toggle" onclick="aiWriteScript()">AI write script</button>
       </div>
     </div>
   </div>
@@ -309,7 +309,7 @@
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">⚙ Options</button>
       <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="1장만 생성 — 빠른 테스트(시간·API비용 약 1/4)">🧪 1장</button>
-      <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate ✨</button>
+      <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
   </div>
 </div>
@@ -346,18 +346,46 @@
     <h3 id="streakTitle">연속 1일!</h3>
     <div class="msub" id="streakSub">데일리 보너스 ◈1을 받았어요.</div>
     <div id="streakDots" style="display:flex;gap:7px;justify-content:center;margin:18px 0 22px"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="closeStreak()">계속 만들기 ✨</button>
+    <button class="btn btn-primary" style="width:100%" onclick="closeStreak()">계속 만들기</button>
   </div>
 </div>
 
 <!-- 인라인 페이월 -->
+<style>
+  .pw-modal{max-width:432px}
+  .pw-hero{text-align:center;margin-bottom:14px}
+  .pw-gem{font-size:32px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 4px 18px rgba(124,108,255,.55))}
+  .pw-modal .pw-title{margin:0 0 8px;font-size:20px;font-weight:800;letter-spacing:-.2px}
+  .pw-modal .pw-sub{font-size:13px;color:var(--dim)}
+  .pw-modal .pw-sub b{color:var(--text);font-weight:700}
+  .pw-short{color:#ff7eb6;font-weight:700}
+  .pw-value{font-size:11.5px;color:var(--faint);text-align:center;background:rgba(124,108,255,.08);border:1px solid rgba(124,108,255,.2);border-radius:10px;padding:9px 12px;margin-bottom:15px;line-height:1.5}
+  .pw-packs{display:flex;flex-direction:column;gap:9px}
+  .pw-pack{position:relative;display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:13px 16px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.15s;color:var(--text);font-family:inherit}
+  .pw-pack:hover{background:rgba(255,255,255,.06);border-color:rgba(124,108,255,.5);transform:translateY(-1px)}
+  .pw-pack.best{border-color:var(--accent2);background:linear-gradient(120deg,rgba(124,108,255,.14),rgba(124,108,255,.04));box-shadow:0 0 0 1px rgba(124,108,255,.3),0 10px 30px -12px rgba(124,108,255,.6)}
+  .pw-ribbon{position:absolute;top:-9px;right:14px;font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27}
+  .pw-cr{font-size:16px;font-weight:800}
+  .pw-unit{font-size:11px;font-weight:600;color:var(--dim);margin-left:6px}
+  .pw-meta{font-size:11.5px;color:var(--faint);margin-top:3px}
+  .pw-bonus{color:#5ee0d6;font-weight:700}
+  .pw-usd{font-size:19px;font-weight:800}
+  .pw-pack.best .pw-usd{color:var(--accent2)}
+  .pw-all{display:block;text-align:center;font-size:12.5px;color:var(--accent2);margin-top:8px;cursor:pointer;text-decoration:none}
+  .pw-foot{font-size:11px;color:var(--faint);text-align:center;margin-top:15px;line-height:1.6}
+  .pw-soon{color:var(--dim);font-size:13px;text-align:center;padding:18px 8px;line-height:1.7}
+  .pw-soon a{color:var(--accent2)}
+</style>
 <div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
-  <div class="modal">
+  <div class="modal pw-modal">
     <button class="x" onclick="closePaywall()">✕</button>
-    <h3>💎 크레딧이 필요해요</h3>
-    <div class="msub" id="pwSub">이 생성에는 크레딧이 더 필요합니다.</div>
-    <div id="pwPacks" style="display:flex;flex-direction:column;gap:10px"></div>
-    <div style="font-size:11.5px;color:var(--faint);margin-top:12px;text-align:center">결제 후 돌아오면 잔액이 채워져요. 그 자리에서 다시 Generate를 누르면 됩니다.</div>
+    <div class="pw-hero">
+      <h3 class="pw-title">Not enough credits</h3>
+      <div class="pw-sub" id="pwSub"></div>
+    </div>
+    <div class="pw-value">Studio-grade photos &amp; reels · 11 premium template sets</div>
+    <div id="pwPacks" class="pw-packs"></div>
+    <div class="pw-foot">Your balance refills the moment you're back — just hit Generate again.</div>
   </div>
 </div>
 
@@ -773,7 +801,7 @@ async function generate(opts){
     }
   }finally{
     lb.classList.add('hidden');
-    generating=false;btn.textContent='Generate ✨';
+    generating=false;btn.textContent='Generate';
     loadCredits(); // 잔액 갱신 (updateBar 포함)
   }
 }
@@ -949,22 +977,30 @@ async function openPaywall(cost){
   const bal=(CREDITS&&CREDITS.balance!=null)?CREDITS.balance:0;
   const short=Math.max(0,(cost||0)-bal);
   document.getElementById('pwSub').innerHTML=
-    `필요 <b style="color:var(--gold)">◈ ${cost||0}</b> · 보유 ◈ ${bal}`+(short?` · <span style="color:#ff7eb6">${short} 부족</span>`:'');
+    `Need <b>◈${cost||0}</b> · Have <b>◈${bal}</b>`+(short?` · <span class="pw-short">◈${short} short</span>`:'');
   const box=document.getElementById('pwPacks');
-  box.innerHTML='<div style="color:var(--dim);font-size:13px;text-align:center;padding:8px">불러오는 중…</div>';
+  box.innerHTML='<div class="pw-soon">Loading…</div>';
   document.getElementById('paywallModal').classList.add('open');
   try{
     if(!PACKS_CACHE){PACKS_CACHE=(await(await fetch('/api/billing/packs')).json()).data;}
     const packs=PACKS_CACHE.packs||[];
-    if(!PACKS_CACHE.configured){
-      box.innerHTML=`<div style="color:var(--dim);font-size:13px;text-align:center;padding:8px;line-height:1.6">결제가 아직 설정되지 않았어요.<br><a href="/billing" style="color:var(--accent2)">Billing 페이지</a>에서 관리하세요.</div>`;
+    if(!packs.length){
+      box.innerHTML=`<div class="pw-soon">Payments open soon.<br>Manage them on the <a href="/billing">Billing page</a>.</div>`;
       return;
     }
-    box.innerHTML=packs.map(p=>`
-      <button class="btn ${p.id==='pack700'?'btn-primary':'btn-ghost'}" style="width:100%;display:flex;justify-content:space-between;align-items:center" onclick="buyPack('${p.id}',this)">
-        <span>${esc(p.label)}</span><span style="font-weight:700">$${p.usd}</span></button>`).join('')
-      +`<a href="/billing" style="text-align:center;font-size:12.5px;color:var(--accent2);margin-top:4px">전체 요금제 보기 →</a>`;
-  }catch(e){ box.innerHTML='<div style="color:#ff7eb6;font-size:13px;text-align:center">불러오기 실패</div>'; }
+    box.innerHTML=packs.map(p=>{
+      const m=(p.label||'').match(/\+\s*(\d+)\s*bonus/i); const bonus=m?+m[1]:0;
+      const ppc=p.credits?('$'+(p.usd/p.credits).toFixed(3)):''; const best=p.id==='pack700';
+      return `<button class="pw-pack${best?' best':''}" onclick="buyPack('${p.id}',this)">
+        ${best?'<span class="pw-ribbon">BEST VALUE</span>':''}
+        <div>
+          <div class="pw-cr">◈ ${p.credits}<span class="pw-unit">credits</span></div>
+          <div class="pw-meta">${bonus?`<span class="pw-bonus">+${bonus} bonus</span> · `:''}${ppc?ppc+' / credit':''}</div>
+        </div>
+        <div class="pw-usd">$${p.usd}</div>
+      </button>`;
+    }).join('')+`<a href="/billing" class="pw-all">See all plans →</a>`;
+  }catch(e){ box.innerHTML='<div class="pw-soon" style="color:#ff7eb6">Failed to load</div>'; }
 }
 function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}
 function buyPack(packId){
