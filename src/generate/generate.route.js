@@ -14,6 +14,7 @@ const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 const teamCredit = require('../teams/team.credit');
 const { query } = require('../db/client');
+const { getTool } = require('../tools/registry');
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
 const router = Router();
@@ -36,8 +37,16 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
  */
 router.post('/', upload.array('referenceImages', 14), async (req, res, next) => {
   try {
-    const { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
+    let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
     const generateCount = Math.min(parseInt(count, 10) || 1, 4);
+
+    // #4: 툴이 템플릿에 박힘 — req.body.tool(템플릿 지정 또는 파워유저 override) → 레지스트리로 해석.
+    //     이미지 툴은 레거시 model 키(pro/flash/gpt-image-2/gpt-image-2-high)로 환원해 하위 경로를 그대로 재사용.
+    //     tool 미지정 시 기존 model 경로 유지(하위호환). 영상 툴은 reels 경로 소관(여기 아님).
+    const toolDef = req.body.tool ? getTool(req.body.tool) : null;
+    if (toolDef && toolDef.type === 'image' && toolDef.costKey) {
+      model = toolDef.costKey;
+    }
 
     if (!prompt || prompt.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
