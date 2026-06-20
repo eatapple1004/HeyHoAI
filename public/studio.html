@@ -304,7 +304,7 @@
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
   </div>
-  <div class="prompt-row">
+  <div class="prompt-row" id="promptRow">
     <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
       placeholder="Add a prompt (optional) — leave empty to use the template only"
       oninput="updateBar()">
@@ -403,6 +403,8 @@
     <div class="rm-preview" id="rmPreview"></div>
     <div class="rm-head"><h3 id="rmName" style="margin:0"></h3><span class="rm-badge" id="rmBadge"></span></div>
     <div class="rm-desc" id="rmDesc"></div>
+    <label for="rmDetail" style="display:block;font-size:12px;color:var(--dim);margin:14px 0 6px">Add detail (optional)</label>
+    <textarea id="rmDetail" maxlength="300" placeholder="Add your own touch — e.g. red dress, golden hour, soft smile" style="width:100%;min-height:60px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:14px"></textarea>
     <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">Use this template</button>
   </div>
 </div>
@@ -642,6 +644,8 @@ function setMode(m,initialVertical){
   document.getElementById('modelLabel').style.display=custom?'none':'';
   document.getElementById('qualitySeg').style.display=custom?'none':'';
   document.getElementById('saveTplBtn').style.display=custom?'':'none';
+  // 하단 프롬프트 칸: Custom 전용 — 템플릿 모드는 레시피 모달의 Add detail 사용
+  document.getElementById('promptRow').style.display=custom?'':'none';
   document.getElementById('resultStep').classList.add('hidden');
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
@@ -721,9 +725,10 @@ async function loadRecipeDesc(){
 let modalRecipeId=null;
 function openRecipeModal(id){
   // 이미 선택된 카드를 다시 클릭하면 모달 없이 선택만 해제
-  if(state.recipeId===id){state.recipeId=null;renderRecipes();updateBar();return;}
+  if(state.recipeId===id){state.recipeId=null;state.detail=null;renderRecipes();updateBar();return;}
   const r=(TEMPLATES[state.mode]||[]).find(x=>x.id===id);if(!r)return;
   modalRecipeId=id;
+  const dt=document.getElementById('rmDetail'); if(dt)dt.value=''; // 새 템플릿 → Add detail 초기화
   document.getElementById('rmName').textContent=r.name;
   document.getElementById('rmBadge').textContent=r.type==='reel'?'▶ Reel':'▦ Photo';
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
@@ -736,7 +741,10 @@ function openRecipeModal(id){
 function closeRecipeModal(){document.getElementById('recipeModal').classList.remove('open');}
 function selectFromModal(){
   if(!modalRecipeId)return;
-  state.recipeId=(state.recipeId===modalRecipeId?null:modalRecipeId); // 모달에서 선택/해제 토글
+  const sel=(state.recipeId!==modalRecipeId); // 모달은 미선택 카드에서만 열림 → 항상 선택
+  state.recipeId=sel?modalRecipeId:null;
+  const dt=document.getElementById('rmDetail');
+  state.detail=sel?(dt?dt.value.trim():''):''; // 선택 시 Add detail 저장, 해제 시 클리어
   renderRecipes();updateBar();closeRecipeModal();
 }
 
@@ -848,7 +856,11 @@ function openImageModal(url,type){
 function closeImageModal(){document.getElementById('imgModal').classList.remove('open');}
 
 // 사용자가 한 줄로 추가한 커스텀 프롬프트 (선택)
-function extraPromptText(){const el=document.getElementById('extraPrompt');return el?el.value.trim():'';}
+// 추가 프롬프트 소스: Custom=하단 칸 / 템플릿 모드=레시피 모달의 Add detail(state.detail)
+function extraPromptText(){
+  if(state.mode==='custom'){const el=document.getElementById('extraPrompt');return el?el.value.trim():'';}
+  return (state.detail||'').trim();
+}
 // Save as template — 현재 프롬프트+툴을 user 템플릿으로 저장(비공개 기본, 공개는 크리에이터 게이트)
 async function saveAsTemplate(){
   const p=extraPromptText();
