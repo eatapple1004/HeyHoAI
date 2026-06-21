@@ -17,6 +17,7 @@ router.get('/', async (req, res, next) => {
       success: true,
       data: {
         balance,
+        points: await creditService.getPoints(req.user.id), // 크리에이터 로열티 포인트(토큰 교환 가능)
         // 팀 컨텍스트에선 admin이라도 팀 풀에서 차감 (개인 면제는 개인 컨텍스트에서만)
         unlimited: !isTeam && req.user.role === 'admin',
         costs: creditService.COSTS,
@@ -42,6 +43,30 @@ router.post('/checkin', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+/**
+ * POST /api/credits/points/exchange  { amount }
+ * 크리에이터 포인트 → 크레딧(토큰) 교환 (1:1). 현금 교환은 추후.
+ */
+router.post('/points/exchange', async (req, res, next) => {
+  try {
+    const out = await creditService.exchangePointsToCredits(req.user.id, req.body && req.body.amount);
+    res.json({ success: true, data: out });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
+/**
+ * GET /api/credits/points/ledger?limit=50  — 포인트 내역
+ */
+router.get('/points/ledger', async (req, res, next) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    res.json({ success: true, data: await creditService.getPointLedger(req.user.id, limit) });
+  } catch (err) { next(err); }
 });
 
 /**

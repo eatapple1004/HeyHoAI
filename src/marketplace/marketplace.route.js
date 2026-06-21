@@ -10,7 +10,7 @@ const TYPES = new Set(['image', 'reel']);
 const CREATOR_SHARE = 0.7; // 크리에이터 70% 수익분배
 
 const PUBLIC_COLS = `id, creator_id, creator_handle, name, category, type, style, prompt,
-  negative_prompt, tool, visibility, emoji, price_credits, usage_count, likes_count,
+  negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, usage_count, likes_count,
   preview_media, is_official, created_at`;
 // JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
 const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
@@ -35,7 +35,8 @@ router.get('/templates', async (req, res, next) => {
     const order = isFeed ? 'likes_count DESC, usage_count DESC' : 'is_official DESC, usage_count DESC';
     const r = await query(
       `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine,
-              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked
+              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked,
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1) AS owned
        FROM marketplace_templates WHERE ${where}
        ORDER BY ${order} LIMIT 200`,
       params
@@ -50,15 +51,16 @@ router.get('/templates/:id', async (req, res, next) => {
   try {
     const r = await query(
       `SELECT ${PUBLIC_COLS}, (creator_id = $2) AS mine,
-              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked
+              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked,
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2) AS owned
        FROM marketplace_templates
        WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
       [req.params.id, req.user.id]
     );
     const tpl = r.rows[0];
     if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-    // 유료 + 내 것 아니면 prompt 숨김(블랙박스). 무료/내 것은 그대로.
-    if (tpl.price_credits > 0 && !tpl.mine) { tpl.prompt = null; tpl.negative_prompt = null; }
+    // 블랙박스: 보유(구매/제작)하지 않은 유료 템플릿은 prompt 숨김. 보유/내 것은 그대로.
+    if (tpl.price_credits > 0 && !tpl.mine && !tpl.owned) { tpl.prompt = null; tpl.negative_prompt = null; }
     res.json({ success: true, data: tpl });
   } catch (err) { next(err); }
 });
@@ -77,28 +79,28 @@ router.get('/me', async (req, res, next) => {
 
 /**
  * GET /api/marketplace/earnings — 셀러(크리에이터) 정산 대시보드
- * royalty 원장(type='royalty', ref_id=템플릿id)을 집계해 총수익·템플릿별 수익·최근 내역 반환.
+ * 로열티는 '포인트'로 적립(point_ledger type='royalty', ref_id=템플릿id). 총수익·템플릿별·최근·현재 포인트 잔액 반환.
  */
 router.get('/earnings', async (req, res, next) => {
   try {
-    const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
+    const u = await query('SELECT is_creator, point_balance FROM users WHERE id = $1', [req.user.id]);
     const isCreator = u.rows[0]?.is_creator || false;
 
-    // 총 수익 + 적립 건수
+    // 총 수익(누적 포인트) + 적립 건수
     const totals = await query(
       `SELECT COALESCE(SUM(amount), 0)::int AS total_earned, COUNT(*)::int AS payout_count
-       FROM credit_ledger WHERE user_id = $1 AND type = 'royalty'`,
+       FROM point_ledger WHERE user_id = $1 AND type = 'royalty'`,
       [req.user.id]
     );
 
     // 템플릿별 수익 (ref_id=템플릿 UUID를 TEXT로 저장 → 캐스팅 조인)
     const byTemplate = await query(
-      `SELECT mt.id, mt.name, mt.emoji, mt.category, mt.type, mt.price_credits, mt.usage_count, mt.visibility,
-              COALESCE(SUM(cl.amount), 0)::int AS earned,
-              COUNT(cl.id)::int AS uses_paid
+      `SELECT mt.id, mt.name, mt.emoji, mt.category, mt.type, mt.price_credits, mt.use_price_credits, mt.usage_count, mt.visibility,
+              COALESCE(SUM(pl.amount), 0)::int AS earned,
+              COUNT(pl.id)::int AS uses_paid
        FROM marketplace_templates mt
-       LEFT JOIN credit_ledger cl
-         ON cl.ref_id = mt.id::text AND cl.user_id = $1 AND cl.type = 'royalty'
+       LEFT JOIN point_ledger pl
+         ON pl.ref_id = mt.id::text AND pl.user_id = $1 AND pl.type = 'royalty'
        WHERE mt.creator_id = $1
        GROUP BY mt.id
        ORDER BY earned DESC, mt.created_at DESC`,
@@ -108,7 +110,7 @@ router.get('/earnings', async (req, res, next) => {
     // 최근 적립 내역
     const recent = await query(
       `SELECT amount, description, created_at
-       FROM credit_ledger WHERE user_id = $1 AND type = 'royalty'
+       FROM point_ledger WHERE user_id = $1 AND type = 'royalty'
        ORDER BY created_at DESC LIMIT 20`,
       [req.user.id]
     );
@@ -118,6 +120,7 @@ router.get('/earnings', async (req, res, next) => {
       data: {
         isCreator,
         creatorShare: CREATOR_SHARE,
+        pointBalance: u.rows[0]?.point_balance || 0, // 교환 가능한 현재 포인트
         totalEarned: totals.rows[0].total_earned,
         payoutCount: totals.rows[0].payout_count,
         templates: byTemplate.rows,
@@ -144,7 +147,7 @@ router.post('/templates', async (req, res, next) => {
   try {
     const {
       name, category, type = 'image', style = 'Natural', prompt,
-      negativePrompt = '', emoji = '🎨', priceCredits = 0,
+      negativePrompt = '', emoji = '🎨', priceCredits = 0, usePriceCredits = 0,
       tool, visibility = 'private', previewMedia = [],
     } = req.body || {};
     if (!name || !prompt) return res.status(400).json({ success: false, error: 'name과 prompt는 필수입니다.' });
@@ -162,16 +165,17 @@ router.post('/templates', async (req, res, next) => {
 
     const resolvedTool = resolveToolId(tool, t === 'reel' ? 'reel' : 'image');
     const price = Math.max(0, Math.min(parseInt(priceCredits, 10) || 0, 100));
+    const usePrice = Math.max(0, Math.min(parseInt(usePriceCredits, 10) || 0, 50)); // 사용당 로열티(소액, ≤50)
     const preview = Array.isArray(previewMedia) ? previewMedia.slice(0, 6) : [];
     const handle = '@' + String(req.user.email || 'creator').split('@')[0];
 
     const r = await query(
       `INSERT INTO marketplace_templates
-         (creator_id, creator_handle, name, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, preview_media)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb) RETURNING ${PUBLIC_COLS}`,
+         (creator_id, creator_handle, name, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb) RETURNING ${PUBLIC_COLS}`,
       [req.user.id, handle, String(name).slice(0, 120), category, t, String(style).slice(0, 50),
        String(prompt).slice(0, 2000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
-       String(emoji).slice(0, 8), price, JSON.stringify(preview)]
+       String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview)]
     );
     res.status(201).json({ success: true, data: r.rows[0] });
   } catch (err) { next(err); }
@@ -201,6 +205,10 @@ router.patch('/templates/:id', async (req, res, next) => {
     if (body.priceCredits !== undefined) {
       const price = Math.max(0, Math.min(parseInt(body.priceCredits, 10) || 0, 100));
       params.push(price); sets.push(`price_credits = $${params.length}`);
+    }
+    if (body.usePriceCredits !== undefined) {
+      const usePrice = Math.max(0, Math.min(parseInt(body.usePriceCredits, 10) || 0, 50));
+      params.push(usePrice); sets.push(`use_price_credits = $${params.length}`);
     }
     if (body.negativePrompt !== undefined) {
       params.push(String(body.negativePrompt).slice(0, 1000)); sets.push(`negative_prompt = $${params.length}`);
@@ -244,7 +252,49 @@ router.delete('/templates/:id', async (req, res, next) => {
  * 사용 기록 + (유료면) 사용료 차감 → 크리에이터 70% 분배. 스튜디오 적용용 파라미터(tool 포함) 반환.
  * 비공개는 본인 것만 사용 가능(타인 비공개 누수 방지).
  */
+async function isOwned(userId, tpl) {
+  if (tpl.creator_id === userId) return true; // 제작자는 자동 보유
+  const o = await query('SELECT 1 FROM template_owns WHERE user_id = $1 AND template_id = $2', [userId, tpl.id]);
+  return !!o.rows[0];
+}
+
 router.post('/templates/:id/use', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT ${PUBLIC_COLS} FROM marketplace_templates WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
+      [req.params.id, req.user.id]
+    );
+    const tpl = r.rows[0];
+    if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
+
+    // buy-to-own: 보유해야 사용. 유료 미보유 → 402(구매 필요). 무료 미보유 → 자동 보유(추가).
+    if (!(await isOwned(req.user.id, tpl))) {
+      if (tpl.price_credits > 0) {
+        return res.status(402).json({ success: false, error: '먼저 구매해야 사용할 수 있습니다.', data: { needPurchase: true, price: tpl.price_credits } });
+      }
+      await query(
+        `INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`,
+        [req.user.id, tpl.id]
+      );
+    }
+
+    await query('UPDATE marketplace_templates SET usage_count = usage_count + 1 WHERE id = $1', [tpl.id]);
+    res.json({
+      success: true,
+      data: {
+        id: tpl.id, name: tpl.name, category: tpl.category, type: tpl.type, style: tpl.style,
+        prompt: tpl.prompt, negativePrompt: tpl.negative_prompt || '', tool: tpl.tool || null, emoji: tpl.emoji,
+      },
+      charged: 0, // 사용 시점엔 과금 없음(구매료=/acquire / 사용당 로열티=생성 시점 Phase 2)
+    });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/marketplace/templates/:id/acquire — 보유 획득.
+ * 무료=즉시 보유(추가). 유료=price_credits 1회 과금 + 크리에이터 70% 로열티 + 보유. 이미 보유=멱등(무과금).
+ */
+router.post('/templates/:id/acquire', async (req, res, next) => {
   let charge = null;
   try {
     const r = await query(
@@ -254,43 +304,36 @@ router.post('/templates/:id/use', async (req, res, next) => {
     const tpl = r.rows[0];
     if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
 
-    const isOwner = tpl.creator_id === req.user.id;
-    // 유료 템플릿이고 내 것이 아니면 사용료 차감 + 크리에이터 분배
-    if (tpl.price_credits > 0 && !isOwner) {
-      charge = await creditService.charge(req.user, tpl.price_credits, {
-        type: 'template_use',
-        description: `템플릿 사용료: ${tpl.name}`,
-        refId: tpl.id,
-      });
-      if (charge && tpl.creator_id) {
-        const royalty = Math.round(tpl.price_credits * CREATOR_SHARE);
-        if (royalty > 0) {
-          await creditService.addCredits(tpl.creator_id, royalty, {
-            type: 'royalty',
-            description: `템플릿 수익: ${tpl.name}`,
-            refId: tpl.id,
-          }).catch(() => {});
-        }
-      }
+    if (await isOwned(req.user.id, tpl)) {
+      return res.json({ success: true, data: { id: tpl.id, owned: true, alreadyOwned: true }, charged: 0 });
     }
 
-    await query('UPDATE marketplace_templates SET usage_count = usage_count + 1 WHERE id = $1', [tpl.id]);
+    let source = 'free', pricePaid = 0;
+    if (tpl.price_credits > 0) {
+      charge = await creditService.charge(req.user, tpl.price_credits, {
+        type: 'template_purchase', description: `템플릿 구매: ${tpl.name}`, refId: tpl.id,
+      });
+      source = 'purchase';
+      pricePaid = charge ? charge.amount : tpl.price_credits;
+    }
 
-    res.json({
-      success: true,
-      data: {
-        id: tpl.id,
-        name: tpl.name,
-        category: tpl.category,
-        type: tpl.type,
-        style: tpl.style,
-        prompt: tpl.prompt,
-        negativePrompt: tpl.negative_prompt || '',
-        tool: tpl.tool || null,
-        emoji: tpl.emoji,
-      },
-      charged: charge ? charge.amount : 0,
-    });
+    const ins = await query(
+      `INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (user_id, template_id) DO NOTHING RETURNING user_id`,
+      [req.user.id, tpl.id, source, pricePaid]
+    );
+    if (ins.rowCount === 0) { // 동시 획득 — 이미 보유. 과금했으면 환불.
+      if (charge) await charge.refund();
+      return res.json({ success: true, data: { id: tpl.id, owned: true, alreadyOwned: true }, charged: 0 });
+    }
+    // 구매 성공 후에만 로열티 분배(70%) → 크리에이터 포인트(현금성, credit 아님)
+    if (charge && tpl.creator_id && tpl.price_credits > 0) {
+      const royalty = Math.round(tpl.price_credits * CREATOR_SHARE);
+      if (royalty > 0) await creditService.addPoints(tpl.creator_id, royalty, {
+        type: 'royalty', description: `템플릿 판매: ${tpl.name}`, refId: tpl.id,
+      }).catch(() => {});
+    }
+    res.json({ success: true, data: { id: tpl.id, owned: true, source }, charged: pricePaid });
   } catch (err) {
     if (charge) await charge.refund();
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
@@ -382,6 +425,21 @@ router.get('/bookmarks', async (req, res, next) => {
        JOIN marketplace_templates mt ON mt.id = tb.template_id
        WHERE tb.user_id = $1 AND mt.status = 'active'
        ORDER BY tb.created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: r.rows });
+  } catch (err) { next(err); }
+});
+
+/** GET /api/marketplace/owned — 내가 보유(무료추가/구매)한 템플릿. studio pick-a-template 머지용. 보유분은 prompt 포함. */
+router.get('/owned', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT ${MT_COLS}, true AS owned, ow.source AS own_source
+       FROM template_owns ow
+       JOIN marketplace_templates mt ON mt.id = ow.template_id
+       WHERE ow.user_id = $1 AND mt.status = 'active'
+       ORDER BY ow.created_at DESC`,
       [req.user.id]
     );
     res.json({ success: true, data: r.rows });

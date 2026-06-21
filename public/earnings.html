@@ -105,7 +105,7 @@
 
 <div class="wrap">
   <h1 class="fade d1">Seller earnings</h1>
-  <div class="sub fade d1">Track every template you've published. You keep <b id="shareLbl">70%</b> in credits on every paid use — paid straight into your balance.</div>
+  <div class="sub fade d1">Track every template you've published. You keep <b id="shareLbl">70%</b> as <b>creator points</b> on every sale & paid use — exchange to credits anytime, cash payouts coming soon.</div>
 
   <!-- 크리에이터가 아니면 신청 CTA -->
   <div class="apply glass fade d2" id="applyBox" style="display:none">
@@ -114,7 +114,7 @@
   </div>
 
   <div class="stats fade d2">
-    <div class="stat glass"><div class="n gold" id="stEarned">—</div><div class="l">Total earned (◈)</div></div>
+    <div class="stat glass"><div class="n gold" id="stEarned">—</div><div class="l">Points earned (◈)</div></div>
     <div class="stat glass"><div class="n" id="stPayouts">—</div><div class="l">Paid uses</div></div>
     <div class="stat glass"><div class="n" id="stTemplates">—</div><div class="l">Published</div></div>
     <div class="stat glass"><div class="n" id="stShare">70%</div><div class="l">Your share</div></div>
@@ -128,11 +128,13 @@
   <div class="empty" id="itemEmpty" style="display:none">No published templates yet — publish one from the <a onclick="location.href='/marketplace'">Market</a> to start earning.</div>
 
   <div class="payout glass fade d4">
-    <div class="pi">Reward type<b>Account credits (◈)</b></div>
-    <div class="pi">Total earned<b style="color:var(--gold)" id="pTotal">◈ —</b></div>
-    <div class="pi">Revenue share<b>70%</b></div>
+    <div class="pi">Reward type<b>Creator points (◈)</b></div>
+    <div class="pi">Available now<b style="color:var(--gold)" id="pBalance">◈ —</b></div>
+    <div class="pi">Lifetime earned<b id="pTotal">◈ —</b></div>
     <div class="pi">Cash payout<b style="color:var(--faint)">Coming soon</b></div>
+    <button class="btn btn-primary" id="exBtn" onclick="exchangePoints()" style="padding:12px 18px">Exchange → credits</button>
   </div>
+  <div class="note" style="text-align:center;color:var(--faint);font-size:12px;margin-top:10px">Points convert to generation credits 1:1. Cash withdrawal is coming once payouts launch.</div>
 
   <div class="affil-link fade d4">Also referring others? <a onclick="location.href='/affiliate'">See your affiliate earnings →</a></div>
 </div>
@@ -146,8 +148,10 @@
     <div class="mfield"><label>Visibility</label>
       <select id="edVis"><option value="public">Public (in the Feed)</option><option value="private">Private (only me)</option></select>
     </div>
-    <div class="mfield" data-flag="marketplace"><label>Price <i style="color:var(--faint)">(◈ credits each use — 0 = free)</i></label>
+    <div class="mfield" data-flag="marketplace"><label>Unlock price <i style="color:var(--faint)">(◈ one-time to own — 0 = free)</i></label>
       <input type="number" id="edPrice" min="0" max="100" step="1" value="0"></div>
+    <div class="mfield" data-flag="marketplace"><label>Per-use royalty <i style="color:var(--faint)">(◈ each render — optional)</i></label>
+      <input type="number" id="edUsePrice" min="0" max="50" step="1" value="0"></div>
     <div class="mrow">
       <button class="btn danger" onclick="deleteTpl()">Delete</button>
       <button class="btn btn-primary" id="edSave" onclick="saveEdit()">Save changes</button>
@@ -176,6 +180,8 @@ async function load(){
     document.getElementById('stPayouts').textContent=x.payoutCount;
     document.getElementById('stTemplates').textContent=(x.templates||[]).length;
     document.getElementById('pTotal').textContent='◈ '+x.totalEarned;
+    window.__points=x.pointBalance||0;
+    document.getElementById('pBalance').textContent='◈ '+window.__points;
     document.getElementById('applyBox').style.display=x.isCreator?'none':'flex';
 
     const list=document.getElementById('itemList');
@@ -205,6 +211,7 @@ function openEdit(id){
   document.getElementById('edName').value=t.name||'';
   document.getElementById('edVis').value=t.visibility==='public'?'public':'private';
   document.getElementById('edPrice').value=t.price_credits||0;
+  document.getElementById('edUsePrice').value=t.use_price_credits||0;
   document.getElementById('editModal').classList.add('open');
 }
 function closeEdit(){document.getElementById('editModal').classList.remove('open');EDIT_ID=null;}
@@ -212,7 +219,10 @@ async function saveEdit(){
   if(!EDIT_ID)return;
   const btn=document.getElementById('edSave');btn.disabled=true;btn.textContent='Saving…';
   const body={name:document.getElementById('edName').value.trim(),visibility:document.getElementById('edVis').value};
-  if(window.featureOn&&window.featureOn('marketplace'))body.priceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edPrice').value,10)||0,100));
+  if(window.featureOn&&window.featureOn('marketplace')){
+    body.priceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edPrice').value,10)||0,100));
+    body.usePriceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edUsePrice').value,10)||0,50));
+  }
   try{
     const r=await fetch('/api/marketplace/templates/'+EDIT_ID,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
@@ -230,6 +240,20 @@ async function deleteTpl(){
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     closeEdit();toast('Template deleted');load();
   }catch(e){toast('Delete failed: '+(e.message||e));}
+}
+async function exchangePoints(){
+  const bal=window.__points||0;
+  if(bal<=0){toast('No points to exchange yet.');return;}
+  if(!confirm('Exchange ◈'+bal+' points → ◈'+bal+' credits? (1:1)'))return;
+  const btn=document.getElementById('exBtn');btn.disabled=true;btn.textContent='…';
+  try{
+    const r=await fetch('/api/credits/points/exchange',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:bal})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Exchanged ◈'+d.data.exchanged+' → credits');
+    loadBalance();load();
+  }catch(e){toast('Exchange failed: '+(e.message||e));}
+  finally{btn.disabled=false;btn.textContent='Exchange → credits';}
 }
 async function apply(btn){
   btn.disabled=true;btn.textContent='…';

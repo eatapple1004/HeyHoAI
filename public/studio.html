@@ -428,8 +428,10 @@
       <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
     <label class="stpl-vis"><input type="checkbox" id="stplVis" checked onchange="syncStplPrice()"> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
     <div class="field" id="stplPriceRow" data-flag="marketplace" style="display:none">
-      <label>Price <i>(◈ credits each use — 0 = free)</i></label>
+      <label>Unlock price <i>(◈ one-time to own — 0 = free)</i></label>
       <input type="number" id="stplPrice" min="0" max="100" step="1" value="0" style="width:100%" placeholder="0">
+      <label style="margin-top:10px">Per-use royalty <i>(◈ each render — optional)</i></label>
+      <input type="number" id="stplUsePrice" min="0" max="50" step="1" value="0" style="width:100%" placeholder="0">
     </div>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
@@ -562,6 +564,22 @@ function buildTemplates(){
     ugc:(C.ugc||[]).map(c=>{const m=mk(c,c.cat||"Talking");m.type="reel";m.soon=true;return m;}),
     custom:[]
   };
+}
+// 보유 마켓 템플릿(무료추가/구매)을 pick-a-template 그리드에 머지. marketplace 점화 시만. (실패=무시, recipe만 유지)
+// 대부분 유저 템플릿은 category=Custom → influencer 그리드에 'My templates' 필터로 노출(점화 후 정밀화 여지).
+async function mergeOwnedTemplates(){
+  if(!(window.featureOn&&window.featureOn('marketplace')))return;
+  let owned;try{owned=(await(await fetch('/api/marketplace/owned')).json()).data||[];}catch(e){return;}
+  if(!owned.length)return;
+  const MODE={Influencer:'influencer',Shopping:'shopping',UGC:'ugc',Custom:'influencer'};
+  owned.forEach(t=>{
+    const mode=MODE[t.category]||'influencer';
+    if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
+    TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
+      emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',cat:'My templates',
+      prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace'});
+  });
+  renderFilters();renderRecipes();updateBar();
 }
 
 let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,filter:'All'};
@@ -739,7 +757,7 @@ function captionOn(){return document.getElementById('aCaption').classList.contai
 function privateOn(){const b=document.getElementById('privateToggle');return !!(b&&!b.classList.contains('on'));}
 function togglePrivate(b){b.classList.toggle('on');const on=b.classList.contains('on');const bd=document.getElementById('pubBadge');if(bd)bd.textContent=on?'ON':'OFF';}
 // 출처 템플릿 attribution(결과→템플릿 링크): 빌트인 레시피 우선, 없으면 마켓 Try 템플릿
-function attribution(){const r=curRecipe();if(r&&r.id)return {templateId:String(r.id),templateSource:'recipe'};if(state.tryTemplateId)return {templateId:String(state.tryTemplateId),templateSource:'marketplace'};return {templateId:'',templateSource:''};}
+function attribution(){const r=curRecipe();if(r&&r.id)return {templateId:String(r.id),templateSource:r.source==='marketplace'?'marketplace':'recipe'};if(state.tryTemplateId)return {templateId:String(state.tryTemplateId),templateSource:'marketplace'};return {templateId:'',templateSource:''};}
 function toggleCaption(b){b.classList.toggle('on');
   document.getElementById('captionLang').classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
 
@@ -965,7 +983,13 @@ function renderRecipes(){
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===id);if(s){state.slots[primarySlotKey()]=[itemFromSubject(s)];syncPrimary();renderSubjects();updateBar();}}
-function pickRecipe(id){state.recipeId=(state.recipeId===id?null:id);renderRecipes();updateBar();} // 같은 카드 재클릭 시 선택 해제(토글)
+function pickRecipe(id){
+  state.recipeId=(state.recipeId===id?null:id); // 같은 카드 재클릭 시 선택 해제(토글)
+  // 보유 마켓 템플릿(자기 tool 보유) 선택 시 → 그 tool 적용(applyTryTemplate와 동일 패턴). 일반 recipe는 기본 유지.
+  const r=curRecipe();
+  if(r&&r.source==='marketplace'&&r.tool){const tt=toolById(r.tool);const ts=document.getElementById('toolSel');if(ts&&tt){pickType(tt.type);ts.value=r.tool;applyToolSchema();}}
+  renderRecipes();updateBar();
+}
 
 // 템플릿 설명(서버 rationale) 캐시 + 상세 모달
 let RECIPE_DESC={};
@@ -1129,6 +1153,7 @@ function saveAsTemplate(){
     ? prev.map(u=>`<div class="stpl-ph" style="background-image:url('${esc(u)}')"></div>`).join('')
     : `<div class="stpl-noprev">No preview yet — generate first so your template shows an example in the Feed.</div>`;
   document.getElementById('stplPrice').value='0';
+  document.getElementById('stplUsePrice').value='0';
   syncStplPrice();
   document.getElementById('saveTplModal').classList.add('open');
 }
@@ -1144,14 +1169,15 @@ async function confirmSaveTpl(){
   if(!name){toast('Name your template.');return;}
   const makePublic=document.getElementById('stplVis').checked;
   // 가격: 공개 + 마켓 점화일 때만(미점화/비공개=무료)
-  const priceCredits=(makePublic&&window.featureOn&&window.featureOn('marketplace'))
-    ? Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)) : 0;
+  const paidOn=(makePublic&&window.featureOn&&window.featureOn('marketplace'));
+  const priceCredits=paidOn?Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)):0;
+  const usePriceCredits=paidOn?Math.max(0,Math.min(parseInt(document.getElementById('stplUsePrice').value,10)||0,50)):0;
   const p=extraPromptText();
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:name,category:'Custom',type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
-        visibility:makePublic?'public':'private',priceCredits:priceCredits,negativePrompt:negText(),previewMedia:(state.lastPreview||[]).slice(0,6)})});
+        visibility:makePublic?'public':'private',priceCredits:priceCredits,usePriceCredits:usePriceCredits,negativePrompt:negText(),previewMedia:(state.lastPreview||[]).slice(0,6)})});
     const d=await res.json();
     if(res.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
@@ -1428,6 +1454,8 @@ function applyTryTemplate(){
   }catch(e){return false;}
 }
 if(!applyTryTemplate() && !bootRecipe() && !bootFromUrl()) setMode('influencer');
+// 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
+if(document.readyState==='loading')addEventListener('DOMContentLoaded',function(){mergeOwnedTemplates();});else mergeOwnedTemplates();
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubjects();
 loadCredits();

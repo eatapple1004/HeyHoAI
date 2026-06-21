@@ -882,6 +882,23 @@ async function migrateMarketplace() {
     CREATE INDEX IF NOT EXISTS idx_template_bookmarks_user ON template_bookmarks(user_id, created_at DESC);
   `);
 
+  // 보유/구매(buy-to-own): 무료=추가·유료=구매 1회 → 보유. 보유분이 studio pick-a-template에 등장. (멱등)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS template_owns (
+        user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        template_id  UUID NOT NULL REFERENCES marketplace_templates(id) ON DELETE CASCADE,
+        source       VARCHAR(10) NOT NULL DEFAULT 'free', -- free | purchase
+        price_paid   INT NOT NULL DEFAULT 0,               -- 구매 시 지불액(언락 가격)
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, template_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_template_owns_user ON template_owns(user_id, created_at DESC);
+  `);
+  // 사용당 로열티(하이브리드): 보유 후 생성마다 크리에이터에 분배할 소액(0=없음). price_credits=언락가, 이건 사용가.
+  await pool.query(`
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS use_price_credits INT NOT NULL DEFAULT 0;
+  `);
+
   // 공식 템플릿 시드 (한 번만)
   const existing = await pool.query(`SELECT 1 FROM marketplace_templates WHERE is_official LIMIT 1`);
   if (existing.rowCount === 0) {
@@ -927,6 +944,22 @@ async function migrateCredits() {
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_credit_ledger_user ON credit_ledger(user_id, created_at DESC);
+  `);
+
+  // 크리에이터 로열티 = 별도 '포인트'(현금성). credit(토큰)과 분리: 토큰으로 교환 가능 / 추후 현금 페이아웃. (멱등)
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS point_balance INT NOT NULL DEFAULT 0;
+    CREATE TABLE IF NOT EXISTS point_ledger (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount        INT NOT NULL,            -- +적립(royalty) / -차감(exchange·payout)
+        balance_after INT NOT NULL,
+        type          VARCHAR(20) NOT NULL,    -- royalty | exchange | payout
+        description   TEXT DEFAULT '',
+        ref_id        TEXT,                    -- 관련 템플릿/주문 ID
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_point_ledger_user ON point_ledger(user_id, created_at DESC);
   `);
 
   // 엑심베이 등 redirect형 PG 주문 추적 (ready 시 pending 생성 → status_url에서 paid)

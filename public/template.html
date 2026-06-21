@@ -71,30 +71,50 @@ function render(){
     gal=`<div class="none">${esc(t.emoji||'🎨')}</div>`;
   }
   const isReel=t.type==='reel';
+  const owned=!!(t.owned||t.mine);
+  const subject=t.category==='Shopping'?'product':'face';
+  // buy-to-own: 유료=1회 언락가(+사용당 소액 로열티 있으면 병기) / 무료=추가만
+  const perUse=t.use_price_credits>0?` <span style="font-size:13px;color:var(--faint);font-weight:500">· ◈${t.use_price_credits}/use to the creator</span>`:'';
   const price=t.price_credits>0
-    ? `◈ ${t.price_credits} <span style="font-size:13px;color:var(--faint);font-weight:500">per use</span>`
+    ? `◈ ${t.price_credits} <span style="font-size:13px;color:var(--faint);font-weight:500">to unlock${owned?' · owned':''}</span>${perUse}`
     : `<span class="free">Free</span> <span style="font-size:13px;color:var(--faint);font-weight:500">· uses your generation credits</span>`;
-  const blackbox=(t.price_credits>0 && !t.mine);
+  // CTA: 보유→Use / 유료 미보유→Unlock(구매) / 무료 미보유→Add & use(/use가 자동 보유)
+  let cta;
+  if(owned) cta=`<button class="cta" onclick="useThis()">✨ Use with your ${subject}</button>`;
+  else if(t.price_credits>0) cta=`<button class="cta" onclick="acquireThis()">🔓 Unlock · ◈ ${t.price_credits}</button>`;
+  else cta=`<button class="cta" onclick="useThis()">✨ Add &amp; use with your ${subject}</button>`;
+  const blackbox=(t.price_credits>0 && !owned);
   document.getElementById('content').innerHTML=`
     <div class="gal">${gal}</div>
     <div class="panel">
       <h1>${esc(t.name)}</h1>
-      <div class="by">by <a href="#">${esc(t.creator_handle||'@creator')}</a></div>
+      <div class="by">by <a href="/creator?handle=${encodeURIComponent(String(t.creator_handle||'').replace(/^@/,''))}">${esc(t.creator_handle||'@creator')}</a></div>
       <div class="badges">
         <span class="b">${isReel?'▶ Reel':'▦ Photo'}</span>
         <span class="b">${esc(t.category||'')}</span>
         ${t.tool?`<span class="b">${esc(t.tool)}</span>`:''}
         ${t.is_official?'<span class="b" style="color:#ffce7a">★ Official</span>':''}
+        ${owned&&!t.mine?'<span class="b" style="color:#5ee0d6">✓ Owned</span>':''}
       </div>
-      <div class="desc">Add your ${t.category==='Shopping'?'product':'face'} and this template recreates the look in seconds — identity kept consistent.</div>
+      <div class="desc">Add your ${subject} and this template recreates the look in seconds — identity kept consistent.</div>
       <div class="stats"><span>♥ ${t.likes_count||0}</span><span>◷ used ${t.usage_count||0}</span></div>
       <div class="price">${price}</div>
-      <button class="cta" onclick="useThis()">✨ Use with your ${t.category==='Shopping'?'product':'face'}</button>
+      ${cta}
       <div class="sub-actions">
-        ${t.mine?`<button onclick="location.href='/gallery'">Manage</button>`:`<button onclick="reportThis()">⚐ Report</button>`}
+        ${t.mine?`<button onclick="location.href='/earnings'">Manage</button>`:`<button onclick="reportThis()">⚐ Report</button>`}
       </div>
-      ${blackbox?'<div class="note">🔒 This is a paid template — the recipe (prompt) stays private. You get the result, not the prompt.</div>':''}
+      ${blackbox?'<div class="note">🔒 Paid template — the recipe (prompt) stays private. Unlock once to own it, then use it anytime (generation credits apply per render).</div>':''}
     </div>`;
+}
+async function acquireThis(){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(TPL.id)+'/acquire',{method:'POST'});
+    const d=await r.json();
+    if(r.status===402){toast(d.error||'Not enough credits — top up in Billing');setTimeout(()=>location.href='/billing',1300);return;}
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast(d.charged>0?`Unlocked · ◈${d.charged} — it's yours now`:'Added to your templates');
+    TPL.owned=true; render(); // CTA → Use 로 전환
+  }catch(e){toast('Could not get template: '+(e.message||e));}
 }
 async function useThis(){
   try{

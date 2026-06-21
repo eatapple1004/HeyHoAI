@@ -127,6 +127,19 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
 
+    // ─── 사용당 로열티(하이브리드): 보유 마켓 템플릿 사용 시 use_price_credits 추가 과금 → 성공 시 크리에이터 70%.
+    //     fail-open: 조회 실패=로열티 0(생성 진행). 본인 템플릿/관리자(charge=null) 면제 시 분배 안 함(민팅 방지). ⚠️ marketplace 점화 후에만 실제 발생. ───
+    let useRoyalty = 0, royaltyCreatorId = null;
+    if (templateSource === 'marketplace' && templateId) {
+      try {
+        const tr = await query('SELECT use_price_credits, creator_id FROM marketplace_templates WHERE id = $1', [templateId]);
+        const row = tr.rows[0];
+        if (row && row.use_price_credits > 0 && row.creator_id && row.creator_id !== req.user.id) {
+          useRoyalty = row.use_price_credits; royaltyCreatorId = row.creator_id;
+        }
+      } catch (e) { /* fail-open: 로열티 스킵, 생성은 진행 */ }
+    }
+
     // ─── 크레딧 차감 (개인=admin면제, 팀=풀차감/viewer 403, 부족 시 402) ───
     const creditService = require('../credits/credit.service');
     const teamCredit = require('../teams/team.credit');
@@ -134,7 +147,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     try {
       charge = await teamCredit.chargeGeneration(
         req.user,
-        creditService.imageCost(model),
+        creditService.imageCost(model) + useRoyalty,
         `사진 생성 (${model}, ${generateCount}장)`
       );
     } catch (e) {
@@ -300,9 +313,16 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       }
     }
 
-    // 전부 실패하면 환불
+    // 전부 실패하면 환불 (사용당 로열티 surcharge 포함 전액)
     const okCount = results.filter((r) => r.success).length;
     if (okCount === 0 && charge) await charge.refund();
+    // 생성 성공 + 실제 과금(admin 면제 시 charge=null → 분배 안 함)일 때만 사용당 로열티 70% 분배
+    else if (okCount > 0 && charge && useRoyalty > 0 && royaltyCreatorId) {
+      const royalty = Math.round(useRoyalty * 0.7);
+      if (royalty > 0) await creditService.addPoints(royaltyCreatorId, royalty, { // 크리에이터 포인트(현금성)
+        type: 'royalty', description: '템플릿 사용 로열티', refId: templateId,
+      }).catch(() => {});
+    }
 
     res.json({
       success: true,
