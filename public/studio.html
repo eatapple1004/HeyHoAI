@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=3" />
 <script src="/saas-auth.js" defer></script>
-<script src="/js/rail.js" defer></script>
+<script src="/js/rail.js?v=2" defer></script>
 <script src="/js/flags.js" defer></script>
 <style>
   .wrap{max-width:1080px;margin:0 auto;padding:36px 24px 210px;position:relative;z-index:2}
@@ -32,7 +32,7 @@
   }
 
   /* subjects */
-  .subject-row{display:flex;gap:16px;flex-wrap:wrap}
+  .subject-row{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
   .upload-box{width:152px;height:196px;border:1.5px dashed var(--border2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;color:var(--dim);text-align:center;padding:14px;background:rgba(255,255,255,.02)}
   .upload-box:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,108,255,.06)}
   .upload-box .plus{font-size:26px;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center}
@@ -51,6 +51,33 @@
   .subj-ava{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--surface2,rgba(255,255,255,.05))}
   .subj-ava.grad{background:linear-gradient(135deg,#7c6cff,#5ee0d6)}
   .subj-ava.ph{background:rgba(255,255,255,.05);color:var(--dim);font-size:20px}
+  /* 선택된 레퍼런스 = 선택기 아래 정사각 사진 타일(Leonardo식) */
+  /* 이미지 추가 아이콘 버튼 + 툴별 슬롯 팝오버 */
+  .img-add-wrap{position:relative;display:inline-block}
+  .img-add{position:relative;width:56px;height:56px;border-radius:14px;border:1px dashed var(--border2);background:var(--surface);color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s}
+  .img-add:hover{border-color:var(--accent);color:var(--text)}
+  .img-add-ic{width:26px;height:26px}
+  .img-add-plus{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 0 2px var(--bg,#0c0c14)}
+  /* 라벨형(Influencer/Shopping): 아이콘 + "Select a face/product" */
+  .img-add.labeled{width:auto;height:auto;border-style:solid;border-radius:14px;padding:9px 16px 9px 10px;gap:11px;color:var(--text);font-family:inherit}
+  .img-add.labeled .img-add-ic{width:22px;height:22px;color:var(--dim)}
+  .img-add-label{font-size:14px;font-weight:600;white-space:nowrap}
+  .img-menu{position:absolute;top:64px;left:0;z-index:40;min-width:300px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;box-shadow:0 16px 48px -12px rgba(0,0,0,.7);padding:6px;display:none}
+  .img-menu.open{display:block}
+  .img-menu-h{font-size:12px;font-weight:700;color:var(--dim);padding:6px 10px 4px}
+  .img-menu-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;border-radius:10px;padding:11px 12px;cursor:pointer;color:var(--text);font-family:inherit}
+  .img-menu-row:hover{background:rgba(255,255,255,.05)}
+  .imr-ic{flex-shrink:0;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--dim)}
+  .imr-ic.on{color:var(--accent2);background:rgba(124,108,255,.16)}
+  .imr-t{display:flex;flex-direction:column;gap:1px}
+  .imr-t b{font-size:13.5px;font-weight:600}
+  .imr-t i{font-size:11.5px;color:var(--faint);font-style:normal}
+  .ref-tiles{display:flex;gap:10px;flex-wrap:wrap}
+  .ref-tile{position:relative;width:92px;height:92px;border-radius:14px;border:1px solid var(--border2);background:var(--surface) center/cover no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.3);overflow:hidden}
+  .ref-tile.grad{background:linear-gradient(135deg,#7c6cff,#5ee0d6)}
+  .ref-tile:hover{border-color:var(--accent)}
+  .ref-tile .ref-x{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+  .ref-tile .ref-name{position:absolute;left:0;right:0;bottom:0;padding:3px 6px;font-size:10px;font-weight:600;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.75));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .subj-trig-label{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .subj-trig-label.dim{color:var(--dim);font-weight:500}
   .subj-caret{color:var(--faint);font-size:11px;flex-shrink:0}
@@ -320,11 +347,6 @@
     </select>
     <span class="addon-label" id="countLabel" style="display:none">Count</span>
     <select id="countSel" class="addon-lang" style="display:none" onchange="updateBar()"><!-- 스키마가 채움 --></select>
-    <span class="addon-label" id="endFrameWrap" style="display:none">End frame
-      <button type="button" class="addon-toggle" id="endFrameBtn" onclick="document.getElementById('endFrameInput').click()">＋ Add</button>
-      <button type="button" class="addon-toggle hidden" id="endFrameClear" onclick="clearEndFrame()">✕ <span id="endFrameName">frame</span></button>
-      <input type="file" id="endFrameInput" accept="image/*" style="display:none" onchange="pickEndFrame(this)">
-    </span>
     <button type="button" class="addon-toggle" id="audioWrap" style="display:none" onclick="toggleAudio(this)">Audio <span class="bk-on hidden" id="audioOnBadge">ON</span></button>
     <span class="addon-label" id="modelLabel">Model</span>
     <div class="seg" id="qualitySeg">
@@ -338,6 +360,8 @@
     <select class="addon-lang hidden" id="captionLang">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
+    <span class="divider-v"></span>
+    <button class="addon-toggle on" id="privateToggle" onclick="togglePrivate(this)" title="ON = your creation appears in the community Explore feed · OFF = private (only you)">🌐 Public <span class="bk-on" id="pubBadge">ON</span></button>
   </div>
   <div class="prompt-row" id="promptRow">
     <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
@@ -514,7 +538,7 @@ function buildTemplates(){
   };
 }
 
-let state={mode:'influencer',subjectId:null,recipeId:null,filter:'All'};
+let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,filter:'All'};
 let SUBJECTS={influencer:[],shopping:[],ugc:[],custom:[]};
 let generating=false;
 let CREDITS={balance:null,unlimited:false,costs:null};
@@ -587,11 +611,11 @@ const M_LABEL={flash:'Gemini Flash',pro:'Gemini Pro','gpt-image-2':'GPT Image','
 // → 스튜디오가 폼을 동적 렌더(Leonardo식 "툴마다 폼"). FALLBACK은 오프라인/정적 프리뷰용 미러.
 const FALLBACK_TOOLS={
   image:[
-    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],imageSize:['1K','2K'],count:[1,2,3,4],negative:true}},
-    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],count:[1,2,3,4],negative:true}},
+    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],imageSize:['1K','2K'],count:[1,2,3,4],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
+    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],count:[1,2,3,4],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
   ],
   video:[
-    {id:'kling',label:'Kling',type:'video',model:'kling',controls:{duration:[5,10],quality:[{value:'std',label:'Standard'},{value:'pro',label:'Pro'}],aspectRatio:['9:16','1:1','16:9'],endFrame:{type:'image'},audio:{type:'toggle'}}},
+    {id:'kling',label:'Kling',type:'video',model:'kling',controls:{duration:[5,10],quality:[{value:'std',label:'Standard'},{value:'pro',label:'Pro'}],aspectRatio:['9:16','1:1','16:9'],audio:{type:'toggle'}},imageSlots:[{key:'startFrame',label:'Start frame',hint:'Starting frame of the video'},{key:'endFrame',label:'End frame',hint:'Ending frame of the video'}]},
   ],
 };
 let TOOLS_CACHE=FALLBACK_TOOLS; // 동기 기본 → loadTools()가 서버 정본으로 갱신
@@ -611,11 +635,11 @@ function curToolType(){return state.mode==='custom'?curType():'image';}
 function pickType(t){
   if(t==='video'&&!videoAvailable())t='image';
   document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.type===t));
-  renderToolPicker();applyToolSchema();updateBar();
+  renderToolPicker();applyToolSchema();renderSubjects();updateBar(); // 타입 변경 → 이미지 슬롯도 갱신
 }
 // 영상 생성 여부: 템플릿 reel이거나, Custom에서 Video 타입
 function isVideoGen(){const r=curRecipe();if(r)return r.type==='reel';return state.mode==='custom'&&curType()==='video';}
-function pickTool(){applyToolSchema();updateBar();}
+function pickTool(){applyToolSchema();renderSubjects();updateBar();}
 // Custom 컨트롤 읽기 — 표시는 스키마가 결정, 값은 해당 select에서
 function curAspect(){const s=document.getElementById('aspectSel');return s?s.value:'';}
 // 해상도: 스키마에 imageSize 있는 툴만(=pro). 없으면 1K. 서버도 동일 가드.
@@ -627,15 +651,7 @@ function negText(){const el=document.getElementById('negPrompt');return el?el.va
 // 오디오 토글 / 끝프레임 업로드 (Kling 등 비디오 툴)
 function audioOn(){const b=document.getElementById('audioWrap');return !!(b&&b.classList.contains('on'));}
 function toggleAudio(b){b.classList.toggle('on');const bd=document.getElementById('audioOnBadge');if(bd)bd.classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
-let endFrameFile=null;
-function pickEndFrame(input){endFrameFile=(input.files&&input.files[0])||null;renderEndFrame();updateBar();}
-function clearEndFrame(silent){endFrameFile=null;const inp=document.getElementById('endFrameInput');if(inp)inp.value='';renderEndFrame();if(!silent)updateBar();}
-function renderEndFrame(){
-  const add=document.getElementById('endFrameBtn'),clr=document.getElementById('endFrameClear'),nm=document.getElementById('endFrameName');
-  if(!add||!clr)return;
-  if(endFrameFile){add.classList.add('hidden');clr.classList.remove('hidden');if(nm)nm.textContent=(endFrameFile.name||'frame').slice(0,14);}
-  else{add.classList.remove('hidden');clr.classList.add('hidden');}
-}
+// (끝프레임은 이미지 슬롯 팝오버로 이동 — 별도 컨트롤 제거)
 // Type 세그(비디오 툴 없으면 Video 버튼 숨김) + 선택 타입의 툴만 드롭다운에 채움.
 function renderToolPicker(){
   const sel=document.getElementById('toolSel');if(!sel)return;
@@ -664,10 +680,8 @@ function applyToolSchema(){
   sh('countLabel',!!c.count);sh('countSel',!!c.count);fill('countSel',c.count,null,4); // 기본 4장
   sh('durLabel',!!c.duration);sh('durSel',!!c.duration);fill('durSel',c.duration,v=>v+'s');
   sh('qualityLabel',!!c.quality);sh('qualitySel',!!c.quality);fill('qualitySel',c.quality);
-  sh('endFrameWrap',!!c.endFrame);            // 끝프레임(이미지 업로드)
   sh('audioWrap',!!c.audio);                  // 오디오(토글)
   sh('negRow',!!c.negative);
-  if(!c.endFrame)clearEndFrame(true);         // 끝프레임 없는 툴로 전환 시 정리
 }
 async function doEnhance(){
   const el=document.getElementById('extraPrompt');
@@ -695,6 +709,11 @@ function toggleOptions(){
   document.getElementById('optsBtn').classList.toggle('on',open);
 }
 function captionOn(){return document.getElementById('aCaption').classList.contains('on');}
+// 자동 공개: Public 토글 ON(기본)=공개, OFF=비공개
+function privateOn(){const b=document.getElementById('privateToggle');return !!(b&&!b.classList.contains('on'));}
+function togglePrivate(b){b.classList.toggle('on');const on=b.classList.contains('on');const bd=document.getElementById('pubBadge');if(bd)bd.textContent=on?'ON':'OFF';}
+// 출처 템플릿 attribution(결과→템플릿 링크): 빌트인 레시피 우선, 없으면 마켓 Try 템플릿
+function attribution(){const r=curRecipe();if(r&&r.id)return {templateId:String(r.id),templateSource:'recipe'};if(state.tryTemplateId)return {templateId:String(state.tryTemplateId),templateSource:'marketplace'};return {templateId:'',templateSource:''};}
 function toggleCaption(b){b.classList.toggle('on');
   document.getElementById('captionLang').classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
 
@@ -782,7 +801,7 @@ function placeGenBar(custom){
 function setMode(m,initialVertical){
   // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
   const defFilter=m==='shopping'?(initialVertical&&VERTICAL_EMOJI[initialVertical]?initialVertical:'Fashion'):'All';
-  state={mode:m,subjectId:null,recipeId:null,filter:defFilter};
+  state={mode:m,slots:{},subjectId:null,recipeId:null,filter:defFilter};
   ['Influencer','Shopping','Ugc','Custom'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
   const ugc=(m==='ugc');
   const custom=(m==='custom');
@@ -816,44 +835,83 @@ function setMode(m,initialVertical){
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function renderSubjects(){
-  const subs=SUBJECTS[state.mode]||[];
-  const noun={influencer:'face',shopping:'product',ugc:'face',custom:'reference'}[state.mode];
-  const sel=subs.find(s=>s.id===state.subjectId);
-  const ava=s=>(s&&s.reference_image_url)
-    ?`<span class="subj-ava" style="background:url('${esc(s.reference_image_url)}') center/cover"></span>`
-    :`<span class="subj-ava grad">🙂</span>`;
-  const nameOf=s=>esc((s.name||'').replace(PRODUCT_TAG,'').trim()||s.name);
-  const trig=sel
-    ?`${ava(sel)}<span class="subj-trig-label">${nameOf(sel)}</span>`
-    :`<span class="subj-ava ph">＋</span><span class="subj-trig-label dim">Select a ${noun}</span>`;
-  document.getElementById('subjectRow').innerHTML=
-    `<button class="subj-trigger" type="button" onclick="openSubjModal()">${trig}<span class="subj-caret">▾</span></button>`;
+// ── 이미지 입력(슬롯 기반): 아이콘 버튼 → 툴별 슬롯 팝오버 → 역할 라벨 타일 ──
+function currentImageSlots(){
+  if(state.mode==='custom'){const t=toolById(curTool());if(t&&t.imageSlots&&t.imageSlots.length)return t.imageSlots;}
+  return [{key:'reference',label:'Reference image',hint:'Image to guide the result',multi:true}];
 }
-// ── 인물/제품 선택: 썸네일 그리드 모달 (Leonardo "Select Media" 스타일) ──
-let subjPending=null;
-function openSubjModal(){
-  subjPending=state.subjectId;
-  const noun={influencer:'face',shopping:'product',ugc:'face',custom:'reference'}[state.mode];
-  document.getElementById('subjModalTitle').textContent='Select a '+noun;
+function slotItems(key){return (state.slots&&state.slots[key])||[];}
+function primarySlotKey(){return (currentImageSlots()[0]||{}).key||'reference';}
+function syncPrimary(){const it=slotItems(primarySlotKey());state.subjectId=it.length?it[0].id:null;}
+function removeSlot(key,idx){const a=slotItems(key).slice();a.splice(idx,1);state.slots[key]=a;syncPrimary();renderSubjects();updateBar();}
+function renderSubjects(){
+  const slots=currentImageSlots();
+  const isCustom=state.mode==='custom';
+  const ICON='<svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg>';
+  // Custom = 항상 슬롯 팝오버(이미지·영상 모두, 슬롯 1개여도 — Leonardo식). 그 외(Influencer/Shopping)는 안내 라벨+바로 피커.
+  const noun={influencer:'face',shopping:'product',ugc:'face'}[state.mode];
+  const labeled=!isCustom&&!!noun;
+  const onClick=isCustom?`toggleImgMenu(event)`:`openSubjModal('${slots[0].key}')`;
+  const btn=labeled
+    ?`<button class="img-add labeled" type="button" onclick="${onClick}">${ICON}<span class="img-add-label">Select a ${noun}</span></button>`
+    :`<button class="img-add" type="button" title="Add image" onclick="${onClick}">${ICON}<span class="img-add-plus">＋</span></button>`;
+  let menu='';
+  if(isCustom){
+    menu=`<div class="img-menu" id="imgMenu"><div class="img-menu-h">Reference</div>`+slots.map(s=>{
+      const has=slotItems(s.key).length;
+      return `<button type="button" class="img-menu-row" onclick="openSubjModal('${s.key}')"><span class="imr-ic ${has?'on':''}">${has?'✓':'＋'}</span><span class="imr-t"><b>${esc(s.label)}</b><i>${esc(s.hint||'')}</i></span></button>`;
+    }).join('')+`</div>`;
+  }
+  let tiles='';
+  slots.forEach(s=>{
+    slotItems(s.key).forEach((it,idx)=>{
+      const bg=it.url?` style="background-image:url('${esc(it.url)}')"`:'';
+      // 라벨: 슬롯 여러 개(Kling start/end)면 역할명, 단일 슬롯이면 이미지 이름
+      const lbl=slots.length>1?s.label:(it.name||s.label);
+      tiles+=`<div class="ref-tile${it.url?'':' grad'}"${bg} title="${esc(it.name||'')}" onclick="openSubjModal('${s.key}')">`
+        +`<button class="ref-x" type="button" title="Remove" onclick="event.stopPropagation();removeSlot('${s.key}',${idx})">✕</button>`
+        +`<span class="ref-name">${esc(lbl)}</span></div>`;
+    });
+  });
+  document.getElementById('subjectRow').innerHTML=`<div class="img-add-wrap">${btn}${menu}</div>`+(tiles?`<div class="ref-tiles">${tiles}</div>`:'');
+}
+function toggleImgMenu(ev){if(ev)ev.stopPropagation();const m=document.getElementById('imgMenu');if(m)m.classList.toggle('open');}
+document.addEventListener('click',function(e){const m=document.getElementById('imgMenu');if(m&&m.classList.contains('open')&&!e.target.closest('.img-add-wrap'))m.classList.remove('open');});
+// ── 사진 선택 모달 (활성 슬롯 대상) ──
+let subjPending=[];
+let activeSlot='reference';
+function activeSlotMulti(){const s=currentImageSlots().find(x=>x.key===activeSlot);return !!(s&&s.multi);}
+function openSubjModal(slotKey){
+  activeSlot=slotKey||primarySlotKey();
+  const mm=document.getElementById('imgMenu');if(mm)mm.classList.remove('open');
+  const slot=currentImageSlots().find(s=>s.key===activeSlot)||{};
+  subjPending=slotItems(activeSlot).map(it=>it.id).filter(Boolean);
+  document.getElementById('subjModalTitle').textContent='Select Media'; // 슬롯 상관없이 일괄(Leonardo식)
   renderSubjModalGrid();
   document.getElementById('subjModal').classList.add('open');
 }
 function closeSubjModal(){const m=document.getElementById('subjModal');if(m)m.classList.remove('open');}
-function pickPending(id){subjPending=(subjPending===id?null:id);renderSubjModalGrid();}
-function confirmSubj(){if(subjPending){state.subjectId=subjPending;renderSubjects();updateBar();}closeSubjModal();}
+function pickPending(id){
+  if(activeSlotMulti()){const i=subjPending.indexOf(id);if(i<0)subjPending.push(id);else subjPending.splice(i,1);}
+  else{subjPending=(subjPending[0]===id?[]:[id]);}
+  renderSubjModalGrid();
+}
+function itemFromSubject(s){return {id:s.id,url:s.reference_image_url,name:(s.name||'').replace(PRODUCT_TAG,'').trim()||s.name};}
+function confirmSubj(){
+  const subs=SUBJECTS[state.mode]||[];
+  state.slots[activeSlot]=subjPending.map(id=>{const s=subs.find(x=>x.id===id);return s?itemFromSubject(s):null;}).filter(Boolean);
+  syncPrimary();renderSubjects();updateBar();closeSubjModal();
+}
 function renderSubjModalGrid(){
-  // 이미지 없는(빈) 제품/인물은 아예 숨김. URL이 있어도 로드 실패(onerror)하면 카드 제거 → 빈 placeholder 0개.
   const subs=(SUBJECTS[state.mode]||[]).filter(s=>s&&s.reference_image_url);
-  const upLabel={influencer:'Upload selfie',shopping:'Upload product',ugc:'Upload face',custom:'Upload reference'}[state.mode];
-  const up=`<button class="media-card media-upload" type="button" onclick="document.getElementById('subjectFile').click()"><span class="media-up-ic">⬆</span><span class="media-up-t">${upLabel}</span><span class="media-up-s">PNG · JPG · 5MB</span></button>`;
+  const up=`<button class="media-card media-upload" type="button" onclick="document.getElementById('subjectFile').click()"><span class="media-up-ic">⬆</span><span class="media-up-t">Upload an image</span><span class="media-up-s">PNG or JPG · up to 10MB</span></button>`;
   const cards=subs.map(s=>{
-    const on=subjPending===s.id;
+    const on=subjPending.includes(s.id);
     return `<button class="media-card ${on?'on':''}" type="button" onclick="pickPending('${s.id}')"><img class="media-img" src="${esc(s.reference_image_url)}" alt="" loading="lazy" onload="this.classList.add('loaded')" onerror="this.closest('.media-card').remove()">${on?'<span class="media-check">✓</span>':''}</button>`;
   }).join('');
   document.getElementById('subjModalGrid').innerHTML=up+cards;
-  const c=document.getElementById('subjConfirm');if(c)c.disabled=!subjPending;
-  const cnt=document.getElementById('subjModalCount');if(cnt)cnt.textContent=subjPending?'1 selected':(subs.length+' saved');
+  const c=document.getElementById('subjConfirm');if(c)c.disabled=!subjPending.length;
+  const cnt=document.getElementById('subjModalCount');if(cnt)cnt.textContent=subjPending.length?(subjPending.length+' selected'):(subs.length+' saved');
 }
 const VERTICAL_EMOJI={Fashion:'👗',Beauty:'💄',Jewelry:'💍',Food:'🍽️',Coffee:'☕',Home:'🏠',Tech:'📱',Pet:'🐾'};
 function renderFilters(){
@@ -880,7 +938,7 @@ function renderRecipes(){
   }).join('');
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
-function pickSubject(id){state.subjectId=id;renderSubjects();updateBar();}
+function pickSubject(id){const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===id);if(s){state.slots[primarySlotKey()]=[itemFromSubject(s)];syncPrimary();renderSubjects();updateBar();}}
 function pickRecipe(id){state.recipeId=(state.recipeId===id?null:id);renderRecipes();updateBar();} // 같은 카드 재클릭 시 선택 해제(토글)
 
 // 템플릿 설명(서버 rationale) 캐시 + 상세 모달
@@ -931,7 +989,11 @@ async function uploadSubject(inp){
     const data=await res.json();
     if(!res.ok||!data.success){toast('Upload failed: '+(data.error||res.status),'error');return;}
     await loadSubjects();
-    state.subjectId=data.data.id;
+    // 업로드한 이미지를 활성 슬롯에 추가(단일 슬롯=교체, 다중=추가)
+    const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===data.data.id);
+    const item=s?itemFromSubject(s):{id:data.data.id,url:'',name:name};
+    state.slots[activeSlot]=activeSlotMulti()?[...slotItems(activeSlot),item]:[item];
+    syncPrimary();
     renderSubjects();updateBar();closeSubjModal();
   }catch(e){toast('Something went wrong during upload.','error');}
 }
@@ -1065,10 +1127,24 @@ async function resolvePromptFor(r,subj){
 async function generateImages(r,subj,count){
   count=count||4;
   const rp=await resolvePromptFor(r,subj);
-  const res=await fetch('/api/generate',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:effModelKey(),tool:state.mode==='custom'?curTool():undefined,count:count,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'My prompt',...(state.mode==='custom'?{aspectRatio:curAspect(),imageSize:curSize(),negativePrompt:negText()}:{})})
-  });
+  // 다중 레퍼런스(reference 슬롯): 1번째=characterId, 2번째부터=referenceImages 파일(백엔드 합쳐 사용, 최대 14)
+  const items=slotItems('reference').length?slotItems('reference'):(subj?[{id:subj.id,url:subj.reference_image_url}]:[]);
+  const fd=new FormData();
+  fd.append('characterId',(items[0]&&items[0].id)||'');
+  fd.append('prompt',rp.prompt);
+  fd.append('model',effModelKey());
+  if(state.mode==='custom')fd.append('tool',curTool());
+  fd.append('count',count);
+  fd.append('style',rp.style);
+  fd.append('brandKit',brandOn());
+  fd.append('templateName',r?r.name:'My prompt');
+  if(state.mode==='custom'){fd.append('aspectRatio',curAspect());fd.append('imageSize',curSize());fd.append('negativePrompt',negText());}
+  fd.append('privateMode',privateOn()?'true':'false'); // 자동 공개
+  const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
+  for(let i=1;i<items.length;i++){
+    if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}
+  }
+  const res=await fetch('/api/generate',{method:'POST',body:fd});
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
@@ -1089,24 +1165,26 @@ async function generateImages(r,subj,count){
 }
 
 async function generateReel(r,subj){
-  if(!subj.reference_image_url){
-    document.getElementById('resultHint').textContent='⚠ Reels need a reference image. Please upload a photo first.';
+  const isCustomVid=(state.mode==='custom'&&curType()==='video');
+  // 시작 프레임: Custom 비디오면 startFrame 슬롯, 템플릿 릴이면 subject
+  const startUrl=isCustomVid?((slotItems('startFrame')[0]||{}).url):(subj&&subj.reference_image_url);
+  if(!startUrl){
+    document.getElementById('resultHint').textContent='⚠ Add a start frame first.';
     return;
   }
-  // 캐릭터 레퍼런스 이미지를 소스 프레임으로 사용해 Kling 비디오 생성
-  const imgRes=await fetch(subj.reference_image_url);
-  if(!imgRes.ok)throw new Error('reference image fetch failed');
+  const imgRes=await fetch(startUrl);
+  if(!imgRes.ok)throw new Error('start image fetch failed');
   const blob=await imgRes.blob();
   const rp=await resolvePromptFor(r,subj);
   const fd=new FormData();
   fd.append('prompt',rp.prompt);
-  const isCustomVid=(state.mode==='custom'&&curType()==='video');
   fd.append('duration',isCustomVid?curDuration():'5');
   fd.append('mode',isCustomVid?curQuality():'std'); // 화질 std/pro (Custom 비디오만 선택, 템플릿 릴은 std)
   if(isCustomVid){
     fd.append('aspectRatio',curAspect());
     fd.append('audio',audioOn()?'true':'false'); // 효과음/배경음 합성
-    if(endFrameFile)fd.append('endFrame',endFrameFile,endFrameFile.name||'endframe.png'); // 끝프레임
+    const ef=slotItems('endFrame')[0]; // 끝프레임 슬롯
+    if(ef&&ef.url){try{const eb=await(await fetch(ef.url)).blob();fd.append('endFrame',eb,'endframe.png');}catch(e){}}
   }
   fd.append('sourceImage',blob,'reference.png');
   // 비동기: 제출 → jobId → 상태 폴링 (Cloudflare 100초 타임아웃 회피)
@@ -1261,6 +1339,7 @@ function applyTryTemplate(){
     sessionStorage.removeItem('doppia_try_tpl');
     const t=JSON.parse(raw);
     setMode('custom');
+    state.tryTemplateId=t.id||null; // attribution: 이 마켓 템플릿으로 만든 결과 표시
     const ep=document.getElementById('extraPrompt');
     if(ep&&t.prompt){ep.value=t.prompt; const c=document.getElementById('extraClear'); if(c)c.classList.remove('hidden');}
     const tt=toolById(t.tool); const ts=document.getElementById('toolSel');

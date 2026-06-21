@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Explore</title>
+<script src="/js/flags.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=3" />
+<script src="/saas-auth.js" defer></script>
+<script src="/js/rail.js?v=2" defer></script>
+<style>
+  .wrap{max-width:1280px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
+  .head{margin-bottom:24px}
+  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
+  .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
+  /* 마소너리 그리드 */
+  .grid{columns:4 260px;column-gap:16px}
+  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative}
+  .card .media{display:block;width:100%;height:auto;background:#0c0c14}
+  .card .ov{position:absolute;left:0;right:0;bottom:0;padding:30px 12px 11px;background:linear-gradient(transparent,rgba(0,0,0,.82));opacity:0;transition:opacity .15s}
+  .card:hover .ov{opacity:1}
+  .card .by{font-size:12px;color:#cbd0e0;font-weight:600;margin-bottom:8px}
+  .card .row{display:flex;gap:8px;align-items:center}
+  .card .use{flex:1;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .use.ghost{background:rgba(255,255,255,.14)}
+  .card .rep{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:9px;padding:8px 9px;font-size:12px;cursor:pointer}
+  .card .vbadge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px}
+  .empty{text-align:center;color:var(--dim);padding:80px 20px}
+  .empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px;font-family:'Sora'}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body class="has-rail">
+<div class="wrap">
+  <div class="head">
+    <h1>Explore</h1>
+    <div class="sub">Real creations from the Doppia community. Like one? <b style="color:var(--accent2)">Make it with your own face or product.</b></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty hidden" id="empty"><b>Nothing here yet</b>Be the first — create something in Studio (Public mode on) and it shows up here.</div>
+</div>
+<div id="toast"></div>
+<script>
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+
+function card(it){
+  const media=it.type==='video'
+    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>`
+    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
+  // Use 버튼: 마켓 템플릿이면 그 템플릿 사용, 아니면 스튜디오로
+  const useBtn = (it.templateSource==='marketplace' && it.templateId)
+    ? `<button class="use" onclick="useTemplate('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`
+    : `<button class="use ghost" onclick="location.href='/studio'">✨ Create in Studio</button>`;
+  const vbadge=it.type==='video'?'<span class="vbadge">▶ Reel</span>':'';
+  return `<div class="card">${vbadge}${media}
+    <div class="ov">
+      <div class="by">${esc(it.creatorHandle||'@creator')}</div>
+      <div class="row">${useBtn}<button class="rep" title="Report" onclick="reportResult(${it.idx})">⚐</button></div>
+    </div></div>`;
+}
+
+async function load(){
+  const grid=document.getElementById('grid'),empty=document.getElementById('empty');
+  try{
+    const d=(await(await fetch('/api/generate/community?limit=80')).json()).data||[];
+    if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+    empty.classList.add('hidden');grid.innerHTML=d.map(card).join('');
+  }catch(e){console.error('explore load failed',e);empty.classList.remove('hidden');}
+}
+async function useTemplate(id){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id+'/use',{method:'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    sessionStorage.setItem('doppia_try_tpl',JSON.stringify(d.data));
+    location.href='/studio?try=1';
+  }catch(e){toast('Could not open template: '+(e.message||e));}
+}
+async function reportResult(idx){
+  if(!confirm('Report this creation for review?'))return;
+  try{
+    const r=await fetch('/api/generate/results/'+idx+'/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:'inappropriate'})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast(d.data&&d.data.takenDown?'Reported — removed from feed':'Reported. Thank you.');
+    if(d.data&&d.data.takenDown)load();
+  }catch(e){toast('Report failed: '+(e.message||e));}
+}
+load();
+</script>
+<script src="/js/biz-footer.js?v=1"></script>
+</body>
+</html>
