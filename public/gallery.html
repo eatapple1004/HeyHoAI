@@ -165,9 +165,32 @@
         <div class="view-sub" id="viewMeta"></div>
       </div>
       <div class="view-actions">
+        <button class="btn btn-primary" id="viewSaveTpl" style="display:none" onclick="openSaveFromCreation()">Save as template</button>
         <a id="viewDownload" href="#" download><button class="btn">⬇ Download</button></a>
         <button class="btn" onclick="viewNewTab()">⤢ New tab</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- creation → template 저장 모달 -->
+<div class="modal-bg" id="ctplModal" onclick="if(event.target===this)closeCtpl()">
+  <div class="modal">
+    <button class="x" onclick="closeCtpl()">✕</button>
+    <h3>Save as template</h3>
+    <div class="msub">Turn this creation into a reusable template — your prompt and this image become the preview.</div>
+    <div class="field">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Template name</label>
+      <input type="text" id="ctplName" maxlength="80" placeholder="e.g. Stone plinth luxe" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;margin:14px 0;cursor:pointer"><input type="checkbox" id="ctplPub" onchange="syncCtplPrice()"> <span>Publish to the community <i style="color:var(--dim)">(off = private, only you)</i></span></label>
+    <div id="ctplPriceRow" data-flag="marketplace" style="display:none;margin-bottom:4px">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Unlock price <i>(◈ one-time — 0 = free)</i></label>
+      <input type="number" id="ctplPrice" min="0" max="100" step="1" value="0" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn" style="flex:1" onclick="closeCtpl()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" id="ctplSave" onclick="confirmSaveCreation()">Save</button>
     </div>
   </div>
 </div>
@@ -236,6 +259,8 @@ async function load(){
           model:r.model||'',
           visibility:r.visibility==='public'?'public':'private',
           takenDown:!!r.taken_down,
+          prompt:r.prompt_text||'',                 // 사후 템플릿화용
+          templateSource:r.template_source||'',     // Custom(빈값)만 템플릿화 제공
           template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||inferTemplate(r.prompt_text)
         };
       });
@@ -297,10 +322,12 @@ async function toggleVis(idx){
 }
 
 // ── 결과물 뷰어 (새 탭 대신 모달 창) ──
-let VIEW_URL='';
+let VIEW_URL='', VIEW_ITEM=null;
 function openView(idx){
   const it=ITEMS.find(x=>x.idx===idx); if(!it)return;
-  VIEW_URL=it.url;
+  VIEW_URL=it.url; VIEW_ITEM=it;
+  // Custom 출처(template_source 없음) + 프롬프트 있는 결과만 "Save as template" 노출
+  document.getElementById('viewSaveTpl').style.display=(!it.templateSource && it.prompt)?'':'none';
   document.getElementById('viewMedia').innerHTML = it.type==='reel'
     ? `<video src="${esc(it.url)}" controls autoplay loop playsinline></video>`
     : `<img src="${esc(it.url)}" alt="">`;
@@ -321,7 +348,49 @@ function closeView(){
   document.getElementById('viewMedia').innerHTML=''; // 비디오 정지 + 메모리 해제
 }
 function viewNewTab(){ if(VIEW_URL) window.open(VIEW_URL,'_blank'); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeView(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeView();closeCtpl();} });
+
+// ── 사후 템플릿화: My creations 결과 → 템플릿 (뷰어 "Save as template") ──
+function openSaveFromCreation(){
+  if(!VIEW_ITEM||!VIEW_ITEM.prompt)return;
+  closeView();
+  document.getElementById('ctplName').value=(VIEW_ITEM.prompt||'').slice(0,40);
+  document.getElementById('ctplPub').checked=false; // Private 기본
+  document.getElementById('ctplPrice').value='0';
+  syncCtplPrice();
+  document.getElementById('ctplModal').classList.add('open');
+}
+function closeCtpl(){document.getElementById('ctplModal').classList.remove('open');}
+function syncCtplPrice(){
+  const row=document.getElementById('ctplPriceRow');
+  const show=document.getElementById('ctplPub').checked && window.featureOn && window.featureOn('marketplace');
+  row.style.display=show?'':'none';
+}
+async function confirmSaveCreation(){
+  const it=VIEW_ITEM; if(!it)return;
+  const name=document.getElementById('ctplName').value.trim();
+  if(!name){toast('Name your template.');return;}
+  const pub=document.getElementById('ctplPub').checked;
+  const priceCredits=(pub&&window.featureOn&&window.featureOn('marketplace'))?Math.max(0,Math.min(parseInt(document.getElementById('ctplPrice').value,10)||0,100)):0;
+  const body=v=>JSON.stringify({name:name,category:'Custom',type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,previewMedia:[it.url]});
+  const btn=document.getElementById('ctplSave');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    let res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:body(pub?'public':'private')});
+    if(res.status===403){ // 비크리에이터가 공개 시도 → private로 폴백 저장
+      toast('Apply as creator to publish — saved as private.');
+      res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:body('private')});
+    }else{
+      const d=await res.json();
+      if(!res.ok||!d.success)throw new Error(d.error||'save failed');
+      toast(pub?'Saved & published':'Saved to My templates');
+      closeCtpl();if(tplLoaded)loadMyTemplates();return;
+    }
+    const d2=await res.json();
+    if(!res.ok||!d2.success)throw new Error(d2.error||'save failed');
+    toast('Saved to My templates');closeCtpl();if(tplLoaded)loadMyTemplates();
+  }catch(e){toast('Save failed: '+(e.message||e),'error');}
+  finally{btn.disabled=false;btn.textContent='Save';}
+}
 
 // ── 사진 → 릴스 (기존 /api/generate/video 재사용) ──
 let REEL_SRC=null,reelBusy=false;
