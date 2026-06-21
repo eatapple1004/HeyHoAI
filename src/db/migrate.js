@@ -904,6 +904,12 @@ async function migrateMarketplace() {
   await pool.query(`
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS recipe_id TEXT;
   `);
+  // 상세 등록(2026-06-21): 크리에이터가 템플릿을 더 풍부하게 등록 — 설명 텍스트 + 제작에 쓴 레퍼런스(전시용 갤러리).
+  //   reference_examples = 입력 레퍼런스 URL 배열(전시 전용·생성엔 미주입). preview_media(결과 예시)와 의미 분리. (멱등)
+  await pool.query(`
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS description TEXT;
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS reference_examples JSONB NOT NULL DEFAULT '[]'::jsonb;
+  `);
   // 🗑️ 가짜 placeholder 시드 제거: 개발자가 넣은 무료 공식 8개(@heyhoai, 미리보기 없음·하드코딩된 가짜 usage). (멱등)
   //    → 진짜 유료 recipe-backed 프리미엄으로 대체. recipe-backed(@doppia)는 보존.
   await pool.query(`DELETE FROM marketplace_templates WHERE is_official = true AND creator_handle = '@heyhoai' AND recipe_id IS NULL`);

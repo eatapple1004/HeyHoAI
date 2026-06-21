@@ -23,6 +23,14 @@ const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'), // 프로덕션 HTTPS 환경에서 true
 
+  // 마켓 유료 과금 게이트 — 점화 전엔 false(유저가 만든 유료 템플릿이 실제 크레딧을 돌리지 않게).
+  // false면 비공식(유저) 유료 템플릿의 acquire 언락·사용당 로열티가 무료/미과금 처리됨.
+  // 공식 시드(is_official)는 이 게이트와 무관하게 항상 라이브 유료(배포 즉시 유료 의도 보존).
+  MARKETPLACE_PAID: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // 외부 공개 주소 (도메인). 인스타 발행 시 미디어 URL·발행 링크 등에 사용.
   // 예: https://doppia.ai — 미설정 시 폴백 IP 사용
   PUBLIC_URL: z.string().url().optional(),

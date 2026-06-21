@@ -222,6 +222,12 @@
   .stpl-vis{display:flex;align-items:center;gap:9px;margin:14px 0 4px;font-size:13.5px;color:var(--text);cursor:pointer}
   .stpl-vis i{color:var(--faint);font-style:normal}
   .stpl-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .modal .field>textarea,.modal .field>select{width:100%;font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:10px 12px;font-size:13.5px}
+  .modal .field>textarea{resize:vertical;min-height:62px;line-height:1.5}
+  .modal .field>textarea:focus,.modal .field>select:focus{outline:none;border-color:var(--accent)}
+  .stpl-refs{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+  .stpl-refs .stpl-ph{width:52px;height:52px;border-radius:9px;background:var(--surface) center/cover no-repeat;border:1px solid var(--border2)}
+  .stpl-refs.off{opacity:.4;filter:grayscale(.55)}
   .modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative;animation:fadeUp .35s cubic-bezier(.2,.7,.3,1)}
   .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
   .modal .msub{font-size:13px;color:var(--dim);margin-bottom:20px;line-height:1.5}
@@ -448,13 +454,24 @@
     <div class="stpl-prev" id="stplPrev"></div>
     <div class="field"><label>Template name</label>
       <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
+    <div class="field"><label>Description <i>(what it's good for — shown on the template page)</i></label>
+      <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
+    <div class="field"><label>Category</label>
+      <select id="stplCat">
+        <option value="Custom">Custom</option>
+        <option value="Influencer">Influencer</option>
+        <option value="Shopping">Shopping</option>
+        <option value="UGC">UGC</option>
+      </select></div>
     <label class="stpl-vis"><input type="checkbox" id="stplVis" checked onchange="syncStplPrice()"> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
-    <div class="field" id="stplPriceRow" data-flag="marketplace" style="display:none">
+    <div class="field" id="stplPriceRow" style="display:none">
       <label>Unlock price <i>(◈ one-time to own — 0 = free)</i></label>
       <input type="number" id="stplPrice" min="0" max="100" step="1" value="0" style="width:100%" placeholder="0">
       <label style="margin-top:10px">Per-use royalty <i>(◈ each render — optional)</i></label>
       <input type="number" id="stplUsePrice" min="0" max="50" step="1" value="0" style="width:100%" placeholder="0">
     </div>
+    <label class="stpl-vis" id="stplRefOptRow" style="display:none"><input type="checkbox" id="stplRefOpt" onchange="syncStplRefs()"> <span>Show the reference image(s) I used as examples <i>(off = hidden — may include your face/product)</i></span></label>
+    <div class="stpl-refs off" id="stplRefPrev"></div>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
       <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
@@ -1222,6 +1239,8 @@ function saveAsTemplate(){
   if(!p){toast('Write a prompt first.');return;}
   const prev=(state.lastPreview||[]);
   document.getElementById('stplName').value=p.slice(0,40);
+  document.getElementById('stplDesc').value='';
+  document.getElementById('stplCat').value='Custom';
   document.getElementById('stplVis').checked=true; // 기본 공개(Feed)
   // 미리보기 썸네일 — 방금 만든 결과
   document.getElementById('stplPrev').innerHTML=prev.length
@@ -1229,35 +1248,52 @@ function saveAsTemplate(){
     : `<div class="stpl-noprev">No preview yet — generate first so your template shows an example in the Feed.</div>`;
   document.getElementById('stplPrice').value='0';
   document.getElementById('stplUsePrice').value='0';
+  // 제작에 쓴 레퍼런스(전시용·옵트인). 서버 호스팅 URL만(blob 제외) → 다른 유저도 볼 수 있음.
+  state._saveRefs=slotItems('reference').map(i=>i&&i.url).filter(u=>typeof u==='string'&&/^https?:|^\//.test(u)).slice(0,6);
+  const refOptRow=document.getElementById('stplRefOptRow');
+  const refPrev=document.getElementById('stplRefPrev');
+  const refOpt=document.getElementById('stplRefOpt');
+  refOpt.checked=false; // 기본 OFF(얼굴/제품 무심코 공개 방지)
+  refPrev.innerHTML=state._saveRefs.map(u=>`<div class="stpl-ph" style="background-image:url('${esc(u)}')"></div>`).join('');
+  refOptRow.style.display=state._saveRefs.length?'':'none';
+  syncStplRefs();
   syncStplPrice();
   document.getElementById('saveTplModal').classList.add('open');
 }
-// 가격 행: 마켓 점화(featureOn) + 공개 게시일 때만 노출. 비공개/미점화면 숨김.
+// 가격 행: 공개 게시일 때 항상 노출(점화 전이라도). 실제 과금은 백엔드 MARKETPLACE_PAID 게이트가 막음.
 function syncStplPrice(){
   const row=document.getElementById('stplPriceRow');
-  const show=document.getElementById('stplVis').checked && window.featureOn && window.featureOn('marketplace');
-  row.style.display=show?'':'none';
+  row.style.display=document.getElementById('stplVis').checked?'':'none';
+}
+// 레퍼런스 전시 옵트인: 켜면 컬러·끄면 흐릿(미공개) 표시.
+function syncStplRefs(){
+  const on=document.getElementById('stplRefOpt').checked;
+  document.getElementById('stplRefPrev').classList.toggle('off',!on);
 }
 function closeSaveTpl(){document.getElementById('saveTplModal').classList.remove('open');}
 async function confirmSaveTpl(){
   const name=document.getElementById('stplName').value.trim();
   if(!name){toast('Name your template.');return;}
   const makePublic=document.getElementById('stplVis').checked;
-  // 가격: 공개 + 마켓 점화일 때만(미점화/비공개=무료)
-  const paidOn=(makePublic&&window.featureOn&&window.featureOn('marketplace'));
-  const priceCredits=paidOn?Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)):0;
-  const usePriceCredits=paidOn?Math.max(0,Math.min(parseInt(document.getElementById('stplUsePrice').value,10)||0,50)):0;
+  // 가격: 공개일 때 항상 전송(점화 전엔 백엔드가 미과금 처리). 비공개=무료.
+  const priceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)):0;
+  const usePriceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplUsePrice').value,10)||0,50)):0;
+  const description=document.getElementById('stplDesc').value.trim();
+  const category=document.getElementById('stplCat').value||'Custom';
+  // 레퍼런스 전시: 옵트인 체크 시에만 전송
+  const referenceExamples=document.getElementById('stplRefOpt').checked?(state._saveRefs||[]):[];
   const p=extraPromptText();
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,category:'Custom',type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
-        visibility:makePublic?'public':'private',priceCredits:priceCredits,usePriceCredits:usePriceCredits,negativePrompt:negText(),previewMedia:(state.lastPreview||[]).slice(0,6)})});
+      body:JSON.stringify({name:name,description:description,category:category,type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
+        visibility:makePublic?'public':'private',priceCredits:priceCredits,usePriceCredits:usePriceCredits,negativePrompt:negText(),
+        previewMedia:(state.lastPreview||[]).slice(0,6),referenceExamples:referenceExamples})});
     const d=await res.json();
     if(res.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
     closeSaveTpl();
-    toast(makePublic?(priceCredits>0?`Published to the Feed · ◈${priceCredits}/use ✨`:'Saved & published to the Feed ✨'):'Saved to your templates');
+    toast(makePublic?(priceCredits>0?`Published to the Feed · ◈${priceCredits} to unlock ✨`:'Saved & published to the Feed ✨'):'Saved to your templates');
   }catch(e){toast('Save failed: '+(e.message||e),'error');}
   finally{btn.disabled=false;btn.textContent='Save template';}
 }

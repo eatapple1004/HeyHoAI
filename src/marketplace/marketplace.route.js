@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { query } = require('../db/client');
+const { env } = require('../config');
 const creditService = require('../credits/credit.service');
 const { resolveToolId } = require('../tools/registry');
 
@@ -9,9 +10,15 @@ const CATEGORIES = new Set(['Influencer', 'Shopping', 'UGC', 'Custom']);
 const TYPES = new Set(['image', 'reel']);
 const CREATOR_SHARE = 0.7; // 크리에이터 70% 수익분배
 
-const PUBLIC_COLS = `id, creator_id, creator_handle, name, category, type, style, prompt,
+// 유료 과금이 실제로 도는가? 공식 시드(is_official)는 배포 즉시 라이브 유료(게이트 무관),
+// 비공식(유저 생성) 유료 템플릿은 MARKETPLACE_PAID 점화 전엔 무료 취급(가격은 노출·저장만).
+function paidActive(tpl) {
+  return env.MARKETPLACE_PAID === true || tpl.is_official === true;
+}
+
+const PUBLIC_COLS = `id, creator_id, creator_handle, name, description, category, type, style, prompt,
   negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, recipe_id, usage_count, likes_count,
-  preview_media, is_official, created_at`;
+  preview_media, reference_examples, is_official, created_at`;
 // JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
 const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
 
@@ -146,9 +153,9 @@ router.post('/apply', async (req, res, next) => {
 router.post('/templates', async (req, res, next) => {
   try {
     const {
-      name, category, type = 'image', style = 'Natural', prompt,
+      name, description = '', category, type = 'image', style = 'Natural', prompt,
       negativePrompt = '', emoji = '🎨', priceCredits = 0, usePriceCredits = 0,
-      tool, visibility = 'private', previewMedia = [],
+      tool, visibility = 'private', previewMedia = [], referenceExamples = [],
     } = req.body || {};
     if (!name || !prompt) return res.status(400).json({ success: false, error: 'name과 prompt는 필수입니다.' });
     if (!CATEGORIES.has(category)) return res.status(400).json({ success: false, error: '유효한 category가 필요합니다.' });
@@ -167,15 +174,19 @@ router.post('/templates', async (req, res, next) => {
     const price = Math.max(0, Math.min(parseInt(priceCredits, 10) || 0, 100));
     const usePrice = Math.max(0, Math.min(parseInt(usePriceCredits, 10) || 0, 50)); // 사용당 로열티(소액, ≤50)
     const preview = Array.isArray(previewMedia) ? previewMedia.slice(0, 6) : [];
+    // 전시용 레퍼런스(제작에 쓴 입력 이미지) — 생성엔 미주입, 상세페이지 갤러리 전용. 문자열 URL만 통과·최대 6장.
+    const refExamples = Array.isArray(referenceExamples)
+      ? referenceExamples.filter((u) => typeof u === 'string' && u).slice(0, 6) : [];
+    const desc = String(description || '').slice(0, 600);
     const handle = '@' + String(req.user.email || 'creator').split('@')[0];
 
     const r = await query(
       `INSERT INTO marketplace_templates
-         (creator_id, creator_handle, name, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb) RETURNING ${PUBLIC_COLS}`,
-      [req.user.id, handle, String(name).slice(0, 120), category, t, String(style).slice(0, 50),
+         (creator_id, creator_handle, name, description, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media, reference_examples)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb) RETURNING ${PUBLIC_COLS}`,
+      [req.user.id, handle, String(name).slice(0, 120), desc, category, t, String(style).slice(0, 50),
        String(prompt).slice(0, 2000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
-       String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview)]
+       String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview), JSON.stringify(refExamples)]
     );
     res.status(201).json({ success: true, data: r.rows[0] });
   } catch (err) { next(err); }
@@ -201,6 +212,9 @@ router.patch('/templates/:id', async (req, res, next) => {
     }
     if (body.category !== undefined && CATEGORIES.has(body.category)) {
       params.push(body.category); sets.push(`category = $${params.length}`);
+    }
+    if (body.description !== undefined) {
+      params.push(String(body.description || '').slice(0, 600)); sets.push(`description = $${params.length}`);
     }
     if (body.priceCredits !== undefined) {
       const price = Math.max(0, Math.min(parseInt(body.priceCredits, 10) || 0, 100));
@@ -309,13 +323,15 @@ router.post('/templates/:id/acquire', async (req, res, next) => {
       return res.json({ success: true, data: { id: tpl.id, owned: true, alreadyOwned: true }, charged: 0 });
     }
 
+    // 점화 게이트: 비공식 유료 템플릿은 MARKETPLACE_PAID 전엔 가격 0 취급(무료 언락). 공식은 항상 과금.
+    const effectivePrice = paidActive(tpl) ? tpl.price_credits : 0;
     let source = 'free', pricePaid = 0;
-    if (tpl.price_credits > 0) {
-      charge = await creditService.charge(req.user, tpl.price_credits, {
+    if (effectivePrice > 0) {
+      charge = await creditService.charge(req.user, effectivePrice, {
         type: 'template_purchase', description: `템플릿 구매: ${tpl.name}`, refId: tpl.id,
       });
       source = 'purchase';
-      pricePaid = charge ? charge.amount : tpl.price_credits;
+      pricePaid = charge ? charge.amount : effectivePrice;
     }
 
     const ins = await query(
@@ -328,8 +344,8 @@ router.post('/templates/:id/acquire', async (req, res, next) => {
       return res.json({ success: true, data: { id: tpl.id, owned: true, alreadyOwned: true }, charged: 0 });
     }
     // 구매 성공 후에만 로열티 분배(70%) → 크리에이터 포인트(현금성, credit 아님)
-    if (charge && tpl.creator_id && tpl.price_credits > 0) {
-      const royalty = Math.round(tpl.price_credits * CREATOR_SHARE);
+    if (charge && tpl.creator_id && effectivePrice > 0) {
+      const royalty = Math.round(effectivePrice * CREATOR_SHARE);
       if (royalty > 0) await creditService.addPoints(tpl.creator_id, royalty, {
         type: 'royalty', description: `템플릿 판매: ${tpl.name}`, refId: tpl.id,
       }).catch(() => {});

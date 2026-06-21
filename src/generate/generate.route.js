@@ -134,9 +134,11 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     let useRoyalty = 0, royaltyCreatorId = null;
     try {
       if (templateSource === 'marketplace' && templateId) {
-        const tr = await query('SELECT use_price_credits, creator_id FROM marketplace_templates WHERE id = $1', [templateId]);
+        const tr = await query('SELECT use_price_credits, creator_id, is_official FROM marketplace_templates WHERE id = $1', [templateId]);
         const row = tr.rows[0];
-        if (row && row.use_price_credits > 0 && row.creator_id && row.creator_id !== req.user.id) {
+        // 점화 게이트: 비공식(유저) 템플릿 사용당 로열티는 MARKETPLACE_PAID 전엔 미과금(공식은 항상 라이브).
+        const paidLive = env.MARKETPLACE_PAID === true || (row && row.is_official === true);
+        if (paidLive && row && row.use_price_credits > 0 && row.creator_id && row.creator_id !== req.user.id) {
           useRoyalty = row.use_price_credits; royaltyCreatorId = row.creator_id;
         }
       } else if (templateSource === 'recipe' && templateId) {
