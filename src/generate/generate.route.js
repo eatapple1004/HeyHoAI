@@ -127,18 +127,40 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
 
-    // ─── 사용당 로열티(하이브리드): 보유 마켓 템플릿 사용 시 use_price_credits 추가 과금 → 성공 시 크리에이터 70%.
-    //     fail-open: 조회 실패=로열티 0(생성 진행). 본인 템플릿/관리자(charge=null) 면제 시 분배 안 함(민팅 방지). ⚠️ marketplace 점화 후에만 실제 발생. ───
+    // ─── 유료 템플릿 게이트 + 사용당 로열티(하이브리드). ───
+    //   marketplace 출처: 보유 마켓 템플릿이면 use_price_credits 추가 과금 → 성공 시 크리에이터 70%.
+    //   recipe 출처: recipe-backed 유료 템플릿이 있으면 보유 필수(미보유 402), 보유 시 use_price 로열티.
+    //   fail-open(조회 실패=게이트/로열티 스킵, 생성 진행) · mint-safe(관리자 charge=null이면 분배 안 함) · official(creator NULL)=분배 없이 플랫폼.
     let useRoyalty = 0, royaltyCreatorId = null;
-    if (templateSource === 'marketplace' && templateId) {
-      try {
+    try {
+      if (templateSource === 'marketplace' && templateId) {
         const tr = await query('SELECT use_price_credits, creator_id FROM marketplace_templates WHERE id = $1', [templateId]);
         const row = tr.rows[0];
         if (row && row.use_price_credits > 0 && row.creator_id && row.creator_id !== req.user.id) {
           useRoyalty = row.use_price_credits; royaltyCreatorId = row.creator_id;
         }
-      } catch (e) { /* fail-open: 로열티 스킵, 생성은 진행 */ }
-    }
+      } else if (templateSource === 'recipe' && templateId) {
+        const tr = await query(
+          `SELECT mt.id, mt.name, mt.price_credits, mt.use_price_credits, mt.creator_id,
+                  EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $2) AS owned
+           FROM marketplace_templates mt
+           WHERE mt.recipe_id = $1 AND mt.status = 'active' AND mt.price_credits > 0
+           ORDER BY mt.is_official DESC LIMIT 1`,
+          [templateId, req.user.id]
+        );
+        const row = tr.rows[0];
+        if (row) {
+          const isCreator = !!(row.creator_id && row.creator_id === req.user.id);
+          if (!row.owned && !isCreator) {
+            return res.status(402).json({ success: false, error: `먼저 구매해야 사용할 수 있습니다: ${row.name}`, data: { needPurchase: true, templateId: row.id, price: row.price_credits } });
+          }
+          if (row.use_price_credits > 0 && !isCreator) {
+            useRoyalty = row.use_price_credits;
+            royaltyCreatorId = row.creator_id || null; // official(creator NULL)=분배 없이 플랫폼
+          }
+        }
+      }
+    } catch (e) { /* fail-open: 게이트/로열티 스킵, 생성 진행 */ }
 
     // ─── 크레딧 차감 (개인=admin면제, 팀=풀차감/viewer 403, 부족 시 402) ───
     const creditService = require('../credits/credit.service');

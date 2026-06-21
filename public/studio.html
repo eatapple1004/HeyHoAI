@@ -573,11 +573,23 @@ async function mergeOwnedTemplates(){
   if(!owned.length)return;
   const MODE={Influencer:'influencer',Shopping:'shopping',UGC:'ugc',Custom:'influencer'};
   owned.forEach(t=>{
+    if(t.recipe_id)return; // recipe-backed는 applyRecipeGates가 처리(숨김/노출)
     const mode=MODE[t.category]||'influencer';
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
       emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',cat:'My templates',
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace'});
+  });
+  renderFilters();renderRecipes();updateBar();
+}
+// recipe-backed 유료 템플릿 게이트: 미보유=내장 recipe 숨김(held=true, 카탈로그서 구매) / 보유=노출(held=false).
+// 백엔드 /api/generate가 미보유 생성을 402로 막으므로 숨김은 UX용. flag 무관(공식 유료는 점화와 별개로 라이브).
+async function applyRecipeGates(){
+  let gates;try{gates=(await(await fetch('/api/marketplace/recipe-gates')).json()).data||[];}catch(e){return;}
+  if(!gates.length)return;
+  gates.forEach(g=>{
+    for(const m of Object.keys(TEMPLATES)){const rc=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));
+      if(rc){rc.held=!g.owned;break;}}
   });
   renderFilters();renderRecipes();updateBar();
 }
@@ -1455,7 +1467,7 @@ function applyTryTemplate(){
 }
 if(!applyTryTemplate() && !bootRecipe() && !bootFromUrl()) setMode('influencer');
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
-if(document.readyState==='loading')addEventListener('DOMContentLoaded',function(){mergeOwnedTemplates();});else mergeOwnedTemplates();
+if(document.readyState==='loading')addEventListener('DOMContentLoaded',function(){mergeOwnedTemplates();applyRecipeGates();});else {mergeOwnedTemplates();applyRecipeGates();}
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubjects();
 loadCredits();

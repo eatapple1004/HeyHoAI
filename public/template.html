@@ -122,6 +122,8 @@ async function useThis(){
     const d=await r.json();
     if(r.status===402){toast(d.error||'Not enough credits');return;}
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    // recipe-backed면 리치 recipe를 스튜디오에서 선택(/studio?recipe=), 아니면 Custom 프리필
+    if(d.data.recipeId){location.href='/studio?recipe='+encodeURIComponent(d.data.recipeId);return;}
     sessionStorage.setItem('doppia_try_tpl',JSON.stringify(d.data));
     location.href='/studio?try=1';
   }catch(e){toast('Could not open: '+(e.message||e));}

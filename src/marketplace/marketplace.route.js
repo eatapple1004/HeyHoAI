@@ -10,7 +10,7 @@ const TYPES = new Set(['image', 'reel']);
 const CREATOR_SHARE = 0.7; // 크리에이터 70% 수익분배
 
 const PUBLIC_COLS = `id, creator_id, creator_handle, name, category, type, style, prompt,
-  negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, usage_count, likes_count,
+  negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, recipe_id, usage_count, likes_count,
   preview_media, is_official, created_at`;
 // JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
 const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
@@ -284,8 +284,9 @@ router.post('/templates/:id/use', async (req, res, next) => {
       data: {
         id: tpl.id, name: tpl.name, category: tpl.category, type: tpl.type, style: tpl.style,
         prompt: tpl.prompt, negativePrompt: tpl.negative_prompt || '', tool: tpl.tool || null, emoji: tpl.emoji,
+        recipeId: tpl.recipe_id || null, // recipe-backed면 스튜디오가 리치 recipe를 로드
       },
-      charged: 0, // 사용 시점엔 과금 없음(구매료=/acquire / 사용당 로열티=생성 시점 Phase 2)
+      charged: 0, // 사용 시점엔 과금 없음(구매료=/acquire / 사용당 로열티=생성 시점)
     });
   } catch (err) { next(err); }
 });
@@ -428,6 +429,20 @@ router.get('/bookmarks', async (req, res, next) => {
       [req.user.id]
     );
     res.json({ success: true, data: r.rows });
+  } catch (err) { next(err); }
+});
+
+/** GET /api/marketplace/recipe-gates — recipe-backed 유료 템플릿 게이트. 스튜디오: 미보유=recipe 숨김 / 보유=노출. */
+router.get('/recipe-gates', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT mt.id, mt.recipe_id, mt.price_credits,
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1) AS owned
+       FROM marketplace_templates mt
+       WHERE mt.recipe_id IS NOT NULL AND mt.status = 'active' AND mt.price_credits > 0`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: r.rows.map((x) => ({ templateId: x.id, recipeId: x.recipe_id, price: x.price_credits, owned: x.owned })) });
   } catch (err) { next(err); }
 });
 

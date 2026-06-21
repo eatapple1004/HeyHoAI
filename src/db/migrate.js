@@ -898,6 +898,23 @@ async function migrateMarketplace() {
   await pool.query(`
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS use_price_credits INT NOT NULL DEFAULT 0;
   `);
+  // recipe-backed 유료 템플릿: 마켓 템플릿이 내장 recipe를 가리킴 → 구매/보유=마켓 시스템, 생성=리치 recipe resolver. (멱등)
+  await pool.query(`
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS recipe_id TEXT;
+  `);
+  // 첫 프리미엄 공식 유료 템플릿 시드(recipe-backed). 공식=creator_id NULL(크리에이터 로열티 없음=플랫폼). 멱등(recipe_id 미존재 시만).
+  for (const t of [
+    { rid: 'stone-plinth-luxe', name: 'Stone Plinth Luxe', emoji: '🏛️' },
+    { rid: 'noir-gold-hero', name: 'Noir Gold Hero', emoji: '🖤' },
+  ]) {
+    await pool.query(
+      `INSERT INTO marketplace_templates
+         (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
+       SELECT '@doppia', $1, 'Shopping', 'image', 'Natural', $2, 8, 1, true, 'public', $3, $4
+       WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = $3)`,
+      [t.name, t.emoji, t.rid, `Premium recipe-backed hero — ${t.name}`]
+    );
+  }
 
   // 공식 템플릿 시드 (한 번만)
   const existing = await pool.query(`SELECT 1 FROM marketplace_templates WHERE is_official LIMIT 1`);
