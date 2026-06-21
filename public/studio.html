@@ -1390,6 +1390,23 @@ function bootFromUrl(){
   }
   return false;
 }
+// Explore creation 카드 "Use [recipe]" → /studio?recipe=<id>: 해당 레시피를 자동 선택(발견→제작 루프).
+function bootRecipe(){
+  const id=new URLSearchParams(location.search).get('recipe');
+  if(!id)return false;
+  for(const mode of Object.keys(TEMPLATES||{})){
+    const r=(TEMPLATES[mode]||[]).find(x=>String(x.id)===String(id));
+    if(r){
+      setMode(mode);
+      state.recipeId=id;state.filter='All';
+      renderFilters();renderRecipes();updateBar();
+      document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
+      if(window.toast)toast('Template ready — add your reference and generate');
+      return true;
+    }
+  }
+  return false; // 못 찾으면 폴백(기본 모드)
+}
 
 buildTemplates(); // window.RECIPES(93종) → TEMPLATES (setMode 렌더 전에 필수)
 // Library "Try it" → /studio?try=1 + sessionStorage(doppia_try_tpl) → Custom 모드 프리필
@@ -1410,7 +1427,7 @@ function applyTryTemplate(){
     return true;
   }catch(e){return false;}
 }
-if(!applyTryTemplate() && !bootFromUrl()) setMode('influencer');
+if(!applyTryTemplate() && !bootRecipe() && !bootFromUrl()) setMode('influencer');
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubjects();
 loadCredits();

@@ -96,10 +96,14 @@ function card(it){
   const media=it.type==='video'
     ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>`
     : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
-  // Use 버튼: 마켓 템플릿이면 상세(상품) 페이지로, 아니면 스튜디오로
-  const useBtn = (it.templateSource==='marketplace' && it.templateId)
-    ? `<button class="use" onclick="location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`
-    : `<button class="use ghost" onclick="location.href='/studio'">✨ Create in Studio</button>`;
+  // Use 버튼: 마켓 템플릿→상세 페이지 / recipe 출처→해당 레시피 프리셀렉트(/studio?recipe=) / 그 외→스튜디오
+  let useBtn;
+  if(it.templateSource==='marketplace' && it.templateId)
+    useBtn = `<button class="use" onclick="location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`;
+  else if(it.templateSource==='recipe' && it.templateId)
+    useBtn = `<button class="use" onclick="location.href='/studio?recipe='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`;
+  else
+    useBtn = `<button class="use ghost" onclick="location.href='/studio'">✨ Create in Studio</button>`;
   const vbadge=it.type==='video'?'<span class="vbadge">▶ Reel</span>':'';
   const by=it.creatorHandle
     ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}">${esc(it.creatorHandle)}</a>`
