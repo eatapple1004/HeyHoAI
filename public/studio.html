@@ -633,23 +633,16 @@ function placeGenBar(custom){
   bar.style.bottom=''; // 도킹 스크립트 잔여 인라인 bottom 제거
   const subjStep=document.getElementById('subjectStep');
   const subjRow=document.getElementById('subjectRow');
-  if(custom){
-    if(!_genBarHome)_genBarHome={parent:bar.parentNode,next:bar.nextSibling};
-    top.appendChild(bar);
-    bar.classList.add('gen-inline');
-    // 레퍼런스 셀렉터를 compose 블록 맨 위로 (Leonardo식) + 별도 Step1 숨김
-    if(subjRow){
-      if(!_subjHome)_subjHome={parent:subjRow.parentNode,next:subjRow.nextSibling};
-      bar.insertBefore(subjRow,bar.firstChild);
-      subjRow.classList.add('subj-in-compose');
-    }
-    if(subjStep)subjStep.classList.add('hidden');
-  }else{
-    if(_genBarHome&&bar.parentNode!==_genBarHome.parent)_genBarHome.parent.insertBefore(bar,_genBarHome.next);
-    bar.classList.remove('gen-inline');
-    if(subjRow&&_subjHome&&subjRow.parentNode!==_subjHome.parent){_subjHome.parent.insertBefore(subjRow,_subjHome.next);subjRow.classList.remove('subj-in-compose');}
-    if(subjStep)subjStep.classList.remove('hidden');
+  // 전 모드: 생성란을 탭 밑 #composeTop에 고정 + 레퍼런스를 compose 안으로 흡수 + 별도 Step1 숨김
+  if(!_genBarHome)_genBarHome={parent:bar.parentNode,next:bar.nextSibling};
+  top.appendChild(bar);
+  bar.classList.add('gen-inline');
+  if(subjRow){
+    if(!_subjHome)_subjHome={parent:subjRow.parentNode,next:subjRow.nextSibling};
+    bar.insertBefore(subjRow,bar.firstChild);
+    subjRow.classList.add('subj-in-compose');
   }
+  if(subjStep)subjStep.classList.add('hidden');
 }
 function setMode(m,initialVertical){
   // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
@@ -663,8 +656,8 @@ function setMode(m,initialVertical){
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
   // Custom 모드: 템플릿 그리드 숨김 — 직접 프롬프트로 생성(하단 프롬프트 칸이 주 입력)
   document.getElementById('templateStep').classList.toggle('hidden',custom);
-  document.getElementById('snTemplate').textContent=ugc?'3':'2';
-  document.getElementById('snResult').textContent=custom?'2':(ugc?'4':'3');
+  document.getElementById('snTemplate').style.display='none'; // Step1 흡수로 스텝 번호 체계 제거
+  document.getElementById('snResult').style.display='none';
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
   document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
   const ep=document.getElementById('extraPrompt');
