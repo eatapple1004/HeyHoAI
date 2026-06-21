@@ -14,7 +14,7 @@ const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 const teamCredit = require('../teams/team.credit');
 const { query } = require('../db/client');
-const { getTool } = require('../tools/registry');
+const { getTool, listTools } = require('../tools/registry');
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
 const router = Router();
@@ -48,6 +48,15 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       model = toolDef.costKey;
     }
 
+    // ─── Custom 풀 컨트롤 (비율·해상도·네거티브) — 미지정 시 기존 동작 유지 ───
+    // 비율: Gemini API 지원값 화이트리스트. 그 외/빈값 → 미적용.
+    const ASPECT_ALLOW = ['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
+    const aspectRatio = ASPECT_ALLOW.includes(req.body.aspectRatio) ? req.body.aspectRatio : null;
+    // 해상도: 2K는 Nano Banana Pro(model=pro) 전용. 4K는 보류(D1). 그 외 → 1K(미적용).
+    const imageSize = (model === 'pro' && String(req.body.imageSize || '').toUpperCase() === '2K') ? '2K' : null;
+    // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 500.
+    const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 500);
+
     if (!prompt || prompt.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
     }
@@ -63,6 +72,11 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       if (bk.enabled && bk.primary_color) {
         finalPrompt += `, subtle brand color accent of ${bk.primary_color} in the styling and tones, cohesive on-brand aesthetic`;
       }
+    }
+
+    // 네거티브 프롬프트: provider 관용대로 "Avoid:" 절로 합침
+    if (negativePrompt) {
+      finalPrompt += `\n\nAvoid: ${negativePrompt}`;
     }
 
     // Reference 이미지 결정 (최대 14개)
@@ -101,6 +115,10 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const isGpt = model.startsWith('gpt-');
     const gptQuality = model === 'gpt-image-2-high' ? 'high' : 'medium';
     const gptModelName = model.replace('-high', '');
+    // GPT 이미지는 size로만 비율 표현 (gemini의 imageConfig.aspectRatio 대체)
+    const gptSize = ['16:9', '3:2', '4:3', '21:9'].includes(aspectRatio) ? '1536x1024'
+      : ['9:16', '2:3', '3:4'].includes(aspectRatio) ? '1024x1536'
+      : '1024x1024';
     const modelId = isGpt ? gptModelName
       : model === 'flash' ? 'gemini-2.5-flash-image'
       : 'gemini-3-pro-image-preview';
@@ -149,7 +167,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           const OpenAI = require('openai');
           const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-          const gptParams = { model: modelId, prompt: finalPrompt, n: 1, size: '1024x1024', quality: gptQuality };
+          const gptParams = { model: modelId, prompt: finalPrompt, n: 1, size: gptSize, quality: gptQuality };
 
           // 레퍼런스 이미지가 있으면 편집 모드
           if (referenceImages.length > 0) {
@@ -162,7 +180,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
               image: refFile,
               prompt: gptParams.prompt,
               n: 1,
-              size: '1024x1024',
+              size: gptSize,
             });
             imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
           } else {
@@ -191,6 +209,10 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
             contents = finalPrompt;
           }
 
+          const imageConfig = {};
+          if (aspectRatio) imageConfig.aspectRatio = aspectRatio;
+          if (imageSize) imageConfig.imageSize = imageSize;
+
           const response = await ai.models.generateContent({
             model: modelId,
             contents,
@@ -202,6 +224,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
                 { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
                 { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
               ],
+              ...(Object.keys(imageConfig).length ? { imageConfig } : {}),
             },
           });
 
@@ -349,6 +372,49 @@ router.post('/caption', async (req, res, next) => {
   }
 });
 
+// ─── 프롬프트 Enhance (Claude 확장, Custom 애드온) ───
+router.post('/enhance', async (req, res, next) => {
+  const creditService = require('../credits/credit.service');
+  let charge = null;
+  try {
+    const { prompt, mode } = req.body || {};
+    if (!prompt || !String(prompt).trim()) {
+      return res.status(400).json({ success: false, error: 'prompt is required' });
+    }
+
+    // 크레딧 차감 (컨텍스트별: 개인=admin면제 / 팀=풀, viewer 403)
+    const teamCredit = require('../teams/team.credit');
+    charge = await teamCredit.chargeGeneration(req.user, creditService.COSTS.enhance, '프롬프트 Enhance');
+
+    const { enhancePrompt } = require('./enhance.service');
+    const result = await enhancePrompt({ prompt, mode });
+
+    res.json({
+      success: true,
+      data: { prompt: result.prompt },
+      credits: charge ? { charged: charge.amount, balance: await teamCredit.contextBalance(req.user.id) } : null,
+    });
+  } catch (err) {
+    if (charge) await charge.refund();
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
+// ─── 툴 카탈로그 (툴별 폼 스키마 정본 — 스튜디오가 폼을 동적 렌더) ───
+// 노출 = 레지스트리 enabled 큐레이션(단일 정본). 이미지·비디오 동일 규칙.
+//   비디오 = enabled 툴만(현재 kling). 프론트는 카탈로그에 비디오가 있으면 Image/Video 타입 선택 노출.
+router.get('/tools', (_req, res) => {
+  const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {} });
+  res.json({
+    success: true,
+    data: {
+      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
+      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
+    },
+  });
+});
+
 // ─── 스타일 프리셋 목록 ───
 router.get('/styles', async (_req, res, next) => {
   try {
@@ -443,13 +509,15 @@ router.delete('/reviews/:idx', async (req, res, next) => {
 // Cloudflare 100초 타임아웃 회피용. 스튜디오/갤러리가 이 경로를 사용.
 const videoJobService = require('./videoJob.service');
 
-router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }]), async (req, res, next) => {
+router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }]), async (req, res, next) => {
   try {
-    const { prompt, duration = '5', mode = 'std' } = req.body;
+    const { prompt, duration = '5', mode = 'std', aspectRatio, audio } = req.body;
     const sourceFile = req.files?.sourceImage?.[0];
+    const endFrameFile = req.files?.endFrame?.[0];
     const result = await videoJobService.submit({
-      user: req.user, prompt, duration, mode,
+      user: req.user, prompt, duration, mode, aspectRatio, audio,
       sourceImagePath: sourceFile ? sourceFile.path : null,
+      endFramePath: endFrameFile ? endFrameFile.path : null,
     });
     res.json({ success: true, ...result });
   } catch (err) {

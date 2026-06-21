@@ -30,7 +30,10 @@ function klingToken() {
  * @returns {Promise<{ jobId: string }>}
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
-async function submit({ user, prompt, duration = '5', mode = 'std', sourceImagePath }) {
+async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath }) {
+  const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
+  const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
+  const wantAudio = audio === true || audio === 'true';
   if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }
   if (!env.KLING_ACCESS_KEY || !env.KLING_SECRET_KEY) {
     const e = new Error('Kling API keys not configured'); e.statusCode = 400; throw e;
@@ -51,11 +54,13 @@ async function submit({ user, prompt, duration = '5', mode = 'std', sourceImageP
       const imageBase64 = fs.readFileSync(sourceImagePath).toString('base64');
       endpoint = 'https://api.klingai.com/v1/videos/image2video';
       body = { model_name: 'kling-v3', image: imageBase64, prompt,
-        negative_prompt: 'ugly, deformed, blurry, static', duration, mode, aspect_ratio: '9:16' };
+        negative_prompt: 'ugly, deformed, blurry, static', duration, mode, aspect_ratio: aspect };
+      // 끝프레임(선택) → Kling image_tail
+      if (endFramePath) { try { body.image_tail = fs.readFileSync(endFramePath).toString('base64'); } catch {} }
     } else {
       endpoint = 'https://api.klingai.com/v1/videos/text2video';
       body = { model_name: 'kling-v3', prompt,
-        negative_prompt: 'ugly, deformed, blurry, static', duration, mode, aspect_ratio: '9:16' };
+        negative_prompt: 'ugly, deformed, blurry, static', duration, mode, aspect_ratio: aspect };
     }
 
     const submitRes = await fetch(endpoint, {
@@ -73,17 +78,18 @@ async function submit({ user, prompt, duration = '5', mode = 'std', sourceImageP
     }
 
     const ins = await query(
-      `INSERT INTO video_jobs (user_id, team_id, prompt, duration, mode, task_id, charge_amount, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'processing') RETURNING id`,
-      [user.id, teamId, String(prompt).slice(0, 2000), duration, mode, taskId, chargeAmount]
+      `INSERT INTO video_jobs (user_id, team_id, prompt, duration, mode, task_id, charge_amount, status, audio)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'processing',$8) RETURNING id`,
+      [user.id, teamId, String(prompt).slice(0, 2000), duration, mode, taskId, chargeAmount, wantAudio]
     );
-    log.info(`Submitted job ${ins.rows[0].id} task=${taskId} (${duration}s ${mode})`);
+    log.info(`Submitted job ${ins.rows[0].id} task=${taskId} (${duration}s ${mode}${wantAudio ? ' +audio' : ''})`);
     return { jobId: ins.rows[0].id };
   } catch (err) {
     if (!err.statusCode && charge) await charge.refund().catch(() => {});
     throw err;
   } finally {
     if (sourceImagePath) { try { fs.unlinkSync(sourceImagePath); } catch {} }
+    if (endFramePath) { try { fs.unlinkSync(endFramePath); } catch {} }
   }
 }
 
@@ -95,22 +101,74 @@ async function refundJob(job) {
   else await creditService.addCredits(job.user_id, job.charge_amount, opts).catch(() => {});
 }
 
-/** 잡 완료 처리: 영상 다운로드 + 저장 + 결과 기록 */
-async function finalizeSucceeded(job, videoUrl, videoDuration, unitsUsed, taskId) {
-  const resFetch = await fetch(videoUrl);
-  const videoBuf = Buffer.from(await resFetch.arrayBuffer());
+/** Kling video-to-audio: 효과음/배경음 트랙 생성 → mp3 url (실패/타임아웃 시 null). */
+async function generateAudioFor({ videoId, videoUrl, prompt }) {
+  const body = {
+    ...(videoId ? { video_id: videoId } : { video_url: videoUrl }),
+    sound_effect_prompt: String(prompt || '').slice(0, 200), bgm_prompt: '', asmr_mode: false,
+  };
+  const submitRes = await fetch('https://api.klingai.com/v1/audio/video-to-audio', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + klingToken(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  let submitData; try { submitData = JSON.parse(await submitRes.text()); } catch { submitData = {}; }
+  const audioTaskId = submitData.data?.task_id;
+  if (!audioTaskId) return null;
+  for (let j = 0; j < 18; j++) { // 최대 ~3분 폴링
+    await new Promise((r) => setTimeout(r, 10000));
+    const pollRes = await fetch(`https://api.klingai.com/v1/audio/video-to-audio/${audioTaskId}`, {
+      headers: { Authorization: 'Bearer ' + klingToken() },
+    });
+    let d; try { d = JSON.parse(await pollRes.text()); } catch { continue; }
+    const st = d.data?.task_status;
+    if (st === 'succeed') {
+      const a = d.data?.task_result?.audios?.[0];
+      return a?.url_mp3 || a?.audio_url || a?.url_wav || a?.mp3_url || null;
+    }
+    if (st === 'failed') return null;
+  }
+  return null;
+}
+
+/** 잡 완료 처리: 영상(+옵션 오디오 합성) 다운로드 + 저장 + 결과 기록 */
+async function finalizeSucceeded(job, v, unitsUsed) {
+  const videoUrl = v.url, videoDuration = v.duration, videoId = v.id, taskId = job.task_id;
+  const videoBuf = Buffer.from(await (await fetch(videoUrl)).arrayBuffer());
   fs.mkdirSync(outputDir, { recursive: true });
-  const filename = `${crypto.randomUUID()}.mp4`;
-  fs.writeFileSync(path.join(outputDir, filename), videoBuf);
+  const uuid = crypto.randomUUID();
+  const filename = `${uuid}.mp4`;
+  const filePath = path.join(outputDir, filename);
+
+  // 오디오 옵션: video-to-audio → ffmpeg 합성. 실패해도 무음 영상으로 저장(품질 우선).
+  let hasAudio = false;
+  if (job.audio) {
+    try {
+      const audioUrl = await generateAudioFor({ videoId, videoUrl, prompt: job.prompt });
+      if (audioUrl) {
+        const tmpV = path.join(outputDir, `_v_${uuid}.mp4`), tmpA = path.join(outputDir, `_a_${uuid}.mp3`);
+        fs.writeFileSync(tmpV, videoBuf);
+        fs.writeFileSync(tmpA, Buffer.from(await (await fetch(audioUrl)).arrayBuffer()));
+        try {
+          require('child_process').execSync(
+            `ffmpeg -i "${tmpV}" -i "${tmpA}" -c:v copy -c:a aac -shortest -y "${filePath}" 2>&1`, { timeout: 30000 });
+          hasAudio = true;
+        } catch (e) { fs.writeFileSync(filePath, videoBuf); log.warn(`ffmpeg merge failed job ${job.id}: ${e.message}`); }
+        try { fs.unlinkSync(tmpV); } catch {}
+        try { fs.unlinkSync(tmpA); } catch {}
+      } else { fs.writeFileSync(filePath, videoBuf); }
+    } catch (e) { fs.writeFileSync(filePath, videoBuf); log.warn(`audio step failed job ${job.id}: ${e.message}`); }
+  } else {
+    fs.writeFileSync(filePath, videoBuf);
+  }
 
   const savedPrompt = await promptRepo.insert({
     userId: job.user_id, promptText: job.prompt, model: 'kling-v3',
-    tags: ['video', job.mode, job.duration + 's'], teamId: job.team_id,
+    tags: ['video', job.mode, job.duration + 's', ...(hasAudio ? ['audio'] : [])], teamId: job.team_id,
   });
   const savedResult = await resultRepo.insert({
     promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
-    fileSizeKb: Math.round(videoBuf.length / 1024), model: 'kling-v3',
-    metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed },
+    fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: 'kling-v3',
+    metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio },
   });
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
 
@@ -118,7 +176,7 @@ async function finalizeSucceeded(job, videoUrl, videoDuration, unitsUsed, taskId
     `UPDATE video_jobs SET status='succeeded', result_idx=$1, result_url=$2, updated_at=now() WHERE id=$3`,
     [savedResult.idx, `/images/${filename}`, job.id]
   );
-  log.info(`Job ${job.id} succeeded → /images/${filename}`);
+  log.info(`Job ${job.id} succeeded → /images/${filename}${hasAudio ? ' (audio)' : ''}`);
 }
 
 /** processing 잡들을 한 번씩 폴링 (백그라운드 틱) */
@@ -134,10 +192,18 @@ async function pollOnce() {
 
       if (status === 'succeed') {
         const v = pollData.data.task_result?.videos?.[0];
-        if (v?.url) {
-          await finalizeSucceeded(job, v.url, v.duration, pollData.data.final_unit_deduction, job.task_id);
-        } else {
-          throw new Error('succeed but no video url');
+        if (!v?.url) throw new Error('succeed but no video url');
+        // 중복 처리 방지: processing → finalizing 원자적 클레임 (오디오 합성으로 길어질 수 있어 필수).
+        const claim = await query(
+          `UPDATE video_jobs SET status='finalizing', updated_at=now() WHERE id=$1 AND status='processing'`, [job.id]);
+        if (claim.rowCount === 0) continue; // 다른 틱이 이미 가져감
+        try {
+          await finalizeSucceeded(job, v, pollData.data.final_unit_deduction);
+        } catch (e) {
+          log.error(`Finalize failed job ${job.id}: ${e.message}`);
+          await refundJob(job);
+          await query(`UPDATE video_jobs SET status='failed', error=$1, updated_at=now() WHERE id=$2`,
+            [String(e.message).slice(0, 300), job.id]).catch(() => {});
         }
       } else if (status === 'failed') {
         const msg = pollData.data?.task_status_msg || 'Kling generation failed';

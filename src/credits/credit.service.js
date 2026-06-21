@@ -11,6 +11,7 @@ const COSTS = {
   video: { 5: 8, 10: 16 }, // 릴스 (duration 초)
   videoHighSurcharge: 2, // mode=high 추가
   caption: 1, // 캡션 + 해시태그 생성 (애드온)
+  enhance: 1, // 프롬프트 Enhance (Claude 확장, Custom 애드온)
 };
 
 /** 이미지 생성 1회 비용 */
@@ -22,7 +23,8 @@ function imageCost(model) {
 /** 비디오(릴스) 생성 1회 비용 */
 function videoCost(duration, mode) {
   const base = COSTS.video[parseInt(duration, 10)] || COSTS.video[5];
-  return base + (mode === 'high' ? COSTS.videoHighSurcharge : 0);
+  // 화질 가산: std 외(pro/high)는 surcharge
+  return base + (mode && mode !== 'std' ? COSTS.videoHighSurcharge : 0);
 }
 
 /** statusCode 402를 가진 에러 (errorHandler가 그대로 응답) */

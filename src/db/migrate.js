@@ -665,6 +665,8 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_video_jobs_status ON video_jobs(status);
     CREATE INDEX IF NOT EXISTS idx_video_jobs_user ON video_jobs(user_id, created_at DESC);
   `);
+  // 오디오 옵션(비동기 video-to-audio 단계가 잡 완료 후 실행할지) 보존
+  await pool.query(`ALTER TABLE video_jobs ADD COLUMN IF NOT EXISTS audio BOOLEAN NOT NULL DEFAULT false;`);
 
   console.log('Migrations completed.');
 }
