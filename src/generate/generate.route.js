@@ -38,6 +38,10 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 router.post('/', upload.array('referenceImages', 14), async (req, res, next) => {
   try {
     let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
+    // 자동 공개: Private Mode 끄면(기본) 결과물 공개. + 출처 템플릿 attribution.
+    const resultVisibility = (req.body.privateMode === 'true' || req.body.privateMode === true) ? 'private' : 'public';
+    const templateId = req.body.templateId || null;
+    const templateSource = req.body.templateSource || null; // 'marketplace' | 'recipe'
     const generateCount = Math.min(parseInt(count, 10) || 1, 4);
 
     // #4: 툴이 템플릿에 박힘 — req.body.tool(템플릿 지정 또는 파워유저 override) → 레지스트리로 해석.
@@ -254,6 +258,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           filePath: `tmp/images/${filename}`,
           fileSizeKb: Math.round(imageBuffer.length / 1024),
           model: modelId,
+          visibility: resultVisibility, templateId, templateSource, templateName,
           metadata: { description },
         });
 
@@ -405,7 +410,7 @@ router.post('/enhance', async (req, res, next) => {
 // 노출 = 레지스트리 enabled 큐레이션(단일 정본). 이미지·비디오 동일 규칙.
 //   비디오 = enabled 툴만(현재 kling). 프론트는 카탈로그에 비디오가 있으면 Image/Video 타입 선택 노출.
 router.get('/tools', (_req, res) => {
-  const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {} });
+  const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
   res.json({
     success: true,
     data: {
@@ -461,6 +466,39 @@ router.get('/results', async (req, res, next) => {
       offset: offset ? parseInt(offset) : undefined,
     });
     res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ─── 커뮤니티 피드(Explore): 모든 유저의 공개 결과물 (자동공개) ───
+router.get('/community', async (req, res, next) => {
+  try {
+    const { limit, offset } = req.query;
+    const data = await resultRepo.findCommunity({
+      limit: limit ? parseInt(limit, 10) : 60,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
+    const items = data.map((r) => ({
+      idx: r.idx,
+      url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+      type: (r.metadata && r.metadata.type === 'video') ? 'video' : 'image',
+      model: r.model,
+      creatorHandle: r.creator_handle ? '@' + r.creator_handle : null,
+      templateId: r.template_id,
+      templateSource: r.template_source,
+      templateName: r.template_name,
+      createdAt: r.created_at,
+    }));
+    res.json({ success: true, data: items });
+  } catch (err) { next(err); }
+});
+
+// ─── 공개 결과물 신고 → 누적 시 자동 테이크다운 ───
+router.post('/results/:idx/report', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
+    const out = await resultRepo.report(idx, req.user.id, (req.body && req.body.reason) || 'other');
+    res.json({ success: true, data: out });
   } catch (err) { next(err); }
 });
 

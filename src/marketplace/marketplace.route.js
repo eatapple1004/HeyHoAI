@@ -41,6 +41,24 @@ router.get('/templates', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/** GET /api/marketplace/templates/:id — 템플릿 상세(상품 페이지용). 공개 또는 내 것만.
+ *  ⚠️ 유료 템플릿은 prompt(레시피) 비공개(블랙박스) — 결과·예시만 노출. */
+router.get('/templates/:id', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT ${PUBLIC_COLS}, (creator_id = $2) AS mine
+       FROM marketplace_templates
+       WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
+      [req.params.id, req.user.id]
+    );
+    const tpl = r.rows[0];
+    if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
+    // 유료 + 내 것 아니면 prompt 숨김(블랙박스). 무료/내 것은 그대로.
+    if (tpl.price_credits > 0 && !tpl.mine) { tpl.prompt = null; tpl.negative_prompt = null; }
+    res.json({ success: true, data: tpl });
+  } catch (err) { next(err); }
+});
+
 /** GET /api/marketplace/me — 크리에이터 상태 + 내가 게시한 템플릿 */
 router.get('/me', async (req, res, next) => {
   try {

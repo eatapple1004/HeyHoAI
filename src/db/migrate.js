@@ -586,6 +586,28 @@ async function migrate() {
     ALTER TABLE generation_results ALTER COLUMN file_path DROP NOT NULL;
   `);
 
+  // ─── 결과물 자동공개(커뮤니티) + attribution + 모더레이션 ───
+  // ⚠️ visibility 기본값 'private': 기존(과거) 결과는 비공개 유지(소급 공개 방지). 신규는 앱이 명시 설정.
+  await pool.query(`
+    ALTER TABLE generation_results
+    ADD COLUMN IF NOT EXISTS visibility      VARCHAR(10) NOT NULL DEFAULT 'private', -- public | private
+    ADD COLUMN IF NOT EXISTS taken_down       BOOLEAN     NOT NULL DEFAULT false,
+    ADD COLUMN IF NOT EXISTS template_id      TEXT,        -- 출처 템플릿(마켓 UUID 또는 레시피 id), null=Custom
+    ADD COLUMN IF NOT EXISTS template_source  VARCHAR(12), -- marketplace | recipe | null
+    ADD COLUMN IF NOT EXISTS template_name    TEXT;
+    CREATE INDEX IF NOT EXISTS idx_gen_results_public ON generation_results(visibility, taken_down, created_at DESC);
+  `);
+  // 공개 결과물 신고(중복 무시) — 누적 시 자동 테이크다운
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS result_reports (
+        result_idx   INT NOT NULL REFERENCES generation_results(idx) ON DELETE CASCADE,
+        reporter_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reason       VARCHAR(40),
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (result_idx, reporter_id)
+    );
+  `);
+
   // reviews에 active 컬럼 추가 (소프트 삭제)
   await pool.query(`
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;

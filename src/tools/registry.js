@@ -19,6 +19,11 @@
 //   aspectRatio: string[]  (select; 첫 값 = 기본)   imageSize/resolution: string[] (해상도 티어 select)
 //   duration: number[] (영상 길이 select; 's' 접미)  negative: bool (네거티브 입력)  audio: bool (오디오 토글)
 //   → 새 컨트롤 타입은 스튜디오 renderer에 케이스 1개만 추가하면 됨. 새 '툴'은 여기 한 줄로 폼이 생김.
+//
+// 🖼 imageSlots = 툴별 "이미지 입력" 슬롯(정본). Custom에서 이미지추가 버튼 → 슬롯 팝오버로 노출(Leonardo식).
+//   [{ key, label, hint, multi? }]  — 이미지툴=Reference(다중), 영상툴=Start/End frame 등 각 툴 지원에 맞게.
+//   ⚠️ 규칙: 이미지를 입력으로 받는 새 툴은 반드시 imageSlots를 정의할 것(없으면 기본 'reference' 단일).
+//     매핑은 generate 경로에서: reference→referenceImages, startFrame→sourceImage, endFrame→image_tail 등.
 const IMG_ASPECTS = ['3:4', '1:1', '4:3', '9:16', '16:9', '2:3', '3:2']; // Gemini API 지원값(기본 3:4)
 
 const TOOLS = {
@@ -28,12 +33,14 @@ const TOOLS = {
     provider: 'gemini', model: 'gemini-3-pro-image-preview',
     costKey: 'pro', enabled: true,
     controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K'], count: [1, 2, 3, 4], negative: true }, // 2K=Pro 전용
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'nano-banana': {
     id: 'nano-banana', label: 'Nano Banana', type: 'image',
     provider: 'gemini', model: 'gemini-2.5-flash-image',
     costKey: 'flash', enabled: true,
     controls: { aspectRatio: IMG_ASPECTS, count: [1, 2, 3, 4], negative: true }, // flash=1K 고정(imageSize 없음)
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'gpt-image': {
     id: 'gpt-image', label: 'GPT Image', type: 'image',
@@ -59,20 +66,24 @@ const TOOLS = {
     id: 'kling', label: 'Kling', type: 'video',
     provider: 'kling', model: 'kling-v3',
     costKey: null, enabled: true, // 비디오 툴 런칭 노출(2026-06-21). ⚠️ 실제 생성은 KLING_ACCESS/SECRET_KEY 필요.
-    // 라이브 async 경로 실배선. 시작프레임=레퍼런스(subject). 끝프레임=image_tail, 오디오=video-to-audio.
+    // 라이브 async 경로 실배선. start=sourceImage, end=image_tail, audio=video-to-audio.
     controls: {
       duration: [5, 10],
       quality: [{ value: 'std', label: 'Standard' }, { value: 'pro', label: 'Pro' }],
       aspectRatio: ['9:16', '1:1', '16:9'],
-      endFrame: { type: 'image' }, // 끝 프레임(선택)
       audio: { type: 'toggle' },   // 효과음/배경음 합성(선택)
     },
+    imageSlots: [
+      { key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' },
+      { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' },
+    ],
   },
   'runway': {
     id: 'runway', label: 'Runway', type: 'video',
     provider: 'runway', model: 'gen4_turbo',
     costKey: null, enabled: false,
     controls: { duration: [5, 10] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   // 추가 툴(minimax, fal, veo 등)은 #9 어댑터 웨이브에서 검증 후 등록 — controls만 채우면 폼 자동.
 };
