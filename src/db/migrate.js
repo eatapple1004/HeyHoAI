@@ -904,34 +904,29 @@ async function migrateMarketplace() {
   await pool.query(`
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS recipe_id TEXT;
   `);
-  // 첫 프리미엄 공식 유료 템플릿 시드(recipe-backed). 공식=creator_id NULL(크리에이터 로열티 없음=플랫폼). 멱등(recipe_id 미존재 시만).
+  // 🗑️ 가짜 placeholder 시드 제거: 개발자가 넣은 무료 공식 8개(@heyhoai, 미리보기 없음·하드코딩된 가짜 usage). (멱등)
+  //    → 진짜 유료 recipe-backed 프리미엄으로 대체. recipe-backed(@doppia)는 보존.
+  await pool.query(`DELETE FROM marketplace_templates WHERE is_official = true AND creator_handle = '@heyhoai' AND recipe_id IS NULL`);
+
+  // ✅ 공식 유료 프리미엄 템플릿 시드(recipe-backed, 8종/5버티컬). 공식=creator_id NULL(로열티 없음=플랫폼).
+  //    가짜 통계 없음(usage_count 기본 0). 가격=◈8 언락 + ◈1/사용. 미리보기 이미지는 추후 실예시 생성 후 첨부. 멱등(recipe_id 미존재 시만).
   for (const t of [
-    { rid: 'stone-plinth-luxe', name: 'Stone Plinth Luxe', emoji: '🏛️' },
-    { rid: 'noir-gold-hero', name: 'Noir Gold Hero', emoji: '🖤' },
+    { rid: 'stone-plinth-luxe',           name: 'Stone Plinth Luxe',           emoji: '🏛️' }, // beauty
+    { rid: 'noir-gold-hero',              name: 'Noir Gold Hero',              emoji: '🖤' }, // beauty
+    { rid: 'dewy-glass-hero',             name: 'Dewy Glass Hero',             emoji: '💧' }, // beauty
+    { rid: 'ring-editorial-campaign',     name: 'Ring Editorial Campaign',     emoji: '💍' }, // jewelry
+    { rid: 'bracelet-editorial-campaign', name: 'Bracelet Editorial Campaign', emoji: '💎' }, // jewelry
+    { rid: 'top-down-hero',               name: 'Top-Down Hero',               emoji: '🍽️' }, // food
+    { rid: 'void-hero-cut',               name: 'Void Hero Cut',               emoji: '🔲' }, // tech
+    { rid: 'pet-product-hero',            name: 'Pet Product Hero',            emoji: '🐾' }, // pet
   ]) {
     await pool.query(
       `INSERT INTO marketplace_templates
          (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
        SELECT '@doppia', $1, 'Shopping', 'image', 'Natural', $2, 8, 1, true, 'public', $3, $4
        WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = $3)`,
-      [t.name, t.emoji, t.rid, `Premium recipe-backed hero — ${t.name}`]
+      [t.name, t.emoji, t.rid, `Premium recipe-backed template — ${t.name}`]
     );
-  }
-
-  // 공식 템플릿 시드 (한 번만)
-  const existing = await pool.query(`SELECT 1 FROM marketplace_templates WHERE is_official LIMIT 1`);
-  if (existing.rowCount === 0) {
-    await pool.query(`
-      INSERT INTO marketplace_templates (creator_handle, name, category, type, style, emoji, price_credits, usage_count, is_official, prompt) VALUES
-        ('@heyhoai', 'Golden Hour Pro',     'Influencer', 'image', 'Natural',   '🌅', 0, 1240, true, 'golden hour on a rooftop terrace, warm orange sunlight, candid travel snapshot, wind in hair, looking into the distance, city skyline in background'),
-        ('@heyhoai', 'Y2K Film Selfie',     'Influencer', 'image', 'Film',      '📸', 0,  990, true, 'y2k style mirror selfie, compact digital camera with flash, retro 2000s fashion, playful pose, slight motion blur'),
-        ('@heyhoai', 'Aesthetic Cafe',      'Influencer', 'image', 'Portrait',  '☕', 0,  730, true, 'cozy indoor cafe, warm ambient lighting, holding a coffee cup with both hands, soft natural smile, window light from the side'),
-        ('@heyhoai', 'Editorial Glam',      'Influencer', 'image', 'Glamour',   '💄', 0,  610, true, 'high-end editorial look, designer outfit, dramatic studio lighting, confident expression, magazine cover quality'),
-        ('@heyhoai', 'GRWM Cinematic',      'Influencer', 'reel',  'Natural',   '💋', 0,  810, true, 'getting ready in front of a vanity mirror, applying makeup, soft morning light, casual intimate vlog feel, subtle natural movement'),
-        ('@heyhoai', 'Lookbook Studio',     'Shopping',   'image', 'Fashion',   '📷', 0,  670, true, 'clean studio product photography, the product on a minimal pedestal, soft even lighting, premium lookbook style'),
-        ('@heyhoai', 'Lifestyle Mood Shot', 'Shopping',   'image', 'Natural',   '🌿', 0,  430, true, 'the product placed in a cozy lifestyle scene, morning light through a window, plants and natural textures around, aesthetic instagram mood'),
-        ('@heyhoai', 'Product Reel',        'Shopping',   'reel',  'Cinematic', '🎞️', 0,  350, true, 'slow cinematic camera orbit around the product, soft light sweeping across, premium aesthetic mood, shallow depth of field')
-    `);
   }
 }
 
