@@ -206,6 +206,13 @@
   /* brand kit modal */
   .modal-bg{position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
   .modal-bg.open{display:flex}
+  /* save-as-template 모달 */
+  .stpl-prev{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+  .stpl-prev .stpl-ph{width:64px;height:80px;border-radius:10px;background:var(--surface) center/cover no-repeat;border:1px solid var(--border2)}
+  .stpl-noprev{font-size:12.5px;color:var(--faint);background:rgba(255,255,255,.04);border:1px dashed var(--border2);border-radius:10px;padding:14px;line-height:1.5}
+  .stpl-vis{display:flex;align-items:center;gap:9px;margin:14px 0 4px;font-size:13.5px;color:var(--text);cursor:pointer}
+  .stpl-vis i{color:var(--faint);font-style:normal}
+  .stpl-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
   .modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative;animation:fadeUp .35s cubic-bezier(.2,.7,.3,1)}
   .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
   .modal .msub{font-size:13px;color:var(--dim);margin-bottom:20px;line-height:1.5}
@@ -411,6 +418,21 @@
 <input type="file" id="subjectFile" accept="image/png,image/jpeg" style="display:none" onchange="uploadSubject(this)" />
 
 <!-- 데일리 보너스 모달 -->
+<div class="modal-bg" id="saveTplModal" onclick="if(event.target===this)closeSaveTpl()">
+  <div class="modal">
+    <button class="x" onclick="closeSaveTpl()">✕</button>
+    <h3>Save as template</h3>
+    <div class="msub">Turn this recipe into a template. Public ones appear in the community Feed for anyone to use.</div>
+    <div class="stpl-prev" id="stplPrev"></div>
+    <div class="field"><label>Template name</label>
+      <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
+    <label class="stpl-vis"><input type="checkbox" id="stplVis" checked> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
+    <div class="stpl-actions">
+      <button class="btn" onclick="closeSaveTpl()">Cancel</button>
+      <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="streakModal" onclick="if(event.target===this)closeStreak()">
   <div class="modal" style="text-align:center">
     <div style="font-size:48px;margin-bottom:8px"></div>
@@ -1091,19 +1113,37 @@ function extraPromptText(){
   return (state.detail||'').trim();
 }
 // Save as template — 현재 프롬프트+툴을 user 템플릿으로 저장(비공개 기본, 공개는 크리에이터 게이트)
-async function saveAsTemplate(){
+// Save as template — 결과 이미지를 미리보기로 붙여 제대로 된 모달로 저장(네이티브 prompt 폐지)
+function saveAsTemplate(){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
-  const name=window.prompt('Template name:', p.slice(0,40));
-  if(!name)return;
-  const makePublic=window.confirm('Make this template public in the Feed?\nOK = public · Cancel = private (only you)');
+  const prev=(state.lastPreview||[]);
+  document.getElementById('stplName').value=p.slice(0,40);
+  document.getElementById('stplVis').checked=true; // 기본 공개(Feed)
+  // 미리보기 썸네일 — 방금 만든 결과
+  document.getElementById('stplPrev').innerHTML=prev.length
+    ? prev.map(u=>`<div class="stpl-ph" style="background-image:url('${esc(u)}')"></div>`).join('')
+    : `<div class="stpl-noprev">No preview yet — generate first so your template shows an example in the Feed.</div>`;
+  document.getElementById('saveTplModal').classList.add('open');
+}
+function closeSaveTpl(){document.getElementById('saveTplModal').classList.remove('open');}
+async function confirmSaveTpl(){
+  const name=document.getElementById('stplName').value.trim();
+  if(!name){toast('Name your template.');return;}
+  const makePublic=document.getElementById('stplVis').checked;
+  const p=extraPromptText();
+  const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,category:'Custom',type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),visibility:makePublic?'public':'private',negativePrompt:negText()})});
+      body:JSON.stringify({name:name,category:'Custom',type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
+        visibility:makePublic?'public':'private',negativePrompt:negText(),previewMedia:(state.lastPreview||[]).slice(0,6)})});
     const d=await res.json();
+    if(res.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
-    toast(makePublic?'Saved & published to Feed':'Saved to your templates');
+    closeSaveTpl();
+    toast(makePublic?'Saved & published to the Feed ✨':'Saved to your templates');
   }catch(e){toast('Save failed: '+(e.message||e),'error');}
+  finally{btn.disabled=false;btn.textContent='Save template';}
 }
 
 // 레시피 카드 → 실제 프롬프트: 마켓 주입분(r.prompt 보유)은 직접, 그 외는 /api/recipes/:id/resolve.
@@ -1150,6 +1190,8 @@ async function generateImages(r,subj,count){
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
   const ok=(data.results||[]).filter(x=>x.success);
   const fail=(data.results||[]).length-ok.length;
+  state.lastPreview=ok.map(x=>x.url).slice(0,4); // 템플릿 미리보기 후보(방금 만든 결과)
+  if(state.mode==='custom')document.getElementById('saveTplBtn').classList.remove('btn-dim'); // 생성 후 강조
   document.getElementById('resultsGrid').innerHTML=ok.map(x=>`
     <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(x.url)}','photo')">
       <div class="actions">

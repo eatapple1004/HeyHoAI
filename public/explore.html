@@ -50,9 +50,9 @@ function card(it){
   const media=it.type==='video'
     ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>`
     : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
-  // Use 버튼: 마켓 템플릿이면 그 템플릿 사용, 아니면 스튜디오로
+  // Use 버튼: 마켓 템플릿이면 상세(상품) 페이지로, 아니면 스튜디오로
   const useBtn = (it.templateSource==='marketplace' && it.templateId)
-    ? `<button class="use" onclick="useTemplate('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`
+    ? `<button class="use" onclick="location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`
     : `<button class="use ghost" onclick="location.href='/studio'">✨ Create in Studio</button>`;
   const vbadge=it.type==='video'?'<span class="vbadge">▶ Reel</span>':'';
   return `<div class="card">${vbadge}${media}
@@ -69,15 +69,6 @@ async function load(){
     if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
     empty.classList.add('hidden');grid.innerHTML=d.map(card).join('');
   }catch(e){console.error('explore load failed',e);empty.classList.remove('hidden');}
-}
-async function useTemplate(id){
-  try{
-    const r=await fetch('/api/marketplace/templates/'+id+'/use',{method:'POST'});
-    const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    sessionStorage.setItem('doppia_try_tpl',JSON.stringify(d.data));
-    location.href='/studio?try=1';
-  }catch(e){toast('Could not open template: '+(e.message||e));}
 }
 async function reportResult(idx){
   if(!confirm('Report this creation for review?'))return;

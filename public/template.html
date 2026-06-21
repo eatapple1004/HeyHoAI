@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Template</title>
+<script src="/js/flags.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=3" />
+<script src="/saas-auth.js" defer></script>
+<script src="/js/rail.js?v=2" defer></script>
+<style>
+  .wrap{max-width:980px;margin:0 auto;padding:34px 24px 90px;position:relative;z-index:2}
+  .back{display:inline-flex;align-items:center;gap:6px;color:var(--dim);font-size:13px;cursor:pointer;margin-bottom:18px}
+  .back:hover{color:var(--text)}
+  .grid2{display:grid;grid-template-columns:1.2fr .9fr;gap:30px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  /* 예시 갤러리 */
+  .gal{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .gal .ph{aspect-ratio:3/4;border-radius:14px;background:var(--surface) center/cover no-repeat;border:1px solid var(--border)}
+  .gal .ph.full{grid-column:1/-1;aspect-ratio:16/10}
+  .gal .none{grid-column:1/-1;aspect-ratio:16/9;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:54px;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
+  /* 우측 패널 */
+  .panel h1{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.2}
+  .by{color:var(--dim);font-size:13.5px;margin-top:8px}
+  .by a{color:var(--accent2);text-decoration:none}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .b{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.06);color:var(--dim)}
+  .desc{color:var(--dim);font-size:14px;line-height:1.6;margin:14px 0 18px}
+  .stats{display:flex;gap:18px;color:var(--faint);font-size:13px;margin-bottom:18px}
+  .price{font-family:'Sora';font-size:20px;font-weight:800;margin-bottom:14px}
+  .price .free{color:#5ee0d6}
+  .cta{display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  .cta:hover{filter:brightness(1.07)}
+  .sub-actions{display:flex;gap:10px;margin-top:10px}
+  .sub-actions button{flex:1;background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border2);border-radius:11px;padding:10px;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .note{margin-top:16px;color:var(--faint);font-size:12px;line-height:1.5}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body class="has-rail">
+<div class="wrap">
+  <div class="back" onclick="history.length>1?history.back():location.href='/explore'">← Back</div>
+  <div id="content" class="grid2"></div>
+</div>
+<div id="toast"></div>
+<script>
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function qid(){try{return new URLSearchParams(location.search).get('id');}catch(e){return null;}}
+
+let TPL=null;
+async function load(){
+  const id=qid();
+  if(!id){document.getElementById('content').innerHTML='<p style="color:var(--dim)">No template.</p>';return;}
+  try{
+    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(id));
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'not found');
+    TPL=d.data;render();
+  }catch(e){document.getElementById('content').innerHTML='<p style="color:var(--dim)">Could not load this template. '+esc(e.message||'')+'</p>';}
+}
+function render(){
+  const t=TPL;
+  const media=Array.isArray(t.preview_media)?t.preview_media:[];
+  let gal;
+  if(media.length){
+    gal=media.slice(0,5).map((m,i)=>`<div class="ph${i===0&&media.length%2?' full':''}" style="background-image:url('${esc(m)}')"></div>`).join('');
+  }else{
+    gal=`<div class="none">${esc(t.emoji||'🎨')}</div>`;
+  }
+  const isReel=t.type==='reel';
+  const price=t.price_credits>0
+    ? `◈ ${t.price_credits} <span style="font-size:13px;color:var(--faint);font-weight:500">per use</span>`
+    : `<span class="free">Free</span> <span style="font-size:13px;color:var(--faint);font-weight:500">· uses your generation credits</span>`;
+  const blackbox=(t.price_credits>0 && !t.mine);
+  document.getElementById('content').innerHTML=`
+    <div class="gal">${gal}</div>
+    <div class="panel">
+      <h1>${esc(t.name)}</h1>
+      <div class="by">by <a href="#">${esc(t.creator_handle||'@creator')}</a></div>
+      <div class="badges">
+        <span class="b">${isReel?'▶ Reel':'▦ Photo'}</span>
+        <span class="b">${esc(t.category||'')}</span>
+        ${t.tool?`<span class="b">${esc(t.tool)}</span>`:''}
+        ${t.is_official?'<span class="b" style="color:#ffce7a">★ Official</span>':''}
+      </div>
+      <div class="desc">Add your ${t.category==='Shopping'?'product':'face'} and this template recreates the look in seconds — identity kept consistent.</div>
+      <div class="stats"><span>♥ ${t.likes_count||0}</span><span>◷ used ${t.usage_count||0}</span></div>
+      <div class="price">${price}</div>
+      <button class="cta" onclick="useThis()">✨ Use with your ${t.category==='Shopping'?'product':'face'}</button>
+      <div class="sub-actions">
+        ${t.mine?`<button onclick="location.href='/gallery'">Manage</button>`:`<button onclick="reportThis()">⚐ Report</button>`}
+      </div>
+      ${blackbox?'<div class="note">🔒 This is a paid template — the recipe (prompt) stays private. You get the result, not the prompt.</div>':''}
+    </div>`;
+}
+async function useThis(){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(TPL.id)+'/use',{method:'POST'});
+    const d=await r.json();
+    if(r.status===402){toast(d.error||'Not enough credits');return;}
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    sessionStorage.setItem('doppia_try_tpl',JSON.stringify(d.data));
+    location.href='/studio?try=1';
+  }catch(e){toast('Could not open: '+(e.message||e));}
+}
+async function reportThis(){
+  if(!confirm('Report this template for review?'))return;
+  try{
+    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(TPL.id)+'/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:'inappropriate'})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast(d.data&&d.data.takenDown?'Reported — template removed':'Reported. Thank you.');
+  }catch(e){toast('Report failed: '+(e.message||e));}
+}
+load();
+</script>
+<script src="/js/biz-footer.js?v=1"></script>
+</body>
+</html>
