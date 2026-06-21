@@ -16,10 +16,10 @@ a{text-decoration:none;color:inherit}
 
 /* ambient mesh */
 .mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.blob{position:absolute;border-radius:50%;filter:blur(120px);opacity:.15;animation:float 22s ease-in-out infinite}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.45;animation:float 18s ease-in-out infinite}
 .blob.b1{width:520px;height:520px;background:radial-gradient(circle,#7c6cff,transparent 70%);top:-180px;left:-140px}
 .blob.b2{width:460px;height:460px;background:radial-gradient(circle,#ff7eb6,transparent 70%);top:60px;right:-160px;animation-delay:-6s}
-.blob.b3{width:400px;height:400px;background:radial-gradient(circle,#5ee0d6,transparent 70%);bottom:-120px;left:25%;opacity:.1;animation-delay:-11s}
+.blob.b3{width:400px;height:400px;background:radial-gradient(circle,#5ee0d6,transparent 70%);bottom:-120px;left:25%;opacity:.25;animation-delay:-11s}
 @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-40px) scale(1.08)}}
 .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.03;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
