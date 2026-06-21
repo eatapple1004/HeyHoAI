@@ -143,6 +143,15 @@
   /* best value 배지 */
   .recipe-card .val-badge{position:absolute;top:10px;right:10px;left:auto;font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:4px 8px;border-radius:8px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;text-transform:uppercase}
   .recipe-card .hold-badge{position:absolute;bottom:10px;left:10px;font-size:10px;font-weight:800;letter-spacing:.4px;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:var(--gold);border:1px solid var(--gold)}
+  /* 프리미엄 업셀 섹션 — 잠금표시 없이, 절제된 골드 톤 */
+  #premiumWrap{margin-top:38px}
+  .premium-head{font-family:'Sora';font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:16px;display:flex;align-items:baseline;gap:10px}
+  .premium-head .ph-sub{font-family:inherit;font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--dim)}
+  .recipe-card.premium{border-color:rgba(216,189,126,.3)}
+  .recipe-card.premium:hover{border-color:var(--gold)}
+  .recipe-card.premium .preview{position:relative}
+  .recipe-card.premium .preview::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(8,8,14,.5))}
+  .recipe-card.premium .meta .cost{color:var(--dim);font-weight:500}
 
   /* add-ons (quality upsell · fast-lane · caption) */
   .addons{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--border)}
@@ -313,6 +322,10 @@
       <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span></div>
     <div class="filter-row" id="filterRow"></div>
     <div class="recipe-grid" id="recipeGrid"></div>
+    <div id="premiumWrap" style="display:none">
+      <div class="premium-head">Premium <span class="ph-sub">— unlock once, yours forever</span></div>
+      <div class="recipe-grid" id="premiumGrid"></div>
+    </div>
   </div>
 
   <div class="step hidden" id="resultStep">
@@ -418,6 +431,15 @@
 <input type="file" id="subjectFile" accept="image/png,image/jpeg" style="display:none" onchange="uploadSubject(this)" />
 
 <!-- 데일리 보너스 모달 -->
+<div class="modal-bg" id="unlockModal" onclick="if(event.target===this)closeUnlock()">
+  <div class="modal">
+    <button class="x" onclick="closeUnlock()">✕</button>
+    <h3 id="unlockName">Premium template</h3>
+    <div class="msub">A premium template. Unlock it once to make it yours — then use it anytime with your own face or product. Generation credits still apply per render, like every template.</div>
+    <button class="btn btn-primary" style="width:100%" id="unlockBtn" onclick="confirmUnlock()">Unlock · <span id="unlockPrice">◈ —</span></button>
+    <div style="text-align:center;margin-top:14px"><a onclick="closeUnlock()" style="color:var(--dim);font-size:13px;cursor:pointer">Maybe later</a></div>
+  </div>
+</div>
 <div class="modal-bg" id="saveTplModal" onclick="if(event.target===this)closeSaveTpl()">
   <div class="modal">
     <button class="x" onclick="closeSaveTpl()">✕</button>
@@ -587,10 +609,12 @@ async function mergeOwnedTemplates(){
 // 백엔드 /api/generate가 미보유 생성을 402로 막으므로 숨김은 UX용. flag 무관(공식 유료는 점화와 별개로 라이브).
 async function applyRecipeGates(){
   let gates;try{gates=(await(await fetch('/api/marketplace/recipe-gates')).json()).data||[];}catch(e){return;}
-  if(!gates.length)return;
+  PREMIUM=[];
   gates.forEach(g=>{
-    for(const m of Object.keys(TEMPLATES)){const rc=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));
-      if(rc){rc.held=!g.inStudio;break;}} // 보유 && in_studio일 때만 노출
+    let rc=null,mode=null;
+    for(const m of Object.keys(TEMPLATES)){const c=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));if(c){rc=c;mode=m;break;}}
+    if(rc)rc.held=!g.inStudio;                 // 보유 && in_studio면 메인 그리드 노출
+    if(!g.owned&&rc)PREMIUM.push({templateId:g.templateId,recipeId:g.recipeId,price:g.price,name:rc.name,grad:rc.grad,type:rc.type,mode:mode}); // 미보유=프리미엄 섹션
   });
   renderFilters();renderRecipes();updateBar();
 }
@@ -980,7 +1004,7 @@ function renderFilters(){
   }).join('');
 }
 function renderRecipes(){
-  const rs=TEMPLATES[state.mode].filter(r=>state.filter==='All'||r.cat===state.filter);
+  const rs=TEMPLATES[state.mode].filter(r=>(state.filter==='All'||r.cat===state.filter)&&!PREMIUM.some(p=>p.recipeId===r.id));
   // ★ 합격(보류 해제, held===false) 템플릿을 각 테마(cat) 상단으로 — 테마 그룹 순서는 원본 유지(안정 정렬)
   const _catOrder=[]; rs.forEach(r=>{ if(!_catOrder.includes(r.cat))_catOrder.push(r.cat); });
   rs.sort((a,b)=>{ const ci=_catOrder.indexOf(a.cat)-_catOrder.indexOf(b.cat); return ci!==0?ci:((a.held===false?0:1)-(b.held===false?0:1)); });
@@ -993,6 +1017,44 @@ function renderRecipes(){
       <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
+  renderPremium();
+}
+// 프리미엄(미보유 paid) 업셀 — 메인 그리드 아래, 잠금표시 없이 자연스러운 카드. 클릭 시 결제 안내.
+let PREMIUM=[];
+function renderPremium(){
+  const wrap=document.getElementById('premiumWrap'),grid=document.getElementById('premiumGrid');
+  if(!wrap||!grid)return;
+  const list=PREMIUM.filter(p=>p.mode===state.mode);
+  if(!list.length){wrap.style.display='none';grid.innerHTML='';return;}
+  wrap.style.display='';
+  grid.innerHTML=list.map(p=>`<div class="recipe-card premium" onclick="openUnlock('${esc(p.templateId)}','${esc(p.recipeId)}')">
+    <div class="preview" style="background:${p.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)'}"></div>
+    <div class="meta"><div class="rname">${esc(p.name)}</div><div class="cost">Premium template</div></div></div>`).join('');
+}
+let UNLOCK={tid:null,rid:null,price:0};
+function openUnlock(tid,rid){
+  const p=PREMIUM.find(x=>x.templateId===tid)||{};
+  UNLOCK={tid:tid,rid:rid,price:p.price||0};
+  document.getElementById('unlockName').textContent=p.name||'Premium template';
+  document.getElementById('unlockPrice').textContent='◈ '+(p.price||'');
+  document.getElementById('unlockModal').classList.add('open');
+}
+function closeUnlock(){document.getElementById('unlockModal').classList.remove('open');}
+async function confirmUnlock(){
+  if(!UNLOCK.tid)return;
+  const btn=document.getElementById('unlockBtn');btn.disabled=true;btn.textContent='Unlocking…';
+  try{
+    const r=await fetch('/api/marketplace/templates/'+UNLOCK.tid+'/acquire',{method:'POST'});
+    const d=await r.json();
+    if(r.status===402){if(window.toast)toast('Not enough credits — top up in Billing.');setTimeout(()=>location.href='/billing',1300);return;}
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    const rid=UNLOCK.rid;closeUnlock();
+    if(window.toast)toast("Unlocked — it's in your templates now.");
+    await applyRecipeGates();           // 보유 반영: 프리미엄에서 빠지고 메인 그리드로
+    if(rid){state.recipeId=rid;state.filter='All';renderFilters();renderRecipes();updateBar();
+      document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});}
+  }catch(e){if(window.toast)toast('Unlock failed: '+(e.message||e));}
+  finally{btn.disabled=false;btn.innerHTML='Unlock · <span id="unlockPrice">◈ '+(UNLOCK.price||'')+'</span>';}
 }
 function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===id);if(s){state.slots[primarySlotKey()]=[itemFromSubject(s)];syncPrimary();renderSubjects();updateBar();}}
