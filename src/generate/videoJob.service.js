@@ -30,10 +30,13 @@ function klingToken() {
  * @returns {Promise<{ jobId: string }>}
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
-async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath }) {
+async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
+  visibility, templateId, templateSource, templateName }) {
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
   const wantAudio = audio === true || audio === 'true';
+  // 자동공개(P2): 이미지 경로와 동일 정책 — Private Mode 명시 안 하면 공개. + 출처 템플릿 attribution.
+  const vis = visibility === 'private' ? 'private' : 'public';
   if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }
   if (!env.KLING_ACCESS_KEY || !env.KLING_SECRET_KEY) {
     const e = new Error('Kling API keys not configured'); e.statusCode = 400; throw e;
@@ -78,9 +81,11 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
     }
 
     const ins = await query(
-      `INSERT INTO video_jobs (user_id, team_id, prompt, duration, mode, task_id, charge_amount, status, audio)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'processing',$8) RETURNING id`,
-      [user.id, teamId, String(prompt).slice(0, 2000), duration, mode, taskId, chargeAmount, wantAudio]
+      `INSERT INTO video_jobs (user_id, team_id, prompt, duration, mode, task_id, charge_amount, status, audio,
+         visibility, template_id, template_source, template_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'processing',$8,$9,$10,$11,$12) RETURNING id`,
+      [user.id, teamId, String(prompt).slice(0, 2000), duration, mode, taskId, chargeAmount, wantAudio,
+       vis, templateId || null, templateSource || null, templateName ? String(templateName).slice(0, 120) : null]
     );
     log.info(`Submitted job ${ins.rows[0].id} task=${taskId} (${duration}s ${mode}${wantAudio ? ' +audio' : ''})`);
     return { jobId: ins.rows[0].id };
@@ -169,6 +174,8 @@ async function finalizeSucceeded(job, v, unitsUsed) {
     promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
     fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: 'kling-v3',
     metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio },
+    // 자동공개(P2): 잡이 운반한 visibility·출처 템플릿을 결과에 기록 → Explore 피드 노출.
+    visibility: job.visibility, templateId: job.template_id, templateSource: job.template_source, templateName: job.template_name,
   });
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
 

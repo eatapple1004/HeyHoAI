@@ -492,6 +492,19 @@ router.get('/community', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── 내 결과물 공개/비공개 토글 (My creations에서 항목별 공개·재공개) ───
+router.patch('/results/:idx/visibility', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
+    const visibility = (req.body && req.body.visibility) === 'public' ? 'public' : 'private';
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    const updated = await resultRepo.setVisibility(idx, { userId: teamId ? undefined : req.user.id, teamId }, visibility);
+    if (!updated) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 공개할 수 없는 항목입니다.' });
+    res.json({ success: true, data: updated });
+  } catch (err) { next(err); }
+});
+
 // ─── 공개 결과물 신고 → 누적 시 자동 테이크다운 ───
 router.post('/results/:idx/report', async (req, res, next) => {
   try {
@@ -550,10 +563,14 @@ const videoJobService = require('./videoJob.service');
 router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }]), async (req, res, next) => {
   try {
     const { prompt, duration = '5', mode = 'std', aspectRatio, audio } = req.body;
+    // 자동공개(P2): 이미지 경로와 동일 — Private Mode 끄면(기본) 공개 + 출처 템플릿 attribution.
+    const visibility = (req.body.privateMode === 'true' || req.body.privateMode === true) ? 'private' : 'public';
     const sourceFile = req.files?.sourceImage?.[0];
     const endFrameFile = req.files?.endFrame?.[0];
     const result = await videoJobService.submit({
       user: req.user, prompt, duration, mode, aspectRatio, audio,
+      visibility, templateId: req.body.templateId || null,
+      templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,
       endFramePath: endFrameFile ? endFrameFile.path : null,
     });

@@ -74,14 +74,14 @@
 
 <div class="wrap">
   <div class="head fade d1">
-    <div><h1>Your Library</h1><div class="sub">Your creations, your saved templates, and the community feed.</div></div>
+    <div><h1>Your Library</h1><div class="sub">Your creations and your saved templates. Discover more in Explore.</div></div>
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
   <div class="tabbar fade d1">
     <button class="tab active" data-tab="creations" onclick="switchTab('creations')">My creations</button>
     <button class="tab" data-tab="templates" onclick="switchTab('templates')">My templates</button>
-    <button class="tab" data-tab="feed" onclick="switchTab('feed')">Feed</button>
+    <button class="tab" data-tab="saved" onclick="switchTab('saved')">Saved</button>
   </div>
 
   <!-- My creations (생성 결과물) -->
@@ -106,6 +106,7 @@
 
   <!-- My templates (저장한 템플릿) -->
   <section id="tab-templates" class="hidden">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><a href="/earnings" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none">Manage pricing & earnings →</a></div>
     <div class="grid fade d2" id="tplGrid"></div>
     <div class="empty hidden" id="tplEmpty">
       <div class="ico"></div><h3>No saved templates yet</h3>
@@ -114,12 +115,13 @@
     </div>
   </section>
 
-  <!-- Feed (공개 커뮤니티 템플릿) -->
-  <section id="tab-feed" class="hidden">
-    <div class="grid fade d2" id="feedGrid"></div>
-    <div class="empty hidden" id="feedEmpty">
-      <div class="ico"></div><h3>The feed is just getting started</h3>
-      <p>Public templates from the community will appear here — try them with your own photo.</p>
+  <!-- Saved (내가 북마크한 템플릿) -->
+  <section id="tab-saved" class="hidden">
+    <div class="grid fade d2" id="savedGrid"></div>
+    <div class="empty hidden" id="savedEmpty">
+      <div class="ico">🔖</div><h3>No saved templates yet</h3>
+      <p>Tap the bookmark on any template in <a href="/explore?tab=templates" style="color:var(--accent2)">Explore → Templates</a> to save it here for one-tap reuse.</p>
+      <a href="/explore?tab=templates" class="btn btn-primary">Browse Templates →</a>
     </div>
   </section>
 </div>
@@ -220,6 +222,8 @@ async function load(){
           name:r.character_name||'',
           date:(r.created_at||'').slice(0,10),
           model:r.model||'',
+          visibility:r.visibility==='public'?'public':'private',
+          takenDown:!!r.taken_down,
           template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||inferTemplate(r.prompt_text)
         };
       });
@@ -240,23 +244,45 @@ function render(){
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
   if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
-  grid.innerHTML=list.map(it=>`
+  grid.innerHTML=list.map(it=>{
+    const visBadge=it.takenDown
+      ?`<span class="badge vis private" title="Removed by moderation">⚑ Removed</span>`
+      :`<span class="badge vis ${it.visibility==='public'?'':'private'}">${it.visibility==='public'?'🌐 Public':'🔒 Private'}</span>`;
+    const visBtn=it.takenDown?'':(it.visibility==='public'
+      ?`<button class="vistoggle" onclick="toggleVis(${it.idx})" title="Make private">🔒</button>`
+      :`<button class="vistoggle" onclick="toggleVis(${it.idx})" title="Make public">🌐</button>`);
+    return `
     <div class="item">
       ${it.type==='reel'
         ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="openView(${it.idx})"></video>`
         :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="openView(${it.idx})">`}
-      <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>
+      <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>${visBadge}
       <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}${it.template?' · '+esc(it.template):''}</div></div>
       <div class="actions">
         ${it.type==='photo'?`<button class="reel" onclick="openReel('${esc(it.url)}','${esc(it.name)}')">→ Reel</button>`:''}
+        ${visBtn}
         <a href="${esc(it.url)}" download><button>⬇</button></a>
         <button onclick="openView(${it.idx})">⤢</button>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
   // 사진이 하나라도 있으면 넛지 표시
   document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
 }
 function setFilter(f){filter=f;renderFilters();render();}
+
+// ── 결과물 공개/비공개 토글 (My creations) ──
+async function toggleVis(idx){
+  const it=ITEMS.find(x=>x.idx===idx); if(!it||it.takenDown)return;
+  const next=it.visibility==='public'?'private':'public';
+  try{
+    const r=await fetch('/api/generate/results/'+idx+'/visibility',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visibility:next})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    it.visibility=d.data&&d.data.visibility?d.data.visibility:next;
+    render();
+    toast(it.visibility==='public'?'Now public — it shows in Explore.':'Now private.');
+  }catch(e){toast('Could not update: '+(e.message||e),'error');}
+}
 
 // ── 결과물 뷰어 (새 탭 대신 모달 창) ──
 let VIEW_URL='';
@@ -339,28 +365,29 @@ async function pollReelJob(jobId){
   throw new Error('The Reel is taking too long. Please refresh the gallery in a moment.');
 }
 
-// ── Library 탭 (My creations / My templates / Feed) ──
-let tplLoaded=false, feedLoaded=false;
+// ── Library 탭 (My creations / My templates / Saved) ──
+let tplLoaded=false, savedLoaded=false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.getElementById('tab-creations').classList.toggle('hidden',t!=='creations');
   document.getElementById('tab-templates').classList.toggle('hidden',t!=='templates');
-  document.getElementById('tab-feed').classList.toggle('hidden',t!=='feed');
+  document.getElementById('tab-saved').classList.toggle('hidden',t!=='saved');
   if(t==='templates'&&!tplLoaded){tplLoaded=true;loadMyTemplates();}
-  if(t==='feed'&&!feedLoaded){feedLoaded=true;loadFeed();}
+  if(t==='saved'&&!savedLoaded){savedLoaded=true;loadSaved();}
 }
-function tplCard(t,mine){
+// kind: 'mine'(내가 만든) | 'saved'(북마크) — 메타·액션 분기
+function tplCard(t,kind){
   const prev=(t.preview_media&&t.preview_media[0])||'';
   const thumb=prev
     ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="tryTpl('${t.id}')">`
     :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#5ee0d6);cursor:pointer" onclick="tryTpl('${t.id}')">${esc(t.emoji||'🎨')}</div>`;
-  const vis=mine?`<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>`:'';
-  const meta=mine
+  const vis=kind==='mine'?`<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>`:'';
+  const meta=kind==='mine'
     ?`♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`
     :`by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`;
-  const actions=mine
+  const actions=kind==='mine'
     ?`<button class="del" onclick="delTpl('${t.id}')">Delete</button><button onclick="tryTpl('${t.id}')">Use</button>`
-    :`<button onclick="tryTpl('${t.id}')">Try it</button><button class="del" onclick="reportTpl('${t.id}')" title="Report">⚐</button>`;
+    :`<button onclick="tryTpl('${t.id}')">Try it</button><button class="del" onclick="unsaveTpl('${t.id}')" title="Remove from Saved">🔖</button>`;
   return `<div class="item">
     ${thumb}
     <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}
@@ -374,16 +401,24 @@ async function loadMyTemplates(){
     const d=(await(await fetch('/api/marketplace/me')).json()).data||{};
     const list=d.templates||[];
     if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
-    empty.classList.add('hidden');grid.innerHTML=list.map(t=>tplCard(t,true)).join('');
+    empty.classList.add('hidden');grid.innerHTML=list.map(t=>tplCard(t,'mine')).join('');
   }catch(e){console.error('my templates load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
 }
-async function loadFeed(){
-  const grid=document.getElementById('feedGrid'),empty=document.getElementById('feedEmpty');
+async function loadSaved(){
+  const grid=document.getElementById('savedGrid'),empty=document.getElementById('savedEmpty');
   try{
-    const d=(await(await fetch('/api/marketplace/templates?feed=1')).json()).data||[];
+    const d=(await(await fetch('/api/marketplace/bookmarks')).json()).data||[];
     if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
-    empty.classList.add('hidden');grid.innerHTML=d.map(t=>tplCard(t,false)).join('');
-  }catch(e){console.error('feed load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+    empty.classList.add('hidden');grid.innerHTML=d.map(t=>tplCard(t,'saved')).join('');
+  }catch(e){console.error('saved load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+}
+async function unsaveTpl(id){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id+'/bookmark',{method:'DELETE'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Removed from Saved');loadSaved();
+  }catch(e){toast('Could not remove: '+(e.message||e),'error');}
 }
 async function tryTpl(id){
   try{
@@ -403,17 +438,6 @@ async function delTpl(id){
     toast('Template deleted');loadMyTemplates();
   }catch(e){toast('Delete failed: '+(e.message||e),'error');}
 }
-async function reportTpl(id){
-  if(!confirm('Report this template for review?'))return;
-  try{
-    const r=await fetch('/api/marketplace/templates/'+id+'/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:'inappropriate'})});
-    const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast(d.data&&d.data.takenDown?'Reported — template removed':'Reported. Thank you.');
-    if(d.data&&d.data.takenDown)loadFeed();
-  }catch(e){toast('Report failed: '+(e.message||e),'error');}
-}
-
 loadReelCost();renderFilters();load();
 </script>
 <script src="/js/biz-footer.js?v=1"></script>

@@ -12,6 +12,8 @@ const CREATOR_SHARE = 0.7; // 크리에이터 70% 수익분배
 const PUBLIC_COLS = `id, creator_id, creator_handle, name, category, type, style, prompt,
   negative_prompt, tool, visibility, emoji, price_credits, usage_count, likes_count,
   preview_media, is_official, created_at`;
+// JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
+const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
 
 /**
  * GET /api/marketplace/templates?category=Influencer&feed=1
@@ -32,7 +34,8 @@ router.get('/templates', async (req, res, next) => {
     }
     const order = isFeed ? 'likes_count DESC, usage_count DESC' : 'is_official DESC, usage_count DESC';
     const r = await query(
-      `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine
+      `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine,
+              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked
        FROM marketplace_templates WHERE ${where}
        ORDER BY ${order} LIMIT 200`,
       params
@@ -46,7 +49,8 @@ router.get('/templates', async (req, res, next) => {
 router.get('/templates/:id', async (req, res, next) => {
   try {
     const r = await query(
-      `SELECT ${PUBLIC_COLS}, (creator_id = $2) AS mine
+      `SELECT ${PUBLIC_COLS}, (creator_id = $2) AS mine,
+              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked
        FROM marketplace_templates
        WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
       [req.params.id, req.user.id]
@@ -89,7 +93,7 @@ router.get('/earnings', async (req, res, next) => {
 
     // 템플릿별 수익 (ref_id=템플릿 UUID를 TEXT로 저장 → 캐스팅 조인)
     const byTemplate = await query(
-      `SELECT mt.id, mt.name, mt.emoji, mt.category, mt.type, mt.price_credits, mt.usage_count,
+      `SELECT mt.id, mt.name, mt.emoji, mt.category, mt.type, mt.price_credits, mt.usage_count, mt.visibility,
               COALESCE(SUM(cl.amount), 0)::int AS earned,
               COUNT(cl.id)::int AS uses_paid
        FROM marketplace_templates mt
@@ -170,6 +174,56 @@ router.post('/templates', async (req, res, next) => {
        String(emoji).slice(0, 8), price, JSON.stringify(preview)]
     );
     res.status(201).json({ success: true, data: r.rows[0] });
+  } catch (err) { next(err); }
+});
+
+/**
+ * PATCH /api/marketplace/templates/:id — 내 템플릿 편집(이름·가격·공개·카테고리·네거티브).
+ * 비공개→공개 전환은 크리에이터 게이트. 가격 0~100 클램프(0=무료). 부분 업데이트.
+ */
+router.patch('/templates/:id', async (req, res, next) => {
+  try {
+    const cur = await query(
+      `SELECT id, visibility FROM marketplace_templates WHERE id = $1 AND creator_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (!cur.rows[0]) return res.status(404).json({ success: false, error: '내 템플릿이 아니거나 없습니다.' });
+
+    const body = req.body || {};
+    const sets = [];
+    const params = [];
+    if (typeof body.name === 'string' && body.name.trim()) {
+      params.push(body.name.trim().slice(0, 120)); sets.push(`name = $${params.length}`);
+    }
+    if (body.category !== undefined && CATEGORIES.has(body.category)) {
+      params.push(body.category); sets.push(`category = $${params.length}`);
+    }
+    if (body.priceCredits !== undefined) {
+      const price = Math.max(0, Math.min(parseInt(body.priceCredits, 10) || 0, 100));
+      params.push(price); sets.push(`price_credits = $${params.length}`);
+    }
+    if (body.negativePrompt !== undefined) {
+      params.push(String(body.negativePrompt).slice(0, 1000)); sets.push(`negative_prompt = $${params.length}`);
+    }
+    if (body.visibility !== undefined) {
+      const vis = body.visibility === 'public' ? 'public' : 'private';
+      // 공개 전환만 게이트(이미 공개거나 비공개 전환은 자유)
+      if (vis === 'public' && cur.rows[0].visibility !== 'public') {
+        const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
+        if (!u.rows[0]?.is_creator) {
+          return res.status(403).json({ success: false, error: '공개 게시는 먼저 크리에이터로 신청해 주세요.' });
+        }
+      }
+      params.push(vis); sets.push(`visibility = $${params.length}`);
+    }
+    if (!sets.length) return res.status(400).json({ success: false, error: '변경할 내용이 없습니다.' });
+
+    params.push(req.params.id);
+    const r = await query(
+      `UPDATE marketplace_templates SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${PUBLIC_COLS}`,
+      params
+    );
+    res.json({ success: true, data: r.rows[0] });
   } catch (err) { next(err); }
 });
 
@@ -267,6 +321,94 @@ router.post('/templates/:id/report', async (req, res, next) => {
       takenDown = true;
     }
     res.json({ success: true, data: { reported: true, takenDown } });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/marketplace/creators/:handle — 크리에이터 공개 스토어프론트.
+ * 공개·active 템플릿 + 쇼케이스(해당 크리에이터 공개 결과물). prompt(레시피)는 노출 안 함(블랙박스 보호).
+ */
+router.get('/creators/:handle', async (req, res, next) => {
+  try {
+    const raw = String(req.params.handle || '').replace(/^@+/, '').slice(0, 80);
+    if (!raw) return res.status(400).json({ success: false, error: 'handle이 필요합니다.' });
+    const handle = '@' + raw;
+    const tpls = await query(
+      `SELECT id, creator_handle, name, category, type, style, tool, emoji,
+              price_credits, usage_count, likes_count, preview_media, is_official, created_at,
+              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked
+       FROM marketplace_templates
+       WHERE creator_handle = $1 AND status = 'active' AND visibility = 'public'
+       ORDER BY is_official DESC, usage_count DESC, created_at DESC LIMIT 100`,
+      [handle, req.user.id]
+    );
+    const showcase = await query(
+      `SELECT gr.idx, gr.file_path, gr.metadata
+       FROM generation_results gr
+       JOIN prompts p ON p.idx = gr.prompt_idx
+       JOIN users u   ON u.id = p.user_id
+       WHERE split_part(u.email, '@', 1) = $1 AND gr.visibility = 'public'
+         AND gr.status = 'success' AND gr.taken_down = false AND gr.file_path IS NOT NULL
+       ORDER BY gr.created_at DESC LIMIT 12`,
+      [raw]
+    );
+    if (!tpls.rows.length && !showcase.rows.length) {
+      return res.status(404).json({ success: false, error: '크리에이터를 찾을 수 없습니다.' });
+    }
+    const totalLikes = tpls.rows.reduce((s, t) => s + (t.likes_count || 0), 0);
+    res.json({
+      success: true,
+      data: {
+        handle,
+        templateCount: tpls.rows.length,
+        totalLikes,
+        templates: tpls.rows,
+        showcase: showcase.rows.map((r) => ({
+          idx: r.idx,
+          url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+          type: (r.metadata && r.metadata.type === 'video') ? 'video' : 'image',
+        })),
+      },
+    });
+  } catch (err) { next(err); }
+});
+
+/** GET /api/marketplace/bookmarks — 내가 저장한 템플릿(Library Saved 탭). active만, 최근 저장순. */
+router.get('/bookmarks', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT ${MT_COLS}, (mt.creator_id = $1) AS mine, true AS bookmarked
+       FROM template_bookmarks tb
+       JOIN marketplace_templates mt ON mt.id = tb.template_id
+       WHERE tb.user_id = $1 AND mt.status = 'active'
+       ORDER BY tb.created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: r.rows });
+  } catch (err) { next(err); }
+});
+
+/** POST /api/marketplace/templates/:id/bookmark — 템플릿 저장(Saved). 공개 또는 내 것만. (멱등) */
+router.post('/templates/:id/bookmark', async (req, res, next) => {
+  try {
+    const t = await query(
+      `SELECT id FROM marketplace_templates WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
+      [req.params.id, req.user.id]
+    );
+    if (!t.rows[0]) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
+    await query(
+      `INSERT INTO template_bookmarks (user_id, template_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [req.user.id, req.params.id]
+    );
+    res.json({ success: true, data: { bookmarked: true } });
+  } catch (err) { next(err); }
+});
+
+/** DELETE /api/marketplace/templates/:id/bookmark — 저장 해제 */
+router.delete('/templates/:id/bookmark', async (req, res, next) => {
+  try {
+    await query(`DELETE FROM template_bookmarks WHERE user_id = $1 AND template_id = $2`, [req.user.id, req.params.id]);
+    res.json({ success: true, data: { bookmarked: false } });
   } catch (err) { next(err); }
 });
 

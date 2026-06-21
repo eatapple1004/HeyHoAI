@@ -690,6 +690,16 @@ async function migrate() {
   // 오디오 옵션(비동기 video-to-audio 단계가 잡 완료 후 실행할지) 보존
   await pool.query(`ALTER TABLE video_jobs ADD COLUMN IF NOT EXISTS audio BOOLEAN NOT NULL DEFAULT false;`);
 
+  // 영상 결과 자동공개(P2): 잡이 visibility·출처 템플릿(attribution)을 운반 → finalize가 결과에 그대로 기록.
+  // ⚠️ 기본 'private': 컬럼 미지정 잡(과거)은 비공개. 신규는 /video/async가 명시(이미지 경로와 동일 정책).
+  await pool.query(`
+    ALTER TABLE video_jobs
+    ADD COLUMN IF NOT EXISTS visibility      VARCHAR(10) NOT NULL DEFAULT 'private', -- public | private
+    ADD COLUMN IF NOT EXISTS template_id      TEXT,        -- 출처 템플릿(마켓 UUID 또는 레시피 id), null=Custom
+    ADD COLUMN IF NOT EXISTS template_source  VARCHAR(12), -- marketplace | recipe | null
+    ADD COLUMN IF NOT EXISTS template_name    TEXT;
+  `);
+
   console.log('Migrations completed.');
 }
 
@@ -859,6 +869,17 @@ async function migrateMarketplace() {
         UNIQUE (template_id, reporter_id)
     );
     CREATE INDEX IF NOT EXISTS idx_template_reports_tpl ON template_reports(template_id);
+  `);
+
+  // 북마크(P2): 유저가 템플릿을 'Saved'로 저장 — Library Saved 탭 + 수요 신호. (멱등)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS template_bookmarks (
+        user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        template_id  UUID NOT NULL REFERENCES marketplace_templates(id) ON DELETE CASCADE,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, template_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_template_bookmarks_user ON template_bookmarks(user_id, created_at DESC);
   `);
 
   // 공식 템플릿 시드 (한 번만)

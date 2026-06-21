@@ -426,7 +426,11 @@
     <div class="stpl-prev" id="stplPrev"></div>
     <div class="field"><label>Template name</label>
       <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
-    <label class="stpl-vis"><input type="checkbox" id="stplVis" checked> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
+    <label class="stpl-vis"><input type="checkbox" id="stplVis" checked onchange="syncStplPrice()"> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
+    <div class="field" id="stplPriceRow" data-flag="marketplace" style="display:none">
+      <label>Price <i>(◈ credits each use — 0 = free)</i></label>
+      <input type="number" id="stplPrice" min="0" max="100" step="1" value="0" style="width:100%" placeholder="0">
+    </div>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
       <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
@@ -1124,24 +1128,35 @@ function saveAsTemplate(){
   document.getElementById('stplPrev').innerHTML=prev.length
     ? prev.map(u=>`<div class="stpl-ph" style="background-image:url('${esc(u)}')"></div>`).join('')
     : `<div class="stpl-noprev">No preview yet — generate first so your template shows an example in the Feed.</div>`;
+  document.getElementById('stplPrice').value='0';
+  syncStplPrice();
   document.getElementById('saveTplModal').classList.add('open');
+}
+// 가격 행: 마켓 점화(featureOn) + 공개 게시일 때만 노출. 비공개/미점화면 숨김.
+function syncStplPrice(){
+  const row=document.getElementById('stplPriceRow');
+  const show=document.getElementById('stplVis').checked && window.featureOn && window.featureOn('marketplace');
+  row.style.display=show?'':'none';
 }
 function closeSaveTpl(){document.getElementById('saveTplModal').classList.remove('open');}
 async function confirmSaveTpl(){
   const name=document.getElementById('stplName').value.trim();
   if(!name){toast('Name your template.');return;}
   const makePublic=document.getElementById('stplVis').checked;
+  // 가격: 공개 + 마켓 점화일 때만(미점화/비공개=무료)
+  const priceCredits=(makePublic&&window.featureOn&&window.featureOn('marketplace'))
+    ? Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)) : 0;
   const p=extraPromptText();
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:name,category:'Custom',type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
-        visibility:makePublic?'public':'private',negativePrompt:negText(),previewMedia:(state.lastPreview||[]).slice(0,6)})});
+        visibility:makePublic?'public':'private',priceCredits:priceCredits,negativePrompt:negText(),previewMedia:(state.lastPreview||[]).slice(0,6)})});
     const d=await res.json();
     if(res.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
     closeSaveTpl();
-    toast(makePublic?'Saved & published to the Feed ✨':'Saved to your templates');
+    toast(makePublic?(priceCredits>0?`Published to the Feed · ◈${priceCredits}/use ✨`:'Saved & published to the Feed ✨'):'Saved to your templates');
   }catch(e){toast('Save failed: '+(e.message||e),'error');}
   finally{btn.disabled=false;btn.textContent='Save template';}
 }
@@ -1229,6 +1244,10 @@ async function generateReel(r,subj){
     if(ef&&ef.url){try{const eb=await(await fetch(ef.url)).blob();fd.append('endFrame',eb,'endframe.png');}catch(e){}}
   }
   fd.append('sourceImage',blob,'reference.png');
+  // 자동공개(P2): 영상도 이미지와 동일 — Private Mode + 출처 템플릿 attribution 전송.
+  fd.append('templateName',r?r.name:'My reel');
+  fd.append('privateMode',privateOn()?'true':'false');
+  const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
   // 비동기: 제출 → jobId → 상태 폴링 (Cloudflare 100초 타임아웃 회피)
   const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
   const data=await res.json();

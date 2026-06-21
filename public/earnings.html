@@ -53,9 +53,30 @@
   .affil-link{margin-top:28px;font-size:13px;color:var(--dim);text-align:center}
   .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
 
+  .irow .stcell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+  .irow .mng{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .irow .mng:hover{border-color:var(--accent)}
+  .pill.private{background:rgba(255,255,255,.08);color:var(--faint)}
+
+  /* 템플릿 편집 모달 */
+  .modal-bg{position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
+  .modal-bg.open{display:flex}
+  .modal{width:min(420px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:24px;position:relative}
+  .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:16px}
+  .modal .x{position:absolute;top:14px;right:16px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
+  .modal .mfield{margin-bottom:14px}
+  .modal .mfield label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600}
+  .modal .mfield input,.modal .mfield select{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;padding:9px 12px}
+  .modal .mrow{display:flex;gap:10px;margin-top:18px}
+  .modal .mrow .btn{flex:1}
+  .btn.danger{background:rgba(255,95,110,.14);border:1px solid rgba(255,95,110,.4);color:#ff8a96}
+  .btn.danger:hover{background:#ff5f6e;border-color:#ff5f6e;color:#fff}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #toast.show{opacity:1}
+
   @media(max-width:640px){
     .stats{grid-template-columns:repeat(2,1fr)}
-    .irow{grid-template-columns:1.6fr 1fr 1fr;font-size:12.5px}
+    .irow{grid-template-columns:1.6fr 1fr 1.2fr;font-size:12.5px}
     .irow .col-uses,.irow.head .col-uses{display:none}
     .irow .col-rev{text-align:right}
   }
@@ -116,12 +137,33 @@
   <div class="affil-link fade d4">Also referring others? <a onclick="location.href='/affiliate'">See your affiliate earnings →</a></div>
 </div>
 
+<!-- 템플릿 편집 모달 -->
+<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeEdit()">
+  <div class="modal">
+    <button class="x" onclick="closeEdit()">✕</button>
+    <h3>Manage template</h3>
+    <div class="mfield"><label>Name</label><input type="text" id="edName" maxlength="80"></div>
+    <div class="mfield"><label>Visibility</label>
+      <select id="edVis"><option value="public">Public (in the Feed)</option><option value="private">Private (only me)</option></select>
+    </div>
+    <div class="mfield" data-flag="marketplace"><label>Price <i style="color:var(--faint)">(◈ credits each use — 0 = free)</i></label>
+      <input type="number" id="edPrice" min="0" max="100" step="1" value="0"></div>
+    <div class="mrow">
+      <button class="btn danger" onclick="deleteTpl()">Delete</button>
+      <button class="btn btn-primary" id="edSave" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
 <script>
 // ═══ 실제 연결: /api/marketplace/earnings (그들 디자인 + 크레딧 모델 실데이터) ═══
 async function loadBalance(){
   try{const d=await(await fetch('/api/credits')).json();if(d.success)document.getElementById('navBalance').textContent=d.data.unlimited?'∞':d.data.balance;}catch(e){}
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+let ITEMS=[];
 async function load(){
   try{
     const d=await(await fetch('/api/marketplace/earnings')).json();
@@ -137,21 +179,57 @@ async function load(){
     document.getElementById('applyBox').style.display=x.isCreator?'none':'flex';
 
     const list=document.getElementById('itemList');
-    const items=x.templates||[];
-    if(!items.length){
+    ITEMS=x.templates||[];
+    if(!ITEMS.length){
       list.style.display='none';
       document.getElementById('itemEmpty').style.display='block';
     }else{
+      list.style.display='';document.getElementById('itemEmpty').style.display='none';
       list.innerHTML=
         `<div class="irow head"><div>Item</div><div class="col-uses">Total uses</div><div class="r-amt col-rev">Your earnings</div><div class="r-amt">Status</div></div>`+
-        items.map(t=>`<div class="irow">
+        ITEMS.map(t=>{const pub=t.visibility==='public';return `<div class="irow">
           <div class="nm"><div class="ic">${t.emoji||'🎨'}</div><div>${esc(t.name)}<div class="sub2">${esc(t.category)} · ${t.type==='reel'?'Reel':'Photo'}${t.price_credits>0?' · ◈'+t.price_credits:' · Free'}</div></div></div>
           <div class="col-uses">${t.usage_count}</div>
           <div class="r-amt col-rev gold">◈ ${t.earned}</div>
-          <div class="r-amt"><span class="pill live">Live</span></div>
-        </div>`).join('');
+          <div class="r-amt stcell"><span class="pill ${pub?'live':'private'}">${pub?'Live':'Private'}</span><button class="mng" onclick="openEdit('${t.id}')">Edit</button></div>
+        </div>`;}).join('');
     }
   }catch(e){}
+}
+
+// ── 템플릿 편집/삭제 (PATCH·DELETE /api/marketplace/templates/:id) ──
+let EDIT_ID=null;
+function openEdit(id){
+  const t=ITEMS.find(x=>x.id===id);if(!t)return;
+  EDIT_ID=id;
+  document.getElementById('edName').value=t.name||'';
+  document.getElementById('edVis').value=t.visibility==='public'?'public':'private';
+  document.getElementById('edPrice').value=t.price_credits||0;
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEdit(){document.getElementById('editModal').classList.remove('open');EDIT_ID=null;}
+async function saveEdit(){
+  if(!EDIT_ID)return;
+  const btn=document.getElementById('edSave');btn.disabled=true;btn.textContent='Saving…';
+  const body={name:document.getElementById('edName').value.trim(),visibility:document.getElementById('edVis').value};
+  if(window.featureOn&&window.featureOn('marketplace'))body.priceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edPrice').value,10)||0,100));
+  try{
+    const r=await fetch('/api/marketplace/templates/'+EDIT_ID,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(r.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    closeEdit();toast('Template updated');load();
+  }catch(e){toast('Update failed: '+(e.message||e));}
+  finally{btn.disabled=false;btn.textContent='Save changes';}
+}
+async function deleteTpl(){
+  if(!EDIT_ID||!confirm('Delete this template? This cannot be undone.'))return;
+  try{
+    const r=await fetch('/api/marketplace/templates/'+EDIT_ID,{method:'DELETE'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    closeEdit();toast('Template deleted');load();
+  }catch(e){toast('Delete failed: '+(e.message||e));}
 }
 async function apply(btn){
   btn.disabled=true;btn.textContent='…';

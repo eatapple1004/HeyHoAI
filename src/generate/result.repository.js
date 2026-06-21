@@ -50,6 +50,26 @@ async function report(resultIdx, reporterId, reason) {
   return { reported: true, takenDown };
 }
 
+/**
+ * 결과물 공개/비공개 토글(My creations). 소유 검증을 조인으로(개인=prompts.user_id 본인&비팀 / 팀=prompts.team_id).
+ * taken_down(모더레이션)된 결과는 재공개 불가 — private 전환은 항상 허용. 반환: {idx, visibility} 또는 null(미소유/없음/공개차단).
+ */
+async function setVisibility(idx, { userId, teamId }, visibility) {
+  const vis = visibility === 'public' ? 'public' : 'private';
+  const ownWhere = teamId ? 'p.team_id = $3' : 'p.user_id = $3 AND p.team_id IS NULL';
+  const owner = teamId || userId;
+  const r = await query(
+    `UPDATE generation_results gr
+        SET visibility = $1
+       FROM prompts p
+      WHERE p.idx = gr.prompt_idx AND gr.idx = $2 AND ${ownWhere}
+        AND ($1 = 'private' OR gr.taken_down = false)
+      RETURNING gr.idx, gr.visibility`,
+    [vis, idx, owner]
+  );
+  return r.rows[0] || null;
+}
+
 async function insertFailed({ promptIdx, characterId, model, errorMessage, metadata }) {
   const result = await query(
     `INSERT INTO generation_results (prompt_idx, character_id, file_path, model, metadata, status, error_message)
@@ -88,4 +108,4 @@ async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
   return result.rows;
 }
 
-module.exports = { insert, insertFailed, findByIdx, findByPromptIdx, findAll, findCommunity, report };
+module.exports = { insert, insertFailed, findByIdx, findByPromptIdx, findAll, findCommunity, report, setVisibility };

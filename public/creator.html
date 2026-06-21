@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Creator</title>
+<script src="/js/flags.js" defer></script>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=3" />
+<script src="/saas-auth.js" defer></script>
+<script src="/js/rail.js?v=2" defer></script>
+<style>
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
+  .chead{display:flex;align-items:center;gap:18px;margin-bottom:8px}
+  .avatar{width:64px;height:64px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;font-size:26px;color:#fff;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
+  .chead h1{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-.5px}
+  .chead .stats{color:var(--dim);font-size:13.5px;margin-top:4px}
+  .chead .stats b{color:var(--accent2)}
+  .sectitle{font-family:'Sora';font-size:16px;font-weight:700;margin:34px 0 14px}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+  .tcard{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);transition:border-color .2s,transform .2s}
+  .tcard:hover{transform:translateY(-3px);border-color:var(--border2)}
+  .tthumb{position:relative;aspect-ratio:4/5;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
+  .tthumb img{width:100%;height:100%;object-fit:cover}
+  .temoji{font-size:46px}
+  .tprice{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;text-transform:uppercase;letter-spacing:.3px}
+  .tbody{padding:11px 12px}
+  .tname{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tmeta{font-size:11.5px;color:var(--dim);margin-top:3px}
+  .trow{display:flex;gap:7px;margin-top:10px}
+  .tuse{flex:1;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .tuse:hover{filter:brightness(1.08)}
+  .tbk{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;border-radius:9px;padding:8px 11px;font-size:14px;cursor:pointer;line-height:1}
+  .tbk.on{color:#ffd35e;border-color:rgba(255,211,94,.5)}
+  .showcase{columns:5 180px;column-gap:12px}
+  .shot{break-inside:avoid;margin:0 0 12px;border-radius:12px;overflow:hidden;border:1px solid var(--border);position:relative}
+  .shot .media{display:block;width:100%;height:auto;background:#0c0c14}
+  .shot .vb{position:absolute;top:7px;left:7px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px}
+  .empty{text-align:center;color:var(--dim);padding:80px 20px}
+  .empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px;font-family:'Sora'}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body class="has-rail">
+<div class="wrap">
+  <div id="profile" class="hidden">
+    <div class="chead">
+      <div class="avatar" id="avatar">@</div>
+      <div>
+        <h1 id="handle">@creator</h1>
+        <div class="stats"><b id="tplCount">0</b> templates · ♥ <b id="likeCount">0</b> likes</div>
+      </div>
+    </div>
+
+    <div class="sectitle" id="tplTitle">Templates</div>
+    <div class="tgrid" id="tplGrid"></div>
+    <div id="tplEmpty" class="hidden" style="color:var(--dim);font-size:13.5px;padding:8px 2px">No public templates yet.</div>
+
+    <div class="sectitle" id="showTitle">Showcase</div>
+    <div class="showcase" id="showGrid"></div>
+    <div id="showEmpty" class="hidden" style="color:var(--dim);font-size:13.5px;padding:8px 2px">No public creations yet.</div>
+  </div>
+
+  <div class="empty hidden" id="notfound"><b>Creator not found</b>This creator has no public templates or creations yet.</div>
+  <div class="empty hidden" id="nohandle"><b>No creator selected</b>Open a creator from a template or the Explore feed.</div>
+</div>
+<div id="toast"></div>
+<script>
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function qp(k){return new URLSearchParams(location.search).get(k);}
+
+let TPLS=[];
+function tcard(t){
+  const prev=(t.preview_media&&t.preview_media[0])||'';
+  const thumb=prev?`<img src="${esc(prev)}" loading="lazy" alt="">`:`<div class="temoji">${esc(t.emoji||'🎨')}</div>`;
+  const price=t.price_credits>0?('◈ '+t.price_credits):'Free';
+  return `<div class="tcard">
+    <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}<span class="tprice">${price}</span></div>
+    <div class="tbody">
+      <div class="tname">${esc(t.name)}</div>
+      <div class="tmeta">♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
+      <div class="trow">
+        <button class="tuse" onclick="goTpl('${esc(t.id)}')">Use</button>
+        <button class="tbk ${t.bookmarked?'on':''}" onclick="toggleBookmark('${esc(t.id)}',this)" title="${t.bookmarked?'Saved':'Save'}">${t.bookmarked?'★':'☆'}</button>
+      </div>
+    </div></div>`;
+}
+function shot(s){
+  const media=s.type==='video'
+    ?`<video class="media" src="${esc(s.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>`
+    :`<img class="media" src="${esc(s.url)}" loading="lazy" alt="">`;
+  return `<div class="shot">${s.type==='video'?'<span class="vb">▶ Reel</span>':''}${media}</div>`;
+}
+function goTpl(id){location.href='/template?id='+encodeURIComponent(id);}
+async function toggleBookmark(id,btn){
+  const on=btn.classList.contains('on');
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id+'/bookmark',{method:on?'DELETE':'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    btn.classList.toggle('on',!on);btn.textContent=!on?'★':'☆';btn.title=!on?'Saved':'Save';
+    toast(!on?'Saved to your Library':'Removed from Saved');
+  }catch(e){toast('Could not update: '+(e.message||e));}
+}
+
+async function load(){
+  const raw=(qp('handle')||'').replace(/^@+/,'');
+  if(!raw){document.getElementById('nohandle').classList.remove('hidden');return;}
+  let d;
+  try{
+    const r=await fetch('/api/marketplace/creators/'+encodeURIComponent(raw));
+    if(r.status===404){document.getElementById('notfound').classList.remove('hidden');return;}
+    d=(await r.json()).data;
+  }catch(e){document.getElementById('notfound').classList.remove('hidden');return;}
+  if(!d){document.getElementById('notfound').classList.remove('hidden');return;}
+
+  document.getElementById('profile').classList.remove('hidden');
+  document.getElementById('handle').textContent=d.handle;
+  document.getElementById('avatar').textContent=(d.handle||'@?').replace(/^@/,'').charAt(0).toUpperCase()||'?';
+  document.getElementById('tplCount').textContent=d.templateCount||0;
+  document.getElementById('likeCount').textContent=d.totalLikes||0;
+  document.title='Doppia · '+d.handle;
+
+  TPLS=d.templates||[];
+  const tg=document.getElementById('tplGrid');
+  if(TPLS.length){tg.innerHTML=TPLS.map(tcard).join('');}
+  else{tg.innerHTML='';document.getElementById('tplEmpty').classList.remove('hidden');}
+
+  const sc=d.showcase||[];
+  const sg=document.getElementById('showGrid');
+  if(sc.length){sg.innerHTML=sc.map(shot).join('');}
+  else{sg.innerHTML='';document.getElementById('showEmpty').classList.remove('hidden');document.getElementById('showTitle').style.display='none';}
+}
+load();
+</script>
+<script src="/js/biz-footer.js?v=1"></script>
+</body>
+</html>
