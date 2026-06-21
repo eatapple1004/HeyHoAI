@@ -291,11 +291,41 @@
 
 <div class="gen-bar">
   <div class="addons" id="addonsRow">
+    <span class="addon-label" id="typeLabel" style="display:none">Type</span>
+    <div class="seg" id="typeSeg" style="display:none">
+      <button class="on" data-type="image" onclick="pickType('image')">Image</button>
+      <button data-type="video" onclick="pickType('video')">Video</button>
+    </div>
     <span class="addon-label" id="toolLabel" style="display:none">Tool</span>
-    <select id="toolSel" class="addon-lang" style="display:none" onchange="pickTool()">
-      <option value="nano-banana-pro" data-model="pro">Nano Banana Pro</option>
-      <option value="nano-banana" data-model="flash">Nano Banana</option>
+    <select id="toolSel" class="addon-lang" style="display:none" onchange="pickTool()"><!-- renderToolPicker()가 선택 타입의 툴만 채움 --></select>
+    <span class="addon-label" id="durLabel" style="display:none">Length</span>
+    <select id="durSel" class="addon-lang" style="display:none" onchange="updateBar()">
+      <option value="5">5s</option>
+      <option value="10">10s</option>
     </select>
+    <span class="addon-label" id="qualityLabel" style="display:none">Quality</span>
+    <select id="qualitySel" class="addon-lang" style="display:none" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+    <span class="addon-label" id="aspectLabel" style="display:none">Ratio</span>
+    <select id="aspectSel" class="addon-lang" style="display:none">
+      <option value="3:4">3:4 Portrait</option>
+      <option value="1:1">1:1 Square</option>
+      <option value="4:3">4:3 Landscape</option>
+      <option value="9:16">9:16 Story</option>
+      <option value="16:9">16:9 Wide</option>
+    </select>
+    <span class="addon-label" id="sizeLabel" style="display:none">Size</span>
+    <select id="sizeSel" class="addon-lang" style="display:none">
+      <option value="1K">1K</option>
+      <option value="2K">2K</option>
+    </select>
+    <span class="addon-label" id="countLabel" style="display:none">Count</span>
+    <select id="countSel" class="addon-lang" style="display:none" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+    <span class="addon-label" id="endFrameWrap" style="display:none">End frame
+      <button type="button" class="addon-toggle" id="endFrameBtn" onclick="document.getElementById('endFrameInput').click()">＋ Add</button>
+      <button type="button" class="addon-toggle hidden" id="endFrameClear" onclick="clearEndFrame()">✕ <span id="endFrameName">frame</span></button>
+      <input type="file" id="endFrameInput" accept="image/*" style="display:none" onchange="pickEndFrame(this)">
+    </span>
+    <button type="button" class="addon-toggle" id="audioWrap" style="display:none" onclick="toggleAudio(this)">Audio <span class="bk-on hidden" id="audioOnBadge">ON</span></button>
     <span class="addon-label" id="modelLabel">Model</span>
     <div class="seg" id="qualitySeg">
       <button data-q="std" data-m="flash" data-flag="model-flash" onclick="pickQuality(this)">Gemini Flash</button>
@@ -315,10 +345,15 @@
       oninput="updateBar()">
     <button class="prompt-clear hidden" id="extraClear" title="Clear" onclick="document.getElementById('extraPrompt').value='';document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
   </div>
+  <div class="prompt-row" id="negRow" style="display:none">
+    <input id="negPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
+      placeholder="Negative — what to avoid (optional, e.g. blurry, extra fingers, text)">
+  </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
+      <button class="btn" id="enhanceBtn" style="display:none" onclick="doEnhance()" title="Expand your prompt with AI (+1 credit)">✨ Enhance</button>
       <button class="btn" id="saveTplBtn" style="display:none" onclick="saveAsTemplate()">Save as template</button>
       <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="Generate just one — a quick test (about 1/4 the time and API cost)">Test 1</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
@@ -522,8 +557,8 @@ function genCost(r){
   const c=CREDITS.costs;
   if(!c)return null;
   const cap=captionOn()?(c.caption||1):0;
-  const type=r?r.type:'image'; // 템플릿 없이 프롬프트만이면 사진
-  if(type==='reel')return (c.video&&c.video[5]||8)+cap; // 릴스는 Runway 고정 — Model 토글 무관
+  const type=isVideoGen()?'reel':(r?r.type:'image'); // 템플릿 reel 또는 Custom 비디오 툴
+  if(type==='reel'){const cv=(state.mode==='custom'&&curType()==='video');const dur=cv?parseInt(curDuration(),10):5;let v=(c.video&&c.video[dur]||8);if(cv&&curQuality()!=='std')v+=(c.videoHighSurcharge||2);return v+cap;}
   const s=c.imageModelSurcharge?c.imageModelSurcharge[effModelKey()]:0;
   return c.imageBase+(s===undefined?1:s)+cap;
 }
@@ -548,13 +583,112 @@ function pickModel(b){document.querySelectorAll('#qualitySeg button').forEach(x=
 const pickQuality=pickModel; // 하위호환 별칭
 // 사용 가능한 이미지 생성 모델 표시명 (data-m → 라벨). /api/generate 가 지원하는 값.
 const M_LABEL={flash:'Gemini Flash',pro:'Gemini Pro','gpt-image-2':'GPT Image','gpt-image-2-high':'GPT Image HD'};
-// Custom 모드 툴 픽커 — 레지스트리 enabled 이미지 툴 미러 (TODO: GET /api/tools로 대체)
-const FE_TOOLS={'nano-banana-pro':{label:'Nano Banana Pro',model:'pro'},'nano-banana':{label:'Nano Banana',model:'flash'}};
-function curTool(){const s=document.getElementById('toolSel');return s?s.value:'nano-banana-pro';}
-function pickTool(){updateBar();}
+// 툴 카탈로그 = 정본 GET /api/generate/tools(레지스트리). 각 툴이 controls 폼 스키마를 들고 옴
+// → 스튜디오가 폼을 동적 렌더(Leonardo식 "툴마다 폼"). FALLBACK은 오프라인/정적 프리뷰용 미러.
+const FALLBACK_TOOLS={
+  image:[
+    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],imageSize:['1K','2K'],count:[1,2,3,4],negative:true}},
+    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],count:[1,2,3,4],negative:true}},
+  ],
+  video:[
+    {id:'kling',label:'Kling',type:'video',model:'kling',controls:{duration:[5,10],quality:[{value:'std',label:'Standard'},{value:'pro',label:'Pro'}],aspectRatio:['9:16','1:1','16:9'],endFrame:{type:'image'},audio:{type:'toggle'}}},
+  ],
+};
+let TOOLS_CACHE=FALLBACK_TOOLS; // 동기 기본 → loadTools()가 서버 정본으로 갱신
+async function loadTools(){
+  try{
+    const d=await(await fetch('/api/generate/tools')).json();
+    if(d&&d.success&&d.data){TOOLS_CACHE=d.data;if(state.mode==='custom'){renderToolPicker();applyToolSchema();updateBar();}}
+  }catch(e){/* 서버 없으면 FALLBACK 유지 */}
+}
+function allTools(){return [...(TOOLS_CACHE.image||[]),...(TOOLS_CACHE.video||[])];}
+function toolById(id){return allTools().find(t=>t.id===id)||null;}
+function curTool(){const s=document.getElementById('toolSel');return s&&s.value?s.value:'nano-banana-pro';}
+// 타입(이미지/비디오)을 "먼저" 고르는 세그(Leonardo식) → 그 타입의 툴만 드롭다운에 노출.
+function videoAvailable(){return (TOOLS_CACHE.video||[]).length>0;} // 카탈로그(=레지스트리 enabled)에 비디오 툴 있으면 노출
+function curType(){const b=document.querySelector('#typeSeg .on');return b?b.dataset.type:'image';}
+function curToolType(){return state.mode==='custom'?curType():'image';}
+function pickType(t){
+  if(t==='video'&&!videoAvailable())t='image';
+  document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.type===t));
+  renderToolPicker();applyToolSchema();updateBar();
+}
+// 영상 생성 여부: 템플릿 reel이거나, Custom에서 Video 타입
+function isVideoGen(){const r=curRecipe();if(r)return r.type==='reel';return state.mode==='custom'&&curType()==='video';}
+function pickTool(){applyToolSchema();updateBar();}
+// Custom 컨트롤 읽기 — 표시는 스키마가 결정, 값은 해당 select에서
+function curAspect(){const s=document.getElementById('aspectSel');return s?s.value:'';}
+// 해상도: 스키마에 imageSize 있는 툴만(=pro). 없으면 1K. 서버도 동일 가드.
+function curSize(){const t=toolById(curTool());if(t&&t.controls&&t.controls.imageSize){const s=document.getElementById('sizeSel');return s?s.value:'1K';}return '1K';}
+function curDuration(){const s=document.getElementById('durSel');return s?s.value:'5';}
+function curQuality(){const s=document.getElementById('qualitySel');return (state.mode==='custom'&&curType()==='video'&&s)?s.value:'std';}
+function curCount(){const s=document.getElementById('countSel');return (state.mode==='custom'&&curType()==='image'&&s&&s.value)?parseInt(s.value,10):4;}
+function negText(){const el=document.getElementById('negPrompt');return el?el.value.trim():'';}
+// 오디오 토글 / 끝프레임 업로드 (Kling 등 비디오 툴)
+function audioOn(){const b=document.getElementById('audioWrap');return !!(b&&b.classList.contains('on'));}
+function toggleAudio(b){b.classList.toggle('on');const bd=document.getElementById('audioOnBadge');if(bd)bd.classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
+let endFrameFile=null;
+function pickEndFrame(input){endFrameFile=(input.files&&input.files[0])||null;renderEndFrame();updateBar();}
+function clearEndFrame(silent){endFrameFile=null;const inp=document.getElementById('endFrameInput');if(inp)inp.value='';renderEndFrame();if(!silent)updateBar();}
+function renderEndFrame(){
+  const add=document.getElementById('endFrameBtn'),clr=document.getElementById('endFrameClear'),nm=document.getElementById('endFrameName');
+  if(!add||!clr)return;
+  if(endFrameFile){add.classList.add('hidden');clr.classList.remove('hidden');if(nm)nm.textContent=(endFrameFile.name||'frame').slice(0,14);}
+  else{add.classList.remove('hidden');clr.classList.add('hidden');}
+}
+// Type 세그(비디오 툴 없으면 Video 버튼 숨김) + 선택 타입의 툴만 드롭다운에 채움.
+function renderToolPicker(){
+  const sel=document.getElementById('toolSel');if(!sel)return;
+  const vBtn=document.querySelector('#typeSeg [data-type="video"]');
+  if(vBtn)vBtn.style.display=videoAvailable()?'':'none';
+  if(curType()==='video'&&!videoAvailable()){
+    const ib=document.querySelector('#typeSeg [data-type="image"]'),vb=document.querySelector('#typeSeg [data-type="video"]');
+    if(ib)ib.classList.add('on');if(vb)vb.classList.remove('on');
+  }
+  const list=(curType()==='video'?(TOOLS_CACHE.video||[]):(TOOLS_CACHE.image||[]));
+  const cur=sel.value;
+  sel.innerHTML=list.map(t=>`<option value="${t.id}" data-model="${t.model}">${t.label}</option>`).join('');
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:(list[0]?list[0].id:'nano-banana-pro');
+}
+// 선택 툴의 controls 스키마로 폼을 그림(표시 토글 + 옵션 채움). 새 툴 = 레지스트리 한 줄.
+function applyToolSchema(){
+  const custom=state.mode==='custom';
+  const c=(custom&&(toolById(curTool())||{}).controls)||{};
+  const sh=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
+  // 옵션값 = 문자열 또는 {value,label}. fmt는 단순 문자열 옵션의 표시 포매터.
+  const fill=(id,vals,fmt,def)=>{const s=document.getElementById(id);if(!s||!vals)return;const cur=s.value;
+    s.innerHTML=vals.map(v=>{const val=(v&&v.value!==undefined)?v.value:v;const txt=(v&&v.label!==undefined)?v.label:(fmt?fmt(val):val);return `<option value="${val}">${txt}</option>`;}).join('');
+    const has=x=>[...s.options].some(o=>o.value==x);s.value=has(cur)?cur:(def!=null&&has(def)?String(def):s.value);};
+  sh('aspectLabel',!!c.aspectRatio);sh('aspectSel',!!c.aspectRatio);fill('aspectSel',c.aspectRatio);
+  sh('sizeLabel',!!c.imageSize);sh('sizeSel',!!c.imageSize);fill('sizeSel',c.imageSize);
+  sh('countLabel',!!c.count);sh('countSel',!!c.count);fill('countSel',c.count,null,4); // 기본 4장
+  sh('durLabel',!!c.duration);sh('durSel',!!c.duration);fill('durSel',c.duration,v=>v+'s');
+  sh('qualityLabel',!!c.quality);sh('qualitySel',!!c.quality);fill('qualitySel',c.quality);
+  sh('endFrameWrap',!!c.endFrame);            // 끝프레임(이미지 업로드)
+  sh('audioWrap',!!c.audio);                  // 오디오(토글)
+  sh('negRow',!!c.negative);
+  if(!c.endFrame)clearEndFrame(true);         // 끝프레임 없는 툴로 전환 시 정리
+}
+async function doEnhance(){
+  const el=document.getElementById('extraPrompt');
+  const p=el?el.value.trim():'';
+  if(!p){toast('Write a prompt first.');return;}
+  const btn=document.getElementById('enhanceBtn'),old=btn.textContent;
+  btn.disabled=true;btn.textContent='Enhancing…';
+  try{
+    const res=await fetch('/api/generate/enhance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,mode:state.mode})});
+    const d=await res.json();
+    if(res.status===402){toast(d.error||'Not enough credits','error');return;}
+    if(!res.ok||!d.success)throw new Error(d.error||'enhance failed');
+    el.value=d.data.prompt;
+    document.getElementById('extraClear').classList.remove('hidden');
+    updateBar();toast('Prompt enhanced ✨');
+  }catch(e){toast('Enhance failed: '+(e.message||e),'error');}
+  finally{btn.disabled=false;btn.textContent=old;}
+}
 // 비용·표시용 실효 모델 키/라벨: Custom이면 선택 툴 기준, 아니면 기존 Model 픽커
-function effModelKey(){return state.mode==='custom'?((FE_TOOLS[curTool()]||{}).model||'pro'):curModel();}
-function effModelLabel(){return state.mode==='custom'?((FE_TOOLS[curTool()]||{}).label||'Nano Banana Pro'):M_LABEL[curModel()];}
+function effModelKey(){return state.mode==='custom'?((toolById(curTool())||{}).model||'pro'):curModel();}
+function effModelLabel(){return state.mode==='custom'?((toolById(curTool())||{}).label||'Nano Banana Pro'):M_LABEL[curModel()];}
 // 모바일 옵션 시트 토글
 function toggleOptions(){
   const open=document.getElementById('addonsRow').classList.toggle('open');
@@ -663,12 +797,18 @@ function setMode(m,initialVertical){
   document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
   const ep=document.getElementById('extraPrompt');
   if(ep)ep.placeholder=custom?'Describe what you want to create — your prompt drives the result':'Add a prompt (optional) — leave empty to use the template only';
-  // Custom: 모델 픽커 → 툴 픽커로 교체 + Save as template 노출
+  // Custom: 모델 픽커 → 타입 세그(Image|Video) + 툴 픽커로 교체 + Save as template 노출
+  document.getElementById('typeLabel').style.display=custom?'':'none';
+  document.getElementById('typeSeg').style.display=custom?'':'none';
   document.getElementById('toolLabel').style.display=custom?'':'none';
   document.getElementById('toolSel').style.display=custom?'':'none';
   document.getElementById('modelLabel').style.display=custom?'none':'';
   document.getElementById('qualitySeg').style.display=custom?'none':'';
   document.getElementById('saveTplBtn').style.display=custom?'':'none';
+  document.getElementById('enhanceBtn').style.display=custom?'':'none';
+  // Custom 풀 컨트롤: 툴 픽커(type 그룹) + 툴 타입별 컨트롤(이미지=비율/해상도/네거티브, 비디오=길이)
+  renderToolPicker();
+  applyToolSchema();
   // 하단 프롬프트 칸: Custom 전용 — 템플릿 모드는 레시피 모달의 Add detail 사용
   document.getElementById('promptRow').style.display=custom?'':'none';
   placeGenBar(custom);
@@ -798,7 +938,7 @@ async function uploadSubject(inp){
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
-function updateBar(){ updateBarCore(); const _a=document.getElementById('genBtn'),_b=document.getElementById('genBtnOne'); if(_a&&_b){_b.disabled=_a.disabled; const _cr=curRecipe(); _b.style.display=(_cr&&_cr.type==='reel')?'none':'';} }
+function updateBar(){ updateBarCore(); const _a=document.getElementById('genBtn'),_b=document.getElementById('genBtnOne'); if(_a&&_b){_b.disabled=_a.disabled; _b.style.display=isVideoGen()?'none':'';} }
 function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
@@ -817,14 +957,15 @@ function updateBarCore(){
     return;
   }
   btn.disabled=false;
-  const isReel=r&&r.type==='reel';
-  const o=isReel?'1 reel (5s)':'4 photos';
+  const isReel=isVideoGen();
+  const reelDur=(state.mode==='custom'&&curToolType()==='video')?curDuration():'5';
+  const o=isReel?`1 reel (${reelDur}s)`:'4 photos';
   s.innerHTML=`${title} → ${o}${isReel?'':' · '+effModelLabel()}${costTxt}${isReel?' <span style="color:var(--faint)">(reels take a few minutes)</span>':''}`;
 }
 
 // ── 실제 생성 ──
 async function generate(opts){
-  const genN=(opts&&opts.count)||4;
+  const genN=(opts&&opts.count)||((state.mode==='custom'&&curType()==='image')?curCount():4); // Count 컨트롤(이미지)
   const r=curRecipe(),subj=curSubject();
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
@@ -835,7 +976,7 @@ async function generate(opts){
   // 잔액 부족이면 생성 대신 페이월
   const cost=genCost(r);
   if(notEnough(cost)){openPaywall(cost);return;}
-  const isReel=r&&r.type==='reel'; // 템플릿 없이 프롬프트만이면 사진
+  const isReel=isVideoGen(); // 템플릿 reel 또는 Custom 비디오 툴 → 영상 경로
 
   generating=true;updateBar();
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
@@ -896,7 +1037,7 @@ async function saveAsTemplate(){
   const makePublic=window.confirm('Make this template public in the Feed?\nOK = public · Cancel = private (only you)');
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,category:'Custom',type:'image',prompt:p,tool:curTool(),visibility:makePublic?'public':'private'})});
+      body:JSON.stringify({name:name,category:'Custom',type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),visibility:makePublic?'public':'private',negativePrompt:negText()})});
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
     toast(makePublic?'Saved & published to Feed':'Saved to your templates');
@@ -926,7 +1067,7 @@ async function generateImages(r,subj,count){
   const rp=await resolvePromptFor(r,subj);
   const res=await fetch('/api/generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:effModelKey(),tool:state.mode==='custom'?curTool():undefined,count:count,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'My prompt'})
+    body:JSON.stringify({characterId:subj.id,prompt:rp.prompt,model:effModelKey(),tool:state.mode==='custom'?curTool():undefined,count:count,style:rp.style,brandKit:brandOn(),templateName:r?r.name:'My prompt',...(state.mode==='custom'?{aspectRatio:curAspect(),imageSize:curSize(),negativePrompt:negText()}:{})})
   });
   const data=await res.json();
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
@@ -959,8 +1100,14 @@ async function generateReel(r,subj){
   const rp=await resolvePromptFor(r,subj);
   const fd=new FormData();
   fd.append('prompt',rp.prompt);
-  fd.append('duration','5');
-  fd.append('mode','std'); // 릴스는 Model 토글과 무관 (Runway 고정)
+  const isCustomVid=(state.mode==='custom'&&curType()==='video');
+  fd.append('duration',isCustomVid?curDuration():'5');
+  fd.append('mode',isCustomVid?curQuality():'std'); // 화질 std/pro (Custom 비디오만 선택, 템플릿 릴은 std)
+  if(isCustomVid){
+    fd.append('aspectRatio',curAspect());
+    fd.append('audio',audioOn()?'true':'false'); // 효과음/배경음 합성
+    if(endFrameFile)fd.append('endFrame',endFrameFile,endFrameFile.name||'endframe.png'); // 끝프레임
+  }
   fd.append('sourceImage',blob,'reference.png');
   // 비동기: 제출 → jobId → 상태 폴링 (Cloudflare 100초 타임아웃 회피)
   const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
@@ -1116,13 +1263,15 @@ function applyTryTemplate(){
     setMode('custom');
     const ep=document.getElementById('extraPrompt');
     if(ep&&t.prompt){ep.value=t.prompt; const c=document.getElementById('extraClear'); if(c)c.classList.remove('hidden');}
-    const ts=document.getElementById('toolSel'); if(ts&&t.tool&&FE_TOOLS[t.tool])ts.value=t.tool;
+    const tt=toolById(t.tool); const ts=document.getElementById('toolSel');
+    if(ts&&t.tool&&tt){pickType(tt.type);ts.value=t.tool;applyToolSchema();}
     updateBar();
     if(window.toast)toast('Template loaded — pick a reference and generate');
     return true;
   }catch(e){return false;}
 }
 if(!applyTryTemplate() && !bootFromUrl()) setMode('influencer');
+loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubjects();
 loadCredits();
 loadBrandkit();
