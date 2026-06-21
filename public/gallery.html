@@ -183,10 +183,22 @@
       <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Template name</label>
       <input type="text" id="ctplName" maxlength="80" placeholder="e.g. Stone plinth luxe" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
     </div>
+    <div class="field">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Description <i style="color:var(--faint)">(what it's good for — shown on the template page)</i></label>
+      <textarea id="ctplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare hero shots." style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px;resize:vertical;line-height:1.5"></textarea>
+    </div>
+    <div class="field">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Category</label>
+      <select id="ctplCat" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
+        <option value="Custom">Custom</option><option value="Influencer">Influencer</option><option value="Shopping">Shopping</option><option value="UGC">UGC</option>
+      </select>
+    </div>
     <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;margin:14px 0;cursor:pointer"><input type="checkbox" id="ctplPub" onchange="syncCtplPrice()"> <span>Publish to the community <i style="color:var(--dim)">(off = private, only you)</i></span></label>
-    <div id="ctplPriceRow" data-flag="marketplace" style="display:none;margin-bottom:4px">
+    <div id="ctplPriceRow" style="display:none;margin-bottom:4px">
       <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Unlock price <i>(◈ one-time — 0 = free)</i></label>
       <input type="number" id="ctplPrice" min="0" max="100" step="1" value="0" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
+      <label style="font-size:12px;color:var(--dim);display:block;margin:10px 0 6px">Per-use royalty <i>(◈ each render — optional)</i></label>
+      <input type="number" id="ctplUsePrice" min="0" max="50" step="1" value="0" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
     </div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn" style="flex:1" onclick="closeCtpl()">Cancel</button>
@@ -355,24 +367,30 @@ function openSaveFromCreation(){
   if(!VIEW_ITEM||!VIEW_ITEM.prompt)return;
   closeView();
   document.getElementById('ctplName').value=(VIEW_ITEM.prompt||'').slice(0,40);
+  document.getElementById('ctplDesc').value='';
+  document.getElementById('ctplCat').value='Custom';
   document.getElementById('ctplPub').checked=false; // Private 기본
   document.getElementById('ctplPrice').value='0';
+  document.getElementById('ctplUsePrice').value='0';
   syncCtplPrice();
   document.getElementById('ctplModal').classList.add('open');
 }
 function closeCtpl(){document.getElementById('ctplModal').classList.remove('open');}
+// 가격 행: 공개 게시일 때 항상 노출(점화 전이라도). 실제 과금은 백엔드 MARKETPLACE_PAID 게이트가 막음.
 function syncCtplPrice(){
   const row=document.getElementById('ctplPriceRow');
-  const show=document.getElementById('ctplPub').checked && window.featureOn && window.featureOn('marketplace');
-  row.style.display=show?'':'none';
+  row.style.display=document.getElementById('ctplPub').checked?'':'none';
 }
 async function confirmSaveCreation(){
   const it=VIEW_ITEM; if(!it)return;
   const name=document.getElementById('ctplName').value.trim();
   if(!name){toast('Name your template.');return;}
   const pub=document.getElementById('ctplPub').checked;
-  const priceCredits=(pub&&window.featureOn&&window.featureOn('marketplace'))?Math.max(0,Math.min(parseInt(document.getElementById('ctplPrice').value,10)||0,100)):0;
-  const body=v=>JSON.stringify({name:name,category:'Custom',type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,previewMedia:[it.url]});
+  const priceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplPrice').value,10)||0,100)):0;
+  const usePriceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplUsePrice').value,10)||0,50)):0;
+  const description=document.getElementById('ctplDesc').value.trim();
+  const category=document.getElementById('ctplCat').value||'Custom';
+  const body=v=>JSON.stringify({name:name,description:description,category:category,type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,usePriceCredits:v==='public'?usePriceCredits:0,previewMedia:[it.url]});
   const btn=document.getElementById('ctplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     let res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:body(pub?'public':'private')});
