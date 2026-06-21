@@ -574,6 +574,7 @@ async function mergeOwnedTemplates(){
   const MODE={Influencer:'influencer',Shopping:'shopping',UGC:'ugc',Custom:'influencer'};
   owned.forEach(t=>{
     if(t.recipe_id)return; // recipe-backed는 applyRecipeGates가 처리(숨김/노출)
+    if(t.in_studio===false)return; // Purchased 탭에서 studio에서 뺀 것
     const mode=MODE[t.category]||'influencer';
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
@@ -589,7 +590,7 @@ async function applyRecipeGates(){
   if(!gates.length)return;
   gates.forEach(g=>{
     for(const m of Object.keys(TEMPLATES)){const rc=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));
-      if(rc){rc.held=!g.owned;break;}}
+      if(rc){rc.held=!g.inStudio;break;}} // 보유 && in_studio일 때만 노출
   });
   renderFilters();renderRecipes();updateBar();
 }

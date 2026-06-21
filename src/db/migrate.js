@@ -894,6 +894,8 @@ async function migrateMarketplace() {
     );
     CREATE INDEX IF NOT EXISTS idx_template_owns_user ON template_owns(user_id, created_at DESC);
   `);
+  // 보유 템플릿의 studio 노출 토글(Library Purchased 탭에서 켜고 끔). 구매 시 자동 true.
+  await pool.query(`ALTER TABLE template_owns ADD COLUMN IF NOT EXISTS in_studio BOOLEAN NOT NULL DEFAULT true;`);
   // 사용당 로열티(하이브리드): 보유 후 생성마다 크리에이터에 분배할 소액(0=없음). price_credits=언락가, 이건 사용가.
   await pool.query(`
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS use_price_credits INT NOT NULL DEFAULT 0;

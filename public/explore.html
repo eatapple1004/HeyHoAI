@@ -174,7 +174,7 @@ function tcard(t){
 }
 function renderCatalog(){
   const term=(document.getElementById('tplSearch').value||'').toLowerCase().trim();
-  let list=CATALOG;
+  let list=CATALOG.filter(t=>!t.owned); // 발견용: 이미 보유한 건 숨김(Library에 있음)
   if(curPrice==='Free')list=list.filter(t=>!(t.price_credits>0));
   else if(curPrice==='Paid')list=list.filter(t=>t.price_credits>0);
   if(term)list=list.filter(t=>(t.name||'').toLowerCase().includes(term));

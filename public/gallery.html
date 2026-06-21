@@ -81,6 +81,7 @@
   <div class="tabbar fade d1">
     <button class="tab active" data-tab="creations" onclick="switchTab('creations')">My creations</button>
     <button class="tab" data-tab="templates" onclick="switchTab('templates')">My templates</button>
+    <button class="tab" data-tab="purchased" onclick="switchTab('purchased')">Purchased</button>
     <button class="tab" data-tab="saved" onclick="switchTab('saved')">Saved</button>
   </div>
 
@@ -112,6 +113,17 @@
       <div class="ico"></div><h3>No saved templates yet</h3>
       <p>In Studio, build a look in Custom mode and hit "Save as template" — it shows up here.</p>
       <a href="/studio" class="btn btn-primary">Open Studio →</a>
+    </div>
+  </section>
+
+  <!-- Purchased (구매·보유한 템플릿) -->
+  <section id="tab-purchased" class="hidden">
+    <div class="sub fade d1" style="color:var(--dim);font-size:13px;margin:-6px 0 16px">Templates you own. Toggle each in or out of your Studio template picker.</div>
+    <div class="grid fade d2" id="purGrid"></div>
+    <div class="empty hidden" id="purEmpty">
+      <div class="ico">🔓</div><h3>No purchased templates yet</h3>
+      <p>Unlock premium templates in <a href="/explore?tab=templates" style="color:var(--accent2)">Explore → Templates</a> — they appear here and in your Studio.</p>
+      <a href="/explore?tab=templates" class="btn btn-primary">Browse Templates →</a>
     </div>
   </section>
 
@@ -365,15 +377,57 @@ async function pollReelJob(jobId){
   throw new Error('The Reel is taking too long. Please refresh the gallery in a moment.');
 }
 
-// ── Library 탭 (My creations / My templates / Saved) ──
-let tplLoaded=false, savedLoaded=false;
+// ── Library 탭 (My creations / My templates / Purchased / Saved) ──
+let tplLoaded=false, savedLoaded=false, purLoaded=false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.getElementById('tab-creations').classList.toggle('hidden',t!=='creations');
   document.getElementById('tab-templates').classList.toggle('hidden',t!=='templates');
+  document.getElementById('tab-purchased').classList.toggle('hidden',t!=='purchased');
   document.getElementById('tab-saved').classList.toggle('hidden',t!=='saved');
   if(t==='templates'&&!tplLoaded){tplLoaded=true;loadMyTemplates();}
+  if(t==='purchased'&&!purLoaded){purLoaded=true;loadPurchased();}
   if(t==='saved'&&!savedLoaded){savedLoaded=true;loadSaved();}
+}
+// Purchased: 보유 템플릿 + studio 넣기/빼기 토글
+function purCard(t){
+  const prev=(t.preview_media&&t.preview_media[0])||'';
+  const onUse=`usePurchased('${esc(t.id)}','${esc(t.recipe_id||'')}')`;
+  const thumb=prev
+    ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="${onUse}">`
+    :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#ffce7a);cursor:pointer" onclick="${onUse}">${esc(t.emoji||'🎨')}</div>`;
+  const on=t.in_studio!==false;
+  const meta=`${t.price_credits>0?'◈'+t.price_credits+' · owned':'Free · added'}${t.tool?' · '+esc(t.tool):''}`;
+  return `<div class="item">
+    ${thumb}
+    <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>
+    <span class="badge vis ${on?'':'private'}" style="left:auto;right:10px">${on?'In studio':'Hidden'}</span>
+    <div class="info"><div class="nm">${esc(t.name)}</div><div class="dt">${meta}</div></div>
+    <div class="actions">
+      <button onclick="toggleInStudio('${esc(t.id)}',${on?'false':'true'})">${on?'Remove from studio':'Add to studio'}</button>
+      <button onclick="${onUse}">Use</button>
+    </div>
+  </div>`;
+}
+async function loadPurchased(){
+  const grid=document.getElementById('purGrid'),empty=document.getElementById('purEmpty');
+  try{
+    const d=(await(await fetch('/api/marketplace/owned')).json()).data||[];
+    if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+    empty.classList.add('hidden');grid.innerHTML=d.map(purCard).join('');
+  }catch(e){console.error('purchased load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+}
+async function toggleInStudio(id,desired){
+  try{
+    const r=await fetch('/api/marketplace/owned/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({inStudio:desired})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast(desired?'Added to your Studio':'Removed from Studio');loadPurchased();
+  }catch(e){toast('Could not update: '+(e.message||e),'error');}
+}
+function usePurchased(id,recipeId){
+  if(recipeId){location.href='/studio?recipe='+encodeURIComponent(recipeId);return;}
+  tryTpl(id);
 }
 // kind: 'mine'(내가 만든) | 'saved'(북마크) — 메타·액션 분기
 function tplCard(t,kind){
