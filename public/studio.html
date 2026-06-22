@@ -405,7 +405,6 @@
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
       <button class="btn" id="enhanceBtn" data-flag="enhance" style="display:none" onclick="doEnhance()" title="Expand your prompt with AI (+1 credit)">✨ Enhance</button>
       <button class="btn" id="saveTplBtn" style="display:none" onclick="saveAsTemplate()">Save as template</button>
-      <button class="btn" id="genBtnOne" disabled onclick="generate({count:1})" title="Generate just one — a quick test (about 1/4 the time and API cost)">Test 1</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
   </div>
@@ -1144,7 +1143,7 @@ async function uploadSubject(inp){
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
-function updateBar(){ updateBarCore(); const _a=document.getElementById('genBtn'),_b=document.getElementById('genBtnOne'); if(_a&&_b){_b.disabled=_a.disabled; _b.style.display=isVideoGen()?'none':'';} }
+function updateBar(){ updateBarCore(); }
 function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
@@ -1191,7 +1190,7 @@ async function generate(opts){
   const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
   lb.querySelector('div:last-child').textContent=isReel
     ?'Generating reel… usually 2–5 minutes. You can close this — it saves to your gallery automatically.'
-    :(genN===1?'Generating 1 (test)… ~15s.':'Generating photos… this takes 30s–1 min.');
+    :(genN===1?'Generating 1… ~15s.':'Generating photos… this takes 30s–1 min.');
   document.getElementById('resultHint').textContent='';
   step.scrollIntoView({behavior:'smooth'});
 
