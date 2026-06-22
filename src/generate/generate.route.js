@@ -42,7 +42,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const resultVisibility = (req.body.privateMode === 'true' || req.body.privateMode === true) ? 'private' : 'public';
     const templateId = req.body.templateId || null;
     const templateSource = req.body.templateSource || null; // 'marketplace' | 'recipe'
-    const generateCount = Math.min(parseInt(count, 10) || 1, 4);
+    const generateCount = Math.min(parseInt(count, 10) || 1, 8); // 유저 선택 1~8
 
     // #4: 툴이 템플릿에 박힘 — req.body.tool(템플릿 지정 또는 파워유저 override) → 레지스트리로 해석.
     //     이미지 툴은 레거시 model 키(pro/flash/gpt-image-2/gpt-image-2-high)로 환원해 하위 경로를 그대로 재사용.
@@ -171,7 +171,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     try {
       charge = await teamCredit.chargeGeneration(
         req.user,
-        creditService.imageCost(model) + useRoyalty,
+        creditService.imageCost(model, generateCount) + useRoyalty,
         `사진 생성 (${model}, ${generateCount}장)`
       );
     } catch (e) {

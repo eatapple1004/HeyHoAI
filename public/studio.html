@@ -682,7 +682,7 @@ function genCost(r){
   const type=isVideoGen()?'reel':(r?r.type:'image'); // 템플릿 reel 또는 Custom 비디오 툴
   if(type==='reel'){const cv=(state.mode==='custom'&&curType()==='video');const dur=cv?parseInt(curDuration(),10):5;let v=(c.video&&c.video[dur]||8)+(c.videoHighSurcharge||2);return v+cap;} // 영상=Pro 단일(가산 항상 포함)
   const s=c.imageModelSurcharge?c.imageModelSurcharge[effModelKey()]:0;
-  return c.imageBase+(s===undefined?1:s)+cap;
+  return curCount()*(c.imageUnit||1)+(s===undefined?1:s)+cap; // 장당 × count
 }
 function notEnough(cost){return !CREDITS.unlimited&&CREDITS.balance!==null&&cost!==null&&CREDITS.balance<cost;}
 
@@ -709,8 +709,8 @@ const M_LABEL={flash:'Gemini Flash',pro:'Gemini Pro','gpt-image-2':'GPT Image','
 // → 스튜디오가 폼을 동적 렌더(Leonardo식 "툴마다 폼"). FALLBACK은 오프라인/정적 프리뷰용 미러.
 const FALLBACK_TOOLS={
   image:[
-    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],imageSize:['1K','2K'],count:[1,2,3,4],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
-    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],count:[1,2,3,4],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
+    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],imageSize:['1K','2K'],count:[1,2,3,4,5,6,7,8],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
+    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],count:[1,2,3,4,5,6,7,8],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
   ],
   video:[
     {id:'kling',label:'Kling',type:'video',model:'kling',controls:{duration:[5,10],quality:[{value:'pro',label:'Pro'}],aspectRatio:['9:16','1:1','16:9'],audio:{type:'toggle'}},imageSlots:[{key:'startFrame',label:'Start frame',hint:'Starting frame of the video'},{key:'endFrame',label:'End frame',hint:'Ending frame of the video'}]},
@@ -744,7 +744,7 @@ function curAspect(){const s=document.getElementById('aspectSel');return s?s.val
 function curSize(){const t=toolById(curTool());if(t&&t.controls&&t.controls.imageSize){const s=document.getElementById('sizeSel');return s?s.value:'1K';}return '1K';}
 function curDuration(){const s=document.getElementById('durSel');return s?s.value:'5';}
 function curQuality(){const s=document.getElementById('qualitySel');return (state.mode==='custom'&&curType()==='video'&&s)?s.value:'std';}
-function curCount(){const s=document.getElementById('countSel');return (state.mode==='custom'&&curType()==='image'&&s&&s.value)?parseInt(s.value,10):4;}
+function curCount(){const s=document.getElementById('countSel');return (!isVideoGen()&&s&&s.value)?parseInt(s.value,10):4;} // 이미지=전모드 선택값(1~8), 영상=미사용
 function negText(){const el=document.getElementById('negPrompt');return el?el.value.trim():'';}
 // 오디오 토글 / 끝프레임 업로드 (Kling 등 비디오 툴)
 function audioOn(){const b=document.getElementById('audioWrap');return !!(b&&b.classList.contains('on'));}
@@ -764,6 +764,7 @@ function renderToolPicker(){
   sel.innerHTML=list.map(t=>`<option value="${t.id}" data-model="${t.model}">${t.label}</option>`).join('');
   sel.value=[...sel.options].some(o=>o.value===cur)?cur:(list[0]?list[0].id:'nano-banana-pro');
 }
+const COUNT_OPTS=[1,2,3,4,5,6,7,8]; // 결과 장수 = 유저 선택(전 모드·이미지). 템플릿=1룩 × count 변형.
 // 선택 툴의 controls 스키마로 폼을 그림(표시 토글 + 옵션 채움). 새 툴 = 레지스트리 한 줄.
 function applyToolSchema(){
   const custom=state.mode==='custom';
@@ -775,7 +776,8 @@ function applyToolSchema(){
     const has=x=>[...s.options].some(o=>o.value==x);s.value=has(cur)?cur:(def!=null&&has(def)?String(def):s.value);};
   sh('aspectLabel',!!c.aspectRatio);sh('aspectSel',!!c.aspectRatio);fill('aspectSel',c.aspectRatio);
   sh('sizeLabel',!!c.imageSize);sh('sizeSel',!!c.imageSize);fill('sizeSel',c.imageSize);
-  sh('countLabel',!!c.count);sh('countSel',!!c.count);fill('countSel',c.count,null,4); // 기본 4장
+  const imgGen=!isVideoGen(); // 영상이 아니면 이미지 → count 전 모드 노출(1~8, 기본 4)
+  sh('countLabel',imgGen);sh('countSel',imgGen);if(imgGen)fill('countSel',COUNT_OPTS,null,4);
   sh('durLabel',!!c.duration);sh('durSel',!!c.duration);fill('durSel',c.duration,v=>v+'s');
   sh('qualityLabel',!!c.quality);sh('qualitySel',!!c.quality);fill('qualitySel',c.quality);
   sh('audioWrap',!!c.audio);                  // 오디오(토글)
@@ -1169,7 +1171,7 @@ function updateBarCore(){
 
 // ── 실제 생성 ──
 async function generate(opts){
-  const genN=(opts&&opts.count)||((state.mode==='custom'&&curType()==='image')?curCount():4); // Count 컨트롤(이미지)
+  const genN=(opts&&opts.count)||curCount(); // Count 컨트롤(전 모드 1~8)
   const r=curRecipe(),subj=curSubject();
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)

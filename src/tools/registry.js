@@ -32,14 +32,14 @@ const TOOLS = {
     id: 'nano-banana-pro', label: 'Nano Banana Pro', type: 'image',
     provider: 'gemini', model: 'gemini-3-pro-image-preview',
     costKey: 'pro', enabled: true,
-    controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K'], count: [1, 2, 3, 4], negative: true }, // 2K=Pro 전용
+    controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K'], count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // 2K=Pro 전용
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'nano-banana': {
     id: 'nano-banana', label: 'Nano Banana', type: 'image',
     provider: 'gemini', model: 'gemini-2.5-flash-image',
     costKey: 'flash', enabled: true,
-    controls: { aspectRatio: IMG_ASPECTS, count: [1, 2, 3, 4], negative: true }, // flash=1K 고정(imageSize 없음)
+    controls: { aspectRatio: IMG_ASPECTS, count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // flash=1K 고정(imageSize 없음)
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'gpt-image': {

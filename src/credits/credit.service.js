@@ -6,7 +6,8 @@ const SIGNUP_BONUS = 10;
 // 실원가 기준(docs/가격_재설계.md): 사진 4장 ≈ $0.16($0.039/장), 릴스 5초 ≈ $0.25(Runway).
 // 1cr=$0.10 기준가 → 사진 "1장=1cr"(4cr), 릴스 5초 8cr / 10초 16cr 로 기준가 마진 60~69% 확보.
 const COSTS = {
-  imageBase: 4, // 사진 생성 요청당 (4장 = 1장당 1cr)
+  imageUnit: 1, // 사진 장당 (count×imageUnit). 유저가 1~8장 선택 → 장당 과금.
+  imageBase: 4, // (레거시 표시용) = imageUnit×4
   imageModelSurcharge: { flash: 0, pro: 1, 'gpt-image-2': 1, 'gpt-image-2-high': 2 },
   video: { 5: 8, 10: 16 }, // 릴스 (duration 초)
   videoHighSurcharge: 2, // mode=high 추가
@@ -14,10 +15,11 @@ const COSTS = {
   enhance: 1, // 프롬프트 Enhance (Claude 확장, Custom 애드온)
 };
 
-/** 이미지 생성 1회 비용 */
-function imageCost(model) {
+/** 이미지 생성 비용 = 장당(count×imageUnit) + 모델가산(생성당 1회). count 미지정 시 4(기존 기준가). */
+function imageCost(model, count = 4) {
+  const n = Math.max(1, Math.min(parseInt(count, 10) || 1, 8));
   const surcharge = COSTS.imageModelSurcharge[model];
-  return COSTS.imageBase + (surcharge === undefined ? 1 : surcharge);
+  return n * COSTS.imageUnit + (surcharge === undefined ? 1 : surcharge);
 }
 
 /** 비디오(릴스) 생성 1회 비용 */
