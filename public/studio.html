@@ -381,9 +381,9 @@
       <button data-q="hd" data-m="gpt-image-2" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image <i>+1</i></button>
       <button data-q="4k" data-m="gpt-image-2-high" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image HD <i>+2</i></button>
     </div>
-    <span class="divider-v"></span>
-    <button class="addon-toggle" id="aCaption" onclick="toggleCaption(this)">Caption + hashtags <i>+1</i></button>
-    <select class="addon-lang hidden" id="captionLang">
+    <span class="divider-v" data-flag="caption"></span>
+    <button class="addon-toggle" id="aCaption" data-flag="caption" onclick="toggleCaption(this)">Caption + hashtags <i>+1</i></button>
+    <select class="addon-lang hidden" id="captionLang" data-flag="caption">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
     <span class="divider-v"></span>
