@@ -35,6 +35,9 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
   const wantAudio = audio === true || audio === 'true';
+  // ⚠️ Kling Standard(std) 미연결 — Pro만 사용. 들어온 mode가 pro가 아니면 pro로 강제(비용·Kling 요청·저장 모두 pro).
+  //    (추후 std 연결되면 이 한 줄 가드만 제거하면 복구.)
+  if (mode !== 'pro') mode = 'pro';
   // 자동공개(P2): 이미지 경로와 동일 정책 — Private Mode 명시 안 하면 공개. + 출처 템플릿 attribution.
   const vis = visibility === 'private' ? 'private' : 'public';
   if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }

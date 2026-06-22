@@ -412,10 +412,11 @@ async function confirmSaveCreation(){
 
 // ── 사진 → 릴스 (기존 /api/generate/video 재사용) ──
 let REEL_SRC=null,reelBusy=false;
-let REEL_COST=6;
+let REEL_COST=10; // 영상=Pro 단일(5초 base 8 + 가산 2). Standard 폐지.
 async function loadReelCost(){
   try{const d=(await(await fetch('/api/credits')).json()).data;
-    if(d.costs&&d.costs.video)REEL_COST=d.costs.video[5]||6;}catch(e){}
+    // 영상은 Pro 단일 → base + 가산(videoHighSurcharge)으로 표시(실제 과금과 일치).
+    if(d.costs&&d.costs.video)REEL_COST=(d.costs.video[5]||8)+(d.costs.videoHighSurcharge||2);}catch(e){}
 }
 function openReel(url,name){
   REEL_SRC=url;

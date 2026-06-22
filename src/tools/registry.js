@@ -69,7 +69,7 @@ const TOOLS = {
     // 라이브 async 경로 실배선. start=sourceImage, end=image_tail, audio=video-to-audio.
     controls: {
       duration: [5, 10],
-      quality: [{ value: 'std', label: 'Standard' }, { value: 'pro', label: 'Pro' }],
+      quality: [{ value: 'pro', label: 'Pro' }], // Standard(std) 미연결 — 숨김. Pro만 노출.
       aspectRatio: ['9:16', '1:1', '16:9'],
       audio: { type: 'toggle' },   // 효과음/배경음 합성(선택)
     },
