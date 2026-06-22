@@ -18,6 +18,7 @@
     business:     { launch: false, label: 'hidden' }, // B2B 연기
     affiliate:    { launch: false, label: 'hidden' }, // 성장기능, 임계 아님
     ugc:          { launch: false, label: 'hidden' }, // UGC Ads 모드 — 준비 중
+    enhance:      { launch: false, label: 'hidden' }, // 프롬프트 LLM 보강 — 첫 출시 제외(Custom 파워유저용), 점화 후 재노출
     // 모델 선택 단순화 — pro만 노출
     'model-flash':{ launch: false, label: 'hidden' },
     'model-gpt':  { launch: false, label: 'hidden' },
