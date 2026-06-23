@@ -248,9 +248,21 @@
   .rp-btn.on .rp-ic{border-color:var(--accent2)}
   .rp-r{font-size:11.5px;font-weight:700;color:var(--text)}
   .rp-o{font-size:9px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.4px}
-  /* Private Mode 잠금(비구독자) */
-  .priv-lock{font-size:11px;opacity:.85}
-  #privateToggle.locked{opacity:.7}
+  /* Private Mode — 라벨 + 도움말 툴팁 + 토글 스위치(Leonardo식) */
+  .priv-ctl{display:inline-flex;align-items:center;gap:8px;padding-bottom:1px}
+  .priv-label{font-size:12.5px;font-weight:600;color:var(--dim);white-space:nowrap}
+  .priv-help{position:relative;display:inline-flex;align-items:center;color:var(--faint);cursor:help;outline:none}
+  .priv-help:hover,.priv-help:focus-visible{color:var(--text)}
+  .priv-tip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#15151f;color:var(--text);border:1px solid var(--border2);font-size:12px;font-weight:500;line-height:1.4;padding:7px 11px;border-radius:9px;box-shadow:0 14px 36px -12px rgba(0,0,0,.75);opacity:0;visibility:hidden;transition:opacity .14s ease,visibility .14s;z-index:70;pointer-events:none}
+  .priv-tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#15151f}
+  .priv-help:hover .priv-tip,.priv-help:focus-visible .priv-tip{opacity:1;visibility:visible}
+  .priv-switch{position:relative;width:40px;height:22px;flex-shrink:0;border:none;border-radius:999px;background:rgba(255,255,255,.16);cursor:pointer;padding:0;transition:background .18s}
+  .priv-switch .priv-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.5);transition:left .18s}
+  .priv-switch.on{background:var(--accent2)}
+  .priv-switch.on .priv-knob{left:20px}
+  .priv-switch.locked{background:linear-gradient(120deg,#aee35e,#7cc94a)}
+  .priv-switch.locked .priv-knob{left:2px}
+  .priv-gem{position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;color:#33560f;line-height:1;pointer-events:none}
 
   /* caption result block */
   .caption-box{margin-top:18px;border:1px solid var(--border);border-radius:14px;padding:16px 18px;background:linear-gradient(180deg,rgba(124,108,255,.06),transparent)}
@@ -485,7 +497,17 @@
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
     <span class="divider-v"></span>
-    <button class="addon-toggle locked" id="privateToggle" onclick="togglePrivate(this)" title="Private Mode — keep this creation off the public Explore feed. Subscribers only; off by default (public).">Private Mode <span class="bk-on hidden" id="privBadge">ON</span><span class="priv-lock" id="privLock">🔒</span></button>
+    <div class="priv-ctl" id="privCtl">
+      <span class="priv-label">Private Mode</span>
+      <span class="priv-help" tabindex="0" aria-label="This is a Premium Feature. Subscribe to access it.">
+        <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="5" r="1" fill="currentColor"/><rect x="7.25" y="7" width="1.5" height="4.4" rx=".75" fill="currentColor"/></svg>
+        <span class="priv-tip" role="tooltip">This is a Premium Feature. Subscribe to access it.</span>
+      </span>
+      <button type="button" class="priv-switch locked" id="privateToggle" role="switch" aria-checked="false" aria-label="Private Mode" onclick="togglePrivate(this)">
+        <span class="priv-gem" id="privLock" aria-hidden="true">◆</span>
+        <span class="priv-knob"></span>
+      </button>
+    </div>
   </div>
   <div class="prompt-row" id="promptRow">
     <div class="pfield pfield-main">
@@ -1087,10 +1109,12 @@ function refreshPrivateToggle(){
   const lock=document.getElementById('privLock'),badge=document.getElementById('privBadge');
   if(!SUB.canPrivate){b.classList.remove('on');b.classList.add('locked');if(lock)lock.classList.remove('hidden');if(badge)badge.classList.add('hidden');}
   else{b.classList.remove('locked');if(lock)lock.classList.add('hidden');if(badge)badge.classList.toggle('hidden',!b.classList.contains('on'));}
+  b.setAttribute('aria-checked',b.classList.contains('on')?'true':'false');
 }
 function togglePrivate(b){
   if(!SUB.canPrivate){openUpgradeForPrivate();return;}
   b.classList.toggle('on');
+  b.setAttribute('aria-checked',b.classList.contains('on')?'true':'false');
   const badge=document.getElementById('privBadge');if(badge)badge.classList.toggle('hidden',!b.classList.contains('on'));
 }
 function openUpgradeForPrivate(){toast('🔒 Private Mode is a subscriber feature — upgrade your plan to keep creations private.','error');}
@@ -1429,7 +1453,7 @@ function updateBarCore(){
   if(state.mode==='ugc'){btn.disabled=true;s.textContent='UGC ads — coming soon.';return;}
   const extra=extraPromptText();
   // 대상은 필수, 템플릿·프롬프트는 둘 중 하나 이상이면 생성 가능
-  if(!state.subjectId){btn.disabled=true;s.textContent='Select a face/product first.';return;}
+  if(!state.subjectId){btn.disabled=true;s.textContent='';return;}
   if(!r&&!extra){btn.disabled=true;s.textContent='Pick a template or enter a prompt.';return;}
   const cost=genCost(r);
   const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
