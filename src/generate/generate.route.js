@@ -549,6 +549,7 @@ router.get('/community', async (req, res, next) => {
       templateName: r.template_name,
       likes: r.likes_count || 0,
       liked: !!r.liked,
+      isOwn: !!r.is_own,
       createdAt: r.created_at,
     }));
     res.json({ success: true, data: items });

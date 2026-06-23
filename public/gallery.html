@@ -25,12 +25,23 @@
   .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
 
   .grid{columns:4 260px;column-gap:16px}
-  /* Explore와 동일한 카드 양식 (My creations) */
+  /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
-  .card .like{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;line-height:1}
-  .card .like .hrt{font-size:13px;line-height:1;color:#ff5a7a}
-  .card .vbadge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:2}
+  .card .ovt,.card .ovb{position:absolute;left:0;right:0;opacity:0;transition:opacity .15s;pointer-events:none;z-index:2}
+  .card:hover .ovt,.card:hover .ovb{opacity:1}
+  .card .ovt{top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;background:linear-gradient(rgba(0,0,0,.72),transparent)}
+  .card .ovb{bottom:0;padding:30px 11px 12px;background:linear-gradient(transparent,rgba(0,0,0,.82))}
+  .card .by{pointer-events:auto;font-size:12px;color:#fff;font-weight:600;text-decoration:none;text-shadow:0 1px 3px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+  .card a.by:hover{text-decoration:underline}
+  .card .like{pointer-events:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,border-color .15s}
+  .card .like:active{transform:scale(.88)}
+  .card .like .hrt{font-size:13px;line-height:1}
+  .card .like.on{color:#ff5a7a;border-color:rgba(255,90,122,.6)}
+  .card .act{pointer-events:auto;width:100%;border:none;border-radius:9px;padding:9px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .act.save{background:rgba(255,255,255,.17);color:#fff;border:1px solid rgba(255,255,255,.32)}
+  .card .vbadge{position:absolute;top:9px;left:9px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:3;opacity:0;transition:opacity .15s}
+  .card:hover .vbadge{opacity:1}
   .item{border-radius:16px;overflow:hidden;position:relative;aspect-ratio:4/5;border:1px solid var(--border);transition:transform .2s}
   .item:hover{transform:translateY(-4px)}
   .item .thumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:42px}
@@ -273,6 +284,8 @@ async function load(){
           url:'/images/'+fn,
           type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',
           likes:r.likes_count||0,
+          liked:!!r.liked,
+          creatorHandle:r.creator_handle||'',
           name:r.character_name||'',
           date:(r.created_at||'').slice(0,10),
           model:r.model||'',
@@ -321,14 +334,47 @@ function render(){
   empty.classList.add('hidden');
   grid.innerHTML=list.map(it=>{
     const media=it.type==='reel'
-      ? `<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>`
+      ? `<video class="media" src="${esc(it.url)}" muted loop playsinline autoplay preload="auto"></video>`
       : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
-    const vbadge=it.type==='reel'?'<span class="vbadge">▶ Reel</span>':'';
-    const like=`<span class="like"><span class="hrt">♥</span><span class="lct">${it.likes||0}</span></span>`;
-    return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">${vbadge}${like}${media}</div>`;
+    const by=it.creatorHandle
+      ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">@${esc(it.creatorHandle)}</a>`
+      : `<span class="by">@me</span>`;
+    const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
+    const act=!it.templateSource?`<button class="act save" onclick="event.stopPropagation();location.href='/gallery?save=${it.idx}'">✦ Save as template</button>`:'';
+    return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">
+      <div class="ovt">${by}${like}</div>
+      ${media}
+      ${act?`<div class="ovb">${act}</div>`:''}
+    </div>`;
   }).join('');
+  playFeedVideos();
   // 사진이 하나라도 있으면 넛지 표시
   document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
+}
+// 동적 삽입 영상은 autoplay 속성만으론 재생이 안 걸려 명시적 play()(muted=정책 통과). 화면 들어올 때만 재생.
+function playFeedVideos(){
+  const vids=document.querySelectorAll('.card video.media');
+  if(!vids.length)return;
+  const kick=v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});};
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver((es)=>es.forEach(e=>{e.isIntersecting?kick(e.target):e.target.pause();}),{threshold:.25});
+    vids.forEach(v=>io.observe(v));
+  }else{ vids.forEach(kick); }
+}
+// 카드 하트 토글(공개 결과만 서버에서 허용) — Explore와 동일 동작
+async function toggleLike(idx,btn){
+  const on=btn.classList.contains('on'); btn.disabled=true;
+  try{
+    const r=await fetch('/api/generate/results/'+idx+'/like',{method:on?'DELETE':'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    btn.classList.toggle('on',d.data.liked);
+    btn.querySelector('.hrt').textContent=d.data.liked?'♥':'♡';
+    btn.querySelector('.lct').textContent=d.data.likes;
+    btn.title=d.data.liked?'Liked':'Like';
+    const it=ITEMS.find(x=>x.idx===idx); if(it){it.liked=d.data.liked;it.likes=d.data.likes;}
+  }catch(e){toast('Like failed: '+(e.message||e));}
+  finally{btn.disabled=false;}
 }
 function setFilter(f){filter=f;renderFilters();render();}
 

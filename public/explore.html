@@ -16,24 +16,27 @@
   .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
   /* 마소너리 그리드 */
   .grid{columns:4 260px;column-gap:16px}
-  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative}
+  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
-  .card .ov{position:absolute;left:0;right:0;bottom:0;padding:30px 12px 11px;background:linear-gradient(transparent,rgba(0,0,0,.82));opacity:0;transition:opacity .15s}
-  .card:hover .ov{opacity:1}
-  .card .by{font-size:12px;color:#cbd0e0;font-weight:600;margin-bottom:8px;text-decoration:none;display:inline-block}
-  a.by:hover{color:#fff;text-decoration:underline}
   .hlink{color:inherit;text-decoration:none}
   .hlink:hover{color:var(--accent2);text-decoration:underline}
-  .card .row{display:flex;gap:8px;align-items:center}
-  .card .use{flex:1;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .use.ghost{background:rgba(255,255,255,.14)}
-  .card .rep{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:9px;padding:8px 9px;font-size:12px;cursor:pointer}
-  .card .vbadge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px}
-  .card .like{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,background .15s,border-color .15s}
-  .card .like:hover{background:rgba(0,0,0,.72)}
+  /* 호버 오버레이: 평소 숨김 → 호버 시 상단(생성자+하트)·하단(액션). 컨테이너는 클릭 통과(pointer-events:none), 버튼만 클릭. */
+  .card .ovt,.card .ovb{position:absolute;left:0;right:0;opacity:0;transition:opacity .15s;pointer-events:none;z-index:2}
+  .card:hover .ovt,.card:hover .ovb{opacity:1}
+  .card .ovt{top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;background:linear-gradient(rgba(0,0,0,.72),transparent)}
+  .card .ovb{bottom:0;padding:30px 11px 12px;background:linear-gradient(transparent,rgba(0,0,0,.82))}
+  .card .by{pointer-events:auto;font-size:12px;color:#fff;font-weight:600;text-decoration:none;text-shadow:0 1px 3px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+  .card a.by:hover{text-decoration:underline}
+  .card .like{pointer-events:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,border-color .15s}
   .card .like:active{transform:scale(.88)}
   .card .like .hrt{font-size:13px;line-height:1}
-  .card .like.on{color:#ff5a7a;border-color:rgba(255,90,122,.55)}
+  .card .like.on{color:#ff5a7a;border-color:rgba(255,90,122,.6)}
+  .card .act{pointer-events:auto;width:100%;border:none;border-radius:9px;padding:9px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .act.save{background:rgba(255,255,255,.17);color:#fff;border:1px solid rgba(255,255,255,.32)}
+  .card .act.use{background:var(--accent);color:#fff}
+  .card .act.ghost{background:rgba(255,255,255,.14);color:#fff}
+  .card .vbadge{position:absolute;top:9px;left:9px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:3;opacity:0;transition:opacity .15s}
+  .card:hover .vbadge{opacity:1}
   .empty{text-align:center;color:var(--dim);padding:80px 20px}
   .empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px;font-family:'Sora'}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
@@ -97,28 +100,28 @@
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
+// 호버 하단 액션: 본인 미등록=Save as template / 마켓·recipe 출처=Get·Use / 그 외 타인=Make your own
+function cardAction(it){
+  if(it.isOwn && !it.templateSource) return `<button class="act save" onclick="event.stopPropagation();location.href='/gallery?save=${it.idx}'">✦ Save as template</button>`;
+  if(it.templateSource==='marketplace' && it.templateId) return `<button class="act use" onclick="event.stopPropagation();location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">🔓 Get ${esc(it.templateName||'template')}</button>`;
+  if(it.templateSource==='recipe' && it.templateId) return `<button class="act use" onclick="event.stopPropagation();location.href='/studio?recipe='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'template')}</button>`;
+  if(!it.isOwn) return `<button class="act ghost" onclick="event.stopPropagation();location.href='/studio'">✨ Make your own</button>`;
+  return '';
+}
 function card(it){
-  const open=`onclick="location.href='/creation?idx=${it.idx}&from=explore'" style="cursor:pointer"`;
   const media=it.type==='video'
-    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()" ${open}></video>`
-    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${open}>`;
-  // CTA: 마켓 템플릿→구매 페이지(상세) / recipe 출처→레시피 프리셀렉트(무료) / 무템플릿→관람만(CTA 없음)
-  let useBtn='';
-  if(it.templateSource==='marketplace' && it.templateId)
-    useBtn = `<button class="use" onclick="location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">🔓 Get ${esc(it.templateName||'this template')}</button>`;
-  else if(it.templateSource==='recipe' && it.templateId)
-    useBtn = `<button class="use" onclick="location.href='/studio?recipe='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`;
-  // 무템플릿 = 관람만(홍보 가치 없음) → CTA 미표시
-  const vbadge=it.type==='video'?'<span class="vbadge">▶ Reel</span>':'';
-  const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
+    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline autoplay></video>`
+    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
   const by=it.creatorHandle
-    ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}">${esc(it.creatorHandle)}</a>`
-    : `<div class="by">@creator</div>`;
-  return `<div class="card">${vbadge}${like}${media}
-    <div class="ov">
-      ${by}
-      <div class="row">${useBtn}<button class="rep" title="Report" onclick="reportResult(${it.idx})">⚐</button></div>
-    </div></div>`;
+    ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`
+    : `<span class="by">@creator</span>`;
+  const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
+  const act=cardAction(it);
+  return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=explore'">
+    <div class="ovt">${by}${like}</div>
+    ${media}
+    ${act?`<div class="ovb">${act}</div>`:''}
+  </div>`;
 }
 async function toggleLike(idx,btn){
   const on=btn.classList.contains('on');
@@ -141,7 +144,18 @@ async function load(){
     const d=(await(await fetch('/api/generate/community?limit=80')).json()).data||[];
     if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
     empty.classList.add('hidden');grid.innerHTML=d.map(card).join('');
+    playFeedVideos();
   }catch(e){console.error('explore load failed',e);empty.classList.remove('hidden');}
+}
+// 동적 삽입된 영상은 autoplay 속성만으론 재생이 안 걸려 명시적으로 play() 호출(muted=정책 통과). 화면 들어올 때 재생.
+function playFeedVideos(){
+  const vids=document.querySelectorAll('.card video.media');
+  if(!vids.length)return;
+  const kick=v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});};
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver((es)=>es.forEach(e=>{e.isIntersecting?kick(e.target):e.target.pause();}),{threshold:.25});
+    vids.forEach(v=>io.observe(v));
+  }else{ vids.forEach(kick); }
 }
 async function reportResult(idx){
   if(!confirm('Report this creation for review?'))return;

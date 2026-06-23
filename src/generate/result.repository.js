@@ -24,6 +24,7 @@ async function findCommunity({ limit = 60, offset = 0, viewerId = null } = {}) {
     `SELECT gr.idx, gr.file_path, gr.model, gr.metadata, gr.created_at,
             gr.template_id, gr.template_source, gr.template_name, gr.likes_count,
             split_part(u.email, '@', 1) AS creator_handle,
+            (p.user_id = $3) AS is_own,
             EXISTS(SELECT 1 FROM result_likes rl WHERE rl.result_idx = gr.idx AND rl.user_id = $3) AS liked
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
@@ -187,10 +188,12 @@ async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
   const where = teamId ? 'p.team_id = $1' : 'p.user_id = $1 AND p.team_id IS NULL';
   const owner = teamId || userId;
   const result = await query(
-    `SELECT gr.*, p.prompt_text, p.tags, c.name as character_name
+    `SELECT gr.*, p.prompt_text, p.tags, c.name as character_name,
+            split_part(u.email, '@', 1) AS creator_handle
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
      LEFT JOIN characters c ON c.id = gr.character_id
+     LEFT JOIN users u ON u.id = p.user_id
      WHERE ${where}
      ORDER BY gr.created_at DESC LIMIT $2 OFFSET $3`,
     [owner, limit, offset]
