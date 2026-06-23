@@ -24,7 +24,13 @@
   .chip:hover{color:var(--text)}
   .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .grid{columns:4 260px;column-gap:16px}
+  /* Explore와 동일한 카드 양식 (My creations) */
+  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
+  .card .media{display:block;width:100%;height:auto;background:#0c0c14}
+  .card .like{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;line-height:1}
+  .card .like .hrt{font-size:13px;line-height:1;color:#ff5a7a}
+  .card .vbadge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:2}
   .item{border-radius:16px;overflow:hidden;position:relative;aspect-ratio:4/5;border:1px solid var(--border);transition:transform .2s}
   .item:hover{transform:translateY(-4px)}
   .item .thumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:42px}
@@ -89,7 +95,7 @@
   <section id="tab-creations">
     <div class="nudge fade d1" id="reelNudge" style="display:none">
       <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
-      <span class="nudge-hint">Just hit the <b>→ Reel</b> button on any photo card.</span>
+      <span class="nudge-hint">Open any photo and hit <b>▶ Make a Reel</b>.</span>
     </div>
     <div class="filter-row fade d1" id="filterRow"></div>
     <div class="grid fade d2" id="grid"></div>
@@ -314,26 +320,13 @@ function render(){
   if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
   grid.innerHTML=list.map(it=>{
-    const visBadge=it.takenDown
-      ?`<span class="badge vis private" title="Removed by moderation">⚑ Removed</span>`
-      :`<span class="badge vis ${it.visibility==='public'?'':'private'}">${it.visibility==='public'?'🌐 Public':'🔒 Private'}</span>`;
-    const visBtn=it.takenDown?'':(it.visibility==='public'
-      ?`<button class="vistoggle" onclick="toggleVis(${it.idx})" title="Make private">🔒</button>`
-      :`<button class="vistoggle" onclick="toggleVis(${it.idx})" title="Make public">🌐</button>`);
-    return `
-    <div class="item">
-      ${it.type==='reel'
-        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="location.href='/creation?idx=${it.idx}&from=library'" style="cursor:pointer"></video>`
-        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="location.href='/creation?idx=${it.idx}&from=library'" style="cursor:pointer">`}
-      <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>${visBadge}${it.visibility==='public'?`<span class="badge" title="Likes from the community">♥ ${it.likes||0}</span>`:''}
-      <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}${it.template?' · '+esc(it.template):''}</div></div>
-      <div class="actions">
-        ${it.type==='photo'?`<button class="reel" onclick="openReel('${esc(it.url)}','${esc(it.name)}')">→ Reel</button>`:''}
-        ${visBtn}
-        <a href="${esc(it.url)}" download><button>⬇</button></a>
-        <button onclick="openView(${it.idx})">⤢</button>
-      </div>
-    </div>`;}).join('');
+    const media=it.type==='reel'
+      ? `<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>`
+      : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
+    const vbadge=it.type==='reel'?'<span class="vbadge">▶ Reel</span>':'';
+    const like=`<span class="like"><span class="hrt">♥</span><span class="lct">${it.likes||0}</span></span>`;
+    return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">${vbadge}${like}${media}</div>`;
+  }).join('');
   // 사진이 하나라도 있으면 넛지 표시
   document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
 }
