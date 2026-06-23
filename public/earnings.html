@@ -182,6 +182,15 @@
         <button class="btn btn-primary" id="ovExBtn" onclick="exchangePoints()" style="padding:12px 18px">Exchange points → credits</button>
       </div>
     </div>
+
+    <!-- γ 넛지: 좋아요 받은 미등록 creation → 템플릿 등록 유도 -->
+    <div class="row-head fade d3" id="likableHead" style="display:none">
+      <div class="section-label" style="margin:0">Turn likes into earnings</div>
+    </div>
+    <div class="glass fade d3" id="likablePanel" style="padding:18px;display:none">
+      <p id="likableMsg" style="margin:0 0 14px;color:var(--dim);font-size:14px;line-height:1.5"></p>
+      <div id="likableGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:12px"></div>
+    </div>
   </section>
 
   <!-- ═══ TEMPLATES ═══ -->
@@ -371,7 +380,25 @@ async function load(){
       list.innerHTML=head+rows;
       earnList.innerHTML=head+rows;
     }
+    loadLikable();
   }catch(e){studioError('Couldn’t load your studio — check your connection and retry.');}
+}
+
+// γ 넛지: 좋아요 받은 미등록 creation → 등록 유도(저장 모달은 Library에서 ?save=idx로 연다)
+async function loadLikable(){
+  try{
+    const d=(await(await fetch('/api/generate/creator-overview')).json()).data;
+    const head=document.getElementById('likableHead'),panel=document.getElementById('likablePanel');
+    if(!d||!d.topLikable||!d.topLikable.length){head.style.display='none';panel.style.display='none';return;}
+    head.style.display='';panel.style.display='';
+    document.getElementById('likableMsg').innerHTML=`Your public creations earned <b style="color:#ff5a7a">♥ ${d.totalLikes}</b>. Turn your most-liked ones into templates — registered templates earn you points on every use.`;
+    document.getElementById('likableGrid').innerHTML=d.topLikable.map(it=>`
+      <a href="/gallery?save=${it.idx}" title="Register as template" style="text-decoration:none;display:block;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <img src="${esc(it.url)}" style="width:100%;height:128px;object-fit:cover;display:block">
+        <span style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#ff5a7a;font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px">♥ ${it.likes}</span>
+        <span style="position:absolute;left:0;right:0;bottom:0;padding:9px 8px;background:linear-gradient(transparent,rgba(0,0,0,.82));color:#fff;font-size:11.5px;font-weight:700;text-align:center">Register →</span>
+      </a>`).join('');
+  }catch(e){/* 비치명적 */}
 }
 
 // ── 스토어프론트 핸들 (saas-auth.js 의 #saasUserBox 에서 유추) ──

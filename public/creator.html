@@ -16,6 +16,10 @@
   .chead h1{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-.5px}
   .chead .stats{color:var(--dim);font-size:13.5px;margin-top:4px}
   .chead .stats b{color:var(--accent2)}
+  .follow{flex-shrink:0;border:1px solid var(--accent);background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:10px 20px;border-radius:999px;cursor:pointer;transition:all .15s}
+  .follow:hover{filter:brightness(1.08)}
+  .follow.on{background:transparent;color:var(--dim);border-color:var(--border2)}
+  .follow.on:hover{color:#ff7eb6;border-color:#ff7eb6}
   .sectitle{font-family:'Sora';font-size:16px;font-weight:700;margin:34px 0 14px}
   .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
   .tcard{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);transition:border-color .2s,transform .2s}
@@ -47,10 +51,11 @@
   <div id="profile" class="hidden">
     <div class="chead">
       <div class="avatar" id="avatar">@</div>
-      <div>
+      <div style="flex:1;min-width:0">
         <h1 id="handle">@creator</h1>
-        <div class="stats"><b id="tplCount">0</b> templates · ♥ <b id="likeCount">0</b> likes</div>
+        <div class="stats"><b id="tplCount">0</b> templates · ♥ <b id="likeCount">0</b> likes · <b id="followCount">0</b> followers</div>
       </div>
+      <button class="follow hidden" id="followBtn" onclick="toggleFollow()">+ Follow</button>
     </div>
 
     <div class="sectitle" id="tplTitle">Templates</div>
@@ -121,7 +126,13 @@ async function load(){
   document.getElementById('avatar').textContent=(d.handle||'@?').replace(/^@/,'').charAt(0).toUpperCase()||'?';
   document.getElementById('tplCount').textContent=d.templateCount||0;
   document.getElementById('likeCount').textContent=d.totalLikes||0;
+  document.getElementById('followCount').textContent=d.followers||0;
   document.title='Doppia · '+d.handle;
+
+  window.__handle=raw;
+  const fb=document.getElementById('followBtn');
+  if(d.isOwn){fb.classList.add('hidden');}
+  else{fb.classList.remove('hidden');fb.classList.toggle('on',!!d.following);fb.textContent=d.following?'Following':'+ Follow';}
 
   TPLS=d.templates||[];
   const tg=document.getElementById('tplGrid');
@@ -132,6 +143,18 @@ async function load(){
   const sg=document.getElementById('showGrid');
   if(sc.length){sg.innerHTML=sc.map(shot).join('');}
   else{sg.innerHTML='';document.getElementById('showEmpty').classList.remove('hidden');document.getElementById('showTitle').style.display='none';}
+}
+async function toggleFollow(){
+  const btn=document.getElementById('followBtn'); if(!btn||!window.__handle)return;
+  const on=btn.classList.contains('on'); btn.disabled=true;
+  try{
+    const r=await fetch('/api/marketplace/creators/'+encodeURIComponent(window.__handle)+'/follow',{method:on?'DELETE':'POST'});
+    const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    btn.classList.toggle('on',d.data.following);
+    btn.textContent=d.data.following?'Following':'+ Follow';
+    document.getElementById('followCount').textContent=d.data.followers||0;
+  }catch(e){alert('Follow failed: '+(e.message||e));}
+  finally{btn.disabled=false;}
 }
 load();
 </script>

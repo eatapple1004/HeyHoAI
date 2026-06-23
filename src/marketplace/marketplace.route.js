@@ -157,6 +157,7 @@ router.post('/templates', async (req, res, next) => {
       name, description = '', category, type = 'image', style = 'Natural', prompt,
       negativePrompt = '', emoji = '🎨', priceCredits = 0, usePriceCredits = 0,
       tool, visibility = 'private', previewMedia = [], referenceExamples = [],
+      sourceResultIdx, // 이 템플릿의 씨앗 creation(역링크 + 누적 좋아요 롤업용, 선택)
     } = req.body || {};
     if (!name || !prompt) return res.status(400).json({ success: false, error: 'name과 prompt는 필수입니다.' });
     if (!CATEGORIES.has(category)) return res.status(400).json({ success: false, error: '유효한 category가 필요합니다.' });
@@ -189,7 +190,28 @@ router.post('/templates', async (req, res, next) => {
        String(prompt).slice(0, 2000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
        String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview), JSON.stringify(refExamples)]
     );
-    res.status(201).json({ success: true, data: r.rows[0] });
+    const created = r.rows[0];
+
+    // 씨앗 creation 역링크 + 누적 좋아요 롤업(등록 즉시 사회적 증명). 본인 소유·아직 미귀속(Custom) 결과만.
+    // 공개(마켓) 게시일 때만 — 비공개(개인) 템플릿은 마켓 노출이 없어 역링크 시 creation에 막다른 Get CTA가 생김.
+    const srcIdx = parseInt(sourceResultIdx, 10);
+    if (srcIdx && vis === 'public') {
+      const link = await query(
+        `UPDATE generation_results gr
+            SET template_id = $1, template_source = 'marketplace'
+           FROM prompts p
+          WHERE p.idx = gr.prompt_idx AND gr.idx = $2 AND p.user_id = $3
+            AND gr.template_id IS NULL
+          RETURNING gr.likes_count`,
+        [created.id, srcIdx, req.user.id]
+      );
+      const seedLikes = link.rows[0] ? (link.rows[0].likes_count || 0) : 0;
+      if (seedLikes > 0) {
+        await query('UPDATE marketplace_templates SET likes_count = likes_count + $2 WHERE id = $1', [created.id, seedLikes]);
+        created.likes_count = (created.likes_count || 0) + seedLikes;
+      }
+    }
+    res.status(201).json({ success: true, data: created });
   } catch (err) { next(err); }
 });
 
@@ -417,12 +439,24 @@ router.get('/creators/:handle', async (req, res, next) => {
       return res.status(404).json({ success: false, error: '크리에이터를 찾을 수 없습니다.' });
     }
     const totalLikes = tpls.rows.reduce((s, t) => s + (t.likes_count || 0), 0);
+    // 팔로우 상태(handle→creator user id 해석)
+    const cu = await query("SELECT id FROM users WHERE split_part(email, '@', 1) = $1 LIMIT 1", [raw]);
+    const creatorId = cu.rows[0] ? cu.rows[0].id : null;
+    const isOwn = !!creatorId && creatorId === req.user.id;
+    let followers = 0, following = false;
+    if (creatorId) {
+      followers = (await query('SELECT count(*)::int AS n FROM follows WHERE creator_id = $1', [creatorId])).rows[0].n;
+      if (!isOwn) following = (await query('SELECT 1 FROM follows WHERE creator_id = $1 AND follower_id = $2', [creatorId, req.user.id])).rowCount > 0;
+    }
     res.json({
       success: true,
       data: {
         handle,
         templateCount: tpls.rows.length,
         totalLikes,
+        followers,
+        following,
+        isOwn,
         templates: tpls.rows,
         showcase: showcase.rows.map((r) => ({
           idx: r.idx,
@@ -431,6 +465,34 @@ router.get('/creators/:handle', async (req, res, next) => {
         })),
       },
     });
+  } catch (err) { next(err); }
+});
+
+// 크리에이터 팔로우/언팔로우 — handle을 creator user id로 해석. 자기 자신 금지, 멱등.
+async function resolveCreatorId(raw) {
+  const r = await query("SELECT id FROM users WHERE split_part(email, '@', 1) = $1 LIMIT 1", [raw]);
+  return r.rows[0] ? r.rows[0].id : null;
+}
+async function followerCount(creatorId) {
+  return (await query('SELECT count(*)::int AS n FROM follows WHERE creator_id = $1', [creatorId])).rows[0].n;
+}
+router.post('/creators/:handle/follow', async (req, res, next) => {
+  try {
+    const raw = String(req.params.handle || '').replace(/^@+/, '').slice(0, 80);
+    const creatorId = await resolveCreatorId(raw);
+    if (!creatorId) return res.status(404).json({ success: false, error: '크리에이터를 찾을 수 없습니다.' });
+    if (creatorId === req.user.id) return res.status(400).json({ success: false, error: '자기 자신은 팔로우할 수 없습니다.' });
+    await query('INSERT INTO follows (follower_id, creator_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.user.id, creatorId]);
+    res.json({ success: true, data: { following: true, followers: await followerCount(creatorId) } });
+  } catch (err) { next(err); }
+});
+router.delete('/creators/:handle/follow', async (req, res, next) => {
+  try {
+    const raw = String(req.params.handle || '').replace(/^@+/, '').slice(0, 80);
+    const creatorId = await resolveCreatorId(raw);
+    if (!creatorId) return res.status(404).json({ success: false, error: '크리에이터를 찾을 수 없습니다.' });
+    await query('DELETE FROM follows WHERE follower_id = $1 AND creator_id = $2', [req.user.id, creatorId]);
+    res.json({ success: true, data: { following: false, followers: await followerCount(creatorId) } });
   } catch (err) { next(err); }
 });
 

@@ -536,6 +536,7 @@ router.get('/community', async (req, res, next) => {
     const data = await resultRepo.findCommunity({
       limit: limit ? parseInt(limit, 10) : 60,
       offset: offset ? parseInt(offset, 10) : 0,
+      viewerId: req.user.id,
     });
     const items = data.map((r) => ({
       idx: r.idx,
@@ -546,6 +547,8 @@ router.get('/community', async (req, res, next) => {
       templateId: r.template_id,
       templateSource: r.template_source,
       templateName: r.template_name,
+      likes: r.likes_count || 0,
+      liked: !!r.liked,
       createdAt: r.created_at,
     }));
     res.json({ success: true, data: items });
@@ -574,6 +577,66 @@ router.post('/results/:idx/report', async (req, res, next) => {
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
     const out = await resultRepo.report(idx, req.user.id, (req.body && req.body.reason) || 'other');
     res.json({ success: true, data: out });
+  } catch (err) { next(err); }
+});
+
+// ─── creation 좋아요 토글 (Explore 피드) — POST=좋아요 / DELETE=취소, 멱등 ───
+router.post('/results/:idx/like', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
+    const out = await resultRepo.toggleLike(idx, req.user.id, true);
+    if (!out.found) return res.status(404).json({ success: false, error: 'creation not available' });
+    res.json({ success: true, data: { liked: out.liked, likes: out.likes } });
+  } catch (err) { next(err); }
+});
+router.delete('/results/:idx/like', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
+    const out = await resultRepo.toggleLike(idx, req.user.id, false); // 취소는 멱등 no-op 허용
+    res.json({ success: true, data: { liked: out.liked, likes: out.likes } });
+  } catch (err) { next(err); }
+});
+
+// ─── 단일 creation 상세 (공개 또는 본인) — creation.html ───
+router.get('/creations/:idx', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
+    const r = await resultRepo.findDetailForViewer(idx, req.user.id);
+    if (!r) return res.status(404).json({ success: false, error: 'creation not found' });
+    res.json({ success: true, data: {
+      idx: r.idx,
+      url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+      type: (r.metadata && r.metadata.type === 'video') ? 'video' : 'image',
+      creatorHandle: r.creator_handle ? '@' + r.creator_handle : null,
+      likes: r.likes_count || 0,
+      liked: !!r.liked,
+      followers: r.followers || 0,
+      following: !!r.following,
+      isOwn: !!r.is_own,
+      visibility: r.visibility,
+      templateId: r.template_id,
+      templateSource: r.template_source,
+      templateName: r.template_name,
+      createdAt: r.created_at,
+    } });
+  } catch (err) { next(err); }
+});
+
+// ─── 크리에이터 Overview(γ 넛지): 총 좋아요 + 미등록 인기 creation Top ───
+router.get('/creator-overview', async (req, res, next) => {
+  try {
+    const d = await resultRepo.creatorLikeOverview(req.user.id);
+    res.json({ success: true, data: {
+      totalLikes: d.totalLikes,
+      topLikable: d.topLikable.map((r) => ({
+        idx: r.idx,
+        url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+        likes: r.likes_count || 0,
+      })),
+    } });
   } catch (err) { next(err); }
 });
 

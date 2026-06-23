@@ -266,6 +266,7 @@ async function load(){
           idx:r.idx,
           url:'/images/'+fn,
           type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',
+          likes:r.likes_count||0,
           name:r.character_name||'',
           date:(r.created_at||'').slice(0,10),
           model:r.model||'',
@@ -278,6 +279,17 @@ async function load(){
       });
   }catch(e){console.error('results load failed',e);}
   renderFilters();render();
+  maybeOpenSave();
+}
+// Creator Studio γ 패널 등에서 /library?save=IDX 로 진입 시 해당 creation의 저장 모달 자동 오픈
+function maybeOpenSave(){
+  const sid=parseInt(new URLSearchParams(location.search).get('save'),10);
+  if(!sid)return;
+  history.replaceState(null,'',location.pathname); // 새로고침 재오픈 방지
+  const it=ITEMS.find(x=>x.idx===sid);
+  if(it&&it.prompt){ VIEW_ITEM=it; openSaveFromCreation(); }
+  else if(it){ toast('This creation can’t be saved as a template.'); }
+  else { toast('Creation not found.'); }
 }
 function renderFilters(){
   document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<div class="chip ${filter===f?'active':''}" onclick="setFilter('${f}')">${f}</div>`).join('');
@@ -303,9 +315,9 @@ function render(){
     return `
     <div class="item">
       ${it.type==='reel'
-        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="openView(${it.idx})"></video>`
-        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="openView(${it.idx})">`}
-      <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>${visBadge}
+        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="location.href='/creation?idx=${it.idx}'" style="cursor:pointer"></video>`
+        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="location.href='/creation?idx=${it.idx}'" style="cursor:pointer">`}
+      <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>${visBadge}${it.visibility==='public'?`<span class="badge" title="Likes from the community">♥ ${it.likes||0}</span>`:''}
       <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}${it.template?' · '+esc(it.template):''}</div></div>
       <div class="actions">
         ${it.type==='photo'?`<button class="reel" onclick="openReel('${esc(it.url)}','${esc(it.name)}')">→ Reel</button>`:''}
@@ -390,7 +402,7 @@ async function confirmSaveCreation(){
   const usePriceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplUsePrice').value,10)||0,50)):0;
   const description=document.getElementById('ctplDesc').value.trim();
   const category=document.getElementById('ctplCat').value||'Custom';
-  const body=v=>JSON.stringify({name:name,description:description,category:category,type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,usePriceCredits:v==='public'?usePriceCredits:0,previewMedia:[it.url]});
+  const body=v=>JSON.stringify({name:name,description:description,category:category,type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,usePriceCredits:v==='public'?usePriceCredits:0,previewMedia:[it.url],sourceResultIdx:it.idx});
   const btn=document.getElementById('ctplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     let res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:body(pub?'public':'private')});

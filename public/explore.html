@@ -29,6 +29,11 @@
   .card .use.ghost{background:rgba(255,255,255,.14)}
   .card .rep{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:9px;padding:8px 9px;font-size:12px;cursor:pointer}
   .card .vbadge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px}
+  .card .like{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,background .15s,border-color .15s}
+  .card .like:hover{background:rgba(0,0,0,.72)}
+  .card .like:active{transform:scale(.88)}
+  .card .like .hrt{font-size:13px;line-height:1}
+  .card .like.on{color:#ff5a7a;border-color:rgba(255,90,122,.55)}
   .empty{text-align:center;color:var(--dim);padding:80px 20px}
   .empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px;font-family:'Sora'}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
@@ -93,9 +98,10 @@ function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
 function card(it){
+  const open=`onclick="location.href='/creation?idx=${it.idx}'" style="cursor:pointer"`;
   const media=it.type==='video'
-    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>`
-    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
+    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()" ${open}></video>`
+    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${open}>`;
   // CTA: 마켓 템플릿→구매 페이지(상세) / recipe 출처→레시피 프리셀렉트(무료) / 무템플릿→관람만(CTA 없음)
   let useBtn='';
   if(it.templateSource==='marketplace' && it.templateId)
@@ -104,14 +110,29 @@ function card(it){
     useBtn = `<button class="use" onclick="location.href='/studio?recipe='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'this template')}</button>`;
   // 무템플릿 = 관람만(홍보 가치 없음) → CTA 미표시
   const vbadge=it.type==='video'?'<span class="vbadge">▶ Reel</span>':'';
+  const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
   const by=it.creatorHandle
     ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}">${esc(it.creatorHandle)}</a>`
     : `<div class="by">@creator</div>`;
-  return `<div class="card">${vbadge}${media}
+  return `<div class="card">${vbadge}${like}${media}
     <div class="ov">
       ${by}
       <div class="row">${useBtn}<button class="rep" title="Report" onclick="reportResult(${it.idx})">⚐</button></div>
     </div></div>`;
+}
+async function toggleLike(idx,btn){
+  const on=btn.classList.contains('on');
+  btn.disabled=true;
+  try{
+    const r=await fetch('/api/generate/results/'+idx+'/like',{method:on?'DELETE':'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    btn.classList.toggle('on',d.data.liked);
+    btn.querySelector('.hrt').textContent=d.data.liked?'♥':'♡';
+    btn.querySelector('.lct').textContent=d.data.likes;
+    btn.title=d.data.liked?'Liked':'Like';
+  }catch(e){toast('Like failed: '+(e.message||e));}
+  finally{btn.disabled=false;}
 }
 
 async function load(){

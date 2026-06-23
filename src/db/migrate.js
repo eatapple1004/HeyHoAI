@@ -608,6 +608,31 @@ async function migrate() {
     );
   `);
 
+  // 공개 결과물(creation) 좋아요 — Explore 피드. 중복 좋아요는 PK로 차단(멱등).
+  // likes_count는 generation_results에 비정규화(인기순 정렬·크리에이터 대시보드용) → 토글 시 단일 CTE로 원자적 갱신.
+  await pool.query(`
+    ALTER TABLE generation_results ADD COLUMN IF NOT EXISTS likes_count INT NOT NULL DEFAULT 0;
+    CREATE TABLE IF NOT EXISTS result_likes (
+        result_idx   INT NOT NULL REFERENCES generation_results(idx) ON DELETE CASCADE,
+        user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (result_idx, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_result_likes_user ON result_likes(user_id, created_at DESC);
+  `);
+
+  // 크리에이터 팔로우 — follower_id가 creator_id를 팔로우. 자기 자신 금지(CHECK), 중복 PK 차단(멱등).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS follows (
+        follower_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        creator_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (follower_id, creator_id),
+        CHECK (follower_id <> creator_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_follows_creator ON follows(creator_id);
+  `);
+
   // reviews에 active 컬럼 추가 (소프트 삭제)
   await pool.query(`
     ALTER TABLE reviews ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
