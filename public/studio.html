@@ -154,9 +154,10 @@
   .recipe-card.premium .meta .cost{color:var(--dim);font-weight:500}
 
   /* add-ons (quality upsell · fast-lane · caption) */
-  .addons{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--border)}
-  .addon-label{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
-  .divider-v{width:1px;height:22px;background:var(--border)}
+  .addons{display:flex;align-items:flex-end;gap:15px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border)}
+  .addons .field{display:flex;flex-direction:column;gap:7px}
+  .addon-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  .divider-v{width:1px;height:32px;background:var(--border);align-self:center}
   .seg{display:inline-flex;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:3px}
   .seg button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .18s}
   .seg button.on{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff}
@@ -167,6 +168,78 @@
   .addon-toggle.on{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.45)}
   .addon-toggle.on i{color:var(--accent2)}
   .addon-lang{font-family:inherit;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:8px 10px;font-size:12.5px;cursor:pointer}
+
+  /* tool trigger + Models 카드 피커 (Leonardo식 인라인 팝오버) */
+  .tool-pop-wrap{position:relative;display:inline-flex}
+  .tool-trigger{font-family:inherit;display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:5px 11px 5px 5px;font-size:12.5px;font-weight:600;cursor:pointer;transition:border-color .16s}
+  .tool-trigger:hover,.tool-trigger.open{border-color:var(--accent)}
+  .tt-name{white-space:nowrap}
+  .tt-logo{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background-color:var(--surface);background-image:linear-gradient(135deg,color-mix(in srgb,var(--pc,#7c6cff) 36%,transparent),transparent)}
+  .tt-logo svg{width:15px;height:15px}
+  .tt-logo .tlogo-mono{font-size:11px}
+  .tt-chev{color:var(--faint);font-size:10px;margin-left:1px}
+  .tool-pop{position:absolute;top:calc(100% + 9px);left:0;z-index:60;width:392px;max-width:calc(100vw - 40px);max-height:64vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:16px;box-shadow:0 26px 64px -18px rgba(0,0,0,.78);display:none}
+  .tool-pop.open{display:block;animation:fadeUp .22s cubic-bezier(.2,.7,.3,1)}
+  .tool-pop-h{font-family:'Sora';font-size:14px;font-weight:700;margin-bottom:3px}
+  .tool-pop-sub{font-size:12px;color:var(--dim);margin-bottom:13px;line-height:1.45}
+  .tool-tabs{display:flex;gap:6px;margin-bottom:13px}
+  .ttab{font-family:inherit;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--dim);font-size:12.5px;font-weight:600;padding:7px 15px;border-radius:9px;cursor:pointer}
+  .ttab.on{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.45)}
+  .tool-list{display:flex;flex-direction:column;gap:9px}
+  .tool-card{font-family:inherit;text-align:left;display:flex;align-items:center;gap:13px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px 13px;cursor:pointer;transition:border-color .16s,background .16s;width:100%}
+  .tool-card:hover{border-color:var(--border2);background:rgba(255,255,255,.045)}
+  .tool-card.sel{border-color:var(--accent);background:rgba(124,108,255,.09)}
+  /* 메인 타일 = 컨셉 이미지 플레이스홀더 + 모서리 제공사 배지 */
+  .tcard-media{width:52px;height:52px;border-radius:13px;position:relative;flex-shrink:0;background-color:var(--surface);background-image:linear-gradient(150deg,color-mix(in srgb,var(--pc,#7c6cff) 42%,transparent),color-mix(in srgb,var(--pc,#7c6cff) 8%,transparent));border:1px solid var(--border2);display:flex;align-items:center;justify-content:center}
+  .tcard-glyph{color:rgba(255,255,255,.5);display:flex}
+  .tcard-glyph svg{width:22px;height:22px}
+  .tcard-pbadge{position:absolute;bottom:-5px;right:-5px;width:21px;height:21px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center}
+  .tcard-pbadge svg{width:13px;height:13px}
+  .tcard-pbadge .tlogo-mono{font-size:9.5px}
+  .tlogo-mono{font-family:'Sora';font-weight:800;color:#fff}
+  .tcard-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .tcard-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .tcard-top b{font-size:14px;font-weight:700;color:var(--text)}
+  .tcard-prov{font-size:11.5px;color:var(--faint)}
+  .tcard-desc{font-size:12.5px;color:var(--dim);line-height:1.45}
+  .tcard-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .tbadge{font-size:10.5px;font-weight:700;letter-spacing:.3px;padding:3px 8px;border-radius:7px;background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border)}
+  .tbadge.img{color:var(--accent2);background:rgba(124,108,255,.14);border-color:rgba(124,108,255,.3)}
+  .tbadge.vid{color:var(--cyan);background:rgba(94,224,214,.14);border-color:rgba(94,224,214,.3)}
+  .tcard-check{color:var(--accent2);font-size:16px;flex-shrink:0}
+  .tool-empty{color:var(--faint);font-size:13px;padding:22px;text-align:center}
+  /* ratio · size 시각 선택 (Leonardo식) */
+  .viz-grid{display:inline-flex;gap:7px;flex-wrap:wrap;align-items:flex-end}
+  /* 균일 박스(Leonardo식) — 박스 크기는 고정, 안의 비율 사각형만 변함 */
+  .viz-btn{font-family:inherit;width:62px;min-height:62px;box-sizing:border-box;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:11px;padding:8px 5px;cursor:pointer;transition:border-color .15s,background .15s}
+  .viz-btn:hover{border-color:var(--border2)}
+  .viz-btn.on{border-color:var(--accent);background:rgba(124,108,255,.12)}
+  .viz-icwrap{height:24px;display:flex;align-items:center;justify-content:center}
+  .viz-ic{display:block;border:1.6px solid var(--dim);border-radius:2px}
+  .viz-btn.on .viz-ic{border-color:var(--accent2)}
+  .viz-lbl{font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:.2px}
+  .viz-btn.on .viz-lbl{color:var(--accent2)}
+  .viz-sub{font-size:8.5px;font-weight:600;color:var(--faint);letter-spacing:.1px;white-space:nowrap}
+  .viz-btn.on .viz-sub{color:var(--accent2)}
+  /* size 박스: 동일 크기, 내부 네모 없이 텍스트(티어 + 해결된 W×H) */
+  .viz-btn.size-btn{gap:4px}
+  /* ratio: 인라인 3개 + Custom 패널(>3일 때) */
+  .ratio-wrap{position:relative;display:inline-flex}
+  .viz-ic-more{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border:1.6px dashed var(--dim);border-radius:3px;color:var(--dim);font-size:12px;line-height:1}
+  .viz-btn.ratio-more.on .viz-ic-more{border-color:var(--accent2);color:var(--accent2)}
+  .opt-pop{position:absolute;top:calc(100% + 9px);left:0;z-index:60;width:300px;max-width:calc(100vw - 40px);background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:15px;box-shadow:0 26px 64px -18px rgba(0,0,0,.78);display:none}
+  .opt-pop.open{display:block;animation:fadeUp .2s cubic-bezier(.2,.7,.3,1)}
+  .ratio-panel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
+  .rp-btn{font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:11px;padding:13px 6px 9px;cursor:pointer;transition:border-color .15s,background .15s}
+  .rp-btn:hover{border-color:var(--border2)}
+  .rp-btn.on{border-color:var(--accent);background:rgba(124,108,255,.12)}
+  .rp-ic{border:1.6px solid var(--dim);border-radius:2px}
+  .rp-btn.on .rp-ic{border-color:var(--accent2)}
+  .rp-r{font-size:11.5px;font-weight:700;color:var(--text)}
+  .rp-o{font-size:9px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.4px}
+  /* Private Mode 잠금(비구독자) */
+  .priv-lock{font-size:11px;opacity:.85}
+  #privateToggle.locked{opacity:.7}
 
   /* caption result block */
   .caption-box{margin-top:18px;border:1px solid var(--border);border-radius:14px;padding:16px 18px;background:linear-gradient(180deg,rgba(124,108,255,.06),transparent)}
@@ -344,42 +417,56 @@
 
 <div class="gen-bar">
   <div class="addons" id="addonsRow">
-    <span class="addon-label" id="typeLabel" style="display:none">Type</span>
-    <div class="seg" id="typeSeg" style="display:none">
-      <button class="on" data-type="image" onclick="pickType('image')">Image</button>
-      <button data-type="video" onclick="pickType('video')">Video</button>
+    <div class="field" id="modelField" style="display:none">
+      <span class="addon-label">Model</span>
+      <select id="toolSel" style="display:none" onchange="pickTool()"><!-- hidden value store --></select>
+      <span class="tool-pop-wrap" id="toolPopWrap">
+        <button type="button" class="tool-trigger" id="toolTrigger" onclick="toggleToolPop(event)"><span class="tt-logo" id="ttLogo"></span><span class="tt-name" id="ttName">Nano Banana Pro</span><span class="tt-chev">▾</span></button>
+        <div class="tool-pop" id="toolPop">
+          <div class="tool-pop-h">Models</div>
+          <div class="tool-pop-sub">Pick a generation engine — each tool has different inputs &amp; options.</div>
+          <div class="tool-tabs" id="toolTabs"></div>
+          <div class="tool-list" id="toolList"></div>
+        </div>
+      </span>
     </div>
-    <span class="addon-label" id="toolLabel" style="display:none">Tool</span>
-    <select id="toolSel" class="addon-lang" style="display:none" onchange="pickTool()"><!-- renderToolPicker()가 선택 타입의 툴만 채움 --></select>
-    <span class="addon-label" id="durLabel" style="display:none">Length</span>
-    <select id="durSel" class="addon-lang" style="display:none" onchange="updateBar()">
-      <option value="5">5s</option>
-      <option value="10">10s</option>
-    </select>
-    <span class="addon-label" id="qualityLabel" style="display:none">Quality</span>
-    <select id="qualitySel" class="addon-lang" style="display:none" onchange="updateBar()"><!-- 스키마가 채움 --></select>
-    <span class="addon-label" id="aspectLabel" style="display:none">Ratio</span>
-    <select id="aspectSel" class="addon-lang" style="display:none">
-      <option value="3:4">3:4 Portrait</option>
-      <option value="1:1">1:1 Square</option>
-      <option value="4:3">4:3 Landscape</option>
-      <option value="9:16">9:16 Story</option>
-      <option value="16:9">16:9 Wide</option>
-    </select>
-    <span class="addon-label" id="sizeLabel" style="display:none">Size</span>
-    <select id="sizeSel" class="addon-lang" style="display:none">
-      <option value="1K">1K</option>
-      <option value="2K">2K</option>
-    </select>
-    <span class="addon-label" id="countLabel" style="display:none">Count</span>
-    <select id="countSel" class="addon-lang" style="display:none" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+    <div class="field" id="durField" style="display:none">
+      <span class="addon-label">Length</span>
+      <select id="durSel" class="addon-lang" onchange="updateBar()"><option value="5">5s</option><option value="10">10s</option></select>
+    </div>
+    <div class="field" id="qualityField" style="display:none">
+      <span class="addon-label">Quality</span>
+      <select id="qualitySel" class="addon-lang" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+    </div>
+    <div class="field" id="ratioField" style="display:none">
+      <span class="addon-label">Ratio</span>
+      <select id="aspectSel" style="display:none"><option value="3:4">3:4</option><option value="1:1">1:1</option><option value="4:3">4:3</option><option value="9:16">9:16</option><option value="16:9">16:9</option></select>
+      <span class="ratio-wrap" id="ratioWrap">
+        <span class="viz-grid" id="ratioGrid"></span>
+        <div class="opt-pop" id="ratioPanel">
+          <div class="tool-pop-h">Aspect ratio</div>
+          <div class="ratio-panel-grid" id="ratioPanelGrid"></div>
+        </div>
+      </span>
+    </div>
+    <div class="field" id="sizeField" style="display:none">
+      <span class="addon-label">Size</span>
+      <select id="sizeSel" style="display:none"><option value="1K">1K</option><option value="2K">2K</option></select>
+      <div class="viz-grid" id="sizeGrid"></div>
+    </div>
+    <div class="field" id="countField" style="display:none">
+      <span class="addon-label">Count</span>
+      <select id="countSel" class="addon-lang" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+    </div>
     <button type="button" class="addon-toggle" id="audioWrap" style="display:none" onclick="toggleAudio(this)">Audio <span class="bk-on hidden" id="audioOnBadge">ON</span></button>
-    <span class="addon-label" id="modelLabel">Model</span>
-    <div class="seg" id="qualitySeg">
-      <button data-q="std" data-m="flash" data-flag="model-flash" onclick="pickQuality(this)">Gemini Flash</button>
-      <button class="on" data-q="hd" data-m="pro" onclick="pickQuality(this)">Gemini Pro <i>+1</i></button>
-      <button data-q="hd" data-m="gpt-image-2" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image <i>+1</i></button>
-      <button data-q="4k" data-m="gpt-image-2-high" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image HD <i>+2</i></button>
+    <div class="field" id="legacyModelField">
+      <span class="addon-label">Model</span>
+      <div class="seg" id="qualitySeg">
+        <button data-q="std" data-m="flash" data-flag="model-flash" onclick="pickQuality(this)">Gemini Flash</button>
+        <button class="on" data-q="hd" data-m="pro" onclick="pickQuality(this)">Gemini Pro <i>+1</i></button>
+        <button data-q="hd" data-m="gpt-image-2" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image <i>+1</i></button>
+        <button data-q="4k" data-m="gpt-image-2-high" data-flag="model-gpt" onclick="pickQuality(this)">GPT Image HD <i>+2</i></button>
+      </div>
     </div>
     <span class="divider-v" data-flag="caption"></span>
     <button class="addon-toggle" id="aCaption" data-flag="caption" onclick="toggleCaption(this)">Caption + hashtags <i>+1</i></button>
@@ -387,7 +474,7 @@
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
     <span class="divider-v"></span>
-    <button class="addon-toggle on" id="privateToggle" onclick="togglePrivate(this)" title="ON = your creation appears in the community Explore feed · OFF = private (only you)">🌐 Public <span class="bk-on" id="pubBadge">ON</span></button>
+    <button class="addon-toggle locked" id="privateToggle" onclick="togglePrivate(this)" title="Private Mode — keep this creation off the public Explore feed. Subscribers only; off by default (public).">Private Mode <span class="bk-on hidden" id="privBadge">ON</span><span class="priv-lock" id="privLock">🔒</span></button>
   </div>
   <div class="prompt-row" id="promptRow">
     <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
@@ -408,6 +495,9 @@
     </div>
   </div>
 </div>
+
+<!-- 제공사 로고 그라데이션 defs (Gemini spark) — 인라인 SVG 로고가 참조 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gmnGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285F4"/><stop offset=".45" stop-color="#9168c9"/><stop offset="1" stop-color="#e0689a"/></linearGradient></defs></svg>
 
 <div class="modal-bg" id="brandkitModal" onclick="if(event.target===this)closeBrandkit()">
   <div class="modal">
@@ -722,7 +812,7 @@ let TOOLS_CACHE=FALLBACK_TOOLS; // 동기 기본 → loadTools()가 서버 정�
 async function loadTools(){
   try{
     const d=await(await fetch('/api/generate/tools')).json();
-    if(d&&d.success&&d.data){TOOLS_CACHE=d.data;if(state.mode==='custom'){renderToolPicker();applyToolSchema();updateBar();}}
+    if(d&&d.success&&d.data){TOOLS_CACHE=d.data;if(state.mode==='custom'){renderToolPicker();applyToolSchema();updateBar();}const _p=document.getElementById('toolPop');if(_p&&_p.classList.contains('open'))renderToolModal();}
   }catch(e){/* 서버 없으면 FALLBACK 유지 */}
 }
 function allTools(){return [...(TOOLS_CACHE.image||[]),...(TOOLS_CACHE.video||[])];}
@@ -730,13 +820,9 @@ function toolById(id){return allTools().find(t=>t.id===id)||null;}
 function curTool(){const s=document.getElementById('toolSel');return s&&s.value?s.value:'nano-banana-pro';}
 // 타입(이미지/비디오)을 "먼저" 고르는 세그(Leonardo식) → 그 타입의 툴만 드롭다운에 노출.
 function videoAvailable(){return (TOOLS_CACHE.video||[]).length>0;} // 카탈로그(=레지스트리 enabled)에 비디오 툴 있으면 노출
-function curType(){const b=document.querySelector('#typeSeg .on');return b?b.dataset.type:'image';}
+// Type 세그 제거(Leonardo식) — 타입은 선택한 모델에서 자동 도출. Model 팝오버의 Image/Video 탭으로 전환.
+function curType(){const t=toolById(curTool());return (t&&t.type==='video')?'video':'image';}
 function curToolType(){return state.mode==='custom'?curType():'image';}
-function pickType(t){
-  if(t==='video'&&!videoAvailable())t='image';
-  document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.type===t));
-  renderToolPicker();applyToolSchema();renderSubjects();updateBar(); // 타입 변경 → 이미지 슬롯도 갱신
-}
 // 영상 생성 여부: 템플릿 reel이거나, Custom에서 Video 타입
 function isVideoGen(){const r=curRecipe();if(r)return r.type==='reel';return state.mode==='custom'&&curType()==='video';}
 function pickTool(){applyToolSchema();renderSubjects();updateBar();}
@@ -752,19 +838,14 @@ function negText(){const el=document.getElementById('negPrompt');return el?el.va
 function audioOn(){const b=document.getElementById('audioWrap');return !!(b&&b.classList.contains('on'));}
 function toggleAudio(b){b.classList.toggle('on');const bd=document.getElementById('audioOnBadge');if(bd)bd.classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
 // (끝프레임은 이미지 슬롯 팝오버로 이동 — 별도 컨트롤 제거)
-// Type 세그(비디오 툴 없으면 Video 버튼 숨김) + 선택 타입의 툴만 드롭다운에 채움.
+// 선택 타입(=현재 모델의 타입)의 툴로 hidden toolSel 옵션을 채움(값 저장소). 카드 목록은 팝오버가 별도 렌더.
 function renderToolPicker(){
   const sel=document.getElementById('toolSel');if(!sel)return;
-  const vBtn=document.querySelector('#typeSeg [data-type="video"]');
-  if(vBtn)vBtn.style.display=videoAvailable()?'':'none';
-  if(curType()==='video'&&!videoAvailable()){
-    const ib=document.querySelector('#typeSeg [data-type="image"]'),vb=document.querySelector('#typeSeg [data-type="video"]');
-    if(ib)ib.classList.add('on');if(vb)vb.classList.remove('on');
-  }
   const list=(curType()==='video'?(TOOLS_CACHE.video||[]):(TOOLS_CACHE.image||[]));
   const cur=sel.value;
   sel.innerHTML=list.map(t=>`<option value="${t.id}" data-model="${t.model}">${t.label}</option>`).join('');
   sel.value=[...sel.options].some(o=>o.value===cur)?cur:(list[0]?list[0].id:'nano-banana-pro');
+  refreshToolTrigger();
 }
 const COUNT_OPTS=[1,2,3,4,5,6,7,8]; // 결과 장수 = 유저 선택(전 모드·이미지). 템플릿=1룩 × count 변형.
 // 선택 툴의 controls 스키마로 폼을 그림(표시 토글 + 옵션 채움). 새 툴 = 레지스트리 한 줄.
@@ -776,14 +857,155 @@ function applyToolSchema(){
   const fill=(id,vals,fmt,def)=>{const s=document.getElementById(id);if(!s||!vals)return;const cur=s.value;
     s.innerHTML=vals.map(v=>{const val=(v&&v.value!==undefined)?v.value:v;const txt=(v&&v.label!==undefined)?v.label:(fmt?fmt(val):val);return `<option value="${val}">${txt}</option>`;}).join('');
     const has=x=>[...s.options].some(o=>o.value==x);s.value=has(cur)?cur:(def!=null&&has(def)?String(def):s.value);};
-  sh('aspectLabel',!!c.aspectRatio);sh('aspectSel',!!c.aspectRatio);fill('aspectSel',c.aspectRatio);
-  sh('sizeLabel',!!c.imageSize);sh('sizeSel',!!c.imageSize);fill('sizeSel',c.imageSize);
+  fill('aspectSel',c.aspectRatio);sh('ratioField',!!c.aspectRatio);renderRatioGrid(c.aspectRatio);
+  fill('sizeSel',c.imageSize);sh('sizeField',!!c.imageSize);renderSizeGrid(c.imageSize);
   const imgGen=!isVideoGen(); // 영상이 아니면 이미지 → count 전 모드 노출(1~8, 기본 4)
-  sh('countLabel',imgGen);sh('countSel',imgGen);if(imgGen)fill('countSel',COUNT_OPTS,null,4);
-  sh('durLabel',!!c.duration);sh('durSel',!!c.duration);fill('durSel',c.duration,v=>v+'s');
-  sh('qualityLabel',!!c.quality);sh('qualitySel',!!c.quality);fill('qualitySel',c.quality);
+  sh('countField',imgGen);if(imgGen)fill('countSel',COUNT_OPTS,null,4);
+  sh('durField',!!c.duration);fill('durSel',c.duration,v=>v+'s');
+  sh('qualityField',!!c.quality);fill('qualitySel',c.quality);
   sh('audioWrap',!!c.audio);                  // 오디오(토글)
   sh('negRow',!!c.negative);
+}
+
+// ── Models 카드 피커 (Leonardo식) ──────────────────────────────
+// 제공사 = 제조사 브랜드. logo = 인라인 마크(Gemini는 정식 그라데이션 spark, 그 외는 모노그램 — 공식 SVG로 교체 가능).
+const _MONO=(ch)=>`<span class="tlogo-mono">${ch}</span>`;
+const GEMINI_SVG='<svg viewBox="0 0 24 24"><path d="M12 0C12 6.6 6.6 12 0 12C6.6 12 12 17.4 12 24C12 17.4 17.4 12 24 12C17.4 12 12 6.6 12 0Z" fill="url(#gmnGrad)"/></svg>';
+// 메인 타일 플레이스홀더 글리프(컨셉 이미지/영상이 들어오기 전까지) — image / video
+const IMG_GLYPH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>';
+const VID_GLYPH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>';
+const PROVIDER={
+  google:{name:'Google Gemini',color:'#4285F4',logo:GEMINI_SVG},
+  openai:{name:'OpenAI',color:'#0fa37f',logo:_MONO('AI')},
+  kling:{name:'Kling AI',color:'#8b5cf6',logo:_MONO('K')},
+  bfl:{name:'Black Forest Labs',color:'#fb6b6b',logo:_MONO('F')},
+  runway:{name:'Runway',color:'#cfd2dc',logo:_MONO('R')},
+  _default:{name:'Doppia',color:'#7c6cff',logo:_MONO('·')},
+};
+// 툴 id → 제공사 + 한 줄 설명(프론트 카피). 능력 배지는 스키마에서 자동 도출하므로 여기 안 적음.
+const TOOL_META={
+  'nano-banana-pro':{provider:'google',desc:'Highest-fidelity image model. References your face or product, up to 2K, 1–8 at once.'},
+  'nano-banana':{provider:'google',desc:'Faster generation and sharper edits. References your face or product.'},
+  'gpt-image':{provider:'openai',desc:'Polished compositions and creative direction from simple prompts.'},
+  'gpt-image-hd':{provider:'openai',desc:'GPT Image at higher resolution — production-ready output.'},
+  'flux-pro':{provider:'bfl',desc:'Photoreal detail with strong prompt adherence.'},
+  'kling':{provider:'kling',desc:'Image-to-video. Start/end frames, up to 10s, with audio.'},
+  'runway':{provider:'runway',desc:'Fast image-to-video from a start frame.'},
+};
+function provInfo(id){const m=TOOL_META[id]||{};return PROVIDER[m.provider]||PROVIDER._default;}
+// 능력 배지 = 스키마(controls·imageSlots)에서 도출 (툴마다 자동으로 달라짐)
+function badgesFor(t){
+  const c=t.controls||{},sl=t.imageSlots||[],out=[];
+  out.push(t.type==='video'?{label:'Video',cls:'vid'}:{label:'Image',cls:'img'});
+  if(sl.some(s=>s.key==='reference'))out.push({label:'Image Ref'});
+  if(sl.some(s=>s.key==='startFrame'))out.push({label:'Start / End frame'});
+  if(c.imageSize&&c.imageSize.includes('2K'))out.push({label:'2K'});
+  if(c.duration&&c.duration.length)out.push({label:c.duration[0]+'–'+c.duration[c.duration.length-1]+'s'});
+  if(c.audio)out.push({label:'Audio'});
+  return out;
+}
+let toolModalTab='image';
+// 인라인 팝오버(Leonardo식) — 트리거 옆에서 펼쳐짐. 전체화면 모달 아님.
+function toggleToolPop(ev){if(ev)ev.stopPropagation();const p=document.getElementById('toolPop');if(!p)return;
+  if(p.classList.contains('open')){closeToolPop();return;}
+  toolModalTab=curType();renderToolModal();p.classList.add('open');
+  const t=document.getElementById('toolTrigger');if(t)t.classList.add('open');}
+function closeToolPop(){const p=document.getElementById('toolPop');if(p)p.classList.remove('open');const t=document.getElementById('toolTrigger');if(t)t.classList.remove('open');}
+function setToolTab(t){toolModalTab=t;renderToolModal();}
+document.addEventListener('click',function(e){const p=document.getElementById('toolPop');if(p&&p.classList.contains('open')&&!e.target.closest('.tool-pop-wrap'))closeToolPop();});
+function toolCardHTML(t,sel){
+  const pv=provInfo(t.id),m=TOOL_META[t.id]||{};
+  const badges=badgesFor(t).map(b=>`<span class="tbadge ${b.cls||''}">${esc(b.label)}</span>`).join('');
+  // 메인 타일 = 컨셉 이미지 플레이스홀더(글리프) + 모서리 제공사 배지
+  const media=`<span class="tcard-media" style="--pc:${pv.color}"><span class="tcard-glyph">${t.type==='video'?VID_GLYPH:IMG_GLYPH}</span><span class="tcard-pbadge">${pv.logo}</span></span>`;
+  return `<button type="button" class="tool-card${sel?' sel':''}" onclick="selectTool('${t.id}')">`
+    +media
+    +`<span class="tcard-body"><span class="tcard-top"><b>${esc(t.label)}</b><span class="tcard-prov">${esc(pv.name)}</span></span>`
+    +`<span class="tcard-desc">${esc(m.desc||'')}</span><span class="tcard-badges">${badges}</span></span>`
+    +(sel?'<span class="tcard-check">✓</span>':'')+`</button>`;
+}
+function renderToolModal(){
+  const tabs=document.getElementById('toolTabs');if(!tabs)return;
+  const hasVid=videoAvailable();
+  tabs.innerHTML=`<button class="ttab${toolModalTab==='image'?' on':''}" onclick="setToolTab('image')">Image</button>`
+    +(hasVid?`<button class="ttab${toolModalTab==='video'?' on':''}" onclick="setToolTab('video')">Video</button>`:'');
+  const list=(toolModalTab==='video'?(TOOLS_CACHE.video||[]):(TOOLS_CACHE.image||[]));
+  const cur=curTool();
+  document.getElementById('toolList').innerHTML=list.length?list.map(t=>toolCardHTML(t,t.id===cur)).join(''):'<div class="tool-empty">No models available.</div>';
+}
+// 툴 확정 + 폼/슬롯/트리거 갱신. ⚠️ hidden <select>는 존재하는 option에만 value가 설정되므로,
+// 그 툴의 타입(toolById로 직접 판정) 목록을 먼저 채운 뒤 value를 박아야 타입 전환(이미지↔영상)이 먹는다.
+function applyTool(id){
+  const t=toolById(id);
+  const sel=document.getElementById('toolSel');
+  if(sel){
+    const list=(t&&t.type==='video')?(TOOLS_CACHE.video||[]):(TOOLS_CACHE.image||[]);
+    sel.innerHTML=list.map(x=>`<option value="${x.id}" data-model="${x.model}">${x.label}</option>`).join('');
+    sel.value=id;
+  }
+  applyToolSchema();renderSubjects();refreshToolTrigger();updateBar();
+}
+function selectTool(id){const t=toolById(id);if(!t)return;applyTool(id);closeToolPop();}
+// ratio · size 시각 선택(Leonardo식) — 값은 hidden select에 저장, 버튼은 시각 레이어
+let _ratioVals=[];
+const RATIO_PRIMARY=['3:4','1:1','16:9']; // 인라인 우선 노출(>3개면 나머지는 Custom 패널)
+function ratioRect(v,box){const p=String(v).split(':').map(Number),w=p[0]||1,h=p[1]||1,mx=Math.max(w,h);return {w:Math.max(8,Math.round(box*w/mx)),h:Math.max(8,Math.round(box*h/mx))};}
+function ratioBtnHTML(v,on){const r=ratioRect(v,18);return `<button type="button" class="viz-btn${on?' on':''}" onclick="pickRatio('${v}')" title="${v}"><span class="viz-icwrap"><span class="viz-ic" style="width:${r.w}px;height:${r.h}px"></span></span><span class="viz-lbl">${v}</span></button>`;}
+function ratioOrient(v){const p=String(v).split(':').map(Number),w=p[0]||1,h=p[1]||1;return w>h?'Landscape':w<h?'Portrait':'Square';}
+function renderRatioGrid(vals){
+  const g=document.getElementById('ratioGrid');if(!g)return;
+  _ratioVals=vals||[];
+  if(!_ratioVals.length){g.innerHTML='';return;}
+  const sel=document.getElementById('aspectSel');let cur=sel?sel.value:'';
+  if(!_ratioVals.includes(cur)){cur=_ratioVals[0];if(sel)sel.value=cur;}
+  if(_ratioVals.length<=3){
+    g.innerHTML=_ratioVals.map(v=>ratioBtnHTML(v,v===cur)).join('');
+  }else{ // 3개 인라인 + Custom(나머지는 패널)
+    let inline=RATIO_PRIMARY.filter(v=>_ratioVals.includes(v));
+    inline=(inline.length>=3?inline:inline.concat(_ratioVals.filter(v=>!inline.includes(v)))).slice(0,3);
+    const curOutside=!inline.includes(cur);
+    g.innerHTML=inline.map(v=>ratioBtnHTML(v,v===cur)).join('')
+      +`<button type="button" class="viz-btn ratio-more${curOutside?' on':''}" onclick="openRatioPanel(event)" title="More ratios"><span class="viz-icwrap"><span class="viz-ic-more">⋯</span></span><span class="viz-lbl">${curOutside?cur:'Custom'}</span></button>`;
+  }
+}
+function renderRatioPanel(){
+  const grid=document.getElementById('ratioPanelGrid');if(!grid)return;
+  const cur=(document.getElementById('aspectSel')||{}).value;
+  grid.innerHTML=_ratioVals.map(v=>{const r=ratioRect(v,24);
+    return `<button type="button" class="rp-btn${v===cur?' on':''}" onclick="pickRatio('${v}',true)"><span class="rp-ic" style="width:${r.w}px;height:${r.h}px"></span><span class="rp-r">${v}</span><span class="rp-o">${ratioOrient(v)}</span></button>`;}).join('');
+}
+function openRatioPanel(ev){if(ev)ev.stopPropagation();const p=document.getElementById('ratioPanel');if(!p)return;if(p.classList.contains('open')){closeRatioPanel();return;}renderRatioPanel();p.classList.add('open');}
+function closeRatioPanel(){const p=document.getElementById('ratioPanel');if(p)p.classList.remove('open');}
+function pickRatio(v,fromPanel){const sel=document.getElementById('aspectSel');if(sel)sel.value=v;renderRatioGrid(_ratioVals);renderSizeGrid(_sizeVals);if(fromPanel)closeRatioPanel();updateBar();}
+document.addEventListener('click',function(e){const p=document.getElementById('ratioPanel');if(p&&p.classList.contains('open')&&!e.target.closest('.ratio-wrap'))closeRatioPanel();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeToolPop();closeRatioPanel();}});
+// 해결된 출력 치수 = 티어 메가픽셀 예산을 비율에 맞춰 분배(1:1은 Google 공식값 1024²/2048²/4096²에 앵커, /16 반올림).
+// Leonardo가 치수를 산출하는 방식과 동일(예산 보존+반올림). 실제 모델 출력이 몇 px 반올림될 수 있음.
+const TIER_PX={'1K':1024,'2K':2048,'4K':4096}; // 1:1 롱에지(=공식값) → 예산 = px²
+function dimsFor(aspect,tier){
+  const base=TIER_PX[tier]||1024, budget=base*base;
+  const p=String(aspect||'1:1').split(':').map(Number),a=p[0]||1,b=p[1]||1;
+  const r16=n=>Math.max(16,Math.round(Math.sqrt(n)/16)*16);
+  return {w:r16(budget*a/b), h:r16(budget*b/a)};
+}
+let _sizeVals=[];
+function renderSizeGrid(vals){
+  const g=document.getElementById('sizeGrid');if(!g)return;
+  _sizeVals=vals||[];
+  if(!_sizeVals.length){g.innerHTML='';return;}
+  const sel=document.getElementById('sizeSel');let cur=sel?sel.value:'';
+  if(!_sizeVals.includes(cur)){cur=_sizeVals[0];if(sel)sel.value=cur;}
+  const aspect=curAspect()||'1:1';
+  g.innerHTML=_sizeVals.map(v=>{const d=dimsFor(aspect,v);
+    return `<button type="button" class="viz-btn size-btn${v===cur?' on':''}" onclick="pickSize('${v}')" title="${v} · ${d.w}×${d.h}"><span class="viz-lbl">${v}</span><span class="viz-sub">${d.w}×${d.h}</span></button>`;}).join('');
+}
+function pickSize(v){const sel=document.getElementById('sizeSel');if(sel)sel.value=v;renderSizeGrid([...sel.options].map(o=>o.value));updateBar();}
+// 트리거 버튼(제공사 로고 + 현재 모델명) 갱신
+function refreshToolTrigger(){
+  const t=toolById(curTool())||{},pv=provInfo(t.id||'');
+  const lg=document.getElementById('ttLogo'),nm=document.getElementById('ttName');
+  if(lg){lg.innerHTML=pv.logo;lg.style.setProperty('--pc',pv.color);}
+  if(nm)nm.textContent=t.label||'Select model';
 }
 async function doEnhance(){
   const el=document.getElementById('extraPrompt');
@@ -812,8 +1034,29 @@ function toggleOptions(){
 }
 function captionOn(){return document.getElementById('aCaption').classList.contains('on');}
 // 자동 공개: Public 토글 ON(기본)=공개, OFF=비공개
-function privateOn(){const b=document.getElementById('privateToggle');return !!(b&&!b.classList.contains('on'));}
-function togglePrivate(b){b.classList.toggle('on');const on=b.classList.contains('on');const bd=document.getElementById('pubBadge');if(bd)bd.textContent=on?'ON':'OFF';}
+// Private Mode = 결과 비공개(구독자 전용). 기본 OFF=공개. ON일 때만 백엔드에 privateMode 전송(서버도 게이트).
+let SUB={plan:'free',canPrivate:false};
+async function loadSubscription(){
+  try{const d=await(await fetch('/api/subscription')).json();
+    if(d&&d.success&&d.data){const e=d.data.entitlements||{};
+      SUB.plan=d.data.plan||'free';
+      SUB.canPrivate=(typeof e.privateMode!=='undefined')?!!e.privateMode:(SUB.plan!=='free');}
+  }catch(e){/* 비로그인/오류 → 비구독 취급 */}
+  refreshPrivateToggle();
+}
+function privateOn(){const b=document.getElementById('privateToggle');return !!(b&&b.classList.contains('on')&&SUB.canPrivate);}
+function refreshPrivateToggle(){
+  const b=document.getElementById('privateToggle');if(!b)return;
+  const lock=document.getElementById('privLock'),badge=document.getElementById('privBadge');
+  if(!SUB.canPrivate){b.classList.remove('on');b.classList.add('locked');if(lock)lock.classList.remove('hidden');if(badge)badge.classList.add('hidden');}
+  else{b.classList.remove('locked');if(lock)lock.classList.add('hidden');if(badge)badge.classList.toggle('hidden',!b.classList.contains('on'));}
+}
+function togglePrivate(b){
+  if(!SUB.canPrivate){openUpgradeForPrivate();return;}
+  b.classList.toggle('on');
+  const badge=document.getElementById('privBadge');if(badge)badge.classList.toggle('hidden',!b.classList.contains('on'));
+}
+function openUpgradeForPrivate(){toast('🔒 Private Mode is a subscriber feature — upgrade your plan to keep creations private.','error');}
 // 출처 템플릿 attribution(결과→템플릿 링크): 빌트인 레시피 우선, 없으면 마켓 Try 템플릿
 function attribution(){const r=curRecipe();if(r&&r.id)return {templateId:String(r.id),templateSource:r.source==='marketplace'?'marketplace':'recipe'};if(state.tryTemplateId)return {templateId:String(state.tryTemplateId),templateSource:'marketplace'};return {templateId:'',templateSource:''};}
 function toggleCaption(b){b.classList.toggle('on');
@@ -919,12 +1162,8 @@ function setMode(m,initialVertical){
   const ep=document.getElementById('extraPrompt');
   if(ep)ep.placeholder=custom?'Describe what you want to create — your prompt drives the result':'Add a prompt (optional) — leave empty to use the template only';
   // Custom: 모델 픽커 → 타입 세그(Image|Video) + 툴 픽커로 교체 + Save as template 노출
-  document.getElementById('typeLabel').style.display=custom?'':'none';
-  document.getElementById('typeSeg').style.display=custom?'':'none';
-  document.getElementById('toolLabel').style.display=custom?'':'none';
-  document.getElementById('toolSel').style.display=custom?'':'none';
-  document.getElementById('modelLabel').style.display=custom?'none':'';
-  document.getElementById('qualitySeg').style.display=custom?'none':'';
+  document.getElementById('modelField').style.display=custom?'':'none';
+  document.getElementById('legacyModelField').style.display=custom?'none':'';
   document.getElementById('enhanceBtn').style.display=(custom&&(!window.featureOn||window.featureOn('enhance')))?'':'none'; // 첫 출시 숨김(flags: enhance)
   // Custom 풀 컨트롤: 툴 픽커(type 그룹) + 툴 타입별 컨트롤(이미지=비율/해상도/네거티브, 비디오=길이)
   renderToolPicker();
@@ -1082,7 +1321,7 @@ function pickRecipe(id){
   state.recipeId=(state.recipeId===id?null:id); // 같은 카드 재클릭 시 선택 해제(토글)
   // 보유 마켓 템플릿(자기 tool 보유) 선택 시 → 그 tool 적용(applyTryTemplate와 동일 패턴). 일반 recipe는 기본 유지.
   const r=curRecipe();
-  if(r&&r.source==='marketplace'&&r.tool){const tt=toolById(r.tool);const ts=document.getElementById('toolSel');if(ts&&tt){pickType(tt.type);ts.value=r.tool;applyToolSchema();}}
+  if(r&&r.source==='marketplace'&&r.tool){const tt=toolById(r.tool);if(tt)applyTool(r.tool);}
   renderRecipes();updateBar();
 }
 
@@ -1562,7 +1801,7 @@ function applyTryTemplate(){
     const ep=document.getElementById('extraPrompt');
     if(ep&&t.prompt){ep.value=t.prompt; const c=document.getElementById('extraClear'); if(c)c.classList.remove('hidden');}
     const tt=toolById(t.tool); const ts=document.getElementById('toolSel');
-    if(ts&&t.tool&&tt){pickType(tt.type);ts.value=t.tool;applyToolSchema();}
+    if(ts&&t.tool&&tt){applyTool(t.tool);}
     updateBar();
     if(window.toast)toast('Template loaded — pick a reference and generate');
     return true;
@@ -1572,6 +1811,7 @@ if(!applyTryTemplate() && !bootRecipe() && !bootFromUrl()) setMode('influencer')
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',function(){mergeOwnedTemplates();applyRecipeGates();});else {mergeOwnedTemplates();applyRecipeGates();}
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
+loadSubscription(); // 구독 상태 → Private Mode 게이트
 loadSubjects();
 loadCredits();
 loadBrandkit();

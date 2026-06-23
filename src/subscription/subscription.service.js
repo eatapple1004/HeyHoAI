@@ -65,6 +65,7 @@ async function getSubscription(reqUser, nowMs) {
       watermarkFree: ent.watermarkFree,
       hd: ent.hd,
       commercial: ent.commercial,
+      privateMode: ent.privateMode,
     },
     renewsAt: row.plan_renews_at || null,
     offer,

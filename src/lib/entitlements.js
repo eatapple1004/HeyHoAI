@@ -7,10 +7,11 @@
 
 // 플랜별 권한 정의 (서버측 단일 소스)
 const PLANS = {
-  free:    { name: 'Free',    rank: 0, monthlyCredits: 10,   watermarkFree: false, hd: false, commercial: false },
-  creator: { name: 'Creator', rank: 1, monthlyCredits: 250,  watermarkFree: true,  hd: true,  commercial: false },
-  pro:     { name: 'Pro',     rank: 2, monthlyCredits: 600,  watermarkFree: true,  hd: true,  commercial: false },
-  brand:   { name: 'Brand',   rank: 3, monthlyCredits: 1400, watermarkFree: true,  hd: true,  commercial: true },
+  // privateMode = 결과물을 공개 Explore 피드에서 빼는 권한(구독자 전용). free는 항상 공개.
+  free:    { name: 'Free',    rank: 0, monthlyCredits: 10,   watermarkFree: false, hd: false, commercial: false, privateMode: false },
+  creator: { name: 'Creator', rank: 1, monthlyCredits: 250,  watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
+  pro:     { name: 'Pro',     rank: 2, monthlyCredits: 600,  watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
+  brand:   { name: 'Brand',   rank: 3, monthlyCredits: 1400, watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
 };
 
 /** 사용자의 유효 플랜 키 (admin은 brand 권한으로 취급) */

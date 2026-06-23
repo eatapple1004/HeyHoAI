@@ -15,9 +15,24 @@ const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('
 const teamCredit = require('../teams/team.credit');
 const { query } = require('../db/client');
 const { getTool, listTools } = require('../tools/registry');
+const { entitlementsFor } = require('../lib/entitlements');
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
 const router = Router();
+
+// Private Mode(결과 비공개)는 구독자 전용 — JWT엔 plan이 없으므로 DB에서 로드해 권한 판정.
+// 프론트 잠금은 UX일 뿐, 비구독자가 privateMode=true를 보내도 여기서 공개로 강제(진짜 게이트).
+async function canUsePrivate(reqUser) {
+  if (!reqUser) return false;
+  if (reqUser.role === 'admin') return true;
+  try {
+    const r = await query('SELECT plan FROM users WHERE id = $1', [reqUser.id]);
+    return !!entitlementsFor({ role: reqUser.role, plan: r.rows[0] && r.rows[0].plan }).privateMode;
+  } catch (e) { logger.warn({ err: e, userId: reqUser && reqUser.id }, 'canUsePrivate plan lookup failed — defaulting to public'); return false; }
+}
+function wantsPrivate(body) {
+  return body && (body.privateMode === 'true' || body.privateMode === true);
+}
 
 // 업로드 설정
 const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
@@ -39,7 +54,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
   try {
     let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
     // 자동 공개: Private Mode 끄면(기본) 결과물 공개. + 출처 템플릿 attribution.
-    const resultVisibility = (req.body.privateMode === 'true' || req.body.privateMode === true) ? 'private' : 'public';
+    // Private Mode는 구독자 전용 → 비구독자가 요청해도 공개로 강제(서버 게이트).
+    const resultVisibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const templateId = req.body.templateId || null;
     const templateSource = req.body.templateSource || null; // 'marketplace' | 'recipe'
     const generateCount = Math.min(parseInt(count, 10) || 1, 8); // 유저 선택 1~8
@@ -541,7 +557,9 @@ router.patch('/results/:idx/visibility', async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
-    const visibility = (req.body && req.body.visibility) === 'public' ? 'public' : 'private';
+    // 비공개 전환은 구독자 전용 — 생성 경로와 동일 게이트(비구독자가 사후 비공개로 우회하는 것을 차단).
+    const reqVis = (req.body && req.body.visibility) === 'private' ? 'private' : 'public';
+    const visibility = (reqVis === 'private' && await canUsePrivate(req.user)) ? 'private' : 'public';
     const teamId = await teamCredit.activeTeamId(req.user.id);
     const updated = await resultRepo.setVisibility(idx, { userId: teamId ? undefined : req.user.id, teamId }, visibility);
     if (!updated) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 공개할 수 없는 항목입니다.' });
@@ -608,7 +626,8 @@ router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 },
   try {
     const { prompt, duration = '5', mode = 'std', aspectRatio, audio } = req.body;
     // 자동공개(P2): 이미지 경로와 동일 — Private Mode 끄면(기본) 공개 + 출처 템플릿 attribution.
-    const visibility = (req.body.privateMode === 'true' || req.body.privateMode === true) ? 'private' : 'public';
+    // Private Mode는 구독자 전용 → 비구독자가 요청해도 공개로 강제(서버 게이트).
+    const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const sourceFile = req.files?.sourceImage?.[0];
     const endFrameFile = req.files?.endFrame?.[0];
     const result = await videoJobService.submit({
