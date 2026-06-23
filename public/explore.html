@@ -98,7 +98,7 @@ function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
 function card(it){
-  const open=`onclick="location.href='/creation?idx=${it.idx}'" style="cursor:pointer"`;
+  const open=`onclick="location.href='/creation?idx=${it.idx}&from=explore'" style="cursor:pointer"`;
   const media=it.type==='video'
     ? `<video class="media" src="${esc(it.url)}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()" ${open}></video>`
     : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${open}>`;

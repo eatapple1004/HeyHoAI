@@ -281,15 +281,23 @@ async function load(){
   renderFilters();render();
   maybeOpenSave();
 }
-// Creator Studio γ 패널 등에서 /library?save=IDX 로 진입 시 해당 creation의 저장 모달 자동 오픈
+// /gallery?save=IDX(Creator Studio γ패널·creation 상세) / ?reel=IDX(creation 상세) 진입 시 해당 모달 자동 오픈
 function maybeOpenSave(){
-  const sid=parseInt(new URLSearchParams(location.search).get('save'),10);
-  if(!sid)return;
+  const sp=new URLSearchParams(location.search);
+  const sid=parseInt(sp.get('save'),10), rid=parseInt(sp.get('reel'),10);
+  if(!sid&&!rid)return;
   history.replaceState(null,'',location.pathname); // 새로고침 재오픈 방지
-  const it=ITEMS.find(x=>x.idx===sid);
-  if(it&&it.prompt){ VIEW_ITEM=it; openSaveFromCreation(); }
-  else if(it){ toast('This creation can’t be saved as a template.'); }
-  else { toast('Creation not found.'); }
+  if(sid){
+    const it=ITEMS.find(x=>x.idx===sid);
+    if(it&&it.prompt){ VIEW_ITEM=it; openSaveFromCreation(); }
+    else if(it){ toast('This creation can’t be saved as a template.'); }
+    else { toast('Creation not found.'); }
+  }else if(rid){
+    const it=ITEMS.find(x=>x.idx===rid);
+    if(it&&it.type==='photo'){ openReel(it.url,it.name); }
+    else if(it){ toast('Reels can only be made from photos.'); }
+    else { toast('Creation not found.'); }
+  }
 }
 function renderFilters(){
   document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<div class="chip ${filter===f?'active':''}" onclick="setFilter('${f}')">${f}</div>`).join('');
@@ -315,8 +323,8 @@ function render(){
     return `
     <div class="item">
       ${it.type==='reel'
-        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="location.href='/creation?idx=${it.idx}'" style="cursor:pointer"></video>`
-        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="location.href='/creation?idx=${it.idx}'" style="cursor:pointer">`}
+        ?`<video class="media" src="${esc(it.url)}" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()" onclick="location.href='/creation?idx=${it.idx}&from=library'" style="cursor:pointer"></video>`
+        :`<img class="media" src="${esc(it.url)}" loading="lazy" alt="" onclick="location.href='/creation?idx=${it.idx}&from=library'" style="cursor:pointer">`}
       <span class="badge">${it.type==='reel'?'▶ Reel':'▦ Photo'}</span>${visBadge}${it.visibility==='public'?`<span class="badge" title="Likes from the community">♥ ${it.likes||0}</span>`:''}
       <div class="info"><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.date)}${it.model?' · '+esc(it.model):''}${it.template?' · '+esc(it.template):''}</div></div>
       <div class="actions">
