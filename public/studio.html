@@ -918,7 +918,9 @@ function toggleToolPop(ev){if(ev)ev.stopPropagation();const p=document.getElemen
   toolModalTab=curType();renderToolModal();p.classList.add('open');
   const t=document.getElementById('toolTrigger');if(t)t.classList.add('open');}
 function closeToolPop(){const p=document.getElementById('toolPop');if(p)p.classList.remove('open');const t=document.getElementById('toolTrigger');if(t)t.classList.remove('open');}
-function setToolTab(t){toolModalTab=t;renderToolModal();}
+// ⚠️ stopPropagation 필수: 탭 클릭이 renderToolModal로 탭 HTML을 다시 그리면 클릭된 버튼이 DOM에서 분리되고,
+//    그 클릭이 document로 버블링되면 closest('.tool-pop-wrap')가 null→"바깥 클릭"으로 오판해 팝오버가 닫힘.
+function setToolTab(t,ev){if(ev)ev.stopPropagation();toolModalTab=t;renderToolModal();}
 document.addEventListener('click',function(e){const p=document.getElementById('toolPop');if(p&&p.classList.contains('open')&&!e.target.closest('.tool-pop-wrap'))closeToolPop();});
 function toolCardHTML(t,sel){
   const pv=provInfo(t.id),m=TOOL_META[t.id]||{};
@@ -934,8 +936,8 @@ function toolCardHTML(t,sel){
 function renderToolModal(){
   const tabs=document.getElementById('toolTabs');if(!tabs)return;
   const hasVid=videoAvailable();
-  tabs.innerHTML=`<button class="ttab${toolModalTab==='image'?' on':''}" onclick="setToolTab('image')">Image</button>`
-    +(hasVid?`<button class="ttab${toolModalTab==='video'?' on':''}" onclick="setToolTab('video')">Video</button>`:'');
+  tabs.innerHTML=`<button class="ttab${toolModalTab==='image'?' on':''}" onclick="setToolTab('image',event)">Image</button>`
+    +(hasVid?`<button class="ttab${toolModalTab==='video'?' on':''}" onclick="setToolTab('video',event)">Video</button>`:'');
   const list=(toolModalTab==='video'?(TOOLS_CACHE.video||[]):(TOOLS_CACHE.image||[]));
   const cur=curTool();
   document.getElementById('toolList').innerHTML=list.length?list.map(t=>toolCardHTML(t,t.id===cur)).join(''):'<div class="tool-empty">No models available.</div>';
