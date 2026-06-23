@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doppia · Seller earnings</title>
+<title>Doppia · Creator Studio</title>
 <script src="/js/flags.js" defer></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
@@ -12,27 +12,45 @@
 <script src="/saas-auth.js" defer></script>
 <script src="/js/rail.js?v=2" defer></script>
 <style>
-  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
-  .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
+  .sub{color:var(--dim);font-size:14.5px;margin-bottom:26px}
   .sub b{color:var(--gold)}
 
+  /* 섹션 네비 (pill tabs) */
+  .secnav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:30px;border-bottom:1px solid var(--border);padding-bottom:18px}
+  .secnav .chip{font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--dim);cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+  .secnav .chip:hover{border-color:var(--border2);color:var(--text)}
+  .secnav .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .secnav .chip.soon{cursor:not-allowed;opacity:.5}
+  .secnav .chip.soon:hover{border-color:var(--border);color:var(--dim)}
+  .secnav .chip .tag{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:rgba(255,255,255,.12);padding:2px 6px;border-radius:6px;color:var(--dim)}
+
+  .sec{display:none}
+  .sec.on{display:block}
+
   /* 크리에이터 신청 CTA */
-  .apply{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:24px 26px;margin-bottom:30px}
+  .apply{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:24px 26px;margin-bottom:26px}
   .apply .ai b{font-family:'Sora';font-size:17px;font-weight:700;display:block;margin-bottom:4px}
   .apply .ai p{font-size:13px;color:var(--dim);line-height:1.5}
 
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+  .welcome{display:flex;align-items:center;gap:12px;padding:18px 22px;margin-bottom:24px}
+  .welcome .badge{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 11px;border-radius:8px;background:rgba(94,224,214,.16);color:var(--cyan)}
+  .welcome .badge.guest{background:rgba(255,255,255,.08);color:var(--faint)}
+  .welcome p{font-size:13.5px;color:var(--dim);line-height:1.5}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px}
   .stat{padding:20px;text-align:center}
   .stat .n{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
   .stat .n.gold{color:var(--gold)}
   .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
+  .stat .n.soon{font-size:18px;color:var(--faint);font-weight:700}
 
   .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
   .row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:12px}
 
-  .items{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:38px}
-  .irow{display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 0.9fr;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .items{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px}
+  .irow{display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 1.1fr;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:13.5px}
   .irow:last-child{border-bottom:0}
   .irow.head{background:rgba(255,255,255,.03);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
   .irow .nm{display:flex;align-items:center;gap:11px;font-weight:600}
@@ -42,43 +60,58 @@
   .pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.4px}
   .pill.live{background:rgba(94,224,214,.16);color:var(--cyan)}
   .pill.review{background:rgba(255,206,122,.18);color:var(--gold)}
+  .pill.private{background:rgba(255,255,255,.08);color:var(--faint)}
   .r-amt{text-align:right}
   .empty{text-align:center;padding:34px;color:var(--faint);font-size:14px}
-  .empty a{color:var(--accent)}
-
-  .payout{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:20px 24px}
-  .payout .pi{font-size:13px;color:var(--dim)}
-  .payout .pi b{color:var(--text);font-size:15px;display:block;margin-top:2px;font-family:'Sora';font-weight:700}
-
-  .affil-link{margin-top:28px;font-size:13px;color:var(--dim);text-align:center}
-  .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
+  .empty a{color:var(--accent);cursor:pointer}
 
   .irow .stcell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
   .irow .mng{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
   .irow .mng:hover{border-color:var(--accent)}
-  .pill.private{background:rgba(255,255,255,.08);color:var(--faint)}
+  .irow .mng.del{color:#ff8a96}
+  .irow .mng.del:hover{border-color:#ff5f6e}
+
+  .payout{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:20px 24px;margin-bottom:14px}
+  .payout .pi{font-size:13px;color:var(--dim)}
+  .payout .pi b{color:var(--text);font-size:15px;display:block;margin-top:2px;font-family:'Sora';font-weight:700}
+
+  .affil-link{margin-top:24px;font-size:13px;color:var(--dim);text-align:center}
+  .affil-link a{color:var(--accent2);font-weight:600;cursor:pointer}
+
+  .profile-card{padding:24px 26px;margin-bottom:18px}
+  .profile-card h3{font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:6px}
+  .profile-card p{font-size:13px;color:var(--dim);line-height:1.55;margin-bottom:16px}
+  .profile-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--border)}
+  .profile-row .pk{font-size:13px;color:var(--dim)}
+  .profile-row .pv{font-size:13.5px;font-weight:600}
+  .profile-row .pv.ok{color:var(--cyan)}
+  .profile-row .pv.no{color:var(--faint)}
 
   /* 템플릿 편집 모달 */
   .modal-bg{position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
   .modal-bg.open{display:flex}
-  .modal{width:min(420px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:24px;position:relative}
+  .modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:24px;position:relative;max-height:90vh;overflow-y:auto}
   .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:16px}
   .modal .x{position:absolute;top:14px;right:16px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
   .modal .mfield{margin-bottom:14px}
   .modal .mfield label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600}
-  .modal .mfield input,.modal .mfield select{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;padding:9px 12px}
+  .modal .mfield input,.modal .mfield select,.modal .mfield textarea{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;padding:9px 12px}
+  .modal .mfield textarea{resize:vertical;min-height:64px;line-height:1.5}
+  .modal .mtwo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .modal .mrow{display:flex;gap:10px;margin-top:18px}
   .modal .mrow .btn{flex:1}
   .btn.danger{background:rgba(255,95,110,.14);border:1px solid rgba(255,95,110,.4);color:#ff8a96}
   .btn.danger:hover{background:#ff5f6e;border-color:#ff5f6e;color:#fff}
-  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
   #toast.show{opacity:1}
 
   @media(max-width:640px){
     .stats{grid-template-columns:repeat(2,1fr)}
-    .irow{grid-template-columns:1.6fr 1fr 1.2fr;font-size:12.5px}
-    .irow .col-uses,.irow.head .col-uses{display:none}
+    .irow{grid-template-columns:1.7fr 1fr auto;font-size:12.5px;gap:8px}
+    .irow .col-uses,.irow.head .col-uses,.irow .col-status,.irow.head .col-status{display:none}
     .irow .col-rev{text-align:right}
+    .irow .mng{padding:5px 8px;font-size:11px}
+    .modal .mtwo{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -104,39 +137,100 @@
 </nav>
 
 <div class="wrap">
-  <h1 class="fade d1">Seller earnings</h1>
-  <div class="sub fade d1">Track every template you've published. You keep <b id="shareLbl">70%</b> as <b>creator points</b> on every sale & paid use — exchange to credits anytime, cash payouts coming soon.</div>
+  <h1 class="fade d1">Creator Studio</h1>
+  <div class="sub fade d1">Publish your prompts as templates, manage pricing, and earn <b id="shareLbl">70%</b> as <b>creator points</b> on every paid use — exchange to credits anytime.</div>
 
-  <!-- 크리에이터가 아니면 신청 CTA -->
+  <!-- 섹션 네비 -->
+  <div class="secnav fade d1" id="secNav">
+    <button class="chip active" data-sec="overview" onclick="showSec('overview')">Overview</button>
+    <button class="chip" data-sec="templates" onclick="showSec('templates')">Templates</button>
+    <button class="chip" data-sec="earnings" onclick="showSec('earnings')">Earnings &amp; payouts</button>
+    <button class="chip" data-sec="profile" onclick="showSec('profile')">Profile</button>
+    <button class="chip soon" disabled title="Coming soon">Collections <span class="tag">Soon</span></button>
+    <button class="chip soon" disabled title="Coming soon">Production <span class="tag">Soon</span></button>
+  </div>
+
+  <!-- 크리에이터가 아니면 신청 CTA (모든 섹션 위) -->
   <div class="apply glass fade d2" id="applyBox" style="display:none">
     <div class="ai"><b>Become a seller</b><p>Get instant approval, publish your prompts as templates, and start earning credits from every paid use.</p></div>
     <button class="btn btn-primary" id="applyBtn" onclick="apply(this)">Become a seller →</button>
   </div>
 
-  <div class="stats fade d2">
-    <div class="stat glass"><div class="n gold" id="stEarned">—</div><div class="l">Points earned (◈)</div></div>
-    <div class="stat glass"><div class="n" id="stPayouts">—</div><div class="l">Paid uses</div></div>
-    <div class="stat glass"><div class="n" id="stTemplates">—</div><div class="l">Published</div></div>
-    <div class="stat glass"><div class="n" id="stShare">70%</div><div class="l">Your share</div></div>
-  </div>
+  <!-- ═══ OVERVIEW ═══ -->
+  <section class="sec on" id="sec-overview">
+    <div class="welcome glass fade d2" id="welcomeBox">
+      <span class="badge guest" id="roleBadge">Guest</span>
+      <p id="welcomeMsg">Loading your Creator Studio…</p>
+    </div>
 
-  <div class="row-head fade d3">
-    <div class="section-label" style="margin:0">Your published items</div>
-    <button class="btn btn-primary" onclick="location.href='/marketplace'">+ Publish new</button>
-  </div>
-  <div class="items glass fade d3" id="itemList"></div>
-  <div class="empty" id="itemEmpty" style="display:none">No published templates yet — publish one from the <a onclick="location.href='/marketplace'">Market</a> to start earning.</div>
+    <div class="stats fade d2">
+      <div class="stat glass"><div class="n gold" id="stEarned">—</div><div class="l">Creator points (◈)</div></div>
+      <div class="stat glass"><div class="n" id="stUses">—</div><div class="l">Total uses</div></div>
+      <div class="stat glass"><div class="n" id="stTemplates">—</div><div class="l">Published templates</div></div>
+      <div class="stat glass"><div class="n soon">Coming soon</div><div class="l">Cash payout</div></div>
+    </div>
 
-  <div class="payout glass fade d4">
-    <div class="pi">Reward type<b>Creator points (◈)</b></div>
-    <div class="pi">Available now<b style="color:var(--gold)" id="pBalance">◈ —</b></div>
-    <div class="pi">Lifetime earned<b id="pTotal">◈ —</b></div>
-    <div class="pi">Cash payout<b style="color:var(--faint)">Coming soon</b></div>
-    <button class="btn btn-primary" id="exBtn" onclick="exchangePoints()" style="padding:12px 18px">Exchange → credits</button>
-  </div>
-  <div class="note" style="text-align:center;color:var(--faint);font-size:12px;margin-top:10px">Points convert to generation credits 1:1. Cash withdrawal is coming once payouts launch.</div>
+    <div class="row-head fade d3">
+      <div class="section-label" style="margin:0">Quick actions</div>
+    </div>
+    <div class="payout glass fade d3">
+      <div class="pi">Available points<b style="color:var(--gold)" id="ovBalance">◈ —</b></div>
+      <div class="pi">Your share<b id="ovShare">70%</b></div>
+      <div class="pi">Published<b id="ovTemplates">—</b></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="showSec('templates')" style="padding:12px 18px">Manage templates →</button>
+        <button class="btn btn-primary" id="ovExBtn" onclick="exchangePoints()" style="padding:12px 18px">Exchange points → credits</button>
+      </div>
+    </div>
+  </section>
 
-  <div class="affil-link fade d4">Also referring others? <a onclick="location.href='/affiliate'">See your affiliate earnings →</a></div>
+  <!-- ═══ TEMPLATES ═══ -->
+  <section class="sec" id="sec-templates">
+    <div class="row-head fade d2">
+      <div class="section-label" style="margin:0">Your published items</div>
+      <button class="btn btn-primary" onclick="location.href='/studio'">+ New template</button>
+    </div>
+    <div class="items glass fade d2" id="itemList"></div>
+    <div class="empty glass fade d2" id="itemEmpty" style="display:none">No published templates yet — build a look in <a onclick="location.href='/studio'">Studio</a> and hit "Save as template" to start earning.</div>
+    <div class="note" style="text-align:center;color:var(--faint);font-size:12px;margin-top:6px">New templates are created in Studio. Manage pricing, visibility, and details here.</div>
+  </section>
+
+  <!-- ═══ EARNINGS & PAYOUTS ═══ -->
+  <section class="sec" id="sec-earnings">
+    <div class="section-label fade d2">Points &amp; payouts</div>
+    <div class="payout glass fade d2">
+      <div class="pi">Reward type<b>Creator points (◈)</b></div>
+      <div class="pi">Available now<b style="color:var(--gold)" id="pBalance">◈ —</b></div>
+      <div class="pi">Lifetime earned<b id="pTotal">◈ —</b></div>
+      <div class="pi">Cash payout<b style="color:var(--faint)">Coming soon</b></div>
+      <button class="btn btn-primary" id="exBtn" onclick="exchangePoints()" style="padding:12px 18px">Exchange → credits</button>
+    </div>
+    <div class="note" style="text-align:center;color:var(--faint);font-size:12px;margin-top:10px;margin-bottom:24px">Points convert to generation credits 1:1. Cash withdrawal is coming once payouts launch.</div>
+
+    <div class="section-label fade d3">Earnings by template</div>
+    <div class="items glass fade d3" id="earnList"></div>
+    <div class="empty glass fade d3" id="earnEmpty" style="display:none">No earnings yet — once your published templates get paid uses, your points show up here.</div>
+
+    <div class="affil-link fade d4">Also referring others? <a onclick="location.href='/affiliate'">See your affiliate earnings →</a></div>
+  </section>
+
+  <!-- ═══ PROFILE ═══ -->
+  <section class="sec" id="sec-profile">
+    <div class="profile-card glass fade d2">
+      <h3>Your public storefront</h3>
+      <p>Everything you publish lives on your creator storefront, where shoppers can browse and try your templates.</p>
+      <button class="btn btn-primary" id="storeBtn" onclick="openStorefront()">View public storefront →</button>
+    </div>
+    <div class="profile-card glass fade d3">
+      <h3>Account</h3>
+      <div class="profile-row"><span class="pk">Seller status</span><span class="pv no" id="prSeller">—</span></div>
+      <div class="profile-row"><span class="pk">Creator handle</span><span class="pv" id="prHandle">—</span></div>
+      <div class="profile-row"><span class="pk">Published templates</span><span class="pv" id="prTemplates">—</span></div>
+      <div class="profile-row"><span class="pk">Creator share</span><span class="pv" id="prShare">70%</span></div>
+    </div>
+  </section>
+
+  <div class="affil-link fade d4" id="globalNote" style="display:none"></div>
 </div>
 
 <!-- 템플릿 편집 모달 -->
@@ -145,13 +239,24 @@
     <button class="x" onclick="closeEdit()">✕</button>
     <h3>Manage template</h3>
     <div class="mfield"><label>Name</label><input type="text" id="edName" maxlength="80"></div>
+    <div class="mfield"><label>Description</label><textarea id="edDesc" maxlength="600" placeholder="What this template does, who it's for…"></textarea></div>
+    <div class="mfield"><label>Category</label>
+      <select id="edCat">
+        <option value="Custom">Custom</option>
+        <option value="Influencer">Influencer</option>
+        <option value="Shopping">Shopping</option>
+        <option value="UGC">UGC</option>
+      </select>
+    </div>
     <div class="mfield"><label>Visibility</label>
       <select id="edVis"><option value="public">Public (in the Feed)</option><option value="private">Private (only me)</option></select>
     </div>
-    <div class="mfield" data-flag="marketplace"><label>Unlock price <i style="color:var(--faint)">(◈ one-time to own — 0 = free)</i></label>
-      <input type="number" id="edPrice" min="0" max="100" step="1" value="0"></div>
-    <div class="mfield" data-flag="marketplace"><label>Per-use royalty <i style="color:var(--faint)">(◈ each render — optional)</i></label>
-      <input type="number" id="edUsePrice" min="0" max="50" step="1" value="0"></div>
+    <div class="mtwo">
+      <div class="mfield" data-flag="marketplace"><label>Unlock price <i style="color:var(--faint)">(◈ — 0 = free)</i></label>
+        <input type="number" id="edPrice" min="0" max="100" step="1" value="0"></div>
+      <div class="mfield" data-flag="marketplace"><label>Per-use royalty <i style="color:var(--faint)">(◈ each)</i></label>
+        <input type="number" id="edUsePrice" min="0" max="50" step="1" value="0"></div>
+    </div>
     <div class="mrow">
       <button class="btn danger" onclick="deleteTpl()">Delete</button>
       <button class="btn btn-primary" id="edSave" onclick="saveEdit()">Save changes</button>
@@ -161,46 +266,128 @@
 <div id="toast"></div>
 
 <script>
-// ═══ 실제 연결: /api/marketplace/earnings (그들 디자인 + 크레딧 모델 실데이터) ═══
+// ═══ 섹션 네비 (show/hide, no reload) ═══
+function showSec(name){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  const el=document.getElementById('sec-'+name);
+  if(el)el.classList.add('on');
+  document.querySelectorAll('#secNav .chip').forEach(c=>c.classList.toggle('active',c.dataset.sec===name));
+  try{history.replaceState(null,'','#'+name);}catch(e){}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══ 실제 연결: /api/marketplace/earnings ═══
 async function loadBalance(){
   try{const d=await(await fetch('/api/credits')).json();if(d.success)document.getElementById('navBalance').textContent=d.data.unlimited?'∞':d.data.balance;}catch(e){}
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 let ITEMS=[];
+window.__handle=null;
+
+function rowMarkup(t){
+  const pub=t.visibility==='public';
+  const price=t.price_credits>0?(' · ◈'+t.price_credits):' · Free';
+  const royalty=t.use_price_credits>0?(' +◈'+t.use_price_credits+'/use'):'';
+  return `<div class="irow">
+    <div class="nm"><div class="ic">${t.emoji||'🎨'}</div><div>${esc(t.name)}<div class="sub2">${esc(t.category)} · ${t.type==='reel'?'Reel':'Photo'}${price}${royalty}</div></div></div>
+    <div class="col-uses">${t.usage_count}</div>
+    <div class="r-amt col-rev gold">◈ ${t.earned}</div>
+    <div class="r-amt col-status"><span class="pill ${pub?'live':'private'}">${pub?'Live':'Private'}</span></div>
+    <div class="r-amt stcell"><button class="mng" onclick="openEdit('${t.id}')">Edit</button><button class="mng del" onclick="deleteFromRow('${t.id}')">Delete</button></div>
+  </div>`;
+}
+
+function studioError(msg,signIn){
+  const m=document.getElementById('welcomeMsg');if(m)m.textContent=msg;
+  const b=document.getElementById('roleBadge');if(b){b.textContent=signIn?'Sign in':'Error';b.classList.add('guest');}
+  toast(msg);
+  if(signIn)setTimeout(()=>{location.href='/saas-login';},1400);
+}
 async function load(){
   try{
-    const d=await(await fetch('/api/marketplace/earnings')).json();
-    if(!d.success)return;
+    const r=await fetch('/api/marketplace/earnings');
+    if(r.status===401){studioError('Please sign in to view your Creator Studio.',true);return;}
+    const d=await r.json();
+    if(!r.ok||!d.success){studioError('Couldn’t load your studio — please retry.');return;}
     const x=d.data;
     const pct=Math.round((x.creatorShare||0.7)*100)+'%';
     document.getElementById('shareLbl').textContent=pct;
-    document.getElementById('stShare').textContent=pct;
+    document.getElementById('ovShare').textContent=pct;
+    document.getElementById('prShare').textContent=pct;
+
+    ITEMS=x.templates||[];
+    const totalUses=ITEMS.reduce((s,t)=>s+(parseInt(t.usage_count,10)||0),0);
+
+    // Overview KPIs
     document.getElementById('stEarned').textContent='◈ '+x.totalEarned;
-    document.getElementById('stPayouts').textContent=x.payoutCount;
-    document.getElementById('stTemplates').textContent=(x.templates||[]).length;
+    document.getElementById('stUses').textContent=totalUses;
+    document.getElementById('stTemplates').textContent=ITEMS.length;
+    document.getElementById('ovTemplates').textContent=ITEMS.length;
+
+    // Earnings / points
     document.getElementById('pTotal').textContent='◈ '+x.totalEarned;
     window.__points=x.pointBalance||0;
     document.getElementById('pBalance').textContent='◈ '+window.__points;
-    document.getElementById('applyBox').style.display=x.isCreator?'none':'flex';
+    document.getElementById('ovBalance').textContent='◈ '+window.__points;
 
-    const list=document.getElementById('itemList');
-    ITEMS=x.templates||[];
-    if(!ITEMS.length){
-      list.style.display='none';
-      document.getElementById('itemEmpty').style.display='block';
+    // Role / welcome / apply CTA
+    const isCreator=!!x.isCreator;
+    window.__isCreator=isCreator;
+    window.__handle=x.handle||null;
+    const _pubOpt=document.querySelector('#edVis option[value="public"]');if(_pubOpt)_pubOpt.disabled=!isCreator; // 비셀러는 공개 선택 불가(403 막다른길 방지)
+    document.getElementById('applyBox').style.display=isCreator?'none':'flex';
+    const badge=document.getElementById('roleBadge');
+    const msg=document.getElementById('welcomeMsg');
+    if(isCreator){
+      badge.textContent='Seller';badge.classList.remove('guest');
+      msg.textContent=ITEMS.length
+        ? `You have ${ITEMS.length} published ${ITEMS.length===1?'template':'templates'} earning ${pct} creator points on every paid use.`
+        : `You're an approved seller — publish your first template from Studio to start earning.`;
     }else{
-      list.style.display='';document.getElementById('itemEmpty').style.display='none';
-      list.innerHTML=
-        `<div class="irow head"><div>Item</div><div class="col-uses">Total uses</div><div class="r-amt col-rev">Your earnings</div><div class="r-amt">Status</div></div>`+
-        ITEMS.map(t=>{const pub=t.visibility==='public';return `<div class="irow">
-          <div class="nm"><div class="ic">${t.emoji||'🎨'}</div><div>${esc(t.name)}<div class="sub2">${esc(t.category)} · ${t.type==='reel'?'Reel':'Photo'}${t.price_credits>0?' · ◈'+t.price_credits:' · Free'}</div></div></div>
-          <div class="col-uses">${t.usage_count}</div>
-          <div class="r-amt col-rev gold">◈ ${t.earned}</div>
-          <div class="r-amt stcell"><span class="pill ${pub?'live':'private'}">${pub?'Live':'Private'}</span><button class="mng" onclick="openEdit('${t.id}')">Edit</button></div>
-        </div>`;}).join('');
+      badge.textContent='Not a seller yet';badge.classList.add('guest');
+      msg.textContent='Become a seller to publish templates and earn creator points on every paid use.';
     }
+
+    // Profile
+    document.getElementById('prSeller').textContent=isCreator?'Approved seller':'Not applied';
+    document.getElementById('prSeller').className='pv '+(isCreator?'ok':'no');
+    document.getElementById('prHandle').textContent=x.handle||'—';
+    document.getElementById('prTemplates').textContent=ITEMS.length;
+
+    // Templates list
+    const list=document.getElementById('itemList');
+    const earnList=document.getElementById('earnList');
+    if(!ITEMS.length){
+      list.style.display='none';earnList.style.display='none';
+      document.getElementById('itemEmpty').style.display='block';
+      document.getElementById('earnEmpty').style.display='block';
+    }else{
+      list.style.display='';earnList.style.display='';
+      document.getElementById('itemEmpty').style.display='none';
+      document.getElementById('earnEmpty').style.display='none';
+      const head=`<div class="irow head"><div>Item</div><div class="col-uses">Total uses</div><div class="r-amt col-rev">Your earnings</div><div class="r-amt col-status">Status</div><div class="r-amt">Manage</div></div>`;
+      const rows=ITEMS.map(rowMarkup).join('');
+      list.innerHTML=head+rows;
+      earnList.innerHTML=head+rows;
+    }
+  }catch(e){studioError('Couldn’t load your studio — check your connection and retry.');}
+}
+
+// ── 스토어프론트 핸들 (saas-auth.js 의 #saasUserBox 에서 유추) ──
+function deriveHandle(){
+  try{
+    const box=document.getElementById('saasUserBox');
+    const txt=box?box.textContent:'';
+    const m=txt&&txt.match(/[A-Za-z0-9._-]+@[A-Za-z0-9.-]+/);
+    if(m)return m[0].split('@')[0];
   }catch(e){}
+  return null;
+}
+function openStorefront(){
+  const h=window.__handle||deriveHandle();
+  if(h){location.href='/creator?handle='+encodeURIComponent(h);return;}
+  location.href='/creator';
 }
 
 // ── 템플릿 편집/삭제 (PATCH·DELETE /api/marketplace/templates/:id) ──
@@ -208,7 +395,11 @@ let EDIT_ID=null;
 function openEdit(id){
   const t=ITEMS.find(x=>x.id===id);if(!t)return;
   EDIT_ID=id;
+  window.__editVis=t.visibility==='public'?'public':'private';
   document.getElementById('edName').value=t.name||'';
+  document.getElementById('edDesc').value=t.description||'';
+  const cat=['Custom','Influencer','Shopping','UGC'].includes(t.category)?t.category:'Custom';
+  document.getElementById('edCat').value=cat;
   document.getElementById('edVis').value=t.visibility==='public'?'public':'private';
   document.getElementById('edPrice').value=t.price_credits||0;
   document.getElementById('edUsePrice').value=t.use_price_credits||0;
@@ -218,7 +409,12 @@ function closeEdit(){document.getElementById('editModal').classList.remove('open
 async function saveEdit(){
   if(!EDIT_ID)return;
   const btn=document.getElementById('edSave');btn.disabled=true;btn.textContent='Saving…';
-  const body={name:document.getElementById('edName').value.trim(),visibility:document.getElementById('edVis').value};
+  const body={
+    name:document.getElementById('edName').value.trim(),
+    description:document.getElementById('edDesc').value.trim(),
+    category:document.getElementById('edCat').value,
+    visibility:document.getElementById('edVis').value
+  };
   if(window.featureOn&&window.featureOn('marketplace')){
     body.priceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edPrice').value,10)||0,100));
     body.usePriceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edUsePrice').value,10)||0,50));
@@ -226,7 +422,7 @@ async function saveEdit(){
   try{
     const r=await fetch('/api/marketplace/templates/'+EDIT_ID,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    if(r.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
+    if(r.status===403){document.getElementById('edVis').value=window.__editVis||'private';toast('Apply as a seller first to publish publicly — see “Become a seller”.');return;}
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     closeEdit();toast('Template updated');load();
   }catch(e){toast('Update failed: '+(e.message||e));}
@@ -234,18 +430,27 @@ async function saveEdit(){
 }
 async function deleteTpl(){
   if(!EDIT_ID||!confirm('Delete this template? This cannot be undone.'))return;
+  await doDelete(EDIT_ID);
+}
+async function deleteFromRow(id){
+  if(!confirm('Delete this template? This cannot be undone.'))return;
+  await doDelete(id);
+}
+async function doDelete(id){
   try{
-    const r=await fetch('/api/marketplace/templates/'+EDIT_ID,{method:'DELETE'});
+    const r=await fetch('/api/marketplace/templates/'+id,{method:'DELETE'});
     const d=await r.json();
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    closeEdit();toast('Template deleted');load();
+    if(EDIT_ID===id)closeEdit();
+    toast('Template deleted');load();
   }catch(e){toast('Delete failed: '+(e.message||e));}
 }
 async function exchangePoints(){
   const bal=window.__points||0;
   if(bal<=0){toast('No points to exchange yet.');return;}
   if(!confirm('Exchange ◈'+bal+' points → ◈'+bal+' credits? (1:1)'))return;
-  const btn=document.getElementById('exBtn');btn.disabled=true;btn.textContent='…';
+  const btns=[document.getElementById('exBtn'),document.getElementById('ovExBtn')].filter(Boolean);
+  btns.forEach(b=>{b.disabled=true;b._t=b.textContent;b.textContent='…';});
   try{
     const r=await fetch('/api/credits/points/exchange',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:bal})});
     const d=await r.json();
@@ -253,16 +458,22 @@ async function exchangePoints(){
     toast('Exchanged ◈'+d.data.exchanged+' → credits');
     loadBalance();load();
   }catch(e){toast('Exchange failed: '+(e.message||e));}
-  finally{btn.disabled=false;btn.textContent='Exchange → credits';}
+  finally{btns.forEach(b=>{b.disabled=false;b.textContent=b._t||'Exchange → credits';});}
 }
 async function apply(btn){
   btn.disabled=true;btn.textContent='…';
   try{
     const d=await(await fetch('/api/marketplace/apply',{method:'POST'})).json();
-    if(d.success){if(window.toast)toast('You\'re now a seller — publish your first template!');load();}
+    if(d.success){toast('You\'re now a seller — publish your first template!');load();}
     else{btn.disabled=false;btn.textContent='Become a seller →';}
   }catch(e){btn.disabled=false;btn.textContent='Become a seller →';}
 }
+
+// 딥링크 (#templates 등) 지원
+(function(){
+  const h=(location.hash||'').replace('#','');
+  if(['overview','templates','earnings','profile'].includes(h))showSec(h);
+})();
 loadBalance();load();
 </script>
 <script src="/js/biz-footer.js?v=1"></script>

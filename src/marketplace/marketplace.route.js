@@ -102,7 +102,7 @@ router.get('/earnings', async (req, res, next) => {
 
     // 템플릿별 수익 (ref_id=템플릿 UUID를 TEXT로 저장 → 캐스팅 조인)
     const byTemplate = await query(
-      `SELECT mt.id, mt.name, mt.emoji, mt.category, mt.type, mt.price_credits, mt.use_price_credits, mt.usage_count, mt.visibility,
+      `SELECT mt.id, mt.name, mt.description, mt.emoji, mt.category, mt.type, mt.price_credits, mt.use_price_credits, mt.usage_count, mt.visibility,
               COALESCE(SUM(pl.amount), 0)::int AS earned,
               COUNT(pl.id)::int AS uses_paid
        FROM marketplace_templates mt
@@ -126,6 +126,7 @@ router.get('/earnings', async (req, res, next) => {
       success: true,
       data: {
         isCreator,
+        handle: '@' + String(req.user.email || 'creator').split('@')[0],
         creatorShare: CREATOR_SHARE,
         pointBalance: u.rows[0]?.point_balance || 0, // 교환 가능한 현재 포인트
         totalEarned: totals.rows[0].total_earned,
