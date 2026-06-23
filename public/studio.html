@@ -440,7 +440,7 @@
     </div>
     <div class="field" id="ratioField" style="display:none">
       <span class="addon-label">Ratio</span>
-      <select id="aspectSel" style="display:none"><option value="3:4">3:4</option><option value="1:1">1:1</option><option value="4:3">4:3</option><option value="9:16">9:16</option><option value="16:9">16:9</option></select>
+      <select id="aspectSel" style="display:none"><option value="4:5">4:5</option><option value="1:1">1:1</option><option value="9:16">9:16</option><option value="3:4">3:4</option><option value="4:3">4:3</option><option value="16:9">16:9</option></select>
       <span class="ratio-wrap" id="ratioWrap">
         <span class="viz-grid" id="ratioGrid"></span>
         <div class="opt-pop" id="ratioPanel">
@@ -793,7 +793,7 @@ async function loadSubjects(){
 
 function curQuality(){return document.querySelector('#qualitySeg .on').dataset.q;}
 function curModel(){return document.querySelector('#qualitySeg .on').dataset.m;}
-function pickModel(b){document.querySelectorAll('#qualitySeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');updateBar();}
+function pickModel(b){document.querySelectorAll('#qualitySeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');applyToolSchema();updateBar();} // 모델 변경 → Size(2K=Pro) 노출 재평가
 const pickQuality=pickModel; // 하위호환 별칭
 // 사용 가능한 이미지 생성 모델 표시명 (data-m → 라벨). /api/generate 가 지원하는 값.
 const M_LABEL={flash:'Gemini Flash',pro:'Gemini Pro','gpt-image-2':'GPT Image','gpt-image-2-high':'GPT Image HD'};
@@ -801,8 +801,8 @@ const M_LABEL={flash:'Gemini Flash',pro:'Gemini Pro','gpt-image-2':'GPT Image','
 // → 스튜디오가 폼을 동적 렌더(Leonardo식 "툴마다 폼"). FALLBACK은 오프라인/정적 프리뷰용 미러.
 const FALLBACK_TOOLS={
   image:[
-    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],imageSize:['1K','2K'],count:[1,2,3,4,5,6,7,8],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
-    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['3:4','1:1','4:3','9:16','16:9','2:3','3:2'],count:[1,2,3,4,5,6,7,8],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
+    {id:'nano-banana-pro',label:'Nano Banana Pro',type:'image',model:'pro',controls:{aspectRatio:['4:5','1:1','9:16','3:4','4:3','16:9','2:3','3:2','5:4','21:9'],imageSize:['1K','2K'],count:[1,2,3,4,5,6,7,8],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
+    {id:'nano-banana',label:'Nano Banana',type:'image',model:'flash',controls:{aspectRatio:['4:5','1:1','9:16','3:4','4:3','16:9','2:3','3:2','5:4','21:9'],count:[1,2,3,4,5,6,7,8],negative:true},imageSlots:[{key:'reference',label:'Image Reference',hint:'References the visual style and composition of an image to influence the output.',multi:true}]},
   ],
   video:[
     {id:'kling',label:'Kling',type:'video',model:'kling',controls:{duration:[5,10],quality:[{value:'pro',label:'Pro'}],aspectRatio:['9:16','1:1','16:9'],audio:{type:'toggle'}},imageSlots:[{key:'startFrame',label:'Start frame',hint:'Starting frame of the video'},{key:'endFrame',label:'End frame',hint:'Ending frame of the video'}]},
@@ -829,7 +829,8 @@ function pickTool(){applyToolSchema();renderSubjects();updateBar();}
 // Custom 컨트롤 읽기 — 표시는 스키마가 결정, 값은 해당 select에서
 function curAspect(){const s=document.getElementById('aspectSel');return s?s.value:'';}
 // 해상도: 스키마에 imageSize 있는 툴만(=pro). 없으면 1K. 서버도 동일 가드.
-function curSize(){const t=toolById(curTool());if(t&&t.controls&&t.controls.imageSize){const s=document.getElementById('sizeSel');return s?s.value:'1K';}return '1K';}
+// Size: 필드가 실제 노출된 경우(=imageSize 컨트롤 활성)에만 선택값, 아니면 1K. 서버도 2K=model:pro 가드.
+function curSize(){const f=document.getElementById('sizeField');const s=document.getElementById('sizeSel');return (f&&f.style.display!=='none'&&s&&s.value)?s.value:'1K';}
 function curDuration(){const s=document.getElementById('durSel');return s?s.value:'5';}
 function curQuality(){const s=document.getElementById('qualitySel');return (state.mode==='custom'&&curType()==='video'&&s)?s.value:'std';}
 function curCount(){const s=document.getElementById('countSel');return (!isVideoGen()&&s&&s.value)?parseInt(s.value,10):4;} // 이미지=전모드 선택값(1~8), 영상=미사용
@@ -851,7 +852,13 @@ const COUNT_OPTS=[1,2,3,4,5,6,7,8]; // 결과 장수 = 유저 선택(전 모드�
 // 선택 툴의 controls 스키마로 폼을 그림(표시 토글 + 옵션 채움). 새 툴 = 레지스트리 한 줄.
 function applyToolSchema(){
   const custom=state.mode==='custom';
-  const c=(custom&&(toolById(curTool())||{}).controls)||{};
+  // 컨트롤 스키마: custom=선택 툴의 controls / 템플릿 모드(influencer·shopping)=레거시 모델 기반 합성(비율 항상, Size는 Pro만) / ugc=없음
+  let c;
+  if(custom){ c=(toolById(curTool())||{}).controls||{}; }
+  else if(state.mode==='influencer'||state.mode==='shopping'){
+    const m=curModel(), gpt=String(m||'').startsWith('gpt');
+    c={ aspectRatio: gpt?['1:1','3:4','16:9']:GEMINI_ASPECTS, imageSize: (m==='pro'?['1K','2K']:null) };
+  } else { c={}; }
   const sh=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
   // 옵션값 = 문자열 또는 {value,label}. fmt는 단순 문자열 옵션의 표시 포매터.
   const fill=(id,vals,fmt,def)=>{const s=document.getElementById(id);if(!s||!vals)return;const cur=s.value;
@@ -948,7 +955,9 @@ function applyTool(id){
 function selectTool(id){const t=toolById(id);if(!t)return;applyTool(id);closeToolPop();}
 // ratio · size 시각 선택(Leonardo식) — 값은 hidden select에 저장, 버튼은 시각 레이어
 let _ratioVals=[];
-const RATIO_PRIMARY=['3:4','1:1','16:9']; // 인라인 우선 노출(>3개면 나머지는 Custom 패널)
+const RATIO_PRIMARY=['4:5','1:1','9:16']; // 인라인 우선 노출(IG 피드·정사각·스토리; 나머지는 Custom 패널)
+// 템플릿 모드(레거시 Flash/Pro 모델)용 비율 세트 = Gemini 10종(IG 4:5 우선). GPT는 3종만(플래그 off라 사실상 미사용).
+const GEMINI_ASPECTS=['4:5','1:1','9:16','3:4','4:3','16:9','2:3','3:2','5:4','21:9'];
 function ratioRect(v,box){const p=String(v).split(':').map(Number),w=p[0]||1,h=p[1]||1,mx=Math.max(w,h);return {w:Math.max(8,Math.round(box*w/mx)),h:Math.max(8,Math.round(box*h/mx))};}
 function ratioBtnHTML(v,on){const r=ratioRect(v,18);return `<button type="button" class="viz-btn${on?' on':''}" onclick="pickRatio('${v}')" title="${v}"><span class="viz-icwrap"><span class="viz-ic" style="width:${r.w}px;height:${r.h}px"></span></span><span class="viz-lbl">${v}</span></button>`;}
 function ratioOrient(v){const p=String(v).split(':').map(Number),w=p[0]||1,h=p[1]||1;return w>h?'Landscape':w<h?'Portrait':'Square';}
@@ -1575,6 +1584,7 @@ async function generateImages(r,subj,count){
   fd.append('brandKit',brandOn());
   fd.append('templateName',r?r.name:'My prompt');
   if(state.mode==='custom'){fd.append('aspectRatio',curAspect());fd.append('imageSize',curSize());fd.append('negativePrompt',negText());}
+  else if(state.mode==='influencer'||state.mode==='shopping'){fd.append('aspectRatio',curAspect());fd.append('imageSize',curSize());} // 템플릿 모드도 비율·해상도 전송(기본 4:5, 2K=Pro만)
   fd.append('privateMode',privateOn()?'true':'false'); // 자동 공개
   const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
   for(let i=1;i<items.length;i++){

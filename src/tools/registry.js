@@ -24,7 +24,8 @@
 //   [{ key, label, hint, multi? }]  — 이미지툴=Reference(다중), 영상툴=Start/End frame 등 각 툴 지원에 맞게.
 //   ⚠️ 규칙: 이미지를 입력으로 받는 새 툴은 반드시 imageSlots를 정의할 것(없으면 기본 'reference' 단일).
 //     매핑은 generate 경로에서: reference→referenceImages, startFrame→sourceImage, endFrame→image_tail 등.
-const IMG_ASPECTS = ['3:4', '1:1', '4:3', '9:16', '16:9', '2:3', '3:2']; // Gemini API 지원값(기본 3:4)
+// Gemini 이미지 지원 비율 10종(2.5 Flash Image 프로덕션 기준). 순서=노출 우선(첫 값=기본). IG 피드 4:5 우선.
+const IMG_ASPECTS = ['4:5', '1:1', '9:16', '3:4', '4:3', '16:9', '2:3', '3:2', '5:4', '21:9'];
 
 const TOOLS = {
   // ── 이미지 ──

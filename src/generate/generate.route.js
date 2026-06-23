@@ -70,7 +70,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
     // ─── Custom 풀 컨트롤 (비율·해상도·네거티브) — 미지정 시 기존 동작 유지 ───
     // 비율: Gemini API 지원값 화이트리스트. 그 외/빈값 → 미적용.
-    const ASPECT_ALLOW = ['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
+    const ASPECT_ALLOW = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']; // Gemini 10종(+4:5/5:4 = IG 피드)
     const aspectRatio = ASPECT_ALLOW.includes(req.body.aspectRatio) ? req.body.aspectRatio : null;
     // 해상도: 2K는 Nano Banana Pro(model=pro) 전용. 4K는 보류(D1). 그 외 → 1K(미적용).
     const imageSize = (model === 'pro' && String(req.body.imageSize || '').toUpperCase() === '2K') ? '2K' : null;
