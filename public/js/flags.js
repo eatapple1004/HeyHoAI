@@ -12,8 +12,8 @@
     // 🔴 런칭에서 숨기는 기능 (로컬엔 표시)
     reels:        { launch: false, label: 'hidden' }, // Kling 영상 — v1.1로 연기
     brandkit:     { launch: false, label: 'on hold' }, // 로고/폰트 미적용 (반쪽)
-    marketplace:  { launch: false, label: 'hidden' }, // 공급 없음
-    earnings:     { launch: false, label: 'hidden' }, // 마켓/제휴 종속
+    marketplace:  { launch: true,  label: 'hidden' }, // 점화(2026-06-22, dev 확인용 전체점화) — 유저 유료 실과금은 서버 MARKETPLACE_PAID env가 별도 게이트
+    earnings:     { launch: true,  label: 'hidden' }, // 점화(2026-06-22) — Creator Studio 공개
     teams:        { launch: false, label: 'hidden' }, // 개인 유저 먼저
     business:     { launch: false, label: 'hidden' }, // B2B 연기
     affiliate:    { launch: false, label: 'hidden' }, // 성장기능, 임계 아님
