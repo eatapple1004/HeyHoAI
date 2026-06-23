@@ -404,7 +404,6 @@
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
       <button class="btn" id="enhanceBtn" data-flag="enhance" style="display:none" onclick="doEnhance()" title="Expand your prompt with AI (+1 credit)">✨ Enhance</button>
-      <button class="btn" id="saveTplBtn" style="display:none" onclick="saveAsTemplate()">Save as template</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
   </div>
@@ -566,7 +565,10 @@
   <button class="img-close" onclick="closeImageModal()" title="Close">✕</button>
   <div id="imgModalMedia"></div>
   <div id="imgModalTpl" class="img-tpl"></div>
-  <a id="imgModalDl" class="img-dl" download href="#">⬇ Download</a>
+  <div class="img-actions">
+    <button id="imgModalSave" class="img-dl" style="display:none" onclick="closeImageModal();saveAsTemplate()">＋ Save as template</button>
+    <a id="imgModalDl" class="img-dl" download href="#">⬇ Download</a>
+  </div>
 </div>
 <style>
   #imgModal #imgModalMedia img,#imgModal #imgModalMedia video{max-width:92vw;max-height:80vh;border-radius:12px;box-shadow:0 30px 90px -20px rgba(0,0,0,.85);object-fit:contain;background:#0c0c14;display:block}
@@ -574,7 +576,8 @@
   #imgModal .img-tpl b{color:var(--accent2)}
   #imgModal .img-tpl:empty{display:none}
   #imgModal .img-close{position:fixed;top:18px;right:22px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:17px;width:40px;height:40px;border-radius:50%;cursor:pointer;z-index:91}
-  #imgModal .img-dl{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:11px;text-decoration:none;z-index:91}
+  #imgModal .img-actions{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:91}
+  #imgModal .img-dl{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:11px;text-decoration:none;cursor:pointer;font-family:inherit}
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
@@ -922,7 +925,6 @@ function setMode(m,initialVertical){
   document.getElementById('toolSel').style.display=custom?'':'none';
   document.getElementById('modelLabel').style.display=custom?'none':'';
   document.getElementById('qualitySeg').style.display=custom?'none':'';
-  document.getElementById('saveTplBtn').style.display=custom?'':'none';
   document.getElementById('enhanceBtn').style.display=(custom&&(!window.featureOn||window.featureOn('enhance')))?'':'none'; // 첫 출시 숨김(flags: enhance)
   // Custom 풀 컨트롤: 툴 픽커(type 그룹) + 툴 타입별 컨트롤(이미지=비율/해상도/네거티브, 비디오=길이)
   renderToolPicker();
@@ -1223,6 +1225,8 @@ function openImageModal(url,type){
     : `<img src="${esc(url)}" alt="">`;
   document.getElementById('imgModalTpl').innerHTML = lastGenTemplate ? `Template: <b>${esc(lastGenTemplate)}</b>` : '';
   document.getElementById('imgModalDl').href=url;
+  // Custom 모드 사진 결과에서만 "Save as template" 노출 — 생성 결과를 클릭해 저장(Library 방식)
+  document.getElementById('imgModalSave').style.display=(!isReel&&state.mode==='custom')?'':'none';
   document.getElementById('imgModal').classList.add('open');
 }
 function closeImageModal(){document.getElementById('imgModal').classList.remove('open');}
@@ -1344,7 +1348,6 @@ async function generateImages(r,subj,count){
   const ok=(data.results||[]).filter(x=>x.success);
   const fail=(data.results||[]).length-ok.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,4); // 템플릿 미리보기 후보(방금 만든 결과)
-  if(state.mode==='custom')document.getElementById('saveTplBtn').classList.remove('btn-dim'); // 생성 후 강조
   document.getElementById('resultsGrid').innerHTML=ok.map(x=>`
     <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(x.url)}','photo')">
       <div class="actions">
