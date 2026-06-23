@@ -131,12 +131,23 @@
   .gen-main{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .gen-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
   /* 한 줄 커스텀 프롬프트 (선택) — 템플릿 고정 프롬프트에 더해짐. 은은하게(인라인) */
-  .prompt-row{display:flex;align-items:center;gap:8px}
-  .prompt-input{flex:1;min-width:0;background:transparent;border:none;border-radius:0;padding:4px 2px;color:var(--dim);font-family:inherit;font-size:13px}
-  .prompt-input:focus{outline:none;color:var(--text)}
-  .prompt-input::placeholder{color:var(--faint);opacity:.65}
-  .prompt-clear{flex-shrink:0;background:none;border:none;color:var(--faint);font-size:13px;cursor:pointer;padding:2px 4px}
-  .prompt-clear:hover{color:var(--text)}
+  /* Custom 프롬프트 입력칸 — 일반/네거티브 명확히 구분(라벨 + 박스 + 색조) */
+  .prompt-row{display:block}
+  .pfield{position:relative;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;transition:border-color .16s,box-shadow .16s}
+  .pfield:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(106,64,224,.16)}
+  .pfield-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .pfield-label{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim)}
+  .pfield-label i{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;color:var(--faint);font-size:12px;margin-left:5px}
+  .neg-toggle{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:5px 2px;border-radius:7px}
+  .neg-toggle:hover{color:var(--accent2)}
+  .neg-toggle .pl{font-size:15px;line-height:1}
+  .pfield-ta{width:100%;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:inherit;font-size:14.5px;line-height:1.55;min-height:23px;max-height:220px;overflow-y:auto;display:block;padding-right:22px}
+  .pfield-ta::placeholder{color:var(--faint);font-size:14.5px}
+  .pfield-in{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:inherit;font-size:13.5px}
+  .pfield-in::placeholder{color:var(--faint)}
+  .pfield-neg{background:rgba(255,255,255,.02);padding:11px 16px 12px}
+  .prompt-clear{position:absolute;top:12px;right:13px;background:none;border:none;color:var(--faint);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:7px;line-height:1}
+  .prompt-clear:hover{color:var(--text);background:rgba(255,255,255,.06)}
   .prompt-clear.hidden{display:none}
   .opts-btn{display:none;font-family:inherit;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:13px;font-weight:600;padding:11px 14px;border-radius:11px;cursor:pointer}
   .opts-btn.on{color:var(--accent2);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.1)}
@@ -477,14 +488,20 @@
     <button class="addon-toggle locked" id="privateToggle" onclick="togglePrivate(this)" title="Private Mode — keep this creation off the public Explore feed. Subscribers only; off by default (public).">Private Mode <span class="bk-on hidden" id="privBadge">ON</span><span class="priv-lock" id="privLock">🔒</span></button>
   </div>
   <div class="prompt-row" id="promptRow">
-    <input id="extraPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
-      placeholder="Add a prompt (optional) — leave empty to use the template only"
-      oninput="updateBar()">
-    <button class="prompt-clear hidden" id="extraClear" title="Clear" onclick="document.getElementById('extraPrompt').value='';document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
+    <div class="pfield pfield-main">
+      <textarea id="extraPrompt" class="pfield-ta" maxlength="300" rows="1" autocomplete="off"
+        placeholder="Type a prompt..." oninput="autoGrowPrompt(this);updateBar()"></textarea>
+      <button class="prompt-clear hidden" id="extraClear" title="Clear" onclick="var e=document.getElementById('extraPrompt');e.value='';autoGrowPrompt(e);document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
+    </div>
   </div>
   <div class="prompt-row" id="negRow" style="display:none">
-    <input id="negPrompt" class="prompt-input" type="text" maxlength="300" autocomplete="off"
-      placeholder="Negative — what to avoid (optional, e.g. blurry, extra fingers, text)">
+    <button type="button" class="neg-toggle" id="negToggle" onclick="toggleNeg(true)"><span class="pl">+</span> Negative prompt</button>
+    <div class="pfield pfield-neg" id="negField" style="display:none">
+      <div class="pfield-head"><span class="pfield-label">Negative <i>— what to avoid (optional)</i></span>
+        <button class="prompt-clear" type="button" title="Hide" onclick="toggleNeg(false)">✕</button></div>
+      <input id="negPrompt" class="pfield-in" type="text" maxlength="300" autocomplete="off"
+        placeholder="Type a negative...">
+    </div>
   </div>
   <div class="gen-main">
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
@@ -835,6 +852,15 @@ function curDuration(){const s=document.getElementById('durSel');return s?s.valu
 function curQuality(){const s=document.getElementById('qualitySel');return (state.mode==='custom'&&curType()==='video'&&s)?s.value:'std';}
 function curCount(){const s=document.getElementById('countSel');return (!isVideoGen()&&s&&s.value)?parseInt(s.value,10):4;} // 이미지=전모드 선택값(1~8), 영상=미사용
 function negText(){const el=document.getElementById('negPrompt');return el?el.value.trim():'';}
+// 프롬프트 입력: 1줄에서 시작 → 줄 늘면 내용에 맞춰 자동 확장(최대 후 스크롤). Leonardo식.
+function autoGrowPrompt(el){if(!el)return;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,200)+'px';}
+// 네거티브: 기본 접힘. "+ Negative prompt" 토글로 펼침(Leonardo식). 값은 접어도 유지·적용.
+function toggleNeg(show){
+  const f=document.getElementById('negField'),t=document.getElementById('negToggle');
+  if(!f||!t)return;
+  f.style.display=show?'':'none';t.style.display=show?'none':'';
+  if(show){const n=document.getElementById('negPrompt');if(n)n.focus();}
+}
 // 오디오 토글 / 끝프레임 업로드 (Kling 등 비디오 툴)
 function audioOn(){const b=document.getElementById('audioWrap');return !!(b&&b.classList.contains('on'));}
 function toggleAudio(b){b.classList.toggle('on');const bd=document.getElementById('audioOnBadge');if(bd)bd.classList.toggle('hidden',!b.classList.contains('on'));updateBar();}
@@ -1029,7 +1055,7 @@ async function doEnhance(){
     const d=await res.json();
     if(res.status===402){toast(d.error||'Not enough credits','error');return;}
     if(!res.ok||!d.success)throw new Error(d.error||'enhance failed');
-    el.value=d.data.prompt;
+    el.value=d.data.prompt;autoGrowPrompt(el);
     document.getElementById('extraClear').classList.remove('hidden');
     updateBar();toast('Prompt enhanced ✨');
   }catch(e){toast('Enhance failed: '+(e.message||e),'error');}
@@ -1171,7 +1197,7 @@ function setMode(m,initialVertical){
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
   document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
   const ep=document.getElementById('extraPrompt');
-  if(ep)ep.placeholder=custom?'Describe what you want to create — your prompt drives the result':'Add a prompt (optional) — leave empty to use the template only';
+  if(ep)ep.placeholder=custom?'Type a prompt...':'Add a prompt (optional) — leave empty to use the template only';
   // Custom: 모델 픽커 → 타입 세그(Image|Video) + 툴 픽커로 교체 + Save as template 노출
   document.getElementById('modelField').style.display=custom?'':'none';
   document.getElementById('legacyModelField').style.display=custom?'none':'';
