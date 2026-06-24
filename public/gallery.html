@@ -132,7 +132,13 @@
 
   <!-- My templates (저장한 템플릿) -->
   <section id="tab-templates" class="hidden">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><a href="/earnings" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none">Open Creator Studio →</a></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+      <div class="tplview-tog">
+        <button data-v="list" class="on" onclick="setTplView('list')">List</button>
+        <button data-v="theme" onclick="setTplView('theme')">By theme</button>
+      </div>
+      <a href="/earnings" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none">Open Creator Studio →</a>
+    </div>
     <div class="grid fade d2" id="tplGrid"></div>
     <div class="empty hidden" id="tplEmpty">
       <div class="ico"></div><h3>No saved templates yet</h3>
@@ -659,20 +665,76 @@ function tplCard(t,kind){
     <div class="actions">${actions}</div>
   </div>`;
 }
-// My templates = 내 저장/생성(테마 넣다뺐다 가능) + 오피셜(표시·Use; 오피셜 테마관리는 studio).
+// My templates = 내 저장/생성 + 오피셜. [리스트 | 테마별] 보기 전환.
+let MY_TPLS=[], OFFICIAL_TPLS=[], TPLVIEW='list';
 async function loadMyTemplates(){
-  const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty');
   try{
     await loadLibThemes();
     const d=(await(await fetch('/api/marketplace/me')).json()).data||{};
-    const mine=(d.templates||[]);
-    const mineIds=new Set(mine.map(t=>t.id));
-    const official=(d.official||[]).filter(o=>!mineIds.has(o.id));
-    const list=mine.map(t=>tplCard(t,'mine')).concat(official.map(t=>tplCard(t,'official')));
-    if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
-    empty.classList.add('hidden');grid.innerHTML=list.join('');
-  }catch(e){console.error('my templates load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+    MY_TPLS=d.templates||[];
+    const mineIds=new Set(MY_TPLS.map(t=>t.id));
+    OFFICIAL_TPLS=(d.official||[]).filter(o=>!mineIds.has(o.id));
+  }catch(e){ console.error('my templates load failed',e); MY_TPLS=[]; OFFICIAL_TPLS=[]; }
+  renderTemplates();
 }
+function setTplView(v){ TPLVIEW=(v==='theme'?'theme':'list'); document.querySelectorAll('.tplview-tog button').forEach(b=>b.classList.toggle('on',b.dataset.v===TPLVIEW)); renderTemplates(); }
+function renderTemplates(){ if(TPLVIEW==='theme') renderThemeView(); else renderListView(); }
+function renderListView(){
+  const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty');
+  grid.classList.remove('tv-mode');
+  const list=MY_TPLS.map(t=>tplCard(t,'mine')).concat(OFFICIAL_TPLS.map(t=>tplCard(t,'official')));
+  if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');grid.innerHTML=list.join('');
+}
+// ── 테마별 배치 보기 (내 템플릿만 배치 대상; 오피셜은 리스트 보기) ──
+function tplInTheme(tp, kind, key){
+  if(kind==='custom'){ const c=LIB.customs.find(x=>x.id===key); return !!(c&&(c.items||[]).some(i=>i.itemType==='template'&&String(i.itemId)===String(tp.id))); }
+  const o=LIB.ov[key], id=String(tp.id);
+  if(o&&o.remove.has(id))return false;
+  if(o&&o.add.has(id))return true;
+  return (tp.themes||[]).includes(key);
+}
+function tvThumbStyle(tp){ const prev=(tp.preview_media&&tp.preview_media[0])||''; return (prev&&!/\.(mp4|webm|mov)$/i.test(prev))?`background-image:url('${esc(prev)}');background-size:cover;background-position:center`:`background:linear-gradient(150deg,#7c6cff,#5ee0d6)`; }
+function themeViewCard(tp, kind, key){
+  return `<div class="tv-card" draggable="true" ondragstart="tvDragStart(event,'${tp.id}','${kind}','${esc(key)}')" style="${tvThumbStyle(tp)}" title="${esc(tp.name)}">
+    <button class="tv-x" title="Remove from theme" onclick="event.stopPropagation();tvRemove('${kind}','${esc(key)}','${tp.id}')">✕</button>
+    <span class="tv-cn">${esc(tp.name)}</span></div>`;
+}
+function renderThemeView(){
+  const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty');
+  empty.classList.add('hidden'); grid.classList.add('tv-mode');
+  const defs=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
+  const secs=defs.map(t=>({kind:'default',key:t.slug,name:t.name})).concat(LIB.customs.map(t=>({kind:'custom',key:t.id,name:'✦ '+t.name})));
+  let h=secs.map(s=>{
+    const inTpls=MY_TPLS.filter(tp=>tplInTheme(tp,s.kind,s.key));
+    const cards=inTpls.length?inTpls.map(tp=>themeViewCard(tp,s.kind,s.key)).join(''):`<div class="tv-empty">Empty — drag a template here or tap ＋ Add</div>`;
+    return `<div class="tv-sec" ondragover="tvDragOver(event)" ondragenter="this.classList.add('tv-over')" ondragleave="if(event.target===this)this.classList.remove('tv-over')" ondrop="this.classList.remove('tv-over');tvDrop(event,'${s.kind}','${esc(s.key)}')">
+      <div class="tv-head"><span class="tv-name">${esc(s.name)}</span><button class="tv-add" onclick="tvOpenAdd('${s.kind}','${esc(s.key)}')">＋ Add</button></div>
+      <div class="tv-cards">${cards}</div></div>`;
+  }).join('');
+  h+=`<button class="tv-newtheme" onclick="tvNewTheme()">＋ New theme</button>`;
+  grid.innerHTML=h;
+}
+// 배치 조작 (버튼·DnD 공용 · 기존 엔드포인트 재사용 · 내 템플릿 자동보유는 백엔드 처리)
+async function tvAdd(kind,key,tid){
+  if(kind==='custom'){ await fetch('/api/studio/themes/'+key+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid})}); const c=LIB.customs.find(x=>x.id===key); if(c){c.items=c.items||[]; if(!c.items.some(i=>i.itemType==='template'&&String(i.itemId)===String(tid)))c.items.push({itemType:'template',itemId:tid});} }
+  else { await fetch('/api/studio/global-themes/'+encodeURIComponent(key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid,action:'add'})}); const o=LIB.ov[key]=LIB.ov[key]||{add:new Set(),remove:new Set()}; o.add.add(String(tid)); o.remove.delete(String(tid)); }
+}
+async function tvRemoveSilent(kind,key,tid){
+  if(kind==='custom'){ await fetch('/api/studio/themes/'+key+'/items/template/'+tid,{method:'DELETE'}); const c=LIB.customs.find(x=>x.id===key); if(c)c.items=(c.items||[]).filter(i=>!(i.itemType==='template'&&String(i.itemId)===String(tid))); }
+  else { await fetch('/api/studio/global-themes/'+encodeURIComponent(key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid,action:'remove'})}); const o=LIB.ov[key]=LIB.ov[key]||{add:new Set(),remove:new Set()}; o.remove.add(String(tid)); o.add.delete(String(tid)); }
+}
+async function tvRemove(kind,key,tid){ try{ await tvRemoveSilent(kind,key,tid); renderThemeView(); }catch(e){ toast('Could not update theme','error'); } }
+let TV_DRAG=null;
+function tvDragStart(e,tid,kind,key){ TV_DRAG={tid:String(tid),fromKind:kind,fromKey:key}; try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(tid));}catch(_){} }
+function tvDragOver(e){ e.preventDefault(); try{e.dataTransfer.dropEffect='move';}catch(_){} }
+async function tvDrop(e,kind,key){ e.preventDefault(); if(!TV_DRAG)return; const d=TV_DRAG; TV_DRAG=null; if(d.fromKind===kind&&d.fromKey===key)return; try{ await tvAdd(kind,key,d.tid); await tvRemoveSilent(d.fromKind,d.fromKey,d.tid); renderThemeView(); }catch(err){ toast('Could not move','error'); } }
+// ＋ Add 피커 (그 테마에 없는 내 템플릿)
+let TV_ADD={kind:null,key:null};
+function tvOpenAdd(kind,key){ TV_ADD={kind,key}; const avail=MY_TPLS.filter(tp=>!tplInTheme(tp,kind,key)); document.getElementById('tvAddList').innerHTML = avail.length?avail.map(tp=>`<button type="button" class="tv-arow" onclick="tvAddPick('${tp.id}')">${esc(tp.name)}</button>`).join(''):'<div class="tv-empty" style="padding:10px 2px">No templates to add.</div>'; document.getElementById('tvAddModal').classList.add('open'); }
+function tvCloseAdd(){ document.getElementById('tvAddModal').classList.remove('open'); }
+async function tvAddPick(tid){ try{ await tvAdd(TV_ADD.kind,TV_ADD.key,tid); tvCloseAdd(); renderThemeView(); }catch(e){ toast('Could not add','error'); } }
+async function tvNewTheme(){ const name=prompt('New theme name'); if(!name||!name.trim())return; try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})})).json(); if(d&&d.data){ LIB.customs.push(d.data); renderThemeView(); } }catch(e){ toast('Could not create theme','error'); } }
 // ── 테마 매니저(My templates에서 studio 테마 넣다뺐다) ──
 // 기본 테마=user_theme_overrides(add/remove 업서트가 태그보다 우선) / 커스텀=user_studio_theme_items.
 let LIB={global:[],customs:[],ov:{},hidden:new Set(),tid:null};
@@ -769,5 +831,36 @@ loadReelCost();renderFilters();load();
     .tm-x{width:100%;background:none;border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
   </style>
 </div>
+<div id="tvAddModal" class="tva-ov">
+  <div class="tva-box">
+    <div class="tva-h">Add a template to this theme</div>
+    <div id="tvAddList"></div>
+    <button type="button" class="tva-x" onclick="tvCloseAdd()">Cancel</button>
+  </div>
+</div>
+<style>
+  .tplview-tog{display:inline-flex;border:1px solid var(--border2);border-radius:10px;overflow:hidden}
+  .tplview-tog button{background:none;border:none;color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;cursor:pointer}
+  .tplview-tog button.on{background:var(--accent);color:#fff}
+  #tplGrid.tv-mode{columns:auto!important;column-width:auto!important;display:block!important}
+  .tv-sec{border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;background:rgba(255,255,255,.02)}
+  .tv-sec.tv-over{border-color:var(--accent);background:rgba(124,108,255,.10)}
+  .tv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+  .tv-name{font-size:15px;font-weight:700}
+  .tv-add{background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--text);border-radius:9px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0}
+  .tv-cards{display:flex;flex-wrap:wrap;gap:10px;min-height:30px}
+  .tv-card{position:relative;width:118px;height:148px;border-radius:11px;overflow:hidden;cursor:grab;border:1px solid var(--border);display:flex;align-items:flex-end}
+  .tv-card:active{cursor:grabbing}
+  .tv-cn{font-size:11px;font-weight:600;color:#fff;padding:6px 8px;width:100%;background:linear-gradient(transparent,rgba(0,0,0,.82));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tv-x{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+  .tv-empty{color:var(--dim);font-size:13px;padding:10px 2px}
+  .tv-newtheme{width:100%;background:none;border:1px dashed var(--border2);color:var(--accent2);border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:20px}
+  .tva-ov{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
+  .tva-ov.open{display:flex}
+  .tva-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;max-width:420px;width:100%;max-height:80vh;overflow:auto;padding:22px}
+  .tva-h{font-size:17px;font-weight:700;margin-bottom:12px}
+  .tv-arow{display:block;width:100%;text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:11px 13px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:7px}
+  .tva-x{width:100%;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:10px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;margin-top:6px}
+</style>
 </body>
 </html>
