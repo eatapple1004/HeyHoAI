@@ -511,7 +511,7 @@
   </div>
   <div class="prompt-row" id="promptRow">
     <div class="pfield pfield-main">
-      <textarea id="extraPrompt" class="pfield-ta" maxlength="1500" rows="1" autocomplete="off"
+      <textarea id="extraPrompt" class="pfield-ta" maxlength="8000" rows="1" autocomplete="off"
         placeholder="Type a prompt..." oninput="autoGrowPrompt(this);updateBar()"></textarea>
       <button class="prompt-clear hidden" id="extraClear" title="Clear" onclick="var e=document.getElementById('extraPrompt');e.value='';autoGrowPrompt(e);document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
     </div>
@@ -521,7 +521,7 @@
     <div class="pfield pfield-neg" id="negField" style="display:none">
       <div class="pfield-head"><span class="pfield-label">Negative <i>— what to avoid (optional)</i></span>
         <button class="prompt-clear" type="button" title="Hide" onclick="toggleNeg(false)">✕</button></div>
-      <input id="negPrompt" class="pfield-in" type="text" maxlength="300" autocomplete="off"
+      <input id="negPrompt" class="pfield-in" type="text" maxlength="1000" autocomplete="off"
         placeholder="Type a negative...">
     </div>
   </div>

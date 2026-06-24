@@ -74,8 +74,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const aspectRatio = ASPECT_ALLOW.includes(req.body.aspectRatio) ? req.body.aspectRatio : null;
     // 해상도: 2K는 Nano Banana Pro(model=pro) 전용. 4K는 보류(D1). 그 외 → 1K(미적용).
     const imageSize = (model === 'pro' && String(req.body.imageSize || '').toUpperCase() === '2K') ? '2K' : null;
-    // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 500.
-    const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 500);
+    // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 1000(입력란 maxlength와 일치).
+    const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 1000);
 
     if (!prompt || prompt.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
