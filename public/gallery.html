@@ -76,6 +76,9 @@
   .tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
   .item .badge.vis{left:auto;right:10px;background:rgba(124,108,255,.6)}
   .item .badge.vis.private{background:rgba(0,0,0,.55)}
+  /* My templates 테마 필터(All + 글로벌·커스텀 중 내 템플릿이 들어있는 테마만) */
+  .tpl-filter{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+  .tpl-empty-note{color:var(--faint);font-size:14px;padding:34px 6px;text-align:center}
   /* My templates = 깔끔한 타일. "Themes" 누르면 그 카드 위에 칩 패널이 인플레이스로 펼쳐짐(모달 아님) */
   .item .lib-panel{position:absolute;inset:0;z-index:5;background:rgba(10,10,16,.93);backdrop-filter:blur(4px);display:none;flex-direction:column;padding:12px;border-radius:16px}
   .item .lib-panel.open{display:flex}
@@ -144,6 +147,7 @@
   <!-- My templates (저장한 템플릿) -->
   <section id="tab-templates" class="hidden">
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><a href="/earnings" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none">Open Creator Studio →</a></div>
+    <div class="tpl-filter fade d1" id="tplThemeFilter"></div>
     <div class="grid fade d2" id="tplGrid"></div>
     <div class="empty hidden" id="tplEmpty">
       <div class="ico"></div><h3>No saved templates yet</h3>
@@ -674,23 +678,62 @@ function tplCard(t,kind){
     <div class="actions">${actions}</div>${panel}
   </div>`;
 }
-// My templates = 내 저장/생성(테마 넣다뺐다 가능) + 오피셜(표시·Use; 오피셜 테마관리는 studio).
+// My templates = 내 저장/생성 + 오피셜. 테마 칩 필터(글로벌+커스텀 동적)로 골라보기.
 async function loadMyTemplates(){
-  const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty');
+  const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty'),filt=document.getElementById('tplThemeFilter');
   try{
     await loadLibThemes();
     const d=(await(await fetch('/api/marketplace/me')).json()).data||{};
     const mine=(d.templates||[]);
     const mineIds=new Set(mine.map(t=>t.id));
     const official=(d.official||[]).filter(o=>!mineIds.has(o.id));
-    const list=mine.map(t=>tplCard(t,'mine')).concat(official.map(t=>tplCard(t,'official')));
-    if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
-    empty.classList.add('hidden');grid.innerHTML=list.join('');
+    TPL_THEMES={};
+    mine.concat(official).forEach(t=>{ TPL_THEMES[String(t.id)]=new Set(t.themes||[]); });
+    MYT.list=mine.map(t=>({t:t,kind:'mine'})).concat(official.map(t=>({t:t,kind:'official'})));
+    if(!MYT.list.length){ grid.innerHTML=''; if(filt)filt.innerHTML=''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    renderThemeFilter(); renderMyTemplates();
   }catch(e){console.error('my templates load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
+}
+// 한 템플릿의 effective 글로벌 테마(base 태그 ± override·숨김 제외) / 커스텀 테마 id 집합.
+function itemGlobalThemes(tid){
+  tid=String(tid); const out=new Set();
+  (LIB.global||[]).forEach(t=>{ if(LIB.hidden.has(t.slug))return; if(libDefOn(t.slug,tid)) out.add(t.slug); });
+  return out;
+}
+function itemCustomThemes(tid){ tid=String(tid); return new Set((LIB.customs||[]).filter(c=>(c.items||[]).some(i=>i.itemType==='template'&&String(i.itemId)===tid)).map(c=>c.id)); }
+function inThemeFilter(x){
+  const f=MYT.filter; if(!f||f.kind==='all')return true;
+  const tid=String(x.t.id);
+  if(f.kind==='global') return itemGlobalThemes(tid).has(f.slug);
+  if(f.kind==='custom') return itemCustomThemes(tid).has(f.id);
+  return true;
+}
+// 칩 = All + 내 템플릿이 실제로 들어있는 글로벌/커스텀 테마만(동적·빈 테마 미표시·커스텀 추가삭제 자동반영).
+function renderThemeFilter(){
+  const el=document.getElementById('tplThemeFilter'); if(!el)return;
+  const gP=new Set(), cP=new Set();
+  MYT.list.forEach(x=>{ itemGlobalThemes(x.t.id).forEach(s=>gP.add(s)); itemCustomThemes(x.t.id).forEach(id=>cP.add(id)); });
+  const f=MYT.filter||{kind:'all'};
+  let h=`<button class="chip${f.kind==='all'?' active':''}" onclick="setMyThemeFilter('all')">All</button>`;
+  (LIB.global||[]).filter(t=>gP.has(t.slug)).forEach(t=>{ h+=`<button class="chip${f.kind==='global'&&f.slug===t.slug?' active':''}" onclick="setMyThemeFilter('global','${esc(t.slug)}')">${esc(t.name)}</button>`; });
+  (LIB.customs||[]).filter(c=>cP.has(c.id)).forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">✦ ${esc(c.name)}</button>`; });
+  el.innerHTML=h;
+}
+function renderMyTemplates(){
+  const grid=document.getElementById('tplGrid'); if(!grid)return;
+  const rows=MYT.list.filter(inThemeFilter);
+  grid.innerHTML = rows.length ? rows.map(x=>tplCard(x.t,x.kind)).join('') : '<div class="tpl-empty-note">No templates in this theme yet.</div>';
+}
+function setMyThemeFilter(kind,key){
+  MYT.filter = kind==='all'?{kind:'all'}:(kind==='global'?{kind:'global',slug:key}:{kind:'custom',id:key});
+  renderThemeFilter(); renderMyTemplates();
 }
 // ── 테마 매니저(My templates에서 studio 테마 넣다뺐다) ──
 // 기본 테마=user_theme_overrides(add/remove 업서트가 태그보다 우선) / 커스텀=user_studio_theme_items.
 let LIB={global:[],customs:[],ov:{},hidden:new Set()};
+let TPL_THEMES={};                 // tid → Set(base 글로벌 테마 슬러그, /me의 themes)
+let MYT={list:[],filter:{kind:'all'}};  // My templates 전체 목록 + 현재 테마 필터
 async function loadLibThemes(){
   try{ LIB.global=await ensureThemes(); }catch(e){ LIB.global=[]; }
   try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{};
@@ -698,7 +741,8 @@ async function loadLibThemes(){
     LIB.ov={}; (d.themeOverrides||[]).forEach(o=>{ if(o.itemType==='template'){ const m=(LIB.ov[o.themeSlug]=LIB.ov[o.themeSlug]||{add:new Set(),remove:new Set()}); m[o.action].add(String(o.itemId)); } });
   }catch(e){ LIB.customs=[]; LIB.ov={}; LIB.hidden=new Set(); }
 }
-function libDefOn(slug,tid){ const o=LIB.ov[slug]; tid=String(tid); if(o&&o.remove.has(tid))return false; if(o&&o.add.has(tid))return true; return false; }
+// effective 글로벌 멤버십: 개인 override remove > add > 크리에이터 base 태그(TPL_THEMES). 필터·스튜디오와 일치.
+function libDefOn(slug,tid){ tid=String(tid); const o=LIB.ov[slug]; if(o&&o.remove.has(tid))return false; if(o&&o.add.has(tid))return true; return !!(TPL_THEMES[tid]&&TPL_THEMES[tid].has(slug)); }
 function libCustomOn(themeId,tid){ tid=String(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>i.itemType==='template'&&String(i.itemId)===tid)); }
 function libChip(on,label,onclick){ return `<button type="button" class="lib-chip${on?' on':''}" onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
 // 카드 인라인 테마 칩: 기본 테마(user_theme_overrides) + 커스텀(user_studio_theme_items) 모두 토글.
