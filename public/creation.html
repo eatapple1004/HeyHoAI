@@ -82,6 +82,8 @@
   <div class="sv-box">
     <div class="sv-h">Save to your studio</div>
     <div class="sv-s">A private template is added to your studio and My templates.</div>
+    <div class="sv-lbl">Name</div>
+    <input id="svName" type="text" maxlength="80" class="sv-name" placeholder="Name this template">
     <div class="sv-lbl">Mode</div>
     <div class="sv-modes" id="svModes">
       <button type="button" class="sv-mode" data-mode="Influencer" onclick="pickMode(this)">Influencer</button>
@@ -101,6 +103,7 @@
     .sv-h{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
     .sv-s{font-size:13px;color:var(--dim,#9aa);margin-bottom:16px;line-height:1.45}
     .sv-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim,#9aa);font-weight:700;margin:10px 0 6px}
+    .sv-name{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;box-sizing:border-box;margin-bottom:2px}
     .sv-modes{display:flex;gap:8px;margin-bottom:6px}
     .sv-mode{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
     .sv-mode.on{background:var(--accent,#7c6cff);border-color:var(--accent,#7c6cff);color:#fff}
@@ -123,6 +126,7 @@ let SV={mode:null, themeKind:null, themeKey:null, themes:null, hidden:null};
 async function openSaveModal(){
   if(!IT||!IT.idx){ toast('Could not save'); return; }
   document.getElementById('saveModal').classList.add('open');
+  const nm=document.getElementById('svName'); if(nm) nm.value=(IT.type==='video'?'Reel':'Look')+' · '+(IT.createdAt?new Date(IT.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}):IT.idx);
   if(!SV.themes){
     let defs=[], customs=[];
     try{ defs=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){}
@@ -153,7 +157,7 @@ async function confirmSave(){
   if(!(SV.mode&&SV.themeKey))return;
   const go=document.getElementById('svGo'); go.disabled=true; go.textContent='Saving…';
   try{
-    const r=await fetch('/api/studio/save-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creationIdx:IT.idx, category:SV.mode, themeKind:SV.themeKind, themeKey:SV.themeKey})});
+    const r=await fetch('/api/studio/save-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creationIdx:IT.idx, category:SV.mode, themeKind:SV.themeKind, themeKey:SV.themeKey, name:((document.getElementById('svName')||{}).value||'').trim()||'Saved look'})});
     const d=await r.json();
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     closeSaveModal();
