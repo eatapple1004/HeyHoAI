@@ -15,7 +15,11 @@
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
   .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
   /* 마소너리 그리드 */
-  .grid{columns:4 260px;column-gap:16px}
+  /* creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
+  .grid{column-count:2;column-gap:14px}  /* 폴백 */
+  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
+  @media(min-width:600px){#grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}}
+  #grid .card{margin:0;align-self:start;break-inside:auto}
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
   .hlink{color:inherit;text-decoration:none}
@@ -145,8 +149,19 @@ async function load(){
     if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
     empty.classList.add('hidden');grid.innerHTML=d.map(card).join('');
     playFeedVideos();
+    layoutGridMasonry();
   }catch(e){console.error('explore load failed',e);empty.classList.remove('hidden');}
 }
+// 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
+function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+14); }
+function layoutGridMasonry(){
+  const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
+  g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
+    if(m&&!m.__gmHooked){ m.__gmHooked=1; try{m.loading='eager';}catch(e){} const ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
+      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeGridCard(c); else m.addEventListener(ev,()=>sizeGridCard(c),{once:true}); }
+    sizeGridCard(c); });
+}
+addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTimeout(layoutGridMasonry,150); });
 // 동적 삽입된 영상은 autoplay 속성만으론 재생이 안 걸려 명시적으로 play() 호출(muted=정책 통과). 화면 들어올 때 재생.
 function playFeedVideos(){
   const vids=document.querySelectorAll('.card video.media');

@@ -24,8 +24,12 @@
   .chip:hover{color:var(--text)}
   .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
 
-  .grid{columns:4 260px;column-gap:16px}
-  /* My creations = Explore와 동일 masonry(.grid columns) — 자연 비율·크롭 없음. 무한스크롤만 추가 유지. */
+  .grid{column-count:2;column-gap:14px}  /* 좁은 화면=2칸 고정(세로 1줄 방지) */
+  @media(min-width:600px){.grid{column-count:auto;columns:6 185px}}  /* 다른 탭(템플릿/구매/저장) 폴백 */
+  /* My creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
+  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
+  @media(min-width:600px){#grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}}
+  #grid .card{margin:0;align-self:start;break-inside:auto}
   #scrollSentinel{height:1px;width:100%}
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
@@ -374,9 +378,20 @@ function render(){
     </div>`;
   }).join('');
   playFeedVideos();
+  layoutGridMasonry();
   // 사진이 하나라도 있으면 넛지 표시
   document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
 }
+// 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
+function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+14); }
+function layoutGridMasonry(){
+  const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
+  g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
+    if(m&&!m.__gmHooked){ m.__gmHooked=1; try{m.loading='eager';}catch(e){} const ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
+      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeGridCard(c); else m.addEventListener(ev,()=>sizeGridCard(c),{once:true}); }
+    sizeGridCard(c); });
+}
+addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTimeout(layoutGridMasonry,150); });
 // 동적 삽입 영상은 autoplay 속성만으론 재생이 안 걸려 명시적 play()(muted=정책 통과). 화면 들어올 때만 재생.
 function playFeedVideos(){
   const vids=document.querySelectorAll('.card video.media');
