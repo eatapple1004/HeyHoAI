@@ -293,6 +293,9 @@ router.post('/templates', async (req, res, next) => {
     );
     const created = r.rows[0];
 
+    // 크리에이터는 자기 템플릿 자동 보유 → studio 픽커(mergeOwnedTemplates)에 떠서 테마 배치·사용 가능.
+    await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [req.user.id, created.id]);
+
     // 씨앗 creation 역링크 + 누적 좋아요 롤업(등록 즉시 사회적 증명). 본인 소유·아직 미귀속(Custom) 결과만.
     // 공개(마켓) 게시일 때만 — 비공개(개인) 템플릿은 마켓 노출이 없어 역링크 시 creation에 막다른 Get CTA가 생김.
     const srcIdx = parseInt(sourceResultIdx, 10);

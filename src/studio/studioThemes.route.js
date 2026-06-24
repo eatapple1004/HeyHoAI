@@ -10,6 +10,19 @@ async function isPublicCreation(idx) {
   return !!r.rows[0];
 }
 
+// 내 템플릿을 studio 테마에 넣을 때 보유 보장: 미보유 + 내가 만든/저장한 것(creator_id=나)이면 자동 보유(무료).
+//   studio 픽커는 mergeOwnedTemplates(=/owned)로만 카드를 올리므로, 보유돼야 테마에 보임. 남의 미보유=false(구매 필요).
+async function ensureOwnedIfMine(userId, templateId) {
+  const owned = await query(`SELECT 1 FROM template_owns WHERE user_id = $1 AND template_id = $2`, [userId, templateId]);
+  if (owned.rows[0]) return true;
+  const t = await query(`SELECT creator_id FROM marketplace_templates WHERE id = $1`, [templateId]);
+  if (t.rows[0] && t.rows[0].creator_id === userId) {
+    await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [userId, templateId]);
+    return true;
+  }
+  return false;
+}
+
 /**
  * 스튜디오 개인 큐레이션 (설계 = docs/테마_조직화_설계_2026-06-24.md).
  *  - 기본 테마 섹션 = 프론트 파생(내장 레시피 vertical→테마 + 보유 마켓 템플릿). 숨긴 내장은 user_hidden_recipes로 제외.
@@ -127,8 +140,7 @@ router.post('/themes/:id/items', async (req, res, next) => {
     if (!own.rows[0]) return res.status(404).json({ success: false, error: '내 테마가 아니거나 없습니다.' });
     if (itemType === 'template') {
       if (!UUID_RE.test(itemId)) return res.status(400).json({ success: false, error: '템플릿 id가 올바르지 않습니다.' });
-      const owned = await query(`SELECT 1 FROM template_owns WHERE user_id = $1 AND template_id = $2`, [req.user.id, itemId]);
-      if (!owned.rows[0]) return res.status(403).json({ success: false, error: '먼저 이 템플릿을 보유해야 합니다.' });
+      if (!(await ensureOwnedIfMine(req.user.id, itemId))) return res.status(403).json({ success: false, error: '먼저 이 템플릿을 보유해야 합니다.' });
     } else if (itemType === 'creation') {
       if (!/^\d+$/.test(itemId)) return res.status(400).json({ success: false, error: 'creation id가 올바르지 않습니다.' });
       if (!await isPublicCreation(parseInt(itemId, 10))) return res.status(404).json({ success: false, error: '저장할 수 없는 결과물입니다 (비공개·삭제·없음).' });
@@ -185,6 +197,10 @@ router.post('/global-themes/:slug/items', async (req, res, next) => {
     if (itemType === 'creation' && action === 'add') {
       if (!/^\d+$/.test(itemId)) return res.status(400).json({ success: false, error: 'creation id가 올바르지 않습니다.' });
       if (!await isPublicCreation(parseInt(itemId, 10))) return res.status(404).json({ success: false, error: '저장할 수 없는 결과물입니다 (비공개·삭제·없음).' });
+    }
+    // 기본 테마에 내 템플릿 추가(add) 시 보유 보장 → studio 픽커에 떠야 그 테마에 보임.
+    if (itemType === 'template' && action === 'add' && UUID_RE.test(itemId)) {
+      await ensureOwnedIfMine(req.user.id, itemId);
     }
     await query(
       `INSERT INTO user_theme_overrides (user_id, theme_slug, item_type, item_id, action)
