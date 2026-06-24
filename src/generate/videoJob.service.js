@@ -141,6 +141,28 @@ async function generateAudioFor({ videoId, videoUrl, prompt }) {
 /** 잡 완료 처리: 영상(+옵션 오디오 합성) 다운로드 + 저장 + 결과 기록 */
 async function finalizeSucceeded(job, v, unitsUsed) {
   const videoUrl = v.url, videoDuration = v.duration, videoId = v.id, taskId = job.task_id;
+
+  // 멱등 가드: 같은 Kling task가 이미 결과로 저장됐으면 중복 저장 금지.
+  //   원인 = PM2 재시작/재배포 시 옛·새 프로세스의 폴러가 잠깐 겹쳐, 단일-폴러 전제의
+  //   원자적 claim을 우회해 같은 task를 두 번 finalize(고아 중복 결과·검정 카드 발생).
+  //   여기서 task_id 기준으로 막으면 프로세스가 겹쳐도 결과는 1개만 유지된다.
+  const dup = await query(
+    `SELECT idx, file_path FROM generation_results
+     WHERE metadata->>'type'='video' AND metadata->>'taskId'=$1
+     ORDER BY idx LIMIT 1`,
+    [taskId]
+  );
+  if (dup.rows[0]) {
+    const ex = dup.rows[0];
+    const exUrl = ex.file_path ? `/${ex.file_path.replace(/^tmp\//, '')}` : null;
+    await query(
+      `UPDATE video_jobs SET status='succeeded', result_idx=$1, result_url=$2, updated_at=now() WHERE id=$3`,
+      [ex.idx, exUrl, job.id]
+    );
+    log.warn(`Job ${job.id}: task ${taskId} already saved as result ${ex.idx} — linked to existing, skipped duplicate save`);
+    return;
+  }
+
   const videoBuf = Buffer.from(await (await fetch(videoUrl)).arrayBuffer());
   fs.mkdirSync(outputDir, { recursive: true });
   const uuid = crypto.randomUUID();
