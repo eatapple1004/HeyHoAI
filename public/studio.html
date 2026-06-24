@@ -801,7 +801,7 @@ async function mergeOwnedTemplates(){
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
       emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',cat:'My templates',
       themes:(t.themes&&t.themes.length?t.themes:['general']),
-      prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace'});
+      prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false});
   });
   renderFilters();renderRecipes();updateBar();
 }
@@ -2050,21 +2050,27 @@ function bootRecipe(){
 }
 
 buildTemplates(); // window.RECIPES(93종) → TEMPLATES (setMode 렌더 전에 필수)
-// Library "Try it" → /studio?try=1 + sessionStorage(doppia_try_tpl) → Custom 모드 프리필
+// "Use" (비-recipe 마켓 템플릿) → /studio?try=1: Custom 점프 폐지 → 스튜디오 그리드에 카드로 주입+선택(recipe 템플릿과 일관).
 function applyTryTemplate(){
   try{
     const raw=sessionStorage.getItem('doppia_try_tpl');
     if(!raw)return false;
     sessionStorage.removeItem('doppia_try_tpl');
     const t=JSON.parse(raw);
-    setMode('custom');
-    state.tryTemplateId=t.id||null; // attribution: 이 마켓 템플릿으로 만든 결과 표시
-    const ep=document.getElementById('extraPrompt');
-    if(ep&&t.prompt){ep.value=t.prompt; const c=document.getElementById('extraClear'); if(c)c.classList.remove('hidden');}
-    const tt=toolById(t.tool); const ts=document.getElementById('toolSel');
-    if(ts&&t.tool&&tt){applyTool(t.tool);}
-    updateBar();
-    if(window.toast)toast('Template loaded — pick a reference and generate');
+    // mergeOwnedTemplates와 동일 카드 형식으로 그리드에 주입(중복은 dedup) → 선택. mode=카테고리 매핑.
+    const MODE={Influencer:'influencer',Shopping:'shopping',UGC:'ugc',Custom:'influencer'};
+    const mode=MODE[t.category]||'influencer';
+    const card={id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
+      emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',cat:'My templates',
+      themes:(t.themes&&t.themes.length?t.themes:['general']),
+      prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false};
+    TEMPLATES[mode]=TEMPLATES[mode]||[];
+    if(!TEMPLATES[mode].some(r=>String(r.id)===String(card.id)))TEMPLATES[mode].unshift(card);
+    setMode(mode);
+    state.recipeId=card.id; state.filter='All';   // 그리드에서 선택된 상태(attribution=curRecipe→marketplace)
+    renderFilters();renderRecipes();updateBar();
+    document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
+    if(window.toast)toast('Template added to your studio — pick a reference and generate');
     return true;
   }catch(e){return false;}
 }
