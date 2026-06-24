@@ -41,12 +41,23 @@
   .note{margin-top:16px;color:var(--faint);font-size:12px;line-height:1.5}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
   #toast.show{opacity:1}
+  /* 이 템플릿으로 만든 creations (좋아요순) */
+  #madeWith{max-width:980px;margin:0 auto;padding:0 24px 70px}
+  .made-h{font-family:'Sora';font-size:18px;font-weight:800;margin:38px 0 16px}
+  .made-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+  .made-card{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#0c0c14;cursor:pointer;aspect-ratio:4/5}
+  .made-card .m{display:block;width:100%;height:100%;object-fit:cover}
+  .made-card .lk{position:absolute;top:7px;right:7px;display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:700;line-height:1}
+  .made-card .lk .h{color:#ff5a7a;font-size:12px}
+  .made-empty{color:var(--faint);font-size:13.5px;margin:6px 0 0}
+  @media(max-width:760px){.made-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
 </style>
 </head>
 <body class="has-rail">
 <div class="wrap">
   <div class="back" onclick="history.length>1?history.back():location.href='/explore'">← Back</div>
   <div id="content" class="grid2"></div>
+  <div id="madeWith"></div>
 </div>
 <div id="toast"></div>
 <script>
@@ -62,8 +73,24 @@ async function load(){
     const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(id));
     const d=await r.json();
     if(!r.ok||!d.success)throw new Error(d.error||'not found');
-    TPL=d.data;render();
+    TPL=d.data;render();loadCreations();
   }catch(e){document.getElementById('content').innerHTML='<p style="color:var(--dim)">Could not load this template. '+esc(e.message||'')+'</p>';}
+}
+// 이 템플릿으로 만든 공개 creations — 좋아요순 이미지/영상 갤러리
+async function loadCreations(){
+  const id=qid(); if(!id)return;
+  const el=document.getElementById('madeWith');
+  try{
+    const d=(await(await fetch('/api/marketplace/templates/'+encodeURIComponent(id)+'/creations')).json()).data||[];
+    if(!d.length){ el.innerHTML='<div class="made-h">Made with this template</div><div class="made-empty">No public creations yet — be the first.</div>'; return; }
+    el.innerHTML='<div class="made-h">Made with this template <span style="color:var(--faint);font-weight:500;font-size:14px">· '+d.length+'</span></div><div class="made-grid">'+d.map(it=>{
+      const m=it.type==='video'
+        ? `<video class="m" src="${esc(it.url)}" muted loop playsinline autoplay preload="auto"></video>`
+        : `<img class="m" src="${esc(it.url)}" loading="lazy" alt="">`;
+      return `<div class="made-card" onclick="location.href='/creation?idx=${it.idx}&from=explore'"><span class="lk"><span class="h">♥</span> ${it.likes||0}</span>${m}</div>`;
+    }).join('')+'</div>';
+    document.querySelectorAll('#madeWith video.m').forEach(v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});});
+  }catch(e){ el.innerHTML=''; }
 }
 function render(){
   const t=TPL;
@@ -108,7 +135,7 @@ function render(){
       ${t.description?`<div class="desc">${esc(t.description)}</div>`:''}
       <div class="hint">Add your ${subject} and this template recreates the look in seconds — identity kept consistent.</div>
       ${refsHtml}
-      <div class="stats"><span>♥ ${t.likes_count||0}</span><span>◷ used ${t.usage_count||0}</span></div>
+      <div class="stats"><span>🖼 ${t.creationsCount||0} creations</span><span>♥ ${t.totalLikes||0} likes</span>${t.mine?`<span style="color:var(--gold);font-weight:700">◈ ${t.revenue||0} earned</span>`:''}</div>
       <div class="price">${price}</div>
       ${cta}
       <div class="sub-actions">

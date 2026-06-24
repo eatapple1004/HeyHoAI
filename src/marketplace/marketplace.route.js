@@ -68,7 +68,49 @@ router.get('/templates/:id', async (req, res, next) => {
     if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
     // 블랙박스: 보유(구매/제작)하지 않은 유료 템플릿은 prompt 숨김. 보유/내 것은 그대로.
     if (tpl.price_credits > 0 && !tpl.mine && !tpl.owned) { tpl.prompt = null; tpl.negative_prompt = null; }
+
+    // 이 템플릿으로 만들어진 creation 수 + 그 creation들 좋아요 합(= 롤업과 동치, 신선 계산)
+    const agg = await query(
+      `SELECT COUNT(*)::int AS creations, COALESCE(SUM(likes_count), 0)::int AS likes
+         FROM generation_results
+        WHERE template_id = $1 AND template_source = 'marketplace'
+          AND status = 'success' AND taken_down = false`,
+      [req.params.id]
+    );
+    tpl.creationsCount = agg.rows[0].creations;
+    tpl.totalLikes = agg.rows[0].likes;
+    // 수익은 본인 템플릿에만 노출(남의 수익 비공개). 로열티 포인트(type='royalty', ref_id=템플릿id) 합 — earnings와 동일 계산.
+    if (tpl.mine) {
+      const rev = await query(
+        `SELECT COALESCE(SUM(amount), 0)::int AS revenue
+           FROM point_ledger WHERE user_id = $1 AND type = 'royalty' AND ref_id = $2`,
+        [req.user.id, String(req.params.id)]
+      );
+      tpl.revenue = rev.rows[0].revenue;
+    }
     res.json({ success: true, data: tpl });
+  } catch (err) { next(err); }
+});
+
+/** GET /api/marketplace/templates/:id/creations — 이 템플릿으로 만든 공개 creation들, 좋아요순(이미지/영상 갤러리·사회적 증명). */
+router.get('/templates/:id/creations', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT gr.idx, gr.file_path, gr.metadata, gr.likes_count
+         FROM generation_results gr
+        WHERE gr.template_id = $1 AND gr.template_source = 'marketplace'
+          AND gr.visibility = 'public' AND gr.status = 'success'
+          AND gr.taken_down = false AND gr.file_path IS NOT NULL
+        ORDER BY gr.likes_count DESC, gr.created_at DESC
+        LIMIT 60`,
+      [req.params.id]
+    );
+    res.json({ success: true, data: r.rows.map((x) => ({
+      idx: x.idx,
+      url: x.file_path ? `/${x.file_path.replace(/^tmp\//, '')}` : null,
+      type: (x.metadata && x.metadata.type === 'video') ? 'video' : 'image',
+      likes: x.likes_count || 0,
+    })) });
   } catch (err) { next(err); }
 });
 
