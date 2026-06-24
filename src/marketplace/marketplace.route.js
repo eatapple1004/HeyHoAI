@@ -522,14 +522,19 @@ router.get('/creators/:handle', async (req, res, next) => {
     const raw = String(req.params.handle || '').replace(/^@+/, '').slice(0, 80);
     if (!raw) return res.status(400).json({ success: false, error: 'handle이 필요합니다.' });
     const handle = '@' + raw;
+    // 핸들 → 실제 소유자(user) 해석. 템플릿은 brittle한 creator_handle 문자열이 아니라 소유자(creator_id)로 매칭
+    // (creator_handle이 소유자와 어긋나면 본인 공개 템플릿이 프로필에 0건으로 뜨던 버그 방지). 공식(creator_id NULL)은 handle로.
+    const cu = await query("SELECT id FROM users WHERE split_part(email, '@', 1) = $1 LIMIT 1", [raw]);
+    const creatorId = cu.rows[0] ? cu.rows[0].id : null;
     const tpls = await query(
       `SELECT id, creator_handle, name, category, type, style, tool, emoji,
               price_credits, usage_count, likes_count, preview_media, is_official, created_at,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked
        FROM marketplace_templates
-       WHERE creator_handle = $1 AND status = 'active' AND visibility = 'public'
+       WHERE status = 'active' AND visibility = 'public'
+         AND ( ($3::uuid IS NOT NULL AND creator_id = $3) OR (creator_id IS NULL AND creator_handle = $1) )
        ORDER BY is_official DESC, usage_count DESC, created_at DESC LIMIT 100`,
-      [handle, req.user.id]
+      [handle, req.user.id, creatorId]
     );
     const showcase = await query(
       `SELECT gr.idx, gr.file_path, gr.metadata
@@ -545,9 +550,7 @@ router.get('/creators/:handle', async (req, res, next) => {
       return res.status(404).json({ success: false, error: '크리에이터를 찾을 수 없습니다.' });
     }
     const totalLikes = tpls.rows.reduce((s, t) => s + (t.likes_count || 0), 0);
-    // 팔로우 상태(handle→creator user id 해석)
-    const cu = await query("SELECT id FROM users WHERE split_part(email, '@', 1) = $1 LIMIT 1", [raw]);
-    const creatorId = cu.rows[0] ? cu.rows[0].id : null;
+    // 팔로우 상태(위에서 해석한 creatorId 재사용)
     const isOwn = !!creatorId && creatorId === req.user.id;
     let followers = 0, following = false;
     if (creatorId) {
