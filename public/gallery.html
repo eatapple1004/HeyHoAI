@@ -25,6 +25,11 @@
   .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
 
   .grid{columns:4 260px;column-gap:16px}
+  /* My creations = 행 우선 격자 + 균일 타일(최신=맨 윗줄, 무한스크롤 안정). 다른 탭(.grid)은 masonry 유지. */
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;columns:auto}
+  #grid .card{margin:0;break-inside:auto;aspect-ratio:4/5}
+  #grid .card .media{width:100%;height:100%;object-fit:cover}
+  #scrollSentinel{height:1px;width:100%}
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
@@ -110,6 +115,7 @@
     </div>
     <div class="filter-row fade d1" id="filterRow"></div>
     <div class="grid fade d2" id="grid"></div>
+    <div id="scrollSentinel"></div>
     <div class="empty hidden" id="empty">
       <div class="ico"></div><h3>Your library is waiting</h3>
       <p>Your very first result comes out watermark-free — make something you can post today.</p>
@@ -276,34 +282,52 @@ function inferTemplate(promptText){
   return score>=0.82?best+' (estimated)':'';
 }
 
-async function load(){
+// 무한 스크롤: offset 페이지네이션으로 200개 제한 제거. 최신순(백엔드 created_at DESC) 유지.
+let OFFSET=0; const PAGE=120; let LOADING=false, DONE=false;
+function mapRow(r){
+  const fn=r.file_path.split('/').pop();
+  return {
+    idx:r.idx,
+    url:'/images/'+fn,
+    type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',
+    likes:r.likes_count||0,
+    liked:!!r.liked,
+    creatorHandle:r.creator_handle||'',
+    name:r.character_name||'',
+    date:(r.created_at||'').slice(0,10),
+    model:r.model||'',
+    visibility:r.visibility==='public'?'public':'private',
+    takenDown:!!r.taken_down,
+    prompt:r.prompt_text||'',                 // 사후 템플릿화용
+    templateSource:r.template_source||'',     // Custom(빈값)만 템플릿화 제공
+    template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||inferTemplate(r.prompt_text)
+  };
+}
+async function loadMore(){
+  if(LOADING||DONE)return; LOADING=true;
   try{
-    const res=await fetch('/api/generate/results?limit=200');
+    const res=await fetch('/api/generate/results?limit='+PAGE+'&offset='+OFFSET);
     const data=await res.json();
-    ITEMS=(data.data||[])
-      .filter(r=>r.status==='success'&&r.file_path)
-      .map(r=>{
-        const fn=r.file_path.split('/').pop();
-        return {
-          idx:r.idx,
-          url:'/images/'+fn,
-          type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',
-          likes:r.likes_count||0,
-          liked:!!r.liked,
-          creatorHandle:r.creator_handle||'',
-          name:r.character_name||'',
-          date:(r.created_at||'').slice(0,10),
-          model:r.model||'',
-          visibility:r.visibility==='public'?'public':'private',
-          takenDown:!!r.taken_down,
-          prompt:r.prompt_text||'',                 // 사후 템플릿화용
-          templateSource:r.template_source||'',     // Custom(빈값)만 템플릿화 제공
-          template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||inferTemplate(r.prompt_text)
-        };
-      });
+    const raw=data.data||[];
+    ITEMS=ITEMS.concat(raw.filter(r=>r.status==='success'&&r.file_path).map(mapRow));
+    OFFSET+=PAGE;
+    if(raw.length<PAGE)DONE=true;   // 마지막 페이지(원시 결과가 한 페이지 미만) → 종료
+    render();
   }catch(e){console.error('results load failed',e);}
-  renderFilters();render();
+  finally{LOADING=false;}
+}
+async function load(){
+  ITEMS=[]; OFFSET=0; DONE=false; LOADING=false;
+  await loadMore();
+  renderFilters();
   maybeOpenSave();
+  setupInfiniteScroll();
+}
+function setupInfiniteScroll(){
+  const s=document.getElementById('scrollSentinel'); if(!s)return;
+  if(window.__galIO)window.__galIO.disconnect();
+  window.__galIO=new IntersectionObserver((es)=>{ if(es.some(e=>e.isIntersecting))loadMore(); },{rootMargin:'700px'});
+  window.__galIO.observe(s);
 }
 // /gallery?save=IDX(Creator Studio γ패널·creation 상세) / ?reel=IDX(creation 상세) 진입 시 해당 모달 자동 오픈
 function maybeOpenSave(){
