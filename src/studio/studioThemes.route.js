@@ -21,6 +21,8 @@ router.get('/themes', async (req, res, next) => {
       `SELECT user_studio_theme_id AS theme_id, item_type, item_id
          FROM user_studio_theme_items WHERE user_id = $1`, [uid]);
     const hidden = await query(`SELECT recipe_id FROM user_hidden_recipes WHERE user_id = $1`, [uid]);
+    const overrides = await query(`SELECT theme_slug, item_type, item_id, action FROM user_theme_overrides WHERE user_id = $1`, [uid]);
+    const hiddenThemes = await query(`SELECT theme_slug FROM user_hidden_themes WHERE user_id = $1`, [uid]);
     const byTheme = {};
     for (const it of items.rows) {
       (byTheme[it.theme_id] = byTheme[it.theme_id] || []).push({ itemType: it.item_type, itemId: it.item_id });
@@ -32,6 +34,8 @@ router.get('/themes', async (req, res, next) => {
           id: t.id, name: t.name, sortOrder: t.sort_order, items: byTheme[t.id] || [],
         })),
         hiddenRecipes: hidden.rows.map((r) => r.recipe_id),
+        themeOverrides: overrides.rows.map((o) => ({ themeSlug: o.theme_slug, itemType: o.item_type, itemId: o.item_id, action: o.action })),
+        hiddenThemes: hiddenThemes.rows.map((r) => r.theme_slug),
       },
     });
   } catch (err) { next(err); }
@@ -133,6 +137,57 @@ router.delete('/hidden/:recipeId', async (req, res, next) => {
   try {
     await query(`DELETE FROM user_hidden_recipes WHERE user_id = $1 AND recipe_id = $2`, [req.user.id, req.params.recipeId]);
     res.json({ success: true, data: { recipeId: req.params.recipeId, hidden: false } });
+  } catch (err) { next(err); }
+});
+
+// ── 기본(글로벌) 테마 개인 오버라이드: 특정 테마에 템플릿 add/remove ──
+// POST /api/studio/global-themes/:slug/items { itemType, itemId, action:'add'|'remove' }
+router.post('/global-themes/:slug/items', async (req, res, next) => {
+  try {
+    const slug = String(req.params.slug || '').slice(0, 60);
+    const itemType = req.body && req.body.itemType === 'template' ? 'template' : 'recipe';
+    const itemId = String((req.body && req.body.itemId) || '').slice(0, 200);
+    const action = req.body && req.body.action === 'remove' ? 'remove' : 'add';
+    if (!slug || !itemId) return res.status(400).json({ success: false, error: 'slug·itemId 필요' });
+    const ok = await query(`SELECT 1 FROM themes WHERE slug = $1`, [slug]);
+    if (!ok.rows[0]) return res.status(404).json({ success: false, error: '없는 테마' });
+    await query(
+      `INSERT INTO user_theme_overrides (user_id, theme_slug, item_type, item_id, action)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (user_id, theme_slug, item_type, item_id) DO UPDATE SET action = EXCLUDED.action`,
+      [req.user.id, slug, itemType, itemId, action]
+    );
+    res.json({ success: true, data: { themeSlug: slug, itemType, itemId, action } });
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/studio/global-themes/:slug/items/:itemType/:itemId — 오버라이드 해제(태그 기본값으로 복귀)
+router.delete('/global-themes/:slug/items/:itemType/:itemId', async (req, res, next) => {
+  try {
+    const itemType = req.params.itemType === 'template' ? 'template' : 'recipe';
+    await query(
+      `DELETE FROM user_theme_overrides WHERE user_id = $1 AND theme_slug = $2 AND item_type = $3 AND item_id = $4`,
+      [req.user.id, req.params.slug, itemType, req.params.itemId]
+    );
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// POST /api/studio/hidden-themes/:slug — 기본 테마 통째로 제거
+router.post('/hidden-themes/:slug', async (req, res, next) => {
+  try {
+    const slug = String(req.params.slug || '').slice(0, 60);
+    if (!slug) return res.status(400).json({ success: false, error: 'slug 필요' });
+    await query(`INSERT INTO user_hidden_themes (user_id, theme_slug) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [req.user.id, slug]);
+    res.json({ success: true, data: { themeSlug: slug, hidden: true } });
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/studio/hidden-themes/:slug — 기본 테마 다시 보이기
+router.delete('/hidden-themes/:slug', async (req, res, next) => {
+  try {
+    await query(`DELETE FROM user_hidden_themes WHERE user_id = $1 AND theme_slug = $2`, [req.user.id, req.params.slug]);
+    res.json({ success: true, data: { themeSlug: req.params.slug, hidden: false } });
   } catch (err) { next(err); }
 });
 

@@ -738,15 +738,17 @@ let TEMPLATES={influencer:[],shopping:[],ugc:[],custom:[]};
 function buildTemplates(){
   const C=(window.RECIPES&&window.RECIPES.cards)||{};
   const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
-  const mk=(c,cat)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
-    emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",held:c.held});
+  // theme = 글로벌 테마 slug(Explore와 동일 어휘). cat = 카드 라벨(인물=샷타입·제품=버티컬명 유지).
+  const mk=(c,cat,theme)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
+    emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",
+    themes:theme?[theme]:['general'],held:c.held});
   const PRODUCT=["fashion","beauty","jewelry","food","coffee","home","tech","pet"];
   const shopping=[];
-  PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v)))));
+  PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v),v))));
   TEMPLATES={
-    influencer:[].concat((C.influencer||[]).map(c=>mk(c)),(C.headshot||[]).map(c=>mk(c,"Headshot")),(C.general||[]).map(c=>mk(c,"General"))),
+    influencer:[].concat((C.influencer||[]).map(c=>mk(c,c.cat,'people')),(C.headshot||[]).map(c=>mk(c,"Headshot",'people')),(C.general||[]).map(c=>mk(c,"General",'people'))),
     shopping:shopping,
-    ugc:(C.ugc||[]).map(c=>{const m=mk(c,c.cat||"Talking");m.type="reel";m.soon=true;return m;}),
+    ugc:(C.ugc||[]).map(c=>{const m=mk(c,c.cat||"Talking",'ugc');m.type="reel";m.soon=true;return m;}),
     custom:[]
   };
 }
@@ -764,6 +766,7 @@ async function mergeOwnedTemplates(){
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
       emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',cat:'My templates',
+      themes:(t.themes&&t.themes.length?t.themes:['general']),
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace'});
   });
   renderFilters();renderRecipes();updateBar();
@@ -1221,7 +1224,7 @@ function placeGenBar(custom){
 }
 function setMode(m,initialVertical){
   // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
-  const defFilter=m==='shopping'?(initialVertical&&VERTICAL_EMOJI[initialVertical]?initialVertical:'Fashion'):'All';
+  const defFilter=(m==='shopping'&&initialVertical)?String(initialVertical).toLowerCase():'All';
   state={mode:m,slots:{},subjectId:null,recipeId:null,filter:defFilter};
   ['Influencer','Shopping','Ugc','Custom'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
   const ugc=(m==='ugc');
@@ -1335,11 +1338,47 @@ let STUDIO_THEMES=[];   // [{id,name,sortOrder,items:[{itemType,itemId}]}]
 let HIDDEN=new Set();   // 숨긴 내장 recipe id
 let manageMode=false;
 let curTheme=null;      // 선택된 커스텀 테마 id (null=일반 mode/cat 보기)
+let THEME_LIST=[];      // 글로벌 테마 [{slug,name}] — Explore와 동일 어휘
+let THEME_OV={};        // 기본 테마 오버라이드: slug -> {add:Set, remove:Set}
+let HIDDEN_THEMES=new Set(); // 유저가 제거한 기본 테마 slug
 async function loadStudioThemes(){
+  try{ THEME_LIST=await ensureThemes(); }catch(e){ THEME_LIST=[]; }
   try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{};
     STUDIO_THEMES=d.customThemes||[]; HIDDEN=new Set((d.hiddenRecipes||[]).map(String));
-  }catch(e){ STUDIO_THEMES=[]; HIDDEN=new Set(); }
+    THEME_OV={}; (d.themeOverrides||[]).forEach(o=>{ const t=(THEME_OV[o.themeSlug]=THEME_OV[o.themeSlug]||{add:new Set(),remove:new Set()}); t[o.action].add(String(o.itemId)); });
+    HIDDEN_THEMES=new Set(d.hiddenThemes||[]);
+  }catch(e){ STUDIO_THEMES=[]; HIDDEN=new Set(); THEME_OV={}; HIDDEN_THEMES=new Set(); }
   renderFilters();renderRecipes();
+}
+// 카드 r이 기본 테마 slug에 (오버라이드 반영) 속하는가
+function inGlobalTheme(r, slug){
+  const ov=THEME_OV[slug]; const id=String(r.id);
+  if(ov&&ov.remove.has(id)) return false;
+  if(ov&&ov.add.has(id)) return true;
+  return (r.themes||[]).includes(slug);
+}
+async function hideTheme(slug){ // 기본 테마 통째 제거
+  try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'POST'}); HIDDEN_THEMES.add(slug); if(state.filter===slug)state.filter='All'; renderFilters();renderRecipes(); if(window.toast)toast('Theme removed from your studio'); }catch(e){}
+}
+async function restoreTheme(slug){ // 제거한 기본 테마 복원
+  try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'DELETE'}); HIDDEN_THEMES.delete(slug); renderFilters();renderRecipes(); }catch(e){}
+}
+async function addToGlobalTheme(slug,rid){ // 특정 기본 테마에 템플릿 추가
+  rid=String(rid); const ov=THEME_OV[slug]=THEME_OV[slug]||{add:new Set(),remove:new Set()};
+  try{
+    if(ov.remove.has(rid)){ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items/'+itemTypeOf(findCard(rid))+'/'+encodeURIComponent(rid),{method:'DELETE'}); ov.remove.delete(rid); }
+    else { await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:itemTypeOf(findCard(rid)),itemId:rid,action:'add'})}); ov.add.add(rid); }
+    renderRecipes();
+  }catch(e){}
+}
+async function removeFromGlobalTheme(slug,rid){ // 특정 기본 테마에서 템플릿 제거
+  rid=String(rid); const ov=THEME_OV[slug]=THEME_OV[slug]||{add:new Set(),remove:new Set()};
+  const r=findCard(rid); const tagged=(r.themes||[]).includes(slug);
+  try{
+    if(ov.add.has(rid)){ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items/'+itemTypeOf(r)+'/'+encodeURIComponent(rid),{method:'DELETE'}); ov.add.delete(rid); }
+    if(tagged){ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:itemTypeOf(r),itemId:rid,action:'remove'})}); ov.remove.add(rid); }
+    renderRecipes();
+  }catch(e){}
 }
 function curThemeObj(){ return STUDIO_THEMES.find(t=>t.id===curTheme)||null; }
 function findCard(id){ for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[m].find(r=>String(r.id)===String(id));if(c)return c;} return {}; }
@@ -1379,11 +1418,16 @@ async function removeFromTheme(rid){
   }catch(e){}
 }
 function renderFilters(){
-  const cats=['All',...new Set(TEMPLATES[state.mode].map(r=>r.cat))];
-  const isShop=state.mode==='shopping';
-  let html=cats.map(c=>{
-    const label=isShop&&VERTICAL_EMOJI[c]?VERTICAL_EMOJI[c]+' '+c:c;
-    return `<div class="chip ${!curTheme&&state.filter===c?'active':''}" onclick="setFilter('${c}')">${label}</div>`;
+  // 필터 = 글로벌 테마(Explore와 동일 어휘) 중 현재 모드 카드가 가진 것만, 전역 순서로.
+  const present=new Set();
+  (TEMPLATES[state.mode]||[]).forEach(r=>{ (r.themes||[]).forEach(s=>present.add(s)); Object.keys(THEME_OV).forEach(s=>{ if(THEME_OV[s].add.has(String(r.id)))present.add(s); }); });
+  let ordered=(THEME_LIST.length?THEME_LIST:[...present].map(s=>({slug:s,name:s}))).filter(t=>present.has(t.slug));
+  if(!manageMode) ordered=ordered.filter(t=>!HIDDEN_THEMES.has(t.slug));
+  let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
+  html+=ordered.map(t=>{
+    const hiddenT=HIDDEN_THEMES.has(t.slug);
+    const x=manageMode?` <span class="chip-x" onclick="event.stopPropagation();${hiddenT?'restoreTheme':'hideTheme'}('${t.slug}')">${hiddenT?'↺':'✕'}</span>`:'';
+    return `<div class="chip ${!curTheme&&state.filter===t.slug?'active':''}${hiddenT?' is-hidden':''}" onclick="setFilter('${t.slug}')">${esc(t.name)}${x}</div>`;
   }).join('');
   if(STUDIO_THEMES.length||manageMode){
     html+=`<span class="filt-div"></span>`;
@@ -1395,16 +1439,19 @@ function renderFilters(){
 }
 function renderRecipes(){
   const tObj=curThemeObj();
+  const defTheme=(!curTheme&&state.filter!=='All')?state.filter:null; // 선택된 기본(글로벌) 테마
   let rs;
   if(curTheme){
-    if(manageMode){ // 편집: 현재 모드 전체 노출 → 멤버십 +/− 토글
+    if(manageMode){ // 커스텀 테마 편집: 현재 모드 전체 노출 → 멤버십 +/− 토글
       rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
     }else{          // 사용: 이 테마의 멤버만(모드 교차)
       const ids=new Set((tObj?tObj.items:[]).map(i=>String(i.itemId)));
       rs=[]; Object.keys(TEMPLATES).forEach(m=>TEMPLATES[m].forEach(r=>{ if(ids.has(String(r.id))&&!rs.some(x=>String(x.id)===String(r.id)))rs.push(r); }));
     }
+  }else if(defTheme&&manageMode){ // 기본 테마 편집: 현재 모드 전체 노출 → +/− 토글
+    rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
   }else{
-    rs=TEMPLATES[state.mode].filter(r=>(state.filter==='All'||r.cat===state.filter)&&!PREMIUM.some(p=>p.recipeId===r.id));
+    rs=TEMPLATES[state.mode].filter(r=>(state.filter==='All'||inGlobalTheme(r,state.filter))&&!PREMIUM.some(p=>p.recipeId===r.id));
   }
   // 숨긴 내장 제외(매니지 모드에선 흐리게 보여 복원 가능)
   if(!manageMode)rs=rs.filter(r=>!HIDDEN.has(String(r.id)));
@@ -1413,17 +1460,22 @@ function renderRecipes(){
   rs.sort((a,b)=>{ const ci=_catOrder.indexOf(a.cat)-_catOrder.indexOf(b.cat); return ci!==0?ci:((a.held===false?0:1)-(b.held===false?0:1)); });
   const bestId=manageMode?null:(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
   const grid=document.getElementById('recipeGrid');
-  if(curTheme&&!manageMode&&!rs.length){ grid.innerHTML=`<div class="cth-empty">No templates in this theme yet. Tap ⚙ Manage, then ＋ on any template to add it.</div>`; renderPremium(); return; }
+  if((curTheme||defTheme)&&!manageMode&&!rs.length){ grid.innerHTML=`<div class="cth-empty">No templates in this theme yet. Tap ⚙ Manage, then ＋ on any template to add it.</div>`; renderPremium(); return; }
   const memberIds=(tObj&&tObj.items||[]).map(i=>String(i.itemId));
   grid.innerHTML=rs.map(r=>{
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="4 photos for the same cost — best value per credit">★ Best value</span>`:'';
     const hidden=HIDDEN.has(String(r.id));
     let mc='';
     if(manageMode){
-      const hideBtn=`<span class="mc" title="${hidden?'Restore':'Hide'}" onclick="event.stopPropagation();toggleHide('${r.id}')">${hidden?'↺':'✕'}</span>`;
-      const inTheme=curTheme&&memberIds.includes(String(r.id));
-      const themeBtn=curTheme?(inTheme?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromTheme('${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToTheme('${r.id}')">＋</span>`):'';
-      mc=`<div class="mctrls">${themeBtn}${hideBtn}</div>`;
+      if(curTheme){ // 커스텀 테마 멤버십
+        const inT=memberIds.includes(String(r.id));
+        mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromTheme('${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToTheme('${r.id}')">＋</span>`}</div>`;
+      }else if(defTheme){ // 기본 테마 멤버십(오버라이드)
+        const inT=inGlobalTheme(r,defTheme);
+        mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromGlobalTheme('${defTheme}','${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToGlobalTheme('${defTheme}','${r.id}')">＋</span>`}</div>`;
+      }else{ // All 뷰: 전역 숨김
+        mc=`<div class="mctrls"><span class="mc" title="${hidden?'Restore':'Hide'}" onclick="event.stopPropagation();toggleHide('${r.id}')">${hidden?'↺':'✕'}</span></div>`;
+      }
     }
     return `
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}${hidden?' is-hidden':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">

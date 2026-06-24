@@ -1005,6 +1005,22 @@ async function migrateMarketplace() {
         recipe_id TEXT NOT NULL,
         PRIMARY KEY (user_id, recipe_id)
     );
+    -- 기본(글로벌) 테마 개인 오버라이드: 태그 파생 멤버십 위에 add(추가)/remove(제외). 템플릿을 특정 테마에 넣다/빼다.
+    CREATE TABLE IF NOT EXISTS user_theme_overrides (
+        user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        theme_slug TEXT NOT NULL,
+        item_type  TEXT NOT NULL,                  -- 'recipe' | 'template'
+        item_id    TEXT NOT NULL,
+        action     TEXT NOT NULL,                  -- 'add' | 'remove'
+        PRIMARY KEY (user_id, theme_slug, item_type, item_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_uto_user ON user_theme_overrides(user_id);
+    -- 유저가 스튜디오에서 통째로 제거한 기본 테마(다시 보이기=행 삭제).
+    CREATE TABLE IF NOT EXISTS user_hidden_themes (
+        user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        theme_slug TEXT NOT NULL,
+        PRIMARY KEY (user_id, theme_slug)
+    );
   `);
   // 글로벌 테마 시드(산업 8 + People + UGC). 멱등(slug UNIQUE).
   const THEME_SEED = [
