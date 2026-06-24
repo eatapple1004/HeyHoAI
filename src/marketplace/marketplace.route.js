@@ -21,6 +21,38 @@ const PUBLIC_COLS = `id, creator_id, creator_handle, name, description, category
   preview_media, reference_examples, is_official, created_at`;
 // JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
 const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
+// 템플릿 id = UUID. 비UUID(예: recipe 슬러그)를 id로 넘기면 `WHERE id = $1`이 캐스트 에러로 500 → 404로 가드.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// 각 템플릿의 글로벌 테마 slug 배열(크리에이터 다중 태그) — Explore 칩 표시·필터용. 없으면 빈 배열.
+const THEMES_SUBQ = `COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
+    FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+    WHERE tt.template_id = marketplace_templates.id), '{}') AS themes`;
+
+// 템플릿의 글로벌 테마 태그를 슬러그 배열로 재설정(기존 삭제 후 유효 슬러그만 재삽입). 반환=확정 슬러그 배열.
+async function setTemplateThemes(templateId, slugs) {
+  const arr = Array.isArray(slugs)
+    ? [...new Set(slugs.filter((s) => typeof s === 'string' && s))].slice(0, 12) : [];
+  await query('DELETE FROM template_themes WHERE template_id = $1', [templateId]);
+  if (arr.length) {
+    await query(
+      `INSERT INTO template_themes (template_id, theme_id)
+       SELECT $1, th.id FROM themes th WHERE th.slug = ANY($2::text[])
+       ON CONFLICT DO NOTHING`,
+      [templateId, arr]
+    );
+  }
+  // 유효 테마가 하나도 안 남으면(미설정 or 전부 무효 slug) 'general' 폴백 — "테마 없음 = General".
+  const cnt = await query('SELECT count(*)::int AS c FROM template_themes WHERE template_id = $1', [templateId]);
+  if (cnt.rows[0].c === 0) {
+    await query(`INSERT INTO template_themes (template_id, theme_id) SELECT $1, id FROM themes WHERE slug = 'general' ON CONFLICT DO NOTHING`, [templateId]);
+  }
+  const r = await query(
+    `SELECT th.slug FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+      WHERE tt.template_id = $1 ORDER BY th.sort_order`,
+    [templateId]
+  );
+  return r.rows.map((x) => x.slug);
+}
 
 /**
  * GET /api/marketplace/templates?category=Influencer&feed=1
@@ -29,7 +61,7 @@ const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
  */
 router.get('/templates', async (req, res, next) => {
   try {
-    const { category, feed } = req.query;
+    const { category, feed, theme } = req.query;
     const isFeed = feed === '1' || feed === 'true';
     const params = [req.user.id];
     let where = isFeed
@@ -39,11 +71,17 @@ router.get('/templates', async (req, res, next) => {
       params.push(category);
       where += ` AND category = $${params.length}`;
     }
+    if (theme) {
+      params.push(theme);
+      where += ` AND EXISTS(SELECT 1 FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+                            WHERE tt.template_id = marketplace_templates.id AND th.slug = $${params.length})`;
+    }
     const order = isFeed ? 'likes_count DESC, usage_count DESC' : 'is_official DESC, usage_count DESC';
     const r = await query(
       `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1) AS owned
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1) AS owned,
+              ${THEMES_SUBQ}
        FROM marketplace_templates WHERE ${where}
        ORDER BY ${order} LIMIT 200`,
       params
@@ -56,10 +94,12 @@ router.get('/templates', async (req, res, next) => {
  *  ⚠️ 유료 템플릿은 prompt(레시피) 비공개(블랙박스) — 결과·예시만 노출. */
 router.get('/templates/:id', async (req, res, next) => {
   try {
+    if (!UUID_RE.test(req.params.id)) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
     const r = await query(
       `SELECT ${PUBLIC_COLS}, (creator_id = $2) AS mine,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2) AS owned
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2) AS owned,
+              ${THEMES_SUBQ}
        FROM marketplace_templates
        WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
       [req.params.id, req.user.id]
@@ -116,6 +156,14 @@ router.get('/templates/:id/creations', async (req, res, next) => {
       type: (x.metadata && x.metadata.type === 'video') ? 'video' : 'image',
       likes: x.likes_count || 0,
     })) });
+  } catch (err) { next(err); }
+});
+
+/** GET /api/marketplace/themes — 글로벌 테마 목록(크리에이터 태깅·Explore 칩·스튜디오 시드용). */
+router.get('/themes', async (req, res, next) => {
+  try {
+    const r = await query('SELECT slug, name FROM themes ORDER BY sort_order, name');
+    res.json({ success: true, data: r.rows });
   } catch (err) { next(err); }
 });
 
@@ -204,6 +252,7 @@ router.post('/templates', async (req, res, next) => {
       name, description = '', category, type = 'image', style = 'Natural', prompt,
       negativePrompt = '', emoji = '🎨', priceCredits = 0, usePriceCredits = 0,
       tool, visibility = 'private', previewMedia = [], referenceExamples = [],
+      themeSlugs = [], // 크리에이터 다중 테마 태그(글로벌 themes.slug 배열)
       sourceResultIdx, // 이 템플릿의 씨앗 creation(역링크 + 누적 좋아요 롤업용, 선택)
     } = req.body || {};
     if (!name || !prompt) return res.status(400).json({ success: false, error: 'name과 prompt는 필수입니다.' });
@@ -258,6 +307,7 @@ router.post('/templates', async (req, res, next) => {
         created.likes_count = (created.likes_count || 0) + seedLikes;
       }
     }
+    created.themes = await setTemplateThemes(created.id, themeSlugs);
     res.status(201).json({ success: true, data: created });
   } catch (err) { next(err); }
 });
@@ -308,14 +358,23 @@ router.patch('/templates/:id', async (req, res, next) => {
       }
       params.push(vis); sets.push(`visibility = $${params.length}`);
     }
-    if (!sets.length) return res.status(400).json({ success: false, error: '변경할 내용이 없습니다.' });
+    const hasThemes = body.themeSlugs !== undefined; // 테마만 바꾸는 것도 허용
+    if (!sets.length && !hasThemes) return res.status(400).json({ success: false, error: '변경할 내용이 없습니다.' });
 
-    params.push(req.params.id);
-    const r = await query(
-      `UPDATE marketplace_templates SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${PUBLIC_COLS}`,
-      params
-    );
-    res.json({ success: true, data: r.rows[0] });
+    let row;
+    if (sets.length) {
+      params.push(req.params.id);
+      const r = await query(
+        `UPDATE marketplace_templates SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${PUBLIC_COLS}`,
+        params
+      );
+      row = r.rows[0];
+    } else {
+      const r = await query(`SELECT ${PUBLIC_COLS} FROM marketplace_templates WHERE id = $1`, [req.params.id]);
+      row = r.rows[0];
+    }
+    if (hasThemes) row.themes = await setTemplateThemes(req.params.id, body.themeSlugs);
+    res.json({ success: true, data: row });
   } catch (err) { next(err); }
 });
 

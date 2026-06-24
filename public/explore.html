@@ -169,9 +169,8 @@ async function reportResult(idx){
 }
 
 // ── Discover 탭 (Creations | Templates 카탈로그) ──
-const CATS=['All','Influencer','Shopping','UGC','Custom'];
 const PRICES=['All','Free','Paid'];
-let CATALOG=[], curCat='All', curPrice='All', catalogLoaded=false;
+let CATALOG=[], THEMES=[], curTheme='All', curPrice='All', catalogLoaded=false;
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.getElementById('tab-feed').classList.toggle('hidden',t!=='feed');
@@ -179,16 +178,17 @@ function switchTab(t){
   document.getElementById('sub').innerHTML = t==='templates'
     ? 'Browse community templates. <b style="color:var(--accent2)">Save the ones you like</b> — or use them with your own face or product.'
     : 'Real creations from the Doppia community. Like one? <b style="color:var(--accent2)">Make it with your own face or product.</b>';
-  if(t==='templates'&&!catalogLoaded){catalogLoaded=true;renderCats();renderPrices();loadCatalog();}
+  if(t==='templates'&&!catalogLoaded){catalogLoaded=true;renderPrices();loadThemesThenCatalog();}
 }
-function renderCats(){document.getElementById('catFilter').innerHTML=CATS.map(c=>`<div class="chip ${curCat===c?'active':''}" onclick="setCat('${c}')">${c}</div>`).join('');}
-function setCat(c){curCat=c;renderCats();loadCatalog();}
+function themeName(slug){return slug==='All'?'All':((THEMES.find(t=>t.slug===slug)||{}).name||slug);}
+function renderThemeFilter(){const all=['All'].concat(THEMES.map(t=>t.slug));document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${themeName(s)}</div>`).join('');}
+function setTheme(s){curTheme=s;renderThemeFilter();renderCatalog();}
 function renderPrices(){document.getElementById('priceFilter').innerHTML=PRICES.map(c=>`<div class="chip ${curPrice===c?'active':''}" onclick="setPrice('${c}')">${c}</div>`).join('');}
 function setPrice(c){curPrice=c;renderPrices();renderCatalog();}
+async function loadThemesThenCatalog(){try{THEMES=(await(await fetch('/api/marketplace/themes')).json()).data||[];}catch(e){THEMES=[];}renderThemeFilter();loadCatalog();}
 async function loadCatalog(){
-  const q=(curCat&&curCat!=='All')?('?category='+encodeURIComponent(curCat)):'';
   try{
-    CATALOG=(await(await fetch('/api/marketplace/templates'+q)).json()).data||[];
+    CATALOG=(await(await fetch('/api/marketplace/templates')).json()).data||[];
   }catch(e){console.error('catalog load failed',e);CATALOG=[];}
   renderCatalog();
 }
@@ -210,6 +210,7 @@ function tcard(t){
 function renderCatalog(){
   const term=(document.getElementById('tplSearch').value||'').toLowerCase().trim();
   let list=CATALOG.filter(t=>!t.owned); // 발견용: 이미 보유한 건 숨김(Library에 있음)
+  if(curTheme!=='All')list=list.filter(t=>(t.themes||[]).includes(curTheme));
   if(curPrice==='Free')list=list.filter(t=>!(t.price_credits>0));
   else if(curPrice==='Paid')list=list.filter(t=>t.price_credits>0);
   if(term)list=list.filter(t=>(t.name||'').toLowerCase().includes(term));

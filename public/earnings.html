@@ -257,6 +257,10 @@
         <option value="UGC">UGC</option>
       </select>
     </div>
+    <div class="mfield"><label>Themes <i>(shown in Explore)</i></label>
+      <div id="edThemes" class="theme-chips"></div>
+    </div>
+    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}</style>
     <div class="mfield"><label>Visibility</label>
       <select id="edVis"><option value="public">Public (in the Feed)</option><option value="private">Private (only me)</option></select>
     </div>
@@ -417,6 +421,16 @@ function openStorefront(){
   location.href='/creator';
 }
 
+// 글로벌 테마 칩(크리에이터 다중 태그) — 캐시·렌더·수집.
+let _themesCache=null;
+async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
+async function renderThemeChips(containerId, selected){
+  const el=document.getElementById(containerId); if(!el)return;
+  const sel=new Set(selected||[]); const themes=await ensureThemes();
+  el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on')">${esc(t.name)}</button>`).join('');
+}
+function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
+
 // ── 템플릿 편집/삭제 (PATCH·DELETE /api/marketplace/templates/:id) ──
 let EDIT_ID=null;
 function openEdit(id){
@@ -427,6 +441,9 @@ function openEdit(id){
   document.getElementById('edDesc').value=t.description||'';
   const cat=['Custom','Influencer','Shopping','UGC'].includes(t.category)?t.category:'Custom';
   document.getElementById('edCat').value=cat;
+  // 기존 테마 프리로드(상세 API가 themes 반환)
+  renderThemeChips('edThemes', t.themes||[]);
+  fetch('/api/marketplace/templates/'+id).then(r=>r.json()).then(d=>renderThemeChips('edThemes',(d.data&&d.data.themes)||[])).catch(()=>{});
   document.getElementById('edVis').value=t.visibility==='public'?'public':'private';
   document.getElementById('edPrice').value=t.price_credits||0;
   document.getElementById('edUsePrice').value=t.use_price_credits||0;
@@ -440,6 +457,7 @@ async function saveEdit(){
     name:document.getElementById('edName').value.trim(),
     description:document.getElementById('edDesc').value.trim(),
     category:document.getElementById('edCat').value,
+    themeSlugs:selectedThemes('edThemes'),
     visibility:document.getElementById('edVis').value
   };
   if(window.featureOn&&window.featureOn('marketplace')){

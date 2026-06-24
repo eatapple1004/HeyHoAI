@@ -959,6 +959,97 @@ async function migrateMarketplace() {
       [t.name, t.emoji, t.rid, `Premium recipe-backed template — ${t.name}`]
     );
   }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 테마 조직화(2026-06-24, 설계=docs/테마_조직화_설계_2026-06-24.md). 전부 멱등.
+  //  - themes: 글로벌 공유 어휘(Doppia 시드). template_themes: 크리에이터 다중 태그(Explore 분류).
+  //  - user_studio_themes/_items: 유저 개인 스튜디오 큐레이션(활성 세트=멤버십, in_studio/recipe_hidden 대체).
+  // ───────────────────────────────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS themes (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug        TEXT UNIQUE NOT NULL,
+        name        TEXT NOT NULL,
+        is_official BOOLEAN NOT NULL DEFAULT true,
+        sort_order  INT NOT NULL DEFAULT 0,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS template_themes (
+        template_id UUID NOT NULL REFERENCES marketplace_templates(id) ON DELETE CASCADE,
+        theme_id    UUID NOT NULL REFERENCES themes(id) ON DELETE CASCADE,
+        PRIMARY KEY (template_id, theme_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_template_themes_theme ON template_themes(theme_id);
+    CREATE TABLE IF NOT EXISTS user_studio_themes (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name        TEXT NOT NULL,
+        sort_order  INT NOT NULL DEFAULT 0,
+        origin      TEXT NOT NULL DEFAULT 'custom',  -- 'default'(시드) | 'custom'
+        seed_slug   TEXT,                            -- default일 때 출처 글로벌 테마 slug(중복시드 방지)
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_studio_themes_user ON user_studio_themes(user_id, sort_order);
+    CREATE TABLE IF NOT EXISTS user_studio_theme_items (
+        user_studio_theme_id UUID NOT NULL REFERENCES user_studio_themes(id) ON DELETE CASCADE,
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        item_type   TEXT NOT NULL,                   -- 'recipe' | 'template'
+        item_id     TEXT NOT NULL,                   -- recipe 슬러그 또는 template uuid(text)
+        added_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_studio_theme_id, item_type, item_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ustitems_user ON user_studio_theme_items(user_id);
+    -- 기본 테마 섹션에서 유저가 숨긴 내장 레시피(있으면 스튜디오 picker 기본섹션에서 제외). 다시 넣기=행 삭제.
+    CREATE TABLE IF NOT EXISTS user_hidden_recipes (
+        user_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        recipe_id TEXT NOT NULL,
+        PRIMARY KEY (user_id, recipe_id)
+    );
+  `);
+  // 글로벌 테마 시드(산업 8 + People + UGC). 멱등(slug UNIQUE).
+  const THEME_SEED = [
+    ['beauty', 'Beauty'], ['fashion', 'Fashion'], ['jewelry', 'Jewelry'], ['food', 'Food'],
+    ['coffee', 'Coffee'], ['home', 'Home'], ['tech', 'Tech'], ['pet', 'Pet'],
+    ['people', 'People'], ['ugc', 'UGC'], ['general', 'General'],
+  ];
+  for (let i = 0; i < THEME_SEED.length; i++) {
+    await pool.query(
+      `INSERT INTO themes (slug, name, is_official, sort_order) VALUES ($1, $2, true, $3)
+       ON CONFLICT (slug) DO NOTHING`,
+      [THEME_SEED[i][0], THEME_SEED[i][1], i]
+    );
+  }
+  // 공식 recipe-backed 시드 → 테마 백필(vertical 매핑). 멱등(PK).
+  const OFFICIAL_THEME = [
+    ['stone-plinth-luxe', 'beauty'], ['noir-gold-hero', 'beauty'], ['dewy-glass-hero', 'beauty'],
+    ['ring-editorial-campaign', 'jewelry'], ['bracelet-editorial-campaign', 'jewelry'],
+    ['top-down-hero', 'food'], ['void-hero-cut', 'tech'], ['pet-product-hero', 'pet'],
+  ];
+  for (const [rid, slug] of OFFICIAL_THEME) {
+    await pool.query(
+      `INSERT INTO template_themes (template_id, theme_id)
+       SELECT mt.id, th.id FROM marketplace_templates mt, themes th
+        WHERE mt.recipe_id = $1 AND th.slug = $2
+       ON CONFLICT DO NOTHING`,
+      [rid, slug]
+    );
+  }
+  // 기존 유저 템플릿 category → 테마 백필(아는 것만: Influencer→people, UGC→ugc; Shopping/Custom=미태그=크리에이터 후속 지정).
+  await pool.query(
+    `INSERT INTO template_themes (template_id, theme_id)
+     SELECT mt.id, th.id FROM marketplace_templates mt
+       JOIN themes th ON th.slug = (CASE mt.category WHEN 'Influencer' THEN 'people' WHEN 'UGC' THEN 'ugc' END)
+      WHERE mt.recipe_id IS NULL AND mt.is_official = false
+     ON CONFLICT DO NOTHING`
+  );
+  // 테마 미지정 템플릿 → 'general' 폴백("테마 없음 = General"). 멱등.
+  await pool.query(
+    `INSERT INTO template_themes (template_id, theme_id)
+     SELECT mt.id, th.id FROM marketplace_templates mt CROSS JOIN themes th
+      WHERE th.slug = 'general'
+        AND NOT EXISTS (SELECT 1 FROM template_themes tt WHERE tt.template_id = mt.id)
+     ON CONFLICT DO NOTHING`
+  );
 }
 
 /**

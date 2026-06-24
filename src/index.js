@@ -149,6 +149,7 @@ app.use('/api/billing', requireAuth, require('./billing/billing.route').router);
 app.use('/api/billing/eximbay', requireAuth, require('./billing/eximbay.route').router);
 app.use('/api/brand-kit', requireAuth, require('./brandkit/brandkit.route').router);
 app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.route').router);
+app.use('/api/studio', requireAuth, require('./studio/studioThemes.route').router);
 app.use('/api/affiliate', requireAuth, require('./affiliate/affiliate.route').router);
 app.use('/api/teams', requireAuth, require('./teams/team.route').router);
 app.use('/api/dashboard', requireAuth, require('./dashboard/dashboard.route').router);

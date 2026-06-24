@@ -423,6 +423,18 @@
     <div class="step-head"><div class="step-num" id="snTemplate">2</div><h2 id="step2Title">Pick a template</h2>
       <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span></div>
     <div class="filter-row" id="filterRow"></div>
+    <style>
+      .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
+      .filter-row .chip.ghost{border-style:dashed;color:var(--dim)}
+      .filter-row .chip .chip-x{margin-left:5px;opacity:.55;font-size:10px}
+      .recipe-card{position:relative}
+      .recipe-card.is-hidden{opacity:.42}
+      .recipe-card .mctrls{position:absolute;top:6px;right:6px;z-index:3;display:flex;gap:5px}
+      .recipe-card .mc{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:14px;cursor:pointer;line-height:1}
+      .recipe-card .mc.add{background:var(--accent);border-color:var(--accent)}
+      .recipe-card .mc.rem{background:#c0455e;border-color:#c0455e}
+      .cth-empty{grid-column:1/-1;color:var(--faint);font-size:13.5px;padding:24px 4px;text-align:center;line-height:1.6}
+    </style>
     <div class="recipe-grid" id="recipeGrid"></div>
     <div id="premiumWrap" style="display:none">
       <div class="premium-head">Premium <span class="ph-sub">— unlock once, yours forever</span></div>
@@ -590,6 +602,9 @@
         <option value="Shopping">Shopping</option>
         <option value="UGC">UGC</option>
       </select></div>
+    <div class="field"><label>Themes <i>(pick all that fit — shown in Explore)</i></label>
+      <div id="stplThemes" class="theme-chips"></div></div>
+    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}</style>
     <label class="stpl-vis"><input type="checkbox" id="stplVis" checked onchange="syncStplPrice()"> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
     <div class="field" id="stplPriceRow" style="display:none">
       <label>Unlock price <i>(◈ one-time to own — 0 = free)</i></label>
@@ -1315,25 +1330,104 @@ function renderSubjModalGrid(){
   const cnt=document.getElementById('subjModalCount');if(cnt)cnt.textContent=subjPending.length?(subjPending.length+' selected'):(subs.length+' saved');
 }
 const VERTICAL_EMOJI={Fashion:'👗',Beauty:'💄',Jewelry:'💍',Food:'🍽️',Coffee:'☕',Home:'🏠',Tech:'📱',Pet:'🐾'};
+// ── P-D 개인 큐레이션: 커스텀 테마 + 내장 숨김 (설계=docs/테마_조직화_설계_2026-06-24.md) ──
+let STUDIO_THEMES=[];   // [{id,name,sortOrder,items:[{itemType,itemId}]}]
+let HIDDEN=new Set();   // 숨긴 내장 recipe id
+let manageMode=false;
+let curTheme=null;      // 선택된 커스텀 테마 id (null=일반 mode/cat 보기)
+async function loadStudioThemes(){
+  try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{};
+    STUDIO_THEMES=d.customThemes||[]; HIDDEN=new Set((d.hiddenRecipes||[]).map(String));
+  }catch(e){ STUDIO_THEMES=[]; HIDDEN=new Set(); }
+  renderFilters();renderRecipes();
+}
+function curThemeObj(){ return STUDIO_THEMES.find(t=>t.id===curTheme)||null; }
+function findCard(id){ for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[m].find(r=>String(r.id)===String(id));if(c)return c;} return {}; }
+function itemTypeOf(r){ return r&&r.source==='marketplace'?'template':'recipe'; }
+function setCustomTheme(id){ curTheme=id; state.filter='All'; renderFilters();renderRecipes(); }
+function toggleManage(){ manageMode=!manageMode; renderFilters();renderRecipes(); }
+async function newStudioTheme(nameArg){
+  const name=(nameArg!=null?nameArg:(prompt('New theme name')||'')).trim(); if(!name)return;
+  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})})).json();
+    if(d&&d.data){ STUDIO_THEMES.push(d.data); curTheme=d.data.id; manageMode=true; renderFilters();renderRecipes(); if(window.toast)toast('Theme created — add templates with ＋'); return d.data; }
+  }catch(e){ if(window.toast)toast('Could not create theme'); }
+}
+async function deleteStudioTheme(id,skipConfirm){
+  if(!skipConfirm&&!confirm('Delete this theme? (templates stay in your library)'))return;
+  try{ await fetch('/api/studio/themes/'+id,{method:'DELETE'});
+    STUDIO_THEMES=STUDIO_THEMES.filter(t=>t.id!==id); if(curTheme===id)curTheme=null; renderFilters();renderRecipes();
+  }catch(e){}
+}
+async function toggleHide(rid){
+  rid=String(rid); const on=HIDDEN.has(rid);
+  try{ await fetch('/api/studio/hidden/'+encodeURIComponent(rid),{method:on?'DELETE':'POST'});
+    if(on)HIDDEN.delete(rid);else HIDDEN.add(rid); renderRecipes();
+  }catch(e){}
+}
+async function addToTheme(rid){
+  if(!curTheme){ if(window.toast)toast('Select a theme first'); return; }
+  const r=findCard(rid);
+  try{ const d=await(await fetch('/api/studio/themes/'+curTheme+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:itemTypeOf(r),itemId:String(rid)})})).json();
+    if(d&&d.success){ const t=curThemeObj(); if(t){ t.items=t.items||[]; if(!t.items.some(i=>String(i.itemId)===String(rid)))t.items.push({itemType:itemTypeOf(r),itemId:String(rid)}); } if(window.toast)toast('Added'); renderRecipes(); }
+    else if(window.toast)toast((d&&d.error)||'Could not add');
+  }catch(e){}
+}
+async function removeFromTheme(rid){
+  if(!curTheme)return; const r=findCard(rid);
+  try{ await fetch('/api/studio/themes/'+curTheme+'/items/'+itemTypeOf(r)+'/'+encodeURIComponent(String(rid)),{method:'DELETE'});
+    const t=curThemeObj(); if(t)t.items=(t.items||[]).filter(i=>String(i.itemId)!==String(rid)); renderRecipes();
+  }catch(e){}
+}
 function renderFilters(){
   const cats=['All',...new Set(TEMPLATES[state.mode].map(r=>r.cat))];
   const isShop=state.mode==='shopping';
-  document.getElementById('filterRow').innerHTML=cats.map(c=>{
+  let html=cats.map(c=>{
     const label=isShop&&VERTICAL_EMOJI[c]?VERTICAL_EMOJI[c]+' '+c:c;
-    return `<div class="chip ${state.filter===c?'active':''}" onclick="setFilter('${c}')">${label}</div>`;
+    return `<div class="chip ${!curTheme&&state.filter===c?'active':''}" onclick="setFilter('${c}')">${label}</div>`;
   }).join('');
+  if(STUDIO_THEMES.length||manageMode){
+    html+=`<span class="filt-div"></span>`;
+    html+=STUDIO_THEMES.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" onclick="setCustomTheme('${t.id}')">✦ ${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
+    html+=`<div class="chip ghost" onclick="newStudioTheme()">＋ Theme</div>`;
+  }
+  html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;
+  document.getElementById('filterRow').innerHTML=html;
 }
 function renderRecipes(){
-  const rs=TEMPLATES[state.mode].filter(r=>(state.filter==='All'||r.cat===state.filter)&&!PREMIUM.some(p=>p.recipeId===r.id));
-  // ★ 합격(보류 해제, held===false) 템플릿을 각 테마(cat) 상단으로 — 테마 그룹 순서는 원본 유지(안정 정렬)
+  const tObj=curThemeObj();
+  let rs;
+  if(curTheme){
+    if(manageMode){ // 편집: 현재 모드 전체 노출 → 멤버십 +/− 토글
+      rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
+    }else{          // 사용: 이 테마의 멤버만(모드 교차)
+      const ids=new Set((tObj?tObj.items:[]).map(i=>String(i.itemId)));
+      rs=[]; Object.keys(TEMPLATES).forEach(m=>TEMPLATES[m].forEach(r=>{ if(ids.has(String(r.id))&&!rs.some(x=>String(x.id)===String(r.id)))rs.push(r); }));
+    }
+  }else{
+    rs=TEMPLATES[state.mode].filter(r=>(state.filter==='All'||r.cat===state.filter)&&!PREMIUM.some(p=>p.recipeId===r.id));
+  }
+  // 숨긴 내장 제외(매니지 모드에선 흐리게 보여 복원 가능)
+  if(!manageMode)rs=rs.filter(r=>!HIDDEN.has(String(r.id)));
+  // ★ 합격(held===false) 템플릿을 각 테마(cat) 상단으로 — 그룹 순서 유지(안정 정렬)
   const _catOrder=[]; rs.forEach(r=>{ if(!_catOrder.includes(r.cat))_catOrder.push(r.cat); });
   rs.sort((a,b)=>{ const ci=_catOrder.indexOf(a.cat)-_catOrder.indexOf(b.cat); return ci!==0?ci:((a.held===false?0:1)-(b.held===false?0:1)); });
-  // ★ Best value: 같은 비용에 4장이 나오는 사진 템플릿 중 첫 번째 (크레딧당 산출 최고)
-  const bestId=(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
-  document.getElementById('recipeGrid').innerHTML=rs.map(r=>{
+  const bestId=manageMode?null:(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
+  const grid=document.getElementById('recipeGrid');
+  if(curTheme&&!manageMode&&!rs.length){ grid.innerHTML=`<div class="cth-empty">No templates in this theme yet. Tap ⚙ Manage, then ＋ on any template to add it.</div>`; renderPremium(); return; }
+  const memberIds=(tObj&&tObj.items||[]).map(i=>String(i.itemId));
+  grid.innerHTML=rs.map(r=>{
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="4 photos for the same cost — best value per credit">★ Best value</span>`:'';
+    const hidden=HIDDEN.has(String(r.id));
+    let mc='';
+    if(manageMode){
+      const hideBtn=`<span class="mc" title="${hidden?'Restore':'Hide'}" onclick="event.stopPropagation();toggleHide('${r.id}')">${hidden?'↺':'✕'}</span>`;
+      const inTheme=curTheme&&memberIds.includes(String(r.id));
+      const themeBtn=curTheme?(inTheme?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromTheme('${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToTheme('${r.id}')">＋</span>`):'';
+      mc=`<div class="mctrls">${themeBtn}${hideBtn}</div>`;
+    }
     return `
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="openRecipeModal('${r.id}')">
+    <div class="recipe-card ${state.recipeId===r.id?'selected':''}${hidden?' is-hidden':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
+      ${mc}
       <div class="preview" style="background:${r.grad}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
@@ -1376,7 +1470,7 @@ async function confirmUnlock(){
   }catch(e){if(window.toast)toast('Unlock failed: '+(e.message||e));}
   finally{btn.disabled=false;btn.innerHTML='Unlock · <span id="unlockPrice">◈ '+(UNLOCK.price||'')+'</span>';}
 }
-function setFilter(c){state.filter=c;renderFilters();renderRecipes();}
+function setFilter(c){curTheme=null;state.filter=c;renderFilters();renderRecipes();}
 function pickSubject(id){const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===id);if(s){state.slots[primarySlotKey()]=[itemFromSubject(s)];syncPrimary();renderSubjects();updateBar();}}
 function pickRecipe(id){
   state.recipeId=(state.recipeId===id?null:id); // 같은 카드 재클릭 시 선택 해제(토글)
@@ -1537,6 +1631,16 @@ function extraPromptText(){
   if(state.mode==='custom'){const el=document.getElementById('extraPrompt');return el?el.value.trim():'';}
   return (state.detail||'').trim();
 }
+// 글로벌 테마 칩(크리에이터 다중 태그) — 캐시 + 렌더 + 수집.
+let _themesCache=null;
+async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
+async function renderThemeChips(containerId, selected){
+  const el=document.getElementById(containerId); if(!el)return;
+  const sel=new Set(selected||[]); const themes=await ensureThemes();
+  el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on')">${esc(t.name)}</button>`).join('');
+}
+function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
+
 // Save as template — 현재 프롬프트+툴을 user 템플릿으로 저장(비공개 기본, 공개는 크리에이터 게이트)
 // Save as template — 결과 이미지를 미리보기로 붙여 제대로 된 모달로 저장(네이티브 prompt 폐지)
 function saveAsTemplate(){
@@ -1546,6 +1650,7 @@ function saveAsTemplate(){
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
   document.getElementById('stplCat').value='Custom';
+  renderThemeChips('stplThemes', []); // 테마 칩(기본 미선택)
   document.getElementById('stplVis').checked=true; // 기본 공개(Feed)
   // 미리보기 썸네일 — 방금 만든 결과
   document.getElementById('stplPrev').innerHTML=prev.length
@@ -1585,13 +1690,14 @@ async function confirmSaveTpl(){
   const usePriceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplUsePrice').value,10)||0,50)):0;
   const description=document.getElementById('stplDesc').value.trim();
   const category=document.getElementById('stplCat').value||'Custom';
+  const themeSlugs=selectedThemes('stplThemes');
   // 레퍼런스 전시: 옵트인 체크 시에만 전송
   const referenceExamples=document.getElementById('stplRefOpt').checked?(state._saveRefs||[]):[];
   const p=extraPromptText();
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,description:description,category:category,type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
+      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
         visibility:makePublic?'public':'private',priceCredits:priceCredits,usePriceCredits:usePriceCredits,negativePrompt:negText(),
         previewMedia:(state.lastPreview||[]).slice(0,6),referenceExamples:referenceExamples})});
     const d=await res.json();
@@ -1871,7 +1977,8 @@ function applyTryTemplate(){
 }
 if(!applyTryTemplate() && !bootRecipe() && !bootFromUrl()) setMode('influencer');
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
-if(document.readyState==='loading')addEventListener('DOMContentLoaded',function(){mergeOwnedTemplates();applyRecipeGates();});else {mergeOwnedTemplates();applyRecipeGates();}
+function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>loadStudioThemes()); }
+if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubscription(); // 구독 상태 → Private Mode 게이트
 loadSubjects();
