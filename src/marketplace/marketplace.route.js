@@ -640,7 +640,7 @@ router.get('/recipe-gates', async (req, res, next) => {
 router.get('/owned', async (req, res, next) => {
   try {
     const r = await query(
-      `SELECT ${MT_COLS}, true AS owned, ow.source AS own_source, ow.in_studio
+      `SELECT ${MT_COLS}, mt.from_creation_idx, true AS owned, ow.source AS own_source, ow.in_studio
        FROM template_owns ow
        JOIN marketplace_templates mt ON mt.id = ow.template_id
        WHERE ow.user_id = $1 AND mt.status = 'active'

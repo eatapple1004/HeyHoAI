@@ -371,11 +371,9 @@ function render(){
       ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">@${esc(it.creatorHandle)}</a>`
       : `<span class="by">@me</span>`;
     const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
-    const act=!it.templateSource?`<button class="act save" onclick="event.stopPropagation();location.href='/gallery?save=${it.idx}'">✦ Save as template</button>`:'';
     return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">
       <div class="ovt">${by}${like}</div>
       ${media}
-      ${act?`<div class="ovb">${act}</div>`:''}
     </div>`;
   }).join('');
   playFeedVideos();

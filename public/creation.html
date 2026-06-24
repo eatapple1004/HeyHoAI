@@ -78,12 +78,89 @@
   <aside class="panel" id="panel"></aside>
 </div>
 <div id="toast"></div>
+<div id="saveModal" class="sv-ov">
+  <div class="sv-box">
+    <div class="sv-h">Save to your studio</div>
+    <div class="sv-s">A private template is added to your studio and My templates.</div>
+    <div class="sv-lbl">Mode</div>
+    <div class="sv-modes" id="svModes">
+      <button type="button" class="sv-mode" data-mode="Influencer" onclick="pickMode(this)">Influencer</button>
+      <button type="button" class="sv-mode" data-mode="Shopping" onclick="pickMode(this)">Shopping</button>
+    </div>
+    <div class="sv-lbl">Theme</div>
+    <div class="sv-list" id="svThemes"></div>
+    <div class="sv-row">
+      <button type="button" class="sv-x" onclick="closeSaveModal()">Cancel</button>
+      <button type="button" class="sv-go" id="svGo" onclick="confirmSave()" disabled>Save</button>
+    </div>
+  </div>
+  <style>
+    .sv-ov{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
+    .sv-ov.open{display:flex}
+    .sv-box{background:var(--bg2,#15151c);border:1px solid var(--border2,#2a2a35);border-radius:16px;max-width:440px;width:100%;max-height:84vh;overflow:auto;padding:22px}
+    .sv-h{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
+    .sv-s{font-size:13px;color:var(--dim,#9aa);margin-bottom:16px;line-height:1.45}
+    .sv-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim,#9aa);font-weight:700;margin:10px 0 6px}
+    .sv-modes{display:flex;gap:8px;margin-bottom:6px}
+    .sv-mode{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+    .sv-mode.on{background:var(--accent,#7c6cff);border-color:var(--accent,#7c6cff);color:#fff}
+    .sv-list{display:flex;flex-direction:column;gap:7px}
+    .sv-sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim,#9aa);font-weight:700;margin:6px 0 2px}
+    .sv-th{text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:10px 13px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+    .sv-th.on{background:var(--accent,#7c6cff);border-color:var(--accent,#7c6cff);color:#fff}
+    .sv-new{border-style:dashed;color:var(--accent2,#a89bff)}
+    .sv-row{display:flex;gap:8px;margin-top:16px}
+    .sv-x{flex:1;background:none;border:1px solid var(--border2,#2a2a35);color:var(--dim,#9aa);border-radius:10px;padding:11px;font-size:13px;cursor:pointer;font-family:inherit}
+    .sv-go{flex:2;background:var(--accent,#7c6cff);border:1px solid var(--accent,#7c6cff);color:#fff;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+    .sv-go:disabled{opacity:.45;cursor:default}
+  </style>
+</div>
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
-function saveCreation(){ // γ-2: 이 공개 룩을 내 스튜디오 테마에 저장 — Studio에서 어느 테마에 넣을지 선택.
+// Save: creation → 비공개 템플릿 민팅(My templates) + studio 모드/테마 배치. 모드·테마 수동 선택.
+let SV={mode:null, themeKind:null, themeKey:null, themes:null, hidden:null};
+async function openSaveModal(){
   if(!IT||!IT.idx){ toast('Could not save'); return; }
-  location.href='/studio?saveLook='+IT.idx;
+  document.getElementById('saveModal').classList.add('open');
+  if(!SV.themes){
+    let defs=[], customs=[];
+    try{ defs=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){}
+    try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{}; customs=d.customThemes||[]; SV.hidden=new Set(d.hiddenThemes||[]); }catch(e){}
+    SV.themes={ defs:defs.filter(t=>!(SV.hidden&&SV.hidden.has(t.slug))), customs };
+  }
+  renderSvThemes();
+}
+function renderSvThemes(){
+  const el=document.getElementById('svThemes'); const {defs,customs}=SV.themes;
+  let h='';
+  if(defs.length) h+=`<div class="sv-sec">Themes</div>`+defs.map(t=>`<button type="button" class="sv-th" data-kind="default" data-key="${esc(t.slug)}" onclick="pickTheme(this)">${esc(t.name)}</button>`).join('');
+  if(customs.length) h+=`<div class="sv-sec">Your themes</div>`+customs.map(t=>`<button type="button" class="sv-th" data-kind="custom" data-key="${esc(t.id)}" onclick="pickTheme(this)">✦ ${esc(t.name)}</button>`).join('');
+  h+=`<button type="button" class="sv-th sv-new" onclick="newThemeThenPick()">＋ New theme</button>`;
+  el.innerHTML=h;
+}
+function pickMode(btn){ SV.mode=btn.dataset.mode; [...document.querySelectorAll('#svModes .sv-mode')].forEach(b=>b.classList.toggle('on',b===btn)); refreshSvGo(); }
+function pickTheme(btn){ SV.themeKind=btn.dataset.kind; SV.themeKey=btn.dataset.key; [...document.querySelectorAll('#svThemes .sv-th')].forEach(b=>b.classList.toggle('on',b===btn)); refreshSvGo(); }
+function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=!(SV.mode&&SV.themeKey); }
+async function newThemeThenPick(){
+  const name=prompt('New theme name'); if(!name||!name.trim())return;
+  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})})).json();
+    if(d&&d.success&&d.data){ SV.themes.customs.push(d.data); renderSvThemes(); SV.themeKind='custom'; SV.themeKey=d.data.id; const b=[...document.querySelectorAll('#svThemes .sv-th')].find(x=>x.dataset.key===d.data.id); if(b)b.classList.add('on'); refreshSvGo(); }
+  }catch(e){}
+}
+function closeSaveModal(){ document.getElementById('saveModal').classList.remove('open'); }
+async function confirmSave(){
+  if(!(SV.mode&&SV.themeKey))return;
+  const go=document.getElementById('svGo'); go.disabled=true; go.textContent='Saving…';
+  try{
+    const r=await fetch('/api/studio/save-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creationIdx:IT.idx, category:SV.mode, themeKind:SV.themeKind, themeKey:SV.themeKey})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    closeSaveModal();
+    const tn=(SV.themeKind==='custom'?(SV.themes.customs.find(t=>t.id===SV.themeKey)||{}).name:(SV.themes.defs.find(t=>t.slug===SV.themeKey)||{}).name)||'theme';
+    toast('Saved to '+tn+' · also in My templates ✦');
+  }catch(e){ toast('Could not save: '+(e.message||e)); }
+  finally{ go.disabled=false; go.textContent='Save'; }
 }
 function goBack(){ if(history.length>1) history.back(); else location.href = FROM==='library' ? '/gallery' : '/explore'; }
 function qs(k){return new URLSearchParams(location.search).get(k);}
@@ -155,9 +232,7 @@ function render(){
   let owner='';
   if(IT.isOwn){
     const isPub=IT.visibility==='public';
-    const canSave=!IT.templateSource;
     owner=`<div class="sep"></div><div class="ownhdr">Your creation</div><div class="acts">
-      ${canSave?`<a class="act sm" href="/gallery?save=${IT.idx}">✦ Save as template</a>`:''}
       ${IT.type!=='video'?`<a class="act sm" href="/gallery?reel=${IT.idx}">▶ Make a Reel</a>`:''}
       <button class="act sm" id="visBtn" onclick="toggleVis()">${isPub?'🌐 Public — make private':'🔒 Private — make public'}</button>
       <a class="act sm" href="${esc(IT.url)}" download>⬇ Download</a>
@@ -168,7 +243,7 @@ function render(){
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
-    <div class="acts">${IT.isOwn?'':useCta()}${(!IT.isOwn&&!IT.templateSource)?`<button class="act sm" onclick="saveCreation()">✦ Save</button>`:''}<button class="act sm" onclick="share()">↗ Share</button></div>
+    <div class="acts"><a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Use</a><button class="act sm" onclick="openSaveModal()">＋ Save</button><button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }
 

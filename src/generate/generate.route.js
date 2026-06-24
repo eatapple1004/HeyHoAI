@@ -86,8 +86,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       const cr = await query(
         `SELECT p.prompt_text, gr.model
            FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
-          WHERE gr.idx = $1 AND gr.visibility = 'public' AND gr.status = 'success' AND gr.taken_down = false`,
-        [fromCreationIdx]
+          WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false
+            AND (gr.visibility = 'public' OR p.user_id = $2)`,
+        [fromCreationIdx, req.user.id]
       );
       if (!cr.rows[0]) return res.status(404).json({ success: false, error: '사용할 수 없는 결과물입니다 (비공개·삭제·없음).' });
       prompt = cr.rows[0].prompt_text;                 // 블랙박스 프롬프트(서버사이드, 클라 미노출)

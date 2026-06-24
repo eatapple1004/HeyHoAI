@@ -929,6 +929,11 @@ async function migrateMarketplace() {
   await pool.query(`
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS recipe_id TEXT;
   `);
+  // Save한 creation 출처 포인터(γ): 비공개 개인 템플릿이 이 creation의 룩을 가리킴. 프롬프트는 템플릿에 저장 안 함(블랙박스),
+  //   생성 시 γ-1(fromCreationIdx)로 서버사이드 해석. 내 것=내 프롬프트 / 남의 것=블랙박스(escrow는 γ-3). (멱등)
+  await pool.query(`
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS from_creation_idx INT;
+  `);
   // 상세 등록(2026-06-21): 크리에이터가 템플릿을 더 풍부하게 등록 — 설명 텍스트 + 제작에 쓴 레퍼런스(전시용 갤러리).
   //   reference_examples = 입력 레퍼런스 URL 배열(전시 전용·생성엔 미주입). preview_media(결과 예시)와 의미 분리. (멱등)
   await pool.query(`

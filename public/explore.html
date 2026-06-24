@@ -121,11 +121,9 @@ function card(it){
     ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`
     : `<span class="by">@creator</span>`;
   const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
-  const act=cardAction(it);
   return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=explore'">
     <div class="ovt">${by}${like}</div>
     ${media}
-    ${act?`<div class="ovb">${act}</div>`:''}
   </div>`;
 }
 async function toggleLike(idx,btn){

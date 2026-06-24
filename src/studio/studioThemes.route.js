@@ -226,6 +226,64 @@ router.delete('/hidden-themes/:slug', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Save: creation(공개 or 본인) → 비공개 개인 템플릿 민팅 + 자동 보유 + studio 모드/테마 배치. ──
+//   프롬프트는 템플릿에 저장 안 함(블랙박스): from_creation_idx 포인터만 → 생성 시 γ-1 해석. escrow는 γ-3.
+//   결과: My templates(내 비공개 템플릿) + 선택한 studio 모드(category)/테마 셀프에 동시 등장.
+router.post('/save-creation', async (req, res, next) => {
+  try {
+    const idx = parseInt((req.body && req.body.creationIdx), 10) || 0;
+    if (!idx) return res.status(400).json({ success: false, error: 'creationIdx가 필요합니다.' });
+    const category = (req.body && req.body.category === 'Shopping') ? 'Shopping' : 'Influencer'; // 모드(수동 선택)
+    const themeKind = (req.body && req.body.themeKind === 'custom') ? 'custom' : 'default';
+    const themeKey = String((req.body && req.body.themeKey) || '').slice(0, 80); // custom=themeId(uuid) / default=slug
+
+    // creation 검증: 성공·미테이크다운 + (공개 or 본인). 미리보기·타입 해석.
+    const cr = await query(
+      `SELECT gr.file_path, gr.metadata, gr.visibility, p.user_id
+         FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+        WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false AND gr.file_path IS NOT NULL`,
+      [idx]
+    );
+    const c = cr.rows[0];
+    if (!c) return res.status(404).json({ success: false, error: '저장할 수 없는 결과물입니다 (실패·삭제·없음).' });
+    if (!(c.visibility === 'public' || c.user_id === req.user.id)) {
+      return res.status(403).json({ success: false, error: '공개 결과물 또는 본인 것만 저장할 수 있습니다.' });
+    }
+    const type = (c.metadata && c.metadata.type === 'video') ? 'reel' : 'image';
+    const previewUrl = `/${c.file_path.replace(/^tmp\//, '')}`;
+    const name = String((req.body && req.body.name) || 'Saved look').slice(0, 120);
+    const handle = '@' + String(req.user.email || 'creator').split('@')[0];
+
+    // 비공개 템플릿 민팅(prompt='' = 블랙박스, from_creation_idx 포인터). preview=creation 이미지.
+    const ins = await query(
+      `INSERT INTO marketplace_templates
+         (creator_id, creator_handle, name, category, type, style, prompt, visibility, emoji, from_creation_idx, preview_media)
+       VALUES ($1,$2,$3,$4,$5,'Natural','','private','🎨',$6,$7::jsonb)
+       RETURNING id`,
+      [req.user.id, handle, name, category, type, idx, JSON.stringify([previewUrl])]
+    );
+    const templateId = ins.rows[0].id;
+
+    // 자동 보유(내 거 — studio에서 바로 선택·생성 가능)
+    await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [req.user.id, templateId]);
+
+    // studio 테마 배치(커스텀=멤버십 / 기본=오버라이드 add). 잘못된 키는 조용히 스킵(템플릿은 My templates엔 이미 생김).
+    if (themeKind === 'custom' && UUID_RE.test(themeKey)) {
+      const own = await query(`SELECT 1 FROM user_studio_themes WHERE id = $1 AND user_id = $2 AND origin = 'custom'`, [themeKey, req.user.id]);
+      if (own.rows[0]) await query(`INSERT INTO user_studio_theme_items (user_studio_theme_id, user_id, item_type, item_id) VALUES ($1,$2,'template',$3) ON CONFLICT DO NOTHING`, [themeKey, req.user.id, templateId]);
+    } else if (themeKind === 'default' && themeKey) {
+      const ok = await query(`SELECT 1 FROM themes WHERE slug = $1`, [themeKey]);
+      if (ok.rows[0]) await query(
+        `INSERT INTO user_theme_overrides (user_id, theme_slug, item_type, item_id, action) VALUES ($1,$2,'template',$3,'add')
+         ON CONFLICT (user_id, theme_slug, item_type, item_id) DO UPDATE SET action = 'add'`,
+        [req.user.id, themeKey, templateId]
+      );
+    }
+
+    res.status(201).json({ success: true, data: { templateId, category, themeKind, themeKey } });
+  } catch (err) { next(err); }
+});
+
 // ── γ-2: 저장한 공개 creation 룩(재사용용 참조). 사용 = γ-1 fromCreationIdx 블랙박스 경로. ──
 // POST /api/studio/saved-creations/:idx — 공개 creation을 내 "Saved looks"에 저장(멱등).
 router.post('/saved-creations/:idx', async (req, res, next) => {

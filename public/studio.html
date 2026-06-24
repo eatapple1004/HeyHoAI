@@ -422,7 +422,6 @@
   <div id="gammaBanner" style="display:none;margin:0 0 18px;padding:12px 16px;border:1px solid var(--accent);background:rgba(124,108,255,.08);border-radius:13px;font-size:13.5px;color:var(--text)">
     ✨ Making your own — add your subject below and Generate. The creator's look is applied for you (recipe stays private).
     <span style="float:right;display:inline-flex;gap:7px">
-      <button type="button" onclick="saveCurrentLook()" style="background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:9px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✦ Save this look</button>
       <button type="button" onclick="cancelGamma()" style="background:none;border:1px solid var(--border2);color:var(--dim);border-radius:9px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit">✕ Cancel</button>
     </span>
   </div>
@@ -801,7 +800,7 @@ async function mergeOwnedTemplates(){
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
       emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',cat:'My templates',
       themes:(t.themes&&t.themes.length?t.themes:['general']),
-      prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false});
+      prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false,fromCreationIdx:t.from_creation_idx||null});
   });
   renderFilters();renderRecipes();updateBar();
 }
@@ -1837,7 +1836,8 @@ async function generateImages(r,subj,count){
   fd.append('privateMode',privateOn()?'true':'false'); // 자동 공개
   fd.append('enhance',enhanceOn()?'true':'false'); // Enhance OFF=완전 raw(캐릭터 프리픽스 제거)
   const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
-  if(GAMMA_FROM)fd.append('fromCreationIdx',GAMMA_FROM); // γ: 서버가 이 creation의 프롬프트 해석(클라 prompt 무시)
+  const _selCard=curRecipe(); const _fci=(_selCard&&_selCard.fromCreationIdx)||GAMMA_FROM;
+  if(_fci)fd.append('fromCreationIdx',_fci); // γ: 서버가 이 creation의 프롬프트 해석(저장 템플릿=from_creation_idx / 직접 Use=GAMMA_FROM)
   for(let i=1;i<items.length;i++){
     if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}
   }
