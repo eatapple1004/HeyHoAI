@@ -105,7 +105,7 @@ function cardAction(it){
   if(it.isOwn && !it.templateSource) return `<button class="act save" onclick="event.stopPropagation();location.href='/gallery?save=${it.idx}'">✦ Save as template</button>`;
   if(it.templateSource==='marketplace' && it.templateId) return `<button class="act use" onclick="event.stopPropagation();location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">🔓 Get ${esc(it.templateName||'template')}</button>`;
   if(it.templateSource==='recipe' && it.templateId) return `<button class="act use" onclick="event.stopPropagation();location.href='/studio?recipe='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'template')}</button>`;
-  if(!it.isOwn) return `<button class="act ghost" onclick="event.stopPropagation();location.href='/studio'">✨ Make your own</button>`;
+  if(!it.isOwn) return `<button class="act ghost" onclick="event.stopPropagation();location.href='/studio?fromCreation=${it.idx}'">✨ Make your own</button>`;
   return '';
 }
 function card(it){

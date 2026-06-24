@@ -419,6 +419,11 @@
     </div>
   </div>
 
+  <div id="gammaBanner" style="display:none;margin:0 0 18px;padding:12px 16px;border:1px solid var(--accent);background:rgba(124,108,255,.08);border-radius:13px;font-size:13.5px;color:var(--text)">
+    ✨ Making your own — add your subject below and Generate. The creator's look is applied for you (recipe stays private).
+    <button type="button" onclick="cancelGamma()" style="float:right;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:9px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit">✕ Cancel</button>
+  </div>
+
   <div class="step fade d3" id="templateStep">
     <div class="step-head"><div class="step-num" id="snTemplate">2</div><h2 id="step2Title">Pick a template</h2>
       <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span></div>
@@ -792,6 +797,7 @@ async function applyRecipeGates(){
 }
 
 let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,filter:'All'};
+let GAMMA_FROM=0; // γ: 공개 creation 블랙박스 사용 — 이 idx의 룩을 내 주체에 적용(프롬프트 미노출). setMode와 독립(모드 전환에도 유지).
 let SUBJECTS={influencer:[],shopping:[],ugc:[],custom:[]};
 let generating=false;
 let CREDITS={balance:null,unlimited:false,costs:null};
@@ -1519,6 +1525,7 @@ function setFilter(c){curTheme=null;state.filter=c;renderFilters();renderRecipes
 function pickSubject(id){const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===id);if(s){state.slots[primarySlotKey()]=[itemFromSubject(s)];syncPrimary();renderSubjects();updateBar();}}
 function pickRecipe(id){
   state.recipeId=(state.recipeId===id?null:id); // 같은 카드 재클릭 시 선택 해제(토글)
+  if(state.recipeId&&GAMMA_FROM)cancelGamma(); // 템플릿 직접 선택 시 γ 모드 해제(혼동 방지)
   // 보유 마켓 템플릿(자기 tool 보유) 선택 시 → 그 tool 적용(applyTryTemplate와 동일 패턴). 일반 recipe는 기본 유지.
   const r=curRecipe();
   if(r&&r.source==='marketplace'&&r.tool){const tt=toolById(r.tool);if(tt)applyTool(r.tool);}
@@ -1616,7 +1623,7 @@ async function generate(opts){
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
   if(!subj||generating)return;
-  if(!r&&!extra)return;
+  if(!r&&!extra&&!GAMMA_FROM)return; // γ 모드: 레시피·프롬프트 없이도 공개 creation 룩으로 생성
   if(r&&r.soon){toast('UGC mode is coming soon.');return;}
   lastGenTemplate=r?r.name:'My prompt'; // 뷰어 모달에 표시할 템플릿
   // 잔액 부족이면 생성 대신 페이월
@@ -1791,6 +1798,7 @@ async function generateImages(r,subj,count){
   fd.append('privateMode',privateOn()?'true':'false'); // 자동 공개
   fd.append('enhance',enhanceOn()?'true':'false'); // Enhance OFF=완전 raw(캐릭터 프리픽스 제거)
   const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
+  if(GAMMA_FROM)fd.append('fromCreationIdx',GAMMA_FROM); // γ: 서버가 이 creation의 프롬프트 해석(클라 prompt 무시)
   for(let i=1;i<items.length;i++){
     if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}
   }
@@ -2021,7 +2029,20 @@ function applyTryTemplate(){
     return true;
   }catch(e){return false;}
 }
-if(!applyTryTemplate() && !bootRecipe() && !bootFromUrl()) setMode('influencer');
+// γ: Explore/creation "Make your own" → /studio?fromCreation=IDX. 그 공개 creation의 룩을 내 주체에 적용(블랙박스).
+function showGammaBanner(){const b=document.getElementById('gammaBanner');if(b)b.style.display='';}
+function cancelGamma(){GAMMA_FROM=0;const b=document.getElementById('gammaBanner');if(b)b.style.display='none';}
+function bootFromCreation(){
+  const idx=parseInt(new URLSearchParams(location.search).get('fromCreation'),10)||0;
+  if(!idx)return false;
+  GAMMA_FROM=idx;
+  setMode('influencer');           // 기본 face 주체(필요 시 모드 전환 가능 — GAMMA_FROM 유지)
+  showGammaBanner();
+  if(window.toast)toast('Add your subject and Generate — the look is applied for you ✨');
+  document.getElementById('subjectRow')?.scrollIntoView({behavior:'smooth',block:'center'});
+  return true;
+}
+if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('influencer');
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
 function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>loadStudioThemes()); }
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();

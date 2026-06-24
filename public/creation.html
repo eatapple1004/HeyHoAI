@@ -125,7 +125,7 @@ function useCta(){
     return `<a class="act primary" href="/template?id=${encodeURIComponent(IT.templateId)}">🔓 Get ${esc(IT.templateName||'this template')}</a>`;
   if(IT.templateSource==='recipe' && IT.templateId)
     return `<a class="act primary" href="/studio?recipe=${encodeURIComponent(IT.templateId)}">✨ Use ${esc(IT.templateName||'this template')}</a>`;
-  return `<a class="act primary" href="/studio">✨ Make your own</a>`;
+  return `<a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Make your own</a>`;
 }
 
 function render(){

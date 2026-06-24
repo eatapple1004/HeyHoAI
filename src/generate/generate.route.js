@@ -58,8 +58,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 자동 공개: Private Mode 끄면(기본) 결과물 공개. + 출처 템플릿 attribution.
     // Private Mode는 구독자 전용 → 비구독자가 요청해도 공개로 강제(서버 게이트).
     const resultVisibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
-    const templateId = req.body.templateId || null;
-    const templateSource = req.body.templateSource || null; // 'marketplace' | 'recipe'
+    let templateId = req.body.templateId || null;
+    let templateSource = req.body.templateSource || null; // 'marketplace' | 'recipe' | 'creation'(γ)
     const generateCount = Math.min(parseInt(count, 10) || 1, 8); // 유저 선택 1~8
 
     // #4: 툴이 템플릿에 박힘 — req.body.tool(템플릿 지정 또는 파워유저 override) → 레지스트리로 해석.
@@ -78,6 +78,22 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const imageSize = (model === 'pro' && String(req.body.imageSize || '').toUpperCase() === '2K') ? '2K' : null;
     // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 1000(입력란 maxlength와 일치).
     const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 1000);
+
+    // γ: 공개 creation을 블랙박스 템플릿으로 사용 — 클라는 fromCreationIdx만 보내고, 서버가 그 creation의
+    //    프롬프트/모델을 해석(프롬프트 절대 미노출). 호출자 본인 주체(referenceImages)로 생성, 출처 귀속(계보·향후 escrow).
+    const fromCreationIdx = parseInt(req.body.fromCreationIdx, 10) || 0;
+    if (fromCreationIdx) {
+      const cr = await query(
+        `SELECT p.prompt_text, gr.model
+           FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+          WHERE gr.idx = $1 AND gr.visibility = 'public' AND gr.status = 'success' AND gr.taken_down = false`,
+        [fromCreationIdx]
+      );
+      if (!cr.rows[0]) return res.status(404).json({ success: false, error: '사용할 수 없는 결과물입니다 (비공개·삭제·없음).' });
+      prompt = cr.rows[0].prompt_text;                 // 블랙박스 프롬프트(서버사이드, 클라 미노출)
+      if (cr.rows[0].model) model = cr.rows[0].model;  // 원본 모델로 충실 재현
+      templateSource = 'creation'; templateId = String(fromCreationIdx); // 출처 귀속
+    }
 
     if (!prompt || prompt.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Prompt is required' });
