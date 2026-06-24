@@ -69,13 +69,15 @@ router.get('/templates/:id', async (req, res, next) => {
     // 블랙박스: 보유(구매/제작)하지 않은 유료 템플릿은 prompt 숨김. 보유/내 것은 그대로.
     if (tpl.price_credits > 0 && !tpl.mine && !tpl.owned) { tpl.prompt = null; tpl.negative_prompt = null; }
 
-    // 이 템플릿으로 만들어진 creation 수 + 그 creation들 좋아요 합(= 롤업과 동치, 신선 계산)
+    // 이 템플릿으로 만들어진 creation 수 + 좋아요 합. ⚠️ recipe-backed 공식 템플릿은 creation이
+    // source='recipe', template_id=recipe_id 로 귀속되므로 그것도 매칭(마켓 귀속 + 레시피 귀속 둘 다).
     const agg = await query(
       `SELECT COUNT(*)::int AS creations, COALESCE(SUM(likes_count), 0)::int AS likes
          FROM generation_results
-        WHERE template_id = $1 AND template_source = 'marketplace'
+        WHERE ((template_source = 'marketplace' AND template_id = $1)
+            OR ($2 <> '' AND template_source = 'recipe' AND template_id = $2))
           AND status = 'success' AND taken_down = false`,
-      [req.params.id]
+      [req.params.id, tpl.recipe_id || '']
     );
     tpl.creationsCount = agg.rows[0].creations;
     tpl.totalLikes = agg.rows[0].likes;
@@ -95,10 +97,13 @@ router.get('/templates/:id', async (req, res, next) => {
 /** GET /api/marketplace/templates/:id/creations — 이 템플릿으로 만든 공개 creation들, 좋아요순(이미지/영상 갤러리·사회적 증명). */
 router.get('/templates/:id/creations', async (req, res, next) => {
   try {
+    // recipe-backed 공식 템플릿은 creation이 source='recipe', template_id=recipe_id 로 귀속 → 마켓·레시피 둘 다 매칭.
     const r = await query(
       `SELECT gr.idx, gr.file_path, gr.metadata, gr.likes_count
          FROM generation_results gr
-        WHERE gr.template_id = $1 AND gr.template_source = 'marketplace'
+         JOIN marketplace_templates mt ON mt.id = $1
+        WHERE ((gr.template_source = 'marketplace' AND gr.template_id = mt.id::text)
+            OR (mt.recipe_id IS NOT NULL AND gr.template_source = 'recipe' AND gr.template_id = mt.recipe_id))
           AND gr.visibility = 'public' AND gr.status = 'success'
           AND gr.taken_down = false AND gr.file_path IS NOT NULL
         ORDER BY gr.likes_count DESC, gr.created_at DESC
