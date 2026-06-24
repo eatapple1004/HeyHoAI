@@ -251,10 +251,8 @@
     <div class="mfield"><label>Description</label><textarea id="edDesc" maxlength="600" placeholder="What this template does, who it's for…"></textarea></div>
     <div class="mfield"><label>Category</label>
       <select id="edCat" onchange="recolorThemes('edCat','edThemes')">
-        <option value="Custom">Custom</option>
         <option value="Influencer">Influencer</option>
         <option value="Shopping">Shopping</option>
-        <option value="UGC">UGC</option>
       </select>
     </div>
     <div class="mfield"><label>Themes <i>(shown in Explore)</i></label>
@@ -428,8 +426,7 @@ async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await
 const CAT_THEMES = {
   Influencer:['people','beauty','fashion','jewelry','pet','general'],
   Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
-  UGC:['people','beauty','fashion','food','pet','ugc','general'],
-  Custom:null,
+  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
 };
 async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
@@ -450,7 +447,7 @@ function openEdit(id){
   window.__editVis=t.visibility==='public'?'public':'private';
   document.getElementById('edName').value=t.name||'';
   document.getElementById('edDesc').value=t.description||'';
-  const cat=['Custom','Influencer','Shopping','UGC'].includes(t.category)?t.category:'Custom';
+  const cat=['Influencer','Shopping'].includes(t.category)?t.category:'Influencer'; // 레거시 Custom/UGC → Influencer 표시
   document.getElementById('edCat').value=cat;
   // 기존 테마 프리로드(상세 API가 themes 반환)
   renderThemeChips('edThemes', t.themes||[], cat);

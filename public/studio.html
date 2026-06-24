@@ -616,10 +616,8 @@
       <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
     <div class="field"><label>Category</label>
       <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes')">
-        <option value="Custom">Custom</option>
         <option value="Influencer">Influencer</option>
         <option value="Shopping">Shopping</option>
-        <option value="UGC">UGC</option>
       </select></div>
     <div class="field"><label>Themes <i>(pick all that fit — shown in Explore)</i></label>
       <div id="stplThemes" class="theme-chips"></div></div>
@@ -1698,8 +1696,7 @@ async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await
 const CAT_THEMES = {
   Influencer:['people','beauty','fashion','jewelry','pet','general'],
   Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
-  UGC:['people','beauty','fashion','food','pet','ugc','general'],
-  Custom:null,
+  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
 };
 async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
@@ -1720,8 +1717,8 @@ function saveAsTemplate(){
   const prev=(state.lastPreview||[]);
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
-  document.getElementById('stplCat').value='Custom';
-  renderThemeChips('stplThemes', [], 'Custom'); // 테마 칩(기본 미선택, category 필터)
+  document.getElementById('stplCat').value='Influencer';
+  renderThemeChips('stplThemes', [], 'Influencer'); // 테마 칩(기본 미선택, category 필터)
   document.getElementById('stplVis').checked=true; // 기본 공개(Feed)
   // 미리보기 썸네일 — 방금 만든 결과
   document.getElementById('stplPrev').innerHTML=prev.length
@@ -1760,7 +1757,7 @@ async function confirmSaveTpl(){
   const priceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)):0;
   const usePriceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplUsePrice').value,10)||0,50)):0;
   const description=document.getElementById('stplDesc').value.trim();
-  const category=document.getElementById('stplCat').value||'Custom';
+  const category=document.getElementById('stplCat').value||'Influencer';
   const themeSlugs=selectedThemes('stplThemes');
   // 레퍼런스 전시: 옵트인 체크 시에만 전송
   const referenceExamples=document.getElementById('stplRefOpt').checked?(state._saveRefs||[]):[];

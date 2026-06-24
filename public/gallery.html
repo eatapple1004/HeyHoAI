@@ -207,7 +207,7 @@
     <div class="field">
       <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Category</label>
       <select id="ctplCat" onchange="recolorThemes('ctplCat','ctplThemes')" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
-        <option value="Custom">Custom</option><option value="Influencer">Influencer</option><option value="Shopping">Shopping</option><option value="UGC">UGC</option>
+        <option value="Influencer">Influencer</option><option value="Shopping">Shopping</option>
       </select>
     </div>
     <div class="field">
@@ -432,8 +432,8 @@ function openSaveFromCreation(){
   closeView();
   document.getElementById('ctplName').value=(VIEW_ITEM.prompt||'').slice(0,40);
   document.getElementById('ctplDesc').value='';
-  document.getElementById('ctplCat').value='Custom';
-  renderThemeChips('ctplThemes', [], 'Custom');
+  document.getElementById('ctplCat').value='Influencer';
+  renderThemeChips('ctplThemes', [], 'Influencer');
   document.getElementById('ctplPub').checked=false; // Private 기본
   document.getElementById('ctplPrice').value='0';
   document.getElementById('ctplUsePrice').value='0';
@@ -447,8 +447,7 @@ async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await
 const CAT_THEMES = {
   Influencer:['people','beauty','fashion','jewelry','pet','general'],
   Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
-  UGC:['people','beauty','fashion','food','pet','ugc','general'],
-  Custom:null,
+  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
 };
 async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
@@ -474,7 +473,7 @@ async function confirmSaveCreation(){
   const priceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplPrice').value,10)||0,100)):0;
   const usePriceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplUsePrice').value,10)||0,50)):0;
   const description=document.getElementById('ctplDesc').value.trim();
-  const category=document.getElementById('ctplCat').value||'Custom';
+  const category=document.getElementById('ctplCat').value||'Influencer';
   const themeSlugs=selectedThemes('ctplThemes');
   const body=v=>JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,usePriceCredits:v==='public'?usePriceCredits:0,previewMedia:[it.url],sourceResultIdx:it.idx});
   const btn=document.getElementById('ctplSave');btn.disabled=true;btn.textContent='Saving…';
