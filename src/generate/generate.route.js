@@ -85,15 +85,6 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const styled = await styleRepo.applyStyle(style, prompt);
     let finalPrompt = styled.prompt;
 
-    // 브랜드킷: 활성화 시 브랜드 색상을 톤 힌트로 주입
-    if (req.body.brandKit === 'true' || req.body.brandKit === true) {
-      const { getBrandKit } = require('../brandkit/brandkit.route');
-      const bk = await getBrandKit(req.user.id);
-      if (bk.enabled && bk.primary_color) {
-        finalPrompt += `, subtle brand color accent of ${bk.primary_color} in the styling and tones, cohesive on-brand aesthetic`;
-      }
-    }
-
     // 네거티브 프롬프트: provider 관용대로 "Avoid:" 절로 합침
     if (negativePrompt) {
       finalPrompt += `\n\nAvoid: ${negativePrompt}`;
