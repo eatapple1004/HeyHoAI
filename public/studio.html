@@ -427,9 +427,26 @@
     </span>
   </div>
 
-  <div id="savedLooksSec" style="display:none;margin-bottom:24px">
-    <div style="font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:12px">✦ Saved looks</div>
-    <div id="savedLooksGrid" class="recipe-grid"></div>
+  <div id="lookThemeModal" class="lt-ov">
+    <div class="lt-box">
+      <div class="lt-h">Save look to a theme</div>
+      <div class="lt-s">Pick one of your studio themes — it'll show up there, ready to reuse.</div>
+      <div id="lookThemeList" class="lt-list"></div>
+      <button type="button" class="lt-x" onclick="closeLookTheme()">Cancel</button>
+    </div>
+    <style>
+      .lt-ov{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:20px}
+      .lt-ov.open{display:flex}
+      .lt-box{background:var(--bg2,#15151c);border:1px solid var(--border2,#2a2a35);border-radius:16px;max-width:420px;width:100%;max-height:80vh;overflow:auto;padding:22px}
+      .lt-h{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
+      .lt-s{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.45}
+      .lt-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+      .lt-sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:8px 0 2px;font-weight:700}
+      .lt-row{text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:11px 14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+      .lt-row:hover{background:rgba(255,255,255,.1)}
+      .lt-new{border-style:dashed;color:var(--accent,#7c6cff)}
+      .lt-x{width:100%;background:none;border:1px solid var(--border2,#2a2a35);color:var(--dim);border-radius:10px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit}
+    </style>
   </div>
 
   <div class="step fade d3" id="templateStep">
@@ -1346,13 +1363,15 @@ let curTheme=null;      // 선택된 커스텀 테마 id (null=일반 mode/cat �
 let THEME_LIST=[];      // 글로벌 테마 [{slug,name}] — Explore와 동일 어휘
 let THEME_OV={};        // 기본 테마 오버라이드: slug -> {add:Set, remove:Set}
 let HIDDEN_THEMES=new Set(); // 유저가 제거한 기본 테마 slug
+let CREATION_PREVIEWS={}; // 테마 멤버 creation(저장 룩) 미리보기: idx -> {url,type,creatorHandle}
+let DEF_CREATIONS={};   // 기본 테마에 넣은 저장 룩: slug -> [idx]
 async function loadStudioThemes(){
   try{ THEME_LIST=await ensureThemes(); }catch(e){ THEME_LIST=[]; }
   try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{};
     STUDIO_THEMES=d.customThemes||[]; HIDDEN=new Set((d.hiddenRecipes||[]).map(String));
-    THEME_OV={}; (d.themeOverrides||[]).forEach(o=>{ const t=(THEME_OV[o.themeSlug]=THEME_OV[o.themeSlug]||{add:new Set(),remove:new Set()}); t[o.action].add(String(o.itemId)); });
-    HIDDEN_THEMES=new Set(d.hiddenThemes||[]);
-  }catch(e){ STUDIO_THEMES=[]; HIDDEN=new Set(); THEME_OV={}; HIDDEN_THEMES=new Set(); }
+    THEME_OV={}; DEF_CREATIONS={}; (d.themeOverrides||[]).forEach(o=>{ const t=(THEME_OV[o.themeSlug]=THEME_OV[o.themeSlug]||{add:new Set(),remove:new Set()}); t[o.action].add(String(o.itemId)); if(o.itemType==='creation'&&o.action==='add')(DEF_CREATIONS[o.themeSlug]=DEF_CREATIONS[o.themeSlug]||[]).push(parseInt(o.itemId,10)); });
+    HIDDEN_THEMES=new Set(d.hiddenThemes||[]); CREATION_PREVIEWS=d.creationPreviews||{};
+  }catch(e){ STUDIO_THEMES=[]; HIDDEN=new Set(); THEME_OV={}; HIDDEN_THEMES=new Set(); CREATION_PREVIEWS={}; DEF_CREATIONS={}; }
   renderFilters();renderRecipes();
 }
 // 카드 r이 기본 테마 slug에 (오버라이드 반영) 속하는가
@@ -1465,9 +1484,13 @@ function renderRecipes(){
   rs.sort((a,b)=>{ const ci=_catOrder.indexOf(a.cat)-_catOrder.indexOf(b.cat); return ci!==0?ci:((a.held===false?0:1)-(b.held===false?0:1)); });
   const bestId=manageMode?null:(rs.find(r=>r.type==='image'&&!r.soon)||{}).id;
   const grid=document.getElementById('recipeGrid');
-  if((curTheme||defTheme)&&!manageMode&&!rs.length){ grid.innerHTML=`<div class="cth-empty">No templates in this theme yet. Tap ⚙ Manage, then ＋ on any template to add it.</div>`; renderPremium(); return; }
+  // 이 테마 뷰의 저장 룩(creation) 타일 — 커스텀/기본 둘 다(All 뷰엔 없음).
+  let lookTiles='';
+  if(curTheme){ const ct=curThemeObj(); lookTiles=creationTilesHtml((ct&&ct.items||[]).filter(i=>i.itemType==='creation').map(i=>parseInt(i.itemId,10)),'custom',curTheme); }
+  else if(defTheme){ lookTiles=creationTilesHtml(DEF_CREATIONS[defTheme]||[],'default',defTheme); }
+  if((curTheme||defTheme)&&!manageMode&&!rs.length&&!lookTiles){ grid.innerHTML=`<div class="cth-empty">No templates in this theme yet. Tap ⚙ Manage, then ＋ on any template to add it.</div>`; renderPremium(); return; }
   const memberIds=(tObj&&tObj.items||[]).map(i=>String(i.itemId));
-  grid.innerHTML=rs.map(r=>{
+  grid.innerHTML=lookTiles+rs.map(r=>{
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="4 photos for the same cost — best value per credit">★ Best value</span>`:'';
     const hidden=HIDDEN.has(String(r.id));
     let mc='';
@@ -2058,36 +2081,52 @@ function bootFromCreation(){
   document.getElementById('subjectRow')?.scrollIntoView({behavior:'smooth',block:'center'});
   return true;
 }
-// γ-2: Saved looks — 저장한 공개 creation 룩(재사용). 사용=γ-1 fromCreationIdx 경로.
-let SAVED_LOOKS=[];
-async function loadSavedLooks(){
-  try{ SAVED_LOOKS=(await(await fetch('/api/studio/saved-creations')).json()).data||[]; }catch(e){ SAVED_LOOKS=[]; }
-  renderSavedLooks();
-}
-function renderSavedLooks(){
-  const sec=document.getElementById('savedLooksSec'),grid=document.getElementById('savedLooksGrid');
-  if(!sec||!grid)return;
-  if(!SAVED_LOOKS.length){sec.style.display='none';grid.innerHTML='';return;}
-  sec.style.display='';
-  grid.innerHTML=SAVED_LOOKS.map(s=>`
-    <div class="recipe-card" style="position:relative" onclick="useSavedLook(${s.idx})">
-      <span class="mc" title="Remove" onclick="event.stopPropagation();unsaveLook(${s.idx})" style="position:absolute;top:6px;right:6px;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);cursor:pointer;font-size:14px">✕</span>
-      <div class="preview" style="background-image:url('${esc(s.url)}');background-size:cover;background-position:center"><span class="type-badge">${s.type==='video'?'▶ Reel':'▦ Photo'}</span></div>
-      <div class="meta"><div class="rname">Saved look</div><div class="cost">${esc(s.creatorHandle||'@creator')}</div></div>
-    </div>`).join('');
-}
+// γ-2 재설계: 저장 룩(공개 creation)을 "내 테마"(기본+커스텀)에 넣어 재사용. 플랫 Saved looks 섹션 폐지.
 function useSavedLook(idx){ GAMMA_FROM=idx; showGammaBanner(); if(window.toast)toast('Add your subject and Generate ✨'); document.getElementById('subjectRow')?.scrollIntoView({behavior:'smooth',block:'center'}); }
-async function unsaveLook(idx){ try{ await fetch('/api/studio/saved-creations/'+idx,{method:'DELETE'}); SAVED_LOOKS=SAVED_LOOKS.filter(s=>s.idx!==idx); renderSavedLooks(); }catch(e){} }
-async function saveCurrentLook(){
-  if(!GAMMA_FROM){if(window.toast)toast('Nothing to save');return;}
-  try{ const r=await(await fetch('/api/studio/saved-creations/'+GAMMA_FROM,{method:'POST'})).json();
-    if(r&&r.success){ if(window.toast)toast('Saved to your templates ✦'); loadSavedLooks(); }
+function saveCurrentLook(){ openLookThemePicker(GAMMA_FROM); }
+// 테마 셀프 안의 저장-룩 타일(클릭=γ 사용 / Manage 모드=빼기)
+function creationTilesHtml(idxs, kind, key){
+  const list=(idxs||[]).filter(idx=>CREATION_PREVIEWS[idx]);
+  return list.map(idx=>{ const c=CREATION_PREVIEWS[idx];
+    const rem=manageMode?`<div class="mctrls"><span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeLookFromTheme('${kind}','${esc(String(key))}',${idx})">−</span></div>`:'';
+    return `<div class="recipe-card" style="position:relative" onclick="${manageMode?'':`useSavedLook(${idx})`}">${rem}<div class="preview" style="background-image:url('${esc(c.url)}');background-size:cover;background-position:center"><span class="type-badge">${c.type==='video'?'▶ Reel':'▦ Photo'}</span></div><div class="meta"><div class="rname">Saved look</div><div class="cost">${esc(c.creatorHandle||'@creator')}</div></div></div>`;
+  }).join('');
+}
+async function removeLookFromTheme(kind,key,idx){
+  try{
+    if(kind==='custom'){ await fetch('/api/studio/themes/'+key+'/items/creation/'+idx,{method:'DELETE'}); const t=STUDIO_THEMES.find(x=>x.id===key); if(t)t.items=(t.items||[]).filter(i=>!(i.itemType==='creation'&&String(i.itemId)===String(idx))); }
+    else{ await fetch('/api/studio/global-themes/'+encodeURIComponent(key)+'/items/creation/'+idx,{method:'DELETE'}); DEF_CREATIONS[key]=(DEF_CREATIONS[key]||[]).filter(x=>x!==idx); }
+    renderRecipes();
+  }catch(e){}
+}
+// 저장 시 테마 선택 피커(기본+커스텀+새 테마)
+let LOOK_SAVE_IDX=0;
+function openLookThemePicker(idx){ idx=parseInt(idx,10)||0; if(!idx){if(window.toast)toast('Nothing to save');return;} LOOK_SAVE_IDX=idx; renderLookThemeList(); document.getElementById('lookThemeModal').classList.add('open'); }
+function closeLookTheme(){ document.getElementById('lookThemeModal').classList.remove('open'); LOOK_SAVE_IDX=0; }
+function renderLookThemeList(){
+  const el=document.getElementById('lookThemeList'); if(!el)return;
+  const defs=(THEME_LIST||[]).filter(t=>!HIDDEN_THEMES.has(t.slug));
+  let html='';
+  if(defs.length) html+=`<div class="lt-sec">Themes</div>`+defs.map(t=>`<button type="button" class="lt-row" onclick="pickLookTheme('default','${esc(t.slug)}')">${esc(t.name)}</button>`).join('');
+  if((STUDIO_THEMES||[]).length) html+=`<div class="lt-sec">Your themes</div>`+STUDIO_THEMES.map(t=>`<button type="button" class="lt-row" onclick="pickLookTheme('custom','${esc(t.id)}')">✦ ${esc(t.name)}</button>`).join('');
+  html+=`<button type="button" class="lt-row lt-new" onclick="pickLookThemeNew()">＋ New theme</button>`;
+  el.innerHTML=html;
+}
+async function pickLookTheme(kind,key){
+  const idx=LOOK_SAVE_IDX; if(!idx)return;
+  try{
+    let r;
+    if(kind==='custom') r=await(await fetch('/api/studio/themes/'+key+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'creation',itemId:String(idx)})})).json();
+    else r=await(await fetch('/api/studio/global-themes/'+encodeURIComponent(key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'creation',itemId:String(idx),action:'add'})})).json();
+    if(r&&r.success){ closeLookTheme(); if(window.toast)toast('Saved to theme ✦'); manageMode=false; await loadStudioThemes(); if(kind==='custom')setCustomTheme(key); else setFilter(key); }
     else if(window.toast)toast((r&&r.error)||'Could not save');
   }catch(e){ if(window.toast)toast('Could not save'); }
 }
+async function pickLookThemeNew(){ const t=await newStudioTheme(); if(t&&t.id) await pickLookTheme('custom',t.id); }
 if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('influencer');
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
-function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();loadSavedLooks();}); }
+function maybeOpenSaveLook(){ const idx=parseInt(new URLSearchParams(location.search).get('saveLook'),10)||0; if(idx) openLookThemePicker(idx); }
+function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes().then(maybeOpenSaveLook);}); }
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubscription(); // 구독 상태 → Private Mode 게이트

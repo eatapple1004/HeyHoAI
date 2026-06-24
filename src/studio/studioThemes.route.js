@@ -4,6 +4,12 @@ const { query } = require('../db/client');
 const router = Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// 공개 creation(저장 룩)인지 검증 — Saved looks를 테마 멤버(item_type='creation')로 넣을 때 사용.
+async function isPublicCreation(idx) {
+  const r = await query(`SELECT 1 FROM generation_results WHERE idx = $1 AND visibility = 'public' AND status = 'success' AND taken_down = false`, [idx]);
+  return !!r.rows[0];
+}
+
 /**
  * 스튜디오 개인 큐레이션 (설계 = docs/테마_조직화_설계_2026-06-24.md).
  *  - 기본 테마 섹션 = 프론트 파생(내장 레시피 vertical→테마 + 보유 마켓 템플릿). 숨긴 내장은 user_hidden_recipes로 제외.
@@ -27,6 +33,25 @@ router.get('/themes', async (req, res, next) => {
     for (const it of items.rows) {
       (byTheme[it.theme_id] = byTheme[it.theme_id] || []).push({ itemType: it.item_type, itemId: it.item_id });
     }
+    // 테마 멤버 중 creation(저장 룩)의 미리보기 해석 — 비공개/삭제분은 자동 제외(프론트는 map에 있는 것만 렌더).
+    const creationIds = new Set();
+    items.rows.forEach((it) => { if (it.item_type === 'creation') creationIds.add(parseInt(it.item_id, 10)); });
+    overrides.rows.forEach((o) => { if (o.item_type === 'creation' && o.action === 'add') creationIds.add(parseInt(o.item_id, 10)); });
+    const creationPreviews = {};
+    const cids = [...creationIds].filter(Boolean);
+    if (cids.length) {
+      const cr = await query(
+        `SELECT gr.idx, gr.file_path, gr.metadata, split_part(u.email, '@', 1) AS handle
+           FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx JOIN users u ON u.id = p.user_id
+          WHERE gr.idx = ANY($1) AND gr.visibility = 'public' AND gr.status = 'success' AND gr.taken_down = false AND gr.file_path IS NOT NULL`,
+        [cids]
+      );
+      cr.rows.forEach((x) => { creationPreviews[x.idx] = {
+        url: x.file_path ? `/${x.file_path.replace(/^tmp\//, '')}` : null,
+        type: (x.metadata && x.metadata.type === 'video') ? 'video' : 'image',
+        creatorHandle: x.handle ? '@' + x.handle : null,
+      }; });
+    }
     res.json({
       success: true,
       data: {
@@ -36,6 +61,7 @@ router.get('/themes', async (req, res, next) => {
         hiddenRecipes: hidden.rows.map((r) => r.recipe_id),
         themeOverrides: overrides.rows.map((o) => ({ themeSlug: o.theme_slug, itemType: o.item_type, itemId: o.item_id, action: o.action })),
         hiddenThemes: hiddenThemes.rows.map((r) => r.theme_slug),
+        creationPreviews,
       },
     });
   } catch (err) { next(err); }
@@ -91,7 +117,8 @@ router.delete('/themes/:id', async (req, res, next) => {
 router.post('/themes/:id/items', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(404).json({ success: false, error: '없는 테마' });
-    const itemType = req.body && req.body.itemType === 'template' ? 'template' : 'recipe';
+    const reqType = req.body && req.body.itemType;
+    const itemType = (reqType === 'template' || reqType === 'creation') ? reqType : 'recipe';
     const itemId = String((req.body && req.body.itemId) || '').slice(0, 200);
     if (!itemId) return res.status(400).json({ success: false, error: 'itemId가 필요합니다.' });
     const own = await query(
@@ -102,6 +129,9 @@ router.post('/themes/:id/items', async (req, res, next) => {
       if (!UUID_RE.test(itemId)) return res.status(400).json({ success: false, error: '템플릿 id가 올바르지 않습니다.' });
       const owned = await query(`SELECT 1 FROM template_owns WHERE user_id = $1 AND template_id = $2`, [req.user.id, itemId]);
       if (!owned.rows[0]) return res.status(403).json({ success: false, error: '먼저 이 템플릿을 보유해야 합니다.' });
+    } else if (itemType === 'creation') {
+      if (!/^\d+$/.test(itemId)) return res.status(400).json({ success: false, error: 'creation id가 올바르지 않습니다.' });
+      if (!await isPublicCreation(parseInt(itemId, 10))) return res.status(404).json({ success: false, error: '저장할 수 없는 결과물입니다 (비공개·삭제·없음).' });
     }
     await query(
       `INSERT INTO user_studio_theme_items (user_studio_theme_id, user_id, item_type, item_id)
@@ -113,7 +143,7 @@ router.post('/themes/:id/items', async (req, res, next) => {
 // DELETE /api/studio/themes/:id/items/:itemType/:itemId — 테마에서 빼기.
 router.delete('/themes/:id/items/:itemType/:itemId', async (req, res, next) => {
   try {
-    const itemType = req.params.itemType === 'template' ? 'template' : 'recipe';
+    const itemType = (req.params.itemType === 'template' || req.params.itemType === 'creation') ? req.params.itemType : 'recipe';
     await query(
       `DELETE FROM user_studio_theme_items
         WHERE user_studio_theme_id = $1 AND user_id = $2 AND item_type = $3 AND item_id = $4`,
@@ -145,12 +175,17 @@ router.delete('/hidden/:recipeId', async (req, res, next) => {
 router.post('/global-themes/:slug/items', async (req, res, next) => {
   try {
     const slug = String(req.params.slug || '').slice(0, 60);
-    const itemType = req.body && req.body.itemType === 'template' ? 'template' : 'recipe';
+    const reqType = req.body && req.body.itemType;
+    const itemType = (reqType === 'template' || reqType === 'creation') ? reqType : 'recipe';
     const itemId = String((req.body && req.body.itemId) || '').slice(0, 200);
     const action = req.body && req.body.action === 'remove' ? 'remove' : 'add';
     if (!slug || !itemId) return res.status(400).json({ success: false, error: 'slug·itemId 필요' });
     const ok = await query(`SELECT 1 FROM themes WHERE slug = $1`, [slug]);
     if (!ok.rows[0]) return res.status(404).json({ success: false, error: '없는 테마' });
+    if (itemType === 'creation' && action === 'add') {
+      if (!/^\d+$/.test(itemId)) return res.status(400).json({ success: false, error: 'creation id가 올바르지 않습니다.' });
+      if (!await isPublicCreation(parseInt(itemId, 10))) return res.status(404).json({ success: false, error: '저장할 수 없는 결과물입니다 (비공개·삭제·없음).' });
+    }
     await query(
       `INSERT INTO user_theme_overrides (user_id, theme_slug, item_type, item_id, action)
        VALUES ($1,$2,$3,$4,$5)
@@ -164,7 +199,7 @@ router.post('/global-themes/:slug/items', async (req, res, next) => {
 // DELETE /api/studio/global-themes/:slug/items/:itemType/:itemId — 오버라이드 해제(태그 기본값으로 복귀)
 router.delete('/global-themes/:slug/items/:itemType/:itemId', async (req, res, next) => {
   try {
-    const itemType = req.params.itemType === 'template' ? 'template' : 'recipe';
+    const itemType = (req.params.itemType === 'template' || req.params.itemType === 'creation') ? req.params.itemType : 'recipe';
     await query(
       `DELETE FROM user_theme_overrides WHERE user_id = $1 AND theme_slug = $2 AND item_type = $3 AND item_id = $4`,
       [req.user.id, req.params.slug, itemType, req.params.itemId]

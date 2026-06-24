@@ -81,10 +81,9 @@
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
-async function saveCreation(){ // γ-2: 이 공개 룩을 내 템플릿(Saved looks)에 저장 — 재사용은 Studio에서
-  try{ const r=await(await fetch('/api/studio/saved-creations/'+IT.idx,{method:'POST'})).json();
-    toast(r&&r.success?'Saved to your templates — find it in Studio ✦':((r&&r.error)||'Could not save'));
-  }catch(e){ toast('Could not save'); }
+function saveCreation(){ // γ-2: 이 공개 룩을 내 스튜디오 테마에 저장 — Studio에서 어느 테마에 넣을지 선택.
+  if(!IT||!IT.idx){ toast('Could not save'); return; }
+  location.href='/studio?saveLook='+IT.idx;
 }
 function goBack(){ if(history.length>1) history.back(); else location.href = FROM==='library' ? '/gallery' : '/explore'; }
 function qs(k){return new URLSearchParams(location.search).get(k);}
