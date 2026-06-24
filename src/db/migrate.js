@@ -1021,6 +1021,14 @@ async function migrateMarketplace() {
         theme_slug TEXT NOT NULL,
         PRIMARY KEY (user_id, theme_slug)
     );
+    -- γ-2: 유저가 "내 템플릿에 저장"한 공개 creation 룩(재사용용 참조). 사용=γ-1 fromCreationIdx 블랙박스 경로.
+    CREATE TABLE IF NOT EXISTS user_saved_creations (
+        user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        creation_idx INT NOT NULL,
+        saved_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, creation_idx)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_saved_creations ON user_saved_creations(user_id, saved_at DESC);
   `);
   // 글로벌 테마 시드(산업 8 + People + UGC). 멱등(slug UNIQUE).
   const THEME_SEED = [

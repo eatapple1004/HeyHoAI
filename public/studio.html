@@ -421,7 +421,15 @@
 
   <div id="gammaBanner" style="display:none;margin:0 0 18px;padding:12px 16px;border:1px solid var(--accent);background:rgba(124,108,255,.08);border-radius:13px;font-size:13.5px;color:var(--text)">
     ✨ Making your own — add your subject below and Generate. The creator's look is applied for you (recipe stays private).
-    <button type="button" onclick="cancelGamma()" style="float:right;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:9px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit">✕ Cancel</button>
+    <span style="float:right;display:inline-flex;gap:7px">
+      <button type="button" onclick="saveCurrentLook()" style="background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:9px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✦ Save this look</button>
+      <button type="button" onclick="cancelGamma()" style="background:none;border:1px solid var(--border2);color:var(--dim);border-radius:9px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit">✕ Cancel</button>
+    </span>
+  </div>
+
+  <div id="savedLooksSec" style="display:none;margin-bottom:24px">
+    <div style="font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:12px">✦ Saved looks</div>
+    <div id="savedLooksGrid" class="recipe-grid"></div>
   </div>
 
   <div class="step fade d3" id="templateStep">
@@ -2042,9 +2050,36 @@ function bootFromCreation(){
   document.getElementById('subjectRow')?.scrollIntoView({behavior:'smooth',block:'center'});
   return true;
 }
+// γ-2: Saved looks — 저장한 공개 creation 룩(재사용). 사용=γ-1 fromCreationIdx 경로.
+let SAVED_LOOKS=[];
+async function loadSavedLooks(){
+  try{ SAVED_LOOKS=(await(await fetch('/api/studio/saved-creations')).json()).data||[]; }catch(e){ SAVED_LOOKS=[]; }
+  renderSavedLooks();
+}
+function renderSavedLooks(){
+  const sec=document.getElementById('savedLooksSec'),grid=document.getElementById('savedLooksGrid');
+  if(!sec||!grid)return;
+  if(!SAVED_LOOKS.length){sec.style.display='none';grid.innerHTML='';return;}
+  sec.style.display='';
+  grid.innerHTML=SAVED_LOOKS.map(s=>`
+    <div class="recipe-card" style="position:relative" onclick="useSavedLook(${s.idx})">
+      <span class="mc" title="Remove" onclick="event.stopPropagation();unsaveLook(${s.idx})" style="position:absolute;top:6px;right:6px;z-index:3;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);cursor:pointer;font-size:14px">✕</span>
+      <div class="preview" style="background-image:url('${esc(s.url)}');background-size:cover;background-position:center"><span class="type-badge">${s.type==='video'?'▶ Reel':'▦ Photo'}</span></div>
+      <div class="meta"><div class="rname">Saved look</div><div class="cost">${esc(s.creatorHandle||'@creator')}</div></div>
+    </div>`).join('');
+}
+function useSavedLook(idx){ GAMMA_FROM=idx; showGammaBanner(); if(window.toast)toast('Add your subject and Generate ✨'); document.getElementById('subjectRow')?.scrollIntoView({behavior:'smooth',block:'center'}); }
+async function unsaveLook(idx){ try{ await fetch('/api/studio/saved-creations/'+idx,{method:'DELETE'}); SAVED_LOOKS=SAVED_LOOKS.filter(s=>s.idx!==idx); renderSavedLooks(); }catch(e){} }
+async function saveCurrentLook(){
+  if(!GAMMA_FROM){if(window.toast)toast('Nothing to save');return;}
+  try{ const r=await(await fetch('/api/studio/saved-creations/'+GAMMA_FROM,{method:'POST'})).json();
+    if(r&&r.success){ if(window.toast)toast('Saved to your templates ✦'); loadSavedLooks(); }
+    else if(window.toast)toast((r&&r.error)||'Could not save');
+  }catch(e){ if(window.toast)toast('Could not save'); }
+}
 if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('influencer');
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
-function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>loadStudioThemes()); }
+function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();loadSavedLooks();}); }
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubscription(); // 구독 상태 → Private Mode 게이트

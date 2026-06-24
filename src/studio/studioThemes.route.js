@@ -191,4 +191,50 @@ router.delete('/hidden-themes/:slug', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── γ-2: 저장한 공개 creation 룩(재사용용 참조). 사용 = γ-1 fromCreationIdx 블랙박스 경로. ──
+// POST /api/studio/saved-creations/:idx — 공개 creation을 내 "Saved looks"에 저장(멱등).
+router.post('/saved-creations/:idx', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10) || 0;
+    if (!idx) return res.status(400).json({ success: false, error: 'idx가 필요합니다.' });
+    const ok = await query(
+      `SELECT 1 FROM generation_results WHERE idx = $1 AND visibility = 'public' AND status = 'success' AND taken_down = false`,
+      [idx]
+    );
+    if (!ok.rows[0]) return res.status(404).json({ success: false, error: '저장할 수 없는 결과물입니다 (비공개·삭제·없음).' });
+    await query(`INSERT INTO user_saved_creations (user_id, creation_idx) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [req.user.id, idx]);
+    res.json({ success: true, data: { idx, saved: true } });
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/studio/saved-creations/:idx — 저장 해제.
+router.delete('/saved-creations/:idx', async (req, res, next) => {
+  try {
+    await query(`DELETE FROM user_saved_creations WHERE user_id = $1 AND creation_idx = $2`, [req.user.id, parseInt(req.params.idx, 10) || 0]);
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// GET /api/studio/saved-creations — 내 저장 룩(미리보기·작성자·타입 해석). 비공개/삭제분 자동 제외.
+router.get('/saved-creations', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT gr.idx, gr.file_path, gr.metadata, split_part(u.email, '@', 1) AS creator_handle
+         FROM user_saved_creations s
+         JOIN generation_results gr ON gr.idx = s.creation_idx
+         JOIN prompts p ON p.idx = gr.prompt_idx
+         JOIN users u ON u.id = p.user_id
+        WHERE s.user_id = $1 AND gr.visibility = 'public' AND gr.status = 'success' AND gr.taken_down = false AND gr.file_path IS NOT NULL
+        ORDER BY s.saved_at DESC LIMIT 60`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: r.rows.map((x) => ({
+      idx: x.idx,
+      url: x.file_path ? `/${x.file_path.replace(/^tmp\//, '')}` : null,
+      type: (x.metadata && x.metadata.type === 'video') ? 'video' : 'image',
+      creatorHandle: x.creator_handle ? '@' + x.creator_handle : null,
+    })) });
+  } catch (err) { next(err); }
+});
+
 module.exports = { router };
