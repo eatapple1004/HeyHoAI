@@ -509,6 +509,13 @@
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
     <span class="divider-v"></span>
+    <div class="priv-ctl" id="enhCtl" style="display:none">
+      <span class="priv-label">Enhance</span>
+      <button type="button" class="priv-switch on" id="enhanceToggle" role="switch" aria-checked="true" aria-label="Enhance" onclick="toggleEnhance(this)">
+        <span class="priv-knob"></span>
+      </button>
+    </div>
+    <span class="divider-v" id="enhDiv" style="display:none"></span>
     <div class="priv-ctl" id="privCtl">
       <span class="priv-label">Private Mode</span>
       <span class="priv-help" tabindex="0" aria-label="This is a Premium Feature. Subscribe to access it.">
@@ -541,7 +548,6 @@
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
-      <button class="btn" id="enhanceBtn" data-flag="enhance" style="display:none" onclick="doEnhance()" title="Expand your prompt with AI (+1 credit)">✨ Enhance</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
   </div>
@@ -1084,23 +1090,10 @@ function refreshToolTrigger(){
   if(lg){lg.innerHTML=pv.logo;lg.style.setProperty('--pc',pv.color);}
   if(nm)nm.textContent=t.label||'Select model';
 }
-async function doEnhance(){
-  const el=document.getElementById('extraPrompt');
-  const p=el?el.value.trim():'';
-  if(!p){toast('Write a prompt first.');return;}
-  const btn=document.getElementById('enhanceBtn'),old=btn.textContent;
-  btn.disabled=true;btn.textContent='Enhancing…';
-  try{
-    const res=await fetch('/api/generate/enhance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,mode:state.mode})});
-    const d=await res.json();
-    if(res.status===402){toast(d.error||'Not enough credits','error');return;}
-    if(!res.ok||!d.success)throw new Error(d.error||'enhance failed');
-    el.value=d.data.prompt;autoGrowPrompt(el);
-    document.getElementById('extraClear').classList.remove('hidden');
-    updateBar();toast('Prompt enhanced ✨');
-  }catch(e){toast('Enhance failed: '+(e.message||e),'error');}
-  finally{btn.disabled=false;btn.textContent=old;}
-}
+// Enhance 토글(기본 ON): ON=인물 정체성 고정 프리픽스 적용 / OFF=완전 raw로 생성
+let ENHANCE=true;
+function enhanceOn(){return ENHANCE;}
+function toggleEnhance(btn){ENHANCE=!ENHANCE;const b=btn||document.getElementById('enhanceToggle');b.classList.toggle('on',ENHANCE);b.setAttribute('aria-checked',ENHANCE?'true':'false');}
 // 비용·표시용 실효 모델 키/라벨: Custom이면 선택 툴 기준, 아니면 기존 Model 픽커
 function effModelKey(){return state.mode==='custom'?((toolById(curTool())||{}).model||'pro'):curModel();}
 function effModelLabel(){return state.mode==='custom'?((toolById(curTool())||{}).label||'Nano Banana Pro'):M_LABEL[curModel()];}
@@ -1243,7 +1236,7 @@ function setMode(m,initialVertical){
   // Custom: 모델 픽커 → 타입 세그(Image|Video) + 툴 픽커로 교체 + Save as template 노출
   document.getElementById('modelField').style.display=custom?'':'none';
   document.getElementById('legacyModelField').style.display=custom?'none':'';
-  document.getElementById('enhanceBtn').style.display=(custom&&(!window.featureOn||window.featureOn('enhance')))?'':'none'; // 첫 출시 숨김(flags: enhance)
+  document.getElementById('enhCtl').style.display=custom?'':'none'; document.getElementById('enhDiv').style.display=custom?'':'none'; // Enhance 토글: 커스텀에서만(influencer·shopping·ugc 숨김)
   // Custom 풀 컨트롤: 툴 픽커(type 그룹) + 툴 타입별 컨트롤(이미지=비율/해상도/네거티브, 비디오=길이)
   renderToolPicker();
   applyToolSchema();
@@ -1796,6 +1789,7 @@ async function generateImages(r,subj,count){
   if(state.mode==='custom'){fd.append('aspectRatio',curAspect());fd.append('imageSize',curSize());fd.append('negativePrompt',negText());}
   else if(state.mode==='influencer'||state.mode==='shopping'){fd.append('aspectRatio',curAspect());fd.append('imageSize',curSize());} // 템플릿 모드도 비율·해상도 전송(기본 4:5, 2K=Pro만)
   fd.append('privateMode',privateOn()?'true':'false'); // 자동 공개
+  fd.append('enhance',enhanceOn()?'true':'false'); // Enhance OFF=완전 raw(캐릭터 프리픽스 제거)
   const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
   for(let i=1;i<items.length;i++){
     if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}

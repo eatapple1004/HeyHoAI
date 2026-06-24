@@ -53,6 +53,8 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 router.post('/', upload.array('referenceImages', 14), async (req, res, next) => {
   try {
     let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
+    // enhance 토글(기본 ON): OFF면 인물 정체성 고정 프리픽스를 빼고 사용자 프롬프트 원문 그대로 생성(완전 raw)
+    const enhance = !(req.body.enhance === 'false' || req.body.enhance === false);
     // 자동 공개: Private Mode 끄면(기본) 결과물 공개. + 출처 템플릿 attribution.
     // Private Mode는 구독자 전용 → 비구독자가 요청해도 공개로 강제(서버 게이트).
     const resultVisibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
@@ -219,7 +221,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
 
           // 레퍼런스 이미지가 있으면 편집 모드
           if (referenceImages.length > 0) {
-            gptParams.prompt = `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
+            gptParams.prompt = enhance
+              ? `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`
+              : finalPrompt;
             // GPT Image는 edit 엔드포인트로 레퍼런스 지원
             const refBuffer = Buffer.from(referenceImages[0].base64, 'base64');
             const refFile = new File([refBuffer], 'ref.png', { type: 'image/png' });
@@ -246,7 +250,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
               parts.push({ inlineData: { mimeType: 'image/png', data: ref.base64 } });
             });
             let promptText;
-            if (referenceImages.length === 1) {
+            if (!enhance) {
+              promptText = finalPrompt;
+            } else if (referenceImages.length === 1) {
               promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
             } else {
               promptText = `${fictionalPrefix} Use these ${referenceImages.length} reference images. The first image is the main character reference. Generate a new photo maintaining consistency with all references.\n\n${finalPrompt}`;
