@@ -18,7 +18,8 @@
   /* creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
   .grid{column-count:2;column-gap:14px}  /* 폴백 */
   #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
-  @media(min-width:600px){#grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}}
+  @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}  /* 한 줄 최대 4개, 이후 줄바뀜 */
   #grid .card{margin:0;align-self:start;break-inside:auto}
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}

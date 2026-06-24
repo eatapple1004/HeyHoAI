@@ -28,7 +28,8 @@
   @media(min-width:600px){.grid{column-count:auto;columns:6 185px}}  /* 다른 탭(템플릿/구매/저장) 폴백 */
   /* My creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
   #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
-  @media(min-width:600px){#grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}}
+  @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}  /* 한 줄 최대 4개, 이후 줄바뀜 */
   #grid .card{margin:0;align-self:start;break-inside:auto}
   #scrollSentinel{height:1px;width:100%}
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
