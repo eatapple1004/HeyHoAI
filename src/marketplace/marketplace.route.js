@@ -187,7 +187,7 @@ router.post('/templates', async (req, res, next) => {
          (creator_id, creator_handle, name, description, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media, reference_examples)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb) RETURNING ${PUBLIC_COLS}`,
       [req.user.id, handle, String(name).slice(0, 120), desc, category, t, String(style).slice(0, 50),
-       String(prompt).slice(0, 2000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
+       String(prompt).slice(0, 8000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
        String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview), JSON.stringify(refExamples)]
     );
     const created = r.rows[0];
