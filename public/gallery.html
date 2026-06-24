@@ -25,10 +25,7 @@
   .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
 
   .grid{columns:4 260px;column-gap:16px}
-  /* My creations = 행 우선 격자 + 균일 타일(최신=맨 윗줄, 무한스크롤 안정). 다른 탭(.grid)은 masonry 유지. */
-  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;columns:auto}
-  #grid .card{margin:0;break-inside:auto;aspect-ratio:4/5}
-  #grid .card .media{width:100%;height:100%;object-fit:cover}
+  /* My creations = Explore와 동일 masonry(.grid columns) — 자연 비율·크롭 없음. 무한스크롤만 추가 유지. */
   #scrollSentinel{height:1px;width:100%}
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
