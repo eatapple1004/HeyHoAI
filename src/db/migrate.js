@@ -725,6 +725,16 @@ async function migrate() {
     ADD COLUMN IF NOT EXISTS template_name    TEXT;
   `);
 
+  // 영상 결과 중복 방지(원천 봉쇄): 같은 Kling task는 결과 1개만.
+  //   원인 = PM2 재시작/구버전 프로세스 겹침으로 같은 task가 두 번 finalize되던 버그.
+  //   코드 가드(SELECT-then-insert)는 동시 실행 TOCTOU 레이스가 남아, DB가 원자적으로 거부하게 함.
+  //   부분 유니크 인덱스: video 타입 + taskId 있을 때만(이미지/구 영상에 영향 없음).
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_gen_results_video_task
+    ON generation_results ((metadata->>'taskId'))
+    WHERE metadata->>'type' = 'video' AND metadata->>'taskId' IS NOT NULL;
+  `);
+
   console.log('Migrations completed.');
 }
 

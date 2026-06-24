@@ -993,14 +993,29 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
           tags: ['video', mode, duration + 's', ...(enableAudio ? ['audio'] : [])],
           teamId: await teamCredit.activeTeamId(req.user.id),
         });
-        const savedResult = await resultRepo.insert({
-          promptIdx: savedPrompt.idx,
-          filePath: `tmp/images/${filename}`,
-          fileSizeKb: Math.round(videoBuf.length / 1024),
-          model: 'kling-v3',
-          metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed, audio: enableAudio },
-        });
-        await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
+        let savedResult;
+        try {
+          savedResult = await resultRepo.insert({
+            promptIdx: savedPrompt.idx,
+            filePath: `tmp/images/${filename}`,
+            fileSizeKb: Math.round(videoBuf.length / 1024),
+            model: 'kling-v3',
+            metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed, audio: enableAudio },
+          });
+          await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
+        } catch (e) {
+          // 같은 Kling task가 이미 저장됨(유니크 인덱스 uniq_gen_results_video_task 위반) → 기존 결과 반환.
+          if (e.code === '23505') {
+            const ex = (await query(
+              `SELECT idx, file_path FROM generation_results
+               WHERE metadata->>'type'='video' AND metadata->>'taskId'=$1 ORDER BY idx LIMIT 1`, [taskId])).rows[0];
+            if (ex) {
+              vlog.warn(`task ${taskId} 이미 저장됨 — 기존 결과 ${ex.idx} 반환(중복 스킵)`);
+              return res.json({ success: true, url: `/${ex.file_path.replace(/^tmp\//, '')}`, duration: videoDuration, units: unitsUsed });
+            }
+          }
+          throw e;
+        }
 
         const finalSize = fs.existsSync(videoFilePath) ? fs.statSync(videoFilePath).size : videoBuf.length;
         vlog.info(`Complete: ${filename} (${videoDuration}s, ${unitsUsed} units, audio: ${!!audioMp3Url})`);

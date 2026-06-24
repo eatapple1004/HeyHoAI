@@ -195,13 +195,33 @@ async function finalizeSucceeded(job, v, unitsUsed) {
     userId: job.user_id, promptText: job.prompt, model: 'kling-v3',
     tags: ['video', job.mode, job.duration + 's', ...(hasAudio ? ['audio'] : [])], teamId: job.team_id,
   });
-  const savedResult = await resultRepo.insert({
-    promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
-    fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: 'kling-v3',
-    metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio },
-    // 자동공개(P2): 잡이 운반한 visibility·출처 템플릿을 결과에 기록 → Explore 피드 노출.
-    visibility: job.visibility, templateId: job.template_id, templateSource: job.template_source, templateName: job.template_name,
-  });
+  let savedResult;
+  try {
+    savedResult = await resultRepo.insert({
+      promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
+      fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: 'kling-v3',
+      metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio },
+      // 자동공개(P2): 잡이 운반한 visibility·출처 템플릿을 결과에 기록 → Explore 피드 노출.
+      visibility: job.visibility, templateId: job.template_id, templateSource: job.template_source, templateName: job.template_name,
+    });
+  } catch (e) {
+    // 유니크 인덱스(uniq_gen_results_video_task) 위반 = 다른 프로세스가 같은 task를 이미 저장.
+    //   SELECT-가드의 TOCTOU 레이스를 DB가 원자적으로 막은 것 → 기존 결과에 잡 연결하고 종료.
+    if (e.code === '23505') {
+      const ex = (await query(
+        `SELECT idx, file_path FROM generation_results
+         WHERE metadata->>'type'='video' AND metadata->>'taskId'=$1 ORDER BY idx LIMIT 1`, [taskId])).rows[0];
+      if (ex) {
+        const exUrl = ex.file_path ? `/${ex.file_path.replace(/^tmp\//, '')}` : null;
+        await query(`UPDATE video_jobs SET status='succeeded', result_idx=$1, result_url=$2, updated_at=now() WHERE id=$3`,
+          [ex.idx, exUrl, job.id]);
+        try { fs.unlinkSync(filePath); } catch {} // 방금 받은 중복 파일 정리
+        log.warn(`Job ${job.id}: task ${taskId} 동시 저장 충돌(23505) — 기존 결과 ${ex.idx}에 연결, 중복 스킵`);
+        return;
+      }
+    }
+    throw e;
+  }
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
 
   await query(
