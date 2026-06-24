@@ -250,7 +250,7 @@
     <div class="mfield"><label>Name</label><input type="text" id="edName" maxlength="80"></div>
     <div class="mfield"><label>Description</label><textarea id="edDesc" maxlength="600" placeholder="What this template does, who it's for…"></textarea></div>
     <div class="mfield"><label>Category</label>
-      <select id="edCat">
+      <select id="edCat" onchange="recolorThemes('edCat','edThemes')">
         <option value="Custom">Custom</option>
         <option value="Influencer">Influencer</option>
         <option value="Shopping">Shopping</option>
@@ -424,12 +424,23 @@ function openStorefront(){
 // 글로벌 테마 칩(크리에이터 다중 태그) — 캐시·렌더·수집.
 let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
-async function renderThemeChips(containerId, selected){
+// category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
+const CAT_THEMES = {
+  Influencer:['people','beauty','fashion','jewelry','pet','general'],
+  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
+  UGC:['people','beauty','fashion','food','pet','ugc','general'],
+  Custom:null,
+};
+async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
-  const sel=new Set(selected||[]); const themes=await ensureThemes();
+  const sel=new Set(selected||[]); let themes=await ensureThemes();
+  const allow=category?CAT_THEMES[category]:null; // 미지정 → 전체
+  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
   el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on')">${esc(t.name)}</button>`).join('');
 }
 function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
+// category 변경 시: 현재 선택 중 새 category 화이트리스트에 남는 것만 보존하고 재렌더.
+function recolorThemes(catId, containerId){ const cat=(document.getElementById(catId)||{}).value; renderThemeChips(containerId, selectedThemes(containerId), cat); }
 
 // ── 템플릿 편집/삭제 (PATCH·DELETE /api/marketplace/templates/:id) ──
 let EDIT_ID=null;
@@ -442,8 +453,8 @@ function openEdit(id){
   const cat=['Custom','Influencer','Shopping','UGC'].includes(t.category)?t.category:'Custom';
   document.getElementById('edCat').value=cat;
   // 기존 테마 프리로드(상세 API가 themes 반환)
-  renderThemeChips('edThemes', t.themes||[]);
-  fetch('/api/marketplace/templates/'+id).then(r=>r.json()).then(d=>renderThemeChips('edThemes',(d.data&&d.data.themes)||[])).catch(()=>{});
+  renderThemeChips('edThemes', t.themes||[], cat);
+  fetch('/api/marketplace/templates/'+id).then(r=>r.json()).then(d=>renderThemeChips('edThemes',(d.data&&d.data.themes)||[], document.getElementById('edCat').value)).catch(()=>{});
   document.getElementById('edVis').value=t.visibility==='public'?'public':'private';
   document.getElementById('edPrice').value=t.price_credits||0;
   document.getElementById('edUsePrice').value=t.use_price_credits||0;

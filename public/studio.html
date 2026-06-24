@@ -615,7 +615,7 @@
     <div class="field"><label>Description <i>(what it's good for — shown on the template page)</i></label>
       <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
     <div class="field"><label>Category</label>
-      <select id="stplCat">
+      <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes')">
         <option value="Custom">Custom</option>
         <option value="Influencer">Influencer</option>
         <option value="Shopping">Shopping</option>
@@ -1694,12 +1694,23 @@ function extraPromptText(){
 // 글로벌 테마 칩(크리에이터 다중 태그) — 캐시 + 렌더 + 수집.
 let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
-async function renderThemeChips(containerId, selected){
+// category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
+const CAT_THEMES = {
+  Influencer:['people','beauty','fashion','jewelry','pet','general'],
+  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
+  UGC:['people','beauty','fashion','food','pet','ugc','general'],
+  Custom:null,
+};
+async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
-  const sel=new Set(selected||[]); const themes=await ensureThemes();
+  const sel=new Set(selected||[]); let themes=await ensureThemes();
+  const allow=category?CAT_THEMES[category]:null; // 미지정 → 전체
+  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
   el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on')">${esc(t.name)}</button>`).join('');
 }
 function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
+// category 변경 시: 현재 선택 중 새 category 화이트리스트에 남는 것만 보존하고 재렌더.
+function recolorThemes(catId, containerId){ const cat=(document.getElementById(catId)||{}).value; renderThemeChips(containerId, selectedThemes(containerId), cat); }
 
 // Save as template — 현재 프롬프트+툴을 user 템플릿으로 저장(비공개 기본, 공개는 크리에이터 게이트)
 // Save as template — 결과 이미지를 미리보기로 붙여 제대로 된 모달로 저장(네이티브 prompt 폐지)
@@ -1710,7 +1721,7 @@ function saveAsTemplate(){
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
   document.getElementById('stplCat').value='Custom';
-  renderThemeChips('stplThemes', []); // 테마 칩(기본 미선택)
+  renderThemeChips('stplThemes', [], 'Custom'); // 테마 칩(기본 미선택, category 필터)
   document.getElementById('stplVis').checked=true; // 기본 공개(Feed)
   // 미리보기 썸네일 — 방금 만든 결과
   document.getElementById('stplPrev').innerHTML=prev.length

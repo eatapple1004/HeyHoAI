@@ -206,7 +206,7 @@
     </div>
     <div class="field">
       <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Category</label>
-      <select id="ctplCat" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
+      <select id="ctplCat" onchange="recolorThemes('ctplCat','ctplThemes')" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
         <option value="Custom">Custom</option><option value="Influencer">Influencer</option><option value="Shopping">Shopping</option><option value="UGC">UGC</option>
       </select>
     </div>
@@ -433,7 +433,7 @@ function openSaveFromCreation(){
   document.getElementById('ctplName').value=(VIEW_ITEM.prompt||'').slice(0,40);
   document.getElementById('ctplDesc').value='';
   document.getElementById('ctplCat').value='Custom';
-  renderThemeChips('ctplThemes', []);
+  renderThemeChips('ctplThemes', [], 'Custom');
   document.getElementById('ctplPub').checked=false; // Private 기본
   document.getElementById('ctplPrice').value='0';
   document.getElementById('ctplUsePrice').value='0';
@@ -443,12 +443,23 @@ function openSaveFromCreation(){
 // 글로벌 테마 칩(크리에이터 다중 태그) — 캐시·렌더·수집.
 let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
-async function renderThemeChips(containerId, selected){
+// category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
+const CAT_THEMES = {
+  Influencer:['people','beauty','fashion','jewelry','pet','general'],
+  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
+  UGC:['people','beauty','fashion','food','pet','ugc','general'],
+  Custom:null,
+};
+async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
-  const sel=new Set(selected||[]); const themes=await ensureThemes();
+  const sel=new Set(selected||[]); let themes=await ensureThemes();
+  const allow=category?CAT_THEMES[category]:null; // 미지정 → 전체
+  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
   el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on')">${esc(t.name)}</button>`).join('');
 }
 function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
+// category 변경 시: 현재 선택 중 새 category 화이트리스트에 남는 것만 보존하고 재렌더.
+function recolorThemes(catId, containerId){ const cat=(document.getElementById(catId)||{}).value; renderThemeChips(containerId, selectedThemes(containerId), cat); }
 function closeCtpl(){document.getElementById('ctplModal').classList.remove('open');}
 // 가격 행: 공개 게시일 때 항상 노출(점화 전이라도). 실제 과금은 백엔드 MARKETPLACE_PAID 게이트가 막음.
 function syncCtplPrice(){
