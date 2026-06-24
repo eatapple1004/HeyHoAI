@@ -172,10 +172,15 @@ router.get('/me', async (req, res, next) => {
   try {
     const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
     const mine = await query(
-      `SELECT ${PUBLIC_COLS} FROM marketplace_templates WHERE creator_id = $1 ORDER BY created_at DESC`,
+      `SELECT ${PUBLIC_COLS}, from_creation_idx FROM marketplace_templates WHERE creator_id = $1 ORDER BY created_at DESC`,
       [req.user.id]
     );
-    res.json({ success: true, data: { isCreator: u.rows[0]?.is_creator || false, templates: mine.rows } });
+    // My templates 마스터: 내 것(저장/생성) + 오피셜(플랫폼 공식). 둘 다 studio 테마에 넣다뺐다 가능.
+    const official = await query(
+      `SELECT ${PUBLIC_COLS}, from_creation_idx FROM marketplace_templates WHERE is_official = true AND status = 'active' AND visibility = 'public' ORDER BY created_at DESC`,
+      []
+    );
+    res.json({ success: true, data: { isCreator: u.rows[0]?.is_creator || false, templates: mine.rows, official: official.rows } });
   } catch (err) { next(err); }
 });
 
