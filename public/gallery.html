@@ -593,7 +593,10 @@ function tplCard(t,kind){
     actions=`<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
     panel=themesPanel;
   }
-  else if(kind==='official') actions=`<button onclick="tryTpl('${tid}')">Use</button>`;
+  else if(kind==='official'){ // 공식 템플릿: 테마 배치(recipe_id 기준·Studio와 동일 키) + 사용. 삭제 불가.
+    actions=`<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
+    panel=themesPanel;
+  }
   else actions=`<button onclick="tryTpl('${tid}')">Try it</button><button class="del" onclick="unsaveTpl('${tid}')" title="Remove from Saved">🔖</button>`;
   return `<div class="item${MYT.highlightId&&String(MYT.highlightId)===tid?' hl':''}" data-tid="${tid}">
     ${thumb}
@@ -629,7 +632,7 @@ function itemGlobalThemes(tid){
   (LIB.global||[]).forEach(t=>{ if(LIB.hidden.has(t.slug))return; if(libDefOn(t.slug,tid)) out.add(t.slug); });
   return out;
 }
-function itemCustomThemes(tid){ tid=String(tid); return new Set((LIB.customs||[]).filter(c=>(c.items||[]).some(i=>i.itemType==='template'&&String(i.itemId)===tid)).map(c=>c.id)); }
+function itemCustomThemes(tid){ const {key}=tplThemeKey(tid); return new Set((LIB.customs||[]).filter(c=>(c.items||[]).some(i=>(i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)).map(c=>c.id)); }
 function inThemeFilter(x){
   const f=MYT.filter; if(!f||f.kind==='all')return true;
   const tid=String(x.t.id);
@@ -681,12 +684,14 @@ async function loadLibThemes(){
   try{ LIB.global=await ensureThemes(); }catch(e){ LIB.global=[]; }
   try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{};
     LIB.customs=d.customThemes||[]; LIB.hidden=new Set(d.hiddenThemes||[]);
-    LIB.ov={}; (d.themeOverrides||[]).forEach(o=>{ if(o.itemType==='template'){ const m=(LIB.ov[o.themeSlug]=LIB.ov[o.themeSlug]||{add:new Set(),remove:new Set()}); m[o.action].add(String(o.itemId)); } });
+    LIB.ov={}; (d.themeOverrides||[]).forEach(o=>{ if(o.itemType==='template'||o.itemType==='recipe'){ const m=(LIB.ov[o.themeSlug]=LIB.ov[o.themeSlug]||{add:new Set(),remove:new Set()}); m[o.action].add(String(o.itemId)); } });
   }catch(e){ LIB.customs=[]; LIB.ov={}; LIB.hidden=new Set(); }
 }
-// effective 글로벌 멤버십: 개인 override remove > add > 크리에이터 base 태그(TPL_THEMES). 필터·스튜디오와 일치.
-function libDefOn(slug,tid){ tid=String(tid); const o=LIB.ov[slug]; if(o&&o.remove.has(tid))return false; if(o&&o.add.has(tid))return true; return !!(TPL_THEMES[tid]&&TPL_THEMES[tid].has(slug)); }
-function libCustomOn(themeId,tid){ tid=String(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>i.itemType==='template'&&String(i.itemId)===tid)); }
+// 테마 멤버십 키: 공식 템플릿은 레시피 기반 → recipe_id('recipe', Studio와 동일 키)로 저장·조회 / 나머지는 마켓 UUID('template'). base 태그(TPL_THEMES)는 항상 UUID 키.
+function tplThemeKey(tid){ const t=tplById(tid); return (t&&t.is_official&&t.recipe_id)?{key:String(t.recipe_id),itemType:'recipe'}:{key:String(tid),itemType:'template'}; }
+// effective 글로벌 멤버십: 개인 override remove > add > base 태그(TPL_THEMES). override는 멤버십 키(공식=recipe_id). 필터·스튜디오와 일치.
+function libDefOn(slug,tid){ tid=String(tid); const {key}=tplThemeKey(tid); const o=LIB.ov[slug]; if(o&&o.remove.has(key))return false; if(o&&o.add.has(key))return true; return !!(TPL_THEMES[tid]&&TPL_THEMES[tid].has(slug)); }
+function libCustomOn(themeId,tid){ const {key}=tplThemeKey(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>(i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)); }
 function libChip(on,label,onclick){ return `<button type="button" class="lib-chip${on?' on':''}" onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
 // 카드 인라인 테마 칩: 기본 테마(user_theme_overrides) + 커스텀(user_studio_theme_items) 모두 토글.
 // ④ 카드 category(Influencer/Shopping)의 CAT_THEMES 테마만 노출(미지정/레거시=전체). 커스텀은 대분류 무관 항상 노출.
@@ -704,18 +709,18 @@ function renderLibChips(tid){ const el=document.getElementById('lib-chips-'+tid)
 // "Themes" 버튼 → 해당 카드의 칩 패널을 그 자리에서 토글(모달 아님·카드별 독립).
 function toggleLibPanel(tid){ const p=document.getElementById('lib-panel-'+tid); if(p) p.classList.toggle('open'); }
 async function toggleDef(slug,tid){
-  tid=String(tid); const on=libDefOn(slug,tid), action=on?'remove':'add';
-  try{ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid,action})});
+  tid=String(tid); const {key,itemType}=tplThemeKey(tid); const on=libDefOn(slug,tid), action=on?'remove':'add';
+  try{ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:key,action})});
     const m=LIB.ov[slug]=LIB.ov[slug]||{add:new Set(),remove:new Set()};
-    if(action==='add'){m.add.add(tid);m.remove.delete(tid);}else{m.remove.add(tid);m.add.delete(tid);}
+    if(action==='add'){m.add.add(key);m.remove.delete(key);}else{m.remove.add(key);m.add.delete(key);}
     renderLibChips(tid);
   }catch(e){ toast('Could not update theme','error'); }
 }
 async function toggleCustom(themeId,tid){
-  tid=String(tid); const on=libCustomOn(themeId,tid), c=LIB.customs.find(x=>x.id===themeId); if(!c)return;
+  tid=String(tid); const {key,itemType}=tplThemeKey(tid); const on=libCustomOn(themeId,tid), c=LIB.customs.find(x=>x.id===themeId); if(!c)return;
   try{
-    if(on){ await fetch('/api/studio/themes/'+themeId+'/items/template/'+tid,{method:'DELETE'}); c.items=(c.items||[]).filter(i=>!(i.itemType==='template'&&String(i.itemId)===tid)); }
-    else { await fetch('/api/studio/themes/'+themeId+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid})}); (c.items=c.items||[]).push({itemType:'template',itemId:tid}); }
+    if(on){ await fetch('/api/studio/themes/'+themeId+'/items/'+itemType+'/'+encodeURIComponent(key),{method:'DELETE'}); c.items=(c.items||[]).filter(i=>!((i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)); }
+    else { await fetch('/api/studio/themes/'+themeId+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:key})}); (c.items=c.items||[]).push({itemType,itemId:key}); }
     renderLibChips(tid);
   }catch(e){ toast('Could not update theme','error'); }
 }
