@@ -54,6 +54,11 @@ li.b{font-weight:800}.accent{color:var(--purple)}.pink{color:var(--pink)}
 .fcard .ic{font-size:2.6rem;margin-bottom:.6rem}
 .fcard .t{font-size:1.25rem;font-weight:800}
 .fcard .s{font-size:.98rem;color:var(--gray);margin-top:.25rem}
+.fcard .fimg{width:100%;height:clamp(120px,18vh,170px);object-fit:cover;border-radius:13px;margin-bottom:.7rem;background:#eee}
+.gallery{display:flex;gap:1.1rem;margin:.4rem 0 1rem}
+.gallery figure{flex:1;display:flex;flex-direction:column;align-items:center}
+.gallery img{width:100%;max-height:42vh;object-fit:contain;border-radius:14px;background:#fff;box-shadow:0 14px 36px -20px rgba(0,0,0,.4)}
+.gallery figcaption{font-size:.98rem;font-weight:700;color:var(--gray);margin-top:.55rem;text-align:center}
 .arrow{font-size:2rem;color:var(--lav);font-weight:800}
 /* steps */
 .steps{display:flex;flex-direction:column;gap:1.25rem}
@@ -115,11 +120,11 @@ video{width:100%;max-height:56vh;border-radius:18px;background:#000;box-shadow:0
     <div class="bar r" style="--d:.18s"></div>
     <p class="lead r" style="--d:.24s">제품·모델 사진 한 장과 템플릿만으로 SNS용 <span class="accent">사진과 릴스</span>를 자동 생성하는 AI SaaS입니다.</p>
     <div class="flow" style="margin-top:2.2rem">
-      <div class="fcard r" style="--d:.4s"><div class="ic">📷</div><div class="t">사진 1장</div><div class="s">제품 / 네일 / 모델</div></div>
+      <div class="fcard r" style="--d:.4s"><img class="fimg" src="before.jpeg" alt="원본 네일 사진"><div class="t">사진 1장 (원본)</div><div class="s">제품 / 네일 / 모델</div></div>
       <div class="arrow r" style="--d:.5s">→</div>
-      <div class="fcard r" style="--d:.6s"><div class="ic">🎨</div><div class="t">템플릿 선택</div><div class="s">프롬프트 작성 불필요</div></div>
+      <div class="fcard r" style="--d:.6s"><div class="ic" style="font-size:2.6rem;margin-bottom:.6rem">🎨</div><div class="t">템플릿 선택</div><div class="s">프롬프트 작성 불필요</div></div>
       <div class="arrow r" style="--d:.7s">→</div>
-      <div class="fcard r" style="--d:.8s"><div class="ic">✨</div><div class="t">사진·릴스 완성</div><div class="s">바로 다운로드·게시</div></div>
+      <div class="fcard r" style="--d:.8s"><img class="fimg" src="nail-card.png" alt="생성된 콘텐츠"><div class="t">콘텐츠 완성</div><div class="s">바로 다운로드·게시</div></div>
     </div>
   </section>
 
@@ -154,13 +159,14 @@ video{width:100%;max-height:56vh;border-radius:18px;background:#000;box-shadow:0
   <section class="slide">
     <span class="blob b2"></span>
     <div class="kicker r" style="--d:.05s">USE CASES</div>
-    <h2 class="r" style="--d:.12s">네일 · 화장품, 이렇게 씁니다</h2>
+    <h2 class="r" style="--d:.12s">이런 결과물이 자동으로 나옵니다</h2>
     <div class="bar r" style="--d:.2s"></div>
-    <ul>
-      <li class="b pink r" style="--d:.3s">네일 브랜드<span class="sub">네일 팁 플랫레이 콘텐츠 카드 · 무드보드 콜라주 · 손 착용샷 · 홍보 릴스</span></li>
-      <li class="b pink r" style="--d:.45s">화장품 브랜드<span class="sub">제품 스튜디오컷 · 무드/에디토리얼 · 인플루언서 착용 연출 · 신상 릴스</span></li>
-      <li class="b pink r" style="--d:.6s">공통<span class="sub">피드(4:5)·스토리(9:16)·정사각(1:1) 비율 지원, 다운로드 후 바로 게시</span></li>
-    </ul>
+    <div class="gallery">
+      <figure class="r" style="--d:.3s"><img src="nail-card.png" alt="콘텐츠 카드"><figcaption>콘텐츠 카드 · 손글씨/데코</figcaption></figure>
+      <figure class="r" style="--d:.42s"><img src="nail-mood.png" alt="무드보드 콜라주"><figcaption>무드보드 콜라주</figcaption></figure>
+      <figure class="r" style="--d:.54s"><img src="nail-kitsch.png" alt="키치 플랫레이"><figcaption>키치 플랫레이</figcaption></figure>
+    </div>
+    <p class="note r" style="--d:.66s">네일뿐 아니라 <b>화장품 제품컷 · 인플루언서 착용 연출</b>도 동일하게 생성됩니다.</p>
   </section>
 
   <!-- 6 HOW TO USE -->
