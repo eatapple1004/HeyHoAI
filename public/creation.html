@@ -232,9 +232,12 @@ async function loadDetail(){
 function templateCta(){
   const rt=IT.relTemplate;
   if(!rt) return '';
+  // 라이브러리(My templates)에서 보기 — 타인 생성물 상세의 동일 버튼과 동일 동작(?tpl 딥링크).
+  const viewInLib=`<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
   if(rt.owned){
-    if(IT.isOwn && IT.mintedTemplateId) return `<a class="act sm" href="/earnings">Manage template</a>`;
-    return `<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
+    // 내 auto 템플릿(보유): 라이브러리에서 보기 + (위) Creator 관리 둘 다. 타인 보유: 라이브러리에서 보기만.
+    if(IT.isOwn && IT.mintedTemplateId) return viewInLib+`<a class="act sm" href="/earnings">Manage template</a>`;
+    return viewInLib;
   }
   if(IT.isOwn && IT.mintedTemplateId) return `<button class="act sm" onclick="openSaveModal()">＋ Add to My templates</button>`;
   // 유료(타인)=Buy / 그 외=Add. 내 템플릿엔 "Buy" 안 붙임.
