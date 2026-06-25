@@ -90,6 +90,8 @@
   .lib-chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.82);border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s;line-height:1.3}
   .lib-chip:hover{border-color:rgba(255,255,255,.45)}
   .lib-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .lib-chip:disabled,.lib-chip.lib-dis{opacity:.38;cursor:not-allowed}
+  .lib-chip:disabled:hover{border-color:rgba(255,255,255,.2)}
   .lib-chip .ck{font-weight:800;margin-right:3px}
   .lib-none{font-size:12px;color:rgba(255,255,255,.6)}
   .lp-x{margin-top:8px;flex-shrink:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
@@ -694,7 +696,10 @@ function tplThemeKey(tid){ const t=tplById(tid); return (t&&t.is_official&&t.rec
 // effective 글로벌 멤버십: 개인 override remove > add > base 태그(TPL_THEMES). override는 멤버십 키(공식=recipe_id). 필터·스튜디오와 일치.
 function libDefOn(slug,tid){ tid=String(tid); const {key}=tplThemeKey(tid); const o=LIB.ov[slug]; if(o&&o.remove.has(key))return false; if(o&&o.add.has(key))return true; return !!(TPL_THEMES[tid]&&TPL_THEMES[tid].has(slug)); }
 function libCustomOn(themeId,tid){ const {key}=tplThemeKey(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>(i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)); }
-function libChip(on,label,onclick){ return `<button type="button" class="lib-chip${on?' on':''}" onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
+function libChip(on,label,onclick,dis){ return `<button type="button" class="lib-chip${on?' on':''}${dis?' lib-dis':''}"${dis?' disabled':''} onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
+// 대분류 상호배타(카드 패널): Custom 카드처럼 양쪽 그룹이 다 보일 때 Influencer↔Shopping 혼합 토글 방지. general·커스텀은 중립. 이미 켜진 칩은 해제 가능하도록 비활성 제외.
+const THEME_GROUP_OF={}; CAT_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ if(s!=='general') THEME_GROUP_OF[s]=label; }));
+function cardActiveGroup(tid){ for(const s in THEME_GROUP_OF){ if(libDefOn(s,tid)) return THEME_GROUP_OF[s]; } return null; }
 // 카드 인라인 테마 칩: 기본 테마(user_theme_overrides) + 커스텀(user_studio_theme_items) 모두 토글.
 // ④ 카드 category(Influencer/Shopping)의 CAT_THEMES 테마만 노출(미지정/레거시=전체). 커스텀은 대분류 무관 항상 노출.
 function tplById(tid){ tid=String(tid); const x=(MYT.list||[]).find(y=>String(y.t.id)===tid); return x?x.t:null; }
@@ -703,8 +708,9 @@ function libThemeChips(tid){
   const t=tplById(tid), allow=(t&&CAT_THEMES[t.category])||null;
   let defs=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
   if(allow) defs=defs.filter(t=>allow.includes(t.slug));
-  let h=defs.map(t=>libChip(libDefOn(t.slug,tid), esc(t.name), `toggleDef('${esc(t.slug)}','${tid}')`)).join('');
-  h+=(LIB.customs||[]).map(t=>libChip(libCustomOn(t.id,tid), '✦ '+esc(t.name), `toggleCustom('${esc(t.id)}','${tid}')`)).join('');
+  const active=cardActiveGroup(tid);
+  let h=defs.map(t=>{ const on=libDefOn(t.slug,tid), g=THEME_GROUP_OF[t.slug]; return libChip(on, esc(t.name), `toggleDef('${esc(t.slug)}','${tid}')`, !!active && g && g!==active && !on); }).join('');
+  h+=(LIB.customs||[]).map(t=>libChip(libCustomOn(t.id,tid), '✦ '+esc(t.name), `toggleCustom('${esc(t.id)}','${tid}')`, false)).join('');
   return h||'<span class="lib-none">No themes yet — create one in Studio.</span>';
 }
 function renderLibChips(tid){ const el=document.getElementById('lib-chips-'+tid); if(el) el.innerHTML=libThemeChips(tid); }

@@ -104,6 +104,7 @@
     .sv-sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim,#9aa);font-weight:700;margin:6px 0 2px}
     .sv-th{text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:10px 13px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
     .sv-th.on{background:var(--accent,#7c6cff);border-color:var(--accent,#7c6cff);color:#fff}
+    .sv-th:disabled,.sv-th.sv-dis{opacity:.38;cursor:not-allowed}
     .sv-new{border-style:dashed;color:var(--accent2,#a89bff)}
     .sv-row{display:flex;gap:8px;margin-top:16px}
     .sv-x{flex:1;background:none;border:1px solid var(--border2,#2a2a35);color:var(--dim,#9aa);border-radius:10px;padding:11px;font-size:13px;cursor:pointer;font-family:inherit}
@@ -132,16 +133,21 @@ async function openSaveModal(){
 function svOn(kind,key){ return SV.picks.some(p=>p.kind===kind&&p.key===key); }
 // 비겹침 대분류(확정 2026-06-26·스튜디오 CAT_THEMES와 동기화) — 각 테마는 한 섹션에만(중복0). general은 범용 폴백이라 Influencer에 한 번만·UGC 숨김·커스텀은 무관.
 const SV_GROUPS=[['Influencer',['people','general']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech']]];
-function svThBtn(kind,key,label){ return `<button type="button" class="sv-th${svOn(kind,key)?' on':''}" data-kind="${kind}" data-key="${esc(key)}" onclick="pickTheme(this)">${esc(label)}</button>`; }
+// 대분류 상호배타: 한 템플릿은 한 대분류에만 → Influencer 테마와 Shopping 테마를 섞어 선택 불가. general(범용 폴백)·커스텀("Your themes")은 중립(무관).
+const SV_GROUP_OF={}; SV_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ if(s!=='general') SV_GROUP_OF[s]=label; }));
+function svActiveGroup(){ for(const p of SV.picks){ if(p.kind==='default'){ const g=SV_GROUP_OF[p.key]; if(g) return g; } } return null; }
+function svThBtn(kind,key,label,dis){ return `<button type="button" class="sv-th${svOn(kind,key)?' on':''}${dis?' sv-dis':''}" data-kind="${kind}" data-key="${esc(key)}"${dis?' disabled':''} onclick="pickTheme(this)">${esc(label)}</button>`; }
 function renderSvThemes(){
   const el=document.getElementById('svThemes'); const {defs,customs}=SV.themes;
   const bySlug={}; (defs||[]).forEach(t=>{ bySlug[t.slug]=t; });
+  const active=svActiveGroup();
   let h='';
   for(const [label,slugs] of SV_GROUPS){
     const group=slugs.map(s=>bySlug[s]).filter(Boolean);
-    if(group.length) h+=`<div class="sv-sec">${label}</div>`+group.map(t=>svThBtn('default',t.slug,t.name)).join('');
+    // 반대 대분류 테마는 비활성(이미 선택된 건 해제 가능하도록 제외). general/커스텀은 항상 활성.
+    if(group.length) h+=`<div class="sv-sec">${label}</div>`+group.map(t=>svThBtn('default',t.slug,t.name, !!active && SV_GROUP_OF[t.slug] && SV_GROUP_OF[t.slug]!==active && !svOn('default',t.slug))).join('');
   }
-  if(customs.length) h+=`<div class="sv-sec">Your themes</div>`+customs.map(t=>svThBtn('custom',t.id,'✦ '+t.name)).join('');
+  if(customs.length) h+=`<div class="sv-sec">Your themes</div>`+customs.map(t=>svThBtn('custom',t.id,'✦ '+t.name,false)).join('');
   h+=`<button type="button" class="sv-th sv-new" onclick="newThemeThenPick()">＋ New theme</button>`;
   el.innerHTML=h;
 }
