@@ -960,6 +960,20 @@ async function migrateMarketplace() {
     CREATE UNIQUE INDEX IF NOT EXISTS uq_marketplace_auto_creation
       ON marketplace_templates(creator_id, from_creation_idx) WHERE origin = 'auto';
   `);
+  // 백필(멱등): 기존 Custom 생성(template_source NULL·성공)에 auto 템플릿이 없으면 민팅 — 자동민팅(P1)은 신규에만 걸리므로
+  //   과거 creation도 상세에서 "Add to My templates / Buy"가 동작하도록(블랙박스 prompt=''·private·preview=결과이미지). NOT EXISTS 가드.
+  await pool.query(`
+    INSERT INTO marketplace_templates (creator_id, creator_handle, name, category, type, style, prompt, visibility, emoji, from_creation_idx, preview_media, origin)
+    SELECT p.user_id, '@'||split_part(u.email,'@',1), 'My custom look', 'Custom',
+           CASE WHEN gr.metadata->>'type'='video' THEN 'reel' ELSE 'image' END,
+           'Natural','','private','🎨', gr.idx,
+           jsonb_build_array('/'||regexp_replace(gr.file_path,'^tmp/','')), 'auto'
+      FROM generation_results gr
+      JOIN prompts p ON p.idx = gr.prompt_idx
+      JOIN users u ON u.id = p.user_id
+     WHERE gr.template_source IS NULL AND gr.status = 'success' AND gr.taken_down = false AND gr.file_path IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM marketplace_templates mt WHERE mt.from_creation_idx = gr.idx AND mt.creator_id = p.user_id AND mt.origin = 'auto')
+  `);
   // 🗑️ 가짜 placeholder 시드 제거: 개발자가 넣은 무료 공식 8개(@heyhoai, 미리보기 없음·하드코딩된 가짜 usage). (멱등)
   //    → 진짜 유료 recipe-backed 프리미엄으로 대체. recipe-backed(@doppia)는 보존.
   await pool.query(`DELETE FROM marketplace_templates WHERE is_official = true AND creator_handle = '@heyhoai' AND recipe_id IS NULL`);

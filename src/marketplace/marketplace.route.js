@@ -213,6 +213,7 @@ router.get('/earnings', async (req, res, next) => {
     const byTemplate = await query(
       `SELECT mt.id, mt.name, mt.description, mt.emoji, mt.category, mt.type, mt.price_credits, mt.use_price_credits, mt.usage_count, mt.visibility,
               mt.origin, mt.from_creation_idx,
+              COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order) FROM template_themes tt JOIN themes th ON th.id = tt.theme_id WHERE tt.template_id = mt.id), '{}') AS themes,
               EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = $1) AS added_to_library,
               COALESCE(SUM(pl.amount), 0)::int AS earned,
               COUNT(pl.id)::int AS uses_paid

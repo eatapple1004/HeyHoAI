@@ -658,6 +658,28 @@ router.get('/creations/:idx', async (req, res, next) => {
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
     const r = await resultRepo.findDetailForViewer(idx, req.user.id);
     if (!r) return res.status(404).json({ success: false, error: 'creation not found' });
+    // 출처 템플릿(View template 대상)이 뷰어의 My templates(라이브러리)에 있나 — 라벨 분기용.
+    //   recipe 출처=공식 템플릿(기본 제공이라 항상 라이브러리에) / marketplace 출처=공식이거나 owns 보유 시.
+    let sourceInLibrary = false;
+    if (r.template_id && r.template_source === 'recipe') {
+      const q = await query(`SELECT 1 FROM marketplace_templates WHERE recipe_id = $1 AND is_official = true AND status = 'active' LIMIT 1`, [r.template_id]);
+      sourceInLibrary = !!q.rows[0];
+    } else if (r.template_id && r.template_source === 'marketplace') {
+      const q = await query(`SELECT 1 FROM marketplace_templates m WHERE m.id::text = $1 AND m.status = 'active' AND (m.is_official = true OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = m.id AND o.user_id = $2)) LIMIT 1`, [r.template_id, req.user.id]);
+      sourceInLibrary = !!q.rows[0];
+    }
+    // 획득/조회 대상 템플릿(Buy/Add/View 버튼용): Custom=auto 템플릿(minted) / 비-Custom=출처 템플릿. id=마켓 UUID(없으면 null).
+    let relTemplate = null;
+    if (r.minted_template_id) {
+      const m = await query(`SELECT id, name, price_credits, (creator_id = $2) AS mine FROM marketplace_templates WHERE id = $1 AND status = 'active'`, [r.minted_template_id, req.user.id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, owned: !!r.owns_template, mine: !!m.rows[0].mine };
+    } else if (r.template_id && r.template_source === 'marketplace') {
+      const m = await query(`SELECT m.id, m.name, m.price_credits, (m.creator_id = $2) AS mine, (m.is_official OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = m.id AND o.user_id = $2)) AS owned FROM marketplace_templates m WHERE m.id::text = $1 AND m.status = 'active'`, [r.template_id, req.user.id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, owned: !!m.rows[0].owned, mine: !!m.rows[0].mine };
+    } else if (r.template_id && r.template_source === 'recipe') {
+      const m = await query(`SELECT id, name, price_credits FROM marketplace_templates WHERE recipe_id = $1 AND is_official = true AND status = 'active' LIMIT 1`, [r.template_id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, owned: true, mine: false }; // 공식 recipe=기본 라이브러리
+    }
     res.json({ success: true, data: {
       idx: r.idx,
       url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
@@ -674,6 +696,8 @@ router.get('/creations/:idx', async (req, res, next) => {
       templateName: r.template_name,
       mintedTemplateId: r.minted_template_id || null, // 이 creation의 auto 템플릿(본인=관리/추가, 타인=구매 대상)
       ownsTemplate: !!r.owns_template,                // 뷰어 보유 여부
+      sourceInLibrary,                                // 출처 템플릿이 내 My templates(라이브러리)에 있나 — View template 라벨 분기
+      relTemplate,                                    // Buy/Add/View 버튼용 {id,name,price,owned} (없으면 null)
       ownerAdded: !!r.owner_added,                    // 원작자가 My templates에 추가했나
       createdAt: r.created_at,
     } });

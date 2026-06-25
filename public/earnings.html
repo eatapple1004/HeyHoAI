@@ -276,6 +276,21 @@
     </div>
   </div>
 </div>
+<!-- Explore 공개 시 테마 선택(공식 Explore 테마, 다중선택) -->
+<div class="modal-bg" id="pubModal" onclick="if(event.target===this)closePub()">
+  <div class="modal">
+    <button class="x" onclick="closePub()">✕</button>
+    <h3>Publish to Explore</h3>
+    <div style="font-size:13px;color:var(--dim);margin:-4px 0 14px;line-height:1.45">Pick the Explore themes this template appears under (multi-select). These are the public Explore categories — separate from your personal Studio themes.</div>
+    <div class="mfield"><label>Themes</label>
+      <div id="pubThemes" class="theme-chips"></div>
+    </div>
+    <div class="mrow">
+      <button class="btn" onclick="closePub()">Cancel</button>
+      <button class="btn btn-primary" id="pubGo" onclick="confirmPublish()">Publish</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -324,14 +339,26 @@ async function addToMyTpl(id){
     toast('Added to My templates'); load();
   }catch(e){ toast('Could not add: '+(e.message||e)); }
 }
-// P4: 템플릿을 Explore에 공개(visibility=public). 서버가 from_creation_idx면 원본 creation Private OFF를 강제(409).
+// P4: Explore 공개 시 테마 선택 모달(공식 Explore 테마 다중선택). 현재 테마 프리셋. (커스텀/스튜디오 테마 아님 — Explore 분류용)
+let PUB_ID=null;
 async function publishTpl(id){
+  PUB_ID=id;
+  const t=(ITEMS||[]).find(x=>x.id===id)||{};
+  document.getElementById('pubModal').classList.add('open');
+  await renderThemeChips('pubThemes', t.themes||[], null); // category 미지정 → 공식 Explore 테마 전체
+}
+function closePub(){ document.getElementById('pubModal').classList.remove('open'); PUB_ID=null; }
+// 공개(visibility=public) + 선택 테마(template_themes) 설정. 서버가 from_creation_idx면 원본 creation Private OFF 강제(409).
+async function confirmPublish(){
+  if(!PUB_ID)return;
+  const btn=document.getElementById('pubGo'); btn.disabled=true; btn.textContent='Publishing…';
   try{
-    const r=await fetch('/api/marketplace/templates/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visibility:'public'})});
+    const r=await fetch('/api/marketplace/templates/'+PUB_ID,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visibility:'public', themeSlugs:selectedThemes('pubThemes')})});
     const d=await r.json();
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast('Published to Explore'); load();
+    closePub(); toast('Published to Explore'); load();
   }catch(e){ toast(e.message||'Could not publish'); }
+  finally{ btn.disabled=false; btn.textContent='Publish'; }
 }
 
 function studioError(msg,signIn){

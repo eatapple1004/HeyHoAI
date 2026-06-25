@@ -210,32 +210,30 @@ async function loadDetail(){
   }catch(e){sw.innerHTML='<div class="state"><b>Couldn’t load</b><span>'+esc(e.message||e)+'</span></div>';panel.innerHTML='';}
 }
 
-// (제거·사용자 지시) 상세 1차 "Make your own"/"Use" 액션 폐지 — Explore는 발견 + My templates 추가가 정본. 생성은 추가 후 Studio에서.
-// P4 보조 액션(템플릿): 내 Custom=관리/추가 / 타인 Custom(auto 템플릿)=추가. mintedTemplateId 없으면(비-Custom) 버튼 없음.
-function saveCta(){
-  if(!IT.mintedTemplateId) return '';
-  if(IT.isOwn){
-    return IT.ownsTemplate
-      ? `<a class="act sm" href="/earnings">Manage template</a>`
-      : `<button class="act sm" onclick="openSaveModal()">＋ Add to My templates</button>`;
+// (제거·사용자 지시) 상세 1차 "Make your own"/"Use" 폐지 — Explore=발견+My templates 추가가 정본.
+// 템플릿 버튼(relTemplate 기반): 보유=라이브러리에서 보기(내 auto면 Creator 관리) / 미보유=유료 Buy·무료 Add → 획득 후 My templates로 이동.
+//   내 Custom auto 템플릿 미추가=테마 선택 모달(openSaveModal). relTemplate 없으면(연결 템플릿 없음) 버튼 없음.
+function templateCta(){
+  const rt=IT.relTemplate;
+  if(!rt) return '';
+  if(rt.owned){
+    if(IT.isOwn && IT.mintedTemplateId) return `<a class="act sm" href="/earnings">Manage template</a>`;
+    return `<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
   }
-  return IT.ownsTemplate
-    ? `<button class="act sm" disabled style="opacity:.6;cursor:default">✓ In My templates</button>`
-    : `<button class="act sm" onclick="acquireFromDetail()">＋ Add to My templates</button>`;
+  if(IT.isOwn && IT.mintedTemplateId) return `<button class="act sm" onclick="openSaveModal()">＋ Add to My templates</button>`;
+  // 유료(타인)=Buy / 그 외=Add. 내 템플릿엔 "Buy" 안 붙임.
+  const label = (!rt.mine && rt.price>0) ? ('Buy '+(rt.name||'template')+' (◈'+rt.price+')') : '＋ Add to My templates';
+  return `<button class="act sm" onclick="acquireRelTemplate()">${esc(label)}</button>`;
 }
-// 비-Custom(출처 템플릿 존재): 그 템플릿을 My templates에서 보기. Custom은 saveCta가 추가/관리 담당이라 제외.
-function viewTemplateCta(){
-  if(IT.templateSource && IT.templateId) return `<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(IT.templateId)}')">View template</button>`;
-  return '';
-}
-// 타인 creation의 auto 템플릿 추가(acquire) — 제자리 갱신.
-async function acquireFromDetail(){
-  if(!IT||!IT.mintedTemplateId)return;
+// 출처/연결 템플릿을 My templates에 획득 후 그 위치(My templates)로 이동. 내 것=add-to-my-templates(owns INSERT)·타인=acquire 폴백.
+async function acquireRelTemplate(){
+  const rt=IT&&IT.relTemplate; if(!rt||!rt.id)return;
+  const tid=encodeURIComponent(rt.id);
   try{
-    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(IT.mintedTemplateId)+'/acquire',{method:'POST'});
+    let r=await fetch('/api/marketplace/templates/'+tid+'/add-to-my-templates',{method:'POST'});
+    if(r.status===404) r=await fetch('/api/marketplace/templates/'+tid+'/acquire',{method:'POST'});
     const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast((d.data&&d.data.alreadyOwned)?'Already in My templates':'Added to My templates ✦');
-    IT.ownsTemplate=true; render();
+    location.href='/gallery?tpl='+tid;
   }catch(e){ toast('Could not add: '+(e.message||e)); }
 }
 
@@ -273,7 +271,7 @@ function render(){
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
-    <div class="acts">${saveCta()}${viewTemplateCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
+    <div class="acts">${templateCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }
 
