@@ -80,6 +80,7 @@
   .item .badge.vis.private{background:rgba(0,0,0,.55)}
   /* My templates 테마 필터(All + 글로벌·커스텀 중 내 템플릿이 들어있는 테마만) */
   .tpl-filter{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+  .flt-sec{flex-basis:100%;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin:6px 0 -3px}
   .tpl-empty-note{color:var(--faint);font-size:14px;padding:34px 6px;text-align:center}
   /* My templates = 깔끔한 타일. "Themes" 누르면 그 카드 위에 칩 패널이 인플레이스로 펼쳐짐(모달 아님) */
   .item .lib-panel{position:absolute;inset:0;z-index:5;background:rgba(10,10,16,.93);backdrop-filter:blur(4px);display:none;flex-direction:column;padding:12px;border-radius:16px}
@@ -636,14 +637,30 @@ function inThemeFilter(x){
   if(f.kind==='custom') return itemCustomThemes(tid).has(f.id);
   return true;
 }
-// 칩 = All + 내 템플릿이 실제로 들어있는 글로벌/커스텀 테마만(동적·빈 테마 미표시·커스텀 추가삭제 자동반영).
-// 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
+// 테마 대분류(스튜디오 CAT_THEMES와 동기화). general 공통 폴백. ④ 카드패널은 카드 category로 필터, ③ 필터는 Influencer/Shopping 섹션으로 그룹화.
+const CAT_THEMES={
+  Influencer:['people','beauty','fashion','jewelry','pet','general'],
+  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
+  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김·재활성 대비
+};
+const CAT_GROUPS=[['Influencer',CAT_THEMES.Influencer],['Shopping',CAT_THEMES.Shopping]]; // 필터/모달 그룹 노출(UGC 제외)
+// 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외)을 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
 function renderThemeFilter(){
   const el=document.getElementById('tplThemeFilter'); if(!el)return;
   const f=MYT.filter||{kind:'all'};
+  const globals=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
+  const bySlug={}; globals.forEach(t=>{ bySlug[t.slug]=t; });
   let h=`<button class="chip${f.kind==='all'?' active':''}" onclick="setMyThemeFilter('all')">All</button>`;
-  (LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug)).forEach(t=>{ h+=`<button class="chip${f.kind==='global'&&f.slug===t.slug?' active':''}" onclick="setMyThemeFilter('global','${esc(t.slug)}')">${esc(t.name)}</button>`; });
-  (LIB.customs||[]).forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">✦ ${esc(c.name)}</button>`; });
+  for(const [label,slugs] of CAT_GROUPS){
+    const group=slugs.map(s=>bySlug[s]).filter(Boolean);
+    if(!group.length) continue;
+    h+=`<div class="flt-sec">${label}</div>`;
+    group.forEach(t=>{ h+=`<button class="chip${f.kind==='global'&&f.slug===t.slug?' active':''}" onclick="setMyThemeFilter('global','${esc(t.slug)}')">${esc(t.name)}</button>`; });
+  }
+  if((LIB.customs||[]).length){
+    h+=`<div class="flt-sec">Your themes</div>`;
+    (LIB.customs||[]).forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">✦ ${esc(c.name)}</button>`; });
+  }
   el.innerHTML=h;
 }
 function renderMyTemplates(){
@@ -672,9 +689,13 @@ function libDefOn(slug,tid){ tid=String(tid); const o=LIB.ov[slug]; if(o&&o.remo
 function libCustomOn(themeId,tid){ tid=String(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>i.itemType==='template'&&String(i.itemId)===tid)); }
 function libChip(on,label,onclick){ return `<button type="button" class="lib-chip${on?' on':''}" onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
 // 카드 인라인 테마 칩: 기본 테마(user_theme_overrides) + 커스텀(user_studio_theme_items) 모두 토글.
+// ④ 카드 category(Influencer/Shopping)의 CAT_THEMES 테마만 노출(미지정/레거시=전체). 커스텀은 대분류 무관 항상 노출.
+function tplById(tid){ tid=String(tid); const x=(MYT.list||[]).find(y=>String(y.t.id)===tid); return x?x.t:null; }
 function libThemeChips(tid){
   tid=String(tid);
-  const defs=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
+  const t=tplById(tid), allow=(t&&CAT_THEMES[t.category])||null;
+  let defs=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
+  if(allow) defs=defs.filter(t=>allow.includes(t.slug));
   let h=defs.map(t=>libChip(libDefOn(t.slug,tid), esc(t.name), `toggleDef('${esc(t.slug)}','${tid}')`)).join('');
   h+=(LIB.customs||[]).map(t=>libChip(libCustomOn(t.id,tid), '✦ '+esc(t.name), `toggleCustom('${esc(t.id)}','${tid}')`)).join('');
   return h||'<span class="lib-none">No themes yet — create one in Studio.</span>';

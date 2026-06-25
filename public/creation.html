@@ -130,16 +130,26 @@ async function openSaveModal(){
   renderSvThemes();
 }
 function svOn(kind,key){ return SV.picks.some(p=>p.kind===kind&&p.key===key); }
+// 공식 테마 대분류(스튜디오 CAT_THEMES와 동기화) — 테마를 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출·UGC 숨김·커스텀은 무관).
+const SV_GROUPS=[['Influencer',['people','beauty','fashion','jewelry','pet','general']],['Shopping',['fashion','jewelry','beauty','food','coffee','home','tech','pet','general']]];
+function svThBtn(kind,key,label){ return `<button type="button" class="sv-th${svOn(kind,key)?' on':''}" data-kind="${kind}" data-key="${esc(key)}" onclick="pickTheme(this)">${esc(label)}</button>`; }
 function renderSvThemes(){
   const el=document.getElementById('svThemes'); const {defs,customs}=SV.themes;
+  const bySlug={}; (defs||[]).forEach(t=>{ bySlug[t.slug]=t; });
   let h='';
-  if(defs.length) h+=`<div class="sv-sec">Themes</div>`+defs.map(t=>`<button type="button" class="sv-th${svOn('default',t.slug)?' on':''}" data-kind="default" data-key="${esc(t.slug)}" onclick="pickTheme(this)">${esc(t.name)}</button>`).join('');
-  if(customs.length) h+=`<div class="sv-sec">Your themes</div>`+customs.map(t=>`<button type="button" class="sv-th${svOn('custom',t.id)?' on':''}" data-kind="custom" data-key="${esc(t.id)}" onclick="pickTheme(this)">✦ ${esc(t.name)}</button>`).join('');
+  for(const [label,slugs] of SV_GROUPS){
+    const group=slugs.map(s=>bySlug[s]).filter(Boolean);
+    if(group.length) h+=`<div class="sv-sec">${label}</div>`+group.map(t=>svThBtn('default',t.slug,t.name)).join('');
+  }
+  if(customs.length) h+=`<div class="sv-sec">Your themes</div>`+customs.map(t=>svThBtn('custom',t.id,'✦ '+t.name)).join('');
   h+=`<button type="button" class="sv-th sv-new" onclick="newThemeThenPick()">＋ New theme</button>`;
   el.innerHTML=h;
 }
 // 다중선택: 클릭한 칩만 on/off, 나머지 유지(편집 플로우와 동일). 테마는 선택사항이라 버튼은 항상 활성.
-function pickTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key; const on=btn.classList.toggle('on'); if(on){ if(!svOn(kind,key)) SV.picks.push({kind,key}); } else { SV.picks=SV.picks.filter(p=>!(p.kind===kind&&p.key===key)); } refreshSvGo(); }
+function pickTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key;
+  if(svOn(kind,key)) SV.picks=SV.picks.filter(p=>!(p.kind===kind&&p.key===key));
+  else SV.picks.push({kind,key});
+  renderSvThemes(); refreshSvGo(); }   // 재렌더: 공유 테마(양쪽 섹션) on/off 동기화
 function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=false; }
 async function newThemeThenPick(){
   const name=prompt('New theme name'); if(!name||!name.trim())return;
