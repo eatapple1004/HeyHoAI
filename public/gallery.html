@@ -641,12 +641,14 @@ function inThemeFilter(x){
   return true;
 }
 // 테마 대분류(스튜디오 CAT_THEMES와 동기화). general 공통 폴백. ④ 카드패널은 카드 category로 필터, ③ 필터는 Influencer/Shopping 섹션으로 그룹화.
+// 비겹침 대분류(확정 2026-06-26): 각 테마는 한 대분류에만. general은 '테마 없음' 범용 폴백이라 카드패널 화이트리스트엔 양쪽 포함.
 const CAT_THEMES={
-  Influencer:['people','beauty','fashion','jewelry','pet','general'],
-  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
+  Influencer:['people','general'],
+  Shopping:['beauty','fashion','jewelry','pet','food','coffee','home','tech','general'],
   UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김·재활성 대비
 };
-const CAT_GROUPS=[['Influencer',CAT_THEMES.Influencer],['Shopping',CAT_THEMES.Shopping]]; // 필터/모달 그룹 노출(UGC 제외)
+// 그룹 표시(③필터)는 비겹침·중복0: general은 Influencer에 한 번만(Shopping 그룹선 생략).
+const CAT_GROUPS=[['Influencer',['people','general']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech']]];
 // 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외)을 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
 function renderThemeFilter(){
   const el=document.getElementById('tplThemeFilter'); if(!el)return;

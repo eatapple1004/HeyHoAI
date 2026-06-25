@@ -476,8 +476,8 @@ let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
 // category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
 const CAT_THEMES = {
-  Influencer:['people','beauty','fashion','jewelry','pet','general'],
-  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
+  Influencer:['people','general'],
+  Shopping:['beauty','fashion','jewelry','pet','food','coffee','home','tech','general'],
   UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
 };
 async function renderThemeChips(containerId, selected, category){
