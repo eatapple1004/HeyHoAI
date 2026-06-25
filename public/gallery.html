@@ -158,7 +158,7 @@
 
   <!-- Purchased (구매·보유한 템플릿) -->
   <section id="tab-purchased" class="hidden">
-    <div class="sub fade d1" style="color:var(--dim);font-size:13px;margin:-6px 0 16px">Templates you own. Toggle each in or out of your Studio template picker.</div>
+    <div class="sub fade d1" style="color:var(--dim);font-size:13px;margin:-6px 0 16px">Templates you own. Organize which ones appear in Studio from the Themes panel there.</div>
     <div class="grid fade d2" id="purGrid"></div>
     <div class="empty hidden" id="purEmpty">
       <div class="ico">🔓</div><h3>No purchased templates yet</h3>
@@ -612,22 +612,20 @@ function switchTab(t){
   if(t==='purchased'&&!purLoaded){purLoaded=true;loadPurchased();}
   if(t==='saved'&&!savedLoaded){savedLoaded=true;loadSaved();}
 }
-// Purchased: 보유 템플릿 + studio 넣기/빼기 토글
+// Purchased: 보유 템플릿. studio 넣다뺐다는 Studio의 Themes 패널로 일원화(안A) — 여기선 Use + 스튜디오 정리 진입만.
 function purCard(t){
   const prev=(t.preview_media&&t.preview_media[0])||'';
   const onUse=`usePurchased('${esc(t.id)}','${esc(t.recipe_id||'')}')`;
   const thumb=prev
     ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="${onUse}">`
     :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#ffce7a);cursor:pointer" onclick="${onUse}">${esc(t.emoji||'🎨')}</div>`;
-  const on=t.in_studio!==false;
   const meta=`${t.price_credits>0?'◈'+t.price_credits+' · owned':'Free · added'}${t.tool?' · '+esc(t.tool):''}`;
   return `<div class="item">
     ${thumb}
     <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>
-    <span class="badge vis ${on?'':'private'}" style="left:auto;right:10px">${on?'In studio':'Hidden'}</span>
     <div class="info"><div class="nm">${esc(t.name)}</div><div class="dt">${meta}</div></div>
     <div class="actions">
-      <button onclick="toggleInStudio('${esc(t.id)}',${on?'false':'true'})">${on?'Remove from studio':'Add to studio'}</button>
+      <button onclick="location.href='/studio'">Organize in Studio</button>
       <button onclick="${onUse}">Use</button>
     </div>
   </div>`;
@@ -639,14 +637,6 @@ async function loadPurchased(){
     if(!d.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
     empty.classList.add('hidden');grid.innerHTML=d.map(purCard).join('');
   }catch(e){console.error('purchased load failed',e);grid.innerHTML='';empty.classList.remove('hidden');}
-}
-async function toggleInStudio(id,desired){
-  try{
-    const r=await fetch('/api/marketplace/owned/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({inStudio:desired})});
-    const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast(desired?'Added to your Studio':'Removed from Studio');loadPurchased();
-  }catch(e){toast('Could not update: '+(e.message||e),'error');}
 }
 function usePurchased(id,recipeId){
   if(recipeId){location.href='/studio?recipe='+encodeURIComponent(recipeId);return;}

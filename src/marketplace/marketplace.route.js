@@ -671,14 +671,13 @@ router.get('/recipe-gates', async (req, res, next) => {
   try {
     const r = await query(
       `SELECT mt.id, mt.recipe_id, mt.price_credits,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1) AS owned,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1 AND ow.in_studio) AS in_studio
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1) AS owned
        FROM marketplace_templates mt
        WHERE mt.recipe_id IS NOT NULL AND mt.status = 'active' AND mt.price_credits > 0`,
       [req.user.id]
     );
-    // inStudio = 보유 && in_studio (스튜디오 노출 결정). owned는 카탈로그 필터/구매 판단용.
-    res.json({ success: true, data: r.rows.map((x) => ({ templateId: x.id, recipeId: x.recipe_id, price: x.price_credits, owned: x.owned, inStudio: x.in_studio })) });
+    // owned=보유 → 메인 그리드 노출 / 미보유 → 프리미엄 업셀. (in_studio 폐기·안A: studio 노출은 테마 멤버십이 결정)
+    res.json({ success: true, data: r.rows.map((x) => ({ templateId: x.id, recipeId: x.recipe_id, price: x.price_credits, owned: x.owned })) });
   } catch (err) { next(err); }
 });
 
@@ -686,7 +685,7 @@ router.get('/recipe-gates', async (req, res, next) => {
 router.get('/owned', async (req, res, next) => {
   try {
     const r = await query(
-      `SELECT ${MT_COLS}, mt.from_creation_idx, true AS owned, ow.source AS own_source, ow.in_studio
+      `SELECT ${MT_COLS}, mt.from_creation_idx, true AS owned, ow.source AS own_source
        FROM template_owns ow
        JOIN marketplace_templates mt ON mt.id = ow.template_id
        WHERE ow.user_id = $1 AND mt.status = 'active'
@@ -697,18 +696,8 @@ router.get('/owned', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/** PATCH /api/marketplace/owned/:templateId  { inStudio } — 보유 템플릿의 studio 노출 토글. */
-router.patch('/owned/:templateId', async (req, res, next) => {
-  try {
-    const inStudio = !!(req.body && (req.body.inStudio === true || req.body.inStudio === 'true'));
-    const r = await query(
-      `UPDATE template_owns SET in_studio = $1 WHERE user_id = $2 AND template_id = $3 RETURNING template_id, in_studio`,
-      [inStudio, req.user.id, req.params.templateId]
-    );
-    if (r.rowCount === 0) return res.status(404).json({ success: false, error: '보유하지 않은 템플릿입니다.' });
-    res.json({ success: true, data: { templateId: r.rows[0].template_id, inStudio: r.rows[0].in_studio } });
-  } catch (err) { next(err); }
-});
+// (폐기·안A) PATCH /api/marketplace/owned/:templateId {inStudio} 제거 — studio 넣다뺐다는 Themes 패널(테마 멤버십)로 일원화.
+//   template_owns.in_studio 컬럼은 deprecate(잔존)·코드 미사용.
 
 /** POST /api/marketplace/templates/:id/bookmark — 템플릿 저장(Saved). 공개 또는 내 것만. (멱등) */
 router.post('/templates/:id/bookmark', async (req, res, next) => {

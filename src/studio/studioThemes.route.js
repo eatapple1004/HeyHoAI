@@ -10,13 +10,14 @@ async function isPublicCreation(idx) {
   return !!r.rows[0];
 }
 
-// 내 템플릿을 studio 테마에 넣을 때 보유 보장: 미보유 + 내가 만든/저장한 것(creator_id=나)이면 자동 보유(무료).
+// 내 템플릿을 studio 테마에 넣을 때 보유 보장: 미보유 + 내가 만든 수동/recipe 템플릿(creator_id=나·origin≠'auto')이면 자동 보유(무료).
 //   studio 픽커는 mergeOwnedTemplates(=/owned)로만 카드를 올리므로, 보유돼야 테마에 보임. 남의 미보유=false(구매 필요).
+//   안A: 자동민팅(origin='auto')은 자동보유 제외 — My templates 추가는 명시적 add-to-my-templates로만(추가 안 한 auto는 테마에도 못 넣음).
 async function ensureOwnedIfMine(userId, templateId) {
   const owned = await query(`SELECT 1 FROM template_owns WHERE user_id = $1 AND template_id = $2`, [userId, templateId]);
   if (owned.rows[0]) return true;
-  const t = await query(`SELECT creator_id FROM marketplace_templates WHERE id = $1`, [templateId]);
-  if (t.rows[0] && t.rows[0].creator_id === userId) {
+  const t = await query(`SELECT creator_id, origin FROM marketplace_templates WHERE id = $1`, [templateId]);
+  if (t.rows[0] && t.rows[0].creator_id === userId && t.rows[0].origin !== 'auto') {
     await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [userId, templateId]);
     return true;
   }

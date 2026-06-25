@@ -796,7 +796,7 @@ async function mergeOwnedTemplates(){
   const MODE={Influencer:'influencer',Shopping:'shopping',UGC:'ugc',Custom:'influencer'};
   owned.forEach(t=>{
     if(t.recipe_id)return; // recipe-backed는 applyRecipeGates가 처리(숨김/노출)
-    if(t.in_studio===false)return; // Purchased 탭에서 studio에서 뺀 것
+    // 안A: in_studio 폐기 — 보유 템플릿은 전부 풀에 올리고, 실제 studio 노출은 테마 멤버십(inAnyTheme)이 결정.
     const mode=MODE[t.category]||'influencer';
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
@@ -814,7 +814,7 @@ async function applyRecipeGates(){
   gates.forEach(g=>{
     let rc=null,mode=null;
     for(const m of Object.keys(TEMPLATES)){const c=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));if(c){rc=c;mode=m;break;}}
-    if(rc)rc.held=!g.inStudio;                 // 보유 && in_studio면 메인 그리드 노출
+    if(rc)rc.held=!g.owned;                    // 보유면 메인 그리드 노출 / 미보유는 프리미엄(안A: in_studio 폐기)
     if(!g.owned&&rc)PREMIUM.push({templateId:g.templateId,recipeId:g.recipeId,price:g.price,name:rc.name,grad:rc.grad,type:rc.type,mode:mode}); // 미보유=프리미엄 섹션
   });
   renderFilters();renderRecipes();updateBar();
@@ -1382,6 +1382,16 @@ function inGlobalTheme(r, slug){
   if(ov&&ov.add.has(id)) return true;
   return (r.themes||[]).includes(slug);
 }
+// 안A: 보유 유저 템플릿의 studio 노출 = 테마 멤버십(커스텀 테마 멤버 OR 비숨김 글로벌 테마 멤버) 여부.
+//   모든 테마에서 빼면 studio 비노출(=옛 in_studio=false 대체). 기본값 themes:['general']이 공식 기본배치.
+function inAnyTheme(r){
+  const id=String(r.id);
+  if(STUDIO_THEMES.some(t=>(t.items||[]).some(i=>String(i.itemId)===id))) return true;
+  const slugs=new Set(r.themes||[]);
+  Object.keys(THEME_OV).forEach(s=>{ if(THEME_OV[s].add.has(id)) slugs.add(s); });
+  for(const s of slugs){ if(!HIDDEN_THEMES.has(s)&&inGlobalTheme(r,s)) return true; }
+  return false;
+}
 async function hideTheme(slug){ // 기본 테마 통째 제거
   try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'POST'}); HIDDEN_THEMES.add(slug); if(state.filter===slug)state.filter='All'; renderFilters();renderRecipes(); if(window.toast)toast('Theme removed from your studio'); }catch(e){}
 }
@@ -1476,7 +1486,12 @@ function renderRecipes(){
   }else if(defTheme&&manageMode){ // 기본 테마 편집: 현재 모드 전체 노출 → +/− 토글
     rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
   }else{
-    rs=TEMPLATES[state.mode].filter(r=>(state.filter==='All'||inGlobalTheme(r,state.filter))&&!PREMIUM.some(p=>p.recipeId===r.id));
+    rs=TEMPLATES[state.mode].filter(r=>{
+      if(PREMIUM.some(p=>p.recipeId===r.id))return false;
+      if(state.filter!=='All')return inGlobalTheme(r,state.filter);
+      // All 뷰: 내장 recipe는 항상 노출 / 보유 유저 템플릿은 테마 ≥1개 배치 시만(안A: in_studio 폐기)
+      return r.source!=='marketplace'||inAnyTheme(r);
+    });
   }
   // 숨긴 내장 제외(매니지 모드에선 흐리게 보여 복원 가능)
   if(!manageMode)rs=rs.filter(r=>!HIDDEN.has(String(r.id)));
