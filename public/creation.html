@@ -131,10 +131,10 @@ async function openSaveModal(){
   renderSvThemes();
 }
 function svOn(kind,key){ return SV.picks.some(p=>p.kind===kind&&p.key===key); }
-// 비겹침 대분류(확정 2026-06-26·스튜디오 CAT_THEMES와 동기화) — 각 테마는 한 섹션에만(중복0). general은 범용 폴백이라 Influencer에 한 번만·UGC 숨김·커스텀은 무관.
-const SV_GROUPS=[['Influencer',['people','general']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech']]];
-// 대분류 상호배타: 한 템플릿은 한 대분류에만 → Influencer 테마와 Shopping 테마를 섞어 선택 불가. general(범용 폴백)·커스텀("Your themes")은 중립(무관).
-const SV_GROUP_OF={}; SV_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ if(s!=='general') SV_GROUP_OF[s]=label; }));
+// 비겹침 대분류(확정 2026-06-26·스튜디오 CAT_THEMES와 동기화) — 각 테마는 한 섹션에만(중복0). general=Shopping(범용/중립 아님)·Influencer=People만·UGC 숨김·커스텀은 무관.
+const SV_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech','general']]];
+// 대분류 상호배타: 한 템플릿은 한 대분류에만 → Influencer 테마와 Shopping 테마를 섞어 선택 불가. general은 Shopping 소속(중립 아님), 커스텀("Your themes")만 중립.
+const SV_GROUP_OF={}; SV_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ SV_GROUP_OF[s]=label; }));
 function svActiveGroup(){ for(const p of SV.picks){ if(p.kind==='default'){ const g=SV_GROUP_OF[p.key]; if(g) return g; } } return null; }
 function svThBtn(kind,key,label,dis){ return `<button type="button" class="sv-th${svOn(kind,key)?' on':''}${dis?' sv-dis':''}" data-kind="${kind}" data-key="${esc(key)}"${dis?' disabled':''} onclick="pickTheme(this)">${esc(label)}</button>`; }
 function renderSvThemes(){

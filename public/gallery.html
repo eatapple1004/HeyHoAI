@@ -642,15 +642,14 @@ function inThemeFilter(x){
   if(f.kind==='custom') return itemCustomThemes(tid).has(f.id);
   return true;
 }
-// 테마 대분류(스튜디오 CAT_THEMES와 동기화). general 공통 폴백. ④ 카드패널은 카드 category로 필터, ③ 필터는 Influencer/Shopping 섹션으로 그룹화.
-// 비겹침 대분류(확정 2026-06-26): 각 테마는 한 대분류에만. general은 '테마 없음' 범용 폴백이라 카드패널 화이트리스트엔 양쪽 포함.
+// 비겹침 대분류(확정 2026-06-26): 각 테마는 한 대분류에만. general=Shopping(범용/중립 아님). Influencer=People만.
 const CAT_THEMES={
-  Influencer:['people','general'],
+  Influencer:['people'],
   Shopping:['beauty','fashion','jewelry','pet','food','coffee','home','tech','general'],
   UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김·재활성 대비
 };
-// 그룹 표시(③필터)는 비겹침·중복0: general은 Influencer에 한 번만(Shopping 그룹선 생략).
-const CAT_GROUPS=[['Influencer',['people','general']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech']]];
+// 그룹 표시(③필터)는 비겹침·중복0.
+const CAT_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech','general']]];
 // 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외)을 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
 function renderThemeFilter(){
   const el=document.getElementById('tplThemeFilter'); if(!el)return;
@@ -697,8 +696,8 @@ function tplThemeKey(tid){ const t=tplById(tid); return (t&&t.is_official&&t.rec
 function libDefOn(slug,tid){ tid=String(tid); const {key}=tplThemeKey(tid); const o=LIB.ov[slug]; if(o&&o.remove.has(key))return false; if(o&&o.add.has(key))return true; return !!(TPL_THEMES[tid]&&TPL_THEMES[tid].has(slug)); }
 function libCustomOn(themeId,tid){ const {key}=tplThemeKey(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>(i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)); }
 function libChip(on,label,onclick,dis){ return `<button type="button" class="lib-chip${on?' on':''}${dis?' lib-dis':''}"${dis?' disabled':''} onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
-// 대분류 상호배타(카드 패널): Custom 카드처럼 양쪽 그룹이 다 보일 때 Influencer↔Shopping 혼합 토글 방지. general·커스텀은 중립. 이미 켜진 칩은 해제 가능하도록 비활성 제외.
-const THEME_GROUP_OF={}; CAT_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ if(s!=='general') THEME_GROUP_OF[s]=label; }));
+// 대분류 상호배타(카드 패널): Custom 카드처럼 양쪽 그룹이 다 보일 때 Influencer↔Shopping 혼합 토글 방지. general은 Shopping 소속(중립 아님), 커스텀('Your themes')만 중립. 이미 켜진 칩은 해제 가능하도록 비활성 제외.
+const THEME_GROUP_OF={}; CAT_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ THEME_GROUP_OF[s]=label; }));
 function cardActiveGroup(tid){ for(const s in THEME_GROUP_OF){ if(libDefOn(s,tid)) return THEME_GROUP_OF[s]; } return null; }
 // 카드 인라인 테마 칩: 기본 테마(user_theme_overrides) + 커스텀(user_studio_theme_items) 모두 토글.
 // ④ 카드 category(Influencer/Shopping)의 CAT_THEMES 테마만 노출(미지정/레거시=전체). 커스텀은 대분류 무관 항상 노출.
