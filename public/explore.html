@@ -105,17 +105,8 @@
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
-// 호버 하단 액션(§6, Explore Creations): 본인 Custom=템플릿 관리 / 타인 Custom(auto 템플릿 존재)=My templates 추가.
-//   그 외(타인 일반·마켓/recipe 출처)는 카드 클릭→상세에서 처리(카드는 군더더기 없이 유지).
-function cardAction(it){
-  if(it.isOwn && !it.templateSource) return `<button class="act save" onclick="event.stopPropagation();location.href='/earnings'">Manage template</button>`;
-  if(!it.isOwn && it.ownableTemplateId){
-    if(it.ownsTemplate) return `<button class="act save" disabled style="opacity:.6;cursor:default">✓ In My templates</button>`;
-    return `<button class="act save" onclick="event.stopPropagation();acquireTpl('${esc(it.ownableTemplateId)}',this)">＋ Add to My templates</button>`;
-  }
-  return '';
-}
-// 타인 creation이 낳은 auto 템플릿을 My templates에 추가(acquire). 성공 시 제자리 유지+토스트+버튼 보유상태로(결정).
+// Explore Creations 카드 = 호버 액션 없는 깔끔한 미리보기(클릭→상세). 템플릿 관련 액션은 상세 페이지에서만(사용자 지시).
+// 타인 creation이 낳은 auto 템플릿을 My templates에 추가(acquire) — Templates 카탈로그 카드(tcard)에서 사용.
 async function acquireTpl(tid,btn){
   if(btn){btn.disabled=true;btn.textContent='Adding…';}
   try{
@@ -134,11 +125,9 @@ function card(it){
     ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`
     : `<span class="by">@creator</span>`;
   const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
-  const act=cardAction(it);
   return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=explore'">
     <div class="ovt">${by}${like}</div>
     ${media}
-    ${act?`<div class="ovb">${act}</div>`:''}
   </div>`;
 }
 async function toggleLike(idx,btn){
@@ -231,7 +220,7 @@ function tcard(t){
       <div class="tname">${esc(t.name)}</div>
       <div class="tmeta">by ${t.creator_handle?`<a class="hlink" href="/creator?handle=${encodeURIComponent(String(t.creator_handle).replace(/^@/,''))}">${esc(t.creator_handle)}</a>`:'@creator'} · ♥ ${t.likes_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
       <div class="trow">
-        <button class="tuse" onclick="goTpl('${esc(t.id)}')">Use</button>
+        <button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>
         <button class="tbk ${t.bookmarked?'on':''}" onclick="toggleBookmark('${esc(t.id)}',this)" title="${t.bookmarked?'Saved':'Save'}">${t.bookmarked?'★':'☆'}</button>
       </div>
     </div></div>`;

@@ -210,13 +210,7 @@ async function loadDetail(){
   }catch(e){sw.innerHTML='<div class="state"><b>Couldn’t load</b><span>'+esc(e.message||e)+'</span></div>';panel.innerHTML='';}
 }
 
-function useCta(){
-  if(IT.templateSource==='marketplace' && IT.templateId)
-    return `<a class="act primary" href="/template?id=${encodeURIComponent(IT.templateId)}">🔓 Get ${esc(IT.templateName||'this template')}</a>`;
-  if(IT.templateSource==='recipe' && IT.templateId)
-    return `<a class="act primary" href="/studio?recipe=${encodeURIComponent(IT.templateId)}">✨ Use ${esc(IT.templateName||'this template')}</a>`;
-  return `<a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Make your own</a>`;
-}
+// (제거·사용자 지시) 상세 1차 "Make your own"/"Use" 액션 폐지 — Explore는 발견 + My templates 추가가 정본. 생성은 추가 후 Studio에서.
 // P4 보조 액션(템플릿): 내 Custom=관리/추가 / 타인 Custom(auto 템플릿)=추가. mintedTemplateId 없으면(비-Custom) 버튼 없음.
 function saveCta(){
   if(!IT.mintedTemplateId) return '';
@@ -228,6 +222,11 @@ function saveCta(){
   return IT.ownsTemplate
     ? `<button class="act sm" disabled style="opacity:.6;cursor:default">✓ In My templates</button>`
     : `<button class="act sm" onclick="acquireFromDetail()">＋ Add to My templates</button>`;
+}
+// 비-Custom(출처 템플릿 존재): 그 템플릿을 My templates에서 보기. Custom은 saveCta가 추가/관리 담당이라 제외.
+function viewTemplateCta(){
+  if(IT.templateSource && IT.templateId) return `<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(IT.templateId)}')">View template</button>`;
+  return '';
 }
 // 타인 creation의 auto 템플릿 추가(acquire) — 제자리 갱신.
 async function acquireFromDetail(){
@@ -274,7 +273,7 @@ function render(){
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
-    <div class="acts"><a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Use</a>${saveCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
+    <div class="acts">${saveCta()}${viewTemplateCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }
 

@@ -305,7 +305,15 @@ async function load(){
   await loadMore();
   renderFilters();
   maybeOpenSave();
+  maybeOpenTpl();
   setupInfiniteScroll();
+}
+// /gallery?tpl=<id|recipe-slug>(creation 상세 "View template") → My templates 탭 + 해당 템플릿 하이라이트.
+function maybeOpenTpl(){
+  const tpl=new URLSearchParams(location.search).get('tpl');
+  if(!tpl)return;
+  history.replaceState(null,'',location.pathname); // 새로고침 재오픈 방지
+  gotoMyTemplates(tpl); // 탭 전환+로드+하이라이트(슬러그→UUID 해석 포함)
 }
 function setupInfiniteScroll(){
   const s=document.getElementById('scrollSentinel'); if(!s)return;
@@ -380,10 +388,19 @@ async function gotoMyTemplates(tid){
   tplLoaded=true;
   switchTab('templates');
   await loadMyTemplates();
-  if(tid){
-    const el=document.querySelector('.item[data-tid="'+String(tid).replace(/"/g,'')+'"]');
-    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('hl'); setTimeout(()=>{el.classList.remove('hl');},2200); }
+  if(!tid) return;
+  let target=String(tid);
+  // 출처가 recipe 슬러그(예: stone-plinth-luxe)면 My templates의 카드 data-tid(마켓 UUID)와 직접 안 맞음 → recipe_id로 공식 템플릿 해석.
+  if(!MYT.list.some(x=>String(x.t.id)===target)){
+    const m=MYT.list.find(x=>x.t.recipe_id&&String(x.t.recipe_id)===target);
+    if(m) target=String(m.t.id);
   }
+  if(!MYT.list.some(x=>String(x.t.id)===target)){ toast('템플릿을 라이브러리에서 찾지 못했어요.'); return; }
+  // 하이라이트는 상태로 렌더(재렌더 레이스에도 유지) → 2.4초 후 해제.
+  MYT.highlightId=target; renderMyTemplates();
+  const el=document.querySelector('.item[data-tid="'+target.replace(/"/g,'')+'"]');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>{ if(MYT.highlightId===target){ MYT.highlightId=null; renderMyTemplates(); } }, 2400);
 }
 // 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
 function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+14); }
@@ -575,37 +592,48 @@ function tplCard(t,kind){
     ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="tryTpl('${tid}')">`
     :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#5ee0d6);cursor:pointer" onclick="tryTpl('${tid}')">${esc(t.emoji||'🎨')}</div>`;
   const vis = kind==='official' ? `<span class="badge vis">Official</span>`
+    : kind==='purchased' ? `<span class="badge vis">Purchased</span>`
     : kind==='mine' ? `<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>` : '';
-  const autoB = (kind==='mine'&&t.origin==='auto') ? `<span class="badge auto">Auto</span>` : '';
+  const autoB = ((kind==='mine'||kind==='purchased')&&t.origin==='auto') ? `<span class="badge auto">Auto</span>` : '';
   const meta = kind==='saved'
     ? `by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`
     : `♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`;
+  // 테마 패널(안A): 본인·구매 무관 studio 테마 넣다뺐다(§6).
+  const themesPanel=`<div class="lib-panel" id="lib-panel-${tid}"><div class="lp-head">Add to studio themes</div><div class="lib-chips" id="lib-chips-${tid}">${libThemeChips(tid)}</div><button type="button" class="lp-x" onclick="toggleLibPanel('${tid}')">Done</button></div>`;
   let actions,panel='';
   if(kind==='mine'){
     actions=`<button class="del" onclick="delTpl('${tid}')">Delete</button><button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
-    panel=`<div class="lib-panel" id="lib-panel-${tid}"><div class="lp-head">Add to studio themes</div><div class="lib-chips" id="lib-chips-${tid}">${libThemeChips(tid)}</div><button type="button" class="lp-x" onclick="toggleLibPanel('${tid}')">Done</button></div>`;
+    panel=themesPanel;
+  }
+  else if(kind==='purchased'){ // 타인에게서 구매(acquire)한 보유 템플릿: 삭제 불가, 사용·테마배치 가능
+    actions=`<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
+    panel=themesPanel;
   }
   else if(kind==='official') actions=`<button onclick="tryTpl('${tid}')">Use</button>`;
   else actions=`<button onclick="tryTpl('${tid}')">Try it</button><button class="del" onclick="unsaveTpl('${tid}')" title="Remove from Saved">🔖</button>`;
-  return `<div class="item" data-tid="${tid}">
+  return `<div class="item${MYT.highlightId&&String(MYT.highlightId)===tid?' hl':''}" data-tid="${tid}">
     ${thumb}
     <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}${autoB}
     <div class="info"><div class="nm">${esc(t.name)}</div><div class="dt">${meta}</div></div>
     <div class="actions">${actions}</div>${panel}
   </div>`;
 }
-// My templates = 내 저장/생성 + 오피셜. 테마 칩 필터(글로벌+커스텀 동적)로 골라보기.
+// §5: My templates = owns 전부(내가 추가한 것 + 타인에게서 구매한 것) = /owned. 공식은 기본 제공(/me.official). 테마 칩 필터로 골라보기.
 async function loadMyTemplates(){
   const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty'),filt=document.getElementById('tplThemeFilter');
   try{
     await loadLibThemes();
-    const d=(await(await fetch('/api/marketplace/me')).json()).data||{};
-    const mine=(d.templates||[]);
-    const mineIds=new Set(mine.map(t=>t.id));
-    const official=(d.official||[]).filter(o=>!mineIds.has(o.id));
+    const [ownedR, meR] = await Promise.all([
+      fetch('/api/marketplace/owned').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/marketplace/me').then(r=>r.json()).catch(()=>({})),
+    ]);
+    const owned=(ownedR&&ownedR.data)||[];                      // 모든 보유: 내것(mine) + 구매(타인)
+    const ownedIds=new Set(owned.map(t=>t.id));
+    const official=((((meR&&meR.data)||{}).official)||[]).filter(o=>!ownedIds.has(o.id)); // 미보유 공식만(보유 공식은 owned로)
     TPL_THEMES={};
-    mine.concat(official).forEach(t=>{ TPL_THEMES[String(t.id)]=new Set(t.themes||[]); });
-    MYT.list=mine.map(t=>({t:t,kind:'mine'})).concat(official.map(t=>({t:t,kind:'official'})));
+    owned.concat(official).forEach(t=>{ TPL_THEMES[String(t.id)]=new Set(t.themes||[]); });
+    MYT.list=owned.map(t=>({t:t, kind: t.mine ? 'mine' : (t.is_official ? 'official' : 'purchased')}))
+                  .concat(official.map(t=>({t:t,kind:'official'})));
     if(!MYT.list.length){ grid.innerHTML=''; if(filt)filt.innerHTML=''; empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
     renderThemeFilter(); renderMyTemplates();
@@ -649,7 +677,7 @@ function setMyThemeFilter(kind,key){
 // 기본 테마=user_theme_overrides(add/remove 업서트가 태그보다 우선) / 커스텀=user_studio_theme_items.
 let LIB={global:[],customs:[],ov:{},hidden:new Set()};
 let TPL_THEMES={};                 // tid → Set(base 글로벌 테마 슬러그, /me의 themes)
-let MYT={list:[],filter:{kind:'all'}};  // My templates 전체 목록 + 현재 테마 필터
+let MYT={list:[],filter:{kind:'all'},highlightId:null};  // My templates 전체 목록 + 현재 테마 필터 + 하이라이트 대상(렌더에서 반영)
 async function loadLibThemes(){
   try{ LIB.global=await ensureThemes(); }catch(e){ LIB.global=[]; }
   try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{};

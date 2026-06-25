@@ -685,11 +685,17 @@ router.get('/recipe-gates', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/** GET /api/marketplace/owned — 내가 보유(무료추가/구매)한 템플릿. studio pick-a-template 머지용. 보유분은 prompt 포함. */
+/** GET /api/marketplace/owned — 내가 보유(무료추가/구매)한 템플릿 전부(내가 만든 것 + 타인에게서 구매한 것).
+ *  §5: Library My templates의 정본 소스(owns 기준). studio pick-a-template 머지에도 사용. 보유분은 prompt 포함.
+ *  origin(Auto 배지)·mine(내 것 vs 구매)·themes(테마 필터) 포함. */
 router.get('/owned', async (req, res, next) => {
   try {
     const r = await query(
-      `SELECT ${MT_COLS}, mt.from_creation_idx, true AS owned, ow.source AS own_source
+      `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, ow.source AS own_source,
+              (mt.creator_id = $1) AS mine,
+              COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
+                FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+                WHERE tt.template_id = mt.id), '{}') AS themes
        FROM template_owns ow
        JOIN marketplace_templates mt ON mt.id = ow.template_id
        WHERE ow.user_id = $1 AND mt.status = 'active'
