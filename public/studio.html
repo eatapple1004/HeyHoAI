@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/css/theme.css?v=4" />
+<link rel="stylesheet" href="/css/theme.css?v=5" />
 <script src="/saas-auth.js" defer></script>
 <script src="/js/rail.js?v=3" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -338,6 +338,8 @@
 
   /* ── 모바일 폴리시 (≤600px): 탭타깃 ≥44px · 토글 한줄핏 · 템플릿 2열 · 폰트 ── */
   @media(max-width:600px){
+    /* 레일 nav(absolute·전체폭)가 모바일 좁은 폭에서 모드 탭 위를 덮어 터치를 가리지 않게 상단 여백 확보 */
+    .topbar{margin-top:34px}
     /* 모드 토글: 3버튼 한 줄 균등분할, "UGC Ads" 줄바꿈 방지 */
     .mode-toggle{display:flex;width:100%}
     .mode-toggle button{flex:1;justify-content:center;white-space:nowrap;padding:12px 6px;font-size:13px;gap:5px}

@@ -51,9 +51,11 @@ nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(
 .rail-item:hover{color:var(--text);background:rgba(255,255,255,.05)}
 .rail-item.active{color:#fff;background:rgba(124,108,255,.16)}
 body.has-rail{padding-left:92px}
-body.has-rail nav{background:none;border-bottom:none;backdrop-filter:none;position:absolute;left:0;right:0}
+body.has-rail nav{background:none;border-bottom:none;backdrop-filter:none;position:absolute;left:0;right:0;pointer-events:none}
 body.has-rail nav .brand,body.has-rail nav .nav-links{display:none}
 body.has-rail nav .nav-in{justify-content:flex-end}
+/* 레일 레이아웃에서 nav가 absolute(전체폭)로 떠 본문 상단(예: studio 모드 탭)의 클릭을 가로채던 문제 — 빈 nav는 클릭 통과, 실제 콘텐츠만 수신 */
+body.has-rail nav .nav-in>*{pointer-events:auto}
 @media(max-width:760px){
   .rail{flex-direction:row;width:auto;left:0;right:0;bottom:0;top:auto;height:60px;border:none;border-top:1px solid var(--border);border-radius:0;box-shadow:none;justify-content:space-around;padding:0;gap:0}
   .rail-brand{display:none}
