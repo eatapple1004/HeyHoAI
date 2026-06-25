@@ -1796,7 +1796,7 @@ async function confirmSaveTpl(){
   finally{btn.disabled=false;btn.textContent='Save template';}
 }
 
-// 레시피 카드 → 실제 프롬프트: 마켓 주입분(r.prompt 보유)은 직접, 그 외는 /api/recipes/:id/resolve.
+// 레시피 카드 → 실제 프롬프트: 마켓 주입분(r.prompt 보유)은 직접, 블랙박스(fromCreationIdx)는 서버가 γ로 해석, 그 외는 /api/recipes/:id/resolve.
 // 사용자가 추가한 프롬프트가 있으면 템플릿 고정 프롬프트 뒤에 더한다.
 async function resolvePromptFor(r,subj){
   let base;
@@ -1804,6 +1804,10 @@ async function resolvePromptFor(r,subj){
     base={prompt:'',style:'none'}; // 템플릿 없음 — 프롬프트만으로 생성
   }else if(r.prompt){
     base={prompt:r.prompt,style:r.style||'none'};
+  }else if(r.fromCreationIdx){
+    // 블랙박스 템플릿(auto-mint·creation 저장: prompt 비공개, id=마켓 UUID) — 프롬프트는 서버가 fromCreationIdx(γ)로 해석.
+    // 레시피 리졸버(/api/recipes/:id/resolve)는 내장 recipe slug만 알아 UUID면 404 → 호출하지 않는다. generateImages가 fromCreationIdx 전송.
+    base={prompt:'',style:'none'};
   }else{
     const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
     const d=await res.json();
