@@ -250,8 +250,12 @@ router.post('/save-creation', async (req, res, next) => {
     const idx = parseInt((req.body && req.body.creationIdx), 10) || 0;
     if (!idx) return res.status(400).json({ success: false, error: 'creationIdx가 필요합니다.' });
     const category = (req.body && req.body.category === 'Shopping') ? 'Shopping' : 'Influencer'; // 모드(수동 선택)
-    const themeKind = (req.body && req.body.themeKind === 'custom') ? 'custom' : 'default';
-    const themeKey = String((req.body && req.body.themeKey) || '').slice(0, 80); // custom=themeId(uuid) / default=slug
+    // 테마 다중선택: themes=[{kind,key}] (신규) / themeKind+themeKey (단일·하위호환)
+    let picks = Array.isArray(req.body && req.body.themes) ? req.body.themes : [];
+    if (!picks.length && req.body && req.body.themeKey) picks = [{ kind: req.body.themeKind, key: req.body.themeKey }];
+    picks = picks.filter((p) => p && p.key)
+      .map((p) => ({ kind: p.kind === 'custom' ? 'custom' : 'default', key: String(p.key).slice(0, 80) }))
+      .slice(0, 20);
 
     // creation 검증: 성공·미테이크다운 + (공개 or 본인). 미리보기·타입 해석.
     const cr = await query(
@@ -283,20 +287,23 @@ router.post('/save-creation', async (req, res, next) => {
     // 자동 보유(내 거 — studio에서 바로 선택·생성 가능)
     await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [req.user.id, templateId]);
 
-    // studio 테마 배치(커스텀=멤버십 / 기본=오버라이드 add). 잘못된 키는 조용히 스킵(템플릿은 My templates엔 이미 생김).
-    if (themeKind === 'custom' && UUID_RE.test(themeKey)) {
-      const own = await query(`SELECT 1 FROM user_studio_themes WHERE id = $1 AND user_id = $2 AND origin = 'custom'`, [themeKey, req.user.id]);
-      if (own.rows[0]) await query(`INSERT INTO user_studio_theme_items (user_studio_theme_id, user_id, item_type, item_id) VALUES ($1,$2,'template',$3) ON CONFLICT DO NOTHING`, [themeKey, req.user.id, templateId]);
-    } else if (themeKind === 'default' && themeKey) {
-      const ok = await query(`SELECT 1 FROM themes WHERE slug = $1`, [themeKey]);
-      if (ok.rows[0]) await query(
-        `INSERT INTO user_theme_overrides (user_id, theme_slug, item_type, item_id, action) VALUES ($1,$2,'template',$3,'add')
-         ON CONFLICT (user_id, theme_slug, item_type, item_id) DO UPDATE SET action = 'add'`,
-        [req.user.id, themeKey, templateId]
-      );
+    // studio 테마 배치(커스텀=멤버십 / 기본=오버라이드 add). 다중선택 전부 배치, 잘못된 키는 조용히 스킵.
+    const placed = [];
+    for (const p of picks) {
+      if (p.kind === 'custom' && UUID_RE.test(p.key)) {
+        const own = await query(`SELECT 1 FROM user_studio_themes WHERE id = $1 AND user_id = $2 AND origin = 'custom'`, [p.key, req.user.id]);
+        if (own.rows[0]) { await query(`INSERT INTO user_studio_theme_items (user_studio_theme_id, user_id, item_type, item_id) VALUES ($1,$2,'template',$3) ON CONFLICT DO NOTHING`, [p.key, req.user.id, templateId]); placed.push(p); }
+      } else if (p.kind === 'default' && p.key) {
+        const ok = await query(`SELECT 1 FROM themes WHERE slug = $1`, [p.key]);
+        if (ok.rows[0]) { await query(
+          `INSERT INTO user_theme_overrides (user_id, theme_slug, item_type, item_id, action) VALUES ($1,$2,'template',$3,'add')
+           ON CONFLICT (user_id, theme_slug, item_type, item_id) DO UPDATE SET action = 'add'`,
+          [req.user.id, p.key, templateId]
+        ); placed.push(p); }
+      }
     }
 
-    res.status(201).json({ success: true, data: { templateId, category, themeKind, themeKey } });
+    res.status(201).json({ success: true, data: { templateId, category, themes: placed } });
   } catch (err) { next(err); }
 });
 
