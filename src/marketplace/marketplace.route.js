@@ -174,7 +174,9 @@ router.get('/me', async (req, res, next) => {
     // My templates = 내가 추가한 것만. auto 자동민팅(origin='auto') 중 아직 추가(owns) 안 한 건 제외(누출 방지).
     //   manual(수동 Save·시드)은 항상 포함, 추가된 auto는 owns 있어 포함.
     const mine = await query(
-      `SELECT ${PUBLIC_COLS}, from_creation_idx, ${THEMES_SUBQ} FROM marketplace_templates
+      `SELECT ${PUBLIC_COLS}, from_creation_idx, origin,
+              EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1) AS added_to_library,
+              ${THEMES_SUBQ} FROM marketplace_templates
         WHERE creator_id = $1
           AND (origin <> 'auto' OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1))
         ORDER BY created_at DESC`,
@@ -182,8 +184,10 @@ router.get('/me', async (req, res, next) => {
     );
     // My templates 마스터: 내 것(저장/생성) + 오피셜(플랫폼 공식). 둘 다 studio 테마에 넣다뺐다 가능.
     const official = await query(
-      `SELECT ${PUBLIC_COLS}, from_creation_idx, ${THEMES_SUBQ} FROM marketplace_templates WHERE is_official = true AND status = 'active' AND visibility = 'public' ORDER BY created_at DESC`,
-      []
+      `SELECT ${PUBLIC_COLS}, from_creation_idx, origin,
+              EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1) AS added_to_library,
+              ${THEMES_SUBQ} FROM marketplace_templates WHERE is_official = true AND status = 'active' AND visibility = 'public' ORDER BY created_at DESC`,
+      [req.user.id]
     );
     res.json({ success: true, data: { isCreator: u.rows[0]?.is_creator || false, templates: mine.rows, official: official.rows } });
   } catch (err) { next(err); }

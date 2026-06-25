@@ -61,6 +61,8 @@
   .pill.live{background:rgba(94,224,214,.16);color:var(--cyan)}
   .pill.review{background:rgba(255,206,122,.18);color:var(--gold)}
   .pill.private{background:rgba(255,255,255,.08);color:var(--faint)}
+  .pill.auto{background:rgba(255,196,84,.18);color:var(--gold)}
+  .pill.lib{background:rgba(124,108,255,.2);color:#b9acff}
   .r-amt{text-align:right}
   .empty{text-align:center;padding:34px;color:var(--faint);font-size:14px}
   .empty a{color:var(--accent);cursor:pointer}
@@ -300,13 +302,36 @@ function rowMarkup(t){
   const pub=t.visibility==='public';
   const price=t.price_credits>0?(' · ◈'+t.price_credits):' · Free';
   const royalty=t.use_price_credits>0?(' +◈'+t.use_price_credits+'/use'):'';
+  // 안A/P4 배지: Auto=자동민팅(origin='auto') · In Library=My templates에 추가됨(owns)
+  const badges=`${t.origin==='auto'?' <span class="pill auto">Auto</span>':''}${t.added_to_library?' <span class="pill lib">In Library</span>':''}`;
+  // 행 액션: auto·미추가면 My templates 추가 / 비공개면 Explore 공개(서버가 원본 creation Private OFF 게이트 강제)
+  const addBtn=(t.origin==='auto'&&window.__isCreator&&!t.added_to_library)?`<button class="mng" onclick="addToMyTpl('${t.id}')">Add to My templates</button>`:'';
+  const pubBtn=(window.__isCreator&&!pub)?`<button class="mng" onclick="publishTpl('${t.id}')">Publish</button>`:'';
   return `<div class="irow">
-    <div class="nm"><div class="ic">${t.emoji||'🎨'}</div><div>${esc(t.name)}<div class="sub2">${esc(t.category)} · ${t.type==='reel'?'Reel':'Photo'}${price}${royalty}</div></div></div>
+    <div class="nm"><div class="ic">${t.emoji||'🎨'}</div><div>${esc(t.name)}<div class="sub2">${esc(t.category)} · ${t.type==='reel'?'Reel':'Photo'}${price}${royalty}${badges}</div></div></div>
     <div class="col-uses">${t.usage_count}</div>
     <div class="r-amt col-rev gold">◈ ${t.earned}</div>
     <div class="r-amt col-status"><span class="pill ${pub?'live':'private'}">${pub?'Live':'Private'}</span></div>
-    <div class="r-amt stcell"><button class="mng" onclick="openEdit('${t.id}')">Edit</button><button class="mng del" onclick="deleteFromRow('${t.id}')">Delete</button></div>
+    <div class="r-amt stcell">${addBtn}${pubBtn}<button class="mng" onclick="openEdit('${t.id}')">Edit</button><button class="mng del" onclick="deleteFromRow('${t.id}')">Delete</button></div>
   </div>`;
+}
+// P4: auto 템플릿을 My templates에 추가(owns INSERT) — 내 것 전용.
+async function addToMyTpl(id){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id+'/add-to-my-templates',{method:'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Added to My templates'); load();
+  }catch(e){ toast('Could not add: '+(e.message||e)); }
+}
+// P4: 템플릿을 Explore에 공개(visibility=public). 서버가 from_creation_idx면 원본 creation Private OFF를 강제(409).
+async function publishTpl(id){
+  try{
+    const r=await fetch('/api/marketplace/templates/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visibility:'public'})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Published to Explore'); load();
+  }catch(e){ toast(e.message||'Could not publish'); }
 }
 
 function studioError(msg,signIn){
@@ -393,12 +418,12 @@ async function loadLikable(){
     const head=document.getElementById('likableHead'),panel=document.getElementById('likablePanel');
     if(!d||!d.topLikable||!d.topLikable.length){head.style.display='none';panel.style.display='none';return;}
     head.style.display='';panel.style.display='';
-    document.getElementById('likableMsg').innerHTML=`Your public creations earned <b style="color:#ff5a7a">♥ ${d.totalLikes}</b>. Turn your most-liked ones into templates — registered templates earn you points on every use.`;
+    document.getElementById('likableMsg').innerHTML=`Your public creations earned <b style="color:#ff5a7a">♥ ${d.totalLikes}</b>. Open your most-liked ones to add them to My templates and publish to Explore — published templates earn you points on every use.`;
     document.getElementById('likableGrid').innerHTML=d.topLikable.map(it=>`
-      <a href="/gallery?save=${it.idx}" title="Register as template" style="text-decoration:none;display:block;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+      <a href="/creation?idx=${it.idx}" title="Open creation" style="text-decoration:none;display:block;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
         <img src="${esc(it.url)}" style="width:100%;height:128px;object-fit:cover;display:block">
         <span style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#ff5a7a;font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px">♥ ${it.likes}</span>
-        <span style="position:absolute;left:0;right:0;bottom:0;padding:9px 8px;background:linear-gradient(transparent,rgba(0,0,0,.82));color:#fff;font-size:11.5px;font-weight:700;text-align:center">Register →</span>
+        <span style="position:absolute;left:0;right:0;bottom:0;padding:9px 8px;background:linear-gradient(transparent,rgba(0,0,0,.82));color:#fff;font-size:11.5px;font-weight:700;text-align:center">Open →</span>
       </a>`).join('');
   }catch(e){/* 비치명적 */}
 }

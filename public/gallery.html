@@ -38,7 +38,7 @@
   .card .ovt,.card .ovb{position:absolute;left:0;right:0;opacity:0;transition:opacity .15s;pointer-events:none;z-index:2}
   .card:hover .ovt,.card:hover .ovb{opacity:1}
   .card .ovt{top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;background:linear-gradient(rgba(0,0,0,.72),transparent)}
-  .card .ovb{bottom:0;padding:30px 11px 12px;background:linear-gradient(transparent,rgba(0,0,0,.82))}
+  .card .ovb{bottom:0;padding:30px 11px 12px;background:linear-gradient(transparent,rgba(0,0,0,.82));display:flex;flex-direction:column;gap:7px}
   .card .by{pointer-events:auto;font-size:12px;color:#fff;font-weight:600;text-decoration:none;text-shadow:0 1px 3px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
   .card a.by:hover{text-decoration:underline}
   .card .like{pointer-events:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,border-color .15s}
@@ -75,6 +75,8 @@
   .tab:hover{color:var(--text)}
   .tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
   .item .badge.vis{left:auto;right:10px;background:rgba(124,108,255,.6)}
+  .item.hl{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .2s}
+  .item .badge.auto{top:38px;left:10px;background:rgba(255,196,84,.72);color:#1a1407}
   .item .badge.vis.private{background:rgba(0,0,0,.55)}
   /* My templates 테마 필터(All + 글로벌·커스텀 중 내 템플릿이 들어있는 테마만) */
   .tpl-filter{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
@@ -205,7 +207,6 @@
         <div class="view-sub" id="viewMeta"></div>
       </div>
       <div class="view-actions">
-        <button class="btn btn-primary" id="viewSaveTpl" style="display:none" onclick="openSaveFromCreation()">Save as template</button>
         <a id="viewDownload" href="#" download><button class="btn">⬇ Download</button></a>
         <button class="btn" onclick="viewNewTab()">⤢ New tab</button>
       </div>
@@ -213,44 +214,7 @@
   </div>
 </div>
 
-<!-- creation → template 저장 모달 -->
-<div class="modal-bg" id="ctplModal" onclick="if(event.target===this)closeCtpl()">
-  <div class="modal">
-    <button class="x" onclick="closeCtpl()">✕</button>
-    <h3>Save as template</h3>
-    <div class="msub">Turn this creation into a reusable template — your prompt and this image become the preview.</div>
-    <div class="field">
-      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Template name</label>
-      <input type="text" id="ctplName" maxlength="80" placeholder="e.g. Stone plinth luxe" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
-    </div>
-    <div class="field">
-      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Description <i style="color:var(--faint)">(what it's good for — shown on the template page)</i></label>
-      <textarea id="ctplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare hero shots." style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px;resize:vertical;line-height:1.5"></textarea>
-    </div>
-    <div class="field">
-      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Category</label>
-      <select id="ctplCat" onchange="recolorThemes('ctplCat','ctplThemes')" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
-        <option value="Influencer">Influencer</option><option value="Shopping">Shopping</option>
-      </select>
-    </div>
-    <div class="field">
-      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Themes <i>(pick all that fit — shown in Explore)</i></label>
-      <div id="ctplThemes" class="theme-chips"></div>
-    </div>
-    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}</style>
-    <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;margin:14px 0;cursor:pointer"><input type="checkbox" id="ctplPub" onchange="syncCtplPrice()"> <span>Publish to the community <i style="color:var(--dim)">(off = private, only you)</i></span></label>
-    <div id="ctplPriceRow" style="display:none;margin-bottom:4px">
-      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Unlock price <i>(◈ one-time — 0 = free)</i></label>
-      <input type="number" id="ctplPrice" min="0" max="100" step="1" value="0" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
-      <label style="font-size:12px;color:var(--dim);display:block;margin:10px 0 6px">Per-use royalty <i>(◈ each render — optional)</i></label>
-      <input type="number" id="ctplUsePrice" min="0" max="50" step="1" value="0" style="width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px">
-    </div>
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn" style="flex:1" onclick="closeCtpl()">Cancel</button>
-      <button class="btn btn-primary" style="flex:1" id="ctplSave" onclick="confirmSaveCreation()">Save</button>
-    </div>
-  </div>
-</div>
+<!-- (폐기·P4) creation→template 수동 저장 모달(ctplModal) 제거 — 자동민팅 + Add to My templates로 일원화 -->
 <style>
   .nudge{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;background:linear-gradient(120deg,rgba(124,108,255,.12),rgba(255,126,182,.07));border:1px solid var(--border2);border-radius:14px;padding:14px 18px;margin-bottom:20px;font-size:13.5px;color:var(--text)}
   .nudge .nudge-hint{color:var(--dim);font-size:12.5px}
@@ -316,7 +280,10 @@ function mapRow(r){
     visibility:r.visibility==='public'?'public':'private',
     takenDown:!!r.taken_down,
     prompt:r.prompt_text||'',                 // 사후 템플릿화용
-    templateSource:r.template_source||'',     // Custom(빈값)만 템플릿화 제공
+    templateSource:r.template_source||'',     // Custom(빈값)=auto-mint 대상 / 비빈값=기존 템플릿 사용
+    mintedTemplateId:r.minted_template_id||null, // 이 Custom creation이 낳은 auto 템플릿(P1 자동민팅)
+    addedToLibrary:!!r.added_to_library,      // 그 템플릿을 My templates에 추가(owns)했나
+    sourceTemplateId:r.template_id||null,     // 비-Custom: 사용한 출처 템플릿(View template 하이라이트용)
     template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||inferTemplate(r.prompt_text)
   };
 }
@@ -346,23 +313,16 @@ function setupInfiniteScroll(){
   window.__galIO=new IntersectionObserver((es)=>{ if(es.some(e=>e.isIntersecting))loadMore(); },{rootMargin:'700px'});
   window.__galIO.observe(s);
 }
-// /gallery?save=IDX(Creator Studio γ패널·creation 상세) / ?reel=IDX(creation 상세) 진입 시 해당 모달 자동 오픈
+// /gallery?reel=IDX(creation 상세) 진입 시 릴스 모달 자동 오픈. (?save 수동 저장 진입은 P4에서 폐기)
 function maybeOpenSave(){
   const sp=new URLSearchParams(location.search);
-  const sid=parseInt(sp.get('save'),10), rid=parseInt(sp.get('reel'),10);
-  if(!sid&&!rid)return;
+  const rid=parseInt(sp.get('reel'),10);
+  if(!rid)return;
   history.replaceState(null,'',location.pathname); // 새로고침 재오픈 방지
-  if(sid){
-    const it=ITEMS.find(x=>x.idx===sid);
-    if(it&&it.prompt){ VIEW_ITEM=it; openSaveFromCreation(); }
-    else if(it){ toast('This creation can’t be saved as a template.'); }
-    else { toast('Creation not found.'); }
-  }else if(rid){
-    const it=ITEMS.find(x=>x.idx===rid);
-    if(it&&it.type==='photo'){ openReel(it.url,it.name); }
-    else if(it){ toast('Reels can only be made from photos.'); }
-    else { toast('Creation not found.'); }
-  }
+  const it=ITEMS.find(x=>x.idx===rid);
+  if(it&&it.type==='photo'){ openReel(it.url,it.name); }
+  else if(it){ toast('Reels can only be made from photos.'); }
+  else { toast('Creation not found.'); }
 }
 function renderFilters(){
   document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<div class="chip ${filter===f?'active':''}" onclick="setFilter('${f}')">${f}</div>`).join('');
@@ -389,12 +349,41 @@ function render(){
     return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">
       <div class="ovt">${by}${like}</div>
       ${media}
+      ${creationActions(it)}
     </div>`;
   }).join('');
   playFeedVideos();
   layoutGridMasonry();
   // 사진이 하나라도 있으면 넛지 표시
   document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
+}
+// My creations 카드 하단 액션(§6 4분기). Custom=auto-mint 템플릿 관리/추가 / 비-Custom=출처 템플릿 보기.
+function creationActions(it){
+  if(!it.templateSource){ // Custom = 생성 시 auto-mint된 내 템플릿
+    return `<div class="ovb">
+      <button class="act save" onclick="event.stopPropagation();location.href='/earnings'">Manage template</button>
+      <button class="act save" onclick="event.stopPropagation();viewMyTemplate(${it.idx})">View in My templates</button>
+    </div>`;
+  }
+  // 비-Custom = 기존 템플릿으로 생성(선추가 필수 모델이라 보유 상태)
+  return `<div class="ovb"><button class="act save" onclick="event.stopPropagation();gotoMyTemplates('${it.sourceTemplateId||''}')">View template</button></div>`;
+}
+// 버튼② — 추가됐으면 My templates에서 하이라이트, 아니면 안내 토스트+Creator Studio.
+function viewMyTemplate(idx){
+  const it=ITEMS.find(x=>x.idx===idx); if(!it)return;
+  if(it.addedToLibrary&&it.mintedTemplateId){ gotoMyTemplates(it.mintedTemplateId); }
+  else { toast('Not in My templates yet — add it from Creator Studio.'); setTimeout(()=>{location.href='/earnings';},1100); }
+}
+// My templates 탭으로 전환 + (가능하면) 해당 템플릿 카드로 스크롤·하이라이트.
+//   tplLoaded를 먼저 true로 둬 switchTab이 자체 비동기 로드를 띄우지 않게 하고(재렌더 레이스 방지), 여기서 한 번만 로드·렌더.
+async function gotoMyTemplates(tid){
+  tplLoaded=true;
+  switchTab('templates');
+  await loadMyTemplates();
+  if(tid){
+    const el=document.querySelector('.item[data-tid="'+String(tid).replace(/"/g,'')+'"]');
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('hl'); setTimeout(()=>{el.classList.remove('hl');},2200); }
+  }
 }
 // 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
 function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+14); }
@@ -453,7 +442,6 @@ function openView(idx){
   const it=ITEMS.find(x=>x.idx===idx); if(!it)return;
   VIEW_URL=it.url; VIEW_ITEM=it;
   // Custom 출처(template_source 없음) + 프롬프트 있는 결과만 "Save as template" 노출
-  document.getElementById('viewSaveTpl').style.display=(!it.templateSource && it.prompt)?'':'none';
   document.getElementById('viewMedia').innerHTML = it.type==='reel'
     ? `<video src="${esc(it.url)}" controls autoplay loop playsinline></video>`
     : `<img src="${esc(it.url)}" alt="">`;
@@ -474,76 +462,13 @@ function closeView(){
   document.getElementById('viewMedia').innerHTML=''; // 비디오 정지 + 메모리 해제
 }
 function viewNewTab(){ if(VIEW_URL) window.open(VIEW_URL,'_blank'); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeView();closeCtpl();} });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeView();} });
 
-// ── 사후 템플릿화: My creations 결과 → 템플릿 (뷰어 "Save as template") ──
-function openSaveFromCreation(){
-  if(!VIEW_ITEM||!VIEW_ITEM.prompt)return;
-  closeView();
-  document.getElementById('ctplName').value=(VIEW_ITEM.prompt||'').slice(0,40);
-  document.getElementById('ctplDesc').value='';
-  document.getElementById('ctplCat').value='Influencer';
-  renderThemeChips('ctplThemes', [], 'Influencer');
-  document.getElementById('ctplPub').checked=false; // Private 기본
-  document.getElementById('ctplPrice').value='0';
-  document.getElementById('ctplUsePrice').value='0';
-  syncCtplPrice();
-  document.getElementById('ctplModal').classList.add('open');
-}
-// 글로벌 테마 칩(크리에이터 다중 태그) — 캐시·렌더·수집.
+// 글로벌 테마 칩 캐시(ensureThemes) — loadLibThemes(My templates 테마 필터)가 사용. (수동 저장 ctpl은 P4에서 제거)
 let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
-// category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
-const CAT_THEMES = {
-  Influencer:['people','beauty','fashion','jewelry','pet','general'],
-  Shopping:['fashion','jewelry','beauty','food','coffee','home','tech','pet','general'],
-  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
-};
-async function renderThemeChips(containerId, selected, category){
-  const el=document.getElementById(containerId); if(!el)return;
-  const sel=new Set(selected||[]); let themes=await ensureThemes();
-  const allow=category?CAT_THEMES[category]:null; // 미지정 → 전체
-  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
-  el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on')">${esc(t.name)}</button>`).join('');
-}
-function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
-// category 변경 시: 현재 선택 중 새 category 화이트리스트에 남는 것만 보존하고 재렌더.
-function recolorThemes(catId, containerId){ const cat=(document.getElementById(catId)||{}).value; renderThemeChips(containerId, selectedThemes(containerId), cat); }
-function closeCtpl(){document.getElementById('ctplModal').classList.remove('open');}
-// 가격 행: 공개 게시일 때 항상 노출(점화 전이라도). 실제 과금은 백엔드 MARKETPLACE_PAID 게이트가 막음.
-function syncCtplPrice(){
-  const row=document.getElementById('ctplPriceRow');
-  row.style.display=document.getElementById('ctplPub').checked?'':'none';
-}
-async function confirmSaveCreation(){
-  const it=VIEW_ITEM; if(!it)return;
-  const name=document.getElementById('ctplName').value.trim();
-  if(!name){toast('Name your template.');return;}
-  const pub=document.getElementById('ctplPub').checked;
-  const priceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplPrice').value,10)||0,100)):0;
-  const usePriceCredits=pub?Math.max(0,Math.min(parseInt(document.getElementById('ctplUsePrice').value,10)||0,50)):0;
-  const description=document.getElementById('ctplDesc').value.trim();
-  const category=document.getElementById('ctplCat').value||'Influencer';
-  const themeSlugs=selectedThemes('ctplThemes');
-  const body=v=>JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:it.type==='reel'?'reel':'image',prompt:it.prompt,visibility:v,priceCredits:v==='public'?priceCredits:0,usePriceCredits:v==='public'?usePriceCredits:0,previewMedia:[it.url],sourceResultIdx:it.idx});
-  const btn=document.getElementById('ctplSave');btn.disabled=true;btn.textContent='Saving…';
-  try{
-    let res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:body(pub?'public':'private')});
-    if(res.status===403){ // 비크리에이터가 공개 시도 → private로 폴백 저장
-      toast('Apply as creator to publish — saved as private.');
-      res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:body('private')});
-    }else{
-      const d=await res.json();
-      if(!res.ok||!d.success)throw new Error(d.error||'save failed');
-      toast(pub?'Saved & published':'Saved to My templates');
-      closeCtpl();if(tplLoaded)loadMyTemplates();return;
-    }
-    const d2=await res.json();
-    if(!res.ok||!d2.success)throw new Error(d2.error||'save failed');
-    toast('Saved to My templates');closeCtpl();if(tplLoaded)loadMyTemplates();
-  }catch(e){toast('Save failed: '+(e.message||e),'error');}
-  finally{btn.disabled=false;btn.textContent='Save';}
-}
+// (폐기·P4) 수동 creation→template 저장(ctplModal: CAT_THEMES/renderThemeChips/selectedThemes/recolorThemes/closeCtpl/syncCtplPrice/confirmSaveCreation) 제거
+//   — 자동민팅(P1) + creation 상세 Add to My templates로 일원화. ensureThemes는 loadLibThemes가 쓰므로 위에 유지.
 
 // ── 사진 → 릴스 (기존 /api/generate/video 재사용) ──
 let REEL_SRC=null,reelBusy=false;
@@ -651,6 +576,7 @@ function tplCard(t,kind){
     :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#5ee0d6);cursor:pointer" onclick="tryTpl('${tid}')">${esc(t.emoji||'🎨')}</div>`;
   const vis = kind==='official' ? `<span class="badge vis">Official</span>`
     : kind==='mine' ? `<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>` : '';
+  const autoB = (kind==='mine'&&t.origin==='auto') ? `<span class="badge auto">Auto</span>` : '';
   const meta = kind==='saved'
     ? `by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`
     : `♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`;
@@ -661,9 +587,9 @@ function tplCard(t,kind){
   }
   else if(kind==='official') actions=`<button onclick="tryTpl('${tid}')">Use</button>`;
   else actions=`<button onclick="tryTpl('${tid}')">Try it</button><button class="del" onclick="unsaveTpl('${tid}')" title="Remove from Saved">🔖</button>`;
-  return `<div class="item">
+  return `<div class="item" data-tid="${tid}">
     ${thumb}
-    <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}
+    <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}${autoB}
     <div class="info"><div class="nm">${esc(t.name)}</div><div class="dt">${meta}</div></div>
     <div class="actions">${actions}</div>${panel}
   </div>`;

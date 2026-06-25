@@ -105,13 +105,26 @@
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
-// 호버 하단 액션: 본인 미등록=Save as template / 마켓·recipe 출처=Get·Use / 그 외 타인=Make your own
+// 호버 하단 액션(§6, Explore Creations): 본인 Custom=템플릿 관리 / 타인 Custom(auto 템플릿 존재)=My templates 추가.
+//   그 외(타인 일반·마켓/recipe 출처)는 카드 클릭→상세에서 처리(카드는 군더더기 없이 유지).
 function cardAction(it){
-  if(it.isOwn && !it.templateSource) return `<button class="act save" onclick="event.stopPropagation();location.href='/gallery?save=${it.idx}'">✦ Save as template</button>`;
-  if(it.templateSource==='marketplace' && it.templateId) return `<button class="act use" onclick="event.stopPropagation();location.href='/template?id='+encodeURIComponent('${esc(it.templateId)}')">🔓 Get ${esc(it.templateName||'template')}</button>`;
-  if(it.templateSource==='recipe' && it.templateId) return `<button class="act use" onclick="event.stopPropagation();location.href='/studio?recipe='+encodeURIComponent('${esc(it.templateId)}')">✨ Use ${esc(it.templateName||'template')}</button>`;
-  if(!it.isOwn) return `<button class="act ghost" onclick="event.stopPropagation();location.href='/studio?fromCreation=${it.idx}'">✨ Make your own</button>`;
+  if(it.isOwn && !it.templateSource) return `<button class="act save" onclick="event.stopPropagation();location.href='/earnings'">Manage template</button>`;
+  if(!it.isOwn && it.ownableTemplateId){
+    if(it.ownsTemplate) return `<button class="act save" disabled style="opacity:.6;cursor:default">✓ In My templates</button>`;
+    return `<button class="act save" onclick="event.stopPropagation();acquireTpl('${esc(it.ownableTemplateId)}',this)">＋ Add to My templates</button>`;
+  }
   return '';
+}
+// 타인 creation이 낳은 auto 템플릿을 My templates에 추가(acquire). 성공 시 제자리 유지+토스트+버튼 보유상태로(결정).
+async function acquireTpl(tid,btn){
+  if(btn){btn.disabled=true;btn.textContent='Adding…';}
+  try{
+    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(tid)+'/acquire',{method:'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast((d.data&&d.data.alreadyOwned)?'Already in My templates':'Added to My templates');
+    if(btn){btn.textContent='✓ In My templates';btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';}
+  }catch(e){ toast('Could not add: '+(e.message||e)); if(btn){btn.disabled=false;btn.textContent='＋ Add to My templates';} }
 }
 function card(it){
   const media=it.type==='video'
@@ -121,9 +134,11 @@ function card(it){
     ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`
     : `<span class="by">@creator</span>`;
   const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
+  const act=cardAction(it);
   return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=explore'">
     <div class="ovt">${by}${like}</div>
     ${media}
+    ${act?`<div class="ovb">${act}</div>`:''}
   </div>`;
 }
 async function toggleLike(idx,btn){

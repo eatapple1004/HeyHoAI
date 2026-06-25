@@ -80,20 +80,13 @@
 <div id="toast"></div>
 <div id="saveModal" class="sv-ov">
   <div class="sv-box">
-    <div class="sv-h">Save to your studio</div>
-    <div class="sv-s">A private template is added to your studio and My templates.</div>
-    <div class="sv-lbl">Name</div>
-    <input id="svName" type="text" maxlength="80" class="sv-name" placeholder="Name this template">
-    <div class="sv-lbl">Mode</div>
-    <div class="sv-modes" id="svModes">
-      <button type="button" class="sv-mode" data-mode="Influencer" onclick="pickMode(this)">Influencer</button>
-      <button type="button" class="sv-mode" data-mode="Shopping" onclick="pickMode(this)">Shopping</button>
-    </div>
-    <div class="sv-lbl">Theme</div>
+    <div class="sv-h">Add to My templates</div>
+    <div class="sv-s">Adds this template to My templates so you can use it in Studio. Pick themes to organize it (optional).</div>
+    <div class="sv-lbl">Themes <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(optional)</span></div>
     <div class="sv-list" id="svThemes"></div>
     <div class="sv-row">
       <button type="button" class="sv-x" onclick="closeSaveModal()">Cancel</button>
-      <button type="button" class="sv-go" id="svGo" onclick="confirmSave()" disabled>Save</button>
+      <button type="button" class="sv-go" id="svGo" onclick="confirmSave()">Add</button>
     </div>
   </div>
   <style>
@@ -121,13 +114,13 @@
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
-// Save: creation → 비공개 템플릿 민팅(My templates) + studio 모드/테마 배치. 모드·테마 수동 선택.
-let SV={mode:null, picks:[], themes:null, hidden:null};  // picks=[{kind,key}] 다중선택
+// P4: creation 상세 [Add to My templates] — 생성 시 auto-mint된 내 템플릿(mintedTemplateId)을 owns에 추가 + 선택 테마 배치(새 민팅 X).
+let SV={ picks:[], themes:null, hidden:null };  // picks=[{kind,key}] 다중선택(테마는 선택)
 async function openSaveModal(){
-  if(!IT||!IT.idx){ toast('Could not save'); return; }
+  if(!IT||!IT.mintedTemplateId){ toast('No template to add for this creation'); return; }
   document.getElementById('saveModal').classList.add('open');
   SV.picks=[];
-  const nm=document.getElementById('svName'); if(nm) nm.value=(IT.type==='video'?'Reel':'Look')+' · '+(IT.createdAt?new Date(IT.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}):IT.idx);
+  const g=document.getElementById('svGo'); if(g) g.disabled=false;
   if(!SV.themes){
     let defs=[], customs=[];
     try{ defs=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){}
@@ -145,10 +138,9 @@ function renderSvThemes(){
   h+=`<button type="button" class="sv-th sv-new" onclick="newThemeThenPick()">＋ New theme</button>`;
   el.innerHTML=h;
 }
-function pickMode(btn){ SV.mode=btn.dataset.mode; [...document.querySelectorAll('#svModes .sv-mode')].forEach(b=>b.classList.toggle('on',b===btn)); refreshSvGo(); }
-// 다중선택: 클릭한 칩만 on/off, 나머지 유지(편집 플로우와 동일)
+// 다중선택: 클릭한 칩만 on/off, 나머지 유지(편집 플로우와 동일). 테마는 선택사항이라 버튼은 항상 활성.
 function pickTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key; const on=btn.classList.toggle('on'); if(on){ if(!svOn(kind,key)) SV.picks.push({kind,key}); } else { SV.picks=SV.picks.filter(p=>!(p.kind===kind&&p.key===key)); } refreshSvGo(); }
-function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=!(SV.mode&&SV.picks.length); }
+function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=false; }
 async function newThemeThenPick(){
   const name=prompt('New theme name'); if(!name||!name.trim())return;
   try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})})).json();
@@ -157,17 +149,27 @@ async function newThemeThenPick(){
 }
 function closeSaveModal(){ document.getElementById('saveModal').classList.remove('open'); }
 async function confirmSave(){
-  if(!(SV.mode&&SV.picks.length))return;
-  const go=document.getElementById('svGo'); go.disabled=true; go.textContent='Saving…';
+  if(!IT||!IT.mintedTemplateId){ toast('No template to add'); return; }
+  const tid=IT.mintedTemplateId;
+  const go=document.getElementById('svGo'); go.disabled=true; go.textContent='Adding…';
   try{
-    const r=await fetch('/api/studio/save-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creationIdx:IT.idx, category:SV.mode, themes:SV.picks, name:((document.getElementById('svName')||{}).value||'').trim()||'Saved look'})});
-    const d=await r.json();
-    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    // 1) auto-mint된 내 템플릿을 My templates에 추가(owns INSERT, 멱등)
+    const ar=await fetch('/api/marketplace/templates/'+encodeURIComponent(tid)+'/add-to-my-templates',{method:'POST'});
+    const ad=await ar.json(); if(!ar.ok||!ad.success)throw new Error(ad.error||'failed');
+    // 2) 선택한 테마에 배치(owns 생성 후라 ensureOwnedIfMine 통과). 커스텀=멤버십 / 기본=오버라이드 add.
+    let placed=0;
+    for(const p of SV.picks){
+      try{
+        if(p.kind==='custom'){ await fetch('/api/studio/themes/'+encodeURIComponent(p.key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid})}); }
+        else { await fetch('/api/studio/global-themes/'+encodeURIComponent(p.key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid,action:'add'})}); }
+        placed++;
+      }catch(e){}
+    }
     closeSaveModal();
-    const n=(d.data&&d.data.themes&&d.data.themes.length)||SV.picks.length;
-    toast('Saved to '+n+' theme'+(n>1?'s':'')+' · also in My templates ✦');
-  }catch(e){ toast('Could not save: '+(e.message||e)); }
-  finally{ go.disabled=false; go.textContent='Save'; }
+    toast(placed?('Added to My templates · '+placed+' theme'+(placed>1?'s':'')+' ✦'):'Added to My templates ✦');
+    IT.ownsTemplate=true; render();
+  }catch(e){ toast('Could not add: '+(e.message||e)); }
+  finally{ go.disabled=false; go.textContent='Add'; }
 }
 function goBack(){ if(history.length>1) history.back(); else location.href = FROM==='library' ? '/gallery' : '/explore'; }
 function qs(k){return new URLSearchParams(location.search).get(k);}
@@ -215,6 +217,28 @@ function useCta(){
     return `<a class="act primary" href="/studio?recipe=${encodeURIComponent(IT.templateId)}">✨ Use ${esc(IT.templateName||'this template')}</a>`;
   return `<a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Make your own</a>`;
 }
+// P4 보조 액션(템플릿): 내 Custom=관리/추가 / 타인 Custom(auto 템플릿)=추가. mintedTemplateId 없으면(비-Custom) 버튼 없음.
+function saveCta(){
+  if(!IT.mintedTemplateId) return '';
+  if(IT.isOwn){
+    return IT.ownsTemplate
+      ? `<a class="act sm" href="/earnings">Manage template</a>`
+      : `<button class="act sm" onclick="openSaveModal()">＋ Add to My templates</button>`;
+  }
+  return IT.ownsTemplate
+    ? `<button class="act sm" disabled style="opacity:.6;cursor:default">✓ In My templates</button>`
+    : `<button class="act sm" onclick="acquireFromDetail()">＋ Add to My templates</button>`;
+}
+// 타인 creation의 auto 템플릿 추가(acquire) — 제자리 갱신.
+async function acquireFromDetail(){
+  if(!IT||!IT.mintedTemplateId)return;
+  try{
+    const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(IT.mintedTemplateId)+'/acquire',{method:'POST'});
+    const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast((d.data&&d.data.alreadyOwned)?'Already in My templates':'Added to My templates ✦');
+    IT.ownsTemplate=true; render();
+  }catch(e){ toast('Could not add: '+(e.message||e)); }
+}
 
 function render(){
   const media=IT.type==='video'
@@ -250,7 +274,7 @@ function render(){
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
-    <div class="acts"><a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Use</a><button class="act sm" onclick="openSaveModal()">＋ Save</button><button class="act sm" onclick="share()">↗ Share</button></div>
+    <div class="acts"><a class="act primary" href="/studio?fromCreation=${IT.idx}">✨ Use</a>${saveCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }
 
