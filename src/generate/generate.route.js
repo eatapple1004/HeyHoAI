@@ -10,6 +10,7 @@ const characterRepo = require('../characters/character.repository');
 const promptRepo = require('./prompt.repository');
 const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
+const { mintAutoTemplate } = require('../marketplace/templateMint');
 const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 const teamCredit = require('../teams/team.credit');
@@ -366,6 +367,22 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
         });
       }
     }
+
+    // 🆕 자동민팅(P1): Custom 생성(templateSource 없음)이면 첫 성공 결과로 비공개 블랙박스 템플릿 1개 자동 생성.
+    //   owns 미생성(My templates 미추가·Creator Studio에만) · 부분유니크로 멱등. 실패해도 생성응답 안 깨게 격리.
+    try {
+      const firstOk = results.find((r) => r.success && r.resultIdx);
+      if (templateSource === null && firstOk) {
+        await mintAutoTemplate({
+          creatorId: req.user.id,
+          creatorHandle: '@' + String(req.user.email || 'creator').split('@')[0],
+          name: String(templateName || prompt || 'My custom look').slice(0, 80),
+          type: 'image',
+          fromCreationIdx: firstOk.resultIdx,
+          previewUrl: firstOk.url,
+        });
+      }
+    } catch (e) { logger.warn?.('auto-mint(image) failed: ' + (e.message || e)); }
 
     // 전부 실패하면 환불 (사용당 로열티 surcharge 포함 전액)
     const okCount = results.filter((r) => r.success).length;

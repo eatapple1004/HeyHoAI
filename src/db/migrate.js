@@ -950,6 +950,16 @@ async function migrateMarketplace() {
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS description TEXT;
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS reference_examples JSONB NOT NULL DEFAULT '[]'::jsonb;
   `);
+  // 🆕 라이프사이클 재설계(2026-06-26): Custom 생성 자동민팅(auto-mint) 지원. (멱등·추가형)
+  //   origin='auto' = 생성 파이프라인 자동민팅(블랙박스·owns 미생성) / 'manual' = 수동 Save·시드. 기존 행은 manual 백필(DEFAULT).
+  //   visibility DEFAULT → 'private'(템플릿은 명시 공개 전까지 비공개). 모든 INSERT가 visibility를 명시하므로 기존 동작 무변화.
+  //   동일 creation 중복 자동민팅은 부분유니크로 방지(생성 count 루프·영상 finalize 재시도 멱등).
+  await pool.query(`
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS origin VARCHAR(8) NOT NULL DEFAULT 'manual'; -- auto | manual
+    ALTER TABLE marketplace_templates ALTER COLUMN visibility SET DEFAULT 'private';
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_marketplace_auto_creation
+      ON marketplace_templates(creator_id, from_creation_idx) WHERE origin = 'auto';
+  `);
   // 🗑️ 가짜 placeholder 시드 제거: 개발자가 넣은 무료 공식 8개(@heyhoai, 미리보기 없음·하드코딩된 가짜 usage). (멱등)
   //    → 진짜 유료 recipe-backed 프리미엄으로 대체. recipe-backed(@doppia)는 보존.
   await pool.query(`DELETE FROM marketplace_templates WHERE is_official = true AND creator_handle = '@heyhoai' AND recipe_id IS NULL`);

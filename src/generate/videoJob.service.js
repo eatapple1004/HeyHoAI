@@ -9,6 +9,7 @@ const log = logger('VideoJob');
 const promptRepo = require('./prompt.repository');
 const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
+const { mintAutoTemplate } = require('../marketplace/templateMint');
 const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
 
@@ -223,6 +224,20 @@ async function finalizeSucceeded(job, v, unitsUsed) {
     throw e;
   }
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
+
+  // 🆕 자동민팅(P1·릴스): Custom 영상 생성(출처 템플릿 없음)이면 비공개 블랙박스 템플릿 자동 생성(owns 미생성·멱등).
+  //   ⚠️ 릴스 미리보기/재생은 R2 오브젝트 스토리지 선결(현 tmp 저장 404 [[doppia_media_storage_bug]]). 민팅 행 생성 자체는 정상.
+  try {
+    if (!job.template_source) {
+      await mintAutoTemplate({
+        creatorId: job.user_id,
+        name: String(job.prompt || 'My custom reel').slice(0, 80),
+        type: 'reel',
+        fromCreationIdx: savedResult.idx,
+        previewUrl: `/images/${filename}`,
+      });
+    }
+  } catch (e) { log.warn('auto-mint(reel) failed: ' + (e.message || e)); }
 
   await query(
     `UPDATE video_jobs SET status='succeeded', result_idx=$1, result_url=$2, updated_at=now() WHERE id=$3`,
