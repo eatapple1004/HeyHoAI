@@ -231,7 +231,8 @@ async function loadDetail(){
 //   내 Custom auto 템플릿 미추가=테마 선택 모달(openSaveModal). relTemplate 없으면(연결 템플릿 없음) 버튼 없음.
 function templateCta(){
   const rt=IT.relTemplate;
-  if(!rt) return '';
+  // 연결 템플릿 없음 + 내 creation = 즉석 민팅+추가 폴백(γ·legacy·민팅실패·삭제 케이스 커버). 타인 것은 추가 대상 없음→버튼 없음.
+  if(!rt) return IT.isOwn ? `<button class="act sm" onclick="mintAndAdd(this)">＋ Add to My templates</button>` : '';
   // 라이브러리(My templates)에서 보기 — 타인 생성물 상세의 동일 버튼과 동일 동작(?tpl 딥링크).
   const viewInLib=`<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
   if(rt.owned){
@@ -243,6 +244,15 @@ function templateCta(){
   // 유료(타인)=Buy / 그 외=Add. 내 템플릿엔 "Buy" 안 붙임.
   const label = (!rt.mine && rt.price>0) ? ('Buy '+(rt.name||'template')+' (◈'+rt.price+')') : '＋ Add to My templates';
   return `<button class="act sm" onclick="acquireRelTemplate()">${esc(label)}</button>`;
+}
+// relTemplate 없는 내 creation: 즉석 auto 템플릿 민팅+보유 추가 후 My templates(해당 템플릿 하이라이트)로 이동.
+async function mintAndAdd(btn){
+  if(btn){ btn.disabled=true; btn.textContent='Adding…'; }
+  try{
+    const r=await fetch('/api/generate/creations/'+IDX+'/add-to-my-templates',{method:'POST'});
+    const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    location.href='/gallery?tpl='+encodeURIComponent(d.data.templateId);
+  }catch(e){ toast('Could not add: '+(e.message||e)); if(btn){ btn.disabled=false; btn.textContent='＋ Add to My templates'; } }
 }
 // 출처/연결 템플릿을 My templates에 획득 후 그 위치(My templates)로 이동. 내 것=add-to-my-templates(owns INSERT)·타인=acquire 폴백.
 async function acquireRelTemplate(){

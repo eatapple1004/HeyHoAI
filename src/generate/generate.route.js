@@ -704,6 +704,32 @@ router.get('/creations/:idx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── 폴백: 연결 템플릿이 없는 내 creation을 즉석 민팅+보유 추가 ───
+//   relTemplate=null 케이스 전부 커버(γ template_source='creation'·배포 전 legacy·자동민팅 실패·auto 템플릿 삭제 후).
+//   auto 템플릿 멱등 민팅(없으면 생성, 있으면 재사용) → template_owns INSERT → templateId 반환(프론트는 /gallery?tpl=로 이동).
+router.post('/creations/:idx/add-to-my-templates', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
+    const r = await resultRepo.findDetailForViewer(idx, req.user.id);
+    if (!r) return res.status(404).json({ success: false, error: 'creation not found' });
+    if (!r.is_own) return res.status(403).json({ success: false, error: '본인 생성물만 추가할 수 있습니다.' });
+    if (r.status !== 'success' || !r.file_path) return res.status(400).json({ success: false, error: '완성된 생성물만 추가할 수 있습니다.' });
+    // 1) auto 템플릿 멱등 민팅. mintAutoTemplate은 신규 생성 시 id, 이미 있으면(DO NOTHING) null → 기존 id 조회.
+    const previewUrl = '/' + r.file_path.replace(/^tmp\//, '');
+    const type = (r.metadata && r.metadata.type === 'video') ? 'reel' : 'image';
+    let tid = await mintAutoTemplate({ creatorId: req.user.id, creatorHandle: r.creator_handle ? '@' + r.creator_handle : null, name: 'My custom look', type, fromCreationIdx: idx, previewUrl });
+    if (!tid) {
+      const e = await query(`SELECT id FROM marketplace_templates WHERE from_creation_idx = $1 AND creator_id = $2 AND origin = 'auto' AND status = 'active' LIMIT 1`, [idx, req.user.id]);
+      tid = e.rows[0]?.id || null;
+    }
+    if (!tid) return res.status(500).json({ success: false, error: '템플릿 생성에 실패했습니다.' });
+    // 2) My templates에 추가(owns INSERT, 멱등)
+    await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [req.user.id, tid]);
+    res.json({ success: true, data: { templateId: tid } });
+  } catch (err) { next(err); }
+});
+
 // ─── 크리에이터 Overview(γ 넛지): 총 좋아요 + 미등록 인기 creation Top ───
 router.get('/creator-overview', async (req, res, next) => {
   try {
