@@ -25,10 +25,13 @@ async function findCommunity({ limit = 60, offset = 0, viewerId = null } = {}) {
             gr.template_id, gr.template_source, gr.template_name, gr.likes_count,
             split_part(u.email, '@', 1) AS creator_handle,
             (p.user_id = $3) AS is_own,
-            EXISTS(SELECT 1 FROM result_likes rl WHERE rl.result_idx = gr.idx AND rl.user_id = $3) AS liked
+            EXISTS(SELECT 1 FROM result_likes rl WHERE rl.result_idx = gr.idx AND rl.user_id = $3) AS liked,
+            mt.id AS ownable_template_id,
+            EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = $3) AS owns_template
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
      JOIN users u   ON u.id = p.user_id
+     LEFT JOIN marketplace_templates mt ON mt.from_creation_idx = gr.idx AND mt.creator_id = p.user_id AND mt.origin = 'auto'
      WHERE gr.visibility = 'public' AND gr.status = 'success'
        AND gr.taken_down = false AND gr.file_path IS NOT NULL
      ORDER BY gr.created_at DESC LIMIT $1 OFFSET $2`,
@@ -88,10 +91,14 @@ async function findDetailForViewer(idx, viewerId) {
             (p.user_id = $2) AS is_own,
             EXISTS(SELECT 1 FROM result_likes rl WHERE rl.result_idx = gr.idx AND rl.user_id = $2) AS liked,
             (SELECT count(*) FROM follows f WHERE f.creator_id = u.id)::int AS followers,
-            EXISTS(SELECT 1 FROM follows f WHERE f.creator_id = u.id AND f.follower_id = $2) AS following
+            EXISTS(SELECT 1 FROM follows f WHERE f.creator_id = u.id AND f.follower_id = $2) AS following,
+            mt.id AS minted_template_id,
+            EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = $2) AS owns_template,
+            EXISTS(SELECT 1 FROM template_owns o2 WHERE o2.template_id = mt.id AND o2.user_id = p.user_id) AS owner_added
        FROM generation_results gr
        JOIN prompts p ON p.idx = gr.prompt_idx
        JOIN users u   ON u.id = p.user_id
+       LEFT JOIN marketplace_templates mt ON mt.from_creation_idx = gr.idx AND mt.creator_id = p.user_id AND mt.origin = 'auto'
       WHERE gr.idx = $1`,
     [idx, viewerId]
   );
@@ -189,11 +196,14 @@ async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
   const owner = teamId || userId;
   const result = await query(
     `SELECT gr.*, p.prompt_text, p.tags, c.name as character_name,
-            split_part(u.email, '@', 1) AS creator_handle
+            split_part(u.email, '@', 1) AS creator_handle,
+            mt.id AS minted_template_id,
+            EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = p.user_id) AS added_to_library
      FROM generation_results gr
      JOIN prompts p ON p.idx = gr.prompt_idx
      LEFT JOIN characters c ON c.id = gr.character_id
      LEFT JOIN users u ON u.id = p.user_id
+     LEFT JOIN marketplace_templates mt ON mt.from_creation_idx = gr.idx AND mt.creator_id = p.user_id AND mt.origin = 'auto'
      WHERE ${where}
      ORDER BY gr.created_at DESC LIMIT $2 OFFSET $3`,
     [owner, limit, offset]

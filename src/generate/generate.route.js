@@ -581,6 +581,8 @@ router.get('/community', async (req, res, next) => {
       likes: r.likes_count || 0,
       liked: !!r.liked,
       isOwn: !!r.is_own,
+      ownableTemplateId: r.ownable_template_id || null, // 이 creation이 낳은 auto 템플릿(구매/추가 대상)
+      ownsTemplate: !!r.owns_template,                  // 뷰어가 이미 보유(추가)했나
       createdAt: r.created_at,
     }));
     res.json({ success: true, data: items });
@@ -595,9 +597,27 @@ router.patch('/results/:idx/visibility', async (req, res, next) => {
     // 비공개 전환은 구독자 전용 — 생성 경로와 동일 게이트(비구독자가 사후 비공개로 우회하는 것을 차단).
     const reqVis = (req.body && req.body.visibility) === 'private' ? 'private' : 'public';
     const visibility = (reqVis === 'private' && await canUsePrivate(req.user)) ? 'private' : 'public';
+    // 🆕 락(요구4): 비공개로 되돌릴 때 — 연결된 auto 템플릿을 타유저가 1명이라도 추가/구매했으면 거부.
+    if (visibility === 'private') {
+      const locked = await query(
+        `SELECT 1 FROM marketplace_templates mt
+          WHERE mt.from_creation_idx = $1 AND mt.creator_id = $2 AND mt.origin = 'auto'
+            AND EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id <> $2) LIMIT 1`,
+        [idx, req.user.id]
+      );
+      if (locked.rows[0]) return res.status(409).json({ success: false, error: '다른 사용자가 이미 이 템플릿을 추가/사용해 비공개로 되돌릴 수 없습니다.' });
+    }
     const teamId = await teamCredit.activeTeamId(req.user.id);
     const updated = await resultRepo.setVisibility(idx, { userId: teamId ? undefined : req.user.id, teamId }, visibility);
     if (!updated) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 공개할 수 없는 항목입니다.' });
+    // 🆕 cascade(요구4): creation을 비공개로 되돌리면 연결 auto 템플릿도 공개→비공개 강등(Explore Templates 정합).
+    if (updated.visibility === 'private') {
+      await query(
+        `UPDATE marketplace_templates SET visibility = 'private'
+          WHERE from_creation_idx = $1 AND creator_id = $2 AND origin = 'auto' AND visibility = 'public'`,
+        [idx, req.user.id]
+      ).catch(() => {});
+    }
     res.json({ success: true, data: updated });
   } catch (err) { next(err); }
 });
@@ -652,6 +672,9 @@ router.get('/creations/:idx', async (req, res, next) => {
       templateId: r.template_id,
       templateSource: r.template_source,
       templateName: r.template_name,
+      mintedTemplateId: r.minted_template_id || null, // 이 creation의 auto 템플릿(본인=관리/추가, 타인=구매 대상)
+      ownsTemplate: !!r.owns_template,                // 뷰어 보유 여부
+      ownerAdded: !!r.owner_added,                    // 원작자가 My templates에 추가했나
       createdAt: r.created_at,
     } });
   } catch (err) { next(err); }

@@ -171,8 +171,13 @@ router.get('/themes', async (req, res, next) => {
 router.get('/me', async (req, res, next) => {
   try {
     const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
+    // My templates = 내가 추가한 것만. auto 자동민팅(origin='auto') 중 아직 추가(owns) 안 한 건 제외(누출 방지).
+    //   manual(수동 Save·시드)은 항상 포함, 추가된 auto는 owns 있어 포함.
     const mine = await query(
-      `SELECT ${PUBLIC_COLS}, from_creation_idx, ${THEMES_SUBQ} FROM marketplace_templates WHERE creator_id = $1 ORDER BY created_at DESC`,
+      `SELECT ${PUBLIC_COLS}, from_creation_idx, ${THEMES_SUBQ} FROM marketplace_templates
+        WHERE creator_id = $1
+          AND (origin <> 'auto' OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1))
+        ORDER BY created_at DESC`,
       [req.user.id]
     );
     // My templates 마스터: 내 것(저장/생성) + 오피셜(플랫폼 공식). 둘 다 studio 테마에 넣다뺐다 가능.
@@ -203,6 +208,8 @@ router.get('/earnings', async (req, res, next) => {
     // 템플릿별 수익 (ref_id=템플릿 UUID를 TEXT로 저장 → 캐스팅 조인)
     const byTemplate = await query(
       `SELECT mt.id, mt.name, mt.description, mt.emoji, mt.category, mt.type, mt.price_credits, mt.use_price_credits, mt.usage_count, mt.visibility,
+              mt.origin, mt.from_creation_idx,
+              EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = $1) AS added_to_library,
               COALESCE(SUM(pl.amount), 0)::int AS earned,
               COUNT(pl.id)::int AS uses_paid
        FROM marketplace_templates mt
@@ -327,7 +334,7 @@ router.post('/templates', async (req, res, next) => {
 router.patch('/templates/:id', async (req, res, next) => {
   try {
     const cur = await query(
-      `SELECT id, visibility FROM marketplace_templates WHERE id = $1 AND creator_id = $2`,
+      `SELECT id, visibility, from_creation_idx FROM marketplace_templates WHERE id = $1 AND creator_id = $2`,
       [req.params.id, req.user.id]
     );
     if (!cur.rows[0]) return res.status(404).json({ success: false, error: '내 템플릿이 아니거나 없습니다.' });
@@ -362,6 +369,14 @@ router.patch('/templates/:id', async (req, res, next) => {
         const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
         if (!u.rows[0]?.is_creator) {
           return res.status(403).json({ success: false, error: '공개 게시는 먼저 크리에이터로 신청해 주세요.' });
+        }
+        // 🆕 선행조건(요구1/2): from_creation_idx가 있으면 그 creation이 공개(Private OFF)여야만 Explore Templates 공개 가능.
+        if (cur.rows[0].from_creation_idx) {
+          const cr = await query(
+            `SELECT 1 FROM generation_results WHERE idx = $1 AND visibility = 'public' AND taken_down = false`,
+            [cur.rows[0].from_creation_idx]
+          );
+          if (!cr.rows[0]) return res.status(409).json({ success: false, error: '원본 creation을 공개(Private Mode OFF)한 뒤에 Explore에 공개할 수 있습니다.' });
         }
       }
       params.push(vis); sets.push(`visibility = $${params.length}`);
@@ -412,7 +427,10 @@ async function isOwned(userId, tpl) {
 router.post('/templates/:id/use', async (req, res, next) => {
   try {
     const r = await query(
-      `SELECT ${PUBLIC_COLS} FROM marketplace_templates WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
+      `SELECT ${PUBLIC_COLS} FROM marketplace_templates
+        WHERE id = $1 AND status = 'active'
+          AND (visibility = 'public' OR creator_id = $2
+               OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $2))`,
       [req.params.id, req.user.id]
     );
     const tpl = r.rows[0];
@@ -450,7 +468,10 @@ router.post('/templates/:id/acquire', async (req, res, next) => {
   let charge = null;
   try {
     const r = await query(
-      `SELECT ${PUBLIC_COLS} FROM marketplace_templates WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
+      `SELECT ${PUBLIC_COLS} FROM marketplace_templates
+        WHERE id = $1 AND status = 'active'
+          AND (visibility = 'public' OR creator_id = $2
+               OR EXISTS(SELECT 1 FROM generation_results gr WHERE gr.idx = marketplace_templates.from_creation_idx AND gr.visibility = 'public' AND gr.taken_down = false))`,
       [req.params.id, req.user.id]
     );
     const tpl = r.rows[0];
@@ -493,6 +514,23 @@ router.post('/templates/:id/acquire', async (req, res, next) => {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
+});
+
+/** POST /api/marketplace/templates/:id/add-to-my-templates — 내 템플릿(주로 auto 자동민팅)을 My templates에 추가(owns INSERT). 멱등.
+ *  내 것 전용 — 타인 템플릿은 /acquire(구매)로 추가. */
+router.post('/templates/:id/add-to-my-templates', async (req, res, next) => {
+  try {
+    const r = await query(
+      `SELECT id FROM marketplace_templates WHERE id = $1 AND status = 'active' AND creator_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ success: false, error: '내 템플릿이 아니거나 없습니다.' });
+    await query(
+      `INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`,
+      [req.user.id, req.params.id]
+    );
+    res.json({ success: true, data: { id: req.params.id, added: true } });
+  } catch (err) { next(err); }
 });
 
 const REPORT_THRESHOLD = 3; // 서로 다른 신고자 N명 이상 → 자동 비공개(테이크다운)
