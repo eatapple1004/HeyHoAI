@@ -128,6 +128,10 @@ app.get('/heyhoai/accounts/:id/analytics', requirePage, (_req, res) => {
 app.get('/heyhoai/editor/page', requirePage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'editor.html'));
 });
+// 관리자: 체험 계정 발급 페이지 (로그인 필요 + API는 admin 가드)
+app.get('/admin-trials', requirePage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-trials.html'));
+});
 
 // 인증 라우트 (공개)
 app.use('/api/auth', authRoutes);
@@ -155,6 +159,8 @@ app.use('/api/teams', requireAuth, require('./teams/team.route').router);
 app.use('/api/dashboard', requireAuth, require('./dashboard/dashboard.route').router);
 app.use('/api/subscription', requireAuth, require('./subscription/subscription.route').router);
 app.use('/api/recipes', requireAuth, require('./recipes/recipe.route'));
+// 체험 계정 (라우트 내부에서 requireAdmin/requireAuth 자체 가드)
+app.use('/api', require('./trial/trial.route'));
 
 // Health check
 app.get('/health', (_req, res) => {

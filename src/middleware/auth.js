@@ -38,4 +38,16 @@ function requirePage(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requirePage, extractToken };
+/**
+ * 관리자 전용 API 보호. 인증 + role==='admin' 검사. 실패 시 401/403 JSON.
+ */
+function requireAdmin(req, res, next) {
+  const token = extractToken(req);
+  const payload = token && verifyToken(token);
+  if (!payload) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  if (payload.role !== 'admin') return res.status(403).json({ success: false, error: 'Forbidden — admin only' });
+  req.user = payload;
+  next();
+}
+
+module.exports = { requireAuth, requirePage, requireAdmin, extractToken };
