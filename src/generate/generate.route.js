@@ -191,19 +191,32 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       }
     } catch (e) { /* fail-open: 게이트/로열티 스킵, 생성 진행 */ }
 
+    // ─── 체험 계정 게이트: 첫 로그인 후 N일·M장 제한 (비-체험이면 trialInfo=null) ───
+    const trialService = require('../trial/trial.service');
+    let trialInfo = null;
+    try {
+      trialInfo = await trialService.assertCanGenerate(req.user.id, generateCount);
+    } catch (e) {
+      if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message, trial: true });
+      throw e;
+    }
+
     // ─── 크레딧 차감 (개인=admin면제, 팀=풀차감/viewer 403, 부족 시 402) ───
+    //     체험 계정은 크레딧 대신 체험 한도로 게이팅 → 과금 면제(charge=null).
     const creditService = require('../credits/credit.service');
     const teamCredit = require('../teams/team.credit');
-    let charge;
-    try {
-      charge = await teamCredit.chargeGeneration(
-        req.user,
-        creditService.imageCost(model, generateCount) + useRoyalty,
-        `사진 생성 (${model}, ${generateCount}장)`
-      );
-    } catch (e) {
-      if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
-      throw e;
+    let charge = null;
+    if (!trialInfo) {
+      try {
+        charge = await teamCredit.chargeGeneration(
+          req.user,
+          creditService.imageCost(model, generateCount) + useRoyalty,
+          `사진 생성 (${model}, ${generateCount}장)`
+        );
+      } catch (e) {
+        if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
+        throw e;
+      }
     }
 
     // ─── 프롬프트 DB 저장 (활성 팀 컨텍스트면 팀 소유) ───
@@ -387,6 +400,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 전부 실패하면 환불 (사용당 로열티 surcharge 포함 전액)
     const okCount = results.filter((r) => r.success).length;
     if (okCount === 0 && charge) await charge.refund();
+    // 체험 계정: 실제 생성 성공한 장수만 한도에서 차감
+    if (trialInfo && okCount > 0) await trialService.consumeImages(req.user.id, okCount);
     // 생성 성공 + 실제 과금(admin 면제 시 charge=null → 분배 안 함)일 때만 사용당 로열티 70% 분배
     else if (okCount > 0 && charge && useRoyalty > 0 && royaltyCreatorId) {
       const royalty = Math.round(useRoyalty * 0.7);

@@ -862,6 +862,17 @@ async function migrateMarketplace() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_renews_at TIMESTAMPTZ;
   `);
 
+  // 체험 계정(회사별): 첫 로그인 시점부터 N일 + 이미지 M장 제한. (관리자 페이지에서 발급)
+  //   trial_started_at = 첫 로그인 때 세팅(NULL이면 아직 시작 전). 만료/소진은 generate 게이트에서 검사.
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS is_trial          BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at   TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_days         INT NOT NULL DEFAULT 7;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_image_quota  INT NOT NULL DEFAULT 200;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_image_used   INT NOT NULL DEFAULT 0;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name       VARCHAR(120);
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS marketplace_templates (
         id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),

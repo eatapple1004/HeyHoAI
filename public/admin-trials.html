@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>체험 계정 관리 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#d9608f)}
+.sub{color:var(--dim);margin:6px 0 26px;font-size:.95rem}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:22px}
+.card h2{font-size:1.05rem;font-weight:800;margin-bottom:16px}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.8rem;color:var(--dim);font-weight:600}
+.field input{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);
+  padding:10px 12px;font-size:.95rem;font-family:inherit;width:200px}
+.field input.sm{width:110px}
+.field input:focus{outline:none;border-color:var(--accent2)}
+.btn{background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff;border:none;border-radius:10px;
+  padding:11px 22px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--dim);padding:7px 14px;font-size:.82rem}
+.hint{font-size:.8rem;color:var(--faint);margin-top:10px}
+/* credential reveal */
+.cred{background:#14241a;border:1px solid #2e5b3f;border-radius:12px;padding:16px 18px;margin-top:16px;display:none}
+.cred.show{display:block}
+.cred h3{font-size:.9rem;color:var(--green);margin-bottom:10px}
+.cred .kv{display:flex;gap:10px;align-items:center;margin:6px 0;font-size:.95rem}
+.cred .kv b{display:inline-block;width:70px;color:var(--dim);font-weight:600}
+.cred code{background:#0c0c14;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.95rem;color:var(--text)}
+.cred .cp{cursor:pointer;color:var(--accent2);font-size:.8rem;border:none;background:none}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--border)}
+th{color:var(--dim);font-weight:600;font-size:.8rem}
+td .em{color:var(--dim);font-size:.8rem}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.74rem;font-weight:700}
+.b-active{background:rgba(74,222,128,.15);color:var(--green)}
+.b-exp{background:rgba(248,113,113,.15);color:var(--red)}
+.b-wait{background:rgba(255,206,122,.15);color:var(--gold)}
+.b-off{background:rgba(154,154,178,.15);color:var(--dim)}
+.bar{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:5px;width:120px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#d9608f)}
+.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;padding:14px 16px;border-radius:12px;display:none}
+.err.show{display:block}
+.empty{color:var(--faint);text-align:center;padding:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 체험 계정 관리</h1>
+  <div class="sub">회사별 전용 체험 계정 발급 — <b>첫 로그인 시점부터 7일 · 사진 200장</b> 제한. (관리자 전용)</div>
+
+  <div class="err" id="err"></div>
+
+  <!-- 발급 -->
+  <div class="card">
+    <h2>새 체험 계정 발급</h2>
+    <div class="row">
+      <div class="field"><label>회사명 *</label><input id="company" placeholder="예: 요고마요"></div>
+      <div class="field"><label>이메일 (비우면 자동생성)</label><input id="email" placeholder="auto@trial.doppia.ai"></div>
+      <div class="field"><label>기간(일)</label><input id="days" class="sm" type="number" value="7"></div>
+      <div class="field"><label>사진 한도</label><input id="quota" class="sm" type="number" value="200"></div>
+      <button class="btn" id="createBtn" onclick="createTrial()">발급</button>
+    </div>
+    <div class="hint">발급 시 이메일·비밀번호가 1회 표시됩니다. 비밀번호는 다시 볼 수 없으니 꼭 복사해 전달하세요.</div>
+    <div class="cred" id="cred">
+      <h3>✅ 발급 완료 — 아래 정보를 회사에 전달하세요</h3>
+      <div class="kv"><b>회사</b> <span id="cCompany"></span></div>
+      <div class="kv"><b>이메일</b> <code id="cEmail"></code> <button class="cp" onclick="cp('cEmail')">복사</button></div>
+      <div class="kv"><b>비밀번호</b> <code id="cPw"></code> <button class="cp" onclick="cp('cPw')">복사</button></div>
+      <div class="kv"><b>제한</b> <span id="cLimit"></span></div>
+      <button class="cp" style="margin-top:8px" onclick="cpAll()">전체 복사 (전달용)</button>
+    </div>
+  </div>
+
+  <!-- 목록 -->
+  <div class="card">
+    <h2>발급된 계정 <button class="btn ghost" onclick="load()" style="margin-left:8px">새로고침</button></h2>
+    <table>
+      <thead><tr><th>회사 / 이메일</th><th>상태</th><th>남은 기간</th><th>사진 사용</th><th>발급일</th><th></th></tr></thead>
+      <tbody id="rows"><tr><td colspan="6" class="empty">불러오는 중…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function showErr(m){const e=$('err');e.textContent='⚠ '+m;e.classList.add('show');}
+function clearErr(){$('err').classList.remove('show');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function cp(id){navigator.clipboard.writeText($(id).textContent);}
+let LAST=null;
+function cpAll(){if(!LAST)return;navigator.clipboard.writeText(
+  `Doppia 체험 계정\n회사: ${LAST.companyName}\n로그인: https://doppia.ai/saas-login\n이메일: ${LAST.email}\n비밀번호: ${LAST.password}\n제한: 첫 로그인 후 ${LAST.days}일 · 사진 ${LAST.quota}장`);}
+
+async function createTrial(){
+  clearErr();
+  const company=$('company').value.trim();
+  if(!company){showErr('회사명을 입력하세요.');return;}
+  $('createBtn').disabled=true;$('createBtn').textContent='발급 중…';
+  try{
+    const res=await fetch('/api/admin/trials',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({companyName:company,email:$('email').value.trim()||undefined,
+        days:parseInt($('days').value,10)||7,quota:parseInt($('quota').value,10)||200})});
+    const d=await res.json();
+    if(res.status===403){showErr('관리자 권한이 필요합니다. admin 계정으로 로그인하세요.');return;}
+    if(!res.ok||!d.success){showErr(d.error||'발급 실패');return;}
+    LAST=d.data;
+    $('cCompany').textContent=d.data.companyName;
+    $('cEmail').textContent=d.data.email;
+    $('cPw').textContent=d.data.password;
+    $('cLimit').textContent=`첫 로그인 후 ${d.data.days}일 · 사진 ${d.data.quota}장`;
+    $('cred').classList.add('show');
+    $('company').value='';$('email').value='';
+    load();
+  }catch(e){showErr('네트워크 오류');}
+  finally{$('createBtn').disabled=false;$('createBtn').textContent='발급';}
+}
+
+function statusBadge(t){
+  if(t.status==='disabled')return '<span class="badge b-off">비활성</span>';
+  if(!t.started)return '<span class="badge b-wait">로그인 대기</span>';
+  if(t.expired)return '<span class="badge b-exp">만료</span>';
+  return '<span class="badge b-active">사용중</span>';
+}
+async function load(){
+  try{
+    const res=await fetch('/api/admin/trials');
+    if(res.status===403){showErr('관리자 권한이 필요합니다. admin 계정으로 로그인하세요.');
+      $('rows').innerHTML='<tr><td colspan="6" class="empty">권한 없음</td></tr>';return;}
+    const d=await res.json();
+    const list=d.data||[];
+    if(!list.length){$('rows').innerHTML='<tr><td colspan="6" class="empty">아직 발급된 계정이 없습니다.</td></tr>';return;}
+    $('rows').innerHTML=list.map(t=>{
+      const pct=Math.min(100,Math.round(t.used/t.quota*100));
+      const left=t.started?(t.expired?'만료됨':`D-${t.daysLeft}`):`${t.days}일(대기)`;
+      const toggle=t.status==='disabled'
+        ? `<button class="btn ghost" onclick="setStatus('${t.id}','active')">활성화</button>`
+        : `<button class="btn ghost" onclick="setStatus('${t.id}','disabled')">비활성</button>`;
+      return `<tr>
+        <td><b>${esc(t.companyName||'-')}</b><div class="em">${esc(t.email)}</div></td>
+        <td>${statusBadge(t)}</td>
+        <td>${left}</td>
+        <td>${t.used} / ${t.quota}<div class="bar"><i style="width:${pct}%"></i></div></td>
+        <td class="em">${new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
+        <td>${toggle}</td></tr>`;
+    }).join('');
+  }catch(e){showErr('목록 불러오기 실패');}
+}
+async function setStatus(id,status){
+  await fetch('/api/admin/trials/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  load();
+}
+load();
+</script>
+</body>
+</html>

@@ -48,6 +48,8 @@ async function login(req, res, next) {
   try {
     const { email, password } = req.body || {};
     const user = await authService.login({ email, password });
+    // 체험 계정: 첫 로그인 시점부터 카운트 시작 (이미 시작했으면 무변경)
+    await require('../trial/trial.service').startTrialIfNeeded(user.id);
     setAuthCookie(res, user);
     res.json({ success: true, data: user });
   } catch (err) {
