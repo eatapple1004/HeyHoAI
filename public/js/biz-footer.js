@@ -12,8 +12,8 @@
     brand: 'Doppia',                 // 서비스 브랜드명
     ceo: '전예담',                   // 대표자
     bizNo: '649-22-01859',           // 사업자등록번호
-    mailOrderNo: '신고 준비 중',      // 통신판매업신고번호 (TODO: 발급 후 'YYYY-지역-번호' 입력)
-    address: '충청남도 천안시 서북구 공원로 176, 305동 4205호 (불당동, 천안불당시티프라디움 3차)',
+    mailOrderNo: '2026-인천서구-2621', // 통신판매업신고번호
+    address: '인천 서구 청라한내로72번길 7-29 1003호',
     tel: '010-9941-3546',            // 대표전화/고객센터
     email: 'adamcompanyofficial@gmail.com', // 운영 이메일
     hosting: 'Amazon Web Services',  // 호스팅 제공자 (선택)
