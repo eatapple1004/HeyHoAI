@@ -64,9 +64,11 @@ router.get('/templates', async (req, res, next) => {
     const { category, feed, theme } = req.query;
     const isFeed = feed === '1' || feed === 'true';
     const params = [req.user.id];
+    // Explore 카탈로그 = 공개(발행)된 것만. 내 미공개(private·auto 자동민팅)는 Explore에 노출 안 함 — Creator Studio/My templates에서만 관리.
+    //   ($1=req.user.id은 아래 SELECT의 mine/bookmarked/owned 표시에 계속 사용)
     let where = isFeed
       ? `status = 'active' AND visibility = 'public' AND price_credits = 0`
-      : `status = 'active' AND (visibility = 'public' OR creator_id = $1)`;
+      : `status = 'active' AND visibility = 'public'`;
     if (category && CATEGORIES.has(category)) {
       params.push(category);
       where += ` AND category = $${params.length}`;
