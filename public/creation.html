@@ -289,8 +289,8 @@ function render(){
   let owner='';
   if(IT.isOwn){
     const isPub=IT.visibility==='public';
+    // "Make a Reel" 숨김(2026-06-26·사용자 지시): 릴스 미디어 영속성 미확정 — 노출 보류. 재활성 시 아래 acts에 reel 링크 복원: ${IT.type!=='video'?`<a class="act sm" href="/gallery?reel=${IT.idx}">▶ Make a Reel</a>`:''}
     owner=`<div class="sep"></div><div class="ownhdr">Your creation</div><div class="acts">
-      ${IT.type!=='video'?`<a class="act sm" href="/gallery?reel=${IT.idx}">▶ Make a Reel</a>`:''}
       <button class="act sm" id="visBtn" onclick="toggleVis()">${isPub?'🌐 Public — make private':'🔒 Private — make public'}</button>
       <a class="act sm" href="${esc(IT.url)}" download>⬇ Download</a>
     </div>`;

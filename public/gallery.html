@@ -365,7 +365,7 @@ function render(){
   playFeedVideos();
   layoutGridMasonry();
   // 사진이 하나라도 있으면 넛지 표시
-  document.getElementById('reelNudge').style.display=ITEMS.some(i=>i.type==='photo')?'':'none';
+  document.getElementById('reelNudge').style.display='none'; // Make a Reel 숨김(2026-06-26)에 맞춰 넛지도 비활성. 재활성 시 원복: =ITEMS.some(i=>i.type==='photo')?'':'none'
 }
 // (제거·사용자 지시) My creations 카드 호버 액션 폐지 — 카드는 깔끔한 미리보기(클릭→상세). 템플릿 관리/추가/보기는 상세 페이지에서.
 // My templates 탭으로 전환 + (가능하면) 해당 템플릿 카드로 스크롤·하이라이트. (상세 "View template"→?tpl 딥링크가 사용)
