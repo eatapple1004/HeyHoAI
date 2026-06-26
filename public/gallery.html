@@ -540,13 +540,19 @@ function switchTab(t){
   if(t==='purchased'&&!purLoaded){purLoaded=true;loadPurchased();}
   if(t==='saved'&&!savedLoaded){savedLoaded=true;loadSaved();}
 }
+// 템플릿 미리보기 썸네일: reel(영상)이면 <video>, 사진이면 <img>, 미리보기 없으면 그라데이션+이모지.
+//   (reel 템플릿의 preview_media[0]는 mp4 — 기존엔 <img>로 그려 이미지 에러/검정 카드가 났음)
+function tplThumb(prev,type,emoji,onclick,grad){
+  if(prev && (type==='reel' || /\.(mp4|webm|mov)$/i.test(prev)))
+    return `<video class="media" src="${esc(prev)}" muted loop playsinline autoplay preload="metadata" onclick="${onclick}"></video>`;
+  if(prev) return `<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="${onclick}">`;
+  return `<div class="thumb" style="background:${grad};cursor:pointer" onclick="${onclick}">${esc(emoji||'🎨')}</div>`;
+}
 // Purchased: 보유 템플릿. studio 넣다뺐다는 Studio의 Themes 패널로 일원화(안A) — 여기선 Use + 스튜디오 정리 진입만.
 function purCard(t){
   const prev=(t.preview_media&&t.preview_media[0])||'';
   const onUse=`usePurchased('${esc(t.id)}','${esc(t.recipe_id||'')}')`;
-  const thumb=prev
-    ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="${onUse}">`
-    :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#ffce7a);cursor:pointer" onclick="${onUse}">${esc(t.emoji||'🎨')}</div>`;
+  const thumb=tplThumb(prev,t.type,t.emoji,onUse,'linear-gradient(150deg,#7c6cff,#ffce7a)');
   const meta=`${t.price_credits>0?'◈'+t.price_credits+' · owned':'Free · added'}${t.tool?' · '+esc(t.tool):''}`;
   return `<div class="item">
     ${thumb}
@@ -574,9 +580,7 @@ function usePurchased(id,recipeId){
 function tplCard(t,kind){
   const tid=String(t.id);
   const prev=(t.preview_media&&t.preview_media[0])||'';
-  const thumb=prev
-    ?`<img class="media" src="${esc(prev)}" loading="lazy" alt="" onclick="tryTpl('${tid}')">`
-    :`<div class="thumb" style="background:linear-gradient(150deg,#7c6cff,#5ee0d6);cursor:pointer" onclick="tryTpl('${tid}')">${esc(t.emoji||'🎨')}</div>`;
+  const thumb=tplThumb(prev,t.type,t.emoji,`tryTpl('${tid}')`,'linear-gradient(150deg,#7c6cff,#5ee0d6)');
   const vis = kind==='official' ? `<span class="badge vis">Official</span>`
     : kind==='purchased' ? `<span class="badge vis">Purchased</span>`
     : kind==='mine' ? `<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>` : '';
