@@ -785,15 +785,15 @@ async function mergeOwnedTemplates(){
   if(!(window.featureOn&&window.featureOn('marketplace')))return;
   let owned;try{owned=(await(await fetch('/api/marketplace/owned')).json()).data||[];}catch(e){return;}
   if(!owned.length)return;
-  const MODE={Influencer:'influencer',Shopping:'shopping',UGC:'ugc',Custom:'influencer'};
   owned.forEach(t=>{
     if(t.recipe_id)return; // recipe-backed는 applyRecipeGates가 처리(숨김/노출)
     // 안A: in_studio 폐기 — 보유 템플릿은 전부 풀에 올리고, 실제 studio 노출은 테마 멤버십(inAnyTheme)이 결정.
-    const mode=MODE[t.category]||'influencer';
+    // Step 2(2026-06-27): 모드 배치를 category가 아닌 '포스트잇 대분류'(/owned.macroGroup, Library와 동일 축)로. 비공식=내 배치 기준 / 공식은 여기 안 옴(recipe_id로 위에서 return). themes=포스트잇 기본테마(빈 배열 가능, 커스텀배치만이면 STUDIO_THEMES로 노출).
+    const mode=t.macroGroup==='Influencer'?'influencer':'shopping';
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
       emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',preview:(t.preview_media&&t.preview_media[0])||null,cat:'My templates',
-      themes:(t.themes&&t.themes.length?t.themes:['general']),
+      themes:(t.themes||[]),
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false,fromCreationIdx:t.from_creation_idx||null});
   });
   renderFilters();renderRecipes();updateBar();

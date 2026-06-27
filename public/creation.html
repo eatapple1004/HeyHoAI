@@ -81,8 +81,8 @@
 <div id="saveModal" class="sv-ov">
   <div class="sv-box">
     <div class="sv-h">Add to My templates</div>
-    <div class="sv-s">Adds this template to My templates so you can use it in Studio. Pick themes to organize it (optional).</div>
-    <div class="sv-lbl">Themes <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(optional)</span></div>
+    <div class="sv-s">Adds this template to My templates so you can use it in Studio. Pick at least one theme to organize it.</div>
+    <div class="sv-lbl">Themes <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(pick at least one)</span></div>
     <div class="sv-list" id="svThemes"></div>
     <div class="sv-row">
       <button type="button" class="sv-x" onclick="closeSaveModal()">Cancel</button>
@@ -121,7 +121,7 @@ async function openSaveModal(){
   if(!IT||!IT.mintedTemplateId){ toast('No template to add for this creation'); return; }
   document.getElementById('saveModal').classList.add('open');
   SV.picks=[];
-  const g=document.getElementById('svGo'); if(g) g.disabled=false;
+  const g=document.getElementById('svGo'); if(g) g.disabled=true;  // 테마 필수: 선택 0개면 Add 비활성
   if(!SV.themes){
     let defs=[], customs=[];
     try{ defs=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){}
@@ -158,7 +158,7 @@ function pickTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key;
   if(svOn(kind,key)) SV.picks=SV.picks.filter(p=>!(p.kind===kind&&p.key===key));
   else SV.picks.push({kind,key});
   renderSvThemes(); refreshSvGo(); }   // 재렌더: 공유 테마(양쪽 섹션) on/off 동기화
-function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=false; }
+function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=!SV.picks.length; }  // 테마 ≥1개일 때만 Add 활성
 async function newThemeThenPick(group){
   const name=prompt('New theme name'); if(!name||!name.trim())return;
   try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),group})})).json();
@@ -168,6 +168,7 @@ async function newThemeThenPick(group){
 function closeSaveModal(){ document.getElementById('saveModal').classList.remove('open'); }
 async function confirmSave(){
   if(!IT||!IT.mintedTemplateId){ toast('No template to add'); return; }
+  if(!SV.picks.length){ toast('Pick at least one theme'); return; }  // 테마 필수
   const tid=IT.mintedTemplateId;
   const go=document.getElementById('svGo'); go.disabled=true; go.textContent='Adding…';
   try{

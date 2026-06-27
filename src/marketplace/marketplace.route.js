@@ -705,19 +705,57 @@ router.get('/recipe-gates', async (req, res, next) => {
  *  origin(Auto 배지)·mine(내 것 vs 구매)·themes(테마 필터) 포함. */
 router.get('/owned', async (req, res, next) => {
   try {
+    const uid = req.user.id;
     const r = await query(
       `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, ow.source AS own_source,
               (mt.creator_id = $1) AS mine,
               COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
                 FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
-                WHERE tt.template_id = mt.id), '{}') AS themes
+                WHERE tt.template_id = mt.id), '{}') AS label_themes
        FROM template_owns ow
        JOIN marketplace_templates mt ON mt.id = ow.template_id
        WHERE ow.user_id = $1 AND mt.status = 'active'
        ORDER BY ow.created_at DESC`,
-      [req.user.id]
+      [uid]
     );
-    res.json({ success: true, data: r.rows });
+    const rows = r.rows;
+    // 테마 판단 규칙(사용자 확정 2026-06-27): 공식=라벨(template_themes·처음부터 스튜디오에 존재) / 비공식=포스트잇(개인 배치).
+    //   포스트잇 = 기본테마 오버라이드(user_theme_overrides) + 커스텀테마 배치(user_studio_theme_items→macro_group).
+    //   themes(기본테마 slug)는 Library 칩·Studio 기본필터용 / macroGroup(Influencer|Shopping)은 Studio 모드 배치용.
+    const ids = rows.filter((t) => !t.is_official).map((t) => String(t.id));
+    const ovAdd = {}, ovRem = {}, customGrp = {};
+    if (ids.length) {
+      const ov = await query(
+        `SELECT item_id, theme_slug, action FROM user_theme_overrides
+          WHERE user_id = $1 AND item_type = 'template' AND item_id = ANY($2)`, [uid, ids]);
+      ov.rows.forEach((o) => { const m = (o.action === 'add' ? ovAdd : ovRem); (m[o.item_id] = m[o.item_id] || new Set()).add(o.theme_slug); });
+      const ci = await query(
+        `SELECT i.item_id, t.macro_group FROM user_studio_theme_items i
+           JOIN user_studio_themes t ON t.id = i.user_studio_theme_id
+          WHERE i.user_id = $1 AND i.item_type = 'template' AND i.item_id = ANY($2)`, [uid, ids]);
+      ci.rows.forEach((x) => { (customGrp[x.item_id] = customGrp[x.item_id] || new Set()).add(x.macro_group === 'Influencer' ? 'Influencer' : 'Shopping'); });
+    }
+    const INFLU = new Set(['people']);
+    const slugGroup = (s) => (INFLU.has(s) ? 'Influencer' : 'Shopping');
+    const data = rows.map((t) => {
+      const id = String(t.id);
+      const label = t.label_themes || [];
+      delete t.label_themes;
+      if (t.is_official) {
+        return { ...t, themes: label, macroGroup: label.some((s) => INFLU.has(s)) ? 'Influencer' : 'Shopping' };
+      }
+      // 비공식 = 포스트잇 우선. 기본테마 오버라이드 add가 있으면 그것만(라벨 무시), 없으면 라벨−remove로 폴백.
+      const adds = [...(ovAdd[id] || [])];
+      const removes = ovRem[id] || new Set();
+      const customGroups = [...(customGrp[id] || [])];
+      const hasPostit = adds.length > 0 || customGroups.length > 0;
+      const themes = adds.length ? adds : (hasPostit ? [] : label.filter((s) => !removes.has(s)));
+      const groups = new Set([...adds.map(slugGroup), ...customGroups]);
+      if (!groups.size) themes.forEach((s) => groups.add(slugGroup(s)));
+      const macroGroup = groups.has('Influencer') ? 'Influencer' : 'Shopping';
+      return { ...t, themes, macroGroup };
+    });
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
