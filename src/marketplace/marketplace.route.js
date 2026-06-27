@@ -98,7 +98,7 @@ router.get('/templates/:id', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
     const r = await query(
-      `SELECT ${PUBLIC_COLS}, (creator_id = $2) AS mine,
+      `SELECT ${PUBLIC_COLS}, marketplace_templates.from_creation_idx, (creator_id = $2) AS mine,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked,
               EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2) AS owned,
               ${THEMES_SUBQ}
@@ -110,6 +110,15 @@ router.get('/templates/:id', async (req, res, next) => {
     if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
     // 블랙박스: 보유(구매/제작)하지 않은 유료 템플릿은 prompt 숨김. 보유/내 것은 그대로.
     if (tpl.price_credits > 0 && !tpl.mine && !tpl.owned) { tpl.prompt = null; tpl.negative_prompt = null; }
+    // 포인터형 템플릿(from_creation_idx, prompt='') — 내 것이면 원본 creation의 실제 프롬프트를 폴백 노출(편집 시 비어보이지 않게).
+    if (tpl.mine && tpl.from_creation_idx && (!tpl.prompt || !String(tpl.prompt).trim())) {
+      const src = await query(
+        `SELECT p.prompt_text FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx WHERE gr.idx = $1`,
+        [tpl.from_creation_idx]
+      );
+      if (src.rows[0]?.prompt_text) tpl.prompt = src.rows[0].prompt_text;
+    }
+    delete tpl.from_creation_idx; // 내부 포인터는 응답에서 제거
 
     // 이 템플릿으로 만들어진 creation 수 + 좋아요 합. ⚠️ recipe-backed 공식 템플릿은 creation이
     // source='recipe', template_id=recipe_id 로 귀속되므로 그것도 매칭(마켓 귀속 + 레시피 귀속 둘 다).
