@@ -1433,10 +1433,12 @@ async function removeFromTheme(rid){
   }catch(e){}
 }
 function renderFilters(){
-  // 필터 = 글로벌 테마(Explore와 동일 어휘) 중 현재 모드 카드가 가진 것만, 전역 순서로.
-  const present=new Set();
-  (TEMPLATES[state.mode]||[]).forEach(r=>{ (r.themes||[]).forEach(s=>present.add(s)); Object.keys(THEME_OV).forEach(s=>{ if(THEME_OV[s].add.has(String(r.id)))present.add(s); }); });
-  let ordered=(THEME_LIST.length?THEME_LIST:[...present].map(s=>({slug:s,name:s}))).filter(t=>present.has(t.slug));
+  // 필터 = 현재 모드의 대분류 테마(CAT_THEMES) — Library와 동일 파티션·순서로 고정(동적 present 폐기 → 스튜디오=Library 일치 보장).
+  //   모드→대분류: influencer→Influencer / shopping→Shopping / ugc→UGC / custom 등 → 전체.
+  const macro={influencer:'Influencer',shopping:'Shopping',ugc:'UGC'}[state.mode];
+  const allow=(macro&&CAT_THEMES[macro])?CAT_THEMES[macro]:null;
+  const byslug={}; (THEME_LIST||[]).forEach(t=>{ byslug[t.slug]=t; });
+  let ordered=allow?allow.map(s=>byslug[s]||{slug:s,name:s}):(THEME_LIST||[]).slice();
   if(!manageMode) ordered=ordered.filter(t=>!HIDDEN_THEMES.has(t.slug));
   let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
   html+=ordered.map(t=>{
