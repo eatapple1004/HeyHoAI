@@ -1010,6 +1010,15 @@ async function migrateMarketplace() {
     );
   }
 
+  // ✅ 시드 레시피(93종) → recipes 테이블 적재. 정본은 시드 JS(recipeStore 런타임 로드),
+  //    이 테이블은 config(JSONB) 전체를 보존하는 DB 사본. 멱등(upsert) — 배포마다 시드와 동기화.
+  {
+    const { RECIPES_TABLE_SQL, seedRecipes } = require('../recipes/recipeDbSeed');
+    await pool.query(RECIPES_TABLE_SQL);
+    const n = await seedRecipes(pool);
+    console.log(`  ✓ recipes 테이블 적재: ${n}개`);
+  }
+
   // ───────────────────────────────────────────────────────────────────────────
   // 테마 조직화(2026-06-24, 설계=docs/테마_조직화_설계_2026-06-24.md). 전부 멱등.
   //  - themes: 글로벌 공유 어휘(Doppia 시드). template_themes: 크리에이터 다중 태그(Explore 분류).

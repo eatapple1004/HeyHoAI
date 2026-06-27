@@ -173,6 +173,12 @@ app.use(errorHandler);
 app.listen(env.PORT, () => {
   log.info(`Running on port ${env.PORT}`);
 
+  // 레시피 정본을 DB(recipes 테이블)에서 메모리로 로드. 실패/0행이면 시드 JS 폴백.
+  const { pool } = require('./db/client');
+  require('./recipes/recipeStore').init(pool)
+    .then((r) => log.info(`Recipes loaded from ${r.source} (${r.count})${r.error ? ' — ' + r.error : ''}`))
+    .catch((e) => log.warn('Recipe init failed, using seed fallback:', e.message));
+
   // 자동 업로드 스케줄러 시작
   const { startScheduler } = require('./publishing/scheduler');
   startScheduler();

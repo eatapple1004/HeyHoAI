@@ -1,12 +1,15 @@
 /**
- * Recipe Store — 시드(src/recipes/seeds/recipes.<section>.v2.js, 폴백 v1)를 로드해
- * 카드 id(slug(name))로 조회 가능한 정본 레시피 맵으로 구성한다.
+ * Recipe Store — 정본 레시피를 카드 id(slug(name))로 조회 가능한 메모리 맵으로 제공.
+ *
+ * 데이터 소스(2026-06 전환):
+ *   - 런타임 정본 = DB `recipes` 테이블 (서버 부팅 시 init(db)로 메모리 로드).
+ *   - 폴백 = 시드 JS(src/recipes/seeds/recipes.<section>.v2.js) — DB 미연결/0행/init 전.
+ *   동기 API(getById/list)는 그대로 — 소비처(resolver·route) 수정 불필요.
+ *
+ * 시더(recipeDbSeed)는 DB가 아니라 항상 시드 JS를 읽어야 하므로 listSeed()를 쓴다(순환 방지).
  *
  * id 규칙은 scripts/recipe_card_contract.js 의 slug()와 동일해야 FE 카드
  * (public/js/recipes.generated.js)의 id와 1:1로 매칭된다.
- *
- * tool: 각 템플릿은 생성 툴을 지정한다(template.tool). 시드가 명시하지 않으면
- *   레지스트리(src/tools/registry.js)의 output 타입별 기본값으로 폴백한다.
  */
 const path = require('path');
 const { resolveToolId } = require('../tools/registry');
@@ -31,29 +34,73 @@ function loadSection(key) {
   return [];
 }
 
-let MAP = null;
-function build() {
-  if (MAP) return MAP;
-  MAP = new Map();
+/** 시드 JS만으로 맵 구성 (폴백·시더 소스). 항상 파일 기준, DB 무관. */
+function buildFromSeed() {
+  const m = new Map();
   for (const key of SECTIONS) {
     for (const r of loadSection(key)) {
       if (!r || !r.name || !r.config) continue; // config 없는 항목 제외(생성 불가)
       const id = slug(r.name);
       const tool = resolveToolId(r.tool, r.output_type === 'reel' ? 'reel' : 'image');
-      if (!MAP.has(id)) MAP.set(id, { ...r, id, section: key, tool });
+      if (!m.has(id)) m.set(id, { ...r, id, section: key, tool });
     }
   }
+  return m;
+}
+
+let MAP = null;        // 런타임 정본(메모리)
+let SOURCE = 'seed';   // 'db' | 'seed'
+
+/** 동기 접근: init 전이면 시드로 지연 빌드(폴백). */
+function map() {
+  if (!MAP) { MAP = buildFromSeed(); SOURCE = 'seed'; }
   return MAP;
+}
+
+/**
+ * 부팅 시 DB `recipes` 테이블을 메모리로 로드. db = pg pool/client.
+ * 실패/0행이면 시드 JS로 폴백(생성이 절대 멈추지 않게). { source, count } 반환.
+ */
+async function init(db) {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, name, section, mode, vertical, category, output_type, credit_cost,
+              sort_order, tool, rationale, meta, config, text_overlay
+         FROM recipes`
+    );
+    if (!rows.length) throw new Error('recipes 테이블이 비어 있음 — 시드 폴백');
+    const m = new Map();
+    for (const row of rows) {
+      const tool = row.tool || resolveToolId(null, row.output_type === 'reel' ? 'reel' : 'image');
+      const rec = { id: row.id, name: row.name, section: row.section, config: row.config, tool };
+      // 시드 객체와 동일한 형태로 복원(undefined/null 키는 생략 — 동작 동일).
+      if (row.mode != null) rec.mode = row.mode;
+      if (row.vertical != null) rec.vertical = row.vertical;
+      if (row.category != null) rec.category = row.category;
+      if (row.output_type != null) rec.output_type = row.output_type;
+      if (row.credit_cost != null) rec.credit_cost = row.credit_cost;
+      if (row.sort_order != null) rec.sort_order = row.sort_order;
+      if (row.rationale != null) rec.rationale = row.rationale;
+      if (row.meta != null) rec.meta = row.meta;
+      if (row.text_overlay != null) rec.text_overlay = row.text_overlay;
+      m.set(row.id, rec);
+    }
+    MAP = m; SOURCE = 'db';
+    return { source: 'db', count: m.size };
+  } catch (e) {
+    MAP = buildFromSeed(); SOURCE = 'seed';
+    return { source: 'seed', count: MAP.size, error: e.message };
+  }
 }
 
 /** id(slug)로 레시피 조회 */
 function getById(id) {
-  return build().get(String(id)) || null;
+  return map().get(String(id)) || null;
 }
 
 /** 전체/모드별 카드 메타 목록 (생성 가능한 것만) */
 function list({ mode, vertical } = {}) {
-  return [...build().values()]
+  return [...map().values()]
     .filter((r) => !mode || r.mode === mode)
     .filter((r) => !vertical || r.vertical === vertical)
     .map((r) => ({
@@ -70,4 +117,14 @@ function list({ mode, vertical } = {}) {
     }));
 }
 
-module.exports = { getById, list, slug, SECTIONS };
+/** 시더 전용: 항상 시드 JS 기준 전체 레시피(DB와 무관 — 순환 방지). */
+function listSeed() {
+  return [...buildFromSeed().values()];
+}
+
+/** 현재 런타임 데이터 소스('db' | 'seed') — 진단/로깅용. */
+function getSource() {
+  return SOURCE;
+}
+
+module.exports = { getById, list, slug, SECTIONS, init, listSeed, getSource };
