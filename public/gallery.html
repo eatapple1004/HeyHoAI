@@ -613,22 +613,16 @@ function tplCard(t,kind){
     <div class="actions">${actions}</div>${panel}
   </div>`;
 }
-// §5: My templates = owns 전부(내가 추가한 것 + 타인에게서 구매한 것) = /owned. 공식은 기본 제공(/me.official). 테마 칩 필터로 골라보기.
+// §5: My templates = 보유(owns)만 = /owned (내가 추가/생성한 것 + 타인에게서 구매·획득한 공식). **미보유 공식은 제외** — 구매 안 한 건 내 컬렉션이 아님(발견·구매는 Explore/Studio PREMIUM). 테마 칩 필터로 골라보기.
 async function loadMyTemplates(){
   const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty'),filt=document.getElementById('tplThemeFilter');
   try{
     await loadLibThemes();
-    const [ownedR, meR] = await Promise.all([
-      fetch('/api/marketplace/owned').then(r=>r.json()).catch(()=>({})),
-      fetch('/api/marketplace/me').then(r=>r.json()).catch(()=>({})),
-    ]);
-    const owned=(ownedR&&ownedR.data)||[];                      // 모든 보유: 내것(mine) + 구매(타인)
-    const ownedIds=new Set(owned.map(t=>t.id));
-    const official=((((meR&&meR.data)||{}).official)||[]).filter(o=>!ownedIds.has(o.id)); // 미보유 공식만(보유 공식은 owned로)
+    const ownedR = await fetch('/api/marketplace/owned').then(r=>r.json()).catch(()=>({}));
+    const owned=(ownedR&&ownedR.data)||[];                      // 보유 전부: 내것(mine)·구매(타인)·획득한 공식
     TPL_THEMES={};
-    owned.concat(official).forEach(t=>{ TPL_THEMES[String(t.id)]=new Set(t.themes||[]); });
-    MYT.list=owned.map(t=>({t:t, kind: t.mine ? 'mine' : (t.is_official ? 'official' : 'purchased')}))
-                  .concat(official.map(t=>({t:t,kind:'official'})));
+    owned.forEach(t=>{ TPL_THEMES[String(t.id)]=new Set(t.themes||[]); });
+    MYT.list=owned.map(t=>({t:t, kind: t.mine ? 'mine' : (t.is_official ? 'official' : 'purchased')}));
     if(!MYT.list.length){ grid.innerHTML=''; if(filt)filt.innerHTML=''; empty.classList.remove('hidden'); return; }
     empty.classList.add('hidden');
     renderThemeFilter(); renderMyTemplates();
