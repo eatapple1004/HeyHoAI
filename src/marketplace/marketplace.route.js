@@ -335,7 +335,7 @@ router.post('/templates', async (req, res, next) => {
 });
 
 /**
- * PATCH /api/marketplace/templates/:id — 내 템플릿 편집(이름·가격·공개·카테고리·네거티브).
+ * PATCH /api/marketplace/templates/:id — 내 템플릿 편집(이름·프롬프트·가격·공개·카테고리·네거티브).
  * 비공개→공개 전환은 크리에이터 게이트. 가격 0~100 클램프(0=무료). 부분 업데이트.
  */
 router.patch('/templates/:id', async (req, res, next) => {
@@ -365,6 +365,9 @@ router.patch('/templates/:id', async (req, res, next) => {
     if (body.usePriceCredits !== undefined) {
       const usePrice = Math.max(0, Math.min(parseInt(body.usePriceCredits, 10) || 0, 50));
       params.push(usePrice); sets.push(`use_price_credits = $${params.length}`);
+    }
+    if (typeof body.prompt === 'string' && body.prompt.trim()) {
+      params.push(String(body.prompt).slice(0, 8000)); sets.push(`prompt = $${params.length}`);
     }
     if (body.negativePrompt !== undefined) {
       params.push(String(body.negativePrompt).slice(0, 1000)); sets.push(`negative_prompt = $${params.length}`);
