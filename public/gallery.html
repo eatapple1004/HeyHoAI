@@ -93,6 +93,8 @@
   .lib-chip:disabled,.lib-chip.lib-dis{opacity:.38;cursor:not-allowed}
   .lib-chip:disabled:hover{border-color:rgba(255,255,255,.2)}
   .lib-chip .ck{font-weight:800;margin-right:3px}
+  .lib-chip.lib-new{background:none;border-style:dashed;border-color:rgba(255,255,255,.32);color:rgba(255,255,255,.7)}
+  .lib-chip.lib-new:hover{border-color:var(--accent);color:#fff}
   .lib-none{font-size:12px;color:rgba(255,255,255,.6)}
   .lp-x{margin-top:8px;flex-shrink:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 </style>
@@ -661,15 +663,14 @@ function renderThemeFilter(){
   const globals=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
   const bySlug={}; globals.forEach(t=>{ bySlug[t.slug]=t; });
   let h=`<button class="chip${f.kind==='all'?' active':''}" onclick="setMyThemeFilter('all')">All</button>`;
+  // 커스텀 테마를 각자 대분류(group) 섹션 안에 표시("Your themes" 중립 버킷 폐지). 빈 섹션은 생략.
   for(const [label,slugs] of CAT_GROUPS){
-    const group=slugs.map(s=>bySlug[s]).filter(Boolean);
-    if(!group.length) continue;
+    const defChips=slugs.map(s=>bySlug[s]).filter(Boolean);
+    const cusChips=(LIB.customs||[]).filter(c=>libCustomGroup(c)===label);
+    if(!defChips.length && !cusChips.length) continue;
     h+=`<div class="flt-sec">${label}</div>`;
-    group.forEach(t=>{ h+=`<button class="chip${f.kind==='global'&&f.slug===t.slug?' active':''}" onclick="setMyThemeFilter('global','${esc(t.slug)}')">${esc(t.name)}</button>`; });
-  }
-  if((LIB.customs||[]).length){
-    h+=`<div class="flt-sec">Your themes</div>`;
-    (LIB.customs||[]).forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">✦ ${esc(c.name)}</button>`; });
+    defChips.forEach(t=>{ h+=`<button class="chip${f.kind==='global'&&f.slug===t.slug?' active':''}" onclick="setMyThemeFilter('global','${esc(t.slug)}')">${esc(t.name)}</button>`; });
+    cusChips.forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">✦ ${esc(c.name)}</button>`; });
   }
   el.innerHTML=h;
 }
@@ -700,21 +701,42 @@ function tplThemeKey(tid){ const t=tplById(tid); return (t&&t.is_official&&t.rec
 function libDefOn(slug,tid){ tid=String(tid); const {key}=tplThemeKey(tid); const o=LIB.ov[slug]; if(o&&o.remove.has(key))return false; if(o&&o.add.has(key))return true; return !!(TPL_THEMES[tid]&&TPL_THEMES[tid].has(slug)); }
 function libCustomOn(themeId,tid){ const {key}=tplThemeKey(tid); const c=LIB.customs.find(x=>x.id===themeId); return !!(c&&(c.items||[]).some(i=>(i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)); }
 function libChip(on,label,onclick,dis){ return `<button type="button" class="lib-chip${on?' on':''}${dis?' lib-dis':''}"${dis?' disabled':''} onclick="${onclick}"><span class="ck">${on?'✓':'＋'}</span>${label}</button>`; }
-// 대분류 상호배타(카드 패널): Custom 카드처럼 양쪽 그룹이 다 보일 때 Influencer↔Shopping 혼합 토글 방지. general은 Shopping 소속(중립 아님), 커스텀('Your themes')만 중립. 이미 켜진 칩은 해제 가능하도록 비활성 제외.
+// 대분류 상호배타(카드 패널): Custom 카드처럼 양쪽 그룹이 다 보일 때 Influencer↔Shopping 혼합 토글 방지. general은 Shopping 소속(중립 아님). 커스텀도 자기 group 소속(중립 버킷 폐지). 이미 켜진 칩은 해제 가능하도록 비활성 제외.
 const THEME_GROUP_OF={}; CAT_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ THEME_GROUP_OF[s]=label; }));
-function cardActiveGroup(tid){ for(const s in THEME_GROUP_OF){ if(libDefOn(s,tid)) return THEME_GROUP_OF[s]; } return null; }
+// 커스텀 테마의 대분류. 백엔드 group('Influencer'|'Shopping'), 누락 시 Shopping 폴백.
+function libCustomGroup(c){ return (c&&c.group==='Influencer')?'Influencer':'Shopping'; }
+function cardActiveGroup(tid){
+  for(const s in THEME_GROUP_OF){ if(libDefOn(s,tid)) return THEME_GROUP_OF[s]; }
+  for(const c of (LIB.customs||[])){ if(libCustomOn(c.id,tid)) return libCustomGroup(c); }
+  return null;
+}
 // 카드 인라인 테마 칩: 기본 테마(user_theme_overrides) + 커스텀(user_studio_theme_items) 모두 토글.
-// ④ 카드 category(Influencer/Shopping)의 CAT_THEMES 테마만 노출(미지정/레거시=전체). 커스텀은 대분류 무관 항상 노출.
+// ④ 카드 대분류(Influencer/Shopping)면 그 그룹의 기본+커스텀만 노출 + 그 그룹으로 ＋New theme. 미지정/레거시(Custom)=전체 폴백·생성버튼 생략.
 function tplById(tid){ tid=String(tid); const x=(MYT.list||[]).find(y=>String(y.t.id)===tid); return x?x.t:null; }
+function cardGroup(tid){ const t=tplById(tid), cat=t&&t.category; return (cat==='Influencer'||cat==='Shopping')?cat:null; }
 function libThemeChips(tid){
   tid=String(tid);
-  const t=tplById(tid), allow=(t&&CAT_THEMES[t.category])||null;
+  const t=tplById(tid), allow=(t&&CAT_THEMES[t.category])||null, grp=cardGroup(tid);
   let defs=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
   if(allow) defs=defs.filter(t=>allow.includes(t.slug));
   const active=cardActiveGroup(tid);
   let h=defs.map(t=>{ const on=libDefOn(t.slug,tid), g=THEME_GROUP_OF[t.slug]; return libChip(on, esc(t.name), `toggleDef('${esc(t.slug)}','${tid}')`, !!active && g && g!==active && !on); }).join('');
-  h+=(LIB.customs||[]).map(t=>libChip(libCustomOn(t.id,tid), '✦ '+esc(t.name), `toggleCustom('${esc(t.id)}','${tid}')`, false)).join('');
+  // 카드 대분류가 정해지면 그 그룹 커스텀만, 미지정이면 전체 폴백. 상호배타 적용.
+  const cus=(LIB.customs||[]).filter(c=> grp ? libCustomGroup(c)===grp : true );
+  h+=cus.map(c=>{ const on=libCustomOn(c.id,tid), g=libCustomGroup(c); return libChip(on, '✦ '+esc(c.name), `toggleCustom('${esc(c.id)}','${tid}')`, !!active && g!==active && !on); }).join('');
+  if(grp) h+=`<button type="button" class="lib-chip lib-new" onclick="newLibTheme('${tid}','${grp}')">＋ New theme</button>`;
   return h||'<span class="lib-none">No themes yet — create one in Studio.</span>';
+}
+// 카드 패널에서 새 커스텀 테마를 카드 대분류로 생성 → 곧장 이 카드에 추가.
+async function newLibTheme(tid,group){
+  const name=prompt('New theme name'); if(!name||!name.trim())return;
+  try{
+    const r=await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),group})});
+    const d=await r.json(); if(!d||!d.success||!d.data){ toast('Could not create theme','error'); return; }
+    LIB.customs.push(d.data);
+    await toggleCustom(d.data.id, tid);   // on=false → 추가(+renderLibChips)
+    renderThemeFilter();                   // 필터 칩에도 새 커스텀 반영
+  }catch(e){ toast('Could not create theme','error'); }
 }
 function renderLibChips(tid){ const el=document.getElementById('lib-chips-'+tid); if(el) el.innerHTML=libThemeChips(tid); }
 // "Themes" 버튼 → 해당 카드의 칩 패널을 그 자리에서 토글(모달 아님·카드별 독립).

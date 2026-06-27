@@ -4,6 +4,9 @@ const { query } = require('../db/client');
 const router = Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// 커스텀 테마가 속한 대분류. "Your themes" 중립 버킷 폐지 → 모든 커스텀은 Influencer 또는 Shopping 소속.
+function normGroup(g) { return g === 'Influencer' ? 'Influencer' : 'Shopping'; }
+
 // 공개 creation(저장 룩)인지 검증 — Saved looks를 테마 멤버(item_type='creation')로 넣을 때 사용.
 async function isPublicCreation(idx) {
   const r = await query(`SELECT 1 FROM generation_results WHERE idx = $1 AND visibility = 'public' AND status = 'success' AND taken_down = false`, [idx]);
@@ -35,7 +38,7 @@ router.get('/themes', async (req, res, next) => {
   try {
     const uid = req.user.id;
     const themes = await query(
-      `SELECT id, name, sort_order FROM user_studio_themes
+      `SELECT id, name, sort_order, macro_group FROM user_studio_themes
         WHERE user_id = $1 AND origin = 'custom' ORDER BY sort_order, name`, [uid]);
     const items = await query(
       `SELECT user_studio_theme_id AS theme_id, item_type, item_id
@@ -70,7 +73,7 @@ router.get('/themes', async (req, res, next) => {
       success: true,
       data: {
         customThemes: themes.rows.map((t) => ({
-          id: t.id, name: t.name, sortOrder: t.sort_order, items: byTheme[t.id] || [],
+          id: t.id, name: t.name, sortOrder: t.sort_order, group: normGroup(t.macro_group), items: byTheme[t.id] || [],
         })),
         hiddenRecipes: hidden.rows.map((r) => r.recipe_id),
         themeOverrides: overrides.rows.map((o) => ({ themeSlug: o.theme_slug, itemType: o.item_type, itemId: o.item_id, action: o.action })),
@@ -86,13 +89,14 @@ router.post('/themes', async (req, res, next) => {
   try {
     const name = String((req.body && req.body.name) || '').trim().slice(0, 60);
     if (!name) return res.status(400).json({ success: false, error: '테마 이름이 필요합니다.' });
+    const group = normGroup(req.body && req.body.group);  // 어느 대분류(Influencer/Shopping)에 만드는지
     const ord = await query(
       `SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM user_studio_themes WHERE user_id = $1 AND origin = 'custom'`,
       [req.user.id]);
     const r = await query(
-      `INSERT INTO user_studio_themes (user_id, name, sort_order, origin) VALUES ($1, $2, $3, 'custom')
-       RETURNING id, name, sort_order`, [req.user.id, name, ord.rows[0].n]);
-    res.status(201).json({ success: true, data: { id: r.rows[0].id, name: r.rows[0].name, sortOrder: r.rows[0].sort_order, items: [] } });
+      `INSERT INTO user_studio_themes (user_id, name, sort_order, origin, macro_group) VALUES ($1, $2, $3, 'custom', $4)
+       RETURNING id, name, sort_order, macro_group`, [req.user.id, name, ord.rows[0].n, group]);
+    res.status(201).json({ success: true, data: { id: r.rows[0].id, name: r.rows[0].name, sortOrder: r.rows[0].sort_order, group: normGroup(r.rows[0].macro_group), items: [] } });
   } catch (err) { next(err); }
 });
 
@@ -104,14 +108,15 @@ router.patch('/themes/:id', async (req, res, next) => {
     const sets = []; const params = [];
     if (typeof body.name === 'string' && body.name.trim()) { params.push(body.name.trim().slice(0, 60)); sets.push(`name = $${params.length}`); }
     if (body.sortOrder !== undefined) { params.push(parseInt(body.sortOrder, 10) || 0); sets.push(`sort_order = $${params.length}`); }
+    if (body.group !== undefined) { params.push(normGroup(body.group)); sets.push(`macro_group = $${params.length}`); }
     if (!sets.length) return res.status(400).json({ success: false, error: '변경할 내용이 없습니다.' });
     params.push(req.params.id, req.user.id);
     const r = await query(
       `UPDATE user_studio_themes SET ${sets.join(', ')}
         WHERE id = $${params.length - 1} AND user_id = $${params.length} AND origin = 'custom'
-       RETURNING id, name, sort_order`, params);
+       RETURNING id, name, sort_order, macro_group`, params);
     if (!r.rows[0]) return res.status(404).json({ success: false, error: '내 테마가 아니거나 없습니다.' });
-    res.json({ success: true, data: { id: r.rows[0].id, name: r.rows[0].name, sortOrder: r.rows[0].sort_order } });
+    res.json({ success: true, data: { id: r.rows[0].id, name: r.rows[0].name, sortOrder: r.rows[0].sort_order, group: normGroup(r.rows[0].macro_group) } });
   } catch (err) { next(err); }
 });
 

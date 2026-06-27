@@ -1400,9 +1400,11 @@ function findCard(id){ for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[
 function itemTypeOf(r){ return r&&r.source==='marketplace'?'template':'recipe'; }
 function setCustomTheme(id){ curTheme=id; state.filter='All'; renderFilters();renderRecipes(); }
 function toggleManage(){ manageMode=!manageMode; renderFilters();renderRecipes(); }
-async function newStudioTheme(nameArg){
+// group = 현재 모드의 대분류(Influencer/Shopping)로 커스텀 테마 생성. 모드에 대분류가 없으면(custom/ugc) Shopping 폴백.
+async function newStudioTheme(group,nameArg){
   const name=(nameArg!=null?nameArg:(prompt('New theme name')||'')).trim(); if(!name)return;
-  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})})).json();
+  const grp=group==='Influencer'?'Influencer':'Shopping';
+  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,group:grp})})).json();
     if(d&&d.data){ STUDIO_THEMES.push(d.data); curTheme=d.data.id; manageMode=true; renderFilters();renderRecipes(); if(window.toast)toast('Theme created — add templates with ＋'); return d.data; }
   }catch(e){ if(window.toast)toast('Could not create theme'); }
 }
@@ -1447,9 +1449,12 @@ function renderFilters(){
     return `<div class="chip ${!curTheme&&state.filter===t.slug?'active':''}${hiddenT?' is-hidden':''}" onclick="setFilter('${t.slug}')">${esc(t.name)}${x}</div>`;
   }).join('');
   if(STUDIO_THEMES.length||manageMode){
+    // 커스텀 테마도 대분류(group) 소속 → 현재 모드 그룹의 커스텀만 노출. 대분류 없는 모드(custom/ugc)=전체 폴백.
+    const grp=state.mode==='influencer'?'Influencer':state.mode==='shopping'?'Shopping':null;
+    const cths=grp?STUDIO_THEMES.filter(t=>(t.group==='Influencer'?'Influencer':'Shopping')===grp):STUDIO_THEMES;
     html+=`<span class="filt-div"></span>`;
-    html+=STUDIO_THEMES.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" onclick="setCustomTheme('${t.id}')">✦ ${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
-    html+=`<div class="chip ghost" onclick="newStudioTheme()">＋ Theme</div>`;
+    html+=cths.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" onclick="setCustomTheme('${t.id}')">✦ ${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
+    html+=`<div class="chip ghost" onclick="newStudioTheme('${grp||'Shopping'}')">＋ Theme</div>`;
   }
   html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;
   document.getElementById('filterRow').innerHTML=html;

@@ -1046,8 +1046,11 @@ async function migrateMarketplace() {
         sort_order  INT NOT NULL DEFAULT 0,
         origin      TEXT NOT NULL DEFAULT 'custom',  -- 'default'(시드) | 'custom'
         seed_slug   TEXT,                            -- default일 때 출처 글로벌 테마 slug(중복시드 방지)
+        macro_group TEXT NOT NULL DEFAULT 'Shopping',-- 'Influencer' | 'Shopping' (커스텀 테마가 속한 대분류·"Your themes" 버킷 폐지)
         created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    -- 기존 DB: 커스텀 테마에 대분류 부여(없던 컬럼). 기본 'Shopping'으로 백필(대분류 미지정 레거시는 Shopping).
+    ALTER TABLE user_studio_themes ADD COLUMN IF NOT EXISTS macro_group TEXT NOT NULL DEFAULT 'Shopping';
     CREATE INDEX IF NOT EXISTS idx_user_studio_themes_user ON user_studio_themes(user_id, sort_order);
     CREATE TABLE IF NOT EXISTS user_studio_theme_items (
         user_studio_theme_id UUID NOT NULL REFERENCES user_studio_themes(id) ON DELETE CASCADE,

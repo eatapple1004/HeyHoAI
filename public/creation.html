@@ -131,11 +131,13 @@ async function openSaveModal(){
   renderSvThemes();
 }
 function svOn(kind,key){ return SV.picks.some(p=>p.kind===kind&&p.key===key); }
-// 비겹침 대분류(확정 2026-06-26·스튜디오 CAT_THEMES와 동기화) — 각 테마는 한 섹션에만(중복0). general=Shopping(범용/중립 아님)·Influencer=People만·UGC 숨김·커스텀은 무관.
+// 비겹침 대분류(확정 2026-06-26·스튜디오 CAT_THEMES와 동기화) — 각 테마는 한 섹션에만(중복0). general=Shopping(범용/중립 아님)·Influencer=People만·UGC 숨김. 커스텀 테마는 각자 대분류(group) 소속("Your themes" 중립 버킷 폐지).
 const SV_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech','general']]];
-// 대분류 상호배타: 한 템플릿은 한 대분류에만 → Influencer 테마와 Shopping 테마를 섞어 선택 불가. general은 Shopping 소속(중립 아님), 커스텀("Your themes")만 중립.
+// 대분류 상호배타: 한 템플릿은 한 대분류에만 → Influencer 테마와 Shopping 테마를 섞어 선택 불가. general은 Shopping 소속. 커스텀도 자기 group 소속(중립 아님).
 const SV_GROUP_OF={}; SV_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ SV_GROUP_OF[s]=label; }));
-function svActiveGroup(){ for(const p of SV.picks){ if(p.kind==='default'){ const g=SV_GROUP_OF[p.key]; if(g) return g; } } return null; }
+function svCustomGroup(id){ const c=((SV.themes&&SV.themes.customs)||[]).find(x=>x.id===id); return (c&&c.group==='Influencer')?'Influencer':'Shopping'; }
+function svPickGroup(p){ return p.kind==='custom'?svCustomGroup(p.key):SV_GROUP_OF[p.key]; }
+function svActiveGroup(){ for(const p of SV.picks){ const g=svPickGroup(p); if(g) return g; } return null; }
 function svThBtn(kind,key,label,dis){ return `<button type="button" class="sv-th${svOn(kind,key)?' on':''}${dis?' sv-dis':''}" data-kind="${kind}" data-key="${esc(key)}"${dis?' disabled':''} onclick="pickTheme(this)">${esc(label)}</button>`; }
 function renderSvThemes(){
   const el=document.getElementById('svThemes'); const {defs,customs}=SV.themes;
@@ -143,12 +145,12 @@ function renderSvThemes(){
   const active=svActiveGroup();
   let h='';
   for(const [label,slugs] of SV_GROUPS){
-    const group=slugs.map(s=>bySlug[s]).filter(Boolean);
-    // 반대 대분류 테마는 비활성(이미 선택된 건 해제 가능하도록 제외). general/커스텀은 항상 활성.
-    if(group.length) h+=`<div class="sv-sec">${label}</div>`+group.map(t=>svThBtn('default',t.slug,t.name, !!active && SV_GROUP_OF[t.slug] && SV_GROUP_OF[t.slug]!==active && !svOn('default',t.slug))).join('');
+    const dis=!!active && label!==active;  // 반대 대분류 섹션 전체 비활성(이미 선택된 건 해제 가능하도록 제외)
+    h+=`<div class="sv-sec">${label}</div>`;
+    slugs.map(s=>bySlug[s]).filter(Boolean).forEach(t=>{ h+=svThBtn('default',t.slug,t.name, dis && !svOn('default',t.slug)); });
+    (customs||[]).filter(c=>svCustomGroup(c.id)===label).forEach(t=>{ h+=svThBtn('custom',t.id,'✦ '+t.name, dis && !svOn('custom',t.id)); });
+    h+=`<button type="button" class="sv-th sv-new${dis?' sv-dis':''}"${dis?' disabled':''} onclick="newThemeThenPick('${label}')">＋ New theme</button>`;
   }
-  if(customs.length) h+=`<div class="sv-sec">Your themes</div>`+customs.map(t=>svThBtn('custom',t.id,'✦ '+t.name,false)).join('');
-  h+=`<button type="button" class="sv-th sv-new" onclick="newThemeThenPick()">＋ New theme</button>`;
   el.innerHTML=h;
 }
 // 다중선택: 클릭한 칩만 on/off, 나머지 유지(편집 플로우와 동일). 테마는 선택사항이라 버튼은 항상 활성.
@@ -157,9 +159,9 @@ function pickTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key;
   else SV.picks.push({kind,key});
   renderSvThemes(); refreshSvGo(); }   // 재렌더: 공유 테마(양쪽 섹션) on/off 동기화
 function refreshSvGo(){ const g=document.getElementById('svGo'); if(g)g.disabled=false; }
-async function newThemeThenPick(){
+async function newThemeThenPick(group){
   const name=prompt('New theme name'); if(!name||!name.trim())return;
-  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})})).json();
+  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),group})})).json();
     if(d&&d.success&&d.data){ SV.themes.customs.push(d.data); SV.picks.push({kind:'custom',key:d.data.id}); renderSvThemes(); refreshSvGo(); }
   }catch(e){}
 }
