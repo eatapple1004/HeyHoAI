@@ -721,9 +721,12 @@ function renderLibChips(tid){ const el=document.getElementById('lib-chips-'+tid)
 function toggleLibPanel(tid){ const p=document.getElementById('lib-panel-'+tid); if(p) p.classList.toggle('open'); }
 async function toggleDef(slug,tid){
   tid=String(tid); const {key,itemType}=tplThemeKey(tid); const on=libDefOn(slug,tid), action=on?'remove':'add';
-  try{ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:key,action})});
+  try{ const r=await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:key,action})});
+    const d=await r.json().catch(()=>({}));
     const m=LIB.ov[slug]=LIB.ov[slug]||{add:new Set(),remove:new Set()};
     if(action==='add'){m.add.add(key);m.remove.delete(key);}else{m.remove.add(key);m.add.delete(key);}
+    // B안: 서버가 미분류(Custom)→대분류 승격하면 그 category를 로컬 카드에 반영(패널 필터가 그 대분류로 좁혀짐).
+    if(d&&d.data&&d.data.category){ const t=tplById(tid); if(t) t.category=d.data.category; }
     renderLibChips(tid);
   }catch(e){ toast('Could not update theme','error'); }
 }

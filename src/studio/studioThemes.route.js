@@ -184,6 +184,10 @@ router.delete('/hidden/:recipeId', async (req, res, next) => {
 });
 
 // ── 기본(글로벌) 테마 개인 오버라이드: 특정 테마에 템플릿 add/remove ──
+// 테마 슬러그 → 대분류(category). general·ugc는 중립(자동 분류 안 함). 프론트 CAT_THEMES와 동기화.
+//   B안: 내 미분류(Custom) 템플릿에 구체 테마(대분류 보유)를 적용하면 그 대분류로 승격 → 스튜디오 모드 정합.
+const THEME_MACRO = { people: 'Influencer', beauty: 'Shopping', fashion: 'Shopping', jewelry: 'Shopping', pet: 'Shopping', food: 'Shopping', coffee: 'Shopping', home: 'Shopping', tech: 'Shopping' };
+
 // POST /api/studio/global-themes/:slug/items { itemType, itemId, action:'add'|'remove' }
 router.post('/global-themes/:slug/items', async (req, res, next) => {
   try {
@@ -209,7 +213,18 @@ router.post('/global-themes/:slug/items', async (req, res, next) => {
        ON CONFLICT (user_id, theme_slug, item_type, item_id) DO UPDATE SET action = EXCLUDED.action`,
       [req.user.id, slug, itemType, itemId, action]
     );
-    res.json({ success: true, data: { themeSlug: slug, itemType, itemId, action } });
+    // B안: 내 미분류(Custom) 마켓 템플릿에 구체 테마(대분류 보유) 추가 → 그 대분류로 승격(스튜디오 모드 정합).
+    //   내 소유·UUID·현재 Custom일 때만. general/ugc는 THEME_MACRO에 없어 미승격(중립).
+    let category = null;
+    if (itemType === 'template' && action === 'add' && UUID_RE.test(itemId) && THEME_MACRO[slug]) {
+      const upd = await query(
+        `UPDATE marketplace_templates SET category = $3
+           WHERE id = $1 AND creator_id = $2 AND category = 'Custom' RETURNING category`,
+        [itemId, req.user.id, THEME_MACRO[slug]]
+      );
+      if (upd.rows[0]) category = upd.rows[0].category;
+    }
+    res.json({ success: true, data: { themeSlug: slug, itemType, itemId, action, category } });
   } catch (err) { next(err); }
 });
 
