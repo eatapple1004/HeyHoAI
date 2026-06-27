@@ -323,7 +323,7 @@ function rowMarkup(t){
   const price=t.price_credits>0?(' · ◈'+t.price_credits):' · Free';
   const royalty=t.use_price_credits>0?(' +◈'+t.use_price_credits+'/use'):'';
   // 안A/P4 배지: Auto=자동민팅(origin='auto') · In Library=My templates에 추가됨(owns)
-  const badges=`${t.origin==='auto'?' <span class="pill auto">Auto</span>':''}${t.added_to_library?' <span class="pill lib">In Library</span>':''}`;
+  const badges=`${t.added_to_library?' <span class="pill lib">In Library</span>':''}`;
   // 행 액션: auto·미추가면 My templates 추가 / 비공개면 Explore 공개(서버가 원본 creation Private OFF 게이트 강제)
   const addBtn=(t.origin==='auto'&&window.__isCreator&&!t.added_to_library)?`<button class="mng" onclick="addToMyTpl('${t.id}')">Add to My templates</button>`:'';
   const pubBtn=(window.__isCreator&&!pub)?`<button class="mng" onclick="publishTpl('${t.id}')">Publish</button>`:'';

@@ -586,7 +586,6 @@ function tplCard(t,kind){
   const vis = kind==='official' ? `<span class="badge vis">Official</span>`
     : kind==='purchased' ? `<span class="badge vis">Purchased</span>`
     : kind==='mine' ? `<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>` : '';
-  const autoB = ((kind==='mine'||kind==='purchased')&&t.origin==='auto') ? `<span class="badge auto">Auto</span>` : '';
   const meta = kind==='saved'
     ? `by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`
     : `♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`;
@@ -608,7 +607,7 @@ function tplCard(t,kind){
   else actions=`<button onclick="tryTpl('${tid}')">Try it</button><button class="del" onclick="unsaveTpl('${tid}')" title="Remove from Saved">🔖</button>`;
   return `<div class="item${MYT.highlightId&&String(MYT.highlightId)===tid?' hl':''}" data-tid="${tid}">
     ${thumb}
-    <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}${autoB}
+    <span class="badge">${t.type==='reel'?'▶ Reel':'▦ Photo'}</span>${vis}
     <div class="info"><div class="nm">${esc(t.name)}</div><div class="dt">${meta}</div></div>
     <div class="actions">${actions}</div>${panel}
   </div>`;
