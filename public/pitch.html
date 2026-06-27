@@ -81,12 +81,12 @@ li.b{font-weight:800}.accent{color:var(--purple)}.pink{color:var(--pink)}
 .two{display:flex;gap:2.4rem;align-items:center}
 .two>div{flex:1}
 video{width:100%;max-height:56vh;border-radius:18px;background:#000;box-shadow:0 20px 50px -20px rgba(0,0,0,.55)}
-/* reels (2 videos) */
-.vfeat{flex-direction:row;flex-wrap:wrap;gap:.6rem 1.8rem;margin:.4rem 0 1.3rem}
-.vfeat li{padding-left:1.5rem;font-size:clamp(.92rem,1.45vw,1.18rem)}
-.reels{display:flex;gap:1.6rem;justify-content:center;align-items:stretch;flex-wrap:wrap}
-.reels figure{display:flex;flex-direction:column;align-items:center;gap:.6rem}
-.reels video{height:46vh;width:auto;max-width:44vw;object-fit:contain;border-radius:18px;
+/* reels (2 videos) — text left, videos right */
+.vstage{display:flex;gap:2.4rem;align-items:center;margin-top:.6rem}
+.vstage .vside{flex:0 0 30%;min-width:220px}
+.reels{flex:1;min-width:0;display:flex;gap:1.4rem;justify-content:center;align-items:center;flex-wrap:wrap}
+.reels figure{display:flex;flex-direction:column;align-items:center;gap:.55rem}
+.reels video{height:50vh;width:auto;max-width:24vw;object-fit:contain;border-radius:18px;
   background:#000;box-shadow:0 20px 50px -20px rgba(0,0,0,.55)}
 .reels figcaption{font-size:1rem;font-weight:700;color:var(--gray)}
 .vph{aspect-ratio:9/16;max-height:56vh;border-radius:18px;border:2px dashed var(--lav);background:#fff;
@@ -196,24 +196,26 @@ video{width:100%;max-height:56vh;border-radius:18px;background:#000;box-shadow:0
     <div class="kicker r" style="--d:.05s">VIDEO / REELS</div>
     <h2 class="r" style="--d:.12s">움직이는 릴스까지</h2>
     <div class="bar r" style="--d:.2s"></div>
-    <ul class="vfeat r" style="--d:.3s">
+    <div class="vstage r" style="--d:.3s">
+    <ul class="vside">
       <li>시작 이미지 + 간단한 움직임 설명 입력</li>
       <li>5초 / 10초 · 세로·정사각·가로 지원</li>
       <li>완료되면 갤러리에 자동 저장</li>
     </ul>
-    <div class="reels r" style="--d:.45s">
+    <div class="reels">
       <figure>
-        <video controls muted loop playsinline preload="metadata">
+        <video autoplay muted loop playsinline controls preload="auto">
           <source src="pitch-reel-original.mp4" type="video/mp4">
         </video>
         <figcaption>릴스 예시 1</figcaption>
       </figure>
       <figure>
-        <video controls muted loop playsinline preload="metadata">
+        <video autoplay muted loop playsinline controls preload="auto">
           <source src="pitch-reel.mp4" type="video/mp4">
         </video>
         <figcaption>릴스 예시 2</figcaption>
       </figure>
+    </div>
     </div>
   </section>
 
