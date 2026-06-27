@@ -53,6 +53,9 @@
   .irow{display:grid;grid-template-columns:2.4fr 1fr 1fr 1fr 1.1fr;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:13.5px}
   .irow:last-child{border-bottom:0}
   .irow.head{background:rgba(255,255,255,.03);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+  .usort{background:none;border:none;color:var(--faint);font-size:13px;line-height:1;cursor:pointer;padding:0 2px;margin-left:3px;font-family:inherit;vertical-align:middle;opacity:.7;transition:color .15s,opacity .15s}
+  .usort:hover{color:var(--text);opacity:1}
+  .usort.on{color:var(--accent2);opacity:1}
   .irow .nm{display:flex;align-items:center;gap:11px;font-weight:600}
   .irow .ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:rgba(255,255,255,.06)}
   .irow .sub2{font-size:11px;color:var(--faint);font-weight:500}
@@ -199,16 +202,7 @@
   <section class="sec" id="sec-templates">
     <div class="row-head fade d2">
       <div class="section-label" style="margin:0">Your published items</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim)">Sort
-          <select id="tplSort" onchange="renderItems()" style="background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:12.5px;padding:7px 10px;cursor:pointer">
-            <option value="recent">Newest</option>
-            <option value="uses_desc">Total uses · high → low</option>
-            <option value="uses_asc">Total uses · low → high</option>
-          </select>
-        </label>
-        <button class="btn btn-primary" onclick="location.href='/studio'">+ New template</button>
-      </div>
+      <button class="btn btn-primary" onclick="location.href='/studio'">+ New template</button>
     </div>
     <div class="items glass fade d2" id="itemList"></div>
     <div class="empty glass fade d2" id="itemEmpty" style="display:none">No published templates yet — build a look in <a onclick="location.href='/studio'">Studio</a> and hit "Save as template" to start earning.</div>
@@ -321,6 +315,7 @@ async function loadBalance(){
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 let ITEMS=[];
+let TPL_SORT='recent'; // recent(최신순) | uses_desc | uses_asc — Total uses 헤더 화살표로 순환
 window.__handle=null;
 
 function rowMarkup(t){
@@ -340,17 +335,20 @@ function rowMarkup(t){
     <div class="r-amt stcell">${addBtn}${pubBtn}<button class="mng" onclick="openEdit('${t.id}')">Edit</button><button class="mng del" onclick="deleteFromRow('${t.id}')">Delete</button></div>
   </div>`;
 }
-// 정렬 적용된 ITEMS 사본 반환 (tplSort 드롭다운: recent | uses_desc | uses_asc)
+// 정렬 적용된 ITEMS 사본 반환 (TPL_SORT: recent | uses_desc | uses_asc)
 function sortedItems(){
   const arr=[...ITEMS];
-  const sel=document.getElementById('tplSort');
-  const s=sel?sel.value:'recent';
   const uses=t=>parseInt(t.usage_count,10)||0;
   const date=t=>new Date(t.created_at||0).getTime()||0;
-  if(s==='uses_desc') arr.sort((a,b)=>uses(b)-uses(a)||date(b)-date(a));
-  else if(s==='uses_asc') arr.sort((a,b)=>uses(a)-uses(b)||date(b)-date(a));
+  if(TPL_SORT==='uses_desc') arr.sort((a,b)=>uses(b)-uses(a)||date(b)-date(a));
+  else if(TPL_SORT==='uses_asc') arr.sort((a,b)=>uses(a)-uses(b)||date(b)-date(a));
   else arr.sort((a,b)=>date(b)-date(a)); // recent(최신순)
   return arr;
+}
+// Total uses 헤더 화살표 클릭 → 정렬 순환: 최신순 → 많은순 → 적은순 → 최신순
+function cycleSort(){
+  TPL_SORT = TPL_SORT==='recent' ? 'uses_desc' : TPL_SORT==='uses_desc' ? 'uses_asc' : 'recent';
+  renderItems();
 }
 // 템플릿 목록 렌더 (Templates·Earnings 탭 공용). 정렬 변경 시 재호출.
 function renderItems(){
@@ -366,7 +364,9 @@ function renderItems(){
   list.style.display='';earnList.style.display='';
   document.getElementById('itemEmpty').style.display='none';
   document.getElementById('earnEmpty').style.display='none';
-  const head=`<div class="irow head"><div>Item</div><div class="col-uses">Total uses</div><div class="r-amt col-rev">Your earnings</div><div class="r-amt col-status">Status</div><div class="r-amt">Manage</div></div>`;
+  const arr=TPL_SORT==='uses_desc'?'↓':TPL_SORT==='uses_asc'?'↑':'↕';
+  const sortTitle=TPL_SORT==='uses_desc'?'Total uses: high → low':TPL_SORT==='uses_asc'?'Total uses: low → high':'Newest (click to sort by uses)';
+  const head=`<div class="irow head"><div>Item</div><div class="col-uses">Total uses <button class="usort${TPL_SORT!=='recent'?' on':''}" onclick="cycleSort()" title="${sortTitle}">${arr}</button></div><div class="r-amt col-rev">Your earnings</div><div class="r-amt col-status">Status</div><div class="r-amt">Manage</div></div>`;
   const rows=sortedItems().map(rowMarkup).join('');
   list.innerHTML=head+rows;
   earnList.innerHTML=head+rows;
