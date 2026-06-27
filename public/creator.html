@@ -88,7 +88,7 @@ function tcard(t){
       <div class="tmeta">♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
       <div class="trow">
         <button class="tuse" onclick="goTpl('${esc(t.id)}')">Use</button>
-        <button class="tbk ${t.bookmarked?'on':''}" onclick="toggleBookmark('${esc(t.id)}',this)" title="${t.bookmarked?'Saved':'Save'}">${t.bookmarked?'★':'☆'}</button>
+        <!-- ☆ Save(북마크) 버튼 숨김 — 현재 미작동(2026-06-27). 재활성 시 복원: toggleBookmark·.tbk 잔존 -->
       </div>
     </div></div>`;
 }

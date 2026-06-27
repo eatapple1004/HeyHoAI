@@ -221,7 +221,7 @@ function tcard(t){
       <div class="tmeta">by ${t.creator_handle?`<a class="hlink" href="/creator?handle=${encodeURIComponent(String(t.creator_handle).replace(/^@/,''))}">${esc(t.creator_handle)}</a>`:'@creator'} · ♥ ${t.likes_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
       <div class="trow">
         <button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>
-        <button class="tbk ${t.bookmarked?'on':''}" onclick="toggleBookmark('${esc(t.id)}',this)" title="${t.bookmarked?'Saved':'Save'}">${t.bookmarked?'★':'☆'}</button>
+        <!-- ☆ Save(북마크) 버튼 숨김 — 현재 미작동(2026-06-27). 재활성 시 복원: toggleBookmark·.tbk·Saved탭 잔존 -->
       </div>
     </div></div>`;
 }
