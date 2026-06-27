@@ -750,6 +750,18 @@ const PRODUCT_TAG='[product]';
 // 레시피 카드 = 서버 단일소스(/js/recipes.generated.js · window.RECIPES, #38 93종).
 // 생성 시 /api/recipes/:id/resolve 로 실제 프롬프트를 받아 /api/generate 에 보낸다.
 let TEMPLATES={influencer:[],shopping:[],ugc:[],custom:[]};
+// Step 1(2026-06-27, 사용자 지시 "마켓 공식 말고 다 없애 일단"): pick-a-template에서 순수 내장 시드 레시피를 숨기고
+//   마켓 백킹 있는 것만 노출 = 레시피 기반 공식(recipe-gates) + 내 보유 템플릿(source='marketplace').
+//   되돌리려면 OFFICIALS_ONLY=false. (recipes.generated.js는 DO-NOT-EDIT라 프론트 필터로만 처리)
+const OFFICIALS_ONLY=true;
+let OFFICIAL_RECIPES=new Set();   // recipe-gates가 준 공식(레시피 기반 마켓) recipe id 집합
+let GATES_LOADED=false;           // 게이트 로드 전엔 필터 보류(전부 숨겨지는 깜빡임 방지)
+// pick-a-template 모드 풀: OFFICIALS_ONLY면 [공식 OR 보유]만 남김(순수 내장 시드 제거). 게이트 로드 전엔 원본 유지.
+function modePool(mode){
+  const pool=TEMPLATES[mode]||[];
+  if(!OFFICIALS_ONLY||!GATES_LOADED)return pool;
+  return pool.filter(r=>r.source==='marketplace'||OFFICIAL_RECIPES.has(String(r.id)));
+}
 function buildTemplates(){
   const C=(window.RECIPES&&window.RECIPES.cards)||{};
   const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
@@ -791,12 +803,15 @@ async function mergeOwnedTemplates(){
 async function applyRecipeGates(){
   let gates;try{gates=(await(await fetch('/api/marketplace/recipe-gates')).json()).data||[];}catch(e){return;}
   PREMIUM=[];
+  OFFICIAL_RECIPES=new Set();   // 마켓 백킹 있는(레시피 기반 공식) recipe id — Step 1 필터 화이트리스트
   gates.forEach(g=>{
+    OFFICIAL_RECIPES.add(String(g.recipeId));
     let rc=null,mode=null;
     for(const m of Object.keys(TEMPLATES)){const c=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));if(c){rc=c;mode=m;break;}}
     if(rc)rc.held=!g.owned;                    // 보유면 메인 그리드 노출 / 미보유는 프리미엄(안A: in_studio 폐기)
     if(!g.owned&&rc)PREMIUM.push({templateId:g.templateId,recipeId:g.recipeId,price:g.price,name:rc.name,grad:rc.grad,type:rc.type,mode:mode}); // 미보유=프리미엄 섹션
   });
+  GATES_LOADED=true;            // 이제부터 pick-a-template은 modePool로 공식+보유만 노출
   renderFilters();renderRecipes();updateBar();
 }
 
@@ -1465,15 +1480,15 @@ function renderRecipes(){
   let rs;
   if(curTheme){
     if(manageMode){ // 커스텀 테마 편집: 현재 모드 전체 노출 → 멤버십 +/− 토글
-      rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
+      rs=modePool(state.mode).filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
     }else{          // 사용: 이 테마의 멤버만(모드 교차)
       const ids=new Set((tObj?tObj.items:[]).map(i=>String(i.itemId)));
-      rs=[]; Object.keys(TEMPLATES).forEach(m=>TEMPLATES[m].forEach(r=>{ if(ids.has(String(r.id))&&!rs.some(x=>String(x.id)===String(r.id)))rs.push(r); }));
+      rs=[]; Object.keys(TEMPLATES).forEach(m=>modePool(m).forEach(r=>{ if(ids.has(String(r.id))&&!rs.some(x=>String(x.id)===String(r.id)))rs.push(r); }));
     }
   }else if(defTheme&&manageMode){ // 기본 테마 편집: 현재 모드 전체 노출 → +/− 토글
     rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
   }else{
-    rs=TEMPLATES[state.mode].filter(r=>{
+    rs=modePool(state.mode).filter(r=>{
       if(PREMIUM.some(p=>p.recipeId===r.id))return false;
       if(state.filter!=='All')return inGlobalTheme(r,state.filter);
       // All 뷰: 내장 recipe는 항상 노출 / 보유 유저 템플릿은 테마 ≥1개 배치 시만(안A: in_studio 폐기)
