@@ -1133,6 +1133,35 @@ async function migrateMarketplace() {
         AND NOT EXISTS (SELECT 1 FROM template_themes tt WHERE tt.template_id = mt.id)
      ON CONFLICT DO NOTHING`
   );
+  // 일회성 백필(멱등): stranded된 미분류(Custom) 템플릿을 "적용된 테마의 대분류"로 승격 → Library↔Studio 모드 정합.
+  //   효과 테마 = template_themes(base) ∪ 크리에이터 user_theme_overrides(add). Shopping 테마 있으면 Shopping, 없고 people면 Influencer.
+  //   general/ugc는 대분류 신호 아님(중립). category='Custom'만 대상이라 재실행해도 무해(멱등). 신규는 코드(global-themes/items)가 즉시 승격.
+  await pool.query(`
+    UPDATE marketplace_templates mt SET category = 'Shopping'
+     WHERE mt.category = 'Custom' AND mt.creator_id IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM (
+           SELECT th.slug FROM template_themes tt JOIN themes th ON th.id = tt.theme_id WHERE tt.template_id = mt.id
+           UNION
+           SELECT o.theme_slug FROM user_theme_overrides o
+             WHERE o.user_id = mt.creator_id AND o.item_type = 'template' AND o.item_id = mt.id::text AND o.action = 'add'
+         ) eff
+         WHERE eff.slug IN ('beauty','fashion','jewelry','pet','food','coffee','home','tech')
+       )
+  `);
+  await pool.query(`
+    UPDATE marketplace_templates mt SET category = 'Influencer'
+     WHERE mt.category = 'Custom' AND mt.creator_id IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM (
+           SELECT th.slug FROM template_themes tt JOIN themes th ON th.id = tt.theme_id WHERE tt.template_id = mt.id
+           UNION
+           SELECT o.theme_slug FROM user_theme_overrides o
+             WHERE o.user_id = mt.creator_id AND o.item_type = 'template' AND o.item_id = mt.id::text AND o.action = 'add'
+         ) eff
+         WHERE eff.slug = 'people'
+       )
+  `);
 }
 
 /**
