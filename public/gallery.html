@@ -45,6 +45,8 @@
   .card .like:active{transform:scale(.88)}
   .card .like .hrt{font-size:13px;line-height:1}
   .card .like.on{color:#ff5a7a;border-color:rgba(255,90,122,.6)}
+  /* My creations 카드 미리보기에선 좋아요 '수'만 숨김(하트는 유지). 상세·Explore는 그대로. toggleLike는 숨은 .lct 갱신=무해 */
+  .card .like .lct{display:none}
   .card .act{pointer-events:auto;width:100%;border:none;border-radius:9px;padding:9px 10px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .card .act.save{background:rgba(255,255,255,.17);color:#fff;border:1px solid rgba(255,255,255,.32)}
   .card .vbadge{position:absolute;top:9px;left:9px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:3;opacity:0;transition:opacity .15s}
