@@ -250,6 +250,7 @@
     <button class="x" onclick="closeEdit()">✕</button>
     <h3>Manage template</h3>
     <div class="mfield"><label>Name</label><input type="text" id="edName" maxlength="80"></div>
+    <div class="mfield"><label>Prompt <i style="color:var(--faint)">(the recipe that generates the result)</i></label><textarea id="edPrompt" maxlength="8000" placeholder="결과물을 만드는 프롬프트…" style="min-height:96px"></textarea></div>
     <div class="mfield"><label>Description</label><textarea id="edDesc" maxlength="600" placeholder="What this template does, who it's for…"></textarea></div>
     <div class="mfield"><label>Category</label>
       <select id="edCat" onchange="recolorThemes('edCat','edThemes')">
@@ -498,12 +499,16 @@ function openEdit(id){
   EDIT_ID=id;
   window.__editVis=t.visibility==='public'?'public':'private';
   document.getElementById('edName').value=t.name||'';
+  document.getElementById('edPrompt').value=t.prompt||''; // 우선 목록 값(있으면) → 아래 상세로 보강
   document.getElementById('edDesc').value=t.description||'';
   const cat=['Influencer','Shopping'].includes(t.category)?t.category:'Influencer'; // 레거시 Custom/UGC → Influencer 표시
   document.getElementById('edCat').value=cat;
-  // 기존 테마 프리로드(상세 API가 themes 반환)
+  // 기존 테마 + prompt 프리로드(상세 API가 themes·prompt 반환 — 내 템플릿이라 prompt 노출됨)
   renderThemeChips('edThemes', t.themes||[], cat);
-  fetch('/api/marketplace/templates/'+id).then(r=>r.json()).then(d=>renderThemeChips('edThemes',(d.data&&d.data.themes)||[], document.getElementById('edCat').value)).catch(()=>{});
+  fetch('/api/marketplace/templates/'+id).then(r=>r.json()).then(d=>{
+    renderThemeChips('edThemes',(d.data&&d.data.themes)||[], document.getElementById('edCat').value);
+    if(d.data&&d.data.prompt!=null) document.getElementById('edPrompt').value=d.data.prompt;
+  }).catch(()=>{});
   document.getElementById('edVis').value=t.visibility==='public'?'public':'private';
   document.getElementById('edPrice').value=t.price_credits||0;
   document.getElementById('edUsePrice').value=t.use_price_credits||0;
@@ -520,6 +525,8 @@ async function saveEdit(){
     themeSlugs:selectedThemes('edThemes'),
     visibility:document.getElementById('edVis').value
   };
+  const pr=document.getElementById('edPrompt').value.trim();
+  if(pr) body.prompt=pr; // 비어 있으면 보내지 않음(실수로 레시피 비우는 것 방지)
   if(window.featureOn&&window.featureOn('marketplace')){
     body.priceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edPrice').value,10)||0,100));
     body.usePriceCredits=Math.max(0,Math.min(parseInt(document.getElementById('edUsePrice').value,10)||0,50));
