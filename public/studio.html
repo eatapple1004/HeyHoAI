@@ -51,6 +51,47 @@
   .subj-ava{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--surface2,rgba(255,255,255,.05))}
   .subj-ava.grad{background:linear-gradient(135deg,#7c6cff,#5ee0d6)}
   .subj-ava.ph{background:rgba(255,255,255,.05);color:var(--dim);font-size:20px}
+  /* ▼▼▼ (2026-06-28 테스트) "Pick a template" 컴포즈 흡수 — 라벨 버튼(미선택) → accent "✓ Template" 칩(선택). 모달은 Select Media와 동일한 .modal.media(배경 #0c0c14). 롤백 시 이 블록 통째 삭제 ▼▼▼ */
+  .tpl-compose{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+  #tplPanelInner{width:min(940px,100%);overflow:auto}        /* .modal.media가 배경#0c0c14·max-height86vh·flex column 제공 */
+  #tplPanelInner .filter-row{margin-top:16px}
+  /* 선택된 템플릿 = 제품(레퍼런스) 타일과 구분되는 강조 카드("이 템플릿으로 만들어진다"가 한눈에) */
+  .tpl-sel{display:flex;align-items:center;gap:14px;background:rgba(124,108,255,.12);border:1.5px solid var(--accent);border-radius:16px;padding:12px 14px 12px 12px;width:100%;max-width:480px;cursor:pointer;box-shadow:0 0 0 4px rgba(124,108,255,.10),0 12px 32px -14px rgba(124,108,255,.55);transition:background .15s}
+  .tpl-sel:hover{background:rgba(124,108,255,.18)}
+  .tpl-sel .ts-thumb{position:relative;width:72px;height:72px;border-radius:12px;flex-shrink:0;background-size:cover;background-position:center;background-color:rgba(255,255,255,.06);box-shadow:0 4px 14px -4px rgba(0,0,0,.5)}
+  .tpl-sel .ts-thumb::after{content:'✓';position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #0c0c14}
+  .tpl-sel .ts-body{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+  .tpl-sel .ts-cap{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2)}
+  .tpl-sel .ts-name{font-size:16.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px;line-height:1.2}
+  .tpl-sel .ts-sub{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tpl-sel .ts-x{margin-left:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--dim);font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;align-self:flex-start}
+  .tpl-sel .ts-x:hover{background:rgba(255,255,255,.18);color:var(--text)}
+  /* ▲▲▲ 테스트 흡수 블록 끝 ▲▲▲ */
+  /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
+  #resultStep .step-head{align-items:baseline}
+  .results-all{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap;cursor:pointer}
+  .results-all:hover{text-decoration:underline}
+  #resultsGrid{display:block}                              /* .results-grid의 4열 grid 무효화 → 배치 행 세로 스택 */
+  .result-row{display:flex;gap:22px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--border)}
+  .result-row:first-child{padding-top:8px}
+  .result-row:last-child{border-bottom:none}
+  .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+  .rb-media .result-card{width:230px;max-width:44vw}       /* 행 안에서 고정폭(grid 1fr 아님) */
+  .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
+  .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
+  .rb-badge.tpl{color:var(--accent2);background:rgba(124,108,255,.14)}
+  .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
+  .rb-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
+  .rb-prompt{font-size:13.5px;line-height:1.55;color:var(--dim);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .rb-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .rb-tag{font-size:11px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:3px 8px;border-radius:7px}
+  .rb-date{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--dim);margin:8px 0 -6px;padding-top:18px;border-top:1px solid var(--border)}
+  .rb-date:first-child{border-top:none;padding-top:0;margin-top:2px}
+  .result-card.rb-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid var(--border)} /* 이미지 크기 박스 안에서 로딩 */
+  .rb-spin{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  .rb-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums} /* 실시간 경과 초 */
+  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media .result-card{width:46%;max-width:none}}
+  /* ▲▲▲ 결과 피드 블록 끝 ▲▲▲ */
   /* 선택된 레퍼런스 = 선택기 아래 정사각 사진 타일(Leonardo식) */
   /* 이미지 추가 아이콘 버튼 + 툴별 슬롯 팝오버 */
   .img-add-wrap{position:relative;display:inline-block}
@@ -430,38 +471,55 @@
 
   <!-- (폐기·P4) lookThemeModal 제거 — γ-2 수동 "룩을 테마에 저장" 피커. 트리거 없음(?saveLook·saveCurrentLook 제거). -->
 
-  <div class="step fade d3" id="templateStep">
-    <div class="step-head"><div class="step-num" id="snTemplate">2</div><h2 id="step2Title">Pick a template</h2>
-      <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span></div>
-    <div class="filter-row" id="filterRow"></div>
-    <style>
-      .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
-      .filter-row .chip.ghost{border-style:dashed;color:var(--dim)}
-      .filter-row .chip .chip-x{margin-left:5px;opacity:.55;font-size:10px}
-      .recipe-card{position:relative}
-      .recipe-card.is-hidden{opacity:.42}
-      .recipe-card .mctrls{position:absolute;top:6px;right:6px;z-index:3;display:flex;gap:5px}
-      .recipe-card .mc{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:14px;cursor:pointer;line-height:1}
-      .recipe-card .mc.add{background:var(--accent);border-color:var(--accent)}
-      .recipe-card .mc.rem{background:#c0455e;border-color:#c0455e}
-      .cth-empty{grid-column:1/-1;color:var(--faint);font-size:13.5px;padding:24px 4px;text-align:center;line-height:1.6}
-    </style>
-    <div class="recipe-grid" id="recipeGrid"></div>
-    <div id="premiumWrap" style="display:none">
-      <div class="premium-head">Premium <span class="ph-sub">— unlock once, yours forever</span></div>
-      <div class="recipe-grid" id="premiumGrid"></div>
+  <!-- (2026-06-28 테스트) "Pick a template"를 컴포즈 박스 트리거(#tplCompose)로 흡수 + 그리드는 모달(#tplPanel)로. Select Media(#imgModal)와 동일하게 .modal-bg/.modal 재사용. 롤백=이 모달 구조를 옛 .step 그리드로 되돌리고 #tplCompose/JS/CSS 제거 -->
+  <div class="step fade d3" id="templateStep" style="margin:0;padding:0">
+    <div class="modal-bg" id="tplPanel" style="z-index:70" onclick="if(event.target===this)closeTemplatePicker()">
+      <div class="modal media" id="tplPanelInner">
+        <button class="x" type="button" onclick="closeTemplatePicker()">✕</button>
+        <div class="step-num" id="snTemplate" style="display:none">2</div>
+        <h3 id="step2Title">Pick a template</h3>
+        <div class="msub" id="step2Hint">No prompt needed — just choose a look.</div>
+        <div class="filter-row" id="filterRow"></div>
+        <style>
+          .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
+          .filter-row .chip.ghost{border-style:dashed;color:var(--dim)}
+          .filter-row .chip .chip-x{margin-left:5px;opacity:.55;font-size:10px}
+          .recipe-card{position:relative}
+          .recipe-card.is-hidden{opacity:.42}
+          .recipe-card .mctrls{position:absolute;top:6px;right:6px;z-index:3;display:flex;gap:5px}
+          .recipe-card .mc{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:14px;cursor:pointer;line-height:1}
+          .recipe-card .mc.add{background:var(--accent);border-color:var(--accent)}
+          .recipe-card .mc.rem{background:#c0455e;border-color:#c0455e}
+          .cth-empty{grid-column:1/-1;color:var(--faint);font-size:13.5px;padding:24px 4px;text-align:center;line-height:1.6}
+        </style>
+        <div class="recipe-grid" id="recipeGrid"></div>
+        <div id="premiumWrap" style="display:none">
+          <div class="premium-head">Premium <span class="ph-sub">— unlock once, yours forever</span></div>
+          <div class="recipe-grid" id="premiumGrid"></div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- (2026-06-28 테스트) 생성 결과 피드 — 컴포즈 박스 아래에 쭉. 로드 시 최근 결과 복구(reload-safe)+생성 시 누적. 롤백=JS의 STUDIO_RESULTS/loadStudioResults/renderStudioResults 제거하고 옛 innerHTML 방식 복원 -->
   <div class="step hidden" id="resultStep">
-    <div class="step-head"><div class="step-num" id="snResult">3</div><h2>Your content</h2>
-      <span class="hint" id="resultHint"></span></div>
+    <div class="step-head"><div class="step-num" id="snResult" style="display:none">3</div><h2 id="resultsTitle">Your creations</h2>
+      <span class="hint" id="resultHint"></span>
+      <a class="results-all" href="/gallery">View all in Library →</a></div>
     <div id="loadingBox" class="loading hidden"><div class="spinner"></div><div>Generating… this takes ~20s</div></div>
     <div class="results-grid" id="resultsGrid"></div>
   </div>
 </div>
 
 <div class="gen-bar">
+  <!-- (2026-06-28 테스트) 템플릿 선택 — "Select a product"와 동일 패턴(라벨 버튼 + 선택 시 .ref-tile 타일). placeGenBar가 subjectRow를 앞에 끼워넣음(subject→template 순서) -->
+  <div class="tpl-compose" id="tplCompose">
+    <button type="button" class="img-add labeled" id="tplTrigger" onclick="toggleTemplatePicker()">
+      <svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span class="img-add-label" id="ttName">Pick a template</span>
+    </button>
+    <div id="tplSelWrap" style="display:none"></div>
+  </div>
   <div class="addons" id="addonsRow">
     <div class="field" id="modelField" style="display:none">
       <span class="addon-label">Model</span>
@@ -1268,7 +1326,7 @@ function setMode(m,initialVertical){
   // 하단 프롬프트 칸: Custom 전용 — 템플릿 모드는 레시피 모달의 Add detail 사용
   document.getElementById('promptRow').style.display=custom?'':'none';
   placeGenBar(custom);
-  document.getElementById('resultStep').classList.add('hidden');
+  renderStudioResults(); // (테스트) 결과 피드는 모드 전환에도 유지(결과 있으면 표시)
   renderSubjects();renderFilters();renderRecipes();updateBar();
 }
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -1563,8 +1621,7 @@ async function confirmUnlock(){
     const rid=UNLOCK.rid;closeUnlock();
     if(window.toast)toast("Unlocked — it's in your templates now.");
     await applyRecipeGates();           // 보유 반영: 프리미엄에서 빠지고 메인 그리드로
-    if(rid){state.recipeId=rid;state.filter='All';renderFilters();renderRecipes();updateBar();
-      document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});}
+    if(rid){state.recipeId=rid;state.filter='All';renderFilters();renderRecipes();updateBar();closeTemplatePicker();}
   }catch(e){if(window.toast)toast('Unlock failed: '+(e.message||e));}
   finally{btn.disabled=false;btn.innerHTML='Unlock · <span id="unlockPrice">◈ '+(UNLOCK.price||'')+'</span>';}
 }
@@ -1608,6 +1665,47 @@ function selectFromModal(){
   const dt=document.getElementById('rmDetail');
   state.detail=sel?(dt?dt.value.trim():''):''; // 선택 시 Add detail 저장, 해제 시 클리어
   renderRecipes();updateBar();closeRecipeModal();
+  if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
+}
+
+// ── (2026-06-28 테스트) 템플릿 픽커: 컴포즈 박스 트리거 + 넓은 모달 ──
+function toggleTemplatePicker(){
+  const p=document.getElementById('tplPanel'); if(!p)return;
+  if(p.parentElement!==document.body) document.body.appendChild(p); // ★ transform 조상(.step.fade/.gen-bar) 탈출 → fixed가 viewport 기준
+  const open=!p.classList.contains('open');
+  p.classList.toggle('open',open);
+  if(open){renderFilters();renderRecipes();} // 열 때 최신 상태로 재렌더
+}
+function closeTemplatePicker(){const p=document.getElementById('tplPanel'); if(p)p.classList.remove('open');}
+function clearTemplate(){state.recipeId=null;state.detail=null;renderRecipes();updateBar();}
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  const p=document.getElementById('tplPanel'); if(!p||!p.classList.contains('open'))return;
+  const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open')){closeRecipeModal();return;} // 위에 뜬 레시피 상세부터
+  closeTemplatePicker();
+});
+// 트리거 라벨 + 선택 시 .ref-tile 타일(Select a product와 동일 패턴). 모든 선택 경로가 updateBar→syncTplTrigger 경유.
+function syncTplTrigger(){
+  const c=document.getElementById('tplCompose'); if(!c)return;
+  const custom=(state.mode==='custom');
+  c.style.display=custom?'none':''; // Custom 모드는 프롬프트가 주 입력 → 트리거 숨김
+  if(custom){closeTemplatePicker();return;}
+  const name=document.getElementById('ttName');
+  if(name)name.textContent=(document.getElementById('step2Title')||{}).textContent||'Pick a template';
+  const btn=document.getElementById('tplTrigger'), wrap=document.getElementById('tplSelWrap');
+  if(!wrap)return;
+  const r=curRecipe();
+  if(r){ // 선택됨 → 라벨 버튼 숨기고 강조 카드("이 템플릿으로 만들어진다"가 한눈에)
+    const thumb=r.preview?`background-image:url('${esc(r.preview)}')`:(r.grad?`background:${r.grad}`:'');
+    const out=r.type==='reel'?'reel':'photos';
+    wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
+      +`<span class="ts-thumb" style="${thumb}"></span>`
+      +`<span class="ts-body"><span class="ts-cap">Template selected</span><span class="ts-name">${esc(r.name)}</span>`
+      +`<span class="ts-sub">Your ${out} will be made with this look · tap to change</span></span>`
+      +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`;
+    wrap.style.display='';
+    if(btn)btn.style.display='none';
+  }else{ wrap.innerHTML=''; wrap.style.display='none'; if(btn)btn.style.display=''; }
 }
 
 // ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
@@ -1638,7 +1736,7 @@ async function uploadSubject(inp){
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
-function updateBar(){ updateBarCore(); }
+function updateBar(){ syncTplTrigger(); updateBarCore(); }
 function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
@@ -1664,6 +1762,77 @@ function updateBarCore(){
 }
 
 // ── 실제 생성 ──
+// ── (2026-06-28 테스트) 생성 결과 피드: Leonardo식 배치당 한 행 + 로드 시 최근 복구 + 생성 시 누적 ──
+// batch = {items:[{url,type,idx}], promptText, templateSource, templateName, model, w, h}
+let STUDIO_BATCHES=[];
+function studioMediaCard(o){
+  const reel=(o.type==='reel');
+  const inner=reel
+    ?`<video class="img" src="${esc(o.url)}" muted loop playsinline preload="metadata" style="object-fit:cover;cursor:zoom-in" onclick="openImageModal('${esc(o.url)}','reel')"></video>`
+    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(o.url)}','photo')">`;
+  return `<div class="result-card">${inner}
+      <div class="actions">
+        <a href="${esc(o.url)}" download><button>⬇ Download</button></a>
+        <button onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')">⤢ View large</button>
+      </div></div>`;
+}
+function batchRowHtml(b){
+  const media=b.loading
+    ? Array.from({length:b.pendingCount||1}).map(()=>`<div class="result-card rb-loading"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join('') // 생성 중: 이미지 칸 자리에서 로딩 + 실시간 경과 초
+    : b.items.map(studioMediaCard).join('');
+  // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
+  const isTpl=!!b.templateSource;
+  const head=isTpl
+    ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
+    :`<span class="rb-badge custom">✎ Custom</span><div class="rb-prompt">${esc(b.promptText||'Custom prompt')}</div>`;
+  const size=(b.w&&b.h)?`${b.w}×${b.h}`:'';
+  const tags=[b.model&&`<span class="rb-tag">${esc(b.model)}</span>`,size&&`<span class="rb-tag">${size}</span>`,b.items.length>1&&`<span class="rb-tag">${b.items.length} images</span>`].filter(Boolean).join('');
+  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}<div class="rb-tags">${tags}</div></div></div>`;
+}
+function dateKeyOf(iso){ const d=iso?new Date(iso):new Date(); if(isNaN(d))return ''; return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+function fmtBatchDate(iso){ // Leonardo식 날짜 헤더: Today / Yesterday / Wednesday, 27 May 2026
+  const d=iso?new Date(iso):new Date(); if(isNaN(d))return '';
+  const t=new Date();t.setHours(0,0,0,0); const dd=new Date(d);dd.setHours(0,0,0,0);
+  const diff=Math.round((t-dd)/86400000);
+  if(diff===0)return 'Today'; if(diff===1)return 'Yesterday';
+  return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+function renderStudioResults(){
+  const grid=document.getElementById('resultsGrid'); if(!grid)return;
+  let html='',lastKey=null;
+  STUDIO_BATCHES.forEach(b=>{
+    if(b.dateKey!==lastKey){ html+=`<div class="rb-date">${esc(b.dateLabel||'')}</div>`; lastKey=b.dateKey; } // 날짜 바뀌는 지점마다 헤더
+    html+=batchRowHtml(b);
+  });
+  grid.innerHTML=html;
+  const step=document.getElementById('resultStep');
+  const lb=document.getElementById('loadingBox');
+  const loading=lb&&!lb.classList.contains('hidden');
+  if(step)step.classList.toggle('hidden',STUDIO_BATCHES.length===0&&!loading); // 결과 있거나 생성 중이면 표시
+}
+// 생성 시작 즉시 피드 맨 앞에 띄울 placeholder 배치(메타는 바로, 이미지는 로딩) — Leonardo식
+function makePendingBatch(r,extra,count,isReel){
+  return {items:[],loading:true,pendingCount:isReel?1:(count||4),
+    promptText:r?'':extra, templateSource:r?(attribution().templateSource||'recipe'):'', templateName:r?r.name:'',
+    model:isReel?'Reel':effModelLabel(), w:null,h:null, dateKey:dateKeyOf(),dateLabel:'Today'};
+}
+async function loadStudioResults(){
+  try{
+    const res=await fetch('/api/generate/results?limit=40');
+    if(!res.ok)return;
+    const rows=((await res.json()).data||[]).filter(r=>r.status==='success'&&r.file_path);
+    // prompt_idx별로 한 배치(=한 번 생성)로 묶음. rows는 created_at DESC(최신순) 유지.
+    const map=new Map(),order=[];
+    rows.forEach(r=>{
+      const k=r.prompt_idx;
+      if(!map.has(k)){ map.set(k,{items:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}); order.push(k); }
+      const fn=r.file_path.split('/').pop();
+      map.get(k).items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
+    });
+    STUDIO_BATCHES=order.map(k=>map.get(k));
+    renderStudioResults();
+  }catch(e){}
+}
 async function generate(opts){
   const genN=(opts&&opts.count)||curCount(); // Count 컨트롤(전 모드 1~8)
   const r=curRecipe(),subj=curSubject();
@@ -1681,20 +1850,25 @@ async function generate(opts){
   generating=true;updateBar();
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
-  document.getElementById('resultsGrid').innerHTML='';
-  const lb=document.getElementById('loadingBox');lb.classList.remove('hidden');
-  lb.querySelector('div:last-child').textContent=isReel
-    ?'Generating reel… usually 2–5 minutes. You can close this — it saves to your gallery automatically.'
-    :(genN===1?'Generating 1… ~15s.':'Generating photos… this takes 30s–1 min.');
   document.getElementById('resultHint').textContent='';
+  // (테스트) Leonardo식: placeholder 배치를 피드 맨 앞에 — 메타(템플릿명/프롬프트/모델)는 즉시, 이미지 칸은 로딩
+  const pending=makePendingBatch(r,extra,genN,isReel);
+  STUDIO_BATCHES.unshift(pending); renderStudioResults();
   step.scrollIntoView({behavior:'smooth'});
+  // (테스트) Leonardo식 실시간 경과 초 — 로딩 박스 안 카운트업
+  const t0=Date.now();
+  const elapsedTimer=setInterval(()=>{
+    const s=((Date.now()-t0)/1000).toFixed(1)+'s';
+    document.querySelectorAll('#resultsGrid .rb-elapsed').forEach(el=>{el.textContent=s;});
+  },100);
 
   try{
-    if(isReel) await generateReel(r,subj);
-    else await generateImages(r,subj,genN);
+    if(isReel) await generateReel(r,subj,pending);
+    else await generateImages(r,subj,genN,pending);
     if(captionOn()) await generateCaptionBlock(r,subj);
   }catch(e){
     console.error(e);
+    const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1); renderStudioResults(); // 실패 → placeholder 제거
     if(e.code402){
       document.getElementById('resultHint').textContent='';
       openPaywall(genCost(r));
@@ -1703,7 +1877,7 @@ async function generate(opts){
       toast('Something went wrong while generating.','error');
     }
   }finally{
-    lb.classList.add('hidden');
+    clearInterval(elapsedTimer); // 경과 타이머 정지
     generating=false;btn.textContent='Generate';
     loadCredits(); // 잔액 갱신 (updateBar 포함)
   }
@@ -1840,7 +2014,7 @@ async function resolvePromptFor(r,subj){
   if(extra)base.prompt=base.prompt?base.prompt+', '+extra:extra; // 템플릿 프롬프트 + 사용자 추가분 (템플릿 없으면 프롬프트만)
   return base;
 }
-async function generateImages(r,subj,count){
+async function generateImages(r,subj,count,pending){
   count=count||4;
   const rp=await resolvePromptFor(r,subj);
   // 다중 레퍼런스(reference 슬롯): 1번째=characterId, 2번째부터=referenceImages 파일(백엔드 합쳐 사용, 최대 14)
@@ -1871,12 +2045,8 @@ async function generateImages(r,subj,count){
   const ok=(data.results||[]).filter(x=>x.success);
   const fail=(data.results||[]).length-ok.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,4); // 템플릿 미리보기 후보(방금 만든 결과)
-  document.getElementById('resultsGrid').innerHTML=ok.map(x=>`
-    <div class="result-card"><img class="img" src="${esc(x.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(x.url)}','photo')">
-      <div class="actions">
-        <a href="${esc(x.url)}" download><button>⬇ Download</button></a>
-        <button onclick="openImageModal('${esc(x.url)}','photo')">⤢ View large</button>
-      </div></div>`).join('');
+  // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지)
+  if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.idx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; renderStudioResults(); }
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
@@ -1885,11 +2055,12 @@ async function generateImages(r,subj,count){
   }
 }
 
-async function generateReel(r,subj){
+async function generateReel(r,subj,pending){
   const isCustomVid=(state.mode==='custom'&&curType()==='video');
   // 시작 프레임: Custom 비디오면 startFrame 슬롯, 템플릿 릴이면 subject
   const startUrl=isCustomVid?((slotItems('startFrame')[0]||{}).url):(subj&&subj.reference_image_url);
   if(!startUrl){
+    if(pending){const i=STUDIO_BATCHES.indexOf(pending);if(i>=0)STUDIO_BATCHES.splice(i,1);renderStudioResults();} // placeholder 제거
     document.getElementById('resultHint').textContent='⚠ Add a start frame first.';
     return;
   }
@@ -1918,12 +2089,8 @@ async function generateReel(r,subj){
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
   const url=await pollVideoJob(data.jobId);
-  document.getElementById('resultsGrid').innerHTML=`
-    <div class="result-card"><video class="img" src="${esc(url)}" controls loop style="object-fit:cover"></video>
-      <div class="actions">
-        <a href="${esc(url)}" download><button>⬇ Download</button></a>
-        <button onclick="openImageModal('${esc(url)}','reel')">⤢ View large</button>
-      </div></div>`;
+  // (테스트) placeholder 릴 배치를 실제 결과로 채움
+  if(pending){ pending.items=[{url:url,type:'reel',idx:null}]; pending.loading=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=`1 reel ready — saved to your gallery`;
 }
 
@@ -2140,6 +2307,7 @@ loadCredits();
 loadBrandkit();
 loadContextSwitcher();
 loadRecipeDesc();
+loadStudioResults(); // (테스트) 최근 생성 결과를 박스 아래 피드로 복구(reload-safe)
 applyPendingTemplate();
 dailyCheckin();
 
