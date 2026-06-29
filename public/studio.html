@@ -1753,7 +1753,8 @@ function updateBarCore(){
   if(state.mode==='ugc'){btn.disabled=true;s.textContent='UGC ads — coming soon.';return;}
   const extra=extraPromptText();
   // 대상은 필수, 템플릿·프롬프트는 둘 중 하나 이상이면 생성 가능
-  if(!state.subjectId){btn.disabled=true;s.textContent='';return;}
+  // (테스트) Custom 모드는 레퍼런스 없이 프롬프트만으로 생성 허용(순수 text-to-image). 그 외엔 주체 필수.
+  if(!state.subjectId&&!(state.mode==='custom'&&extra)){btn.disabled=true;s.textContent='';return;}
   if(!r&&!extra){btn.disabled=true;s.textContent='Pick a template or enter a prompt.';return;}
   const cost=genCost(r);
   const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
@@ -1857,7 +1858,8 @@ async function generate(opts){
   const r=curRecipe(),subj=curSubject();
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
-  if(!subj||generating)return;
+  if(generating)return;
+  if(!subj&&!(state.mode==='custom'&&extra))return; // (테스트) Custom은 레퍼런스 없이 프롬프트만 허용
   if(!r&&!extra&&!GAMMA_FROM)return; // γ 모드: 레시피·프롬프트 없이도 공개 creation 룩으로 생성
   if(r&&r.soon){toast('UGC mode is coming soon.');return;}
   lastGenTemplate=r?r.name:'My prompt'; // 뷰어 모달에 표시할 템플릿
