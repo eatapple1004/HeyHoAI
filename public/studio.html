@@ -525,7 +525,7 @@
   <div class="tpl-compose" id="tplCompose">
     <button type="button" class="img-add labeled" id="tplTrigger" onclick="toggleTemplatePicker()">
       <svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span class="img-add-label" id="ttName">Pick a template</span>
+      <span class="img-add-label" id="tplTrigLabel">Pick a template</span>
     </button>
     <div id="tplSelWrap" style="display:none"></div>
   </div>
@@ -1699,7 +1699,7 @@ function syncTplTrigger(){
   const custom=(state.mode==='custom');
   c.style.display=custom?'none':''; // Custom 모드는 프롬프트가 주 입력 → 트리거 숨김
   if(custom){closeTemplatePicker();return;}
-  const name=document.getElementById('ttName');
+  const name=document.getElementById('tplTrigLabel'); // (수정) 모델 트리거 #ttName과 id 충돌 회피
   if(name)name.textContent=(document.getElementById('step2Title')||{}).textContent||'Pick a template';
   const btn=document.getElementById('tplTrigger'), wrap=document.getElementById('tplSelWrap');
   if(!wrap)return;
