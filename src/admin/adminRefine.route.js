@@ -16,7 +16,9 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = Router();
 
-const IMG_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview';
+// admin 도구는 품질 우선 → 전용 REFINE_IMAGE_MODEL(기본 Nano Banana Pro)로 스튜디오(GEMINI_IMAGE_MODEL, flash)와 분리.
+// 서버 .env가 flash여도 admin refine/apply는 Pro로 생성 → 로컬과 동일 품질/수렴.
+const IMG_MODEL = process.env.REFINE_IMAGE_MODEL || 'gemini-3-pro-image-preview';
 const JUDGE_MODEL = process.env.REFINE_JUDGE_MODEL || 'claude-sonnet-4-6';
 
 // 단발 생성 품질 보강(확대/크롭 방지 + 고해상도) — 두 이미지 입력 시 img2img 줌인 경향 억제
