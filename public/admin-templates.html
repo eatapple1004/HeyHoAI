@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>템플릿 관리 · Doppia Admin</title>
+<style>
+  :root{--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;--border:#2a2a3a;--border2:#3a3a4e;
+    --text:#ececf4;--dim:#9a9ab0;--faint:#6a6a80;--accent:#7c6cff;--accent2:#9b8bff;--ok:#4ade80;--bad:#f87171;--pink:#d9608f}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+  body{background:var(--bg);color:var(--text);padding:26px 30px;max-width:1280px;margin:0 auto}
+  h1{font-size:22px;font-weight:800}
+  .sub{color:var(--dim);font-size:13.5px;margin:5px 0 20px}
+  .sub a{color:var(--accent2)}
+  .wrap{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+  .col-form{flex:1;min-width:340px}
+  .col-list{flex:1.1;min-width:340px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:18px}
+  .card h2{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+  label{display:block;font-size:12px;color:var(--dim);font-weight:700;margin:12px 0 5px}
+  input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);
+    border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13.5px}
+  textarea{resize:vertical;line-height:1.5}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .actions{display:flex;gap:10px;margin-top:18px}
+  button{font-family:inherit;cursor:pointer;border-radius:10px;font-weight:700}
+  .btn-primary{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;border:none;font-size:14px;padding:11px 22px;flex:1}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--dim);font-size:13px;padding:10px 16px}
+  .btn-ghost:hover{color:var(--text);border-color:var(--accent)}
+  .msg{font-size:13px;font-weight:600;margin-top:12px;min-height:18px}
+  .msg.ok{color:var(--ok)}.msg.err{color:var(--bad)}
+  .handoff{background:rgba(124,108,255,.12);border:1px solid rgba(124,108,255,.4);border-radius:11px;padding:11px 13px;
+    font-size:12.5px;color:var(--accent2);margin-bottom:14px;display:none}
+  .tpl{display:flex;gap:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:11px;margin-bottom:11px}
+  .tpl .thumb{width:64px;height:64px;border-radius:9px;flex-shrink:0;background:#0a0a10 center/cover no-repeat;display:flex;
+    align-items:center;justify-content:center;font-size:26px}
+  .tpl .info{flex:1;min-width:0}
+  .tpl .nm{font-size:14px;font-weight:700}
+  .tpl .tags{margin-top:4px;display:flex;gap:5px;flex-wrap:wrap}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--panel);border:1px solid var(--border);color:var(--dim)}
+  .tag.pub{color:var(--accent2);border-color:rgba(124,108,255,.4)}
+  .tag.priv{color:var(--faint)}
+  .tpl .pr{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.4;max-height:34px;overflow:hidden}
+  .tpl .ops{display:flex;flex-direction:column;gap:6px}
+  .tpl .ops button{font-size:11.5px;padding:5px 11px;border:1px solid var(--border2);background:transparent;color:var(--dim)}
+  .tpl .ops .del:hover{color:var(--bad);border-color:var(--bad)}
+  .tpl .ops .edit:hover{color:var(--accent2);border-color:var(--accent)}
+  .empty{color:var(--faint);font-size:13px;text-align:center;padding:26px}
+  .count{font-size:12.5px;color:var(--dim);font-weight:600}
+</style>
+</head>
+<body>
+  <h1>📋 템플릿 관리 <span style="font-size:13px;font-weight:600;color:var(--faint)">· 관리자 전용</span></h1>
+  <div class="sub">내가 만든 템플릿을 생성·수정·삭제합니다. · <a href="/admin-refine">프롬프트 자동 정밀화 →</a></div>
+
+  <div class="wrap">
+    <div class="col-form">
+      <div class="card">
+        <h2><span id="formTitle">＋ 새 템플릿</span><button class="btn-ghost" id="resetBtn" style="display:none">＋ 새로 만들기</button></h2>
+        <div class="handoff" id="handoff"></div>
+        <input type="hidden" id="editId">
+        <label>이름 *</label>
+        <input id="fName" placeholder="예: 파스텔 프레스온 플랫레이">
+        <div class="grid3">
+          <div><label>카테고리 *</label>
+            <select id="fCategory"><option>Shopping</option><option>Influencer</option><option>UGC</option><option>Custom</option></select></div>
+          <div><label>타입</label>
+            <select id="fType"><option value="image">image</option><option value="reel">reel</option></select></div>
+          <div><label>이모지</label><input id="fEmoji" value="🎨" maxlength="4"></div>
+        </div>
+        <label>프롬프트 *</label>
+        <textarea id="fPrompt" rows="6" placeholder="생성 프롬프트"></textarea>
+        <label>네거티브 프롬프트</label>
+        <textarea id="fNeg" rows="3" placeholder="negative prompt"></textarea>
+        <div class="grid3">
+          <div><label>공개</label>
+            <select id="fVis"><option value="private">private</option><option value="public">public</option></select></div>
+          <div><label>가격(크레딧)</label><input id="fPrice" type="number" value="0" min="0" max="100"></div>
+          <div><label>테마 slug (콤마)</label><input id="fThemes" placeholder="beauty,nail"></div>
+        </div>
+        <label>미리보기 이미지 URL (콤마, 최대 6)</label>
+        <input id="fPreview" placeholder="https://…">
+        <label>🎯 타깃(레이아웃) 이미지 — 생성 요청 시 함께 전송</label>
+        <input id="fTargetUrl" placeholder="이미지 URL, 또는 아래에서 파일 업로드">
+        <input type="file" id="fTargetFile" accept="image/*" style="margin-top:6px;padding:6px">
+        <img id="fTargetPv" style="display:none;max-height:130px;border-radius:9px;margin-top:8px;border:1px solid var(--border)">
+        <div class="actions">
+          <button class="btn-primary" id="saveBtn">저장</button>
+        </div>
+        <div class="msg" id="msg"></div>
+      </div>
+    </div>
+
+    <div class="col-list">
+      <div class="card">
+        <h2>내 템플릿 <span class="count" id="count">—</span></h2>
+        <div id="list"><div class="empty">불러오는 중…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="genTestCard">
+    <h2>🧪 템플릿으로 생성 테스트 <span class="count">레퍼런스 + 템플릿 타깃 이미지를 함께 전송</span></h2>
+    <div class="grid3">
+      <div style="grid-column:span 2"><label>템플릿 선택</label><select id="gTpl"></select></div>
+      <div><label>장수</label><select id="gCount"><option>1</option><option>2</option><option selected>3</option></select></div>
+    </div>
+    <label>레퍼런스(피사체) 이미지 업로드 *</label>
+    <input type="file" id="gRef" accept="image/*">
+    <img id="gRefPv" style="display:none;max-height:120px;border-radius:9px;margin-top:8px;border:1px solid var(--border)">
+    <div class="actions"><button class="btn-primary" id="gBtn" disabled>▶ 생성 (ref + 타깃)</button></div>
+    <div class="msg" id="gMsg"></div>
+    <div class="grid" id="gGrid" style="margin-top:12px"></div>
+  </div>
+
+<script>
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let MINE=[]; let TARGET_DATA=null; // 업로드된 타깃 이미지 data URL
+function showTargetPv(url){ const pv=$('fTargetPv'); if(url){ pv.src=url; pv.style.display='block'; } else { pv.style.display='none'; } }
+$('fTargetFile').addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{ TARGET_DATA=r.result; $('fTargetUrl').value=''; showTargetPv(TARGET_DATA); }; r.readAsDataURL(f); });
+$('fTargetUrl').addEventListener('input',()=>{ TARGET_DATA=null; showTargetPv($('fTargetUrl').value.trim()); });
+
+function msg(t,ok){ const m=$('msg'); m.textContent=t; m.className='msg '+(ok?'ok':'err'); }
+function resetForm(){
+  $('editId').value=''; $('fName').value=''; $('fCategory').value='Shopping'; $('fType').value='image';
+  $('fEmoji').value='🎨'; $('fPrompt').value=''; $('fNeg').value=''; $('fVis').value='private';
+  $('fPrice').value='0'; $('fThemes').value=''; $('fPreview').value='';
+  $('fTargetUrl').value=''; TARGET_DATA=null; showTargetPv('');
+  $('formTitle').textContent='＋ 새 템플릿'; $('resetBtn').style.display='none'; $('editId').dataset.mode='create'; msg('');
+}
+$('resetBtn').onclick=resetForm;
+
+function fillForm(t){
+  $('editId').value=t.id; $('fName').value=t.name||''; $('fCategory').value=t.category||'Shopping';
+  $('fType').value=t.type||'image'; $('fEmoji').value=t.emoji||'🎨'; $('fPrompt').value=t.prompt||'';
+  $('fNeg').value=t.negative_prompt||''; $('fVis').value=t.visibility||'private'; $('fPrice').value=t.price_credits||0;
+  $('fThemes').value=(t.themes||[]).join(','); $('fPreview').value=(t.preview_media||[]).join(',');
+  const tgt=t.target_image_url||''; TARGET_DATA=tgt.startsWith('data:')?tgt:null;
+  $('fTargetUrl').value=tgt.startsWith('data:')?'':tgt; showTargetPv(tgt);
+  $('formTitle').textContent='✎ 템플릿 수정'; $('resetBtn').style.display='inline-block'; window.scrollTo({top:0,behavior:'smooth'}); msg('');
+}
+
+function body(){
+  const themeSlugs=$('fThemes').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const previewMedia=$('fPreview').value.split(',').map(s=>s.trim()).filter(Boolean).slice(0,6);
+  const targetImageUrl = TARGET_DATA || $('fTargetUrl').value.trim() || null;
+  return { name:$('fName').value.trim(), category:$('fCategory').value, type:$('fType').value, emoji:$('fEmoji').value.trim()||'🎨',
+    prompt:$('fPrompt').value.trim(), negativePrompt:$('fNeg').value.trim(), visibility:$('fVis').value,
+    priceCredits:parseInt($('fPrice').value,10)||0, themeSlugs, previewMedia, targetImageUrl };
+}
+
+$('saveBtn').onclick=async()=>{
+  const b=body();
+  if(!b.name||!b.prompt){ msg('이름과 프롬프트는 필수입니다.',false); return; }
+  $('saveBtn').disabled=true;
+  const id=$('editId').value;
+  try{
+    const res=await fetch('/api/marketplace/templates'+(id?'/'+id:''),{method:id?'PATCH':'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+    if(res.status===401||res.status===403){ msg('로그인/권한이 필요합니다. (관리자 계정으로 로그인)',false); $('saveBtn').disabled=false; return; }
+    const d=await res.json();
+    if(!res.ok||!d.success){ msg('저장 실패: '+(d.error||res.status),false); $('saveBtn').disabled=false; return; }
+    msg(id?'✓ 수정되었습니다.':'✓ 생성되었습니다.',true);
+    resetForm(); await load();
+  }catch(e){ msg('오류: '+e.message,false); }
+  $('saveBtn').disabled=false;
+};
+
+async function del(id,name){
+  if(!confirm('“'+name+'” 템플릿을 삭제할까요?'))return;
+  try{ const res=await fetch('/api/marketplace/templates/'+id,{method:'DELETE'});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok||!d.success){ alert('삭제 실패: '+(d.error||res.status)); return; }
+    await load();
+  }catch(e){ alert('오류: '+e.message); }
+}
+
+function render(){
+  const el=$('list');
+  if(!MINE.length){ el.innerHTML='<div class="empty">아직 만든 템플릿이 없습니다. 왼쪽에서 새로 만들어 보세요.</div>'; $('count').textContent='0개'; return; }
+  $('count').textContent=MINE.length+'개';
+  el.innerHTML=MINE.map((t,i)=>{
+    const prev=(t.preview_media&&t.preview_media[0])||'';
+    const thumb=prev?`style="background-image:url(${esc(prev)})"`:'';
+    return `<div class="tpl">
+      <div class="thumb" ${thumb}>${prev?'':esc(t.emoji||'🎨')}</div>
+      <div class="info">
+        <div class="nm">${esc(t.name)}</div>
+        <div class="tags"><span class="tag">${esc(t.category)}</span><span class="tag">${esc(t.type)}</span>
+          <span class="tag ${t.visibility==='public'?'pub':'priv'}">${esc(t.visibility)}</span>
+          ${t.target_image_url?'<span class="tag" style="color:var(--pink);border-color:rgba(217,96,143,.4)">🎯 타깃</span>':''}
+          ${(t.themes||[]).slice(0,3).map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>
+        <div class="pr">${esc((t.prompt||'').slice(0,110))}…</div>
+      </div>
+      <div class="ops"><button class="edit" onclick="editIdx(${i})">✎ 수정</button>
+        <button class="del" onclick="delIdx(${i})">🗑 삭제</button></div>
+    </div>`;
+  }).join('');
+}
+window.editIdx=(i)=>fillForm(MINE[i]);
+window.delIdx=(i)=>del(MINE[i].id,MINE[i].name);
+
+async function load(){
+  try{
+    const res=await fetch('/api/marketplace/owned');
+    if(res.status===401||res.status===403){ $('list').innerHTML='<div class="empty">로그인이 필요합니다. (관리자 계정)</div>'; return; }
+    const d=await res.json();
+    MINE=((d&&d.data)||[]).filter(t=>t.mine);
+    render(); populateGenTpl(); $('gBtn').disabled=!(MINE.length&&GEN_REF);
+  }catch(e){ $('list').innerHTML='<div class="empty">불러오기 오류: '+esc(e.message)+'</div>'; }
+}
+
+// ── 🧪 템플릿으로 생성 테스트 (ref + 타깃 함께 전송) ──
+let GEN_REF=null; // 업로드된 레퍼런스 {b64,mime}
+function populateGenTpl(){
+  const sel=$('gTpl'); sel.innerHTML=MINE.map((t,i)=>`<option value="${i}">${esc(t.name)}${t.target_image_url?' 🎯':''} · ${esc(t.category)}</option>`).join('')
+    || '<option value="">— 템플릿 없음 —</option>';
+}
+$('gRef').addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f){GEN_REF=null;return;}
+  const r=new FileReader(); r.onload=()=>{ const d=r.result; GEN_REF={b64:d.split(',')[1],mime:(d.match(/^data:([^;]+);/)||[])[1]||'image/png'};
+    $('gRefPv').src=d; $('gRefPv').style.display='block'; $('gBtn').disabled=!(MINE.length&&GEN_REF); }; r.readAsDataURL(f); });
+$('gBtn').addEventListener('click', async()=>{
+  const t=MINE[parseInt($('gTpl').value,10)]; if(!t||!GEN_REF){ return; }
+  $('gBtn').disabled=true; $('gGrid').innerHTML=''; $('gMsg').className='msg'; $('gMsg').textContent='생성 중…';
+  const tiles={};
+  function tile(i){ if(tiles[i])return tiles[i]; const el=document.createElement('div'); el.className='tpl';
+    el.style.display='block'; el.innerHTML=`<div class="thumb" id="gt${i}" style="width:100%;height:160px">…</div>`; $('gGrid').appendChild(el); return tiles[i]=el; }
+  try{
+    const res=await fetch('/api/admin/refine/apply',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ ref:GEN_REF, prompt:t.prompt, negative:t.negative_prompt||'', layout:t.target_image_url||null, count:parseInt($('gCount').value,10) })});
+    if(res.status===401||res.status===403){ $('gMsg').className='msg err'; $('gMsg').textContent='관리자 로그인이 필요합니다.'; $('gBtn').disabled=false; return; }
+    if(!res.ok){ $('gMsg').className='msg err'; $('gMsg').textContent='요청 실패 ('+res.status+')'; $('gBtn').disabled=false; return; }
+    const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';
+    while(true){ const {done,value}=await reader.read(); if(done)break;
+      buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines){ if(!line.trim())continue; let ev; try{ev=JSON.parse(line)}catch(_){continue}
+        if(ev.type==='start'){ $('gMsg').textContent=`생성 중 · ${ev.count}장${ev.withLayout?' · 🎯 타깃 함께 전송':' · (타깃 없음)'}`; for(let i=1;i<=ev.count;i++)tile(i); }
+        else if(ev.type==='img'){ tile(ev.i); const th=$('gt'+ev.i); th.style.cssText='width:100%;height:auto;border-radius:9px;background:#0a0a10'; th.innerHTML=`<img src="${ev.image}" style="width:100%;border-radius:9px;display:block"><a href="${ev.image}" download="tpl-gen-${ev.i}.png" class="tag" style="display:inline-block;margin-top:6px">⬇ 다운로드</a>`; }
+        else if(ev.type==='done'){ $('gMsg').className='msg ok'; $('gMsg').textContent='✅ 완료'; }
+        else if(ev.type==='error'){ $('gMsg').className='msg err'; $('gMsg').textContent='오류: '+ev.message; }
+      } }
+  }catch(e){ $('gMsg').className='msg err'; $('gMsg').textContent='오류: '+e.message; }
+  $('gBtn').disabled=false;
+});
+
+// refine 연동: /admin-refine 에서 넘긴 프롬프트 프리필
+(function handoff(){
+  try{ const raw=localStorage.getItem('refineHandoff'); if(!raw)return;
+    const h=JSON.parse(raw); localStorage.removeItem('refineHandoff');
+    if(h.prompt)$('fPrompt').value=h.prompt; if(h.negative)$('fNeg').value=h.negative;
+    if(h.preview)$('fPreview').value=h.preview;
+    const box=$('handoff'); box.style.display='block';
+    box.innerHTML='🎯 프롬프트 자동 정밀화에서 넘어온 프롬프트를 채웠습니다. 이름·카테고리 확인 후 저장하세요.';
+  }catch(_){}
+})();
+
+resetForm(); load();
+</script>
+</body>
+</html>

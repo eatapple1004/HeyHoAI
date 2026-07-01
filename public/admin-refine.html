@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프롬프트 자동 정밀화 · Doppia Admin</title>
+<style>
+  :root{--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;--border:#2a2a3a;--border2:#3a3a4e;
+    --text:#ececf4;--dim:#9a9ab0;--faint:#6a6a80;--accent:#7c6cff;--accent2:#9b8bff;--ok:#4ade80;--bad:#f87171;--pink:#d9608f}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+  body{background:var(--bg);color:var(--text);padding:28px 30px;max-width:1240px;margin:0 auto}
+  h1{font-size:22px;font-weight:800}
+  .sub{color:var(--dim);font-size:13.5px;margin:5px 0 22px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:20px}
+  .row{display:flex;gap:18px;flex-wrap:wrap}
+  .drop{flex:1;min-width:240px;border:1.5px dashed var(--border2);border-radius:14px;background:var(--panel2);
+    padding:14px;text-align:center;cursor:pointer;transition:.15s;position:relative}
+  .drop:hover{border-color:var(--accent);background:#1e1e2c}
+  .drop h3{font-size:13.5px;font-weight:700;margin-bottom:3px}
+  .drop p{font-size:11.5px;color:var(--faint)}
+  .drop img{max-width:100%;max-height:200px;border-radius:10px;margin-top:10px;display:none}
+  .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .ctrls{display:flex;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap}
+  label.fld{font-size:12.5px;color:var(--dim);font-weight:600;display:flex;align-items:center;gap:7px}
+  select,input[type=number]{background:var(--panel2);border:1px solid var(--border2);color:var(--text);
+    border-radius:9px;padding:7px 10px;font-family:inherit;font-size:13px}
+  button.run{margin-left:auto;background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;border:none;
+    font-family:inherit;font-size:14px;font-weight:700;padding:11px 26px;border-radius:11px;cursor:pointer}
+  button.run:disabled{opacity:.5;cursor:not-allowed}
+  .status{font-size:13px;color:var(--dim);margin:0 0 14px;font-weight:600}
+  .status b{color:var(--accent2)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+  .tile{background:var(--panel2);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+  .tile .th{aspect-ratio:1;background:#0a0a10 center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+  .tile .th.load{color:var(--faint);font-size:12px}
+  .tile .meta{padding:9px 10px}
+  .tile .badge{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:7px;
+    background:rgba(0,0,0,.6);color:#fff}
+  .tile .score{position:absolute;top:8px;right:8px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:7px}
+  .tile .crit{font-size:11.5px;color:var(--dim);line-height:1.4}
+  .tile .dl{position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:9px;border:none;cursor:pointer;
+    background:rgba(0,0,0,.62);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:.15s}
+  .tile:hover .dl{opacity:1}
+  .tile .dl:hover{background:var(--accent)}
+  .dlbtn{background:linear-gradient(120deg,var(--accent),#9b7bff);color:#fff;border:none;font-family:inherit;font-size:13px;
+    font-weight:700;padding:9px 0;border-radius:10px;cursor:pointer;width:100%;margin-top:9px}
+  .tile.best{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,108,255,.35)}
+  .final{display:flex;gap:22px;flex-wrap:wrap}
+  .final .big{flex:0 0 auto;width:340px;max-width:100%}
+  .final .big img{width:100%;border-radius:14px;border:1px solid var(--border)}
+  .final .info{flex:1;min-width:280px}
+  .lever{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;margin:3px 6px 3px 0;
+    padding:4px 9px;border-radius:8px;background:var(--panel2);border:1px solid var(--border)}
+  .lever.ok{color:var(--ok)}.lever.no{color:var(--bad)}
+  .promptbox{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:13px 14px;margin-top:10px}
+  .promptbox h4{font-size:12px;color:var(--dim);font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between}
+  .promptbox pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.55;color:var(--text);font-family:inherit}
+  .copy{background:none;border:1px solid var(--border2);color:var(--dim);font-family:inherit;font-size:11px;font-weight:600;
+    padding:3px 9px;border-radius:7px;cursor:pointer}
+  .copy:hover{color:var(--text);border-color:var(--accent)}
+  .err{color:var(--bad);font-size:13px;font-weight:600}
+  .muted{color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+  <h1>🎯 프롬프트 자동 정밀화</h1>
+  <div class="sub">목표 사진 + 레퍼런스 사진을 올리면, 결과물이 목표 레이아웃에 가까워질 때까지 프롬프트를 자동 수정·재생성합니다.</div>
+
+  <div class="card">
+    <div class="row">
+      <label class="drop" id="dropTarget">
+        <h3>① 목표 사진 (레이아웃)</h3>
+        <p>원하는 구도·배열·배경의 예시 이미지</p>
+        <img id="pvTarget"><input type="file" id="fTarget" accept="image/*">
+      </label>
+      <label class="drop" id="dropRef">
+        <h3>② 레퍼런스 사진 (디자인)</h3>
+        <p>재현할 네일 디자인·색·참 이미지</p>
+        <img id="pvRef"><input type="file" id="fRef" accept="image/*">
+      </label>
+    </div>
+    <div class="ctrls">
+      <label class="fld">최대 반복
+        <select id="maxSel"><option>4</option><option selected>6</option><option>8</option><option>10</option></select>
+      </label>
+      <span class="muted">생성=Nano Banana Pro · 판정=Claude · 회당 비용 발생</span>
+      <button class="run" id="runBtn" disabled>▶ 실행</button>
+    </div>
+  </div>
+
+  <div id="statusWrap" style="display:none">
+    <div class="status" id="status"></div>
+    <div class="promptbox" id="authoredBox" style="display:none;margin-bottom:18px">
+      <h4>🖊 목표 사진을 읽고 작성한 초기 프롬프트 <button class="copy" data-c="authored">⧉ Copy</button></h4>
+      <pre id="authoredPrompt"></pre>
+    </div>
+  </div>
+
+  <div class="card" id="finalCard" style="display:none">
+    <h3 style="font-size:15px;font-weight:800;margin-bottom:14px">✅ 최종 결과</h3>
+    <div class="final">
+      <div class="big"><img id="finalImg" alt="final"><button class="dlbtn" id="dlFinal">⬇ 최종 이미지 다운로드</button></div>
+      <div class="info">
+        <div id="finalLevers"></div>
+        <div class="promptbox">
+          <h4>Prompt <button class="copy" data-c="prompt">⧉ Copy</button></h4>
+          <pre id="finalPrompt"></pre>
+        </div>
+        <div class="promptbox">
+          <h4>Negative <button class="copy" data-c="neg">⧉ Copy</button></h4>
+          <pre id="finalNeg"></pre>
+        </div>
+        <button class="run" id="applyBtn" style="margin-top:14px;margin-left:0">▶ 이 프롬프트로 레퍼런스만 생성 (타깃 없이)</button>
+        <div class="muted" style="margin-top:6px">고정된 프롬프트를 레퍼런스에만 적용 → 최종 목표(타깃 없이 ref만으로 목표 스타일 생성) 테스트</div>
+        <button class="copy" id="toTemplateBtn" style="margin-top:12px;font-size:13px;padding:9px 16px">📋 이 프롬프트를 템플릿으로 저장 →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="applyCard" style="display:none">
+    <h3 style="font-size:15px;font-weight:800;margin-bottom:6px">🎁 레퍼런스만으로 생성 (프롬프트 고정 · 타깃 미사용)</h3>
+    <div class="muted" id="applyStatus" style="margin-bottom:14px">—</div>
+    <div class="grid" id="applyGrid"></div>
+  </div>
+
+  <div class="card" id="progCard" style="display:none">
+    <h3 style="font-size:15px;font-weight:800;margin-bottom:6px">🧩 진행 과정 (반복별 생성 이미지)</h3>
+    <div class="muted" style="margin-bottom:14px">각 반복의 생성 결과 · 체크리스트 통과 점수 · 판정관 비평</div>
+    <div class="grid" id="progGrid"></div>
+  </div>
+
+<script>
+const $=(id)=>document.getElementById(id);
+let TARGET=null, REF=null;
+function ts(){ const d=new Date(); const p=(n)=>String(n).padStart(2,'0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+function dlDataUrl(url, name){ if(!url)return; const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); }
+function dlBtn(url, name){ const b=document.createElement('button'); b.className='dl'; b.title='다운로드'; b.textContent='⬇';
+  b.onclick=(e)=>{ e.stopPropagation(); dlDataUrl(url, name); }; return b; }
+
+function readImg(file, cb){
+  const r=new FileReader();
+  r.onload=()=>{ const d=r.result; const b64=d.split(',')[1]; const mime=(d.match(/^data:([^;]+);/)||[])[1]||'image/png'; cb({b64,mime,dataUrl:d}); };
+  r.readAsDataURL(file);
+}
+function wire(inputId, pvId, set){
+  $(inputId).addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f)return;
+    readImg(f,(o)=>{ set(o); const img=$(pvId); img.src=o.dataUrl; img.style.display='block'; checkReady(); }); });
+}
+wire('fTarget','pvTarget',(o)=>TARGET=o);
+wire('fRef','pvRef',(o)=>REF=o);
+function checkReady(){ $('runBtn').disabled=!(TARGET&&REF); }
+
+function leverHtml(scores, rubric){
+  return rubric.map(r=>`<span class="lever ${scores[r.k]?'ok':'no'}">${scores[r.k]?'✓':'✗'} ${r.d.split('(')[0].trim().slice(0,14)}</span>`).join('');
+}
+
+$('runBtn').addEventListener('click', run);
+async function run(){
+  $('runBtn').disabled=true;
+  $('progGrid').innerHTML=''; $('finalCard').style.display='none';
+  $('progCard').style.display='block'; $('statusWrap').style.display='block';
+  $('status').innerHTML='시작 중…';
+  let rubric=[], critical=[], tiles={};
+  try{
+    const res=await fetch('/api/admin/refine',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ target:{b64:TARGET.b64,mime:TARGET.mime}, ref:{b64:REF.b64,mime:REF.mime}, max:parseInt($('maxSel').value,10) })});
+    if(res.status===403){ $('status').innerHTML='<span class="err">관리자 권한이 필요합니다. admin 계정으로 로그인하세요.</span>'; $('runBtn').disabled=false; return; }
+    if(!res.ok){ $('status').innerHTML='<span class="err">요청 실패 ('+res.status+')</span>'; $('runBtn').disabled=false; return; }
+    const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';
+    while(true){
+      const {done,value}=await reader.read(); if(done)break;
+      buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines){ if(!line.trim())continue; let ev; try{ev=JSON.parse(line)}catch(_){continue} handle(ev); }
+    }
+  }catch(e){ $('status').innerHTML='<span class="err">오류: '+e.message+'</span>'; }
+  $('runBtn').disabled=false;
+
+  function ensureTile(i){
+    if(tiles[i])return tiles[i];
+    const el=document.createElement('div'); el.className='tile';
+    el.innerHTML=`<span class="badge">iter ${i}</span><div class="th load" id="th${i}">생성 중…</div><div class="meta"><div class="crit" id="cr${i}"></div></div>`;
+    $('progGrid').appendChild(el); tiles[i]={el}; return tiles[i];
+  }
+  function handle(ev){
+    if(ev.type==='authoring'){ $('status').innerHTML='🖊 목표 사진 분석 중 → 프롬프트 작성…'; }
+    else if(ev.type==='start'){ rubric=ev.rubric||[]; critical=ev.critical||[];
+      $('status').innerHTML=`실행 중 · 모델 <b>${ev.imgModel}</b> · 체크리스트 <b>${rubric.length}</b>개 · 최대 <b>${ev.max}</b>회`;
+      if(ev.authoredPrompt){ window.__authored=ev.authoredPrompt; $('authoredBox').style.display='block'; $('authoredPrompt').textContent=ev.authoredPrompt; } }
+    else if(ev.type==='progress'){ const t=ensureTile(ev.i); const th=$('th'+ev.i);
+      if(ev.stage==='generate'){ th.textContent='생성 중…'; }
+      else if(ev.stage==='judge'){ th.className='th'; th.style.backgroundImage=`url(${ev.image})`; th.textContent=''; $('status').innerHTML=`iter <b>${ev.i}</b> · 판정 중…`; } }
+    else if(ev.type==='iter'){ const t=ensureTile(ev.i); const th=$('th'+ev.i);
+      th.className='th'; th.style.backgroundImage=`url(${ev.image})`; th.textContent='';
+      const badge=t.el.querySelector('.badge');
+      const sc=document.createElement('span'); sc.className='score'; sc.style.background=ev.critPass?'rgba(74,222,128,.9)':'rgba(124,108,255,.85)'; sc.style.color=ev.critPass?'#04250f':'#fff';
+      const total=ev.total||rubric.length||0;
+      sc.textContent=`${ev.okCount}/${total}${ev.critPass?' ✓':''}`; t.el.appendChild(sc);
+      t.el.appendChild(dlBtn(ev.image, `iter${ev.i}-${ts()}.png`));
+      $('cr'+ev.i).textContent=ev.critique||''; }
+    else if(ev.type==='converged'){ $('status').innerHTML=`✅ iter <b>${ev.i}</b>에서 핵심 레버 전부 통과 → 수렴 완료`; }
+    else if(ev.type==='done'){ showFinal(ev.best, rubric); }
+    else if(ev.type==='error'){ $('status').innerHTML='<span class="err">오류: '+ev.message+'</span>'; }
+  }
+  function showFinal(best, rubric){
+    if(!best)return;
+    const tot=rubric.length||'?';
+    $('status').innerHTML = best.converged
+      ? `✅ 성공(수렴) · iter <b>${best.i}</b> (${best.okCount}/${tot}) — 최종 결과`
+      : `⏹ 최대 반복 종료 · 마지막(${best.i}번째) 결과 (${best.okCount}/${tot})`;
+    $('finalCard').style.display='block';
+    $('finalImg').src=best.image;
+    $('dlFinal').onclick=()=>dlDataUrl(best.image, `refine-final-iter${best.i}-${ts()}.png`);
+    $('finalPrompt').textContent=best.prompt;
+    $('finalNeg').textContent=best.negative;
+    // 최고 타일 강조
+    if(tiles[best.i]) tiles[best.i].el.classList.add('best');
+    window.__final={prompt:best.prompt,neg:best.negative};
+    $('finalCard').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+}
+$('toTemplateBtn').addEventListener('click', ()=>{
+  const f=window.__final||{}; if(!f.prompt){ return; }
+  localStorage.setItem('refineHandoff', JSON.stringify({ prompt:f.prompt, negative:f.neg }));
+  window.open('/admin-templates','_blank');
+});
+$('applyBtn').addEventListener('click', applyRefOnly);
+async function applyRefOnly(){
+  const f=window.__final||{}; if(!f.prompt||!REF){ return; }
+  $('applyBtn').disabled=true;
+  $('applyCard').style.display='block'; $('applyGrid').innerHTML=''; $('applyStatus').textContent='생성 중…';
+  $('applyCard').scrollIntoView({behavior:'smooth',block:'start'});
+  const tiles={};
+  function tile(i){ if(tiles[i])return tiles[i]; const el=document.createElement('div'); el.className='tile';
+    el.innerHTML=`<span class="badge">#${i}</span><div class="th load" id="ath${i}">생성 중…</div>`; $('applyGrid').appendChild(el); return tiles[i]=el; }
+  try{
+    const res=await fetch('/api/admin/refine/apply',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ ref:{b64:REF.b64,mime:REF.mime}, prompt:f.prompt, negative:f.neg, count:3 })});
+    if(!res.ok){ $('applyStatus').innerHTML='<span class="err">요청 실패 ('+res.status+')</span>'; $('applyBtn').disabled=false; return; }
+    const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';
+    while(true){ const {done,value}=await reader.read(); if(done)break;
+      buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines){ if(!line.trim())continue; let ev; try{ev=JSON.parse(line)}catch(_){continue}
+        if(ev.type==='start'){ $('applyStatus').innerHTML=`레퍼런스만으로 <b>${ev.count}</b>장 생성 · 모델 <b>${ev.imgModel}</b>`; for(let i=1;i<=ev.count;i++)tile(i); }
+        else if(ev.type==='progress'){ tile(ev.i); }
+        else if(ev.type==='img'){ const el=tile(ev.i); const th=$('ath'+ev.i); th.className='th'; th.style.backgroundImage=`url(${ev.image})`; th.textContent=''; el.appendChild(dlBtn(ev.image, `refonly-${ev.i}-${ts()}.png`)); }
+        else if(ev.type==='done'){ $('applyStatus').innerHTML='✅ 완료 — 타깃 없이 레퍼런스만으로 목표 스타일 생성됨'; }
+        else if(ev.type==='error'){ $('applyStatus').innerHTML='<span class="err">오류: '+ev.message+'</span>'; }
+      } }
+  }catch(e){ $('applyStatus').innerHTML='<span class="err">오류: '+e.message+'</span>'; }
+  $('applyBtn').disabled=false;
+}
+document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{
+  const f=window.__final||{}; const t=b.dataset.c==='authored'?window.__authored:(b.dataset.c==='prompt'?f.prompt:f.neg); if(!t)return;
+  navigator.clipboard.writeText(t).then(()=>{ const o=b.textContent; b.textContent='✓ Copied'; setTimeout(()=>b.textContent=o,1300); });
+}));
+</script>
+</body>
+</html>

@@ -50,4 +50,20 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requirePage, requireAdmin, extractToken };
+/**
+ * 관리자 전용 페이지 보호. 미로그인 → /login 리다이렉트, 로그인·비관리자 → 403 안내 페이지.
+ */
+function requireAdminPage(req, res, next) {
+  const token = extractToken(req);
+  const payload = token && verifyToken(token);
+  if (!payload) {
+    return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
+  }
+  if (payload.role !== 'admin') {
+    return res.status(403).type('html').send('<!doctype html><meta charset="utf-8"><title>관리자 전용</title><body style="font-family:system-ui;background:#0c0c14;color:#ececf4;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h2>🔒 관리자 전용 페이지</h2><p style="color:#9a9ab0">이 페이지는 관리자 계정만 접근할 수 있습니다.</p><a href="/" style="color:#7c6cff">← 홈으로</a></div></body>');
+  }
+  req.user = payload;
+  next();
+}
+
+module.exports = { requireAuth, requirePage, requireAdmin, requireAdminPage, extractToken };
