@@ -145,6 +145,7 @@ function renderSvThemes(){
   const active=svActiveGroup();
   let h='';
   for(const [label,slugs] of SV_GROUPS){
+    if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // (2026-07-01) Influencer 대분류 숨김
     const dis=!!active && label!==active;  // 반대 대분류 섹션 전체 비활성(이미 선택된 건 해제 가능하도록 제외)
     h+=`<div class="sv-sec">${label}</div>`;
     slugs.map(s=>bySlug[s]).filter(Boolean).forEach(t=>{ h+=svThBtn('default',t.slug,t.name, dis && !svOn('default',t.slug)); });

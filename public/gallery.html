@@ -660,6 +660,7 @@ function renderThemeFilter(){
   let h=`<button class="chip${f.kind==='all'?' active':''}" onclick="setMyThemeFilter('all')">All</button>`;
   // 커스텀 테마를 각자 대분류(group) 섹션 안에 표시("Your themes" 중립 버킷 폐지). 빈 섹션은 생략.
   for(const [label,slugs] of CAT_GROUPS){
+    if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // (2026-07-01) Influencer 대분류 숨김
     const defChips=slugs.map(s=>bySlug[s]).filter(Boolean);
     const cusChips=(LIB.customs||[]).filter(c=>libCustomGroup(c)===label);
     if(!defChips.length && !cusChips.length) continue;

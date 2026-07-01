@@ -199,7 +199,7 @@ function switchTab(t){
   if(t==='templates'&&!catalogLoaded){catalogLoaded=true;renderPrices();loadThemesThenCatalog();}
 }
 function themeName(slug){return slug==='All'?'All':((THEMES.find(t=>t.slug===slug)||{}).name||slug);}
-function renderThemeFilter(){const all=['All'].concat(THEMES.map(t=>t.slug));document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${themeName(s)}</div>`).join('');}
+function renderThemeFilter(){const hideInf=(typeof featureOn==='function' && !featureOn('influencer'));const all=['All'].concat(THEMES.map(t=>t.slug).filter(s=>!(hideInf&&s==='people')));document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${themeName(s)}</div>`).join('');}
 function setTheme(s){curTheme=s;renderThemeFilter();renderCatalog();}
 function renderPrices(){document.getElementById('priceFilter').innerHTML=PRICES.map(c=>`<div class="chip ${curPrice===c?'active':''}" onclick="setPrice('${c}')">${c}</div>`).join('');}
 function setPrice(c){curPrice=c;renderPrices();renderCatalog();}
@@ -228,6 +228,7 @@ function tcard(t){
 function renderCatalog(){
   const term=(document.getElementById('tplSearch').value||'').toLowerCase().trim();
   let list=CATALOG.filter(t=>!t.owned); // 발견용: 이미 보유한 건 숨김(Library에 있음)
+  if(typeof featureOn==='function' && !featureOn('influencer')) list=list.filter(t=>!(t.themes||[]).includes('people')); // (2026-07-01) 인물(people) 템플릿 숨김
   if(curTheme!=='All')list=list.filter(t=>(t.themes||[]).includes(curTheme));
   if(curPrice==='Free')list=list.filter(t=>!(t.price_credits>0));
   else if(curPrice==='Paid')list=list.filter(t=>t.price_credits>0);

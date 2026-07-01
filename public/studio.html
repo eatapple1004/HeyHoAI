@@ -441,8 +441,8 @@
 <div class="wrap">
   <div class="topbar fade d1">
     <div class="mode-toggle">
-      <button id="modeInfluencer" class="active" onclick="setMode('influencer')">Influencer</button>
-      <button id="modeShopping" onclick="setMode('shopping')">Shopping</button>
+      <button id="modeInfluencer" data-flag="influencer" onclick="setMode('influencer')">Influencer</button>
+      <button id="modeShopping" class="active" onclick="setMode('shopping')">Shopping</button>
       <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">UGC Ads</button>
       <button id="modeCustom" onclick="setMode('custom')">Custom</button>
     </div>
@@ -685,7 +685,7 @@
       <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
     <div class="field"><label>Category</label>
       <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes')">
-        <option value="Influencer">Influencer</option>
+        <!-- (2026-07-01) Influencer 옵션 숨김 — 기업 대상. 재활성 시 <option value="Influencer">Influencer</option> 복원 -->
         <option value="Shopping">Shopping</option>
       </select></div>
     <div class="field"><label>Themes <i>(pick all that fit — shown in Explore)</i></label>
@@ -1312,6 +1312,8 @@ function placeGenBar(custom){
   if(subjStep)subjStep.classList.add('hidden');
 }
 function setMode(m,initialVertical){
+  // (2026-07-01) Influencer 숨김: prod에서 어떤 경로로든 influencer 진입 시 shopping 폴백(로컬은 통과)
+  if(m==='influencer' && typeof featureOn==='function' && !featureOn('influencer')) m='shopping';
   // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
   const defFilter=(m==='shopping'&&initialVertical)?String(initialVertical).toLowerCase():'All';
   state={mode:m,slots:{},subjectId:null,recipeId:null,filter:defFilter};
@@ -1816,7 +1818,8 @@ function batchRowHtml(b){
     :`<span class="rb-badge custom">✎ Custom</span><div class="rb-prompt">${esc(b.promptText||'Custom prompt')}</div>`+
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
-      ((()=>{const cidx=(b.items[0]&&b.items[0].idx)||0; if(!cidx)return ''; // creation idx 있어야 승격 가능(릴/미확정 제외)
+      ((()=>{const cidx=(b.items[0]&&b.items[0].idx)||0;
+        if(!cidx || (typeof featureOn==='function'&&!featureOn('earnings')))return ''; // creation idx 필요 + Creator 숨김(earnings off) 시 승격 버튼도 숨김
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
           :`<button class="rb-add" type="button" onclick="addCreatorTemplate(this,${cidx})">＋ Add to Creator templates</button>`;})())+`</div>`;
   const size=(b.w&&b.h)?`${b.w}×${b.h}`:'';
@@ -2337,7 +2340,7 @@ async function removeLookFromTheme(kind,key,idx){
 }
 // (폐기·P4) 룩-저장 테마 피커(openLookThemePicker/renderLookThemeList/pickLookTheme/pickLookThemeNew/closeLookTheme/LOOK_SAVE_IDX)
 //   + ?saveLook + saveCurrentLook 제거 — 수동 Save 일원화(creation 상세 Add to My templates). creationTilesHtml/useSavedLook/removeLookFromTheme는 유지.
-if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('influencer');
+if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('shopping'); // (2026-07-01) 기본 모드=Shopping(Influencer 숨김)
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
 function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();}); }
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();

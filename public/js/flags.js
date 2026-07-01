@@ -18,6 +18,7 @@
     business:     { launch: false, label: 'hidden' }, // B2B 연기
     affiliate:    { launch: false, label: 'hidden' }, // 성장기능, 임계 아님
     ugc:          { launch: false, label: 'hidden' }, // UGC Ads 모드 — 준비 중
+    influencer:   { launch: false, label: 'hidden' }, // 숨김(2026-07-01) — 첫 고객 기업 대상: 인물/얼굴(Influencer) 모드 접기(Shopping·Custom 중심). 재점화=launch:true
     enhance:      { launch: false, label: 'hidden' }, // 프롬프트 LLM 보강 — 첫 출시 제외(Custom 파워유저용), 점화 후 재노출
     caption:      { launch: false, label: 'hidden' }, // 캡션+해시태그 애드온 — 첫 출시 보류, 점화 후 재노출
     // 모델 선택 단순화 — pro만 노출
