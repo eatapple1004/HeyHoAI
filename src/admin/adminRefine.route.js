@@ -29,16 +29,21 @@ const parseJson = (raw) => {
   return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
 };
 
+// 디자인 일치는 항상 REFERENCE와 비교(구도 체크리스트와 별개로 매 판정에 추가)
+const DESIGN_ITEM = { k: 'designMatchesReference', d: '네일/피사체 디자인(베이스색·아트·글리터·참·마감)이 REFERENCE와 일치(구도가 아닌 디자인 자체 · TARGET의 디자인과 같으면 false)' };
+
 // ── 0) 목표 이미지 → 초기 프롬프트 + 평가 체크리스트 '처음부터' 작성 ──
 async function authorFromTarget(anth, ref, target) {
   const instruction = `너는 이미지 생성 프롬프트 작가다. 두 이미지가 주어진다.
-[TARGET] = 만들고 싶은 결과물의 "구도/레이아웃/시점/배경/조명/스타일" 본보기.
-[REFERENCE] = 결과물에 재현할 "피사체/디자인(색·형태·요소)".
+[TARGET] = 결과물의 "구도/시점/포즈/프레이밍/배경/조명" 본보기.
+[REFERENCE] = 결과물의 네일/피사체에 입힐 "디자인(베이스색·네일아트·글리터·참·마감)" 원본.
 
-목표: REFERENCE의 디자인을 TARGET의 구도·형식으로 렌더링하는 text-to-image 프롬프트를 처음부터 작성하라.
-- prompt: TARGET을 자세히 관찰해 배치/개수/시점(예: 탑다운/정면/각도)/배경/그림자/조명/스타일을 구체적으로 묘사. REFERENCE의 색·요소는 재현하되 배열/형식은 TARGET을 따르도록.
-- negative: 벗어나면 안 되는 것들.
-- checklist: 결과물이 TARGET의 구도·형식에 부합하는지 판정할 구체적 시각 기준 5~8개. 각 항목 {k: 짧은 camelCase 키, d: 한국어 한 줄 설명}. (피사체 색/디자인 자체가 아니라 '구도·시점·배경·배열·개수' 위주로)
+목표: REFERENCE의 디자인을 TARGET의 구도로 렌더링하는 text-to-image 프롬프트를 작성하라.
+- prompt: TARGET의 손 포즈·시점(각도)·프레이밍·배경·조명·크롭만 구체적으로 묘사하라.
+  ⚠️ 네일/피사체의 "디자인(색·아트·글리터·참·마감)"은 절대 TARGET을 보고 묘사하지 말 것. TARGET의 네일 색/디자인 단어(예: pearl-white, gold wire, crystal, french tip 등)를 프롬프트에 넣지 마라.
+  디자인은 "reproduce the EXACT nail design — base color, nail art, glitter, charms and finish — from the reference image, applied to these nails" 처럼 REFERENCE에서 가져오라고 지시만 하라.
+- negative: 벗어나면 안 되는 것들 + "nail design copied from the target, target's nail colors, wrong nail design not matching the reference".
+- checklist: 결과물이 TARGET의 "구도·형식"에 부합하는지 판정할 기준 5~7개. 각 {k: camelCase, d: 한국어 한 줄}. (⚠️ 디자인 자체는 넣지 마라 — 디자인 일치는 자동으로 REFERENCE와 비교된다. 오직 구도·시점·포즈·배경·프레이밍·개수만.)
 
 아래 JSON만 출력(코드펜스 금지):
 {"prompt":"...","negative":"...","checklist":[{"k":"...","d":"..."}]}`;
@@ -76,17 +81,26 @@ async function generate(ai, prompt, negative, ref, target) {
   return { b64: p.inlineData.data, mime: p.inlineData.mimeType || 'image/png' };
 }
 
-// ── 판정: 동적 체크리스트로 채점 + 실패 항목 고쳐 프롬프트 재작성 ──
-async function judge(anth, gen, target, checklist) {
+// ── 판정: 구도(vs TARGET) + 디자인 일치(vs REFERENCE) 채점 + 프롬프트 재작성 ──
+async function judge(anth, gen, target, ref, checklist) {
   const rubricList = checklist.map((c) => `- ${c.k}: ${c.d}`).join('\n');
   const keys = checklist.map((c) => `"${c.k}":true|false`).join(',');
-  const instruction = `너는 이미지 구도 심사관이다. 첫 이미지=[TARGET](목표), 둘째=[GENERATED](결과). GENERATED가 TARGET의 구도/시점/배경/배열/개수에 부합하는지 아래를 각각 true/false로 채점하라(피사체 색·디자인 자체는 무시, 구도·형식만):\n${rubricList}\n\n실패 항목을 고치도록 프롬프트를 다시 써라. 아래 JSON만 출력(코드펜스 금지):\n{"scores":{${keys}},"critique":"타깃과 다른 점 1-2문장","revisedPrompt":"전체 프롬프트","revisedNegative":"전체 네거티브"}`;
+  const instruction = `너는 이미지 심사관이다. 3장이 주어진다: [TARGET](목표 구도), [REFERENCE](네일/피사체 디자인 원본), [GENERATED](결과).
+아래 각 항목을 true/false로 채점하라:
+- 구도/시점/포즈/배경/프레이밍/개수 관련 항목: GENERATED를 [TARGET]과 비교.
+- "designMatchesReference": GENERATED의 네일/피사체 디자인(베이스색·네일아트·글리터·참·마감)이 [REFERENCE]와 일치하는지 비교하라. 구도가 아니라 '디자인 자체'다. GENERATED가 [TARGET]의 네일 디자인을 그대로 따라했으면(=REFERENCE 디자인이 아니면) false.
+${rubricList}
+
+실패 항목을 고치도록 프롬프트를 다시 써라. 특히 designMatchesReference가 false면, 프롬프트가 REFERENCE 디자인을 확실히 입히도록(그리고 TARGET 네일 디자인은 배제하도록) 수정하라. 아래 JSON만 출력(코드펜스 금지):
+{"scores":{${keys}},"critique":"타깃/레퍼런스와 다른 점 1-2문장","revisedPrompt":"전체 프롬프트","revisedNegative":"전체 네거티브"}`;
   const msg = await anth.messages.create({
     model: JUDGE_MODEL, max_tokens: 2000,
     messages: [{ role: 'user', content: [
       { type: 'text', text: instruction },
       { type: 'text', text: '[TARGET]:' },
       { type: 'image', source: { type: 'base64', media_type: target.mime, data: target.b64 } },
+      { type: 'text', text: '[REFERENCE]:' },
+      { type: 'image', source: { type: 'base64', media_type: ref.mime, data: ref.b64 } },
       { type: 'text', text: '[GENERATED]:' },
       { type: 'image', source: { type: 'base64', media_type: gen.mime, data: gen.b64 } },
     ] }],
@@ -126,8 +140,8 @@ async function refineHandler(req, res) {
     const authored = await withTimeout(authorFromTarget(anth, refImg, tgtImg), 90000, '프롬프트 작성');
     let prompt = authored.prompt;
     let negative = authored.negative || '';
-    const checklist = authored.checklist;
-    console.log(`[refine] 초기 프롬프트 작성 완료 · 체크리스트 ${checklist.length}개`);
+    const checklist = [...authored.checklist, DESIGN_ITEM]; // 구도(vs TARGET) + 디자인 일치(vs REFERENCE)
+    console.log(`[refine] 초기 프롬프트 작성 완료 · 체크리스트 ${checklist.length}개(디자인 일치 포함)`);
     send({ type: 'start', max, imgModel: IMG_MODEL, judgeModel: JUDGE_MODEL, rubric: checklist, critical: checklist.map((c) => c.k), authoredPrompt: prompt, authoredNegative: negative });
 
     // 최종 결과 = 성공(수렴) iter가 있으면 그것, 없으면 마지막(N번째) iter.
@@ -142,7 +156,7 @@ async function refineHandler(req, res) {
       if (aborted) break;
       const image = `data:${gen.mime};base64,${gen.b64}`;
       send({ type: 'progress', i, stage: 'judge', image });
-      const v = await withTimeout(judge(anth, gen, tgtImg, checklist), 90000, '판정');
+      const v = await withTimeout(judge(anth, gen, tgtImg, refImg, checklist), 90000, '판정');
       console.log(`[refine] iter ${i} 판정 완료`);
       const okCount = checklist.filter((c) => v.scores?.[c.k]).length;
       const allPass = okCount === checklist.length;
@@ -220,7 +234,7 @@ async function applyHandler(req, res) {
       const anth = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
       console.log('[apply-loop] 타깃 분석 → 체크리스트 작성…');
       const authored = await withTimeout(authorFromTarget(anth, refImg, layoutImg), 90000, '기준 작성');
-      const checklist = authored.checklist;
+      const checklist = [...authored.checklist, DESIGN_ITEM]; // 구도(vs 타깃) + 디자인 일치(vs 레퍼런스)
       let curPrompt = prompt, curNeg = negative || '', best = null;
       send({ type: 'start', count, imgModel: IMG_MODEL, withLayout: true, loop: true, rubric: checklist });
       for (let i = 1; i <= count && !aborted; i++) {
@@ -229,7 +243,7 @@ async function applyHandler(req, res) {
         if (aborted) break;
         const image = `data:${gen.mime};base64,${gen.b64}`;
         send({ type: 'progress', i, stage: 'judge', image });
-        const v = await withTimeout(judge(anth, gen, layoutImg, checklist), 90000, '판정');
+        const v = await withTimeout(judge(anth, gen, layoutImg, refImg, checklist), 90000, '판정');
         const okCount = checklist.filter((c) => v.scores?.[c.k]).length;
         const allPass = okCount === checklist.length;
         send({ type: 'iter', i, image, okCount, total: checklist.length, critPass: allPass, critique: v.critique });
