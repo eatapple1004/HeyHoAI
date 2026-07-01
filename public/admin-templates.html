@@ -49,6 +49,7 @@
   .tpl .ops .edit:hover{color:var(--accent2);border-color:var(--accent)}
   .empty{color:var(--faint);font-size:13px;text-align:center;padding:26px}
   .count{font-size:12.5px;color:var(--dim);font-weight:600}
+  .muted{font-size:12px;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -105,8 +106,11 @@
     <h2>🧪 템플릿으로 생성 테스트 <span class="count">레퍼런스 + 템플릿 타깃 이미지를 함께 전송</span></h2>
     <div class="grid3">
       <div style="grid-column:span 2"><label>템플릿 선택</label><select id="gTpl"></select></div>
-      <div><label>장수</label><select id="gCount"><option>1</option><option>2</option><option selected>3</option></select></div>
+      <div><label id="gCountLbl">장수</label><select id="gCount"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>6</option></select></div>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--text);cursor:pointer;margin-top:12px">
+      <input type="checkbox" id="gLoop" style="width:auto"> 🔁 루프 — 타깃에 수렴할 때까지 자동 판정·재시도해 <b>최고 1장</b> 선택 <span class="muted" style="font-weight:400">(타깃 이미지 있는 템플릿만 · ‘장수’=최대 반복)</span>
+    </label>
     <label>레퍼런스(피사체) 이미지 업로드 *</label>
     <input type="file" id="gRef" accept="image/*">
     <img id="gRefPv" style="display:none;max-height:120px;border-radius:9px;margin-top:8px;border:1px solid var(--border)">
@@ -223,24 +227,38 @@ function populateGenTpl(){
 $('gRef').addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f){GEN_REF=null;return;}
   const r=new FileReader(); r.onload=()=>{ const d=r.result; GEN_REF={b64:d.split(',')[1],mime:(d.match(/^data:([^;]+);/)||[])[1]||'image/png'};
     $('gRefPv').src=d; $('gRefPv').style.display='block'; $('gBtn').disabled=!(MINE.length&&GEN_REF); }; r.readAsDataURL(f); });
+$('gLoop').addEventListener('change',()=>{ $('gCountLbl').textContent=$('gLoop').checked?'최대 반복':'장수'; });
 $('gBtn').addEventListener('click', async()=>{
   const t=MINE[parseInt($('gTpl').value,10)]; if(!t||!GEN_REF){ return; }
-  $('gBtn').disabled=true; $('gGrid').innerHTML=''; $('gMsg').className='msg'; $('gMsg').textContent='생성 중…';
+  const loop=$('gLoop').checked;
+  if(loop && !t.target_image_url){ $('gMsg').className='msg err'; $('gMsg').textContent='루프 모드는 타깃 이미지가 있는 템플릿만 가능합니다.'; return; }
+  $('gBtn').disabled=true; $('gGrid').innerHTML=''; $('gMsg').className='msg'; $('gMsg').textContent='시작…';
   const tiles={};
   function tile(i){ if(tiles[i])return tiles[i]; const el=document.createElement('div'); el.className='tpl';
-    el.style.display='block'; el.innerHTML=`<div class="thumb" id="gt${i}" style="width:100%;height:160px">…</div>`; $('gGrid').appendChild(el); return tiles[i]=el; }
+    el.style.display='block'; el.style.position='relative';
+    el.innerHTML=`<div class="thumb" id="gt${i}" style="width:100%;height:170px">생성 중…</div><div class="pr" id="gc${i}" style="max-height:none;margin-top:6px"></div>`;
+    $('gGrid').appendChild(el); return tiles[i]=el; }
+  function setImg(i,url){ const th=$('gt'+i); th.style.cssText='width:100%;height:auto;border-radius:9px;background:#0a0a10';
+    th.innerHTML=`<img src="${url}" style="width:100%;border-radius:9px;display:block"><a href="${url}" download="tpl-gen-${i}.png" class="tag" style="display:inline-block;margin-top:6px">⬇ 다운로드</a>`; }
   try{
     const res=await fetch('/api/admin/refine/apply',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ ref:GEN_REF, prompt:t.prompt, negative:t.negative_prompt||'', layout:t.target_image_url||null, count:parseInt($('gCount').value,10) })});
+      body:JSON.stringify({ ref:GEN_REF, prompt:t.prompt, negative:t.negative_prompt||'', layout:t.target_image_url||null, count:parseInt($('gCount').value,10), loop })});
     if(res.status===401||res.status===403){ $('gMsg').className='msg err'; $('gMsg').textContent='관리자 로그인이 필요합니다.'; $('gBtn').disabled=false; return; }
-    if(!res.ok){ $('gMsg').className='msg err'; $('gMsg').textContent='요청 실패 ('+res.status+')'; $('gBtn').disabled=false; return; }
+    if(!res.ok){ let er=''; try{er=(await res.json()).error||''}catch(_){} $('gMsg').className='msg err'; $('gMsg').textContent='요청 실패 ('+res.status+') '+er; $('gBtn').disabled=false; return; }
     const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';
     while(true){ const {done,value}=await reader.read(); if(done)break;
       buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
       for(const line of lines){ if(!line.trim())continue; let ev; try{ev=JSON.parse(line)}catch(_){continue}
-        if(ev.type==='start'){ $('gMsg').textContent=`생성 중 · ${ev.count}장${ev.withLayout?' · 🎯 타깃 함께 전송':' · (타깃 없음)'}`; for(let i=1;i<=ev.count;i++)tile(i); }
-        else if(ev.type==='img'){ tile(ev.i); const th=$('gt'+ev.i); th.style.cssText='width:100%;height:auto;border-radius:9px;background:#0a0a10'; th.innerHTML=`<img src="${ev.image}" style="width:100%;border-radius:9px;display:block"><a href="${ev.image}" download="tpl-gen-${ev.i}.png" class="tag" style="display:inline-block;margin-top:6px">⬇ 다운로드</a>`; }
-        else if(ev.type==='done'){ $('gMsg').className='msg ok'; $('gMsg').textContent='✅ 완료'; }
+        if(ev.type==='start'){ $('gMsg').textContent=ev.loop?`🔁 루프 · 최대 ${ev.count}회 · 체크리스트 ${(ev.rubric||[]).length}개`:`생성 중 · ${ev.count}장${ev.withLayout?' · 🎯 타깃 함께':''}`; if(!ev.loop)for(let i=1;i<=ev.count;i++)tile(i); }
+        else if(ev.type==='progress'){ tile(ev.i); if(ev.image)setImg(ev.i,ev.image); else $('gt'+ev.i).textContent=(ev.stage==='judge'?'판정 중…':'생성 중…'); }
+        else if(ev.type==='img'){ tile(ev.i); setImg(ev.i,ev.image); }
+        else if(ev.type==='iter'){ tile(ev.i); setImg(ev.i,ev.image);
+          const sc=document.createElement('span'); sc.className='tag';
+          sc.style.cssText='position:absolute;top:8px;right:8px;font-weight:800;'+(ev.critPass?'color:#04250f;background:#4ade80':'color:#fff;background:#7c6cff');
+          sc.textContent=`${ev.okCount}/${ev.total}${ev.critPass?' ✓':''}`; tiles[ev.i].appendChild(sc); $('gc'+ev.i).textContent=ev.critique||''; }
+        else if(ev.type==='converged'){ $('gMsg').className='msg ok'; $('gMsg').textContent=`✅ iter ${ev.i} 수렴 — 최고 결과`; }
+        else if(ev.type==='done'){ if(ev.best&&tiles[ev.best.i]) tiles[ev.best.i].style.outline='2px solid var(--accent)';
+          if(!$('gMsg').textContent.includes('수렴')){ $('gMsg').className='msg'; $('gMsg').innerHTML=ev.best?`⏹ 종료 · 최고 iter <b>${ev.best.i}</b> (${ev.best.okCount}/${ev.total})`:'✅ 완료'; } }
         else if(ev.type==='error'){ $('gMsg').className='msg err'; $('gMsg').textContent='오류: '+ev.message; }
       } }
   }catch(e){ $('gMsg').className='msg err'; $('gMsg').textContent='오류: '+e.message; }

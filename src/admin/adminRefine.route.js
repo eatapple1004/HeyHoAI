@@ -188,13 +188,18 @@ async function generateRefOnly(ai, prompt, negative, ref, layout) {
   return { b64: p.inlineData.data, mime: p.inlineData.mimeType || 'image/png' };
 }
 
-// POST /api/admin/refine/apply — { ref:{b64,mime}, prompt, negative?, count? } → NDJSON 이미지 스트림
+// POST /api/admin/refine/apply — { ref, prompt, negative?, count?, layout?, loop? } → NDJSON 스트림
+//   loop=false(기본): count장 단발 생성 · loop=true: 타깃에 수렴할 때까지 재시도해 최고/수렴 1장 선택
 async function applyHandler(req, res) {
   const { ref, prompt, negative, layout } = req.body || {};
-  const count = Math.min(Math.max(parseInt(req.body?.count || 3, 10), 1), 6);
-  const layoutImg = toImg(layout); // 템플릿 타깃 이미지(옵션): data URL 또는 {b64,mime}
+  const count = Math.min(Math.max(parseInt(req.body?.count || 3, 10), 1), 8);
+  const loop = req.body?.loop === true || req.body?.loop === 'true';
+  const layoutImg = toImg(layout); // 템플릿 타깃 이미지(옵션)
   if (!ref?.b64 || !prompt) return res.status(400).json({ error: 'ref 이미지와 prompt가 필요합니다.' });
   if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY 미설정' });
+  if (loop && (!layoutImg || !process.env.ANTHROPIC_API_KEY)) {
+    return res.status(400).json({ error: '루프 모드는 템플릿 타깃 이미지 + ANTHROPIC_API_KEY가 필요합니다.' });
+  }
 
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -207,15 +212,41 @@ async function applyHandler(req, res) {
   const refImg = { b64: ref.b64, mime: ref.mime || 'image/png' };
   const withTimeout = (p, ms, l) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error(`${l} 타임아웃`)), ms))]);
 
-  send({ type: 'start', count, imgModel: IMG_MODEL, withLayout: !!layoutImg });
   try {
-    for (let i = 1; i <= count && !aborted; i++) {
-      send({ type: 'progress', i });
-      console.log(`[apply] ${i}/${count} 생성…${layoutImg ? ' (+타깃 레이아웃)' : ''}`);
-      const g = await withTimeout(generateRefOnly(ai, prompt, negative, refImg, layoutImg), 180000, '생성');
-      send({ type: 'img', i, image: `data:${g.mime};base64,${g.b64}` });
+    if (loop) {
+      // 판정 루프: 타깃(layout)에 수렴할 때까지 재시도 → 최고/수렴 1장 선택 (count = 최대 반복)
+      const anth = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      console.log('[apply-loop] 타깃 분석 → 체크리스트 작성…');
+      const authored = await withTimeout(authorFromTarget(anth, refImg, layoutImg), 90000, '기준 작성');
+      const checklist = authored.checklist;
+      let curPrompt = prompt, curNeg = negative || '', best = null;
+      send({ type: 'start', count, imgModel: IMG_MODEL, withLayout: true, loop: true, rubric: checklist });
+      for (let i = 1; i <= count && !aborted; i++) {
+        send({ type: 'progress', i, stage: 'generate' });
+        const gen = await withTimeout(generate(ai, curPrompt, curNeg, refImg, layoutImg), 180000, '생성');
+        if (aborted) break;
+        const image = `data:${gen.mime};base64,${gen.b64}`;
+        send({ type: 'progress', i, stage: 'judge', image });
+        const v = await withTimeout(judge(anth, gen, layoutImg, checklist), 90000, '판정');
+        const okCount = checklist.filter((c) => v.scores?.[c.k]).length;
+        const allPass = okCount === checklist.length;
+        send({ type: 'iter', i, image, okCount, total: checklist.length, critPass: allPass, critique: v.critique });
+        if (!best || okCount > best.okCount) best = { i, image, okCount, converged: allPass }; // 최고 선택
+        if (allPass) { best.converged = true; send({ type: 'converged', i }); break; }
+        curPrompt = v.revisedPrompt || curPrompt; curNeg = v.revisedNegative || curNeg;
+      }
+      send({ type: 'done', best, total: checklist.length });
+    } else {
+      // 단발: count장 생성
+      send({ type: 'start', count, imgModel: IMG_MODEL, withLayout: !!layoutImg, loop: false });
+      for (let i = 1; i <= count && !aborted; i++) {
+        send({ type: 'progress', i });
+        console.log(`[apply] ${i}/${count} 생성…${layoutImg ? ' (+타깃)' : ''}`);
+        const g = await withTimeout(generateRefOnly(ai, prompt, negative, refImg, layoutImg), 180000, '생성');
+        send({ type: 'img', i, image: `data:${g.mime};base64,${g.b64}` });
+      }
+      send({ type: 'done' });
     }
-    send({ type: 'done' });
   } catch (e) { console.error('[apply] 오류:', e.message); send({ type: 'error', message: e.message }); }
   res.end();
 }
