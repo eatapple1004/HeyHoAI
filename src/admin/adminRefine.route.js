@@ -19,6 +19,9 @@ const router = Router();
 const IMG_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview';
 const JUDGE_MODEL = process.env.REFINE_JUDGE_MODEL || 'claude-sonnet-4-6';
 
+// 단발 생성 품질 보강(확대/크롭 방지 + 고해상도) — 두 이미지 입력 시 img2img 줌인 경향 억제
+const QUALITY_SUFFIX = '\n\nRender a FRESH, full, well-composed scene at high resolution with sharp focus and fine detail — do NOT simply zoom into, crop, tightly frame, or lightly edit the input images. Reframe the whole composition anew. Avoid soft, blurry, low-resolution, or overly zoomed output.';
+
 const parseJson = (raw) => {
   let t = (raw || '{}').replace(/```(json)?/gi, '').trim();
   return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
@@ -53,7 +56,7 @@ async function authorFromTarget(anth, ref, target) {
 }
 
 async function generate(ai, prompt, negative, ref, target) {
-  const full = negative ? `${prompt}\n\nAvoid: ${negative}` : prompt;
+  const full = (negative ? `${prompt}\n\nAvoid: ${negative}` : prompt) + QUALITY_SUFFIX;
   const parts = [
     { text: 'IMAGE 1 — DESIGN SOURCE: reproduce this subject\'s EXACT colors, patterns, texture and decorative elements.' },
     { inlineData: { mimeType: ref.mime, data: ref.b64 } },
@@ -165,7 +168,7 @@ function toImg(x) {
 }
 
 async function generateRefOnly(ai, prompt, negative, ref, layout) {
-  const full = negative ? `${prompt}\n\nAvoid: ${negative}` : prompt;
+  const fullQ = (negative ? `${prompt}\n\nAvoid: ${negative}` : prompt) + QUALITY_SUFFIX;
   const parts = [
     { text: 'IMAGE 1 — reference: reproduce this subject\'s exact colors, design and decorative elements.' },
     { inlineData: { mimeType: ref.mime, data: ref.b64 } },
@@ -174,7 +177,7 @@ async function generateRefOnly(ai, prompt, negative, ref, layout) {
     parts.push({ text: 'IMAGE 2 — layout target: match ONLY its composition, subject count, camera viewpoint, background and shadow. Do NOT copy its colors or subject.' });
     parts.push({ inlineData: { mimeType: layout.mime, data: layout.b64 } });
   }
-  parts.push({ text: full });
+  parts.push({ text: fullQ });
   const resp = await ai.models.generateContent({
     model: IMG_MODEL,
     contents: [{ role: 'user', parts }],
