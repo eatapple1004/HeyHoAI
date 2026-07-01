@@ -232,6 +232,8 @@ router.get('/earnings', async (req, res, next) => {
        LEFT JOIN point_ledger pl
          ON pl.ref_id = mt.id::text AND pl.user_id = $1 AND pl.type = 'royalty'
        WHERE mt.creator_id = $1
+         -- 자동민팅 폐지(2026-07-01): 승격(owns)하지 않은 옛 auto 템플릿은 Creator Studio에서 숨김(/me와 동일 규칙)
+         AND (mt.origin <> 'auto' OR EXISTS(SELECT 1 FROM template_owns o2 WHERE o2.template_id = mt.id AND o2.user_id = $1))
        GROUP BY mt.id
        ORDER BY earned DESC, mt.created_at DESC`,
       [req.user.id]

@@ -85,6 +85,10 @@
   .rb-prompt{font-size:13.5px;line-height:1.55;color:var(--dim);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
   .rb-copy{align-self:flex-start;margin-top:1px;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
   .rb-copy:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
+  .rb-add{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:rgba(124,108,255,.12);border:1px solid var(--accent)}
+  .rb-add:hover{background:rgba(124,108,255,.2)}
+  .rb-add.added{color:#5ee0d6;background:rgba(94,224,214,.12);border-color:rgba(94,224,214,.5);cursor:default}
+  .rb-add:disabled{opacity:.6;cursor:default}
   .rb-prompt.expanded{display:block;-webkit-line-clamp:unset;max-height:220px;overflow-y:auto;padding-right:8px} /* (테스트) Leonardo식: 살짝 넓어진 박스 + 내부 스크롤 */
   .rb-prompt.expanded::-webkit-scrollbar{width:6px}
   .rb-prompt.expanded::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -1788,6 +1792,19 @@ function studioMediaCard(o){
 }
 function copyPromptBtn(btn){ navigator.clipboard.writeText(btn.dataset.t||'').then(()=>{ const o=btn.innerHTML; btn.innerHTML='✓ Copied'; setTimeout(()=>{ btn.innerHTML=o; },1400); }).catch(()=>{ if(window.toast)toast('복사 실패','error'); }); }
 function toggleRbPrompt(btn){ const meta=btn.closest('.rb-meta'); const p=meta&&meta.querySelector('.rb-prompt'); if(!p)return; const exp=p.classList.toggle('expanded'); btn.textContent=exp?'Show less':'Show more'; } // (테스트) 프롬프트 펼치기
+// (2026-07-01) 결과물을 Creator 템플릿으로 명시적 승격(자동민팅 폐지 → 이 버튼으로만). 온디맨드 민팅+보유.
+async function addCreatorTemplate(btn,idx){
+  if(!idx||btn.disabled)return;
+  btn.disabled=true; const o=btn.innerHTML; btn.innerHTML='Adding…';
+  try{
+    const r=await fetch('/api/generate/creations/'+idx+'/add-to-my-templates',{method:'POST'});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    const row=btn.closest('.result-row'); const b=row&&STUDIO_BATCHES.find(x=>x.items.some(i=>i.idx===idx)); if(b)b.added=true;
+    const span=document.createElement('span'); span.className='rb-add added'; span.textContent='✓ In Creator templates'; btn.replaceWith(span);
+    if(window.toast)toast('Creator 템플릿에 추가됐어요');
+  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('추가 실패: '+(e.message||e),'error'); }
+}
 function batchRowHtml(b){
   const media=b.loading
     ? Array.from({length:b.pendingCount||1}).map(()=>`<div class="result-card rb-loading"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join('') // 생성 중: 이미지 칸 자리에서 로딩 + 실시간 경과 초
@@ -1798,7 +1815,10 @@ function batchRowHtml(b){
     ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
     :`<span class="rb-badge custom">✎ Custom</span><div class="rb-prompt">${esc(b.promptText||'Custom prompt')}</div>`+
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
-      (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+`</div>`;
+      (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
+      ((()=>{const cidx=(b.items[0]&&b.items[0].idx)||0; if(!cidx)return ''; // creation idx 있어야 승격 가능(릴/미확정 제외)
+        return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
+          :`<button class="rb-add" type="button" onclick="addCreatorTemplate(this,${cidx})">＋ Add to Creator templates</button>`;})())+`</div>`;
   const size=(b.w&&b.h)?`${b.w}×${b.h}`:'';
   const tags=[b.model&&`<span class="rb-tag">${esc(b.model)}</span>`,size&&`<span class="rb-tag">${size}</span>`,b.items.length>1&&`<span class="rb-tag">${b.items.length} images</span>`].filter(Boolean).join('');
   return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}<div class="rb-tags">${tags}</div></div></div>`;
@@ -1845,7 +1865,7 @@ async function loadStudioResults(){
     const map=new Map(),order=[];
     rows.forEach(r=>{
       const k=r.prompt_idx;
-      if(!map.has(k)){ map.set(k,{items:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}); order.push(k); }
+      if(!map.has(k)){ map.set(k,{items:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}); order.push(k); }
       const fn=r.file_path.split('/').pop();
       map.get(k).items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
     });
@@ -2067,7 +2087,7 @@ async function generateImages(r,subj,count,pending){
   const fail=(data.results||[]).length-ok.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,4); // 템플릿 미리보기 후보(방금 만든 결과)
   // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지)
-  if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.idx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; renderStudioResults(); }
+  if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
