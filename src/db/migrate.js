@@ -901,6 +901,7 @@ async function migrateMarketplace() {
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS likes_count INT NOT NULL DEFAULT 0;
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS preview_media JSONB NOT NULL DEFAULT '[]'::jsonb;
     ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS negative_prompt TEXT;
+    ALTER TABLE marketplace_templates ADD COLUMN IF NOT EXISTS target_image_url TEXT; -- 생성 시 함께 보낼 레이아웃 타깃 이미지(admin 지정, URL 또는 data URL)
     CREATE INDEX IF NOT EXISTS idx_marketplace_visibility ON marketplace_templates(visibility, status);
   `);
 

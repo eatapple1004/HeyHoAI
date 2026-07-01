@@ -10,3 +10,5 @@ logs/
 # LOCAL-ONLY (do not push) — 옛 기록 템플릿 추정 표시용
 public/js/recipe_sig.local.js
 scripts/build_recipe_sig.local.js
+# auto-refine 스크래치 산출물
+scripts/_refine*

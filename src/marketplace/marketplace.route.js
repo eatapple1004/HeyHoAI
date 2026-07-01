@@ -18,7 +18,7 @@ function paidActive(tpl) {
 
 const PUBLIC_COLS = `id, creator_id, creator_handle, name, description, category, type, style, prompt,
   negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, recipe_id, usage_count, likes_count,
-  preview_media, reference_examples, is_official, created_at`;
+  preview_media, reference_examples, target_image_url, is_official, created_at`;
 // JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
 const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
 // 템플릿 id = UUID. 비UUID(예: recipe 슬러그)를 id로 넘기면 `WHERE id = $1`이 캐스트 에러로 500 → 404로 가드.
@@ -284,6 +284,7 @@ router.post('/templates', async (req, res, next) => {
       tool, visibility = 'private', previewMedia = [], referenceExamples = [],
       themeSlugs = [], // 크리에이터 다중 테마 태그(글로벌 themes.slug 배열)
       sourceResultIdx, // 이 템플릿의 씨앗 creation(역링크 + 누적 좋아요 롤업용, 선택)
+      targetImageUrl = null, // 생성 시 함께 보낼 레이아웃 타깃 이미지(admin, URL 또는 data URL)
     } = req.body || {};
     if (!name || !prompt) return res.status(400).json({ success: false, error: 'name과 prompt는 필수입니다.' });
     if (!CATEGORIES.has(category)) return res.status(400).json({ success: false, error: '유효한 category가 필요합니다.' });
@@ -307,14 +308,15 @@ router.post('/templates', async (req, res, next) => {
       ? referenceExamples.filter((u) => typeof u === 'string' && u).slice(0, 6) : [];
     const desc = String(description || '').slice(0, 600);
     const handle = '@' + String(req.user.email || 'creator').split('@')[0];
+    const targetImg = targetImageUrl ? String(targetImageUrl).slice(0, 4_000_000) : null; // URL 또는 data URL(캡)
 
     const r = await query(
       `INSERT INTO marketplace_templates
-         (creator_id, creator_handle, name, description, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media, reference_examples)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb) RETURNING ${PUBLIC_COLS}`,
+         (creator_id, creator_handle, name, description, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media, reference_examples, target_image_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,$17) RETURNING ${PUBLIC_COLS}`,
       [req.user.id, handle, String(name).slice(0, 120), desc, category, t, String(style).slice(0, 50),
        String(prompt).slice(0, 8000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
-       String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview), JSON.stringify(refExamples)]
+       String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview), JSON.stringify(refExamples), targetImg]
     );
     const created = r.rows[0];
 
@@ -382,6 +384,10 @@ router.patch('/templates/:id', async (req, res, next) => {
     }
     if (body.negativePrompt !== undefined) {
       params.push(String(body.negativePrompt).slice(0, 1000)); sets.push(`negative_prompt = $${params.length}`);
+    }
+    if (body.targetImageUrl !== undefined) {
+      const v = body.targetImageUrl ? String(body.targetImageUrl).slice(0, 4_000_000) : null;
+      params.push(v); sets.push(`target_image_url = $${params.length}`);
     }
     if (body.visibility !== undefined) {
       const vis = body.visibility === 'public' ? 'public' : 'private';
