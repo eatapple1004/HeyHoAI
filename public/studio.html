@@ -1987,7 +1987,7 @@ async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await
 // category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
 const CAT_THEMES = {
   Influencer:['people'],
-  Shopping:['beauty','fashion','jewelry','pet','food','coffee','home','tech','general'],
+  Shopping:['beauty','fashion','general'], // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(사용자 지시) — 재노출 시 되돌리기
   UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
 };
 async function renderThemeChips(containerId, selected, category){

@@ -646,11 +646,11 @@ function inThemeFilter(x){
 // 비겹침 대분류(확정 2026-06-26): 각 테마는 한 대분류에만. general=Shopping(범용/중립 아님). Influencer=People만.
 const CAT_THEMES={
   Influencer:['people'],
-  Shopping:['beauty','fashion','jewelry','pet','food','coffee','home','tech','general'],
+  Shopping:['beauty','fashion','general'], // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(Studio와 일치)
   UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김·재활성 대비
 };
 // 그룹 표시(③필터)는 비겹침·중복0.
-const CAT_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech','general']]];
+const CAT_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','general']]]; // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(Studio와 일치)
 // 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외)을 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
 function renderThemeFilter(){
   const el=document.getElementById('tplThemeFilter'); if(!el)return;
