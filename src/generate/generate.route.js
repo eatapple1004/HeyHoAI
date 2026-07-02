@@ -729,11 +729,14 @@ router.post('/creations/:idx/add-to-my-templates', async (req, res, next) => {
     if (!tid) return res.status(500).json({ success: false, error: '템플릿 생성에 실패했습니다.' });
     // 2) My templates에 추가(owns INSERT, 멱등)
     await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [req.user.id, tid]);
-    // 3) (2026-07-02) 테마 필수 — 테마 없으면 'general'(보이는 테마) 기본 배정. 없으면 '보이는 테마 게이트'에 걸려 Studio·Library 어디에도 안 뜸(사용자 지시: add 시 무조건 테마 지정).
-    await query(`INSERT INTO template_themes (template_id, theme_id)
-       SELECT $1, id FROM themes WHERE slug='general'
-        AND NOT EXISTS (SELECT 1 FROM template_themes tt WHERE tt.template_id=$1)
-       ON CONFLICT DO NOTHING`, [tid]);
+    // 3) (2026-07-02) 테마 필수 — 테마 없으면 'general'(보이는 테마) 기본 배정. 없으면 '보이는 테마 게이트'에 걸려 Studio·Library 어디에도 안 뜸.
+    //   (2026-07-03) skipDefaultTheme=true면 프론트가 곧이어 사용자가 고른 테마를 직접 배치 → general 폴백 생략(안 그러면 general + 선택테마 둘 다 붙음). 바디 없는 호출(스튜디오 빠른추가 등)은 기존대로 general 기본배정.
+    if (!(req.body && req.body.skipDefaultTheme)) {
+      await query(`INSERT INTO template_themes (template_id, theme_id)
+         SELECT $1, id FROM themes WHERE slug='general'
+          AND NOT EXISTS (SELECT 1 FROM template_themes tt WHERE tt.template_id=$1)
+         ON CONFLICT DO NOTHING`, [tid]);
+    }
     res.json({ success: true, data: { templateId: tid } });
   } catch (err) { next(err); }
 });

@@ -116,9 +116,12 @@
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 // P4: creation 상세 [Add to My templates] — 생성 시 auto-mint된 내 템플릿(mintedTemplateId)을 owns에 추가 + 선택 테마 배치(새 민팅 X).
-let SV={ picks:[], themes:null, hidden:null };  // picks=[{kind,key}] 다중선택(테마는 선택)
-async function openSaveModal(){
-  if(!IT||!IT.mintedTemplateId){ toast('No template to add for this creation'); return; }
+let SV={ picks:[], themes:null, hidden:null, mint:false };  // picks=[{kind,key}] 다중선택(테마는 선택) / mint=연결 템플릿 없는 내 creation을 온디맨드 민팅+추가
+// mint=true(opts): 연결/민팅된 템플릿이 없는 내 Custom creation → confirm 시 온디맨드 민팅 후 선택 테마 배치. 아니면 이미 auto-mint된 mintedTemplateId를 owns에 추가.
+async function openSaveModal(opts){
+  SV.mint=!!(opts&&opts.mint);
+  if(SV.mint){ if(!IT||!IT.isOwn||!IDX){ toast('No creation to add'); return; } }
+  else if(!IT||!IT.mintedTemplateId){ toast('No template to add for this creation'); return; }
   document.getElementById('saveModal').classList.add('open');
   SV.picks=[];
   const g=document.getElementById('svGo'); if(g) g.disabled=true;  // 테마 필수: 선택 0개면 Add 비활성
@@ -168,14 +171,23 @@ async function newThemeThenPick(group){
 }
 function closeSaveModal(){ document.getElementById('saveModal').classList.remove('open'); }
 async function confirmSave(){
-  if(!IT||!IT.mintedTemplateId){ toast('No template to add'); return; }
   if(!SV.picks.length){ toast('Pick at least one theme'); return; }  // 테마 필수
-  const tid=IT.mintedTemplateId;
   const go=document.getElementById('svGo'); go.disabled=true; go.textContent='Adding…';
   try{
-    // 1) auto-mint된 내 템플릿을 My templates에 추가(owns INSERT, 멱등)
-    const ar=await fetch('/api/marketplace/templates/'+encodeURIComponent(tid)+'/add-to-my-templates',{method:'POST'});
-    const ad=await ar.json(); if(!ar.ok||!ad.success)throw new Error(ad.error||'failed');
+    // 1) 대상 템플릿 확보(owns 존재 보장).
+    let tid;
+    if(SV.mint){
+      // 연결/민팅된 템플릿 없음 → 온디맨드 민팅+보유. skipDefaultTheme=true로 general 폴백 생략(아래서 선택 테마 직접 배치).
+      const r=await fetch('/api/generate/creations/'+IDX+'/add-to-my-templates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({skipDefaultTheme:true})});
+      const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
+      tid=d.data.templateId;
+    }else{
+      if(!IT||!IT.mintedTemplateId){ toast('No template to add'); return; }
+      tid=IT.mintedTemplateId;
+      // auto-mint된 내 템플릿을 My templates에 추가(owns INSERT, 멱등)
+      const ar=await fetch('/api/marketplace/templates/'+encodeURIComponent(tid)+'/add-to-my-templates',{method:'POST'});
+      const ad=await ar.json(); if(!ar.ok||!ad.success)throw new Error(ad.error||'failed');
+    }
     // 2) 선택한 테마에 배치(owns 생성 후라 ensureOwnedIfMine 통과). 커스텀=멤버십 / 기본=오버라이드 add.
     let placed=0;
     for(const p of SV.picks){
@@ -186,6 +198,8 @@ async function confirmSave(){
       }catch(e){}
     }
     closeSaveModal();
+    // mint 경로는 기존 mintAndAdd처럼 My templates(해당 템플릿 하이라이트)로 이동, 그 외는 상세에 머물며 재렌더.
+    if(SV.mint){ location.href='/gallery?tpl='+encodeURIComponent(tid); return; }
     toast(placed?('Added to My templates · '+placed+' theme'+(placed>1?'s':'')+' ✦'):'Added to My templates ✦');
     IT.ownsTemplate=true; render();
   }catch(e){ toast('Could not add: '+(e.message||e)); }
@@ -249,15 +263,8 @@ function templateCta(){
   const label = (!rt.mine && rt.price>0) ? ('Buy '+(rt.name||'template')+' (◈'+rt.price+')') : '＋ Add to My templates';
   return `<button class="act sm" onclick="acquireRelTemplate()">${esc(label)}</button>`;
 }
-// relTemplate 없는 내 creation: 즉석 auto 템플릿 민팅+보유 추가 후 My templates(해당 템플릿 하이라이트)로 이동.
-async function mintAndAdd(btn){
-  if(btn){ btn.disabled=true; btn.textContent='Adding…'; }
-  try{
-    const r=await fetch('/api/generate/creations/'+IDX+'/add-to-my-templates',{method:'POST'});
-    const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    location.href='/gallery?tpl='+encodeURIComponent(d.data.templateId);
-  }catch(e){ toast('Could not add: '+(e.message||e)); if(btn){ btn.disabled=false; btn.textContent='＋ Add to My templates'; } }
-}
+// relTemplate 없는 내 creation: 테마 피커 모달(mint 모드)을 열어 사용자가 테마 직접 선택 → confirm 시 즉석 민팅+보유+선택 테마 배치 후 My templates로 이동.
+function mintAndAdd(btn){ openSaveModal({ mint:true }); }
 // 출처/연결 템플릿을 My templates에 획득 후 그 위치(My templates)로 이동. 내 것=add-to-my-templates(owns INSERT)·타인=acquire 폴백.
 async function acquireRelTemplate(){
   const rt=IT&&IT.relTemplate; if(!rt||!rt.id)return;
