@@ -632,6 +632,8 @@ function itemGlobalThemes(tid){
   return out;
 }
 function itemCustomThemes(tid){ const {key}=tplThemeKey(tid); return new Set((LIB.customs||[]).filter(c=>(c.items||[]).some(i=>(i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)).map(c=>c.id)); }
+// 현재 활성 테마 수(보이는 것: 비숨김 글로벌 + 커스텀). "모든 템플릿 테마 필수" — 마지막 1개 제거 금지 가드에 사용.
+function libActiveThemeCount(tid){ return itemGlobalThemes(tid).size + itemCustomThemes(tid).size; }
 function inThemeFilter(x){
   const f=MYT.filter; if(!f||f.kind==='all')return true;
   const tid=String(x.t.id);
@@ -757,6 +759,7 @@ function renderLibChips(tid){ const el=document.getElementById('lib-chips-'+tid)
 function toggleLibPanel(tid){ const p=document.getElementById('lib-panel-'+tid); if(p) p.classList.toggle('open'); }
 async function toggleDef(slug,tid){
   tid=String(tid); const {key,itemType}=tplThemeKey(tid); const on=libDefOn(slug,tid), action=on?'remove':'add';
+  if(action==='remove' && libActiveThemeCount(tid)<=1){ toast('Templates need at least one theme','error'); return; }  // 마지막 테마 제거 금지(테마 0개 방지)
   try{ const r=await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:key,action})});
     const d=await r.json().catch(()=>({}));
     const m=LIB.ov[slug]=LIB.ov[slug]||{add:new Set(),remove:new Set()};
@@ -768,6 +771,7 @@ async function toggleDef(slug,tid){
 }
 async function toggleCustom(themeId,tid){
   tid=String(tid); const {key,itemType}=tplThemeKey(tid); const on=libCustomOn(themeId,tid), c=LIB.customs.find(x=>x.id===themeId); if(!c)return;
+  if(on && libActiveThemeCount(tid)<=1){ toast('Templates need at least one theme','error'); return; }  // 마지막 테마 제거 금지(테마 0개 방지)
   try{
     if(on){ await fetch('/api/studio/themes/'+themeId+'/items/'+itemType+'/'+encodeURIComponent(key),{method:'DELETE'}); c.items=(c.items||[]).filter(i=>!((i.itemType==='template'||i.itemType==='recipe')&&String(i.itemId)===key)); }
     else { await fetch('/api/studio/themes/'+themeId+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType,itemId:key})}); (c.items=c.items||[]).push({itemType,itemId:key}); }
