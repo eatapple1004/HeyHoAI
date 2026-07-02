@@ -1859,22 +1859,31 @@ function makePendingBatch(r,extra,count,isReel){
     promptText:r?'':extra, templateSource:r?(attribution().templateSource||'recipe'):'', templateName:r?r.name:'',
     model:isReel?'Reel':effModelLabel(), w:null,h:null, dateKey:dateKeyOf(),dateLabel:'Today'};
 }
-async function loadStudioResults(){
+// (2026-07-02) 무한 스크롤: 모든 생성 결과를 페이지 단위로 누적 로드. 배치(prompt_idx)는 페이지 경계 넘어 병합.
+let STUDIO_OFFSET=0; const STUDIO_PAGE=60; let STUDIO_LOADING=false, STUDIO_DONE=false;
+const STUDIO_BATCH_BY_KEY=Object.create(null);
+async function loadStudioResults(reset){
+  if(reset){ STUDIO_BATCHES.length=0; for(const k in STUDIO_BATCH_BY_KEY)delete STUDIO_BATCH_BY_KEY[k]; STUDIO_OFFSET=0; STUDIO_DONE=false; }
+  if(STUDIO_LOADING||STUDIO_DONE)return;
+  STUDIO_LOADING=true;
   try{
-    const res=await fetch('/api/generate/results?limit=40');
+    const res=await fetch('/api/generate/results?limit='+STUDIO_PAGE+'&offset='+STUDIO_OFFSET);
     if(!res.ok)return;
     const rows=((await res.json()).data||[]).filter(r=>r.status==='success'&&r.file_path);
-    // prompt_idx별로 한 배치(=한 번 생성)로 묶음. rows는 created_at DESC(최신순) 유지.
-    const map=new Map(),order=[];
-    rows.forEach(r=>{
+    rows.forEach(r=>{ // prompt_idx별 배치로 묶음(페이지 경계에 걸친 배치는 기존 배치에 병합)
       const k=r.prompt_idx;
-      if(!map.has(k)){ map.set(k,{items:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}); order.push(k); }
+      let b=STUDIO_BATCH_BY_KEY[k];
+      if(!b){ b={key:k,items:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
       const fn=r.file_path.split('/').pop();
-      map.get(k).items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
+      if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
     });
-    STUDIO_BATCHES=order.map(k=>map.get(k));
+    STUDIO_OFFSET+=STUDIO_PAGE;
+    if(rows.length<STUDIO_PAGE)STUDIO_DONE=true; // 마지막 페이지(원시 결과가 한 페이지 미만)
     renderStudioResults();
   }catch(e){}
+  finally{STUDIO_LOADING=false;}
+  // 첫 로드가 화면을 못 채우면(스크롤이 안 생기면) 다음 페이지 자동 로드
+  if(!STUDIO_DONE && document.body.scrollHeight<=window.innerHeight+240) setTimeout(()=>loadStudioResults(false),140);
 }
 async function generate(opts){
   const genN=(opts&&opts.count)||curCount(); // Count 컨트롤(전 모드 1~8)
@@ -2352,6 +2361,11 @@ loadBrandkit();
 loadContextSwitcher();
 loadRecipeDesc();
 loadStudioResults(); // (테스트) 최근 생성 결과를 박스 아래 피드로 복구(reload-safe)
+// (2026-07-02) 무한 스크롤: 피드 하단 근처 도달 시 다음 페이지 로드
+window.addEventListener('scroll',function(){
+  if(STUDIO_LOADING||STUDIO_DONE)return;
+  if((window.innerHeight+window.scrollY)>=(document.body.scrollHeight-700)) loadStudioResults(false);
+},{passive:true});
 applyPendingTemplate();
 dailyCheckin();
 
