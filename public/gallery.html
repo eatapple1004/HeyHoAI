@@ -544,6 +544,16 @@ function switchTab(t){
   if(t==='purchased'&&!purLoaded){purLoaded=true;loadPurchased();}
   if(t==='saved'&&!savedLoaded){savedLoaded=true;loadSaved();}
 }
+// (2026-07-02) 크로스탭 일치 — 다른 탭/창(Studio 등)에서 테마·템플릿 변경 후 이 Library 탭으로 복귀 시 활성 탭 최신화.
+//   예: Studio에서 커스텀 테마 삭제 → 미리 열어둔 Library 탭이 다시 보이는 순간 자동 재fetch(테마 필터·보유 반영).
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState!=='visible') return;
+  const a=document.querySelector('.tab.active'); const active=a&&a.dataset.tab;
+  if(active==='templates') loadMyTemplates();               // 테마 필터·보유 최신화(핵심)
+  else if(active==='purchased'){ purLoaded=true; loadPurchased(); }
+  else if(active==='saved'){ savedLoaded=true; loadSaved(); }
+  // creations(무한스크롤 기본탭)는 재로드 생략 — 커스텀 테마와 무관
+});
 // 템플릿 미리보기 썸네일: reel(영상)이면 <video>, 사진이면 <img>, 미리보기 없으면 그라데이션+이모지.
 //   (reel 템플릿의 preview_media[0]는 mp4 — 기존엔 <img>로 그려 이미지 에러/검정 카드가 났음)
 function tplThumb(prev,type,emoji,onclick,grad){
