@@ -823,6 +823,7 @@
 </style>
 
 <script src="/js/recipes.generated.js?v=5"></script>
+<script src="/js/themes.js?v=1"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -837,15 +838,7 @@ let TEMPLATES={influencer:[],shopping:[],ugc:[],custom:[]};
 //   되돌리려면 OFFICIALS_ONLY=false. (recipes.generated.js는 DO-NOT-EDIT라 프론트 필터로만 처리)
 const OFFICIALS_ONLY=true;
 const SHOW_PREMIUM=false; // (2026-07-02) 미보유(구매X) 공식=PREMIUM 섹션을 Studio에서 숨김(사용자 지시·헷갈림 방지). 메인 그리드는 이미 PREMIUM 레시피 제외 → 미보유 공식 완전 숨김. 재노출=true.
-// (2026-07-02) 공식 recipe→theme 매핑(migrate.js OFFICIAL_THEME 미러) — 공식은 recipe 카드라 themes 필드가 없어 applyRecipeGates에서 이걸로 주입. 신규 공식 추가 시 여기도 갱신.
-const OFFICIAL_THEME_MAP={'stone-plinth-luxe':'beauty','noir-gold-hero':'beauty','dewy-glass-hero':'beauty','ring-editorial-campaign':'jewelry','bracelet-editorial-campaign':'jewelry','top-down-hero':'food','void-hero-cut':'tech','pet-product-hero':'pet'};
-// 보이는 테마 = CAT_THEMES(노출 매크로그룹)에 든 slug만. 숨긴 테마(jewelry 등)면 false → 그 테마에만 속한 콘텐츠는 어디서도 안 보임. 커스텀 테마는 id라 여기 안 옴(항상 visible).
-function isThemeVisible(slug){
-  // 노출 모드 = Shopping(Influencer/UGC 숨김). Shopping 테마만 visible. Influencer 재활성 시 그 그룹도 포함. UGC(폐기)는 제외.
-  if(CAT_THEMES.Shopping.indexOf(slug)>=0)return true;
-  if(typeof featureOn==='function'&&featureOn('influencer')&&CAT_THEMES.Influencer.indexOf(slug)>=0)return true;
-  return false;
-}
+// OFFICIAL_THEME_MAP·isThemeVisible → /js/themes.js 공용(P2 통합)
 let OFFICIAL_RECIPES=new Set();   // recipe-gates가 준 공식(레시피 기반 마켓) recipe id 집합
 let GATES_LOADED=false;           // 게이트 로드 전엔 필터 보류(전부 숨겨지는 깜빡임 방지)
 // pick-a-template 모드 풀: OFFICIALS_ONLY면 [공식 OR 보유]만 남김(순수 내장 시드 제거). 게이트 로드 전엔 원본 유지.
@@ -1997,12 +1990,7 @@ function extraPromptText(){
 // 글로벌 테마 칩(크리에이터 다중 태그) — 캐시 + 렌더 + 수집.
 let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
-// category → 노출할 theme slug 화이트리스트(null = 전체·Custom). general 공통 폴백.
-const CAT_THEMES = {
-  Influencer:['people'],
-  Shopping:['beauty','fashion','general'], // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(사용자 지시) — 재노출 시 되돌리기
-  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김(옵션 제거)·재활성 대비 매핑 보존
-};
+// CAT_THEMES → /js/themes.js 공용(P2 통합)
 async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
   const sel=new Set(selected||[]); let themes=await ensureThemes();

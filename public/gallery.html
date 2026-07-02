@@ -92,6 +92,7 @@
   .myt-bulk:hover{background:rgba(124,108,255,.18)}
   .myt-bulk.ghost{color:var(--dim);background:transparent;border-color:var(--border2)}
   .myt-bulk.ghost:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  .myt-empty{color:var(--faint);font-size:13px;line-height:1.5;padding:10px 4px 18px;max-width:640px}
   .stbtn.on{color:var(--accent2);font-weight:600}
   /* My templates = 깔끔한 타일. "Themes" 누르면 그 카드 위에 칩 패널이 인플레이스로 펼쳐짐(모달 아님) */
   .item .lib-panel{position:absolute;inset:0;z-index:5;background:rgba(10,10,16,.93);backdrop-filter:blur(4px);display:none;flex-direction:column;padding:12px;border-radius:16px}
@@ -236,6 +237,7 @@
 
 <!-- LOCAL-ONLY (do not push): 옛 기록 템플릿 추정용 시그니처 맵 -->
 <script src="/js/recipe_sig.local.js"></script>
+<script src="/js/themes.js?v=1"></script>
 <script>
 // ═══ 실제 데이터 연결: GET /api/generate/results ═══
 let ITEMS=[];
@@ -637,21 +639,7 @@ function inThemeFilter(x){
   if(f.kind==='custom') return itemCustomThemes(tid).has(f.id);
   return true;
 }
-// 비겹침 대분류(확정 2026-06-26): 각 테마는 한 대분류에만. general=Shopping(범용/중립 아님). Influencer=People만.
-const CAT_THEMES={
-  Influencer:['people'],
-  Shopping:['beauty','fashion','general'], // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(Studio와 일치)
-  UGC:['people','beauty','fashion','food','pet','ugc','general'], // 숨김·재활성 대비
-};
-// 그룹 표시(③필터)는 비겹침·중복0.
-const CAT_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','general']]]; // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(Studio와 일치)
-// (2026-07-02) 보이는 테마 = CAT_THEMES(노출 매크로그룹)에 든 slug만. 숨긴 테마면 false → 그 테마에만 속한 건 어디서도 안 보임(Studio isThemeVisible와 동일).
-function isThemeVisible(slug){
-  // 노출 모드 = Shopping(Influencer/UGC 숨김). Shopping 테마만 visible. Influencer 재활성 시 포함. UGC(폐기) 제외. Studio isThemeVisible와 동일.
-  if(CAT_THEMES.Shopping.indexOf(slug)>=0)return true;
-  if(typeof featureOn==='function'&&featureOn('influencer')&&CAT_THEMES.Influencer.indexOf(slug)>=0)return true;
-  return false;
-}
+// CAT_THEMES·CAT_GROUPS·isThemeVisible → /js/themes.js 공용(P2 통합)
 // 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외)을 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
 function renderThemeFilter(){
   const el=document.getElementById('tplThemeFilter'); if(!el)return;
@@ -685,10 +673,13 @@ function renderMyTemplates(){
     (x.t.in_studio===false ? libOnly : inStudio).push(x); // in_studio 토글로 In Studio ↔ Library only(대기조)
   });
   const idsOf=arr=>JSON.stringify(arr.map(x=>String(x.t.id)));
-  const sec=(title,sub,arr,bulk)=> arr.length ? `<div class="myt-sec">${title}<span class="myt-sec-sub">${sub}</span>${bulk}</div><div class="grid">${arr.map(x=>tplCard(x.t,x.kind)).join('')}</div>` : '';
+  // 두 그룹 헤더는 항상 표시(비어도) — 구조가 늘 보이고 카드를 옮길 수 있게. 빈 그룹은 안내문.
+  const sec=(title,sub,arr,bulk,empty)=> `<div class="myt-sec">${title}<span class="myt-sec-sub">${sub}</span>${arr.length?bulk:''}</div>`+(arr.length?`<div class="grid">${arr.map(x=>tplCard(x.t,x.kind)).join('')}</div>`:`<div class="myt-empty">${empty}</div>`);
   const bulkAdd = libOnly.length ? `<button type="button" class="myt-bulk" onclick='toggleInStudioBulk(${idsOf(libOnly)},true)'>↑ Add all to Studio</button>` : '';
   const bulkRemove = inStudio.length ? `<button type="button" class="myt-bulk ghost" onclick='toggleInStudioBulk(${idsOf(inStudio)},false)'>↓ Move all to Library only</button>` : '';
-  grid.innerHTML = sec('In Studio','synced with your Studio',inStudio,bulkRemove) + sec('Library only','waiting to be added to Studio',libOnly,bulkAdd);
+  grid.innerHTML =
+    sec('In Studio','synced with your Studio',inStudio,bulkRemove,'Nothing in your Studio yet — add templates from Library only below.') +
+    sec('Library only','owned · not in your Studio',libOnly,bulkAdd,'Empty. Hit a card’s “✓ In Studio” (or “Move all to Library only”) to park templates here — they stay in your library but leave your Studio.');
 }
 // (2026-07-02) In Studio ↔ Library only 이동(개별/일괄) — template_owns.in_studio 토글.
 async function toggleInStudio(id,inStudio){ return toggleInStudioBulk([String(id)],inStudio); }
