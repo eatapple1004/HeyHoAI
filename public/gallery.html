@@ -84,6 +84,10 @@
   .tpl-filter{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
   .flt-sec{flex-basis:100%;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin:6px 0 -3px}
   .tpl-empty-note{color:var(--faint);font-size:14px;padding:34px 6px;text-align:center}
+  /* My templates 두 그룹 섹션 헤더 (In Studio / Library only) */
+  .myt-sec{font-family:'Sora';font-size:15px;font-weight:700;color:var(--text);margin:26px 2px 12px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  #tplGrid>.myt-sec:first-child{margin-top:2px}
+  .myt-sec-sub{font-size:12px;font-weight:500;color:var(--faint)}
   /* My templates = 깔끔한 타일. "Themes" 누르면 그 카드 위에 칩 패널이 인플레이스로 펼쳐짐(모달 아님) */
   .item .lib-panel{position:absolute;inset:0;z-index:5;background:rgba(10,10,16,.93);backdrop-filter:blur(4px);display:none;flex-direction:column;padding:12px;border-radius:16px}
   .item .lib-panel.open{display:flex}
@@ -128,8 +132,6 @@
   <div class="tabbar fade d1">
     <button class="tab active" data-tab="creations" onclick="switchTab('creations')">My creations</button>
     <button class="tab" data-tab="templates" onclick="switchTab('templates')">My templates</button>
-    <button class="tab" data-tab="purchased" onclick="switchTab('purchased')">Purchased</button>
-    <button class="tab" data-tab="saved" onclick="switchTab('saved')">Saved</button>
   </div>
 
   <!-- My creations (생성 결과물) -->
@@ -157,7 +159,7 @@
   <section id="tab-templates" class="hidden">
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><a href="/earnings" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none">Open Creator Studio →</a></div>
     <div class="tpl-filter fade d1" id="tplThemeFilter"></div>
-    <div class="grid fade d2" id="tplGrid"></div>
+    <div class="fade d2" id="tplGrid"></div>
     <div class="empty hidden" id="tplEmpty">
       <div class="ico"></div><h3>No saved templates yet</h3>
       <p>In Studio, build a look in Custom mode and hit "Save as template" — it shows up here.</p>
@@ -165,26 +167,7 @@
     </div>
   </section>
 
-  <!-- Purchased (구매·보유한 템플릿) -->
-  <section id="tab-purchased" class="hidden">
-    <div class="sub fade d1" style="color:var(--dim);font-size:13px;margin:-6px 0 16px">Templates you own. Organize which ones appear in Studio from the Themes panel there.</div>
-    <div class="grid fade d2" id="purGrid"></div>
-    <div class="empty hidden" id="purEmpty">
-      <div class="ico">🔓</div><h3>No purchased templates yet</h3>
-      <p>Unlock premium templates in <a href="/explore?tab=templates" style="color:var(--accent2)">Explore → Templates</a> — they appear here and in your Studio.</p>
-      <a href="/explore?tab=templates" class="btn btn-primary">Browse Templates →</a>
-    </div>
-  </section>
-
-  <!-- Saved (내가 북마크한 템플릿) -->
-  <section id="tab-saved" class="hidden">
-    <div class="grid fade d2" id="savedGrid"></div>
-    <div class="empty hidden" id="savedEmpty">
-      <div class="ico">🔖</div><h3>No saved templates yet</h3>
-      <p>Tap the bookmark on any template in <a href="/explore?tab=templates" style="color:var(--accent2)">Explore → Templates</a> to save it here for one-tap reuse.</p>
-      <a href="/explore?tab=templates" class="btn btn-primary">Browse Templates →</a>
-    </div>
-  </section>
+  <!-- (2026-07-02) Purchased·Saved 탭 제거 — 구매건은 My templates(보유)에 흡수, Saved(북마크)는 폐기 -->
 </div>
 
 <!-- 릴스 생성 모달 -->
@@ -538,21 +521,14 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.getElementById('tab-creations').classList.toggle('hidden',t!=='creations');
   document.getElementById('tab-templates').classList.toggle('hidden',t!=='templates');
-  document.getElementById('tab-purchased').classList.toggle('hidden',t!=='purchased');
-  document.getElementById('tab-saved').classList.toggle('hidden',t!=='saved');
   if(t==='templates'&&!tplLoaded){tplLoaded=true;loadMyTemplates();}
-  if(t==='purchased'&&!purLoaded){purLoaded=true;loadPurchased();}
-  if(t==='saved'&&!savedLoaded){savedLoaded=true;loadSaved();}
 }
 // (2026-07-02) 크로스탭 일치 — 다른 탭/창(Studio 등)에서 테마·템플릿 변경 후 이 Library 탭으로 복귀 시 활성 탭 최신화.
 //   예: Studio에서 커스텀 테마 삭제 → 미리 열어둔 Library 탭이 다시 보이는 순간 자동 재fetch(테마 필터·보유 반영).
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState!=='visible') return;
   const a=document.querySelector('.tab.active'); const active=a&&a.dataset.tab;
-  if(active==='templates') loadMyTemplates();               // 테마 필터·보유 최신화(핵심)
-  else if(active==='purchased'){ purLoaded=true; loadPurchased(); }
-  else if(active==='saved'){ savedLoaded=true; loadSaved(); }
-  // creations(무한스크롤 기본탭)는 재로드 생략 — 커스텀 테마와 무관
+  if(active==='templates') loadMyTemplates();               // 테마 필터·보유 최신화(핵심). creations=무한스크롤 제외
 });
 // 템플릿 미리보기 썸네일: reel(영상)이면 <video>, 사진이면 <img>, 미리보기 없으면 그라데이션+이모지.
 //   (reel 템플릿의 preview_media[0]는 mp4 — 기존엔 <img>로 그려 이미지 에러/검정 카드가 났음)
@@ -680,10 +656,17 @@ function renderThemeFilter(){
   }
   el.innerHTML=h;
 }
+// (2026-07-02) 보유 템플릿을 두 그룹으로: In Studio(테마 배치됨=Studio와 완전 동기화) / Library only(보유했지만 테마 미배치=Library에만).
+//   inAnyThemeLib = Studio inAnyTheme와 동일 축(글로벌 테마 멤버십 또는 커스텀 테마 멤버십 ≥1).
+function inAnyThemeLib(tid){ return itemGlobalThemes(tid).size>0 || itemCustomThemes(tid).size>0; }
 function renderMyTemplates(){
   const grid=document.getElementById('tplGrid'); if(!grid)return;
   const rows=MYT.list.filter(inThemeFilter);
-  grid.innerHTML = rows.length ? rows.map(x=>tplCard(x.t,x.kind)).join('') : '<div class="tpl-empty-note">No templates in this theme yet.</div>';
+  if(!rows.length){ grid.innerHTML='<div class="tpl-empty-note">No templates in this theme yet.</div>'; return; }
+  const inStudio=[], libOnly=[];
+  rows.forEach(x=>{ (inAnyThemeLib(x.t.id)?inStudio:libOnly).push(x); });
+  const sec=(title,sub,arr)=> arr.length ? `<div class="myt-sec">${title}<span class="myt-sec-sub">${sub}</span></div><div class="grid">${arr.map(x=>tplCard(x.t,x.kind)).join('')}</div>` : '';
+  grid.innerHTML = sec('In Studio','synced with your Studio',inStudio) + sec('Library only','owned · not in your Studio yet',libOnly);
 }
 function setMyThemeFilter(kind,key){
   MYT.filter = kind==='all'?{kind:'all'}:(kind==='global'?{kind:'global',slug:key}:{kind:'custom',id:key});
