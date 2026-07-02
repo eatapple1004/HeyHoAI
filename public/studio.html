@@ -53,8 +53,21 @@
   .subj-ava.ph{background:rgba(255,255,255,.05);color:var(--dim);font-size:20px}
   /* ▼▼▼ (2026-06-28 테스트) "Pick a template" 컴포즈 흡수 — 라벨 버튼(미선택) → accent "✓ Template" 칩(선택). 모달은 Select Media와 동일한 .modal.media(배경 #0c0c14). 롤백 시 이 블록 통째 삭제 ▼▼▼ */
   .tpl-compose{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
-  #tplPanelInner{width:min(940px,100%);overflow:auto}        /* .modal.media가 배경#0c0c14·max-height86vh·flex column 제공 */
-  #tplPanelInner .filter-row{margin-top:16px}
+  /* (2026-07-02 템플릿-우선) 갤러리 인라인화 — 옛 #tplPanelInner 모달 스타일 폐지 */
+  #templateStep{margin-top:4px}
+  #templateStep .filter-row{margin-top:16px}
+  #templateStep .recipe-grid{margin-top:18px}
+  /* (2026-07-02) Custom = 독립 CTA 버튼 — 단순·고급(하이라인 보더·투명 배경·액센트 아이콘). 활성 시 '← Templates'. */
+  .custom-cta{display:inline-flex;align-items:center;gap:8px;padding:9px 17px;border-radius:11px;font-family:inherit;font-size:13.5px;font-weight:600;letter-spacing:.2px;cursor:pointer;color:var(--text);background:transparent;border:1px solid var(--border2);transition:border-color .2s,background .2s,color .2s}
+  .custom-cta:hover{border-color:var(--accent);background:rgba(124,108,255,.07)}
+  .custom-cta .cc-ic{font-size:14px;line-height:1;color:var(--accent2)}
+  .custom-cta.back .cc-ic{color:var(--dim)}
+  /* 모드 전환 화면 효과 — 페이드 + 살짝 슬라이드·스케일 */
+  @keyframes modeSwap{0%{opacity:0;transform:translateY(10px) scale(.995)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  .mode-swapping{animation:modeSwap .34s cubic-bezier(.22,.68,.32,1)}
+  /* Custom 모드 — 컴포즈 박스 안 간단한 한 줄 라벨 */
+  #customBar{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--dim)}
+  #customBar b{color:var(--accent2);font-weight:700}
   /* 선택된 템플릿 = 제품(레퍼런스) 타일과 구분되는 강조 카드("이 템플릿으로 만들어진다"가 한눈에) */
   .tpl-sel{display:flex;align-items:center;gap:14px;background:rgba(124,108,255,.12);border:1.5px solid var(--accent);border-radius:16px;padding:12px 14px 12px 12px;width:100%;max-width:480px;cursor:pointer;box-shadow:0 0 0 4px rgba(124,108,255,.10),0 12px 32px -14px rgba(124,108,255,.55);transition:background .15s}
   .tpl-sel:hover{background:rgba(124,108,255,.18)}
@@ -440,12 +453,14 @@
 
 <div class="wrap">
   <div class="topbar fade d1">
-    <div class="mode-toggle">
+    <!-- (2026-07-02 템플릿-우선) 기본=템플릿 갤러리(히어로). 모드 펠릿은 숨김(setMode 참조용 DOM 유지·Influencer 재활성 시 노출). Custom은 독립 CTA 버튼(#customCta)로 진입. -->
+    <div class="mode-toggle" style="display:none">
       <button id="modeInfluencer" data-flag="influencer" onclick="setMode('influencer')">Influencer</button>
-      <button id="modeShopping" class="active" onclick="setMode('shopping')">Shopping</button>
+      <button id="modeShopping" class="active" onclick="setMode('shopping')">Templates</button>
       <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">UGC Ads</button>
       <button id="modeCustom" onclick="setMode('custom')">Custom</button>
     </div>
+    <button type="button" class="custom-cta" id="customCta" onclick="toggleCustom()"><span class="cc-ic">✎</span><span class="cc-label">Custom</span></button>
     <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
 
@@ -484,14 +499,13 @@
 
   <!-- (폐기·P4) lookThemeModal 제거 — γ-2 수동 "룩을 테마에 저장" 피커. 트리거 없음(?saveLook·saveCurrentLook 제거). -->
 
-  <!-- (2026-06-28 테스트) "Pick a template"를 컴포즈 박스 트리거(#tplCompose)로 흡수 + 그리드는 모달(#tplPanel)로. Select Media(#imgModal)와 동일하게 .modal-bg/.modal 재사용. 롤백=이 모달 구조를 옛 .step 그리드로 되돌리고 #tplCompose/JS/CSS 제거 -->
-  <div class="step fade d3" id="templateStep" style="margin:0;padding:0">
-    <div class="modal-bg" id="tplPanel" style="z-index:70" onclick="if(event.target===this)closeTemplatePicker()">
-      <div class="modal media" id="tplPanelInner">
-        <button class="x" type="button" onclick="closeTemplatePicker()">✕</button>
-        <div class="step-num" id="snTemplate" style="display:none">2</div>
-        <h3 id="step2Title">Pick a template</h3>
-        <div class="msub" id="step2Hint">No prompt needed — just choose a look.</div>
+  <!-- (2026-07-02 템플릿-우선) 템플릿 갤러리를 페이지 인라인 히어로로(모달 해제). renderFilters/renderRecipes가 ID로 타겟팅 → 위치만 이동. Custom 모드에선 setMode가 #templateStep을 hidden. 롤백=다시 .modal-bg/.modal.media로 감싸고 toggleTemplatePicker를 모달 오픈으로. -->
+  <div class="step fade d3" id="templateStep">
+        <div class="step-head">
+          <div class="step-num" id="snTemplate" style="display:none">2</div>
+          <h2 id="step2Title">Pick a template</h2>
+          <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span>
+        </div>
         <div class="filter-row" id="filterRow"></div>
         <style>
           .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
@@ -510,8 +524,6 @@
           <div class="premium-head">Premium <span class="ph-sub">— unlock once, yours forever</span></div>
           <div class="recipe-grid" id="premiumGrid"></div>
         </div>
-      </div>
-    </div>
   </div>
 
   <!-- (2026-06-28 테스트) 생성 결과 피드 — 컴포즈 박스 아래에 쭉. 로드 시 최근 결과 복구(reload-safe)+생성 시 누적. 롤백=JS의 STUDIO_RESULTS/loadStudioResults/renderStudioResults 제거하고 옛 innerHTML 방식 복원 -->
@@ -525,12 +537,11 @@
 </div>
 
 <div class="gen-bar">
+  <!-- (2026-07-02) Custom 모드 정체성 — 컴포즈 박스 안 간단한 한 줄. setMode가 custom일 때만 노출. -->
+  <div id="customBar" style="display:none"><b>✎ Custom</b> — write your own prompt, no template needed.</div>
   <!-- (2026-06-28 테스트) 템플릿 선택 — "Select a product"와 동일 패턴(라벨 버튼 + 선택 시 .ref-tile 타일). placeGenBar가 subjectRow를 앞에 끼워넣음(subject→template 순서) -->
-  <div class="tpl-compose" id="tplCompose">
-    <button type="button" class="img-add labeled" id="tplTrigger" onclick="toggleTemplatePicker()">
-      <svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span class="img-add-label" id="tplTrigLabel">Pick a template</span>
-    </button>
+  <!-- (2026-07-02 템플릿-우선) 픽커 트리거는 갤러리(#templateStep)로 대체 — 여기엔 선택된 템플릿 칩만. 미선택 시 syncTplTrigger가 #tplCompose 숨김. -->
+  <div class="tpl-compose" id="tplCompose" style="display:none">
     <div id="tplSelWrap" style="display:none"></div>
   </div>
   <div class="addons" id="addonsRow">
@@ -1342,7 +1353,29 @@ function setMode(m,initialVertical){
   document.getElementById('promptRow').style.display=custom?'':'none';
   placeGenBar(custom);
   renderStudioResults(); // (테스트) 결과 피드는 모드 전환에도 유지(결과 있으면 표시)
+  document.getElementById('customBar').style.display=custom?'':'none'; // Custom 정체성(컴포즈 안 한 줄)
   renderSubjects();renderFilters();renderRecipes();updateBar();
+  syncCustomCta();
+}
+// (2026-07-02) Custom = 독립 CTA 버튼 ↔ 커스텀 페이지. Templates↔Custom 토글 + 전환 화면 효과.
+function toggleCustom(){ setMode(state.mode==='custom'?'shopping':'custom'); playSwap(); }
+// 전환 효과: base opacity:1인 요소만 대상(.gen-bar·#recipeGrid) — .fade 요소(#templateStep, base opacity:0)는
+// 애니가 중단돼 클래스가 남으면 갤러리가 사라지므로 절대 대상 금지. animationend에 클래스 제거(hygiene, transform 잔류 방지).
+function playSwap(){
+  ['.gen-bar','#recipeGrid'].forEach(sel=>{
+    const el=document.querySelector(sel);
+    if(!el||getComputedStyle(el).display==='none')return; // 숨겨진 요소엔 붙이지 않음
+    el.classList.remove('mode-swapping'); void el.offsetWidth; el.classList.add('mode-swapping'); // 리플로우로 재생
+    el.addEventListener('animationend',()=>el.classList.remove('mode-swapping'),{once:true});
+  });
+}
+function syncCustomCta(){
+  const b=document.getElementById('customCta'); if(!b)return;
+  const on=(state.mode==='custom');
+  b.classList.toggle('back',on);
+  b.querySelector('.cc-ic').textContent=on?'←':'✎';
+  b.querySelector('.cc-label').textContent=on?'Templates':'Custom';
+  b.title=on?'Back to templates':'Write your own prompt — full creative control';
 }
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // ── 이미지 입력(슬롯 기반): 아이콘 버튼 → 툴별 슬롯 팝오버 → 역할 라벨 타일 ──
@@ -1683,34 +1716,24 @@ function selectFromModal(){
   if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
 }
 
-// ── (2026-06-28 테스트) 템플릿 픽커: 컴포즈 박스 트리거 + 넓은 모달 ──
+// ── (2026-07-02 템플릿-우선) 갤러리 인라인 → 트리거=갤러리로 스크롤, close=no-op(selectFromModal/confirmUnlock 호환용) ──
 function toggleTemplatePicker(){
-  const p=document.getElementById('tplPanel'); if(!p)return;
-  if(p.parentElement!==document.body) document.body.appendChild(p); // ★ transform 조상(.step.fade/.gen-bar) 탈출 → fixed가 viewport 기준
-  const open=!p.classList.contains('open');
-  p.classList.toggle('open',open);
-  if(open){renderFilters();renderRecipes();} // 열 때 최신 상태로 재렌더
+  const g=document.getElementById('templateStep'); if(!g)return;
+  g.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function closeTemplatePicker(){const p=document.getElementById('tplPanel'); if(p)p.classList.remove('open');}
+function closeTemplatePicker(){}
 function clearTemplate(){state.recipeId=null;state.detail=null;renderRecipes();updateBar();}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
-  const p=document.getElementById('tplPanel'); if(!p||!p.classList.contains('open'))return;
-  const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open')){closeRecipeModal();return;} // 위에 뜬 레시피 상세부터
-  closeTemplatePicker();
+  const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open'))closeRecipeModal();
 });
 // 트리거 라벨 + 선택 시 .ref-tile 타일(Select a product와 동일 패턴). 모든 선택 경로가 updateBar→syncTplTrigger 경유.
+// (2026-07-02 템플릿-우선) 컴포즈엔 선택된 템플릿 칩만 — 미선택/Custom이면 #tplCompose 숨김(갤러리 #templateStep가 픽커).
 function syncTplTrigger(){
   const c=document.getElementById('tplCompose'); if(!c)return;
-  const custom=(state.mode==='custom');
-  c.style.display=custom?'none':''; // Custom 모드는 프롬프트가 주 입력 → 트리거 숨김
-  if(custom){closeTemplatePicker();return;}
-  const name=document.getElementById('tplTrigLabel'); // (수정) 모델 트리거 #ttName과 id 충돌 회피
-  if(name)name.textContent=(document.getElementById('step2Title')||{}).textContent||'Pick a template';
-  const btn=document.getElementById('tplTrigger'), wrap=document.getElementById('tplSelWrap');
-  if(!wrap)return;
-  const r=curRecipe();
-  if(r){ // 선택됨 → 라벨 버튼 숨기고 강조 카드("이 템플릿으로 만들어진다"가 한눈에)
+  const wrap=document.getElementById('tplSelWrap');
+  const r=(state.mode==='custom')?null:curRecipe();
+  if(r&&wrap){ // 선택됨 → 강조 칩("이 템플릿으로 만들어진다"가 한눈에)
     const thumb=r.preview?`background-image:url('${esc(r.preview)}')`:(r.grad?`background:${r.grad}`:'');
     const out=r.type==='reel'?'reel':'photos';
     wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
@@ -1719,8 +1742,8 @@ function syncTplTrigger(){
       +`<span class="ts-sub">Your ${out} will be made with this look · tap to change</span></span>`
       +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`;
     wrap.style.display='';
-    if(btn)btn.style.display='none';
-  }else{ wrap.innerHTML=''; wrap.style.display='none'; if(btn)btn.style.display=''; }
+    c.style.display='';
+  }else{ if(wrap){wrap.innerHTML='';wrap.style.display='none';} c.style.display='none'; }
 }
 
 // ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
