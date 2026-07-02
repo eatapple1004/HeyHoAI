@@ -698,13 +698,14 @@ router.get('/recipe-gates', async (req, res, next) => {
   try {
     const r = await query(
       `SELECT mt.id, mt.recipe_id, mt.price_credits,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1) AS owned
+              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1) AS owned,
+              COALESCE((SELECT ow.in_studio FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1), true) AS in_studio
        FROM marketplace_templates mt
        WHERE mt.recipe_id IS NOT NULL AND mt.status = 'active' AND mt.price_credits > 0`,
       [req.user.id]
     );
     // owned=보유 → 메인 그리드 노출 / 미보유 → 프리미엄 업셀. (in_studio 폐기·안A: studio 노출은 테마 멤버십이 결정)
-    res.json({ success: true, data: r.rows.map((x) => ({ templateId: x.id, recipeId: x.recipe_id, price: x.price_credits, owned: x.owned })) });
+    res.json({ success: true, data: r.rows.map((x) => ({ templateId: x.id, recipeId: x.recipe_id, price: x.price_credits, owned: x.owned, in_studio: x.in_studio })) });
   } catch (err) { next(err); }
 });
 
@@ -715,7 +716,7 @@ router.get('/owned', async (req, res, next) => {
   try {
     const uid = req.user.id;
     const r = await query(
-      `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, ow.source AS own_source,
+      `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, ow.source AS own_source, ow.in_studio,
               (mt.creator_id = $1) AS mine,
               COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
                 FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
@@ -767,8 +768,20 @@ router.get('/owned', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// (폐기·안A) PATCH /api/marketplace/owned/:templateId {inStudio} 제거 — studio 넣다뺐다는 Themes 패널(테마 멤버십)로 일원화.
-//   template_owns.in_studio 컬럼은 deprecate(잔존)·코드 미사용.
+// (2026-07-02 부활) PATCH /api/marketplace/owned/in-studio { ids:[uuid], in_studio:bool }
+//   보유 템플릿 일괄 스튜디오 배치/해제 = In Studio ↔ Library only 이동. in_studio=false면 Library only(대기조), true면 스튜디오 노출.
+router.patch('/owned/in-studio', async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String).filter((x) => UUID_RE.test(x)) : [];
+    const inStudio = req.body.in_studio !== false;
+    if (!ids.length) return res.status(400).json({ success: false, error: 'ids가 필요합니다.' });
+    const r = await query(
+      `UPDATE template_owns SET in_studio = $3 WHERE user_id = $1 AND template_id = ANY($2::uuid[]) RETURNING template_id`,
+      [req.user.id, ids, inStudio]
+    );
+    res.json({ success: true, data: { updated: r.rows.map((x) => x.template_id), in_studio: inStudio } });
+  } catch (err) { next(err); }
+});
 
 /** POST /api/marketplace/templates/:id/bookmark — 템플릿 저장(Saved). 공개 또는 내 것만. (멱등) */
 router.post('/templates/:id/bookmark', async (req, res, next) => {

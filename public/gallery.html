@@ -88,6 +88,11 @@
   .myt-sec{font-family:'Sora';font-size:15px;font-weight:700;color:var(--text);margin:26px 2px 12px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
   #tplGrid>.myt-sec:first-child{margin-top:2px}
   .myt-sec-sub{font-size:12px;font-weight:500;color:var(--faint)}
+  .myt-bulk{margin-left:auto;font-family:inherit;font-size:12px;font-weight:600;color:var(--accent2);background:rgba(124,108,255,.1);border:1px solid rgba(124,108,255,.4);border-radius:8px;padding:5px 11px;cursor:pointer}
+  .myt-bulk:hover{background:rgba(124,108,255,.18)}
+  .myt-bulk.ghost{color:var(--dim);background:transparent;border-color:var(--border2)}
+  .myt-bulk.ghost:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  .stbtn.on{color:var(--accent2);font-weight:600}
   /* My templates = 깔끔한 타일. "Themes" 누르면 그 카드 위에 칩 패널이 인플레이스로 펼쳐짐(모달 아님) */
   .item .lib-panel{position:absolute;inset:0;z-index:5;background:rgba(10,10,16,.93);backdrop-filter:blur(4px);display:none;flex-direction:column;padding:12px;border-radius:16px}
   .item .lib-panel.open{display:flex}
@@ -580,16 +585,19 @@ function tplCard(t,kind){
   // 테마 패널(안A): 본인·구매 무관 studio 테마 넣다뺐다(§6).
   const themesPanel=`<div class="lib-panel" id="lib-panel-${tid}"><div class="lp-head">Add to studio themes</div><div class="lib-chips" id="lib-chips-${tid}">${libThemeChips(tid)}</div><button type="button" class="lp-x" onclick="toggleLibPanel('${tid}')">Done</button></div>`;
   let actions,panel='';
+  // (2026-07-02) In Studio ↔ Library only 개별 토글. in_studio!==false면 스튜디오에 있음.
+  const inS=t.in_studio!==false;
+  const stBtn=`<button class="stbtn${inS?' on':''}" onclick="toggleInStudio('${tid}',${!inS})">${inS?'✓ In Studio':'↑ To Studio'}</button>`;
   if(kind==='mine'){
-    actions=`<button class="del" onclick="delTpl('${tid}')">Delete</button><button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
+    actions=`${stBtn}<button class="del" onclick="delTpl('${tid}')">Delete</button><button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
     panel=themesPanel;
   }
   else if(kind==='purchased'){ // 타인에게서 구매(acquire)한 보유 템플릿: 삭제 불가, 사용·테마배치 가능
-    actions=`<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
+    actions=`${stBtn}<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
     panel=themesPanel;
   }
   else if(kind==='official'){ // 공식 템플릿: 테마 배치(recipe_id 기준·Studio와 동일 키) + 사용. 삭제 불가.
-    actions=`<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
+    actions=`${stBtn}<button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
     panel=themesPanel;
   }
   else actions=`<button onclick="tryTpl('${tid}')">Try it</button><button class="del" onclick="unsaveTpl('${tid}')" title="Remove from Saved">🔖</button>`;
@@ -637,6 +645,13 @@ const CAT_THEMES={
 };
 // 그룹 표시(③필터)는 비겹침·중복0.
 const CAT_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','general']]]; // (2026-07-02) jewelry·pet·food·coffee·home·tech 숨김(Studio와 일치)
+// (2026-07-02) 보이는 테마 = CAT_THEMES(노출 매크로그룹)에 든 slug만. 숨긴 테마면 false → 그 테마에만 속한 건 어디서도 안 보임(Studio isThemeVisible와 동일).
+function isThemeVisible(slug){
+  // 노출 모드 = Shopping(Influencer/UGC 숨김). Shopping 테마만 visible. Influencer 재활성 시 포함. UGC(폐기) 제외. Studio isThemeVisible와 동일.
+  if(CAT_THEMES.Shopping.indexOf(slug)>=0)return true;
+  if(typeof featureOn==='function'&&featureOn('influencer')&&CAT_THEMES.Influencer.indexOf(slug)>=0)return true;
+  return false;
+}
 // 필터 칩 = 내 스튜디오 테마 전체와 동기화: 기본 글로벌(숨김 제외)을 Influencer/Shopping 섹션으로 그룹화(공유 테마는 양쪽 노출) + 모든 커스텀 테마(빈 것 포함). 스튜디오/카드패널/모달과 일치.
 function renderThemeFilter(){
   const el=document.getElementById('tplThemeFilter'); if(!el)return;
@@ -656,17 +671,36 @@ function renderThemeFilter(){
   }
   el.innerHTML=h;
 }
-// (2026-07-02) 보유 템플릿을 두 그룹으로: In Studio(테마 배치됨=Studio와 완전 동기화) / Library only(보유했지만 테마 미배치=Library에만).
-//   inAnyThemeLib = Studio inAnyTheme와 동일 축(글로벌 테마 멤버십 또는 커스텀 테마 멤버십 ≥1).
-function inAnyThemeLib(tid){ return itemGlobalThemes(tid).size>0 || itemCustomThemes(tid).size>0; }
+// (2026-07-02) 보유 템플릿 3분류: In Studio(보이는 테마 멤버십 ≥1 = Studio와 동기화) / Library only(테마 아예 없음 = 미배치) / 숨김(숨긴 테마에만 속함 = 어디서도 안 보임).
+//   Studio inAnyTheme(+isThemeVisible)와 동일 축. 커스텀 테마는 항상 visible.
 function renderMyTemplates(){
   const grid=document.getElementById('tplGrid'); if(!grid)return;
   const rows=MYT.list.filter(inThemeFilter);
   if(!rows.length){ grid.innerHTML='<div class="tpl-empty-note">No templates in this theme yet.</div>'; return; }
   const inStudio=[], libOnly=[];
-  rows.forEach(x=>{ (inAnyThemeLib(x.t.id)?inStudio:libOnly).push(x); });
-  const sec=(title,sub,arr)=> arr.length ? `<div class="myt-sec">${title}<span class="myt-sec-sub">${sub}</span></div><div class="grid">${arr.map(x=>tplCard(x.t,x.kind)).join('')}</div>` : '';
-  grid.innerHTML = sec('In Studio','synced with your Studio',inStudio) + sec('Library only','owned · not in your Studio yet',libOnly);
+  rows.forEach(x=>{
+    const tid=x.t.id, globals=itemGlobalThemes(tid), cust=itemCustomThemes(tid).size;
+    const hasVisible = cust>0 || [...globals].some(s=>isThemeVisible(s)); // 보이는 테마(커스텀 or 비숨김 글로벌)
+    if(!hasVisible) return;                       // 숨긴 테마에만 속함 → 어디서도 안 보임(완전 숨김)
+    (x.t.in_studio===false ? libOnly : inStudio).push(x); // in_studio 토글로 In Studio ↔ Library only(대기조)
+  });
+  const idsOf=arr=>JSON.stringify(arr.map(x=>String(x.t.id)));
+  const sec=(title,sub,arr,bulk)=> arr.length ? `<div class="myt-sec">${title}<span class="myt-sec-sub">${sub}</span>${bulk}</div><div class="grid">${arr.map(x=>tplCard(x.t,x.kind)).join('')}</div>` : '';
+  const bulkAdd = libOnly.length ? `<button type="button" class="myt-bulk" onclick='toggleInStudioBulk(${idsOf(libOnly)},true)'>↑ Add all to Studio</button>` : '';
+  const bulkRemove = inStudio.length ? `<button type="button" class="myt-bulk ghost" onclick='toggleInStudioBulk(${idsOf(inStudio)},false)'>↓ Move all to Library only</button>` : '';
+  grid.innerHTML = sec('In Studio','synced with your Studio',inStudio,bulkRemove) + sec('Library only','waiting to be added to Studio',libOnly,bulkAdd);
+}
+// (2026-07-02) In Studio ↔ Library only 이동(개별/일괄) — template_owns.in_studio 토글.
+async function toggleInStudio(id,inStudio){ return toggleInStudioBulk([String(id)],inStudio); }
+async function toggleInStudioBulk(ids,inStudio){
+  if(!ids||!ids.length)return;
+  try{
+    await fetch('/api/marketplace/owned/in-studio',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,in_studio:inStudio})});
+    const set=new Set(ids.map(String));
+    (MYT.list||[]).forEach(x=>{ if(set.has(String(x.t.id)))x.t.in_studio=inStudio; });
+    renderMyTemplates();
+    if(window.toast)toast(inStudio?'Added to Studio':'Moved to Library only');
+  }catch(e){ if(window.toast)toast('Failed — try again'); }
 }
 function setMyThemeFilter(kind,key){
   MYT.filter = kind==='all'?{kind:'all'}:(kind==='global'?{kind:'global',slug:key}:{kind:'custom',id:key});
