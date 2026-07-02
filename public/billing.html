@@ -132,14 +132,14 @@
 
 <div class="wrap">
   <h1 class="fade d1">Billing &amp; Credits</h1>
-  <div class="sub fade d1">Subscribe for monthly credits, or top up anytime. Credits never expire while subscribed.</div>
+  <div class="sub fade d1">Get a 3-month pass — pay once, no auto-renew. Credits are granted upfront. Or top up with credit packs anytime.</div>
 
   <div id="purchasedBanner" class="hidden" style="background:rgba(94,224,214,.12);border:1px solid rgba(94,224,214,.35);color:var(--cyan);font-size:13.5px;font-weight:600;padding:14px 18px;border-radius:14px;margin-bottom:20px">
     Payment complete. Your credits may take a few seconds to appear. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">Refresh</a>
   </div>
 
   <div class="status fade d2">
-    <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">Top up with credit packs — subscriptions coming soon</div></div>
+    <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">Buy a 3-month pass or top up with credit packs</div></div>
     <div class="bal"><span class="num">◈ <span id="balNum">—</span></span><span class="lbl">credits left</span></div>
   </div>
 
@@ -151,8 +151,9 @@
     <button class="btn btn-primary" id="offerCta" onclick="upgradeToPro(this)">Claim →</button>
   </div>
 
-  <div class="section-label fade d2">Subscription</div>
-  <div class="cycle fade d2">
+  <div class="section-label fade d2">3-Month Passes</div>
+  <!-- (2026-07-02) 정기결제 미지원(eximbay 3달 제약) → 기간권. 월/연 토글 숨김. 재점화 시 style 제거 -->
+  <div class="cycle fade d2" style="display:none">
     <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
     <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 20%</span></button>
   </div>
@@ -170,7 +171,7 @@
       <div class="credits-inc">250 credits / month</div>
       <div class="cr-eq">≈ 125 sets or 41 reels</div>
       <ul><li>No watermark</li><li>Reels + HD</li><li>Priority queue</li><li>Personal license</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Upgrade</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
     <div class="plan-card glass featured" data-plan="pro" data-m="39" data-y="31" data-yt="$372/yr billed annually · save $96">
       <div class="ribbon">Most popular</div>
@@ -179,7 +180,7 @@
       <div class="credits-inc">600 credits / month</div>
       <div class="cr-eq">≈ 300 sets or 100 reels</div>
       <ul><li>Everything in Creator</li><li>Brand kit</li><li>Multilingual captions on</li><li>4K + personal license</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Upgrade</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
     <div class="plan-card glass" data-plan="brand" data-m="79" data-y="63" data-yt="$756/yr billed annually · save $192">
       <div class="pname">Brand</div><div class="price">$<span class="pv">79</span><span> /mo</span></div>
@@ -187,7 +188,7 @@
       <div class="credits-inc">1,400 credits / month</div>
       <div class="cr-eq">≈ 700 sets or 233 reels</div>
       <ul><li>Everything in Pro</li><li>Commercial license</li><li>On-model + bulk</li><li>Team seats &amp; API · premium models</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Upgrade</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
   </div>
 
@@ -281,7 +282,9 @@ function setCycle(c,btn){
   document.querySelectorAll('.plan-card[data-m]').forEach(card=>{
     const pv=card.querySelector('.pv'),note=card.querySelector('.cyc-note');
     if(pv)pv.textContent=card.getAttribute('data-'+c);
-    if(note)note.textContent = c==='y' ? card.getAttribute('data-yt') : '';
+    // (2026-07-02) 기간권: 월 환산가 + 3개월 총액(한 번 결제·자동갱신 없음) 병기
+    const m=parseInt(card.getAttribute('data-m'),10)||0;
+    if(note)note.textContent = c==='y' ? card.getAttribute('data-yt') : (m>0 ? ('3-month pass · $'+(m*3)+' billed once · no auto-renew') : '');
   });
 }
 
@@ -293,7 +296,7 @@ function syncBillingPricing(){
     const p=P.plans[k], card=document.querySelector('.plan-card[data-plan="'+k+'"]'); if(!card||!p)return;
     card.setAttribute('data-m',p.price); card.setAttribute('data-y',p.priceY);
     if(k!=='free') card.setAttribute('data-yt','$'+(p.priceY*12)+'/yr billed annually · save $'+((p.price-p.priceY)*12));
-    const ci=card.querySelector('.credits-inc'); if(ci) ci.textContent=P.fmt(p.cr)+(k==='free'?' credits (one-time)':' credits / month');
+    const ci=card.querySelector('.credits-inc'); if(ci) ci.textContent = k==='free' ? (P.fmt(p.cr)+' credits (one-time)') : (P.fmt(p.cr)+'/mo × 3 = '+P.fmt(p.cr*3)+' credits upfront'); // (2026-07-02) 3개월분 일괄
   });
   const pk=document.getElementById('packsGrid');
   if(pk) pk.innerHTML=P.packs.map(function(p){
@@ -369,27 +372,23 @@ async function loadSubscription(){
     }
     if(sub.plan!=='free' && sub.planName){
       document.getElementById('planName').textContent=sub.planName;
-      if(sub.renewsAt) document.getElementById('planNote').textContent='Renews '+new Date(sub.renewsAt).toLocaleDateString();
+      // 기간권: renewsAt=만료일. 만료 지나면 백엔드가 free로 강등하므로 여기 오면 유효.
+      if(sub.renewsAt) document.getElementById('planNote').textContent='Pass expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew';
     }
-    const banner=document.getElementById('offerBanner');
-    if(sub.offer && sub.offer.active){
-      document.getElementById('offerList').textContent=sub.offer.listPrice;
-      document.getElementById('offerPrice').textContent=sub.offer.offerPrice;
-      document.getElementById('offerPct').textContent=sub.offer.discountPct;
-      banner.classList.remove('hidden');
-      startCountdown(sub.offer.secondsLeft);
-    }else banner.classList.add('hidden');
+    // (2026-07-02) 24h "첫 달 50% off" 오퍼는 정기결제(월) 개념 → 기간권 전환 중 보류(숨김). 재점화 시 복원.
+    document.getElementById('offerBanner').classList.add('hidden');
   }catch(e){console.error(e);}
 }
 async function upgradeToPro(btn){
   btn.disabled=true;const orig=btn.textContent;btn.textContent='…';
   try{
-    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:'pro'})});
+    const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
+    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // (2026-07-02) 3개월 이용권
     const d=await res.json();
-    if(d.success){ notify('Upgraded to Pro!'); if(offerTimer)clearInterval(offerTimer); loadSubscription();loadBalance(); }
-    else if(d.comingSoon){ notify('Subscription billing is coming soon — it activates once merchant review passes.'); }
-    else notify(d.error||'Upgrade failed.','error');
-  }catch(e){ notify('Upgrade connection failed.','error'); }
+    if(d.success){ notify('3-month pass activated!'); if(offerTimer)clearInterval(offerTimer); loadSubscription();loadBalance(); }
+    else if(d.comingSoon){ notify('Pass purchase is coming soon — it activates once merchant review passes.'); }
+    else notify(d.error||'Purchase failed.','error');
+  }catch(e){ notify('Payment connection failed.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }
 }
 

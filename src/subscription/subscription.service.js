@@ -1,6 +1,7 @@
 const { query } = require('../db/client');
 const { PLANS, planKey, entitlementsFor, isPro } = require('../lib/entitlements');
 const { PRICING } = require('../pricing/pricing.config');
+const creditService = require('../credits/credit.service');
 
 // 구독 가격 (월, USD) — pricing.config 단일소스에서 파생
 const PRICES = {
@@ -33,7 +34,7 @@ async function getSubscription(reqUser, nowMs) {
     [reqUser.id]
   );
   const row = r.rows[0] || {};
-  const user = { role: reqUser.role, plan: row.plan };
+  const user = { role: reqUser.role, plan: row.plan, plan_renews_at: row.plan_renews_at }; // 만료 반영(planKey가 plan_renews_at 체크)
   const key = planKey(user);
   const ent = entitlementsFor(user);
 
@@ -95,14 +96,23 @@ async function startOffer(userId, nowMs) {
  * @param {number} nowMs
  * @param {number} [months=1] 갱신일 산정용 개월 수
  */
-async function activatePlan(userId, plan, nowMs, months = 1) {
+// 기간권(선불) 활성화: plan을 months개월 부여(plan_renews_at=만료일, 자동재청구 없음) + 기간분 크레딧 일괄 지급.
+//   3달 후 eximbay 정기결제 오픈 시 이 함수를 재청구 webhook에서 반복 호출(월 리필)로 재활용.
+async function activatePlan(userId, plan, nowMs, months = 3) {
   if (!PLANS[plan] || plan === 'free') {
     throw Object.assign(new Error('유효한 유료 플랜이 아닙니다.'), { statusCode: 400 });
   }
-  const renews = new Date(nowMs + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+  const m = Math.max(1, parseInt(months, 10) || 3);
+  const expires = new Date(nowMs + m * 30 * 24 * 60 * 60 * 1000).toISOString(); // 만료일(기간권)
   await query('UPDATE users SET plan = $2, plan_renews_at = $3, updated_at = now() WHERE id = $1',
-    [userId, plan, renews]);
-  return { plan, renewsAt: renews };
+    [userId, plan, expires]);
+  // 기간분 크레딧 일괄 지급(월 크레딧 × 개월). 만료 시 잔여는 소멸(별도 처리 없음=소멸).
+  const credits = (PLANS[plan].monthlyCredits || 0) * m;
+  if (credits > 0) {
+    await creditService.addCredits(userId, credits, { type: 'plan', description: `${PLANS[plan].name} ${m}개월 이용권` })
+      .catch((e) => { /* 크레딧 지급 실패해도 플랜 활성화는 유지 */ });
+  }
+  return { plan, expiresAt: expires, months: m, creditsGranted: credits };
 }
 
 module.exports = { PRICES, OFFER, offerPrice, getSubscription, startOffer, activatePlan };

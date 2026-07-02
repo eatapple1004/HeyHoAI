@@ -26,15 +26,16 @@ router.post('/offer/start', async (req, res, next) => {
  */
 router.post('/upgrade', async (req, res, next) => {
   try {
-    const { plan = 'pro' } = req.body || {};
+    const { plan = 'pro', months = 3 } = req.body || {};
     if (req.user.role !== 'admin') {
       return res.status(501).json({
         success: false,
-        error: '구독 결제는 곧 오픈됩니다. (가맹점 심사 대기 중)',
+        error: '이용권 결제는 곧 오픈됩니다. (가맹점 심사 대기 중)',
         comingSoon: true,
       });
     }
-    const result = await subscriptionService.activatePlan(req.user.id, plan, Date.now());
+    // 기간권(선불): months개월 부여 + 크레딧 일괄. eximbay 정기결제 오픈 전엔 admin 수동만.
+    const result = await subscriptionService.activatePlan(req.user.id, plan, Date.now(), months);
     res.json({ success: true, data: result });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });

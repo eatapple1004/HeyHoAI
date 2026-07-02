@@ -18,7 +18,14 @@ const PLANS = {
 function planKey(user) {
   if (!user) return 'free';
   if (user.role === 'admin') return 'brand';
-  return PLANS[user.plan] ? user.plan : 'free';
+  if (!PLANS[user.plan] || user.plan === 'free') return 'free';
+  // 기간권(선불) 만료 강등: plan_renews_at(만료일)이 지났으면 free. 자동재청구 없음(eximbay 정기결제 오픈 전).
+  //   ⚠️ 만료 반영하려면 조회 지점에서 plan_renews_at도 넣을 것(없으면 만료 체크 스킵=하위호환).
+  if (user.plan_renews_at) {
+    const exp = new Date(user.plan_renews_at).getTime();
+    if (!isNaN(exp) && exp < Date.now()) return 'free';
+  }
+  return user.plan;
 }
 
 /** 플랜 권한 객체 */

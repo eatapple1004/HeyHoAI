@@ -27,8 +27,9 @@ async function canUsePrivate(reqUser) {
   if (!reqUser) return false;
   if (reqUser.role === 'admin') return true;
   try {
-    const r = await query('SELECT plan FROM users WHERE id = $1', [reqUser.id]);
-    return !!entitlementsFor({ role: reqUser.role, plan: r.rows[0] && r.rows[0].plan }).privateMode;
+    const r = await query('SELECT plan, plan_renews_at FROM users WHERE id = $1', [reqUser.id]);
+    const u = r.rows[0] || {};
+    return !!entitlementsFor({ role: reqUser.role, plan: u.plan, plan_renews_at: u.plan_renews_at }).privateMode; // 기간권 만료 반영
   } catch (e) { logger.warn({ err: e, userId: reqUser && reqUser.id }, 'canUsePrivate plan lookup failed — defaulting to public'); return false; }
 }
 function wantsPrivate(body) {
