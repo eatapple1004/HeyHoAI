@@ -100,19 +100,32 @@ async function startOffer(userId, nowMs) {
 //   3달 후 eximbay 정기결제 오픈 시 이 함수를 재청구 webhook에서 반복 호출(월 리필)로 재활용.
 async function activatePlan(userId, plan, nowMs, months = 3) {
   if (!PLANS[plan] || plan === 'free') {
-    throw Object.assign(new Error('유효한 유료 플랜이 아닙니다.'), { statusCode: 400 });
+    throw Object.assign(new Error('유효한 이용권이 아닙니다.'), { statusCode: 400 });
   }
   const m = Math.max(1, parseInt(months, 10) || 3);
-  const expires = new Date(nowMs + m * 30 * 24 * 60 * 60 * 1000).toISOString(); // 만료일(기간권)
+  // 현재 활성 패스(만료 반영) 조회 — 중복구매 정책의 기준.
+  const r = await query('SELECT plan, plan_renews_at FROM users WHERE id = $1', [userId]);
+  const cur = planKey({ plan: r.rows[0] && r.rows[0].plan, plan_renews_at: r.rows[0] && r.rows[0].plan_renews_at }); // 만료면 'free'
+  const curExpMs = r.rows[0] && r.rows[0].plan_renews_at ? new Date(r.rows[0].plan_renews_at).getTime() : 0;
+  const newRank = PLANS[plan].rank, curRank = PLANS[cur].rank;
+  // 하위 등급 구매 차단: 활성 상위 패스가 있으면 만료 후에만 가능(B안).
+  if (cur !== 'free' && newRank < curRank) {
+    throw Object.assign(new Error(`이미 ${PLANS[cur].name} 패스를 이용 중이에요. 만료 후 하위 이용권을 구매할 수 있어요.`), { statusCode: 409 });
+  }
+  // 기간: 활성 패스(같은/상위)면 남은 기간에 이어붙여 연장, 없으면 지금부터.
+  const base = (cur !== 'free' && curExpMs > nowMs) ? curExpMs : nowMs;
+  const expires = new Date(base + m * 30 * 24 * 60 * 60 * 1000).toISOString();
+  // 등급: 상위 구매면 즉시 상향(newRank>curRank), 같으면 유지. (하위는 위에서 차단됨)
+  const effPlan = newRank >= curRank ? plan : cur;
   await query('UPDATE users SET plan = $2, plan_renews_at = $3, updated_at = now() WHERE id = $1',
-    [userId, plan, expires]);
-  // 기간분 크레딧 일괄 지급(월 크레딧 × 개월). 만료 시 잔여는 소멸(별도 처리 없음=소멸).
+    [userId, effPlan, expires]);
+  // 기간분 크레딧 일괄 지급(구매한 이용권 등급의 월 크레딧 × 개월, 누적). 만료 시 잔여 소멸.
   const credits = (PLANS[plan].monthlyCredits || 0) * m;
   if (credits > 0) {
     await creditService.addCredits(userId, credits, { type: 'plan', description: `${PLANS[plan].name} ${m}개월 이용권` })
-      .catch((e) => { /* 크레딧 지급 실패해도 플랜 활성화는 유지 */ });
+      .catch((e) => { /* 크레딧 지급 실패해도 활성화는 유지 */ });
   }
-  return { plan, expiresAt: expires, months: m, creditsGranted: credits };
+  return { plan: effPlan, expiresAt: expires, months: m, creditsGranted: credits, extended: base > nowMs, upgraded: newRank > curRank };
 }
 
 module.exports = { PRICES, OFFER, offerPrice, getSubscription, startOffer, activatePlan };

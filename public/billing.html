@@ -139,7 +139,7 @@
   </div>
 
   <div class="status fade d2">
-    <div><div class="plan">Current plan: <b id="planName">Pay as you go</b></div><div class="renew" id="planNote">Buy a 3-month pass or top up with credit packs</div></div>
+    <div><div class="plan"><span id="planLabel"></span><b id="planName">Pay as you go</b></div><div class="renew" id="planNote">Buy a 3-month pass or top up with credit packs</div></div>
     <div class="bal"><span class="num">◈ <span id="balNum">—</span></span><span class="lbl">credits left</span></div>
   </div>
 
@@ -372,9 +372,12 @@ async function loadSubscription(){
       try{ sub=(await(await fetch('/api/subscription/offer/start',{method:'POST'})).json()).data || sub; }catch(e){}
     }
     if(sub.plan!=='free' && sub.planName){
+      document.getElementById('planLabel').textContent='Active pass: '; // 단발성 이용권(구독 아님)
       document.getElementById('planName').textContent=sub.planName;
       // 기간권: renewsAt=만료일. 만료 지나면 백엔드가 free로 강등하므로 여기 오면 유효.
-      if(sub.renewsAt) document.getElementById('planNote').textContent='Pass expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew';
+      if(sub.renewsAt) document.getElementById('planNote').textContent='Expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew';
+    } else {
+      document.getElementById('planLabel').textContent=''; // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }
     // (2026-07-02) 24h "첫 달 50% off" 오퍼는 정기결제(월) 개념 → 기간권 전환 중 보류(숨김). 재점화 시 복원.
     document.getElementById('offerBanner').classList.add('hidden');
