@@ -1869,7 +1869,8 @@ async function loadStudioResults(reset){
   try{
     const res=await fetch('/api/generate/results?limit='+STUDIO_PAGE+'&offset='+STUDIO_OFFSET);
     if(!res.ok)return;
-    const rows=((await res.json()).data||[]).filter(r=>r.status==='success'&&r.file_path);
+    const raw=(await res.json()).data||[]; // 백엔드 원본(성공+실패 포함) — DONE 판정은 이걸로
+    const rows=raw.filter(r=>r.status==='success'&&r.file_path); // 표시는 성공 이미지/릴만
     rows.forEach(r=>{ // prompt_idx별 배치로 묶음(페이지 경계에 걸친 배치는 기존 배치에 병합)
       const k=r.prompt_idx;
       let b=STUDIO_BATCH_BY_KEY[k];
@@ -1878,7 +1879,7 @@ async function loadStudioResults(reset){
       if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
     });
     STUDIO_OFFSET+=STUDIO_PAGE;
-    if(rows.length<STUDIO_PAGE)STUDIO_DONE=true; // 마지막 페이지(원시 결과가 한 페이지 미만)
+    if(raw.length<STUDIO_PAGE)STUDIO_DONE=true; // 마지막 페이지=백엔드 원본이 한 페이지 미만(실패/릴 필터로 조기종료 방지)
     renderStudioResults();
   }catch(e){}
   finally{STUDIO_LOADING=false;}
