@@ -240,8 +240,9 @@
     <label class="sw"><input type="checkbox" id="topupSw" onchange="toggleTopup(this)"><span class="tr"></span><span class="kn"></span></label>
   </div>
 
-  <div class="section-label fade d4" style="margin-top:38px">Manage subscription</div>
-  <div class="frow glass fade d4">
+  <!-- (2026-07-02) 단발성 이용권 → 관리할 정기결제 없음(일시정지/취소 무의미). 정기결제 재점화 시 display:none 제거 -->
+  <div class="section-label fade d4" style="margin-top:38px;display:none">Manage subscription</div>
+  <div class="frow glass fade d4" style="display:none">
     <div style="width:100%">
       <div class="lead">Need a break?</div>
       <div class="desc">Pause keeps your account, gallery and trained faces — billing stops and resumes whenever you're back. Most people pause instead of cancelling.</div>
