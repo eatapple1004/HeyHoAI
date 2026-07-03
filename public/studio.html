@@ -12,7 +12,7 @@
 <script src="/js/rail.js?v=6" defer></script>
 <script src="/js/flags.js" defer></script>
 <style>
-  .wrap{max-width:1080px;margin:0 auto;padding:36px 24px 210px;position:relative;z-index:2}
+  .wrap{max-width:none;margin:0;padding:34px 24px 210px;position:relative;z-index:2}/* (2026-07-03) full-bleed(Library/Community/Store와 통일). gen-bar는 position:fixed 중앙(1032px)라 독립. 롤백: max-width:1080px;margin:0 auto;padding:36px 24px 210px */
 
   /* mode toggle */
   .mode-toggle{display:inline-flex;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:32px}
@@ -195,7 +195,7 @@
   .gen-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;width:min(1032px,calc(100% - 48px));
     background:rgba(19,19,29,.84);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:18px;padding:14px 20px;
     display:flex;flex-direction:column;gap:13px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
-  .gen-bar.gen-inline{position:static;transform:none;left:auto;right:auto;bottom:auto;width:100%;margin:0 0 8px;box-shadow:none}
+  .gen-bar.gen-inline{position:static;transform:none;left:auto;right:auto;bottom:auto;width:100%;max-width:1100px;margin:0 0 8px;box-shadow:none}/* (2026-07-03) full-bleed .wrap에서 컴포즈 바만 캡+좌측정렬(픽커/헤딩과 정렬, 결과·픽커는 full-width). 롤백: max-width 제거 */
   .gen-bar .summary{font-size:13.5px;color:var(--dim)}
   .gen-bar .summary b{color:var(--text)}
   .gen-bar .summary .cost{color:var(--gold);font-weight:700}
