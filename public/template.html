@@ -10,18 +10,20 @@
 <script src="/saas-auth.js" defer></script>
 <script src="/js/rail.js?v=6" defer></script>
 <style>
-  .wrap{max-width:980px;margin:0 auto;padding:34px 24px 90px;position:relative;z-index:2}
+  .wrap{max-width:1160px;margin:0 auto;padding:34px 24px 90px;position:relative;z-index:2}
   .back{display:inline-flex;align-items:center;gap:6px;color:var(--dim);font-size:13px;cursor:pointer;margin-bottom:18px}
   .back:hover{color:var(--text)}
-  .grid2{display:grid;grid-template-columns:1.2fr .9fr;gap:30px;align-items:start}
+  .grid2{display:grid;grid-template-columns:1.5fr .82fr;gap:30px;align-items:start}
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
-  /* 예시 갤러리 */
-  .gal{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-  .gal .ph{position:relative;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--border)}
-  .gal .ph.wide{grid-column:1/-1;aspect-ratio:1/1}
+  /* 예시 갤러리 — 균형 justified 행: 원본 비율 유지·행별 동일 높이로 폭에 꽉 채움(과대확대 방지 상한). 1~8장 대응. JS가 layoutGal로 배치 */
+  .gal{display:flex;flex-direction:column;gap:8px}
+  .gal-row{display:flex;gap:8px;justify-content:center}
+  .gal .ph{position:relative;flex:0 0 auto;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--border)}
   .gal .ph img,.gal .ph video{width:100%;height:100%;object-fit:cover;display:block}
-  .gal .none{grid-column:1/-1;aspect-ratio:16/9;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:54px;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
+  .gal .none{aspect-ratio:16/9;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:54px;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
   /* 우측 패널 */
+  .panel{position:sticky;top:24px}
+  @media(max-width:760px){.panel{position:static}}
   .panel h1{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.2}
   .by{color:var(--dim);font-size:13.5px;margin-top:8px}
   .by a{color:var(--accent2);text-decoration:none}
@@ -43,7 +45,7 @@
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
   #toast.show{opacity:1}
   /* 이 템플릿으로 만든 creations (좋아요순) */
-  #madeWith{max-width:980px;margin:0 auto;padding:0 24px 70px}
+  #madeWith{max-width:1160px;margin:0 auto;padding:0 24px 70px}
   .made-h{font-family:'Sora';font-size:18px;font-weight:800;margin:38px 0 16px}
   .made-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
   .made-card{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#0c0c14;cursor:pointer;aspect-ratio:4/5}
@@ -65,18 +67,51 @@
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 function qid(){try{return new URLSearchParams(location.search).get('id');}catch(e){return null;}}
-// 대표사진 갤러리 — 원본 크기 제각각이어도 고정 박스에 object-fit:cover로 정규화.
-//   1번=항상 전체폭 정사각형(hero). 나머지=2열 4/5 페어. 남는 게 홀수면 마지막 1장도 전체폭 정사각형으로 마감(외톨이 타일 방지). 1~8장 대응.
+// 대표사진 갤러리 — 원본 비율(제각각) 유지하며 균형 justified 행으로 배치.
+//   원본 종횡비를 읽어 행별로 동일 높이가 되게 폭에 꽉 채우고(빈 공간 최소화),
+//   높이 상한(과대확대 방지)에 걸린 행은 가운데 정렬. 1~8장 대응.
 function buildGal(items){
-  const n=items.length;
-  return items.map((it,i)=>{
-    const wide=(i===0)||(i===n-1&&(n-1)%2===1);
+  return items.map(it=>{
     const media=it.video
-      ? `<video src="${esc(it.url)}" muted loop playsinline autoplay preload="auto"></video>`
+      ? `<video src="${esc(it.url)}" muted loop playsinline autoplay preload="metadata"></video>`
       : `<img src="${esc(it.url)}" loading="lazy" alt="">`;
     const click=it.href?` onclick="location.href='${esc(it.href)}'" style="cursor:pointer"`:'';
-    return `<div class="ph${wide?' wide':''}"${click}>${media}</div>`;
+    return `<div class="ph"${click}>${media}</div>`;
   }).join('');
+}
+function galAR(t){
+  const m=t.querySelector('img,video'); if(!m)return 0.8;
+  const w=m.tagName==='VIDEO'?m.videoWidth:m.naturalWidth;
+  const h=m.tagName==='VIDEO'?m.videoHeight:m.naturalHeight;
+  return (w&&h)?w/h:0.8;
+}
+function layoutGal(galEl){
+  const tiles=galEl&&galEl._tiles; if(!tiles||!tiles.length)return;
+  const n=tiles.length, W=galEl.clientWidth||600, gap=8, minH=120, maxH=230;
+  const r=n<=3?1:2;                         // 1~3장=한 줄, 4~8장=두 줄
+  const base=Math.floor(n/r), rem=n%r;
+  let idx=0; const rows=[];
+  for(let k=0;k<r;k++){const len=base+(k<rem?1:0);rows.push(tiles.slice(idx,idx+len));idx+=len;}
+  galEl.innerHTML='';
+  rows.forEach(row=>{
+    const rowEl=document.createElement('div'); rowEl.className='gal-row';
+    let sum=0; row.forEach(t=>sum+=galAR(t));
+    let h=(W-gap*(row.length-1))/sum; if(h<minH)h=minH; if(h>maxH)h=maxH;
+    row.forEach(t=>{t.style.width=Math.round(galAR(t)*h)+'px';t.style.height=Math.round(h)+'px';rowEl.appendChild(t);});
+    galEl.appendChild(rowEl);
+  });
+}
+function mountGal(galEl){
+  if(!galEl)return;
+  galEl._tiles=[...galEl.querySelectorAll('.ph')];
+  const relay=()=>layoutGal(galEl);
+  galEl._tiles.forEach(t=>{
+    const m=t.querySelector('img,video'); if(!m)return;
+    if(m.tagName==='VIDEO'){ m.addEventListener('loadedmetadata',relay,{once:true}); m.muted=true; const p=m.play(); if(p&&p.catch)p.catch(()=>{}); }
+    else if(!m.complete){ m.addEventListener('load',relay,{once:true}); m.addEventListener('error',relay,{once:true}); }
+  });
+  relay();
+  if(!galEl._resizeBound){ window.addEventListener('resize',()=>layoutGal(galEl)); galEl._resizeBound=true; }
 }
 
 let TPL=null;
@@ -110,7 +145,7 @@ async function loadCreations(){
     if(noPrev&&galEl){
       const top=d.slice(0,8);
       galEl.innerHTML=buildGal(top.map(it=>({url:it.url,video:it.type==='video',href:`/creation?idx=${it.idx}&from=explore`})));
-      galEl.querySelectorAll('video').forEach(v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});});
+      mountGal(galEl);
     }
   }catch(e){ el.innerHTML=''; }
 }
@@ -165,6 +200,7 @@ function render(){
       </div>
       ${blackbox?'<div class="note">🔒 Paid template — the recipe (prompt) stays private. Unlock once to own it, then use it anytime (generation credits apply per render).</div>':''}
     </div>`;
+  mountGal(document.querySelector('.gal'));
 }
 async function acquireThis(){
   try{
