@@ -32,6 +32,7 @@
   .tthumb img{width:100%;height:100%;object-fit:cover}
   .temoji{font-size:46px}
   .tprice{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;text-transform:uppercase;letter-spacing:.3px}
+  .tthemetag{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:7px;text-transform:capitalize;letter-spacing:.2px}/* (2026-07-03) 카드 테마 표시 */
   .tbody{padding:11px 12px}
   .tname{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tmeta{font-size:11.5px;color:var(--dim);margin-top:3px}
@@ -86,11 +87,15 @@ function tcard(t){
   // ▼▼▼ (2026-07-03) 보유 카드 = "✓ In Library"(비활성) + View 링크(/gallery?tpl 딥링크). 미보유 = ＋Add. 롤백: owned 분기 제거하고 ＋Add만 ▼▼▼
   const owned=!!t.owned;
   const ownedBadge=owned?`<span class="towned">✓ In Library</span>`:'';
+  // (2026-07-03) 카드에 테마 표시 — 보이는 기본 테마만(Studio·Library·칩과 통일). 여러 개면 첫 번째.
+  const vis=(typeof isThemeVisible==='function')?isThemeVisible:function(){return true;};
+  const themeSlug=(t.themes||[]).filter(function(s){return vis(s);})[0];
+  const themeTag=themeSlug?`<span class="tthemetag">${esc(themeName(themeSlug))}</span>`:'';
   const actions=owned
     ? `<button class="tuse owned" disabled>✓ In Library</button><a class="tview" href="/studio?tpl=${encodeURIComponent(t.id)}">View</a>`
     : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>`;
   return `<div class="tcard${owned?' is-owned':''}">
-    <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span></div>
+    <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span>${themeTag}</div>
     <div class="tbody">
       <div class="tname">${esc(t.name)}</div>
       <div class="tmeta">by ${t.creator_handle?`<a class="hlink" href="/creator?handle=${encodeURIComponent(String(t.creator_handle).replace(/^@/,''))}">${esc(t.creator_handle)}</a>`:'@creator'} · ♥ ${t.likes_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
