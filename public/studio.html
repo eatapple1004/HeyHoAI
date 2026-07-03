@@ -878,16 +878,29 @@ function buildTemplates(){
     custom:[]
   };
 }
-// 보유 마켓 템플릿(무료추가/구매)을 pick-a-template 그리드에 머지. marketplace 점화 시만. (실패=무시, recipe만 유지)
-// 대부분 유저 템플릿은 category=Custom → influencer 그리드에 'My templates' 필터로 노출(점화 후 정밀화 여지).
+// 보유 템플릿(/owned)을 pick-a-template 그리드에 머지 — Library My templates와 동일한 단일소스.
+// 공식(is_official)·유저(비공식) 둘 다 여기서 /owned 기준으로 판단(Library Official/My templates 서브탭과 세트 일치).
+// ▼▼▼ (2026-07-03 소스 통일) 공식 노출·테마도 /owned 단일소스로 이동(옛 recipe-gates 이원화 제거).
+//     롤백: 이 함수의 is_official 분기 제거 + applyRecipeGates에 OFFICIAL_RECIPES 재도입(reset/add) + OFFICIAL_THEME_MAP 주입 복원 + GATES_LOADED를 gates로 환원 ▼▼▼
 async function mergeOwnedTemplates(){
-  if(!(window.featureOn&&window.featureOn('marketplace')))return;
-  let owned;try{owned=(await(await fetch('/api/marketplace/owned')).json()).data||[];}catch(e){return;}
-  if(!owned.length)return;
+  let owned;try{owned=(await(await fetch('/api/marketplace/owned')).json()).data||[];}catch(e){GATES_LOADED=true;renderFilters();renderRecipes();return;}
+  const mkOn=!!(window.featureOn&&window.featureOn('marketplace')); // 유저 마켓 템플릿은 점화 시만(기존 동작). 공식은 플래그 무관(옛 applyRecipeGates와 동일).
+  OFFICIAL_RECIPES=new Set(); // 공식 판단 = /owned is_official=true 보유 공식(Library Official 탭과 동일 세트). recipe_id로 window.RECIPES 카드에 매핑.
   owned.forEach(t=>{
-    if(t.recipe_id)return; // recipe-backed는 applyRecipeGates가 처리(숨김/노출)
+    if(t.is_official){
+      // 공식 = recipe-backed(시드 보장). 내장 recipe 카드를 recipe_id로 찾아 '보유 공식'으로 스탬프.
+      //   카드 id=recipe 슬러그·source 불변 → 생성(/api/recipes/:id/resolve)·attribution('recipe') 경로 그대로.
+      if(!t.recipe_id)return;                           // 비-recipe 공식(스코프 밖)
+      const card=findCard(t.recipe_id); if(!card||!card.id)return; // 매핑 실패 = 미노출(무크래시)
+      OFFICIAL_RECIPES.add(String(t.recipe_id));
+      card.held=false;                                  // 보유 → 메인 그리드 노출
+      card.in_studio=(t.in_studio!==false);             // In Studio ↔ Library only 토글
+      if(t.themes&&t.themes.length)card.themes=t.themes; // 테마 = /owned label(Library와 동일 어휘) — OFFICIAL_THEME_MAP 대체
+      return;
+    }
+    if(!mkOn)return; // 비공식(유저) 템플릿은 marketplace 점화 시만.
     // 안A: in_studio 폐기 — 보유 템플릿은 전부 풀에 올리고, 실제 studio 노출은 테마 멤버십(inAnyTheme)이 결정.
-    // Step 2(2026-06-27): 모드 배치를 category가 아닌 '포스트잇 대분류'(/owned.macroGroup, Library와 동일 축)로. 비공식=내 배치 기준 / 공식은 여기 안 옴(recipe_id로 위에서 return). themes=포스트잇 기본테마(빈 배열 가능, 커스텀배치만이면 STUDIO_THEMES로 노출).
+    // Step 2(2026-06-27): 모드 배치를 category가 아닌 '포스트잇 대분류'(/owned.macroGroup, Library와 동일 축)로.
     const mode=t.macroGroup==='Influencer'?'influencer':'shopping';
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
@@ -895,25 +908,23 @@ async function mergeOwnedTemplates(){
       themes:(t.themes||[]),
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false,in_studio:t.in_studio!==false,fromCreationIdx:t.from_creation_idx||null});
   });
+  GATES_LOADED=true; // 공식+보유 판단 완료 → modePool이 공식+보유만 노출(recipe-gates fetch와 무관하게 픽커 정상화).
   renderFilters();renderRecipes();updateBar();
 }
-// recipe-backed 유료 템플릿 게이트: 미보유=내장 recipe 숨김(held=true, 카탈로그서 구매) / 보유=노출(held=false).
-// 백엔드 /api/generate가 미보유 생성을 402로 막으므로 숨김은 UX용. flag 무관(공식 유료는 점화와 별개로 라이브).
+// ▲▲▲
+// recipe-backed 유료 템플릿 게이트 — (2026-07-03 소스 통일) 이제 '미보유 공식 구매 게이팅(PREMIUM 업셀)' 전용.
+//   픽커 노출·공식 판단(OFFICIAL_RECIPES)·테마는 mergeOwnedTemplates(/owned 단일소스)가 결정 → 여기선 OFFICIAL_RECIPES/테마를 건드리지 않는다.
+//   백엔드 /api/generate가 미보유 생성을 402로 막으므로 숨김은 UX용. flag 무관.
 async function applyRecipeGates(){
   let gates;try{gates=(await(await fetch('/api/marketplace/recipe-gates')).json()).data||[];}catch(e){return;}
   PREMIUM=[];
-  OFFICIAL_RECIPES=new Set();   // 마켓 백킹 있는(레시피 기반 공식) recipe id — Step 1 필터 화이트리스트
   gates.forEach(g=>{
-    OFFICIAL_RECIPES.add(String(g.recipeId));
     let rc=null,mode=null;
     for(const m of Object.keys(TEMPLATES)){const c=(TEMPLATES[m]||[]).find(r=>String(r.id)===String(g.recipeId));if(c){rc=c;mode=m;break;}}
-    if(rc)rc.held=!g.owned;                    // 보유면 메인 그리드 노출 / 미보유는 프리미엄(안A: in_studio 폐기)
-    if(rc&&(!rc.themes||!rc.themes.length)&&OFFICIAL_THEME_MAP[String(g.recipeId)])rc.themes=[OFFICIAL_THEME_MAP[String(g.recipeId)]]; // 공식 테마 주입(themes 필드 없어서)
-    if(rc)rc.in_studio=(g.in_studio!==false); // 보유 공식도 in_studio 토글 대상(대기조=false면 스튜디오 미노출)
-    if(!g.owned&&rc)PREMIUM.push({templateId:g.templateId,recipeId:g.recipeId,price:g.price,name:rc.name,grad:rc.grad,type:rc.type,mode:mode}); // 미보유=프리미엄 섹션
+    if(!g.owned&&rc)PREMIUM.push({templateId:g.templateId,recipeId:g.recipeId,price:g.price,name:rc.name,grad:rc.grad,type:rc.type,mode:mode}); // 미보유=프리미엄 섹션(구매 업셀)
   });
-  GATES_LOADED=true;            // 이제부터 pick-a-template은 modePool로 공식+보유만 노출
-  renderFilters();renderRecipes();updateBar();
+  GATES_LOADED=true;            // (mergeOwnedTemplates에서 이미 set — 안전망)
+  renderRecipes();
 }
 
 let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,filter:'All'};
@@ -1722,7 +1733,8 @@ async function confirmUnlock(){
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     const rid=UNLOCK.rid;closeUnlock();
     if(window.toast)toast("Unlocked — it's in your templates now.");
-    await applyRecipeGates();           // 보유 반영: 프리미엄에서 빠지고 메인 그리드로
+    await mergeOwnedTemplates();        // (2026-07-03 소스 통일) 보유 반영은 /owned 재조회로 — 새 보유 공식이 OFFICIAL_RECIPES에 들어와 그리드 노출
+    await applyRecipeGates();           // PREMIUM(미보유 업셀) 재계산
     if(rid){state.recipeId=rid;state.filter='All';renderFilters();renderRecipes();updateBar();closeTemplatePicker();}
   }catch(e){if(window.toast)toast('Unlock failed: '+(e.message||e));}
   finally{btn.disabled=false;btn.innerHTML='Unlock · <span id="unlockPrice">◈ '+(UNLOCK.price||'')+'</span>';}
