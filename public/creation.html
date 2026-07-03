@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Doppia · Creation</title>
 <script src="/js/flags.js" defer></script>
+<script src="/js/themes.js?v=1"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="stylesheet" href="/css/theme.css?v=5" />
 <script src="/saas-auth.js" defer></script>
@@ -134,8 +135,8 @@ async function openSaveModal(opts){
   renderSvThemes();
 }
 function svOn(kind,key){ return SV.picks.some(p=>p.kind===kind&&p.key===key); }
-// 비겹침 대분류(확정 2026-06-26·스튜디오 CAT_THEMES와 동기화) — 각 테마는 한 섹션에만(중복0). general=Shopping(범용/중립 아님)·Influencer=People만·UGC 숨김. 커스텀 테마는 각자 대분류(group) 소속("Your themes" 중립 버킷 폐지).
-const SV_GROUPS=[['Influencer',['people']],['Shopping',['beauty','fashion','jewelry','pet','food','coffee','home','tech','general']]];
+// (2026-07-03 P2 통합) 테마 그룹은 /js/themes.js 단일소스(CAT_GROUPS)를 사용 → Studio·Library와 자동 동기화(숨긴 테마 jewelry·pet·food·coffee·home·tech 제외, Shopping=beauty·fashion·general). 폴백은 themes.js 미로드 대비.
+const SV_GROUPS=(typeof CAT_GROUPS!=='undefined')?CAT_GROUPS:[['Influencer',['people']],['Shopping',['beauty','fashion','general']]];
 // 대분류 상호배타: 한 템플릿은 한 대분류에만 → Influencer 테마와 Shopping 테마를 섞어 선택 불가. general은 Shopping 소속. 커스텀도 자기 group 소속(중립 아님).
 const SV_GROUP_OF={}; SV_GROUPS.forEach(([label,slugs])=>slugs.forEach(s=>{ SV_GROUP_OF[s]=label; }));
 function svCustomGroup(id){ const c=((SV.themes&&SV.themes.customs)||[]).find(x=>x.id===id); return (c&&c.group==='Influencer')?'Influencer':'Shopping'; }
