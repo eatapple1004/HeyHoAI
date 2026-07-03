@@ -532,6 +532,17 @@
           .recipe-card .mc.rem{background:#c0455e;border-color:#c0455e}
           .recipe-card .mc.lock{cursor:default;opacity:.7;font-size:12px}/* (2026-07-03 옵션A-full) 공식=테마 고정 표시. 롤백: 제거 */
           .cth-empty{grid-column:1/-1;color:var(--faint);font-size:13.5px;padding:24px 4px;text-align:center;line-height:1.6}
+          /* ▼ (2026-07-03 A안·모드 격리) Manage 켜면 만들기 요소 숨김 → 관리 화면만. 롤백: 이 블록 제거 ▼ */
+          body.studio-managing .gen-bar,body.studio-managing #subjectStep,body.studio-managing #resultStep,body.studio-managing #customCta,body.studio-managing #brandkitBtn{display:none!important}
+          .mg-sec{font-family:'Sora';font-size:15px;font-weight:700;color:var(--text);margin:22px 2px 12px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+          .mg-sec:first-child{margin-top:4px}
+          .mg-sub{font-size:12px;font-weight:500;color:var(--faint)}
+          .mg-badge{position:absolute;top:8px;left:8px;background:rgba(124,108,255,.85);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.2px}
+          .recipe-card.mg .mc{font-size:12px}
+          #recipeGrid.mg-list{display:block!important}/* 관리 뷰: #recipeGrid 자체가 .recipe-grid(grid)라 그룹 헤더/중첩그리드가 흩어짐 → block으로 정상 스택 */
+          .recipe-card.hl{outline:2px solid var(--accent);outline-offset:2px;animation:mgFlash 2.2s ease}
+          @keyframes mgFlash{0%,100%{outline-color:var(--accent)}50%{outline-color:transparent}}
+          /* ▲ */
         </style>
         <div class="recipe-grid" id="recipeGrid"></div>
         <div id="premiumWrap" style="display:none">
@@ -906,7 +917,7 @@ async function mergeOwnedTemplates(){
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
       emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',preview:(t.preview_media&&t.preview_media[0])||null,cat:'My templates',
-      themes:(t.themes||[]),
+      themes:(t.themes||[]),mine:!!t.mine, // mine=내가 만든 것(Manage에서 Delete 게이트). 구매(purchased)·공식은 삭제 불가.
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false,in_studio:t.in_studio!==false,fromCreationIdx:t.from_creation_idx||null});
   });
   GATES_LOADED=true; // 공식+보유 판단 완료 → modePool이 공식+보유만 노출(recipe-gates fetch와 무관하게 픽커 정상화).
@@ -1557,7 +1568,14 @@ function curThemeObj(){ return STUDIO_THEMES.find(t=>t.id===curTheme)||null; }
 function findCard(id){ for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[m].find(r=>String(r.id)===String(id));if(c)return c;} return {}; }
 function itemTypeOf(r){ return r&&r.source==='marketplace'?'template':'recipe'; }
 function setCustomTheme(id){ curTheme=id; state.filter='All'; renderFilters();renderRecipes(); }
-function toggleManage(){ manageMode=!manageMode; renderFilters();renderRecipes(); }
+// ▼▼▼ (2026-07-03 A안·모드 격리) Manage = 템플릿 관리 전용 화면. 켜면 컴포즈(.gen-bar)·주체·결과를 숨겨 "만들기"와 분리(UI 안 더러워짐). 롤백: applyManageChrome 호출 + body.studio-managing CSS + step2Title 분기 제거 ▼▼▼
+function toggleManage(){ manageMode=!manageMode; applyManageChrome(); renderFilters();renderRecipes(); }
+function applyManageChrome(){
+  document.body.classList.toggle('studio-managing',manageMode); // CSS가 .gen-bar·#subjectStep·#resultStep 숨김
+  const h=document.getElementById('step2Title'); if(h)h.textContent=manageMode?'Manage templates':(state.mode==='ugc'?'Pick an ad format':'Pick a template');
+  const hint=document.getElementById('step2Hint'); if(hint)hint.textContent=manageMode?'Organize what shows in your Studio. Your creations are safe.':'No prompt needed — just choose a look.';
+}
+// ▲▲▲
 // group = 현재 모드의 대분류(Influencer/Shopping)로 커스텀 테마 생성. 모드에 대분류가 없으면(custom/ugc) Shopping 폴백.
 async function newStudioTheme(group,nameArg){
   const name=(nameArg!=null?nameArg:(prompt('New theme name')||'')).trim(); if(!name)return;
@@ -1575,11 +1593,23 @@ async function deleteStudioTheme(id,skipConfirm){
 // ▼▼▼ (2026-07-03 소스 통일 #1) Studio "빼기" = Library only(in_studio=false)로 일원화 — 옛 Studio 전용 개별숨김(toggleHide/HIDDEN) 대체.
 //     Library의 "↓ Move to Library only"와 동일 축·동일 엔드포인트 → Studio 노출 세트 == Library "In Studio" 그룹(완전 일치).
 //     롤백: 이 함수 제거 + toggleHide 복원(POST/DELETE /api/studio/hidden/:rid) + renderRecipes HIDDEN 필터/✕·↺ 컨트롤 복원 ▼▼▼
-async function toggleStudioInStudio(rid){
+async function toggleStudioInStudio(rid,on){ // on=true → In Studio 복귀 / false(기본) → Library only. Library 카드 토글과 동일 엔드포인트.
+  const inStudio=(on===true);
   const r=findCard(rid); const uuid=String((r&&r.ownedId)||rid); // 유저 템플릿 id=UUID / 공식은 ownedId(슬러그≠UUID)
-  try{ await fetch('/api/marketplace/owned/in-studio',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[uuid],in_studio:false})});
-    if(r)r.in_studio=false; renderRecipes(); if(window.toast)toast('Moved to Library only');
+  try{ await fetch('/api/marketplace/owned/in-studio',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[uuid],in_studio:inStudio})});
+    if(r)r.in_studio=inStudio; renderRecipes(); if(window.toast)toast(inStudio?'Added to Studio':'Moved to Library only');
   }catch(e){ if(window.toast)toast('Could not update'); }
+}
+// (2026-07-03 A안) 내 템플릿 삭제 = Library "Delete"와 동일 엔드포인트(DELETE /api/marketplace/templates/:id). 공식·구매분은 미노출(mine만).
+async function deleteStudioTemplate(rid){
+  const r=findCard(rid); if(!r||!r.mine||isOfficialCard(rid))return;
+  if(!confirm('Delete this template? (your creations stay)'))return;
+  const uuid=String(r.ownedId||rid);
+  try{ const res=await fetch('/api/marketplace/templates/'+encodeURIComponent(uuid),{method:'DELETE'});
+    if(!res.ok)throw new Error('failed');
+    Object.keys(TEMPLATES).forEach(m=>{ TEMPLATES[m]=TEMPLATES[m].filter(x=>String(x.id)!==String(rid)); });
+    renderFilters(); renderRecipes(); if(window.toast)toast('Deleted');
+  }catch(e){ if(window.toast)toast('Delete failed'); }
 }
 // ▲▲▲
 async function addToTheme(rid){
@@ -1610,7 +1640,7 @@ function studioPresentThemes(type){ // 그 타입 템플릿이 실제 든 글로
   return {g,c};
 }
 function switchStudioTplType(type){
-  state.tplType=type; state.filter='All'; curTheme=null; if(type==='official')manageMode=false;
+  state.tplType=type; state.filter='All'; curTheme=null; // (2026-07-03 A안) Manage는 양 서브탭 유지(옛 official 강제해제 제거)
   document.querySelectorAll('.studio-subtab').forEach(b=>b.classList.toggle('active',b.dataset.subtab===type));
   renderFilters(); renderRecipes();
 }
@@ -1640,10 +1670,14 @@ function renderFilters(){
     html+=cths.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" onclick="setCustomTheme('${t.id}')">${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
     html+=`<div class="chip ghost" onclick="newStudioTheme('${grp||'Shopping'}')">＋ Theme</div>`;
   }
-  if(curTplType()!=='official') html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;  // (2026-07-03) Manage=유저 서브탭만
+  html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;  // (2026-07-03 A안) Manage=양 서브탭(공식은 In Studio/parked 토글만, 테마·삭제 없음)
   document.getElementById('filterRow').innerHTML=html;
 }
 function renderRecipes(){
+  // ▼(2026-07-03 A안) Manage + All 뷰 = 템플릿 라이프사이클 관리(In Studio / Library only 그룹·↑↓·Delete). 테마 편집은 테마 선택 후 Manage로 유지. 롤백: 이 분기 + renderManageGrid 제거 ▼
+  if(manageMode && !curTheme && state.filter==='All'){ renderManageGrid(); return; }
+  document.getElementById('recipeGrid').classList.remove('mg-list'); // 일반 그리드 복귀
+  // ▲
   const tObj=curThemeObj();
   const defTheme=(!curTheme&&state.filter!=='All')?state.filter:null; // 선택된 기본(글로벌) 테마
   let rs;
@@ -1705,6 +1739,37 @@ function renderRecipes(){
   }).join('');
   renderPremium();
 }
+// ▼▼▼ (2026-07-03 A안) 템플릿 관리 그리드 — Library "My templates"를 Studio로 이식. In Studio / Library only 두 그룹 + hover 액션(↑↓ 이동·Delete). 테마 편집은 테마칩 선택 후 유지. 롤백: 이 함수 + renderRecipes 분기 + .studio-manage CSS 제거 ▼▼▼
+function mgActions(r){ // 카드 hover 액션(모드 격리·hover 패턴이라 카드는 깔끔)
+  const inS=r.in_studio!==false;
+  const move=inS
+    ? `<span class="mc" title="Move to Library only — stays in your Library" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}',false)">↓</span>`
+    : `<span class="mc add" title="Add back to Studio" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}',true)">↑</span>`;
+  const del=(r.mine&&!isOfficialCard(r.id))?`<span class="mc rem" title="Delete template" onclick="event.stopPropagation();deleteStudioTemplate('${r.id}')">🗑</span>`:'';
+  return `<div class="mctrls">${move}${del}</div>`;
+}
+let MANAGE_HL=null; // /studio?tpl 딥링크 하이라이트 대상(카드 id 또는 ownedId)
+function mgCard(r){
+  const hl=(MANAGE_HL&&(String(r.id)===MANAGE_HL||String(r.ownedId)===MANAGE_HL))?' hl':'';
+  return `<div class="recipe-card mg${hl}">${mgActions(r)}
+    <div class="preview" style="${r.preview?`background-image:url('${esc(r.preview)}');background-size:cover;background-position:center`:`background:${r.grad}`}">${isOfficialCard(r.id)?'<span class="mg-badge">Official</span>':''}</div>
+    <div class="meta"><div class="rname">${esc(r.name)}</div><div class="cost">${esc(r.cat||'Template')}</div></div></div>`;
+}
+function renderManageGrid(){
+  const type=curTplType();
+  // 현재 서브탭 타입(공식/유저)의 보유 템플릿 = modePool(보유+공식) ∩ 타입, PREMIUM(미보유) 제외.
+  const pool=modePool(state.mode).filter(r=> ((type==='official')===isOfficialCard(r.id)) && !PREMIUM.some(p=>p.recipeId===r.id));
+  const inStudio=pool.filter(r=>r.in_studio!==false), parked=pool.filter(r=>r.in_studio===false);
+  const sec=(title,sub,arr,empty)=>`<div class="mg-sec">${title}<span class="mg-sub">${sub}</span></div>`+(arr.length?`<div class="recipe-grid">${arr.map(mgCard).join('')}</div>`:`<div class="cth-empty">${empty}</div>`);
+  const grid=document.getElementById('recipeGrid');
+  grid.classList.add('mg-list'); // #recipeGrid를 block으로(그룹 스택). 일반 renderRecipes에서 remove.
+  grid.innerHTML =
+    sec('In Studio','shows in your Studio picker',inStudio,'Nothing here yet — add templates from Library only below (↑), or from the Store.') +
+    sec('Library only','owned · parked out of Studio',parked,'Empty. Hover a card above and hit ↓ to park it here.');
+  renderPremium();
+  if(MANAGE_HL){ const el=grid.querySelector('.recipe-card.hl'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>{ MANAGE_HL=null; const e2=grid.querySelector('.recipe-card.hl'); if(e2)e2.classList.remove('hl'); }, 2400); } else { MANAGE_HL=null; } }
+}
+// ▲▲▲
 // 프리미엄(미보유 paid) 업셀 — 메인 그리드 아래, 잠금표시 없이 자연스러운 카드. 클릭 시 결제 안내.
 let PREMIUM=[];
 function renderPremium(){
@@ -2455,7 +2520,20 @@ async function removeLookFromTheme(kind,key,idx){
 //   + ?saveLook + saveCurrentLook 제거 — 수동 Save 일원화(creation 상세 Add to My templates). creationTilesHtml/useSavedLook/removeLookFromTheme는 유지.
 if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('shopping'); // (2026-07-01) 기본 모드=Shopping(Influencer 숨김)
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
-function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();}); }
+// ▼▼▼ (2026-07-03 A안) /studio?tpl=<uuid|slug> 딥링크 — 옛 Library "View template" 대체. 해당 템플릿이 든 서브탭 + Manage 뷰로 열고 하이라이트. 롤백: 이 함수 + _studioInit 호출 + MANAGE_HL/mgCard hl 제거 ▼▼▼
+function maybeOpenManageTpl(){
+  const tpl=new URLSearchParams(location.search).get('tpl'); if(!tpl)return;
+  history.replaceState(null,'',location.pathname);
+  MANAGE_HL=String(tpl);
+  const card=findCardByAny(tpl);
+  const type=(card&&isOfficialCard(card.id))?'official':'user';
+  state.tplType=type; state.filter='All'; curTheme=null; manageMode=true;
+  document.querySelectorAll('.studio-subtab').forEach(b=>b.classList.toggle('active',b.dataset.subtab===type));
+  applyManageChrome(); renderFilters(); renderRecipes();
+}
+function findCardByAny(v){ v=String(v); for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[m].find(r=>String(r.id)===v||String(r.ownedId)===v);if(c)return c;} return null; }
+// ▲▲▲
+function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();maybeOpenManageTpl();}); }
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubscription(); // 구독 상태 → Private Mode 게이트

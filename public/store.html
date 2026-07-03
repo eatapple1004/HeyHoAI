@@ -86,7 +86,7 @@ function tcard(t){
   const owned=!!t.owned;
   const ownedBadge=owned?`<span class="towned">✓ In Library</span>`:'';
   const actions=owned
-    ? `<button class="tuse owned" disabled>✓ In Library</button><a class="tview" href="/gallery?tpl=${encodeURIComponent(t.id)}">View</a>`
+    ? `<button class="tuse owned" disabled>✓ In Library</button><a class="tview" href="/studio?tpl=${encodeURIComponent(t.id)}">View</a>`
     : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>`;
   return `<div class="tcard${owned?' is-owned':''}">
     <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span></div>

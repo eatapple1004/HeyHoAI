@@ -138,19 +138,13 @@
 
 <div class="wrap">
   <div class="head fade d1">
-    <div><h1>Your Library</h1><div class="sub">Your creations and your saved templates. Discover more in Explore.</div></div>
+    <div><h1>Your Library</h1><div class="sub">Your creations. Manage templates in Studio · discover more in the Store.</div></div>
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
-  <div class="tabbar fade d1">
-    <!-- ▼▼▼ (2026-07-03 Templates 부모 + Official/My templates 서브탭·롤백가능) 원래=creations(active)+templates 2탭. 롤백 시 이 블록·아래 ▲표시된 subtabbar/switchTab/switchTplType/section/MYT.type/init/gotoMyTemplates 복원 ▼▼▼ -->
-    <button class="tab active" data-tab="templates" onclick="switchTab('templates')">Templates</button>
-    <button class="tab" data-tab="creations" onclick="switchTab('creations')">My creations</button>
-    <!-- ▲▲▲ (2026-07-03 Templates 부모) ▲▲▲ -->
-  </div>
-
+  <!-- ▼▼▼ (2026-07-03 A안) Library = My creations 전용. 템플릿 관리는 Studio(⚙ Manage)로 이전. 롤백: tabbar(Templates|My creations) 복원 + #tab-creations hidden 복원 + 아래 #tab-templates 섹션·switchTab/switchTplType/loadMyTemplates·init loadMyTemplates·maybeOpenTpl 원복 ▼▼▼ -->
   <!-- My creations (생성 결과물) -->
-  <section id="tab-creations" class="hidden"><!-- ▼(2026-07-03 Official 분리) 기본 아님→hidden. 롤백: hidden 제거 ▼ -->
+  <section id="tab-creations">
     <div class="nudge fade d1" id="reelNudge" style="display:none">
       <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
       <span class="nudge-hint">Open any photo and hit <b>▶ Make a Reel</b>.</span>
@@ -171,22 +165,8 @@
   </section>
 
   <!-- My templates + Official (템플릿 탭 공유 — MYT.type로 필터) -->
-  <section id="tab-templates"><!-- ▼(2026-07-03 Templates 부모) Templates가 기본 탭→표시. 롤백: class="hidden" 복원 ▼ -->
-    <!-- ▼▼▼ (2026-07-03) Official / My templates 서브탭 (Official 기본). 롤백: 이 subtabbar 제거 ▼▼▼ -->
-    <div class="subtabbar fade d1">
-      <button class="subtab active" data-subtab="official" onclick="switchTplType('official')">Official</button>
-      <button class="subtab" data-subtab="user" onclick="switchTplType('user')">My templates</button>
-    </div>
-    <!-- ▲▲▲ 서브탭 ▲▲▲ -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><a href="/earnings" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none">Open Creator Studio →</a></div>
-    <div class="tpl-filter fade d1" id="tplThemeFilter"></div>
-    <div class="fade d2" id="tplGrid"></div>
-    <div class="empty hidden" id="tplEmpty">
-      <div class="ico"></div><h3>No saved templates yet</h3>
-      <p>In Studio, build a look in Custom mode and hit "Save as template" — it shows up here.</p>
-      <a href="/studio" class="btn btn-primary">Open Studio →</a>
-    </div>
-  </section>
+  <!-- (2026-07-03 A안) #tab-templates(템플릿 관리) 섹션 제거 → Studio ⚙ Manage로 이전. 관련 JS(loadMyTemplates·renderMyTemplates·tplCard·switchTplType·delTpl·toggleInStudio·테마함수 등)는 미사용(dormant)으로 잔존. -->
+  <!-- ▲▲▲ (2026-07-03 A안) Library = 크리에이션 전용 끝 ▲▲▲ -->
 
   <!-- (2026-07-02) Purchased·Saved 탭 제거 — 구매건은 My templates(보유)에 흡수, Saved(북마크)는 폐기 -->
 </div>
@@ -324,8 +304,8 @@ async function load(){
 function maybeOpenTpl(){
   const tpl=new URLSearchParams(location.search).get('tpl');
   if(!tpl)return;
-  history.replaceState(null,'',location.pathname); // 새로고침 재오픈 방지
-  gotoMyTemplates(tpl); // 탭 전환+로드+하이라이트(슬러그→UUID 해석 포함)
+  // (2026-07-03 A안) 템플릿 관리가 Studio로 이전 → 레거시 /gallery?tpl 딥링크는 Studio로 리다이렉트. 롤백: gotoMyTemplates(tpl) 복원
+  location.replace('/studio?tpl='+encodeURIComponent(tpl));
 }
 function setupInfiniteScroll(){
   const s=document.getElementById('scrollSentinel'); if(!s)return;
@@ -861,9 +841,7 @@ async function delTpl(id){
   }catch(e){toast('Delete failed: '+(e.message||e),'error');}
 }
 loadReelCost();renderFilters();load();
-// ▼▼▼ (2026-07-03 Official 탭 분리) 기본 탭=Official → 템플릿(공식) 로드. 롤백: 이 두 줄 제거 ▼▼▼
-tplLoaded=true; loadMyTemplates();
-// ▲▲▲
+// (2026-07-03 A안) Library=크리에이션 전용 → 초기 템플릿 로드 제거. 롤백: `tplLoaded=true; loadMyTemplates();` 복원
 </script>
 <script src="/js/biz-footer.js?v=2"></script>
 </body>

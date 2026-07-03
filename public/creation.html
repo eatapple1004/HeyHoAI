@@ -200,7 +200,7 @@ async function confirmSave(){
     }
     closeSaveModal();
     // mint 경로는 기존 mintAndAdd처럼 My templates(해당 템플릿 하이라이트)로 이동, 그 외는 상세에 머물며 재렌더.
-    if(SV.mint){ location.href='/gallery?tpl='+encodeURIComponent(tid); return; }
+    if(SV.mint){ location.href='/studio?tpl='+encodeURIComponent(tid); return; }
     toast(placed?('Added to My templates · '+placed+' theme'+(placed>1?'s':'')+' ✦'):'Added to My templates ✦');
     IT.ownsTemplate=true; render();
   }catch(e){ toast('Could not add: '+(e.message||e)); }
@@ -253,7 +253,7 @@ function templateCta(){
   // 연결 템플릿 없음 + 내 creation = 즉석 민팅+추가 폴백(γ·legacy·민팅실패·삭제 케이스 커버). 타인 것은 추가 대상 없음→버튼 없음.
   if(!rt) return IT.isOwn ? `<button class="act sm" onclick="mintAndAdd(this)">＋ Add to My templates</button>` : '';
   // 라이브러리(My templates)에서 보기 — 타인 생성물 상세의 동일 버튼과 동일 동작(?tpl 딥링크).
-  const viewInLib=`<button class="act sm" onclick="location.href='/gallery?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
+  const viewInLib=`<button class="act sm" onclick="location.href='/studio?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
   if(rt.owned){
     // 내 auto 템플릿(보유): 라이브러리에서 보기 + (위) Creator 관리 둘 다. 타인 보유: 라이브러리에서 보기만.
     if(IT.isOwn && IT.mintedTemplateId) return viewInLib+`<a class="act sm" href="/earnings">Manage template</a>`;
@@ -274,7 +274,7 @@ async function acquireRelTemplate(){
     let r=await fetch('/api/marketplace/templates/'+tid+'/add-to-my-templates',{method:'POST'});
     if(r.status===404) r=await fetch('/api/marketplace/templates/'+tid+'/acquire',{method:'POST'});
     const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    location.href='/gallery?tpl='+tid;
+    location.href='/studio?tpl='+tid;
   }catch(e){ toast('Could not add: '+(e.message||e)); }
 }
 
