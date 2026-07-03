@@ -539,6 +539,10 @@
           .mg-sub{font-size:12px;font-weight:500;color:var(--faint)}
           .mg-badge{position:absolute;top:8px;left:8px;background:rgba(124,108,255,.85);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.2px}
           .recipe-card.mg .mc{font-size:12px}
+          .mg-thmbtn{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-family:inherit;font-size:12px;font-weight:700;padding:6px 12px;border-radius:9px;cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent2)}
+          .mg-thmbtn:hover{background:rgba(124,108,255,.12)}
+          .mg-thmbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+          .mg-thmbtn.lock{border-color:var(--border2);color:var(--faint);cursor:default;background:transparent}
           #recipeGrid.mg-list{display:block!important}/* 관리 뷰: #recipeGrid 자체가 .recipe-grid(grid)라 그룹 헤더/중첩그리드가 흩어짐 → block으로 정상 스택 */
           .recipe-card.hl{outline:2px solid var(--accent);outline-offset:2px;animation:mgFlash 2.2s ease}
           @keyframes mgFlash{0%,100%{outline-color:var(--accent)}50%{outline-color:transparent}}
@@ -1674,8 +1678,8 @@ function renderFilters(){
   document.getElementById('filterRow').innerHTML=html;
 }
 function renderRecipes(){
-  // ▼(2026-07-03 A안) Manage + All 뷰 = 템플릿 라이프사이클 관리(In Studio / Library only 그룹·↑↓·Delete). 테마 편집은 테마 선택 후 Manage로 유지. 롤백: 이 분기 + renderManageGrid 제거 ▼
-  if(manageMode && !curTheme && state.filter==='All'){ renderManageGrid(); return; }
+  // ▼(2026-07-03 A안) Manage = 항상 두 그룹 관리 뷰(renderManageGrid). All=라이프사이클(↑↓·삭제) / 테마 선택=그 테마 편집(라벨 토글). 옛 평평한 ± 편집 분기 대체. 롤백: `if(manageMode && !curTheme && state.filter==='All')`로 되돌리고 아래 defTheme/curTheme manage 분기 복원 ▼
+  if(manageMode){ renderManageGrid(); return; }
   document.getElementById('recipeGrid').classList.remove('mg-list'); // 일반 그리드 복귀
   // ▲
   const tObj=curThemeObj();
@@ -1749,14 +1753,33 @@ function mgActions(r){ // 카드 hover 액션(모드 격리·hover 패턴이라 
   return `<div class="mctrls">${move}${del}</div>`;
 }
 let MANAGE_HL=null; // /studio?tpl 딥링크 하이라이트 대상(카드 id 또는 ownedId)
+let MG_THEME=null;  // 관리 뷰에서 테마 선택 시 {kind:'global',slug,name}|{kind:'custom',id,name}. null=All(라이프사이클).
+// (2026-07-03) 옛 평평한 ± 편집을 라벨 토글로 — 테마 선택 시 각 카드에 "✓ In <theme> / ＋ Add to <theme>"(공식=🔒). 롤백: 이 함수 + mgCard의 MG_THEME 분기 제거.
+function mgThemeBtn(r){
+  const t=MG_THEME; if(!t)return '';
+  if(isOfficialCard(r.id)) return `<div class="mg-thmbtn lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒 Fixed theme</div>`;
+  const ct=curThemeObj();
+  const member = t.kind==='global' ? inGlobalTheme(r,t.slug) : !!(ct&&(ct.items||[]).some(i=>String(i.itemId)===String(r.id)));
+  const add = t.kind==='global' ? `addToGlobalTheme('${t.slug}','${r.id}')` : `addToTheme('${r.id}')`;
+  const rem = t.kind==='global' ? `removeFromGlobalTheme('${t.slug}','${r.id}')` : `removeFromTheme('${r.id}')`;
+  return member
+    ? `<button class="mg-thmbtn on" onclick="event.stopPropagation();${rem}">✓ In ${esc(t.name)}</button>`
+    : `<button class="mg-thmbtn" onclick="event.stopPropagation();${add}">＋ Add to ${esc(t.name)}</button>`;
+}
 function mgCard(r){
   const hl=(MANAGE_HL&&(String(r.id)===MANAGE_HL||String(r.ownedId)===MANAGE_HL))?' hl':'';
-  return `<div class="recipe-card mg${hl}">${mgActions(r)}
+  return `<div class="recipe-card mg${hl}">${MG_THEME?'':mgActions(r)}
     <div class="preview" style="${r.preview?`background-image:url('${esc(r.preview)}');background-size:cover;background-position:center`:`background:${r.grad}`}">${isOfficialCard(r.id)?'<span class="mg-badge">Official</span>':''}</div>
-    <div class="meta"><div class="rname">${esc(r.name)}</div><div class="cost">${esc(r.cat||'Template')}</div></div></div>`;
+    <div class="meta"><div class="rname">${esc(r.name)}</div><div class="cost">${esc(r.cat||'Template')}</div>${mgThemeBtn(r)}</div></div>`;
 }
 function renderManageGrid(){
   const type=curTplType();
+  // (2026-07-03) 테마 선택 시 = 그 테마 편집(두 그룹 유지·카드마다 라벨 토글). All 필터 = 라이프사이클(↑↓·삭제).
+  const gSlug=(!curTheme && state.filter!=='All')?state.filter:null;
+  const ct=curTheme?curThemeObj():null;
+  MG_THEME = ct ? {kind:'custom',id:curTheme,name:ct.name}
+           : gSlug ? {kind:'global',slug:gSlug,name:(((THEME_LIST||[]).find(t=>t.slug===gSlug)||{}).name)||gSlug}
+           : null;
   // 현재 서브탭 타입(공식/유저)의 보유 템플릿 = modePool(보유+공식) ∩ 타입, PREMIUM(미보유) 제외.
   const pool=modePool(state.mode).filter(r=> ((type==='official')===isOfficialCard(r.id)) && !PREMIUM.some(p=>p.recipeId===r.id));
   const inStudio=pool.filter(r=>r.in_studio!==false), parked=pool.filter(r=>r.in_studio===false);
