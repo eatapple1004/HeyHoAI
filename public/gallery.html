@@ -36,6 +36,8 @@
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
+  .card .reelbadge{position:absolute;bottom:9px;left:9px;z-index:3;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;padding-left:2px;pointer-events:none;backdrop-filter:blur(2px)}
+  .card:hover .reelbadge{opacity:0;transition:opacity .15s}
   .card .ovt,.card .ovb{position:absolute;left:0;right:0;opacity:0;transition:opacity .15s;pointer-events:none;z-index:2}
   .card:hover .ovt,.card:hover .ovb{opacity:1}
   .card .ovt{top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;background:linear-gradient(rgba(0,0,0,.72),transparent)}
@@ -340,8 +342,9 @@ function render(){
   if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
   grid.innerHTML=list.map(it=>{
+    // 릴스: autoplay·preload=auto(전체 다운로드) 제거 → preload=metadata(첫 프레임만) + hover 시 1개만 재생. 다중 동시 다운로드/디코딩으로 인한 로딩지연·끊김 방지.
     const media=it.type==='reel'
-      ? `<video class="media" src="${esc(it.url)}" muted loop playsinline autoplay preload="auto"></video>`
+      ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1"></video>`
       : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
     const by=it.creatorHandle
       ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">@${esc(it.creatorHandle)}</a>`
@@ -349,6 +352,7 @@ function render(){
     const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
     return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">
       <div class="ovt">${by}${like}</div>
+      ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
       ${media}
     </div>`;
   }).join('');
@@ -390,15 +394,25 @@ function layoutGridMasonry(){
     sizeGridCard(c); });
 }
 addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTimeout(layoutGridMasonry,150); });
-// 동적 삽입 영상은 autoplay 속성만으론 재생이 안 걸려 명시적 play()(muted=정책 통과). 화면 들어올 때만 재생.
+// 릴스 재생 정책: 전체 autoplay(다중 동시 디코딩→끊김) 대신 hover 시 "한 번에 1개만" 재생.
+//   화면 밖으로 나가면 재생 중이던 것 정지(자원 정리). preload=metadata라 통짜 다운로드도 안 함.
+let CURRENT_VID=null;
+function playOne(v){
+  if(CURRENT_VID===v)return;
+  if(CURRENT_VID){ try{CURRENT_VID.pause();}catch(e){} }
+  v.muted=true; const p=v.play(); if(p&&p.catch)p.catch(()=>{}); CURRENT_VID=v;
+}
+function pauseIf(v){ if(CURRENT_VID===v){ try{v.pause();}catch(e){} CURRENT_VID=null; } }
 function playFeedVideos(){
-  const vids=document.querySelectorAll('.card video.media');
-  if(!vids.length)return;
-  const kick=v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});};
+  document.querySelectorAll('.card').forEach(card=>{
+    const v=card.querySelector('video[data-reel]'); if(!v||card.__vwired)return; card.__vwired=1;
+    card.addEventListener('mouseenter',()=>playOne(v));
+    card.addEventListener('mouseleave',()=>pauseIf(v));
+  });
   if('IntersectionObserver' in window){
-    const io=new IntersectionObserver((es)=>es.forEach(e=>{e.isIntersecting?kick(e.target):e.target.pause();}),{threshold:.25});
-    vids.forEach(v=>io.observe(v));
-  }else{ vids.forEach(kick); }
+    const io=new IntersectionObserver((es)=>es.forEach(e=>{ if(!e.isIntersecting)pauseIf(e.target); }),{threshold:0});
+    document.querySelectorAll('.card video[data-reel]').forEach(v=>{ if(!v.__io){ v.__io=1; io.observe(v); } });
+  }
 }
 // 카드 하트 토글(공개 결과만 서버에서 허용) — Explore와 동일 동작
 async function toggleLike(idx,btn){
