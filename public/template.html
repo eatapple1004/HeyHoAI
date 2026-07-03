@@ -17,8 +17,9 @@
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
   /* 예시 갤러리 */
   .gal{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-  .gal .ph{aspect-ratio:3/4;border-radius:14px;background:var(--surface) center/cover no-repeat;border:1px solid var(--border)}
-  .gal .ph.full{grid-column:1/-1;aspect-ratio:16/10}
+  .gal .ph{position:relative;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--border)}
+  .gal .ph.wide{grid-column:1/-1;aspect-ratio:1/1}
+  .gal .ph img,.gal .ph video{width:100%;height:100%;object-fit:cover;display:block}
   .gal .none{grid-column:1/-1;aspect-ratio:16/9;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:54px;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
   /* 우측 패널 */
   .panel h1{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.2}
@@ -64,6 +65,19 @@
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 function qid(){try{return new URLSearchParams(location.search).get('id');}catch(e){return null;}}
+// 대표사진 갤러리 — 원본 크기 제각각이어도 고정 박스에 object-fit:cover로 정규화.
+//   1번=항상 전체폭 정사각형(hero). 나머지=2열 4/5 페어. 남는 게 홀수면 마지막 1장도 전체폭 정사각형으로 마감(외톨이 타일 방지). 1~8장 대응.
+function buildGal(items){
+  const n=items.length;
+  return items.map((it,i)=>{
+    const wide=(i===0)||(i===n-1&&(n-1)%2===1);
+    const media=it.video
+      ? `<video src="${esc(it.url)}" muted loop playsinline autoplay preload="auto"></video>`
+      : `<img src="${esc(it.url)}" loading="lazy" alt="">`;
+    const click=it.href?` onclick="location.href='${esc(it.href)}'" style="cursor:pointer"`:'';
+    return `<div class="ph${wide?' wide':''}"${click}>${media}</div>`;
+  }).join('');
+}
 
 let TPL=null;
 async function load(){
@@ -94,14 +108,8 @@ async function loadCreations(){
     const noPrev=!(TPL&&Array.isArray(TPL.preview_media)&&TPL.preview_media.filter(x=>x).length);
     const galEl=document.querySelector('.gal');
     if(noPrev&&galEl){
-      const top=d.slice(0,5);
-      galEl.innerHTML=top.map((it,i)=>{
-        const full=i===0&&top.length%2?' full':'';
-        const click=`onclick="location.href='/creation?idx=${it.idx}&from=explore'"`;
-        return it.type==='video'
-          ? `<div class="ph${full}" style="background:#0c0c14;cursor:pointer" ${click}><video src="${esc(it.url)}" muted loop playsinline autoplay style="width:100%;height:100%;object-fit:cover;display:block"></video></div>`
-          : `<div class="ph${full}" style="background-image:url('${esc(it.url)}');cursor:pointer" ${click}></div>`;
-      }).join('');
+      const top=d.slice(0,8);
+      galEl.innerHTML=buildGal(top.map(it=>({url:it.url,video:it.type==='video',href:`/creation?idx=${it.idx}&from=explore`})));
       galEl.querySelectorAll('video').forEach(v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});});
     }
   }catch(e){ el.innerHTML=''; }
@@ -111,7 +119,7 @@ function render(){
   const media=Array.isArray(t.preview_media)?t.preview_media.filter(m=>m):[];
   let gal;
   if(media.length){
-    gal=media.slice(0,5).map((m,i)=>`<div class="ph${i===0&&media.length%2?' full':''}" style="background-image:url('${esc(m)}')"></div>`).join('');
+    gal=buildGal(media.slice(0,8).map(m=>({url:m,video:false,href:null})));
   }else{
     gal=`<div class="none">${esc(t.emoji||'🎨')}</div>`;
   }
