@@ -88,27 +88,25 @@ function galAR(t){
   const h=m.tagName==='VIDEO'?m.videoHeight:m.naturalHeight;
   return (w&&h)?w/h:0.8;
 }
-// 타깃 행높이 justified: 폭에 상관없이 targetH 근처로 행을 채우다 폭 초과 직전 개행.
-//   꽉 찬 행은 폭에 맞춰 균등 축소, 마지막 덜 찬 행은 늘리지 않고 targetH 유지(과대확대 방지). 1~8장 대응.
+// 균형 justified: 목표 행높이로 행 수를 정하고 근사 균등 분할 → 모든 행을 폭에 꽉 채움(공백 X, 크롭 X).
+//   1장처럼 폭을 못 채우는 경우만 상한 걸고 가운데 정렬(좌측 공백 방지). 1~8장 대응.
 function layoutGal(galEl){
   const tiles=galEl&&galEl._tiles; if(!tiles||!tiles.length)return;
   const n=tiles.length, W=galEl.clientWidth||600, gap=8;
-  // 장수 적을수록 크게(넓은 히어로서 1~2장이 초라해 보이지 않게), 많으면 촘촘히
-  const targetH = n<=2?440 : n<=4?340 : 290, maxH = Math.max(targetH*1.25,360);
-  const rows=[]; let cur=[], arSum=0;
-  tiles.forEach(t=>{
-    const ar=galAR(t); cur.push(t); arSum+=ar;
-    if(arSum*targetH+gap*(cur.length-1)>=W){ rows.push(cur); cur=[]; arSum=0; }
-  });
-  if(cur.length) rows.push(cur);
+  const ars=tiles.map(galAR), totalAr=ars.reduce((a,b)=>a+b,0);
+  const targetH = n<=2?460 : n<=6?340 : 300;         // 적으면 크게, 많으면 촘촘히
+  // 한 줄에 다 넣었을 때 폭 대비 → 이상적 행 수 → 근사 균등 분할(윗줄부터 채움)
+  const oneRowW = totalAr*targetH + gap*(n-1);
+  const nRows = Math.max(1, Math.min(n, Math.round(oneRowW/W)));
+  const per = Math.ceil(n/nRows), rows=[];
+  for(let i=0;i<n;i+=per) rows.push(tiles.slice(i,i+per));
   galEl.innerHTML='';
-  rows.forEach((row,ri)=>{
+  rows.forEach(row=>{
     const rowEl=document.createElement('div'); rowEl.className='gal-row';
     let sum=0; row.forEach(t=>sum+=galAR(t));
     let h=(W-gap*(row.length-1))/sum;                 // 폭을 꽉 채우는 높이
-    const isLast=ri===rows.length-1;
-    if(isLast && sum*targetH+gap*(row.length-1)<W) h=targetH;  // 덜 찬 마지막 행: 늘리지 않음
-    if(h>maxH) h=maxH;
+    const maxH = n===1?600 : n<=2?560 : 470;
+    if(h>maxH){ h=maxH; rowEl.style.justifyContent='center'; }  // 못 채우면 가운데(대칭 여백)
     row.forEach(t=>{t.style.width=Math.round(galAR(t)*h)+'px';t.style.height=Math.round(h)+'px';rowEl.appendChild(t);});
     galEl.appendChild(rowEl);
   });
