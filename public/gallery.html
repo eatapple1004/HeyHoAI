@@ -697,7 +697,7 @@ function renderThemeFilter(){
     if(!defChips.length && !cusChips.length) continue;
     h+=`<div class="flt-sec">${label}</div>`;
     defChips.forEach(t=>{ h+=`<button class="chip${f.kind==='global'&&f.slug===t.slug?' active':''}" onclick="setMyThemeFilter('global','${esc(t.slug)}')">${esc(t.name)}</button>`; });
-    cusChips.forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">✦ ${esc(c.name)}</button>`; });
+    cusChips.forEach(c=>{ h+=`<button class="chip${f.kind==='custom'&&f.id===c.id?' active':''}" onclick="setMyThemeFilter('custom','${esc(c.id)}')">${esc(c.name)}</button>`; });  /* (2026-07-03) 커스텀도 기본 테마와 동일 표시 — ✦ 제거. 롤백: '✦ ' 복원 */
   }
   el.innerHTML=h;
 }
