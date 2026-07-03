@@ -39,6 +39,14 @@
   .tuse:hover{filter:brightness(1.08)}
   .tbk{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;border-radius:9px;padding:8px 11px;font-size:14px;cursor:pointer;line-height:1}
   .tbk.on{color:#ffd35e;border-color:rgba(255,211,94,.5)}
+  /* (2026-07-03) 보유 카드: 살짝 흐리게 + "✓ In Library" 배지·비활성 버튼·View 링크 */
+  .tcard.is-owned{opacity:.72}
+  .tcard.is-owned:hover{opacity:1}
+  .towned{position:absolute;top:8px;left:8px;background:rgba(94,224,214,.9);color:#06231f;font-size:10px;font-weight:800;padding:3px 8px;border-radius:7px;letter-spacing:.2px}
+  .tuse.owned{background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border);cursor:default}
+  .tuse.owned:hover{filter:none}
+  .tview{display:flex;align-items:center;background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:700;text-decoration:none}
+  .tview:hover{border-color:var(--border2)}
 </style>
 </head>
 <body class="has-rail">
@@ -74,16 +82,23 @@ function tcard(t){
   const prev=(t.preview_media&&t.preview_media[0])||'';
   const thumb=prev?`<img src="${esc(prev)}" loading="lazy" alt="">`:`<div class="temoji">${esc(t.emoji||'🎨')}</div>`;
   const price=t.price_credits>0?('◈ '+t.price_credits):'Free';
-  return `<div class="tcard">
-    <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}<span class="tprice">${price}</span></div>
+  // ▼▼▼ (2026-07-03) 보유 카드 = "✓ In Library"(비활성) + View 링크(/gallery?tpl 딥링크). 미보유 = ＋Add. 롤백: owned 분기 제거하고 ＋Add만 ▼▼▼
+  const owned=!!t.owned;
+  const ownedBadge=owned?`<span class="towned">✓ In Library</span>`:'';
+  const actions=owned
+    ? `<button class="tuse owned" disabled>✓ In Library</button><a class="tview" href="/gallery?tpl=${encodeURIComponent(t.id)}">View</a>`
+    : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>`;
+  return `<div class="tcard${owned?' is-owned':''}">
+    <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span></div>
     <div class="tbody">
       <div class="tname">${esc(t.name)}</div>
       <div class="tmeta">by ${t.creator_handle?`<a class="hlink" href="/creator?handle=${encodeURIComponent(String(t.creator_handle).replace(/^@/,''))}">${esc(t.creator_handle)}</a>`:'@creator'} · ♥ ${t.likes_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
       <div class="trow">
-        <button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>
+        ${actions}
         <!-- ☆ Save(북마크) 버튼 숨김 — 현재 미작동(2026-06-27). 재활성 시 복원: toggleBookmark·.tbk·Saved탭 잔존 -->
       </div>
     </div></div>`;
+  // ▲▲▲
 }
 const PRICES=['All','Free','Paid'];
 let CATALOG=[], THEMES=[], curTheme='All', curPrice='All';
@@ -101,12 +116,15 @@ async function loadCatalog(){
 }
 function renderCatalog(){
   const term=(document.getElementById('tplSearch').value||'').toLowerCase().trim();
-  let list=CATALOG.filter(t=>!t.owned); // 발견용: 이미 보유한 건 숨김(Library에 있음)
+  // ▼▼▼ (2026-07-03) 보유 템플릿도 표시(옛 !t.owned 숨김 제거) — "담았는데 사라짐" 혼란 방지. 안 가진 게 위, 보유는 뒤로 정렬. 롤백: `let list=CATALOG.filter(t=>!t.owned);` 복원 ▼▼▼
+  let list=CATALOG.slice();
   if(typeof featureOn==='function' && !featureOn('influencer')) list=list.filter(t=>!(t.themes||[]).includes('people')); // (2026-07-01) 인물(people) 템플릿 숨김
   if(curTheme!=='All')list=list.filter(t=>(t.themes||[]).includes(curTheme));
   if(curPrice==='Free')list=list.filter(t=>!(t.price_credits>0));
   else if(curPrice==='Paid')list=list.filter(t=>t.price_credits>0);
   if(term)list=list.filter(t=>(t.name||'').toLowerCase().includes(term));
+  list.sort((a,b)=>(a.owned?1:0)-(b.owned?1:0)); // 발견 우선: 미보유 위 / 보유 뒤(안정 정렬)
+  // ▲▲▲
   const grid=document.getElementById('tplGrid'),empty=document.getElementById('tplEmpty');
   if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');grid.innerHTML=list.map(tcard).join('');
