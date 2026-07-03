@@ -558,8 +558,7 @@
   <!-- (2026-06-28 테스트) 생성 결과 피드 — 컴포즈 박스 아래에 쭉. 로드 시 최근 결과 복구(reload-safe)+생성 시 누적. 롤백=JS의 STUDIO_RESULTS/loadStudioResults/renderStudioResults 제거하고 옛 innerHTML 방식 복원 -->
   <div class="step hidden" id="resultStep">
     <div class="step-head"><div class="step-num" id="snResult" style="display:none">3</div><h2 id="resultsTitle">Your creations</h2>
-      <span class="hint" id="resultHint"></span>
-      <a class="results-all" href="/gallery">View all in Library →</a></div>
+      <span class="hint" id="resultHint"></span></div><!-- (2026-07-03) "View all in Library →" 버튼 제거. 롤백: <a class="results-all" href="/gallery">View all in Library →</a> 복원 -->
     <div id="loadingBox" class="loading hidden"><div class="spinner"></div><div>Generating… this takes ~20s</div></div>
     <div class="results-grid" id="resultsGrid"></div>
   </div>
