@@ -47,13 +47,15 @@
   /* 이 템플릿으로 만든 creations (좋아요순) */
   #madeWith{max-width:1160px;margin:0 auto;padding:0 24px 70px}
   .made-h{font-family:'Sora';font-size:18px;font-weight:800;margin:38px 0 16px}
-  .made-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
-  .made-card{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#0c0c14;cursor:pointer;aspect-ratio:4/5}
-  .made-card .m{display:block;width:100%;height:100%;object-fit:cover}
-  .made-card .lk{position:absolute;top:7px;right:7px;display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:700;line-height:1}
+  /* Community Creations(/explore)와 동일한 행 우선 masonry: 최대 4열·자연 비율(JS가 grid-row span 계산) */
+  .made-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
+  @media(min-width:560px){.made-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(min-width:700px){.made-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .made-card{position:relative;align-self:start;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:#0c0c14;cursor:pointer}
+  .made-card .m{display:block;width:100%;height:auto;background:#0c0c14}
+  .made-card .lk{position:absolute;top:7px;right:7px;display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:700;line-height:1;z-index:2}
   .made-card .lk .h{color:#ff5a7a;font-size:12px}
   .made-empty{color:var(--faint);font-size:13.5px;margin:6px 0 0}
-  @media(max-width:760px){.made-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
 </style>
 </head>
 <body class="has-rail">
@@ -139,6 +141,7 @@ async function loadCreations(){
       return `<div class="made-card" onclick="location.href='/creation?idx=${it.idx}&from=explore'"><span class="lk"><span class="h">♥</span> ${it.likes||0}</span>${m}</div>`;
     }).join('')+'</div>';
     document.querySelectorAll('#madeWith video.m').forEach(v=>{v.muted=true;const p=v.play();if(p&&p.catch)p.catch(()=>{});});
+    layoutMadeMasonry();
     // 상단 미리보기(preview_media)가 비어 있으면 인기 creation으로 자동 채움 (공식 템플릿 등)
     const noPrev=!(TPL&&Array.isArray(TPL.preview_media)&&TPL.preview_media.filter(x=>x).length);
     const galEl=document.querySelector('.gal');
@@ -149,6 +152,16 @@ async function loadCreations(){
     }
   }catch(e){ el.innerHTML=''; }
 }
+// Community Creations(/explore)와 동일한 행 우선 masonry — 카드 자연 높이로 grid-row span 계산
+function sizeMadeCard(c){ const h=c.getBoundingClientRect().height; if(h>4) c.style.gridRowEnd='span '+Math.round(h+14); }
+function layoutMadeMasonry(){
+  const g=document.querySelector('.made-grid'); if(!g||getComputedStyle(g).display!=='grid')return;
+  g.querySelectorAll('.made-card').forEach(c=>{ const m=c.querySelector('.m');
+    if(m&&!m.__mmHooked){ m.__mmHooked=1; const ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
+      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeMadeCard(c); else m.addEventListener(ev,()=>sizeMadeCard(c),{once:true}); }
+    sizeMadeCard(c); });
+}
+addEventListener('resize',()=>{ clearTimeout(window.__mmT); window.__mmT=setTimeout(layoutMadeMasonry,150); });
 function render(){
   const t=TPL;
   const media=Array.isArray(t.preview_media)?t.preview_media.filter(m=>m):[];
