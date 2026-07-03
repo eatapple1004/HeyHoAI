@@ -894,6 +894,7 @@ async function mergeOwnedTemplates(){
       const card=findCard(t.recipe_id); if(!card||!card.id)return; // 매핑 실패 = 미노출(무크래시)
       OFFICIAL_RECIPES.add(String(t.recipe_id));
       card.held=false;                                  // 보유 → 메인 그리드 노출
+      card.ownedId=String(t.id);                        // 마켓 UUID(카드 id=슬러그라 별도 보관) — in_studio PATCH용
       card.in_studio=(t.in_studio!==false);             // In Studio ↔ Library only 토글
       if(t.themes&&t.themes.length)card.themes=t.themes; // 테마 = /owned label(Library와 동일 어휘) — OFFICIAL_THEME_MAP 대체
       return;
@@ -1489,7 +1490,7 @@ function renderSubjModalGrid(){
 const VERTICAL_EMOJI={Fashion:'👗',Beauty:'💄',Jewelry:'💍',Food:'🍽️',Coffee:'☕',Home:'🏠',Tech:'📱',Pet:'🐾'};
 // ── P-D 개인 큐레이션: 커스텀 테마 + 내장 숨김 (설계=docs/테마_조직화_설계_2026-06-24.md) ──
 let STUDIO_THEMES=[];   // [{id,name,sortOrder,items:[{itemType,itemId}]}]
-let HIDDEN=new Set();   // 숨긴 내장 recipe id
+let HIDDEN=new Set();   // (2026-07-03 소스 통일 #1 이후 미사용·백엔드 hiddenRecipes 로드만) 옛 Studio 전용 개별숨김 — "빼기"는 in_studio(Library only)로 일원화. 재도입 시 renderRecipes 필터/컨트롤 복원
 let manageMode=false;
 let curTheme=null;      // 선택된 커스텀 테마 id (null=일반 mode/cat 보기)
 let THEME_LIST=[];      // 글로벌 테마 [{slug,name}] — Explore와 동일 어휘
@@ -1571,12 +1572,16 @@ async function deleteStudioTheme(id,skipConfirm){
     STUDIO_THEMES=STUDIO_THEMES.filter(t=>t.id!==id); if(curTheme===id)curTheme=null; renderFilters();renderRecipes();
   }catch(e){}
 }
-async function toggleHide(rid){
-  rid=String(rid); const on=HIDDEN.has(rid);
-  try{ await fetch('/api/studio/hidden/'+encodeURIComponent(rid),{method:on?'DELETE':'POST'});
-    if(on)HIDDEN.delete(rid);else HIDDEN.add(rid); renderRecipes();
-  }catch(e){}
+// ▼▼▼ (2026-07-03 소스 통일 #1) Studio "빼기" = Library only(in_studio=false)로 일원화 — 옛 Studio 전용 개별숨김(toggleHide/HIDDEN) 대체.
+//     Library의 "↓ Move to Library only"와 동일 축·동일 엔드포인트 → Studio 노출 세트 == Library "In Studio" 그룹(완전 일치).
+//     롤백: 이 함수 제거 + toggleHide 복원(POST/DELETE /api/studio/hidden/:rid) + renderRecipes HIDDEN 필터/✕·↺ 컨트롤 복원 ▼▼▼
+async function toggleStudioInStudio(rid){
+  const r=findCard(rid); const uuid=String((r&&r.ownedId)||rid); // 유저 템플릿 id=UUID / 공식은 ownedId(슬러그≠UUID)
+  try{ await fetch('/api/marketplace/owned/in-studio',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[uuid],in_studio:false})});
+    if(r)r.in_studio=false; renderRecipes(); if(window.toast)toast('Moved to Library only');
+  }catch(e){ if(window.toast)toast('Could not update'); }
 }
+// ▲▲▲
 async function addToTheme(rid){
   if(officialThemeBlocked(rid))return;   // (2026-07-03 옵션A-full)
   if(!curTheme){ if(window.toast)toast('Select a theme first'); return; }
@@ -1663,8 +1668,7 @@ function renderRecipes(){
   // ▼(2026-07-03 시각정합) 서브탭 타입 필터: Official ↔ My templates 분리 ▼
   rs=rs.filter(r=> (curTplType()==='official')===isOfficialCard(r.id));
   // ▲
-  // 숨긴 내장 제외(매니지 모드에선 흐리게 보여 복원 가능)
-  if(!manageMode)rs=rs.filter(r=>!HIDDEN.has(String(r.id)));
+  // (2026-07-03 소스 통일 #1) 옛 Studio 전용 개별숨김(HIDDEN) 필터 제거 — "빼기"는 in_studio(Library only)로 일원화(Library와 완전 일치). 롤백: `if(!manageMode)rs=rs.filter(r=>!HIDDEN.has(String(r.id)));` 복원
   // ★ 합격(held===false) 템플릿을 각 테마(cat) 상단으로 — 그룹 순서 유지(안정 정렬)
   const _catOrder=[]; rs.forEach(r=>{ if(!_catOrder.includes(r.cat))_catOrder.push(r.cat); });
   rs.sort((a,b)=>{ const ci=_catOrder.indexOf(a.cat)-_catOrder.indexOf(b.cat); return ci!==0?ci:((a.held===false?0:1)-(b.held===false?0:1)); });
@@ -1678,7 +1682,6 @@ function renderRecipes(){
   const memberIds=(tObj&&tObj.items||[]).map(i=>String(i.itemId));
   grid.innerHTML=lookTiles+rs.map(r=>{
     const valBadge=(r.id===bestId)?`<span class="val-badge" title="4 photos for the same cost — best value per credit">★ Best value</span>`:'';
-    const hidden=HIDDEN.has(String(r.id));
     let mc='';
     if(manageMode){
       if(curTheme){ // 커스텀 테마 멤버십
@@ -1690,12 +1693,12 @@ function renderRecipes(){
         if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒</span></div>`; }  // (2026-07-03 옵션A-full)
         else { const inT=inGlobalTheme(r,defTheme);
         mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromGlobalTheme('${defTheme}','${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToGlobalTheme('${defTheme}','${r.id}')">＋</span>`}</div>`; }
-      }else{ // All 뷰: 전역 숨김
-        mc=`<div class="mctrls"><span class="mc" title="${hidden?'Restore':'Hide'}" onclick="event.stopPropagation();toggleHide('${r.id}')">${hidden?'↺':'✕'}</span></div>`;
+      }else{ // ▼(2026-07-03 소스 통일 #1) All 뷰 Manage: 옛 전역숨김(toggleHide) → Library only 이동(in_studio=false)으로 통일 → 복원은 Library "↑ To Studio"에서. 롤백: toggleHide/✕·↺ 복원 ▼
+        mc=`<div class="mctrls"><span class="mc" title="Move to Library only — stays in your Library" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}')">↓</span></div>`;
       }
     }
     return `
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}${hidden?' is-hidden':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
+    <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
       ${mc}
       <div class="preview" style="${r.preview?`background-image:url('${esc(r.preview)}');background-size:cover;background-position:center`:`background:${r.grad}`}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
