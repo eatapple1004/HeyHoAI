@@ -110,6 +110,10 @@
   .rb-more{font-family:inherit;font-size:11.5px;font-weight:700;color:var(--accent2);background:none;border:none;padding:5px 2px;cursor:pointer}
   .rb-more:hover{text-decoration:underline}
   .rb-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .rb-del-row{margin-top:10px}
+  .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  .rb-del:hover{color:#ff5f6e;border-color:#ff5f6e;background:rgba(255,95,110,.1)}
+  .rb-del:disabled{opacity:.6;cursor:default}
   .rb-tag{font-size:11px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:3px 8px;border-radius:7px}
   .rb-date{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--dim);margin:8px 0 -6px;padding-top:18px;border-top:1px solid var(--border)}
   .rb-date:first-child{border-top:none;padding-top:0;margin-top:2px}
@@ -1853,7 +1857,23 @@ function batchRowHtml(b){
           :`<button class="rb-add" type="button" onclick="addCreatorTemplate(this,${cidx})">＋ Add to Creator templates</button>`;})())+`</div>`;
   const size=(b.w&&b.h)?`${b.w}×${b.h}`:'';
   const tags=[b.model&&`<span class="rb-tag">${esc(b.model)}</span>`,size&&`<span class="rb-tag">${size}</span>`,b.items.length>1&&`<span class="rb-tag">${b.items.length} images</span>`].filter(Boolean).join('');
-  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}<div class="rb-tags">${tags}</div></div></div>`;
+  // (2026-07-03) 이 creation(배치) 삭제 — Library My creations에서도 사라짐(같은 행). 승격된 템플릿은 유지. 생성 중(placeholder)·idx 없는 건 버튼 숨김.
+  const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
+  const delBtn=delIdxs.length?`<div class="rb-del-row"><button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button></div>`:'';
+  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}<div class="rb-tags">${tags}</div>${delBtn}</div></div>`;
+}
+// 이 배치(creation)의 모든 이미지 삭제 → 서버(generation_results 행) 제거 + 피드에서 행 제거. Library My creations도 같은 행이라 자동 반영. 승격 템플릿은 영향 없음.
+async function deleteStudioBatch(btn,idxs){
+  if(!idxs||!idxs.length)return;
+  if(!confirm('Delete this creation? It’s removed from your Library too. Templates you already added stay.'))return;
+  btn.disabled=true; const o=btn.innerHTML; btn.innerHTML='Deleting…';
+  try{
+    const oks=await Promise.all(idxs.map(idx=>fetch('/api/generate/creations/'+idx,{method:'DELETE'}).then(r=>r.ok).catch(()=>false)));
+    if(!oks.some(Boolean))throw new Error('failed');
+    const b=STUDIO_BATCHES.find(x=>x.items.some(i=>idxs.indexOf(i.idx)!==-1));
+    if(b){ const i=STUDIO_BATCHES.indexOf(b); if(i>=0)STUDIO_BATCHES.splice(i,1); const k=b.key; if(k!=null&&STUDIO_BATCH_BY_KEY[k])delete STUDIO_BATCH_BY_KEY[k]; renderStudioResults(); }
+    if(window.toast)toast('Creation 삭제됨');
+  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('삭제 실패: '+(e.message||e),'error'); }
 }
 function dateKeyOf(iso){ const d=iso?new Date(iso):new Date(); if(isNaN(d))return ''; return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
 function fmtBatchDate(iso){ // Leonardo식 날짜 헤더: Today / Yesterday / Wednesday, 27 May 2026

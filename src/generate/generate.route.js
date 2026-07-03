@@ -741,6 +741,22 @@ router.post('/creations/:idx/add-to-my-templates', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── creation(생성물) 삭제 — Studio 피드·Library My creations에서 제거(같은 generation_results 행). ───
+//   승격/추가된 템플릿(marketplace_templates.from_creation_idx)은 **영향 없음**: FK 없어 안 지워지고, 템플릿 미리보기가 같은 이미지 파일을 참조하므로 파일도 남김(행만 삭제).
+router.delete('/creations/:idx', async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    if (!idx) return res.status(400).json({ success: false, error: 'invalid creation id' });
+    const r = await resultRepo.findDetailForViewer(idx, req.user.id);
+    if (!r) return res.status(404).json({ success: false, error: 'creation not found' });
+    if (!r.is_own) return res.status(403).json({ success: false, error: '본인 생성물만 삭제할 수 있습니다.' });
+    // reviews는 no-cascade FK → 먼저 제거. likes·reports는 ON DELETE CASCADE로 자동 정리. 템플릿(from_creation_idx)은 FK 없어 남음.
+    await query('DELETE FROM reviews WHERE result_idx = $1', [idx]);
+    await query('DELETE FROM generation_results WHERE idx = $1', [idx]);
+    res.json({ success: true, data: { idx } });
+  } catch (err) { next(err); }
+});
+
 // ─── 크리에이터 Overview(γ 넛지): 총 좋아요 + 미등록 인기 creation Top ───
 router.get('/creator-overview', async (req, res, next) => {
   try {
