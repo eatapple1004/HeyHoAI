@@ -83,6 +83,11 @@ router.get('/templates', async (req, res, next) => {
       `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked,
               EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1) AS owned,
+              COALESCE(preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
+                 WHERE ((gr.template_source='marketplace' AND gr.template_id = marketplace_templates.id::text)
+                     OR (marketplace_templates.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = marketplace_templates.recipe_id))
+                   AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL
+                 ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb,
               ${THEMES_SUBQ}
        FROM marketplace_templates WHERE ${where}
        ORDER BY ${order} LIMIT 200`,
