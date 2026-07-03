@@ -1688,8 +1688,8 @@ function renderRecipes(){
       const ids=new Set((tObj?tObj.items:[]).map(i=>String(i.itemId)));
       rs=[]; Object.keys(TEMPLATES).forEach(m=>modePool(m).forEach(r=>{ if(ids.has(String(r.id))&&!rs.some(x=>String(x.id)===String(r.id)))rs.push(r); }));
     }
-  }else if(defTheme&&manageMode){ // 기본 테마 편집: 현재 모드 전체 노출 → +/− 토글
-    rs=TEMPLATES[state.mode].filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
+  }else if(defTheme&&manageMode){ // 기본 테마 편집: 보유(+공식) 템플릿만 → +/− 토글. (2026-07-03 fix) TEMPLATES[mode]=내장 카탈로그 전체라 미보유 레시피까지 쏟아짐 → modePool(보유+공식)로 제한. 롤백: TEMPLATES[state.mode]
+    rs=modePool(state.mode).filter(r=>!PREMIUM.some(p=>p.recipeId===r.id));
   }else{
     rs=modePool(state.mode).filter(r=>{
       if(PREMIUM.some(p=>p.recipeId===r.id))return false;
