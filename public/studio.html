@@ -521,6 +521,7 @@
           .recipe-card .mc{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:14px;cursor:pointer;line-height:1}
           .recipe-card .mc.add{background:var(--accent);border-color:var(--accent)}
           .recipe-card .mc.rem{background:#c0455e;border-color:#c0455e}
+          .recipe-card .mc.lock{cursor:default;opacity:.7;font-size:12px}/* (2026-07-03 옵션A-full) 공식=테마 고정 표시. 롤백: 제거 */
           .cth-empty{grid-column:1/-1;color:var(--faint);font-size:13.5px;padding:24px 4px;text-align:center;line-height:1.6}
         </style>
         <div class="recipe-grid" id="recipeGrid"></div>
@@ -1508,7 +1509,12 @@ async function hideTheme(slug){ // 기본 테마 통째 제거
 async function restoreTheme(slug){ // 제거한 기본 테마 복원
   try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'DELETE'}); HIDDEN_THEMES.delete(slug); renderFilters();renderRecipes(); }catch(e){}
 }
+// ▼▼▼ (2026-07-03 옵션A-full) 공식 템플릿=회사 배정 테마 고정 → Studio Manage에서도 유저 테마 편집 불가. 롤백: 이 helper + 아래 4함수 가드 + 렌더 🔒 분기 제거 ▼▼▼
+function isOfficialCard(rid){ return OFFICIAL_RECIPES.has(String(rid)); }
+function officialThemeBlocked(rid){ if(isOfficialCard(rid)){ if(window.toast)toast('공식 템플릿은 테마가 고정돼 있어요','error'); return true; } return false; }
+// ▲▲▲
 async function addToGlobalTheme(slug,rid){ // 특정 기본 테마에 템플릿 추가
+  if(officialThemeBlocked(rid))return;   // (2026-07-03 옵션A-full)
   rid=String(rid); const ov=THEME_OV[slug]=THEME_OV[slug]||{add:new Set(),remove:new Set()};
   try{
     if(ov.remove.has(rid)){ await fetch('/api/studio/global-themes/'+encodeURIComponent(slug)+'/items/'+itemTypeOf(findCard(rid))+'/'+encodeURIComponent(rid),{method:'DELETE'}); ov.remove.delete(rid); }
@@ -1517,6 +1523,7 @@ async function addToGlobalTheme(slug,rid){ // 특정 기본 테마에 템플릿 
   }catch(e){}
 }
 async function removeFromGlobalTheme(slug,rid){ // 특정 기본 테마에서 템플릿 제거
+  if(officialThemeBlocked(rid))return;   // (2026-07-03 옵션A-full)
   rid=String(rid); const ov=THEME_OV[slug]=THEME_OV[slug]||{add:new Set(),remove:new Set()};
   const r=findCard(rid); const tagged=(r.themes||[]).includes(slug);
   try{
@@ -1551,6 +1558,7 @@ async function toggleHide(rid){
   }catch(e){}
 }
 async function addToTheme(rid){
+  if(officialThemeBlocked(rid))return;   // (2026-07-03 옵션A-full)
   if(!curTheme){ if(window.toast)toast('Select a theme first'); return; }
   const r=findCard(rid);
   try{ const d=await(await fetch('/api/studio/themes/'+curTheme+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:itemTypeOf(r),itemId:String(rid)})})).json();
@@ -1559,6 +1567,7 @@ async function addToTheme(rid){
   }catch(e){}
 }
 async function removeFromTheme(rid){
+  if(officialThemeBlocked(rid))return;   // (2026-07-03 옵션A-full)
   if(!curTheme)return; const r=findCard(rid);
   try{ await fetch('/api/studio/themes/'+curTheme+'/items/'+itemTypeOf(r)+'/'+encodeURIComponent(String(rid)),{method:'DELETE'});
     const t=curThemeObj(); if(t)t.items=(t.items||[]).filter(i=>String(i.itemId)!==String(rid)); renderRecipes();
@@ -1630,11 +1639,14 @@ function renderRecipes(){
     let mc='';
     if(manageMode){
       if(curTheme){ // 커스텀 테마 멤버십
-        const inT=memberIds.includes(String(r.id));
-        mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromTheme('${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToTheme('${r.id}')">＋</span>`}</div>`;
+        // ▼(2026-07-03 옵션A-full) 공식=테마 고정 → +/− 대신 🔒(편집 불가). 롤백: 이 isOfficialCard 분기 제거 ▼
+        if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒</span></div>`; }
+        else { const inT=memberIds.includes(String(r.id));
+        mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromTheme('${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToTheme('${r.id}')">＋</span>`}</div>`; }
       }else if(defTheme){ // 기본 테마 멤버십(오버라이드)
-        const inT=inGlobalTheme(r,defTheme);
-        mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromGlobalTheme('${defTheme}','${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToGlobalTheme('${defTheme}','${r.id}')">＋</span>`}</div>`;
+        if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒</span></div>`; }  // (2026-07-03 옵션A-full)
+        else { const inT=inGlobalTheme(r,defTheme);
+        mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromGlobalTheme('${defTheme}','${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToGlobalTheme('${defTheme}','${r.id}')">＋</span>`}</div>`; }
       }else{ // All 뷰: 전역 숨김
         mc=`<div class="mctrls"><span class="mc" title="${hidden?'Restore':'Hide'}" onclick="event.stopPropagation();toggleHide('${r.id}')">${hidden?'↺':'✕'}</span></div>`;
       }
