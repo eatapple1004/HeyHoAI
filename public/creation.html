@@ -55,13 +55,20 @@
   .act.sm{padding:11px 14px;font-size:13.5px}
   .sep{height:1px;background:var(--border);margin:20px 0 14px}
   .ownhdr{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-bottom:11px}
-  /* (2026-07-04) 결과물이 어떤 템플릿으로 만들어졌는지 출처 블록 (생성자 바로 아래) */
-  .tpl-attr{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:-6px 0 20px;padding:11px 13px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);font-size:13.5px}
-  .tpl-attr .ta-lbl{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
-  .tpl-attr .ta-name{font-weight:700;color:var(--text)}
-  .tpl-attr .ta-name.gone{color:var(--faint);text-decoration:line-through}
-  .tpl-attr .ta-note{font-size:11.5px;color:var(--faint)}
-  .tpl-attr.custom{color:var(--dim);font-weight:700;gap:6px}
+  /* (2026-07-04) 템플릿으로 만든 결과물 = 일괄 템플릿 카드(보유·미보유 동일 외형) — 생성자 바로 아래 */
+  .tpl-card{margin:-6px 0 20px;padding:14px;border:1px solid var(--accent);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));display:flex;flex-direction:column;gap:10px}
+  .tpl-card.gone{border-color:var(--border);background:rgba(255,255,255,.03)}
+  .tpl-card.custom{flex-direction:row;align-items:center;gap:6px;padding:11px 13px;border-color:var(--border);background:rgba(255,255,255,.03);color:var(--dim);font-weight:700;font-size:13.5px}
+  .tpl-card.gone .tc-line{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13.5px}
+  .tc-eyebrow{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent)}
+  .tpl-card.gone .tc-eyebrow{color:var(--faint)}
+  .tc-body{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tc-name{font-weight:800;color:var(--text);font-size:16px}
+  .tc-name.gone{color:var(--faint);text-decoration:line-through;font-weight:700;font-size:13.5px}
+  .tc-price{font-weight:800;color:var(--text);font-size:15px;white-space:nowrap}
+  .tc-note{font-size:11.5px;color:var(--faint)}
+  .tc-sub{font-size:12px;color:var(--faint);text-align:center}
+  .tc-cta{margin-top:2px}
   .report{margin-top:20px;background:none;border:none;color:var(--faint);font-size:12.5px;cursor:pointer;font-family:inherit;padding:4px}
   .report:hover{color:#ff7eb6}
   .state{display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);text-align:center;flex-direction:column;gap:6px}
@@ -252,24 +259,41 @@ async function loadDetail(){
   }catch(e){sw.innerHTML='<div class="state"><b>Couldn’t load</b><span>'+esc(e.message||e)+'</span></div>';panel.innerHTML='';}
 }
 
-// (제거·사용자 지시) 상세 1차 "Make your own"/"Use" 폐지 — Explore=발견+My templates 추가가 정본.
-// 템플릿 버튼(relTemplate 기반): 보유=라이브러리에서 보기(내 auto면 Creator 관리) / 미보유=유료 Buy·무료 Add → 획득 후 My templates로 이동.
-//   내 Custom auto 템플릿 미추가=테마 선택 모달(openSaveModal). relTemplate 없으면(연결 템플릿 없음) 버튼 없음.
-function templateCta(){
+// (2026-07-04) 일괄 템플릿 카드 — 템플릿으로 만든 결과물이면 보유·미보유 무관 동일 외형(accent 카드 + primary "✨ Use this template").
+//   동작만 분기: 보유(공식/구매/내 것)=Studio로 바로 사용 / 미보유 타인=획득 후 Studio / 미보유 내 minted=테마선택 모달 / 삭제·미접근=정보만(내 것이면 재추가) / Custom=✎ 배지.
+//   가격(◈)은 "미보유 유료 타인 템플릿"에만 노출. 롤백: 이 함수 + sellCard + render의 ${templateCard()} 제거.
+function sellCard(name, price, ctaHtml, extraHtml){
+  const priceTag = (price!=null) ? `<span class="tc-price">◈ ${price}</span>` : '';
+  return `<div class="tpl-card sell">
+    <div class="tc-eyebrow">🧩 Made with this template</div>
+    <div class="tc-body"><span class="tc-name">${name}</span>${priceTag}</div>
+    ${ctaHtml}${extraHtml||''}
+    <div class="tc-sub">Recreate this exact style with your own photo</div>
+  </div>`;
+}
+function templateCard(){
+  if(!IT.templateSource) return `<div class="tpl-card custom">✎ Custom</div>`;   // 프롬프트만(템플릿 미사용)
   const rt=IT.relTemplate;
-  // 연결 템플릿 없음 + 내 creation = 즉석 민팅+추가 폴백(γ·legacy·민팅실패·삭제 케이스 커버). 타인 것은 추가 대상 없음→버튼 없음.
-  if(!rt) return IT.isOwn ? `<button class="act sm" onclick="mintAndAdd(this)">＋ Add to My templates</button>` : '';
-  // 라이브러리(My templates)에서 보기 — 타인 생성물 상세의 동일 버튼과 동일 동작(?tpl 딥링크).
-  const viewInLib=`<button class="act sm" onclick="location.href='/studio?tpl='+encodeURIComponent('${esc(rt.id)}')">View template in my library</button>`;
-  if(rt.owned){
-    // 내 auto 템플릿(보유): 라이브러리에서 보기 + (위) Creator 관리 둘 다. 타인 보유: 라이브러리에서 보기만.
-    if(IT.isOwn && IT.mintedTemplateId) return viewInLib+`<a class="act sm" href="/earnings">Manage template</a>`;
-    return viewInLib;
+  const name=esc((rt&&rt.name)||IT.templateName||'Template');
+  const gone=!(rt&&rt.id);   // 살아있는 템플릿 없음 = 삭제/미접근
+  // 삭제·미접근: 정보만(약한 카드). 내 creation이면 즉석 민팅+추가 폴백.
+  if(gone){
+    const add = IT.isOwn ? `<button class="act sm tc-cta" onclick="mintAndAdd(this)">＋ Add to My templates</button>` : '';
+    return `<div class="tpl-card gone"><div class="tc-line"><span class="tc-eyebrow">🧩 Made with</span> <span class="tc-name gone">${name}</span> <span class="tc-note">no longer available</span></div>${add}</div>`;
   }
-  if(IT.isOwn && IT.mintedTemplateId) return `<button class="act sm" onclick="openSaveModal()">＋ Add to My templates</button>`;
-  // 유료(타인)=Buy / 그 외=Add. 내 템플릿엔 "Buy" 안 붙임.
-  const label = (!rt.mine && rt.price>0) ? ('Buy '+(rt.name||'template')+' (◈'+rt.price+')') : '＋ Add to My templates';
-  return `<button class="act sm" onclick="acquireRelTemplate()">${esc(label)}</button>`;
+  // 보유(공식/구매/내 것): 일괄 강조 카드 — Studio로 바로 사용(가격 없음). 내 auto면 Creator 관리 보조 버튼.
+  if(rt.owned){
+    const use=`<button class="act primary tc-cta" onclick="location.href='/studio?tpl='+encodeURIComponent('${esc(rt.id)}')">✨ Use this template</button>`;
+    const manage=(IT.isOwn && IT.mintedTemplateId)?`<a class="act sm tc-cta" href="/earnings">Manage template</a>`:'';
+    return sellCard(name, null, use, manage);
+  }
+  // 미보유 + 내 minted(본인 creation): 테마 선택 후 추가.
+  if(IT.isOwn && IT.mintedTemplateId){
+    return sellCard(name, null, `<button class="act primary tc-cta" onclick="openSaveModal()">＋ Add to My templates</button>`);
+  }
+  // 미보유 타인 템플릿: 유료=가격 노출 / 무료=가격 없음. 둘 다 "✨ Use this template"(획득 후 Studio).
+  const paid=(!rt.mine && rt.price>0);
+  return sellCard(name, paid?rt.price:null, `<button class="act primary tc-cta" onclick="acquireRelTemplate()">✨ Use this template</button>`);
 }
 // relTemplate 없는 내 creation: 테마 피커 모달(mint 모드)을 열어 사용자가 테마 직접 선택 → confirm 시 즉석 민팅+보유+선택 테마 배치 후 My templates로 이동.
 function mintAndAdd(btn){ openSaveModal({ mint:true }); }
@@ -285,15 +309,6 @@ async function acquireRelTemplate(){
   }catch(e){ toast('Could not add: '+(e.message||e)); }
 }
 
-// (2026-07-04) 출처 블록 — 템플릿으로 만든 결과물엔 "Made with <템플릿명>", Custom엔 "✎ Custom" 뱃지.
-//   이름=현재 rt.name(살아있으면) / 없으면 IT.templateName(생성 당시·삭제됐으면 회색+취소선). 액션(View/Buy/Add)은 아래 acts의 templateCta가 담당. 롤백: 이 함수 + render의 ${templateAttr()} 제거.
-function templateAttr(){
-  if(!IT.templateSource) return `<div class="tpl-attr custom">✎ Custom</div>`;   // 프롬프트만(템플릿 미사용)
-  const rt=IT.relTemplate;
-  const name=esc((rt&&rt.name)||IT.templateName||'Template');
-  const gone=!(rt&&rt.id);   // 살아있는 템플릿 없음 = 삭제/미접근
-  return `<div class="tpl-attr"><span class="ta-lbl">🧩 Made with</span> <span class="ta-name${gone?' gone':''}">${name}</span>${gone?' <span class="ta-note">no longer available</span>':''}</div>`;
-}
 function render(){
   const media=IT.type==='video'
     ? `<video class="media" src="${esc(IT.url)}" controls loop playsinline></video>`
@@ -328,8 +343,8 @@ function render(){
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
-    ${templateAttr()}
-    <div class="acts">${templateCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
+    ${templateCard()}
+    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }
 
