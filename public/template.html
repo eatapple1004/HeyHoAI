@@ -10,14 +10,15 @@
 <script src="/saas-auth.js" defer></script>
 <script src="/js/rail.js?v=6" defer></script>
 <style>
-  .wrap{max-width:1160px;margin:0;padding:34px 24px 40px;position:relative;z-index:2}
+  /* 히어로도 Leonardo식 full-bleed(레일 오프셋은 body.has-rail가 처리) — 화면 폭 꽉 채움 */
+  .wrap{max-width:none;margin:0;padding:34px 24px 40px;position:relative;z-index:2}
   .back{display:inline-flex;align-items:center;gap:6px;color:var(--dim);font-size:13px;cursor:pointer;margin-bottom:18px}
   .back:hover{color:var(--text)}
-  .grid2{display:grid;grid-template-columns:1.5fr .82fr;gap:30px;align-items:start}
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:34px;align-items:start}
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
   /* 예시 갤러리 — 균형 justified 행: 원본 비율 유지·행별 동일 높이로 폭에 꽉 채움(과대확대 방지 상한). 1~8장 대응. JS가 layoutGal로 배치 */
   .gal{display:flex;flex-direction:column;gap:8px}
-  .gal-row{display:flex;gap:8px;justify-content:center}
+  .gal-row{display:flex;gap:8px;justify-content:flex-start}
   .gal .ph{position:relative;flex:0 0 auto;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--border)}
   .gal .ph img,.gal .ph video{width:100%;height:100%;object-fit:cover;display:block}
   .gal .none{aspect-ratio:16/9;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:54px;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
@@ -87,18 +88,27 @@ function galAR(t){
   const h=m.tagName==='VIDEO'?m.videoHeight:m.naturalHeight;
   return (w&&h)?w/h:0.8;
 }
+// 타깃 행높이 justified: 폭에 상관없이 targetH 근처로 행을 채우다 폭 초과 직전 개행.
+//   꽉 찬 행은 폭에 맞춰 균등 축소, 마지막 덜 찬 행은 늘리지 않고 targetH 유지(과대확대 방지). 1~8장 대응.
 function layoutGal(galEl){
   const tiles=galEl&&galEl._tiles; if(!tiles||!tiles.length)return;
-  const n=tiles.length, W=galEl.clientWidth||600, gap=8, minH=120, maxH=230;
-  const r=n<=3?1:2;                         // 1~3장=한 줄, 4~8장=두 줄
-  const base=Math.floor(n/r), rem=n%r;
-  let idx=0; const rows=[];
-  for(let k=0;k<r;k++){const len=base+(k<rem?1:0);rows.push(tiles.slice(idx,idx+len));idx+=len;}
+  const n=tiles.length, W=galEl.clientWidth||600, gap=8;
+  // 장수 적을수록 크게(넓은 히어로서 1~2장이 초라해 보이지 않게), 많으면 촘촘히
+  const targetH = n<=2?440 : n<=4?340 : 290, maxH = Math.max(targetH*1.25,360);
+  const rows=[]; let cur=[], arSum=0;
+  tiles.forEach(t=>{
+    const ar=galAR(t); cur.push(t); arSum+=ar;
+    if(arSum*targetH+gap*(cur.length-1)>=W){ rows.push(cur); cur=[]; arSum=0; }
+  });
+  if(cur.length) rows.push(cur);
   galEl.innerHTML='';
-  rows.forEach(row=>{
+  rows.forEach((row,ri)=>{
     const rowEl=document.createElement('div'); rowEl.className='gal-row';
     let sum=0; row.forEach(t=>sum+=galAR(t));
-    let h=(W-gap*(row.length-1))/sum; if(h<minH)h=minH; if(h>maxH)h=maxH;
+    let h=(W-gap*(row.length-1))/sum;                 // 폭을 꽉 채우는 높이
+    const isLast=ri===rows.length-1;
+    if(isLast && sum*targetH+gap*(row.length-1)<W) h=targetH;  // 덜 찬 마지막 행: 늘리지 않음
+    if(h>maxH) h=maxH;
     row.forEach(t=>{t.style.width=Math.round(galAR(t)*h)+'px';t.style.height=Math.round(h)+'px';rowEl.appendChild(t);});
     galEl.appendChild(rowEl);
   });
