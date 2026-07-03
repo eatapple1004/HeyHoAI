@@ -19,10 +19,7 @@
   .grid{column-count:2;column-gap:14px}  /* 폴백 */
   #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
   @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-  @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-  @media(min-width:1100px){#grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
-  @media(min-width:1450px){#grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
-  @media(min-width:1800px){#grid{grid-template-columns:repeat(7,minmax(0,1fr))}}/* (2026-07-03) full-bleed: 넓을수록 열 증가. 롤백: 1100/1450/1800 3줄 제거 */
+  @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}/* (2026-07-03) full-bleed지만 한 줄 최대 4개 + 이후 줄바꿈. */
   #grid .card{margin:0;align-self:start;break-inside:auto}
   .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
