@@ -55,6 +55,13 @@
   .act.sm{padding:11px 14px;font-size:13.5px}
   .sep{height:1px;background:var(--border);margin:20px 0 14px}
   .ownhdr{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-bottom:11px}
+  /* (2026-07-04) 결과물이 어떤 템플릿으로 만들어졌는지 출처 블록 (생성자 바로 아래) */
+  .tpl-attr{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:-6px 0 20px;padding:11px 13px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);font-size:13.5px}
+  .tpl-attr .ta-lbl{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
+  .tpl-attr .ta-name{font-weight:700;color:var(--text)}
+  .tpl-attr .ta-name.gone{color:var(--faint);text-decoration:line-through}
+  .tpl-attr .ta-note{font-size:11.5px;color:var(--faint)}
+  .tpl-attr.custom{color:var(--dim);font-weight:700;gap:6px}
   .report{margin-top:20px;background:none;border:none;color:var(--faint);font-size:12.5px;cursor:pointer;font-family:inherit;padding:4px}
   .report:hover{color:#ff7eb6}
   .state{display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);text-align:center;flex-direction:column;gap:6px}
@@ -278,6 +285,15 @@ async function acquireRelTemplate(){
   }catch(e){ toast('Could not add: '+(e.message||e)); }
 }
 
+// (2026-07-04) 출처 블록 — 템플릿으로 만든 결과물엔 "Made with <템플릿명>", Custom엔 "✎ Custom" 뱃지.
+//   이름=현재 rt.name(살아있으면) / 없으면 IT.templateName(생성 당시·삭제됐으면 회색+취소선). 액션(View/Buy/Add)은 아래 acts의 templateCta가 담당. 롤백: 이 함수 + render의 ${templateAttr()} 제거.
+function templateAttr(){
+  if(!IT.templateSource) return `<div class="tpl-attr custom">✎ Custom</div>`;   // 프롬프트만(템플릿 미사용)
+  const rt=IT.relTemplate;
+  const name=esc((rt&&rt.name)||IT.templateName||'Template');
+  const gone=!(rt&&rt.id);   // 살아있는 템플릿 없음 = 삭제/미접근
+  return `<div class="tpl-attr"><span class="ta-lbl">🧩 Made with</span> <span class="ta-name${gone?' gone':''}">${name}</span>${gone?' <span class="ta-note">no longer available</span>':''}</div>`;
+}
 function render(){
   const media=IT.type==='video'
     ? `<video class="media" src="${esc(IT.url)}" controls loop playsinline></video>`
@@ -312,6 +328,7 @@ function render(){
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
+    ${templateAttr()}
     <div class="acts">${templateCta()}<button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }
