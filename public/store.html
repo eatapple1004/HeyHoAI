@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Doppia · Store</title>
 <script src="/js/flags.js" defer></script>
+<script src="/js/themes.js?v=1"></script><!-- (2026-07-03) isThemeVisible 공용 — 테마 칩을 Studio/Library와 동일하게 좁힘 -->
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="stylesheet" href="/css/theme.css?v=5" />
 <script src="/saas-auth.js" defer></script>
@@ -103,7 +104,8 @@ function tcard(t){
 const PRICES=['All','Free','Paid'];
 let CATALOG=[], THEMES=[], curTheme='All', curPrice='All';
 function themeName(slug){return slug==='All'?'All':((THEMES.find(t=>t.slug===slug)||{}).name||slug);}
-function renderThemeFilter(){const hideInf=(typeof featureOn==='function' && !featureOn('influencer'));const all=['All'].concat(THEMES.map(t=>t.slug).filter(s=>!(hideInf&&s==='people')));document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${themeName(s)}</div>`).join('');}
+// (2026-07-03) 테마 칩 = 보이는 기본 테마만(Studio·Library와 통일). isThemeVisible=Shopping(beauty/fashion/general)+Influencer(people, flag시). 롤백: hideInf/people 필터로 복원.
+function renderThemeFilter(){const vis=(typeof isThemeVisible==='function')?isThemeVisible:function(){return true;};const all=['All'].concat(THEMES.map(t=>t.slug).filter(function(s){return vis(s);}));document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${themeName(s)}</div>`).join('');}
 function setTheme(s){curTheme=s;renderThemeFilter();renderCatalog();}
 function renderPrices(){document.getElementById('priceFilter').innerHTML=PRICES.map(c=>`<div class="chip ${curPrice===c?'active':''}" onclick="setPrice('${c}')">${c}</div>`).join('');}
 function setPrice(c){curPrice=c;renderPrices();renderCatalog();}
