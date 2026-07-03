@@ -911,6 +911,8 @@ async function mergeOwnedTemplates(){
       card.ownedId=String(t.id);                        // 마켓 UUID(카드 id=슬러그라 별도 보관) — in_studio PATCH용
       card.in_studio=(t.in_studio!==false);             // In Studio ↔ Library only 토글
       if(t.themes&&t.themes.length)card.themes=t.themes; // 테마 = /owned label(Library와 동일 어휘) — OFFICIAL_THEME_MAP 대체
+      const pv=(t.preview_media||[]).filter(x=>x);       // Store와 동일 소스(preview_media[0])를 카드 커버로 — 공식 카드도 실제 미리보기
+      if(pv.length)card.preview=pv[0];
       return;
     }
     if(!mkOn)return; // 비공식(유저) 템플릿은 marketplace 점화 시만.
