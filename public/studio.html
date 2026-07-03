@@ -510,8 +510,17 @@
           <h2 id="step2Title">Pick a template</h2>
           <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span>
         </div>
+        <!-- ▼▼▼ (2026-07-03 Studio↔Library 시각정합) Official/My templates 서브탭 — Library 미러(Official 기본). 소스통일은 다음단계. 롤백: 이 블록 + .studio-subtab CSS + curTplType/studioPresentThemes/switchStudioTplType + renderRecipes 타입필터 + renderFilters present/official분기 제거 ▼▼▼ -->
+        <div class="studio-subtabbar">
+          <button class="studio-subtab active" data-subtab="official" onclick="switchStudioTplType('official')">Official</button>
+          <button class="studio-subtab" data-subtab="user" onclick="switchStudioTplType('user')">My templates</button>
+        </div>
+        <!-- ▲▲▲ 서브탭 ▲▲▲ -->
         <div class="filter-row" id="filterRow"></div>
         <style>
+          .studio-subtabbar{display:flex;gap:8px;margin-bottom:16px}
+          .studio-subtab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer}
+          .studio-subtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
           .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
           .filter-row .chip.ghost{border-style:dashed;color:var(--dim)}
           .filter-row .chip .chip-x{margin-left:5px;opacity:.55;font-size:10px}
@@ -1573,6 +1582,23 @@ async function removeFromTheme(rid){
     const t=curThemeObj(); if(t)t.items=(t.items||[]).filter(i=>String(i.itemId)!==String(rid)); renderRecipes();
   }catch(e){}
 }
+// ▼▼▼ (2026-07-03 Studio↔Library 시각정합) 타입(official/user) 서브탭 헬퍼. 롤백: 이 블록 제거 ▼▼▼
+function curTplType(){ return state.tplType||'official'; }
+function studioPresentThemes(type){ // 그 타입 템플릿이 실제 든 글로벌/커스텀 테마 집합(필터 칩 타입별 좁힘)
+  const g=new Set(), c=new Set();
+  Object.keys(TEMPLATES).forEach(m=>modePool(m).forEach(r=>{
+    if((type==='official')!==isOfficialCard(r.id))return;
+    (THEME_LIST||[]).forEach(t=>{ if(inGlobalTheme(r,t.slug)) g.add(t.slug); });
+    (STUDIO_THEMES||[]).forEach(t=>{ if((t.items||[]).some(i=>String(i.itemId)===String(r.id))) c.add(t.id); });
+  }));
+  return {g,c};
+}
+function switchStudioTplType(type){
+  state.tplType=type; state.filter='All'; curTheme=null; if(type==='official')manageMode=false;
+  document.querySelectorAll('.studio-subtab').forEach(b=>b.classList.toggle('active',b.dataset.subtab===type));
+  renderFilters(); renderRecipes();
+}
+// ▲▲▲
 function renderFilters(){
   // 필터 = 현재 모드의 대분류 테마(CAT_THEMES) — Library와 동일 파티션·순서로 고정(동적 present 폐기 → 스튜디오=Library 일치 보장).
   //   모드→대분류: influencer→Influencer / shopping→Shopping / ugc→UGC / custom 등 → 전체.
@@ -1580,22 +1606,25 @@ function renderFilters(){
   const allow=(macro&&CAT_THEMES[macro])?CAT_THEMES[macro]:null;
   const byslug={}; (THEME_LIST||[]).forEach(t=>{ byslug[t.slug]=t; });
   let ordered=allow?allow.map(s=>byslug[s]||{slug:s,name:s}):(THEME_LIST||[]).slice();
-  if(!manageMode) ordered=ordered.filter(t=>!HIDDEN_THEMES.has(t.slug));
+  const pres=studioPresentThemes(curTplType());  // (2026-07-03) 타입별 present 테마만 칩 노출
+  if(!manageMode) ordered=ordered.filter(t=>!HIDDEN_THEMES.has(t.slug) && pres.g.has(t.slug));
   let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
   html+=ordered.map(t=>{
     const hiddenT=HIDDEN_THEMES.has(t.slug);
     const x=manageMode?` <span class="chip-x" onclick="event.stopPropagation();${hiddenT?'restoreTheme':'hideTheme'}('${t.slug}')">${hiddenT?'↺':'✕'}</span>`:'';
     return `<div class="chip ${!curTheme&&state.filter===t.slug?'active':''}${hiddenT?' is-hidden':''}" onclick="setFilter('${t.slug}')">${esc(t.name)}${x}</div>`;
   }).join('');
-  if(STUDIO_THEMES.length||manageMode){
+  // (2026-07-03 시각정합) 커스텀 테마·＋Theme·Manage는 유저 서브탭에서만(공식=테마 고정이라 큐레이션 불가).
+  if(curTplType()!=='official' && (STUDIO_THEMES.length||manageMode)){
     // 커스텀 테마도 대분류(group) 소속 → 현재 모드 그룹의 커스텀만 노출. 대분류 없는 모드(custom/ugc)=전체 폴백.
     const grp=state.mode==='influencer'?'Influencer':state.mode==='shopping'?'Shopping':null;
-    const cths=grp?STUDIO_THEMES.filter(t=>(t.group==='Influencer'?'Influencer':'Shopping')===grp):STUDIO_THEMES;
+    let cths=grp?STUDIO_THEMES.filter(t=>(t.group==='Influencer'?'Influencer':'Shopping')===grp):STUDIO_THEMES;
+    if(!manageMode) cths=cths.filter(t=>pres.c.has(t.id));  // (2026-07-03) present 커스텀만
     html+=`<span class="filt-div"></span>`;
     html+=cths.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" onclick="setCustomTheme('${t.id}')">✦ ${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
     html+=`<div class="chip ghost" onclick="newStudioTheme('${grp||'Shopping'}')">＋ Theme</div>`;
   }
-  html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;
+  if(curTplType()!=='official') html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;  // (2026-07-03) Manage=유저 서브탭만
   document.getElementById('filterRow').innerHTML=html;
 }
 function renderRecipes(){
@@ -1620,6 +1649,9 @@ function renderRecipes(){
       return inAnyTheme(r); // (2026-07-02) 공식도 '보이는 테마 게이트' 적용(옛 source!=='marketplace' 무조건노출 우회 제거) — 공식 themes는 applyRecipeGates가 주입
     });
   }
+  // ▼(2026-07-03 시각정합) 서브탭 타입 필터: Official ↔ My templates 분리 ▼
+  rs=rs.filter(r=> (curTplType()==='official')===isOfficialCard(r.id));
+  // ▲
   // 숨긴 내장 제외(매니지 모드에선 흐리게 보여 복원 가능)
   if(!manageMode)rs=rs.filter(r=>!HIDDEN.has(String(r.id)));
   // ★ 합격(held===false) 템플릿을 각 테마(cat) 상단으로 — 그룹 순서 유지(안정 정렬)
