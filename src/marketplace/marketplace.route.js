@@ -723,6 +723,11 @@ router.get('/owned', async (req, res, next) => {
     const r = await query(
       `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, ow.source AS own_source, ow.in_studio,
               (mt.creator_id = $1) AS mine,
+              COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
+                 WHERE ((gr.template_source='marketplace' AND gr.template_id = mt.id::text)
+                     OR (mt.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = mt.recipe_id))
+                   AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL
+                 ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb,
               COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
                 FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
                 WHERE tt.template_id = mt.id), '{}') AS label_themes

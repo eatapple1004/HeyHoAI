@@ -911,8 +911,9 @@ async function mergeOwnedTemplates(){
       card.ownedId=String(t.id);                        // 마켓 UUID(카드 id=슬러그라 별도 보관) — in_studio PATCH용
       card.in_studio=(t.in_studio!==false);             // In Studio ↔ Library only 토글
       if(t.themes&&t.themes.length)card.themes=t.themes; // 테마 = /owned label(Library와 동일 어휘) — OFFICIAL_THEME_MAP 대체
-      const pv=(t.preview_media||[]).filter(x=>x);       // Store와 동일 소스(preview_media[0])를 카드 커버로 — 공식 카드도 실제 미리보기
-      if(pv.length)card.preview=pv[0];
+      const pv=(t.preview_media||[]).filter(x=>x);       // Store와 동일 소스: preview_media[0] → 없으면 thumb(인기 creation 폴백). 공식은 preview_media 비어 thumb로 채움.
+      const cover=pv[0]||t.thumb||null;
+      if(cover)card.preview=cover;
       return;
     }
     if(!mkOn)return; // 비공식(유저) 템플릿은 marketplace 점화 시만.
@@ -921,7 +922,7 @@ async function mergeOwnedTemplates(){
     const mode=t.macroGroup==='Influencer'?'influencer':'shopping';
     if(TEMPLATES[mode].some(r=>r.id===t.id))return; // 중복 방지
     TEMPLATES[mode].unshift({id:t.id,name:t.name,type:t.type==='reel'?'reel':'image',
-      emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',preview:(t.preview_media&&t.preview_media[0])||null,cat:'My templates',
+      emoji:t.emoji||'🎨',grad:'linear-gradient(150deg,#7c6cff,#ffce7a)',preview:(t.preview_media&&t.preview_media[0])||t.thumb||null,cat:'My templates',
       themes:(t.themes||[]),mine:!!t.mine, // mine=내가 만든 것(Manage에서 Delete 게이트). 구매(purchased)·공식은 삭제 불가.
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false,in_studio:t.in_studio!==false,fromCreationIdx:t.from_creation_idx||null});
   });
