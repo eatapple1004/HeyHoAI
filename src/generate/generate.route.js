@@ -674,14 +674,14 @@ router.get('/creations/:idx', async (req, res, next) => {
     // 획득/조회 대상 템플릿(Buy/Add/View 버튼용): Custom=auto 템플릿(minted) / 비-Custom=출처 템플릿. id=마켓 UUID(없으면 null).
     let relTemplate = null;
     if (r.minted_template_id) {
-      const m = await query(`SELECT id, name, price_credits, (creator_id = $2) AS mine FROM marketplace_templates WHERE id = $1 AND status = 'active'`, [r.minted_template_id, req.user.id]);
-      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, owned: !!r.owns_template, mine: !!m.rows[0].mine };
+      const m = await query(`SELECT id, name, price_credits, preview_media[1] AS thumb, (creator_id = $2) AS mine FROM marketplace_templates WHERE id = $1 AND status = 'active'`, [r.minted_template_id, req.user.id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: !!r.owns_template, mine: !!m.rows[0].mine };
     } else if (r.template_id && r.template_source === 'marketplace') {
-      const m = await query(`SELECT m.id, m.name, m.price_credits, (m.creator_id = $2) AS mine, (m.is_official OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = m.id AND o.user_id = $2)) AS owned FROM marketplace_templates m WHERE m.id::text = $1 AND m.status = 'active'`, [r.template_id, req.user.id]);
-      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, owned: !!m.rows[0].owned, mine: !!m.rows[0].mine };
+      const m = await query(`SELECT m.id, m.name, m.price_credits, m.preview_media[1] AS thumb, (m.creator_id = $2) AS mine, (m.is_official OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = m.id AND o.user_id = $2)) AS owned FROM marketplace_templates m WHERE m.id::text = $1 AND m.status = 'active'`, [r.template_id, req.user.id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: !!m.rows[0].owned, mine: !!m.rows[0].mine };
     } else if (r.template_id && r.template_source === 'recipe') {
-      const m = await query(`SELECT id, name, price_credits FROM marketplace_templates WHERE recipe_id = $1 AND is_official = true AND status = 'active' LIMIT 1`, [r.template_id]);
-      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, owned: true, mine: false }; // 공식 recipe=기본 라이브러리
+      const m = await query(`SELECT id, name, price_credits, preview_media[1] AS thumb FROM marketplace_templates WHERE recipe_id = $1 AND is_official = true AND status = 'active' LIMIT 1`, [r.template_id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: true, mine: false }; // 공식 recipe=기본 라이브러리
     }
     res.json({ success: true, data: {
       idx: r.idx,
