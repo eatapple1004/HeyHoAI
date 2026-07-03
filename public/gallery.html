@@ -76,10 +76,13 @@
   .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;padding:10px 14px;cursor:pointer;margin-bottom:-1px}
   .tab:hover{color:var(--text)}
   .tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
-  .item .badge.vis{left:auto;right:10px;background:rgba(124,108,255,.6)}
   .item.hl{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .2s}
   .item .badge.auto{top:38px;left:10px;background:rgba(255,196,84,.72);color:#1a1407}
-  .item .badge.vis.private{background:rgba(0,0,0,.55)}
+  /* 우상단 배지 스택 — 타입(Official)과 획득(Purchased/Public/Private)을 독립 축으로 각각 표시(구매한 공식=둘 다) */
+  .item .vis-badges{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:1}
+  .item .vb{font-size:10px;font-weight:700;letter-spacing:.4px;padding:4px 9px;border-radius:8px;backdrop-filter:blur(6px);color:#fff;text-transform:uppercase;background:rgba(124,108,255,.6)}
+  .item .vb.private{background:rgba(0,0,0,.55)}
+  .item .vb.purchased{background:rgba(94,224,214,.62);color:#04221f}  /* 구매/획득 — Official(보라)·Public과 구분되는 teal */
   /* My templates 테마 필터(All + 글로벌·커스텀 중 내 템플릿이 들어있는 테마만) */
   .tpl-filter{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
   .flt-sec{flex-basis:100%;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin:6px 0 -3px}
@@ -578,9 +581,11 @@ function tplCard(t,kind){
   const tid=String(t.id);
   const prev=(t.preview_media&&t.preview_media[0])||'';
   const thumb=tplThumb(prev,t.type,t.emoji,`tryTpl('${tid}')`,'linear-gradient(150deg,#7c6cff,#5ee0d6)');
-  const vis = kind==='official' ? `<span class="badge vis">Official</span>`
-    : kind==='purchased' ? `<span class="badge vis">Purchased</span>`
-    : kind==='mine' ? `<span class="badge vis ${t.visibility==='public'?'':'private'}">${t.visibility==='public'?'Public':'Private'}</span>` : '';
+  // 타입(Official)과 획득(Public/Private vs Purchased)을 독립 배지로. 구매한 공식 = Official + Purchased 둘 다.
+  const vbadges=[];
+  if(kind==='mine'){ vbadges.push(`<span class="vb ${t.visibility==='public'?'public':'private'}">${t.visibility==='public'?'Public':'Private'}</span>`); }
+  else if(kind==='official'||kind==='purchased'){ if(t.is_official) vbadges.push('<span class="vb official">Official</span>'); vbadges.push('<span class="vb purchased">Purchased</span>'); }
+  const vis = vbadges.length ? `<div class="vis-badges">${vbadges.join('')}</div>` : '';
   const meta = kind==='saved'
     ? `by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`
     : `♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`;
