@@ -16,7 +16,7 @@
     { h: '/studio', l: 'Studio', i: IC.studio, m: ['/studio'] },
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
-    { h: '/explore', l: 'Community Creations', i: IC.explore, m: ['/explore'] },
+    { h: '/explore', l: 'Community', i: IC.explore, m: ['/explore'] }, // 페이지 제목은 'Community Creations'(explore.html), 레일은 축약
     { h: '/earnings', l: 'Creator', i: IC.creator, m: ['/earnings'], f: 'earnings' },
     { h: '/billing', l: 'Billing', i: IC.billing, m: ['/billing'] }
   ];
