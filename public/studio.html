@@ -197,7 +197,7 @@
   .gen-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;width:min(1032px,calc(100% - 48px));
     background:rgba(19,19,29,.84);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:18px;padding:14px 20px;
     display:flex;flex-direction:column;gap:13px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
-  .gen-bar.gen-inline{position:static;transform:none;left:auto;right:auto;bottom:auto;width:100%;margin:0 0 8px;box-shadow:none}/* (2026-07-04) 컴포즈 바도 full-width(픽커/결과와 통일) — 우측 공백 제거. 롤백: max-width:1100px 복원 */
+  .gen-bar.gen-inline{position:relative;z-index:41;transform:none;left:auto;right:auto;bottom:auto;width:100%;margin:0 0 8px;box-shadow:none}/* (2026-07-04) 컴포즈 바도 full-width(픽커/결과와 통일) — 우측 공백 제거. position:relative+z-index로 모델 픽커 팝오버가 결과 피드 위로(backdrop-filter가 static일 때 stacking context를 auto 레벨로 눌러 뒤 카드가 덮던 버그 fix). 롤백: position:static */
   .gen-bar .summary{font-size:13.5px;color:var(--dim)}
   .gen-bar .summary b{color:var(--text)}
   .gen-bar .summary .cost{color:var(--gold);font-weight:700}
