@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doppia — Your face. Any look. Auto content.</title>
+<title>Doppia — One product photo. A full content studio.</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -71,11 +71,7 @@
   .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}.d5{animation-delay:.5s}
   @keyframes fadeUp{to{opacity:1;transform:none}}
 
-  /* audience switch + seller line */
-  .aud-switch{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:13px;padding:4px;margin-bottom:24px}
-  .aud-switch button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:13px;font-weight:600;padding:8px 16px;border-radius:9px;cursor:pointer;transition:.2s}
-  .aud-switch button.on{background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff}
-  @media(max-width:600px){.aud-switch{flex-wrap:wrap}}
+  /* seller line */
   .sell-line{text-align:center;margin-top:30px;font-size:14px;color:var(--dim)}
   .sell-line a{color:var(--accent2);font-weight:600}
 
@@ -194,7 +190,7 @@
     <div class="brand"><span>DOPPIA.AI</span></div>
     <div class="nav-links">
       <a href="#how">How it works</a>
-      <a href="#modes">For creators &amp; brands</a>
+      <a href="#modes">Industries</a>
       <a href="#pricing">Pricing</a>
       <a href="/business" data-flag="business">For business</a>
       <a href="/gallery">Library</a>
@@ -209,15 +205,10 @@
 <!-- HERO -->
 <header class="hero wrap">
   <div class="pill fade d1"><span class="live"></span> No prompt engineering. Ever.</div>
-  <div class="aud-switch fade d1">
-    <button class="on" data-aud="creators" onclick="switchAud('creators',this)">Creators</button>
-    <button data-aud="brands" onclick="switchAud('brands',this)">Brands &amp; Sellers</button>
-    <button data-aud="business" data-flag="business" onclick="switchAud('business',this)">Business</button>
-  </div>
-  <h1 class="fade d2" id="heroH1">Your face. Any look.<br><span class="grad">Content on autopilot.</span></h1>
-  <p class="lead fade d3" id="heroLead">Upload one selfie or one product photo, pick a template, and Doppia generates studio-grade photos and reels — keeping your identity perfectly consistent across every shot.</p>
+  <h1 class="fade d2">One product photo.<br><span class="grad">A full content studio.</span></h1>
+  <p class="lead fade d3">Drop in one product shot — fashion, beauty, food, home, tech and more — pick a template, and Doppia generates studio-grade lookbooks, on-model sets, lifestyle scenes and reels. Background removed automatically.</p>
   <div class="hero-cta fade d4">
-    <a href="/studio" class="btn btn-primary btn-lg" id="heroCta">Create your first post →</a>
+    <a href="/studio" class="btn btn-primary btn-lg">Create product content →</a>
     <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
   </div>
   <div class="micro fade d4"><b>10 free credits</b> (≈ 1 reel or 5 photo sets) on sign-up · No credit card required</div>
@@ -230,14 +221,14 @@
         <span class="url">doppia.ai/studio</span>
       </div>
       <div class="showgrid">
-        <div class="tile g1"><span class="badge">▶ REEL</span><img class="av" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Crect width='22' height='22' fill='%23222'/%3E%3C/svg%3E"><span class="lbl">Travel · Golden Hour</span></div>
-        <div class="tile g2"><span class="badge">▦ PHOTO</span><span class="lbl">Editorial Glam</span></div>
-        <div class="tile g3"><span class="badge">▶ REEL</span><span class="lbl">GRWM</span></div>
-        <div class="tile g4"><span class="badge">▦ PHOTO</span><span class="lbl">Cozy Cafe</span></div>
-        <div class="tile g5"><span class="badge">▦ PHOTO</span><span class="lbl">Studio Lookbook</span></div>
-        <div class="tile g6"><span class="badge">▶ REEL</span><span class="lbl">Outfit Transition</span></div>
-        <div class="tile g7"><span class="badge">▦ PHOTO</span><span class="lbl">Lifestyle Mood</span></div>
-        <div class="tile g8"><span class="badge">▦ PHOTO</span><span class="lbl">Street Style</span></div>
+        <div class="tile g1"><span class="badge">▶ REEL</span><span class="lbl">Product · 360° Spin</span></div>
+        <div class="tile g2"><span class="badge">▦ PHOTO</span><span class="lbl">On-Model Lookbook</span></div>
+        <div class="tile g5"><span class="badge">▦ PHOTO</span><span class="lbl">Studio Packshot</span></div>
+        <div class="tile g4"><span class="badge">▦ PHOTO</span><span class="lbl">Cafe Lifestyle</span></div>
+        <div class="tile g8"><span class="badge">▦ PHOTO</span><span class="lbl">Macro Detail</span></div>
+        <div class="tile g6"><span class="badge">▶ REEL</span><span class="lbl">Unboxing</span></div>
+        <div class="tile g7"><span class="badge">▦ PHOTO</span><span class="lbl">Flat-Lay Set</span></div>
+        <div class="tile g3"><span class="badge">▦ PHOTO</span><span class="lbl">Lifestyle Scene</span></div>
       </div>
     </div>
   </div>
@@ -246,9 +237,9 @@
 <!-- LOGO STRIP -->
 <div class="strip wrap">
   <div class="proof">
-    <div class="pf"><b>12,000+</b><span>creators &amp; brands</span></div>
-    <div class="pf"><b>2.4M</b><span>posts created</span></div>
-    <div class="pf"><b>4.9★</b><span>avg creator rating</span></div>
+    <div class="pf"><b>12,000+</b><span>brands &amp; sellers</span></div>
+    <div class="pf"><b>2.4M</b><span>product shots created</span></div>
+    <div class="pf"><b>4.9★</b><span>avg customer rating</span></div>
     <div class="pf"><b>7</b><span>industries supported</span></div>
   </div>
   <p>Powered by best-in-class models</p>
@@ -263,39 +254,39 @@
   <h2 class="h2">Three steps. Zero prompts.</h2>
   <p class="sub">The hard part — prompt engineering, lighting, consistency — is baked into every template. You just choose.</p>
   <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Add your subject</h3><p>One selfie (creators) or one product shot (brands). We lock the identity so it stays you across every frame.</p></div>
-    <div class="step"><div class="n">2</div><h3>Pick a template</h3><p>Browse curated looks and trending reel formats. Filter by style — no prompt writing, no settings to fiddle with.</p></div>
-    <div class="step"><div class="n">3</div><h3>Generate &amp; post</h3><p>Get a full set of photos or a ready reel in seconds. Download, or publish straight to Instagram.</p></div>
+    <div class="step"><div class="n">1</div><h3>Upload your product</h3><p>One product photo — any angle. We remove the background and lock the product so it stays true across every frame.</p></div>
+    <div class="step"><div class="n">2</div><h3>Pick a template</h3><p>Browse curated looks and trending reel formats for your industry. Filter by style — no prompt writing, no settings to fiddle with.</p></div>
+    <div class="step"><div class="n">3</div><h3>Generate &amp; post</h3><p>Get a full set of product photos or a ready reel in seconds. Download, or publish straight to Instagram.</p></div>
   </div>
 </section>
 
 <!-- MODES -->
 <section id="modes" class="wrap">
-  <div class="eyebrow">One engine, two superpowers</div>
-  <h2 class="h2">Built for creators <span style="color:var(--faint)">&amp;</span> brands</h2>
-  <p class="sub">Whether you're growing a personal brand or selling products in any category, the same template magic works for you.</p>
+  <div class="eyebrow">Built for product content</div>
+  <h2 class="h2">Every shot your store needs <span style="color:var(--faint)">—</span> from one photo</h2>
+  <p class="sub">Whatever you sell, the same template magic turns a single product shot into a full campaign.</p>
   <div class="feat">
-    <div class="fcard" data-flag="influencer">
-      <div class="tag">😎 For Influencers</div>
-      <h3>Show up daily — without the shoots</h3>
-      <p>Turn one selfie into an endless feed. Travel sets, GRWM reels, editorial portraits — all unmistakably you.</p>
-      <ul>
-        <li><span class="ck">✓</span> Identity-locked across every image</li>
-        <li><span class="ck">✓</span> Trending reel formats, refreshed weekly</li>
-        <li><span class="ck">✓</span> Feed photos + reels in one click</li>
-      </ul>
-      <div class="fmini"><div class="mt g3"></div><div class="mt g4"></div><div class="mt g6"></div></div>
-    </div>
     <div class="fcard">
-      <div class="tag">🛍️ For Brands &amp; Sellers</div>
-      <h3>Studio-grade product content, no studio</h3>
-      <p>Drop in one product photo — fashion, beauty, food, home, tech, pet and more — and get lookbooks, lifestyle scenes, on-model shots and reels. Background removed automatically.</p>
+      <div class="tag">🛍️ Product Photos</div>
+      <h3>Studio-grade shots, no studio</h3>
+      <p>Drop in one product photo — fashion, beauty, food, home, tech, pet and more — and get lookbooks, lifestyle scenes and on-model shots. Background removed automatically.</p>
       <ul>
         <li><span class="ck">✓</span> Tailored templates for your industry</li>
-        <li><span class="ck">✓</span> On-model, macro detail &amp; reels</li>
+        <li><span class="ck">✓</span> On-model, flat-lay &amp; macro detail</li>
         <li><span class="ck">✓</span> Commercial license included</li>
       </ul>
       <div class="fmini"><div class="mt g5"></div><div class="mt g8"></div><div class="mt g1"></div></div>
+    </div>
+    <div class="fcard">
+      <div class="tag">▶ Product Reels</div>
+      <h3>Scroll-stopping video that sells</h3>
+      <p>Turn the same product into 360° spins, unboxings and lifestyle reels — trending formats refreshed weekly, ready for Instagram and TikTok.</p>
+      <ul>
+        <li><span class="ck">✓</span> Trending reel formats, weekly drops</li>
+        <li><span class="ck">✓</span> Product stays true across every frame</li>
+        <li><span class="ck">✓</span> Photos + reels in one click</li>
+      </ul>
+      <div class="fmini"><div class="mt g3"></div><div class="mt g4"></div><div class="mt g6"></div></div>
     </div>
   </div>
 
@@ -353,10 +344,10 @@
 </section>
 
 <!-- CTA -->
-<section class="wrap" style="padding-top:20px">
+<section class="wrap" style="padding-top:20px;padding-bottom:72px">
   <div class="cta-band">
-    <h2>Your next 30 posts are one selfie away.</h2>
-    <p>Join creators and brands making content on autopilot.</p>
+    <h2>Your next 30 product shots are one photo away.</h2>
+    <p>Join the brands and sellers making product content on autopilot.</p>
     <a href="/studio" class="btn btn-primary btn-lg">Start free — 10 credits →</a>
   </div>
 </section>
@@ -366,31 +357,16 @@
   <div class="foot-grid">
     <div class="foot-col" style="max-width:260px">
       <div class="brand" style="margin-bottom:14px"><span>Doppia</span></div>
-      <p style="font-size:13.5px;color:var(--faint)">Your face. Any look. Content on autopilot.</p>
+      <p style="font-size:13.5px;color:var(--faint)">One product photo. A full content studio.</p>
     </div>
-    <div class="foot-col"><h4>Product</h4><a href="#how">How it works</a><a href="#modes">For creators</a><a href="/business" data-flag="business">For business</a><a href="#pricing">Pricing</a><a href="/studio">Studio</a></div>
+    <div class="foot-col"><h4>Product</h4><a href="#how">How it works</a><a href="#modes">Industries</a><a href="/business" data-flag="business">For business</a><a href="#pricing">Pricing</a><a href="/studio">Studio</a></div>
     <div class="foot-col"><h4>Company</h4><a href="/marketplace" data-flag="marketplace">Sell on Doppia</a><a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a></div>
     <div class="foot-col"><h4>Legal</h4><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Content policy</a></div>
   </div>
-  <div class="foot-bot"><span>© 2026 Doppia. All rights reserved.</span><span>Made for creators, everywhere.</span></div>
+  <div class="foot-bot"><span>© 2026 Doppia. All rights reserved.</span><span>Made for brands, everywhere.</span></div>
 </footer>
 
 <script src="/js/pricing.js?v=1"></script>
-<script>
-const AUD={
-  creators:{h1:'Your face. Any look.|Content on autopilot.',lead:'Upload one selfie, pick a template, and get studio-grade photos and reels — unmistakably you, in seconds.',cta:'Create your first post →',href:'/studio'},
-  brands:{h1:'One product photo.|A full content studio.',lead:'Drop in a product shot — fashion, beauty, food, home and more — and get lookbooks, on-model sets and reels. No studio, no shoot.',cta:'Create product content →',href:'/studio?mode=product'},
-  business:{h1:'Content at scale.|API · teams · white-label.',lead:'Embed Doppia in your store, generate across a team, and resell to clients. Built for brands and agencies.',cta:'Explore Business →',href:'/business'}
-};
-function switchAud(a,btn){
-  document.querySelectorAll('.aud-switch button').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');
-  const d=AUD[a],p=d.h1.split('|');
-  document.getElementById('heroH1').innerHTML=p[0]+'<br><span class="grad">'+p[1]+'</span>';
-  document.getElementById('heroLead').textContent=d.lead;
-  const c=document.getElementById('heroCta');c.textContent=d.cta;c.setAttribute('href',d.href);
-}
-(function(){var a=new URLSearchParams(location.search).get('aud');if(a&&AUD[a])switchAud(a,document.querySelector('.aud-switch button[data-aud="'+a+'"]'));})();
-</script>
 <script src="/js/biz-footer.js?v=2"></script>
 </body>
 </html>
