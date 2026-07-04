@@ -195,7 +195,7 @@
   .gen-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;width:min(1032px,calc(100% - 48px));
     background:rgba(19,19,29,.84);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:18px;padding:14px 20px;
     display:flex;flex-direction:column;gap:13px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
-  .gen-bar.gen-inline{position:static;transform:none;left:auto;right:auto;bottom:auto;width:100%;max-width:1100px;margin:0 0 8px;box-shadow:none}/* (2026-07-03) full-bleed .wrap에서 컴포즈 바만 캡+좌측정렬(픽커/헤딩과 정렬, 결과·픽커는 full-width). 롤백: max-width 제거 */
+  .gen-bar.gen-inline{position:static;transform:none;left:auto;right:auto;bottom:auto;width:100%;margin:0 0 8px;box-shadow:none}/* (2026-07-04) 컴포즈 바도 full-width(픽커/결과와 통일) — 우측 공백 제거. 롤백: max-width:1100px 복원 */
   .gen-bar .summary{font-size:13.5px;color:var(--dim)}
   .gen-bar .summary b{color:var(--text)}
   .gen-bar .summary .cost{color:var(--gold);font-weight:700}
@@ -237,6 +237,7 @@
 
   /* add-ons (quality upsell · fast-lane · caption) */
   .addons{display:flex;align-items:flex-end;gap:15px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border)}
+  .addons-right{display:flex;align-items:center;gap:15px;margin-left:auto}/* Enhance/Private 우측 정렬 묶음 — flex-wrap에서도 통째로 이동 */
   .addons .field{display:flex;flex-direction:column;gap:7px}
   .addon-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
   .divider-v{width:1px;height:32px;background:var(--border);align-self:center}
@@ -629,6 +630,7 @@
     <select class="addon-lang hidden" id="captionLang" data-flag="caption">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
+    <div class="addons-right"><!-- (2026-07-04) Enhance/Private를 한 묶음으로 우측 끝 정렬(full-width 컴포즈바 공백 제거·아래 Generate와 정렬). flex-wrap에서도 통째로 이동 -->
     <span class="divider-v"></span>
     <div class="priv-ctl" id="enhCtl" style="display:none">
       <span class="priv-label">Enhance</span>
@@ -648,6 +650,7 @@
         <span class="priv-knob"></span>
       </button>
     </div>
+    </div><!-- /.addons-right -->
   </div>
   <div class="prompt-row" id="promptRow">
     <div class="pfield pfield-main">
