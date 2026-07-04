@@ -140,34 +140,44 @@
   <div class="sv-box">
     <div class="sv-h">Create template</div>
     <div class="sv-s">Save this look as a private template in your Studio. Only you can see and use it.</div>
-    <div class="sv-lbl">Cover</div>
-    <div class="ct-covers" id="ctCovers"></div>
-    <div class="sv-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <span>Prompt <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(what generates the image)</span></span>
-      <button type="button" id="ctEditPrompt" class="ct-editp" onclick="ctEnablePromptEdit()">✎ Edit prompt</button>
+    <div class="ct-grid">
+      <div class="ct-col">
+        <div class="sv-lbl">Cover</div>
+        <div class="ct-covers" id="ctCovers"></div>
+        <div class="sv-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span>Prompt <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(what generates the image)</span></span>
+          <button type="button" id="ctEditPrompt" class="ct-editp" onclick="ctEnablePromptEdit()">✎ Edit prompt</button>
+        </div>
+        <textarea id="ctPrompt" class="ct-ro" rows="4" readonly oninput="onCtPromptInput()" placeholder="No prompt on this creation."></textarea>
+        <div id="ctPromptWarn" class="ct-warn" style="display:none">Prompt changed — regenerate the image before you can save.</div>
+        <div id="ctRegenRow" style="display:none;margin-bottom:6px">
+          <button type="button" id="ctRegen" class="ct-regen" onclick="ctRegen()">↻ Regenerate preview</button>
+        </div>
+      </div>
+      <div class="ct-col">
+        <div class="sv-lbl">Template name</div>
+        <input type="text" id="ctName" class="sv-name" maxlength="80" placeholder="e.g. Luxe marble editorial">
+        <div class="sv-lbl">Description <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(optional)</span></div>
+        <textarea id="ctDesc" class="sv-name" rows="2" maxlength="600" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots." style="resize:vertical"></textarea>
+        <div class="sv-lbl">Category</div>
+        <select id="ctCat" class="sv-name" onchange="ctRenderThemes(this.value);ctSync()" style="appearance:auto">
+          <option value="" disabled selected>Select a category…</option>
+          <option value="Shopping">Shopping</option>
+        </select>
+        <div class="sv-lbl">Themes <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(pick at least one)</span></div>
+        <div class="ct-chips" id="ctThemes"></div>
+      </div>
     </div>
-    <textarea id="ctPrompt" class="ct-ro" rows="3" readonly oninput="onCtPromptInput()" placeholder="No prompt on this creation."></textarea>
-    <div id="ctPromptWarn" class="ct-warn" style="display:none">Prompt changed — regenerate the image before you can save.</div>
-    <div id="ctRegenRow" style="display:none;margin-bottom:6px">
-      <button type="button" id="ctRegen" class="ct-regen" onclick="ctRegen()">↻ Regenerate preview</button>
-    </div>
-    <div class="sv-lbl">Template name</div>
-    <input type="text" id="ctName" class="sv-name" maxlength="80" placeholder="e.g. Luxe marble editorial">
-    <div class="sv-lbl">Description <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(optional)</span></div>
-    <textarea id="ctDesc" class="sv-name" rows="2" maxlength="600" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots." style="resize:vertical"></textarea>
-    <div class="sv-lbl">Category</div>
-    <select id="ctCat" class="sv-name" onchange="ctRenderThemes(this.value);ctSync()" style="appearance:auto">
-      <option value="" disabled selected>Select a category…</option>
-      <option value="Shopping">Shopping</option>
-    </select>
-    <div class="sv-lbl">Themes <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(pick at least one)</span></div>
-    <div class="ct-chips" id="ctThemes"></div>
     <div class="sv-row">
       <button type="button" class="sv-x" onclick="ctClose()">Cancel</button>
       <button type="button" class="sv-go" id="ctSave" onclick="ctConfirm()" disabled>Save template</button>
     </div>
   </div>
   <style>
+    #ctModal .sv-box{max-width:760px}
+    #ctModal .ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+    #ctModal .ct-col>.sv-lbl:first-child{margin-top:0}
+    @media(max-width:640px){#ctModal .ct-grid{grid-template-columns:1fr;gap:4px}}
     #ctModal .ct-covers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px}
     #ctModal .ct-ph{width:72px;height:90px;border-radius:10px;background-size:cover;background-position:center;cursor:pointer;border:1px solid var(--border2,#2a2a35)}
     #ctModal .ct-ph.sel{outline:2px solid var(--accent,#7c6cff);outline-offset:2px}
@@ -349,6 +359,7 @@ async function ctRenderThemes(category){
   const sel=new Set(ctSelectedThemes()); let themes=await ctEnsureThemes();
   const allow=(typeof CAT_THEMES!=='undefined'&&category&&CAT_THEMES[category])?CAT_THEMES[category]:null;
   if(allow) themes=themes.filter(t=>allow.includes(t.slug));
+  else if(typeof isThemeVisible==='function') themes=themes.filter(t=>isThemeVisible(t.slug)); // 카테고리 미선택 시도 죽인 테마(jewelry·pet·food·coffee·home·tech 등) 노출 금지
   el.innerHTML=themes.map(t=>`<button type="button" class="ct-chip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on');ctSync()">${esc(t.name)}</button>`).join('');
 }
 function ctSync(){

@@ -719,48 +719,72 @@
   </div>
 </div>
 <div class="modal-bg" id="saveTplModal" onclick="if(event.target===this)closeSaveTpl()">
-  <div class="modal">
+  <div class="modal stpl-modal">
     <button class="x" onclick="closeSaveTpl()">✕</button>
-    <h3>Create template</h3>
-    <div class="msub">Save this look as a private template in your Studio. Only you can see and use it.</div>
-    <!-- 핵심 블록: 이 이미지 자체를 만드는 입력(커버 + 프롬프트). 프롬프트 편집 = 이미지 재생성. -->
-    <div class="stpl-core">
-      <div class="field" style="margin-bottom:14px"><label>Cover image <i>(pick one — shown as the template thumbnail)</i></label>
-        <div class="stpl-prev" id="stplPick"></div></div>
-      <div class="field" style="margin-bottom:0"><label class="stpl-lbl-key" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>Prompt <i>— this is what generates the image</i></span><button type="button" id="stplEditPrompt" class="stpl-editp" onclick="enableTplPromptEdit()">✎ Edit prompt</button></label>
-        <textarea id="stplPrompt" class="stpl-prompt-input" rows="3" readonly oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
+    <div class="stpl-h">Create template</div>
+    <div class="stpl-s">Save this look as a private template in your Studio. Only you can see and use it.</div>
+    <div class="stpl-grid">
+      <div class="stpl-col">
+        <div class="stpl-lbl">Cover</div>
+        <div class="stpl-prev" id="stplPick"></div>
+        <div class="stpl-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span>Prompt <span class="stpl-sub">(what generates the image)</span></span>
+          <button type="button" id="stplEditPrompt" class="stpl-editp" onclick="enableTplPromptEdit()">✎ Edit prompt</button>
+        </div>
+        <textarea id="stplPrompt" class="stpl-prompt-input" rows="4" readonly oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
         <div id="stplPromptWarn" class="stpl-warn" style="display:none">Prompt changed — regenerate the preview before saving.</div>
-        <button class="btn" id="stplRegen" style="display:none;margin-top:8px" onclick="regenTplPreview()">↻ Regenerate preview</button></div>
+        <button class="btn" id="stplRegen" style="display:none;margin-top:8px" onclick="regenTplPreview()">↻ Regenerate preview</button>
+      </div>
+      <div class="stpl-col">
+        <div class="stpl-lbl">Template name</div>
+        <input type="text" id="stplName" class="stpl-inp" maxlength="80" placeholder="e.g. Luxe marble editorial">
+        <div class="stpl-lbl">Description <span class="stpl-sub">(optional)</span></div>
+        <textarea id="stplDesc" class="stpl-inp" maxlength="600" rows="2" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots." style="resize:vertical"></textarea>
+        <div class="stpl-lbl">Category</div>
+        <select id="stplCat" class="stpl-inp" onchange="recolorThemes('stplCat','stplThemes');syncTplSaveState()" style="appearance:auto">
+          <!-- (2026-07-01) Influencer 옵션 숨김 — 기업 대상. 재활성 시 <option value="Influencer">Influencer</option> 복원 -->
+          <option value="" disabled selected>Select a category…</option>
+          <option value="Shopping">Shopping</option>
+        </select>
+        <div class="stpl-lbl">Themes <span class="stpl-sub">(pick at least one)</span></div>
+        <div id="stplThemes" class="theme-chips"></div>
+      </div>
     </div>
-    <!-- 부가 설정: 템플릿 메타데이터. 이미지에는 영향 없음. -->
-    <div class="stpl-sec-head"><span>Template details</span><i>Naming & where it appears — doesn't change the image</i></div>
-    <div class="field"><label>Template name</label>
-      <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
-    <div class="field"><label>Description <i>(optional — a reminder of what it's good for)</i></label>
-      <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
-    <div class="field"><label>Category</label>
-      <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes');syncTplSaveState()">
-        <!-- (2026-07-01) Influencer 옵션 숨김 — 기업 대상. 재활성 시 <option value="Influencer">Influencer</option> 복원 -->
-        <option value="" disabled selected>Select a category…</option>
-        <option value="Shopping">Shopping</option>
-      </select></div>
-    <div class="field"><label>Themes <i>(pick all that fit)</i></label>
-      <div id="stplThemes" class="theme-chips"></div></div>
-    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}#stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}#stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}#stplPick .stpl-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}.stpl-warn{margin-top:8px;font-size:12.5px;font-weight:600;color:#f0b429}
-    .stpl-core{border:1px solid var(--accent);border-radius:14px;padding:15px;background:rgba(124,108,255,.06);margin-bottom:6px}
-    #saveTplModal .stpl-lbl-key{font-size:13px!important;font-weight:800!important;color:var(--text)!important}
-    #saveTplModal .stpl-lbl-key i{font-weight:600;color:var(--accent2)}
-    #saveTplModal .stpl-prompt-input{border-color:var(--accent)!important;background:var(--surface)!important}
-    #saveTplModal #stplPrompt[readonly]{opacity:.6;cursor:default}
-    .stpl-editp{font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:7px;cursor:pointer;color:var(--accent2);background:rgba(124,108,255,.12);border:1px solid var(--accent);white-space:nowrap}
-    .stpl-editp:hover{background:rgba(124,108,255,.2)}
-    .stpl-sec-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:22px 0 14px;padding-top:16px;border-top:1px solid var(--border2)}
-    .stpl-sec-head span{font-size:13px;font-weight:800;color:var(--text)}
-    .stpl-sec-head i{font-size:11.5px;font-style:normal;color:var(--dim)}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
     <div class="stpl-actions">
-      <button class="btn" onclick="closeSaveTpl()">Cancel</button>
-      <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
+      <button class="btn stpl-cancel" onclick="closeSaveTpl()">Cancel</button>
+      <button class="btn btn-primary stpl-go" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
     </div>
+    <style>
+    /* 통일 디자인 (2026-07-04): creation.html #ctModal과 동일한 2단 레이아웃 — Studio·Library·Community 공유 */
+    .stpl-modal{width:min(760px,100%)!important;max-height:88vh;overflow-y:auto}
+    .stpl-h{font-family:'Sora',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
+    .stpl-s{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.45}
+    .stpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+    .stpl-col>.stpl-lbl:first-child{margin-top:0}
+    @media(max-width:640px){.stpl-grid{grid-template-columns:1fr;gap:4px}}
+    #saveTplModal .stpl-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin:12px 0 6px}
+    #saveTplModal .stpl-sub{text-transform:none;font-weight:500;color:var(--dim)}
+    .theme-chips{display:flex;flex-wrap:wrap;gap:7px}
+    .theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+    .theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    #saveTplModal .stpl-prev{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+    #saveTplModal #stplPick .stpl-ph{width:72px;height:90px;border-radius:10px;background-size:cover;background-position:center;border:1px solid var(--border2);cursor:pointer;position:relative;transition:transform .12s}
+    #saveTplModal #stplPick .stpl-ph:not(.stpl-loading):hover{transform:translateY(-2px)}
+    #saveTplModal #stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}
+    #saveTplModal #stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}
+    #saveTplModal #stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}
+    #saveTplModal #stplPick .stpl-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
+    #saveTplModal .stpl-inp{width:100%;box-sizing:border-box;font-family:inherit;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:11px 13px;font-size:14px;margin-bottom:2px}
+    #saveTplModal .stpl-inp:focus{outline:none;border-color:var(--accent)}
+    #saveTplModal .stpl-prompt-input{width:100%;box-sizing:border-box;font-family:inherit;background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:11px 13px;font-size:13.5px;resize:none}
+    #saveTplModal #stplPrompt[readonly]{opacity:.7;cursor:default}
+    #saveTplModal .stpl-prompt-input:not([readonly]){opacity:1;background:rgba(255,255,255,.06);border-color:var(--accent)}
+    .stpl-editp{background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:0;font-family:inherit}
+    .stpl-warn{color:#f0b429;font-size:12px;margin:2px 0 6px}
+    .stpl-actions{display:flex;gap:8px;margin-top:16px}
+    .stpl-actions .btn.stpl-cancel{flex:1;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:10px;padding:11px;font-size:13px}
+    .stpl-actions .btn.stpl-cancel:hover{color:var(--text);background:rgba(255,255,255,.05)}
+    .stpl-actions .btn.stpl-go{flex:2}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
   </div>
 </div>
 <div class="modal-bg" id="streakModal" onclick="if(event.target===this)closeStreak()">
@@ -2199,8 +2223,9 @@ async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await
 async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
   const sel=new Set(selected||[]); let themes=await ensureThemes();
-  const allow=category?CAT_THEMES[category]:null; // 미지정 → 전체
+  const allow=category?CAT_THEMES[category]:null; // 미지정 → 노출 테마만(죽인 테마 제외)
   if(allow) themes=themes.filter(t=>allow.includes(t.slug));
+  else if(typeof isThemeVisible==='function') themes=themes.filter(t=>isThemeVisible(t.slug));
   el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on');syncTplSaveState()">${esc(t.name)}</button>`).join('');
 }
 // Create template 저장 게이트 — 커버·카테고리·테마(최소1)·프롬프트 미변경(생성중엔 커버 없음) 충족해야 활성.
