@@ -672,6 +672,7 @@
     <div class="summary" id="genSummary">Select a face and a template to start.</div>
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
+      <button class="btn" id="tplBtn" style="display:none" disabled onclick="generate({thenSaveTemplate:true})">＋ Create template</button>
       <button class="btn btn-primary" id="genBtn" disabled onclick="generate()">Generate</button>
     </div>
   </div>
@@ -718,30 +719,22 @@
 <div class="modal-bg" id="saveTplModal" onclick="if(event.target===this)closeSaveTpl()">
   <div class="modal">
     <button class="x" onclick="closeSaveTpl()">✕</button>
-    <h3>Save as template</h3>
-    <div class="msub">Turn this recipe into a template. Public ones appear in the community Feed for anyone to use.</div>
-    <div class="stpl-prev" id="stplPrev"></div>
+    <h3>Create template</h3>
+    <div class="msub">Save this look as a private template in your Studio. Only you can see and use it.</div>
+    <div class="field"><label>Cover image <i>(pick one — shown as the template thumbnail)</i></label>
+      <div class="stpl-prev" id="stplPick"></div></div>
     <div class="field"><label>Template name</label>
       <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
-    <div class="field"><label>Description <i>(what it's good for — shown on the template page)</i></label>
+    <div class="field"><label>Description <i>(optional — a reminder of what it's good for)</i></label>
       <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
     <div class="field"><label>Category</label>
       <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes')">
         <!-- (2026-07-01) Influencer 옵션 숨김 — 기업 대상. 재활성 시 <option value="Influencer">Influencer</option> 복원 -->
         <option value="Shopping">Shopping</option>
       </select></div>
-    <div class="field"><label>Themes <i>(pick all that fit — shown in Explore)</i></label>
+    <div class="field"><label>Themes <i>(pick all that fit)</i></label>
       <div id="stplThemes" class="theme-chips"></div></div>
-    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}</style>
-    <label class="stpl-vis"><input type="checkbox" id="stplVis" checked onchange="syncStplPrice()"> <span>Publish to the community Feed <i>(off = private, only you)</i></span></label>
-    <div class="field" id="stplPriceRow" style="display:none">
-      <label>Unlock price <i>(◈ one-time to own — 0 = free)</i></label>
-      <input type="number" id="stplPrice" min="0" max="100" step="1" value="0" style="width:100%" placeholder="0">
-      <label style="margin-top:10px">Per-use royalty <i>(◈ each render — optional)</i></label>
-      <input type="number" id="stplUsePrice" min="0" max="50" step="1" value="0" style="width:100%" placeholder="0">
-    </div>
-    <label class="stpl-vis" id="stplRefOptRow" style="display:none"><input type="checkbox" id="stplRefOpt" onchange="syncStplRefs()"> <span>Show the reference image(s) I used as examples <i>(off = hidden — may include your face/product)</i></span></label>
-    <div class="stpl-refs off" id="stplRefPrev"></div>
+    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}</style>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
       <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
@@ -838,7 +831,6 @@
   <div id="imgModalMedia"></div>
   <div id="imgModalTpl" class="img-tpl"></div>
   <div class="img-actions">
-    <button id="imgModalSave" class="img-dl" style="display:none" onclick="closeImageModal();saveAsTemplate()">＋ Save as template</button>
     <a id="imgModalDl" class="img-dl" download href="#">⬇ Download</a>
   </div>
 </div>
@@ -1936,7 +1928,14 @@ async function uploadSubject(inp){
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
-function updateBar(){ syncTplTrigger(); updateBarCore(); }
+function updateBar(){ syncTplTrigger(); updateBarCore(); syncTplBtn(); }
+// "Create template" 버튼: Custom 모드 + 사진(영상 제외)일 때만 노출, 프롬프트 있으면 활성.
+function syncTplBtn(){
+  const b=document.getElementById('tplBtn'); if(!b)return;
+  const show=state.mode==='custom'&&!isVideoGen();
+  b.style.display=show?'':'none';
+  if(show)b.disabled=generating||!extraPromptText();
+}
 function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
@@ -2121,6 +2120,8 @@ async function generate(opts){
     if(isReel) await generateReel(r,subj,pending);
     else await generateImages(r,subj,genN,pending);
     if(captionOn()) await generateCaptionBlock(r,subj);
+    // "Create template" 버튼 경로: 생성 성공 후 저장 모달 오픈(방금 만든 사진을 대표 이미지 후보로).
+    if(opts&&opts.thenSaveTemplate&&!isReel&&(state.lastPreview||[]).length) openCreateTemplate();
   }catch(e){
     console.error(e);
     const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1); renderStudioResults(); // 실패 → placeholder 제거
@@ -2147,8 +2148,6 @@ function openImageModal(url,type){
     : `<img src="${esc(url)}" alt="">`;
   document.getElementById('imgModalTpl').innerHTML = lastGenTemplate ? `Template: <b>${esc(lastGenTemplate)}</b>` : '';
   document.getElementById('imgModalDl').href=url;
-  // Custom 모드 사진 결과에서만 "Save as template" 노출 — 생성 결과를 클릭해 저장(Library 방식)
-  document.getElementById('imgModalSave').style.display=(!isReel&&state.mode==='custom')?'':'none';
   document.getElementById('imgModal').classList.add('open');
 }
 function closeImageModal(){document.getElementById('imgModal').classList.remove('open');}
@@ -2176,68 +2175,46 @@ function recolorThemes(catId, containerId){ const cat=(document.getElementById(c
 
 // Save as template — 현재 프롬프트+툴을 user 템플릿으로 저장(비공개 기본, 공개는 크리에이터 게이트)
 // Save as template — 결과 이미지를 미리보기로 붙여 제대로 된 모달로 저장(네이티브 prompt 폐지)
-function saveAsTemplate(){
+// "Create template" — 방금 생성한 커스텀 룩을 비공개 템플릿(내 Studio 전용)으로 저장. 공개/가격/레퍼런스 없음.
+function openCreateTemplate(){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
   const prev=(state.lastPreview||[]);
+  if(!prev.length){toast('Generate a photo first.');return;}
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
-  document.getElementById('stplCat').value='Influencer';
-  renderThemeChips('stplThemes', [], 'Influencer'); // 테마 칩(기본 미선택, category 필터)
-  document.getElementById('stplVis').checked=true; // 기본 공개(Feed)
-  // 미리보기 썸네일 — 방금 만든 결과
-  document.getElementById('stplPrev').innerHTML=prev.length
-    ? prev.map(u=>`<div class="stpl-ph" style="background-image:url('${esc(u)}')"></div>`).join('')
-    : `<div class="stpl-noprev">No preview yet — generate first so your template shows an example in the Feed.</div>`;
-  document.getElementById('stplPrice').value='0';
-  document.getElementById('stplUsePrice').value='0';
-  // 제작에 쓴 레퍼런스(전시용·옵트인). 서버 호스팅 URL만(blob 제외) → 다른 유저도 볼 수 있음.
-  state._saveRefs=slotItems('reference').map(i=>i&&i.url).filter(u=>typeof u==='string'&&/^https?:|^\//.test(u)).slice(0,6);
-  const refOptRow=document.getElementById('stplRefOptRow');
-  const refPrev=document.getElementById('stplRefPrev');
-  const refOpt=document.getElementById('stplRefOpt');
-  refOpt.checked=false; // 기본 OFF(얼굴/제품 무심코 공개 방지)
-  refPrev.innerHTML=state._saveRefs.map(u=>`<div class="stpl-ph" style="background-image:url('${esc(u)}')"></div>`).join('');
-  refOptRow.style.display=state._saveRefs.length?'':'none';
-  syncStplRefs();
-  syncStplPrice();
+  document.getElementById('stplCat').value='Shopping';
+  renderThemeChips('stplThemes', [], 'Shopping'); // 테마 칩(기본 미선택, category 필터)
+  // 대표 이미지 픽커 — 방금 만든 결과 중 단일 선택(첫 장 기본). official 원리: preview_media[0]=썸네일.
+  state._tplPick=prev[0];
+  document.getElementById('stplPick').innerHTML=prev.map((u,i)=>
+    `<div class="stpl-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`).join('');
   document.getElementById('saveTplModal').classList.add('open');
 }
-// 가격 행: 공개 게시일 때 항상 노출(점화 전이라도). 실제 과금은 백엔드 MARKETPLACE_PAID 게이트가 막음.
-function syncStplPrice(){
-  const row=document.getElementById('stplPriceRow');
-  row.style.display=document.getElementById('stplVis').checked?'':'none';
-}
-// 레퍼런스 전시 옵트인: 켜면 컬러·끄면 흐릿(미공개) 표시.
-function syncStplRefs(){
-  const on=document.getElementById('stplRefOpt').checked;
-  document.getElementById('stplRefPrev').classList.toggle('off',!on);
+function pickTplCover(el){
+  document.querySelectorAll('#stplPick .stpl-ph').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  state._tplPick=el.getAttribute('data-url');
 }
 function closeSaveTpl(){document.getElementById('saveTplModal').classList.remove('open');}
 async function confirmSaveTpl(){
   const name=document.getElementById('stplName').value.trim();
   if(!name){toast('Name your template.');return;}
-  const makePublic=document.getElementById('stplVis').checked;
-  // 가격: 공개일 때 항상 전송(점화 전엔 백엔드가 미과금 처리). 비공개=무료.
-  const priceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplPrice').value,10)||0,100)):0;
-  const usePriceCredits=makePublic?Math.max(0,Math.min(parseInt(document.getElementById('stplUsePrice').value,10)||0,50)):0;
+  const cover=state._tplPick||(state.lastPreview||[])[0];
+  if(!cover){toast('Pick a cover image.');return;}
   const description=document.getElementById('stplDesc').value.trim();
-  const category=document.getElementById('stplCat').value||'Influencer';
+  const category=document.getElementById('stplCat').value||'Shopping';
   const themeSlugs=selectedThemes('stplThemes');
-  // 레퍼런스 전시: 옵트인 체크 시에만 전송
-  const referenceExamples=document.getElementById('stplRefOpt').checked?(state._saveRefs||[]):[];
   const p=extraPromptText();
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:curToolType()==='video'?'reel':'image',prompt:p,tool:curTool(),
-        visibility:makePublic?'public':'private',priceCredits:priceCredits,usePriceCredits:usePriceCredits,negativePrompt:negText(),
-        previewMedia:(state.lastPreview||[]).slice(0,6),referenceExamples:referenceExamples})});
+      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:'image',prompt:p,tool:curTool(),
+        visibility:'private',previewMedia:[cover],negativePrompt:negText()})}); // 항상 비공개 · 대표 이미지 1장
     const d=await res.json();
-    if(res.status===403){toast(d.error||'Apply as creator to publish publicly');return;}
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
     closeSaveTpl();
-    toast(makePublic?(priceCredits>0?`Published to the Feed · ◈${priceCredits} to unlock ✨`:'Saved & published to the Feed ✨'):'Saved to your templates');
+    toast('Saved to your templates');
   }catch(e){toast('Save failed: '+(e.message||e),'error');}
   finally{btn.disabled=false;btn.textContent='Save template';}
 }
@@ -2294,7 +2271,7 @@ async function generateImages(r,subj,count,pending){
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
   const ok=(data.results||[]).filter(x=>x.success);
   const fail=(data.results||[]).length-ok.length;
-  state.lastPreview=ok.map(x=>x.url).slice(0,4); // 템플릿 미리보기 후보(방금 만든 결과)
+  state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
   // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지)
   if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=
