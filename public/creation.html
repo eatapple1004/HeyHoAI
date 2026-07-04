@@ -281,6 +281,7 @@ let CT={pick:null,srcIdx:null,promptBase:'',busy:false};
 let _ctThemesCache=null;
 function ctFromDetail(){
   if(!IT||IT.type==='video'||!IT.url){ toast('No image to use.'); return; }
+  if(IT.templateSource){ toast('Already made with a template.'); return; } // 템플릿으로 만든 결과는 재템플릿화 불가
   openCtFromImages(IT.prompt||'', [IT.url], IDX);
 }
 function openCtFromImages(prompt, imgs, srcIdx){
@@ -519,7 +520,7 @@ function render(){
     ${creator}
     ${templateCard()}
     ${promptPanel()}
-    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button>${IT.type!=='video'?`<button class="act sm" onclick="ctFromDetail()">＋ Create template</button>`:''}</div>
+    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button>${(IT.type!=='video'&&!IT.templateSource)?`<button class="act sm" onclick="ctFromDetail()">＋ Create template</button>`:''}</div>
     ${owner}${report}`;
 }
 
