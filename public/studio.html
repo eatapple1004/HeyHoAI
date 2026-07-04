@@ -727,8 +727,8 @@
     <div class="stpl-core">
       <div class="field" style="margin-bottom:14px"><label>Cover image <i>(pick one — shown as the template thumbnail)</i></label>
         <div class="stpl-prev" id="stplPick"></div></div>
-      <div class="field" style="margin-bottom:0"><label class="stpl-lbl-key">Prompt <i>— this is what generates the image</i></label>
-        <textarea id="stplPrompt" class="stpl-prompt-input" rows="3" oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
+      <div class="field" style="margin-bottom:0"><label class="stpl-lbl-key" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>Prompt <i>— this is what generates the image</i></span><button type="button" id="stplEditPrompt" class="stpl-editp" onclick="enableTplPromptEdit()">✎ Edit prompt</button></label>
+        <textarea id="stplPrompt" class="stpl-prompt-input" rows="3" readonly oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
         <div id="stplPromptWarn" class="stpl-warn" style="display:none">Prompt changed — regenerate the preview before saving.</div>
         <button class="btn" id="stplRegen" style="display:none;margin-top:8px" onclick="regenTplPreview()">↻ Regenerate preview</button></div>
     </div>
@@ -751,6 +751,9 @@
     #saveTplModal .stpl-lbl-key{font-size:13px!important;font-weight:800!important;color:var(--text)!important}
     #saveTplModal .stpl-lbl-key i{font-weight:600;color:var(--accent2)}
     #saveTplModal .stpl-prompt-input{border-color:var(--accent)!important;background:var(--surface)!important}
+    #saveTplModal #stplPrompt[readonly]{opacity:.6;cursor:default}
+    .stpl-editp{font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:7px;cursor:pointer;color:var(--accent2);background:rgba(124,108,255,.12);border:1px solid var(--accent);white-space:nowrap}
+    .stpl-editp:hover{background:rgba(124,108,255,.2)}
     .stpl-sec-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:22px 0 14px;padding-top:16px;border-top:1px solid var(--border2)}
     .stpl-sec-head span{font-size:13px;font-weight:800;color:var(--text)}
     .stpl-sec-head i{font-size:11.5px;font-style:normal;color:var(--dim)}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
@@ -2213,6 +2216,17 @@ function tplPromptDirty(){
   const el=document.getElementById('stplPrompt'); if(!el)return false;
   return el.value.trim()!==(state._tplPromptBase||'').trim();
 }
+// "Edit prompt" 클릭 → 프롬프트 편집 잠금 해제(초기엔 읽기전용). 이후 변경하면 재생성 후에만 save.
+function enableTplPromptEdit(){
+  const pr=document.getElementById('stplPrompt'); if(!pr)return;
+  pr.readOnly=false; pr.focus();
+  const b=document.getElementById('stplEditPrompt'); if(b)b.style.display='none';
+}
+// 프롬프트를 다시 읽기전용으로 잠그고 Edit 버튼 노출 — 모달 열 때 공통 초기화.
+function lockTplPrompt(){
+  const pr=document.getElementById('stplPrompt'); if(pr)pr.readOnly=true;
+  const b=document.getElementById('stplEditPrompt'); if(b)b.style.display='';
+}
 // 프롬프트 입력마다: dirty면 경고·재생성 버튼 표출 + Save 잠금.
 function onTplPromptInput(){
   const el=document.getElementById('stplPrompt'); if(!el)return;
@@ -2252,7 +2266,7 @@ function openCreateTemplate(count){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
   state._tplSrcIdx=null; // 신규 생성 — 원본 크리에이션 링크 없음
-  const pr=document.getElementById('stplPrompt'); pr.readOnly=false;
+  const pr=document.getElementById('stplPrompt'); lockTplPrompt(); // 초기 읽기전용, Edit 버튼으로 잠금 해제
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
   pr.value=p; // 프롬프트 프리필(편집 가능)
@@ -2278,7 +2292,7 @@ function openCreateTemplateFromImages(prompt, imgs, srcIdx){
   state.lastPreview=imgs.slice(); state._tplPromptBase=p; state._tplPick=imgs[0];
   document.getElementById('stplName').value=(p||'My template').slice(0,40);
   document.getElementById('stplDesc').value='';
-  const pr=document.getElementById('stplPrompt'); pr.value=p; pr.readOnly=false; // 프롬프트 편집 가능 — 바꾸면 재생성 강제
+  const pr=document.getElementById('stplPrompt'); pr.value=p; lockTplPrompt(); // 초기 읽기전용, Edit 버튼으로 잠금 해제
   document.getElementById('stplPromptWarn').style.display='none';
   document.getElementById('stplRegen').style.display='none';
   document.getElementById('stplCat').value='';
