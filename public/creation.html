@@ -233,7 +233,7 @@ function renderSvThemes(){
     const dis=!!active && label!==active;  // 반대 대분류 섹션 전체 비활성(이미 선택된 건 해제 가능하도록 제외)
     h+=`<div class="sv-sec">${label}</div>`;
     slugs.map(s=>bySlug[s]).filter(Boolean).forEach(t=>{ h+=svThBtn('default',t.slug,t.name, dis && !svOn('default',t.slug)); });
-    (customs||[]).filter(c=>svCustomGroup(c.id)===label).forEach(t=>{ h+=svThBtn('custom',t.id,'✦ '+t.name, dis && !svOn('custom',t.id)); });
+    (customs||[]).filter(c=>svCustomGroup(c.id)===label).forEach(t=>{ h+=svThBtn('custom',t.id,t.name, dis && !svOn('custom',t.id)); });
     h+=`<button type="button" class="sv-th sv-new${dis?' sv-dis':''}"${dis?' disabled':''} onclick="newThemeThenPick('${label}')">＋ New theme</button>`;
   }
   el.innerHTML=h;
@@ -281,7 +281,7 @@ async function confirmSave(){
     closeSaveModal();
     // mint 경로는 기존 mintAndAdd처럼 My templates(해당 템플릿 하이라이트)로 이동, 그 외는 상세에 머물며 재렌더.
     if(SV.mint){ location.href='/studio?tpl='+encodeURIComponent(tid); return; }
-    toast(placed?('Added to My templates · '+placed+' theme'+(placed>1?'s':'')+' ✦'):'Added to My templates ✦');
+    toast(placed?('Added to My templates · '+placed+' theme'+(placed>1?'s':'')):'Added to My templates');
     IT.ownsTemplate=true; render();
   }catch(e){ toast('Could not add: '+(e.message||e)); }
   finally{ go.disabled=false; go.textContent='Add'; }
@@ -384,7 +384,7 @@ async function ctRenderThemes(category){
     let defSlugs=slugs.filter(s=>bySlug[s]);
     if(allow) defSlugs=defSlugs.filter(s=>allow.includes(s)); // 카테고리 지정 시 화이트리스트 교집합
     defSlugs.forEach(s=>{ h+=ctThBtn('default',s,bySlug[s].name); });
-    (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=ctThBtn('custom',c.id,'✦ '+c.name); });
+    (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=ctThBtn('custom',c.id,c.name); });
     h+=`<button type="button" class="ct-chip ct-new" onclick="ctNewTheme('${label}')">＋ New theme</button>`;
   }
   el.innerHTML=h;

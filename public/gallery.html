@@ -782,7 +782,7 @@ function libThemeChips(tid){
   let h=defs.map(t=>{ const on=libDefOn(t.slug,tid), g=THEME_GROUP_OF[t.slug]; return libChip(on, esc(t.name), `toggleDef('${esc(t.slug)}','${tid}')`, !!active && g && g!==active && !on); }).join('');
   // 카드 대분류가 정해지면 그 그룹 커스텀만, 미지정이면 전체 폴백. 상호배타 적용.
   const cus=(LIB.customs||[]).filter(c=> grp ? libCustomGroup(c)===grp : true );
-  h+=cus.map(c=>{ const on=libCustomOn(c.id,tid), g=libCustomGroup(c); return libChip(on, '✦ '+esc(c.name), `toggleCustom('${esc(c.id)}','${tid}')`, !!active && g!==active && !on); }).join('');
+  h+=cus.map(c=>{ const on=libCustomOn(c.id,tid), g=libCustomGroup(c); return libChip(on, esc(c.name), `toggleCustom('${esc(c.id)}','${tid}')`, !!active && g!==active && !on); }).join('');
   if(grp) h+=`<button type="button" class="lib-chip lib-new" onclick="newLibTheme('${tid}','${grp}')">＋ New theme</button>`;
   return h||'<span class="lib-none">No themes yet — create one in Studio.</span>';
 }

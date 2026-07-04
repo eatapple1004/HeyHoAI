@@ -2230,7 +2230,7 @@ async function renderThemeChips(containerId, selected, category){
     let defSlugs=slugs.filter(s=>bySlug[s]);
     if(allow) defSlugs=defSlugs.filter(s=>allow.includes(s)); // 카테고리 지정 시 화이트리스트 교집합
     defSlugs.forEach(s=>{ h+=stplThBtn('default',s,bySlug[s].name); });
-    (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=stplThBtn('custom',c.id,'✦ '+c.name); });
+    (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=stplThBtn('custom',c.id,c.name); });
     h+=`<button type="button" class="tchip tchip-new" onclick="newStplTheme('${label}')">＋ New theme</button>`;
   }
   el.innerHTML=h;
