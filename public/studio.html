@@ -727,6 +727,10 @@
       <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
     <div class="field"><label>Description <i>(optional — a reminder of what it's good for)</i></label>
       <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
+    <div class="field"><label>Prompt <i>(what this template generates)</i></label>
+      <textarea id="stplPrompt" rows="3" oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
+      <div id="stplPromptWarn" class="stpl-warn" style="display:none">Prompt changed — regenerate the preview before saving.</div>
+      <button class="btn" id="stplRegen" style="display:none;margin-top:8px" onclick="regenTplPreview()">↻ Regenerate preview</button></div>
     <div class="field"><label>Category</label>
       <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes');syncTplSaveState()">
         <!-- (2026-07-01) Influencer 옵션 숨김 — 기업 대상. 재활성 시 <option value="Influencer">Influencer</option> 복원 -->
@@ -735,7 +739,7 @@
       </select></div>
     <div class="field"><label>Themes <i>(pick all that fit)</i></label>
       <div id="stplThemes" class="theme-chips"></div></div>
-    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}#stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}#stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}#stplPick .stpl-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
+    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}#stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}#stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}#stplPick .stpl-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}.stpl-warn{margin-top:8px;font-size:12.5px;font-weight:600;color:#f0b429}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
       <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
@@ -2102,6 +2106,7 @@ async function generate(opts){
   if(notEnough(cost)){openPaywall(cost);return;}
   const isReel=isVideoGen(); // 템플릿 reel 또는 Custom 비디오 툴 → 영상 경로
   const wantTpl=!!(opts&&opts.thenSaveTemplate)&&!isReel; // "Create template" 경로(사진 전용)
+  const regenTpl=!!(opts&&opts.regenTemplate)&&!isReel; // 모달 내 프롬프트 수정 후 미리보기 재생성(폼 유지, 커버만 갱신)
 
   generating=true;updateBar();
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
@@ -2111,6 +2116,7 @@ async function generate(opts){
   const pending=makePendingBatch(r,extra,genN,isReel);
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
   if(wantTpl) openCreateTemplate(genN); // 저장 모달 먼저(커버 자리 로딩) → 생성 완료 시 채움
+  else if(regenTpl) resetTplCoversLoading(genN); // 모달 유지, 커버만 로딩으로 되돌림
   else step.scrollIntoView({behavior:'smooth'});
   // (테스트) Leonardo식 실시간 경과 초 — 로딩 박스 안 카운트업
   const t0=Date.now();
@@ -2124,11 +2130,12 @@ async function generate(opts){
     if(isReel) await generateReel(r,subj,pending);
     else await generateImages(r,subj,genN,pending);
     if(captionOn()) await generateCaptionBlock(r,subj);
-    // "Create template" 경로: 생성 완료 → 모달 커버 픽커를 방금 만든 사진으로 채움.
-    if(wantTpl&&(state.lastPreview||[]).length) fillCreateTemplateCovers();
+    // "Create template"/재생성 경로: 생성 완료 → 모달 커버 픽커를 방금 만든 사진으로 채움.
+    if((wantTpl||regenTpl)&&(state.lastPreview||[]).length) fillCreateTemplateCovers();
   }catch(e){
     console.error(e);
-    if(wantTpl) closeSaveTpl(); // 생성 실패 → 저장 모달 닫음
+    if(wantTpl) closeSaveTpl(); // 최초 생성 실패 → 저장 모달 닫음
+    if(regenTpl){ const rb=document.getElementById('stplRegen'); if(rb)rb.disabled=false; } // 재생성 실패 → 모달 유지, 버튼 복구
     const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1); renderStudioResults(); // 실패 → placeholder 제거
     if(e.code402){
       document.getElementById('resultHint').textContent='';
@@ -2174,13 +2181,45 @@ async function renderThemeChips(containerId, selected, category){
   if(allow) themes=themes.filter(t=>allow.includes(t.slug));
   el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on');syncTplSaveState()">${esc(t.name)}</button>`).join('');
 }
-// Create template 저장 게이트 — 커버·카테고리·테마(최소1) 모두 충족해야 활성. (stpl 모달 전용, 없으면 무시)
+// Create template 저장 게이트 — 커버·카테고리·테마(최소1)·프롬프트 미변경(생성중엔 커버 없음) 충족해야 활성.
 function syncTplSaveState(){
   const b=document.getElementById('stplSave'); if(!b)return;
   const hasCover=!!state._tplPick;
   const hasCat=!!((document.getElementById('stplCat')||{}).value);
   const hasTheme=selectedThemes('stplThemes').length>0;
-  b.disabled=!(hasCover&&hasCat&&hasTheme);
+  b.disabled=!(hasCover&&hasCat&&hasTheme&&!tplPromptDirty());
+}
+// 모달 프롬프트가 현재 커버를 만든 기준 프롬프트와 다르면 dirty → 재생성 필요.
+function tplPromptDirty(){
+  const el=document.getElementById('stplPrompt'); if(!el)return false;
+  return el.value.trim()!==(state._tplPromptBase||'').trim();
+}
+// 프롬프트 입력마다: dirty면 경고·재생성 버튼 표출 + Save 잠금.
+function onTplPromptInput(){
+  const el=document.getElementById('stplPrompt'); if(!el)return;
+  const dirty=tplPromptDirty();
+  const hasText=!!el.value.trim();
+  const warn=document.getElementById('stplPromptWarn'); if(warn)warn.style.display=dirty?'':'none';
+  const rb=document.getElementById('stplRegen');
+  if(rb){ rb.style.display=dirty?'':'none'; rb.disabled=generating||!hasText; }
+  syncTplSaveState();
+}
+// 편집한 프롬프트로 미리보기 재생성 — 폼(이름·카테고리·테마)은 유지, 커버만 로딩→새 사진.
+function regenTplPreview(){
+  if(generating)return;
+  const p=(document.getElementById('stplPrompt').value||'').trim();
+  if(!p){toast('Write a prompt first.');return;}
+  const rb=document.getElementById('stplRegen'); if(rb)rb.disabled=true;
+  const ep=document.getElementById('extraPrompt'); if(ep)ep.value=p; // 편집 프롬프트를 실제 생성 입력에 반영
+  generate({regenTemplate:true});
+}
+// 커버 픽커를 로딩(경과 초) 상태로 — 최초/재생성 공용. Save 비활성.
+function resetTplCoversLoading(count){
+  state._tplPick=null;
+  const n=Math.max(1,count||curCount()||4);
+  document.getElementById('stplPick').innerHTML=Array.from({length:n},()=>
+    `<div class="stpl-ph stpl-loading"><span class="stpl-spin"></span><span class="stpl-elapsed">0.0s</span></div>`).join('');
+  syncTplSaveState();
 }
 function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
 // category 변경 시: 현재 선택 중 새 category 화이트리스트에 남는 것만 보존하고 재렌더.
@@ -2194,14 +2233,13 @@ function openCreateTemplate(count){
   if(!p){toast('Write a prompt first.');return;}
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
+  document.getElementById('stplPrompt').value=p; // 프롬프트 프리필(편집 가능)
+  state._tplPromptBase=p; // 현재 커버를 만든 기준 프롬프트
+  document.getElementById('stplPromptWarn').style.display='none';
+  document.getElementById('stplRegen').style.display='none';
   document.getElementById('stplCat').value=''; // 카테고리 필수 — 사용자가 직접 선택
   renderThemeChips('stplThemes', [], 'Shopping'); // 테마 칩(기본 미선택, Shopping 세트)
-  // 커버 픽커 로딩 상태 — 생성 중. Save는 완료 전까지 비활성.
-  state._tplPick=null;
-  const n=Math.max(1,count||curCount()||4);
-  document.getElementById('stplPick').innerHTML=Array.from({length:n},()=>
-    `<div class="stpl-ph stpl-loading"><span class="stpl-spin"></span><span class="stpl-elapsed">0.0s</span></div>`).join('');
-  document.getElementById('stplSave').disabled=true;
+  resetTplCoversLoading(count); // 커버 로딩 + Save 비활성
   document.getElementById('saveTplModal').classList.add('open');
 }
 // 생성 완료 → 커버 픽커를 실제 사진으로 채움. 단일 선택(첫 장 기본), official 원리: preview_media[0]=썸네일.
@@ -2211,7 +2249,8 @@ function fillCreateTemplateCovers(){
   state._tplPick=prev[0];
   document.getElementById('stplPick').innerHTML=prev.map((u,i)=>
     `<div class="stpl-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`).join('');
-  syncTplSaveState(); // 커버는 채워졌지만 카테고리·테마 미선택이면 여전히 비활성
+  state._tplPromptBase=(document.getElementById('stplPrompt')||{}).value||state._tplPromptBase; // 이 커버를 만든 프롬프트가 새 기준
+  onTplPromptInput(); // dirty 해제 → 경고·재생성 버튼 숨김 + Save 재평가
 }
 function pickTplCover(el){
   document.querySelectorAll('#stplPick .stpl-ph').forEach(x=>x.classList.remove('sel'));
@@ -2230,7 +2269,9 @@ async function confirmSaveTpl(){
   if(!category){toast('Pick a category.');return;}
   const themeSlugs=selectedThemes('stplThemes');
   if(!themeSlugs.length){toast('Pick at least one theme.');return;}
-  const p=extraPromptText();
+  const p=(document.getElementById('stplPrompt').value||'').trim();
+  if(!p){toast('Write a prompt.');return;}
+  if(tplPromptDirty()){toast('Regenerate the preview after editing the prompt.');return;} // 프롬프트 변경 후 미재생성 차단
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
