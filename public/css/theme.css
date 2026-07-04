@@ -56,12 +56,23 @@ body.has-rail nav .brand,body.has-rail nav .nav-links{display:none}
 body.has-rail nav .nav-in{justify-content:flex-end}
 /* 레일 레이아웃에서 nav가 absolute(전체폭)로 떠 본문 상단(예: studio 모드 탭)의 클릭을 가로채던 문제 — 빈 nav는 클릭 통과, 실제 콘텐츠만 수신 */
 body.has-rail nav .nav-in>*{pointer-events:auto}
+/* 레일 하단: 크레딧 칩 + 계정 아바타 (rail.js가 상단 nav에서 이동) */
+.rail-foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:9px;width:100%;padding-top:12px;border-top:1px solid var(--border)}
+.rail-foot .credits:not(#saasUserBox){flex-wrap:wrap;justify-content:center;gap:2px 4px;width:52px;padding:7px 4px;border-radius:12px;font-size:11px;line-height:1.2;text-align:center}
+.rail-foot .credits:not(#saasUserBox) #creditCtxLabel{display:none}
+.rail-foot .credits:not(#saasUserBox) .buy{flex-basis:100%;border-left:none;border-top:1px solid var(--border);margin:3px 0 0;padding:4px 0 0;font-size:10px}
+.rail-foot .acct-caret{display:none}
+.rail-foot .acct-menu{left:calc(100% + 14px);right:auto;top:auto;bottom:0}
 @media(max-width:760px){
   .rail{flex-direction:row;width:auto;left:0;right:0;bottom:0;top:auto;height:60px;border:none;border-top:1px solid var(--border);border-radius:0;box-shadow:none;justify-content:space-around;padding:0;gap:0}
   .rail-brand{display:none}
   .rail-nav{flex-direction:row}
   .rail-item{width:auto;padding:8px 12px;font-size:10px}
   body.has-rail{padding-left:0;padding-bottom:60px}
+  .rail-foot{margin-top:0;flex-direction:row;border-top:none;padding-top:0;width:auto;gap:8px}
+  .rail-foot .credits:not(#saasUserBox){flex-wrap:nowrap;width:auto;padding:6px 11px;font-size:12px}
+  .rail-foot .credits:not(#saasUserBox) .buy{flex-basis:auto;border-top:none;border-left:1px solid var(--border);margin:0 0 0 2px;padding:0 0 0 10px}
+  .rail-foot .acct-menu{left:auto;right:0;bottom:calc(100% + 10px);top:auto}
 }
 
 /* buttons */

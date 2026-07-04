@@ -30,4 +30,14 @@
   rail.innerHTML = html;
   document.body.insertBefore(rail, document.body.firstChild);
   document.body.classList.add('has-rail');
+
+  // 크레딧 칩 + 계정 아바타를 레일 하단으로 이동 (Leonardo식). 노드 자체를 옮겨 ID·이벤트·데이터 흐름 보존.
+  var foot = document.createElement('div');
+  foot.className = 'rail-foot';
+  var balEl = document.getElementById('creditBalance');
+  var pill = balEl ? balEl.closest('.credits') : null;
+  var userBox = document.getElementById('saasUserBox');
+  if (pill) foot.appendChild(pill);
+  if (userBox) foot.appendChild(userBox);
+  if (foot.childNodes.length) rail.appendChild(foot);
 })();
