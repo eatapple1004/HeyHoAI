@@ -734,7 +734,7 @@
       </select></div>
     <div class="field"><label>Themes <i>(pick all that fit)</i></label>
       <div id="stplThemes" class="theme-chips"></div></div>
-    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}</style>
+    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}#stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}#stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
       <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
@@ -2100,6 +2100,7 @@ async function generate(opts){
   const cost=genCost(r);
   if(notEnough(cost)){openPaywall(cost);return;}
   const isReel=isVideoGen(); // 템플릿 reel 또는 Custom 비디오 툴 → 영상 경로
+  const wantTpl=!!(opts&&opts.thenSaveTemplate)&&!isReel; // "Create template" 경로(사진 전용)
 
   generating=true;updateBar();
   const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
@@ -2108,7 +2109,8 @@ async function generate(opts){
   // (테스트) Leonardo식: placeholder 배치를 피드 맨 앞에 — 메타(템플릿명/프롬프트/모델)는 즉시, 이미지 칸은 로딩
   const pending=makePendingBatch(r,extra,genN,isReel);
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
-  step.scrollIntoView({behavior:'smooth'});
+  if(wantTpl) openCreateTemplate(genN); // 저장 모달 먼저(커버 자리 로딩) → 생성 완료 시 채움
+  else step.scrollIntoView({behavior:'smooth'});
   // (테스트) Leonardo식 실시간 경과 초 — 로딩 박스 안 카운트업
   const t0=Date.now();
   const elapsedTimer=setInterval(()=>{
@@ -2120,10 +2122,11 @@ async function generate(opts){
     if(isReel) await generateReel(r,subj,pending);
     else await generateImages(r,subj,genN,pending);
     if(captionOn()) await generateCaptionBlock(r,subj);
-    // "Create template" 버튼 경로: 생성 성공 후 저장 모달 오픈(방금 만든 사진을 대표 이미지 후보로).
-    if(opts&&opts.thenSaveTemplate&&!isReel&&(state.lastPreview||[]).length) openCreateTemplate();
+    // "Create template" 경로: 생성 완료 → 모달 커버 픽커를 방금 만든 사진으로 채움.
+    if(wantTpl&&(state.lastPreview||[]).length) fillCreateTemplateCovers();
   }catch(e){
     console.error(e);
+    if(wantTpl) closeSaveTpl(); // 생성 실패 → 저장 모달 닫음
     const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1); renderStudioResults(); // 실패 → placeholder 제거
     if(e.code402){
       document.getElementById('resultHint').textContent='';
@@ -2174,22 +2177,31 @@ function selectedThemes(containerId){ return [...document.querySelectorAll('#'+c
 function recolorThemes(catId, containerId){ const cat=(document.getElementById(catId)||{}).value; renderThemeChips(containerId, selectedThemes(containerId), cat); }
 
 // Save as template — 현재 프롬프트+툴을 user 템플릿으로 저장(비공개 기본, 공개는 크리에이터 게이트)
-// Save as template — 결과 이미지를 미리보기로 붙여 제대로 된 모달로 저장(네이티브 prompt 폐지)
 // "Create template" — 방금 생성한 커스텀 룩을 비공개 템플릿(내 Studio 전용)으로 저장. 공개/가격/레퍼런스 없음.
-function openCreateTemplate(){
+// 모달을 즉시 열고 커버 자리는 생성 로딩 → 완료 시 fillCreateTemplateCovers()가 실제 사진으로 채움.
+function openCreateTemplate(count){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
-  const prev=(state.lastPreview||[]);
-  if(!prev.length){toast('Generate a photo first.');return;}
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
   document.getElementById('stplCat').value='Shopping';
   renderThemeChips('stplThemes', [], 'Shopping'); // 테마 칩(기본 미선택, category 필터)
-  // 대표 이미지 픽커 — 방금 만든 결과 중 단일 선택(첫 장 기본). official 원리: preview_media[0]=썸네일.
+  // 커버 픽커 로딩 상태 — 생성 중. Save는 완료 전까지 비활성.
+  state._tplPick=null;
+  const n=Math.max(1,count||curCount()||4);
+  document.getElementById('stplPick').innerHTML=Array.from({length:n},()=>
+    `<div class="stpl-ph stpl-loading"><span class="stpl-spin"></span></div>`).join('');
+  document.getElementById('stplSave').disabled=true;
+  document.getElementById('saveTplModal').classList.add('open');
+}
+// 생성 완료 → 커버 픽커를 실제 사진으로 채움. 단일 선택(첫 장 기본), official 원리: preview_media[0]=썸네일.
+function fillCreateTemplateCovers(){
+  const prev=(state.lastPreview||[]);
+  if(!prev.length)return;
   state._tplPick=prev[0];
   document.getElementById('stplPick').innerHTML=prev.map((u,i)=>
     `<div class="stpl-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`).join('');
-  document.getElementById('saveTplModal').classList.add('open');
+  document.getElementById('stplSave').disabled=false;
 }
 function pickTplCover(el){
   document.querySelectorAll('#stplPick .stpl-ph').forEach(x=>x.classList.remove('sel'));
