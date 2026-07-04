@@ -71,6 +71,12 @@
   .tc-thumb{width:100%;max-height:200px;object-fit:cover;border-radius:10px;display:block;background:rgba(255,255,255,.04)}
   .tc-actions{display:flex;flex-direction:column;gap:8px;margin-top:2px}
   .tc-cta{margin-top:0}
+  .prompt-panel{margin:-6px 0 20px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}
+  .prompt-panel .pp-hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+  .prompt-panel .pp-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  .prompt-panel .pp-copy{background:none;border:1px solid var(--border);color:var(--dim);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;padding:4px 10px;border-radius:8px}
+  .prompt-panel .pp-copy:hover{color:var(--text);border-color:var(--border2)}
+  .prompt-panel .pp-text{font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:150px;overflow-y:auto;padding-right:6px}
   .report{margin-top:20px;background:none;border:none;color:var(--faint);font-size:12.5px;cursor:pointer;font-family:inherit;padding:4px}
   .report:hover{color:#ff7eb6}
   .state{display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);text-align:center;flex-direction:column;gap:6px}
@@ -301,6 +307,16 @@ function templateCard(){
   const paid=(!rt.mine && rt.price>0);
   return sellCard(name, paid?rt.price:null, rt.id, thumb, `<button class="act primary tc-cta" onclick="acquireRelTemplate()">Use ${name}</button>`);
 }
+// Custom(자작 프롬프트) creation만 사용 프롬프트 공개 — 템플릿 프롬프트는 블랙박스라 노출 안 함.
+function promptPanel(){
+  if(IT.templateSource || !IT.prompt) return '';
+  return `<div class="prompt-panel"><div class="pp-hdr"><span class="pp-title">Prompt</span>
+    <button class="pp-copy" onclick="copyPrompt(this)">⧉ Copy</button></div>
+    <div class="pp-text">${esc(IT.prompt)}</div></div>`;
+}
+function copyPrompt(btn){
+  navigator.clipboard.writeText(IT.prompt||'').then(()=>{ const o=btn.textContent; btn.textContent='✓ Copied'; setTimeout(()=>btn.textContent=o,1400); }).catch(()=>toast('Copy failed'));
+}
 // relTemplate 없는 내 creation: 테마 피커 모달(mint 모드)을 열어 사용자가 테마 직접 선택 → confirm 시 즉석 민팅+보유+선택 테마 배치 후 My templates로 이동.
 function mintAndAdd(btn){ openSaveModal({ mint:true }); }
 // 출처/연결 템플릿을 My templates에 획득 후 그 위치(My templates)로 이동. 내 것=add-to-my-templates(owns INSERT)·타인=acquire 폴백.
@@ -350,6 +366,7 @@ function render(){
     <div class="date">${esc(dateStr)}</div>
     ${creator}
     ${templateCard()}
+    ${promptPanel()}
     <div class="acts"><button class="act sm" onclick="share()">↗ Share</button></div>
     ${owner}${report}`;
 }

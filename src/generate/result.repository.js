@@ -87,6 +87,7 @@ async function findDetailForViewer(idx, viewerId) {
   const r = await query(
     `SELECT gr.idx, gr.file_path, gr.model, gr.metadata, gr.created_at, gr.visibility, gr.status, gr.taken_down,
             gr.template_id, gr.template_source, gr.template_name, gr.likes_count,
+            p.prompt_text,
             split_part(u.email, '@', 1) AS creator_handle,
             (p.user_id = $2) AS is_own,
             EXISTS(SELECT 1 FROM result_likes rl WHERE rl.result_idx = gr.idx AND rl.user_id = $2) AS liked,

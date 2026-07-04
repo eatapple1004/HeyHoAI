@@ -697,6 +697,7 @@ router.get('/creations/:idx', async (req, res, next) => {
       templateId: r.template_id,
       templateSource: r.template_source,
       templateName: r.template_name,
+      prompt: r.template_source ? null : (r.prompt_text || null), // Custom(자작 프롬프트)만 공개 — 템플릿 프롬프트는 블랙박스
       mintedTemplateId: r.minted_template_id || null, // 이 creation의 auto 템플릿(본인=관리/추가, 타인=구매 대상)
       ownsTemplate: !!r.owns_template,                // 뷰어 보유 여부
       sourceInLibrary,                                // 출처 템플릿이 내 My templates(라이브러리)에 있나 — View template 라벨 분기
