@@ -20,6 +20,9 @@
   .drop p{font-size:11.5px;color:var(--faint)}
   .drop img{max-width:100%;max-height:200px;border-radius:10px;margin-top:10px;display:none}
   .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .goalfld{display:block;font-size:12.5px;color:var(--dim);font-weight:600;margin-top:18px}
+  .goalfld textarea{display:block;width:100%;margin-top:8px;box-sizing:border-box;background:var(--panel2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-family:inherit;font-size:13.5px;line-height:1.5;padding:11px 13px;resize:vertical}
+  .goalfld textarea:focus{outline:none;border-color:var(--accent)}
   .ctrls{display:flex;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap}
   label.fld{font-size:12.5px;color:var(--dim);font-weight:600;display:flex;align-items:center;gap:7px}
   select,input[type=number]{background:var(--panel2);border:1px solid var(--border2);color:var(--text);
@@ -79,6 +82,9 @@
         <img id="pvRef"><input type="file" id="fRef" accept="image/*">
       </label>
     </div>
+    <label class="goalfld">🎯 목표 <span class="muted">(선택) — 원하는 결과를 문장으로. 비우면 목표 사진만 보고 자동 판단</span>
+      <textarea id="goalInput" rows="2" placeholder="예: 팁 5개를 아치형으로 배열, 배경은 크림톤, 손글씨 타이틀은 흰색 · 통통 튀는 귀여운 느낌"></textarea>
+    </label>
     <div class="ctrls">
       <label class="fld">최대 반복
         <select id="maxSel"><option>4</option><option selected>6</option><option>8</option><option>10</option></select>
@@ -163,7 +169,7 @@ async function run(){
   let rubric=[], critical=[], tiles={};
   try{
     const res=await fetch('/api/admin/refine',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ target:{b64:TARGET.b64,mime:TARGET.mime}, ref:{b64:REF.b64,mime:REF.mime}, max:parseInt($('maxSel').value,10) })});
+      body:JSON.stringify({ target:{b64:TARGET.b64,mime:TARGET.mime}, ref:{b64:REF.b64,mime:REF.mime}, max:parseInt($('maxSel').value,10), goal:$('goalInput').value.trim() })});
     if(res.status===403){ $('status').innerHTML='<span class="err">관리자 권한이 필요합니다. admin 계정으로 로그인하세요.</span>'; $('runBtn').disabled=false; return; }
     if(!res.ok){ $('status').innerHTML='<span class="err">요청 실패 ('+res.status+')</span>'; $('runBtn').disabled=false; return; }
     const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';

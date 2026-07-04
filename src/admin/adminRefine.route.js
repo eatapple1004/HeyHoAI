@@ -33,7 +33,10 @@ const parseJson = (raw) => {
 const DESIGN_ITEM = { k: 'designMatchesReference', d: '네일/피사체 디자인(베이스색·아트·글리터·참·마감)이 REFERENCE와 일치(구도가 아닌 디자인 자체 · TARGET의 디자인과 같으면 false)' };
 
 // ── 0) 목표 이미지 → 초기 프롬프트 + 평가 체크리스트 '처음부터' 작성 ──
-async function authorFromTarget(anth, ref, target) {
+async function authorFromTarget(anth, ref, target, goal) {
+  const goalBlock = (goal && String(goal).trim())
+    ? `\n\n[관리자가 지정한 목표 — 최우선 반영]: ${String(goal).trim()}\n이 목표를 prompt와 checklist에 우선 반영하라(구도·배치·배경·연출·개수·분위기 등). 단, 네일/피사체 "디자인"은 여전히 REFERENCE에서만 가져온다(위 규칙 유지).`
+    : '';
   const instruction = `너는 이미지 생성 프롬프트 작가다. 두 이미지가 주어진다.
 [TARGET] = 결과물의 "구도/시점/포즈/프레이밍/배경/조명" 본보기.
 [REFERENCE] = 결과물의 네일/피사체에 입힐 "디자인(베이스색·네일아트·글리터·참·마감)" 원본.
@@ -46,7 +49,7 @@ async function authorFromTarget(anth, ref, target) {
 - checklist: 결과물이 TARGET의 "구도·형식"에 부합하는지 판정할 기준 5~7개. 각 {k: camelCase, d: 한국어 한 줄}. (⚠️ 디자인 자체는 넣지 마라 — 디자인 일치는 자동으로 REFERENCE와 비교된다. 오직 구도·시점·포즈·배경·프레이밍·개수만.)
 
 아래 JSON만 출력(코드펜스 금지):
-{"prompt":"...","negative":"...","checklist":[{"k":"...","d":"..."}]}`;
+{"prompt":"...","negative":"...","checklist":[{"k":"...","d":"..."}]}${goalBlock}`;
   const msg = await anth.messages.create({
     model: JUDGE_MODEL, max_tokens: 2000,
     messages: [{ role: 'user', content: [
@@ -110,7 +113,7 @@ ${rubricList}
 
 // POST /api/admin/refine — NDJSON 스트림 { ref:{b64,mime}, target:{b64,mime}, max? }
 async function refineHandler(req, res) {
-  const { ref, target } = req.body || {};
+  const { ref, target, goal } = req.body || {};
   const max = Math.min(Math.max(parseInt(req.body?.max || 6, 10), 1), 12);
   if (!ref?.b64 || !target?.b64) return res.status(400).json({ error: 'ref, target 이미지가 필요합니다.' });
   if (!process.env.GEMINI_API_KEY || !process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'API 키 미설정(.env)' });
@@ -137,7 +140,7 @@ async function refineHandler(req, res) {
     // 0) 목표 사진을 읽고 초기 프롬프트 + 체크리스트 작성
     send({ type: 'authoring' });
     console.log('[refine] 목표 이미지 분석 → 초기 프롬프트 작성…');
-    const authored = await withTimeout(authorFromTarget(anth, refImg, tgtImg), 90000, '프롬프트 작성');
+    const authored = await withTimeout(authorFromTarget(anth, refImg, tgtImg, goal), 90000, '프롬프트 작성');
     let prompt = authored.prompt;
     let negative = authored.negative || '';
     const checklist = [...authored.checklist, DESIGN_ITEM]; // 구도(vs TARGET) + 디자인 일치(vs REFERENCE)
