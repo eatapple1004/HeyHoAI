@@ -10,40 +10,49 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/saas-auth.js?v=2" defer></script>
-<script src="/js/rail.js?v=7" defer></script>
 <style>
-  .wrap{max-width:1120px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:2}
-  .offer-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;text-align:center;margin-bottom:34px;padding:14px 22px;border-radius:14px;background:linear-gradient(120deg,rgba(255,206,122,.16),rgba(255,126,182,.12));border:1px solid var(--gold);font-size:13.5px;color:var(--dim)}
-  .offer-banner b{color:var(--text)}
-  .offer-banner s{color:var(--faint)}
-  .offer-banner #offerCountdown{color:var(--gold);font-variant-numeric:tabular-nums}
-  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
-  .sub{color:var(--dim);font-size:14.5px;margin-bottom:30px}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 24px 90px;position:relative;z-index:2}
+  /* 레오나도 /buy식 독립 전체 페이지 — 플로팅 백버튼만 (프로필·상단바 없음) */
+  .back-fab{position:fixed;top:22px;left:22px;z-index:60;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--dim);cursor:pointer;padding:9px 15px 9px 12px;border-radius:99px;border:1px solid var(--border);background:rgba(16,16,24,.7);backdrop-filter:blur(14px);transition:color .2s,border-color .2s,background .2s,transform .2s}
+  .back-fab:hover{color:var(--text);border-color:var(--border2);background:rgba(28,28,40,.85);transform:translateX(-2px)}
+  .back-fab svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  /* 히어로 — 레오나도식 대형 브랜드 워드마크 (상단) */
+  .hero{text-align:center;max-width:760px;margin:34px auto 44px;position:relative}
+  .hero::after{content:'';position:absolute;top:32%;left:50%;width:min(680px,86%);height:280px;transform:translate(-50%,-50%);z-index:-1;
+    background:radial-gradient(ellipse at center,rgba(124,108,255,.22),transparent 70%);filter:blur(18px);pointer-events:none}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+    background:linear-gradient(120deg,var(--accent2),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+  h1.brandword{font-family:'Sora';font-weight:800;font-size:clamp(56px,12vw,132px);line-height:.9;letter-spacing:-5px;white-space:nowrap;margin:0 0 12px;
+    background:linear-gradient(180deg,#fff,rgba(255,255,255,.5));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 16px 46px rgba(124,108,255,.35))}
+  h1.brandword span{background:linear-gradient(180deg,var(--accent2),rgba(124,108,255,.5));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero-tag{font-family:'Sora';font-size:20px;font-weight:600;color:var(--text);letter-spacing:-.3px;margin-bottom:12px}
+  .sub{color:var(--dim);font-size:15px;line-height:1.55}
+  .hero-status{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:7px 15px;border-radius:99px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:12.5px;color:var(--dim)}
+  .hero-status b{color:var(--accent2);font-weight:700}
+  .hero-status .coin{color:var(--gold)}
 
-  .status{display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;
-    background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(255,126,182,.1));border:1px solid var(--border2);border-radius:20px;padding:22px 26px;margin-bottom:38px}
-  .status .plan{font-size:13px;color:var(--dim)}
-  .status .plan b{color:var(--accent2);font-size:15px}
-  .status .renew{font-size:12px;color:var(--faint);margin-top:2px}
-  .status .bal{display:flex;align-items:baseline;gap:9px}
-  .status .bal .num{font-family:'Sora';font-size:36px;font-weight:800;letter-spacing:-1px}
-  .status .bal .lbl{font-size:13px;color:var(--dim)}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;text-align:center}
 
-  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
-
-  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:46px;align-items:start}
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:52px;align-items:stretch}
   @media(max-width:920px){.plans{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:560px){.plans{grid-template-columns:1fr}}
-  .plan-card{padding:22px;display:flex;flex-direction:column;position:relative}
-  .plan-card.featured{border-color:rgba(124,108,255,.5);box-shadow:0 0 0 1px rgba(124,108,255,.4),0 30px 70px -30px rgba(124,108,255,.5)}
-  .plan-card .ribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;font-size:10px;font-weight:800;letter-spacing:.6px;padding:5px 13px;border-radius:9px;text-transform:uppercase}
-  .plan-card .pname{font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:5px}
-  .plan-card .price{font-family:'Sora';font-size:34px;font-weight:800;letter-spacing:-1.5px}
-  .plan-card .price span{font-size:13px;font-weight:500;color:var(--faint)}
-  .plan-card .credits-inc{font-size:13px;color:var(--gold);font-weight:600;margin:10px 0 16px}
-  .plan-card ul{list-style:none;font-size:13px;color:var(--dim);flex:1;margin-bottom:20px}
-  .plan-card ul li{padding:4px 0;display:flex;gap:8px}
-  .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700}
+  .plan-card{padding:26px 22px;display:flex;flex-direction:column;position:relative;border-radius:20px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));border:1px solid var(--border2);
+    transition:transform .22s,border-color .22s,box-shadow .22s}
+  .plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(124,108,255,.35),transparent);opacity:0;transition:opacity .22s}
+  .plan-card:hover{transform:translateY(-6px);border-color:rgba(124,108,255,.4);box-shadow:0 30px 60px -32px rgba(0,0,0,.7)}
+  .plan-card:hover::before{opacity:1}
+  .plan-card.featured{border-color:rgba(124,108,255,.55);background:linear-gradient(180deg,rgba(124,108,255,.14),rgba(255,126,182,.05));box-shadow:0 0 0 1px rgba(124,108,255,.4),0 34px 80px -30px rgba(124,108,255,.55)}
+  .plan-card.featured::before{opacity:1;background:linear-gradient(90deg,var(--accent),var(--pink))}
+  .plan-card .ribbon{position:absolute;top:16px;right:16px;background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.6px;padding:5px 11px;border-radius:99px;text-transform:uppercase;box-shadow:0 6px 16px -6px var(--accent)}
+  .plan-card .pname{font-family:'Sora';font-size:16px;font-weight:700;color:var(--dim);letter-spacing:.4px;margin-bottom:12px}
+  .plan-card .price{font-family:'Sora';font-size:40px;font-weight:800;letter-spacing:-1.8px;line-height:1}
+  .plan-card .price span{font-size:13px;font-weight:500;color:var(--faint);letter-spacing:0}
+  .plan-card .credits-inc{font-size:13px;color:var(--gold);font-weight:600;margin:14px 0 18px}
+  .plan-card ul{list-style:none;font-size:13px;color:var(--dim);flex:1;margin-bottom:22px;border-top:1px solid var(--border);padding-top:16px}
+  .plan-card ul li{padding:5px 0;display:flex;gap:9px;align-items:flex-start}
+  .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700;flex-shrink:0}
   .plan-card .btn{width:100%}
   .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
   .team-band{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 26px;margin-bottom:46px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(94,224,214,.08),rgba(124,108,255,.08))}
@@ -84,7 +93,8 @@
   .cycle .save{font-size:10px;font-weight:800;background:rgba(94,224,214,.18);color:var(--cyan);padding:2px 6px;border-radius:6px;letter-spacing:.3px}
   .cycle button.on .save{background:rgba(255,255,255,.24);color:#fff}
   .plan-card .price .pv{font-size:34px;font-weight:800;letter-spacing:-1.5px;color:var(--text)}
-  .plan-card .cyc-note{font-size:11.5px;color:var(--faint);margin:-10px 0 14px;min-height:14px}
+  .plan-card .price{margin-bottom:9px}
+  .plan-card .cyc-note{font-size:11.5px;color:var(--faint);margin:0 0 4px;min-height:14px;line-height:1.4}
 
   .sw{position:relative;width:46px;height:26px;flex:none}
   .sw input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;margin:0}
@@ -114,41 +124,21 @@
 <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="grain"></div>
 
-<nav>
-  <div class="nav-in">
-    <div class="brand" onclick="location.href='/landing'"><b>Doppia</b></div>
-    <div class="nav-links">
-      <a onclick="location.href='/studio'">Studio</a>
-      <a onclick="location.href='/marketplace'">Market</a>
-      <a onclick="location.href='/gallery'">Library</a>
-      <a class="active">Billing</a>
-      <a onclick="location.href='/business'">Business</a>
-    </div>
-    <div class="credits"><span class="coin">◈</span> <span id="navBalance">—</span> credits
-      <span class="buy" onclick="location.href='/billing'">+ Buy</span></div>
-    <div class="credits" id="saasUserBox"></div>
-  </div>
-</nav>
+<a class="back-fab" onclick="goBack()" title="Back">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
+</a>
 
 <div class="wrap">
-  <h1 class="fade d1">Billing &amp; Credits</h1>
-  <div class="sub fade d1">Get a 3-month pass — pay once, no auto-renew. Credits are granted upfront. Or top up with credit packs anytime.</div>
+  <div class="hero fade d1">
+    <div class="eyebrow">Pricing</div>
+    <h1 class="brandword">DOPPIA<span>.AI</span></h1>
+    <div class="hero-tag">Choose your plan</div>
+    <div class="sub">Get a 3-month pass — pay once, no auto-renew. Credits are granted upfront. Or top up with credit packs anytime.</div>
+    <div class="hero-status"><span id="planLabel"></span><b id="planName">Pay as you go</b> · <span class="coin">◈</span> <span id="balNum">—</span> credits left</div>
+  </div>
 
-  <div id="purchasedBanner" class="hidden" style="background:rgba(94,224,214,.12);border:1px solid rgba(94,224,214,.35);color:var(--cyan);font-size:13.5px;font-weight:600;padding:14px 18px;border-radius:14px;margin-bottom:20px">
+  <div id="purchasedBanner" class="hidden" style="background:rgba(94,224,214,.12);border:1px solid rgba(94,224,214,.35);color:var(--cyan);font-size:13.5px;font-weight:600;padding:14px 18px;border-radius:14px;margin-bottom:20px;text-align:center">
     Payment complete. Your credits may take a few seconds to appear. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">Refresh</a>
-  </div>
-
-  <div class="status fade d2">
-    <div><div class="plan"><span id="planLabel"></span><b id="planName">Pay as you go</b></div><div class="renew" id="planNote">Buy a 3-month pass or top up with credit packs</div></div>
-    <div class="bal"><span class="num">◈ <span id="balNum">—</span></span><span class="lbl">credits left</span></div>
-  </div>
-
-  <!-- 24h 첫 결제 오퍼 (실제 /api/subscription 연동, 50% off) -->
-  <div class="offer-banner fade d2 hidden" id="offerBanner">
-    <b id="offerCountdown">--:--:--</b> left —
-    Pro <s>$<span id="offerList">39</span></s> <b>$<span id="offerPrice">20</span>/mo</b> ·
-    <b><span id="offerPct">50</span>% off first month</b>
-    <button class="btn btn-primary" id="offerCta" onclick="upgradeToPro(this)">Claim →</button>
   </div>
 
   <div class="section-label fade d2">3-Month Passes</div>
@@ -266,6 +256,8 @@
 <script src="/js/pricing.js?v=1"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
+function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
+function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
 function planSoon(){ notify('Plan changes are coming soon — for now, top up with a credit pack.'); }
 function joinTeamBeta(){ notify("You're on the Team beta waitlist — we'll email you priority access."); }
@@ -318,10 +310,10 @@ async function loadBalance(){
     if(!data.success)return;
     const bal=data.data.unlimited?'∞':data.data.balance;
     document.getElementById('balNum').textContent=bal;
-    document.getElementById('navBalance').textContent=bal;
+    var nb=document.getElementById('navBalance'); if(nb)nb.textContent=bal;
     if(data.data.unlimited){
-      document.getElementById('planName').textContent='Admin';
-      document.getElementById('planNote').textContent='Admin account — billing exempt';
+      setTxt('planName','Admin');
+      setTxt('planNote','Admin account — billing exempt');
     }
   }catch(e){console.error(e);}
 }
@@ -356,14 +348,6 @@ async function buyPack(packId,btn){
   finally{ btn.disabled=false;btn.textContent=orig; }
 }
 
-// ── 24h 첫 결제 오퍼 (/api/subscription, 50% off) ──
-let offerTimer=null;
-function fmtHMS(s){s=Math.max(0,s|0);const h=String(Math.floor(s/3600)).padStart(2,'0'),m=String(Math.floor((s%3600)/60)).padStart(2,'0'),sec=String(s%60).padStart(2,'0');return `${h}:${m}:${sec}`;}
-function startCountdown(seconds){
-  if(offerTimer)clearInterval(offerTimer);
-  let left=seconds;const el=document.getElementById('offerCountdown');el.textContent=fmtHMS(left);
-  offerTimer=setInterval(()=>{left-=1;if(left<=0){clearInterval(offerTimer);document.getElementById('offerBanner').classList.add('hidden');return;}el.textContent=fmtHMS(left);},1000);
-}
 async function loadSubscription(){
   try{
     let sub=(await(await fetch('/api/subscription')).json()).data;
@@ -372,15 +356,13 @@ async function loadSubscription(){
       try{ sub=(await(await fetch('/api/subscription/offer/start',{method:'POST'})).json()).data || sub; }catch(e){}
     }
     if(sub.plan!=='free' && sub.planName){
-      document.getElementById('planLabel').textContent='Active pass: '; // 단발성 이용권(구독 아님)
-      document.getElementById('planName').textContent=sub.planName;
+      setTxt('planLabel','Active pass: '); // 단발성 이용권(구독 아님)
+      setTxt('planName',sub.planName);
       // 기간권: renewsAt=만료일. 만료 지나면 백엔드가 free로 강등하므로 여기 오면 유효.
-      if(sub.renewsAt) document.getElementById('planNote').textContent='Expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew';
+      if(sub.renewsAt) setTxt('planNote','Expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew');
     } else {
-      document.getElementById('planLabel').textContent=''; // 활성 패스 없음 → 라벨 없이 "Pay as you go"
+      setTxt('planLabel',''); // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }
-    // (2026-07-02) 24h "첫 달 50% off" 오퍼는 정기결제(월) 개념 → 기간권 전환 중 보류(숨김). 재점화 시 복원.
-    document.getElementById('offerBanner').classList.add('hidden');
   }catch(e){console.error(e);}
 }
 async function upgradeToPro(btn){
@@ -389,7 +371,7 @@ async function upgradeToPro(btn){
     const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
     const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // (2026-07-02) 3개월 이용권
     const d=await res.json();
-    if(d.success){ notify('3-month pass activated!'); if(offerTimer)clearInterval(offerTimer); loadSubscription();loadBalance(); }
+    if(d.success){ notify('3-month pass activated!'); loadSubscription();loadBalance(); }
     else if(d.comingSoon){ notify('Pass purchase is coming soon — it activates once merchant review passes.'); }
     else notify(d.error||'Purchase failed.','error');
   }catch(e){ notify('Payment connection failed.','error'); }
