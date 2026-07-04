@@ -767,6 +767,7 @@
     .theme-chips{display:flex;flex-wrap:wrap;gap:7px}
     .theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
     .theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .theme-chips .tchip.tchip-new{border-style:dashed;color:var(--accent2)}
     #saveTplModal .stpl-prev{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px}
     #saveTplModal #stplPick .stpl-ph{width:72px;height:90px;border-radius:10px;background-size:cover;background-position:center;border:1px solid var(--border2);cursor:pointer;position:relative;transition:transform .12s}
     #saveTplModal #stplPick .stpl-ph:not(.stpl-loading):hover{transform:translateY(-2px)}
@@ -2219,21 +2220,47 @@ function extraPromptText(){
 // 글로벌 테마 칩(크리에이터 다중 태그) — 캐시 + 렌더 + 수집.
 let _themesCache=null;
 async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _themesCache=[]; } } return _themesCache; }
-// CAT_THEMES → /js/themes.js 공용(P2 통합)
+// Create template = 비공식 creation을 템플릿화 → My templates 테마(기본 글로벌 + 커스텀)를 그대로 노출.
+// picks: {kind:'default'|'custom', key:slug|id}. 커스텀=user_studio_themes(id), 기본=글로벌 themes(slug). CAT_GROUPS 단일소스로 대분류 그룹핑.
+const STPL_GROUPS=(typeof CAT_GROUPS!=='undefined')?CAT_GROUPS:[['Influencer',['people']],['Shopping',['beauty','fashion','general']]];
+let _stplPicks=[]; let _stplCustoms=null;
+async function ensureStplCustoms(){ if(!_stplCustoms){ try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{}; _stplCustoms={ customs:d.customThemes||[], hidden:new Set(d.hiddenThemes||[]) }; }catch(e){ _stplCustoms={customs:[],hidden:new Set()}; } } return _stplCustoms; }
+function stplOn(kind,key){ return _stplPicks.some(p=>p.kind===kind&&p.key===key); }
+function stplThBtn(kind,key,label){ return `<button type="button" class="tchip${stplOn(kind,key)?' on':''}" data-kind="${kind}" data-key="${esc(key)}" onclick="toggleStplTheme(this)">${esc(label)}</button>`; }
+// containerId·selected 인자는 하위호환용(호출부 유지). 실제 선택 소스는 _stplPicks. CAT_THEMES → /js/themes.js 공용(P2 통합).
 async function renderThemeChips(containerId, selected, category){
   const el=document.getElementById(containerId); if(!el)return;
-  const sel=new Set(selected||[]); let themes=await ensureThemes();
-  const allow=category?CAT_THEMES[category]:null; // 미지정 → 노출 테마만(죽인 테마 제외)
-  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
-  else if(typeof isThemeVisible==='function') themes=themes.filter(t=>isThemeVisible(t.slug));
-  el.innerHTML=themes.map(t=>`<button type="button" class="tchip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on');syncTplSaveState()">${esc(t.name)}</button>`).join('');
+  const defs=await ensureThemes(); const {customs,hidden}=await ensureStplCustoms();
+  const bySlug={}; (defs||[]).forEach(t=>{ if(!hidden.has(t.slug)) bySlug[t.slug]=t; });
+  const allow=(typeof CAT_THEMES!=='undefined'&&category&&CAT_THEMES[category])?CAT_THEMES[category]:null;
+  if(allow) _stplPicks=_stplPicks.filter(p=>p.kind!=='default'||allow.includes(p.key)); // 카테고리 밖 기본 선택 해제(커스텀은 유지)
+  let h='';
+  for(const [label,slugs] of STPL_GROUPS){
+    if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // 숨긴 대분류 제외
+    let defSlugs=slugs.filter(s=>bySlug[s]);
+    if(allow) defSlugs=defSlugs.filter(s=>allow.includes(s)); // 카테고리 지정 시 화이트리스트 교집합
+    defSlugs.forEach(s=>{ h+=stplThBtn('default',s,bySlug[s].name); });
+    (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=stplThBtn('custom',c.id,'✦ '+c.name); });
+    h+=`<button type="button" class="tchip tchip-new" onclick="newStplTheme('${label}')">＋ New theme</button>`;
+  }
+  el.innerHTML=h;
+}
+function toggleStplTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key;
+  if(stplOn(kind,key)) _stplPicks=_stplPicks.filter(p=>!(p.kind===kind&&p.key===key));
+  else _stplPicks.push({kind,key});
+  btn.classList.toggle('on'); syncTplSaveState(); }
+async function newStplTheme(group){
+  const name=prompt('New theme name'); if(!name||!name.trim())return;
+  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),group})})).json();
+    if(d&&d.success&&d.data){ _stplCustoms.customs.push(d.data); _stplPicks.push({kind:'custom',key:d.data.id}); renderThemeChips('stplThemes', [], (document.getElementById('stplCat')||{}).value||''); syncTplSaveState(); }
+  }catch(e){}
 }
 // Create template 저장 게이트 — 커버·카테고리·테마(최소1)·프롬프트 미변경(생성중엔 커버 없음) 충족해야 활성.
 function syncTplSaveState(){
   const b=document.getElementById('stplSave'); if(!b)return;
   const hasCover=!!state._tplPick;
   const hasCat=!!((document.getElementById('stplCat')||{}).value);
-  const hasTheme=selectedThemes('stplThemes').length>0;
+  const hasTheme=_stplPicks.length>0;
   b.disabled=!(hasCover&&hasCat&&hasTheme&&!tplPromptDirty());
 }
 // 모달 프롬프트가 현재 커버를 만든 기준 프롬프트와 다르면 dirty → 재생성 필요.
@@ -2280,7 +2307,7 @@ function resetTplCoversLoading(count){
     `<div class="stpl-ph stpl-loading"><span class="stpl-spin"></span><span class="stpl-elapsed">0.0s</span></div>`).join('');
   syncTplSaveState();
 }
-function selectedThemes(containerId){ return [...document.querySelectorAll('#'+containerId+' .tchip.on')].map(c=>c.dataset.slug); }
+function selectedThemes(containerId){ return _stplPicks.filter(p=>p.kind==='default').map(p=>p.key); } // 글로벌 slug만(POST /templates용). containerId는 하위호환.
 // category 변경 시: 현재 선택 중 새 category 화이트리스트에 남는 것만 보존하고 재렌더.
 function recolorThemes(catId, containerId){ const cat=(document.getElementById(catId)||{}).value; renderThemeChips(containerId, selectedThemes(containerId), cat); }
 
@@ -2299,7 +2326,7 @@ function openCreateTemplate(count){
   document.getElementById('stplPromptWarn').style.display='none';
   document.getElementById('stplRegen').style.display='none';
   document.getElementById('stplCat').value=''; // 카테고리 필수 — 사용자가 직접 선택
-  renderThemeChips('stplThemes', [], 'Shopping'); // 테마 칩(기본 미선택, Shopping 세트)
+  _stplPicks=[]; renderThemeChips('stplThemes', [], 'Shopping'); // 테마 칩(기본 미선택, Shopping 세트)
   resetTplCoversLoading(count); // 커버 로딩 + Save 비활성
   document.getElementById('saveTplModal').classList.add('open');
 }
@@ -2321,7 +2348,7 @@ function openCreateTemplateFromImages(prompt, imgs, srcIdx){
   document.getElementById('stplPromptWarn').style.display='none';
   document.getElementById('stplRegen').style.display='none';
   document.getElementById('stplCat').value='';
-  renderThemeChips('stplThemes', [], 'Shopping');
+  _stplPicks=[]; renderThemeChips('stplThemes', [], 'Shopping');
   document.getElementById('stplPick').innerHTML=imgs.map((u,i)=>
     `<div class="stpl-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`).join('');
   document.getElementById('saveTplModal').classList.add('open');
@@ -2352,8 +2379,9 @@ async function confirmSaveTpl(){
   const description=document.getElementById('stplDesc').value.trim();
   const category=document.getElementById('stplCat').value;
   if(!category){toast('Pick a category.');return;}
-  const themeSlugs=selectedThemes('stplThemes');
-  if(!themeSlugs.length){toast('Pick at least one theme.');return;}
+  if(!_stplPicks.length){toast('Pick at least one theme.');return;}
+  const themeSlugs=selectedThemes('stplThemes'); // 글로벌 기본 테마만 POST /templates로(커스텀은 아래 배치)
+  const customPicks=_stplPicks.filter(p=>p.kind==='custom');
   const p=(document.getElementById('stplPrompt').value||'').trim();
   if(!p){toast('Write a prompt.');return;}
   if(tplPromptDirty()){toast('Regenerate the preview after editing the prompt.');return;} // 프롬프트 변경 후 미재생성 차단
@@ -2364,6 +2392,11 @@ async function confirmSaveTpl(){
         visibility:'private',previewMedia:[cover],negativePrompt:negText(),sourceResultIdx:(state._tplSrcIdx!=null?state._tplSrcIdx:undefined)})}); // 항상 비공개 · 대표 이미지 1장
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
+    const tid=d.data&&d.data.id;
+    // 커스텀 테마 배치(생성된 템플릿을 user_studio_themes 멤버십에 추가)
+    for(const cp of customPicks){
+      try{ await fetch('/api/studio/themes/'+encodeURIComponent(cp.key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid})}); }catch(e){}
+    }
     closeSaveTpl();
     toast('Saved to your templates');
   }catch(e){toast('Save failed: '+(e.message||e),'error');}

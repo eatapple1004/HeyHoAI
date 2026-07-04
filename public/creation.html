@@ -185,6 +185,7 @@
     #ctModal .ct-chips{display:flex;flex-wrap:wrap;gap:7px}
     #ctModal .ct-chip{background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--dim,#9aa);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
     #ctModal .ct-chip.on{background:var(--accent,#7c6cff);border-color:var(--accent,#7c6cff);color:#fff}
+    #ctModal .ct-chip.ct-new{border-style:dashed;color:var(--accent2,#a89bff)}
     #ctModal .ct-editp{background:none;border:none;color:var(--accent,#7c6cff);font-size:12px;font-weight:700;cursor:pointer;padding:0;font-family:inherit}
     #ctModal .ct-ro:not([readonly]){opacity:1;background:rgba(255,255,255,.06)}
     #ctModal .ct-warn{color:#f5b445;font-size:12px;margin:2px 0 6px}
@@ -287,8 +288,8 @@ async function confirmSave(){
 }
 // ── Create template (Studio "Create template"의 from-images 흐름 이식) ──
 // 이 상세 크리에이션의 사진을 커버로 private 템플릿 생성. Studio와 동일: 프롬프트 잠금→Edit로 해제→수정 시 재생성 후 저장 가능(초기 상태만 다름).
-let CT={pick:null,srcIdx:null,promptBase:'',busy:false};
-let _ctThemesCache=null;
+let CT={pick:null,srcIdx:null,promptBase:'',busy:false,picks:[]};
+let _ctThemes=null; // {defs, customs}
 function ctFromDetail(){
   if(!IT||IT.type==='video'||!IT.url){ toast('No image to use.'); return; }
   if(IT.templateSource){ toast('Already made with a template.'); return; } // 템플릿으로 만든 결과는 재템플릿화 불가
@@ -304,6 +305,7 @@ function openCtFromImages(prompt, imgs, srcIdx){
   document.getElementById('ctPromptWarn').style.display='none';
   document.getElementById('ctRegenRow').style.display='none';
   document.getElementById('ctCat').value='';
+  CT.picks=[];
   document.getElementById('ctCovers').innerHTML=imgs.map((u,i)=>
     `<div class="ct-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`).join('');
   ctRenderThemes('');
@@ -352,21 +354,56 @@ function ctPick(el){
   document.querySelectorAll('#ctCovers .ct-ph').forEach(x=>x.classList.remove('sel'));
   el.classList.add('sel'); CT.pick=el.getAttribute('data-url'); ctSync();
 }
-function ctSelectedThemes(){ return [...document.querySelectorAll('#ctThemes .ct-chip.on')].map(c=>c.dataset.slug); }
-async function ctEnsureThemes(){ if(!_ctThemesCache){ try{ _ctThemesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _ctThemesCache=[]; } } return _ctThemesCache; }
+// Create template = 비공식 creation을 템플릿화 → My templates 테마(기본 글로벌 + 커스텀)를 그대로 노출.
+// picks: {kind:'default'|'custom', key:slug|id}. 커스텀은 user_studio_themes(id), 기본은 글로벌 themes(slug).
+function ctThemeGroup(kind,key){
+  if(kind==='custom'){ const c=((_ctThemes&&_ctThemes.customs)||[]).find(x=>x.id===key); return (c&&c.group==='Influencer')?'Influencer':'Shopping'; }
+  return SV_GROUP_OF[key];
+}
+function ctOn(kind,key){ return CT.picks.some(p=>p.kind===kind&&p.key===key); }
+function ctSelectedThemes(){ return CT.picks.filter(p=>p.kind==='default').map(p=>p.key); } // 글로벌 slug만(POST /templates용)
+async function ctEnsureThemes(){
+  if(!_ctThemes){
+    let defs=[], customs=[], hidden=new Set();
+    try{ defs=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){}
+    try{ const d=(await(await fetch('/api/studio/themes')).json()).data||{}; customs=d.customThemes||[]; hidden=new Set(d.hiddenThemes||[]); }catch(e){}
+    _ctThemes={ defs:defs.filter(t=>!hidden.has(t.slug)), customs };
+  }
+  return _ctThemes;
+}
+function ctThBtn(kind,key,label){ return `<button type="button" class="ct-chip${ctOn(kind,key)?' on':''}" data-kind="${kind}" data-key="${esc(key)}" onclick="ctToggleTheme(this)">${esc(label)}</button>`; }
 async function ctRenderThemes(category){
   const el=document.getElementById('ctThemes'); if(!el)return;
-  const sel=new Set(ctSelectedThemes()); let themes=await ctEnsureThemes();
+  const {defs,customs}=await ctEnsureThemes();
+  const bySlug={}; (defs||[]).forEach(t=>{ bySlug[t.slug]=t; });
   const allow=(typeof CAT_THEMES!=='undefined'&&category&&CAT_THEMES[category])?CAT_THEMES[category]:null;
-  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
-  else if(typeof isThemeVisible==='function') themes=themes.filter(t=>isThemeVisible(t.slug)); // 카테고리 미선택 시도 죽인 테마(jewelry·pet·food·coffee·home·tech 등) 노출 금지
-  el.innerHTML=themes.map(t=>`<button type="button" class="ct-chip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on');ctSync()">${esc(t.name)}</button>`).join('');
+  if(allow) CT.picks=CT.picks.filter(p=>p.kind!=='default'||allow.includes(p.key)); // 카테고리 밖 기본 선택 해제(커스텀은 유지)
+  let h='';
+  for(const [label,slugs] of SV_GROUPS){
+    if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // 숨긴 대분류 제외
+    let defSlugs=slugs.filter(s=>bySlug[s]);
+    if(allow) defSlugs=defSlugs.filter(s=>allow.includes(s)); // 카테고리 지정 시 화이트리스트 교집합
+    defSlugs.forEach(s=>{ h+=ctThBtn('default',s,bySlug[s].name); });
+    (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=ctThBtn('custom',c.id,'✦ '+c.name); });
+    h+=`<button type="button" class="ct-chip ct-new" onclick="ctNewTheme('${label}')">＋ New theme</button>`;
+  }
+  el.innerHTML=h;
+}
+function ctToggleTheme(btn){ const kind=btn.dataset.kind, key=btn.dataset.key;
+  if(ctOn(kind,key)) CT.picks=CT.picks.filter(p=>!(p.kind===kind&&p.key===key));
+  else CT.picks.push({kind,key});
+  btn.classList.toggle('on'); ctSync(); }
+async function ctNewTheme(group){
+  const name=prompt('New theme name'); if(!name||!name.trim())return;
+  try{ const d=await(await fetch('/api/studio/themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),group})})).json();
+    if(d&&d.success&&d.data){ _ctThemes.customs.push(d.data); CT.picks.push({kind:'custom',key:d.data.id}); ctRenderThemes((document.getElementById('ctCat')||{}).value||''); ctSync(); }
+  }catch(e){}
 }
 function ctSync(){
   const b=document.getElementById('ctSave'); if(!b)return;
   const hasCover=!!CT.pick;
   const hasCat=!!((document.getElementById('ctCat')||{}).value);
-  const hasTheme=ctSelectedThemes().length>0;
+  const hasTheme=CT.picks.length>0;
   b.disabled=!(hasCover&&hasCat&&hasTheme&&!ctPromptDirty()&&!CT.busy);
 }
 function ctClose(){ document.getElementById('ctModal').classList.remove('open'); }
@@ -377,8 +414,9 @@ async function ctConfirm(){
   const description=document.getElementById('ctDesc').value.trim();
   const category=document.getElementById('ctCat').value;
   if(!category){ toast('Pick a category.'); return; }
-  const themeSlugs=ctSelectedThemes();
-  if(!themeSlugs.length){ toast('Pick at least one theme.'); return; }
+  if(!CT.picks.length){ toast('Pick at least one theme.'); return; }
+  const themeSlugs=ctSelectedThemes(); // 글로벌 기본 테마만 POST /templates로(커스텀은 아래 배치)
+  const customPicks=CT.picks.filter(p=>p.kind==='custom');
   const p=(document.getElementById('ctPrompt').value||'').trim();
   const btn=document.getElementById('ctSave'); btn.disabled=true; btn.textContent='Saving…';
   try{
@@ -387,6 +425,11 @@ async function ctConfirm(){
         visibility:'private',previewMedia:[cover],sourceResultIdx:(CT.srcIdx!=null?CT.srcIdx:undefined)})});
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
+    const tid=d.data&&d.data.id;
+    // 커스텀 테마 배치(생성된 템플릿을 user_studio_themes 멤버십에 추가)
+    for(const cp of customPicks){
+      try{ await fetch('/api/studio/themes/'+encodeURIComponent(cp.key)+'/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemType:'template',itemId:tid})}); }catch(e){}
+    }
     ctClose();
     toast('Saved to your templates');
   }catch(e){ toast('Save failed: '+(e.message||e)); }
