@@ -135,6 +135,41 @@
     .sv-go:disabled{opacity:.45;cursor:default}
   </style>
 </div>
+<!-- Create template — 이 상세 크리에이션의 사진을 커버로 private 템플릿 생성(Studio "Create template"과 동일 흐름). 이 페이지엔 생성 엔진이 없어 프롬프트는 고정(재생성 불가). -->
+<div id="ctModal" class="sv-ov">
+  <div class="sv-box">
+    <div class="sv-h">Create template</div>
+    <div class="sv-s">Save this look as a private template in your Studio. Only you can see and use it.</div>
+    <div class="sv-lbl">Cover</div>
+    <div class="ct-covers" id="ctCovers"></div>
+    <div class="sv-lbl">Prompt <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(what generates the image)</span></div>
+    <textarea id="ctPrompt" class="ct-ro" rows="3" readonly placeholder="No prompt on this creation."></textarea>
+    <div class="sv-lbl">Template name</div>
+    <input type="text" id="ctName" class="sv-name" maxlength="80" placeholder="e.g. Luxe marble editorial">
+    <div class="sv-lbl">Description <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(optional)</span></div>
+    <textarea id="ctDesc" class="sv-name" rows="2" maxlength="600" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots." style="resize:vertical"></textarea>
+    <div class="sv-lbl">Category</div>
+    <select id="ctCat" class="sv-name" onchange="ctRenderThemes(this.value);ctSync()" style="appearance:auto">
+      <option value="" disabled selected>Select a category…</option>
+      <option value="Shopping">Shopping</option>
+    </select>
+    <div class="sv-lbl">Themes <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(pick at least one)</span></div>
+    <div class="ct-chips" id="ctThemes"></div>
+    <div class="sv-row">
+      <button type="button" class="sv-x" onclick="ctClose()">Cancel</button>
+      <button type="button" class="sv-go" id="ctSave" onclick="ctConfirm()" disabled>Save template</button>
+    </div>
+  </div>
+  <style>
+    #ctModal .ct-covers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+    #ctModal .ct-ph{width:72px;height:90px;border-radius:10px;background-size:cover;background-position:center;cursor:pointer;border:1px solid var(--border2,#2a2a35)}
+    #ctModal .ct-ph.sel{outline:2px solid var(--accent,#7c6cff);outline-offset:2px}
+    #ctModal .ct-ro{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2,#2a2a35);color:var(--text,#fff);border-radius:10px;padding:11px 13px;font-size:13.5px;font-family:inherit;box-sizing:border-box;opacity:.7;resize:none;margin-bottom:2px}
+    #ctModal .ct-chips{display:flex;flex-wrap:wrap;gap:7px}
+    #ctModal .ct-chip{background:rgba(255,255,255,.05);border:1px solid var(--border2,#2a2a35);color:var(--dim,#9aa);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+    #ctModal .ct-chip.on{background:var(--accent,#7c6cff);border-color:var(--accent,#7c6cff);color:#fff}
+  </style>
+</div>
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
@@ -227,6 +262,70 @@ async function confirmSave(){
     IT.ownsTemplate=true; render();
   }catch(e){ toast('Could not add: '+(e.message||e)); }
   finally{ go.disabled=false; go.textContent='Add'; }
+}
+// ── Create template (Studio "Create template"의 from-images 흐름 이식) ──
+// 이 상세 크리에이션의 사진을 커버로 private 템플릿 생성. 이 페이지엔 생성 엔진이 없어 프롬프트는 고정(참고용)·재생성 없음.
+let CT={pick:null,srcIdx:null};
+let _ctThemesCache=null;
+function ctFromDetail(){
+  if(!IT||IT.type==='video'||!IT.url){ toast('No image to use.'); return; }
+  openCtFromImages(IT.prompt||'', [IT.url], IDX);
+}
+function openCtFromImages(prompt, imgs, srcIdx){
+  const p=(prompt||'').trim();
+  CT.srcIdx=(srcIdx!=null?srcIdx:null); CT.pick=imgs[0];
+  document.getElementById('ctName').value=(p||'My template').slice(0,40);
+  document.getElementById('ctDesc').value='';
+  document.getElementById('ctPrompt').value=p;
+  document.getElementById('ctCat').value='';
+  document.getElementById('ctCovers').innerHTML=imgs.map((u,i)=>
+    `<div class="ct-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`).join('');
+  ctRenderThemes('');
+  document.getElementById('ctModal').classList.add('open');
+  ctSync();
+}
+function ctPick(el){
+  document.querySelectorAll('#ctCovers .ct-ph').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel'); CT.pick=el.getAttribute('data-url'); ctSync();
+}
+function ctSelectedThemes(){ return [...document.querySelectorAll('#ctThemes .ct-chip.on')].map(c=>c.dataset.slug); }
+async function ctEnsureThemes(){ if(!_ctThemesCache){ try{ _ctThemesCache=(await(await fetch('/api/marketplace/themes')).json()).data||[]; }catch(e){ _ctThemesCache=[]; } } return _ctThemesCache; }
+async function ctRenderThemes(category){
+  const el=document.getElementById('ctThemes'); if(!el)return;
+  const sel=new Set(ctSelectedThemes()); let themes=await ctEnsureThemes();
+  const allow=(typeof CAT_THEMES!=='undefined'&&category&&CAT_THEMES[category])?CAT_THEMES[category]:null;
+  if(allow) themes=themes.filter(t=>allow.includes(t.slug));
+  el.innerHTML=themes.map(t=>`<button type="button" class="ct-chip${sel.has(t.slug)?' on':''}" data-slug="${esc(t.slug)}" onclick="this.classList.toggle('on');ctSync()">${esc(t.name)}</button>`).join('');
+}
+function ctSync(){
+  const b=document.getElementById('ctSave'); if(!b)return;
+  const hasCover=!!CT.pick;
+  const hasCat=!!((document.getElementById('ctCat')||{}).value);
+  const hasTheme=ctSelectedThemes().length>0;
+  b.disabled=!(hasCover&&hasCat&&hasTheme);
+}
+function ctClose(){ document.getElementById('ctModal').classList.remove('open'); }
+async function ctConfirm(){
+  const name=document.getElementById('ctName').value.trim();
+  if(!name){ toast('Name your template.'); return; }
+  const cover=CT.pick; if(!cover){ toast('Pick a cover image.'); return; }
+  const description=document.getElementById('ctDesc').value.trim();
+  const category=document.getElementById('ctCat').value;
+  if(!category){ toast('Pick a category.'); return; }
+  const themeSlugs=ctSelectedThemes();
+  if(!themeSlugs.length){ toast('Pick at least one theme.'); return; }
+  const p=(document.getElementById('ctPrompt').value||'').trim();
+  const btn=document.getElementById('ctSave'); btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:'image',prompt:p,tool:'nano-banana-pro',
+        visibility:'private',previewMedia:[cover],sourceResultIdx:(CT.srcIdx!=null?CT.srcIdx:undefined)})});
+    const d=await res.json();
+    if(!res.ok||!d.success)throw new Error(d.error||'save failed');
+    ctClose();
+    toast('Saved to your templates');
+  }catch(e){ toast('Save failed: '+(e.message||e)); }
+  finally{ btn.disabled=false; btn.textContent='Save template'; }
 }
 function goBack(){ if(history.length>1) history.back(); else location.href = FROM==='library' ? '/gallery' : '/explore'; }
 function qs(k){return new URLSearchParams(location.search).get(k);}
@@ -367,7 +466,7 @@ function render(){
     ${creator}
     ${templateCard()}
     ${promptPanel()}
-    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button></div>
+    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button>${IT.type!=='video'?`<button class="act sm" onclick="ctFromDetail()">＋ Create template</button>`:''}</div>
     ${owner}${report}`;
 }
 
