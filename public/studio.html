@@ -100,6 +100,8 @@
   .rb-copy:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
   .rb-add{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:rgba(124,108,255,.12);border:1px solid var(--accent)}
   .rb-add:hover{background:rgba(124,108,255,.2)}
+  .rb-tpl{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:rgba(124,108,255,.12);border:1px solid var(--accent)}
+  .rb-tpl:hover{background:rgba(124,108,255,.2)}
   .rb-add.added{color:#5ee0d6;background:rgba(94,224,214,.12);border-color:rgba(94,224,214,.5);cursor:default}
   .rb-add:disabled{opacity:.6;cursor:default}
   .rb-prompt.expanded{display:block;-webkit-line-clamp:unset;max-height:220px;overflow-y:auto;padding-right:8px} /* (테스트) Leonardo식: 살짝 넓어진 박스 + 내부 스크롤 */
@@ -2014,11 +2016,16 @@ function batchRowHtml(b){
     : b.items.map(studioMediaCard).join('');
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
+  const photos=b.items.filter(i=>i.type!=='reel'&&i.url); // 이 creation의 사진(릴 제외)
+  const tplFromBtn=(!b.loading&&photos.length)
+    ?`<button class="rb-tpl" type="button" onclick="createTemplateFromBatch(this)" data-p="${esc(b.promptText||'')}" data-imgs='${esc(JSON.stringify(photos.map(i=>i.url)))}' data-idx="${photos[0].idx!=null?photos[0].idx:''}">＋ Create template</button>`
+    :'';
   const head=isTpl
     ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
     :`<span class="rb-badge custom">✎ Custom</span><div class="rb-prompt">${esc(b.promptText||'Custom prompt')}</div>`+
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
+      tplFromBtn+
       ((()=>{const cidx=(b.items[0]&&b.items[0].idx)||0;
         if(!cidx || (typeof featureOn==='function'&&!featureOn('earnings')))return ''; // creation idx 필요 + Creator 숨김(earnings off) 시 승격 버튼도 숨김
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
@@ -2203,6 +2210,7 @@ function syncTplSaveState(){
 }
 // 모달 프롬프트가 현재 커버를 만든 기준 프롬프트와 다르면 dirty → 재생성 필요.
 function tplPromptDirty(){
+  if(state._tplFromCreation)return false; // 기존 크리에이션에서 온 커버는 편집·재생성 없음(사진 고정)
   const el=document.getElementById('stplPrompt'); if(!el)return false;
   return el.value.trim()!==(state._tplPromptBase||'').trim();
 }
@@ -2243,9 +2251,11 @@ function recolorThemes(catId, containerId){ const cat=(document.getElementById(c
 function openCreateTemplate(count){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
+  state._tplFromCreation=false; state._tplSrcIdx=null; // 신규 생성 모드(프롬프트 편집·재생성 허용)
+  const pr=document.getElementById('stplPrompt'); pr.readOnly=false;
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
-  document.getElementById('stplPrompt').value=p; // 프롬프트 프리필(편집 가능)
+  pr.value=p; // 프롬프트 프리필(편집 가능)
   state._tplPromptBase=p; // 현재 커버를 만든 기준 프롬프트
   document.getElementById('stplPromptWarn').style.display='none';
   document.getElementById('stplRegen').style.display='none';
@@ -2253,6 +2263,30 @@ function openCreateTemplate(count){
   renderThemeChips('stplThemes', [], 'Shopping'); // 테마 칩(기본 미선택, Shopping 세트)
   resetTplCoversLoading(count); // 커버 로딩 + Save 비활성
   document.getElementById('saveTplModal').classList.add('open');
+}
+// 기존 크리에이션 카드의 "＋ Create template" → 이미 만들어진 사진을 커버로 같은 모달 오픈(생성·로딩 없음).
+function createTemplateFromBatch(btn){
+  let imgs=[]; try{ imgs=JSON.parse(btn.dataset.imgs||'[]'); }catch(e){}
+  if(!imgs.length){toast('No image to use.');return;}
+  const idxRaw=btn.dataset.idx; const srcIdx=idxRaw!==''&&idxRaw!=null?parseInt(idxRaw,10):null;
+  openCreateTemplateFromImages(btn.dataset.p||'', imgs, srcIdx);
+}
+// 기존 사진 배열을 커버로 모달 구성 — 프롬프트는 읽기전용(사진 고정), 재생성 없음.
+function openCreateTemplateFromImages(prompt, imgs, srcIdx){
+  const p=(prompt||'').trim();
+  state._tplFromCreation=true; state._tplSrcIdx=(srcIdx!=null?srcIdx:null);
+  state.lastPreview=imgs.slice(); state._tplPromptBase=p; state._tplPick=imgs[0];
+  document.getElementById('stplName').value=(p||'My template').slice(0,40);
+  document.getElementById('stplDesc').value='';
+  const pr=document.getElementById('stplPrompt'); pr.value=p; pr.readOnly=true; // 사진이 이미 있으니 편집 불가
+  document.getElementById('stplPromptWarn').style.display='none';
+  document.getElementById('stplRegen').style.display='none';
+  document.getElementById('stplCat').value='';
+  renderThemeChips('stplThemes', [], 'Shopping');
+  document.getElementById('stplPick').innerHTML=imgs.map((u,i)=>
+    `<div class="stpl-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`).join('');
+  document.getElementById('saveTplModal').classList.add('open');
+  syncTplSaveState();
 }
 // 생성 완료 → 커버 픽커를 실제 사진으로 채움. 단일 선택(첫 장 기본), official 원리: preview_media[0]=썸네일.
 function fillCreateTemplateCovers(){
@@ -2288,7 +2322,7 @@ async function confirmSaveTpl(){
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:'image',prompt:p,tool:curTool(),
-        visibility:'private',previewMedia:[cover],negativePrompt:negText()})}); // 항상 비공개 · 대표 이미지 1장
+        visibility:'private',previewMedia:[cover],negativePrompt:negText(),sourceResultIdx:(state._tplSrcIdx!=null?state._tplSrcIdx:undefined)})}); // 항상 비공개 · 대표 이미지 1장
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
     closeSaveTpl();
