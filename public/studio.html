@@ -721,16 +721,21 @@
     <button class="x" onclick="closeSaveTpl()">✕</button>
     <h3>Create template</h3>
     <div class="msub">Save this look as a private template in your Studio. Only you can see and use it.</div>
-    <div class="field"><label>Cover image <i>(pick one — shown as the template thumbnail)</i></label>
-      <div class="stpl-prev" id="stplPick"></div></div>
+    <!-- 핵심 블록: 이 이미지 자체를 만드는 입력(커버 + 프롬프트). 프롬프트 편집 = 이미지 재생성. -->
+    <div class="stpl-core">
+      <div class="field" style="margin-bottom:14px"><label>Cover image <i>(pick one — shown as the template thumbnail)</i></label>
+        <div class="stpl-prev" id="stplPick"></div></div>
+      <div class="field" style="margin-bottom:0"><label class="stpl-lbl-key">Prompt <i>— this is what generates the image</i></label>
+        <textarea id="stplPrompt" class="stpl-prompt-input" rows="3" oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
+        <div id="stplPromptWarn" class="stpl-warn" style="display:none">Prompt changed — regenerate the preview before saving.</div>
+        <button class="btn" id="stplRegen" style="display:none;margin-top:8px" onclick="regenTplPreview()">↻ Regenerate preview</button></div>
+    </div>
+    <!-- 부가 설정: 템플릿 메타데이터. 이미지에는 영향 없음. -->
+    <div class="stpl-sec-head"><span>Template details</span><i>Naming & where it appears — doesn't change the image</i></div>
     <div class="field"><label>Template name</label>
       <input type="text" id="stplName" maxlength="80" placeholder="e.g. Luxe marble editorial" style="width:100%"></div>
     <div class="field"><label>Description <i>(optional — a reminder of what it's good for)</i></label>
       <textarea id="stplDesc" maxlength="600" rows="3" placeholder="e.g. Editorial marble backdrop for skincare & fragrance hero shots."></textarea></div>
-    <div class="field"><label>Prompt <i>(what this template generates)</i></label>
-      <textarea id="stplPrompt" rows="3" oninput="onTplPromptInput()" placeholder="Describe the look this template should produce…"></textarea>
-      <div id="stplPromptWarn" class="stpl-warn" style="display:none">Prompt changed — regenerate the preview before saving.</div>
-      <button class="btn" id="stplRegen" style="display:none;margin-top:8px" onclick="regenTplPreview()">↻ Regenerate preview</button></div>
     <div class="field"><label>Category</label>
       <select id="stplCat" onchange="recolorThemes('stplCat','stplThemes');syncTplSaveState()">
         <!-- (2026-07-01) Influencer 옵션 숨김 — 기업 대상. 재활성 시 <option value="Influencer">Influencer</option> 복원 -->
@@ -739,7 +744,14 @@
       </select></div>
     <div class="field"><label>Themes <i>(pick all that fit)</i></label>
       <div id="stplThemes" class="theme-chips"></div></div>
-    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}#stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}#stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}#stplPick .stpl-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}.stpl-warn{margin-top:8px;font-size:12.5px;font-weight:600;color:#f0b429}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
+    <style>.theme-chips{display:flex;flex-wrap:wrap;gap:7px}.theme-chips .tchip{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.theme-chips .tchip.on{background:var(--accent);border-color:var(--accent);color:#fff}#stplPick .stpl-ph{cursor:pointer}#stplPick .stpl-ph.sel{outline:2px solid var(--accent);outline-offset:2px}#stplPick .stpl-ph.stpl-loading{cursor:default;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:rgba(255,255,255,.04)}#stplPick .stpl-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:stplspin .7s linear infinite}#stplPick .stpl-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}.stpl-warn{margin-top:8px;font-size:12.5px;font-weight:600;color:#f0b429}
+    .stpl-core{border:1px solid var(--accent);border-radius:14px;padding:15px;background:rgba(124,108,255,.06);margin-bottom:6px}
+    #saveTplModal .stpl-lbl-key{font-size:13px!important;font-weight:800!important;color:var(--text)!important}
+    #saveTplModal .stpl-lbl-key i{font-weight:600;color:var(--accent2)}
+    #saveTplModal .stpl-prompt-input{border-color:var(--accent)!important;background:var(--surface)!important}
+    .stpl-sec-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:22px 0 14px;padding-top:16px;border-top:1px solid var(--border2)}
+    .stpl-sec-head span{font-size:13px;font-weight:800;color:var(--text)}
+    .stpl-sec-head i{font-size:11.5px;font-style:normal;color:var(--dim)}@keyframes stplspin{to{transform:rotate(360deg)}}</style>
     <div class="stpl-actions">
       <button class="btn" onclick="closeSaveTpl()">Cancel</button>
       <button class="btn btn-primary" id="stplSave" onclick="confirmSaveTpl()">Save template</button>
