@@ -2210,7 +2210,6 @@ function syncTplSaveState(){
 }
 // 모달 프롬프트가 현재 커버를 만든 기준 프롬프트와 다르면 dirty → 재생성 필요.
 function tplPromptDirty(){
-  if(state._tplFromCreation)return false; // 기존 크리에이션에서 온 커버는 편집·재생성 없음(사진 고정)
   const el=document.getElementById('stplPrompt'); if(!el)return false;
   return el.value.trim()!==(state._tplPromptBase||'').trim();
 }
@@ -2231,6 +2230,7 @@ function regenTplPreview(){
   if(!p){toast('Write a prompt first.');return;}
   const rb=document.getElementById('stplRegen'); if(rb)rb.disabled=true;
   const ep=document.getElementById('extraPrompt'); if(ep)ep.value=p; // 편집 프롬프트를 실제 생성 입력에 반영
+  state._tplSrcIdx=null; // 재생성 = 원본과 다른 새 사진 → 원본 크리에이션 링크 해제
   generate({regenTemplate:true});
 }
 // 커버 픽커를 로딩(경과 초) 상태로 — 최초/재생성 공용. Save 비활성.
@@ -2251,7 +2251,7 @@ function recolorThemes(catId, containerId){ const cat=(document.getElementById(c
 function openCreateTemplate(count){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
-  state._tplFromCreation=false; state._tplSrcIdx=null; // 신규 생성 모드(프롬프트 편집·재생성 허용)
+  state._tplSrcIdx=null; // 신규 생성 — 원본 크리에이션 링크 없음
   const pr=document.getElementById('stplPrompt'); pr.readOnly=false;
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
@@ -2271,14 +2271,14 @@ function createTemplateFromBatch(btn){
   const idxRaw=btn.dataset.idx; const srcIdx=idxRaw!==''&&idxRaw!=null?parseInt(idxRaw,10):null;
   openCreateTemplateFromImages(btn.dataset.p||'', imgs, srcIdx);
 }
-// 기존 사진 배열을 커버로 모달 구성 — 프롬프트는 읽기전용(사진 고정), 재생성 없음.
+// 기존 사진 배열을 커버로 모달 구성 — 초기 커버는 이미 있는 사진. 프롬프트 편집 시 신규 생성 경로와 동일(재생성 후 save).
 function openCreateTemplateFromImages(prompt, imgs, srcIdx){
   const p=(prompt||'').trim();
-  state._tplFromCreation=true; state._tplSrcIdx=(srcIdx!=null?srcIdx:null);
+  state._tplSrcIdx=(srcIdx!=null?srcIdx:null);
   state.lastPreview=imgs.slice(); state._tplPromptBase=p; state._tplPick=imgs[0];
   document.getElementById('stplName').value=(p||'My template').slice(0,40);
   document.getElementById('stplDesc').value='';
-  const pr=document.getElementById('stplPrompt'); pr.value=p; pr.readOnly=true; // 사진이 이미 있으니 편집 불가
+  const pr=document.getElementById('stplPrompt'); pr.value=p; pr.readOnly=false; // 프롬프트 편집 가능 — 바꾸면 재생성 강제
   document.getElementById('stplPromptWarn').style.display='none';
   document.getElementById('stplRegen').style.display='none';
   document.getElementById('stplCat').value='';
