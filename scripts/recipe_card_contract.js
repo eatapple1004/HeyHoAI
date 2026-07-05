@@ -41,7 +41,7 @@ for (const v of VERTICALS) {
   for (const r of v2) {
     const pid = r.config && r.config.parent_id;
     if (!pid) continue;
-    (childrenByParent[pid] = childrenByParent[pid] || []).push({ id: slug(r.name), name: r.name });
+    (childrenByParent[pid] = childrenByParent[pid] || []).push({ id: slug(r.name), name: r.name, preview: r.preview || null });
   }
   out[v] = v2.filter((r) => !(r.config && r.config.parent_id)).map((r) => {
     const isNew = netNew || !v1names.has((r.name || '').trim().toLowerCase());
@@ -63,6 +63,7 @@ for (const v of VERTICALS) {
     if (PRODUCT.has(v)) card.guards = guards.resolvedGuards(v);   // ← resolvedGuards 실소비
     const kids = childrenByParent[id];                            // 중첩: 부모 카드에 컷(자식) 목록 부착
     if (kids && kids.length) card.cuts = kids;
+    if (r.preview) card.preview = r.preview;                      // 예시 이미지(정적 경로) — 있으면 카드/모달에 노출
     return card;
   });
 }

@@ -94,7 +94,8 @@ for (const v of FE_VERTICALS) {
       guards: r.guards || [],                // PREVIEW 전용 (resolver L148 미착지 — '보장' 카피 금지)
       held: !passedIds.has(r.id),            // 출시 보류 — 통과(_pass_log)분만 false(해제). studio 조건부 '보류' 배지.
       emoji: pickEmoji(r), grad: pickGrad(r.id),
-      ...(r.cuts && r.cuts.length ? { cuts: r.cuts } : {}), // 중첩 템플릿: 컷(자식) 선택지
+      ...(r.cuts && r.cuts.length ? { cuts: r.cuts } : {}), // 중첩 템플릿: 컷(자식) 선택지(각 preview 포함)
+      ...(r.preview ? { preview: r.preview } : {}),          // 예시 이미지 경로
     };
   });
 }

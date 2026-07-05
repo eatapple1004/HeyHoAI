@@ -12,6 +12,10 @@
  * 확정 스코프(2026-07-05 Chief): 컷 유형만(효과 축2 나중) · 신규 slug productcut ·
  *   단건 선택(배치 나중) · 균일 과금.
  *
+ * 예시 이미지: 시드에 하드코딩하지 않음. Studio가 컨벤션 경로 /img/productcut/<id>.png를 시도 —
+ *   파일 있으면 부모=카드 썸네일·자식=모달 미리보기로 표시, 없으면 다른 카드와 동일한 그라디언트/placeholder로 폴백.
+ *   (명시 override 필요 시 레시피에 top-level "preview" 추가하면 우선.) 안내=public/img/productcut/README.md.
+ *
  * 입력: 의류 이미지 1장(레퍼런스). 모델 없음 → reference_strategy='product_composite'.
  * 비용공식(시드 캐논): image product_composite=ceil(count×0.5). 4컷 → ◈2.
  *

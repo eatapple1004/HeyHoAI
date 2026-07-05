@@ -3165,23 +3165,28 @@
         "cuts": [
           {
             "id": "flat-lay-cut",
-            "name": "Flat Lay Cut"
+            "name": "Flat Lay Cut",
+            "preview": null
           },
           {
             "id": "hanger-cut",
-            "name": "Hanger Cut"
+            "name": "Hanger Cut",
+            "preview": null
           },
           {
             "id": "ghost-mannequin-cut",
-            "name": "Ghost Mannequin Cut"
+            "name": "Ghost Mannequin Cut",
+            "preview": null
           },
           {
             "id": "styled-object-cut",
-            "name": "Styled Object Cut"
+            "name": "Styled Object Cut",
+            "preview": null
           },
           {
             "id": "detail-cut",
-            "name": "Detail Cut"
+            "name": "Detail Cut",
+            "preview": null
           }
         ]
       }

@@ -81,13 +81,16 @@
   .tpl-sel .ts-sub{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tpl-sel .ts-x{margin-left:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--dim);font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;align-self:flex-start}
   .tpl-sel .ts-x:hover{background:rgba(255,255,255,.18);color:var(--text)}
-  /* 중첩 템플릿 — 컷 유형 선택 그리드 (부모 카드 아래) */
-  .cut-sel{width:100%;max-width:480px;margin-top:10px;display:flex;flex-direction:column;gap:7px}
+  /* 중첩 템플릿 — 컷 유형 선택 그리드 (썸네일 카드, 5개 다 보임) */
+  .cut-sel{width:100%;max-width:none;margin-top:10px;display:flex;flex-direction:column;gap:8px}
   .cut-sel .cut-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2)}
-  .cut-sel .cut-row{display:flex;flex-wrap:wrap;gap:8px}
-  .cut-sel .cut-btn{font:inherit;font-size:13px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .13s;white-space:nowrap}
-  .cut-sel .cut-btn:hover{color:var(--text);border-color:var(--accent);background:rgba(124,108,255,.10)}
-  .cut-sel .cut-btn.on{color:#fff;background:var(--accent);border-color:var(--accent);box-shadow:0 6px 16px -8px rgba(124,108,255,.7)}
+  .cut-sel .cut-row{display:flex;flex-wrap:wrap;gap:10px}
+  .cut-card{width:92px;padding:0;cursor:pointer;border-radius:12px;overflow:hidden;border:2px solid var(--border2);background:rgba(255,255,255,.03);transition:border-color .14s,box-shadow .14s;font-family:inherit}
+  .cut-card:hover{border-color:var(--accent)}
+  .cut-card.on{border-color:var(--accent);box-shadow:0 6px 18px -8px rgba(124,108,255,.7)}
+  .cut-card .cc-thumb{display:block;width:100%;height:84px;background-size:cover;background-position:center}
+  .cut-card .cc-label{display:block;padding:6px 5px;font-size:11.5px;font-weight:600;text-align:center;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cut-card.on .cc-label{color:#fff;background:var(--accent)}
   /* ▲▲▲ 테스트 흡수 블록 끝 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
@@ -902,7 +905,7 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=6"></script>
+<script src="/js/recipes.generated.js?v=8"></script>
 <script src="/js/themes.js?v=3"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
@@ -934,11 +937,17 @@ function buildTemplates(){
   const mk=(c,cat,theme)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
     emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",
     themes:theme?[theme]:['general'],held:c.held,
-    cuts:(c.cuts&&c.cuts.length)?c.cuts:undefined}); // 중첩 템플릿: 컷(자식) 선택지 보존
+    cuts:(c.cuts&&c.cuts.length)?c.cuts:undefined, // 중첩 템플릿: 컷(자식) 선택지 보존(각 preview 포함)
+    preview:c.preview||undefined}); // 예시 이미지(정적 경로) — 있으면 카드/모달 썸네일
   const PRODUCT=["fashion","beauty","jewelry","food","coffee","home","tech","pet"];
   const shopping=[];
   PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v),v))));
-  (C.productcut||[]).forEach(c=>shopping.push(mk(c,'Product Cut','productcut'))); // 신규 오피셜 테마(부모 카드만)
+  (C.productcut||[]).forEach(c=>{ // 신규 오피셜 테마(부모 카드만)
+    const m=mk(c,'Product Cut','productcut');
+    // 예시 이미지 컨벤션: /img/productcut/<id>.png. 파일 있으면 카드 썸네일로, 없으면(404) 레이어드 배경이 그라디언트로 폴백(다른 카드와 동일).
+    if(!m.preview)m.preview='/img/productcut/'+c.id+'.png';
+    shopping.push(m);
+  });
   TEMPLATES={
     influencer:[].concat((C.influencer||[]).map(c=>mk(c,c.cat,'people')),(C.headshot||[]).map(c=>mk(c,"Headshot",'people')),(C.general||[]).map(c=>mk(c,"General",'people'))),
     shopping:shopping,
@@ -1790,7 +1799,7 @@ function renderRecipes(){
     return `
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
       ${mc}
-      <div class="preview" style="${r.preview?`background-image:url('${esc(r.preview)}');background-size:cover;background-position:center`:`background:${r.grad}`}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
+      <div class="preview" style="${r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad}`:`background:${r.grad}`}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
   renderPremium();
@@ -1821,7 +1830,7 @@ function mgThemeBtn(r){
 function mgCard(r){
   const hl=(MANAGE_HL&&(String(r.id)===MANAGE_HL||String(r.ownedId)===MANAGE_HL))?' hl':'';
   return `<div class="recipe-card mg${hl}">${MG_THEME?'':mgActions(r)}
-    <div class="preview" style="${r.preview?`background-image:url('${esc(r.preview)}');background-size:cover;background-position:center`:`background:${r.grad}`}">${isOfficialCard(r.id)?'<span class="mg-badge">Official</span>':''}</div>
+    <div class="preview" style="${r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad}`:`background:${r.grad}`}">${isOfficialCard(r.id)?'<span class="mg-badge">Official</span>':''}</div>
     <div class="meta"><div class="rname">${esc(r.name)}</div><div class="cost">${esc(r.cat||'Template')}</div>${mgThemeBtn(r)}</div></div>`;
 }
 function renderManageGrid(){
@@ -1904,15 +1913,31 @@ async function loadRecipeDesc(){
   try{const d=(await(await fetch('/api/recipes')).json()).data||[];d.forEach(r=>{RECIPE_DESC[r.id]=r.description||'';});}catch(e){}
 }
 let modalRecipeId=null;
+let modalRecipeObj=null; // 현재 모달 레시피(예시 이미지 갱신용)
 let modalCutId=null; // 상세 모달에서 임시 선택한 컷(확정 시 state.cutId로)
-function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-btn').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));}
+// 모달 미리보기: 선택 컷 예시 이미지 우선 → 없으면 부모 예시 → 없으면 그라디언트 placeholder(이미지 404 시 자동 폴백).
+function setModalPreview(r){
+  const pv=document.getElementById('rmPreview'); if(!pv||!r)return;
+  const cut=(r.cuts||[]).find(c=>String(c.id)===String(modalCutId));
+  // 컷 예시 이미지 컨벤션: /img/productcut/<cutId>.png (명시 preview 있으면 우선). 파일 없으면 onerror로 placeholder 폴백(다른 카드와 동일).
+  const img = cut ? (cut.preview || ('/img/productcut/'+cut.id+'.png')) : (r.preview||null);
+  const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
+  const ph=()=>{ pv.style.background=grad; pv.innerHTML=`${r.emoji||'🎨'}<div class="ph">Sample image coming soon</div>`; };
+  if(img){ pv.style.background=grad; pv.innerHTML=''; const im=new Image(); im.alt=''; im.style.cssText='width:100%;height:100%;object-fit:cover;display:block'; im.onerror=ph; im.src=img; pv.appendChild(im); }
+  else ph();
+}
+function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));setModalPreview(modalRecipeObj);}
 function renderModalCuts(r){
   const cw=document.getElementById('rmCuts'); if(!cw)return;
   if(r&&r.cuts&&r.cuts.length){
     modalCutId=(state.recipeId===r.id&&state.cutId)?state.cutId:r.cuts[0].id; // 재오픈 시 기존 선택 유지
     cw.style.display='';
     cw.innerHTML=`<span class="cut-lbl">Cut type — pick one</span><div class="cut-row">`
-      +r.cuts.map(ct=>`<button type="button" data-cut="${ct.id}" class="cut-btn${modalCutId===ct.id?' on':''}" onclick="setModalCut('${ct.id}')">${esc(cutLabel(ct.name))}</button>`).join('')
+      +r.cuts.map(ct=>{
+        const img=ct.preview||('/img/productcut/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
+        return `<button type="button" data-cut="${ct.id}" class="cut-card${modalCutId===ct.id?' on':''}" onclick="setModalCut('${ct.id}')">`
+          +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
+          +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`; }).join('')
       +`</div>`;
   }else{ modalCutId=null; cw.style.display='none'; cw.innerHTML=''; }
 }
@@ -1925,10 +1950,9 @@ function openRecipeModal(id){
   document.getElementById('rmName').textContent=r.name;
   document.getElementById('rmBadge').textContent=r.type==='reel'?'▶ Reel':'▦ Photo';
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
-  const pv=document.getElementById('rmPreview');
-  pv.style.background=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
-  pv.innerHTML=`${r.emoji||'🎨'}<div class="ph">Sample image coming soon</div>`; // 샘플 이미지 없으니 자리만
-  renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면)
+  modalRecipeObj=r;
+  renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
+  setModalPreview(r); // 예시 이미지(선택 컷 우선) — 없으면 placeholder
   document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ Selected — tap to deselect':'Use this template';
   document.getElementById('recipeModal').classList.add('open');
 }
@@ -1963,13 +1987,18 @@ function syncTplTrigger(){
   const wrap=document.getElementById('tplSelWrap');
   const r=(state.mode==='custom')?null:curRecipe();
   if(r&&wrap){ // 선택됨 → 강조 칩("이 템플릿으로 만들어진다"가 한눈에)
-    const thumb=r.preview?`background-image:url('${esc(r.preview)}')`:(r.grad?`background:${r.grad}`:'');
+    const thumb=r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad||'#2a2a3a'}`:(r.grad?`background:${r.grad}`:'');
     const out=r.type==='reel'?'reel':'photos';
     // 중첩 템플릿: 컷 유형 선택 그리드(부모 카드가 cuts 보유 시). 선택 컷이 실제 resolve 대상.
     let cutHtml='';
     if(r.cuts&&r.cuts.length){
       if(!state.cutId||!r.cuts.some(ct=>ct.id===state.cutId))state.cutId=r.cuts[0].id; // 방어: 항상 유효한 컷
-      const btns=r.cuts.map(ct=>`<button type="button" class="cut-btn${state.cutId===ct.id?' on':''}" onclick="event.stopPropagation();setCut('${ct.id}')">${esc(cutLabel(ct.name))}</button>`).join('');
+      const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
+      const btns=r.cuts.map(ct=>{
+        const img=ct.preview||('/img/productcut/'+ct.id+'.png');
+        return `<button type="button" data-cut="${ct.id}" class="cut-card${state.cutId===ct.id?' on':''}" onclick="event.stopPropagation();setCut('${ct.id}')">`
+          +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
+          +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`; }).join('');
       cutHtml=`<div class="cut-sel"><span class="cut-lbl">Cut type</span><div class="cut-row">${btns}</div></div>`;
     }
     wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
@@ -2788,6 +2817,9 @@ dailyCheckin();
   let ticking=false;
   function dock(){
     ticking=false;
+    // (fix) 생성란이 인라인(.gen-inline=position:relative)이면 도킹 금지. relative에 bottom을 주면 요소가
+    //   정상 위치에서 위로 밀려 올라가 "위에 껴서 화면 안 내려옴" 버그가 남. 인라인이면 잔여 bottom 제거 후 종료.
+    if(bar.classList.contains('gen-inline')){ if(bar.style.bottom) bar.style.bottom=''; return; }
     const footer=document.getElementById('bizf-block');
     if(!footer){bar.style.bottom='';return;}            // 푸터 없으면 기본값
     const footTop=footer.getBoundingClientRect().top;     // 푸터 상단의 화면상 위치

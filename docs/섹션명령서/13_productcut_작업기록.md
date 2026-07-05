@@ -83,6 +83,13 @@ Shopping (macro_group)
 - 캐시버스트 `themes.js?v=2→v3`. :3001 재시작 불필요(프론트 정적 + 백엔드 price 라이브 조회).
 - Store엔 price 0(무료/included)로 남음. 재시작 없이 하드리프레시로 :3001 노출.
 
+## 예시 이미지 슬롯 (2026-07-05, UI 컨벤션 방식)
+컷마다 예시 사진 노출(사용자가 직접 제작). **시드 하드코딩 없음** — Studio가 컨벤션 경로 `/img/productcut/<id>.png`를 시도.
+- **아직 안 넣었으면 다른 카드와 동일**: 파일 없으면 그리드 카드=그라디언트(레이어드 배경 `url(convention), grad`), 모달=표준 placeholder("Sample image coming soon", `onerror` 폴백). 데이터(생성 카드)엔 preview 없음.
+- 파일 있으면 표시: 부모 그리드 썸네일=`product-cut.png`, 모달 컷 미리보기=`<cutId>.png`.
+- 배선: buildTemplates가 productcut 카드에 `m.preview='/img/productcut/'+id+'.png'` 파생 / `setModalPreview`가 컷 경로 파생(명시 seed `preview` override 있으면 우선). contract/export의 preview 통과 코드는 override 대비 유지(현재 inert).
+- 안내: `public/img/productcut/README.md`. 파일만 넣으면 재빌드 없이 반영. `recipes.generated.js?v=8`.
+
 ## ⚠️ 배포 주의
 - `recipe.route.js`·`recipeStore.js`·`migrate.js` 변경 = **백엔드**. 배포 시 `pm2 restart` + prod migrate 필요.
 - `migrate.js`는 전부 멱등(기존 8공식 패턴 답습). prod에서 재실행해도 안전.
