@@ -55,6 +55,13 @@
   .subj-ava.ph{background:rgba(255,255,255,.05);color:var(--dim);font-size:20px}
   /* ▼▼▼ (2026-06-28 테스트) "Pick a template" 컴포즈 흡수 — 라벨 버튼(미선택) → accent "✓ Template" 칩(선택). 모달은 Select Media와 동일한 .modal.media(배경 #0c0c14). 롤백 시 이 블록 통째 삭제 ▼▼▼ */
   .tpl-compose{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+  /* 템플릿 미선택 시 "Pick a template" CTA 박스(제품 영역 바로 아래) — 누르면 픽커로 스크롤 */
+  .tpl-pick-cta{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:15px 17px;border-radius:14px;background:rgba(124,108,255,.06);border:1px solid var(--border2);color:var(--text);font-family:inherit;cursor:pointer;transition:border-color .2s,background .2s}
+  .tpl-pick-cta:hover{border-color:var(--accent);background:rgba(124,108,255,.1)}
+  .tpl-pick-cta .tpc-ic{font-size:18px;color:var(--accent2);line-height:1}
+  .tpl-pick-cta .tpc-body{display:flex;flex-direction:column;gap:2px;flex:1}
+  .tpl-pick-cta .tpc-t{font-size:14px;font-weight:700}
+  .tpl-pick-cta .tpc-s{font-size:12px;color:var(--dim)}
   /* (2026-07-02 템플릿-우선) 갤러리 인라인화 — 옛 #tplPanelInner 모달 스타일 폐지 */
   #templateStep{margin-top:4px}
   #templateStep .filter-row{margin-top:16px}
@@ -2078,7 +2085,19 @@ function syncTplTrigger(){
       +cutHtml;
     wrap.style.display='';
     c.style.display='';
-  }else{ if(wrap){wrap.innerHTML='';wrap.style.display='none';} c.style.display='none'; }
+  }else if(wrap){ // 미선택 → "Pick a template" CTA(누르면 픽커로 스크롤). Custom 모드는 프롬프트 직접이라 숨김.
+    if(state.mode!=='custom'){
+      wrap.innerHTML=`<button type="button" class="tpl-pick-cta" onclick="scrollToTemplatePicker()">`
+        +`<span class="tpc-ic">▦</span>`
+        +`<span class="tpc-body"><span class="tpc-t">Pick a template</span><span class="tpc-s">Choose a look below — no prompt needed</span></span></button>`;
+      wrap.style.display=''; c.style.display='';
+    }else{ wrap.innerHTML=''; wrap.style.display='none'; c.style.display='none'; }
+  }else{ c.style.display='none'; }
+}
+// "Pick a template" CTA → 템플릿 픽커 섹션으로 스크롤
+function scrollToTemplatePicker(){
+  const el=document.getElementById('templateStep');
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
