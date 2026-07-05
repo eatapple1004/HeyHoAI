@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia — Settings</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<script src="/saas-auth.js?v=3" defer></script>
+<style>
+  .wrap{max-width:720px;margin:0 auto;padding:24px 24px 90px;position:relative;z-index:2}
+  /* 레오나도 settings식 독립 전체 페이지 — 플로팅 백버튼만 */
+  .back-fab{position:fixed;top:22px;left:22px;z-index:60;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--dim);cursor:pointer;padding:9px 15px 9px 12px;border-radius:99px;border:1px solid var(--border);background:rgba(16,16,24,.7);backdrop-filter:blur(14px);transition:color .2s,border-color .2s,background .2s,transform .2s}
+  .back-fab:hover{color:var(--text);border-color:var(--border2);background:rgba(28,28,40,.85);transform:translateX(-2px)}
+  .back-fab svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  .head{text-align:center;margin:44px auto 40px}
+  .head .eyebrow{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+    background:linear-gradient(120deg,var(--accent2),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+  .head h1{font-family:'Sora';font-weight:800;font-size:38px;letter-spacing:-1.2px;margin:0}
+
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));border:1px solid var(--border2);border-radius:20px;padding:28px 26px;margin-bottom:22px}
+  .card h2{font-family:'Sora';font-size:17px;font-weight:700;margin:0 0 4px}
+  .card .card-sub{font-size:12.5px;color:var(--dim);margin:0 0 22px;line-height:1.5}
+
+  .field{margin-bottom:18px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px}
+  .field input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:12px;padding:13px 15px;color:var(--text);font-family:inherit;font-size:14.5px;transition:border-color .2s,background .2s}
+  .field input:focus{outline:none;border-color:var(--accent);background:rgba(124,108,255,.05)}
+  .field input:disabled{color:var(--faint);cursor:not-allowed;background:rgba(0,0,0,.18)}
+  .field .hint{font-size:11.5px;color:var(--faint);margin-top:7px;line-height:1.45}
+
+  .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+
+  /* Danger zone */
+  .card.danger{border-color:rgba(255,126,182,.3)}
+  .card.danger h2{color:var(--pink)}
+  .danger-row{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .danger-row .txt{font-size:12.5px;color:var(--dim);line-height:1.55;max-width:420px}
+  .btn-danger{background:transparent;color:var(--pink);border:1px solid rgba(255,126,182,.4);border-radius:12px;padding:11px 18px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:background .2s,border-color .2s}
+  .btn-danger:hover{background:rgba(255,126,182,.1);border-color:rgba(255,126,182,.6)}
+  .btn-danger svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Delete confirmation modal */
+  .modal-back{position:fixed;inset:0;background:rgba(4,4,9,.72);backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:24px}
+  .modal-back.open{display:flex}
+  .modal{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:28px 26px;box-shadow:0 40px 100px -40px rgba(0,0,0,.8)}
+  .modal h3{font-family:'Sora';font-size:19px;font-weight:700;margin:0 0 10px;color:var(--pink)}
+  .modal p{font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 20px}
+  .modal p b{color:var(--text)}
+  .modal .field{margin-bottom:0}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+  .btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:12px;padding:11px 18px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s}
+  .btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+  .btn-danger-solid{background:linear-gradient(120deg,var(--pink),#ff5c9a);color:#fff;border:0;border-radius:12px;padding:11px 18px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:opacity .2s,filter .2s}
+  .btn-danger-solid:hover{filter:brightness(1.08)}
+  .btn-danger-solid:disabled{opacity:.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
+
+<a class="back-fab" onclick="goBack()" title="Back">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
+</a>
+
+<div class="wrap">
+  <div class="head fade d1">
+    <div class="eyebrow">Account</div>
+    <h1>Settings</h1>
+  </div>
+
+  <!-- Profile -->
+  <div class="card fade d2">
+    <h2>Your profile</h2>
+    <p class="card-sub">Your email is used to sign in and can't be changed here.</p>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="fEmail" disabled placeholder="—" />
+    </div>
+
+    <div class="field">
+      <label>Display name</label>
+      <input type="text" id="fName" maxlength="50" placeholder="Your name" autocomplete="off" />
+      <div class="hint">This is the name shown across Doppia (account menu, community).</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="saveBtn" onclick="saveProfile()">Save changes</button>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="card danger fade d3">
+    <h2>Delete account</h2>
+    <p class="card-sub">Permanently disable your Doppia account. This can't be undone.</p>
+    <div class="danger-row">
+      <div class="txt">Deleting your account removes access to your studio, library, and credits. You won't be able to sign back in.</div>
+      <button class="btn-danger" onclick="openDelete()">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Delete account
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation -->
+<div class="modal-back" id="delModal">
+  <div class="modal">
+    <h3>Delete your account?</h3>
+    <p>This permanently disables <b id="delEmail">your account</b> and signs you out. To confirm, type <b>DELETE</b> below.</p>
+    <div class="field">
+      <input type="text" id="delConfirm" placeholder="Type DELETE" autocomplete="off" oninput="onDelInput()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeDelete()">Cancel</button>
+      <button class="btn-danger-solid" id="delBtn" disabled onclick="confirmDelete()">Delete account</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
+
+// 현재 사용자 로드 (saas-auth.js가 미로그인 시 이미 리다이렉트)
+(async function loadMe(){
+  try{
+    const res = await fetch('/api/auth/me');
+    if(!res.ok) return;
+    const me = (await res.json()).data || {};
+    var e = document.getElementById('fEmail'); if(e) e.value = me.email || '';
+    var n = document.getElementById('fName'); if(n) n.value = me.display_name || '';
+    var de = document.getElementById('delEmail'); if(de) de.textContent = me.email || 'your account';
+  }catch{}
+})();
+
+async function saveProfile(){
+  var btn = document.getElementById('saveBtn');
+  var name = (document.getElementById('fName').value || '').trim();
+  if(!name){ if(window.toast) toast('Display name cannot be empty.', 'error'); return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const res = await fetch('/api/auth/me', {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ displayName: name })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.success){
+      if(window.toast) toast(data.error || 'Could not save changes.', 'error');
+    } else {
+      if(window.toast) toast('Profile updated.', 'success');
+    }
+  }catch{
+    if(window.toast) toast('Could not reach the server.', 'error');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save changes';
+  }
+}
+
+// ── Delete flow ──
+function openDelete(){ document.getElementById('delModal').classList.add('open'); document.getElementById('delConfirm').focus(); }
+function closeDelete(){ document.getElementById('delModal').classList.remove('open'); document.getElementById('delConfirm').value=''; document.getElementById('delBtn').disabled=true; }
+function onDelInput(){ document.getElementById('delBtn').disabled = document.getElementById('delConfirm').value.trim().toUpperCase() !== 'DELETE'; }
+document.getElementById('delModal').addEventListener('click', function(e){ if(e.target===this) closeDelete(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDelete(); });
+
+async function confirmDelete(){
+  var btn = document.getElementById('delBtn');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  try{
+    const res = await fetch('/api/auth/me', { method:'DELETE' });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.success){
+      if(window.toast) toast(data.error || 'Could not delete account.', 'error');
+      btn.disabled = false; btn.textContent = 'Delete account';
+      return;
+    }
+    location.href = '/saas-login';
+  }catch{
+    if(window.toast) toast('Could not reach the server.', 'error');
+    btn.disabled = false; btn.textContent = 'Delete account';
+  }
+}
+</script>
+</body>
+</html>

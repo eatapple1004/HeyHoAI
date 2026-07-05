@@ -84,4 +84,40 @@ async function me(req, res, next) {
   }
 }
 
-module.exports = { signup, login, logout, me, setAuthCookie, COOKIE_NAME };
+/**
+ * PATCH /api/auth/me (requireAuth) — 표시 이름 변경
+ */
+async function updateProfile(req, res, next) {
+  try {
+    const raw = (req.body && req.body.displayName) || '';
+    const displayName = String(raw).trim();
+    if (!displayName) {
+      return res.status(400).json({ success: false, error: 'Display name cannot be empty.' });
+    }
+    if (displayName.length > 50) {
+      return res.status(400).json({ success: false, error: 'Display name is too long (max 50).' });
+    }
+    const user = await userRepo.updateDisplayName(req.user.id, displayName);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Account not found.' });
+    }
+    res.json({ success: true, data: user });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * DELETE /api/auth/me (requireAuth) — 계정 소프트 삭제 + 로그아웃
+ */
+async function deleteAccount(req, res, next) {
+  try {
+    await userRepo.softDelete(req.user.id);
+    res.clearCookie(COOKIE_NAME, { path: '/' });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { signup, login, logout, me, updateProfile, deleteAccount, setAuthCookie, COOKIE_NAME };

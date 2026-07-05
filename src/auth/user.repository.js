@@ -63,4 +63,19 @@ async function linkGoogle(userId, googleId, avatarUrl = null) {
   );
 }
 
-module.exports = { findByEmail, findById, insert, findByGoogleId, insertGoogle, linkGoogle };
+/** 표시 이름(display_name) 변경 */
+async function updateDisplayName(id, displayName) {
+  const result = await query(
+    `UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1
+     RETURNING id, email, display_name, role, status, created_at`,
+    [id, displayName]
+  );
+  return result.rows[0] || null;
+}
+
+/** 계정 소프트 삭제 — status='deleted' (로그인 차단, FK 캐스케이드 회피) */
+async function softDelete(id) {
+  await query(`UPDATE users SET status = 'deleted', updated_at = now() WHERE id = $1`, [id]);
+}
+
+module.exports = { findByEmail, findById, insert, findByGoogleId, insertGoogle, linkGoogle, updateDisplayName, softDelete };
