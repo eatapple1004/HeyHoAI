@@ -74,16 +74,18 @@
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 
-// 템플릿을 My templates(Library)에 추가(acquire) — 무료=추가 / 유료 공식=크레딧 결제.
+// (2026-07-06) 유료 오피셜 구매(Unlock) — 크레딧 결제 후 Studio에 추가. 무료 오피셜은 기본제공이라 여기 오지 않음(항상 보유).
 async function acquireTpl(tid,btn){
-  if(btn){btn.disabled=true;btn.textContent='Adding…';}
+  const orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Unlocking…';}
   try{
     const r=await fetch('/api/marketplace/templates/'+encodeURIComponent(tid)+'/acquire',{method:'POST'});
     const d=await r.json();
+    if(r.status===402){toast(d.error||'Not enough credits — top up in Billing');if(btn){btn.disabled=false;btn.textContent=orig;}return;}
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast((d.data&&d.data.alreadyOwned)?'Already in My templates':'Added to My templates');
-    if(btn){btn.textContent='✓ In My templates';btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';}
-  }catch(e){ toast('Could not add: '+(e.message||e)); if(btn){btn.disabled=false;btn.textContent='＋ Add to My templates';} }
+    toast((d.data&&d.data.alreadyOwned)?'Already in your Studio':'Unlocked — added to your Studio');
+    if(btn){btn.textContent='✓ Available in Studio';btn.disabled=true;btn.classList.add('owned');}
+  }catch(e){ toast('Could not unlock: '+(e.message||e)); if(btn){btn.disabled=false;btn.textContent=orig;} }
 }
 function tcard(t){
   const prev=t.thumb||(t.preview_media&&t.preview_media[0])||'';
@@ -92,16 +94,16 @@ function tcard(t){
       ?`<video src="${esc(prev)}" muted loop playsinline preload="metadata"></video>`
       :`<img src="${esc(prev)}" loading="lazy" alt="">`):`<div class="temoji">${esc(t.emoji||'🎨')}</div>`;
   const price=t.price_credits>0?('◈ '+t.price_credits):'Free';
-  // ▼▼▼ (2026-07-03) 보유 카드 = "✓ In Library"(비활성) + View 링크(/gallery?tpl 딥링크). 미보유 = ＋Add. 롤백: owned 분기 제거하고 ＋Add만 ▼▼▼
+  // ▼▼▼ (2026-07-06 Store=오피셜 전용 재정의) Store엔 오피셜만. 보유(무료 오피셜=기본제공 포함)=비활성 상태표시 / 미보유(유료·비기본, 현재 없음)=Unlock(구매)→Studio 추가. "Add to My templates"(오피셜엔 부적절) 제거. 롤백: 옛 In Library/＋Add·View 분기 복원 ▼▼▼
   const owned=!!t.owned;
-  const ownedBadge=owned?`<span class="towned">✓ In Library</span>`:'';
+  const ownedBadge=owned?`<span class="towned">✓ Owned</span>`:'';
   // (2026-07-03) 카드에 테마 표시 — 보이는 기본 테마만(Studio·Library·칩과 통일). 여러 개면 첫 번째.
   const vis=(typeof isThemeVisible==='function')?isThemeVisible:function(){return true;};
   const themeSlug=(t.themes||[]).filter(function(s){return vis(s);})[0];
   const themeTag=themeSlug?`<span class="tthemetag">${esc(themeName(themeSlug))}</span>`:'';
   const actions=owned
-    ? `<button class="tuse owned" disabled>✓ In Library</button><a class="tview" href="/studio?tpl=${encodeURIComponent(t.id)}">View</a>`
-    : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add to My templates</button>`;
+    ? `<button class="tuse owned" disabled>✓ Available in Studio</button>`
+    : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">🔓 Unlock · ◈ ${t.price_credits}</button>`;
   return `<div class="tcard${owned?' is-owned':''}">
     <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span>${themeTag}</div>
     <div class="tbody">

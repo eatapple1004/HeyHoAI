@@ -42,6 +42,8 @@
   .price .free{color:#5ee0d6}
   .cta{display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
   .cta:hover{filter:brightness(1.07)}
+  .cta[disabled]{background:rgba(255,255,255,.06);color:var(--dim);cursor:default}/* (2026-07-06) 보유=비활성 상태표시(기능없음) */
+  .cta[disabled]:hover{filter:none}
   .sub-actions{display:flex;gap:10px;margin-top:10px}
   .sub-actions button{flex:1;background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border2);border-radius:11px;padding:10px;font-size:12.5px;cursor:pointer;font-family:inherit}
   .note{margin-top:16px;color:var(--faint);font-size:12px;line-height:1.5}
@@ -192,11 +194,11 @@ function render(){
   const price=t.price_credits>0
     ? `◈ ${t.price_credits} <span style="font-size:13px;color:var(--faint);font-weight:500">to unlock${owned?' · owned':''}</span>${perUse}`
     : `<span class="free">Free</span> <span style="font-size:13px;color:var(--faint);font-weight:500">· uses your generation credits</span>`;
-  // CTA: 보유→Use / 유료 미보유→Unlock(구매) / 무료 미보유→Add & use(/use가 자동 보유)
+  // (2026-07-06 Store=오피셜 전용) CTA: 보유(무료 오피셜=기본제공 포함)→비활성 상태표시(기능없음, Studio에서 사용) / 유료 미보유→Unlock(구매)→Studio 추가 / 무료 미보유(비오피셜 커뮤니티)→Add to Studio. "Use/Add & use with product" 제거. 롤백: 옛 useThis CTA 복원.
   let cta;
-  if(owned) cta=`<button class="cta" onclick="useThis()">✨ Use with your ${subject}</button>`;
+  if(owned) cta=`<button class="cta" disabled>✓ Owned · Available in Studio</button>`;
   else if(t.price_credits>0) cta=`<button class="cta" onclick="acquireThis()">🔓 Unlock · ◈ ${t.price_credits}</button>`;
-  else cta=`<button class="cta" onclick="useThis()">✨ Add &amp; use with your ${subject}</button>`;
+  else cta=`<button class="cta" onclick="acquireThis()">＋ Add to your Studio</button>`;
   const blackbox=(t.price_credits>0 && !owned);
   // 전시용 레퍼런스(제작에 쓴 입력 이미지) — 레시피는 안 드러냄. 예시 결과(preview_media)와 별개 갤러리.
   const refs=Array.isArray(t.reference_examples)?t.reference_examples.filter(u=>typeof u==='string'&&u):[];
@@ -234,8 +236,8 @@ async function acquireThis(){
     const d=await r.json();
     if(r.status===402){toast(d.error||'Not enough credits — top up in Billing');setTimeout(()=>location.href='/billing',1300);return;}
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast(d.charged>0?`Unlocked · ◈${d.charged} — it's yours now`:'Added to your templates');
-    TPL.owned=true; render(); // CTA → Use 로 전환
+    toast(d.charged>0?`Unlocked · ◈${d.charged} — added to your Studio`:'Added to your Studio');
+    TPL.owned=true; render(); // CTA → "Owned · Available in Studio" 상태로 전환
   }catch(e){toast('Could not get template: '+(e.message||e));}
 }
 async function useThis(){

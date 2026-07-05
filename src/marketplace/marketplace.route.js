@@ -82,7 +82,8 @@ router.get('/templates', async (req, res, next) => {
     const r = await query(
       `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1) AS owned,
+              (EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1)
+                 OR (marketplace_templates.is_official = true AND marketplace_templates.price_credits = 0)) AS owned, -- (2026-07-06) 무료 오피셜=기본제공=항상 보유
               COALESCE(preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
                  WHERE ((gr.template_source='marketplace' AND gr.template_id = marketplace_templates.id::text)
                      OR (marketplace_templates.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = marketplace_templates.recipe_id))
@@ -105,7 +106,8 @@ router.get('/templates/:id', async (req, res, next) => {
     const r = await query(
       `SELECT ${PUBLIC_COLS}, marketplace_templates.from_creation_idx, (creator_id = $2) AS mine,
               EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked,
-              EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2) AS owned,
+              (EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2)
+                 OR (marketplace_templates.is_official = true AND marketplace_templates.price_credits = 0)) AS owned, -- (2026-07-06) 무료 오피셜=기본제공=항상 보유
               ${THEMES_SUBQ}
        FROM marketplace_templates
        WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
@@ -721,7 +723,7 @@ router.get('/owned', async (req, res, next) => {
   try {
     const uid = req.user.id;
     const r = await query(
-      `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, ow.source AS own_source, ow.in_studio,
+      `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, COALESCE(ow.source, 'default') AS own_source, COALESCE(ow.in_studio, true) AS in_studio,
               (mt.creator_id = $1) AS mine,
               COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
                  WHERE ((gr.template_source='marketplace' AND gr.template_id = mt.id::text)
@@ -731,10 +733,10 @@ router.get('/owned', async (req, res, next) => {
               COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
                 FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
                 WHERE tt.template_id = mt.id), '{}') AS label_themes
-       FROM template_owns ow
-       JOIN marketplace_templates mt ON mt.id = ow.template_id
-       WHERE ow.user_id = $1 AND mt.status = 'active'
-       ORDER BY ow.created_at DESC`,
+       FROM marketplace_templates mt
+       LEFT JOIN template_owns ow ON ow.template_id = mt.id AND ow.user_id = $1
+       WHERE mt.status = 'active' AND (ow.user_id IS NOT NULL OR (mt.is_official = true AND mt.price_credits = 0)) -- (2026-07-06) 무료 오피셜=기본제공=행 없이도 보유로 노출
+       ORDER BY COALESCE(ow.created_at, mt.created_at) DESC`,
       [uid]
     );
     const rows = r.rows;
