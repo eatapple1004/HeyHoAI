@@ -147,11 +147,11 @@
         <div class="sv-lbl">Cover</div>
         <div class="ct-covers" id="ctCovers"></div>
         <div class="sv-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <span>Prompt <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(what generates the image)</span></span>
+          <span>Prompt <span style="text-transform:none;font-weight:500;color:var(--dim,#9aa)">(what generates the result)</span></span>
           <button type="button" id="ctEditPrompt" class="ct-editp" onclick="ctEnablePromptEdit()">✎ Edit prompt</button>
         </div>
         <textarea id="ctPrompt" class="ct-ro" rows="4" readonly oninput="onCtPromptInput()" placeholder="No prompt on this creation."></textarea>
-        <div id="ctPromptWarn" class="ct-warn" style="display:none">Prompt changed — regenerate the image before you can save.</div>
+        <div id="ctPromptWarn" class="ct-warn" style="display:none">Prompt changed — regenerate the preview before you can save.</div>
         <div id="ctRegenRow" style="display:none;margin-bottom:6px">
           <button type="button" id="ctRegen" class="ct-regen" onclick="ctRegen()">↻ Regenerate preview</button>
         </div>
@@ -290,15 +290,16 @@ async function confirmSave(){
 }
 // ── Create template (Studio "Create template"의 from-images 흐름 이식) ──
 // 이 상세 크리에이션의 사진을 커버로 private 템플릿 생성. Studio와 동일: 프롬프트 잠금→Edit로 해제→수정 시 재생성 후 저장 가능(초기 상태만 다름).
-let CT={pick:null,srcIdx:null,promptBase:'',busy:false,picks:[]};
+let CT={pick:null,srcIdx:null,promptBase:'',busy:false,picks:[],type:'image'};
 let _ctThemes=null; // {defs, customs}
 function ctFromDetail(){
-  if(!IT||IT.type==='video'||!IT.url){ toast('No image to use.'); return; }
+  if(!IT||!IT.url){ toast('No creation to use.'); return; }
   if(IT.templateSource){ toast('Already made with a template.'); return; } // 템플릿으로 만든 결과는 재템플릿화 불가
-  openCtFromImages(IT.prompt||'', [IT.url], IDX);
+  openCtFromImages(IT.prompt||'', [IT.url], IDX, IT.type==='video'?'reel':'image');
 }
-function openCtFromImages(prompt, imgs, srcIdx){
+function openCtFromImages(prompt, imgs, srcIdx, mediaType){
   const p=(prompt||'').trim();
+  CT.type=(mediaType==='reel')?'reel':'image';
   CT.srcIdx=(srcIdx!=null?srcIdx:null); CT.pick=imgs[0]; CT.promptBase=p; CT.busy=false;
   document.getElementById('ctName').value=(p||'My template').slice(0,40);
   document.getElementById('ctDesc').value='';
@@ -308,11 +309,15 @@ function openCtFromImages(prompt, imgs, srcIdx){
   document.getElementById('ctRegenRow').style.display='none';
   document.getElementById('ctCat').value='';
   CT.picks=[];
-  document.getElementById('ctCovers').innerHTML=imgs.map((u,i)=>
-    `<div class="ct-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`).join('');
+  document.getElementById('ctCovers').innerHTML=imgs.map((u,i)=>ctCoverHtml(u,i===0)).join('');
   ctRenderThemes('');
   document.getElementById('ctModal').classList.add('open');
   ctSync();
+}
+// 커버 썸네일 — reel이면 <video>, 이미지면 background-image (ctPick은 data-url 공통 사용)
+function ctCoverHtml(u,sel){
+  if(CT.type==='reel') return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" onclick="ctPick(this)"><video src="${esc(u)}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;border-radius:10px"></video></div>`;
+  return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`;
 }
 function ctEnablePromptEdit(){
   const pr=document.getElementById('ctPrompt'); if(!pr)return;
@@ -332,25 +337,69 @@ function onCtPromptInput(){
 async function ctRegen(){
   const pr=document.getElementById('ctPrompt'); const prompt=(pr.value||'').trim();
   if(!prompt){ toast('Prompt is empty.'); return; }
-  const btn=document.getElementById('ctRegen'); CT.busy=true; btn.disabled=true; btn.textContent='↻ Generating…'; ctSync();
+  const btn=document.getElementById('ctRegen'); CT.busy=true; btn.disabled=true;
+  btn.textContent=CT.type==='reel'?'↻ Generating reel… (takes minutes)':'↻ Generating…'; ctSync();
   try{
-    const fd=new FormData();
-    fd.append('prompt',prompt); fd.append('model','pro'); fd.append('tool','nano-banana-pro');
-    fd.append('count','1'); fd.append('privateMode','true'); fd.append('templateName','My template');
-    const res=await fetch('/api/generate',{method:'POST',body:fd});
-    const d=await res.json();
-    if(res.status===402)throw new Error(d.error||'Out of credits');
-    if(!res.ok||!d.success)throw new Error(d.error||'generate failed');
-    const urls=(d.results||[]).filter(x=>x.success).map(x=>x.url);
-    if(!urls.length)throw new Error('No image generated');
-    CT.pick=urls[0]; CT.srcIdx=null; CT.promptBase=prompt;
-    document.getElementById('ctCovers').innerHTML=urls.map((u,i)=>
-      `<div class="ct-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`).join('');
+    let newUrl;
+    if(CT.type==='reel'){
+      newUrl=await ctRegenReel(prompt); // 영상: async 제출→폴링 (수 분)
+    }else{
+      const fd=new FormData();
+      fd.append('prompt',prompt); fd.append('model','pro'); fd.append('tool','nano-banana-pro');
+      fd.append('count','1'); fd.append('privateMode','true'); fd.append('templateName','My template');
+      const res=await fetch('/api/generate',{method:'POST',body:fd});
+      const d=await res.json();
+      if(res.status===402)throw new Error(d.error||'Out of credits');
+      if(!res.ok||!d.success)throw new Error(d.error||'generate failed');
+      const urls=(d.results||[]).filter(x=>x.success).map(x=>x.url);
+      if(!urls.length)throw new Error('No image generated');
+      newUrl=urls[0];
+    }
+    CT.pick=newUrl; CT.srcIdx=null; CT.promptBase=prompt;
+    document.getElementById('ctCovers').innerHTML=ctCoverHtml(newUrl,true);
     document.getElementById('ctPromptWarn').style.display='none';
     document.getElementById('ctRegenRow').style.display='none';
     toast('New preview ready');
   }catch(e){ toast('Generate failed: '+(e.message||e)); }
   finally{ CT.busy=false; btn.disabled=false; btn.textContent='↻ Regenerate preview'; ctSync(); }
+}
+// 영상 regen: 현재 영상 첫 프레임을 소스로 async 영상 생성(studio generateReel/pollVideoJob 이식)
+async function ctRegenReel(prompt){
+  const frame=await firstFrameBlob(CT.pick);
+  const fd=new FormData();
+  fd.append('prompt',prompt); fd.append('duration','5'); fd.append('mode','std');
+  fd.append('privateMode','true'); fd.append('templateName','My reel');
+  if(frame)fd.append('sourceImage',frame,'frame.png'); // 첫 프레임(same-origin canvas). 실패 시 text-to-video 폴백
+  const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
+  const d=await res.json();
+  if(res.status===402)throw new Error(d.error||'Out of credits');
+  if(!res.ok||!d.success)throw new Error(d.error||'video submit failed');
+  return await pollVideoJob(d.jobId);
+}
+async function pollVideoJob(jobId){
+  for(let i=0;i<90;i++){ // 최대 ~12분
+    await new Promise(r=>setTimeout(r,8000));
+    let d; try{ d=(await(await fetch('/api/generate/video/jobs/'+jobId)).json()).data; }catch(e){ continue; }
+    if(!d)continue;
+    if(d.status==='succeeded')return d.url;
+    if(d.status==='failed')throw new Error(d.error||'Reel generation failed');
+  }
+  throw new Error('This reel is taking a while — check your gallery shortly.');
+}
+// 영상 첫 프레임 추출 → PNG Blob (same-origin /images 라 canvas taint 없음). 실패 시 null.
+function firstFrameBlob(videoUrl){
+  return new Promise((resolve)=>{
+    try{
+      const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.preload='auto'; v.crossOrigin='anonymous'; v.src=videoUrl;
+      const fail=()=>resolve(null);
+      v.addEventListener('loadeddata',()=>{ try{ v.currentTime=0.05; }catch(e){ fail(); } });
+      v.addEventListener('seeked',()=>{ try{
+        const c=document.createElement('canvas'); c.width=v.videoWidth||720; c.height=v.videoHeight||1280;
+        c.getContext('2d').drawImage(v,0,0,c.width,c.height); c.toBlob(b=>resolve(b||null),'image/png');
+      }catch(e){ fail(); } });
+      v.addEventListener('error',fail);
+    }catch(e){ resolve(null); }
+  });
 }
 function ctPick(el){
   document.querySelectorAll('#ctCovers .ct-ph').forEach(x=>x.classList.remove('sel'));
@@ -422,8 +471,10 @@ async function ctConfirm(){
   const p=(document.getElementById('ctPrompt').value||'').trim();
   const btn=document.getElementById('ctSave'); btn.disabled=true; btn.textContent='Saving…';
   try{
+    const isReel=CT.type==='reel';
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:'image',prompt:p,tool:'nano-banana-pro',
+      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,
+        type:isReel?'reel':'image',prompt:p,tool:isReel?'kling':'nano-banana-pro',
         visibility:'private',previewMedia:[cover],sourceResultIdx:(CT.srcIdx!=null?CT.srcIdx:undefined)})});
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
@@ -576,7 +627,7 @@ function render(){
     ${creator}
     ${templateCard()}
     ${promptPanel()}
-    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button>${(IT.type!=='video'&&!IT.templateSource)?`<button class="act sm" onclick="ctFromDetail()">＋ Create template</button>`:''}</div>
+    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button>${(!IT.templateSource)?`<button class="act sm" onclick="ctFromDetail()">＋ Create template</button>`:''}</div>
     ${owner}${report}`;
 }
 
