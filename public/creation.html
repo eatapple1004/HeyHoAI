@@ -373,7 +373,7 @@ async function ctRegen(){
       fd.append('prompt',prompt); fd.append('model','pro'); fd.append('tool','nano-banana-pro');
       fd.append('count','1'); fd.append('privateMode','true'); fd.append('templateName','My template');
       const res=await fetch('/api/generate',{method:'POST',body:fd});
-      const d=await res.json();
+      const d=await ctJson(res); // 방어 파싱(프록시 HTML 대비)
       if(res.status===402)throw new Error(d.error||'Out of credits');
       if(!res.ok||!d.success)throw new Error(d.error||'generate failed');
       const urls=(d.results||[]).filter(x=>x.success).map(x=>x.url);
@@ -398,15 +398,22 @@ async function ctRegen(){
 function ctLoadingHtml(isReel){
   return `<div class="ct-ph ct-loading"><span class="ct-spin"></span><span class="ct-elapsed">0.0s</span>${isReel?`<span class="ct-lhint">reel…</span>`:''}</div>`;
 }
+// (2026-07-06) 응답 방어 파싱 — 프록시 타임아웃(504)·게이트웨이 에러 시 서버가 JSON 대신 HTML(<!DOCTYPE)을 반환하면
+//   res.json()이 "Unexpected token '<'"로 터짐. 텍스트로 받아 파싱 실패 시 사용자 친화 메시지로 대체.
+async function ctJson(res){
+  const txt=await res.text();
+  try{ return JSON.parse(txt); }
+  catch(e){ const err=new Error(res.status>=500?`Server is busy (${res.status}) — please try again in a moment`:`Unexpected server response (${res.status})`); err.nonJson=true; throw err; }
+}
 // 영상 regen: 현재 영상 첫 프레임을 소스로 async 영상 생성(studio generateReel/pollVideoJob 이식)
 async function ctRegenReel(prompt){
   const frame=await firstFrameBlob(CT.pick);
   const fd=new FormData();
   fd.append('prompt',prompt); fd.append('duration','5'); fd.append('mode','std');
   fd.append('privateMode','true'); fd.append('templateName','My reel');
-  if(frame)fd.append('sourceImage',frame,'frame.png'); // 첫 프레임(same-origin canvas). 실패 시 text-to-video 폴백
+  if(frame)fd.append('sourceImage',frame,'frame.jpg'); // 첫 프레임 JPEG(작게 → 업로드/제출 빨라 프록시 타임아웃 회피). 실패 시 text-to-video 폴백
   const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
-  const d=await res.json();
+  const d=await ctJson(res); // 방어 파싱(프록시 HTML 대비)
   if(res.status===402)throw new Error(d.error||'Out of credits');
   if(!res.ok||!d.success)throw new Error(d.error||'video submit failed');
   return await pollVideoJob(d.jobId);
@@ -430,7 +437,7 @@ function firstFrameBlob(videoUrl){
       v.addEventListener('loadeddata',()=>{ try{ v.currentTime=0.05; }catch(e){ fail(); } });
       v.addEventListener('seeked',()=>{ try{
         const c=document.createElement('canvas'); c.width=v.videoWidth||720; c.height=v.videoHeight||1280;
-        c.getContext('2d').drawImage(v,0,0,c.width,c.height); c.toBlob(b=>resolve(b||null),'image/png');
+        c.getContext('2d').drawImage(v,0,0,c.width,c.height); c.toBlob(b=>resolve(b||null),'image/jpeg',0.85); // (2026-07-06) JPEG로 축소 — PNG 수 MB → 수백 KB, 제출 타임아웃 회피
       }catch(e){ fail(); } });
       v.addEventListener('error',fail);
     }catch(e){ resolve(null); }
