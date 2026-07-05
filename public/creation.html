@@ -239,7 +239,8 @@ function renderSvThemes(){
     if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // (2026-07-01) Influencer 대분류 숨김
     const dis=!!active && label!==active;  // 반대 대분류 섹션 전체 비활성(이미 선택된 건 해제 가능하도록 제외)
     h+=`<div class="sv-sec">${label}</div>`;
-    slugs.map(s=>bySlug[s]).filter(Boolean).forEach(t=>{ h+=svThBtn('default',t.slug,t.name, dis && !svOn('default',t.slug)); });
+    const _oo=window.OFFICIAL_ONLY_THEMES||[]; // (2026-07-06) 오피셜 전용 테마 제외 — Create template과 동일, 유저 템플릿화 대상 아님
+    slugs.filter(s=>_oo.indexOf(s)<0).map(s=>bySlug[s]).filter(Boolean).forEach(t=>{ h+=svThBtn('default',t.slug,t.name, dis && !svOn('default',t.slug)); });
     (customs||[]).filter(c=>svCustomGroup(c.id)===label).forEach(t=>{ h+=svThBtn('custom',t.id,t.name, dis && !svOn('custom',t.id)); });
     h+=`<button type="button" class="sv-th sv-new${dis?' sv-dis':''}"${dis?' disabled':''} onclick="newThemeThenPick('${label}')">＋ New theme</button>`;
   }
@@ -321,7 +322,7 @@ function openCtFromImages(prompt, imgs, srcIdx, mediaType){
 }
 // 커버 썸네일 — reel이면 <video>, 이미지면 background-image (ctPick은 data-url 공통 사용)
 function ctCoverHtml(u,sel){
-  if(CT.type==='reel') return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" onclick="ctPick(this)"><video src="${esc(u)}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;border-radius:10px"></video></div>`;
+  if(CT.type==='reel') return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" onclick="ctPick(this)"><video src="${esc(u)}" muted playsinline autoplay loop preload="auto" style="width:100%;height:100%;object-fit:cover;border-radius:10px"></video></div>`;
   return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`;
 }
 function ctEnablePromptEdit(){
@@ -451,6 +452,7 @@ async function ctRenderThemes(category){
   for(const [label,slugs] of SV_GROUPS){
     if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // 숨긴 대분류 제외
     let defSlugs=slugs.filter(s=>bySlug[s]);
+    { const oo=window.OFFICIAL_ONLY_THEMES||[]; defSlugs=defSlugs.filter(s=>oo.indexOf(s)<0); } // (2026-07-06) 오피셜 전용 테마(productcut·nail-base·nail-template)는 유저 템플릿화 대상 아님 → Create template 픽커에서 제외(studio.html:2473·gallery.html:786과 동일 규칙)
     if(allow) defSlugs=defSlugs.filter(s=>allow.includes(s)); // 카테고리 지정 시 화이트리스트 교집합
     defSlugs.forEach(s=>{ h+=ctThBtn('default',s,bySlug[s].name); });
     (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=ctThBtn('custom',c.id,c.name); });
