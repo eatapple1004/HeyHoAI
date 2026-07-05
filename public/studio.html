@@ -531,9 +531,18 @@
           <button class="studio-subtab" data-subtab="user" onclick="switchStudioTplType('user')">My templates</button>
         </div>
         <!-- ▲▲▲ 서브탭 ▲▲▲ -->
+        <div class="cat-switcher" id="catSwitcher"></div>
         <div class="filter-row" id="filterRow"></div>
         <style>
           .studio-subtabbar{display:flex;gap:8px;margin-bottom:16px}
+          /* 카테고리 스위처 (택소노미 상단 축) — 콘텐츠타입 칩보다 상위 */
+          .cat-switcher{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
+          .cat-switcher:empty{display:none}
+          .cat-switcher .cat-lbl{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);margin-right:2px}
+          .cat-switcher .cat-pill{background:rgba(255,255,255,.05);border:1.5px solid var(--border2);color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;padding:8px 16px;border-radius:12px;cursor:pointer;transition:all .13s}
+          .cat-switcher .cat-pill:hover{border-color:var(--accent)}
+          .cat-switcher .cat-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+          .cat-switcher .cat-pill.soon{opacity:.5;cursor:default;font-weight:500}
           .studio-subtab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer}
           .studio-subtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
           .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
@@ -907,6 +916,7 @@
 
 <script src="/js/recipes.generated.js?v=8"></script>
 <script src="/js/themes.js?v=3"></script>
+<script src="/js/taxonomy.js?v=2"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -938,7 +948,8 @@ function buildTemplates(){
     emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",
     themes:theme?[theme]:['general'],held:c.held,
     cuts:(c.cuts&&c.cuts.length)?c.cuts:undefined, // 중첩 템플릿: 컷(자식) 선택지 보존(각 preview 포함)
-    preview:c.preview||undefined}); // 예시 이미지(정적 경로) — 있으면 카드/모달 썸네일
+    preview:c.preview||undefined, // 예시 이미지(정적 경로) — 있으면 카드/모달 썸네일
+    vertical:theme, category:c.cat}); // taxonomy: 카테고리(vertical) + 콘텐츠타입 원값(recipe.category)
   const PRODUCT=["fashion","beauty","jewelry","food","coffee","home","tech","pet"];
   const shopping=[];
   PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v),v))));
@@ -1012,7 +1023,7 @@ async function applyRecipeGates(){
   renderRecipes();
 }
 
-let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,cutId:null,filter:'All'};
+let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,cutId:null,filter:'All',category:'apparel'};
 let GAMMA_FROM=0; // γ: 공개 creation 블랙박스 사용 — 이 idx의 룩을 내 주체에 적용(프롬프트 미노출). setMode와 독립(모드 전환에도 유지).
 let SUBJECTS={influencer:[],shopping:[],ugc:[],custom:[]};
 let generating=false;
@@ -1440,9 +1451,11 @@ function placeGenBar(custom){
 function setMode(m,initialVertical){
   // (2026-07-01) Influencer 숨김: prod에서 어떤 경로로든 influencer 진입 시 shopping 폴백(로컬은 통과)
   if(m==='influencer' && typeof featureOn==='function' && !featureOn('influencer')) m='shopping';
-  // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
-  const defFilter=(m==='shopping'&&initialVertical)?String(initialVertical).toLowerCase():'All';
-  state={mode:m,slots:{},subjectId:null,recipeId:null,cutId:null,filter:defFilter};
+  // taxonomy: shopping은 카테고리(스위처)+콘텐츠타입(칩). 딥링크 vertical은 해당 카테고리로 매핑.
+  const defCat=(window.TAXONOMY&&window.TAXONOMY.defaultCategory)?window.TAXONOMY.defaultCategory().slug:'apparel';
+  let dlCat=defCat;
+  if(m==='shopping'&&initialVertical&&window.TAXONOMY){ const iv=String(initialVertical).toLowerCase(); const hit=window.TAXONOMY.categories.find(c=>(c.verticals||[]).indexOf(iv)>=0||c.slug===iv); if(hit)dlCat=hit.slug; }
+  state={mode:m,slots:{},subjectId:null,recipeId:null,cutId:null,filter:'All',category:dlCat};
   ['Influencer','Shopping','Ugc','Custom'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
   const ugc=(m==='ugc');
   const custom=(m==='custom');
@@ -1709,7 +1722,29 @@ function switchStudioTplType(type){
   renderFilters(); renderRecipes();
 }
 // ▲▲▲
+// ── 택소노미(파일럿) — shopping+official 뷰: 카테고리 스위처 + 콘텐츠타입 칩. 단일소스 /js/taxonomy.js ──
+function taxonomyActive(){ return state.mode==='shopping' && curTplType()==='official' && !!window.TAXONOMY; }
+function renderCatSwitcher(){
+  const el=document.getElementById('catSwitcher'); if(!el)return;
+  if(!taxonomyActive()){ el.innerHTML=''; return; }
+  let h='<span class="cat-lbl">Category</span>';
+  h+=window.TAXONOMY.categories.map(c=> c.active===false
+      ? `<div class="cat-pill soon" title="Coming soon">${esc(c.label)}</div>`
+      : `<div class="cat-pill${state.category===c.slug?' on':''}" onclick="setCategory('${c.slug}')">${esc(c.label)}</div>`).join('');
+  el.innerHTML=h;
+}
+function setCategory(slug){ if(state.category===slug)return; curTheme=null; state.category=slug; state.filter='All'; renderFilters(); renderRecipes(); if(typeof updateBar==='function')updateBar(); }
+function taxonomyFilterRow(){
+  const pool=(typeof TEMPLATES!=='undefined'&&TEMPLATES.shopping)||[];
+  const cts=window.TAXONOMY.contentTypesFor(state.category, pool);
+  let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
+  html+=cts.map(ct=>`<div class="chip ${!curTheme&&state.filter===ct.slug?'active':''}" onclick="setFilter('${esc(ct.slug)}')">${esc(ct.label)}</div>`).join('');
+  html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;
+  document.getElementById('filterRow').innerHTML=html;
+}
 function renderFilters(){
+  renderCatSwitcher();
+  if(taxonomyActive()){ taxonomyFilterRow(); return; } // 콘텐츠타입 칩(택소노미) — 그 외 모드/서브탭은 기존 테마칩
   // 필터 = 현재 모드의 대분류 테마(CAT_THEMES) — Library와 동일 파티션·순서로 고정(동적 present 폐기 → 스튜디오=Library 일치 보장).
   //   모드→대분류: influencer→Influencer / shopping→Shopping / ugc→UGC / custom 등 → 전체.
   const macro={influencer:'Influencer',shopping:'Shopping',ugc:'UGC'}[state.mode];
@@ -1759,6 +1794,11 @@ function renderRecipes(){
     rs=modePool(state.mode).filter(r=>{
       if(PREMIUM.some(p=>p.recipeId===r.id))return false;
       if(r.in_studio===false)return false; // (2026-07-02) Library only(대기조)는 스튜디오 미노출 — In Studio만
+      // 택소노미(파일럿): shopping+official = 카테고리(vertical) + 콘텐츠타입 필터. 그 외는 기존 테마 게이트.
+      if(taxonomyActive()){
+        if(!window.TAXONOMY.recipeInCategory(state.category,r))return false;
+        return state.filter==='All' || window.TAXONOMY.contentTypeOf(state.category,r)===state.filter;
+      }
       if(state.filter!=='All')return inGlobalTheme(r,state.filter);
       // All 뷰: 내장 recipe는 항상 노출 / 보유 유저 템플릿은 테마 ≥1개 배치 시만(안A: in_studio 폐기)
       return inAnyTheme(r); // (2026-07-02) 공식도 '보이는 테마 게이트' 적용(옛 source!=='marketplace' 무조건노출 우회 제거) — 공식 themes는 applyRecipeGates가 주입
@@ -1836,13 +1876,16 @@ function mgCard(r){
 function renderManageGrid(){
   const type=curTplType();
   // (2026-07-03) 테마 선택 시 = 그 테마 편집(두 그룹 유지·카드마다 라벨 토글). All 필터 = 라이프사이클(↑↓·삭제).
-  const gSlug=(!curTheme && state.filter!=='All')?state.filter:null;
+  //   택소노미 뷰(shopping+official)에선 state.filter=콘텐츠타입이라 "테마 편집" 대상 아님 → gSlug 없음(필터로만).
+  const gSlug=(!taxonomyActive() && !curTheme && state.filter!=='All')?state.filter:null;
   const ct=curTheme?curThemeObj():null;
   MG_THEME = ct ? {kind:'custom',id:curTheme,name:ct.name}
            : gSlug ? {kind:'global',slug:gSlug,name:(((THEME_LIST||[]).find(t=>t.slug===gSlug)||{}).name)||gSlug}
            : null;
   // 현재 서브탭 타입(공식/유저)의 보유 템플릿 = modePool(보유+공식) ∩ 타입, PREMIUM(미보유) 제외.
-  const pool=modePool(state.mode).filter(r=> ((type==='official')===isOfficialCard(r.id)) && !PREMIUM.some(p=>p.recipeId===r.id));
+  //   택소노미 뷰: 카테고리(vertical) + 콘텐츠타입 필터도 적용(Manage도 선택 카테고리만).
+  const pool=modePool(state.mode).filter(r=> ((type==='official')===isOfficialCard(r.id)) && !PREMIUM.some(p=>p.recipeId===r.id)
+    && (!taxonomyActive() || (window.TAXONOMY.recipeInCategory(state.category,r) && (state.filter==='All' || window.TAXONOMY.contentTypeOf(state.category,r)===state.filter))));
   const inStudio=pool.filter(r=>r.in_studio!==false), parked=pool.filter(r=>r.in_studio===false);
   const sec=(title,sub,arr,empty)=>`<div class="mg-sec">${title}<span class="mg-sub">${sub}</span></div>`+(arr.length?`<div class="recipe-grid">${arr.map(mgCard).join('')}</div>`:`<div class="cth-empty">${empty}</div>`);
   const grid=document.getElementById('recipeGrid');
