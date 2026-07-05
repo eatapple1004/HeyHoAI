@@ -540,6 +540,7 @@
           <h2 id="step2Title">Pick a template</h2>
           <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span>
         </div>
+        <!-- ▼▼▼ (2026-07-06 1축 재구조) 서브탭을 카테고리 줄로 통합. shopping(taxonomyRowActive)에선 renderCatSwitcher가 이 서브탭을 숨기고 My templates를 카테고리 줄 pill로 렌더; influencer/ugc(비택소노미)에선 서브탭 유지(회귀 방지). 롤백: renderCatSwitcher의 bar.style.display 토글 + 1축 pill/구분선 블록 + taxonomyRowActive + pickOfficialCat/pickUserSpace + #mineBanner + .cat-div/.cat-pill.mine/.mine-banner CSS 제거 ▲ -->
         <!-- ▼▼▼ (2026-07-03 Studio↔Library 시각정합) Official/My templates 서브탭 — Library 미러(Official 기본). 소스통일은 다음단계. 롤백: 이 블록 + .studio-subtab CSS + curTplType/studioPresentThemes/switchStudioTplType + renderRecipes 타입필터 + renderFilters present/official분기 제거 ▼▼▼ -->
         <div class="studio-subtabbar">
           <button class="studio-subtab active" data-subtab="official" onclick="switchStudioTplType('official')">Official</button>
@@ -547,6 +548,8 @@
         </div>
         <!-- ▲▲▲ 서브탭 ▲▲▲ -->
         <div class="cat-switcher" id="catSwitcher"></div>
+        <!-- ▼ (2026-07-06 1축) My templates=내 공간 안내 배너. renderCatSwitcher가 노출 토글. 롤백: 이 div 제거 ▼ -->
+        <div class="mine-banner" id="mineBanner" style="display:none"><span class="mb-ic">✦</span><span>Your space — create, edit and add your own themes &amp; templates</span></div>
         <div class="filter-row" id="filterRow"></div>
         <style>
           .studio-subtabbar{display:flex;gap:8px;margin-bottom:16px}
@@ -560,6 +563,15 @@
           .cat-switcher .cat-pill.soon{opacity:.5;cursor:default;font-weight:500}
           .studio-subtab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer}
           .studio-subtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+          /* ▼ (2026-07-06 1축 재구조) 카테고리 줄 안 My templates(내 공간) — 공식(purple)과 대비되는 골드. 롤백: .cat-div/.cat-pill.mine/.mine-banner 제거 ▼ */
+          .cat-switcher .cat-div{display:inline-block;width:1px;height:22px;background:var(--border2);margin:0 5px 0 8px;vertical-align:middle}
+          .cat-switcher .cat-pill.mine{background:rgba(255,206,122,.06);border-color:rgba(255,206,122,.45);color:var(--gold)}
+          .cat-switcher .cat-pill.mine:hover{border-color:var(--gold)}
+          .cat-switcher .cat-pill.mine.on{background:rgba(255,206,122,.18);border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 1px rgba(255,206,122,.35)}
+          .cat-switcher .cat-pill.mine .cp-dia{font-size:11px;margin-right:3px;opacity:.9}
+          .mine-banner{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;padding:10px 14px;border-radius:11px;background:rgba(255,206,122,.07);border:1px solid rgba(255,206,122,.28);font-size:12.5px;color:var(--gold)}
+          .mine-banner .mb-ic{font-size:14px}
+          /* ▲ */
           .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
           .filter-row .chip.ghost{border-style:dashed;color:var(--dim)}
           .filter-row .chip .chip-x{margin-left:5px;opacity:.55;font-size:10px}
@@ -1769,17 +1781,42 @@ function switchStudioTplType(type){
 }
 // ▲▲▲
 // ── 택소노미(파일럿) — shopping+official 뷰: 카테고리 스위처 + 콘텐츠타입 칩. 단일소스 /js/taxonomy.js ──
-function taxonomyActive(){ return state.mode==='shopping' && curTplType()==='official' && !!window.TAXONOMY; }
+// (2026-07-06 1축) 카테고리 줄 노출 여부(공식+내공간 공통). taxonomyActive=콘텐츠타입 필터·레시피 게이트(공식만) — 이 구분이 1축 통합의 핵심. 롤백: taxonomyRowActive 제거하고 taxonomyActive를 옛 정의로.
+function taxonomyRowActive(){ return state.mode==='shopping' && !!window.TAXONOMY; }
+function taxonomyActive(){ return taxonomyRowActive() && curTplType()==='official'; }
 function renderCatSwitcher(){
   const el=document.getElementById('catSwitcher'); if(!el)return;
-  if(!taxonomyActive()){ el.innerHTML=''; return; }
+  const bn=document.getElementById('mineBanner');
+  const bar=document.querySelector('.studio-subtabbar');
+  const rowOn=taxonomyRowActive();
+  if(bar)bar.style.display=rowOn?'none':''; // 1축 통합 줄이 있을 때만 옛 서브탭 숨김(influencer/ugc는 서브탭 유지)
+  if(!rowOn){ el.innerHTML=''; if(bn)bn.style.display='none'; return; }
+  const isMine=curTplType()==='user';
   let h='<span class="cat-lbl">Category</span>';
   h+=window.TAXONOMY.categories.map(c=> c.active===false
       ? `<div class="cat-pill soon" title="Coming soon">${esc(c.label)}</div>`
-      : `<div class="cat-pill${state.category===c.slug?' on':''}" onclick="setCategory('${c.slug}')">${esc(c.label)}</div>`).join('');
+      : `<div class="cat-pill${(!isMine&&state.category===c.slug)?' on':''}" onclick="pickOfficialCat('${c.slug}')">${esc(c.label)}</div>`).join('');
+  // ▼ (2026-07-06 1축) 구분선 + My templates(내 공간) pill — 공식과 다른 스타일/아이콘. 롤백: 이 두 줄 제거 ▼
+  h+='<span class="cat-div" aria-hidden="true"></span>';
+  h+=`<div class="cat-pill mine${isMine?' on':''}" onclick="pickUserSpace()"><span class="cp-dia">◆</span>My templates</div>`;
   el.innerHTML=h;
+  if(bn)bn.style.display=isMine?'':'none';
 }
 function setCategory(slug){ if(state.category===slug)return; curTheme=null; state.category=slug; state.filter='All'; renderFilters(); renderRecipes(); if(typeof updateBar==='function')updateBar(); }
+// ▼▼▼ (2026-07-06 1축 재구조) 카테고리 줄 통합 핸들러 — 공식 카테고리 pick(→official 복귀) / My templates(내 공간) pick(→user). curTplType 로직 재사용, 데이터·API 변경 0. 롤백: 이 블록 제거 ▼▼▼
+function pickOfficialCat(slug){
+  const wasMine=curTplType()==='user';
+  state.tplType='official';
+  if(!wasMine && state.category===slug){ renderFilters(); return; } // 같은 공식 카테고리 재클릭 = 무변화(줄만 재동기화)
+  curTheme=null; state.category=slug; state.filter='All';
+  renderFilters(); renderRecipes(); if(typeof updateBar==='function')updateBar();
+}
+function pickUserSpace(){
+  if(curTplType()==='user'){ renderFilters(); return; }
+  state.tplType='user'; state.filter='All'; curTheme=null;
+  renderFilters(); renderRecipes(); if(typeof updateBar==='function')updateBar();
+}
+// ▲▲▲
 function taxonomyFilterRow(){
   const pool=(typeof TEMPLATES!=='undefined'&&TEMPLATES.shopping)||[];
   const cts=window.TAXONOMY.contentTypesFor(state.category, pool);
