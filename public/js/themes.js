@@ -5,12 +5,12 @@
   // 노출 카테고리(테마) — Shopping이 활성 모드. jewelry·pet·food·coffee·home·tech 숨김. Influencer/UGC는 flag로 숨김·재활성 대비 매핑 보존.
   window.CAT_THEMES = {
     Influencer: ['people'],
-    Shopping:   ['beauty', 'fashion', 'general', 'productcut'],
+    Shopping:   ['beauty', 'fashion', 'general', 'productcut', 'nail-base', 'nail-template'],
     UGC:        ['people', 'beauty', 'fashion', 'food', 'pet', 'ugc', 'general'],
   };
   // 오피셜 전용 테마 — 유저가 자기 템플릿을 넣을 수 없는 공식 제품 테마. My templates 서브탭 필터에서 제외(Official에만 노출).
   //   (productcut = 제품컷 중첩 템플릿 전용 공식 테마. 유저 테마 카테고리 아님.)
-  window.OFFICIAL_ONLY_THEMES = ['productcut'];
+  window.OFFICIAL_ONLY_THEMES = ['productcut', 'nail-base', 'nail-template'];
   // 기본 제공 공식 recipe — Store 구매/담기 없이 항상 Studio에 노출(◈8 프리미엄 공식과 구분).
   //   백엔드도 price_credits=0이라 생성 구매게이트(402) 없음. Studio는 소유 무관 OFFICIAL_RECIPES에 포함시켜 노출.
   window.DEFAULT_OFFICIAL_RECIPES = ['product-cut'];

@@ -793,6 +793,34 @@ router.patch('/owned/in-studio', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/marketplace/default-officials — 기본공개(무료) 프롬프트 기반 공식 템플릿.
+//   소유 무관 전 유저 스튜디오 노출용(레시피 기반 product-cut의 프롬프트 기반 대응).
+//   조건: is_official=true · price_credits=0(무료 기본공개) · recipe_id NULL(recipe-backed은 클라 카드가 있어 제외).
+//   생성은 마켓 프롬프트 경로라 402 없음(generate.route: marketplace 출처는 소유 게이트 없음). 응답 shape은 /owned 카드빌드와 호환.
+router.get('/default-officials', async (req, res, next) => {
+  try {
+    const uid = req.user.id;
+    const r = await query(
+      `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, false AS owned, (mt.creator_id = $1) AS mine,
+              COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
+                 WHERE gr.template_source='marketplace' AND gr.template_id = mt.id::text
+                   AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL
+                 ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb,
+              COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
+                FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+                WHERE tt.template_id = mt.id), '{}') AS themes
+         FROM marketplace_templates mt
+        WHERE mt.is_official = true AND mt.status = 'active'
+          AND mt.price_credits = 0 AND mt.recipe_id IS NULL
+        ORDER BY mt.created_at DESC`,
+      [uid]
+    );
+    const INFLU = new Set(['people']);
+    const data = r.rows.map((t) => ({ ...t, in_studio: true, macroGroup: (t.themes || []).some((s) => INFLU.has(s)) ? 'Influencer' : 'Shopping' }));
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
 /** POST /api/marketplace/templates/:id/bookmark — 템플릿 저장(Saved). 공개 또는 내 것만. (멱등) */
 router.post('/templates/:id/bookmark', async (req, res, next) => {
   try {

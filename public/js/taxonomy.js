@@ -40,6 +40,17 @@
       { slug: 'beauty',  label: 'Beauty',  active: true, verticals: ['beauty'],  auto: true }, // 뷰티
       { slug: 'general', label: 'General', active: true, verticals: ['general'], auto: true },  // 기타
 
+      // 네일 — 공식(프롬프트 기반) 템플릿 전용 카테고리. 콘텐츠타입은 테마 slug(nail-base/nail-template)와 1:1로,
+      //   studio가 /owned label_themes로부터 카드에 vertical:'nail'+category:'NailBase'|'NailTemplate'를 스탬프 → 스위처가 매칭.
+      {
+        slug: 'nail', label: 'Nail', active: true,
+        verticals: ['nail'],
+        contentTypes: [
+          { slug: 'nail-base',     label: 'Nail Base',     match: { category: ['NailBase'] } },
+          { slug: 'nail-template', label: 'Nail Template', match: { category: ['NailTemplate'] } },
+        ],
+      },
+
       // 향후 추가 예정(예시 — 지금은 비활성):
       // { slug:'jewelry', label:'주얼리', active:false, verticals:['jewelry'],
       //   contentTypes:[ {slug:'product-cut',label:'제품컷',match:{category:['Studio','Macro']}},
