@@ -540,7 +540,7 @@
           <h2 id="step2Title">Pick a template</h2>
           <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span>
         </div>
-        <!-- ▼▼▼ (2026-07-06 1축 재구조) 서브탭을 카테고리 줄로 통합. shopping(taxonomyRowActive)에선 renderCatSwitcher가 이 서브탭을 숨기고 My templates를 카테고리 줄 pill로 렌더; influencer/ugc(비택소노미)에선 서브탭 유지(회귀 방지). 롤백: renderCatSwitcher의 bar.style.display 토글 + 1축 pill/구분선 블록 + taxonomyRowActive + pickOfficialCat/pickUserSpace + #mineBanner + .cat-div/.cat-pill.mine/.mine-banner CSS 제거 ▲ -->
+        <!-- ▼▼▼ (2026-07-06 1축 재구조) 서브탭을 카테고리 줄로 통합. shopping(taxonomyRowActive)에선 renderCatSwitcher가 이 서브탭을 숨기고 My templates를 카테고리 줄 pill로 렌더; influencer/ugc(비택소노미)에선 서브탭 유지(회귀 방지). 롤백: renderCatSwitcher의 bar.style.display 토글 + 1축 pill/구분선/'?'툴팁 블록 + taxonomyRowActive + pickOfficialCat/pickUserSpace + .cat-div/.cat-pill.mine/.cat-help/.cat-tip CSS 제거 ▲ -->
         <!-- ▼▼▼ (2026-07-03 Studio↔Library 시각정합) Official/My templates 서브탭 — Library 미러(Official 기본). 소스통일은 다음단계. 롤백: 이 블록 + .studio-subtab CSS + curTplType/studioPresentThemes/switchStudioTplType + renderRecipes 타입필터 + renderFilters present/official분기 제거 ▼▼▼ -->
         <div class="studio-subtabbar">
           <button class="studio-subtab active" data-subtab="official" onclick="switchStudioTplType('official')">Official</button>
@@ -548,8 +548,7 @@
         </div>
         <!-- ▲▲▲ 서브탭 ▲▲▲ -->
         <div class="cat-switcher" id="catSwitcher"></div>
-        <!-- ▼ (2026-07-06 1축) My templates=내 공간 안내 배너. renderCatSwitcher가 노출 토글. 롤백: 이 div 제거 ▼ -->
-        <div class="mine-banner" id="mineBanner" style="display:none"><span class="mb-ic">✦</span><span>Your space — create, edit and add your own themes &amp; templates</span></div>
+        <!-- (2026-07-06 톤다운) 골드 안내 배너 제거 — 설명은 My templates 옆 '?' 호버 툴팁(renderCatSwitcher가 pill 뒤에 렌더)으로 이동. 롤백: #mineBanner div 복원 + renderCatSwitcher 배너토글/툴팁 되돌리기 -->
         <div class="filter-row" id="filterRow"></div>
         <style>
           .studio-subtabbar{display:flex;gap:8px;margin-bottom:16px}
@@ -563,14 +562,14 @@
           .cat-switcher .cat-pill.soon{opacity:.5;cursor:default;font-weight:500}
           .studio-subtab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer}
           .studio-subtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-          /* ▼ (2026-07-06 1축 재구조) 카테고리 줄 안 My templates(내 공간) — 공식(purple)과 대비되는 골드. 롤백: .cat-div/.cat-pill.mine/.mine-banner 제거 ▼ */
-          .cat-switcher .cat-div{display:inline-block;width:1px;height:22px;background:var(--border2);margin:0 5px 0 8px;vertical-align:middle}
-          .cat-switcher .cat-pill.mine{background:rgba(255,206,122,.06);border-color:rgba(255,206,122,.45);color:var(--gold)}
-          .cat-switcher .cat-pill.mine:hover{border-color:var(--gold)}
-          .cat-switcher .cat-pill.mine.on{background:rgba(255,206,122,.18);border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 1px rgba(255,206,122,.35)}
-          .cat-switcher .cat-pill.mine .cp-dia{font-size:11px;margin-right:3px;opacity:.9}
-          .mine-banner{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;padding:10px 14px;border-radius:11px;background:rgba(255,206,122,.07);border:1px solid rgba(255,206,122,.28);font-size:12.5px;color:var(--gold)}
-          .mine-banner .mb-ic{font-size:14px}
+          /* ▼ (2026-07-06 1축 재구조·톤다운) 카테고리 줄 안 My templates(내 공간). 오피셜이 메인이라 강조 최소화 — 구분선 + 중립 pill(골드 제거). 설명은 옆 '?' 호버 툴팁. 롤백: .cat-div/.cat-pill.mine/.cat-help/.cat-tip 제거 ▼ */
+          .cat-switcher .cat-div{display:inline-block;width:1px;height:20px;background:var(--border);margin:0 4px 0 6px;vertical-align:middle}
+          .cat-switcher .cat-pill.mine{color:var(--dim)}                 /* 비활성 시 살짝 죽인 톤 — 공식보다 눈에 덜 띄게 */
+          .cat-switcher .cat-pill.mine .cp-dia{font-size:10px;margin-right:4px;opacity:.6}
+          .cat-switcher .cat-help{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;border:1px solid var(--border2);color:var(--dim);font-size:11px;font-weight:700;cursor:help;margin-left:-2px}
+          .cat-switcher .cat-help:hover{color:var(--text);border-color:var(--dim)}
+          .cat-switcher .cat-help .cat-tip{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);width:230px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:500;line-height:1.5;color:var(--dim);box-shadow:0 14px 34px -12px rgba(0,0,0,.7);opacity:0;visibility:hidden;transition:opacity .14s;z-index:30;text-align:left;pointer-events:none;text-transform:none;letter-spacing:normal;white-space:normal}
+          .cat-switcher .cat-help:hover .cat-tip{opacity:1;visibility:visible}
           /* ▲ */
           .filter-row .filt-div{display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle}
           .filter-row .chip.ghost{border-style:dashed;color:var(--dim)}
@@ -1786,21 +1785,20 @@ function taxonomyRowActive(){ return state.mode==='shopping' && !!window.TAXONOM
 function taxonomyActive(){ return taxonomyRowActive() && curTplType()==='official'; }
 function renderCatSwitcher(){
   const el=document.getElementById('catSwitcher'); if(!el)return;
-  const bn=document.getElementById('mineBanner');
   const bar=document.querySelector('.studio-subtabbar');
   const rowOn=taxonomyRowActive();
   if(bar)bar.style.display=rowOn?'none':''; // 1축 통합 줄이 있을 때만 옛 서브탭 숨김(influencer/ugc는 서브탭 유지)
-  if(!rowOn){ el.innerHTML=''; if(bn)bn.style.display='none'; return; }
+  if(!rowOn){ el.innerHTML=''; return; }
   const isMine=curTplType()==='user';
   let h='<span class="cat-lbl">Category</span>';
   h+=window.TAXONOMY.categories.map(c=> c.active===false
       ? `<div class="cat-pill soon" title="Coming soon">${esc(c.label)}</div>`
       : `<div class="cat-pill${(!isMine&&state.category===c.slug)?' on':''}" onclick="pickOfficialCat('${c.slug}')">${esc(c.label)}</div>`).join('');
-  // ▼ (2026-07-06 1축) 구분선 + My templates(내 공간) pill — 공식과 다른 스타일/아이콘. 롤백: 이 두 줄 제거 ▼
+  // ▼ (2026-07-06 1축·톤다운) 구분선 + 중립 My templates pill + '?' 호버 툴팁(설명). 오피셜 메인이라 강조 최소화. 롤백: 이 세 줄 제거 ▼
   h+='<span class="cat-div" aria-hidden="true"></span>';
   h+=`<div class="cat-pill mine${isMine?' on':''}" onclick="pickUserSpace()"><span class="cp-dia">◆</span>My templates</div>`;
+  h+=`<span class="cat-help" tabindex="0" aria-label="About My templates">?<span class="cat-tip">Your space — create, edit and add your own themes &amp; templates.</span></span>`;
   el.innerHTML=h;
-  if(bn)bn.style.display=isMine?'':'none';
 }
 function setCategory(slug){ if(state.category===slug)return; curTheme=null; state.category=slug; state.filter='All'; renderFilters(); renderRecipes(); if(typeof updateBar==='function')updateBar(); }
 // ▼▼▼ (2026-07-06 1축 재구조) 카테고리 줄 통합 핸들러 — 공식 카테고리 pick(→official 복귀) / My templates(내 공간) pick(→user). curTplType 로직 재사용, 데이터·API 변경 0. 롤백: 이 블록 제거 ▼▼▼
