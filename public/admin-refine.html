@@ -63,6 +63,13 @@
   .copy:hover{color:var(--text);border-color:var(--accent)}
   .err{color:var(--bad);font-size:13px;font-weight:600}
   .muted{color:var(--faint);font-size:12px}
+  .tile.link{cursor:pointer;transition:transform .15s,border-color .15s}
+  .tile.link:hover{transform:translateY(-3px);border-color:var(--accent)}
+  .tile .cap{padding:8px 10px;font-size:11.5px;color:var(--dim);line-height:1.45}
+  .tile .cap b{color:var(--text)}
+  .modal-bg{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);padding:24px;overflow:auto;display:none}
+  .modal-bg.open{display:block}
+  .modal-box{max-width:1000px;margin:16px auto;background:var(--panel);border:1px solid var(--border2);border-radius:16px;padding:24px;position:relative}
 </style>
 </head>
 <body>
@@ -135,6 +142,29 @@
     <div class="grid" id="progGrid"></div>
   </div>
 
+  <!-- 기록 (지난 실행 조회) -->
+  <div class="card" id="histCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="font-size:15px;font-weight:800">📁 기록 (지난 실행)</h3>
+      <button class="copy" id="histRefresh">↻ 새로고침</button>
+    </div>
+    <div class="muted" style="margin-bottom:14px">과거 정밀화 실행 결과 — 카드를 누르면 반복별 이미지·프롬프트를 봅니다. (최신 100개)</div>
+    <div class="grid" id="histGrid"></div>
+    <div class="muted" id="histEmpty" style="display:none">아직 기록이 없어요. 정밀화를 한 번 실행하면 여기에 저장됩니다.</div>
+  </div>
+
+  <!-- 기록 상세 모달 -->
+  <div class="modal-bg" id="runModal" onclick="if(event.target===this)closeRun()">
+    <div class="modal-box">
+      <button class="copy" onclick="closeRun()" style="position:absolute;top:16px;right:16px">✕ 닫기</button>
+      <h3 id="runTitle" style="font-size:16px;font-weight:800;margin-bottom:4px;padding-right:60px">기록</h3>
+      <div class="muted" id="runMeta" style="margin-bottom:14px"></div>
+      <div class="promptbox" style="margin-bottom:16px"><h4>프롬프트 <button class="copy" id="runCopyPrompt">⧉ Copy</button></h4><pre id="runPrompt"></pre></div>
+      <div class="grid" id="runGrid"></div>
+      <button class="run" id="runDelete" style="margin-top:18px;margin-left:0;background:#c0392b">🗑 이 기록 삭제</button>
+    </div>
+  </div>
+
 <script>
 const $=(id)=>document.getElementById(id);
 let TARGET=null, REF=null;
@@ -204,7 +234,7 @@ async function run(){
       t.el.appendChild(dlBtn(ev.image, `iter${ev.i}-${ts()}.png`));
       $('cr'+ev.i).textContent=ev.critique||''; }
     else if(ev.type==='converged'){ $('status').innerHTML=`✅ iter <b>${ev.i}</b>에서 핵심 레버 전부 통과 → 수렴 완료`; }
-    else if(ev.type==='done'){ showFinal(ev.best, rubric); }
+    else if(ev.type==='done'){ showFinal(ev.best, rubric); loadHistory(); }
     else if(ev.type==='error'){ $('status').innerHTML='<span class="err">오류: '+ev.message+'</span>'; }
   }
   function showFinal(best, rubric){
@@ -259,6 +289,51 @@ document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{
   const f=window.__final||{}; const t=b.dataset.c==='authored'?window.__authored:(b.dataset.c==='prompt'?f.prompt:f.neg); if(!t)return;
   navigator.clipboard.writeText(t).then(()=>{ const o=b.textContent; b.textContent='✓ Copied'; setTimeout(()=>b.textContent=o,1300); });
 }));
+
+// ── 기록(refine 실행 이력) 조회 ──
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmtDate(s){ const d=new Date(s); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+async function loadHistory(){
+  try{
+    const r=await fetch('/api/admin/refine/runs'); if(!r.ok)return;
+    const {data}=await r.json(); const g=$('histGrid'), empty=$('histEmpty');
+    if(!data||!data.length){ g.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    g.innerHTML=data.map(run=>`
+      <div class="tile link" onclick="openRun('${run.id}')">
+        <div class="th" style="background-image:url(/images/${run.best_file})"></div>
+        <div class="cap"><b>${run.best_ok}/${run.total}</b>${run.converged?' <span style="color:var(--ok)">✓</span>':''} · ${run.iter_count}회 · ${fmtDate(run.created_at)}
+          ${run.goal?`<div class="muted" style="margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🎯 ${esc(run.goal)}</div>`:''}</div>
+      </div>`).join('');
+  }catch(e){ console.error('history load failed', e); }
+}
+let CUR_RUN=null;
+async function openRun(id){
+  try{
+    const r=await fetch('/api/admin/refine/runs/'+id); if(!r.ok){ alert('불러오기 실패'); return; }
+    const {data}=await r.json(); CUR_RUN=data;
+    $('runTitle').textContent = data.goal ? ('🎯 '+data.goal) : '정밀화 기록';
+    $('runMeta').textContent = `${fmtDate(data.created_at)} · 최종 ${data.best_ok}/${data.total}${data.converged?' · 수렴 ✓':''} · ${(data.iters||[]).length}회 반복`;
+    $('runPrompt').textContent = data.prompt || '(없음)';
+    $('runGrid').innerHTML=(data.iters||[]).map(it=>`
+      <div class="tile">
+        <div class="th" style="background-image:url(/images/${it.file})"></div>
+        <div class="cap">#${it.i} · <b>${it.okCount}/${it.total}</b>${it.converged?' ✓':''}
+          <a href="/images/${it.file}" download="refine-iter${it.i}.png" style="color:var(--accent2);margin-left:6px;text-decoration:none">⬇</a></div>
+      </div>`).join('');
+    $('runModal').classList.add('open');
+  }catch(e){ alert('오류: '+e.message); }
+}
+function closeRun(){ $('runModal').classList.remove('open'); CUR_RUN=null; }
+$('histRefresh').addEventListener('click', loadHistory);
+$('runCopyPrompt').addEventListener('click', ()=>{ if(!CUR_RUN)return; navigator.clipboard.writeText(CUR_RUN.prompt||'').then(()=>{ const b=$('runCopyPrompt'); b.textContent='✓ Copied'; setTimeout(()=>b.textContent='⧉ Copy',1300); }); });
+$('runDelete').addEventListener('click', async ()=>{
+  if(!CUR_RUN||!confirm('이 기록을 삭제할까요? (이미지도 함께 삭제)'))return;
+  const r=await fetch('/api/admin/refine/runs/'+CUR_RUN.id,{method:'DELETE'});
+  if(r.ok){ closeRun(); loadHistory(); } else alert('삭제 실패');
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape')closeRun(); });
+loadHistory();
 </script>
 </body>
 </html>

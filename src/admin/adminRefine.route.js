@@ -10,11 +10,66 @@
  *   판정/작성: Claude 비전(ANTHROPIC_API_KEY)
  */
 const { Router } = require('express');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const { GoogleGenAI } = require('@google/genai');
 const Anthropic = require('@anthropic-ai/sdk');
 const { requireAdmin } = require('../middleware/auth');
+const { query } = require('../db/client');
 
 const router = Router();
+
+// ── 기록(refine_runs) 저장 — 실행 결과를 조회할 수 있게 DB+이미지 파일로 남긴다 ──
+// 이미지는 tmp/images(=/images 정적 서빙)에 저장 → URL /images/<file>. 테이블은 최초 저장 시 자동 생성.
+let _refineTableReady = false;
+async function ensureRefineTable() {
+  if (_refineTableReady) return;
+  await query(`CREATE TABLE IF NOT EXISTS refine_runs (
+    id         UUID PRIMARY KEY,
+    user_id    UUID,
+    goal       TEXT,
+    prompt     TEXT,
+    negative   TEXT,
+    checklist  JSONB,
+    iters      JSONB,
+    best_file  TEXT,
+    best_ok    INT,
+    total      INT,
+    converged  BOOLEAN NOT NULL DEFAULT false,
+    max_iters  INT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_refine_runs_created ON refine_runs(created_at DESC);`);
+  _refineTableReady = true;
+}
+
+// iters = [{ i, b64, mime, okCount, total, scores, converged }] → 파일로 쓰고 DB에 기록. runId 반환(실패 시 null).
+async function saveRun({ userId, goal, prompt, negative, checklist, iters, max }) {
+  if (!iters || !iters.length) return null;
+  try {
+    await ensureRefineTable();
+    const runId = crypto.randomUUID();
+    const outDir = path.join(process.cwd(), 'tmp', 'images');
+    fs.mkdirSync(outDir, { recursive: true });
+    const saved = iters.map((it) => {
+      const file = `refine-${runId}-iter${it.i}.png`;
+      fs.writeFileSync(path.join(outDir, file), Buffer.from(it.b64, 'base64'));
+      return { i: it.i, file, okCount: it.okCount, total: it.total, scores: it.scores || {}, converged: !!it.converged };
+    });
+    const best = saved[saved.length - 1]; // 최종(수렴 iter 또는 마지막 iter)
+    await query(
+      `INSERT INTO refine_runs (id,user_id,goal,prompt,negative,checklist,iters,best_file,best_ok,total,converged,max_iters)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [runId, userId || null, goal || null, prompt || '', negative || '', JSON.stringify(checklist || []),
+       JSON.stringify(saved), best.file, best.okCount, best.total, saved.some((s) => s.converged), max]
+    );
+    return runId;
+  } catch (e) {
+    console.error('[refine] 기록 저장 실패:', e.message);
+    return null;
+  }
+}
 
 // admin 도구는 품질 우선 → 전용 REFINE_IMAGE_MODEL(기본 Nano Banana Pro)로 스튜디오(GEMINI_IMAGE_MODEL, flash)와 분리.
 // 서버 .env가 flash여도 admin refine/apply는 Pro로 생성 → 로컬과 동일 품질/수렴.
@@ -150,6 +205,8 @@ async function refineHandler(req, res) {
     // 최종 결과 = 성공(수렴) iter가 있으면 그것, 없으면 마지막(N번째) iter.
     // (수렴 시 그 iter에서 break → last가 곧 성공 iter가 됨)
     let last = null;
+    const iterRecords = []; // 기록 저장용(b64 포함)
+    let finalPrompt = prompt, finalNegative = negative;
     for (let i = 1; i <= max && !aborted; i++) {
       send({ type: 'progress', i, stage: 'generate' });
       const t0 = Date.now();
@@ -165,11 +222,15 @@ async function refineHandler(req, res) {
       const allPass = okCount === checklist.length;
       send({ type: 'iter', i, image, scores: v.scores, okCount, total: checklist.length, critPass: allPass, critique: v.critique, prompt, negative });
       last = { i, image, okCount, prompt, negative, converged: allPass }; // 항상 최신 iter로 갱신
+      iterRecords.push({ i, b64: gen.b64, mime: gen.mime, okCount, total: checklist.length, scores: v.scores || {}, converged: allPass });
+      finalPrompt = prompt; finalNegative = negative;
       if (allPass) { send({ type: 'converged', i }); break; }
       prompt = v.revisedPrompt || prompt;
       negative = v.revisedNegative || negative;
     }
-    send({ type: 'done', best: last, total: checklist.length });
+    // 기록 저장(조회용) — 스트림 실패해도 무방(try/catch 내부 처리)
+    const runId = await saveRun({ userId: req.user?.id, goal, prompt: finalPrompt, negative: finalNegative, checklist, iters: iterRecords, max });
+    send({ type: 'done', best: last, total: checklist.length, runId });
   } catch (e) {
     console.error('[refine] 오류:', e.message);
     send({ type: 'error', message: e.message });
@@ -177,6 +238,41 @@ async function refineHandler(req, res) {
   res.end();
 }
 router.post('/admin/refine', requireAdmin, refineHandler);
+
+// ── 기록 조회/삭제 (admin 전용) ──
+// 목록: 최신순 100개(썸네일=best_file, 프롬프트 요약, 점수, 반복수, 날짜)
+router.get('/admin/refine/runs', requireAdmin, async (_req, res, next) => {
+  try {
+    await ensureRefineTable();
+    const { rows } = await query(
+      `SELECT id, goal, left(prompt, 180) AS prompt, best_file, best_ok, total, converged, max_iters,
+              jsonb_array_length(iters) AS iter_count, created_at
+         FROM refine_runs ORDER BY created_at DESC LIMIT 100`
+    );
+    res.json({ success: true, data: rows });
+  } catch (e) { next(e); }
+});
+
+// 상세: 전체 iter 이미지·프롬프트·체크리스트
+router.get('/admin/refine/runs/:id', requireAdmin, async (req, res, next) => {
+  try {
+    await ensureRefineTable();
+    const { rows } = await query(`SELECT * FROM refine_runs WHERE id = $1`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ success: false, error: '기록을 찾을 수 없습니다.' });
+    res.json({ success: true, data: rows[0] });
+  } catch (e) { next(e); }
+});
+
+// 삭제: DB 레코드 + 이미지 파일
+router.delete('/admin/refine/runs/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(`DELETE FROM refine_runs WHERE id = $1 RETURNING iters`, [req.params.id]);
+    for (const it of (rows[0]?.iters || [])) {
+      try { fs.unlinkSync(path.join(process.cwd(), 'tmp', 'images', it.file)); } catch (_) {}
+    }
+    res.json({ success: true });
+  } catch (e) { next(e); }
+});
 
 // ── ② 생성 단계: 고정된 프롬프트를 레퍼런스에만 적용(타깃 없이) → N장 생성 ──
 // data URL 문자열 또는 {b64,mime} → {b64,mime} 정규화
