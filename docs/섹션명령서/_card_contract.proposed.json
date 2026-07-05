@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 173,
-  "new_count": 139,
+  "total": 174,
+  "new_count": 140,
   "provisional_count": 26,
   "drift_guard": {
-    "seed_total": 173,
-    "status_total": 173,
+    "seed_total": 174,
+    "status_total": 174,
     "ok": true
   },
   "id_collisions": [],
@@ -3146,6 +3146,44 @@
           "needs_human_review"
         ],
         "text_overlay": false
+      }
+    ],
+    "productcut": [
+      {
+        "id": "product-cut",
+        "cat": "ProductCut",
+        "name": "Product Cut",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "cuts": [
+          {
+            "id": "flat-lay-cut",
+            "name": "Flat Lay Cut"
+          },
+          {
+            "id": "hanger-cut",
+            "name": "Hanger Cut"
+          },
+          {
+            "id": "ghost-mannequin-cut",
+            "name": "Ghost Mannequin Cut"
+          },
+          {
+            "id": "styled-object-cut",
+            "name": "Styled Object Cut"
+          },
+          {
+            "id": "detail-cut",
+            "name": "Detail Cut"
+          }
+        ]
       }
     ]
   }

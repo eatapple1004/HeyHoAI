@@ -237,7 +237,7 @@
 
 <!-- LOCAL-ONLY (do not push): 옛 기록 템플릿 추정용 시그니처 맵 -->
 <script src="/js/recipe_sig.local.js"></script>
-<script src="/js/themes.js?v=1"></script>
+<script src="/js/themes.js?v=3"></script>
 <script>
 // ═══ 실제 데이터 연결: GET /api/generate/results ═══
 let ITEMS=[];
@@ -780,6 +780,8 @@ function libThemeChips(tid){
   const t=tplById(tid), allow=(t&&CAT_THEMES[t.category])||null, grp=cardGroup(tid);
   let defs=(LIB.global||[]).filter(t=>!LIB.hidden.has(t.slug));
   if(allow) defs=defs.filter(t=>allow.includes(t.slug));
+  // 오피셜 전용 테마(예: productcut)엔 유저 템플릿 배정 불가 → 배정 칩에서 제외.
+  { const oo=window.OFFICIAL_ONLY_THEMES||[]; defs=defs.filter(t=>oo.indexOf(t.slug)<0); }
   const active=cardActiveGroup(tid);
   let h=defs.map(t=>{ const on=libDefOn(t.slug,tid), g=THEME_GROUP_OF[t.slug]; return libChip(on, esc(t.name), `toggleDef('${esc(t.slug)}','${tid}')`, !!active && g && g!==active && !on); }).join('');
   // 카드 대분류가 정해지면 그 그룹 커스텀만, 미지정이면 전체 폴백. 상호배타 적용.

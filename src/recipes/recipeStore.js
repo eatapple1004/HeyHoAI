@@ -15,7 +15,7 @@ const path = require('path');
 const { resolveToolId } = require('../tools/registry');
 
 // 12개 섹션 (FE recipes.generated.js의 cards 키와 정합)
-const SECTIONS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
+const SECTIONS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut'];
 
 /** 카드 계약과 동일한 slug 규칙 (id = slug(name)) */
 function slug(s) {
@@ -98,9 +98,12 @@ function getById(id) {
   return map().get(String(id)) || null;
 }
 
-/** 전체/모드별 카드 메타 목록 (생성 가능한 것만) */
+/** 전체/모드별 카드 메타 목록 (생성 가능한 것만).
+ * config.parent_id 있는 자식(변형) 레시피는 카드 목록에서 제외 — 진입점은 부모 1장.
+ * getById는 자식도 반환하므로 Studio가 컷 선택 시 자식 id로 resolve 가능. */
 function list({ mode, vertical } = {}) {
   return [...map().values()]
+    .filter((r) => !(r.config && r.config.parent_id))
     .filter((r) => !mode || r.mode === mode)
     .filter((r) => !vertical || r.vertical === vertical)
     .map((r) => ({

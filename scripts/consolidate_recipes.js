@@ -17,7 +17,10 @@ const SECTIONS = [
   ['jewelry','주얼리','product'], ['food','푸드&카페','product'], ['coffee','카페&커피','product'], ['home','홈&리빙','product'],
   ['tech','테크','product'], ['pet','펫','product'], ['ugc','UGC광고','avatar'],
   ['general','General/기타제품','product'], ['headshot','헤드샷/퍼스널','face'],
+  ['productcut','제품컷','product'],
 ];
+// 파라미터형(부모 1 + 자식 컷) 섹션 — 개수 6~8·◈2진입·싼릴스 휴리스틱 면제(카드는 부모 1장뿐).
+const PARAM_SECTIONS = new Set(['productcut']);
 
 function tryLoad(key){
   for (const f of [`recipes.${key}.v2.js`, `recipes.${key}.js`]) {
@@ -49,10 +52,13 @@ for (const [key,name,mode] of SECTIONS){
   row.count=arr.length; total+=arr.length;
   // per-recipe validation
   let hasEntry2=false, hasCheapReel=false;
+  let childCount=0;
   arr.forEach((r,i)=>{
     const id=`#${i+1} ${r&&r.name||'(noname)'}`;
-    REQ_TOP.forEach(k=>{ if(r&&r[k]==null) row.issues.push(`${id}: top.${k} 누락`); });
     const c=r&&r.config||{};
+    // 자식(변형) 레시피: output/subject는 부모 상속이라 자체 config에 없음 → REQ_CFG·가격·중복 검증 제외.
+    if(c.parent_id){ childCount++; return; }
+    REQ_TOP.forEach(k=>{ if(r&&r[k]==null) row.issues.push(`${id}: top.${k} 누락`); });
     REQ_CFG.forEach(k=>{ if(c[k]==null) row.issues.push(`${id}: config.${k} 누락`); });
     if(r){
       const out=c.output||{};
@@ -71,9 +77,15 @@ for (const [key,name,mode] of SECTIONS){
       if(r.text_overlay===true) row.overlay.push(r.name||'(noname)');
     }
   });
-  if(!hasEntry2) row.issues.push('가격사다리: ◈2 사진 진입 없음');
-  if(!hasCheapReel) row.issues.push('가격사다리: 싼 릴스(≤◈4) 없음');
-  if(arr.length<6||arr.length>8) row.issues.push(`개수 ${arr.length} (권장 6~8)`);
+  total -= childCount;                             // 자식(변형)은 카드 아님 → 총 카드수 제외(drift-guard 정합)
+  row.count = arr.length - childCount;             // 표시 개수 = 카드(부모/독립)만
+  if(PARAM_SECTIONS.has(key)){
+    row.flags.push(`파라미터형: 부모 ${row.count} + 컷 ${childCount} (개수/가격사다리 휴리스틱 면제)`);
+  } else {
+    if(!hasEntry2) row.issues.push('가격사다리: ◈2 사진 진입 없음');
+    if(!hasCheapReel) row.issues.push('가격사다리: 싼 릴스(≤◈4) 없음');
+    if(arr.length<6||arr.length>8) row.issues.push(`개수 ${arr.length} (권장 6~8)`);
+  }
   row.status = row.issues.length? 'draft(이슈)' : 'OK';
   if(row.status==='OK') ready++;
   report.push(row);

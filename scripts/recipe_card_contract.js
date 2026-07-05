@@ -18,8 +18,9 @@ const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const guards = require(path.join(SEEDS, 'product.guards.v2.js')); // ← resolvedGuards 실호출
 
-const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot'];
+const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut'];
 const PRODUCT = new Set(['fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'general']);
+// productcut은 PRODUCT에 넣지 않음 — guards(product.guards.v2.js)에 vertical 없음. guards는 PREVIEW 전용이라 생략 안전.
 
 const slug = (s) => String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
@@ -34,7 +35,15 @@ for (const v of VERTICALS) {
   const v1names = new Set((v1 || []).map((r) => (r.name || '').trim().toLowerCase()));
   const netNew = v1 === null;                                    // v1 시드 없음 = 전부 신규
 
-  out[v] = v2.map((r) => {
+  // 자식(변형) 레시피 = config.parent_id 보유 → 카드 아님(진입점은 부모 1장). 컨트랙트/카드에서 제외.
+  // 단, 부모 카드는 자기 자식(컷) 목록을 cuts로 실어 Studio가 컷 선택 그리드를 그린다.
+  const childrenByParent = {};
+  for (const r of v2) {
+    const pid = r.config && r.config.parent_id;
+    if (!pid) continue;
+    (childrenByParent[pid] = childrenByParent[pid] || []).push({ id: slug(r.name), name: r.name });
+  }
+  out[v] = v2.filter((r) => !(r.config && r.config.parent_id)).map((r) => {
     const isNew = netNew || !v1names.has((r.name || '').trim().toLowerCase());
     const id = slug(r.name);                                     // ⚠ 파생 id (게이트 A2a: FE/backend 비준 대상)
     if (idSet.has(id)) idCollisions.push(id); else idSet.add(id);
@@ -52,6 +61,8 @@ for (const v of VERTICALS) {
       text_overlay: r.text_overlay === true,                     // top-level (consolidate와 동일 경로)
     };
     if (PRODUCT.has(v)) card.guards = guards.resolvedGuards(v);   // ← resolvedGuards 실소비
+    const kids = childrenByParent[id];                            // 중첩: 부모 카드에 컷(자식) 목록 부착
+    if (kids && kids.length) card.cuts = kids;
     return card;
   });
 }

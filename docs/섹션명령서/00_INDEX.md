@@ -22,6 +22,7 @@
 - [10 General / 기타 제품](10_general.md) — 제품 · **신규(net-new)**, 처음부터 6~8개 설계
 - [11 헤드샷 / 퍼스널 브랜딩](11_headshot.md) — 얼굴 · **신규(net-new)**, 처음부터 6~8개 설계 · [▶작업기록](11_headshot_작업기록.md)(死필드 negative→extra_negative 7/7 이관완료)
 - [12 카페 & 커피](12_coffee.md) — 제품 · **신규(net-new)**, 커피/음료 전용 7개(food 음료 갭 충전) · [▶작업기록](12_coffee_작업기록.md)(**신설 + 로컬 적용 완료 ✅** · 시드+파이프라인+studio+CSV, drift OK)
+- 13 제품컷(Product Cut) — 제품 · **신규 오피셜 테마 + 중첩 템플릿**(부모1+컷5, 파라미터형·컷=parent_id 자식) · [▶작업기록](13_productcut_작업기록.md)(**Phase1 시드+Phase2 배선+Phase3 Studio UI(컷 그리드) 완료·drift OK 174·node/문법 검증 통과** / 로컬 :3002 migrate+브라우저 눈검증·배포 대기)
 
 ## 사용법
 1. 한 섹션 = 한 세션(또는 한 작업 단위)에 그 파일 1개를 전달.

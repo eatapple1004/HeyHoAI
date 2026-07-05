@@ -1011,6 +1011,16 @@ async function migrateMarketplace() {
     );
   }
 
+  // ✅ 기본 제공(무료) 공식 — Product Cut(제품컷 중첩). price_credits=0 → Store 구매게이트/생성 402 없음.
+  //    Studio는 DEFAULT_OFFICIAL_RECIPES로 소유 무관 노출. 멱등: 없으면 삽입, 있으면 price를 0으로 보정(◈8 프리미엄 아님).
+  await pool.query(
+    `INSERT INTO marketplace_templates
+       (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
+     SELECT '@doppia', 'Product Cut', 'Shopping', 'image', 'Natural', '👕', 0, 0, true, 'public', 'product-cut', 'Included official template — Product Cut'
+     WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = 'product-cut')`
+  );
+  await pool.query(`UPDATE marketplace_templates SET price_credits = 0, use_price_credits = 0 WHERE recipe_id = 'product-cut'`);
+
   // ✅ 시드 레시피(93종) → recipes 테이블 적재. 정본은 시드 JS(recipeStore 런타임 로드),
   //    이 테이블은 config(JSONB) 전체를 보존하는 DB 사본. 멱등(upsert) — 배포마다 시드와 동기화.
   {
@@ -1098,6 +1108,7 @@ async function migrateMarketplace() {
     ['beauty', 'Beauty'], ['fashion', 'Fashion'], ['jewelry', 'Jewelry'], ['food', 'Food'],
     ['coffee', 'Coffee'], ['home', 'Home'], ['tech', 'Tech'], ['pet', 'Pet'],
     ['people', 'People'], ['ugc', 'UGC'], ['general', 'General'],
+    ['productcut', 'Product Cut'],
   ];
   for (let i = 0; i < THEME_SEED.length; i++) {
     await pool.query(
@@ -1111,6 +1122,7 @@ async function migrateMarketplace() {
     ['stone-plinth-luxe', 'beauty'], ['noir-gold-hero', 'beauty'], ['dewy-glass-hero', 'beauty'],
     ['ring-editorial-campaign', 'jewelry'], ['bracelet-editorial-campaign', 'jewelry'],
     ['top-down-hero', 'food'], ['void-hero-cut', 'tech'], ['pet-product-hero', 'pet'],
+    ['product-cut', 'productcut'],
   ];
   for (const [rid, slug] of OFFICIAL_THEME) {
     await pool.query(

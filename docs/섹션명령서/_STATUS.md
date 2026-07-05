@@ -1,6 +1,6 @@
 # 레시피 종합 현황 (자동생성 · `node scripts/consolidate_recipes.js`)
 
-**6/12 섹션 OK · 총 173개 템플릿**
+**7/13 섹션 OK · 총 174개 템플릿**
 
 | 섹션 | 상태 | 개수 | 파일 |
 |---|---|---|---|
@@ -16,6 +16,7 @@
 | ugc (UGC광고) | OK | 7 | `recipes.ugc.v2.js` |
 | general (General/기타제품) | OK | 8 | `recipes.general.v2.js` |
 | headshot (헤드샷/퍼스널) | OK | 7 | `recipes.headshot.v2.js` |
+| productcut (제품컷) | OK | 1 | `recipes.productcut.v2.js` |
 
 ## 이슈
 **influencer**
@@ -134,6 +135,10 @@ _없음_
 **headshot**
 - Speaking Profile Reel [needs_human_review]
 - About-Page Intro Reel [needs_human_review]
+
+**productcut**
+- Product Cut [experimental,needs_human_review]
+- 파라미터형: 부모 1 + 컷 5 (개수/가격사다리 휴리스틱 면제)
 
 ## 🅣 텍스트 오버레이 (text_overlay)
 **beauty**: Before/After Result Reel · Ingredient Claim Card

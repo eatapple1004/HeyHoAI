@@ -81,6 +81,13 @@
   .tpl-sel .ts-sub{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tpl-sel .ts-x{margin-left:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--dim);font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;align-self:flex-start}
   .tpl-sel .ts-x:hover{background:rgba(255,255,255,.18);color:var(--text)}
+  /* 중첩 템플릿 — 컷 유형 선택 그리드 (부모 카드 아래) */
+  .cut-sel{width:100%;max-width:480px;margin-top:10px;display:flex;flex-direction:column;gap:7px}
+  .cut-sel .cut-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2)}
+  .cut-sel .cut-row{display:flex;flex-wrap:wrap;gap:8px}
+  .cut-sel .cut-btn{font:inherit;font-size:13px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1.5px solid var(--border2);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .13s;white-space:nowrap}
+  .cut-sel .cut-btn:hover{color:var(--text);border-color:var(--accent);background:rgba(124,108,255,.10)}
+  .cut-sel .cut-btn.on{color:#fff;background:var(--accent);border-color:var(--accent);box-shadow:0 6px 16px -8px rgba(124,108,255,.7)}
   /* ▲▲▲ 테스트 흡수 블록 끝 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
@@ -846,6 +853,7 @@
     <div class="rm-preview" id="rmPreview"></div>
     <div class="rm-head"><h3 id="rmName" style="margin:0"></h3><span class="rm-badge" id="rmBadge"></span></div>
     <div class="rm-desc" id="rmDesc"></div>
+    <div id="rmCuts" class="cut-sel" style="display:none;margin:16px 0 0;max-width:none"></div>
     <label for="rmDetail" style="display:block;font-size:12px;color:var(--dim);margin:14px 0 6px">Add detail (optional)</label>
     <textarea id="rmDetail" maxlength="300" placeholder="Add your own touch — e.g. red dress, golden hour, soft smile" style="width:100%;min-height:60px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:14px"></textarea>
     <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">Use this template</button>
@@ -894,8 +902,8 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=5"></script>
-<script src="/js/themes.js?v=1"></script>
+<script src="/js/recipes.generated.js?v=6"></script>
+<script src="/js/themes.js?v=3"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -925,10 +933,12 @@ function buildTemplates(){
   // theme = 글로벌 테마 slug(Explore와 동일 어휘). cat = 카드 라벨(인물=샷타입·제품=버티컬명 유지).
   const mk=(c,cat,theme)=>({id:c.id,name:c.name,type:c.type==="reel"?"reel":"image",
     emoji:c.emoji||"🎨",grad:c.grad||"linear-gradient(150deg,#7c6cff,#5ee0d6)",cat:cat||c.cat||"All",
-    themes:theme?[theme]:['general'],held:c.held});
+    themes:theme?[theme]:['general'],held:c.held,
+    cuts:(c.cuts&&c.cuts.length)?c.cuts:undefined}); // 중첩 템플릿: 컷(자식) 선택지 보존
   const PRODUCT=["fashion","beauty","jewelry","food","coffee","home","tech","pet"];
   const shopping=[];
   PRODUCT.forEach(v=>(C[v]||[]).forEach(c=>shopping.push(mk(c,cap(v),v))));
+  (C.productcut||[]).forEach(c=>shopping.push(mk(c,'Product Cut','productcut'))); // 신규 오피셜 테마(부모 카드만)
   TEMPLATES={
     influencer:[].concat((C.influencer||[]).map(c=>mk(c,c.cat,'people')),(C.headshot||[]).map(c=>mk(c,"Headshot",'people')),(C.general||[]).map(c=>mk(c,"General",'people'))),
     shopping:shopping,
@@ -940,8 +950,11 @@ function buildTemplates(){
 // 공식(is_official)·유저(비공식) 둘 다 여기서 /owned 기준으로 판단(Library Official/My templates 서브탭과 세트 일치).
 // ▼▼▼ (2026-07-03 소스 통일) 공식 노출·테마도 /owned 단일소스로 이동(옛 recipe-gates 이원화 제거).
 //     롤백: 이 함수의 is_official 분기 제거 + applyRecipeGates에 OFFICIAL_RECIPES 재도입(reset/add) + OFFICIAL_THEME_MAP 주입 복원 + GATES_LOADED를 gates로 환원 ▼▼▼
+// 기본 제공 공식 recipe(DEFAULT_OFFICIAL_RECIPES) — 소유 무관 항상 공식으로 취급(OFFICIAL_RECIPES 포함)+노출(held=false).
+//   modePool이 OFFICIAL_RECIPES 카드만 노출하므로 여기 넣어야 Store 담기 없이 Studio에 뜬다. price 0이라 생성 구매게이트 없음.
+function applyDefaultOfficials(){ (window.DEFAULT_OFFICIAL_RECIPES||[]).forEach(id=>{ id=String(id); const c=findCard(id); if(c&&c.id){ OFFICIAL_RECIPES.add(id); c.held=false; } }); }
 async function mergeOwnedTemplates(){
-  let owned;try{owned=(await(await fetch('/api/marketplace/owned')).json()).data||[];}catch(e){GATES_LOADED=true;renderFilters();renderRecipes();return;}
+  let owned;try{owned=(await(await fetch('/api/marketplace/owned')).json()).data||[];}catch(e){applyDefaultOfficials();GATES_LOADED=true;renderFilters();renderRecipes();return;}
   const mkOn=!!(window.featureOn&&window.featureOn('marketplace')); // 유저 마켓 템플릿은 점화 시만(기존 동작). 공식은 플래그 무관(옛 applyRecipeGates와 동일).
   OFFICIAL_RECIPES=new Set(); // 공식 판단 = /owned is_official=true 보유 공식(Library Official 탭과 동일 세트). recipe_id로 window.RECIPES 카드에 매핑.
   owned.forEach(t=>{
@@ -970,6 +983,7 @@ async function mergeOwnedTemplates(){
       themes:(t.themes||[]),mine:!!t.mine, // mine=내가 만든 것(Manage에서 Delete 게이트). 구매(purchased)·공식은 삭제 불가.
       prompt:t.prompt,tool:t.tool||null,style:t.style||'none',source:'marketplace',held:false,in_studio:t.in_studio!==false,fromCreationIdx:t.from_creation_idx||null});
   });
+  applyDefaultOfficials(); // 기본 제공 공식(product-cut 등)은 소유 무관 항상 노출
   GATES_LOADED=true; // 공식+보유 판단 완료 → modePool이 공식+보유만 노출(recipe-gates fetch와 무관하게 픽커 정상화).
   renderFilters();renderRecipes();updateBar();
 }
@@ -989,7 +1003,7 @@ async function applyRecipeGates(){
   renderRecipes();
 }
 
-let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,filter:'All'};
+let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,cutId:null,filter:'All'};
 let GAMMA_FROM=0; // γ: 공개 creation 블랙박스 사용 — 이 idx의 룩을 내 주체에 적용(프롬프트 미노출). setMode와 독립(모드 전환에도 유지).
 let SUBJECTS={influencer:[],shopping:[],ugc:[],custom:[]};
 let generating=false;
@@ -1419,7 +1433,7 @@ function setMode(m,initialVertical){
   if(m==='influencer' && typeof featureOn==='function' && !featureOn('influencer')) m='shopping';
   // 제품 모드는 버티컬 기본 선택(Fashion), 딥링크 시 지정 버티컬
   const defFilter=(m==='shopping'&&initialVertical)?String(initialVertical).toLowerCase():'All';
-  state={mode:m,slots:{},subjectId:null,recipeId:null,filter:defFilter};
+  state={mode:m,slots:{},subjectId:null,recipeId:null,cutId:null,filter:defFilter};
   ['Influencer','Shopping','Ugc','Custom'].forEach(x=>document.getElementById('mode'+x).classList.toggle('active',m===x.toLowerCase()));
   const ugc=(m==='ugc');
   const custom=(m==='custom');
@@ -1693,6 +1707,8 @@ function renderFilters(){
   const allow=(macro&&CAT_THEMES[macro])?CAT_THEMES[macro]:null;
   const byslug={}; (THEME_LIST||[]).forEach(t=>{ byslug[t.slug]=t; });
   let ordered=allow?allow.map(s=>byslug[s]||{slug:s,name:s}):(THEME_LIST||[]).slice();
+  // 오피셜 전용 테마(예: productcut)는 My templates(user) 서브탭 필터에서 제외 — 공식 제품 테마라 유저 큐레이션 대상 아님.
+  if(curTplType()==='user'){ const oo=window.OFFICIAL_ONLY_THEMES||[]; ordered=ordered.filter(t=>oo.indexOf(t.slug)<0); }
   if(!manageMode) ordered=ordered.filter(t=>!HIDDEN_THEMES.has(t.slug));  // (2026-07-04) 완전 동기화 — 빈 테마도 칩 노출(옛 present 필터 제거, Create template·Manage와 일치)
   let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
   html+=ordered.map(t=>{
@@ -1874,8 +1890,13 @@ function pickRecipe(id){
   // 보유 마켓 템플릿(자기 tool 보유) 선택 시 → 그 tool 적용(applyTryTemplate와 동일 패턴). 일반 recipe는 기본 유지.
   const r=curRecipe();
   if(r&&r.source==='marketplace'&&r.tool){const tt=toolById(r.tool);if(tt)applyTool(r.tool);}
+  syncDefaultCut();
   renderRecipes();updateBar();
 }
+// 중첩 템플릿: 부모(cuts 보유) 선택 시 첫 컷을 기본, 그 외엔 컷 없음.
+function syncDefaultCut(){const r=curRecipe();state.cutId=(r&&r.cuts&&r.cuts.length)?r.cuts[0].id:null;}
+function setCut(id){state.cutId=id;syncTplTrigger();} // 컷 전환 — 컴포즈 칩만 다시 그림
+function cutLabel(n){return String(n||'').replace(/\s*Cut$/,'');} // "Flat Lay Cut" → "Flat Lay"
 
 // 템플릿 설명(서버 rationale) 캐시 + 상세 모달
 let RECIPE_DESC={};
@@ -1883,6 +1904,18 @@ async function loadRecipeDesc(){
   try{const d=(await(await fetch('/api/recipes')).json()).data||[];d.forEach(r=>{RECIPE_DESC[r.id]=r.description||'';});}catch(e){}
 }
 let modalRecipeId=null;
+let modalCutId=null; // 상세 모달에서 임시 선택한 컷(확정 시 state.cutId로)
+function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-btn').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));}
+function renderModalCuts(r){
+  const cw=document.getElementById('rmCuts'); if(!cw)return;
+  if(r&&r.cuts&&r.cuts.length){
+    modalCutId=(state.recipeId===r.id&&state.cutId)?state.cutId:r.cuts[0].id; // 재오픈 시 기존 선택 유지
+    cw.style.display='';
+    cw.innerHTML=`<span class="cut-lbl">Cut type — pick one</span><div class="cut-row">`
+      +r.cuts.map(ct=>`<button type="button" data-cut="${ct.id}" class="cut-btn${modalCutId===ct.id?' on':''}" onclick="setModalCut('${ct.id}')">${esc(cutLabel(ct.name))}</button>`).join('')
+      +`</div>`;
+  }else{ modalCutId=null; cw.style.display='none'; cw.innerHTML=''; }
+}
 function openRecipeModal(id){
   // 이미 선택된 카드를 다시 클릭하면 모달 없이 선택만 해제
   if(state.recipeId===id){state.recipeId=null;state.detail=null;renderRecipes();updateBar();return;}
@@ -1895,6 +1928,7 @@ function openRecipeModal(id){
   const pv=document.getElementById('rmPreview');
   pv.style.background=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
   pv.innerHTML=`${r.emoji||'🎨'}<div class="ph">Sample image coming soon</div>`; // 샘플 이미지 없으니 자리만
+  renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면)
   document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ Selected — tap to deselect':'Use this template';
   document.getElementById('recipeModal').classList.add('open');
 }
@@ -1905,6 +1939,8 @@ function selectFromModal(){
   state.recipeId=sel?modalRecipeId:null;
   const dt=document.getElementById('rmDetail');
   state.detail=sel?(dt?dt.value.trim():''):''; // 선택 시 Add detail 저장, 해제 시 클리어
+  syncDefaultCut();
+  if(sel&&modalCutId)state.cutId=modalCutId; // 모달에서 고른 컷 반영
   renderRecipes();updateBar();closeRecipeModal();
   if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
 }
@@ -1915,7 +1951,7 @@ function toggleTemplatePicker(){
   g.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeTemplatePicker(){}
-function clearTemplate(){state.recipeId=null;state.detail=null;renderRecipes();updateBar();}
+function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;renderRecipes();updateBar();}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
   const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open'))closeRecipeModal();
@@ -1929,11 +1965,19 @@ function syncTplTrigger(){
   if(r&&wrap){ // 선택됨 → 강조 칩("이 템플릿으로 만들어진다"가 한눈에)
     const thumb=r.preview?`background-image:url('${esc(r.preview)}')`:(r.grad?`background:${r.grad}`:'');
     const out=r.type==='reel'?'reel':'photos';
+    // 중첩 템플릿: 컷 유형 선택 그리드(부모 카드가 cuts 보유 시). 선택 컷이 실제 resolve 대상.
+    let cutHtml='';
+    if(r.cuts&&r.cuts.length){
+      if(!state.cutId||!r.cuts.some(ct=>ct.id===state.cutId))state.cutId=r.cuts[0].id; // 방어: 항상 유효한 컷
+      const btns=r.cuts.map(ct=>`<button type="button" class="cut-btn${state.cutId===ct.id?' on':''}" onclick="event.stopPropagation();setCut('${ct.id}')">${esc(cutLabel(ct.name))}</button>`).join('');
+      cutHtml=`<div class="cut-sel"><span class="cut-lbl">Cut type</span><div class="cut-row">${btns}</div></div>`;
+    }
     wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
       +`<span class="ts-thumb" style="${thumb}"></span>`
       +`<span class="ts-body"><span class="ts-cap">Template selected</span><span class="ts-name">${esc(r.name)}</span>`
       +`<span class="ts-sub">Your ${out} will be made with this look · tap to change</span></span>`
-      +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`;
+      +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`
+      +cutHtml;
     wrap.style.display='';
     c.style.display='';
   }else{ if(wrap){wrap.innerHTML='';wrap.style.display='none';} c.style.display='none'; }
@@ -2231,6 +2275,7 @@ async function renderThemeChips(containerId, selected, category){
     if(label==='Influencer' && typeof featureOn==='function' && !featureOn('influencer')) continue; // 숨긴 대분류 제외
     let defSlugs=slugs.filter(s=>bySlug[s]);
     if(allow) defSlugs=defSlugs.filter(s=>allow.includes(s)); // 카테고리 지정 시 화이트리스트 교집합
+    { const oo=window.OFFICIAL_ONLY_THEMES||[]; defSlugs=defSlugs.filter(s=>oo.indexOf(s)<0); } // 오피셜 전용 테마엔 유저 템플릿 배정 불가
     defSlugs.forEach(s=>{ h+=stplThBtn('default',s,bySlug[s].name); });
     (customs||[]).filter(c=>((c.group==='Influencer')?'Influencer':'Shopping')===label).forEach(c=>{ h+=stplThBtn('custom',c.id,c.name); });
     h+=`<button type="button" class="tchip tchip-new" onclick="newStplTheme('${label}')">＋ New theme</button>`;
@@ -2408,7 +2453,9 @@ async function resolvePromptFor(r,subj){
     // 레시피 리졸버(/api/recipes/:id/resolve)는 내장 recipe slug만 알아 UUID면 404 → 호출하지 않는다. generateImages가 fromCreationIdx 전송.
     base={prompt:'',style:'none'};
   }else{
-    const res=await fetch('/api/recipes/'+r.id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
+    // 중첩 템플릿: 부모가 cuts 보유면 선택된 컷(자식) id로 resolve(서버가 부모 상속 병합). 아니면 카드 id 그대로.
+    const rid=(r.cuts&&r.cuts.length&&state.cutId)?state.cutId:r.id;
+    const res=await fetch('/api/recipes/'+rid+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjectId:subj.id})});
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'Could not resolve the template.');
     base={prompt:d.data.generate.prompt,style:'none',count:d.data.generate.count}; // resolver가 스타일 프리셋을 이미 반영 → style none. count도 레시피값

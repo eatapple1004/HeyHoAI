@@ -39,7 +39,18 @@ router.post('/:id/resolve', async (req, res, next) => {
     const recipe = recipeStore.getById(req.params.id);
     if (!recipe) return res.status(404).json({ success: false, error: '레시피를 찾을 수 없습니다.' });
 
-    const cfgSubjectType = (recipe.config.subject && recipe.config.subject.type) || 'face';
+    // 중첩 템플릿: 자식(config.parent_id 보유)은 부모 config를 상속(resolver가 deepMerge(parent→child)).
+    //   자식은 shots·look만 오버라이드하고 output/subject 등 공통은 부모에서 온다.
+    //   (현재 1단 상속. 다단 중첩은 부모 체인을 root→leaf로 pre-merge해 parentConfig로 넘기면 확장.)
+    let parentConfig;
+    if (recipe.config.parent_id) {
+      const parent = recipeStore.getById(recipe.config.parent_id);
+      if (parent) parentConfig = parent.config;
+    }
+
+    // subject.type은 병합 결과 기준 — 자식이 생략하면 부모 값을 따른다.
+    const cfgSubjectType = (recipe.config.subject && recipe.config.subject.type)
+      || (parentConfig && parentConfig.subject && parentConfig.subject.type) || 'face';
     let subject = { type: cfgSubjectType, name: 'subject' };
 
     const { subjectId, userSlots } = req.body || {};
@@ -55,7 +66,7 @@ router.post('/:id/resolve', async (req, res, next) => {
     }
 
     const { presetMap, attributeMap } = await getMaps();
-    const resolved = resolveRecipe(recipe.config, { subject, presetMap, attributeMap, userSlots: userSlots || {} });
+    const resolved = resolveRecipe(recipe.config, { subject, presetMap, attributeMap, parentConfig, userSlots: userSlots || {} });
 
     const first = (resolved.jobs && resolved.jobs[0]) || {};
     res.json({

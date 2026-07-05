@@ -238,5 +238,19 @@
       "About-Page Intro Reel [needs_human_review]"
     ],
     "overlay": []
+  },
+  {
+    "key": "productcut",
+    "name": "제품컷",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.productcut.v2.js",
+    "count": 1,
+    "issues": [],
+    "flags": [
+      "Product Cut [experimental,needs_human_review]",
+      "파라미터형: 부모 1 + 컷 5 (개수/가격사다리 휴리스틱 면제)"
+    ],
+    "overlay": []
   }
 ]
