@@ -71,6 +71,10 @@
   .custom-cta:hover{border-color:var(--accent);background:rgba(124,108,255,.07)}
   .custom-cta .cc-ic{font-size:14px;line-height:1;color:var(--accent2)}
   .custom-cta.back .cc-ic{color:var(--dim)}
+  /* (rollback) Custom 강등 — footer 좌측 요약 아래 작은 muted 진입 링크. 롤백 시 이 세 규칙 삭제 */
+  .gen-foot-left{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+  .custom-link{align-self:flex-start;background:none;border:none;padding:0;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--faint);cursor:pointer;transition:color .2s}
+  .custom-link:hover{color:var(--dim);text-decoration:underline}
   /* 모드 전환 화면 효과 — 페이드 + 살짝 슬라이드·스케일 */
   @keyframes modeSwap{0%{opacity:0;transform:translateY(10px) scale(.995)}100%{opacity:1;transform:translateY(0) scale(1)}}
   .mode-swapping{animation:modeSwap .34s cubic-bezier(.22,.68,.32,1)}
@@ -703,7 +707,12 @@
     </div>
   </div>
   <div class="gen-main">
-    <div class="summary" id="genSummary">Select a face and a template to start.</div>
+    <!-- ▼ (rollback) Custom 강등: 진입 링크를 footer 좌측(요약 아래)에 배치 — Generate와 좌우 균형. 롤백=gen-foot-left 래퍼 풀고 summary만 남기고 #customLink 삭제 + CSS .gen-foot-left/.custom-link 삭제 + syncCustomCta display 토글 삭제 ▼ -->
+    <div class="gen-foot-left">
+      <div class="summary" id="genSummary">Select a face and a template to start.</div>
+      <button type="button" class="custom-link" id="customLink" onclick="toggleCustom()">write your own prompt</button>
+    </div>
+    <!-- ▲ -->
     <div class="gen-actions">
       <button class="opts-btn" id="optsBtn" onclick="toggleOptions()">Options</button>
       <button class="btn" id="tplBtn" style="display:none" disabled onclick="generate({thenSaveTemplate:true})">＋ Create template</button>
@@ -1533,6 +1542,10 @@ function playSwap(){
 function syncCustomCta(){
   const b=document.getElementById('customCta'); if(!b)return;
   const on=(state.mode==='custom');
+  // ▼ (rollback) Custom 강등: 진입("✎ Custom")은 좌상단서 숨기고 하단 #customLink로. 복귀("← Templates")일 때만 좌상단 노출. 롤백=이 2줄 삭제 ▼
+  b.style.display=on?'':'none';
+  { const lk=document.getElementById('customLink'); if(lk)lk.style.display=on?'none':''; }
+  // ▲
   b.classList.toggle('back',on);
   b.querySelector('.cc-ic').textContent=on?'←':'✎';
   b.querySelector('.cc-label').textContent=on?'Templates':'Custom';
