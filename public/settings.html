@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Doppia — Settings</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
+<script src="/js/i18n.js?v=5" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <style>
   .wrap{max-width:720px;margin:0 auto;padding:24px 24px 90px;position:relative;z-index:2}
@@ -58,6 +60,15 @@
   .btn-danger-solid{background:linear-gradient(120deg,var(--pink),#ff5c9a);color:#fff;border:0;border-radius:12px;padding:11px 18px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:opacity .2s,filter .2s}
   .btn-danger-solid:hover{filter:brightness(1.08)}
   .btn-danger-solid:disabled{opacity:.4;cursor:not-allowed}
+
+  /* Language */
+  .lang-list{display:flex;flex-direction:column;gap:10px}
+  .lang-opt{display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;transition:border-color .2s,background .2s}
+  .lang-opt:hover{border-color:var(--border2)}
+  .lang-opt.active{border-color:var(--accent);background:rgba(124,108,255,.08)}
+  .lang-opt .lang-sub{font-size:12px;font-weight:500;color:var(--faint);margin-left:8px}
+  .lang-opt .lang-check{color:var(--accent2);opacity:0;font-weight:800;font-size:16px}
+  .lang-opt.active .lang-check{opacity:1}
 </style>
 </head>
 <body>
@@ -95,8 +106,24 @@
     </div>
   </div>
 
+  <!-- Language -->
+  <div class="card fade d3">
+    <h2>Language</h2>
+    <p class="card-sub">Applies across Doppia on this device.</p>
+    <div class="lang-list" id="langList">
+      <button class="lang-opt" data-lang="en" onclick="pickLang('en')">
+        <span><span class="lang-name">English</span></span>
+        <span class="lang-check">✓</span>
+      </button>
+      <button class="lang-opt" data-lang="ko" onclick="pickLang('ko')">
+        <span><span class="lang-name">한국어</span><span class="lang-sub">Korean</span></span>
+        <span class="lang-check">✓</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Danger zone -->
-  <div class="card danger fade d3">
+  <div class="card danger fade d4">
     <h2>Delete account</h2>
     <p class="card-sub">Permanently disable your Doppia account. This can't be undone.</p>
     <div class="danger-row">
@@ -126,6 +153,20 @@
 
 <script>
 function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
+
+// ── Language ──
+function currentLang(){ try{ return localStorage.getItem('doppia_lang') || 'en'; }catch(e){ return 'en'; } }
+function markLang(){
+  var cur = currentLang();
+  var opts = document.querySelectorAll('.lang-opt');
+  for(var i=0;i<opts.length;i++){ opts[i].classList.toggle('active', opts[i].getAttribute('data-lang')===cur); }
+}
+function pickLang(l){
+  if(l === currentLang()) return;
+  if(window.i18n && window.i18n.setLang){ window.i18n.setLang(l); }
+  else { try{ localStorage.setItem('doppia_lang', l); }catch(e){} document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax'; location.reload(); }
+}
+markLang();
 
 // 현재 사용자 로드 (saas-auth.js가 미로그인 시 이미 리다이렉트)
 (async function loadMe(){
