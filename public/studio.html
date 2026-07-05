@@ -1048,7 +1048,7 @@ async function applyRecipeGates(){
 let state={mode:'influencer',slots:{},subjectId:null,recipeId:null,cutId:null,filter:'All',category:'apparel'};
 let GAMMA_FROM=0; // γ: 공개 creation 블랙박스 사용 — 이 idx의 룩을 내 주체에 적용(프롬프트 미노출). setMode와 독립(모드 전환에도 유지).
 let SUBJECTS={influencer:[],shopping:[],ugc:[],custom:[]};
-let generating=false;
+let genActive=0; // 동시 진행 중인 생성 수(0=유휴). 생성 중에도 추가 요청 허용(이미지·영상 공통).
 let CREDITS={balance:null,unlimited:false,costs:null};
 
 // ── 크레딧 잔액/가격표 로드 (컨텍스트 반영) ──
@@ -2111,12 +2111,12 @@ function syncTplBtn(){
   const b=document.getElementById('tplBtn'); if(!b)return;
   const show=state.mode==='custom'&&!isVideoGen();
   b.style.display=show?'':'none';
-  if(show)b.disabled=generating||!extraPromptText();
+  if(show)b.disabled=genActive>0||!extraPromptText();
 }
 function updateBarCore(){
   const btn=document.getElementById('genBtn'),s=document.getElementById('genSummary'),r=curRecipe();
   const ec=document.getElementById('extraClear');if(ec)ec.classList.toggle('hidden',!extraPromptText());
-  if(generating){btn.disabled=true;return;}
+  // (생성 중에도 버튼 유지 — 추가 생성 요청 허용) 옛 generating 잠금 제거
   if(state.mode==='ugc'){btn.disabled=true;s.textContent='UGC ads — coming soon.';return;}
   const extra=extraPromptText();
   // 대상은 필수, 템플릿·프롬프트는 둘 중 하나 이상이면 생성 가능
@@ -2273,7 +2273,7 @@ async function generate(opts){
   const r=curRecipe(),subj=curSubject();
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
-  if(generating)return;
+  if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;} // 동시 상한(런어웨이 방지). 크레딧도 매 생성 차감.
   if(!subj&&!(state.mode==='custom'&&extra))return; // (테스트) Custom은 레퍼런스 없이 프롬프트만 허용
   if(!r&&!extra&&!GAMMA_FROM)return; // γ 모드: 레시피·프롬프트 없이도 공개 creation 룩으로 생성
   if(r&&r.soon){toast('UGC mode is coming soon.');return;}
@@ -2285,8 +2285,8 @@ async function generate(opts){
   const wantTpl=!!(opts&&opts.thenSaveTemplate)&&!isReel; // "Create template" 경로(사진 전용)
   const regenTpl=!!(opts&&opts.regenTemplate)&&!isReel; // 모달 내 프롬프트 수정 후 미리보기 재생성(폼 유지, 커버만 갱신)
 
-  generating=true;updateBar();
-  const btn=document.getElementById('genBtn');btn.disabled=true;btn.textContent='Generating…';
+  genActive++;updateBar();
+  const btn=document.getElementById('genBtn'); // 생성 중에도 버튼 활성 유지(추가 요청 가능) — disable/라벨변경 안 함
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
   document.getElementById('resultHint').textContent='';
   // (테스트) Leonardo식: placeholder 배치를 피드 맨 앞에 — 메타(템플릿명/프롬프트/모델)는 즉시, 이미지 칸은 로딩
@@ -2323,7 +2323,7 @@ async function generate(opts){
     }
   }finally{
     clearInterval(elapsedTimer); // 경과 타이머 정지
-    generating=false;btn.textContent='Generate';
+    genActive=Math.max(0,genActive-1);btn.textContent='Generate';
     loadCredits(); // 잔액 갱신 (updateBar 포함)
   }
 }
@@ -2417,12 +2417,12 @@ function onTplPromptInput(){
   const hasText=!!el.value.trim();
   const warn=document.getElementById('stplPromptWarn'); if(warn)warn.style.display=dirty?'':'none';
   const rb=document.getElementById('stplRegen');
-  if(rb){ rb.style.display=dirty?'':'none'; rb.disabled=generating||!hasText; }
+  if(rb){ rb.style.display=dirty?'':'none'; rb.disabled=genActive>0||!hasText; }
   syncTplSaveState();
 }
 // 편집한 프롬프트로 미리보기 재생성 — 폼(이름·카테고리·테마)은 유지, 커버만 로딩→새 사진.
 function regenTplPreview(){
-  if(generating)return;
+  if(genActive>0)return;
   const p=(document.getElementById('stplPrompt').value||'').trim();
   if(!p){toast('Write a prompt first.');return;}
   const rb=document.getElementById('stplRegen'); if(rb)rb.disabled=true;
