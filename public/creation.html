@@ -316,6 +316,7 @@ function openCtFromImages(prompt, imgs, srcIdx, mediaType){
   document.getElementById('ctCat').value='';
   CT.picks=[];
   document.getElementById('ctCovers').innerHTML=imgs.map((u,i)=>ctCoverHtml(u,i===0)).join('');
+  ctActivateCover(); // reel이면 영상 재생 보장
   ctRenderThemes('');
   document.getElementById('ctModal').classList.add('open');
   ctSync();
@@ -324,6 +325,18 @@ function openCtFromImages(prompt, imgs, srcIdx, mediaType){
 function ctCoverHtml(u,sel){
   if(CT.type==='reel') return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" onclick="ctPick(this)"><video src="${esc(u)}" muted playsinline autoplay loop preload="auto" style="width:100%;height:100%;object-fit:cover;border-radius:10px"></video></div>`;
   return `<div class="ct-ph${sel?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="ctPick(this)"></div>`;
+}
+// (2026-07-06) 커버 영상 재생 보장 — innerHTML로 (특히 재생성 async 후) 삽입된 <video>는 autoplay 속성만으론
+//   재생/디코드가 안 붙는 경우가 있어(빈 커버) 명시적으로 load()+play(). 로드 에러 시 몇 번 재시도(라이브 미디어 전파 지연 대비).
+function ctActivateCover(retries){
+  const v=document.querySelector('#ctCovers video'); if(!v)return; // 이미지 커버면 video 없음 → no-op
+  retries=(retries==null)?6:retries;
+  v.muted=true;
+  const kick=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
+  v.addEventListener('loadeddata',kick,{once:true}); // 첫 프레임 디코드되면 재생(그러면 최소한 프레임은 보임)
+  v.addEventListener('error',()=>{ if(retries>0) setTimeout(()=>{ try{ v.load(); }catch(e){} ctActivateCover(retries-1); }, 1200); },{once:true});
+  try{ v.load(); }catch(e){}
+  kick();
 }
 function ctEnablePromptEdit(){
   const pr=document.getElementById('ctPrompt'); if(!pr)return;
@@ -367,13 +380,16 @@ async function ctRegen(){
       if(!urls.length)throw new Error('No image generated');
       newUrl=urls[0];
     }
+    if(!newUrl)throw new Error('No preview URL returned'); // (2026-07-06) null URL → 빈 커버 대신 실패 처리(이전 커버 복원)
     CT.pick=newUrl; CT.srcIdx=null; CT.promptBase=prompt;
     covers.innerHTML=ctCoverHtml(newUrl,true);
+    ctActivateCover(); // (2026-07-06) 재생성 영상도 초기처럼 재생되도록 명시 활성화
     document.getElementById('ctPromptWarn').style.display='none';
     document.getElementById('ctRegenRow').style.display='none';
     toast('New preview ready');
   }catch(e){
     covers.innerHTML=ctCoverHtml(prevPick,true); // 실패 → 이전 커버 복원
+    ctActivateCover(); // 복원 커버(영상)도 재생 유지
     toast('Generate failed: '+(e.message||e));
   }
   finally{ clearInterval(timer); CT.busy=false; btn.disabled=false; btn.textContent='↻ Regenerate preview'; ctSync(); }
