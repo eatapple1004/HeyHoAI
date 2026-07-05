@@ -134,6 +134,10 @@
   .result-card.rb-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid var(--border)} /* 이미지 크기 박스 안에서 로딩 */
   .rb-spin{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   .rb-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums} /* 실시간 경과 초 */
+  .result-card.rb-failed{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;padding:16px;background:rgba(255,90,90,.06);border:1px solid rgba(255,120,120,.28)} /* 레오나르도식 실패 카드 */
+  .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:13px;display:flex;align-items:center;gap:5px}
+  .rb-failed .rbf-msg{color:var(--dim);font-size:11.5px;line-height:1.5}
+  .rb-failed .rbf-del{margin-top:2px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:6px 13px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
   @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media .result-card{width:46%;max-width:none}}
   /* ▲▲▲ 결과 피드 블록 끝 ▲▲▲ */
   /* 선택된 레퍼런스 = 선택기 아래 정사각 사진 타일(Leonardo식) */
@@ -2171,7 +2175,7 @@ async function addCreatorTemplate(btn,idx){
 function batchRowHtml(b){
   const media=b.loading
     ? Array.from({length:b.pendingCount||1}).map(()=>`<div class="result-card rb-loading"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join('') // 생성 중: 이미지 칸 자리에서 로딩 + 실시간 경과 초
-    : b.items.map(studioMediaCard).join('');
+    : b.items.map(studioMediaCard).join('')+(b.failed||[]).map(f=>studioFailedCard(f.idx)).join(''); // 성공 슬롯 + 실패 슬롯(레오나르도식)
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
   const photos=b.items.filter(i=>i.type!=='reel'&&i.url); // 이 creation의 사진(릴 제외)
@@ -2194,6 +2198,28 @@ function batchRowHtml(b){
   const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
   const delBtn=delIdxs.length?`<div class="rb-del-row"><button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button></div>`:'';
   return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}<div class="rb-tags">${tags}</div>${delBtn}</div></div>`;
+}
+// 실패 슬롯(레오나르도식) — 정확한 문구 + Delete. idx 있으면 서버 실패행 삭제, 없으면(라이브·릴) 타일만 제거. 토큰은 백엔드가 실패분만 환불.
+function studioFailedCard(idx){
+  const del=(idx!=null)?`onclick='deleteStudioFailed(this,${idx})'`:`onclick='this.closest(".result-card").remove()'`;
+  return `<div class="result-card rb-failed"><div class="rbf-ic">⚠ Failed Generation</div>`
+    +`<div class="rbf-msg">The output failed to save. Try generating again. Your tokens have been credited back to your account.</div>`
+    +`<button class="rbf-del" type="button" ${del}>🗑 Delete</button></div>`;
+}
+async function deleteStudioFailed(btn,idx){
+  btn.disabled=true; const o=btn.innerHTML; btn.innerHTML='Deleting…';
+  try{
+    const ok=await fetch('/api/generate/creations/'+idx,{method:'DELETE'}).then(r=>r.ok).catch(()=>false);
+    if(!ok)throw new Error('failed');
+    for(const b of STUDIO_BATCHES){
+      if(b.failed&&b.failed.some(f=>f.idx===idx)){
+        b.failed=b.failed.filter(f=>f.idx!==idx);
+        if(!b.items.length&&!(b.failed&&b.failed.length)&&!b.loading){ const i=STUDIO_BATCHES.indexOf(b); if(i>=0)STUDIO_BATCHES.splice(i,1); if(b.key!=null)delete STUDIO_BATCH_BY_KEY[b.key]; }
+        break;
+      }
+    }
+    renderStudioResults();
+  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('삭제 실패','error'); }
 }
 // 이 배치(creation)의 모든 이미지 삭제 → 서버(generation_results 행) 제거 + 피드에서 행 제거. Library My creations도 같은 행이라 자동 반영. 승격 템플릿은 영향 없음.
 async function deleteStudioBatch(btn,idxs){
@@ -2252,13 +2278,16 @@ async function loadStudioResults(reset){
     const res=await fetch('/api/generate/results?limit='+STUDIO_PAGE+'&offset='+STUDIO_OFFSET);
     if(!res.ok)return;
     const raw=(await res.json()).data||[]; // 백엔드 원본(성공+실패 포함) — DONE 판정은 이걸로
-    const rows=raw.filter(r=>r.status==='success'&&r.file_path); // 표시는 성공 이미지/릴만
-    rows.forEach(r=>{ // prompt_idx별 배치로 묶음(페이지 경계에 걸친 배치는 기존 배치에 병합)
+    raw.forEach(r=>{ // prompt_idx별 배치(성공=이미지 슬롯, 실패=실패 슬롯). 페이지 경계 넘어 병합.
       const k=r.prompt_idx;
       let b=STUDIO_BATCH_BY_KEY[k];
-      if(!b){ b={key:k,items:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
-      const fn=r.file_path.split('/').pop();
-      if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
+      if(!b){ b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
+      if(r.status==='success'&&r.file_path){
+        const fn=r.file_path.split('/').pop();
+        if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
+      }else if(r.status==='failed'){
+        if(!(b.failed||[]).some(f=>f.idx===r.idx)) (b.failed=b.failed||[]).push({idx:r.idx});
+      }
     });
     STUDIO_OFFSET+=STUDIO_PAGE;
     if(raw.length<STUDIO_PAGE)STUDIO_DONE=true; // 마지막 페이지=백엔드 원본이 한 페이지 미만(실패/릴 필터로 조기종료 방지)
@@ -2313,13 +2342,16 @@ async function generate(opts){
     console.error(e);
     if(wantTpl) closeSaveTpl(); // 최초 생성 실패 → 저장 모달 닫음
     if(regenTpl){ const rb=document.getElementById('stplRegen'); if(rb)rb.disabled=false; } // 재생성 실패 → 모달 유지, 버튼 복구
-    const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1); renderStudioResults(); // 실패 → placeholder 제거
     if(e.code402){
+      // 결제 이슈(과금 없음) → placeholder 제거 후 페이월
+      const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1); renderStudioResults();
       document.getElementById('resultHint').textContent='';
       openPaywall(genCost(r));
     }else{
-      document.getElementById('resultHint').textContent='⚠ Something went wrong. Please try again.';
-      toast('Something went wrong while generating.','error');
+      // 생성 실패(릴 throw·하드에러) → placeholder를 레오나르도식 실패 카드로 전환(제거 안 함). 토큰은 백엔드가 환불.
+      if(pending){ pending.loading=false; pending.items=[]; pending.failed=Array.from({length:pending.pendingCount||1}).map(()=>({idx:null})); }
+      renderStudioResults();
+      document.getElementById('resultHint').textContent='';
     }
   }finally{
     clearInterval(elapsedTimer); // 경과 타이머 정지
@@ -2587,10 +2619,11 @@ async function generateImages(r,subj,count,pending){
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
   const ok=(data.results||[]).filter(x=>x.success);
+  const failedR=(data.results||[]).filter(x=>!x.success); // 실패 결과(부분 실패 포함) → 실패 슬롯
   const fail=(data.results||[]).length-ok.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
-  // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지)
-  if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
+  // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지 + 실패 슬롯)
+  if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도

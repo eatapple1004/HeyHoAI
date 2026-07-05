@@ -73,9 +73,11 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 
 // Explore Creations 카드 = 호버 액션 없는 깔끔한 미리보기(클릭→상세). 템플릿 획득(acquire)은 Store(/store)로 이전.
 function card(it){
+  // 미디어 로드 실패(파일 누락 404 등) → 카드 자체 제거(빈 카드 안 뜨게)
+  const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
   const media=it.type==='video'
-    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline autoplay></video>`
-    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
+    ? `<video class="media" src="${esc(it.url)}" muted loop playsinline autoplay ${onerr}></video>`
+    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
   const by=it.creatorHandle
     ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">${esc(it.creatorHandle)}</a>`
     : `<span class="by">@creator</span>`;

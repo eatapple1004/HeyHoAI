@@ -345,9 +345,11 @@ function render(){
   empty.classList.add('hidden');
   grid.innerHTML=list.map(it=>{
     // 릴스: autoplay·preload=auto(전체 다운로드) 제거 → preload=metadata(첫 프레임만) + hover 시 1개만 재생. 다중 동시 다운로드/디코딩으로 인한 로딩지연·끊김 방지.
+    // 미디어 로드 실패(파일 누락 404 등) → 카드 자체 제거(빈 카드 안 뜨게)
+    const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
     const media=it.type==='reel'
-      ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1"></video>`
-      : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="">`;
+      ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
+      : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
     const by=it.creatorHandle
       ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">@${esc(it.creatorHandle)}</a>`
       : `<span class="by">@me</span>`;

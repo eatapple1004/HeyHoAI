@@ -141,6 +141,20 @@ async function chargeGeneration(user, amount, description, refId = null) {
   return require('../credits/credit.service').chargeForGeneration(user, amount, description, refId);
 }
 
+/**
+ * 생성 일부 실패 시 부분 환불 — charge.refund()는 전액 전용이라 별도 헬퍼.
+ * 활성 컨텍스트(팀 풀/개인 잔액)에 맞춰 amount를 되돌린다. (admin 개인은 charge=null이라 호출부에서 애초에 안 부름)
+ */
+async function refundGeneration(user, amount, description, refId = null) {
+  if (!(amount > 0)) return;
+  const ctx = await resolveContext(user.id);
+  if (ctx.type === 'team') {
+    await addCredits(ctx.teamId, amount, { actorId: user.id, type: 'refund', description, refId }).catch(() => {});
+  } else {
+    await require('../credits/credit.service').addCredits(user.id, amount, { type: 'refund', description, refId }).catch(() => {});
+  }
+}
+
 /** 활성 컨텍스트의 현재 잔액 */
 async function contextBalance(userId) {
   const ctx = await resolveContext(userId);
@@ -160,6 +174,7 @@ module.exports = {
   addCredits,
   charge,
   chargeGeneration,
+  refundGeneration,
   contextBalance,
   activeTeamId,
   transferFromUser,

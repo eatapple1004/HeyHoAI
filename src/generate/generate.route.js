@@ -385,9 +385,13 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 자동민팅 폐지(2026-07-01): Custom 생성이 매번 Creator Studio에 템플릿을 쌓던 훅 제거.
     //   승격은 사용자 명시적 액션(POST /creations/:idx/add-to-my-templates)에서 온디맨드 민팅으로만.
 
-    // 전부 실패하면 환불 (사용당 로열티 surcharge 포함 전액)
+    // 실패분 환불: 전부 실패=전액(가산 포함), 일부 실패=실패 장수 × 장당 단가(가산은 생성 발생분이라 유지).
     const okCount = results.filter((r) => r.success).length;
-    if (okCount === 0 && charge) await charge.refund();
+    const failCount = results.length - okCount;
+    if (charge && failCount > 0) {
+      if (okCount === 0) await charge.refund();
+      else await teamCredit.refundGeneration(req.user, failCount * creditService.COSTS.imageUnit, `부분 생성 실패 환불 (${failCount}장)`);
+    }
     // 체험 계정: 실제 생성 성공한 장수만 한도에서 차감
     if (trialInfo && okCount > 0) await trialService.consumeImages(req.user.id, okCount);
     // 생성 성공 + 실제 과금(admin 면제 시 charge=null → 분배 안 함)일 때만 사용당 로열티 70% 분배
