@@ -193,6 +193,11 @@
     #ctModal .ct-warn{color:#f5b445;font-size:12px;margin:2px 0 6px}
     #ctModal .ct-regen{background:rgba(124,108,255,.14);border:1px solid var(--accent,#7c6cff);color:var(--accent,#7c6cff);border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
     #ctModal .ct-regen[disabled]{opacity:.55;cursor:default}
+    #ctModal .ct-ph.ct-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:rgba(255,255,255,.04);cursor:default;outline:2px solid var(--accent,#7c6cff);outline-offset:2px}
+    #ctModal .ct-spin{width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(124,108,255,.25);border-top-color:var(--accent,#7c6cff);animation:ctspin .7s linear infinite}
+    #ctModal .ct-elapsed{font-size:11px;color:var(--dim,#9aa);font-weight:700}
+    #ctModal .ct-lhint{font-size:9px;color:var(--faint,#777)}
+    @keyframes ctspin{to{transform:rotate(360deg)}}
   </style>
 </div>
 <script>
@@ -339,6 +344,12 @@ async function ctRegen(){
   if(!prompt){ toast('Prompt is empty.'); return; }
   const btn=document.getElementById('ctRegen'); CT.busy=true; btn.disabled=true;
   btn.textContent=CT.type==='reel'?'↻ Generating reel… (takes minutes)':'↻ Generating…'; ctSync();
+  const prevPick=CT.pick;
+  // 커버 자리에 로딩 스피너 + 경과 초 (피드 로딩과 동일한 시각화)
+  const covers=document.getElementById('ctCovers');
+  covers.innerHTML=ctLoadingHtml(CT.type==='reel');
+  const t0=Date.now(); const elEl=covers.querySelector('.ct-elapsed');
+  const timer=setInterval(()=>{ if(elEl)elEl.textContent=((Date.now()-t0)/1000).toFixed(1)+'s'; },100);
   try{
     let newUrl;
     if(CT.type==='reel'){
@@ -356,12 +367,19 @@ async function ctRegen(){
       newUrl=urls[0];
     }
     CT.pick=newUrl; CT.srcIdx=null; CT.promptBase=prompt;
-    document.getElementById('ctCovers').innerHTML=ctCoverHtml(newUrl,true);
+    covers.innerHTML=ctCoverHtml(newUrl,true);
     document.getElementById('ctPromptWarn').style.display='none';
     document.getElementById('ctRegenRow').style.display='none';
     toast('New preview ready');
-  }catch(e){ toast('Generate failed: '+(e.message||e)); }
-  finally{ CT.busy=false; btn.disabled=false; btn.textContent='↻ Regenerate preview'; ctSync(); }
+  }catch(e){
+    covers.innerHTML=ctCoverHtml(prevPick,true); // 실패 → 이전 커버 복원
+    toast('Generate failed: '+(e.message||e));
+  }
+  finally{ clearInterval(timer); CT.busy=false; btn.disabled=false; btn.textContent='↻ Regenerate preview'; ctSync(); }
+}
+// 커버 로딩 타일 — 회전 스피너 + 경과 초 (reel은 'reel…' 힌트)
+function ctLoadingHtml(isReel){
+  return `<div class="ct-ph ct-loading"><span class="ct-spin"></span><span class="ct-elapsed">0.0s</span>${isReel?`<span class="ct-lhint">reel…</span>`:''}</div>`;
 }
 // 영상 regen: 현재 영상 첫 프레임을 소스로 async 영상 생성(studio generateReel/pollVideoJob 이식)
 async function ctRegenReel(prompt){
