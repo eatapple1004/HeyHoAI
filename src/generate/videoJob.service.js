@@ -233,26 +233,46 @@ async function finalizeSucceeded(job, v, unitsUsed) {
   log.info(`Job ${job.id} succeeded → /images/${filename}${hasAudio ? ' (audio)' : ''}`);
 }
 
+/**
+ * Kling task 상태 조회 — ⚠️ Kling은 image2video·text2video 조회 엔드포인트가 분리돼 있고
+ *   task_id는 "제출한 그 엔드포인트"로만 조회 가능. 제출 종류를 video_jobs에 저장하지 않으므로
+ *   두 엔드포인트를 순차 시도(해당 task를 아는 쪽이 task_status를 반환). 못 찾으면 notFound.
+ *   (이전엔 image2video만 조회 → text2video 잡이 영영 미완료되던 "됐다 안됐다" 버그.)
+ * @returns {Promise<object>} Kling `data` 객체(task_status·task_result·final_unit_deduction)
+ */
+async function pollKlingTask(taskId) {
+  let lastInfo = null;
+  for (const kind of ['image2video', 'text2video']) {
+    try {
+      const res = await fetch(`https://api.klingai.com/v1/videos/${kind}/${taskId}`, {
+        headers: { Authorization: 'Bearer ' + klingToken() },
+      });
+      const data = await res.json();
+      if (data && data.data && data.data.task_status) return data.data; // 이 엔드포인트가 이 task를 앎
+      lastInfo = (data && (data.message || data.code)) || `HTTP ${res.status}`;
+    } catch (e) { lastInfo = e.message; }
+  }
+  const e = new Error(`Kling task ${taskId} not found on either endpoint (${lastInfo})`);
+  e.notFound = true; throw e;
+}
+
 /** processing 잡들을 한 번씩 폴링 (백그라운드 틱) */
 async function pollOnce() {
   const jobs = (await query(`SELECT * FROM video_jobs WHERE status='processing' ORDER BY created_at LIMIT 20`)).rows;
   for (const job of jobs) {
     try {
-      const pollRes = await fetch(`https://api.klingai.com/v1/videos/image2video/${job.task_id}`, {
-        headers: { Authorization: 'Bearer ' + klingToken() },
-      });
-      const pollData = await pollRes.json();
-      const status = pollData.data?.task_status;
+      const d = await pollKlingTask(job.task_id); // image2video/text2video 자동 판별
+      const status = d.task_status;
 
       if (status === 'succeed') {
-        const v = pollData.data.task_result?.videos?.[0];
+        const v = d.task_result?.videos?.[0];
         if (!v?.url) throw new Error('succeed but no video url');
         // 중복 처리 방지: processing → finalizing 원자적 클레임 (오디오 합성으로 길어질 수 있어 필수).
         const claim = await query(
           `UPDATE video_jobs SET status='finalizing', updated_at=now() WHERE id=$1 AND status='processing'`, [job.id]);
         if (claim.rowCount === 0) continue; // 다른 틱이 이미 가져감
         try {
-          await finalizeSucceeded(job, v, pollData.data.final_unit_deduction);
+          await finalizeSucceeded(job, v, d.final_unit_deduction);
         } catch (e) {
           log.error(`Finalize failed job ${job.id}: ${e.message}`);
           await refundJob(job);
@@ -260,7 +280,7 @@ async function pollOnce() {
             [String(e.message).slice(0, 300), job.id]).catch(() => {});
         }
       } else if (status === 'failed') {
-        const msg = pollData.data?.task_status_msg || 'Kling generation failed';
+        const msg = d.task_status_msg || 'Kling generation failed';
         await refundJob(job);
         await query(`UPDATE video_jobs SET status='failed', error=$1, updated_at=now() WHERE id=$2`, [msg, job.id]);
         log.warn(`Job ${job.id} failed: ${msg}`);
