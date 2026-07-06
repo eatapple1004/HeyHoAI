@@ -17,6 +17,7 @@ const { GoogleGenAI } = require('@google/genai');
 const Anthropic = require('@anthropic-ai/sdk');
 const { requireAdmin } = require('../middleware/auth');
 const { query } = require('../db/client');
+const mediaStore = require('../storage/mediaStore');
 
 const router = Router();
 
@@ -57,6 +58,7 @@ async function saveRun({ userId, goal, prompt, negative, checklist, iters, max }
       fs.writeFileSync(path.join(outDir, file), Buffer.from(it.b64, 'base64'));
       return { i: it.i, file, okCount: it.okCount, total: it.total, scores: it.scores || {}, converged: !!it.converged };
     });
+    for (const s of saved) await mediaStore.putFile(path.join(outDir, s.file)); // 영속 스토리지 best-effort(미설정 시 no-op)
     const best = saved[saved.length - 1]; // 최종(수렴 iter 또는 마지막 iter)
     await query(
       `INSERT INTO refine_runs (id,user_id,goal,prompt,negative,checklist,iters,best_file,best_ok,total,converged,max_iters)

@@ -39,7 +39,29 @@ app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
 // 정적 파일 서빙
-app.use('/images', express.static(path.join(process.cwd(), 'tmp', 'images')));
+// /images: 스토리지-aware. 로컬 파일 우선 서빙(과거 파일·같은 프로세스 생성물 호환, Range 지원=영상 seek) →
+//          없으면 오브젝트 스토리지(S3/R2)로 302 redirect → 둘 다 없으면 404. MEDIA_S3 미설정 시 순수 로컬.
+const mediaStore = require('./storage/mediaStore');
+const IMAGES_DIR = path.join(process.cwd(), 'tmp', 'images');
+app.get('/images/:file', async (req, res, next) => {
+  const name = path.basename(req.params.file); // path traversal 방지
+  const local = path.join(IMAGES_DIR, name);
+  if (fs.existsSync(local)) return res.sendFile(local); // sendFile은 Range 처리 → 영상 탐색 정상
+  if (!mediaStore.isRemote()) return next(); // 로컬 전용 모드 → 404
+  const remote = mediaStore.remoteUrl(name);
+  if (remote) return res.redirect(302, remote); // 공개 CDN/버킷 설정 시 302 오프로드
+  // 비공개 버킷: 앱이 프록시 스트리밍(동일출처). Range 전달 → 영상 seek 시 206.
+  try {
+    const obj = await mediaStore.getObject(name, req.headers.range);
+    if (!obj || !obj.Body) return next(); // 404
+    if (obj.ContentType) res.setHeader('Content-Type', obj.ContentType);
+    if (obj.ContentLength != null) res.setHeader('Content-Length', obj.ContentLength);
+    res.setHeader('Accept-Ranges', 'bytes');
+    if (obj.ContentRange) { res.status(206); res.setHeader('Content-Range', obj.ContentRange); }
+    obj.Body.on('error', () => { if (!res.headersSent) res.status(502); res.end(); });
+    return obj.Body.pipe(res);
+  } catch (_) { return next(); }
+});
 app.use('/bgm', express.static(path.join(process.cwd(), 'tmp', 'bgm')));
 
 // ffmpeg.wasm self-host (Workers must be same-origin)

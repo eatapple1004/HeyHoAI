@@ -5,6 +5,7 @@ const log = logger('Scheduler');
 const path = require('path');
 const fs = require('fs');
 const { env } = require('../config');
+const mediaStore = require('../storage/mediaStore');
 
 /**
  * 확정(confirmed) 상태의 큐 항목을 Zernio로 업로드
@@ -74,6 +75,7 @@ async function publishConfirmedItems() {
                 if (fs.existsSync(reelFullPath) && fs.existsSync(bgmFullPath)) {
                   execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -map 0:v -map 1:a -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
                   reelFilename = mergedFilename;
+                  await mediaStore.putFile(mergedPath); // 영속 스토리지 best-effort(미설정 시 no-op)
                   log.info(`BGM merged: ${mergedFilename}`);
                 } else {
                   log.warn('BGM or reel file not found, uploading without BGM');
@@ -203,6 +205,7 @@ async function publishSingleItem(queueId) {
           if (fs.existsSync(reelFullPath) && fs.existsSync(bgmFullPath)) {
             execSync(`ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -map 0:v -map 1:a -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`, { timeout: 30000 });
             reelFilename = mergedFilename;
+            await mediaStore.putFile(mergedPath); // 영속 스토리지 best-effort(미설정 시 no-op)
             log.info(`BGM merged: ${mergedFilename}`);
           }
         } catch (ffErr) {

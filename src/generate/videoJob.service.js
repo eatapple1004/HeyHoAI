@@ -11,6 +11,7 @@ const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
 const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
+const mediaStore = require('../storage/mediaStore');
 
 const POLL_INTERVAL_MS = 15000;   // 15초마다 폴링 틱
 const MAX_ATTEMPTS = 48;          // 48 * 15s = 12분 후 타임아웃
@@ -252,6 +253,10 @@ async function finalizeSucceeded(job, v, unitsUsed) {
     throw e;
   }
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
+
+  // 영속 스토리지에도 업로드(best-effort, 실패해도 throw 안 함). 로컬 tmp 소실·재배포·메모리킬 시
+  //   /images 라우트가 S3로 302 폴백 → 라이브 영상 간헐 404 해소. MEDIA_S3 미설정이면 no-op.
+  await mediaStore.putFile(filePath);
 
   // 자동민팅 폐지(2026-07-01): 릴 생성 자동 템플릿화 제거. 승격은 수동 add-to-my-templates로만.
 

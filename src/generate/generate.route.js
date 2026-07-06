@@ -17,6 +17,7 @@ const teamCredit = require('../teams/team.credit');
 const { query } = require('../db/client');
 const { getTool, listTools } = require('../tools/registry');
 const { entitlementsFor } = require('../lib/entitlements');
+const mediaStore = require('../storage/mediaStore');
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
 const router = Router();
@@ -333,6 +334,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
         const imageId = crypto.randomUUID();
         const filename = `${imageId}.png`;
         fs.writeFileSync(path.join(outputDir, filename), imageBuffer);
+        await mediaStore.put(filename, imageBuffer); // 영속 스토리지 best-effort(미설정 시 no-op)
 
         const savedResult = await resultRepo.insert({
           promptIdx: savedPrompt.idx,
@@ -1107,6 +1109,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
           alog.info('No audio URL - saving video without audio');
           fs.writeFileSync(videoFilePath, videoBuf);
         }
+        await mediaStore.putFile(videoFilePath); // 영속 스토리지 best-effort(미설정 시 no-op)
 
         // DB 저장 (활성 팀 컨텍스트면 팀 소유)
         const savedPrompt = await promptRepo.insert({

@@ -8,6 +8,7 @@ const mediaRepo = require('./accountMedia.repository');
 const zernio = require('./zernio.client');
 const logger = require('../lib/logger');
 const { assertAccountOwned, assertAccountResourceOwned } = require('../middleware/ownership');
+const mediaStore = require('../storage/mediaStore');
 const log = logger('Account');
 
 const router = Router();
@@ -248,6 +249,7 @@ router.post('/:id/generate-outfits', async (req, res, next) => {
           const ext = img.inlineData.mimeType === 'image/png' ? 'png' : 'jpg';
           const filename = `${imageId}.${ext}`;
           fs.writeFileSync(path.join(outputDir, filename), Buffer.from(img.inlineData.data, 'base64'));
+          await mediaStore.putFile(path.join(outputDir, filename)); // 영속 스토리지 best-effort(미설정 시 no-op)
 
           const media = await mediaRepo.insert({
             accountId: req.params.id,
@@ -349,6 +351,7 @@ router.post('/:id/generate-reel', async (req, res, next) => {
         const outputDir = path.join(process.cwd(), 'tmp', 'images');
         const filename = `${videoId}.mp4`;
         fs.writeFileSync(path.join(outputDir, filename), videoBuf);
+        await mediaStore.putFile(path.join(outputDir, filename)); // 영속 스토리지 best-effort(미설정 시 no-op)
 
         const media = await mediaRepo.insert({
           accountId: req.params.id,
@@ -532,6 +535,7 @@ router.post('/:id/batch-reels', async (req, res, next) => {
             const videoId = crypto.randomUUID();
             const filename = `${videoId}.mp4`;
             fs.writeFileSync(path.join(process.cwd(), 'tmp', 'images', filename), videoBuf);
+            await mediaStore.putFile(path.join(process.cwd(), 'tmp', 'images', filename)); // 영속 스토리지 best-effort(미설정 시 no-op)
 
             const media = await mediaRepo.insert({
               accountId: req.params.id,

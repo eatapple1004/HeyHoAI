@@ -35,6 +35,16 @@ const envSchema = z.object({
   // 예: https://doppia.ai — 미설정 시 폴백 IP 사용
   PUBLIC_URL: z.string().url().optional(),
 
+  // ── 미디어 오브젝트 스토리지 (S3 호환 — AWS S3 / Cloudflare R2) ──
+  // 신규 영상/이미지를 로컬 tmp/images(비영속)뿐 아니라 영속 스토리지에도 저장해 재배포·메모리킬 시 404 방지.
+  // MEDIA_S3_BUCKET 미설정 시 전부 로컬 동작(현행 무변경) — 로컬 개발/미설정 prod에 영향 없음.
+  MEDIA_S3_BUCKET: z.string().optional(),                    // 설정 시 원격 활성화 스위치
+  MEDIA_S3_REGION: z.string().default('ap-northeast-2'),     // EC2와 동일 리전 권장(서울)
+  MEDIA_S3_ENDPOINT: z.string().url().optional(),            // R2 등 S3 호환 커스텀 엔드포인트. 순정 S3면 미설정.
+  MEDIA_S3_PUBLIC_BASE: z.string().url().optional(),         // 공개 CDN/버킷 URL base(예: https://cdn.doppia.ai). 없으면 로컬 폴백만.
+  MEDIA_S3_PREFIX: z.string().default('images'),             // 버킷 내 키 접두사
+  // 자격증명은 표준 AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 또는 EC2 인스턴스 프로파일(IAM Role)에서 자동 해석.
+
   // Google OAuth (소셜 로그인) — 미설정 시 비활성. 콘솔에서 OAuth 클라이언트 생성 후 입력.
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

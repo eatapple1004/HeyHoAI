@@ -3,6 +3,7 @@ const { env } = require('../../config');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const mediaStore = require('../../storage/mediaStore');
 
 let client;
 function getClient() {
@@ -92,6 +93,7 @@ const nanoBananaProvider = {
     const filePath = path.join(outputDir, `${imageId}.${ext}`);
     const buffer = Buffer.from(imagePart.inlineData.data, 'base64');
     fs.writeFileSync(filePath, buffer);
+    await mediaStore.put(path.basename(filePath), buffer); // 영속 스토리지 best-effort 업로드(미설정 시 no-op)
 
     const textPart = parts.find((p) => p.text);
 
