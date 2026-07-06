@@ -35,6 +35,20 @@ async function fetchWithTimeout(url, opts = {}, ms = 60000) {
   finally { clearTimeout(t); }
 }
 
+// (2026-07-06) 다운로드 재시도 — Kling 완성영상 다운로드가 'fetch failed'(일시 네트워크)로 실패하면
+//   생성 성공한 잡이 통째로 실패·환불됨(실측: 'make her dance' 잡). 몇 번 백오프 재시도로 회수.
+async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
+  let last;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetchWithTimeout(url, {}, timeoutMs);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    } catch (e) { last = e; if (i < retries - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1))); } // 1.5s·3s·4.5s 백오프
+  }
+  throw new Error(`${(last && last.message) || 'fetch failed'} (after ${retries} tries)`);
+}
+
 /**
  * 비동기 릴스 제출: 크레딧 차감 → Kling 제출 → 잡 생성. (수 초 내 완료)
  * @returns {Promise<{ jobId: string }>}
@@ -175,7 +189,7 @@ async function finalizeSucceeded(job, v, unitsUsed) {
 
   // (2026-07-06) 단계별 에러 라벨 — video_jobs.error에 원인(다운로드/파일쓰기)이 남아 진단 가능("output failed to save"의 실체).
   let videoBuf;
-  try { videoBuf = Buffer.from(await (await fetchWithTimeout(videoUrl, {}, 120000)).arrayBuffer()); }
+  try { videoBuf = await downloadBuf(videoUrl); } // 타임아웃+4회 재시도 — 일시 'fetch failed'로 완성영상 잃지 않게
   catch (e) { throw new Error(`video download failed: ${e.message}`); }
   const uuid = crypto.randomUUID();
   const filename = `${uuid}.mp4`;
@@ -276,7 +290,9 @@ async function pollOnce() {
   // (2026-07-06) 크래시/재배포로 'finalizing'에 5분+ 멈춘 잡 회수 — 폴러 SELECT는 processing만 잡아 고아가 됨.
   //   processing으로 되돌리면 재폴링→재클레임→재finalize. task_id dup-guard가 중복 저장을 막으므로 안전.
   await query(`UPDATE video_jobs SET status='processing', updated_at=now() WHERE status='finalizing' AND updated_at < now() - interval '5 minutes'`).catch(() => {});
-  const jobs = (await query(`SELECT * FROM video_jobs WHERE status='processing' ORDER BY created_at LIMIT 20`)).rows;
+  // (2026-07-06) updated_at 12초 게이트 — 매 폴은 attempts/updated_at을 올리므로, 최근 12초 내 폴린 잡은 제외.
+  //   폴러 틱이 겹치거나 prod가 멀티인스턴스여도 같은 잡을 이중으로 폴링하지 않음(실측 attempts=41/4분 폭주 방지).
+  const jobs = (await query(`SELECT * FROM video_jobs WHERE status='processing' AND updated_at < now() - interval '12 seconds' ORDER BY created_at LIMIT 20`)).rows;
   for (const job of jobs) {
     try {
       const d = await pollKlingTask(job.task_id); // image2video/text2video 자동 판별
