@@ -2364,6 +2364,13 @@ async function loadStudioResults(reset){
   // 첫 로드가 화면을 못 채우면(스크롤이 안 생기면) 다음 페이지 자동 로드
   if(!STUDIO_DONE && document.body.scrollHeight<=window.innerHeight+240) setTimeout(()=>loadStudioResults(false),140);
 }
+// (2026-07-06) 방어 파싱 — 프록시(CF) 타임아웃·게이트웨이 에러로 JSON 대신 HTML(<!DOCTYPE)이 오면
+//   res.json()이 "Unexpected token '<'"로 터짐 → 텍스트로 받아 실패 시 사용자 친화 메시지로.
+async function sjson(res){
+  const txt=await res.text();
+  try{ return JSON.parse(txt); }
+  catch(e){ throw new Error(res.status>=500?`Server is busy (${res.status}) — please try again in a moment`:`Unexpected server response (${res.status})`); }
+}
 async function generate(opts){
   const genN=(opts&&opts.count)||curCount(); // Count 컨트롤(전 모드 1~8)
   const r=curRecipe(),subj=curSubject();
@@ -2682,7 +2689,7 @@ async function generateImages(r,subj,count,pending){
     if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}
   }
   const res=await fetch('/api/generate',{method:'POST',body:fd});
-  const data=await res.json();
+  const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
   const ok=(data.results||[]).filter(x=>x.success);
@@ -2729,7 +2736,7 @@ async function generateReel(r,subj,pending){
   const at=attribution();if(at.templateId){fd.append('templateId',at.templateId);fd.append('templateSource',at.templateSource);}
   // 비동기: 제출 → jobId → 상태 폴링 (Cloudflare 100초 타임아웃 회피)
   const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
-  const data=await res.json();
+  const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
   const url=await pollVideoJob(data.jobId);

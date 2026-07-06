@@ -25,6 +25,16 @@ function klingToken() {
   );
 }
 
+// (2026-07-06) 타임아웃 붙은 fetch — Kling 제출/영상 다운로드가 무한정 매달려 폴러를 막거나,
+//   제출 요청이 Cloudflare 100초 한도를 넘겨 502 HTML을 유발하는 걸 방지. 초과 시 AbortError로 던짐.
+async function fetchWithTimeout(url, opts = {}, ms = 60000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  catch (e) { if (e.name === 'AbortError') throw new Error(`request timed out after ${ms}ms`); throw e; }
+  finally { clearTimeout(t); }
+}
+
 /**
  * 비동기 릴스 제출: 크레딧 차감 → Kling 제출 → 잡 생성. (수 초 내 완료)
  * @returns {Promise<{ jobId: string }>}
@@ -69,11 +79,11 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
         negative_prompt: 'ugly, deformed, blurry, static', duration, mode, aspect_ratio: aspect };
     }
 
-    const submitRes = await fetch(endpoint, {
+    const submitRes = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + klingToken(), 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    });
+    }, 45000); // CF 100초 한도보다 짧게 — 초과 시 여기서 끊고 환불→JSON 에러(프록시 HTML 502 방지)
     const submitData = await submitRes.json();
     const taskId = submitData.data?.task_id;
     if (!taskId) {
@@ -163,11 +173,15 @@ async function finalizeSucceeded(job, v, unitsUsed) {
     return;
   }
 
-  const videoBuf = Buffer.from(await (await fetch(videoUrl)).arrayBuffer());
-  fs.mkdirSync(outputDir, { recursive: true });
+  // (2026-07-06) 단계별 에러 라벨 — video_jobs.error에 원인(다운로드/파일쓰기)이 남아 진단 가능("output failed to save"의 실체).
+  let videoBuf;
+  try { videoBuf = Buffer.from(await (await fetchWithTimeout(videoUrl, {}, 120000)).arrayBuffer()); }
+  catch (e) { throw new Error(`video download failed: ${e.message}`); }
   const uuid = crypto.randomUUID();
   const filename = `${uuid}.mp4`;
   const filePath = path.join(outputDir, filename);
+  try { fs.mkdirSync(outputDir, { recursive: true }); }
+  catch (e) { throw new Error(`output dir not writable (${outputDir}): ${e.message}`); } // prod FS 읽기전용/비영속이면 여기서 명확히
 
   // 오디오 옵션: video-to-audio → ffmpeg 합성. 실패해도 무음 영상으로 저장(품질 우선).
   let hasAudio = false;
@@ -177,7 +191,7 @@ async function finalizeSucceeded(job, v, unitsUsed) {
       if (audioUrl) {
         const tmpV = path.join(outputDir, `_v_${uuid}.mp4`), tmpA = path.join(outputDir, `_a_${uuid}.mp3`);
         fs.writeFileSync(tmpV, videoBuf);
-        fs.writeFileSync(tmpA, Buffer.from(await (await fetch(audioUrl)).arrayBuffer()));
+        fs.writeFileSync(tmpA, Buffer.from(await (await fetchWithTimeout(audioUrl, {}, 60000)).arrayBuffer()));
         try {
           require('child_process').execSync(
             `ffmpeg -i "${tmpV}" -i "${tmpA}" -c:v copy -c:a aac -shortest -y "${filePath}" 2>&1`, { timeout: 30000 });
@@ -188,7 +202,8 @@ async function finalizeSucceeded(job, v, unitsUsed) {
       } else { fs.writeFileSync(filePath, videoBuf); }
     } catch (e) { fs.writeFileSync(filePath, videoBuf); log.warn(`audio step failed job ${job.id}: ${e.message}`); }
   } else {
-    fs.writeFileSync(filePath, videoBuf);
+    try { fs.writeFileSync(filePath, videoBuf); }
+    catch (e) { throw new Error(`file write failed (FS ${e.code || ''} @ ${outputDir}): ${e.message}`); } // RO/비영속 FS면 여기서 명확히
   }
 
   const savedPrompt = await promptRepo.insert({
@@ -258,6 +273,9 @@ async function pollKlingTask(taskId) {
 
 /** processing 잡들을 한 번씩 폴링 (백그라운드 틱) */
 async function pollOnce() {
+  // (2026-07-06) 크래시/재배포로 'finalizing'에 5분+ 멈춘 잡 회수 — 폴러 SELECT는 processing만 잡아 고아가 됨.
+  //   processing으로 되돌리면 재폴링→재클레임→재finalize. task_id dup-guard가 중복 저장을 막으므로 안전.
+  await query(`UPDATE video_jobs SET status='processing', updated_at=now() WHERE status='finalizing' AND updated_at < now() - interval '5 minutes'`).catch(() => {});
   const jobs = (await query(`SELECT * FROM video_jobs WHERE status='processing' ORDER BY created_at LIMIT 20`)).rows;
   for (const job of jobs) {
     try {
@@ -318,10 +336,15 @@ async function getJob(id, userId) {
 }
 
 let started = false;
+let polling = false; // (2026-07-06) 재진입 가드 — pollOnce가 15초를 넘겨도(느린 다운로드/오디오 인라인) 틱이 겹치지 않게. 겹침=같은 잡 중복처리·attempts 부풀림·중복 Kling 호출의 원인.
 function startPoller() {
   if (started) return;
   started = true;
-  setInterval(() => { pollOnce().catch((e) => log.error('pollOnce:', e.message)); }, POLL_INTERVAL_MS);
+  setInterval(() => {
+    if (polling) { log.warn('pollOnce still running — skipping this tick'); return; }
+    polling = true;
+    pollOnce().catch((e) => log.error('pollOnce:', e.message)).finally(() => { polling = false; });
+  }, POLL_INTERVAL_MS);
   log.info(`Video job poller started (every ${POLL_INTERVAL_MS / 1000}s)`);
 }
 
