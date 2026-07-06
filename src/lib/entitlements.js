@@ -5,19 +5,21 @@
  * 가격/한도는 프론트의 public/js/pricing.js 와 일치시킨다.
  */
 
-// 플랜별 권한 정의 (서버측 단일 소스)
+// 플랜별 권한 정의 (서버측 단일 소스). (2026-07-06) 티어 다양화: free/starter/standard/pro/premium.
+// monthlyCredits는 pricing.config.js plans.cr와 일치(표시·참고용).
 const PLANS = {
   // privateMode = 결과물을 공개 Explore 피드에서 빼는 권한(구독자 전용). free는 항상 공개.
-  free:    { name: 'Free',    rank: 0, monthlyCredits: 10,   watermarkFree: false, hd: false, commercial: false, privateMode: false },
-  creator: { name: 'Creator', rank: 1, monthlyCredits: 250,  watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
-  pro:     { name: 'Pro',     rank: 2, monthlyCredits: 600,  watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
-  brand:   { name: 'Brand',   rank: 3, monthlyCredits: 1400, watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
+  free:     { name: 'Free',     rank: 0, monthlyCredits: 1500,  watermarkFree: false, hd: false, commercial: false, privateMode: false },
+  starter:  { name: 'Starter',  rank: 1, monthlyCredits: 7300,  watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
+  standard: { name: 'Standard', rank: 2, monthlyCredits: 20300, watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
+  pro:      { name: 'Pro',      rank: 3, monthlyCredits: 44000, watermarkFree: true,  hd: true,  commercial: false, privateMode: true  },
+  premium:  { name: 'Premium',  rank: 4, monthlyCredits: 95000, watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
 };
 
-/** 사용자의 유효 플랜 키 (admin은 brand 권한으로 취급) */
+/** 사용자의 유효 플랜 키 (admin은 최상위 premium 권한으로 취급) */
 function planKey(user) {
   if (!user) return 'free';
-  if (user.role === 'admin') return 'brand';
+  if (user.role === 'admin') return 'premium';
   if (!PLANS[user.plan] || user.plan === 'free') return 'free';
   // 기간권(선불) 만료 강등: plan_renews_at(만료일)이 지났으면 free. 자동재청구 없음(eximbay 정기결제 오픈 전).
   //   ⚠️ 만료 반영하려면 조회 지점에서 plan_renews_at도 넣을 것(없으면 만료 체크 스킵=하위호환).

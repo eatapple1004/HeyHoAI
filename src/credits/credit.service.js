@@ -1,32 +1,41 @@
 const { pool, query } = require('../db/client');
 
-// ─── 크레딧 가격표 (docs/UI_기능설명서.md 부록 A 기준) ───
-const SIGNUP_BONUS = 10;
+// ─── 크레딧 가격표 (2026-07-06 재설계: 커스텀/템플릿 분리 + 30배 인플레이션) ───
+//   근거·마진표: docs/생성원가_마진_분석_2026-07-06.md
+//   원가(구글 직접, ₩1,400/$): Pro사진 $0.134 · Flash $0.039 · Kling Pro 릴 5s $0.56 / 10s $1.12
+//   배수: 커스텀 2~3배 / 템플릿 4~6배 — "배수 범위"는 플랜별 ₩/크레딧으로 실현(pricing.js). 여기 값은 30배 인플레이션 반영.
+const SIGNUP_BONUS = 1500; // 가입 시 무료 크레딧 = 템플릿 5장(300×5). Free 티어와 동일.
 
-// 실원가 기준(docs/가격_재설계.md): 사진 4장 ≈ $0.16($0.039/장), 릴스 5초 ≈ $0.25(Runway).
-// 1cr=$0.10 기준가 → 사진 "1장=1cr"(4cr), 릴스 5초 8cr / 10초 16cr 로 기준가 마진 60~69% 확보.
+// 이미지: 모델티어별 [커스텀per장, 템플릿per장]. 총액 = count × per.
+const IMG_CREDIT = {
+  flash: [45, 90],                 // Nano Banana (2.5 Flash Image)
+  pro: [150, 300],                 // Nano Banana Pro (3 Pro Image) — 스튜디오 기본
+  'gpt-image-2': [150, 300],       // pro 티어 근사(별도 원가 확정 전)
+  'gpt-image-2-high': [270, 540],  // 상위 티어 근사
+};
+// 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
+const VIDEO_CREDIT = {
+  5: [625, 1250],
+  10: [1250, 2500],
+};
 const COSTS = {
-  imageUnit: 1, // 사진 장당 (count×imageUnit). 유저가 1~8장 선택 → 장당 과금.
-  imageBase: 4, // (레거시 표시용) = imageUnit×4
-  imageModelSurcharge: { flash: 0, pro: 1, 'gpt-image-2': 1, 'gpt-image-2-high': 2 },
-  video: { 5: 8, 10: 16 }, // 릴스 (duration 초)
-  videoHighSurcharge: 2, // mode=high 추가
-  caption: 1, // 캡션 + 해시태그 생성 (애드온)
-  enhance: 1, // 프롬프트 Enhance (Claude 확장, Custom 애드온)
+  caption: 30, // 캡션+해시태그 애드온 (옛 1 ×30)
+  enhance: 30, // 프롬프트 Enhance 애드온 (옛 1 ×30)
+  img: IMG_CREDIT,     // 클라 비용표시용 — {model:[커스텀,템플릿]}
+  video: VIDEO_CREDIT, // {duration:[커스텀,템플릿]}
 };
 
-/** 이미지 생성 비용 = 장당(count×imageUnit) + 모델가산(생성당 1회). count 미지정 시 4(기존 기준가). */
-function imageCost(model, count = 4) {
+/** 이미지 생성 비용 = 장당(모델티어·커스텀/템플릿) × count. isTemplate=템플릿 기반(4~6배)/false=커스텀(2~3배). */
+function imageCost(model, count = 4, isTemplate = false) {
   const n = Math.max(1, Math.min(parseInt(count, 10) || 1, 8));
-  const surcharge = COSTS.imageModelSurcharge[model];
-  return n * COSTS.imageUnit + (surcharge === undefined ? 1 : surcharge);
+  const tier = IMG_CREDIT[model] || IMG_CREDIT.pro;
+  return n * (isTemplate ? tier[1] : tier[0]);
 }
 
-/** 비디오(릴스) 생성 1회 비용 */
-function videoCost(duration, mode) {
-  const base = COSTS.video[parseInt(duration, 10)] || COSTS.video[5];
-  // 화질 가산: std 외(pro/high)는 surcharge
-  return base + (mode && mode !== 'std' ? COSTS.videoHighSurcharge : 0);
+/** 비디오(릴스) 생성 1회 비용. isTemplate=템플릿 릴(4~6배)/false=커스텀 릴(2~3배). mode는 Kling Pro 고정이라 현재 미사용(std 연결 시 확장). */
+function videoCost(duration, mode, isTemplate = false) {
+  const tier = VIDEO_CREDIT[parseInt(duration, 10)] || VIDEO_CREDIT[5];
+  return isTemplate ? tier[1] : tier[0];
 }
 
 /** statusCode 402를 가진 에러 (errorHandler가 그대로 응답) */

@@ -211,7 +211,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       try {
         charge = await teamCredit.chargeGeneration(
           req.user,
-          creditService.imageCost(model, generateCount) + useRoyalty,
+          creditService.imageCost(model, generateCount, req.body.billingMode !== 'custom') + useRoyalty, // billingMode: 'custom'=커스텀(2~3배), 그 외=템플릿(4~6배)
           `사진 생성 (${model}, ${generateCount}장)`
         );
       } catch (e) {
@@ -390,7 +390,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const failCount = results.length - okCount;
     if (charge && failCount > 0) {
       if (okCount === 0) await charge.refund();
-      else await teamCredit.refundGeneration(req.user, failCount * creditService.COSTS.imageUnit, `부분 생성 실패 환불 (${failCount}장)`);
+      else await teamCredit.refundGeneration(req.user, creditService.imageCost(model, failCount, req.body.billingMode !== 'custom'), `부분 생성 실패 환불 (${failCount}장)`); // 실패 장수 × 장당(모델·커스텀/템플릿)
     }
     // 체험 계정: 실제 생성 성공한 장수만 한도에서 차감
     if (trialInfo && okCount > 0) await trialService.consumeImages(req.user.id, okCount);
@@ -836,6 +836,7 @@ router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 },
       templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,
       endFramePath: endFrameFile ? endFrameFile.path : null,
+      isTemplate: req.body.billingMode !== 'custom', // 'custom'=커스텀 릴(2~3배), 그 외=템플릿(4~6배)
     });
     res.json({ success: true, ...result });
   } catch (err) {
@@ -882,7 +883,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
     try {
       charge = await teamCredit.chargeGeneration(
         req.user,
-        creditService.videoCost(duration, mode),
+        creditService.videoCost(duration, mode, req.body.billingMode !== 'custom'), // billingMode: 'custom'=커스텀 릴(2~3배), 그 외=템플릿(4~6배)
         `릴스 생성 (${duration}s, ${mode})`
       );
     } catch (e) {

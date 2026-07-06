@@ -3,12 +3,10 @@ const { PLANS, planKey, entitlementsFor, isPro } = require('../lib/entitlements'
 const { PRICING } = require('../pricing/pricing.config');
 const creditService = require('../credits/credit.service');
 
-// 구독 가격 (월, USD) — pricing.config 단일소스에서 파생
-const PRICES = {
-  creator: PRICING.plans.creator.price,
-  pro: PRICING.plans.pro.price,
-  brand: PRICING.plans.brand.price,
-};
+// 구독 가격 (월, USD) — pricing.config 단일소스에서 전 플랜 동적 파생(플랜 키 변경에 안전).
+const PRICES = Object.fromEntries(
+  Object.entries(PRICING.plans).map(([k, v]) => [k, v.price])
+);
 
 // 24시간 첫 업그레이드 오퍼 — 할인율은 pricing.config.firstMonthOff(단일소스)
 const OFFER = {

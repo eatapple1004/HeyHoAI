@@ -9,28 +9,34 @@
  */
 (function () {
   var PRICING = {
-    // 구독 플랜 (price=월, priceY=연간 환산 월요금, cr=월 크레딧)
+    // 개인 구독 (price=월$, priceY=연간 환산 월요금$, cr=월 크레딧). (2026-07-06) 티어 다양화 + 30배. 작은 플랜=비쌈→큰 플랜=쌈.
     plans: {
-      free:    { name: 'Free',    price: 0,  priceY: 0,  cr: 10,   license: 'Personal' },
-      creator: { name: 'Creator', price: 19, priceY: 15, cr: 250,  license: 'Personal',
-                 line: 'No watermark · HD · ◈250/mo' },
-      pro:     { name: 'Pro',     price: 39, priceY: 31, cr: 600,  license: 'Personal', featured: true,
-                 line: 'Brand kit · 4K · multilingual captions always-on · ◈600/mo' },
-      brand:   { name: 'Brand',   price: 79, priceY: 63, cr: 1400, license: 'Commercial',
-                 line: 'Commercial license · premium AI models · team seats · ◈1,400/mo' }
+      free:     { name: 'Free',     price: 0,   priceY: 0,   cr: 1500,  license: 'Personal' },
+      starter:  { name: 'Starter',  price: 19,  priceY: 16,  cr: 7300,  license: 'Personal',
+                  line: 'No watermark · group lookbook · ◈7,300/mo' },
+      standard: { name: 'Standard', price: 49,  priceY: 41,  cr: 20300, license: 'Personal', featured: true,
+                  line: 'Edit · 2K · 4 slots · ◈20,300/mo' },
+      pro:      { name: 'Pro',      price: 99,  priceY: 82,  cr: 44000, license: 'Personal',
+                  line: 'Concept cut · 5 slots · ◈44,000/mo' },
+      premium:  { name: 'Premium',  price: 199, priceY: 165, cr: 95000, license: 'Commercial',
+                  line: 'Video · 6 slots · commercial · ◈95,000/mo' }
     },
-    // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$, ppc=크레딧당 단가 표기)
+    // 기업 (연간 결제, price=월환산$, cr=월 크레딧). 볼륨 최저가.
+    enterprise: {
+      team:  { name: 'Enterprise Team', price: 599,  cr: 362000, slots: 10, line: 'Team roles · shared pool · 10 slots' },
+      pro:   { name: 'Enterprise Pro',  price: 899,  cr: 575000, slots: 15, featured: true, line: 'Everything · 15 slots · priority' },
+      elite: { name: 'Elite',           price: 1199, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
+    },
+    // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$). 충동성=최고가.
     packs: [
-      { id: 'pack50',  cr: 50,  bonus: 0,   price: 5,  ppc: '0.100' },
-      { id: 'pack120', cr: 100, bonus: 20,  price: 11, ppc: '0.092' },
-      { id: 'pack300', cr: 250, bonus: 50,  price: 26, ppc: '0.087' },
-      { id: 'pack700', cr: 600, bonus: 100, price: 56, ppc: '0.080', best: true }
+      { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   ppc: '0.0026' },
+      { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  ppc: '0.0026' },
+      { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, ppc: '0.0025' },
+      { id: 'pack349', cr: 128000, bonus: 14000, price: 349, ppc: '0.0025', best: true }
     ],
-    // 팀 플랜
-    team: { price: 199, seats: 3, pool: 2000, extraSeat: 15 },
     // 신규 24h 첫 결제 할인율(%)
     firstMonthOff: 50,
-    // 확정가 — 실원가 검증 완료(2026-06-19). 서버(/api/pricing)가 동일값으로 덮어씀.
+    // 확정가 — 실원가 재검증(2026-07-06, docs/생성원가_마진_분석). 커스텀 2~3배/템플릿 4~6배 + 크레딧 30배. 서버(/api/pricing)가 동일값으로 덮어씀.
     estimated: false,
 
     // path 조회: PRICING.get('creator.cr') → 250
@@ -60,6 +66,7 @@
       .then(function (s) {
         if (!s || typeof s !== 'object') return;
         if (s.plans) PRICING.plans = s.plans;
+        if (s.enterprise) PRICING.enterprise = s.enterprise;
         if (s.packs) PRICING.packs = s.packs;
         if (s.team) PRICING.team = s.team;
         if (typeof s.firstMonthOff === 'number') PRICING.firstMonthOff = s.firstMonthOff;

@@ -371,7 +371,7 @@ async function ctRegen(){
     }else{
       const fd=new FormData();
       fd.append('prompt',prompt); fd.append('model','pro'); fd.append('tool','nano-banana-pro');
-      fd.append('count','1'); fd.append('privateMode','true'); fd.append('templateName','My template');
+      fd.append('count','1'); fd.append('privateMode','true'); fd.append('templateName','My template'); fd.append('billingMode','custom'); // 재생성=본인 프롬프트=커스텀 과금
       const res=await fetch('/api/generate',{method:'POST',body:fd});
       const d=await ctJson(res); // 방어 파싱(프록시 HTML 대비)
       if(res.status===402)throw new Error(d.error||'Out of credits');
@@ -410,7 +410,7 @@ async function ctRegenReel(prompt){
   const frame=await firstFrameBlob(CT.pick);
   const fd=new FormData();
   fd.append('prompt',prompt); fd.append('duration','5'); fd.append('mode','std');
-  fd.append('privateMode','true'); fd.append('templateName','My reel');
+  fd.append('privateMode','true'); fd.append('templateName','My reel'); fd.append('billingMode','custom'); // 재생성=본인 프롬프트=커스텀 과금
   if(frame)fd.append('sourceImage',frame,'frame.jpg'); // 첫 프레임 JPEG(작게 → 업로드/제출 빨라 프록시 타임아웃 회피). 실패 시 text-to-video 폴백
   const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
   const d=await ctJson(res); // 방어 파싱(프록시 HTML 대비)

@@ -55,7 +55,7 @@ async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
 async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName }) {
+  visibility, templateId, templateSource, templateName, isTemplate = false }) {
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
   const wantAudio = audio === true || audio === 'true';
@@ -73,7 +73,7 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
 
   // 크레딧 차감 (개인=admin면제 / 팀=풀, viewer 403, 부족 402) — statusCode 에러는 그대로 전파
   const charge = await teamCredit.chargeGeneration(
-    user, creditService.videoCost(duration, mode), `릴스 생성 (${duration}s, ${mode})`
+    user, creditService.videoCost(duration, mode, isTemplate), `릴스 생성 (${duration}s, ${mode})`
   );
   const chargeAmount = charge ? charge.amount : 0;
 

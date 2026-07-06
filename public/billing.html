@@ -36,8 +36,9 @@
 
   .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;text-align:center}
 
-  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:52px;align-items:stretch}
-  @media(max-width:920px){.plans{grid-template-columns:repeat(2,1fr)}}
+  .plans{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;align-items:stretch}
+  .ent-plans{grid-template-columns:repeat(3,1fr);margin-bottom:52px}
+  @media(max-width:1000px){.plans{grid-template-columns:repeat(2,1fr)}.ent-plans{grid-template-columns:1fr}}
   @media(max-width:560px){.plans{grid-template-columns:1fr}}
   .plan-card{padding:26px 22px;display:flex;flex-direction:column;position:relative;border-radius:20px;overflow:hidden;
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));border:1px solid var(--border2);
@@ -153,50 +154,64 @@
     <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
       <div class="pname">Free</div><div class="price">$<span class="pv">0</span><span> /mo</span></div>
       <div class="cyc-note"></div>
-      <div class="credits-inc">10 credits (one-time)</div>
-      <ul><li>Try all modes</li><li>First result watermark-free</li><li>Then watermarked</li></ul>
+      <div class="credits-inc">1,500 credits (one-time)</div>
+      <ul><li>Try all modes</li><li>Solo lookbook</li><li>2K quality</li><li>2 concurrent slots</li></ul>
       <button class="btn btn-ghost" onclick="planSoon('Free')">Current tier</button>
     </div>
-    <div class="plan-card glass" data-plan="creator" data-m="19" data-y="15" data-yt="$180/yr billed annually · save $48">
-      <div class="pname">Creator</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
+    <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
+      <div class="pname">Starter</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
       <div class="cyc-note"></div>
-      <div class="credits-inc">250 credits / month</div>
-      <div class="cr-eq">≈ 125 sets or 41 reels</div>
-      <ul><li>No watermark</li><li>Reels + HD</li><li>Priority queue</li><li>Personal license</li></ul>
+      <div class="credits-inc"></div>
+      <ul><li>No watermark</li><li>Group lookbook</li><li>3 concurrent slots</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
-    <div class="plan-card glass featured" data-plan="pro" data-m="39" data-y="31" data-yt="$372/yr billed annually · save $96">
+    <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
       <div class="ribbon">Most popular</div>
-      <div class="pname">Pro</div><div class="price">$<span class="pv">39</span><span> /mo</span></div>
+      <div class="pname">Standard</div><div class="price">$<span class="pv">49</span><span> /mo</span></div>
       <div class="cyc-note"></div>
-      <div class="credits-inc">600 credits / month</div>
-      <div class="cr-eq">≈ 300 sets or 100 reels</div>
-      <ul><li>Everything in Creator</li><li>Brand kit</li><li>Multilingual captions on</li><li>4K + personal license</li></ul>
+      <div class="credits-inc"></div>
+      <ul><li>Everything in Starter</li><li>Edit results</li><li>4 concurrent slots</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
-    <div class="plan-card glass" data-plan="brand" data-m="79" data-y="63" data-yt="$756/yr billed annually · save $192">
-      <div class="pname">Brand</div><div class="price">$<span class="pv">79</span><span> /mo</span></div>
+    <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
+      <div class="pname">Pro</div><div class="price">$<span class="pv">99</span><span> /mo</span></div>
       <div class="cyc-note"></div>
-      <div class="credits-inc">1,400 credits / month</div>
-      <div class="cr-eq">≈ 700 sets or 233 reels</div>
-      <ul><li>Everything in Pro</li><li>Commercial license</li><li>On-model + bulk</li><li>Team seats &amp; API · premium models</li></ul>
+      <div class="credits-inc"></div>
+      <ul><li>Everything in Standard</li><li>Concept cut</li><li>5 concurrent slots</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+    </div>
+    <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
+      <div class="pname">Premium</div><div class="price">$<span class="pv">199</span><span> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Everything in Pro</li><li>Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
   </div>
 
-  <div class="team-band glass fade d3">
-    <div class="tb-info">
-      <div class="tb-tag">TEAM</div>
-      <div class="tb-title">Scaling across a team or agency?</div>
-      <div class="tb-desc">Shared credit pool, per-seat roles, and one invoice — sits between Brand and full White-label. Add or remove seats anytime.</div>
+  <div class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</div>
+  <div class="plans ent-plans fade d3">
+    <div class="plan-card glass" data-ent="team">
+      <div class="pname">Enterprise Team</div><div class="price">$<span class="ev">599</span><span> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>Team roles &amp; shared pool</li><li>Horizon cut · recommended models</li><li>10 concurrent slots</li></ul>
+      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
     </div>
-    <div class="tb-price">
-      <div class="tbp">$<span data-dp="team.price">199</span><span> /mo</span></div>
-      <div class="tb-meta"><span data-dp="team.seats">3</span> seats included · shared pool ◈<span data-dp="team.pool" data-fmt="1">2,000</span> · +$<span data-dp="team.extraSeat">15</span> / extra seat · SSO &amp; invoicing</div>
-      <div class="tb-cta">
-        <button class="btn btn-primary" onclick="joinTeamBeta()">Join Team beta</button>
-        <button class="btn btn-ghost" onclick="location.href='/business'">Manage team →</button>
-      </div>
+    <div class="plan-card glass featured" data-ent="pro">
+      <div class="ribbon">Best offer</div>
+      <div class="pname">Enterprise Pro</div><div class="price">$<span class="ev">899</span><span> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>Everything in Team</li><li>15 concurrent slots</li><li>Priority support</li></ul>
+      <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
+    </div>
+    <div class="plan-card glass" data-ent="elite">
+      <div class="pname">Elite</div><div class="price">$<span class="ev">1,199</span><span> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>Max scale</li><li>20 concurrent slots</li><li>Dedicated support</li></ul>
+      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
     </div>
   </div>
 
@@ -206,14 +221,14 @@
 
   <div class="section-label fade d4" style="margin-top:40px">What credits buy</div>
   <div class="costtable glass fade d4">
-    <div><span>Photo set (4 imgs)</span><b>◈ 4</b></div>
-    <div><span>On-model / composite set</span><b>◈ 5–6</b></div>
-    <div><span>Macro / detail shots</span><b>◈ 4–5</b></div>
-    <div><span>Reel (5s)</span><b>◈ 8</b></div>
-    <div><span>Reel (10s)</span><b>◈ 16</b></div>
-    <div><span>Add-on (HD/4K/caption…)</span><b>+◈ 1–3</b></div>
+    <div><span>Template photo (per image)</span><b>◈ 300</b></div>
+    <div><span>Custom photo (per image)</span><b>◈ 150</b></div>
+    <div><span>Photo — Flash (per image)</span><b>◈ 45–90</b></div>
+    <div><span>Template reel (5s)</span><b>◈ 1,250</b></div>
+    <div><span>Template reel (10s)</span><b>◈ 2,500</b></div>
+    <div><span>Add-on (caption · enhance)</span><b>+◈ 30</b></div>
   </div>
-  <div class="note">◈4 is the <b>starting</b> price — richer renders cost more. Payments secured by Eximbay.</div>
+  <div class="note">Template looks cost more than custom prompts. Payments secured by Eximbay.</div>
 
   <!-- (2026-07-05) Auto top-up 미지원 → 섹션 숨김. 기능 활성화 시 display:none 제거 -->
   <div class="section-label fade d4" style="margin-top:46px;display:none">Wallet automation</div>
@@ -288,11 +303,18 @@ function setCycle(c,btn){
 const PACK_ID={50:'pack50',120:'pack120',300:'pack300',700:'pack700'};
 function syncBillingPricing(){
   if(!window.PRICING)return; const P=window.PRICING;
-  ['free','creator','pro','brand'].forEach(function(k){
+  ['free','starter','standard','pro','premium'].forEach(function(k){
     const p=P.plans[k], card=document.querySelector('.plan-card[data-plan="'+k+'"]'); if(!card||!p)return;
     card.setAttribute('data-m',p.price); card.setAttribute('data-y',p.priceY);
     if(k!=='free') card.setAttribute('data-yt','$'+(p.priceY*12)+'/yr billed annually · save $'+((p.price-p.priceY)*12));
+    const pv=card.querySelector('.pv'); if(pv)pv.textContent=P.fmt(p.price);
     const ci=card.querySelector('.credits-inc'); if(ci) ci.textContent = k==='free' ? (P.fmt(p.cr)+' credits (one-time)') : (P.fmt(p.cr)+'/mo × 3 = '+P.fmt(p.cr*3)+' credits upfront'); // (2026-07-02) 3개월분 일괄
+  });
+  // 기업(연간) — data-ent 카드
+  if(P.enterprise) ['team','pro','elite'].forEach(function(k){
+    const e=P.enterprise[k], card=document.querySelector('.plan-card[data-ent="'+k+'"]'); if(!card||!e)return;
+    const ev=card.querySelector('.ev'); if(ev)ev.textContent=P.fmt(e.price);
+    const ci=card.querySelector('.credits-inc'); if(ci)ci.textContent=P.fmt(e.cr)+' credits / month';
   });
   const pk=document.getElementById('packsGrid');
   if(pk) pk.innerHTML=P.packs.map(function(p){
