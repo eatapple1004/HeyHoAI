@@ -1,0 +1,223 @@
+/* Doppia 온보딩 코치마크 — 자체완결(외부 라이브러리 0). 스포트라이트 + 말풍선.
+   테마 변수(theme.css) 재사용: --accent/--gold/--text/--border/--bg */
+
+.ob-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: auto;                 /* 투어 중 배경 클릭 차단 → Next/Skip으로만 진행 */
+  font-family: inherit;
+  animation: ob-fade .18s ease;
+}
+.ob-root.ob-centered { background: rgba(4, 4, 10, .66); }   /* 타깃 없을 때 전체 딤 */
+
+@keyframes ob-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* 스포트라이트 — 타깃 위 투명 사각, box-shadow로 주변을 딤 처리(구멍 뚫는 고전 기법) */
+.ob-spot {
+  position: fixed;
+  border-radius: 14px;
+  box-shadow: 0 0 0 9999px rgba(4, 4, 10, .66);
+  transition: all .25s cubic-bezier(.4, 0, .2, 1);
+  pointer-events: none;
+  outline: 2px solid var(--accent, #6a40e0);
+  outline-offset: 2px;
+}
+.ob-root.ob-centered .ob-spot { display: none; }
+
+/* 말풍선 */
+.ob-tip {
+  position: fixed;
+  width: min(340px, calc(100vw - 32px));
+  background: #14141c;
+  border: 1px solid var(--border, rgba(255, 255, 255, .1));
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .55);
+  color: var(--text, #edecf5);
+  transition: top .25s cubic-bezier(.4, 0, .2, 1), left .25s cubic-bezier(.4, 0, .2, 1);
+}
+.ob-root.ob-centered .ob-tip {
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ob-tip-count {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent, #6a40e0);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.ob-tip-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+.ob-tip-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(237, 236, 245, .78);
+  margin-bottom: 14px;
+}
+
+/* ── 미니 데모 애니메이션 (말풍선 안, 자체완결) ── */
+.ob-demo { display: none; }
+.ob-demo.on { display: block; margin-bottom: 12px; }
+.ob-demo-stage {
+  position: relative;
+  height: 96px;
+  border-radius: 12px;
+  background: radial-gradient(120% 120% at 50% 0%, rgba(106,64,224,.12), rgba(255,255,255,.02));
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  overflow: hidden;
+}
+/* 미니 제품 사진(보틀형 실루엣) — 순수 CSS */
+.ob-prod { position: relative; background: linear-gradient(160deg,#2f2a44,#201b33); overflow: hidden; }
+.ob-prod::before { content:''; position:absolute; left:50%; top:16%; width:16%; height:13%; transform:translateX(-50%); border-radius:2px 2px 0 0; background:#cdb6f0; }  /* 뚜껑 */
+.ob-prod::after  { content:''; position:absolute; left:50%; top:28%; width:46%; height:52%; transform:translateX(-50%); border-radius:7px; background:#cdb6f0; }  /* 본체 */
+
+/* Upload 데모 */
+.ob-demo-upload .ob-add {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:60px; height:60px; border-radius:12px;
+  border:2px dashed rgba(205,182,240,.5); display:flex; align-items:center; justify-content:center;
+  color:rgba(205,182,240,.7); font-size:26px; font-weight:300;
+}
+.ob-demo-upload .ob-photo {
+  position:absolute; left:50%; top:50%; width:56px; height:56px; border-radius:11px;
+  animation: ob-drop 3s ease-in-out infinite;
+}
+.ob-demo-upload .ob-check {
+  position:absolute; left:calc(50% + 20px); top:calc(50% - 30px);
+  width:20px; height:20px; border-radius:50%; background:#39d98a; color:#06210f;
+  font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  opacity:0; animation: ob-check 3s ease-in-out infinite;
+}
+@keyframes ob-drop {
+  0%   { transform:translate(calc(-50% + 96px), calc(-50% - 62px)) scale(.5); opacity:0; }
+  35%  { transform:translate(-50%,-50%) scale(1); opacity:1; }
+  75%  { transform:translate(-50%,-50%) scale(1); opacity:1; }
+  90%,100% { transform:translate(-50%,-50%) scale(1); opacity:0; }
+}
+@keyframes ob-check { 0%,38%{opacity:0;transform:scale(.4)} 48%,78%{opacity:1;transform:scale(1)} 88%,100%{opacity:0} }
+
+/* Pick 데모 */
+.ob-demo-pick .ob-row {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; gap:10px;
+}
+.ob-demo-pick .ob-thumb { width:44px; height:60px; border-radius:9px; border:1.5px solid transparent; }
+.ob-demo-pick .ob-thumb.sel { animation: ob-select 3s ease-in-out infinite; }
+.ob-demo-pick .ob-cursor {
+  position:absolute; left:50%; top:78%; font-size:18px; color:#fff;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
+  animation: ob-tap 3s ease-in-out infinite;
+}
+.ob-demo-pick .ob-badge {
+  position:absolute; left:calc(50% + 14px); top:calc(50% - 34px);
+  width:18px; height:18px; border-radius:50%; background:#39d98a; color:#06210f;
+  font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  opacity:0; animation: ob-check 3s ease-in-out infinite;
+}
+@keyframes ob-tap {
+  0%   { transform:translate(40px, 20px) scale(1); opacity:0; }
+  25%  { transform:translate(0,0) scale(1); opacity:1; }
+  40%  { transform:translate(0,0) scale(.82); }      /* 클릭 */
+  55%  { transform:translate(0,0) scale(1); opacity:1; }
+  85%,100% { transform:translate(0,0) scale(1); opacity:0; }
+}
+@keyframes ob-select {
+  0%,38%   { border-color:transparent; }
+  50%,80%  { border-color:var(--accent,#6a40e0); box-shadow:0 0 0 2px rgba(106,64,224,.3); }
+  92%,100% { border-color:transparent; box-shadow:none; }
+}
+.ob-tip-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ob-tip-actions .ob-spacer { flex: 1; }
+
+.ob-tip button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .15s, border-color .15s, opacity .15s;
+}
+.ob-skip {
+  background: transparent;
+  color: rgba(237, 236, 245, .5);
+  padding: 7px 4px !important;
+}
+.ob-skip:hover { color: rgba(237, 236, 245, .85); }
+.ob-back {
+  background: transparent;
+  color: rgba(237, 236, 245, .8);
+  border-color: var(--border, rgba(255, 255, 255, .12)) !important;
+}
+.ob-back:hover { background: rgba(255, 255, 255, .06); }
+.ob-next {
+  background: var(--accent, #6a40e0);
+  color: #fff;
+}
+.ob-next:hover { opacity: .9; }
+
+/* 플로우 선택 메뉴 */
+.ob-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ob-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px !important;
+  border-radius: 11px !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, .1)) !important;
+  background: rgba(255, 255, 255, .03);
+  color: var(--text, #edecf5);
+  font-size: 14px !important;
+  font-weight: 600;
+}
+.ob-menu-item:hover {
+  background: rgba(106, 64, 224, .14);
+  border-color: var(--accent, #6a40e0) !important;
+}
+.ob-menu-item .ob-arrow { color: var(--accent, #6a40e0); font-size: 18px; line-height: 1; }
+
+/* 헤더 "?" 도움말 버튼 */
+.ob-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border, rgba(255, 255, 255, .14));
+  background: transparent;
+  color: rgba(237, 236, 245, .7);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ob-help-btn:hover {
+  color: var(--text, #edecf5);
+  border-color: var(--accent, #6a40e0);
+  background: rgba(106, 64, 224, .12);
+}
+
+@media (max-width: 640px) {
+  .ob-tip { padding: 15px 15px 12px; }
+  .ob-tip-title { font-size: 16px; }
+}
