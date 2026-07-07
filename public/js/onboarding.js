@@ -132,8 +132,8 @@
       label: 'Save a creation as a template',
       mock: MOCK_SAVE,
       steps: [
-        { target: 'mk-ctbtn', title: 'Turn a creation into a template',
-          body: 'In Your creations, click + Create template on any image or reel you love.' },
+        { target: 'mk-ctbtn', title: 'Turn a Custom creation into a template',
+          body: 'In Your creations, click + Create template under any Custom creation — an image or reel you made from your own prompt. (Template-based creations already have a template.)' },
         { target: 'mk-ctname', title: 'Name & category',
           body: 'Give it a name and pick a category so it is easy to reuse.' },
         { target: 'mk-ctthemes', title: 'Pick themes',
