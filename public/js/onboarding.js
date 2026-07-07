@@ -31,7 +31,7 @@
       '<div class="mk-priv"><span class="mk-tg"><i class="on"></i></span>Enhance<span class="mk-tg"><i></i></span>Private</div>' +
     '</div>';
 
-  // 템플릿 화면 목업 (Select a product / Pick a template 버튼)
+  // 템플릿 화면 목업 (Select a product / Pick a template 버튼 + 아래 갤러리)
   var MOCK_TEMPLATE = wrap(
     '<div class="mk-card">' +
       '<div class="mk-btn mk-product" id="mk-product"><span class="mk-bic">▤</span>Select a product</div>' +
@@ -39,6 +39,15 @@
       SETTINGS +
       '<div class="mk-div"></div>' +
       '<div class="mk-foot"><span class="mk-prompt">write your own prompt</span><span class="mk-sp"></span><span class="mk-gen" id="mk-generate">Generate</span></div>' +
+    '</div>' +
+    '<div class="mk-gallery" id="mk-gallery">' +
+      '<div class="mk-gh">Pick a template</div>' +
+      '<div class="mk-gcat"><span class="mk-gpill on">Apparel</span><span class="mk-gpill">Beauty</span><span class="mk-gpill">General</span><span class="mk-gpill">Nail</span></div>' +
+      '<div class="mk-gcards">' +
+        '<div class="mk-tplcard sel" id="mk-tplcard"><span class="mk-badge">PHOTO</span><span class="mk-badge best">★ BEST</span><div class="mk-thumb"><b>DOPPIA</b></div><div class="mk-cinfo"><div class="mk-cname">Product Cut</div><div class="mk-csub">Product Cut</div></div><span class="mk-check">✓</span></div>' +
+        '<div class="mk-tplcard"><div class="mk-thumb"></div><div class="mk-cinfo"><div class="mk-cname">On-model</div></div></div>' +
+        '<div class="mk-tplcard"><div class="mk-thumb"></div><div class="mk-cinfo"><div class="mk-cname">Lookbook</div></div></div>' +
+      '</div>' +
     '</div>');
 
   // Custom 화면 목업 (업로드 박스 + ✎Custom + 프롬프트 중심)
@@ -60,8 +69,8 @@
       steps: [
         { target: 'mk-product', title: 'Select your product',
           body: 'Click Select a product and upload one clear photo. We keep it consistent across every scene.' },
-        { target: 'mk-template', title: 'Pick a template',
-          body: 'Click Pick a template and choose a look below — it is applied to your product. No prompt needed.' },
+        { target: 'mk-tplcard', title: 'Pick a template',
+          body: 'Tap a template below — the look is applied to your product instantly. Filter by category (Apparel, Beauty…). No prompt needed.' },
         { target: 'mk-settings', title: 'Adjust settings',
           body: 'Set the model, ratio, size, and count. The defaults work fine to start.' },
         { target: 'mk-generate', title: 'Generate',
@@ -141,7 +150,7 @@
   }
 
   // 목업 요소들의 "자연 좌표"(변형 전) 측정 → 줌 계산에 사용(스텝 전환 시 깜빡임 방지).
-  var geom = {};
+  var geom = {}, stageGeom = { w: 0, h: 0 };
   function measureGeom() {
     var stage = root && root.querySelector('.ob-stage');
     if (!stage) return;
@@ -149,6 +158,7 @@
     stage.style.transition = 'none'; stage.style.transform = 'none';
     var sr = stage.getBoundingClientRect();
     if (sr.width < 40) { stage.style.transform = savedT; stage.style.transition = savedTr; return; } // 레이아웃 전 → 측정 보류
+    stageGeom = { w: sr.width, h: sr.height };   // 목업 자연 크기(갤러리 포함 높이) → 팬 클램프에 사용
     steps.forEach(function (s) {   // 현재 플로우의 스텝 target만 측정
       var el = root.querySelector('#' + s.target);
       if (!el) return;
@@ -172,8 +182,9 @@
     var Z = Math.min(vw * 0.26 / g.w, vh * 0.26 / g.h, 1.35);   // 아주 완만한 줌 = 전체 화면 유지
     Z = Math.max(Z, 1.05);
     var tx = vw / 2 - g.cx * Z, ty = vh / 2 - g.cy * Z;
-    tx = Math.min(0, Math.max(tx, vw - vw * Z));   // 뷰포트 밖 빈 공간 안 보이게 클램프
-    ty = Math.min(0, Math.max(ty, vh - vh * Z));
+    var Sw = stageGeom.w || vw, Sh = stageGeom.h || vh;   // 콘텐츠 실제 크기 기준 클램프(아래 갤러리까지 팬)
+    tx = Math.min(0, Math.max(tx, vw - Sw * Z));
+    ty = Math.min(0, Math.max(ty, vh - Sh * Z));
     stage.style.transition = 'transform .55s cubic-bezier(.4,0,.2,1)';
     stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + Z + ')';
   }

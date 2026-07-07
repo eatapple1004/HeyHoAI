@@ -29,7 +29,7 @@
   border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
 }
 /* 풀 페이지 목업 = 좌측 레일 + 메인(컴포즈) — 실제 스튜디오 화면 재현 */
-.ob-mock { position: absolute; inset: 0; padding: 12px; display: flex; gap: 12px; }
+.ob-mock { position: relative; width: 100%; box-sizing: border-box; padding: 12px; display: flex; gap: 12px; }
 
 .mk-rail {
   width: 66px; flex: none; background: #0c0a12; border: 1px solid rgba(255,255,255,.05);
@@ -42,9 +42,9 @@
 .mk-nav.on { color: #d7c6f7; }
 .mk-nav.on .ic { background: rgba(106,64,224,.3); box-shadow: inset 0 0 0 1px rgba(106,64,224,.5); color: #d7c6f7; }
 
-.mk-main { flex: 1; min-width: 0; display: flex; }
+.mk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 /* 실제 컴포즈 카드 레이아웃 재현 */
-.mk-card { flex: 1; background: #0f0c17; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 11px; box-sizing: border-box; }
+.mk-card { background: #0f0c17; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 11px; box-sizing: border-box; }
 
 .mk-btn { display: flex; align-items: center; gap: 11px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px 14px; color: #e6e4f0; font-size: 12.5px; font-weight: 600; background: rgba(255,255,255,.02); }
 .mk-btn .mk-bic { width: 24px; height: 24px; border-radius: 7px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #a29fb3; flex: none; }
@@ -85,8 +85,27 @@
 .mk-tg i.on { background: var(--accent,#6a40e0); }
 .mk-tg i.on::after { left: 13px; }
 
-/* 줌 레이어: 스텝마다 target 요소로 확대·이동(카메라). 히어로=뷰포트(overflow hidden) */
-.ob-stage { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform;
+/* 템플릿 갤러리 (컴포즈 카드 아래 — 실제 화면 재현) */
+.mk-gallery { }
+.mk-gh { font-size: 13px; font-weight: 700; color: #e6e4f0; margin-bottom: 9px; }
+.mk-gcat { display: flex; gap: 6px; margin-bottom: 10px; }
+.mk-gpill { font-size: 9.5px; font-weight: 600; color: #b7b5c6; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 5px 11px; }
+.mk-gpill.on { background: var(--accent,#6a40e0); color: #fff; border-color: transparent; }
+.mk-gcards { display: flex; gap: 11px; }
+.mk-tplcard { width: 100px; border-radius: 11px; overflow: hidden; border: 1.5px solid rgba(255,255,255,.08); background: #0f0c17; position: relative; }
+.mk-tplcard .mk-thumb { height: 82px; background: linear-gradient(160deg,#eceaf2,#cdcad9); display: flex; align-items: center; justify-content: center; }
+.mk-tplcard .mk-thumb b { font-size: 11px; letter-spacing: .12em; color: #3a3550; font-weight: 800; }
+.mk-tplcard .mk-cinfo { padding: 7px 9px; }
+.mk-tplcard .mk-cname { font-size: 10px; font-weight: 700; color: #e6e4f0; }
+.mk-tplcard .mk-csub { font-size: 8.5px; color: #d0a75f; font-weight: 600; margin-top: 1px; }
+.mk-tplcard .mk-badge { position: absolute; top: 6px; left: 6px; font-size: 7px; font-weight: 700; background: rgba(0,0,0,.55); color: #e6e4f0; padding: 3px 6px; border-radius: 5px; }
+.mk-tplcard .mk-badge.best { left: auto; right: 6px; background: linear-gradient(90deg,#f0b46a,#f0d06a); color: #3a2a10; }
+.mk-tplcard.sel { border-color: var(--accent,#6a40e0); box-shadow: 0 0 0 1px rgba(106,64,224,.4); }
+.mk-tplcard .mk-check { position: absolute; bottom: 7px; right: 7px; width: 19px; height: 19px; border-radius: 50%; background: #39d98a; color: #06210f; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+/* 줌 레이어: 스텝마다 target 요소로 확대·이동(카메라). 히어로=뷰포트(overflow hidden).
+   높이는 목업 콘텐츠(갤러리 포함) 만큼 → 아래 요소까지 팬 가능. */
+.ob-stage { position: absolute; top: 0; left: 0; width: 100%; transform-origin: 0 0; will-change: transform;
   transition: transform .55s cubic-bezier(.4,0,.2,1); }
 /* 현재 스텝 요소 강조 링 (확대된 상태에서 표시) */
 .mk-active { box-shadow: 0 0 0 2px var(--accent,#6a40e0), 0 0 0 6px rgba(106,64,224,.22); border-radius: 9px; position: relative; z-index: 2; }
