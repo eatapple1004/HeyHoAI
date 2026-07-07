@@ -1,237 +1,253 @@
-/* Doppia 온보딩 코치마크 — 자체완결(외부 라이브러리 0, 백엔드 0).
- *  구조: 여러 "플로우"를 담는 레지스트리(FLOWS). 각 플로우 = 짧은 미니 투어.
- *   - 첫 방문: PRIMARY 플로우 자동 시작(+Skip). localStorage로 1회만.
- *   - 헤더 "?": 플로우가 1개면 바로 시작, 2개 이상이면 선택 메뉴.
- *  카피는 영어(제품 원칙). i18n은 추후 /js/i18n.js 사전 키로 확장.
- *
- *  ▶ 새 플로우 추가법: 아래 FLOWS 객체에 { label, steps:[{sel,title,body}] } 항목만 추가.
+/* Doppia 온보딩 — 모달 + 스튜디오 미니 목업 + 정확 위치 하이라이트 링. 자체완결(외부 0, 백엔드 0).
+ *  실제 페이지는 건드리지 않는다. 모달 안에 스튜디오 화면 목업을 그리고, 스텝마다 링이 해당 요소로 이동.
+ *   - 첫 방문: PRIMARY 플로우 자동 오픈(+Skip). localStorage로 1회만.
+ *   - 헤더 "?": 1개면 바로 오픈, 2개 이상이면 선택 메뉴.
+ *  ▶ 새 플로우: FLOWS에 { label, steps:[{target,title,body}] } 추가. target=목업 요소 id.
  */
 (function () {
   'use strict';
 
-  var SEEN_KEY = 'doppia_ob_seen_v2';   // 자동시작 1회 플래그(구조/카피 개편 시 버전업)
+  var SEEN_KEY = 'doppia_ob_seen_v4';   // 목업 개편 → 버전업
+
+  // 스튜디오 컴포즈 화면 미니 목업 (모든 스텝 공통, 링만 이동)
+  var RAIL =
+    '<div class="mk-rail">' +
+      '<div class="mk-logo"></div>' +
+      '<div class="mk-nav on" id="mk-nav-studio"><span class="ic">✦</span><span class="lb">Studio</span></div>' +
+      '<div class="mk-nav" id="mk-nav-library"><span class="ic">▦</span><span class="lb">Library</span></div>' +
+      '<div class="mk-nav" id="mk-nav-store"><span class="ic">▤</span><span class="lb">Store</span></div>' +
+      '<div class="mk-nav" id="mk-nav-community"><span class="ic">◎</span><span class="lb">Community</span></div>' +
+      '<div class="mk-nav" id="mk-nav-billing"><span class="ic">▭</span><span class="lb">Billing</span></div>' +
+    '</div>';
+  function wrap(inner) { return '<div class="ob-mock">' + RAIL + '<div class="mk-main">' + inner + '</div></div>'; }
+
+  // 공통 설정 행 (MODEL·RATIO·SIZE·COUNT·Enhance·Private)
+  var SETTINGS =
+    '<div class="mk-set" id="mk-settings">' +
+      '<div class="mk-fg"><em>MODEL</em><span class="mk-pill acc">Nano Banana Pro ▾</span></div>' +
+      '<div class="mk-fg"><em>RATIO</em><span class="mk-rt sel"></span><span class="mk-rt sq"></span><span class="mk-rt tall"></span></div>' +
+      '<div class="mk-fg"><em>SIZE</em><span class="mk-tile sel">1K</span><span class="mk-tile">2K</span></div>' +
+      '<div class="mk-fg"><em>COUNT</em><span class="mk-pill">4 ▾</span></div>' +
+      '<div class="mk-priv"><span class="mk-tg"><i class="on"></i></span>Enhance<span class="mk-tg"><i></i></span>Private</div>' +
+    '</div>';
+
+  // 템플릿 화면 목업 (Select a product / Pick a template 버튼)
+  var MOCK_TEMPLATE = wrap(
+    '<div class="mk-card">' +
+      '<div class="mk-btn mk-product" id="mk-product"><span class="mk-bic">▤</span>Select a product</div>' +
+      '<div class="mk-btn mk-tplbtn" id="mk-template"><span class="mk-bic">▦</span><span class="mk-btxt"><b>Pick a template</b><i>Choose a look below — no prompt needed</i></span></div>' +
+      SETTINGS +
+      '<div class="mk-div"></div>' +
+      '<div class="mk-foot"><span class="mk-prompt">write your own prompt</span><span class="mk-sp"></span><span class="mk-gen" id="mk-generate">Generate</span></div>' +
+    '</div>');
+
+  // Custom 화면 목업 (업로드 박스 + ✎Custom + 프롬프트 중심)
+  var MOCK_CUSTOM = wrap(
+    '<div class="mk-card">' +
+      '<div class="mk-upbox" id="mk-product"><span class="mk-upic">▤</span><span class="mk-upplus">+</span></div>' +
+      '<div class="mk-customline"><b>✎ Custom</b> — write your own prompt, no template needed.</div>' +
+      SETTINGS +
+      '<div class="mk-pbox" id="mk-prompt">Type a prompt…</div>' +
+      '<div class="mk-negline">+ Negative prompt</div>' +
+      '<div class="mk-foot"><span class="mk-sp"></span><span class="mk-ghost">Create template</span><span class="mk-gen" id="mk-generate">Generate</span></div>' +
+    '</div>');
 
   var FLOWS = {
-    // ── Flow 1: 템플릿으로 만들기 (기본 경로) ──
+    // ── Flow 1: 템플릿으로 만들기 ──
     template: {
       label: 'Create with a template',
+      mock: MOCK_TEMPLATE,
       steps: [
-        { sel: ['#subjectRow .img-add-wrap', '#subjectRow', '#subjectStep'], demo: 'upload',
-          title: 'Add your product',
-          body: 'Click here and upload one clear photo of your product. We keep it consistent across every scene.' },
-        { sel: ['#recipeGrid .recipe-card', '#templateStep .recipe-card', '#step2Title'], demo: 'pick',
-          title: 'Pick a template',
-          body: 'Tap a template to open it, then choose it. The look is applied to your product — no prompt needed.' },
-        { sel: '#genBtn',
-          title: 'Generate',
-          body: 'Press Generate. The number on it is the credit cost, and your product shots appear below.' }
+        { target: 'mk-product', title: 'Select your product',
+          body: 'Click Select a product and upload one clear photo. We keep it consistent across every scene.' },
+        { target: 'mk-template', title: 'Pick a template',
+          body: 'Click Pick a template and choose a look below — it is applied to your product. No prompt needed.' },
+        { target: 'mk-settings', title: 'Adjust settings',
+          body: 'Set the model, ratio, size, and count. The defaults work fine to start.' },
+        { target: 'mk-generate', title: 'Generate',
+          body: 'Hit Generate. The badge shows the credit cost, and your product shots appear below.' }
+      ]
+    },
+    // ── Flow 2: 프롬프트 직접 쓰기 (Custom) ──
+    custom: {
+      label: 'Write your own prompt',
+      mock: MOCK_CUSTOM,
+      steps: [
+        { target: 'mk-product', title: 'Add a reference (optional)',
+          body: 'Select a product photo so results stay true to it — or skip it and go text-only.' },
+        { target: 'mk-prompt', title: 'Write your prompt',
+          body: 'Use "write your own prompt" to describe the shot — the scene, angle, and mood. No template needed.' },
+        { target: 'mk-settings', title: 'Choose your settings',
+          body: 'Pick the model, ratio, size, and count. The defaults work fine to start.' },
+        { target: 'mk-generate', title: 'Generate',
+          body: 'Hit Generate. Your custom product shots appear below.' }
       ]
     }
-    // ── (예정) Flow 2: Custom 프롬프트, Flow 3: 릴 만들기 등은 여기 추가 ──
+    // ── (예정) Flow 3: 릴 만들기 등은 여기 추가 ──
   };
   var PRIMARY = 'template';
 
-  var root = null, spot = null, tip = null, steps = [], idx = 0, onResize = null;
-
-  function isVisible(el) {
-    if (!el) return false;
-    if (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return false;
-    var r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
-  }
-
-  // sel = 문자열 또는 후보 배열. 배열이면 "보이는 첫 요소"(없으면 존재하는 첫 요소) 반환.
-  function resolveEl(sel) {
-    var list = Array.isArray(sel) ? sel : [sel];
-    var firstExisting = null;
-    for (var i = 0; i < list.length; i++) {
-      var el = document.querySelector(list[i]);
-      if (el && !firstExisting) firstExisting = el;
-      if (isVisible(el)) return el;
-    }
-    return firstExisting;
-  }
-
-  var DEMOS = {
-    upload: '<div class="ob-demo-stage ob-demo-upload"><div class="ob-add">+</div><div class="ob-photo ob-prod"></div><div class="ob-check">✓</div></div>',
-    pick: '<div class="ob-demo-stage ob-demo-pick"><div class="ob-row"><div class="ob-thumb ob-prod"></div><div class="ob-thumb ob-prod sel"></div><div class="ob-thumb ob-prod"></div></div><div class="ob-badge">✓</div><div class="ob-cursor">➤</div></div>'
-  };
+  var root = null, steps = [], idx = 0, currentMock = MOCK_TEMPLATE;
 
   function makeRoot() {
     root = document.createElement('div');
     root.className = 'ob-root';
+    root.addEventListener('click', function (e) { if (e.target === root) close(false); }); // 바깥 클릭=닫기
     document.body.appendChild(root);
     document.addEventListener('keydown', onKey);
-    onResize = function () { if (steps.length) render(); };
-    window.addEventListener('resize', onResize);
-    window.addEventListener('scroll', onResize, true);
+    window.addEventListener('resize', onResizeGeom);
+  }
+  function onResizeGeom() { measureGeom(); reposition(); }
+  function onKey(e) {
+    if (e.key === 'Escape') close(false);
+    else if (e.key === 'ArrowRight') next();
+    else if (e.key === 'ArrowLeft') go(idx - 1);
   }
 
-  function onKey(e) { if (e.key === 'Escape') close(false); }
-
-  // ── 플로우 투어 ──
-  function buildTour() {
-    spot = document.createElement('div');
-    spot.className = 'ob-spot';
-    tip = document.createElement('div');
-    tip.className = 'ob-tip';
-    tip.innerHTML =
-      '<div class="ob-tip-count"></div>' +
-      '<div class="ob-tip-title"></div>' +
-      '<div class="ob-demo"></div>' +
-      '<div class="ob-tip-body"></div>' +
-      '<div class="ob-tip-actions">' +
-        '<button type="button" class="ob-skip">Skip</button>' +
-        '<span class="ob-spacer"></span>' +
-        '<button type="button" class="ob-back">Back</button>' +
-        '<button type="button" class="ob-next">Next</button>' +
+  // ── 플로우 슬라이드(목업 1회 빌드 + 링 이동) ──
+  function buildFlowShell() {
+    var dots = steps.map(function (_, i) { return '<span class="ob-dot"></span>'; }).join('');
+    root.innerHTML =
+      '<div class="ob-modal" role="dialog" aria-modal="true">' +
+        '<div class="ob-hero"><div class="ob-stage">' + currentMock + '</div></div>' +
+        '<div class="ob-modal-body">' +
+          '<div class="ob-count"></div>' +
+          '<div class="ob-title"></div>' +
+          '<div class="ob-body"></div>' +
+          '<div class="ob-actions">' +
+            '<button type="button" class="ob-skip">Skip</button>' +
+            '<div class="ob-dots">' + dots + '</div>' +
+            '<span class="ob-spacer"></span>' +
+            '<button type="button" class="ob-back">Back</button>' +
+            '<button type="button" class="ob-next"></button>' +
+          '</div>' +
+        '</div>' +
       '</div>';
-    root.appendChild(spot);
-    root.appendChild(tip);
-    tip.querySelector('.ob-skip').addEventListener('click', function () { close(true); });
-    tip.querySelector('.ob-back').addEventListener('click', function () { go(idx - 1); });
-    tip.querySelector('.ob-next').addEventListener('click', function () {
-      if (idx >= steps.length - 1) close(true); else go(idx + 1);
+    root.querySelector('.ob-skip').onclick = function () { close(true); };
+    root.querySelector('.ob-back').onclick = function () { go(idx - 1); };
+    root.querySelector('.ob-next').onclick = next;
+  }
+
+  function renderStep() {
+    var s = steps[idx];
+    root.querySelector('.ob-count').textContent = (idx + 1) + ' / ' + steps.length;
+    root.querySelector('.ob-title').textContent = s.title;
+    root.querySelector('.ob-body').textContent = s.body;
+    var dots = root.querySelectorAll('.ob-dot');
+    for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i === idx);
+    root.querySelector('.ob-back').style.display = idx === 0 ? 'none' : '';
+    root.querySelector('.ob-next').textContent = idx >= steps.length - 1 ? 'Got it' : 'Next';
+    reposition();
+  }
+
+  // 목업 요소들의 "자연 좌표"(변형 전) 측정 → 줌 계산에 사용(스텝 전환 시 깜빡임 방지).
+  var geom = {};
+  function measureGeom() {
+    var stage = root && root.querySelector('.ob-stage');
+    if (!stage) return;
+    var savedT = stage.style.transform, savedTr = stage.style.transition;
+    stage.style.transition = 'none'; stage.style.transform = 'none';
+    var sr = stage.getBoundingClientRect();
+    if (sr.width < 40) { stage.style.transform = savedT; stage.style.transition = savedTr; return; } // 레이아웃 전 → 측정 보류
+    steps.forEach(function (s) {   // 현재 플로우의 스텝 target만 측정
+      var el = root.querySelector('#' + s.target);
+      if (!el) return;
+      var er = el.getBoundingClientRect();
+      geom[s.target] = { cx: er.left - sr.left + er.width / 2, cy: er.top - sr.top + er.height / 2, w: er.width, h: er.height };
+    });
+    stage.style.transform = savedT; stage.style.transition = savedTr;
+  }
+
+  // 현재 스텝 target으로 카메라(줌+팬) 이동 + 강조.
+  function reposition() {
+    if (!root || !steps.length) return;
+    var hero = root.querySelector('.ob-hero'), stage = root.querySelector('.ob-stage');
+    if (!hero || !stage) return;
+    var vw = hero.clientWidth, vh = hero.clientHeight;
+    if (vw < 40) { setTimeout(reposition, 90); return; }   // 뷰포트 아직 0(레이아웃/헤드리스) → 재시도
+    var tid = steps[idx].target, g = geom[tid];
+    if (!g) { measureGeom(); g = geom[tid]; if (!g) { setTimeout(reposition, 90); return; } }
+    var prev = stage.querySelector('.mk-active'); if (prev) prev.classList.remove('mk-active');
+    var el = root.querySelector('#' + tid); if (el) el.classList.add('mk-active');
+    var Z = Math.min(vw * 0.26 / g.w, vh * 0.26 / g.h, 1.35);   // 아주 완만한 줌 = 전체 화면 유지
+    Z = Math.max(Z, 1.05);
+    var tx = vw / 2 - g.cx * Z, ty = vh / 2 - g.cy * Z;
+    tx = Math.min(0, Math.max(tx, vw - vw * Z));   // 뷰포트 밖 빈 공간 안 보이게 클램프
+    ty = Math.min(0, Math.max(ty, vh - vh * Z));
+    stage.style.transition = 'transform .55s cubic-bezier(.4,0,.2,1)';
+    stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + Z + ')';
+  }
+
+  function go(n) { idx = Math.max(0, Math.min(steps.length - 1, n)); renderStep(); }
+  function next() { if (idx >= steps.length - 1) close(true); else go(idx + 1); }
+
+  // ── 플로우 선택 메뉴(모달) ──
+  function renderMenu() {
+    var items = Object.keys(FLOWS).map(function (id) {
+      return '<button type="button" class="ob-menu-item" data-flow="' + id + '">' + FLOWS[id].label + ' <span class="ob-arrow">›</span></button>';
+    }).join('');
+    root.innerHTML =
+      '<div class="ob-modal" role="dialog" aria-modal="true"><div class="ob-menu-wrap">' +
+        '<div class="ob-menu-h">Guides</div>' +
+        '<div class="ob-menu-title">What do you want to do?</div>' +
+        '<div class="ob-menu-list">' + items + '</div>' +
+        '<div class="ob-menu-close"><button type="button" class="ob-skip">Close</button></div>' +
+      '</div></div>';
+    root.querySelector('.ob-skip').onclick = function () { close(false); };
+    [].forEach.call(root.querySelectorAll('.ob-menu-item'), function (b) {
+      b.onclick = function () { start(b.getAttribute('data-flow')); };
     });
   }
 
-  function go(n) {
-    idx = Math.max(0, Math.min(steps.length - 1, n));
-    var el = resolveEl(steps[idx].sel);
-    if (isVisible(el)) {
-      try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) { el.scrollIntoView(); }
-      setTimeout(render, 260);
-    } else {
-      render();
-    }
-  }
-
-  function render() {
-    if (!root || !tip) return;
-    var step = steps[idx];
-    var el = resolveEl(step.sel);
-    var vis = isVisible(el);
-
-    tip.querySelector('.ob-tip-count').textContent = (idx + 1) + ' / ' + steps.length;
-    tip.querySelector('.ob-tip-title').textContent = step.title;
-    var demoEl = tip.querySelector('.ob-demo');
-    var want = (step.demo && DEMOS[step.demo]) ? step.demo : '';
-    if (demoEl.getAttribute('data-demo') !== want) {   // 스텝 바뀔 때만 갱신(리포지션 시 애니 재시작 방지)
-      demoEl.setAttribute('data-demo', want);
-      demoEl.innerHTML = want ? DEMOS[want] : '';
-      demoEl.classList.toggle('on', !!want);
-    }
-    tip.querySelector('.ob-tip-body').textContent = step.body;
-    tip.querySelector('.ob-back').style.display = idx === 0 ? 'none' : '';
-    tip.querySelector('.ob-next').textContent = idx >= steps.length - 1 ? 'Got it' : 'Next';
-
-    if (!vis) { root.classList.add('ob-centered'); return; }
-    root.classList.remove('ob-centered');
-
-    var r = el.getBoundingClientRect();
-    var pad = 6;
-    spot.style.top = (r.top - pad) + 'px';
-    spot.style.left = (r.left - pad) + 'px';
-    spot.style.width = (r.width + pad * 2) + 'px';
-    spot.style.height = (r.height + pad * 2) + 'px';
-
-    var tr = tip.getBoundingClientRect();
-    var tw = tr.width || 340, th = tr.height || 160;
-    var margin = 14, vw = window.innerWidth, vh = window.innerHeight;
-    var top = r.bottom + margin;
-    if (top + th > vh - 10) top = Math.max(10, r.top - th - margin);
-    var left = r.left + r.width / 2 - tw / 2;
-    left = Math.max(12, Math.min(left, vw - tw - 12));
-    tip.style.top = top + 'px';
-    tip.style.left = left + 'px';
-  }
-
-  // ── 플로우 선택 메뉴 (플로우 2개 이상일 때) ──
-  function buildMenu() {
-    root.classList.add('ob-centered');
-    var box = document.createElement('div');
-    box.className = 'ob-tip ob-menu';
-    var html = '<div class="ob-tip-count">Guides</div>' +
-      '<div class="ob-tip-title">What do you want to do?</div>' +
-      '<div class="ob-menu-list">';
-    Object.keys(FLOWS).forEach(function (id) {
-      html += '<button type="button" class="ob-menu-item" data-flow="' + id + '">' + FLOWS[id].label + ' <span class="ob-arrow">›</span></button>';
-    });
-    html += '</div><div class="ob-tip-actions"><span class="ob-spacer"></span><button type="button" class="ob-skip">Close</button></div>';
-    box.innerHTML = html;
-    root.appendChild(box);
-    box.querySelector('.ob-skip').addEventListener('click', function () { close(false); });
-    box.querySelectorAll('.ob-menu-item').forEach(function (b) {
-      b.addEventListener('click', function () { start(b.getAttribute('data-flow')); });
-    });
-  }
-
-  // ── 공통 정리 ──
-  function clearRoot() {
-    if (root) { while (root.firstChild) root.removeChild(root.firstChild); root.classList.remove('ob-centered'); }
-    spot = tip = null; steps = []; idx = 0;
-  }
-
-  function close(markSeen) {
-    if (markSeen) { try { localStorage.setItem(SEEN_KEY, '1'); } catch (_) {} }
+  function close(seen) {
+    if (seen) { try { localStorage.setItem(SEEN_KEY, '1'); } catch (_) {} }
     document.removeEventListener('keydown', onKey);
-    window.removeEventListener('resize', onResize);
-    window.removeEventListener('scroll', onResize, true);
+    window.removeEventListener('resize', onResizeGeom);
     if (root) { root.remove(); root = null; }
-    spot = tip = null; steps = []; idx = 0;
+    steps = []; idx = 0;
   }
 
   // ── 공개 API ──
   function start(flowId) {
     var flow = FLOWS[flowId] || FLOWS[PRIMARY];
     if (!flow) return;
-    if (!root) makeRoot(); else clearRoot();
-    steps = flow.steps;
-    buildTour();
-    go(0);
+    if (!root) makeRoot();
+    steps = flow.steps; idx = 0; geom = {}; currentMock = flow.mock || MOCK_TEMPLATE;
+    buildFlowShell();
+    // 레이아웃 정착 후 좌표 측정 → 첫 스텝으로 줌인
+    setTimeout(function () { measureGeom(); renderStep(); }, 60);
   }
-
   function openHelp() {
     var ids = Object.keys(FLOWS);
     if (ids.length <= 1) { start(ids[0]); return; }
-    if (!root) makeRoot(); else clearRoot();
-    buildMenu();
+    if (!root) makeRoot();
+    steps = []; renderMenu();
   }
-
   function maybeAutoStart() {
     var seen; try { seen = localStorage.getItem(SEEN_KEY); } catch (_) { seen = '1'; }
     if (seen) return;
     if (!document.querySelector('#subjectStep')) return;   // 스튜디오 페이지에서만
     start(PRIMARY);
   }
-
   function injectHelpButton() {
     var bar = document.querySelector('.topbar');
     if (!bar || document.querySelector('.ob-help-btn')) return;
     var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'ob-help-btn';
-    btn.title = 'How Studio works';
-    btn.setAttribute('aria-label', 'How Studio works');
-    btn.textContent = '?';
-    btn.addEventListener('click', openHelp);
+    btn.type = 'button'; btn.className = 'ob-help-btn';
+    btn.title = 'How Studio works'; btn.setAttribute('aria-label', 'How Studio works');
+    btn.textContent = '?'; btn.addEventListener('click', openHelp);
     bar.appendChild(btn);
   }
 
   window.Onboarding = {
-    start: start,
-    help: openHelp,
+    start: start, help: openHelp,
     reset: function () { try { localStorage.removeItem(SEEN_KEY); } catch (_) {} }
   };
 
   function init() {
     injectHelpButton();
-    setTimeout(maybeAutoStart, 900);   // 동적 콘텐츠 자리잡을 시간
+    setTimeout(maybeAutoStart, 900);
   }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();

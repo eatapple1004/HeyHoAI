@@ -1,223 +1,142 @@
-/* Doppia 온보딩 코치마크 — 자체완결(외부 라이브러리 0). 스포트라이트 + 말풍선.
-   테마 변수(theme.css) 재사용: --accent/--gold/--text/--border/--bg */
+/* Doppia 온보딩 — 모달 캐러셀 + 스튜디오 화면 미니 목업 + 정확 위치 하이라이트 링.
+   실제 페이지는 건드리지 않고, 모달 안 목업 위에서 링이 해당 요소로 이동하며 설명.
+   테마 변수(theme.css): --accent/--gold/--text/--border */
 
 .ob-root {
-  position: fixed;
-  inset: 0;
-  z-index: 100000;
-  pointer-events: auto;                 /* 투어 중 배경 클릭 차단 → Next/Skip으로만 진행 */
-  font-family: inherit;
-  animation: ob-fade .18s ease;
+  position: fixed; inset: 0; z-index: 100000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(4, 4, 10, .72); backdrop-filter: blur(3px);
+  animation: ob-fade .2s ease;
 }
-.ob-root.ob-centered { background: rgba(4, 4, 10, .66); }   /* 타깃 없을 때 전체 딤 */
-
 @keyframes ob-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* 스포트라이트 — 타깃 위 투명 사각, box-shadow로 주변을 딤 처리(구멍 뚫는 고전 기법) */
-.ob-spot {
-  position: fixed;
-  border-radius: 14px;
-  box-shadow: 0 0 0 9999px rgba(4, 4, 10, .66);
-  transition: all .25s cubic-bezier(.4, 0, .2, 1);
-  pointer-events: none;
-  outline: 2px solid var(--accent, #6a40e0);
-  outline-offset: 2px;
-}
-.ob-root.ob-centered .ob-spot { display: none; }
-
-/* 말풍선 */
-.ob-tip {
-  position: fixed;
-  width: min(340px, calc(100vw - 32px));
-  background: #14141c;
-  border: 1px solid var(--border, rgba(255, 255, 255, .1));
-  border-radius: 16px;
-  padding: 18px 18px 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .55);
+.ob-modal {
+  width: min(680px, calc(100vw - 40px));
+  max-height: calc(100vh - 48px); overflow: auto;
+  background: #141019;
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,.6);
   color: var(--text, #edecf5);
-  transition: top .25s cubic-bezier(.4, 0, .2, 1), left .25s cubic-bezier(.4, 0, .2, 1);
+  animation: ob-pop .22s cubic-bezier(.2,.8,.3,1);
 }
-.ob-root.ob-centered .ob-tip {
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-}
+@keyframes ob-pop { from { transform: translateY(10px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
 
-.ob-tip-count {
-  font-size: 11px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--accent, #6a40e0);
-  font-weight: 700;
-  margin-bottom: 8px;
+/* ── 히어로: 스튜디오 화면 미니 목업 ── */
+.ob-hero {
+  height: 330px; position: relative; overflow: hidden;
+  border-radius: 22px 22px 0 0;
+  background: #08070d;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
 }
-.ob-tip-title {
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.25;
-  margin-bottom: 6px;
-}
-.ob-tip-body {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: rgba(237, 236, 245, .78);
-  margin-bottom: 14px;
-}
+/* 풀 페이지 목업 = 좌측 레일 + 메인(컴포즈) — 실제 스튜디오 화면 재현 */
+.ob-mock { position: absolute; inset: 0; padding: 12px; display: flex; gap: 12px; }
 
-/* ── 미니 데모 애니메이션 (말풍선 안, 자체완결) ── */
-.ob-demo { display: none; }
-.ob-demo.on { display: block; margin-bottom: 12px; }
-.ob-demo-stage {
-  position: relative;
-  height: 96px;
-  border-radius: 12px;
-  background: radial-gradient(120% 120% at 50% 0%, rgba(106,64,224,.12), rgba(255,255,255,.02));
-  border: 1px solid var(--border, rgba(255,255,255,.08));
-  overflow: hidden;
+.mk-rail {
+  width: 66px; flex: none; background: #0c0a12; border: 1px solid rgba(255,255,255,.05);
+  border-radius: 14px; padding: 11px 5px; display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
-/* 미니 제품 사진(보틀형 실루엣) — 순수 CSS */
-.ob-prod { position: relative; background: linear-gradient(160deg,#2f2a44,#201b33); overflow: hidden; }
-.ob-prod::before { content:''; position:absolute; left:50%; top:16%; width:16%; height:13%; transform:translateX(-50%); border-radius:2px 2px 0 0; background:#cdb6f0; }  /* 뚜껑 */
-.ob-prod::after  { content:''; position:absolute; left:50%; top:28%; width:46%; height:52%; transform:translateX(-50%); border-radius:7px; background:#cdb6f0; }  /* 본체 */
+.mk-logo { width: 28px; height: 28px; border-radius: 9px; background: linear-gradient(135deg,#6a40e0,#a37bff); margin-bottom: 4px; flex: none; }
+.mk-nav { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #6a6879; }
+.mk-nav .ic { width: 22px; height: 22px; border-radius: 7px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.mk-nav .lb { font-size: 7.5px; font-weight: 600; letter-spacing: .02em; }
+.mk-nav.on { color: #d7c6f7; }
+.mk-nav.on .ic { background: rgba(106,64,224,.3); box-shadow: inset 0 0 0 1px rgba(106,64,224,.5); color: #d7c6f7; }
 
-/* Upload 데모 */
-.ob-demo-upload .ob-add {
-  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-  width:60px; height:60px; border-radius:12px;
-  border:2px dashed rgba(205,182,240,.5); display:flex; align-items:center; justify-content:center;
-  color:rgba(205,182,240,.7); font-size:26px; font-weight:300;
-}
-.ob-demo-upload .ob-photo {
-  position:absolute; left:50%; top:50%; width:56px; height:56px; border-radius:11px;
-  animation: ob-drop 3s ease-in-out infinite;
-}
-.ob-demo-upload .ob-check {
-  position:absolute; left:calc(50% + 20px); top:calc(50% - 30px);
-  width:20px; height:20px; border-radius:50%; background:#39d98a; color:#06210f;
-  font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center;
-  opacity:0; animation: ob-check 3s ease-in-out infinite;
-}
-@keyframes ob-drop {
-  0%   { transform:translate(calc(-50% + 96px), calc(-50% - 62px)) scale(.5); opacity:0; }
-  35%  { transform:translate(-50%,-50%) scale(1); opacity:1; }
-  75%  { transform:translate(-50%,-50%) scale(1); opacity:1; }
-  90%,100% { transform:translate(-50%,-50%) scale(1); opacity:0; }
-}
-@keyframes ob-check { 0%,38%{opacity:0;transform:scale(.4)} 48%,78%{opacity:1;transform:scale(1)} 88%,100%{opacity:0} }
+.mk-main { flex: 1; min-width: 0; display: flex; }
+/* 실제 컴포즈 카드 레이아웃 재현 */
+.mk-card { flex: 1; background: #0f0c17; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 15px; display: flex; flex-direction: column; gap: 11px; box-sizing: border-box; }
 
-/* Pick 데모 */
-.ob-demo-pick .ob-row {
-  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-  display:flex; gap:10px;
-}
-.ob-demo-pick .ob-thumb { width:44px; height:60px; border-radius:9px; border:1.5px solid transparent; }
-.ob-demo-pick .ob-thumb.sel { animation: ob-select 3s ease-in-out infinite; }
-.ob-demo-pick .ob-cursor {
-  position:absolute; left:50%; top:78%; font-size:18px; color:#fff;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
-  animation: ob-tap 3s ease-in-out infinite;
-}
-.ob-demo-pick .ob-badge {
-  position:absolute; left:calc(50% + 14px); top:calc(50% - 34px);
-  width:18px; height:18px; border-radius:50%; background:#39d98a; color:#06210f;
-  font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;
-  opacity:0; animation: ob-check 3s ease-in-out infinite;
-}
-@keyframes ob-tap {
-  0%   { transform:translate(40px, 20px) scale(1); opacity:0; }
-  25%  { transform:translate(0,0) scale(1); opacity:1; }
-  40%  { transform:translate(0,0) scale(.82); }      /* 클릭 */
-  55%  { transform:translate(0,0) scale(1); opacity:1; }
-  85%,100% { transform:translate(0,0) scale(1); opacity:0; }
-}
-@keyframes ob-select {
-  0%,38%   { border-color:transparent; }
-  50%,80%  { border-color:var(--accent,#6a40e0); box-shadow:0 0 0 2px rgba(106,64,224,.3); }
-  92%,100% { border-color:transparent; box-shadow:none; }
-}
-.ob-tip-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ob-tip-actions .ob-spacer { flex: 1; }
+.mk-btn { display: flex; align-items: center; gap: 11px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px 14px; color: #e6e4f0; font-size: 12.5px; font-weight: 600; background: rgba(255,255,255,.02); }
+.mk-btn .mk-bic { width: 24px; height: 24px; border-radius: 7px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #a29fb3; flex: none; }
+.mk-product { align-self: flex-start; padding-right: 20px; }
+.mk-btxt { display: flex; flex-direction: column; gap: 2px; }
+.mk-btxt b { font-size: 12.5px; }
+.mk-btxt i { font-size: 10px; color: #8f8da0; font-style: normal; font-weight: 500; }
 
-.ob-tip button {
-  font: inherit;
-  cursor: pointer;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  transition: background .15s, border-color .15s, opacity .15s;
-}
-.ob-skip {
-  background: transparent;
-  color: rgba(237, 236, 245, .5);
-  padding: 7px 4px !important;
-}
-.ob-skip:hover { color: rgba(237, 236, 245, .85); }
-.ob-back {
-  background: transparent;
-  color: rgba(237, 236, 245, .8);
-  border-color: var(--border, rgba(255, 255, 255, .12)) !important;
-}
-.ob-back:hover { background: rgba(255, 255, 255, .06); }
-.ob-next {
-  background: var(--accent, #6a40e0);
-  color: #fff;
-}
-.ob-next:hover { opacity: .9; }
+.mk-set { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 14px; }
+.mk-fg { display: flex; align-items: center; gap: 6px; }
+.mk-fg em { font-size: 8px; letter-spacing: .06em; color: #6a6879; font-weight: 700; font-style: normal; }
+.mk-rt { width: 14px; height: 17px; border: 1.4px solid rgba(255,255,255,.18); border-radius: 3px; }
+.mk-rt.sq { height: 14px; }
+.mk-rt.tall { width: 11px; height: 18px; }
+.mk-rt.sel { border-color: var(--accent,#6a40e0); box-shadow: 0 0 0 1px rgba(106,64,224,.4); }
+.mk-tile { font-size: 9px; font-weight: 600; color: #c3c1d0; border: 1.4px solid rgba(255,255,255,.14); border-radius: 6px; padding: 5px 8px; }
+.mk-tile.sel { border-color: var(--accent,#6a40e0); color: #fff; background: rgba(106,64,224,.15); }
+.mk-pill { font-size: 9.5px; font-weight: 600; color: #d2d0de; border: 1px solid rgba(255,255,255,.13); border-radius: 7px; padding: 5px 9px; }
+.mk-pill.acc { background: var(--accent,#6a40e0); color: #fff; border-color: transparent; }
+.mk-priv { display: flex; align-items: center; gap: 7px; margin-left: auto; font-size: 9.5px; color: #a29fb3; font-weight: 600; }
+.mk-tg i { width: 24px; height: 13px; border-radius: 7px; background: rgba(255,255,255,.14); position: relative; display: block; }
+.mk-tg i::after { content:''; position:absolute; top:2px; left:2px; width:9px; height:9px; border-radius:50%; background:#fff; }
 
-/* 플로우 선택 메뉴 */
-.ob-menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
+.mk-div { height: 1px; background: rgba(255,255,255,.07); margin: 1px 0; }
+.mk-foot { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+.mk-prompt { font-size: 11px; color: #6f6d84; }
+.mk-sp { flex: 1; }
+.mk-gen { font-size: 11px; font-weight: 700; color: #fff; background: var(--accent, #6a40e0); border-radius: 9px; padding: 9px 17px; }
+
+/* Custom 화면 목업 전용 요소 */
+.mk-upbox { width: 56px; height: 56px; position: relative; align-self: flex-start; border: 1.5px dashed rgba(205,182,240,.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: rgba(205,182,240,.4); font-size: 16px; }
+.mk-upbox .mk-upplus { position: absolute; right: -6px; bottom: -6px; width: 19px; height: 19px; border-radius: 50%; background: var(--accent,#6a40e0); color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+.mk-customline { font-size: 11px; color: #8f8da0; }
+.mk-customline b { color: #a98bff; font-weight: 700; }
+.mk-pbox { font-size: 11px; color: #6f6d84; background: #16121f; border: 1px solid rgba(255,255,255,.08); border-radius: 11px; padding: 16px 14px; }
+.mk-negline { font-size: 9.5px; color: #8f8da0; font-weight: 600; }
+.mk-ghost { font-size: 10px; font-weight: 600; color: #b7b5c6; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 8px 12px; }
+.mk-tg i.on { background: var(--accent,#6a40e0); }
+.mk-tg i.on::after { left: 13px; }
+
+/* 줌 레이어: 스텝마다 target 요소로 확대·이동(카메라). 히어로=뷰포트(overflow hidden) */
+.ob-stage { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform;
+  transition: transform .55s cubic-bezier(.4,0,.2,1); }
+/* 현재 스텝 요소 강조 링 (확대된 상태에서 표시) */
+.mk-active { box-shadow: 0 0 0 2px var(--accent,#6a40e0), 0 0 0 6px rgba(106,64,224,.22); border-radius: 9px; position: relative; z-index: 2; }
+
+/* ── 본문 ── */
+.ob-modal-body { padding: 22px 26px 20px; }
+.ob-count { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent, #6a40e0); font-weight: 700; margin-bottom: 9px; }
+.ob-title { font-size: 22px; font-weight: 750; line-height: 1.2; margin-bottom: 8px; }
+.ob-body { font-size: 15px; line-height: 1.55; color: rgba(237,236,245,.8); margin-bottom: 20px; }
+
+.ob-actions { display: flex; align-items: center; gap: 10px; }
+.ob-dots { display: flex; gap: 6px; }
+.ob-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.2); transition: all .2s; }
+.ob-dot.on { background: var(--accent, #6a40e0); width: 20px; border-radius: 4px; }
+.ob-spacer { flex: 1; }
+.ob-actions button { font: inherit; cursor: pointer; border-radius: 11px; border: 1px solid transparent; padding: 10px 18px; font-size: 14px; font-weight: 600; transition: all .15s; }
+.ob-skip { background: transparent; color: rgba(237,236,245,.5); padding: 10px 6px !important; }
+.ob-skip:hover { color: rgba(237,236,245,.85); }
+.ob-back { background: transparent; color: rgba(237,236,245,.8); border-color: var(--border, rgba(255,255,255,.14)) !important; }
+.ob-back:hover { background: rgba(255,255,255,.06); }
+.ob-next { background: var(--accent, #6a40e0); color: #fff; }
+.ob-next:hover { filter: brightness(1.08); }
+
+/* ── 플로우 선택 메뉴(모달) ── */
+.ob-menu-wrap { padding: 26px; }
+.ob-menu-h { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent, #6a40e0); font-weight: 700; margin-bottom: 8px; }
+.ob-menu-title { font-size: 22px; font-weight: 750; margin-bottom: 18px; }
+.ob-menu-list { display: flex; flex-direction: column; gap: 10px; }
 .ob-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  text-align: left;
-  padding: 12px 14px !important;
-  border-radius: 11px !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, .1)) !important;
-  background: rgba(255, 255, 255, .03);
-  color: var(--text, #edecf5);
-  font-size: 14px !important;
-  font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left;
+  padding: 16px 18px; border-radius: 13px;
+  border: 1px solid var(--border, rgba(255,255,255,.1)); background: rgba(255,255,255,.03);
+  color: var(--text, #edecf5); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s;
 }
-.ob-menu-item:hover {
-  background: rgba(106, 64, 224, .14);
-  border-color: var(--accent, #6a40e0) !important;
-}
-.ob-menu-item .ob-arrow { color: var(--accent, #6a40e0); font-size: 18px; line-height: 1; }
+.ob-menu-item:hover { background: rgba(106,64,224,.14); border-color: var(--accent, #6a40e0); }
+.ob-menu-item .ob-arrow { color: var(--accent, #6a40e0); font-size: 20px; line-height: 1; }
+.ob-menu-close { margin-top: 14px; text-align: right; }
 
-/* 헤더 "?" 도움말 버튼 */
+/* ── 헤더 "?" 도움말 버튼 ── */
 .ob-help-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  border: 1px solid var(--border, rgba(255, 255, 255, .14));
-  background: transparent;
-  color: rgba(237, 236, 245, .7);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--border, rgba(255,255,255,.14)); background: transparent;
+  color: rgba(237,236,245,.7); font-size: 15px; font-weight: 700; cursor: pointer; transition: all .15s;
 }
-.ob-help-btn:hover {
-  color: var(--text, #edecf5);
-  border-color: var(--accent, #6a40e0);
-  background: rgba(106, 64, 224, .12);
-}
+.ob-help-btn:hover { color: var(--text, #edecf5); border-color: var(--accent, #6a40e0); background: rgba(106,64,224,.12); }
 
-@media (max-width: 640px) {
-  .ob-tip { padding: 15px 15px 12px; }
-  .ob-tip-title { font-size: 16px; }
+@media (max-width: 560px) {
+  .ob-hero { height: 240px; }
+  .ob-title { font-size: 20px; }
+  .ob-modal-body { padding: 18px 18px 16px; }
+  .mk-tpls i { width: 28px; height: 40px; }
 }
