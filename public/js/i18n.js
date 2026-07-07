@@ -108,7 +108,7 @@
     'Create product content →': '제품 콘텐츠 만들기 →', 'See how it works': '작동 방식 보기', '10 free credits': '무료 크레딧 10개',
     'on sign-up · No credit card required': '가입 시 · 신용카드 불필요', 'How it works': '작동 방식', 'Three steps. Zero prompts.': '세 단계. 프롬프트 제로.',
     'Upload your product': '제품 업로드', 'Generate & post': '생성 후 게시', 'Built for product content': '제품 콘텐츠를 위해 설계됨',
-    'Fashion': '패션', 'Beauty': '뷰티', 'Jewelry': '주얼리', 'Food & Cafe': '푸드 & 카페', 'Home & Living': '홈 & 리빙',
+    'Fashion': '패션', 'Beauty': '뷰티', 'Cosmetics': '화장품', 'Accessories': '악세서리', 'Jewelry': '주얼리', 'Food & Cafe': '푸드 & 카페', 'Home & Living': '홈 & 리빙',
     'Tech': '테크', 'Pet': '펫', '＋ more': '＋ 더보기', 'Pricing': '요금제', 'Start free. Scale when you grow.': '무료로 시작하고, 성장하면 확장하세요.',
     'Get started': '시작하기', 'Start creating': '제작 시작', 'Industries': '산업군', 'For business': '비즈니스용',
     'Sell on Doppia': 'Doppia에서 판매', 'About': '소개', 'Blog': '블로그', 'Careers': '채용', 'Legal': '법적 고지',

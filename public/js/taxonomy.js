@@ -27,18 +27,15 @@
         slug: 'apparel', label: 'Apparel', active: true, // 의류
         verticals: ['fashion', 'productcut', 'studiomodel'], // 이 카테고리에 속한 기존 recipe.vertical
         contentTypes: [
+          // (2026-07-08 사용자 지시: lookbook·fabric·editorial·video 콘텐츠타입 삭제. product-cut·on-model만 유지.)
           { slug: 'product-cut', label: 'Product Cut', match: { vertical: ['productcut'] } }, // 제품컷
           { slug: 'on-model',    label: 'On-model',    match: { category: ['OnModel'] } },     // 착용컷
-          { slug: 'lookbook',    label: 'Lookbook',    match: { category: ['Lifestyle'] } },   // 룩북(잠정)
-          { slug: 'fabric-cut',  label: 'Fabric',      match: { category: ['Detail'] } },       // 원단컷(잠정)
-          { slug: 'editorial',   label: 'Editorial',   match: { category: ['Editorial'] } },    // 화보
-          { slug: 'video',       label: 'Video',       match: { category: ['Reel'] } },         // 영상
         ],
       },
-      // 뷰티·기타(General) — 비파괴용(파일럿). 콘텐츠타입 미큐레이션 → auto:true 로 데이터에서 자동 도출.
+      // 화장품(Cosmetics) — 비파괴용(파일럿). 콘텐츠타입 미큐레이션 → auto:true 로 데이터에서 자동 도출.
       //   나중에 여기 contentTypes:[…] 로 큐레이션하면 자동 도출 대체됨.
-      { slug: 'beauty',  label: 'Beauty',  active: true, verticals: ['beauty'],  auto: true }, // 뷰티
-      { slug: 'general', label: 'General', active: true, verticals: ['general'], auto: true },  // 기타
+      //   (2026-07-08 사용자 지시: Beauty→Cosmetics 라벨 변경 / General 카테고리 삭제. slug는 매핑·딥링크 위해 'beauty' 유지.)
+      { slug: 'beauty',  label: 'Cosmetics',  active: true, verticals: ['beauty'],  auto: true }, // 화장품
 
       // 네일 — 공식(프롬프트 기반) 템플릿 전용 카테고리. 콘텐츠타입은 테마 slug(nail-base/nail-template)와 1:1로,
       //   studio가 /owned label_themes로부터 카드에 vertical:'nail'+category:'NailBase'|'NailTemplate'를 스탬프 → 스위처가 매칭.
@@ -50,6 +47,10 @@
           { slug: 'nail-template', label: 'Nail Template', match: { category: ['NailTemplate'] } },
         ],
       },
+
+      // 악세서리(Accessories) — 2026-07-08 사용자 지시로 신설. 콘텐츠타입 미큐레이션 → auto:true(데이터에서 자동 도출).
+      //   accessories vertical 레시피가 생기면 자동 노출. 지금은 빈 카테고리 칩(향후 템플릿 대비).
+      { slug: 'accessories', label: 'Accessories', active: true, verticals: ['accessories'], auto: true },
 
       // 향후 추가 예정(예시 — 지금은 비활성):
       // { slug:'jewelry', label:'주얼리', active:false, verticals:['jewelry'],
