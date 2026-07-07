@@ -115,22 +115,27 @@
 .mk-creact { font-size: 9.5px; font-weight: 600; color: #b7b5c6; border: 1px solid rgba(255,255,255,.12); border-radius: 7px; padding: 5px 9px; }
 .mk-creact.ct { color: #cdb6f0; border-color: rgba(106,64,224,.5); background: rgba(106,64,224,.1); }
 
-.mk-ctmodal { background: #14101d; border: 1px solid rgba(255,255,255,.09); border-radius: 14px; padding: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
-.mk-cth { font-size: 13px; font-weight: 700; color: #f0eef7; margin-bottom: 11px; }
-.mk-ctgrid { display: flex; gap: 14px; }
+.mk-ctmodal { background: #14101d; border: 1px solid rgba(255,255,255,.09); border-radius: 16px; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+.mk-cth { font-size: 15px; font-weight: 700; color: #f0eef7; }
+.mk-ctsub { font-size: 10.5px; color: #8f8da0; margin: 4px 0 14px; }
+.mk-ctgrid { display: flex; gap: 18px; }
 .mk-ctc { flex: 1; min-width: 0; }
 .mk-ctlbl { font-size: 8px; letter-spacing: .06em; text-transform: uppercase; color: #6a6879; font-weight: 700; margin: 0 0 5px; }
-.mk-ctc .mk-ctlbl:not(:first-child) { margin-top: 10px; }
-.mk-ctcover { height: 96px; border-radius: 9px; background: linear-gradient(160deg,#2f2a44,#201b33); position: relative; }
+.mk-ctc .mk-ctlbl:not(:first-child) { margin-top: 11px; }
+.mk-ctlblsub { text-transform: none; letter-spacing: 0; color: #5a5869; font-weight: 500; }
+.mk-ctcover { height: 92px; width: 68px; border-radius: 9px; background: linear-gradient(160deg,#2f2a44,#201b33); position: relative; }
 .mk-ctcover::before { content:''; position:absolute; left:50%; top:22%; width:16%; height:12%; transform:translateX(-50%); border-radius:2px 2px 0 0; background:#cdb6f0; }
 .mk-ctcover::after { content:''; position:absolute; left:50%; top:32%; width:42%; height:44%; transform:translateX(-50%); border-radius:6px; background:#cdb6f0; }
-.mk-ctinp { font-size: 10.5px; color: #d2d0de; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 8px 10px; }
+.mk-ctinp { font-size: 10.5px; color: #d2d0de; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 9px 11px; }
+.mk-cttext { font-size: 10px; color: #c3c1d0; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 9px 11px; line-height: 1.4; }
+.mk-ctinp.ph, .mk-cttext.ph { color: #6a6879; }
 .mk-ctthemes { display: flex; gap: 6px; flex-wrap: wrap; }
-.mk-cchip { font-size: 9px; font-weight: 600; color: #b7b5c6; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 5px 10px; }
+.mk-cchip { font-size: 9px; font-weight: 600; color: #b7b5c6; border: 1px solid rgba(255,255,255,.14); border-radius: 13px; padding: 5px 11px; }
 .mk-cchip.sel { border-color: var(--accent,#6a40e0); color: #fff; background: rgba(106,64,224,.18); }
-.mk-ctfoot { display: flex; justify-content: flex-end; align-items: center; gap: 9px; margin-top: 12px; }
-.mk-ctcancel { font-size: 10px; font-weight: 600; color: #8f8da0; }
-.mk-ctsave { font-size: 10.5px; font-weight: 700; color: #fff; background: var(--accent,#6a40e0); border-radius: 8px; padding: 8px 15px; }
+.mk-cchip.new { color: var(--accent2,#a98bff); border-color: rgba(124,108,255,.4); }
+.mk-ctfoot { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.mk-ctcancel { font-size: 11px; font-weight: 600; color: #b7b5c6; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: 10px 20px; }
+.mk-ctsave { flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: #fff; background: var(--accent,#6a40e0); border-radius: 10px; padding: 10px 15px; }
 
 /* 줌 레이어: 스텝마다 target 요소로 확대·이동(카메라). 히어로=뷰포트(overflow hidden).
    높이는 목업 콘텐츠(갤러리 포함) 만큼 → 아래 요소까지 팬 가능. */

@@ -38,7 +38,7 @@
       '<div class="mk-btn mk-tplbtn" id="mk-template"><span class="mk-bic">▦</span><span class="mk-btxt"><b>Pick a template</b><i>Choose a look below — no prompt needed</i></span></div>' +
       SETTINGS +
       '<div class="mk-div"></div>' +
-      '<div class="mk-foot"><span class="mk-prompt">write your own prompt</span><span class="mk-sp"></span><span class="mk-gen" id="mk-generate">Generate</span></div>' +
+      '<div class="mk-foot"><span class="mk-prompt" id="mk-writeprompt">write your own prompt</span><span class="mk-sp"></span><span class="mk-gen" id="mk-generate">Generate</span></div>' +
     '</div>' +
     '<div class="mk-gallery" id="mk-gallery">' +
       '<div class="mk-gh">Pick a template</div>' +
@@ -76,12 +76,19 @@
     '</div>' +
     '<div class="mk-ctmodal">' +
       '<div class="mk-cth">Create template</div>' +
+      '<div class="mk-ctsub">Save this look as a private template in your Studio. Only you can see and use it.</div>' +
       '<div class="mk-ctgrid">' +
-        '<div class="mk-ctc"><div class="mk-ctlbl">Cover</div><div class="mk-ctcover"></div></div>' +
+        '<div class="mk-ctc">' +
+          '<div class="mk-ctlbl">Cover</div><div class="mk-ctcover"></div>' +
+          '<div class="mk-ctlbl">Prompt <span class="mk-ctlblsub">(what generates the image)</span></div>' +
+          '<div class="mk-cttext">a serum bottle on wet stone</div>' +
+        '</div>' +
         '<div class="mk-ctc">' +
           '<div class="mk-ctlbl">Template name</div><div class="mk-ctinp" id="mk-ctname">My template</div>' +
-          '<div class="mk-ctlbl">Category</div><div class="mk-ctinp">Shopping ▾</div>' +
-          '<div class="mk-ctlbl">Themes</div><div class="mk-ctthemes" id="mk-ctthemes"><span class="mk-cchip sel">General</span><span class="mk-cchip">Beauty</span><span class="mk-cchip">Fashion</span></div>' +
+          '<div class="mk-ctlbl">Description <span class="mk-ctlblsub">(optional)</span></div><div class="mk-cttext ph">e.g. Editorial marble backdrop…</div>' +
+          '<div class="mk-ctlbl">Category</div><div class="mk-ctinp ph">Select a category… ▾</div>' +
+          '<div class="mk-ctlbl">Themes <span class="mk-ctlblsub">(pick at least one)</span></div>' +
+          '<div class="mk-ctthemes" id="mk-ctthemes"><span class="mk-cchip">Beauty</span><span class="mk-cchip">Fashion</span><span class="mk-cchip">General</span><span class="mk-cchip">Nail</span><span class="mk-cchip new">+ New theme</span></div>' +
         '</div>' +
       '</div>' +
       '<div class="mk-ctfoot"><span class="mk-ctcancel">Cancel</span><span class="mk-ctsave" id="mk-ctsave">Save template</span></div>' +
@@ -108,6 +115,8 @@
       label: 'Write your own prompt',
       mock: MOCK_CUSTOM,
       steps: [
+        { mock: MOCK_TEMPLATE, target: 'mk-writeprompt', title: 'Switch to Custom',
+          body: 'On the main screen, click "write your own prompt" to switch to Custom mode.' },
         { target: 'mk-product', title: 'Add a reference (optional)',
           body: 'Select a product photo so results stay true to it — or skip it and go text-only.' },
         { target: 'mk-prompt', title: 'Write your prompt',
@@ -136,7 +145,7 @@
   };
   var PRIMARY = 'template';
 
-  var root = null, steps = [], idx = 0, currentMock = MOCK_TEMPLATE;
+  var root = null, steps = [], idx = 0, currentMock = MOCK_TEMPLATE, flowMock = MOCK_TEMPLATE;
 
   function makeRoot() {
     root = document.createElement('div');
@@ -186,6 +195,15 @@
     for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i === idx);
     root.querySelector('.ob-back').style.display = idx === 0 ? 'none' : '';
     root.querySelector('.ob-next').textContent = idx >= steps.length - 1 ? 'Got it' : 'Next';
+    // 스텝별 목업 전환(예: Custom 플로우 1단계=템플릿 화면 → 2단계부터 Custom 화면).
+    var want = s.mock || flowMock;
+    if (want !== currentMock) {
+      currentMock = want;
+      var stage = root.querySelector('.ob-stage');
+      stage.style.transition = 'none'; stage.style.transform = 'none'; // 새 화면은 전체 보기에서 시작
+      stage.innerHTML = want;
+      geom = {}; measureGeom();
+    }
     reposition();
   }
 
@@ -263,7 +281,9 @@
     var flow = FLOWS[flowId] || FLOWS[PRIMARY];
     if (!flow) return;
     if (!root) makeRoot();
-    steps = flow.steps; idx = 0; geom = {}; currentMock = flow.mock || MOCK_TEMPLATE;
+    steps = flow.steps; idx = 0; geom = {};
+    flowMock = flow.mock || MOCK_TEMPLATE;
+    currentMock = steps[0].mock || flowMock;   // 첫 스텝 목업(스텝별 오버라이드 지원)
     buildFlowShell();
     // 레이아웃 정착 후 좌표 측정 → 첫 스텝으로 줌인
     setTimeout(function () { measureGeom(); renderStep(); }, 60);
