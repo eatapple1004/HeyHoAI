@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=7" defer></script>
+<script src="/js/i18n.js?v=8" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=7" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -104,6 +104,14 @@
   .cut-card .cc-thumb{display:block;width:100%;height:84px;background-size:cover;background-position:center}
   .cut-card .cc-label{display:block;padding:6px 5px;font-size:11.5px;font-weight:600;text-align:center;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cut-card.on .cc-label{color:#fff;background:var(--accent)}
+  /* 배경색(hex) 입력 — Flat Lay·Ghost Mannequin 컷 전용 */
+  .cut-bg{display:none;align-items:center;gap:9px;margin-top:12px}
+  .cut-bg.show{display:flex}
+  .cut-bg .cbg-lbl{font-size:11.5px;font-weight:600;color:var(--dim)}
+  .cut-bg .cbg-inp{width:112px;padding:7px 10px;border-radius:9px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--text);font-family:inherit;font-size:13px;letter-spacing:.6px;text-transform:uppercase}
+  .cut-bg .cbg-inp::placeholder{text-transform:none;letter-spacing:0;color:var(--faint)}
+  .cut-bg .cbg-inp:focus{outline:none;border-color:var(--accent)}
+  .cut-bg .cbg-sw{width:22px;height:22px;border-radius:6px;border:1px solid var(--border2);background:transparent}
   /* ▲▲▲ 테스트 흡수 블록 끝 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
@@ -2059,6 +2067,12 @@ function syncDefaultCut(){const r=curRecipe();state.cutId=(r&&r.cuts&&r.cuts.len
 function setCut(id){state.cutId=id;syncTplTrigger();} // 컷 전환 — 컴포즈 칩만 다시 그림
 function cutLabel(n){return String(n||'').replace(/\s*Cut$/,'');} // "Flat Lay Cut" → "Flat Lay"
 
+// ── 컷 배경색(hex) — Flat Lay·Ghost Mannequin 컷만 지원 ──
+const BG_CUTS=new Set(['flat-lay-cut','ghost-mannequin-cut']);
+function normHexColor(v){ if(!v)return ''; const s=String(v).trim().replace(/^#/,''); return (/^[0-9a-fA-F]{3}$/.test(s)||/^[0-9a-fA-F]{6}$/.test(s))?'#'+s.toLowerCase():''; }
+function cutBgActive(){ return BG_CUTS.has(state.cutId)?normHexColor(state.cutBg):''; } // 선택 컷이 지원+유효 hex면 반환
+function onCutBgInput(el){ state.cutBg=el.value; const sw=document.getElementById('rmCutBgSw'); if(sw)sw.style.background=normHexColor(el.value)||'transparent'; }
+
 // 템플릿 설명(서버 rationale) 캐시 + 상세 모달
 let RECIPE_DESC={};
 async function loadRecipeDesc(){
@@ -2078,24 +2092,31 @@ function setModalPreview(r){
   if(img){ pv.style.background=grad; pv.innerHTML=''; const im=new Image(); im.alt=''; im.style.cssText='width:100%;height:100%;object-fit:cover;display:block'; im.onerror=ph; im.src=img; pv.appendChild(im); }
   else ph();
 }
-function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));setModalPreview(modalRecipeObj);}
+function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));const bg=document.getElementById('rmCutBg');if(bg)bg.classList.toggle('show',BG_CUTS.has(id));setModalPreview(modalRecipeObj);}
 function renderModalCuts(r){
   const cw=document.getElementById('rmCuts'); if(!cw)return;
   if(r&&r.cuts&&r.cuts.length){
     modalCutId=(state.recipeId===r.id&&state.cutId)?state.cutId:r.cuts[0].id; // 재오픈 시 기존 선택 유지
     cw.style.display='';
+    const bgVal=(state.recipeId===r.id)?(state.cutBg||''):''; // 재오픈 시 기존 배경색 유지
     cw.innerHTML=`<span class="cut-lbl">Cut type — pick one</span><div class="cut-row">`
       +r.cuts.map(ct=>{
         const img=ct.preview||('/img/productcut/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
         return `<button type="button" data-cut="${ct.id}" class="cut-card${modalCutId===ct.id?' on':''}" onclick="setModalCut('${ct.id}')">`
           +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
           +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`; }).join('')
+      +`</div>`
+      +`<div class="cut-bg${BG_CUTS.has(modalCutId)?' show':''}" id="rmCutBg">`
+        +`<span class="cbg-lbl">Background color</span>`
+        +`<input type="text" id="rmCutBgInput" class="cbg-inp" maxlength="7" placeholder="#RRGGBB" autocomplete="off" spellcheck="false" value="${esc(bgVal)}" oninput="onCutBgInput(this)">`
+        +`<span class="cbg-sw" id="rmCutBgSw"></span>`
       +`</div>`;
+    const bgi=document.getElementById('rmCutBgInput'); if(bgi)onCutBgInput(bgi); // 스와치 초기화
   }else{ modalCutId=null; cw.style.display='none'; cw.innerHTML=''; }
 }
 function openRecipeModal(id){
   // 이미 선택된 카드를 다시 클릭하면 모달 없이 선택만 해제
-  if(state.recipeId===id){state.recipeId=null;state.detail=null;renderRecipes();updateBar();return;}
+  if(state.recipeId===id){state.recipeId=null;state.detail=null;state.cutBg=null;renderRecipes();updateBar();return;}
   const r=(TEMPLATES[state.mode]||[]).find(x=>x.id===id);if(!r)return;
   modalRecipeId=id;
   const dt=document.getElementById('rmDetail'); if(dt)dt.value=''; // 새 템플릿 → Add detail 초기화
@@ -2117,6 +2138,8 @@ function selectFromModal(){
   state.detail=sel?(dt?dt.value.trim():''):''; // 선택 시 Add detail 저장, 해제 시 클리어
   syncDefaultCut();
   if(sel&&modalCutId)state.cutId=modalCutId; // 모달에서 고른 컷 반영
+  const bgi=document.getElementById('rmCutBgInput');
+  state.cutBg=(sel&&BG_CUTS.has(state.cutId)&&bgi)?bgi.value:''; // 지원 컷 선택 시만 배경색 유지
   renderRecipes();updateBar();closeRecipeModal();
   if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
 }
@@ -2127,7 +2150,7 @@ function toggleTemplatePicker(){
   g.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeTemplatePicker(){}
-function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;renderRecipes();updateBar();}
+function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;state.cutBg=null;renderRecipes();updateBar();}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
   const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open'))closeRecipeModal();
@@ -2712,6 +2735,8 @@ async function resolvePromptFor(r,subj){
   }
   const extra=extraPromptText();
   if(extra)base.prompt=base.prompt?base.prompt+', '+extra:extra; // 템플릿 프롬프트 + 사용자 추가분 (템플릿 없으면 프롬프트만)
+  const bg=cutBgActive(); // 컷 배경색(Flat Lay·Ghost Mannequin) — 기본 배경 위에 정확한 hex 지정
+  if(bg)base.prompt=base.prompt?base.prompt+', set against a seamless solid-color background of exactly '+bg:'seamless solid-color background of exactly '+bg;
   return base;
 }
 async function generateImages(r,subj,count,pending){

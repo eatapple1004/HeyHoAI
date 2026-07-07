@@ -49,6 +49,7 @@
     'Reference': '레퍼런스', 'Options': '옵션', 'Negative': '네거티브', 'Negative prompt': '네거티브 프롬프트',
     'Type a prompt...': '프롬프트를 입력하세요...', 'Type a negative...': '네거티브를 입력하세요...',
     'Add detail (optional)': '디테일 추가 (선택)', 'Add your own touch — e.g. red dress, golden hour, soft smile': '나만의 터치 추가 — 예: 레드 드레스, 골든아워, 부드러운 미소',
+    'Cut type — pick one': '컷 유형 — 하나 선택', 'Cut type': '컷 유형', 'Background color': '배경색',
     'Generating… this takes ~20s': '생성 중… 약 20초 소요', 'Enhance': '향상', 'Try it': '체험하기',
     'Upload an image': '이미지 업로드', 'Upload a clear selfie — we keep your identity across every shot.': '선명한 셀피를 올려주세요 — 모든 컷에서 동일한 정체성을 유지합니다.',
     'Upload a product photo — we keep it consistent across scenes.': '제품 사진을 올려주세요 — 모든 장면에서 일관되게 유지합니다.',
