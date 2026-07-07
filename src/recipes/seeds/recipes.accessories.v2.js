@@ -362,9 +362,11 @@ module.exports = [
   },
 
   // ════════════════════════════════════════════════════════════════════════
-  // 패밀리 2b · Jewelry On Model (모델 착용컷) — 얼굴 O, 모델 픽커 (studiomodel 패턴)
-  //   meta.picker='model' → Studio가 모델 로스터(80) + 배경 픽커 렌더. 선택 모델 얼굴이 나옴.
-  //   자식 컷 없음(부모 1장). 과금 = full 모델(얼굴) 합성 → ◈5(studiomodel과 동일).
+  // 패밀리 2b · Jewelry On Model (모델 착용컷) — 얼굴 O, 모델 픽커 + 악세서리 종류 컷
+  //   meta.picker='model' → Studio가 모델 로스터(80) + 배경 픽커 렌더(선택 모델 얼굴 O).
+  //   + cuts 4종(악세서리 종류) → 모달에 종류 선택 그리드 동시 렌더. 컷이 착용 부위를 명시해
+  //     오인식(귀걸이→반지) 제거. 전 컷 상반신 뷰티 포트레이트 고정(전신 제외, 주얼리 크게 보이게).
+  //   과금 = full 모델(얼굴) 합성 → ◈5(studiomodel과 동일). 컷+picker 공존은 studio 검증됨.
   // ════════════════════════════════════════════════════════════════════════
   {
     "mode": "product",
@@ -374,11 +376,12 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 5,
     "sort_order": 11,
-    "rationale": "Put your jewelry on a real-looking model — face and all. Upload one piece, pick a house model and a background, and get aspirational beauty-portrait shots with the model wearing your jewelry. The exact piece is locked to the reference; the chosen model's face is shown. For a faceless body-part crop use 'Jewelry Worn Cut' instead.",
+    "rationale": "Put your jewelry on a real-looking model — face and all. Pick your accessory type (earrings, necklace, ring or bracelet), a house model and a background, and get aspirational upper-body beauty-portrait shots with the model wearing your piece where it belongs. The exact piece is locked to the reference; the chosen model's face is shown. Default type is earrings. For a faceless body-part crop use 'Jewelry Worn Cut' instead.",
     "meta": {
       "picker": "model",
+      "cuts": ["jewelry-on-model-earrings", "jewelry-on-model-necklace", "jewelry-on-model-ring", "jewelry-on-model-bracelet"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "On-model composite with face: the selected roster model image is passed as an identity reference alongside the uploaded jewelry; the chosen background (studio default or a scene) is injected. The model wears the piece (earrings on ears, necklace on neckline, ring on hand near the face). Verify no jewelry morph, correct anatomy (hands/ears) and no identity drift from the model reference before delivery."
+      "render_notes": "On-model composite with face + accessory-type cut. The selected roster model image is passed as an identity reference alongside the uploaded jewelry; the chosen background is injected. The cut fixes WHERE the piece is worn (earrings→ears, necklace→neckline, ring→hand near face, bracelet→wrist) so it is never mistaken for another type. All framings are waist-up upper-body portraits — never full body. Verify no jewelry morph, correct anatomy (hands/ears) and no identity drift before delivery."
     },
     "config": {
       "schema_version": 1,
@@ -400,15 +403,131 @@ module.exports = [
           "color:neutral_true",
           "texture:natural_skin"
         ],
-        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded jewelry, the exact same piece locked to the reference — metal, gemstones and setting identical with no morph or drift, natural realistic fit on the body (earrings on the ear, necklace on the neckline, ring or bracelet on the hand), relaxed natural model pose and soft expression, flattering beauty light, the jewelry tack-sharp with shallow depth of field, true-to-life skin, clean editorial styling, a single well-formed pair of hands with exactly five natural fingers each when hands are shown",
-        "extra_negative": "warped or melted metal, mismatched stone, doubled piece, deformed or extra fingers, malformed hands, fused or deformed ears, distorted face, identity drift from the model reference, plastic skin, floating jewelry, blown highlights, cluttered distracting background, logos, text, watermark"
+        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded jewelry, waist-up upper-body beauty portrait framing that keeps the jewelry large and clearly visible, the exact same piece locked to the reference — metal, gemstones and setting identical with no morph or drift, relaxed natural model pose and soft expression, flattering beauty light, the jewelry tack-sharp with shallow depth of field, true-to-life skin, clean editorial styling, a single well-formed pair of hands with exactly five natural fingers each when hands are shown",
+        "extra_negative": "full body, full-length shot, legs, feet, distant wide shot with tiny jewelry, wrong jewelry type, warped or melted metal, mismatched stone, doubled piece, deformed or extra fingers, malformed hands, fused or deformed ears, distorted face, identity drift from the model reference, plastic skin, floating jewelry, blown highlights, cluttered distracting background, logos, text, watermark"
       },
       "shot_strategy": "list",
       "shots": [
-        { "scene": "chosen setting", "pose": "model beauty portrait front-facing, relaxed, featuring the worn jewelry", "composition": "medium_shot" },
-        { "scene": "chosen setting", "pose": "model at a slight three-quarter turn showing the piece in wear", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "model waist-up beauty portrait front-facing, relaxed, featuring the worn jewelry", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "model upper-body at a slight three-quarter turn showing the piece in wear", "composition": "medium_shot" },
         { "scene": "chosen setting", "pose": "tighter beauty crop on the worn area with the model's expression", "composition": "closeup" },
-        { "scene": "chosen setting", "pose": "editorial portrait stance featuring the jewelry", "composition": "medium_shot" }
+        { "scene": "chosen setting", "pose": "upper-body editorial portrait stance featuring the jewelry", "composition": "medium_shot" }
+      ]
+    }
+  },
+
+  // ─── 자식 2b-1 · On Model Earrings (귀걸이) ──────────────────────────────
+  {
+    "mode": "product",
+    "vertical": "accessories",
+    "category": "On Model",
+    "name": "Jewelry On Model Earrings",
+    "output_type": "image_set",
+    "credit_cost": 5,
+    "sort_order": 12,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Model wears EARRINGS on the ears — waist-up beauty portrait. Verify the piece reads as earrings (not a ring/necklace), natural ears, no full body." },
+    "rationale": "Model wearing your earrings — upper-body beauty portrait beside the face.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "jewelry-on-model",
+      "look": {
+        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded earrings on both ears, waist-up upper-body beauty portrait framing the face and ears so the earrings are clearly featured beside the jawline, hair softly styled back to reveal the ears, the earrings tack-sharp and locked to the reference, relaxed natural expression, flattering beauty light, true skin, clean editorial styling",
+        "extra_negative": "full body, legs, feet, ring, necklace, bracelet, worn on the wrong body part, wrong jewelry type, doubled earring, deformed or fused ears, distorted face, plastic skin, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "chosen setting", "pose": "waist-up front beauty portrait, earrings featured beside the face", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "slight three-quarter turn highlighting one earring's drop", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "tight beauty crop on the ear and earring with the model's expression", "composition": "closeup" },
+        { "scene": "chosen setting", "pose": "upper-body editorial stance, hair back, both earrings visible", "composition": "medium_shot" }
+      ]
+    }
+  },
+
+  // ─── 자식 2b-2 · On Model Necklace (목걸이) ──────────────────────────────
+  {
+    "mode": "product",
+    "vertical": "accessories",
+    "category": "On Model",
+    "name": "Jewelry On Model Necklace",
+    "output_type": "image_set",
+    "credit_cost": 5,
+    "sort_order": 13,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Model wears a NECKLACE on the neckline — waist-up portrait. Verify the piece reads as a necklace (not earrings/ring), natural neckline, no full body." },
+    "rationale": "Model wearing your necklace — upper-body portrait on the neckline.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "jewelry-on-model",
+      "look": {
+        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded necklace on the neckline and décolletage, waist-up upper-body beauty portrait framing the neck and chest so the necklace is clearly featured, the necklace tack-sharp and locked to the reference, chain draping naturally along the collarbone, relaxed natural expression, flattering beauty light, true skin, clean editorial styling",
+        "extra_negative": "full body, legs, feet, earrings as the focus, ring, bracelet, worn on the wrong body part, wrong jewelry type, doubled pendant, broken or morphed chain, distorted neck, plastic skin, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "chosen setting", "pose": "waist-up front portrait, necklace centered on the neckline", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "slight three-quarter turn showing the chain drape", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "closer crop on the neckline and pendant with the model's expression", "composition": "closeup" },
+        { "scene": "chosen setting", "pose": "upper-body editorial stance featuring the necklace", "composition": "medium_shot" }
+      ]
+    }
+  },
+
+  // ─── 자식 2b-3 · On Model Ring (반지) ────────────────────────────────────
+  {
+    "mode": "product",
+    "vertical": "accessories",
+    "category": "On Model",
+    "name": "Jewelry On Model Ring",
+    "output_type": "image_set",
+    "credit_cost": 5,
+    "sort_order": 14,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Model wears a RING on a finger, hand raised near the face — waist-up portrait. Verify five natural fingers, the piece reads as a ring, no full body." },
+    "rationale": "Model wearing your ring — upper-body portrait with the hand raised near the face.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "jewelry-on-model",
+      "look": {
+        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded ring on a finger, waist-up upper-body beauty portrait with one hand raised gracefully near the face or chin so the ring is clearly featured, a single well-formed hand with exactly five natural fingers and neat nails, the ring tack-sharp and locked to the reference, relaxed natural expression, flattering beauty light, true skin, clean editorial styling",
+        "extra_negative": "full body, legs, feet, earrings, necklace as the focus, bracelet, worn on the wrong body part, wrong jewelry type, deformed or extra fingers, six fingers, malformed hand, warped ring, plastic skin, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "chosen setting", "pose": "waist-up portrait, hand raised near the cheek featuring the ring", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "hand resting under the chin, ring toward camera", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "tight crop on the hand and ring near the face", "composition": "closeup" },
+        { "scene": "chosen setting", "pose": "upper-body editorial stance, hand elegantly framing the face", "composition": "medium_shot" }
+      ]
+    }
+  },
+
+  // ─── 자식 2b-4 · On Model Bracelet (팔찌) ────────────────────────────────
+  {
+    "mode": "product",
+    "vertical": "accessories",
+    "category": "On Model",
+    "name": "Jewelry On Model Bracelet",
+    "output_type": "image_set",
+    "credit_cost": 5,
+    "sort_order": 15,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Model wears a BRACELET on the wrist, hand raised near the shoulder/face — waist-up portrait. Verify natural wrist/hand, the piece reads as a bracelet, no full body." },
+    "rationale": "Model wearing your bracelet — upper-body portrait with the wrist raised.",
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "jewelry-on-model",
+      "look": {
+        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded bracelet on the wrist, waist-up upper-body beauty portrait with the hand and wrist raised gracefully near the shoulder or face so the bracelet is clearly featured wrapping the wrist, a single well-formed hand with exactly five natural fingers, the bracelet tack-sharp and locked to the reference, relaxed natural expression, flattering beauty light, true skin, clean editorial styling",
+        "extra_negative": "full body, legs, feet, earrings, necklace as the focus, ring as the focus, worn on the wrong body part, wrong jewelry type, deformed wrist, extra fingers, malformed hand, morphed or broken bracelet, plastic skin, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "chosen setting", "pose": "waist-up portrait, wrist raised near the shoulder featuring the bracelet", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "hand near the collarbone, bracelet wrapping the wrist toward camera", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "tight crop on the wrist and bracelet", "composition": "closeup" },
+        { "scene": "chosen setting", "pose": "upper-body editorial stance, wrist elegantly featured", "composition": "medium_shot" }
       ]
     }
   },

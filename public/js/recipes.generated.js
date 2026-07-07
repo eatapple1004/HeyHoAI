@@ -3820,6 +3820,28 @@
         "held": true,
         "emoji": "🖼️",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)",
+        "cuts": [
+          {
+            "id": "jewelry-on-model-earrings",
+            "name": "Jewelry On Model Earrings",
+            "preview": null
+          },
+          {
+            "id": "jewelry-on-model-necklace",
+            "name": "Jewelry On Model Necklace",
+            "preview": null
+          },
+          {
+            "id": "jewelry-on-model-ring",
+            "name": "Jewelry On Model Ring",
+            "preview": null
+          },
+          {
+            "id": "jewelry-on-model-bracelet",
+            "name": "Jewelry On Model Bracelet",
+            "preview": null
+          }
+        ],
         "picker": "model"
       },
       {

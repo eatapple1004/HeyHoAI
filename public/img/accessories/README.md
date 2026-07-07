@@ -16,7 +16,11 @@
 | | 컷 · On Neck | `jewelry-on-neck.png` | 〃 |
 | | 컷 · On Ears | `jewelry-on-ears.png` | 〃 |
 | | 컷 · On Wrist | `jewelry-on-wrist.png` | 〃 |
-| **On Model** (모델 픽커·얼굴 O) | 부모 카드 | `jewelry-on-model.png` | 그리드 카드 썸네일 (컷 없음, 모달=모델/배경 픽커) |
+| **On Model** (모델 픽커·얼굴 O·상반신) | 부모 카드 | `jewelry-on-model.png` | 그리드 카드 썸네일 (모달=종류 컷 + 모델/배경 픽커) |
+| | 컷 · Earrings | `jewelry-on-model-earrings.png` | 모달 종류 선택 미리보기 |
+| | 컷 · Necklace | `jewelry-on-model-necklace.png` | 〃 |
+| | 컷 · Ring | `jewelry-on-model-ring.png` | 〃 |
+| | 컷 · Bracelet | `jewelry-on-model-bracelet.png` | 〃 |
 | **Hero** | 부모 카드 | `jewelry-hero.png` | 그리드 카드 썸네일 |
 | | 스타일 · Noir Gold | `jewelry-noir-gold.png` | 모달 스타일 선택 미리보기 |
 | | 스타일 · Marble Plinth | `jewelry-marble-plinth.png` | 〃 |
