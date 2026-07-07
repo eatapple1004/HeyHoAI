@@ -301,13 +301,16 @@
     start(PRIMARY);
   }
   function injectHelpButton() {
-    var bar = document.querySelector('.topbar');
-    if (!bar || document.querySelector('.ob-help-btn')) return;
+    if (document.querySelector('.ob-help-btn')) return;
+    var host = document.querySelector('.gen-bar') || document.querySelector('.topbar'); // 컴포즈 카드 우상단(빨간원), 없으면 헤더
+    if (!host) return;
+    var inCompose = host.classList.contains('gen-bar');
     var btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'ob-help-btn';
-    btn.title = 'How Studio works'; btn.setAttribute('aria-label', 'How Studio works');
-    btn.textContent = '?'; btn.addEventListener('click', openHelp);
-    bar.appendChild(btn);
+    btn.type = 'button'; btn.className = 'ob-help-btn' + (inCompose ? ' ob-in-compose' : '');
+    btn.title = 'Doppia guide — how Studio works'; btn.setAttribute('aria-label', 'Doppia guide');
+    btn.innerHTML = '<span class="ob-help-q">?</span><span class="ob-help-tx">doppia guide</span>';
+    btn.addEventListener('click', openHelp);
+    host.appendChild(btn);
   }
 
   window.Onboarding = {

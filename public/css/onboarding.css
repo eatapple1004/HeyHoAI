@@ -179,13 +179,18 @@
 .ob-menu-close { margin-top: 14px; text-align: right; }
 
 /* ── 헤더 "?" 도움말 버튼 ── */
+/* 헤더 우측 "doppia guide" 필 (그 왼쪽 브랜드 로고와 짝) */
 .ob-help-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 50%;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 6px; border-radius: 999px;
   border: 1px solid var(--border, rgba(255,255,255,.14)); background: transparent;
-  color: rgba(237,236,245,.7); font-size: 15px; font-weight: 700; cursor: pointer; transition: all .15s;
+  color: rgba(237,236,245,.7); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all .15s;
 }
-.ob-help-btn:hover { color: var(--text, #edecf5); border-color: var(--accent, #6a40e0); background: rgba(106,64,224,.12); }
+.ob-help-btn:hover { color: var(--text, #edecf5); border-color: var(--accent, #6a40e0); background: rgba(106,64,224,.1); }
+.ob-help-q { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; flex: none; border-radius: 50%; border: 1px solid currentColor; font-size: 10px; font-weight: 700; }
+.ob-help-tx { white-space: nowrap; letter-spacing: .01em; }
+/* 컴포즈 카드(.gen-bar) 안 우상단 배치 */
+.ob-help-btn.ob-in-compose { position: absolute; top: 14px; right: 16px; z-index: 6; }
 
 @media (max-width: 560px) {
   .ob-hero { height: 240px; }
