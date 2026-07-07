@@ -120,9 +120,12 @@
   .model-sel .ms-filters,.cut-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
   .model-sel .ms-chip,.cut-sel .ms-chip{padding:5px 12px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
   .model-sel .ms-chip.on,.cut-sel .ms-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .ax-row{margin:0 0 12px}
-  .ax-row .ax-lbl{display:block;font-size:12px;font-weight:700;color:var(--dim);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+  .ax-row{margin:0 0 14px}
+  .ax-row .ax-lbl{display:block;font-size:12px;font-weight:700;color:var(--dim);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
   .ax-row .ms-filters{margin-bottom:0}
+  .ax-row .cut-row{display:flex;flex-wrap:wrap;gap:8px}
+  .ax-swatch{width:72px}
+  .ax-swatch .cc-thumb{height:44px}
   .model-sel .ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;max-height:300px;overflow-y:auto;padding:2px}
   .model-card{padding:0;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border2);background:rgba(255,255,255,.03);transition:border-color .14s,box-shadow .14s;font-family:inherit}
   .model-card:hover{border-color:var(--accent)}
@@ -2212,15 +2215,24 @@ function cutGridHtml(r){ return cutsForFilter(r,modalCutFilter).map(ct=>cutCardH
 function setCutFilter(v){ modalCutFilter=v; const g=document.getElementById('rmCutRow'); if(g&&modalRecipeObj)g.innerHTML=cutGridHtml(modalRecipeObj); document.querySelectorAll('#rmCuts .ms-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cf')===v)); }
 
 // ── 축 픽커 (Worn Cut: 피부색·나이·컨셉) — card.axes 있을 때만. 시드 변형 아니라 프롬프트 주입형(생성 시 append). ──
-// 각 항목 [value, label, promptPhrase]. 'auto'/'studio'=기본(주입 없음).
+// 각 항목 [value, label, promptPhrase, visual]. 'auto'/'studio'=기본(주입 없음).
+//   mode='swatch' → 색상 스와치 카드(visual=CSS 색상). mode='card' → 사진 썸네일 카드(visual=이미지 경로). mode='chip' → 텍스트 칩.
 const AXIS_DEFS={
-  skin:{title:'Skin tone',attr:'sk',opts:[['auto','Auto',''],['fair','Fair','fair porcelain skin'],['light','Light','light skin'],['medium','Medium','medium warm skin'],['tan','Tan','tan sun-kissed skin'],['deep','Deep','deep rich skin']]},
-  age:{title:'Age',attr:'ag',opts:[['auto','Auto',''],['20s','20s','youthful young-adult skin'],['30s','30s','natural skin in the 30s'],['40s','40s','mature refined skin in the 40s'],['50s','50s+','graceful mature senior skin']]},
-  concept:{title:'Concept',attr:'cn',opts:[['studio','Studio',''],['daylight','Daylight','in soft natural daylight with an airy bright mood'],['warm','Warm','warm editorial lighting with a cozy premium mood'],['marble','Marble','on a pale marble surface with a bright gallery-luxe mood'],['noir','Noir','against a dark backdrop with a warm rim light and a noir luxe mood'],['golden','Golden','in golden-hour warm sunlight with a glowing mood']]},
+  skin:{title:'Skin tone',attr:'sk',mode:'swatch',opts:[['auto','Auto','','linear-gradient(135deg,#f4dcc7,#7c5233)'],['fair','Fair','fair porcelain skin','#f2d9c4'],['light','Light','light skin','#e6bf9c'],['medium','Medium','medium warm skin','#cf9e70'],['tan','Tan','tan sun-kissed skin','#b07a4e'],['deep','Deep','deep rich skin','#7c5233']]},
+  age:{title:'Age',attr:'ag',mode:'chip',opts:[['auto','Auto',''],['20s','20s','youthful young-adult skin'],['30s','30s','natural skin in the 30s'],['40s','40s','mature refined skin in the 40s'],['50s','50s+','graceful mature senior skin']]},
+  concept:{title:'Concept',attr:'cn',mode:'card',opts:[['studio','Studio','','/img/accessories/concept-studio.png'],['daylight','Daylight','in soft natural daylight with an airy bright mood','/img/accessories/concept-daylight.png'],['warm','Warm','warm editorial lighting with a cozy premium mood','/img/accessories/concept-warm.png'],['marble','Marble','on a pale marble surface with a bright gallery-luxe mood','/img/accessories/concept-marble.png'],['noir','Noir','against a dark backdrop with a warm rim light and a noir luxe mood','/img/accessories/concept-noir.png'],['golden','Golden','in golden-hour warm sunlight with a glowing mood','/img/accessories/concept-golden.png']]},
 };
 const AXIS_ORDER=['skin','age','concept'];
 const AXIS_DEFAULT={skin:'auto',age:'auto',concept:'studio'};
 let modalAxis={skin:'auto',age:'auto',concept:'studio'};
+function axisOptHtml(k,d,o,cur){
+  const on=cur===o[0]?' on':'';
+  if(d.mode==='swatch'){ const bg=o[3]||'#888';
+    return `<button type="button" class="cut-card ax-swatch${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
+  if(d.mode==='card'){ const grad='linear-gradient(150deg,#7c6cff,#5ee0d6)'; const bg=o[3]?`url('${esc(o[3])}') center/cover no-repeat, ${grad}`:grad;
+    return `<button type="button" class="cut-card${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
+  return `<button type="button" class="ms-chip${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')">${esc(o[1])}</button>`;
+}
 function renderModalAxes(r){
   const w=document.getElementById('rmAxes'); if(!w)return;
   const axes=(r&&r.axes)||[];
@@ -2230,8 +2242,9 @@ function renderModalAxes(r){
   w.style.display='';
   w.innerHTML=axes.filter(k=>AXIS_DEFS[k]).map(k=>{
     const d=AXIS_DEFS[k];
-    const chips=d.opts.map(o=>`<button type="button" class="ms-chip${modalAxis[k]===o[0]?' on':''}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')">${esc(o[1])}</button>`).join('');
-    return `<div class="ax-row"><span class="ax-lbl">${esc(d.title)}</span><div class="ms-filters">${chips}</div></div>`;
+    const opts=d.opts.map(o=>axisOptHtml(k,d,o,modalAxis[k])).join('');
+    const wrap=(d.mode==='chip')?`<div class="ms-filters">${opts}</div>`:`<div class="cut-row">${opts}</div>`;
+    return `<div class="ax-row"><span class="ax-lbl">${esc(d.title)}</span>${wrap}</div>`;
   }).join('');
 }
 function setModalAxis(k,v){ modalAxis[k]=v; const d=AXIS_DEFS[k]; if(!d)return; document.querySelectorAll('#rmAxes [data-'+d.attr+']').forEach(b=>b.classList.toggle('on',b.getAttribute('data-'+d.attr)===v)); }
@@ -2269,8 +2282,9 @@ function openRecipeModal(id){
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
   modalRecipeObj=r;
   const _isModel=(r.picker==='model');
-  const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.toggle('wide',_isModel); // Model Cut = 좌우로 넓게
-  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_isModel?'none':''; // 픽커가 시각요소라 상단 샘플 플레이스홀더 숨김
+  const _hasAxes=!!(r.axes&&r.axes.length);
+  const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.toggle('wide',_isModel||_hasAxes); // Model Cut·축 카드 = 좌우로 넓게(잘림 방지)
+  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_isModel?'none':''; // 픽커만 상단 샘플 숨김(축 카드는 프리뷰 유지)
   renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
   renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
   renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
