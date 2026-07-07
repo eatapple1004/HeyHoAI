@@ -3169,23 +3169,8 @@
             "preview": null
           },
           {
-            "id": "hanger-cut",
-            "name": "Hanger Cut",
-            "preview": null
-          },
-          {
             "id": "ghost-mannequin-cut",
             "name": "Ghost Mannequin Cut",
-            "preview": null
-          },
-          {
-            "id": "styled-object-cut",
-            "name": "Styled Object Cut",
-            "preview": null
-          },
-          {
-            "id": "detail-cut",
-            "name": "Detail Cut",
             "preview": null
           }
         ]

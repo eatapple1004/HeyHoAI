@@ -1,17 +1,15 @@
 # Product Cut — 예시 이미지 (오피셜)
 
-제품컷 템플릿(부모 + 컷 5종)의 예시 사진을 여기에 둡니다. 파일명 = 레시피 id, 확장자 `.png`.
+제품컷 템플릿(부모 + 컷 2종)의 예시 사진을 여기에 둡니다. 파일명 = 레시피 id, 확장자 `.png`.
 없으면 UI가 자동으로 그라디언트 placeholder("Sample image coming soon")로 폴백하므로 깨지지 않습니다.
+(2026-07-08 옷걸이·오브제·디테일 컷 제거 — 배경색 지정 지원 컷 2종만 유지. 옛 파일 `hanger-cut.png`·`styled-object-cut.png`·`detail-cut.png`는 미사용.)
 
 ## 파일명 (정확히 이 이름으로)
 | 슬롯 | 파일 | 노출 위치 |
 |---|---|---|
 | 부모 카드 | `product-cut.png` | 그리드 카드 썸네일 · 컴포즈 칩 |
 | 바닥컷 | `flat-lay-cut.png` | 모달 컷 선택 시 미리보기 |
-| 옷걸이컷 | `hanger-cut.png` | 〃 |
 | 고스트컷 | `ghost-mannequin-cut.png` | 〃 |
-| 오브제컷 | `styled-object-cut.png` | 〃 |
-| 디테일컷 | `detail-cut.png` | 〃 |
 
 권장: 4:5 비율(카드/모달 미리보기와 동일), 세로형.
 

@@ -138,7 +138,7 @@ _없음_
 
 **productcut**
 - Product Cut [experimental,needs_human_review]
-- 파라미터형: 부모 1 + 컷 5 (개수/가격사다리 휴리스틱 면제)
+- 파라미터형: 부모 1 + 컷 2 (개수/가격사다리 휴리스틱 면제)
 
 ## 🅣 텍스트 오버레이 (text_overlay)
 **beauty**: Before/After Result Reel · Ingredient Claim Card

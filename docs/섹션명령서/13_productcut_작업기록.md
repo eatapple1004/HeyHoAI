@@ -1,5 +1,7 @@
 # 13 · 제품컷(Product Cut) — 작업기록
 
+> **⚠️ 2026-07-08 갱신 — 컷 5종 → 2종.** 옷걸이(Hanger)·오브제(Styled Object)·디테일(Detail) 컷 제거, **바닥(Flat Lay)·고스트(Ghost Mannequin)만 유지**(배경색 #hex 지정 지원 컷). 시드에서 자식 3개 삭제 + 부모 `meta.cuts` 2종 + rationale 갱신 → consolidate·contract·export 재실행(recipes.generated.js v8→v9). 총계 불변(부모 1). 아래 5종 기록은 히스토리.
+>
 > 신규 오피셜 테마 **productcut** + **중첩 템플릿(부모 1 + 컷 5종 자식)** 신설.
 > 설계 결정: [../제품컷_중첩템플릿_설계결정_2026-07-05.md](../제품컷_중첩템플릿_설계결정_2026-07-05.md)
 > 착수 세션: 2026-07-05. 상태: **로컬 데이터/파이프라인/백엔드 배선 완료 · drift OK · 순수함수 검증 통과**. 미배포.

@@ -1,8 +1,9 @@
 /**
  * Doppia recipe seed — Product Cut (product mode), v2.
- * 새 오피셜 테마 "productcut" · 부모 1 템플릿 + 컷 5종 자식(파라미터형 중첩).
+ * 새 오피셜 테마 "productcut" · 부모 1 템플릿 + 컷 2종 자식(파라미터형 중첩).
  * 설계 결정: docs/제품컷_중첩템플릿_설계결정_2026-07-05.md
- *   - 컷 5종(바닥/옷걸이/고스트/오브제/디테일) = 테마 X · 5템플릿 X → "제품컷" 부모의 세부옵션.
+ *   - 컷 2종(바닥/고스트) = 테마 X · 2템플릿 X → "제품컷" 부모의 세부옵션.
+ *     (2026-07-08 옷걸이·오브제·디테일 컷 제거 — 배경색 지정 지원 컷만 유지.)
  *   - 데이터: 자식마다 config.parent_id='product-cut' → recipeResolver deepMerge(parent→child).
  *     자식은 shots·look만 오버라이드하고 output/subject 등 공통은 부모 상속(배열은 통째 교체됨).
  *   - 자식 숨김 신호 = config.parent_id 존재(별도 hidden 플래그 없음). 카드 리스트/컨트랙트/list()에서
@@ -32,9 +33,9 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 2,
     "sort_order": 1,
-    "rationale": "One flat garment photo into a clean e-commerce product cut. Sellers pick a cut type (flat lay, hanger, ghost mannequin, styled object, macro detail) and get catalog-ready shots with no model or studio. The default cut is a neutral floor flat lay; the cut selector swaps in a specialized child recipe.",
+    "rationale": "One flat garment photo into a clean e-commerce product cut. Sellers pick a cut type (flat lay or ghost mannequin) and get catalog-ready shots with no model or studio. The default cut is a neutral floor flat lay; the cut selector swaps in a specialized child recipe.",
     "meta": {
-      "cuts": ["flat-lay-cut", "hanger-cut", "ghost-mannequin-cut", "styled-object-cut", "detail-cut"],
+      "cuts": ["flat-lay-cut", "ghost-mannequin-cut"],
       "flags": ["experimental", "needs_human_review"],
       "render_notes": "Parent = shared base + default flat-lay. Cut children inherit output/subject and override shots + look. Ghost mannequin (hollow-body) is high AI-risk — queue for human QA."
     },
@@ -100,35 +101,7 @@ module.exports = [
     }
   },
 
-  // ─── 자식 2 · 옷걸이컷 (Hanger) ─────────────────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "productcut",
-    "category": "ProductCut",
-    "name": "Hanger Cut",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 3,
-    "rationale": "Garment hung on a clean hanger against a seamless backdrop — natural vertical drape.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "product-cut",
-      "look": {
-        "extra_positive": "garment hung on a simple matte hanger against a light grey seamless backdrop, natural vertical drape and fall, front-facing catalog framing, soft even studio light, true fabric weight and stitching",
-        "extra_negative": "visible model, human body, mannequin, warped hanger, garment floating without hanger, cluttered rail, harsh shadow"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "light grey seamless backdrop", "pose": "garment on a slim hanger, front-facing, natural drape", "composition": "full_body" },
-        { "scene": "same backdrop, soft floor shadow", "pose": "garment on hanger at a slight three-quarter turn showing side drape", "composition": "full_body" },
-        { "scene": "neutral grey backdrop, tighter framing", "pose": "upper garment and shoulder line on hanger, collar detail", "composition": "medium_shot" },
-        { "scene": "light grey backdrop, close crop", "pose": "hem and fabric fall detail on hanger", "composition": "closeup" }
-      ]
-    }
-  },
-
-  // ─── 자식 3 · 고스트컷 (Ghost Mannequin) ────────────────────────────────
+  // ─── 자식 2 · 고스트컷 (Ghost Mannequin) ────────────────────────────────
   {
     "mode": "product",
     "vertical": "productcut",
@@ -136,7 +109,7 @@ module.exports = [
     "name": "Ghost Mannequin Cut",
     "output_type": "image_set",
     "credit_cost": 2,
-    "sort_order": 4,
+    "sort_order": 3,
     "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Hollow-body invisible-mannequin effect is high AI-risk — verify no phantom body parts before delivery." },
     "rationale": "Invisible-mannequin (hollow body) effect — garment holds its 3D shape with no visible model.",
     "config": {
@@ -153,68 +126,6 @@ module.exports = [
         { "scene": "same backdrop, subtle floor shadow", "pose": "hollow garment at three-quarter turn showing dimensional drape", "composition": "full_body" },
         { "scene": "neutral grey backdrop", "pose": "back view of hollow garment showing inside back neckline", "composition": "full_body" },
         { "scene": "light grey backdrop, tighter crop", "pose": "collar and shoulder structure of the hollow form", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ─── 자식 4 · 오브제컷 (Styled Object) ──────────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "productcut",
-    "category": "ProductCut",
-    "name": "Styled Object Cut",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 5,
-    "rationale": "Garment styled as a composed object with minimal props — editorial still-life mood.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "product-cut",
-      "look": {
-        "style_preset": "Film",
-        "extra_positive": "styled still-life product photography, the garment folded or draped as a composed object with minimal tasteful props and negative space, editorial catalog mood, warm soft directional light with gentle shadow, tactile fabric texture, muted neutral palette",
-        "extra_negative": "visible model, mannequin, hanger, busy clutter, loud competing colors, garment distortion"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "warm neutral surface with soft directional light", "pose": "garment folded into a neat styled stack, hero angle", "composition": "medium_shot" },
-        { "scene": "same surface with one minimal prop and shadow", "pose": "garment loosely draped with an accent object nearby", "composition": "medium_shot" },
-        { "scene": "muted backdrop, negative space", "pose": "garment as a single composed object, off-center with room to breathe", "composition": "full_body" },
-        { "scene": "warm surface, close crop", "pose": "folded edge and fabric texture detail", "composition": "closeup" }
-      ]
-    }
-  },
-
-  // ─── 자식 5 · 디테일컷 (Macro Detail) ───────────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "productcut",
-    "category": "ProductCut",
-    "name": "Detail Cut",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 6,
-    "rationale": "Macro close-ups of fabric, stitching and hardware — texture and quality proof shots.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "product-cut",
-      "look": {
-        "attributes": [
-          "texture:fabric_weave",
-          "lighting:studio_softbox",
-          "color:neutral_true"
-        ],
-        "extra_positive": "extreme macro product detail photography, razor-sharp close-ups of fabric weave, stitching, seams, buttons and hardware, shallow depth of field, raking soft light revealing texture, true material color, pristine clean surface",
-        "extra_negative": "visible model, mannequin, whole garment wide shot, soft blur on the subject, dust, lint, harsh glare"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "macro on the primary fabric surface", "pose": "close-up of the weave and texture with raking light", "composition": "closeup" },
-        { "scene": "macro on a seam line", "pose": "close-up of stitching and seam construction", "composition": "closeup" },
-        { "scene": "macro on hardware", "pose": "close-up of buttons, zipper or clasp detail", "composition": "closeup" },
-        { "scene": "macro on the collar or cuff", "pose": "close-up of edge finishing and label area", "composition": "closeup" }
       ]
     }
   }
