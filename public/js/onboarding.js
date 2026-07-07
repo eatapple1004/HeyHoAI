@@ -61,6 +61,32 @@
       '<div class="mk-foot"><span class="mk-sp"></span><span class="mk-ghost">Create template</span><span class="mk-gen" id="mk-generate">Generate</span></div>' +
     '</div>');
 
+  // My templates 저장 화면 목업 (Your creations 결과 + Create template 모달)
+  var MOCK_SAVE = wrap(
+    '<div class="mk-cre">' +
+      '<div class="mk-crehead">Your creations</div>' +
+      '<div class="mk-crerow">' +
+        '<div class="mk-crethumb"></div>' +
+        '<div class="mk-cremeta">' +
+          '<span class="mk-crebadge">✎ Custom</span>' +
+          '<div class="mk-creprompt">a serum bottle on wet stone</div>' +
+          '<div class="mk-creacts"><span class="mk-creact">⧉ Copy prompt</span><span class="mk-creact ct" id="mk-ctbtn">＋ Create template</span></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mk-ctmodal">' +
+      '<div class="mk-cth">Create template</div>' +
+      '<div class="mk-ctgrid">' +
+        '<div class="mk-ctc"><div class="mk-ctlbl">Cover</div><div class="mk-ctcover"></div></div>' +
+        '<div class="mk-ctc">' +
+          '<div class="mk-ctlbl">Template name</div><div class="mk-ctinp" id="mk-ctname">My template</div>' +
+          '<div class="mk-ctlbl">Category</div><div class="mk-ctinp">Shopping ▾</div>' +
+          '<div class="mk-ctlbl">Themes</div><div class="mk-ctthemes" id="mk-ctthemes"><span class="mk-cchip sel">General</span><span class="mk-cchip">Beauty</span><span class="mk-cchip">Fashion</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="mk-ctfoot"><span class="mk-ctcancel">Cancel</span><span class="mk-ctsave" id="mk-ctsave">Save template</span></div>' +
+    '</div>');
+
   var FLOWS = {
     // ── Flow 1: 템플릿으로 만들기 ──
     template: {
@@ -91,8 +117,22 @@
         { target: 'mk-generate', title: 'Generate',
           body: 'Hit Generate. Your custom product shots appear below.' }
       ]
+    },
+    // ── Flow 3: 생성 결과를 My templates로 저장 ──
+    save: {
+      label: 'Save a creation as a template',
+      mock: MOCK_SAVE,
+      steps: [
+        { target: 'mk-ctbtn', title: 'Turn a creation into a template',
+          body: 'In Your creations, click + Create template on any image or reel you love.' },
+        { target: 'mk-ctname', title: 'Name & category',
+          body: 'Give it a name and pick a category so it is easy to reuse.' },
+        { target: 'mk-ctthemes', title: 'Pick themes',
+          body: 'Choose at least one theme — it groups the template in your Studio.' },
+        { target: 'mk-ctsave', title: 'Save',
+          body: 'Save — it is now in My templates, ready to reuse anytime. No prompt needed next time.' }
+      ]
     }
-    // ── (예정) Flow 3: 릴 만들기 등은 여기 추가 ──
   };
   var PRIMARY = 'template';
 

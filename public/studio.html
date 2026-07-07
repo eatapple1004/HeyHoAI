@@ -9,12 +9,12 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
-<link rel="stylesheet" href="/css/onboarding.css?v=18" />
+<link rel="stylesheet" href="/css/onboarding.css?v=19" />
 <script src="/js/i18n.js?v=5" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=7" defer></script>
 <script src="/js/flags.js" defer></script>
-<script src="/js/onboarding.js?v=18" defer></script>
+<script src="/js/onboarding.js?v=19" defer></script>
 <style>
   .wrap{max-width:none;margin:0;padding:34px 24px 210px;position:relative;z-index:2}/* (2026-07-03) full-bleed(Library/Community/Store와 통일). gen-bar는 position:fixed 중앙(1032px)라 독립. 롤백: max-width:1080px;margin:0 auto;padding:36px 24px 210px */
 
@@ -599,6 +599,14 @@
           .mg-thmbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
           .mg-thmbtn.lock{border-color:var(--border2);color:var(--faint);cursor:default;background:transparent}
           #recipeGrid.mg-list{display:block!important}/* 관리 뷰: #recipeGrid 자체가 .recipe-grid(grid)라 그룹 헤더/중첩그리드가 흩어짐 → block으로 정상 스택 */
+          /* (2026-07-07) Manage 상단 Store CTA — 컴팩트 프리미엄 버튼 */
+          .mg-store-cta{display:inline-flex;align-items:center;gap:9px;padding:8px 13px;margin:6px 0 2px;border-radius:11px;text-decoration:none;color:var(--text);cursor:pointer;
+            font-size:13px;font-weight:600;letter-spacing:.2px;
+            border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.025);transition:border-color .16s,background .16s,transform .16s}
+          .mg-store-cta:hover{border-color:rgba(124,108,255,.55);background:rgba(124,108,255,.08);transform:translateY(-1px)}
+          .mg-store-ic{display:flex;color:var(--accent2,#a98bff)}
+          .mg-store-arrow{color:var(--faint);font-size:14px;transition:color .16s,transform .16s}
+          .mg-store-cta:hover .mg-store-arrow{color:var(--accent2,#a98bff);transform:translateX(2px)}
           .recipe-card.hl{outline:2px solid var(--accent);outline-offset:2px;animation:mgFlash 2.2s ease}
           @keyframes mgFlash{0%,100%{outline-color:var(--accent)}50%{outline-color:transparent}}
           /* ▲ */
@@ -1981,7 +1989,12 @@ function renderManageGrid(){
   const sec=(title,sub,arr,empty)=>`<div class="mg-sec">${title}<span class="mg-sub">${sub}</span></div>`+(arr.length?`<div class="recipe-grid">${arr.map(mgCard).join('')}</div>`:`<div class="cth-empty">${empty}</div>`);
   const grid=document.getElementById('recipeGrid');
   grid.classList.add('mg-list'); // #recipeGrid를 block으로(그룹 스택). 일반 renderRecipes에서 remove.
+  const storeCta=`<a class="mg-store-cta" href="/store" title="Browse the Store for new looks">`+
+    `<span class="mg-store-ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 8.5 4.6 4h14.8l1.4 4.5"/><path d="M4 8.5v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-10"/><path d="M3.2 8.5h17.6a2.4 2.4 0 0 1-4.8 0 2.4 2.4 0 0 1-4.8 0 2.4 2.4 0 0 1-4.8 0 2.4 2.4 0 0 1-3.2 0Z"/><path d="M9.5 19.5v-5h5v5"/></svg></span>`+
+    `Get more templates`+
+    `<span class="mg-store-arrow">→</span></a>`;
   grid.innerHTML =
+    storeCta +
     sec('In Studio','shows in your Studio picker',inStudio,'Nothing here yet — add templates from Library only below (↑), or from the Store.') +
     sec('Library only','owned · parked out of Studio',parked,'Empty. Hover a card above and hit ↓ to park it here.');
   renderPremium();
