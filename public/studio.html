@@ -939,6 +939,7 @@
     <div class="rm-desc" id="rmDesc"></div>
     <div id="rmCuts" class="cut-sel" style="display:none;margin:16px 0 0;max-width:none"></div>
     <div id="rmModels" class="model-sel" style="display:none;margin:16px 0 0"></div>
+    <div id="rmBackgrounds" class="model-sel" style="display:none;margin:16px 0 0"></div>
     <label for="rmDetail" style="display:block;font-size:12px;color:var(--dim);margin:14px 0 6px">Add detail (optional)</label>
     <textarea id="rmDetail" maxlength="300" placeholder="Add your own touch — e.g. red dress, golden hour, soft smile" style="width:100%;min-height:60px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:14px"></textarea>
     <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">Use this template</button>
@@ -987,10 +988,11 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=10"></script>
+<script src="/js/recipes.generated.js?v=11"></script>
 <script src="/js/themes.js?v=4"></script>
 <script src="/js/taxonomy.js?v=3"></script>
 <script src="/js/models.roster.js?v=1"></script>
+<script src="/js/backgrounds.roster.js?v=1"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -2140,6 +2142,35 @@ function renderModalModels(r){
 }
 function setModelFilter(v){ modalModelFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-f')===v)); }
 function setModalModel(id){ modalModelId=id; document.querySelectorAll('#rmModels .model-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-model')===id)); }
+
+// ── 배경 픽커 (Model Cut · Studio 기본 + 씬 40) ──
+let modalBgId='studio', modalBgFilter='all';
+const BG_STUDIO={id:'studio',name:'Studio',category:'Studio',category_key:'studio',scene:null,light:null,img:null};
+function bgList(){ return [BG_STUDIO].concat(window.BACKGROUNDS||[]); }
+function bgById(id){ return bgList().find(b=>b.id===id)||BG_STUDIO; }
+function bgCats(){ const s=[]; (window.BACKGROUNDS||[]).forEach(b=>{ if(!s.some(x=>x.k===b.category_key))s.push({k:b.category_key,l:b.category}); }); return s; }
+function bgShort(l){ return ({'Home / Lifestyle':'Home','Cafe / Retail / Venue':'Cafe','Urban / Street':'Urban','Architectural / Minimal':'Architect','Nature / Outdoor':'Nature','Golden / Editorial Light':'Golden','Seasonal / Mood':'Seasonal'})[l]||l; }
+function bgsFor(f){ const all=bgList(); return f==='all'?all:all.filter(b=>b.id==='studio'||b.category_key===f); } // Studio 항상 노출
+function bgCardsHtml(){
+  return bgsFor(modalBgFilter).map(b=>{
+    const thumb=b.img?`background:url('${esc(b.img)}') center/cover no-repeat`:`background:linear-gradient(135deg,#d6d6dd,#b6b6c1)`; // Studio=그레이 플레이스홀더
+    return `<button type="button" class="model-card${modalBgId===b.id?' on':''}" data-bg="${esc(b.id)}" onclick="setModalBg('${esc(b.id)}')" title="${esc(b.name)}">`
+      +`<span class="mc-thumb" style="${thumb}"></span><span class="mc-name">${esc(b.name)}</span></button>`;
+  }).join('');
+}
+function renderModalBackgrounds(r){
+  const bw=document.getElementById('rmBackgrounds'); if(!bw)return;
+  if(!(r&&r.picker==='model')){ bw.style.display='none'; bw.innerHTML=''; return; } // Model Cut만 배경 픽커
+  modalBgId=(state.recipeId===r.id&&state.bgId)?state.bgId:'studio'; // 기본 Studio
+  bw.style.display='';
+  const chip=(v,l)=>`<button type="button" class="ms-chip${modalBgFilter===v?' on':''}" data-bf="${v}" onclick="setBgFilter('${v}')">${l}</button>`;
+  bw.innerHTML=`<span class="ms-lbl">Choose a background</span>`
+    +`<div class="ms-filters">${chip('all','All')}${bgCats().map(c=>chip(c.k,bgShort(c.l))).join('')}</div>`
+    +`<div class="ms-grid" id="rmBgGrid">${bgCardsHtml()}</div>`;
+}
+function setBgFilter(v){ modalBgFilter=v; const g=document.getElementById('rmBgGrid'); if(g)g.innerHTML=bgCardsHtml(); document.querySelectorAll('#rmBackgrounds .ms-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-bf')===v)); }
+function setModalBg(id){ modalBgId=id; document.querySelectorAll('#rmBackgrounds .model-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-bg')===id)); }
+function bgPhrase(){ const b=bgById(state.bgId); if(!b||b.id==='studio'||!b.scene) return 'in a clean photography studio against a light grey seamless cyclorama, soft even softbox lighting'; return 'in '+b.scene+', '+b.light; }
 function renderModalCuts(r){
   const cw=document.getElementById('rmCuts'); if(!cw)return;
   if(r&&r.cuts&&r.cuts.length){
@@ -2163,7 +2194,7 @@ function renderModalCuts(r){
 }
 function openRecipeModal(id){
   // 이미 선택된 카드를 다시 클릭하면 모달 없이 선택만 해제
-  if(state.recipeId===id){state.recipeId=null;state.detail=null;state.cutBg=null;state.modelId=null;renderRecipes();updateBar();return;}
+  if(state.recipeId===id){state.recipeId=null;state.detail=null;state.cutBg=null;state.modelId=null;state.bgId=null;renderRecipes();updateBar();return;}
   const r=(TEMPLATES[state.mode]||[]).find(x=>x.id===id);if(!r)return;
   modalRecipeId=id;
   const dt=document.getElementById('rmDetail'); if(dt)dt.value=''; // 새 템플릿 → Add detail 초기화
@@ -2172,7 +2203,8 @@ function openRecipeModal(id){
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
   modalRecipeObj=r;
   renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
-  renderModalModels(r); // Studio Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
+  renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
+  renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
   setModalPreview(r); // 예시 이미지(선택 컷 우선) — 없으면 placeholder
   document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ Selected — tap to deselect':'Use this template';
   document.getElementById('recipeModal').classList.add('open');
@@ -2189,6 +2221,7 @@ function selectFromModal(){
   const bgi=document.getElementById('rmCutBgInput');
   state.cutBg=(sel&&BG_CUTS.has(state.cutId)&&bgi)?bgi.value:''; // 지원 컷 선택 시만 배경색 유지
   state.modelId=(sel&&modalRecipeObj&&modalRecipeObj.picker==='model')?modalModelId:null; // 모델 픽커 템플릿만 유지
+  state.bgId=(sel&&modalRecipeObj&&modalRecipeObj.picker==='model')?(modalBgId||'studio'):null; // 배경(Model Cut만, 기본 Studio)
   renderRecipes();updateBar();closeRecipeModal();
   if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
 }
@@ -2199,7 +2232,7 @@ function toggleTemplatePicker(){
   g.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeTemplatePicker(){}
-function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;state.cutBg=null;state.modelId=null;renderRecipes();updateBar();}
+function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;state.cutBg=null;state.modelId=null;state.bgId=null;renderRecipes();updateBar();}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
   const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open'))closeRecipeModal();
@@ -2786,6 +2819,7 @@ async function resolvePromptFor(r,subj){
   if(extra)base.prompt=base.prompt?base.prompt+', '+extra:extra; // 템플릿 프롬프트 + 사용자 추가분 (템플릿 없으면 프롬프트만)
   const bg=cutBgActive(); // 컷 배경색(Flat Lay·Ghost Mannequin) — 기본 배경 위에 정확한 hex 지정
   if(bg)base.prompt=base.prompt?base.prompt+', set against a seamless solid-color background of exactly '+bg:'seamless solid-color background of exactly '+bg;
+  if(r&&r.picker==='model'){ const bp=bgPhrase(); if(bp)base.prompt=base.prompt?base.prompt+', '+bp:bp; } // Model Cut: 선택 배경(Studio 기본 또는 씬) 주입
   return base;
 }
 async function generateImages(r,subj,count,pending){

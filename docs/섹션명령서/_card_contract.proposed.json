@@ -3178,9 +3178,9 @@
     ],
     "studiomodel": [
       {
-        "id": "studio-model-cut",
+        "id": "model-cut",
         "cat": "OnModel",
-        "name": "Studio Model Cut",
+        "name": "Model Cut",
         "type": "image",
         "cost": 5,
         "new": true,

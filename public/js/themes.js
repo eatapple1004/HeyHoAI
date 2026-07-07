@@ -13,7 +13,7 @@
   window.OFFICIAL_ONLY_THEMES = ['productcut', 'nail-base', 'nail-template'];
   // 기본 제공 공식 recipe — Store 구매/담기 없이 항상 Studio에 노출(◈8 프리미엄 공식과 구분).
   //   백엔드도 price_credits=0이라 생성 구매게이트(402) 없음. Studio는 소유 무관 OFFICIAL_RECIPES에 포함시켜 노출.
-  window.DEFAULT_OFFICIAL_RECIPES = ['product-cut', 'studio-model-cut'];
+  window.DEFAULT_OFFICIAL_RECIPES = ['product-cut', 'model-cut'];
   // Library 필터 그룹(비겹침) — CAT_THEMES에서 파생(단일소스).
   window.CAT_GROUPS = [['Influencer', window.CAT_THEMES.Influencer], ['Shopping', window.CAT_THEMES.Shopping]];
   // 공식 recipe→theme 매핑(migrate.js OFFICIAL_THEME 미러). 공식은 recipe 카드라 themes 필드가 없어 studio가 이걸로 주입.

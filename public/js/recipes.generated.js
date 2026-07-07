@@ -3757,9 +3757,9 @@
     ],
     "studiomodel": [
       {
-        "id": "studio-model-cut",
+        "id": "model-cut",
         "cat": "OnModel",
-        "name": "Studio Model Cut",
+        "name": "Model Cut",
         "type": "image",
         "cost": 5,
         "new": true,
@@ -3772,7 +3772,7 @@
         "guards": [],
         "held": true,
         "emoji": "🧍",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)",
+        "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)",
         "picker": "model"
       }
     ]

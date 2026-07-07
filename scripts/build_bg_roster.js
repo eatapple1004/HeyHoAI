@@ -101,6 +101,12 @@ fs.mkdirSync(outDir, { recursive: true });
 const header = `/* ⚠️ AUTO-GENERATED — node scripts/build_bg_roster.js\n * Doppia 배경(씬) 로스터 v1 — on-model용 (40씬, 8카테고리).\n * scene/light = on-model 생성에 주입할 환경/조명. 프리뷰: scripts/generate_bg_images.js → public/img/backgrounds/<id>.jpg\n */\n`;
 fs.writeFileSync(path.join(outDir, 'roster.v1.js'), header + 'module.exports = ' + JSON.stringify(roster, null, 2) + ';\n');
 
+// 산출 1b: 프론트 노출용 슬림 JS (window.BACKGROUNDS) — 배경 픽커가 소비
+const slim = roster.map(p => ({ id: p.id, name: p.name, category: p.category, category_key: p.category_key, scene: p.scene, light: p.light, img: `/img/backgrounds/${p.id}.jpg` }));
+const pubDir = path.join(ROOT, 'public/js');
+fs.writeFileSync(path.join(pubDir, 'backgrounds.roster.js'),
+  `/* AUTO-GENERATED — node scripts/build_bg_roster.js · window.BACKGROUNDS(${slim.length}) */\n(function(){ window.BACKGROUNDS = ${JSON.stringify(slim)}; })();\n`);
+
 // 산출 2: CSV
 const docsDir = path.join(ROOT, 'docs/backgrounds');
 fs.mkdirSync(docsDir, { recursive: true });
