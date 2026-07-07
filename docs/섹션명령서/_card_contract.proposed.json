@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 169,
-  "new_count": 136,
+  "total": 170,
+  "new_count": 137,
   "provisional_count": 17,
   "drift_guard": {
-    "seed_total": 169,
-    "status_total": 169,
+    "seed_total": 170,
+    "status_total": 170,
     "ok": true
   },
   "id_collisions": [],
@@ -3237,6 +3237,21 @@
             "preview": null
           }
         ]
+      },
+      {
+        "id": "jewelry-on-model",
+        "cat": "On Model",
+        "name": "Jewelry On Model",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "picker": "model"
       },
       {
         "id": "jewelry-hero",

@@ -991,9 +991,9 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=15"></script>
-<script src="/js/themes.js?v=6"></script>
-<script src="/js/taxonomy.js?v=7"></script>
+<script src="/js/recipes.generated.js?v=16"></script>
+<script src="/js/themes.js?v=7"></script>
+<script src="/js/taxonomy.js?v=8"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
 <script>
@@ -1050,8 +1050,9 @@ function buildTemplates(){
     if(!m.preview)m.preview='/img/producthero/dewy-glass.jpg'; // 카드 썸네일=기본 스타일
     shopping.push(m);
   });
-  (C.accessories||[]).forEach(c=>{ // 오피셜 Accessories(주얼리 v1) — 3패밀리 부모(Product Cut·Worn Cut·Hero), 각 파라미터형 컷 보유.
-    const m=mk(c,c.cat,'accessories'); // cat=recipe.category(콘텐츠타입 라벨) → taxonomy Accessories>Product Cut/Worn Cut/Hero.
+  (C.accessories||[]).forEach(c=>{ // 오피셜 Accessories(주얼리 v1) — 부모 패밀리(Product Cut·Worn Cut·On Model·Hero), 컷/모델픽커 보유.
+    const m=mk(c,c.cat,'accessories'); // cat=recipe.category(콘텐츠타입 라벨) → taxonomy Accessories>Product Cut/Worn Cut/On Model/Hero.
+    if(c.picker)m.picker=c.picker; // 'model' → On Model은 컷 대신 모달 모델 그리드(studiomodel과 동일)
     if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/accessories/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
     if(!m.preview)m.preview='/img/accessories/'+c.id+'.png'; // 카드 썸네일=부모 id
     shopping.push(m);

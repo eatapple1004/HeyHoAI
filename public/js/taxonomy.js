@@ -60,7 +60,8 @@
         verticals: ['accessories'],
         contentTypes: [
           { slug: 'product-cut', label: 'Product Cut', match: { category: ['Product Cut'] } }, // 제품컷(모델없음)
-          { slug: 'worn-cut',    label: 'Worn Cut',    match: { category: ['Worn Cut'] } },     // 착용컷(부위 파라미터)
+          { slug: 'worn-cut',    label: 'Worn Cut',    match: { category: ['Worn Cut'] } },     // 착용컷(부위 파라미터·얼굴 배제)
+          { slug: 'on-model',    label: 'On Model',    match: { category: ['On Model'] } },      // 모델 착용컷(모델 픽커·얼굴 O)
           { slug: 'hero',        label: 'Hero',        match: { category: ['Hero'] } },          // 프리미엄 히어로
         ],
       },

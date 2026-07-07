@@ -279,13 +279,14 @@
     "mode": "product",
     "status": "OK",
     "file": "recipes.accessories.v2.js",
-    "count": 3,
+    "count": 4,
     "issues": [],
     "flags": [
       "Jewelry Product Cut [experimental,needs_human_review]",
       "Jewelry Worn Cut [experimental,needs_human_review]",
+      "Jewelry On Model [experimental,needs_human_review]",
       "Jewelry Hero [experimental,needs_human_review]",
-      "파라미터형: 부모 3 + 컷 13 (개수/가격사다리 휴리스틱 면제)"
+      "파라미터형: 부모 4 + 컷 13 (개수/가격사다리 휴리스틱 면제)"
     ],
     "overlay": []
   }

@@ -30,6 +30,7 @@ const PROD = {
   'jewelry-on-neck':      'a delicate unbranded gold pendant necklace',
   'jewelry-on-ears':      'a pair of unbranded gold drop earrings',
   'jewelry-on-wrist':     'an unbranded gold tennis bracelet',
+  'jewelry-on-model':     'a natural-looking female fashion model wearing elegant unbranded gold drop earrings and a delicate gold necklace',
   'jewelry-hero':         'an elegant unbranded gold diamond ring',
   'jewelry-noir-gold':    'an elegant unbranded gold diamond ring',
   'jewelry-marble-plinth':'an elegant unbranded gold diamond ring',

@@ -204,11 +204,11 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 3,
     "sort_order": 6,
-    "rationale": "Show your jewelry being worn — no photoshoot. Pick the body zone that fits your piece (hand, neck, ears or wrist) and get natural on-body shots with the exact piece locked to the reference. The default zone is on-hand.",
+    "rationale": "Show your jewelry being worn — no photoshoot, no face. Pick the body zone that fits your piece (hand, neck, ears or wrist) and get natural on-body crops with the exact piece locked to the reference. Faceless by design; for a shot with a chosen model's face use 'Jewelry On Model'. The default zone is on-hand.",
     "meta": {
       "cuts": ["jewelry-on-hand", "jewelry-on-neck", "jewelry-on-ears", "jewelry-on-wrist"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "On-body composite: the chosen body zone is generated wearing the uploaded piece (no model roster). High AI-risk on hands/anatomy — verify correct fingers, ears and skin, and that the piece did not morph, before delivery."
+      "render_notes": "Faceless on-body composite: the chosen body zone is generated wearing the uploaded piece (no model, no face). High AI-risk on hands/anatomy — verify correct fingers, ears and skin, no face in frame, and that the piece did not morph, before delivery. (Face variant with model picker = 'Jewelry On Model'.)"
     },
     "config": {
       "schema_version": 1,
@@ -230,8 +230,8 @@ module.exports = [
           "color:neutral_true",
           "texture:natural_skin"
         ],
-        "extra_positive": "premium on-body jewelry photography, the exact uploaded piece worn naturally on a realistic well-groomed body part, the piece locked to the reference — metal, gemstones and setting identical with no morph or drift, natural true-to-life skin with soft flattering light, elegant relaxed pose, shallow depth of field keeping the jewelry tack-sharp, clean neutral background",
-        "extra_negative": "warped or melted metal, mismatched stone, deformed or extra fingers, malformed hands, fused earlobes, distorted anatomy, plastic skin, blemishes, floating jewelry, doubled piece, harsh blown highlights, cluttered background, logos, text, watermark"
+        "extra_positive": "premium on-body jewelry photography, the exact uploaded piece worn naturally on a realistic well-groomed body part, cropped tightly to the body zone with no face in frame, the piece locked to the reference — metal, gemstones and setting identical with no morph or drift, natural true-to-life skin with soft flattering light, elegant relaxed pose, shallow depth of field keeping the jewelry tack-sharp, clean neutral background",
+        "extra_negative": "face, eyes, nose, lips, mouth, portrait, full head, warped or melted metal, mismatched stone, deformed or extra fingers, malformed hands, fused earlobes, distorted anatomy, plastic skin, blemishes, floating jewelry, doubled piece, harsh blown highlights, cluttered background, logos, text, watermark"
       },
       "shot_strategy": "list",
       "shots": [
@@ -281,22 +281,22 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 3,
     "sort_order": 8,
-    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Verify natural collarbone/décolletage anatomy and that the chain drapes correctly without morphing the pendant." },
-    "rationale": "Necklace or pendant worn on the neckline and décolletage.",
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless — framing on the neck and collarbone only, chin and face cropped out. Verify natural collarbone/décolletage anatomy and that the chain drapes correctly without morphing the pendant. (Face variant = 'Jewelry On Model'.)" },
+    "rationale": "Necklace or pendant worn on the neckline — cropped to the neck, no face shown.",
     "config": {
       "schema_version": 1,
       "mode": "product",
       "parent_id": "jewelry-worn-cut",
       "look": {
-        "extra_positive": "elegant on-neck jewelry photography, the uploaded necklace or pendant draped naturally on a smooth neckline and décolletage, the chain following the collarbone with the pendant centered and tack-sharp, locked to the reference, soft flattering light, true skin texture, clean minimal styling, shallow depth of field",
-        "extra_negative": "distorted neck anatomy, floating necklace, broken or morphed chain, doubled pendant, mismatched stone, plastic skin, harsh shadow, cluttered background, visible face distortion",
-        "notes": "framing centered on the neck and décolletage — face optional and softly cropped"
+        "extra_positive": "elegant on-neck jewelry photography, the uploaded necklace or pendant draped naturally on a smooth neckline and collarbone, framing cropped to the neck and décolletage with the chin and face out of frame, the chain following the collarbone with the pendant centered and tack-sharp, locked to the reference, soft flattering light, true skin texture, clean minimal styling, shallow depth of field",
+        "extra_negative": "face, chin, jaw, eyes, nose, lips, mouth, portrait, full head, distorted neck anatomy, floating necklace, broken or morphed chain, doubled pendant, mismatched stone, plastic skin, harsh shadow, cluttered background",
+        "notes": "framing on the neck and collarbone only — chin and face cropped out of frame"
       },
       "shot_strategy": "list",
       "shots": [
-        { "scene": "clean neutral background, soft light", "pose": "neckline front-on, chain draped, pendant centered", "composition": "closeup" },
-        { "scene": "soft gradient, gentle shadow", "pose": "slight three-quarter turn showing chain flow", "composition": "closeup" },
-        { "scene": "soft-focus lifestyle backdrop", "pose": "relaxed pose featuring the necklace on the décolletage", "composition": "medium_shot" },
+        { "scene": "clean neutral background, soft light", "pose": "neckline front-on, chain draped, pendant centered, no face", "composition": "closeup" },
+        { "scene": "soft gradient, gentle shadow", "pose": "slight turn showing chain flow across the collarbone", "composition": "closeup" },
+        { "scene": "neutral backdrop, neck-only crop", "pose": "décolletage featuring the necklace, cropped below the chin", "composition": "closeup" },
         { "scene": "neutral background, tight crop", "pose": "macro of the pendant resting on the skin", "composition": "macro" }
       ]
     }
@@ -311,22 +311,22 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 3,
     "sort_order": 9,
-    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Ears are high AI-risk — verify natural single earlobe anatomy and that the earring is not duplicated or fused to the ear." },
-    "rationale": "Earrings worn on the ear — side-profile beauty framing.",
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless — tight crop on the ear only, no face in frame. Verify natural single earlobe anatomy and that the earring is not duplicated or fused to the ear. (Face variant = 'Jewelry On Model'.)" },
+    "rationale": "Earrings worn on the ear — tight crop, no face shown.",
     "config": {
       "schema_version": 1,
       "mode": "product",
       "parent_id": "jewelry-worn-cut",
       "look": {
-        "extra_positive": "elegant on-ear jewelry photography, the uploaded earring worn on a natural well-formed earlobe in a graceful side-profile beauty crop, the earring tack-sharp and locked to the reference, hair softly tucked back to reveal the ear, soft flattering light, true skin texture, clean neutral background, shallow depth of field",
-        "extra_negative": "deformed ear, fused earlobe, doubled earring, extra piercings, morphed metal, mismatched stone, plastic skin, hair covering the earring, harsh shadow, cluttered background",
-        "notes": "tight side-profile framing on the ear and jawline"
+        "extra_positive": "elegant on-ear jewelry photography, the uploaded earring worn on a natural well-formed earlobe, framed as an extreme tight crop on the ear only with no face in the frame, hair softly tucked back to reveal the ear, the earring tack-sharp and locked to the reference, soft flattering light, true skin texture, clean neutral background, shallow depth of field",
+        "extra_negative": "face, eyes, nose, lips, mouth, cheek, chin, portrait, full head, deformed ear, fused earlobe, doubled earring, extra piercings, morphed metal, mismatched stone, plastic skin, hair covering the earring, harsh shadow, cluttered background",
+        "notes": "extreme tight crop on the ear and earlobe only — no face visible in frame"
       },
       "shot_strategy": "list",
       "shots": [
-        { "scene": "clean neutral background, soft key light", "pose": "side profile of the ear presenting the earring", "composition": "closeup" },
-        { "scene": "soft gradient, gentle shadow", "pose": "slight turn showing the earring drop and movement", "composition": "closeup" },
-        { "scene": "soft-focus lifestyle backdrop", "pose": "relaxed three-quarter beauty framing with earring", "composition": "medium_shot" },
+        { "scene": "clean neutral background, soft key light", "pose": "tight crop of the ear presenting the earring, no face", "composition": "closeup" },
+        { "scene": "soft gradient, gentle shadow", "pose": "slight turn showing the earring drop, cropped to the ear", "composition": "closeup" },
+        { "scene": "neutral backdrop, ear-only crop", "pose": "earring movement detail against the lobe", "composition": "closeup" },
         { "scene": "neutral background, tight crop", "pose": "macro of the earring on the lobe", "composition": "macro" }
       ]
     }
@@ -357,6 +357,58 @@ module.exports = [
         { "scene": "soft gradient, gentle shadow", "pose": "wrist turned showing the piece wrapping around", "composition": "closeup" },
         { "scene": "soft-focus lifestyle backdrop", "pose": "hand resting naturally, bracelet catching light", "composition": "medium_shot" },
         { "scene": "neutral background, tight crop", "pose": "macro of the bracelet on the wrist", "composition": "macro" }
+      ]
+    }
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 패밀리 2b · Jewelry On Model (모델 착용컷) — 얼굴 O, 모델 픽커 (studiomodel 패턴)
+  //   meta.picker='model' → Studio가 모델 로스터(80) + 배경 픽커 렌더. 선택 모델 얼굴이 나옴.
+  //   자식 컷 없음(부모 1장). 과금 = full 모델(얼굴) 합성 → ◈5(studiomodel과 동일).
+  // ════════════════════════════════════════════════════════════════════════
+  {
+    "mode": "product",
+    "vertical": "accessories",
+    "category": "On Model",
+    "name": "Jewelry On Model",
+    "output_type": "image_set",
+    "credit_cost": 5,
+    "sort_order": 11,
+    "rationale": "Put your jewelry on a real-looking model — face and all. Upload one piece, pick a house model and a background, and get aspirational beauty-portrait shots with the model wearing your jewelry. The exact piece is locked to the reference; the chosen model's face is shown. For a faceless body-part crop use 'Jewelry Worn Cut' instead.",
+    "meta": {
+      "picker": "model",
+      "flags": ["experimental", "needs_human_review"],
+      "render_notes": "On-model composite with face: the selected roster model image is passed as an identity reference alongside the uploaded jewelry; the chosen background (studio default or a scene) is injected. The model wears the piece (earrings on ears, necklace on neckline, ring on hand near the face). Verify no jewelry morph, correct anatomy (hands/ears) and no identity drift from the model reference before delivery."
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "output": {
+        "type": "image_set",
+        "count": 4,
+        "aspect_ratio": "4:5"
+      },
+      "subject": {
+        "type": "product",
+        "reference_strategy": "product_composite",
+        "min_refs": 1
+      },
+      "look": {
+        "style_preset": "Fashion",
+        "attributes": [
+          "lighting:soft_box_key_plus_rim",
+          "color:neutral_true",
+          "texture:natural_skin"
+        ],
+        "extra_positive": "premium on-model beauty jewelry photography, the selected model wearing the uploaded jewelry, the exact same piece locked to the reference — metal, gemstones and setting identical with no morph or drift, natural realistic fit on the body (earrings on the ear, necklace on the neckline, ring or bracelet on the hand), relaxed natural model pose and soft expression, flattering beauty light, the jewelry tack-sharp with shallow depth of field, true-to-life skin, clean editorial styling, a single well-formed pair of hands with exactly five natural fingers each when hands are shown",
+        "extra_negative": "warped or melted metal, mismatched stone, doubled piece, deformed or extra fingers, malformed hands, fused or deformed ears, distorted face, identity drift from the model reference, plastic skin, floating jewelry, blown highlights, cluttered distracting background, logos, text, watermark"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "chosen setting", "pose": "model beauty portrait front-facing, relaxed, featuring the worn jewelry", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "model at a slight three-quarter turn showing the piece in wear", "composition": "medium_shot" },
+        { "scene": "chosen setting", "pose": "tighter beauty crop on the worn area with the model's expression", "composition": "closeup" },
+        { "scene": "chosen setting", "pose": "editorial portrait stance featuring the jewelry", "composition": "medium_shot" }
       ]
     }
   },

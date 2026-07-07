@@ -13,7 +13,7 @@
   window.OFFICIAL_ONLY_THEMES = ['productcut', 'nail-base', 'nail-template', 'accessories'];
   // 기본 제공 공식 recipe — Store 구매/담기 없이 항상 Studio에 노출(◈8 프리미엄 공식과 구분).
   //   백엔드도 price_credits=0이라 생성 구매게이트(402) 없음. Studio는 소유 무관 OFFICIAL_RECIPES에 포함시켜 노출.
-  window.DEFAULT_OFFICIAL_RECIPES = ['product-cut', 'model-cut', 'product-hero', 'jewelry-product-cut', 'jewelry-worn-cut', 'jewelry-hero'];
+  window.DEFAULT_OFFICIAL_RECIPES = ['product-cut', 'model-cut', 'product-hero', 'jewelry-product-cut', 'jewelry-worn-cut', 'jewelry-on-model', 'jewelry-hero'];
   // Library 필터 그룹(비겹침) — CAT_THEMES에서 파생(단일소스).
   window.CAT_GROUPS = [['Influencer', window.CAT_THEMES.Influencer], ['Shopping', window.CAT_THEMES.Shopping]];
   // 공식 recipe→theme 매핑(migrate.js OFFICIAL_THEME 미러). 공식은 recipe 카드라 themes 필드가 없어 studio가 이걸로 주입.
@@ -22,7 +22,7 @@
     'ring-editorial-campaign': 'jewelry', 'bracelet-editorial-campaign': 'jewelry',
     'top-down-hero': 'food', 'void-hero-cut': 'tech', 'pet-product-hero': 'pet',
     'product-cut': 'productcut',
-    'jewelry-product-cut': 'accessories', 'jewelry-worn-cut': 'accessories', 'jewelry-hero': 'accessories',
+    'jewelry-product-cut': 'accessories', 'jewelry-worn-cut': 'accessories', 'jewelry-on-model': 'accessories', 'jewelry-hero': 'accessories',
   };
   // 보이는 테마 = 노출 매크로그룹(Shopping, Influencer는 flag) 안의 slug만. 숨긴 테마면 false → 그 테마에만 속한 콘텐츠는 Studio·Library 어디서도 안 보임. 커스텀 테마는 id라 여기 안 옴(항상 visible).
   window.isThemeVisible = function (slug) {
