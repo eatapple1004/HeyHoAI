@@ -22,6 +22,9 @@ const CONCEPTS = [
   ['marble',   'resting on a pale white marble surface with a bright gallery-luxe mood'],
   ['noir',     'against a dark moody backdrop with a warm golden rim light, noir luxe mood'],
   ['golden',   'in golden-hour warm sunlight with a glowing dreamy mood'],
+  ['pop',      'against a bold vivid saturated hot-pink seamless backdrop, high-energy pop-art color, glossy modern mood'],
+  ['cobalt',   'against a bold electric cobalt-blue seamless backdrop, vivid saturated modern pop mood'],
+  ['colorblock','against a bold graphic colorblock seamless backdrop split into two vivid contrasting colors, playful pop mood'],
 ];
 
 async function main(){
