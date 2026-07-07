@@ -32,10 +32,14 @@
           { slug: 'on-model',    label: 'On-model',    match: { category: ['OnModel'] } },     // 착용컷
         ],
       },
-      // 화장품(Cosmetics) — 비파괴용(파일럿). 콘텐츠타입 미큐레이션 → auto:true 로 데이터에서 자동 도출.
-      //   나중에 여기 contentTypes:[…] 로 큐레이션하면 자동 도출 대체됨.
-      //   (2026-07-08 사용자 지시: Beauty→Cosmetics 라벨 변경 / General 카테고리 삭제. slug는 매핑·딥링크 위해 'beauty' 유지.)
-      { slug: 'beauty',  label: 'Cosmetics',  active: true, verticals: ['beauty'],  auto: true }, // 화장품
+      // 화장품(Cosmetics). slug은 매핑·딥링크 위해 'beauty' 유지(Beauty→Cosmetics 라벨 변경, General 삭제 2026-07-08).
+      //   (2026-07-08 사용자 지시: texture·onmodel·reel·lifestyle·infocard·shade 테마 삭제 → Hero만 큐레이션. auto 제거.)
+      {
+        slug: 'beauty', label: 'Cosmetics', active: true, verticals: ['beauty'],
+        contentTypes: [
+          { slug: 'hero', label: 'Hero', match: { category: ['Hero'] } }, // 제품 히어로컷 (Texture/OnModel/Reel/Lifestyle/InfoCard/Shade는 삭제됨)
+        ],
+      },
 
       // 네일 — 공식(프롬프트 기반) 템플릿 전용 카테고리. 콘텐츠타입은 테마 slug(nail-base/nail-template)와 1:1로,
       //   studio가 /owned label_themes로부터 카드에 vertical:'nail'+category:'NailBase'|'NailTemplate'를 스탬프 → 스위처가 매칭.
