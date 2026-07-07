@@ -111,7 +111,10 @@
   .cut-bg .cbg-inp{width:112px;padding:7px 10px;border-radius:9px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--text);font-family:inherit;font-size:13px;letter-spacing:.6px;text-transform:uppercase}
   .cut-bg .cbg-inp::placeholder{text-transform:none;letter-spacing:0;color:var(--faint)}
   .cut-bg .cbg-inp:focus{outline:none;border-color:var(--accent)}
-  .cut-bg .cbg-sw{width:22px;height:22px;border-radius:6px;border:1px solid var(--border2);background:transparent}
+  .cut-bg input.cbg-sw{width:26px;height:26px;padding:0;border:1px solid var(--border2);border-radius:7px;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none}
+  .cut-bg input.cbg-sw::-webkit-color-swatch-wrapper{padding:0}
+  .cut-bg input.cbg-sw::-webkit-color-swatch{border:none;border-radius:6px}
+  .cut-bg input.cbg-sw::-moz-color-swatch{border:none;border-radius:6px}
   /* ▲▲▲ 테스트 흡수 블록 끝 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
@@ -2071,7 +2074,9 @@ function cutLabel(n){return String(n||'').replace(/\s*Cut$/,'');} // "Flat Lay C
 const BG_CUTS=new Set(['flat-lay-cut','ghost-mannequin-cut']);
 function normHexColor(v){ if(!v)return ''; const s=String(v).trim().replace(/^#/,''); return (/^[0-9a-fA-F]{3}$/.test(s)||/^[0-9a-fA-F]{6}$/.test(s))?'#'+s.toLowerCase():''; }
 function cutBgActive(){ return BG_CUTS.has(state.cutId)?normHexColor(state.cutBg):''; } // 선택 컷이 지원+유효 hex면 반환
-function onCutBgInput(el){ state.cutBg=el.value; const sw=document.getElementById('rmCutBgSw'); if(sw)sw.style.background=normHexColor(el.value)||'transparent'; }
+function expandHex6(v){ const n=normHexColor(v); if(!n)return ''; const s=n.slice(1); return '#'+(s.length===3?s.split('').map(c=>c+c).join(''):s); } // #abc→#aabbcc (컬러 인풋은 6자리 필요)
+function onCutBgInput(el){ state.cutBg=el.value; const p=document.getElementById('rmCutBgSw'); const h6=expandHex6(el.value); if(p&&h6)p.value=h6; } // 텍스트 입력 → 피커 동기화
+function onCutBgPick(el){ const v=(el.value||'').toUpperCase(); state.cutBg=v; const t=document.getElementById('rmCutBgInput'); if(t)t.value=v; } // 피커 선택 → 텍스트 동기화
 
 // 템플릿 설명(서버 rationale) 캐시 + 상세 모달
 let RECIPE_DESC={};
@@ -2109,7 +2114,7 @@ function renderModalCuts(r){
       +`<div class="cut-bg${BG_CUTS.has(modalCutId)?' show':''}" id="rmCutBg">`
         +`<span class="cbg-lbl">Background color</span>`
         +`<input type="text" id="rmCutBgInput" class="cbg-inp" maxlength="7" placeholder="#RRGGBB" autocomplete="off" spellcheck="false" value="${esc(bgVal)}" oninput="onCutBgInput(this)">`
-        +`<span class="cbg-sw" id="rmCutBgSw"></span>`
+        +`<input type="color" class="cbg-sw" id="rmCutBgSw" value="${expandHex6(bgVal)||'#000000'}" oninput="onCutBgPick(this)" title="Pick a color">`
       +`</div>`;
     const bgi=document.getElementById('rmCutBgInput'); if(bgi)onCutBgInput(bgi); // 스와치 초기화
   }else{ modalCutId=null; cw.style.display='none'; cw.innerHTML=''; }
