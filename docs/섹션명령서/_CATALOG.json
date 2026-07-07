@@ -269,7 +269,23 @@
     "issues": [],
     "flags": [
       "Product Hero [experimental,needs_human_review]",
-      "파라미터형: 부모 1 + 컷 10 (개수/가격사다리 휴리스틱 면제)"
+      "파라미터형: 부모 1 + 컷 19 (개수/가격사다리 휴리스틱 면제)"
+    ],
+    "overlay": []
+  },
+  {
+    "key": "accessories",
+    "name": "악세서리(주얼리)",
+    "mode": "product",
+    "status": "OK",
+    "file": "recipes.accessories.v2.js",
+    "count": 3,
+    "issues": [],
+    "flags": [
+      "Jewelry Product Cut [experimental,needs_human_review]",
+      "Jewelry Worn Cut [experimental,needs_human_review]",
+      "Jewelry Hero [experimental,needs_human_review]",
+      "파라미터형: 부모 3 + 컷 13 (개수/가격사다리 휴리스틱 면제)"
     ],
     "overlay": []
   }

@@ -18,7 +18,8 @@ fs.mkdirSync(OUT, { recursive: true });
 function slug(s){ return String(s).toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 // fit별 대표 제품(썸네일 오브젝트)
 const PROD = { skincare:'a minimalist unbranded skincare serum bottle with a dropper', luxury:'a luxurious unbranded frosted-glass cosmetic bottle',
-  fragrance:'an elegant unbranded glass perfume bottle', color:'a sleek unbranded lipstick and compact', set:'a coordinated set of unbranded cosmetic bottles and jars' };
+  fragrance:'an elegant unbranded glass perfume bottle', color:'a sleek unbranded lipstick and compact', set:'a coordinated set of unbranded cosmetic bottles and jars',
+  body:'a minimalist unbranded body wash pump bottle' };
 function productFor(fit){ for(const f of (fit||[])) if(PROD[f]) return PROD[f]; return 'a minimalist unbranded cosmetic bottle'; }
 
 async function main(){

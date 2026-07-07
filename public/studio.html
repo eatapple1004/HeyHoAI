@@ -991,9 +991,9 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=13"></script>
-<script src="/js/themes.js?v=5"></script>
-<script src="/js/taxonomy.js?v=6"></script>
+<script src="/js/recipes.generated.js?v=15"></script>
+<script src="/js/themes.js?v=6"></script>
+<script src="/js/taxonomy.js?v=7"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
 <script>
@@ -1048,6 +1048,12 @@ function buildTemplates(){
     const m=mk(c,'Hero','producthero');
     if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/producthero/'+ct.id+'.jpg'; }); // 스타일 썸네일 컨벤션
     if(!m.preview)m.preview='/img/producthero/dewy-glass.jpg'; // 카드 썸네일=기본 스타일
+    shopping.push(m);
+  });
+  (C.accessories||[]).forEach(c=>{ // 오피셜 Accessories(주얼리 v1) — 3패밀리 부모(Product Cut·Worn Cut·Hero), 각 파라미터형 컷 보유.
+    const m=mk(c,c.cat,'accessories'); // cat=recipe.category(콘텐츠타입 라벨) → taxonomy Accessories>Product Cut/Worn Cut/Hero.
+    if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/accessories/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
+    if(!m.preview)m.preview='/img/accessories/'+c.id+'.png'; // 카드 썸네일=부모 id
     shopping.push(m);
   });
   TEMPLATES={
@@ -2182,7 +2188,7 @@ function setModalBg(id){ modalBgId=id; document.querySelectorAll('#rmBackgrounds
 function bgPhrase(){ const b=bgById(state.bgId); if(!b||b.id==='studio'||!b.scene) return 'in a clean photography studio against a light grey seamless cyclorama, soft even softbox lighting'; return 'in '+b.scene+', '+b.light; }
 // 컷/스타일 픽커 — cuts에 fit 태그가 있으면(producthero) 제품궁합 필터 노출.
 let modalCutFilter='all';
-const CUT_FIT_LABEL={skincare:'Skincare',color:'Color',fragrance:'Fragrance',luxury:'Luxury',set:'Set'};
+const CUT_FIT_LABEL={skincare:'Skincare',color:'Color',fragrance:'Fragrance',luxury:'Luxury',set:'Set',body:'Body'};
 function cutFitTags(r){ const s=[]; (r&&r.cuts||[]).forEach(ct=>{(ct.fit||[]).forEach(f=>{if(s.indexOf(f)<0)s.push(f);});}); return s; }
 function cutsForFilter(r,f){ return (r&&r.cuts||[]).filter(ct=> f==='all' || !ct.fit || !ct.fit.length || ct.fit.indexOf(f)>=0 ); } // 빈 fit=범용(항상)
 function cutCardHtml(r,ct){

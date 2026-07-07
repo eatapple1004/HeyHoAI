@@ -1,6 +1,6 @@
 # 레시피 종합 현황 (자동생성 · `node scripts/consolidate_recipes.js`)
 
-**9/15 섹션 OK · 총 166개 템플릿**
+**10/16 섹션 OK · 총 169개 템플릿**
 
 | 섹션 | 상태 | 개수 | 파일 |
 |---|---|---|---|
@@ -19,6 +19,7 @@
 | productcut (제품컷) | OK | 1 | `recipes.productcut.v2.js` |
 | studiomodel (스튜디오 모델컷) | OK | 1 | `recipes.studiomodel.v2.js` |
 | producthero (제품 히어로(화장품)) | OK | 1 | `recipes.producthero.v2.js` |
+| accessories (악세서리(주얼리)) | OK | 3 | `recipes.accessories.v2.js` |
 
 ## 이슈
 **influencer**
@@ -140,7 +141,13 @@ _없음_
 
 **producthero**
 - Product Hero [experimental,needs_human_review]
-- 파라미터형: 부모 1 + 컷 10 (개수/가격사다리 휴리스틱 면제)
+- 파라미터형: 부모 1 + 컷 19 (개수/가격사다리 휴리스틱 면제)
+
+**accessories**
+- Jewelry Product Cut [experimental,needs_human_review]
+- Jewelry Worn Cut [experimental,needs_human_review]
+- Jewelry Hero [experimental,needs_human_review]
+- 파라미터형: 부모 3 + 컷 13 (개수/가격사다리 휴리스틱 면제)
 
 ## 🅣 텍스트 오버레이 (text_overlay)
 **beauty**: Before/After Result Reel · Ingredient Claim Card

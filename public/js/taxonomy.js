@@ -52,9 +52,18 @@
         ],
       },
 
-      // 악세서리(Accessories) — 2026-07-08 사용자 지시로 신설. 콘텐츠타입 미큐레이션 → auto:true(데이터에서 자동 도출).
-      //   accessories vertical 레시피가 생기면 자동 노출. 지금은 빈 카테고리 칩(향후 템플릿 대비).
-      { slug: 'accessories', label: 'Accessories', active: true, verticals: ['accessories'], auto: true },
+      // 악세서리(Accessories) — 2026-07-08 신설, 주얼리 v1 큐레이션(공식 파라미터-중첩 vertical).
+      //   콘텐츠타입 3개 = 시드 3패밀리 부모 category와 1:1(Product Cut/Worn Cut/Hero). 각 부모는 파라미터형 자식(컷) 보유.
+      //   match=category(레시피 category 원값). 확장(가방·시계 등)은 같은 카테고리에 부모 카드만 추가.
+      {
+        slug: 'accessories', label: 'Accessories', active: true,
+        verticals: ['accessories'],
+        contentTypes: [
+          { slug: 'product-cut', label: 'Product Cut', match: { category: ['Product Cut'] } }, // 제품컷(모델없음)
+          { slug: 'worn-cut',    label: 'Worn Cut',    match: { category: ['Worn Cut'] } },     // 착용컷(부위 파라미터)
+          { slug: 'hero',        label: 'Hero',        match: { category: ['Hero'] } },          // 프리미엄 히어로
+        ],
+      },
 
       // 향후 추가 예정(예시 — 지금은 비활성):
       // { slug:'jewelry', label:'주얼리', active:false, verticals:['jewelry'],

@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 166→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 169→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 166,
-  "new_count": 133,
+  "total": 169,
+  "new_count": 136,
   "overlay_count": 7,
   "guarded_count": 118,
   "provisional_count": 17,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 166,
-    "contract_total": 166,
-    "catalog_total": 166,
-    "status_total": 166,
+    "fe_total": 169,
+    "contract_total": 169,
+    "catalog_total": 169,
+    "status_total": 169,
     "ok": true
   },
   "cards": {
@@ -3642,6 +3642,209 @@
             "fit": [
               "set"
             ]
+          },
+          {
+            "id": "bold-color-block",
+            "name": "Bold Color Block",
+            "preview": null,
+            "fit": [
+              "color"
+            ]
+          },
+          {
+            "id": "gloss-mirror",
+            "name": "Gloss Mirror",
+            "preview": null,
+            "fit": [
+              "color",
+              "luxury"
+            ]
+          },
+          {
+            "id": "palette-flat-lay",
+            "name": "Palette Flat-lay",
+            "preview": null,
+            "fit": [
+              "color",
+              "set"
+            ]
+          },
+          {
+            "id": "swatch-beside",
+            "name": "Swatch Beside",
+            "preview": null,
+            "fit": [
+              "color"
+            ]
+          },
+          {
+            "id": "light-caustics",
+            "name": "Light Caustics",
+            "preview": null,
+            "fit": [
+              "fragrance"
+            ]
+          },
+          {
+            "id": "mineral-crystal",
+            "name": "Mineral Crystal",
+            "preview": null,
+            "fit": [
+              "fragrance",
+              "luxury"
+            ]
+          },
+          {
+            "id": "wet-tile-spa",
+            "name": "Wet Tile Spa",
+            "preview": null,
+            "fit": [
+              "body",
+              "skincare"
+            ]
+          },
+          {
+            "id": "bath-ledge",
+            "name": "Bath Ledge",
+            "preview": null,
+            "fit": [
+              "body"
+            ]
+          },
+          {
+            "id": "foam-and-suds",
+            "name": "Foam & Suds",
+            "preview": null,
+            "fit": [
+              "body"
+            ]
+          }
+        ]
+      }
+    ],
+    "accessories": [
+      {
+        "id": "jewelry-product-cut",
+        "cat": "Product Cut",
+        "name": "Jewelry Product Cut",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "🖼️",
+        "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)",
+        "cuts": [
+          {
+            "id": "jewelry-flat-lay",
+            "name": "Jewelry Flat Lay",
+            "preview": null
+          },
+          {
+            "id": "jewelry-floating",
+            "name": "Jewelry Floating",
+            "preview": null
+          },
+          {
+            "id": "jewelry-pedestal",
+            "name": "Jewelry Pedestal",
+            "preview": null
+          },
+          {
+            "id": "jewelry-macro-detail",
+            "name": "Jewelry Macro Detail",
+            "preview": null
+          }
+        ]
+      },
+      {
+        "id": "jewelry-worn-cut",
+        "cat": "Worn Cut",
+        "name": "Jewelry Worn Cut",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "🖼️",
+        "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)",
+        "cuts": [
+          {
+            "id": "jewelry-on-hand",
+            "name": "Jewelry On Hand",
+            "preview": null
+          },
+          {
+            "id": "jewelry-on-neck",
+            "name": "Jewelry On Neck",
+            "preview": null
+          },
+          {
+            "id": "jewelry-on-ears",
+            "name": "Jewelry On Ears",
+            "preview": null
+          },
+          {
+            "id": "jewelry-on-wrist",
+            "name": "Jewelry On Wrist",
+            "preview": null
+          }
+        ]
+      },
+      {
+        "id": "jewelry-hero",
+        "cat": "Hero",
+        "name": "Jewelry Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "✨",
+        "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)",
+        "cuts": [
+          {
+            "id": "jewelry-noir-gold",
+            "name": "Jewelry Noir Gold",
+            "preview": null
+          },
+          {
+            "id": "jewelry-marble-plinth",
+            "name": "Jewelry Marble Plinth",
+            "preview": null
+          },
+          {
+            "id": "jewelry-silk-drape",
+            "name": "Jewelry Silk Drape",
+            "preview": null
+          },
+          {
+            "id": "jewelry-spotlight",
+            "name": "Jewelry Spotlight",
+            "preview": null
+          },
+          {
+            "id": "jewelry-floating-luxe",
+            "name": "Jewelry Floating Luxe",
+            "preview": null
           }
         ]
       }

@@ -1,5 +1,5 @@
 /* ⚠️ AUTO-GENERATED — node scripts/build_producthero_seed.js
- * Cosmetics "Product Hero" 파라미터형(부모1 + 스타일 자식10). look/shots=beauty Hero 이식.
+ * Cosmetics "Product Hero" 파라미터형(부모1 + 스타일 자식N). look/shots=beauty Hero 이식 10 + 확장 9(색조·향수·바디).
  * 자식 meta.fit = 제품궁합 태그(picker 필터). productcut과 동일 nesting(config.parent_id).
  */
 module.exports = [
@@ -11,7 +11,7 @@ module.exports = [
     "output_type": "image_set",
     "credit_cost": 2,
     "sort_order": 1,
-    "rationale": "One product photo into a clean, premium hero shot for your PDP and ads — no studio. Pick a mood style (dewy, splash, luxe, botanical, cryo, silk, sunlit, aqua…) filtered by your product type. The product is the hero; the exact packaging is locked to your reference.",
+    "rationale": "One product photo into a clean, premium hero shot for your PDP and ads — no studio. Pick a mood style filtered by your product type (skincare, color makeup, fragrance, body & bath). The product is the hero; the exact packaging is locked to your reference.",
     "meta": {
       "cuts": [
         "dewy-glass",
@@ -23,13 +23,22 @@ module.exports = [
         "silk-drape",
         "stone-plinth-luxe",
         "sunlit-pop",
-        "gift-set-group"
+        "gift-set-group",
+        "bold-color-block",
+        "gloss-mirror",
+        "palette-flat-lay",
+        "swatch-beside",
+        "light-caustics",
+        "mineral-crystal",
+        "wet-tile-spa",
+        "bath-ledge",
+        "foam-and-suds"
       ],
       "flags": [
         "experimental",
         "needs_human_review"
       ],
-      "render_notes": "Parent = shared base + default Dewy Glass. Style children override look + shots. meta.fit tags drive the product-fit filter in the picker."
+      "render_notes": "Parent = shared base + default Dewy Glass. Style children override look + shots. meta.fit tags drive the product-fit filter in the picker (skincare/color/fragrance/luxury/set/body)."
     },
     "config": {
       "schema_version": 1,
@@ -647,6 +656,527 @@ module.exports = [
         {
           "scene": "products nestled inside or beside premium gift box with satin ribbon and tissue",
           "pose": "lifestyle group shot with gift box context, products arranged inside the open box",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Bold Color Block",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 12,
+    "rationale": "Graphic single-color studio block for lipsticks, compacts and color makeup — bold, clean, scroll-stopping.",
+    "meta": {
+      "parent_fit": [
+        "color"
+      ],
+      "fit": [
+        "color"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:crisp_studio_flash",
+          "color:bold_flat_color_field",
+          "texture:clean_matte_pop",
+          "context:solid_color_block"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product standing against a bold flat solid-color studio block backdrop that echoes the product shade, crisp hard studio flash from camera-left with a controlled soft fill, one clean graphic shadow, glossy acrylic base with a subtle reflection, modern editorial pop aesthetic, punchy high-contrast yet color-accurate brand packaging, shot on 100mm macro at f/8, tack-sharp legible label true to reference",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, gradient background, busy pattern, dull flat lighting"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "bold flat single-color block backdrop matched to the product shade, glossy acrylic base",
+          "pose": "product standing upright, front face and label squared to camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "saturated solid color field with one crisp graphic shadow raking to the side",
+          "pose": "product turned to a 3/4 hero angle showing front and side",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "tight frame on the cap and signature detail against the flat color, crisp specular highlight",
+          "pose": "macro on the signature detail, label fully legible",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product on a small color-matched acrylic riser, single simple geometric prop, bold cast shadow",
+          "pose": "product staged on the podium, slight tilt, hero presentation",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Gloss Mirror",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 13,
+    "rationale": "Dramatic black-mirror reflection for lip, gloss and compacts — moody, glossy, premium.",
+    "meta": {
+      "parent_fit": [
+        "color",
+        "luxury"
+      ],
+      "fit": [
+        "color",
+        "luxury"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:moody_directional_key",
+          "color:deep_black_reflective",
+          "texture:high_gloss_mirror",
+          "context:black_glass_surface"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product on a polished black glass mirror surface with a sharp clean vertical mirror reflection beneath it, deep dark moody gradient backdrop, single directional key light with a crisp specular rim defining the edge, controlled reflections, dramatic luxe high-gloss mood, shot on 100mm macro at f/8, tack-sharp legible label true to reference, glossy jewel-like highlight on the cap",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, washed-out background, flat frontal lighting, double reflection, cluttered props"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "polished black glass mirror on a dark gradient backdrop, clean vertical reflection",
+          "pose": "product upright, label squared to camera, reflection mirrored below",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "moody dark set with a single crisp rim light tracing the product silhouette",
+          "pose": "product at a 3/4 hero angle, reflection anchoring it",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the cap and signature detail with a jewel-like specular highlight on black glass",
+          "pose": "detail crop on the signature, label legible",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product on a black glass plinth with a soft pool of light, minimal luxe staging",
+          "pose": "hero presentation, subtle tilt, product dominant",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Palette Flat-lay",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 14,
+    "rationale": "Overhead flat-lay for palettes, compacts and multi-pan makeup — clean top-down grid.",
+    "meta": {
+      "parent_fit": [
+        "color",
+        "set"
+      ],
+      "fit": [
+        "color",
+        "set"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:even_soft_overhead",
+          "color:warm_neutral_stone",
+          "texture:matte_paper_marble",
+          "context:top_down_flat_lay"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, an overhead top-down flat-lay of the single product opened flat on a warm neutral stone or matte paper surface, even soft overhead lighting with gentle directional shaping, all pans and shades true to the reference, a few minimal styling props kept sparse and out of the way, clean editorial flat-lay aesthetic, shot straight down on 50mm at f/8, tack-sharp legible label, color-accurate finish",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, angled perspective, invented extra pans, busy clutter, harsh shadows"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "top-down flat-lay on warm neutral stone, product opened flat and centered",
+          "pose": "overhead, product squared to frame, all pans visible",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "flat-lay on matte paper with a soft directional highlight across the pans",
+          "pose": "overhead with product slightly off-center, minimal negative space",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "tight overhead macro on the pans and finish detail true to reference",
+          "pose": "top-down closeup on the shades and texture",
+          "composition": "closeup"
+        },
+        {
+          "scene": "flat-lay with one sparse prop (a brush) placed diagonally, calm neutral palette",
+          "pose": "overhead styled composition, product dominant",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Swatch Beside",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 15,
+    "rationale": "Product paired with a clean cream swatch of itself — shows the shade and texture in one hero shot.",
+    "meta": {
+      "parent_fit": [
+        "color"
+      ],
+      "fit": [
+        "color"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:soft_box_key_plus_fill",
+          "color:clean_neutral_studio",
+          "texture:cream_swatch_smear",
+          "context:stone_acrylic_slab"
+        ],
+        "extra_positive": "premium beauty hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product standing beside one clean glossy cream swatch smear of its own shade drawn on a smooth stone or acrylic slab, the swatch color faithfully matching the product, soft box key with a gentle fill for even readable texture, minimal neutral studio backdrop, crisp macro detail on the swatch texture, modern clean-beauty aesthetic, shot on 100mm macro at f/8, tack-sharp legible label true to reference",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, multiple messy swatches, wrong swatch color, smeared label, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "smooth stone slab with one clean cream swatch smear beside the product",
+          "pose": "product upright with the swatch drawn in front to camera-right",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "neutral studio set, product at a 3/4 angle with the shade swatch leading the eye",
+          "pose": "product turned to hero angle, swatch anchoring the composition",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the glossy swatch texture and pigment, product soft behind",
+          "pose": "detail crop on the swatch, product out of focus",
+          "composition": "closeup"
+        },
+        {
+          "scene": "acrylic slab with the product and a curved swatch stroke, minimal shadow",
+          "pose": "styled hero pairing product and swatch, product dominant",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Light Caustics",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 16,
+    "rationale": "Sunlit water-caustic light dancing across the bottle — warm, luminous, fragrance-native.",
+    "meta": {
+      "parent_fit": [
+        "fragrance"
+      ],
+      "fit": [
+        "fragrance"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:warm_sun_caustics",
+          "color:golden_warm_glow",
+          "texture:glass_light_refraction",
+          "context:sunlit_pool_ripple"
+        ],
+        "extra_positive": "premium luxury fragrance hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single glass bottle catching rippling sunlit water-caustic light patterns dancing across its surface and the surrounding surface, warm golden hour glow, backlit glass refracting light through the liquid, soft gradient backdrop, luminous airy caustic reflections, elegant refined mood, shot on 100mm macro at f/8, tack-sharp legible label true to reference, jewel-like specular highlights in the glass",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, cold flat lighting, murky water, distorted caustic noise, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "warm sunlit surface with rippling caustic light across the bottle and backdrop",
+          "pose": "bottle upright, label squared to camera, caustics playing over the glass",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "backlit glass glowing with refracted golden light, soft gradient behind",
+          "pose": "bottle at a 3/4 hero angle, light passing through the liquid",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the shoulder and cap with jewel-like caustic highlights",
+          "pose": "detail crop on the glass edge and stopper",
+          "composition": "closeup"
+        },
+        {
+          "scene": "bottle on a warm stone ledge with dappled sun caustics and a soft shadow",
+          "pose": "styled hero, warm luminous presentation, product dominant",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Mineral Crystal",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 17,
+    "rationale": "Bottle on raw quartz and mineral — cool, sculptural, high-luxe fragrance staging.",
+    "meta": {
+      "parent_fit": [
+        "fragrance",
+        "luxury"
+      ],
+      "fit": [
+        "fragrance",
+        "luxury"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:cool_directional_key",
+          "color:cool_stone_mineral",
+          "texture:raw_crystal_quartz",
+          "context:mineral_plinth"
+        ],
+        "extra_positive": "premium luxury fragrance hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single glass bottle staged on a raw quartz crystal and natural mineral plinth with a few sculptural stone accents, cool directional key light with a crisp specular rim, refined gallery-like backdrop, controlled shadows, sculptural high-luxe editorial mood, shot on 100mm macro at f/8, tack-sharp legible label true to reference, cool jewel-like highlights on glass and crystal facets",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, plastic-looking fake crystal, warm muddy tone, busy clutter, flat frontal light"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "raw quartz and mineral plinth on a cool gallery backdrop",
+          "pose": "bottle upright on the crystal, label squared to camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "sculptural stone set with a crisp rim light on the glass and crystal facets",
+          "pose": "bottle at a 3/4 hero angle, crystals framing the base",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the bottle shoulder resting against a quartz facet, cool highlights",
+          "pose": "detail crop on glass meeting crystal",
+          "composition": "closeup"
+        },
+        {
+          "scene": "bottle on a mineral slab with one sculptural stone accent, soft cool shadow",
+          "pose": "minimal luxe hero staging, product dominant",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Wet Tile Spa",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 18,
+    "rationale": "Product on wet stone tile with soft steam — clean spa hero for body & bath.",
+    "meta": {
+      "parent_fit": [
+        "body",
+        "skincare"
+      ],
+      "fit": [
+        "body",
+        "skincare"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:soft_natural_daylight",
+          "color:calm_neutral_spa",
+          "texture:wet_stone_tile_steam",
+          "context:spa_bath_ledge"
+        ],
+        "extra_positive": "premium body and bath hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product standing on a wet natural stone or matte tile surface with fine water beading and a hint of soft steam, calm neutral spa palette, soft diffused natural daylight from the side, gentle wet sheen and clean reflection, fresh serene wellness mood, shot on 100mm macro at f/8, tack-sharp legible label true to reference, color-accurate packaging",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, heavy fog obscuring product, dirty grout, harsh sun, cluttered bathroom clutter"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "wet natural stone tile with water beading and faint steam, soft daylight",
+          "pose": "product upright, label squared to camera, wet sheen below",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "calm neutral spa ledge with a soft reflection on the wet surface",
+          "pose": "product at a 3/4 hero angle, steam softly behind",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the pump or cap with water droplets, shallow depth",
+          "pose": "detail crop on the dispenser and beading water",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product on a wet stone ledge with a folded towel and a eucalyptus sprig out of focus",
+          "pose": "styled spa hero, product dominant",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Bath Ledge",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 19,
+    "rationale": "Sunny bath-side ledge with towels and greenery — warm lifestyle-adjacent body hero.",
+    "meta": {
+      "parent_fit": [
+        "body"
+      ],
+      "fit": [
+        "body"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:warm_window_daylight",
+          "color:warm_neutral_home",
+          "texture:linen_ceramic_matte",
+          "context:tub_edge_lifestyle"
+        ],
+        "extra_positive": "premium body care hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product staged on a clean bright bathtub or basin ledge with soft folded linen towels and a touch of greenery, warm window daylight casting a gentle natural shadow, airy home-spa lifestyle setting kept clean and uncluttered, product remains the clear hero, shot on 85mm at f/5.6, tack-sharp legible label true to reference, warm inviting mood",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, messy cluttered bathroom, busy background, harsh contrast, product lost in the scene"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "bright tub ledge with folded linen towels and soft greenery, warm daylight",
+          "pose": "product upright and forward, label squared to camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "sunlit basin ledge with a gentle natural shadow, airy home-spa mood",
+          "pose": "product at a 3/4 hero angle, towels softly behind",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on the cap and label with warm window light and soft bokeh greenery",
+          "pose": "detail crop on the dispenser, background out of focus",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product on the ledge with one plant and a rolled towel, clean lifestyle staging",
+          "pose": "styled hero, product clearly dominant in frame",
+          "composition": "medium_shot"
+        }
+      ]
+    }
+  },
+  {
+    "mode": "product",
+    "vertical": "producthero",
+    "category": "Hero",
+    "name": "Foam & Suds",
+    "output_type": "image_set",
+    "credit_cost": 2,
+    "sort_order": 20,
+    "rationale": "Soft lather and bubbles around the bottle — fresh, tactile hero for washes & cleansers.",
+    "meta": {
+      "parent_fit": [
+        "body"
+      ],
+      "fit": [
+        "body"
+      ]
+    },
+    "config": {
+      "schema_version": 1,
+      "mode": "product",
+      "parent_id": "product-hero",
+      "look": {
+        "style_preset": "Studio Beauty",
+        "attributes": [
+          "lighting:bright_clean_key",
+          "color:fresh_light_airy",
+          "texture:soft_foam_bubbles",
+          "context:clean_studio_wet"
+        ],
+        "extra_positive": "premium body wash and cleanser hero product photography, single product only, never duplicate or invent extra copies, packaging and label identical to the reference, do not fabricate lettering, product-only with no people or hands in frame, the single product surrounded by soft clean foam lather and delicate bubbles on a smooth wet surface, bright fresh airy palette, clean key light with a soft rim to catch the bubbles, crisp macro sparkle on the suds, fresh energetic clean mood, shot on 100mm macro at f/8, tack-sharp legible label true to reference, color-accurate packaging",
+        "extra_negative": "warped or melted product, distorted label, gibberish typography, double product, duplicate copies, extra caps, harsh blown highlights, muddy crushed shadows, fingerprints, dust, cluttered background, oversaturated neon clipping, color banding, people, hands, dirty grey foam, messy overflow covering the label, murky water, cluttered background"
+      },
+      "shot_strategy": "list",
+      "shots": [
+        {
+          "scene": "smooth wet surface with soft clean foam and delicate bubbles around the product",
+          "pose": "product upright, label kept clear of the foam, squared to camera",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "bright fresh set with rim-lit bubbles catching the light beside the product",
+          "pose": "product at a 3/4 hero angle, lather curling around the base",
+          "composition": "medium_shot"
+        },
+        {
+          "scene": "macro on sparkling suds and a few crisp bubbles against the cap",
+          "pose": "detail crop on the foam texture and dispenser",
+          "composition": "closeup"
+        },
+        {
+          "scene": "product on a wet ledge with a light drift of foam and a soft clean shadow",
+          "pose": "styled fresh hero, product dominant and label readable",
           "composition": "medium_shot"
         }
       ]
