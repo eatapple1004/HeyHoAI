@@ -35,7 +35,7 @@
       // 화장품(Cosmetics). slug은 매핑·딥링크 위해 'beauty' 유지(Beauty→Cosmetics 라벨 변경, General 삭제 2026-07-08).
       //   (2026-07-08 사용자 지시: texture·onmodel·reel·lifestyle·infocard·shade 테마 삭제 → Hero만 큐레이션. auto 제거.)
       {
-        slug: 'beauty', label: 'Cosmetics', active: true, verticals: ['beauty'],
+        slug: 'beauty', label: 'Cosmetics', active: true, verticals: ['beauty', 'producthero'],
         contentTypes: [
           { slug: 'hero', label: 'Hero', match: { category: ['Hero'] } }, // 제품 히어로컷 (Texture/OnModel/Reel/Lifestyle/InfoCard/Shade는 삭제됨)
         ],

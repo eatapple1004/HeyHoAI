@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 175→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 176→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 175,
-  "new_count": 141,
+  "total": 176,
+  "new_count": 142,
   "overlay_count": 7,
   "guarded_count": 128,
   "provisional_count": 26,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 175,
-    "contract_total": 175,
-    "catalog_total": 175,
-    "status_total": 175,
+    "fe_total": 176,
+    "contract_total": 176,
+    "catalog_total": 176,
+    "status_total": 176,
     "ok": true
   },
   "cards": {
@@ -3774,6 +3774,109 @@
         "emoji": "🧍",
         "grad": "linear-gradient(150deg,#ff9a6b,#ffce7a)",
         "picker": "model"
+      }
+    ],
+    "producthero": [
+      {
+        "id": "product-hero",
+        "cat": "Hero",
+        "name": "Product Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "✨",
+        "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)",
+        "cuts": [
+          {
+            "id": "dewy-glass",
+            "name": "Dewy Glass",
+            "preview": null,
+            "fit": []
+          },
+          {
+            "id": "liquid-splash",
+            "name": "Liquid Splash",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "botanical-dew",
+            "name": "Botanical Dew",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "aqua-float",
+            "name": "Aqua Float",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "cryo-frost",
+            "name": "Cryo Frost",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "noir-gold",
+            "name": "Noir Gold",
+            "preview": null,
+            "fit": [
+              "luxury",
+              "fragrance"
+            ]
+          },
+          {
+            "id": "silk-drape",
+            "name": "Silk Drape",
+            "preview": null,
+            "fit": [
+              "luxury",
+              "fragrance"
+            ]
+          },
+          {
+            "id": "stone-plinth-luxe",
+            "name": "Stone Plinth Luxe",
+            "preview": null,
+            "fit": [
+              "luxury",
+              "skincare"
+            ]
+          },
+          {
+            "id": "sunlit-pop",
+            "name": "Sunlit Pop",
+            "preview": null,
+            "fit": [
+              "color"
+            ]
+          },
+          {
+            "id": "gift-set-group",
+            "name": "Gift Set Group",
+            "preview": null,
+            "fit": [
+              "set"
+            ]
+          }
+        ]
       }
     ]
   }

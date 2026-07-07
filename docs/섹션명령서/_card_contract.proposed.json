@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 175,
-  "new_count": 141,
+  "total": 176,
+  "new_count": 142,
   "provisional_count": 26,
   "drift_guard": {
-    "seed_total": 175,
-    "status_total": 175,
+    "seed_total": 176,
+    "status_total": 176,
     "ok": true
   },
   "id_collisions": [],
@@ -3191,6 +3191,105 @@
         ],
         "text_overlay": false,
         "picker": "model"
+      }
+    ],
+    "producthero": [
+      {
+        "id": "product-hero",
+        "cat": "Hero",
+        "name": "Product Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "cuts": [
+          {
+            "id": "dewy-glass",
+            "name": "Dewy Glass",
+            "preview": null,
+            "fit": []
+          },
+          {
+            "id": "liquid-splash",
+            "name": "Liquid Splash",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "botanical-dew",
+            "name": "Botanical Dew",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "aqua-float",
+            "name": "Aqua Float",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "cryo-frost",
+            "name": "Cryo Frost",
+            "preview": null,
+            "fit": [
+              "skincare"
+            ]
+          },
+          {
+            "id": "noir-gold",
+            "name": "Noir Gold",
+            "preview": null,
+            "fit": [
+              "luxury",
+              "fragrance"
+            ]
+          },
+          {
+            "id": "silk-drape",
+            "name": "Silk Drape",
+            "preview": null,
+            "fit": [
+              "luxury",
+              "fragrance"
+            ]
+          },
+          {
+            "id": "stone-plinth-luxe",
+            "name": "Stone Plinth Luxe",
+            "preview": null,
+            "fit": [
+              "luxury",
+              "skincare"
+            ]
+          },
+          {
+            "id": "sunlit-pop",
+            "name": "Sunlit Pop",
+            "preview": null,
+            "fit": [
+              "color"
+            ]
+          },
+          {
+            "id": "gift-set-group",
+            "name": "Gift Set Group",
+            "preview": null,
+            "fit": [
+              "set"
+            ]
+          }
+        ]
       }
     ]
   }

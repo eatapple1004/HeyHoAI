@@ -117,9 +117,9 @@
   .cut-bg input.cbg-sw::-moz-color-swatch{border:none;border-radius:6px}
   /* 모델 픽커 (Studio Model Cut 모달) */
   .model-sel .ms-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2);display:block;margin-bottom:8px}
-  .model-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-  .model-sel .ms-chip{padding:5px 12px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-  .model-sel .ms-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .model-sel .ms-filters,.cut-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .model-sel .ms-chip,.cut-sel .ms-chip{padding:5px 12px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .model-sel .ms-chip.on,.cut-sel .ms-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
   .model-sel .ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;max-height:300px;overflow-y:auto;padding:2px}
   .model-card{padding:0;cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border2);background:rgba(255,255,255,.03);transition:border-color .14s,box-shadow .14s;font-family:inherit}
   .model-card:hover{border-color:var(--accent)}
@@ -991,9 +991,9 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=11"></script>
-<script src="/js/themes.js?v=4"></script>
-<script src="/js/taxonomy.js?v=5"></script>
+<script src="/js/recipes.generated.js?v=12"></script>
+<script src="/js/themes.js?v=5"></script>
+<script src="/js/taxonomy.js?v=6"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
 <script>
@@ -1042,6 +1042,12 @@ function buildTemplates(){
     const m=mk(c,'On-model','studiomodel');
     m.picker=c.picker; // 'model' → 모달에서 컷 대신 모델 그리드
     if(!m.preview)m.preview='/img/studiomodel/'+c.id+'.png';
+    shopping.push(m);
+  });
+  (C.producthero||[]).forEach(c=>{ // 오피셜 Cosmetics 제품 히어로(스타일 변형 픽커+제품궁합 필터). category=Hero → taxonomy Cosmetics>Hero.
+    const m=mk(c,'Hero','producthero');
+    if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/producthero/'+ct.id+'.jpg'; }); // 스타일 썸네일 컨벤션
+    if(!m.preview)m.preview='/img/producthero/dewy-glass.jpg'; // 카드 썸네일=기본 스타일
     shopping.push(m);
   });
   TEMPLATES={
@@ -2174,19 +2180,32 @@ function renderModalBackgrounds(r){
 function setBgFilter(v){ modalBgFilter=v; const g=document.getElementById('rmBgGrid'); if(g)g.innerHTML=bgCardsHtml(); document.querySelectorAll('#rmBackgrounds .ms-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-bf')===v)); }
 function setModalBg(id){ modalBgId=id; document.querySelectorAll('#rmBackgrounds .model-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-bg')===id)); }
 function bgPhrase(){ const b=bgById(state.bgId); if(!b||b.id==='studio'||!b.scene) return 'in a clean photography studio against a light grey seamless cyclorama, soft even softbox lighting'; return 'in '+b.scene+', '+b.light; }
+// 컷/스타일 픽커 — cuts에 fit 태그가 있으면(producthero) 제품궁합 필터 노출.
+let modalCutFilter='all';
+const CUT_FIT_LABEL={skincare:'Skincare',color:'Color',fragrance:'Fragrance',luxury:'Luxury',set:'Set'};
+function cutFitTags(r){ const s=[]; (r&&r.cuts||[]).forEach(ct=>{(ct.fit||[]).forEach(f=>{if(s.indexOf(f)<0)s.push(f);});}); return s; }
+function cutsForFilter(r,f){ return (r&&r.cuts||[]).filter(ct=> f==='all' || !ct.fit || !ct.fit.length || ct.fit.indexOf(f)>=0 ); } // 빈 fit=범용(항상)
+function cutCardHtml(r,ct){
+  const img=ct.preview||('/img/productcut/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
+  return `<button type="button" data-cut="${esc(ct.id)}" class="cut-card${modalCutId===ct.id?' on':''}" onclick="setModalCut('${esc(ct.id)}')">`
+    +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
+    +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`;
+}
+function cutGridHtml(r){ return cutsForFilter(r,modalCutFilter).map(ct=>cutCardHtml(r,ct)).join(''); }
+function setCutFilter(v){ modalCutFilter=v; const g=document.getElementById('rmCutRow'); if(g&&modalRecipeObj)g.innerHTML=cutGridHtml(modalRecipeObj); document.querySelectorAll('#rmCuts .ms-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cf')===v)); }
 function renderModalCuts(r){
   const cw=document.getElementById('rmCuts'); if(!cw)return;
   if(r&&r.cuts&&r.cuts.length){
     modalCutId=(state.recipeId===r.id&&state.cutId)?state.cutId:r.cuts[0].id; // 재오픈 시 기존 선택 유지
+    modalCutFilter='all';
     cw.style.display='';
     const bgVal=(state.recipeId===r.id)?(state.cutBg||''):''; // 재오픈 시 기존 배경색 유지
-    cw.innerHTML=`<span class="cut-lbl">Cut type — pick one</span><div class="cut-row">`
-      +r.cuts.map(ct=>{
-        const img=ct.preview||('/img/productcut/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
-        return `<button type="button" data-cut="${ct.id}" class="cut-card${modalCutId===ct.id?' on':''}" onclick="setModalCut('${ct.id}')">`
-          +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
-          +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`; }).join('')
-      +`</div>`
+    const fits=cutFitTags(r); const hasFit=fits.length>0; // producthero면 제품궁합 필터
+    const lbl=hasFit?'Style — pick one':'Cut type — pick one';
+    const chip=(v,l)=>`<button type="button" class="ms-chip${modalCutFilter===v?' on':''}" data-cf="${esc(v)}" onclick="setCutFilter('${esc(v)}')">${esc(l)}</button>`;
+    const filters=hasFit?`<div class="ms-filters">${chip('all','All')}${fits.map(f=>chip(f,CUT_FIT_LABEL[f]||f)).join('')}</div>`:'';
+    cw.innerHTML=`<span class="cut-lbl">${lbl}</span>`+filters
+      +`<div class="cut-row" id="rmCutRow">${cutGridHtml(r)}</div>`
       +`<div class="cut-bg${BG_CUTS.has(modalCutId)?' show':''}" id="rmCutBg">`
         +`<span class="cbg-lbl">Background color</span>`
         +`<input type="text" id="rmCutBgInput" class="cbg-inp" maxlength="7" placeholder="#RRGGBB" autocomplete="off" spellcheck="false" value="${esc(bgVal)}" oninput="onCutBgInput(this)">`
