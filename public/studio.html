@@ -2282,9 +2282,8 @@ function openRecipeModal(id){
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
   modalRecipeObj=r;
   const _isModel=(r.picker==='model');
-  const _hasAxes=!!(r.axes&&r.axes.length);
-  const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.toggle('wide',_isModel||_hasAxes); // Model Cut·축 카드 = 좌우로 넓게(잘림 방지)
-  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_isModel?'none':''; // 픽커만 상단 샘플 숨김(축 카드는 프리뷰 유지)
+  const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.add('wide'); // 모든 템플릿 모달 통일 wide(좌우 확장·잘림 방지)
+  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_isModel?'none':''; // 픽커만 상단 샘플 숨김(그 외 프리뷰 유지)
   renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
   renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
   renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
