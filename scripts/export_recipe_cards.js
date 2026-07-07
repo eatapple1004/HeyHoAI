@@ -96,6 +96,7 @@ for (const v of FE_VERTICALS) {
       emoji: pickEmoji(r), grad: pickGrad(r.id),
       ...(r.cuts && r.cuts.length ? { cuts: r.cuts } : {}), // 중첩 템플릿: 컷(자식) 선택지(각 preview 포함)
       ...(r.picker ? { picker: r.picker } : {}),             // 모달 서브픽커 종류('model' = 모델 그리드)
+      ...(r.axes ? { axes: r.axes } : {}),                   // 모달 축 칩(skin/age/concept)
       ...(r.preview ? { preview: r.preview } : {}),          // 예시 이미지 경로
     };
   });

@@ -3801,6 +3801,11 @@
             "name": "Jewelry On Wrist",
             "preview": null
           }
+        ],
+        "axes": [
+          "skin",
+          "age",
+          "concept"
         ]
       },
       {

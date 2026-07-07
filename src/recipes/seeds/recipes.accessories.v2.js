@@ -207,8 +207,9 @@ module.exports = [
     "rationale": "Show your jewelry being worn — no photoshoot, no face. Pick the body zone that fits your piece (hand, neck, ears or wrist) and get natural on-body crops with the exact piece locked to the reference. Faceless by design; for a shot with a chosen model's face use 'Jewelry On Model'. The default zone is on-hand.",
     "meta": {
       "cuts": ["jewelry-on-hand", "jewelry-on-neck", "jewelry-on-ears", "jewelry-on-wrist"],
+      "axes": ["skin", "age", "concept"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "Faceless on-body composite: the chosen body zone is generated wearing the uploaded piece (no model, no face). High AI-risk on hands/anatomy — verify correct fingers, ears and skin, no face in frame, and that the piece did not morph, before delivery. (Face variant with model picker = 'Jewelry On Model'.)"
+      "render_notes": "Faceless on-body composite: the chosen body zone is generated wearing the uploaded piece (no model, no face). meta.axes = studio chip selectors (skin tone / age / concept) injected into the prompt at generate time (no seed variants). High AI-risk on hands/anatomy — verify correct fingers, ears and skin, no face in frame, and that the piece did not morph, before delivery. (Face variant with model picker = 'Jewelry On Model'.)"
     },
     "config": {
       "schema_version": 1,
