@@ -458,6 +458,9 @@
   .stpl-refs .stpl-ph{width:52px;height:52px;border-radius:9px;background:var(--surface) center/cover no-repeat;border:1px solid var(--border2)}
   .stpl-refs.off{opacity:.4;filter:grayscale(.55)}
   .modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative;animation:fadeUp .35s cubic-bezier(.2,.7,.3,1)}
+  /* Model Cut 등 픽커 모달 — 좌우로 넓게(가로 공간 활용) + 세로 오버플로 스크롤 */
+  .modal.wide{width:min(940px,100%);max-height:90vh;overflow-y:auto}
+  .modal.wide .model-sel .ms-grid{max-height:none} /* 넓어져 열이 많으니 각 픽커 내부 스크롤 해제 → 모달 전체 스크롤로 통일 */
   .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
   .modal .msub{font-size:13px;color:var(--dim);margin-bottom:20px;line-height:1.5}
   .modal .field{margin-bottom:16px}
@@ -2202,6 +2205,9 @@ function openRecipeModal(id){
   document.getElementById('rmBadge').textContent=r.type==='reel'?'▶ Reel':'▦ Photo';
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
   modalRecipeObj=r;
+  const _isModel=(r.picker==='model');
+  const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.toggle('wide',_isModel); // Model Cut = 좌우로 넓게
+  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_isModel?'none':''; // 픽커가 시각요소라 상단 샘플 플레이스홀더 숨김
   renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
   renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
   renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
