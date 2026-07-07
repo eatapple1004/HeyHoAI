@@ -211,6 +211,8 @@
     'Product · 360° Spin': '제품 · 360° 스핀', 'On-Model Lookbook': '온모델 룩북', 'Studio Packshot': '스튜디오 팩샷',
     'Cafe Lifestyle': '카페 라이프스타일', 'Macro Detail': '매크로 디테일', 'Unboxing': '언박싱', 'Flat-Lay Set': '플랫레이 세트',
     'Lifestyle Scene': '라이프스타일 장면', 'Product Reels': '제품 릴스', 'Product Photos': '제품 사진',
+    'On-Model Reel': '온모델 릴스', 'Editorial Hero': '에디토리얼 히어로', 'Color Pop': '컬러 팝', 'On-Neck Beauty': '온넥 뷰티', 'Colorblock': '컬러블록',
+    'Sunlit Pop': '선릿 팝', 'Bold Color': '볼드 컬러',
     'from one photo': '사진 한 장에서', 'credits to try': '체험용 크레딧',
     'is included with Brand — and Studio offers it right when you publish.': '는 Brand에 포함되며, 게시할 때 스튜디오가 바로 제공합니다.',
     '🛍️ Product Photos': '🛍️ 제품 사진', '▶ Product Reels': '▶ 제품 릴스',
