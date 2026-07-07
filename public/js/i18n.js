@@ -218,6 +218,8 @@
 
     // ── 온보딩 (Onboarding — doppia guide) ──
     // 플로우 라벨 · 메뉴 · 버튼
+    'doppia guide': 'doppia 사용하는 법', 'Doppia guide': 'doppia 사용하는 법',
+    'Doppia guide — how Studio works': 'doppia 사용하는 법 — 스튜디오 작동 방식',
     'Guides': '가이드', 'What do you want to do?': '무엇을 하시겠어요?',
     'Create with a template': '템플릿으로 만들기', 'Write your own prompt': '직접 프롬프트 쓰기',
     'Save a creation as a template': '크리에이션을 템플릿으로 저장',
