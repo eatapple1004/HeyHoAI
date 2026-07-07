@@ -79,13 +79,11 @@
 
   /* hero showcase */
   .showcase{margin-top:64px;position:relative}
-  .browser{max-width:1000px;margin:0 auto;background:linear-gradient(180deg,#15151f,#0e0e16);border:1px solid var(--border2);
-    border-radius:22px;box-shadow:0 50px 120px -40px rgba(124,108,255,.45),0 0 0 1px rgba(255,255,255,.03);overflow:hidden}
-  .browser-bar{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-  .browser-bar i{width:11px;height:11px;border-radius:50%;display:block}
-  .browser-bar .r{background:#ff5f57}.browser-bar .y{background:#febc2e}.browser-bar .g{background:#28c840}
-  .browser-bar .url{margin-left:14px;font-size:12px;color:var(--faint);background:rgba(255,255,255,.04);padding:5px 14px;border-radius:8px;border:1px solid var(--border)}
-  .showgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px}
+  /* 프레임리스 — 브라우저 목업 제거, 그리드만 은은한 글로우로 부양 */
+  .browser{max-width:1040px;margin:0 auto;position:relative}
+  .browser::before{content:'';position:absolute;inset:-8% 6% auto 6%;height:72%;z-index:-1;pointer-events:none;
+    background:radial-gradient(60% 100% at 50% 0%,rgba(124,108,255,.26),transparent 70%);filter:blur(34px)}
+  .showgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:0}
   @media(max-width:760px){.showgrid{grid-template-columns:repeat(2,1fr)}}
   .tile{aspect-ratio:3/4;border-radius:14px;position:relative;overflow:hidden;border:1px solid var(--border);transition:transform .3s}
   .tile:hover{transform:translateY(-6px) scale(1.02)}
@@ -218,10 +216,6 @@
   <!-- SHOWCASE -->
   <div class="showcase fade d5">
     <div class="browser">
-      <div class="browser-bar">
-        <i class="r"></i><i class="y"></i><i class="g"></i>
-        <span class="url">doppia.ai/studio</span>
-      </div>
       <!-- 실제 생성 결과물(Doppia 샘플). 각 타일=스크림+이미지(cover)+다크 폴백(#15151f).
            폴백을 다크로 둬서 cover 서브픽셀 반올림 시 하단 하이라이트 라인이 안 보이게 함(이미지 404 시에도 어둡게 폴백). -->
       <div class="showgrid">
