@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 174,
-  "new_count": 140,
+  "total": 175,
+  "new_count": 141,
   "provisional_count": 26,
   "drift_guard": {
-    "seed_total": 174,
-    "status_total": 174,
+    "seed_total": 175,
+    "status_total": 175,
     "ok": true
   },
   "id_collisions": [],
@@ -3174,6 +3174,23 @@
             "preview": null
           }
         ]
+      }
+    ],
+    "studiomodel": [
+      {
+        "id": "studio-model-cut",
+        "cat": "OnModel",
+        "name": "Studio Model Cut",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "picker": "model"
       }
     ]
   }

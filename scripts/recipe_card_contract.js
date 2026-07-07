@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const guards = require(path.join(SEEDS, 'product.guards.v2.js')); // ← resolvedGuards 실호출
 
-const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut'];
+const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel'];
 const PRODUCT = new Set(['fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'general']);
 // productcut은 PRODUCT에 넣지 않음 — guards(product.guards.v2.js)에 vertical 없음. guards는 PREVIEW 전용이라 생략 안전.
 
@@ -63,6 +63,7 @@ for (const v of VERTICALS) {
     if (PRODUCT.has(v)) card.guards = guards.resolvedGuards(v);   // ← resolvedGuards 실소비
     const kids = childrenByParent[id];                            // 중첩: 부모 카드에 컷(자식) 목록 부착
     if (kids && kids.length) card.cuts = kids;
+    if (r.meta && r.meta.picker) card.picker = r.meta.picker;    // 모달 서브픽커 종류('model' = 모델 선택 그리드)
     if (r.preview) card.preview = r.preview;                      // 예시 이미지(정적 경로) — 있으면 카드/모달에 노출
     return card;
   });

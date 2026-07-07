@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 174→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 175→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 174,
-  "new_count": 140,
+  "total": 175,
+  "new_count": 141,
   "overlay_count": 7,
   "guarded_count": 128,
   "provisional_count": 26,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 174,
-    "contract_total": 174,
-    "catalog_total": 174,
-    "status_total": 174,
+    "fe_total": 175,
+    "contract_total": 175,
+    "catalog_total": 175,
+    "status_total": 175,
     "ok": true
   },
   "cards": {
@@ -3753,6 +3753,27 @@
             "preview": null
           }
         ]
+      }
+    ],
+    "studiomodel": [
+      {
+        "id": "studio-model-cut",
+        "cat": "OnModel",
+        "name": "Studio Model Cut",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "🧍",
+        "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)",
+        "picker": "model"
       }
     ]
   }

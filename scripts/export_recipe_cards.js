@@ -74,7 +74,7 @@ let passedIds = new Set();
 try { passedIds = new Set((JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/섹션명령서/_pass_log.json'), 'utf8')).entries || []).map((e) => e.id)); } catch (e) {}
 
 // ── 카드 변환 (계약 필드 보존 + emoji/grad 파생) ──
-const FE_VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut'];
+const FE_VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel'];
 const cards = {};
 let total = 0, newCount = 0, overlayCount = 0, guardCount = 0, provCount = 0, idSet = new Set(), collisions = [];
 const provVerts = new Set(); // 계약 per-card provisional 기반(확장 로스터) — 하드코딩 아님, 데이터에서 파생
@@ -95,6 +95,7 @@ for (const v of FE_VERTICALS) {
       held: !passedIds.has(r.id),            // 출시 보류 — 통과(_pass_log)분만 false(해제). studio 조건부 '보류' 배지.
       emoji: pickEmoji(r), grad: pickGrad(r.id),
       ...(r.cuts && r.cuts.length ? { cuts: r.cuts } : {}), // 중첩 템플릿: 컷(자식) 선택지(각 preview 포함)
+      ...(r.picker ? { picker: r.picker } : {}),             // 모달 서브픽커 종류('model' = 모델 그리드)
       ...(r.preview ? { preview: r.preview } : {}),          // 예시 이미지 경로
     };
   });

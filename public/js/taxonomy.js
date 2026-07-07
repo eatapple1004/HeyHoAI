@@ -25,7 +25,7 @@
     categories: [
       {
         slug: 'apparel', label: 'Apparel', active: true, // 의류
-        verticals: ['fashion', 'productcut'], // 이 카테고리에 속한 기존 recipe.vertical
+        verticals: ['fashion', 'productcut', 'studiomodel'], // 이 카테고리에 속한 기존 recipe.vertical
         contentTypes: [
           { slug: 'product-cut', label: 'Product Cut', match: { vertical: ['productcut'] } }, // 제품컷
           { slug: 'on-model',    label: 'On-model',    match: { category: ['OnModel'] } },     // 착용컷

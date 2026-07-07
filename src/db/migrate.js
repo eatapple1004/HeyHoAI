@@ -1021,6 +1021,15 @@ async function migrateMarketplace() {
   );
   await pool.query(`UPDATE marketplace_templates SET price_credits = 0, use_price_credits = 0 WHERE recipe_id = 'product-cut'`);
 
+  // ✅ 기본 제공(무료) 공식 — Studio Model Cut(on-model, 모달 모델 픽커). price 0 → Store 구매게이트/생성 402 없음.
+  await pool.query(
+    `INSERT INTO marketplace_templates
+       (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
+     SELECT '@doppia', 'Studio Model Cut', 'Shopping', 'image', 'Natural', '🧍', 0, 0, true, 'public', 'studio-model-cut', 'Included official template — Studio Model Cut'
+     WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = 'studio-model-cut')`
+  );
+  await pool.query(`UPDATE marketplace_templates SET price_credits = 0, use_price_credits = 0 WHERE recipe_id = 'studio-model-cut'`);
+
   // ✅ 시드 레시피(93종) → recipes 테이블 적재. 정본은 시드 JS(recipeStore 런타임 로드),
   //    이 테이블은 config(JSONB) 전체를 보존하는 DB 사본. 멱등(upsert) — 배포마다 시드와 동기화.
   {

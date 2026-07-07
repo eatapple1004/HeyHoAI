@@ -15,7 +15,7 @@ const path = require('path');
 const { resolveToolId } = require('../tools/registry');
 
 // 12개 섹션 (FE recipes.generated.js의 cards 키와 정합)
-const SECTIONS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut'];
+const SECTIONS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel'];
 
 /** 카드 계약과 동일한 slug 규칙 (id = slug(name)) */
 function slug(s) {
