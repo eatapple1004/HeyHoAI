@@ -2258,9 +2258,10 @@ function batchRowHtml(b){
     : b.items.map(studioMediaCard).join('')+(b.failed||[]).map(f=>studioFailedCard(f.idx)).join(''); // 성공 슬롯 + 실패 슬롯(레오나르도식)
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
-  const photos=b.items.filter(i=>i.type!=='reel'&&i.url); // 이 creation의 사진(릴 제외)
-  const tplFromBtn=(!b.loading&&photos.length)
-    ?`<button class="rb-tpl" type="button" onclick="createTemplateFromBatch(this)" data-p="${esc(b.promptText||'')}" data-imgs='${esc(JSON.stringify(photos.map(i=>i.url)))}' data-idx="${photos[0].idx!=null?photos[0].idx:''}">＋ Create template</button>`
+  const usable=b.items.filter(i=>i.url); // 이 creation의 사진 또는 릴(영상 포함)
+  const firstU=usable[0]; const isReelBatch=!!(firstU&&firstU.type==='reel');
+  const tplFromBtn=(!b.loading&&usable.length)
+    ?`<button class="rb-tpl" type="button" onclick="createTemplateFromBatch(this)" data-p="${esc(b.promptText||'')}" data-imgs='${esc(JSON.stringify(usable.map(i=>i.url)))}' data-idx="${firstU.idx!=null?firstU.idx:''}" data-reel="${isReelBatch?1:0}">＋ Create template</button>`
     :'';
   const head=isTpl
     ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
@@ -2567,7 +2568,7 @@ function recolorThemes(catId, containerId){ const cat=(document.getElementById(c
 function openCreateTemplate(count){
   const p=extraPromptText();
   if(!p){toast('Write a prompt first.');return;}
-  state._tplSrcIdx=null; // 신규 생성 — 원본 크리에이션 링크 없음
+  state._tplSrcIdx=null; state._tplIsReel=false; // 신규 생성(이미지) — 원본 크리에이션 링크 없음
   const pr=document.getElementById('stplPrompt'); lockTplPrompt(); // 초기 읽기전용, Edit 버튼으로 잠금 해제
   document.getElementById('stplName').value=p.slice(0,40);
   document.getElementById('stplDesc').value='';
@@ -2583,26 +2584,43 @@ function openCreateTemplate(count){
 // 기존 크리에이션 카드의 "＋ Create template" → 이미 만들어진 사진을 커버로 같은 모달 오픈(생성·로딩 없음).
 function createTemplateFromBatch(btn){
   let imgs=[]; try{ imgs=JSON.parse(btn.dataset.imgs||'[]'); }catch(e){}
-  if(!imgs.length){toast('No image to use.');return;}
+  if(!imgs.length){toast('No media to use.');return;}
   const idxRaw=btn.dataset.idx; const srcIdx=idxRaw!==''&&idxRaw!=null?parseInt(idxRaw,10):null;
-  openCreateTemplateFromImages(btn.dataset.p||'', imgs, srcIdx);
+  openCreateTemplateFromImages(btn.dataset.p||'', imgs, srcIdx, btn.dataset.reel==='1');
 }
 // 기존 사진 배열을 커버로 모달 구성 — 초기 커버는 이미 있는 사진. 프롬프트 편집 시 신규 생성 경로와 동일(재생성 후 save).
-function openCreateTemplateFromImages(prompt, imgs, srcIdx){
+function openCreateTemplateFromImages(prompt, imgs, srcIdx, isReel){
   const p=(prompt||'').trim();
   state._tplSrcIdx=(srcIdx!=null?srcIdx:null);
+  state._tplIsReel=!!isReel;
   state.lastPreview=imgs.slice(); state._tplPromptBase=p; state._tplPick=imgs[0];
-  document.getElementById('stplName').value=(p||'My template').slice(0,40);
+  document.getElementById('stplName').value=(p||(isReel?'My reel':'My template')).slice(0,40);
   document.getElementById('stplDesc').value='';
   const pr=document.getElementById('stplPrompt'); pr.value=p; lockTplPrompt(); // 초기 읽기전용, Edit 버튼으로 잠금 해제
+  // reel: 프롬프트 편집·재생성(스튜디오 미지원) → Edit 숨김. 있는 그대로 승격.
+  const eb=document.getElementById('stplEditPrompt'); if(eb)eb.style.display=isReel?'none':'';
   document.getElementById('stplPromptWarn').style.display='none';
   document.getElementById('stplRegen').style.display='none';
   document.getElementById('stplCat').value='';
   _stplPicks=[]; renderThemeChips('stplThemes', [], 'Shopping');
-  document.getElementById('stplPick').innerHTML=imgs.map((u,i)=>
-    `<div class="stpl-ph${i===0?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`).join('');
+  document.getElementById('stplPick').innerHTML=imgs.map((u,i)=>tplCoverHtml(u,i===0,isReel)).join('');
+  if(isReel)activateTplCoverVideo();
   document.getElementById('saveTplModal').classList.add('open');
   syncTplSaveState();
+}
+// 커버 썸네일 — reel이면 <video>, 이미지면 background-image (pickTplCover는 data-url 공통)
+function tplCoverHtml(u,sel,isReel){
+  if(isReel)return `<div class="stpl-ph${sel?' sel':''}" data-url="${esc(u)}" onclick="pickTplCover(this)"><video src="${esc(u)}" muted playsinline autoplay loop preload="auto" style="width:100%;height:100%;object-fit:cover;border-radius:10px"></video></div>`;
+  return `<div class="stpl-ph${sel?' sel':''}" data-url="${esc(u)}" style="background-image:url('${esc(u)}')" onclick="pickTplCover(this)"></div>`;
+}
+// 커버 영상 재생 보장(creation.html ctActivateCover 이식) — innerHTML 삽입 video는 명시 load()+play() 필요.
+function activateTplCoverVideo(retries){
+  const v=document.querySelector('#stplPick video'); if(!v)return;
+  retries=(retries==null)?6:retries; v.muted=true;
+  const kick=()=>{const pl=v.play(); if(pl&&pl.catch)pl.catch(()=>{});};
+  v.addEventListener('loadeddata',kick,{once:true});
+  v.addEventListener('error',()=>{ if(retries>0)setTimeout(()=>{ try{v.load();}catch(e){} activateTplCoverVideo(retries-1); },1200); },{once:true});
+  try{v.load();}catch(e){} kick();
 }
 // 생성 완료 → 커버 픽커를 실제 사진으로 채움. 단일 선택(첫 장 기본), official 원리: preview_media[0]=썸네일.
 function fillCreateTemplateCovers(){
@@ -2638,8 +2656,9 @@ async function confirmSaveTpl(){
   const btn=document.getElementById('stplSave');btn.disabled=true;btn.textContent='Saving…';
   try{
     const res=await fetch('/api/marketplace/templates',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,type:'image',prompt:p,tool:curTool(),
-        visibility:'private',previewMedia:[cover],negativePrompt:negText(),sourceResultIdx:(state._tplSrcIdx!=null?state._tplSrcIdx:undefined)})}); // 항상 비공개 · 대표 이미지 1장
+      body:JSON.stringify({name:name,description:description,category:category,themeSlugs:themeSlugs,
+        type:state._tplIsReel?'reel':'image',prompt:p,tool:state._tplIsReel?'kling':curTool(),
+        visibility:'private',previewMedia:[cover],negativePrompt:negText(),sourceResultIdx:(state._tplSrcIdx!=null?state._tplSrcIdx:undefined)})}); // 항상 비공개 · 대표 커버 1장(이미지 또는 릴)
     const d=await res.json();
     if(!res.ok||!d.success)throw new Error(d.error||'save failed');
     const tid=d.data&&d.data.id;
