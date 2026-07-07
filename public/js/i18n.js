@@ -214,7 +214,63 @@
     'is included with Brand — and Studio offers it right when you publish.': '는 Brand에 포함되며, 게시할 때 스튜디오가 바로 제공합니다.',
     '🛍️ Product Photos': '🛍️ 제품 사진', '▶ Product Reels': '▶ 제품 릴스',
     '💸 Make great templates or AI models?': '💸 멋진 템플릿이나 AI 모델을 만드시나요?',
-    'Product': '제품', 'Company': '회사', 'Resources': '리소스'
+    'Product': '제품', 'Company': '회사', 'Resources': '리소스',
+
+    // ── 온보딩 (Onboarding — doppia guide) ──
+    // 플로우 라벨 · 메뉴 · 버튼
+    'Guides': '가이드', 'What do you want to do?': '무엇을 하시겠어요?',
+    'Create with a template': '템플릿으로 만들기', 'Write your own prompt': '직접 프롬프트 쓰기',
+    'Save a creation as a template': '크리에이션을 템플릿으로 저장',
+    'Skip': '건너뛰기', 'Next': '다음', 'Got it': '확인', 'Save': '저장',
+    // 템플릿 플로우
+    'Select your product': '제품 선택',
+    'Click Select a product and upload one clear photo. We keep it consistent across every scene.': '‘제품 선택’을 눌러 선명한 사진 한 장을 올리세요. 모든 장면에서 일관되게 유지합니다.',
+    'Tap a template below — the look is applied to your product instantly. Filter by category (Apparel, Beauty…). No prompt needed.': '아래 템플릿을 탭하면 그 룩이 제품에 바로 적용됩니다. 카테고리(의류·뷰티 등)로 필터링하세요. 프롬프트는 필요 없습니다.',
+    'Adjust settings': '설정 조정',
+    'Set the model, ratio, size, and count. The defaults work fine to start.': '모델·비율·크기·수량을 설정하세요. 처음엔 기본값으로 충분합니다.',
+    'Hit Generate. The badge shows the credit cost, and your product shots appear below.': '‘생성’을 누르세요. 뱃지에 크레딧 비용이 표시되고, 제품 컷이 아래에 나타납니다.',
+    // 커스텀 플로우
+    'Switch to Custom': '커스텀으로 전환',
+    'On the main screen, click "write your own prompt" to switch to Custom mode.': '메인 화면에서 ‘직접 프롬프트 쓰기’를 눌러 커스텀 모드로 전환하세요.',
+    'Add a reference (optional)': '레퍼런스 추가 (선택)',
+    'Select a product photo so results stay true to it — or skip it and go text-only.': '결과가 제품과 일치하도록 제품 사진을 선택하세요 — 또는 건너뛰고 텍스트만으로 진행하세요.',
+    'Write your prompt': '프롬프트 작성',
+    'Use "write your own prompt" to describe the shot — the scene, angle, and mood. No template needed.': '‘직접 프롬프트 쓰기’로 원하는 컷 — 장면·앵글·분위기 — 을 설명하세요. 템플릿은 필요 없습니다.',
+    'Choose your settings': '설정 선택',
+    'Pick the model, ratio, size, and count. The defaults work fine to start.': '모델·비율·크기·수량을 선택하세요. 처음엔 기본값으로 충분합니다.',
+    'Hit Generate. Your custom product shots appear below.': '‘생성’을 누르세요. 커스텀 제품 컷이 아래에 나타납니다.',
+    // 저장 플로우
+    'Turn a Custom creation into a template': '커스텀 크리에이션을 템플릿으로',
+    'In Your creations, click + Create template under any Custom creation — an image or reel you made from your own prompt. (Template-based creations already have a template.)': '‘내 크리에이션’에서 직접 프롬프트로 만든 커스텀 크리에이션(이미지 또는 릴스) 아래의 ‘＋ 템플릿 만들기’를 누르세요. (템플릿으로 만든 크리에이션은 이미 템플릿이 있습니다.)',
+    'Name & category': '이름 & 카테고리',
+    'Give it a name and pick a category so it is easy to reuse.': '나중에 다시 쓰기 쉽도록 이름을 정하고 카테고리를 고르세요.',
+    'Pick themes': '테마 선택',
+    'Choose at least one theme — it groups the template in your Studio.': '테마를 하나 이상 선택하세요 — 스튜디오에서 템플릿을 묶어줍니다.',
+    'Save — it is now in My templates, ready to reuse anytime. No prompt needed next time.': '저장하면 ‘내 템플릿’에 들어가 언제든 다시 쓸 수 있습니다. 다음엔 프롬프트가 필요 없습니다.',
+    // 목업 문구 · 저장 모달 필드
+    'Choose a look below — no prompt needed': '아래에서 룩을 고르세요 — 프롬프트 불필요',
+    'write your own prompt': '직접 프롬프트 쓰기', '✎ Custom': '✎ 커스텀', '⧉ Copy prompt': '⧉ 프롬프트 복사',
+    '— write your own prompt, no template needed.': '— 직접 프롬프트를 쓰세요, 템플릿 불필요.',
+    'Type a prompt…': '프롬프트를 입력하세요…', '+ Negative prompt': '+ 네거티브 프롬프트',
+    'Apparel': '의류', 'General': '일반', 'Nail': '네일',
+    'Product Cut': '제품 컷', 'On-model': '온모델', 'Lookbook': '룩북',
+    '(what generates the image)': '(이미지를 생성하는 내용)', 'My template': '내 템플릿',
+    '(optional)': '(선택)', 'e.g. Editorial marble backdrop…': '예: 에디토리얼 마블 배경…',
+    '(pick at least one)': '(하나 이상 선택)', 'Select a category… ▾': '카테고리 선택… ▾',
+    '+ New theme': '+ 새 테마',
+
+    // ── 라이브러리 · 스튜디오: In Studio / Library only (최근 추가) ──
+    'In Studio': '스튜디오에 있음', 'Library only': '라이브러리 전용',
+    '✓ In Studio': '✓ 스튜디오에 있음', '↑ To Studio': '↑ 스튜디오로',
+    'synced with your Studio': '스튜디오와 동기화됨', 'owned · not in your Studio': '보유 · 스튜디오에 없음',
+    '↓ Move all to Library only': '↓ 전체를 라이브러리 전용으로',
+    'In Studio / Library only': '스튜디오에 있음 / 라이브러리 전용', 'Manage templates': '템플릿 관리',
+    'Nothing in your Studio yet — add templates from Library only below.': '아직 스튜디오에 아무것도 없어요 — 아래 ‘라이브러리 전용’에서 템플릿을 추가하세요.',
+    'Empty. Hit a card’s “✓ In Studio” (or “Move all to Library only”) to park templates here — they stay in your library but leave your Studio.': '비어 있습니다. 카드의 ‘✓ 스튜디오에 있음’(또는 ‘전체를 라이브러리 전용으로’)을 눌러 템플릿을 여기에 보관하세요 — 라이브러리에는 남지만 스튜디오에서는 빠집니다.',
+    'Move to Library only — stays in your Library': '라이브러리 전용으로 이동 — 라이브러리에는 남습니다',
+    'Add back to Studio': '스튜디오로 되돌리기',
+    'Added to Studio': '스튜디오에 추가됨', 'Moved to Library only': '라이브러리 전용으로 이동됨',
+    'Could not update': '업데이트하지 못했습니다', 'Failed — try again': '실패 — 다시 시도하세요'
   } };
 
   function getLang() {
