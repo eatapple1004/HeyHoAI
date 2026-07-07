@@ -2,26 +2,26 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 176→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 166→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 176,
-  "new_count": 142,
+  "total": 166,
+  "new_count": 133,
   "overlay_count": 7,
-  "guarded_count": 128,
-  "provisional_count": 26,
+  "guarded_count": 118,
+  "provisional_count": 17,
   "provisional_verticals": [
     "beauty",
     "home",
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 176,
-    "contract_total": 176,
-    "catalog_total": 176,
-    "status_total": 176,
+    "fe_total": 166,
+    "contract_total": 166,
+    "catalog_total": 166,
+    "status_total": 166,
     "ok": true
   },
   "cards": {
@@ -305,27 +305,6 @@
     ],
     "beauty": [
       {
-        "id": "dewy-glass-hero",
-        "cat": "Hero",
-        "name": "Dewy Glass Hero",
-        "type": "image",
-        "cost": 2,
-        "new": false,
-        "provisional": false,
-        "flags": [],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "💄",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
-      },
-      {
         "id": "macro-swatch-lab",
         "cat": "Texture",
         "name": "Macro Swatch Lab",
@@ -526,27 +505,6 @@
         "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)"
       },
       {
-        "id": "gift-set-group-hero",
-        "cat": "Hero",
-        "name": "Gift Set Group Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": true,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
-      },
-      {
         "id": "glide-stick-swipe",
         "cat": "Texture",
         "name": "Glide Stick Swipe",
@@ -653,197 +611,6 @@
         ],
         "held": true,
         "emoji": "🖼️",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
-      },
-      {
-        "id": "stone-plinth-luxe",
-        "cat": "Hero",
-        "name": "Stone Plinth Luxe",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
-      },
-      {
-        "id": "liquid-splash-hero",
-        "cat": "Hero",
-        "name": "Liquid Splash Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
-      },
-      {
-        "id": "botanical-dew",
-        "cat": "Hero",
-        "name": "Botanical Dew",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)"
-      },
-      {
-        "id": "noir-gold-hero",
-        "cat": "Hero",
-        "name": "Noir Gold Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)"
-      },
-      {
-        "id": "cryo-frost-hero",
-        "cat": "Hero",
-        "name": "Cryo Frost Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
-      },
-      {
-        "id": "silk-drape-hero",
-        "cat": "Hero",
-        "name": "Silk Drape Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff5f8f)"
-      },
-      {
-        "id": "sunlit-pop",
-        "cat": "Hero",
-        "name": "Sunlit Pop",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
-      },
-      {
-        "id": "aqua-float",
-        "cat": "Hero",
-        "name": "Aqua Float",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ],
-        "held": false,
-        "emoji": "✨",
         "grad": "linear-gradient(150deg,#ffce7a,#ff7eb6)"
       }
     ],

@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 176,
-  "new_count": 142,
-  "provisional_count": 26,
+  "total": 166,
+  "new_count": 133,
+  "provisional_count": 17,
   "drift_guard": {
-    "seed_total": 176,
-    "status_total": 176,
+    "seed_total": 166,
+    "status_total": 166,
     "ok": true
   },
   "id_collisions": [],
@@ -242,24 +242,6 @@
     ],
     "beauty": [
       {
-        "id": "dewy-glass-hero",
-        "cat": "Hero",
-        "name": "Dewy Glass Hero",
-        "type": "image",
-        "cost": 2,
-        "new": false,
-        "provisional": false,
-        "flags": [],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
         "id": "macro-swatch-lab",
         "cat": "Texture",
         "name": "Macro Swatch Lab",
@@ -433,24 +415,6 @@
         ]
       },
       {
-        "id": "gift-set-group-hero",
-        "cat": "Hero",
-        "name": "Gift Set Group Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
         "id": "glide-stick-swipe",
         "cat": "Texture",
         "name": "Glide Stick Swipe",
@@ -533,173 +497,6 @@
         "new": true,
         "provisional": true,
         "flags": [
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "stone-plinth-luxe",
-        "cat": "Hero",
-        "name": "Stone Plinth Luxe",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "liquid-splash-hero",
-        "cat": "Hero",
-        "name": "Liquid Splash Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "botanical-dew",
-        "cat": "Hero",
-        "name": "Botanical Dew",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "noir-gold-hero",
-        "cat": "Hero",
-        "name": "Noir Gold Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "cryo-frost-hero",
-        "cat": "Hero",
-        "name": "Cryo Frost Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "silk-drape-hero",
-        "cat": "Hero",
-        "name": "Silk Drape Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "sunlit-pop",
-        "cat": "Hero",
-        "name": "Sunlit Pop",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [
-          "form_lock",
-          "single_sku",
-          "label_lock",
-          "reflection_control",
-          "count_lock"
-        ]
-      },
-      {
-        "id": "aqua-float",
-        "cat": "Hero",
-        "name": "Aqua Float",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": true,
-        "flags": [
-          "experimental",
           "needs_human_review"
         ],
         "text_overlay": false,

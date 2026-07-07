@@ -993,9 +993,8 @@ async function migrateMarketplace() {
   // ✅ 공식 유료 프리미엄 템플릿 시드(recipe-backed, 8종/5버티컬). 공식=creator_id NULL(로열티 없음=플랫폼).
   //    가짜 통계 없음(usage_count 기본 0). 가격=◈8 언락 + ◈1/사용. 미리보기 이미지는 추후 실예시 생성 후 첨부. 멱등(recipe_id 미존재 시만).
   for (const t of [
-    { rid: 'stone-plinth-luxe',           name: 'Stone Plinth Luxe',           emoji: '🏛️' }, // beauty
-    { rid: 'noir-gold-hero',              name: 'Noir Gold Hero',              emoji: '🖤' }, // beauty
-    { rid: 'dewy-glass-hero',             name: 'Dewy Glass Hero',             emoji: '💧' }, // beauty
+    // (2026-07-08) beauty Hero 3종(stone-plinth-luxe·noir-gold-hero·dewy-glass-hero) 제거 —
+    //   Product Hero 파라미터형 템플릿(producthero)으로 이관, 단독 오피셜 카드 폐지. 아래 DELETE로 prod 기존 행 정리.
     { rid: 'ring-editorial-campaign',     name: 'Ring Editorial Campaign',     emoji: '💍' }, // jewelry
     { rid: 'bracelet-editorial-campaign', name: 'Bracelet Editorial Campaign', emoji: '💎' }, // jewelry
     { rid: 'top-down-hero',               name: 'Top-Down Hero',               emoji: '🍽️' }, // food
@@ -1010,6 +1009,9 @@ async function migrateMarketplace() {
       [t.name, t.emoji, t.rid, `Premium recipe-backed template — ${t.name}`]
     );
   }
+  // (2026-07-08) beauty Hero 3종을 Product Hero(producthero)로 이관 → 옛 단독 프리미엄 오피셜 행 정리.
+  //   recipe_id는 producthero 자식과 안 겹침(-hero/-luxe 접미사). 멱등.
+  await pool.query(`DELETE FROM marketplace_templates WHERE recipe_id IN ('dewy-glass-hero','noir-gold-hero','stone-plinth-luxe') AND is_official = true`);
 
   // ✅ 기본 제공(무료) 공식 — Product Cut(제품컷 중첩). price_credits=0 → Store 구매게이트/생성 402 없음.
   //    Studio는 DEFAULT_OFFICIAL_RECIPES로 소유 무관 노출. 멱등: 없으면 삽입, 있으면 price를 0으로 보정(◈8 프리미엄 아님).
@@ -1128,7 +1130,7 @@ async function migrateMarketplace() {
   }
   // 공식 recipe-backed 시드 → 테마 백필(vertical 매핑). 멱등(PK).
   const OFFICIAL_THEME = [
-    ['stone-plinth-luxe', 'beauty'], ['noir-gold-hero', 'beauty'], ['dewy-glass-hero', 'beauty'],
+    // (2026-07-08) beauty Hero 3종 제거 → producthero로 이관.
     ['ring-editorial-campaign', 'jewelry'], ['bracelet-editorial-campaign', 'jewelry'],
     ['top-down-hero', 'food'], ['void-hero-cut', 'tech'], ['pet-product-hero', 'pet'],
     ['product-cut', 'productcut'],

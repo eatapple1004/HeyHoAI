@@ -1,12 +1,12 @@
 # 레시피 종합 현황 (자동생성 · `node scripts/consolidate_recipes.js`)
 
-**9/15 섹션 OK · 총 176개 템플릿**
+**9/15 섹션 OK · 총 166개 템플릿**
 
 | 섹션 | 상태 | 개수 | 파일 |
 |---|---|---|---|
 | influencer (인플루언서) | draft(이슈) | 7 | `recipes.influencer.v2.js` |
 | fashion (패션) | OK | 8 | `recipes.fashion.v2.js` |
-| beauty (뷰티) | draft(이슈) | 24 | `recipes.beauty.v2.js` |
+| beauty (뷰티) | draft(이슈) | 14 | `recipes.beauty.v2.js` |
 | jewelry (주얼리) | draft(이슈) | 34 | `recipes.jewelry.v2.js` |
 | food (푸드&카페) | OK | 8 | `recipes.food.v2.js` |
 | coffee (카페&커피) | draft(이슈) | 24 | `recipes.coffee.v2.js` |
@@ -25,7 +25,7 @@
 - #7 Summer Beach Coconut: config.shots 누락
 
 **beauty**
-- 개수 24 (권장 6~8)
+- 개수 14 (권장 6~8)
 
 **jewelry**
 - 개수 34 (권장 6~8)
@@ -60,14 +60,6 @@ _없음_
 - Region Result Reel [experimental,needs_human_review]
 - On-Skin Patch Hero [needs_human_review]
 - Teeth Shade Card [needs_human_review]
-- Stone Plinth Luxe [needs_human_review]
-- Liquid Splash Hero [experimental,needs_human_review]
-- Botanical Dew [experimental,needs_human_review]
-- Noir Gold Hero [experimental,needs_human_review]
-- Cryo Frost Hero [experimental,needs_human_review]
-- Silk Drape Hero [experimental,needs_human_review]
-- Sunlit Pop [experimental,needs_human_review]
-- Aqua Float [experimental,needs_human_review]
 
 **jewelry**
 - Ring on Finger [experimental,needs_human_review]
