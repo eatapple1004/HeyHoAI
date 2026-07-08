@@ -22,7 +22,7 @@ const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
 const mediaStore = require('../storage/mediaStore');
 
-const { generateUgcScript } = require('./ugcScript.service');
+const { generateUgcScript, suggestConcept } = require('./ugcScript.service');
 const { renderClips } = require('./clipPipeline.service');
 const { buildRenderPlan } = require('./renderPlan');
 const { assemble } = require('./assembler/ffmpeg.assembler');
@@ -162,4 +162,4 @@ async function getJob(id, userId) {
   };
 }
 
-module.exports = { generateScript, render, submit, getJob, estimateCost };
+module.exports = { generateScript, render, submit, getJob, estimateCost, suggestConcept };

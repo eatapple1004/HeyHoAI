@@ -128,4 +128,33 @@ async function generateUgcScript(input) {
   return script;
 }
 
-module.exports = { generateUgcScript, validateScriptSafety };
+/**
+ * 제품 사진 → 한 줄 컨셉/앵글 제안(비전). 컨셉 쓰기 귀찮은 유저용(선택).
+ * @param {{ image:{data:string,mediaType?:string}, details?:string, language?:string }} input
+ * @returns {Promise<string>} 컨셉 한 줄
+ */
+async function suggestConcept({ image, details = '', language = 'ko' } = {}) {
+  if (!image || !image.data) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
+  const langName = language === 'en' ? 'English' : 'Korean';
+  const system = [
+    'You are a short-form ad strategist. You look at a product photo and propose ONE punchy ad concept/angle for a TikTok / Instagram Reels ad.',
+    `Reply in ${langName}. Return ONLY the concept line — a single sentence, max ~14 words, scroll-stopping and specific to the product shown.`,
+    'No quotes, no preamble, no hashtags, no options — just the one line.',
+    'Do not invent unverifiable factual claims (exact wear time, ingredients, certifications, prices) unless given.',
+  ].join('\n');
+  const userText = details ? `Product facts (may use): ${details}\nPropose the concept.` : 'Propose the concept.';
+
+  const response = await client.messages.create({
+    model: env.CLAUDE_MODEL, // sonnet-5(비전) — 한 줄 제안엔 충분·저렴
+    max_tokens: 120,
+    system,
+    messages: [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: image.mediaType || 'image/png', data: image.data } },
+      { type: 'text', text: userText },
+    ] }],
+  });
+  const text = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+  return text.replace(/^["'“”](.*)["'“”]$/s, '$1').trim(); // 감싼 따옴표 제거
+}
+
+module.exports = { generateUgcScript, validateScriptSafety, suggestConcept };

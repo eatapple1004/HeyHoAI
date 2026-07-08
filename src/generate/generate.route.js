@@ -893,6 +893,21 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: 1 }]
   }
 });
 
+// (선택) 제품 사진 → AI 컨셉 제안. 컨셉 쓰기 귀찮은 유저용. 무과금.
+router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
+  try {
+    const pf = req.files?.productImage?.[0];
+    if (!pf) return res.status(400).json({ success: false, error: 'product image is required' });
+    const image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
+    try { fs.unlinkSync(pf.path); } catch {}
+    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '' });
+    res.json({ success: true, concept });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
 router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
