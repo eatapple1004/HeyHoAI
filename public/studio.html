@@ -607,12 +607,13 @@
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Product category <span style="color:var(--faint)">— category-tuned shots &amp; style</span></div>
         <div class="ugc-cats" id="ugcCats">
-          <button type="button" class="ugc-cat active" data-cat="" onclick="ugcSetCategory(this)">Auto-detect</button>
           <button type="button" class="ugc-cat" data-cat="apparel" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Apparel</button>
           <button type="button" class="ugc-cat" data-cat="cosmetics" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Cosmetics</button>
           <button type="button" class="ugc-cat" data-cat="nail" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Nail</button>
           <button type="button" class="ugc-cat" data-cat="accessories" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Accessories</button>
+          <button type="button" class="ugc-cat active" data-cat="" onclick="ugcSetCategory(this)">Other</button>
         </div>
+        <div style="font-size:11px;color:var(--faint);margin-top:4px">“Other” — AI reads your product image and picks the best approach automatically (same as selecting nothing).</div>
         <input type="hidden" id="ugcCategory" value="">
       </div>
       <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
