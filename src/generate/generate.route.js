@@ -997,7 +997,7 @@ router.post('/ugc/re-render', async (req, res, next) => {
       removed: parseArr(b.removed),
       edits: parseObj(b.edits),
       redoScenes: parseArr(b.redoScenes), // 씬 재생성(과금)
-      editedPrompts: parseObj(b.editedPrompts), // P3 Advanced brollPrompt 편집
+      editInstructions: parseObj(b.editInstructions), // 자연어 수정 지시(원본 프롬프트에 덧붙임)
     });
     res.json({ success: true, ...result });
   } catch (err) {

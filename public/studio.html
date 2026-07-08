@@ -2774,7 +2774,7 @@ function ugcSceneStripHtml(b){
         <button type="button" class="usc-redo" title="Re-generate this scene (uses credits)" onclick="ugcSceneRedo('${esc(u.jobId)}',${s.n})">🔄</button>
         <button type="button" class="usc-del" title="Remove scene" onclick="ugcSceneRemove('${esc(u.jobId)}',${s.n})" ${u.scenes.length<=1?'disabled':''}>🗑</button>
       </div>
-      <button type="button" class="usc-adv-toggle" onclick="ugcToggleAdv('${esc(u.jobId)}',${s.n})">⚙ Advanced</button>
+      <button type="button" class="usc-adv-toggle" onclick="ugcToggleAdv('${esc(u.jobId)}',${s.n})">✎ Edit scene</button>
       <div class="usc-busy-ov"><div class="rb-spin"></div></div></div>`;
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
@@ -2841,7 +2841,7 @@ async function ugcReassemble(jobId,opts){
   const edits={}; for(const k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; } // 남은 씬의 편집만
   const body={jobId,order,removed,edits};
   if(opts.redoScenes)body.redoScenes=opts.redoScenes;
-  if(opts.editedPrompts)body.editedPrompts=opts.editedPrompts;
+  if(opts.editInstructions)body.editInstructions=opts.editInstructions;
   const setBusy=opts.setBusy||function(){}; setBusy(true);
   try{
     const res=await fetch('/api/generate/ugc/re-render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -2854,7 +2854,6 @@ async function ugcReassemble(jobId,opts){
     if(paid){ try{ const jd=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data;
       if(jd&&Array.isArray(jd.scenes)&&jd.scenes.length){ u.scenes=jd.scenes.map(s=>Object.assign({},s)); u._orig=jd.scenes.map(s=>Object.assign({},s)); refreshed=true; } }catch(e){} }
     if(!refreshed){ // 무과금 or 재조회 실패: 로컬 낙관 상태를 확정
-      if(opts.editedPrompts){for(const k in opts.editedPrompts){const sc=u.scenes.find(x=>String(x.n)===String(k));if(sc)sc.advPrompt=opts.editedPrompts[k];}}
       u._orig=u.scenes.map(s=>Object.assign({},s,('onScreenText' in (u.edits[s.n]||{}))?{onScreenText:u.edits[s.n].onScreenText}:{}));
       u.scenes=u._orig.map(s=>Object.assign({},s));
     }
@@ -2877,26 +2876,24 @@ async function ugcSceneRedo(jobId,n){
   const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]');
   await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){if(card)card.classList.toggle('usc-busy',on);}});
 }
-// P3 — Advanced: 씬 이미지 프롬프트 편집 패널 토글(기본 숨김, 파워유저용).
+// 씬 수정하기: 자연어 지시로 그 씬만 재생성(원본 프롬프트 미노출). 패널 토글.
 function ugcToggleAdv(jobId,n){
   const b=ugcFindBatch(jobId); if(!b)return;
-  const s=b.ugc.scenes.find(x=>x.n===n)||(b.ugc._orig||[]).find(x=>x.n===n);
   const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
   if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';return;}
   wrap.dataset.n=String(n); wrap.style.display='';
-  const prompt=(s&&s.advPrompt)||'';
-  wrap.innerHTML='<div class="ugc-adv-hd">Advanced — Scene '+n+' image prompt <span class="ugc-adv-note">Most users don\'t need this. Editing regenerates the scene (uses credits).</span></div>'
-    +'<textarea class="ugc-adv-ta" spellcheck="false">'+esc(prompt)+'</textarea>'
-    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate with this prompt — uses credits</button>'
+  wrap.innerHTML='<div class="ugc-adv-hd">Edit Scene '+n+' <span class="ugc-adv-note">Describe a change and we\'ll re-generate this scene (uses credits).</span></div>'
+    +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder  ·  Make the model prettier  ·  Brighter background"></textarea>'
+    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
     +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div>';
 }
 async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
-  const val=ta?ta.value.trim():''; if(!val){toast('Prompt is empty');return;}
-  if(!confirm('Re-generate scene '+n+' with the new prompt? This uses credits.'))return;
+  const val=ta?ta.value.trim():''; if(!val){toast('Describe the change first');return;}
+  if(!confirm('Re-generate scene '+n+' with this change? This uses credits.'))return;
   const btn=wrap.querySelector('.ugc-apply'); const o=btn?btn.textContent:'';
-  const ep={}; ep[n]=val;
-  await ugcReassemble(jobId,{redoScenes:[n],editedPrompts:ep,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}}});
+  const ins={}; ins[n]=val;
+  await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}}});
   if(wrap){wrap.style.display='none';wrap.dataset.n='';}
 }
 // 실패 슬롯(레오나르도식) — 정확한 문구 + Delete. idx 있으면 서버 실패행 삭제, 없으면(라이브·릴) 타일만 제거. 토큰은 백엔드가 실패분만 환불.

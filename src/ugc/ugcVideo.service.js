@@ -257,7 +257,7 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editedPrompts = {}, dryRunVideo = false }) {
+async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, dryRunVideo = false }) {
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
   if (row.status !== 'succeeded' || !row.script || !row.result_idx) {
@@ -293,8 +293,9 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       const productKind = (rp && rp.kind) || 'product';
       const modelPath = (script._render && script._render.model) || null;
       for (const s of toRedo) {
-        const ep = editedPrompts[s.n] != null ? editedPrompts[s.n] : editedPrompts[String(s.n)];
-        if (ep != null && String(ep).trim()) s.brollPrompt = String(ep).slice(0, 2000); // P3 Advanced 편집 프롬프트
+        // 유저 자연어 수정 지시를 원본 프롬프트 뒤에 덧붙여 재생성(프롬프트 미노출·No prompt engineering)
+        const ins = editInstructions[s.n] != null ? editInstructions[s.n] : editInstructions[String(s.n)];
+        if (ins != null && String(ins).trim()) s.brollPrompt = `${s.brollPrompt || s.direction || ''}. ${String(ins).trim()}`.slice(0, 2000);
         const clip = await renderSceneClip(s, {
           productImagePath: productKind === 'product' ? productLocal : null,
           referenceImagePath: productKind === 'product' ? null : productLocal,
@@ -401,7 +402,7 @@ function editableScenes(script, sceneClips) {
       clipUrl: cl.clip ? (cl.remote ? cl.clip : `/images/${cl.clip}`) : null, // 씬 카드 자동재생용
       isStill: !!cl.isStill, // 정지이미지 클립(dryRun)이면 video 대신 썸네일
       hasClip: !!cl.clip,
-      advPrompt: sc.brollPrompt || '', // P3 Advanced 전용(기본 UI 미노출, 파워유저가 토글 시만)
+      // 원본 프롬프트는 프론트로 보내지 않음(No prompt engineering) — 수정은 자연어 지시로만
     };
   });
 }
