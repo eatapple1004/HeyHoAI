@@ -560,7 +560,8 @@
         <span id="ugcDropLabel" style="font-size:13.5px;color:var(--dim)">📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene</span>
         <button type="button" id="ugcImgClear" onclick="event.stopPropagation();ugcClearImg()" style="display:none;margin-left:auto;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
       </div>
-      <textarea class="script-ta" id="ugcConcept" placeholder="Describe your ad — your product + the angle.  e.g. Red matte lipstick, everyday hydrating formula — one color that completes your date-night look"></textarea>
+      <input type="text" id="ugcProductName" placeholder="Product name — e.g. Rouge Velvet Matte  (optional)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px;font-family:inherit">
+      <textarea class="script-ta" id="ugcConcept" placeholder="Describe the angle / concept.  e.g. everyday hydrating formula — one color that completes your date-night look"></textarea>
       <button type="button" id="ugcSuggestBtn" onclick="ugcSuggestConcept()" style="margin:4px 0 2px;background:none;border:none;color:var(--accent2);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:0">✨ Suggest a concept from your photo</button>
       <div style="margin:2px 0 8px">
         <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
@@ -3151,6 +3152,7 @@ async function ugcWriteScript(){
   try{
     const fd=new FormData();
     fd.append('concept',concept);fd.append('outputType',outputType);
+    const productName=(document.getElementById('ugcProductName').value||'').trim();if(productName)fd.append('product',productName); // 제품명(선택)
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details); // 옵션 제품 팩트(브랜드·클레임) — 카피 근거
     const pf=document.getElementById('ugcProductImg').files[0];
@@ -3200,6 +3202,7 @@ async function ugcRenderVideo(){
     const fd=new FormData();
     fd.append('script',JSON.stringify(ugcScript));
     fd.append('concept',concept);fd.append('outputType',outputType);
+    const productName=(document.getElementById('ugcProductName').value||'').trim();if(productName)fd.append('product',productName); // 제품명(선택)
     const vEl=document.getElementById('ugcVoice');fd.append('voice',(vEl&&vEl.checked)?'true':'false'); // 음성 내레이션
     const mEl=document.getElementById('ugcMusic');fd.append('music',(mEl&&mEl.checked)?'true':'false'); // 배경음악
     const vIdEl=document.getElementById('ugcVoiceId');if(vIdEl&&vIdEl.value)fd.append('voiceId',vIdEl.value); // 영상별 보이스
