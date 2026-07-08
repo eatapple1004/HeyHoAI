@@ -536,6 +536,7 @@
       <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">UGC Ads</button>
       <button id="modeCustom" onclick="setMode('custom')">Custom</button>
     </div>
+    <button type="button" class="custom-cta" id="ugcCta" onclick="toggleUgc()"><span class="cc-ic">🎬</span><span class="cc-label">Ad Video</span></button>
     <button type="button" class="custom-cta" id="customCta" onclick="toggleCustom()"><span class="cc-ic">✎</span><span class="cc-label">Custom</span></button>
     <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>
@@ -550,19 +551,19 @@
   </div>
 
   <div class="step fade d2 hidden" id="scriptStep">
-    <div class="step-head"><div class="step-num" id="snScript">2</div><h2>Write your script</h2>
-      <span class="hint">The line your avatar will say — or let AI write it.</span></div>
+    <div class="step-head"><div class="step-num" id="snScript">1</div><h2>Describe your ad</h2>
+      <span class="hint">Product + a one-line concept → AI writes the script and builds the video.</span></div>
     <div class="script-box">
-      <textarea class="script-ta" id="scriptTA" placeholder="e.g. I tried this for 7 days and the results genuinely shocked me…"></textarea>
+      <input class="script-ta" id="ugcProduct" style="min-height:0;height:auto" placeholder="Product — e.g. red matte lipstick, everyday hydrating formula">
+      <textarea class="script-ta" id="ugcConcept" placeholder="Concept / angle — e.g. one color that completes your date-night look"></textarea>
       <div class="script-ctrls">
-        <select class="tone-sel" id="toneSel">
-          <option value="energetic">Energetic</option>
-          <option value="trust">Trustworthy</option>
-          <option value="casual">Casual</option>
-          <option value="luxury">Luxury</option>
+        <select class="tone-sel" id="ugcFormat">
+          <option value="product-ad">Product ad (no model)</option>
+          <option value="model-editorial">Model editorial (on-model)</option>
         </select>
-        <button class="addon-toggle" onclick="aiWriteScript()">AI write script</button>
+        <button class="btn btn-primary" id="ugcGenBtn" onclick="generateUgc()">Generate ad video</button>
       </div>
+      <div class="hint" id="ugcHint" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -1595,8 +1596,10 @@ function setMode(m,initialVertical){
   document.getElementById('step1Title').textContent=STEP1[m][0];
   document.getElementById('step1Hint').textContent=STEP1[m][1];
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
-  // Custom 모드: 템플릿 그리드 숨김 — 직접 프롬프트로 생성(하단 프롬프트 칸이 주 입력)
-  document.getElementById('templateStep').classList.toggle('hidden',custom);
+  // Custom·UGC 모드: 템플릿 그리드 숨김 — 직접 입력으로 생성(Custom=프롬프트칸, UGC=제품+컨셉 패널)
+  document.getElementById('templateStep').classList.toggle('hidden',custom||ugc);
+  // UGC: compose gen-bar(genBtn) 숨김 — scriptStep의 자체 Generate 버튼 사용
+  { const gb=document.querySelector('.gen-bar'); if(gb)gb.style.display=ugc?'none':''; }
   document.getElementById('snTemplate').style.display='none'; // Step1 흡수로 스텝 번호 체계 제거
   document.getElementById('snResult').style.display='none';
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
@@ -1620,6 +1623,7 @@ function setMode(m,initialVertical){
 }
 // (2026-07-02) Custom = 독립 CTA 버튼 ↔ 커스텀 페이지. Templates↔Custom 토글 + 전환 화면 효과.
 function toggleCustom(){ setMode(state.mode==='custom'?'shopping':'custom'); playSwap(); }
+function toggleUgc(){ setMode(state.mode==='ugc'?'shopping':'ugc'); playSwap(); }
 // 전환 효과: base opacity:1인 요소만 대상(.gen-bar·#recipeGrid) — .fade 요소(#templateStep, base opacity:0)는
 // 애니가 중단돼 클래스가 남으면 갤러리가 사라지므로 절대 대상 금지. animationend에 클래스 제거(hygiene, transform 잔류 방지).
 function playSwap(){
@@ -3003,6 +3007,55 @@ async function pollVideoJob(jobId){
     if(d.status==='failed')throw new Error(d.error||'Reel generation failed');
   }
   throw new Error('This reel is taking a while. Check your gallery again shortly.');
+}
+
+// ── UGC 광고 영상 (제품+컨셉 → 대본→클립→조립, 비동기) ──
+async function generateUgc(){
+  const product=(document.getElementById('ugcProduct').value||'').trim();
+  const concept=(document.getElementById('ugcConcept').value||'').trim();
+  const outputType=document.getElementById('ugcFormat').value||'product-ad';
+  const hint=document.getElementById('ugcHint');
+  if(!product||!concept){hint.textContent='⚠ Enter a product and a one-line concept.';return;}
+  if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;}
+  const btn=document.getElementById('ugcGenBtn');const oldLabel=btn.textContent;
+  genActive++;btn.disabled=true;btn.textContent='Generating…';
+  hint.textContent='Writing the script and building your scenes… this can take a few minutes.';
+  const step=document.getElementById('resultStep');step.classList.remove('hidden');
+  const pending=makePendingBatch(null,concept,1,true); // reel placeholder
+  STUDIO_BATCHES.unshift(pending); renderStudioResults();
+  step.scrollIntoView({behavior:'smooth'});
+  const t0=Date.now();
+  const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#resultsGrid .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
+  try{
+    const res=await fetch('/api/generate/ugc/async',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,concept,outputType})});
+    const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
+    if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
+    if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
+    const url=await pollUgcJob(data.jobId);
+    if(pending){pending.items=[{url:url,type:'reel',idx:null}];pending.loading=false;renderStudioResults();}
+    hint.textContent='✓ Ad video ready — saved to your gallery.';
+  }catch(e){
+    console.error(e);
+    const i=STUDIO_BATCHES.indexOf(pending);
+    if(e.code402){if(i>=0)STUDIO_BATCHES.splice(i,1);renderStudioResults();hint.textContent='';toast(e.message||'Not enough credits','error');}
+    else{if(pending){pending.loading=false;pending.items=[];pending.failed=[{idx:null}];}renderStudioResults();hint.textContent='⚠ '+(e.message||'Generation failed');}
+  }finally{
+    clearInterval(elapsedTimer);
+    genActive=Math.max(0,genActive-1);btn.disabled=false;btn.textContent=oldLabel;
+    loadCredits();
+  }
+}
+// UGC 잡 상태 폴링 (최대 ~16분) — getJob은 resultUrl 반환
+async function pollUgcJob(jobId){
+  for(let i=0;i<120;i++){
+    await new Promise(r=>setTimeout(r,8000));
+    let d;
+    try{ d=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data; }catch(e){ continue; }
+    if(!d)continue;
+    if(d.status==='succeeded')return d.resultUrl;
+    if(d.status==='failed')throw new Error(d.error||'Ad video generation failed');
+  }
+  throw new Error('This is taking a while — check your gallery again shortly.');
 }
 
 // ── 캡션 + 해시태그 (Claude) ──
