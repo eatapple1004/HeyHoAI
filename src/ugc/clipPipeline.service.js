@@ -87,14 +87,15 @@ async function renderSceneClip(scene, opts) {
     return { sceneN: scene.n, clipUrl: imageUrl, durationMs, isStill: true, imageUrl };
   }
 
-  // 3) Kling image2video 모션
+  // 3) Kling image2video 모션 — Kling은 5s/10s 네이티브만 지원(임의 초 불가)이라 양자화.
   log(`  [scene ${scene.n}] Kling 모션…`);
-  const durationSec = Math.min(Math.max(Math.round(durationMs / 1000), 5), klingProvider.maxDurationSec);
+  const wantSec = Math.round(durationMs / 1000); // 유저 지정 최종 길이
+  const klingDur = Math.min((wantSec >= 8) ? 10 : 5, klingProvider.maxDurationSec); // Kling 생성 길이(5 or 10)
   const submit = await klingProvider.submit({
     sourceImageUrl: imageUrl,
     motionPrompt: scene.direction || prompt,
     negativePrompt: BROLL_NEGATIVE,
-    durationSec,
+    durationSec: klingDur,
     width,
     height,
     aspectRatio: aspect,
@@ -102,10 +103,12 @@ async function renderSceneClip(scene, opts) {
   });
   const poll = await pollUntilDone(klingProvider, submit.providerJobId);
 
+  // 최종 길이는 유저 지정(durationMs) — assembler가 Kling 5/10초 클립을 이 길이로 트림(Kling≥최종이라 항상 트림만).
+  const klingMs = poll.durationMs || klingDur * 1000;
   return {
     sceneN: scene.n,
     clipUrl: poll.videoUrl,
-    durationMs: poll.durationMs || durationSec * 1000,
+    durationMs: Math.min(durationMs, klingMs), // 유저 길이로 트림(Kling 실제보다 길게 요구하지 않게 clamp)
     isStill: false,
     imageUrl,
   };

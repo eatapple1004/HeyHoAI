@@ -37,9 +37,14 @@ async function updateJob(id, patch) {
   await query(`UPDATE ugc_jobs SET ${set}, updated_at=now() WHERE id=$1`, [id, ...cols.map((c) => patch[c])]);
 }
 
-/** 크레딧 원가 추정 — placeholder(클립수 × pro 5s 릴 단가). 확정 단가는 비즈 결정. */
-function estimateCost(nClips, isTemplate) {
-  return Math.max(nClips, 1) * creditService.videoCost(5, 'pro', isTemplate);
+/** Kling 생성 길이(네이티브 5s/10s only) — 8초+ 는 10초 생성, 그 이하는 5초 생성(짧게는 5초 만들어 트림). */
+function klingGenDur(durationSec) { return (Number(durationSec) >= 8) ? 10 : 5; }
+
+/** 크레딧 원가 추정 — 씬별 Kling 생성 길이(5/10) 단가 합산. 짧게(3~4s)는 5초 생성이라 5초 단가. */
+function estimateCost(script, isTemplate) {
+  const broll = ((script && script.scenes) || []).filter((s) => s.type === 'broll');
+  if (!broll.length) return creditService.videoCost(5, 'pro', isTemplate);
+  return broll.reduce((sum, s) => sum + creditService.videoCost(klingGenDur(s.durationSec), 'pro', isTemplate), 0);
 }
 
 function brollCount(script) { return ((script && script.scenes) || []).filter((s) => s.type === 'broll').length; }
@@ -85,12 +90,12 @@ async function persistSceneClips(clips) {
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
  */
-async function generateScript({ product, concept, outputType = 'product-ad', image = null, details = '', voiceover = true, category = '' }) {
+async function generateScript({ product, concept, outputType = 'product-ad', image = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0 }) {
   if (!concept) { const e = new Error('concept is required'); e.statusCode = 400; throw e; }
-  const script = await generateUgcScript({ product, concept, outputType, image, details, voiceover, category });
+  const script = await generateUgcScript({ product, concept, outputType, image, details, voiceover, category, sceneCount, sceneDuration });
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
-  return { script, nClips, cost: estimateCost(nClips, false) };
+  return { script, nClips, cost: estimateCost(script, false) };
 }
 
 /**
@@ -108,8 +113,8 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const refImage = productImagePath || referenceImagePath || null;
   const refKind = productImagePath ? 'product' : 'person';
 
-  // 과금(클립수 기준) — statusCode 에러(402/403) 그대로 전파. 승인 후에만.
-  const cost = estimateCost(nClips, isTemplate);
+  // 과금(씬별 길이 반영) — statusCode 에러(402/403) 그대로 전파. 승인 후에만.
+  const cost = estimateCost(script, isTemplate);
   const charge = await teamCredit.chargeGeneration(user, cost, `UGC 영상 (${outputType}, ${nClips}컷)`);
   const teamId = await teamCredit.activeTeamId(user.id);
 
@@ -293,7 +298,7 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
   const toRender = scenes.filter((s) => redoSet.has(s.n) || addedNs.has(s.n));
   let charge = null;
   if (toRender.length) {
-    const cost = toRender.length * creditService.videoCost(5, 'pro', false);
+    const cost = toRender.reduce((sum, s) => sum + creditService.videoCost(klingGenDur(s.durationSec), 'pro', false), 0);
     charge = await teamCredit.chargeGeneration(user, cost, `UGC 씬 ${toRender.length}컷 (재생성/추가)`); // 402/403 전파
   }
   try {

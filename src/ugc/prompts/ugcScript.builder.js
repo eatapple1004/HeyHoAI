@@ -50,10 +50,13 @@ function buildUgcScriptPrompt(input) {
     details = '',
     voiceover = true, // false면 내레이션·자막 없는 비주얼 전용 대본(onScreenText/spoken 비움)
     category = '',    // 제품군 지정 시 카테고리 플레이북 주입(씬레시피·스타일)
+    sceneCount = 0,   // 유저 지정 broll 씬 개수(0=AI 자동)
+    sceneDuration = 0, // 유저 지정 씬당 길이(초, 0=AI 자동)
   } = input || {};
 
   const profile = getProfile(outputType);
-  const durationSec = input?.durationSec || profile.defaultDurationSec || 20;
+  const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration
+    : (input?.durationSec || profile.defaultDurationSec || 20);
   const langName = language === 'en' ? 'English' : 'Korean';
   const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
@@ -87,6 +90,8 @@ function buildUgcScriptPrompt(input) {
       '  · Read each line aloud in your head: if a real person would never say it, rewrite it.',
     ] : []),
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
+    ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
+    ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : []),
     ...(voiceover ? [] : [
       '- NO VOICEOVER MODE: this ad has no narration and no on-screen captions — it is a silent, visual-only ad carried by the product visuals and background music.',
       '  · Set "onScreenText" to "" (empty) and "spoken" to "" for EVERY scene. Do NOT write any narration or caption lines.',
