@@ -181,6 +181,15 @@
   /* 생성 중: 우측 대본 패널 유지(읽기전용 흐림 + Generating 배지) */
   .ugc-generating{position:relative;opacity:.5;pointer-events:none;user-select:none}
   .ugc-generating::after{content:'⏳ Generating…';position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--accent,#8b7bff);color:#fff;font-size:12px;font-weight:650;padding:5px 13px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+  /* 결과 영상 음소거 토글(피드는 자동재생 위해 muted) */
+  .result-card .reel-mute{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+  .result-card .reel-mute:hover{background:rgba(0,0,0,.82)}
+  .result-card .reel-mute.on{background:var(--accent,#8b7bff)}
+  /* 씬 드래그 재배치 */
+  .usc-thumb{cursor:grab}
+  .usc-thumb:active{cursor:grabbing}
+  .usc.usc-dragover{outline:2px dashed var(--accent,#8b7bff);outline-offset:2px}
+  .usc.usc-dragging{opacity:.45}
   .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
   .rb-badge.tpl{color:var(--accent2);background:rgba(124,108,255,.14)}
   .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
@@ -2623,13 +2632,20 @@ let STUDIO_BATCHES=[];
 function studioMediaCard(o){
   const reel=(o.type==='reel');
   const inner=reel
-    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onclick="openImageModal('${esc(o.url)}','reel')"></video>`
+    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onclick="openImageModal('${esc(o.url)}','reel')"></video><button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`
     :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(o.url)}','photo')">`;
   return `<div class="result-card">${inner}
       <div class="actions">
         <a href="${esc(o.url)}" download><button>⬇ Download</button></a>
         <button onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')">⤢ View large</button>
       </div></div>`;
+}
+// 피드 영상은 자동재생 정책상 muted → 소리 토글(클릭 시 openImageModal 안 열리게 stopPropagation)
+function ugcToggleSound(e,btn){
+  e.stopPropagation();
+  const v=btn.parentElement&&btn.parentElement.querySelector('video'); if(!v)return;
+  v.muted=!v.muted; btn.textContent=v.muted?'🔇':'🔊'; btn.classList.toggle('on',!v.muted);
+  if(!v.muted){ try{ v.play(); }catch(_){} }
 }
 function copyPromptBtn(btn){ navigator.clipboard.writeText(btn.dataset.t||'').then(()=>{ const o=btn.innerHTML; btn.innerHTML='✓ Copied'; setTimeout(()=>{ btn.innerHTML=o; },1400); }).catch(()=>{ if(window.toast)toast('복사 실패','error'); }); }
 function toggleRbPrompt(btn){ const meta=btn.closest('.rb-meta'); const p=meta&&meta.querySelector('.rb-prompt'); if(!p)return; const exp=p.classList.toggle('expanded'); btn.textContent=exp?'Show less':'Show more'; } // (테스트) 프롬프트 펼치기
@@ -2683,8 +2699,8 @@ function ugcSceneStripHtml(b){
     const ed=u.edits[s.n]||{};
     const cap=(('onScreenText' in ed)?ed.onScreenText:s.onScreenText)||'';
     const thumb=s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`;
-    return `<div class="usc" data-n="${s.n}">
-      <div class="usc-thumb">${thumb}<span class="usc-idx">${i+1}</span></div>
+    return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
+      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)" title="Drag to reorder">${thumb}<span class="usc-idx">${i+1}</span></div>
       <div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
@@ -2709,6 +2725,28 @@ function ugcSceneStripHtml(b){
 }
 function ugcFindBatch(jobId){ return STUDIO_BATCHES.find(b=>b.ugc&&b.ugc.jobId===jobId); }
 function ugcCont(jobId){ return document.querySelector('.ugc-scenes[data-job="'+jobId+'"]'); } // 배치 스코프(멀티 결과 first-match 방지)
+// 씬 드래그 재배치(썸네일 잡고 드래그 → 대상 씬 앞으로 이동). ◀▶ 버튼은 터치 폴백으로 유지.
+var UGC_DRAG=null;
+function ugcDragStart(e,jobId,n){ UGC_DRAG={jobId:jobId,n:n}; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(n)); }catch(_){}
+  const c=e.target.closest('.usc'); if(c)c.classList.add('usc-dragging'); }
+function ugcDragEnd(e){ const c=e.target.closest('.usc'); if(c)c.classList.remove('usc-dragging');
+  document.querySelectorAll('.usc-dragover').forEach(el=>el.classList.remove('usc-dragover')); UGC_DRAG=null; }
+function ugcDragOver(e){ if(!UGC_DRAG)return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(_){}
+  const c=e.target.closest('.usc'); if(c&&String(c.dataset.n)!==String(UGC_DRAG.n))c.classList.add('usc-dragover'); }
+function ugcDragLeave(e){ const c=e.target.closest('.usc'); if(c&&!c.contains(e.relatedTarget))c.classList.remove('usc-dragover'); }
+function ugcDrop(e,jobId,targetN){ e.preventDefault();
+  const c=e.target.closest('.usc'); if(c)c.classList.remove('usc-dragover');
+  if(!UGC_DRAG||UGC_DRAG.jobId!==jobId){ UGC_DRAG=null; return; }
+  const from=UGC_DRAG.n; UGC_DRAG=null;
+  if(String(from)===String(targetN))return;
+  const b=ugcFindBatch(jobId); if(!b)return; const a=b.ugc.scenes;
+  const fi=a.findIndex(s=>String(s.n)===String(from));
+  const ti=a.findIndex(s=>String(s.n)===String(targetN));
+  if(fi<0||ti<0||fi===ti)return;
+  const [m]=a.splice(fi,1);
+  let ni=a.findIndex(s=>String(s.n)===String(targetN));
+  if(ni<0)ni=a.length; else if(fi<ti)ni++; // 오른쪽으로 드래그→대상 뒤로, 왼쪽으로→대상 앞으로
+  a.splice(ni,0,m); b.ugc._dirty=true; renderStudioResults(); }
 function ugcApplyBtn(jobId){ const c=ugcCont(jobId); return c&&c.querySelector('.ugc-apply-row .ugc-apply'); } // Advanced 패널의 .ugc-apply 회피
 function ugcSceneMove(jobId,n,dir){
   const b=ugcFindBatch(jobId); if(!b)return; const a=b.ugc.scenes; const i=a.findIndex(s=>s.n===n); const j=i+dir;
