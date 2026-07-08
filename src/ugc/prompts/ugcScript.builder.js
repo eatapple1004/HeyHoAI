@@ -45,6 +45,7 @@ function buildUgcScriptPrompt(input) {
     tone = 'authentic, upbeat, friendly',
     language = 'ko',
     audience = '',
+    hasImage = false,
   } = input || {};
 
   const profile = getProfile(outputType);
@@ -92,6 +93,7 @@ function buildUgcScriptPrompt(input) {
     // product는 선택 — 보통 유저가 brief(concept)에 제품을 녹여서 씀. 있으면 명시.
     product ? `Product: ${product}` : '',
     `Brief (product + concept/angle): ${concept}`,
+    hasImage ? 'A photo of the actual product is attached. Ground the copy, onScreenText and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.' : '',
     audience ? `Target audience: ${audience}` : '',
     `Format: ${format}`,
     `Formats reference:\n${fmtLine(format)}`,

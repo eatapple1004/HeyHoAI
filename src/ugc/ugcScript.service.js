@@ -77,13 +77,21 @@ async function generateUgcScript(input) {
   if (!input || !input.concept) {
     throw Object.assign(new Error('concept is required'), { statusCode: 400 });
   }
-  const { system, user } = buildUgcScriptPrompt(input);
+  const { system, user } = buildUgcScriptPrompt({ ...input, hasImage: !!(input.image && input.image.data) });
+
+  // 제품 사진이 있으면 비전 블록으로 첨부 → Claude가 실제 제품(색·형태·패키지)에 근거해 카피·brollPrompt 작성.
+  const content = (input.image && input.image.data)
+    ? [
+        { type: 'image', source: { type: 'base64', media_type: input.image.mediaType || 'image/png', data: input.image.data } },
+        { type: 'text', text: user },
+      ]
+    : user;
 
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
     max_tokens: 2048,
     system,
-    messages: [{ role: 'user', content: user }],
+    messages: [{ role: 'user', content }],
     output_config: { format: { type: 'json_schema', schema: SCRIPT_SCHEMA } }, // 유효 JSON 보장
   });
 

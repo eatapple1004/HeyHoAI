@@ -3055,7 +3055,11 @@ async function ugcWriteScript(){
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
   hint.textContent='Writing your script…';
   try{
-    const res=await fetch('/api/generate/ugc/script',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({concept,outputType})});
+    const fd=new FormData();
+    fd.append('concept',concept);fd.append('outputType',outputType);
+    const pf=document.getElementById('ugcProductImg').files[0];
+    if(pf)fd.append('productImage',pf,pf.name||'product.png'); // Claude가 실제 제품 보고 카피 작성
+    const res=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});
     const data=await sjson(res);
     if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
     ugcScript=data.script;

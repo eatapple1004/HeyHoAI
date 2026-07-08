@@ -875,10 +875,17 @@ function saveProductImage(req) {
 }
 
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
-router.post('/ugc/script', async (req, res, next) => {
+router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
     const { product, concept, outputType } = req.body || {};
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad' });
+    // 제품 사진 있으면 base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피)
+    let image = null;
+    const pf = req.files?.productImage?.[0];
+    if (pf) {
+      image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
+      try { fs.unlinkSync(pf.path); } catch {}
+    }
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
