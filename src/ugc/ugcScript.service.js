@@ -95,7 +95,7 @@ async function generateUgcScript(input) {
 
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
-    max_tokens: 2048,
+    max_tokens: 3600, // summary(씬별 1-2문장) 추가로 토큰 여유 확보(5씬+긴 요약 잘림 방지)
     system,
     messages: [{ role: 'user', content }],
     output_config: { format: { type: 'json_schema', schema: SCRIPT_SCHEMA } }, // 유효 JSON 보장
@@ -200,7 +200,7 @@ async function refineScene({ brollPrompt = '', direction = '', summary = '', ins
     '- summary: a one-line plain-language description the USER reads (not a prompt).',
     'The user requests a change in natural language (ANY language, e.g. Korean). Decide whether it affects the IMAGE, the MOTION, or BOTH, and apply it there. Rewrite ONLY what the change touches; keep everything else identical.',
     'Return IMAGE and MOTION prompts in ENGLISH, fully self-contained (not a diff). If the change does not apply to a field, return that field UNCHANGED (translate to English if needed).',
-    `Also return "summary": an updated ONE-LINE plain-language description in ${lang} of what the viewer now sees (human-readable, NO camera/render jargon).`,
+    `Also return "summary": an updated SPECIFIC 1-2 sentence description in ${lang} of what the viewer now sees and how it moves — concrete enough to picture it, plain human language (no jargon list), 1-2 sentences, not overloaded.`,
     subject === 'model'
       ? 'This scene features a model using the product — image changes may involve the model.'
       : 'This scene shows the PRODUCT ONLY — no model or person; do not add people.',
@@ -220,11 +220,11 @@ async function refineScene({ brollPrompt = '', direction = '', summary = '', ins
     return {
       brollPrompt: String(raw.brollPrompt || brollPrompt).slice(0, 2000),
       direction: String(raw.direction || direction).slice(0, 600),
-      summary: String(raw.summary || summary).slice(0, 200),
+      summary: String(raw.summary || summary).slice(0, 300),
     };
   } catch (e) {
     // Claude 실패 → 안전 폴백: 지시를 이미지 프롬프트에 덧붙이고 요약에도 반영
-    return { brollPrompt: `${brollPrompt}. ${ins}`.slice(0, 2000), direction, summary: (summary ? `${summary} · ${ins}` : ins).slice(0, 200) };
+    return { brollPrompt: `${brollPrompt}. ${ins}`.slice(0, 2000), direction, summary: (summary ? `${summary} · ${ins}` : ins).slice(0, 300) };
   }
 }
 
@@ -262,7 +262,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
       ? `Write spoken narration in ${lang} — natural, understated, no hype.`
       : 'This ad has NO voiceover — leave spoken empty; put any on-screen words in onScreenText.',
     `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. brollPrompt = a detailed still-image prompt (product, setting, lighting, composition). direction = Kling camera/subject motion.`,
-    `Also write "summary": a one-line plain-language description in ${lang} of what the viewer sees (human-readable for the user, NOT a prompt).`,
+    `Also write "summary": a SPECIFIC 1-2 sentence description in ${lang} of what the viewer sees and how it moves — concrete enough to picture the shot, plain human language (NOT a prompt), 1-2 sentences, not overloaded.`,
     'durationSec between 2 and 5. Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. "${x.onScreenText || '(visual only)'}" — motion: ${x.direction || ''}`).join('\n') || '(none)'}`;
@@ -282,7 +282,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
     spoken: voiceover ? String(raw.spoken || '').slice(0, 600) : '',
     direction: String(raw.direction || '').slice(0, 600),
     brollPrompt: String(raw.brollPrompt || raw.direction || '').slice(0, 2000),
-    summary: String(raw.summary || '').slice(0, 200),
+    summary: String(raw.summary || '').slice(0, 300),
     subject: (!productOnly && raw.subject === 'model') ? 'model' : 'product',
     durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 5),
   };
@@ -306,7 +306,7 @@ async function suggestScenes({ script, outputType = 'product-ad', count = 4 } = 
     `You propose ${n} DIFFERENT candidate scenes the user could ADD to an existing short product-ad video. Each must be a DISTINCT natural next scene with a different angle/beat (e.g. a result shot, a hero product beauty shot, a detail macro, a lifestyle/gifting moment). Match the existing tone and product.`,
     productOnly ? 'PRODUCT ONLY — subject MUST be "product", no people.' : 'May use subject "model" when a scene needs a person, otherwise "product".',
     voiceover ? `Write spoken narration in ${lang} — natural, understated.` : 'NO voiceover — leave spoken empty.',
-    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = ONE line ${lang} human description (what the user sees, NOT a prompt). durationSec 2-5.`,
+    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = a SPECIFIC 1-2 sentence ${lang} description of what the viewer sees and how it moves (concrete but plain human language, not a prompt; not overloaded). durationSec 2-5.`,
     'Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. ${x.summary || x.onScreenText || x.direction || ''}`).join('\n') || '(none)'}`;
@@ -332,7 +332,7 @@ function normalizeAddSceneObj(sc, outputType = 'product-ad', voiceover = true) {
     spoken: voiceover ? String(sc.spoken || '').slice(0, 600) : '',
     direction: String(sc.direction || '').slice(0, 600),
     brollPrompt: String(sc.brollPrompt || sc.direction || '').slice(0, 2000),
-    summary: String(sc.summary || '').slice(0, 200),
+    summary: String(sc.summary || '').slice(0, 300),
     subject: (!productOnly && sc.subject === 'model') ? 'model' : 'product',
     durationSec: Math.min(Math.max(Number(sc.durationSec) || 3, 2), 5),
   };
