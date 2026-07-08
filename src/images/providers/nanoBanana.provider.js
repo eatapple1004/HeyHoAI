@@ -13,6 +13,28 @@ function getClient() {
   return client;
 }
 
+// 레퍼런스 경로 → 실제 파일 절대경로(로스터 /img/, tmp/images, 절대경로 모두 해석)
+function resolveRefPath(p) {
+  if (!p) return null;
+  const clean = p.replace('file://', '');
+  if (path.isAbsolute(clean) && fs.existsSync(clean)) return clean;
+  if (clean.startsWith('/img/')) { const pub = path.join(process.cwd(), 'public', clean); if (fs.existsSync(pub)) return pub; }
+  const inTmp = path.join(process.cwd(), 'tmp', 'images', clean.split('/').pop());
+  if (fs.existsSync(inTmp)) return inTmp;
+  if (fs.existsSync(clean)) return clean;
+  return null;
+}
+function guessMime(fp) {
+  const e = fp.toLowerCase().split('.').pop();
+  return e === 'jpg' || e === 'jpeg' ? 'image/jpeg' : e === 'webp' ? 'image/webp' : 'image/png';
+}
+// 레퍼런스 종류별 지시문(제품=정체성 고정, person/model=동일 인물 유지)
+function refClause(kind, idx) {
+  return kind === 'product'
+    ? `Image ${idx} is the EXACT product to feature — keep its identity, shape, color, label and details unchanged.`
+    : `Image ${idx} is an AI-generated fictional model (not a real person) — keep the SAME face, hair and features.`;
+}
+
 /** @type {import('./types').ImageProvider} */
 const nanoBananaProvider = {
   name: 'nano-banana',
@@ -36,26 +58,33 @@ const nanoBananaProvider = {
     // Reference image가 있으면 멀티모달 요청, 없으면 텍스트만
     let contents;
 
-    if (req.referenceImagePath) {
-      // 절대 경로에서 파일명 추출 → 현재 서버의 tmp/images/에서 찾기
-      const filename = req.referenceImagePath.replace('file://', '').split('/').pop();
-      const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
-      const imageData = fs.readFileSync(refPath);
-      const base64 = imageData.toString('base64');
+    // 레퍼런스 정규화: req.references([{path,kind}]) 우선, 없으면 단일 referenceImagePath(하위호환)
+    const refs = (Array.isArray(req.references) && req.references.length)
+      ? req.references
+      : (req.referenceImagePath ? [{ path: req.referenceImagePath, kind: req.referenceKind || 'person' }] : []);
 
-      // referenceKind: 'product'=제품 정체성 고정(라벨·형태·색), 'person'(기본)=동일 인물 유지
-      const refInstruction = req.referenceKind === 'product'
-        ? `Use the product shown in the reference image as the EXACT product to feature. Keep its identity, shape, color, label and details unchanged. Place it in this new scene:\n\n${fullPrompt}`
-        : `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${fullPrompt}`;
-      contents = [
-        {
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType: 'image/png', data: base64 } },
-            { text: refInstruction },
-          ],
-        },
-      ];
+    if (refs.length) {
+      const imageParts = [];
+      const clauses = [];
+      let n = 0;
+      for (const r of refs) {
+        const abs = resolveRefPath(r.path);
+        if (!abs) continue;
+        n += 1;
+        imageParts.push({ inlineData: { mimeType: guessMime(abs), data: fs.readFileSync(abs).toString('base64') } });
+        clauses.push(refClause(r.kind || 'person', n));
+      }
+      if (imageParts.length) {
+        const hasProduct = refs.some((r) => r.kind === 'product');
+        const hasModel = refs.some((r) => r.kind && r.kind !== 'product');
+        const combine = (imageParts.length > 1 && hasProduct && hasModel)
+          ? 'Dress/place the product on the model naturally so the model is wearing or using that exact product. '
+          : '';
+        const instruction = `${clauses.join(' ')}\n${combine}Generate this new scene:\n\n${fullPrompt}`;
+        contents = [{ role: 'user', parts: [...imageParts, { text: instruction }] }];
+      } else {
+        contents = fullPrompt;
+      }
     } else {
       contents = fullPrompt;
     }
@@ -110,7 +139,7 @@ const nanoBananaProvider = {
         mimeType: imagePart.inlineData.mimeType,
         description: textPart?.text || '',
         localPath: filePath,
-        usedReference: !!req.referenceImagePath,
+        usedReference: !!(req.referenceImagePath || (Array.isArray(req.references) && req.references.length)),
       },
     };
   },
