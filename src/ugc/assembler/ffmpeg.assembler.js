@@ -16,6 +16,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { activeTracks } = require('../renderPlan');
+const tts = require('../audio/tts.service');
 
 const execFileP = promisify(execFile);
 
@@ -186,8 +187,30 @@ async function assemble(plan, opts = {}) {
     await fsp.copyFile(concatPath, finalPath);
   }
 
-  log(`조립 완료: ${finalPath}`);
-  return { videoPath: finalPath, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile };
+  // 4) 오디오 트랙 — opts.audio 요청 시 무음 final에 믹싱(v3 음성 / v2 음악 슬롯)
+  let videoOut = finalPath;
+  const audioTracks = [];
+  if (opts.audio && opts.audio.voice && opts.script) {
+    try {
+      log('VO(음성) 생성…');
+      const vo = await tts.voiceoverForScript(opts.script, { voice: opts.audio.voiceName, outPath: path.join(workDir, 'vo.mp3') });
+      if (vo) {
+        // 무음영상 + VO. -shortest 없이 → 영상 길이 유지(20s), VO는 그 위에 재생 후 무음.
+        await ff(['-i', 'final.mp4', '-i', 'vo.mp3', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', 'final_audio.mp4'], workDir);
+        videoOut = path.join(workDir, 'final_audio.mp4');
+        audioTracks.push('vo');
+        log('VO 믹싱 완료');
+      } else {
+        log('⚠️ VO 스킵(OPENAI_API_KEY 미설정)');
+      }
+    } catch (e) {
+      log(`⚠️ VO 실패, 무음 유지: ${e.message}`);
+    }
+  }
+  // 음악(music) 트랙은 여기 이어붙임 — 소스 결정 후(Kling audio / 라이브러리) 배선
+
+  log(`조립 완료: ${videoOut}`);
+  return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks };
 }
 
 module.exports = { assemble, buildAss, buildSrt, TARGET_W, TARGET_H, FPS };

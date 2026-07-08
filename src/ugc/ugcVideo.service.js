@@ -61,7 +61,8 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  * @returns {Promise<{ jobId:string, cost:number }>}
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
-  referenceImagePath = null, productImagePath = null, dryRunVideo = false, visibility, isTemplate = false }) {
+  referenceImagePath = null, productImagePath = null, dryRunVideo = false, visibility, isTemplate = false,
+  audio = {} }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -87,7 +88,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId: user.id, charge })
+  runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId: user.id, charge, audio })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -101,14 +102,14 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId, charge }) {
+async function runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId, charge, audio = {} }) {
   try {
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정.
     const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const plan = buildRenderPlan(script, clips);
-    const out = await assemble(plan, { log: (m) => log.info(`[${jobId}] ${m}`) });
+    const out = await assemble(plan, { audio, script, log: (m) => log.info(`[${jobId}] ${m}`) });
 
     // 서빙 디렉토리로 복사(/images 라우트가 서빙 + mediaStore 영속화)
     fs.mkdirSync(servedDir, { recursive: true });

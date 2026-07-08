@@ -911,7 +911,7 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
 router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
+    const { product, concept, outputType, referenceImagePath, dryRun, voice, music } = req.body || {};
     let script;
     try { script = JSON.parse(req.body.script || 'null'); } catch { return res.status(400).json({ success: false, error: 'invalid script JSON' }); }
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
@@ -921,6 +921,7 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]
       productImagePath: saveProductImage(req),
       referenceImagePath: referenceImagePath || null,
       dryRunVideo: dryRun === true || dryRun === 'true',
+      audio: { voice: voice === 'true' || voice === true, music: music === 'true' || music === true }, // 음성·음악 토글
       visibility, isTemplate: false,
     });
     res.json({ success: true, jobId: result.jobId, cost: result.cost });
