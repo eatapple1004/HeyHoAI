@@ -979,6 +979,28 @@ router.get('/ugc/jobs/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// (선택) 보이스·속도 미리듣기 — 짧은 샘플 TTS(mp3 스트림). 렌더 전 오디션용. Doppia 크레딧 미과금.
+router.get('/ugc/voice-preview', async (req, res, next) => {
+  try {
+    const tts = require('../ugc/audio/tts.service');
+    if (!tts.isConfigured()) return res.status(400).json({ success: false, error: 'TTS not configured' });
+    const { voiceId, speed, text } = req.query || {};
+    const sample = (text && String(text).trim()) || '이 색 하나면 데일리로 물리지 않아요. 바르는 순간 윤기까지 딱.';
+    const spd = parseFloat(speed);
+    const buf = await tts.synthesizeBuffer(sample.slice(0, 140), {
+      voiceId: (voiceId && String(voiceId).trim()) || undefined,
+      speed: Number.isFinite(spd) ? spd : undefined,
+    });
+    if (!buf) return res.status(502).json({ success: false, error: 'preview failed' });
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Cache-Control', 'no-store');
+    res.send(buf);
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
 // ─── 비디오 생성 (Kling V3) — 동기 (운영툴/오디오용, 기존 유지) ───
 router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), async (req, res, next) => {
   const vlog = logger('Video');

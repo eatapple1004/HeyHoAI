@@ -611,6 +611,7 @@
               <option value="1.1">Fast</option>
             </select>
           </label>
+          <button type="button" id="ugcPreviewBtn" onclick="ugcPreviewVoice()" class="btn" style="align-self:flex-end;font-size:12px;padding:6px 12px">▶ Preview voice</button>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:12px">
@@ -3113,6 +3114,32 @@ function ugcToggleDetails(){
 }
 
 // 1단계 — 대본만(무료). 검토 패널에 표시.
+// 보이스·속도 미리듣기: 현재 대본 hook(없으면 기본 문장)으로 짧은 샘플 재생. 렌더 전 오디션.
+let _ugcPreviewAudio=null;
+async function ugcPreviewVoice(){
+  const btn=document.getElementById('ugcPreviewBtn'); if(!btn) return;
+  const vid=(document.getElementById('ugcVoiceId')||{}).value||'';
+  const sp=(document.getElementById('ugcSpeed')||{}).value||'1';
+  const hook=(typeof ugcScript==='object'&&ugcScript&&ugcScript.hook)?String(ugcScript.hook):'';
+  const reset=()=>{ btn.textContent='▶ Preview voice'; btn.disabled=false; };
+  try{
+    if(_ugcPreviewAudio){ try{_ugcPreviewAudio.pause();}catch(e){} _ugcPreviewAudio=null; }
+    btn.disabled=true; btn.textContent='⏳ Loading…';
+    const qs=new URLSearchParams({voiceId:vid,speed:sp}); if(hook) qs.set('text',hook.slice(0,140));
+    const res=await fetch('/api/generate/ugc/voice-preview?'+qs.toString());
+    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error||('HTTP '+res.status)); }
+    const url=URL.createObjectURL(await res.blob());
+    _ugcPreviewAudio=new Audio(url);
+    btn.textContent='▶ Playing…';
+    _ugcPreviewAudio.onended=()=>{ reset(); URL.revokeObjectURL(url); };
+    _ugcPreviewAudio.onerror=()=>{ reset(); };
+    await _ugcPreviewAudio.play();
+  }catch(err){
+    btn.textContent='⚠ '+(err.message||'failed').slice(0,24);
+    setTimeout(reset,2500);
+  }
+}
+
 async function ugcWriteScript(){
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';

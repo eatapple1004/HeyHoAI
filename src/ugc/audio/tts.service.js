@@ -73,12 +73,16 @@ async function synthOpenAI(text, { voice = DEFAULT_VOICE, model = 'tts-1' } = {}
  * 텍스트 → mp3 파일. 벤더 미설정이면 null(호출부가 VO 스킵).
  * @returns {Promise<string|null>} mp3 경로
  */
-async function synthesize(text, opts = {}) {
+async function synthesizeBuffer(text, opts = {}) {
   const p = provider();
   if (!p) return null;
   if (!text || !text.trim()) return null;
+  return p === 'elevenlabs' ? await synthElevenLabs(text, opts) : await synthOpenAI(text, opts);
+}
 
-  const buf = p === 'elevenlabs' ? await synthElevenLabs(text, opts) : await synthOpenAI(text, opts);
+async function synthesize(text, opts = {}) {
+  const buf = await synthesizeBuffer(text, opts);
+  if (!buf) return null;
   const out = opts.outPath || path.join(process.cwd(), 'tmp', 'ugc', `vo_${Date.now()}.mp3`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, buf);
@@ -92,4 +96,4 @@ async function voiceoverForScript(script, opts = {}) {
 
 function isConfigured() { return !!provider(); }
 
-module.exports = { synthesize, voiceoverForScript, narrationFromScript, isConfigured, provider, DEFAULT_VOICE };
+module.exports = { synthesize, synthesizeBuffer, voiceoverForScript, narrationFromScript, isConfigured, provider, DEFAULT_VOICE };
