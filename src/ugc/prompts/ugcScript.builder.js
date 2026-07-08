@@ -53,6 +53,7 @@ function buildUgcScriptPrompt(input) {
   const profile = getProfile(outputType);
   const durationSec = input?.durationSec || profile.defaultDurationSec || 20;
   const langName = language === 'en' ? 'English' : 'Korean';
+  const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
 
   const system = [
     'You are a top-tier short-form creative director for TikTok / Instagram Reels / YouTube Shorts.',
@@ -65,6 +66,9 @@ function buildUgcScriptPrompt(input) {
     '- Parse the brief for: target audience, mood/tone, and any VISUAL cues — background, color, lighting, color grade, texture, setting, styling. Route every visual cue into the scene "direction" and "brollPrompt" so the rendered images actually reflect it (e.g. "빨강 배경" → red background in every brollPrompt). Route mood → copy tone; target → audience.',
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
+    usesModel
+      ? '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT invent a specific face. In "product" scenes brollPrompt is product-only.'
+      : '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, onScreenText and every brollPrompt to that category.',
     `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
     ...(language === 'ko' ? [
@@ -95,6 +99,7 @@ function buildUgcScriptPrompt(input) {
     '      "spoken": string,                 // dialogue/voiceover; EMPTY for no-dialogue output types',
     '      "onScreenText": string,           // short caption/overlay text',
     '      "direction": string,              // what is shown / camera & motion',
+    '      "subject": "product"|"model",     // "model"=model wears/uses the product in this shot; "product"=product-only shot',
     '      "brollPrompt": string             // for type "broll": product/model image prompt (English)',
     '    }',
     '  ],',

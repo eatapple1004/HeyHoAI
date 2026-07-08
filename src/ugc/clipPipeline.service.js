@@ -50,7 +50,8 @@ async function mapLimit(items, limit, fn) {
  * @returns {Promise<{ sceneN:number, clipUrl:string|null, durationMs:number, isStill:boolean, imageUrl:string|null, error?:string }>}
  */
 async function renderSceneClip(scene, opts) {
-  const { referenceImagePath = null, referenceKind = 'person', dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
+  const { referenceImagePath = null, referenceKind = 'person', productImagePath = null, modelImagePath = null,
+    dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
   const durationMs = Math.round((scene.durationSec || 3) * 1000);
   const prompt = scene.brollPrompt || scene.direction || '';
 
@@ -58,14 +59,25 @@ async function renderSceneClip(scene, opts) {
     return { sceneN: scene.n, clipUrl: null, durationMs, isStill: false, imageUrl: null, error: 'empty brollPrompt' };
   }
 
+  // 씬별 레퍼런스 라우팅: 모델씬(subject:'model')=모델+제품, 그 외=제품(또는 하위호환 단일 ref)
+  let references = [];
+  if (scene.subject === 'model' && modelImagePath) {
+    references.push({ path: modelImagePath, kind: 'person' });
+    if (productImagePath) references.push({ path: productImagePath, kind: 'product' });
+  } else if (productImagePath) {
+    references = [{ path: productImagePath, kind: 'product' }];
+  } else if (referenceImagePath) {
+    references = [{ path: referenceImagePath, kind: referenceKind }];
+  }
+
   // 1) 이미지 렌더 (nanoBanana / Gemini)
-  log(`  [scene ${scene.n}] 이미지 렌더…`);
+  log(`  [scene ${scene.n}] 이미지 렌더${references.length > 1 ? '(모델+제품)' : ''}…`);
   const image = await nanoBanana.generate({
     prompt,
     negativePrompt: BROLL_NEGATIVE,
     width: REELS_W,
     height: REELS_H,
-    ...(referenceImagePath ? { referenceImagePath, referenceKind } : {}),
+    ...(references.length ? { references } : {}),
   });
   const imageUrl = image.url;
 

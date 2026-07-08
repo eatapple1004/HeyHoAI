@@ -27,8 +27,9 @@ const SCRIPT_SCHEMA = {
           n: { type: 'integer' }, type: { type: 'string', enum: ['spoken', 'broll'] },
           durationSec: { type: 'number' }, spoken: { type: 'string' },
           onScreenText: { type: 'string' }, direction: { type: 'string' }, brollPrompt: { type: 'string' },
+          subject: { type: 'string', enum: ['product', 'model'] }, // 렌더 레퍼런스 라우팅(모델씬=제품+모델)
         },
-        required: ['n', 'type', 'durationSec', 'spoken', 'onScreenText', 'direction', 'brollPrompt'],
+        required: ['n', 'type', 'durationSec', 'spoken', 'onScreenText', 'direction', 'brollPrompt', 'subject'],
       },
     },
     cta: { type: 'string' }, caption: { type: 'string' },
@@ -65,7 +66,10 @@ function normalizeScenes(scenes) {
     spoken: s.spoken || '',
     onScreenText: s.onScreenText || '',
     direction: s.direction || '',
-    ...(s.type === 'broll' ? { brollPrompt: s.brollPrompt || s.direction || '' } : {}),
+    ...(s.type === 'broll' ? {
+      brollPrompt: s.brollPrompt || s.direction || '',
+      subject: s.subject === 'model' ? 'model' : 'product', // 렌더 레퍼런스 라우팅용(기본=제품)
+    } : {}),
   }));
 }
 
