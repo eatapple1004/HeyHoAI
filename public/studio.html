@@ -153,7 +153,7 @@
   .ugc-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
   .usc{position:relative;flex:0 0 132px;width:132px;background:var(--card2,#191921);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .usc-thumb{position:relative;aspect-ratio:9/16;background:#000}
-  .usc-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .usc-thumb img,.usc-thumb video{width:100%;height:100%;object-fit:cover;display:block}
   .usc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;font-weight:700}
   .usc-idx{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;font-weight:700;border-radius:20px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px}
   .usc-cap{font-size:11.5px;line-height:1.35;padding:7px 8px;min-height:34px;color:var(--fg,#e8e8ef);outline:none;border-bottom:1px solid transparent}
@@ -2640,10 +2640,15 @@ function studioMediaCard(o){
         <button onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')">⤢ View large</button>
       </div></div>`;
 }
-// 피드 영상은 자동재생 정책상 muted → 소리 토글(클릭 시 openImageModal 안 열리게 stopPropagation)
+// 피드 영상은 자동재생 정책상 muted → 소리 토글. 한 번에 하나만 소리(누른 것만 unmute, 나머지 음소거).
 function ugcToggleSound(e,btn){
   e.stopPropagation();
   const v=btn.parentElement&&btn.parentElement.querySelector('video'); if(!v)return;
+  const willUnmute=v.muted;
+  if(willUnmute){ // 다른 결과 영상은 모두 음소거(씬 카드 .usc video는 제외 — 미리보기 전용)
+    document.querySelectorAll('.result-card video').forEach(o=>{ if(o!==v)o.muted=true; });
+    document.querySelectorAll('.result-card .reel-mute').forEach(b=>{ if(b!==btn){ b.textContent='🔇'; b.classList.remove('on'); } });
+  }
   v.muted=!v.muted; btn.textContent=v.muted?'🔇':'🔊'; btn.classList.toggle('on',!v.muted);
   if(!v.muted){ try{ v.play(); }catch(_){} }
 }
@@ -2698,7 +2703,10 @@ function ugcSceneStripHtml(b){
   const cards=u.scenes.map((s,i)=>{
     const ed=u.edits[s.n]||{};
     const cap=(('onScreenText' in ed)?ed.onScreenText:s.onScreenText)||'';
-    const thumb=s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`;
+    const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
+    const thumb=isVid
+      ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata"></video>` // 각 씬 클립 자동재생(무음 미리보기)
+      :(s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`);
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)" title="Drag to reorder">${thumb}<span class="usc-idx">${i+1}</span></div>
       <div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"

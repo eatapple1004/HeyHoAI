@@ -398,6 +398,8 @@ function editableScenes(script, sceneClips) {
       subject: sc.subject || 'product',
       durationSec: sc.durationSec || Math.round((cl.durationMs || 3000) / 1000),
       thumb: cl.thumb ? `/images/${cl.thumb}` : null,
+      clipUrl: cl.clip ? (cl.remote ? cl.clip : `/images/${cl.clip}`) : null, // 씬 카드 자동재생용
+      isStill: !!cl.isStill, // 정지이미지 클립(dryRun)이면 video 대신 썸네일
       hasClip: !!cl.clip,
       advPrompt: sc.brollPrompt || '', // P3 Advanced 전용(기본 UI 미노출, 파워유저가 토글 시만)
     };
