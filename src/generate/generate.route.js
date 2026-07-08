@@ -900,7 +900,7 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
     if (!pf) return res.status(400).json({ success: false, error: 'product image is required' });
     const image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
     try { fs.unlinkSync(pf.path); } catch {}
-    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '' });
+    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '', outputType: req.body.outputType || 'product-ad' });
     res.json({ success: true, concept });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });

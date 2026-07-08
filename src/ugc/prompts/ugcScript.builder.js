@@ -62,6 +62,7 @@ function buildUgcScriptPrompt(input) {
     'Golden rules:',
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
+    '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, onScreenText and every brollPrompt to that category.',
     `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     '- Safe, honest, no medical/financial guarantees, no banned/adult content.',

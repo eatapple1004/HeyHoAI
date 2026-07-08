@@ -3060,6 +3060,7 @@ async function ugcSuggestConcept(){
   try{
     const fd=new FormData();
     fd.append('productImage',pf,pf.name||'product.png');
+    fd.append('outputType',document.getElementById('ugcFormat').value||'product-ad'); // 무출연/모델 인지
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details);
     const res=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd});

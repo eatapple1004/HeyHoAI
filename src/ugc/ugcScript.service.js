@@ -133,16 +133,27 @@ async function generateUgcScript(input) {
  * @param {{ image:{data:string,mediaType?:string}, details?:string, language?:string }} input
  * @returns {Promise<string>} 컨셉 한 줄
  */
-async function suggestConcept({ image, details = '', language = 'ko' } = {}) {
+async function suggestConcept({ image, details = '', language = 'ko', outputType = 'product-ad' } = {}) {
   if (!image || !image.data) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
   const langName = language === 'en' ? 'English' : 'Korean';
+  const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
   const system = [
-    'You are a short-form ad strategist. You look at a product photo and propose ONE punchy ad concept/angle for a TikTok / Instagram Reels ad.',
-    `Reply in ${langName}. Return ONLY the concept line — a single sentence, max ~14 words, scroll-stopping and specific to the product shown.`,
+    'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and propose ONE strategic ad angle for a TikTok / Instagram Reels ad.',
+    'Adapt the angle to the category you see:',
+    '- Cosmetics/beauty → shade, finish, texture, before→after result.',
+    '- Jewelry/accessories → emotion, craftsmanship, how it catches the light, gifting/occasion, timelessness.',
+    '- Apparel → styling, fit, fabric feel, versatility (one piece, many looks).',
+    '- Food/beverage → appetite, sensory detail, freshness, the moment.',
+    '- Tech/gadgets/home → the key benefit or the problem it solves.',
+    'The angle must be a STRATEGIC PROMISE (why stop scrolling / the payoff) — NOT a specific shot, camera move, or staging gimmick (no "comparison battle", no scene/camera directions; the script decides staging).',
+    noModel
+      ? 'This ad shows the PRODUCT ONLY — no model or person. Do not suggest angles that require someone to wear, apply, or hold it on camera.'
+      : 'This ad features a model wearing/using the product — the angle may involve the model.',
+    `Reply in ${langName}. Return ONLY the angle — one sentence, max ~14 words, specific to the product shown.`,
     'No quotes, no preamble, no hashtags, no options — just the one line.',
     'Do not invent unverifiable factual claims (exact wear time, ingredients, certifications, prices) unless given.',
   ].join('\n');
-  const userText = details ? `Product facts (may use): ${details}\nPropose the concept.` : 'Propose the concept.';
+  const userText = details ? `Product facts (may use): ${details}\nPropose the angle.` : 'Propose the angle.';
 
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL, // sonnet-5(비전) — 한 줄 제안엔 충분·저렴
