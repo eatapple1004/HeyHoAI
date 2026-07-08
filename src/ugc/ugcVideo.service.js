@@ -5,16 +5,16 @@
  * videoJob.service 의 크레딧·결과저장·mediaStore 패턴을 재사용하되, UGC는 단일 Kling task가
  * 아니라 다단계 오케스트레이션이라 자체 백그라운드 잡으로 돈다(공유 Kling 폴러 미사용).
  *
- * ⚠️ v1 배선 제약(다음 증분에서 해소):
- *   - 잡 상태 = 인메모리 Map (프로세스 재시작 시 소실). durable 하려면 `ugc_jobs` 테이블
- *     → prod 마이그레이션 배치에 포함 필요([[doppia_local_prod_isolation]]로 로컬 migrate 금지).
- *   - 크레딧 원가 = placeholder(클립수 × videoCost). 확정 단가는 비즈 결정(별도).
+ * 잡 상태 = `ugc_jobs` 테이블(재시작·멀티인스턴스 견고). ⚠️ prod엔 마이그레이션 미적용 —
+ *   배포 배치에서 `node src/db/migrate.js` 실행 필요([[doppia_local_prod_isolation]]로 로컬만 적용됨).
+ * ⚠️ 크레딧 원가 = placeholder(클립수 × videoCost). 확정 단가는 비즈 결정(별도).
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const logger = require('../lib/logger');
 const log = logger('UgcVideo');
+const { query } = require('../db/client');
 const promptRepo = require('../generate/prompt.repository');
 const resultRepo = require('../generate/result.repository');
 const reviewRepo = require('../generate/review.repository');
@@ -29,9 +29,13 @@ const { assemble } = require('./assembler/ffmpeg.assembler');
 
 const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우트가 서빙하는 디렉토리
 
-// v1 인메모리 잡 스토어(재시작 시 소실 — durable=ugc_jobs 테이블은 다음 증분)
-const JOBS = new Map();
-function setJob(id, patch) { JOBS.set(id, { ...(JOBS.get(id) || {}), ...patch, updatedAt: Date.now() }); }
+/** ugc_jobs 상태 갱신 (updated_at 자동). patch 키 = 컬럼명 */
+async function updateJob(id, patch) {
+  const cols = Object.keys(patch);
+  if (!cols.length) return;
+  const set = cols.map((c, i) => `${c}=$${i + 2}`).join(', ');
+  await query(`UPDATE ugc_jobs SET ${set}, updated_at=now() WHERE id=$1`, [id, ...cols.map((c) => patch[c])]);
+}
 
 /** 크레딧 원가 추정 — placeholder(클립수 × pro 5s 릴 단가). 확정 단가는 비즈 결정. */
 function estimateCost(nClips, isTemplate) {
@@ -56,13 +60,17 @@ async function submit({ user, product, concept, outputType = 'product-ad', refer
   const charge = await teamCredit.chargeGeneration(user, cost, `UGC 영상 (${outputType}, ${nClips}컷)`);
   const teamId = await teamCredit.activeTeamId(user.id);
 
-  // 3) 잡 생성 + 즉시 반환
-  const jobId = crypto.randomUUID();
-  setJob(jobId, {
-    id: jobId, userId: user.id, teamId, status: 'processing', outputType,
-    title: script.title, nClips, cost, resultUrl: null, error: null,
-    caption: script.caption, hashtags: script.hashtags, createdAt: Date.now(),
-  });
+  // 3) 잡 생성(DB) + 즉시 반환
+  const vis = visibility === 'private' ? 'private' : 'public';
+  const ins = await query(
+    `INSERT INTO ugc_jobs (user_id, team_id, output_type, product, concept, title, n_clips,
+       charge_amount, status, caption, hashtags, visibility)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'processing',$9,$10,$11) RETURNING id`,
+    [user.id, teamId, outputType, String(product).slice(0, 500), String(concept).slice(0, 1000),
+     script.title, nClips, charge ? charge.amount : 0, script.caption,
+     JSON.stringify(script.hashtags || []), vis]
+  );
+  const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} submitted (${outputType}, ${nClips}컷, cost=${cost})`);
 
   // 4) 백그라운드 파이프라인(await 안 함)
@@ -104,28 +112,33 @@ async function runPipeline({ jobId, script, referenceImagePath, dryRunVideo, vis
     await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
     await mediaStore.putFile(served); // 영속 스토리지 best-effort(라이브 404 방지)
 
-    setJob(jobId, { status: 'succeeded', resultUrl: `/images/${filename}`, resultIdx: savedResult.idx, durationSec, subtitleMode: out.subtitleMode });
+    await updateJob(jobId, { status: 'succeeded', result_url: `/images/${filename}`, result_idx: savedResult.idx, duration_sec: durationSec, subtitle_mode: out.subtitleMode });
     log.info(`UGC job ${jobId} succeeded → /images/${filename} (자막=${out.subtitleMode})`);
   } catch (err) {
     if (charge) await charge.refund().catch(() => {});
-    setJob(jobId, { status: 'failed', error: String(err.message).slice(0, 300) });
+    await updateJob(jobId, { status: 'failed', error: String(err.message).slice(0, 300) });
     log.error(`UGC job ${jobId} failed(refunded): ${err.message}`);
   }
 }
 
 /** 잡 상태 조회(소유자 본인 또는 팀 멤버) */
 async function getJob(id, userId) {
-  const j = JOBS.get(id);
+  const r = await query(
+    `SELECT id, status, result_url, error, title, output_type, caption, hashtags,
+            duration_sec, subtitle_mode, charge_amount, n_clips
+     FROM ugc_jobs
+     WHERE id = $1 AND (
+       user_id = $2
+       OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
+     )`,
+    [id, userId]
+  );
+  const j = r.rows[0];
   if (!j) return null;
-  if (j.userId !== userId) {
-    // 팀 멤버 허용
-    const isMember = j.teamId && (await teamCredit.activeTeamId(userId)) === j.teamId;
-    if (!isMember) return null;
-  }
   return {
-    id: j.id, status: j.status, resultUrl: j.resultUrl, error: j.error,
-    title: j.title, outputType: j.outputType, caption: j.caption, hashtags: j.hashtags,
-    durationSec: j.durationSec, subtitleMode: j.subtitleMode, cost: j.cost, nClips: j.nClips,
+    id: j.id, status: j.status, resultUrl: j.result_url, error: j.error,
+    title: j.title, outputType: j.output_type, caption: j.caption, hashtags: j.hashtags,
+    durationSec: j.duration_sec, subtitleMode: j.subtitle_mode, cost: j.charge_amount, nClips: j.n_clips,
   };
 }
 

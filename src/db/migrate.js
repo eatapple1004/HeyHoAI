@@ -735,6 +735,35 @@ async function migrate() {
     WHERE metadata->>'type' = 'video' AND metadata->>'taskId' IS NOT NULL;
   `);
 
+  // ─── UGC 영상 엔진 잡(제품+컨셉→대본→클립→조립) — 다단계 비동기 오케스트레이션 ───
+  //   video_jobs와 별개: 단일 Kling task가 아니라 자체 파이프라인. 인메모리 잡스토어를 대체(재시작·멀티인스턴스 견고).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ugc_jobs (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        team_id       UUID REFERENCES teams(id) ON DELETE SET NULL,
+        output_type   VARCHAR(24) NOT NULL DEFAULT 'product-ad',
+        product       TEXT,
+        concept       TEXT,
+        title         TEXT,
+        n_clips       INT NOT NULL DEFAULT 0,
+        charge_amount INT NOT NULL DEFAULT 0,  -- 실패 시 환불액
+        status        VARCHAR(20) NOT NULL DEFAULT 'processing', -- processing | succeeded | failed
+        result_idx    INT,                     -- generation_results.idx
+        result_url    TEXT,
+        caption       TEXT,
+        hashtags      JSONB,
+        duration_sec  INT,
+        subtitle_mode VARCHAR(12),             -- burned | sidecar | none
+        visibility    VARCHAR(10) NOT NULL DEFAULT 'public', -- public | private
+        error         TEXT,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_ugc_jobs_status ON ugc_jobs(status);
+    CREATE INDEX IF NOT EXISTS idx_ugc_jobs_user ON ugc_jobs(user_id, created_at DESC);
+  `);
+
   console.log('Migrations completed.');
 }
 
