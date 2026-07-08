@@ -178,6 +178,9 @@
   .ugc-adv-note{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
   .ugc-adv-ta{width:100%;box-sizing:border-box;min-height:82px;background:var(--card2,#14141b);border:1px solid var(--border);border-radius:8px;color:var(--fg,#e8e8ef);font:inherit;font-size:12.5px;line-height:1.45;padding:9px 11px;resize:vertical}
   .ugc-adv-row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  /* 생성 중: 우측 대본 패널 유지(읽기전용 흐림 + Generating 배지) */
+  .ugc-generating{position:relative;opacity:.5;pointer-events:none;user-select:none}
+  .ugc-generating::after{content:'⏳ Generating…';position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--accent,#8b7bff);color:#fff;font-size:12px;font-weight:650;padding:5px 13px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.35)}
   .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
   .rb-badge.tpl{color:var(--accent2);background:rgba(124,108,255,.14)}
   .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
@@ -3537,12 +3540,13 @@ async function ugcRenderVideo(){
     const data=await sjson(res);
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
-    document.getElementById('ugcScriptPreview').style.display='none'; // 렌더 시작 → 검토 패널 닫기
-    const empReset=document.getElementById('ugcScriptEmpty'); if(empReset)empReset.style.display=''; // 오른쪽 플레이스홀더 복귀
+    const prev=document.getElementById('ugcScriptPreview'); if(prev)prev.classList.add('ugc-generating'); // 생성 중 대본 유지(읽기전용 흐림 + Generating 배지)
     const job=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
       {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false};} // 결과 편집(씬 스트립)용
       renderStudioResults();}
+    if(prev){prev.classList.remove('ugc-generating');prev.style.display='none';} // 완료 → 검토 패널 접기(편집은 결과 씬 스트립에서)
+    const empReset=document.getElementById('ugcScriptEmpty'); if(empReset)empReset.style.display=''; // 다음 대본 위해 플레이스홀더 복귀
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){
     console.error(e);
@@ -3551,6 +3555,7 @@ async function ugcRenderVideo(){
     else{if(pending){pending.loading=false;pending.items=[];pending.failed=[{idx:null}];}renderStudioResults();hint.textContent='⚠ '+(e.message||'Generation failed');}
   }finally{
     clearInterval(elapsedTimer);
+    const gp=document.getElementById('ugcScriptPreview'); if(gp)gp.classList.remove('ugc-generating'); // 실패 시 대본 흐림 해제(다시 시도 가능)
     genActive=Math.max(0,genActive-1);rbtn.disabled=false;rbtn.innerHTML=oldLabel;
     loadCredits();
   }
