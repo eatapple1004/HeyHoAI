@@ -442,6 +442,11 @@
   /* script step (UGC) */
   .script-box{display:flex;flex-direction:column;gap:12px;
     background:rgba(19,19,29,.84);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:18px;padding:18px 20px}
+  /* Ad Video 좌우 2단: 왼쪽=입력(이미지·이름·컨셉), 오른쪽=대본 */
+  .ugc-cols{display:flex;gap:16px;align-items:flex-start}
+  .ugc-cols > #ugcInputBox{flex:1 1 0;min-width:0;max-width:540px}
+  .ugc-cols > #ugcScriptPreview{flex:1 1 0;min-width:0;align-self:stretch}
+  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview{width:100%;max-width:none}}
   .script-ta{width:100%;min-height:92px;resize:vertical;font-family:inherit;font-size:14.5px;line-height:1.6;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:14px;padding:14px 16px}
   .script-ta::placeholder{color:var(--faint)}
   .script-ta:focus{outline:none;border-color:var(--accent)}
@@ -554,6 +559,7 @@
   <div class="step fade d2 hidden" id="scriptStep">
     <div class="step-head"><div class="step-num" id="snScript">1</div><h2>Describe your ad</h2>
       <span class="hint">Product + a one-line concept → AI writes a script → you review it → build the video.</span></div>
+    <div class="ugc-cols">
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" style="display:none" onchange="ugcPreview(this)">
       <div id="ugcDrop" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -584,7 +590,7 @@
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
     </div>
     <!-- 2단계: 대본 미리보기 → 검토 후 렌더 -->
-    <div id="ugcScriptPreview" style="display:none;margin-top:14px;border:1px solid var(--border2);border-radius:14px;padding:16px 18px;background:rgba(255,255,255,.02)">
+    <div id="ugcScriptPreview" style="display:none;border:1px solid var(--border2);border-radius:14px;padding:16px 18px;background:rgba(255,255,255,.02)">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
         <b style="font-size:15px" id="ugcScriptTitle"></b>
         <span class="hint" id="ugcScriptMeta"></span>
@@ -626,6 +632,7 @@
         <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()">↻ Rewrite</button>
         <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()">✓ Generate video</button>
       </div>
+    </div>
     </div>
   </div>
 
@@ -3171,7 +3178,7 @@ async function ugcWriteScript(){
     if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
     ugcScript=data.script;
     ugcRenderScriptPreview(data);
-    hint.textContent='Review the script below, then generate — you\'re only charged when you build the video.';
+    hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
   }catch(e){ console.error(e); hint.textContent='⚠ '+(e.message||'Script failed'); }
   finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); }
 }
