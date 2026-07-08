@@ -984,6 +984,28 @@ router.get('/ugc/jobs/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// 무과금 편집: 저장된 씬 클립을 재사용해 재배치·삭제·자막수정을 반영(재조립). Kling/이미지 재호출 0 → 크레딧 미과금.
+router.post('/ugc/re-render', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
+    const parseObj = (v) => { if (v && typeof v === 'object' && !Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return {}; } } return {}; };
+    const result = await ugcVideoService.reRender({
+      user: req.user,
+      jobId: String(b.jobId || ''),
+      order: parseArr(b.order),
+      removed: parseArr(b.removed),
+      edits: parseObj(b.edits),
+      redoScenes: parseArr(b.redoScenes), // 씬 재생성(과금)
+      editedPrompts: parseObj(b.editedPrompts), // P3 Advanced brollPrompt 편집
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
 // (선택) 보이스·속도 미리듣기 — 짧은 샘플 TTS(mp3 스트림). 렌더 전 오디션용. Doppia 크레딧 미과금.
 router.get('/ugc/voice-preview', async (req, res, next) => {
   try {

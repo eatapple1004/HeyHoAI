@@ -763,6 +763,13 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_ugc_jobs_status ON ugc_jobs(status);
     CREATE INDEX IF NOT EXISTS idx_ugc_jobs_user ON ugc_jobs(user_id, created_at DESC);
   `);
+  // 결과 편집(씬 재배치·삭제·씬별 재생성·자막수정)을 위해 대본과 씬별 클립을 영속화.
+  //   script      = 렌더에 쓴 대본 전체(scenes 포함) — 서버가 재조립 기준으로 보관(brollPrompt는 서버 내부만).
+  //   scene_clips = { [sceneN]: { clip, thumb, durationMs, isStill } } — basename만 저장(로컬/S3/프론트 URL 공용).
+  await pool.query(`
+    ALTER TABLE ugc_jobs ADD COLUMN IF NOT EXISTS script JSONB;
+    ALTER TABLE ugc_jobs ADD COLUMN IF NOT EXISTS scene_clips JSONB;
+  `);
 
   console.log('Migrations completed.');
 }

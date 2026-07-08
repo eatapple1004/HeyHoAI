@@ -139,12 +139,45 @@
   .results-all{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap;cursor:pointer}
   .results-all:hover{text-decoration:underline}
   #resultsGrid{display:block}                              /* .results-grid의 4열 grid 무효화 → 배치 행 세로 스택 */
-  .result-row{display:flex;gap:22px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--border)}
+  .result-row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--border)}
   .result-row:first-child{padding-top:8px}
   .result-row:last-child{border-bottom:none}
   .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
   .rb-media .result-card{width:230px;max-width:44vw}       /* 행 안에서 고정폭(grid 1fr 아님) */
   .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
+  /* ── Ad Video 결과 편집: 씬 스트립 ── */
+  .ugc-scenes{flex:0 0 100%;order:3;margin-top:4px;padding-top:14px;border-top:1px dashed var(--border)}
+  .ugc-scenes-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .ugc-scenes-hd>span:first-child{font-weight:650;font-size:13px}
+  .ugc-scenes-hint{font-size:11.5px;color:var(--muted)}
+  .ugc-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+  .usc{position:relative;flex:0 0 132px;width:132px;background:var(--card2,#191921);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .usc-thumb{position:relative;aspect-ratio:9/16;background:#000}
+  .usc-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .usc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;font-weight:700}
+  .usc-idx{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;font-weight:700;border-radius:20px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+  .usc-cap{font-size:11.5px;line-height:1.35;padding:7px 8px;min-height:34px;color:var(--fg,#e8e8ef);outline:none;border-bottom:1px solid transparent}
+  .usc-cap:focus{background:rgba(255,255,255,.05);border-bottom-color:var(--accent,#8b7bff)}
+  .usc-cap:empty:before{content:attr(data-ph);color:var(--muted);opacity:.7}
+  .usc-acts{display:flex;gap:3px;padding:5px;border-top:1px solid var(--border)}
+  .usc-acts button{flex:1;background:transparent;border:1px solid var(--border);color:var(--fg,#ddd);border-radius:7px;padding:4px 0;font-size:12px;cursor:pointer;line-height:1}
+  .usc-acts button:hover:not(:disabled){background:rgba(255,255,255,.07)}
+  .usc-acts button:disabled{opacity:.28;cursor:default}
+  .usc-acts .usc-del:hover:not(:disabled){border-color:#e0605f;color:#e0605f}
+  .ugc-apply-row{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .ugc-apply{background:var(--accent,#8b7bff);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:650;cursor:pointer}
+  .ugc-apply:disabled{background:var(--border);color:var(--muted);cursor:default}
+  .ugc-reset{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 14px;font-size:12.5px;cursor:pointer}
+  .usc-acts .usc-redo:hover:not(:disabled){border-color:var(--accent,#8b7bff);color:var(--accent,#8b7bff)}
+  .usc-adv-toggle{background:transparent;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:10.5px;padding:5px 0;cursor:pointer;width:100%}
+  .usc-adv-toggle:hover{color:var(--fg,#ddd);background:rgba(255,255,255,.04)}
+  .usc .usc-busy-ov{position:absolute;inset:0;background:rgba(10,10,14,.72);display:none;align-items:center;justify-content:center;z-index:2}
+  .usc.usc-busy .usc-busy-ov{display:flex}
+  .ugc-adv{margin-top:12px;padding:14px;border:1px solid var(--accent,#8b7bff);border-radius:11px;background:rgba(139,123,255,.06)}
+  .ugc-adv-hd{font-size:12.5px;font-weight:650;margin-bottom:8px}
+  .ugc-adv-note{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+  .ugc-adv-ta{width:100%;box-sizing:border-box;min-height:82px;background:var(--card2,#14141b);border:1px solid var(--border);border-radius:8px;color:var(--fg,#e8e8ef);font:inherit;font-size:12.5px;line-height:1.45;padding:9px 11px;resize:vertical}
+  .ugc-adv-row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
   .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
   .rb-badge.tpl{color:var(--accent2);background:rgba(124,108,255,.14)}
   .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
@@ -2636,7 +2669,131 @@ function batchRowHtml(b){
   // (2026-07-03) 이 creation(배치) 삭제 — Library My creations에서도 사라짐(같은 행). 승격된 템플릿은 유지. 생성 중(placeholder)·idx 없는 건 버튼 숨김.
   const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
   const delBtn=delIdxs.length?`<div class="rb-del-row"><button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button></div>`:'';
-  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}<div class="rb-tags">${tags}</div>${delBtn}</div></div>`;
+  const ugcStrip=(!b.loading&&b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length)?ugcSceneStripHtml(b):''; // Ad Video 결과 편집 스트립
+  return `<div class="result-row"><div class="rb-media">${media}</div>${ugcStrip}<div class="rb-meta">${head}<div class="rb-tags">${tags}</div>${delBtn}</div></div>`;
+}
+// ── Ad Video 결과 편집: 씬 스트립(재배치·삭제·자막수정, 무과금 재조립) ──
+// b.ugc = { jobId, scenes:[{n,onScreenText,spoken,subject,thumb,...}], edits:{n:{onScreenText,spoken}} }
+function ugcSceneStripHtml(b){
+  const u=b.ugc; const dirty=!!u._dirty;
+  const cards=u.scenes.map((s,i)=>{
+    const ed=u.edits[s.n]||{};
+    const cap=(('onScreenText' in ed)?ed.onScreenText:s.onScreenText)||'';
+    const thumb=s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`;
+    return `<div class="usc" data-n="${s.n}">
+      <div class="usc-thumb">${thumb}<span class="usc-idx">${i+1}</span></div>
+      <div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
+           onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+           data-ph="Tap to edit caption">${esc(cap)}</div>
+      <div class="usc-acts">
+        <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
+        <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
+        <button type="button" class="usc-redo" title="Re-generate this scene (uses credits)" onclick="ugcSceneRedo('${esc(u.jobId)}',${s.n})">🔄</button>
+        <button type="button" class="usc-del" title="Remove scene" onclick="ugcSceneRemove('${esc(u.jobId)}',${s.n})" ${u.scenes.length<=1?'disabled':''}>🗑</button>
+      </div>
+      <button type="button" class="usc-adv-toggle" onclick="ugcToggleAdv('${esc(u.jobId)}',${s.n})">⚙ Advanced</button>
+      <div class="usc-busy-ov"><div class="rb-spin"></div></div></div>`;
+  }).join('');
+  return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
+    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span></div>
+    <div class="ugc-strip">${cards}</div>
+    <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
+    <div class="ugc-apply-row">
+      <button type="button" class="ugc-apply" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')" ${dirty?'':'disabled'}>${dirty?'✓ Apply changes — free':'No changes'}</button>
+      ${dirty?`<button type="button" class="ugc-reset" onclick="ugcResetEdits('${esc(b.ugc.jobId)}')">Reset</button>`:''}
+    </div></div>`;
+}
+function ugcFindBatch(jobId){ return STUDIO_BATCHES.find(b=>b.ugc&&b.ugc.jobId===jobId); }
+function ugcCont(jobId){ return document.querySelector('.ugc-scenes[data-job="'+jobId+'"]'); } // 배치 스코프(멀티 결과 first-match 방지)
+function ugcApplyBtn(jobId){ const c=ugcCont(jobId); return c&&c.querySelector('.ugc-apply-row .ugc-apply'); } // Advanced 패널의 .ugc-apply 회피
+function ugcSceneMove(jobId,n,dir){
+  const b=ugcFindBatch(jobId); if(!b)return; const a=b.ugc.scenes; const i=a.findIndex(s=>s.n===n); const j=i+dir;
+  if(i<0||j<0||j>=a.length)return; const t=a[i];a[i]=a[j];a[j]=t; b.ugc._dirty=true; renderStudioResults();
+}
+function ugcSceneRemove(jobId,n){
+  const b=ugcFindBatch(jobId); if(!b||b.ugc.scenes.length<=1)return;
+  b.ugc.scenes=b.ugc.scenes.filter(s=>s.n!==n); delete b.ugc.edits[n]; b.ugc._dirty=true; renderStudioResults();
+}
+function ugcSceneEditCap(el,jobId,n){
+  const b=ugcFindBatch(jobId); if(!b)return; const s=b.ugc.scenes.find(x=>x.n===n); if(!s)return;
+  const val=(el.textContent||'').trim(); const cur=(n in b.ugc.edits&&'onScreenText' in b.ugc.edits[n])?b.ugc.edits[n].onScreenText:(s.onScreenText||'');
+  if(val===cur)return; // 변경 없음
+  b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{onScreenText:val}); b.ugc._dirty=true;
+  const btn=ugcApplyBtn(jobId); // 전체 재렌더 없이 Apply만 활성(편집 중 포커스 유지)·배치 스코프
+  if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
+}
+function ugcResetEdits(jobId){
+  const b=ugcFindBatch(jobId); if(!b||!b.ugc._orig)return;
+  b.ugc.scenes=b.ugc._orig.map(s=>Object.assign({},s)); b.ugc.edits={}; b.ugc._dirty=false; renderStudioResults();
+}
+// 공용 재조립 호출 — 무과금(재배치/삭제/자막)과 과금(redoScenes 재생성)을 한 경로로.
+async function ugcReassemble(jobId,opts){
+  opts=opts||{}; const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
+  const paid=!!(opts.redoScenes&&opts.redoScenes.length);
+  if(!paid&&!u._dirty)return; // 무과금인데 변경 없으면 무시
+  const order=u.scenes.map(s=>s.n);
+  const origNs=(u._orig||u.scenes).map(s=>s.n); const keep=new Set(order); const removed=origNs.filter(n=>!keep.has(n));
+  const edits={}; for(const k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; } // 남은 씬의 편집만
+  const body={jobId,order,removed,edits};
+  if(opts.redoScenes)body.redoScenes=opts.redoScenes;
+  if(opts.editedPrompts)body.editedPrompts=opts.editedPrompts;
+  const setBusy=opts.setBusy||function(){}; setBusy(true);
+  try{
+    const res=await fetch('/api/generate/ugc/re-render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await sjson(res);
+    if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
+    if(!res.ok||!data.success)throw new Error(data.error||'Could not apply changes');
+    b.items=[{url:data.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
+    // paid(씬 재생성): 서버가 씬 이미지를 새로 그렸으니 최신 scenes(새 썸네일 포함) 재조회로 갱신
+    let refreshed=false;
+    if(paid){ try{ const jd=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data;
+      if(jd&&Array.isArray(jd.scenes)&&jd.scenes.length){ u.scenes=jd.scenes.map(s=>Object.assign({},s)); u._orig=jd.scenes.map(s=>Object.assign({},s)); refreshed=true; } }catch(e){} }
+    if(!refreshed){ // 무과금 or 재조회 실패: 로컬 낙관 상태를 확정
+      if(opts.editedPrompts){for(const k in opts.editedPrompts){const sc=u.scenes.find(x=>String(x.n)===String(k));if(sc)sc.advPrompt=opts.editedPrompts[k];}}
+      u._orig=u.scenes.map(s=>Object.assign({},s,('onScreenText' in (u.edits[s.n]||{}))?{onScreenText:u.edits[s.n].onScreenText}:{}));
+      u.scenes=u._orig.map(s=>Object.assign({},s));
+    }
+    u.edits={}; u._dirty=false;
+    renderStudioResults();
+    if(window.toast)toast(paid?('Scene re-generated'+(data.cost?' — '+data.cost+' credits':'')):'Video updated — free edit');
+    if(paid&&typeof loadCredits==='function')loadCredits();
+  }catch(e){
+    setBusy(false);
+    if(window.toast)toast(e.message||(e.code402?'Not enough credits':'Could not apply changes'),'error');
+  }
+}
+async function ugcApplyEdits(jobId){
+  const btn=ugcApplyBtn(jobId);
+  await ugcReassemble(jobId,{setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Reassembling…':'✓ Apply changes — free';}}});
+}
+// P2 — 이 씬만 재생성(과금). 현재 순서/삭제/자막 편집도 함께 반영.
+async function ugcSceneRedo(jobId,n){
+  if(!confirm('Re-generate this scene? This uses credits (about one video clip).'))return;
+  const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]');
+  await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){if(card)card.classList.toggle('usc-busy',on);}});
+}
+// P3 — Advanced: 씬 이미지 프롬프트 편집 패널 토글(기본 숨김, 파워유저용).
+function ugcToggleAdv(jobId,n){
+  const b=ugcFindBatch(jobId); if(!b)return;
+  const s=b.ugc.scenes.find(x=>x.n===n)||(b.ugc._orig||[]).find(x=>x.n===n);
+  const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
+  if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';return;}
+  wrap.dataset.n=String(n); wrap.style.display='';
+  const prompt=(s&&s.advPrompt)||'';
+  wrap.innerHTML='<div class="ugc-adv-hd">Advanced — Scene '+n+' image prompt <span class="ugc-adv-note">Most users don\'t need this. Editing regenerates the scene (uses credits).</span></div>'
+    +'<textarea class="ugc-adv-ta" spellcheck="false">'+esc(prompt)+'</textarea>'
+    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate with this prompt — uses credits</button>'
+    +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div>';
+}
+async function ugcAdvRegen(jobId,n){
+  const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
+  const val=ta?ta.value.trim():''; if(!val){toast('Prompt is empty');return;}
+  if(!confirm('Re-generate scene '+n+' with the new prompt? This uses credits.'))return;
+  const btn=wrap.querySelector('.ugc-apply'); const o=btn?btn.textContent:'';
+  const ep={}; ep[n]=val;
+  await ugcReassemble(jobId,{redoScenes:[n],editedPrompts:ep,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}}});
+  if(wrap){wrap.style.display='none';wrap.dataset.n='';}
 }
 // 실패 슬롯(레오나르도식) — 정확한 문구 + Delete. idx 있으면 서버 실패행 삭제, 없으면(라이브·릴) 타일만 제거. 토큰은 백엔드가 실패분만 환불.
 function studioFailedCard(idx){
@@ -3382,8 +3539,10 @@ async function ugcRenderVideo(){
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     document.getElementById('ugcScriptPreview').style.display='none'; // 렌더 시작 → 검토 패널 닫기
     const empReset=document.getElementById('ugcScriptEmpty'); if(empReset)empReset.style.display=''; // 오른쪽 플레이스홀더 복귀
-    const url=await pollUgcJob(data.jobId);
-    if(pending){pending.items=[{url:url,type:'reel',idx:null}];pending.loading=false;renderStudioResults();}
+    const job=await pollUgcJob(data.jobId);
+    if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
+      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false};} // 결과 편집(씬 스트립)용
+      renderStudioResults();}
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){
     console.error(e);
@@ -3403,7 +3562,7 @@ async function pollUgcJob(jobId){
     let d;
     try{ d=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data; }catch(e){ continue; }
     if(!d)continue;
-    if(d.status==='succeeded')return d.resultUrl;
+    if(d.status==='succeeded')return d; // 전체 job(resultUrl+scenes) 반환 → 결과 편집 스트립
     if(d.status==='failed')throw new Error(d.error||'Ad video generation failed');
   }
   throw new Error('This is taking a while — check your gallery again shortly.');
