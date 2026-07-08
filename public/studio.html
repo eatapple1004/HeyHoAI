@@ -2678,13 +2678,22 @@ let STUDIO_BATCHES=[];
 function studioMediaCard(o){
   const reel=(o.type==='reel');
   const inner=reel
-    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onclick="openImageModal('${esc(o.url)}','reel')"></video><button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`
+    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onclick="openImageModal('${esc(o.url)}','reel')"></video>`
     :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(o.url)}','photo')">`;
   return `<div class="result-card">${inner}
       <div class="actions">
         <a href="${esc(o.url)}" download><button>⬇ Download</button></a>
         <button onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')">⤢ View large</button>
       </div></div>`;
+}
+// 우측 완성 영상: 기본 소리 ON 시도. 브라우저 자동재생 정책상 막히면 muted 유지(버튼으로 켤 수 있음).
+function ugcTryUnmute(v){
+  const btn=v.parentElement&&v.parentElement.querySelector('.reel-mute');
+  const setBtn=()=>{ if(btn){ btn.textContent=v.muted?'🔇':'🔊'; btn.classList.toggle('on',!v.muted); } };
+  v.muted=false;
+  const p=v.play();
+  if(p&&p.then)p.then(setBtn).catch(()=>{ v.muted=true; setBtn(); });
+  else setBtn();
 }
 // 피드 영상은 자동재생 정책상 muted → 소리 토글. 한 번에 하나만 소리(누른 것만 unmute, 나머지 음소거).
 function ugcToggleSound(e,btn){
@@ -2968,8 +2977,8 @@ function renderUgcInline(b){
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; let html='';
   if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
-    +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onclick="openImageModal('${esc(it.url)}','reel')"></video>`
-    +`<button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`
+    +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onloadeddata="ugcTryUnmute(this)" onclick="openImageModal('${esc(it.url)}','reel')"></video>`
+    +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
     +`<button class="ugc-inline-zoom" onclick="openImageModal('${esc(it.url)}','reel')">⤢ View large</button>`
     +'</div>'; }
   if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
