@@ -858,6 +858,41 @@ router.get('/video/jobs/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── UGC 영상 엔진 (제품+컨셉 → 화보/광고 릴) — 비동기 ───
+//   대본→broll 클립(이미지→모션)→ffmpeg 조립. 다단계라 자체 오케스트레이션(ugcVideo.service).
+//   v1 잡 상태=인메모리(재시작 소실), 크레딧 단가=placeholder(클립수 기준). 프론트 UI는 다음 증분.
+const ugcVideoService = require('../ugc/ugcVideo.service');
+
+router.post('/ugc/async', async (req, res, next) => {
+  try {
+    const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
+    const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    const result = await ugcVideoService.submit({
+      user: req.user,
+      product, concept,
+      outputType: outputType || 'product-ad',
+      referenceImagePath: referenceImagePath || null, // model-editorial: 모델 로스터 reference
+      dryRunVideo: dryRun === true || dryRun === 'true', // LIVE 기본(false); 테스트만 true
+      visibility,
+      isTemplate: false,
+    });
+    // script는 응답에서 제외(대본 전문 노출 방지) — jobId·cost·요약만
+    res.json({ success: true, jobId: result.jobId, cost: result.cost,
+      title: result.script.title, scenes: (result.script.scenes || []).length });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
+router.get('/ugc/jobs/:id', async (req, res, next) => {
+  try {
+    const job = await ugcVideoService.getJob(req.params.id, req.user.id);
+    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+    res.json({ success: true, data: job });
+  } catch (err) { next(err); }
+});
+
 // ─── 비디오 생성 (Kling V3) — 동기 (운영툴/오디오용, 기존 유지) ───
 router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), async (req, res, next) => {
   const vlog = logger('Video');
