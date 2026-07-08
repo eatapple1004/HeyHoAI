@@ -17,6 +17,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { activeTracks } = require('../renderPlan');
 const tts = require('../audio/tts.service');
+const music = require('../audio/music.service');
 
 const execFileP = promisify(execFile);
 
@@ -132,6 +133,42 @@ function buildSrt(subtitle) {
 }
 
 /**
+ * 무음 영상에 오디오 트랙(들)을 믹싱해 최종 mp4 산출.
+ * 각 입력은 volume 적용 후 apad(무음 패딩)되어 amix, -t 로 영상 길이에 맞춰 잘림.
+ * → VO는 재생 후 무음, 음악은 전 구간(더킹된 볼륨)으로 깔림.
+ * @param {string} videoIn  무음 영상(workDir 상대 경로)
+ * @param {Array<{file:string, volume:number}>} audioInputs  workDir 상대 mp3들
+ * @param {number} durSec  최종 길이(=영상 길이)
+ * @returns {Promise<string>} 믹싱된 영상 절대 경로
+ */
+async function muxAudio(videoIn, audioInputs, durSec, workDir, outName) {
+  const inputs = ['-i', videoIn];
+  const filters = [];
+  const labels = [];
+  audioInputs.forEach((a, i) => {
+    inputs.push('-i', a.file);
+    const lbl = `a${i}`;
+    filters.push(`[${i + 1}:a]volume=${a.volume},apad[${lbl}]`);
+    labels.push(`[${lbl}]`);
+  });
+
+  let filter;
+  if (audioInputs.length === 1) {
+    filter = filters[0].replace(/\[a0\]$/, '[mix]'); // 단일 입력: amix 불필요
+  } else {
+    filter = filters.join(';') + ';' + labels.join('')
+      + `amix=inputs=${audioInputs.length}:normalize=0:duration=longest[mix]`;
+  }
+
+  await ff([
+    ...inputs, '-filter_complex', filter,
+    '-map', '0:v', '-map', '[mix]',
+    '-t', durSec.toFixed(2), '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', outName,
+  ], workDir);
+  return path.join(workDir, outName);
+}
+
+/**
  * RenderPlan → 최종 mp4.
  * @param {object} plan  renderPlan.buildRenderPlan 산출
  * @param {{ outDir?:string, log?:Function }} [opts]
@@ -187,30 +224,44 @@ async function assemble(plan, opts = {}) {
     await fsp.copyFile(concatPath, finalPath);
   }
 
-  // 4) 오디오 트랙 — opts.audio 요청 시 무음 final에 믹싱(v3 음성 / v2 음악 슬롯)
+  // 4) 오디오 트랙 — opts.audio 요청 시 무음 final에 믹싱(v3 음성 VO + v2 음악)
+  //    VO=ElevenLabs/OpenAI TTS, 음악=ElevenLabs Music. 둘 다 있으면 음악을 더킹해 VO 밑에 깖.
   let videoOut = finalPath;
   const audioTracks = [];
-  if (opts.audio && opts.audio.voice && opts.script) {
-    try {
-      log('VO(음성) 생성…');
-      const vo = await tts.voiceoverForScript(opts.script, { voice: opts.audio.voiceName, outPath: path.join(workDir, 'vo.mp3') });
-      if (vo) {
-        // 무음영상 + VO. -shortest 없이 → 영상 길이 유지(20s), VO는 그 위에 재생 후 무음.
-        await ff(['-i', 'final.mp4', '-i', 'vo.mp3', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', 'final_audio.mp4'], workDir);
-        videoOut = path.join(workDir, 'final_audio.mp4');
-        audioTracks.push('vo');
-        log('VO 믹싱 완료');
-      } else {
-        log('⚠️ VO 스킵(OPENAI_API_KEY 미설정)');
-      }
-    } catch (e) {
-      log(`⚠️ VO 실패, 무음 유지: ${e.message}`);
-    }
+  const durSec = Math.max((plan.meta.durationMs || 0) / 1000, 1);
+  const wantVoice = !!(opts.audio && opts.audio.voice);
+  const wantMusic = !!(opts.audio && opts.audio.music);
+  const audioInputs = [];
+
+  if (wantVoice && opts.script) {
+    if (tts.isConfigured()) {
+      try {
+        log(`VO(음성) 생성… [${tts.provider()}]`);
+        const vo = await tts.voiceoverForScript(opts.script, { outPath: path.join(workDir, 'vo.mp3') });
+        if (vo) audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' });
+      } catch (e) { log(`⚠️ VO 실패, 스킵: ${e.message}`); }
+    } else { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); }
   }
-  // 음악(music) 트랙은 여기 이어붙임 — 소스 결정 후(Kling audio / 라이브러리) 배선
+
+  if (wantMusic) {
+    if (music.isConfigured()) {
+      try {
+        log('배경음악 생성… [elevenlabs music]');
+        const m = await music.composeForScript(opts.script || {}, { durationMs: plan.meta.durationMs, outPath: path.join(workDir, 'music.mp3') });
+        // VO 있으면 더킹(0.18), 없으면 배경 단독(0.5)
+        if (m) audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' });
+      } catch (e) { log(`⚠️ 음악 실패, 스킵: ${e.message}`); }
+    } else { log('⚠️ 음악 요청됨 — ELEVENLABS_API_KEY 미설정, 스킵'); }
+  }
+
+  if (audioInputs.length) {
+    videoOut = await muxAudio('final.mp4', audioInputs, durSec, workDir, 'final_audio.mp4');
+    audioInputs.forEach((a) => { audioTracks.push(a.kind); active.push(a.kind); });
+    log(`오디오 믹싱 완료(${audioTracks.join('+')})`);
+  }
 
   log(`조립 완료: ${videoOut}`);
   return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks };
 }
 
-module.exports = { assemble, buildAss, buildSrt, TARGET_W, TARGET_H, FPS };
+module.exports = { assemble, muxAudio, buildAss, buildSrt, TARGET_W, TARGET_H, FPS };

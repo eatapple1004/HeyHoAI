@@ -582,9 +582,14 @@
         <span class="hint" id="ugcScriptMeta"></span>
       </div>
       <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
-      <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);margin-top:12px;cursor:pointer">
-        <input type="checkbox" id="ugcVoice" checked> 🎙️ Add voiceover (AI narration)
-      </label>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="ugcVoice" checked> 🎙️ Add voiceover (AI narration)
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="ugcMusic" checked> 🎵 Add background music
+        </label>
+      </div>
       <div style="display:flex;gap:10px;margin-top:12px">
         <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()">↻ Rewrite</button>
         <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()">✓ Generate video</button>
@@ -3146,6 +3151,7 @@ async function ugcRenderVideo(){
     fd.append('script',JSON.stringify(ugcScript));
     fd.append('concept',concept);fd.append('outputType',outputType);
     const vEl=document.getElementById('ugcVoice');fd.append('voice',(vEl&&vEl.checked)?'true':'false'); // 음성 내레이션
+    const mEl=document.getElementById('ugcMusic');fd.append('music',(mEl&&mEl.checked)?'true':'false'); // 배경음악
     const pf=document.getElementById('ugcProductImg').files[0];
     if(pf)fd.append('productImage',pf,pf.name||'product.png'); // 유저 실제 제품 → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});

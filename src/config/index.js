@@ -80,8 +80,16 @@ const envSchema = z.object({
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
 
-  // OpenAI (GPT Image)
+  // OpenAI (GPT Image + TTS 폴백)
   OPENAI_API_KEY: z.string().optional(),
+
+  // ElevenLabs (UGC 오디오 — TTS 음성 + Music v2 배경음악, 한 키로 둘 다).
+  //   ELEVENLABS_API_KEY 설정 시 TTS는 ElevenLabs 우선(미설정이면 OpenAI TTS 폴백), 음악은 ElevenLabs Music.
+  //   미설정 시 음성=OpenAI 폴백·음악=스킵(무음/무음악, 현행 무변경).
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_VOICE_ID: z.string().default('21m00Tcm4TlvDq8ikWAM'), // 다국어(한국어 지원) 기본 보이스. 한국어 전용 보이스 ID로 override 권장.
+  ELEVENLABS_TTS_MODEL: z.string().default('eleven_multilingual_v2'), // 한국어 포함 다국어
+  ELEVENLABS_MUSIC_MODEL: z.string().default('music_v2'),            // music_v1 | music_v2(라이선스 클리어)
 
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
