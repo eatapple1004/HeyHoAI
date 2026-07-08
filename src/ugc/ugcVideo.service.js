@@ -48,9 +48,9 @@ function brollCount(script) { return ((script && script.scenes) || []).filter((s
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
  */
-async function generateScript({ product, concept, outputType = 'product-ad', image = null }) {
+async function generateScript({ product, concept, outputType = 'product-ad', image = null, details = '' }) {
   if (!concept) { const e = new Error('concept is required'); e.statusCode = 400; throw e; }
-  const script = await generateUgcScript({ product, concept, outputType, image });
+  const script = await generateUgcScript({ product, concept, outputType, image, details });
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
   return { script, nClips, cost: estimateCost(nClips, false) };

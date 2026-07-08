@@ -46,6 +46,7 @@ function buildUgcScriptPrompt(input) {
     language = 'ko',
     audience = '',
     hasImage = false,
+    details = '',
   } = input || {};
 
   const profile = getProfile(outputType);
@@ -64,6 +65,7 @@ function buildUgcScriptPrompt(input) {
     `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     '- Safe, honest, no medical/financial guarantees, no banned/adult content.',
+    '- Do NOT invent specific factual claims (exact wear time, SPF, ingredients, certifications, prices). Use only claims given in the brief or product facts; otherwise keep copy benefit-led and non-specific.',
     'Return ONLY a single JSON object (no prose, no markdown fences), matching exactly this schema:',
     '{',
     '  "title": string,',
@@ -94,6 +96,7 @@ function buildUgcScriptPrompt(input) {
     product ? `Product: ${product}` : '',
     `Brief (product + concept/angle): ${concept}`,
     hasImage ? 'A photo of the actual product is attached. Ground the copy, onScreenText and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.' : '',
+    details ? `Product facts / claims — use ONLY these, do not invent additional claims:\n${details}` : '',
     audience ? `Target audience: ${audience}` : '',
     `Format: ${format}`,
     `Formats reference:\n${fmtLine(format)}`,
