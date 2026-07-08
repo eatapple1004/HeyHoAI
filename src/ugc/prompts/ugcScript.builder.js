@@ -47,6 +47,7 @@ function buildUgcScriptPrompt(input) {
     audience = '',
     hasImage = false,
     details = '',
+    voiceover = true, // false면 내레이션·자막 없는 비주얼 전용 대본(onScreenText/spoken 비움)
   } = input || {};
 
   const profile = getProfile(outputType);
@@ -72,6 +73,11 @@ function buildUgcScriptPrompt(input) {
       '  · Read each line aloud in your head: if a real person would never say it, rewrite it.',
     ] : []),
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
+    ...(voiceover ? [] : [
+      '- NO VOICEOVER MODE: this ad has no narration and no on-screen captions — it is a silent, visual-only ad carried by the product visuals and background music.',
+      '  · Set "onScreenText" to "" (empty) and "spoken" to "" for EVERY scene. Do NOT write any narration or caption lines.',
+      '  · Put all your craft into "direction" and "brollPrompt" (the visuals & motion). Still fill title, hook, cta, caption, hashtags, musicVibe normally (used off-screen for the post, not shown in the video).',
+    ]),
     '- Safe, honest, no medical/financial guarantees, no banned/adult content.',
     '- Do NOT invent specific factual claims (exact wear time, SPF, ingredients, certifications, prices). Use only claims given in the brief or product facts; otherwise keep copy benefit-led and non-specific.',
     'Return ONLY a single JSON object (no prose, no markdown fences), matching exactly this schema:',

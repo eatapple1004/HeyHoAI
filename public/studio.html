@@ -585,6 +585,9 @@
         <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
       </div>
+      <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:2px 0">
+        <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
+      </label>
       <div class="script-ctrls">
         <select class="tone-sel" id="ugcFormat">
           <option value="product-ad">Product ad (no model)</option>
@@ -609,13 +612,10 @@
       <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
-          <input type="checkbox" id="ugcVoice" checked> 🎙️ Add voiceover (AI narration)
-        </label>
-        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="ugcMusic" checked> 🎵 Add background music
         </label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
-          <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
+          <label id="ugcVoiceLbl" style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
             Voice
             <select id="ugcVoiceId" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px">
               <option value="n2fbxG88jqAoaVPUy3IG" selected>Yooni — F, clear &amp; calm</option>
@@ -628,7 +628,7 @@
               <option value="8cOkLISXzLWeGEsu0cZC">Minjoon — M, warm &amp; clear</option>
             </select>
           </label>
-          <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
+          <label id="ugcSpeedLbl" style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
             Speed
             <select id="ugcSpeed" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px">
               <option value="0.85">Slow</option>
@@ -3195,6 +3195,7 @@ async function ugcWriteScript(){
     if(details)fd.append('details',details); // 옵션 제품 팩트(브랜드·클레임) — 카피 근거
     const pf=document.getElementById('ugcProductImg').files[0];
     if(pf)fd.append('productImage',pf,pf.name||'product.png'); // Claude가 실제 제품 보고 카피 작성
+    fd.append('voiceover',(document.getElementById('ugcVoice')||{}).checked!==false?'true':'false'); // 음성 여부→내레이션 대본 생성 분기
     const res=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});
     const data=await sjson(res);
     if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
@@ -3212,9 +3213,14 @@ function ugcRenderScriptPreview(data){
   document.getElementById('ugcScriptMeta').textContent=`${data.nClips} scenes · ${s.durationSec||''}s`;
   // 편집 가능 필드(클릭→수정, ugcScript에 즉시 반영). 회색 🎬줄=씬 비주얼 설명(읽기전용, 편집은 후속).
   const ce=(f,val,ph)=>`<span class="ugc-edit" contenteditable="true" data-f="${f}"${ph?` data-ph="${esc(ph)}"`:''}>${esc(val||'')}</span>`;
-  const scenes=(s.scenes||[]).map((sc,i)=>
-    `<div style="padding:8px 0;border-top:1px solid var(--border)"><b>${i+1}.</b> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="on-screen text">${esc(sc.onScreenText||'')}</span>`
-    +`<div style="color:var(--dim);font-size:12px;margin-top:3px">🎬 ${esc(sc.direction||sc.brollPrompt||'')}</div></div>`).join('');
+  const scenes=(s.scenes||[]).map((sc,i)=>{
+    const hasText=(sc.onScreenText||'').trim();
+    const line=hasText
+      ? `<b>${i+1}.</b> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="on-screen text">${esc(sc.onScreenText)}</span>`
+      : `<b>${i+1}.</b> <span style="color:var(--faint);font-size:12px">visual only — no narration</span>`;
+    return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
+      +`<div style="color:var(--dim);font-size:12px;margin-top:3px">🎬 ${esc(sc.direction||sc.brollPrompt||'')}</div></div>`;
+  }).join('');
   document.getElementById('ugcScriptBody').innerHTML=
     `<div style="margin-bottom:6px"><span style="color:var(--dim)">Hook</span> — ${ce('hook',s.hook,'hook line')}</div>`+
     scenes+
@@ -3226,6 +3232,14 @@ function ugcRenderScriptPreview(data){
   document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?`✓ Generate video <span class="gen-cost">◈ ${data.cost}</span>`:'✓ Generate video';
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
   document.getElementById('ugcScriptPreview').style.display='';
+  ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
+}
+// 음성 여부에 따라 Voice/Speed/Preview 컨트롤 표시 토글(라벨 inline display:flex라 복원값 명시)
+function ugcSyncVoiceControls(){
+  const on=(document.getElementById('ugcVoice')||{}).checked!==false;
+  const vl=document.getElementById('ugcVoiceLbl'); if(vl)vl.style.display=on?'flex':'none';
+  const sl=document.getElementById('ugcSpeedLbl'); if(sl)sl.style.display=on?'flex':'none';
+  const pb=document.getElementById('ugcPreviewBtn'); if(pb)pb.style.display=on?'':'none';
 }
 // 편집 → ugcScript에 즉시 반영(렌더는 ugcScript를 그대로 전송하므로 수정본이 영상에 반영됨).
 function ugcBindScriptEdits(){
