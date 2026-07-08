@@ -452,6 +452,17 @@
   .ugc-edit:hover{border-bottom-color:var(--border2);background:rgba(255,255,255,.03)}
   .ugc-edit:focus{border-bottom-color:var(--accent);background:rgba(124,108,255,.08)}
   .ugc-edit:empty:before{content:attr(data-ph);color:var(--faint)}
+  /* Ad Video 포맷 픽커 + 모델 그리드 */
+  .ugc-fmt{display:flex;gap:8px}
+  .ugc-fmt-btn{flex:1;display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+  .ugc-fmt-btn b{font-size:13.5px}
+  .ugc-fmt-btn span{font-size:11px;color:var(--dim)}
+  .ugc-fmt-btn.active{border-color:var(--accent);background:rgba(124,108,255,.1)}
+  .ugc-mf{font-size:11.5px;padding:3px 9px;border:1px solid var(--border2);border-radius:999px;background:none;color:var(--dim);cursor:pointer;font-family:inherit}
+  .ugc-mf.active{border-color:var(--accent);color:var(--text);background:rgba(124,108,255,.1)}
+  #ugcModelGrid img{width:50px;height:50px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block}
+  #ugcModelGrid img:hover{border-color:var(--border2)}
+  #ugcModelGrid img.sel{border-color:var(--accent)}
   .script-ta{width:100%;min-height:92px;resize:vertical;font-family:inherit;font-size:14.5px;line-height:1.6;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:14px;padding:14px 16px}
   .script-ta::placeholder{color:var(--faint)}
   .script-ta:focus{outline:none;border-color:var(--accent)}
@@ -585,14 +596,30 @@
         <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
       </div>
-      <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:2px 0">
+      <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
+      <div style="margin:8px 0 2px">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Video format</div>
+        <div class="ugc-fmt">
+          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b>📦 Product only</b><span>Just the product</span></button>
+          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b>🧍 With a model</b><span>Product + a model using it</span></button>
+        </div>
+        <input type="hidden" id="ugcFormat" value="product-ad">
+        <div id="ugcModelPicker" style="display:none;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--dim)">Pick a model</span>
+            <span id="ugcModelPick" style="font-size:11.5px;color:var(--accent2);font-weight:700"></span>
+            <span style="margin-left:auto;display:flex;gap:5px">
+              <button type="button" class="ugc-mf active" data-g="female" onclick="ugcModelFilter('female')">Female</button>
+              <button type="button" class="ugc-mf" data-g="male" onclick="ugcModelFilter('male')">Male</button>
+            </span>
+          </div>
+          <div id="ugcModelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,50px);gap:6px;max-height:176px;overflow-y:auto;padding:2px"></div>
+        </div>
+      </div>
+      <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:6px 0 2px">
         <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
       </label>
       <div class="script-ctrls">
-        <select class="tone-sel" id="ugcFormat">
-          <option value="product-ad">Product ad (no model)</option>
-          <option value="model-editorial">Model editorial (on-model)</option>
-        </select>
         <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()">✍ Write script</button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
@@ -3255,11 +3282,37 @@ function ugcBindScriptEdits(){
 }
 
 // 2단계 — 검토한 대본으로 렌더(여기서 과금). 기존 결과 피드에 채움.
+// 포맷 픽커(제품/모델) + 모델 로스터 선택
+let ugcSelectedModelImg=null, ugcModelGender='female';
+function ugcSetFormat(fmt){
+  const el=document.getElementById('ugcFormat'); if(el)el.value=fmt;
+  document.querySelectorAll('.ugc-fmt-btn').forEach(b=>b.classList.toggle('active',b.dataset.fmt===fmt));
+  const mp=document.getElementById('ugcModelPicker');
+  if(fmt==='model-editorial'){ if(mp)mp.style.display=''; ugcRenderModelGrid(); }
+  else if(mp){ mp.style.display='none'; }
+}
+function ugcModelFilter(g){
+  ugcModelGender=g;
+  document.querySelectorAll('.ugc-mf').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
+  ugcRenderModelGrid();
+}
+function ugcRenderModelGrid(){
+  const grid=document.getElementById('ugcModelGrid'); if(!grid) return;
+  const list=(window.MODELS||[]).filter(m=>m.gender===ugcModelGender);
+  grid.innerHTML=list.map(m=>`<img src="${m.img}" title="${m.name} · ${m.descent}, ${m.age}" data-img="${m.img}" data-name="${m.name}" class="${ugcSelectedModelImg===m.img?'sel':''}" onclick="ugcSelectModel(this)">`).join('');
+}
+function ugcSelectModel(el){
+  ugcSelectedModelImg=el.dataset.img;
+  document.querySelectorAll('#ugcModelGrid img').forEach(i=>i.classList.toggle('sel',i===el));
+  const p=document.getElementById('ugcModelPick'); if(p)p.textContent='✓ '+el.dataset.name;
+}
+
 async function ugcRenderVideo(){
   if(!ugcScript){toast('Write a script first.');return;}
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;}
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
+  if(outputType==='model-editorial'&&!ugcSelectedModelImg){toast('Pick a model first (🧍 With a model).');return;}
   const hint=document.getElementById('ugcHint');
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
@@ -3273,6 +3326,7 @@ async function ugcRenderVideo(){
   try{
     const fd=new FormData();
     const moodEl=document.getElementById('ugcMusicMood'); if(moodEl&&moodEl.value&&ugcScript)ugcScript.musicVibe=moodEl.value; // 음악 무드 선택 시 musicVibe 오버라이드
+    if(outputType==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg); // 🧍 선택 모델(로스터 경로)
     fd.append('script',JSON.stringify(ugcScript));
     fd.append('concept',concept);fd.append('outputType',outputType);
     const productName=(document.getElementById('ugcProductName').value||'').trim();if(productName)fd.append('product',productName); // 제품명(선택)
