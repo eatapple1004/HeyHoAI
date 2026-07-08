@@ -986,6 +986,15 @@ router.get('/ugc/jobs/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Save & finish / 이탈 시 자동 — draft를 갤러리·Explore에 확정 저장(멱등). sendBeacon도 이 라우트 사용.
+router.post('/ugc/jobs/:id/commit', async (req, res, next) => {
+  try {
+    const r = await ugcVideoService.commitJob(req.params.id, req.user.id);
+    if (!r) return res.status(404).json({ success: false, error: 'Job not found or not ready' });
+    res.json({ success: true, resultIdx: r.resultIdx, already: !!r.already });
+  } catch (err) { next(err); }
+});
+
 // 무과금 편집: 저장된 씬 클립을 재사용해 재배치·삭제·자막수정을 반영(재조립). Kling/이미지 재호출 0 → 크레딧 미과금.
 router.post('/ugc/re-render', async (req, res, next) => {
   try {

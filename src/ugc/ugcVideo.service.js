@@ -163,24 +163,12 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
     const served = path.join(servedDir, filename);
     fs.copyFileSync(out.videoPath, served);
 
-    // 결과 저장(generation_results 'video' → 기존 Library/Explore 피드에 자동 노출)
-    const savedPrompt = await promptRepo.insert({
-      userId, promptText: `${script.title} — ${script.caption}`.slice(0, 2000),
-      model: 'ugc-v1', tags: ['video', 'ugc', script.outputType], teamId,
-    });
+    // 🔖 DRAFT: 완성 mp4·대본·씬클립만 영속화. generation_results 저장은 "Save & finish" 또는 이탈 시(commitJob)로 미룸.
+    //   → 저장 전엔 generation_results에 없으므로 My creations/Library/Explore 어디에도 안 뜸(쿼리 무수정).
     const durationSec = Math.round((plan.meta.durationMs || 0) / 1000);
-    const savedResult = await resultRepo.insert({
-      promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
-      fileSizeKb: Math.round(fs.statSync(served).size / 1024), model: 'ugc-v1',
-      metadata: { type: 'video', source: 'ugc', outputType: script.outputType, duration: durationSec,
-        subtitleMode: out.subtitleMode, clips: plan.tracks.video.length },
-      visibility: visibility === 'private' ? 'private' : 'public',
-    });
-    await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
     await mediaStore.putFile(served); // 영속 스토리지 best-effort(라이브 404 방지)
 
     // 편집(재조립/씬재생성)용: 대본 + 렌더 설정 + 레퍼런스 + 씬 클립을 영속화.
-    //   _render.product/model = 씬Redo(P2)가 원본 제품/모델 레퍼런스로 이미지를 다시 그리는 데 필요.
     let productRef = null;
     if (refImage) {
       try { await mediaStore.putFile(refImage); } catch {} // 재배포 후 redo 대비 영속화
@@ -188,11 +176,11 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
     }
     const persistedScript = { ...script, _render: { audio: audio || {}, aspect, product: productRef, model: modelImagePath || null } };
     await updateJob(jobId, {
-      status: 'succeeded', result_url: `/images/${filename}`, result_idx: savedResult.idx,
+      status: 'succeeded', result_url: `/images/${filename}`,
       duration_sec: durationSec, subtitle_mode: out.subtitleMode,
       script: JSON.stringify(persistedScript), scene_clips: JSON.stringify(sceneClips),
     });
-    log.info(`UGC job ${jobId} succeeded → /images/${filename} (자막=${out.subtitleMode})`);
+    log.info(`UGC job ${jobId} succeeded(draft) → /images/${filename} (자막=${out.subtitleMode})`);
   } catch (err) {
     if (charge) await charge.refund().catch(() => {});
     await updateJob(jobId, { status: 'failed', error: String(err.message).slice(0, 300) });
@@ -354,12 +342,14 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
     fs.copyFileSync(out.videoPath, served);
     await mediaStore.putFile(served);
     const durationSec = Math.round((plan.meta.durationMs || 0) / 1000);
-    await query(
-      `UPDATE generation_results SET file_path=$2, file_size_kb=$3, metadata=$4 WHERE idx=$1`,
-      [row.result_idx, `tmp/images/${filename}`, Math.round(fs.statSync(served).size / 1024),
-       JSON.stringify({ type: 'video', source: 'ugc', outputType: row.output_type, duration: durationSec,
-         subtitleMode: out.subtitleMode, clips: plan.tracks.video.length, edited: true })]
-    );
+    if (row.result_idx) { // committed(저장됨) 후 편집만 generation_results 반영. draft는 result_idx 없어 스킵.
+      await query(
+        `UPDATE generation_results SET file_path=$2, file_size_kb=$3, metadata=$4 WHERE idx=$1`,
+        [row.result_idx, `tmp/images/${filename}`, Math.round(fs.statSync(served).size / 1024),
+         JSON.stringify({ type: 'video', source: 'ugc', outputType: row.output_type, duration: durationSec,
+           subtitleMode: out.subtitleMode, clips: plan.tracks.video.length, edited: true })]
+      );
+    }
     await updateJob(jobId, {
       result_url: `/images/${filename}`, duration_sec: durationSec, subtitle_mode: out.subtitleMode,
       script: JSON.stringify(script), scene_clips: JSON.stringify(sceneClips),
@@ -370,6 +360,43 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
     if (charge) await charge.refund().catch(() => {}); // redo 렌더/조립/저장 어디서 실패해도 재생성 과금 환불
     throw e;
   }
+}
+
+/**
+ * "Save & finish" 또는 이탈 시 — draft를 generation_results에 확정 저장(My creations/Library/Explore 노출). 멱등.
+ * @returns {Promise<{resultIdx:number, already?:boolean}|null>} null=없음/권한없음/미완성
+ */
+async function commitJob(id, userId) {
+  const r = await query(
+    `SELECT id, user_id, team_id, output_type, visibility, title, caption, hashtags,
+            duration_sec, subtitle_mode, result_url, result_idx, script, status
+     FROM ugc_jobs WHERE id = $1 AND (
+       user_id = $2 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $2)))`,
+    [id, userId]
+  );
+  const j = r.rows[0];
+  if (!j) return null;
+  if (j.result_idx) return { resultIdx: j.result_idx, already: true }; // 이미 저장됨(멱등 — 중복 방지)
+  if (j.status !== 'succeeded' || !j.result_url) return null; // 아직 완성 안 됨
+  const filename = String(j.result_url).split('/').pop();
+  const served = path.join(servedDir, filename);
+  const script = safeParse(j.script) || {};
+  const nClips = ((script.scenes || []).filter((s) => s.type === 'broll')).length;
+  const savedPrompt = await promptRepo.insert({
+    userId: j.user_id, promptText: `${j.title || ''} — ${j.caption || ''}`.slice(0, 2000),
+    model: 'ugc-v1', tags: ['video', 'ugc', j.output_type], teamId: j.team_id,
+  });
+  const savedResult = await resultRepo.insert({
+    promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
+    fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
+    metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
+      subtitleMode: j.subtitle_mode, clips: nClips },
+    visibility: j.visibility === 'private' ? 'private' : 'public',
+  });
+  await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
+  await updateJob(id, { result_idx: savedResult.idx });
+  log.info(`UGC job ${id} committed → generation_results idx ${savedResult.idx}`);
+  return { resultIdx: savedResult.idx };
 }
 
 /** 잡 상태 조회(소유자 본인 또는 팀 멤버) */
@@ -429,4 +456,4 @@ function editableScenes(script, sceneClips) {
 }
 function safeParse(v) { try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+module.exports = { generateScript, render, submit, getJob, reRender, commitJob, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };

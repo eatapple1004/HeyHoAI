@@ -168,6 +168,7 @@
   .ugc-apply{background:var(--accent,#8b7bff);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:650;cursor:pointer}
   .ugc-apply:disabled{background:var(--border);color:var(--muted);cursor:default}
   .ugc-reset{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 14px;font-size:12.5px;cursor:pointer}
+  .ugc-save-hint{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
   .usc-acts .usc-redo:hover:not(:disabled){border-color:var(--accent,#8b7bff);color:var(--accent,#8b7bff)}
   .usc-adv-toggle{background:transparent;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:10.5px;padding:5px 0;cursor:pointer;width:100%}
   .usc-adv-toggle:hover{color:var(--fg,#ddd);background:rgba(255,255,255,.04)}
@@ -2729,7 +2730,6 @@ function studioMediaCard(o){
   return `<div class="result-card">${inner}
       <div class="actions">
         <a href="${esc(o.url)}" download><button>⬇ Download</button></a>
-        <button onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')">⤢ View large</button>
       </div></div>`;
 }
 // 우측 완성 영상: 기본 소리 ON 시도. 브라우저 자동재생 정책상 막히면 muted 유지(버튼으로 켤 수 있음).
@@ -2808,8 +2808,10 @@ function ugcSceneStripHtml(b){
     const thumb=isVid
       ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata"></video>` // 각 씬 클립 자동재생(무음 미리보기)
       :(s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`);
+    const zoomUrl=isVid?s.clipUrl:(s.thumb||''); const zoomType=isVid?'reel':'photo'; // 씬 클릭 시 확대(영상/이미지)
+    const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
-      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)" title="Drag to reorder">${thumb}<span class="usc-idx">${i+1}</span></div>
+      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span></div>
       <div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
@@ -2829,9 +2831,11 @@ function ugcSceneStripHtml(b){
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
     <div class="ugc-apply-row">
-      <button type="button" class="ugc-apply" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')" ${dirty?'':'disabled'}>${dirty?'✓ Apply changes — free':'No changes'}</button>
+      <button type="button" class="ugc-apply" onclick="ugcSaveFinish('${esc(b.ugc.jobId)}')">${u._saved?'✓ Saved to gallery':(dirty?'Apply · Save & finish':'Save & finish')}</button>
       ${dirty?`<button type="button" class="ugc-reset" onclick="ugcResetEdits('${esc(b.ugc.jobId)}')">Reset</button>`:''}
-    </div></div>`;
+    </div>
+    ${u._saved?'':`<div class="ugc-save-hint">Not saved yet — it'll auto-save when you leave, or Save &amp; finish now.</div>`}
+    </div>`;
 }
 function ugcFindBatch(jobId){ return STUDIO_BATCHES.find(b=>b.ugc&&b.ugc.jobId===jobId); }
 function ugcCont(jobId){ return document.querySelector('.ugc-scenes[data-job="'+jobId+'"]'); } // 배치 스코프(멀티 결과 first-match 방지)
@@ -2918,6 +2922,28 @@ async function ugcApplyEdits(jobId){
   const btn=ugcApplyBtn(jobId);
   await ugcReassemble(jobId,{setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Reassembling…':'✓ Apply changes — free';}}});
 }
+// Save & finish — 미적용 편집 반영(재조립) 후 갤러리·Explore에 확정 저장(draft→공개)
+async function ugcSaveFinish(jobId){
+  const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
+  const btn=ugcApplyBtn(jobId); const o=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    if(u._dirty){ await ugcReassemble(jobId,{}); } // 미적용 편집(재배치·삭제·자막) 먼저 반영
+    const res=await fetch('/api/generate/ugc/jobs/'+jobId+'/commit',{method:'POST'});
+    const d=await sjson(res);
+    if(!res.ok||!d.success)throw new Error(d.error||'Could not save');
+    u._saved=true; renderStudioResults();
+    if(window.toast)toast('Saved to your gallery');
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent=o;} if(window.toast)toast(e.message||'Could not save','error'); }
+}
+// 이탈(새로고침·나가기) 시 저장 안 한 Ad Video draft를 자동 확정
+window.addEventListener('beforeunload',function(){
+  try{
+    (STUDIO_BATCHES||[]).forEach(function(b){
+      if(b&&b.isUgc&&b.ugc&&b.ugc.jobId&&!b.ugc._saved){ navigator.sendBeacon('/api/generate/ugc/jobs/'+b.ugc.jobId+'/commit'); }
+    });
+  }catch(_){}
+});
 // P2 — 이 씬만 재생성(과금). 현재 순서/삭제/자막 편집도 함께 반영.
 async function ugcSceneRedo(jobId,n){
   if(!confirm('Re-generate this scene? This uses credits (about one video clip).'))return;
@@ -3050,7 +3076,6 @@ function renderUgcInline(b){
   if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
     +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onloadeddata="ugcTryUnmute(this)" onclick="openImageModal('${esc(it.url)}','reel')"></video>`
     +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
-    +`<button class="ugc-inline-zoom" onclick="openImageModal('${esc(it.url)}','reel')">⤢ View large</button>`
     +'</div>'; }
   if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
   el.innerHTML=html;
