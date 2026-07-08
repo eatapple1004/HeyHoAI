@@ -22,7 +22,7 @@ const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
 const mediaStore = require('../storage/mediaStore');
 
-const { generateUgcScript, suggestConcept, refineScene } = require('./ugcScript.service');
+const { generateUgcScript, suggestConcept, refineScene, generateAddScene } = require('./ugcScript.service');
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
 const { assemble } = require('./assembler/ffmpeg.assembler');
@@ -257,7 +257,7 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, dryRunVideo = false }) {
+async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], dryRunVideo = false }) {
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
   if (row.status !== 'succeeded' || !row.script || !row.result_idx) {
@@ -270,21 +270,34 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
   // 편집 적용: broll 씬만 대상 → 삭제 → 자막/내레이션 수정 → 재정렬(순수 헬퍼)
   const scenes = applySceneEdits(script.scenes, { order, removed, edits });
   if (!scenes.length) { const e = new Error('At least one scene must remain'); e.statusCode = 422; throw e; }
-  script.scenes = scenes;
 
   const aspect = (script._render && script._render.aspect) || script.aspect || '9:16';
   const audio = (script._render && script._render.audio) || {};
 
-  // 씬 재생성(P2, 과금) — 남아있는 씬 중 redoScenes만 이미지→모션 재렌더 후 scene_clips 교체.
+  // 새 씬 추가(끝에) — 기존 대본 맥락으로 Claude가 생성(자연어 지시 or AI 제안). 한 영상 최대 12씬.
+  const adds = Array.isArray(addScenes) ? addScenes : [];
+  if (adds.length) {
+    if (scenes.length + adds.length > 12) { const e = new Error('You can have up to 12 scenes in one video'); e.statusCode = 422; throw e; }
+    let maxN = scenes.reduce((mx, s) => Math.max(mx, Number(s.n) || 0), 0);
+    for (const a of adds) {
+      const ns = await generateAddScene({ script, instruction: a && a.instruction, outputType: row.output_type });
+      ns.n = ++maxN;
+      scenes.push(ns);
+    }
+  }
+  script.scenes = scenes;
+
+  // 렌더 대상 = 재생성 지정 씬(redoScenes) + 새로 추가된 씬(클립 없음). 과금.
   const redoSet = new Set((redoScenes || []).map(Number));
-  const toRedo = scenes.filter((s) => redoSet.has(s.n));
+  const addedNs = new Set(adds.length ? scenes.slice(-adds.length).map((s) => s.n) : []);
+  const toRender = scenes.filter((s) => redoSet.has(s.n) || addedNs.has(s.n));
   let charge = null;
-  if (toRedo.length) {
-    const cost = toRedo.length * creditService.videoCost(5, 'pro', false);
-    charge = await teamCredit.chargeGeneration(user, cost, `UGC 씬 재생성 (${toRedo.length}컷)`); // 402/403 전파
+  if (toRender.length) {
+    const cost = toRender.length * creditService.videoCost(5, 'pro', false);
+    charge = await teamCredit.chargeGeneration(user, cost, `UGC 씬 ${toRender.length}컷 (재생성/추가)`); // 402/403 전파
   }
   try {
-    if (toRedo.length) {
+    if (toRender.length) {
       const { w, h } = aspectDims(aspect);
       const rp = script._render && script._render.product;
       const productLocal = rp && rp.clip ? await restoreClipLocal(rp.clip) : null;
@@ -292,9 +305,9 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       if (rp && rp.clip && !productLocal) throw Object.assign(new Error('Product reference is no longer available — cannot re-generate this scene'), { statusCode: 410 });
       const productKind = (rp && rp.kind) || 'product';
       const modelPath = (script._render && script._render.model) || null;
-      for (const s of toRedo) {
-        // 유저 자연어 수정 지시 → Claude가 이미지(brollPrompt)/모션(direction)으로 분석·라우팅+영어정제(No prompt engineering)
-        const ins = editInstructions[s.n] != null ? editInstructions[s.n] : editInstructions[String(s.n)];
+      for (const s of toRender) {
+        // 재생성 씬만 자연어 지시 반영(새 씬은 generateAddScene이 프롬프트 이미 생성) → Claude 이미지/모션 라우팅
+        const ins = redoSet.has(s.n) ? (editInstructions[s.n] != null ? editInstructions[s.n] : editInstructions[String(s.n)]) : null;
         if (ins != null && String(ins).trim()) {
           const refined = await refineScene({ brollPrompt: s.brollPrompt, direction: s.direction, instruction: ins, subject: s.subject });
           s.brollPrompt = refined.brollPrompt; s.direction = refined.direction;
@@ -346,7 +359,7 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       result_url: `/images/${filename}`, duration_sec: durationSec, subtitle_mode: out.subtitleMode,
       script: JSON.stringify(script), scene_clips: JSON.stringify(sceneClips),
     });
-    log.info(`UGC job ${jobId} re-rendered (씬 ${scenes.length}개, redo ${toRedo.length}, ${charge ? 'cost=' + charge.amount : '무과금'}) → /images/${filename}`);
+    log.info(`UGC job ${jobId} re-rendered (씬 ${scenes.length}개, 렌더 ${toRender.length}, ${charge ? 'cost=' + charge.amount : '무과금'}) → /images/${filename}`);
     return { jobId, resultUrl: `/images/${filename}`, durationSec, cost: charge ? charge.amount : 0 };
   } catch (e) {
     if (charge) await charge.refund().catch(() => {}); // redo 렌더/조립/저장 어디서 실패해도 재생성 과금 환불

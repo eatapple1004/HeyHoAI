@@ -173,11 +173,17 @@
   .usc-adv-toggle:hover{color:var(--fg,#ddd);background:rgba(255,255,255,.04)}
   .usc .usc-busy-ov{position:absolute;inset:0;background:rgba(10,10,14,.72);display:none;align-items:center;justify-content:center;z-index:2}
   .usc.usc-busy .usc-busy-ov{display:flex}
-  .ugc-adv{margin-top:12px;padding:14px;border:1px solid var(--accent,#8b7bff);border-radius:11px;background:rgba(139,123,255,.06)}
+  .ugc-adv,.ugc-add{margin-top:12px;padding:14px;border:1px solid var(--accent,#8b7bff);border-radius:11px;background:rgba(139,123,255,.06)}
   .ugc-adv-hd{font-size:12.5px;font-weight:650;margin-bottom:8px}
   .ugc-adv-note{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
-  .ugc-adv-ta{width:100%;box-sizing:border-box;min-height:82px;background:var(--card2,#14141b);border:1px solid var(--border);border-radius:8px;color:var(--fg,#e8e8ef);font:inherit;font-size:12.5px;line-height:1.45;padding:9px 11px;resize:vertical}
+  .ugc-adv-ta,.ugc-add-ta{width:100%;box-sizing:border-box;min-height:82px;background:var(--card2,#14141b);border:1px solid var(--border);border-radius:8px;color:var(--fg,#e8e8ef);font:inherit;font-size:12.5px;line-height:1.45;padding:9px 11px;resize:vertical}
   .ugc-adv-row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  /* + Add a scene 카드(씬 스트립 끝) */
+  .usc.usc-add{border-style:dashed;cursor:pointer;justify-content:center;align-items:center}
+  .usc.usc-add:hover{border-color:var(--accent,#8b7bff);background:rgba(139,123,255,.06)}
+  .usc-add-in{text-align:center;color:var(--muted)}
+  .usc-add-plus{font-size:28px;line-height:1;font-weight:300}
+  .usc-add-t{font-size:11.5px;margin-top:5px}
   /* 생성 중: 우측 대본 패널 유지(읽기전용 흐림 + Generating 배지) */
   .ugc-generating{position:relative;opacity:.5;pointer-events:none;user-select:none}
   .ugc-generating::after{content:'⏳ Generating…';position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--accent,#8b7bff);color:#fff;font-size:12px;font-weight:650;padding:5px 13px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.35)}
@@ -2779,7 +2785,8 @@ function ugcSceneStripHtml(b){
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
     <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span></div>
-    <div class="ugc-strip">${cards}</div>
+    <div class="ugc-strip">${cards}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
+    <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
     <div class="ugc-apply-row">
       <button type="button" class="ugc-apply" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')" ${dirty?'':'disabled'}>${dirty?'✓ Apply changes — free':'No changes'}</button>
@@ -2834,7 +2841,7 @@ function ugcResetEdits(jobId){
 // 공용 재조립 호출 — 무과금(재배치/삭제/자막)과 과금(redoScenes 재생성)을 한 경로로.
 async function ugcReassemble(jobId,opts){
   opts=opts||{}; const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
-  const paid=!!(opts.redoScenes&&opts.redoScenes.length);
+  const paid=!!((opts.redoScenes&&opts.redoScenes.length)||(opts.addScenes&&opts.addScenes.length));
   if(!paid&&!u._dirty)return; // 무과금인데 변경 없으면 무시
   const order=u.scenes.map(s=>s.n);
   const origNs=(u._orig||u.scenes).map(s=>s.n); const keep=new Set(order); const removed=origNs.filter(n=>!keep.has(n));
@@ -2842,6 +2849,7 @@ async function ugcReassemble(jobId,opts){
   const body={jobId,order,removed,edits};
   if(opts.redoScenes)body.redoScenes=opts.redoScenes;
   if(opts.editInstructions)body.editInstructions=opts.editInstructions;
+  if(opts.addScenes)body.addScenes=opts.addScenes;
   const setBusy=opts.setBusy||function(){}; setBusy(true);
   try{
     const res=await fetch('/api/generate/ugc/re-render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -2895,6 +2903,30 @@ async function ugcAdvRegen(jobId,n){
   const ins={}; ins[n]=val;
   await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}}});
   if(wrap){wrap.style.display='none';wrap.dataset.n='';}
+}
+// 새 씬 추가: 자연어 지시 or AI 제안(빈칸)으로 영상 끝에 씬 하나 생성(과금). 드래그로 위치 이동 가능.
+function ugcAddScene(jobId){
+  const b=ugcFindBatch(jobId); if(!b)return;
+  if(b.ugc.scenes.length>=12){toast('Up to 12 scenes per video');return;}
+  const wrap=document.getElementById('ugcAdd-'+jobId); if(!wrap)return;
+  if(wrap.style.display!=='none'&&wrap.dataset.open==='1'){wrap.style.display='none';wrap.dataset.open='';return;}
+  wrap.dataset.open='1'; wrap.style.display='';
+  wrap.innerHTML='<div class="ugc-adv-hd">Add a scene <span class="ugc-adv-note">Describe it, or let AI suggest the next one (uses credits).</span></div>'
+    +'<textarea class="ugc-add-ta" spellcheck="false" placeholder="e.g. A close-up of the finished look  ·  The full product lineup  ·  A confident smile"></textarea>'
+    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAddSubmit(\''+esc(jobId)+'\',true)">Add scene — uses credits</button>'
+    +'<button type="button" class="ugc-reset" onclick="ugcAddSubmit(\''+esc(jobId)+'\',false)">✨ Suggest for me</button>'
+    +'<button type="button" class="ugc-reset" onclick="ugcAddScene(\''+esc(jobId)+'\')">Close</button></div>';
+}
+async function ugcAddSubmit(jobId,useText){
+  const b=ugcFindBatch(jobId); if(!b)return;
+  if(b.ugc.scenes.length>=12){toast('Up to 12 scenes per video');return;}
+  const wrap=document.getElementById('ugcAdd-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-add-ta');
+  const val=useText?(ta?ta.value.trim():''):'';
+  if(useText&&!val){toast('Describe the scene, or use ✨ Suggest');return;}
+  if(!confirm('Add a new scene? This uses credits.'))return;
+  const btns=wrap?Array.prototype.slice.call(wrap.querySelectorAll('button')):[];
+  await ugcReassemble(jobId,{addScenes:[{instruction:val}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});}});
+  if(wrap){wrap.style.display='none';wrap.dataset.open='';}
 }
 // 실패 슬롯(레오나르도식) — 정확한 문구 + Delete. idx 있으면 서버 실패행 삭제, 없으면(라이브·릴) 타일만 제거. 토큰은 백엔드가 실패분만 환불.
 function studioFailedCard(idx){

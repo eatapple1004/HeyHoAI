@@ -997,7 +997,8 @@ router.post('/ugc/re-render', async (req, res, next) => {
       removed: parseArr(b.removed),
       edits: parseObj(b.edits),
       redoScenes: parseArr(b.redoScenes), // 씬 재생성(과금)
-      editInstructions: parseObj(b.editInstructions), // 자연어 수정 지시(원본 프롬프트에 덧붙임)
+      editInstructions: parseObj(b.editInstructions), // 자연어 수정 지시(Claude 이미지/모션 라우팅)
+      addScenes: parseArr(b.addScenes), // 새 씬 추가([{instruction}], 자연어 or 빈=AI 제안)
     });
     res.json({ success: true, ...result });
   } catch (err) {

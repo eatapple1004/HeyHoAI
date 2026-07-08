@@ -222,4 +222,61 @@ async function refineScene({ brollPrompt = '', direction = '', instruction, subj
   }
 }
 
-module.exports = { generateUgcScript, validateScriptSafety, suggestConcept, refineScene };
+// 새 씬 1개 스키마(완성 영상에 추가). broll 씬.
+const ADD_SCENE_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: {
+    onScreenText: { type: 'string' }, spoken: { type: 'string' },
+    direction: { type: 'string' }, brollPrompt: { type: 'string' },
+    subject: { type: 'string', enum: ['product', 'model'] }, durationSec: { type: 'number' },
+  },
+  required: ['onScreenText', 'spoken', 'direction', 'brollPrompt', 'subject', 'durationSec'],
+};
+
+/**
+ * 완성 영상에 붙일 새 씬 1개 생성. 기존 대본(톤·제품·씬들) 맥락 유지.
+ *   instruction 있으면 그 방향으로, 없으면 AI가 다음으로 자연스러운 씬 제안.
+ * @param {{ script:object, instruction?:string, outputType?:string }} p
+ * @returns {Promise<{ type:'broll', onScreenText, spoken, direction, brollPrompt, subject, durationSec }>}
+ */
+async function generateAddScene({ script, instruction = '', outputType = 'product-ad' } = {}) {
+  const s = script || {};
+  const scenes = (s.scenes || []).filter((x) => x.type === 'broll');
+  const voiceover = scenes.some((x) => x.spoken && x.spoken.trim()); // 기존에 내레이션 있으면 새 씬도 음성
+  const lang = s.language === 'en' ? 'English' : 'Korean';
+  const productOnly = outputType !== 'model-editorial';
+  const system = [
+    'You add ONE new scene to an EXISTING short product-ad video (TikTok / Instagram Reels). Match the tone, product identity, and visual style of the existing scenes.',
+    'If a user direction is given, realize it. If not, propose the single most natural next scene (e.g. a satisfying result shot, a hero product beauty shot, or a moment that supports the call-to-action).',
+    productOnly
+      ? 'This ad shows the PRODUCT ONLY — no model or person. subject MUST be "product".'
+      : 'This ad may feature a model. Use subject "model" only if the scene needs a person, otherwise "product".',
+    voiceover
+      ? `Write spoken narration in ${lang} — natural, understated, no hype.`
+      : 'This ad has NO voiceover — leave spoken empty; put any on-screen words in onScreenText.',
+    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. brollPrompt = a detailed still-image prompt (product, setting, lighting, composition). direction = Kling camera/subject motion.`,
+    'durationSec between 2 and 5. Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
+  ].join('\n');
+  const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. "${x.onScreenText || '(visual only)'}" — motion: ${x.direction || ''}`).join('\n') || '(none)'}`;
+  const user = `${ctx}\n\n${String(instruction).trim() ? `USER DIRECTION for the new scene: ${String(instruction).trim()}` : 'Propose the single most natural next scene to add.'}\n\nReturn one new scene.`;
+  const response = await client.messages.create({
+    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 700, system,
+    messages: [{ role: 'user', content: user }],
+    output_config: { format: { type: 'json_schema', schema: ADD_SCENE_SCHEMA } },
+  });
+  const text = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+  const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+  if (!m) throw Object.assign(new Error('Could not generate the new scene'), { statusCode: 502 });
+  const raw = JSON.parse(m[1]);
+  return {
+    type: 'broll',
+    onScreenText: String(raw.onScreenText || '').slice(0, 300),
+    spoken: voiceover ? String(raw.spoken || '').slice(0, 600) : '',
+    direction: String(raw.direction || '').slice(0, 600),
+    brollPrompt: String(raw.brollPrompt || raw.direction || '').slice(0, 2000),
+    subject: (!productOnly && raw.subject === 'model') ? 'model' : 'product',
+    durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 5),
+  };
+}
+
+module.exports = { generateUgcScript, validateScriptSafety, suggestConcept, refineScene, generateAddScene };
