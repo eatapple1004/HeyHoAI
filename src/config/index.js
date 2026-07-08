@@ -35,6 +35,14 @@ const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
 
+  // 영상 잡 폴러 비활성(로컬 개발용). 로컬 :3001이 prod DB에 붙으면 폴러가 prod 잡을 이중 폴링
+  //   → 중복 finalize·attempts 부풀림(폴러 겹침). 로컬 프로세스만 DISABLE_VIDEO_POLLER=true로 폴러만 끔.
+  //   기본 false(폴러 실행) → prod 무변경, 단일 폴러 유지.
+  DISABLE_VIDEO_POLLER: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // 외부 공개 주소 (도메인). 인스타 발행 시 미디어 URL·발행 링크 등에 사용.
   // 예: https://doppia.ai — 미설정 시 폴백 IP 사용
   PUBLIC_URL: z.string().url().optional(),

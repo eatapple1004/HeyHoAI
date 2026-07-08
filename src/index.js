@@ -216,8 +216,13 @@ app.listen(env.PORT, () => {
   const { startScheduler } = require('./publishing/scheduler');
   startScheduler();
 
-  // 비동기 릴스 생성 폴러 시작
-  require('./generate/videoJob.service').startPoller();
+  // 비동기 릴스 생성 폴러 시작 — 로컬(prod DB에 붙는 :3001)에선 DISABLE_VIDEO_POLLER=true로 꺼서
+  //   prod 폴러와의 이중 폴링(같은 잡 중복 finalize·attempts 부풀림) 방지. 기본 실행(prod 무변경).
+  if (env.DISABLE_VIDEO_POLLER) {
+    log.warn('Video job poller disabled (DISABLE_VIDEO_POLLER=true) — 로컬 전용');
+  } else {
+    require('./generate/videoJob.service').startPoller();
+  }
 });
 
 module.exports = app;
