@@ -18,6 +18,7 @@ const crypto = require('crypto');
 const { activeTracks } = require('../renderPlan');
 const tts = require('../audio/tts.service');
 const music = require('../audio/music.service');
+const { env } = require('../../config');
 
 const execFileP = promisify(execFile);
 
@@ -102,8 +103,8 @@ function buildAss(subtitle) {
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    // 하단 중앙(Alignment 2), 흰 글자 + 검은 아웃라인, 굵게
-    'Style: Kinetic, Arial, 72, &H00FFFFFF, &H00000000, &H00000000, 1, 1, 4, 2, 2, 80, 80, 240, 1',
+    // 하단 중앙(Alignment 2), 흰 글자 + 검은 아웃라인, 굵게. 폰트=한글 글리프 있는 것(config).
+    `Style: Kinetic, ${env.UGC_SUBTITLE_FONT}, 72, &H00FFFFFF, &H00000000, &H00000000, 1, 1, 4, 2, 2, 80, 80, 240, 1`,
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',

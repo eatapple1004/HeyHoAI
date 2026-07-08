@@ -91,6 +91,10 @@ const envSchema = z.object({
   ELEVENLABS_TTS_MODEL: z.string().default('eleven_multilingual_v2'), // 한국어 포함 다국어
   ELEVENLABS_MUSIC_MODEL: z.string().default('music_v2'),            // music_v1 | music_v2(라이선스 클리어)
 
+  // UGC 자막 번인 폰트(libass). 한글 글리프 있는 폰트여야 함(없으면 □□□ 두부박스).
+  //   서버에 fonts-noto-cjk 설치 필요. 폰트 패밀리명이 다르면 이 값으로 override.
+  UGC_SUBTITLE_FONT: z.string().default('Noto Sans CJK KR'),
+
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
 
