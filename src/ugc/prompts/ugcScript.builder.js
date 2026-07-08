@@ -9,6 +9,7 @@
  * 산출물: 엄격한 JSON(스키마는 ugcScript.service.SCRIPT_SCHEMA 와 정합).
  */
 const { getProfile, DEFAULT_OUTPUT_TYPE } = require('../profiles');
+const { getPlaybook } = require('../categories');
 
 // 포맷별 골격 힌트(Claude가 구조를 잡도록).
 const FORMAT_HINTS = {
@@ -48,12 +49,14 @@ function buildUgcScriptPrompt(input) {
     hasImage = false,
     details = '',
     voiceover = true, // false면 내레이션·자막 없는 비주얼 전용 대본(onScreenText/spoken 비움)
+    category = '',    // 제품군 지정 시 카테고리 플레이북 주입(씬레시피·스타일)
   } = input || {};
 
   const profile = getProfile(outputType);
   const durationSec = input?.durationSec || profile.defaultDurationSec || 20;
   const langName = language === 'en' ? 'English' : 'Korean';
   const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
+  const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
 
   const system = [
     'You are a top-tier short-form creative director for TikTok / Instagram Reels / YouTube Shorts.',
@@ -70,6 +73,11 @@ function buildUgcScriptPrompt(input) {
       ? '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT invent a specific face. In "product" scenes brollPrompt is product-only.'
       : '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, onScreenText and every brollPrompt to that category.',
+    ...(playbook ? [
+      `- CATEGORY PALETTE — ${playbook.label}: draw from these shot TYPES as a menu (pick, reorder, skip, or vary freely to fit THIS brief — it is not a fixed sequence, and two ads should not look identical): ${playbook.shots.join(', ')}.`,
+      `  · Apply this visual style to every brollPrompt: ${playbook.style}.`,
+      `  · Lean toward musicVibe: ${playbook.music} — unless the brief implies another mood.`,
+    ] : []),
     `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
     ...(language === 'ko' ? [
       '- KOREAN VOICE (critical — copy must NOT sound AI-generated or translated):',
