@@ -560,8 +560,7 @@
         <span id="ugcDropLabel" style="font-size:13.5px;color:var(--dim)">📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene</span>
         <button type="button" id="ugcImgClear" onclick="event.stopPropagation();ugcClearImg()" style="display:none;margin-left:auto;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
       </div>
-      <input class="script-ta" id="ugcProduct" style="min-height:0;height:auto" placeholder="Product — e.g. red matte lipstick, everyday hydrating formula">
-      <textarea class="script-ta" id="ugcConcept" placeholder="Concept / angle — e.g. one color that completes your date-night look"></textarea>
+      <textarea class="script-ta" id="ugcConcept" placeholder="Describe your ad — your product + the angle.  e.g. Red matte lipstick, everyday hydrating formula — one color that completes your date-night look"></textarea>
       <div class="script-ctrls">
         <select class="tone-sel" id="ugcFormat">
           <option value="product-ad">Product ad (no model)</option>
@@ -3048,16 +3047,15 @@ let ugcScript=null; // 1단계에서 받은 대본(2단계 렌더로 전달)
 
 // 1단계 — 대본만(무료). 검토 패널에 표시.
 async function ugcWriteScript(){
-  const product=(document.getElementById('ugcProduct').value||'').trim();
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
   const hint=document.getElementById('ugcHint');
-  if(!product||!concept){hint.textContent='⚠ Enter a product and a one-line concept.';return;}
+  if(!concept){hint.textContent='⚠ Describe your ad — product + the angle.';return;}
   const wbtn=document.getElementById('ugcGenBtn'),rwbtn=document.getElementById('ugcRewriteBtn');
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
   hint.textContent='Writing your script…';
   try{
-    const res=await fetch('/api/generate/ugc/script',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,concept,outputType})});
+    const res=await fetch('/api/generate/ugc/script',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({concept,outputType})});
     const data=await sjson(res);
     if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
     ugcScript=data.script;
@@ -3086,7 +3084,6 @@ function ugcRenderScriptPreview(data){
 async function ugcRenderVideo(){
   if(!ugcScript){toast('Write a script first.');return;}
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;}
-  const product=(document.getElementById('ugcProduct').value||'').trim();
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
   const hint=document.getElementById('ugcHint');
@@ -3102,7 +3099,7 @@ async function ugcRenderVideo(){
   try{
     const fd=new FormData();
     fd.append('script',JSON.stringify(ugcScript));
-    fd.append('product',product);fd.append('concept',concept);fd.append('outputType',outputType);
+    fd.append('concept',concept);fd.append('outputType',outputType);
     const pf=document.getElementById('ugcProductImg').files[0];
     if(pf)fd.append('productImage',pf,pf.name||'product.png'); // 유저 실제 제품 → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});

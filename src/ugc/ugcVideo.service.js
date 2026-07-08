@@ -49,7 +49,7 @@ function brollCount(script) { return ((script && script.scenes) || []).filter((s
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
  */
 async function generateScript({ product, concept, outputType = 'product-ad' }) {
-  if (!product || !concept) { const e = new Error('product and concept are required'); e.statusCode = 400; throw e; }
+  if (!concept) { const e = new Error('concept is required'); e.statusCode = 400; throw e; }
   const script = await generateUgcScript({ product, concept, outputType });
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }

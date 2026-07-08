@@ -74,8 +74,8 @@ function normalizeScenes(scenes) {
  * @returns {Promise<object>} 구조화 UGC 대본
  */
 async function generateUgcScript(input) {
-  if (!input || !input.product || !input.concept) {
-    throw Object.assign(new Error('product and concept are required'), { statusCode: 400 });
+  if (!input || !input.concept) {
+    throw Object.assign(new Error('concept is required'), { statusCode: 400 });
   }
   const { system, user } = buildUgcScriptPrompt(input);
 

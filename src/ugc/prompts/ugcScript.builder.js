@@ -89,8 +89,9 @@ function buildUgcScriptPrompt(input) {
 
   const user = [
     `Output type: ${outputType}`,
-    `Product: ${product}`,
-    `Concept / angle: ${concept}`,
+    // product는 선택 — 보통 유저가 brief(concept)에 제품을 녹여서 씀. 있으면 명시.
+    product ? `Product: ${product}` : '',
+    `Brief (product + concept/angle): ${concept}`,
     audience ? `Target audience: ${audience}` : '',
     `Format: ${format}`,
     `Formats reference:\n${fmtLine(format)}`,
