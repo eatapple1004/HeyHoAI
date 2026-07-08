@@ -169,6 +169,14 @@
   .ugc-apply:disabled{background:var(--border);color:var(--muted);cursor:default}
   .ugc-reset{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 14px;font-size:12.5px;cursor:pointer}
   .ugc-save-hint{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
+  /* 검토 화면 씬 설명(사람용) + 자연어 편집 */
+  .ugc-scene-sum{color:var(--dim);font-size:12px;margin-top:3px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+  .ugc-scene-sum>span{flex:1;min-width:120px}
+  .ugc-sum-edit{background:none;border:none;color:var(--accent2,#8b7bff);font-size:11px;cursor:pointer;font-family:inherit;padding:0;white-space:nowrap}
+  .ugc-sum-panel{margin-top:8px}
+  .ugc-sum-ta{width:100%;box-sizing:border-box;min-height:56px;background:var(--card2,#14141b);border:1px solid var(--border2);border-radius:8px;color:var(--text);font:inherit;font-size:12.5px;padding:8px 10px;resize:vertical}
+  .ugc-sum-row{display:flex;gap:8px;margin-top:7px}
+  .ugc-sum-apply{background:var(--accent2,#8b7bff);color:#fff;border:none;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:600;cursor:pointer}
   .usc-acts .usc-redo:hover:not(:disabled){border-color:var(--accent,#8b7bff);color:var(--accent,#8b7bff)}
   .usc-adv-toggle{background:transparent;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:10.5px;padding:5px 0;cursor:pointer;width:100%}
   .usc-adv-toggle:hover{color:var(--fg,#ddd);background:rgba(255,255,255,.04)}
@@ -3654,6 +3662,7 @@ async function ugcWriteScript(){
 // 대본 검토 패널 렌더
 function ugcRenderScriptPreview(data){
   const s=data.script||{};
+  if(data.cost!=null)window.ugcLastCost=data.cost; // refine 후 재렌더 때 비용 유지
   document.getElementById('ugcScriptTitle').textContent=s.title||'Your ad script';
   document.getElementById('ugcScriptMeta').textContent=`${data.nClips} scenes · ${s.durationSec||''}s`;
   // 편집 가능 필드(클릭→수정, ugcScript에 즉시 반영). 회색 🎬줄=씬 비주얼 설명(읽기전용, 편집은 후속).
@@ -3664,7 +3673,9 @@ function ugcRenderScriptPreview(data){
       ? `<b>${i+1}.</b> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="on-screen text">${esc(sc.onScreenText)}</span>`
       : `<b>${i+1}.</b> <span style="color:var(--faint);font-size:12px">visual only — no narration</span>`;
     return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
-      +`<div style="color:var(--dim);font-size:12px;margin-top:3px">🎬 ${esc(sc.direction||sc.brollPrompt||'')}</div></div>`;
+      +`<div class="ugc-scene-sum">🎬 <span>${esc(sc.summary||sc.direction||'')}</span>`
+      +(sc.type==='broll'?` <button type="button" class="ugc-sum-edit" onclick="ugcEditScenePre(${i})" title="Change this scene">✎ change</button>`:'')
+      +`</div><div class="ugc-sum-panel" id="ugcSumPanel-${i}" style="display:none"></div></div>`;
   }).join('');
   document.getElementById('ugcScriptBody').innerHTML=
     `<div style="margin-bottom:6px"><span style="color:var(--dim)">Hook</span> — ${ce('hook',s.hook,'hook line')}</div>`+
@@ -3681,6 +3692,32 @@ function ugcRenderScriptPreview(data){
   renderUgcInline(null);
   document.getElementById('ugcScriptPreview').style.display='';
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
+}
+// 생성 전 대본 검토: 씬 자연어 편집 패널 토글 → refineScene(이미지/모션 라우팅). 프롬프트 미노출.
+function ugcEditScenePre(i){
+  const panel=document.getElementById('ugcSumPanel-'+i); if(!panel)return;
+  if(panel.style.display!=='none'){panel.style.display='none';panel.innerHTML='';return;}
+  panel.style.display='';
+  panel.innerHTML='<textarea class="ugc-sum-ta" spellcheck="false" placeholder="Describe the change — e.g. 배경을 어둡게 · 제품이 회전하게 · 더 밝게"></textarea>'
+    +'<div class="ugc-sum-row"><button type="button" class="ugc-sum-apply" onclick="ugcApplyScenePre('+i+')">Apply change</button>'
+    +'<button type="button" class="ugc-reset" onclick="ugcEditScenePre('+i+')">Cancel</button></div>';
+  const ta=panel.querySelector('.ugc-sum-ta'); if(ta)ta.focus();
+}
+async function ugcApplyScenePre(i){
+  const panel=document.getElementById('ugcSumPanel-'+i); const ta=panel&&panel.querySelector('.ugc-sum-ta');
+  const val=ta?ta.value.trim():''; if(!val){toast('Describe the change first');return;}
+  const sc=ugcScript&&ugcScript.scenes&&ugcScript.scenes[i]; if(!sc)return;
+  const btn=panel.querySelector('.ugc-sum-apply'); const o=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Updating…';}
+  try{
+    const res=await fetch('/api/generate/ugc/refine-scene',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({brollPrompt:sc.brollPrompt,direction:sc.direction,summary:sc.summary,instruction:val,subject:sc.subject,language:ugcScript.language||'ko'})});
+    const d=await sjson(res);
+    if(!res.ok||!d.success)throw new Error(d.error||'Could not update the scene');
+    sc.brollPrompt=d.brollPrompt; sc.direction=d.direction; sc.summary=d.summary; // 프롬프트+요약 갱신(화면엔 요약만)
+    ugcRenderScriptPreview({script:ugcScript,nClips:(ugcScript.scenes||[]).filter(x=>x.type==='broll').length,cost:window.ugcLastCost});
+    if(window.toast)toast('Scene updated');
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent=o;} if(window.toast)toast(e.message||'Could not update','error'); }
 }
 // 음성 여부에 따라 Voice/Speed/Preview 컨트롤 표시 토글(라벨 inline display:flex라 복원값 명시)
 function ugcSyncVoiceControls(){

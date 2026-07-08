@@ -27,9 +27,10 @@ const SCRIPT_SCHEMA = {
           n: { type: 'integer' }, type: { type: 'string', enum: ['spoken', 'broll'] },
           durationSec: { type: 'number' }, spoken: { type: 'string' },
           onScreenText: { type: 'string' }, direction: { type: 'string' }, brollPrompt: { type: 'string' },
+          summary: { type: 'string' }, // 사람용 한 줄 장면 설명(유저 언어) — 검토 화면 노출, 프롬프트는 숨김
           subject: { type: 'string', enum: ['product', 'model'] }, // 렌더 레퍼런스 라우팅(모델씬=제품+모델)
         },
-        required: ['n', 'type', 'durationSec', 'spoken', 'onScreenText', 'direction', 'brollPrompt', 'subject'],
+        required: ['n', 'type', 'durationSec', 'spoken', 'onScreenText', 'direction', 'brollPrompt', 'summary', 'subject'],
       },
     },
     cta: { type: 'string' }, caption: { type: 'string' },
@@ -66,6 +67,7 @@ function normalizeScenes(scenes) {
     spoken: s.spoken || '',
     onScreenText: s.onScreenText || '',
     direction: s.direction || '',
+    summary: s.summary || '',
     ...(s.type === 'broll' ? {
       brollPrompt: s.brollPrompt || s.direction || '',
       subject: s.subject === 'model' ? 'model' : 'product', // 렌더 레퍼런스 라우팅용(기본=제품)
@@ -174,11 +176,11 @@ async function suggestConcept({ image, details = '', language = 'ko', outputType
   return text.replace(/^["'“”](.*)["'“”]$/s, '$1').trim(); // 감싼 따옴표 제거
 }
 
-// 씬 수정 라우팅 스키마: 유저 지시를 반영한 이미지/모션 프롬프트(영어, 자기완결).
+// 씬 수정 라우팅 스키마: 유저 지시를 반영한 이미지/모션 프롬프트(영어) + 사람용 요약(유저 언어).
 const REFINE_SCHEMA = {
   type: 'object', additionalProperties: false,
-  properties: { brollPrompt: { type: 'string' }, direction: { type: 'string' } },
-  required: ['brollPrompt', 'direction'],
+  properties: { brollPrompt: { type: 'string' }, direction: { type: 'string' }, summary: { type: 'string' } },
+  required: ['brollPrompt', 'direction', 'summary'],
 };
 
 /**
@@ -187,24 +189,27 @@ const REFINE_SCHEMA = {
  * @param {{ brollPrompt?:string, direction?:string, instruction:string, subject?:string }} p
  * @returns {Promise<{ brollPrompt:string, direction:string }>}
  */
-async function refineScene({ brollPrompt = '', direction = '', instruction, subject = 'product' } = {}) {
+async function refineScene({ brollPrompt = '', direction = '', summary = '', instruction, subject = 'product', language = 'ko' } = {}) {
   const ins = String(instruction || '').trim();
-  if (!ins) return { brollPrompt, direction };
+  if (!ins) return { brollPrompt, direction, summary };
+  const lang = language === 'en' ? 'English' : 'Korean';
   const system = [
-    'You refine ONE scene of a short product-ad video. A scene has two prompts:',
+    'You refine ONE scene of a short product-ad video. A scene has two hidden prompts + a human summary:',
     '- IMAGE prompt: what the still frame shows (product, model, background, lighting, colors, any text).',
     '- MOTION prompt: how the camera/subject moves (push-in, rotate, reveal, pan, tilt, speed).',
+    '- summary: a one-line plain-language description the USER reads (not a prompt).',
     'The user requests a change in natural language (ANY language, e.g. Korean). Decide whether it affects the IMAGE, the MOTION, or BOTH, and apply it there. Rewrite ONLY what the change touches; keep everything else identical.',
-    'Return BOTH prompts in ENGLISH, fully self-contained (not a diff, not a delta). If the change does not apply to a field, return that field UNCHANGED (translate it to English if it was not already English).',
+    'Return IMAGE and MOTION prompts in ENGLISH, fully self-contained (not a diff). If the change does not apply to a field, return that field UNCHANGED (translate to English if needed).',
+    `Also return "summary": an updated ONE-LINE plain-language description in ${lang} of what the viewer now sees (human-readable, NO camera/render jargon).`,
     subject === 'model'
       ? 'This scene features a model using the product — image changes may involve the model.'
       : 'This scene shows the PRODUCT ONLY — no model or person; do not add people.',
     'Keep product identity (shape, color, label) intact unless the user explicitly asks to change it. Never invent unverifiable claims.',
   ].join('\n');
-  const user = `CURRENT IMAGE prompt:\n${brollPrompt || '(none)'}\n\nCURRENT MOTION prompt:\n${direction || '(none)'}\n\nUSER CHANGE REQUEST:\n${ins}\n\nReturn the updated IMAGE and MOTION prompts in English.`;
+  const user = `CURRENT IMAGE prompt:\n${brollPrompt || '(none)'}\n\nCURRENT MOTION prompt:\n${direction || '(none)'}\n\nCURRENT summary:\n${summary || '(none)'}\n\nUSER CHANGE REQUEST:\n${ins}\n\nReturn updated IMAGE prompt, MOTION prompt (English), and summary (${lang}).`;
   try {
     const response = await client.messages.create({
-      model: env.CLAUDE_MODEL, max_tokens: 700, system,
+      model: env.CLAUDE_MODEL, max_tokens: 800, system,
       messages: [{ role: 'user', content: user }],
       output_config: { format: { type: 'json_schema', schema: REFINE_SCHEMA } },
     });
@@ -215,10 +220,11 @@ async function refineScene({ brollPrompt = '', direction = '', instruction, subj
     return {
       brollPrompt: String(raw.brollPrompt || brollPrompt).slice(0, 2000),
       direction: String(raw.direction || direction).slice(0, 600),
+      summary: String(raw.summary || summary).slice(0, 200),
     };
   } catch (e) {
-    // Claude 실패 → 안전 폴백: 지시를 이미지 프롬프트에 덧붙여 최소 동작 보장
-    return { brollPrompt: `${brollPrompt}. ${ins}`.slice(0, 2000), direction };
+    // Claude 실패 → 안전 폴백: 지시를 이미지 프롬프트에 덧붙이고 요약에도 반영
+    return { brollPrompt: `${brollPrompt}. ${ins}`.slice(0, 2000), direction, summary: (summary ? `${summary} · ${ins}` : ins).slice(0, 200) };
   }
 }
 
@@ -228,9 +234,10 @@ const ADD_SCENE_SCHEMA = {
   properties: {
     onScreenText: { type: 'string' }, spoken: { type: 'string' },
     direction: { type: 'string' }, brollPrompt: { type: 'string' },
+    summary: { type: 'string' }, // 사람용 한 줄 설명(유저 언어)
     subject: { type: 'string', enum: ['product', 'model'] }, durationSec: { type: 'number' },
   },
-  required: ['onScreenText', 'spoken', 'direction', 'brollPrompt', 'subject', 'durationSec'],
+  required: ['onScreenText', 'spoken', 'direction', 'brollPrompt', 'summary', 'subject', 'durationSec'],
 };
 
 /**
@@ -255,6 +262,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
       ? `Write spoken narration in ${lang} — natural, understated, no hype.`
       : 'This ad has NO voiceover — leave spoken empty; put any on-screen words in onScreenText.',
     `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. brollPrompt = a detailed still-image prompt (product, setting, lighting, composition). direction = Kling camera/subject motion.`,
+    `Also write "summary": a one-line plain-language description in ${lang} of what the viewer sees (human-readable for the user, NOT a prompt).`,
     'durationSec between 2 and 5. Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. "${x.onScreenText || '(visual only)'}" — motion: ${x.direction || ''}`).join('\n') || '(none)'}`;
@@ -274,6 +282,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
     spoken: voiceover ? String(raw.spoken || '').slice(0, 600) : '',
     direction: String(raw.direction || '').slice(0, 600),
     brollPrompt: String(raw.brollPrompt || raw.direction || '').slice(0, 2000),
+    summary: String(raw.summary || '').slice(0, 200),
     subject: (!productOnly && raw.subject === 'model') ? 'model' : 'product',
     durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 5),
   };

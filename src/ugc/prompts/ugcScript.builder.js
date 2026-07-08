@@ -82,6 +82,7 @@ function buildUgcScriptPrompt(input) {
       `  · Lean toward musicVibe: ${playbook.music} — unless the brief implies another mood.`,
     ] : []),
     `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
+    `- For EACH scene also write "summary": ONE short plain-language line in ${langName} describing what the viewer sees, written FOR THE USER to read — a human description, NOT a prompt (no camera/lens/render jargon dump). e.g. "제품 클로즈업, 천천히 줌인" / "모델이 크림을 얼굴에 바르는 장면". This is what the user sees on the review screen; the actual prompts stay hidden.`,
     ...(language === 'ko' ? [
       '- KOREAN VOICE (critical — copy must NOT sound AI-generated or translated):',
       '  · Write like a real Korean creator/copywriter speaking to a friend — natural 구어체 rhythm, not a brochure or a machine.',

@@ -895,6 +895,19 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: 1 }]
   }
 });
 
+// 생성 전 대본 편집: 한 씬을 자연어로 수정 → Claude가 이미지(brollPrompt)/모션(direction) 라우팅 + 사람용 요약(summary) 갱신. 무과금.
+router.post('/ugc/refine-scene', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const { refineScene } = require('../ugc/ugcScript.service');
+    const r = await refineScene({
+      brollPrompt: b.brollPrompt, direction: b.direction, summary: b.summary,
+      instruction: b.instruction, subject: b.subject, language: b.language || 'ko',
+    });
+    res.json({ success: true, ...r });
+  } catch (err) { next(err); }
+});
+
 // (선택) 제품 사진 → AI 컨셉 제안. 컨셉 쓰기 귀찮은 유저용. 무과금.
 router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {

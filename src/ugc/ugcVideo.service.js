@@ -302,8 +302,8 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
         // 재생성 씬만 자연어 지시 반영(새 씬은 generateAddScene이 프롬프트 이미 생성) → Claude 이미지/모션 라우팅
         const ins = redoSet.has(s.n) ? (editInstructions[s.n] != null ? editInstructions[s.n] : editInstructions[String(s.n)]) : null;
         if (ins != null && String(ins).trim()) {
-          const refined = await refineScene({ brollPrompt: s.brollPrompt, direction: s.direction, instruction: ins, subject: s.subject });
-          s.brollPrompt = refined.brollPrompt; s.direction = refined.direction;
+          const refined = await refineScene({ brollPrompt: s.brollPrompt, direction: s.direction, summary: s.summary, instruction: ins, subject: s.subject, language: script.language });
+          s.brollPrompt = refined.brollPrompt; s.direction = refined.direction; s.summary = refined.summary;
         }
         const clip = await renderSceneClip(s, {
           productImagePath: productKind === 'product' ? productLocal : null,
@@ -444,6 +444,7 @@ function editableScenes(script, sceneClips) {
       n: sc.n,
       onScreenText: sc.onScreenText || '',
       spoken: sc.spoken || '',
+      summary: sc.summary || '', // 사람용 장면 설명(프롬프트 숨김)
       subject: sc.subject || 'product',
       durationSec: sc.durationSec || Math.round((cl.durationMs || 3000) / 1000),
       thumb: cl.thumb ? `/images/${cl.thumb}` : null,
