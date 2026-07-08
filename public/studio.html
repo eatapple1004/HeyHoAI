@@ -556,10 +556,16 @@
       <span class="hint">Product + a one-line concept → AI writes a script → you review it → build the video.</span></div>
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" style="display:none" onchange="ugcPreview(this)">
-      <div id="ugcDrop" onclick="document.getElementById('ugcProductImg').click()" style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:10px;border:1.5px dashed var(--border2);border-radius:12px;cursor:pointer;background:rgba(255,255,255,.02)">
-        <img id="ugcThumb" style="display:none;width:48px;height:48px;object-fit:cover;border-radius:8px;flex:none">
-        <span id="ugcDropLabel" style="font-size:13.5px;color:var(--dim)">📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene</span>
-        <button type="button" id="ugcImgClear" onclick="event.stopPropagation();ugcClearImg()" style="display:none;margin-left:auto;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
+      <div id="ugcDrop" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button type="button" id="ugcPickBtn" class="img-add labeled" onclick="document.getElementById('ugcProductImg').click()">
+          <svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg>
+          <span class="img-add-label">Add your product photo</span>
+        </button>
+        <div id="ugcThumbTile" class="ref-tile" style="display:none" onclick="document.getElementById('ugcProductImg').click()">
+          <button type="button" class="ref-x" id="ugcImgClear" onclick="event.stopPropagation();ugcClearImg()">✕</button>
+          <span class="ref-name" id="ugcDropLabel"></span>
+        </div>
+        <span id="ugcPickHint" style="font-size:12px;color:var(--dim)">Recommended — keeps your product in every scene</span>
       </div>
       <input type="text" id="ugcProductName" placeholder="Product name — e.g. Rouge Velvet Matte  (optional)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px;font-family:inherit">
       <textarea class="script-ta" id="ugcConcept" placeholder="Describe the angle / concept.  e.g. everyday hydrating formula — one color that completes your date-night look"></textarea>
@@ -3067,18 +3073,20 @@ async function pollVideoJob(jobId){
 
 // ── UGC 제품 사진 업로드 미리보기 ──
 function ugcPreview(input){
-  const f=input.files&&input.files[0]; const thumb=document.getElementById('ugcThumb');
-  const label=document.getElementById('ugcDropLabel'); const clr=document.getElementById('ugcImgClear');
+  const f=input.files&&input.files[0];
   if(!f){ugcClearImg();return;}
   const url=URL.createObjectURL(f);
-  thumb.src=url; thumb.style.display=''; clr.style.display='';
-  label.innerHTML='<b style="color:var(--text)">'+ (f.name||'product image') +'</b> — locked into every scene';
+  const tile=document.getElementById('ugcThumbTile');
+  tile.style.backgroundImage='url('+url+')'; tile.style.display='';
+  document.getElementById('ugcPickBtn').style.display='none';
+  document.getElementById('ugcDropLabel').textContent=f.name||'product image';
+  const hint=document.getElementById('ugcPickHint'); if(hint)hint.textContent='Locked into every scene';
 }
 function ugcClearImg(){
   const input=document.getElementById('ugcProductImg'); input.value='';
-  document.getElementById('ugcThumb').style.display='none';
-  document.getElementById('ugcImgClear').style.display='none';
-  document.getElementById('ugcDropLabel').innerHTML='📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene';
+  const tile=document.getElementById('ugcThumbTile'); tile.style.display='none'; tile.style.backgroundImage='';
+  document.getElementById('ugcPickBtn').style.display='';
+  const hint=document.getElementById('ugcPickHint'); if(hint)hint.textContent='Recommended — keeps your product in every scene';
 }
 
 // ── UGC 광고 영상 (2단계: 대본 미리보기 → 검토 → 렌더) ──
