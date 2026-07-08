@@ -589,6 +589,29 @@
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="ugcMusic" checked> 🎵 Add background music
         </label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
+            Voice
+            <select id="ugcVoiceId" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px">
+              <option value="n2fbxG88jqAoaVPUy3IG" selected>Yooni — F, clear &amp; calm</option>
+              <option value="bQlkYuipD5BHEhntA5iz">JY — F, trendy &amp; upbeat</option>
+              <option value="YDseIkMzKtO5bK1Ehnev">Hanabad — F, confident</option>
+              <option value="qWofGdsKN4woEPGCzrdX">Nara — F, warm &amp; mature</option>
+              <option value="SE9upoSoM2ipDUdAVW8q">Mono Beige — F, gentle</option>
+              <option value="8lidWTlnwgjObqCImnE2">Juan — M, deep storyteller</option>
+              <option value="rvVNwZozYG4hTIbVUvHi">Jin — M, warm &amp; classy</option>
+              <option value="8cOkLISXzLWeGEsu0cZC">Minjoon — M, warm &amp; clear</option>
+            </select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
+            Speed
+            <select id="ugcSpeed" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px">
+              <option value="0.85">Slow</option>
+              <option value="1" selected>Normal</option>
+              <option value="1.1">Fast</option>
+            </select>
+          </label>
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:12px">
         <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()">↻ Rewrite</button>
@@ -3152,6 +3175,8 @@ async function ugcRenderVideo(){
     fd.append('concept',concept);fd.append('outputType',outputType);
     const vEl=document.getElementById('ugcVoice');fd.append('voice',(vEl&&vEl.checked)?'true':'false'); // 음성 내레이션
     const mEl=document.getElementById('ugcMusic');fd.append('music',(mEl&&mEl.checked)?'true':'false'); // 배경음악
+    const vIdEl=document.getElementById('ugcVoiceId');if(vIdEl&&vIdEl.value)fd.append('voiceId',vIdEl.value); // 영상별 보이스
+    const spEl=document.getElementById('ugcSpeed');if(spEl&&spEl.value)fd.append('speed',spEl.value); // 말하기 속도
     const pf=document.getElementById('ugcProductImg').files[0];
     if(pf)fd.append('productImage',pf,pf.name||'product.png'); // 유저 실제 제품 → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});

@@ -87,7 +87,7 @@ const envSchema = z.object({
   //   ELEVENLABS_API_KEY 설정 시 TTS는 ElevenLabs 우선(미설정이면 OpenAI TTS 폴백), 음악은 ElevenLabs Music.
   //   미설정 시 음성=OpenAI 폴백·음악=스킵(무음/무음악, 현행 무변경).
   ELEVENLABS_API_KEY: z.string().optional(),
-  ELEVENLABS_VOICE_ID: z.string().default('21m00Tcm4TlvDq8ikWAM'), // 다국어(한국어 지원) 기본 보이스. 한국어 전용 보이스 ID로 override 권장.
+  ELEVENLABS_VOICE_ID: z.string().default('n2fbxG88jqAoaVPUy3IG'), // 기본=Yooni(한국어 원어민, clear&calm, 라이브러리 최다사용). 영상별로 스튜디오서 override.
   ELEVENLABS_TTS_MODEL: z.string().default('eleven_multilingual_v2'), // 한국어 포함 다국어
   ELEVENLABS_MUSIC_MODEL: z.string().default('music_v2'),            // music_v1 | music_v2(라이선스 클리어)
 

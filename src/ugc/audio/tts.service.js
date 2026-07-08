@@ -35,17 +35,22 @@ function narrationFromScript(script) {
   return parts.map((p) => (/[.!?…]$/.test(p) ? p : p + '.')).join(' ');
 }
 
-/** ElevenLabs TTS → mp3 버퍼 */
-async function synthElevenLabs(text) {
-  const voiceId = env.ELEVENLABS_VOICE_ID;
-  const res = await fetch(`${EL_TTS}/${voiceId}?output_format=mp3_44100_128`, {
+/** ElevenLabs TTS → mp3 버퍼. voiceId/speed 영상별 override 가능. */
+async function synthElevenLabs(text, { voiceId, speed } = {}) {
+  const vid = voiceId || env.ELEVENLABS_VOICE_ID;
+  const body = { text: text.slice(0, 5000), model_id: env.ELEVENLABS_TTS_MODEL };
+  // speed: 0.7(느림)~1.2(빠름), 기본 1.0. 1.0이면 안 보냄(기본값).
+  if (speed && speed !== 1) {
+    body.voice_settings = { speed: Math.min(Math.max(speed, 0.7), 1.2) };
+  }
+  const res = await fetch(`${EL_TTS}/${vid}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text.slice(0, 5000), model_id: env.ELEVENLABS_TTS_MODEL }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`ElevenLabs TTS failed (${res.status}): ${body.slice(0, 200)}`);
+    const b = await res.text().catch(() => '');
+    throw new Error(`ElevenLabs TTS failed (${res.status}): ${b.slice(0, 200)}`);
   }
   return Buffer.from(await res.arrayBuffer());
 }
@@ -73,7 +78,7 @@ async function synthesize(text, opts = {}) {
   if (!p) return null;
   if (!text || !text.trim()) return null;
 
-  const buf = p === 'elevenlabs' ? await synthElevenLabs(text) : await synthOpenAI(text, opts);
+  const buf = p === 'elevenlabs' ? await synthElevenLabs(text, opts) : await synthOpenAI(text, opts);
   const out = opts.outPath || path.join(process.cwd(), 'tmp', 'ugc', `vo_${Date.now()}.mp3`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, buf);

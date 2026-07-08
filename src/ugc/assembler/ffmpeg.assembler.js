@@ -238,7 +238,11 @@ async function assemble(plan, opts = {}) {
     if (tts.isConfigured()) {
       try {
         log(`VO(음성) 생성… [${tts.provider()}]`);
-        const vo = await tts.voiceoverForScript(opts.script, { outPath: path.join(workDir, 'vo.mp3') });
+        const vo = await tts.voiceoverForScript(opts.script, {
+          outPath: path.join(workDir, 'vo.mp3'),
+          voiceId: opts.audio.voiceId,   // 영상별 보이스 선택(없으면 env 기본)
+          speed: opts.audio.speed,       // 영상별 말하기 속도(없으면 1.0)
+        });
         if (vo) audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' });
       } catch (e) { log(`⚠️ VO 실패, 스킵: ${e.message}`); }
     } else { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); }
