@@ -22,7 +22,7 @@ const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
 const mediaStore = require('../storage/mediaStore');
 
-const { generateUgcScript, suggestConcept } = require('./ugcScript.service');
+const { generateUgcScript, suggestConcept, refineScene } = require('./ugcScript.service');
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
 const { assemble } = require('./assembler/ffmpeg.assembler');
@@ -293,9 +293,12 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       const productKind = (rp && rp.kind) || 'product';
       const modelPath = (script._render && script._render.model) || null;
       for (const s of toRedo) {
-        // 유저 자연어 수정 지시를 원본 프롬프트 뒤에 덧붙여 재생성(프롬프트 미노출·No prompt engineering)
+        // 유저 자연어 수정 지시 → Claude가 이미지(brollPrompt)/모션(direction)으로 분석·라우팅+영어정제(No prompt engineering)
         const ins = editInstructions[s.n] != null ? editInstructions[s.n] : editInstructions[String(s.n)];
-        if (ins != null && String(ins).trim()) s.brollPrompt = `${s.brollPrompt || s.direction || ''}. ${String(ins).trim()}`.slice(0, 2000);
+        if (ins != null && String(ins).trim()) {
+          const refined = await refineScene({ brollPrompt: s.brollPrompt, direction: s.direction, instruction: ins, subject: s.subject });
+          s.brollPrompt = refined.brollPrompt; s.direction = refined.direction;
+        }
         const clip = await renderSceneClip(s, {
           productImagePath: productKind === 'product' ? productLocal : null,
           referenceImagePath: productKind === 'product' ? null : productLocal,

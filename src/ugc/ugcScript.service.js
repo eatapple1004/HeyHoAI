@@ -174,4 +174,52 @@ async function suggestConcept({ image, details = '', language = 'ko', outputType
   return text.replace(/^["'“”](.*)["'“”]$/s, '$1').trim(); // 감싼 따옴표 제거
 }
 
-module.exports = { generateUgcScript, validateScriptSafety, suggestConcept };
+// 씬 수정 라우팅 스키마: 유저 지시를 반영한 이미지/모션 프롬프트(영어, 자기완결).
+const REFINE_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: { brollPrompt: { type: 'string' }, direction: { type: 'string' } },
+  required: ['brollPrompt', 'direction'],
+};
+
+/**
+ * "Edit scene" — 유저 자연어 수정 지시를 이미지(brollPrompt) vs 모션(direction)으로 분석·라우팅하고
+ *   영어로 정제해 반환. 한 필드만 관련되면 나머지는 원본 유지. Claude 실패 시 이미지 프롬프트에 덧붙이는 안전 폴백.
+ * @param {{ brollPrompt?:string, direction?:string, instruction:string, subject?:string }} p
+ * @returns {Promise<{ brollPrompt:string, direction:string }>}
+ */
+async function refineScene({ brollPrompt = '', direction = '', instruction, subject = 'product' } = {}) {
+  const ins = String(instruction || '').trim();
+  if (!ins) return { brollPrompt, direction };
+  const system = [
+    'You refine ONE scene of a short product-ad video. A scene has two prompts:',
+    '- IMAGE prompt: what the still frame shows (product, model, background, lighting, colors, any text).',
+    '- MOTION prompt: how the camera/subject moves (push-in, rotate, reveal, pan, tilt, speed).',
+    'The user requests a change in natural language (ANY language, e.g. Korean). Decide whether it affects the IMAGE, the MOTION, or BOTH, and apply it there. Rewrite ONLY what the change touches; keep everything else identical.',
+    'Return BOTH prompts in ENGLISH, fully self-contained (not a diff, not a delta). If the change does not apply to a field, return that field UNCHANGED (translate it to English if it was not already English).',
+    subject === 'model'
+      ? 'This scene features a model using the product — image changes may involve the model.'
+      : 'This scene shows the PRODUCT ONLY — no model or person; do not add people.',
+    'Keep product identity (shape, color, label) intact unless the user explicitly asks to change it. Never invent unverifiable claims.',
+  ].join('\n');
+  const user = `CURRENT IMAGE prompt:\n${brollPrompt || '(none)'}\n\nCURRENT MOTION prompt:\n${direction || '(none)'}\n\nUSER CHANGE REQUEST:\n${ins}\n\nReturn the updated IMAGE and MOTION prompts in English.`;
+  try {
+    const response = await client.messages.create({
+      model: env.CLAUDE_MODEL, max_tokens: 700, system,
+      messages: [{ role: 'user', content: user }],
+      output_config: { format: { type: 'json_schema', schema: REFINE_SCHEMA } },
+    });
+    const text = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+    if (!m) throw new Error('no json');
+    const raw = JSON.parse(m[1]);
+    return {
+      brollPrompt: String(raw.brollPrompt || brollPrompt).slice(0, 2000),
+      direction: String(raw.direction || direction).slice(0, 600),
+    };
+  } catch (e) {
+    // Claude 실패 → 안전 폴백: 지시를 이미지 프롬프트에 덧붙여 최소 동작 보장
+    return { brollPrompt: `${brollPrompt}. ${ins}`.slice(0, 2000), direction };
+  }
+}
+
+module.exports = { generateUgcScript, validateScriptSafety, suggestConcept, refineScene };
