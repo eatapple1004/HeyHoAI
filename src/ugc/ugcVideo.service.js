@@ -22,7 +22,7 @@ const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
 const mediaStore = require('../storage/mediaStore');
 
-const { generateUgcScript, suggestConcept, refineScene, generateAddScene } = require('./ugcScript.service');
+const { generateUgcScript, suggestConcept, refineScene, generateAddScene, normalizeAddSceneObj } = require('./ugcScript.service');
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
 const { assemble } = require('./assembler/ffmpeg.assembler');
@@ -272,8 +272,11 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
   if (adds.length) {
     if (scenes.length + adds.length > 12) { const e = new Error('You can have up to 12 scenes in one video'); e.statusCode = 422; throw e; }
     let maxN = scenes.reduce((mx, s) => Math.max(mx, Number(s.n) || 0), 0);
+    const vo = scenes.some((s) => s.spoken && s.spoken.trim());
     for (const a of adds) {
-      const ns = await generateAddScene({ script, instruction: a && a.instruction, outputType: row.output_type });
+      const ns = (a && a.scene && (a.scene.brollPrompt || a.scene.summary))
+        ? normalizeAddSceneObj(a.scene, row.output_type, vo) // 제안 선택 — Claude 재생성 없이 그대로 추가
+        : await generateAddScene({ script, instruction: a && a.instruction, outputType: row.output_type }); // 자연어 → 생성
       ns.n = ++maxN;
       scenes.push(ns);
     }

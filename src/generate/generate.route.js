@@ -908,6 +908,18 @@ router.post('/ugc/refine-scene', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// 씬 추가 — AI가 다음 씬 후보 N개(기본 4)를 사람용 설명으로 제안. 유저는 summary만 보고 선택. 무과금.
+router.post('/ugc/suggest-scenes', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const { suggestScenes } = require('../ugc/ugcScript.service');
+    const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
+    const script = { scenes: parseArr(b.scenes).map((s) => ({ ...s, type: 'broll' })), language: b.language || 'ko', title: b.title || '' };
+    const r = await suggestScenes({ script, outputType: b.outputType || 'product-ad', count: 4 });
+    res.json({ success: true, scenes: r });
+  } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+});
+
 // (선택) 제품 사진 → AI 컨셉 제안. 컨셉 쓰기 귀찮은 유저용. 무과금.
 router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {

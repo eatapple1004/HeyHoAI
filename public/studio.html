@@ -187,6 +187,17 @@
   .ugc-adv-note{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
   .ugc-adv-ta,.ugc-add-ta{width:100%;box-sizing:border-box;min-height:82px;background:var(--card2,#14141b);border:1px solid var(--border);border-radius:8px;color:var(--fg,#e8e8ef);font:inherit;font-size:12.5px;line-height:1.45;padding:9px 11px;resize:vertical}
   .ugc-adv-row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  /* 씬 추가 — AI 제안 4개 카드 */
+  .ugc-suggest-wrap{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+  .ugc-suggest-card{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2,#14141b);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--text)}
+  .ugc-suggest-card:hover{border-color:var(--accent,#8b7bff);background:rgba(139,123,255,.06)}
+  .ugc-suggest-n{flex:0 0 20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--dim);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ugc-suggest-sum{flex:1;min-width:0;font-size:12.5px;line-height:1.4}
+  .ugc-suggest-go{flex:0 0 auto;font-size:11.5px;color:var(--accent2,#8b7bff);font-weight:650}
+  .ugc-suggest-refresh{background:none;border:none;color:var(--dim);font-size:11.5px;cursor:pointer;font-family:inherit;padding:4px 0;align-self:flex-start}
+  .ugc-suggest-refresh:hover{color:var(--text)}
+  .ugc-add-own{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border2)}
+  .ugc-add-own-h{font-size:11.5px;color:var(--faint);margin-bottom:6px}
   /* + Add a scene 카드(씬 스트립 끝) */
   .usc.usc-add{border-style:dashed;cursor:pointer;justify-content:center;align-items:center}
   .usc.usc-add:hover{border-color:var(--accent,#8b7bff);background:rgba(139,123,255,.06)}
@@ -2985,18 +2996,45 @@ function ugcAddScene(jobId){
   const wrap=document.getElementById('ugcAdd-'+jobId); if(!wrap)return;
   if(wrap.style.display!=='none'&&wrap.dataset.open==='1'){wrap.style.display='none';wrap.dataset.open='';return;}
   wrap.dataset.open='1'; wrap.style.display='';
-  wrap.innerHTML='<div class="ugc-adv-hd">Add a scene <span class="ugc-adv-note">Describe it, or let AI suggest the next one (uses credits).</span></div>'
-    +'<textarea class="ugc-add-ta" spellcheck="false" placeholder="e.g. A close-up of the finished look  ·  The full product lineup  ·  A confident smile"></textarea>'
-    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAddSubmit(\''+esc(jobId)+'\',true)">Add scene — uses credits</button>'
-    +'<button type="button" class="ugc-reset" onclick="ugcAddSubmit(\''+esc(jobId)+'\',false)">✨ Suggest for me</button>'
-    +'<button type="button" class="ugc-reset" onclick="ugcAddScene(\''+esc(jobId)+'\')">Close</button></div>';
+  wrap.innerHTML='<div class="ugc-adv-hd">Add a scene <span class="ugc-adv-note">Pick a suggestion, or describe your own (uses credits).</span></div>'
+    +'<div id="ugcSuggestWrap-'+esc(jobId)+'" class="ugc-suggest-wrap"><div class="ugc-inline-loadcap">Thinking of scenes… <span class="rb-spin" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span></div></div>'
+    +'<div class="ugc-add-own"><div class="ugc-add-own-h">Or describe your own</div>'
+    +'<textarea class="ugc-add-ta" spellcheck="false" placeholder="e.g. 제품이 회전하는 장면 · 사용 후 만족하는 클로즈업"></textarea>'
+    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAddSubmit(\''+esc(jobId)+'\')">Add this scene — uses credits</button>'
+    +'<button type="button" class="ugc-reset" onclick="ugcAddScene(\''+esc(jobId)+'\')">Close</button></div></div>';
+  ugcLoadSuggestions(jobId);
 }
-async function ugcAddSubmit(jobId,useText){
+// AI가 다음 씬 후보 4개를 사람용 설명으로 제안(프롬프트는 데이터에 숨김). 기본 진입점.
+async function ugcLoadSuggestions(jobId){
+  const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
+  const wrap=document.getElementById('ugcSuggestWrap-'+jobId); if(!wrap)return;
+  wrap.innerHTML='<div class="ugc-inline-loadcap">Thinking of scenes… <span class="rb-spin" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span></div>';
+  try{
+    const res=await fetch('/api/generate/ugc/suggest-scenes',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({scenes:u.scenes.map(function(s){return {onScreenText:s.onScreenText,spoken:s.spoken,summary:s.summary,subject:s.subject};}),language:'ko',outputType:u.outputType||'product-ad'})});
+    const d=await sjson(res);
+    if(!res.ok||!d.success||!Array.isArray(d.scenes)||!d.scenes.length)throw new Error(d.error||'no suggestions');
+    u._suggest=d.scenes; // full(프롬프트 포함) — 화면엔 summary만
+    wrap.innerHTML=d.scenes.map(function(sc,i){return '<button type="button" class="ugc-suggest-card" onclick="ugcPickSuggestion(\''+esc(jobId)+'\','+i+')"><span class="ugc-suggest-n">'+(i+1)+'</span><span class="ugc-suggest-sum">'+esc(sc.summary||'')+'</span><span class="ugc-suggest-go">Add →</span></button>';}).join('')
+      +'<button type="button" class="ugc-suggest-refresh" onclick="ugcLoadSuggestions(\''+esc(jobId)+'\')">↻ More ideas</button>';
+  }catch(e){ wrap.innerHTML='<div class="ugc-inline-loadcap">Couldn\'t load suggestions — describe your own below.</div>'; }
+}
+async function ugcPickSuggestion(jobId,i){
+  const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
+  if(u.scenes.length>=12){toast('Up to 12 scenes per video');return;}
+  const sc=u._suggest&&u._suggest[i]; if(!sc)return;
+  if(!confirm('Add this scene? This uses credits.'))return;
+  const wrap=document.getElementById('ugcAdd-'+jobId); const btns=wrap?Array.prototype.slice.call(wrap.querySelectorAll('button')):[];
+  await ugcReassemble(jobId,{addScenes:[{scene:sc}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});}}); // 선택 씬 그대로(재생성 없이)
+  if(wrap){wrap.style.display='none';wrap.dataset.open='';}
+}
+// 자연어(부차) — 직접 설명해서 추가
+async function ugcAddSubmit(jobId){
   const b=ugcFindBatch(jobId); if(!b)return;
   if(b.ugc.scenes.length>=12){toast('Up to 12 scenes per video');return;}
   const wrap=document.getElementById('ugcAdd-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-add-ta');
-  const val=useText?(ta?ta.value.trim():''):'';
-  if(useText&&!val){toast('Describe the scene, or use ✨ Suggest');return;}
+  const val=ta?ta.value.trim():'';
+  if(!val){toast('Describe the scene, or pick a suggestion above');return;}
   if(!confirm('Add a new scene? This uses credits.'))return;
   const btns=wrap?Array.prototype.slice.call(wrap.querySelectorAll('button')):[];
   await ugcReassemble(jobId,{addScenes:[{instruction:val}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});}});
@@ -3824,7 +3862,7 @@ async function ugcRenderVideo(){
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     const job=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
-      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false};} // 결과 편집(씬 스트립)용
+      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType};} // 결과 편집(씬 스트립)용
       renderStudioResults();} // 우측 인라인에 완성 영상+씬 스트립
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){

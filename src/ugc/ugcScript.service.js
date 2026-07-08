@@ -288,4 +288,54 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
   };
 }
 
-module.exports = { generateUgcScript, validateScriptSafety, suggestConcept, refineScene, generateAddScene };
+const SUGGEST_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: { scenes: { type: 'array', items: ADD_SCENE_SCHEMA } },
+  required: ['scenes'],
+};
+
+/** 완성 영상에 추가할 씬 후보 N개(기본 4)를 서로 다른 앵글로 제안. 유저는 summary만 보고 고름(프롬프트는 뒤에). */
+async function suggestScenes({ script, outputType = 'product-ad', count = 4 } = {}) {
+  const s = script || {};
+  const scenes = (s.scenes || []).filter((x) => x.type === 'broll');
+  const voiceover = scenes.some((x) => x.spoken && x.spoken.trim());
+  const lang = s.language === 'en' ? 'English' : 'Korean';
+  const productOnly = outputType !== 'model-editorial';
+  const n = Math.min(Math.max(count, 2), 6);
+  const system = [
+    `You propose ${n} DIFFERENT candidate scenes the user could ADD to an existing short product-ad video. Each must be a DISTINCT natural next scene with a different angle/beat (e.g. a result shot, a hero product beauty shot, a detail macro, a lifestyle/gifting moment). Match the existing tone and product.`,
+    productOnly ? 'PRODUCT ONLY — subject MUST be "product", no people.' : 'May use subject "model" when a scene needs a person, otherwise "product".',
+    voiceover ? `Write spoken narration in ${lang} — natural, understated.` : 'NO voiceover — leave spoken empty.',
+    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = ONE line ${lang} human description (what the user sees, NOT a prompt). durationSec 2-5.`,
+    'Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
+  ].join('\n');
+  const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. ${x.summary || x.onScreenText || x.direction || ''}`).join('\n') || '(none)'}`;
+  const user = `${ctx}\n\nPropose ${n} distinct candidate scenes to add.`;
+  const response = await client.messages.create({
+    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 1800, system,
+    messages: [{ role: 'user', content: user }],
+    output_config: { format: { type: 'json_schema', schema: SUGGEST_SCHEMA } },
+  });
+  const text = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+  const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+  if (!m) throw Object.assign(new Error('Could not suggest scenes'), { statusCode: 502 });
+  const raw = JSON.parse(m[1]);
+  return (Array.isArray(raw.scenes) ? raw.scenes : []).slice(0, n).map((sc) => normalizeAddSceneObj(sc, outputType, voiceover));
+}
+
+/** 씬 객체(제안 선택 or 프론트 전송) 정규화. 프롬프트/요약/subject/길이 클램프. */
+function normalizeAddSceneObj(sc, outputType = 'product-ad', voiceover = true) {
+  const productOnly = outputType !== 'model-editorial';
+  return {
+    type: 'broll',
+    onScreenText: String(sc.onScreenText || '').slice(0, 300),
+    spoken: voiceover ? String(sc.spoken || '').slice(0, 600) : '',
+    direction: String(sc.direction || '').slice(0, 600),
+    brollPrompt: String(sc.brollPrompt || sc.direction || '').slice(0, 2000),
+    summary: String(sc.summary || '').slice(0, 200),
+    subject: (!productOnly && sc.subject === 'model') ? 'model' : 'product',
+    durationSec: Math.min(Math.max(Number(sc.durationSec) || 3, 2), 5),
+  };
+}
+
+module.exports = { generateUgcScript, validateScriptSafety, suggestConcept, refineScene, generateAddScene, suggestScenes, normalizeAddSceneObj };
