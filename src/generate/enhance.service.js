@@ -18,7 +18,7 @@ Rules:
 
 /**
  * 짧은 유저 프롬프트를 풍부한 이미지 생성 프롬프트로 확장한다.
- * caption.service 패턴 미러: @anthropic-ai/sdk, model = env.CLAUDE_MODEL.
+ * caption.service 패턴 미러: @anthropic-ai/sdk. 결과 이미지 품질 직결이라 opus override(env.CLAUDE_MODEL_ENHANCE).
  *
  * @param {{ prompt: string; mode?: string }} input
  * @returns {Promise<{ prompt: string }>}
@@ -34,7 +34,7 @@ async function enhancePrompt({ prompt, mode }) {
     : `Idea: ${idea}`;
 
   const response = await client.messages.create({
-    model: env.CLAUDE_MODEL,
+    model: env.CLAUDE_MODEL_ENHANCE,
     max_tokens: 400,
     system: SYSTEM,
     messages: [{ role: 'user', content: user }],

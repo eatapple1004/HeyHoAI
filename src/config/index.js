@@ -4,7 +4,11 @@ const { z } = require('zod');
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
-  CLAUDE_MODEL: z.string().default('claude-sonnet-4-20250514'),
+  // Claude 모델 — 역할별 지정(B안). base=정형작업(캡션·캐릭터), 나머지 둘은 품질 우선 override.
+  //   미설정 시 base=sonnet-5, 대본·enhance=opus-4-8. 통일하려면 세 값을 같게 설정.
+  CLAUDE_MODEL: z.string().default('claude-sonnet-5'),          // 캡션·캐릭터(정형)
+  CLAUDE_MODEL_SCRIPT: z.string().default('claude-opus-4-8'),   // 대본생성(ugc) — 템플릿 저작 수준
+  CLAUDE_MODEL_ENHANCE: z.string().default('claude-opus-4-8'),  // 프롬프트 Enhance — 결과 이미지 품질 직결
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 

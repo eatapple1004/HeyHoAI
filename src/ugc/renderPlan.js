@@ -1,0 +1,75 @@
+/**
+ * renderPlan.js — 트랙 스택 자료구조 (재작업 0의 핵심)
+ * ============================================================================
+ * 최종 영상을 "트랙 스택"으로 표현한다. v1은 video + subtitle 만 채우고,
+ * music / vo / presenter 는 슬롯만 비워둔다. v2~v4는 이 슬롯에 렌더러를
+ * 꽂기만 하면 되므로 조립기 구조를 재작업하지 않는다.
+ *
+ *   video:     [{ clipUrl, startMs, durMs, sceneN }]   // v1 필수 — 모션 클립 시퀀스
+ *   subtitle:  [{ text, startMs, durMs, style }]        // v1 필수 — 키네틱 자막
+ *   music:     null   // v2 (배경음)
+ *   vo:        null   // v3 (ElevenLabs TTS)
+ *   presenter: null   // v4 (토킹 아바타 벤더)
+ */
+
+/**
+ * 대본 + 렌더된 클립 → RenderPlan.
+ * @param {object} script  ugcScript.service 산출 대본(scenes[] 포함)
+ * @param {Array<{ sceneN:number, clipUrl:string, durationMs:number }>} clips
+ *        각 broll 씬에 대응하는 모션 클립(씬 순서와 무관하게 sceneN으로 매칭)
+ * @returns {object} RenderPlan
+ */
+function buildRenderPlan(script, clips) {
+  const byScene = new Map(clips.map((c) => [c.sceneN, c]));
+  const scenes = Array.isArray(script.scenes) ? script.scenes : [];
+
+  const video = [];
+  const subtitle = [];
+  let cursorMs = 0;
+
+  for (const scene of scenes) {
+    const clip = byScene.get(scene.n);
+    if (!clip || !clip.clipUrl) continue; // 클립 렌더 실패한 씬은 스킵(무음 갭 방지)
+
+    const durMs = clip.durationMs || Math.round((scene.durationSec || 3) * 1000);
+
+    video.push({ clipUrl: clip.clipUrl, startMs: cursorMs, durMs, sceneN: scene.n });
+
+    const text = (scene.onScreenText || '').trim();
+    if (text) {
+      subtitle.push({ text, startMs: cursorMs, durMs, style: 'kinetic' });
+    }
+
+    cursorMs += durMs;
+  }
+
+  return {
+    meta: {
+      outputType: script.outputType || null,
+      title: script.title || '',
+      aspect: script.aspect || '9:16',
+      language: script.language || 'ko',
+      durationMs: cursorMs,
+      cta: script.cta || '',
+      caption: script.caption || '',
+      hashtags: script.hashtags || [],
+      musicVibe: script.musicVibe || '', // v2 배경음 선택 힌트(아직 미사용)
+    },
+    tracks: {
+      video,          // v1 필수
+      subtitle,       // v1 필수
+      music: null,    // v2 슬롯
+      vo: null,       // v3 슬롯
+      presenter: null,// v4 슬롯
+    },
+  };
+}
+
+/** 채워진(non-null) 트랙 이름 목록 — 조립기가 렌더할 트랙 판단용 */
+function activeTracks(plan) {
+  return Object.entries(plan.tracks)
+    .filter(([, v]) => v != null && (!Array.isArray(v) || v.length > 0))
+    .map(([k]) => k);
+}
+
+module.exports = { buildRenderPlan, activeTracks };
