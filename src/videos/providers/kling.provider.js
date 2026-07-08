@@ -84,7 +84,7 @@ const klingProvider = {
         negative_prompt: req.negativePrompt,
         duration: String(req.durationSec),
         mode: req.style === 'cinematic' ? 'pro' : 'std',
-        aspect_ratio: '9:16',
+        aspect_ratio: ['9:16', '1:1', '16:9'].includes(req.aspectRatio) ? req.aspectRatio : '9:16',
         ...(req.seed != null && { seed: req.seed }),
       }),
     });

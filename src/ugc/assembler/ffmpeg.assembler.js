@@ -15,7 +15,7 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
-const { activeTracks } = require('../renderPlan');
+const { activeTracks, aspectDims } = require('../renderPlan');
 const tts = require('../audio/tts.service');
 const music = require('../audio/music.service');
 const { env } = require('../../config');
@@ -26,8 +26,8 @@ const TARGET_W = 1080;
 const TARGET_H = 1920;
 const FPS = 30;
 
-// 9:16 캔버스에 맞춰 축소+레터박스, SAR 정규화
-const FIT_916 = `scale=${TARGET_W}:${TARGET_H}:force_original_aspect_ratio=decrease,pad=${TARGET_W}:${TARGET_H}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=${FPS}`;
+// 캔버스(W×H)에 맞춰 축소+레터박스, SAR 정규화 (비율 동적)
+const fitFilter = (w, h) => `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=${FPS}`;
 
 async function ff(args, cwd) {
   try {
@@ -65,13 +65,13 @@ async function resolveToLocal(clipUrl, workDir, idx) {
 }
 
 /** 단일 클립(영상 또는 정지 이미지) → 정규화된 무음 세그먼트 mp4 */
-async function makeSegment(item, workDir, idx) {
+async function makeSegment(item, workDir, idx, fit) {
   const local = await resolveToLocal(item.clipUrl, workDir, idx);
   const durSec = Math.max((item.durMs || 3000) / 1000, 1);
   const seg = path.join(workDir, `seg_${String(idx).padStart(3, '0')}.mp4`);
   const isImage = item.isStill || /\.(png|jpe?g|webp)$/i.test(local);
 
-  const common = ['-vf', FIT_916, '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-t', durSec.toFixed(2), seg];
+  const common = ['-vf', fit || fitFilter(TARGET_W, TARGET_H), '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-t', durSec.toFixed(2), seg];
   if (isImage) {
     await ff(['-loop', '1', '-i', local, ...common], workDir);
   } else {
@@ -94,12 +94,12 @@ function escapeAss(text) {
   return String(text).replace(/\n/g, '\\N').replace(/[{}]/g, '');
 }
 
-function buildAss(subtitle) {
+function buildAss(subtitle, w = TARGET_W, h = TARGET_H) {
   const header = [
     '[Script Info]',
     'ScriptType: v4.00+',
-    `PlayResX: ${TARGET_W}`,
-    `PlayResY: ${TARGET_H}`,
+    `PlayResX: ${w}`,
+    `PlayResY: ${h}`,
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
@@ -184,11 +184,16 @@ async function assemble(plan, opts = {}) {
   const workDir = opts.outDir || path.join(process.cwd(), 'tmp', 'ugc', runId);
   await fsp.mkdir(workDir, { recursive: true });
 
+  // 비율 → 캔버스 치수(9:16·1:1·16:9). opts.aspect 우선, 없으면 plan.meta.aspect
+  const dims = aspectDims(opts.aspect || (plan.meta && plan.meta.aspect) || '9:16');
+  const CW = dims.w, CH = dims.h;
+  const fit = fitFilter(CW, CH);
+
   // 1) 클립별 세그먼트 정규화
-  log(`세그먼트 정규화 ${clips.length}개…`);
+  log(`세그먼트 정규화 ${clips.length}개… (${CW}x${CH})`);
   const segments = [];
   for (let i = 0; i < clips.length; i++) {
-    segments.push(await makeSegment(clips[i], workDir, i));
+    segments.push(await makeSegment(clips[i], workDir, i, fit));
   }
 
   // 2) concat (동일 코덱이라 stream copy)
@@ -208,7 +213,7 @@ async function assemble(plan, opts = {}) {
   if (subtitle.length) {
     const filter = await detectTextFilter();
     // 사이드카는 항상 기록(디버그/외부 조립기용)
-    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle));
+    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, CW, CH));
     await fsp.writeFile(path.join(workDir, 'subs.srt'), buildSrt(subtitle));
 
     if (filter) {

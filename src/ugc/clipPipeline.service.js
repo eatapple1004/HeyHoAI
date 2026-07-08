@@ -51,7 +51,7 @@ async function mapLimit(items, limit, fn) {
  */
 async function renderSceneClip(scene, opts) {
   const { referenceImagePath = null, referenceKind = 'person', productImagePath = null, modelImagePath = null,
-    dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
+    width = REELS_W, height = REELS_H, aspect = '9:16', dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
   const durationMs = Math.round((scene.durationSec || 3) * 1000);
   const prompt = scene.brollPrompt || scene.direction || '';
 
@@ -75,8 +75,8 @@ async function renderSceneClip(scene, opts) {
   const image = await nanoBanana.generate({
     prompt,
     negativePrompt: BROLL_NEGATIVE,
-    width: REELS_W,
-    height: REELS_H,
+    width,
+    height,
     ...(references.length ? { references } : {}),
   });
   const imageUrl = image.url;
@@ -95,8 +95,9 @@ async function renderSceneClip(scene, opts) {
     motionPrompt: scene.direction || prompt,
     negativePrompt: BROLL_NEGATIVE,
     durationSec,
-    width: REELS_W,
-    height: REELS_H,
+    width,
+    height,
+    aspectRatio: aspect,
     style: videoStyle,
   });
   const poll = await pollUntilDone(klingProvider, submit.providerJobId);

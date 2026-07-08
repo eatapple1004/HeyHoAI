@@ -911,19 +911,21 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
 router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage } = req.body || {};
+    const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect } = req.body || {};
     let script;
     try { script = JSON.parse(req.body.script || 'null'); } catch { return res.status(400).json({ success: false, error: 'invalid script JSON' }); }
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const spd = parseFloat(speed); // 말하기 속도(0.7~1.2), 없으면 undefined→기본 1.0
     // 모델 선택(🧍 포맷): 로스터 경로만 허용(path traversal 방지)
     const safeModel = (typeof modelImage === 'string' && /^\/img\/models\/[\w-]+\.(jpe?g|png|webp)$/i.test(modelImage)) ? modelImage : null;
+    const safeAspect = ['9:16', '1:1', '16:9'].includes(aspect) ? aspect : '9:16'; // Kling 지원 비율만
     const result = await ugcVideoService.render({
       user: req.user, script, product, concept,
       outputType: outputType || 'product-ad',
       productImagePath: saveProductImage(req),
       referenceImagePath: referenceImagePath || null,
       modelImagePath: safeModel,
+      aspect: safeAspect,
       dryRunVideo: dryRun === true || dryRun === 'true',
       audio: { // 음성·음악 토글 + 영상별 보이스/속도
         voice: voice === 'true' || voice === true,

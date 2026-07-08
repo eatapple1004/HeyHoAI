@@ -72,4 +72,8 @@ function activeTracks(plan) {
     .map(([k]) => k);
 }
 
-module.exports = { buildRenderPlan, activeTracks };
+// 비율 → 픽셀 치수(Kling 영상 지원: 9:16·1:1·16:9). Gemini 이미지도 이 치수로 맞춤.
+const ASPECT_DIMS = { '9:16': { w: 1080, h: 1920 }, '1:1': { w: 1080, h: 1080 }, '16:9': { w: 1920, h: 1080 } };
+function aspectDims(a) { return ASPECT_DIMS[a] || ASPECT_DIMS['9:16']; }
+
+module.exports = { buildRenderPlan, activeTracks, aspectDims, ASPECT_DIMS };

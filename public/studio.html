@@ -463,6 +463,10 @@
   #ugcModelGrid img{width:50px;height:50px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block}
   #ugcModelGrid img:hover{border-color:var(--border2)}
   #ugcModelGrid img.sel{border-color:var(--accent)}
+  .ugc-ar{display:flex;gap:8px}
+  .ugc-ar-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 6px;border:1px solid var(--border2);border-radius:10px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;font-size:13px;font-weight:700}
+  .ugc-ar-btn span{font-size:10.5px;font-weight:500;color:var(--dim)}
+  .ugc-ar-btn.active{border-color:var(--accent);background:rgba(124,108,255,.1)}
   .script-ta{width:100%;min-height:92px;resize:vertical;font-family:inherit;font-size:14.5px;line-height:1.6;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:14px;padding:14px 16px}
   .script-ta::placeholder{color:var(--faint)}
   .script-ta:focus{outline:none;border-color:var(--accent)}
@@ -615,6 +619,15 @@
           </div>
           <div id="ugcModelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,50px);gap:6px;max-height:176px;overflow-y:auto;padding:2px"></div>
         </div>
+      </div>
+      <div style="margin:8px 0 2px">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Aspect ratio</div>
+        <div class="ugc-ar">
+          <button type="button" class="ugc-ar-btn active" data-ar="9:16" onclick="ugcSetAspect('9:16')">9:16<span>Reels · Shorts</span></button>
+          <button type="button" class="ugc-ar-btn" data-ar="1:1" onclick="ugcSetAspect('1:1')">1:1<span>Feed</span></button>
+          <button type="button" class="ugc-ar-btn" data-ar="16:9" onclick="ugcSetAspect('16:9')">16:9<span>Wide</span></button>
+        </div>
+        <input type="hidden" id="ugcAspect" value="9:16">
       </div>
       <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:6px 0 2px">
         <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
@@ -3306,6 +3319,10 @@ function ugcSelectModel(el){
   document.querySelectorAll('#ugcModelGrid img').forEach(i=>i.classList.toggle('sel',i===el));
   const p=document.getElementById('ugcModelPick'); if(p)p.textContent='✓ '+el.dataset.name;
 }
+function ugcSetAspect(ar){
+  const el=document.getElementById('ugcAspect'); if(el)el.value=ar;
+  document.querySelectorAll('.ugc-ar-btn').forEach(b=>b.classList.toggle('active',b.dataset.ar===ar));
+}
 
 async function ugcRenderVideo(){
   if(!ugcScript){toast('Write a script first.');return;}
@@ -3327,6 +3344,7 @@ async function ugcRenderVideo(){
     const fd=new FormData();
     const moodEl=document.getElementById('ugcMusicMood'); if(moodEl&&moodEl.value&&ugcScript)ugcScript.musicVibe=moodEl.value; // 음악 무드 선택 시 musicVibe 오버라이드
     if(outputType==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg); // 🧍 선택 모델(로스터 경로)
+    fd.append('aspect',(document.getElementById('ugcAspect')||{}).value||'9:16'); // 비율(Kling)
     fd.append('script',JSON.stringify(ugcScript));
     fd.append('concept',concept);fd.append('outputType',outputType);
     const productName=(document.getElementById('ugcProductName').value||'').trim();if(productName)fd.append('product',productName); // 제품명(선택)
