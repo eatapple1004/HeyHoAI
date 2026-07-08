@@ -520,6 +520,9 @@
   #ugcInline .ugc-inline-zoom{position:absolute;bottom:8px;right:8px;z-index:3;background:rgba(0,0,0,.62);border:none;color:#fff;border-radius:9px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer}
   #ugcInline .ugc-inline-zoom:hover{background:rgba(0,0,0,.85)}
   #ugcInline .ugc-scenes{border-top:none;margin-top:16px;padding-top:0}
+  #ugcInline .ugc-inline-loadhead{font-size:12.5px;color:var(--dim);margin-bottom:12px}
+  #ugcInline .usc-loadcard .usc-thumb{display:flex;align-items:center;justify-content:center}
+  #ugcInline .usc-cap-sk{height:11px;margin:9px 8px 12px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.045) 25%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.045) 75%);background-size:200% 100%;animation:sksh 1.3s ease-in-out infinite}
   /* 대본 인라인 편집 — 클릭해서 바로 수정 */
   .ugc-edit{outline:none;border-bottom:1px dashed transparent;border-radius:3px;padding:0 2px;cursor:text;transition:background .15s,border-color .15s}
   .ugc-edit:hover{border-bottom-color:var(--border2);background:rgba(255,255,255,.03)}
@@ -2957,7 +2960,11 @@ function renderUgcInline(b){
   const el=document.getElementById('ugcInline'); if(!el)return;
   if(!b){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='';
-  if(b.loading){ el.innerHTML='<div class="ugc-inline-load"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div><div class="ugc-inline-cap">Building your scenes… this can take a few minutes.</div></div>'; return; }
+  if(b.loading){ // 씬 개수만큼 로딩 카드(각 씬이 만들어지는 중) — 완성 스트립과 같은 레이아웃
+    const n=b.sceneCount||5; let cards='';
+    for(let i=1;i<=n;i++){ cards+=`<div class="usc usc-loadcard"><div class="usc-thumb"><div class="rb-spin"></div><span class="usc-idx">${i}</span></div><div class="usc-cap-sk"></div></div>`; }
+    el.innerHTML='<div class="ugc-inline-loadhead">Building your scenes… <span class="rb-elapsed">0.0s</span></div><div class="ugc-strip">'+cards+'</div>';
+    return; }
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; let html='';
   if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
@@ -3637,6 +3644,7 @@ async function ugcRenderVideo(){
   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
   const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true;
+  pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 로딩 씬 카드 수
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
   const t0=Date.now();
   const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#ugcInline .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
