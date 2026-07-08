@@ -445,8 +445,8 @@
   /* Ad Video 좌우 2단: 왼쪽=입력(이미지·이름·컨셉), 오른쪽=대본 */
   .ugc-cols{display:flex;gap:16px;align-items:flex-start}
   .ugc-cols > #ugcInputBox{flex:1 1 0;min-width:0;max-width:540px}
-  .ugc-cols > #ugcScriptPreview{flex:1 1 0;min-width:0;align-self:stretch}
-  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview{width:100%;max-width:none}}
+  .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty{flex:1 1 0;min-width:0;align-self:stretch}
+  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty{width:100%;max-width:none}}
   /* 대본 인라인 편집 — 클릭해서 바로 수정 */
   .ugc-edit{outline:none;border-bottom:1px dashed transparent;border-radius:3px;padding:0 2px;cursor:text;transition:background .15s,border-color .15s}
   .ugc-edit:hover{border-bottom-color:var(--border2);background:rgba(255,255,255,.03)}
@@ -593,6 +593,12 @@
         <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()">✍ Write script</button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
+    </div>
+    <!-- 오른쪽 빈 상태 플레이스홀더(대본 생성 전 항상 표시) -->
+    <div id="ugcScriptEmpty" style="border:1px dashed var(--border2);border-radius:14px;padding:34px 24px;background:rgba(255,255,255,.015);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;min-height:220px;color:var(--dim)">
+      <div style="font-size:30px;opacity:.65">📝</div>
+      <b style="font-size:15px;color:var(--text)">Your script appears here</b>
+      <span style="font-size:13px;max-width:290px;line-height:1.55">Add your product &amp; concept on the left, then press <b style="color:var(--accent2)">Write script</b>. You can edit every line before generating.</span>
     </div>
     <!-- 2단계: 대본 미리보기 → 검토 후 렌더 -->
     <div id="ugcScriptPreview" style="display:none;border:1px solid var(--border2);border-radius:14px;padding:16px 18px;background:rgba(255,255,255,.02)">
@@ -3218,6 +3224,7 @@ function ugcRenderScriptPreview(data){
   ugcBindScriptEdits();
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
   document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?`✓ Generate video <span class="gen-cost">◈ ${data.cost}</span>`:'✓ Generate video';
+  const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
   document.getElementById('ugcScriptPreview').style.display='';
 }
 // 편집 → ugcScript에 즉시 반영(렌더는 ugcScript를 그대로 전송하므로 수정본이 영상에 반영됨).
@@ -3266,6 +3273,7 @@ async function ugcRenderVideo(){
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     document.getElementById('ugcScriptPreview').style.display='none'; // 렌더 시작 → 검토 패널 닫기
+    const empReset=document.getElementById('ugcScriptEmpty'); if(empReset)empReset.style.display=''; // 오른쪽 플레이스홀더 복귀
     const url=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:url,type:'reel',idx:null}];pending.loading=false;renderStudioResults();}
     hint.textContent='✓ Ad video ready — saved to your gallery.';
