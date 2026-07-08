@@ -554,6 +554,12 @@
     <div class="step-head"><div class="step-num" id="snScript">1</div><h2>Describe your ad</h2>
       <span class="hint">Product + a one-line concept → AI writes the script and builds the video.</span></div>
     <div class="script-box">
+      <input type="file" id="ugcProductImg" accept="image/*" style="display:none" onchange="ugcPreview(this)">
+      <div id="ugcDrop" onclick="document.getElementById('ugcProductImg').click()" style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:10px;border:1.5px dashed var(--border2);border-radius:12px;cursor:pointer;background:rgba(255,255,255,.02)">
+        <img id="ugcThumb" style="display:none;width:48px;height:48px;object-fit:cover;border-radius:8px;flex:none">
+        <span id="ugcDropLabel" style="font-size:13.5px;color:var(--dim)">📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene</span>
+        <button type="button" id="ugcImgClear" onclick="event.stopPropagation();ugcClearImg()" style="display:none;margin-left:auto;background:none;border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit">✕</button>
+      </div>
       <input class="script-ta" id="ugcProduct" style="min-height:0;height:auto" placeholder="Product — e.g. red matte lipstick, everyday hydrating formula">
       <textarea class="script-ta" id="ugcConcept" placeholder="Concept / angle — e.g. one color that completes your date-night look"></textarea>
       <div class="script-ctrls">
@@ -3009,6 +3015,22 @@ async function pollVideoJob(jobId){
   throw new Error('This reel is taking a while. Check your gallery again shortly.');
 }
 
+// ── UGC 제품 사진 업로드 미리보기 ──
+function ugcPreview(input){
+  const f=input.files&&input.files[0]; const thumb=document.getElementById('ugcThumb');
+  const label=document.getElementById('ugcDropLabel'); const clr=document.getElementById('ugcImgClear');
+  if(!f){ugcClearImg();return;}
+  const url=URL.createObjectURL(f);
+  thumb.src=url; thumb.style.display=''; clr.style.display='';
+  label.innerHTML='<b style="color:var(--text)">'+ (f.name||'product image') +'</b> — locked into every scene';
+}
+function ugcClearImg(){
+  const input=document.getElementById('ugcProductImg'); input.value='';
+  document.getElementById('ugcThumb').style.display='none';
+  document.getElementById('ugcImgClear').style.display='none';
+  document.getElementById('ugcDropLabel').innerHTML='📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene';
+}
+
 // ── UGC 광고 영상 (제품+컨셉 → 대본→클립→조립, 비동기) ──
 async function generateUgc(){
   const product=(document.getElementById('ugcProduct').value||'').trim();
@@ -3027,7 +3049,11 @@ async function generateUgc(){
   const t0=Date.now();
   const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#resultsGrid .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
   try{
-    const res=await fetch('/api/generate/ugc/async',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,concept,outputType})});
+    const fd=new FormData();
+    fd.append('product',product);fd.append('concept',concept);fd.append('outputType',outputType);
+    const pf=document.getElementById('ugcProductImg').files[0];
+    if(pf)fd.append('productImage',pf,pf.name||'product.png'); // 유저 실제 제품 → 전 씬 고정
+    const res=await fetch('/api/generate/ugc/async',{method:'POST',body:fd});
     const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');

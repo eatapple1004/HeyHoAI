@@ -863,15 +863,26 @@ router.get('/video/jobs/:id', async (req, res, next) => {
 //   v1 잡 상태=인메모리(재시작 소실), 크레딧 단가=placeholder(클립수 기준). 프론트 UI는 다음 증분.
 const ugcVideoService = require('../ugc/ugcVideo.service');
 
-router.post('/ugc/async', async (req, res, next) => {
+router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
     const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    // 업로드한 제품 사진 → tmp/images(=nanoBanana가 reference로 읽는 위치)에 저장
+    let productImagePath = null;
+    const pf = req.files?.productImage?.[0];
+    if (pf) {
+      const dest = path.join(process.cwd(), 'tmp', 'images', `${crypto.randomUUID()}.png`);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(pf.path, dest);
+      try { fs.unlinkSync(pf.path); } catch {}
+      productImagePath = dest;
+    }
     const result = await ugcVideoService.submit({
       user: req.user,
       product, concept,
       outputType: outputType || 'product-ad',
-      referenceImagePath: referenceImagePath || null, // model-editorial: 모델 로스터 reference
+      productImagePath,                                 // product-ad: 유저 실제 제품 고정
+      referenceImagePath: referenceImagePath || null,   // model-editorial: 모델 로스터 reference
       dryRunVideo: dryRun === true || dryRun === 'true', // LIVE 기본(false); 테스트만 true
       visibility,
       isTemplate: false,

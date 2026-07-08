@@ -50,7 +50,7 @@ async function mapLimit(items, limit, fn) {
  * @returns {Promise<{ sceneN:number, clipUrl:string|null, durationMs:number, isStill:boolean, imageUrl:string|null, error?:string }>}
  */
 async function renderSceneClip(scene, opts) {
-  const { referenceImagePath = null, dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
+  const { referenceImagePath = null, referenceKind = 'person', dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
   const durationMs = Math.round((scene.durationSec || 3) * 1000);
   const prompt = scene.brollPrompt || scene.direction || '';
 
@@ -65,7 +65,7 @@ async function renderSceneClip(scene, opts) {
     negativePrompt: BROLL_NEGATIVE,
     width: REELS_W,
     height: REELS_H,
-    ...(referenceImagePath ? { referenceImagePath } : {}),
+    ...(referenceImagePath ? { referenceImagePath, referenceKind } : {}),
   });
   const imageUrl = image.url;
 

@@ -47,8 +47,13 @@ function estimateCost(nClips, isTemplate) {
  * @returns {Promise<{ jobId:string, script:object, cost:number }>}
  */
 async function submit({ user, product, concept, outputType = 'product-ad', referenceImagePath = null,
-  dryRunVideo = false, visibility, isTemplate = false }) {
+  productImagePath = null, dryRunVideo = false, visibility, isTemplate = false }) {
   if (!product || !concept) { const e = new Error('product and concept are required'); e.statusCode = 400; throw e; }
+
+  // 레퍼런스 결정: 업로드한 제품 사진이 있으면 제품 고정('product'), 없고 모델 ref면 인물 유지('person').
+  //   product-ad = 제품컷을 유저 실제 제품으로 고정. model-editorial = 모델 로스터(인물).
+  const refImage = productImagePath || referenceImagePath || null;
+  const refKind = productImagePath ? 'product' : 'person';
 
   // 1) 대본(opus) — 저렴, 차감 前 실행(빠른 실패)
   const script = await generateUgcScript({ product, concept, outputType });
@@ -74,17 +79,17 @@ async function submit({ user, product, concept, outputType = 'product-ad', refer
   log.info(`UGC job ${jobId} submitted (${outputType}, ${nClips}컷, cost=${cost})`);
 
   // 4) 백그라운드 파이프라인(await 안 함)
-  runPipeline({ jobId, script, referenceImagePath, dryRunVideo, visibility, teamId, userId: user.id, charge })
+  runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId: user.id, charge })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, script, cost };
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, referenceImagePath, dryRunVideo, visibility, teamId, userId, charge }) {
+async function runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId, charge }) {
   try {
-    // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본
-    const clips = await renderClips(script, { dryRunVideo, referenceImagePath, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
+    // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정.
+    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const plan = buildRenderPlan(script, clips);

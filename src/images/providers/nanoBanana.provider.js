@@ -43,12 +43,16 @@ const nanoBananaProvider = {
       const imageData = fs.readFileSync(refPath);
       const base64 = imageData.toString('base64');
 
+      // referenceKind: 'product'=제품 정체성 고정(라벨·형태·색), 'person'(기본)=동일 인물 유지
+      const refInstruction = req.referenceKind === 'product'
+        ? `Use the product shown in the reference image as the EXACT product to feature. Keep its identity, shape, color, label and details unchanged. Place it in this new scene:\n\n${fullPrompt}`
+        : `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${fullPrompt}`;
       contents = [
         {
           role: 'user',
           parts: [
             { inlineData: { mimeType: 'image/png', data: base64 } },
-            { text: `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${fullPrompt}` },
+            { text: refInstruction },
           ],
         },
       ];
