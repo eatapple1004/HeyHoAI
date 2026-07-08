@@ -490,8 +490,20 @@
   /* Ad Video 좌우 2단: 왼쪽=입력(이미지·이름·컨셉), 오른쪽=대본 */
   .ugc-cols{display:flex;gap:16px;align-items:flex-start}
   .ugc-cols > #ugcInputBox{flex:1 1 0;min-width:0;max-width:540px}
-  .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty{flex:1 1 0;min-width:0;align-self:stretch}
-  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty{width:100%;max-width:none}}
+  .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline{flex:1 1 0;min-width:0;align-self:stretch}
+  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline{width:100%;max-width:none}}
+  /* 우측 인라인 결과(생성 로딩·완성 영상·씬 스트립) */
+  #ugcInline .ugc-inline-load{border:1px dashed var(--border2);border-radius:14px;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(255,255,255,.015)}
+  #ugcInline .ugc-inline-cap{font-size:12.5px;color:var(--dim)}
+  #ugcInline .ugc-inline-fail{border:1px solid #e0605f;border-radius:14px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#e0605f;font-weight:650;font-size:14px;background:rgba(224,96,95,.05);text-align:center;padding:20px}
+  #ugcInline .ugc-inline-vidwrap{position:relative;border-radius:14px;overflow:hidden;background:#000;max-width:340px;margin:0 auto}
+  #ugcInline .ugc-inline-vid{width:100%;display:block;cursor:zoom-in}
+  #ugcInline .ugc-inline-vidwrap .reel-mute{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+  #ugcInline .ugc-inline-vidwrap .reel-mute:hover{background:rgba(0,0,0,.82)}
+  #ugcInline .ugc-inline-vidwrap .reel-mute.on{background:var(--accent,#8b7bff)}
+  #ugcInline .ugc-inline-zoom{position:absolute;bottom:8px;right:8px;z-index:3;background:rgba(0,0,0,.62);border:none;color:#fff;border-radius:9px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer}
+  #ugcInline .ugc-inline-zoom:hover{background:rgba(0,0,0,.85)}
+  #ugcInline .ugc-scenes{border-top:none;margin-top:16px;padding-top:0}
   /* 대본 인라인 편집 — 클릭해서 바로 수정 */
   .ugc-edit{outline:none;border-bottom:1px dashed transparent;border-radius:3px;padding:0 2px;cursor:text;transition:background .15s,border-color .15s}
   .ugc-edit:hover{border-bottom-color:var(--border2);background:rgba(255,255,255,.03)}
@@ -756,6 +768,8 @@
         <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()">✓ Generate video</button>
       </div>
     </div>
+    <!-- 우측 결과 인라인(생성 로딩·완성 영상·씬 스트립을 대본 자리에 배치) -->
+    <div id="ugcInline" style="display:none"></div>
     </div>
   </div>
 
@@ -2891,6 +2905,7 @@ function renderStudioResults(){
   const grid=document.getElementById('resultsGrid'); if(!grid)return;
   let html='',lastKey=null;
   STUDIO_BATCHES.forEach(b=>{
+    if(b.isUgc)return; // Ad Video 배치는 우측 인라인(대본 자리)에 렌더
     if(b.dateKey!==lastKey){ html+=`<div class="rb-date">${esc(b.dateLabel||'')}</div>`; lastKey=b.dateKey; } // 날짜 바뀌는 지점마다 헤더
     html+=batchRowHtml(b);
   });
@@ -2901,10 +2916,28 @@ function renderStudioResults(){
     if(p.classList.contains('expanded')){more.style.display='';return;}
     more.style.display=(p.scrollHeight>p.clientHeight+2)?'':'none';
   });
+  renderUgcInline(STUDIO_BATCHES.find(b=>b.isUgc)||null); // 우측 대본 자리에 Ad Video 로딩·결과
   const step=document.getElementById('resultStep');
   const lb=document.getElementById('loadingBox');
   const loading=lb&&!lb.classList.contains('hidden');
-  if(step)step.classList.toggle('hidden',STUDIO_BATCHES.length===0&&!loading); // 결과 있거나 생성 중이면 표시
+  const hasNonUgc=STUDIO_BATCHES.some(b=>!b.isUgc);
+  if(step)step.classList.toggle('hidden',!hasNonUgc&&!loading); // UGC는 우측이라 아래 결과 섹션과 무관
+}
+// Ad Video 생성 로딩·완성 영상·씬 스트립을 우측(대본 자리) 인라인에 렌더
+function renderUgcInline(b){
+  const el=document.getElementById('ugcInline'); if(!el)return;
+  if(!b){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='';
+  if(b.loading){ el.innerHTML='<div class="ugc-inline-load"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div><div class="ugc-inline-cap">Building your scenes… this can take a few minutes.</div></div>'; return; }
+  if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
+  const it=b.items&&b.items[0]; let html='';
+  if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
+    +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onclick="openImageModal('${esc(it.url)}','reel')"></video>`
+    +`<button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`
+    +`<button class="ugc-inline-zoom" onclick="openImageModal('${esc(it.url)}','reel')">⤢ View large</button>`
+    +'</div>'; }
+  if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
+  el.innerHTML=html;
 }
 // 생성 시작 즉시 피드 맨 앞에 띄울 placeholder 배치(메타는 바로, 이미지는 로딩) — Leonardo식
 function makePendingBatch(r,extra,count,isReel){
@@ -3494,6 +3527,8 @@ function ugcRenderScriptPreview(data){
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
   document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?`✓ Generate video <span class="gen-cost">◈ ${data.cost}</span>`:'✓ Generate video';
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
+  for(let i=STUDIO_BATCHES.length-1;i>=0;i--){ if(STUDIO_BATCHES[i].isUgc)STUDIO_BATCHES.splice(i,1); } // 이전 Ad Video 결과(우측 인라인) 치우기
+  renderUgcInline(null);
   document.getElementById('ugcScriptPreview').style.display='';
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
 }
@@ -3562,12 +3597,13 @@ async function ugcRenderVideo(){
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
   hint.textContent='Building your scenes… this can take a few minutes.';
-  const step=document.getElementById('resultStep');step.classList.remove('hidden');
-  const pending=makePendingBatch(null,concept,1,true);
+  // 우측(대본 자리)로 전환: 대본·플레이스홀더 숨기고 인라인에 로딩→결과
+  const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';
+  const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
+  const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true;
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
-  step.scrollIntoView({behavior:'smooth'});
   const t0=Date.now();
-  const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#resultsGrid .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
+  const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#ugcInline .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
   try{
     const fd=new FormData();
     const moodEl=document.getElementById('ugcMusicMood'); if(moodEl&&moodEl.value&&ugcScript)ugcScript.musicVibe=moodEl.value; // 음악 무드 선택 시 musicVibe 오버라이드
@@ -3586,22 +3622,20 @@ async function ugcRenderVideo(){
     const data=await sjson(res);
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
-    const prev=document.getElementById('ugcScriptPreview'); if(prev)prev.classList.add('ugc-generating'); // 생성 중 대본 유지(읽기전용 흐림 + Generating 배지)
     const job=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
       {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false};} // 결과 편집(씬 스트립)용
-      renderStudioResults();}
-    if(prev){prev.classList.remove('ugc-generating');prev.style.display='none';} // 완료 → 검토 패널 접기(편집은 결과 씬 스트립에서)
-    const empReset=document.getElementById('ugcScriptEmpty'); if(empReset)empReset.style.display=''; // 다음 대본 위해 플레이스홀더 복귀
+      renderStudioResults();} // 우측 인라인에 완성 영상+씬 스트립
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){
     console.error(e);
     const i=STUDIO_BATCHES.indexOf(pending);
-    if(e.code402){if(i>=0)STUDIO_BATCHES.splice(i,1);renderStudioResults();hint.textContent='';toast(e.message||'Not enough credits','error');}
-    else{if(pending){pending.loading=false;pending.items=[];pending.failed=[{idx:null}];}renderStudioResults();hint.textContent='⚠ '+(e.message||'Generation failed');}
+    if(e.code402){ // 크레딧 부족: 우측 결과 취소하고 대본 복원
+      if(i>=0)STUDIO_BATCHES.splice(i,1);
+      if(sp)sp.style.display='';renderStudioResults();hint.textContent='';toast(e.message||'Not enough credits','error');}
+    else{if(pending){pending.loading=false;pending.items=[];pending.failed=[{idx:null}];pending.failMsg=e.message||'Generation failed';}renderStudioResults();hint.textContent='⚠ '+(e.message||'Generation failed');}
   }finally{
     clearInterval(elapsedTimer);
-    const gp=document.getElementById('ugcScriptPreview'); if(gp)gp.classList.remove('ugc-generating'); // 실패 시 대본 흐림 해제(다시 시도 가능)
     genActive=Math.max(0,genActive-1);rbtn.disabled=false;rbtn.innerHTML=oldLabel;
     loadCredits();
   }
