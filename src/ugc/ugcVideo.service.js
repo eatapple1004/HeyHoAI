@@ -42,47 +42,62 @@ function estimateCost(nClips, isTemplate) {
   return Math.max(nClips, 1) * creditService.videoCost(5, 'pro', isTemplate);
 }
 
-/**
- * 제출: 대본 생성 → 클립수만큼 크레딧 차감 → jobId 즉시 반환, 파이프라인은 백그라운드.
- * @returns {Promise<{ jobId:string, script:object, cost:number }>}
- */
-async function submit({ user, product, concept, outputType = 'product-ad', referenceImagePath = null,
-  productImagePath = null, dryRunVideo = false, visibility, isTemplate = false }) {
-  if (!product || !concept) { const e = new Error('product and concept are required'); e.statusCode = 400; throw e; }
+function brollCount(script) { return ((script && script.scenes) || []).filter((s) => s.type === 'broll').length; }
 
-  // 레퍼런스 결정: 업로드한 제품 사진이 있으면 제품 고정('product'), 없고 모델 ref면 인물 유지('person').
-  //   product-ad = 제품컷을 유저 실제 제품으로 고정. model-editorial = 모델 로스터(인물).
+/**
+ * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
+ * @returns {Promise<{ script:object, nClips:number, cost:number }>}
+ */
+async function generateScript({ product, concept, outputType = 'product-ad' }) {
+  if (!product || !concept) { const e = new Error('product and concept are required'); e.statusCode = 400; throw e; }
+  const script = await generateUgcScript({ product, concept, outputType });
+  const nClips = brollCount(script);
+  if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
+  return { script, nClips, cost: estimateCost(nClips, false) };
+}
+
+/**
+ * 2단계 — 검토한 대본으로 렌더(여기서만 과금). jobId 즉시 반환, 파이프라인 백그라운드.
+ * @returns {Promise<{ jobId:string, cost:number }>}
+ */
+async function render({ user, script, product, concept, outputType = 'product-ad',
+  referenceImagePath = null, productImagePath = null, dryRunVideo = false, visibility, isTemplate = false }) {
+  if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
+  const nClips = brollCount(script);
+  if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
+
+  // 레퍼런스: 업로드 제품 사진=제품 고정('product'), 없고 모델 ref면 인물 유지('person').
   const refImage = productImagePath || referenceImagePath || null;
   const refKind = productImagePath ? 'product' : 'person';
 
-  // 1) 대본(opus) — 저렴, 차감 前 실행(빠른 실패)
-  const script = await generateUgcScript({ product, concept, outputType });
-  const nClips = (script.scenes || []).filter((s) => s.type === 'broll').length;
-  if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
-
-  // 2) 크레딧 차감(클립수 기준) — statusCode 에러(402/403)는 그대로 전파
+  // 과금(클립수 기준) — statusCode 에러(402/403) 그대로 전파. 승인 후에만.
   const cost = estimateCost(nClips, isTemplate);
   const charge = await teamCredit.chargeGeneration(user, cost, `UGC 영상 (${outputType}, ${nClips}컷)`);
   const teamId = await teamCredit.activeTeamId(user.id);
 
-  // 3) 잡 생성(DB) + 즉시 반환
   const vis = visibility === 'private' ? 'private' : 'public';
   const ins = await query(
     `INSERT INTO ugc_jobs (user_id, team_id, output_type, product, concept, title, n_clips,
        charge_amount, status, caption, hashtags, visibility)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'processing',$9,$10,$11) RETURNING id`,
-    [user.id, teamId, outputType, String(product).slice(0, 500), String(concept).slice(0, 1000),
+    [user.id, teamId, outputType, String(product || '').slice(0, 500), String(concept || '').slice(0, 1000),
      script.title, nClips, charge ? charge.amount : 0, script.caption,
      JSON.stringify(script.hashtags || []), vis]
   );
   const jobId = ins.rows[0].id;
-  log.info(`UGC job ${jobId} submitted (${outputType}, ${nClips}컷, cost=${cost})`);
+  log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  // 4) 백그라운드 파이프라인(await 안 함)
   runPipeline({ jobId, script, refImage, refKind, dryRunVideo, visibility, teamId, userId: user.id, charge })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
-  return { jobId, script, cost };
+  return { jobId, cost };
+}
+
+/** 원샷(하네스/하위호환): 대본 생성 → 즉시 렌더. */
+async function submit(input) {
+  const { script } = await generateScript(input);
+  const r = await render({ ...input, script });
+  return { ...r, script };
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
@@ -147,4 +162,4 @@ async function getJob(id, userId) {
   };
 }
 
-module.exports = { submit, getJob, estimateCost };
+module.exports = { generateScript, render, submit, getJob, estimateCost };

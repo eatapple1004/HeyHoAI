@@ -552,8 +552,8 @@
 
   <div class="step fade d2 hidden" id="scriptStep">
     <div class="step-head"><div class="step-num" id="snScript">1</div><h2>Describe your ad</h2>
-      <span class="hint">Product + a one-line concept → AI writes the script and builds the video.</span></div>
-    <div class="script-box">
+      <span class="hint">Product + a one-line concept → AI writes a script → you review it → build the video.</span></div>
+    <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" style="display:none" onchange="ugcPreview(this)">
       <div id="ugcDrop" onclick="document.getElementById('ugcProductImg').click()" style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:10px;border:1.5px dashed var(--border2);border-radius:12px;cursor:pointer;background:rgba(255,255,255,.02)">
         <img id="ugcThumb" style="display:none;width:48px;height:48px;object-fit:cover;border-radius:8px;flex:none">
@@ -567,9 +567,21 @@
           <option value="product-ad">Product ad (no model)</option>
           <option value="model-editorial">Model editorial (on-model)</option>
         </select>
-        <button class="btn btn-primary" id="ugcGenBtn" onclick="generateUgc()">Generate ad video</button>
+        <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()">✍ Write script</button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
+    </div>
+    <!-- 2단계: 대본 미리보기 → 검토 후 렌더 -->
+    <div id="ugcScriptPreview" style="display:none;margin-top:14px;border:1px solid var(--border2);border-radius:14px;padding:16px 18px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <b style="font-size:15px" id="ugcScriptTitle"></b>
+        <span class="hint" id="ugcScriptMeta"></span>
+      </div>
+      <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()">↻ Rewrite</button>
+        <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()">✓ Generate video</button>
+      </div>
     </div>
   </div>
 
@@ -3031,32 +3043,73 @@ function ugcClearImg(){
   document.getElementById('ugcDropLabel').innerHTML='📷 Add your product photo <b style="color:var(--text)">(recommended)</b> — keeps YOUR real product in every scene';
 }
 
-// ── UGC 광고 영상 (제품+컨셉 → 대본→클립→조립, 비동기) ──
-async function generateUgc(){
+// ── UGC 광고 영상 (2단계: 대본 미리보기 → 검토 → 렌더) ──
+let ugcScript=null; // 1단계에서 받은 대본(2단계 렌더로 전달)
+
+// 1단계 — 대본만(무료). 검토 패널에 표시.
+async function ugcWriteScript(){
   const product=(document.getElementById('ugcProduct').value||'').trim();
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
   const hint=document.getElementById('ugcHint');
   if(!product||!concept){hint.textContent='⚠ Enter a product and a one-line concept.';return;}
+  const wbtn=document.getElementById('ugcGenBtn'),rwbtn=document.getElementById('ugcRewriteBtn');
+  [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
+  hint.textContent='Writing your script…';
+  try{
+    const res=await fetch('/api/generate/ugc/script',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,concept,outputType})});
+    const data=await sjson(res);
+    if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
+    ugcScript=data.script;
+    ugcRenderScriptPreview(data);
+    hint.textContent='Review the script below, then generate — you\'re only charged when you build the video.';
+  }catch(e){ console.error(e); hint.textContent='⚠ '+(e.message||'Script failed'); }
+  finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); }
+}
+
+// 대본 검토 패널 렌더
+function ugcRenderScriptPreview(data){
+  const s=data.script||{};
+  document.getElementById('ugcScriptTitle').textContent=s.title||'Your ad script';
+  document.getElementById('ugcScriptMeta').textContent=`${data.nClips} scenes · ${s.durationSec||''}s`;
+  const scenes=(s.scenes||[]).map((sc,i)=>`<div style="padding:8px 0;border-top:1px solid var(--border)"><b>${i+1}.</b> ${esc(sc.onScreenText||'')}<div style="color:var(--dim);font-size:12.5px;margin-top:2px">${esc(sc.direction||sc.brollPrompt||'')}</div></div>`).join('');
+  document.getElementById('ugcScriptBody').innerHTML=
+    `<div style="margin-bottom:6px"><span style="color:var(--dim)">Hook</span> — ${esc(s.hook||'')}</div>`+
+    scenes+
+    `<div style="padding-top:8px;border-top:1px solid var(--border)"><span style="color:var(--dim)">CTA</span> — ${esc(s.cta||'')}</div>`+
+    `<div style="margin-top:8px;color:var(--dim);font-size:12.5px">${esc(s.caption||'')} ${(s.hashtags||[]).map(h=>'#'+h).join(' ')}</div>`;
+  document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?`✓ Generate video <span class="gen-cost">◈ ${data.cost}</span>`:'✓ Generate video';
+  document.getElementById('ugcScriptPreview').style.display='';
+}
+
+// 2단계 — 검토한 대본으로 렌더(여기서 과금). 기존 결과 피드에 채움.
+async function ugcRenderVideo(){
+  if(!ugcScript){toast('Write a script first.');return;}
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;}
-  const btn=document.getElementById('ugcGenBtn');const oldLabel=btn.textContent;
-  genActive++;btn.disabled=true;btn.textContent='Generating…';
-  hint.textContent='Writing the script and building your scenes… this can take a few minutes.';
+  const product=(document.getElementById('ugcProduct').value||'').trim();
+  const concept=(document.getElementById('ugcConcept').value||'').trim();
+  const outputType=document.getElementById('ugcFormat').value||'product-ad';
+  const hint=document.getElementById('ugcHint');
+  const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
+  genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
+  hint.textContent='Building your scenes… this can take a few minutes.';
   const step=document.getElementById('resultStep');step.classList.remove('hidden');
-  const pending=makePendingBatch(null,concept,1,true); // reel placeholder
+  const pending=makePendingBatch(null,concept,1,true);
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
   step.scrollIntoView({behavior:'smooth'});
   const t0=Date.now();
   const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#resultsGrid .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
   try{
     const fd=new FormData();
+    fd.append('script',JSON.stringify(ugcScript));
     fd.append('product',product);fd.append('concept',concept);fd.append('outputType',outputType);
     const pf=document.getElementById('ugcProductImg').files[0];
     if(pf)fd.append('productImage',pf,pf.name||'product.png'); // 유저 실제 제품 → 전 씬 고정
-    const res=await fetch('/api/generate/ugc/async',{method:'POST',body:fd});
-    const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
+    const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});
+    const data=await sjson(res);
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
+    document.getElementById('ugcScriptPreview').style.display='none'; // 렌더 시작 → 검토 패널 닫기
     const url=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:url,type:'reel',idx:null}];pending.loading=false;renderStudioResults();}
     hint.textContent='✓ Ad video ready — saved to your gallery.';
@@ -3067,7 +3120,7 @@ async function generateUgc(){
     else{if(pending){pending.loading=false;pending.items=[];pending.failed=[{idx:null}];}renderStudioResults();hint.textContent='⚠ '+(e.message||'Generation failed');}
   }finally{
     clearInterval(elapsedTimer);
-    genActive=Math.max(0,genActive-1);btn.disabled=false;btn.textContent=oldLabel;
+    genActive=Math.max(0,genActive-1);rbtn.disabled=false;rbtn.innerHTML=oldLabel;
     loadCredits();
   }
 }

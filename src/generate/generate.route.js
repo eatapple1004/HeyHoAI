@@ -858,11 +858,57 @@ router.get('/video/jobs/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ─── UGC 영상 엔진 (제품+컨셉 → 화보/광고 릴) — 비동기 ───
+// ─── UGC 영상 엔진 (제품+컨셉 → 화보/광고 릴) ───
+//   2단계: /ugc/script(무료 대본 미리보기) → /ugc/render(검토 후 과금+렌더). 잡=ugc_jobs 테이블.
 //   대본→broll 클립(이미지→모션)→ffmpeg 조립. 다단계라 자체 오케스트레이션(ugcVideo.service).
-//   v1 잡 상태=인메모리(재시작 소실), 크레딧 단가=placeholder(클립수 기준). 프론트 UI는 다음 증분.
 const ugcVideoService = require('../ugc/ugcVideo.service');
 
+// 업로드 제품 사진 → tmp/images(nanoBanana가 reference로 읽는 위치) 저장 → 경로 반환
+function saveProductImage(req) {
+  const pf = req.files?.productImage?.[0];
+  if (!pf) return null;
+  const dest = path.join(process.cwd(), 'tmp', 'images', `${crypto.randomUUID()}.png`);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(pf.path, dest);
+  try { fs.unlinkSync(pf.path); } catch {}
+  return dest;
+}
+
+// 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
+router.post('/ugc/script', async (req, res, next) => {
+  try {
+    const { product, concept, outputType } = req.body || {};
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad' });
+    res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
+// 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
+router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
+  try {
+    const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
+    let script;
+    try { script = JSON.parse(req.body.script || 'null'); } catch { return res.status(400).json({ success: false, error: 'invalid script JSON' }); }
+    const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    const result = await ugcVideoService.render({
+      user: req.user, script, product, concept,
+      outputType: outputType || 'product-ad',
+      productImagePath: saveProductImage(req),
+      referenceImagePath: referenceImagePath || null,
+      dryRunVideo: dryRun === true || dryRun === 'true',
+      visibility, isTemplate: false,
+    });
+    res.json({ success: true, jobId: result.jobId, cost: result.cost });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+});
+
+// 원샷(하위호환): 대본+렌더 한방
 router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
     const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
