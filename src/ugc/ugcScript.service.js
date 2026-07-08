@@ -138,22 +138,24 @@ async function suggestConcept({ image, details = '', language = 'ko', outputType
   const langName = language === 'en' ? 'English' : 'Korean';
   const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
   const system = [
-    'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and propose ONE strategic ad angle for a TikTok / Instagram Reels ad.',
+    'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and draft the user\'s CREATIVE BRIEF for a TikTok / Instagram Reels ad — phrased as their own request.',
     'Adapt the angle to the category you see:',
     '- Cosmetics/beauty → shade, finish, texture, before→after result.',
     '- Jewelry/accessories → emotion, craftsmanship, how it catches the light, gifting/occasion, timelessness.',
     '- Apparel → styling, fit, fabric feel, versatility (one piece, many looks).',
     '- Food/beverage → appetite, sensory detail, freshness, the moment.',
     '- Tech/gadgets/home → the key benefit or the problem it solves.',
-    'The angle must be a STRATEGIC PROMISE (why stop scrolling / the payoff) — NOT a specific shot, camera move, or staging gimmick (no "comparison battle", no scene/camera directions; the script decides staging).',
+    'Capture a STRATEGIC PROMISE (why stop scrolling / the payoff) + a vibe or target if it fits — NOT a specific shot or camera move (the script decides staging).',
     noModel
       ? 'This ad shows the PRODUCT ONLY — no model or person. Do not suggest angles that require someone to wear, apply, or hold it on camera.'
       : 'This ad features a model wearing/using the product — the angle may involve the model.',
-    `Reply in ${langName}. Return ONLY the angle — one sentence, max ~14 words, specific to the product shown.`,
-    'No quotes, no preamble, no hashtags, no options — just the one line.',
+    // ★핵심: 완성된 슬로건이 아니라, 유저가 스스로 말하는 "요청" 문장.
+    `Write it in ${langName} as the user's OWN request in first person — natural "~하게 만들고 싶어" phrasing (e.g. "촉촉한 발색이 데일리로 물리지 않는 걸 보여주면서 20대 타깃 감각적인 광고로 만들고 싶어").`,
+    'It is a BRIEF (your intent/direction), NOT a finished tagline or ad slogan. One natural sentence, ~25 words max.',
+    'No quotes, no preamble, no hashtags, no options — just the one request line.',
     'Do not invent unverifiable factual claims (exact wear time, ingredients, certifications, prices) unless given.',
   ].join('\n');
-  const userText = details ? `Product facts (may use): ${details}\nPropose the angle.` : 'Propose the angle.';
+  const userText = details ? `Product facts (may use): ${details}\nDraft the request.` : 'Draft the request.';
 
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL, // sonnet-5(비전) — 한 줄 제안엔 충분·저렴

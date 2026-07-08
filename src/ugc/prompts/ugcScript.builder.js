@@ -61,6 +61,8 @@ function buildUgcScriptPrompt(input) {
     profile.systemGuide,
     '',
     'Golden rules:',
+    '- The Brief is the user\'s creative REQUEST/DIRECTION — it may be a full sentence ("...감각적인 광고로 만들고 싶어") OR loose keywords ("빨강 배경, 고급스러운 컬러"). Interpret their INTENT; accept any format. NEVER echo the brief text verbatim (especially not as the hook) — write fresh copy toward the intent.',
+    '- Parse the brief for: target audience, mood/tone, and any VISUAL cues — background, color, lighting, color grade, texture, setting, styling. Route every visual cue into the scene "direction" and "brollPrompt" so the rendered images actually reflect it (e.g. "빨강 배경" → red background in every brollPrompt). Route mood → copy tone; target → audience.',
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, onScreenText and every brollPrompt to that category.',
@@ -108,7 +110,7 @@ function buildUgcScriptPrompt(input) {
     `Output type: ${outputType}`,
     // product는 선택 — 보통 유저가 brief(concept)에 제품을 녹여서 씀. 있으면 명시.
     product ? `Product: ${product}` : '',
-    `Brief (product + concept/angle): ${concept}`,
+    `Creative brief / request (a sentence or loose keywords — interpret intent, don't echo): ${concept}`,
     hasImage ? 'A photo of the actual product is attached. Ground the copy, onScreenText and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.' : '',
     details ? `Product facts / claims — use ONLY these, do not invent additional claims:\n${details}` : '',
     audience ? `Target audience: ${audience}` : '',
