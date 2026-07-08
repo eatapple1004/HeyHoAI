@@ -554,6 +554,11 @@
   .ugc-ar-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 6px;border:1px solid var(--border2);border-radius:10px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;font-size:13px;font-weight:700}
   .ugc-ar-btn span{font-size:10.5px;font-weight:500;color:var(--dim)}
   .ugc-ar-btn.active{border-color:var(--accent);background:rgba(124,108,255,.1)}
+  .ugc-ar-btn .ar-box{display:block;border:1.6px solid var(--dim);border-radius:2px;margin-bottom:4px}
+  .ugc-ar-btn.active .ar-box{border-color:var(--accent,#8b7bff)}
+  .ar-916{width:14px;height:24px}
+  .ar-11{width:20px;height:20px}
+  .ar-169{width:27px;height:15px}
   .ugc-cats{display:flex;gap:6px;flex-wrap:wrap}
   .ugc-cat{font-size:12px;padding:5px 11px;border:1px solid var(--border2);border-radius:999px;background:none;color:var(--dim);cursor:pointer;font-family:inherit}
   .ugc-cat.active{border-color:var(--accent);color:var(--text);background:rgba(124,108,255,.1)}
@@ -726,9 +731,9 @@
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Aspect ratio</div>
         <div class="ugc-ar">
-          <button type="button" class="ugc-ar-btn active" data-ar="9:16" onclick="ugcSetAspect('9:16')">9:16<span>Reels · Shorts</span></button>
-          <button type="button" class="ugc-ar-btn" data-ar="1:1" onclick="ugcSetAspect('1:1')">1:1<span>Feed</span></button>
-          <button type="button" class="ugc-ar-btn" data-ar="16:9" onclick="ugcSetAspect('16:9')">16:9<span>Wide</span></button>
+          <button type="button" class="ugc-ar-btn active" data-ar="9:16" onclick="ugcSetAspect('9:16')"><span class="ar-box ar-916"></span>9:16<span>Reels · Shorts</span></button>
+          <button type="button" class="ugc-ar-btn" data-ar="1:1" onclick="ugcSetAspect('1:1')"><span class="ar-box ar-11"></span>1:1<span>Feed</span></button>
+          <button type="button" class="ugc-ar-btn" data-ar="16:9" onclick="ugcSetAspect('16:9')"><span class="ar-box ar-169"></span>16:9<span>Wide</span></button>
         </div>
         <input type="hidden" id="ugcAspect" value="9:16">
       </div>
@@ -749,15 +754,15 @@
           <div>
             <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
             <div class="ugc-seg" id="ugcDurSeg">
-              <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
-              <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">Short</button>
-              <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
-              <button type="button" class="ugc-seg-b" data-d="10" onclick="ugcSetSceneDur(this)">10s</button>
+              <button type="button" class="ugc-seg-b" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
+              <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
+              <button type="button" class="ugc-seg-b active" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
             </div>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--faint);margin-top:5px;line-height:1.5">Short clips (3–4s) are trimmed from a 5s render — so they cost the same as 5s. 10s costs 2×.</div>
-        <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
+        <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2,#8b7bff);font-weight:650;margin-top:6px"></div>
+        <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
+        <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="5">
       </div>
       <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:6px 0 2px">
         <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
@@ -3696,8 +3701,18 @@ function ugcSetAspect(ar){
   const el=document.getElementById('ugcAspect'); if(el)el.value=ar;
   document.querySelectorAll('.ugc-ar-btn').forEach(b=>b.classList.toggle('active',b.dataset.ar===ar));
 }
-function ugcSetSceneCount(el){ document.getElementById('ugcSceneCount').value=el.dataset.c; document.querySelectorAll('#ugcCountSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); }
-function ugcSetSceneDur(el){ document.getElementById('ugcSceneDur').value=el.dataset.d; document.querySelectorAll('#ugcDurSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); }
+function ugcSetSceneCount(el){ document.getElementById('ugcSceneCount').value=el.dataset.c; document.querySelectorAll('#ugcCountSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); ugcUpdateTotal(); }
+function ugcSetSceneDur(el){ document.getElementById('ugcSceneDur').value=el.dataset.d; document.querySelectorAll('#ugcDurSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); ugcUpdateTotal(); }
+function ugcUpdateTotal(){
+  const c=parseInt((document.getElementById('ugcSceneCount')||{}).value,10)||0;
+  const d=parseInt((document.getElementById('ugcSceneDur')||{}).value,10)||0;
+  const el=document.getElementById('ugcTotalLen'); if(!el)return;
+  if(c&&d)el.textContent=`${c} × ${d}s = ${c*d}s total`;
+  else if(c&&!d)el.textContent=`${c} scenes · length auto`;
+  else if(!c&&d)el.textContent=`${d}s per scene · scene count auto`;
+  else el.textContent='';
+}
+try{ ugcUpdateTotal(); }catch(_){}
 function ugcSetCategory(el){
   const c=document.getElementById('ugcCategory'); if(c)c.value=el.dataset.cat||'';
   document.querySelectorAll('#ugcCats .ugc-cat').forEach(b=>b.classList.toggle('active',b===el));
