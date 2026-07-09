@@ -3114,7 +3114,7 @@ function ugcToggleAdv(jobId,n){
     +'</div><button type="button" class="ugc-apply" onclick="ugcApplyEdits(\''+esc(jobId)+'\')">Apply — free</button></div>'
     +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">✎ Re-generate scene <span class="ugc-adv-paid">uses credits</span></div>'
     +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder · Brighter background"></textarea>'
-    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
+    +'<div class="ugc-adv-row"><button type="button" class="ugc-apply ugc-regen" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
     +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div></div>';
 }
 // 3a: 씬 timing(lead-in/tail) 편집 → edits에 담고 무과금 Apply 대기(음성·클립 재사용, retiming만).
@@ -3128,9 +3128,14 @@ async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
   const val=ta?ta.value.trim():''; if(!val){toast('Describe the change first');return;}
   if(!confirm('Re-generate scene '+n+' with this change? This uses credits.'))return;
-  const btn=wrap.querySelector('.ugc-apply'); const o=btn?btn.textContent:'';
+  const btn=wrap.querySelector('.ugc-regen'); const o=btn?btn.textContent:''; // 전용 클래스 — timing "Apply — free" 오선택 회피
+  const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]'); // 재생성 중 해당 씬 카드에 로딩 스피너
   const ins={}; ins[n]=val;
-  await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}}});
+  // redoScenes(과금) + 미적용 dirty 편집(ugcReassemble이 body.edits로 함께 전송)이 서버에서 같이 반영됨 → 편집 안 날림
+  await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,setBusy:function(on){
+    if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}
+    if(card)card.classList.toggle('usc-busy',on);
+  }});
   if(wrap){wrap.style.display='none';wrap.dataset.n='';}
 }
 // 새 씬 추가: 자연어 지시 or AI 제안(빈칸)으로 영상 끝에 씬 하나 생성(과금). 드래그로 위치 이동 가능.
