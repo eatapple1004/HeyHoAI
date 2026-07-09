@@ -163,10 +163,13 @@ function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
   // 자막 등장 애니메이션(4단계 옵션2): 자막=짧은 키워드가 등장. 음성과 독립(음성 타임스탬프 불필요).
   //   pop = 살짝 오버슈트하며 커지는 통통 등장(짧폼 감성). 기본(none) = 짧은 페이드.
   const anim = subtitleAnim(style.anim);
+  // 자유 위치(드래그) — posX/posY(%, 중앙 앵커)면 \an5\pos(x,y)로 임의 위치. 미리보기 오버레이(translate(-50%,-50%))와 좌표 규칙 일치.
+  const custom = typeof style.posX === 'number' && typeof style.posY === 'number';
+  const posTag = custom ? `{\\an5\\pos(${Math.round(style.posX / 100 * w)},${Math.round(style.posY / 100 * h)})}` : '';
   const lines = (subtitle || []).map((c) => {
     const start = assTime(c.startMs);
     const end = assTime(c.startMs + c.durMs);
-    return `Dialogue: 0,${start},${end},Kinetic,,0,0,0,,${anim}${escapeAss(c.text)}`;
+    return `Dialogue: 0,${start},${end},Kinetic,,0,0,0,,${posTag}${anim}${escapeAss(c.text)}`;
   });
   return header.concat(lines).join('\n') + '\n';
 }
