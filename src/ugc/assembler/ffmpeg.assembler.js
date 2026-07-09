@@ -94,16 +94,35 @@ function escapeAss(text) {
   return String(text).replace(/\n/g, '\\N').replace(/[{}]/g, '');
 }
 
-// 자막 스타일 프리셋(생성 후 조정용). ASS Alignment: 2=하중,5=중중,8=상중. 색상은 ASS BGR(&HAABBGGRR).
+// 자막 위치/크기 축. ASS Alignment: 2=하중,5=중중,8=상중. 색상은 ASS BGR(&HAABBGGRR).
 const SUB_POS = { bottom: { align: 2, mv: 240 }, middle: { align: 5, mv: 0 }, top: { align: 8, mv: 240 } };
 const SUB_SIZE = { s: 56, m: 72, l: 92 };
 const SUB_COLOR = { white: '&H00FFFFFF', yellow: '&H0000FFFF', black: '&H00000000', mint: '&H00D9F5C7' };
 
+// 캡션 스타일 프리셋(2단계) — 폰트 영/한 페어(언어로 스왑) + 박스/아웃라인 + 색. BorderStyle 1=아웃라인·3=박스.
+//   폰트는 prod 서버에 설치 필요(영문 OFL + 한글 Pretendard). 한글 영상은 ko 폰트(라틴도 포함).
+const SUB_PRESETS = {
+  clean:   { en: 'Inter',      ko: 'Pretendard', border: 1, outlineW: 4, primary: '&H00FFFFFF', outlineC: '&H00000000', backC: '&H00000000' }, // 흰 글씨+검정 아웃라인
+  boldbox: { en: 'Montserrat', ko: 'Pretendard', border: 3, outlineW: 8, primary: '&H00000000', outlineC: '&H0000FFFF', backC: '&H0000FFFF' }, // 노랑 하이라이트 박스+검정 글씨
+  impact:  { en: 'Anton',      ko: 'Pretendard', border: 1, outlineW: 7, primary: '&H00FFFFFF', outlineC: '&H00000000', backC: '&H00000000' }, // 굵은 흰 글씨+두꺼운 아웃라인
+  soft:    { en: 'Nunito',     ko: 'Pretendard', border: 1, outlineW: 3, primary: '&H00F0F4FF', outlineC: '&H00604838', backC: '&H00000000' }, // 부드러운 크림+갈색 아웃라인
+};
+
 function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
   const pos = SUB_POS[style.position] || SUB_POS.bottom;
   const size = SUB_SIZE[style.size] || SUB_SIZE.m;
-  const primary = SUB_COLOR[style.color] || SUB_COLOR.white;
-  const outline = style.color === 'black' ? '&H00FFFFFF' : '&H00000000'; // 검정 글자면 흰 아웃라인(가독성)
+  const lang = style.lang === 'en' ? 'en' : 'ko';
+  let font, primary, outlineC, backC, border, outlineW;
+  const preset = SUB_PRESETS[style.preset];
+  if (preset) {
+    font = preset[lang]; primary = preset.primary; outlineC = preset.outlineC; backC = preset.backC;
+    border = preset.border; outlineW = preset.outlineW;
+  } else { // 하위호환: 프리셋 없으면 기존 color 축(폰트=config 기본)
+    font = env.UGC_SUBTITLE_FONT;
+    primary = SUB_COLOR[style.color] || SUB_COLOR.white;
+    outlineC = style.color === 'black' ? '&H00FFFFFF' : '&H00000000';
+    backC = '&H00000000'; border = 1; outlineW = 4;
+  }
   const header = [
     '[Script Info]',
     'ScriptType: v4.00+',
@@ -112,8 +131,8 @@ function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    // 위치·크기·색상 = 프리셋(기본=하단 중앙·72·흰 글자+검은 아웃라인·굵게). 폰트=한글 글리프 있는 것(config).
-    `Style: Kinetic, ${env.UGC_SUBTITLE_FONT}, ${size}, ${primary}, ${outline}, &H00000000, 1, 1, 4, 2, ${pos.align}, 80, 80, ${pos.mv}, 1`,
+    // 폰트·색·박스/아웃라인 = 프리셋(언어별 폰트). 위치·크기는 별도 축. 굵게.
+    `Style: Kinetic, ${font}, ${size}, ${primary}, ${outlineC}, ${backC}, 1, ${border}, ${outlineW}, 2, ${pos.align}, 80, 80, ${pos.mv}, 1`,
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
@@ -330,7 +349,8 @@ async function assemble(plan, opts = {}) {
   if (subtitle.length) {
     const filter = await detectTextFilter();
     // 사이드카는 항상 기록(디버그/외부 조립기용)
-    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, CW, CH, opts.subtitleStyle || {}));
+    const subStyle = { ...(opts.subtitleStyle || {}), lang: (opts.script && opts.script.language) || (plan.meta && plan.meta.language) || 'ko' };
+    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, CW, CH, subStyle));
     await fsp.writeFile(path.join(workDir, 'subs.srt'), buildSrt(subtitle));
 
     if (filter) {

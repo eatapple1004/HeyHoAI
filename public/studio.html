@@ -2911,14 +2911,14 @@ function ugcSceneStripHtml(b){
     <div class="ugc-arow">
       <span class="ugc-arow-lbl">💬 Captions</span>
       <label class="ugc-arow-chk"><input type="checkbox" class="ugc-cap-on" checked> Show</label>
+      <select class="ugc-arow-sel ugc-cap-preset" aria-label="Style">
+        <option value="clean" selected>Clean</option><option value="boldbox">Bold Box</option><option value="impact">Impact</option><option value="soft">Soft</option>
+      </select>
       <select class="ugc-arow-sel ugc-cap-pos" aria-label="Position">
         <option value="bottom" selected>Bottom</option><option value="middle">Middle</option><option value="top">Top</option>
       </select>
       <select class="ugc-arow-sel ugc-cap-size" aria-label="Size">
         <option value="s">Small</option><option value="m" selected>Medium</option><option value="l">Large</option>
-      </select>
-      <select class="ugc-arow-sel ugc-cap-color" aria-label="Color">
-        <option value="white" selected>White</option><option value="yellow">Yellow</option><option value="black">Black</option><option value="mint">Mint</option>
       </select>
       <button type="button" class="ugc-arow-go ugc-cap-go" onclick="ugcChangeCaptions('${esc(b.ugc.jobId)}')">Apply style</button>
     </div>
@@ -3055,11 +3055,11 @@ async function ugcChangeVoice(jobId){
   const btn=cont.querySelector('.ugc-voice-go'); const o=btn?btn.textContent:'Update voice';
   await ugcReassemble(jobId,{voice:payload,setBusy:function(x){if(btn){btn.disabled=x;btn.textContent=x?'Updating…':o;}}});
 }
-// 자막 스타일(무과금) — 위치·크기·색상. 클립·음성·음악 전부 재사용, 자막만 재번인.
+// 자막 스타일(무과금) — 프리셋(폰트+박스+색)·위치·크기·on/off. 클립·음성·음악 전부 재사용, 자막만 재번인.
 async function ugcChangeCaptions(jobId){
   const cont=ugcCont(jobId); if(!cont)return;
-  const pos=cont.querySelector('.ugc-cap-pos'), size=cont.querySelector('.ugc-cap-size'), color=cont.querySelector('.ugc-cap-color'), show=cont.querySelector('.ugc-cap-on');
-  const style={position:pos?pos.value:'bottom', size:size?size.value:'m', color:color?color.value:'white', off: show?!show.checked:false};
+  const preset=cont.querySelector('.ugc-cap-preset'), pos=cont.querySelector('.ugc-cap-pos'), size=cont.querySelector('.ugc-cap-size'), show=cont.querySelector('.ugc-cap-on');
+  const style={preset:preset?preset.value:'clean', position:pos?pos.value:'bottom', size:size?size.value:'m', off: show?!show.checked:false};
   const btn=cont.querySelector('.ugc-cap-go'); const o=btn?btn.textContent:'Apply style';
   await ugcReassemble(jobId,{subtitleStyle:style,setBusy:function(x){if(btn){btn.disabled=x;btn.textContent=x?'Applying…':o;}}});
 }
