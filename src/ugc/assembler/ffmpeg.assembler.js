@@ -199,6 +199,78 @@ function voSegments(script, plan) {
   return segs;
 }
 
+// ── 음성 주도 타임라인(1단계) ──────────────────────────────────────
+const MIN_SCENE_MS = 1500; // 음성이 짧아도 씬 최소 길이(컷 안 튐)
+const VO_TAIL_MS = 300;    // 음성 끝나고 살짝 여운
+
+/** mp3/영상 길이(ms). ffprobe 실패 시 0. */
+async function probeDurationMs(file) {
+  try {
+    const { stdout } = await execFileP('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]);
+    const sec = parseFloat(String(stdout).trim());
+    return Number.isFinite(sec) ? Math.round(sec * 1000) : 0;
+  } catch { return 0; }
+}
+
+/**
+ * 씬별 VO 세그먼트를 생성(또는 캐시 복원)하고 각 길이를 측정 → [{sceneN, rel, durationMs}].
+ * 음성 미요청/미설정이면 null. startMs는 retimeByVoice가 나중에 배정.
+ */
+async function synthVoSegments(opts, plan, workDir, log) {
+  if (!(opts.audio && opts.audio.voice) || !opts.script) return null;
+  const reuse = Array.isArray(opts.reuseVo) ? opts.reuseVo : null;
+  const out = [];
+  if (reuse && reuse.length) {
+    for (let i = 0; i < reuse.length; i++) {
+      const seg = reuse[i];
+      if (!seg.path || !fs.existsSync(seg.path)) continue;
+      const rel = `vo_${i}.mp3`;
+      await fsp.copyFile(seg.path, path.join(workDir, rel));
+      out.push({ sceneN: seg.sceneN, rel, durationMs: await probeDurationMs(path.join(workDir, rel)) });
+    }
+    if (out.length) log(`VO 캐시 재사용(${out.length}세그먼트, 재생성 안 함)`);
+  } else if (tts.isConfigured()) {
+    const info = voSegments(opts.script, plan);
+    for (let i = 0; i < info.length; i++) {
+      const rel = `vo_${i}.mp3`;
+      try {
+        const p = await tts.synthesize(info[i].text, { outPath: path.join(workDir, rel), voiceId: opts.audio.voiceId, speed: opts.audio.speed });
+        if (p) out.push({ sceneN: info[i].sceneN, rel, durationMs: await probeDurationMs(p) });
+      } catch (e) { log(`⚠️ VO 세그먼트 ${i} 실패, 스킵: ${e.message}`); }
+    }
+    if (out.length) log(`VO(음성) ${out.length}세그먼트 생성… [${tts.provider()}]`);
+  } else { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); }
+  return out.length ? out : null;
+}
+
+/**
+ * 음성 주도 retiming — 음성 있는 씬의 길이를 그 씬 음성 길이(+여운, 최소 클램프)로 재설정하고
+ *   video·subtitle·meta.durationMs를 누적 재계산(plan을 직접 갱신). 음성 없는 씬은 기존 길이 유지.
+ *   → 음성이 씬 경계 넘어 끊김 없이 이어지고(연속), 영상이 음성에 맞춰 흐름.
+ * @returns {object|null} voStartByScene(음성 있는 씬의 시작 시각) — 없으면 null(retiming 안 함)
+ */
+function retimeByVoice(plan, voSegs) {
+  if (!voSegs || !voSegs.length) return null; // 무음 영상은 기존 씬 길이 유지
+  const voDur = {};
+  voSegs.forEach((s) => { voDur[s.sceneN] = s.durationMs; });
+  let cursor = 0;
+  const voStart = {};
+  for (const v of (plan.tracks.video || [])) {
+    const d = voDur[v.sceneN];
+    const durMs = d ? Math.max(d + VO_TAIL_MS, MIN_SCENE_MS) : v.durMs;
+    v.startMs = cursor;
+    v.durMs = durMs;
+    if (d) voStart[v.sceneN] = cursor; // 음성 시작 = 씬 시작(lead-in은 3단계)
+    cursor += durMs;
+  }
+  for (const s of (plan.tracks.subtitle || [])) {
+    const v = (plan.tracks.video || []).find((x) => x.sceneN === s.sceneN);
+    if (v) { s.startMs = v.startMs; s.durMs = v.durMs; }
+  }
+  plan.meta.durationMs = cursor;
+  return voStart;
+}
+
 /**
  * RenderPlan → 최종 mp4.
  * @param {object} plan  renderPlan.buildRenderPlan 산출
@@ -218,6 +290,13 @@ async function assemble(plan, opts = {}) {
   const dims = aspectDims(opts.aspect || (plan.meta && plan.meta.aspect) || '9:16');
   const CW = dims.w, CH = dims.h;
   const fit = fitFilter(CW, CH);
+
+  // 0) 음성 주도(1단계): VO 먼저 생성·길이 측정 → 씬 타이밍을 음성 길이로 재계산(plan mutate).
+  //    음성 있는 씬 = 그 음성 길이만큼(+여운, 최소 클램프) → 음성이 씬 넘어 끊김 없이 이어짐.
+  //    음성 없으면 voStart=null이고 씬 길이는 기존 유지(무음 영상).
+  const voSegsData = await synthVoSegments(opts, plan, workDir, log);
+  const voStart = retimeByVoice(plan, voSegsData);
+  // clips는 plan.tracks.video와 동일 참조라 retiming(durMs) 자동 반영됨.
 
   // 1) 클립별 세그먼트 정규화
   log(`세그먼트 정규화 ${clips.length}개… (${CW}x${CH})`);
@@ -272,36 +351,12 @@ async function assemble(plan, opts = {}) {
   const wantVoice = !!(opts.audio && opts.audio.voice);
   const wantMusic = !!(opts.audio && opts.audio.music);
   const audioInputs = [];
-  let voSegsOut = null, musicPath = null; // voSegsOut = [{sceneN, rel, startMs}] (씬별 VO 세그먼트)
+  let voSegsOut = null, musicPath = null; // voSegsOut = [{sceneN, rel, durationMs}] (0단계 생성분)
 
-  // VO(F): 씬별 세그먼트를 각 씬 시각(startMs)에 배치 → 자막과 싱크. reuseVo=배열이면 통째 재사용(캐싱).
-  if (wantVoice && opts.script) {
-    const reuse = Array.isArray(opts.reuseVo) ? opts.reuseVo : null;
-    if (reuse && reuse.length) {
-      voSegsOut = [];
-      for (let i = 0; i < reuse.length; i++) {
-        const seg = reuse[i];
-        if (!seg.path || !fs.existsSync(seg.path)) continue;
-        const rel = `vo_${i}.mp3`;
-        await fsp.copyFile(seg.path, path.join(workDir, rel));
-        voSegsOut.push({ sceneN: seg.sceneN, rel, startMs: seg.startMs || 0 });
-      }
-      if (voSegsOut.length) log(`VO 캐시 재사용(${voSegsOut.length}세그먼트, 재생성 안 함)`);
-    } else if (tts.isConfigured()) {
-      const info = voSegments(opts.script, plan);
-      if (info.length) {
-        voSegsOut = [];
-        for (let i = 0; i < info.length; i++) {
-          const rel = `vo_${i}.mp3`;
-          try {
-            const p = await tts.synthesize(info[i].text, { outPath: path.join(workDir, rel), voiceId: opts.audio.voiceId, speed: opts.audio.speed });
-            if (p) voSegsOut.push({ sceneN: info[i].sceneN, rel, startMs: info[i].startMs });
-          } catch (e) { log(`⚠️ VO 세그먼트 ${i} 실패, 스킵: ${e.message}`); }
-        }
-        if (voSegsOut.length) log(`VO(음성) ${voSegsOut.length}세그먼트 생성… [${tts.provider()}]`);
-      }
-    } else { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); }
-    if (voSegsOut) voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: seg.startMs }));
+  // VO: 0단계에서 이미 생성·측정·retiming됨 → 여기선 retimed 시작 시각(voStart)에 배치만.
+  if (wantVoice && voSegsData) {
+    voSegsOut = voSegsData;
+    voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: (voStart && voStart[seg.sceneN]) || 0 }));
   }
 
   if (wantMusic) {
@@ -327,7 +382,7 @@ async function assemble(plan, opts = {}) {
   }
 
   log(`조립 완료: ${videoOut}`);
-  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: s.startMs })) : null;
+  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: (voStart && voStart[s.sceneN]) || 0 })) : null;
   return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks, audioAssets: { vo: voAssets, music: musicPath } };
 }
 

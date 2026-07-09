@@ -40,7 +40,9 @@ function voKey(script, audio = {}) {
   const text = (script.scenes || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join('|');
   return audioKey([text, audio.voiceId || '', String(audio.speed || 1)]);
 }
-function musicKey(script, durationMs) { return audioKey([music.promptFromScript(script), String(Math.round(durationMs || 0))]); }
+// 음악 키 = 무드(프롬프트)만. 길이는 제외 — 음성 주도로 durationMs가 매 편집 변하는데,
+//   음악 길이는 muxAudio가 영상에 맞춰 트림/패딩하므로 재생성 불필요. vibe 바뀔 때만 재생성.
+function musicKey(script) { return audioKey([music.promptFromScript(script)]); }
 
 /** assemble이 만든 오디오 mp3(로컬 절대경로)를 서빙 디렉토리로 영속화 → basename 반환(restoreClipLocal로 복원). */
 async function persistAudioFile(localPath) {
@@ -57,7 +59,7 @@ async function persistAudioFile(localPath) {
  * assemble 반환 오디오 경로 → {vo:{file,key}, music:{file,key}} 영속 자산.
  * reuseMap[kind] 있으면(=재사용된 트랙) 재영속화 없이 기존 entry 유지.
  */
-async function buildAudioAssets(rendered, script, audio, durationMs, reuseMap = {}) {
+async function buildAudioAssets(rendered, script, audio, reuseMap = {}) {
   const assets = {};
   // VO = 씬별 세그먼트 배열(F). 재사용이면 기존 entry 유지, 아니면 각 세그먼트 영속화 + 캐시키(전체 텍스트 기준).
   if (rendered && Array.isArray(rendered.vo) && rendered.vo.length) {
@@ -66,7 +68,7 @@ async function buildAudioAssets(rendered, script, audio, durationMs, reuseMap = 
       segs: await Promise.all(rendered.vo.map(async (s) => ({ sceneN: s.sceneN, file: await persistAudioFile(s.path), startMs: s.startMs }))),
     };
   }
-  if (rendered && rendered.music) assets.music = reuseMap.music || { file: await persistAudioFile(rendered.music), key: musicKey(script, durationMs) };
+  if (rendered && rendered.music) assets.music = reuseMap.music || { file: await persistAudioFile(rendered.music), key: musicKey(script) };
   return assets;
 }
 
@@ -216,7 +218,7 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
       productRef = { clip: path.basename(refImage), kind: refKind || 'product' };
     }
     // 오디오 캐싱: 생성된 VO·음악을 영속화 + 캐시키 저장 → 이후 편집 시 안 바뀐 트랙 재사용(무재생성).
-    const audioAssets = await buildAudioAssets(out.audioAssets, script, audio || {}, plan.meta.durationMs, {});
+    const audioAssets = await buildAudioAssets(out.audioAssets, script, audio || {}, {});
     const persistedScript = { ...script, _render: { audio: audio || {}, aspect, product: productRef, model: modelImagePath || null, audioAssets } };
     await updateJob(jobId, {
       status: 'succeeded', result_url: `/images/${filename}`,
@@ -422,13 +424,13 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       }
       if (restored.length === prevAssets.vo.segs.length) { reuseVo = restored; reuseMap.vo = prevAssets.vo; } // 전부 복원돼야 재사용
     }
-    if (audio.music && prevAssets.music && prevAssets.music.key === musicKey(script, plan.meta.durationMs)) {
+    if (audio.music && prevAssets.music && prevAssets.music.key === musicKey(script)) {
       reuseMusic = await restoreClipLocal(prevAssets.music.file);
       if (reuseMusic) reuseMap.music = prevAssets.music;
     }
     const out = await assemble(plan, { audio, script, aspect, reuseVo, reuseMusic, subtitleStyle: (script._render && script._render.subtitleStyle) || undefined, log: (m) => log.info(`[re-render ${jobId}] ${m}`) });
     // 자산 갱신: 재사용 트랙은 기존 entry 유지, 재생성 트랙만 새로 영속화
-    if (script._render) script._render.audioAssets = await buildAudioAssets(out.audioAssets, script, audio, plan.meta.durationMs, reuseMap);
+    if (script._render) script._render.audioAssets = await buildAudioAssets(out.audioAssets, script, audio, reuseMap);
 
     // in-place 갱신: 새 mp4 서빙 + 기존 generation_results 행 교체 + 잡 갱신
     fs.mkdirSync(servedDir, { recursive: true });

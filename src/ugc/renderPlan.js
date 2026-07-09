@@ -37,7 +37,7 @@ function buildRenderPlan(script, clips) {
 
     const text = (scene.onScreenText || '').trim();
     if (text) {
-      subtitle.push({ text, startMs: cursorMs, durMs, style: 'kinetic' });
+      subtitle.push({ text, startMs: cursorMs, durMs, style: 'kinetic', sceneN: scene.n }); // sceneN=음성 주도 retiming 매칭용
     }
 
     cursorMs += durMs;
