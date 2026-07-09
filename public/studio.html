@@ -151,6 +151,13 @@
   .ugc-scenes-hd>span:first-child{font-weight:650;font-size:13px}
   .ugc-scenes-hint{font-size:11.5px;color:var(--muted)}
   .ugc-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+  .ugc-music-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+  .ugc-music-lbl{font-weight:650;font-size:12.5px}
+  .ugc-music-mood,.ugc-music-vibe{background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px}
+  .ugc-music-vibe{flex:1 1 160px;min-width:120px}
+  .ugc-music-go{background:var(--card2,#191921);color:inherit;border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .ugc-music-go:hover{border-color:var(--accent,#8b7cf6)}
+  .ugc-music-go:disabled{opacity:.55;cursor:default}
   .usc{position:relative;flex:0 0 132px;width:132px;background:var(--card2,#191921);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .usc-thumb{position:relative;aspect-ratio:9/16;background:#000}
   .usc-thumb img,.usc-thumb video{width:100%;height:100%;object-fit:cover;display:block}
@@ -2849,6 +2856,20 @@ function ugcSceneStripHtml(b){
     <div class="ugc-strip">${cards}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
+    <div class="ugc-music-row">
+      <span class="ugc-music-lbl">🎵 Music</span>
+      <select class="ugc-music-mood" aria-label="Music mood">
+        <option value="">Auto (AI)</option>
+        <option value="upbeat, energetic, bright modern">Upbeat</option>
+        <option value="calm, gentle, soft ambient">Calm</option>
+        <option value="luxurious, elegant, cinematic premium">Luxury</option>
+        <option value="warm, cozy, acoustic">Warm</option>
+        <option value="high-energy, driving, punchy">Energetic</option>
+        <option value="none">No music</option>
+      </select>
+      <input type="text" class="ugc-music-vibe" placeholder="or describe a vibe…" maxlength="120">
+      <button type="button" class="ugc-music-go" onclick="ugcChangeMusic('${esc(b.ugc.jobId)}')">Change music</button>
+    </div>
     <div class="ugc-apply-row">
       <button type="button" class="ugc-apply" onclick="ugcSaveFinish('${esc(b.ugc.jobId)}')">${u._saved?'✓ Saved to gallery':(dirty?'Apply · Save & finish':'Save & finish')}</button>
       ${dirty?`<button type="button" class="ugc-reset" onclick="ugcResetEdits('${esc(b.ugc.jobId)}')">Reset</button>`:''}
@@ -2905,7 +2926,8 @@ function ugcResetEdits(jobId){
 async function ugcReassemble(jobId,opts){
   opts=opts||{}; const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
   const paid=!!((opts.redoScenes&&opts.redoScenes.length)||(opts.addScenes&&opts.addScenes.length));
-  if(!paid&&!u._dirty)return; // 무과금인데 변경 없으면 무시
+  const hasMusic=opts.musicVibe!=null; // 음악만 교체(무과금)
+  if(!paid&&!u._dirty&&!hasMusic)return; // 변경 없으면 무시
   const order=u.scenes.map(s=>s.n);
   const origNs=(u._orig||u.scenes).map(s=>s.n); const keep=new Set(order); const removed=origNs.filter(n=>!keep.has(n));
   const edits={}; for(const k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; } // 남은 씬의 편집만
@@ -2913,6 +2935,7 @@ async function ugcReassemble(jobId,opts){
   if(opts.redoScenes)body.redoScenes=opts.redoScenes;
   if(opts.editInstructions)body.editInstructions=opts.editInstructions;
   if(opts.addScenes)body.addScenes=opts.addScenes;
+  if(hasMusic)body.musicVibe=opts.musicVibe;
   const setBusy=opts.setBusy||function(){}; setBusy(true);
   try{
     const res=await fetch('/api/generate/ugc/re-render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -2930,7 +2953,7 @@ async function ugcReassemble(jobId,opts){
     }
     u.edits={}; u._dirty=false;
     renderStudioResults();
-    if(window.toast)toast(paid?('Scene re-generated'+(data.cost?' — '+data.cost+' credits':'')):'Video updated — free edit');
+    if(window.toast)toast(paid?('Scene re-generated'+(data.cost?' — '+data.cost+' credits':'')):(hasMusic?'Music updated — free':'Video updated — free edit'));
     if(paid&&typeof loadCredits==='function')loadCredits();
   }catch(e){
     setBusy(false);
@@ -2940,6 +2963,15 @@ async function ugcReassemble(jobId,opts){
 async function ugcApplyEdits(jobId){
   const btn=ugcApplyBtn(jobId);
   await ugcReassemble(jobId,{setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Reassembling…':'✓ Apply changes — free';}}});
+}
+// 음악만 교체(무과금) — 무드 프리셋 또는 자연어. 영상·클립·음성·자막 유지, 배경음만 재생성+재조립.
+async function ugcChangeMusic(jobId){
+  const cont=ugcCont(jobId); if(!cont)return;
+  const sel=cont.querySelector('.ugc-music-mood');
+  const txt=cont.querySelector('.ugc-music-vibe');
+  const vibe=(txt&&txt.value.trim())?txt.value.trim():(sel?sel.value:''); // 자연어 우선, 없으면 프리셋('' =Auto, 'none'=끔)
+  const btn=cont.querySelector('.ugc-music-go'); const o=btn?btn.textContent:'Change music';
+  await ugcReassemble(jobId,{musicVibe:vibe,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Changing…':o;}}});
 }
 // Save & finish — 미적용 편집 반영(재조립) 후 갤러리·Explore에 확정 저장(draft→공개)
 async function ugcSaveFinish(jobId){

@@ -250,7 +250,7 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], dryRunVideo = false }) {
+async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, dryRunVideo = false }) {
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
   if (row.status !== 'succeeded' || !row.script || !row.result_idx) {
@@ -265,7 +265,20 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
   if (!scenes.length) { const e = new Error('At least one scene must remain'); e.statusCode = 422; throw e; }
 
   const aspect = (script._render && script._render.aspect) || script.aspect || '9:16';
-  const audio = (script._render && script._render.audio) || {};
+  let audio = (script._render && script._render.audio) || {};
+
+  // "음악만 바꾸기" — musicVibe override(무과금). 영상·클립·VO는 그대로, 배경음만 재생성+재조립.
+  //   ''(Auto)=AI 기본 무드, 'none'=음악 끔, 그 외=무드 프리셋/자연어. 변경은 _render.audio에도 영속화(다음 편집서 유지).
+  const mv = musicVibe == null ? null : String(musicVibe).trim();
+  if (mv != null) {
+    if (mv.toLowerCase() === 'none') {
+      audio = { ...audio, music: false };
+    } else {
+      script.musicVibe = mv.toLowerCase() === 'auto' ? '' : mv;
+      audio = { ...audio, music: true };
+    }
+    if (script._render) script._render.audio = audio;
+  }
 
   // 새 씬 추가(끝에) — 기존 대본 맥락으로 Claude가 생성(자연어 지시 or AI 제안). 한 영상 최대 12씬.
   const adds = Array.isArray(addScenes) ? addScenes : [];
