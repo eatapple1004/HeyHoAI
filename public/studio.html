@@ -586,9 +586,13 @@
   #ugcInline .ugc-inline-vidwrap{position:relative;border-radius:14px;overflow:hidden;background:#000;max-width:340px;margin:0 auto}
   #ugcInline .ugc-inline-vid{width:100%;display:block;cursor:zoom-in}
   /* B+ 자막 오버레이 — 자막 없는 미리보기 영상 위에 현재 자막을 즉시 표시(번인 결과 근사). */
-  #ugcInline .ugc-cap-ov{position:absolute;left:0;right:0;z-index:2;text-align:center;padding:0 6%;pointer-events:auto;cursor:move;touch-action:none;font-weight:800;line-height:1.18;letter-spacing:-.3px;color:#fff;text-shadow:0 2px 7px rgba(0,0,0,.72),0 0 2px rgba(0,0,0,.92);white-space:pre-wrap;word-break:keep-all;display:none}
-  #ugcInline .ugc-cap-ov:hover{outline:1px dashed rgba(255,255,255,.55);outline-offset:2px}
-  #ugcInline .ugc-cap-ov.grabbing{outline:1px solid rgba(255,255,255,.85)}
+  /* 컨테이너 = 위치만(전역 posX/posY). 텍스트 표시·편집·드래그는 자막별 자식(.ugc-cap-line). */
+  #ugcInline .ugc-cap-ov{position:absolute;left:0;right:0;z-index:2;display:none;flex-direction:column;align-items:center;gap:3px;pointer-events:none;color:#fff}
+  /* 자막 한 줄(=자막 1개) — 자동 줄바꿈 없음(white-space:pre, 수동 줄바꿈만). 클릭=편집, 드래그=이동. */
+  #ugcInline .ugc-cap-line{pointer-events:auto;touch-action:none;cursor:move;white-space:pre;word-break:normal;text-align:center;font-weight:800;line-height:1.18;letter-spacing:-.3px;color:inherit;text-shadow:0 2px 7px rgba(0,0,0,.72),0 0 2px rgba(0,0,0,.92);outline:none;padding:1px 3px;border-radius:4px}
+  #ugcInline .ugc-cap-line:hover{outline:1px dashed rgba(255,255,255,.55);outline-offset:2px}
+  #ugcInline .ugc-cap-ov.grabbing .ugc-cap-line{outline:1px solid rgba(255,255,255,.85)}
+  #ugcInline .ugc-cap-line.editing{cursor:text;outline:1.5px solid rgba(139,124,246,.95);outline-offset:2px;background:rgba(0,0,0,.34)}
   #ugcInline .ugc-inline-vidwrap .reel-mute{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
   #ugcInline .ugc-inline-vidwrap .reel-mute:hover{background:rgba(0,0,0,.82)}
   #ugcInline .ugc-inline-vidwrap .reel-mute.on{background:var(--accent,#8b7bff)}
@@ -2884,10 +2888,8 @@ function ugcSceneStripHtml(b){
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
-      <div class="usc-line"><span class="usc-ic" title="On-screen caption — text shown in the video">💬</span><div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
-           onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
-           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-           data-ph="Caption (shown on screen)">${esc(cap)}</div></div>
+      <div class="usc-line"><span class="usc-ic" title="On-screen caption — edit it directly on the video">💬</span><div class="usc-cap usc-cap-ro" data-n="${s.n}"
+           title="Edit captions directly on the video above" data-ph="No caption">${esc(cap)}</div></div>
       ${''/* V2: 음성은 씬별이 아니라 영상 전체 "통 나레이션" 한 편집창으로 이전 → 씬 카드엔 자막(💬)만 */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
@@ -3352,7 +3354,7 @@ function renderUgcInline(b){
   if(useOverlay){ const zoom=(it&&it.url)||u.previewUrl;
     html+='<div class="ugc-inline-vidwrap">'
       +`<video class="ugc-inline-vid" src="${esc(u.previewUrl)}" autoplay muted loop playsinline ontimeupdate="ugcSyncCap(this,'${esc(u.jobId)}')" onloadeddata="ugcTryUnmute(this);ugcSyncCap(this,'${esc(u.jobId)}')" onclick="openImageModal('${esc(zoom)}','reel')"></video>`
-      +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}" title="Drag to reposition" onpointerdown="ugcCapGrab(event,'${esc(u.jobId)}')"></div>`
+      +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
       +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
       +'</div>';
     html+=ugcTimelineHtml(u); // V2b 자막 타임라인(오버레이 아래)
@@ -3365,6 +3367,7 @@ function renderUgcInline(b){
 }
 // B+ 자막 오버레이 싱크 — 미리보기(자막 없는) 영상의 현재 시각에 해당하는 자막을 오버레이에 표시.
 //   자막 텍스트는 편집분(edits) 우선 → 타이핑 즉시 반영. 실제 번인은 Apply 시 백그라운드로 파일에 구워짐.
+var UGC_CAP_EDITING=null; // 인라인 편집 중인 jobId — 편집/드래그 중엔 ugcSyncCap 재빌드 금지(캐럿·드래그 보존)
 function ugcSyncCap(video,jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
   const ov=video.parentNode&&video.parentNode.querySelector('.ugc-cap-ov'); if(!ov)return;
@@ -3375,24 +3378,30 @@ function ugcSyncCap(video,jobId){
   const tot=(typeof ugcTlTotal==='function')?ugcTlTotal(u):0;
   const ph=document.querySelector('#ugcInline .ugc-timeline .ugc-tl-play');
   if(ph&&tot)ph.style.left=(Math.max(0,Math.min(1,ms/tot))*100)+'%';
-  if(st.off){ ov.style.display='none'; return; }
-  // 현재 시각에 걸리는 자막 전부(겹치면 여러 개) → 여러 줄로 쌓아 표시. find(하나)면 겹칠 때 한 자막이 다른 자막을 가려버림.
+  if(UGC_CAP_EDITING===jobId||UGC_CAP_DRAG)return; // 편집/드래그 중 재빌드 금지(캐럿·드래그 대상 보존)
+  function clear(){ ov.style.display='none'; if(ov.childNodes.length){ov.innerHTML='';ov.removeAttribute('data-sig');} }
+  if(st.off)return clear();
+  // 현재 시각에 걸린 자막 전부(겹치면 여러 개) → 자막별 개별 편집 박스. 중복(같은 자막) 제거.
   const matches=timings.filter(x=>{const s0=+x.startMs,d=+x.durMs; return ms>=s0&&ms<s0+d;}).sort((a,b)=>(+a.startMs)-(+b.startMs));
-  const seen={}; const lines=[];
-  for(const t of matches){ const tx=ugcCapTextOf(u,t); if(tx&&!seen[tx]){seen[tx]=1;lines.push(tx);} } // 자유 자막=자기 text, 씬 자막=씬에서. 중복 제거
-  let text=lines.join('\n');
-  if(!text){ ov.style.display='none'; if(ov.textContent)ov.textContent=''; return; }
-  ov.style.display='block'; // ''로 두면 CSS의 display:none으로 되돌아가 자막이 영영 안 뜸(근본 버그)
-  if(ov.textContent!==text)ov.textContent=text;
+  const items=[]; const seen={};
+  for(const t of matches){ const kind=(t&&t.text!=null&&!Number.isFinite(Number(t.sceneN)))?'free':'scene'; const ref=kind==='free'?String(t.id):String(t.sceneN); const k=kind+':'+ref; const tx=ugcCapTextOf(u,t); if(!tx||seen[k])continue; seen[k]=1; items.push({kind,ref,text:tx}); }
+  if(!items.length)return clear();
+  // 같은 자막·텍스트면 재빌드 안 함(불필요한 DOM 교체·깜빡임 방지). ␞=구분자.
+  const sig=items.map(it=>it.kind+':'+it.ref+'='+it.text).join('␞');
+  if(ov.getAttribute('data-sig')!==sig){
+    ov.innerHTML=items.map(it=>`<div class="ugc-cap-line" data-kind="${it.kind}" data-ref="${esc(it.ref)}" title="Click to edit · drag to move" onpointerdown="ugcCapGrab(event,'${esc(jobId)}')" onkeydown="ugcCapKey(event)" onblur="ugcCapCommit(this,'${esc(jobId)}')">${esc(it.text)}</div>`).join('');
+    ov.setAttribute('data-sig',sig);
+  }
+  ov.style.display='flex'; // '' 금지(CSS display:none으로 되돌아가 자막 영영 숨김 — 근본 버그). flex=자막별 자식 세로 스택.
   ugcStyleCapOv(ov,st);
 }
-// 오버레이 스타일 = 번인 프리셋 근사(위치·크기·색). 컨테이너(영상) 폭 기준으로 폰트 스케일.
+// 오버레이 컨테이너 스타일 = 번인 근사(위치·크기·색). 자막별 자식은 font-size·color를 상속. 자동 줄바꿈 없음(자식 white-space:pre).
 function ugcStyleCapOv(ov,st){
   const custom=typeof st.posX==='number'&&typeof st.posY==='number'; // 자유 위치(드래그) — 중앙 앵커 %. ASS \pos(\an5)와 좌표 규칙 일치.
   if(custom){
     ov.style.left=st.posX+'%'; ov.style.right='auto'; ov.style.top=st.posY+'%'; ov.style.bottom='auto';
-    ov.style.transform='translate(-50%,-50%)'; ov.style.maxWidth='88%';
-  } else { // 프리셋(하위호환): 가로 풀폭 밴드 + 상/중/하
+    ov.style.transform='translate(-50%,-50%)'; ov.style.maxWidth='';
+  } else { // 프리셋(하위호환): 가로 풀폭 밴드 + 상/중/하(자식이 가운데 정렬)
     const pos=st.position||'bottom';
     ov.style.left='0'; ov.style.right='0'; ov.style.transform='none'; ov.style.maxWidth='';
     ov.style.top=pos==='top'?'8%':(pos==='middle'?'44%':'auto');
@@ -3402,33 +3411,75 @@ function ugcStyleCapOv(ov,st){
   const size=st.size||'m'; ov.style.fontSize=Math.round(w*(size==='s'?0.046:size==='l'?0.076:0.058))+'px';
   ov.style.color={white:'#fff',yellow:'#ffe14d',black:'#111',mint:'#c7f5d9'}[st.color]||'#fff';
 }
-// 영상 위 자막 자유 드래그 — 드래그 중엔 서버 0(오버레이 style만 즉시 갱신), 놓으면 디바운스 무중단 저장.
+// ── 영상 위 자막: 클릭=인라인 편집 · 드래그=전역 위치 이동(탭 확대 제거) ──
 var UGC_CAP_DRAG=null;
 function ugcCapGrab(ev,jobId){
-  const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const ov=ev.currentTarget; const wrap=ov.parentNode; if(!wrap)return;
-  ev.preventDefault(); ev.stopPropagation();
-  UGC_CAP_DRAG={u:b.ugc,jobId,ov,wrap,rect:wrap.getBoundingClientRect(),startX:ev.clientX,startY:ev.clientY,moved:false};
-  ov.classList.add('grabbing');
-  try{ov.setPointerCapture&&ov.setPointerCapture(ev.pointerId);}catch(e){}
+  if(UGC_CAP_EDITING)return; // 편집 중이면 네이티브 텍스트 조작(캐럿/선택) 우선
+  const line=ev.currentTarget; const ov=line.closest&&line.closest('.ugc-cap-ov'); const wrap=ov&&ov.parentNode; if(!wrap)return;
+  const b=ugcFindBatch(jobId); if(!b||!b.ugc)return;
+  ev.preventDefault(); ev.stopPropagation(); // 클릭/드래그 판정 전까지 네이티브 캐럿 억제
+  UGC_CAP_DRAG={u:b.ugc,jobId,ov,line,wrap,rect:wrap.getBoundingClientRect(),startX:ev.clientX,startY:ev.clientY,px:ev.clientX,py:ev.clientY,moved:false};
+  try{line.setPointerCapture&&line.setPointerCapture(ev.pointerId);}catch(e){}
   document.addEventListener('pointermove',ugcCapMove); document.addEventListener('pointerup',ugcCapUp);
 }
 function ugcCapMove(ev){
-  const D=UGC_CAP_DRAG; if(!D)return;
-  if(Math.abs(ev.clientX-D.startX)>4||Math.abs(ev.clientY-D.startY)>4)D.moved=true;
+  const D=UGC_CAP_DRAG; if(!D)return; D.px=ev.clientX; D.py=ev.clientY;
+  if(!D.moved&&(Math.abs(ev.clientX-D.startX)>4||Math.abs(ev.clientY-D.startY)>4)){ D.moved=true; D.ov.classList.add('grabbing'); }
+  if(!D.moved)return;
   const posX=Math.max(4,Math.min(96,(ev.clientX-D.rect.left)/D.rect.width*100)); // 중앙 앵커 기준, 화면 밖 방지 클램프
   const posY=Math.max(6,Math.min(94,(ev.clientY-D.rect.top)/D.rect.height*100));
   D.u.subtitleStyle=Object.assign({},D.u.subtitleStyle||{},{posX:Math.round(posX*10)/10,posY:Math.round(posY*10)/10});
-  const sp=D.u.captionSpec||{}; ugcStyleCapOv(D.ov,Object.assign({},sp.style||{},D.u.subtitleStyle||{})); // 즉시 이동
+  const sp=D.u.captionSpec||{}; ugcStyleCapOv(D.ov,Object.assign({},sp.style||{},D.u.subtitleStyle||{})); // 즉시 이동(전역 위치)
 }
 function ugcCapUp(ev){
   const D=UGC_CAP_DRAG; UGC_CAP_DRAG=null;
   document.removeEventListener('pointermove',ugcCapMove); document.removeEventListener('pointerup',ugcCapUp);
   if(!D)return; D.ov.classList.remove('grabbing');
-  if(!D.moved){ // 이동 없는 탭 → 영상 확대(오버레이가 클릭 가로채므로 대신 열어줌)
-    const b=ugcFindBatch(D.jobId); const zoom=(b&&b.items&&b.items[0]&&b.items[0].url)||(b&&b.ugc&&b.ugc.previewUrl);
-    if(zoom&&typeof openImageModal==='function')openImageModal(zoom,'reel'); return;
+  if(D.moved){ ugcScheduleSilentSave(D.jobId,D.u); return; } // 이동 → 전역 위치 디바운스 저장(타임라인과 동일 경로)
+  ugcCapEnterEdit(D.line,D.jobId,D.px,D.py); // 이동 없는 클릭 → 그 자막 인라인 편집
+}
+// 인라인 편집 진입 — 영상 일시정지(자막 안 바뀌게)+contenteditable+클릭 지점 캐럿.
+function ugcCapEnterEdit(line,jobId,cx,cy){
+  if(!line)return; const b=ugcFindBatch(jobId); if(!b||!b.ugc)return;
+  const v=document.querySelector('#ugcInline .ugc-inline-vid'); if(v&&!v.paused){try{v.pause();}catch(e){}}
+  UGC_CAP_EDITING=jobId;
+  try{line.contentEditable='plaintext-only';}catch(e){}
+  if(line.contentEditable!=='plaintext-only')line.contentEditable='true'; // 폴백(Firefox 등)
+  line.classList.add('editing'); line.focus();
+  try{ // 클릭 지점에 캐럿(가능하면), 아니면 기본(끝)
+    let r=null;
+    if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(cx,cy);
+    else if(document.caretPositionFromPoint){const p=document.caretPositionFromPoint(cx,cy); if(p){r=document.createRange();r.setStart(p.offsetNode,p.offset);r.collapse(true);}}
+    if(r&&line.contains(r.startContainer)){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);}
+  }catch(e){}
+}
+function ugcCapKey(ev){
+  if(ev.key==='Escape'){ ev.preventDefault(); ev.currentTarget.blur(); return; }
+  // plaintext-only는 Enter가 \n(줄바꿈). true 폴백이면 수동 삽입(블록<div> 중첩 방지).
+  if(ev.key==='Enter'&&ev.currentTarget.contentEditable!=='plaintext-only'){ ev.preventDefault(); try{document.execCommand('insertLineBreak');}catch(e){} }
+}
+function ugcCapPlainText(el){ const t=(el.innerText!=null?el.innerText:(el.textContent||'')); return t.replace(/\r\n?/g,'\n').replace(/\n+$/,'').slice(0,300); }
+// 편집 종료(blur) — 텍스트를 소스(씬 onScreenText / 자유 자막 text)에 반영 → 디바운스 값싼 재조립. 줄바꿈(\n) 보존.
+function ugcCapCommit(line,jobId){
+  if(UGC_CAP_EDITING===jobId)UGC_CAP_EDITING=null;
+  line.contentEditable='false'; line.removeAttribute('contenteditable'); line.classList.remove('editing');
+  const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
+  const kind=line.getAttribute('data-kind'), ref=line.getAttribute('data-ref'); const val=ugcCapPlainText(line);
+  let changed=false;
+  if(kind==='scene'){
+    const n=Number(ref), s=(u.scenes||[]).find(x=>x.n===n);
+    if(s){ const cur=(u.edits[n]&&'onScreenText' in u.edits[n])?u.edits[n].onScreenText:(s.onScreenText||'');
+      if(val!==cur){ u.edits[n]=Object.assign({},u.edits[n],{onScreenText:val}); u._dirty=true; changed=true;
+        const cont=(typeof ugcCont==='function')?ugcCont(jobId):null; const card=cont&&cont.querySelector('.usc[data-n="'+n+'"] .usc-cap-ro'); if(card)card.textContent=val; } } // 씬 카드 읽기전용 표시 즉시 동기화
+  } else { // 자유 자막
+    const tm=(u.captionSpec&&u.captionSpec.timings)||[]; const t=tm.find(x=>x&&String(x.id)===String(ref));
+    if(t&&val!==String(t.text||'')){ if(val)t.text=val; else{const i=tm.indexOf(t); if(i>=0)tm.splice(i,1);} changed=true; }
   }
-  ugcScheduleSilentSave(D.jobId,D.u); // 위치도 디바운스 무중단 저장(타임라인과 동일 경로)
+  const v=document.querySelector('#ugcInline .ugc-inline-vid');
+  if(v&&typeof ugcSyncCap==='function')ugcSyncCap(v,jobId); // 새 텍스트로 오버레이 재빌드
+  if(typeof ugcRenderTimeline==='function')ugcRenderTimeline(u);
+  if(v&&v.paused){try{v.play();}catch(e){}} // 편집 종료 → 재생 재개
+  if(changed)ugcScheduleSilentSave(jobId,u); // 값싼 재조립(디바운스) — 캐시키가 자막 텍스트·줄바꿈 반영해 정확히 miss→재조립
 }
 // ===== V2b 자막 타임라인 =====
 // 씬 길이(durationSec)로 전체 축(ms)과 씬 경계 계산 — playhead·블록 위치·스냅이 같은 축을 씀.

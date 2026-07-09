@@ -151,6 +151,7 @@ function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
     'ScriptType: v4.00+',
     `PlayResX: ${w}`,
     `PlayResY: ${h}`,
+    'WrapStyle: 2', // 자동 줄바꿈 끔 — 사용자가 넣은 수동 줄바꿈(\N)만. escapeAss가 \n→\N 변환(미리보기 white-space:pre와 일치).
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
