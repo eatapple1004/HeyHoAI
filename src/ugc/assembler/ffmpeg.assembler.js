@@ -475,7 +475,8 @@ async function assemble(plan, opts = {}) {
     subtitleMode: burned.subtitleMode, subtitleFile: burned.subtitleFile, audioTracks,
     audioAssets: { vo: voAssets, music: musicPath },
     // B+ 재합성 스펙: silentPath=무자막·무음 concat(음악만 갈아끼울 때 베이스), caption=자막 타이밍·스타일·치수
-    caption: { timings: subtitle.map((s) => ({ sceneN: s.sceneN, startMs: s.startMs, durMs: s.durMs })), style: subStyle, w: CW, h: CH, hasAudio },
+    // 자유(직접 추가) 자막은 id+text 보존(씬에 안 묶여 다음 재조립 때 텍스트 소스가 없음). 씬 자막은 sceneN만(텍스트는 씬에서).
+    caption: { timings: subtitle.map((s) => (s.id != null ? { id: s.id, text: s.text, startMs: s.startMs, durMs: s.durMs } : { sceneN: s.sceneN, startMs: s.startMs, durMs: s.durMs })), style: subStyle, w: CW, h: CH, hasAudio },
   };
 }
 

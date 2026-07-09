@@ -145,6 +145,9 @@ async function persistSceneClips(clips) {
 // 씬 클립 엔트리에서 순수 클립 정보만(버전 목록 element용) — versions/v 같은 메타 제외.
 function stripClipEntry(e) { const o = {}; ['clip', 'thumb', 'isStill', 'durationMs', 'remote'].forEach((k) => { if (e && k in e) o[k] = e[k]; }); return o; }
 
+// 자막 타이밍 → 텍스트 리졸버. 자유 자막(직접 추가)은 자기 text, 씬 자막은 씬의 onScreenText.
+function captionTextOf(t, byN) { return (t && t.text != null ? String(t.text) : ((byN[t.sceneN] && byN[t.sceneN].onScreenText) || '')).trim(); }
+
 /**
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
@@ -385,15 +388,19 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
         const start = Math.max(0, Math.round(Number(t.startMs) || 0));
         let d = Math.max(200, Math.round(Number(t.durMs) || 0));
         if (dur && start + d > dur) d = Math.max(200, dur - start);
-        return { sceneN: Number(t.sceneN), startMs: start, durMs: d };
-      }).filter((t) => Number.isFinite(t.sceneN));
+        const e = { startMs: start, durMs: d };
+        if (Number.isFinite(Number(t.sceneN))) e.sceneN = Number(t.sceneN); // 씬 자막(텍스트는 씬에서)
+        if (t.text != null) e.text = String(t.text).slice(0, 300);          // 자유 자막(자기 텍스트 보유)
+        if (t.id != null) e.id = String(t.id).slice(0, 40);
+        return e;
+      }).filter((t) => Number.isFinite(t.sceneN) || (t.text != null && t.text !== '')); // 씬 자막 또는 텍스트 있는 자유 자막만
     }
 
     const byN = {}; script.scenes.forEach((s) => { byN[s.n] = s; });
     const style = { ...(R.caption.style || {}), ...(R.subtitleStyle || {}), lang: script.language || (R.caption.style && R.caption.style.lang) || 'ko' };
     const captionsOff = !!(R.subtitleStyle && R.subtitleStyle.off);
     const subtitle = captionsOff ? [] : R.caption.timings
-      .map((t) => ({ sceneN: t.sceneN, startMs: t.startMs, durMs: t.durMs, text: ((byN[t.sceneN] && byN[t.sceneN].onScreenText) || '').trim() }))
+      .map((t) => ({ sceneN: t.sceneN, startMs: t.startMs, durMs: t.durMs, text: captionTextOf(t, byN) })) // 자유 자막=자기 text, 씬 자막=씬에서
       .filter((s) => s.text);
     const W = R.caption.w || 1080, H = R.caption.h || 1920;
     const durMs = R.durationMs || R.caption.timings.reduce((m, t) => Math.max(m, t.startMs + t.durMs), 0) || 6000;
@@ -602,6 +609,21 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
     // 재조립(원본 오디오/비율 재사용)
     const plan = buildRenderPlan(script, clips);
     plan.meta.aspect = aspect;
+    // 자유(직접 추가) 자막은 씬에 안 묶임 → buildRenderPlan(씬 기반)이 놓치므로, 저장된 timings의 자유 자막을 이어붙여 보존.
+    {
+      const Rc = script._render && script._render.caption;
+      const capOff = !!(script._render && script._render.subtitleStyle && script._render.subtitleStyle.off);
+      if (Rc && Array.isArray(Rc.timings) && !capOff) {
+        const dur = plan.meta.durationMs || 0;
+        for (const t of Rc.timings) {
+          if (t.text == null || !String(t.text).trim() || Number.isFinite(Number(t.sceneN))) continue; // 씬 자막은 이미 처리됨
+          let start = Math.max(0, Math.round(Number(t.startMs) || 0));
+          let d = Math.max(200, Math.round(Number(t.durMs) || 0));
+          if (dur && start + d > dur) d = Math.max(200, dur - start);
+          if (!dur || start < dur) plan.tracks.subtitle.push({ id: t.id, startMs: start, durMs: d, text: String(t.text).trim() });
+        }
+      }
+    }
 
     // 오디오 캐싱: 저장된 VO·음악 중 키가 그대로면 재사용(재생성 안 함). 다르면 재생성.
     //   음악만 바꾸기 = 음악 키만 변경 → VO 재사용, 음악만 새로. 재배치/자막편집 = 텍스트 바뀌면 VO만 재생성.
