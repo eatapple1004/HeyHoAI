@@ -201,6 +201,7 @@ async function submit(input) {
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
 async function runPipeline({ jobId, script, refImage, refKind, productImagePath, modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {} }) {
+  let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정.
@@ -211,7 +212,8 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
 
     const plan = buildRenderPlan(script, clips);
     plan.meta.aspect = aspect; // 선택 비율을 조립기·결과 메타에 반영
-    const out = await assemble(plan, { audio, script, aspect, log: (m) => log.info(`[${jobId}] ${m}`) });
+    renderWorkDir = path.join(process.cwd(), 'tmp', 'ugc', crypto.randomUUID().slice(0, 8));
+    const out = await assemble(plan, { audio, script, aspect, outDir: renderWorkDir, log: (m) => log.info(`[${jobId}] ${m}`) });
 
     // 서빙 디렉토리로 복사(/images 라우트가 서빙 + mediaStore 영속화)
     fs.mkdirSync(servedDir, { recursive: true });
@@ -249,6 +251,9 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
     if (charge) await charge.refund().catch(() => {});
     await updateJob(jobId, { status: 'failed', error: String(err.message).slice(0, 300) });
     log.error(`UGC job ${jobId} failed(refunded): ${err.message}`);
+  } finally {
+    // 렌더 스크래치 정리 — 서빙본·silentBase·previewBase·오디오·씬클립은 try 안에서 이미 servedDir로 복사됨(finally는 그 뒤 실행). 편집 경로(tryReComposite)와 동일 패턴.
+    if (renderWorkDir) { try { fs.rmSync(renderWorkDir, { recursive: true, force: true }); } catch (e) {} }
   }
 }
 

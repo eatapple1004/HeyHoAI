@@ -25,13 +25,16 @@ const execFileP = promisify(execFile);
 const TARGET_W = 1080;
 const TARGET_H = 1920;
 const FPS = 30;
+// 단일 ffmpeg 작업(세그먼트·concat·mux·번인) 상한. 멈춘 ffmpeg가 안 죽고 쌓여 서버를 잠식하던 문제 방지.
+//   짧은 광고 클립 한 작업은 보통 수초~1분이라 6분은 정상 작업엔 절대 안 걸리는 넉넉한 상한. 초과 시 SIGKILL로 강제 종료.
+const FF_TIMEOUT_MS = 6 * 60 * 1000;
 
 // 캔버스(W×H)에 맞춰 축소+레터박스, SAR 정규화 (비율 동적)
 const fitFilter = (w, h) => `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=${FPS}`;
 
 async function ff(args, cwd) {
   try {
-    await execFileP('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', ...args], { cwd, maxBuffer: 64 * 1024 * 1024 });
+    await execFileP('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', ...args], { cwd, maxBuffer: 64 * 1024 * 1024, timeout: FF_TIMEOUT_MS, killSignal: 'SIGKILL' });
   } catch (err) {
     // 신호 종료(OOM 등)는 stderr가 비어 원인이 안 보이므로 명시. stderr 우선, 없으면 message.
     const sig = (err.killed || err.signal) ? ` [killed${err.signal ? ' ' + err.signal : ''}]` : '';
@@ -45,7 +48,7 @@ let _textFilter; // undefined=미탐지, null=없음, 'subtitles'|'ass'=사용�
 async function detectTextFilter() {
   if (_textFilter !== undefined) return _textFilter;
   try {
-    const { stdout } = await execFileP('ffmpeg', ['-hide_banner', '-filters'], { maxBuffer: 8 * 1024 * 1024 });
+    const { stdout } = await execFileP('ffmpeg', ['-hide_banner', '-filters'], { maxBuffer: 8 * 1024 * 1024, timeout: 30000, killSignal: 'SIGKILL' });
     _textFilter = /(^|\s)subtitles\s/m.test(stdout) ? 'subtitles'
       : /(^|\s)ass\s/m.test(stdout) ? 'ass' : null;
   } catch { _textFilter = null; }
@@ -253,7 +256,7 @@ const VO_TAIL_MS = 300;    // 음성 끝나고 살짝 여운
 /** mp3/영상 길이(ms). ffprobe 실패 시 0. */
 async function probeDurationMs(file) {
   try {
-    const { stdout } = await execFileP('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]);
+    const { stdout } = await execFileP('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { timeout: 30000, killSignal: 'SIGKILL' });
     const sec = parseFloat(String(stdout).trim());
     return Number.isFinite(sec) ? Math.round(sec * 1000) : 0;
   } catch { return 0; }

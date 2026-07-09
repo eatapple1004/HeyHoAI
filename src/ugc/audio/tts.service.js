@@ -47,8 +47,10 @@ function applyTempo(buf, speed) {
   const tempo = Math.min(Math.max(t, 0.5), 2.0);
   return new Promise((resolve) => {
     let done = false; const chunks = [];
-    const finish = (out) => { if (!done) { done = true; resolve(out); } };
     const ff = spawn('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-filter:a', `atempo=${tempo}`, '-f', 'mp3', 'pipe:1']);
+    // 멈춘 ffmpeg가 안 죽고 매달리는 것 방지 — 60s 넘으면 강제 종료하고 원본 버퍼 반환.
+    const killT = setTimeout(() => { try { ff.kill('SIGKILL'); } catch (e) {} }, 60000);
+    const finish = (out) => { if (!done) { done = true; clearTimeout(killT); resolve(out); } };
     ff.stdout.on('data', (c) => chunks.push(c));
     ff.on('error', () => finish(buf)); // ffmpeg 미설치 등 → 원본
     ff.on('close', (code) => finish(code === 0 && chunks.length ? Buffer.concat(chunks) : buf));
