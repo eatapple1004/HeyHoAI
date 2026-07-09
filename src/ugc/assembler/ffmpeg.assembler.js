@@ -232,15 +232,23 @@ async function assemble(plan, opts = {}) {
 
   // 4) 오디오 트랙 — opts.audio 요청 시 무음 final에 믹싱(v3 음성 VO + v2 음악)
   //    VO=ElevenLabs/OpenAI TTS, 음악=ElevenLabs Music. 둘 다 있으면 음악을 더킹해 VO 밑에 깖.
+  //    opts.reuseVo / opts.reuseMusic = 캐시된 mp3 절대경로 → 있으면 재생성 대신 재사용(무과금·톤 고정).
+  //    반환 audioAssets = 이번에 사용/생성한 vo·music 로컬 경로(호출부가 영속화).
   let videoOut = finalPath;
   const audioTracks = [];
   const durSec = Math.max((plan.meta.durationMs || 0) / 1000, 1);
   const wantVoice = !!(opts.audio && opts.audio.voice);
   const wantMusic = !!(opts.audio && opts.audio.music);
   const audioInputs = [];
+  let voPath = null, musicPath = null;
 
   if (wantVoice && opts.script) {
-    if (tts.isConfigured()) {
+    if (opts.reuseVo && fs.existsSync(opts.reuseVo)) {
+      voPath = path.join(workDir, 'vo.mp3');
+      await fsp.copyFile(opts.reuseVo, voPath);
+      audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' });
+      log('VO 캐시 재사용(재생성 안 함)');
+    } else if (tts.isConfigured()) {
       try {
         log(`VO(음성) 생성… [${tts.provider()}]`);
         const vo = await tts.voiceoverForScript(opts.script, {
@@ -248,18 +256,23 @@ async function assemble(plan, opts = {}) {
           voiceId: opts.audio.voiceId,   // 영상별 보이스 선택(없으면 env 기본)
           speed: opts.audio.speed,       // 영상별 말하기 속도(없으면 1.0)
         });
-        if (vo) audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' });
+        if (vo) { voPath = vo; audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' }); }
       } catch (e) { log(`⚠️ VO 실패, 스킵: ${e.message}`); }
     } else { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); }
   }
 
   if (wantMusic) {
-    if (music.isConfigured()) {
+    if (opts.reuseMusic && fs.existsSync(opts.reuseMusic)) {
+      musicPath = path.join(workDir, 'music.mp3');
+      await fsp.copyFile(opts.reuseMusic, musicPath);
+      audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' });
+      log('배경음악 캐시 재사용(재생성 안 함)');
+    } else if (music.isConfigured()) {
       try {
         log('배경음악 생성… [elevenlabs music]');
         const m = await music.composeForScript(opts.script || {}, { durationMs: plan.meta.durationMs, outPath: path.join(workDir, 'music.mp3') });
         // VO 있으면 더킹(0.18), 없으면 배경 단독(0.5)
-        if (m) audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' });
+        if (m) { musicPath = m; audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); }
       } catch (e) { log(`⚠️ 음악 실패, 스킵: ${e.message}`); }
     } else { log('⚠️ 음악 요청됨 — ELEVENLABS_API_KEY 미설정, 스킵'); }
   }
@@ -271,7 +284,7 @@ async function assemble(plan, opts = {}) {
   }
 
   log(`조립 완료: ${videoOut}`);
-  return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks };
+  return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks, audioAssets: { vo: voPath, music: musicPath } };
 }
 
 module.exports = { assemble, muxAudio, buildAss, buildSrt, TARGET_W, TARGET_H, FPS };
