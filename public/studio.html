@@ -595,11 +595,11 @@
   #ugcInline .ugc-timeline{max-width:340px;margin:9px auto 0;position:relative}
   #ugcInline .ugc-tl-lbl{font-size:11px;color:var(--muted,#8a8a9a);margin:0 2px 5px;display:flex;justify-content:space-between;align-items:center}
   #ugcInline .ugc-tl-hint{font-size:10px;opacity:.72}
-  #ugcInline .ugc-tl-track{position:relative;height:34px;background:rgba(140,140,160,.12);border-radius:8px;overflow:hidden;touch-action:none;user-select:none}
+  #ugcInline .ugc-tl-track{position:relative;min-height:34px;background:rgba(140,140,160,.12);border-radius:8px;overflow:hidden;touch-action:none;user-select:none}
   #ugcInline .ugc-tl-seg{position:absolute;top:0;bottom:0;border-right:1px solid rgba(140,140,160,.28)}
   #ugcInline .ugc-tl-seg:last-child{border-right:none}
   #ugcInline .ugc-tl-seg-lbl{position:absolute;top:2px;left:4px;font-size:9px;color:var(--muted,#8a8a9a);opacity:.7;pointer-events:none}
-  #ugcInline .ugc-tl-block{position:absolute;top:6px;bottom:6px;background:var(--accent,#8b7bff);border-radius:6px;cursor:grab;display:flex;align-items:center;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.25);touch-action:none}
+  #ugcInline .ugc-tl-block{position:absolute;background:var(--accent,#8b7bff);border-radius:6px;cursor:grab;display:flex;align-items:center;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.25);touch-action:none}
   #ugcInline .ugc-tl-block.grabbing{cursor:grabbing;filter:brightness(1.08)}
   #ugcInline .ugc-tl-block .ugc-tl-txt{flex:1;min-width:0;font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px;pointer-events:none}
   #ugcInline .ugc-tl-h{width:9px;flex:0 0 9px;cursor:ew-resize;position:relative}
@@ -3346,9 +3346,9 @@ function ugcSyncCap(video,jobId){
   const ph=document.querySelector('#ugcInline .ugc-timeline .ugc-tl-play');
   if(ph&&tot)ph.style.left=(Math.max(0,Math.min(1,ms/tot))*100)+'%';
   if(st.off){ ov.style.display='none'; return; }
-  const t=timings.find(x=>ms>=x.startMs&&ms<x.startMs+x.durMs);
+  const t=timings.find(x=>{const s0=+x.startMs,d=+x.durMs; return ms>=s0&&ms<s0+d;}); // 문자열/숫자 무관 비교
   let text='';
-  if(t){ const s=u.scenes.find(x=>x.n===t.sceneN); const e=s&&u.edits[t.sceneN]; text=(e&&'onScreenText' in e)?e.onScreenText:(s?s.onScreenText:''); }
+  if(t){ const s=u.scenes.find(x=>Number(x.n)===Number(t.sceneN)); const e=s&&u.edits[t.sceneN]; text=(e&&'onScreenText' in e)?e.onScreenText:(s?s.onScreenText:''); } // 씬 매칭도 숫자로(블록과 통일 — 이게 자막 안 뜨던 원인)
   text=(text||'').trim();
   if(!text){ ov.style.display='none'; if(ov.textContent)ov.textContent=''; return; }
   ov.style.display='';
@@ -3375,24 +3375,37 @@ function ugcTlSnap(ms,snaps,thr){ let best=ms,bd=thr+1; for(const s of snaps){co
 // 서버로 보낼 captionTimings(전 씬, 씬당 1개) — 백엔드가 R.caption.timings를 통째 교체하므로 완전한 세트를 보낸다.
 function ugcTlPayload(u){ const bounds=ugcTlBounds(u); const timings=(u.captionSpec&&u.captionSpec.timings)||[];
   return bounds.map(b=>{ if(!ugcTlCapText(u,b.n).trim())return null; const t=timings.find(x=>Number(x.sceneN)===Number(b.n));
-    return {sceneN:b.n, startMs:t?t.startMs:b.startMs, durMs:t?t.durMs:(b.endMs-b.startMs)}; }).filter(Boolean); }
+    return {sceneN:b.n, startMs:t?+t.startMs:b.startMs, durMs:t?+t.durMs:(b.endMs-b.startMs)}; }).filter(Boolean); }
 // 오버레이 아래 타임라인 HTML — 씬 눈금 + 씬당 자막 블록(이동/좌우 리사이즈) + 재생 playhead.
 function ugcTimelineHtml(u){
   if(!u||!Array.isArray(u.scenes)||!u.scenes.length||!u.captionSpec)return '';
   const total=ugcTlTotal(u); const bounds=ugcTlBounds(u); const timings=u.captionSpec.timings||[];
   let segs=''; bounds.forEach((b,i)=>{ const l=b.startMs/total*100, w=(b.endMs-b.startMs)/total*100;
     segs+=`<div class="ugc-tl-seg" style="left:${l.toFixed(3)}%;width:${w.toFixed(3)}%"><span class="ugc-tl-seg-lbl">${i+1}</span></div>`; });
-  let blocks=''; bounds.forEach(b=>{ const txt=ugcTlCapText(u,b.n).trim(); if(!txt)return; // 자막 있는 씬만
+  // 자막 있는 씬만 블록 아이템으로(시간·텍스트)
+  const items=[]; bounds.forEach(b=>{ const txt=ugcTlCapText(u,b.n).trim(); if(!txt)return;
     const t=timings.find(x=>Number(x.sceneN)===Number(b.n));
-    const start=t?t.startMs:b.startMs, dur=t?t.durMs:(b.endMs-b.startMs);
-    const l=Math.max(0,start/total*100), w=Math.max(2,dur/total*100);
-    blocks+=`<div class="ugc-tl-block" data-n="${b.n}" style="left:${l.toFixed(3)}%;width:${w.toFixed(3)}%" onpointerdown="ugcTlGrab(event,'${esc(u.jobId)}',${b.n},'move')" title="Drag to move · edges to trim">`
-      +`<div class="ugc-tl-h" onpointerdown="ugcTlGrab(event,'${esc(u.jobId)}',${b.n},'l')" title="Trim start"></div>`
-      +`<div class="ugc-tl-txt">${esc(txt)}</div>`
-      +`<div class="ugc-tl-h" onpointerdown="ugcTlGrab(event,'${esc(u.jobId)}',${b.n},'r')" title="Trim end"></div>`
+    items.push({n:b.n, start:t?+t.startMs:b.startMs, dur:t?+t.durMs:(b.endMs-b.startMs), txt}); });
+  // 레인 스택: 시간 겹치면 아래 레인으로(그리디). 안 겹치면 같은 줄에 나란히.
+  const laneByI=ugcTlLanes(items); const laneCount=Math.max(1,(laneByI.length?Math.max.apply(null,laneByI):0)+1);
+  const ROW=22, GAP=4, PAD=5; const trackH=PAD*2+laneCount*ROW+(laneCount-1)*GAP;
+  let blocks=''; items.forEach((it,i)=>{ const lane=laneByI[i]||0;
+    const l=Math.max(0,it.start/total*100), w=Math.max(2,it.dur/total*100); const top=PAD+lane*(ROW+GAP);
+    blocks+=`<div class="ugc-tl-block" data-n="${it.n}" style="left:${l.toFixed(3)}%;width:${w.toFixed(3)}%;top:${top}px;height:${ROW}px;bottom:auto" onpointerdown="ugcTlGrab(event,'${esc(u.jobId)}',${it.n},'move')" title="Drag to move · edges to trim">`
+      +`<div class="ugc-tl-h" onpointerdown="ugcTlGrab(event,'${esc(u.jobId)}',${it.n},'l')" title="Trim start"></div>`
+      +`<div class="ugc-tl-txt">${esc(it.txt)}</div>`
+      +`<div class="ugc-tl-h" onpointerdown="ugcTlGrab(event,'${esc(u.jobId)}',${it.n},'r')" title="Trim end"></div>`
       +`</div>`; });
   return `<div class="ugc-timeline"><div class="ugc-tl-lbl"><span>Caption timing</span><span class="ugc-tl-hint">Drag to move · edges to trim · snaps to scenes</span></div>`
-    +`<div class="ugc-tl-track" data-job="${esc(u.jobId)}" data-total="${total}">${segs}${blocks}<div class="ugc-tl-play" style="left:0%"></div></div></div>`;
+    +`<div class="ugc-tl-track" data-job="${esc(u.jobId)}" data-total="${total}" style="height:${trackH}px">${segs}${blocks}<div class="ugc-tl-play" style="left:0%"></div></div></div>`;
+}
+// 레인 배치 — start 정렬 후, 각 블록을 "겹치지 않는 첫 레인"에 넣음. 원래 인덱스별 레인 번호 배열 반환.
+function ugcTlLanes(items){
+  const order=items.map((it,i)=>({i,start:it.start,end:it.start+it.dur})).sort((a,b)=>a.start-b.start||a.end-b.end);
+  const laneEnd=[]; const out=[];
+  order.forEach(o=>{ let L=0; for(;L<laneEnd.length;L++){ if(o.start>=laneEnd[L]-1)break; } // 1ms 여유(경계 맞닿음은 같은 레인)
+    laneEnd[L]=o.end; out[o.i]=L; });
+  return out;
 }
 let UGC_TL_DRAG=null;
 function ugcTlGrab(ev,jobId,sceneN,mode){
@@ -3405,7 +3418,7 @@ function ugcTlGrab(ev,jobId,sceneN,mode){
   const total=(+track.dataset.total)||ugcTlTotal(u);
   const rectW=track.getBoundingClientRect().width||1;
   const bounds=ugcTlBounds(u); const snaps=bounds.map(x=>x.startMs); if(bounds.length)snaps.push(bounds[bounds.length-1].endMs);
-  UGC_TL_DRAG={u,jobId,t,blockEl,track,mode,total,pxPerMs:rectW/total,snaps,startX:ev.clientX,origStart:t.startMs,origDur:t.durMs};
+  UGC_TL_DRAG={u,jobId,t,blockEl,track,mode,total,pxPerMs:rectW/total,snaps,startX:ev.clientX,origStart:+t.startMs,origDur:+t.durMs};
   blockEl.classList.add('grabbing');
   try{ev.currentTarget.setPointerCapture&&ev.currentTarget.setPointerCapture(ev.pointerId);}catch(e){}
   document.addEventListener('pointermove',ugcTlMove); document.addEventListener('pointerup',ugcTlUp);
