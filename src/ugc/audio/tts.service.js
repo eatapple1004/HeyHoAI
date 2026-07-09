@@ -57,10 +57,21 @@ function applyTempo(buf, speed) {
   });
 }
 
+/**
+ * 유저 친화 쉼 마크 → ElevenLabs SSML break(3c). [쉼]=0.6s·[긴쉼]=1.2s·[pause]=0.6s.
+ *   말줄임표(…/...)는 ElevenLabs가 자연스러운 짧은 쉼으로 알아서 처리하므로 손대지 않음.
+ */
+function applyPauseMarks(text) {
+  return String(text || '')
+    .replace(/\[긴쉼\]/g, '<break time="1.2s" />')
+    .replace(/\[쉼\]/g, '<break time="0.6s" />')
+    .replace(/\[pause\]/gi, '<break time="0.6s" />');
+}
+
 /** ElevenLabs TTS → mp3 버퍼. 속도는 synthesizeBuffer의 atempo가 담당(여기선 안 보냄). */
 async function synthElevenLabs(text, { voiceId } = {}) {
   const vid = voiceId || env.ELEVENLABS_VOICE_ID;
-  const body = { text: text.slice(0, 5000), model_id: env.ELEVENLABS_TTS_MODEL };
+  const body = { text: applyPauseMarks(text).slice(0, 5000), model_id: env.ELEVENLABS_TTS_MODEL };
   const res = await fetch(`${EL_TTS}/${vid}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },

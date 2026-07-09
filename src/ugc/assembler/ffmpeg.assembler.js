@@ -247,9 +247,10 @@ async function synthVoSegments(opts, plan, workDir, log) {
  * 음성 주도 retiming — 음성 있는 씬의 길이를 그 씬 음성 길이(+여운, 최소 클램프)로 재설정하고
  *   video·subtitle·meta.durationMs를 누적 재계산(plan을 직접 갱신). 음성 없는 씬은 기존 길이 유지.
  *   → 음성이 씬 경계 넘어 끊김 없이 이어지고(연속), 영상이 음성에 맞춰 흐름.
- * @returns {object|null} voStartByScene(음성 있는 씬의 시작 시각) — 없으면 null(retiming 안 함)
+ *   sceneOpts[sceneN] = { leadInMs, tailMs }(3a): 씬 시작 후 음성 딜레이(lead-in) / 음성 끝 여백(tail).
+ * @returns {object|null} voStartByScene(음성 있는 씬의 음성 시작 시각) — 없으면 null(retiming 안 함)
  */
-function retimeByVoice(plan, voSegs) {
+function retimeByVoice(plan, voSegs, sceneOpts = {}) {
   if (!voSegs || !voSegs.length) return null; // 무음 영상은 기존 씬 길이 유지
   const voDur = {};
   voSegs.forEach((s) => { voDur[s.sceneN] = s.durationMs; });
@@ -257,10 +258,13 @@ function retimeByVoice(plan, voSegs) {
   const voStart = {};
   for (const v of (plan.tracks.video || [])) {
     const d = voDur[v.sceneN];
-    const durMs = d ? Math.max(d + VO_TAIL_MS, MIN_SCENE_MS) : v.durMs;
+    const opt = sceneOpts[v.sceneN] || {};
+    const lead = d ? Math.max(0, Math.round(opt.leadInMs || 0)) : 0;             // 씬 시작 후 음성까지 여백
+    const tail = d ? Math.max(VO_TAIL_MS, Math.round(opt.tailMs || 0)) : 0;       // 음성 끝 후 여운(기본 VO_TAIL_MS)
+    const durMs = d ? Math.max(lead + d + tail, MIN_SCENE_MS) : v.durMs;
     v.startMs = cursor;
     v.durMs = durMs;
-    if (d) voStart[v.sceneN] = cursor; // 음성 시작 = 씬 시작(lead-in은 3단계)
+    if (d) voStart[v.sceneN] = cursor + lead; // 음성은 lead-in 후 시작
     cursor += durMs;
   }
   for (const s of (plan.tracks.subtitle || [])) {
@@ -295,7 +299,9 @@ async function assemble(plan, opts = {}) {
   //    음성 있는 씬 = 그 음성 길이만큼(+여운, 최소 클램프) → 음성이 씬 넘어 끊김 없이 이어짐.
   //    음성 없으면 voStart=null이고 씬 길이는 기존 유지(무음 영상).
   const voSegsData = await synthVoSegments(opts, plan, workDir, log);
-  const voStart = retimeByVoice(plan, voSegsData);
+  const sceneOpts = {}; // 씬별 lead-in/tail(3a) — 대본 씬 필드에서 추출
+  ((opts.script && opts.script.scenes) || []).forEach((s) => { sceneOpts[s.n] = { leadInMs: s.leadInMs, tailMs: s.tailMs }; });
+  const voStart = retimeByVoice(plan, voSegsData, sceneOpts);
   // clips는 plan.tracks.video와 동일 참조라 retiming(durMs) 자동 반영됨.
 
   // 1) 클립별 세그먼트 정규화
@@ -386,4 +392,4 @@ async function assemble(plan, opts = {}) {
   return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks, audioAssets: { vo: voAssets, music: musicPath } };
 }
 
-module.exports = { assemble, muxAudio, buildAss, buildSrt, voSegments, TARGET_W, TARGET_H, FPS };
+module.exports = { assemble, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, TARGET_W, TARGET_H, FPS };

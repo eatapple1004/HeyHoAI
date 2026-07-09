@@ -279,6 +279,8 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
     if (!e) continue;
     if ('onScreenText' in e) s.onScreenText = String(e.onScreenText || '').slice(0, 300);
     if ('spoken' in e) s.spoken = String(e.spoken || '').slice(0, 600);
+    if ('leadInMs' in e) s.leadInMs = Math.max(0, Math.min(Number(e.leadInMs) || 0, 3000)); // 3a: 음성 시작 딜레이
+    if ('tailMs' in e) s.tailMs = Math.max(0, Math.min(Number(e.tailMs) || 0, 3000));       // 3a: 음성 끝 여백
   }
   if (Array.isArray(order) && order.length) {
     const pos = new Map(order.map((n, i) => [Number(n), i]));
@@ -541,6 +543,8 @@ function editableScenes(script, sceneClips) {
       n: sc.n,
       onScreenText: sc.onScreenText || '',
       spoken: sc.spoken || '',
+      leadInMs: sc.leadInMs || 0, // 3a: 음성 시작 딜레이
+      tailMs: sc.tailMs || 0,     // 3a: 음성 끝 여백
       summary: sc.summary || '', // 사람용 장면 설명(프롬프트 숨김)
       subject: sc.subject || 'product',
       durationSec: sc.durationSec || Math.round((cl.durationMs || 3000) / 1000),

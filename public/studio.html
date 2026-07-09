@@ -208,6 +208,14 @@
   .ugc-adv-note{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
   .ugc-adv-ta,.ugc-add-ta{width:100%;box-sizing:border-box;min-height:82px;background:var(--card2,#14141b);border:1px solid var(--border);border-radius:8px;color:var(--fg,#e8e8ef);font:inherit;font-size:12.5px;line-height:1.45;padding:9px 11px;resize:vertical}
   .ugc-adv-row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .ugc-adv-sec{padding:10px 0;border-top:1px solid var(--border)}
+  .ugc-adv-sec:first-of-type{border-top:none}
+  .ugc-adv-sech{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .ugc-adv-free{font-size:10px;font-weight:600;color:#6ee787;background:rgba(110,231,135,.12);border-radius:5px;padding:1px 6px}
+  .ugc-adv-paid{font-size:10px;font-weight:600;color:var(--accent,#8b7cf6);background:rgba(139,124,246,.14);border-radius:5px;padding:1px 6px}
+  .ugc-adv-timing{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .ugc-adv-timing label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)}
+  .ugc-adv-timing select{background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px}
   /* 씬 추가 — AI 제안 4개 카드 */
   .ugc-suggest-wrap{display:flex;flex-direction:column;gap:7px;margin-top:4px}
   .ugc-suggest-card{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2,#14141b);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--text)}
@@ -2858,10 +2866,11 @@ function ugcSceneStripHtml(b){
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
            data-ph="Caption (shown on screen)">${esc(cap)}</div></div>
-      ${voiceMode?`<div class="usc-line"><span class="usc-ic" title="Voiceover — what the voice says (not shown on screen)">🎙</span><div class="usc-vo" contenteditable="true" spellcheck="false" data-n="${s.n}"
+      ${voiceMode?`<div class="usc-line"><span class="usc-ic" title="Voiceover — what the voice says. Type [쉼] for a short pause, [긴쉼] for a long one.">🎙</span><div class="usc-vo" contenteditable="true" spellcheck="false" data-n="${s.n}"
            onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-           data-ph="Voice line (spoken)">${esc(spk)}</div></div>`:''}
+           title="Type [쉼] for a pause, [긴쉼] for a longer one"
+           data-ph="Voice line · [쉼]=pause">${esc(spk)}</div></div>`:''}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
         <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
@@ -3004,7 +3013,7 @@ async function ugcReassemble(jobId,opts){
     if(paid){ try{ const jd=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data;
       if(jd&&Array.isArray(jd.scenes)&&jd.scenes.length){ u.scenes=jd.scenes.map(s=>Object.assign({},s)); u._orig=jd.scenes.map(s=>Object.assign({},s)); refreshed=true; } }catch(e){} }
     if(!refreshed){ // 무과금 or 재조회 실패: 로컬 낙관 상태를 확정
-      u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{});});
+      u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{},('leadInMs' in e)?{leadInMs:e.leadInMs}:{},('tailMs' in e)?{tailMs:e.tailMs}:{});});
       u.scenes=u._orig.map(s=>Object.assign({},s));
     }
     u.edits={}; u._dirty=false;
@@ -3087,11 +3096,29 @@ function ugcToggleAdv(jobId,n){
   const b=ugcFindBatch(jobId); if(!b)return;
   const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
   if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';return;}
+  const s=b.ugc.scenes.find(x=>x.n===n)||{}; const ed=b.ugc.edits[n]||{};
+  const lead=('leadInMs' in ed)?ed.leadInMs:(s.leadInMs||0);
+  const tail=('tailMs' in ed)?ed.tailMs:(s.tailMs||0);
+  const opt=(cur,v,lbl)=>'<option value="'+v+'"'+(Number(cur)===v?' selected':'')+'>'+lbl+'</option>';
   wrap.dataset.n=String(n); wrap.style.display='';
-  wrap.innerHTML='<div class="ugc-adv-hd">Edit Scene '+n+' <span class="ugc-adv-note">Describe a change and we\'ll re-generate this scene (uses credits).</span></div>'
-    +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder  ·  Make the model prettier  ·  Brighter background"></textarea>'
+  wrap.innerHTML='<div class="ugc-adv-hd">Scene '+n+'</div>'
+    +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">⏱ Timing <span class="ugc-adv-free">free</span></div>'
+    +'<div class="ugc-adv-timing">'
+    +'<label>Voice starts<select class="ugc-t-lead" onchange="ugcSetTiming(\''+esc(jobId)+'\','+n+',\'leadInMs\',this.value)">'
+    +opt(lead,0,'Immediately')+opt(lead,300,'0.3s later')+opt(lead,500,'0.5s later')+opt(lead,1000,'1s later')+'</select></label>'
+    +'<label>End pause<select class="ugc-t-tail" onchange="ugcSetTiming(\''+esc(jobId)+'\','+n+',\'tailMs\',this.value)">'
+    +opt(tail,0,'Default')+opt(tail,500,'Short')+opt(tail,1000,'Long')+'</select></label>'
+    +'</div><button type="button" class="ugc-apply" onclick="ugcApplyEdits(\''+esc(jobId)+'\')">Apply — free</button></div>'
+    +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">✎ Re-generate scene <span class="ugc-adv-paid">uses credits</span></div>'
+    +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder · Brighter background"></textarea>'
     +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
-    +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div>';
+    +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div></div>';
+}
+// 3a: 씬 timing(lead-in/tail) 편집 → edits에 담고 무과금 Apply 대기(음성·클립 재사용, retiming만).
+function ugcSetTiming(jobId,n,field,val){
+  const b=ugcFindBatch(jobId); if(!b)return;
+  b.ugc.edits[n]=Object.assign({},b.ugc.edits[n]); b.ugc.edits[n][field]=Number(val); b.ugc._dirty=true;
+  const btn=ugcApplyBtn(jobId); if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
 }
 async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
