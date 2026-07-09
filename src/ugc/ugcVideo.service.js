@@ -26,7 +26,6 @@ const { generateUgcScript, suggestConcept, refineScene, generateAddScene, normal
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
 const { assemble } = require('./assembler/ffmpeg.assembler');
-const tts = require('./audio/tts.service');
 const music = require('./audio/music.service');
 
 const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우트가 서빙하는 디렉토리
@@ -36,7 +35,11 @@ const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우�
 //   VO 키 = 내레이션 텍스트 + 보이스 + 속도.  음악 키 = 음악 프롬프트(무드) + 영상 길이.
 //   음악만 바꾸기 = musicVibe만 달라짐 → 음악 키만 변경 → VO 재사용, 음악만 재생성.
 function audioKey(parts) { return crypto.createHash('sha1').update(parts.join('|')).digest('hex').slice(0, 16); }
-function voKey(script, audio = {}) { return audioKey([tts.narrationFromScript(script), audio.voiceId || '', String(audio.speed || 1)]); }
+// VO 키 = 씬 대사(spoken 우선)만 — voSegments와 동일 기준(hook/CTA 제외). 자막만 바뀌고 spoken 있으면 키 불변→VO 재사용.
+function voKey(script, audio = {}) {
+  const text = (script.scenes || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join('|');
+  return audioKey([text, audio.voiceId || '', String(audio.speed || 1)]);
+}
 function musicKey(script, durationMs) { return audioKey([music.promptFromScript(script), String(Math.round(durationMs || 0))]); }
 
 /** assemble이 만든 오디오 mp3(로컬 절대경로)를 서빙 디렉토리로 영속화 → basename 반환(restoreClipLocal로 복원). */

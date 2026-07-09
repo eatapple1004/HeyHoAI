@@ -182,21 +182,20 @@ async function muxAudio(videoIn, audioInputs, durSec, workDir, outName) {
 }
 
 /**
- * 씬별 VO 세그먼트 계획 — 각 렌더된 씬의 내레이션 텍스트를 그 씬 시작 시각에 배치(F 싱크).
- *   hook은 첫 씬 앞에, cta는 마지막 씬 뒤에 붙임. 음성 텍스트 = spoken 우선(E 분리), 없으면 onScreenText.
+ * 씬별 VO 세그먼트 계획 — 각 렌더된 씬의 대사를 그 씬 시작 시각에 배치(F 싱크).
+ *   음성 텍스트 = 그 씬 대사만(spoken 우선, 없으면 onScreenText) → 씬 카드에 보이는 회색 음성줄과 정확히 일치.
+ *   hook/CTA는 음성으로 읽지 않음(화면에 없는 게 들리는 불일치 방지 — 유저 결정).
  * @returns {Array<{sceneN:number, text:string, startMs:number}>}
  */
 function voSegments(script, plan) {
   const scenes = Array.isArray(script.scenes) ? script.scenes : [];
   const videoByScene = new Map((plan.tracks.video || []).map((v) => [v.sceneN, v]));
-  const rendered = scenes.filter((s) => videoByScene.has(s.n)); // 클립 있는 씬만(영상 순서)
   const segs = [];
-  rendered.forEach((s, i) => {
-    let text = (s.spoken || s.onScreenText || '').trim();
-    if (i === 0 && script.hook) text = `${String(script.hook).trim()} ${text}`.trim();
-    if (i === rendered.length - 1 && script.cta) text = `${text} ${String(script.cta).trim()}`.trim();
+  for (const s of scenes) {
+    if (!videoByScene.has(s.n)) continue; // 클립 있는 씬만(영상 순서)
+    const text = (s.spoken || s.onScreenText || '').trim();
     if (text) segs.push({ sceneN: s.n, text, startMs: videoByScene.get(s.n).startMs });
-  });
+  }
   return segs;
 }
 
