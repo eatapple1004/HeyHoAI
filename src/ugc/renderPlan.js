@@ -33,7 +33,8 @@ function buildRenderPlan(script, clips) {
 
     const durMs = clip.durationMs || Math.round((scene.durationSec || 3) * 1000);
 
-    video.push({ clipUrl: clip.clipUrl, startMs: cursorMs, durMs, sceneN: scene.n });
+    // imageUrl/isStill = assembler가 동영상 클립 정규화 실패 시 정지컷으로 폴백하는 데 사용(견고성).
+    video.push({ clipUrl: clip.clipUrl, startMs: cursorMs, durMs, sceneN: scene.n, imageUrl: clip.imageUrl || null, isStill: !!clip.isStill });
 
     const text = (scene.onScreenText || '').trim();
     if (text) {

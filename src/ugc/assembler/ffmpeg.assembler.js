@@ -33,7 +33,10 @@ async function ff(args, cwd) {
   try {
     await execFileP('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', ...args], { cwd, maxBuffer: 64 * 1024 * 1024 });
   } catch (err) {
-    throw new Error(`ffmpeg failed: ${(err.stderr || err.message || '').toString().slice(0, 400)}`);
+    // 신호 종료(OOM 등)는 stderr가 비어 원인이 안 보이므로 명시. stderr 우선, 없으면 message.
+    const sig = (err.killed || err.signal) ? ` [killed${err.signal ? ' ' + err.signal : ''}]` : '';
+    const detail = ((err.stderr || '').toString().trim()) || (err.message || '').toString();
+    throw new Error(`ffmpeg failed${sig}: ${detail.slice(0, 400)}`);
   }
 }
 
@@ -64,20 +67,37 @@ async function resolveToLocal(clipUrl, workDir, idx) {
   return clipUrl; // 이미 로컬 경로
 }
 
-/** 단일 클립(영상 또는 정지 이미지) → 정규화된 무음 세그먼트 mp4 */
-async function makeSegment(item, workDir, idx, fit) {
-  const local = await resolveToLocal(item.clipUrl, workDir, idx);
+/** 단일 클립(영상 또는 정지 이미지) → 정규화된 무음 세그먼트 mp4.
+ *  동영상 정규화가 실패(비영속 tmp 클립 유실·불완전 다운로드·OOM 등)하면 씬 썸네일 정지컷으로
+ *  폴백해 재조립 전체가 죽지 않게 한다(특히 무과금 자막편집이 깨진 한 클립에 막히면 안 됨).
+ *  폴백 소스(썸네일)도 없을 때만 명확한 에러로 실패. */
+async function makeSegment(item, workDir, idx, fit, log = () => {}) {
   const durSec = Math.max((item.durMs || 3000) / 1000, 1);
   const seg = path.join(workDir, `seg_${String(idx).padStart(3, '0')}.mp4`);
-  const isImage = item.isStill || /\.(png|jpe?g|webp)$/i.test(local);
+  const vf = fit || fitFilter(TARGET_W, TARGET_H);
+  const tail = ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-t', durSec.toFixed(2), seg];
+  const stillFrom = (img) => ff(['-loop', '1', '-i', img, '-vf', vf, '-an', ...tail], workDir);
+  const sceneLabel = item.sceneN != null ? item.sceneN : idx + 1;
 
-  const common = ['-vf', fit || fitFilter(TARGET_W, TARGET_H), '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-t', durSec.toFixed(2), seg];
-  if (isImage) {
-    await ff(['-loop', '1', '-i', local, ...common], workDir);
-  } else {
-    await ff(['-i', local, ...common], workDir);
+  const local = await resolveToLocal(item.clipUrl, workDir, idx);
+  const isImage = item.isStill || /\.(png|jpe?g|webp)$/i.test(local);
+  if (isImage) { await stillFrom(local); return seg; }
+
+  try {
+    let sz = -1; try { sz = (await fsp.stat(local)).size; } catch { /* 없으면 아래 ffmpeg가 실패 */ }
+    if (sz >= 0 && sz < 1024) throw new Error(`source clip truncated/empty (${sz}B)`); // 잘린/0바이트 다운로드 조기 감지
+    await ff(['-i', local, '-vf', vf, '-an', ...tail], workDir);
+    return seg;
+  } catch (err) {
+    let thumb = null;
+    if (item.imageUrl) { try { thumb = await resolveToLocal(item.imageUrl, workDir, `t${idx}`); } catch { thumb = null; } }
+    if (thumb && fs.existsSync(thumb)) {
+      log(`⚠️ 씬 ${sceneLabel} 클립 정규화 실패 → 썸네일 정지컷으로 대체 (${err.message})`);
+      await stillFrom(thumb);
+      return seg;
+    }
+    throw new Error(`scene ${sceneLabel} clip unavailable (no still fallback): ${err.message}`);
   }
-  return seg;
 }
 
 // ── ASS 자막 ──
@@ -335,7 +355,7 @@ async function assemble(plan, opts = {}) {
   log(`세그먼트 정규화 ${clips.length}개… (${CW}x${CH})`);
   const segments = [];
   for (let i = 0; i < clips.length; i++) {
-    segments.push(await makeSegment(clips[i], workDir, i, fit));
+    segments.push(await makeSegment(clips[i], workDir, i, fit, log));
   }
 
   // 2) concat (동일 코덱이라 stream copy)

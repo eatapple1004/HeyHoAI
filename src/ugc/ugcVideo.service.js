@@ -258,7 +258,7 @@ async function restoreClipLocal(basename) {
 /** 편집용 원본 잡 로드(소유권 게이트). script/scene_clips 원문 포함. */
 async function loadJobForEdit(id, userId) {
   const r = await query(
-    `SELECT id, status, result_idx, output_type, visibility, script, scene_clips
+    `SELECT id, status, result_idx, result_url, output_type, visibility, script, scene_clips
      FROM ugc_jobs WHERE id = $1 AND (
        user_id = $2 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $2)))`,
     [id, userId]
@@ -290,6 +290,25 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
 }
 
 /**
+ * 재조립 킥오프(동기) — 소유권·편집가능 검증 후 잡을 'processing'으로 마킹하고 이전 URL 반환.
+ *   라우트가 이걸 먼저 await(빠름)해 404/400을 즉시 응답한 뒤, reRender는 백그라운드로 돌린다.
+ *   (동기 재조립이 Cloudflare 100초 한도를 넘겨 524가 나던 문제 해결 — 특히 Kling 씬재생성.)
+ */
+async function beginRerender(jobId, userId) {
+  const row = await loadJobForEdit(jobId, userId);
+  if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
+  if (!row.script) { const e = new Error('This video is not editable'); e.statusCode = 400; throw e; }
+  await updateJob(jobId, { status: 'processing', error: null }); // 폴링이 processing→succeeded 전환으로 완료 감지
+  return { jobId, prevUrl: row.result_url };
+}
+
+/** 백그라운드 재조립 실패 처리 — 잡을 다시 편집가능('succeeded')으로 되돌리고 에러를 남겨 프론트가 표시. */
+async function failRerender(jobId, err) {
+  log.error(`UGC re-render ${jobId} failed: ${err && err.message}`);
+  await updateJob(jobId, { status: 'succeeded', error: String((err && err.message) || 'Could not apply changes').slice(0, 300) }).catch(() => {});
+}
+
+/**
  * 재조립/씬재생성 — 저장된 씬 클립을 재사용해 재배치·삭제·자막수정을 반영(무과금),
  *   redoScenes 지정 시 그 씬만 이미지→모션 재생성(과금). 기존 결과를 in-place 갱신(피드에 새 카드 안 쌓임).
  *   - 재배치/삭제/자막: Kling/nanoBanana 재호출 0 → 무과금. spoken 바뀌고 음성ON이면 그 구간만 재TTS(무과금).
@@ -300,10 +319,11 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
 async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, dryRunVideo = false }) {
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
-  // 편집 가능 조건 = 완성 + 대본 보유. result_idx는 요구하지 않음
-  //   (draft 라이프사이클: 완성 직후엔 result_idx 없음 → Save & finish 전에도 편집 허용.
-  //    generation_results 갱신은 하류에서 result_idx 있을 때만 = 조건부).
-  if (row.status !== 'succeeded' || !row.script) {
+  // 편집 가능 조건 = 대본 보유(완성된 잡). result_idx는 요구하지 않음
+  //   (draft 라이프사이클: 완성 직후엔 result_idx 없음 → Save & finish 전에도 편집 허용).
+  //   status는 재조립을 백그라운드로 돌리는 동안 'processing'으로 두므로 여기선 판단 기준에서 제외
+  //   (초기 생성 중 잡은 아직 script가 없어 자연히 걸러짐). generation_results 갱신은 result_idx 있을 때만.
+  if (!row.script) {
     const e = new Error('This video is not editable'); e.statusCode = 400; throw e;
   }
   const script = safeParse(row.script);
@@ -450,6 +470,7 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       );
     }
     await updateJob(jobId, {
+      status: 'succeeded', // 백그라운드 재조립 완료 — beginRerender가 걸어둔 'processing'을 해제(프론트 폴링 종료 신호)
       result_url: `/images/${filename}`, duration_sec: durationSec, subtitle_mode: out.subtitleMode,
       script: JSON.stringify(script), scene_clips: JSON.stringify(sceneClips),
     });
@@ -560,4 +581,4 @@ function editableScenes(script, sceneClips) {
 //   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
 function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, commitJob, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };

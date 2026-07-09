@@ -3010,23 +3010,39 @@ async function ugcReassemble(jobId,opts){
     const data=await sjson(res);
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Could not apply changes');
-    b.items=[{url:data.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
-    // paid(씬 재생성): 서버가 씬 이미지를 새로 그렸으니 최신 scenes(새 썸네일 포함) 재조회로 갱신
-    let refreshed=false;
-    if(paid){ try{ const jd=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data;
-      if(jd&&Array.isArray(jd.scenes)&&jd.scenes.length){ u.scenes=jd.scenes.map(s=>Object.assign({},s)); u._orig=jd.scenes.map(s=>Object.assign({},s)); refreshed=true; } }catch(e){} }
-    if(!refreshed){ // 무과금 or 재조회 실패: 로컬 낙관 상태를 확정
+    // 재조립은 백그라운드(서버 즉시 응답) → 완료까지 폴링. 동기 처리 시 재조립이 CF 100초 한도를 넘겨
+    //   524("Server is busy")가 나고 피드가 안 바뀌던 문제 해결. 폴링 중 씬 스트립은 그대로 유지(변경 전 상태 계속 보임).
+    const done=await pollUgcRerender(jobId,data.prevUrl);
+    b.items=[{url:done.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
+    if(Array.isArray(done.scenes)&&done.scenes.length){ u.scenes=done.scenes.map(s=>Object.assign({},s)); u._orig=done.scenes.map(s=>Object.assign({},s)); } // 서버 최신 씬(새 썸네일 포함)
+    else { // 재조회 실패 폴백: 로컬 낙관 상태를 확정
       u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{},('leadInMs' in e)?{leadInMs:e.leadInMs}:{},('tailMs' in e)?{tailMs:e.tailMs}:{});});
       u.scenes=u._orig.map(s=>Object.assign({},s));
     }
     u.edits={}; u._dirty=false;
     renderStudioResults();
-    if(window.toast)toast(paid?('Scene re-generated'+(data.cost?' — '+data.cost+' credits':'')):(hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':'Video updated — free edit'));
+    if(window.toast)toast(paid?'Scene re-generated':(hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':'Video updated — free edit'));
     if(paid&&typeof loadCredits==='function')loadCredits();
   }catch(e){
     setBusy(false);
     if(window.toast)toast(e.message||(e.code402?'Not enough credits':'Could not apply changes'),'error');
   }
+}
+// 재조립(재배치·자막·음성·음악·씬재생성) 백그라운드 완료 폴링 — 잡 status가 processing→succeeded로 바뀌면 완료.
+//   성공=새 resultUrl 반환, 실패=error 필드 throw(잡은 다시 편집가능 상태로 복구됨). CF 100초 한도 회피.
+async function pollUgcRerender(jobId,prevUrl){
+  for(let i=0;i<200;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    let d; try{ d=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data; }catch(e){ continue; }
+    if(!d)continue;
+    if(d.status==='failed')throw new Error(d.error||'Could not apply changes');
+    if(d.status==='succeeded'){
+      if(d.error)throw new Error(d.error); // 백그라운드 실패(상태는 편집가능으로 복구)
+      if(d.resultUrl&&d.resultUrl!==prevUrl)return d; // 새 영상 = 완료
+      // 아직 begin의 processing 마킹이 반영 안 된 stale succeeded — 계속 폴링
+    }
+  }
+  throw new Error('This is taking a while — please check again shortly.');
 }
 async function ugcApplyEdits(jobId){
   const btn=ugcApplyBtn(jobId);

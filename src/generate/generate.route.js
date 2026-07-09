@@ -1026,7 +1026,7 @@ router.post('/ugc/re-render', async (req, res, next) => {
     const b = req.body || {};
     const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
     const parseObj = (v) => { if (v && typeof v === 'object' && !Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return {}; } } return {}; };
-    const result = await ugcVideoService.reRender({
+    const params = {
       user: req.user,
       jobId: String(b.jobId || ''),
       order: parseArr(b.order),
@@ -1040,8 +1040,12 @@ router.post('/ugc/re-render', async (req, res, next) => {
       voiceId: b.voiceId || null, // 보이스 교체
       speed: (b.speed === undefined || b.speed === null || b.speed === '') ? null : b.speed, // 말속도
       subtitleStyle: parseObj(b.subtitleStyle), // 자막 스타일(위치·크기·색상)
-    });
-    res.json({ success: true, ...result });
+    };
+    // 킥오프(동기): 검증 + 'processing' 마킹. 재조립 본체는 백그라운드 — Cloudflare 100초 한도를 넘겨
+    //   524가 나던 문제 해결(특히 Kling 씬재생성). 프론트는 /ugc/jobs/:id 폴링으로 완료/실패 감지.
+    const begin = await ugcVideoService.beginRerender(params.jobId, req.user.id);
+    ugcVideoService.reRender(params).catch((err) => ugcVideoService.failRerender(params.jobId, err));
+    res.json({ success: true, async: true, jobId: params.jobId, prevUrl: begin.prevUrl });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
