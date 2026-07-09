@@ -9,6 +9,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const { env } = require('../../config');
 
 const OPENAI_TTS = 'https://api.openai.com/v1/audio/speech';
@@ -35,14 +36,31 @@ function narrationFromScript(script) {
   return parts.map((p) => (/[.!?…]$/.test(p) ? p : p + '.')).join(' ');
 }
 
-/** ElevenLabs TTS → mp3 버퍼. voiceId/speed 영상별 override 가능. */
-async function synthElevenLabs(text, { voiceId, speed } = {}) {
+/**
+ * 말속도 조절 = ffmpeg atempo 후처리(피치 유지, 0.5~2.0). 벤더 speed 파라미터 대신 사용.
+ *   ElevenLabs voice_settings.speed 는 multilingual_v2 에서 >1.0(빠르게)이 무시되는 문제가 있어(실측),
+ *   벤더 무관하게 여기서 균일 적용한다. ffmpeg 없거나 실패 시 원본 반환(속도만 미적용, 무breakage).
+ */
+function applyTempo(buf, speed) {
+  const t = Number(speed);
+  if (!buf || !Number.isFinite(t) || Math.abs(t - 1) < 0.01) return Promise.resolve(buf);
+  const tempo = Math.min(Math.max(t, 0.5), 2.0);
+  return new Promise((resolve) => {
+    let done = false; const chunks = [];
+    const finish = (out) => { if (!done) { done = true; resolve(out); } };
+    const ff = spawn('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-filter:a', `atempo=${tempo}`, '-f', 'mp3', 'pipe:1']);
+    ff.stdout.on('data', (c) => chunks.push(c));
+    ff.on('error', () => finish(buf)); // ffmpeg 미설치 등 → 원본
+    ff.on('close', (code) => finish(code === 0 && chunks.length ? Buffer.concat(chunks) : buf));
+    ff.stdin.on('error', () => {});
+    ff.stdin.write(buf); ff.stdin.end();
+  });
+}
+
+/** ElevenLabs TTS → mp3 버퍼. 속도는 synthesizeBuffer의 atempo가 담당(여기선 안 보냄). */
+async function synthElevenLabs(text, { voiceId } = {}) {
   const vid = voiceId || env.ELEVENLABS_VOICE_ID;
   const body = { text: text.slice(0, 5000), model_id: env.ELEVENLABS_TTS_MODEL };
-  // speed: 0.7(느림)~1.2(빠름), 기본 1.0. 1.0이면 안 보냄(기본값).
-  if (speed && speed !== 1) {
-    body.voice_settings = { speed: Math.min(Math.max(speed, 0.7), 1.2) };
-  }
   const res = await fetch(`${EL_TTS}/${vid}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
@@ -77,7 +95,8 @@ async function synthesizeBuffer(text, opts = {}) {
   const p = provider();
   if (!p) return null;
   if (!text || !text.trim()) return null;
-  return p === 'elevenlabs' ? await synthElevenLabs(text, opts) : await synthOpenAI(text, opts);
+  const buf = p === 'elevenlabs' ? await synthElevenLabs(text, opts) : await synthOpenAI(text, opts);
+  return buf ? applyTempo(buf, opts.speed) : buf; // 속도는 벤더 무관 atempo로(미리듣기·실제 생성 공통 경로)
 }
 
 async function synthesize(text, opts = {}) {
