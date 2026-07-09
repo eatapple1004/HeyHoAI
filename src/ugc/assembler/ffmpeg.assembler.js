@@ -137,13 +137,21 @@ function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
   ];
+  // 자막 등장 애니메이션(4단계 옵션2): 자막=짧은 키워드가 등장. 음성과 독립(음성 타임스탬프 불필요).
+  //   pop = 살짝 오버슈트하며 커지는 통통 등장(짧폼 감성). 기본(none) = 짧은 페이드.
+  const anim = subtitleAnim(style.anim);
   const lines = (subtitle || []).map((c) => {
     const start = assTime(c.startMs);
     const end = assTime(c.startMs + c.durMs);
-    // 간단 키네틱: 짧은 페이드 인/아웃
-    return `Dialogue: 0,${start},${end},Kinetic,,0,0,0,,{\\fad(150,150)}${escapeAss(c.text)}`;
+    return `Dialogue: 0,${start},${end},Kinetic,,0,0,0,,${anim}${escapeAss(c.text)}`;
   });
   return header.concat(lines).join('\n') + '\n';
+}
+
+// 자막 등장 태그(라인 시작 기준 상대 시간). pop=50%→110%(오버슈트)→100% 스케일 + 페이드.
+function subtitleAnim(kind) {
+  if (kind === 'pop') return '{\\fad(60,100)\\fscx55\\fscy55\\t(0,120,\\fscx110\\fscy110)\\t(120,200,\\fscx100\\fscy100)}';
+  return '{\\fad(150,150)}';
 }
 
 // SRT 사이드카(번인 불가 환경 폴백 — 범용 포맷)
