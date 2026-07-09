@@ -2029,7 +2029,7 @@ function renderSubjects(){
         +`<span class="ref-name">${esc(lbl)}</span></div>`;
     });
   });
-  document.getElementById('subjectRow').innerHTML=`<div class="img-add-wrap">${btn}${menu}</div>`+(tiles?`<div class="ref-tiles">${tiles}</div>`:'');
+  document.getElementById('subjectRow').innerHTML=`<div class="img-add-wrap">${btn}${menu}</div>`+`<span style="margin-left:12px;align-self:center;padding:5px 11px;background:#8b7bff;color:#fff;border-radius:7px;font-size:12px;font-weight:800;white-space:nowrap">🧪 배포 테스트 UI</span>`+(tiles?`<div class="ref-tiles">${tiles}</div>`:'');
 }
 function toggleImgMenu(ev){if(ev)ev.stopPropagation();const m=document.getElementById('imgMenu');if(m)m.classList.toggle('open');}
 document.addEventListener('click',function(e){const m=document.getElementById('imgMenu');if(m&&m.classList.contains('open')&&!e.target.closest('.img-add-wrap'))m.classList.remove('open');});
