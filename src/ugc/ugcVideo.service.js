@@ -556,6 +556,8 @@ function editableScenes(script, sceneClips) {
     };
   });
 }
-function safeParse(v) { try { return JSON.parse(v); } catch { return null; } }
+// script/scene_clips는 JSONB 컬럼 → pg가 조회 시 이미 JS 객체로 자동 파싱함. 객체면 그대로 반환
+//   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
+function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
 module.exports = { generateScript, render, submit, getJob, reRender, commitJob, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
