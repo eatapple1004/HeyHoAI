@@ -150,6 +150,9 @@
   .ugc-scenes-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .ugc-scenes-hd>span:first-child{font-weight:650;font-size:13px}
   .ugc-scenes-hint{font-size:11.5px;color:var(--muted)}
+  .ugc-hd-apply{margin-left:auto;background:var(--accent,#8b7cf6);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:650;cursor:pointer;white-space:nowrap;animation:hdApplyIn .2s ease}
+  .ugc-hd-apply:hover{filter:brightness(1.1)}
+  @keyframes hdApplyIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
   .ugc-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
   .ugc-music-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
   .ugc-music-lbl{font-weight:650;font-size:12.5px}
@@ -166,6 +169,8 @@
   .ugc-arow-go:hover{border-color:var(--accent,#8b7cf6)}
   .ugc-arow-go:disabled{opacity:.55;cursor:default}
   .usc{position:relative;flex:0 0 132px;width:132px;background:var(--card2,#191921);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .usc.usc-edited{border-color:var(--accent,#8b7cf6);box-shadow:0 0 0 1px var(--accent,#8b7cf6)}
+  .usc.usc-edited::after{content:'● edited';position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;color:#fff;background:var(--accent,#8b7cf6);border-radius:5px;padding:1px 5px;z-index:2;pointer-events:none}
   .usc-thumb{position:relative;aspect-ratio:9/16;background:#000}
   .usc-thumb img,.usc-thumb video{width:100%;height:100%;object-fit:cover;display:block}
   .usc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;font-weight:700}
@@ -806,15 +811,15 @@
           <div>
             <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
             <div class="ugc-seg" id="ugcDurSeg">
-              <button type="button" class="ugc-seg-b" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
+              <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
               <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
-              <button type="button" class="ugc-seg-b active" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
+              <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
             </div>
           </div>
         </div>
         <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2,#8b7bff);font-weight:650;margin-top:6px"></div>
         <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
-        <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="5">
+        <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
       </div>
       <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:6px 0 2px">
         <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
@@ -2772,9 +2777,10 @@ function updateBarCore(){
 let STUDIO_BATCHES=[];
 function studioMediaCard(o){
   const reel=(o.type==='reel');
+  // 로드 시 카드 비율을 실제 미디어 비율(9:16·1:1·16:9·이미지)로 맞춤 → UI 안 잘림(cover crop 방지).
   const inner=reel
-    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onclick="openImageModal('${esc(o.url)}','reel')"></video>`
-    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" alt="" onclick="openImageModal('${esc(o.url)}','photo')">`;
+    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onloadedmetadata="if(this.videoWidth)this.closest('.result-card').style.aspectRatio=this.videoWidth+'/'+this.videoHeight" onclick="openImageModal('${esc(o.url)}','reel')"></video>`
+    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" onload="if(this.naturalWidth)this.closest('.result-card').style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" alt="" onclick="openImageModal('${esc(o.url)}','photo')">`;
   return `<div class="result-card">${inner}
       <div class="actions">
         <a href="${esc(o.url)}" download><button>⬇ Download</button></a>
@@ -2881,7 +2887,7 @@ function ugcSceneStripHtml(b){
       <div class="usc-busy-ov"><div class="rb-spin"></div></div></div>`;
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
-    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span></div>
+    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
     <div class="ugc-strip">${cards}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
@@ -2965,13 +2971,21 @@ function ugcSceneRemove(jobId,n){
   const b=ugcFindBatch(jobId); if(!b||b.ugc.scenes.length<=1)return;
   b.ugc.scenes=b.ugc.scenes.filter(s=>s.n!==n); delete b.ugc.edits[n]; b.ugc._dirty=true; renderStudioResults();
 }
+// 편집 즉시 시각 피드백(리렌더 없이): 해당 씬 카드 하이라이트 + 헤더 Apply 버튼 노출 + 안내 토스트.
+//   → "고쳤는데 영상이 그대로다" 혼란 방지. 실제 영상 반영은 Apply(무과금 재조립) 눌러야 됨을 명확히.
+function ugcMarkEdited(el,jobId,what){
+  const card=el&&el.closest&&el.closest('.usc'); if(card)card.classList.add('usc-edited');
+  const cont=ugcCont(jobId);
+  const hd=cont&&cont.querySelector('.ugc-hd-apply'); if(hd)hd.style.display='';
+  const btn=ugcApplyBtn(jobId); if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
+  if(window.toast)toast((what||'Edited')+' — tap “Apply changes” to update the video');
+}
 function ugcSceneEditCap(el,jobId,n){
   const b=ugcFindBatch(jobId); if(!b)return; const s=b.ugc.scenes.find(x=>x.n===n); if(!s)return;
   const val=(el.textContent||'').trim(); const cur=(n in b.ugc.edits&&'onScreenText' in b.ugc.edits[n])?b.ugc.edits[n].onScreenText:(s.onScreenText||'');
   if(val===cur)return; // 변경 없음
   b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{onScreenText:val}); b.ugc._dirty=true;
-  const btn=ugcApplyBtn(jobId); // 전체 재렌더 없이 Apply만 활성(편집 중 포커스 유지)·배치 스코프
-  if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
+  ugcMarkEdited(el,jobId,'Caption edited');
 }
 // 음성(spoken) 편집 — 자막과 별개. 음성만 바꾸면 VO만 재생성(자막·클립·음악 재사용), 자막만 바꾸면 음성 유지(캐싱).
 function ugcSceneEditVoice(el,jobId,n){
@@ -2979,8 +2993,7 @@ function ugcSceneEditVoice(el,jobId,n){
   const val=(el.textContent||'').trim(); const cur=(n in b.ugc.edits&&'spoken' in b.ugc.edits[n])?b.ugc.edits[n].spoken:(s.spoken||'');
   if(val===cur)return;
   b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{spoken:val}); b.ugc._dirty=true;
-  const btn=ugcApplyBtn(jobId);
-  if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
+  ugcMarkEdited(el,jobId,'Voice edited');
 }
 function ugcResetEdits(jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc._orig)return;
@@ -3121,7 +3134,8 @@ function ugcToggleAdv(jobId,n){
 function ugcSetTiming(jobId,n,field,val){
   const b=ugcFindBatch(jobId); if(!b)return;
   b.ugc.edits[n]=Object.assign({},b.ugc.edits[n]); b.ugc.edits[n][field]=Number(val); b.ugc._dirty=true;
-  const btn=ugcApplyBtn(jobId); if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
+  const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]');
+  ugcMarkEdited(card,jobId,'Timing changed');
 }
 async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
