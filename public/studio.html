@@ -178,6 +178,10 @@
   .usc-thumb img,.usc-thumb video{width:100%;height:100%;object-fit:cover;display:block}
   .usc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;font-weight:700}
   .usc-idx{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;font-weight:700;border-radius:20px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+  .usc-ver{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1px;background:rgba(0,0,0,.7);border-radius:20px;padding:1px 3px;z-index:3}
+  .usc-ver button{background:transparent;border:none;color:#fff;font-size:14px;cursor:pointer;width:18px;height:18px;line-height:1;padding:0;border-radius:50%}
+  .usc-ver button:hover{background:rgba(255,255,255,.22)}
+  .usc-ver span{color:#fff;font-size:10px;font-weight:700;min-width:24px;text-align:center}
   .usc-cap{font-size:11.5px;line-height:1.35;padding:7px 8px;min-height:34px;color:var(--fg,#e8e8ef);outline:none;border-bottom:1px solid transparent}
   .usc-cap:focus{background:rgba(255,255,255,.05);border-bottom-color:var(--accent,#8b7bff)}
   .usc-cap:empty:before{content:attr(data-ph);color:var(--muted);opacity:.7}
@@ -2872,7 +2876,7 @@ function ugcSceneStripHtml(b){
     const zoomUrl=isVid?s.clipUrl:(s.thumb||''); const zoomType=isVid?'reel':'photo'; // 씬 클릭 시 확대(영상/이미지)
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
-      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span></div>
+      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
       <div class="usc-line"><span class="usc-ic" title="On-screen caption — text shown in the video">💬</span><div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
@@ -3018,7 +3022,8 @@ async function ugcReassemble(jobId,opts){
   const hasCaptions=!!opts.subtitleStyle; // 자막 스타일(위치·크기·색상)
   const hasNarr=opts.narration!=null; // V2 통 나레이션 텍스트
   const hasTimings=Array.isArray(opts.captionTimings)&&opts.captionTimings.length>0; // V2 자막 타임라인
-  if(!paid&&!u._dirty&&!hasMusic&&!hasVoice&&!hasCaptions&&!hasNarr&&!hasTimings)return; // 변경 없으면 무시
+  const hasVersions=opts.setVersions&&Object.keys(opts.setVersions).length>0; // 씬 버전 전환(무과금)
+  if(!paid&&!u._dirty&&!hasMusic&&!hasVoice&&!hasCaptions&&!hasNarr&&!hasTimings&&!hasVersions)return; // 변경 없으면 무시
   const order=u.scenes.map(s=>s.n);
   const origNs=(u._orig||u.scenes).map(s=>s.n); const keep=new Set(order); const removed=origNs.filter(n=>!keep.has(n));
   const edits={}; for(const k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; } // 남은 씬의 편집만
@@ -3031,6 +3036,7 @@ async function ugcReassemble(jobId,opts){
   if(hasCaptions)body.subtitleStyle=opts.subtitleStyle;
   if(hasNarr)body.narration=opts.narration; // V2 통 나레이션
   if(hasTimings)body.captionTimings=opts.captionTimings; // V2 자막 타임라인
+  if(hasVersions)body.setVersions=opts.setVersions; // 씬 버전 전환
   const setBusy=opts.setBusy||function(){}; setBusy(true);
   if(opts.silent)UGC_REASM_INFLIGHT[jobId]=true;
   try{
@@ -3058,7 +3064,7 @@ async function ugcReassemble(jobId,opts){
       }
       u.edits={}; u._dirty=false;
       renderStudioResults();
-      if(window.toast)toast(paid?'Scene re-generated':(hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
+      if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
       if(paid&&typeof loadCredits==='function')loadCredits();
     }
   }catch(e){
@@ -3157,9 +3163,20 @@ window.addEventListener('beforeunload',function(){
 });
 // P2 — 이 씬만 재생성(과금). 현재 순서/삭제/자막 편집도 함께 반영.
 async function ugcSceneRedo(jobId,n){
-  if(!confirm('Re-generate this scene? This uses credits (about one video clip).'))return;
+  if(!confirm('Re-generate this scene? This uses credits (about one video clip). Your current version is kept — you can switch back.'))return;
   const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]');
   await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){if(card)card.classList.toggle('usc-busy',on);}});
+}
+// 비파괴 재생성: 씬의 렌더된 버전들 사이 전환(순환). 무과금 재조립(이미 렌더된 클립 재사용) → 고른 버전이 피드 영상에 반영.
+function ugcSceneVersion(ev,jobId,n,dir){
+  if(ev){ev.stopPropagation();ev.preventDefault();}
+  const b=ugcFindBatch(jobId); if(!b)return; const s=b.ugc.scenes.find(x=>x.n===n);
+  if(!s||!Array.isArray(s.versions)||s.versions.length<2)return;
+  const cur=s.activeVersion||0; let idx=cur+dir; if(idx<0)idx=s.versions.length-1; if(idx>=s.versions.length)idx=0;
+  if(idx===cur)return;
+  const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]');
+  const sv={}; sv[n]=idx;
+  ugcReassemble(jobId,{setVersions:sv,setBusy:function(on){if(card)card.classList.toggle('usc-busy',on);}});
 }
 // 씬 수정하기: 자연어 지시로 그 씬만 재생성(원본 프롬프트 미노출). 패널 토글.
 function ugcToggleAdv(jobId,n){

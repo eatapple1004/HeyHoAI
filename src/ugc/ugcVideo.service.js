@@ -142,6 +142,9 @@ async function persistSceneClips(clips) {
   return map;
 }
 
+// 씬 클립 엔트리에서 순수 클립 정보만(버전 목록 element용) — versions/v 같은 메타 제외.
+function stripClipEntry(e) { const o = {}; ['clip', 'thumb', 'isStill', 'durationMs', 'remote'].forEach((k) => { if (e && k in e) o[k] = e[k]; }); return o; }
+
 /**
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
@@ -340,8 +343,8 @@ async function failRerender(jobId, err) {
  *   ⚠️ 씬 구조 바뀌는 편집(순서·삭제·씬재생성/추가·spoken·leadIn/tail)은 null → 전체 reRender 폴백. 레거시 잡(베이스 미영속)·복원 실패도 null.
  * @returns {Promise<{jobId,resultUrl,durationSec,cost}|null>}
  */
-async function tryReComposite({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null }) {
-  if ((redoScenes && redoScenes.length) || (addScenes && addScenes.length) || (removed && removed.length)) return null; // 씬 구조/클립 변경 → 폴백
+async function tryReComposite({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = null }) {
+  if ((redoScenes && redoScenes.length) || (addScenes && addScenes.length) || (removed && removed.length) || (setVersions && Object.keys(setVersions).length)) return null; // 씬 구조/클립 변경(버전 전환 포함) → 전체 재조립 폴백
   for (const k in (edits || {})) { for (const f in (edits[k] || {})) if (f !== 'onScreenText') return null; } // 자막 텍스트 외(spoken/lead/tail)면 폴백
   const hasCaptionEdit = Object.keys(edits || {}).length > 0;
   const hasStyle = subtitleStyle && typeof subtitleStyle === 'object' && Object.keys(subtitleStyle).length > 0;
@@ -462,9 +465,9 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, dryRunVideo = false }) {
+async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = {}, dryRunVideo = false }) {
   // B+ 값싼 경로 우선: 자막(텍스트/스타일·타이밍)·음악·음성/나레이션만 바뀌면 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
-  const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle, narration, captionTimings });
+  const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle, narration, captionTimings, setVersions });
   if (cheap) return cheap;
 
   const row = await loadJobForEdit(jobId, user.id);
@@ -562,7 +565,24 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
           log: (m) => log.info(`[re-render ${jobId}] ${m}`),
         });
         if (!clip || !clip.clipUrl) throw Object.assign(new Error(`Scene ${s.n} could not be re-generated`), { statusCode: 502 });
-        Object.assign(sceneClips, await persistSceneClips([clip]));
+        // 비파괴: 덮어쓰지 않고 versions[]에 추가 + 새 것을 활성으로. 이전 클립 보존 → 씬 카드에서 되돌리기 가능.
+        const nm = await persistSceneClips([clip]);
+        const ne = nm[s.n] || nm[String(s.n)];
+        if (ne) {
+          const prev = sceneClips[s.n] || sceneClips[String(s.n)];
+          let versions = (prev && Array.isArray(prev.versions)) ? prev.versions.slice() : (prev && prev.clip ? [stripClipEntry(prev)] : []);
+          versions.push(stripClipEntry(ne));
+          if (versions.length > 8) versions = versions.slice(-8); // 버전 상한(스토리지 보호)
+          sceneClips[s.n] = Object.assign(stripClipEntry(ne), { versions, v: versions.length - 1 });
+        }
+      }
+    }
+    // 씬 버전 전환(무과금): 지정 씬의 활성 클립을 versions[idx]로 교체(재조립만, Kling 0). 렌더 뒤·복원 앞에 적용.
+    for (const k in (setVersions || {})) {
+      const n = Number(k), idx = Number(setVersions[k]);
+      const cur = sceneClips[n] || sceneClips[String(n)];
+      if (cur && Array.isArray(cur.versions) && cur.versions[idx]) {
+        sceneClips[n] = Object.assign(stripClipEntry(cur.versions[idx]), { versions: cur.versions, v: idx });
       }
     }
 
@@ -733,6 +753,9 @@ function editableScenes(script, sceneClips) {
       clipUrl: cl.clip ? (cl.remote ? cl.clip : `/images/${cl.clip}`) : null, // 씬 카드 자동재생용
       isStill: !!cl.isStill, // 정지이미지 클립(dryRun)이면 video 대신 썸네일
       hasClip: !!cl.clip,
+      // 비파괴 재생성: 이 씬의 렌더된 버전들(썸네일)+활성 인덱스 → 프론트 버전 선택기. 1개면 선택기 숨김.
+      versions: Array.isArray(cl.versions) ? cl.versions.map((v) => ({ thumb: v.thumb ? `/images/${v.thumb}` : null, isStill: !!v.isStill })) : [],
+      activeVersion: typeof cl.v === 'number' ? cl.v : 0,
       // 원본 프롬프트는 프론트로 보내지 않음(No prompt engineering) — 수정은 자연어 지시로만
     };
   });

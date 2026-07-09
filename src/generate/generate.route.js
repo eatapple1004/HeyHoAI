@@ -1042,6 +1042,7 @@ router.post('/ugc/re-render', async (req, res, next) => {
       subtitleStyle: parseObj(b.subtitleStyle), // 자막 스타일(위치·크기·색상)
       narration: (b.narration === undefined || b.narration === null) ? null : String(b.narration), // V2 통 나레이션 텍스트
       captionTimings: parseArr(b.captionTimings), // V2 자막 타임라인(씬별 startMs/durMs)
+      setVersions: parseObj(b.setVersions), // 씬 버전 전환({sceneN: versionIdx}, 무과금 — 이미 렌더된 클립 재조립만)
     };
     // 킥오프(동기): 검증 + 'processing' 마킹. 재조립 본체는 백그라운드 — Cloudflare 100초 한도를 넘겨
     //   524가 나던 문제 해결(특히 Kling 씬재생성). 프론트는 /ugc/jobs/:id 폴링으로 완료/실패 감지.
