@@ -223,9 +223,6 @@
   .ugc-adv-sech{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .ugc-adv-free{font-size:10px;font-weight:600;color:#6ee787;background:rgba(110,231,135,.12);border-radius:5px;padding:1px 6px}
   .ugc-adv-paid{font-size:10px;font-weight:600;color:var(--accent,#8b7cf6);background:rgba(139,124,246,.14);border-radius:5px;padding:1px 6px}
-  .ugc-adv-timing{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-  .ugc-adv-timing label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)}
-  .ugc-adv-timing select{background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px}
   /* 씬 추가 — AI 제안 4개 카드 */
   .ugc-suggest-wrap{display:flex;flex-direction:column;gap:7px;margin-top:4px}
   .ugc-suggest-card{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2,#14141b);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--text)}
@@ -3056,7 +3053,7 @@ async function ugcReassemble(jobId,opts){
       if(done.previewUrl)u.previewUrl=done.previewUrl+'?v='+Date.now(); if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; if(done.captionSpec)u.captionSpec=done.captionSpec; if(typeof done.narration==='string')u.narration=done.narration; if('hasVoice' in done)u.hasVoice=done.hasVoice; // B+/V2 오버레이·나레이션 소스 갱신
       if(Array.isArray(done.scenes)&&done.scenes.length){ u.scenes=done.scenes.map(s=>Object.assign({},s)); u._orig=done.scenes.map(s=>Object.assign({},s)); } // 서버 최신 씬(새 썸네일 포함)
       else { // 재조회 실패 폴백: 로컬 낙관 상태를 확정
-        u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{},('leadInMs' in e)?{leadInMs:e.leadInMs}:{},('tailMs' in e)?{tailMs:e.tailMs}:{});});
+        u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{});});
         u.scenes=u._orig.map(s=>Object.assign({},s));
       }
       u.edits={}; u._dirty=false;
@@ -3169,30 +3166,13 @@ function ugcToggleAdv(jobId,n){
   const b=ugcFindBatch(jobId); if(!b)return;
   const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
   if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';return;}
-  const s=b.ugc.scenes.find(x=>x.n===n)||{}; const ed=b.ugc.edits[n]||{};
-  const lead=('leadInMs' in ed)?ed.leadInMs:(s.leadInMs||0);
-  const tail=('tailMs' in ed)?ed.tailMs:(s.tailMs||0);
-  const opt=(cur,v,lbl)=>'<option value="'+v+'"'+(Number(cur)===v?' selected':'')+'>'+lbl+'</option>';
   wrap.dataset.n=String(n); wrap.style.display='';
+  // 음성이 영상 전체 통 나레이션 한 트랙 → 씬별 Timing(lead-in/tail) 제거. 씬 수정=재생성만.
   wrap.innerHTML='<div class="ugc-adv-hd">Scene '+n+'</div>'
-    +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">⏱ Timing <span class="ugc-adv-free">free</span></div>'
-    +'<div class="ugc-adv-timing">'
-    +'<label>Voice starts<select class="ugc-t-lead" onchange="ugcSetTiming(\''+esc(jobId)+'\','+n+',\'leadInMs\',this.value)">'
-    +opt(lead,0,'Immediately')+opt(lead,300,'0.3s later')+opt(lead,500,'0.5s later')+opt(lead,1000,'1s later')+'</select></label>'
-    +'<label>End pause<select class="ugc-t-tail" onchange="ugcSetTiming(\''+esc(jobId)+'\','+n+',\'tailMs\',this.value)">'
-    +opt(tail,0,'Default')+opt(tail,500,'Short')+opt(tail,1000,'Long')+'</select></label>'
-    +'</div><button type="button" class="ugc-apply" onclick="ugcApplyEdits(\''+esc(jobId)+'\')">Apply — free</button></div>'
     +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">✎ Re-generate scene <span class="ugc-adv-paid">uses credits</span></div>'
     +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder · Brighter background"></textarea>'
     +'<div class="ugc-adv-row"><button type="button" class="ugc-apply ugc-regen" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
     +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div></div>';
-}
-// 3a: 씬 timing(lead-in/tail) 편집 → edits에 담고 무과금 Apply 대기(음성·클립 재사용, retiming만).
-function ugcSetTiming(jobId,n,field,val){
-  const b=ugcFindBatch(jobId); if(!b)return;
-  b.ugc.edits[n]=Object.assign({},b.ugc.edits[n]); b.ugc.edits[n][field]=Number(val); b.ugc._dirty=true;
-  const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]');
-  ugcMarkEdited(card,jobId,'Timing changed');
 }
 async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
