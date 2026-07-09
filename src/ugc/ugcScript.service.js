@@ -61,7 +61,8 @@ function validateScriptSafety(script) {
 /** 씬 배열 정규화(번호·타입·broll 프롬프트 보장). */
 function normalizeScenes(scenes) {
   return (Array.isArray(scenes) ? scenes : []).map((s, i) => ({
-    n: typeof s.n === 'number' ? s.n : i + 1,
+    // n은 항상 배열 순서로 유일화 — Claude가 중복 n을 주면 같은 클립 공유·동시삭제·VO 겹침 발생(신뢰 불가).
+    n: i + 1,
     type: s.type === 'broll' ? 'broll' : 'spoken',
     durationSec: Number(s.durationSec) || 3,
     spoken: s.spoken || '',

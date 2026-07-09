@@ -90,6 +90,7 @@ function buildUgcScriptPrompt(input) {
       '  · Prefer 절제된 확신 — short, concrete, understated. One vivid specific beat beats three adjectives. Trust the product; do not oversell or sound desperate.',
       '  · Read each line aloud in your head: if a real person would never say it, rewrite it.',
     ] : []),
+    '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or onScreenText across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : []),
