@@ -253,7 +253,10 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
 async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, dryRunVideo = false }) {
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
-  if (row.status !== 'succeeded' || !row.script || !row.result_idx) {
+  // 편집 가능 조건 = 완성 + 대본 보유. result_idx는 요구하지 않음
+  //   (draft 라이프사이클: 완성 직후엔 result_idx 없음 → Save & finish 전에도 편집 허용.
+  //    generation_results 갱신은 하류에서 result_idx 있을 때만 = 조건부).
+  if (row.status !== 'succeeded' || !row.script) {
     const e = new Error('This video is not editable'); e.statusCode = 400; throw e;
   }
   const script = safeParse(row.script);
