@@ -25,7 +25,7 @@ const mediaStore = require('../storage/mediaStore');
 const { generateUgcScript, suggestConcept, refineScene, generateAddScene, normalizeAddSceneObj } = require('./ugcScript.service');
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
-const { assemble } = require('./assembler/ffmpeg.assembler');
+const { assemble, burnCaptions, muxAudio } = require('./assembler/ffmpeg.assembler');
 const music = require('./audio/music.service');
 
 const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우트가 서빙하는 디렉토리
@@ -48,6 +48,17 @@ function musicKey(script) { return audioKey([music.promptFromScript(script)]); }
 async function persistAudioFile(localPath) {
   if (!localPath || !fs.existsSync(localPath)) return null;
   const filename = `${crypto.randomUUID()}.mp3`;
+  const dest = path.join(servedDir, filename);
+  fs.mkdirSync(servedDir, { recursive: true });
+  fs.copyFileSync(localPath, dest);
+  try { await mediaStore.putFile(dest); } catch {}
+  return filename;
+}
+
+/** mp4(무자막 베이스 등)를 서빙 디렉토리로 영속화 → basename 반환(restoreClipLocal로 복원). B+ 재합성 토대. */
+async function persistVideoFile(localPath) {
+  if (!localPath || !fs.existsSync(localPath)) return null;
+  const filename = `${crypto.randomUUID()}.mp4`;
   const dest = path.join(servedDir, filename);
   fs.mkdirSync(servedDir, { recursive: true });
   fs.copyFileSync(localPath, dest);
@@ -219,7 +230,13 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
     }
     // 오디오 캐싱: 생성된 VO·음악을 영속화 + 캐시키 저장 → 이후 편집 시 안 바뀐 트랙 재사용(무재생성).
     const audioAssets = await buildAudioAssets(out.audioAssets, script, audio || {}, {});
-    const persistedScript = { ...script, _render: { audio: audio || {}, aspect, product: productRef, model: modelImagePath || null, audioAssets } };
+    // B+ 재합성 토대: 무자막·무음 베이스(silentBase, 음악 교체용) + 자막 없는 미리보기 베이스(previewBase, 자막 1패스 재번인·오버레이용) + 자막 타이밍.
+    const silentBase = await persistVideoFile(out.silentPath);
+    const previewBase = await persistVideoFile(out.basePath);
+    const persistedScript = { ...script, _render: {
+      audio: audio || {}, aspect, product: productRef, model: modelImagePath || null, audioAssets,
+      silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
+    } };
     await updateJob(jobId, {
       status: 'succeeded', result_url: `/images/${filename}`,
       duration_sec: durationSec, subtitle_mode: out.subtitleMode,
@@ -309,6 +326,100 @@ async function failRerender(jobId, err) {
 }
 
 /**
+ * B+ 값싼 재합성 — 자막(텍스트/스타일)·음악만 바뀌는 편집을 "무자막 베이스 + 캐시 오디오"에서 재조립.
+ *   클립 복원·씬 재인코딩·재타이밍 0 (타이밍 불변 편집만). muxAudio+burnCaptions 프리미티브 재사용 → 몇 초·실패지점 최소.
+ *   ⚠️ 타이밍 바뀌는 편집(순서·삭제·씬재생성/추가·음성변경·leadIn/tail·spoken)은 null 반환 → 호출부가 전체 reRender로 폴백.
+ *   레거시 잡(베이스 미영속)·복원 실패도 null(폴백). 성공 시에만 잡을 succeeded로 갱신.
+ * @returns {Promise<{jobId,resultUrl,durationSec,cost}|null>}
+ */
+async function tryReComposite({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null }) {
+  if ((redoScenes && redoScenes.length) || (addScenes && addScenes.length) || (removed && removed.length)) return null; // 타이밍/클립 변경
+  if (voice != null || voiceId || (speed != null && speed !== '')) return null; // 음성 변경 = 재타이밍 필요
+  for (const k in (edits || {})) { for (const f in (edits[k] || {})) if (f !== 'onScreenText') return null; } // 자막 텍스트 외(spoken/lead/tail)면 폴백
+  const hasCaptionEdit = Object.keys(edits || {}).length > 0;
+  const hasStyle = subtitleStyle && typeof subtitleStyle === 'object' && Object.keys(subtitleStyle).length > 0;
+  const mv = musicVibe == null ? null : String(musicVibe).trim();
+  const hasMusic = mv != null;
+  if (!hasCaptionEdit && !hasStyle && !hasMusic) return null; // 값싼 경로로 처리할 변경이 없음
+
+  const row = await loadJobForEdit(jobId, user.id);
+  if (!row || !row.script) return null;
+  const script = safeParse(row.script);
+  const R = script && script._render;
+  if (!script || !Array.isArray(script.scenes) || !R || !R.silentBase || !R.previewBase || !R.caption) return null; // 레거시 잡 → 폴백
+
+  const curOrder = script.scenes.map((s) => s.n);
+  if (order && order.length && (order.length !== curOrder.length || order.some((n, i) => Number(n) !== curOrder[i]))) return null; // 순서 변경 → 폴백
+
+  const rlog = (m) => log.info(`[recompose ${jobId}] ${m}`);
+  const workDir = path.join(process.cwd(), 'tmp', 'ugc', `rc_${crypto.randomUUID().slice(0, 8)}`);
+  fs.mkdirSync(workDir, { recursive: true });
+  try {
+    // 편집 반영(영속 대상): 자막 텍스트(onScreenText만) → script.scenes, 스타일 → _render.subtitleStyle, 음악 → _render.audio
+    for (const k in (edits || {})) { const e = edits[k]; const s = script.scenes.find((x) => String(x.n) === String(k)); if (s && e && 'onScreenText' in e) s.onScreenText = String(e.onScreenText || '').slice(0, 300); }
+    if (hasStyle) R.subtitleStyle = { ...(R.subtitleStyle || {}), ...subtitleStyle };
+    let audio = { ...(R.audio || {}) };
+    if (hasMusic) { if (mv.toLowerCase() === 'none') audio.music = false; else { script.musicVibe = mv.toLowerCase() === 'auto' ? '' : mv; audio.music = true; } R.audio = audio; }
+
+    const byN = {}; script.scenes.forEach((s) => { byN[s.n] = s; });
+    const style = { ...(R.caption.style || {}), ...(R.subtitleStyle || {}), lang: script.language || (R.caption.style && R.caption.style.lang) || 'ko' };
+    const captionsOff = !!(R.subtitleStyle && R.subtitleStyle.off);
+    const subtitle = captionsOff ? [] : R.caption.timings
+      .map((t) => ({ sceneN: t.sceneN, startMs: t.startMs, durMs: t.durMs, text: ((byN[t.sceneN] && byN[t.sceneN].onScreenText) || '').trim() }))
+      .filter((s) => s.text);
+    const W = R.caption.w || 1080, H = R.caption.h || 1920;
+    const durMs = R.durationMs || R.caption.timings.reduce((m, t) => Math.max(m, t.startMs + t.durMs), 0) || 6000;
+    const wantVoice = !!audio.voice, wantMusic = !!audio.music;
+
+    let baseAbs; // 자막 얹을 베이스(영상+오디오, 자막 없음)
+    if (hasMusic) {
+      // 음악 변경 → silentBase에 VO(재사용)+새 음악 재믹싱 → previewBase 갱신
+      const silent = await restoreClipLocal(R.silentBase);
+      if (!silent) return null; // 베이스 복원 실패 → 폴백
+      const audioInputs = [];
+      if (wantVoice && R.audioAssets && R.audioAssets.vo && Array.isArray(R.audioAssets.vo.segs)) {
+        for (const seg of R.audioAssets.vo.segs) { const p = await restoreClipLocal(seg.file); if (p) audioInputs.push({ file: p, volume: 1.0, kind: 'vo', delayMs: seg.startMs || 0 }); }
+      }
+      if (wantMusic) {
+        if (music.isConfigured()) {
+          rlog('음악만 재생성 [elevenlabs music]');
+          const m = await music.composeForScript(script, { durationMs: durMs, outPath: path.join(workDir, 'music.mp3') });
+          if (m) { audioInputs.push({ file: m, volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); if (R.audioAssets) R.audioAssets.music = { file: await persistAudioFile(m), key: musicKey(script) }; }
+        } else if (R.audioAssets && R.audioAssets.music) { const mp = await restoreClipLocal(R.audioAssets.music.file); if (mp) audioInputs.push({ file: mp, volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); }
+      } else if (R.audioAssets) { delete R.audioAssets.music; }
+      if (audioInputs.length) baseAbs = await muxAudio(silent, audioInputs, Math.max(durMs / 1000, 1), workDir, 'base.mp4');
+      else { baseAbs = path.join(workDir, 'base.mp4'); fs.copyFileSync(silent, baseAbs); }
+      R.previewBase = await persistVideoFile(baseAbs); // 오디오 바뀐 새 무자막 미리보기 베이스
+    } else {
+      baseAbs = await restoreClipLocal(R.previewBase); // 자막/스타일만 → 기존 미리보기 베이스(영상+오디오) 재사용
+      if (!baseAbs) return null;
+    }
+
+    const burned = await burnCaptions({ basePath: baseAbs, subtitle, style, w: W, h: H, workDir, hasAudio: wantVoice || wantMusic, log: rlog });
+
+    fs.mkdirSync(servedDir, { recursive: true });
+    const filename = `${crypto.randomUUID()}.mp4`;
+    const served = path.join(servedDir, filename);
+    fs.copyFileSync(burned.videoPath, served);
+    await mediaStore.putFile(served).catch(() => {});
+    const durationSec = Math.round(durMs / 1000);
+    if (row.result_idx) { // committed 후에만 generation_results in-place 갱신(draft는 스킵)
+      await query(`UPDATE generation_results SET file_path=$2, file_size_kb=$3, metadata=$4 WHERE idx=$1`,
+        [row.result_idx, `tmp/images/${filename}`, Math.round(fs.statSync(served).size / 1024),
+         JSON.stringify({ type: 'video', source: 'ugc', outputType: row.output_type, duration: durationSec, subtitleMode: burned.subtitleMode, edited: true })]);
+    }
+    await updateJob(jobId, { status: 'succeeded', result_url: `/images/${filename}`, duration_sec: durationSec, subtitle_mode: burned.subtitleMode, script: JSON.stringify(script) });
+    rlog(`값싼 재합성 완료(${hasMusic ? '음악+' : ''}자막, 클립/재타이밍 0) → /images/${filename}`);
+    return { jobId, resultUrl: `/images/${filename}`, durationSec, cost: 0 };
+  } catch (e) {
+    log.warn(`[recompose ${jobId}] 실패 → 전체 재조립 폴백: ${e.message}`);
+    return null; // 폴백(잡 미갱신 — 호출부 reRender가 원본 script로 다시 처리)
+  } finally {
+    try { fs.rmSync(workDir, { recursive: true, force: true }); } catch {}
+  }
+}
+
+/**
  * 재조립/씬재생성 — 저장된 씬 클립을 재사용해 재배치·삭제·자막수정을 반영(무과금),
  *   redoScenes 지정 시 그 씬만 이미지→모션 재생성(과금). 기존 결과를 in-place 갱신(피드에 새 카드 안 쌓임).
  *   - 재배치/삭제/자막: Kling/nanoBanana 재호출 0 → 무과금. spoken 바뀌고 음성ON이면 그 구간만 재TTS(무과금).
@@ -317,6 +428,10 @@ async function failRerender(jobId, err) {
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
 async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, dryRunVideo = false }) {
+  // B+ 값싼 경로 우선: 자막(텍스트/스타일)·음악만 바뀌면 무자막 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
+  const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle });
+  if (cheap) return cheap;
+
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
   // 편집 가능 조건 = 대본 보유(완성된 잡). result_idx는 요구하지 않음

@@ -323,10 +323,34 @@ function retimeByVoice(plan, voSegs, sceneOpts = {}) {
 }
 
 /**
- * RenderPlan → 최종 mp4.
+ * 베이스 영상(영상+음성, 자막 없음) 위에 자막만 1패스 번인 → 최종 mp4. 오디오는 copy로 유지.
+ *   B+ 자막 굽기의 핵심: 자막 편집 시 클립/음성 재작업 0, 이 함수만 재실행하면 됨(빠르고 실패지점 1개).
+ *   libass 없으면 사이드카 폴백(베이스 그대로 + subs.srt). subtitle 비면 베이스=최종.
+ * @param {{ basePath:string, subtitle:Array, style:object, w:number, h:number, workDir:string, hasAudio?:boolean, log?:Function }} p
+ */
+async function burnCaptions({ basePath, subtitle, style, w, h, workDir, hasAudio = true, log = () => {} }) {
+  const finalPath = path.join(workDir, 'final.mp4');
+  if (!subtitle || !subtitle.length) { await fsp.copyFile(basePath, finalPath); return { videoPath: finalPath, subtitleMode: 'none', subtitleFile: null }; }
+  const filter = await detectTextFilter();
+  await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, w, h, style));
+  await fsp.writeFile(path.join(workDir, 'subs.srt'), buildSrt(subtitle));
+  if (filter) {
+    log(`자막 ${subtitle.length}개 번인(${filter})…`);
+    const aArgs = hasAudio ? ['-c:a', 'copy'] : ['-an'];
+    // basePath는 절대경로(assemble의 workDir 내부거나, 재합성 시 다른 곳의 복원 베이스) — 둘 다 -i 절대경로로 안전.
+    await ff(['-i', basePath, '-vf', `${filter}=subs.ass`, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', ...aArgs, 'final.mp4'], workDir);
+    return { videoPath: finalPath, subtitleMode: 'burned', subtitleFile: null };
+  }
+  log('⚠️ libass 없음 → 자막 사이드카(subs.srt), 베이스 그대로(prod libass에선 자동 번인).');
+  await fsp.copyFile(basePath, finalPath);
+  return { videoPath: finalPath, subtitleMode: 'sidecar', subtitleFile: path.join(workDir, 'subs.srt') };
+}
+
+/**
+ * RenderPlan → 최종 mp4 + 자막 없는 베이스.
  * @param {object} plan  renderPlan.buildRenderPlan 산출
  * @param {{ outDir?:string, log?:Function }} [opts]
- * @returns {Promise<{ videoPath:string, workDir:string, activeTracks:string[], segments:number }>}
+ * @returns {Promise<{ videoPath:string, basePath:string, caption:object, workDir:string, activeTracks:string[], segments:number }>}
  */
 async function assemble(plan, opts = {}) {
   const log = opts.log || (() => {});
@@ -365,54 +389,21 @@ async function assemble(plan, opts = {}) {
   await ff(['-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'concat.mp4'], workDir);
 
   const active = activeTracks(plan);
-
-  // 3) 자막: 필터 있으면 번인, 없으면(최소 ffmpeg 빌드) 사이드카(.srt/.ass) + 무음영상
-  //    subtitleStyle.off=true면 자막 트랙 무시(자막 없는 버전 — 음성/음악만).
-  const captionsOff = !!(opts.subtitleStyle && opts.subtitleStyle.off);
-  const subtitle = captionsOff ? [] : (plan.tracks.subtitle || []);
-  const finalPath = path.join(workDir, 'final.mp4');
-  let subtitleMode = 'none';
-  let subtitleFile = null;
-
-  if (subtitle.length) {
-    const filter = await detectTextFilter();
-    // 사이드카는 항상 기록(디버그/외부 조립기용)
-    const subStyle = { ...(opts.subtitleStyle || {}), lang: (opts.script && opts.script.language) || (plan.meta && plan.meta.language) || 'ko' };
-    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, CW, CH, subStyle));
-    await fsp.writeFile(path.join(workDir, 'subs.srt'), buildSrt(subtitle));
-
-    if (filter) {
-      log(`자막 ${subtitle.length}개 번인(${filter})…`);
-      await ff(['-i', 'concat.mp4', '-vf', `${filter}=subs.ass`, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-an', 'final.mp4'], workDir);
-      subtitleMode = 'burned';
-    } else {
-      log(`⚠️ 로컬 ffmpeg에 자막필터(libass) 없음 → 무음영상 + 자막 사이드카(subs.srt). libass 빌드/prod에선 자동 번인.`);
-      await fsp.copyFile(concatPath, finalPath);
-      subtitleMode = 'sidecar';
-      subtitleFile = path.join(workDir, 'subs.srt');
-    }
-  } else {
-    await fsp.copyFile(concatPath, finalPath);
-  }
-
-  // 4) 오디오 트랙 — opts.audio 요청 시 무음 final에 믹싱(v3 음성 VO + v2 음악)
-  //    VO=ElevenLabs/OpenAI TTS, 음악=ElevenLabs Music. 둘 다 있으면 음악을 더킹해 VO 밑에 깖.
-  //    opts.reuseVo / opts.reuseMusic = 캐시된 mp3 절대경로 → 있으면 재생성 대신 재사용(무과금·톤 고정).
-  //    반환 audioAssets = 이번에 사용/생성한 vo·music 로컬 경로(호출부가 영속화).
-  let videoOut = finalPath;
-  const audioTracks = [];
   const durSec = Math.max((plan.meta.durationMs || 0) / 1000, 1);
-  const wantVoice = !!(opts.audio && opts.audio.voice);
-  const wantMusic = !!(opts.audio && opts.audio.music);
+
+  // 3) 오디오(VO+음악)를 무자막 concat에 먼저 믹싱 → "베이스"(영상+음성, 자막 없음).
+  //    자막은 4)에서 베이스 위에 얹는다 → 편집 시 이 베이스에 자막만 1패스 재번인(클립/음성 재작업 0).
+  //    opts.reuseVo/reuseMusic = 캐시된 mp3 → 있으면 재생성 대신 재사용. 반환 audioAssets = 사용/생성 경로.
+  const audioTracks = [];
   const audioInputs = [];
   let voSegsOut = null, musicPath = null; // voSegsOut = [{sceneN, rel, durationMs}] (0단계 생성분)
+  const wantVoice = !!(opts.audio && opts.audio.voice);
+  const wantMusic = !!(opts.audio && opts.audio.music);
 
-  // VO: 0단계에서 이미 생성·측정·retiming됨 → 여기선 retimed 시작 시각(voStart)에 배치만.
   if (wantVoice && voSegsData) {
     voSegsOut = voSegsData;
     voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: (voStart && voStart[seg.sceneN]) || 0 }));
   }
-
   if (wantMusic) {
     if (opts.reuseMusic && fs.existsSync(opts.reuseMusic)) {
       musicPath = path.join(workDir, 'music.mp3');
@@ -423,21 +414,35 @@ async function assemble(plan, opts = {}) {
       try {
         log('배경음악 생성… [elevenlabs music]');
         const m = await music.composeForScript(opts.script || {}, { durationMs: plan.meta.durationMs, outPath: path.join(workDir, 'music.mp3') });
-        // VO 있으면 더킹(0.18), 없으면 배경 단독(0.5)
-        if (m) { musicPath = m; audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); }
+        if (m) { musicPath = m; audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); } // VO 있으면 더킹(0.18)
       } catch (e) { log(`⚠️ 음악 실패, 스킵: ${e.message}`); }
     } else { log('⚠️ 음악 요청됨 — ELEVENLABS_API_KEY 미설정, 스킵'); }
   }
 
-  if (audioInputs.length) {
-    videoOut = await muxAudio('final.mp4', audioInputs, durSec, workDir, 'final_audio.mp4');
+  let basePath = concatPath;
+  const hasAudio = audioInputs.length > 0;
+  if (hasAudio) {
+    basePath = await muxAudio('concat.mp4', audioInputs, durSec, workDir, 'base.mp4');
     audioInputs.forEach((a) => { audioTracks.push(a.kind); active.push(a.kind); });
-    log(`오디오 믹싱 완료(${audioTracks.join('+')})`);
+    log(`오디오 믹싱(${audioTracks.join('+')}) → 베이스`);
   }
 
-  log(`조립 완료: ${videoOut}`);
+  // 4) 자막을 베이스 위에 번인 → 최종본. subtitleStyle.off면 자막 없이 베이스=최종.
+  //    caption 스펙(자막 타이밍·스타일·치수)은 항상 반환 → 오버레이 미리보기 + 1패스 재번인에 사용.
+  const captionsOff = !!(opts.subtitleStyle && opts.subtitleStyle.off);
+  const subtitle = captionsOff ? [] : (plan.tracks.subtitle || []);
+  const subStyle = { ...(opts.subtitleStyle || {}), lang: (opts.script && opts.script.language) || (plan.meta && plan.meta.language) || 'ko' };
+  const burned = await burnCaptions({ basePath, subtitle, style: subStyle, w: CW, h: CH, workDir, hasAudio, log });
+
+  log(`조립 완료: ${burned.videoPath}`);
   const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: (voStart && voStart[s.sceneN]) || 0 })) : null;
-  return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks, audioAssets: { vo: voAssets, music: musicPath } };
+  return {
+    videoPath: burned.videoPath, basePath, silentPath: concatPath, workDir, activeTracks: active, segments: segments.length,
+    subtitleMode: burned.subtitleMode, subtitleFile: burned.subtitleFile, audioTracks,
+    audioAssets: { vo: voAssets, music: musicPath },
+    // B+ 재합성 스펙: silentPath=무자막·무음 concat(음악만 갈아끼울 때 베이스), caption=자막 타이밍·스타일·치수
+    caption: { timings: subtitle.map((s) => ({ sceneN: s.sceneN, startMs: s.startMs, durMs: s.durMs })), style: subStyle, w: CW, h: CH, hasAudio },
+  };
 }
 
-module.exports = { assemble, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, TARGET_W, TARGET_H, FPS };
+module.exports = { assemble, burnCaptions, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, TARGET_W, TARGET_H, FPS };
