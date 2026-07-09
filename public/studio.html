@@ -196,6 +196,8 @@
   .ugc-save-hint{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
   /* 검토 화면 씬 설명(사람용) + 자연어 편집 */
   .ugc-scene-dur{display:inline-block;font-size:10.5px;font-weight:600;color:var(--accent,#8b7cf6);background:rgba(139,124,246,.14);border-radius:5px;padding:1px 6px;margin-left:5px;vertical-align:middle}
+  .ugc-el-ic{cursor:help;font-size:12px;opacity:.9}
+  .ugc-el-lbl{cursor:help;color:var(--dim);border-bottom:1px dotted var(--border)}
   .ugc-scene-sum{color:var(--dim);font-size:12px;margin-top:3px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
   .ugc-scene-sum>span{flex:1;min-width:120px}
   .ugc-sum-edit{background:none;border:none;color:var(--accent2,#8b7bff);font-size:11px;cursor:pointer;font-family:inherit;padding:0;white-space:nowrap}
@@ -616,9 +618,6 @@
   .ar-916{width:14px;height:24px}
   .ar-11{width:20px;height:20px}
   .ar-169{width:27px;height:15px}
-  .ugc-cats{display:flex;gap:6px;flex-wrap:wrap}
-  .ugc-cat{font-size:12px;padding:5px 11px;border:1px solid var(--border2);border-radius:999px;background:none;color:var(--dim);cursor:pointer;font-family:inherit}
-  .ugc-cat.active{border-color:var(--accent);color:var(--text);background:rgba(124,108,255,.1)}
   .script-ta{width:100%;min-height:92px;resize:vertical;font-family:inherit;font-size:14.5px;line-height:1.6;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:14px;padding:14px 16px}
   .script-ta::placeholder{color:var(--faint)}
   .script-ta:focus{outline:none;border-color:var(--accent)}
@@ -752,19 +751,7 @@
         <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
       </div>
-      <!-- 제품 카테고리(플레이북): 카테고리별 샷 레시피·스타일로 퀄 강화 -->
-      <div style="margin:8px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Product category <span style="color:var(--faint)">— category-tuned shots &amp; style</span></div>
-        <div class="ugc-cats" id="ugcCats">
-          <button type="button" class="ugc-cat" data-cat="apparel" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Apparel</button>
-          <button type="button" class="ugc-cat" data-cat="cosmetics" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Cosmetics</button>
-          <button type="button" class="ugc-cat" data-cat="nail" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Nail</button>
-          <button type="button" class="ugc-cat" data-cat="accessories" data-fmt="model-editorial" onclick="ugcSetCategory(this)">Accessories</button>
-          <button type="button" class="ugc-cat active" data-cat="" onclick="ugcSetCategory(this)">Auto-detect</button>
-        </div>
-        <div style="font-size:11px;color:var(--faint);margin-top:4px">“Auto-detect” — AI reads your product image and picks the best approach automatically (same as selecting nothing).</div>
-        <input type="hidden" id="ugcCategory" value="">
-      </div>
+      <!-- 카테고리 UI 제거(2026-07-09): builder가 사진 보고 카테고리 자동 판별·플레이북 적용 → 유저 선택 불필요 -->
       <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Video format</div>
@@ -3841,7 +3828,7 @@ async function ugcWriteScript(){
     const pf=document.getElementById('ugcProductImg').files[0];
     if(pf)fd.append('productImage',pf,pf.name||'product.png'); // Claude가 실제 제품 보고 카피 작성
     fd.append('voiceover',(document.getElementById('ugcVoice')||{}).checked!==false?'true':'false'); // 음성 여부→내레이션 대본 생성 분기
-    fd.append('category',(document.getElementById('ugcCategory')||{}).value||''); // 제품군 플레이북
+    // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택)
     const scD=(document.getElementById('ugcSceneDur')||{}).value; if(scD&&scD!=='0')fd.append('sceneDuration',scD); // 씬 길이(선택)
     const res=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});
@@ -3869,19 +3856,19 @@ function ugcRenderScriptPreview(data){
     const dur=sc.durationSec||evenDur;
     const durBadge=sc.type==='broll'?`<span class="ugc-scene-dur" title="Scene length">${dur}s</span>`:'';
     const line=hasText
-      ? `<b>${i+1}.</b>${durBadge} <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="on-screen text">${esc(sc.onScreenText)}</span>`
+      ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="On-screen caption — the text shown in the video for this scene">💬</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="on-screen text">${esc(sc.onScreenText)}</span>`
       : `<b>${i+1}.</b>${durBadge} <span style="color:var(--faint);font-size:12px">visual only — no narration</span>`;
     return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
-      +`<div class="ugc-scene-sum">🎬 <span>${esc(sc.summary||sc.direction||'')}</span>`
+      +`<div class="ugc-scene-sum"><span class="ugc-el-ic" title="What this scene shows — the visuals & motion">🎬</span> <span>${esc(sc.summary||sc.direction||'')}</span>`
       +(sc.type==='broll'?` <button type="button" class="ugc-sum-edit" onclick="ugcEditScenePre(${i})" title="Change this scene">✎ change</button>`:'')
       +`</div><div class="ugc-sum-panel" id="ugcSumPanel-${i}" style="display:none"></div></div>`;
   }).join('');
   document.getElementById('ugcScriptBody').innerHTML=
-    `<div style="margin-bottom:6px"><span style="color:var(--dim)">Hook</span> — ${ce('hook',s.hook,'hook line')}</div>`+
+    `<div style="margin-bottom:6px"><span class="ugc-el-lbl" title="The opening line that grabs attention in the first second">🎣 Hook</span> — ${ce('hook',s.hook,'hook line')}</div>`+
     scenes+
-    `<div style="padding-top:8px;border-top:1px solid var(--border)"><span style="color:var(--dim)">CTA</span> — ${ce('cta',s.cta,'call to action')}</div>`+
-    `<div style="margin-top:8px;color:var(--dim);font-size:12.5px">${ce('caption',s.caption,'caption')} <span class="ugc-edit" contenteditable="true" data-f="hashtags">${esc((s.hashtags||[]).map(h=>'#'+h).join(' '))}</span></div>`+
-    `<div style="margin-top:8px;color:var(--faint);font-size:11.5px">✎ Tap any line above to edit before generating.</div>`;
+    `<div style="padding-top:8px;border-top:1px solid var(--border)"><span class="ugc-el-lbl" title="Closing call-to-action — what you want the viewer to do">📣 CTA</span> — ${ce('cta',s.cta,'call to action')}</div>`+
+    `<div style="margin-top:8px;color:var(--dim);font-size:12.5px"><span class="ugc-el-ic" title="Ready-to-post caption & hashtags for the social post (not shown in the video)">📝</span> ${ce('caption',s.caption,'caption')} <span class="ugc-edit" contenteditable="true" data-f="hashtags">${esc((s.hashtags||[]).map(h=>'#'+h).join(' '))}</span></div>`+
+    `<div style="margin-top:8px;color:var(--faint);font-size:11.5px">💡 Each line has an icon — hover it for what it means. Tap any line to edit before generating.</div>`;
   ugcBindScriptEdits();
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
   document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?`✓ Generate video <span class="gen-cost">◈ ${data.cost}</span>`:'✓ Generate video';
@@ -3979,12 +3966,6 @@ function ugcUpdateTotal(){
   else el.textContent='';
 }
 try{ ugcUpdateTotal(); }catch(_){}
-function ugcSetCategory(el){
-  const c=document.getElementById('ugcCategory'); if(c)c.value=el.dataset.cat||'';
-  document.querySelectorAll('#ugcCats .ugc-cat').forEach(b=>b.classList.toggle('active',b===el));
-  if(el.dataset.fmt) ugcSetFormat(el.dataset.fmt); // 카테고리 기본 포맷 자동 세팅(유저 변경 가능)
-}
-
 async function ugcRenderVideo(){
   if(!ugcScript){toast('Write a script first.');return;}
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;}
