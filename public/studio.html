@@ -3088,8 +3088,10 @@ async function ugcReassemble(jobId,opts){
 // 재조립(재배치·자막·음성·음악·씬재생성) 백그라운드 완료 폴링 — 잡 status가 processing→succeeded로 바뀌면 완료.
 //   성공=새 resultUrl 반환, 실패=error 필드 throw(잡은 다시 편집가능 상태로 복구됨). CF 100초 한도 회피.
 async function pollUgcRerender(jobId,prevUrl){
-  for(let i=0;i<200;i++){
-    await new Promise(r=>setTimeout(r,3000));
+  // 첫 폴링을 짧게 램프 — 버전 전환/자막 등 완성본 캐시 히트는 <0.2s라 3s 폴 대기가 유일 병목이었음. 이후 3s 백오프.
+  var _pd=[250,400,650,1000,1500];
+  for(let i=0;i<205;i++){
+    await new Promise(r=>setTimeout(r, i<_pd.length?_pd[i]:3000));
     let d; try{ d=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data; }catch(e){ continue; }
     if(!d)continue;
     if(d.status==='failed')throw new Error(d.error||'Could not apply changes');

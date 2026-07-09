@@ -222,6 +222,13 @@ app.listen(env.PORT, () => {
     log.warn('Video job poller disabled (DISABLE_VIDEO_POLLER=true) — 로컬 전용');
   } else {
     require('./generate/videoJob.service').startPoller();
+    // UGC 완성본 캐시 백스톱 — 크래시로 방치된 잡의 비활성 컴포지트 정리(고아 파일 회수).
+    //   폴러와 동일 게이트라 prod에서만 실행(로컬 :3001은 prod DB에 붙으므로 sweep 금지). 시작 90s 후 1회 + 6h 간격.
+    const ugc = require('./ugc/ugcVideo.service');
+    if (ugc.sweepStaleComposites) {
+      setTimeout(() => ugc.sweepStaleComposites().catch((e) => log.warn('UGC composite sweep failed: ' + e.message)), 90 * 1000);
+      setInterval(() => ugc.sweepStaleComposites().catch(() => {}), 6 * 60 * 60 * 1000).unref();
+    }
   }
 });
 

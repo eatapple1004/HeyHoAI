@@ -148,6 +148,84 @@ function stripClipEntry(e) { const o = {}; ['clip', 'thumb', 'isStill', 'duratio
 // 자막 타이밍 → 텍스트 리졸버. 자유 자막(직접 추가)은 자기 text, 씬 자막은 씬의 onScreenText.
 function captionTextOf(t, byN) { return (t && t.text != null ? String(t.text) : ((byN[t.sceneN] && byN[t.sceneN].onScreenText) || '')).trim(); }
 
+// ── 완성본(컴포지트) 캐시 — 버전 전환 즉시화 ─────────────────────────────
+// 편집 상태 전체(씬 클립 버전·순서·자막·오디오·비율)로 완성 mp4를 캐싱 → 같은 상태로 다시 오면
+//   재조립(concat+오디오믹싱+자막번인) 없이 URL 스왑만(0). 키가 상태 전체를 담아 스테일 불가능
+//   (상태가 하나라도 다르면 키가 달라져 miss→재조립). 버전 전환 후 자막/음성 편집도 키가 바뀌어 재조립됨.
+//   각 엔트리는 최종본(file)+무자막 미리보기(preview)+무음(silent)+자막 스펙(caption)을 함께 보관 →
+//   전환 시 previewBase/silentBase/caption도 그 버전 것으로 복원(오버레이·치싼 재합성 정확, "잡당 베이스 1개" 가정 붕괴 방지).
+const MAX_COMPOSITES = 6;                 // 편집 중 잡당 보관 상한 — 초과 시 가장 오래된 비활성 엔트리 제거(디스크 스파이크 방지)
+const UUID_MP4 = /^[0-9a-f-]{8,}\.mp4$/i; // 삭제 가드: 우리가 만든 UUID 컴포지트 파일만 지움
+
+// 씬 순서 + 각 씬 활성 클립 basename → 비디오 트랙 시그니처(버전·순서·삭제·정지여부·길이 반영)
+function videoSig(scenes, sceneClips) {
+  return (scenes || []).filter((s) => s.type === 'broll').map((s) => {
+    const cl = sceneClips[s.n] || sceneClips[String(s.n)] || {};
+    return `${s.n}~${cl.clip || ''}~${cl.durationMs || ''}~${cl.isStill ? 1 : 0}`;
+  }).join(',');
+}
+// 실제 번인될 자막 트랙(씬 자막+자유 자막의 텍스트·타이밍) → 자막 시그니처
+function subtitleSig(plan) {
+  return (((plan && plan.tracks && plan.tracks.subtitle) || [])).map((t) =>
+    `${t.sceneN != null ? t.sceneN : ''}#${t.id || ''}@${t.startMs}+${t.durMs}:${(t.text || '').trim()}`).join('|');
+}
+// 완성본 캐시 키 = 조립 결과 mp4 바이트를 결정하는 모든 상태(비디오·자막·오디오·비율·스타일·언어).
+//   오디오는 voKey(내레이션+보이스+속도)·musicKey(무드)+on/off 플래그로 완전 포착(reuse 여부는 출력 불변이라 제외).
+function compositeKey(scenes, sceneClips, plan, audio, aspect, style, script) {
+  return audioKey([
+    'ck1', aspect || '9:16', videoSig(scenes, sceneClips), subtitleSig(plan),
+    `voice=${audio && audio.voice ? 1 : 0}`, `music=${audio && audio.music ? 1 : 0}`,
+    voKey(script, audio || {}), musicKey(script),
+    JSON.stringify(style || {}), (script && script.language) || 'ko',
+  ]);
+}
+// UUID 컴포지트 파일만 로컬 삭제(가드) — protectedSet(활성 결과·활성 베이스)은 절대 안 지움.
+//   S3(오브젝트 스토리지)는 손대지 않음(그쪽 GC는 별개 리스크, [[doppia_media_storage_bug]]).
+function delCompositeFiles(entry, protectedSet) {
+  for (const k of ['file', 'preview', 'silent']) {
+    const bn = entry && entry[k];
+    if (bn && !protectedSet.has(bn) && UUID_MP4.test(bn)) {
+      try { fs.unlinkSync(path.join(servedDir, bn)); } catch {}
+    }
+  }
+}
+// 캐시 조회 — 세 파일(최종·미리보기·무음)이 전부 복원돼야 히트. MRU 갱신, 스테일이면 제거하고 miss.
+async function lookupComposite(R, key) {
+  const arr = Array.isArray(R.composites) ? R.composites : [];
+  const i = arr.findIndex((e) => e && e.key === key);
+  if (i < 0) return null;
+  const e = arr[i];
+  const file = await restoreClipLocal(e.file);
+  const preview = e.preview ? await restoreClipLocal(e.preview) : null;
+  const silent = e.silent ? await restoreClipLocal(e.silent) : null;
+  if (!file || (e.preview && !preview) || (e.silent && !silent)) { arr.splice(i, 1); R.composites = arr; return null; }
+  arr.splice(i, 1); arr.push(e); R.composites = arr; // MRU(최근 사용을 뒤로)
+  return e;
+}
+// 캐시 저장 + LRU 정리 — 활성 결과(currentBasename)는 절대 제거 대상 아님.
+function storeComposite(R, key, entry, currentBasename) {
+  const arr = Array.isArray(R.composites) ? R.composites.filter((e) => e && e.key !== key) : [];
+  arr.push(Object.assign({ key }, entry));
+  const prot = new Set([currentBasename, R.previewBase, R.silentBase, entry.preview, entry.silent, entry.file].filter(Boolean));
+  while (arr.length > MAX_COMPOSITES) {
+    const idx = arr.findIndex((e) => e.file !== currentBasename); // 활성 아닌 가장 오래된 것
+    if (idx < 0) break;
+    delCompositeFiles(arr.splice(idx, 1)[0], prot);
+  }
+  R.composites = arr;
+}
+// 커밋/백스톱 정리 — 활성 결과 엔트리만 남기고 나머지 컴포지트 파일 제거(가드). 이후 편집은 캐시 재축적.
+function pruneComposites(R, keepBasename) {
+  if (!R || !Array.isArray(R.composites)) return;
+  const prot = new Set([keepBasename, R.previewBase, R.silentBase].filter(Boolean));
+  const kept = [];
+  for (const e of R.composites) {
+    if (e && e.file === keepBasename) kept.push(e);
+    else delCompositeFiles(e, prot);
+  }
+  R.composites = kept;
+}
+
 /**
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
@@ -247,6 +325,12 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
       audio: audio || {}, aspect, product: productRef, model: modelImagePath || null, audioAssets,
       silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
     } };
+    // 완성본 캐시 시드 — 최초 완성본(전 씬 v0)도 캐싱. 씬 재생성 후 되돌리면 첫 전환부터 즉시(재조립 0).
+    persistedScript._render.composites = [{
+      key: compositeKey(script.scenes, sceneClips, plan, audio || {}, aspect, undefined, script),
+      file: filename, preview: previewBase, silent: silentBase, caption: out.caption,
+      durationSec, subtitleMode: out.subtitleMode,
+    }];
     await updateJob(jobId, {
       status: 'succeeded', result_url: `/images/${filename}`,
       duration_sec: durationSec, subtitle_mode: out.subtitleMode,
@@ -472,19 +556,21 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-// 잡별 reRender 직렬화 — 동시 재생성/편집이 scene_clips·결과·오디오를 경쟁(하나만 반영·음성 겹침·피드 지터)하던 것 방지.
-//   같은 jobId 요청은 앞 작업이 끝난 뒤 순서대로 실행 → 각 reRender가 직전 결과 위 scene_clips를 로드해 누적.
-//   ⚠️ 인메모리 = 단일 인스턴스 전제. prod가 멀티 인스턴스면 DB 락 필요(후속).
+// 잡별 직렬화 큐 — 동시 재생성/편집/커밋이 scene_clips·결과·오디오·완성본캐시를 경쟁(하나만 반영·음성 겹침·피드 지터)하던 것 방지.
+//   같은 jobId 요청은 앞 작업이 끝난 뒤 순서대로 실행 → 각 작업이 직전 결과 위 상태를 로드해 누적. reRender·commitJob·백스톱이 공유.
+//   ⚠️ 인메모리 = 단일 인스턴스 전제(ecosystem.config.js instances:1). prod가 멀티 인스턴스면 DB 락 필요(후속).
 const _rerenderChain = Object.create(null);
-function reRender(params) {
-  const jobId = params && params.jobId;
-  if (!jobId) return _reRenderImpl(params);
+function chainRun(jobId, fn) {
+  if (!jobId) return fn();
   const prev = _rerenderChain[jobId] || Promise.resolve();
-  const cur = prev.then(() => _reRenderImpl(params), () => _reRenderImpl(params)); // 성패 무관 앞 작업 뒤 실행
+  const cur = prev.then(fn, fn); // 성패 무관 앞 작업 뒤 실행
   const tail = cur.then(() => {}, () => {});
   _rerenderChain[jobId] = tail;
   tail.then(() => { if (_rerenderChain[jobId] === tail) delete _rerenderChain[jobId]; }); // 큐 비면 키 정리(누수 방지)
   return cur;
+}
+function reRender(params) {
+  return chainRun(params && params.jobId, () => _reRenderImpl(params));
 }
 async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = {}, dryRunVideo = false }) {
   // B+ 값싼 경로 우선: 자막(텍스트/스타일·타이밍)·음악·음성/나레이션만 바뀌면 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
@@ -639,6 +725,32 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
       }
     }
 
+    // ── 완성본 캐시: 이 상태(버전 전환 포함)의 완성본이 있으면 재조립 0, URL 스왑만 ──
+    //   키가 비디오(버전·순서·삭제)+자막+오디오+비율+스타일 전체를 담아 스테일 불가능. 미스면 아래서 재조립.
+    const R2 = script._render || (script._render = {});
+    const styleForKey = (R2.subtitleStyle && typeof R2.subtitleStyle === 'object') ? R2.subtitleStyle : undefined;
+    const ckey = compositeKey(scenes, sceneClips, plan, audio, aspect, styleForKey, script);
+    const hit = await lookupComposite(R2, ckey);
+    if (hit) {
+      // 활성 베이스/자막 스펙을 이 버전 것으로 복원(오버레이·치싼 재합성 정확성)
+      if (hit.preview) R2.previewBase = hit.preview;
+      if (hit.silent) R2.silentBase = hit.silent;
+      if (hit.caption) R2.caption = hit.caption;
+      const durationSec = hit.durationSec || Math.round((plan.meta.durationMs || 0) / 1000);
+      const servedHit = path.join(servedDir, hit.file);
+      if (row.result_idx) { // committed 후에만 generation_results in-place 갱신(draft는 스킵)
+        await query(`UPDATE generation_results SET file_path=$2, file_size_kb=$3, metadata=$4 WHERE idx=$1`,
+          [row.result_idx, `tmp/images/${hit.file}`, fs.existsSync(servedHit) ? Math.round(fs.statSync(servedHit).size / 1024) : null,
+           JSON.stringify({ type: 'video', source: 'ugc', outputType: row.output_type, duration: durationSec, subtitleMode: hit.subtitleMode, clips: plan.tracks.video.length, edited: true })]);
+      }
+      await updateJob(jobId, {
+        status: 'succeeded', result_url: `/images/${hit.file}`, duration_sec: durationSec,
+        subtitle_mode: hit.subtitleMode, script: JSON.stringify(script), scene_clips: JSON.stringify(sceneClips),
+      });
+      log.info(`UGC job ${jobId} 완성본 캐시 히트(재조립 0) → /images/${hit.file}`);
+      return { jobId, resultUrl: `/images/${hit.file}`, durationSec, cost: charge ? charge.amount : 0 };
+    }
+
     // 오디오 캐싱: 저장된 VO·음악 중 키가 그대로면 재사용(재생성 안 함). 다르면 재생성.
     //   음악만 바꾸기 = 음악 키만 변경 → VO 재사용, 음악만 새로. 재배치/자막편집 = 텍스트 바뀌면 VO만 재생성.
     const prevAssets = (script._render && script._render.audioAssets) || {};
@@ -667,6 +779,16 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
     fs.copyFileSync(out.videoPath, served);
     await mediaStore.putFile(served);
     const durationSec = Math.round((plan.meta.durationMs || 0) / 1000);
+    // 완성본 캐시 갱신 + 활성 베이스(오버레이·치싼 재합성용)를 이 버전 것으로 영속화 → 다음에 같은 상태면 즉시 히트.
+    //   (풀 재조립 경로가 previewBase/silentBase를 안 갱신하던 잠복 버그도 해소: 버전 전환 후 오버레이가 옛 클립을 보이던 문제.)
+    const previewBase = await persistVideoFile(out.basePath);
+    const silentBase = await persistVideoFile(out.silentPath);
+    if (script._render) {
+      if (previewBase) script._render.previewBase = previewBase;
+      if (silentBase) script._render.silentBase = silentBase;
+      if (out.caption) script._render.caption = out.caption;
+      storeComposite(script._render, ckey, { file: filename, preview: previewBase, silent: silentBase, caption: out.caption, durationSec, subtitleMode: out.subtitleMode }, filename);
+    }
     if (row.result_idx) { // committed(저장됨) 후 편집만 generation_results 반영. draft는 result_idx 없어 스킵.
       await query(
         `UPDATE generation_results SET file_path=$2, file_size_kb=$3, metadata=$4 WHERE idx=$1`,
@@ -690,9 +812,10 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
 
 /**
  * "Save & finish" 또는 이탈 시 — draft를 generation_results에 확정 저장(My creations/Library/Explore 노출). 멱등.
+ *   ⚠️ reRender와 같은 잡별 직렬화 큐(chainRun)에 태워 호출(commit vs 편집 경쟁 방지 — 아래 commitJob 래퍼).
  * @returns {Promise<{resultIdx:number, already?:boolean}|null>} null=없음/권한없음/미완성
  */
-async function commitJob(id, userId) {
+async function _commitJobImpl(id, userId) {
   const r = await query(
     `SELECT id, user_id, team_id, output_type, visibility, title, caption, hashtags,
             duration_sec, subtitle_mode, result_url, result_idx, script, status
@@ -721,8 +844,48 @@ async function commitJob(id, userId) {
   });
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});
   await updateJob(id, { result_idx: savedResult.idx });
+  // 정리: 활성 결과만 남기고 다른 완성본 캐시 파일 제거(디스크 회수·가드 삭제 — 참조/활성 베이스는 안 지움).
+  //   commit 후에도 편집(in-place)은 가능 → 캐시는 이후 다시 축적됨.
+  const R = script._render;
+  if (R && Array.isArray(R.composites) && R.composites.length > 1) {
+    pruneComposites(R, filename);
+    await updateJob(id, { script: JSON.stringify(script) });
+  }
   log.info(`UGC job ${id} committed → generation_results idx ${savedResult.idx}`);
   return { resultIdx: savedResult.idx };
+}
+// 공개 커밋 — reRender와 같은 잡별 큐에 태움(commit vs 편집 경쟁 방지). sendBeacon 자동커밋도 이 경로.
+function commitJob(id, userId) {
+  return chainRun(id, () => _commitJobImpl(id, userId));
+}
+
+/**
+ * 백스톱 — 하드 크래시 등으로 커밋 없이 방치된 잡의 완성본 캐시 정리(고아 파일 회수).
+ *   updated_at이 오래된(=편집 안 하는) 잡만, 활성 결과는 남기고 비활성 컴포지트만 제거(잡별 큐 경유).
+ *   ⚠️ prod에서만 실행(index.js가 DISABLE_VIDEO_POLLER로 게이트 — 로컬 :3001은 prod DB에 붙으므로 sweep 금지).
+ */
+async function sweepStaleComposites({ maxAgeHours = 24, limit = 300 } = {}) {
+  let rows;
+  try {
+    rows = (await query(
+      `SELECT id, result_url FROM ugc_jobs
+       WHERE status='succeeded' AND script IS NOT NULL AND updated_at < now() - ($1 * interval '1 hour')
+       ORDER BY updated_at ASC LIMIT $2`, [maxAgeHours, limit])).rows;
+  } catch (e) { log.warn(`sweepStaleComposites 쿼리 실패: ${e.message}`); return { swept: 0 }; }
+  let swept = 0;
+  for (const j of rows) {
+    await chainRun(j.id, async () => { // 라이브 편집과 직렬화(경쟁 방지). 큐 안에서 최신 상태 재조회 후 판단.
+      const fresh = (await query(`SELECT script, result_url FROM ugc_jobs WHERE id=$1`, [j.id])).rows[0];
+      const s = fresh && safeParse(fresh.script); const R = s && s._render;
+      if (!R || !Array.isArray(R.composites) || R.composites.length <= 1) return;
+      const keep = fresh.result_url ? String(fresh.result_url).split('/').pop() : null;
+      pruneComposites(R, keep);
+      await updateJob(j.id, { script: JSON.stringify(s) });
+      swept++;
+    }).catch((e) => log.warn(`sweep ${j.id} 실패: ${e.message}`));
+  }
+  if (swept) log.info(`sweepStaleComposites: ${swept}개 잡의 비활성 완성본 캐시 정리`);
+  return { swept };
 }
 
 /** 잡 상태 조회(소유자 본인 또는 팀 멤버) */
@@ -800,4 +963,4 @@ function editableScenes(script, sceneClips) {
 //   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
 function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, sweepStaleComposites, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
