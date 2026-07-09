@@ -472,7 +472,21 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = {}, dryRunVideo = false }) {
+// 잡별 reRender 직렬화 — 동시 재생성/편집이 scene_clips·결과·오디오를 경쟁(하나만 반영·음성 겹침·피드 지터)하던 것 방지.
+//   같은 jobId 요청은 앞 작업이 끝난 뒤 순서대로 실행 → 각 reRender가 직전 결과 위 scene_clips를 로드해 누적.
+//   ⚠️ 인메모리 = 단일 인스턴스 전제. prod가 멀티 인스턴스면 DB 락 필요(후속).
+const _rerenderChain = Object.create(null);
+function reRender(params) {
+  const jobId = params && params.jobId;
+  if (!jobId) return _reRenderImpl(params);
+  const prev = _rerenderChain[jobId] || Promise.resolve();
+  const cur = prev.then(() => _reRenderImpl(params), () => _reRenderImpl(params)); // 성패 무관 앞 작업 뒤 실행
+  const tail = cur.then(() => {}, () => {});
+  _rerenderChain[jobId] = tail;
+  tail.then(() => { if (_rerenderChain[jobId] === tail) delete _rerenderChain[jobId]; }); // 큐 비면 키 정리(누수 방지)
+  return cur;
+}
+async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = {}, dryRunVideo = false }) {
   // B+ 값싼 경로 우선: 자막(텍스트/스타일·타이밍)·음악·음성/나레이션만 바뀌면 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
   const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle, narration, captionTimings, setVersions });
   if (cheap) return cheap;

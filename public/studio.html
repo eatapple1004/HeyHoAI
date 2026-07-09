@@ -3019,10 +3019,13 @@ function ugcResetEdits(jobId){
 }
 // silent(자막 타이밍 무중단 저장) 동시 실행 가드 — 진행 중이면 마지막 요청만 대기했다 재발사(지터·경합 방지).
 var UGC_REASM_INFLIGHT=Object.create(null); var UGC_REASM_PENDING=Object.create(null);
+var UGC_NS_BUSY=Object.create(null); var UGC_NS_Q=Object.create(null); // 비-silent(재생성·버전전환·씬편집) 잡별 단일 실행 큐
 // 공용 재조립 호출 — 무과금(재배치/삭제/자막)과 과금(redoScenes 재생성)을 한 경로로.
 async function ugcReassemble(jobId,opts){
   opts=opts||{}; const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
   if(opts.silent&&UGC_REASM_INFLIGHT[jobId]){ UGC_REASM_PENDING[jobId]=true; return; } // 진행 중 → 최신 상태로 나중에 1회 재발사
+  // 비-silent(전체 재조립: 재생성·버전전환·재배치·삭제·씬편집)는 잡별 직렬화 — 동시 실행 시 폴러가 서로의 결과를 잡아 "하나만 반영"·피드 지터·음성 겹침.
+  if(!opts.silent){ if(UGC_NS_BUSY[jobId]){ if(opts.setBusy)opts.setBusy(true); (UGC_NS_Q[jobId]=UGC_NS_Q[jobId]||[]).push(opts); return; } UGC_NS_BUSY[jobId]=true; }
   const paid=!!((opts.redoScenes&&opts.redoScenes.length)||(opts.addScenes&&opts.addScenes.length));
   const hasMusic=opts.musicVibe!=null; // 음악만 교체(무과금)
   const hasVoice=!!opts.voice; // 음성 on/off·보이스·속도({voice,voiceId,speed})
@@ -3079,6 +3082,7 @@ async function ugcReassemble(jobId,opts){
     if(!opts.silent&&window.toast)toast(e.message||(e.code402?'Not enough credits':'Could not apply changes'),'error'); // 무중단 저장 실패는 조용히(다음 편집서 재시도)
   }finally{
     if(opts.silent){ UGC_REASM_INFLIGHT[jobId]=false; if(UGC_REASM_PENDING[jobId]){ UGC_REASM_PENDING[jobId]=false; const bb=ugcFindBatch(jobId); if(bb)ugcReassemble(jobId,ugcSilentPayload(bb.ugc)); } } // 대기 요청 있으면 최신 상태로 1회 재발사
+    else { UGC_NS_BUSY[jobId]=false; const q=UGC_NS_Q[jobId]; if(q&&q.length){ const nx=q.shift(); ugcReassemble(jobId,nx); } } // 큐에 대기 재생성 있으면 순서대로 1개씩
   }
 }
 // 재조립(재배치·자막·음성·음악·씬재생성) 백그라운드 완료 폴링 — 잡 status가 processing→succeeded로 바뀌면 완료.
