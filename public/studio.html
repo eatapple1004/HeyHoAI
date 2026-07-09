@@ -3023,6 +3023,18 @@ function ugcResetEdits(jobId){
 var UGC_REASM_INFLIGHT=Object.create(null); var UGC_REASM_PENDING=Object.create(null);
 var UGC_NS_BUSY=Object.create(null); var UGC_NS_Q=Object.create(null); // 비-silent(재생성·버전전환·씬편집) 잡별 단일 실행 큐
 // 공용 재조립 호출 — 무과금(재배치/삭제/자막)과 과금(redoScenes 재생성)을 한 경로로.
+// 새 미리보기 mp4를 미리 받아둔다(디코드까지). 이후 렌더의 <video>가 같은 URL을 immutable 캐시서 즉시 재생 → 검은 깜빡임·재다운로드 제거.
+//   canplay/loadeddata/error 중 먼저 오는 것에 resolve, 3초 안전 타임아웃(무한대기 방지). 실패해도 렌더는 진행(회귀 없음).
+function ugcPreloadVideo(url){
+  return new Promise(function(res){
+    try{
+      var v=document.createElement('video'); v.muted=true; v.preload='auto';
+      var done=false; var fin=function(){ if(done)return; done=true; try{v.removeAttribute('src');v.load();}catch(e){} res(); };
+      v.addEventListener('canplay',fin,{once:true}); v.addEventListener('loadeddata',fin,{once:true}); v.addEventListener('error',fin,{once:true});
+      setTimeout(fin,3000); v.src=url; v.load();
+    }catch(e){ res(); }
+  });
+}
 async function ugcReassemble(jobId,opts){
   opts=opts||{}; const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
   if(opts.silent&&UGC_REASM_INFLIGHT[jobId]){ UGC_REASM_PENDING[jobId]=true; return; } // 진행 중 → 최신 상태로 나중에 1회 재발사
@@ -3068,13 +3080,14 @@ async function ugcReassemble(jobId,opts){
       setBusy(false);
     } else {
       b.items=[{url:done.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
-      if(done.previewUrl)u.previewUrl=done.previewUrl+'?v='+Date.now(); if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; if(done.captionSpec)u.captionSpec=done.captionSpec; if(typeof done.narration==='string')u.narration=done.narration; if('hasVoice' in done)u.hasVoice=done.hasVoice; // B+/V2 오버레이·나레이션 소스 갱신
+      u.previewUrl=done.previewUrl||null; if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; // ?v 캐시버스트 제거 — previewBase는 콘텐츠주소(UUID·불변)라 되돌려도 브라우저 캐시 히트=즉시. 파일 바뀌면 basename도 바뀜 if(done.captionSpec)u.captionSpec=done.captionSpec; if(typeof done.narration==='string')u.narration=done.narration; if('hasVoice' in done)u.hasVoice=done.hasVoice; // B+/V2 오버레이·나레이션 소스 갱신
       if(Array.isArray(done.scenes)&&done.scenes.length){ u.scenes=done.scenes.map(s=>Object.assign({},s)); u._orig=done.scenes.map(s=>Object.assign({},s)); } // 서버 최신 씬(새 썸네일 포함)
       else { // 재조회 실패 폴백: 로컬 낙관 상태를 확정
         u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{});});
         u.scenes=u._orig.map(s=>Object.assign({},s));
       }
       u.edits={}; u._dirty=false;
+      if(u.previewUrl)await ugcPreloadVideo(u.previewUrl); // 새 미리보기를 먼저 받아둠(immutable 캐시) → 아래 렌더가 브라우저 캐시서 즉시 스왑(버전전환 로딩 체감 제거)
       renderStudioResults();
       if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
       if(paid&&typeof loadCredits==='function')loadCredits();
@@ -4383,8 +4396,10 @@ async function ugcRenderVideo(){
 }
 // UGC 잡 상태 폴링 (최대 ~16분) — getJob은 resultUrl 반환
 async function pollUgcJob(jobId){
-  for(let i=0;i<120;i++){
-    await new Promise(r=>setTimeout(r,8000));
+  // 폴 간격 램프: 초반 촘촘(완성 즉시 감지 — 8s 고정이면 백엔드 완료 후 최대 8s 더 로딩) → 이후 4s. 총 ~16분(240틱).
+  //   순간 서버 오류(502/522)는 조용히 재시도(로딩 유지) — 잡은 백그라운드로 계속 진행되므로 다음 폴에서 회복.
+  for(let i=0;i<240;i++){
+    await new Promise(r=>setTimeout(r, i<4?2500:4000));
     let d;
     try{ d=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data; }catch(e){ continue; }
     if(!d)continue;

@@ -43,10 +43,13 @@ app.use(cookieParser());
 //          없으면 오브젝트 스토리지(S3/R2)로 302 redirect → 둘 다 없으면 404. MEDIA_S3 미설정 시 순수 로컬.
 const mediaStore = require('./storage/mediaStore');
 const IMAGES_DIR = path.join(process.cwd(), 'tmp', 'images');
+// /images 파일은 전부 UUID(콘텐츠 주소) = 불변 → 장기 immutable 캐시. 편집/버전전환마다 같은 영상을
+//   다시 받지 않아 즉시 전환됨(프론트가 새 URL을 미리 로드하면 렌더가 브라우저 캐시에서 즉시 서빙). 파일명이 바뀌면 URL도 바뀌므로 스테일 없음.
+const IMG_CACHE_MS = 1000 * 60 * 60 * 24 * 30; // 30일
 app.get('/images/:file', async (req, res, next) => {
   const name = path.basename(req.params.file); // path traversal 방지
   const local = path.join(IMAGES_DIR, name);
-  if (fs.existsSync(local)) return res.sendFile(local); // sendFile은 Range 처리 → 영상 탐색 정상
+  if (fs.existsSync(local)) return res.sendFile(local, { maxAge: IMG_CACHE_MS, immutable: true }); // sendFile은 Range 처리 → 영상 탐색 정상
   if (!mediaStore.isRemote()) return next(); // 로컬 전용 모드 → 404
   const remote = mediaStore.remoteUrl(name);
   if (remote) return res.redirect(302, remote); // 공개 CDN/버킷 설정 시 302 오프로드
@@ -54,6 +57,7 @@ app.get('/images/:file', async (req, res, next) => {
   try {
     const obj = await mediaStore.getObject(name, req.headers.range);
     if (!obj || !obj.Body) return next(); // 404
+    res.setHeader('Cache-Control', `public, max-age=${Math.floor(IMG_CACHE_MS / 1000)}, immutable`);
     if (obj.ContentType) res.setHeader('Content-Type', obj.ContentType);
     if (obj.ContentLength != null) res.setHeader('Content-Length', obj.ContentLength);
     res.setHeader('Accept-Ranges', 'bytes');

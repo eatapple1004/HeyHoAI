@@ -189,18 +189,19 @@ function delCompositeFiles(entry, protectedSet) {
     }
   }
 }
-// 캐시 조회 — 세 파일(최종·미리보기·무음)이 전부 복원돼야 히트. MRU 갱신, 스테일이면 제거하고 miss.
+// 캐시 조회 — 즉시 전환의 핵심인 **최종 파일만 있으면 히트**(preview/silent는 있으면 복원해 쓰고, 없으면 그 필드만 null).
+//   (전엔 셋 다 요구 → prod tmp에서 하나만 사라져도 미스→full 재조립. 최종본만 있으면 URL 스왑은 즉시 가능하므로 완화.)
+//   MRU 갱신. 최종 파일까지 없으면 스테일 엔트리 제거 후 miss. 반환은 복원 성공한 것만 담은 사본(죽은 링크 주입 방지).
 async function lookupComposite(R, key) {
   const arr = Array.isArray(R.composites) ? R.composites : [];
   const i = arr.findIndex((e) => e && e.key === key);
   if (i < 0) return null;
   const e = arr[i];
-  const file = await restoreClipLocal(e.file);
-  const preview = e.preview ? await restoreClipLocal(e.preview) : null;
+  if (!(await restoreClipLocal(e.file))) { arr.splice(i, 1); R.composites = arr; return null; } // 최종 파일 없으면 진짜 미스
+  const preview = e.preview ? await restoreClipLocal(e.preview) : null; // 있으면 로컬로 웜(오버레이·치싼 재합성용)
   const silent = e.silent ? await restoreClipLocal(e.silent) : null;
-  if (!file || (e.preview && !preview) || (e.silent && !silent)) { arr.splice(i, 1); R.composites = arr; return null; }
   arr.splice(i, 1); arr.push(e); R.composites = arr; // MRU(최근 사용을 뒤로)
-  return e;
+  return Object.assign({}, e, { preview: preview ? e.preview : null, silent: silent ? e.silent : null }); // 복원 안 된 베이스는 null → 히트 경로가 죽은 basename을 안 씀
 }
 // 캐시 저장 + LRU 정리 — 활성 결과(currentBasename)는 절대 제거 대상 아님.
 function storeComposite(R, key, entry, currentBasename) {
@@ -732,9 +733,11 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
     const ckey = compositeKey(scenes, sceneClips, plan, audio, aspect, styleForKey, script);
     const hit = await lookupComposite(R2, ckey);
     if (hit) {
-      // 활성 베이스/자막 스펙을 이 버전 것으로 복원(오버레이·치싼 재합성 정확성)
-      if (hit.preview) R2.previewBase = hit.preview;
-      if (hit.silent) R2.silentBase = hit.silent;
+      // 활성 베이스/자막 스펙을 이 버전 것으로 복원(오버레이·치싼 재합성 정확성).
+      //   preview/silent 파일이 유실됐으면(lookup이 null 반환) 베이스도 null로 → 오버레이는 최종본 표시,
+      //   이후 편집은 스테일 베이스 대신 full 경로로 재생성(다른 버전 영상이 섞이는 것 방지).
+      R2.previewBase = hit.preview || null;
+      R2.silentBase = hit.silent || null;
       if (hit.caption) R2.caption = hit.caption;
       const durationSec = hit.durationSec || Math.round((plan.meta.durationMs || 0) / 1000);
       const servedHit = path.join(servedDir, hit.file);
