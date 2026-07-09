@@ -656,11 +656,18 @@ async function getJob(id, userId) {
   }
   const j = r.rows[0];
   if (!j) return null;
+  const sc = j.script ? (safeParse(j.script) || {}) : {};
+  const R = sc._render || {};
   return {
     id: j.id, status: j.status, resultUrl: j.result_url, error: j.error,
     title: j.title, outputType: j.output_type, caption: j.caption, hashtags: j.hashtags,
     durationSec: j.duration_sec, subtitleMode: j.subtitle_mode, cost: j.charge_amount, nClips: j.n_clips,
     scenes: editableScenes(j.script, j.scene_clips), // 결과 편집용(brollPrompt 미노출)
+    // B+ 2b: 편집 중 자막 없는 미리보기 영상 + 브라우저 오버레이용 자막 스펙(타이밍·스타일).
+    previewUrl: R.previewBase ? `/images/${R.previewBase}` : null,
+    captionSpec: R.caption ? { timings: R.caption.timings || [], style: R.caption.style || {}, w: R.caption.w || 1080, h: R.caption.h || 1920 } : null,
+    subtitleStyle: R.subtitleStyle || null,
+    language: sc.language || 'ko',
   };
 }
 

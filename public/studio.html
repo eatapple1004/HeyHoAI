@@ -581,6 +581,8 @@
   #ugcInline .ugc-inline-fail{border:1px solid #e0605f;border-radius:14px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#e0605f;font-weight:650;font-size:14px;background:rgba(224,96,95,.05);text-align:center;padding:20px}
   #ugcInline .ugc-inline-vidwrap{position:relative;border-radius:14px;overflow:hidden;background:#000;max-width:340px;margin:0 auto}
   #ugcInline .ugc-inline-vid{width:100%;display:block;cursor:zoom-in}
+  /* B+ 자막 오버레이 — 자막 없는 미리보기 영상 위에 현재 자막을 즉시 표시(번인 결과 근사). */
+  #ugcInline .ugc-cap-ov{position:absolute;left:0;right:0;z-index:2;text-align:center;padding:0 6%;pointer-events:none;font-weight:800;line-height:1.18;letter-spacing:-.3px;color:#fff;text-shadow:0 2px 7px rgba(0,0,0,.72),0 0 2px rgba(0,0,0,.92);white-space:pre-wrap;word-break:keep-all;display:none}
   #ugcInline .ugc-inline-vidwrap .reel-mute{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
   #ugcInline .ugc-inline-vidwrap .reel-mute:hover{background:rgba(0,0,0,.82)}
   #ugcInline .ugc-inline-vidwrap .reel-mute.on{background:var(--accent,#8b7bff)}
@@ -2973,6 +2975,7 @@ function ugcSceneEditCap(el,jobId,n){
   if(val===cur)return; // 변경 없음
   b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{onScreenText:val}); b.ugc._dirty=true;
   ugcMarkEdited(el,jobId,'Caption edited');
+  const v=document.querySelector('#ugcInline .ugc-inline-vid'); if(v&&typeof ugcSyncCap==='function')ugcSyncCap(v,jobId); // B+ 오버레이 즉시 반영
 }
 // 음성(spoken) 편집 — 자막과 별개. 음성만 바꾸면 VO만 재생성(자막·클립·음악 재사용), 자막만 바꾸면 음성 유지(캐싱).
 function ugcSceneEditVoice(el,jobId,n){
@@ -3014,6 +3017,7 @@ async function ugcReassemble(jobId,opts){
     //   524("Server is busy")가 나고 피드가 안 바뀌던 문제 해결. 폴링 중 씬 스트립은 그대로 유지(변경 전 상태 계속 보임).
     const done=await pollUgcRerender(jobId,data.prevUrl);
     b.items=[{url:done.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
+    if(done.previewUrl)u.previewUrl=done.previewUrl+'?v='+Date.now(); if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; if(done.captionSpec)u.captionSpec=done.captionSpec; // B+ 오버레이 소스 갱신(음악 편집 시 새 previewBase)
     if(Array.isArray(done.scenes)&&done.scenes.length){ u.scenes=done.scenes.map(s=>Object.assign({},s)); u._orig=done.scenes.map(s=>Object.assign({},s)); } // 서버 최신 씬(새 썸네일 포함)
     else { // 재조회 실패 폴백: 로컬 낙관 상태를 확정
       u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{},('leadInMs' in e)?{leadInMs:e.leadInMs}:{},('tailMs' in e)?{tailMs:e.tailMs}:{});});
@@ -3283,13 +3287,47 @@ function renderUgcInline(b){
       +'<div class="ugc-scenes"><div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Each scene is being generated…</span></div><div class="ugc-strip">'+cards+'</div></div>';
     return; }
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
-  const it=b.items&&b.items[0]; let html='';
-  if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
+  const it=b.items&&b.items[0]; const u=b.ugc; let html='';
+  const useOverlay=u&&u.previewUrl; // B+ 편집 중엔 자막 없는 미리보기 + HTML 오버레이(즉시 반영). 확대·공유는 구운 최종.
+  if(useOverlay){ const zoom=(it&&it.url)||u.previewUrl;
+    html+='<div class="ugc-inline-vidwrap">'
+      +`<video class="ugc-inline-vid" src="${esc(u.previewUrl)}" autoplay muted loop playsinline ontimeupdate="ugcSyncCap(this,'${esc(u.jobId)}')" onloadeddata="ugcTryUnmute(this);ugcSyncCap(this,'${esc(u.jobId)}')" onclick="openImageModal('${esc(zoom)}','reel')"></video>`
+      +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`
+      +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
+      +'</div>';
+  } else if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
     +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onloadeddata="ugcTryUnmute(this)" onclick="openImageModal('${esc(it.url)}','reel')"></video>`
     +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
     +'</div>'; }
   if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
   el.innerHTML=html;
+}
+// B+ 자막 오버레이 싱크 — 미리보기(자막 없는) 영상의 현재 시각에 해당하는 자막을 오버레이에 표시.
+//   자막 텍스트는 편집분(edits) 우선 → 타이핑 즉시 반영. 실제 번인은 Apply 시 백그라운드로 파일에 구워짐.
+function ugcSyncCap(video,jobId){
+  const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
+  const ov=video.parentNode&&video.parentNode.querySelector('.ugc-cap-ov'); if(!ov)return;
+  const spec=u.captionSpec; const timings=(spec&&spec.timings)||[];
+  const st=Object.assign({},(spec&&spec.style)||{},u.subtitleStyle||{});
+  if(st.off){ ov.style.display='none'; return; }
+  const ms=(video.currentTime||0)*1000;
+  const t=timings.find(x=>ms>=x.startMs&&ms<x.startMs+x.durMs);
+  let text='';
+  if(t){ const s=u.scenes.find(x=>x.n===t.sceneN); const e=s&&u.edits[t.sceneN]; text=(e&&'onScreenText' in e)?e.onScreenText:(s?s.onScreenText:''); }
+  text=(text||'').trim();
+  if(!text){ ov.style.display='none'; if(ov.textContent)ov.textContent=''; return; }
+  ov.style.display='';
+  if(ov.textContent!==text)ov.textContent=text;
+  ugcStyleCapOv(ov,st);
+}
+// 오버레이 스타일 = 번인 프리셋 근사(위치·크기·색). 컨테이너(영상) 폭 기준으로 폰트 스케일.
+function ugcStyleCapOv(ov,st){
+  const pos=st.position||'bottom';
+  ov.style.top=pos==='top'?'8%':(pos==='middle'?'44%':'auto');
+  ov.style.bottom=pos==='bottom'?'12%':'auto';
+  const wrap=ov.parentNode; const w=(wrap&&wrap.clientWidth)||340;
+  const size=st.size||'m'; ov.style.fontSize=Math.round(w*(size==='s'?0.046:size==='l'?0.076:0.058))+'px';
+  ov.style.color={white:'#fff',yellow:'#ffe14d',black:'#111',mint:'#c7f5d9'}[st.color]||'#fff';
 }
 // 생성 시작 즉시 피드 맨 앞에 띄울 placeholder 배치(메타는 바로, 이미지는 로딩) — Leonardo식
 function makePendingBatch(r,extra,count,isReel){
@@ -4025,7 +4063,7 @@ async function ugcRenderVideo(){
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     const job=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
-      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType};} // 결과 편집(씬 스트립)용
+      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:job.language||'ko'};} // 결과 편집(씬 스트립 + B+ 자막 오버레이)용
       renderStudioResults();} // 우측 인라인에 완성 영상+씬 스트립
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){
