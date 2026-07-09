@@ -176,6 +176,9 @@
   .usc-vo{font-size:11px;line-height:1.35;padding:5px 8px;min-height:28px;color:var(--dim,#b9b9c6);outline:none;border-top:1px dashed rgba(255,255,255,.08)}
   .usc-vo:focus{background:rgba(139,124,246,.07)}
   .usc-vo:empty:before{content:attr(data-ph);color:var(--muted);opacity:.6}
+  .usc-line{display:flex;align-items:flex-start;gap:4px}
+  .usc-ic{font-size:10px;opacity:.5;padding:7px 0 0 6px;flex:0 0 auto;line-height:1;user-select:none;cursor:help}
+  .usc-line .usc-cap,.usc-line .usc-vo{flex:1;padding-left:2px}
   .usc-acts{display:flex;gap:3px;padding:5px;border-top:1px solid var(--border)}
   .usc-acts button{flex:1;background:transparent;border:1px solid var(--border);color:var(--fg,#ddd);border-radius:7px;padding:4px 0;font-size:12px;cursor:pointer;line-height:1}
   .usc-acts button:hover:not(:disabled){background:rgba(255,255,255,.07)}
@@ -2851,14 +2854,14 @@ function ugcSceneStripHtml(b){
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span></div>
-      <div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
+      <div class="usc-line"><span class="usc-ic" title="On-screen caption — text shown in the video">💬</span><div class="usc-cap" contenteditable="true" spellcheck="false" data-n="${s.n}"
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-           data-ph="Tap to edit caption">${esc(cap)}</div>
-      ${voiceMode?`<div class="usc-vo" contenteditable="true" spellcheck="false" data-n="${s.n}"
+           data-ph="Caption (shown on screen)">${esc(cap)}</div></div>
+      ${voiceMode?`<div class="usc-line"><span class="usc-ic" title="Voiceover — what the voice says (not shown on screen)">🎙</span><div class="usc-vo" contenteditable="true" spellcheck="false" data-n="${s.n}"
            onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-           data-ph="🎙 Voice line" title="What the voice says (separate from the caption)">${esc(spk)}</div>`:''}
+           data-ph="Voice line (spoken)">${esc(spk)}</div></div>`:''}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
         <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
