@@ -291,14 +291,43 @@ async function synthVoSegments(opts, plan, workDir, log) {
 }
 
 /**
- * 음성 주도 retiming — 음성 있는 씬의 길이를 그 씬 음성 길이(+여운, 최소 클램프)로 재설정하고
- *   video·subtitle·meta.durationMs를 누적 재계산(plan을 직접 갱신). 음성 없는 씬은 기존 길이 유지.
- *   → 음성이 씬 경계 넘어 끊김 없이 이어지고(연속), 영상이 음성에 맞춰 흐름.
- *   sceneOpts[sceneN] = { leadInMs, tailMs }(3a): 씬 시작 후 음성 딜레이(lead-in) / 음성 끝 여백(tail).
- * @returns {object|null} voStartByScene(음성 있는 씬의 음성 시작 시각) — 없으면 null(retiming 안 함)
+ * 통 나레이션(단일 음성 트랙) 생성/재사용 — 영상 전체에 하나의 음성. 씬별 세그먼트 아님(유저 결정).
+ *   영상 길이는 씬 고정 길이 그대로 → 음성이 길이를 좌우하지 않음. 음성 편집 = 이 트랙만 교체(재타이밍 0).
+ *   반환은 기존 세그먼트 배열 shape 유지(요소 1개, sceneN:0, startMs:0) → 캐싱·믹싱 하류 코드 재사용.
+ * @returns {Array<{sceneN:0, rel:string, durationMs:number}>|null}
+ */
+async function synthNarration(opts, workDir, log) {
+  if (!(opts.audio && opts.audio.voice) || !opts.script) return null;
+  const text = ((opts.script.scenes) || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' '); // 한 호흡으로 이어 읽기
+  if (!text) return null;
+  const rel = 'vo_0.mp3';
+  const reuse = Array.isArray(opts.reuseVo) ? opts.reuseVo : null;
+  // 단일 세그먼트일 때만 재사용(=신 통나레이션 캐시). 옛 잡의 씬별 다중 세그먼트는 재사용하면 첫 씬만
+  //   들어가므로 통 나레이션으로 재생성한다.
+  if (reuse && reuse.length === 1 && reuse[0].path && fs.existsSync(reuse[0].path)) {
+    await fsp.copyFile(reuse[0].path, path.join(workDir, rel));
+    log('VO 캐시 재사용(통 나레이션, 재생성 안 함)');
+    return [{ sceneN: 0, rel, durationMs: await probeDurationMs(path.join(workDir, rel)) }];
+  }
+  if (!tts.isConfigured()) { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); return null; }
+  try {
+    const p = await tts.synthesize(text, { outPath: path.join(workDir, rel), voiceId: opts.audio.voiceId, speed: opts.audio.speed });
+    if (!p) return null;
+    log(`VO(통 나레이션) 생성… [${tts.provider()}]`);
+    return [{ sceneN: 0, rel, durationMs: await probeDurationMs(p) }];
+  } catch (e) { log(`⚠️ VO 실패, 스킵: ${e.message}`); return null; }
+}
+
+/**
+ * 씬 타이밍 재계산 — **영상 길이 고정 + 음성 오버플로 가드**(유저 결정).
+ *   각 씬은 생성 시 정한 고정 길이(3s/5s 등)를 유지 → 영상 총 길이가 음성 따라 들쭉날쭉하지 않고 예측 가능.
+ *   단 음성(+lead-in/tail)이 그 슬롯보다 길면 그 씬만 늘려 음성이 잘리지 않게 함. 음성 짧으면 슬롯 유지(뒤 여백).
+ *   video·subtitle·meta.durationMs를 누적 재계산(plan 직접 갱신). 음성 없는 씬·무음 영상은 고정 길이.
+ *   sceneOpts[sceneN] = { leadInMs, tailMs }(3a): 음성 시작 딜레이 / 음성 끝 여백.
+ * @returns {object|null} voStartByScene(음성 있는 씬의 음성 시작 시각) — 없으면 null
  */
 function retimeByVoice(plan, voSegs, sceneOpts = {}) {
-  if (!voSegs || !voSegs.length) return null; // 무음 영상은 기존 씬 길이 유지
+  if (!voSegs || !voSegs.length) return null; // 무음 영상은 고정 길이 유지
   const voDur = {};
   voSegs.forEach((s) => { voDur[s.sceneN] = s.durationMs; });
   let cursor = 0;
@@ -308,7 +337,8 @@ function retimeByVoice(plan, voSegs, sceneOpts = {}) {
     const opt = sceneOpts[v.sceneN] || {};
     const lead = d ? Math.max(0, Math.round(opt.leadInMs || 0)) : 0;             // 씬 시작 후 음성까지 여백
     const tail = d ? Math.max(VO_TAIL_MS, Math.round(opt.tailMs || 0)) : 0;       // 음성 끝 후 여운(기본 VO_TAIL_MS)
-    const durMs = d ? Math.max(lead + d + tail, MIN_SCENE_MS) : v.durMs;
+    const fixed = v.durMs; // 생성 시 정한 고정 길이 — 기본은 이 길이 유지(영상 총 길이 예측 가능)
+    const durMs = d ? Math.max(fixed, lead + d + tail, MIN_SCENE_MS) : fixed;     // 음성이 슬롯보다 길 때만 그 씬 확장(잘림 방지)
     v.startMs = cursor;
     v.durMs = durMs;
     if (d) voStart[v.sceneN] = cursor + lead; // 음성은 lead-in 후 시작
@@ -366,14 +396,10 @@ async function assemble(plan, opts = {}) {
   const CW = dims.w, CH = dims.h;
   const fit = fitFilter(CW, CH);
 
-  // 0) 음성 주도(1단계): VO 먼저 생성·길이 측정 → 씬 타이밍을 음성 길이로 재계산(plan mutate).
-  //    음성 있는 씬 = 그 음성 길이만큼(+여운, 최소 클램프) → 음성이 씬 넘어 끊김 없이 이어짐.
-  //    음성 없으면 voStart=null이고 씬 길이는 기존 유지(무음 영상).
-  const voSegsData = await synthVoSegments(opts, plan, workDir, log);
-  const sceneOpts = {}; // 씬별 lead-in/tail(3a) — 대본 씬 필드에서 추출
-  ((opts.script && opts.script.scenes) || []).forEach((s) => { sceneOpts[s.n] = { leadInMs: s.leadInMs, tailMs: s.tailMs }; });
-  const voStart = retimeByVoice(plan, voSegsData, sceneOpts);
-  // clips는 plan.tracks.video와 동일 참조라 retiming(durMs) 자동 반영됨.
+  // 0) 음성 = 영상 전체에 통 나레이션 한 트랙(유저 결정). 영상 길이는 씬 고정 길이 그대로(buildRenderPlan)
+  //    → 음성이 영상 길이를 좌우하지 않음(예측 가능) + 음성 편집이 재타이밍 없이 트랙만 교체됨.
+  //    자막 타이밍(plan.tracks.subtitle)도 고정 길이 그대로 → 씬 기본 배치. (retimeByVoice 미사용)
+  const voSegsData = await synthNarration(opts, workDir, log); // [{sceneN:0, rel, durationMs}] or null
 
   // 1) 클립별 세그먼트 정규화
   log(`세그먼트 정규화 ${clips.length}개… (${CW}x${CH})`);
@@ -402,7 +428,7 @@ async function assemble(plan, opts = {}) {
 
   if (wantVoice && voSegsData) {
     voSegsOut = voSegsData;
-    voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: (voStart && voStart[seg.sceneN]) || 0 }));
+    voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: 0 })); // 통 나레이션 = 0부터
   }
   if (wantMusic) {
     if (opts.reuseMusic && fs.existsSync(opts.reuseMusic)) {
@@ -435,7 +461,7 @@ async function assemble(plan, opts = {}) {
   const burned = await burnCaptions({ basePath, subtitle, style: subStyle, w: CW, h: CH, workDir, hasAudio, log });
 
   log(`조립 완료: ${burned.videoPath}`);
-  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: (voStart && voStart[s.sceneN]) || 0 })) : null;
+  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: 0 })) : null;
   return {
     videoPath: burned.videoPath, basePath, silentPath: concatPath, workDir, activeTracks: active, segments: segments.length,
     subtitleMode: burned.subtitleMode, subtitleFile: burned.subtitleFile, audioTracks,

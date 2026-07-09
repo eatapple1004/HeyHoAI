@@ -27,6 +27,7 @@ const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
 const { assemble, burnCaptions, muxAudio } = require('./assembler/ffmpeg.assembler');
 const music = require('./audio/music.service');
+const tts = require('./audio/tts.service');
 
 const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우트가 서빙하는 디렉토리
 
@@ -326,21 +327,22 @@ async function failRerender(jobId, err) {
 }
 
 /**
- * B+ 값싼 재합성 — 자막(텍스트/스타일)·음악만 바뀌는 편집을 "무자막 베이스 + 캐시 오디오"에서 재조립.
- *   클립 복원·씬 재인코딩·재타이밍 0 (타이밍 불변 편집만). muxAudio+burnCaptions 프리미티브 재사용 → 몇 초·실패지점 최소.
- *   ⚠️ 타이밍 바뀌는 편집(순서·삭제·씬재생성/추가·음성변경·leadIn/tail·spoken)은 null 반환 → 호출부가 전체 reRender로 폴백.
- *   레거시 잡(베이스 미영속)·복원 실패도 null(폴백). 성공 시에만 잡을 succeeded로 갱신.
+ * B+ 값싼 재합성 — 자막(텍스트/스타일)·음악·음성 편집을 "무자막 베이스 + 캐시/재합성 오디오"에서 재조립.
+ *   영상 길이 고정 + 음성 단일 나레이션이라 재타이밍 없음 → 클립 재작업 0. 음성 변경 시 나레이션만 재합성(TTS 1회)+재믹싱.
+ *   자막/스타일만 = previewBase에 자막 1패스. 음악/음성 = silentBase에 오디오 재믹싱 후 자막.
+ *   muxAudio+burnCaptions+tts+music 프리미티브 재사용 → 몇 초·실패지점 최소.
+ *   ⚠️ 씬 구조 바뀌는 편집(순서·삭제·씬재생성/추가·spoken·leadIn/tail)은 null → 전체 reRender 폴백. 레거시 잡(베이스 미영속)·복원 실패도 null.
  * @returns {Promise<{jobId,resultUrl,durationSec,cost}|null>}
  */
 async function tryReComposite({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null }) {
-  if ((redoScenes && redoScenes.length) || (addScenes && addScenes.length) || (removed && removed.length)) return null; // 타이밍/클립 변경
-  if (voice != null || voiceId || (speed != null && speed !== '')) return null; // 음성 변경 = 재타이밍 필요
-  for (const k in (edits || {})) { for (const f in (edits[k] || {})) if (f !== 'onScreenText') return null; } // 자막 텍스트 외(spoken/lead/tail)면 폴백
+  if ((redoScenes && redoScenes.length) || (addScenes && addScenes.length) || (removed && removed.length)) return null; // 씬 구조/클립 변경 → 폴백
+  for (const k in (edits || {})) { for (const f in (edits[k] || {})) if (f !== 'onScreenText') return null; } // 자막 텍스트 외(spoken/lead/tail)면 폴백(추후 나레이션 편집기)
   const hasCaptionEdit = Object.keys(edits || {}).length > 0;
   const hasStyle = subtitleStyle && typeof subtitleStyle === 'object' && Object.keys(subtitleStyle).length > 0;
   const mv = musicVibe == null ? null : String(musicVibe).trim();
   const hasMusic = mv != null;
-  if (!hasCaptionEdit && !hasStyle && !hasMusic) return null; // 값싼 경로로 처리할 변경이 없음
+  const hasVoiceEdit = (voice != null) || !!voiceId || (speed != null && speed !== ''); // 단일 나레이션이라 음성 편집도 재타이밍 없이 값싼 경로
+  if (!hasCaptionEdit && !hasStyle && !hasMusic && !hasVoiceEdit) return null; // 값싼 경로로 처리할 변경이 없음
 
   const row = await loadJobForEdit(jobId, user.id);
   if (!row || !row.script) return null;
@@ -359,7 +361,11 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
     for (const k in (edits || {})) { const e = edits[k]; const s = script.scenes.find((x) => String(x.n) === String(k)); if (s && e && 'onScreenText' in e) s.onScreenText = String(e.onScreenText || '').slice(0, 300); }
     if (hasStyle) R.subtitleStyle = { ...(R.subtitleStyle || {}), ...subtitleStyle };
     let audio = { ...(R.audio || {}) };
-    if (hasMusic) { if (mv.toLowerCase() === 'none') audio.music = false; else { script.musicVibe = mv.toLowerCase() === 'auto' ? '' : mv; audio.music = true; } R.audio = audio; }
+    if (hasMusic) { if (mv.toLowerCase() === 'none') audio.music = false; else { script.musicVibe = mv.toLowerCase() === 'auto' ? '' : mv; audio.music = true; } }
+    if (voice != null) audio.voice = !!voice;                              // 음성 on/off
+    if (voiceId) audio.voiceId = String(voiceId);                          // 보이스 교체
+    if (speed != null && speed !== '') audio.speed = Number(speed);        // 말속도
+    if (hasMusic || hasVoiceEdit) R.audio = audio;                         // 오디오 변경 영속
 
     const byN = {}; script.scenes.forEach((s) => { byN[s.n] = s; });
     const style = { ...(R.caption.style || {}), ...(R.subtitleStyle || {}), lang: script.language || (R.caption.style && R.caption.style.lang) || 'ko' };
@@ -372,14 +378,24 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
     const wantVoice = !!audio.voice, wantMusic = !!audio.music;
 
     let baseAbs; // 자막 얹을 베이스(영상+오디오, 자막 없음)
-    if (hasMusic) {
-      // 음악 변경 → silentBase에 VO(재사용)+새 음악 재믹싱 → previewBase 갱신
+    if (hasMusic || hasVoiceEdit) {
+      // 음악/음성 변경 → silentBase에 오디오 재믹싱 → previewBase 갱신 (재타이밍·클립 재작업 0)
       const silent = await restoreClipLocal(R.silentBase);
       if (!silent) return null; // 베이스 복원 실패 → 폴백
       const audioInputs = [];
-      if (wantVoice && R.audioAssets && R.audioAssets.vo && Array.isArray(R.audioAssets.vo.segs)) {
-        for (const seg of R.audioAssets.vo.segs) { const p = await restoreClipLocal(seg.file); if (p) audioInputs.push({ file: p, volume: 1.0, kind: 'vo', delayMs: seg.startMs || 0 }); }
-      }
+      // VO(통 나레이션): 음성 편집이면 새 보이스/속도로 재합성, 아니면 캐시 재사용. voice off면 VO 없음.
+      if (wantVoice) {
+        const narrText = script.scenes.map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' ');
+        let voLocal = null;
+        if (hasVoiceEdit && narrText && tts.isConfigured()) {
+          rlog(`나레이션 재합성(음성 변경) [${tts.provider()}]`);
+          try { voLocal = await tts.synthesize(narrText, { outPath: path.join(workDir, 'vo.mp3'), voiceId: audio.voiceId, speed: audio.speed }); } catch (e) { rlog(`VO 재합성 실패: ${e.message}`); }
+          if (voLocal && R.audioAssets) R.audioAssets.vo = { key: voKey(script, audio), segs: [{ sceneN: 0, file: await persistAudioFile(voLocal), startMs: 0 }] };
+        } else if (R.audioAssets && R.audioAssets.vo && Array.isArray(R.audioAssets.vo.segs) && R.audioAssets.vo.segs[0]) {
+          voLocal = await restoreClipLocal(R.audioAssets.vo.segs[0].file); // 재사용(음성 안 바뀜)
+        }
+        if (voLocal) audioInputs.push({ file: voLocal, volume: 1.0, kind: 'vo', delayMs: 0 });
+      } else if (R.audioAssets) { delete R.audioAssets.vo; } // voice off → VO 자산 제거
       if (wantMusic) {
         if (music.isConfigured()) {
           rlog('음악만 재생성 [elevenlabs music]');
@@ -409,7 +425,7 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
          JSON.stringify({ type: 'video', source: 'ugc', outputType: row.output_type, duration: durationSec, subtitleMode: burned.subtitleMode, edited: true })]);
     }
     await updateJob(jobId, { status: 'succeeded', result_url: `/images/${filename}`, duration_sec: durationSec, subtitle_mode: burned.subtitleMode, script: JSON.stringify(script) });
-    rlog(`값싼 재합성 완료(${hasMusic ? '음악+' : ''}자막, 클립/재타이밍 0) → /images/${filename}`);
+    rlog(`값싼 재합성 완료(${(hasMusic || hasVoiceEdit) ? '오디오+' : ''}자막, 클립/재타이밍 0) → /images/${filename}`);
     return { jobId, resultUrl: `/images/${filename}`, durationSec, cost: 0 };
   } catch (e) {
     log.warn(`[recompose ${jobId}] 실패 → 전체 재조립 폴백: ${e.message}`);
