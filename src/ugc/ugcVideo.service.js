@@ -38,7 +38,8 @@ const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우�
 function audioKey(parts) { return crypto.createHash('sha1').update(parts.join('|')).digest('hex').slice(0, 16); }
 // VO 키 = 씬 대사(spoken 우선)만 — voSegments와 동일 기준(hook/CTA 제외). 자막만 바뀌고 spoken 있으면 키 불변→VO 재사용.
 function voKey(script, audio = {}) {
-  const text = (script.scenes || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join('|');
+  const text = (script.narration && String(script.narration).trim())
+    || (script.scenes || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join('|');
   return audioKey([text, audio.voiceId || '', String(audio.speed || 1)]);
 }
 // 음악 키 = 무드(프롬프트)만. 길이는 제외 — 음성 주도로 durationMs가 매 편집 변하는데,
@@ -334,15 +335,17 @@ async function failRerender(jobId, err) {
  *   ⚠️ 씬 구조 바뀌는 편집(순서·삭제·씬재생성/추가·spoken·leadIn/tail)은 null → 전체 reRender 폴백. 레거시 잡(베이스 미영속)·복원 실패도 null.
  * @returns {Promise<{jobId,resultUrl,durationSec,cost}|null>}
  */
-async function tryReComposite({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null }) {
+async function tryReComposite({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null }) {
   if ((redoScenes && redoScenes.length) || (addScenes && addScenes.length) || (removed && removed.length)) return null; // 씬 구조/클립 변경 → 폴백
-  for (const k in (edits || {})) { for (const f in (edits[k] || {})) if (f !== 'onScreenText') return null; } // 자막 텍스트 외(spoken/lead/tail)면 폴백(추후 나레이션 편집기)
+  for (const k in (edits || {})) { for (const f in (edits[k] || {})) if (f !== 'onScreenText') return null; } // 자막 텍스트 외(spoken/lead/tail)면 폴백
   const hasCaptionEdit = Object.keys(edits || {}).length > 0;
   const hasStyle = subtitleStyle && typeof subtitleStyle === 'object' && Object.keys(subtitleStyle).length > 0;
   const mv = musicVibe == null ? null : String(musicVibe).trim();
   const hasMusic = mv != null;
-  const hasVoiceEdit = (voice != null) || !!voiceId || (speed != null && speed !== ''); // 단일 나레이션이라 음성 편집도 재타이밍 없이 값싼 경로
-  if (!hasCaptionEdit && !hasStyle && !hasMusic && !hasVoiceEdit) return null; // 값싼 경로로 처리할 변경이 없음
+  const narrationChanged = narration != null; // V2 나레이션 편집기 → 통 나레이션 재합성(값싼)
+  const hasVoiceEdit = (voice != null) || !!voiceId || (speed != null && speed !== '') || narrationChanged;
+  const hasTimingEdit = Array.isArray(captionTimings) && captionTimings.length > 0; // V2 자막 타임라인 → 자막 타이밍만(값싼)
+  if (!hasCaptionEdit && !hasStyle && !hasMusic && !hasVoiceEdit && !hasTimingEdit) return null; // 값싼 경로로 처리할 변경이 없음
 
   const row = await loadJobForEdit(jobId, user.id);
   if (!row || !row.script) return null;
@@ -365,7 +368,18 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
     if (voice != null) audio.voice = !!voice;                              // 음성 on/off
     if (voiceId) audio.voiceId = String(voiceId);                          // 보이스 교체
     if (speed != null && speed !== '') audio.speed = Number(speed);        // 말속도
+    if (narrationChanged) script.narration = String(narration).slice(0, 5000); // V2 나레이션 편집기 → 통 나레이션 텍스트
     if (hasMusic || hasVoiceEdit) R.audio = audio;                         // 오디오 변경 영속
+    // V2 자막 타임라인 → 자막 타이밍 override(영속). 씬 매핑·숫자만 정제, 영상 길이 안에 클램프.
+    if (hasTimingEdit) {
+      const dur = R.durationMs || 0;
+      R.caption.timings = captionTimings.map((t) => {
+        const start = Math.max(0, Math.round(Number(t.startMs) || 0));
+        let d = Math.max(200, Math.round(Number(t.durMs) || 0));
+        if (dur && start + d > dur) d = Math.max(200, dur - start);
+        return { sceneN: Number(t.sceneN), startMs: start, durMs: d };
+      }).filter((t) => Number.isFinite(t.sceneN));
+    }
 
     const byN = {}; script.scenes.forEach((s) => { byN[s.n] = s; });
     const style = { ...(R.caption.style || {}), ...(R.subtitleStyle || {}), lang: script.language || (R.caption.style && R.caption.style.lang) || 'ko' };
@@ -385,7 +399,7 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
       const audioInputs = [];
       // VO(통 나레이션): 음성 편집이면 새 보이스/속도로 재합성, 아니면 캐시 재사용. voice off면 VO 없음.
       if (wantVoice) {
-        const narrText = script.scenes.map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' ');
+        const narrText = (script.narration && String(script.narration).trim()) || script.scenes.map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' ');
         let voLocal = null;
         if (hasVoiceEdit && narrText && tts.isConfigured()) {
           rlog(`나레이션 재합성(음성 변경) [${tts.provider()}]`);
@@ -443,9 +457,9 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, dryRunVideo = false }) {
-  // B+ 값싼 경로 우선: 자막(텍스트/스타일)·음악만 바뀌면 무자막 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
-  const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle });
+async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, dryRunVideo = false }) {
+  // B+ 값싼 경로 우선: 자막(텍스트/스타일·타이밍)·음악·음성/나레이션만 바뀌면 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
+  const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle, narration, captionTimings });
   if (cheap) return cheap;
 
   const row = await loadJobForEdit(jobId, user.id);
@@ -684,6 +698,9 @@ async function getJob(id, userId) {
     captionSpec: R.caption ? { timings: R.caption.timings || [], style: R.caption.style || {}, w: R.caption.w || 1080, h: R.caption.h || 1920 } : null,
     subtitleStyle: R.subtitleStyle || null,
     language: sc.language || 'ko',
+    // V2: 통 나레이션 텍스트(편집기 프리필) — 전용 필드 우선, 없으면 씬 대사 이어붙임. 음성 켜진 잡만 의미.
+    narration: (sc.narration && String(sc.narration).trim()) || (Array.isArray(sc.scenes) ? sc.scenes.map((s) => (s.spoken || '').trim()).filter(Boolean).join(' ') : ''),
+    hasVoice: !!(R.audio && R.audio.voice),
   };
 }
 

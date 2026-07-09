@@ -168,6 +168,9 @@
   .ugc-arow-go{background:var(--card2,#191921);color:inherit;border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap}
   .ugc-arow-go:hover{border-color:var(--accent,#8b7cf6)}
   .ugc-arow-go:disabled{opacity:.55;cursor:default}
+  .ugc-narr-row{align-items:flex-start}
+  .ugc-narr-ta{flex:1 1 240px;min-width:160px;background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:7px 9px;font-size:12.5px;line-height:1.4;font-family:inherit;resize:vertical}
+  .ugc-narr-ta:focus{outline:none;border-color:var(--accent,#8b7cf6)}
   .usc{position:relative;flex:0 0 132px;width:132px;background:var(--card2,#191921);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .usc.usc-edited{border-color:var(--accent,#8b7cf6);box-shadow:0 0 0 1px var(--accent,#8b7cf6)}
   .usc.usc-edited::after{content:'● edited';position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;color:#fff;background:var(--accent,#8b7cf6);border-radius:5px;padding:1px 5px;z-index:2;pointer-events:none}
@@ -2861,11 +2864,7 @@ function ugcSceneStripHtml(b){
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
            data-ph="Caption (shown on screen)">${esc(cap)}</div></div>
-      ${voiceMode?`<div class="usc-line"><span class="usc-ic" title="Voiceover — what the voice says. Type [쉼] for a short pause, [긴쉼] for a long one.">🎙</span><div class="usc-vo" contenteditable="true" spellcheck="false" data-n="${s.n}"
-           onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})"
-           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-           title="Type [쉼] for a pause, [긴쉼] for a longer one"
-           data-ph="Voice line · [쉼]=pause">${esc(spk)}</div></div>`:''}
+      ${''/* V2: 음성은 씬별이 아니라 영상 전체 "통 나레이션" 한 편집창으로 이전 → 씬 카드엔 자막(💬)만 */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
         <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
@@ -2902,6 +2901,11 @@ function ugcSceneStripHtml(b){
         <option value="0.85">Slow</option><option value="1" selected>Normal</option><option value="1.1">Fast</option>
       </select>
       <button type="button" class="ugc-arow-go ugc-voice-go" onclick="ugcChangeVoice('${esc(b.ugc.jobId)}')">Update voice</button>
+    </div>
+    <div class="ugc-arow ugc-narr-row">
+      <span class="ugc-arow-lbl">📝 Narration</span>
+      <textarea class="ugc-narr-ta" rows="2" placeholder="One voiceover for the whole video…" maxlength="1200">${esc(u.narration||'')}</textarea>
+      <button type="button" class="ugc-arow-go ugc-narr-go" onclick="ugcChangeNarration('${esc(b.ugc.jobId)}')">Update narration</button>
     </div>
     <div class="ugc-arow">
       <span class="ugc-arow-lbl">💬 Captions</span>
@@ -2996,7 +3000,9 @@ async function ugcReassemble(jobId,opts){
   const hasMusic=opts.musicVibe!=null; // 음악만 교체(무과금)
   const hasVoice=!!opts.voice; // 음성 on/off·보이스·속도({voice,voiceId,speed})
   const hasCaptions=!!opts.subtitleStyle; // 자막 스타일(위치·크기·색상)
-  if(!paid&&!u._dirty&&!hasMusic&&!hasVoice&&!hasCaptions)return; // 변경 없으면 무시
+  const hasNarr=opts.narration!=null; // V2 통 나레이션 텍스트
+  const hasTimings=Array.isArray(opts.captionTimings)&&opts.captionTimings.length>0; // V2 자막 타임라인
+  if(!paid&&!u._dirty&&!hasMusic&&!hasVoice&&!hasCaptions&&!hasNarr&&!hasTimings)return; // 변경 없으면 무시
   const order=u.scenes.map(s=>s.n);
   const origNs=(u._orig||u.scenes).map(s=>s.n); const keep=new Set(order); const removed=origNs.filter(n=>!keep.has(n));
   const edits={}; for(const k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; } // 남은 씬의 편집만
@@ -3007,6 +3013,8 @@ async function ugcReassemble(jobId,opts){
   if(hasMusic)body.musicVibe=opts.musicVibe;
   if(hasVoice){ body.voice=opts.voice.voice; if(opts.voice.voiceId)body.voiceId=opts.voice.voiceId; if(opts.voice.speed)body.speed=opts.voice.speed; }
   if(hasCaptions)body.subtitleStyle=opts.subtitleStyle;
+  if(hasNarr)body.narration=opts.narration; // V2 통 나레이션
+  if(hasTimings)body.captionTimings=opts.captionTimings; // V2 자막 타임라인
   const setBusy=opts.setBusy||function(){}; setBusy(true);
   try{
     const res=await fetch('/api/generate/ugc/re-render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -3017,7 +3025,7 @@ async function ugcReassemble(jobId,opts){
     //   524("Server is busy")가 나고 피드가 안 바뀌던 문제 해결. 폴링 중 씬 스트립은 그대로 유지(변경 전 상태 계속 보임).
     const done=await pollUgcRerender(jobId,data.prevUrl);
     b.items=[{url:done.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
-    if(done.previewUrl)u.previewUrl=done.previewUrl+'?v='+Date.now(); if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; if(done.captionSpec)u.captionSpec=done.captionSpec; // B+ 오버레이 소스 갱신(음악 편집 시 새 previewBase)
+    if(done.previewUrl)u.previewUrl=done.previewUrl+'?v='+Date.now(); if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; if(done.captionSpec)u.captionSpec=done.captionSpec; if(typeof done.narration==='string')u.narration=done.narration; if('hasVoice' in done)u.hasVoice=done.hasVoice; // B+/V2 오버레이·나레이션 소스 갱신
     if(Array.isArray(done.scenes)&&done.scenes.length){ u.scenes=done.scenes.map(s=>Object.assign({},s)); u._orig=done.scenes.map(s=>Object.assign({},s)); } // 서버 최신 씬(새 썸네일 포함)
     else { // 재조회 실패 폴백: 로컬 낙관 상태를 확정
       u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{},('leadInMs' in e)?{leadInMs:e.leadInMs}:{},('tailMs' in e)?{tailMs:e.tailMs}:{});});
@@ -3077,6 +3085,14 @@ async function ugcChangeVoice(jobId){
   const payload={voice:on?on.checked:true, voiceId:vid?vid.value:'', speed:sp?sp.value:''};
   const btn=cont.querySelector('.ugc-voice-go'); const o=btn?btn.textContent:'Update voice';
   await ugcReassemble(jobId,{voice:payload,setBusy:function(x){if(btn){btn.disabled=x;btn.textContent=x?'Updating…':o;}}});
+}
+// V2 통 나레이션(무과금) — 영상 전체 한 음성 트랙 텍스트 교체 → 나레이션 재합성 + 고정 베이스 재믹싱(재타이밍 0).
+async function ugcChangeNarration(jobId){
+  const cont=ugcCont(jobId); if(!cont)return;
+  const ta=cont.querySelector('.ugc-narr-ta'); const val=ta?ta.value.trim():'';
+  if(!val){toast('Write the narration first');return;}
+  const btn=cont.querySelector('.ugc-narr-go'); const o=btn?btn.textContent:'Update narration';
+  await ugcReassemble(jobId,{narration:val,setBusy:function(x){if(btn){btn.disabled=x;btn.textContent=x?'Updating…':o;}}});
 }
 // 자막 스타일(무과금) — 프리셋(폰트+박스+색)·위치·크기·on/off. 클립·음성·음악 전부 재사용, 자막만 재번인.
 async function ugcChangeCaptions(jobId){
@@ -4063,7 +4079,7 @@ async function ugcRenderVideo(){
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     const job=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
-      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:job.language||'ko'};} // 결과 편집(씬 스트립 + B+ 자막 오버레이)용
+      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:job.language||'ko',narration:job.narration||'',hasVoice:job.hasVoice!==false};} // 결과 편집(씬 스트립 + B+ 자막 오버레이 + 나레이션)용
       renderStudioResults();} // 우측 인라인에 완성 영상+씬 스트립
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){

@@ -298,7 +298,9 @@ async function synthVoSegments(opts, plan, workDir, log) {
  */
 async function synthNarration(opts, workDir, log) {
   if (!(opts.audio && opts.audio.voice) || !opts.script) return null;
-  const text = ((opts.script.scenes) || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' '); // 한 호흡으로 이어 읽기
+  // 나레이션 텍스트 = 전용 필드(narration, V2 나레이션 편집기) 우선, 없으면 씬 대사를 이어 읽기.
+  const text = (opts.script.narration && String(opts.script.narration).trim())
+    || ((opts.script.scenes) || []).map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' ');
   if (!text) return null;
   const rel = 'vo_0.mp3';
   const reuse = Array.isArray(opts.reuseVo) ? opts.reuseVo : null;
