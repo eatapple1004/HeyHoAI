@@ -2,18 +2,27 @@
 (function () {
   if (document.querySelector('.rail')) return; // 중복 주입 방지
   var path = location.pathname;
-  function active(ms) { return ms.some(function (m) { return path === m || path.indexOf(m) === 0; }); }
+  var isUgc = /(?:^|[?&])mode=ugc(?:&|$)/i.test(location.search); // Ad Video = /studio?mode=ugc (Studio와 경로 공유 → 쿼리로 구분)
+  function active(it) {
+    if (!it.m.some(function (m) { return path === m || path.indexOf(m) === 0; })) return false;
+    if (it.q === 'ugc') return isUgc;    // Ad Video: /studio 이면서 mode=ugc 일 때만
+    if (it.q === '!ugc') return !isUgc;  // Studio: /studio 이면서 ugc 아닐 때만
+    return true;
+  }
   var IC = {
     studio: '<svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.5L20 10l-5.8 1.5L12 17l-2.2-5.5L4 10l5.8-1.5z"/></svg>',
+    advideo: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10l6-3v10l-6-3z"/></svg>',
     explore: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg>',
     library: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
     store: '<svg viewBox="0 0 24 24"><path d="M4 4h16l1 5a2.5 2.5 0 01-4.9.6 2.5 2.5 0 01-4.9 0 2.5 2.5 0 01-4.9 0A2.5 2.5 0 013 9z"/><path d="M5 11v8a1 1 0 001 1h12a1 1 0 001-1v-8"/></svg>',
     billing: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg>',
     creator: '<svg viewBox="0 0 24 24"><path d="M4 4h16l-1 4.4a2.6 2.6 0 01-5 .3 2.6 2.6 0 01-5 0 2.6 2.6 0 01-5-.3z"/><path d="M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9"/><path d="M10 20v-5h4v5"/></svg>'
   };
-  // (2026-07-03) 순서: Studio · Library · Store · Explore · Creator(flag) · Billing. Store = 옛 Explore>Templates 카탈로그(/store).
+  // (2026-07-09) 순서: Studio · Ad Video · Library · Store · Community · Creator(flag) · Billing.
+  //   Studio·Ad Video = 대표 상품(둘 다 /studio, Ad Video는 mode=ugc 딥링크 → bootFromUrl이 ugc 모드로 진입).
   var items = [
-    { h: '/studio', l: 'Studio', i: IC.studio, m: ['/studio'] },
+    { h: '/studio', l: 'Studio', i: IC.studio, m: ['/studio'], q: '!ugc' },
+    { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc' },
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
     { h: '/explore', l: 'Community', i: IC.explore, m: ['/explore'] }, // 페이지 제목은 'Community Creations'(explore.html), 레일은 축약
@@ -22,7 +31,7 @@
   ];
   var html = '<div class="rail-brand" onclick="location.href=\'/landing\'" title="Doppia"><img src="/favicon-512.png" alt="Doppia"></div><div class="rail-nav">';
   items.forEach(function (it) {
-    html += '<a class="rail-item' + (active(it.m) ? ' active' : '') + '"' + (it.f ? ' data-flag="' + it.f + '"' : '') + ' onclick="location.href=\'' + it.h + '\'" title="' + it.l + '">' + it.i + '<span>' + it.l + '</span></a>';
+    html += '<a class="rail-item' + (active(it) ? ' active' : '') + '"' + (it.f ? ' data-flag="' + it.f + '"' : '') + ' onclick="location.href=\'' + it.h + '\'" title="' + it.l + '">' + it.i + '<span>' + it.l + '</span></a>';
   });
   html += '</div>';
   var rail = document.createElement('aside');
