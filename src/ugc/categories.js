@@ -51,4 +51,11 @@ function categoryList() {
   return Object.entries(PLAYBOOKS).map(([value, p]) => ({ value, label: p.label }));
 }
 
-module.exports = { PLAYBOOKS, getPlaybook, categoryList };
+/** 카테고리 미지정(Auto) 시 — 전체 플레이북을 메뉴로 프롬프트에 주입해 Claude가 사진 보고 판별·적용. */
+function playbookMenu() {
+  return Object.values(PLAYBOOKS).map((p) =>
+    `  · If it's ${p.label} — shot palette: ${p.shots.join(', ')}; style: ${p.style}; lean musicVibe: ${p.music}.`
+  );
+}
+
+module.exports = { PLAYBOOKS, getPlaybook, categoryList, playbookMenu };

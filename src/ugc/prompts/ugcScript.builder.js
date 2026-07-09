@@ -9,7 +9,7 @@
  * 산출물: 엄격한 JSON(스키마는 ugcScript.service.SCRIPT_SCHEMA 와 정합).
  */
 const { getProfile, DEFAULT_OUTPUT_TYPE } = require('../profiles');
-const { getPlaybook } = require('../categories');
+const { getPlaybook, playbookMenu } = require('../categories');
 
 // 포맷별 골격 힌트(Claude가 구조를 잡도록).
 const FORMAT_HINTS = {
@@ -80,7 +80,11 @@ function buildUgcScriptPrompt(input) {
       `- CATEGORY PALETTE — ${playbook.label}: draw from these shot TYPES as a menu (pick, reorder, skip, or vary freely to fit THIS brief — it is not a fixed sequence, and two ads should not look identical): ${playbook.shots.join(', ')}.`,
       `  · Apply this visual style to every brollPrompt: ${playbook.style}.`,
       `  · Lean toward musicVibe: ${playbook.music} — unless the brief implies another mood.`,
-    ] : []),
+    ] : [
+      // Auto: 카테고리 UI 없이 사진으로 판별 → 해당 플레이북 팔레트 적용. 메뉴로 주고 Claude가 고름.
+      '- CATEGORY PLAYBOOKS — detect the product category from the attached photo (and brief), then draw from the MATCHING palette below as a menu (pick/reorder/skip/vary to fit THIS brief; not a fixed sequence; two ads should not look identical). If none fits, use your own judgment:',
+      ...playbookMenu(),
+    ]),
     `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
     `- For EACH scene also write "summary": a SPECIFIC 1-2 sentence description in ${langName} of what the viewer sees AND how it moves — concrete enough to picture the shot (subject, setting, key detail, the motion), but plain human language FOR THE USER, NOT a prompt (no camera/lens/render jargon list). e.g. "골드 케이스 립스틱이 어두운 배경에서 천천히 회전하며 골드 디테일에 빛이 스칩니다. 매트한 레드 심지가 드러나요." Keep it to 1-2 sentences — vivid but not overloaded. The actual prompts stay hidden.`,
     ...(language === 'ko' ? [
