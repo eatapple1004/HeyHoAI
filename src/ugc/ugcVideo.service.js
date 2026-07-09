@@ -56,7 +56,13 @@ async function persistAudioFile(localPath) {
  */
 async function buildAudioAssets(rendered, script, audio, durationMs, reuseMap = {}) {
   const assets = {};
-  if (rendered && rendered.vo) assets.vo = reuseMap.vo || { file: await persistAudioFile(rendered.vo), key: voKey(script, audio) };
+  // VO = 씬별 세그먼트 배열(F). 재사용이면 기존 entry 유지, 아니면 각 세그먼트 영속화 + 캐시키(전체 텍스트 기준).
+  if (rendered && Array.isArray(rendered.vo) && rendered.vo.length) {
+    assets.vo = reuseMap.vo || {
+      key: voKey(script, audio),
+      segs: await Promise.all(rendered.vo.map(async (s) => ({ sceneN: s.sceneN, file: await persistAudioFile(s.path), startMs: s.startMs }))),
+    };
+  }
   if (rendered && rendered.music) assets.music = reuseMap.music || { file: await persistAudioFile(rendered.music), key: musicKey(script, durationMs) };
   return assets;
 }
@@ -284,7 +290,7 @@ function applySceneEdits(scenes, { order = null, removed = [], edits = {} } = {}
  * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object,
  *           redoScenes?:number[], editedPrompts?:object, dryRunVideo?:boolean }} p
  */
-async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, dryRunVideo = false }) {
+async function reRender({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, dryRunVideo = false }) {
   const row = await loadJobForEdit(jobId, user.id);
   if (!row) { const e = new Error('Job not found'); e.statusCode = 404; throw e; }
   // 편집 가능 조건 = 완성 + 대본 보유. result_idx는 요구하지 않음
@@ -315,6 +321,19 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
       audio = { ...audio, music: true };
     }
     if (script._render) script._render.audio = audio;
+  }
+
+  // 음성 override(A/B) — on/off·보이스·속도. 캐싱이 voKey(텍스트+보이스+속도)로 재생성 자동 판단.
+  //   voiceId/speed 바뀌면 VO만 재생성(클립·음악 재사용), voice=false면 VO 트랙 제거(무과금).
+  let audioTouched = mv != null;
+  if (voice != null) { audio = { ...audio, voice: !!voice }; audioTouched = true; }
+  if (voiceId) { audio = { ...audio, voiceId: String(voiceId) }; audioTouched = true; }
+  if (speed != null && speed !== '') { audio = { ...audio, speed: Number(speed) }; audioTouched = true; }
+  if (audioTouched && script._render) script._render.audio = audio;
+
+  // 자막 스타일 override(C) — 위치·크기·색상. 클립·VO·음악 전부 재사용, 자막만 재번인 = 완전 무과금.
+  if (subtitleStyle && typeof subtitleStyle === 'object' && Object.keys(subtitleStyle).length && script._render) {
+    script._render.subtitleStyle = { ...(script._render.subtitleStyle || {}), ...subtitleStyle };
   }
 
   // 새 씬 추가(끝에) — 기존 대본 맥락으로 Claude가 생성(자연어 지시 or AI 제안). 한 영상 최대 12씬.
@@ -392,15 +411,19 @@ async function reRender({ user, jobId, order = null, removed = [], edits = {}, r
     const prevAssets = (script._render && script._render.audioAssets) || {};
     const reuseMap = {};
     let reuseVo = null, reuseMusic = null;
-    if (audio.voice && prevAssets.vo && prevAssets.vo.key === voKey(script, audio)) {
-      reuseVo = await restoreClipLocal(prevAssets.vo.file);
-      if (reuseVo) reuseMap.vo = prevAssets.vo;
+    if (audio.voice && prevAssets.vo && prevAssets.vo.key === voKey(script, audio) && Array.isArray(prevAssets.vo.segs)) {
+      const restored = [];
+      for (const s of prevAssets.vo.segs) {
+        const local = await restoreClipLocal(s.file);
+        if (local) restored.push({ sceneN: s.sceneN, path: local, startMs: s.startMs });
+      }
+      if (restored.length === prevAssets.vo.segs.length) { reuseVo = restored; reuseMap.vo = prevAssets.vo; } // 전부 복원돼야 재사용
     }
     if (audio.music && prevAssets.music && prevAssets.music.key === musicKey(script, plan.meta.durationMs)) {
       reuseMusic = await restoreClipLocal(prevAssets.music.file);
       if (reuseMusic) reuseMap.music = prevAssets.music;
     }
-    const out = await assemble(plan, { audio, script, aspect, reuseVo, reuseMusic, log: (m) => log.info(`[re-render ${jobId}] ${m}`) });
+    const out = await assemble(plan, { audio, script, aspect, reuseVo, reuseMusic, subtitleStyle: (script._render && script._render.subtitleStyle) || undefined, log: (m) => log.info(`[re-render ${jobId}] ${m}`) });
     // 자산 갱신: 재사용 트랙은 기존 entry 유지, 재생성 트랙만 새로 영속화
     if (script._render) script._render.audioAssets = await buildAudioAssets(out.audioAssets, script, audio, plan.meta.durationMs, reuseMap);
 

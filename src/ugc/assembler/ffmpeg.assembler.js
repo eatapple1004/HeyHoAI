@@ -94,7 +94,16 @@ function escapeAss(text) {
   return String(text).replace(/\n/g, '\\N').replace(/[{}]/g, '');
 }
 
-function buildAss(subtitle, w = TARGET_W, h = TARGET_H) {
+// 자막 스타일 프리셋(생성 후 조정용). ASS Alignment: 2=하중,5=중중,8=상중. 색상은 ASS BGR(&HAABBGGRR).
+const SUB_POS = { bottom: { align: 2, mv: 240 }, middle: { align: 5, mv: 0 }, top: { align: 8, mv: 240 } };
+const SUB_SIZE = { s: 56, m: 72, l: 92 };
+const SUB_COLOR = { white: '&H00FFFFFF', yellow: '&H0000FFFF', black: '&H00000000', mint: '&H00D9F5C7' };
+
+function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
+  const pos = SUB_POS[style.position] || SUB_POS.bottom;
+  const size = SUB_SIZE[style.size] || SUB_SIZE.m;
+  const primary = SUB_COLOR[style.color] || SUB_COLOR.white;
+  const outline = style.color === 'black' ? '&H00FFFFFF' : '&H00000000'; // 검정 글자면 흰 아웃라인(가독성)
   const header = [
     '[Script Info]',
     'ScriptType: v4.00+',
@@ -103,8 +112,8 @@ function buildAss(subtitle, w = TARGET_W, h = TARGET_H) {
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    // 하단 중앙(Alignment 2), 흰 글자 + 검은 아웃라인, 굵게. 폰트=한글 글리프 있는 것(config).
-    `Style: Kinetic, ${env.UGC_SUBTITLE_FONT}, 72, &H00FFFFFF, &H00000000, &H00000000, 1, 1, 4, 2, 2, 80, 80, 240, 1`,
+    // 위치·크기·색상 = 프리셋(기본=하단 중앙·72·흰 글자+검은 아웃라인·굵게). 폰트=한글 글리프 있는 것(config).
+    `Style: Kinetic, ${env.UGC_SUBTITLE_FONT}, ${size}, ${primary}, ${outline}, &H00000000, 1, 1, 4, 2, ${pos.align}, 80, 80, ${pos.mv}, 1`,
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
@@ -138,7 +147,8 @@ function buildSrt(subtitle) {
  * 각 입력은 volume 적용 후 apad(무음 패딩)되어 amix, -t 로 영상 길이에 맞춰 잘림.
  * → VO는 재생 후 무음, 음악은 전 구간(더킹된 볼륨)으로 깔림.
  * @param {string} videoIn  무음 영상(workDir 상대 경로)
- * @param {Array<{file:string, volume:number}>} audioInputs  workDir 상대 mp3들
+ * @param {Array<{file:string, volume:number, delayMs?:number}>} audioInputs  workDir 상대 mp3들
+ *        delayMs = 트랙 시작 지연(씬별 VO 세그먼트를 해당 씬 시각에 배치, F 싱크).
  * @param {number} durSec  최종 길이(=영상 길이)
  * @returns {Promise<string>} 믹싱된 영상 절대 경로
  */
@@ -149,7 +159,9 @@ async function muxAudio(videoIn, audioInputs, durSec, workDir, outName) {
   audioInputs.forEach((a, i) => {
     inputs.push('-i', a.file);
     const lbl = `a${i}`;
-    filters.push(`[${i + 1}:a]volume=${a.volume},apad[${lbl}]`);
+    const d = Math.round(a.delayMs || 0);
+    const delay = d > 0 ? `adelay=${d}|${d},` : ''; // 스테레오 양 채널 지연
+    filters.push(`[${i + 1}:a]volume=${a.volume},${delay}apad[${lbl}]`);
     labels.push(`[${lbl}]`);
   });
 
@@ -167,6 +179,25 @@ async function muxAudio(videoIn, audioInputs, durSec, workDir, outName) {
     '-t', durSec.toFixed(2), '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', outName,
   ], workDir);
   return path.join(workDir, outName);
+}
+
+/**
+ * 씬별 VO 세그먼트 계획 — 각 렌더된 씬의 내레이션 텍스트를 그 씬 시작 시각에 배치(F 싱크).
+ *   hook은 첫 씬 앞에, cta는 마지막 씬 뒤에 붙임. 음성 텍스트 = spoken 우선(E 분리), 없으면 onScreenText.
+ * @returns {Array<{sceneN:number, text:string, startMs:number}>}
+ */
+function voSegments(script, plan) {
+  const scenes = Array.isArray(script.scenes) ? script.scenes : [];
+  const videoByScene = new Map((plan.tracks.video || []).map((v) => [v.sceneN, v]));
+  const rendered = scenes.filter((s) => videoByScene.has(s.n)); // 클립 있는 씬만(영상 순서)
+  const segs = [];
+  rendered.forEach((s, i) => {
+    let text = (s.spoken || s.onScreenText || '').trim();
+    if (i === 0 && script.hook) text = `${String(script.hook).trim()} ${text}`.trim();
+    if (i === rendered.length - 1 && script.cta) text = `${text} ${String(script.cta).trim()}`.trim();
+    if (text) segs.push({ sceneN: s.n, text, startMs: videoByScene.get(s.n).startMs });
+  });
+  return segs;
 }
 
 /**
@@ -205,7 +236,9 @@ async function assemble(plan, opts = {}) {
   const active = activeTracks(plan);
 
   // 3) 자막: 필터 있으면 번인, 없으면(최소 ffmpeg 빌드) 사이드카(.srt/.ass) + 무음영상
-  const subtitle = plan.tracks.subtitle || [];
+  //    subtitleStyle.off=true면 자막 트랙 무시(자막 없는 버전 — 음성/음악만).
+  const captionsOff = !!(opts.subtitleStyle && opts.subtitleStyle.off);
+  const subtitle = captionsOff ? [] : (plan.tracks.subtitle || []);
   const finalPath = path.join(workDir, 'final.mp4');
   let subtitleMode = 'none';
   let subtitleFile = null;
@@ -213,7 +246,7 @@ async function assemble(plan, opts = {}) {
   if (subtitle.length) {
     const filter = await detectTextFilter();
     // 사이드카는 항상 기록(디버그/외부 조립기용)
-    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, CW, CH));
+    await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, CW, CH, opts.subtitleStyle || {}));
     await fsp.writeFile(path.join(workDir, 'subs.srt'), buildSrt(subtitle));
 
     if (filter) {
@@ -240,25 +273,36 @@ async function assemble(plan, opts = {}) {
   const wantVoice = !!(opts.audio && opts.audio.voice);
   const wantMusic = !!(opts.audio && opts.audio.music);
   const audioInputs = [];
-  let voPath = null, musicPath = null;
+  let voSegsOut = null, musicPath = null; // voSegsOut = [{sceneN, rel, startMs}] (씬별 VO 세그먼트)
 
+  // VO(F): 씬별 세그먼트를 각 씬 시각(startMs)에 배치 → 자막과 싱크. reuseVo=배열이면 통째 재사용(캐싱).
   if (wantVoice && opts.script) {
-    if (opts.reuseVo && fs.existsSync(opts.reuseVo)) {
-      voPath = path.join(workDir, 'vo.mp3');
-      await fsp.copyFile(opts.reuseVo, voPath);
-      audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' });
-      log('VO 캐시 재사용(재생성 안 함)');
+    const reuse = Array.isArray(opts.reuseVo) ? opts.reuseVo : null;
+    if (reuse && reuse.length) {
+      voSegsOut = [];
+      for (let i = 0; i < reuse.length; i++) {
+        const seg = reuse[i];
+        if (!seg.path || !fs.existsSync(seg.path)) continue;
+        const rel = `vo_${i}.mp3`;
+        await fsp.copyFile(seg.path, path.join(workDir, rel));
+        voSegsOut.push({ sceneN: seg.sceneN, rel, startMs: seg.startMs || 0 });
+      }
+      if (voSegsOut.length) log(`VO 캐시 재사용(${voSegsOut.length}세그먼트, 재생성 안 함)`);
     } else if (tts.isConfigured()) {
-      try {
-        log(`VO(음성) 생성… [${tts.provider()}]`);
-        const vo = await tts.voiceoverForScript(opts.script, {
-          outPath: path.join(workDir, 'vo.mp3'),
-          voiceId: opts.audio.voiceId,   // 영상별 보이스 선택(없으면 env 기본)
-          speed: opts.audio.speed,       // 영상별 말하기 속도(없으면 1.0)
-        });
-        if (vo) { voPath = vo; audioInputs.push({ file: 'vo.mp3', volume: 1.0, kind: 'vo' }); }
-      } catch (e) { log(`⚠️ VO 실패, 스킵: ${e.message}`); }
+      const info = voSegments(opts.script, plan);
+      if (info.length) {
+        voSegsOut = [];
+        for (let i = 0; i < info.length; i++) {
+          const rel = `vo_${i}.mp3`;
+          try {
+            const p = await tts.synthesize(info[i].text, { outPath: path.join(workDir, rel), voiceId: opts.audio.voiceId, speed: opts.audio.speed });
+            if (p) voSegsOut.push({ sceneN: info[i].sceneN, rel, startMs: info[i].startMs });
+          } catch (e) { log(`⚠️ VO 세그먼트 ${i} 실패, 스킵: ${e.message}`); }
+        }
+        if (voSegsOut.length) log(`VO(음성) ${voSegsOut.length}세그먼트 생성… [${tts.provider()}]`);
+      }
     } else { log('⚠️ VO 요청됨 — TTS 미설정(ELEVENLABS/OPENAI 키), 스킵'); }
+    if (voSegsOut) voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: seg.startMs }));
   }
 
   if (wantMusic) {
@@ -284,7 +328,8 @@ async function assemble(plan, opts = {}) {
   }
 
   log(`조립 완료: ${videoOut}`);
-  return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks, audioAssets: { vo: voPath, music: musicPath } };
+  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: s.startMs })) : null;
+  return { videoPath: videoOut, workDir, activeTracks: active, segments: segments.length, subtitleMode, subtitleFile, audioTracks, audioAssets: { vo: voAssets, music: musicPath } };
 }
 
-module.exports = { assemble, muxAudio, buildAss, buildSrt, TARGET_W, TARGET_H, FPS };
+module.exports = { assemble, muxAudio, buildAss, buildSrt, voSegments, TARGET_W, TARGET_H, FPS };

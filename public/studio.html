@@ -158,6 +158,13 @@
   .ugc-music-go{background:var(--card2,#191921);color:inherit;border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap}
   .ugc-music-go:hover{border-color:var(--accent,#8b7cf6)}
   .ugc-music-go:disabled{opacity:.55;cursor:default}
+  .ugc-arow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+  .ugc-arow-lbl{font-weight:650;font-size:12.5px}
+  .ugc-arow-chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--dim)}
+  .ugc-arow-sel{background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px}
+  .ugc-arow-go{background:var(--card2,#191921);color:inherit;border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .ugc-arow-go:hover{border-color:var(--accent,#8b7cf6)}
+  .ugc-arow-go:disabled{opacity:.55;cursor:default}
   .usc{position:relative;flex:0 0 132px;width:132px;background:var(--card2,#191921);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .usc-thumb{position:relative;aspect-ratio:9/16;background:#000}
   .usc-thumb img,.usc-thumb video{width:100%;height:100%;object-fit:cover;display:block}
@@ -166,6 +173,9 @@
   .usc-cap{font-size:11.5px;line-height:1.35;padding:7px 8px;min-height:34px;color:var(--fg,#e8e8ef);outline:none;border-bottom:1px solid transparent}
   .usc-cap:focus{background:rgba(255,255,255,.05);border-bottom-color:var(--accent,#8b7bff)}
   .usc-cap:empty:before{content:attr(data-ph);color:var(--muted);opacity:.7}
+  .usc-vo{font-size:11px;line-height:1.35;padding:5px 8px;min-height:28px;color:var(--dim,#b9b9c6);outline:none;border-top:1px dashed rgba(255,255,255,.08)}
+  .usc-vo:focus{background:rgba(139,124,246,.07)}
+  .usc-vo:empty:before{content:attr(data-ph);color:var(--muted);opacity:.6}
   .usc-acts{display:flex;gap:3px;padding:5px;border-top:1px solid var(--border)}
   .usc-acts button{flex:1;background:transparent;border:1px solid var(--border);color:var(--fg,#ddd);border-radius:7px;padding:4px 0;font-size:12px;cursor:pointer;line-height:1}
   .usc-acts button:hover:not(:disabled){background:rgba(255,255,255,.07)}
@@ -2827,9 +2837,11 @@ function batchRowHtml(b){
 // b.ugc = { jobId, scenes:[{n,onScreenText,spoken,subject,thumb,...}], edits:{n:{onScreenText,spoken}} }
 function ugcSceneStripHtml(b){
   const u=b.ugc; const dirty=!!u._dirty;
+  const voiceMode=u.scenes.some(x=>((('spoken' in (u.edits[x.n]||{}))?u.edits[x.n].spoken:x.spoken)||'').trim()); // 음성 있는 영상만 음성 줄 노출
   const cards=u.scenes.map((s,i)=>{
     const ed=u.edits[s.n]||{};
     const cap=(('onScreenText' in ed)?ed.onScreenText:s.onScreenText)||'';
+    const spk=(('spoken' in ed)?ed.spoken:s.spoken)||'';
     const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
     const thumb=isVid
       ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata"></video>` // 각 씬 클립 자동재생(무음 미리보기)
@@ -2842,6 +2854,10 @@ function ugcSceneStripHtml(b){
            onblur="ugcSceneEditCap(this,'${esc(u.jobId)}',${s.n})"
            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
            data-ph="Tap to edit caption">${esc(cap)}</div>
+      ${voiceMode?`<div class="usc-vo" contenteditable="true" spellcheck="false" data-n="${s.n}"
+           onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+           data-ph="🎙 Voice line" title="What the voice says (separate from the caption)">${esc(spk)}</div>`:''}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
         <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
@@ -2869,6 +2885,29 @@ function ugcSceneStripHtml(b){
       </select>
       <input type="text" class="ugc-music-vibe" placeholder="or describe a vibe…" maxlength="120">
       <button type="button" class="ugc-music-go" onclick="ugcChangeMusic('${esc(b.ugc.jobId)}')">Change music</button>
+    </div>
+    <div class="ugc-arow">
+      <span class="ugc-arow-lbl">🎙️ Voice</span>
+      <label class="ugc-arow-chk"><input type="checkbox" class="ugc-voice-on" checked> Voiceover</label>
+      <select class="ugc-arow-sel ugc-voice-id" aria-label="Voice">${UGC_VOICE_OPTS}</select>
+      <select class="ugc-arow-sel ugc-voice-speed" aria-label="Speed">
+        <option value="0.85">Slow</option><option value="1" selected>Normal</option><option value="1.1">Fast</option>
+      </select>
+      <button type="button" class="ugc-arow-go ugc-voice-go" onclick="ugcChangeVoice('${esc(b.ugc.jobId)}')">Update voice</button>
+    </div>
+    <div class="ugc-arow">
+      <span class="ugc-arow-lbl">💬 Captions</span>
+      <label class="ugc-arow-chk"><input type="checkbox" class="ugc-cap-on" checked> Show</label>
+      <select class="ugc-arow-sel ugc-cap-pos" aria-label="Position">
+        <option value="bottom" selected>Bottom</option><option value="middle">Middle</option><option value="top">Top</option>
+      </select>
+      <select class="ugc-arow-sel ugc-cap-size" aria-label="Size">
+        <option value="s">Small</option><option value="m" selected>Medium</option><option value="l">Large</option>
+      </select>
+      <select class="ugc-arow-sel ugc-cap-color" aria-label="Color">
+        <option value="white" selected>White</option><option value="yellow">Yellow</option><option value="black">Black</option><option value="mint">Mint</option>
+      </select>
+      <button type="button" class="ugc-arow-go ugc-cap-go" onclick="ugcChangeCaptions('${esc(b.ugc.jobId)}')">Apply style</button>
     </div>
     <div class="ugc-apply-row">
       <button type="button" class="ugc-apply" onclick="ugcSaveFinish('${esc(b.ugc.jobId)}')">${u._saved?'✓ Saved to gallery':(dirty?'Apply · Save & finish':'Save & finish')}</button>
@@ -2918,6 +2957,15 @@ function ugcSceneEditCap(el,jobId,n){
   const btn=ugcApplyBtn(jobId); // 전체 재렌더 없이 Apply만 활성(편집 중 포커스 유지)·배치 스코프
   if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
 }
+// 음성(spoken) 편집 — 자막과 별개. 음성만 바꾸면 VO만 재생성(자막·클립·음악 재사용), 자막만 바꾸면 음성 유지(캐싱).
+function ugcSceneEditVoice(el,jobId,n){
+  const b=ugcFindBatch(jobId); if(!b)return; const s=b.ugc.scenes.find(x=>x.n===n); if(!s)return;
+  const val=(el.textContent||'').trim(); const cur=(n in b.ugc.edits&&'spoken' in b.ugc.edits[n])?b.ugc.edits[n].spoken:(s.spoken||'');
+  if(val===cur)return;
+  b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{spoken:val}); b.ugc._dirty=true;
+  const btn=ugcApplyBtn(jobId);
+  if(btn){btn.disabled=false;btn.textContent='✓ Apply changes — free';}
+}
 function ugcResetEdits(jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc._orig)return;
   b.ugc.scenes=b.ugc._orig.map(s=>Object.assign({},s)); b.ugc.edits={}; b.ugc._dirty=false; renderStudioResults();
@@ -2927,7 +2975,9 @@ async function ugcReassemble(jobId,opts){
   opts=opts||{}; const b=ugcFindBatch(jobId); if(!b)return; const u=b.ugc;
   const paid=!!((opts.redoScenes&&opts.redoScenes.length)||(opts.addScenes&&opts.addScenes.length));
   const hasMusic=opts.musicVibe!=null; // 음악만 교체(무과금)
-  if(!paid&&!u._dirty&&!hasMusic)return; // 변경 없으면 무시
+  const hasVoice=!!opts.voice; // 음성 on/off·보이스·속도({voice,voiceId,speed})
+  const hasCaptions=!!opts.subtitleStyle; // 자막 스타일(위치·크기·색상)
+  if(!paid&&!u._dirty&&!hasMusic&&!hasVoice&&!hasCaptions)return; // 변경 없으면 무시
   const order=u.scenes.map(s=>s.n);
   const origNs=(u._orig||u.scenes).map(s=>s.n); const keep=new Set(order); const removed=origNs.filter(n=>!keep.has(n));
   const edits={}; for(const k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; } // 남은 씬의 편집만
@@ -2936,6 +2986,8 @@ async function ugcReassemble(jobId,opts){
   if(opts.editInstructions)body.editInstructions=opts.editInstructions;
   if(opts.addScenes)body.addScenes=opts.addScenes;
   if(hasMusic)body.musicVibe=opts.musicVibe;
+  if(hasVoice){ body.voice=opts.voice.voice; if(opts.voice.voiceId)body.voiceId=opts.voice.voiceId; if(opts.voice.speed)body.speed=opts.voice.speed; }
+  if(hasCaptions)body.subtitleStyle=opts.subtitleStyle;
   const setBusy=opts.setBusy||function(){}; setBusy(true);
   try{
     const res=await fetch('/api/generate/ugc/re-render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -2948,12 +3000,12 @@ async function ugcReassemble(jobId,opts){
     if(paid){ try{ const jd=(await(await fetch('/api/generate/ugc/jobs/'+jobId)).json()).data;
       if(jd&&Array.isArray(jd.scenes)&&jd.scenes.length){ u.scenes=jd.scenes.map(s=>Object.assign({},s)); u._orig=jd.scenes.map(s=>Object.assign({},s)); refreshed=true; } }catch(e){} }
     if(!refreshed){ // 무과금 or 재조회 실패: 로컬 낙관 상태를 확정
-      u._orig=u.scenes.map(s=>Object.assign({},s,('onScreenText' in (u.edits[s.n]||{}))?{onScreenText:u.edits[s.n].onScreenText}:{}));
+      u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{});});
       u.scenes=u._orig.map(s=>Object.assign({},s));
     }
     u.edits={}; u._dirty=false;
     renderStudioResults();
-    if(window.toast)toast(paid?('Scene re-generated'+(data.cost?' — '+data.cost+' credits':'')):(hasMusic?'Music updated — free':'Video updated — free edit'));
+    if(window.toast)toast(paid?('Scene re-generated'+(data.cost?' — '+data.cost+' credits':'')):(hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':'Video updated — free edit'));
     if(paid&&typeof loadCredits==='function')loadCredits();
   }catch(e){
     setBusy(false);
@@ -2972,6 +3024,31 @@ async function ugcChangeMusic(jobId){
   const vibe=(txt&&txt.value.trim())?txt.value.trim():(sel?sel.value:''); // 자연어 우선, 없으면 프리셋('' =Auto, 'none'=끔)
   const btn=cont.querySelector('.ugc-music-go'); const o=btn?btn.textContent:'Change music';
   await ugcReassemble(jobId,{musicVibe:vibe,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Changing…':o;}}});
+}
+// 결과 스트립 Voice 드롭다운 옵션(생성 전 #ugcVoiceId와 동일 8종)
+var UGC_VOICE_OPTS='<option value="n2fbxG88jqAoaVPUy3IG">Yooni — F, clear &amp; calm</option>'
+  +'<option value="bQlkYuipD5BHEhntA5iz">JY — F, trendy &amp; upbeat</option>'
+  +'<option value="YDseIkMzKtO5bK1Ehnev">Hanabad — F, confident</option>'
+  +'<option value="qWofGdsKN4woEPGCzrdX">Nara — F, warm &amp; mature</option>'
+  +'<option value="SE9upoSoM2ipDUdAVW8q">Mono Beige — F, gentle</option>'
+  +'<option value="8lidWTlnwgjObqCImnE2">Juan — M, deep storyteller</option>'
+  +'<option value="rvVNwZozYG4hTIbVUvHi">Jin — M, warm &amp; classy</option>'
+  +'<option value="8cOkLISXzLWeGEsu0cZC">Minjoon — M, warm &amp; clear</option>';
+// 음성 교체/on-off(무과금) — 보이스·속도 바꾸면 VO만 재생성(클립·음악 재사용), 끄면 VO 트랙 제거.
+async function ugcChangeVoice(jobId){
+  const cont=ugcCont(jobId); if(!cont)return;
+  const on=cont.querySelector('.ugc-voice-on'), vid=cont.querySelector('.ugc-voice-id'), sp=cont.querySelector('.ugc-voice-speed');
+  const payload={voice:on?on.checked:true, voiceId:vid?vid.value:'', speed:sp?sp.value:''};
+  const btn=cont.querySelector('.ugc-voice-go'); const o=btn?btn.textContent:'Update voice';
+  await ugcReassemble(jobId,{voice:payload,setBusy:function(x){if(btn){btn.disabled=x;btn.textContent=x?'Updating…':o;}}});
+}
+// 자막 스타일(무과금) — 위치·크기·색상. 클립·음성·음악 전부 재사용, 자막만 재번인.
+async function ugcChangeCaptions(jobId){
+  const cont=ugcCont(jobId); if(!cont)return;
+  const pos=cont.querySelector('.ugc-cap-pos'), size=cont.querySelector('.ugc-cap-size'), color=cont.querySelector('.ugc-cap-color'), show=cont.querySelector('.ugc-cap-on');
+  const style={position:pos?pos.value:'bottom', size:size?size.value:'m', color:color?color.value:'white', off: show?!show.checked:false};
+  const btn=cont.querySelector('.ugc-cap-go'); const o=btn?btn.textContent:'Apply style';
+  await ugcReassemble(jobId,{subtitleStyle:style,setBusy:function(x){if(btn){btn.disabled=x;btn.textContent=x?'Applying…':o;}}});
 }
 // Save & finish — 미적용 편집 반영(재조립) 후 갤러리·Explore에 확정 저장(draft→공개)
 async function ugcSaveFinish(jobId){

@@ -93,7 +93,12 @@ function buildUgcScriptPrompt(input) {
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : []),
-    ...(voiceover ? [] : [
+    ...(voiceover ? [
+      '- CAPTION vs VOICE are DIFFERENT layers — do NOT make them identical:',
+      '  · "onScreenText" = a SHORT on-screen caption (2-6 words, punchy keyword/hook style — what the viewer READS).',
+      '  · "spoken" = the fuller natural sentence the voice actually SAYS (conversational, complements the caption). Fill "spoken" for every scene.',
+      '  · The caption is the headline; the voice line expands on it. Never copy one into the other verbatim.',
+    ] : [
       '- NO VOICEOVER MODE: this ad has no narration and no on-screen captions — it is a silent, visual-only ad carried by the product visuals and background music.',
       '  · Set "onScreenText" to "" (empty) and "spoken" to "" for EVERY scene. Do NOT write any narration or caption lines.',
       '  · Put all your craft into "direction" and "brollPrompt" (the visuals & motion). Still fill title, hook, cta, caption, hashtags, musicVibe normally (used off-screen for the post, not shown in the video).',
