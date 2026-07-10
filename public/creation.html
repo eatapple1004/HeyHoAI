@@ -592,19 +592,19 @@ function templateCard(){
   const gone=!(rt&&rt.id);   // 살아있는 템플릿 없음 = 삭제/미접근
   // 삭제·미접근: 정보만(약한 카드). 내 creation이면 즉석 민팅+추가 폴백.
   if(gone){
-    const add = IT.isOwn ? `<button class="act sm tc-cta" onclick="mintAndAdd(this)">＋ Add to My templates</button>` : '';
+    const add = ''; // (2026-07-11) ＋ Add to My templates 제거(오피셜 전용)
     return `<div class="tpl-card gone"><div class="tc-line"><span class="tc-eyebrow">Made with</span> <span class="tc-name gone">${name}</span> <span class="tc-note">no longer available</span></div>${add}</div>`;
   }
   const thumb=(rt&&rt.thumb)||null;
   // 보유(공식/구매/내 것): 일괄 강조 카드 — Studio로 바로 사용(가격 없음). 내 auto면 Creator 관리 보조 버튼.
   if(rt.owned){
     const use=`<button class="act primary tc-cta" onclick="location.href='/studio?tpl='+encodeURIComponent('${esc(rt.id)}')">Use ${name}</button>`;
-    const manage=(IT.isOwn && IT.mintedTemplateId)?`<a class="act sm tc-cta" href="/earnings">Manage template</a>`:'';
+    const manage=''; // (2026-07-11) Manage template(→earnings/Creator) 제거(미운영)
     return sellCard(name, null, rt.id, thumb, use, manage);
   }
   // 미보유 + 내 minted(본인 creation): 테마 선택 후 추가.
   if(IT.isOwn && IT.mintedTemplateId){
-    return sellCard(name, null, rt.id, thumb, `<button class="act primary tc-cta" onclick="openSaveModal()">＋ Add to My templates</button>`);
+    return sellCard(name, null, rt.id, thumb, ``); // (2026-07-11) ＋ Add to My templates 제거(오피셜 전용)
   }
   // 미보유 타인 템플릿: 유료=가격 노출 / 무료=가격 없음. 둘 다 "Use [name]"(획득 후 Studio).
   const paid=(!rt.mine && rt.price>0);
@@ -670,7 +670,7 @@ function render(){
     ${creator}
     ${templateCard()}
     ${promptPanel()}
-    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button>${(!IT.templateSource)?`<button class="act sm" onclick="ctFromDetail()">＋ Create template</button>`:''}</div>
+    <div class="acts"><button class="act sm" onclick="share()">↗ Share</button><!-- (2026-07-11) ＋ Create template 제거(오피셜 전용) --></div>
     ${owner}${report}`;
 }
 

@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
 <script src="/js/i18n.js?v=9" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=9" defer></script>
+<script src="/js/rail.js?v=10" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/onboarding.js?v=25" defer></script>
 <style>
@@ -720,6 +720,12 @@
 </style>
 </head>
 <body>
+<style>
+/* (2026-07-11) 유저 템플릿 생성/관리 진입점 숨김 — 오피셜 템플릿 전용 방향. 롤백: 이 style 블록 제거. */
+.cat-pill.mine,.cat-help,.cat-div{display:none!important}   /* 카테고리 줄 'My templates' pill·구분선·? 툴팁 */
+.studio-subtab[data-subtab="user"]{display:none!important}  /* Official/My templates 서브탭의 My templates */
+.rb-tpl,.rb-add{display:none!important}                     /* 결과의 +Create template / +Add to Creator templates */
+</style>
 <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="grain"></div>
 

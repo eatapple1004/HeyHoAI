@@ -29,7 +29,8 @@
     { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
     // (2026-07-11) Community(explore) 레일 항목 제거 — 홈 하단 'Community Creations' 섹션이 좋아요·크리에이터 링크까지 기능 동등하게 대체. 롤백: 아래 주석 복원.
     // { h: '/explore', l: 'Community', i: IC.explore, m: ['/explore'] },
-    { h: '/earnings', l: 'Creator', i: IC.creator, m: ['/earnings'], f: 'earnings' },
+    // (2026-07-11) Creator(earnings) 레일 항목 제거 — 유저 템플릿/크리에이터 수익 미운영(오피셜 전용). 롤백: 아래 주석 복원.
+    // { h: '/earnings', l: 'Creator', i: IC.creator, m: ['/earnings'], f: 'earnings' },
     { h: '/billing', l: 'Billing', i: IC.billing, m: ['/billing'] }
   ];
   // (2026-07-11) 레일 상단 브랜드/파비콘 클릭 비활성화 — 아무 동작 안 함(옛 onclick=/landing 제거). 롤백: onclick="location.href='/landing'" 복원.
