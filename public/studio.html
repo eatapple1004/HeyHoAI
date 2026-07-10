@@ -154,10 +154,10 @@
   .ugc-hd-apply:hover{filter:brightness(1.1)}
   @keyframes hdApplyIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
   .ugc-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
-  .ugc-music-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);border-radius:8px;transition:background .3s}
-  .ugc-music-row.ugc-flash{animation:ugcMusicFlash 1.3s ease}
-  @keyframes ugcMusicFlash{0%{background:rgba(139,124,246,0)}18%{background:rgba(139,124,246,.22)}100%{background:rgba(139,124,246,0)}}
-  @media(prefers-reduced-motion:reduce){.ugc-music-row.ugc-flash{animation:none}}
+  .ugc-music-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+  /* 음악 변경 완료 알림 — 완성 영상 영역 상단에 뜨는 다크 필 배너(자동 사라짐) */
+  .ugc-inline-vidwrap .ugc-vid-notice{position:absolute;top:12px;left:50%;transform:translate(-50%,-8px);z-index:5;background:rgba(20,20,28,.92);border:1px solid rgba(255,255,255,.09);color:#fff;font-size:12.5px;font-weight:650;line-height:1.35;text-align:center;padding:8px 14px;border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-width:calc(100% - 24px);opacity:0;pointer-events:none;transition:opacity .28s ease,transform .28s ease}
+  .ugc-inline-vidwrap .ugc-vid-notice.show{opacity:1;transform:translate(-50%,0)}
   .ugc-music-lbl{font-weight:650;font-size:12.5px}
   .ugc-music-mood,.ugc-music-vibe{background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px}
   .ugc-music-vibe{flex:1 1 160px;min-width:120px}
@@ -3136,8 +3136,8 @@ async function ugcReassemble(jobId,opts){
       { const _rL=UGC_LAYERED[jobId]; if(_rL&&_rL.player){ u._resume={ time:_rL.player.currentTime(), unmuted:!!(_rL.audio&&((_rL.audio.voice&&!_rL.audio.voice.muted)||(_rL.audio.music&&!_rL.audio.music.muted))) }; } }
       if(u.previewUrl)await ugcPreloadVideo(u.previewUrl); // 새 미리보기를 먼저 받아둠(immutable 캐시) → 아래 렌더가 브라우저 캐시서 즉시 스왑(버전전환 로딩 체감 제거)
       renderStudioResults();
-      if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasMusic?ugcMusicToast(opts):hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
-      if(hasMusic)ugcFlashMusicRow(jobId); // 음악 교체 시 음악 줄 하이라이트(유저 인지 강화)
+      if(hasMusic){ ugcNotifyOnVideo(jobId,ugcMusicToast(opts)); } // 음악 변경 완료 → 완성 영상 위에 알림(요청)
+      else if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
       if(paid&&typeof loadCredits==='function')loadCredits();
     }
   }catch(e){
@@ -3197,11 +3197,16 @@ function ugcMusicToast(opts){
   const lbl=(opts&&opts.musicLabel)||'a new mood';
   return '🎵 Music changed to “'+lbl+'” — free';
 }
-// 음악 줄에 짧은 하이라이트 플래시 — 변경이 반영된 지점을 시각적으로 확인시켜줌(toast 보조).
-function ugcFlashMusicRow(jobId){
-  const cont=ugcCont(jobId); const row=cont&&cont.querySelector('.ugc-music-row'); if(!row)return;
-  row.classList.remove('ugc-flash'); void row.offsetWidth; row.classList.add('ugc-flash'); // 리플로우로 애니메이션 재시작 보장
-  setTimeout(function(){ row.classList.remove('ugc-flash'); },1300);
+// 음악 변경 완료 알림 — 완성 영상 영역(#ugcInline 상단 미리보기) 위에 다크 필 배너를 잠깐 띄움.
+//   영상 영역이 없으면(로딩·실패) 기존 하단 toast로 폴백. 3초 후 페이드아웃.
+function ugcNotifyOnVideo(jobId,msg){
+  const wrap=document.querySelector('#ugcInline .ugc-inline-vidwrap');
+  if(!wrap){ if(window.toast)toast(msg); return; }
+  const prev=wrap.querySelector('.ugc-vid-notice'); if(prev)prev.remove(); // 이전 알림 있으면 교체
+  const n=document.createElement('div'); n.className='ugc-vid-notice'; n.textContent=msg;
+  wrap.appendChild(n);
+  void n.offsetWidth; n.classList.add('show'); // 리플로우 후 슬라이드/페이드 인
+  setTimeout(function(){ n.classList.remove('show'); setTimeout(function(){ n.remove(); },320); },3000);
 }
 // 결과 스트립 Voice 드롭다운 옵션(생성 전 #ugcVoiceId와 동일 8종)
 var UGC_VOICE_OPTS='<option value="n2fbxG88jqAoaVPUy3IG">Yooni — F, clear &amp; calm</option>'
