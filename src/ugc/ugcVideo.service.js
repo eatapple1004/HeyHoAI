@@ -571,6 +571,23 @@ function chainRun(jobId, fn) {
   tail.then(() => { if (_rerenderChain[jobId] === tail) delete _rerenderChain[jobId]; }); // 큐 비면 키 정리(누수 방지)
   return cur;
 }
+// #6·#7: 저장된 씬 자막 커스텀 타이밍(R.caption.timings의 sceneN 항목)을 plan.tracks.subtitle에 재적용.
+//   buildRenderPlan은 씬 자막을 기본 커서 타이밍으로만 만드므로, full reRender에서 타임라인 편집이 유실되던 것을 복원.
+//   subtitle 요소를 in-place로 갱신(startMs/durMs). durMs 클램프로 영상 길이 초과 방지.
+function applySceneCaptionTimings(subtitle, timings, durMs) {
+  if (!Array.isArray(subtitle) || !Array.isArray(timings)) return subtitle;
+  const byScene = {};
+  for (const t of timings) { const n = Number(t && t.sceneN); if (Number.isFinite(n)) byScene[n] = t; }
+  for (const s of subtitle) {
+    const t = (s && s.sceneN != null) ? byScene[Number(s.sceneN)] : null;
+    if (!t) continue;
+    let start = Math.max(0, Math.round(Number(t.startMs) || 0));
+    let d = Math.max(200, Math.round(Number(t.durMs) || 0));
+    if (durMs && start + d > durMs) d = Math.max(200, durMs - start);
+    s.startMs = start; s.durMs = d;
+  }
+  return subtitle;
+}
 function reRender(params) {
   return chainRun(params && params.jobId, () => _reRenderImpl(params));
 }
@@ -718,12 +735,15 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
       if (Rc && Array.isArray(Rc.timings) && !capOff) {
         const dur = plan.meta.durationMs || 0;
         for (const t of Rc.timings) {
-          if (t.text == null || !String(t.text).trim() || Number.isFinite(Number(t.sceneN))) continue; // 씬 자막은 이미 처리됨
+          if (t.text == null || !String(t.text).trim() || Number.isFinite(Number(t.sceneN))) continue; // 씬 자막은 아래서 처리
           let start = Math.max(0, Math.round(Number(t.startMs) || 0));
           let d = Math.max(200, Math.round(Number(t.durMs) || 0));
           if (dur && start + d > dur) d = Math.max(200, dur - start);
           if (!dur || start < dur) plan.tracks.subtitle.push({ id: t.id, startMs: start, durMs: d, text: String(t.text).trim() });
         }
+        // #6·#7: 씬 자막의 커스텀 타이밍(타임라인 편집)을 재적용 — buildRenderPlan은 기본 커서 타이밍이라 full reRender서 유실됐음.
+        //   → (a)구운 자막이 편집 타이밍 반영, (b)subtitleSig(캐시키) 변경으로 stale hit 방지.
+        applySceneCaptionTimings(plan.tracks.subtitle, Rc.timings, dur);
       }
     }
 
@@ -1024,4 +1044,4 @@ function editableScenes(script, sceneClips) {
 //   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
 function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };

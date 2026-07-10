@@ -28,6 +28,7 @@ const FUNCS = ['esc', 'ugcCapTextOf', 'ugcTlCapText', 'ugcTlTotal', 'ugcScenesPl
   'ugcSyncCap', 'ugcSyncCapAt', 'ugcStyleCapOv', 'ugcToggleSound',
   'ugcSyncPlayer', 'ugcRefreshStrip', 'ugcReflectEdit', 'ugcSceneVersion', 'ugcSceneMove', 'ugcSceneRemove',
   'ugcAutoCommit', 'ugcLayeredFallback', 'ugcUnmuteLayered',
+  'ugcReassemble', 'ugcReasmNext', 'UGC_REASM_INFLIGHT', 'UGC_NS_BUSY',
   'UGC_LAYERED', 'UGC_CAP_EDITING', 'UGC_CAP_DRAG'];
 let extracted = '// === 실 studio.html 추출(드리프트 0) ===\n';
 for (const f of FUNCS) extracted += '\n' + extractDecl(f) + '\n';
