@@ -1362,7 +1362,7 @@
 <script src="/js/taxonomy.js?v=8"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
-<script src="/js/ugcPlayer.js?v=3"></script>
+<script src="/js/ugcPlayer.js?v=4"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -2894,7 +2894,7 @@ function ugcSceneStripHtml(b){
     const spk=(('spoken' in ed)?ed.spoken:s.spoken)||'';
     const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
     const thumb=isVid
-      ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata"></video>` // 각 씬 클립 자동재생(무음 미리보기)
+      ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata" onerror="ugcClipBroken(this)"></video>` // 각 씬 클립 자동재생(무음 미리보기). 404/유실 시 ugcClipBroken이 loop·src 제거해 재시도·깜빡임 차단하고 씬번호 플레이스홀더로 폴백.
       :(s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`);
     const zoomUrl=isVid?s.clipUrl:(s.thumb||''); const zoomType=isVid?'reel':'photo'; // 씬 클릭 시 확대(영상/이미지)
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
@@ -2970,6 +2970,8 @@ function ugcSceneStripHtml(b){
     </div>`;
 }
 function ugcFindBatch(jobId){ return STUDIO_BATCHES.find(b=>b.ugc&&b.ugc.jobId===jobId); }
+// 씬 카드 클립 <video> 로드 실패(404/유실) — loop·src 제거로 브라우저 재시도 루프 차단 + 요소 숨김(씬번호 배지만 남김) → 스트립 깜빡임 방지.
+function ugcClipBroken(v){ try{ v.removeAttribute('loop'); v.removeAttribute('autoplay'); v.pause(); }catch(e){} try{ v.removeAttribute('src'); v.load(); }catch(e){} v.style.display='none'; const th=v.closest&&v.closest('.usc-thumb'); if(th)th.classList.add('usc-thumb-broken'); }
 function ugcCont(jobId){ return document.querySelector('.ugc-scenes[data-job="'+jobId+'"]'); } // 배치 스코프(멀티 결과 first-match 방지)
 // 씬 드래그 재배치(썸네일 잡고 드래그 → 대상 씬 앞으로 이동). ◀▶ 버튼은 터치 폴백으로 유지.
 var UGC_DRAG=null;
@@ -3435,6 +3437,7 @@ function ugcPlayerScenes(u){ return ((u&&u.scenes)||[]).map(function(s){ return 
 // C: 기본(0) 아닌 활성 버전만 {sceneN:idx} — Save·Apply 굽기 페이로드에 실어 미리보기 버전과 최종본을 일치시킴.
 function ugcActiveVersions(u){ const sv={}; ((u&&u.scenes)||[]).forEach(function(s){ if(Array.isArray(s.versions)&&s.versions.length>1&&(s.activeVersion||0)>0)sv[s.n]=s.activeVersion; }); return sv; }
 var UGC_LAYERED={}; // jobId -> { player, audio, wrap }
+window.__UGC_BUILD='flicker-fix2'; // 배포 검증용: F12 콘솔에서 window.__UGC_BUILD 로 이 studio.html 버전 확인('flicker-fix2'면 최신)
 function ugcMountLayered(u,zoom){
   const wrap=document.querySelector('#ugcInline .ugc-inline-vidwrap.ugc-layered'); if(!wrap||typeof ugcMakePlayer!=='function')return;
   ugcDestroyLayered(u.jobId); // 이전 인스턴스 정리(중복 재생·오디오 겹침 방지)
@@ -3459,7 +3462,7 @@ function ugcDestroyLayered(jobId){ const L=UGC_LAYERED[jobId]; if(!L)return; try
 function ugcDestroyAllLayered(){ for(const k in UGC_LAYERED)ugcDestroyLayered(k); }
 // ── C: 편집(재배치·삭제·버전전환)을 재생기에 즉시 반영(서버 왕복 0, 오디오 안 멈춤) ──
 // 레이어드면 player.setScenes로 클립만 스왑(재마운트·오디오 재시작 없음). 반환=적용 여부.
-function ugcSyncPlayer(jobId){ const L=UGC_LAYERED[jobId]; const b=ugcFindBatch(jobId); if(L&&L.player&&b&&b.ugc){ L.player.setScenes(ugcPlayerScenes(b.ugc)); return true; } return false; }
+function ugcSyncPlayer(jobId){ const b=ugcFindBatch(jobId); if(b&&b.ugc&&b.ugc._layeredFailed)return false; /* 폴백된 잡은 죽은 재생기에 죽은 클립 재주입 금지 → 전체 재렌더(단일영상) 경로로 */ const L=UGC_LAYERED[jobId]; if(L&&L.player&&b&&b.ugc){ L.player.setScenes(ugcPlayerScenes(b.ugc)); return true; } return false; }
 // 씬 스트립(#ugcInline 안)만 다시 그림 — 재생기 vidwrap은 안 건드림(오디오·재생 유지). 순서·버전카운터·dirty UI 갱신.
 function ugcRefreshStrip(jobId){ const b=ugcFindBatch(jobId); if(!b)return; const old=document.querySelector('#ugcInline .ugc-scenes[data-job="'+jobId+'"]'); if(!old)return; const tmp=document.createElement('div'); tmp.innerHTML=ugcSceneStripHtml(b); const neo=tmp.firstElementChild; if(neo)old.replaceWith(neo); }
 // 로컬 편집 후 통합 반영: 레이어드면 setScenes+스트립·타임라인·자막 재싱크(즉시), 아니면 전체 재렌더 폴백.

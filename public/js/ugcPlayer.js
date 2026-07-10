@@ -38,23 +38,28 @@ function ugcMakePlayer(wrap, opts) {
 
   function segAt(ms) { for (var i = 0; i < segs.length; i++) { if (ms < segs[i].startMs + segs[i].durMs) return i; } return Math.max(0, segs.length - 1); }
 
-  // 실패(404)로 알려진 clip은 재요청하지 않음(load 재시도 폭주 방지) + 성한 버퍼를 404로 덮어써 잃지 않게.
+  // 실패(404)로 알려진 clip은 재요청하지 않음(load 재시도 폭주 방지).
   function preloadInto(v, url) { if (url && failed[url]) return; if (v.dataset.clip !== url) { v.dataset.clip = url; v.src = url || ''; try { v.load(); } catch (e) {} } }
+  function nextIdx(i) { return (i + 1 < segs.length) ? i + 1 : (loop ? 0 : -1); }
+  // 버퍼가 "지금 화면에 보여도 되는" 상태인가 — 로드 성공(readyState>=2=첫 프레임 디코드됨)이고 실패(404) clip이 아님.
+  function clipReady(v) { return !!(v && v.dataset.clip && !failed[v.dataset.clip] && v.readyState >= 2); }
 
   function showSeg(i, offsetMs) {
     var s = segs[i]; if (!s) return;
     // 실패(404) clip 씬 — 검은/낡은 프레임으로 토글하지 않고 직전 성한 화면을 그대로 유지. 인덱스만 전진, 다음 클립만 프리로드.
     if (s.clipUrl && failed[s.clipUrl]) {
-      if (curIdx !== i) { curIdx = i; var nf = (i + 1 < segs.length) ? i + 1 : (loop ? 0 : -1); if (nf >= 0 && segs[nf]) preloadInto(nxt, segs[nf].clipUrl); }
+      if (curIdx !== i) { curIdx = i; var nf = nextIdx(i); if (nf >= 0 && segs[nf]) preloadInto(nxt, segs[nf].clipUrl); }
       return;
     }
     if (curIdx !== i) {
-      if (nxt.dataset.clip === s.clipUrl && s.clipUrl) { var tmp = cur; cur = nxt; nxt = tmp; } // 프리로드된 다음 클립으로 스왑(끊김 없음)
-      else { preloadInto(cur, s.clipUrl); }
+      // 목표 클립은 항상 "숨은" 버퍼(nxt)에 로드하고, 준비(readyState>=2)됐을 때만 스왑한다.
+      // 보이는 버퍼(cur)는 절대 로딩 중 클립으로 덮어쓰지 않음 → 로딩/404 중 검은 프레임과의 opacity 토글(=깜빡임) 원천 차단.
+      if (nxt.dataset.clip !== s.clipUrl) preloadInto(nxt, s.clipUrl);
+      if (!(s.isStill || clipReady(nxt))) return; // 아직 로딩 중 → 이번 프레임은 성한 화면(cur) 유지, 다음 프레임 재시도(토글 안 함)
+      var tmp = cur; cur = nxt; nxt = tmp; // 준비된 클립으로만 스왑(끊김·깜빡임 없음)
       cur.style.opacity = '1'; nxt.style.opacity = '0';
       curIdx = i;
-      var ni = (i + 1 < segs.length) ? i + 1 : (loop ? 0 : -1); // 다음 클립 프리로드
-      if (ni >= 0 && segs[ni]) preloadInto(nxt, segs[ni].clipUrl);
+      var ni = nextIdx(i); if (ni >= 0 && segs[ni]) preloadInto(nxt, segs[ni].clipUrl); // 다음 클립 프리로드
     }
     if (!s.isStill && cur.dataset.clip) { // 클립 내 위치 맞춤(트림 대비). 큰 편차만 보정(잦은 seek 방지).
       var want = Math.max(0, offsetMs) / 1000;
