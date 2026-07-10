@@ -27,11 +27,13 @@
     { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc' },
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
-    { h: '/explore', l: 'Community', i: IC.explore, m: ['/explore'] }, // 페이지 제목은 'Community Creations'(explore.html), 레일은 축약
+    // (2026-07-11) Community(explore) 레일 항목 제거 — 홈 하단 'Community Creations' 섹션이 좋아요·크리에이터 링크까지 기능 동등하게 대체. 롤백: 아래 주석 복원.
+    // { h: '/explore', l: 'Community', i: IC.explore, m: ['/explore'] },
     { h: '/earnings', l: 'Creator', i: IC.creator, m: ['/earnings'], f: 'earnings' },
     { h: '/billing', l: 'Billing', i: IC.billing, m: ['/billing'] }
   ];
-  var html = '<div class="rail-brand" onclick="location.href=\'/landing\'" title="Doppia"><img src="/favicon-512.png" alt="Doppia"></div><div class="rail-nav">';
+  // (2026-07-11) 레일 상단 브랜드/파비콘 클릭 비활성화 — 아무 동작 안 함(옛 onclick=/landing 제거). 롤백: onclick="location.href='/landing'" 복원.
+  var html = '<div class="rail-brand" title="Doppia" style="cursor:default"><img src="/favicon-512.png" alt="Doppia"></div><div class="rail-nav">';
   items.forEach(function (it) {
     html += '<a class="rail-item' + (active(it) ? ' active' : '') + '"' + (it.f ? ' data-flag="' + it.f + '"' : '') + ' onclick="location.href=\'' + it.h + '\'" title="' + it.l + '">' + it.i + '<span>' + it.l + '</span></a>';
   });

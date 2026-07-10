@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/js/i18n.js?v=9" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=8" defer></script>
+<script src="/js/rail.js?v=9" defer></script>
 <script src="/js/flags.js" defer></script>
 <style>
   /* 스튜디오 .wrap과 동일: 좌측정렬 풀폭(중앙정렬 아님) — 제목·카드가 완전히 왼쪽에 붙음 */
@@ -61,27 +61,25 @@
   .feat-cta .arw svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
   /* 섹션 헤더 (제목 + View more) */
-  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:54px 2px 20px}
-  .section-head .sh-l{display:flex;flex-direction:column;gap:5px;min-width:0}
+  /* Leonardo식: 제목 + 바로 옆 작은 'View more' 링크(테두리 없는 소형 텍스트) */
+  .section-head{display:flex;align-items:baseline;gap:14px;margin:54px 2px 20px}
   .section-head h2{font-family:'Sora';font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
-  .section-head .sh-sub{font-size:13px;color:var(--dim)}
-  .viewmore{display:inline-flex;align-items:center;gap:7px;font-family:'Sora';font-size:13px;font-weight:700;color:var(--accent2);text-decoration:none;padding:9px 15px;border-radius:11px;border:1px solid var(--border2);background:rgba(124,108,255,.06);white-space:nowrap;flex-shrink:0;transition:background .2s,border-color .2s,transform .2s}
-  .viewmore:hover{background:rgba(124,108,255,.14);border-color:var(--accent);transform:translateX(2px)}
-  .viewmore svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .viewmore{display:inline-flex;align-items:center;gap:5px;font-family:'Sora';font-size:13px;font-weight:700;color:var(--accent2);text-decoration:none;white-space:nowrap;transition:gap .2s,color .2s}
+  .viewmore:hover{gap:8px;color:var(--text)}
+  .viewmore svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
   /* 대표 템플릿 — 큰 커버 카드 가로 스트립 (풀폭 컨테이너 안에서 좌측정렬 + 가로 스크롤) */
-  .pop-strip{display:flex;gap:18px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:6px 0 24px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
-  .pop-strip::-webkit-scrollbar{height:8px}
-  .pop-strip::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
-  .pop-strip::-webkit-scrollbar-track{background:transparent}
-  .pop-card{flex:0 0 clamp(230px,25vw,300px);scroll-snap-align:start;aspect-ratio:4/5;border-radius:20px;overflow:hidden;position:relative;cursor:pointer;text-decoration:none;color:inherit;border:1px solid var(--border);background:#0c0c16;box-shadow:0 26px 60px -34px rgba(0,0,0,.85);transition:transform .3s cubic-bezier(.2,.7,.2,1),border-color .3s,box-shadow .3s}
+  /* 가로 스크롤바 숨김(스크롤 기능은 유지) */
+  .pop-strip{display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:6px 0 12px;scrollbar-width:none;-ms-overflow-style:none}
+  .pop-strip::-webkit-scrollbar{display:none;width:0;height:0}
+  .pop-card{flex:0 0 clamp(170px,18vw,224px);scroll-snap-align:start;aspect-ratio:4/5;border-radius:18px;overflow:hidden;position:relative;cursor:pointer;text-decoration:none;color:inherit;border:1px solid var(--border);background:#0c0c16;box-shadow:0 22px 50px -34px rgba(0,0,0,.85);transition:transform .3s cubic-bezier(.2,.7,.2,1),border-color .3s,box-shadow .3s}
   .pop-card:hover{transform:translateY(-6px);border-color:var(--accent2);box-shadow:0 44px 92px -40px rgba(106,64,224,.55)}
   .pop-card .pc-img{position:absolute;inset:0;background-size:cover;background-position:center;transition:transform .55s cubic-bezier(.2,.7,.2,1)}
   .pop-card:hover .pc-img{transform:scale(1.07)}
   .pop-card .pc-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(6,6,14,.92) 3%,rgba(6,6,14,.4) 36%,transparent 64%)}
   .pop-card .pc-type{position:absolute;top:10px;left:10px;font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#fff;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
-  .pop-card .pc-foot{position:absolute;left:0;right:0;bottom:0;padding:16px 17px 17px;z-index:2}
-  .pop-card .pc-name{font-family:'Sora';font-size:17.5px;font-weight:800;letter-spacing:-.3px;color:#fff;line-height:1.15}
+  .pop-card .pc-foot{position:absolute;left:0;right:0;bottom:0;padding:14px 15px 15px;z-index:2}
+  .pop-card .pc-name{font-family:'Sora';font-size:15.5px;font-weight:800;letter-spacing:-.3px;color:#fff;line-height:1.15}
   .pop-card .pc-desc{margin-top:8px;font-size:12.8px;line-height:1.5;color:rgba(255,255,255,.82);max-height:0;opacity:0;overflow:hidden;transition:max-height .35s ease,opacity .3s,margin-top .35s}
   .pop-card:hover .pc-desc{max-height:120px;opacity:1}
   .pop-card .pc-cta{margin-top:11px;display:inline-flex;align-items:center;gap:8px;font-family:'Sora';font-size:12.5px;font-weight:700;color:#fff;opacity:0;transform:translateY(6px);transition:opacity .3s .05s,transform .3s .05s}
@@ -92,15 +90,23 @@
   /* (홈 자체 모달 제거 — 카드 클릭 시 스튜디오의 실제 템플릿 모달을 연다) */
 
   /* 커뮤니티 크리에이션 (explore식 masonry) */
+  /* Explore(Community Creations 페이지)와 동일: 그리드 2/3/4열 · 호버 오버레이(크리에이터+좋아요) */
   .cc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
   @media(min-width:560px){.cc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-  @media(min-width:860px){.cc-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-  .cc-card{align-self:start;margin:0 0 14px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
+  @media(min-width:700px){.cc-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .cc-card{align-self:start;margin:0 0 14px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .cc-card .cc-media{display:block;width:100%;height:auto;background:#0c0c14}
-  .cc-card .cc-by{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;backdrop-filter:blur(4px)}
+  .cc-card .cc-ovt{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;background:linear-gradient(rgba(0,0,0,.72),transparent);opacity:0;transition:opacity .15s;pointer-events:none;z-index:2}
+  .cc-card:hover .cc-ovt{opacity:1}
+  .cc-card .cc-by{pointer-events:auto;font-size:12px;color:#fff;font-weight:600;text-decoration:none;text-shadow:0 1px 3px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+  .cc-card a.cc-by:hover{text-decoration:underline}
+  .cc-card .cc-like{pointer-events:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:transform .12s,border-color .15s}
+  .cc-card .cc-like:active{transform:scale(.88)}
+  .cc-card .cc-like .hrt{font-size:13px;line-height:1}
+  .cc-card .cc-like.on{color:#ff5a7a;border-color:rgba(255,90,122,.6)}
   .cc-empty{color:var(--faint);font-size:13.5px;padding:8px 2px;grid-column:1/-1}
-  @media(min-width:1200px){.cc-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
-  @media(min-width:1720px){.cc-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+  #ccToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #ccToast.show{opacity:1}
 
   @media (max-width:860px){
     .home{padding:34px 18px 120px}
@@ -155,24 +161,18 @@
 
   <!-- 대표 템플릿 (좌측정렬 가로 스트립 · 호버=설명 · 클릭=스튜디오 실제 모달) -->
   <section class="section-head">
-    <div class="sh-l">
-      <h2>Popular templates</h2>
-      <span class="sh-sub">Start from a proven look — one product photo is all you need.</span>
-    </div>
-    <a class="viewmore" href="/studio">Browse all in Studio <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <h2>Templates</h2>
+    <a class="viewmore" href="/studio">View more <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </section>
   <div class="pop-strip" id="popStrip"></div>
 
   <!-- 커뮤니티 크리에이션 (explore 피드와 동일) -->
   <section class="section-head">
-    <div class="sh-l">
-      <h2>Community Creations</h2>
-      <span class="sh-sub">Real results made by creators on Doppia.</span>
-    </div>
-    <a class="viewmore" href="/explore">View all <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <h2>Community Creations</h2>
   </section>
   <div id="homeCommunity" class="cc-grid"><div class="cc-empty">Loading…</div></div>
 </main>
+<div id="ccToast"></div>
 
 <script>
 // Popular templates — 큰 커버 스트립 + 호버=설명. 카드 클릭 → 스튜디오의 실제 템플릿 모달을 연다(페이지 이동).
@@ -213,17 +213,47 @@
 })();
 </script>
 <script>
-// Community Creations — explore 피드 미러(같은 API). masonry + 영상 자동재생 + 클릭→크리에이션.
+// Community Creations — Explore(/explore) 페이지와 기능 동등: 같은 API·masonry·영상 자동재생
+//   + 좋아요(하트 토글) + 크리에이터 핸들 링크(/creator) + 빈상태 + toast. (Explore를 이 섹션으로 대체)
 (function(){
   var grid=document.getElementById('homeCommunity'); if(!grid)return;
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var toastEl=document.getElementById('ccToast');
+  function toast(m){ if(!toastEl)return; toastEl.textContent=m; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(function(){toastEl.classList.remove('show');},2600); }
   function card(it){
     var onerr="onerror=\"var c=this.closest('.cc-card');if(c)c.remove()\"";
     var media=it.type==='video'
       ? "<video class='cc-media' src='"+esc(it.url)+"' muted loop playsinline autoplay "+onerr+"></video>"
       : "<img class='cc-media' src='"+esc(it.url)+"' loading='lazy' alt='' "+onerr+">";
-    var by=it.creatorHandle?"<span class='cc-by'>"+esc(it.creatorHandle)+"</span>":"";
-    return "<div class='cc-card' onclick=\"location.href='/creation?idx="+encodeURIComponent(it.idx)+"&from=home'\">"+media+by+"</div>";
+    var by=it.creatorHandle
+      ? "<a class='cc-by' href='/creator?handle="+encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))+"'>"+esc(it.creatorHandle)+"</a>"
+      : "<span class='cc-by'>@creator</span>";
+    var like="<button class='cc-like"+(it.liked?' on':'')+"' data-idx='"+encodeURIComponent(it.idx)+"' title='"+(it.liked?'Liked':'Like')+"'><span class='hrt'>"+(it.liked?'♥':'♡')+"</span><span class='lct'>"+(it.likes||0)+"</span></button>";
+    return "<div class='cc-card' data-href='/creation?idx="+encodeURIComponent(it.idx)+"&from=home'><div class='cc-ovt'>"+by+like+"</div>"+media+"</div>";
+  }
+  // 이벤트 위임: 좋아요=토글 / 크리에이터=링크 기본이동 / 그 외 카드=상세 이동
+  grid.addEventListener('click',function(e){
+    var lb=e.target.closest('.cc-like');
+    if(lb){ e.preventDefault(); e.stopPropagation(); toggleLike(lb); return; }
+    if(e.target.closest('.cc-by')) return; // <a>가 크리에이터 프로필로 이동
+    var c=e.target.closest('.cc-card');
+    if(c&&c.getAttribute('data-href')) location.href=c.getAttribute('data-href');
+  });
+  function toggleLike(btn){
+    var idx=btn.getAttribute('data-idx'); var on=btn.classList.contains('on');
+    btn.disabled=true;
+    fetch('/api/generate/results/'+idx+'/like',{method:on?'DELETE':'POST'})
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(o){
+        if(!o.ok||!o.d.success) throw new Error((o.d&&o.d.error)||'failed');
+        var liked=o.d.data.liked;
+        btn.classList.toggle('on',liked);
+        btn.querySelector('.hrt').textContent=liked?'♥':'♡';
+        btn.querySelector('.lct').textContent=o.d.data.likes;
+        btn.title=liked?'Liked':'Like';
+      })
+      .catch(function(err){ toast('Like failed: '+(err.message||err)); })
+      .then(function(){ btn.disabled=false; });
   }
   function sizeCard(c){var h=c.getBoundingClientRect().height; if(h>4)c.style.gridRowEnd='span '+Math.round(h+14);}
   function layout(){ grid.querySelectorAll('.cc-card').forEach(function(c){ var m=c.querySelector('.cc-media');
@@ -236,7 +266,7 @@
   addEventListener('resize',function(){ clearTimeout(window.__ccT); window.__ccT=setTimeout(layout,150); });
   fetch('/api/generate/community?limit=80').then(function(r){return r.json();}).then(function(j){
     var d=(j&&j.data)||[];
-    if(!d.length){ grid.innerHTML="<div class='cc-empty'>Be the first to share a creation.</div>"; return; }
+    if(!d.length){ grid.innerHTML="<div class='cc-empty'>Nothing here yet — create something in Studio with Public mode on, and it shows up here.</div>"; return; }
     grid.innerHTML=d.map(card).join(''); playVids(); layout();
   }).catch(function(){ grid.innerHTML="<div class='cc-empty'>Couldn’t load community creations.</div>"; });
 })();
