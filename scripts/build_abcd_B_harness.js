@@ -22,9 +22,11 @@ function extractDecl(name) {
   return lines.slice(start, end).join('\n').replace(/\s+$/, '');
 }
 
-const FUNCS = ['esc', 'ugcCapTextOf', 'ugcTlCapText', 'ugcTlTotal', 'ugcScenesPlayable', 'ugcMountLayered',
+const FUNCS = ['esc', 'ugcCapTextOf', 'ugcTlCapText', 'ugcTlTotal', 'ugcScenesPlayable', 'ugcPlayerScenes',
+  'ugcActiveVersions', 'ugcMountLayered',
   'ugcDestroyLayered', 'ugcDestroyAllLayered', 'ugcMakeAudio', 'ugcAudioSync', 'ugcAudioDestroy',
   'ugcSyncCap', 'ugcSyncCapAt', 'ugcStyleCapOv', 'ugcToggleSound',
+  'ugcSyncPlayer', 'ugcRefreshStrip', 'ugcReflectEdit', 'ugcSceneVersion', 'ugcSceneMove', 'ugcSceneRemove',
   'UGC_LAYERED', 'UGC_CAP_EDITING', 'UGC_CAP_DRAG'];
 let extracted = '// === 실 studio.html 추출(드리프트 0) ===\n';
 for (const f of FUNCS) extracted += '\n' + extractDecl(f) + '\n';
@@ -168,5 +170,86 @@ async function run(){
 run();
 </script></body></html>`;
 fs.writeFileSync(path.join(pub, '__abcd_harness_B.html'), harness);
-console.log('하네스 생성: public/__abcd_harness_B.html (+__abcd_extracted.js)');
+
+// ── C 하네스: 편집 클라이언트화(버전전환·재배치·삭제 즉시, 서버0, 오디오 유지) ──
+const harnessC = `<!doctype html><html><head><meta charset="utf-8"><title>ABCD C harness</title>
+<style>:root{--accent:#8b7bff}${css}
+#results{font:13px/1.5 monospace;padding:12px;white-space:pre-wrap}.pass{color:#0a0}.fail{color:#c00;font-weight:bold}#ugcInline{max-width:360px}</style></head><body>
+<div id="ugcInline"></div><div id="results">running…</div>
+<script src="/js/ugcPlayer.js"></script>
+<script src="/__abcd_extracted.js"></script>
+<script>
+// ── 스텁 ──
+var __ZOOM=null; function openImageModal(u){__ZOOM=u;} function toast(){}
+var __rsr=0; function renderStudioResults(){__rsr++;}
+function ugcRenderTimeline(){}
+function ugcSceneStripHtml(b){ return '<div class="ugc-scenes" data-job="'+b.ugc.jobId+'"><div class="usc" data-n="1"><div class="usc-ver"><span>'+((b.ugc.scenes[0].activeVersion||0)+1)+'/'+((b.ugc.scenes[0].versions||[]).length||1)+'</span></div></div></div>'; }
+var __fetch={n:0,bodies:[]};
+window.fetch=function(url,opts){ __fetch.n++; if(opts&&opts.body){try{__fetch.bodies.push(JSON.parse(opts.body));}catch(e){}} return Promise.resolve({ok:false,status:500,json:function(){return Promise.resolve({error:'stub'});},text:function(){return Promise.resolve('stub');}}); };
+var __B=null; function ugcFindBatch(id){ return (__B&&__B.ugc.jobId===id)?__B:null; }
+function mkB(){ return { ugc:{ jobId:'test', previewUrl:'/__abcd_prev.mp4', edits:{}, _dirty:false, _saved:false,
+  captionSpec:{w:1080,h:1920,style:{position:'bottom',size:'m',color:'white'},timings:[{sceneN:1,startMs:0,durMs:2000},{sceneN:2,startMs:2000,durMs:2000},{sceneN:3,startMs:4000,durMs:2000}]},
+  subtitleStyle:null, voiceUrl:'/__abcd_voice.mp3', musicUrl:'/__abcd_music.mp3', hasVoice:true, hasMusic:true,
+  scenes:[
+    {n:1,clipUrl:'/__abcd_c1.mp4',isStill:false,durationSec:2,onScreenText:'첫 자막',activeVersion:0,versions:[{clipUrl:'/__abcd_c1.mp4',isStill:false,durationSec:2},{clipUrl:'/__abcd_c3.mp4',isStill:false,durationSec:2}]},
+    {n:2,clipUrl:'/__abcd_c2.mp4',isStill:false,durationSec:2,onScreenText:'둘 자막'},
+    {n:3,clipUrl:'/__abcd_c3.mp4',isStill:false,durationSec:2,onScreenText:'셋 자막'}
+  ] }, items:[{url:'/__abcd_prev.mp4'}] }; }
+function setup(){ __B=mkB(); window.__U=__B.ugc; document.getElementById('ugcInline').innerHTML=
+  '<div class="ugc-inline-vidwrap ugc-layered"><div class="ugc-cap-ov" data-job="test"></div><button class="reel-mute">🔇</button></div>'
+  +ugcSceneStripHtml(__B);
+  ugcMountLayered(__B.ugc,'/__abcd_prev.mp4'); __fetch.n=0; __rsr=0; }
+
+var out=[],pass=0,fail=0;
+function ok(n,c,x){ if(c){pass++;out.push('  PASS '+n);}else{fail++;out.push('  FAIL '+n+(x?' :: '+x:''));} }
+
+async function run(){
+  // 1) ugcActiveVersions: 기본0=빈, 비기본만 포함
+  ok('activeVersions 기본0 → {}', Object.keys(ugcActiveVersions(mkB().ugc)).length===0);
+  var ub=mkB().ugc; ub.scenes[0].activeVersion=1;
+  var sv=ugcActiveVersions(ub); ok('activeVersions 비기본 → {1:1}', sv[1]===1&&Object.keys(sv).length===1, JSON.stringify(sv));
+
+  // 2) ugcSceneVersion = 서버0 + 즉시 클립 스왑 + dirty
+  setup(); var L=UGC_LAYERED['test'];
+  ugcSceneVersion(null,'test',1,1);
+  ok('버전전환: fetch 0(서버 왕복 없음)', __fetch.n===0, 'got '+__fetch.n);
+  ok('버전전환: scene1.activeVersion=1', __B.ugc.scenes[0].activeVersion===1);
+  ok('버전전환: scene1.clipUrl=c3', __B.ugc.scenes[0].clipUrl==='/__abcd_c3.mp4', __B.ugc.scenes[0].clipUrl);
+  ok('버전전환: _dirty=true', __B.ugc._dirty===true);
+  L.player.seekTo(500); // 씬1 구간
+  ok('버전전환: 재생기 clip=c3(즉시)', /__abcd_c3\\.mp4/.test(L.player.visibleClip()||''), L.player.visibleClip());
+  ok('버전전환: 카드 카운터 2/2', /2\\/2/.test((document.querySelector('#ugcInline .usc-ver span')||{}).textContent||''));
+
+  // 3) 오디오·재생기 인스턴스 연속성(재마운트 아님) — 재배치 시 오디오 안 멈춤
+  setup(); L=UGC_LAYERED['test']; var voiceRef=L.audio.voice, musicRef=L.audio.music, playerRef=L.player;
+  ugcSceneMove('test',1,1); // 씬1을 오른쪽으로
+  ok('재배치: 오디오 voice 동일 인스턴스(연속)', UGC_LAYERED['test'].audio.voice===voiceRef);
+  ok('재배치: 오디오 music 동일 인스턴스(연속)', UGC_LAYERED['test'].audio.music===musicRef);
+  ok('재배치: player 동일 인스턴스(재마운트 아님)', UGC_LAYERED['test'].player===playerRef);
+  ok('재배치: fetch 0', __fetch.n===0, 'got '+__fetch.n);
+  ok('재배치: _dirty=true', __B.ugc._dirty===true);
+  ok('재배치: 순서 바뀜(첫 씬 n=2)', __B.ugc.scenes[0].n===2, 'first='+__B.ugc.scenes[0].n);
+  playerRef.seekTo(500); ok('재배치: 재생기 첫 클립=c2(즉시)', /__abcd_c2\\.mp4/.test(playerRef.visibleClip()||''), playerRef.visibleClip());
+
+  // 4) 삭제 즉시 반영
+  setup(); L=UGC_LAYERED['test'];
+  ugcSceneRemove('test',2);
+  ok('삭제: 씬 2개 남음', __B.ugc.scenes.length===2);
+  ok('삭제: fetch 0', __fetch.n===0, 'got '+__fetch.n);
+  ok('삭제: 재생기 씬수 2', ugcPlayerScenes(__B.ugc).length===2);
+  ok('삭제: _dirty=true', __B.ugc._dirty===true);
+
+  // 5) 폴백: 레이어드 아님(파기) → renderStudioResults
+  setup(); ugcDestroyAllLayered(); __rsr=0;
+  ugcSceneMove('test',1,1);
+  ok('폴백: 레이어드 없으면 renderStudioResults 호출', __rsr>0, 'rsr='+__rsr);
+
+  var head=(fail===0?'ALL PASS ':'HAS FAIL ')+pass+' PASS / '+fail+' FAIL';
+  document.getElementById('results').innerHTML='<span class="'+(fail?'fail':'pass')+'">'+head+'</span>\\n'+out.join('\\n');
+  window.__ABCD_C={pass:pass,fail:fail,head:head};
+}
+run();
+</script></body></html>`;
+fs.writeFileSync(path.join(pub, '__abcd_harness_C.html'), harnessC);
+console.log('하네스 생성: public/__abcd_harness_B.html · __abcd_harness_C.html (+__abcd_extracted.js)');
 console.log('추출 함수:', FUNCS.length, '개');
