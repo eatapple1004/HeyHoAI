@@ -4800,6 +4800,15 @@ function maybeOpenManageTpl(){
   applyManageChrome(); renderFilters(); renderRecipes();
 }
 function findCardByAny(v){ v=String(v); for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[m].find(r=>String(r.id)===v||String(r.ownedId)===v);if(c)return c;} return null; }
+// (2026-07-10 홈 진입) /studio?openTpl=<recipeId> → 해당 레시피의 실제 상세 모달(openRecipeModal)을 즉시 연다. 홈 Popular templates 카드가 사용. 롤백: 이 함수 + 아래 호출 1줄 제거.
+async function maybeOpenTplModal(){
+  const id=new URLSearchParams(location.search).get('openTpl'); if(!id)return;
+  history.replaceState(null,'',location.pathname);
+  try{ await loadRecipeDesc(); }catch(e){}
+  for(const m of Object.keys(TEMPLATES||{})){
+    if((TEMPLATES[m]||[]).some(r=>String(r.id)===String(id))){ setMode(m); openRecipeModal(String(id)); return; }
+  }
+}
 // ▲▲▲
 function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();maybeOpenManageTpl();}); }
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();
@@ -4810,6 +4819,7 @@ loadCredits();
 loadBrandkit();
 loadContextSwitcher();
 loadRecipeDesc();
+maybeOpenTplModal(); // 홈 Popular templates 카드 진입: /studio?openTpl=<id> → 실제 템플릿 모달 열기
 loadStudioResults(); // (테스트) 최근 생성 결과를 박스 아래 피드로 복구(reload-safe)
 // (2026-07-02) 무한 스크롤: 피드 하단 근처 도달 시 다음 페이지 로드
 window.addEventListener('scroll',function(){

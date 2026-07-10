@@ -14,7 +14,8 @@
 <script src="/js/rail.js?v=8" defer></script>
 <script src="/js/flags.js" defer></script>
 <style>
-  .home{max-width:1120px;margin:0 auto;padding:56px 26px 130px;position:relative;z-index:2}
+  /* 스튜디오 .wrap과 동일: 좌측정렬 풀폭(중앙정렬 아님) — 제목·카드가 완전히 왼쪽에 붙음 */
+  .home{max-width:none;margin:0;padding:44px 26px 130px;position:relative;z-index:2}
   /* 배경 글로우(깊이) */
   .home-glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
   .home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}
@@ -59,28 +60,36 @@
   .feat:hover .feat-cta .arw{transform:translateX(4px)}
   .feat-cta .arw svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
-  /* 보조 선택지 그리드 */
-  .home-sec-title{font-family:'Sora';font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--faint);text-transform:uppercase;margin:42px 2px 16px}
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .tile{display:flex;flex-direction:column;gap:12px;padding:22px 20px 20px;border-radius:18px;background:var(--surface);border:1px solid var(--border);text-decoration:none;color:inherit;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.2,.7,.2,1),border-color .22s,background .22s}
-  .tile::after{content:'';position:absolute;inset:0;background:radial-gradient(90% 70% at 50% -10%,rgba(106,64,224,.16),transparent 70%);opacity:0;transition:opacity .22s}
-  .tile:hover{transform:translateY(-3px);border-color:var(--border2);background:var(--surface2)}
-  .tile:hover::after{opacity:1}
-  .tile-ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--accent2);transition:color .22s,background .22s}
-  .tile:hover .tile-ic{color:#fff;background:linear-gradient(135deg,rgba(106,64,224,.35),rgba(217,96,143,.25))}
-  .tile-ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .tile h3{font-family:'Sora';font-size:16px;font-weight:700;letter-spacing:-.2px}
-  .tile p{font-size:12.5px;color:var(--dim);line-height:1.5}
-  .tile .tile-go{margin-top:auto;font-size:12px;font-weight:600;color:var(--faint);display:inline-flex;align-items:center;gap:5px;transition:color .22s}
-  .tile:hover .tile-go{color:var(--accent2)}
+  /* 섹션 헤더 (제목 + View more) */
+  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:54px 2px 20px}
+  .section-head .sh-l{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .section-head h2{font-family:'Sora';font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+  .section-head .sh-sub{font-size:13px;color:var(--dim)}
+  .viewmore{display:inline-flex;align-items:center;gap:7px;font-family:'Sora';font-size:13px;font-weight:700;color:var(--accent2);text-decoration:none;padding:9px 15px;border-radius:11px;border:1px solid var(--border2);background:rgba(124,108,255,.06);white-space:nowrap;flex-shrink:0;transition:background .2s,border-color .2s,transform .2s}
+  .viewmore:hover{background:rgba(124,108,255,.14);border-color:var(--accent);transform:translateX(2px)}
+  .viewmore svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
-  /* 대표 템플릿 스트립 (한 줄) */
-  .tpl-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-  .tpl{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px}
-  .tpl-thumb{aspect-ratio:4/5;border-radius:14px;border:1px solid var(--border);transition:transform .2s,border-color .2s;box-shadow:0 12px 30px -18px rgba(0,0,0,.7)}
-  .tpl:hover .tpl-thumb{transform:translateY(-3px);border-color:var(--accent2)}
-  .tpl-name{font-size:12.5px;font-weight:600;color:var(--dim);padding:0 2px}
-  .tpl:hover .tpl-name{color:var(--text)}
+  /* 대표 템플릿 — 큰 커버 카드 가로 스트립 (풀폭 컨테이너 안에서 좌측정렬 + 가로 스크롤) */
+  .pop-strip{display:flex;gap:18px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:6px 0 24px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+  .pop-strip::-webkit-scrollbar{height:8px}
+  .pop-strip::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+  .pop-strip::-webkit-scrollbar-track{background:transparent}
+  .pop-card{flex:0 0 clamp(230px,25vw,300px);scroll-snap-align:start;aspect-ratio:4/5;border-radius:20px;overflow:hidden;position:relative;cursor:pointer;text-decoration:none;color:inherit;border:1px solid var(--border);background:#0c0c16;box-shadow:0 26px 60px -34px rgba(0,0,0,.85);transition:transform .3s cubic-bezier(.2,.7,.2,1),border-color .3s,box-shadow .3s}
+  .pop-card:hover{transform:translateY(-6px);border-color:var(--accent2);box-shadow:0 44px 92px -40px rgba(106,64,224,.55)}
+  .pop-card .pc-img{position:absolute;inset:0;background-size:cover;background-position:center;transition:transform .55s cubic-bezier(.2,.7,.2,1)}
+  .pop-card:hover .pc-img{transform:scale(1.07)}
+  .pop-card .pc-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(6,6,14,.92) 3%,rgba(6,6,14,.4) 36%,transparent 64%)}
+  .pop-card .pc-type{position:absolute;top:10px;left:10px;font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#fff;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
+  .pop-card .pc-foot{position:absolute;left:0;right:0;bottom:0;padding:16px 17px 17px;z-index:2}
+  .pop-card .pc-name{font-family:'Sora';font-size:17.5px;font-weight:800;letter-spacing:-.3px;color:#fff;line-height:1.15}
+  .pop-card .pc-desc{margin-top:8px;font-size:12.8px;line-height:1.5;color:rgba(255,255,255,.82);max-height:0;opacity:0;overflow:hidden;transition:max-height .35s ease,opacity .3s,margin-top .35s}
+  .pop-card:hover .pc-desc{max-height:120px;opacity:1}
+  .pop-card .pc-cta{margin-top:11px;display:inline-flex;align-items:center;gap:8px;font-family:'Sora';font-size:12.5px;font-weight:700;color:#fff;opacity:0;transform:translateY(6px);transition:opacity .3s .05s,transform .3s .05s}
+  .pop-card:hover .pc-cta{opacity:1;transform:none}
+  .pop-card .pc-cta .pill{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:linear-gradient(120deg,var(--accent),#8a5cff)}
+  .pop-card .pc-cta svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+  /* (홈 자체 모달 제거 — 카드 클릭 시 스튜디오의 실제 템플릿 모달을 연다) */
 
   /* 커뮤니티 크리에이션 (explore식 masonry) */
   .cc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
@@ -90,14 +99,16 @@
   .cc-card .cc-media{display:block;width:100%;height:auto;background:#0c0c14}
   .cc-card .cc-by{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;backdrop-filter:blur(4px)}
   .cc-empty{color:var(--faint);font-size:13.5px;padding:8px 2px;grid-column:1/-1}
+  @media(min-width:1200px){.cc-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+  @media(min-width:1720px){.cc-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 
   @media (max-width:860px){
     .home{padding:34px 18px 120px}
     .feats{grid-template-columns:1fr}
     .feat-media{height:196px}
-    .tpl-row{grid-template-columns:repeat(3,1fr)}
+    .section-head{margin-top:42px}
+    .section-head h2{font-size:19px}
   }
-  @media (max-width:480px){ .tpl-row{grid-template-columns:repeat(2,1fr)} }
 </style>
 </head>
 <body>
@@ -142,21 +153,65 @@
     </a>
   </div>
 
-  <!-- 대표 템플릿 (한 줄 6개, 큐레이션 → 스튜디오 바로 진입) -->
-  <div class="home-sec-title">Popular templates</div>
-  <div class="tpl-row">
-    <a class="tpl" href="/studio?tpl=product-cut"><div class="tpl-thumb" style="background:url('/img/productcut/product-cut.png') center/cover no-repeat,linear-gradient(150deg,#7c6cff,#5ee0d6)"></div><span class="tpl-name">Product Cut</span></a>
-    <a class="tpl" href="/studio?tpl=model-cut"><div class="tpl-thumb" style="background:url('/images/e76dfb0b-dc3d-4daf-8be6-2e8905826816.png') center/cover no-repeat,linear-gradient(150deg,#ff9a6b,#ffce7a)"></div><span class="tpl-name">Model Cut</span></a>
-    <a class="tpl" href="/studio?tpl=product-hero"><div class="tpl-thumb" style="background:url('/img/producthero/noir-gold.jpg') center/cover no-repeat,linear-gradient(150deg,#a99bff,#ff7eb6)"></div><span class="tpl-name">Product Hero</span></a>
-    <a class="tpl" href="/studio?tpl=jewelry-worn-cut"><div class="tpl-thumb" style="background:url('/img/accessories/jewelry-worn-cut.png') center/cover no-repeat,linear-gradient(150deg,#a99bff,#ff7eb6)"></div><span class="tpl-name">Jewelry Worn Cut</span></a>
-    <a class="tpl" href="/studio?tpl=jewelry-on-model"><div class="tpl-thumb" style="background:url('/img/accessories/jewelry-on-model.png') center/cover no-repeat,linear-gradient(150deg,#ff9a6b,#ffce7a)"></div><span class="tpl-name">Jewelry On Model</span></a>
-    <a class="tpl" href="/studio?tpl=844bb654-3fb2-408d-8fdc-54615d2f2524"><div class="tpl-thumb" style="background:url('/images/1037ddba-0fbb-4a93-bb1d-9156666d8864.png') center/cover no-repeat,linear-gradient(150deg,#5ee0d6,#7c6cff)"></div><span class="tpl-name">Hand to Nail</span></a>
-  </div>
+  <!-- 대표 템플릿 (좌측정렬 가로 스트립 · 호버=설명 · 클릭=스튜디오 실제 모달) -->
+  <section class="section-head">
+    <div class="sh-l">
+      <h2>Popular templates</h2>
+      <span class="sh-sub">Start from a proven look — one product photo is all you need.</span>
+    </div>
+    <a class="viewmore" href="/studio">Browse all in Studio <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </section>
+  <div class="pop-strip" id="popStrip"></div>
 
   <!-- 커뮤니티 크리에이션 (explore 피드와 동일) -->
-  <div class="home-sec-title">Community Creations</div>
+  <section class="section-head">
+    <div class="sh-l">
+      <h2>Community Creations</h2>
+      <span class="sh-sub">Real results made by creators on Doppia.</span>
+    </div>
+    <a class="viewmore" href="/explore">View all <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </section>
   <div id="homeCommunity" class="cc-grid"><div class="cc-empty">Loading…</div></div>
 </main>
+
+<script>
+// Popular templates — 큰 커버 스트립 + 호버=설명. 카드 클릭 → 스튜디오의 실제 템플릿 모달을 연다(페이지 이동).
+//   레시피(5) → /studio?openTpl=<id> (studio 훅이 openRecipeModal 호출 = 모델/컷 픽커 실제 모달)
+//   Hand to Nail(마켓 UUID) → /studio?tpl=<uuid> (스튜디오에서 해당 템플릿 열림)
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var TPLS=[
+    {name:'Product Cut',cover:"/img/productcut/product-cut.png",grad:'linear-gradient(150deg,#7c6cff,#5ee0d6)',
+     desc:'Turn one flat garment photo into a clean e-commerce cut — flat lay or ghost mannequin, no model or studio needed.',
+     href:'/studio?openTpl=product-cut'},
+    {name:'Model Cut',cover:"/images/e76dfb0b-dc3d-4daf-8be6-2e8905826816.png",grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+     desc:'Put your product on a photorealistic model. Choose the model and setting, then get on-model catalog shots from a single photo.',
+     href:'/studio?openTpl=model-cut'},
+    {name:'Product Hero',cover:"/img/producthero/noir-gold.jpg",grad:'linear-gradient(150deg,#a99bff,#ff7eb6)',
+     desc:'Editorial hero shots for your product — dewy glass, liquid splash, noir gold and more premium sets to choose from.',
+     href:'/studio?openTpl=product-hero'},
+    {name:'Jewelry Worn Cut',cover:"/img/accessories/jewelry-worn-cut.png",grad:'linear-gradient(150deg,#a99bff,#ff7eb6)',
+     desc:'Show jewelry worn on hand, neck, ears or wrist — close, tactile shots that sell scale and shine.',
+     href:'/studio?openTpl=jewelry-worn-cut'},
+    {name:'Jewelry On Model',cover:"/img/accessories/jewelry-on-model.png",grad:'linear-gradient(150deg,#ff9a6b,#ffce7a)',
+     desc:'Your jewelry on a styled model — earrings, necklace, ring or bracelet, shot editorial-clean.',
+     href:'/studio?openTpl=jewelry-on-model'},
+    {name:'Hand to Nail',cover:"/images/1037ddba-0fbb-4a93-bb1d-9156666d8864.png",grad:'linear-gradient(150deg,#5ee0d6,#7c6cff)',
+     desc:'Turn a bare-hand photo into polished nail-art shots — ideal for nail salons and press-on brands.',
+     href:'/studio?tpl=844bb654-3fb2-408d-8fdc-54615d2f2524'}
+  ];
+  var strip=document.getElementById('popStrip');
+  if(!strip)return;
+  strip.innerHTML=TPLS.map(function(t){
+    return "<a class='pop-card' href='"+esc(t.href)+"' aria-label='Open "+esc(t.name)+" in Studio'>"
+      +"<div class='pc-img' style=\"background:url('"+esc(t.cover)+"') center/cover no-repeat, "+t.grad+"\"></div>"
+      +"<div class='pc-shade'></div><div class='pc-type'>▦ Photo</div>"
+      +"<div class='pc-foot'><div class='pc-name'>"+esc(t.name)+"</div>"
+      +"<div class='pc-desc'>"+esc(t.desc)+"</div>"
+      +"<div class='pc-cta'><span class='pill'><svg viewBox='0 0 24 24'><path d='M5 12h14M13 6l6 6-6 6'/></svg></span> Open in Studio</div></div></a>";
+  }).join('');
+})();
+</script>
 <script>
 // Community Creations — explore 피드 미러(같은 API). masonry + 영상 자동재생 + 클릭→크리에이션.
 (function(){
