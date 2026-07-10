@@ -3509,6 +3509,20 @@ function ugcLayeredFallback(jobId){ const b=ugcFindBatch(jobId); if(!b||!b.ugc||
 function ugcUnmuteLayered(jobId){ const L=UGC_LAYERED[jobId]; if(!L||!L.audio)return; [L.audio.voice,L.audio.music].filter(Boolean).forEach(a=>{ a.muted=false; const pr=a.play(); if(pr&&pr.catch)pr.catch(()=>{}); }); const btn=document.querySelector('#ugcInline .ugc-inline-vidwrap .reel-mute'); if(btn){ btn.textContent='🔊'; btn.classList.add('on'); } }
 function ugcDestroyLayered(jobId){ const L=UGC_LAYERED[jobId]; if(!L)return; try{ L.player&&L.player.destroy(); }catch(e){} try{ ugcAudioDestroy(L.audio); }catch(e){} delete UGC_LAYERED[jobId]; }
 function ugcDestroyAllLayered(){ for(const k in UGC_LAYERED)ugcDestroyLayered(k); }
+// 확대 모달 재생 중 인라인 오디오 겹침 방지 — 레이어드 재생기는 player.pause() 필수
+//   (onTime→ugcAudioSync가 매 프레임 audio를 되살려서 audio.pause()만으론 부족). 단일 인라인 <video>도 정지.
+function ugcSilenceInline(){
+  for(const k in UGC_LAYERED){ const L=UGC_LAYERED[k]; if(!L)continue;
+    try{ L.player&&L.player.pause(); }catch(e){}
+    if(L.audio)[L.audio.voice,L.audio.music].filter(Boolean).forEach(a=>{ try{ a.pause(); }catch(e){} });
+  }
+  document.querySelectorAll('#ugcInline .ugc-inline-vid').forEach(v=>{ try{ v.pause(); }catch(e){} });
+}
+// 모달 닫힘 후 인라인 재생 재개 — muted 상태는 안 건드림(이전에 소리 켰으면 다시 들리고, 꺼뒀으면 계속 무음).
+function ugcResumeInline(){
+  for(const k in UGC_LAYERED){ const L=UGC_LAYERED[k]; if(L&&L.player)try{ L.player.play(); }catch(e){} }
+  document.querySelectorAll('#ugcInline .ugc-inline-vid').forEach(v=>{ try{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} });
+}
 // ── C: 편집(재배치·삭제·버전전환)을 재생기에 즉시 반영(서버 왕복 0, 오디오 안 멈춤) ──
 // 레이어드면 player.setScenes로 클립만 스왑(재마운트·오디오 재시작 없음). 반환=적용 여부.
 function ugcSyncPlayer(jobId){ const b=ugcFindBatch(jobId); if(b&&b.ugc&&b.ugc._layeredFailed)return false; /* 폴백된 잡은 죽은 재생기에 죽은 클립 재주입 금지 → 전체 재렌더(단일영상) 경로로 */ const L=UGC_LAYERED[jobId]; if(L&&L.player&&b&&b.ugc){ L.player.setScenes(ugcPlayerScenes(b.ugc)); return true; } return false; }
@@ -3955,6 +3969,7 @@ async function generate(opts){
 let lastGenTemplate=''; // 직전 생성에 사용한 템플릿(또는 '내 프롬프트')
 function openImageModal(url,type){
   const isReel=type==='reel';
+  if(isReel&&typeof ugcSilenceInline==='function')ugcSilenceInline(); // 확대 영상 재생 시 인라인 오디오 정지(음악 겹침 방지)
   document.getElementById('imgModalMedia').innerHTML = isReel
     ? `<video src="${esc(url)}" controls autoplay loop playsinline></video>`
     : `<img src="${esc(url)}" alt="">`;
@@ -3962,7 +3977,11 @@ function openImageModal(url,type){
   document.getElementById('imgModalDl').href=url;
   document.getElementById('imgModal').classList.add('open');
 }
-function closeImageModal(){document.getElementById('imgModal').classList.remove('open');}
+function closeImageModal(){
+  document.getElementById('imgModal').classList.remove('open');
+  const m=document.getElementById('imgModalMedia'); if(m)m.innerHTML=''; // 모달 영상 정지(숨겨도 계속 재생·소리나던 것 차단)
+  if(typeof ugcResumeInline==='function')ugcResumeInline(); // 인라인 재생 재개(이전 음소거 상태 보존)
+}
 
 // 사용자가 한 줄로 추가한 커스텀 프롬프트 (선택)
 // 추가 프롬프트 소스: Custom=하단 칸 / 템플릿 모드=레시피 모달의 Add detail(state.detail)
