@@ -3532,7 +3532,7 @@ function ugcSyncCapAt(jobId,ms){
   const ph=document.querySelector('#ugcInline .ugc-timeline .ugc-tl-play');
   if(ph&&tot)ph.style.left=(Math.max(0,Math.min(1,ms/tot))*100)+'%';
   if(UGC_CAP_EDITING===jobId||UGC_CAP_DRAG)return; // 편집/드래그 중 재빌드 금지(캐럿·드래그 대상 보존)
-  function clear(){ ov.style.display='none'; if(ov.childNodes.length){ov.innerHTML='';ov.removeAttribute('data-sig');} }
+  function clear(){ ov.style.display='none'; if(ov.childNodes.length){ov.innerHTML='';ov.removeAttribute('data-sig');ov.removeAttribute('data-struct');} }
   if(st.off)return clear();
   // 현재 시각에 걸린 자막 전부(겹치면 여러 개) → 자막별 개별 편집 박스. 중복(같은 자막) 제거.
   const matches=timings.filter(x=>{const s0=+x.startMs,d=+x.durMs; return ms>=s0&&ms<s0+d;}).sort((a,b)=>(+a.startMs)-(+b.startMs));
@@ -3540,15 +3540,18 @@ function ugcSyncCapAt(jobId,ms){
   for(const t of matches){ const kind=(t&&t.text!=null&&!Number.isFinite(Number(t.sceneN)))?'free':'scene'; const ref=kind==='free'?String(t.id):String(t.sceneN); const k=kind+':'+ref; if(seen[k])continue;
     let tx;
     if(kind==='free'){ tx=ugcCapTextOf(u,t); } // 자유 자막=자기 텍스트 통짜(청킹 안 함)
-    else { const full=ugcTlCapText(u,Number(ref)).trim(); // 씬 음성자막=spoken을 청킹(A+)해 현재 ms 청크만 표시
-      if(full){ const cks=ugcChunkCaption(full,+t.startMs,+t.durMs); const c=cks.find(ch=>ms>=ch.startMs&&ms<ch.startMs+ch.durMs)||cks[cks.length-1]; tx=c?c.text:full; } else tx=''; }
+    else { const full=ugcTlCapText(u,Number(ref)).trim(); const s0=+t.startMs, d0=+t.durMs; // 씬 음성자막=spoken을 청킹(A+)해 현재 ms 청크만
+      if(full&&Number.isFinite(s0)&&Number.isFinite(d0)&&d0>0){ const cks=ugcChunkCaption(full,s0,d0); const c=cks.find(ch=>ms>=ch.startMs&&ms<ch.startMs+ch.durMs)||cks[cks.length-1]; tx=c?c.text:full; } else tx=full; } // 타이밍 불량(NaN 등)이면 청킹 없이 통짜
     if(!tx)continue; seen[k]=1; items.push({kind,ref,text:tx}); }
   if(!items.length)return clear();
-  // 같은 자막·텍스트면 재빌드 안 함(불필요한 DOM 교체·깜빡임 방지). ␞=구분자.
-  const sig=items.map(it=>it.kind+':'+it.ref+'='+it.text).join('␞');
-  if(ov.getAttribute('data-sig')!==sig){
+  // ⚡깜빡임 방지: 구조(자막 개수·종류)만 sig로 → 청크 전환(같은 씬, 텍스트만 변경)엔 DOM 재빌드 안 하고 텍스트만 제자리 갱신. ␞=구분자.
+  const structSig=items.map(it=>it.kind+':'+it.ref).join('␞');
+  if(ov.getAttribute('data-struct')!==structSig){
     ov.innerHTML=items.map(it=>`<div class="ugc-cap-line" data-kind="${it.kind}" data-ref="${esc(it.ref)}" title="${it.kind==='free'?'Click to edit · drag to move':'Drag to move · edit in scene card'}" onpointerdown="ugcCapGrab(event,'${esc(jobId)}')" onkeydown="ugcCapKey(event)" onblur="ugcCapCommit(this,'${esc(jobId)}')">${esc(it.text)}</div>`).join('');
-    ov.setAttribute('data-sig',sig);
+    ov.setAttribute('data-struct',structSig);
+  } else { // 구조 동일 → 청크 텍스트만 제자리 교체(innerHTML 재빌드 없음 = blink 없음). 편집 중 라인은 안 건드림.
+    const lines=ov.querySelectorAll('.ugc-cap-line');
+    items.forEach((it,i)=>{ const el=lines[i]; if(el&&!el.classList.contains('editing')&&el.textContent!==it.text)el.textContent=it.text; });
   }
   ov.style.display='flex'; // '' 금지(CSS display:none으로 되돌아가 자막 영영 숨김 — 근본 버그). flex=자막별 자식 세로 스택.
   ugcStyleCapOv(ov,st);
