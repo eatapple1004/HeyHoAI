@@ -845,9 +845,14 @@
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
         <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[쉼]</b> (0.6s) / <b>[긴쉼]</b> (1.2s) in the script + per-scene <b>+여백</b>.</div>
       </div>
-      <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:6px 0 2px">
-        <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
-      </label>
+      <div style="margin:8px 0 2px">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Mode</div>
+        <div class="ugc-seg" id="ugcModeSeg">
+          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)">🎙️ Voice</button>
+          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)">🎵 Music only</button>
+        </div>
+        <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 세그먼트가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
+      </div>
       <div class="script-ctrls">
         <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()">✍ Write script</button>
       </div>
@@ -4449,6 +4454,13 @@ async function ugcApplyScenePre(i){
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=o;} if(window.toast)toast(e.message||'Could not update','error'); }
 }
 // 음성 여부에 따라 Voice/Speed/Preview 컨트롤 표시 토글(라벨 inline display:flex라 복원값 명시)
+// P3 2모드 선택기 — 세그먼트(🎙️Voice/🎵Music)가 숨은 #ugcVoice checkbox(모델)를 구동 → 기존 모든 참조(.checked) 호환.
+function ugcSetMode(btn){
+  const voice=btn.dataset.voice==='1';
+  const seg=btn.closest('.ugc-seg'); if(seg)seg.querySelectorAll('.ugc-seg-b').forEach(b=>b.classList.toggle('active',b===btn));
+  const cb=document.getElementById('ugcVoice'); if(cb)cb.checked=voice;
+  if(typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls();
+}
 function ugcSyncVoiceControls(){
   const on=(document.getElementById('ugcVoice')||{}).checked!==false;
   const vl=document.getElementById('ugcVoiceLbl'); if(vl)vl.style.display=on?'flex':'none';
