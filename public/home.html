@@ -22,41 +22,46 @@
   .home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}
 
   /* 히어로 */
-  .home-hero{margin-bottom:38px}
+  .home-hero{margin-bottom:34px}
   .home-eyebrow{font-family:'Sora';font-size:12.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:var(--accent2);margin-bottom:14px;display:flex;align-items:center;gap:9px}
   .home-eyebrow .dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 0 12px var(--accent)}
   .home-hero h1{font-family:'Sora';font-size:clamp(30px,4.4vw,46px);font-weight:800;line-height:1.08;letter-spacing:-1px;margin-bottom:14px}
   .home-hero h1 b{font-weight:800;background:linear-gradient(110deg,#fff 10%,var(--accent2) 55%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  .home-sub{font-size:16px;color:var(--dim);max-width:560px;line-height:1.62}
+  .home-sub{font-size:16px;color:var(--dim);max-width:600px;line-height:1.62}
 
-  /* 대표(Ad Video) 카드 */
-  .feat{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:0;border-radius:24px;overflow:hidden;border:1px solid var(--border2);background:linear-gradient(180deg,var(--surface),var(--bg2));text-decoration:none;color:inherit;position:relative;box-shadow:0 34px 90px -40px rgba(0,0,0,.8);transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s,border-color .28s;isolation:isolate}
-  .feat::before{content:'';position:absolute;inset:-1px;border-radius:24px;padding:1px;background:conic-gradient(from 120deg,transparent,rgba(106,64,224,.9),rgba(217,96,143,.7),transparent 55%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .3s;z-index:1}
-  .feat:hover{transform:translateY(-4px);border-color:transparent;box-shadow:0 44px 110px -40px rgba(106,64,224,.55)}
+  /* 대표 상품 2개(동급) — Ad Video · Studio Photos. 세로형 카드 나란히. */
+  .feats{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .feat{display:flex;flex-direction:column;border-radius:22px;overflow:hidden;border:1px solid var(--border2);background:linear-gradient(180deg,var(--surface),var(--bg2));text-decoration:none;color:inherit;position:relative;box-shadow:0 30px 80px -42px rgba(0,0,0,.8);transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s,border-color .28s;isolation:isolate}
+  .feat::before{content:'';position:absolute;inset:-1px;border-radius:22px;padding:1px;background:conic-gradient(from 120deg,transparent,rgba(106,64,224,.9),rgba(217,96,143,.7),transparent 55%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .3s;z-index:1}
+  .feat:hover{transform:translateY(-4px);border-color:transparent;box-shadow:0 44px 110px -40px rgba(106,64,224,.5)}
   .feat:hover::before{opacity:1;animation:featspin 6s linear infinite}
   @keyframes featspin{to{transform:rotate(360deg)}}
-  .feat-media{position:relative;min-height:290px;overflow:hidden;background:radial-gradient(120% 120% at 30% 20%,#241a4a,#0c0c16 70%)}
-  .feat-media .orb{position:absolute;inset:0;background:conic-gradient(from 200deg at 62% 42%,rgba(106,64,224,.0),rgba(106,64,224,.6),rgba(94,224,214,.35),rgba(217,96,143,.5),rgba(106,64,224,0));filter:blur(26px);opacity:.85;animation:orb 14s linear infinite}
+  .feat-media{position:relative;height:212px;overflow:hidden;background:radial-gradient(120% 120% at 30% 20%,#241a4a,#0c0c16 70%)}
+  .feat.studio .feat-media{background:radial-gradient(120% 120% at 32% 22%,#14303a,#0c0c16 72%)}
+  .feat-media .orb{position:absolute;inset:0;background:conic-gradient(from 200deg at 62% 42%,rgba(106,64,224,0),rgba(106,64,224,.6),rgba(94,224,214,.35),rgba(217,96,143,.5),rgba(106,64,224,0));filter:blur(26px);opacity:.85;animation:orb 14s linear infinite}
+  .feat.studio .feat-media .orb{background:conic-gradient(from 160deg at 60% 44%,rgba(94,224,214,0),rgba(94,224,214,.5),rgba(106,64,224,.5),rgba(217,96,143,.45),rgba(94,224,214,0))}
   @keyframes orb{to{transform:rotate(360deg)}}
-  .feat-media .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -18px rgba(0,0,0,.7),inset 0 0 20px rgba(255,255,255,.1);transition:transform .28s}
-  .feat:hover .feat-media .play{transform:translate(-50%,-50%) scale(1.07)}
-  .feat-media .play svg{width:30px;height:30px;margin-left:5px;fill:#fff}
-  .feat-media .ph-cap{position:absolute;left:22px;bottom:22px;font-family:'Sora';font-weight:700;font-size:15px;color:#fff;letter-spacing:-.3px;padding:8px 14px;border-radius:11px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);transform:translateY(0);animation:capfloat 4.5s ease-in-out infinite}
+  .feat-emblem{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -18px rgba(0,0,0,.7),inset 0 0 20px rgba(255,255,255,.1);transition:transform .28s}
+  .feat:hover .feat-emblem{transform:translate(-50%,-50%) scale(1.07)}
+  .feat-emblem svg{width:30px;height:30px;fill:#fff}
+  .feat-emblem.play svg{margin-left:5px}
+  .feat-emblem.pic svg{fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .feat-media .ph-cap{position:absolute;left:20px;bottom:20px;right:20px;font-family:'Sora';font-weight:700;font-size:14px;color:#fff;letter-spacing:-.3px;padding:8px 13px;border-radius:11px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);animation:capfloat 4.5s ease-in-out infinite;width:fit-content;max-width:calc(100% - 40px)}
   @keyframes capfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-  .feat-body{padding:38px 40px;display:flex;flex-direction:column;justify-content:center;gap:14px;position:relative;z-index:2}
-  .feat-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.4px;color:#fff;padding:5px 12px;border-radius:999px;background:linear-gradient(120deg,var(--accent),var(--pink));box-shadow:0 8px 20px -8px var(--accent)}
-  .feat-body h2{font-family:'Sora';font-size:29px;font-weight:800;letter-spacing:-.6px}
-  .feat-body p{font-size:15px;color:var(--dim);line-height:1.6;max-width:400px}
+  .feat-body{padding:24px 26px 26px;display:flex;flex-direction:column;gap:12px;flex:1;position:relative;z-index:2}
+  .feat-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.4px;color:#fff;padding:5px 12px;border-radius:999px;background:linear-gradient(120deg,var(--accent),var(--pink));box-shadow:0 8px 20px -8px var(--accent)}
+  .feat-body h2{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.6px}
+  .feat-body p{font-size:14.5px;color:var(--dim);line-height:1.58}
   .feat-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
-  .feat-tags span{font-size:11.5px;font-weight:600;color:var(--accent2);padding:4px 10px;border-radius:8px;background:rgba(106,64,224,.12);border:1px solid rgba(106,64,224,.24)}
-  .feat-cta{margin-top:8px;display:inline-flex;align-items:center;gap:9px;font-family:'Sora';font-weight:700;font-size:15px;color:#fff}
-  .feat-cta .arw{display:inline-flex;width:34px;height:34px;border-radius:10px;background:linear-gradient(120deg,var(--accent),#8a5cff);align-items:center;justify-content:center;box-shadow:0 10px 24px -10px var(--accent);transition:transform .25s}
+  .feat-tags span{font-size:11px;font-weight:600;color:var(--accent2);padding:4px 10px;border-radius:8px;background:rgba(106,64,224,.12);border:1px solid rgba(106,64,224,.24)}
+  .feat-cta{margin-top:auto;padding-top:6px;display:inline-flex;align-items:center;gap:9px;font-family:'Sora';font-weight:700;font-size:14.5px;color:#fff}
+  .feat-cta .arw{display:inline-flex;width:32px;height:32px;border-radius:10px;background:linear-gradient(120deg,var(--accent),#8a5cff);align-items:center;justify-content:center;box-shadow:0 10px 24px -10px var(--accent);transition:transform .25s}
   .feat:hover .feat-cta .arw{transform:translateX(4px)}
-  .feat-cta .arw svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .feat-cta .arw svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
   /* 보조 선택지 그리드 */
-  .home-sec-title{font-family:'Sora';font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--faint);text-transform:uppercase;margin:44px 2px 16px}
-  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .home-sec-title{font-family:'Sora';font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--faint);text-transform:uppercase;margin:42px 2px 16px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
   .tile{display:flex;flex-direction:column;gap:12px;padding:22px 20px 20px;border-radius:18px;background:var(--surface);border:1px solid var(--border);text-decoration:none;color:inherit;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.2,.7,.2,1),border-color .22s,background .22s}
   .tile::after{content:'';position:absolute;inset:0;background:radial-gradient(90% 70% at 50% -10%,rgba(106,64,224,.16),transparent 70%);opacity:0;transition:opacity .22s}
   .tile:hover{transform:translateY(-3px);border-color:var(--border2);background:var(--surface2)}
@@ -71,12 +76,10 @@
 
   @media (max-width:860px){
     .home{padding:34px 18px 120px}
-    .feat{grid-template-columns:1fr}
-    .feat-media{min-height:210px}
-    .feat-body{padding:26px 24px}
-    .tiles{grid-template-columns:repeat(2,1fr)}
+    .feats{grid-template-columns:1fr}
+    .feat-media{height:196px}
+    .tiles{grid-template-columns:1fr}
   }
-  @media (max-width:480px){ .tiles{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -85,34 +88,45 @@
   <header class="home-hero">
     <p class="home-eyebrow"><span class="dot"></span> Doppia Studio</p>
     <h1>What will you <b>create</b> today?</h1>
-    <p class="home-sub">One product photo is enough. Pick a starting point — we handle the scripting, visuals, voice and captions.</p>
+    <p class="home-sub">One product photo is enough — turn it into ad videos, cutouts, editorial and on-model shots. Pick a starting point; we handle the rest.</p>
   </header>
 
-  <!-- 대표 상품: Ad Video -->
-  <a class="feat" href="/studio?mode=ugc" aria-label="Create an Ad Video">
-    <div class="feat-media">
-      <div class="orb"></div>
-      <div class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-      <div class="ph-cap">“One touch, and the color changes everything.”</div>
-    </div>
-    <div class="feat-body">
-      <span class="feat-badge">✦ Flagship</span>
-      <h2>Ad Video</h2>
-      <p>Turn a product photo into a narrated, captioned short — scenes, voice and music, ready for Reels &amp; TikTok.</p>
-      <div class="feat-tags"><span>Auto script</span><span>AI voice &amp; music</span><span>9:16 · 1:1 · 16:9</span></div>
-      <span class="feat-cta">Create an ad video <span class="arw"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
-    </div>
-  </a>
+  <!-- 대표 상품 2개(동급): Ad Video · Product & Model Photos -->
+  <div class="feats">
+    <a class="feat" href="/studio?mode=ugc" aria-label="Create an Ad Video">
+      <div class="feat-media">
+        <div class="orb"></div>
+        <div class="feat-emblem play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="ph-cap">“One touch, and the color changes everything.”</div>
+      </div>
+      <div class="feat-body">
+        <span class="feat-badge">✦ Flagship</span>
+        <h2>Ad Video</h2>
+        <p>Turn a product photo into a narrated, captioned short — scenes, voice and music, ready for Reels &amp; TikTok.</p>
+        <div class="feat-tags"><span>Auto script</span><span>AI voice &amp; music</span><span>9:16 · 1:1 · 16:9</span></div>
+        <span class="feat-cta">Create an ad video <span class="arw"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+      </div>
+    </a>
+
+    <a class="feat studio" href="/studio" aria-label="Create Product & Model Photos">
+      <div class="feat-media">
+        <div class="orb"></div>
+        <div class="feat-emblem pic"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.7"/><path d="M21 16l-5-5-9 9"/></svg></div>
+        <div class="ph-cap">One photo → a whole lookbook.</div>
+      </div>
+      <div class="feat-body">
+        <span class="feat-badge">✦ Flagship</span>
+        <h2>Product &amp; Model Photos</h2>
+        <p>Cutouts, editorial and on-model looks from one product photo — driven by ready-made templates.</p>
+        <div class="feat-tags"><span>Cutout</span><span>Editorial</span><span>On-model</span></div>
+        <span class="feat-cta">Create photos <span class="arw"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+      </div>
+    </a>
+  </div>
 
   <!-- 보조 선택지 -->
   <div class="home-sec-title">Or start another way</div>
   <div class="tiles">
-    <a class="tile" href="/studio">
-      <div class="tile-ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.5L20 10l-5.8 1.5L12 17l-2.2-5.5L4 10l5.8-1.5z"/></svg></div>
-      <h3>Product &amp; Model Photos</h3>
-      <p>Studio shots and on-model looks from one photo.</p>
-      <span class="tile-go">Open Studio →</span>
-    </a>
     <a class="tile" href="/store">
       <div class="tile-ic"><svg viewBox="0 0 24 24"><path d="M4 4h16l1 5a2.5 2.5 0 01-4.9.6 2.5 2.5 0 01-4.9 0 2.5 2.5 0 01-4.9 0A2.5 2.5 0 013 9z"/><path d="M5 11v8a1 1 0 001 1h12a1 1 0 001-1v-8"/></svg></div>
       <h3>Templates</h3>
