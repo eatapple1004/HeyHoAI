@@ -233,6 +233,11 @@ app.listen(env.PORT, () => {
       setTimeout(() => ugc.sweepStaleComposites().catch((e) => log.warn('UGC composite sweep failed: ' + e.message)), 90 * 1000);
       setInterval(() => ugc.sweepStaleComposites().catch(() => {}), 6 * 60 * 60 * 1000).unref();
     }
+    // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수(폴러와 동일 게이트=prod only). 시작 60s 후 + 5분 간격.
+    if (ugc.reapStaleProcessing) {
+      setTimeout(() => ugc.reapStaleProcessing().catch((e) => log.warn('UGC processing reap failed: ' + e.message)), 60 * 1000);
+      setInterval(() => ugc.reapStaleProcessing().catch(() => {}), 5 * 60 * 1000).unref();
+    }
   }
 });
 

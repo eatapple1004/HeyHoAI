@@ -10,6 +10,7 @@ function ugcMakePlayer(wrap, opts) {
   opts = opts || {};
   var scenes = opts.scenes || [];
   var onTime = opts.onTime || function () {};
+  var onError = opts.onError || function () {}; // 클립 로드 실패(404/유실) 콜백 — 마운트 계층이 폴백 판단
   var loop = opts.loop !== false;
 
   function buildSegs(sc) {
@@ -27,6 +28,8 @@ function ugcMakePlayer(wrap, opts) {
     var v = document.createElement('video');
     v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto'; v.loop = false;
     v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0';
+    // 클립 로드 실패(404/유실) 감지 → 마운트 계층에 알림(빈 src '' 무시). 검은 세그먼트로 방치되지 않게 폴백 유도.
+    v.addEventListener('error', function () { if (v.src && v.dataset.clip && v.error) onError(v.dataset.clip); });
     wrap.appendChild(v); return v;
   }
   var vA = mkv(), vB = mkv(), cur = vA, nxt = vB, curIdx = -1;

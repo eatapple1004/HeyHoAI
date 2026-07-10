@@ -214,8 +214,14 @@ async function muxAudio(videoIn, audioInputs, durSec, workDir, outName) {
     inputs.push('-i', a.file);
     const lbl = `a${i}`;
     const d = Math.round(a.delayMs || 0);
-    const delay = d > 0 ? `adelay=${d}|${d},` : ''; // 스테레오 양 채널 지연
-    filters.push(`[${i + 1}:a]volume=${a.volume},${delay}apad[${lbl}]`);
+    // 음악은 영상 길이만큼 aloop로 반복(짧은 음악이 뒤에서 무음되는 것 방지 — 클라 미리보기 loop=true와 일치).
+    //   VO는 apad(한 번 재생 후 무음) 유지. -t durSec가 최종적으로 영상 길이에 맞춰 트림.
+    const parts = [];
+    if (a.kind === 'music') parts.push('aloop=loop=-1:size=2147483647'); // 전 구간 반복
+    parts.push(`volume=${a.volume}`);
+    if (d > 0) parts.push(`adelay=${d}|${d}`); // 스테레오 양 채널 지연
+    if (a.kind !== 'music') parts.push('apad'); // 무음 패딩(VO 등)
+    filters.push(`[${i + 1}:a]${parts.join(',')}[${lbl}]`);
     labels.push(`[${lbl}]`);
   });
 

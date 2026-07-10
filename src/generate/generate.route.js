@@ -18,6 +18,10 @@ const { query } = require('../db/client');
 const { getTool, listTools } = require('../tools/registry');
 const { entitlementsFor } = require('../lib/entitlements');
 const mediaStore = require('../storage/mediaStore');
+// #1 보안: 사용자 제공 reference 이미지 경로 검증 — 공개 로스터(/img/…) 또는 업로드 산출물(tmp/images/<basename>)만.
+//   absolute 경로·'..' 트래버설·타 확장자 거부 → nanoBanana resolveRefPath로 흘러가는 임의 파일 읽기/크로스테넌트 이미지 유출 차단.
+const safeRefImage = (p) => (typeof p === 'string' && p && !p.includes('..') && !p.includes('\0')
+  && (/^\/img\/[\w./-]+\.(jpe?g|png|webp)$/i.test(p) || /^tmp\/images\/[\w-]+\.(jpe?g|png|webp)$/i.test(p))) ? p : null;
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
 const router = Router();
@@ -945,12 +949,14 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]
     const spd = parseFloat(speed); // 말하기 속도(0.7~1.2), 없으면 undefined→기본 1.0
     // 모델 선택(🧍 포맷): 로스터 경로만 허용(path traversal 방지)
     const safeModel = (typeof modelImage === 'string' && /^\/img\/models\/[\w-]+\.(jpe?g|png|webp)$/i.test(modelImage)) ? modelImage : null;
+    // #1 보안: referenceImagePath는 공개 로스터(/img/…) 또는 업로드 산출물(tmp/images/<basename>)만 허용. absolute·'..' 거부(임의 파일 읽기·크로스테넌트 이미지 유출 차단).
+    const safeRef = safeRefImage(referenceImagePath);
     const safeAspect = ['9:16', '1:1', '16:9'].includes(aspect) ? aspect : '9:16'; // Kling 지원 비율만
     const result = await ugcVideoService.render({
       user: req.user, script, product, concept,
       outputType: outputType || 'product-ad',
       productImagePath: saveProductImage(req),
-      referenceImagePath: referenceImagePath || null,
+      referenceImagePath: safeRef,
       modelImagePath: safeModel,
       aspect: safeAspect,
       dryRunVideo: dryRun === true || dryRun === 'true',
@@ -989,7 +995,8 @@ router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: 1 }])
       product, concept,
       outputType: outputType || 'product-ad',
       productImagePath,                                 // product-ad: 유저 실제 제품 고정
-      referenceImagePath: referenceImagePath || null,   // model-editorial: 모델 로스터 reference
+      referenceImagePath: safeRefImage(referenceImagePath), // #1 보안: 로스터/업로드 경로만(absolute·traversal 거부)
+
       dryRunVideo: dryRun === true || dryRun === 'true', // LIVE 기본(false); 테스트만 true
       visibility,
       isTemplate: false,
@@ -1458,14 +1465,14 @@ router.get('/bgm/list', (_req, res) => {
 });
 
 router.delete('/bgm/:filename', (req, res) => {
-  const filePath = path.join(bgmDir, req.params.filename);
+  const filePath = path.join(bgmDir, path.basename(req.params.filename)); // #2 보안: basename으로 path traversal 차단(%2f 디코드 후 '../' 방지)
   if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Not found' });
   fs.unlinkSync(filePath);
   res.json({ success: true });
 });
 
 router.patch('/bgm/:filename', (req, res) => {
-  const oldName = req.params.filename;
+  const oldName = path.basename(req.params.filename); // #2 보안: basename으로 srcPath traversal 차단
   const rawNew = (req.body && req.body.newName) || '';
   if (!rawNew) return res.status(400).json({ success: false, error: 'newName required' });
 

@@ -3103,6 +3103,8 @@ async function ugcReassemble(jobId,opts){
         u.scenes=u._orig.map(s=>Object.assign({},s));
       }
       u.edits={}; u._dirty=false;
+      // #11: 재렌더(재생기 파기·재마운트) 전 재생위치·소리상태 보존 → ugcMountLayered가 seekTo+언뮤트 복원(t=0·재음소거 방지)
+      { const _rL=UGC_LAYERED[jobId]; if(_rL&&_rL.player){ u._resume={ time:_rL.player.currentTime(), unmuted:!!(_rL.audio&&((_rL.audio.voice&&!_rL.audio.voice.muted)||(_rL.audio.music&&!_rL.audio.music.muted))) }; } }
       if(u.previewUrl)await ugcPreloadVideo(u.previewUrl); // 새 미리보기를 먼저 받아둠(immutable 캐시) → 아래 렌더가 브라우저 캐시서 즉시 스왑(버전전환 로딩 체감 제거)
       renderStudioResults();
       if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
@@ -3394,7 +3396,7 @@ function renderUgcInline(b){
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; const u=b.ugc; let html='';
   const useOverlay=u&&u.previewUrl; // B+ 편집 중엔 자막 없는 미리보기 + HTML 오버레이(즉시 반영). 확대·공유는 구운 최종.
-  const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u); // B: 실 비디오 클립 있고 재생기 로드됐으면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷 → 빈 영상영역 방지).
+  const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u)&&!u._layeredFailed; // B: 실 비디오 클립 있고 재생기 로드됐으면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷·런타임 클립404[_layeredFailed] → 빈 영상영역·깜빡임 방지).
   if(useLayered){
     html+='<div class="ugc-inline-vidwrap ugc-layered">' /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio */
       +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
@@ -3430,11 +3432,19 @@ function ugcMountLayered(u,zoom){
   // wrap 높이 = 영상 비율(player 비디오는 position:absolute라 높이 기여 안 함 → aspect-ratio 필수). captionSpec w/h 우선(9:16·1:1·16:9).
   const cs=u.captionSpec||{}; const w=cs.w||1080, h=cs.h||1920; wrap.style.aspectRatio=w+' / '+h;
   const audio=ugcMakeAudio(u);
-  const player=ugcMakePlayer(wrap,{ scenes:ugcPlayerScenes(u), loop:true, onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); } });
+  const player=ugcMakePlayer(wrap,{ scenes:ugcPlayerScenes(u), loop:true,
+    onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); },
+    onError:function(){ ugcLayeredFallback(u.jobId); } }); // #12: 클립 404/유실 → previewUrl 단일영상 다운그레이드(검은 세그먼트·깜빡임 방지)
   UGC_LAYERED[u.jobId]={ player:player, audio:audio, wrap:wrap };
+  // #11: 무과금 편집(음악·음성·자막) 재마운트 시 재생위치·소리상태 복원(t=0 리셋·재음소거 방지)
+  const rs=u._resume; if(rs){ delete u._resume; if(typeof rs.time==='number'){ try{ player.seekTo(rs.time); }catch(e){} } if(rs.unmuted){ ugcUnmuteLayered(u.jobId); } }
   player.play(); // 무음(클립) + muted 오디오 자동재생(정책 허용) → 언뮤트 시 즉시 소리
   wrap.onclick=function(ev){ if(ev.target.closest&&(ev.target.closest('.ugc-cap-ov')||ev.target.closest('.reel-mute')))return; if(typeof openImageModal==='function')openImageModal(zoom,'reel'); }; // 확대(오버레이·버튼 제외)
 }
+// #12: 클립 로드 실패 시 레이어드→previewUrl 단일영상 폴백(잡당 1회). useLayered 게이트가 _layeredFailed로 false 전환.
+function ugcLayeredFallback(jobId){ const b=ugcFindBatch(jobId); if(!b||!b.ugc||b.ugc._layeredFailed)return; b.ugc._layeredFailed=true; ugcDestroyLayered(jobId); if(typeof renderStudioResults==='function')renderStudioResults(); }
+// #11 헬퍼: 레이어드 오디오 트랙 언뮤트 + 뮤트버튼 갱신(편집 후 소리 복원용, ugcToggleSound과 동일 효과).
+function ugcUnmuteLayered(jobId){ const L=UGC_LAYERED[jobId]; if(!L||!L.audio)return; [L.audio.voice,L.audio.music].filter(Boolean).forEach(a=>{ a.muted=false; const pr=a.play(); if(pr&&pr.catch)pr.catch(()=>{}); }); const btn=document.querySelector('#ugcInline .ugc-inline-vidwrap .reel-mute'); if(btn){ btn.textContent='🔊'; btn.classList.add('on'); } }
 function ugcDestroyLayered(jobId){ const L=UGC_LAYERED[jobId]; if(!L)return; try{ L.player&&L.player.destroy(); }catch(e){} try{ ugcAudioDestroy(L.audio); }catch(e){} delete UGC_LAYERED[jobId]; }
 function ugcDestroyAllLayered(){ for(const k in UGC_LAYERED)ugcDestroyLayered(k); }
 // ── C: 편집(재배치·삭제·버전전환)을 재생기에 즉시 반영(서버 왕복 0, 오디오 안 멈춤) ──
@@ -3552,6 +3562,7 @@ function ugcCapUp(ev){
 function ugcCapEnterEdit(line,jobId,cx,cy){
   if(!line)return; const b=ugcFindBatch(jobId); if(!b||!b.ugc)return;
   const v=document.querySelector('#ugcInline .ugc-inline-vid'); if(v&&!v.paused){try{v.pause();}catch(e){}}
+  const _L=UGC_LAYERED[jobId]; if(_L&&_L.player)try{_L.player.pause();}catch(e){} // #10: 레이어드 재생기도 멈춤(편집 중 재생시각 전진→자막 튐 방지)
   UGC_CAP_EDITING=jobId;
   try{line.contentEditable='plaintext-only';}catch(e){}
   if(line.contentEditable!=='plaintext-only')line.contentEditable='true'; // 폴백(Firefox 등)
@@ -3588,7 +3599,8 @@ function ugcCapCommit(line,jobId){
   const v=document.querySelector('#ugcInline .ugc-inline-vid');
   if(v&&typeof ugcSyncCap==='function')ugcSyncCap(v,jobId); // 새 텍스트로 오버레이 재빌드
   if(typeof ugcRenderTimeline==='function')ugcRenderTimeline(u);
-  if(v&&v.paused){try{v.play();}catch(e){}} // 편집 종료 → 재생 재개
+  if(v&&v.paused){try{v.play();}catch(e){}} // 편집 종료 → 재생 재개(단일영상)
+  const _L=UGC_LAYERED[jobId]; if(_L&&_L.player){ ugcSyncCapAt(jobId,_L.player.currentTime()); try{_L.player.play();}catch(e){} } // #10: 레이어드 재생기 현재시각 자막 재싱크 + 재생 재개
   if(changed)ugcScheduleSilentSave(jobId,u); // 값싼 재조립(디바운스) — 캐시키가 자막 텍스트·줄바꿈 반영해 정확히 miss→재조립
 }
 // ===== V2b 자막 타임라인 =====
@@ -3640,7 +3652,8 @@ function ugcTimelineHtml(u){
 function ugcCapAdd(jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc||!b.ugc.captionSpec)return; const u=b.ugc;
   const total=ugcTlTotal(u); const v=document.querySelector('#ugcInline .ugc-inline-vid');
-  let start=v?Math.round((v.currentTime||0)*1000):Math.round(total*0.4); let dur=2000;
+  const _L=UGC_LAYERED[jobId]; // #15: 레이어드는 .ugc-inline-vid가 없어 player.currentTime()(이미 ms) 사용, 없으면 40%
+  let start=v?Math.round((v.currentTime||0)*1000):(_L&&_L.player?Math.round(_L.player.currentTime()):Math.round(total*0.4)); let dur=2000;
   if(start+dur>total)start=Math.max(0,total-dur); if(start+dur>total)dur=Math.max(500,total-start);
   const id='c'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
   if(!Array.isArray(u.captionSpec.timings))u.captionSpec.timings=[];

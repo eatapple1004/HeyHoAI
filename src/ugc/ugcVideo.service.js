@@ -509,6 +509,7 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
           voLocal = await restoreClipLocal(R.audioAssets.vo.segs[0].file); // 재사용(음성 안 바뀜)
         }
         if (voLocal) audioInputs.push({ file: voLocal, volume: 1.0, kind: 'vo', delayMs: 0 });
+        else if (hasVoiceEdit && narrText && tts.isConfigured()) { rlog('VO 재합성 실패 → 무음 성공 방지, 전체 reRender 폴백'); return null; } // #8: 음성 편집 요청인데 합성 실패 시, 나레이션 없는 영상을 '성공'으로 내지 않고 전체 경로로 폴백(사용자에 오류 노출/재시도)
       } else if (R.audioAssets) { delete R.audioAssets.vo; } // voice off → VO 자산 제거
       if (wantMusic) {
         if (music.isConfigured()) {
@@ -907,6 +908,23 @@ async function sweepStaleComposites({ maxAgeHours = 24, limit = 300 } = {}) {
   return { swept };
 }
 
+/**
+ * #9: 크래시·OOM·pm2 reload로 status='processing'에 영구 갇힌 ugc_jobs 회수.
+ *   beginRerender가 processing으로 마킹 후 배경 reRender 도중 프로세스가 죽으면 .catch(failRerender)가 못 돌아 잡이 영영 로딩 상태로 남는다.
+ *   video_jobs 리퍼 패턴 미러링 — 오래된 processing을 'succeeded'로 되돌려 재편집 가능하게(에러 라벨로 프론트에 안내).
+ */
+async function reapStaleProcessing({ maxAgeMinutes = 15 } = {}) {
+  try {
+    const r = await query(
+      `UPDATE ugc_jobs SET status='succeeded', error='Editing was interrupted — please try again', updated_at=now()
+       WHERE status='processing' AND script IS NOT NULL AND updated_at < now() - ($1 * interval '1 minute') RETURNING id`,
+      [maxAgeMinutes]
+    );
+    if (r.rows.length) log.info(`reapStaleProcessing: ${r.rows.length}개 갇힌 processing 잡 회수`);
+    return { reaped: r.rows.length };
+  } catch (e) { log.warn(`reapStaleProcessing 실패: ${e.message}`); return { reaped: 0 }; }
+}
+
 /** 잡 상태 조회(소유자 본인 또는 팀 멤버) */
 async function getJob(id, userId) {
   const gate = `(user_id = $2 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $2)))`;
@@ -1006,4 +1024,4 @@ function editableScenes(script, sceneClips) {
 //   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
 function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
