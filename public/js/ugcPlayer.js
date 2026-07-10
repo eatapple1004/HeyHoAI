@@ -12,6 +12,7 @@ function ugcMakePlayer(wrap, opts) {
   var onTime = opts.onTime || function () {};
   var onError = opts.onError || function () {}; // 클립 로드 실패(404/유실) 콜백 — 마운트 계층이 폴백 판단
   var loop = opts.loop !== false;
+  var failed = Object.create(null); // 로드 실패(404) clipUrl 집합 — 재요청·표시 안 함(404 폭주·깜빡임 방지)
 
   function buildSegs(sc) {
     var segs = [], acc = 0;
@@ -28,8 +29,8 @@ function ugcMakePlayer(wrap, opts) {
     var v = document.createElement('video');
     v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto'; v.loop = false;
     v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0';
-    // 클립 로드 실패(404/유실) 감지 → 마운트 계층에 알림(빈 src '' 무시). 검은 세그먼트로 방치되지 않게 폴백 유도.
-    v.addEventListener('error', function () { if (v.src && v.dataset.clip && v.error) onError(v.dataset.clip); });
+    // 클립 로드 실패(404/유실) 감지 → 실패 집합에 기록(재요청·표시 차단) + 마운트 계층에 알림(폴백 유도). 빈 src '' 무시.
+    v.addEventListener('error', function () { if (v.src && v.dataset.clip && v.error) { failed[v.dataset.clip] = 1; onError(v.dataset.clip); } });
     wrap.appendChild(v); return v;
   }
   var vA = mkv(), vB = mkv(), cur = vA, nxt = vB, curIdx = -1;
@@ -37,10 +38,16 @@ function ugcMakePlayer(wrap, opts) {
 
   function segAt(ms) { for (var i = 0; i < segs.length; i++) { if (ms < segs[i].startMs + segs[i].durMs) return i; } return Math.max(0, segs.length - 1); }
 
-  function preloadInto(v, url) { if (v.dataset.clip !== url) { v.dataset.clip = url; v.src = url || ''; try { v.load(); } catch (e) {} } }
+  // 실패(404)로 알려진 clip은 재요청하지 않음(load 재시도 폭주 방지) + 성한 버퍼를 404로 덮어써 잃지 않게.
+  function preloadInto(v, url) { if (url && failed[url]) return; if (v.dataset.clip !== url) { v.dataset.clip = url; v.src = url || ''; try { v.load(); } catch (e) {} } }
 
   function showSeg(i, offsetMs) {
     var s = segs[i]; if (!s) return;
+    // 실패(404) clip 씬 — 검은/낡은 프레임으로 토글하지 않고 직전 성한 화면을 그대로 유지. 인덱스만 전진, 다음 클립만 프리로드.
+    if (s.clipUrl && failed[s.clipUrl]) {
+      if (curIdx !== i) { curIdx = i; var nf = (i + 1 < segs.length) ? i + 1 : (loop ? 0 : -1); if (nf >= 0 && segs[nf]) preloadInto(nxt, segs[nf].clipUrl); }
+      return;
+    }
     if (curIdx !== i) {
       if (nxt.dataset.clip === s.clipUrl && s.clipUrl) { var tmp = cur; cur = nxt; nxt = tmp; } // 프리로드된 다음 클립으로 스왑(끊김 없음)
       else { preloadInto(cur, s.clipUrl); }
@@ -74,6 +81,7 @@ function ugcMakePlayer(wrap, opts) {
     currentTime: function () { return t; },
     total: function () { return total; },
     visibleClip: function () { return (cur.style.opacity === '1') ? cur.dataset.clip : (nxt.style.opacity === '1' ? nxt.dataset.clip : cur.dataset.clip); },
+    markFailed: function (url) { if (url) failed[url] = 1; }, // 실패(404) clip 수동 표시 — 상위(썸네일 로드실패 등)나 테스트가 씀. 이후 재요청·표시 안 함.
     destroy: function () { api.pause(); try { wrap.removeChild(vA); wrap.removeChild(vB); } catch (e) {} },
   };
   return api;

@@ -1362,7 +1362,7 @@
 <script src="/js/taxonomy.js?v=8"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
-<script src="/js/ugcPlayer.js?v=2"></script>
+<script src="/js/ugcPlayer.js?v=3"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -3442,8 +3442,8 @@ function ugcMountLayered(u,zoom){
   const cs=u.captionSpec||{}; const w=cs.w||1080, h=cs.h||1920; wrap.style.aspectRatio=w+' / '+h;
   const audio=ugcMakeAudio(u);
   const player=ugcMakePlayer(wrap,{ scenes:ugcPlayerScenes(u), loop:true,
-    onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); },
-    onError:function(){ ugcLayeredFallback(u.jobId); } }); // #12: 클립 404/유실 → previewUrl 단일영상 다운그레이드(검은 세그먼트·깜빡임 방지)
+    onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); } });
+    // 클립 404/유실은 이제 재생기 내부에서 곱게 처리(실패 clip 재요청·표시 안 함, 직전 성한 화면 유지) → 깜빡임·404폭주 제거. 통째 다운그레이드 불필요.
   UGC_LAYERED[u.jobId]={ player:player, audio:audio, wrap:wrap };
   // #11: 무과금 편집(음악·음성·자막) 재마운트 시 재생위치·소리상태 복원(t=0 리셋·재음소거 방지)
   const rs=u._resume; if(rs){ delete u._resume; if(typeof rs.time==='number'){ try{ player.seekTo(rs.time); }catch(e){} } if(rs.unmuted){ ugcUnmuteLayered(u.jobId); } }
