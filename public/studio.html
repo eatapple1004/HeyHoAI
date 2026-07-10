@@ -2831,7 +2831,7 @@ function ugcToggleSound(e,btn){
   // B: 레이어드 재생기면 소리는 <video> 아닌 개별 음성·음악 <audio> 트랙에 있음 → 그쪽을 토글.
   const lwrap=btn.parentElement&&btn.parentElement.classList&&btn.parentElement.classList.contains('ugc-layered')?btn.parentElement:null;
   if(lwrap){
-    const ov=lwrap.querySelector('.ugc-cap-ov'); const jobId=ov&&ov.getAttribute('data-job'); const L=jobId&&UGC_LAYERED[jobId]; if(!L||!L.audio)return;
+    const ov=lwrap.querySelector('.ugc-cap-ov'); const jobId=lwrap.getAttribute('data-job')||(ov&&ov.getAttribute('data-job')); const L=jobId&&UGC_LAYERED[jobId]; if(!L||!L.audio)return; /* jobId=wrap 우선(자막 OFF로 .ugc-cap-ov 없어도 동작), cap-ov는 하위호환 폴백 */
     const tracks=[L.audio.voice,L.audio.music].filter(Boolean); if(!tracks.length)return;
     const willUnmute=tracks.every(a=>a.muted); // 현재 전부 음소거면 언뮤트
     if(willUnmute){ document.querySelectorAll('.result-card video').forEach(o=>{ o.muted=true; }); document.querySelectorAll('.result-card .reel-mute').forEach(b=>{ if(b!==btn){ b.textContent='🔇'; b.classList.remove('on'); } }); }
@@ -3435,7 +3435,7 @@ function renderUgcInline(b){
   const perSceneVoice=!!(u&&u.hasVoice&&!u.voiceUrl);
   const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u)&&!u._layeredFailed&&!perSceneVoice; // B: 실 비디오 클립 있고 재생기 로드·단일음성이면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷·런타임 클립404[_layeredFailed]·씬별VO → 빈 영상영역·깜빡임·무음성 방지).
   if(useLayered){
-    html+='<div class="ugc-inline-vidwrap ugc-layered">' /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio */
+    html+=`<div class="ugc-inline-vidwrap ugc-layered" data-job="${esc(u.jobId)}">` /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio. data-job=오디오 토글용(자막 오버레이와 분리) */
       +(UGC_CAPTIONS?`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`:'')/* 자막 OFF면 오버레이 미생성 */
       +`<button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`/* 오디오는 muted 자동재생 시작 → 🔇, 클릭 시 언뮤트 */
       +'</div>';
@@ -3501,11 +3501,11 @@ function ugcReflectEdit(jobId){
   } else { renderStudioResults(); } // 폴백(레이어드 아님=구버전잡·클립유실)
 }
 // 음성·음악 개별 <audio> 트랙(A에서 getJob이 노출한 voiceUrl·musicUrl). muted 시작(자동재생 정책) → 🔊 클릭 시 언뮤트.
-//   더킹: 음성 있으면 음악 0.18, 없으면 0.5(assembler muxAudio와 동일). 볼륨은 파일 아닌 클라이언트가 적용(=on/off·더킹 즉시).
+//   더킹: 음성 있으면 음악 0.30(=음성보다 ~9dB 아래, 들리되 안 방해), 없으면 0.5(assembler muxAudio와 동일). 볼륨은 파일 아닌 클라이언트가 적용(=on/off·더킹 즉시).
 function ugcMakeAudio(u){
   const A={ voice:null, music:null };
   if(u.voiceUrl){ const a=new Audio(u.voiceUrl); a.preload='auto'; a.muted=true; a.loop=false; a.volume=1.0; A.voice=a; }
-  if(u.musicUrl){ const a=new Audio(u.musicUrl); a.preload='auto'; a.muted=true; a.loop=true; a.volume=u.voiceUrl?0.18:0.5; A.music=a; }
+  if(u.musicUrl){ const a=new Audio(u.musicUrl); a.preload='auto'; a.muted=true; a.loop=true; a.volume=u.voiceUrl?0.30:0.5; A.music=a; }
   return A;
 }
 // 재생기 시계(ms)를 master로 오디오 트랙 위치 보정. 음성=한 번 재생 후 무음(끝나면 멈춤), 음악=루프(모듈로).

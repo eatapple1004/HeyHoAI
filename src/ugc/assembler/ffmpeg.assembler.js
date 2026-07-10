@@ -488,13 +488,13 @@ async function assemble(plan, opts = {}) {
     if (opts.reuseMusic && fs.existsSync(opts.reuseMusic)) {
       musicPath = path.join(workDir, 'music.mp3');
       await fsp.copyFile(opts.reuseMusic, musicPath);
-      audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' });
+      audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.30 : 0.5, kind: 'music' });
       log('배경음악 캐시 재사용(재생성 안 함)');
     } else if (music.isConfigured()) {
       try {
         log('배경음악 생성… [elevenlabs music]');
         const m = await music.composeForScript(opts.script || {}, { durationMs: plan.meta.durationMs, outPath: path.join(workDir, 'music.mp3') });
-        if (m) { musicPath = m; audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); } // VO 있으면 더킹(0.18)
+        if (m) { musicPath = m; audioInputs.push({ file: 'music.mp3', volume: audioInputs.length ? 0.30 : 0.5, kind: 'music' }); } // VO 있으면 더킹(0.18)
       } catch (e) { log(`⚠️ 음악 실패, 스킵: ${e.message}`); }
     } else { log('⚠️ 음악 요청됨 — ELEVENLABS_API_KEY 미설정, 스킵'); }
   }
