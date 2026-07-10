@@ -3196,14 +3196,24 @@ async function ugcSaveFinish(jobId){
     if(window.toast)toast('Saved to your gallery');
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=o;} if(window.toast)toast(e.message||'Could not save','error'); }
 }
-// 이탈(새로고침·나가기) 시 저장 안 한 Ad Video draft를 자동 확정
-window.addEventListener('beforeunload',function(){
-  try{
-    (STUDIO_BATCHES||[]).forEach(function(b){
-      if(b&&b.isUgc&&b.ugc&&b.ugc.jobId&&!b.ugc._saved){ navigator.sendBeacon('/api/generate/ugc/jobs/'+b.ugc.jobId+'/commit'); }
-    });
-  }catch(_){}
-});
+// 이탈(새로고침·나가기) 시 저장 안 한 Ad Video draft를 자동 확정.
+//   D: 미굽힌 클라이언트 편집(재배치·버전·삭제·자막)이 있으면(_dirty) 그 상태를 함께 보내 서버가 현재 상태로
+//      굽고 커밋 → 이탈해도 최종본이 미리보기와 일치(C가 편집을 클라 즉시로 바꾼 뒤의 유실 방지).
+function ugcAutoCommit(b){
+  if(!(b&&b.isUgc&&b.ugc&&b.ugc.jobId&&!b.ugc._saved))return;
+  var u=b.ugc; var url='/api/generate/ugc/jobs/'+u.jobId+'/commit';
+  if(u._dirty){
+    var order=u.scenes.map(function(s){return s.n;});
+    var origNs=(u._orig||u.scenes).map(function(s){return s.n;}); var keep={}; order.forEach(function(n){keep[n]=1;});
+    var removed=origNs.filter(function(n){return !keep[n];});
+    var edits={}; for(var k in u.edits){ if(order.indexOf(Number(k))>=0)edits[k]=u.edits[k]; }
+    var body={order:order,removed:removed,edits:edits,setVersions:(typeof ugcActiveVersions==='function'?ugcActiveVersions(u):{})};
+    navigator.sendBeacon(url,new Blob([JSON.stringify(body)],{type:'application/json'})); // 서버가 현재 편집으로 굽고 커밋
+  } else {
+    navigator.sendBeacon(url); // 편집 없음 → 마지막 완성본 그대로 커밋
+  }
+}
+window.addEventListener('beforeunload',function(){ try{ (STUDIO_BATCHES||[]).forEach(ugcAutoCommit); }catch(_){} });
 // P2 — 이 씬만 재생성(과금). 현재 순서/삭제/자막 편집도 함께 반영.
 async function ugcSceneRedo(jobId,n){
   if(!confirm('Re-generate this scene? This uses credits (about one video clip). Your current version is kept — you can switch back.'))return;

@@ -863,6 +863,22 @@ function commitJob(id, userId) {
 }
 
 /**
+ * D: 미굽힌 클라이언트 편집(재배치·삭제·자막·버전전환)을 먼저 굽고(무과금 reRender) 커밋.
+ *   C가 편집을 클라이언트 즉시(서버 굽기 0)로 바꾼 뒤, Save·이탈 시 그 편집 상태로 최종본을 1회 굽기 위함.
+ *   reRender·commitJob 둘 다 chainRun(jobId) → await reRender 완료 후 commit이 순서대로 실행(경쟁 없음).
+ *   bake 실패해도 마지막 완성본으로 커밋(데이터 유실 방지 — 편집 반영만 놓치고 저장은 됨).
+ * @param {{ user:object, jobId:string, order?:number[], removed?:number[], edits?:object, setVersions?:object }} p
+ */
+async function commitDraft(p) {
+  try {
+    await reRender({ user: p.user, jobId: p.jobId, order: p.order, removed: p.removed, edits: p.edits, setVersions: p.setVersions });
+  } catch (e) {
+    log.warn(`commitDraft ${p.jobId} bake 실패 → 마지막 완성본으로 커밋: ${e.message}`);
+  }
+  return commitJob(p.jobId, p.user.id);
+}
+
+/**
  * 백스톱 — 하드 크래시 등으로 커밋 없이 방치된 잡의 완성본 캐시 정리(고아 파일 회수).
  *   updated_at이 오래된(=편집 안 하는) 잡만, 활성 결과는 남기고 비활성 컴포지트만 제거(잡별 큐 경유).
  *   ⚠️ prod에서만 실행(index.js가 DISABLE_VIDEO_POLLER로 게이트 — 로컬 :3001은 prod DB에 붙으므로 sweep 금지).
@@ -990,4 +1006,4 @@ function editableScenes(script, sceneClips) {
 //   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
 function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, sweepStaleComposites, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };

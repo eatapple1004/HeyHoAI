@@ -27,6 +27,7 @@ const FUNCS = ['esc', 'ugcCapTextOf', 'ugcTlCapText', 'ugcTlTotal', 'ugcScenesPl
   'ugcDestroyLayered', 'ugcDestroyAllLayered', 'ugcMakeAudio', 'ugcAudioSync', 'ugcAudioDestroy',
   'ugcSyncCap', 'ugcSyncCapAt', 'ugcStyleCapOv', 'ugcToggleSound',
   'ugcSyncPlayer', 'ugcRefreshStrip', 'ugcReflectEdit', 'ugcSceneVersion', 'ugcSceneMove', 'ugcSceneRemove',
+  'ugcAutoCommit',
   'UGC_LAYERED', 'UGC_CAP_EDITING', 'UGC_CAP_DRAG'];
 let extracted = '// === 실 studio.html 추출(드리프트 0) ===\n';
 for (const f of FUNCS) extracted += '\n' + extractDecl(f) + '\n';
@@ -251,5 +252,58 @@ async function run(){
 run();
 </script></body></html>`;
 fs.writeFileSync(path.join(pub, '__abcd_harness_C.html'), harnessC);
-console.log('하네스 생성: public/__abcd_harness_B.html · __abcd_harness_C.html (+__abcd_extracted.js)');
+
+// ── D 하네스: 이탈 auto-commit이 현재 편집 상태를 전송(유실 방지) ──
+const harnessD = `<!doctype html><html><head><meta charset="utf-8"><title>ABCD D harness</title>
+<style>#results{font:13px/1.5 monospace;padding:12px;white-space:pre-wrap}.pass{color:#0a0}.fail{color:#c00;font-weight:bold}</style></head><body>
+<div id="results">running…</div>
+<script src="/__abcd_extracted.js"></script>
+<script>
+var beacons=[]; navigator.sendBeacon=function(url,data){ beacons.push({url:url,data:data}); return true; };
+function mkUgc(over){ return Object.assign({ jobId:'j1', _saved:false, _dirty:false, edits:{},
+  scenes:[{n:1},{n:2},{n:3}], _orig:[{n:1},{n:2},{n:3}] }, over||{}); }
+var out=[],pass=0,fail=0; function ok(n,c,x){ if(c){pass++;out.push('  PASS '+n);}else{fail++;out.push('  FAIL '+n+(x?' :: '+x:''));} }
+async function bodyText(d){ if(d&&d.text)return await d.text(); return d; }
+async function run(){
+  // 1) 비-dirty → plain sendBeacon(본문 없음)
+  beacons=[]; ugcAutoCommit({isUgc:true,ugc:mkUgc()});
+  ok('비-dirty: sendBeacon 1회', beacons.length===1, 'n='+beacons.length);
+  ok('비-dirty: 본문 없음(plain commit)', beacons[0]&&beacons[0].data===undefined);
+  ok('비-dirty: URL commit', /\\/commit$/.test(beacons[0].url));
+
+  // 2) dirty(재배치+삭제+버전+자막) → 편집 본문 전송
+  beacons=[];
+  var u=mkUgc({ _dirty:true,
+    scenes:[{n:3,activeVersion:1,versions:[{},{}]},{n:1}], // 순서 [3,1], 2번 삭제, 3번 버전1
+    _orig:[{n:1},{n:2},{n:3}], edits:{1:{onScreenText:'수정'}} });
+  ugcAutoCommit({isUgc:true,ugc:u});
+  ok('dirty: sendBeacon 1회', beacons.length===1, 'n='+beacons.length);
+  var body=JSON.parse(await bodyText(beacons[0].data));
+  ok('dirty: order=[3,1]', JSON.stringify(body.order)==='[3,1]', JSON.stringify(body.order));
+  ok('dirty: removed=[2]', JSON.stringify(body.removed)==='[2]', JSON.stringify(body.removed));
+  ok('dirty: edits{1:수정}(남은 씬만)', body.edits&&body.edits['1']&&body.edits['1'].onScreenText==='수정');
+  ok('dirty: setVersions{3:1}', body.setVersions&&body.setVersions['3']===1, JSON.stringify(body.setVersions));
+
+  // 3) 이미 저장(_saved) → 스킵
+  beacons=[]; ugcAutoCommit({isUgc:true,ugc:mkUgc({_saved:true})});
+  ok('_saved: 스킵(전송 없음)', beacons.length===0);
+
+  // 4) 비-UGC 배치 → 스킵
+  beacons=[]; ugcAutoCommit({isUgc:false});
+  ok('비-UGC: 스킵', beacons.length===0);
+
+  // 5) 삭제된 씬의 edits는 제외(남은 씬만)
+  beacons=[]; var u2=mkUgc({_dirty:true, scenes:[{n:1}], _orig:[{n:1},{n:2}], edits:{1:{spoken:'a'},2:{spoken:'b'}} });
+  ugcAutoCommit({isUgc:true,ugc:u2});
+  var b2=JSON.parse(await bodyText(beacons[0].data));
+  ok('삭제 씬(2) edits 제외', b2.edits['2']===undefined&&b2.edits['1']!==undefined, JSON.stringify(b2.edits));
+
+  var head=(fail===0?'ALL PASS ':'HAS FAIL ')+pass+' PASS / '+fail+' FAIL';
+  document.getElementById('results').innerHTML='<span class="'+(fail?'fail':'pass')+'">'+head+'</span>\\n'+out.join('\\n');
+  window.__ABCD_D={pass:pass,fail:fail,head:head};
+}
+run();
+</script></body></html>`;
+fs.writeFileSync(path.join(pub, '__abcd_harness_D.html'), harnessD);
+console.log('하네스 생성: __abcd_harness_B/C/D.html (+__abcd_extracted.js)');
 console.log('추출 함수:', FUNCS.length, '개');

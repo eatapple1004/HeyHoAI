@@ -1012,9 +1012,18 @@ router.get('/ugc/jobs/:id', async (req, res, next) => {
 });
 
 // Save & finish / 이탈 시 자동 — draft를 갤러리·Explore에 확정 저장(멱등). sendBeacon도 이 라우트 사용.
+//   D: 본문에 미굽힌 편집(order/removed/edits/setVersions)이 있으면 그 상태로 먼저 굽고(무과금) 커밋
+//      → C의 클라이언트 즉시 편집 후 이탈해도 최종본이 현재 상태와 일치(sendBeacon JSON blob).
 router.post('/ugc/jobs/:id/commit', async (req, res, next) => {
   try {
-    const r = await ugcVideoService.commitJob(req.params.id, req.user.id);
+    const b = req.body || {};
+    const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
+    const parseObj = (v) => { if (v && typeof v === 'object' && !Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return {}; } } return {}; };
+    const order = parseArr(b.order), removed = parseArr(b.removed), edits = parseObj(b.edits), setVersions = parseObj(b.setVersions);
+    const hasEdits = order.length || removed.length || Object.keys(edits).length || Object.keys(setVersions).length;
+    const r = hasEdits
+      ? await ugcVideoService.commitDraft({ user: req.user, jobId: req.params.id, order, removed, edits, setVersions })
+      : await ugcVideoService.commitJob(req.params.id, req.user.id);
     if (!r) return res.status(404).json({ success: false, error: 'Job not found or not ready' });
     res.json({ success: true, resultIdx: r.resultIdx, already: !!r.already });
   } catch (err) { next(err); }
