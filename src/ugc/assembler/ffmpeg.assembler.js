@@ -508,4 +508,4 @@ async function assemble(plan, opts = {}) {
   };
 }
 
-module.exports = { assemble, burnCaptions, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, TARGET_W, TARGET_H, FPS };
+module.exports = { assemble, burnCaptions, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, probeDurationMs, TARGET_W, TARGET_H, FPS };

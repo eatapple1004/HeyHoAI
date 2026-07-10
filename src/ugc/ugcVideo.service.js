@@ -25,9 +25,28 @@ const mediaStore = require('../storage/mediaStore');
 const { generateUgcScript, suggestConcept, refineScene, generateAddScene, normalizeAddSceneObj } = require('./ugcScript.service');
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
-const { assemble, burnCaptions, muxAudio } = require('./assembler/ffmpeg.assembler');
+const { assemble, burnCaptions, muxAudio, probeDurationMs } = require('./assembler/ffmpeg.assembler');
 const music = require('./audio/music.service');
 const tts = require('./audio/tts.service');
+
+// P4(음성모드): 클립 생성 前 씬별 VO를 먼저 합성·길이 측정 → 그 길이로 클립을 뽑게(음성>클립 갭 방지).
+//   반환 [{sceneN, path, durationMs}] 또는 null(음성 미요청·미설정·대사 없음·전부 실패). assemble엔 reuseVo로 넘겨 재합성 0.
+async function preSynthVoice(script, audio, workDir, jobId) {
+  if (!audio || !audio.voice || !tts.isConfigured()) return null;
+  const scenes = ((script && script.scenes) || []).filter((s) => s.type === 'broll' && (s.spoken || s.onScreenText || '').trim());
+  if (!scenes.length) return null;
+  fs.mkdirSync(workDir, { recursive: true });
+  const out = [];
+  for (const s of scenes) {
+    const text = (s.spoken || s.onScreenText || '').trim();
+    const rel = `pvo_${s.n}.mp3`;
+    try {
+      const p = await tts.synthesize(text, { outPath: path.join(workDir, rel), voiceId: audio.voiceId, speed: audio.speed });
+      if (p) out.push({ sceneN: s.n, path: p, durationMs: await probeDurationMs(p) });
+    } catch (e) { log.info(`[${jobId}] pre-VO 씬${s.n} 실패(스킵): ${e.message}`); }
+  }
+  return out.length ? out : null;
+}
 
 const servedDir = path.join(process.cwd(), 'tmp', 'images'); // /images 라우트가 서빙하는 디렉토리
 
@@ -94,7 +113,7 @@ async function updateJob(id, patch) {
 }
 
 /** Kling 생성 길이(네이티브 5s/10s only) — 8초+ 는 10초 생성, 그 이하는 5초 생성(짧게는 5초 만들어 트림). */
-function klingGenDur(durationSec) { return (Number(durationSec) >= 8) ? 10 : 5; }
+function klingGenDur(durationSec) { return (Number(durationSec) > 5) ? 10 : 5; }
 
 /** 크레딧 원가 추정 — 씬별 Kling 생성 길이(5/10) 단가 합산. 짧게(3~4s)는 5초 생성이라 5초 단가. */
 function estimateCost(script, isTemplate) {
@@ -289,7 +308,28 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
-    // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정.
+    renderWorkDir = path.join(process.cwd(), 'tmp', 'ugc', crypto.randomUUID().slice(0, 8));
+
+    // P4 음성모드: 클립 생성 前 씬별 VO 합성·측정 → 씬 durationSec을 음성 커버 길이로 세팅(음성>클립 갭 방지).
+    //   assemble엔 reuseVo로 넘겨 재합성 0. 음악모드(audio.voice=false)는 스킵=기존 경로 무변경.
+    let reuseVo;
+    if (audio && audio.voice) {
+      const preVo = await preSynthVoice(script, audio, renderWorkDir, jobId);
+      if (preVo && preVo.length) {
+        for (const s of (script.scenes || [])) {
+          if (s.type !== 'broll') continue;
+          const seg = preVo.find((v) => v.sceneN === s.n);
+          if (!seg) continue;
+          const tail = Math.max(300, Math.min(Number(s.tailMs) || 0, 3000)); // retimeByVoice와 동일(최소 VO_TAIL_MS 300)
+          const lead = Math.max(0, Math.min(Number(s.leadInMs) || 0, 3000));
+          s.durationSec = Math.max(2, Math.ceil((seg.durationMs + tail + lead) / 1000)); // 클립 생성·트림 길이 = 음성+여백 커버
+        }
+        reuseVo = preVo.map((v) => ({ sceneN: v.sceneN, path: v.path, startMs: 0 }));
+        log.info(`[${jobId}] 음성모드: 씬별 VO ${preVo.length}개 선합성 → 클립을 음성 길이로 생성`);
+      }
+    }
+
+    // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정. 음성모드는 위에서 durationSec=음성길이.
     const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePath, modelImagePath, width: w, height: h, aspect, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
@@ -297,8 +337,7 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
 
     const plan = buildRenderPlan(script, clips);
     plan.meta.aspect = aspect; // 선택 비율을 조립기·결과 메타에 반영
-    renderWorkDir = path.join(process.cwd(), 'tmp', 'ugc', crypto.randomUUID().slice(0, 8));
-    const out = await assemble(plan, { audio, script, aspect, outDir: renderWorkDir, log: (m) => log.info(`[${jobId}] ${m}`) });
+    const out = await assemble(plan, { audio, script, aspect, reuseVo, outDir: renderWorkDir, log: (m) => log.info(`[${jobId}] ${m}`) });
 
     // 서빙 디렉토리로 복사(/images 라우트가 서빙 + mediaStore 영속화)
     fs.mkdirSync(servedDir, { recursive: true });

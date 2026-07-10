@@ -90,7 +90,7 @@ async function renderSceneClip(scene, opts) {
   // 3) Kling image2video 모션 — Kling은 5s/10s 네이티브만 지원(임의 초 불가)이라 양자화.
   log(`  [scene ${scene.n}] Kling 모션…`);
   const wantSec = Math.round(durationMs / 1000); // 유저 지정 최종 길이
-  const klingDur = Math.min((wantSec >= 8) ? 10 : 5, klingProvider.maxDurationSec); // Kling 생성 길이(5 or 10)
+  const klingDur = Math.min((wantSec > 5) ? 10 : 5, klingProvider.maxDurationSec); // Kling 생성 길이(5 or 10). >5s면 10s 뽑아 트림(5s로 못 덮는 갭 방지)
   const submit = await klingProvider.submit({
     sourceImageUrl: imageUrl,
     motionPrompt: scene.direction || prompt,
