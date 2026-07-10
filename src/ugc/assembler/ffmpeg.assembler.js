@@ -28,7 +28,7 @@ function expandCaptionChunks(subtitle) {
   for (const c of (subtitle || [])) {
     const isScene = c && c.sceneN != null && c.id == null;
     const text = c && c.text != null ? String(c.text).trim() : '';
-    if (isScene && text) {
+    if (isScene && text && !c.chunked) { // c.chunked = B 실 타임스탬프 청크(이미 청크) → 재청킹 안 함. 그 외 씬 통문장만 균등 청킹.
       for (const ch of chunkCaption(text, c.startMs, c.durMs)) {
         out.push({ text: ch.text, startMs: ch.startMs, durMs: ch.durMs, style: c.style, sceneN: c.sceneN });
       }
@@ -437,6 +437,21 @@ async function assemble(plan, opts = {}) {
   const sceneOpts = {}; ((opts.script && opts.script.scenes) || []).forEach((s) => { sceneOpts[s.n] = { leadInMs: s.leadInMs, tailMs: s.tailMs }; });
   const voStart = retimeByVoice(plan, voSegsData, sceneOpts); // 씬별 음성 시작 시각 map(없으면 null)
 
+  // B: 실 타임스탬프 청크가 있으면 자막 트랙을 청크 단위(실 발화 타이밍)로 교체. 청크 상대시각 → voStart(씬 음성시작) 기준 절대시각.
+  //    청크 없는 씬은 기존 씬 엔트리 유지(균등 청킹 폴백). chunked:true 플래그로 하류(번인·오버레이)가 재청킹 안 함.
+  if (opts.voiceChunks && voStart) {
+    const newSub = [];
+    for (const s of (plan.tracks.subtitle || [])) {
+      const cks = opts.voiceChunks[s.sceneN];
+      if (cks && cks.length) {
+        const vid = plan.tracks.video.find((v) => v.sceneN === s.sceneN);
+        const base = (voStart[s.sceneN] != null) ? voStart[s.sceneN] : (vid ? vid.startMs : s.startMs);
+        for (const c of cks) newSub.push({ text: c.text, startMs: base + c.startMs, durMs: c.durMs, style: s.style, sceneN: s.sceneN, chunked: true });
+      } else { newSub.push(s); }
+    }
+    plan.tracks.subtitle = newSub;
+  }
+
   // 1) 클립별 세그먼트 정규화
   log(`세그먼트 정규화 ${clips.length}개… (${CW}x${CH})`);
   const segments = [];
@@ -504,7 +519,7 @@ async function assemble(plan, opts = {}) {
     audioAssets: { vo: voAssets, music: musicPath },
     // B+ 재합성 스펙: silentPath=무자막·무음 concat(음악만 갈아끼울 때 베이스), caption=자막 타이밍·스타일·치수
     // 자유(직접 추가) 자막은 id+text 보존(씬에 안 묶여 다음 재조립 때 텍스트 소스가 없음). 씬 자막은 sceneN만(텍스트는 씬에서).
-    caption: { timings: subtitle.map((s) => (s.id != null ? { id: s.id, text: s.text, startMs: s.startMs, durMs: s.durMs } : { sceneN: s.sceneN, startMs: s.startMs, durMs: s.durMs })), style: subStyle, w: CW, h: CH, hasAudio },
+    caption: { timings: subtitle.map((s) => (s.id != null ? { id: s.id, text: s.text, startMs: s.startMs, durMs: s.durMs } : (s.chunked ? { sceneN: s.sceneN, text: s.text, startMs: s.startMs, durMs: s.durMs, chunked: true } : { sceneN: s.sceneN, startMs: s.startMs, durMs: s.durMs }))), style: subStyle, w: CW, h: CH, hasAudio },
   };
 }
 

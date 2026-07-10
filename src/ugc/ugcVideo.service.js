@@ -41,8 +41,9 @@ async function preSynthVoice(script, audio, workDir, jobId) {
     const text = (s.spoken || s.onScreenText || '').trim();
     const rel = `pvo_${s.n}.mp3`;
     try {
-      const p = await tts.synthesize(text, { outPath: path.join(workDir, rel), voiceId: audio.voiceId, speed: audio.speed });
-      if (p) out.push({ sceneN: s.n, path: p, durationMs: await probeDurationMs(p) });
+      // B: with-timestamps 합성 → 실 발화 타이밍 청크(chunks). ElevenLabs 아니거나 실패면 chunks=null(균등 폴백).
+      const r = await tts.synthesizeWithChunks(text, { outPath: path.join(workDir, rel), voiceId: audio.voiceId, speed: audio.speed });
+      if (r && r.path) out.push({ sceneN: s.n, path: r.path, durationMs: await probeDurationMs(r.path), chunks: r.chunks || null });
     } catch (e) { log.info(`[${jobId}] pre-VO 씬${s.n} 실패(스킵): ${e.message}`); }
   }
   return out.length ? out : null;
@@ -312,7 +313,7 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
 
     // P4 음성모드: 클립 생성 前 씬별 VO 합성·측정 → 씬 durationSec을 음성 커버 길이로 세팅(음성>클립 갭 방지).
     //   assemble엔 reuseVo로 넘겨 재합성 0. 음악모드(audio.voice=false)는 스킵=기존 경로 무변경.
-    let reuseVo;
+    let reuseVo, voiceChunks;
     if (audio && audio.voice) {
       const preVo = await preSynthVoice(script, audio, renderWorkDir, jobId);
       if (preVo && preVo.length) {
@@ -325,7 +326,8 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
           s.durationSec = Math.max(2, Math.ceil((seg.durationMs + tail + lead) / 1000)); // 클립 생성·트림 길이 = 음성+여백 커버
         }
         reuseVo = preVo.map((v) => ({ sceneN: v.sceneN, path: v.path, startMs: 0 }));
-        log.info(`[${jobId}] 음성모드: 씬별 VO ${preVo.length}개 선합성 → 클립을 음성 길이로 생성`);
+        voiceChunks = {}; for (const v of preVo) if (v.chunks && v.chunks.length) voiceChunks[v.sceneN] = v.chunks; // B: 씬별 실 타임스탬프 청크(없으면 균등 폴백)
+        log.info(`[${jobId}] 음성모드: 씬별 VO ${preVo.length}개 선합성 → 클립을 음성 길이로 생성 (타임스탬프 청크 ${Object.keys(voiceChunks).length}씬)`);
       }
     }
 
@@ -337,7 +339,7 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
 
     const plan = buildRenderPlan(script, clips);
     plan.meta.aspect = aspect; // 선택 비율을 조립기·결과 메타에 반영
-    const out = await assemble(plan, { audio, script, aspect, reuseVo, outDir: renderWorkDir, log: (m) => log.info(`[${jobId}] ${m}`) });
+    const out = await assemble(plan, { audio, script, aspect, reuseVo, voiceChunks, outDir: renderWorkDir, log: (m) => log.info(`[${jobId}] ${m}`) });
 
     // 서빙 디렉토리로 복사(/images 라우트가 서빙 + mediaStore 영속화)
     fs.mkdirSync(servedDir, { recursive: true });
@@ -527,7 +529,7 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
     const style = { ...(R.caption.style || {}), ...(R.subtitleStyle || {}), lang: script.language || (R.caption.style && R.caption.style.lang) || 'ko' };
     const captionsOff = !!(R.subtitleStyle && R.subtitleStyle.off);
     const subtitle = captionsOff ? [] : R.caption.timings
-      .map((t) => ({ sceneN: t.sceneN, startMs: t.startMs, durMs: t.durMs, text: captionTextOf(t, byN) })) // 자유 자막=자기 text, 씬 자막=씬에서
+      .map((t) => ({ sceneN: t.sceneN, startMs: t.startMs, durMs: t.durMs, text: captionTextOf(t, byN), chunked: t.chunked })) // 자유=자기 text, 씬=씬에서. chunked(B 실 청크)는 보존→재청킹 안 함
       .filter((s) => s.text);
     const W = R.caption.w || 1080, H = R.caption.h || 1920;
     const durMs = R.durationMs || R.caption.timings.reduce((m, t) => Math.max(m, t.startMs + t.durMs), 0) || 6000;

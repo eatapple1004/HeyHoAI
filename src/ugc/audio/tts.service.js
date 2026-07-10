@@ -121,6 +121,64 @@ async function synthesize(text, opts = {}) {
   return out;
 }
 
+// ── B: 단어 타임스탬프 기반 청킹 (ElevenLabs with-timestamps) ──────────────
+// 글자별 정렬 → 단어 → 청크(≤14자·≤4단어, ugcChunkCaption과 동일 정책). 타이밍만 실제 발화값.
+//   speed는 atempo로 audio가 늘고 줄므로 char time을 1/speed로 스케일해 최종 오디오에 맞춤.
+function chunksFromAlignment(alignment, speed) {
+  if (!alignment || !Array.isArray(alignment.characters)) return null;
+  const chars = alignment.characters;
+  const st = alignment.character_start_times_seconds || [];
+  const et = alignment.character_end_times_seconds || [];
+  const sf = (Number(speed) > 0 ? Number(speed) : 1);
+  const ms = (i, arr) => Math.round(((arr[i] != null ? arr[i] : (st[i] || 0)) * 1000) / sf);
+  const words = []; let cur = '', ws = null, we = null;
+  for (let i = 0; i < chars.length; i++) {
+    const c = String(chars[i] == null ? '' : chars[i]);
+    if (/\s/.test(c) || !c) { if (cur) { words.push({ text: cur, startMs: ws, endMs: we }); cur = ''; ws = null; } continue; }
+    if (!cur) ws = ms(i, st);
+    cur += c; we = ms(i, et);
+  }
+  if (cur) words.push({ text: cur, startMs: ws, endMs: we });
+  if (!words.length) return null;
+  const groups = []; let g = [], gc = 0;
+  for (const w of words) {
+    const add = (g.length ? 1 : 0) + w.text.length;
+    if (g.length && (g.length >= 4 || gc + add > 14)) { groups.push(g); g = [w]; gc = w.text.length; }
+    else { g.push(w); gc += add; }
+  }
+  if (g.length) groups.push(g);
+  return groups.map((grp) => ({ text: grp.map((w) => w.text).join(' '), startMs: grp[0].startMs, durMs: Math.max(1, grp[grp.length - 1].endMs - grp[0].startMs) }));
+}
+
+// ElevenLabs with-timestamps → { buffer, alignment }. ElevenLabs 아니면 null(호출부가 무타임스탬프 폴백).
+async function synthWithTimestamps(text, opts = {}) {
+  if (provider() !== 'elevenlabs') return null;
+  const vid = opts.voiceId || env.ELEVENLABS_VOICE_ID;
+  const body = { text: applyPauseMarks(text).slice(0, 5000), model_id: env.ELEVENLABS_TTS_MODEL };
+  const res = await fetch(`${EL_TTS}/${vid}/with-timestamps?output_format=mp3_44100_128`, {
+    method: 'POST', headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!res.ok) { const b = await res.text().catch(() => ''); throw new Error(`ElevenLabs timestamps failed (${res.status}): ${b.slice(0, 200)}`); }
+  const j = await res.json();
+  let buf = Buffer.from(j.audio_base64 || '', 'base64');
+  buf = await applyTempo(buf, opts.speed);
+  return { buffer: buf, alignment: j.alignment || j.normalized_alignment || null };
+}
+
+// text → { path, chunks:[{text,startMs,durMs}]|null }. ElevenLabs면 실 타임스탬프 청크, 아니면 chunks=null(무타임스탬프 → 균등 폴백).
+async function synthesizeWithChunks(text, opts = {}) {
+  let r = null;
+  try { r = await synthWithTimestamps(text, opts); } catch (e) { r = null; } // 타임스탬프 실패 → 무청크 폴백(무음 방지)
+  if (!r || !r.buffer || !r.buffer.length) {
+    const p = await synthesize(text, opts); // 폴백: 일반 합성(청크 없음 → 호출부가 균등 청킹)
+    return p ? { path: p, chunks: null } : null;
+  }
+  const out = opts.outPath || path.join(process.cwd(), 'tmp', 'ugc', `vo_${Date.now()}.mp3`);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, r.buffer);
+  return { path: out, chunks: chunksFromAlignment(r.alignment, opts.speed) };
+}
+
 /** 대본 → VO mp3(내레이션 조립 포함). */
 async function voiceoverForScript(script, opts = {}) {
   return synthesize(narrationFromScript(script), opts);
@@ -128,4 +186,4 @@ async function voiceoverForScript(script, opts = {}) {
 
 function isConfigured() { return !!provider(); }
 
-module.exports = { synthesize, synthesizeBuffer, voiceoverForScript, narrationFromScript, isConfigured, provider, DEFAULT_VOICE };
+module.exports = { synthesize, synthesizeBuffer, synthesizeWithChunks, chunksFromAlignment, voiceoverForScript, narrationFromScript, isConfigured, provider, DEFAULT_VOICE };

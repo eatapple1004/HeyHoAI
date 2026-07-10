@@ -3560,11 +3560,11 @@ function ugcSyncCapAt(jobId,ms){
   // 현재 시각에 걸린 자막 전부(겹치면 여러 개) → 자막별 개별 편집 박스. 중복(같은 자막) 제거.
   const matches=timings.filter(x=>{const s0=+x.startMs,d=+x.durMs; return ms>=s0&&ms<s0+d;}).sort((a,b)=>(+a.startMs)-(+b.startMs));
   const items=[]; const seen={};
-  for(const t of matches){ const kind=(t&&t.text!=null&&!Number.isFinite(Number(t.sceneN)))?'free':'scene'; const ref=kind==='free'?String(t.id):String(t.sceneN); const k=kind+':'+ref; if(seen[k])continue;
+  for(const t of matches){ const hasSceneN=Number.isFinite(Number(t&&t.sceneN)); const kind=(!hasSceneN&&t&&t.text!=null)?'free':'scene'; const ref=kind==='free'?String(t.id):String(t.sceneN); const k=kind+':'+ref; if(seen[k])continue;
     let tx;
-    if(kind==='free'){ tx=ugcCapTextOf(u,t); } // 자유 자막=자기 텍스트 통짜(청킹 안 함)
-    else { const full=ugcTlCapText(u,Number(ref)).trim(); const s0=+t.startMs, d0=+t.durMs; // 씬 음성자막=spoken을 청킹(A+)해 현재 ms 청크만
-      if(full&&Number.isFinite(s0)&&Number.isFinite(d0)&&d0>0){ const cks=ugcChunkCaption(full,s0,d0); const c=cks.find(ch=>ms>=ch.startMs&&ms<ch.startMs+ch.durMs)||cks[cks.length-1]; tx=c?c.text:full; } else tx=full; } // 타이밍 불량(NaN 등)이면 청킹 없이 통짜
+    if(t&&t.text!=null){ tx=String(t.text); } // 실 청크(B: chunked, sceneN+text) 또는 자유 자막 — 텍스트·타이밍 확정 → 직접 표시(match 필터가 현재 ms 청크만 선택)
+    else { const full=ugcTlCapText(u,Number(t.sceneN)).trim(); const s0=+t.startMs, d0=+t.durMs; // 씬 통문장(구버전/폴백) → 균등 청킹(A+)해 현재 ms 청크
+      if(full&&Number.isFinite(s0)&&Number.isFinite(d0)&&d0>0){ const cks=ugcChunkCaption(full,s0,d0); const c=cks.find(ch=>ms>=ch.startMs&&ms<ch.startMs+ch.durMs)||cks[cks.length-1]; tx=c?c.text:full; } else tx=full; }
     if(!tx)continue; seen[k]=1; items.push({kind,ref,text:tx}); }
   if(!items.length)return clear();
   // ⚡깜빡임 방지: 구조(자막 개수·종류)만 sig로 → 청크 전환(같은 씬, 텍스트만 변경)엔 DOM 재빌드 안 하고 텍스트만 제자리 갱신. ␞=구분자.
