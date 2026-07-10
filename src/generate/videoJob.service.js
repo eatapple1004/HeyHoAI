@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const execFileP = promisify(execFile); // 비동기 ffmpeg — 이벤트 루프 블로킹 방지(구 execSync 대체)
 const jwt = require('jsonwebtoken');
 const { env } = require('../config');
 const { query } = require('../db/client');
@@ -208,8 +211,9 @@ async function finalizeSucceeded(job, v, unitsUsed) {
         fs.writeFileSync(tmpV, videoBuf);
         fs.writeFileSync(tmpA, Buffer.from(await (await fetchWithTimeout(audioUrl, {}, 60000)).arrayBuffer()));
         try {
-          require('child_process').execSync(
-            `ffmpeg -i "${tmpV}" -i "${tmpA}" -c:v copy -c:a aac -shortest -y "${filePath}" 2>&1`, { timeout: 30000 });
+          await execFileP('ffmpeg',
+            ['-i', tmpV, '-i', tmpA, '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-y', filePath],
+            { timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
           hasAudio = true;
         } catch (e) { fs.writeFileSync(filePath, videoBuf); log.warn(`ffmpeg merge failed job ${job.id}: ${e.message}`); }
         try { fs.unlinkSync(tmpV); } catch {}

@@ -3,6 +3,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const execFileP = promisify(execFile); // 비동기 ffmpeg — 이벤트 루프 블로킹 방지(구 execSync 대체)
 const { GoogleGenAI } = require('@google/genai');
 const { env } = require('../config');
 const logger = require('../lib/logger');
@@ -1310,8 +1313,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
         const videoFilePath = path.join(outputDir, filename);
 
         if (audioMp3Url) {
-          // 오디오 다운로드 후 ffmpeg로 합치기
-          const { execSync } = require('child_process');
+          // 오디오 다운로드 후 ffmpeg로 합치기 (비동기 — 이벤트 루프 블로킹 방지)
           const tempVideoPath = path.join(outputDir, `_tmp_v_${videoId}.mp4`);
           const tempAudioPath = path.join(outputDir, `_tmp_a_${videoId}.mp3`);
 
@@ -1323,8 +1325,10 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
           alog.info('Audio file size:', audioBuf.length, 'bytes');
 
           try {
-            const ffResult = execSync(`ffmpeg -i "${tempVideoPath}" -i "${tempAudioPath}" -c:v copy -c:a aac -shortest -y "${videoFilePath}" 2>&1`, { timeout: 30000 });
-            alog.info('✅ ffmpeg merge done, output:', ffResult.toString().slice(-200));
+            const { stdout: ffOut } = await execFileP('ffmpeg',
+              ['-i', tempVideoPath, '-i', tempAudioPath, '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-y', videoFilePath],
+              { timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
+            alog.info('✅ ffmpeg merge done, output:', (ffOut || '').toString().slice(-200));
             const mergedSize = fs.statSync(videoFilePath).size;
             const videoOnlySize = videoBuf.length;
             alog.info('Size check - video only:', videoOnlySize, 'merged:', mergedSize, 'diff:', mergedSize - videoOnlySize);
