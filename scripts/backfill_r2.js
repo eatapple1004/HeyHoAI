@@ -9,9 +9,23 @@
 //  - 소량 동시성(8)으로 처리. best-effort(개별 실패는 카운트만, 전체 중단 안 함).
 //
 // 실행(서버, ~/HeyHoAI 에서):
-//   node -r @dotenvx/dotenvx/config scripts/backfill_r2.js
+//   node scripts/backfill_r2.js
 const fs = require('fs');
 const path = require('path');
+
+// .env를 직접 로드(주입 방식/dotenvx 버전에 비의존). src/config require 전에 process.env 채움.
+(function loadDotenv() {
+  const envPath = path.join(process.cwd(), '.env');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!m) continue; // 주석(#)·빈 줄 무시
+    const k = m[1];
+    let v = m[2].replace(/^["']|["']$/g, ''); // 양끝 따옴표 제거
+    if (process.env[k] === undefined) process.env[k] = v;
+  }
+})();
+
 const { env } = require('../src/config');
 const mediaStore = require('../src/storage/mediaStore');
 const { S3Client, HeadObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
