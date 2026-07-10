@@ -7,6 +7,7 @@
 <title>Doppia · Store</title>
 <script src="/js/flags.js" defer></script>
 <script src="/js/themes.js?v=7"></script><!-- (2026-07-03) isThemeVisible 공용 — 테마 칩을 Studio/Library와 동일하게 좁힘 -->
+<script src="/js/taxonomy.js?v=1"></script><!-- (2026-07-11) 카테고리 정본 — Store 카테고리 칩을 Studio 오피셜 카테고리(Apparel·Cosmetics·Nail·Accessories)와 정확히 일치 -->
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/js/i18n.js?v=9" defer></script>
@@ -119,8 +120,12 @@ function tcard(t){
 const PRICES=['All','Free','Paid'];
 let CATALOG=[], THEMES=[], curTheme='All', curPrice='All';
 function themeName(slug){return slug==='All'?'All':((THEMES.find(t=>t.slug===slug)||{}).name||slug);}
-// (2026-07-03) 테마 칩 = 보이는 기본 테마만(Studio·Library와 통일). isThemeVisible=Shopping(beauty/fashion/general)+Influencer(people, flag시). 롤백: hideInf/people 필터로 복원.
-function renderThemeFilter(){const vis=(typeof isThemeVisible==='function')?isThemeVisible:function(){return true;};const all=['All'].concat(THEMES.map(t=>t.slug).filter(function(s){return vis(s);}));document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${themeName(s)}</div>`).join('');}
+// (2026-07-11) 카테고리 칩 = Studio 오피셜 카테고리 정본(TAXONOMY.activeCategories: Apparel·Cosmetics·Nail·Accessories)과 정확히 일치.
+//   curTheme는 이제 카테고리 slug('All'|'apparel'|'beauty'|'nail'|'accessories')를 담음. 템플릿은 각 카테고리의 themes 슬러그로 버킷(catThemes).
+//   taxonomy.js가 SINGLE SOURCE — 카테고리 추가/삭제 시 Store 칩 자동 반영. 롤백: 아래 3함수를 옛 isThemeVisible 버전으로 복원.
+function catLabel(slug){if(slug==='All')return 'All';var c=(window.TAXONOMY&&TAXONOMY.categoryBySlug)?TAXONOMY.categoryBySlug(slug):null;return (c&&c.label)||slug;}
+function catThemes(slug){return (window.TAXONOMY&&TAXONOMY.themesForCategory)?TAXONOMY.themesForCategory(slug):[];}
+function renderThemeFilter(){const cats=(window.TAXONOMY&&TAXONOMY.activeCategories)?TAXONOMY.activeCategories().map(function(c){return c.slug;}):[];const all=['All'].concat(cats);document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${catLabel(s)}</div>`).join('');}
 function setTheme(s){curTheme=s;renderThemeFilter();renderCatalog();}
 function renderPrices(){document.getElementById('priceFilter').innerHTML=PRICES.map(c=>`<div class="chip ${curPrice===c?'active':''}" onclick="setPrice('${c}')">${c}</div>`).join('');}
 function setPrice(c){curPrice=c;renderPrices();renderCatalog();}
@@ -136,7 +141,7 @@ function renderCatalog(){
   // ▼▼▼ (2026-07-03) 보유 템플릿도 표시(옛 !t.owned 숨김 제거) — "담았는데 사라짐" 혼란 방지. 안 가진 게 위, 보유는 뒤로 정렬. 롤백: `let list=CATALOG.filter(t=>!t.owned);` 복원 ▼▼▼
   let list=CATALOG.slice();
   if(typeof featureOn==='function' && !featureOn('influencer')) list=list.filter(t=>!(t.themes||[]).includes('people')); // (2026-07-01) 인물(people) 템플릿 숨김
-  if(curTheme!=='All')list=list.filter(t=>(t.themes||[]).includes(curTheme));
+  if(curTheme!=='All'){const cth=catThemes(curTheme);list=list.filter(t=>(t.themes||[]).some(x=>cth.indexOf(x)>=0));} // 카테고리 = 그 카테고리 themes 슬러그를 가진 템플릿(taxonomy 정본)
   if(curPrice==='Free')list=list.filter(t=>!(t.price_credits>0));
   else if(curPrice==='Paid')list=list.filter(t=>t.price_credits>0);
   if(term)list=list.filter(t=>(t.name||'').toLowerCase().includes(term));

@@ -26,6 +26,7 @@
       {
         slug: 'apparel', label: 'Apparel', active: true, // 의류
         verticals: ['fashion', 'productcut', 'studiomodel'], // 이 카테고리에 속한 기존 recipe.vertical
+        themes: ['fashion', 'productcut'], // Store 카탈로그(테마 슬러그) 버킷용 — 이 테마의 마켓 템플릿이 이 카테고리 칩에 노출
         contentTypes: [
           // (2026-07-08 사용자 지시: lookbook·fabric·editorial·video 콘텐츠타입 삭제. product-cut·on-model만 유지.)
           { slug: 'product-cut', label: 'Product Cut', match: { vertical: ['productcut'] } }, // 제품컷
@@ -36,6 +37,7 @@
       //   (2026-07-08 사용자 지시: texture·onmodel·reel·lifestyle·infocard·shade 테마 삭제 → Hero만 큐레이션. auto 제거.)
       {
         slug: 'beauty', label: 'Cosmetics', active: true, verticals: ['beauty', 'producthero'],
+        themes: ['beauty'], // Store 카탈로그 버킷용
         contentTypes: [
           { slug: 'hero', label: 'Hero', match: { category: ['Hero'] } }, // 제품 히어로컷 (Texture/OnModel/Reel/Lifestyle/InfoCard/Shade는 삭제됨)
         ],
@@ -46,6 +48,7 @@
       {
         slug: 'nail', label: 'Nail', active: true,
         verticals: ['nail'],
+        themes: ['nail-base', 'nail-template'], // Store 카탈로그 버킷용
         contentTypes: [
           { slug: 'nail-base',     label: 'Nail Base',     match: { category: ['NailBase'] } },
           { slug: 'nail-template', label: 'Nail Template', match: { category: ['NailTemplate'] } },
@@ -58,6 +61,7 @@
       {
         slug: 'accessories', label: 'Accessories', active: true,
         verticals: ['accessories'],
+        themes: ['accessories', 'jewelry'], // Store 카탈로그 버킷용(주얼리 v1은 'jewelry' 또는 'accessories'로 태깅됨)
         contentTypes: [
           { slug: 'product-cut', label: 'Product Cut', match: { category: ['Product Cut'] } }, // 제품컷(모델없음)
           { slug: 'worn-cut',    label: 'Worn Cut',    match: { category: ['Worn Cut'] } },     // 착용컷(부위 파라미터·얼굴 배제)
@@ -79,6 +83,8 @@
   TX.activeCategories = function () { return TX.categories.filter(function (c) { return c.active !== false; }); };
   TX.categoryBySlug = function (s) { return TX.categories.find(function (c) { return c.slug === String(s); }); };
   TX.defaultCategory = function () { return TX.activeCategories()[0] || TX.categories[0]; };
+  // 이 카테고리에 매핑되는 Store 카탈로그 테마 슬러그 목록(마켓 템플릿 버킷용). 없으면 [].
+  TX.themesForCategory = function (slug) { var c = TX.categoryBySlug(slug); return (c && c.themes) || []; };
   // 레시피(vertical, category) → 이 카테고리에서 어떤 콘텐츠타입인지 slug 반환(없으면 null).
   //   큐레이션(contentTypes+match) 우선. auto 카테고리는 recipe.category 원값을 콘텐츠타입으로.
   TX.contentTypeOf = function (categorySlug, recipe) {
