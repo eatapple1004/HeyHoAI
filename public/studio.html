@@ -3407,7 +3407,11 @@ function renderUgcInline(b){
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; const u=b.ugc; let html='';
   const useOverlay=u&&u.previewUrl; // B+ 편집 중엔 자막 없는 미리보기 + HTML 오버레이(즉시 반영). 확대·공유는 구운 최종.
-  const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u)&&!u._layeredFailed; // B: 실 비디오 클립 있고 재생기 로드됐으면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷·런타임 클립404[_layeredFailed] → 빈 영상영역·깜빡임 방지).
+  // 씬별 VO(음성-주도 리타이밍, 옵션B) 잡은 단일 voiceUrl이 없어(voiceUrl=null) 레이어드 재생기가 음성을 못 틀고(클립은 muted)
+  //   타임라인(고정 durationSec)도 리타이밍과 안 맞음 → muxed previewUrl(음성+영상 싱크 완비)로 폴백해야 함.
+  //   판정: 음성 원함(hasVoice) + 단일 voiceUrl 없음 = 씬별 VO. (무음성/단일블롭 잡은 기존대로 레이어드.)
+  const perSceneVoice=!!(u&&u.hasVoice&&!u.voiceUrl);
+  const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u)&&!u._layeredFailed&&!perSceneVoice; // B: 실 비디오 클립 있고 재생기 로드·단일음성이면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷·런타임 클립404[_layeredFailed]·씬별VO → 빈 영상영역·깜빡임·무음성 방지).
   if(useLayered){
     html+='<div class="ugc-inline-vidwrap ugc-layered">' /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio */
       +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
