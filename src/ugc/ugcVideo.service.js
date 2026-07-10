@@ -448,6 +448,9 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
   const script = safeParse(row.script);
   const R = script && script._render;
   if (!script || !Array.isArray(script.scenes) || !R || !R.silentBase || !R.previewBase || !R.caption) return null; // 레거시 잡 → 폴백
+  // 씬별 VO(음성-주도 리타이밍, 옵션B) 잡은 값싼 재합성 불가(편집이 재타이밍을 유발 → silentBase 무효) → 전체 reRender 폴백(reuseVo 캐시로 재TTS·재Kling은 0).
+  const _voSegs = R.audioAssets && R.audioAssets.vo && Array.isArray(R.audioAssets.vo.segs) ? R.audioAssets.vo.segs : null;
+  if (_voSegs && (_voSegs.length > 1 || _voSegs.some((s) => s && ((s.startMs || 0) > 0 || Number(s.sceneN || 0) !== 0)))) return null;
 
   const curOrder = script.scenes.map((s) => s.n);
   if (order && order.length && (order.length !== curOrder.length || order.some((n, i) => Number(n) !== curOrder[i]))) return null; // 순서 변경 → 폴백

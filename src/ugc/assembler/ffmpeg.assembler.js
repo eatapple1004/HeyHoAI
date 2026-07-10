@@ -354,10 +354,10 @@ async function synthNarration(opts, workDir, log) {
 }
 
 /**
- * 씬 타이밍 재계산 — **영상 길이 고정 + 음성 오버플로 가드**(유저 결정).
- *   각 씬은 생성 시 정한 고정 길이(3s/5s 등)를 유지 → 영상 총 길이가 음성 따라 들쭉날쭉하지 않고 예측 가능.
- *   단 음성(+lead-in/tail)이 그 슬롯보다 길면 그 씬만 늘려 음성이 잘리지 않게 함. 음성 짧으면 슬롯 유지(뒤 여백).
- *   video·subtitle·meta.durationMs를 누적 재계산(plan 직접 갱신). 음성 없는 씬·무음 영상은 고정 길이.
+ * 씬 타이밍 재계산 — **음성-주도(옵션B, 음성/비디오/자막 싱크)**.
+ *   음성 있는 씬 = 그 씬 음성 길이(+lead-in/tail, 최소 클램프 MIN_SCENE_MS)만큼 지속 → 음성이 씬 경계 넘어
+ *   끊김 없이 이어지고(연속), 비디오·자막이 음성에 정확히 정렬. 영상 총 길이는 음성 따라 가변(예측성↔싱크 트레이드오프에서 싱크 택함).
+ *   video·subtitle·meta.durationMs를 누적 재계산(plan 직접 갱신). 음성 없는 씬·무음 영상은 기존 고정 길이 유지.
  *   sceneOpts[sceneN] = { leadInMs, tailMs }(3a): 음성 시작 딜레이 / 음성 끝 여백.
  * @returns {object|null} voStartByScene(음성 있는 씬의 음성 시작 시각) — 없으면 null
  */
@@ -372,8 +372,7 @@ function retimeByVoice(plan, voSegs, sceneOpts = {}) {
     const opt = sceneOpts[v.sceneN] || {};
     const lead = d ? Math.max(0, Math.round(opt.leadInMs || 0)) : 0;             // 씬 시작 후 음성까지 여백
     const tail = d ? Math.max(VO_TAIL_MS, Math.round(opt.tailMs || 0)) : 0;       // 음성 끝 후 여운(기본 VO_TAIL_MS)
-    const fixed = v.durMs; // 생성 시 정한 고정 길이 — 기본은 이 길이 유지(영상 총 길이 예측 가능)
-    const durMs = d ? Math.max(fixed, lead + d + tail, MIN_SCENE_MS) : fixed;     // 음성이 슬롯보다 길 때만 그 씬 확장(잘림 방지)
+    const durMs = d ? Math.max(lead + d + tail, MIN_SCENE_MS) : v.durMs;     // 음성 있는 씬 = 음성 길이(+여운, 최소 클램프)만큼 → 연속 음성·씬 단위 정확 싱크. 음성 없으면 기존 고정 길이.
     v.startMs = cursor;
     v.durMs = durMs;
     if (d) voStart[v.sceneN] = cursor + lead; // 음성은 lead-in 후 시작
@@ -431,10 +430,12 @@ async function assemble(plan, opts = {}) {
   const CW = dims.w, CH = dims.h;
   const fit = fitFilter(CW, CH);
 
-  // 0) 음성 = 영상 전체에 통 나레이션 한 트랙(유저 결정). 영상 길이는 씬 고정 길이 그대로(buildRenderPlan)
-  //    → 음성이 영상 길이를 좌우하지 않음(예측 가능) + 음성 편집이 재타이밍 없이 트랙만 교체됨.
-  //    자막 타이밍(plan.tracks.subtitle)도 고정 길이 그대로 → 씬 기본 배치. (retimeByVoice 미사용)
-  const voSegsData = await synthNarration(opts, workDir, log); // [{sceneN:0, rel, durationMs}] or null
+  // 0) 음성-주도 타이밍(옵션B, 예전 방식 복원): 씬별 VO 먼저 생성·길이 측정 → 씬 타이밍을 음성 길이로 재계산(plan mutate).
+  //    각 음성 있는 씬 = 그 음성 길이(+여운, 최소 클램프)만큼 지속 → 음성·비디오·자막이 씬 단위로 정확히 정렬(연속 음성).
+  //    clips는 plan.tracks.video 동일 참조라 retiming(durMs) 자동 반영. 음성 없으면 voStart=null·기존 길이(무음).
+  const voSegsData = await synthVoSegments(opts, plan, workDir, log);
+  const sceneOpts = {}; ((opts.script && opts.script.scenes) || []).forEach((s) => { sceneOpts[s.n] = { leadInMs: s.leadInMs, tailMs: s.tailMs }; });
+  const voStart = retimeByVoice(plan, voSegsData, sceneOpts); // 씬별 음성 시작 시각 map(없으면 null)
 
   // 1) 클립별 세그먼트 정규화
   log(`세그먼트 정규화 ${clips.length}개… (${CW}x${CH})`);
@@ -463,7 +464,7 @@ async function assemble(plan, opts = {}) {
 
   if (wantVoice && voSegsData) {
     voSegsOut = voSegsData;
-    voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: 0 })); // 통 나레이션 = 0부터
+    voSegsOut.forEach((seg) => audioInputs.push({ file: seg.rel, volume: 1.0, kind: 'vo', delayMs: (voStart && voStart[seg.sceneN]) || 0 })); // 씬별 VO를 그 씬 시작(lead-in) 시각에 배치=싱크
   }
   if (wantMusic) {
     if (opts.reuseMusic && fs.existsSync(opts.reuseMusic)) {
@@ -496,7 +497,7 @@ async function assemble(plan, opts = {}) {
   const burned = await burnCaptions({ basePath, subtitle, style: subStyle, w: CW, h: CH, workDir, hasAudio, log });
 
   log(`조립 완료: ${burned.videoPath}`);
-  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: 0 })) : null;
+  const voAssets = voSegsOut ? voSegsOut.map((s) => ({ sceneN: s.sceneN, path: path.join(workDir, s.rel), startMs: (voStart && voStart[s.sceneN]) || 0 })) : null;
   return {
     videoPath: burned.videoPath, basePath, silentPath: concatPath, workDir, activeTracks: active, segments: segments.length,
     subtitleMode: burned.subtitleMode, subtitleFile: burned.subtitleFile, audioTracks,
