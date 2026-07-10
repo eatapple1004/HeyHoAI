@@ -928,7 +928,27 @@ async function getJob(id, userId) {
     // V2: 통 나레이션 텍스트(편집기 프리필) — 전용 필드 우선, 없으면 씬 대사 이어붙임. 음성 켜진 잡만 의미.
     narration: (sc.narration && String(sc.narration).trim()) || (Array.isArray(sc.scenes) ? sc.scenes.map((s) => (s.spoken || '').trim()).filter(Boolean).join(' ') : ''),
     hasVoice: !!(R.audio && R.audio.voice),
+    hasMusic: !!(R.audio && R.audio.music),
+    // A(레이어드 재생기): 음성·음악을 개별 트랙 URL로 노출 → 재생기가 별도 <audio> 2개로 얹어 on/off·볼륨·더킹을 클라이언트 즉시.
+    //   파일은 이미 buildAudioAssets가 /images에 순수(pre-mix) mp3로 영속화 → 여기선 URL 파생만(추가 굽기 0).
+    ...audioTrackUrls(R),
   };
+}
+
+/**
+ * A: script._render.audioAssets → 재생기용 개별 오디오 트랙 URL.
+ *   voiceUrl = 통 나레이션 단일 트랙(t=0부터 재생). 음악 = 단일 트랙. 둘 다 풀볼륨 원본(더킹은 클라이언트가 적용).
+ *   렌더 시 꺼진(파일 없는) 트랙은 null — 그 트랙 켜기는 서버 재생성(수초). 옛 씬별 다중 세그먼트(segs>1)는
+ *   단일 트랙 모델과 안 맞아 노출 안 함(→ 재생기는 muxed previewUrl로 폴백).
+ * @returns {{voiceUrl:string|null, musicUrl:string|null}}
+ */
+function audioTrackUrls(R) {
+  const a = (R && R.audioAssets) || {};
+  const segs = a.vo && Array.isArray(a.vo.segs) ? a.vo.segs : null;
+  const voiceUrl = (segs && segs.length === 1 && segs[0].file && (segs[0].startMs || 0) === 0)
+    ? `/images/${segs[0].file}` : null;
+  const musicUrl = a.music && a.music.file ? `/images/${a.music.file}` : null;
+  return { voiceUrl, musicUrl };
 }
 
 /**
