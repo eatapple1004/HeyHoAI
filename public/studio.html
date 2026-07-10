@@ -154,7 +154,10 @@
   .ugc-hd-apply:hover{filter:brightness(1.1)}
   @keyframes hdApplyIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
   .ugc-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
-  .ugc-music-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+  .ugc-music-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);border-radius:8px;transition:background .3s}
+  .ugc-music-row.ugc-flash{animation:ugcMusicFlash 1.3s ease}
+  @keyframes ugcMusicFlash{0%{background:rgba(139,124,246,0)}18%{background:rgba(139,124,246,.22)}100%{background:rgba(139,124,246,0)}}
+  @media(prefers-reduced-motion:reduce){.ugc-music-row.ugc-flash{animation:none}}
   .ugc-music-lbl{font-weight:650;font-size:12.5px}
   .ugc-music-mood,.ugc-music-vibe{background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:5px 8px;font-size:12.5px}
   .ugc-music-vibe{flex:1 1 160px;min-width:120px}
@@ -3133,7 +3136,8 @@ async function ugcReassemble(jobId,opts){
       { const _rL=UGC_LAYERED[jobId]; if(_rL&&_rL.player){ u._resume={ time:_rL.player.currentTime(), unmuted:!!(_rL.audio&&((_rL.audio.voice&&!_rL.audio.voice.muted)||(_rL.audio.music&&!_rL.audio.music.muted))) }; } }
       if(u.previewUrl)await ugcPreloadVideo(u.previewUrl); // 새 미리보기를 먼저 받아둠(immutable 캐시) → 아래 렌더가 브라우저 캐시서 즉시 스왑(버전전환 로딩 체감 제거)
       renderStudioResults();
-      if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasMusic?'Music updated — free':hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
+      if(window.toast)toast(paid?'Scene re-generated':(hasVersions?'Scene version switched — free':hasMusic?ugcMusicToast(opts):hasVoice?'Voice updated — free':hasCaptions?'Captions updated — free':hasTimings?'Caption timing updated — free':'Video updated — free edit'));
+      if(hasMusic)ugcFlashMusicRow(jobId); // 음악 교체 시 음악 줄 하이라이트(유저 인지 강화)
       if(paid&&typeof loadCredits==='function')loadCredits();
     }
   }catch(e){
@@ -3178,9 +3182,26 @@ async function ugcChangeMusic(jobId){
   const cont=ugcCont(jobId); if(!cont)return;
   const sel=cont.querySelector('.ugc-music-mood');
   const txt=cont.querySelector('.ugc-music-vibe');
-  const vibe=(txt&&txt.value.trim())?txt.value.trim():(sel?sel.value:''); // 자연어 우선, 없으면 프리셋('' =Auto, 'none'=끔)
+  const custom=txt&&txt.value.trim();
+  const vibe=custom?txt.value.trim():(sel?sel.value:''); // 자연어 우선, 없으면 프리셋('' =Auto, 'none'=끔)
+  // 알림용 사람친화 라벨 — 자연어 입력 우선, 없으면 선택한 드롭다운 옵션 텍스트(Upbeat·Calm·No music…)
+  const label=custom?txt.value.trim():((sel&&sel.selectedOptions&&sel.selectedOptions[0])?sel.selectedOptions[0].textContent.trim():'Auto (AI)');
   const btn=cont.querySelector('.ugc-music-go'); const o=btn?btn.textContent:'Change music';
-  await ugcReassemble(jobId,{musicVibe:vibe,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Changing…':o;}}});
+  await ugcReassemble(jobId,{musicVibe:vibe,musicLabel:label,setBusy:function(on){if(btn){btn.disabled=on;btn.textContent=on?'Changing…':o;}}});
+}
+// 음악 교체 알림 문구 — 무드/제거/Auto를 구분해 "무엇으로 바뀌었는지" 명시(밋밋한 'Music updated' 대체).
+function ugcMusicToast(opts){
+  const v=String((opts&&opts.musicVibe)||'');
+  if(v==='none')return '🎵 Music removed — free';
+  if(v==='')return '🎵 Music set to Auto (AI) — free';
+  const lbl=(opts&&opts.musicLabel)||'a new mood';
+  return '🎵 Music changed to “'+lbl+'” — free';
+}
+// 음악 줄에 짧은 하이라이트 플래시 — 변경이 반영된 지점을 시각적으로 확인시켜줌(toast 보조).
+function ugcFlashMusicRow(jobId){
+  const cont=ugcCont(jobId); const row=cont&&cont.querySelector('.ugc-music-row'); if(!row)return;
+  row.classList.remove('ugc-flash'); void row.offsetWidth; row.classList.add('ugc-flash'); // 리플로우로 애니메이션 재시작 보장
+  setTimeout(function(){ row.classList.remove('ugc-flash'); },1300);
 }
 // 결과 스트립 Voice 드롭다운 옵션(생성 전 #ugcVoiceId와 동일 8종)
 var UGC_VOICE_OPTS='<option value="n2fbxG88jqAoaVPUy3IG">Yooni — F, clear &amp; calm</option>'
