@@ -2913,8 +2913,8 @@ function ugcSceneStripHtml(b){
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
-      <div class="usc-line"><span class="usc-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
-           title="${UGC_CAPTIONS?'Edit what\'s said (voice) & shown (caption) in this scene':'Edit the voice narration for this scene'}" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>
+      ${u.hasVoice?`<div class="usc-line"><span class="usc-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
+           title="${UGC_CAPTIONS?'Edit what\'s said (voice) & shown (caption) in this scene':'Edit the voice narration for this scene'}" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>`:''/* 음악모드(음성 없음)=씬별 음성/자막 줄 숨김(음성 언급 제거) */}
       ${u.hasVoice?`<div class="usc-pad"><span class="usc-pad-lbl" title="Extra pause after this scene's voice (voice mode)">+여백</span><select class="usc-pad-sel" onchange="ugcSceneSetTail('${esc(u.jobId)}',${s.n},this.value)">${[0,500,1000,1500,2000].map(v=>`<option value="${v}"${tailMs===v?' selected':''}>${v===0?'0s':'+'+(v/1000)+'s'}</option>`).join('')}</select></div>`:''/* P2: 씬별 여백 — 음성모드만(음성-주도 타이밍에 tailMs로 반영) */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
@@ -2944,7 +2944,7 @@ function ugcSceneStripHtml(b){
       <input type="text" class="ugc-music-vibe" placeholder="or describe a vibe…" maxlength="120">
       <button type="button" class="ugc-music-go" onclick="ugcChangeMusic('${esc(b.ugc.jobId)}')">Change music</button>
     </div>
-    <div class="ugc-arow">
+    ${u.hasVoice?`<div class="ugc-arow">
       <span class="ugc-arow-lbl">🎙️ Voice</span>
       <label class="ugc-arow-chk"><input type="checkbox" class="ugc-voice-on" checked> Voiceover</label>
       <select class="ugc-arow-sel ugc-voice-id" aria-label="Voice">${UGC_VOICE_OPTS}</select>
@@ -2952,7 +2952,7 @@ function ugcSceneStripHtml(b){
         <option value="0.85">Slow</option><option value="1" selected>Normal</option><option value="1.1">Fast</option>
       </select>
       <button type="button" class="ugc-arow-go ugc-voice-go" onclick="ugcChangeVoice('${esc(b.ugc.jobId)}')">Update voice</button>
-    </div>
+    </div>`:''/* 음악모드(음성 없음)=Voice 편집 줄 전체 숨김(음성 언급 제거) */}
     ${''/* 통 Narration 편집기 접음(A+): 음성=씬별 spoken 단일소스 → 각 씬 카드 🎙에서 편집. 백엔드 narration은 옛 잡 하위호환용으로만 유지. */}
     ${UGC_CAPTIONS?`<div class="ugc-arow">
       <span class="ugc-arow-lbl">💬 Captions</span>
@@ -4435,7 +4435,7 @@ function ugcRenderScriptPreview(data){
     const durBadge=sc.type==='broll'?`<span class="ugc-scene-dur" title="Scene length">${dur}s</span>`:'';
     const line=hasText
       ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="what's said in this scene">${esc(sc.spoken||sc.onScreenText||'')}</span>`
-      : `<b>${i+1}.</b>${durBadge} <span style="color:var(--faint);font-size:12px">visual only — no narration</span>`;
+      : `<b>${i+1}.</b>${durBadge} <span style="color:var(--faint);font-size:12px">visual only</span>`;
     return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
       +`<div class="ugc-scene-sum"><span class="ugc-el-ic" title="What this scene shows — the visuals & motion">🎬</span> <span>${esc(sc.summary||sc.direction||'')}</span>`
       +(sc.type==='broll'?` <button type="button" class="ugc-sum-edit" onclick="ugcEditScenePre(${i})" title="Change this scene">✎ change</button>`:'')
