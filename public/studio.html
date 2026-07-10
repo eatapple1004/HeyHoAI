@@ -2818,6 +2818,17 @@ function ugcTryUnmute(v){
 // 피드 영상은 자동재생 정책상 muted → 소리 토글. 한 번에 하나만 소리(누른 것만 unmute, 나머지 음소거).
 function ugcToggleSound(e,btn){
   e.stopPropagation();
+  // B: 레이어드 재생기면 소리는 <video> 아닌 개별 음성·음악 <audio> 트랙에 있음 → 그쪽을 토글.
+  const lwrap=btn.parentElement&&btn.parentElement.classList&&btn.parentElement.classList.contains('ugc-layered')?btn.parentElement:null;
+  if(lwrap){
+    const ov=lwrap.querySelector('.ugc-cap-ov'); const jobId=ov&&ov.getAttribute('data-job'); const L=jobId&&UGC_LAYERED[jobId]; if(!L||!L.audio)return;
+    const tracks=[L.audio.voice,L.audio.music].filter(Boolean); if(!tracks.length)return;
+    const willUnmute=tracks.every(a=>a.muted); // 현재 전부 음소거면 언뮤트
+    if(willUnmute){ document.querySelectorAll('.result-card video').forEach(o=>{ o.muted=true; }); document.querySelectorAll('.result-card .reel-mute').forEach(b=>{ if(b!==btn){ b.textContent='🔇'; b.classList.remove('on'); } }); }
+    tracks.forEach(a=>{ a.muted=!willUnmute; if(!a.muted){ const pr=a.play(); if(pr&&pr.catch)pr.catch(()=>{}); } });
+    btn.textContent=willUnmute?'🔊':'🔇'; btn.classList.toggle('on',willUnmute);
+    return;
+  }
   const v=btn.parentElement&&btn.parentElement.querySelector('video'); if(!v)return;
   const willUnmute=v.muted;
   if(willUnmute){ // 다른 결과 영상은 모두 음소거(씬 카드 .usc video는 제외 — 미리보기 전용)
@@ -3080,6 +3091,7 @@ async function ugcReassemble(jobId,opts){
       setBusy(false);
     } else {
       b.items=[{url:done.resultUrl+'?v='+Date.now(),type:'reel',idx:(b.items[0]&&b.items[0].idx)||null}]; // in-place 영상 교체(캐시버스트)
+      if('voiceUrl' in done)u.voiceUrl=done.voiceUrl; if('musicUrl' in done)u.musicUrl=done.musicUrl; if('hasMusic' in done)u.hasMusic=done.hasMusic; // A: 편집 후 오디오 트랙 URL 갱신(음악무드·보이스 변경 시 새 파일)
       u.previewUrl=done.previewUrl||null; if('subtitleStyle' in done)u.subtitleStyle=done.subtitleStyle; // ?v 캐시버스트 제거 — previewBase는 콘텐츠주소(UUID·불변)라 되돌려도 브라우저 캐시 히트=즉시. 파일 바뀌면 basename도 바뀜 if(done.captionSpec)u.captionSpec=done.captionSpec; if(typeof done.narration==='string')u.narration=done.narration; if('hasVoice' in done)u.hasVoice=done.hasVoice; // B+/V2 오버레이·나레이션 소스 갱신
       if(Array.isArray(done.scenes)&&done.scenes.length){ u.scenes=done.scenes.map(s=>Object.assign({},s)); u._orig=done.scenes.map(s=>Object.assign({},s)); } // 서버 최신 씬(새 썸네일 포함)
       else { // 재조회 실패 폴백: 로컬 낙관 상태를 확정
@@ -3352,6 +3364,7 @@ function renderStudioResults(){
 // Ad Video 생성 로딩·완성 영상·씬 스트립을 우측(대본 자리) 인라인에 렌더
 function renderUgcInline(b){
   const el=document.getElementById('ugcInline'); if(!el)return;
+  ugcDestroyAllLayered(); // 재렌더/이탈 전 기존 레이어드 재생기·오디오 파기(좀비 오디오·중복 재생 방지 — <audio>는 DOM 밖이라 innerHTML='' 로 안 멈춤)
   if(!b){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='';
   if(b.loading){ // 완성본과 동일 뼈대: 상단 피드 영상 자리 + Scenes 헤더 + 씬 카드(각 영상 위치에서 로딩)
@@ -3364,7 +3377,14 @@ function renderUgcInline(b){
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; const u=b.ugc; let html='';
   const useOverlay=u&&u.previewUrl; // B+ 편집 중엔 자막 없는 미리보기 + HTML 오버레이(즉시 반영). 확대·공유는 구운 최종.
-  if(useOverlay){ const zoom=(it&&it.url)||u.previewUrl;
+  const useLayered=useOverlay&&ugcScenesPlayable(u); // B: 실 비디오 클립 있으면 레이어드 재생기(씬 즉시전환+음성·음악 2트랙), 없으면 previewUrl 단일영상 폴백(구버전잡·클립유실·정지컷).
+  if(useLayered){
+    html+='<div class="ugc-inline-vidwrap ugc-layered">' /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio */
+      +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
+      +`<button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`/* 오디오는 muted 자동재생 시작 → 🔇, 클릭 시 언뮤트 */
+      +'</div>';
+    html+=ugcTimelineHtml(u); // V2b 자막 타임라인(오버레이 아래)
+  } else if(useOverlay){ const zoom=(it&&it.url)||u.previewUrl;
     html+='<div class="ugc-inline-vidwrap">'
       +`<video class="ugc-inline-vid" src="${esc(u.previewUrl)}" autoplay muted loop playsinline ontimeupdate="ugcSyncCap(this,'${esc(u.jobId)}')" onloadeddata="ugcTryUnmute(this);ugcSyncCap(this,'${esc(u.jobId)}')" onclick="openImageModal('${esc(zoom)}','reel')"></video>`
       +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
@@ -3377,16 +3397,59 @@ function renderUgcInline(b){
     +'</div>'; }
   if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
   el.innerHTML=html;
+  if(useLayered)ugcMountLayered(u,(it&&it.url)||u.previewUrl); // innerHTML 이후 마운트(요소 존재해야 player append 가능)
 }
+// ── B: 레이어드 재생기 마운트 + 오디오 2트랙(음성·음악) ─────────────────────
+// 실 비디오 클립(정지컷 아님)이 하나라도 있어야 레이어드 가동. 아니면 previewUrl 단일영상으로 폴백(회귀 0).
+function ugcScenesPlayable(u){ return !!(u&&Array.isArray(u.scenes)&&u.scenes.some(function(s){ return s&&s.clipUrl&&!s.isStill; })); }
+var UGC_LAYERED={}; // jobId -> { player, audio, wrap }
+function ugcMountLayered(u,zoom){
+  const wrap=document.querySelector('#ugcInline .ugc-inline-vidwrap.ugc-layered'); if(!wrap||typeof ugcMakePlayer!=='function')return;
+  ugcDestroyLayered(u.jobId); // 이전 인스턴스 정리(중복 재생·오디오 겹침 방지)
+  // wrap 높이 = 영상 비율(player 비디오는 position:absolute라 높이 기여 안 함 → aspect-ratio 필수). captionSpec w/h 우선(9:16·1:1·16:9).
+  const cs=u.captionSpec||{}; const w=cs.w||1080, h=cs.h||1920; wrap.style.aspectRatio=w+' / '+h;
+  const scenes=(u.scenes||[]).map(function(s){ return { n:s.n, clipUrl:s.clipUrl||'', isStill:!!s.isStill, durationSec:s.durationSec||Math.max(1,Math.round((s.durationMs||3000)/1000)) }; });
+  const audio=ugcMakeAudio(u);
+  const player=ugcMakePlayer(wrap,{ scenes:scenes, loop:true, onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); } });
+  UGC_LAYERED[u.jobId]={ player:player, audio:audio, wrap:wrap };
+  player.play(); // 무음(클립) + muted 오디오 자동재생(정책 허용) → 언뮤트 시 즉시 소리
+  wrap.onclick=function(ev){ if(ev.target.closest&&(ev.target.closest('.ugc-cap-ov')||ev.target.closest('.reel-mute')))return; if(typeof openImageModal==='function')openImageModal(zoom,'reel'); }; // 확대(오버레이·버튼 제외)
+}
+function ugcDestroyLayered(jobId){ const L=UGC_LAYERED[jobId]; if(!L)return; try{ L.player&&L.player.destroy(); }catch(e){} try{ ugcAudioDestroy(L.audio); }catch(e){} delete UGC_LAYERED[jobId]; }
+function ugcDestroyAllLayered(){ for(const k in UGC_LAYERED)ugcDestroyLayered(k); }
+// 음성·음악 개별 <audio> 트랙(A에서 getJob이 노출한 voiceUrl·musicUrl). muted 시작(자동재생 정책) → 🔊 클릭 시 언뮤트.
+//   더킹: 음성 있으면 음악 0.18, 없으면 0.5(assembler muxAudio와 동일). 볼륨은 파일 아닌 클라이언트가 적용(=on/off·더킹 즉시).
+function ugcMakeAudio(u){
+  const A={ voice:null, music:null };
+  if(u.voiceUrl){ const a=new Audio(u.voiceUrl); a.preload='auto'; a.muted=true; a.loop=false; a.volume=1.0; A.voice=a; }
+  if(u.musicUrl){ const a=new Audio(u.musicUrl); a.preload='auto'; a.muted=true; a.loop=true; a.volume=u.voiceUrl?0.18:0.5; A.music=a; }
+  return A;
+}
+// 재생기 시계(ms)를 master로 오디오 트랙 위치 보정. 음성=한 번 재생 후 무음(끝나면 멈춤), 음악=루프(모듈로).
+function ugcAudioSync(A,ms,total){
+  if(!A)return; const sec=(ms||0)/1000;
+  [['voice',false],['music',true]].forEach(function(p){ const a=A[p[0]]; if(!a||!a.src)return; const loop=p[1];
+    const dur=(isFinite(a.duration)&&a.duration>0)?a.duration:0;
+    if(!loop&&dur&&sec>=dur){ if(!a.paused)a.pause(); return; } // 나레이션 끝 → 멈춤(영상 끝까지 무음). 루프 되감김 시 아래서 재개.
+    let want=sec; if(loop&&dur)want=sec%dur; if(dur)want=Math.min(want,Math.max(0,dur-0.05));
+    if(Math.abs((a.currentTime||0)-want)>0.3){ try{ a.currentTime=want; }catch(e){} } // 큰 드리프트만 보정(잦은 seek=stutter 방지)
+    if(a.paused){ const pr=a.play(); if(pr&&pr.catch)pr.catch(function(){}); }
+  });
+}
+function ugcAudioDestroy(A){ if(!A)return; ['voice','music'].forEach(function(k){ const a=A[k]; if(a){ try{ a.pause(); }catch(e){} try{ a.removeAttribute('src'); a.load(); }catch(e){} } }); }
 // B+ 자막 오버레이 싱크 — 미리보기(자막 없는) 영상의 현재 시각에 해당하는 자막을 오버레이에 표시.
 //   자막 텍스트는 편집분(edits) 우선 → 타이핑 즉시 반영. 실제 번인은 Apply 시 백그라운드로 파일에 구워짐.
 var UGC_CAP_EDITING=null; // 인라인 편집 중인 jobId — 편집/드래그 중엔 ugcSyncCap 재빌드 금지(캐럿·드래그 보존)
-function ugcSyncCap(video,jobId){
+// 자막 싱크 진입점(단일 <video> 폴백 경로) — video.currentTime를 ms로 환산해 ugcSyncCapAt에 위임.
+//   레이어드 재생기 경로는 player.onTime(ms,total)이 ugcSyncCapAt를 직접 구동(video 불필요).
+function ugcSyncCap(video,jobId){ ugcSyncCapAt(jobId,(video&&video.currentTime||0)*1000); }
+// B: 시각(ms) 기반 자막 오버레이 구동 — 재생기(onTime)·단일영상 어느 쪽이든 공통. 오버레이는 DOM에서 찾음(#ugcInline 안 하나).
+function ugcSyncCapAt(jobId,ms){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
-  const ov=video.parentNode&&video.parentNode.querySelector('.ugc-cap-ov'); if(!ov)return;
+  const ov=document.querySelector('#ugcInline .ugc-cap-ov'); if(!ov)return;
   const spec=u.captionSpec; const timings=(spec&&spec.timings)||[];
   const st=Object.assign({},(spec&&spec.style)||{},u.subtitleStyle||{});
-  const ms=(video.currentTime||0)*1000;
+  ms=ms||0;
   // V2b 타임라인 재생위치 표시(자막 on/off와 무관하게 갱신). 블록·눈금과 같은 축(씬 길이 합)을 써야 어긋나지 않음.
   const tot=(typeof ugcTlTotal==='function')?ugcTlTotal(u):0;
   const ph=document.querySelector('#ugcInline .ugc-timeline .ugc-tl-play');
@@ -4378,7 +4441,7 @@ async function ugcRenderVideo(){
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     const job=await pollUgcJob(data.jobId);
     if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
-      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:job.language||'ko',narration:job.narration||'',hasVoice:job.hasVoice!==false};} // 결과 편집(씬 스트립 + B+ 자막 오버레이 + 나레이션)용
+      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:job.language||'ko',narration:job.narration||'',hasVoice:job.hasVoice!==false,hasMusic:!!job.hasMusic,voiceUrl:job.voiceUrl||null,musicUrl:job.musicUrl||null};} // 결과 편집(씬 스트립 + B+ 자막 오버레이 + 나레이션 + A 오디오 2트랙)용
       renderStudioResults();} // 우측 인라인에 완성 영상+씬 스트립
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){
