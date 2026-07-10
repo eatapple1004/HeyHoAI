@@ -955,8 +955,12 @@ function editableScenes(script, sceneClips) {
       clipUrl: cl.clip ? (cl.remote ? cl.clip : `/images/${cl.clip}`) : null, // 씬 카드 자동재생용
       isStill: !!cl.isStill, // 정지이미지 클립(dryRun)이면 video 대신 썸네일
       hasClip: !!cl.clip,
-      // 비파괴 재생성: 이 씬의 렌더된 버전들(썸네일)+활성 인덱스 → 프론트 버전 선택기. 1개면 선택기 숨김.
-      versions: Array.isArray(cl.versions) ? cl.versions.map((v) => ({ thumb: v.thumb ? `/images/${v.thumb}` : null, isStill: !!v.isStill })) : [],
+      // 비파괴 재생성: 이 씬의 렌더된 버전들(썸네일+클립URL)+활성 인덱스 → 프론트 버전 선택기 + 클라이언트 즉시 전환(재생기가 클립만 스왑).
+      versions: Array.isArray(cl.versions) ? cl.versions.map((v) => ({
+        thumb: v.thumb ? `/images/${v.thumb}` : null, isStill: !!v.isStill,
+        clipUrl: v.clip ? (v.remote ? v.clip : `/images/${v.clip}`) : null, // 클라이언트 시퀀서 버전 스왑용
+        durationSec: Math.round((v.durationMs || 3000) / 1000),
+      })) : [],
       activeVersion: typeof cl.v === 'number' ? cl.v : 0,
       // 원본 프롬프트는 프론트로 보내지 않음(No prompt engineering) — 수정은 자연어 지시로만
     };
