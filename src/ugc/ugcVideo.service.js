@@ -145,8 +145,8 @@ async function persistSceneClips(clips) {
 // 씬 클립 엔트리에서 순수 클립 정보만(버전 목록 element용) — versions/v 같은 메타 제외.
 function stripClipEntry(e) { const o = {}; ['clip', 'thumb', 'isStill', 'durationMs', 'remote'].forEach((k) => { if (e && k in e) o[k] = e[k]; }); return o; }
 
-// 자막 타이밍 → 텍스트 리졸버. 자유 자막(직접 추가)은 자기 text, 씬 자막은 씬의 onScreenText.
-function captionTextOf(t, byN) { return (t && t.text != null ? String(t.text) : ((byN[t.sceneN] && byN[t.sceneN].onScreenText) || '')).trim(); }
+// 자막 타이밍 → 텍스트 리졸버. 자유 자막(직접 추가)은 자기 text, 씬 자막(음성자막)은 씬의 spoken(옛 잡 onScreenText 폴백).
+function captionTextOf(t, byN) { if (t && t.text != null) return String(t.text).trim(); const s = byN[t && t.sceneN]; if (!s) return ''; return String((s.spoken && String(s.spoken).trim()) ? s.spoken : (s.onScreenText || '')).trim(); }
 
 // ── 완성본(컴포지트) 캐시 — 버전 전환 즉시화 ─────────────────────────────
 // 편집 상태 전체(씬 클립 버전·순서·자막·오디오·비율)로 완성 mp4를 캐싱 → 같은 상태로 다시 오면

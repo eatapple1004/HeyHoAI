@@ -2890,7 +2890,7 @@ function ugcSceneStripHtml(b){
   const voiceMode=u.scenes.some(x=>((('spoken' in (u.edits[x.n]||{}))?u.edits[x.n].spoken:x.spoken)||'').trim()); // 음성 있는 영상만 음성 줄 노출
   const cards=u.scenes.map((s,i)=>{
     const ed=u.edits[s.n]||{};
-    const cap=(('onScreenText' in ed)?ed.onScreenText:s.onScreenText)||'';
+    const capV=('spoken' in ed)?ed.spoken:s.spoken; const cap=((capV&&String(capV).trim())?capV:(('onScreenText' in ed)?ed.onScreenText:s.onScreenText))||''; // 음성자막=spoken(옛 잡 onScreenText 폴백)
     const spk=(('spoken' in ed)?ed.spoken:s.spoken)||'';
     const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
     const thumb=isVid
@@ -2900,8 +2900,8 @@ function ugcSceneStripHtml(b){
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
-      <div class="usc-line"><span class="usc-ic" title="On-screen caption — edit it directly on the video">💬</span><div class="usc-cap usc-cap-ro" data-n="${s.n}"
-           title="Edit captions directly on the video above" data-ph="No caption">${esc(cap)}</div></div>
+      <div class="usc-line"><span class="usc-ic" title="What's said & shown — voice + caption for this scene">💬</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
+           title="Edit what's said (voice) & shown (caption) in this scene" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>
       ${''/* V2: 음성은 씬별이 아니라 영상 전체 "통 나레이션" 한 편집창으로 이전 → 씬 카드엔 자막(💬)만 */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
@@ -2940,11 +2940,7 @@ function ugcSceneStripHtml(b){
       </select>
       <button type="button" class="ugc-arow-go ugc-voice-go" onclick="ugcChangeVoice('${esc(b.ugc.jobId)}')">Update voice</button>
     </div>
-    <div class="ugc-arow ugc-narr-row">
-      <span class="ugc-arow-lbl">📝 Narration</span>
-      <textarea class="ugc-narr-ta" rows="2" placeholder="One voiceover for the whole video…" maxlength="1200">${esc(u.narration||'')}</textarea>
-      <button type="button" class="ugc-arow-go ugc-narr-go" onclick="ugcChangeNarration('${esc(b.ugc.jobId)}')">Update narration</button>
-    </div>
+    ${''/* 통 Narration 편집기 접음(A+): 음성=씬별 spoken 단일소스 → 각 씬 카드 💬에서 편집. 백엔드 narration은 옛 잡 하위호환용으로만 유지. */}
     <div class="ugc-arow">
       <span class="ugc-arow-lbl">💬 Captions</span>
       <label class="ugc-arow-chk"><input type="checkbox" class="ugc-cap-on" checked> Show</label>
@@ -3027,7 +3023,11 @@ function ugcSceneEditVoice(el,jobId,n){
   const val=(el.textContent||'').trim(); const cur=(n in b.ugc.edits&&'spoken' in b.ugc.edits[n])?b.ugc.edits[n].spoken:(s.spoken||'');
   if(val===cur)return;
   b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{spoken:val}); b.ugc._dirty=true;
-  ugcMarkEdited(el,jobId,'Voice edited');
+  ugcMarkEdited(el,jobId,'Voice & caption edited');
+  // spoken = 음성 + 음성자막 → 오버레이·타임라인 자막 즉시 반영(스타일 경로는 안 건드림).
+  const v=document.querySelector('#ugcInline .ugc-inline-vid'); if(v&&typeof ugcSyncCap==='function')ugcSyncCap(v,jobId);
+  const _L=UGC_LAYERED[jobId]; if(_L&&_L.player&&typeof ugcSyncCapAt==='function')ugcSyncCapAt(jobId,_L.player.currentTime());
+  if(typeof ugcRenderTimeline==='function')ugcRenderTimeline(b.ugc);
 }
 function ugcResetEdits(jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc._orig)return;
@@ -3499,6 +3499,26 @@ function ugcAudioDestroy(A){ if(!A)return; ['voice','music'].forEach(function(k)
 var UGC_CAP_EDITING=null; // 인라인 편집 중인 jobId — 편집/드래그 중엔 ugcSyncCap 재빌드 금지(캐럿·드래그 보존)
 // 자막 싱크 진입점(단일 <video> 폴백 경로) — video.currentTime를 ms로 환산해 ugcSyncCapAt에 위임.
 //   레이어드 재생기 경로는 player.onTime(ms,total)이 ugcSyncCapAt를 직접 구동(video 불필요).
+// 음성 자막 청킹(A+) — ⚠️ src/ugc/assembler/captionChunk.js 와 반드시 동일 로직(프리뷰 오버레이 == 최종 번인).
+//   spoken 한 문장을 2~4단어 청크로 쪼개 구간에 글자수 비례 분배. 결정론(입력 같으면 출력 같음).
+var UGC_CAP_MAX_CHARS=14, UGC_CAP_MAX_WORDS=4;
+function ugcChunkCaption(text,startMs,durMs){
+  var t=String(text==null?'':text).trim(); if(!t)return [];
+  var words=t.split(/\s+/).filter(Boolean);
+  var chunks=[], cur='', curWords=0;
+  for(var i=0;i<words.length;i++){ var w=words[i]; var cand=cur?cur+' '+w:w;
+    if(cur&&(curWords>=UGC_CAP_MAX_WORDS||cand.length>UGC_CAP_MAX_CHARS)){ chunks.push(cur); cur=w; curWords=1; }
+    else { cur=cand; curWords++; } }
+  if(cur)chunks.push(cur);
+  var n=chunks.length; if(n===0)return [];
+  var totalChars=0; for(var j=0;j<n;j++)totalChars+=chunks[j].length; if(totalChars<=0)totalChars=n;
+  var start=Math.round(startMs), end=start+Math.round(durMs), out=[], cursor=start;
+  for(var k=0;k<n;k++){ var d;
+    if(k===n-1){ d=end-cursor; if(d<1)d=1; }
+    else { d=Math.round(durMs*chunks[k].length/totalChars); if(d<1)d=1; }
+    out.push({text:chunks[k], startMs:cursor, durMs:d}); cursor+=d; }
+  return out;
+}
 function ugcSyncCap(video,jobId){ ugcSyncCapAt(jobId,(video&&video.currentTime||0)*1000); }
 // B: 시각(ms) 기반 자막 오버레이 구동 — 재생기(onTime)·단일영상 어느 쪽이든 공통. 오버레이는 DOM에서 찾음(#ugcInline 안 하나).
 function ugcSyncCapAt(jobId,ms){
@@ -3517,12 +3537,17 @@ function ugcSyncCapAt(jobId,ms){
   // 현재 시각에 걸린 자막 전부(겹치면 여러 개) → 자막별 개별 편집 박스. 중복(같은 자막) 제거.
   const matches=timings.filter(x=>{const s0=+x.startMs,d=+x.durMs; return ms>=s0&&ms<s0+d;}).sort((a,b)=>(+a.startMs)-(+b.startMs));
   const items=[]; const seen={};
-  for(const t of matches){ const kind=(t&&t.text!=null&&!Number.isFinite(Number(t.sceneN)))?'free':'scene'; const ref=kind==='free'?String(t.id):String(t.sceneN); const k=kind+':'+ref; const tx=ugcCapTextOf(u,t); if(!tx||seen[k])continue; seen[k]=1; items.push({kind,ref,text:tx}); }
+  for(const t of matches){ const kind=(t&&t.text!=null&&!Number.isFinite(Number(t.sceneN)))?'free':'scene'; const ref=kind==='free'?String(t.id):String(t.sceneN); const k=kind+':'+ref; if(seen[k])continue;
+    let tx;
+    if(kind==='free'){ tx=ugcCapTextOf(u,t); } // 자유 자막=자기 텍스트 통짜(청킹 안 함)
+    else { const full=ugcTlCapText(u,Number(ref)).trim(); // 씬 음성자막=spoken을 청킹(A+)해 현재 ms 청크만 표시
+      if(full){ const cks=ugcChunkCaption(full,+t.startMs,+t.durMs); const c=cks.find(ch=>ms>=ch.startMs&&ms<ch.startMs+ch.durMs)||cks[cks.length-1]; tx=c?c.text:full; } else tx=''; }
+    if(!tx)continue; seen[k]=1; items.push({kind,ref,text:tx}); }
   if(!items.length)return clear();
   // 같은 자막·텍스트면 재빌드 안 함(불필요한 DOM 교체·깜빡임 방지). ␞=구분자.
   const sig=items.map(it=>it.kind+':'+it.ref+'='+it.text).join('␞');
   if(ov.getAttribute('data-sig')!==sig){
-    ov.innerHTML=items.map(it=>`<div class="ugc-cap-line" data-kind="${it.kind}" data-ref="${esc(it.ref)}" title="Click to edit · drag to move" onpointerdown="ugcCapGrab(event,'${esc(jobId)}')" onkeydown="ugcCapKey(event)" onblur="ugcCapCommit(this,'${esc(jobId)}')">${esc(it.text)}</div>`).join('');
+    ov.innerHTML=items.map(it=>`<div class="ugc-cap-line" data-kind="${it.kind}" data-ref="${esc(it.ref)}" title="${it.kind==='free'?'Click to edit · drag to move':'Drag to move · edit in scene card'}" onpointerdown="ugcCapGrab(event,'${esc(jobId)}')" onkeydown="ugcCapKey(event)" onblur="ugcCapCommit(this,'${esc(jobId)}')">${esc(it.text)}</div>`).join('');
     ov.setAttribute('data-sig',sig);
   }
   ov.style.display='flex'; // '' 금지(CSS display:none으로 되돌아가 자막 영영 숨김 — 근본 버그). flex=자막별 자식 세로 스택.
@@ -3569,7 +3594,7 @@ function ugcCapUp(ev){
   document.removeEventListener('pointermove',ugcCapMove); document.removeEventListener('pointerup',ugcCapUp);
   if(!D)return; D.ov.classList.remove('grabbing');
   if(D.moved){ ugcScheduleSilentSave(D.jobId,D.u); return; } // 이동 → 전역 위치 디바운스 저장(타임라인과 동일 경로)
-  ugcCapEnterEdit(D.line,D.jobId,D.px,D.py); // 이동 없는 클릭 → 그 자막 인라인 편집
+  if(D.line.getAttribute('data-kind')==='free') ugcCapEnterEdit(D.line,D.jobId,D.px,D.py); // 탭 → 자유 자막만 인라인 편집(씬 음성자막은 씬 카드/타임라인서 편집 — 단순안)
 }
 // 인라인 편집 진입 — 영상 일시정지(자막 안 바뀌게)+contenteditable+클릭 지점 캐럿.
 function ugcCapEnterEdit(line,jobId,cx,cy){
@@ -3600,11 +3625,11 @@ function ugcCapCommit(line,jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
   const kind=line.getAttribute('data-kind'), ref=line.getAttribute('data-ref'); const val=ugcCapPlainText(line);
   let changed=false;
-  if(kind==='scene'){
+  if(kind==='scene'){ // 단순안: 씬 음성자막은 온-비디오 편집 비활성(씬 카드서 편집) — 이 분기는 방어적, spoken 기준으로 통일
     const n=Number(ref), s=(u.scenes||[]).find(x=>x.n===n);
-    if(s){ const cur=(u.edits[n]&&'onScreenText' in u.edits[n])?u.edits[n].onScreenText:(s.onScreenText||'');
-      if(val!==cur){ u.edits[n]=Object.assign({},u.edits[n],{onScreenText:val}); u._dirty=true; changed=true;
-        const cont=(typeof ugcCont==='function')?ugcCont(jobId):null; const card=cont&&cont.querySelector('.usc[data-n="'+n+'"] .usc-cap-ro'); if(card)card.textContent=val; } } // 씬 카드 읽기전용 표시 즉시 동기화
+    if(s){ const cur=(u.edits[n]&&'spoken' in u.edits[n])?u.edits[n].spoken:(s.spoken||'');
+      if(val!==cur){ u.edits[n]=Object.assign({},u.edits[n],{spoken:val}); u._dirty=true; changed=true;
+        const cont=(typeof ugcCont==='function')?ugcCont(jobId):null; const card=cont&&cont.querySelector('.usc[data-n="'+n+'"] .usc-cap'); if(card)card.textContent=val; } } // 씬 카드 표시 즉시 동기화
   } else { // 자유 자막
     const tm=(u.captionSpec&&u.captionSpec.timings)||[]; const t=tm.find(x=>x&&String(x.id)===String(ref));
     if(t&&val!==String(t.text||'')){ if(val)t.text=val; else{const i=tm.indexOf(t); if(i>=0)tm.splice(i,1);} changed=true; }
@@ -3621,7 +3646,7 @@ function ugcCapCommit(line,jobId){
 function ugcTlTotal(u){ let t=0; ((u&&u.scenes)||[]).forEach(s=>{t+=Math.max(1000,Math.round((s.durationSec||3)*1000));}); return t||6000; }
 function ugcTlBounds(u){ const out=[]; let acc=0; ((u&&u.scenes)||[]).forEach(s=>{const d=Math.max(1000,Math.round((s.durationSec||3)*1000)); out.push({n:s.n,startMs:acc,endMs:acc+d}); acc+=d;}); return out; }
 // 씬 자막 텍스트(편집분 우선) — 자막 있는 씬만 블록/타이밍을 만든다.
-function ugcTlCapText(u,n){ const s=(u.scenes||[]).find(x=>x.n===n); const e=s&&u.edits[n]; return (((e&&'onScreenText' in e)?e.onScreenText:(s?s.onScreenText:''))||''); }
+function ugcTlCapText(u,n){ const s=(u.scenes||[]).find(x=>x.n===n); if(!s)return ''; const e=u.edits[n]||{}; const sp=('spoken' in e)?e.spoken:s.spoken; const ost=('onScreenText' in e)?e.onScreenText:s.onScreenText; return String(((sp&&String(sp).trim())?sp:ost)||''); } // 음성자막=spoken(없으면 옛 잡 onScreenText 폴백)
 // 타이밍 → 텍스트: 자유 자막(직접 추가)은 자기 text, 씬 자막은 씬에서(편집분 우선).
 function ugcCapTextOf(u,t){ if(t&&t.text!=null)return String(t.text).trim(); const n=Number(t&&t.sceneN); if(!Number.isFinite(n))return ''; return ugcTlCapText(u,n).trim(); }
 // 자유 자막(직접 추가) 목록 — captionSpec.timings 중 text 보유·씬 없는 것.
@@ -4349,11 +4374,11 @@ function ugcRenderScriptPreview(data){
   const brollN=(s.scenes||[]).filter(x=>x.type==='broll').length||1;
   const evenDur=Math.max(1,Math.round((s.durationSec||0)/brollN)); // 씬별 durationSec 없으면 총합 균등분배
   const scenes=(s.scenes||[]).map((sc,i)=>{
-    const hasText=(sc.onScreenText||'').trim();
+    const hasText=((sc.spoken||sc.onScreenText)||'').trim(); // 음성자막=spoken(옛 잡 onScreenText 폴백)
     const dur=sc.durationSec||evenDur;
     const durBadge=sc.type==='broll'?`<span class="ugc-scene-dur" title="Scene length">${dur}s</span>`:'';
     const line=hasText
-      ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="On-screen caption — the text shown in the video for this scene">💬</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="on-screen text">${esc(sc.onScreenText)}</span>`
+      ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="What's said & shown — voice + caption for this scene">💬</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="what's said in this scene">${esc(sc.spoken||sc.onScreenText||'')}</span>`
       : `<b>${i+1}.</b>${durBadge} <span style="color:var(--faint);font-size:12px">visual only — no narration</span>`;
     return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
       +`<div class="ugc-scene-sum"><span class="ugc-el-ic" title="What this scene shows — the visuals & motion">🎬</span> <span>${esc(sc.summary||sc.direction||'')}</span>`
@@ -4415,7 +4440,7 @@ function ugcBindScriptEdits(){
     el.oninput=()=>{
       if(!ugcScript)return;
       const txt=el.textContent;
-      if(el.dataset.scene!=null){const i=+el.dataset.scene; if(ugcScript.scenes&&ugcScript.scenes[i])ugcScript.scenes[i].onScreenText=txt;}
+      if(el.dataset.scene!=null){const i=+el.dataset.scene; if(ugcScript.scenes&&ugcScript.scenes[i])ugcScript.scenes[i].spoken=txt;} // 음성자막=spoken 편집(음성+자막 동시)
       else if(el.dataset.f==='hashtags'){ugcScript.hashtags=txt.split(/[\s,]+/).map(h=>h.replace(/^#/,'')).filter(Boolean);}
       else if(el.dataset.f){ugcScript[el.dataset.f]=txt;}
     };

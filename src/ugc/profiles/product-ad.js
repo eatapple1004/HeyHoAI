@@ -15,9 +15,8 @@ module.exports = {
 
   // 시스템 프롬프트에 주입해 연출 방향을 고정
   systemGuide: [
-    'OUTPUT TYPE: product ad with NO on-camera presenter and NO spoken dialogue.',
-    '- Every scene MUST be type "broll" — a product-focused visual. Do NOT emit "spoken" scenes.',
-    '- Put the persuasive message in "onScreenText" (short kinetic caption overlays), NOT in spoken lines. Leave "spoken" empty.',
+    'OUTPUT TYPE: product ad — NO on-camera presenter / talking head. Any narration is voiceover played over product b-roll (text placement is defined elsewhere).',
+    '- Every scene is a product-focused visual — no person talking to camera.',
     '- Vary shots across the ad: hero shot, macro/texture detail, product-in-use or styled scene, and a final CTA card.',
     '- "brollPrompt": a vivid product photo prompt (subject, angle, lighting, surface, mood). NO human faces, NO people.',
     '- First 2s must be a scroll-stopping visual; end on a hard CTA.',

@@ -75,7 +75,7 @@ function buildUgcScriptPrompt(input) {
     usesModel
       ? '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT invent a specific face. In "product" scenes brollPrompt is product-only.'
       : '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
-    '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, onScreenText and every brollPrompt to that category.',
+    '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, spoken and every brollPrompt to that category.',
     ...(playbook ? [
       `- CATEGORY PALETTE — ${playbook.label}: draw from these shot TYPES as a menu (pick, reorder, skip, or vary freely to fit THIS brief — it is not a fixed sequence, and two ads should not look identical): ${playbook.shots.join(', ')}.`,
       `  · Apply this visual style to every brollPrompt: ${playbook.style}.`,
@@ -85,7 +85,7 @@ function buildUgcScriptPrompt(input) {
       '- CATEGORY PLAYBOOKS — detect the product category from the attached photo (and brief), then draw from the MATCHING palette below as a menu (pick/reorder/skip/vary to fit THIS brief; not a fixed sequence; two ads should not look identical). If none fits, use your own judgment:',
       ...playbookMenu(),
     ]),
-    `- Write all onScreenText, spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
+    `- Write all spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
     `- For EACH scene also write "summary": a SPECIFIC 1-2 sentence description in ${langName} of what the viewer sees AND how it moves — concrete enough to picture the shot (subject, setting, key detail, the motion), but plain human language FOR THE USER, NOT a prompt (no camera/lens/render jargon list). e.g. "골드 케이스 립스틱이 어두운 배경에서 천천히 회전하며 골드 디테일에 빛이 스칩니다. 매트한 레드 심지가 드러나요." Keep it to 1-2 sentences — vivid but not overloaded. The actual prompts stay hidden.`,
     ...(language === 'ko' ? [
       '- KOREAN VOICE (critical — copy must NOT sound AI-generated or translated):',
@@ -94,15 +94,14 @@ function buildUgcScriptPrompt(input) {
       '  · Prefer 절제된 확신 — short, concrete, understated. One vivid specific beat beats three adjectives. Trust the product; do not oversell or sound desperate.',
       '  · Read each line aloud in your head: if a real person would never say it, rewrite it.',
     ] : []),
-    '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or onScreenText across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
+    '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or spoken line across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : []),
     ...(voiceover ? [
-      '- CAPTION vs VOICE are DIFFERENT layers — do NOT make them identical:',
-      '  · "onScreenText" = a SHORT on-screen caption (2-6 words, punchy keyword/hook style — what the viewer READS).',
-      '  · "spoken" = the fuller natural sentence the voice actually SAYS (conversational, complements the caption). Fill "spoken" for every scene.',
-      '  · The caption is the headline; the voice line expands on it. Never copy one into the other verbatim.',
+      '- VOICE IS THE CAPTION — they are the SAME layer. "spoken" is BOTH what the voice says AND the on-screen subtitle (shown in sync as the voice speaks it).',
+      '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
+      '  · Set "onScreenText" to "" (empty). Do NOT write a separate headline/keyword caption — the subtitle IS the spoken line. Any extra graphic captions are added by the user later, never by you.',
     ] : [
       '- NO VOICEOVER MODE: this ad has no narration and no on-screen captions — it is a silent, visual-only ad carried by the product visuals and background music.',
       '  · Set "onScreenText" to "" (empty) and "spoken" to "" for EVERY scene. Do NOT write any narration or caption lines.',
@@ -120,8 +119,8 @@ function buildUgcScriptPrompt(input) {
     '  "hook": string,                       // the opening line / first on-screen text',
     '  "scenes": [',
     '    { "n": number, "type": "spoken"|"broll", "durationSec": number,',
-    '      "spoken": string,                 // dialogue/voiceover; EMPTY for no-dialogue output types',
-    '      "onScreenText": string,           // short caption/overlay text',
+    '      "spoken": string,                 // what the voice SAYS = the on-screen subtitle (same text, concise 4-12 words); EMPTY for no-voiceover',
+    '      "onScreenText": string,           // leave "" — the caption is the spoken line; users add extra graphic captions themselves',
     '      "direction": string,              // what is shown / camera & motion',
     '      "subject": "product"|"model",     // "model"=model wears/uses the product in this shot; "product"=product-only shot',
     '      "brollPrompt": string             // for type "broll": product/model image prompt (English)',
@@ -140,7 +139,7 @@ function buildUgcScriptPrompt(input) {
     // product는 선택 — 보통 유저가 brief(concept)에 제품을 녹여서 씀. 있으면 명시.
     product ? `Product: ${product}` : '',
     `Creative brief / request (a sentence or loose keywords — interpret intent, don't echo): ${concept}`,
-    hasImage ? 'A photo of the actual product is attached. Ground the copy, onScreenText and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.' : '',
+    hasImage ? 'A photo of the actual product is attached. Ground the copy, spoken and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.' : '',
     details ? `Product facts / claims — use ONLY these, do not invent additional claims:\n${details}` : '',
     audience ? `Target audience: ${audience}` : '',
     `Format: ${format}`,

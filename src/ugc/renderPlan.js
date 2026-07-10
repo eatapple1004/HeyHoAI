@@ -36,7 +36,9 @@ function buildRenderPlan(script, clips) {
     // imageUrl/isStill = assembler가 동영상 클립 정규화 실패 시 정지컷으로 폴백하는 데 사용(견고성).
     video.push({ clipUrl: clip.clipUrl, startMs: cursorMs, durMs, sceneN: scene.n, imageUrl: clip.imageUrl || null, isStill: !!clip.isStill });
 
-    const text = (scene.onScreenText || '').trim();
+    // 음성 자막(A+): 기본 자막 = 그 씬에서 말하는 것(spoken). 옛 잡은 spoken 없어 onScreenText 폴백.
+    // 여기선 씬당 1개(전체 문장)만 담고, 어셈블러가 청크로 확장(captionChunk) → 프리뷰 오버레이와 동일.
+    const text = (scene.spoken || scene.onScreenText || '').trim();
     if (text) {
       subtitle.push({ text, startMs: cursorMs, durMs, style: 'kinetic', sceneN: scene.n }); // sceneN=음성 주도 retiming 매칭용
     }

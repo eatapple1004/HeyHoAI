@@ -14,9 +14,8 @@ module.exports = {
   sceneTypes: ['broll'],
 
   systemGuide: [
-    'OUTPUT TYPE: on-model editorial with NO spoken dialogue (the model does NOT talk to camera).',
+    'OUTPUT TYPE: on-model editorial — a human model wears/uses the product. The model does NOT lip-sync / talk to camera; any narration is voiceover (text placement is defined elsewhere).',
     '- Every scene MUST be type "broll". A human model wears/uses the product; treat it like a fashion/beauty editorial.',
-    '- Put any message in "onScreenText" overlays, NOT spoken lines. Leave "spoken" empty.',
     '- Vary looks and framing: full look, detail/worn close-up, movement/pose, and a final CTA card.',
     '- "brollPrompt": describe the styling, wardrobe, pose, mood, lighting, and setting — the model identity is supplied separately via a reference image, so do NOT describe a specific face.',
     '- First 2s must stop the scroll; end on a hard CTA.',

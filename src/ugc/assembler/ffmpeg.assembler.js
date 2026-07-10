@@ -18,6 +18,26 @@ const crypto = require('crypto');
 const { activeTracks, aspectDims } = require('../renderPlan');
 const tts = require('../audio/tts.service');
 const music = require('../audio/music.service');
+const { chunkCaption } = require('./captionChunk');
+
+// 음성 자막(A+) 청킹 — 씬 자막(sceneN 有, id 無)의 통문장을 짧은 청크로 확장. 자유 자막(id 有)은 그대로.
+//   ⚠️ 클라 프리뷰 오버레이(studio.html ugcChunkCaption)와 동일 로직 → 미리보기 == 번인.
+//   저장되는 caption.timings는 씬 단위 그대로(여기선 번인 시점의 로컬 확장만).
+function expandCaptionChunks(subtitle) {
+  const out = [];
+  for (const c of (subtitle || [])) {
+    const isScene = c && c.sceneN != null && c.id == null;
+    const text = c && c.text != null ? String(c.text).trim() : '';
+    if (isScene && text) {
+      for (const ch of chunkCaption(text, c.startMs, c.durMs)) {
+        out.push({ text: ch.text, startMs: ch.startMs, durMs: ch.durMs, style: c.style, sceneN: c.sceneN });
+      }
+    } else {
+      out.push(c);
+    }
+  }
+  return out;
+}
 const { env } = require('../../config');
 
 const execFileP = promisify(execFile);
@@ -167,7 +187,7 @@ function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
   // 자유 위치(드래그) — posX/posY(%, 중앙 앵커)면 \an5\pos(x,y)로 임의 위치. 미리보기 오버레이(translate(-50%,-50%))와 좌표 규칙 일치.
   const custom = typeof style.posX === 'number' && typeof style.posY === 'number';
   const posTag = custom ? `{\\an5\\pos(${Math.round(style.posX / 100 * w)},${Math.round(style.posY / 100 * h)})}` : '';
-  const lines = (subtitle || []).map((c) => {
+  const lines = expandCaptionChunks(subtitle).map((c) => {
     const start = assTime(c.startMs);
     const end = assTime(c.startMs + c.durMs);
     return `Dialogue: 0,${start},${end},Kinetic,,0,0,0,,${posTag}${anim}${escapeAss(c.text)}`;
@@ -191,7 +211,7 @@ function srtTime(ms) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(mm).padStart(3, '0')}`;
 }
 function buildSrt(subtitle) {
-  return (subtitle || []).map((c, i) =>
+  return expandCaptionChunks(subtitle).map((c, i) =>
     `${i + 1}\n${srtTime(c.startMs)} --> ${srtTime(c.startMs + c.durMs)}\n${c.text}\n`
   ).join('\n');
 }
