@@ -2910,8 +2910,8 @@ function ugcSceneStripHtml(b){
     const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
     return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
-      <div class="usc-line"><span class="usc-ic" title="What's said & shown — voice + caption for this scene">💬</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
-           title="Edit what's said (voice) & shown (caption) in this scene" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>
+      <div class="usc-line"><span class="usc-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
+           title="${UGC_CAPTIONS?'Edit what\'s said (voice) & shown (caption) in this scene':'Edit the voice narration for this scene'}" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>
       ${u.hasVoice?`<div class="usc-pad"><span class="usc-pad-lbl" title="Extra pause after this scene's voice (voice mode)">+여백</span><select class="usc-pad-sel" onchange="ugcSceneSetTail('${esc(u.jobId)}',${s.n},this.value)">${[0,500,1000,1500,2000].map(v=>`<option value="${v}"${tailMs===v?' selected':''}>${v===0?'0s':'+'+(v/1000)+'s'}</option>`).join('')}</select></div>`:''/* P2: 씬별 여백 — 음성모드만(음성-주도 타이밍에 tailMs로 반영) */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
@@ -2950,8 +2950,8 @@ function ugcSceneStripHtml(b){
       </select>
       <button type="button" class="ugc-arow-go ugc-voice-go" onclick="ugcChangeVoice('${esc(b.ugc.jobId)}')">Update voice</button>
     </div>
-    ${''/* 통 Narration 편집기 접음(A+): 음성=씬별 spoken 단일소스 → 각 씬 카드 💬에서 편집. 백엔드 narration은 옛 잡 하위호환용으로만 유지. */}
-    <div class="ugc-arow">
+    ${''/* 통 Narration 편집기 접음(A+): 음성=씬별 spoken 단일소스 → 각 씬 카드 🎙에서 편집. 백엔드 narration은 옛 잡 하위호환용으로만 유지. */}
+    ${UGC_CAPTIONS?`<div class="ugc-arow">
       <span class="ugc-arow-lbl">💬 Captions</span>
       <label class="ugc-arow-chk"><input type="checkbox" class="ugc-cap-on" checked> Show</label>
       <select class="ugc-arow-sel ugc-cap-preset" aria-label="Style">
@@ -2967,7 +2967,7 @@ function ugcSceneStripHtml(b){
         <option value="pop" selected>Pop</option><option value="none">None</option>
       </select>
       <button type="button" class="ugc-arow-go ugc-cap-go" onclick="ugcChangeCaptions('${esc(b.ugc.jobId)}')">Apply style</button>
-    </div>
+    </div>`:''}
     <div class="ugc-apply-row">
       <button type="button" class="ugc-apply" onclick="ugcSaveFinish('${esc(b.ugc.jobId)}')">${u._saved?'✓ Saved to gallery':(dirty?'Apply · Save & finish':'Save & finish')}</button>
       ${dirty?`<button type="button" class="ugc-reset" onclick="ugcResetEdits('${esc(b.ugc.jobId)}')">Reset</button>`:''}
@@ -2979,6 +2979,9 @@ function ugcFindBatch(jobId){ return STUDIO_BATCHES.find(b=>b.ugc&&b.ugc.jobId==
 // 씬 카드 클립 <video> 로드 실패(404/유실) — loop·src 제거로 브라우저 재시도 루프 차단 + 요소 숨김(씬번호 배지만 남김) → 스트립 깜빡임 방지.
 function ugcClipBroken(v){ try{ v.removeAttribute('loop'); v.removeAttribute('autoplay'); v.pause(); }catch(e){} try{ v.removeAttribute('src'); v.load(); }catch(e){} v.style.display='none'; const th=v.closest&&v.closest('.usc-thumb'); if(th)th.classList.add('usc-thumb-broken'); }
 function ugcCont(jobId){ return document.querySelector('.ugc-scenes[data-job="'+jobId+'"]'); } // 배치 스코프(멀티 결과 first-match 방지)
+// 자막(캡션) 기능 게이트 — 첫 출시 스코프 컷으로 OFF(제품에 자막 안 나옴). 코드는 보존, 재활성 시 true.
+//   백엔드 번인은 config UGC_CAPTIONS_ENABLED가 별도 게이트(둘 다 자막 제거로 일치). 음성·음악·리타이밍 무영향.
+var UGC_CAPTIONS=false;
 // 씬 드래그 재배치(썸네일 잡고 드래그 → 대상 씬 앞으로 이동). ◀▶ 버튼은 터치 폴백으로 유지.
 var UGC_DRAG=null;
 function ugcDragStart(e,jobId,n){ UGC_DRAG={jobId:jobId,n:n}; try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(n)); }catch(_){}
@@ -3433,17 +3436,17 @@ function renderUgcInline(b){
   const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u)&&!u._layeredFailed&&!perSceneVoice; // B: 실 비디오 클립 있고 재생기 로드·단일음성이면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷·런타임 클립404[_layeredFailed]·씬별VO → 빈 영상영역·깜빡임·무음성 방지).
   if(useLayered){
     html+='<div class="ugc-inline-vidwrap ugc-layered">' /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio */
-      +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
+      +(UGC_CAPTIONS?`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`:'')/* 자막 OFF면 오버레이 미생성 */
       +`<button class="reel-mute" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔇</button>`/* 오디오는 muted 자동재생 시작 → 🔇, 클릭 시 언뮤트 */
       +'</div>';
-    html+=ugcTimelineHtml(u); // V2b 자막 타임라인(오버레이 아래)
+    if(UGC_CAPTIONS)html+=ugcTimelineHtml(u); // V2b 자막 타임라인(오버레이 아래)
   } else if(useOverlay){ const zoom=(it&&it.url)||u.previewUrl;
     html+='<div class="ugc-inline-vidwrap">'
       +`<video class="ugc-inline-vid" src="${esc(u.previewUrl)}" autoplay muted loop playsinline ontimeupdate="ugcSyncCap(this,'${esc(u.jobId)}')" onloadeddata="ugcTryUnmute(this);ugcSyncCap(this,'${esc(u.jobId)}')" onclick="openImageModal('${esc(zoom)}','reel')"></video>`
-      +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
+      +(UGC_CAPTIONS?`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`:'')/* 자막 OFF면 오버레이 미생성 */
       +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
       +'</div>';
-    html+=ugcTimelineHtml(u); // V2b 자막 타임라인(오버레이 아래)
+    if(UGC_CAPTIONS)html+=ugcTimelineHtml(u); // V2b 자막 타임라인(오버레이 아래)
   } else if(it&&it.url){ html+='<div class="ugc-inline-vidwrap">'
     +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onloadeddata="ugcTryUnmute(this)" onclick="openImageModal('${esc(it.url)}','reel')"></video>`
     +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
@@ -3545,6 +3548,7 @@ function ugcChunkCaption(text,startMs,durMs){
 function ugcSyncCap(video,jobId){ ugcSyncCapAt(jobId,(video&&video.currentTime||0)*1000); }
 // B: 시각(ms) 기반 자막 오버레이 구동 — 재생기(onTime)·단일영상 어느 쪽이든 공통. 오버레이는 DOM에서 찾음(#ugcInline 안 하나).
 function ugcSyncCapAt(jobId,ms){
+  if(!UGC_CAPTIONS)return; // 자막 OFF: 오버레이 미생성이라 재싱크 불필요(ontimeupdate·player.onTime 공통 진입점 차단)
   const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
   const ov=document.querySelector('#ugcInline .ugc-cap-ov'); if(!ov)return;
   const spec=u.captionSpec; const timings=(spec&&spec.timings)||[];
@@ -4404,7 +4408,7 @@ function ugcRenderScriptPreview(data){
     const dur=sc.durationSec||evenDur;
     const durBadge=sc.type==='broll'?`<span class="ugc-scene-dur" title="Scene length">${dur}s</span>`:'';
     const line=hasText
-      ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="What's said & shown — voice + caption for this scene">💬</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="what's said in this scene">${esc(sc.spoken||sc.onScreenText||'')}</span>`
+      ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="what's said in this scene">${esc(sc.spoken||sc.onScreenText||'')}</span>`
       : `<b>${i+1}.</b>${durBadge} <span style="color:var(--faint);font-size:12px">visual only — no narration</span>`;
     return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
       +`<div class="ugc-scene-sum"><span class="ugc-el-ic" title="What this scene shows — the visuals & motion">🎬</span> <span>${esc(sc.summary||sc.direction||'')}</span>`

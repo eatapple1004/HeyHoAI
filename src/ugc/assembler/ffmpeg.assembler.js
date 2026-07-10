@@ -394,6 +394,9 @@ function retimeByVoice(plan, voSegs, sceneOpts = {}) {
  */
 async function burnCaptions({ basePath, subtitle, style, w, h, workDir, hasAudio = true, log = () => {} }) {
   const finalPath = path.join(workDir, 'final.mp4');
+  // 자막 기능 게이트(첫 출시 OFF): 플래그 OFF면 subtitle 유무 무관하게 번인 스킵 → base=최종.
+  //   모든 굽기 경로(assemble·tryReComposite)가 이 함수를 거치는 단일 초크포인트.
+  if (!env.UGC_CAPTIONS_ENABLED) { await fsp.copyFile(basePath, finalPath); return { videoPath: finalPath, subtitleMode: 'disabled', subtitleFile: null }; }
   if (!subtitle || !subtitle.length) { await fsp.copyFile(basePath, finalPath); return { videoPath: finalPath, subtitleMode: 'none', subtitleFile: null }; }
   const filter = await detectTextFilter();
   await fsp.writeFile(path.join(workDir, 'subs.ass'), buildAss(subtitle, w, h, style));

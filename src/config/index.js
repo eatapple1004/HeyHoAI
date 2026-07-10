@@ -95,6 +95,15 @@ const envSchema = z.object({
   //   서버에 fonts-noto-cjk 설치 필요. 폰트 패밀리명이 다르면 이 값으로 override.
   UGC_SUBTITLE_FONT: z.string().default('Noto Sans CJK KR'),
 
+  // UGC 자막(캡션) 기능 게이트. 첫 출시 스코프 컷으로 기본 OFF(제품에 자막 안 나옴).
+  //   OFF면 assembler가 자막 번인을 건너뜀(base=최종) + 스튜디오가 오버레이·타임라인·스타일행 숨김.
+  //   음성(TTS)·음악·retimeByVoice·클립 생성은 무영향. 재활성 = UGC_CAPTIONS_ENABLED=true.
+  //   z.coerce.boolean()은 "false"도 true로 바꾸므로 명시 비교(위 부울 env와 동일 패턴).
+  UGC_CAPTIONS_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
 
