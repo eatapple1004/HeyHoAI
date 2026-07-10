@@ -118,6 +118,13 @@
 </style>
 </head>
 <body>
+<!-- 레일 하단으로 이동됨(rail.js가 #creditBalance 칩 + #saasUserBox 아바타를 rail-foot로 relocate). 스튜디오와 동일 요소·API. -->
+<div id="railFootSrc" style="display:none" aria-hidden="true">
+  <div class="credits"><span class="coin">◈</span> <span id="creditBalance">—</span> <span id="creditCtxLabel">credits</span>
+    <span class="buy" onclick="location.href='/billing'">+ Buy</span>
+  </div>
+  <div class="credits" id="saasUserBox"></div>
+</div>
 <div class="home-glow"></div>
 <main class="home">
   <header class="home-hero">
@@ -173,6 +180,17 @@
   <div id="homeCommunity" class="cc-grid"><div class="cc-empty">Loading…</div></div>
 </main>
 <div id="ccToast"></div>
+<script>
+// 레일 하단 토큰 잔액 칩 채우기 — 스튜디오 loadCredits와 동일(/api/credits). 아바타는 saas-auth.js가 채움.
+(function(){
+  fetch('/api/credits').then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.success)return; var c=d.data||{};
+    var b=document.getElementById('creditBalance'); if(b)b.textContent=c.unlimited?'∞':(c.balance!=null?c.balance:'—');
+    var isTeam=c.context&&c.context.type==='team';
+    var l=document.getElementById('creditCtxLabel'); if(l)l.textContent=isTeam?('· '+c.context.teamName):'credits';
+  }).catch(function(){});
+})();
+</script>
 
 <script>
 // Popular templates — 큰 커버 스트립 + 호버=설명. 카드 클릭 → 스튜디오의 실제 템플릿 모달을 연다(페이지 이동).

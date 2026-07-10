@@ -752,7 +752,8 @@
       <button id="modeUgc" data-flag="ugc" onclick="setMode('ugc')">UGC Ads</button>
       <button id="modeCustom" onclick="setMode('custom')">Custom</button>
     </div>
-    <button type="button" class="custom-cta" id="ugcCta" onclick="toggleUgc()"><span class="cc-ic">🎬</span><span class="cc-label">Ad Video</span></button>
+    <!-- (2026-07-11) 상단 'Ad Video' 버튼 제거 — 레일 'Ad Video'(/studio?mode=ugc)와 중복. toggleUgc()는 유지(미사용). 롤백: 아래 버튼 복원.
+    <button type="button" class="custom-cta" id="ugcCta" onclick="toggleUgc()"><span class="cc-ic">🎬</span><span class="cc-label">Ad Video</span></button> -->
     <button type="button" class="custom-cta" id="customCta" onclick="toggleCustom()"><span class="cc-ic">✎</span><span class="cc-label">Custom</span></button>
     <button class="addon-toggle brandkit-btn" id="brandkitBtn" data-flag="brandkit" onclick="openBrandkit()">Brand kit <span class="bk-on hidden" id="bkOn">ON</span></button>
   </div>

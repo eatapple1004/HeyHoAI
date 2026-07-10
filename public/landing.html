@@ -43,11 +43,30 @@
   .nav-in{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
   .brand{font-family:'Sora';font-weight:800;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px}
   .brand span{background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .nav-links{display:flex;gap:30px}
-  .nav-links a{font-size:14px;color:var(--dim);font-weight:500;transition:color .2s}
-  .nav-links a:hover{color:var(--text)}
+  .nav-links{display:flex;gap:2px;align-items:center}
+  .nav-item{position:relative}
+  .nav-trigger,.nav-plain{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--dim);font-weight:500;padding:10px 14px;border-radius:11px;cursor:pointer;transition:color .2s,background .2s;user-select:none}
+  .nav-item:hover .nav-trigger,.nav-plain:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  .nav-trigger .caret{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s;opacity:.7}
+  .nav-item:hover .nav-trigger .caret{transform:rotate(180deg)}
+  /* 메가 드롭다운 */
+  .mega{position:absolute;top:calc(100% + 12px);left:0;background:#0e0e17;border:1px solid var(--border2);border-radius:18px;padding:20px;box-shadow:0 44px 100px -34px rgba(0,0,0,.85);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s,transform .18s,visibility .18s;z-index:60}
+  .nav-item:hover .mega{opacity:1;visibility:visible;transform:none}
+  .mega::before{content:'';position:absolute;top:-14px;left:0;right:0;height:16px} /* hover bridge(간격 넘어가도 안 닫힘) */
+  .mega-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px}
+  .mega-col-title{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin:6px 0 8px;padding:0 10px}
+  .mega-link{display:flex;gap:12px;padding:9px 10px;border-radius:12px;transition:background .16s;align-items:flex-start}
+  .mega-link:hover{background:rgba(255,255,255,.05)}
+  .mega-link .mi{width:34px;height:34px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(124,108,255,.13);border:1px solid rgba(124,108,255,.26);color:var(--accent2)}
+  .mega-link .mi svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .mega-link .mt{min-width:0}
+  .mega-link .mt b{font-family:'Sora';font-size:14px;font-weight:700;color:var(--text);display:block;letter-spacing:-.2px}
+  .mega-link .mt span{font-size:12px;color:var(--dim);line-height:1.4;display:block}
+  .mega-chips{display:flex;flex-wrap:wrap;gap:8px;max-width:340px;padding:2px 10px 4px}
+  .mega-chips a{font-size:13px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:8px 13px;border-radius:20px;transition:all .18s}
+  .mega-chips a:hover{color:var(--text);border-color:var(--border2)}
   .nav-cta{display:flex;gap:10px;align-items:center}
-  @media(max-width:860px){.nav-links{display:none}}
+  @media(max-width:920px){.nav-links{display:none}}
 
   .btn{font-family:inherit;font-weight:600;font-size:14px;border-radius:12px;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
   .btn-ghost{background:transparent;color:var(--text);padding:10px 16px;border:1px solid var(--border2)}
@@ -226,11 +245,54 @@
   <div class="nav-in">
     <div class="brand"><span>DOPPIA.AI</span></div>
     <div class="nav-links">
-      <a href="#templates">Templates</a>
-      <a href="#advideo">Ad Video</a>
-      <a href="#how">How it works</a>
-      <a href="#pricing">Pricing</a>
-      <a href="/business" data-flag="business">For business</a>
+      <!-- CREATE -->
+      <div class="nav-item">
+        <span class="nav-trigger">Create <svg class="caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        <div class="mega">
+          <div class="mega-grid" style="min-width:520px">
+            <div>
+              <div class="mega-col-title">Photos</div>
+              <a class="mega-link" href="/studio"><span class="mi"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-9 9"/></svg></span><span class="mt"><b>Product &amp; Model Photos</b><span>Template-driven studio &amp; on-model shots</span></span></a>
+              <a class="mega-link" href="#templates"><span class="mi"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="mt"><b>Templates</b><span>Ready-made looks — no prompts</span></span></a>
+              <a class="mega-link" href="/studio"><span class="mi"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 10.5-10.5a2 2 0 000-3l-.5-.5a2 2 0 00-3 0L4.5 15.5z"/></svg></span><span class="mt"><b>Custom</b><span>Write your own prompt</span></span></a>
+            </div>
+            <div>
+              <div class="mega-col-title">Video &amp; built-in</div>
+              <a class="mega-link" href="/studio?mode=ugc"><span class="mi"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10l6-3v10l-6-3z"/></svg></span><span class="mt"><b>Ad Video</b><span>Narrated, captioned shorts for Reels</span></span></a>
+              <a class="mega-link" href="/studio"><span class="mi"><svg viewBox="0 0 24 24"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span><span class="mt"><b>Background Remover</b><span>Automatic on every upload</span></span></a>
+              <a class="mega-link" href="/studio"><span class="mi"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></svg></span><span class="mt"><b>On-Model &amp; Virtual Models</b><span>Put products on house models</span></span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- INDUSTRIES -->
+      <div class="nav-item">
+        <span class="nav-trigger">Industries <svg class="caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        <div class="mega">
+          <div class="mega-col-title">Tailored templates by industry</div>
+          <div class="mega-chips">
+            <a href="/studio?mode=product&vertical=fashion">Fashion</a><a href="/studio?mode=product&vertical=beauty">Beauty</a><a href="/studio?mode=product&vertical=jewelry">Jewelry</a><a href="/studio?mode=product&vertical=food">Food &amp; Cafe</a><a href="/studio?mode=product&vertical=home">Home &amp; Living</a><a href="/studio?mode=product&vertical=tech">Tech</a><a href="/studio?mode=product&vertical=pet">Pet</a><a href="/studio?mode=product">＋ more</a>
+          </div>
+        </div>
+      </div>
+      <!-- BUSINESS -->
+      <div class="nav-item">
+        <span class="nav-trigger">Business <svg class="caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        <div class="mega">
+          <div class="mega-grid" style="min-width:500px">
+            <div>
+              <div class="mega-col-title">For teams &amp; brands</div>
+              <a class="mega-link" href="/business" data-flag="business"><span class="mi"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span><span class="mt"><b>For Business</b><span>Enterprise, agencies &amp; commercial license</span></span></a>
+            </div>
+            <div>
+              <div class="mega-col-title">Earn on Doppia</div>
+              <a class="mega-link" href="/marketplace" data-flag="marketplace"><span class="mi"><svg viewBox="0 0 24 24"><path d="M4 4h16l1 5a2.5 2.5 0 01-4.9.6 2.5 2.5 0 01-4.9 0 2.5 2.5 0 01-4.9 0A2.5 2.5 0 013 9z"/><path d="M5 11v8a1 1 0 001 1h12a1 1 0 001-1v-8"/></svg></span><span class="mt"><b>Sell on Doppia</b><span>Publish templates — keep 70%</span></span></a>
+              <a class="mega-link" href="/earnings" data-flag="earnings"><span class="mi"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.5L20 10l-5.8 1.5L12 17l-2.2-5.5L4 10l5.8-1.5z"/></svg></span><span class="mt"><b>Creator Program</b><span>Monetize your looks</span></span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <a class="nav-plain" href="#pricing">Pricing</a>
     </div>
     <div class="nav-cta">
       <a href="/saas-login" class="btn btn-ghost">Log in</a>
@@ -267,14 +329,8 @@
   </div>
 </header>
 
-<!-- PROOF + MODELS -->
-<div class="strip wrap">
-  <div class="proof">
-    <div class="pf"><b>12,000+</b><span>brands &amp; sellers</span></div>
-    <div class="pf"><b>2.4M</b><span>assets created</span></div>
-    <div class="pf"><b>4.9★</b><span>avg customer rating</span></div>
-    <div class="pf"><b>~20s</b><span>to a finished post</span></div>
-  </div>
+<!-- MODELS (슬림 트러스트 스트립) -->
+<div class="strip wrap" style="margin-top:52px">
   <p>Powered by best-in-class models</p>
   <div class="logos">
     <span>Nano&nbsp;Banana</span><span>Kling</span><span>MiniMax</span><span>Runway</span><span>ElevenLabs</span><span>Claude</span>
@@ -390,13 +446,13 @@
   <p class="sell-line" data-flag="marketplace">💸 Make great templates or AI models? <a href="/marketplace">Sell on Doppia &amp; keep 70% →</a></p>
 </section>
 
-<!-- STATS -->
+<!-- PROOF (가격 직전 신뢰 배너) -->
 <section class="wrap" style="padding-top:0">
   <div class="stats">
-    <div class="stat"><div class="big">~20s</div><div class="cap">to a full post</div></div>
-    <div class="stat"><div class="big">48+</div><div class="cap">curated templates</div></div>
-    <div class="stat"><div class="big">1</div><div class="cap">photo to start</div></div>
-    <div class="stat"><div class="big">0</div><div class="cap">prompts to write</div></div>
+    <div class="stat"><div class="big">12,000+</div><div class="cap">brands &amp; sellers</div></div>
+    <div class="stat"><div class="big">2.4M</div><div class="cap">assets created</div></div>
+    <div class="stat"><div class="big">4.9★</div><div class="cap">avg customer rating</div></div>
+    <div class="stat"><div class="big">~20s</div><div class="cap">to a finished post</div></div>
   </div>
 </section>
 
