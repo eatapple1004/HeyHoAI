@@ -74,12 +74,30 @@
   .tile .tile-go{margin-top:auto;font-size:12px;font-weight:600;color:var(--faint);display:inline-flex;align-items:center;gap:5px;transition:color .22s}
   .tile:hover .tile-go{color:var(--accent2)}
 
+  /* 대표 템플릿 스트립 (한 줄) */
+  .tpl-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  .tpl{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px}
+  .tpl-thumb{aspect-ratio:4/5;border-radius:14px;border:1px solid var(--border);transition:transform .2s,border-color .2s;box-shadow:0 12px 30px -18px rgba(0,0,0,.7)}
+  .tpl:hover .tpl-thumb{transform:translateY(-3px);border-color:var(--accent2)}
+  .tpl-name{font-size:12.5px;font-weight:600;color:var(--dim);padding:0 2px}
+  .tpl:hover .tpl-name{color:var(--text)}
+
+  /* 커뮤니티 크리에이션 (explore식 masonry) */
+  .cc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
+  @media(min-width:560px){.cc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(min-width:860px){.cc-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .cc-card{align-self:start;margin:0 0 14px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
+  .cc-card .cc-media{display:block;width:100%;height:auto;background:#0c0c14}
+  .cc-card .cc-by{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;backdrop-filter:blur(4px)}
+  .cc-empty{color:var(--faint);font-size:13.5px;padding:8px 2px;grid-column:1/-1}
+
   @media (max-width:860px){
     .home{padding:34px 18px 120px}
     .feats{grid-template-columns:1fr}
     .feat-media{height:196px}
-    .tiles{grid-template-columns:1fr}
+    .tpl-row{grid-template-columns:repeat(3,1fr)}
   }
+  @media (max-width:480px){ .tpl-row{grid-template-columns:repeat(2,1fr)} }
 </style>
 </head>
 <body>
@@ -124,28 +142,49 @@
     </a>
   </div>
 
-  <!-- 보조 선택지 -->
-  <div class="home-sec-title">Or start another way</div>
-  <div class="tiles">
-    <a class="tile" href="/store">
-      <div class="tile-ic"><svg viewBox="0 0 24 24"><path d="M4 4h16l1 5a2.5 2.5 0 01-4.9.6 2.5 2.5 0 01-4.9 0 2.5 2.5 0 01-4.9 0A2.5 2.5 0 013 9z"/><path d="M5 11v8a1 1 0 001 1h12a1 1 0 001-1v-8"/></svg></div>
-      <h3>Templates</h3>
-      <p>Browse ready-made looks in the Store.</p>
-      <span class="tile-go">Browse Store →</span>
-    </a>
-    <a class="tile" href="/gallery">
-      <div class="tile-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
-      <h3>Your Library</h3>
-      <p>Everything you’ve created, in one place.</p>
-      <span class="tile-go">Open Library →</span>
-    </a>
-    <a class="tile" href="/explore">
-      <div class="tile-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg></div>
-      <h3>Community</h3>
-      <p>Get inspired by what others made.</p>
-      <span class="tile-go">Explore →</span>
-    </a>
+  <!-- 대표 템플릿 (한 줄 6개, 큐레이션 → 스튜디오 바로 진입) -->
+  <div class="home-sec-title">Popular templates</div>
+  <div class="tpl-row">
+    <a class="tpl" href="/studio?tpl=product-cut"><div class="tpl-thumb" style="background:url('/img/productcut/product-cut.png') center/cover no-repeat,linear-gradient(150deg,#7c6cff,#5ee0d6)"></div><span class="tpl-name">Product Cut</span></a>
+    <a class="tpl" href="/studio?tpl=model-cut"><div class="tpl-thumb" style="background:url('/images/e76dfb0b-dc3d-4daf-8be6-2e8905826816.png') center/cover no-repeat,linear-gradient(150deg,#ff9a6b,#ffce7a)"></div><span class="tpl-name">Model Cut</span></a>
+    <a class="tpl" href="/studio?tpl=product-hero"><div class="tpl-thumb" style="background:url('/img/producthero/noir-gold.jpg') center/cover no-repeat,linear-gradient(150deg,#a99bff,#ff7eb6)"></div><span class="tpl-name">Product Hero</span></a>
+    <a class="tpl" href="/studio?tpl=jewelry-worn-cut"><div class="tpl-thumb" style="background:url('/img/accessories/jewelry-worn-cut.png') center/cover no-repeat,linear-gradient(150deg,#a99bff,#ff7eb6)"></div><span class="tpl-name">Jewelry Worn Cut</span></a>
+    <a class="tpl" href="/studio?tpl=jewelry-on-model"><div class="tpl-thumb" style="background:url('/img/accessories/jewelry-on-model.png') center/cover no-repeat,linear-gradient(150deg,#ff9a6b,#ffce7a)"></div><span class="tpl-name">Jewelry On Model</span></a>
+    <a class="tpl" href="/studio?tpl=844bb654-3fb2-408d-8fdc-54615d2f2524"><div class="tpl-thumb" style="background:url('/images/1037ddba-0fbb-4a93-bb1d-9156666d8864.png') center/cover no-repeat,linear-gradient(150deg,#5ee0d6,#7c6cff)"></div><span class="tpl-name">Hand to Nail</span></a>
   </div>
+
+  <!-- 커뮤니티 크리에이션 (explore 피드와 동일) -->
+  <div class="home-sec-title">Community Creations</div>
+  <div id="homeCommunity" class="cc-grid"><div class="cc-empty">Loading…</div></div>
 </main>
+<script>
+// Community Creations — explore 피드 미러(같은 API). masonry + 영상 자동재생 + 클릭→크리에이션.
+(function(){
+  var grid=document.getElementById('homeCommunity'); if(!grid)return;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function card(it){
+    var onerr="onerror=\"var c=this.closest('.cc-card');if(c)c.remove()\"";
+    var media=it.type==='video'
+      ? "<video class='cc-media' src='"+esc(it.url)+"' muted loop playsinline autoplay "+onerr+"></video>"
+      : "<img class='cc-media' src='"+esc(it.url)+"' loading='lazy' alt='' "+onerr+">";
+    var by=it.creatorHandle?"<span class='cc-by'>"+esc(it.creatorHandle)+"</span>":"";
+    return "<div class='cc-card' onclick=\"location.href='/creation?idx="+encodeURIComponent(it.idx)+"&from=home'\">"+media+by+"</div>";
+  }
+  function sizeCard(c){var h=c.getBoundingClientRect().height; if(h>4)c.style.gridRowEnd='span '+Math.round(h+14);}
+  function layout(){ grid.querySelectorAll('.cc-card').forEach(function(c){ var m=c.querySelector('.cc-media');
+    if(m&&!m.__h){ m.__h=1; var ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
+      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeCard(c); else m.addEventListener(ev,function(){sizeCard(c);},{once:true}); }
+    sizeCard(c); }); }
+  function playVids(){ var vids=grid.querySelectorAll('video.cc-media'); if(!vids.length)return;
+    var kick=function(v){ v.muted=true; var p=v.play(); if(p&&p.catch)p.catch(function(){}); };
+    if('IntersectionObserver' in window){ var io=new IntersectionObserver(function(es){es.forEach(function(e){e.isIntersecting?kick(e.target):e.target.pause();});},{threshold:.25}); vids.forEach(function(v){io.observe(v);}); } else vids.forEach(kick); }
+  addEventListener('resize',function(){ clearTimeout(window.__ccT); window.__ccT=setTimeout(layout,150); });
+  fetch('/api/generate/community?limit=80').then(function(r){return r.json();}).then(function(j){
+    var d=(j&&j.data)||[];
+    if(!d.length){ grid.innerHTML="<div class='cc-empty'>Be the first to share a creation.</div>"; return; }
+    grid.innerHTML=d.map(card).join(''); playVids(); layout();
+  }).catch(function(){ grid.innerHTML="<div class='cc-empty'>Couldn’t load community creations.</div>"; });
+})();
+</script>
 </body>
 </html>
