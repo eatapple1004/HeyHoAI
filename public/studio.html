@@ -191,6 +191,9 @@
   .usc-line{display:flex;align-items:flex-start;gap:4px}
   .usc-ic{font-size:10px;opacity:.5;padding:7px 0 0 6px;flex:0 0 auto;line-height:1;user-select:none;cursor:help}
   .usc-line .usc-cap,.usc-line .usc-vo{flex:1;padding-left:2px}
+  .usc-pad{display:flex;align-items:center;gap:5px;padding:2px 8px 4px}
+  .usc-pad-lbl{font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .usc-pad-sel{font-size:10.5px;background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:5px;padding:1px 4px;cursor:pointer}
   .usc-acts{display:flex;gap:3px;padding:5px;border-top:1px solid var(--border)}
   .usc-acts button{flex:1;background:transparent;border:1px solid var(--border);color:var(--fg,#ddd);border-radius:7px;padding:4px 0;font-size:12px;cursor:pointer;line-height:1}
   .usc-acts button:hover:not(:disabled){background:rgba(255,255,255,.07)}
@@ -828,7 +831,7 @@
               <button type="button" class="ugc-seg-b" data-c="6" onclick="ugcSetSceneCount(this)">6</button>
             </div>
           </div>
-          <div>
+          <div id="ugcLenSceneWrap">
             <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
             <div class="ugc-seg" id="ugcDurSeg">
               <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
@@ -840,6 +843,7 @@
         <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2,#8b7bff);font-weight:650;margin-top:6px"></div>
         <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
+        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[쉼]</b> (0.6s) / <b>[긴쉼]</b> (1.2s) in the script + per-scene <b>+여백</b>.</div>
       </div>
       <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;margin:6px 0 2px">
         <input type="checkbox" id="ugcVoice" checked onchange="ugcSyncVoiceControls()"> 🎙️ Add voiceover narration <span style="color:var(--faint);font-size:11.5px">— off = visual + music only</span>
@@ -2892,6 +2896,7 @@ function ugcSceneStripHtml(b){
     const ed=u.edits[s.n]||{};
     const capV=('spoken' in ed)?ed.spoken:s.spoken; const cap=((capV&&String(capV).trim())?capV:(('onScreenText' in ed)?ed.onScreenText:s.onScreenText))||''; // 음성자막=spoken(옛 잡 onScreenText 폴백)
     const spk=(('spoken' in ed)?ed.spoken:s.spoken)||'';
+    const tailMs=(('tailMs' in ed)?ed.tailMs:s.tailMs)||0; // P2: 씬 끝 여백(음성모드 음성-주도 타이밍)
     const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
     const thumb=isVid
       ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata" onerror="ugcClipBroken(this)"></video>` // 각 씬 클립 자동재생(무음 미리보기). 404/유실 시 ugcClipBroken이 loop·src 제거해 재시도·깜빡임 차단하고 씬번호 플레이스홀더로 폴백.
@@ -2902,7 +2907,7 @@ function ugcSceneStripHtml(b){
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
       <div class="usc-line"><span class="usc-ic" title="What's said & shown — voice + caption for this scene">💬</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
            title="Edit what's said (voice) & shown (caption) in this scene" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>
-      ${''/* V2: 음성은 씬별이 아니라 영상 전체 "통 나레이션" 한 편집창으로 이전 → 씬 카드엔 자막(💬)만 */}
+      ${u.hasVoice?`<div class="usc-pad"><span class="usc-pad-lbl" title="Extra pause after this scene's voice (voice mode)">+여백</span><select class="usc-pad-sel" onchange="ugcSceneSetTail('${esc(u.jobId)}',${s.n},this.value)">${[0,500,1000,1500,2000].map(v=>`<option value="${v}"${tailMs===v?' selected':''}>${v===0?'0s':'+'+(v/1000)+'s'}</option>`).join('')}</select></div>`:''/* P2: 씬별 여백 — 음성모드만(음성-주도 타이밍에 tailMs로 반영) */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
         <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
@@ -3028,6 +3033,15 @@ function ugcSceneEditVoice(el,jobId,n){
   const v=document.querySelector('#ugcInline .ugc-inline-vid'); if(v&&typeof ugcSyncCap==='function')ugcSyncCap(v,jobId);
   const _L=UGC_LAYERED[jobId]; if(_L&&_L.player&&typeof ugcSyncCapAt==='function')ugcSyncCapAt(jobId,_L.player.currentTime());
   if(typeof ugcRenderTimeline==='function')ugcRenderTimeline(b.ugc);
+}
+// P2: 씬 끝 여백(tailMs) 편집 — 음성모드 음성-주도 타이밍에 반영(Apply 시 재렌더=재타이밍). 백엔드 applyEdits가 0~3000ms 클램프.
+function ugcSceneSetTail(jobId,n,ms){
+  const b=ugcFindBatch(jobId); if(!b)return; const s=b.ugc.scenes.find(x=>x.n===n); if(!s)return;
+  const val=Math.max(0,Math.min(Number(ms)||0,3000));
+  const cur=(b.ugc.edits[n]&&'tailMs' in b.ugc.edits[n])?b.ugc.edits[n].tailMs:(s.tailMs||0);
+  if(val===cur)return;
+  b.ugc.edits[n]=Object.assign({},b.ugc.edits[n],{tailMs:val}); b.ugc._dirty=true;
+  const cont=(typeof ugcCont==='function')?ugcCont(jobId):null; const hd=cont&&cont.querySelector('.ugc-hd-apply'); if(hd)hd.style.display=''; // Apply 노출(적용 시 재타이밍)
 }
 function ugcResetEdits(jobId){
   const b=ugcFindBatch(jobId); if(!b||!b.ugc._orig)return;
@@ -4440,6 +4454,9 @@ function ugcSyncVoiceControls(){
   const vl=document.getElementById('ugcVoiceLbl'); if(vl)vl.style.display=on?'flex':'none';
   const sl=document.getElementById('ugcSpeedLbl'); if(sl)sl.style.display=on?'flex':'none';
   const pb=document.getElementById('ugcPreviewBtn'); if(pb)pb.style.display=on?'':'none';
+  // P3 2모드: 음성모드(on)=길이를 음성이 정함 → Length/scene 숨김+안내. 음악모드(off)=Length/scene 표시.
+  const lw=document.getElementById('ugcLenSceneWrap'); if(lw)lw.style.display=on?'none':'';
+  const lh=document.getElementById('ugcVoiceLenHint'); if(lh)lh.style.display=on?'':'none';
 }
 // 편집 → ugcScript에 즉시 반영(렌더는 ugcScript를 그대로 전송하므로 수정본이 영상에 반영됨).
 function ugcBindScriptEdits(){
