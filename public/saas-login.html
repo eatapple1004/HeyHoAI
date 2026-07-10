@@ -96,7 +96,7 @@ function showErr(msg){
 }
 function nextUrl(){
   const next=new URLSearchParams(location.search).get('next');
-  return next&&next.startsWith('/')?next:'/studio';
+  return next&&next.startsWith('/')?next:'/home.html'; // 로그인 후 기본 진입 = 홈(허브). next 파라미터 있으면 그 곳으로.
 }
 async function submitForm(e){
   e.preventDefault();showErr('');
