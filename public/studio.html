@@ -3306,8 +3306,10 @@ function ugcToggleAdv(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
   if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';return;}
   wrap.dataset.n=String(n); wrap.style.display='';
+  // 헤더 번호 = 현재 위치(카드 배지 i+1과 일치). n은 내부 식별키(edits·versions·redo·자막)라 재배치 후 위치와 달라질 수 있어, 표시는 위치로.
+  const pos=(b.ugc.scenes.findIndex(s=>Number(s.n)===Number(n))+1)||n;
   // 음성이 영상 전체 통 나레이션 한 트랙 → 씬별 Timing(lead-in/tail) 제거. 씬 수정=재생성만.
-  wrap.innerHTML='<div class="ugc-adv-hd">Scene '+n+'</div>'
+  wrap.innerHTML='<div class="ugc-adv-hd">Scene '+pos+'</div>'
     +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">✎ Re-generate scene <span class="ugc-adv-paid">uses credits</span></div>'
     +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder · Brighter background"></textarea>'
     +'<div class="ugc-adv-row"><button type="button" class="ugc-apply ugc-regen" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
@@ -3316,7 +3318,8 @@ function ugcToggleAdv(jobId,n){
 async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
   const val=ta?ta.value.trim():''; if(!val){toast('Describe the change first');return;}
-  if(!confirm('Re-generate scene '+n+' with this change? This uses credits.'))return;
+  const _b=ugcFindBatch(jobId); const pos=(_b?_b.ugc.scenes.findIndex(s=>Number(s.n)===Number(n))+1:0)||n; // confirm 번호도 현재 위치(카드 배지 일치)
+  if(!confirm('Re-generate scene '+pos+' with this change? This uses credits.'))return;
   const btn=wrap.querySelector('.ugc-regen'); const o=btn?btn.textContent:''; // 전용 클래스 — timing "Apply — free" 오선택 회피
   const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]'); // 재생성 중 해당 씬 카드에 로딩 스피너
   const ins={}; ins[n]=val;
