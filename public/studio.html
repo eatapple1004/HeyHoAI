@@ -1362,6 +1362,7 @@
 <script src="/js/taxonomy.js?v=8"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
+<script src="/js/ugcPlayer.js?v=1"></script>
 <script>
 // ═══ 실제 백엔드 연결 ═══
 // Subjects = characters API · Generate = /api/generate (이미지) · /api/generate/video (릴스)
@@ -3393,7 +3394,7 @@ function renderUgcInline(b){
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; const u=b.ugc; let html='';
   const useOverlay=u&&u.previewUrl; // B+ 편집 중엔 자막 없는 미리보기 + HTML 오버레이(즉시 반영). 확대·공유는 구운 최종.
-  const useLayered=useOverlay&&ugcScenesPlayable(u); // B: 실 비디오 클립 있으면 레이어드 재생기(씬 즉시전환+음성·음악 2트랙), 없으면 previewUrl 단일영상 폴백(구버전잡·클립유실·정지컷).
+  const useLayered=useOverlay&&typeof ugcMakePlayer==='function'&&ugcScenesPlayable(u); // B: 실 비디오 클립 있고 재생기 로드됐으면 레이어드, 아니면 previewUrl 단일영상 폴백(ugcPlayer.js 미로드·구버전잡·클립유실·정지컷 → 빈 영상영역 방지).
   if(useLayered){
     html+='<div class="ugc-inline-vidwrap ugc-layered">' /* player가 <video> 2개를 여기 append. 높이=마운트 시 aspect-ratio */
       +`<div class="ugc-cap-ov" data-job="${esc(u.jobId)}"></div>`/* 자식(.ugc-cap-line)이 편집/드래그 처리 */
