@@ -3442,8 +3442,9 @@ function ugcMountLayered(u,zoom){
   const cs=u.captionSpec||{}; const w=cs.w||1080, h=cs.h||1920; wrap.style.aspectRatio=w+' / '+h;
   const audio=ugcMakeAudio(u);
   const player=ugcMakePlayer(wrap,{ scenes:ugcPlayerScenes(u), loop:true,
-    onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); } });
-    // 클립 404/유실은 이제 재생기 내부에서 곱게 처리(실패 clip 재요청·표시 안 함, 직전 성한 화면 유지) → 깜빡임·404폭주 제거. 통째 다운그레이드 불필요.
+    onTime:function(ms,total){ ugcSyncCapAt(u.jobId,ms); ugcAudioSync(audio,ms,total); },
+    // 클립 404/유실 감지 시 즉시 단일 previewUrl 영상으로 폴백(잡당 1회). 재생기 내부 failed[] 스킵엔 레이스 구멍이 있어(경계에서 아직 error 안 뜬 404 클립을 nxt로 스왑→검은 프레임 표시→다음 루프 스킵=토글) 옛 영상 편집 프리뷰가 깜빡임. 겹치는 더블버퍼를 아예 없애 토글 원천 차단.
+    onError:function(){ ugcLayeredFallback(u.jobId); } });
   UGC_LAYERED[u.jobId]={ player:player, audio:audio, wrap:wrap };
   // #11: 무과금 편집(음악·음성·자막) 재마운트 시 재생위치·소리상태 복원(t=0 리셋·재음소거 방지)
   const rs=u._resume; if(rs){ delete u._resume; if(typeof rs.time==='number'){ try{ player.seekTo(rs.time); }catch(e){} } if(rs.unmuted){ ugcUnmuteLayered(u.jobId); } }
