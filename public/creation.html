@@ -22,7 +22,7 @@
   :focus{outline:none}
   :focus-visible{outline:2px solid var(--accent2);outline-offset:3px;border-radius:var(--r-sm)}
 
-  .viewer{display:grid;grid-template-columns:88px minmax(0,1fr) 372px;height:100vh;position:relative;z-index:1}
+  .viewer{display:grid;grid-template-columns:70px minmax(0,1fr) 350px;height:100vh;position:relative;z-index:1}
 
   /* ── close (fixed, true top-right) ── */
   .vclose{position:fixed;top:20px;right:20px;z-index:40;width:38px;height:38px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 78%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
@@ -30,16 +30,16 @@
   .vclose .ic{width:16px;height:16px;color:inherit}
 
   /* ── filmstrip ── */
-  .strip{position:relative;overflow-y:auto;overflow-x:hidden;padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:12px;background:var(--bg2)}
+  .strip{position:relative;overflow-y:auto;overflow-x:hidden;padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:9px;background:var(--bg2)}
   .strip::before{content:"";position:absolute;top:0;right:0;width:1px;height:100%;background:linear-gradient(180deg,transparent,var(--border) 12%,var(--border) 88%,transparent)}
   .strip::-webkit-scrollbar{width:0}
-  .th{width:62px;height:62px;border-radius:var(--r-md);overflow:hidden;border:2px solid transparent;cursor:pointer;flex-shrink:0;background:var(--bg);padding:0;position:relative;transition:transform .14s,border-color .15s,box-shadow .15s}
+  .th{width:50px;height:50px;border-radius:11px;overflow:hidden;border:2px solid transparent;cursor:pointer;flex-shrink:0;background:var(--bg);padding:0;position:relative;transition:transform .14s,border-color .15s,box-shadow .15s}
   .th:hover{transform:scale(1.05)}
-  .th.on{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 24%,transparent)}
+  .th.on{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 24%,transparent)}
   .th img,.th video{width:100%;height:100%;object-fit:cover;display:block}
 
   /* ── stage (immersive, borderless, softly lit) ── */
-  .stageWrap{position:relative;display:flex;align-items:center;justify-content:center;padding:48px;min-width:0;background:radial-gradient(120% 100% at 50% 38%,var(--bg2),var(--bg))}
+  .stageWrap{position:relative;display:flex;align-items:center;justify-content:center;padding:44px 64px;min-width:0;background:radial-gradient(120% 100% at 50% 38%,var(--bg2),var(--bg))}
   .stageWrap::before{content:"";position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:min(620px,66%);height:min(620px,66%);pointer-events:none;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 16%,transparent),transparent 72%);filter:blur(20px)}
   .stageWrap::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(92% 74% at 50% 42%,transparent 58%,rgba(0,0,0,.4))}
   .stage{position:relative;z-index:1;display:inline-flex;max-width:100%;max-height:calc(100vh - 96px);border-radius:var(--r-lg);overflow:hidden;background:var(--bg2);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 0 0 1px rgba(255,255,255,.05),0 30px 90px -24px rgba(0,0,0,.8),0 10px 34px -8px rgba(0,0,0,.5)}
@@ -56,7 +56,7 @@
   .vbadge .ic{width:11px;height:11px;color:#fff}
 
   /* ── panel ── */
-  .panel{position:relative;overflow-y:auto;padding:26px 26px 30px;background:var(--bg2);display:flex;flex-direction:column}
+  .panel{position:relative;overflow-y:auto;margin:14px 14px 14px 0;padding:26px 24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 40px 90px -44px rgba(0,0,0,.75);display:flex;flex-direction:column}
   .panel>*{flex-shrink:0}  /* 내용이 길면 카드가 쭈그러들지 말고(→.tpl-sub 짤림) 패널이 스크롤. .report의 margin-top:auto는 유지 */
   .panel::before{content:"";position:absolute;top:0;left:0;width:1px;height:100%;background:linear-gradient(180deg,transparent,var(--border) 8%,var(--border) 92%,transparent)}
   .panel::-webkit-scrollbar{width:7px}
@@ -165,7 +165,7 @@
     .strip::before{display:none}
     .stageWrap{padding:28px 16px 20px}
     .stage,.stage .media{max-height:70vh}
-    .panel{padding:24px 18px 44px}
+    .panel{margin:0;border:none;border-radius:0;box-shadow:none;padding:24px 18px 44px}
     .panel::before{display:none}
     .vclose{top:14px;right:14px}
   }
