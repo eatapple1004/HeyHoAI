@@ -15,38 +15,38 @@
 <style>
   .wrap{max-width:1120px;margin:0 auto;padding:24px 24px 90px;position:relative;z-index:2}
   /* 레오나도 /buy식 독립 전체 페이지 — 플로팅 백버튼만 (프로필·상단바 없음) */
-  .back-fab{position:fixed;top:22px;left:22px;z-index:60;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--dim);cursor:pointer;padding:9px 15px 9px 12px;border-radius:99px;border:1px solid var(--border);background:rgba(16,16,24,.7);backdrop-filter:blur(14px);transition:color .2s,border-color .2s,background .2s,transform .2s}
+  .back-fab{position:fixed;top:22px;left:22px;z-index:60;display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--dim);cursor:pointer;padding:12px 16px 12px 14px;border-radius:99px;border:1px solid var(--border);background:rgba(16,16,24,.7);backdrop-filter:blur(14px);transition:color .2s,border-color .2s,background .2s,transform .2s}
   .back-fab:hover{color:var(--text);border-color:var(--border2);background:rgba(28,28,40,.85);transform:translateX(-2px)}
   .back-fab svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   /* 히어로 — 레오나도식 대형 브랜드 워드마크 (상단) */
   .hero{text-align:center;max-width:760px;margin:34px auto 44px;position:relative}
   .hero::after{content:'';position:absolute;top:32%;left:50%;width:min(680px,86%);height:280px;transform:translate(-50%,-50%);z-index:-1;
-    background:radial-gradient(ellipse at center,rgba(124,108,255,.22),transparent 70%);filter:blur(18px);pointer-events:none}
+    background:radial-gradient(ellipse at center,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%);filter:blur(18px);pointer-events:none}
   .eyebrow{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
     background:linear-gradient(120deg,var(--accent2),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
   h1.brandword{font-family:'Sora';font-weight:800;font-size:clamp(56px,12vw,132px);line-height:.9;letter-spacing:-5px;white-space:nowrap;margin:0 0 12px;
     background:linear-gradient(180deg,#fff,rgba(255,255,255,.5));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 16px 46px rgba(124,108,255,.35))}
-  h1.brandword span{background:linear-gradient(180deg,var(--accent2),rgba(124,108,255,.5));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    filter:drop-shadow(0 16px 46px color-mix(in srgb,var(--accent) 35%,transparent))}
+  h1.brandword span{background:linear-gradient(180deg,var(--accent2),color-mix(in srgb,var(--accent) 50%,transparent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .hero-tag{font-family:'Sora';font-size:20px;font-weight:600;color:var(--text);letter-spacing:-.3px;margin-bottom:12px}
   .sub{color:var(--dim);font-size:15px;line-height:1.55}
   .hero-status{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:7px 15px;border-radius:99px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:12.5px;color:var(--dim)}
   .hero-status b{color:var(--accent2);font-weight:700}
   .hero-status .coin{color:var(--gold)}
 
-  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;text-align:center}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin:0 0 16px;text-align:center}
 
   .plans{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;align-items:stretch}
   .ent-plans{grid-template-columns:repeat(3,1fr);margin-bottom:52px}
   @media(max-width:1000px){.plans{grid-template-columns:repeat(2,1fr)}.ent-plans{grid-template-columns:1fr}}
   @media(max-width:560px){.plans{grid-template-columns:1fr}}
-  .plan-card{padding:26px 22px;display:flex;flex-direction:column;position:relative;border-radius:20px;overflow:hidden;
+  .plan-card{padding:26px 22px;display:flex;flex-direction:column;position:relative;border-radius:var(--r);overflow:hidden;
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));border:1px solid var(--border2);
     transition:transform .22s,border-color .22s,box-shadow .22s}
-  .plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(124,108,255,.35),transparent);opacity:0;transition:opacity .22s}
-  .plan-card:hover{transform:translateY(-6px);border-color:rgba(124,108,255,.4);box-shadow:0 30px 60px -32px rgba(0,0,0,.7)}
+  .plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 35%,transparent),transparent);opacity:0;transition:opacity .22s}
+  .plan-card:hover{transform:translateY(-6px);border-color:color-mix(in srgb,var(--accent) 40%,transparent);box-shadow:0 30px 60px -32px rgba(0,0,0,.7)}
   .plan-card:hover::before{opacity:1}
-  .plan-card.featured{border-color:rgba(124,108,255,.55);background:linear-gradient(180deg,rgba(124,108,255,.14),rgba(255,126,182,.05));box-shadow:0 0 0 1px rgba(124,108,255,.4),0 34px 80px -30px rgba(124,108,255,.55)}
+  .plan-card.featured{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 14%,transparent),color-mix(in srgb,var(--pink) 5%,transparent));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent),0 34px 80px -30px color-mix(in srgb,var(--accent) 55%,transparent)}
   .plan-card.featured::before{opacity:1;background:linear-gradient(90deg,var(--accent),var(--pink))}
   .plan-card .ribbon{position:absolute;top:16px;right:16px;background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.6px;padding:5px 11px;border-radius:99px;text-transform:uppercase;box-shadow:0 6px 16px -6px var(--accent)}
   .plan-card .pname{font-family:'Sora';font-size:16px;font-weight:700;color:var(--dim);letter-spacing:.4px;margin-bottom:12px}
@@ -58,31 +58,21 @@
   .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700;flex-shrink:0}
   .plan-card .btn{width:100%}
   .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
-  .team-band{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 26px;margin-bottom:46px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(94,224,214,.08),rgba(124,108,255,.08))}
-  .team-band .tb-tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 10px;border-radius:7px;background:rgba(94,224,214,.16);color:var(--cyan);margin-bottom:8px}
-  .team-band .tb-title{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
-  .team-band .tb-desc{font-size:13px;color:var(--dim);max-width:440px;line-height:1.5}
-  .team-band .tb-price{text-align:right;min-width:240px}
-  .team-band .tbp{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-1px}
-  .team-band .tbp span{font-size:13px;font-weight:500;color:var(--faint)}
-  .team-band .tb-meta{font-size:12px;color:var(--dim);margin:4px 0 12px}
-  .team-band .tb-cta{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-  @media(max-width:620px){.team-band .tb-price{text-align:left;min-width:0}.team-band .tb-cta{justify-content:flex-start}}
 
   .packs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
   @media(max-width:860px){.packs{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:480px){.packs{grid-template-columns:1fr}}
   .pack-card{padding:22px;text-align:center;transition:transform .2s;position:relative}
   .pack-card:hover{transform:translateY(-4px)}
-  .pack-card.best{border-color:rgba(255,206,122,.5);box-shadow:0 0 0 1px rgba(255,206,122,.35)}
-  .pack-card .ptag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27;white-space:nowrap}
+  .pack-card.best{border-color:color-mix(in srgb,var(--gold) 50%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 35%,transparent)}
+  .pack-card .ptag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),var(--pink));color:#1a1a27;white-space:nowrap}
   .pack-card .amt{font-family:'Sora';font-size:24px;font-weight:800;color:var(--gold)}
   .pack-card .amt small{font-size:12px;color:var(--dim);font-weight:500}
-  .pack-card .ppc{font-size:11px;color:var(--faint);margin:4px 0 12px}
+  .pack-card .ppc{font-size:11px;color:var(--dim);margin:4px 0 12px}
   .pack-card .price{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:14px}
   .pack-card .btn{width:100%}
 
-  .note{font-size:12.5px;color:var(--faint);margin-top:14px;text-align:center}
+  .note{font-size:12.5px;color:var(--dim);margin-top:14px;text-align:center}
   .note b{color:var(--dim)}
   .cr-eq{font-size:11.5px;color:var(--faint);margin:-12px 0 14px}
   .costtable{display:grid;grid-template-columns:repeat(2,1fr);gap:0 28px;padding:14px 22px}
@@ -97,7 +87,7 @@
   .cycle button.on .save{background:rgba(255,255,255,.24);color:#fff}
   .plan-card .price .pv{font-size:34px;font-weight:800;letter-spacing:-1.5px;color:var(--text)}
   .plan-card .price{margin-bottom:9px}
-  .plan-card .cyc-note{font-size:11.5px;color:var(--faint);margin:0 0 4px;min-height:14px;line-height:1.4}
+  .plan-card .cyc-note{font-size:11.5px;color:var(--dim);margin:0 0 4px;min-height:14px;line-height:1.4}
 
   .sw{position:relative;width:46px;height:26px;flex:none}
   .sw input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;margin:0}
@@ -127,9 +117,9 @@
 <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="grain"></div>
 
-<a class="back-fab" onclick="goBack()" title="Back">
-  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
-</a>
+<button type="button" class="back-fab" onclick="goBack()" aria-label="Back">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Back
+</button>
 
 <div class="wrap">
   <div class="hero fade d1">
@@ -138,13 +128,14 @@
     <div class="hero-tag">Choose your plan</div>
     <div class="sub">Get a 3-month pass — pay once, no auto-renew. Credits are granted upfront. Or top up with credit packs anytime.</div>
     <div class="hero-status"><span id="planLabel"></span><b id="planName">Pay as you go</b> · <span class="coin">◈</span> <span id="balNum">—</span> credits left</div>
+    <div id="planNote" style="font-size:12.5px;color:var(--dim);margin-top:10px"></div>
   </div>
 
   <div id="purchasedBanner" class="hidden" style="background:rgba(94,224,214,.12);border:1px solid rgba(94,224,214,.35);color:var(--cyan);font-size:13.5px;font-weight:600;padding:14px 18px;border-radius:14px;margin-bottom:20px;text-align:center">
-    Payment complete. Your credits may take a few seconds to appear. <a onclick="loadBalance()" style="cursor:pointer;text-decoration:underline">Refresh</a>
+    Payment complete. Your credits may take a few seconds to appear. <button type="button" onclick="loadBalance()" style="cursor:pointer;text-decoration:underline;background:none;border:none;color:inherit;font:inherit;padding:0">Refresh</button>
   </div>
 
-  <div class="section-label fade d2">3-Month Passes</div>
+  <h2 class="section-label fade d2">3-Month Passes</h2>
   <!-- (2026-07-02) 정기결제 미지원(eximbay 3달 제약) → 기간권. 월/연 토글 숨김. 재점화 시 style 제거 -->
   <div class="cycle fade d2" style="display:none">
     <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
@@ -156,7 +147,7 @@
       <div class="cyc-note"></div>
       <div class="credits-inc">1,500 credits (one-time)</div>
       <ul><li>Try all modes</li><li>Solo lookbook</li><li>2K quality</li><li>2 concurrent slots</li></ul>
-      <button class="btn btn-ghost" onclick="planSoon('Free')">Current tier</button>
+      <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
     </div>
     <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
       <div class="pname">Starter</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
@@ -184,18 +175,18 @@
       <div class="pname">Premium</div><div class="price">$<span class="pv">199</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
-      <ul><li>Everything in Pro</li><li>Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
+      <ul><li>Everything in Pro</li><li data-flag="reels">Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
   </div>
 
-  <div class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</div>
+  <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
   <div class="plans ent-plans fade d3">
     <div class="plan-card glass" data-ent="team">
       <div class="pname">Enterprise Team</div><div class="price">$<span class="ev">599</span><span> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
-      <ul><li>Team roles &amp; shared pool</li><li>Horizon cut · recommended models</li><li>10 concurrent slots</li></ul>
+      <ul><li>Team roles &amp; shared pool</li><li>Commercial license</li><li>10 concurrent slots</li></ul>
       <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
     </div>
     <div class="plan-card glass featured" data-ent="pro">
@@ -215,17 +206,17 @@
     </div>
   </div>
 
-  <div class="section-label fade d3">Top-up credit packs (one-time)</div>
+  <h2 class="section-label fade d3">Top-up credit packs (one-time)</h2>
   <div class="packs fade d4" id="packsGrid"></div>
-  <div style="font-size:12.5px;color:var(--faint);margin-top:12px;text-align:center">A subscription is always cheaper per credit. Packs are for one-off top-ups.</div>
+  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">A subscription is always cheaper per credit. Packs are for one-off top-ups.</div>
 
-  <div class="section-label fade d4" style="margin-top:40px">What credits buy</div>
+  <h2 class="section-label fade d4" style="margin-top:40px">What credits buy</h2>
   <div class="costtable glass fade d4">
     <div><span>Template photo (per image)</span><b>◈ 300</b></div>
     <div><span>Custom photo (per image)</span><b>◈ 150</b></div>
     <div><span>Photo — Flash (per image)</span><b>◈ 45–90</b></div>
-    <div><span>Template reel (5s)</span><b>◈ 1,250</b></div>
-    <div><span>Template reel (10s)</span><b>◈ 2,500</b></div>
+    <div data-flag="reels"><span>Template reel (5s)</span><b>◈ 1,250</b></div>
+    <div data-flag="reels"><span>Template reel (10s)</span><b>◈ 2,500</b></div>
     <div><span>Add-on (caption · enhance)</span><b>+◈ 30</b></div>
   </div>
   <div class="note">Template looks cost more than custom prompts. Payments secured by Eximbay.</div>
@@ -278,7 +269,6 @@ function goBack(){ if(history.length>1) history.back(); else location.href='/stu
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
 function planSoon(){ notify('Plan changes are coming soon — for now, top up with a credit pack.'); }
-function joinTeamBeta(){ notify("You're on the Team beta waitlist — we'll email you priority access."); }
 function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidden'); }
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
@@ -373,6 +363,12 @@ async function buyPack(packId,btn){
   finally{ btn.disabled=false;btn.textContent=orig; }
 }
 
+function markCurrentPlan(plan){
+  document.querySelectorAll('.plan-card[data-plan]').forEach(function(card){
+    var btn=card.querySelector('.btn'); if(!btn)return;
+    if(card.getAttribute('data-plan')===plan){ btn.textContent='Current plan'; btn.classList.add('current'); btn.disabled=true; }
+  });
+}
 async function loadSubscription(){
   try{
     let sub=(await(await fetch('/api/subscription')).json()).data;
@@ -388,6 +384,7 @@ async function loadSubscription(){
     } else {
       setTxt('planLabel',''); // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }
+    markCurrentPlan(sub.plan||'free');
   }catch(e){console.error(e);}
 }
 async function upgradeToPro(btn){
