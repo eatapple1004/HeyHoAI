@@ -122,6 +122,12 @@
   .act:hover{border-color:var(--border2);background:var(--surface2)}
   .act .ic{color:var(--dim)}
   .act:hover .ic{color:var(--text)}
+  /* Leonardo식 작은 아이콘 액션(저장·공유) + 하단 바 */
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:20px}
+  .mini-acts{display:flex;gap:8px}
+  .mini-btn{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:color .15s,border-color .15s,background .15s;text-decoration:none;flex-shrink:0}
+  .mini-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface)}
+  .mini-btn .ic{width:17px;height:17px;color:currentColor}
 
   /* owner section */
   .sep{height:1px;background:var(--border);margin:24px 0}
@@ -129,7 +135,7 @@
   .own-hint{font-size:12px;font-weight:400;line-height:1.5;color:var(--faint);margin:10px 2px 0}
 
   /* tertiary — report */
-  .report{display:inline-flex;align-items:center;gap:8px;margin-top:auto;align-self:flex-start;padding:10px 2px;background:transparent;border:0;cursor:pointer;color:var(--faint);font-family:inherit;font-size:12px;font-weight:500;transition:color .15s}
+  .report{display:inline-flex;align-items:center;gap:7px;padding:6px 2px;background:transparent;border:0;cursor:pointer;color:var(--faint);font-family:inherit;font-size:12px;font-weight:500;transition:color .15s}
   .report .ic{width:15px;height:15px;color:inherit}
   .report:hover{color:var(--pink)}
 
@@ -327,11 +333,14 @@ function render(){
     ${creator}
     ${templateCard()}
     ${promptPanel()}
-    <div class="acts">
-      <button class="act" onclick="share()">${IC.share} Share</button>
-      <a class="act" href="${esc(IT.url)}" download>${IC.dl} Download</a>
-    </div>
-    ${owner}${report}`;
+    ${owner}
+    <div class="foot">
+      <div class="mini-acts">
+        <button class="mini-btn" onclick="share()" aria-label="Share" title="Share">${IC.share}</button>
+        <a class="mini-btn" href="${esc(IT.url)}" download aria-label="Download" title="Download">${IC.dl}</a>
+      </div>
+      ${report}
+    </div>`;
 }
 
 async function toggleLike(btn){
