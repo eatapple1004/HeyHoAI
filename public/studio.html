@@ -128,6 +128,7 @@
   .pick-sel .psel-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border:1px solid var(--border2);border-radius:999px;background:rgba(255,255,255,.03)}
   .pick-sel .psel-th{width:26px;height:26px;border-radius:50%;background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
   .pick-sel .psel-nm{font-size:13px;font-weight:600;color:var(--text)}
+  .pick-sel .psel-chip.txt{padding-left:12px}
   /* 모델 픽커 (Studio Model Cut 모달) */
   .model-sel .ms-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2);display:block;margin-bottom:8px}
   .model-sel .ms-filters,.cut-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
@@ -2769,6 +2770,20 @@ function syncTplTrigger(){
         +`<div class="psel"><span class="psel-lbl">Background</span><span class="psel-chip"><span class="psel-th" style="background:${bTh}"></span><span class="psel-nm">${esc(bb.name)}</span></span></div>`
         +`</div>`;
     }
+    // (2026-07-11) Worn Cut 축(Skin tone·Age·Concept): 선택값만 컴팩트 표시(표시 전용, 전체 옵션은 모달에만).
+    let axisHtml='';
+    if(r.axes&&r.axes.length&&state.axis){
+      const chips=r.axes.filter(k=>AXIS_DEFS[k]).map(k=>{
+        const d=AXIS_DEFS[k];
+        const o=d.opts.find(x=>x[0]===state.axis[k])||d.opts[0];
+        let thumb='',txt='';
+        if(d.mode==='swatch')thumb=`<span class="psel-th" style="background:${o[3]||'#888'}"></span>`;
+        else if(d.mode==='card')thumb=`<span class="psel-th" style="background:${o[3]?`url('${esc(o[3])}') center/cover no-repeat`:'linear-gradient(150deg,#7c6cff,#5ee0d6)'}"></span>`;
+        else txt=' txt';
+        return `<div class="psel"><span class="psel-lbl">${esc(d.title)}</span><span class="psel-chip${txt}">${thumb}<span class="psel-nm">${esc(o[1])}</span></span></div>`;
+      }).join('');
+      axisHtml=`<div class="pick-sel">${chips}</div>`;
+    }
     const detHtml=`<div class="det-compose"><span class="det-lbl">Add detail (optional)</span>`
       +`<textarea id="cbDetail" class="det-ta" maxlength="300" rows="1" placeholder="Add your own touch — e.g. red dress, golden hour" oninput="onComposeDetail(this)">${esc(state.detail||'')}</textarea></div>`;
     wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
@@ -2776,7 +2791,7 @@ function syncTplTrigger(){
       +`<span class="ts-body"><span class="ts-cap">Template selected</span><span class="ts-name">${esc(r.name)}</span>`
       +`<span class="ts-sub">Your ${out} will be made with this look · tap to change</span></span>`
       +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`
-      +cutHtml+bgHtml+pickHtml+detHtml;
+      +cutHtml+bgHtml+pickHtml+axisHtml+detHtml;
     wrap.style.display='';
     c.style.display='';
   }else if(wrap){ // 미선택 → "Pick a template" CTA(누르면 픽커로 스크롤). Custom 모드는 프롬프트 직접이라 숨김.
