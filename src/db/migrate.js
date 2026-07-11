@@ -1026,47 +1026,51 @@ async function migrateMarketplace() {
   //    → 진짜 유료 recipe-backed 프리미엄으로 대체. recipe-backed(@doppia)는 보존.
   await pool.query(`DELETE FROM marketplace_templates WHERE is_official = true AND creator_handle = '@heyhoai' AND recipe_id IS NULL`);
 
-  // ✅ 공식 유료 프리미엄 템플릿 시드(recipe-backed, 8종/5버티컬). 공식=creator_id NULL(로열티 없음=플랫폼).
-  //    가짜 통계 없음(usage_count 기본 0). 가격=◈8 언락 + ◈1/사용. 미리보기 이미지는 추후 실예시 생성 후 첨부. 멱등(recipe_id 미존재 시만).
-  for (const t of [
-    // (2026-07-08) beauty Hero 3종(stone-plinth-luxe·noir-gold-hero·dewy-glass-hero) 제거 —
-    //   Product Hero 파라미터형 템플릿(producthero)으로 이관, 단독 오피셜 카드 폐지. 아래 DELETE로 prod 기존 행 정리.
-    { rid: 'ring-editorial-campaign',     name: 'Ring Editorial Campaign',     emoji: '💍' }, // jewelry
-    { rid: 'bracelet-editorial-campaign', name: 'Bracelet Editorial Campaign', emoji: '💎' }, // jewelry
-    { rid: 'top-down-hero',               name: 'Top-Down Hero',               emoji: '🍽️' }, // food
-    { rid: 'void-hero-cut',               name: 'Void Hero Cut',               emoji: '🔲' }, // tech
-    { rid: 'pet-product-hero',            name: 'Pet Product Hero',            emoji: '🐾' }, // pet
-  ]) {
-    await pool.query(
-      `INSERT INTO marketplace_templates
-         (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
-       SELECT '@doppia', $1, 'Shopping', 'image', 'Natural', $2, 8, 1, true, 'public', $3, $4
-       WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = $3)`,
-      [t.name, t.emoji, t.rid, `Premium recipe-backed template — ${t.name}`]
-    );
-  }
+  // (2026-07-11) 옛 오피셜 슬러그 은퇴 — 현재 recipe 세트(DEFAULT_OFFICIAL_RECIPES)에 없는 레거시 행을
+  //   visibility='private'로 격하(비파괴·가역). fresh DB엔 애초 안 생기고, 기존 prod행은 Store에서 숨김.
+  //   (ring/bracelet-editorial-campaign·top-down-hero·void-hero-cut·pet-product-hero=옛 프리미엄, studio-model-cut=model-cut 옛 이름 중복.)
+  await pool.query(
+    `UPDATE marketplace_templates SET visibility = 'private'
+     WHERE is_official = true AND recipe_id = ANY($1::text[])`,
+    [['ring-editorial-campaign', 'bracelet-editorial-campaign', 'top-down-hero', 'void-hero-cut', 'pet-product-hero', 'studio-model-cut']]
+  );
   // (2026-07-08) beauty Hero 3종을 Product Hero(producthero)로 이관 → 옛 단독 프리미엄 오피셜 행 정리.
   //   recipe_id는 producthero 자식과 안 겹침(-hero/-luxe 접미사). 멱등.
   await pool.query(`DELETE FROM marketplace_templates WHERE recipe_id IN ('dewy-glass-hero','noir-gold-hero','stone-plinth-luxe') AND is_official = true`);
 
-  // ✅ 기본 제공(무료) 공식 — Product Cut(제품컷 중첩). price_credits=0 → Store 구매게이트/생성 402 없음.
-  //    Studio는 DEFAULT_OFFICIAL_RECIPES로 소유 무관 노출. 멱등: 없으면 삽입, 있으면 price를 0으로 보정(◈8 프리미엄 아님).
+  // ✅ 기본 제공(무료) 공식 recipe 7종 — 현재 DEFAULT_OFFICIAL_RECIPES. price_credits=0 → Store 구매게이트/생성 402 없음.
+  //    Studio는 소유 무관 노출(applyDefaultOfficials). preview_media = 큐레이션된 정적 /img/ 대표이미지(git 커밋 영속).
+  //    멱등: 없으면 삽입, 있으면 price 0 보정 + preview_media를 정적 대표이미지로 갱신(@doppia 권위값).
+  //    (2026-07-11) product-hero + jewelry×4 신규 추가 + 전 recipe 대표이미지 지정. themes는 아래 OFFICIAL_THEME에서 배선.
+  for (const t of [
+    { rid: 'product-cut',         name: 'Product Cut',         emoji: '🖼️', thumb: '/img/productcut/product-cut.png' },
+    { rid: 'product-hero',        name: 'Product Hero',        emoji: '✨',  thumb: '/img/producthero/dewy-glass.jpg' },
+    { rid: 'model-cut',           name: 'Model Cut',           emoji: '🧍', thumb: '/img/studiomodel/model-cut.png' },
+    { rid: 'jewelry-product-cut', name: 'Jewelry Product Cut', emoji: '🖼️', thumb: '/img/accessories/jewelry-product-cut.png' },
+    { rid: 'jewelry-worn-cut',    name: 'Jewelry Worn Cut',    emoji: '🖼️', thumb: '/img/accessories/jewelry-worn-cut.png' },
+    { rid: 'jewelry-on-model',    name: 'Jewelry On Model',    emoji: '🖼️', thumb: '/img/accessories/jewelry-on-model.png' },
+    { rid: 'jewelry-hero',        name: 'Jewelry Hero',        emoji: '✨',  thumb: '/img/accessories/jewelry-hero.png' },
+  ]) {
+    await pool.query(
+      `INSERT INTO marketplace_templates
+         (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
+       SELECT '@doppia', $1, 'Shopping', 'image', 'Natural', $2, 0, 0, true, 'public', $3, $4
+       WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = $3)`,
+      [t.name, t.emoji, t.rid, `Included official template — ${t.name}`]
+    );
+    await pool.query(
+      `UPDATE marketplace_templates
+          SET price_credits = 0, use_price_credits = 0, preview_media = jsonb_build_array($2::text)
+        WHERE recipe_id = $1 AND is_official = true`,
+      [t.rid, t.thumb]
+    );
+  }
+  // (2026-07-11) 네일 오피셜 대표이미지 백필 — 비어있는 것만(기존 /images 썸네일은 보존).
   await pool.query(
-    `INSERT INTO marketplace_templates
-       (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
-     SELECT '@doppia', 'Product Cut', 'Shopping', 'image', 'Natural', '👕', 0, 0, true, 'public', 'product-cut', 'Included official template — Product Cut'
-     WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = 'product-cut')`
+    `UPDATE marketplace_templates SET preview_media = jsonb_build_array('/img/nail/bridal-concept-nail.png')
+      WHERE name = '신부 컨셉 네일' AND is_official = true
+        AND (preview_media IS NULL OR preview_media = '[]'::jsonb OR (preview_media->>0) IS NULL)`
   );
-  await pool.query(`UPDATE marketplace_templates SET price_credits = 0, use_price_credits = 0 WHERE recipe_id = 'product-cut'`);
-
-  // ✅ 기본 제공(무료) 공식 — Model Cut(on-model, 모달 모델+배경 픽커). price 0 → Store 구매게이트/생성 402 없음.
-  await pool.query(
-    `INSERT INTO marketplace_templates
-       (creator_handle, name, category, type, style, emoji, price_credits, use_price_credits, is_official, visibility, recipe_id, prompt)
-     SELECT '@doppia', 'Model Cut', 'Shopping', 'image', 'Natural', '🧍', 0, 0, true, 'public', 'model-cut', 'Included official template — Model Cut'
-     WHERE NOT EXISTS (SELECT 1 FROM marketplace_templates WHERE recipe_id = 'model-cut')`
-  );
-  await pool.query(`UPDATE marketplace_templates SET price_credits = 0, use_price_credits = 0 WHERE recipe_id = 'model-cut'`);
 
   // ✅ 시드 레시피(93종) → recipes 테이블 적재. 정본은 시드 JS(recipeStore 런타임 로드),
   //    이 테이블은 config(JSONB) 전체를 보존하는 DB 사본. 멱등(upsert) — 배포마다 시드와 동기화.
@@ -1155,7 +1159,7 @@ async function migrateMarketplace() {
     ['beauty', 'Beauty'], ['fashion', 'Fashion'], ['jewelry', 'Jewelry'], ['food', 'Food'],
     ['coffee', 'Coffee'], ['home', 'Home'], ['tech', 'Tech'], ['pet', 'Pet'],
     ['people', 'People'], ['ugc', 'UGC'], ['general', 'General'],
-    ['productcut', 'Product Cut'],
+    ['productcut', 'Product Cut'], ['accessories', 'Accessories'], // (2026-07-11) accessories = jewelry 오피셜 전용 테마
   ];
   for (let i = 0; i < THEME_SEED.length; i++) {
     await pool.query(
@@ -1166,10 +1170,11 @@ async function migrateMarketplace() {
   }
   // 공식 recipe-backed 시드 → 테마 백필(vertical 매핑). 멱등(PK).
   const OFFICIAL_THEME = [
-    // (2026-07-08) beauty Hero 3종 제거 → producthero로 이관.
-    ['ring-editorial-campaign', 'jewelry'], ['bracelet-editorial-campaign', 'jewelry'],
-    ['top-down-hero', 'food'], ['void-hero-cut', 'tech'], ['pet-product-hero', 'pet'],
-    ['product-cut', 'productcut'],
+    // (2026-07-11) 현재 오피셜 recipe → 테마. 옛 슬러그(editorial-campaign·top-down/void/pet-hero)는 은퇴로 제거.
+    //   model-cut은 항목 없음 → 아래 'general' 폴백이 배선(prod와 동일).
+    ['product-cut', 'productcut'], ['product-hero', 'beauty'],
+    ['jewelry-product-cut', 'accessories'], ['jewelry-worn-cut', 'accessories'],
+    ['jewelry-on-model', 'accessories'], ['jewelry-hero', 'accessories'],
   ];
   for (const [rid, slug] of OFFICIAL_THEME) {
     await pool.query(
