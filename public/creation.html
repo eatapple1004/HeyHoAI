@@ -123,11 +123,15 @@
   .act .ic{color:var(--dim)}
   .act:hover .ic{color:var(--text)}
   /* Leonardo식 작은 아이콘 액션(저장·공유) + 하단 바 */
-  .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:20px}
-  .mini-acts{display:flex;gap:8px}
+  .foot{display:flex;flex-direction:column;margin-top:auto;padding-top:20px}
+  .foot .own-hint{margin:0 0 12px}
+  .foot-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .mini-acts{display:flex;gap:8px;flex-wrap:wrap}
   .mini-btn{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:color .15s,border-color .15s,background .15s;text-decoration:none;flex-shrink:0}
   .mini-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface)}
   .mini-btn .ic{width:17px;height:17px;color:currentColor}
+  .mini-btn.on{color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 48%,transparent)}          /* Private ON */
+  .mini-btn.danger:hover{color:#ff6b6b;border-color:color-mix(in srgb,#ff6b6b 48%,transparent);background:color-mix(in srgb,#ff6b6b 9%,transparent)}
 
   /* owner section */
   .sep{height:1px;background:var(--border);margin:24px 0}
@@ -237,6 +241,7 @@ const IC={
   globe:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
   lock:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   flag:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
+  trash:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6M14 11v6"/></svg>',
   copy:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
   pencil:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   adv:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M10 9.2l5 2.8-5 2.8z"/></svg>',
@@ -317,29 +322,30 @@ function render(){
     ? `<div class="creatorRow"><a class="creator" href="/creator?handle=${encodeURIComponent(handle.replace(/^@/,''))}">${inner}</a>${followBtn}</div>`
     : `<div class="creatorRow"><div class="creator">${inner}</div></div>`;
 
-  let owner='';
-  if(IT.isOwn){
-    const isPub=IT.visibility==='public';
-    // 소유자 전용 = 공개/비공개 토글 + 안내(공개면 프롬프트도 공개된다는 점 명시). Download는 공용(아래)으로 이동(누구나).
-    owner=`<div class="sep"></div><div class="ownhdr eyebrow">Your creation</div><div class="acts">
-      <button class="act" id="visBtn" onclick="toggleVis()">${isPub?IC.globe+' Public — make private':IC.lock+' Private — make public'}</button>
-    </div>
-    <div class="own-hint" id="visHint">${isPub?'Public — your creation and prompt show in the community.':'Private — only you can see it.'}</div>`;
-  }
+  // Leonardo식 하단 작은 아이콘 행. 게이팅: share/download=전체 · report=남의 것.
+  // 관리 버튼(copy·private·delete) = Studio·Library(내 창작물, FROM=library)에서만. Home·Explore(커뮤니티)는 숨김.
+  const isImg=IT.type!=='video';
+  const isPub=IT.visibility==='public';
+  const manage=(FROM==='library');
+  const mShare=`<button class="mini-btn" onclick="share()" aria-label="Share" title="Share">${IC.share}</button>`;
+  const mDl=`<a class="mini-btn" href="${esc(IT.url)}" download aria-label="Download" title="Download">${IC.dl}</a>`;
+  const mCopy=(manage&&isImg)?`<button class="mini-btn" onclick="copyImage(this)" aria-label="Copy image" title="Copy image">${IC.copy}</button>`:'';
+  const mPriv=(manage&&IT.isOwn)?`<button class="mini-btn${isPub?'':' on'}" id="visBtn" onclick="toggleVis()" aria-label="Toggle visibility" title="${isPub?'Public — your creation and prompt show in the community. Click to make private.':'Private — only you can see it. Click to make public.'}">${isPub?IC.globe:IC.lock}</button>`:'';
+  const mDel=(manage&&IT.isOwn)?`<button class="mini-btn danger" onclick="deleteCreation()" aria-label="Delete" title="Delete this creation">${IC.trash}</button>`:'';
   const report=IT.isOwn?'':`<button class="report" onclick="reportIt()">${IC.flag} Report this creation</button>`;
+  const ownHint=(manage&&IT.isOwn)?`<div class="own-hint" id="visHint">${isPub?'Public — your creation and prompt show in the community.':'Private — only you can see it.'}</div>`:'';
 
   document.getElementById('panel').innerHTML=`
     <div class="date">${esc(dateStr)}</div>
     ${creator}
     ${templateCard()}
     ${promptPanel()}
-    ${owner}
     <div class="foot">
-      <div class="mini-acts">
-        <button class="mini-btn" onclick="share()" aria-label="Share" title="Share">${IC.share}</button>
-        <a class="mini-btn" href="${esc(IT.url)}" download aria-label="Download" title="Download">${IC.dl}</a>
+      ${ownHint}
+      <div class="foot-row">
+        <div class="mini-acts">${mShare}${mDl}${mCopy}${mPriv}${mDel}</div>
+        ${report}
       </div>
-      ${report}
     </div>`;
 }
 
@@ -359,6 +365,29 @@ function share(){
   const url=location.href;
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied'),()=>toast('Copy failed')); }
   else{ toast('Copy this URL: '+url); }
+}
+// 이미지 복사 — 클립보드에 이미지(png) 기록. 이미지 전용(릴 제외). Safari 대응: ClipboardItem에 blob 프라미스 전달(제스처 내 동기 생성).
+async function copyImage(){
+  if(!IT||IT.type==='video'){ toast('Only images can be copied'); return; }
+  if(!(navigator.clipboard&&window.ClipboardItem&&navigator.clipboard.write)){ toast('Copy not supported — use Download'); return; }
+  try{
+    const png=(async()=>{ const blob=await(await fetch(IT.url)).blob();
+      if(blob.type==='image/png')return blob;
+      const bmp=await createImageBitmap(blob); const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height;
+      c.getContext('2d').drawImage(bmp,0,0); return await new Promise(r=>c.toBlob(r,'image/png')); })();
+    await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);
+    toast('Image copied');
+  }catch(e){ toast('Copy failed — try Download'); }
+}
+// creation 삭제 — 내 것만(백엔드도 403 게이트). 확인 후 DELETE, 성공 시 뒤로.
+async function deleteCreation(){
+  if(!IT||!IT.isOwn){ return; }
+  if(!confirm('Delete this creation? This can’t be undone.'))return;
+  try{
+    const r=await fetch('/api/generate/creations/'+IDX,{method:'DELETE'});
+    const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Deleted'); goBack();
+  }catch(e){ toast('Delete failed: '+(e.message||e)); }
 }
 async function toggleFollow(){
   const btn=document.getElementById('followBtn'); if(!btn)return;
@@ -383,7 +412,9 @@ async function toggleVis(){
     const d=await r.json(); if(!r.ok||!d.success)throw new Error(d.error||'failed');
     IT.visibility=d.data.visibility;
     const pub=IT.visibility==='public';
-    btn.innerHTML=pub?IC.globe+' Public — make private':IC.lock+' Private — make public';
+    btn.innerHTML=pub?IC.globe:IC.lock;
+    btn.classList.toggle('on',!pub);
+    btn.title=pub?'Public — your creation and prompt show in the community. Click to make private.':'Private — only you can see it. Click to make public.';
     const hint=document.getElementById('visHint'); if(hint)hint.textContent=pub?'Public — your creation and prompt show in the community.':'Private — only you can see it.';
     toast(next==='private'&&!pub?'Private needs a paid plan — kept public':(pub?'Now public — shows in Explore':'Now private'));
   }catch(e){toast('Update failed: '+(e.message||e));}
