@@ -39,8 +39,8 @@
   .wrap{max-width:1180px;margin:0 auto;padding:0 24px;position:relative;z-index:2}
 
   /* nav */
-  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(7,7,12,.6);border-bottom:1px solid var(--border)}
-  .nav-in{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  nav{position:sticky;top:0;z-index:50;background:transparent;padding:16px 20px 0;transition:padding .3s}
+  .nav-in{max-width:1140px;margin:0 auto;padding:10px 12px 10px 20px;display:flex;align-items:center;justify-content:space-between;background:rgba(12,12,20,.5);backdrop-filter:blur(22px);border:1px solid var(--border2);border-radius:18px;box-shadow:0 12px 40px -22px rgba(0,0,0,.75);transition:background .3s,box-shadow .3s,border-color .3s}
   .brand{font-family:'Sora';font-weight:800;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px}
   .brand span{background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .nav-links{display:flex;gap:2px;align-items:center}
@@ -327,6 +327,35 @@
     *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
     .blob{animation:none}.hx-beam{animation:none;opacity:.4}.rv{opacity:1;transform:none}
   }
+
+  /* ══ nav + footer UI elevation (best-in-class polish, dark mood kept) ══ */
+  nav.scrolled{padding-top:8px}
+  nav.scrolled .nav-in{background:rgba(12,12,20,.82);box-shadow:0 16px 46px -20px rgba(0,0,0,.85);border-color:rgba(255,255,255,.17)}
+  @media(max-width:600px){
+    nav{padding:12px 12px 0}
+    .nav-in{padding:7px 8px 7px 13px}
+    .brand{font-size:18px;gap:7px}
+    .brand-mark{width:22px;height:22px}
+    .nav-cta{gap:7px}
+    .nav-cta .btn{padding:9px 13px;font-size:13.5px}
+  }
+  .brand{align-items:center}
+  .brand-mark{width:26px;height:26px;flex-shrink:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 6px 16px -6px rgba(157,64,224,.7)}
+  .brand-mark svg{width:15px;height:15px;fill:#fff}
+  .nav-cta .btn-primary{background:linear-gradient(100deg,var(--accent),var(--pink))}
+  .nav-cta .btn-primary:hover{box-shadow:0 14px 34px -10px var(--pink)}
+
+  /* footer elevation */
+  footer{position:relative;border-top:none;margin-top:70px}
+  footer::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(106,64,224,.45),rgba(217,96,143,.35),transparent)}
+  footer .brand{font-family:'Sora';font-weight:800;font-size:21px}
+  .foot-social{display:flex;gap:10px;margin-top:18px}
+  .foot-social a{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);color:var(--dim);background:rgba(255,255,255,.02);transition:all .18s}
+  .foot-social a:hover{color:var(--text);border-color:var(--accent2);transform:translateY(-2px)}
+  .foot-social svg{width:17px;height:17px;fill:currentColor}
+  .foot-col h4{color:var(--faint)}
+  .foot-col a{transition:color .18s,padding-left .18s}
+  .foot-col a:hover{padding-left:3px}
 </style>
 </head>
 <body>
@@ -335,7 +364,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand"><span>DOPPIA.AI</span></div>
+    <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 1.8l2.6 6.9 6.9 2.6-6.9 2.6L12 22.8l-2.6-6.9L2.5 13.3l6.9-2.6z"/></svg></span><span>DOPPIA.AI</span></div>
     <div class="nav-links">
       <!-- CREATE -->
       <div class="nav-item">
@@ -607,7 +636,7 @@
 <footer class="wrap">
   <div class="foot-grid">
     <div class="foot-col" style="max-width:290px">
-      <div class="brand" style="margin-bottom:14px"><span>Doppia</span></div>
+      <div class="brand" style="margin-bottom:14px"><span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 1.8l2.6 6.9 6.9 2.6-6.9 2.6L12 22.8l-2.6-6.9L2.5 13.3l6.9-2.6z"/></svg></span><span>Doppia</span></div>
       <p style="font-size:13.5px;color:var(--faint);line-height:1.6">Studio-grade photos and ad videos from one product photo. No prompts, no studio.</p>
       <a href="/studio" class="btn btn-primary grad-cta" style="margin-top:16px">Start free →</a>
     </div>
@@ -661,6 +690,13 @@
     var ex = grid.classList.toggle('expanded');
     seeAll.textContent = ex ? 'Show fewer plans ↑' : 'See all 5 tiers ↓';
   });
+  // nav scroll state (subtle background/border strengthen on scroll)
+  var navEl = document.querySelector('nav');
+  if (navEl) {
+    var onScroll = function(){ navEl.classList.toggle('scrolled', window.scrollY > 12); };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive:true });
+  }
 })();
 </script>
 <script src="/js/pricing.js?v=1"></script>
