@@ -132,6 +132,13 @@
   .mini-btn .ic{width:17px;height:17px;color:currentColor}
   .mini-btn.on{color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 48%,transparent)}          /* Private ON */
   .mini-btn.danger:hover{color:#ff6b6b;border-color:color-mix(in srgb,#ff6b6b 48%,transparent);background:color-mix(in srgb,#ff6b6b 9%,transparent)}
+  /* 공유 드롭다운(Leonardo식): Copy link + 소셜 */
+  .share-wrap{position:relative;display:inline-flex}
+  .share-menu{position:absolute;bottom:calc(100% + 8px);left:0;min-width:186px;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 22px 54px -18px rgba(0,0,0,.75);z-index:30}
+  .share-menu[hidden]{display:none}
+  .share-menu>*{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;background:none;border:0;color:var(--dim);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;text-align:left;width:100%;box-sizing:border-box;transition:color .12s,background .12s}
+  .share-menu>*:hover{background:var(--surface);color:var(--text)}
+  .share-menu .ic{width:15px;height:15px;flex-shrink:0}
 
   /* owner section */
   .sep{height:1px;background:var(--border);margin:24px 0}
@@ -236,12 +243,17 @@ function sellCard(name, price, id, thumb, ctaHtml, extraHtml){
 }
 // 패널 아이콘(카드 툴과 동일 톤의 클린 라인 SVG)
 const IC={
-  dl:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
-  share:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>',
+  dl:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+  share:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>',
   globe:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
   lock:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   flag:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
-  trash:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6M14 11v6"/></svg>',
+  trash:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+  link:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6"/><path d="M10.5 6.5l1.2-1.2a4 4 0 0 1 5.7 5.7l-1.2 1.2"/><path d="M13.5 17.5l-1.2 1.2a4 4 0 0 1-5.7-5.7l1.2-1.2"/></svg>',
+  facebook:'<svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M14 9V7.4c0-.7.3-1 1.1-1H16.6V3.5C16.2 3.4 15.1 3.3 14 3.3c-2.3 0-3.9 1.4-3.9 4V9H7.5v3.1h2.6V21h3.6v-8.9h2.5l.5-3.1z"/></svg>',
+  x:'<svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.6 3h3.1l-6.8 7.8L21.8 21h-6.2l-4.9-6.4L5.1 21H2l7.3-8.3L2.4 3h6.4l4.4 5.9zM16.5 19.1h1.7L7.6 4.8H5.8z"/></svg>',
+  reddit:'<svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M22 11.6a2 2 0 0 0-3.4-1.4c-1.3-.9-3.1-1.4-5-1.5l.9-4 2.8.6a1.4 1.4 0 1 0 .2-1.4l-3.4-.7-1.1 5c-1.9.1-3.6.6-5 1.5A2 2 0 1 0 4.3 13c0 .2-.1.4-.1.6 0 2.8 3.5 5 7.8 5s7.8-2.2 7.8-5c0-.2 0-.4-.1-.6.7-.3 1.2-1 1.2-1.8zM8.4 13a1.3 1.3 0 1 1 2.6 0 1.3 1.3 0 0 1-2.6 0zm7 3.7c-1 1-3 1-3.4 1s-2.4 0-3.4-1a.4.4 0 0 1 .6-.5c.6.6 2 .7 2.8.7s2.2-.1 2.8-.7a.4.4 0 1 1 .6.5zm-.2-2.4a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6z"/></svg>',
+  mail:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>',
   copy:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
   pencil:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   adv:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M10 9.2l5 2.8-5 2.8z"/></svg>',
@@ -322,12 +334,21 @@ function render(){
     ? `<div class="creatorRow"><a class="creator" href="/creator?handle=${encodeURIComponent(handle.replace(/^@/,''))}">${inner}</a>${followBtn}</div>`
     : `<div class="creatorRow"><div class="creator">${inner}</div></div>`;
 
-  // Leonardo식 하단 작은 아이콘 행. 게이팅: share/download=전체 · report=남의 것.
-  // 관리 버튼(copy·private·delete) = Studio·Library(내 창작물, FROM=library)에서만. Home·Explore(커뮤니티)는 숨김.
+  // Leonardo식 하단 작은 아이콘 행. 게이팅: download=전체 · report=남의 것.
+  // share + 관리 버튼(copy·private·delete) = Studio·Library(내 창작물, FROM=library)에서만. Home·Explore(커뮤니티)는 숨김.
   const isImg=IT.type!=='video';
   const isPub=IT.visibility==='public';
   const manage=(FROM==='library');
-  const mShare=`<button class="mini-btn" onclick="share()" aria-label="Share" title="Share">${IC.share}</button>`;
+  const mShare=manage?`<div class="share-wrap">
+    <button class="mini-btn" onclick="toggleShareMenu(event)" aria-label="Share" title="Share">${IC.share}</button>
+    <div class="share-menu" id="shareMenu" hidden>
+      <button type="button" onclick="closeShareMenu();share()">${IC.link}<span>Copy link</span></button>
+      <button type="button" onclick="shareOpen('facebook')">${IC.facebook}<span>Facebook</span></button>
+      <button type="button" onclick="shareOpen('x')">${IC.x}<span>X</span></button>
+      <button type="button" onclick="shareOpen('reddit')">${IC.reddit}<span>Reddit</span></button>
+      <a href="mailto:?subject=${encodeURIComponent('Made with Doppia')}&body=${encodeURIComponent(location.href)}" onclick="closeShareMenu()">${IC.mail}<span>Email</span></a>
+    </div>
+  </div>`:'';
   const mDl=`<a class="mini-btn" href="${esc(IT.url)}" download aria-label="Download" title="Download">${IC.dl}</a>`;
   const mCopy=(manage&&isImg)?`<button class="mini-btn" onclick="copyImage(this)" aria-label="Copy image" title="Copy image">${IC.copy}</button>`:'';
   const mPriv=(manage&&IT.isOwn)?`<button class="mini-btn${isPub?'':' on'}" id="visBtn" onclick="toggleVis()" aria-label="Toggle visibility" title="${isPub?'Public — your creation and prompt show in the community. Click to make private.':'Private — only you can see it. Click to make public.'}">${isPub?IC.globe:IC.lock}</button>`:'';
@@ -366,6 +387,13 @@ function share(){
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>toast('Link copied'),()=>toast('Copy failed')); }
   else{ toast('Copy this URL: '+url); }
 }
+// 공유 드롭다운(Copy link + 소셜). 바깥 클릭 시 닫힘.
+function toggleShareMenu(e){ if(e)e.stopPropagation(); const m=document.getElementById('shareMenu'); if(!m)return;
+  if(m.hasAttribute('hidden')){ m.removeAttribute('hidden'); setTimeout(()=>document.addEventListener('click',closeShareMenu,{once:true}),0); } else closeShareMenu(); }
+function closeShareMenu(){ const m=document.getElementById('shareMenu'); if(m)m.setAttribute('hidden',''); }
+function shareOpen(net){ closeShareMenu(); const u=encodeURIComponent(location.href);
+  const map={facebook:'https://www.facebook.com/sharer/sharer.php?u='+u, x:'https://twitter.com/intent/tweet?url='+u, reddit:'https://www.reddit.com/submit?url='+u};
+  const href=map[net]; if(href)window.open(href,'_blank','noopener,noreferrer,width=620,height=560'); }
 // 이미지 복사 — 클립보드에 이미지(png) 기록. 이미지 전용(릴 제외). Safari 대응: ClipboardItem에 blob 프라미스 전달(제스처 내 동기 생성).
 async function copyImage(){
   if(!IT||IT.type==='video'){ toast('Only images can be copied'); return; }
