@@ -297,6 +297,7 @@
   .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
   .rb-badge.tpl{color:var(--accent2);background:rgba(124,108,255,.14)}
   .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
+  .rb-badge.ugc{color:#ffb26b;background:rgba(255,178,107,.14)}/* (2026-07-11) Ad Video 크리에이션 배지 */
   .rb-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
   .rb-prompt{font-size:13.5px;line-height:1.55;color:var(--dim);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
   .rb-copy{align-self:flex-start;margin-top:1px;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
@@ -2963,6 +2964,7 @@ function batchRowHtml(b){
     : b.items.map(studioMediaCard).join('')+(b.failed||[]).map(f=>studioFailedCard(f.idx)).join(''); // 성공 슬롯 + 실패 슬롯(레오나르도식)
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
+  const isUgc=/^ugc/i.test(String(b.model||'')); // (2026-07-11) Ad Video(UGC) 크리에이션 = model 'ugc-v1' → Custom 아닌 Ad Video로 표기
   const usable=b.items.filter(i=>i.url); // 이 creation의 사진 또는 릴(영상 포함)
   const firstU=usable[0]; const isReelBatch=!!(firstU&&firstU.type==='reel');
   const tplFromBtn=(!b.loading&&usable.length)
@@ -2970,7 +2972,7 @@ function batchRowHtml(b){
     :'';
   const head=isTpl
     ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
-    :`<span class="rb-badge custom">✎ Custom</span><div class="rb-prompt">${esc(b.promptText||'Custom prompt')}</div>`+
+    :`<span class="rb-badge ${isUgc?'ugc':'custom'}">${isUgc?'🎬 Ad Video':'✎ Custom'}</span><div class="rb-prompt">${esc(b.promptText||(isUgc?'Ad Video':'Custom prompt'))}</div>`+
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
       tplFromBtn+
