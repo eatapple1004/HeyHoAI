@@ -34,11 +34,11 @@
   .hero-status b{color:var(--accent2);font-weight:700}
   .hero-status .coin{color:var(--gold)}
 
-  .section-label{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin:0 0 16px;text-align:center}
+  .section-label{font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent2);margin:0 0 16px;text-align:center}
 
-  .plans{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;align-items:stretch}
+  .plans{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px;align-items:stretch}
   .ent-plans{grid-template-columns:repeat(3,1fr);margin-bottom:52px}
-  @media(max-width:1000px){.plans{grid-template-columns:repeat(2,1fr)}.ent-plans{grid-template-columns:1fr}}
+  @media(max-width:1160px){.plans{grid-template-columns:repeat(3,1fr)}}@media(max-width:1000px){.plans{grid-template-columns:repeat(2,1fr)}.ent-plans{grid-template-columns:1fr}}
   @media(max-width:560px){.plans{grid-template-columns:1fr}}
   .plan-card{padding:26px 22px;display:flex;flex-direction:column;position:relative;border-radius:var(--r);overflow:hidden;
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));border:1px solid var(--border2);
@@ -63,7 +63,7 @@
   @media(max-width:860px){.packs{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:480px){.packs{grid-template-columns:1fr}}
   .pack-card{padding:22px;text-align:center;transition:transform .2s;position:relative}
-  .pack-card:hover{transform:translateY(-4px)}
+  .pack-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -24px rgba(0,0,0,.6)}
   .pack-card.best{border-color:color-mix(in srgb,var(--gold) 50%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 35%,transparent)}
   .pack-card .ptag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),var(--pink));color:#1a1a27;white-space:nowrap}
   .pack-card .amt{font-family:'Sora';font-size:24px;font-weight:800;color:var(--gold)}
@@ -86,6 +86,7 @@
   .cycle .save{font-size:10px;font-weight:800;background:rgba(94,224,214,.18);color:var(--cyan);padding:2px 6px;border-radius:6px;letter-spacing:.3px}
   .cycle button.on .save{background:rgba(255,255,255,.24);color:#fff}
   .plan-card .price .pv,.plan-card .price .ev{font-size:34px;font-weight:800;letter-spacing:-1.5px;color:var(--text)}
+  .plan-card .price .cur{font-size:20px;font-weight:600;color:var(--dim)}
   .plan-card .price{margin-bottom:9px}
   .plan-card .cyc-note{font-size:11.5px;color:var(--dim);margin:0 0 4px;min-height:14px;line-height:1.4}
 
@@ -143,14 +144,14 @@
   </div>
   <div class="plans fade d3">
     <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
-      <div class="pname">Free</div><div class="price">$<span class="pv">0</span><span> /mo</span></div>
+      <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">1,500 credits (one-time)</div>
       <ul><li>Try all modes</li><li>Solo lookbook</li><li>2K quality</li><li>2 concurrent slots</li></ul>
       <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
     </div>
     <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
-      <div class="pname">Starter</div><div class="price">$<span class="pv">19</span><span> /mo</span></div>
+      <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>No watermark</li><li>Group lookbook</li><li>3 concurrent slots</li></ul>
@@ -158,21 +159,21 @@
     </div>
     <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
       <div class="ribbon">Most popular</div>
-      <div class="pname">Standard</div><div class="price">$<span class="pv">49</span><span> /mo</span></div>
+      <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Starter</li><li>Edit results</li><li>4 concurrent slots</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
     <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
-      <div class="pname">Pro</div><div class="price">$<span class="pv">99</span><span> /mo</span></div>
+      <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Standard</li><li>Concept cut</li><li>5 concurrent slots</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
     </div>
     <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
-      <div class="pname">Premium</div><div class="price">$<span class="pv">199</span><span> /mo</span></div>
+      <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Pro</li><li data-flag="reels">Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
@@ -183,7 +184,7 @@
   <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
   <div class="plans ent-plans fade d3">
     <div class="plan-card glass" data-ent="team">
-      <div class="pname">Enterprise Team</div><div class="price">$<span class="ev">599</span><span> /mo</span></div>
+      <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
       <ul><li>Team roles &amp; shared pool</li><li>Commercial license</li><li>10 concurrent slots</li></ul>
@@ -191,14 +192,14 @@
     </div>
     <div class="plan-card glass featured" data-ent="pro">
       <div class="ribbon">Best offer</div>
-      <div class="pname">Enterprise Pro</div><div class="price">$<span class="ev">899</span><span> /mo</span></div>
+      <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Team</li><li>15 concurrent slots</li><li>Priority support</li></ul>
       <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
     </div>
     <div class="plan-card glass" data-ent="elite">
-      <div class="pname">Elite</div><div class="price">$<span class="ev">1,199</span><span> /mo</span></div>
+      <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
       <ul><li>Max scale</li><li>20 concurrent slots</li><li>Dedicated support</li></ul>

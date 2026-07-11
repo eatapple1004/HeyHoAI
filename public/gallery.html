@@ -26,10 +26,10 @@
   .chip:hover{color:var(--text)}
   .chip.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
 
-  .grid{column-count:2;column-gap:14px}  /* 좁은 화면=2칸 고정(세로 1줄 방지) */
+  .grid{column-count:2;column-gap:16px}  /* 좁은 화면=2칸 고정(세로 1줄 방지) */
   @media(min-width:600px){.grid{column-count:auto;columns:6 185px}}  /* 다른 탭(템플릿/구매/저장) 폴백 */
   /* My creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
-  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:14px}
+  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:16px}
   @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media(min-width:1200px){#grid{grid-template-columns:repeat(5,minmax(0,1fr))}}/* (2026-07-03) Library=넓은 화면 한 줄 5개(Community는 4개 유지). 롤백: 이 줄 제거 */
@@ -81,7 +81,7 @@
   .item .actions button:hover{background:var(--accent);border-color:var(--accent)}
   .item .actions button.del:hover{background:#ff5f6e;border-color:#ff5f6e}
 
-  .empty{text-align:center;padding:72px 20px;color:var(--dim)}
+  .empty{text-align:center;padding:72px 20px;color:var(--dim);max-width:520px;margin:0 auto}
   .empty .ico{font-size:42px;margin-bottom:14px}
   .empty h3{font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px}
   .empty p{font-size:14px;margin-bottom:22px}
@@ -171,7 +171,7 @@
     <div class="grid fade d2" id="grid"></div>
     <div id="scrollSentinel"></div>
     <div class="empty hidden" id="empty">
-      <div class="ico"></div><h3>Your library is waiting</h3>
+      <div class="ico">🖼️</div><h3>Your library is waiting</h3>
       <p>Your very first result comes out watermark-free — make something you can post today.</p>
       <a href="/studio" class="btn btn-primary">Open Studio →</a>
       <div class="empty-hooks">
@@ -408,7 +408,7 @@ async function gotoMyTemplates(tid){
   setTimeout(()=>{ if(MYT.highlightId===target){ MYT.highlightId=null; renderMyTemplates(); } }, 2400);
 }
 // 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
-function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+14); }
+function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+16); }
 function layoutGridMasonry(){
   const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
   g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
