@@ -390,7 +390,7 @@
   .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
 
   /* recipe grid */
-  .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:16px}
+  .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}/* (2026-07-11) 4:5 전환 후 카드가 큼 → 최소폭 192→160·gap 16→14로 축소(한 줄 더 많이). */
   .recipe-card{border-radius:16px;overflow:hidden;cursor:pointer;border:2px solid var(--border);background:var(--surface);transition:all .22s}
   .recipe-card:hover{transform:translateY(-5px);border-color:var(--border2)}
   .recipe-card.selected{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,108,255,.2)}
