@@ -18,13 +18,13 @@
   .head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:26px}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
   .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
-  .head .count{font-size:13px;color:var(--faint)}
+  .head .count{font-size:13px;color:var(--dim)}
   .head .count b{color:var(--accent2)}
 
   .filter-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px}
-  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
+  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
   .chip:hover{color:var(--text)}
-  .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
+  .chip.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
 
   .grid{column-count:2;column-gap:14px}  /* 좁은 화면=2칸 고정(세로 1줄 방지) */
   @media(min-width:600px){.grid{column-count:auto;columns:6 185px}}  /* 다른 탭(템플릿/구매/저장) 폴백 */
@@ -71,7 +71,7 @@
   .item .actions button:hover{background:var(--accent);border-color:var(--accent)}
   .item .actions button.del:hover{background:#ff5f6e;border-color:#ff5f6e}
 
-  .empty{text-align:center;padding:72px 20px;color:var(--faint)}
+  .empty{text-align:center;padding:72px 20px;color:var(--dim)}
   .empty .ico{font-size:42px;margin-bottom:14px}
   .empty h3{font-family:'Sora';font-size:18px;color:var(--text);margin-bottom:8px}
   .empty p{font-size:14px;margin-bottom:22px}
@@ -121,9 +121,12 @@
   .lib-chip.lib-new:hover{border-color:var(--accent);color:#fff}
   .lib-none{font-size:12px;color:rgba(255,255,255,.6)}
   .lp-x{margin-top:8px;flex-shrink:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .card:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+  .card:focus-within .ovt{opacity:1}
+  @media(max-width:760px){.filter-row .chip{padding:9px 16px}}
 </style>
 </head>
-<body>
+<body class="has-rail">
 <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="grain"></div>
 
@@ -164,7 +167,7 @@
       <div class="empty-hooks">
         <div class="eh">Come back daily — your streak earns free credits</div>
         <div class="eh">Turn one look into a full week's set in a tap</div>
-        <div class="eh">7 industries · 48+ templates ready, zero prompts</div>
+        <div class="eh">4 categories · dozens of templates, zero prompts</div>
       </div>
     </div>
   </section>
@@ -178,12 +181,12 @@
 
 <!-- 릴스 생성 모달 -->
 <div class="modal-bg" id="reelModal" onclick="if(event.target===this)closeReel()">
-  <div class="modal">
-    <button class="x" onclick="closeReel()">✕</button>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Turn photo into a Reel">
+    <button class="x" onclick="closeReel()" aria-label="Close">✕</button>
     <h3>Turn photo into a Reel</h3>
     <div class="msub">Turn this photo into a moving 5-second Reel. Describe the motion you want.</div>
     <img id="reelSrcPreview" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px" alt="">
-    <textarea id="reelPrompt" placeholder="e.g. camera slowly zooms in while hair sways gently" style="width:100%;min-height:72px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px"></textarea>
+    <textarea id="reelPrompt" aria-label="Describe the motion for your Reel" placeholder="e.g. camera slowly zooms in while hair sways gently" style="width:100%;min-height:72px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px"></textarea>
     <button class="btn btn-primary" style="width:100%" id="reelGoBtn" onclick="createReel()">Create Reel · <span id="reelCost">◈ —</span></button>
     <div id="reelProgress" style="display:none;margin-top:14px;text-align:center;color:var(--dim);font-size:13px">
       <div class="spin" style="width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;margin:8px auto 12px"></div>
@@ -194,8 +197,8 @@
 
 <!-- 결과물 뷰어 모달 (새 탭 대신 창으로) -->
 <div class="modal-bg" id="viewModal" onclick="if(event.target===this)closeView()">
-  <div class="modal view-modal">
-    <button class="x" onclick="closeView()">✕</button>
+  <div class="modal view-modal" role="dialog" aria-modal="true" aria-label="Creation preview">
+    <button class="x" onclick="closeView()" aria-label="Close">✕</button>
     <div id="viewMedia" class="view-media"></div>
     <div class="view-card">
       <div class="view-info">
@@ -219,7 +222,7 @@
   .modal{width:min(440px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative}
   .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
   .modal .msub{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.5}
-  .modal .x{position:absolute;top:15px;right:18px;font-size:16px;color:var(--dim);cursor:pointer;background:none;border:none}
+  .modal .x{position:absolute;top:7px;right:10px;font-size:16px;line-height:1;padding:8px;color:var(--dim);cursor:pointer;background:none;border:none}
   @keyframes sp{to{transform:rotate(360deg)}}
   .item .actions button.reel:hover{background:var(--accent);border-color:var(--accent)}
   .item .media{cursor:zoom-in}
@@ -330,7 +333,7 @@ function maybeOpenSave(){
   else { toast('Creation not found.'); }
 }
 function renderFilters(){
-  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<div class="chip ${filter===f?'active':''}" onclick="setFilter('${f}')">${f}</div>`).join('');
+  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<button type="button" class="chip ${filter===f?'active':''}" aria-pressed="${filter===f}" onclick="setFilter('${f}')">${f}</button>`).join('');
 }
 function match(it){
   if(filter==='Photos')return it.type==='photo';
@@ -354,7 +357,7 @@ function render(){
       ? `<a class="by" href="/creator?handle=${encodeURIComponent(String(it.creatorHandle).replace(/^@/,''))}" onclick="event.stopPropagation()">@${esc(it.creatorHandle)}</a>`
       : `<span class="by">@me</span>`;
     const like=`<button class="like ${it.liked?'on':''}" title="${it.liked?'Liked':'Like'}" onclick="event.stopPropagation();toggleLike(${it.idx},this)"><span class="hrt">${it.liked?'♥':'♡'}</span><span class="lct">${it.likes||0}</span></button>`;
-    return `<div class="card" onclick="location.href='/creation?idx=${it.idx}&from=library'">
+    return `<div class="card" role="link" tabindex="0" aria-label="Open creation${it.name?' — '+esc(it.name):''}" onclick="location.href='/creation?idx=${it.idx}&from=library'" onkeydown="cardKey(event,${it.idx})">
       <div class="ovt">${by}${like}</div>
       ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
       ${media}
@@ -434,6 +437,7 @@ async function toggleLike(idx,btn){
   finally{btn.disabled=false;}
 }
 function setFilter(f){filter=f;renderFilters();render();}
+function cardKey(e,idx){if(e.key==='Enter'||e.key===' '){e.preventDefault();location.href='/creation?idx='+idx+'&from=library';}}
 
 // ── 결과물 공개/비공개 토글 (My creations) ──
 async function toggleVis(idx){
@@ -475,7 +479,7 @@ function closeView(){
   document.getElementById('viewMedia').innerHTML=''; // 비디오 정지 + 메모리 해제
 }
 function viewNewTab(){ if(VIEW_URL) window.open(VIEW_URL,'_blank'); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeView();} });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeView();closeReel();} });
 
 // 글로벌 테마 칩 캐시(ensureThemes) — loadLibThemes(My templates 테마 필터)가 사용. (수동 저장 ctpl은 P4에서 제거)
 let _themesCache=null;
