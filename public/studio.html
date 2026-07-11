@@ -115,6 +115,12 @@
   .cut-bg input.cbg-sw::-webkit-color-swatch-wrapper{padding:0}
   .cut-bg input.cbg-sw::-webkit-color-swatch{border:none;border-radius:6px}
   .cut-bg input.cbg-sw::-moz-color-swatch{border:none;border-radius:6px}
+  /* (2026-07-11) 컴포즈 인라인 Add detail 필드(전 템플릿) */
+  .det-compose{width:100%;max-width:none;margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .det-compose .det-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2)}
+  .det-compose .det-ta{width:100%;min-height:38px;max-height:120px;resize:vertical;font-family:inherit;font-size:13.5px;line-height:1.4;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:10px;padding:8px 11px;box-sizing:border-box}
+  .det-compose .det-ta:focus{outline:none;border-color:var(--accent)}
+  .det-compose .det-ta::placeholder{color:var(--faint)}
   /* 모델 픽커 (Studio Model Cut 모달) */
   .model-sel .ms-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2);display:block;margin-bottom:8px}
   .model-sel .ms-filters,.cut-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
@@ -2516,8 +2522,11 @@ const BG_CUTS=new Set(['flat-lay-cut','ghost-mannequin-cut']);
 function normHexColor(v){ if(!v)return ''; const s=String(v).trim().replace(/^#/,''); return (/^[0-9a-fA-F]{3}$/.test(s)||/^[0-9a-fA-F]{6}$/.test(s))?'#'+s.toLowerCase():''; }
 function cutBgActive(){ return BG_CUTS.has(state.cutId)?normHexColor(state.cutBg):''; } // 선택 컷이 지원+유효 hex면 반환
 function expandHex6(v){ const n=normHexColor(v); if(!n)return ''; const s=n.slice(1); return '#'+(s.length===3?s.split('').map(c=>c+c).join(''):s); } // #abc→#aabbcc (컬러 인풋은 6자리 필요)
-function onCutBgInput(el){ state.cutBg=el.value; const p=document.getElementById('rmCutBgSw'); const h6=expandHex6(el.value); if(p&&h6)p.value=h6; } // 텍스트 입력 → 피커 동기화
-function onCutBgPick(el){ const v=(el.value||'').toUpperCase(); state.cutBg=v; const t=document.getElementById('rmCutBgInput'); if(t)t.value=v; } // 피커 선택 → 텍스트 동기화
+// 배경색 = state.cutBg 단일소스. 모달(rm*)·컴포즈(cb*) 둘 다 동기화(둘은 동시노출 안 되지만 안전).
+function onCutBgInput(el){ state.cutBg=el.value; const h6=expandHex6(el.value); ['rmCutBgSw','cbCutBgSw'].forEach(function(id){var p=document.getElementById(id); if(p&&h6)p.value=h6;}); ['rmCutBgInput','cbCutBgInput'].forEach(function(id){var t=document.getElementById(id); if(t&&t!==el)t.value=el.value;}); } // 텍스트 입력 → 피커+미러 동기화
+function onCutBgPick(el){ const v=(el.value||'').toUpperCase(); state.cutBg=v; ['rmCutBgInput','cbCutBgInput'].forEach(function(id){var t=document.getElementById(id); if(t)t.value=v;}); ['rmCutBgSw','cbCutBgSw'].forEach(function(id){var p=document.getElementById(id); if(p&&p!==el)p.value=el.value;}); } // 피커 선택 → 텍스트+미러 동기화
+// 컴포즈 Add detail → state만 갱신(재렌더 없이 포커스 유지). 생성은 extraPromptText()가 state.detail 사용(전 템플릿 공통).
+function onComposeDetail(el){ state.detail=el.value; }
 
 // 템플릿 설명(서버 rationale) 캐시 + 상세 모달
 let RECIPE_DESC={};
@@ -2732,12 +2741,23 @@ function syncTplTrigger(){
           +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`; }).join('');
       cutHtml=`<div class="cut-sel"><span class="cut-lbl">Cut type</span><div class="cut-row">${btns}</div></div>`;
     }
+    // (2026-07-11) 컴포즈 인라인 세부설정 — 모달뿐 아니라 생성 박스에서도 편집(state 단일소스).
+    //   배경색: Product Cut(BG_CUT) 컷 선택 시만. Add detail: 전 템플릿 공통(항상 노출).
+    let bgHtml='';
+    if(r.cuts&&r.cuts.length&&BG_CUTS.has(state.cutId)){
+      const bgv=state.cutBg||'';
+      bgHtml=`<div class="cut-bg show"><span class="cbg-lbl">Background color</span>`
+        +`<input type="text" id="cbCutBgInput" class="cbg-inp" maxlength="7" placeholder="#RRGGBB" autocomplete="off" spellcheck="false" value="${esc(bgv)}" oninput="onCutBgInput(this)">`
+        +`<input type="color" id="cbCutBgSw" class="cbg-sw" value="${expandHex6(bgv)||'#000000'}" oninput="onCutBgPick(this)" title="Pick a color"></div>`;
+    }
+    const detHtml=`<div class="det-compose"><span class="det-lbl">Add detail (optional)</span>`
+      +`<textarea id="cbDetail" class="det-ta" maxlength="300" rows="1" placeholder="Add your own touch — e.g. red dress, golden hour" oninput="onComposeDetail(this)">${esc(state.detail||'')}</textarea></div>`;
     wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
       +`<span class="ts-thumb" style="${thumb}"></span>`
       +`<span class="ts-body"><span class="ts-cap">Template selected</span><span class="ts-name">${esc(r.name)}</span>`
       +`<span class="ts-sub">Your ${out} will be made with this look · tap to change</span></span>`
       +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`
-      +cutHtml;
+      +cutHtml+bgHtml+detHtml;
     wrap.style.display='';
     c.style.display='';
   }else if(wrap){ // 미선택 → "Pick a template" CTA(누르면 픽커로 스크롤). Custom 모드는 프롬프트 직접이라 숨김.
