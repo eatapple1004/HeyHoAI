@@ -2916,6 +2916,8 @@ const RC_SVG={
   pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
   priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
 };
+// 카드 키보드 활성(Enter·Space) → 상세페이지. gallery cardKey와 동일 패턴.
+function rcKey(e,idx){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); location.href='/creation?idx='+idx+'&from=library'; } }
 function studioMediaCard(o){
   const reel=(o.type==='reel');
   // 로드 시 카드 비율을 실제 미디어 비율(9:16·1:1·16:9·이미지)로 맞춤 → UI 안 잘림(cover crop 방지).
@@ -2923,8 +2925,9 @@ function studioMediaCard(o){
     ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover" onloadedmetadata="if(this.videoWidth)this.closest('.result-card').style.aspectRatio=this.videoWidth+'/'+this.videoHeight"></video>`
     :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover" onload="if(this.naturalWidth)this.closest('.result-card').style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" alt="">`;
   // 카드 클릭 → 결과물 상세페이지(from=library: 내 결과물 필름스트립·뒤로가기 정합). idx 없으면(placeholder 등) 확대 라이트박스로 폴백.
+  // idx 있으면 키보드 접근(role/tabindex/Enter·Space) — gallery 카드와 동일 a11y 패턴.
   const open=(o.idx!=null)
-    ?`onclick="location.href='/creation?idx=${o.idx}&from=library'" style="cursor:pointer"`
+    ?`role="link" tabindex="0" aria-label="Open creation" onclick="location.href='/creation?idx=${o.idx}&from=library'" onkeydown="rcKey(event,${o.idx})" style="cursor:pointer"`
     :`onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')" style="cursor:zoom-in"`;
   const priv=(o.visibility==='private');
   // Private/Public 토글 = idx 있는 결과만(PATCH 대상). 신규 릴(idx 미정)은 리로드 후 표시.
