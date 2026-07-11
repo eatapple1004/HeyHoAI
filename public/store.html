@@ -21,17 +21,17 @@
   .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
   .empty{text-align:center;color:var(--dim);padding:80px 20px}
   .empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px;font-family:'Sora'}
-  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a27;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid var(--border2)}
   #toast.show{opacity:1}
   .filter-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
-  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
+  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
   .chip:hover{color:var(--text)}
-  .chip.active{background:rgba(124,108,255,.16);color:var(--accent2);border-color:rgba(124,108,255,.4)}
+  .chip.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
   #tplSearch{width:100%;max-width:340px;display:block;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13.5px;padding:9px 13px;margin-bottom:18px}
   .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
   .tcard{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);transition:border-color .2s,transform .2s}
   .tcard:hover{transform:translateY(-3px);border-color:var(--border2)}
-  .tthumb{position:relative;aspect-ratio:4/5;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#7c6cff,#5ee0d6)}
+  .tthumb{position:relative;aspect-ratio:4/5;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--accent),var(--cyan))}
   .tthumb img,.tthumb video{width:100%;height:100%;object-fit:cover}
   .temoji{font-size:46px}
   .tprice{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;text-transform:uppercase;letter-spacing:.3px}
@@ -52,6 +52,8 @@
   .tuse.owned:hover{filter:none}
   .tview{display:flex;align-items:center;background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:700;text-decoration:none}
   .tview:hover{border-color:var(--border2)}
+  @media(max-width:760px){#toast{bottom:76px}.tuse{padding:11px 10px}.filter-row .chip{padding:9px 16px}}
+  @media(hover:none){.tcard.is-owned{opacity:.86}}
 </style>
 </head>
 <body class="has-rail">
@@ -61,12 +63,12 @@
 <div class="wrap">
   <div class="head">
     <h1>Store</h1>
-    <div class="sub">Browse templates and <b style="color:var(--accent2)">add the ones you like to your Library</b> — then use them in Studio with your own face or product.</div>
+    <div class="sub">Browse templates and <b style="color:var(--accent2)">add the ones you like</b> — then use them in Studio with your own product.</div>
   </div>
 
   <div class="filter-row" id="catFilter"></div>
   <div class="filter-row" id="priceFilter" data-flag="marketplace"></div>
-  <input id="tplSearch" type="search" placeholder="Search templates…" oninput="renderCatalog()" autocomplete="off" />
+  <input id="tplSearch" type="search" placeholder="Search templates…" aria-label="Search templates" oninput="renderCatalog()" autocomplete="off" />
   <div class="tgrid" id="tplGrid"></div>
   <div class="empty hidden" id="tplEmpty"><b>No templates here</b>Try another category or price.</div>
 </div>
@@ -85,6 +87,7 @@ async function acquireTpl(tid,btn){
     if(r.status===402){toast(d.error||'Not enough credits — top up in Billing');if(btn){btn.disabled=false;btn.textContent=orig;}return;}
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     toast((d.data&&d.data.alreadyOwned)?'Already in your Studio':'Unlocked — added to your Studio');
+    const ct=CATALOG.find(x=>x.id===tid); if(ct)ct.owned=true;
     if(btn){btn.textContent='✓ Available in Studio';btn.disabled=true;btn.classList.add('owned');}
   }catch(e){ toast('Could not unlock: '+(e.message||e)); if(btn){btn.disabled=false;btn.textContent=orig;} }
 }
@@ -104,9 +107,11 @@ function tcard(t){
   const themeTag=themeSlug?`<span class="tthemetag">${esc(themeName(themeSlug))}</span>`:'';
   const actions=owned
     ? `<button class="tuse owned" disabled>✓ Available in Studio</button>`
-    : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">🔓 Unlock · ◈ ${t.price_credits}</button>`;
+    : (t.price_credits>0
+        ? `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">🔓 Unlock · ◈ ${t.price_credits}</button>`
+        : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add</button>`);
   return `<div class="tcard${owned?' is-owned':''}">
-    <div class="tthumb" onclick="goTpl('${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span>${themeTag}</div>
+    <div class="tthumb" role="button" tabindex="0" aria-label="View ${esc(t.name)}" onclick="goTpl('${esc(t.id)}')" onkeydown="tkey(event,'${esc(t.id)}')">${thumb}${ownedBadge}<span class="tprice">${price}</span>${themeTag}</div>
     <div class="tbody">
       <div class="tname">${esc(t.name)}</div>
       <div class="tmeta">by ${t.creator_handle?`<a class="hlink" href="/creator?handle=${encodeURIComponent(String(t.creator_handle).replace(/^@/,''))}">${esc(t.creator_handle)}</a>`:'@creator'} · ♥ ${t.likes_count||0}${t.type==='reel'?' · ▶ Reel':''}</div>
@@ -125,9 +130,9 @@ function themeName(slug){return slug==='All'?'All':((THEMES.find(t=>t.slug===slu
 //   taxonomy.js가 SINGLE SOURCE — 카테고리 추가/삭제 시 Store 칩 자동 반영. 롤백: 아래 3함수를 옛 isThemeVisible 버전으로 복원.
 function catLabel(slug){if(slug==='All')return 'All';var c=(window.TAXONOMY&&TAXONOMY.categoryBySlug)?TAXONOMY.categoryBySlug(slug):null;return (c&&c.label)||slug;}
 function catThemes(slug){return (window.TAXONOMY&&TAXONOMY.themesForCategory)?TAXONOMY.themesForCategory(slug):[];}
-function renderThemeFilter(){const cats=(window.TAXONOMY&&TAXONOMY.activeCategories)?TAXONOMY.activeCategories().map(function(c){return c.slug;}):[];const all=['All'].concat(cats);document.getElementById('catFilter').innerHTML=all.map(s=>`<div class="chip ${curTheme===s?'active':''}" onclick="setTheme('${s}')">${catLabel(s)}</div>`).join('');}
+function renderThemeFilter(){const cats=(window.TAXONOMY&&TAXONOMY.activeCategories)?TAXONOMY.activeCategories().map(function(c){return c.slug;}):[];const all=['All'].concat(cats);document.getElementById('catFilter').innerHTML=all.map(s=>`<button type="button" class="chip ${curTheme===s?'active':''}" aria-pressed="${curTheme===s}" onclick="setTheme('${s}')">${catLabel(s)}</button>`).join('');}
 function setTheme(s){curTheme=s;renderThemeFilter();renderCatalog();}
-function renderPrices(){document.getElementById('priceFilter').innerHTML=PRICES.map(c=>`<div class="chip ${curPrice===c?'active':''}" onclick="setPrice('${c}')">${c}</div>`).join('');}
+function renderPrices(){document.getElementById('priceFilter').innerHTML=PRICES.map(c=>`<button type="button" class="chip ${curPrice===c?'active':''}" aria-pressed="${curPrice===c}" onclick="setPrice('${c}')">${c}</button>`).join('');}
 function setPrice(c){curPrice=c;renderPrices();renderCatalog();}
 async function loadThemesThenCatalog(){try{THEMES=(await(await fetch('/api/marketplace/themes')).json()).data||[];}catch(e){THEMES=[];}renderThemeFilter();loadCatalog();}
 async function loadCatalog(){
@@ -152,6 +157,7 @@ function renderCatalog(){
   empty.classList.add('hidden');grid.innerHTML=list.map(tcard).join('');
 }
 function goTpl(id){location.href='/template?id='+encodeURIComponent(id);}
+function tkey(e,id){if(e.key==='Enter'||e.key===' '){e.preventDefault();goTpl(id);}}
 async function toggleBookmark(id,btn){
   const on=btn.classList.contains('on');
   try{
