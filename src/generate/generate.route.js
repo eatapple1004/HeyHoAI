@@ -710,6 +710,7 @@ router.get('/creations/:idx', async (req, res, next) => {
       templateId: r.template_id,
       templateSource: r.template_source,
       templateName: r.template_name,
+      model: r.model, // 상세에서 Ad Video(UGC=ugc-v1) 판별용 (community API와 동일 노출)
       prompt: r.template_source ? null : (r.prompt_text || null), // Custom(자작 프롬프트)만 공개 — 템플릿 프롬프트는 블랙박스
       mintedTemplateId: r.minted_template_id || null, // 이 creation의 auto 템플릿(본인=관리/추가, 타인=구매 대상)
       ownsTemplate: !!r.owns_template,                // 뷰어 보유 여부
