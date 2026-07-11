@@ -574,6 +574,16 @@
   .result-card:hover .actions{opacity:1}
   .result-card .actions button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer}
   .result-card .actions button:hover{background:var(--accent);border-color:var(--accent)}
+  /* 카드 우상단 툴(Leonardo식): Private/Public 토글 + Download. 호버 시 노출(터치=항상). */
+  .result-card .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:4}
+  .result-card:hover .rc-tools,.result-card:focus-within .rc-tools{opacity:1;transform:none}
+  @media(hover:none){.result-card .rc-tools{opacity:1;transform:none}}
+  .result-card .rc-btn{width:30px;height:30px;border-radius:9px;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,transform .1s}
+  .result-card .rc-btn:hover{background:rgba(0,0,0,.8)}
+  .result-card .rc-btn:active{transform:scale(.9)}
+  .result-card .rc-btn svg{width:15px;height:15px;display:block}
+  .result-card .rc-btn.on{background:var(--accent)}                 /* Private ON = 강조 */
+  .result-card .rc-btn.on:hover{background:var(--accent);filter:brightness(1.12)}
 
   .loading{text-align:center;padding:54px 0;color:var(--dim)}
   .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
@@ -2900,6 +2910,12 @@ function updateBarCore(){
 // ── (2026-06-28 테스트) 생성 결과 피드: Leonardo식 배치당 한 행 + 로드 시 최근 복구 + 생성 시 누적 ──
 // batch = {items:[{url,type,idx}], promptText, templateSource, templateName, model, w, h}
 let STUDIO_BATCHES=[];
+// 카드 우상단 툴 아이콘(Leonardo식)
+const RC_SVG={
+  dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
+  pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
+  priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+};
 function studioMediaCard(o){
   const reel=(o.type==='reel');
   // 로드 시 카드 비율을 실제 미디어 비율(9:16·1:1·16:9·이미지)로 맞춤 → UI 안 잘림(cover crop 방지).
@@ -2910,10 +2926,37 @@ function studioMediaCard(o){
   const open=(o.idx!=null)
     ?`onclick="location.href='/creation?idx=${o.idx}&from=library'" style="cursor:pointer"`
     :`onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')" style="cursor:zoom-in"`;
+  const priv=(o.visibility==='private');
+  // Private/Public 토글 = idx 있는 결과만(PATCH 대상). 신규 릴(idx 미정)은 리로드 후 표시.
+  const visBtn=(o.idx!=null)
+    ?`<button class="rc-btn${priv?' on':''}" type="button" aria-pressed="${priv?'true':'false'}" title="${priv?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleCardVis(this,${o.idx})">${priv?RC_SVG.priv:RC_SVG.pub}</button>`
+    :'';
+  const dlBtn=`<a class="rc-btn" href="${esc(o.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
   return `<div class="result-card" ${open}>${inner}
-      <div class="actions">
-        <a href="${esc(o.url)}" download onclick="event.stopPropagation()"><button>⬇ Download</button></a>
-      </div></div>`;
+      <div class="rc-tools">${visBtn}${dlBtn}</div></div>`;
+}
+// 카드 Private/Public 토글 — gallery와 동일 엔드포인트(서버가 private=구독 게이트). 재렌더에도 유지되게 STUDIO_BATCHES 동기화.
+async function toggleCardVis(btn,idx){
+  if(btn.disabled)return;
+  const next=btn.classList.contains('on')?'public':'private';
+  btn.disabled=true;
+  try{
+    const r=await fetch('/api/generate/results/'+idx+'/visibility',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visibility:next})});
+    const d=await r.json();
+    if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    const vis=(d.data&&d.data.visibility)||next;
+    const nowPriv=(vis==='private');
+    btn.classList.toggle('on',nowPriv);
+    btn.setAttribute('aria-pressed',nowPriv?'true':'false');
+    btn.title=nowPriv?'Private — only you can see it':'Public — shows in Explore';
+    btn.innerHTML=nowPriv?RC_SVG.priv:RC_SVG.pub;
+    for(const b of STUDIO_BATCHES){ const it=b.items.find(i=>i.idx===idx); if(it){ it.visibility=vis; break; } } // 상태 소스 동기화
+    if(window.toast){
+      if(next==='private'&&vis!=='private') toast('Private mode needs a paid plan — kept public.','error');
+      else toast(nowPriv?'Now private — only you can see it.':'Now public — shows in Explore.');
+    }
+  }catch(e){ if(window.toast)toast('Could not update: '+(e.message||e),'error'); }
+  finally{ btn.disabled=false; }
 }
 // 우측 완성 영상: 기본 소리 ON 시도. 브라우저 자동재생 정책상 막히면 muted 유지(버튼으로 켤 수 있음).
 function ugcTryUnmute(v){
@@ -3999,7 +4042,7 @@ async function loadStudioResults(reset){
       if(!b){ b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
       if(r.status==='success'&&r.file_path){
         const fn=r.file_path.split('/').pop();
-        if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx});
+        if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx,visibility:r.visibility});
       }else if(r.status==='failed'){
         if(!(b.failed||[]).some(f=>f.idx===r.idx)) (b.failed=b.failed||[]).push({idx:r.idx});
       }
@@ -4375,7 +4418,7 @@ async function generateImages(r,subj,count,pending){
   const fail=(data.results||[]).length-ok.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
   // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지 + 실패 슬롯)
-  if(pending){ pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
+  if(pending){ const vis=privateOn()?'private':'public'; pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
