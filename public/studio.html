@@ -129,6 +129,11 @@
   .pick-sel .psel-th{width:26px;height:26px;border-radius:50%;background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
   .pick-sel .psel-nm{font-size:13px;font-weight:600;color:var(--text)}
   .pick-sel .psel-chip.txt{padding-left:12px}
+  /* (2026-07-11) 컷 많을 때 접이식(선택만 표시 + 펼침) */
+  .cut-sel .cut-collapsed{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:5px 13px 5px 5px;border:1px solid var(--border2);border-radius:999px;background:rgba(255,255,255,.03);cursor:pointer;color:var(--text);font-family:inherit}
+  .cut-sel .cut-collapsed:hover{border-color:var(--accent)}
+  .cut-sel .cut-collapsed .cut-more{font-size:11.5px;color:var(--dim);font-weight:600;margin-left:2px}
+  .cut-sel .cut-collapse-x{background:none;border:none;color:var(--accent2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-left:10px;letter-spacing:0;text-transform:none}
   /* 모델 픽커 (Studio Model Cut 모달) */
   .model-sel .ms-lbl{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent2);display:block;margin-bottom:8px}
   .model-sel .ms-filters,.cut-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
@@ -2517,7 +2522,7 @@ function pickRecipe(id){
 }
 // 중첩 템플릿: 부모(cuts 보유) 선택 시 첫 컷을 기본, 그 외엔 컷 없음.
 function syncDefaultCut(){const r=curRecipe();state.cutId=(r&&r.cuts&&r.cuts.length)?r.cuts[0].id:null;}
-function setCut(id){state.cutId=id;syncTplTrigger();} // 컷 전환 — 컴포즈 칩만 다시 그림
+function setCut(id){state.cutId=id;cutsExpanded=false;syncTplTrigger();} // 컷 전환 — 선택 후 접이식이면 다시 접힘
 function cutLabel(n){return String(n||'')
   .replace(/\s*Cut$/,'')                 // "Flat Lay Cut" → "Flat Lay" (productcut)
   .replace(/^Jewelry On Model\s+/,'')    // "Jewelry On Model Earrings" → "Earrings"
@@ -2527,6 +2532,9 @@ function cutLabel(n){return String(n||'')
 
 // ── 컷 배경색(hex) — Flat Lay·Ghost Mannequin 컷만 지원 ──
 const BG_CUTS=new Set(['flat-lay-cut','ghost-mannequin-cut']);
+const CUT_INLINE_MAX=8; // 컷이 이보다 많으면(예: Product Hero 19) 컴포즈에서 접이식(선택만+▾). 적으면 인라인 그리드.
+let cutsExpanded=false; // 접이식 컷 펼침 상태(전환 UI 상태). 컷 선택/템플릿 변경 시 접힘.
+function toggleCutsExpand(){ cutsExpanded=!cutsExpanded; syncTplTrigger(); }
 function normHexColor(v){ if(!v)return ''; const s=String(v).trim().replace(/^#/,''); return (/^[0-9a-fA-F]{3}$/.test(s)||/^[0-9a-fA-F]{6}$/.test(s))?'#'+s.toLowerCase():''; }
 function cutBgActive(){ return BG_CUTS.has(state.cutId)?normHexColor(state.cutBg):''; } // 선택 컷이 지원+유효 hex면 반환
 function expandHex6(v){ const n=normHexColor(v); if(!n)return ''; const s=n.slice(1); return '#'+(s.length===3?s.split('').map(c=>c+c).join(''):s); } // #abc→#aabbcc (컬러 인풋은 6자리 필요)
@@ -2704,6 +2712,7 @@ function selectFromModal(){
   if(!modalRecipeId)return;
   const sel=(state.recipeId!==modalRecipeId); // 모달은 미선택 카드에서만 열림 → 항상 선택
   state.recipeId=sel?modalRecipeId:null;
+  cutsExpanded=false; // 새 템플릿 선택 → 접이식 컷 접힘으로 초기화
   const dt=document.getElementById('rmDetail');
   state.detail=sel?(dt?dt.value.trim():''):''; // 선택 시 Add detail 저장, 해제 시 클리어
   syncDefaultCut();
@@ -2723,7 +2732,7 @@ function toggleTemplatePicker(){
   g.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeTemplatePicker(){}
-function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;state.cutBg=null;state.modelId=null;state.bgId=null;state.axis=null;renderRecipes();updateBar();}
+function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;state.cutBg=null;state.modelId=null;state.bgId=null;state.axis=null;cutsExpanded=false;renderRecipes();updateBar();}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
   const rm=document.getElementById('recipeModal'); if(rm&&rm.classList.contains('open'))closeRecipeModal();
@@ -2742,12 +2751,25 @@ function syncTplTrigger(){
     if(r.cuts&&r.cuts.length){
       if(!state.cutId||!r.cuts.some(ct=>ct.id===state.cutId))state.cutId=r.cuts[0].id; // 방어: 항상 유효한 컷
       const grad=r.grad||'linear-gradient(150deg,#7c6cff,#5ee0d6)';
-      const btns=r.cuts.map(ct=>{
-        const img=ct.preview||('/img/productcut/'+ct.id+'.png');
-        return `<button type="button" data-cut="${ct.id}" class="cut-card${state.cutId===ct.id?' on':''}" onclick="event.stopPropagation();setCut('${ct.id}')">`
-          +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
-          +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`; }).join('');
-      cutHtml=`<div class="cut-sel"><span class="cut-lbl">Cut type</span><div class="cut-row">${btns}</div></div>`;
+      const cutImg=ct=>ct.preview||('/img/productcut/'+ct.id+'.png');
+      // (2026-07-11) 컷이 임계값 초과(예: Product Hero 19)면 컴포즈를 꽉 채우지 않도록 접이식:
+      //   기본=선택 컷만 칩+▾, 펼치면 전체 그리드(고르면 다시 접힘). 적으면(≤CUT_INLINE_MAX) 현행 그리드.
+      const many=r.cuts.length>CUT_INLINE_MAX;
+      if(many&&!cutsExpanded){
+        const sel=r.cuts.find(ct=>ct.id===state.cutId)||r.cuts[0];
+        cutHtml=`<div class="cut-sel"><span class="cut-lbl">Cut type</span>`
+          +`<button type="button" class="cut-collapsed" onclick="event.stopPropagation();toggleCutsExpand()" title="Change style">`
+          +`<span class="psel-th" style="background:url('${esc(cutImg(sel))}') center/cover no-repeat, ${grad}"></span>`
+          +`<span class="psel-nm">${esc(cutLabel(sel.name))}</span>`
+          +`<span class="cut-more">▾ ${r.cuts.length} styles</span></button></div>`;
+      }else{
+        const btns=r.cuts.map(ct=>
+          `<button type="button" data-cut="${ct.id}" class="cut-card${state.cutId===ct.id?' on':''}" onclick="event.stopPropagation();setCut('${ct.id}')">`
+          +`<span class="cc-thumb" style="background:url('${esc(cutImg(ct))}') center/cover no-repeat, ${grad}"></span>`
+          +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`).join('');
+        const collapse=many?`<button type="button" class="cut-collapse-x" onclick="event.stopPropagation();toggleCutsExpand()">▴ Collapse</button>`:'';
+        cutHtml=`<div class="cut-sel"><span class="cut-lbl">Cut type${collapse}</span><div class="cut-row">${btns}</div></div>`;
+      }
     }
     // (2026-07-11) 컴포즈 인라인 세부설정 — 모달뿐 아니라 생성 박스에서도 편집(state 단일소스).
     //   배경색: Product Cut(BG_CUT) 컷 선택 시만. Add detail: 전 템플릿 공통(항상 노출).
