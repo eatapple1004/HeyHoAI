@@ -2904,11 +2904,15 @@ function studioMediaCard(o){
   const reel=(o.type==='reel');
   // 로드 시 카드 비율을 실제 미디어 비율(9:16·1:1·16:9·이미지)로 맞춤 → UI 안 잘림(cover crop 방지).
   const inner=reel
-    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover;cursor:zoom-in" onloadedmetadata="if(this.videoWidth)this.closest('.result-card').style.aspectRatio=this.videoWidth+'/'+this.videoHeight" onclick="openImageModal('${esc(o.url)}','reel')"></video>`
-    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover;cursor:zoom-in" onload="if(this.naturalWidth)this.closest('.result-card').style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" alt="" onclick="openImageModal('${esc(o.url)}','photo')">`;
-  return `<div class="result-card">${inner}
+    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover" onloadedmetadata="if(this.videoWidth)this.closest('.result-card').style.aspectRatio=this.videoWidth+'/'+this.videoHeight"></video>`
+    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover" onload="if(this.naturalWidth)this.closest('.result-card').style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" alt="">`;
+  // 카드 클릭 → 결과물 상세페이지(from=library: 내 결과물 필름스트립·뒤로가기 정합). idx 없으면(placeholder 등) 확대 라이트박스로 폴백.
+  const open=(o.idx!=null)
+    ?`onclick="location.href='/creation?idx=${o.idx}&from=library'" style="cursor:pointer"`
+    :`onclick="openImageModal('${esc(o.url)}','${reel?'reel':'photo'}')" style="cursor:zoom-in"`;
+  return `<div class="result-card" ${open}>${inner}
       <div class="actions">
-        <a href="${esc(o.url)}" download><button>⬇ Download</button></a>
+        <a href="${esc(o.url)}" download onclick="event.stopPropagation()"><button>⬇ Download</button></a>
       </div></div>`;
 }
 // 우측 완성 영상: 기본 소리 ON 시도. 브라우저 자동재생 정책상 막히면 muted 유지(버튼으로 켤 수 있음).
