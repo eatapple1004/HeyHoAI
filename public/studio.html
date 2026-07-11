@@ -185,6 +185,14 @@
   .usc-ver button{background:transparent;border:none;color:#fff;font-size:14px;cursor:pointer;width:18px;height:18px;line-height:1;padding:0;border-radius:50%}
   .usc-ver button:hover{background:rgba(255,255,255,.22)}
   .usc-ver span{color:#fff;font-size:10px;font-weight:700;min-width:24px;text-align:center}
+  /* 씬 버전 카드 — 비활성(선택 안 됨)은 어둡고 투명하게, 활성은 ✓ 배지 */
+  /* 미디어만 어둡게+투명(선택 안 됨 표시) — Select 버튼은 밝게 유지 */
+  .usc-dim .usc-thumb img,.usc-dim .usc-thumb video{filter:brightness(.42) saturate(.85);opacity:.8;transition:filter .18s,opacity .18s}
+  .usc-dim:hover .usc-thumb img,.usc-dim:hover .usc-thumb video{filter:brightness(.62) saturate(.95);opacity:.92}
+  .usc-dim-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .usc-dim-pick{background:#1a1a22;color:#fff;font-size:12px;font-weight:800;padding:7px 16px;border-radius:20px;box-shadow:0 3px 14px rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.6);letter-spacing:.2px}
+  .usc-dim:hover .usc-dim-pick{background:#26262f}
+  .usc-sel-badge{position:absolute;top:6px;right:6px;background:var(--accent,#8b7cf6);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.4)}
   .usc-cap{font-size:11.5px;line-height:1.35;padding:7px 8px;min-height:34px;color:var(--fg,#e8e8ef);outline:none;border-bottom:1px solid transparent}
   .usc-cap:focus{background:rgba(255,255,255,.05);border-bottom-color:var(--accent,#8b7bff)}
   .usc-cap:empty:before{content:attr(data-ph);color:var(--muted);opacity:.7}
@@ -2910,16 +2918,20 @@ function ugcSceneStripHtml(b){
   const cards=u.scenes.map((s,i)=>{
     const ed=u.edits[s.n]||{};
     const capV=('spoken' in ed)?ed.spoken:s.spoken; const cap=((capV&&String(capV).trim())?capV:(('onScreenText' in ed)?ed.onScreenText:s.onScreenText))||''; // 음성자막=spoken(옛 잡 onScreenText 폴백)
-    const spk=(('spoken' in ed)?ed.spoken:s.spoken)||'';
     const tailMs=(('tailMs' in ed)?ed.tailMs:s.tailMs)||0; // P2: 씬 끝 여백(음성모드 음성-주도 타이밍)
-    const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
-    const thumb=isVid
-      ?`<video src="${esc(s.clipUrl)}" autoplay muted loop playsinline preload="metadata" onerror="ugcClipBroken(this)"></video>` // 각 씬 클립 자동재생(무음 미리보기). 404/유실 시 ugcClipBroken이 loop·src 제거해 재시도·깜빡임 차단하고 씬번호 플레이스홀더로 폴백.
-      :(s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`);
-    const zoomUrl=isVid?s.clipUrl:(s.thumb||''); const zoomType=isVid?'reel':'photo'; // 씬 클릭 시 확대(영상/이미지)
-    const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${zoomType}')" style="cursor:zoom-in"`:'';
-    return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
-      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumb}<span class="usc-idx">${i+1}</span>${(s.versions&&s.versions.length>1)?`<div class="usc-ver" onclick="event.stopPropagation()" ondragstart="event.stopPropagation()"><button type="button" title="Previous version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},-1)">‹</button><span>${(s.activeVersion||0)+1}/${s.versions.length}</span><button type="button" title="Next version" onclick="ugcSceneVersion(event,'${esc(u.jobId)}',${s.n},1)">›</button></div>`:''}</div>
+    const multi=Array.isArray(s.versions)&&s.versions.length>1; const activeV=s.activeVersion||0; // 재생성으로 버전이 여럿이면 버전별 카드로 펼침(3-1·3-2…)
+    // 버전 썸네일 HTML(영상/이미지) — clip/thumb/still로 렌더
+    const thumbHtml=(clip,thmb,still)=>{ const isVid=clip&&!still&&/\.(mp4|webm|mov)(\?|$)/i.test(clip);
+      return isVid?`<video src="${esc(clip)}" autoplay muted loop playsinline preload="metadata" onerror="ugcClipBroken(this)"></video>`:(thmb?`<img src="${esc(thmb)}" alt="" loading="lazy">`:`<div class="usc-noimg">${s.n}</div>`); };
+    // 비활성(선택 안 된) 버전 카드 — 어둡고 투명하게, 클릭 시 선택. 삭제 안 함(선택만).
+    const dimCard=(vi)=>{ const v=s.versions[vi]||{};
+      return `<div class="usc usc-dim" data-n="${s.n}" title="Tap to select this version"><div class="usc-thumb" style="cursor:pointer" onclick="ugcSceneSelectVersion('${esc(u.jobId)}',${s.n},${vi})">${thumbHtml(v.clipUrl||'',v.thumb,!!v.isStill)}<span class="usc-idx">${i+1}-${vi+1}</span><div class="usc-dim-ov"><span class="usc-dim-pick">Select</span></div></div></div>`; };
+    // 활성 카드(또는 단일 버전) — 전체(썸네일+선택표시+자막+액션+수정)
+    const mainCard=()=>{ const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
+      const zoomUrl=isVid?s.clipUrl:(s.thumb||''); const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${isVid?'reel':'photo'}')" style="cursor:zoom-in"`:'';
+      const label=multi?`${i+1}-${activeV+1}`:`${i+1}`;
+      return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
+      <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumbHtml(s.clipUrl,s.thumb,!!s.isStill)}<span class="usc-idx">${label}</span>${multi?`<span class="usc-sel-badge" title="Selected version">✓</span>`:''}</div>
       ${u.hasVoice?`<div class="usc-line"><span class="usc-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
            title="${UGC_CAPTIONS?'Edit what\'s said (voice) & shown (caption) in this scene':'Edit the voice narration for this scene'}" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>`:''/* 음악모드(음성 없음)=씬별 음성/자막 줄 숨김(음성 언급 제거) */}
       ${u.hasVoice?`<div class="usc-pad"><span class="usc-pad-lbl" title="Extra pause after this scene's voice (voice mode)">+여백</span><select class="usc-pad-sel" onchange="ugcSceneSetTail('${esc(u.jobId)}',${s.n},this.value)">${[0,500,1000,1500,2000].map(v=>`<option value="${v}"${tailMs===v?' selected':''}>${v===0?'0s':'+'+(v/1000)+'s'}</option>`).join('')}</select></div>`:''/* P2: 씬별 여백 — 음성모드만(음성-주도 타이밍에 tailMs로 반영) */}
@@ -2930,7 +2942,9 @@ function ugcSceneStripHtml(b){
         <button type="button" class="usc-del" title="Remove scene" onclick="ugcSceneRemove('${esc(u.jobId)}',${s.n})" ${u.scenes.length<=1?'disabled':''}>🗑</button>
       </div>
       <button type="button" class="usc-adv-toggle" onclick="ugcToggleAdv('${esc(u.jobId)}',${s.n})">✎ Edit scene</button>
-      <div class="usc-busy-ov"><div class="rb-spin"></div></div></div>`;
+      <div class="usc-busy-ov"><div class="rb-spin"></div></div></div>`; };
+    if(!multi)return mainCard();
+    return s.versions.map((_,vi)=>vi===activeV?mainCard():dimCard(vi)).join(''); // 버전 순서 유지: 활성=전체카드, 나머지=어두운 선택카드
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
     <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
@@ -3299,6 +3313,17 @@ function ugcSceneVersion(ev,jobId,n,dir){
   s.clipUrl=v.clipUrl||s.clipUrl; if('thumb' in v)s.thumb=v.thumb; s.isStill=!!v.isStill; if(v.durationSec)s.durationSec=v.durationSec;
   b.ugc._dirty=true;
   ugcReflectEdit(jobId); // 즉시(레이어드=setScenes, 폴백=재렌더). Save 시 setVersions로 굽힘.
+}
+// 버전 카드(3-1·3-2…) 클릭 → 그 버전을 활성으로(절대 인덱스). 어두운 카드 선택용. 무과금(재조립만).
+function ugcSceneSelectVersion(jobId,n,idx){
+  const b=ugcFindBatch(jobId); if(!b)return; const s=b.ugc.scenes.find(x=>x.n===n);
+  if(!s||!Array.isArray(s.versions)||!s.versions[idx])return;
+  if((s.activeVersion||0)===idx)return; // 이미 선택된 버전
+  const v=s.versions[idx]||{};
+  s.activeVersion=idx;
+  s.clipUrl=v.clipUrl||s.clipUrl; if('thumb' in v)s.thumb=v.thumb; s.isStill=!!v.isStill; if(v.durationSec)s.durationSec=v.durationSec;
+  b.ugc._dirty=true;
+  ugcReflectEdit(jobId); // 재생기 클립 즉시 스왑 + 스트립 재렌더(활성/비활성 하이라이트 갱신)
 }
 // 씬 수정하기: 자연어 지시로 그 씬만 재생성(원본 프롬프트 미노출). 패널 토글.
 function ugcToggleAdv(jobId,n){
