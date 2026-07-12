@@ -713,9 +713,10 @@ router.get('/creations/:idx', async (req, res, next) => {
     } else if (r.template_id && r.template_source === 'recipe') {
       const m = await query(`SELECT mt.id, mt.name, mt.price_credits, COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr WHERE gr.template_source='recipe' AND gr.template_id = mt.recipe_id AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb FROM marketplace_templates mt WHERE mt.recipe_id = $1 AND mt.is_official = true AND mt.status = 'active' LIMIT 1`, [r.template_id]);
       if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: true, mine: false }; // 공식 recipe=기본 라이브러리
-    } else if (r.template_name && r.template_source === 'creation') {
-      // γ("이 결과로 시작하기"로 재생성): 출처가 크리에이션이라 marketplace/recipe id 매칭이 없음(relTemplate=null → "no longer available").
-      //   같은 이름의 살아있는 템플릿(공식 우선)으로 "Made with"를 연결 → 실존 템플릿이 사라진 것처럼 뜨던 것 해소.
+    }
+    // 폴백: 위 id 기반 조회로 못 찾았지만(템플릿 삭제 · γ 'creation' 출처 · 프론트↔marketplace 드리프트) template_name이 있으면
+    //   같은 이름의 살아있는 템플릿(공식 우선)으로 "Made with"를 연결 → 실존 템플릿이 카드 없이 "MADE WITH 이름"만 뜨던 것 해소(출처 무관 커버).
+    if (!relTemplate && r.template_name) {
       const m = await query(`SELECT m.id, m.name, m.price_credits, COALESCE(m.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr WHERE ((gr.template_source='marketplace' AND gr.template_id = m.id::text) OR (m.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = m.recipe_id)) AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb, (m.creator_id = $2) AS mine, (m.is_official OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = m.id AND o.user_id = $2)) AS owned FROM marketplace_templates m WHERE m.name = $1 AND m.status = 'active' ORDER BY m.is_official DESC, m.id LIMIT 1`, [r.template_name, req.user.id]);
       if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: !!m.rows[0].owned, mine: !!m.rows[0].mine };
     }
