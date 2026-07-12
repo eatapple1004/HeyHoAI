@@ -162,9 +162,10 @@
   .result-row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--border)}
   .result-row:first-child{padding-top:8px}
   .result-row:last-child{border-bottom:none}
-  .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
-  .rb-media .result-card{width:230px;max-width:44vw}       /* 행 안에서 고정폭(grid 1fr 아님) */
-  .rb-media .result-card.landscape{width:auto;height:230px;max-width:100%}  /* 가로>세로 = 세로 길이 기준(폭 고정 시 납작해지는 것 방지) */
+  /* 결과 미디어 = Leonardo식: 카드는 높이 기준(크롭 없이 비율 유지), 정보 패널은 미디어 바로 옆에(빈 공간 제거) */
+  .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:0 1 auto;min-width:0;max-width:calc(100% - 306px)}  /* grow 제거 → 정보가 미디어 옆에 밀착. 306=메타284+갭22 */
+  .rb-media .result-card{height:300px;width:auto;max-width:100%}   /* 높이 기준(폭=비율) → 여러 장=균일 높이 그리드. 가로/세로/정사각 모두 크롭 없이 커버 */
+  .rb-media .result-card:only-child{height:460px}                 /* 단독 = 큰 프리뷰 */
   .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
   /* ── Ad Video 결과 편집: 씬 스트립 ── */
   .ugc-scenes{flex:0 0 100%;order:3;margin-top:4px;padding-top:14px;border-top:1px dashed var(--border)}
@@ -337,7 +338,7 @@
   .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:13px;display:flex;align-items:center;gap:5px}
   .rb-failed .rbf-msg{color:var(--dim);font-size:11.5px;line-height:1.5}
   .rb-failed .rbf-del{margin-top:2px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:6px 13px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
-  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media .result-card{width:46%;max-width:none}}
+  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media{max-width:none}.rb-media .result-card{width:46%;height:auto;max-width:none}.rb-media .result-card:only-child{width:100%}}
   /* ▲▲▲ 결과 피드 블록 끝 ▲▲▲ */
   /* 선택된 레퍼런스 = 선택기 아래 정사각 사진 타일(Leonardo식) */
   /* 이미지 추가 아이콘 버튼 + 툴별 슬롯 팝오버 */
@@ -2925,12 +2926,11 @@ const RC_SVG={
 };
 // 카드 키보드 활성(Enter·Space) → 상세페이지. gallery cardKey와 동일 패턴.
 function rcKey(e,idx){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); location.href='/creation?idx='+idx+'&from=library'; } }
-// 로드 시 카드 비율을 실제 미디어 비율로 맞춤 + 가로>세로면 .landscape(높이 기준)로 전환 → 16:9가 폭 고정에 눌려 납작해지던 것 해소.
+// 로드 시 카드에 실제 미디어 비율 반영 → 높이 기준 카드의 폭이 비율대로 정해짐(가로/세로/정사각 크롭 없음).
 function fitResultCard(el){
   const w=el.videoWidth||el.naturalWidth, h=el.videoHeight||el.naturalHeight; if(!w||!h) return;
   const card=el.closest('.result-card'); if(!card) return;
   card.style.aspectRatio=w+'/'+h;
-  card.classList.toggle('landscape', w>h);
 }
 function studioMediaCard(o){
   const reel=(o.type==='reel');
