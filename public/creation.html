@@ -451,7 +451,7 @@ function render(){
   const media=IT.type==='video'
     ? `<video class="media" src="${esc(IT.url)}" controls loop playsinline></video>`
     : `<img class="media" src="${esc(IT.url)}" alt="">`;
-  const vbadge=IT.type==='video'?`<span class="vbadge">${IC.play}Reel</span>`:'';
+  const vbadge=IT.type==='video'?`<span class="vbadge">${IC.play}${isUgc()?'Ad Video':'Reel'}</span>`:'';
   document.getElementById('stageWrap').innerHTML=`<div class="stage">${vbadge}
     <button class="like ${IT.liked?'on':''}" title="${IT.liked?'Liked':'Like'}" onclick="toggleLike(this)"><span class="hrt">${IT.liked?IC.heartFull:IC.heart}</span><span class="lct">${IT.likes||0}</span></button>
     ${media}</div>`;
