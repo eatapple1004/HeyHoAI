@@ -282,7 +282,8 @@
   .usc-add-t{font-size:11.5px;margin-top:5px}
   /* 씬 개수·길이 세그먼트 */
   .ugc-seg{display:inline-flex;gap:4px;background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:9px;padding:3px}
-  .ugc-seg-b{background:none;border:none;color:var(--dim);font-size:12px;padding:5px 11px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1}
+  .ugc-seg-b{background:none;border:none;color:var(--dim);font-size:12px;padding:5px 11px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1;display:inline-flex;align-items:center;gap:5px}
+  .ugc-ic{width:14px;height:14px;flex-shrink:0}  /* S3 라인아트 아이콘(이모지 대체·creation.html IC 어휘) */
   .ugc-seg-b.active{background:var(--accent2,#8b7bff);color:#fff}
   .ugc-seg-b:hover:not(.active){color:var(--text)}
   /* 생성 중: 우측 대본 패널 유지(읽기전용 흐림 + Generating 배지) */
@@ -688,7 +689,7 @@
   /* Ad Video 포맷 픽커 + 모델 그리드 */
   .ugc-fmt{display:flex;gap:8px}
   .ugc-fmt-btn{flex:1;display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
-  .ugc-fmt-btn b{font-size:13.5px}
+  .ugc-fmt-btn b{font-size:13.5px;display:inline-flex;align-items:center;gap:6px}
   .ugc-fmt-btn span{font-size:11px;color:var(--dim)}
   .ugc-fmt-btn.active{border-color:var(--accent);background:rgba(124,108,255,.1)}
   .ugc-mf{font-size:11.5px;padding:3px 9px;border:1px solid var(--border2);border-radius:999px;background:none;color:var(--dim);cursor:pointer;font-family:inherit}
@@ -840,7 +841,7 @@
       </div>
       <input type="text" id="ugcProductName" placeholder="Product name — e.g. Rouge Velvet Matte  (optional)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px;font-family:inherit">
       <textarea class="script-ta" id="ugcConcept" placeholder="Tell us how you want it — a sentence or just keywords.  e.g. &quot;clean, sensual lookbook for 20–30s&quot;  ·  &quot;red background, luxurious color&quot;"></textarea>
-      <button type="button" id="ugcSuggestBtn" onclick="ugcSuggestConcept()" style="margin:4px 0 2px;background:none;border:none;color:var(--accent2);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:0">✨ Suggest a concept from your photo</button>
+      <button type="button" id="ugcSuggestBtn" onclick="ugcSuggestConcept()" style="margin:4px 0 2px;background:none;border:none;color:var(--accent2);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:0;display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Suggest a concept from your photo</button>
       <div style="margin:2px 0 8px">
         <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
@@ -850,8 +851,8 @@
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Video format</div>
         <div class="ugc-fmt">
-          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b>📦 Product only</b><span>Just the product</span></button>
-          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b>🧍 With a model</b><span>Product + a model using it</span></button>
+          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b><span>Just the product</span></button>
+          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>With a model</b><span>Product + a model using it</span></button>
         </div>
         <input type="hidden" id="ugcFormat" value="product-ad">
         <div id="ugcModelPicker" style="display:none;margin-top:8px">
@@ -906,13 +907,13 @@
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Mode</div>
         <div class="ugc-seg" id="ugcModeSeg">
-          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)">🎙️ Voice</button>
-          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)">🎵 Music only</button>
+          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voice</button>
+          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only</button>
         </div>
         <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 세그먼트가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
       </div>
       <div class="script-ctrls">
-        <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()">✍ Write script</button>
+        <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Write script</button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
     </div>
@@ -931,7 +932,7 @@
       <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
-          <input type="checkbox" id="ugcMusic" checked> 🎵 Add background music
+          <input type="checkbox" id="ugcMusic" checked> <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Add background music</span>
         </label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
           <label id="ugcVoiceLbl" style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--dim)">
@@ -966,12 +967,12 @@
               <option value="high-energy, driving, punchy">Energetic</option>
             </select>
           </label>
-          <button type="button" id="ugcPreviewBtn" onclick="ugcPreviewVoice()" class="btn" style="align-self:flex-end;font-size:12px;padding:6px 12px">▶ Preview voice</button>
+          <button type="button" id="ugcPreviewBtn" onclick="ugcPreviewVoice()" class="btn" style="align-self:flex-end;font-size:12px;padding:6px 12px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Preview voice</button>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:12px">
-        <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()">↻ Rewrite</button>
-        <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()">✓ Generate video</button>
+        <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.9 4.2"/><path d="M20 4v6h-6"/></svg>Rewrite</button>
+        <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>Generate video</button>
       </div>
     </div>
     <!-- 우측 결과 인라인(생성 로딩·완성 영상·씬 스트립을 대본 자리에 배치) -->
@@ -3151,7 +3152,7 @@ function ugcSceneStripHtml(b){
       <button type="button" class="ugc-music-go" onclick="ugcChangeMusic('${esc(b.ugc.jobId)}')">Change music</button>
     </div>
     ${u.hasVoice?`<div class="ugc-arow">
-      <span class="ugc-arow-lbl">🎙️ Voice</span>
+      <span class="ugc-arow-lbl" style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voice</span>
       <label class="ugc-arow-chk"><input type="checkbox" class="ugc-voice-on" checked> Voiceover</label>
       <select class="ugc-arow-sel ugc-voice-id" aria-label="Voice">${UGC_VOICE_OPTS}</select>
       <select class="ugc-arow-sel ugc-voice-speed" aria-label="Speed">
@@ -4602,7 +4603,7 @@ async function ugcPreviewVoice(){
   const vid=(document.getElementById('ugcVoiceId')||{}).value||'';
   const sp=(document.getElementById('ugcSpeed')||{}).value||'1';
   const hook=(typeof ugcScript==='object'&&ugcScript&&ugcScript.hook)?String(ugcScript.hook):'';
-  const reset=()=>{ btn.textContent='▶ Preview voice'; btn.disabled=false; };
+  const reset=()=>{ btn.innerHTML='<svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Preview voice'; btn.disabled=false; };
   try{
     if(_ugcPreviewAudio){ try{_ugcPreviewAudio.pause();}catch(e){} _ugcPreviewAudio=null; }
     btn.disabled=true; btn.textContent='⏳ Loading…';
@@ -4687,7 +4688,8 @@ function ugcRenderScriptPreview(data){
     `<div style="margin-top:8px;color:var(--faint);font-size:11.5px">💡 Each line has an icon — hover it for what it means. Tap any line to edit before generating.</div>`;
   ugcBindScriptEdits();
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
-  document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?`✓ Generate video <span class="gen-cost">◈ ${data.cost}</span>`:'✓ Generate video';
+  {const chk='<svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+   document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?chk+`Generate video <span class="gen-cost">◈ ${data.cost}</span>`:chk+'Generate video';}
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display='none'; // 작성 스켈레톤 숨김
   for(let i=STUDIO_BATCHES.length-1;i>=0;i--){ if(STUDIO_BATCHES[i].isUgc)STUDIO_BATCHES.splice(i,1); } // 이전 Ad Video 결과(우측 인라인) 치우기
@@ -4797,7 +4799,7 @@ async function ugcRenderVideo(){
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;}
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
-  if(outputType==='model-editorial'&&!ugcSelectedModelImg){toast('Pick a model first (🧍 With a model).');return;}
+  if(outputType==='model-editorial'&&!ugcSelectedModelImg){toast('Pick a model first for "With a model".');return;}
   const hint=document.getElementById('ugcHint');
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
