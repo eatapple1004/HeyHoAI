@@ -302,6 +302,7 @@
   .rb-badge.ugc{color:#ffb26b;background:rgba(255,178,107,.14)}/* (2026-07-11) Ad Video 크리에이션 배지 */
   .rb-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
   .rb-prompt{font-size:13.5px;line-height:1.55;color:var(--dim);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .rb-prompt.clip{cursor:pointer}   /* 잘린 프롬프트 = 탭하면 펼쳐 스크롤로 전체 열람 */
   .rb-copy{align-self:flex-start;margin-top:1px;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
   .rb-copy:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
   .rb-add{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:rgba(124,108,255,.12);border:1px solid var(--accent)}
@@ -3008,6 +3009,8 @@ function ugcToggleSound(e,btn){
 }
 function copyPromptBtn(btn){ navigator.clipboard.writeText(btn.dataset.t||'').then(()=>{ const o=btn.innerHTML; btn.innerHTML='✓ Copied'; setTimeout(()=>{ btn.innerHTML=o; },1400); }).catch(()=>{ if(window.toast)toast('복사 실패','error'); }); }
 function toggleRbPrompt(btn){ const meta=btn.closest('.rb-meta'); const p=meta&&meta.querySelector('.rb-prompt'); if(!p)return; const exp=p.classList.toggle('expanded'); btn.textContent=exp?'Show less':'Show more'; } // (테스트) 프롬프트 펼치기
+// 프롬프트 본문 탭/클릭 → 펼침(스크롤로 전체 열람), 다시 탭하면 접힘. 잘린 프롬프트(.clip)만 반응. Show more 버튼과 라벨 동기화.
+function toggleRbPromptEl(p){ if(!p.classList.contains('clip'))return; const more=p.parentElement.querySelector('.rb-more'); const exp=p.classList.toggle('expanded'); if(more)more.textContent=exp?'Show less':'Show more'; }
 // (2026-07-01) 결과물을 Creator 템플릿으로 명시적 승격(자동민팅 폐지 → 이 버튼으로만). 온디맨드 민팅+보유.
 async function addCreatorTemplate(btn,idx){
   if(!idx||btn.disabled)return;
@@ -3062,7 +3065,7 @@ function batchRowHtml(b){
     :'';
   const head=isTpl
     ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
-    :`<span class="rb-badge ${isUgc?'ugc':'custom'}">${isUgc?'🎬 Ad Video':'✎ Custom'}</span><div class="rb-prompt">${esc(b.promptText||(isUgc?'Ad Video':'Custom prompt'))}</div>`+
+    :`<span class="rb-badge ${isUgc?'ugc':'custom'}">${isUgc?'🎬 Ad Video':'✎ Custom'}</span><div class="rb-prompt" onclick="toggleRbPromptEl(this)">${esc(b.promptText||(isUgc?'Ad Video':'Custom prompt'))}</div>`+
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
       tplFromBtn+
@@ -3638,8 +3641,9 @@ function renderStudioResults(){
   // (테스트) 프롬프트가 실제로 잘린 행만 Show more 노출
   grid.querySelectorAll('.rb-prompt').forEach(p=>{
     const more=p.parentElement.querySelector('.rb-more'); if(!more)return;
-    if(p.classList.contains('expanded')){more.style.display='';return;}
-    more.style.display=(p.scrollHeight>p.clientHeight+2)?'':'none';
+    const show=p.classList.contains('expanded')||(p.scrollHeight>p.clientHeight+2);
+    more.style.display=show?'':'none';
+    p.classList.toggle('clip',show);   // 잘린(또는 펼친) 프롬프트만 탭 대상(cursor·toggleRbPromptEl 가드)
   });
   fillRbSpecs(grid); // 결과 스펙(해상도·비율·길이)을 미디어 로드 시 채움
   renderUgcInline(STUDIO_BATCHES.find(b=>b.isUgc)||null); // 우측 대본 자리에 Ad Video 로딩·결과
