@@ -2857,11 +2857,12 @@ async function uploadSubject(inp){
   if(!f)return;
   if(state.mode==='ugc'){toast('UGC mode is coming soon.');return;}
   const isProduct=state.mode==='shopping';
-  const name=prompt(isProduct?'Enter a product name':'Enter a name',isProduct?'New Product':'My Face');
-  if(!name)return;
+  const nameRaw=prompt(isProduct?'Enter a product name':'Enter a name',isProduct?'New Product':'My Face');
+  if(nameRaw===null){ toast(isProduct?'Canceled — no product added':'Canceled — nothing was added'); return; } // 취소(Cancel/Esc) — 조용한 실패처럼 보이지 않게 명시 피드백
+  const nm=(nameRaw.trim())||(isProduct?'New Product':'My Face');  // 빈 이름이면 기본값 — 고른 사진을 버리지 않음
   const fd=new FormData();
-  fd.append('name',name);
-  fd.append('concept',isProduct?PRODUCT_TAG+' '+name:'social media influencer');
+  fd.append('name',nm);
+  fd.append('concept',isProduct?PRODUCT_TAG+' '+nm:'social media influencer');
   fd.append('referenceImage',f);
   try{
     const res=await fetch('/api/characters/register',{method:'POST',body:fd});
@@ -2870,7 +2871,7 @@ async function uploadSubject(inp){
     await loadSubjects();
     // 업로드한 이미지를 활성 슬롯에 추가(단일 슬롯=교체, 다중=추가)
     const s=(SUBJECTS[state.mode]||[]).find(x=>x.id===data.data.id);
-    const item=s?itemFromSubject(s):{id:data.data.id,url:'',name:name};
+    const item=s?itemFromSubject(s):{id:data.data.id,url:'',name:nm};
     state.slots[activeSlot]=activeSlotMulti()?[...slotItems(activeSlot),item]:[item];
     syncPrimary();
     renderSubjects();updateBar();closeSubjModal();
