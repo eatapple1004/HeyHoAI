@@ -2898,8 +2898,8 @@ function updateBarCore(){
   const extra=extraPromptText();
   // 대상은 필수, 템플릿·프롬프트는 둘 중 하나 이상이면 생성 가능
   // (테스트) Custom 모드는 레퍼런스 없이 프롬프트만으로 생성 허용(순수 text-to-image). 그 외엔 주체 필수.
-  if(!state.subjectId&&!(state.mode==='custom'&&extra)){btn.disabled=true;setGenBtn(null);s.textContent='';return;}
-  if(!r&&!extra){btn.disabled=true;setGenBtn(null);s.textContent='Pick a template or enter a prompt.';return;}
+  if(!state.subjectId&&!(state.mode==='custom'&&extra)){btn.disabled=true;setGenBtn(null);s.textContent=state.mode==='custom'?'Write a prompt to generate.':'';return;}
+  if(!r&&!extra){btn.disabled=true;setGenBtn(null);s.textContent=state.mode==='custom'?'Enter a prompt to generate.':'Pick a template or enter a prompt.';return;}
   const cost=genCost(r);          // 총액(장수 반영) — 버튼 배지·요약·잔액 체크 모두 동일
   setGenBtn(cost);
   const costTxt=cost!==null?` · <span class="cost">◈ ${cost}</span>`:'';
@@ -2912,7 +2912,7 @@ function updateBarCore(){
   btn.disabled=false;
   const isReel=isVideoGen();
   const reelDur=(state.mode==='custom'&&curToolType()==='video')?curDuration():'5';
-  const o=isReel?`1 reel (${reelDur}s)`:'4 photos';
+  const n=curCount(); const o=isReel?`1 reel (${reelDur}s)`:`${n} photo${n===1?'':'s'}`;
   s.innerHTML=`${title} → ${o}${isReel?'':' · '+effModelLabel()}${costTxt}${isReel?' <span style="color:var(--faint)">(reels take a few minutes)</span>':''}`;
 }
 
