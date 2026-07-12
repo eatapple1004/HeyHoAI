@@ -696,6 +696,11 @@ router.get('/creations/:idx', async (req, res, next) => {
       const m = await query(`SELECT mt.id, mt.name, mt.price_credits, COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr WHERE gr.template_source='recipe' AND gr.template_id = mt.recipe_id AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb FROM marketplace_templates mt WHERE mt.recipe_id = $1 AND mt.is_official = true AND mt.status = 'active' LIMIT 1`, [r.template_id]);
       if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: true, mine: false }; // 공식 recipe=기본 라이브러리
     }
+    // Ad Video(UGC): 씬 스토리보드(공개 자막·썸네일만, 렌더 레시피 제외) — 빈 패널 방지. UGC일 때만 ugc_jobs 조회(핫 기본쿼리 무변경).
+    let storyboard = null;
+    if (/^ugc/i.test(String(r.model || ''))) {
+      try { storyboard = await ugcVideoService.sceneStoryboardForResult(r.idx); } catch (e) { storyboard = null; }
+    }
     res.json({ success: true, data: {
       idx: r.idx,
       url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
@@ -717,6 +722,8 @@ router.get('/creations/:idx', async (req, res, next) => {
       sourceInLibrary,                                // 출처 템플릿이 내 My templates(라이브러리)에 있나 — View template 라벨 분기
       relTemplate,                                    // Buy/Add/View 버튼용 {id,name,price,owned} (없으면 null)
       ownerAdded: !!r.owner_added,                    // 원작자가 My templates에 추가했나
+      scenes: storyboard ? storyboard.scenes : null,  // Ad Video 씬 스토리보드(없으면 null → 프론트 Make yours 폴백)
+      storyHook: storyboard ? storyboard.hook : null,
       createdAt: r.created_at,
     } });
   } catch (err) { next(err); }

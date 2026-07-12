@@ -1088,4 +1088,32 @@ function editableScenes(script, sceneClips) {
 //   (문자열을 또 JSON.parse 하면 실패해 null → reRender가 "script unavailable" 400을 던지던 버그).
 function safeParse(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } }
 
-module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits };
+// 공개 상세페이지(creation.html)용 씬 스토리보드.
+//   editableScenes가 이미 brollPrompt/direction(렌더 레시피)을 제외하고, 여기서 다시 명시적 allowlist로만
+//   추려 반환한다 — raw 씬 객체 spread 금지(향후 실수로 summary/clipUrl 등이 새는 것 방지).
+//   caption = 화면에 실제 박힌 자막(onScreenText) 우선 → 없으면 (가청) 나레이션 spoken 폴백. 둘 다 공개 영상서 이미 보이/들림.
+//   clipUrl은 노출하지 않음(라이브 클립 404 버그·디코드 비용 회피) — 정지 썸네일만.
+async function sceneStoryboardForResult(resultIdx) {
+  const r = await query(
+    `SELECT script, scene_clips FROM ugc_jobs
+      WHERE result_idx = $1 AND script IS NOT NULL
+      ORDER BY (status = 'succeeded') DESC, created_at DESC LIMIT 1`, [resultIdx]);
+  const job = r.rows[0];
+  if (!job) return null;
+  const full = editableScenes(job.script, job.scene_clips);
+  if (!full || !full.length) return null;
+  const scenes = full.map((sc) => ({
+    n: sc.n,
+    caption: sc.onScreenText || sc.spoken || '',
+    subject: sc.subject === 'model' ? 'model' : 'product',
+    durationSec: sc.durationSec || 0,
+    thumb: sc.thumb || null,   // /images/<basename> 정지 포스터
+    isStill: !!sc.isStill,
+    hasClip: !!sc.hasClip,     // 모션 비트 표시용(재생 글리프) — clipUrl 자체는 미노출
+  }));
+  const s = safeParse(job.script);
+  const hook = (s && typeof s.hook === 'string') ? s.hook : '';
+  return { hook, sceneCount: scenes.length, scenes };
+}
+
+module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };

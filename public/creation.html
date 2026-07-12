@@ -131,6 +131,26 @@
   .badge-chip{display:inline-flex;align-items:center;align-self:flex-start;gap:7px;margin-bottom:4px;padding:0;border:0;background:none;box-shadow:none;color:var(--dim);font-size:12.5px;font-weight:600}
   .badge-chip .ic{color:var(--faint)}
 
+  /* Ad Video 씬 스토리보드 — 유리 위 그레이스케일 필름스트립(퍼플은 Create CTA만). 좁은 패널 대응 */
+  .story{position:relative;margin-bottom:4px}
+  .story>.eyebrow{margin-bottom:9px}
+  .sb-hook{font-size:12px;font-style:italic;color:var(--dim);line-height:1.4;margin-bottom:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .sb-list{display:flex;flex-direction:column;gap:11px}
+  .sb-row{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:12px}
+  .sb-row[hidden]{display:none}
+  .sb-poster{position:relative;width:34px;aspect-ratio:9/16;border-radius:6px;overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .sb-poster img{width:100%;height:100%;object-fit:cover;display:block}
+  .sb-n{position:absolute;top:3px;left:3px;min-width:13px;height:13px;padding:0 3px;border-radius:5px;background:rgba(0,0,0,.55);color:rgba(255,255,255,.9);font-size:8.5px;font-weight:700;line-height:13px;text-align:center;font-variant-numeric:tabular-nums;z-index:1}
+  .sb-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .sb-play .ic{width:10px;height:10px;color:rgba(255,255,255,.92);filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+  .sb-txt{min-width:0;display:flex;flex-direction:column;gap:3px}
+  .sb-cap{font-size:12px;font-weight:500;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  .sb-meta{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--faint)}
+  .sb-subj{text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--border2);border-radius:var(--r-pill);padding:1px 6px}
+  .sb-dur{font-variant-numeric:tabular-nums}
+  .sb-more{margin-top:4px;background:none;border:0;color:var(--dim);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;padding:2px 0;text-align:left}
+  .sb-more:hover{color:var(--text)}
+
   /* Prompt module (Custom only) — 박스 → 좌측 룰 에디토리얼 풀쿼트 */
   .prompt{margin:0 0 4px;padding:0 0 0 13px;border:0;border-left:2px solid var(--border2);border-radius:0;background:none;box-shadow:none}
   .prompt-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
@@ -294,6 +314,23 @@ const IC={
   check:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
 };
 function isUgc(){ return /^ugc/i.test(String((IT&&IT.model)||'')); } // Ad Video(UGC) 판별
+// Ad Video 씬 스토리보드 — 공개 자막·썸네일·길이만(서버가 렌더 레시피 제외한 allowlist). 없으면 '' → Make yours 폴백.
+function renderStoryboard(){
+  const sc=IT&&IT.scenes; if(!Array.isArray(sc)||!sc.length) return '';
+  const CAP=5;
+  const rows=sc.map(function(s,i){
+    const cap=esc(s.caption||('Scene '+s.n));
+    const subj=s.subject==='model'?'Model':'Product';
+    const dur=s.durationSec?('· '+s.durationSec+'s'):'';
+    const poster=s.thumb?`<img src="${esc(s.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:'';
+    const play=(s.hasClip&&!s.isStill)?`<span class="sb-play">${IC.play}</span>`:'';
+    return `<div class="sb-row"${i>=CAP?' hidden':''}><span class="sb-poster"><span class="sb-n">${s.n}</span>${poster}${play}</span><span class="sb-txt"><span class="sb-cap">${cap}</span><span class="sb-meta"><span class="sb-subj">${subj}</span>${dur?`<span class="sb-dur">${dur}</span>`:''}</span></span></div>`;
+  }).join('');
+  const more=sc.length>CAP?`<button class="sb-more" onclick="expandStory(this)">+ ${sc.length-CAP} more scenes</button>`:'';
+  const hook=IT.storyHook?`<div class="sb-hook">${esc(IT.storyHook)}</div>`:'';
+  return `<div class="story"><span class="eyebrow">Storyboard · ${sc.length} scenes</span>${hook}<div class="sb-list">${rows}</div>${more}</div>`;
+}
+function expandStory(btn){ const st=btn.closest('.story'); if(st) st.querySelectorAll('.sb-row[hidden]').forEach(function(r){r.hidden=false;}); btn.remove(); }
 // intrinsic 크기 → 근접 표준 비율 라벨
 function ratioLabel(w,h){ if(!w||!h) return ''; const r=w/h, C=[[9,16],[4,5],[2,3],[3,4],[1,1],[4,3],[3,2],[16,9]]; let best=C[0],bd=Infinity; C.forEach(function(c){ const d=Math.abs(r-c[0]/c[1]); if(d<bd){bd=d;best=c;} }); return best[0]+':'+best[1]; }
 // model 코드 → Doppia 친절명(알 수 없으면 '' → pill 숨김, raw 코드 노출 방지)
@@ -311,11 +348,15 @@ function fillSpecs(){ const el=document.querySelector('.stage .media'); if(!el) 
   if(el.tagName==='IMG'){ if(el.complete&&el.naturalWidth) apply(); else el.addEventListener('load',apply,{once:true}); }
   else { if(el.readyState>=1) apply(); else el.addEventListener('loadedmetadata',apply,{once:true}); } }
 function templateCard(){
-  if(isUgc()) return `<section class="tpl advid" aria-label="Ad Video">
-    <div class="tpl-head"><span class="eyebrow">Ad Video</span><div class="tpl-name-row"><h2 class="tpl-name">Make yours</h2></div></div>
+  if(isUgc()){                                                                                    // Ad Video: 씬 스토리보드(있으면) + Create CTA / 없으면 Make yours 폴백
+    const sb=renderStoryboard();
+    const head=sb||`<div class="tpl-head"><span class="eyebrow">Ad Video</span><div class="tpl-name-row"><h2 class="tpl-name">Make yours</h2></div></div>`;
+    return `<section class="tpl advid" aria-label="Ad Video">
+    ${head}
     <div class="tpl-actions"><a class="tpl-cta" href="/studio?mode=ugc">${IC.adv}<span>Create Ad Video</span></a></div>
     <p class="tpl-sub">Turn your product into a video ad like this.</p>
-  </section>`;                                                                                     // Ad Video 전용 모듈(스펙은 공용 .specs 블록·템플릿 없음 → 빈 패널 방지)
+  </section>`;
+  }
   if(!IT.templateSource) return `<div class="badge-chip">${IC.pencil}<span>Custom</span></div>`;    // 프롬프트만(템플릿 미사용)
   const rt=IT.relTemplate;
   const name=esc((rt&&rt.name)||IT.templateName||'Template');
