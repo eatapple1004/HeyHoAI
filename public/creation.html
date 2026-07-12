@@ -25,7 +25,7 @@
   /* DOPPIA.AI 워드마크(Studio 브랜드와 동일 크기·스타일) — 좌측 상단 플로팅, 글래스 바 없음 */
   .brandmark{position:fixed;top:20px;left:24px;z-index:40;display:inline-flex;align-items:center;text-decoration:none;user-select:none}
   .brandmark span{font-family:'Sora',sans-serif;font-weight:800;font-size:21px;letter-spacing:-.5px;background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--accent2)}
-  .viewer{display:grid;grid-template-columns:70px minmax(0,1fr) 350px;height:100vh;position:relative;z-index:1}
+  .viewer{display:grid;grid-template-columns:70px minmax(0,1fr) 234px;height:100vh;position:relative;z-index:1}
 
   /* ── close (fixed, true top-right) ── */
   .vclose{position:fixed;top:20px;right:20px;z-index:40;width:38px;height:38px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 78%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
@@ -62,9 +62,8 @@
   .vbadge .ic{width:11px;height:11px;color:#fff}
 
   /* ── panel ── */
-  .panel{position:relative;overflow-y:auto;margin:14px 14px 14px 0;padding:48px 24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 40px 90px -44px rgba(0,0,0,.75);display:flex;flex-direction:column;
-    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 46px,#000 100%);
-    mask-image:linear-gradient(to bottom,transparent 0,#000 46px,#000 100%)}
+  /* 패널은 페이드 없이 또렷한 카드로 유지(필름스트립과 구분). 상단 padding으로 콘텐츠를 닫기 버튼 아래에서 시작 */
+  .panel{position:relative;overflow-y:auto;margin:14px 14px 14px 0;padding:48px 24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 40px 90px -44px rgba(0,0,0,.75);display:flex;flex-direction:column}
   .panel>*{flex-shrink:0}  /* 내용이 길면 카드가 쭈그러들지 말고(→.tpl-sub 짤림) 패널이 스크롤. .report의 margin-top:auto는 유지 */
   .panel::before{content:"";position:absolute;top:0;left:0;width:1px;height:100%;background:linear-gradient(180deg,transparent,var(--border) 8%,var(--border) 92%,transparent)}
   .panel::-webkit-scrollbar{width:7px}
@@ -134,10 +133,10 @@
   .foot{display:flex;flex-direction:column;margin-top:auto;padding-top:20px}
   .foot .own-hint{margin:0 0 12px}
   .foot-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .mini-acts{display:flex;gap:6px;flex-wrap:wrap;margin-left:-7px}   /* 아이콘 전용 — 박스 없이 첫 아이콘 광학 정렬 */
-  .mini-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:var(--dim);cursor:pointer;transition:color .15s,background .15s;text-decoration:none;flex-shrink:0}
+  .mini-acts{display:flex;gap:4px;flex-wrap:wrap;margin-left:-7px}   /* 아이콘 전용 — 박스 없이 첫 아이콘 광학 정렬(좁은 패널서 5개 한 줄) */
+  .mini-btn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:var(--dim);cursor:pointer;transition:color .15s,background .15s;text-decoration:none;flex-shrink:0}
   .mini-btn:hover{color:var(--text);background:color-mix(in srgb,var(--text) 8%,transparent)}
-  .mini-btn .ic{width:18px;height:18px;color:currentColor}
+  .mini-btn .ic{width:16px;height:16px;color:currentColor}
   .mini-btn.on{color:var(--accent2)}          /* Private ON */
   .mini-btn.danger:hover{color:#ff6b6b;background:color-mix(in srgb,#ff6b6b 12%,transparent)}
   /* 공유 드롭다운(Leonardo식): Copy link + 소셜 */
@@ -173,7 +172,7 @@
     .strip::before{display:none}
     .stageWrap{padding:28px 16px 20px}
     .stage,.stage .media{max-height:70vh}
-    .panel{margin:0;border:none;border-radius:0;box-shadow:none;padding:24px 18px 44px;-webkit-mask-image:none;mask-image:none}
+    .panel{margin:0;border:none;border-radius:0;box-shadow:none;padding:24px 18px 44px}
     .panel::before{display:none}
     .brandmark{display:none}  /* 좁은 모바일: 가로 필름스트립과 겹침 방지 — X 닫기만(몰입 뷰) */
     .vclose{top:14px;right:14px}
