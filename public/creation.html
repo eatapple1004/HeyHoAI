@@ -28,7 +28,8 @@
   .viewer{display:grid;grid-template-columns:70px minmax(0,1fr) 250px;height:100vh;position:relative;z-index:1}
 
   /* ── close (fixed, true top-right) ── */
-  .vclose{position:fixed;top:20px;right:20px;z-index:40;width:38px;height:38px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 78%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
+  /* 닫기 X = 우측 패널 top-right 코너(모달식). 패널 top(54)+inset 기준 고정 */
+  .vclose{position:fixed;top:42px;right:26px;z-index:40;width:34px;height:34px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 78%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
   .vclose:hover{color:var(--text);background:var(--surface2)}
   .vclose .ic{width:16px;height:16px;color:inherit}
 
@@ -62,8 +63,8 @@
   .vbadge .ic{width:11px;height:11px;color:#fff}
 
   /* ── panel ── */
-  /* 패널은 페이드 없이 또렷한 카드로 유지(필름스트립과 구분). 상단 로고·닫기 밴드 아래에서 시작(margin-top) */
-  .panel{position:relative;overflow-y:auto;margin:58px 14px 14px 0;padding:26px 24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 40px 90px -44px rgba(0,0,0,.75);display:flex;flex-direction:column}
+  /* 페이드 없이 또렷한 카드(필름스트립과 구분). 상단 로고 밴드 아래서 시작 + top-right에 닫기 X 헤더 존(padding-top) */
+  .panel{position:relative;overflow-y:auto;margin:30px 14px 14px 0;padding:46px 24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 40px 90px -44px rgba(0,0,0,.75);display:flex;flex-direction:column}
   .panel>*{flex-shrink:0}  /* 내용이 길면 카드가 쭈그러들지 말고(→.tpl-sub 짤림) 패널이 스크롤. .report의 margin-top:auto는 유지 */
   .panel::before{content:"";position:absolute;top:0;left:0;width:1px;height:100%;background:linear-gradient(180deg,transparent,var(--border) 8%,var(--border) 92%,transparent)}
   .panel::-webkit-scrollbar{width:7px}
