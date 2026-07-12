@@ -409,6 +409,7 @@
   .recipe-card .meta{padding:13px 15px;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent)}
   .recipe-card .rname{font-size:13.5px;font-weight:600;margin-bottom:4px}
   .recipe-card .cost{font-size:11.5px;color:var(--gold);font-weight:600}
+  .recipe-card .rcat{font-size:11.5px;color:var(--dim);font-weight:500}  /* 카테고리 라벨 = 중립 톤(골드는 가격·프리미엄 전용) */
 
   /* generate bar */
   .gen-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;width:min(1032px,calc(100% - 48px));
@@ -455,7 +456,7 @@
   .recipe-card.premium:hover{border-color:var(--gold)}
   .recipe-card.premium .preview{position:relative}
   .recipe-card.premium .preview::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(8,8,14,.5))}
-  .recipe-card.premium .meta .cost{color:var(--dim);font-weight:500}
+  /* (2026-07-13) 카테고리는 .rcat(중립)로 이관 → 골드 .cost는 가격·"Premium template" 전용. 옛 .premium .cost 뮤팅 오버라이드 제거. */
 
   /* add-ons (quality upsell · fast-lane · caption) */
   .addons{display:flex;align-items:flex-end;gap:15px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--border)}
@@ -753,7 +754,7 @@
     /* 템플릿/결과 그리드 2열 (기존 minmax 192/220px → 모바일서 1열) */
     .recipe-grid,.results-grid{grid-template-columns:repeat(2,1fr);gap:12px}
     .recipe-card .preview{font-size:34px}/* 모바일: 높이 고정 제거 — aspect-ratio:4/5 유지 */
-    .recipe-card .cost{font-size:12px}
+    .recipe-card .cost,.recipe-card .rcat{font-size:12px}
     /* Generate / 🧪 1장 탭타깃 ≥44px (기존 ~41px) */
     .gen-actions .btn{min-height:46px}
     /* nav credits pill ≥44px → '+ Buy' 탭타깃 확보 (기존 ~38px) */
@@ -2430,7 +2431,7 @@ function renderRecipes(){
     <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')}${manageMode?'':` role="button" tabindex="0" aria-label="Preview ${esc(r.name)} template" onkeydown="keyClick(event)"`} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
       ${mc}
       <div class="preview" style="${r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad}`:`background:${r.grad}`}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
-      <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
+      <div class="meta"><div class="rname">${r.name}</div><div class="rcat">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
   }).join('');
   renderPremium();
 }
@@ -2461,7 +2462,7 @@ function mgCard(r){
   const hl=(MANAGE_HL&&(String(r.id)===MANAGE_HL||String(r.ownedId)===MANAGE_HL))?' hl':'';
   return `<div class="recipe-card mg${hl}">${MG_THEME?'':mgActions(r)}
     <div class="preview" style="${r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad}`:`background:${r.grad}`}">${isOfficialCard(r.id)?'<span class="mg-badge">Official</span>':''}</div>
-    <div class="meta"><div class="rname">${esc(r.name)}</div><div class="cost">${esc(r.cat||'Template')}</div>${mgThemeBtn(r)}</div></div>`;
+    <div class="meta"><div class="rname">${esc(r.name)}</div><div class="rcat">${esc(r.cat||'Template')}</div>${mgThemeBtn(r)}</div></div>`;
 }
 function renderManageGrid(){
   const type=curTplType();
