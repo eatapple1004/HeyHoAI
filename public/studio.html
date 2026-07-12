@@ -316,12 +316,16 @@
   .rb-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:1px}
   .rb-more{font-family:inherit;font-size:11.5px;font-weight:700;color:var(--accent2);background:none;border:none;padding:5px 2px;cursor:pointer}
   .rb-more:hover{text-decoration:underline}
-  .rb-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  /* 결과 스펙 = 상세페이지(creation.html)와 동일한 마이크로 캡션 한 줄: 타입 · 해상도 · 비율 · [길이] · 모델 */
+  .rb-specs{display:flex;flex-wrap:wrap;align-items:baseline;gap:0;margin-top:2px}
+  .rb-specs .spec{display:inline;font-size:10.5px;font-weight:500;letter-spacing:.3px;color:var(--faint);line-height:1.5;font-variant-numeric:tabular-nums}
+  .rb-specs .spec b{color:var(--dim);font-weight:600;font-variant-numeric:tabular-nums}
+  .rb-specs .spec[hidden]{display:none}
+  .rb-specs .spec:not(:first-child)::before{content:"·";margin:0 6px;color:rgba(255,255,255,.16);font-weight:400}
   .rb-del-row{margin-top:10px}
   .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
   .rb-del:hover{color:#ff5f6e;border-color:#ff5f6e;background:rgba(255,95,110,.1)}
   .rb-del:disabled{opacity:.6;cursor:default}
-  .rb-tag{font-size:11px;font-weight:600;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:3px 8px;border-radius:7px}
   .rb-date{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--dim);margin:8px 0 -6px;padding-top:18px;border-top:1px solid var(--border)}
   .rb-date:first-child{border-top:none;padding-top:0;margin-top:2px}
   .result-card.rb-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid var(--border)} /* 이미지 크기 박스 안에서 로딩 */
@@ -3009,6 +3013,33 @@ async function addCreatorTemplate(btn,idx){
     if(window.toast)toast('Creator 템플릿에 추가됐어요');
   }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('추가 실패: '+(e.message||e),'error'); }
 }
+// 모델 코드/라벨 → 친절명(상세페이지 modelLabel과 정합). 이미 친절라벨(effModelLabel)이면 그대로 통과.
+function rbModelLabel(m){ m=String(m||'').trim(); if(!m) return ''; const l=m.toLowerCase();
+  if(l==='pro') return 'Nano Banana Pro'; if(l==='flash') return 'Nano Banana';
+  if(/gemini.*flash|flash.*image/.test(l)) return 'Nano Banana'; if(/gemini|nano.?banana/.test(l)) return /pro/.test(l)?'Nano Banana Pro':'Nano Banana';
+  if(l==='gpt-image-2-high') return 'GPT Image HD'; if(/gpt/.test(l)) return 'GPT Image';
+  if(/kling/.test(l)||/^ugc/.test(l)||l==='reel') return 'Kling';
+  return m; }
+// intrinsic 크기 → 근접 표준 비율 라벨(상세페이지 ratioLabel과 동일).
+function rbRatioLabel(w,h){ if(!w||!h) return ''; const r=w/h, C=[[9,16],[4,5],[2,3],[3,4],[1,1],[4,3],[3,2],[16,9]]; let best=C[0],bd=Infinity; C.forEach(function(c){ const d=Math.abs(r-c[0]/c[1]); if(d<bd){bd=d;best=c;} }); return best[0]+':'+best[1]; }
+// 각 결과 행 첫 미디어 로드 시 해상도·비율·길이 채움(상세페이지 fillSpecs와 동일 로직).
+function fillRbSpecs(root){
+  (root||document).querySelectorAll('.result-row').forEach(function(row){
+    const specs=row.querySelector('.rb-specs'); if(!specs)return;
+    const dimEl=specs.querySelector('.rb-spec-dim'), ratioEl=specs.querySelector('.rb-spec-ratio'), durEl=specs.querySelector('.rb-spec-dur');
+    const needDim=!!(dimEl&&dimEl.hasAttribute('hidden')), needDur=!!durEl;
+    if(!needDim&&!needDur) return;
+    const el=row.querySelector('.rb-media .result-card img, .rb-media .result-card video'); if(!el)return;
+    const apply=function(){
+      const w=el.videoWidth||el.naturalWidth, h=el.videoHeight||el.naturalHeight;
+      if(needDim&&w&&h){ dimEl.innerHTML='<b>'+w+'</b> × <b>'+h+'</b>'; dimEl.hidden=false;
+        if(ratioEl){ const lbl=rbRatioLabel(w,h); if(lbl){ ratioEl.innerHTML='<b>'+lbl+'</b>'; ratioEl.hidden=false; } } }
+      if(needDur&&isFinite(el.duration)&&el.duration>0){ const s=Math.round(el.duration); durEl.innerHTML='<b>'+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</b>'; durEl.hidden=false; }
+    };
+    if(el.tagName==='IMG'){ if(el.complete&&el.naturalWidth) apply(); else el.addEventListener('load',apply,{once:true}); }
+    else { if(el.readyState>=1) apply(); else el.addEventListener('loadedmetadata',apply,{once:true}); }
+  });
+}
 function batchRowHtml(b){
   const media=b.loading
     ? Array.from({length:b.pendingCount||1}).map(()=>`<div class="result-card rb-loading"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join('') // 생성 중: 이미지 칸 자리에서 로딩 + 실시간 경과 초
@@ -3031,13 +3062,22 @@ function batchRowHtml(b){
         if(!cidx || (typeof featureOn==='function'&&!featureOn('earnings')))return ''; // creation idx 필요 + Creator 숨김(earnings off) 시 승격 버튼도 숨김
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
           :`<button class="rb-add" type="button" onclick="addCreatorTemplate(this,${cidx})">＋ Add to Creator templates</button>`;})())+`</div>`;
-  const size=(b.w&&b.h)?`${b.w}×${b.h}`:'';
-  const tags=[b.model&&`<span class="rb-tag">${esc(b.model)}</span>`,size&&`<span class="rb-tag">${size}</span>`,b.items.length>1&&`<span class="rb-tag">${b.items.length} images</span>`].filter(Boolean).join('');
+  // 상세페이지와 동일한 마이크로 캡션 스펙: 타입 · 해상도 · 비율 · [길이] · 모델. 해상도/비율/길이는 미디어 로드 시 fillRbSpecs가 채움(b.w/h 있으면 즉시).
+  const ML=rbModelLabel(b.model);
+  const dimStatic=(b.w&&b.h)?`<b>${b.w}</b> × <b>${b.h}</b>`:'';
+  const ratioStatic=(b.w&&b.h)?rbRatioLabel(b.w,b.h):'';
+  const specs=b.loading?'':`<div class="rb-specs">`
+    +`<span class="spec">${isReelBatch?'Reel':'Photo'}</span>`
+    +`<span class="spec rb-spec-dim"${dimStatic?'':' hidden'}>${dimStatic}</span>`
+    +`<span class="spec rb-spec-ratio"${ratioStatic?'':' hidden'}>${ratioStatic?`<b>${ratioStatic}</b>`:''}</span>`
+    +(isReelBatch?`<span class="spec rb-spec-dur" hidden></span>`:'')
+    +(ML?`<span class="spec">${esc(ML)}</span>`:'')
+    +`</div>`;
   // (2026-07-03) 이 creation(배치) 삭제 — Library My creations에서도 사라짐(같은 행). 승격된 템플릿은 유지. 생성 중(placeholder)·idx 없는 건 버튼 숨김.
   const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
   const delBtn=delIdxs.length?`<div class="rb-del-row"><button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button></div>`:'';
   const ugcStrip=(!b.loading&&b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length)?ugcSceneStripHtml(b):''; // Ad Video 결과 편집 스트립
-  return `<div class="result-row"><div class="rb-media">${media}</div>${ugcStrip}<div class="rb-meta">${head}<div class="rb-tags">${tags}</div>${delBtn}</div></div>`;
+  return `<div class="result-row"><div class="rb-media">${media}</div>${ugcStrip}<div class="rb-meta">${head}${specs}${delBtn}</div></div>`;
 }
 // ── Ad Video 결과 편집: 씬 스트립(재배치·삭제·자막수정, 무과금 재조립) ──
 // b.ugc = { jobId, scenes:[{n,onScreenText,spoken,subject,thumb,...}], edits:{n:{onScreenText,spoken}} }
@@ -3593,6 +3633,7 @@ function renderStudioResults(){
     if(p.classList.contains('expanded')){more.style.display='';return;}
     more.style.display=(p.scrollHeight>p.clientHeight+2)?'':'none';
   });
+  fillRbSpecs(grid); // 결과 스펙(해상도·비율·길이)을 미디어 로드 시 채움
   renderUgcInline(STUDIO_BATCHES.find(b=>b.isUgc)||null); // 우측 대본 자리에 Ad Video 로딩·결과
   const step=document.getElementById('resultStep');
   const lb=document.getElementById('loadingBox');
