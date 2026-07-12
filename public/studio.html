@@ -164,6 +164,7 @@
   .result-row:last-child{border-bottom:none}
   .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
   .rb-media .result-card{width:230px;max-width:44vw}       /* 행 안에서 고정폭(grid 1fr 아님) */
+  .rb-media .result-card.landscape{width:auto;height:230px;max-width:100%}  /* 가로>세로 = 세로 길이 기준(폭 고정 시 납작해지는 것 방지) */
   .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
   /* ── Ad Video 결과 편집: 씬 스트립 ── */
   .ugc-scenes{flex:0 0 100%;order:3;margin-top:4px;padding-top:14px;border-top:1px dashed var(--border)}
@@ -2923,12 +2924,19 @@ const RC_SVG={
 };
 // 카드 키보드 활성(Enter·Space) → 상세페이지. gallery cardKey와 동일 패턴.
 function rcKey(e,idx){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); location.href='/creation?idx='+idx+'&from=library'; } }
+// 로드 시 카드 비율을 실제 미디어 비율로 맞춤 + 가로>세로면 .landscape(높이 기준)로 전환 → 16:9가 폭 고정에 눌려 납작해지던 것 해소.
+function fitResultCard(el){
+  const w=el.videoWidth||el.naturalWidth, h=el.videoHeight||el.naturalHeight; if(!w||!h) return;
+  const card=el.closest('.result-card'); if(!card) return;
+  card.style.aspectRatio=w+'/'+h;
+  card.classList.toggle('landscape', w>h);
+}
 function studioMediaCard(o){
   const reel=(o.type==='reel');
   // 로드 시 카드 비율을 실제 미디어 비율(9:16·1:1·16:9·이미지)로 맞춤 → UI 안 잘림(cover crop 방지).
   const inner=reel
-    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover" onloadedmetadata="if(this.videoWidth)this.closest('.result-card').style.aspectRatio=this.videoWidth+'/'+this.videoHeight"></video>`
-    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover" onload="if(this.naturalWidth)this.closest('.result-card').style.aspectRatio=this.naturalWidth+'/'+this.naturalHeight" alt="">`;
+    ?`<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="auto" style="object-fit:cover" onloadedmetadata="fitResultCard(this)"></video>`
+    :`<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover" onload="fitResultCard(this)" alt="">`;
   // 카드 클릭 → 결과물 상세페이지(from=library: 내 결과물 필름스트립·뒤로가기 정합). idx 없으면(placeholder 등) 확대 라이트박스로 폴백.
   // idx 있으면 키보드 접근(role/tabindex/Enter·Space) — gallery 카드와 동일 a11y 패턴.
   const open=(o.idx!=null)
