@@ -1090,9 +1090,11 @@ function safeParse(v) { if (v && typeof v === 'object') return v; try { return J
 
 // 공개 상세페이지(creation.html)용 씬 스토리보드.
 //   editableScenes가 이미 brollPrompt/direction(렌더 레시피)을 제외하고, 여기서 다시 명시적 allowlist로만
-//   추려 반환한다 — raw 씬 객체 spread 금지(향후 실수로 summary/clipUrl 등이 새는 것 방지).
-//   caption = 화면에 실제 박힌 자막(onScreenText) 우선 → 없으면 (가청) 나레이션 spoken 폴백. 둘 다 공개 영상서 이미 보이/들림.
-//   clipUrl은 노출하지 않음(라이브 클립 404 버그·디코드 비용 회피) — 정지 썸네일만.
+//   추려 반환한다 — raw 씬 객체 spread 금지(향후 실수로 recipe/summary 등이 새는 것 방지).
+//   ⚠️ 자막 기능은 첫 출시에서 제외 → 씬별 텍스트(onScreenText/spoken/summary) 미노출. 이미지(썸네일)+호버 재생(clipUrl)만.
+//   컨셉은 script.hook 한 줄만 노출(전체 광고 컨셉). 씬 클립·썸네일은 공개 영상의 조각이라 이미 보임 → 새 유출 없음.
+//   ⚠️ 접근제어 없음(공개/소유 필터 X) — 호출부가 result_idx를 반드시 선인가해야 함(현재 유일 호출부 generate.route 상세는
+//      findDetailForViewer로 비공개/타인 결과를 404 처리한 뒤 호출). 다른 곳에서 게이트 없이 호출 금지.
 async function sceneStoryboardForResult(resultIdx) {
   const r = await query(
     `SELECT script, scene_clips FROM ugc_jobs
@@ -1103,13 +1105,11 @@ async function sceneStoryboardForResult(resultIdx) {
   const full = editableScenes(job.script, job.scene_clips);
   if (!full || !full.length) return null;
   const scenes = full.map((sc) => ({
-    n: sc.n,
-    caption: sc.onScreenText || sc.spoken || '',
-    subject: sc.subject === 'model' ? 'model' : 'product',
-    durationSec: sc.durationSec || 0,
-    thumb: sc.thumb || null,   // /images/<basename> 정지 포스터
+    n: Number(sc.n) || 0,                               // 숫자 강제(비정규 DB값의 프론트 미이스케이프 주입 차단)
+    durationSec: Number(sc.durationSec) || 0,
+    thumb: sc.thumb || null,                            // /images/<basename> 정지 포스터
+    clipUrl: sc.isStill ? null : (sc.clipUrl || null),  // 호버 재생용 씬 클립(정지컷=null)
     isStill: !!sc.isStill,
-    hasClip: !!sc.hasClip,     // 모션 비트 표시용(재생 글리프) — clipUrl 자체는 미노출
   }));
   const s = safeParse(job.script);
   const hook = (s && typeof s.hook === 'string') ? s.hook : '';
