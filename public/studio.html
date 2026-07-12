@@ -2302,10 +2302,10 @@ function renderCatSwitcher(){
   let h='<span class="cat-lbl">Category</span>';
   h+=window.TAXONOMY.categories.map(c=> c.active===false
       ? `<div class="cat-pill soon" title="Coming soon">${esc(c.label)}</div>`
-      : `<div class="cat-pill${(!isMine&&state.category===c.slug)?' on':''}" onclick="pickOfficialCat('${c.slug}')">${esc(c.label)}</div>`).join('');
+      : `<div class="cat-pill${(!isMine&&state.category===c.slug)?' on':''}" role="button" tabindex="0" aria-pressed="${!isMine&&state.category===c.slug}" onkeydown="keyClick(event)" onclick="pickOfficialCat('${c.slug}')">${esc(c.label)}</div>`).join('');
   // ▼ (2026-07-06 1축·톤다운) 구분선 + 중립 My templates pill + '?' 호버 툴팁(설명). 오피셜 메인이라 강조 최소화. 롤백: 이 세 줄 제거 ▼
   h+='<span class="cat-div" aria-hidden="true"></span>';
-  h+=`<div class="cat-pill mine${isMine?' on':''}" onclick="pickUserSpace()"><span class="cp-dia">◆</span>My templates</div>`;
+  h+=`<div class="cat-pill mine${isMine?' on':''}" role="button" tabindex="0" aria-pressed="${isMine}" onkeydown="keyClick(event)" onclick="pickUserSpace()"><span class="cp-dia">◆</span>My templates</div>`;
   h+=`<span class="cat-help" tabindex="0" aria-label="About My templates">?<span class="cat-tip">Your space — create, edit and add your own themes &amp; templates.</span></span>`;
   el.innerHTML=h;
 }
@@ -2327,9 +2327,9 @@ function pickUserSpace(){
 function taxonomyFilterRow(){
   const pool=(typeof TEMPLATES!=='undefined'&&TEMPLATES.shopping)||[];
   const cts=window.TAXONOMY.contentTypesFor(state.category, pool);
-  let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
-  html+=cts.map(ct=>`<div class="chip ${!curTheme&&state.filter===ct.slug?'active':''}" onclick="setFilter('${esc(ct.slug)}')">${esc(ct.label)}</div>`).join('');
-  html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;
+  let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" role="button" tabindex="0" aria-pressed="${!curTheme&&state.filter==='All'}" onkeydown="keyClick(event)" onclick="setFilter('All')">All</div>`;
+  html+=cts.map(ct=>`<div class="chip ${!curTheme&&state.filter===ct.slug?'active':''}" role="button" tabindex="0" aria-pressed="${!curTheme&&state.filter===ct.slug}" onkeydown="keyClick(event)" onclick="setFilter('${esc(ct.slug)}')">${esc(ct.label)}</div>`).join('');
+  html+=`<div class="chip mng ${manageMode?'active':''}" role="button" tabindex="0" aria-pressed="${manageMode}" onkeydown="keyClick(event)" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;
   document.getElementById('filterRow').innerHTML=html;
 }
 function renderFilters(){
@@ -2344,11 +2344,11 @@ function renderFilters(){
   // 오피셜 전용 테마(예: productcut)는 My templates(user) 서브탭 필터에서 제외 — 공식 제품 테마라 유저 큐레이션 대상 아님.
   if(curTplType()==='user'){ const oo=window.OFFICIAL_ONLY_THEMES||[]; ordered=ordered.filter(t=>oo.indexOf(t.slug)<0); }
   if(!manageMode) ordered=ordered.filter(t=>!HIDDEN_THEMES.has(t.slug));  // (2026-07-04) 완전 동기화 — 빈 테마도 칩 노출(옛 present 필터 제거, Create template·Manage와 일치)
-  let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" onclick="setFilter('All')">All</div>`;
+  let html=`<div class="chip ${!curTheme&&state.filter==='All'?'active':''}" role="button" tabindex="0" aria-pressed="${!curTheme&&state.filter==='All'}" onkeydown="keyClick(event)" onclick="setFilter('All')">All</div>`;
   html+=ordered.map(t=>{
     const hiddenT=HIDDEN_THEMES.has(t.slug);
     const x=manageMode?` <span class="chip-x" onclick="event.stopPropagation();${hiddenT?'restoreTheme':'hideTheme'}('${t.slug}')">${hiddenT?'↺':'✕'}</span>`:'';
-    return `<div class="chip ${!curTheme&&state.filter===t.slug?'active':''}${hiddenT?' is-hidden':''}" onclick="setFilter('${t.slug}')">${esc(t.name)}${x}</div>`;
+    return `<div class="chip ${!curTheme&&state.filter===t.slug?'active':''}${hiddenT?' is-hidden':''}" role="button" tabindex="0" aria-pressed="${!curTheme&&state.filter===t.slug}" onkeydown="keyClick(event)" onclick="setFilter('${t.slug}')">${esc(t.name)}${x}</div>`;
   }).join('');
   // (2026-07-03 시각정합) 커스텀 테마·＋Theme·Manage는 유저 서브탭에서만(공식=테마 고정이라 큐레이션 불가).
   if(curTplType()!=='official' && (STUDIO_THEMES.length||manageMode)){
@@ -2357,10 +2357,10 @@ function renderFilters(){
     let cths=grp?STUDIO_THEMES.filter(t=>(t.group==='Influencer'?'Influencer':'Shopping')===grp):STUDIO_THEMES;
     // (2026-07-04) 완전 동기화 — 빈 커스텀 테마도 노출(옛 present 필터 제거)
     // (2026-07-03) 커스텀 테마도 기본 테마와 동일 표시 — ✦·구분선 제거(My templates 안에선 다 같은 '내 테마'). 롤백: filt-div span + '✦ ' 복원
-    html+=cths.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" onclick="setCustomTheme('${t.id}')">${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
-    html+=`<div class="chip ghost" onclick="newStudioTheme('${grp||'Shopping'}')">＋ Theme</div>`;
+    html+=cths.map(t=>`<div class="chip cth ${curTheme===t.id?'active':''}" role="button" tabindex="0" aria-pressed="${curTheme===t.id}" onkeydown="keyClick(event)" onclick="setCustomTheme('${t.id}')">${esc(t.name)}${manageMode?` <span class="chip-x" onclick="event.stopPropagation();deleteStudioTheme('${t.id}')">✕</span>`:''}</div>`).join('');
+    html+=`<div class="chip ghost" role="button" tabindex="0" onkeydown="keyClick(event)" onclick="newStudioTheme('${grp||'Shopping'}')">＋ Theme</div>`;
   }
-  html+=`<div class="chip mng ${manageMode?'active':''}" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;  // (2026-07-03 A안) Manage=양 서브탭(공식은 In Studio/parked 토글만, 테마·삭제 없음)
+  html+=`<div class="chip mng ${manageMode?'active':''}" role="button" tabindex="0" aria-pressed="${manageMode}" onkeydown="keyClick(event)" onclick="toggleManage()">${manageMode?'✓ Done':'⚙ Manage'}</div>`;  // (2026-07-03 A안) Manage=양 서브탭(공식은 In Studio/parked 토글만, 테마·삭제 없음)
   document.getElementById('filterRow').innerHTML=html;
 }
 function renderRecipes(){
@@ -2427,7 +2427,7 @@ function renderRecipes(){
       }
     }
     return `
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
+    <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')}${manageMode?'':` role="button" tabindex="0" aria-label="Preview ${esc(r.name)} template" onkeydown="keyClick(event)"`} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
       ${mc}
       <div class="preview" style="${r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad}`:`background:${r.grad}`}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="cost">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
@@ -2927,6 +2927,8 @@ const RC_SVG={
 };
 // 카드 키보드 활성(Enter·Space) → 상세페이지. gallery cardKey와 동일 패턴.
 function rcKey(e,idx){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); location.href='/creation?idx='+idx+'&from=library'; } }
+// 공용 키보드 활성화 — role="button"인 div/img가 Enter·Space로 자기 onclick을 실행(마우스 전용 해소). 접근성만 추가, 동작·스타일 무변경.
+function keyClick(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); const t=e.currentTarget||e.target; if(t&&t.click)t.click(); } }
 // 로드 시 카드에 실제 미디어 비율 반영 → 높이 기준 카드의 폭이 비율대로 정해짐(가로/세로/정사각 크롭 없음).
 function fitResultCard(el){
   const w=el.videoWidth||el.naturalWidth, h=el.videoHeight||el.naturalHeight; if(!w||!h) return;
@@ -4765,7 +4767,7 @@ function ugcModelFilter(g){
 function ugcRenderModelGrid(){
   const grid=document.getElementById('ugcModelGrid'); if(!grid) return;
   const list=(window.MODELS||[]).filter(m=>m.gender===ugcModelGender);
-  grid.innerHTML=list.map(m=>`<img src="${m.img}" title="${m.name} · ${m.descent}, ${m.age}" data-img="${m.img}" data-name="${m.name}" class="${ugcSelectedModelImg===m.img?'sel':''}" onclick="ugcSelectModel(this)">`).join('');
+  grid.innerHTML=list.map(m=>`<img src="${m.img}" alt="" title="${m.name} · ${m.descent}, ${m.age}" data-img="${m.img}" data-name="${m.name}" class="${ugcSelectedModelImg===m.img?'sel':''}" role="button" tabindex="0" aria-label="${esc(m.name)}, ${esc(m.descent)}, ${esc(m.age)}" aria-pressed="${ugcSelectedModelImg===m.img}" onkeydown="keyClick(event)" onclick="ugcSelectModel(this)">`).join('');
 }
 function ugcSelectModel(el){
   ugcSelectedModelImg=el.dataset.img;
