@@ -900,7 +900,7 @@
         <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2,#8b7bff);font-weight:650;margin-top:6px"></div>
         <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
-        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[쉼]</b> (0.6s) / <b>[긴쉼]</b> (1.2s) in the script + per-scene <b>+여백</b>.</div>
+        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[pause]</b> (0.6s) in the script + per-scene <b>Add pause</b>.</div>
       </div>
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Mode</div>
@@ -2195,7 +2195,7 @@ async function restoreTheme(slug){ // 제거한 기본 테마 복원
 }
 // ▼▼▼ (2026-07-03 옵션A-full) 공식 템플릿=회사 배정 테마 고정 → Studio Manage에서도 유저 테마 편집 불가. 롤백: 이 helper + 아래 4함수 가드 + 렌더 🔒 분기 제거 ▼▼▼
 function isOfficialCard(rid){ return OFFICIAL_RECIPES.has(String(rid)); }
-function officialThemeBlocked(rid){ if(isOfficialCard(rid)){ if(window.toast)toast('공식 템플릿은 테마가 고정돼 있어요','error'); return true; } return false; }
+function officialThemeBlocked(rid){ if(isOfficialCard(rid)){ if(window.toast)toast('Official templates have a fixed theme','error'); return true; } return false; }
 // ▲▲▲
 async function addToGlobalTheme(slug,rid){ // 특정 기본 테마에 템플릿 추가
   if(officialThemeBlocked(rid))return;   // (2026-07-03 옵션A-full)
@@ -2415,11 +2415,11 @@ function renderRecipes(){
     if(manageMode){
       if(curTheme){ // 커스텀 테마 멤버십
         // ▼(2026-07-03 옵션A-full) 공식=테마 고정 → +/− 대신 🔒(편집 불가). 롤백: 이 isOfficialCard 분기 제거 ▼
-        if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒</span></div>`; }
+        if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="Official templates have a fixed theme">🔒</span></div>`; }
         else { const inT=memberIds.includes(String(r.id));
         mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromTheme('${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToTheme('${r.id}')">＋</span>`}</div>`; }
       }else if(defTheme){ // 기본 테마 멤버십(오버라이드)
-        if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒</span></div>`; }  // (2026-07-03 옵션A-full)
+        if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="Official templates have a fixed theme">🔒</span></div>`; }  // (2026-07-03 옵션A-full)
         else { const inT=inGlobalTheme(r,defTheme);
         mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromGlobalTheme('${defTheme}','${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToGlobalTheme('${defTheme}','${r.id}')">＋</span>`}</div>`; }
       }else{ // ▼(2026-07-03 소스 통일 #1) All 뷰 Manage: 옛 전역숨김(toggleHide) → Library only 이동(in_studio=false)으로 통일 → 복원은 Library "↑ To Studio"에서. 롤백: toggleHide/✕·↺ 복원 ▼
@@ -2448,7 +2448,7 @@ let MG_THEME=null;  // 관리 뷰에서 테마 선택 시 {kind:'global',slug,na
 // (2026-07-03) 옛 평평한 ± 편집을 라벨 토글로 — 테마 선택 시 각 카드에 "✓ In <theme> / ＋ Add to <theme>"(공식=🔒). 롤백: 이 함수 + mgCard의 MG_THEME 분기 제거.
 function mgThemeBtn(r){
   const t=MG_THEME; if(!t)return '';
-  if(isOfficialCard(r.id)) return `<div class="mg-thmbtn lock" title="공식 템플릿은 테마가 고정돼 있어요">🔒 Fixed theme</div>`;
+  if(isOfficialCard(r.id)) return `<div class="mg-thmbtn lock" title="Official templates have a fixed theme">🔒 Fixed theme</div>`;
   const ct=curThemeObj();
   const member = t.kind==='global' ? inGlobalTheme(r,t.slug) : !!(ct&&(ct.items||[]).some(i=>String(i.itemId)===String(r.id)));
   const add = t.kind==='global' ? `addToGlobalTheme('${t.slug}','${r.id}')` : `addToTheme('${r.id}')`;
@@ -3008,7 +3008,7 @@ function ugcToggleSound(e,btn){
   v.muted=!v.muted; btn.textContent=v.muted?'🔇':'🔊'; btn.classList.toggle('on',!v.muted);
   if(!v.muted){ try{ v.play(); }catch(_){} }
 }
-function copyPromptBtn(btn){ navigator.clipboard.writeText(btn.dataset.t||'').then(()=>{ const o=btn.innerHTML; btn.innerHTML='✓ Copied'; setTimeout(()=>{ btn.innerHTML=o; },1400); }).catch(()=>{ if(window.toast)toast('복사 실패','error'); }); }
+function copyPromptBtn(btn){ navigator.clipboard.writeText(btn.dataset.t||'').then(()=>{ const o=btn.innerHTML; btn.innerHTML='✓ Copied'; setTimeout(()=>{ btn.innerHTML=o; },1400); }).catch(()=>{ if(window.toast)toast('Copy failed','error'); }); }
 function toggleRbPrompt(btn){ const meta=btn.closest('.rb-meta'); const p=meta&&meta.querySelector('.rb-prompt'); if(!p)return; const exp=p.classList.toggle('expanded'); btn.textContent=exp?'Show less':'Show more'; } // (테스트) 프롬프트 펼치기
 // 프롬프트 본문 탭/클릭 → 펼침(스크롤로 전체 열람), 다시 탭하면 접힘. 잘린 프롬프트(.clip)만 반응. Show more 버튼과 라벨 동기화.
 function toggleRbPromptEl(p){ if(!p.classList.contains('clip'))return; const more=p.parentElement.querySelector('.rb-more'); const exp=p.classList.toggle('expanded'); if(more)more.textContent=exp?'Show less':'Show more'; }
@@ -3022,8 +3022,8 @@ async function addCreatorTemplate(btn,idx){
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
     const row=btn.closest('.result-row'); const b=row&&STUDIO_BATCHES.find(x=>x.items.some(i=>i.idx===idx)); if(b)b.added=true;
     const span=document.createElement('span'); span.className='rb-add added'; span.textContent='✓ In Creator templates'; btn.replaceWith(span);
-    if(window.toast)toast('Creator 템플릿에 추가됐어요');
-  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('추가 실패: '+(e.message||e),'error'); }
+    if(window.toast)toast('Added to Creator templates');
+  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('Could not add: '+(e.message||e),'error'); }
 }
 // 모델 코드/라벨 → 친절명(상세페이지 modelLabel과 정합). 이미 친절라벨(effModelLabel)이면 그대로 통과.
 function rbModelLabel(m){ m=String(m||'').trim(); if(!m) return ''; const l=m.toLowerCase();
@@ -3115,7 +3115,7 @@ function ugcSceneStripHtml(b){
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumbHtml(s.clipUrl,s.thumb,!!s.isStill)}<span class="usc-idx">${label}</span>${multi?`<span class="usc-sel-badge" title="Selected version">✓</span>`:''}</div>
       ${u.hasVoice?`<div class="usc-line"><span class="usc-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
            title="${UGC_CAPTIONS?'Edit what\'s said (voice) & shown (caption) in this scene':'Edit the voice narration for this scene'}" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>`:''/* 음악모드(음성 없음)=씬별 음성/자막 줄 숨김(음성 언급 제거) */}
-      ${u.hasVoice?`<div class="usc-pad"><span class="usc-pad-lbl" title="Extra pause after this scene's voice (voice mode)">+여백</span><select class="usc-pad-sel" onchange="ugcSceneSetTail('${esc(u.jobId)}',${s.n},this.value)">${[0,500,1000,1500,2000].map(v=>`<option value="${v}"${tailMs===v?' selected':''}>${v===0?'0s':'+'+(v/1000)+'s'}</option>`).join('')}</select></div>`:''/* P2: 씬별 여백 — 음성모드만(음성-주도 타이밍에 tailMs로 반영) */}
+      ${u.hasVoice?`<div class="usc-pad"><span class="usc-pad-lbl" title="Extra pause after this scene's voice (voice mode)">Add pause</span><select class="usc-pad-sel" onchange="ugcSceneSetTail('${esc(u.jobId)}',${s.n},this.value)">${[0,500,1000,1500,2000].map(v=>`<option value="${v}"${tailMs===v?' selected':''}>${v===0?'0s':'+'+(v/1000)+'s'}</option>`).join('')}</select></div>`:''/* P2: 씬별 여백 — 음성모드만(음성-주도 타이밍에 tailMs로 반영) */}
       <div class="usc-acts">
         <button type="button" title="Move left" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},-1)" ${i===0?'disabled':''}>◀</button>
         <button type="button" title="Move right" onclick="ugcSceneMove('${esc(u.jobId)}',${s.n},1)" ${i===u.scenes.length-1?'disabled':''}>▶</button>
@@ -3546,7 +3546,7 @@ function ugcAddScene(jobId){
   wrap.innerHTML='<div class="ugc-adv-hd">Add a scene <span class="ugc-adv-note">Pick a suggestion, or describe your own (uses credits).</span></div>'
     +'<div id="ugcSuggestWrap-'+esc(jobId)+'" class="ugc-suggest-wrap"><div class="ugc-inline-loadcap">Thinking of scenes… <span class="rb-spin" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span></div></div>'
     +'<div class="ugc-add-own"><div class="ugc-add-own-h">Or describe your own</div>'
-    +'<textarea class="ugc-add-ta" spellcheck="false" placeholder="e.g. 제품이 회전하는 장면 · 사용 후 만족하는 클로즈업"></textarea>'
+    +'<textarea class="ugc-add-ta" spellcheck="false" placeholder="e.g. the product rotating · a satisfied close-up after use"></textarea>'
     +'<div class="ugc-adv-row"><button type="button" class="ugc-apply" onclick="ugcAddSubmit(\''+esc(jobId)+'\')">Add this scene — uses credits</button>'
     +'<button type="button" class="ugc-reset" onclick="ugcAddScene(\''+esc(jobId)+'\')">Close</button></div></div>';
   ugcLoadSuggestions(jobId);
@@ -3607,7 +3607,7 @@ async function deleteStudioFailed(btn,idx){
       }
     }
     renderStudioResults();
-  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('삭제 실패','error'); }
+  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('Delete failed','error'); }
 }
 // 이 배치(creation)의 모든 이미지 삭제 → 서버(generation_results 행) 제거 + 피드에서 행 제거. Library My creations도 같은 행이라 자동 반영. 승격 템플릿은 영향 없음.
 async function deleteStudioBatch(btn,idxs){
@@ -3619,8 +3619,8 @@ async function deleteStudioBatch(btn,idxs){
     if(!oks.some(Boolean))throw new Error('failed');
     const b=STUDIO_BATCHES.find(x=>x.items.some(i=>idxs.indexOf(i.idx)!==-1));
     if(b){ const i=STUDIO_BATCHES.indexOf(b); if(i>=0)STUDIO_BATCHES.splice(i,1); const k=b.key; if(k!=null&&STUDIO_BATCH_BY_KEY[k])delete STUDIO_BATCH_BY_KEY[k]; renderStudioResults(); }
-    if(window.toast)toast('Creation 삭제됨');
-  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('삭제 실패: '+(e.message||e),'error'); }
+    if(window.toast)toast('Creation deleted');
+  }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('Delete failed: '+(e.message||e),'error'); }
 }
 function dateKeyOf(iso){ const d=iso?new Date(iso):new Date(); if(isNaN(d))return ''; return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
 function fmtBatchDate(iso){ // Leonardo식 날짜 헤더: Today / Yesterday / Wednesday, 27 May 2026
@@ -4696,7 +4696,7 @@ function ugcEditScenePre(i){
   const panel=document.getElementById('ugcSumPanel-'+i); if(!panel)return;
   if(panel.style.display!=='none'){panel.style.display='none';panel.innerHTML='';return;}
   panel.style.display='';
-  panel.innerHTML='<textarea class="ugc-sum-ta" spellcheck="false" placeholder="Describe the change — e.g. 배경을 어둡게 · 제품이 회전하게 · 더 밝게"></textarea>'
+  panel.innerHTML='<textarea class="ugc-sum-ta" spellcheck="false" placeholder="Describe the change — e.g. darker background · rotate the product · brighter"></textarea>'
     +'<div class="ugc-sum-row"><button type="button" class="ugc-sum-apply" onclick="ugcApplyScenePre('+i+')">Apply change</button>'
     +'<button type="button" class="ugc-reset" onclick="ugcEditScenePre('+i+')">Cancel</button></div>';
   const ta=panel.querySelector('.ugc-sum-ta'); if(ta)ta.focus();
