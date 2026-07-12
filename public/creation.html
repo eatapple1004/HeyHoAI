@@ -152,6 +152,15 @@
   .sb-cell:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
   .sb-more-note{margin-top:8px;font-size:11px;font-weight:500;color:var(--faint);text-align:center;letter-spacing:.2px}
 
+  /* 씬 확대 모달 — 씬 클릭/탭 시 큰 화면으로 재생(컨트롤·루프). 스테이지와 같은 몰입 다크 톤 */
+  .sbmodal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:40px;background:rgba(4,5,10,.86);backdrop-filter:blur(12px) saturate(1.05);-webkit-backdrop-filter:blur(12px) saturate(1.05)}
+  .sbmodal.open{display:flex}
+  .sbmodal-stage{position:relative;display:flex;align-items:center;justify-content:center;max-width:min(92vw,520px);max-height:88vh}
+  .sbmodal-stage video{max-width:100%;max-height:88vh;width:auto;height:auto;border-radius:var(--r-lg);background:#000;box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);display:block}
+  .sbmodal-x{position:fixed;top:24px;right:24px;z-index:61;width:38px;height:38px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 70%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
+  .sbmodal-x:hover{color:var(--text);background:var(--surface2)}
+  .sbmodal-x .ic{width:18px;height:18px;color:inherit}
+
   /* Prompt module (Custom only) — 박스 → 좌측 룰 에디토리얼 풀쿼트 */
   .prompt{margin:0 0 4px;padding:0 0 0 13px;border:0;border-left:2px solid var(--border2);border-radius:0;background:none;box-shadow:none}
   .prompt-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
@@ -232,6 +241,12 @@
   <aside class="panel" id="panel"></aside>
 </div>
 <div id="toast"></div>
+<div class="sbmodal" id="sbModal" role="dialog" aria-modal="true" aria-label="Scene preview" onclick="if(event.target===this)closeSceneModal()">
+  <button class="sbmodal-x" onclick="closeSceneModal()" aria-label="Close" title="Close">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+  <div class="sbmodal-stage" id="sbModalStage"></div>
+</div>
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
@@ -328,7 +343,7 @@ function renderStoryboard(){
     const vid=canPlay?`<video class="sb-vid" src="${esc(s.clipUrl)}" muted loop playsinline preload="none" onplaying="this.closest('.sb-cell').classList.add('von')" onerror="var c=this.closest('.sb-cell');c.classList.remove('von');c.dataset.play='0'"></video>`:'';
     const glyph=canPlay?`<span class="sb-glyph">${IC.play}</span>`:'';
     const dur=s.durationSec?`<span class="sb-dur">${s.durationSec}s</span>`:'';
-    const inter=canPlay?` data-play="1" tabindex="0" role="button" aria-label="Play scene ${s.n} preview" onmouseenter="sbHover(this,1)" onmouseleave="sbHover(this,0)" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this)}"`:'';
+    const inter=canPlay?` data-play="1" tabindex="0" role="button" aria-label="Enlarge scene ${s.n}" onmouseenter="sbHover(this,1)" onmouseleave="sbHover(this,0)" onclick="openSceneModal(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSceneModal(this)}"`:'';
     return `<div class="sb-cell"${inter}><span class="sb-n">${s.n}</span>${poster}${vid}${glyph}${dur}</div>`;
   }).join('');
   const more=extra>0?`<div class="sb-more-note">+${extra} more scene${extra>1?'s':''}</div>`:'';
@@ -343,13 +358,24 @@ function sbHover(cell,on){
   if(on){ try{v.currentTime=0;}catch(e){} const p=v.play(); if(p&&p.catch)p.catch(function(){}); }
   else { try{v.pause();}catch(e){} cell.classList.remove('von'); }
 }
-// 탭/키보드 재생 토글(터치·키보드 경로). 다른 재생 셀은 정지(단일 활성).
-function sbToggle(cell){
+// 씬 클립 확대 — 클릭/탭/Enter 시 큰 화면 모달로 재생(컨트롤·루프). 뒤 인라인 호버 미리보기는 정지.
+function openSceneModal(cell){
   if(!cell||cell.dataset.play!=='1') return;
-  const playing=cell.classList.contains('von');
-  document.querySelectorAll('.sb-cell.von').forEach(function(c){ if(c!==cell) sbHover(c,0); });
-  sbHover(cell, playing?0:1);
+  const v=cell.querySelector('.sb-vid'), src=v&&v.getAttribute('src'); if(!src) return;
+  document.querySelectorAll('.sb-cell.von').forEach(function(c){ sbHover(c,0); });   // 인라인 재생 정지(중복 재생 방지)
+  const stage=document.getElementById('sbModalStage');
+  stage.innerHTML=`<video src="${esc(src)}" controls autoplay loop playsinline disablepictureinpicture></video>`;
+  const mv=stage.querySelector('video'); if(mv){ mv.disablePictureInPicture=true; const p=mv.play&&mv.play(); if(p&&p.catch)p.catch(function(){}); }
+  const m=document.getElementById('sbModal'); m.classList.add('open');
+  document.addEventListener('keydown',sbModalKey);
 }
+function closeSceneModal(){
+  const m=document.getElementById('sbModal'); if(!m.classList.contains('open')) return;
+  m.classList.remove('open');
+  document.getElementById('sbModalStage').innerHTML='';   // 요소 제거 = 재생 정지·리소스 해제
+  document.removeEventListener('keydown',sbModalKey);
+}
+function sbModalKey(e){ if(e.key==='Escape'){ e.preventDefault(); closeSceneModal(); } }
 // intrinsic 크기 → 근접 표준 비율 라벨
 function ratioLabel(w,h){ if(!w||!h) return ''; const r=w/h, C=[[9,16],[4,5],[2,3],[3,4],[1,1],[4,3],[3,2],[16,9]]; let best=C[0],bd=Infinity; C.forEach(function(c){ const d=Math.abs(r-c[0]/c[1]); if(d<bd){bd=d;best=c;} }); return best[0]+':'+best[1]; }
 // model 코드 → Doppia 친절명(알 수 없으면 '' → pill 숨김, raw 코드 노출 방지)
