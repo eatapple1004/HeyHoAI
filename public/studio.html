@@ -298,6 +298,7 @@
   .usc.usc-dragover{outline:2px dashed var(--accent,#8b7bff);outline-offset:2px}
   .usc.usc-dragging{opacity:.45}
   .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
+  .rb-lbl{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);margin-bottom:-5px}  /* Ad Video 컨셉=내 입력 표식(상세페이지 AI 훅과 구분) */
   .rb-badge.tpl{color:var(--accent2);background:rgba(124,108,255,.14)}
   .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
   .rb-badge.ugc{color:#ffb26b;background:rgba(255,178,107,.14)}/* (2026-07-11) Ad Video 크리에이션 배지 */
@@ -3065,7 +3066,7 @@ function batchRowHtml(b){
     :'';
   const head=isTpl
     ?`<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName||'Template')}</div>`
-    :`<span class="rb-badge ${isUgc?'ugc':'custom'}">${isUgc?'🎬 Ad Video':'✎ Custom'}</span><div class="rb-prompt" onclick="toggleRbPromptEl(this)">${esc(b.promptText||(isUgc?'Ad Video':'Custom prompt'))}</div>`+
+    :`<span class="rb-badge ${isUgc?'ugc':'custom'}">${isUgc?'🎬 Ad Video':'✎ Custom'}</span>${isUgc?'<div class="rb-lbl">Concept</div>':''}<div class="rb-prompt" onclick="toggleRbPromptEl(this)">${esc(b.promptText||(isUgc?'Ad Video':'Custom prompt'))}</div>`+
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
       tplFromBtn+
