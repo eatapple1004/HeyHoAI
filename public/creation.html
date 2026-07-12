@@ -129,12 +129,12 @@
   .foot{display:flex;flex-direction:column;margin-top:auto;padding-top:20px}
   .foot .own-hint{margin:0 0 12px}
   .foot-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .mini-acts{display:flex;gap:8px;flex-wrap:wrap}
-  .mini-btn{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:color .15s,border-color .15s,background .15s;text-decoration:none;flex-shrink:0}
-  .mini-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface)}
-  .mini-btn .ic{width:17px;height:17px;color:currentColor}
-  .mini-btn.on{color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 48%,transparent)}          /* Private ON */
-  .mini-btn.danger:hover{color:#ff6b6b;border-color:color-mix(in srgb,#ff6b6b 48%,transparent);background:color-mix(in srgb,#ff6b6b 9%,transparent)}
+  .mini-acts{display:flex;gap:6px;flex-wrap:wrap;margin-left:-7px}   /* 아이콘 전용 — 박스 없이 첫 아이콘 광학 정렬 */
+  .mini-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:var(--dim);cursor:pointer;transition:color .15s,background .15s;text-decoration:none;flex-shrink:0}
+  .mini-btn:hover{color:var(--text);background:color-mix(in srgb,var(--text) 8%,transparent)}
+  .mini-btn .ic{width:18px;height:18px;color:currentColor}
+  .mini-btn.on{color:var(--accent2)}          /* Private ON */
+  .mini-btn.danger:hover{color:#ff6b6b;background:color-mix(in srgb,#ff6b6b 12%,transparent)}
   /* 공유 드롭다운(Leonardo식): Copy link + 소셜 */
   .share-wrap{position:relative;display:inline-flex}
   .share-menu{position:absolute;bottom:calc(100% + 8px);left:0;min-width:186px;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 22px 54px -18px rgba(0,0,0,.75);z-index:30}
