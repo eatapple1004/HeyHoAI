@@ -27,6 +27,24 @@ const safeRefImage = (p) => (typeof p === 'string' && p && !p.includes('..') && 
   && (/^\/img\/[\w./-]+\.(jpe?g|png|webp)$/i.test(p) || /^tmp\/images\/[\w-]+\.(jpe?g|png|webp)$/i.test(p))) ? p : null;
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
+// 레퍼런스 파일명 → base64. 로컬(tmp/images) 우선, 없으면 R2에서 복원(cleanup cron이 오래된 tmp를 지워도
+//   캐릭터/서브젝트 레퍼런스가 유실되지 않게). 복원분은 로컬에 다시 써 다음 요청을 빠르게. 실패 시 null.
+async function readRefBase64(filename) {
+  const local = path.join(process.cwd(), 'tmp', 'images', filename);
+  if (fs.existsSync(local)) return fs.readFileSync(local).toString('base64');
+  try {
+    const obj = await mediaStore.getObject(filename);
+    if (obj && obj.Body) {
+      const chunks = [];
+      for await (const c of obj.Body) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+      const buf = Buffer.concat(chunks);
+      try { fs.mkdirSync(path.dirname(local), { recursive: true }); fs.writeFileSync(local, buf); } catch (e) {} // 로컬 캐시 복원(best-effort)
+      return buf.toString('base64');
+    }
+  } catch (e) {}
+  return null;
+}
+
 const router = Router();
 
 // Private Mode(결과 비공개)는 구독자 전용 — JWT엔 plan이 없으므로 DB에서 로드해 권한 판정.
@@ -130,9 +148,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       const character = await characterRepo.findById(characterId);
       if (character?.reference_image_url) {
         const filename = character.reference_image_url.split('/').pop();
-        const refPath = path.join(process.cwd(), 'tmp', 'images', filename);
-        if (fs.existsSync(refPath)) {
-          referenceImages.push({ base64: fs.readFileSync(refPath).toString('base64'), source: 'character' });
+        const b64 = await readRefBase64(filename); // 로컬 우선, 없으면 R2 폴백(cleanup cron이 tmp/images 삭제해도 레퍼런스 유지)
+        if (b64) {
+          referenceImages.push({ base64: b64, source: 'character' });
           referenceImagePath = `tmp/images/${filename}`;
         }
       }

@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const mediaStore = require('../storage/mediaStore'); // 레퍼런스 이미지 R2 영속화(cleanup cron 삭제 대비)
 
 /** 활성 작업 컨텍스트의 팀 id (개인이면 null) */
 async function activeTeamId(userId) {
@@ -169,6 +170,7 @@ async function register(req, res, next) {
         const refUrl = `/images/${req.file.filename}`;
         await characterRepo.setReferenceImage(saved.id, null, refUrl);
         saved.reference_image_url = refUrl;
+        try { await mediaStore.putFile(req.file.path); } catch (e) {} // R2 영속화(cleanup cron이 tmp/images 삭제해도 생성 시 R2 폴백으로 복원)
       }
 
       res.status(201).json({ success: true, data: saved });
@@ -237,6 +239,7 @@ async function registerWithImage(req, res, next) {
     const imageUrl = `/images/${imageFilename}`;
     await characterRepo.setReferenceImage(saved.id, null, imageUrl);
     saved.reference_image_url = imageUrl;
+    try { const lp = path.join(process.cwd(), 'tmp', 'images', imageFilename); if (fs.existsSync(lp)) await mediaStore.putFile(lp); } catch (e) {} // R2 영속화(생성물이 R2에 없을 경우 대비)
 
     res.status(201).json({ success: true, data: saved });
   } catch (e) {
