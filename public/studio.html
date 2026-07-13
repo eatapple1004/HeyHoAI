@@ -998,7 +998,7 @@
   </div>
 
   <div id="gammaBanner" style="display:none;margin:0 0 18px;padding:12px 16px;border:1px solid var(--accent);background:rgba(124,108,255,.08);border-radius:13px;font-size:13.5px;color:var(--text)">
-    ✨ Making your own — add your subject below and Generate. The creator's look is applied for you (recipe stays private).
+    ✨ Making your own — add your subject below and Generate. The creator's look is applied for you (their exact settings stay private).
     <span style="float:right;display:inline-flex;gap:7px">
       <button type="button" onclick="cancelGamma()" style="background:none;border:1px solid var(--border2);color:var(--dim);border-radius:9px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit">✕ Cancel</button>
     </span>
@@ -3607,7 +3607,7 @@ async function ugcAddSubmit(jobId){
 function studioFailedCard(idx){
   const del=(idx!=null)?`onclick='deleteStudioFailed(this,${idx})'`:`onclick='this.closest(".result-card").remove()'`;
   return `<div class="result-card rb-failed"><div class="rbf-ic">⚠ Failed Generation</div>`
-    +`<div class="rbf-msg">The output failed to save. Try generating again. Your tokens have been credited back to your account.</div>`
+    +`<div class="rbf-msg">The output failed to save. Try generating again — your credits were refunded.</div>`
     +`<button class="rbf-del" type="button" ${del}>🗑 Delete</button></div>`;
 }
 async function deleteStudioFailed(btn,idx){
@@ -4144,7 +4144,7 @@ async function generate(opts){
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;} // 동시 상한(런어웨이 방지). 크레딧도 매 생성 차감.
   if(!subj&&!(state.mode==='custom'&&extra))return; // (테스트) Custom은 레퍼런스 없이 프롬프트만 허용
   if(!r&&!extra&&!GAMMA_FROM)return; // γ 모드: 레시피·프롬프트 없이도 공개 creation 룩으로 생성
-  if(r&&r.soon){toast('UGC mode is coming soon.');return;}
+  if(r&&r.soon){toast('This template is coming soon.');return;}
   lastGenTemplate=r?r.name:'My prompt'; // 뷰어 모달에 표시할 템플릿
   // 잔액 부족이면 생성 대신 페이월
   const cost=genCost(r);
