@@ -48,8 +48,16 @@
   .feat-emblem svg{width:30px;height:30px;fill:#fff}
   .feat-emblem.play svg{margin-left:5px}
   .feat-emblem.pic svg{fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .feat-media .ph-cap{position:absolute;left:20px;bottom:20px;right:20px;font-family:'Sora';font-weight:700;font-size:14px;color:#fff;letter-spacing:-.3px;padding:8px 13px;border-radius:11px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);animation:capfloat 4.5s ease-in-out infinite;width:fit-content;max-width:calc(100% - 40px)}
+  .feat-media .ph-cap{z-index:80;position:absolute;left:20px;bottom:20px;right:20px;font-family:'Sora';font-weight:700;font-size:14px;color:#fff;letter-spacing:-.3px;padding:8px 13px;border-radius:11px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);animation:capfloat 4.5s ease-in-out infinite;width:fit-content;max-width:calc(100% - 40px)}
   @keyframes capfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* 딥 스택 회전 캐러셀 — 왼쪽 hero · 오른쪽 play 소나 펄스 */
+  .deepstack{position:absolute;inset:0;-webkit-mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+  .deepstack::before{content:'';position:absolute;left:50%;top:47%;width:200px;height:150px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(106,64,224,.5),rgba(94,224,214,.13) 46%,transparent 72%);filter:blur(28px);z-index:0}
+  .ds-card{position:absolute;top:50%;left:50%;width:82px;height:104px;border-radius:11px;background-size:cover;background-position:center;border:2px solid rgba(255,255,255,.9);box-shadow:0 14px 30px -10px rgba(0,0,0,.72);transform-origin:center;will-change:transform,filter}
+  .feat-emblem.play::before,.feat-emblem.play::after{content:'';position:absolute;inset:-16px;border-radius:50%;border:1px solid rgba(255,255,255,.3);animation:playpulse 2.8s ease-out infinite}
+  .feat-emblem.play::after{animation-delay:1.4s}
+  @keyframes playpulse{0%{transform:scale(.82);opacity:.75}100%{transform:scale(1.55);opacity:0}}
+  @media (prefers-reduced-motion: reduce){.orb,.feat-media .ph-cap,.feat-emblem.play::before,.feat-emblem.play::after{animation:none}}
   .feat-body{padding:24px 26px 26px;display:flex;flex-direction:column;gap:12px;flex:1;position:relative;z-index:2}
   .feat-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.4px;color:#fff;padding:5px 12px;border-radius:999px;background:linear-gradient(120deg,var(--accent),var(--pink));box-shadow:0 8px 20px -8px var(--accent)}
   .feat-body h2{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.6px}
@@ -143,7 +151,7 @@
     <a class="feat studio" href="/studio" aria-label="Create Product & Model Photos">
       <div class="feat-media">
         <div class="orb"></div>
-        <div class="feat-emblem pic"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.7"/><path d="M21 16l-5-5-9 9"/></svg></div>
+        <div class="deepstack" id="dstack" aria-hidden="true"></div>
         <div class="ph-cap">One photo → a whole lookbook.</div>
       </div>
       <div class="feat-body">
@@ -298,5 +306,25 @@
 })();
 </script>
 <script src="/js/biz-footer.js?v=1"></script>
+<script>/*DSCAROUSEL*/
+(function(){
+  var stack=document.getElementById('dstack'); if(!stack) return;
+  var POOL=["/img/hero/h24.jpg","/img/hero/h41.jpg","/img/hero/h10.jpg","/img/hero/h45.jpg","/img/hero/h02.jpg","/img/hero/h14.jpg","/img/hero/h38.jpg","/img/hero/h29.jpg","/img/hero/h49.jpg","/img/hero/h36.jpg","/img/hero/h28.jpg","/img/hero/h54.jpg","/img/hero/h40.jpg","/img/hero/h00.jpg","/img/hero/h48.jpg","/img/hero/h34.jpg","/img/hero/h19.jpg","/img/hero/h17.jpg","/img/hero/h22.jpg","/img/hero/h11.jpg","/img/hero/h18.jpg","/img/hero/h03.jpg","/img/hero/h20.jpg","/img/hero/h21.jpg","/img/hero/h43.jpg","/img/hero/h46.jpg","/img/hero/h09.jpg","/img/hero/h42.jpg","/img/hero/h06.jpg","/img/hero/h31.jpg","/img/hero/h04.jpg","/img/hero/h08.jpg","/img/hero/h32.jpg","/img/hero/h23.jpg","/img/hero/h16.jpg","/img/hero/h05.jpg","/img/hero/h50.jpg","/img/hero/h12.jpg","/img/hero/h30.jpg","/img/hero/h01.jpg","/img/hero/h07.jpg","/img/hero/h37.jpg","/img/hero/h27.jpg","/img/hero/h35.jpg","/img/hero/h33.jpg","/img/hero/h44.jpg","/img/hero/h52.jpg","/img/hero/h47.jpg","/img/hero/h51.jpg","/img/hero/h13.jpg","/img/hero/h15.jpg","/img/hero/h39.jpg","/img/hero/h25.jpg","/img/hero/h53.jpg","/img/hero/h26.jpg"];
+  var N=13, SPEED=1/20000, next=0, cards=[], phase=[];
+  function arc(t){var dc=(t-0.5)*2,ad=Math.abs(dc);var e=Math.min(t,1-t),o=Math.max(0,Math.min(1,e/0.08));o=o*o*(3-2*o);return{l:3+t*94,s:0.66+(1-ad)*0.42,b:1-ad*0.34,bl:ad>0.6?(ad-0.6)*4:0,r:dc*15,y:ad*14,z:Math.round(60-ad*40),o:o};}
+  function apply(el,t){var a=arc(t);el.style.left=a.l+'%';el.style.zIndex=a.z;el.style.opacity=a.o.toFixed(3);el.style.filter='brightness('+a.b.toFixed(2)+')'+(a.bl>0.05?' blur('+a.bl.toFixed(1)+'px)':'');el.style.transform='translate(-50%,calc(-50% + '+a.y.toFixed(0)+'px)) rotate('+a.r.toFixed(1)+'deg) scale('+a.s.toFixed(3)+')';}
+  for(var i=0;i<N;i++){var el=document.createElement('span');el.className='ds-card';el.style.backgroundImage="url('"+POOL[next++%POOL.length]+"')";stack.appendChild(el);cards.push(el);phase.push(i/N);apply(el,i/N);}
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce) return;
+  var last=null;
+  function frame(ts){
+    if(document.hidden){last=ts;requestAnimationFrame(frame);return;}
+    if(last==null)last=ts; var dt=Math.min(ts-last,60); last=ts;
+    for(var i=0;i<N;i++){phase[i]-=SPEED*dt;if(phase[i]<0){phase[i]+=1;cards[i].style.backgroundImage="url('"+POOL[next++%POOL.length]+"')";}apply(cards[i],phase[i]);}
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>
