@@ -38,6 +38,10 @@
     '.bizf b{color:#aab0c4;font-weight:600}' +
     '.bizf a{color:#8a8fa3;text-decoration:none}.bizf a:hover{text-decoration:underline}' +
     '.bizf .bizf-sep{margin:0 9px;color:rgba(255,255,255,.18)}' +
+    '.bizf .bizf-legal{margin-bottom:12px;font-size:12.5px}' +
+    '.bizf .bizf-legal a{color:#aab0c4;font-weight:500}' +
+    '.bizf .bizf-legal a:hover{color:#dfe3ee}' +
+    '.bizf .bizf-legal b{color:#dfe3ee;font-weight:700}' +
     '.bizf .bizf-copy{margin-top:10px;color:#6b7080;font-size:11.5px}';
 
   function mount() {
@@ -51,6 +55,9 @@
     el.id = 'bizf-block';
     el.innerHTML =
       '<div class="bizf-in">' +
+      '<div class="bizf-legal"><a href="/terms">이용약관</a>' + sep +
+        '<a href="/privacy"><b>개인정보처리방침</b></a>' + sep +
+        '<a href="/refund">취소·환불 및 청약철회</a></div>' +
       rows.join(sep) +
       '<div class="bizf-copy">© 2026 ' + BIZ.company + ' (' + BIZ.brand + '). All rights reserved.</div>' +
       '</div>';
