@@ -2044,6 +2044,7 @@ function setMode(m,initialVertical){
   document.getElementById('step1Title').textContent=STEP1[m][0];
   document.getElementById('step1Hint').textContent=STEP1[m][1];
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
+  if(ugc && typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls(); // (2026-07-13) 진입 시 Voice 기본상태 동기화 — 안 하면 Length/scene·음성힌트가 반대로 표시(토글 전까지)
   // Custom·UGC 모드: 템플릿 그리드 숨김 — 직접 입력으로 생성(Custom=프롬프트칸, UGC=제품+컨셉 패널)
   document.getElementById('templateStep').classList.toggle('hidden',custom||ugc);
   // UGC: compose gen-bar(genBtn) 숨김 — scriptStep의 자체 Generate 버튼 사용
