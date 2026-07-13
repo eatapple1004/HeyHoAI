@@ -766,6 +766,10 @@
     .media-grid{column-count:2;column-width:auto;column-gap:10px}
     .media-card{margin-bottom:10px}
   }
+  /* (2026-07-13) 모션 저감 존중 — 앰비언트/피드백 애니메이션·전환 사실상 정지(animationend 대기 코드 안 깨지게 .001ms). */
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  }
 </style>
 </head>
 <body>
