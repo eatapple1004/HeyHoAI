@@ -1119,11 +1119,11 @@
     </div>
     <div class="field" id="durField" style="display:none">
       <span class="addon-label">Length</span>
-      <select id="durSel" class="addon-lang" onchange="updateBar()"><option value="5">5s</option><option value="10">10s</option></select>
+      <select id="durSel" class="addon-lang" aria-label="Length" onchange="updateBar()"><option value="5">5s</option><option value="10">10s</option></select>
     </div>
     <div class="field" id="qualityField" style="display:none">
       <span class="addon-label">Quality</span>
-      <select id="qualitySel" class="addon-lang" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+      <select id="qualitySel" class="addon-lang" aria-label="Quality" onchange="updateBar()"><!-- 스키마가 채움 --></select>
     </div>
     <div class="field" id="ratioField" style="display:none">
       <span class="addon-label">Ratio</span>
@@ -1143,7 +1143,7 @@
     </div>
     <div class="field" id="countField" style="display:none">
       <span class="addon-label">Count</span>
-      <select id="countSel" class="addon-lang" onchange="updateBar()"><!-- 스키마가 채움 --></select>
+      <select id="countSel" class="addon-lang" aria-label="Number of images" onchange="updateBar()"><!-- 스키마가 채움 --></select>
     </div>
     <button type="button" class="addon-toggle" id="audioWrap" style="display:none" onclick="toggleAudio(this)">Audio <span class="bk-on hidden" id="audioOnBadge">ON</span></button>
     <div class="field" id="legacyModelField">
@@ -1157,7 +1157,7 @@
     </div>
     <span class="divider-v" data-flag="caption"></span>
     <button class="addon-toggle" id="aCaption" data-flag="caption" onclick="toggleCaption(this)">Caption + hashtags <i>+1</i></button>
-    <select class="addon-lang hidden" id="captionLang" data-flag="caption">
+    <select class="addon-lang hidden" id="captionLang" data-flag="caption" aria-label="Caption language">
       <option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option>
     </select>
     <div class="addons-right"><!-- (2026-07-04) Enhance/Private를 한 묶음으로 우측 끝 정렬(full-width 컴포즈바 공백 제거·아래 Generate와 정렬). flex-wrap에서도 통째로 이동 -->
