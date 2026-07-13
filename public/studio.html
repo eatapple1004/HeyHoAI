@@ -980,7 +980,7 @@
     <!-- 대본 작성 중 스켈레톤(각 씬 줄이 쓰여지는 느낌) -->
     <div id="ugcScriptLoading" style="display:none">
       <div class="ugc-sk">
-        <div class="ugc-sk-head">✍ Writing your script<span class="ugc-sk-dots"></span></div>
+        <div class="ugc-sk-head"><svg class="ugc-ic" style="vertical-align:-2px;margin-right:5px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Writing your script<span class="ugc-sk-dots"></span></div>
         <div class="ugc-sk-row"><span class="ugc-sk-lbl">Hook</span><span class="ugc-sk-bar"></span></div>
         <div class="ugc-sk-row"><b>1.</b><span class="ugc-sk-bar"></span></div>
         <div class="ugc-sk-row"><b>2.</b><span class="ugc-sk-bar"></span></div>
@@ -3138,7 +3138,7 @@ function ugcSceneStripHtml(b){
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
     <div class="ugc-music-row">
-      <span class="ugc-music-lbl">🎵 Music</span>
+      <span class="ugc-music-lbl"><svg class="ugc-ic" style="vertical-align:-2px;margin-right:5px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music</span>
       <select class="ugc-music-mood" aria-label="Music mood">
         <option value="">Auto (AI)</option>
         <option value="upbeat, energetic, bright modern">Upbeat</option>
@@ -3568,7 +3568,7 @@ async function ugcLoadSuggestions(jobId){
     if(!res.ok||!d.success||!Array.isArray(d.scenes)||!d.scenes.length)throw new Error(d.error||'no suggestions');
     u._suggest=d.scenes; // full(프롬프트 포함) — 화면엔 summary만
     wrap.innerHTML=d.scenes.map(function(sc,i){return '<button type="button" class="ugc-suggest-card" onclick="ugcPickSuggestion(\''+esc(jobId)+'\','+i+')"><span class="ugc-suggest-n">'+(i+1)+'</span><span class="ugc-suggest-sum">'+esc(sc.summary||'')+'</span><span class="ugc-suggest-go">Add →</span></button>';}).join('')
-      +'<button type="button" class="ugc-suggest-refresh" onclick="ugcLoadSuggestions(\''+esc(jobId)+'\')">↻ More ideas</button>';
+      +'<button type="button" class="ugc-suggest-refresh" onclick="ugcLoadSuggestions(\''+esc(jobId)+'\')"><svg class="ugc-ic" style="vertical-align:-2px;margin-right:5px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.9 4.2"/><path d="M20 4v6h-6"/></svg>More ideas</button>';
   }catch(e){ wrap.innerHTML='<div class="ugc-inline-loadcap">Couldn\'t load suggestions — describe your own below.</div>'; }
 }
 async function ugcPickSuggestion(jobId,i){
