@@ -1213,7 +1213,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gmnGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285F4"/><stop offset=".45" stop-color="#9168c9"/><stop offset="1" stop-color="#e0689a"/></linearGradient></defs></svg>
 
 <div class="modal-bg" id="brandkitModal" onclick="if(event.target===this)closeBrandkit()">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Brand kit">
     <button class="x" onclick="closeBrandkit()">✕</button>
     <h3>Brand kit</h3>
     <div class="msub">Lock your logo, colors and font so every generated photo, reel and ad stays on-brand.</div>
@@ -1248,7 +1248,7 @@
   </div>
 </div>
 <div class="modal-bg" id="saveTplModal" onclick="if(event.target===this)closeSaveTpl()">
-  <div class="modal stpl-modal">
+  <div class="modal stpl-modal" role="dialog" aria-modal="true" aria-label="Save as template">
     <button class="x" onclick="closeSaveTpl()">✕</button>
     <div class="stpl-h">Create template</div>
     <div class="stpl-s">Save this look as a private template in your Studio. Only you can see and use it.</div>
@@ -1354,7 +1354,7 @@
   .pw-soon a{color:var(--accent2)}
 </style>
 <div class="modal-bg" id="paywallModal" onclick="if(event.target===this)closePaywall()">
-  <div class="modal pw-modal">
+  <div class="modal pw-modal" role="dialog" aria-modal="true" aria-label="Upgrade">
     <button class="x" onclick="closePaywall()">✕</button>
     <div class="pw-hero">
       <h3 class="pw-title">Not enough credits</h3>
@@ -1368,7 +1368,7 @@
 
 <!-- 템플릿 상세 모달 (설명 + 샘플 이미지) -->
 <div class="modal-bg" id="recipeModal" onclick="if(event.target===this)closeRecipeModal()">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Template">
     <button class="x" onclick="closeRecipeModal()">✕</button>
     <div class="rm-preview" id="rmPreview"></div>
     <div class="rm-head"><h3 id="rmName" style="margin:0"></h3><span class="rm-badge" id="rmBadge"></span></div>
@@ -1392,7 +1392,7 @@
 
 <!-- 결과 이미지 라이트박스 (같은 페이지 내 확대 보기) -->
 <div class="modal-bg" id="subjModal" onclick="if(event.target===this)closeSubjModal()">
-  <div class="modal media">
+  <div class="modal media" role="dialog" aria-modal="true" aria-label="Select media">
     <button class="x" onclick="closeSubjModal()">✕</button>
     <h3 id="subjModalTitle">Select a face</h3>
     <div class="media-grid" id="subjModalGrid"></div>
@@ -1855,7 +1855,7 @@ function openRatioPanel(ev){if(ev)ev.stopPropagation();const p=document.getEleme
 function closeRatioPanel(){const p=document.getElementById('ratioPanel');if(p)p.classList.remove('open');}
 function pickRatio(v,fromPanel){const sel=document.getElementById('aspectSel');if(sel)sel.value=v;renderRatioGrid(_ratioVals);renderSizeGrid(_sizeVals);if(fromPanel)closeRatioPanel();updateBar();}
 document.addEventListener('click',function(e){const p=document.getElementById('ratioPanel');if(p&&p.classList.contains('open')&&!e.target.closest('.ratio-wrap'))closeRatioPanel();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeToolPop();closeRatioPanel();}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeToolPop();closeRatioPanel();var om=document.querySelector('.modal-bg.open');if(om){e.preventDefault();om.click();/* 백드롭 클릭 경로로 닫기(각 모달 close 클린업 포함) */}}});
 // 해결된 출력 치수 = 티어 메가픽셀 예산을 비율에 맞춰 분배(1:1은 Google 공식값 1024²/2048²/4096²에 앵커, /16 반올림).
 // Leonardo가 치수를 산출하는 방식과 동일(예산 보존+반올림). 실제 모델 출력이 몇 px 반올림될 수 있음.
 const TIER_PX={'1K':1024,'2K':2048,'4K':4096}; // 1:1 롱에지(=공식값) → 예산 = px²
