@@ -381,8 +381,8 @@
     .nav-cta .btn{padding:9px 13px;font-size:13.5px}
   }
   .brand{align-items:center}
-  .brand-mark{width:26px;height:26px;flex-shrink:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 6px 16px -6px rgba(157,64,224,.7)}
-  .brand-mark svg{width:15px;height:15px;fill:#fff}
+  .brand-mark{width:26px;height:26px;flex-shrink:0;border-radius:8px;overflow:hidden;box-shadow:0 6px 16px -6px rgba(157,64,224,.7)}
+  .brand-mark img{width:100%;height:100%;object-fit:cover;display:block}
   .nav-cta .btn-primary{background:linear-gradient(100deg,var(--accent),var(--pink))}
   .nav-cta .btn-primary:hover{box-shadow:0 14px 34px -10px var(--pink)}
 
@@ -410,6 +410,51 @@
   .reel-frame{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:130px;height:231px;z-index:2;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.85);box-shadow:0 24px 54px -14px rgba(0,0,0,.9);background:#0c0c16}
   .reel-v{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   @media (prefers-reduced-motion: reduce){.reel-scroller{transition:none}}
+
+  /* [LP] 히어로 SNS 릴(제네릭·저작권 안전·9:16·오버레이 동반 슬라이드) */
+  .rslot.sns{border-style:solid;border-color:rgba(255,255,255,.1);background:#0a0a12;padding:0;display:flex;align-items:center;justify-content:center}
+  .hreel{position:relative;height:100%;width:auto;aspect-ratio:9/16;max-width:100%;overflow:hidden;border-radius:16px;background:#000}
+  .hpage{position:absolute;inset:0;transform:translateY(100%);transition:transform .5s cubic-bezier(.5,0,.15,1)}
+  .hpage.show{transform:translateY(0)}
+  .hpage.up{transform:translateY(-100%)}
+  .hpage.noanim{transition:none}
+  .hpv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .sns-ov{position:absolute;inset:0;z-index:3;pointer-events:none}
+  .sns-grad{position:absolute;inset:0;background:linear-gradient(transparent 52%,rgba(0,0,0,.72))}
+  .sns-rail{position:absolute;right:9px;bottom:58px;display:flex;flex-direction:column;align-items:center;gap:13px}
+  .sns-ava{position:relative;width:32px;height:32px;border-radius:50%;background:#0d0d14;border:2px solid #fff;margin-bottom:4px}
+  .sns-ava img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+  .sns-plus{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #0a0a12;line-height:1}
+  .sns-act{display:flex;flex-direction:column;align-items:center;gap:2px;color:#fff}
+  .sns-act svg{width:22px;height:22px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.55))}
+  .sns-act b{font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  .sns-bottom{position:absolute;left:11px;right:48px;bottom:11px;color:#fff}
+  .sns-user{font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:7px;text-shadow:0 1px 4px rgba(0,0,0,.65)}
+  .sns-follow{font-size:9.5px;font-weight:700;border:1px solid rgba(255,255,255,.7);border-radius:5px;padding:1.5px 6px}
+  .sns-cap{font-size:11px;line-height:1.4;margin-top:5px;text-shadow:0 1px 4px rgba(0,0,0,.65);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .sns-music{font-size:10px;margin-top:6px;display:flex;align-items:center;gap:5px;text-shadow:0 1px 4px rgba(0,0,0,.65)}
+  .sns-music svg{width:12px;height:12px}
+  @media (prefers-reduced-motion: reduce){.hpage{transition:none}}
+  /* [LP] fan-pic → 인스타 피드 포스트 카드(헤더/사진/액션 분리) */
+  .fan-pic.igpost{background:#0c0c12;display:flex;flex-direction:column;border:1px solid var(--border2);overflow:hidden}
+  .ig-head{display:flex;align-items:center;gap:7px;padding:8px 10px}
+  .ig-ava{width:24px;height:24px;border-radius:50%;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:#0d0d14;flex-shrink:0}
+  .ig-ava img{width:100%;height:100%;object-fit:cover;display:block}
+  .ig-uwrap{display:flex;align-items:center;gap:4px;min-width:0}
+  .ig-user{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ig-verif{width:12px;height:12px;flex-shrink:0}
+  .ig-time{font-size:11px;color:var(--faint);white-space:nowrap}
+  .ig-follow{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--accent2);flex-shrink:0}
+  .ig-dots{color:#fff;font-size:14px;font-weight:800;letter-spacing:.5px;flex-shrink:0}
+  .ig-photo{flex:1;min-height:0;background-size:cover;background-position:center}
+  .ig-foot{padding:8px 10px 10px}
+  .ig-acts{display:flex;align-items:center;gap:12px;color:#fff}
+  .ig-ic{display:inline-flex;color:#fff}
+  .ig-ic svg{width:17px;height:17px;display:block}
+  .ig-save{margin-left:auto}
+  .ig-likes{font-size:11px;font-weight:700;color:#fff;margin-top:6px}
+  .ig-cap{font-size:11px;color:#dcdce4;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ig-cap b{font-weight:700;color:#fff}
 </style>
 </head>
 <body>
@@ -418,7 +463,7 @@
 
 <nav>
   <div class="nav-in">
-    <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 1.8l2.6 6.9 6.9 2.6-6.9 2.6L12 22.8l-2.6-6.9L2.5 13.3l6.9-2.6z"/></svg></span><span>DOPPIA.AI</span></div>
+    <div class="brand"><span>DOPPIA.AI</span></div>
     <div class="nav-links">
       <!-- CREATE -->
       <div class="nav-item">
@@ -493,16 +538,10 @@
     <div class="hx-grid">
       <!-- REEL SLOT — 광고영상 자리(플레이스홀더). 준비되면 이 .rslot 통째를
            <video src="/YOUR-REEL.mp4" autoplay muted loop playsinline poster="/img/reel-poster.jpg"></video> 로 교체 -->
-      <div class="rslot" aria-label="Ad video sample slot">
-        <span class="rs-tag">▶ 9:16 · Ad video</span>
-        <span class="rs-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-        <span class="rs-t">Ad video sample</span>
-        <span class="rs-s">A narrated, captioned reel — dropping in soon.</span>
-      </div>
-      <div class="fan-pic" style="background-image:url('/img/producthero/noir-gold.jpg')"><span class="b">▦ PHOTO</span><span class="n">Product Hero · Noir Gold</span></div>
-      <div class="fan-pic" style="background-image:url('/img/models/f-east_asian-2.jpg')"><span class="b">▦ PHOTO</span><span class="n">On-model</span></div>
+      <div class="rslot sns" aria-label="Ad video sample"><div class="hreel" id="hReel" aria-hidden="true"><div class="hpage show" id="hpg0"><video class="hpv" id="hpv0" muted playsinline preload="auto" disablepictureinpicture></video><div class="sns-ov"><div class="sns-grad"></div><div class="sns-rail"><span class="sns-ava"><img src="/apple-touch-icon.png" alt="Doppia"><span class="sns-plus">+</span></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg><b>12.4K</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg><b>348</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg><b>Share</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg><b>1.2K</b></span></div><div class="sns-bottom"><div class="sns-user">@doppia.ai <span class="sns-follow">Follow</span></div><div class="sns-cap">One photo → a full ad. No shoot, no studio ✨</div><div class="sns-music"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 17V6l10-2v9" stroke-linecap="round"/><circle cx="6.5" cy="17" r="2.4"/><circle cx="16.5" cy="13" r="2.4"/></svg><span>Original audio · Doppia</span></div></div></div></div><div class="hpage" id="hpg1"><video class="hpv" id="hpv1" muted playsinline preload="auto" disablepictureinpicture></video><div class="sns-ov"><div class="sns-grad"></div><div class="sns-rail"><span class="sns-ava"><img src="/apple-touch-icon.png" alt="Doppia"><span class="sns-plus">+</span></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg><b>8.9K</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg><b>212</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg><b>Share</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg><b>740</b></span></div><div class="sns-bottom"><div class="sns-user">@doppia.ai <span class="sns-follow">Follow</span></div><div class="sns-cap">One product shot → a week of content 🎬</div><div class="sns-music"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 17V6l10-2v9" stroke-linecap="round"/><circle cx="6.5" cy="17" r="2.4"/><circle cx="16.5" cy="13" r="2.4"/></svg><span>Original audio · Doppia</span></div></div></div></div></div></div>
+      <div class="fan-pic igpost"><div class="ig-head"><span class="ig-ava"><img src="/apple-touch-icon.png" alt=""></span><span class="ig-uwrap"><span class="ig-user">@doppia.ai</span><svg class="ig-verif" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#6a40e0"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="ig-time">· 1d</span></span><span class="ig-follow">Follow</span><span class="ig-dots">···</span></div><div class="ig-photo" style="background-image:url('/img/producthero/noir-gold.jpg')"></div><div class="ig-foot"><div class="ig-acts"><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg></span><span class="ig-ic ig-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg></span></div><div class="ig-likes">1,204 likes</div><div class="ig-cap"><b>@doppia.ai</b> Studio hero shot — one upload, zero prompts.</div></div></div>
+      <div class="fan-pic igpost"><div class="ig-head"><span class="ig-ava"><img src="/apple-touch-icon.png" alt=""></span><span class="ig-uwrap"><span class="ig-user">@doppia.ai</span><svg class="ig-verif" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#6a40e0"/><path d="M7.4 12.4l3 3 6.2-6.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="ig-time">· 2d</span></span><span class="ig-follow">Follow</span><span class="ig-dots">···</span></div><div class="ig-photo" style="background-image:url('/img/models/f-east_asian-2.jpg')"></div><div class="ig-foot"><div class="ig-acts"><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg></span><span class="ig-ic ig-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg></span></div><div class="ig-likes">2,891 likes</div><div class="ig-cap"><b>@doppia.ai</b> On-model look — no casting, no shoot.</div></div></div>
       <div class="hx-beam"></div>
-      <div class="hx-origin"><img src="/before.jpeg" alt="Raw product photo" width="44" height="44" loading="lazy"><div><div class="ot">YOUR PHOTO</div><div class="os">one shot in →</div></div></div>
     </div>
   </div>
 </header>
@@ -700,7 +739,7 @@
 <footer class="wrap">
   <div class="foot-grid">
     <div class="foot-col" style="max-width:290px">
-      <div class="brand" style="margin-bottom:14px"><span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 1.8l2.6 6.9 6.9 2.6-6.9 2.6L12 22.8l-2.6-6.9L2.5 13.3l6.9-2.6z"/></svg></span><span>Doppia</span></div>
+      <div class="brand" style="margin-bottom:14px"><span class="brand-mark"><img src="/apple-touch-icon.png" alt="Doppia"></span><span>Doppia</span></div>
       <p style="font-size:13.5px;color:var(--faint);line-height:1.6">Studio-grade photos and ad videos from one product photo. No prompts, no studio.</p>
       <a href="/studio" class="btn btn-primary grad-cta" style="margin-top:16px">Start free →</a>
     </div>
@@ -795,7 +834,7 @@
   var pages=[document.getElementById('pg0'),document.getElementById('pg1')];
   var vids=[document.getElementById('rv0'),document.getElementById('rv1')];
   var bgs=[document.getElementById('bg0'),document.getElementById('bg1')];
-  var cur=0,idx=0,POOL=["/img/reels/r04.mp4","/img/reels/r20.mp4","/img/reels/r17.mp4","/img/reels/r05.mp4","/img/reels/r15.mp4","/img/reels/r00.mp4","/img/reels/r11.mp4","/img/reels/r09.mp4","/img/reels/r02.mp4","/img/reels/r21.mp4","/img/reels/r12.mp4","/img/reels/r10.mp4","/img/reels/r08.mp4"];
+  var cur=0,idx=0,POOL=["/img/reels/r02.mp4?v=hq","/img/reels/r11.mp4?v=hq","/img/reels/r10.mp4?v=hq","/img/reels/r03.mp4?v=hq","/img/reels/r09.mp4?v=hq","/img/reels/r00.mp4?v=hq","/img/reels/r07.mp4?v=hq","/img/reels/r05.mp4?v=hq","/img/reels/r01.mp4?v=hq","/img/reels/r12.mp4?v=hq","/img/reels/r08.mp4?v=hq","/img/reels/r06.mp4?v=hq","/img/reels/r04.mp4?v=hq"];
   function src(n){return POOL[((n%POOL.length)+POOL.length)%POOL.length];}
   function safePlay(v){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
   function H(){return stage.clientHeight||236;}
@@ -812,6 +851,30 @@
   }
   vids[0].addEventListener('ended',onEnded);vids[1].addEventListener('ended',onEnded);
   document.addEventListener('visibilitychange',function(){if(document.hidden){vids[cur].pause();bgs[cur].pause();}else{safePlay(vids[cur]);safePlay(bgs[cur]);}});
+})();
+</script>
+<script>/*LP-HEROREEL*/
+(function(){
+  var reel=document.getElementById('hReel'); if(!reel) return;
+  var pages=[document.getElementById('hpg0'),document.getElementById('hpg1')];
+  var vids=[document.getElementById('hpv0'),document.getElementById('hpv1')];
+  var cur=0,idx=0,POOL=["/img/reels/r06.mp4?v=hq","/img/reels/r09.mp4?v=hq","/img/reels/r05.mp4?v=hq","/img/reels/r12.mp4?v=hq","/img/reels/r07.mp4?v=hq","/img/reels/r11.mp4?v=hq","/img/reels/r04.mp4?v=hq","/img/reels/r01.mp4?v=hq","/img/reels/r00.mp4?v=hq","/img/reels/r10.mp4?v=hq","/img/reels/r02.mp4?v=hq","/img/reels/r08.mp4?v=hq","/img/reels/r03.mp4?v=hq"];
+  function src(n){return POOL[((n%POOL.length)+POOL.length)%POOL.length];}
+  function safePlay(v){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
+  vids[0].src=src(0); vids[1].src=src(1);
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  safePlay(vids[0]);
+  function onEnded(){
+    var nxt=cur^1, oldP=pages[cur], oldV=vids[cur], newV=vids[nxt];
+    try{newV.currentTime=0;}catch(e){}
+    safePlay(newV);
+    pages[nxt].classList.add('show'); oldP.classList.remove('show'); oldP.classList.add('up');
+    idx++;
+    setTimeout(function(){oldP.classList.add('noanim');oldP.classList.remove('up');void oldP.offsetWidth;oldP.classList.remove('noanim');oldV.src=src(idx+1);},520);
+    cur=nxt;
+  }
+  vids[0].addEventListener('ended',onEnded); vids[1].addEventListener('ended',onEnded);
+  document.addEventListener('visibilitychange',function(){if(document.hidden){vids[cur].pause();}else{safePlay(vids[cur]);}});
 })();
 </script>
 </body>

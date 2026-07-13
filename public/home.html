@@ -338,7 +338,7 @@
   var vids=[document.getElementById('rv0'),document.getElementById('rv1')];
   var bgs=[document.getElementById('bg0'),document.getElementById('bg1')];
   var cur=0,idx=0;
-  var POOL=["/img/reels/r04.mp4","/img/reels/r20.mp4","/img/reels/r17.mp4","/img/reels/r05.mp4","/img/reels/r15.mp4","/img/reels/r00.mp4","/img/reels/r11.mp4","/img/reels/r09.mp4","/img/reels/r02.mp4","/img/reels/r21.mp4","/img/reels/r12.mp4","/img/reels/r10.mp4","/img/reels/r08.mp4"];
+  var POOL=["/img/reels/r02.mp4?v=hq","/img/reels/r11.mp4?v=hq","/img/reels/r10.mp4?v=hq","/img/reels/r03.mp4?v=hq","/img/reels/r09.mp4?v=hq","/img/reels/r00.mp4?v=hq","/img/reels/r07.mp4?v=hq","/img/reels/r05.mp4?v=hq","/img/reels/r01.mp4?v=hq","/img/reels/r12.mp4?v=hq","/img/reels/r08.mp4?v=hq","/img/reels/r06.mp4?v=hq","/img/reels/r04.mp4?v=hq"];
   function src(n){return POOL[((n%POOL.length)+POOL.length)%POOL.length];}
   function safePlay(v){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
   function H(){return stage.clientHeight||212;}
