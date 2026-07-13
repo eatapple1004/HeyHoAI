@@ -1824,10 +1824,13 @@ function selectTool(id){const t=toolById(id);if(!t)return;applyTool(id);closeToo
 // ratio · size 시각 선택(Leonardo식) — 값은 hidden select에 저장, 버튼은 시각 레이어
 let _ratioVals=[];
 const RATIO_PRIMARY=['4:5','1:1','9:16']; // 인라인 우선 노출(IG 피드·정사각·스토리; 나머지는 Custom 패널)
+// (2026-07-13) 플랫폼 용도 힌트 — S3 Ad Video 비율 pill과 동일 어휘로 S1/S2 피커에도 가이드 제공(일관성). 매핑 없으면 방향 폴백.
+const RATIO_USE={'9:16':'Reels · Shorts','1:1':'Feed','4:5':'Feed','16:9':'Wide','2:3':'Portrait','3:4':'Portrait','4:3':'Landscape','3:2':'Landscape','5:4':'Landscape','21:9':'Cinematic'};
+function ratioUse(v){return RATIO_USE[v]||ratioOrient(v);}
 // 템플릿 모드(레거시 Flash/Pro 모델)용 비율 세트 = Gemini 10종(IG 4:5 우선). GPT는 3종만(플래그 off라 사실상 미사용).
 const GEMINI_ASPECTS=['4:5','1:1','9:16','3:4','4:3','16:9','2:3','3:2','5:4','21:9'];
 function ratioRect(v,box){const p=String(v).split(':').map(Number),w=p[0]||1,h=p[1]||1,mx=Math.max(w,h);return {w:Math.max(8,Math.round(box*w/mx)),h:Math.max(8,Math.round(box*h/mx))};}
-function ratioBtnHTML(v,on){const r=ratioRect(v,18);return `<button type="button" class="viz-btn${on?' on':''}" onclick="pickRatio('${v}')" title="${v}"><span class="viz-icwrap"><span class="viz-ic" style="width:${r.w}px;height:${r.h}px"></span></span><span class="viz-lbl">${v}</span></button>`;}
+function ratioBtnHTML(v,on){const r=ratioRect(v,18);return `<button type="button" class="viz-btn${on?' on':''}" onclick="pickRatio('${v}')" title="${v} · ${ratioUse(v)}" aria-label="${v}, ${ratioUse(v)}"><span class="viz-icwrap"><span class="viz-ic" style="width:${r.w}px;height:${r.h}px"></span></span><span class="viz-lbl">${v}</span></button>`;}
 function ratioOrient(v){const p=String(v).split(':').map(Number),w=p[0]||1,h=p[1]||1;return w>h?'Landscape':w<h?'Portrait':'Square';}
 function renderRatioGrid(vals){
   const g=document.getElementById('ratioGrid');if(!g)return;
@@ -1849,7 +1852,7 @@ function renderRatioPanel(){
   const grid=document.getElementById('ratioPanelGrid');if(!grid)return;
   const cur=(document.getElementById('aspectSel')||{}).value;
   grid.innerHTML=_ratioVals.map(v=>{const r=ratioRect(v,24);
-    return `<button type="button" class="rp-btn${v===cur?' on':''}" onclick="pickRatio('${v}',true)"><span class="rp-ic" style="width:${r.w}px;height:${r.h}px"></span><span class="rp-r">${v}</span><span class="rp-o">${ratioOrient(v)}</span></button>`;}).join('');
+    return `<button type="button" class="rp-btn${v===cur?' on':''}" onclick="pickRatio('${v}',true)"><span class="rp-ic" style="width:${r.w}px;height:${r.h}px"></span><span class="rp-r">${v}</span><span class="rp-o">${ratioUse(v)}</span></button>`;}).join('');
 }
 function openRatioPanel(ev){if(ev)ev.stopPropagation();const p=document.getElementById('ratioPanel');if(!p)return;if(p.classList.contains('open')){closeRatioPanel();return;}renderRatioPanel();p.classList.add('open');}
 function closeRatioPanel(){const p=document.getElementById('ratioPanel');if(p)p.classList.remove('open');}
