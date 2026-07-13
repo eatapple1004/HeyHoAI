@@ -86,6 +86,9 @@
 
     // ── 결제 (Billing) ──
     'Back': '뒤로', 'Pricing': '요금제', 'Choose your plan': '요금제를 선택하세요',
+    'Monthly plans': '월간 요금제',
+    'Subscribe monthly — your credits refill every month. Cancel anytime. Or top up with credit packs.': '매월 구독 — 크레딧이 매달 충전됩니다. 언제든 해지하세요. 또는 크레딧 팩으로 충전하세요.',
+    'Template looks cost more than custom prompts.': '템플릿 룩은 커스텀 프롬프트보다 비용이 더 듭니다.',
     'Get a 3-month pass — pay once, no auto-renew. Credits are granted upfront. Or top up with credit packs anytime.': '3개월 이용권 — 한 번 결제, 자동 갱신 없음. 크레딧은 선지급됩니다. 또는 언제든 크레딧 팩으로 충전하세요.',
     'Pay as you go': '사용한 만큼 결제', 'Refresh': '새로고침', 'Payment complete. Your credits may take a few seconds to appear.': '결제 완료. 크레딧 반영에 몇 초 걸릴 수 있습니다.',
     '3-Month Passes': '3개월 이용권', 'Monthly': '월간', 'Annual': '연간', 'Current tier': '현재 등급', 'Get pass': '이용권 받기',

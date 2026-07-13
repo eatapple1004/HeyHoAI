@@ -18,33 +18,36 @@ const PRICING = {
        + '커스텀 1.65~3배 / 템플릿 3.3~5.9배(플랜별) · 크레딧 30배 인플레이션. 근거: docs/생성원가_마진_분석_2026-07-06.md',
   confirmedOn: '2026-07-06',
 
-  // 개인 구독 (price=월$, priceY=연간 환산 월요금$, cr=월 크레딧). 배수: 작은 플랜=비쌈 → 큰 플랜=쌈.
+  // 개인 구독 (price=월$, priceKRW=월₩[VAT포함], priceY=연간환산 월$, priceYKRW=연간환산 월₩, cr=월 크레딧).
+  // KRW = USD × 환율(2026-07-13 1,503.60) × 1.10(VAT 포함분) 라운딩 → 고정가 페그(실시간 변환 아님). 배수: 작은 플랜=비쌈 → 큰 플랜=쌈.
   plans: {
-    free:     { name: 'Free',     price: 0,   priceY: 0,   cr: 1500,  license: 'Personal' },
-    starter:  { name: 'Starter',  price: 19,  priceY: 16,  cr: 7300,  license: 'Personal',
+    free:     { name: 'Free',     price: 0,   priceKRW: 0,      priceY: 0,   priceYKRW: 0,      cr: 1500,  license: 'Personal' },
+    starter:  { name: 'Starter',  price: 19,  priceKRW: 31000,  priceY: 16,  priceYKRW: 26000,  cr: 7300,  license: 'Personal',
                 line: 'No watermark · group lookbook · ◈7,300/mo' },
-    standard: { name: 'Standard', price: 49,  priceY: 41,  cr: 20300, license: 'Personal', featured: true,
+    standard: { name: 'Standard', price: 49,  priceKRW: 81000,  priceY: 41,  priceYKRW: 68000,  cr: 20300, license: 'Personal', featured: true,
                 line: 'Edit · 2K · 4 slots · ◈20,300/mo' },
-    pro:      { name: 'Pro',      price: 99,  priceY: 82,  cr: 44000, license: 'Personal',
+    pro:      { name: 'Pro',      price: 99,  priceKRW: 164000, priceY: 82,  priceYKRW: 136000, cr: 44000, license: 'Personal',
                 line: 'Concept cut · 5 slots · ◈44,000/mo' },
-    premium:  { name: 'Premium',  price: 199, priceY: 165, cr: 95000, license: 'Commercial',
+    premium:  { name: 'Premium',  price: 199, priceKRW: 329000, priceY: 165, priceYKRW: 273000, cr: 95000, license: 'Commercial',
                 line: 'Video · 6 slots · commercial · ◈95,000/mo' }
   },
-  // 기업 (연간 결제, price=월환산$, cr=월 크레딧). 볼륨 최저가(템플릿 3.3~3.7배).
+  // 기업 (연간 결제, price=월환산$, priceKRW=월환산₩[VAT포함], cr=월 크레딧). 볼륨 최저가(템플릿 3.3~3.7배).
   enterprise: {
-    team:  { name: 'Enterprise Team', price: 599,  cr: 362000, slots: 10, line: 'Team roles · shared pool · 10 slots' },
-    pro:   { name: 'Enterprise Pro',  price: 899,  cr: 575000, slots: 15, featured: true, line: 'Everything · 15 slots · priority' },
-    elite: { name: 'Elite',           price: 1199, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
+    team:  { name: 'Enterprise Team', price: 599,  priceKRW: 990000,  cr: 362000, slots: 10, line: 'Team roles · shared pool · 10 slots' },
+    pro:   { name: 'Enterprise Pro',  price: 899,  priceKRW: 1490000, cr: 575000, slots: 15, featured: true, line: 'Everything · 15 slots · priority' },
+    elite: { name: 'Elite',           price: 1199, priceKRW: 1990000, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
   },
-  // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$). 충동성=최고가(5.5~5.9배).
+  // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$, priceKRW=₩[VAT포함]). 충동성=최고가(5.5~5.9배).
   packs: [
-    { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   ppc: '0.0026' },
-    { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  ppc: '0.0026' },
-    { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, ppc: '0.0025' },
-    { id: 'pack349', cr: 128000, bonus: 14000, price: 349, ppc: '0.0025', best: true }
+    { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   priceKRW: 15000,  ppc: '0.0026' },
+    { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  priceKRW: 81000,  ppc: '0.0026' },
+    { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, priceKRW: 329000, ppc: '0.0025' },
+    { id: 'pack349', cr: 128000, bonus: 14000, price: 349, priceKRW: 579000, ppc: '0.0025', best: true }
   ],
   // 신규 24h 첫 결제 할인율(%)
   firstMonthOff: 50,
+  // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
+  currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
 };
 
 /** 가격 단일 소스(메타 포함)를 반환. GET /api/pricing 의 응답 본문. */

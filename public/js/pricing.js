@@ -9,33 +9,36 @@
  */
 (function () {
   var PRICING = {
-    // 개인 구독 (price=월$, priceY=연간 환산 월요금$, cr=월 크레딧). (2026-07-06) 티어 다양화 + 30배. 작은 플랜=비쌈→큰 플랜=쌈.
+    // 개인 구독 (price=월$, priceKRW=월₩[VAT포함], priceY=연간환산 월$, priceYKRW=연간환산 월₩, cr=월 크레딧).
+    // KRW = USD × 환율(2026-07-13 1,503.60) × 1.10(VAT 포함분) 라운딩 → 고정가 페그. 작은 플랜=비쌈→큰 플랜=쌈.
     plans: {
-      free:     { name: 'Free',     price: 0,   priceY: 0,   cr: 1500,  license: 'Personal' },
-      starter:  { name: 'Starter',  price: 19,  priceY: 16,  cr: 7300,  license: 'Personal',
+      free:     { name: 'Free',     price: 0,   priceKRW: 0,      priceY: 0,   priceYKRW: 0,      cr: 1500,  license: 'Personal' },
+      starter:  { name: 'Starter',  price: 19,  priceKRW: 31000,  priceY: 16,  priceYKRW: 26000,  cr: 7300,  license: 'Personal',
                   line: 'No watermark · group lookbook · ◈7,300/mo' },
-      standard: { name: 'Standard', price: 49,  priceY: 41,  cr: 20300, license: 'Personal', featured: true,
+      standard: { name: 'Standard', price: 49,  priceKRW: 81000,  priceY: 41,  priceYKRW: 68000,  cr: 20300, license: 'Personal', featured: true,
                   line: 'Edit · 2K · 4 slots · ◈20,300/mo' },
-      pro:      { name: 'Pro',      price: 99,  priceY: 82,  cr: 44000, license: 'Personal',
+      pro:      { name: 'Pro',      price: 99,  priceKRW: 164000, priceY: 82,  priceYKRW: 136000, cr: 44000, license: 'Personal',
                   line: 'Concept cut · 5 slots · ◈44,000/mo' },
-      premium:  { name: 'Premium',  price: 199, priceY: 165, cr: 95000, license: 'Commercial',
+      premium:  { name: 'Premium',  price: 199, priceKRW: 329000, priceY: 165, priceYKRW: 273000, cr: 95000, license: 'Commercial',
                   line: 'Video · 6 slots · commercial · ◈95,000/mo' }
     },
-    // 기업 (연간 결제, price=월환산$, cr=월 크레딧). 볼륨 최저가.
+    // 기업 (연간 결제, price=월환산$, priceKRW=월환산₩[VAT포함], cr=월 크레딧). 볼륨 최저가.
     enterprise: {
-      team:  { name: 'Enterprise Team', price: 599,  cr: 362000, slots: 10, line: 'Team roles · shared pool · 10 slots' },
-      pro:   { name: 'Enterprise Pro',  price: 899,  cr: 575000, slots: 15, featured: true, line: 'Everything · 15 slots · priority' },
-      elite: { name: 'Elite',           price: 1199, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
+      team:  { name: 'Enterprise Team', price: 599,  priceKRW: 990000,  cr: 362000, slots: 10, line: 'Team roles · shared pool · 10 slots' },
+      pro:   { name: 'Enterprise Pro',  price: 899,  priceKRW: 1490000, cr: 575000, slots: 15, featured: true, line: 'Everything · 15 slots · priority' },
+      elite: { name: 'Elite',           price: 1199, priceKRW: 1990000, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
     },
-    // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$). 충동성=최고가.
+    // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$, priceKRW=₩[VAT포함]). 충동성=최고가.
     packs: [
-      { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   ppc: '0.0026' },
-      { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  ppc: '0.0026' },
-      { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, ppc: '0.0025' },
-      { id: 'pack349', cr: 128000, bonus: 14000, price: 349, ppc: '0.0025', best: true }
+      { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   priceKRW: 15000,  ppc: '0.0026' },
+      { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  priceKRW: 81000,  ppc: '0.0026' },
+      { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, priceKRW: 329000, ppc: '0.0025' },
+      { id: 'pack349', cr: 128000, bonus: 14000, price: 349, priceKRW: 579000, ppc: '0.0025', best: true }
     ],
     // 신규 24h 첫 결제 할인율(%)
     firstMonthOff: 50,
+    // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
+    currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
     // 확정가 — 실원가 재검증(2026-07-06, docs/생성원가_마진_분석). 커스텀 2~3배/템플릿 4~6배 + 크레딧 30배. 서버(/api/pricing)가 동일값으로 덮어씀.
     estimated: false,
 
@@ -49,11 +52,53 @@
     }
   };
 
+  // ── 통화(currency): 표시통화 = 결제통화 = PG. KRW→국내(NHN KCP), USD→해외(Eximbay). ──
+  //   기본값 = 지역 자동감지 프록시(저장 언어 ko 또는 브라우저 언어 ko → KRW, 그 외 USD). doppia_currency로 독립 오버라이드.
+  var CUR_KEY = 'doppia_currency';
+  function detectCurrency() {
+    try { var s = localStorage.getItem(CUR_KEY); if (s === 'KRW' || s === 'USD') return s; } catch (e) {}
+    var lang = ''; try { lang = localStorage.getItem('doppia_lang') || ''; } catch (e) {}
+    if (lang === 'ko') return 'KRW';
+    if (!lang && typeof navigator !== 'undefined' && (navigator.language || '').toLowerCase().indexOf('ko') === 0) return 'KRW';
+    return 'USD';
+  }
+  var CURRENCY = detectCurrency();
+  var CUR_META = {
+    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
+    USD: { code: 'USD', symbol: '$', per: ' /mo', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · billed monthly · cancel anytime' }
+  };
+  PRICING.getCurrency = function () { return CURRENCY; };
+  PRICING.curMeta = function () { return CUR_META[CURRENCY]; };
+  // 플랜/팩의 현재 통화 금액(숫자). annual=true면 연간환산 월요금.
+  PRICING.amount = function (o, annual) {
+    if (!o) return 0;
+    return CURRENCY === 'KRW' ? ((annual ? o.priceYKRW : o.priceKRW) || 0) : ((annual ? o.priceY : o.price) || 0);
+  };
+  // 현재 통화 금액 포맷 문자열(기호 포함). "₩31,000" | "$19".
+  PRICING.priceOf = function (o, annual) {
+    return CUR_META[CURRENCY].symbol + PRICING.fmt(PRICING.amount(o, annual));
+  };
+  PRICING.setCurrency = function (c) {
+    if (c !== 'KRW' && c !== 'USD') c = 'USD';
+    if (c === CURRENCY) return;
+    CURRENCY = c;
+    try { localStorage.setItem(CUR_KEY, c); } catch (e) {}
+    applyDP();
+    try { document.dispatchEvent(new CustomEvent('dp:currency', { detail: { currency: c } })); } catch (e) {}
+  };
+
   // [data-dp="creator.cr"] 요소를 PRICING 값으로 채움 (data-fmt="1"이면 천단위 콤마)
   function applyDP() {
     document.querySelectorAll('[data-dp]').forEach(function (el) {
       var v = PRICING.get(el.getAttribute('data-dp'));
       if (v != null) el.textContent = (el.dataset.fmt === '1') ? PRICING.fmt(v) : v;
+    });
+    // 통화 인지 가격: <div data-price="starter"></div> → "₩31,000 /월" | "$19 /mo". data-annual="1"이면 연환산.
+    var m = CUR_META[CURRENCY];
+    document.querySelectorAll('[data-price]').forEach(function (el) {
+      var plan = PRICING.plans && PRICING.plans[el.getAttribute('data-price')];
+      if (!plan) return;
+      el.innerHTML = m.symbol + PRICING.fmt(PRICING.amount(plan, el.dataset.annual === '1')) + '<small>' + m.per + '</small>';
     });
   }
 
@@ -69,6 +114,7 @@
         if (s.enterprise) PRICING.enterprise = s.enterprise;
         if (s.packs) PRICING.packs = s.packs;
         if (s.team) PRICING.team = s.team;
+        if (s.currency) PRICING.currency = s.currency;
         if (typeof s.firstMonthOff === 'number') PRICING.firstMonthOff = s.firstMonthOff;
         if (typeof s.estimated === 'boolean') PRICING.estimated = s.estimated;
         applyDP();
@@ -78,6 +124,7 @@
 
   window.PRICING = PRICING;
   window.applyDP = applyDP;
+  window.setCurrency = PRICING.setCurrency;
   if (document.readyState !== 'loading') applyDP();
   else document.addEventListener('DOMContentLoaded', applyDP);
   hydrateFromServer();
