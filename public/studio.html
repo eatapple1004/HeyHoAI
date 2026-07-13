@@ -1867,6 +1867,16 @@ function closeRatioPanel(){const p=document.getElementById('ratioPanel');if(p)p.
 function pickRatio(v,fromPanel){const sel=document.getElementById('aspectSel');if(sel)sel.value=v;renderRatioGrid(_ratioVals);renderSizeGrid(_sizeVals);if(fromPanel)closeRatioPanel();updateBar();}
 document.addEventListener('click',function(e){const p=document.getElementById('ratioPanel');if(p&&p.classList.contains('open')&&!e.target.closest('.ratio-wrap'))closeRatioPanel();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeToolPop();closeRatioPanel();var om=document.querySelector('.modal-bg.open');if(om){e.preventDefault();om.click();/* 백드롭 클릭 경로로 닫기(각 모달 close 클린업 포함) */}}});
+// (2026-07-13) 모달 포커스 관리(a11y) — 열리면 첫 포커서블로 이동, Tab/Shift+Tab을 모달 안에 가둠(포커스가 새면 다시 안으로).
+function _modalFocusables(m){return Array.prototype.filter.call(m.querySelectorAll('input:not([type=hidden]),button,select,textarea,a[href],[tabindex]:not([tabindex="-1"])'),function(el){return el.offsetParent!==null&&!el.disabled;});}
+(function(){var mo=new MutationObserver(function(muts){muts.forEach(function(mu){var m=mu.target;if(!m.classList||!m.classList.contains('modal-bg'))return;
+  if(m.classList.contains('open')){ if(!m._focused){m._focused=true;var f=_modalFocusables(m);if(f.length)setTimeout(function(){try{f[0].focus();}catch(e){}},0);} }
+  else { m._focused=false; }});});
+  document.querySelectorAll('.modal-bg').forEach(function(m){mo.observe(m,{attributes:true,attributeFilter:['class']});});})();
+document.addEventListener('keydown',function(e){ if(e.key!=='Tab')return; var m=document.querySelector('.modal-bg.open'); if(!m)return;
+  var foc=_modalFocusables(m); if(!foc.length)return; var first=foc[0],last=foc[foc.length-1],a=document.activeElement;
+  if(!m.contains(a)){e.preventDefault();first.focus();return;}
+  if(e.shiftKey&&a===first){e.preventDefault();last.focus();} else if(!e.shiftKey&&a===last){e.preventDefault();first.focus();} });
 // 해결된 출력 치수 = 티어 메가픽셀 예산을 비율에 맞춰 분배(1:1은 Google 공식값 1024²/2048²/4096²에 앵커, /16 반올림).
 // Leonardo가 치수를 산출하는 방식과 동일(예산 보존+반올림). 실제 모델 출력이 몇 px 반올림될 수 있음.
 const TIER_PX={'1K':1024,'2K':2048,'4K':4096}; // 1:1 롱에지(=공식값) → 예산 = px²
