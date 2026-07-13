@@ -397,6 +397,19 @@
   .foot-col h4{color:var(--faint)}
   .foot-col a{transition:color .18s,padding-left .18s}
   .foot-col a:hover{padding-left:3px}
+
+  /* [LP] 랜딩 플래그십 카드 인터랙티브(coverflow 캐러셀 + 씬영상 릴) — home과 동일, 사이즈만 조정 */
+  .deepstack{position:absolute;inset:0;z-index:1;-webkit-mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+  .deepstack::before{content:'';position:absolute;left:50%;top:47%;width:230px;height:180px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(106,64,224,.5),rgba(94,224,214,.13) 46%,transparent 72%);filter:blur(30px);z-index:0}
+  .ds-card{position:absolute;top:50%;left:50%;width:92px;height:118px;border-radius:12px;background-size:cover;background-position:center;border:2px solid rgba(255,255,255,.9);box-shadow:0 16px 34px -10px rgba(0,0,0,.72);transform-origin:center;will-change:transform,filter}
+  .reel-stage{position:absolute;inset:0;overflow:hidden;z-index:1;background:#0a0a12}
+  .reel-scroller{position:absolute;top:0;left:0;width:100%;transition:transform .52s cubic-bezier(.5,0,.15,1)}
+  .reel-scroller.noanim{transition:none}
+  .reel-page{position:relative;width:100%;height:236px;overflow:visible}
+  .reel-bg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:172%;height:164%;object-fit:cover;z-index:1;filter:blur(38px) brightness(.42) saturate(1.05);-webkit-mask:linear-gradient(transparent,#000 36%,#000 64%,transparent);mask:linear-gradient(transparent,#000 36%,#000 64%,transparent);mix-blend-mode:screen}
+  .reel-frame{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:130px;height:231px;z-index:2;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.85);box-shadow:0 24px 54px -14px rgba(0,0,0,.9);background:#0c0c16}
+  .reel-v{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  @media (prefers-reduced-motion: reduce){.reel-scroller{transition:none}}
 </style>
 </head>
 <body>
@@ -530,11 +543,7 @@
       <div class="fs-media">
         <div class="fs-orb"></div>
         <!-- REEL SLOT — 광고영상 자리(플레이스홀더). 준비되면 .adv-slot을 <video …> 로 교체 -->
-        <div class="adv-slot">
-          <span class="rs-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="rs-t">Ad video sample</span>
-          <span class="rs-s">9:16 · dropping in soon</span>
-        </div>
+        <div class="reel-stage" id="reelStage" aria-hidden="true"><div class="reel-scroller" id="reelScroller"><div class="reel-page" id="pg0"><video class="reel-bg" id="bg0" muted playsinline loop preload="auto" disablepictureinpicture></video><div class="reel-frame"><video class="reel-v" id="rv0" muted playsinline preload="auto" disablepictureinpicture></video></div></div><div class="reel-page" id="pg1"><video class="reel-bg" id="bg1" muted playsinline loop preload="auto" disablepictureinpicture></video><div class="reel-frame"><video class="reel-v" id="rv1" muted playsinline preload="auto" disablepictureinpicture></video></div></div></div></div>
       </div>
       <div class="fs-body">
         <span class="fs-badge">✦ Flagship · New</span>
@@ -554,11 +563,7 @@
     <a class="fs" href="/studio" aria-label="Create product and model photos">
       <div class="fs-media">
         <div class="fs-orb"></div>
-        <div class="fs-collage">
-          <i style="background-image:url('/img/accessories/jewelry-on-model.png')"></i>
-          <i style="background-image:url('/img/productcut/product-cut.png')"></i>
-          <i style="background-image:url('/img/producthero/noir-gold.jpg')"></i>
-        </div>
+        <div class="deepstack" id="dstack" aria-hidden="true"></div>
       </div>
       <div class="fs-body">
         <span class="fs-badge">✦ Flagship · Template-based</span>
@@ -771,5 +776,43 @@
 </script>
 <script src="/js/pricing.js?v=1"></script>
 <script src="/js/biz-footer.js?v=3"></script>
+<script>/*LP-INTERACTIVE*/
+(function(){ /* coverflow 캐러셀 (Photos) */
+  var stack=document.getElementById('dstack'); if(!stack) return;
+  var POOL=["/img/hero/h24.jpg","/img/hero/h41.jpg","/img/hero/h10.jpg","/img/hero/h45.jpg","/img/hero/h02.jpg","/img/hero/h14.jpg","/img/hero/h38.jpg","/img/hero/h29.jpg","/img/hero/h49.jpg","/img/hero/h36.jpg","/img/hero/h28.jpg","/img/hero/h54.jpg","/img/hero/h40.jpg","/img/hero/h00.jpg","/img/hero/h48.jpg","/img/hero/h34.jpg","/img/hero/h19.jpg","/img/hero/h17.jpg","/img/hero/h22.jpg","/img/hero/h11.jpg","/img/hero/h18.jpg","/img/hero/h03.jpg","/img/hero/h20.jpg","/img/hero/h21.jpg","/img/hero/h43.jpg","/img/hero/h46.jpg","/img/hero/h09.jpg","/img/hero/h42.jpg","/img/hero/h06.jpg","/img/hero/h31.jpg","/img/hero/h04.jpg","/img/hero/h08.jpg","/img/hero/h32.jpg","/img/hero/h23.jpg","/img/hero/h16.jpg","/img/hero/h05.jpg","/img/hero/h50.jpg","/img/hero/h12.jpg","/img/hero/h30.jpg","/img/hero/h01.jpg","/img/hero/h07.jpg","/img/hero/h37.jpg","/img/hero/h27.jpg","/img/hero/h35.jpg","/img/hero/h33.jpg","/img/hero/h44.jpg","/img/hero/h52.jpg","/img/hero/h47.jpg","/img/hero/h51.jpg","/img/hero/h13.jpg","/img/hero/h15.jpg","/img/hero/h39.jpg","/img/hero/h25.jpg","/img/hero/h53.jpg","/img/hero/h26.jpg"];
+  var N=13,SPEED=1/20000,next=0,cards=[],phase=[];
+  function arc(t){var dc=(t-0.5)*2,ad=Math.abs(dc);var e=Math.min(t,1-t),o=Math.max(0,Math.min(1,e/0.08));o=o*o*(3-2*o);return{l:3+t*94,s:0.66+(1-ad)*0.42,b:1-ad*0.34,bl:ad>0.6?(ad-0.6)*4:0,r:dc*15,y:ad*16,z:Math.round(60-ad*40),o:o};}
+  function apply(el,t){var a=arc(t);el.style.left=a.l+'%';el.style.zIndex=a.z;el.style.opacity=a.o.toFixed(3);el.style.filter='brightness('+a.b.toFixed(2)+')'+(a.bl>0.05?' blur('+a.bl.toFixed(1)+'px)':'');el.style.transform='translate(-50%,calc(-50% + '+a.y.toFixed(0)+'px)) rotate('+a.r.toFixed(1)+'deg) scale('+a.s.toFixed(3)+')';}
+  for(var i=0;i<N;i++){var el=document.createElement('span');el.className='ds-card';el.style.backgroundImage="url('"+POOL[next++%POOL.length]+"')";stack.appendChild(el);cards.push(el);phase.push(i/N);apply(el,i/N);}
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var last=null;
+  function frame(ts){if(document.hidden){last=ts;requestAnimationFrame(frame);return;}if(last==null)last=ts;var dt=Math.min(ts-last,60);last=ts;for(var i=0;i<N;i++){phase[i]-=SPEED*dt;if(phase[i]<0){phase[i]+=1;cards[i].style.backgroundImage="url('"+POOL[next++%POOL.length]+"')";}apply(cards[i],phase[i]);}requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+})();
+(function(){ /* 씬 영상 릴 (Ad Video) */
+  var stage=document.getElementById('reelStage'); if(!stage) return;
+  var scr=document.getElementById('reelScroller');
+  var pages=[document.getElementById('pg0'),document.getElementById('pg1')];
+  var vids=[document.getElementById('rv0'),document.getElementById('rv1')];
+  var bgs=[document.getElementById('bg0'),document.getElementById('bg1')];
+  var cur=0,idx=0,POOL=["/img/reels/r04.mp4","/img/reels/r20.mp4","/img/reels/r17.mp4","/img/reels/r05.mp4","/img/reels/r15.mp4","/img/reels/r00.mp4","/img/reels/r11.mp4","/img/reels/r09.mp4","/img/reels/r02.mp4","/img/reels/r21.mp4","/img/reels/r12.mp4","/img/reels/r10.mp4","/img/reels/r08.mp4"];
+  function src(n){return POOL[((n%POOL.length)+POOL.length)%POOL.length];}
+  function safePlay(v){try{var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
+  function H(){return stage.clientHeight||236;}
+  vids[0].src=src(0);bgs[0].src=src(0);vids[1].src=src(1);bgs[1].src=src(1);
+  scr.style.transform='translateY(0)';
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  safePlay(vids[0]);safePlay(bgs[0]);
+  function onEnded(){
+    var nxt=cur^1,oldI=cur;
+    scr.style.transform='translateY(-'+H()+'px)';
+    vids[nxt].currentTime=0;safePlay(vids[nxt]);safePlay(bgs[nxt]);
+    cur=nxt;idx++;
+    setTimeout(function(){scr.appendChild(pages[oldI]);scr.classList.add('noanim');scr.style.transform='translateY(0)';void scr.offsetWidth;scr.classList.remove('noanim');bgs[oldI].pause();vids[oldI].src=src(idx+1);bgs[oldI].src=src(idx+1);},560);
+  }
+  vids[0].addEventListener('ended',onEnded);vids[1].addEventListener('ended',onEnded);
+  document.addEventListener('visibilitychange',function(){if(document.hidden){vids[cur].pause();bgs[cur].pause();}else{safePlay(vids[cur]);safePlay(bgs[cur]);}});
+})();
+</script>
 </body>
 </html>
