@@ -916,7 +916,7 @@ function saveProductImage(req) {
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
 router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration } = req.body || {};
+    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language } = req.body || {};
     // 제품 사진 있으면 base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피)
     let image = null;
     const pf = req.files?.productImage?.[0];
@@ -926,7 +926,7 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: 1 }]
     }
     const scN = Math.min(Math.max(parseInt(sceneCount, 10) || 0, 0), 12); // 씬 개수(0=자동, 최대 12)
     const scD = [3, 5, 10].includes(parseInt(sceneDuration, 10)) ? parseInt(sceneDuration, 10) : 0; // 씬 길이 3/5/10s(0=자동)
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD });
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en' });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
@@ -966,7 +966,7 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
     if (!pf) return res.status(400).json({ success: false, error: 'product image is required' });
     const image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
     try { fs.unlinkSync(pf.path); } catch {}
-    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '', outputType: req.body.outputType || 'product-ad' });
+    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '', outputType: req.body.outputType || 'product-ad', language: req.body.language === 'ko' ? 'ko' : 'en' });
     res.json({ success: true, concept });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
