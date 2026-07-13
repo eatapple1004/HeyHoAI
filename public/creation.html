@@ -159,6 +159,14 @@
   .sbmodal-x{position:fixed;top:24px;right:24px;z-index:61;width:38px;height:38px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 70%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,border-color .16s}
   .sbmodal-x:hover{color:var(--text);background:var(--surface2)}
   .sbmodal-x .ic{width:18px;height:18px;color:inherit}
+  /* 씬 간 이동(prev/next) + 씬 컨텍스트 라벨 */
+  .sbmodal-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:61;width:44px;height:44px;border-radius:var(--r-pill);border:1px solid var(--border2);background:color-mix(in srgb,var(--bg2) 70%,transparent);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer;transition:color .16s,background .16s,opacity .16s}
+  .sbmodal-nav:hover{color:var(--text);background:var(--surface2)}
+  .sbmodal-nav.prev{left:20px} .sbmodal-nav.next{right:20px}
+  .sbmodal-nav .ic{width:20px;height:20px;color:inherit}
+  .sbmodal-nav[disabled]{opacity:.28;pointer-events:none}
+  .sbmodal-cap{position:fixed;top:28px;left:50%;transform:translateX(-50%);z-index:61;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:600;letter-spacing:.2px;padding:5px 13px;border-radius:var(--r-pill);font-variant-numeric:tabular-nums}
+  @media(max-width:560px){ .sbmodal-nav{width:38px;height:38px} .sbmodal-nav.prev{left:8px} .sbmodal-nav.next{right:8px} }
 
   /* Prompt module (Custom only) — 박스 → 좌측 룰 에디토리얼 풀쿼트 */
   .prompt{margin:0 0 4px;padding:0 0 0 13px;border:0;border-left:2px solid var(--border2);border-radius:0;background:none;box-shadow:none}
@@ -245,6 +253,9 @@
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
   </button>
   <div class="sbmodal-stage" id="sbModalStage"></div>
+  <button class="sbmodal-nav prev" id="sbPrev" onclick="sceneModalGo(-1)" aria-label="Previous scene" title="Previous scene"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <button class="sbmodal-nav next" id="sbNext" onclick="sceneModalGo(1)" aria-label="Next scene" title="Next scene"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+  <span class="sbmodal-cap" id="sbCap"></span>
 </div>
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -358,23 +369,46 @@ function sbHover(cell,on){
   else { try{v.pause();}catch(e){} cell.classList.remove('von'); }
 }
 // 씬 클립 확대 — 클릭/탭/Enter 시 큰 화면 모달로 재생(컨트롤·루프). 뒤 인라인 호버 미리보기는 정지.
+// 모달 상태 — 씬 간 prev/next 이동 + 포커스 복귀
+let sbCells=[], sbIdx=-1, sbOpener=null;
 function openSceneModal(cell){
   if(!cell||cell.dataset.play!=='1') return;
-  const v=cell.querySelector('.sb-vid'), src=v&&v.getAttribute('src'); if(!src) return;
+  sbCells=Array.prototype.slice.call(document.querySelectorAll('.sb-cell[data-play="1"]'));
+  sbIdx=sbCells.indexOf(cell); if(sbIdx<0) return;
+  sbOpener=cell;
   document.querySelectorAll('.sb-cell.von').forEach(function(c){ sbHover(c,0); });   // 인라인 재생 정지(중복 재생 방지)
+  if(!renderSceneModal()) return;
+  const m=document.getElementById('sbModal'); m.classList.add('open');
+  document.addEventListener('keydown',sbModalKey);
+  const x=document.querySelector('.sbmodal-x'); if(x&&x.focus)x.focus();   // 포커스를 모달로(진입)
+}
+// 현재 sbIdx 씬을 렌더(비디오 교체 + prev/next 상태 + 씬 라벨). 실패 시 false.
+function renderSceneModal(){
+  const cell=sbCells[sbIdx]; if(!cell) return false;
+  const v=cell.querySelector('.sb-vid'), src=v&&v.getAttribute('src'); if(!src) return false;
   const stage=document.getElementById('sbModalStage');
   stage.innerHTML=`<video src="${esc(src)}" controls autoplay loop playsinline disablepictureinpicture></video>`;
   const mv=stage.querySelector('video'); if(mv){ mv.disablePictureInPicture=true; const p=mv.play&&mv.play(); if(p&&p.catch)p.catch(function(){}); }
-  const m=document.getElementById('sbModal'); m.classList.add('open');
-  document.addEventListener('keydown',sbModalKey);
+  const n=((cell.querySelector('.sb-n')||{}).textContent||String(sbIdx+1)).trim();
+  const cap=document.getElementById('sbCap'); if(cap)cap.textContent=`Scene ${n} of ${sbCells.length}`;
+  const pv=document.getElementById('sbPrev'), nx=document.getElementById('sbNext');
+  if(pv)pv.disabled=(sbIdx<=0); if(nx)nx.disabled=(sbIdx>=sbCells.length-1);
+  return true;
 }
+function sceneModalGo(dir){ const ni=sbIdx+dir; if(ni<0||ni>=sbCells.length) return; sbIdx=ni; renderSceneModal(); }
 function closeSceneModal(){
   const m=document.getElementById('sbModal'); if(!m.classList.contains('open')) return;
   m.classList.remove('open');
   document.getElementById('sbModalStage').innerHTML='';   // 요소 제거 = 재생 정지·리소스 해제
   document.removeEventListener('keydown',sbModalKey);
+  const opener=sbOpener; sbOpener=null; sbCells=[]; sbIdx=-1;
+  if(opener&&opener.focus){ try{opener.focus();}catch(e){} }   // 포커스 복귀(연 씬 셀로)
 }
-function sbModalKey(e){ if(e.key==='Escape'){ e.preventDefault(); closeSceneModal(); } }
+function sbModalKey(e){
+  if(e.key==='Escape'){ e.preventDefault(); closeSceneModal(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); sceneModalGo(-1); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); sceneModalGo(1); }
+}
 // intrinsic 크기 → 근접 표준 비율 라벨
 function ratioLabel(w,h){ if(!w||!h) return ''; const r=w/h, C=[[9,16],[4,5],[2,3],[3,4],[1,1],[4,3],[3,2],[16,9]]; let best=C[0],bd=Infinity; C.forEach(function(c){ const d=Math.abs(r-c[0]/c[1]); if(d<bd){bd=d;best=c;} }); return best[0]+':'+best[1]; }
 // model 코드 → Doppia 친절명(알 수 없으면 '' → pill 숨김, raw 코드 노출 방지)
