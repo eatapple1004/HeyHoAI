@@ -821,8 +821,8 @@
 })();
 </script>
 <script src="/js/pricing.js?v=1"></script>
-<script>/*LP-CONV #3 크레딧 환산 — 사진 pro300/flash90 per장, ad video ~6250/편(5씬 템플릿); 근거 src/credits/credit.service.js. 크레딧은 PRICING에서 읽어 동적계산.*/
-(function(){function fill(){var P=window.PRICING;if(!P||!P.plans)return;var PRO=300,FLASH=90,VIDEO=6250;document.querySelectorAll('[data-conv]').forEach(function(el){var k=el.getAttribute('data-conv'),pl=P.plans[k];if(!pl)return;var cr=pl.cr||0,lo=Math.floor(cr/PRO),hi=Math.floor(cr/FLASH);if(lo<1){el.textContent='';return;}var t='\u2248 '+lo.toLocaleString()+'\u2013'+hi.toLocaleString()+' photos';if(k!=='free'){var v=Math.floor(cr/VIDEO);if(v>=1)t+=' or '+v+' ad video'+(v>1?'s':'');}el.textContent=t;});}if(document.readyState!=='loading')fill();else document.addEventListener('DOMContentLoaded',fill);})();</script>
+<script>/*LP-CONV #3 크레딧 환산 — 사진 pro300/flash90 per장, ad video ~3125/편(5씬×커스텀625/씬, render isTemplate=false); 근거 src/credits/credit.service.js. 크레딧은 PRICING에서 읽어 동적계산.*/
+(function(){function fill(){var P=window.PRICING;if(!P||!P.plans)return;var PRO=300,FLASH=90,VIDEO=3125;document.querySelectorAll('[data-conv]').forEach(function(el){var k=el.getAttribute('data-conv'),pl=P.plans[k];if(!pl)return;var cr=pl.cr||0,lo=Math.floor(cr/PRO),hi=Math.floor(cr/FLASH);if(lo<1){el.textContent='';return;}var t='\u2248 '+lo.toLocaleString()+'\u2013'+hi.toLocaleString()+' photos';if(k!=='free'){var v=Math.floor(cr/VIDEO);if(v>=1)t+=' or '+v+' ad video'+(v>1?'s':'');}el.textContent=t;});}if(document.readyState!=='loading')fill();else document.addEventListener('DOMContentLoaded',fill);})();</script>
 <script src="/js/biz-footer.js?v=3"></script>
 <script>/*LP-INTERACTIVE*/
 (function(){ /* coverflow 캐러셀 (Photos) */
