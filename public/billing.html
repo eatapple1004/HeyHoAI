@@ -111,6 +111,15 @@
   .cancelbox .cbh{font-size:14px;font-weight:700;margin-bottom:6px}
   .cancelbox .cbb{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:14px}
   .cancelbox .cbcta{display:flex;gap:10px;flex-wrap:wrap}
+  .curbar{display:flex;flex-direction:column;align-items:center;gap:9px;margin:0 0 26px}
+  .curtog{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:4px}
+  .curtog button{font-family:inherit;border:0;background:transparent;color:var(--dim);font-size:13px;font-weight:600;padding:8px 18px;border-radius:9px;cursor:pointer;transition:all .2s}
+  .curtog button.on{background:linear-gradient(120deg,var(--accent),var(--pink));color:#fff}
+  .curnote{font-size:12px;color:var(--dim);text-align:center}
+  /* 원화는 자릿수가 길어 가격+단위가 한 줄에 들어가도록 축소·줄바꿈 방지 */
+  .plan-card .price{white-space:nowrap}
+  .cur-krw .plan-card .price .pv,.cur-krw .plan-card .price .ev{font-size:27px;letter-spacing:-1px}
+  .cur-krw .plan-card .price .cur{font-size:15px}
   .hidden{display:none!important}
 </style>
 </head>
@@ -127,7 +136,7 @@
     <div class="eyebrow">Pricing</div>
     <h1 class="brandword">DOPPIA<span>.AI</span></h1>
     <div class="hero-tag">Choose your plan</div>
-    <div class="sub">Get a 3-month pass — pay once, no auto-renew. Credits are granted upfront. Or top up with credit packs anytime.</div>
+    <div class="sub">A monthly subscription for AI content creation — your usage credits refill every month, and you can cancel anytime. Need more mid-cycle? Add an extra credit pack.</div>
     <div class="hero-status"><span id="planLabel"></span><b id="planName">Pay as you go</b> · <span class="coin">◈</span> <span id="balNum">—</span> credits left</div>
     <div id="planNote" style="font-size:12.5px;color:var(--dim);margin-top:10px"></div>
   </div>
@@ -136,55 +145,63 @@
     Payment complete. Your credits may take a few seconds to appear. <button type="button" onclick="loadBalance()" style="cursor:pointer;text-decoration:underline;background:none;border:none;color:inherit;font:inherit;padding:0">Refresh</button>
   </div>
 
-  <h2 class="section-label fade d2">3-Month Passes</h2>
-  <!-- (2026-07-02) 정기결제 미지원(eximbay 3달 제약) → 기간권. 월/연 토글 숨김. 재점화 시 style 제거 -->
-  <div class="cycle fade d2" style="display:none">
+  <div class="curbar fade d2">
+    <div class="curtog" role="group" aria-label="Currency">
+      <button type="button" data-cur="KRW" onclick="pickCurrency('KRW')">₩ KRW</button>
+      <button type="button" data-cur="USD" onclick="pickCurrency('USD')">$ USD</button>
+    </div>
+    <div class="curnote" id="curNote"></div>
+  </div>
+
+  <h2 class="section-label fade d2">Subscription plans</h2>
+  <!-- (2026-07-14) 자동갱신 구독 전환 → 월/연 토글 재노출. 실제 연간 청구 로직은 백엔드 정기결제 연동 후. -->
+  <div class="cycle fade d2">
     <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
-    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 20%</span></button>
+    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 17%</span></button>
   </div>
   <div class="plans fade d3">
     <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
-      <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span> /mo</span></div>
+      <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">1,500 credits (one-time)</div>
       <ul><li>Try all modes</li><li>Solo lookbook</li><li>2K quality</li><li>2 concurrent slots</li></ul>
       <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
     </div>
     <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
-      <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span> /mo</span></div>
+      <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>No watermark</li><li>Group lookbook</li><li>3 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
       <div class="ribbon">Most popular</div>
-      <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span> /mo</span></div>
+      <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Starter</li><li>Edit results</li><li>4 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
-      <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span> /mo</span></div>
+      <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Standard</li><li>Concept cut</li><li>5 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
-      <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span> /mo</span></div>
+      <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Pro</li><li data-flag="reels">Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
   </div>
 
   <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
   <div class="plans ent-plans fade d3">
     <div class="plan-card glass" data-ent="team">
-      <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span> /mo</span></div>
+      <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span class="per"> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
       <ul><li>Team roles &amp; shared pool</li><li>Commercial license</li><li>10 concurrent slots</li></ul>
@@ -192,14 +209,14 @@
     </div>
     <div class="plan-card glass featured" data-ent="pro">
       <div class="ribbon">Best offer</div>
-      <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span> /mo</span></div>
+      <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span class="per"> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Team</li><li>15 concurrent slots</li><li>Priority support</li></ul>
       <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
     </div>
     <div class="plan-card glass" data-ent="elite">
-      <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span> /mo</span></div>
+      <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span class="per"> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
       <ul><li>Max scale</li><li>20 concurrent slots</li><li>Dedicated support</li></ul>
@@ -207,20 +224,21 @@
     </div>
   </div>
 
-  <h2 class="section-label fade d3">Top-up credit packs (one-time)</h2>
+  <h2 class="section-label fade d3">Extra credits (one-time)</h2>
   <div class="packs fade d4" id="packsGrid"></div>
-  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">A subscription is always cheaper per credit. Packs are for one-off top-ups.</div>
+  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">A subscription gives the best value per credit — extra credit packs are for one-off needs. Credits are in-service usage units with no cash value and are non-refundable once used. <a href="/refund" style="color:var(--accent2);text-decoration:none">Refund policy</a></div>
 
   <h2 class="section-label fade d4" style="margin-top:40px">What credits buy</h2>
   <div class="costtable glass fade d4">
     <div><span>Template photo (per image)</span><b>◈ 300</b></div>
     <div><span>Custom photo (per image)</span><b>◈ 150</b></div>
     <div><span>Photo — Flash (per image)</span><b>◈ 45–90</b></div>
+    <div><span>Ad Video (per scene)</span><b>◈ 625</b></div>
     <div data-flag="reels"><span>Template reel (5s)</span><b>◈ 1,250</b></div>
     <div data-flag="reels"><span>Template reel (10s)</span><b>◈ 2,500</b></div>
     <div><span>Add-on (caption · enhance)</span><b>+◈ 30</b></div>
   </div>
-  <div class="note">Template looks cost more than custom prompts. Payments secured by Eximbay.</div>
+  <div class="note">Template looks cost more than custom prompts.</div>
 
   <!-- (2026-07-05) Auto top-up 미지원 → 섹션 숨김. 기능 활성화 시 display:none 제거 -->
   <div class="section-label fade d4" style="margin-top:46px;display:none">Wallet automation</div>
@@ -269,7 +287,7 @@
 function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
-function planSoon(){ notify('Plan changes are coming soon — for now, top up with a credit pack.'); }
+function planSoon(){ notify('Plan changes are coming soon — for now, add an extra credit pack.'); }
 function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidden'); }
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
@@ -281,44 +299,59 @@ function setCycle(c,btn){
   CYCLE=c;
   document.querySelectorAll('.cycle button').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
+  const meta=(window.PRICING&&window.PRICING.curMeta)?window.PRICING.curMeta():{symbol:'$',per:' /mo',note:''};
   document.querySelectorAll('.plan-card[data-m]').forEach(card=>{
-    const pv=card.querySelector('.pv'),note=card.querySelector('.cyc-note');
-    if(pv)pv.textContent=card.getAttribute('data-'+c);
-    // (2026-07-02) 기간권: 월 환산가 + 3개월 총액(한 번 결제·자동갱신 없음) 병기
-    const m=parseInt(card.getAttribute('data-m'),10)||0;
-    if(note)note.textContent = c==='y' ? card.getAttribute('data-yt') : (m>0 ? ('3-month pass · $'+(m*3)+' billed once · no auto-renew') : '');
+    const pv=card.querySelector('.pv'),cur=card.querySelector('.cur'),per=card.querySelector('.per'),note=card.querySelector('.cyc-note');
+    const raw=parseInt(card.getAttribute('data-'+c),10)||0;
+    if(cur)cur.textContent=meta.symbol;
+    if(pv)pv.textContent=window.PRICING.fmt(raw);
+    if(per)per.textContent=meta.per;
+    // 구독(월간): 통화별 VAT·자동결제·해지 안내. 연간은 절약액 병기.
+    if(note)note.textContent = raw>0 ? (c==='y' ? (card.getAttribute('data-yt')||'') : meta.note) : '';
   });
 }
 
-// 가격 단일소스(/js/pricing.js → window.PRICING)에서 플랜·팩 렌더
-const PACK_ID={50:'pack50',120:'pack120',300:'pack300',700:'pack700'};
+// 가격 단일소스(/js/pricing.js → window.PRICING)에서 플랜·팩 렌더 (통화 인지: ₩ KRW/$ USD)
 function syncBillingPricing(){
-  if(!window.PRICING)return; const P=window.PRICING;
+  if(!window.PRICING)return; const P=window.PRICING; const meta=P.curMeta();
   ['free','starter','standard','pro','premium'].forEach(function(k){
     const p=P.plans[k], card=document.querySelector('.plan-card[data-plan="'+k+'"]'); if(!card||!p)return;
-    card.setAttribute('data-m',p.price); card.setAttribute('data-y',p.priceY);
-    if(k!=='free') card.setAttribute('data-yt','$'+(p.priceY*12)+'/yr billed annually · save $'+((p.price-p.priceY)*12));
-    const pv=card.querySelector('.pv'); if(pv)pv.textContent=P.fmt(p.price);
-    const ci=card.querySelector('.credits-inc'); if(ci) ci.textContent = k==='free' ? (P.fmt(p.cr)+' credits (one-time)') : (P.fmt(p.cr)+'/mo × 3 = '+P.fmt(p.cr*3)+' credits upfront'); // (2026-07-02) 3개월분 일괄
+    card.setAttribute('data-m',P.amount(p,false)); card.setAttribute('data-y',P.amount(p,true));
+    if(k!=='free'){
+      const yr=P.amount(p,true)*12, save=(P.amount(p,false)-P.amount(p,true))*12;
+      card.setAttribute('data-yt', meta.symbol+P.fmt(yr)+'/yr billed annually · save '+meta.symbol+P.fmt(save));
+    }
+    const ci=card.querySelector('.credits-inc'); if(ci) ci.textContent = k==='free' ? (P.fmt(p.cr)+' credits (one-time)') : (P.fmt(p.cr)+' credits / month');
   });
   // 기업(연간) — data-ent 카드
   if(P.enterprise) ['team','pro','elite'].forEach(function(k){
     const e=P.enterprise[k], card=document.querySelector('.plan-card[data-ent="'+k+'"]'); if(!card||!e)return;
-    const ev=card.querySelector('.ev'); if(ev)ev.textContent=P.fmt(e.price);
+    const cur=card.querySelector('.cur'), ev=card.querySelector('.ev'), per=card.querySelector('.per');
+    if(cur)cur.textContent=meta.symbol;
+    if(ev)ev.textContent=P.fmt(P.amount(e,false));
+    if(per)per.textContent=meta.per;
     const ci=card.querySelector('.credits-inc'); if(ci)ci.textContent=P.fmt(e.cr)+' credits / month';
   });
   const pk=document.getElementById('packsGrid');
   if(pk) pk.innerHTML=P.packs.map(function(p){
     const total=p.cr+p.bonus, bonus=p.bonus?(' <small>+'+p.bonus+' bonus</small>'):'';
-    const id=p.id||PACK_ID[p.cr];
-    const btn = id
-      ? '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="buyPack(\''+id+'\',this)">Buy</button>'
+    const amt=P.amount(p,false), per=total?(meta.symbol+(amt/total).toFixed(meta.code==='KRW'?1:4)):'';
+    const btn = p.id
+      ? '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="buyPack(\''+p.id+'\',this)">Buy</button>'
       : '<button class="btn btn-ghost" disabled style="opacity:.5">Coming soon</button>';
     return '<div class="pack-card glass'+(p.best?' best':'')+'">'+(p.best?'<span class="ptag">BEST VALUE</span>':'')+
-      '<div class="amt">◈ '+P.fmt(p.cr)+bonus+'</div><div class="ppc">$'+p.ppc+' / credit</div><div class="price">$'+p.price+'</div>'+btn+'</div>';
+      '<div class="amt">◈ '+P.fmt(p.cr)+bonus+'</div><div class="ppc">'+per+' / credit</div><div class="price">'+meta.symbol+P.fmt(amt)+'</div>'+btn+'</div>';
   }).join('');
+  // 통화 토글 활성 표시 + 안내(통화·VAT·자동결제·PG)
+  document.querySelectorAll('.curtog button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-cur')===meta.code); });
+  document.body.classList.toggle('cur-krw', meta.code==='KRW');
+  const cn=document.getElementById('curNote'); if(cn) cn.textContent = meta.symbol+' '+meta.code+' · '+meta.note+' · '+meta.pg;
   setCycle(CYCLE, document.querySelector('.cycle button[data-cyc="'+CYCLE+'"]'));
 }
+
+// 통화 전환: 토글 클릭 → 저장 + dp:currency 이벤트 → 재렌더
+function pickCurrency(c){ if(window.PRICING&&window.PRICING.setCurrency) window.PRICING.setCurrency(c); }
+document.addEventListener('dp:currency', syncBillingPricing);
 
 async function loadBalance(){
   try{
@@ -378,10 +411,10 @@ async function loadSubscription(){
       try{ sub=(await(await fetch('/api/subscription/offer/start',{method:'POST'})).json()).data || sub; }catch(e){}
     }
     if(sub.plan!=='free' && sub.planName){
-      setTxt('planLabel','Active pass: '); // 단발성 이용권(구독 아님)
+      setTxt('planLabel','Active plan: '); // 구독 활성 플랜
       setTxt('planName',sub.planName);
-      // 기간권: renewsAt=만료일. 만료 지나면 백엔드가 free로 강등하므로 여기 오면 유효.
-      if(sub.renewsAt) setTxt('planNote','Expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew');
+      // 구독: renewsAt=다음 결제 예정일. 백엔드 정기결제 연동 시 매월 자동갱신.
+      if(sub.renewsAt) setTxt('planNote','Renews '+new Date(sub.renewsAt).toLocaleDateString()+' · cancel anytime');
     } else {
       setTxt('planLabel',''); // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }
@@ -392,10 +425,10 @@ async function upgradeToPro(btn){
   btn.disabled=true;const orig=btn.textContent;btn.textContent='…';
   try{
     const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
-    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // (2026-07-02) 3개월 이용권
+    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // ⚠️ 레거시 기간권 계약. 자동갱신 구독 전환 시 개발자가 정기결제 엔드포인트로 교체(설계: docs/원화_빌링키_정기결제_설계).
     const d=await res.json();
-    if(d.success){ notify('3-month pass activated!'); loadSubscription();loadBalance(); }
-    else if(d.comingSoon){ notify('Pass purchase is coming soon — it activates once merchant review passes.'); }
+    if(d.success){ notify('Subscription activated!'); loadSubscription();loadBalance(); }
+    else if(d.comingSoon){ notify('Subscriptions are coming soon — they activate once payment review passes.'); }
     else notify(d.error||'Purchase failed.','error');
   }catch(e){ notify('Payment connection failed.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }

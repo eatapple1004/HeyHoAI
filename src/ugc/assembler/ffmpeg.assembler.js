@@ -154,7 +154,9 @@ const SUB_PRESETS = {
 function buildAss(subtitle, w = TARGET_W, h = TARGET_H, style = {}) {
   const pos = SUB_POS[style.position] || SUB_POS.bottom;
   const size = SUB_SIZE[style.size] || SUB_SIZE.m;
-  const lang = style.lang === 'en' ? 'en' : 'ko';
+  // 폰트 선택: en 프리셋(Inter 등)은 라틴 전용이라 한글이 섞이면 깨짐 → 자막에 한글이 있으면 lang과 무관하게 ko 폰트(Pretendard=라틴+CJK 커버).
+  const hasCJK = Array.isArray(subtitle) && subtitle.some((s) => /[ㄱ-힝]/.test((s && s.text) || ''));
+  const lang = (style.lang === 'en' && !hasCJK) ? 'en' : 'ko';
   let font, primary, outlineC, backC, border, outlineW;
   const preset = SUB_PRESETS[style.preset];
   if (preset) {

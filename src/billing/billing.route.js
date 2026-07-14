@@ -3,24 +3,34 @@ const crypto = require('crypto');
 const { env } = require('../config');
 const { query } = require('../db/client');
 const creditService = require('../credits/credit.service');
+const { PRICING } = require('../pricing/pricing.config');
 const log = require('../lib/logger')('Billing');
 
 const router = express.Router();
 
-// ─── 크레딧 팩 정의 (docs/가격_재설계.md / pricing.config.js packs와 일치 / LS variant 매핑) ───
-const PACKS = [
-  { id: 'pack50',  credits: 50,  usd: 5,  label: '◈ 50' },
-  { id: 'pack120', credits: 120, usd: 11, label: '◈ 100 + 20 bonus' },
-  { id: 'pack300', credits: 300, usd: 26, label: '◈ 250 + 50 bonus' },
-  { id: 'pack700', credits: 700, usd: 56, label: '◈ 600 + 100 bonus' },
-];
+// ─── 크레딧 팩 = pricing.config 단일소스에서 파생 (표시가=청구가 정합). ───
+//   id/credits/usd/krw가 프론트(pricing.js)·studio 페이월과 완전 일치 → "Unknown pack" 방지.
+//   usd=해외(Eximbay) 청구 통화, krw=국내(KCP) 청구 통화(KCP 연동은 개발자 후속).
+const PACKS = PRICING.packs.map((p) => {
+  const credits = p.cr + p.bonus;
+  return {
+    id: p.id,
+    credits,
+    bonus: p.bonus,
+    usd: p.price,
+    krw: p.priceKRW,
+    best: Boolean(p.best),
+    label: `◈ ${credits.toLocaleString()}`,
+  };
+});
 
+// Lemon Squeezy 폴백(현재 키 미설정=휴면). 신규 pack ID로 매핑.
 function variantIdFor(packId) {
   const map = {
-    pack50:  env.LS_VARIANT_PACK50,
-    pack120: env.LS_VARIANT_PACK120,
-    pack300: env.LS_VARIANT_PACK300,
-    pack700: env.LS_VARIANT_PACK700,
+    pack9:   env.LS_VARIANT_PACK50,
+    pack49:  env.LS_VARIANT_PACK120,
+    pack199: env.LS_VARIANT_PACK300,
+    pack349: env.LS_VARIANT_PACK700,
   };
   return map[packId] || null;
 }

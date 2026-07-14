@@ -1301,7 +1301,7 @@ async function migrateCredits() {
         user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         provider    VARCHAR(30) NOT NULL,      -- lemonsqueezy
         order_id    TEXT NOT NULL,
-        product     VARCHAR(50),               -- pack50 | pack120 | pack300 | pack700
+        product     VARCHAR(50),               -- pack9 | pack49 | pack199 | pack349 (pricing.config 단일소스)
         amount_usd  DECIMAL(10,2),
         credits     INT NOT NULL,
         raw         JSONB DEFAULT '{}',

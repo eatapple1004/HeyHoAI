@@ -714,6 +714,12 @@ router.get('/creations/:idx', async (req, res, next) => {
       const m = await query(`SELECT mt.id, mt.name, mt.price_credits, COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr WHERE gr.template_source='recipe' AND gr.template_id = mt.recipe_id AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb FROM marketplace_templates mt WHERE mt.recipe_id = $1 AND mt.is_official = true AND mt.status = 'active' LIMIT 1`, [r.template_id]);
       if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: true, mine: false }; // 공식 recipe=기본 라이브러리
     }
+    // 폴백: 위 id 기반 조회로 못 찾았지만(템플릿 삭제 · γ 'creation' 출처 · 프론트↔marketplace 드리프트) template_name이 있으면
+    //   같은 이름의 살아있는 템플릿(공식 우선)으로 "Made with"를 연결 → 실존 템플릿이 카드 없이 "MADE WITH 이름"만 뜨던 것 해소(출처 무관 커버).
+    if (!relTemplate && r.template_name) {
+      const m = await query(`SELECT m.id, m.name, m.price_credits, COALESCE(m.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr WHERE ((gr.template_source='marketplace' AND gr.template_id = m.id::text) OR (m.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = m.recipe_id)) AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb, (m.creator_id = $2) AS mine, (m.is_official OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = m.id AND o.user_id = $2)) AS owned FROM marketplace_templates m WHERE m.name = $1 AND m.status = 'active' ORDER BY m.is_official DESC, m.id LIMIT 1`, [r.template_name, req.user.id]);
+      if (m.rows[0]) relTemplate = { id: m.rows[0].id, name: m.rows[0].name, price: m.rows[0].price_credits || 0, thumb: m.rows[0].thumb || null, owned: !!m.rows[0].owned, mine: !!m.rows[0].mine };
+    }
     // Ad Video(UGC): 씬 스토리보드(공개 자막·썸네일만, 렌더 레시피 제외) — 빈 패널 방지. UGC일 때만 ugc_jobs 조회(핫 기본쿼리 무변경).
     let storyboard = null;
     if (/^ugc/i.test(String(r.model || ''))) {
@@ -926,7 +932,7 @@ function saveProductImages(req) {
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
 router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration } = req.body || {};
+    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language } = req.body || {};
     // 제품 사진들(다각도) base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피·정확한 brollPrompt)
     const images = [];
     for (const pf of (req.files?.productImage || [])) {
@@ -936,7 +942,7 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_
     const image = images[0] || null; // 하위호환(단일)
     const scN = Math.min(Math.max(parseInt(sceneCount, 10) || 0, 0), 12); // 씬 개수(0=자동, 최대 12)
     const scD = [3, 5, 10].includes(parseInt(sceneDuration, 10)) ? parseInt(sceneDuration, 10) : 0; // 씬 길이 3/5/10s(0=자동)
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD });
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en' });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
@@ -976,7 +982,7 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
     if (!pf) return res.status(400).json({ success: false, error: 'product image is required' });
     const image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
     try { fs.unlinkSync(pf.path); } catch {}
-    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '', outputType: req.body.outputType || 'product-ad' });
+    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '', outputType: req.body.outputType || 'product-ad', language: req.body.language === 'ko' ? 'ko' : 'en' });
     res.json({ success: true, concept });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
