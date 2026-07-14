@@ -293,6 +293,7 @@
   .hrisk b{color:var(--text);font-weight:700}
   .cta-fine{margin-top:16px;font-size:12.5px;color:var(--faint)}
   .pfine{font-size:11.5px;color:var(--faint);margin-top:10px;text-align:center}
+  .pconv{font-size:11.5px;color:var(--dim);margin:3px 0 2px;font-weight:600}
   .btn-primary.grad-cta{background:linear-gradient(100deg,var(--accent),var(--pink))}
   .hx-stage{position:relative}
   .hx-grid{position:relative;display:grid;grid-template-columns:1.12fr .88fr;grid-template-rows:1fr 1fr;gap:14px;height:min(76vh,600px)}
@@ -695,31 +696,31 @@
   <div class="prices" id="pricesGrid">
     <div class="price">
       <div class="pn">Free</div><div class="pp" data-price="free">$0<small> /mo</small></div>
-      <div class="cr">◈ <span data-dp="plans.free.cr" data-fmt="1">1,500</span> credits to try</div>
-      <ul><li><span class="ck">✓</span> All modes</li><li><span class="ck">✓</span> Solo lookbook</li><li><span class="ck">✓</span> 2 concurrent slots</li></ul>
+      <div class="cr">◈ <span data-dp="plans.free.cr" data-fmt="1">1,500</span> credits to try</div><div class="pconv" data-conv="free"></div>
+      <ul><li><span class="ck">✓</span> All photo modes</li><li><span class="ck">✓</span> Solo lookbook</li><li><span class="ck">✓</span> 2 concurrent slots</li></ul>
       <a href="/studio" class="btn btn-ghost">Get started</a><div class="pfine">No credit card required</div>
     </div>
     <div class="price collapsed">
       <div class="pn">Starter</div><div class="pp" data-price="starter">$19<small> /mo</small></div>
-      <div class="cr">◈ <span data-dp="plans.starter.cr" data-fmt="1">7,300</span> credits / month</div>
-      <ul><li><span class="ck">✓</span> No watermark</li><li><span class="ck">✓</span> Group lookbook</li><li><span class="ck">✓</span> 3 concurrent slots</li></ul>
+      <div class="cr">◈ <span data-dp="plans.starter.cr" data-fmt="1">7,300</span> credits / month</div><div class="pconv" data-conv="starter"></div>
+      <ul><li><span class="ck">✓</span> Ad Video reels</li><li><span class="ck">✓</span> No watermark</li><li><span class="ck">✓</span> Group lookbook</li><li><span class="ck">✓</span> 3 concurrent slots</li></ul>
       <a href="/studio" class="btn btn-ghost">Start creating</a>
     </div>
     <div class="price pop">
       <div class="pn">Standard</div><div class="pp" data-price="standard">$49<small> /mo</small></div>
-      <div class="cr">◈ <span data-dp="plans.standard.cr" data-fmt="1">20,300</span> credits / month</div>
+      <div class="cr">◈ <span data-dp="plans.standard.cr" data-fmt="1">20,300</span> credits / month</div><div class="pconv" data-conv="standard"></div>
       <ul><li><span class="ck">✓</span> Everything in Starter</li><li><span class="ck">✓</span> Edit results</li><li><span class="ck">✓</span> 4 concurrent slots</li></ul>
       <a href="/studio" class="btn btn-primary">Start with Standard</a>
     </div>
     <div class="price collapsed">
       <div class="pn">Pro</div><div class="pp" data-price="pro">$99<small> /mo</small></div>
-      <div class="cr">◈ <span data-dp="plans.pro.cr" data-fmt="1">44,000</span> credits / month</div>
+      <div class="cr">◈ <span data-dp="plans.pro.cr" data-fmt="1">44,000</span> credits / month</div><div class="pconv" data-conv="pro"></div>
       <ul><li><span class="ck">✓</span> Everything in Standard</li><li><span class="ck">✓</span> Concept cut</li><li><span class="ck">✓</span> 5 concurrent slots</li></ul>
       <a href="/studio" class="btn btn-ghost">Start with Pro</a>
     </div>
     <div class="price">
       <div class="pn">Premium</div><div class="pp" data-price="premium">$199<small> /mo</small></div>
-      <div class="cr">◈ <span data-dp="plans.premium.cr" data-fmt="1">95,000</span> credits / month</div>
+      <div class="cr">◈ <span data-dp="plans.premium.cr" data-fmt="1">95,000</span> credits / month</div><div class="pconv" data-conv="premium"></div>
       <ul><li><span class="ck">✓</span> Everything in Pro</li><li><span class="ck">✓</span> Commercial license included</li><li><span class="ck">✓</span> 6 concurrent slots</li></ul>
       <a href="/billing" class="btn btn-ghost">Choose Premium</a>
     </div>
@@ -820,6 +821,8 @@
 })();
 </script>
 <script src="/js/pricing.js?v=1"></script>
+<script>/*LP-CONV #3 크레딧 환산 — 사진 pro300/flash90 per장, ad video ~6250/편(5씬 템플릿); 근거 src/credits/credit.service.js. 크레딧은 PRICING에서 읽어 동적계산.*/
+(function(){function fill(){var P=window.PRICING;if(!P||!P.plans)return;var PRO=300,FLASH=90,VIDEO=6250;document.querySelectorAll('[data-conv]').forEach(function(el){var k=el.getAttribute('data-conv'),pl=P.plans[k];if(!pl)return;var cr=pl.cr||0,lo=Math.floor(cr/PRO),hi=Math.floor(cr/FLASH);if(lo<1){el.textContent='';return;}var t='\u2248 '+lo.toLocaleString()+'\u2013'+hi.toLocaleString()+' photos';if(k!=='free'){var v=Math.floor(cr/VIDEO);if(v>=1)t+=' or '+v+' ad video'+(v>1?'s':'');}el.textContent=t;});}if(document.readyState!=='loading')fill();else document.addEventListener('DOMContentLoaded',fill);})();</script>
 <script src="/js/biz-footer.js?v=3"></script>
 <script>/*LP-INTERACTIVE*/
 (function(){ /* coverflow 캐러셀 (Photos) */
