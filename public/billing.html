@@ -136,7 +136,7 @@
     <div class="eyebrow">Pricing</div>
     <h1 class="brandword">DOPPIA<span>.AI</span></h1>
     <div class="hero-tag">Choose your plan</div>
-    <div class="sub">Subscribe monthly — your credits refill every month. Cancel anytime. Or top up with credit packs.</div>
+    <div class="sub">A monthly subscription for AI content creation — your usage credits refill every month, and you can cancel anytime. Need more mid-cycle? Add an extra credit pack.</div>
     <div class="hero-status"><span id="planLabel"></span><b id="planName">Pay as you go</b> · <span class="coin">◈</span> <span id="balNum">—</span> credits left</div>
     <div id="planNote" style="font-size:12.5px;color:var(--dim);margin-top:10px"></div>
   </div>
@@ -153,11 +153,11 @@
     <div class="curnote" id="curNote"></div>
   </div>
 
-  <h2 class="section-label fade d2">Monthly plans</h2>
-  <!-- (2026-07-02) 정기결제 미지원(eximbay 3달 제약) → 기간권. 월/연 토글 숨김. 재점화 시 style 제거 -->
-  <div class="cycle fade d2" style="display:none">
+  <h2 class="section-label fade d2">Subscription plans</h2>
+  <!-- (2026-07-14) 자동갱신 구독 전환 → 월/연 토글 재노출. 실제 연간 청구 로직은 백엔드 정기결제 연동 후. -->
+  <div class="cycle fade d2">
     <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
-    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 20%</span></button>
+    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 17%</span></button>
   </div>
   <div class="plans fade d3">
     <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
@@ -172,7 +172,7 @@
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>No watermark</li><li>Group lookbook</li><li>3 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
       <div class="ribbon">Most popular</div>
@@ -180,21 +180,21 @@
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Starter</li><li>Edit results</li><li>4 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
       <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Standard</li><li>Concept cut</li><li>5 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
       <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
       <ul><li>Everything in Pro</li><li data-flag="reels">Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Get pass</button>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
   </div>
 
@@ -224,15 +224,16 @@
     </div>
   </div>
 
-  <h2 class="section-label fade d3">Top-up credit packs (one-time)</h2>
+  <h2 class="section-label fade d3">Extra credits (one-time)</h2>
   <div class="packs fade d4" id="packsGrid"></div>
-  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">A subscription is always cheaper per credit. Packs are for one-off top-ups.</div>
+  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">A subscription gives the best value per credit — extra credit packs are for one-off needs. Credits are in-service usage units with no cash value and are non-refundable once used. <a href="/refund" style="color:var(--accent2);text-decoration:none">Refund policy</a></div>
 
   <h2 class="section-label fade d4" style="margin-top:40px">What credits buy</h2>
   <div class="costtable glass fade d4">
     <div><span>Template photo (per image)</span><b>◈ 300</b></div>
     <div><span>Custom photo (per image)</span><b>◈ 150</b></div>
     <div><span>Photo — Flash (per image)</span><b>◈ 45–90</b></div>
+    <div><span>Ad Video (per scene)</span><b>◈ 625</b></div>
     <div data-flag="reels"><span>Template reel (5s)</span><b>◈ 1,250</b></div>
     <div data-flag="reels"><span>Template reel (10s)</span><b>◈ 2,500</b></div>
     <div><span>Add-on (caption · enhance)</span><b>+◈ 30</b></div>
@@ -286,7 +287,7 @@
 function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
-function planSoon(){ notify('Plan changes are coming soon — for now, top up with a credit pack.'); }
+function planSoon(){ notify('Plan changes are coming soon — for now, add an extra credit pack.'); }
 function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidden'); }
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
@@ -410,10 +411,10 @@ async function loadSubscription(){
       try{ sub=(await(await fetch('/api/subscription/offer/start',{method:'POST'})).json()).data || sub; }catch(e){}
     }
     if(sub.plan!=='free' && sub.planName){
-      setTxt('planLabel','Active pass: '); // 단발성 이용권(구독 아님)
+      setTxt('planLabel','Active plan: '); // 구독 활성 플랜
       setTxt('planName',sub.planName);
-      // 기간권: renewsAt=만료일. 만료 지나면 백엔드가 free로 강등하므로 여기 오면 유효.
-      if(sub.renewsAt) setTxt('planNote','Expires '+new Date(sub.renewsAt).toLocaleDateString()+' · no auto-renew');
+      // 구독: renewsAt=다음 결제 예정일. 백엔드 정기결제 연동 시 매월 자동갱신.
+      if(sub.renewsAt) setTxt('planNote','Renews '+new Date(sub.renewsAt).toLocaleDateString()+' · cancel anytime');
     } else {
       setTxt('planLabel',''); // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }
@@ -424,10 +425,10 @@ async function upgradeToPro(btn){
   btn.disabled=true;const orig=btn.textContent;btn.textContent='…';
   try{
     const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
-    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // (2026-07-02) 3개월 이용권
+    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // ⚠️ 레거시 기간권 계약. 자동갱신 구독 전환 시 개발자가 정기결제 엔드포인트로 교체(설계: docs/원화_빌링키_정기결제_설계).
     const d=await res.json();
-    if(d.success){ notify('3-month pass activated!'); loadSubscription();loadBalance(); }
-    else if(d.comingSoon){ notify('Pass purchase is coming soon — it activates once merchant review passes.'); }
+    if(d.success){ notify('Subscription activated!'); loadSubscription();loadBalance(); }
+    else if(d.comingSoon){ notify('Subscriptions are coming soon — they activate once payment review passes.'); }
     else notify(d.error||'Purchase failed.','error');
   }catch(e){ notify('Payment connection failed.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }

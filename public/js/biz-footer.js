@@ -56,6 +56,7 @@
     el.innerHTML =
       '<div class="bizf-in">' +
       '<div class="bizf-legal"><a href="/terms">이용약관</a>' + sep +
+        '<a href="/terms#ai-use-policy">AI 이용정책</a>' + sep +
         '<a href="/privacy"><b>개인정보처리방침</b></a>' + sep +
         '<a href="/refund">취소·환불 및 청약철회</a></div>' +
       rows.join(sep) +
