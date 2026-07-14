@@ -816,17 +816,14 @@
       <span class="hint">Product + a one-line concept → AI writes a script → you review it → build the video.</span></div>
     <div class="ugc-cols">
     <div class="script-box" id="ugcInputBox">
-      <input type="file" id="ugcProductImg" accept="image/*" style="display:none" onchange="ugcPreview(this)">
-      <div id="ugcDrop" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <input type="file" id="ugcProductImg" accept="image/*" multiple style="display:none" onchange="ugcPreview(this)">
+      <div id="ugcDrop" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div id="ugcThumbStrip" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <button type="button" id="ugcPickBtn" class="img-add labeled" onclick="document.getElementById('ugcProductImg').click()">
           <svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg>
-          <span class="img-add-label">Add your product photo</span>
+          <span class="img-add-label">Add product photos</span>
         </button>
-        <div id="ugcThumbTile" class="ref-tile" style="display:none" onclick="document.getElementById('ugcProductImg').click()">
-          <button type="button" class="ref-x" id="ugcImgClear" onclick="event.stopPropagation();ugcClearImg()">✕</button>
-          <span class="ref-name" id="ugcDropLabel"></span>
-        </div>
-        <span id="ugcPickHint" style="font-size:12px;color:var(--dim)">Recommended — keeps your product in every scene</span>
+        <span id="ugcPickHint" style="font-size:12px;color:var(--dim)">Recommended — add multiple angles to keep your product consistent</span>
       </div>
       <input type="text" id="ugcProductName" placeholder="Product name — e.g. Rouge Velvet Matte  (optional)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px;font-family:inherit">
       <textarea class="script-ta" id="ugcConcept" placeholder="Tell us how you want it — a sentence or just keywords.  e.g. &quot;clean, sensual lookbook for 20–30s&quot;  ·  &quot;red background, luxurious color&quot;"></textarea>
@@ -4484,36 +4481,47 @@ async function pollVideoJob(jobId){
 }
 
 // ── UGC 제품 사진 업로드 미리보기 ──
+// 제품 레퍼런스(동일 제품 다각도) — 최대 5장. 배열로 보관 후 생성 시 모두 전송.
+var UGC_MAX_REF=5;
+var ugcProductFiles=[];
 function ugcPreview(input){
-  const f=input.files&&input.files[0];
-  if(!f){ugcClearImg();return;}
-  const url=URL.createObjectURL(f);
-  const tile=document.getElementById('ugcThumbTile');
-  tile.style.backgroundImage='url('+url+')'; tile.style.display='';
-  document.getElementById('ugcPickBtn').style.display='none';
-  document.getElementById('ugcDropLabel').textContent=f.name||'product image';
-  const hint=document.getElementById('ugcPickHint'); if(hint)hint.textContent='Locked into every scene';
+  var incoming=Array.prototype.slice.call(input.files||[]);
+  input.value=''; // 같은 파일 재선택 허용 + 다음 추가를 위해 초기화
+  for(var i=0;i<incoming.length;i++){
+    var f=incoming[i];
+    if(ugcProductFiles.length>=UGC_MAX_REF)break;
+    if(ugcProductFiles.some(function(x){return x.name===f.name&&x.size===f.size;}))continue; // 중복 스킵
+    ugcProductFiles.push(f);
+  }
+  ugcRenderProductThumbs();
 }
-function ugcClearImg(){
-  const input=document.getElementById('ugcProductImg'); input.value='';
-  const tile=document.getElementById('ugcThumbTile'); tile.style.display='none'; tile.style.backgroundImage='';
-  document.getElementById('ugcPickBtn').style.display='';
-  const hint=document.getElementById('ugcPickHint'); if(hint)hint.textContent='Recommended — keeps your product in every scene';
+function ugcRenderProductThumbs(){
+  var strip=document.getElementById('ugcThumbStrip'); if(!strip)return;
+  strip.innerHTML=ugcProductFiles.map(function(f,i){
+    var url=URL.createObjectURL(f);
+    return '<div class="ref-tile" style="background-image:url(\''+url+'\')" title="'+esc(f.name||'product')+'"><button type="button" class="ref-x" onclick="ugcRemoveProductImg('+i+')">✕</button></div>';
+  }).join('');
+  var pick=document.getElementById('ugcPickBtn'); if(pick)pick.style.display=ugcProductFiles.length>=UGC_MAX_REF?'none':'';
+  var hint=document.getElementById('ugcPickHint');
+  if(hint)hint.textContent=ugcProductFiles.length
+    ? ugcProductFiles.length+'/'+UGC_MAX_REF+' — locked into every scene · add more angles for accuracy'
+    : 'Recommended — add multiple angles to keep your product consistent';
 }
+function ugcRemoveProductImg(i){ ugcProductFiles.splice(i,1); ugcRenderProductThumbs(); }
+function ugcClearImg(){ ugcProductFiles=[]; ugcRenderProductThumbs(); }
 
 // ── UGC 광고 영상 (2단계: 대본 미리보기 → 검토 → 렌더) ──
 let ugcScript=null; // 1단계에서 받은 대본(2단계 렌더로 전달)
 
 // (선택) 제품 사진 → AI 컨셉 제안 → 컨셉 필드 채움. 컨셉 쓰기 귀찮은 유저용.
 async function ugcSuggestConcept(){
-  const pf=document.getElementById('ugcProductImg').files[0];
   const hint=document.getElementById('ugcHint');
-  if(!pf){hint.textContent='⚠ Add a product photo first — then I can suggest a concept.';return;}
+  if(!ugcProductFiles.length){hint.textContent='⚠ Add a product photo first — then I can suggest a concept.';return;}
   const btn=document.getElementById('ugcSuggestBtn');const old=btn.textContent;
   btn.disabled=true;btn.textContent='✨ Thinking…';
   try{
     const fd=new FormData();
-    fd.append('productImage',pf,pf.name||'product.png');
+    ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png')));
     fd.append('outputType',document.getElementById('ugcFormat').value||'product-ad'); // 무출연/모델 인지
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details);
@@ -4582,8 +4590,7 @@ async function ugcWriteScript(){
     const productName=(document.getElementById('ugcProductName').value||'').trim();if(productName)fd.append('product',productName); // 제품명(선택)
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details); // 옵션 제품 팩트(브랜드·클레임) — 카피 근거
-    const pf=document.getElementById('ugcProductImg').files[0];
-    if(pf)fd.append('productImage',pf,pf.name||'product.png'); // Claude가 실제 제품 보고 카피 작성
+    ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png'))); // Claude가 실제 제품(다각도) 보고 카피·brollPrompt 작성
     fd.append('voiceover',(document.getElementById('ugcVoice')||{}).checked!==false?'true':'false'); // 음성 여부→내레이션 대본 생성 분기
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택)
@@ -4763,8 +4770,7 @@ async function ugcRenderVideo(){
     const mEl=document.getElementById('ugcMusic');fd.append('music',(mEl&&mEl.checked)?'true':'false'); // 배경음악
     const vIdEl=document.getElementById('ugcVoiceId');if(vIdEl&&vIdEl.value)fd.append('voiceId',vIdEl.value); // 영상별 보이스
     const spEl=document.getElementById('ugcSpeed');if(spEl&&spEl.value)fd.append('speed',spEl.value); // 말하기 속도
-    const pf=document.getElementById('ugcProductImg').files[0];
-    if(pf)fd.append('productImage',pf,pf.name||'product.png'); // 유저 실제 제품 → 전 씬 고정
+    ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png'))); // 유저 실제 제품(다각도) → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});
     const data=await sjson(res);
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}

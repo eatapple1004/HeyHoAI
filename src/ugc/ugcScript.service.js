@@ -84,12 +84,15 @@ async function generateUgcScript(input) {
   if (!input || !input.concept) {
     throw Object.assign(new Error('concept is required'), { statusCode: 400 });
   }
-  const { system, user } = buildUgcScriptPrompt({ ...input, hasImage: !!(input.image && input.image.data) });
+  // 제품 사진들(동일 제품 다각도). images(배열) 우선, 없으면 image(단일, 하위호환).
+  const imgs = (Array.isArray(input.images) && input.images.length ? input.images : (input.image ? [input.image] : []))
+    .filter((im) => im && im.data);
+  const { system, user } = buildUgcScriptPrompt({ ...input, hasImage: imgs.length > 0, imageCount: imgs.length });
 
-  // 제품 사진이 있으면 비전 블록으로 첨부 → Claude가 실제 제품(색·형태·패키지)에 근거해 카피·brollPrompt 작성.
-  const content = (input.image && input.image.data)
+  // 제품 사진이 있으면 비전 블록으로 첨부(여러 각도) → Claude가 실제 제품(색·형태·구조·가동부)에 근거해 카피·brollPrompt 작성.
+  const content = imgs.length
     ? [
-        { type: 'image', source: { type: 'base64', media_type: input.image.mediaType || 'image/png', data: input.image.data } },
+        ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/png', data: im.data } })),
         { type: 'text', text: user },
       ]
     : user;
