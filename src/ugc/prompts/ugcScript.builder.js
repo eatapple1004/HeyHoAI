@@ -47,6 +47,7 @@ function buildUgcScriptPrompt(input) {
     language = 'ko',
     audience = '',
     hasImage = false,
+    imageCount = 0, // 첨부된 제품 사진 장수(다각도면 >1)
     details = '',
     voiceover = true, // false면 내레이션·자막 없는 비주얼 전용 대본(onScreenText/spoken 비움)
     category = '',    // 제품군 지정 시 카테고리 플레이북 주입(씬레시피·스타일)
@@ -145,7 +146,9 @@ function buildUgcScriptPrompt(input) {
     // product는 선택 — 보통 유저가 brief(concept)에 제품을 녹여서 씀. 있으면 명시.
     product ? `Product: ${product}` : '',
     `Creative brief / request (a sentence or loose keywords — interpret intent, don't echo): ${concept}`,
-    hasImage ? 'A photo of the actual product is attached. Ground the copy, spoken and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.' : '',
+    hasImage ? (imageCount > 1
+      ? `${imageCount} photos of the SAME product from different angles are attached. Study them together to understand its full 3D structure and any moving/mechanical parts (e.g. a robot's joints, a truck's container). Ground the copy, spoken and every brollPrompt in its real appearance — color, form, structure, texture, finish — and use the angle that best shows the motion each scene needs.`
+      : 'A photo of the actual product is attached. Ground the copy, spoken and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.') : '',
     details ? `Product facts / claims — use ONLY these, do not invent additional claims:\n${details}` : '',
     audience ? `Target audience: ${audience}` : '',
     `Format: ${format}`,

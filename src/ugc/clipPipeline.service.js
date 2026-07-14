@@ -50,7 +50,7 @@ async function mapLimit(items, limit, fn) {
  * @returns {Promise<{ sceneN:number, clipUrl:string|null, durationMs:number, isStill:boolean, imageUrl:string|null, error?:string }>}
  */
 async function renderSceneClip(scene, opts) {
-  const { referenceImagePath = null, referenceKind = 'person', productImagePath = null, modelImagePath = null,
+  const { referenceImagePath = null, referenceKind = 'person', productImagePath = null, productImagePaths = null, modelImagePath = null,
     width = REELS_W, height = REELS_H, aspect = '9:16', dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
   const durationMs = Math.round((scene.durationSec || 3) * 1000);
   const prompt = scene.brollPrompt || scene.direction || '';
@@ -59,13 +59,16 @@ async function renderSceneClip(scene, opts) {
     return { sceneN: scene.n, clipUrl: null, durationMs, isStill: false, imageUrl: null, error: 'empty brollPrompt' };
   }
 
+  // 제품 레퍼런스(동일 제품 다각도): 배열 우선, 없으면 단일(하위호환). 전부 kind='product'로 넘겨 구조 파악↑.
+  const prodPaths = (Array.isArray(productImagePaths) && productImagePaths.length) ? productImagePaths.filter(Boolean)
+    : (productImagePath ? [productImagePath] : []);
   // 씬별 레퍼런스 라우팅: 모델씬(subject:'model')=모델+제품, 그 외=제품(또는 하위호환 단일 ref)
   let references = [];
   if (scene.subject === 'model' && modelImagePath) {
     references.push({ path: modelImagePath, kind: 'person' });
-    if (productImagePath) references.push({ path: productImagePath, kind: 'product' });
-  } else if (productImagePath) {
-    references = [{ path: productImagePath, kind: 'product' }];
+    for (const p of prodPaths) references.push({ path: p, kind: 'product' });
+  } else if (prodPaths.length) {
+    references = prodPaths.map((p) => ({ path: p, kind: 'product' }));
   } else if (referenceImagePath) {
     references = [{ path: referenceImagePath, kind: referenceKind }];
   }

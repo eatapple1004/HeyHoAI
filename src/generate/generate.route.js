@@ -902,6 +902,8 @@ router.get('/video/jobs/:id', async (req, res, next) => {
 //   대본→broll 클립(이미지→모션)→ffmpeg 조립. 다단계라 자체 오케스트레이션(ugcVideo.service).
 const ugcVideoService = require('../ugc/ugcVideo.service');
 
+const UGC_MAX_PRODUCT_IMAGES = 5; // 동일 제품 다각도 레퍼런스 상한(각도 커버 충분 + Gemini 페이로드 적정)
+
 // 업로드 제품 사진 → tmp/images(nanoBanana가 reference로 읽는 위치) 저장 → 경로 반환
 function saveProductImage(req) {
   const pf = req.files?.productImage?.[0];
@@ -913,20 +915,34 @@ function saveProductImage(req) {
   return dest;
 }
 
+// 업로드된 제품 사진들(동일 제품 다각도) → tmp/images 저장 → 경로 배열. 없으면 [].
+function saveProductImages(req) {
+  const files = (req.files?.productImage) || [];
+  const out = [];
+  for (const pf of files.slice(0, UGC_MAX_PRODUCT_IMAGES)) {
+    const dest = path.join(process.cwd(), 'tmp', 'images', `${crypto.randomUUID()}.png`);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(pf.path, dest);
+    try { fs.unlinkSync(pf.path); } catch {}
+    out.push(dest);
+  }
+  return out;
+}
+
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
-router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
+router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
     const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language } = req.body || {};
-    // 제품 사진 있으면 base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피)
-    let image = null;
-    const pf = req.files?.productImage?.[0];
-    if (pf) {
-      image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
+    // 제품 사진들(다각도) base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피·정확한 brollPrompt)
+    const images = [];
+    for (const pf of (req.files?.productImage || [])) {
+      try { images.push({ data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' }); } catch (e) {}
       try { fs.unlinkSync(pf.path); } catch {}
     }
+    const image = images[0] || null; // 하위호환(단일)
     const scN = Math.min(Math.max(parseInt(sceneCount, 10) || 0, 0), 12); // 씬 개수(0=자동, 최대 12)
     const scD = [3, 5, 10].includes(parseInt(sceneDuration, 10)) ? parseInt(sceneDuration, 10) : 0; // 씬 길이 3/5/10s(0=자동)
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en' });
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en' });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
@@ -960,7 +976,7 @@ router.post('/ugc/suggest-scenes', async (req, res, next) => {
 });
 
 // (선택) 제품 사진 → AI 컨셉 제안. 컨셉 쓰기 귀찮은 유저용. 무과금.
-router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
+router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
     const pf = req.files?.productImage?.[0];
     if (!pf) return res.status(400).json({ success: false, error: 'product image is required' });
@@ -975,7 +991,7 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
 });
 
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
-router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
+router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
     const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect } = req.body || {};
     let script;
@@ -990,7 +1006,7 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]
     const result = await ugcVideoService.render({
       user: req.user, script, product, concept,
       outputType: outputType || 'product-ad',
-      productImagePath: saveProductImage(req),
+      productImagePaths: saveProductImages(req), // 동일 제품 다각도 레퍼런스(1~5장)
       referenceImagePath: safeRef,
       modelImagePath: safeModel,
       aspect: safeAspect,
@@ -1011,25 +1027,15 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: 1 }]
 });
 
 // 원샷(하위호환): 대본+렌더 한방
-router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: 1 }]), async (req, res, next) => {
+router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
     const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
-    // 업로드한 제품 사진 → tmp/images(=nanoBanana가 reference로 읽는 위치)에 저장
-    let productImagePath = null;
-    const pf = req.files?.productImage?.[0];
-    if (pf) {
-      const dest = path.join(process.cwd(), 'tmp', 'images', `${crypto.randomUUID()}.png`);
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.copyFileSync(pf.path, dest);
-      try { fs.unlinkSync(pf.path); } catch {}
-      productImagePath = dest;
-    }
     const result = await ugcVideoService.submit({
       user: req.user,
       product, concept,
       outputType: outputType || 'product-ad',
-      productImagePath,                                 // product-ad: 유저 실제 제품 고정
+      productImagePaths: saveProductImages(req),        // product-ad: 유저 실제 제품 다각도 고정(1~5장)
       referenceImagePath: safeRefImage(referenceImagePath), // #1 보안: 로스터/업로드 경로만(absolute·traversal 거부)
 
       dryRunVideo: dryRun === true || dryRun === 'true', // LIVE 기본(false); 테스트만 true

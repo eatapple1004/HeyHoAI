@@ -251,9 +251,9 @@ function pruneComposites(R, keepBasename) {
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
  */
-async function generateScript({ product, concept, outputType = 'product-ad', image = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0, language = 'en' }) {
+async function generateScript({ product, concept, outputType = 'product-ad', image = null, images = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0, language = 'en' }) {
   if (!concept) { const e = new Error('concept is required'); e.statusCode = 400; throw e; }
-  const script = await generateUgcScript({ product, concept, outputType, image, details, voiceover, category, sceneCount, sceneDuration, language });
+  const script = await generateUgcScript({ product, concept, outputType, image, images, details, voiceover, category, sceneCount, sceneDuration, language });
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
   return { script, nClips, cost: estimateCost(script, false) };
@@ -264,15 +264,19 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  * @returns {Promise<{ jobId:string, cost:number }>}
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
-  referenceImagePath = null, productImagePath = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
+  referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
   audio = {} }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
 
-  // 레퍼런스: 업로드 제품 사진=제품 고정('product'), 없고 모델 ref면 인물 유지('person').
-  const refImage = productImagePath || referenceImagePath || null;
-  const refKind = productImagePath ? 'product' : 'person';
+  // 레퍼런스: 업로드 제품 사진들(동일 제품 다각도)=제품 고정('product'), 없고 모델 ref면 인물 유지('person').
+  //   productImagePaths(배열) 우선, 없으면 단일 productImagePath(하위호환), 그것도 없으면 referenceImagePath.
+  const prodPaths = (Array.isArray(productImagePaths) && productImagePaths.length) ? productImagePaths.filter(Boolean)
+    : (productImagePath ? [productImagePath] : []);
+  const refImages = prodPaths.length ? prodPaths : (referenceImagePath ? [referenceImagePath] : []);
+  const refImage = refImages[0] || null; // 하위호환(첫 장)
+  const refKind = prodPaths.length ? 'product' : 'person';
 
   // 과금(씬별 길이 반영) — statusCode 에러(402/403) 그대로 전파. 승인 후에만.
   const cost = estimateCost(script, isTemplate);
@@ -291,7 +295,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refKind, productImagePath: refImage, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -305,7 +309,7 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refKind, productImagePath, modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {} }) {
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {} }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
@@ -332,7 +336,7 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
     }
 
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정. 음성모드는 위에서 durationSec=음성길이.
-    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePath, modelImagePath, width: w, height: h, aspect, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
+    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const sceneClips = await persistSceneClips(clips); // 결과 편집(재배치·삭제·재생성)용 씬 클립 영속화
@@ -352,19 +356,22 @@ async function runPipeline({ jobId, script, refImage, refKind, productImagePath,
     const durationSec = Math.round((plan.meta.durationMs || 0) / 1000);
     await mediaStore.putFile(served); // 영속 스토리지 best-effort(라이브 404 방지)
 
-    // 편집(재조립/씬재생성)용: 대본 + 렌더 설정 + 레퍼런스 + 씬 클립을 영속화.
-    let productRef = null;
-    if (refImage) {
-      try { await mediaStore.putFile(refImage); } catch {} // 재배포 후 redo 대비 영속화
-      productRef = { clip: path.basename(refImage), kind: refKind || 'product' };
+    // 편집(재조립/씬재생성)용: 대본 + 렌더 설정 + 레퍼런스(다각도) + 씬 클립을 영속화.
+    //   products=배열(동일 제품 여러 각도). 하위호환으로 product=첫 장도 유지(옛 redo 코드 폴백).
+    const srcRefs = (Array.isArray(refImages) && refImages.length) ? refImages : (refImage ? [refImage] : []);
+    let products = [];
+    for (const rp of srcRefs) {
+      try { await mediaStore.putFile(rp); } catch {} // 재배포/cleanup 후 redo 대비 R2 영속화
+      products.push({ clip: path.basename(rp), kind: refKind || 'product' });
     }
+    const productRef = products[0] || null; // 하위호환(단일 필드)
     // 오디오 캐싱: 생성된 VO·음악을 영속화 + 캐시키 저장 → 이후 편집 시 안 바뀐 트랙 재사용(무재생성).
     const audioAssets = await buildAudioAssets(out.audioAssets, script, audio || {}, {});
     // B+ 재합성 토대: 무자막·무음 베이스(silentBase, 음악 교체용) + 자막 없는 미리보기 베이스(previewBase, 자막 1패스 재번인·오버레이용) + 자막 타이밍.
     const silentBase = await persistVideoFile(out.silentPath);
     const previewBase = await persistVideoFile(out.basePath);
     const persistedScript = { ...script, _render: {
-      audio: audio || {}, aspect, product: productRef, model: modelImagePath || null, audioAssets,
+      audio: audio || {}, aspect, product: productRef, products, model: modelImagePath || null, audioAssets,
       silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
     } };
     // 완성본 캐시 시드 — 최초 완성본(전 씬 v0)도 캐싱. 씬 재생성 후 되돌리면 첫 전환부터 즉시(재조립 0).
@@ -714,11 +721,14 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
   try {
     if (toRender.length) {
       const { w, h } = aspectDims(aspect);
-      const rp = script._render && script._render.product;
-      const productLocal = rp && rp.clip ? await restoreClipLocal(rp.clip) : null;
-      // 원본에 제품 레퍼런스가 있었는데 복원 실패 → off-brand 이미지 생성+과금 방지(환불되게 throw)
-      if (rp && rp.clip && !productLocal) throw Object.assign(new Error('Product reference is no longer available — cannot re-generate this scene'), { statusCode: 410 });
-      const productKind = (rp && rp.kind) || 'product';
+      const R0 = script._render || {};
+      // 다각도 레퍼런스 복원: products(배열) 우선, 없으면 product(단일, 옛 잡). 전부 R2/로컬 복원.
+      const refEntries = (Array.isArray(R0.products) && R0.products.length) ? R0.products : (R0.product ? [R0.product] : []);
+      const productKind = (refEntries[0] && refEntries[0].kind) || 'product';
+      const productLocals = [];
+      for (const e of refEntries) { if (!e || !e.clip) continue; const lp = await restoreClipLocal(e.clip); if (lp) productLocals.push(lp); }
+      // 원본에 제품 레퍼런스가 있었는데 하나도 복원 못 함 → off-brand 이미지 생성+과금 방지(환불되게 throw)
+      if (refEntries.length && !productLocals.length) throw Object.assign(new Error('Product reference is no longer available — cannot re-generate this scene'), { statusCode: 410 });
       const modelPath = (script._render && script._render.model) || null;
       for (const s of toRender) {
         // 재생성 씬만 자연어 지시 반영(새 씬은 generateAddScene이 프롬프트 이미 생성) → Claude 이미지/모션 라우팅
@@ -728,8 +738,8 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
           s.brollPrompt = refined.brollPrompt; s.direction = refined.direction; s.summary = refined.summary;
         }
         const clip = await renderSceneClip(s, {
-          productImagePath: productKind === 'product' ? productLocal : null,
-          referenceImagePath: productKind === 'product' ? null : productLocal,
+          productImagePaths: productKind === 'product' ? productLocals : [],
+          referenceImagePath: productKind === 'product' ? null : (productLocals[0] || null),
           referenceKind: productKind, modelImagePath: modelPath,
           width: w, height: h, aspect, dryRunVideo,
           log: (m) => log.info(`[re-render ${jobId}] ${m}`),
