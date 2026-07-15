@@ -1083,6 +1083,19 @@ router.post('/ugc/re-render', async (req, res, next) => {
     const b = req.body || {};
     const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
     const parseObj = (v) => { if (v && typeof v === 'object' && !Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return {}; } } return {}; };
+    // Edit scene 추가 레퍼런스(base64, 최대 3) → tmp/images 저장 → 경로. 그 씬 재생성에만 일회성 참고.
+    const editRefPaths = [];
+    for (const dataB64 of (Array.isArray(b.editRefImages) ? b.editRefImages.slice(0, 3) : [])) {
+      if (typeof dataB64 !== 'string' || !dataB64) continue;
+      try {
+        const buf = Buffer.from(dataB64.replace(/^data:[^,]*,/, ''), 'base64');
+        if (!buf.length || buf.length > 12 * 1024 * 1024) continue; // 빈/과대(>12MB) 방어
+        const dest = path.join(process.cwd(), 'tmp', 'images', `${crypto.randomUUID()}.png`);
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, buf);
+        editRefPaths.push(dest);
+      } catch (e) {}
+    }
     const params = {
       user: req.user,
       jobId: String(b.jobId || ''),
@@ -1091,6 +1104,7 @@ router.post('/ugc/re-render', async (req, res, next) => {
       edits: parseObj(b.edits),
       redoScenes: parseArr(b.redoScenes), // 씬 재생성(과금)
       editInstructions: parseObj(b.editInstructions), // 자연어 수정 지시(Claude 이미지/모션 라우팅)
+      editRefPaths, // Edit scene 추가 레퍼런스 경로(그 씬 재생성 시 기존 제품ref와 합쳐 참고)
       addScenes: parseArr(b.addScenes), // 새 씬 추가([{instruction}], 자연어 or 빈=AI 제안)
       musicVibe: (b.musicVibe === undefined || b.musicVibe === null) ? null : String(b.musicVibe), // 음악만 교체(무과금)
       voice: (b.voice === undefined || b.voice === null) ? null : (b.voice === true || b.voice === 'true'), // 음성 on/off
