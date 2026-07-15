@@ -3330,6 +3330,7 @@ async function ugcReassemble(jobId,opts){
   const body={jobId,order,removed,edits};
   if(opts.redoScenes)body.redoScenes=opts.redoScenes;
   if(opts.editInstructions)body.editInstructions=opts.editInstructions;
+  if(opts.editRefs&&opts.editRefs.length)body.editRefImages=opts.editRefs; // Edit scene 추가 레퍼런스(base64, 그 씬 재생성 참고)
   if(opts.addScenes)body.addScenes=opts.addScenes;
   if(hasMusic)body.musicVibe=opts.musicVibe;
   if(hasVoice){ body.voice=opts.voice.voice; if(opts.voice.voiceId)body.voiceId=opts.voice.voiceId; if(opts.voice.speed)body.speed=opts.voice.speed; }
@@ -3540,34 +3541,62 @@ function ugcSceneSelectVersion(jobId,n,idx){
   ugcReflectEdit(jobId); // 재생기 클립 즉시 스왑 + 스트립 재렌더(활성/비활성 하이라이트 갱신)
 }
 // 씬 수정하기: 자연어 지시로 그 씬만 재생성(원본 프롬프트 미노출). 패널 토글.
+// Edit scene 추가 레퍼런스(그 씬 재생성에만 일회성 참고) — jobId별 File 배열, 최대 3장.
+var UGC_EDIT_REFS=Object.create(null); var UGC_EDIT_MAX_REF=3;
 function ugcToggleAdv(jobId,n){
   const b=ugcFindBatch(jobId); if(!b)return;
   const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
-  if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';return;}
-  wrap.dataset.n=String(n); wrap.style.display='';
+  if(String(wrap.dataset.n)===String(n)&&wrap.style.display!=='none'){wrap.style.display='none';wrap.dataset.n='';delete UGC_EDIT_REFS[jobId];return;}
+  wrap.dataset.n=String(n); wrap.style.display=''; delete UGC_EDIT_REFS[jobId]; // 씬 바꿔 열면 이전 첨부 초기화
   // 헤더 번호 = 현재 위치(카드 배지 i+1과 일치). n은 내부 식별키(edits·versions·redo·자막)라 재배치 후 위치와 달라질 수 있어, 표시는 위치로.
   const pos=(b.ugc.scenes.findIndex(s=>Number(s.n)===Number(n))+1)||n;
   // 음성이 영상 전체 통 나레이션 한 트랙 → 씬별 Timing(lead-in/tail) 제거. 씬 수정=재생성만.
   wrap.innerHTML='<div class="ugc-adv-hd">Scene '+pos+'</div>'
     +'<div class="ugc-adv-sec"><div class="ugc-adv-sech">✎ Re-generate scene <span class="ugc-adv-paid">uses credits</span></div>'
-    +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder · Brighter background"></textarea>'
+    +'<textarea class="ugc-adv-ta" spellcheck="false" placeholder="e.g. Make the lipstick redder · Brighter background · or attach a reference below"></textarea>'
+    +'<input type="file" class="ugc-adv-reffile" accept="image/*" multiple style="display:none" onchange="ugcAdvAddRef(\''+esc(jobId)+'\',this)">'
+    +'<div class="ugc-adv-refstrip" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px"></div>'
+    +'<button type="button" class="ugc-adv-refbtn" onclick="ugcAdvPickRef(\''+esc(jobId)+'\')" style="background:transparent;border:1px dashed var(--border2,#2a2a38);color:var(--accent2,#b3a7ff);border-radius:7px;font-size:11.5px;font-weight:600;padding:5px 11px;cursor:pointer;margin:2px 0 8px">＋ Add reference image (optional)</button>'
     +'<div class="ugc-adv-row"><button type="button" class="ugc-apply ugc-regen" onclick="ugcAdvRegen(\''+esc(jobId)+'\','+n+')">Re-generate — uses credits</button>'
     +'<button type="button" class="ugc-reset" onclick="ugcToggleAdv(\''+esc(jobId)+'\','+n+')">Close</button></div></div>';
 }
+function ugcAdvPickRef(jobId){ const w=document.getElementById('ugcAdv-'+jobId); const inp=w&&w.querySelector('.ugc-adv-reffile'); if(inp)inp.click(); }
+function ugcAdvAddRef(jobId,input){
+  const files=Array.prototype.slice.call(input.files||[]); input.value='';
+  const arr=UGC_EDIT_REFS[jobId]||(UGC_EDIT_REFS[jobId]=[]);
+  for(let i=0;i<files.length;i++){ if(arr.length>=UGC_EDIT_MAX_REF)break; arr.push(files[i]); }
+  ugcAdvRenderRefs(jobId);
+}
+function ugcAdvRenderRefs(jobId){
+  const wrap=document.getElementById('ugcAdv-'+jobId); if(!wrap)return;
+  const strip=wrap.querySelector('.ugc-adv-refstrip'); if(!strip)return;
+  const arr=UGC_EDIT_REFS[jobId]||[];
+  strip.innerHTML=arr.map(function(f,i){ const url=URL.createObjectURL(f);
+    return '<div class="ref-tile" style="width:56px;height:56px;background-image:url(\''+url+'\')" title="'+esc(f.name||'reference')+'"><button type="button" class="ref-x" onclick="ugcAdvRemoveRef(\''+esc(jobId)+'\','+i+')">✕</button></div>';
+  }).join('');
+  const btn=wrap.querySelector('.ugc-adv-refbtn'); if(btn)btn.style.display=arr.length>=UGC_EDIT_MAX_REF?'none':'';
+}
+function ugcAdvRemoveRef(jobId,i){ const arr=UGC_EDIT_REFS[jobId]||[]; arr.splice(i,1); ugcAdvRenderRefs(jobId); }
+function ugcFileToBase64(f){ return new Promise(function(res){ const r=new FileReader(); r.onload=function(){ res(String(r.result).split(',').pop()); }; r.onerror=function(){res(null);}; r.readAsDataURL(f); }); }
 async function ugcAdvRegen(jobId,n){
   const wrap=document.getElementById('ugcAdv-'+jobId); const ta=wrap&&wrap.querySelector('.ugc-adv-ta');
-  const val=ta?ta.value.trim():''; if(!val){toast('Describe the change first');return;}
+  const val=ta?ta.value.trim():'';
+  const refFiles=UGC_EDIT_REFS[jobId]||[];
+  if(!val&&!refFiles.length){toast('Describe the change or add a reference image');return;}
   const _b=ugcFindBatch(jobId); const pos=(_b?_b.ugc.scenes.findIndex(s=>Number(s.n)===Number(n))+1:0)||n; // confirm 번호도 현재 위치(카드 배지 일치)
   if(!confirm('Re-generate scene '+pos+' with this change? This uses credits.'))return;
   const btn=wrap.querySelector('.ugc-regen'); const o=btn?btn.textContent:''; // 전용 클래스 — timing "Apply — free" 오선택 회피
   const cont=ugcCont(jobId); const card=cont&&cont.querySelector('.usc[data-n="'+n+'"]'); // 재생성 중 해당 씬 카드에 로딩 스피너
-  const ins={}; ins[n]=val;
+  const ins={}; if(val)ins[n]=val; // 지시문 있으면만(이미지만으로도 재생성 가능)
+  // 추가 레퍼런스 이미지 → base64(그 씬 재생성에만 참고, express.json 50mb 한도 내)
+  let editRefs=null;
+  if(refFiles.length){ editRefs=[]; for(const f of refFiles){ const bb=await ugcFileToBase64(f); if(bb)editRefs.push(bb); } }
   // redoScenes(과금) + 미적용 dirty 편집(ugcReassemble이 body.edits로 함께 전송)이 서버에서 같이 반영됨 → 편집 안 날림
-  await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,setBusy:function(on){
+  await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,editRefs:editRefs,setBusy:function(on){
     if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}
     if(card)card.classList.toggle('usc-busy',on);
   }});
-  if(wrap){wrap.style.display='none';wrap.dataset.n='';}
+  if(wrap){wrap.style.display='none';wrap.dataset.n='';} delete UGC_EDIT_REFS[jobId];
 }
 // 새 씬 추가: 자연어 지시 or AI 제안(빈칸)으로 영상 끝에 씬 하나 생성(과금). 드래그로 위치 이동 가능.
 function ugcAddScene(jobId){

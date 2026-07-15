@@ -642,7 +642,7 @@ function applySceneCaptionTimings(subtitle, timings, durMs) {
 function reRender(params) {
   return chainRun(params && params.jobId, () => _reRenderImpl(params));
 }
-async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = {}, dryRunVideo = false }) {
+async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = {}, redoScenes = [], editInstructions = {}, editRefPaths = [], addScenes = [], musicVibe = null, voice = null, voiceId = null, speed = null, subtitleStyle = null, narration = null, captionTimings = null, setVersions = {}, dryRunVideo = false }) {
   // B+ 값싼 경로 우선: 자막(텍스트/스타일·타이밍)·음악·음성/나레이션만 바뀌면 베이스에서 재합성(클립/재타이밍 0). 처리 불가면 null → 아래 전체 경로.
   const cheap = await tryReComposite({ user, jobId, order, removed, edits, redoScenes, addScenes, musicVibe, voice, voiceId, speed, subtitleStyle, narration, captionTimings, setVersions });
   if (cheap) return cheap;
@@ -730,6 +730,8 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
       // 원본에 제품 레퍼런스가 있었는데 하나도 복원 못 함 → off-brand 이미지 생성+과금 방지(환불되게 throw)
       if (refEntries.length && !productLocals.length) throw Object.assign(new Error('Product reference is no longer available — cannot re-generate this scene'), { statusCode: 410 });
       const modelPath = (script._render && script._render.model) || null;
+      // Edit scene 추가 레퍼런스(이번 재생성에만 참고) — 이미 tmp/images에 저장된 로컬 경로. 제품 레퍼런스에 합침(product-ad).
+      const editExtra = (Array.isArray(editRefPaths) ? editRefPaths.filter(Boolean) : []);
       for (const s of toRender) {
         // 재생성 씬만 자연어 지시 반영(새 씬은 generateAddScene이 프롬프트 이미 생성) → Claude 이미지/모션 라우팅
         const ins = redoSet.has(s.n) ? (editInstructions[s.n] != null ? editInstructions[s.n] : editInstructions[String(s.n)]) : null;
@@ -738,8 +740,8 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
           s.brollPrompt = refined.brollPrompt; s.direction = refined.direction; s.summary = refined.summary;
         }
         const clip = await renderSceneClip(s, {
-          productImagePaths: productKind === 'product' ? productLocals : [],
-          referenceImagePath: productKind === 'product' ? null : (productLocals[0] || null),
+          productImagePaths: productKind === 'product' ? [...productLocals, ...editExtra] : editExtra,
+          referenceImagePath: productKind === 'product' ? null : (editExtra.length ? null : (productLocals[0] || null)),
           referenceKind: productKind, modelImagePath: modelPath,
           width: w, height: h, aspect, dryRunVideo,
           log: (m) => log.info(`[re-render ${jobId}] ${m}`),
