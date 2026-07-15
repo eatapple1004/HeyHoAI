@@ -760,8 +760,11 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
       }
     }
     // 씬 버전 전환(무과금): 지정 씬의 활성 클립을 versions[idx]로 교체(재조립만, Kling 0). 렌더 뒤·복원 앞에 적용.
+    //   ⚠️ 방금 재생성(redo)·추가(added)한 씬은 스킵 — 새로 만든 버전을 활성으로 유지해야 함. 프론트가 자동으로
+    //   보내는 setVersions(재생성 前 활성)가 새 버전을 옛 버전으로 되돌려 "새 버전이 안 보이던" 버그 방지.
     for (const k in (setVersions || {})) {
       const n = Number(k), idx = Number(setVersions[k]);
+      if (redoSet.has(n) || addedNs.has(n)) continue; // 재생성/추가 씬은 새 버전 활성 유지
       const cur = sceneClips[n] || sceneClips[String(n)];
       if (cur && Array.isArray(cur.versions) && cur.versions[idx]) {
         sceneClips[n] = Object.assign(stripClipEntry(cur.versions[idx]), { versions: cur.versions, v: idx });
