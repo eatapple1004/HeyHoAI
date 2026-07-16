@@ -3144,7 +3144,8 @@ function ugcSceneStripHtml(b){
     const mainCard=()=>{ const isVid=s.clipUrl&&!s.isStill&&/\.(mp4|webm|mov)(\?|$)/i.test(s.clipUrl);
       const zoomUrl=isVid?s.clipUrl:(s.thumb||''); const zoomClick=zoomUrl?` onclick="openImageModal('${esc(zoomUrl)}','${isVid?'reel':'photo'}')" style="cursor:zoom-in"`:'';
       const label=multi?`${i+1}-${activeV+1}`:`${i+1}`;
-      return `<div class="usc" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
+      const busyCls=(u._busyN&&u._busyN[s.n])?' usc-busy':''; // 재생성 진행 표시(상태 기반) — 재렌더·버전카드·큐에도 유지
+      return `<div class="usc${busyCls}" data-n="${s.n}" ondragover="ugcDragOver(event)" ondragleave="ugcDragLeave(event)" ondrop="ugcDrop(event,'${esc(u.jobId)}',${s.n})">
       <div class="usc-thumb" draggable="true" ondragstart="ugcDragStart(event,'${esc(u.jobId)}',${s.n})" ondragend="ugcDragEnd(event)"${zoomClick} title="Drag to reorder · tap to enlarge">${thumbHtml(s.clipUrl,s.thumb,!!s.isStill)}<span class="usc-idx">${label}</span>${multi?`<span class="usc-sel-badge" title="Selected version">✓</span>`:''}</div>
       ${u.hasVoice?`<div class="usc-line"><span class="usc-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span><div class="usc-cap" contenteditable="true" data-n="${s.n}"
            title="${UGC_CAPTIONS?'Edit what\'s said (voice) & shown (caption) in this scene':'Edit the voice narration for this scene'}" data-ph="What's said in this scene…" onblur="ugcSceneEditVoice(this,'${esc(u.jobId)}',${s.n})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(cap)}</div></div>`:''/* 음악모드(음성 없음)=씬별 음성/자막 줄 숨김(음성 언급 제거) */}
@@ -3367,7 +3368,7 @@ async function ugcReassemble(jobId,opts){
         u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{});});
         u.scenes=u._orig.map(s=>Object.assign({},s));
       }
-      u.edits={}; u._dirty=false;
+      u.edits={}; u._dirty=false; u._busyN={}; // 완료 → 재생성 진행 표시 클리어(큐 대기분은 발사 시 다시 세팅)
       // #11: 재렌더(재생기 파기·재마운트) 전 재생위치·소리상태 보존 → ugcMountLayered가 seekTo+언뮤트 복원(t=0·재음소거 방지)
       { const _rL=UGC_LAYERED[jobId]; if(_rL&&_rL.player){ u._resume={ time:_rL.player.currentTime(), unmuted:!!(_rL.audio&&((_rL.audio.voice&&!_rL.audio.voice.muted)||(_rL.audio.music&&!_rL.audio.music.muted))) }; } }
       if(u.previewUrl)await ugcPreloadVideo(u.previewUrl); // 새 미리보기를 먼저 받아둠(immutable 캐시) → 아래 렌더가 브라우저 캐시서 즉시 스왑(버전전환 로딩 체감 제거)
@@ -3510,11 +3511,16 @@ function ugcAutoCommit(b){
 }
 window.addEventListener('beforeunload',function(){ try{ (STUDIO_BATCHES||[]).forEach(ugcAutoCommit); }catch(_){} });
 // P2 — 이 씬만 재생성(과금). 현재 순서/삭제/자막 편집도 함께 반영.
+// 씬 재생성 진행 표시(상태 기반) — DOM 클래스 토글 대신 u._busyN에 저장하고 스트립만 재렌더.
+//   버전카드(N-1·N-2…)·renderStudioResults 재렌더·동시편집 큐 어디서도 스피너가 안 깨짐(활성 카드에 항상 표시).
+function ugcSetSceneBusy(jobId,n,on){
+  const b=ugcFindBatch(jobId); if(!b||!b.ugc)return; const u=b.ugc;
+  u._busyN=u._busyN||{}; if(on)u._busyN[n]=1; else delete u._busyN[n];
+  if(typeof ugcRefreshStrip==='function')ugcRefreshStrip(jobId);
+}
 async function ugcSceneRedo(jobId,n){
   if(!confirm('Re-generate this scene? This uses credits (about one video clip). Your current version is kept — you can switch back.'))return;
-  // setBusy는 매번 현재 DOM에서 씬 카드를 새로 조회 — 동시 편집 시 앞 작업 완료가 renderStudioResults로
-  //   스트립을 다시 그려도, 큐에서 발사된 이 재생성의 스피너가 정상 표시됨(캡처한 stale card 토글 버그 방지).
-  await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){const c=ugcCont(jobId)&&ugcCont(jobId).querySelector('.usc[data-n="'+n+'"]:not(.usc-dim)');if(c)c.classList.toggle('usc-busy',on);}});
+  await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){ugcSetSceneBusy(jobId,n,on);}});
 }
 // C: 비파괴 버전 전환(순환) — 이미 렌더된 클립 재사용이라 서버 왕복 0. 활성 버전을 로컬 교체 →
 //   재생기 클립만 스왑(즉시, 오디오 안 멈춤) + dirty 표시. 최종본 굽기는 Save 때 이 버전으로(setVersions 자동 반영).
@@ -3595,7 +3601,7 @@ async function ugcAdvRegen(jobId,n){
   //   setBusy는 매번 현재 DOM에서 씬 카드를 새로 조회(동시 편집 시 재렌더로 stale 되는 캡처 card 토글 버그 방지).
   await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,editRefs:editRefs,setBusy:function(on){
     if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}
-    const c=ugcCont(jobId)&&ugcCont(jobId).querySelector('.usc[data-n="'+n+'"]:not(.usc-dim)'); if(c)c.classList.toggle('usc-busy',on);
+    ugcSetSceneBusy(jobId,n,on);
   }});
   if(wrap){wrap.style.display='none';wrap.dataset.n='';} delete UGC_EDIT_REFS[jobId];
 }
