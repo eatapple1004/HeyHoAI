@@ -3514,7 +3514,7 @@ async function ugcSceneRedo(jobId,n){
   if(!confirm('Re-generate this scene? This uses credits (about one video clip). Your current version is kept — you can switch back.'))return;
   // setBusy는 매번 현재 DOM에서 씬 카드를 새로 조회 — 동시 편집 시 앞 작업 완료가 renderStudioResults로
   //   스트립을 다시 그려도, 큐에서 발사된 이 재생성의 스피너가 정상 표시됨(캡처한 stale card 토글 버그 방지).
-  await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){const c=ugcCont(jobId)&&ugcCont(jobId).querySelector('.usc[data-n="'+n+'"]');if(c)c.classList.toggle('usc-busy',on);}});
+  await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){const c=ugcCont(jobId)&&ugcCont(jobId).querySelector('.usc[data-n="'+n+'"]:not(.usc-dim)');if(c)c.classList.toggle('usc-busy',on);}});
 }
 // C: 비파괴 버전 전환(순환) — 이미 렌더된 클립 재사용이라 서버 왕복 0. 활성 버전을 로컬 교체 →
 //   재생기 클립만 스왑(즉시, 오디오 안 멈춤) + dirty 표시. 최종본 굽기는 Save 때 이 버전으로(setVersions 자동 반영).
@@ -3595,7 +3595,7 @@ async function ugcAdvRegen(jobId,n){
   //   setBusy는 매번 현재 DOM에서 씬 카드를 새로 조회(동시 편집 시 재렌더로 stale 되는 캡처 card 토글 버그 방지).
   await ugcReassemble(jobId,{redoScenes:[n],editInstructions:ins,editRefs:editRefs,setBusy:function(on){
     if(btn){btn.disabled=on;btn.textContent=on?'Re-generating…':o;}
-    const c=ugcCont(jobId)&&ugcCont(jobId).querySelector('.usc[data-n="'+n+'"]'); if(c)c.classList.toggle('usc-busy',on);
+    const c=ugcCont(jobId)&&ugcCont(jobId).querySelector('.usc[data-n="'+n+'"]:not(.usc-dim)'); if(c)c.classList.toggle('usc-busy',on);
   }});
   if(wrap){wrap.style.display='none';wrap.dataset.n='';} delete UGC_EDIT_REFS[jobId];
 }
