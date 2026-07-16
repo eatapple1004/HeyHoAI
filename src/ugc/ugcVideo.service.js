@@ -428,16 +428,26 @@ async function restoreClipLocal(basename) {
  *
  * 목록으로 돌려주는 이유: 지금 UI는 1개만 그리지만(renderUgcInline이 .find()),
  * 동시 N개로 갈 때 이 엔드포인트를 그대로 쓰기 위함.
+ *
+ * ⚠️ maxAgeMinutes — 고아 잡을 물고 늘어지지 않기 위한 안전장치.
+ *   렌더 중에는 script가 NULL이다(runPipeline이 끝날 때 status='succeeded'와 함께 기록).
+ *   그런데 reapStaleProcessing은 `AND script IS NOT NULL` 조건이라 최초 렌더 도중
+ *   프로세스가 죽으면(pm2 reload=배포, OOM) 그 잡은 processing에 영구히 갇히고 회수되지 않는다.
+ *   그 상태로 이 목록에 계속 잡히면 Studio를 열 때마다 클라가 붙어 최대 16분 폴링하고
+ *   (pollUgcJob은 240회 상한) 그동안 genActive>0이라 대본 작성까지 막힌다.
+ *   실제 렌더는 몇 분이고 폴링도 ~16분에 포기하므로, 그보다 넉넉한 30분을 넘긴 processing은
+ *   살아있지 않다고 보고 목록에서 뺀다. (근본 해결 = 최초 렌더 크래시를 failed+환불로 회수하는 것)
  */
-async function listActiveJobs(userId) {
+async function listActiveJobs(userId, { maxAgeMinutes = 30 } = {}) {
   const r = await query(
     `SELECT id, status, title, product, concept, output_type, n_clips, created_at
      FROM ugc_jobs
-     WHERE status = 'processing' AND (
-       user_id = $1 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)))
+     WHERE status = 'processing'
+       AND updated_at > now() - ($2 * interval '1 minute')
+       AND (user_id = $1 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)))
      ORDER BY created_at DESC
      LIMIT 20`,
-    [userId]
+    [userId, maxAgeMinutes]
   );
   return r.rows;
 }
