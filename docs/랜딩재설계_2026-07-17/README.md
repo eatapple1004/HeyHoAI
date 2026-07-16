@@ -1,6 +1,7 @@
 # 랜딩 재설계 (2026-07-17) — 다음 세션 진입점
 
-> `upstream/main = 80fb3a7`. 7커밋 전부 푸시됨. **미배포.**
+> `upstream/main = 2690aa9`(푸시됨) + **로컬 `f51c958` 상업권 착지(미푸시)**. **전부 미배포.**
+> 배포 전 필독: 아래 「🔴 배포 안 됨」의 **pm2 restart 필수**(브리핑의 'pm2 불필요'는 상업권 커밋으로 무효).
 
 ## 이 폴더
 
@@ -32,13 +33,18 @@ f21ed73  거짓 제거 — 보장문 4곳·누끼·게시연동 + 갤러리 Appa
 ## 🔴 배포 안 됨
 
 ```bash
-cd /home/ubuntu/HeyHoAI && git pull      # → 80fb3a7
-# ⚠️ migrate 누적분 확인 (테마 8테이블 · macro_group 등). 이번 7커밋은 스키마 0이지만
+cd /home/ubuntu/HeyHoAI && git pull      # → f51c958 (상업권 착지 포함)
+# ⚠️ migrate 누적분 확인 (테마 8테이블 · macro_group 등). 이번 커밋들은 스키마 0이지만
 #    미배포분이 같이 얹히면 /owned가 500날 수 있다.
+pm2 restart <app>                        # ⚠️ 필수 — 아래 참조
 # Cloudflare Purge:
-#   landing.html · ko.html · js/pricing.js · js/i18n.js · robots.txt · sitemap.xml · 16개 앱 html
+#   landing.html · ko.html · terms.html · js/pricing.js · js/i18n.js · robots.txt · sitemap.xml · 16개 앱 html
 ```
-**pm2 불필요** — `src/` 변경 0. `index.js`도 안 건드렸다(clean URL 정규식 `:80`이 `/ko`를 이미 매칭).
+**⚠️ pm2 restart 필수** (2026-07-17 상업권 커밋 `f51c958`부터 바뀜).
+`src/lib/entitlements.js`·`src/pricing/pricing.config.js`를 고쳤다 → **`/api/pricing`이 클라 임베드를 덮어쓰므로
+pm2를 안 올리면 서버가 옛 `license:'Personal'`을 계속 내려보낸다.**
+`index.js`는 여전히 무변경(clean URL 정규식 `:80`이 `/ko`를 이미 매칭).
+**`terms.html`도 퍼지 목록에 추가됐다** — 상업권 개정으로 본문이 바뀌었다.
 
 **배포 후 확인**: `https://doppia.ai/ko` 가 뜨는지. 로컬에선 정적 서버라 `/ko.html`로만 검증했다.
 
@@ -68,9 +74,11 @@ cd /home/ubuntu/HeyHoAI && git pull      # → 80fb3a7
 ### 🟡 결정 대기
 - `shots.tile.5` `Hero` → `대표컷`? 3안이 갈렸다(메인컷/대표컷/히어로컷). `대표컷`·`메인컷`은
   스마트스토어에서 **등록 슬롯**을 뜻해 오독 위험. Studio는 영문 UI라 셀러가 `Hero`로 본다.
-- 상업권 개방 — 승인됐으나 **미적용**. `entitlements.js` **:13 starter · :14 standard · :15 pro**
-  `commercial:false→true` + `terms.html:210` 표 **동시**(코드만 고치면 약관과 상충).
-  ⚠️ 브리핑의 `:14-16`은 off-by-one이다.
+- ~~상업권 개방~~ ✅ **완료** (2026-07-17 `f51c958`, 로컬 커밋 — 푸시 여부는 아래 확인).
+  `entitlements.js:13-15` `commercial:false→true` + `terms.html` 제8조②(`:149`) · 제13조② 표(`:210-211`) + 부칙 ③.
+  **⚠️ 문서들이 `:210`만 지목했으나 `:149`에도 같은 티어 분류가 산문으로 있었다** — 210만 고치면 약관이 자기모순.
+  런타임 변경 0(`ent.commercial` 소비자 = `subscription.service.js:66` 에코 1곳뿐, 게이트 없음).
+  → 이로써 `landing.html:714` "only the amount changes"가 참이 됐다. **배포 차단 해제.**
 - 무료 크레딧 금액 — 인상만 확정, 금액 미정. 랜딩은 `data-dp` 바인딩이라 재작성 0.
 - 워터마크 배선 vs 폐기 — 어느 쪽이든 지금은 안 판다.
 
