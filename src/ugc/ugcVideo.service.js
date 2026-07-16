@@ -820,6 +820,7 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
       R2.silentBase = hit.silent || null;
       if (hit.caption) R2.caption = hit.caption;
       const durationSec = hit.durationSec || Math.round((plan.meta.durationMs || 0) / 1000);
+      R2.durationMs = (durationSec * 1000) || plan.meta.durationMs || R2.durationMs || 0; // 활성 완성본 길이 반영 → 이후 '음악만 교체'가 이 길이로 재생성
       const servedHit = path.join(servedDir, hit.file);
       if (row.result_idx) { // committed 후에만 generation_results in-place 갱신(draft는 스킵)
         await query(`UPDATE generation_results SET file_path=$2, file_size_kb=$3, metadata=$4 WHERE idx=$1`,
@@ -870,6 +871,7 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
       if (previewBase) script._render.previewBase = previewBase;
       if (silentBase) script._render.silentBase = silentBase;
       if (out.caption) script._render.caption = out.caption;
+      script._render.durationMs = plan.meta.durationMs || 0; // 씬 추가/삭제로 바뀐 현재 길이 반영 → 이후 '음악만 교체'가 이 길이로 재생성(옛 길이로 음악 짧아지고 영상 잘리던 버그 방지)
       storeComposite(script._render, ckey, { file: filename, preview: previewBase, silent: silentBase, caption: out.caption, durationSec, subtitleMode: out.subtitleMode }, filename);
     }
     if (row.result_idx) { // committed(저장됨) 후 편집만 generation_results 반영. draft는 result_idx 없어 스킵.
