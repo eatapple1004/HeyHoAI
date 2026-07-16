@@ -452,6 +452,31 @@ async function listActiveJobs(userId, { maxAgeMinutes = 30 } = {}) {
   return r.rows;
 }
 
+/**
+ * 완성됐지만 아직 저장(commit) 안 된 잡 — "당신을 기다리는 것".
+ *
+ * 완성 ≠ 라이브러리다. runPipeline이 끝나면 status='succeeded'가 되지만 result_idx는 없고,
+ * generation_results 행은 commit(Save & finish 또는 이탈 시 sendBeacon 자동저장) 때 생긴다.
+ * 자동 커밋 스위퍼는 없다 → 렌더 중에 자리를 뜨면 영상이 draft로 남아 어디에도 안 보인다.
+ * (prod 실측: succeeded 88개 중 6개가 이 상태로 방치)
+ *
+ * 이걸 세어 레일 배지로 띄우고, Ad Video로 돌아왔을 때 복원해 저장할 수 있게 한다.
+ * maxAgeHours — 오래된 draft(며칠 전 테스트 등)가 배지에 영원히 남지 않도록.
+ */
+async function listPendingReview(userId, { maxAgeHours = 24 } = {}) {
+  const r = await query(
+    `SELECT id, status, title, product, concept, output_type, n_clips, updated_at
+     FROM ugc_jobs
+     WHERE status = 'succeeded' AND result_idx IS NULL AND result_url IS NOT NULL
+       AND updated_at > now() - ($2 * interval '1 hour')
+       AND (user_id = $1 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)))
+     ORDER BY updated_at DESC
+     LIMIT 20`,
+    [userId, maxAgeHours]
+  );
+  return r.rows;
+}
+
 /** 편집용 원본 잡 로드(소유권 게이트). script/scene_clips 원문 포함. */
 async function loadJobForEdit(id, userId) {
   const r = await query(
@@ -1167,4 +1192,4 @@ async function sceneStoryboardForResult(resultIdx) {
   return { hook, sceneCount: scenes.length, scenes };
 }
 
-module.exports = { generateScript, render, submit, getJob, listActiveJobs, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };
+module.exports = { generateScript, render, submit, getJob, listActiveJobs, listPendingReview, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };

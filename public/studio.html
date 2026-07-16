@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
 <script src="/js/i18n.js?v=11" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=10" defer></script>
+<script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/onboarding.js?v=25" defer></script>
@@ -5148,13 +5148,16 @@ function ugcFillPendingFromJob(pending, jobId, job, fallbackOutputType){
  * 화면이 아직 1개만 그리므로(renderUgcInline이 .find()) 최신 1개만 복원한다 — N개는 피드 전환(2단계) 후.
  */
 async function ugcRestoreActiveJobs(){
-  let list=[];
+  let list=[],drafts=[]; // ⚠️ 'pending'으로 쓰면 아래 const pending(배치)과 같은 스코프에서 재선언 → 블록 전체 파싱 실패
   try{
     const r=await fetch('/api/generate/ugc/jobs');
     const d=await r.json().catch(()=>null);
     list=(d&&d.success&&Array.isArray(d.data))?d.data:[];
+    drafts=(d&&d.success&&Array.isArray(d.pending))?d.pending:[];
   }catch(e){ return; } // 조회 실패는 조용히 — 없던 기능이라 새 에러를 만들지 않는다
-  if(!list.length)return;
+  // 렌더 중인 게 없고 "완성됐지만 미저장"만 있으면 그걸 붙인다(폴링 없이 바로 결과).
+  // 레일 배지가 이걸 세므로, 배지를 눌러 왔는데 빈 화면이면 안 된다.
+  if(!list.length){ if(drafts.length)await ugcRestoreDraft(drafts[0]); return; }
   const j=list[0];
   const hint=document.getElementById('ugcHint');
   const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true;
@@ -5185,6 +5188,33 @@ async function ugcRestoreActiveJobs(){
     if(box)box.classList.remove('rendering');
     loadCredits();
   }
+}
+
+/**
+ * 완성됐지만 저장 안 된 잡(draft)을 복원 — 렌더 중이 아니므로 폴링 없이 결과를 바로 붙인다.
+ *
+ * 자리를 뜬 사이 렌더가 끝나면 status='succeeded'가 되지만 commit 전이라 result_idx가 없고,
+ * 자동 커밋 스위퍼도 없어서 라이브러리에도 안 보인다 → 돌아와도 영상이 어디에도 없는 상태였다.
+ * 레일 배지가 이 draft를 세므로, 눌러서 왔을 때 반드시 여기 떠 있어야 한다(Save & finish 가능).
+ */
+async function ugcRestoreDraft(j){
+  let job=null;
+  try{
+    const r=await fetch('/api/generate/ugc/jobs/'+encodeURIComponent(j.id));
+    const d=await r.json().catch(()=>null);
+    job=(d&&d.success&&d.data)?d.data:null;
+  }catch(e){ return; }
+  if(!job||!job.resultUrl)return; // 결과 URL이 없으면 붙일 게 없다
+  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true;
+  pending.sceneCount=j.n_clips||5;
+  STUDIO_BATCHES.unshift(pending);
+  {const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
+   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';}
+  ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad'); // 새 렌더 완성 때와 같은 매핑
+  renderStudioResults();
+  ugcCompact({name:j.title||j.product||'',concept:j.concept||'',fmt:j.output_type,ar:''});
+  const hint=document.getElementById('ugcHint');
+  if(hint)hint.textContent='Your video finished while you were away — save it to your gallery.';
 }
 
 async function pollUgcJob(jobId){

@@ -24,7 +24,7 @@
   var items = [
     { h: '/home.html', l: 'Home', i: IC.home, m: ['/home'] }, // 정적 서빙(/home.html) — index.js 클린URL 라우트는 추후(충돌 회피)
     { h: '/studio', l: 'Studio', i: IC.studio, m: ['/studio'], q: '!ugc' },
-    { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc' },
+    { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
     // (2026-07-11) Community(explore) 레일 항목 제거 — 홈 하단 'Community Creations' 섹션이 좋아요·크리에이터 링크까지 기능 동등하게 대체. 롤백: 아래 주석 복원.
@@ -36,7 +36,7 @@
   // (2026-07-11) 레일 상단 브랜드/파비콘 클릭 비활성화 — 아무 동작 안 함(옛 onclick=/landing 제거). 롤백: onclick="location.href='/landing'" 복원.
   var html = '<div class="rail-brand" title="Doppia" style="cursor:default"><img src="/favicon-512.png" alt="Doppia"></div><div class="rail-nav">';
   items.forEach(function (it) {
-    html += '<a class="rail-item' + (active(it) ? ' active' : '') + '"' + (it.f ? ' data-flag="' + it.f + '"' : '') + ' onclick="location.href=\'' + it.h + '\'" title="' + it.l + '">' + it.i + '<span>' + it.l + '</span></a>';
+    html += '<a class="rail-item' + (active(it) ? ' active' : '') + '"' + (it.f ? ' data-flag="' + it.f + '"' : '') + (it.b ? ' data-badge="' + it.b + '"' : '') + ' onclick="location.href=\'' + it.h + '\'" title="' + it.l + '">' + it.i + '<span>' + it.l + '</span></a>';
   });
   html += '</div>';
   var rail = document.createElement('aside');
@@ -54,4 +54,59 @@
   if (pill) foot.appendChild(pill);
   if (userBox) foot.appendChild(userBox);
   if (foot.childNodes.length) rail.appendChild(foot);
+
+  /* ── Ad Video 배지 (2026-07-17) ────────────────────────────────────────────
+   * "Ad Video에서 나를 기다리는 것" = 렌더 중 + 완성됐지만 미저장(draft).
+   *
+   * 왜 '본 시각(seen)'을 안 쓰나: 배지가 *보면* 꺼지는 게 아니라 *처리하면* 꺼진다.
+   *   렌더 중 → 아직 있음 → 유지 / 완성·미저장 → 아직 있음 → 유지 / 저장됨 → 사라짐.
+   *   덕분에 localStorage도 seen_at 컬럼(=migrate)도 필요 없고, 배지는 항상 행동 가능하다.
+   *
+   * ⚠️ 이 파일은 11개 페이지가 공유한다. 여기서 예외가 새면 전 페이지 네비게이션이 죽는다.
+   *   → 레일은 위에서 이미 그려졌고, 아래는 전부 try/catch + 실패 시 조용히 배지 없이 간다.
+   *   → 미로그인(401)은 정상 상황이므로 조용히 멈춘다(saas-auth의 401 리다이렉트를 타지 않도록
+   *      /api/auth/ 가 아닌 경로의 401은 그쪽 래퍼가 처리하니, 여기선 응답만 보고 폴링을 끈다).
+   */
+  try {
+    var badgeEl = rail.querySelector('.rail-item[data-badge="advideo"]');
+    if (!badgeEl) return;
+    // 스타일은 theme.css가 아니라 여기 인라인 — theme.css를 고치면 그 캐시 버전을 20개 페이지에서
+    // 올려야 하고(개발자 소유 파일 포함 가능), 하나라도 옛 CSS를 캐시에서 받으면 배지가 스타일 없이
+    // 깨져 보인다. 인라인이면 바뀌는 파일이 rail.js 하나뿐이라 버전 관리도 한 군데서 끝난다.
+    badgeEl.style.position = 'relative';
+    var dot = document.createElement('i');
+    dot.style.cssText = 'position:absolute;top:4px;right:7px;min-width:15px;height:15px;padding:0 4px;'
+      + 'box-sizing:border-box;border-radius:8px;background:var(--accent2,#8b7cf6);color:#fff;'
+      + 'font-size:9.5px;font-weight:800;line-height:15px;text-align:center;font-style:normal;pointer-events:none';
+    dot.style.display = 'none';
+    badgeEl.appendChild(dot);
+
+    var timer = null;
+    var stopped = false;
+    function paint(n) {
+      try {
+        if (n > 0) { dot.textContent = n > 9 ? '9+' : String(n); dot.style.display = ''; badgeEl.title = 'Ad Video — ' + n + ' waiting'; }
+        else { dot.style.display = 'none'; badgeEl.title = 'Ad Video'; }
+      } catch (e) {}
+    }
+    function tick() {
+      if (stopped || document.hidden) return; // 숨은 탭은 폴링 안 함(유휴 부하·중복 방지)
+      fetch('/api/generate/ugc/jobs', { headers: { Accept: 'application/json' } })
+        .then(function (r) {
+          if (r.status === 401 || r.status === 403) { stopped = true; if (timer) clearInterval(timer); return null; } // 미로그인 → 조용히 종료
+          if (!r.ok) return null;
+          return r.json();
+        })
+        .then(function (d) {
+          if (!d || !d.success) return;
+          var a = Array.isArray(d.data) ? d.data.length : 0;
+          var p = Array.isArray(d.pending) ? d.pending.length : 0;
+          paint(a + p);
+        })
+        .catch(function () {}); // 네트워크 실패 = 배지 없이 감 (레일은 멀쩡)
+    }
+    tick();
+    timer = setInterval(tick, 60000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); }); // 탭 복귀 시 즉시 갱신
+  } catch (e) { /* 배지는 부가기능 — 실패해도 레일은 살아있어야 한다 */ }
 })();

@@ -1055,8 +1055,12 @@ router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_M
 // (반드시 '/ugc/jobs/:id' 보다 위에 둘 것 — 아래면 'jobs'가 :id로 먹힌다)
 router.get('/ugc/jobs', async (req, res, next) => {
   try {
-    const rows = await ugcVideoService.listActiveJobs(req.user.id);
-    res.json({ success: true, data: rows });
+    // data = 렌더 중 / pending = 완성됐지만 미저장(draft). 레일 배지 = 둘의 합 = "나를 기다리는 것".
+    const [rows, pending] = await Promise.all([
+      ugcVideoService.listActiveJobs(req.user.id),
+      ugcVideoService.listPendingReview(req.user.id),
+    ]);
+    res.json({ success: true, data: rows, pending });
   } catch (err) { next(err); }
 });
 
