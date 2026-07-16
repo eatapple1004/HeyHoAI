@@ -312,6 +312,28 @@
   .hx-origin .os{font-size:10.5px;color:var(--dim)}
   .hx-beam{position:absolute;left:6%;bottom:9%;width:44%;height:3px;background:linear-gradient(90deg,var(--accent),var(--pink));filter:blur(2px);transform:rotate(-33deg);transform-origin:left center;opacity:.5;z-index:4;pointer-events:none;animation:beamPulse 3.4s ease-in-out infinite}
   @keyframes beamPulse{0%,100%{opacity:.28}50%{opacity:.6}}
+  /* [LP] 히어로 우측 = 결과물 세로 마퀴 2열 ("1장 → 일주일치"를 물량으로 증명) */
+  .hx-mq{grid-row:1/3;position:relative;border-radius:18px;overflow:hidden;perspective:1200px;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 89%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 89%,transparent 100%)}
+  .mq-3d{position:absolute;inset:-7% 0;display:grid;grid-template-columns:1fr 1fr;gap:11px;
+    transform:rotateY(-6deg) rotateX(1.5deg);transform-origin:50% 50%}
+  .mq-col{overflow:hidden}
+  .mq-track{display:flex;flex-direction:column;will-change:transform;animation:mqUp 42s linear infinite}
+  .mq-col.dn .mq-track{animation-name:mqDn;animation-duration:52s}
+  .hx-mq:hover .mq-track{animation-play-state:paused}
+  .mq-card{position:relative;flex:none;margin-bottom:11px;border-radius:13px;overflow:hidden;
+    border:1px solid var(--border2);background:#0c0c12;aspect-ratio:4/5;
+    box-shadow:0 16px 38px -20px rgba(0,0,0,.95)}
+  .mq-card img{width:100%;height:100%;object-fit:cover;display:block}
+  .mq-card .t{position:absolute;top:7px;left:7px;z-index:2;font-size:9.5px;font-weight:800;letter-spacing:.3px;
+    color:#fff;background:rgba(0,0,0,.5);backdrop-filter:blur(5px);padding:3px 7px;border-radius:6px}
+  .hx-mq::after{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
+    background:radial-gradient(115% 65% at 50% 50%,transparent 45%,rgba(8,8,14,.5))}
+  @keyframes mqUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+  @keyframes mqDn{from{transform:translateY(-50%)}to{transform:translateY(0)}}
+  @media(prefers-reduced-motion:reduce){.mq-track{animation:none}}
+  @media(max-width:900px){.hx-mq{grid-row:auto;height:330px;perspective:none}.mq-3d{inset:0;transform:none}}
   @media(max-width:900px){.hx{grid-template-columns:1fr;gap:30px;text-align:left}.hx-grid{height:auto;grid-template-rows:auto}.rslot{aspect-ratio:9/16;grid-row:auto}.fan-pic{aspect-ratio:1}.hx-origin{position:static;margin-top:8px}.hx-beam{display:none}}
 
   /* live transform demo */
@@ -356,14 +378,13 @@
   .gtile .gt-b{position:absolute;top:8px;left:8px;font-size:9px;font-weight:800;color:#07070c;background:var(--gold);padding:3px 7px;border-radius:6px}
   .gtile.hide{display:none}
 
-  /* pricing: collapse to 3 + see-all */
-  #pricesGrid{grid-template-columns:repeat(3,1fr);max-width:940px;margin-inline:auto}
-  #pricesGrid.expanded{grid-template-columns:repeat(5,1fr);max-width:none}
-  .price.collapsed{display:none}
-  #pricesGrid.expanded .price.collapsed{display:block}
-  .see-all-row{text-align:center;margin-top:24px}
-  @media(max-width:980px){#pricesGrid,#pricesGrid.expanded{grid-template-columns:repeat(2,1fr);max-width:680px}}
-  @media(max-width:520px){#pricesGrid,#pricesGrid.expanded{grid-template-columns:1fr;max-width:420px}}
+  /* pricing: 5티어 전부 기본 노출 (2026-07-14 collapse/see-all 폐지 — 최저 유료 진입가 Starter가 숨겨져
+     사다리가 ₩0→₩81,000→₩329,000으로 끊기고, Standard의 "Everything in Starter"가 해독 불가였음) */
+  #pricesGrid{grid-template-columns:repeat(5,1fr);max-width:none;margin-inline:auto}
+  #pricesGrid .price{padding:26px 18px}
+  #pricesGrid .price .pp{font-size:30px;letter-spacing:-1px;white-space:nowrap}
+  @media(max-width:980px){#pricesGrid{grid-template-columns:repeat(2,1fr);max-width:680px}#pricesGrid .price{padding:30px}}
+  @media(max-width:520px){#pricesGrid{grid-template-columns:1fr;max-width:420px}}
 
   /* scroll reveal */
   .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
@@ -545,8 +566,9 @@
       <!-- REEL SLOT — 광고영상 자리(플레이스홀더). 준비되면 이 .rslot 통째를
            <video src="/YOUR-REEL.mp4" autoplay muted loop playsinline poster="/img/reel-poster.jpg"></video> 로 교체 -->
       <div class="rslot sns" aria-label="Ad video sample"><div class="hreel" id="hReel" aria-hidden="true"><div class="hpage show" id="hpg0"><video class="hpv" id="hpv0" muted playsinline preload="auto" poster="/img/reels/p06.jpg" disablepictureinpicture></video><div class="sns-ov"><div class="sns-grad"></div><div class="sns-rail"><span class="sns-ava"><img src="/apple-touch-icon.png" alt="Doppia"><span class="sns-plus">+</span></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg><b>9,999+</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg><b>999+</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg><b>Share</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg><b>999+</b></span></div><div class="sns-bottom"><div class="sns-user">@doppia.ai <span class="sns-follow">Follow</span></div><div class="sns-cap">One photo → a full ad. No shoot, no studio ✨</div><div class="sns-music"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 17V6l10-2v9" stroke-linecap="round"/><circle cx="6.5" cy="17" r="2.4"/><circle cx="16.5" cy="13" r="2.4"/></svg><span>Original audio · Doppia</span></div></div></div></div><div class="hpage" id="hpg1"><video class="hpv" id="hpv1" muted playsinline preload="auto" poster="/img/reels/p09.jpg" disablepictureinpicture></video><div class="sns-ov"><div class="sns-grad"></div><div class="sns-rail"><span class="sns-ava"><img src="/apple-touch-icon.png" alt="Doppia"><span class="sns-plus">+</span></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg><b>9,999+</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg><b>999+</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg><b>Share</b></span><span class="sns-act"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg><b>999+</b></span></div><div class="sns-bottom"><div class="sns-user">@doppia.ai <span class="sns-follow">Follow</span></div><div class="sns-cap">One product shot → a week of content 🎬</div><div class="sns-music"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 17V6l10-2v9" stroke-linecap="round"/><circle cx="6.5" cy="17" r="2.4"/><circle cx="16.5" cy="13" r="2.4"/></svg><span>Original audio · Doppia</span></div></div></div></div></div></div>
-      <div class="fan-pic igpost"><div class="ig-head"><span class="ig-ava"><img src="/apple-touch-icon.png" alt=""></span><span class="ig-uwrap"><span class="ig-user">@doppia.ai</span><span class="ig-time">· 1d</span></span><span class="ig-follow">Follow</span><span class="ig-dots">···</span></div><div class="ig-photo" style="background-image:url('/img/producthero/noir-gold.jpg')"></div><div class="ig-foot"><div class="ig-acts"><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg></span><span class="ig-ic ig-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg></span></div><div class="ig-likes">9,999+ likes</div><div class="ig-cap"><b>@doppia.ai</b> Studio hero shot — one upload, zero prompts.</div></div></div>
-      <div class="fan-pic igpost"><div class="ig-head"><span class="ig-ava"><img src="/apple-touch-icon.png" alt=""></span><span class="ig-uwrap"><span class="ig-user">@doppia.ai</span><span class="ig-time">· 2d</span></span><span class="ig-follow">Follow</span><span class="ig-dots">···</span></div><div class="ig-photo" style="background-image:url('/img/models/f-east_asian-2.jpg')"></div><div class="ig-foot"><div class="ig-acts"><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20.3l-1.3-1.2C5.5 14.6 2.2 11.6 2.2 8 2.2 5.5 4.2 3.6 6.6 3.6c1.5 0 2.9.7 3.7 1.8.8-1.1 2.2-1.8 3.7-1.8 2.4 0 4.4 1.9 4.4 4.4 0 3.6-3.3 6.6-8.5 11.1L12 20.3z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 4h-17A1 1 0 002.5 5v9a1 1 0 001 1H5v4l5-4h10.5a1 1 0 001-1V5a1 1 0 00-1-1z"/></svg></span><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 3L11 14M22 3l-7 19-4-8-8-4 19-7z"/></svg></span><span class="ig-ic ig-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11a1 1 0 011 1V20l-6.5-3.7L5 20V4.5a1 1 0 011-1z"/></svg></span></div><div class="ig-likes">9,999+ likes</div><div class="ig-cap"><b>@doppia.ai</b> On-model look — no casting, no shoot.</div></div></div>
+      <div class="hx-mq" aria-label="Doppia sample outputs">
+        <div class="mq-3d" aria-hidden="true"><div class="mq-col"><div class="mq-track"><div class="mq-card"><span class="t">Hero shot</span><img src="/img/producthero/noir-gold.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Hero shot</span><img src="/img/producthero/liquid-splash.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Jewelry</span><img src="/img/accessories/jewelry-floating-luxe.png" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Beauty</span><img src="/img/producthero/dewy-glass.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Editorial</span><img src="/img/producthero/botanical-dew.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Product cut</span><img src="/img/productcut/styled-object-cut.png" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Hero shot</span><img src="/img/producthero/noir-gold.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Hero shot</span><img src="/img/producthero/liquid-splash.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Jewelry</span><img src="/img/accessories/jewelry-floating-luxe.png" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Beauty</span><img src="/img/producthero/dewy-glass.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Editorial</span><img src="/img/producthero/botanical-dew.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Product cut</span><img src="/img/productcut/styled-object-cut.png" alt="" loading="lazy" decoding="async"></div></div></div><div class="mq-col dn"><div class="mq-track"><div class="mq-card"><span class="t">Hero shot</span><img src="/img/producthero/gloss-mirror.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Jewelry</span><img src="/img/accessories/jewelry-flat-lay.png" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Editorial</span><img src="/img/producthero/silk-drape.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Editorial</span><img src="/img/producthero/mineral-crystal.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Beauty</span><img src="/img/producthero/sunlit-pop.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Flat lay</span><img src="/img/productcut/flat-lay-cut.png" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Hero shot</span><img src="/img/producthero/gloss-mirror.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Jewelry</span><img src="/img/accessories/jewelry-flat-lay.png" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Editorial</span><img src="/img/producthero/silk-drape.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Editorial</span><img src="/img/producthero/mineral-crystal.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Beauty</span><img src="/img/producthero/sunlit-pop.jpg" alt="" loading="lazy" decoding="async"></div><div class="mq-card"><span class="t">Flat lay</span><img src="/img/productcut/flat-lay-cut.png" alt="" loading="lazy" decoding="async"></div></div></div></div>
+      </div>
       <div class="hx-beam"></div>
     </div>
   </div>
@@ -700,7 +722,7 @@
       <ul><li><span class="ck">✓</span> All photo modes</li><li><span class="ck">✓</span> Solo lookbook</li><li><span class="ck">✓</span> 2 concurrent slots</li></ul>
       <a href="/studio" class="btn btn-ghost">Get started</a><div class="pfine">No credit card required</div>
     </div>
-    <div class="price collapsed">
+    <div class="price">
       <div class="pn">Starter</div><div class="pp" data-price="starter">$19<small> /mo</small></div>
       <div class="cr">◈ <span data-dp="plans.starter.cr" data-fmt="1">7,300</span> credits / month</div><div class="pconv" data-conv="starter"></div>
       <ul><li><span class="ck">✓</span> Ad Video reels</li><li><span class="ck">✓</span> No watermark</li><li><span class="ck">✓</span> Group lookbook</li><li><span class="ck">✓</span> 3 concurrent slots</li></ul>
@@ -712,7 +734,7 @@
       <ul><li><span class="ck">✓</span> Everything in Starter</li><li><span class="ck">✓</span> Edit results</li><li><span class="ck">✓</span> 4 concurrent slots</li></ul>
       <a href="/studio" class="btn btn-primary">Start with Standard</a>
     </div>
-    <div class="price collapsed">
+    <div class="price">
       <div class="pn">Pro</div><div class="pp" data-price="pro">$99<small> /mo</small></div>
       <div class="cr">◈ <span data-dp="plans.pro.cr" data-fmt="1">44,000</span> credits / month</div><div class="pconv" data-conv="pro"></div>
       <ul><li><span class="ck">✓</span> Everything in Standard</li><li><span class="ck">✓</span> Concept cut</li><li><span class="ck">✓</span> 5 concurrent slots</li></ul>
@@ -725,7 +747,6 @@
       <a href="/billing" class="btn btn-ghost">Choose Premium</a>
     </div>
   </div>
-  <div class="see-all-row"><button type="button" id="seeAllTiers" class="btn btn-ghost">See all 5 tiers ↓</button></div>
   <p class="sub" style="text-align:center;margin-top:24px;font-size:13px">Selling products or running ads? <b style="color:var(--text)">Commercial license</b> is included with Premium — and Studio offers it right when you publish. <a href="/business" style="color:var(--accent2)" data-flag="business">Enterprise &amp; agencies →</a></p>
 </section>
 
@@ -793,12 +814,6 @@
         tile.classList.toggle('hide', cat!=='all' && tile.getAttribute('data-cat')!==cat);
       });
     });
-  });
-  // pricing: see all 5 tiers
-  var seeAll = document.getElementById('seeAllTiers'), grid = document.getElementById('pricesGrid');
-  if (seeAll && grid) seeAll.addEventListener('click', function(){
-    var ex = grid.classList.toggle('expanded');
-    seeAll.textContent = ex ? 'Show fewer plans ↑' : 'See all 5 tiers ↓';
   });
   // mobile menu (hamburger) — nav-links가 숨는 ≤920px 대체
   var burger = document.getElementById('navBurger'), mnav = document.getElementById('mnav');
