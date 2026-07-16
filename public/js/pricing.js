@@ -63,17 +63,15 @@
     return 'USD';
   }
   var CURRENCY = detectCurrency();
-  // (2026-07-17) per/note 정정 — 코드는 **선불 기간권**이다: subscription.service.js:99
-  //   activatePlan(userId, plan, nowMs, months = 3) · subscription.route.js:37 주석 "기간권(선불)".
-  //   자동재청구 로직은 레포에 0줄이다. 그런데 옛 값이 '/월' + '매월 자동결제 · 언제든 해지'를
-  //   주장했다 — 해지할 자동결제가 없으므로 3중 거짓(월단위 아님·자동결제 없음·해지대상 없음).
-  //   소비처: pricing.js:101(data-price) · billing.html:308 — 한 소스라 양쪽이 함께 고쳐진다.
-  //   ⚠️ price↔기간 매핑은 아직 코드에 없다(결제 미연동, subscription.route.js:31이 non-admin에 501).
-  //      그래서 기간을 단정하지 않고 뺐다. 포트원/Eximbay 정기결제 개시 시 재검토.
-  //   롤백: per:' /월' · note:'VAT 포함 · 매월 자동결제 · 언제든 해지' 복원.
+  // 월 구독 전제 — :12 주석(price=월$ · priceY=연간환산 월$ · cr=월 크레딧) · subscription.route.js:23
+  //   "Eximbay 구독상품 심사 통과 후 결제 성공 webhook에서 activatePlan(...) 호출 예정".
+  //   ⚠️ 심사 통과 전까지 subscription.route.js:31이 non-admin에 501을 준다 —
+  //      즉 '/월'·'매월 자동결제·언제든 해지'는 **결제 개시 시점부터** 참이 된다(사용자 결정: 개시 전제로 작업).
+  //      개시가 지연되면 이 문구가 라이브 거짓이 되므로 런칭 전 반드시 재확인할 것.
+  //   소비처: pricing.js:101(data-price) · billing.html:308 — 한 소스라 양쪽이 함께 움직인다.
   var CUR_META = {
-    KRW: { code: 'KRW', symbol: '₩', per: '', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 자동결제 없음' },
-    USD: { code: 'USD', symbol: '$', per: '', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · nothing auto-renews' }
+    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
+    USD: { code: 'USD', symbol: '$', per: ' /mo', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · billed monthly · cancel anytime' }
   };
   PRICING.getCurrency = function () { return CURRENCY; };
   PRICING.curMeta = function () { return CUR_META[CURRENCY]; };
