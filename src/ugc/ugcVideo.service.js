@@ -477,6 +477,22 @@ async function listPendingReview(userId, { maxAgeHours = 24 } = {}) {
   return r.rows;
 }
 
+/**
+ * 편집 가능한 저장본의 result_idx 목록 — 피드 카드가 [Edit]를 띄울지 판단하는 근거.
+ *   편집 = 저장된 씬 클립 재조립이라 대본 없는 옛 잡은 원천적으로 불가(getJobByResultIdx도 404).
+ *   클라가 미리 알아야 "눌러도 안 되는 버튼"을 안 띄운다.
+ *   게이트·조건은 getJobByResultIdx와 같은 것을 봐야 한다(한쪽만 바뀌면 버튼과 실제가 어긋남).
+ */
+async function listEditableResultIdxs(userId) {
+  const r = await query(
+    `SELECT DISTINCT result_idx FROM ugc_jobs
+      WHERE result_idx IS NOT NULL AND script IS NOT NULL
+        AND (user_id = $1 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)))`,
+    [userId]
+  );
+  return r.rows.map((x) => x.result_idx);
+}
+
 /** 편집용 원본 잡 로드(소유권 게이트). script/scene_clips 원문 포함. */
 async function loadJobForEdit(id, userId) {
   const r = await query(
@@ -1159,6 +1175,30 @@ async function getJob(id, userId) {
 }
 
 /**
+ * 저장된 결과(result_idx) → 그 잡. 피드 카드가 아는 열쇠는 result_idx 하나뿐이라,
+ * "저장하고 나면 다시는 편집 못 하던" 결함의 되돌아올 길이 된다(카드 [Edit] → 조리대).
+ *
+ * 소유 게이트는 getJob과 동일 — id 해석에 한 번 걸고, 반환은 getJob에 위임해 한 번 더 걸린다
+ * (직렬화·필드 정의가 getJob 한 곳에만 있게). sceneStoryboardForResult(공개 상세용, 게이트 없음)와
+ * 혼동 금지: 저건 allowlist로 추린 관람용, 이건 소유자 편집용 전체.
+ * 편집 가능 조건 = 대본 보유 → script IS NOT NULL(생성 중인 잡은 자연히 걸러짐).
+ */
+async function getJobByResultIdx(resultIdx, userId) {
+  const idx = Number(resultIdx);
+  if (!Number.isInteger(idx)) return null;
+  const gate = `(user_id = $2 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $2)))`;
+  const r = await query(
+    `SELECT id FROM ugc_jobs
+      WHERE result_idx = $1 AND script IS NOT NULL AND ${gate}
+      ORDER BY (status = 'succeeded') DESC, created_at DESC LIMIT 1`,
+    [idx, userId]
+  );
+  const row = r.rows[0];
+  if (!row) return null;
+  return getJob(row.id, userId);
+}
+
+/**
  * A: script._render.audioAssets → 재생기용 개별 오디오 트랙 URL.
  *   voiceUrl = 통 나레이션 단일 트랙(t=0부터 재생). 음악 = 단일 트랙. 둘 다 풀볼륨 원본(더킹은 클라이언트가 적용).
  *   렌더 시 꺼진(파일 없는) 트랙은 null — 그 트랙 켜기는 서버 재생성(수초). 옛 씬별 다중 세그먼트(segs>1)는
@@ -1241,4 +1281,4 @@ async function sceneStoryboardForResult(resultIdx) {
   return { hook, sceneCount: scenes.length, scenes };
 }
 
-module.exports = { generateScript, render, submit, getJob, listActiveJobs, listPendingReview, reapCrashedRenders, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };
+module.exports = { generateScript, render, submit, getJob, getJobByResultIdx, listActiveJobs, listPendingReview, listEditableResultIdxs, reapCrashedRenders, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };

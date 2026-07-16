@@ -1056,11 +1056,23 @@ router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_M
 router.get('/ugc/jobs', async (req, res, next) => {
   try {
     // data = 렌더 중 / pending = 완성됐지만 미저장(draft). 레일 배지 = 둘의 합 = "나를 기다리는 것".
-    const [rows, pending] = await Promise.all([
+    // editable = 저장됐고 대본이 있어 되불러 편집 가능한 result_idx들(피드 [Edit] 노출 판단).
+    const [rows, pending, editable] = await Promise.all([
       ugcVideoService.listActiveJobs(req.user.id),
       ugcVideoService.listPendingReview(req.user.id),
+      ugcVideoService.listEditableResultIdxs(req.user.id),
     ]);
-    res.json({ success: true, data: rows, pending });
+    res.json({ success: true, data: rows, pending, editable });
+  } catch (err) { next(err); }
+});
+
+// 저장된 결과로 잡 되찾기 — 피드 카드([Edit])가 아는 열쇠는 result_idx 하나뿐.
+//   ':id'는 한 세그먼트만 먹으므로 경로가 겹치지 않지만, 읽는 순서를 위해 위에 둔다.
+router.get('/ugc/jobs/by-result/:idx', async (req, res, next) => {
+  try {
+    const job = await ugcVideoService.getJobByResultIdx(req.params.idx, req.user.id);
+    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+    res.json({ success: true, data: job });
   } catch (err) { next(err); }
 });
 
