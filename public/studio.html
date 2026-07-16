@@ -3163,7 +3163,7 @@ function ugcSceneStripHtml(b){
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
     <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
-    <div class="ugc-strip">${cards}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
+    <div class="ugc-strip">${cards}${u._adding?`<div class="usc usc-loadcard usc-add-loading"><div class="usc-thumb"><div class="rb-spin"></div></div><div class="usc-add-loadcap" style="text-align:center;font-size:11px;color:var(--dim);padding:9px 4px">Adding a scene…</div></div>`:''}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
     <div class="ugc-music-row">
@@ -3368,7 +3368,7 @@ async function ugcReassemble(jobId,opts){
         u._orig=u.scenes.map(s=>{const e=u.edits[s.n]||{};return Object.assign({},s,('onScreenText' in e)?{onScreenText:e.onScreenText}:{},('spoken' in e)?{spoken:e.spoken}:{});});
         u.scenes=u._orig.map(s=>Object.assign({},s));
       }
-      u.edits={}; u._dirty=false; u._busyN={}; // 완료 → 재생성 진행 표시 클리어(큐 대기분은 발사 시 다시 세팅)
+      u.edits={}; u._dirty=false; u._busyN={}; u._adding=false; // 완료 → 재생성·씬추가 진행 표시 클리어(큐 대기분은 발사 시 다시 세팅)
       // #11: 재렌더(재생기 파기·재마운트) 전 재생위치·소리상태 보존 → ugcMountLayered가 seekTo+언뮤트 복원(t=0·재음소거 방지)
       { const _rL=UGC_LAYERED[jobId]; if(_rL&&_rL.player){ u._resume={ time:_rL.player.currentTime(), unmuted:!!(_rL.audio&&((_rL.audio.voice&&!_rL.audio.voice.muted)||(_rL.audio.music&&!_rL.audio.music.muted))) }; } }
       if(u.previewUrl)await ugcPreloadVideo(u.previewUrl); // 새 미리보기를 먼저 받아둠(immutable 캐시) → 아래 렌더가 브라우저 캐시서 즉시 스왑(버전전환 로딩 체감 제거)
@@ -3518,6 +3518,12 @@ function ugcSetSceneBusy(jobId,n,on){
   u._busyN=u._busyN||{}; if(on)u._busyN[n]=1; else delete u._busyN[n];
   if(typeof ugcRefreshStrip==='function')ugcRefreshStrip(jobId);
 }
+// Add scene 진행 표시 — 새 씬은 아직 카드가 없으므로 스트립 끝에 "생성 중" 플레이스홀더 카드를 띄움(상태 기반).
+function ugcSetAddingBusy(jobId,on){
+  const b=ugcFindBatch(jobId); if(!b||!b.ugc)return;
+  b.ugc._adding=!!on;
+  if(typeof ugcRefreshStrip==='function')ugcRefreshStrip(jobId);
+}
 async function ugcSceneRedo(jobId,n){
   if(!confirm('Re-generate this scene? This uses credits (about one video clip). Your current version is kept — you can switch back.'))return;
   await ugcReassemble(jobId,{redoScenes:[n],setBusy:function(on){ugcSetSceneBusy(jobId,n,on);}});
@@ -3641,7 +3647,8 @@ async function ugcPickSuggestion(jobId,i){
   const sc=u._suggest&&u._suggest[i]; if(!sc)return;
   if(!confirm('Add this scene? This uses credits.'))return;
   const wrap=document.getElementById('ugcAdd-'+jobId); const btns=wrap?Array.prototype.slice.call(wrap.querySelectorAll('button')):[];
-  await ugcReassemble(jobId,{addScenes:[{scene:sc}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});}}); // 선택 씬 그대로(재생성 없이)
+  if(window.toast)toast('Adding a scene… uses credits'); // 즉시 피드백
+  await ugcReassemble(jobId,{addScenes:[{scene:sc}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});ugcSetAddingBusy(jobId,on);if(on&&wrap){wrap.style.display='none';wrap.dataset.open='';}}}); // 선택 씬 그대로 + 스트립에 생성중 카드
   if(wrap){wrap.style.display='none';wrap.dataset.open='';}
 }
 // 자연어(부차) — 직접 설명해서 추가
@@ -3653,7 +3660,8 @@ async function ugcAddSubmit(jobId){
   if(!val){toast('Describe the scene, or pick a suggestion above');return;}
   if(!confirm('Add a new scene? This uses credits.'))return;
   const btns=wrap?Array.prototype.slice.call(wrap.querySelectorAll('button')):[];
-  await ugcReassemble(jobId,{addScenes:[{instruction:val}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});}});
+  if(window.toast)toast('Adding a scene… uses credits'); // 즉시 피드백
+  await ugcReassemble(jobId,{addScenes:[{instruction:val}],setBusy:function(on){btns.forEach(function(x){x.disabled=on;});ugcSetAddingBusy(jobId,on);if(on&&wrap){wrap.style.display='none';wrap.dataset.open='';}}});
   if(wrap){wrap.style.display='none';wrap.dataset.open='';}
 }
 // 실패 슬롯(레오나르도식) — 정확한 문구 + Delete. idx 있으면 서버 실패행 삭제, 없으면(라이브·릴) 타일만 제거. 토큰은 백엔드가 실패분만 환불.
