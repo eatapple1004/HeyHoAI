@@ -11,13 +11,17 @@
   var PRICING = {
     // 개인 구독 (price=월$, priceKRW=월₩[VAT포함], priceY=연간환산 월$, priceYKRW=연간환산 월₩, cr=월 크레딧).
     // KRW = USD × 환율(2026-07-13 1,503.60) × 1.10(VAT 포함분) 라운딩 → 고정가 페그. 작은 플랜=비쌈→큰 플랜=쌈.
+    // ⚠️ 기능·라이선스 축의 진실 = src/lib/entitlements.js PLANS. 여기 license/line은 표시용 파생이지 권한이 아니다.
+    //    (2026-07-17) 상업권 유료 전티어 개방 → 유료 4티어 license='Commercial'.
+    //    이 블록은 src/pricing/pricing.config.js 와 자구까지 동일해야 한다(서버가 /api/pricing으로 덮어씀).
+    //    ⚠️ line:의 slots·lookbook·Edit·Concept cut은 날조다(소비자 0건). 가격표 진실화에서 함께 교체할 것.
     plans: {
       free:     { name: 'Free',     price: 0,   priceKRW: 0,      priceY: 0,   priceYKRW: 0,      cr: 1500,  license: 'Personal' },
-      starter:  { name: 'Starter',  price: 19,  priceKRW: 31000,  priceY: 16,  priceYKRW: 26000,  cr: 7300,  license: 'Personal',
+      starter:  { name: 'Starter',  price: 19,  priceKRW: 31000,  priceY: 16,  priceYKRW: 26000,  cr: 7300,  license: 'Commercial',
                   line: 'No watermark · group lookbook · ◈7,300/mo' },
-      standard: { name: 'Standard', price: 49,  priceKRW: 81000,  priceY: 41,  priceYKRW: 68000,  cr: 20300, license: 'Personal', featured: true,
+      standard: { name: 'Standard', price: 49,  priceKRW: 81000,  priceY: 41,  priceYKRW: 68000,  cr: 20300, license: 'Commercial', featured: true,
                   line: 'Edit · 2K · 4 slots · ◈20,300/mo' },
-      pro:      { name: 'Pro',      price: 99,  priceKRW: 164000, priceY: 82,  priceYKRW: 136000, cr: 44000, license: 'Personal',
+      pro:      { name: 'Pro',      price: 99,  priceKRW: 164000, priceY: 82,  priceYKRW: 136000, cr: 44000, license: 'Commercial',
                   line: 'Concept cut · 5 slots · ◈44,000/mo' },
       premium:  { name: 'Premium',  price: 199, priceKRW: 329000, priceY: 165, priceYKRW: 273000, cr: 95000, license: 'Commercial',
                   line: 'Video · 6 slots · commercial · ◈95,000/mo' }
