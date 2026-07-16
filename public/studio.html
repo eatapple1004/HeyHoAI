@@ -5145,14 +5145,19 @@ async function ugcRenderVideo(){
     const job=await pollUgcJob(data.jobId);
     // 결과 매핑은 ugcFillPendingFromJob 하나로 — 재연결(ugcRestoreActiveJobs)과 같은 코드를 쓴다
     if(pending){ ugcFillPendingFromJob(pending,data.jobId,job,outputType); renderStudioResults(); } // 우측 인라인에 완성 영상+씬 스트립
-    hint.textContent='✓ Ad video ready — saved to your gallery.';
+    // C: 완성 알림을 여기(공용 #ugcHint)서 하지 않는다 — ① 거짓말이었다: 완성은 draft일 뿐 갤러리에 없다
+    //    (자동 커밋 스위퍼 없음). 바로 옆 스트립이 "Not saved yet … Save & finish"라고 정반대를 말하고 있었다.
+    //    ② 배치별 사실을 배치가 여럿일 수 없는 칸에 쓰면 N개에서 서로 덮어쓴다. 완성은 영상·[Save & finish]가
+    //    스스로 말한다(오븐에 남는 건 레일 배지가 센다).
   }catch(e){
     console.error(e);
     // 실패·타임아웃 모두: 로딩/실패 카드를 치우고 검토·편집한 대본(+Generate 버튼)을 복원 → 막다른 실패 카드 대신 재시도 가능(402 경로와 동일 패턴).
     const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1);
     if(sp)sp.style.display=''; renderStudioResults();
     if(e.code402){ hint.textContent=''; if(typeof openPaywall==='function')openPaywall(window.ugcLastCost||0); else toast(e.message||'Not enough credits','error'); } // 이미지 생성과 동일하게 페이월 오픈(사라지는 토스트 대신)
-    else if(e.timeout){ hint.textContent='Still rendering — we’ll save it to your gallery when it’s ready.'; toast('Still rendering — check your gallery shortly. No need to resubmit.'); }
+    // C: "갤러리에 저장해두겠다"는 거짓말이었다 — 폴링만 끊겼을 뿐 렌더는 서버에서 계속 돌고, 끝나도
+    //    draft로 남는다(자동 커밋 스위퍼 없음). 갤러리엔 저장을 눌러야 들어간다. 돌아오면 여기서 되찾는다.
+    else if(e.timeout){ hint.textContent='Still rendering — it’ll be waiting for you here when it’s done.'; toast('Still rendering — no need to resubmit.'); }
     else{ hint.textContent='⚠ '+(e.message||'Generation failed')+' — your script is ready, try again.'; toast((e.message||'Generation failed')+' — try again','error'); }
   }finally{
     clearInterval(elapsedTimer);
@@ -5268,11 +5273,11 @@ async function ugcRestoreActiveJobs(){
     const job=await pollUgcJob(j.id);
     ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad');
     renderStudioResults();
-    if(hint)hint.textContent='✓ Ad video ready — saved to your gallery.';
+    // C: 완성 알림은 영상·[Save & finish]가 스스로 한다(위 ugcRenderVideo와 같은 이유 — 거짓말 + N개 덮어쓰기)
   }catch(e){
     const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1);
     renderStudioResults();
-    if(hint)hint.textContent=(e&&e.timeout)?'Still rendering — we’ll save it to your gallery when it’s ready.':'';
+    if(hint)hint.textContent=(e&&e.timeout)?'Still rendering — it’ll be waiting for you here when it’s done.':'';
   }finally{
     clearInterval(timer); genActive=Math.max(0,genActive-1);
     if(box)box.classList.remove('rendering');
@@ -5318,7 +5323,9 @@ async function pollUgcJob(jobId){
     if(d.status==='succeeded')return d; // 전체 job(resultUrl+scenes) 반환 → 결과 편집 스트립
     if(d.status==='failed')throw new Error(d.error||'Ad video generation failed');
   }
-  const te=new Error('Still rendering — check your gallery shortly.'); te.timeout=true; throw te; // 타임아웃 = 실패 아님(백그라운드 계속) → 안심 카피로 구분
+  // 타임아웃 = 실패 아님(백그라운드 계속) → 안심 카피로 구분. 갤러리를 들먹이지 않는다 — 끝나도 draft라
+  //   저장 전엔 갤러리에 없다(호출부가 e.timeout으로 분기하므로 이 문구가 뜨는 경로는 지금 없지만, 같은 거짓말을 남겨두지 않는다).
+  const te=new Error('Still rendering — it’ll be waiting for you here when it’s done.'); te.timeout=true; throw te;
 }
 
 // ── 캡션 + 해시태그 (Claude) ──
