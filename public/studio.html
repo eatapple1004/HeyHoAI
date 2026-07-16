@@ -618,6 +618,65 @@
   .ugc-cols > #ugcInputBox{flex:1 1 0;min-width:0;max-width:540px}
   .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{flex:1 1 0;min-width:0;align-self:stretch}
   @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{width:100%;max-width:none}}
+
+  /* ───── Ad Video Step 1 정리(2026-07-17) ─────
+     기본값이 잡힌 노브 4그룹(비율·씬수·모드·언어)을 요약줄 뒤로 접어 Write script를 첫 화면에 올린다.
+     요약줄은 상태를 "질문"이 아니라 "진술"로 보여주는 자리 — 접어서 숨기는 게 아니라 한 줄로 말해준다. */
+  .ugc-knobline{margin:10px 0 2px}
+  .ugc-knobline-btn{width:100%;display:flex;align-items:center;gap:9px;text-align:left;cursor:pointer;
+    background:rgba(255,255,255,.02);border:1px solid var(--border2);border-radius:10px;
+    padding:10px 12px;color:var(--dim);font:inherit;font-size:12.5px}
+  .ugc-knobline-btn:hover{border-color:var(--accent2)}
+  .ugc-knobline-txt{flex:1;min-width:0}
+  .ugc-knobline-txt b{color:var(--text);font-weight:700}
+  .ugc-knobline-chg{color:var(--accent2);font-weight:800;font-size:12px;flex:none}
+  .ugc-knobs{border:1px solid var(--border2);border-top:none;border-radius:0 0 10px 10px;padding:4px 12px 12px;margin-top:-2px}
+  #ugcInputBox:not(.knobs-open) .ugc-knobs{display:none}
+  #ugcInputBox.knobs-open .ugc-knobline-btn{border-radius:10px 10px 0 0}
+
+  /* 컨셉 라벨 줄 — 왼쪽=라벨(placeholder가 하던 역할을 회수), 오른쪽=AI 제안(벽보다 사다리를 먼저 보게 박스 위로) */
+  .ugc-fieldhd{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .ugc-fieldhd label{font-size:12px;color:var(--dim);font-weight:650}
+  .ugc-fieldhd label span{color:var(--faint);font-weight:400}
+  /* 사진이 들어오기 전엔 말로만 알려주고, 들어오면 진짜 버튼이 된다(호출은 여전히 수동) */
+  #ugcInputBox:not(.has-photo) #ugcSuggestHero{display:none!important}
+  #ugcInputBox.has-photo #ugcSuggestBtn{display:none!important}
+  #ugcSuggestHero{margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+    background:rgba(139,124,246,.12);border:1px solid var(--accent2);border-radius:8px;
+    color:var(--accent2);font:inherit;font-size:12px;font-weight:800;padding:5px 10px;cursor:pointer;white-space:nowrap}
+  #ugcSuggestHero:hover{background:rgba(139,124,246,.2)}
+  #ugcSuggestHero:disabled{opacity:.55;cursor:default}
+  #ugcSuggestBtn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;color:var(--faint);white-space:nowrap}
+
+  /* 대본이 나오면 입력은 요약 카드로 접히고 오른쪽(대본·영상)이 주인공이 된다 */
+  #ugcInputBox.compact .ugc-foldable{display:none}
+  #ugcInputBox:not(.compact) .ugc-recap{display:none}
+  .ugc-recap{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--dim)}
+  .ugc-recap-th{width:34px;height:34px;border-radius:6px;border:1px solid var(--border2);flex:none;object-fit:cover;background:rgba(255,255,255,.04)}
+  .ugc-recap b{color:var(--text)}
+  .ugc-recap-edit{margin-left:auto;color:var(--accent2);font-weight:800;font-size:12px;background:none;border:none;cursor:pointer;font-family:inherit;flex:none}
+  .ugc-cols > #ugcInputBox.compact{flex:0 0 300px}
+  @media(max-width:860px){.ugc-cols > #ugcInputBox.compact{flex:1 1 auto}}
+
+  /* 빈 상태 = 여정 예고. 대본만 약속하던 자리에서 "영상이 여기 나온다"까지 말해준다 */
+  .ugc-jrn{border:1px dashed var(--border2);border-radius:14px;padding:20px;background:rgba(255,255,255,.015)}
+  .ugc-jrn-h{font-size:12px;color:var(--faint);margin-bottom:14px}
+  .ugc-jrn-s{display:flex;gap:12px;padding:11px 0;align-items:flex-start}
+  .ugc-jrn-s + .ugc-jrn-s{border-top:1px solid var(--border2)}
+  .ugc-jrn-n{width:22px;height:22px;flex:none;border-radius:50%;border:1px solid var(--border2);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--dim)}
+  /* flex:1 = 세 단이 같은 폭에서 줄바꿈(안 주면 각 단이 제 텍스트 길이만큼 늘어나 아트박스 폭이 제각각) */
+  .ugc-jrn-b{min-width:0;flex:1}
+  .ugc-jrn-b > b{display:block;font-size:13.5px;color:var(--text);margin-bottom:3px}
+  .ugc-jrn-b > span{font-size:12px;color:var(--dim);line-height:1.5;display:block;max-width:44ch}
+  .ugc-jrn-art{margin-top:9px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.02);padding:9px 10px;max-width:240px}
+  .ugc-jrn-line{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--border2),transparent);margin:5px 0}
+  .ugc-jrn-thumbs{display:flex;gap:5px}
+  .ugc-jrn-th{width:26px;height:34px;border-radius:4px;background:linear-gradient(135deg,#332a4d,#1c1a2b);border:1px solid var(--border2)}
+  .ugc-jrn-vid{height:52px;border-radius:6px;background:linear-gradient(135deg,#3a2f52,#1d1b2e);border:1px solid var(--border2);
+    display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:17px}
+
   /* 대본 작성 중 스켈레톤 */
   .ugc-sk{display:flex;flex-direction:column;gap:13px;padding:16px 18px;border:1px solid var(--border2);border-radius:14px;background:rgba(255,255,255,.02);min-height:220px}
   .ugc-sk-head{font-size:14px;font-weight:650;color:var(--text)}
@@ -832,6 +891,16 @@
     <div class="ugc-cols">
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" multiple style="display:none" onchange="ugcPreview(this)">
+      <!-- 대본이 나오면 입력 전체가 이 한 줄로 접힌다(오른쪽 대본·영상이 주인공) -->
+      <div class="ugc-recap" id="ugcRecap">
+        <img class="ugc-recap-th" id="ugcRecapTh" alt="">
+        <div style="min-width:0">
+          <div id="ugcRecapTop" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+          <div id="ugcRecapSub" style="color:var(--faint);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+        </div>
+        <button type="button" class="ugc-recap-edit" onclick="ugcUncompact()">Edit</button>
+      </div>
+      <div class="ugc-foldable">
       <div id="ugcDrop" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div id="ugcThumbStrip" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <button type="button" id="ugcPickBtn" class="img-add labeled" onclick="document.getElementById('ugcProductImg').click()">
@@ -841,8 +910,15 @@
         <span id="ugcPickHint" style="font-size:12px;color:var(--dim)">Recommended — add multiple angles to keep your product consistent</span>
       </div>
       <input type="text" id="ugcProductName" placeholder="Product name — e.g. Rouge Velvet Matte  (optional)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px;font-family:inherit">
-      <textarea class="script-ta" id="ugcConcept" placeholder="Tell us how you want it — a sentence or just keywords.  e.g. &quot;clean, sensual lookbook for 20–30s&quot;  ·  &quot;red background, luxurious color&quot;"></textarea>
-      <button type="button" id="ugcSuggestBtn" onclick="ugcSuggestConcept()" style="margin:4px 0 2px;background:none;border:none;color:var(--accent2);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:0;display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Suggest a concept from your photo</button>
+      <!-- 컨셉 라벨 줄(2026-07-17): 원래 placeholder가 라벨 역할까지 했고(입력 시작하면 사라짐 = a11y 문제),
+           "AI가 대신 써준다"는 구제책이 텍스트박스 '아래' 있어서 유저가 빈 박스라는 벽을 먼저 만난 뒤에야 사다리를 봤다.
+           라벨 줄을 만들면서 그 줄 오른쪽에 제안을 얹어 라벨·위치·문구를 한 번에 해결. 높이 +24px. -->
+      <div class="ugc-fieldhd">
+        <label for="ugcConcept">Concept <span>— a sentence or a few keywords is enough</span></label>
+        <button type="button" id="ugcSuggestHero" onclick="ugcSuggestConcept()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span id="ugcSuggestHeroTxt">Write it for me</span></button>
+        <span id="ugcSuggestBtn"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor" opacity=".45"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Add a photo and AI can write this for you</span>
+      </div>
+      <textarea class="script-ta" id="ugcConcept" placeholder="e.g. &quot;clean, sensual lookbook for 20–30s&quot;  ·  &quot;red background, luxurious color&quot;"></textarea>
       <div style="margin:2px 0 8px">
         <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
@@ -868,6 +944,28 @@
           <div id="ugcModelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,50px);gap:6px;max-height:176px;overflow-y:auto;padding:2px"></div>
         </div>
       </div>
+      <!-- Sound: 요약줄에 넣었다가 뺌(2026-07-17). 요약줄은 "기본값이 보통 맞는" 것만 진술하는 자리인데
+           Voiceover/Music only는 보통 맞는 쪽이 없는 창작 분기고(나레이션 광고 vs BGM 무드 영상),
+           틀리면 대본을 다시 써야 함(VO 카피 유무 = 대본 구조가 바뀜). 그래서 Format과 같은 층에 노출.
+           라벨도 'Mode'(뜻 없음) → 'Sound', 'Voice' → 'Voiceover'(Voice 모드에도 음악이 깔리므로 대비를 살림). -->
+      <div style="margin:10px 0 2px">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Sound</div>
+        <div class="ugc-seg" id="ugcModeSeg">
+          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voiceover</button>
+          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only</button>
+        </div>
+        <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 세그먼트가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
+      </div>
+
+      <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐 -->
+      <div class="ugc-knobline">
+        <button type="button" class="ugc-knobline-btn" id="ugcKnobLine" onclick="ugcToggleKnobs()" aria-expanded="false" aria-controls="ugcKnobs">
+          <span aria-hidden="true">🎬</span>
+          <span class="ugc-knobline-txt" id="ugcKnobTxt"></span>
+          <span class="ugc-knobline-chg" id="ugcKnobChg">Change</span>
+        </button>
+      </div>
+      <div class="ugc-knobs" id="ugcKnobs">
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Aspect ratio</div>
         <div class="ugc-ar">
@@ -878,40 +976,17 @@
         <input type="hidden" id="ugcAspect" value="9:16">
       </div>
       <!-- 씬 개수·길이(선택) — Kling 네이티브 5s/10s, 짧게는 5s에서 트림 -->
+      <!-- 씬 개수만 여기 남는다. 길이는 대본을 안 바꾸는 렌더 파라미터라 2단계(#ugcScriptPreview)로 이동 -->
       <div style="margin:8px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes &amp; length <span style="color:var(--faint)">— optional</span></div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Count</div>
-            <div class="ugc-seg" id="ugcCountSeg">
-              <button type="button" class="ugc-seg-b active" data-c="0" onclick="ugcSetSceneCount(this)">Auto</button>
-              <button type="button" class="ugc-seg-b" data-c="3" onclick="ugcSetSceneCount(this)">3</button>
-              <button type="button" class="ugc-seg-b" data-c="4" onclick="ugcSetSceneCount(this)">4</button>
-              <button type="button" class="ugc-seg-b" data-c="5" onclick="ugcSetSceneCount(this)">5</button>
-              <button type="button" class="ugc-seg-b" data-c="6" onclick="ugcSetSceneCount(this)">6</button>
-            </div>
-          </div>
-          <div id="ugcLenSceneWrap">
-            <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
-            <div class="ugc-seg" id="ugcDurSeg">
-              <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
-              <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
-              <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
-            </div>
-          </div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes <span style="color:var(--faint)">— Auto matches the script</span></div>
+        <div class="ugc-seg" id="ugcCountSeg">
+          <button type="button" class="ugc-seg-b active" data-c="0" onclick="ugcSetSceneCount(this)">Auto</button>
+          <button type="button" class="ugc-seg-b" data-c="3" onclick="ugcSetSceneCount(this)">3</button>
+          <button type="button" class="ugc-seg-b" data-c="4" onclick="ugcSetSceneCount(this)">4</button>
+          <button type="button" class="ugc-seg-b" data-c="5" onclick="ugcSetSceneCount(this)">5</button>
+          <button type="button" class="ugc-seg-b" data-c="6" onclick="ugcSetSceneCount(this)">6</button>
         </div>
-        <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
-        <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
-        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[pause]</b> (0.6s) in the script + per-scene <b>Add pause</b>.</div>
-      </div>
-      <div style="margin:8px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Mode</div>
-        <div class="ugc-seg" id="ugcModeSeg">
-          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voice</button>
-          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only</button>
-        </div>
-        <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 세그먼트가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
       </div>
       <!-- Ad language: 대본·음성·자막·캡션의 언어(생성 프롬프트·영상 비주얼은 무관). 기본 English. -->
       <div style="margin:8px 0 2px">
@@ -922,16 +997,39 @@
         </div>
         <input type="hidden" id="ugcLangSel" value="en">
       </div>
+      </div><!-- /.ugc-knobs -->
       <div class="script-ctrls">
         <button class="btn btn-primary" id="ugcGenBtn" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Write script</button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
+      </div><!-- /.ugc-foldable -->
     </div>
-    <!-- 오른쪽 빈 상태 플레이스홀더(대본 생성 전 항상 표시) -->
-    <div id="ugcScriptEmpty" style="border:1px dashed var(--border2);border-radius:14px;padding:34px 24px;background:rgba(255,255,255,.015);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;min-height:220px;color:var(--dim)">
-      <div style="font-size:30px;opacity:.65">📝</div>
-      <b style="font-size:15px;color:var(--text)">Your script appears here</b>
-      <span style="font-size:13px;max-width:290px;line-height:1.55">Add your product &amp; concept on the left, then press <b style="color:var(--accent2)">Write script</b>. You can edit every line before generating.</span>
+    <!-- 오른쪽 빈 상태 = 여정 예고. 이 슬롯엔 대본 → 씬 → 완성 영상이 차례로 들어오므로
+         "대본이 나온다"만 말하던 옛 문구 대신 영상까지 약속해준다(광고 만들러 온 사람에게 영상 얘기를 해야 함) -->
+    <div id="ugcScriptEmpty" class="ugc-jrn">
+      <div class="ugc-jrn-h">How this works</div>
+      <div class="ugc-jrn-s">
+        <div class="ugc-jrn-n">1</div>
+        <div class="ugc-jrn-b"><b>Script</b><span>AI writes it. You can edit every line.</span>
+          <div class="ugc-jrn-art"><div class="ugc-jrn-line" style="width:80%"></div><div class="ugc-jrn-line" style="width:62%"></div><div class="ugc-jrn-line" style="width:71%"></div></div>
+        </div>
+      </div>
+      <!-- 2번은 원래 "Each line becomes a shot."로 유저가 할 게 없는 부산물이었다(그래서 3과 합쳐도 될 것처럼 보임).
+           씬 단위 재생성이 이 제품의 제일 강한 안심 장치인데 화면 어디서도 말하지 않고 있어서 여기로 올림.
+           → 1·2·3이 전부 "유저가 통제하는 것"으로 통일된다: 대본을 고치고, 컷을 고치고, 영상을 받는다.
+           재생성은 크레딧이 들므로 "free"라고 쓰지 않는다(정확한 과금은 씬 스트립이 안내). -->
+      <div class="ugc-jrn-s">
+        <div class="ugc-jrn-n">2</div>
+        <div class="ugc-jrn-b"><b>Scenes</b><span>Each line becomes a scene. Don't like one? Remake just that scene — not the whole video.</span>
+          <div class="ugc-jrn-art"><div class="ugc-jrn-thumbs"><div class="ugc-jrn-th"></div><div class="ugc-jrn-th"></div><div class="ugc-jrn-th"></div><div class="ugc-jrn-th"></div></div></div>
+        </div>
+      </div>
+      <div class="ugc-jrn-s">
+        <div class="ugc-jrn-n">3</div>
+        <div class="ugc-jrn-b"><b>Video</b><span>Your finished ad appears <b style="color:var(--accent2);font-weight:700">right here</b>.</span>
+          <div class="ugc-jrn-art"><div class="ugc-jrn-vid" aria-hidden="true">▶</div></div>
+        </div>
+      </div>
     </div>
     <!-- 2단계: 대본 미리보기 → 검토 후 렌더 -->
     <div id="ugcScriptPreview" style="display:none;border:1px solid var(--border2);border-radius:14px;padding:16px 18px;background:rgba(255,255,255,.02)">
@@ -940,6 +1038,20 @@
         <span class="hint" id="ugcScriptMeta"></span>
       </div>
       <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
+      <!-- 씬 길이: 1단계에서 이리로 옮김. 대본 텍스트를 바꾸지 않는 순수 렌더 파라미터라 생성 직전이 제자리고,
+           음성모드에서 숨겨질 때 "3s는 5s에서 트림" 안내가 컨트롤과 함께 사라지도록 wrap 안에 넣었다
+           (기존엔 형제 노드라 컨트롤만 숨고 안내문만 남는 유령 문구가 됐음) -->
+      <div id="ugcLenSceneWrap" style="margin-top:12px">
+        <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
+        <div class="ugc-seg" id="ugcDurSeg">
+          <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
+          <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
+          <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
+        </div>
+        <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
+      </div>
+      <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
+      <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[pause]</b> (0.6s) in the script + per-scene <b>Add pause</b>.</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="ugcMusic" checked> <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Add background music</span>
@@ -977,11 +1089,11 @@
               <option value="high-energy, driving, punchy">Energetic</option>
             </select>
           </label>
-          <button type="button" id="ugcPreviewBtn" onclick="ugcPreviewVoice()" class="btn" style="align-self:flex-end;font-size:12px;padding:6px 12px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Preview voice</button>
+          <button type="button" id="ugcPreviewBtn" onclick="ugcPreviewVoice()" class="btn btn-ghost" style="align-self:flex-end;font-size:12px;padding:6px 12px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Preview voice</button>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:12px">
-        <button class="btn" id="ugcRewriteBtn" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.9 4.2"/><path d="M20 4v6h-6"/></svg>Rewrite</button>
+        <button class="btn btn-ghost" id="ugcRewriteBtn" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.9 4.2"/><path d="M20 4v6h-6"/></svg>Rewrite</button>
         <button class="btn btn-primary" id="ugcRenderBtn" onclick="ugcRenderVideo()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>Generate video</button>
       </div>
     </div>
@@ -4636,6 +4748,9 @@ function ugcRenderProductThumbs(){
     var url=URL.createObjectURL(f);
     return '<div class="ref-tile" style="background-image:url(\''+url+'\')" title="'+esc(f.name||'product')+'"><button type="button" class="ref-x" onclick="ugcRemoveProductImg('+i+')">✕</button></div>';
   }).join('');
+  // 사진이 들어오면 컨셉 제안이 휴면 문구 → 진짜 버튼으로 승격(호출은 여전히 눌러야 함)
+  var box=document.getElementById('ugcInputBox');
+  if(box)box.classList.toggle('has-photo',ugcProductFiles.length>0);
   var pick=document.getElementById('ugcPickBtn'); if(pick)pick.style.display=ugcProductFiles.length>=UGC_MAX_REF?'none':'';
   var hint=document.getElementById('ugcPickHint');
   if(hint)hint.textContent=ugcProductFiles.length
@@ -4652,8 +4767,10 @@ let ugcScript=null; // 1단계에서 받은 대본(2단계 렌더로 전달)
 async function ugcSuggestConcept(){
   const hint=document.getElementById('ugcHint');
   if(!ugcProductFiles.length){hint.textContent='⚠ Add a product photo first — then I can suggest a concept.';return;}
-  const btn=document.getElementById('ugcSuggestBtn');const old=btn.textContent;
-  btn.disabled=true;btn.textContent='✨ Thinking…';
+  // 로딩 표시는 실제 버튼(#ugcSuggestHero)에. 옛 #ugcSuggestBtn은 사진 없을 때만 뜨는 힌트 span으로 바뀜.
+  const btn=document.getElementById('ugcSuggestHero');
+  const lbl=document.getElementById('ugcSuggestHeroTxt');const old=lbl?lbl.textContent:'';
+  btn.disabled=true; if(lbl)lbl.textContent='Thinking…';
   try{
     const fd=new FormData();
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png')));
@@ -4667,7 +4784,7 @@ async function ugcSuggestConcept(){
     document.getElementById('ugcConcept').value=data.concept;
     hint.textContent='Concept suggested — edit it, or tap again for another.';
   }catch(e){ console.error(e); hint.textContent='⚠ '+(e.message||'Suggestion failed'); }
-  finally{ btn.disabled=false;btn.textContent=old; }
+  finally{ btn.disabled=false; if(lbl)lbl.textContent=old; } // textContent로 되돌리면 버튼 안 SVG가 날아감 → 라벨 span만 복원
 }
 
 // 접힌 "제품 상세" 옵션 토글
@@ -4713,7 +4830,7 @@ function ugcShowScriptLoading(on){
 }
 // Ad language(대본·음성·자막·캡션 언어). 기본 en. 생성 프롬프트·영상 비주얼과는 무관.
 function ugcLang(){ const el=document.getElementById('ugcLangSel'); return (el&&el.value==='ko')?'ko':'en'; }
-function ugcSetLang(btn){ const el=document.getElementById('ugcLangSel'); if(el)el.value=btn.dataset.lang; const seg=btn.closest('.ugc-seg'); if(seg)seg.querySelectorAll('.ugc-seg-b').forEach(b=>b.classList.toggle('active',b===btn)); }
+function ugcSetLang(btn){ const el=document.getElementById('ugcLangSel'); if(el)el.value=btn.dataset.lang; const seg=btn.closest('.ugc-seg'); if(seg)seg.querySelectorAll('.ugc-seg-b').forEach(b=>b.classList.toggle('active',b===btn)); ugcRenderKnobLine(); }
 async function ugcWriteScript(){
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
@@ -4782,6 +4899,7 @@ function ugcRenderScriptPreview(data){
   renderUgcInline(null);
   document.getElementById('ugcScriptPreview').style.display='';
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
+  ugcCompact(); // 대본이 나왔으니 왼쪽 입력은 요약 카드로 접고 오른쪽에 자리를 내준다
 }
 // 생성 전 대본 검토: 씬 자연어 편집 패널 토글 → refineScene(이미지/모션 라우팅). 프롬프트 미노출.
 function ugcEditScenePre(i){
@@ -4825,6 +4943,7 @@ function ugcSyncVoiceControls(){
   // P3 2모드: 음성모드(on)=길이를 음성이 정함 → Length/scene 숨김+안내. 음악모드(off)=Length/scene 표시.
   const lw=document.getElementById('ugcLenSceneWrap'); if(lw)lw.style.display=on?'none':'';
   const lh=document.getElementById('ugcVoiceLenHint'); if(lh)lh.style.display=on?'':'none';
+  ugcRenderKnobLine();
 }
 // 편집 → ugcScript에 즉시 반영(렌더는 ugcScript를 그대로 전송하므로 수정본이 영상에 반영됨).
 function ugcBindScriptEdits(){
@@ -4867,9 +4986,51 @@ function ugcSelectModel(el){
 function ugcSetAspect(ar){
   const el=document.getElementById('ugcAspect'); if(el)el.value=ar;
   document.querySelectorAll('.ugc-ar-btn').forEach(b=>b.classList.toggle('active',b.dataset.ar===ar));
+  ugcRenderKnobLine();
 }
-function ugcSetSceneCount(el){ document.getElementById('ugcSceneCount').value=el.dataset.c; document.querySelectorAll('#ugcCountSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); ugcUpdateTotal(); }
+function ugcSetSceneCount(el){ document.getElementById('ugcSceneCount').value=el.dataset.c; document.querySelectorAll('#ugcCountSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); ugcUpdateTotal(); ugcRenderKnobLine(); }
 function ugcSetSceneDur(el){ document.getElementById('ugcSceneDur').value=el.dataset.d; document.querySelectorAll('#ugcDurSeg .ugc-seg-b').forEach(b=>b.classList.toggle('active',b===el)); ugcUpdateTotal(); }
+
+/* ───── Step 1 요약줄 (2026-07-17) ─────
+   기본값이 이미 잡힌 노브(비율·씬수·모드·언어)를 한 줄로 "진술"한다. 접어서 숨기는 게 아니라
+   상태를 말해주는 것 — 확인은 1줄 읽기로 끝나고, 바꿀 때만 Change로 펼친다.
+   Video format은 창작 분기(제품만 vs 모델)라 요약줄 밖에 카드로 남는다. */
+function ugcRenderKnobLine(){
+  const txt=document.getElementById('ugcKnobTxt'); if(!txt)return;
+  const v=(id)=>(document.getElementById(id)||{}).value;
+  const b=(s)=>'<b>'+s+'</b>';
+  const ar=v('ugcAspect')||'9:16';
+  const arSub=ar==='9:16'?' Reels':ar==='1:1'?' Feed':' Wide';
+  const lang=v('ugcLangSel')==='ko'?'한국어':'English';
+  const cnt=parseInt(v('ugcSceneCount'),10)||0;
+  // Sound(Voiceover/Music only)는 요약줄에 넣지 않는다 — 기본값이 보통 맞지 않는 창작 분기라 밖에 노출
+  txt.innerHTML=[b(ar)+arSub, b(lang), b(cnt?String(cnt):'Auto')+' scenes'].join(' · ');
+}
+function ugcToggleKnobs(){
+  const box=document.getElementById('ugcInputBox'); if(!box)return;
+  const open=box.classList.toggle('knobs-open');
+  const line=document.getElementById('ugcKnobLine'); if(line)line.setAttribute('aria-expanded',String(open));
+  const chg=document.getElementById('ugcKnobChg'); if(chg)chg.textContent=open?'Done':'Change';
+}
+/* 대본이 나오면 입력을 요약 카드로 접고, Edit로 되돌린다 */
+function ugcCompact(){
+  const box=document.getElementById('ugcInputBox'); if(!box)return;
+  const name=((document.getElementById('ugcProductName')||{}).value||'').trim();
+  const concept=((document.getElementById('ugcConcept')||{}).value||'').trim();
+  const fmt=(document.getElementById('ugcFormat')||{}).value==='model-editorial'?'With a model':'Product only';
+  const ar=(document.getElementById('ugcAspect')||{}).value||'9:16';
+  const top=document.getElementById('ugcRecapTop');
+  if(top)top.innerHTML=(name?'<b>'+ugcEsc(name)+'</b> · ':'')+ugcEsc(fmt)+' · '+ugcEsc(ar);
+  const sub=document.getElementById('ugcRecapSub'); if(sub)sub.textContent=concept;
+  // 썸네일은 <img>가 아니라 .ref-tile의 background-image(objectURL)라 거기서 꺼낸다
+  const th=document.getElementById('ugcRecapTh');
+  const tile=document.querySelector('#ugcThumbStrip .ref-tile');
+  const m=tile&&(tile.style.backgroundImage||'').match(/url\(["']?(.+?)["']?\)/);
+  if(th){ if(m&&m[1]){th.src=m[1];th.style.display='';} else {th.removeAttribute('src');th.style.display='none';} }
+  box.classList.add('compact'); box.classList.remove('knobs-open');
+}
+function ugcUncompact(){ const box=document.getElementById('ugcInputBox'); if(box)box.classList.remove('compact'); }
+function ugcEsc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 function ugcUpdateTotal(){
   const c=parseInt((document.getElementById('ugcSceneCount')||{}).value,10)||0;
   const d=parseInt((document.getElementById('ugcSceneDur')||{}).value,10)||0;
