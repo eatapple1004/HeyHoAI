@@ -1,18 +1,46 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doppia — One product photo. Studio photos & ad videos.</title>
-<meta name="description" content="Drop in one product photo, pick a template, and Doppia generates studio-grade product & model photos and narrated ad videos for Reels & TikTok. No prompts." />
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
-<script src="/js/flags.js" defer></script>
-<script src="/js/no-pip.js" defer></script>
-<script src="/js/i18n.js?v=10" defer></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Doppia — One product photo. The ad, and the catalog.</title>
+<meta content="One product photo is the whole upload. Doppia writes and renders the ad video that sells your product, and shoots the catalog cuts that show it — for apparel, jewelry and cosmetics sellers." name="description"/>
+<!-- (2026-07-17) notranslate 복원 — /ko 프리렌더가 생겼으므로 Chrome 기계번역에 카피를 맡기는 것보다
+     hreflang + 언어 스위처로 /ko에 보내는 게 낫다. 색인·hreflang엔 영향 없다(번역 제안만 억제). -->
+<meta content="notranslate" name="google"/>
+<!-- ⚠️ hreflang 3개는 en·ko·x-default를 **자기 자신 포함** 전부 나열해야 한다. 한쪽만 선언하면 Google이 세트를 통째로 폐기.
+     canonical은 반드시 **자기 언어 URL**(/ko의 canonical을 /로 두면 /ko가 색인에서 사라진다). ko.html은 build_landing_ko.js가 뒤집는다. -->
+<link href="https://doppia.ai/" rel="canonical"/>
+<link href="https://doppia.ai/" hreflang="en" rel="alternate"/>
+<link href="https://doppia.ai/ko" hreflang="ko" rel="alternate"/>
+<link href="https://doppia.ai/" hreflang="x-default" rel="alternate"/>
+<meta content="website" property="og:type"/>
+<meta content="https://doppia.ai/" property="og:url"/>
+<meta content="Doppia — One product photo. The ad, and the catalog." property="og:title"/>
+<meta content="One product photo is the whole upload. Doppia writes and renders the ad video that sells your product, and shoots the catalog cuts that show it." property="og:description"/>
+<meta content="https://doppia.ai/img/accessories/jewelry-worn-cut.png" property="og:image"/>
+<meta content="en_US" property="og:locale"/>
+<meta content="ko_KR" property="og:locale:alternate"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/favicon-16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=Sora:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<script defer="" src="/js/flags.js"></script>
+<script defer="" src="/js/no-pip.js"></script>
+<!-- (2026-07-17) i18n.js 제거 — 랜딩은 /ko 프리렌더로 빠진다. 남기면 documentElement.lang = getLang()이
+     localStorage='en'일 때 /ko에 lang="en"을 덮어써 hreflang 신호를 망가뜨린다.
+     나머지 17개 앱 페이지(studio·billing·gallery…)는 기존 DICT 방식 무손상 유지. -->
+<script>/*LP-LANG — 명시적 선호(doppia_lang)가 ko면 /ko로. 저장값 없으면 아무것도 안 한다.
+  Googlebot은 무쿠키라 미발동 → 영문 + hreflang으로 /ko 발견. 자동 리다이렉트 아님(오판 시 적대적).*/
+(function(){try{
+  if(location.pathname!=='/'&&location.pathname!=='/landing')return;
+  var l=localStorage.getItem('doppia_lang')||(document.cookie.match(/(?:^|;\s*)doppia_lang=([^;]+)/)||[])[1];
+  if(l==='ko')location.replace('/ko'+location.search+location.hash);
+}catch(e){}})();
+</script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
@@ -466,7 +494,6 @@
   .ig-cap{font-size:11px;color:#dcdce4;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ig-cap b{font-weight:700;color:#fff}
 </style>
-
 <style>
   /* ══ 구조 재설계 (2026-07-17) — 독자 질문 사다리 10섹션.
         그라디언트 = CTA 전용 회수(옛 13요소) · 상시 모션 7→1 · nav = 페이지 목차.
@@ -585,186 +612,192 @@
 <body>
 <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="grain"></div>
-
 <nav class="n-nav"><div class="in">
-  <a class="mark" href="/landing">DOPPIA.AI</a>
-  <span class="toc"><a href="#advideo">Ad Video</a><a href="#shots">Shots</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></span>
-  <span class="end"><a href="/saas-login">Log in</a><a class="btn btn-primary grad-cta" href="/studio">Start free</a></span>
+<a class="mark" data-i18n="nav.mark" href="/landing">DOPPIA.AI</a>
+<span class="toc"><a data-i18n="nav.advideo" href="#advideo">Ad Video</a><a data-i18n="nav.shots" href="#shots">Shots</a><a data-i18n="nav.pricing" href="#pricing">Pricing</a><a data-i18n="nav.faq" href="#faq">FAQ</a></span>
+<span class="end"><a data-i18n="nav.login" href="/saas-login">Log in</a><a class="btn btn-primary grad-cta" data-i18n="nav.cta" href="/studio">Start free</a></span>
 </div></nav>
-
 <header class="n-wrap n-hero">
-  <div>
-    <span class="n-pill">Apparel · Jewelry · Cosmetics</span>
-    <h1 class="n-h1">One product photo.<br>The ad, and <em>the catalog.</em></h1>
-    <p class="n-lede">One photo is the whole upload — no second angle, no reference sheet. Doppia writes and renders the ad video that sells your product, and shoots the catalog cuts that show it.</p>
-    <div class="n-cta">
-      <a class="btn btn-primary grad-cta btn-lg" href="/studio">Start free — upload one photo</a>
-      <a class="btn btn-ghost btn-lg" href="#shots">See what comes out</a>
-    </div>
-    <p class="n-fine"><b>◈ <span data-dp="plans.free.cr" data-fmt="1">1,500</span> free credits</b> · No credit card · Cancel anytime</p>
-  </div>
-  <div class="n-stage">
-    <!-- SLOT A — Ad Video 1편(9:16). 준비되면 <div class="n-drop"> 통째를
+<div>
+<span class="n-pill" data-i18n="hero.pill">Apparel · Jewelry · Cosmetics</span>
+<h1 class="n-h1" data-i18n="hero.h1">One product photo.<br/>The ad, and <em>the catalog.</em></h1>
+<p class="n-lede" data-i18n="hero.lede">One photo is the whole upload — no second angle, no reference sheet. Doppia writes and renders the ad video that sells your product, and shoots the catalog cuts that show it.</p>
+<div class="n-cta">
+<a class="btn btn-primary grad-cta btn-lg" data-i18n="hero.cta1" href="/studio">Start free — upload one photo</a>
+<a class="btn btn-ghost btn-lg" data-i18n="hero.cta2" href="#shots">See what comes out</a>
+</div>
+<p class="n-fine" data-i18n="hero.fine"><b>◈ <span data-dp="plans.free.cr" data-fmt="1">1,500</span> free credits</b> · No credit card · Cancel anytime</p>
+</div>
+<div class="n-stage">
+<!-- SLOT A — Ad Video 1편(9:16). 준비되면 <div class="n-drop"> 통째를
          <video src="/img/hero-advideo.mp4" autoplay muted loop playsinline poster="..."></video> 로 교체 -->
-    <div class="n-slotA"><div class="n-drop"><b>Ad Video</b>9:16 · 20s</div></div>
-    <div class="n-slotB"><img src="/img/accessories/jewelry-worn-cut.png" alt="On-model jewelry shot"></div>
-  </div>
+<div class="n-slotA"><div class="n-drop" data-i18n="hero.slotA"><b>Ad Video</b>9:16 · 20s</div></div>
+<div class="n-slotB"><img alt="On-model jewelry shot" src="/img/accessories/jewelry-worn-cut.png"/></div>
+</div>
 </header>
-
 <section class="n-wrap n-sec" id="advideo">
-  <div class="n-eyebrow">Ad Video</div>
-  <h2 class="n-h">It writes the ad before it spends your credits.</h2>
-  <p class="n-sub">Ad Video is the one that talks. One photo and one line about your product — Doppia drafts the scenes and every on-screen line, and shows you all of it for free.</p>
-  <div class="n-chain">
-    <div><b>Claude</b><span>writes the script and every on-screen line</span></div>
-    <div><b>Gemini</b><span>renders each scene</span></div>
-    <div><b>Kling</b><span>puts them in motion</span></div>
-    <div><b>ElevenLabs</b><span>scores it</span></div>
-  </div>
-  <div class="n-body">
-    <p>Out comes 1080&times;1920, 30fps, H.264 — the Reels and TikTok upload spec.</p>
-    <p><b>The script comes first, and it costs nothing.</b> Read every line. Rewrite any of them. Only then does anything get charged — <b>&#9670;625 per five-second scene</b>.</p>
-    <p>After it's made, tell any single scene what to change in plain language and redo just that one. Swapping the music or the speed on a finished ad is free.</p>
-  </div>
+<div class="n-eyebrow" data-i18n="advideo.eyebrow">Ad Video</div>
+<h2 class="n-h" data-i18n="advideo.h">It writes the ad before it spends your credits.</h2>
+<p class="n-sub" data-i18n="advideo.sub">Ad Video is the one that talks. One photo and one line about your product — Doppia drafts the scenes and every on-screen line, and shows you all of it for free.</p>
+<div class="n-chain">
+<div data-i18n="advideo.chain.claude"><b>Claude</b><span>writes the script and every on-screen line</span></div>
+<div data-i18n="advideo.chain.gemini"><b>Gemini</b><span>renders each scene</span></div>
+<div data-i18n="advideo.chain.kling"><b>Kling</b><span>puts them in motion</span></div>
+<div data-i18n="advideo.chain.elevenlabs"><b>ElevenLabs</b><span>scores it</span></div>
+</div>
+<div class="n-body">
+<p data-i18n="advideo.body1">Out comes 1080×1920, 30fps, H.264 — the Reels and TikTok upload spec.</p>
+<p data-i18n="advideo.body2"><b>The script comes first, and it costs nothing.</b> Read every line. Rewrite any of them. Only then does anything get charged — <b>◆625 per five-second scene</b>.</p>
+<p data-i18n="advideo.body3">After it's made, tell any single scene what to change in plain language and redo just that one. Swapping the music or the speed on a finished ad is free.</p>
+</div>
 </section>
-
 <section class="n-wrap n-sec" id="shots">
-  <div class="n-eyebrow">Shots</div>
-  <h2 class="n-h">This tee went in. These are the cuts it came out as.</h2>
-  <p class="n-sub">Shots are the ones that don't talk — they show. Pick your category to see what ships for it today.</p>
-  <div class="n-pair">
-    <!-- SLOT — 입력 원본. 준비되면 <div class="n-in n-drop"> 를 <img src="..."> 로 교체 -->
-    <figure><div class="n-in n-drop"><b>Your photo</b>one upload</div><figcaption>Went in</figcaption></figure>
-    <div class="n-arw" aria-hidden="true">&rarr;</div>
-    <figure><img src="/img/productcut/flat-lay-cut.png" alt="Flat lay product cut"><figcaption>Flat Lay</figcaption></figure>
-    <figure><img src="/img/productcut/ghost-mannequin-cut.png" alt="Ghost mannequin product cut"><figcaption>Ghost Mannequin</figcaption></figure>
-  </div>
-  <div class="n-body" style="margin-bottom:34px"><p>Same shirt, same seams, same neckline. Every run returns four photos, not one, so you pick the take that holds.</p></div>
-  <div class="n-tabs" role="tablist" aria-label="Category">
-    <button class="n-tab" role="tab" aria-selected="true" data-t="app">Apparel</button>
-    <button class="n-tab" role="tab" aria-selected="false" data-t="jew">Jewelry</button>
-    <button class="n-tab" role="tab" aria-selected="false" data-t="cos">Cosmetics</button>
-  </div>
-  <div class="n-tiles" id="nTiles"><div class="n-tile"><img src="/img/productcut/flat-lay-cut.png" alt="Flat Lay" loading="lazy"><span>Flat Lay</span></div><div class="n-tile"><img src="/img/studiomodel/model-cut.png" alt="On-model" loading="lazy"><span>On-model</span></div><div class="n-tile"><img src="/img/productcut/ghost-mannequin-cut.png" alt="Ghost Mannequin" loading="lazy"><span>Ghost Mannequin</span></div></div>
-  <p class="n-body" style="margin-top:26px">Selling something else — food, furniture, electronics, pets? We're not there yet. <a href="mailto:support@doppia.ai">Tell us what you sell &rarr;</a></p>
+<div class="n-eyebrow" data-i18n="shots.eyebrow">Shots</div>
+<h2 class="n-h" data-i18n="shots.h">This tee went in. These are the cuts it came out as.</h2>
+<p class="n-sub" data-i18n="shots.sub">Shots are the ones that don't talk — they show. Pick your category to see what ships for it today.</p>
+<div class="n-pair">
+<!-- SLOT — 입력 원본. 준비되면 <div class="n-in n-drop"> 를 <img src="..."> 로 교체 -->
+<figure><div class="n-in n-drop" data-i18n="shots.pair.in"><b>Your photo</b>one upload</div><figcaption data-i18n="shots.cap.in">Went in</figcaption></figure>
+<div aria-hidden="true" class="n-arw">→</div>
+<figure><img alt="Flat lay product cut" src="/img/productcut/flat-lay-cut.png"/><figcaption data-i18n="shots.cap.flat">Flat Lay</figcaption></figure>
+<figure><img alt="Ghost mannequin product cut" src="/img/productcut/ghost-mannequin-cut.png"/><figcaption data-i18n="shots.cap.ghost">Ghost Mannequin</figcaption></figure>
+</div>
+<div class="n-body" data-i18n="shots.body1" style="margin-bottom:34px"><p>Same shirt, same seams, same neckline. Every run returns four photos, not one, so you pick the take that holds.</p></div>
+<div aria-label="Category" class="n-tabs" role="tablist">
+<button aria-selected="true" class="n-tab" data-i18n="shots.tab.app" data-t="app" role="tab">Apparel</button>
+<button aria-selected="false" class="n-tab" data-i18n="shots.tab.jew" data-t="jew" role="tab">Jewelry</button>
+<button aria-selected="false" class="n-tab" data-i18n="shots.tab.cos" data-t="cos" role="tab">Cosmetics</button>
+</div>
+<div class="n-tiles" id="nTiles"><div class="n-tile" data-cat="app"><img alt="Flat Lay" loading="lazy" src="/img/productcut/flat-lay-cut.png"/><span data-i18n="shots.tile.0">Flat Lay</span></div><div class="n-tile" data-cat="app"><img alt="On-model" loading="lazy" src="/img/studiomodel/model-cut.png"/><span data-i18n="shots.tile.1">On-model</span></div><div class="n-tile" data-cat="app"><img alt="Ghost Mannequin" loading="lazy" src="/img/productcut/ghost-mannequin-cut.png"/><span data-i18n="shots.tile.2">Ghost Mannequin</span></div><div class="n-tile" data-cat="jew"><img alt="On Model" loading="lazy" src="/img/accessories/jewelry-on-model-necklace.png"/><span data-i18n="shots.tile.3">On Model</span></div><div class="n-tile" data-cat="jew"><img alt="Worn Cut" loading="lazy" src="/img/accessories/jewelry-worn-cut.png"/><span data-i18n="shots.tile.4">Worn Cut</span></div><div class="n-tile" data-cat="jew"><img alt="Hero" loading="lazy" src="/img/accessories/jewelry-hero.png"/><span data-i18n="shots.tile.5">Hero</span></div><div class="n-tile" data-cat="jew"><img alt="Product Cut" loading="lazy" src="/img/accessories/jewelry-product-cut.png"/><span data-i18n="shots.tile.6">Product Cut</span></div><div class="n-tile" data-cat="cos"><img alt="Noir Gold" loading="lazy" src="/img/producthero/noir-gold.jpg"/><span data-i18n="shots.tile.7">Noir Gold</span></div><div class="n-tile" data-cat="cos"><img alt="Dewy Glass" loading="lazy" src="/img/producthero/dewy-glass.jpg"/><span data-i18n="shots.tile.8">Dewy Glass</span></div><div class="n-tile" data-cat="cos"><img alt="Gloss Mirror" loading="lazy" src="/img/producthero/gloss-mirror.jpg"/><span data-i18n="shots.tile.9">Gloss Mirror</span></div><div class="n-tile" data-cat="cos"><img alt="Liquid Splash" loading="lazy" src="/img/producthero/liquid-splash.jpg"/><span data-i18n="shots.tile.10">Liquid Splash</span></div><div class="n-tile" data-cat="cos"><img alt="Silk Drape" loading="lazy" src="/img/producthero/silk-drape.jpg"/><span data-i18n="shots.tile.11">Silk Drape</span></div><div class="n-tile" data-cat="cos"><img alt="Sunlit Pop" loading="lazy" src="/img/producthero/sunlit-pop.jpg"/><span data-i18n="shots.tile.12">Sunlit Pop</span></div></div>
+<p class="n-body" data-i18n="shots.body2" style="margin-top:26px">Selling something else — food, furniture, electronics, pets? We're not there yet. <a href="mailto:support@doppia.ai">Tell us what you sell →</a></p>
 </section>
-
 <section class="n-wrap n-sec">
-  <div class="n-eyebrow">Control</div>
-  <h2 class="n-h">Three things you do. Four things you decide.</h2>
-  <p class="n-sub">The work is one upload. The rest is choices — and they're yours, not the look's.</p>
-  <div class="n-body" style="margin-bottom:34px"><p><b>You do:</b> Upload one product photo &rarr; pick a look &rarr; generate.</p></div>
-  <div class="n-dec"><h3>Cast it.</h3>
-    <p>Eighty models — forty women and forty men, across eight ethnic groups. Every one is AI-generated. Nobody to book, no day rate, no location fee.</p>
-    <div class="n-roster"><img src="/img/models/f-east_asian-1.jpg" alt="" loading="lazy"><img src="/img/models/f-east_asian-2.jpg" alt="" loading="lazy"><img src="/img/models/f-white_european-1.jpg" alt="" loading="lazy"><img src="/img/models/f-white_european-2.jpg" alt="" loading="lazy"><img src="/img/models/f-black_african-1.jpg" alt="" loading="lazy"><img src="/img/models/f-black_african-2.jpg" alt="" loading="lazy"><img src="/img/models/f-hispanic_latino-1.jpg" alt="" loading="lazy"><img src="/img/models/f-hispanic_latino-2.jpg" alt="" loading="lazy"><img src="/img/models/f-south_asian-1.jpg" alt="" loading="lazy"><img src="/img/models/f-south_asian-2.jpg" alt="" loading="lazy"><img src="/img/models/f-southeast_asian-1.jpg" alt="" loading="lazy"><img src="/img/models/f-southeast_asian-2.jpg" alt="" loading="lazy"><img src="/img/models/f-mena-1.jpg" alt="" loading="lazy"><img src="/img/models/f-mena-2.jpg" alt="" loading="lazy"><img src="/img/models/f-mixed-1.jpg" alt="" loading="lazy"><img src="/img/models/f-mixed-2.jpg" alt="" loading="lazy"><img src="/img/models/m-east_asian-1.jpg" alt="" loading="lazy"><img src="/img/models/m-east_asian-2.jpg" alt="" loading="lazy"><img src="/img/models/m-white_european-1.jpg" alt="" loading="lazy"><img src="/img/models/m-white_european-2.jpg" alt="" loading="lazy"><img src="/img/models/m-black_african-1.jpg" alt="" loading="lazy"><img src="/img/models/m-black_african-2.jpg" alt="" loading="lazy"><img src="/img/models/m-hispanic_latino-1.jpg" alt="" loading="lazy"><img src="/img/models/m-hispanic_latino-2.jpg" alt="" loading="lazy"><img src="/img/models/m-south_asian-1.jpg" alt="" loading="lazy"><img src="/img/models/m-south_asian-2.jpg" alt="" loading="lazy"><img src="/img/models/m-southeast_asian-1.jpg" alt="" loading="lazy"><img src="/img/models/m-southeast_asian-2.jpg" alt="" loading="lazy"><img src="/img/models/m-mena-1.jpg" alt="" loading="lazy"><img src="/img/models/m-mena-2.jpg" alt="" loading="lazy"><img src="/img/models/m-mixed-1.jpg" alt="" loading="lazy"><img src="/img/models/m-mixed-2.jpg" alt="" loading="lazy"></div></div>
-  <div class="n-dec"><h3>Pick the scene.</h3>
-    <p>Forty scenes in eight categories.</p>
-    <div class="n-chips"><span class="n-chip">Studio</span><span class="n-chip">Home</span><span class="n-chip">Cafe / Retail</span><span class="n-chip">Urban</span><span class="n-chip">Architectural</span><span class="n-chip">Nature</span><span class="n-chip">Golden Hour</span><span class="n-chip">Seasonal</span></div></div>
-  <div class="n-dec"><h3>Pick the crop, per run — not per look.</h3>
-    <p>Ten aspect ratios, 4:5 by default, because 4:5 is the largest crop the Instagram feed will take.</p>
-    <div class="n-chips"><span class="n-chip on">4:5</span><span class="n-chip">1:1</span><span class="n-chip">9:16</span><span class="n-chip">16:9</span><span class="n-chip">+6 more</span></div></div>
+<div class="n-eyebrow" data-i18n="control.eyebrow">Control</div>
+<h2 class="n-h" data-i18n="control.h">Three things you do. Four things you decide.</h2>
+<p class="n-sub" data-i18n="control.sub">The work is one upload. The rest is choices — and they're yours, not the look's.</p>
+<div class="n-body" style="margin-bottom:34px"><p data-i18n="control.youdo"><b>You do:</b> Upload one product photo → pick a look → generate.</p></div>
+<div class="n-dec"><h3 data-i18n="control.cast.h">Cast it.</h3>
+<p data-i18n="control.cast.p">Eighty models — forty women and forty men, across eight ethnic groups. Every one is AI-generated. Nobody to book, no day rate, no location fee.</p>
+<div class="n-roster"><img alt="" loading="lazy" src="/img/models/f-east_asian-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-east_asian-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-white_european-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-white_european-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-black_african-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-black_african-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-hispanic_latino-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-hispanic_latino-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-south_asian-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-south_asian-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-southeast_asian-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-southeast_asian-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-mena-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-mena-2.jpg"/><img alt="" loading="lazy" src="/img/models/f-mixed-1.jpg"/><img alt="" loading="lazy" src="/img/models/f-mixed-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-east_asian-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-east_asian-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-white_european-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-white_european-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-black_african-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-black_african-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-hispanic_latino-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-hispanic_latino-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-south_asian-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-south_asian-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-southeast_asian-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-southeast_asian-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-mena-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-mena-2.jpg"/><img alt="" loading="lazy" src="/img/models/m-mixed-1.jpg"/><img alt="" loading="lazy" src="/img/models/m-mixed-2.jpg"/></div></div>
+<div class="n-dec"><h3 data-i18n="control.scene.h">Pick the scene.</h3>
+<p data-i18n="control.scene.p">Forty scenes in eight categories.</p>
+<div class="n-chips"><span class="n-chip" data-i18n="control.chip.0">Studio</span><span class="n-chip" data-i18n="control.chip.1">Home</span><span class="n-chip" data-i18n="control.chip.2">Cafe / Retail</span><span class="n-chip" data-i18n="control.chip.3">Urban</span><span class="n-chip" data-i18n="control.chip.4">Architectural</span><span class="n-chip" data-i18n="control.chip.5">Nature</span><span class="n-chip" data-i18n="control.chip.6">Golden Hour</span><span class="n-chip" data-i18n="control.chip.7">Seasonal</span></div></div>
+<div class="n-dec"><h3 data-i18n="control.crop.h">Pick the crop, per run — not per look.</h3>
+<p data-i18n="control.crop.p">Ten aspect ratios, 4:5 by default, because 4:5 is the largest crop the Instagram feed will take.</p>
+<div class="n-chips"><span class="n-chip on" data-i18n="control.chip.8">4:5</span><span class="n-chip" data-i18n="control.chip.9">1:1</span><span class="n-chip" data-i18n="control.chip.10">9:16</span><span class="n-chip" data-i18n="control.chip.11">16:9</span><span class="n-chip" data-i18n="control.chip.12">+6 more</span></div></div>
 </section>
-
 <section class="n-wrap n-sec">
-  <div class="n-eyebrow">Trust</div>
-  <h2 class="n-h">You've never heard of us. So don't trust us — check us.</h2>
-  <p class="n-sub">We have no logos to show you. Here's what you can verify instead.</p>
-  <div class="n-tg">
-    <div><b>You only pay for what renders.</b><p>If a photo fails, the credits come back automatically — per photo, no ticket, no ask.</p></div>
-    <div><b>You can't overspend.</b><p>No overage, no auto top-up. If your balance is short, the run fails instead of billing you. Every credit movement is itemized in a ledger you can open.</p></div>
-    <div><b>Your files live on AWS Seoul.</b><p>Every AI vendor that touches them is published by name — what we send, and where it goes. Doppia doesn't train on your uploads. <a href="/privacy.html">Read the vendor table &rarr;</a></p></div>
-  </div>
+<div class="n-eyebrow" data-i18n="trust.eyebrow">Trust</div>
+<h2 class="n-h" data-i18n="trust.h">You've never heard of us. So don't trust us — check us.</h2>
+<p class="n-sub" data-i18n="trust.sub">We have no logos to show you. Here's what you can verify instead.</p>
+<div class="n-tg">
+<div><b data-i18n="trust.a.b">You only pay for what renders.</b><p data-i18n="trust.a.p">If a photo fails, the credits come back automatically — per photo, no ticket, no ask.</p></div>
+<div><b data-i18n="trust.b.b">You can't overspend.</b><p data-i18n="trust.b.p">No overage, no auto top-up. If your balance is short, the run fails instead of billing you. Every credit movement is itemized in a ledger you can open.</p></div>
+<div><b data-i18n="trust.c.b">Your files live on AWS Seoul.</b><p data-i18n="trust.c.p">Every AI vendor that touches them is published by name — what we send, and where it goes. Doppia doesn't train on your uploads. <a href="/privacy.html">Read the vendor table →</a></p></div>
+</div>
 </section>
-
 <section class="n-wrap n-sec" id="pricing">
-  <div class="n-eyebrow">Pricing</div>
-  <h2 class="n-h">The line, and the amount.</h2>
-  <div class="n-pr">
-    <div class="n-card"><div class="lab">The line</div>
-      <div class="n-body">
-        <p>Free: every result you generate is published to Doppia's public Community Creations feed. <b>There is no opt-out</b> — not when you generate, and not afterwards. If you're shooting an SKU you haven't launched, that's the line.</p>
-        <p><b>Every paid plan includes Private Mode:</b> your results stay out of that feed.</p>
-      </div>
-    </div>
-    <div class="n-card"><div class="lab">The amount</div>
-      <div class="n-body"><p>Private Mode, and more credits. <b>That's the whole difference between the paid plans — only the amount changes.</b></p></div>
-      <div class="n-plans" role="tablist" aria-label="Plan">
-        <button class="n-plan" role="tab" aria-selected="false" data-p="starter">Starter</button>
-        <button class="n-plan" role="tab" aria-selected="true" data-p="standard">Standard</button>
-        <button class="n-plan" role="tab" aria-selected="false" data-p="pro">Pro</button>
-        <button class="n-plan" role="tab" aria-selected="false" data-p="premium">Premium</button>
-      </div>
-      <div class="n-cyc" role="group" aria-label="Billing cycle">
-        <button class="n-cy" aria-pressed="true" data-y="0">Monthly</button>
-        <button class="n-cy" aria-pressed="false" data-y="1">Yearly <b>−16%</b></button>
-      </div>
-      <div class="n-amt" data-price="standard" id="nAmt">$49</div>
-      <div class="n-conv" data-conv="standard" id="nConv"></div>
-      <div class="n-note" id="nNote"></div>
-      <a class="btn btn-primary grad-cta" href="/billing" style="margin-top:20px">Choose this plan</a>
-    </div>
-  </div>
+<div class="n-eyebrow" data-i18n="pricing.eyebrow">Pricing</div>
+<h2 class="n-h" data-i18n="pricing.h">The line, and the amount.</h2>
+<div class="n-pr">
+<div class="n-card"><div class="lab" data-i18n="pricing.line.lab">The line</div>
+<div class="n-body">
+<p data-i18n="pricing.line.p1">Free: every result you generate is published to Doppia's public Community Creations feed. <b>There is no opt-out</b> — not when you generate, and not afterwards. If you're shooting an SKU you haven't launched, that's the line.</p>
+<p data-i18n="pricing.line.p2"><b>Every paid plan includes Private Mode:</b> your results stay out of that feed.</p>
+</div>
+</div>
+<div class="n-card"><div class="lab" data-i18n="pricing.amount.lab">The amount</div>
+<div class="n-body"><p data-i18n="pricing.amount.p1">Private Mode, and more credits. <b>That's the whole difference between the paid plans — only the amount changes.</b></p></div>
+<div aria-label="Plan" class="n-plans" role="tablist">
+<button aria-selected="false" class="n-plan" data-i18n="pricing.plan.starter" data-p="starter" role="tab">Starter</button>
+<button aria-selected="true" class="n-plan" data-i18n="pricing.plan.standard" data-p="standard" role="tab">Standard</button>
+<button aria-selected="false" class="n-plan" data-i18n="pricing.plan.pro" data-p="pro" role="tab">Pro</button>
+<button aria-selected="false" class="n-plan" data-i18n="pricing.plan.premium" data-p="premium" role="tab">Premium</button>
+</div>
+<div aria-label="Billing cycle" class="n-cyc" role="group">
+<button aria-pressed="true" class="n-cy" data-i18n="pricing.cyc.m" data-y="0">Monthly</button>
+<button aria-pressed="false" class="n-cy" data-i18n="pricing.cyc.y" data-y="1">Yearly <b>−16%</b></button>
+</div>
+<div class="n-amt" data-price="standard" id="nAmt">$49</div>
+<div class="n-conv" data-conv="standard" id="nConv"></div>
+<div class="n-note" id="nNote"></div>
+<a class="btn btn-primary grad-cta" data-i18n="pricing.cta" href="/billing" style="margin-top:20px">Choose this plan</a>
+</div>
+</div>
 </section>
-
 <section class="n-wrap n-sec" id="faq">
-  <div class="n-eyebrow">FAQ</div>
-  <h2 class="n-h">Before you spend a credit</h2>
-  <div class="n-faq">
-    <details open><summary>Will this work for what I sell?</summary><p>Today Doppia is built for three things: apparel, jewelry and cosmetics. If that's what you sell, the looks are ready. If you sell food, electronics, furniture or pet — we're not there yet. We'd rather tell you now than take your signup.</p></details>
-    <details><summary>What do I have to give it?</summary><p>One product photo. That's the whole input — no second angle, no reference sheet. For an ad video, add one line about the product, or let Doppia read the photo and draft that line for you. More angles help: an ad video reads up to five photos of the same product together.</p></details>
-    <details><summary>What does a credit actually buy?</summary><p>A template photo is &#9670;300 and every run returns four. A custom-prompt photo is &#9670;150. An ad video is &#9670;625 per five-second scene — a 20-second ad is four scenes, &#9670;2,500. You only pay for what renders.</p></details>
-    <details><summary>What happens to my photos?</summary><p>Your files sit on AWS Seoul. From there, Shots go to a single vendor — Google, in the US. Ad Video uses four: Claude for the script, Gemini for the scenes, ElevenLabs for the score, and Kling for the motion — the first three in the US, Kling in China. Every vendor is named in our privacy policy with its country, what we send it, and its privacy contact. Doppia doesn't train on your uploads. <a href="/privacy.html">Read the vendor table &rarr;</a></p></details>
-  </div>
+<div class="n-eyebrow" data-i18n="faq.eyebrow">FAQ</div>
+<h2 class="n-h" data-i18n="faq.h">Before you spend a credit</h2>
+<div class="n-faq">
+<details open=""><summary data-i18n="faq.q1">Will this work for what I sell?</summary><p data-i18n="faq.a1">Today Doppia is built for three things: apparel, jewelry and cosmetics. If that's what you sell, the looks are ready. If you sell food, electronics, furniture or pet — we're not there yet. We'd rather tell you now than take your signup.</p></details>
+<details><summary data-i18n="faq.q2">What do I have to give it?</summary><p data-i18n="faq.a2">One product photo. That's the whole input — no second angle, no reference sheet. For an ad video, add one line about the product, or let Doppia read the photo and draft that line for you. More angles help: an ad video reads up to five photos of the same product together.</p></details>
+<details><summary data-i18n="faq.q3">What does a credit actually buy?</summary><p data-i18n="faq.a3">A template photo is ◆300 and every run returns four. A custom-prompt photo is ◆150. An ad video is ◆625 per five-second scene — a 20-second ad is four scenes, ◆2,500. You only pay for what renders.</p></details>
+<details><summary data-i18n="faq.q4">What happens to my photos?</summary><p data-i18n="faq.a4">Your files sit on AWS Seoul. From there, Shots go to a single vendor — Google, in the US. Ad Video uses four: Claude for the script, Gemini for the scenes, ElevenLabs for the score, and Kling for the motion — the first three in the US, Kling in China. Every vendor is named in our privacy policy with its country, what we send it, and its privacy contact. Doppia doesn't train on your uploads. <a href="/privacy.html">Read the vendor table →</a></p></details>
+</div>
 </section>
-
 <section class="n-wrap" style="padding:34px 28px 0">
-  <div class="n-band">
-    <h2 class="n-h">Try it on your own product.</h2>
-    <p class="n-sub">One photo. See what comes out before you decide anything.</p>
-    <a class="btn btn-primary grad-cta btn-lg" href="/studio">Start free — upload one photo</a>
-    <p class="n-fine">&#9670; <span data-dp="plans.free.cr" data-fmt="1">1,500</span> free credits · No credit card · Cancel anytime</p>
-  </div>
+<div class="n-band">
+<h2 class="n-h" data-i18n="cta.h">Try it on your own product.</h2>
+<p class="n-sub" data-i18n="cta.sub">One photo. See what comes out before you decide anything.</p>
+<a class="btn btn-primary grad-cta btn-lg" data-i18n="cta.btn" href="/studio">Start free — upload one photo</a>
+<p class="n-fine" data-i18n="cta.fine">◆ <span data-dp="plans.free.cr" data-fmt="1">1,500</span> free credits · No credit card · Cancel anytime</p>
+</div>
 </section>
-
 <footer class="n-wrap">
-  <div class="n-foot">
-    <b style="color:var(--text)">DOPPIA</b>
-    <a href="#advideo">Ad Video</a><a href="#shots">Shots</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
-    <a href="/studio">Studio</a><a href="/saas-login">Log in</a>
-    <a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund</a>
-  </div>
+<div class="n-foot">
+<b data-i18n="footer.brand" style="color:var(--text)">DOPPIA</b>
+<a data-i18n="footer.link0" href="#advideo">Ad Video</a><a data-i18n="footer.link1" href="#shots">Shots</a><a data-i18n="footer.link2" href="#pricing">Pricing</a><a data-i18n="footer.link3" href="#faq">FAQ</a>
+<a data-i18n="footer.link4" href="/studio">Studio</a><a data-i18n="footer.link5" href="/saas-login">Log in</a>
+<a data-i18n="footer.link6" href="/privacy.html">Privacy</a><a data-i18n="footer.link7" href="/terms.html">Terms</a><a data-i18n="footer.link8" href="/refund.html">Refund</a>
+<!-- 언어 스위처 — 진짜 <a href>여야 한다. 드롭다운 JS 위젯이면 크롤러가 /ko를 발견 못 해 hreflang 신뢰도가 떨어진다.
+         ko.html은 build_landing_ko.js가 aria-current를 한국어 쪽으로 옮긴다. -->
+<span class="lang-sw" style="margin-left:auto">
+<a aria-current="true" data-lang="en" href="/" hreflang="en">English</a>
+<span aria-hidden="true" style="opacity:.4;margin:0 6px">·</span>
+<a data-lang="ko" href="/ko" hreflang="ko">한국어</a>
+</span>
+</div>
 </footer>
-
-<script>/*LP-TABS — Shots 3버티컬 + Pricing 플랜 스위처. 신규 의존성 0.*/
+<script>/*LP-LANGSW — i18n.js setLang()을 부르면 안 된다: 마지막에 location.reload()라 /ko 이동을 덮어쓴다.
+  대신 setLang이 쓰는 것과 동일한 두 저장소(localStorage + doppia_lang 쿠키)를 직접 기록해 계약을 지킨다.
+  settings.html 스위처는 무수정 — 같은 두 키를 공유하므로 자동 동기화된다.*/
 (function(){
-  var T={
-    app:'<div class="n-tile"><img src="/img/productcut/flat-lay-cut.png" alt="Flat Lay" loading="lazy"><span>Flat Lay</span></div><div class="n-tile"><img src="/img/studiomodel/model-cut.png" alt="On-model" loading="lazy"><span>On-model</span></div><div class="n-tile"><img src="/img/productcut/ghost-mannequin-cut.png" alt="Ghost Mannequin" loading="lazy"><span>Ghost Mannequin</span></div>',
-    jew:'<div class="n-tile"><img src="/img/accessories/jewelry-on-model-necklace.png" alt="On Model" loading="lazy"><span>On Model</span></div><div class="n-tile"><img src="/img/accessories/jewelry-worn-cut.png" alt="Worn Cut" loading="lazy"><span>Worn Cut</span></div><div class="n-tile"><img src="/img/accessories/jewelry-hero.png" alt="Hero" loading="lazy"><span>Hero</span></div><div class="n-tile"><img src="/img/accessories/jewelry-product-cut.png" alt="Product Cut" loading="lazy"><span>Product Cut</span></div>',
-    cos:'<div class="n-tile"><img src="/img/producthero/noir-gold.jpg" alt="Noir Gold" loading="lazy"><span>Noir Gold</span></div><div class="n-tile"><img src="/img/producthero/dewy-glass.jpg" alt="Dewy Glass" loading="lazy"><span>Dewy Glass</span></div><div class="n-tile"><img src="/img/producthero/gloss-mirror.jpg" alt="Gloss Mirror" loading="lazy"><span>Gloss Mirror</span></div><div class="n-tile"><img src="/img/producthero/liquid-splash.jpg" alt="Liquid Splash" loading="lazy"><span>Liquid Splash</span></div><div class="n-tile"><img src="/img/producthero/silk-drape.jpg" alt="Silk Drape" loading="lazy"><span>Silk Drape</span></div><div class="n-tile"><img src="/img/producthero/sunlit-pop.jpg" alt="Sunlit Pop" loading="lazy"><span>Sunlit Pop</span></div>'
-  };
-  var box=document.getElementById('nTiles');
+  document.querySelectorAll('.lang-sw a[data-lang]').forEach(function(a){
+    a.addEventListener('click',function(){
+      var l=a.getAttribute('data-lang');
+      try{localStorage.setItem('doppia_lang',l);}catch(e){}
+      document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax';
+      // preventDefault 없음 — href가 그대로 이동시킨다
+    });
+  });
+})();
+</script>
+<script>/*LP-TABS — Shots 3버티컬 필터 + Pricing 플랜/주기 스위처.
+  타일은 **DOM에 전부** 있고 CSS로 거른다(옛 JS 문자열 사전 방식 폐기 —
+  그러면 ko.html에서 타일 라벨이 영어로 남는다. data-i18n이 DOM만 훑으므로).*/
+(function(){
+  var tiles=[].slice.call(document.querySelectorAll('#nTiles .n-tile'));
+  function show(cat){ tiles.forEach(function(t){ t.hidden = t.dataset.cat!==cat; }); }
   document.querySelectorAll('.n-tab').forEach(function(b){
     b.addEventListener('click',function(){
       document.querySelectorAll('.n-tab').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});
-      if(box)box.innerHTML=T[b.dataset.t]||'';
+      show(b.dataset.t);
     });
   });
-  // Pricing 플랜 스위처 — data-price/data-conv를 갈아끼우고 pricing.js·LP-CONV를 재실행
-  var amt=document.getElementById('nAmt'), conv=document.getElementById('nConv');
+  show('app');
+
+  var amt=document.getElementById('nAmt'), conv=document.getElementById('nConv'), annual=false;
   document.querySelectorAll('.n-plan').forEach(function(b){
     b.addEventListener('click',function(){
       document.querySelectorAll('.n-plan').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});
-      var p=b.dataset.p;
-      if(amt){amt.setAttribute('data-price',p);}
-      if(conv){conv.setAttribute('data-conv',p);}
+      if(amt)amt.setAttribute('data-price',b.dataset.p);
+      if(conv)conv.setAttribute('data-conv',b.dataset.p);
       render();
     });
   });
-  // 월/연 토글 — priceY/priceYKRW가 pricing.js에 이미 있다(연 16~17% 할인). 랜딩이 쓴 적 없었다.
-  var annual=false;
   document.querySelectorAll('.n-cy').forEach(function(b){
     b.addEventListener('click',function(){
-      annual = b.dataset.y==='1';
+      annual=b.dataset.y==='1';
       document.querySelectorAll('.n-cy').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
       render();
     });
@@ -773,17 +806,15 @@
     if(amt){ if(annual)amt.dataset.annual='1'; else delete amt.dataset.annual; }
     if(window.PRICING&&window.PRICING.applyDP)try{window.PRICING.applyDP();}catch(e){}
     if(window.__lpconv)try{window.__lpconv();}catch(e){}
-    var note=document.getElementById('nNote');
-    if(note&&window.PRICING&&window.PRICING.curMeta){
+    var n=document.getElementById('nNote');
+    if(n&&window.PRICING&&window.PRICING.curMeta){
       var m=window.PRICING.curMeta();
-      note.textContent = annual ? (m.code==='KRW'?'연간 결제 · '+m.note:'Billed yearly · '+m.note) : m.note;
+      n.textContent = annual ? (m.code==='KRW'?'연간 결제 · '+m.note:'Billed yearly · '+m.note) : m.note;
     }
   }
   render();
 })();
 </script>
-
-
 <script>
 (function(){
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;

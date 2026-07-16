@@ -1,0 +1,20 @@
+# Doppia — robots.txt (2026-07-17 신설)
+# 로그인 뒤 화면(studio·gallery·billing 등)은 SEO 대상이 아니고, 인증 게이트라 크롤해도 빈 셸만 나온다.
+# 결제·계정 경로는 색인되면 안 된다. 공개 대상 = 랜딩(/ · /ko) + 법적 문서.
+
+User-agent: *
+Disallow: /studio
+Disallow: /gallery
+Disallow: /library
+Disallow: /store
+Disallow: /billing
+Disallow: /explore
+Disallow: /creation
+Disallow: /earnings
+Disallow: /saas-login
+Disallow: /login
+Disallow: /signup
+Disallow: /account
+Disallow: /api/
+
+Sitemap: https://doppia.ai/sitemap.xml

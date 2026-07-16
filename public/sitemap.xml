@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Doppia sitemap (2026-07-17 신설).
+     hreflang은 head에도 있지만 사이트맵에 같이 두는 게 표준 — 크롤러가 /ko를 확실히 발견한다.
+     ⚠️ head의 hreflang과 반드시 일치해야 한다. 어긋나면 Google이 세트를 폐기한다.
+     ⚠️ 페이지 추가 시(예: /ko/pricing v2) 여기도 갱신할 것. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://doppia.ai/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://doppia.ai/" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://doppia.ai/ko" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://doppia.ai/" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://doppia.ai/ko</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://doppia.ai/" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://doppia.ai/ko" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://doppia.ai/" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url><loc>https://doppia.ai/privacy</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://doppia.ai/terms</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://doppia.ai/refund</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+</urlset>
