@@ -2175,6 +2175,11 @@ function setMode(m,initialVertical){
   document.getElementById('step1Hint').textContent=STEP1[m][1];
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
   if(ugc && typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls(); // (2026-07-13) 진입 시 Voice 기본상태 동기화 — 안 하면 Length/scene·음성힌트가 반대로 표시(토글 전까지)
+  // (2026-07-17) 진행 중이던 렌더에 다시 붙는다. setMode는 모드 전환마다 불리므로 페이지 로드당 1회로 막고,
+  // 이번 세션에서 이미 렌더가 도는 중이면(genActive>0) 같은 잡을 두 번 붙이지 않는다.
+  if(ugc && !window._ugcRestored && !genActive && typeof ugcRestoreActiveJobs==='function'){
+    window._ugcRestored=true; ugcRestoreActiveJobs();
+  }
   // Custom·UGC 모드: 템플릿 그리드 숨김 — 직접 입력으로 생성(Custom=프롬프트칸, UGC=제품+컨셉 패널)
   document.getElementById('templateStep').classList.toggle('hidden',custom||ugc);
   // UGC: compose gen-bar(genBtn) 숨김 — scriptStep의 자체 Generate 버튼 사용
@@ -5029,15 +5034,18 @@ function ugcToggleKnobs(){
   const line=document.getElementById('ugcKnobLine'); if(line)line.setAttribute('aria-expanded',String(open));
   const chg=document.getElementById('ugcKnobChg'); if(chg)chg.textContent=open?'Done':'Change';
 }
-/* 대본이 나오면 입력을 요약 카드로 접고, Edit로 되돌린다 */
-function ugcCompact(){
+/* 대본이 나오면 입력을 요약 카드로 접고, Edit로 되돌린다.
+   o를 주면 폼 대신 그 값으로 채운다 — 새로고침 후 재연결은 폼이 비어 있어서(잡 데이터만 있음) 필요. */
+function ugcCompact(o){
+  o=o||{};
   const box=document.getElementById('ugcInputBox'); if(!box)return;
-  const name=((document.getElementById('ugcProductName')||{}).value||'').trim();
-  const concept=((document.getElementById('ugcConcept')||{}).value||'').trim();
-  const fmt=(document.getElementById('ugcFormat')||{}).value==='model-editorial'?'With a model':'Product only';
-  const ar=(document.getElementById('ugcAspect')||{}).value||'9:16';
+  const name=(o.name!==undefined?o.name:((document.getElementById('ugcProductName')||{}).value||'')).trim();
+  const concept=(o.concept!==undefined?o.concept:((document.getElementById('ugcConcept')||{}).value||'')).trim();
+  const fmtRaw=o.fmt!==undefined?o.fmt:(document.getElementById('ugcFormat')||{}).value;
+  const fmt=fmtRaw==='model-editorial'?'With a model':'Product only';
+  const ar=o.ar!==undefined?o.ar:((document.getElementById('ugcAspect')||{}).value||'9:16');
   const top=document.getElementById('ugcRecapTop');
-  if(top)top.innerHTML=(name?'<b>'+ugcEsc(name)+'</b> · ':'')+ugcEsc(fmt)+' · '+ugcEsc(ar);
+  if(top)top.innerHTML=(name?'<b>'+ugcEsc(name)+'</b> · ':'')+ugcEsc(fmt)+(ar?' · '+ugcEsc(ar):'');
   const sub=document.getElementById('ugcRecapSub'); if(sub)sub.textContent=concept;
   // 썸네일은 <img>가 아니라 .ref-tile의 background-image(objectURL)라 거기서 꺼낸다
   const th=document.getElementById('ugcRecapTh');
@@ -5098,9 +5106,8 @@ async function ugcRenderVideo(){
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     const job=await pollUgcJob(data.jobId);
-    if(pending){pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
-      {const sc=Array.isArray(job.scenes)?job.scenes:[]; pending.ugc={jobId:data.jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||outputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:(job.language||ugcLang()),narration:job.narration||'',hasVoice:job.hasVoice!==false,hasMusic:!!job.hasMusic,voiceUrl:job.voiceUrl||null,musicUrl:job.musicUrl||null};} // 결과 편집(씬 스트립 + B+ 자막 오버레이 + 나레이션 + A 오디오 2트랙)용
-      renderStudioResults();} // 우측 인라인에 완성 영상+씬 스트립
+    // 결과 매핑은 ugcFillPendingFromJob 하나로 — 재연결(ugcRestoreActiveJobs)과 같은 코드를 쓴다
+    if(pending){ ugcFillPendingFromJob(pending,data.jobId,job,outputType); renderStudioResults(); } // 우측 인라인에 완성 영상+씬 스트립
     hint.textContent='✓ Ad video ready — saved to your gallery.';
   }catch(e){
     console.error(e);
@@ -5118,6 +5125,68 @@ async function ugcRenderVideo(){
   }
 }
 // UGC 잡 상태 폴링 (최대 ~16분) — getJob은 resultUrl 반환
+/**
+ * 완성 잡 → pending 배치에 결과 채우기 (2026-07-17).
+ *
+ * 새 렌더(ugcRenderVideo)와 새로고침 후 재연결(ugcRestoreActiveJobs)이 반드시 같은 매핑을
+ * 쓰게 하려고 뽑았다. 이 객체가 커서(씬 스트립·자막 오버레이·나레이션·오디오 2트랙) 복제하면
+ * 두 경로가 조용히 어긋난다. 폴링 루프까지 합치지 않은 이유: ugcRenderVideo는 POST 전에
+ * pending을 만들어 업로드 동안에도 로딩을 띄우는데, 합치면 그 구간이 비어버린다.
+ */
+function ugcFillPendingFromJob(pending, jobId, job, fallbackOutputType){
+  pending.items=[{url:job.resultUrl,type:'reel',idx:null}];pending.loading=false;
+  const sc=Array.isArray(job.scenes)?job.scenes:[];
+  pending.ugc={jobId:jobId,scenes:sc.map(s=>Object.assign({},s)),_orig:sc.map(s=>Object.assign({},s)),edits:{},_dirty:false,outputType:job.outputType||fallbackOutputType,previewUrl:job.previewUrl||null,captionSpec:job.captionSpec||null,subtitleStyle:job.subtitleStyle||null,language:(job.language||ugcLang()),narration:job.narration||'',hasVoice:job.hasVoice!==false,hasMusic:!!job.hasMusic,voiceUrl:job.voiceUrl||null,musicUrl:job.musicUrl||null};
+}
+
+/**
+ * 진입 시 재연결 — "내 진행 중 잡"을 물어보고 있으면 화면에 다시 붙인다.
+ *
+ * 백엔드는 이미 요청과 무관하게 렌더를 끝까지 돌리고 있었다(render()가 runPipeline을 await 안 함).
+ * 없던 건 돌아올 길 하나뿐: getJob은 id를 알아야 하는데 새로고침하면 날아가고,
+ * generation_results엔 commit 전까지 행이 없어 크리에이션 피드로도 안 잡혔다.
+ * 화면이 아직 1개만 그리므로(renderUgcInline이 .find()) 최신 1개만 복원한다 — N개는 피드 전환(2단계) 후.
+ */
+async function ugcRestoreActiveJobs(){
+  let list=[];
+  try{
+    const r=await fetch('/api/generate/ugc/jobs');
+    const d=await r.json().catch(()=>null);
+    list=(d&&d.success&&Array.isArray(d.data))?d.data:[];
+  }catch(e){ return; } // 조회 실패는 조용히 — 없던 기능이라 새 에러를 만들지 않는다
+  if(!list.length)return;
+  const j=list[0];
+  const hint=document.getElementById('ugcHint');
+  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true;
+  pending.sceneCount=j.n_clips||5;
+  STUDIO_BATCHES.unshift(pending);
+  // 여정 예고·대본 패널을 치운다 — ugcRenderVideo가 하는 것과 같음. 안 하면 "How this works"가 결과와 겹쳐 뜬다
+  {const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
+   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';}
+  renderStudioResults(); // 즉시 로딩 화면 = 떠날 때 그 화면
+  // 영수증은 잡 데이터로 채운다 — 새로고침 후엔 폼이 비어 있어 ugcCompact()가 폼을 읽으면 빈 카드가 된다.
+  // aspect는 ugc_jobs에 컬럼이 없어 생략(제목·포맷만으로도 "뭘 만드는 중인지"는 전달됨).
+  ugcCompact({name:j.title||j.product||'', concept:j.concept||'', fmt:j.output_type, ar:''});
+  const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('rendering'); // 렌더 중 = Edit 숨김
+  const t0=Date.now();
+  const timer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#ugcInline .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
+  genActive++; // 렌더 중 대본 재작성 차단 가드가 재연결에서도 걸리게
+  try{
+    const job=await pollUgcJob(j.id);
+    ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad');
+    renderStudioResults();
+    if(hint)hint.textContent='✓ Ad video ready — saved to your gallery.';
+  }catch(e){
+    const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1);
+    renderStudioResults();
+    if(hint)hint.textContent=(e&&e.timeout)?'Still rendering — we’ll save it to your gallery when it’s ready.':'';
+  }finally{
+    clearInterval(timer); genActive=Math.max(0,genActive-1);
+    if(box)box.classList.remove('rendering');
+    loadCredits();
+  }
+}
+
 async function pollUgcJob(jobId){
   // 폴 간격 램프: 초반 촘촘(완성 즉시 감지 — 8s 고정이면 백엔드 완료 후 최대 8s 더 로딩) → 이후 4s. 총 ~16분(240틱).
   //   순간 서버 오류(502/522)는 조용히 재시도(로딩 유지) — 잡은 백그라운드로 계속 진행되므로 다음 폴에서 회복.

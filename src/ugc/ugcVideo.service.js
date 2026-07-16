@@ -418,6 +418,30 @@ async function restoreClipLocal(basename) {
   return null;
 }
 
+/**
+ * 진행 중인 내 잡 목록(소유권 게이트) — 새로고침·이탈 후 재연결용.
+ *
+ * 렌더는 이미 요청과 무관하게 끝까지 돈다(render()가 runPipeline을 await하지 않음).
+ * 없던 건 "클라이언트가 돌아올 길" 하나였다: getJob은 id를 이미 알아야 하는데
+ * 새로고침하면 그 id가 날아가고, generation_results에는 commit 전까지 행이 없어서
+ * 크리에이션 피드로도 안 잡힌다 → 서버는 만들고 있는데 화면만 모르는 상태가 됐다.
+ *
+ * 목록으로 돌려주는 이유: 지금 UI는 1개만 그리지만(renderUgcInline이 .find()),
+ * 동시 N개로 갈 때 이 엔드포인트를 그대로 쓰기 위함.
+ */
+async function listActiveJobs(userId) {
+  const r = await query(
+    `SELECT id, status, title, product, concept, output_type, n_clips, created_at
+     FROM ugc_jobs
+     WHERE status = 'processing' AND (
+       user_id = $1 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)))
+     ORDER BY created_at DESC
+     LIMIT 20`,
+    [userId]
+  );
+  return r.rows;
+}
+
 /** 편집용 원본 잡 로드(소유권 게이트). script/scene_clips 원문 포함. */
 async function loadJobForEdit(id, userId) {
   const r = await query(
@@ -1133,4 +1157,4 @@ async function sceneStoryboardForResult(resultIdx) {
   return { hook, sceneCount: scenes.length, scenes };
 }
 
-module.exports = { generateScript, render, submit, getJob, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };
+module.exports = { generateScript, render, submit, getJob, listActiveJobs, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };

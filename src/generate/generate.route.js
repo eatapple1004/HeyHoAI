@@ -1051,6 +1051,15 @@ router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_M
   }
 });
 
+// 진행 중인 내 Ad Video 잡 목록 — 새로고침·이탈 후 클라이언트가 다시 붙기 위한 유일한 통로.
+// (반드시 '/ugc/jobs/:id' 보다 위에 둘 것 — 아래면 'jobs'가 :id로 먹힌다)
+router.get('/ugc/jobs', async (req, res, next) => {
+  try {
+    const rows = await ugcVideoService.listActiveJobs(req.user.id);
+    res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
+});
+
 router.get('/ugc/jobs/:id', async (req, res, next) => {
   try {
     const job = await ugcVideoService.getJob(req.params.id, req.user.id);
