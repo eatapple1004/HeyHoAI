@@ -3839,11 +3839,17 @@ function fmtBatchDate(iso){ // Leonardo식 날짜 헤더: Today / Yesterday / We
   if(diff===0)return 'Today'; if(diff===1)return 'Yesterday';
   return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 }
+/**
+ * 배치의 두 축 — 겸하면 안 된다(N개 동시 생성이 불가능해지는 지점).
+ *   b.isUgc  = "이건 Ad Video 배치다"    → 피드 카드의 배지·씬 스트립(정체성. 영원히 유지)
+ *   b._bench = "지금 조리대에 올라와 있다" → 피드에서 빼고 우측 인라인이 그림(위치. 올렸다 내렸다 함)
+ * 조리대는 항상 1개. 오븐(피드)엔 여러 개.
+ */
 function renderStudioResults(){
   const grid=document.getElementById('resultsGrid'); if(!grid)return;
   let html='',lastKey=null;
   STUDIO_BATCHES.forEach(b=>{
-    if(b.isUgc)return; // Ad Video 배치는 우측 인라인(대본 자리)에 렌더
+    if(b._bench)return; // 조리대에 올라와 있는 배치만 피드에서 뺀다(우측 인라인이 그린다). isUgc여도 조리대 밖이면 피드에 남는다
     if(b.dateKey!==lastKey){ html+=`<div class="rb-date">${esc(b.dateLabel||'')}</div>`; lastKey=b.dateKey; } // 날짜 바뀌는 지점마다 헤더
     html+=batchRowHtml(b);
   });
@@ -3856,12 +3862,12 @@ function renderStudioResults(){
     p.classList.toggle('clip',show);   // 잘린(또는 펼친) 프롬프트만 탭 대상(cursor·toggleRbPromptEl 가드)
   });
   fillRbSpecs(grid); // 결과 스펙(해상도·비율·길이)을 미디어 로드 시 채움
-  renderUgcInline(STUDIO_BATCHES.find(b=>b.isUgc)||null); // 우측 대본 자리에 Ad Video 로딩·결과
+  renderUgcInline(STUDIO_BATCHES.find(b=>b._bench)||null); // 우측 대본 자리 = 조리대. 올라온 1개만 그린다
   const step=document.getElementById('resultStep');
   const lb=document.getElementById('loadingBox');
   const loading=lb&&!lb.classList.contains('hidden');
-  const hasNonUgc=STUDIO_BATCHES.some(b=>!b.isUgc);
-  if(step)step.classList.toggle('hidden',!hasNonUgc&&!loading); // UGC는 우측이라 아래 결과 섹션과 무관
+  const hasFeed=STUDIO_BATCHES.some(b=>!b._bench);
+  if(step)step.classList.toggle('hidden',!hasFeed&&!loading); // 조리대 것만 있으면(=피드 빈) 아래 결과 섹션 숨김
 }
 // Ad Video 생성 로딩·완성 영상·씬 스트립을 우측(대본 자리) 인라인에 렌더
 function renderUgcInline(b){
@@ -5086,7 +5092,7 @@ async function ugcRenderVideo(){
   // 우측(대본 자리)로 전환: 대본·플레이스홀더 숨기고 인라인에 로딩→결과
   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
-  const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true;
+  const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true; pending._bench=true;
   pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 로딩 씬 카드 수
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
   const t0=Date.now();
@@ -5163,7 +5169,7 @@ async function ugcRestoreActiveJobs(){
   if(!list.length){ if(drafts.length)await ugcRestoreDraft(drafts[0]); return; }
   const j=list[0];
   const hint=document.getElementById('ugcHint');
-  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true;
+  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true; pending._bench=true;
   pending.sceneCount=j.n_clips||5;
   STUDIO_BATCHES.unshift(pending);
   // 여정 예고·대본 패널을 치운다 — ugcRenderVideo가 하는 것과 같음. 안 하면 "How this works"가 결과와 겹쳐 뜬다
@@ -5208,7 +5214,7 @@ async function ugcRestoreDraft(j){
     job=(d&&d.success&&d.data)?d.data:null;
   }catch(e){ return; }
   if(!job||!job.resultUrl)return; // 결과 URL이 없으면 붙일 게 없다
-  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true;
+  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true; pending._bench=true;
   pending.sceneCount=j.n_clips||5;
   STUDIO_BATCHES.unshift(pending);
   {const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
