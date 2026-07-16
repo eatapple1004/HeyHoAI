@@ -658,6 +658,10 @@
   .ugc-recap-th{width:34px;height:34px;border-radius:6px;border:1px solid var(--border2);flex:none;object-fit:cover;background:rgba(255,255,255,.04)}
   .ugc-recap b{color:var(--text)}
   .ugc-recap-edit{margin-left:auto;color:var(--accent2);font-weight:800;font-size:12px;background:none;border:none;cursor:pointer;font-family:inherit;flex:none}
+  /* 진행 중엔 왼쪽이 '설정창'이 아니라 '영수증'. 바꿀 수 있는 게 없는데 편집 가능한 폼을 보여주는 건 거짓말이다.
+     busy = 대본 쓰는 몇 초(레이아웃 안 흔들고 잠그기만) / rendering = 영상 몇 분(요약 카드만, Edit 없음) */
+  #ugcInputBox.busy .ugc-foldable{opacity:.5;pointer-events:none}
+  #ugcInputBox.rendering .ugc-recap-edit{display:none}
   .ugc-cols > #ugcInputBox.compact{flex:0 0 300px}
   @media(max-width:860px){.ugc-cols > #ugcInputBox.compact{flex:1 1 auto}}
 
@@ -4843,9 +4847,14 @@ async function ugcWriteScript(){
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
   const hint=document.getElementById('ugcHint');
+  // 영상 렌더 중엔 대본을 다시 쓰지 못하게 막는다. ugcRenderScriptPreview()가 STUDIO_BATCHES에서
+  // isUgc 배치를 전부 splice하므로, 렌더 중에 이게 돌면 진행 중인 영상이 화면에서 사라진다
+  // (백엔드는 계속 돌고 크레딧도 그대로 나가서 유저에겐 "영상이 증발"로 보임).
+  if(genActive>0){toast('Your video is still rendering — wait for it to finish before rewriting.');return;}
   if(!concept){hint.textContent='⚠ Describe your ad — product + the angle.';return;}
   const wbtn=document.getElementById('ugcGenBtn'),rwbtn=document.getElementById('ugcRewriteBtn');
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
+  const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('busy'); // 대본 쓰는 몇 초간 입력 잠금(헛수고 방지)
   hint.textContent='Writing your script…';
   ugcShowScriptLoading(true); // 우측에 씬별 쓰여지는 스켈레톤
   try{
@@ -4866,7 +4875,7 @@ async function ugcWriteScript(){
     ugcRenderScriptPreview(data);
     hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
   }catch(e){ console.error(e); ugcShowScriptLoading(false); const emp=document.getElementById('ugcScriptEmpty'); if(emp&&!ugcScript)emp.style.display=''; hint.textContent='⚠ '+(e.message||'Script failed'); }
-  finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); }
+  finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); if(box)box.classList.remove('busy'); }
 }
 
 // 대본 검토 패널 렌더
@@ -5058,7 +5067,11 @@ async function ugcRenderVideo(){
   const hint=document.getElementById('ugcHint');
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
-  hint.textContent='Building your scenes… this can take a few minutes.';
+  // 렌더 중 왼쪽은 '설정창'이 아니라 '영수증'이다 — 바꿀 수 있는 게 없으므로 요약 카드로 접고
+  // Edit도 감춘다(펼쳐두면 Write script가 살아나 진행 중인 렌더를 화면에서 지울 수 있었음).
+  ugcCompact();
+  const ibox=document.getElementById('ugcInputBox'); if(ibox)ibox.classList.add('rendering');
+  hint.textContent=''; // 진행 상황은 오른쪽 씬 스트립이 말한다(왼쪽에서 같은 얘기 반복 안 함)
   // 우측(대본 자리)로 전환: 대본·플레이스홀더 숨기고 인라인에 로딩→결과
   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
@@ -5100,6 +5113,7 @@ async function ugcRenderVideo(){
   }finally{
     clearInterval(elapsedTimer);
     genActive=Math.max(0,genActive-1);rbtn.disabled=false;rbtn.innerHTML=oldLabel;
+    if(ibox)ibox.classList.remove('rendering'); // 렌더 끝 → Edit 복귀(요약 카드는 유지)
     loadCredits();
   }
 }
