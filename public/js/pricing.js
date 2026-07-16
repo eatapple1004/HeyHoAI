@@ -63,9 +63,17 @@
     return 'USD';
   }
   var CURRENCY = detectCurrency();
+  // (2026-07-17) per/note 정정 — 코드는 **선불 기간권**이다: subscription.service.js:99
+  //   activatePlan(userId, plan, nowMs, months = 3) · subscription.route.js:37 주석 "기간권(선불)".
+  //   자동재청구 로직은 레포에 0줄이다. 그런데 옛 값이 '/월' + '매월 자동결제 · 언제든 해지'를
+  //   주장했다 — 해지할 자동결제가 없으므로 3중 거짓(월단위 아님·자동결제 없음·해지대상 없음).
+  //   소비처: pricing.js:101(data-price) · billing.html:308 — 한 소스라 양쪽이 함께 고쳐진다.
+  //   ⚠️ price↔기간 매핑은 아직 코드에 없다(결제 미연동, subscription.route.js:31이 non-admin에 501).
+  //      그래서 기간을 단정하지 않고 뺐다. 포트원/Eximbay 정기결제 개시 시 재검토.
+  //   롤백: per:' /월' · note:'VAT 포함 · 매월 자동결제 · 언제든 해지' 복원.
   var CUR_META = {
-    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
-    USD: { code: 'USD', symbol: '$', per: ' /mo', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · billed monthly · cancel anytime' }
+    KRW: { code: 'KRW', symbol: '₩', per: '', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 자동결제 없음' },
+    USD: { code: 'USD', symbol: '$', per: '', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · nothing auto-renews' }
   };
   PRICING.getCurrency = function () { return CURRENCY; };
   PRICING.curMeta = function () { return CUR_META[CURRENCY]; };
@@ -98,9 +106,12 @@
     document.querySelectorAll('[data-price]').forEach(function (el) {
       var plan = PRICING.plans && PRICING.plans[el.getAttribute('data-price')];
       if (!plan) return;
-      el.innerHTML = m.symbol + PRICING.fmt(PRICING.amount(plan, el.dataset.annual === '1')) + '<small>' + m.per + '</small>';
+      el.innerHTML = m.symbol + PRICING.fmt(PRICING.amount(plan, el.dataset.annual === '1')) + (m.per ? '<small>' + m.per + '</small>' : '');
     });
   }
+  // (2026-07-17) 노출 — 랜딩 플랜 스위처가 data-price를 갈아끼운 뒤 재렌더해야 한다.
+  //   지금까진 setCurrency() 안에서만 불려서 밖에서 재실행할 방법이 없었다.
+  PRICING.applyDP = applyDP;
 
   // 서버 주도 단일 소스: /api/pricing 성공 시 임베드 값을 서버 값으로 덮어쓰고 재적용.
   // 실패(정적 호스팅·오프라인 등) 시 위 임베드 PRICING을 그대로 동기 폴백으로 사용.
