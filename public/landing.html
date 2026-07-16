@@ -511,7 +511,13 @@
 
   .n-nav{position:sticky;top:0;z-index:60;backdrop-filter:blur(18px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid var(--border)}
   .n-nav .in{max-width:1140px;margin:0 auto;padding:15px 28px;display:flex;align-items:center;gap:34px}
-  .n-nav .mark{font-weight:800;font-size:16px;letter-spacing:-.02em;color:var(--text);text-decoration:none}
+  /* 로고 = 앱 전역과 동일한 처리(studio.html:610 .studio-brand span · css/theme.css:32 .brand b).
+     재설계 때 .brand→.mark로 갈면서 서체(Sora)·크기·그라디언트가 전부 빠져 Inter 16px 단색으로 떨어져 있었다.
+     ⚠️ 그라디언트 축소('CTA에만') 대상 아님 — 이건 장식이 아니라 로고 자체의 정체다.
+     색은 theme.css와 랜딩의 --accent2가 동일값(#a394ee)이라 두 화면이 정확히 일치한다. */
+  .n-nav .mark{font-family:'Sora';font-weight:800;font-size:24px;letter-spacing:-.5px;text-decoration:none;
+    background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:var(--accent2)}
   .n-nav a{color:var(--dim);text-decoration:none;font-size:14px;font-weight:500;transition:color .15s}
   .n-nav a:hover,.n-nav a:focus-visible{color:var(--text)}
   .n-nav .toc{display:flex;gap:26px}
