@@ -3634,7 +3634,15 @@ async function ugcSaveFinish(jobId){
     const res=await fetch('/api/generate/ugc/jobs/'+jobId+'/commit',{method:'POST'});
     const d=await sjson(res);
     if(!res.ok||!d.success)throw new Error(d.error||'Could not save');
-    u._saved=true; renderStudioResults();
+    u._saved=true;
+    // D: 저장된 결과의 정체(result idx)를 배치에 적는다 — 배치와 DB 행이 같은 것임을 잇는 유일한 열쇠.
+    //    안 적으면 방금 저장한 영상이 삭제(delIdxs)도 편집(eidx)도 안 되는 반쪽 카드로 남는다.
+    //    같은 idx를 쥔 배치가 하나뿐이므로 이 열쇠가 곧 중복 방지(같은 영상이 두 장 뜨지 않는다).
+    if(d.resultIdx!=null){
+      UGC_EDITABLE.add(d.resultIdx);                                   // 대본 보유 = 되불러 편집 가능(F)
+      if(b.items[0]&&b.items[0].idx==null)b.items[0].idx=d.resultIdx;  // 되불러온 배치는 이미 갖고 있다 → 덮지 않음
+    }
+    renderStudioResults();
     if(window.toast)toast('Saved to your gallery');
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=o;} if(window.toast)toast(e.message||'Could not save','error'); }
 }
