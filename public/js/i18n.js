@@ -9,6 +9,107 @@
   // ── EN → KO 사전 (키: 화면에 보이는 영어 원문, trim 기준) ──
   // 아래 DICT는 자동 생성이 아니라 수기 관리. 새 문구는 여기에 추가하면 전 페이지에 반영된다.
   var DICT = { ko: {
+    // ══ (2026-07-17) 누락분 보충 ══════════════════════════════════════════
+    // 사전에 없는 문자열은 **영어로 남는다** → 레일이 "Home · 스튜디오 · Ad Video · 라이브러리"처럼
+    // 뒤섞였다. 아래는 home/gallery/store/explore/creation/saas-login DOM 전수 대조로 뽑은 구멍.
+    // ⛔ 번역하지 않는 것: Doppia · Ad Video · Shots · 플랜명 · 엔진명 · Reels · TikTok · 비율 · 숫자 · ◈
+    //    (제품명·고유명사. 한국 SaaS 관행이자 Studio 영문 UI와의 정합.)
+    // ⛔ billing.html은 **의도적으로 건너뛴다** — 미번역 67종 중 다수가 코드 근거 0인 날조다
+    //    (Solo/Group lookbook · N concurrent slots · 2K quality · Concept cut · Edit results ·
+    //     Video reels · Template reel · watermark-free). 번역하면 거짓을 한국어로 굳힌다.
+    //    → 가격표 진실화(docs/가격표_진실화_변경셋) 선행 후 번역할 것.
+
+    'Home': '홈',
+    // home 히어로 — <h1>What will you <b>create</b> today?</h1> 텍스트노드 3개.
+    // 노드 단위 치환이라 어순을 못 바꾼다 → 조각을 한국어 어순에 맞게 배분해 "오늘 뭘 만들어 볼까요?"를 만든다.
+    // <b> 강조가 영문 'create'에서 한국어 '만들어'로 자연히 옮겨간다(둘 다 동사).
+    'What will you': '오늘 뭘', 'create': '만들어', 'today?': '볼까요?',
+    'Product & Model Photos': 'Product & Model Photos',
+    'Create photos': '사진 만들기', 'Create an ad video': 'Ad Video 만들기',
+    'Create Product & Model Photos': 'Product & Model Photos 만들기', 'Create an Ad Video': 'Ad Video 만들기',
+    'Cutout': '제품컷', 'Editorial': '화보컷',
+    'Auto script': '대본 자동 생성', 'AI voice & music': 'AI 음성 · 음악',
+    'View more': '더 보기', 'Best offer': '가장 알뜰한 선택',
+    'Search templates': '템플릿 검색', 'Creation preview': '결과 미리보기',
+    'Scene preview': '씬 미리보기', 'Next scene': '다음 씬', 'Previous scene': '이전 씬',
+    'Max scale': '최대 크기', 'OR': '또는', '⤢ New tab': '⤢ 새 탭',
+    'Currency': '통화', 'English': 'English', 'Korean': '한국어',
+    'Privacy Policy': '개인정보처리방침', 'Refund policy': '환불 정책',
+    'Subscribe': '구독하기', 'Contact sales': '문의하기',
+    'Priority support': '우선 지원', 'Dedicated support': '전담 지원',
+    'Team roles & shared pool': '팀 권한 · 크레딧 공유',
+    'Subscription plans': '구독 플랜', 'Subscription paused': '구독 일시정지됨',
+    'Extra credits (one-time)': '추가 크레딧 (1회성)', 'Free tier': '무료',
+    'Everything in Starter': 'Starter의 모든 것', 'Everything in Standard': 'Standard의 모든 것',
+    'Everything in Team': 'Team의 모든 것',
+    'you@example.com': 'you@example.com', 'your account': '내 계정',
+    'Your email is used to sign in and can\'t be changed here.': '로그인에 쓰는 이메일이라 여기서는 변경할 수 없습니다.',
+    'It saves to your gallery automatically even if you close this window.': '이 창을 닫아도 라이브러리에 자동으로 저장됩니다.',
+    'add the ones you like': '마음에 드는 것을 담으세요',
+    '— then use them in Studio with your own product.': '— 담은 템플릿은 스튜디오에서 내 제품으로 바로 씁니다.',
+    'creations': '크리에이션',
+    'Open any photo and hit': '아무 사진이나 열어서 누르세요 —',
+    'Turn one look into a full week\'s set in a tap': '한 번 탭으로 일주일치 세트를 만듭니다',
+    'Deleting your account removes access to your studio, library, and credits. You won\'t be able to sign back in.':
+      '계정을 삭제하면 스튜디오·라이브러리·크레딧에 접근할 수 없게 되고, 다시 로그인할 수 없습니다.',
+    'Permanently disable your Doppia account. This can\'t be undone.':
+      'Doppia 계정을 영구히 비활성화합니다. 되돌릴 수 없습니다.',
+    'Pause instead (recommended)': '대신 일시정지 (권장)',
+    'Pause keeps your account, gallery and trained faces — billing stops and resumes whenever you\'re back. Most people pause instead of cancelling.':
+      '일시정지하면 계정과 라이브러리가 그대로 남고, 결제만 멈췄다가 돌아오실 때 다시 시작됩니다.',
+    'Cancel anyway': '그래도 해지하기',
+    '— no charges until you resume. Your credits and gallery stay safe.':
+      '— 다시 시작하기 전까지 청구되지 않습니다. 크레딧과 라이브러리는 그대로입니다.',
+    'DELETE': 'DELETE',
+    // home 카드 본문 — ⚠️ 영문이 'cutouts'를 파는데 배경제거 구현은 0이다
+    //   (removeBackground|remove_background|bgRemove grep 0건 · product-cut은 배경을 '생성'한다).
+    //   랜딩에선 이미 걷어냈다(f21ed73). 한국어는 정직한 '제품컷'으로 옮긴다 —
+    //   EN도 같이 고쳐야 정합이지만 그건 home.html 카피 수정 건이라 별도.
+    'One product photo is enough — turn it into ad videos, cutouts, editorial and on-model shots. Pick a starting point; we handle the rest.':
+      '제품 사진 한 장이면 충분합니다 — 광고영상, 제품컷, 화보컷, 모델 착용컷으로 바꿔 드립니다. 시작할 곳만 고르시면 나머지는 저희가 합니다.',
+    'Cutouts, editorial and on-model looks from one product photo — driven by ready-made templates.':
+      '제품 사진 한 장으로 제품컷 · 화보컷 · 모델 착용컷까지. 준비된 템플릿이 알아서 합니다.',
+    'Turn a product photo into a narrated short — scenes, voice and music, ready for Reels & TikTok.':
+      '제품 사진 한 장을 내레이션 숏폼으로. 씬 · 음성 · 음악까지 붙어 Reels · TikTok에 바로 올립니다.',
+    // gallery
+    '4 categories · dozens of templates, zero prompts': '4개 카테고리 · 템플릿 수십 종, 프롬프트 없이',
+    'Come back daily — your streak earns free credits': '매일 들르시면 연속 출석으로 크레딧이 쌓입니다',
+    'Turn one look into a full week\'s set in a tap': '한 번 탭으로 일주일치 세트를 만듭니다',
+    'Create Reel ·': 'Reel 만들기 ·',
+    'Describe the motion for your Reel': 'Reel에 넣을 움직임을 적어주세요',
+    'e.g. camera slowly zooms in while hair sways gently': '예) 머리카락이 살랑이는 동안 카메라가 천천히 줌인',
+    'Your very first result comes out watermark-free — make something you can post today.':
+      '첫 결과물은 바로 올릴 수 있게 나옵니다.',  // ⚠️ 'watermark-free'는 배선 0(generate.route.js:385가 플랜 무관 watermarked:false) → 주장 제거
+    // saas-login — ⚠️ 'my own face/content'는 폐기된 인플루언서 시대 문구(flags influencer:false)
+    'I confirm this is my own face/content and I agree to the': '본인이 권리를 가진 콘텐츠임을 확인하며, 다음에 동의합니다:',
+    '✦ Flagship': '✦ 대표 상품',
+    '— Reels reach far more people than photos.': '— Reels는 사진보다 훨씬 멀리 갑니다.',
+
+    // ── billing.html — ⛔ 날조 18종은 **의도적으로 미번역**(아래 목록). 번역하면 거짓을 한국어로 굳힌다.
+    //    N concurrent slots · Solo/Group lookbook · 2K quality · Concept cut · Edit results ·
+    //    Video reels · Template reel(5s/10s) · watermark-free exports · /mo
+    //    → entitlements.js PLANS에 그 축이 아예 없다(monthlyCredits·watermarkFree·hd·commercial·privateMode 5개뿐,
+    //      그중 코드로 강제되는 건 privateMode 하나). 가격표 진실화 선행 후 삭제할 것.
+    'Extra credits': '추가 크레딧', 'Credit packs': '크레딧 팩',
+    '1,500 credits (one-time)': '1,500 크레딧 (가입 시 1회)',
+    'Template photo (per image)': '템플릿 사진 (장당)',
+    'Custom photo (per image)': '커스텀 사진 (장당)',
+    'Photo — Flash (per image)': '사진 — Flash (장당)',
+    'Ad Video (per scene)': 'Ad Video (씬당)',
+    'Add-on (caption · enhance)': '애드온 (캡션 · 보강)',
+    'A monthly subscription for AI content creation — your usage credits refill every month, and you can cancel anytime. Need more mid-cycle? Add an extra credit pack.':
+      'AI 콘텐츠 제작 월 구독 — 크레딧이 매월 충전되고 언제든 해지할 수 있습니다. 중간에 더 필요하시면 크레딧 팩을 추가하세요.',
+    'A subscription gives the best value per credit — extra credit packs are for one-off needs. Credits are in-service usage units with no cash value and are non-refundable once used.':
+      '크레딧당 단가는 구독이 가장 낮고, 크레딧 팩은 일회성 수요를 위한 것입니다. 크레딧은 서비스 내 사용 단위로 현금 가치가 없으며 사용 후에는 환불되지 않습니다.',
+    'Never run out mid-generation. When your balance drops below the threshold, we auto-buy a pack so your renders never stop.':
+      '생성 도중 크레딧이 떨어지지 않게, 잔액이 기준 아래로 내려가면 팩을 자동으로 구매합니다.',
+    'When below': '잔액이 이 아래일 때', 'auto-buy': '자동 구매',
+    'Enterprise — annual, best value per credit': '기업 — 연간 결제, 크레딧당 단가 최저',
+    'billed annually': '연간 결제', 'SAVE 17%': '17% 절약',
+    '20 credits': '20 크레딧', '50 credits': '50 크레딧', '100 credits': '100 크레딧',
+    '50 credits — $5': '50 크레딧 — $5', '220 credits — $18': '220 크레딧 — $18', '580 credits — $40': '580 크레딧 — $40',
+    // ⛔ 미번역 유지: DOPPIA · .AI(브랜드) · Enterprise Pro/Team(플랜명) · $ USD · ₩ KRW(통화코드)
+
     // ── 레일 · 계정 메뉴 · 공통 ──
     'Studio': '스튜디오', 'Library': '라이브러리', 'Store': '스토어', 'Community': '커뮤니티',
     'Creator': '크리에이터', 'Billing': '결제', 'Market': '마켓', 'Marketplace': '마켓플레이스',
