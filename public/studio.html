@@ -242,7 +242,9 @@
   .ugc-el-ic{cursor:help;font-size:12px;opacity:.9}
   .ugc-el-lbl{cursor:help;color:var(--dim);border-bottom:1px dotted var(--border)}
   .ugc-scene-sum{color:var(--dim);font-size:12px;margin-top:3px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-  .ugc-scene-sum>span{flex:1;min-width:120px}
+  /* :not(.ugc-el-ic) — 아이콘 span까지 flex:1을 먹어 이모지 하나가 텍스트와 공간을 반씩 나눠 갖던 버그
+     (넓은 창일수록 심해져 1990px에서 🎬 하나가 717px를 차지했음). 늘어나야 하는 건 설명 텍스트뿐. */
+  .ugc-scene-sum>span:not(.ugc-el-ic){flex:1;min-width:120px}
   .ugc-sum-edit{background:none;border:none;color:var(--accent2);font-size:11px;cursor:pointer;font-family:inherit;padding:0;white-space:nowrap}
   .ugc-sum-panel{margin-top:8px}
   .ugc-sum-ta{width:100%;box-sizing:border-box;min-height:56px;background:var(--card2,#14141b);border:1px solid var(--border2);border-radius:8px;color:var(--text);font:inherit;font-size:12.5px;padding:8px 10px;resize:vertical}
@@ -975,17 +977,37 @@
         </div>
         <input type="hidden" id="ugcAspect" value="9:16">
       </div>
-      <!-- 씬 개수·길이(선택) — Kling 네이티브 5s/10s, 짧게는 5s에서 트림 -->
-      <!-- 씬 개수만 여기 남는다. 길이는 대본을 안 바꾸는 렌더 파라미터라 2단계(#ugcScriptPreview)로 이동 -->
+      <!-- 씬 개수·길이(선택) — Kling 네이티브 5s/10s, 짧게는 5s에서 트림.
+           ⚠️ 둘 다 렌더가 아니라 '대본 생성' 파라미터다: ugcWriteScript()가 sceneCount/sceneDuration을
+           /api/generate/ugc/script 로 보내 AI가 그 길이에 맞춰 대본을 쓴다(대본 스키마의 scenes[].durationSec).
+           2026-07-17 한때 길이를 2단계로 옮겼다가 되돌림 — 대본이 나온 뒤엔 Rewrite 없이는 아무 효과가 없었고,
+           대본이 이미 씬별 길이를 정해 보여주는데(4s 배지) 그 아래서 또 물어보는 모순이 생겼다. -->
       <div style="margin:8px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes <span style="color:var(--faint)">— Auto matches the script</span></div>
-        <div class="ugc-seg" id="ugcCountSeg">
-          <button type="button" class="ugc-seg-b active" data-c="0" onclick="ugcSetSceneCount(this)">Auto</button>
-          <button type="button" class="ugc-seg-b" data-c="3" onclick="ugcSetSceneCount(this)">3</button>
-          <button type="button" class="ugc-seg-b" data-c="4" onclick="ugcSetSceneCount(this)">4</button>
-          <button type="button" class="ugc-seg-b" data-c="5" onclick="ugcSetSceneCount(this)">5</button>
-          <button type="button" class="ugc-seg-b" data-c="6" onclick="ugcSetSceneCount(this)">6</button>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes &amp; length <span style="color:var(--faint)">— Auto lets the script decide</span></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Count</div>
+            <div class="ugc-seg" id="ugcCountSeg">
+              <button type="button" class="ugc-seg-b active" data-c="0" onclick="ugcSetSceneCount(this)">Auto</button>
+              <button type="button" class="ugc-seg-b" data-c="3" onclick="ugcSetSceneCount(this)">3</button>
+              <button type="button" class="ugc-seg-b" data-c="4" onclick="ugcSetSceneCount(this)">4</button>
+              <button type="button" class="ugc-seg-b" data-c="5" onclick="ugcSetSceneCount(this)">5</button>
+              <button type="button" class="ugc-seg-b" data-c="6" onclick="ugcSetSceneCount(this)">6</button>
+            </div>
+          </div>
+          <!-- 안내문은 wrap '안'에 둔다 — 형제로 두면 음성모드에서 컨트롤만 숨고 안내만 남는 유령 문구가 됨 -->
+          <div id="ugcLenSceneWrap">
+            <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
+            <div class="ugc-seg" id="ugcDurSeg">
+              <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
+              <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
+              <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
+            </div>
+            <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
+          </div>
         </div>
+        <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
+        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voiceover mode — length is set by the voice.</div>
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
       </div>
       <!-- Ad language: 대본·음성·자막·캡션의 언어(생성 프롬프트·영상 비주얼은 무관). 기본 English. -->
@@ -1038,20 +1060,6 @@
         <span class="hint" id="ugcScriptMeta"></span>
       </div>
       <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
-      <!-- 씬 길이: 1단계에서 이리로 옮김. 대본 텍스트를 바꾸지 않는 순수 렌더 파라미터라 생성 직전이 제자리고,
-           음성모드에서 숨겨질 때 "3s는 5s에서 트림" 안내가 컨트롤과 함께 사라지도록 wrap 안에 넣었다
-           (기존엔 형제 노드라 컨트롤만 숨고 안내문만 남는 유령 문구가 됐음) -->
-      <div id="ugcLenSceneWrap" style="margin-top:12px">
-        <div style="font-size:11px;color:var(--faint);margin-bottom:3px">Length / scene</div>
-        <div class="ugc-seg" id="ugcDurSeg">
-          <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
-          <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
-          <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
-        </div>
-        <div style="font-size:11px;color:var(--faint);margin-top:4px;line-height:1.5">3s clips are trimmed from a 5s render, so they cost the same as 5s.</div>
-      </div>
-      <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
-      <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voice mode — length is set by the voice. Adjust with what's said + <b>[pause]</b> (0.6s) in the script + per-scene <b>Add pause</b>.</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="ugcMusic" checked> <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Add background music</span>
