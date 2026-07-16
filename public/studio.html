@@ -3907,7 +3907,7 @@ function renderUgcInline(b){
     const n=b.sceneCount||5; let cards='';
     for(let i=1;i<=n;i++){ cards+=`<div class="usc usc-loadcard"><div class="usc-thumb"><div class="rb-spin"></div><span class="usc-idx">${i}</span></div><div class="usc-cap-sk"></div></div>`; }
     el.innerHTML=
-      '<div class="ugc-inline-vidwrap ugc-inline-loadvid"><div class="rb-spin rb-spin-lg"></div><div class="ugc-inline-loadcap">Building your video… <span class="rb-elapsed">0.0s</span></div></div>'
+      `<div class="ugc-inline-vidwrap ugc-inline-loadvid"><div class="rb-spin rb-spin-lg"></div><div class="ugc-inline-loadcap">Building your video… <span class="rb-elapsed" data-batch="${b._uid}">0.0s</span></div></div>`
       +'<div class="ugc-scenes"><div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Each scene is being generated…</span></div><div class="ugc-strip">'+cards+'</div></div>';
     return; }
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
@@ -4321,8 +4321,11 @@ function ugcScheduleSilentSave(jobId,u){
   UGC_TL_SAVE_TIMER=setTimeout(function(){ ugcReassemble(jobId,ugcSilentPayload(u)); },900);
 }
 // 생성 시작 즉시 피드 맨 앞에 띄울 placeholder 배치(메타는 바로, 이미지는 로딩) — Leonardo식
+// 배치별 DOM 식별자 — 경과 타이머가 "내 카드"만 갱신하게 한다. jobId를 쓸 수 없다:
+//   렌더 POST 응답 전에 로딩 화면이 이미 떠서, 타이머가 시작될 땐 아직 잡 id가 없다.
+let BATCH_SEQ=0;
 function makePendingBatch(r,extra,count,isReel){
-  return {items:[],loading:true,pendingCount:isReel?1:(count||4),
+  return {_uid:++BATCH_SEQ, items:[],loading:true,pendingCount:isReel?1:(count||4),
     promptText:r?'':extra, templateSource:r?(attribution().templateSource||'recipe'):'', templateName:r?r.name:'',
     model:isReel?'Reel':effModelLabel(), w:null,h:null, dateKey:dateKeyOf(),dateLabel:'Today'};
 }
@@ -4394,7 +4397,9 @@ async function generate(opts){
   const t0=Date.now();
   const elapsedTimer=setInterval(()=>{
     const s=((Date.now()-t0)/1000).toFixed(1)+'s';
-    document.querySelectorAll('#resultsGrid .rb-elapsed').forEach(el=>{el.textContent=s;});
+    // B: 주인 있는 경과칸(data-batch = Ad Video 배치별 타이머)은 건드리지 않는다 — E로 Ad Video 로딩
+    //    카드가 이 피드에 들어오면 사진 타이머가 남의 초를 덮어써 두 타이머가 싸운다.
+    document.querySelectorAll('#resultsGrid .rb-elapsed:not([data-batch])').forEach(el=>{el.textContent=s;});
     document.querySelectorAll('#stplPick .stpl-elapsed').forEach(el=>{el.textContent=s;}); // 저장 모달 로딩 타일도 동일 경과 초
   },100);
 
@@ -5124,7 +5129,10 @@ async function ugcRenderVideo(){
   pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 로딩 씬 카드 수
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
   const t0=Date.now();
-  const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#ugcInline .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
+  // B: 내 배치의 경과만 갱신한다. 전엔 '#ugcInline .rb-elapsed'였다 — 칸이 하나뿐이라 N개가 같은 숫자를
+  //    쓰고, 로딩 카드가 오븐으로 가면(E) 스코프 밖이라 타이머가 아예 멎었다. data-batch는 둘 다 푼다.
+  const uid=pending._uid;
+  const elapsedTimer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+uid+'"]').forEach(el=>{el.textContent=s;});},100);
   try{
     const fd=new FormData();
     const moodEl=document.getElementById('ugcMusicMood'); if(moodEl&&moodEl.value&&ugcScript)ugcScript.musicVibe=moodEl.value; // 음악 무드 선택 시 musicVibe 오버라이드
@@ -5267,7 +5275,8 @@ async function ugcRestoreActiveJobs(){
   ugcCompact({name:j.title||j.product||'', concept:j.concept||'', fmt:j.output_type, ar:''});
   const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('rendering'); // 렌더 중 = Edit 숨김
   const t0=Date.now();
-  const timer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('#ugcInline .rb-elapsed').forEach(el=>{el.textContent=s;});},100);
+  const ruid=pending._uid; // B: 재연결 렌더도 자기 배치 것만(위 ugcRenderVideo와 같은 이유)
+  const timer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+ruid+'"]').forEach(el=>{el.textContent=s;});},100);
   genActive++; // 렌더 중 대본 재작성 차단 가드가 재연결에서도 걸리게
   try{
     const job=await pollUgcJob(j.id);
