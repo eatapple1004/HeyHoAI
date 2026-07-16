@@ -665,7 +665,9 @@
   /* 진행 중엔 왼쪽이 '설정창'이 아니라 '영수증'. 바꿀 수 있는 게 없는데 편집 가능한 폼을 보여주는 건 거짓말이다.
      busy = 대본 쓰는 몇 초(레이아웃 안 흔들고 잠그기만) / rendering = 영상 몇 분(요약 카드만, Edit 없음) */
   #ugcInputBox.busy .ugc-foldable{opacity:.5;pointer-events:none}
-  #ugcInputBox.rendering .ugc-recap-edit{display:none}
+  /* (H) 렌더 중 Edit 숨김을 걷어냈다 — 같은 사고(재작성이 영상을 지움)를 막던 것이라 이유가 사라졌고,
+     ugcUncompact()로 가는 유일한 길이라 숨기면 렌더가 도는 동안 다음 영상을 시작할 수 없었다.
+     .rendering 클래스 자체는 남겨둔다(렌더 중 상태 표식으로 다른 데서 쓸 수 있게). */
   .ugc-cols > #ugcInputBox.compact{flex:0 0 300px}
   @media(max-width:860px){.ugc-cols > #ugcInputBox.compact{flex:1 1 auto}}
 
@@ -4911,10 +4913,9 @@ async function ugcWriteScript(){
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
   const hint=document.getElementById('ugcHint');
-  // 영상 렌더 중엔 대본을 다시 쓰지 못하게 막는다. ugcRenderScriptPreview()가 STUDIO_BATCHES에서
-  // isUgc 배치를 전부 splice하므로, 렌더 중에 이게 돌면 진행 중인 영상이 화면에서 사라진다
-  // (백엔드는 계속 돌고 크레딧도 그대로 나가서 유저에겐 "영상이 증발"로 보임).
-  if(genActive>0){toast('Your video is still rendering — wait for it to finish before rewriting.');return;}
+  // (H) "렌더 중 대본 재작성 금지" 가드를 걷어냈다. 그건 대본 재작성이 진행 중인 영상을 splice로
+  //   지워버리던 사고(영상 증발)를 막으려던 것이고, 이제 지우지 않고 조리대에서 내리기만 하므로
+  //   막을 이유가 없다 — 렌더가 도는 동안 다음 영상의 대본을 쓸 수 있어야 N개가 성립한다.
   if(!concept){hint.textContent='⚠ Describe your ad — product + the angle.';return;}
   const wbtn=document.getElementById('ugcGenBtn'),rwbtn=document.getElementById('ugcRewriteBtn');
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
@@ -4976,8 +4977,13 @@ function ugcRenderScriptPreview(data){
    document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?chk+`Generate video <span class="gen-cost">◈ ${data.cost}</span>`:chk+'Generate video';}
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display='none'; // 작성 스켈레톤 숨김
-  for(let i=STUDIO_BATCHES.length-1;i>=0;i--){ if(STUDIO_BATCHES[i].isUgc)STUDIO_BATCHES.splice(i,1); } // 이전 Ad Video 결과(우측 인라인) 치우기
-  renderUgcInline(null);
+  // H: 새 대본이 조리대를 차지한다 — 이전 배치는 **지우지 않고** 조리대에서만 내린다(오븐에 남아 계속
+  //    렌더되고, 완성되면 거기서 저장·편집한다). 전엔 isUgc 배치를 전부 splice해서, 렌더 중에 대본을
+  //    다시 쓰면 영상이 화면에서 증발했다(백엔드는 계속 돌고 크레딧도 그대로 나갔다). 그 사고를 막으려고
+  //    "렌더 중 재작성 금지" 가드를 걸어놨었고, 그 가드가 곧 두 번째 영상을 못 만들게 하던 벽이었다.
+  //    지우지 않게 된 지금은 가드도 필요 없다 → N개 동시 생성이 열린다.
+  STUDIO_BATCHES.forEach(x=>{ x._bench=false; });
+  renderStudioResults(); // 내려간 배치는 오븐 카드로, 조리대는 빈 채로(새 대본이 곧 채운다)
   document.getElementById('ugcScriptPreview').style.display='';
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
   ugcCompact(); // 대본이 나왔으니 왼쪽 입력은 요약 카드로 접고 오른쪽에 자리를 내준다
