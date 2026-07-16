@@ -3220,7 +3220,10 @@ function batchRowHtml(b){
     : b.items.map(studioMediaCard).join('')+(b.failed||[]).map(f=>studioFailedCard(f.idx)).join(''); // 성공 슬롯 + 실패 슬롯(레오나르도식)
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
-  const isUgc=/^ugc/i.test(String(b.model||'')); // (2026-07-11) Ad Video(UGC) 크리에이션 = model 'ugc-v1' → Custom 아닌 Ad Video로 표기
+  // (2026-07-11) DB 히스토리의 Ad Video = model 'ugc-v1'. (2026-07-17) 인플라이트 배치는 b.isUgc 플래그로 오는데
+  //   makePendingBatch(...,isReel=true)가 model을 'Reel'로 박아 /^ugc/에 안 걸린다 → 피드에서 Custom 배지로 오표기됐다.
+  //   판정 축이 둘(히스토리=model / 인플라이트=플래그)이므로 둘 다 받는다.
+  const isUgc=!!b.isUgc||/^ugc/i.test(String(b.model||''));
   const usable=b.items.filter(i=>i.url); // 이 creation의 사진 또는 릴(영상 포함)
   const firstU=usable[0]; const isReelBatch=!!(firstU&&firstU.type==='reel');
   const tplFromBtn=(!b.loading&&usable.length)
