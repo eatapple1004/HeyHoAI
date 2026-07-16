@@ -233,6 +233,16 @@ app.listen(env.PORT, () => {
       setTimeout(() => ugc.sweepStaleComposites().catch((e) => log.warn('UGC composite sweep failed: ' + e.message)), 90 * 1000);
       setInterval(() => ugc.sweepStaleComposites().catch(() => {}), 6 * 60 * 60 * 1000).unref();
     }
+    // 최초 렌더가 크래시·재배포로 죽은 잡 회수 = failed + 환불. **부팅 시 1회만**(인터벌 없음).
+    //   reapStaleProcessing은 `script IS NOT NULL` 조건이라 최초 렌더(렌더 중 script=NULL)를 못 잡아,
+    //   유저가 선차감된 채 잡도 영상도 못 받는 구멍이 있었다.
+    //   나이로 판단하지 않는 이유: runPipeline이 중간에 updateJob을 안 불러 렌더 내내 updated_at이
+    //   INSERT 시각에 멈춰 있다 → 살아있는 렌더를 failed+환불로 죽여 돈이 두 번 나간다.
+    //   파이프라인은 프로세스 메모리에만 살고 pm2 instances:1 + fork(겹침 없음)라
+    //   "새 프로세스가 떴다 = 이전 파이프라인 100% 사망"이 확정. 그래서 부팅 1회로 충분하고 안전하다.
+    if (ugc.reapCrashedRenders) {
+      setTimeout(() => ugc.reapCrashedRenders().catch((e) => log.warn('UGC crashed-render reap failed: ' + e.message)), 8000).unref();
+    }
     // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수(폴러와 동일 게이트=prod only). 시작 60s 후 + 5분 간격.
     if (ugc.reapStaleProcessing) {
       setTimeout(() => ugc.reapStaleProcessing().catch((e) => log.warn('UGC processing reap failed: ' + e.message)), 60 * 1000);

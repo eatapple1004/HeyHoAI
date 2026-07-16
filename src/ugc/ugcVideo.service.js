@@ -1065,6 +1065,55 @@ async function reapStaleProcessing({ maxAgeMinutes = 15 } = {}) {
   } catch (e) { log.warn(`reapStaleProcessing 실패: ${e.message}`); return { reaped: 0 }; }
 }
 
+/**
+ * 최초 렌더가 크래시·재배포로 죽은 잡 회수 — failed + 환불. **부팅 시 1회만** 실행.
+ *
+ * 왜 필요한가 (reapStaleProcessing의 구멍):
+ *   runPipeline은 script를 '끝날 때' status='succeeded'와 함께 기록한다 → 렌더 중엔 script가 NULL.
+ *   그런데 reapStaleProcessing은 `AND script IS NOT NULL` 조건이라(원래 reRender/편집 경로용)
+ *   최초 렌더 도중 프로세스가 죽으면 그 잡을 절대 건드리지 않는다.
+ *   → 유저는 선차감된 채(render()가 chargeGeneration 후 INSERT) 잡도 영상도 못 받는다.
+ *
+ * 왜 '시간'이 아니라 '부팅'인가:
+ *   runPipeline은 중간에 updateJob을 부르지 않아 렌더 내내 updated_at이 INSERT 시각에 멈춰 있다.
+ *   즉 10분짜리 정상 렌더도 "10분간 멈춘 것"처럼 보인다 → 나이로 판단하면 살아있는 렌더를
+ *   failed+환불로 죽인다(오탐 = 돈이 두 번 나감).
+ *   반면 파이프라인은 프로세스 메모리에만 산다. pm2 instances:1 + fork 모드라 재시작 시 겹침이
+ *   없으므로, **새 프로세스가 떴다 = 이전 파이프라인은 100% 죽었다**가 확정이다. 추측이 0.
+ *   그래서 인터벌로 돌리지 않는다(reapStaleProcessing과 다른 점 — 그쪽은 돈이 안 걸려 있다).
+ *
+ * 멱등성: UPDATE ... WHERE status='processing' ... RETURNING 이 원자적이라 실제로 뒤집힌 행만
+ *   돌아온다 → 환불은 행당 1회. 갱신 후 환불 순서인 이유: 사이에서 죽으면 '환불 누락'(수동 복구 가능)이지
+ *   '이중 환불'(돈이 나감)이 아니다.
+ */
+async function reapCrashedRenders({ minAgeMinutes = 2 } = {}) {
+  let rows;
+  try {
+    rows = (await query(
+      `UPDATE ugc_jobs
+          SET status='failed',
+              error='Rendering was interrupted by a server restart — your credits were refunded.',
+              updated_at=now()
+        WHERE status='processing' AND script IS NULL
+          AND updated_at < now() - ($1 * interval '1 minute')
+        RETURNING id, user_id, charge_amount`,
+      [minAgeMinutes]
+    )).rows;
+  } catch (e) { log.warn(`reapCrashedRenders 쿼리 실패: ${e.message}`); return { reaped: 0, refunded: 0 }; }
+  if (!rows.length) return { reaped: 0, refunded: 0 };
+  let refunded = 0;
+  for (const r of rows) {
+    const amt = Number(r.charge_amount) || 0;
+    if (amt <= 0) continue; // admin 등 무과금 잡
+    try {
+      await teamCredit.refundGeneration({ id: r.user_id }, amt, 'UGC 영상 렌더 중단(서버 재시작) 환불', r.id);
+      refunded += amt;
+    } catch (e) { log.warn(`reapCrashedRenders 환불 실패 job=${r.id}: ${e.message}`); }
+  }
+  log.info(`reapCrashedRenders: 중단된 렌더 ${rows.length}개 회수, ${refunded}크레딧 환불`);
+  return { reaped: rows.length, refunded };
+}
+
 /** 잡 상태 조회(소유자 본인 또는 팀 멤버) */
 async function getJob(id, userId) {
   const gate = `(user_id = $2 OR (team_id IS NOT NULL AND team_id IN (SELECT team_id FROM team_members WHERE user_id = $2)))`;
@@ -1192,4 +1241,4 @@ async function sceneStoryboardForResult(resultIdx) {
   return { hook, sceneCount: scenes.length, scenes };
 }
 
-module.exports = { generateScript, render, submit, getJob, listActiveJobs, listPendingReview, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };
+module.exports = { generateScript, render, submit, getJob, listActiveJobs, listPendingReview, reapCrashedRenders, reRender, beginRerender, failRerender, commitJob, commitDraft, sweepStaleComposites, reapStaleProcessing, applySceneCaptionTimings, estimateCost, suggestConcept, persistSceneClips, editableScenes, applySceneEdits, sceneStoryboardForResult };
