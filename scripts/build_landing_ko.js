@@ -73,24 +73,54 @@ if (lack.length) fail('_meta 누락: ' + lack.join(', ') + ' — 한국어 검�
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const sub = (re, to) => { if (!re.test(html)) fail('head 패턴 불일치(영문 원본이 바뀌었나?): ' + re); html = html.replace(re, to); };
 
+// ⚠️ 속성 순서를 가정하지 마라. landing.html이 파서(bs4)를 거치면 <meta name= content=> 가
+//    <meta content= name=> 로 뒤집힌다 — 순서 의존 정규식은 그때 조용히 죽는다(실제로 겪음).
+//    → 식별 속성으로 태그를 찾고, 그 태그 안에서 목표 속성만 바꾼다.
+function setAttr(idAttr, idVal, attr, val, label) {
+  const tagRe = new RegExp(`<(meta|link)\\b[^>]*\\b${idAttr}="${idVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`, 'i');
+  const m = html.match(tagRe);
+  if (!m) fail(`head에서 못 찾음: ${label || idAttr + '=' + idVal} — 영문 원본이 바뀌었나?`);
+  const attrRe = new RegExp(`(\\b${attr}=")[^"]*(")`);
+  let tag = m[0];
+  if (!attrRe.test(tag)) fail(`${label || idVal} 태그에 ${attr} 속성이 없다`);
+  tag = tag.replace(attrRe, `$1${val}$2`);
+  html = html.replace(m[0], tag);
+}
+
 sub(/<html lang="en">/, '<html lang="ko">');
 sub(/<title>[\s\S]*?<\/title>/, `<title>${esc(meta.title)}</title>`);
-sub(/(<meta name="description" content=")[^"]*(")/, `$1${esc(meta.description)}$2`);
-sub(/(<link rel="canonical" href=")[^"]*(")/, `$1${ORIGIN}/ko$2`);
-sub(/(<meta property="og:url" content=")[^"]*(")/, `$1${ORIGIN}/ko$2`);
-sub(/(<meta property="og:title" content=")[^"]*(")/, `$1${esc(meta.og_title)}$2`);
-sub(/(<meta property="og:description" content=")[^"]*(")/, `$1${esc(meta.og_description)}$2`);
-sub(/(<meta property="og:locale" content=")[^"]*(")/, '$1ko_KR$2');
-sub(/(<meta property="og:locale:alternate" content=")[^"]*(")/, '$1en_US$2');
-if (meta.og_image) sub(/(<meta property="og:image" content=")[^"]*(")/, `$1${esc(meta.og_image)}$2`);
+setAttr('name', 'description', 'content', esc(meta.description), 'meta description');
+setAttr('rel', 'canonical', 'href', `${ORIGIN}/ko`, 'canonical');            // 자기참조 필수
+setAttr('property', 'og:url', 'content', `${ORIGIN}/ko`, 'og:url');
+setAttr('property', 'og:title', 'content', esc(meta.og_title), 'og:title');
+setAttr('property', 'og:description', 'content', esc(meta.og_description), 'og:description');
+setAttr('property', 'og:locale', 'content', 'ko_KR', 'og:locale');
+setAttr('property', 'og:locale:alternate', 'content', 'en_US', 'og:locale:alternate');
+if (meta.og_image) setAttr('property', 'og:image', 'content', esc(meta.og_image), 'og:image');
 
 // ── 3. 언어 스위처 aria-current 이동 ────────────────────────────────────
-html = html.replace(/(<a href="\/" hreflang="en" data-lang="en")\s+aria-current="true"/, '$1');
-html = html.replace(/(<a href="\/ko" hreflang="ko" data-lang="ko")/, '$1 aria-current="true"');
+// ⚠️ 속성 순서 무관. bs4가 <a href hreflang data-lang> 을 <a data-lang href hreflang> 으로 뒤집는다.
+function swapCurrent(fromLang, toLang) {
+  const tag = (l) => new RegExp(`<a\\b[^>]*\\bdata-lang="${l}"[^>]*>`, 'i');
+  const mf = html.match(tag(fromLang));
+  if (!mf) fail(`언어 스위처에 data-lang="${fromLang}" 없음`);
+  html = html.replace(mf[0], mf[0].replace(/\s*aria-current="[^"]*"/, ''));
+  const mt = html.match(tag(toLang));
+  if (!mt) fail(`언어 스위처에 data-lang="${toLang}" 없음`);
+  if (!/aria-current/.test(mt[0])) html = html.replace(mt[0], mt[0].replace(/>$/, ' aria-current="true">'));
+}
+swapCurrent('en', 'ko');
 
 // ── 4. LP-LANG 리다이렉트 스니펫 제거 ───────────────────────────────────
 // /ko에서는 불필요하고, pathname 가드('/' | '/landing')상 발동도 안 하지만 죽은 코드를 남기지 않는다.
-html = html.replace(/<script>\/\*LP-LANG[\s\S]*?<\/script>\n?/, '');
+{
+  const i = html.indexOf('/*LP-LANG');
+  if (i < 0) fail('LP-LANG 스니펫을 못 찾음 — landing.html이 바뀌었나?');
+  const s0 = html.lastIndexOf('<script', i);
+  const e0 = html.indexOf('</script>', i);
+  if (s0 < 0 || e0 < 0) fail('LP-LANG script 경계 파싱 실패');
+  html = html.slice(0, s0) + html.slice(e0 + '</script>'.length).replace(/^\n/, '');
+}
 
 // ── 5. 생성 표식 ────────────────────────────────────────────────────────
 html = html.replace(/<head>/,
