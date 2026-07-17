@@ -1152,7 +1152,10 @@
         <div class="step-head">
           <div class="step-num" id="snTemplate" style="display:none">2</div>
           <h2 id="step2Title">Pick a template</h2>
-          <span class="hint" id="step2Hint">No prompt needed — just choose a look.</span>
+          <!-- (2026-07-17) 옛 부제 "just choose a look" — 헤딩은 template, 부제는 look이라 한 박스에서 같은 것을
+               두 단어로 불렀다. 셀러가 둘을 다른 것으로 읽는다. → look을 걷어내고 template으로 통일.
+               "프롬프트 불필요"의 이유를 대신 밝힌다 = 템플릿이 프롬프트 레시피를 품고 있다(docs/제품컷_중첩템플릿 §2-1). -->
+          <span class="hint" id="step2Hint">No prompt needed — the template brings its own.</span>
         </div>
         <!-- ▼▼▼ (2026-07-06 1축 재구조) 서브탭을 카테고리 줄로 통합. shopping(taxonomyRowActive)에선 renderCatSwitcher가 이 서브탭을 숨기고 My templates를 카테고리 줄 pill로 렌더; influencer/ugc(비택소노미)에선 서브탭 유지(회귀 방지). 롤백: renderCatSwitcher의 bar.style.display 토글 + 1축 pill/구분선/'?'툴팁 블록 + taxonomyRowActive + pickOfficialCat/pickUserSpace + .cat-div/.cat-pill.mine/.cat-help/.cat-tip CSS 제거 ▲ -->
         <!-- ▼▼▼ (2026-07-03 Studio↔Library 시각정합) Official/My templates 서브탭 — Library 미러(Official 기본). 소스통일은 다음단계. 롤백: 이 블록 + .studio-subtab CSS + curTplType/studioPresentThemes/switchStudioTplType + renderRecipes 타입필터 + renderFilters present/official분기 제거 ▼▼▼ -->
@@ -1509,7 +1512,13 @@
       <h3 class="pw-title">Not enough credits</h3>
       <div class="pw-sub" id="pwSub"></div>
     </div>
-    <div class="pw-value">Studio-grade photos &amp; reels · 11 premium template sets</div>
+    <!-- (2026-07-17) 옛 문구 "Studio-grade photos & reels · 11 premium template sets" 폐기 — 결제 유도 화면에서
+         못 주는 걸 팔고 있었다: ① reels = flags.js reels:{launch:false} 미출시(확정결정 §54 "지금 못 판다")
+         ② "11 sets" = 레포에 78/60/93/170이 3배씩 충돌(§82 "숫자를 쓰지 마라").
+         ⚠️ 이 모달은 Ad Video에서도 뜬다(:5237 UGC 402 경로)는데 pw-value는 모드 무관 고정이라
+            "photos"라고 쓰면 광고영상 사용자에겐 그것부터 거짓이다 → 두 모드 다 참인 말만 쓴다.
+         이 문구 = 랜딩 trust.a.b의 검증된 주장(KO "나온 것만 크레딧이 나갑니다"). -->
+    <div class="pw-value">You only pay for what renders.</div>
     <div id="pwPacks" class="pw-packs"></div>
     <div class="pw-foot">Your balance refills the moment you're back — just hit Generate again.</div>
   </div>
@@ -2198,7 +2207,7 @@ function setMode(m,initialVertical){
   document.getElementById('snTemplate').style.display='none'; // Step1 흡수로 스텝 번호 체계 제거
   document.getElementById('snResult').style.display='none';
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
-  document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — just choose a look.';
+  document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — the template brings its own.';
   const ep=document.getElementById('extraPrompt');
   if(ep)ep.placeholder=custom?'Type a prompt...':'Add a prompt (optional) — leave empty to use the template only';
   // Custom: 모델 픽커 → 타입 세그(Image|Video) + 툴 픽커로 교체 + Save as template 노출
@@ -2395,7 +2404,7 @@ function toggleManage(){ manageMode=!manageMode; applyManageChrome(); renderFilt
 function applyManageChrome(){
   document.body.classList.toggle('studio-managing',manageMode); // CSS가 .gen-bar·#subjectStep·#resultStep 숨김
   const h=document.getElementById('step2Title'); if(h)h.textContent=manageMode?'Manage templates':(state.mode==='ugc'?'Pick an ad format':'Pick a template');
-  const hint=document.getElementById('step2Hint'); if(hint)hint.textContent=manageMode?'Organize what shows when you make Shots. Your creations are safe.':'No prompt needed — just choose a look.';
+  const hint=document.getElementById('step2Hint'); if(hint)hint.textContent=manageMode?'Organize what shows when you make Shots. Your creations are safe.':'No prompt needed — the template brings its own.';
 }
 // ▲▲▲
 // group = 현재 모드의 대분류(Influencer/Shopping)로 커스텀 테마 생성. 모드에 대분류가 없으면(custom/ugc) Shopping 폴백.
@@ -3010,7 +3019,7 @@ function syncTplTrigger(){
     if(state.mode!=='custom'){
       wrap.innerHTML=`<button type="button" class="tpl-pick-cta" onclick="scrollToTemplatePicker()">`
         +`<span class="tpc-ic">▦</span>`
-        +`<span class="tpc-body"><span class="tpc-t">Pick a template</span><span class="tpc-s">Choose a look below — no prompt needed</span></span></button>`;
+        +`<span class="tpc-body"><span class="tpc-t">Pick a template</span><span class="tpc-s">Choose one below — no prompt needed</span></span></button>`;
       wrap.style.display=''; c.style.display='';
     }else{ wrap.innerHTML=''; wrap.style.display='none'; c.style.display='none'; }
   }else{ c.style.display='none'; }

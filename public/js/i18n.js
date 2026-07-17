@@ -157,7 +157,13 @@
     'Add your spokesperson': '모델 추가', 'Select a face': '얼굴 선택', 'Ratio': '비율', 'Aspect ratio': '화면 비율',
     'More ratios': '비율 더 보기', 'Size': '크기', 'Count': '수량', 'Model': '모델', 'Models': '모델',
     'Quality': '품질', 'Private Mode': '비공개 모드', 'Generate': '생성', 'Pick a template': '템플릿 선택',
-    'No prompt needed — just choose a look.': '프롬프트 불필요 — 원하는 룩만 고르세요.', 'Official': '공식',
+    // (2026-07-17) 옛 키 'No prompt needed — just choose a look.' 폐기 — 헤딩(template)과 부제(look)가
+    //   한 박스에서 같은 것을 두 단어로 불렀다. EN을 통일했으므로 키도 따라간다.
+    'No prompt needed — the template brings its own.': '프롬프트 불필요 — 템플릿이 프롬프트를 갖고 있습니다.',
+    'Choose one below — no prompt needed': '아래에서 고르세요 — 프롬프트 불필요',
+    // 페이월(크레딧 부족 모달). 랜딩 trust.a.b와 **같은 문장**을 쓴다 — 검증된 주장이고 두 모드 다 참이다.
+    'You only pay for what renders.': '나온 것만 크레딧이 나갑니다.',
+    'Official': '공식',
     'My templates': '내 템플릿', 'My creations': '내 크리에이션', 'Your creations': '내 크리에이션',
     'Image': '이미지', 'Video': '비디오', 'Photos': '사진', 'Reels': '릴스', 'Length': '길이', 'Audio': '오디오',
     'Reference': '레퍼런스', 'Options': '옵션', 'Negative': '네거티브', 'Negative prompt': '네거티브 프롬프트',
@@ -370,7 +376,6 @@
     'Choose at least one theme — it groups the template in Shots.': '테마를 하나 이상 선택하세요 — 스튜디오에서 템플릿을 묶어줍니다.',
     'Save — it is now in My templates, ready to reuse anytime. No prompt needed next time.': '저장하면 ‘내 템플릿’에 들어가 언제든 다시 쓸 수 있습니다. 다음엔 프롬프트가 필요 없습니다.',
     // 목업 문구 · 저장 모달 필드
-    'Choose a look below — no prompt needed': '아래에서 룩을 고르세요 — 프롬프트 불필요',
     'write your own prompt': '직접 프롬프트 쓰기', '✎ Custom': '✎ 커스텀', '⧉ Copy prompt': '⧉ 프롬프트 복사',
     '— write your own prompt, no template needed.': '— 직접 프롬프트를 쓰세요, 템플릿 불필요.',
     'Type a prompt…': '프롬프트를 입력하세요…', '+ Negative prompt': '+ 네거티브 프롬프트',
