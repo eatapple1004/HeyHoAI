@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="google" content="notranslate" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Doppia · Studio</title>
+<title>Doppia · Shots</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -862,7 +862,7 @@
   <div class="nav-in">
     <div class="brand" onclick="location.href='/landing'"><b>Doppia</b></div>
     <div class="nav-links">
-      <a class="active">Studio</a>
+      <a class="active">Shots</a>
       <a onclick="location.href='/marketplace'">Market</a>
       <a onclick="location.href='/gallery'">Library</a>
       <a onclick="location.href='/billing'">Billing</a>
@@ -1400,7 +1400,7 @@
   <div class="modal stpl-modal" role="dialog" aria-modal="true" aria-label="Save as template">
     <button class="x" onclick="closeSaveTpl()">✕</button>
     <div class="stpl-h">Create template</div>
-    <div class="stpl-s">Save this look as a private template in your Studio. Only you can see and use it.</div>
+    <div class="stpl-s">Save this look as a private template. Only you can see and use it.</div>
     <div class="stpl-grid">
       <div class="stpl-col">
         <div class="stpl-lbl">Cover</div>
@@ -2358,7 +2358,7 @@ function inAnyTheme(r){
   return false;
 }
 async function hideTheme(slug){ // 기본 테마 통째 제거
-  try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'POST'}); HIDDEN_THEMES.add(slug); if(state.filter===slug)state.filter='All'; renderFilters();renderRecipes(); if(window.toast)toast('Theme removed from your studio'); }catch(e){}
+  try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'POST'}); HIDDEN_THEMES.add(slug); if(state.filter===slug)state.filter='All'; renderFilters();renderRecipes(); if(window.toast)toast('Theme removed from Shots'); }catch(e){}
 }
 async function restoreTheme(slug){ // 제거한 기본 테마 복원
   try{ await fetch('/api/studio/hidden-themes/'+encodeURIComponent(slug),{method:'DELETE'}); HIDDEN_THEMES.delete(slug); renderFilters();renderRecipes(); }catch(e){}
@@ -2395,7 +2395,7 @@ function toggleManage(){ manageMode=!manageMode; applyManageChrome(); renderFilt
 function applyManageChrome(){
   document.body.classList.toggle('studio-managing',manageMode); // CSS가 .gen-bar·#subjectStep·#resultStep 숨김
   const h=document.getElementById('step2Title'); if(h)h.textContent=manageMode?'Manage templates':(state.mode==='ugc'?'Pick an ad format':'Pick a template');
-  const hint=document.getElementById('step2Hint'); if(hint)hint.textContent=manageMode?'Organize what shows in your Studio. Your creations are safe.':'No prompt needed — just choose a look.';
+  const hint=document.getElementById('step2Hint'); if(hint)hint.textContent=manageMode?'Organize what shows when you make Shots. Your creations are safe.':'No prompt needed — just choose a look.';
 }
 // ▲▲▲
 // group = 현재 모드의 대분류(Influencer/Shopping)로 커스텀 테마 생성. 모드에 대분류가 없으면(custom/ugc) Shopping 폴백.
@@ -2413,13 +2413,13 @@ async function deleteStudioTheme(id,skipConfirm){
   }catch(e){}
 }
 // ▼▼▼ (2026-07-03 소스 통일 #1) Studio "빼기" = Library only(in_studio=false)로 일원화 — 옛 Studio 전용 개별숨김(toggleHide/HIDDEN) 대체.
-//     Library의 "↓ Move to Library only"와 동일 축·동일 엔드포인트 → Studio 노출 세트 == Library "In Studio" 그룹(완전 일치).
+//     Library의 "↓ Store"와 동일 축·동일 엔드포인트 → Studio 노출 세트 == Library "In Studio" 그룹(완전 일치).
 //     롤백: 이 함수 제거 + toggleHide 복원(POST/DELETE /api/studio/hidden/:rid) + renderRecipes HIDDEN 필터/✕·↺ 컨트롤 복원 ▼▼▼
 async function toggleStudioInStudio(rid,on){ // on=true → In Studio 복귀 / false(기본) → Library only. Library 카드 토글과 동일 엔드포인트.
   const inStudio=(on===true);
   const r=findCard(rid); const uuid=String((r&&r.ownedId)||rid); // 유저 템플릿 id=UUID / 공식은 ownedId(슬러그≠UUID)
   try{ await fetch('/api/marketplace/owned/in-studio',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[uuid],in_studio:inStudio})});
-    if(r)r.in_studio=inStudio; renderRecipes(); if(window.toast)toast(inStudio?'Added to Studio':'Moved to Library only');
+    if(r)r.in_studio=inStudio; renderRecipes(); if(window.toast)toast(inStudio?'Taken out':'Put away');
   }catch(e){ if(window.toast)toast('Could not update'); }
 }
 // (2026-07-03 A안) 내 템플릿 삭제 = Library "Delete"와 동일 엔드포인트(DELETE /api/marketplace/templates/:id). 공식·구매분은 미노출(mine만).
@@ -2592,8 +2592,8 @@ function renderRecipes(){
         if(isOfficialCard(r.id)){ mc=`<div class="mctrls"><span class="mc lock" title="Official templates have a fixed theme">🔒</span></div>`; }  // (2026-07-03 옵션A-full)
         else { const inT=inGlobalTheme(r,defTheme);
         mc=`<div class="mctrls">${inT?`<span class="mc rem" title="Remove from theme" onclick="event.stopPropagation();removeFromGlobalTheme('${defTheme}','${r.id}')">−</span>`:`<span class="mc add" title="Add to theme" onclick="event.stopPropagation();addToGlobalTheme('${defTheme}','${r.id}')">＋</span>`}</div>`; }
-      }else{ // ▼(2026-07-03 소스 통일 #1) All 뷰 Manage: 옛 전역숨김(toggleHide) → Library only 이동(in_studio=false)으로 통일 → 복원은 Library "↑ To Studio"에서. 롤백: toggleHide/✕·↺ 복원 ▼
-        mc=`<div class="mctrls"><span class="mc" title="Move to Library only — stays in your Library" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}')">↓</span></div>`;
+      }else{ // ▼(2026-07-03 소스 통일 #1) All 뷰 Manage: 옛 전역숨김(toggleHide) → Library only 이동(in_studio=false)으로 통일 → 복원은 Library "↑ Take out"에서. 롤백: toggleHide/✕·↺ 복원 ▼
+        mc=`<div class="mctrls"><span class="mc" title="Store — stays in your Library" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}')">↓</span></div>`;
       }
     }
     return `
@@ -2608,8 +2608,8 @@ function renderRecipes(){
 function mgActions(r){ // 카드 hover 액션(모드 격리·hover 패턴이라 카드는 깔끔)
   const inS=r.in_studio!==false;
   const move=inS
-    ? `<span class="mc" title="Move to Library only — stays in your Library" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}',false)">↓</span>`
-    : `<span class="mc add" title="Add back to Studio" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}',true)">↑</span>`;
+    ? `<span class="mc" title="Store — stays in your Library" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}',false)">↓</span>`
+    : `<span class="mc add" title="Take out again" onclick="event.stopPropagation();toggleStudioInStudio('${r.id}',true)">↑</span>`;
   const del=(r.mine&&!isOfficialCard(r.id))?`<span class="mc rem" title="Delete template" onclick="event.stopPropagation();deleteStudioTemplate('${r.id}')">🗑</span>`:'';
   return `<div class="mctrls">${move}${del}</div>`;
 }
@@ -2656,8 +2656,8 @@ function renderManageGrid(){
     `<span class="mg-store-arrow">→</span></a>`;
   grid.innerHTML =
     storeCta +
-    sec('In Studio','shows in your Studio picker',inStudio,'Nothing here yet — add templates from Library only below (↑), or from the Store.') +
-    sec('Library only','owned · parked out of Studio',parked,'Empty. Hover a card above and hit ↓ to park it here.');
+    sec('In use','shown when you make Shots',inStudio,'Nothing here yet — take one out from Stored below (↑), or from the Store.') +
+    sec('Stored','owned · not in use',parked,'Empty. Hover a card above and hit ↓ to store it here.');
   renderPremium();
   if(MANAGE_HL){ const el=grid.querySelector('.recipe-card.hl'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>{ MANAGE_HL=null; const e2=grid.querySelector('.recipe-card.hl'); if(e2)e2.classList.remove('hl'); }, 2400); } else { MANAGE_HL=null; } }
 }
@@ -5619,7 +5619,7 @@ function applyTryTemplate(){
     state.recipeId=card.id; state.filter='All';   // 그리드에서 선택된 상태(attribution=curRecipe→marketplace)
     renderFilters();renderRecipes();updateBar();
     document.querySelector('.recipe-grid')?.scrollIntoView({behavior:'smooth',block:'center'});
-    if(window.toast)toast('Template added to your studio — pick a reference and generate');
+    if(window.toast)toast('Template added to Shots — pick a reference and generate');
     return true;
   }catch(e){return false;}
 }

@@ -65,7 +65,7 @@
 <div class="wrap">
   <div class="head">
     <h1>Store</h1>
-    <div class="sub">Browse templates and <b style="color:var(--accent2)">add the ones you like</b> — then use them in Studio with your own product.</div>
+    <div class="sub">Browse templates and <b style="color:var(--accent2)">add the ones you like</b> — then use them in Shots with your own product.</div>
   </div>
 
   <div class="filter-row" id="catFilter"></div>
@@ -88,9 +88,9 @@ async function acquireTpl(tid,btn){
     const d=await r.json();
     if(r.status===402){toast(d.error||'Not enough credits — top up in Billing');if(btn){btn.disabled=false;btn.textContent=orig;}return;}
     if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast((d.data&&d.data.alreadyOwned)?'Already in your Studio':'Unlocked — added to your Studio');
+    toast((d.data&&d.data.alreadyOwned)?'Already yours':'Unlocked — ready to use');
     const ct=CATALOG.find(x=>x.id===tid); if(ct)ct.owned=true;
-    if(btn){btn.textContent='✓ Available in Studio';btn.disabled=true;btn.classList.add('owned');}
+    if(btn){btn.textContent='✓ In use';btn.disabled=true;btn.classList.add('owned');}
   }catch(e){ toast('Could not unlock: '+(e.message||e)); if(btn){btn.disabled=false;btn.textContent=orig;} }
 }
 function tcard(t){
@@ -108,7 +108,7 @@ function tcard(t){
   const themeSlug=(t.themes||[]).filter(function(s){return vis(s);})[0];
   const themeTag=themeSlug?`<span class="tthemetag">${esc(themeName(themeSlug))}</span>`:'';
   const actions=owned
-    ? `<button class="tuse owned" disabled>✓ Available in Studio</button>`
+    ? `<button class="tuse owned" disabled>✓ In use</button>`
     : (t.price_credits>0
         ? `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">🔓 Unlock · ◈ ${t.price_credits}</button>`
         : `<button class="tuse" onclick="acquireTpl('${esc(t.id)}',this)">＋ Add</button>`);

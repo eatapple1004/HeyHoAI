@@ -130,7 +130,7 @@
   <div class="nav-in">
     <div class="brand" onclick="location.href='/landing'"><b>Doppia</b></div>
     <div class="nav-links">
-      <a onclick="location.href='/studio'">Studio</a>
+      <a onclick="location.href='/studio'">Shots</a>
       <a onclick="location.href='/marketplace'">Market</a>
       <a onclick="location.href='/gallery'">Library</a>
       <a onclick="location.href='/billing'">Billing</a>
@@ -207,8 +207,8 @@
       <button class="btn btn-primary" onclick="location.href='/studio'">+ New template</button>
     </div>
     <div class="items glass fade d2" id="itemList"></div>
-    <div class="empty glass fade d2" id="itemEmpty" style="display:none">No published templates yet — build a look in <a onclick="location.href='/studio'">Studio</a> and hit "Save as template" to start earning.</div>
-    <div class="note" style="text-align:center;color:var(--faint);font-size:12px;margin-top:6px">New templates are created in Studio. Manage pricing, visibility, and details here.</div>
+    <div class="empty glass fade d2" id="itemEmpty" style="display:none">No published templates yet — build a look in <a onclick="location.href='/studio'">Shots</a> and hit "Save as template" to start earning.</div>
+    <div class="note" style="text-align:center;color:var(--faint);font-size:12px;margin-top:6px">New templates are created in Shots. Manage pricing, visibility, and details here.</div>
   </section>
 
   <!-- ═══ EARNINGS & PAYOUTS ═══ -->
@@ -287,7 +287,7 @@
   <div class="modal">
     <button class="x" onclick="closePub()">✕</button>
     <h3>Publish to Explore</h3>
-    <div style="font-size:13px;color:var(--dim);margin:-4px 0 14px;line-height:1.45">Pick the Explore themes this template appears under (multi-select). These are the public Explore categories — separate from your personal Studio themes.</div>
+    <div style="font-size:13px;color:var(--dim);margin:-4px 0 14px;line-height:1.45">Pick the Explore themes this template appears under (multi-select). These are the public Explore categories — separate from your personal Shots themes.</div>
     <div class="mfield"><label>Themes</label>
       <div id="pubThemes" class="theme-chips"></div>
     </div>
@@ -449,7 +449,7 @@ async function load(){
       badge.textContent='Seller';badge.classList.remove('guest');
       msg.textContent=ITEMS.length
         ? `You have ${ITEMS.length} published ${ITEMS.length===1?'template':'templates'} earning ${pct} creator points on every paid use.`
-        : `You're an approved seller — publish your first template from Studio to start earning.`;
+        : `You're an approved seller — publish your first template from Shots to start earning.`;
     }else{
       badge.textContent='Not a seller yet';badge.classList.add('guest');
       msg.textContent='Become a seller to publish templates and earn creator points on every paid use.';

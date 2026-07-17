@@ -19,11 +19,12 @@
     billing: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg>',
     creator: '<svg viewBox="0 0 24 24"><path d="M4 4h16l-1 4.4a2.6 2.6 0 01-5 .3 2.6 2.6 0 01-5 0 2.6 2.6 0 01-5-.3z"/><path d="M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9"/><path d="M10 20v-5h4v5"/></svg>'
   };
-  // (2026-07-09) 순서: Studio · Ad Video · Library · Store · Community · Creator(flag) · Billing.
-  //   Studio·Ad Video = 대표 상품(둘 다 /studio, Ad Video는 mode=ugc 딥링크 → bootFromUrl이 ugc 모드로 진입).
+  // (2026-07-09) 순서: Shots · Ad Video · Library · Store · Community · Creator(flag) · Billing.
+  //   Shots·Ad Video = 대표 상품(둘 다 /studio, Ad Video는 mode=ugc 딥링크 → bootFromUrl이 ugc 모드로 진입).
+//   ⚠️ 'Shots'=대본 없는 것(확정결정 §2). 라벨만 Shots이고 URL·컨테이너는 /studio 그대로 — Studio는 사용자에게 안 보인다.
   var items = [
     { h: '/home.html', l: 'Home', i: IC.home, m: ['/home'] }, // 정적 서빙(/home.html) — index.js 클린URL 라우트는 추후(충돌 회피)
-    { h: '/studio', l: 'Studio', i: IC.studio, m: ['/studio'], q: '!ugc' },
+    { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'], q: '!ugc' },
     { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },

@@ -24,9 +24,8 @@
     // 노드 단위 치환이라 어순을 못 바꾼다 → 조각을 한국어 어순에 맞게 배분해 "오늘 뭘 만들어 볼까요?"를 만든다.
     // <b> 강조가 영문 'create'에서 한국어 '만들어'로 자연히 옮겨간다(둘 다 동사).
     'What will you': '오늘 뭘', 'create': '만들어', 'today?': '볼까요?',
-    'Product & Model Photos': 'Product & Model Photos',
     'Create photos': '사진 만들기', 'Create an ad video': 'Ad Video 만들기',
-    'Create Product & Model Photos': 'Product & Model Photos 만들기', 'Create an Ad Video': 'Ad Video 만들기',
+    'Create Shots': 'Shots 만들기', 'Create an Ad Video': 'Ad Video 만들기',
     'Cutout': '제품컷', 'Editorial': '화보컷',
     'Auto script': '대본 자동 생성', 'AI voice & music': 'AI 음성 · 음악',
     'View more': '더 보기', 'Best offer': '가장 알뜰한 선택',
@@ -46,7 +45,7 @@
     'Your email is used to sign in and can\'t be changed here.': '로그인에 쓰는 이메일이라 여기서는 변경할 수 없습니다.',
     'It saves to your gallery automatically even if you close this window.': '이 창을 닫아도 라이브러리에 자동으로 저장됩니다.',
     'add the ones you like': '마음에 드는 것을 담으세요',
-    '— then use them in Studio with your own product.': '— 담은 템플릿은 스튜디오에서 내 제품으로 바로 씁니다.',
+    '— then use them in Shots with your own product.': '— 담은 템플릿은 Shots에서 내 제품으로 바로 씁니다.',
     'creations': '크리에이션',
     'Open any photo and hit': '아무 사진이나 열어서 누르세요 —',
     'Turn one look into a full week\'s set in a tap': '한 번 탭으로 일주일치 세트를 만듭니다',
@@ -111,6 +110,8 @@
     // ⛔ 미번역 유지: DOPPIA · .AI(브랜드) · Enterprise Pro/Team(플랜명) · $ USD · ₩ KRW(통화코드)
 
     // ── 레일 · 계정 메뉴 · 공통 ──
+    // ⚠️ 'Studio'는 이제 **배경 카테고리** 전용이다(js/backgrounds.roster.js category:"Studio").
+    //    내비 라벨은 2026-07-17에 Shots로 바뀌었고 Shots는 번역하지 않는다(제품명).
     'Studio': '스튜디오', 'Library': '라이브러리', 'Store': '스토어', 'Community': '커뮤니티',
     'Creator': '크리에이터', 'Billing': '결제', 'Market': '마켓', 'Marketplace': '마켓플레이스',
     'Business': '비즈니스', 'Settings': '설정', 'Billing & credits': '결제 · 크레딧',
@@ -254,7 +255,7 @@
     'Your creation': '내 크리에이션', '🌐 Public — make private': '🌐 공개 — 비공개로 전환', '🔒 Private — make public': '🔒 비공개 — 공개로 전환',
     '⬇ Download': '⬇ 다운로드', 'Download': '다운로드', '↗ Share': '↗ 공유', '＋ Create template': '＋ 템플릿 만들기',
     'Now public — shows in Explore': '이제 공개 — 탐색에 표시됨', 'Now private': '이제 비공개', 'Created': '생성일',
-    'Save this look as a private template in your Studio. Only you can see and use it.': '이 룩을 스튜디오에 비공개 템플릿으로 저장합니다. 나만 보고 사용할 수 있습니다.',
+    'Save this look as a private template. Only you can see and use it.': '이 룩을 스튜디오에 비공개 템플릿으로 저장합니다. 나만 보고 사용할 수 있습니다.',
     'Select a category…': '카테고리 선택…', 'Save template': '템플릿 저장', 'Name your template.': '템플릿 이름을 지정하세요.',
     'Pick a cover image.': '커버 이미지를 선택하세요.', 'Pick a category.': '카테고리를 선택하세요.', 'Pick at least one theme.': '테마를 하나 이상 선택하세요.',
     'Saved to your templates': '내 템플릿에 저장됨', 'Save failed:': '저장 실패:', 'Regenerating…': '재생성 중…',
@@ -274,7 +275,7 @@
     'to the creator': '크리에이터에게', 'uses your generation credits': '생성 크레딧을 사용합니다',
     // 스튜디오 서브 카피 조각
     'Turn one look into a full week\'s set in a tap': '한 번의 룩을 탭 한 번으로 일주일치 세트로',
-    'Your creations. Manage templates in Studio · discover more in the Store.': '내 크리에이션. 템플릿은 스튜디오에서 관리하고 · 스토어에서 더 찾아보세요.',
+    'Your creations. Manage templates in Shots · discover more in the Store.': '내 크리에이션. 템플릿은 Shots에서 관리하고 · 스토어에서 더 찾아보세요.',
 
     // ── 랜딩 페이지 전체 (히어로 조각 · 섹션 · 요금제 · 푸터) ──
     'One product photo.': '제품 사진 한 장.', 'A full content studio.': '완전한 콘텐츠 스튜디오.',
@@ -326,7 +327,7 @@
     // ── 온보딩 (Onboarding — doppia guide) ──
     // 플로우 라벨 · 메뉴 · 버튼
     'doppia guide': 'doppia 사용하는 법', 'Doppia guide': 'doppia 사용하는 법',
-    'Doppia guide — how Studio works': 'doppia 사용하는 법 — 스튜디오 작동 방식',
+    'Doppia guide — how Shots works': 'doppia 사용하는 법 — Shots 작동 방식',
     'Guides': '가이드', 'What do you want to do?': '무엇을 하시겠어요?',
     'Create with a template': '템플릿으로 만들기', 'Write your own prompt': '직접 프롬프트 쓰기',
     'Save a creation as a template': '크리에이션을 템플릿으로 저장',
@@ -354,7 +355,7 @@
     'Name & category': '이름 & 카테고리',
     'Give it a name and pick a category so it is easy to reuse.': '나중에 다시 쓰기 쉽도록 이름을 정하고 카테고리를 고르세요.',
     'Pick themes': '테마 선택',
-    'Choose at least one theme — it groups the template in your Studio.': '테마를 하나 이상 선택하세요 — 스튜디오에서 템플릿을 묶어줍니다.',
+    'Choose at least one theme — it groups the template in Shots.': '테마를 하나 이상 선택하세요 — 스튜디오에서 템플릿을 묶어줍니다.',
     'Save — it is now in My templates, ready to reuse anytime. No prompt needed next time.': '저장하면 ‘내 템플릿’에 들어가 언제든 다시 쓸 수 있습니다. 다음엔 프롬프트가 필요 없습니다.',
     // 목업 문구 · 저장 모달 필드
     'Choose a look below — no prompt needed': '아래에서 룩을 고르세요 — 프롬프트 불필요',
@@ -368,17 +369,22 @@
     '(pick at least one)': '(하나 이상 선택)', 'Select a category… ▾': '카테고리 선택… ▾',
     '+ New theme': '+ 새 테마',
 
-    // ── 라이브러리 · 스튜디오: In Studio / Library only (최근 추가) ──
-    'In Studio': '스튜디오에 있음', 'Library only': '라이브러리 전용',
-    '✓ In Studio': '✓ 스튜디오에 있음', '↑ To Studio': '↑ 스튜디오로',
-    'synced with your Studio': '스튜디오와 동기화됨', 'owned · not in your Studio': '보유 · 스튜디오에 없음',
-    '↓ Move all to Library only': '↓ 전체를 라이브러리 전용으로',
-    'In Studio / Library only': '스튜디오에 있음 / 라이브러리 전용', 'Manage templates': '템플릿 관리',
-    'Nothing in your Studio yet — add templates from Library only below.': '아직 스튜디오에 아무것도 없어요 — 아래 ‘라이브러리 전용’에서 템플릿을 추가하세요.',
-    'Empty. Hit a card’s “✓ In Studio” (or “Move all to Library only”) to park templates here — they stay in your library but leave your Studio.': '비어 있습니다. 카드의 ‘✓ 스튜디오에 있음’(또는 ‘전체를 라이브러리 전용으로’)을 눌러 템플릿을 여기에 보관하세요 — 라이브러리에는 남지만 스튜디오에서는 빠집니다.',
-    'Move to Library only — stays in your Library': '라이브러리 전용으로 이동 — 라이브러리에는 남습니다',
-    'Add back to Studio': '스튜디오로 되돌리기',
-    'Added to Studio': '스튜디오에 추가됨', 'Moved to Library only': '라이브러리 전용으로 이동됨',
+    // ── 라이브러리 · Shots: In use / Stored ──
+    // (2026-07-17) 옛 'In Studio / Library only' 폐기. 사용자에게 'Studio'를 안 보이게 했으므로
+    //   장소("스튜디오에 있음")로 말할 수 없다 → 상태("사용 중 / 보관만")로 바꿨다.
+    //   ⚠️ 라벨만 바뀌었다. DB는 template_owns.in_studio 그대로다(엔드포인트 /owned/in-studio도 불변).
+    //   ⚠️ 'Stored'(섹션 헤더=보관만)와 'Put away'(토스트=보관했습니다)를 일부러 다른 문자열로 뒀다 —
+    //      사전 키가 EN 원문이라 같은 문자열이면 번역을 하나만 가질 수 있다.
+    'In use': '사용 중', 'Stored': '보관만',
+    '✓ In use': '✓ 사용 중', '↑ Take out': '↑ 꺼내기',
+    'shown when you make Shots': '지금 쓰는 것들', 'owned · not in use': '보유 · 보관 중',
+    '↑ Take all out': '↑ 전부 꺼내기', '↓ Store all': '↓ 전부 보관',
+    'In use / Stored': '사용 중 / 보관만', 'Manage templates': '템플릿 관리',
+    'Nothing taken out yet — take one out from Stored below.': '아직 꺼낸 게 없어요 — 아래 ‘보관만’에서 꺼내세요.',
+    'Empty. Hit a card’s “✓ In use” (or “Store all”) to park templates here — they stay in your library but stop showing when you make Shots.': '비어 있습니다. 카드의 ‘✓ 사용 중’(또는 ‘전부 보관’)을 눌러 여기에 보관하세요 — 라이브러리에는 남고 고를 때만 안 뜹니다.',
+    'Store — stays in your Library': '보관 — 라이브러리에는 남습니다',
+    'Take out again': '다시 꺼내기',
+    'Taken out': '꺼냈습니다', 'Put away': '보관했습니다',
     'Could not update': '업데이트하지 못했습니다', 'Failed — try again': '실패 — 다시 시도하세요'
   } };
 

@@ -107,7 +107,7 @@
   .tpl-filter{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
   .flt-sec{flex-basis:100%;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin:6px 0 -3px}
   .tpl-empty-note{color:var(--faint);font-size:14px;padding:34px 6px;text-align:center}
-  /* My templates 두 그룹 섹션 헤더 (In Studio / Library only) */
+  /* My templates 두 그룹 섹션 헤더 (In use / Stored) — 라벨만 바뀜, DB는 in_studio 그대로 */
   .myt-sec{font-family:'Sora';font-size:15px;font-weight:700;color:var(--text);margin:26px 2px 12px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
   #tplGrid>.myt-sec:first-child{margin-top:2px}
   .myt-sec-sub{font-size:12px;font-weight:500;color:var(--faint)}
@@ -145,7 +145,7 @@
   <div class="nav-in">
     <div class="brand" onclick="location.href='/landing'"><b>Doppia</b></div>
     <div class="nav-links">
-      <a onclick="location.href='/studio'">Studio</a>
+      <a onclick="location.href='/studio'">Shots</a>
       <a onclick="location.href='/marketplace'">Market</a>
       <a class="active">Library</a>
       <a onclick="location.href='/billing'">Billing</a>
@@ -157,7 +157,7 @@
 
 <div class="wrap">
   <div class="head fade d1">
-    <div><h1>Your Library</h1><div class="sub">Your creations. Manage templates in Studio · discover more in the Store.</div></div>
+    <div><h1>Your Library</h1><div class="sub">Your creations. Manage templates in Shots · discover more in the Store.</div></div>
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
@@ -174,7 +174,7 @@
     <div class="empty hidden" id="empty">
       <div class="ico">🖼️</div><h3>Your library is waiting</h3>
       <p>Your very first result comes out watermark-free — make something you can post today.</p>
-      <a href="/studio" class="btn btn-primary">Open Studio →</a>
+      <a href="/studio" class="btn btn-primary">Open Shots →</a>
       <div class="empty-hooks">
         <div class="eh">Come back daily — your streak earns free credits</div>
         <div class="eh">Turn one look into a full week's set in a tap</div>
@@ -641,11 +641,11 @@ function tplCard(t,kind){
     ? `by ${esc(t.creator_handle||'')} · ♥ ${t.likes_count||0}${t.tool?' · '+esc(t.tool):''}`
     : `♥ ${t.likes_count||0} · ◷ ${t.usage_count||0}${t.tool?' · '+esc(t.tool):''}`;
   // 테마 패널(안A): 본인·구매 무관 studio 테마 넣다뺐다(§6).
-  const themesPanel=`<div class="lib-panel" id="lib-panel-${tid}"><div class="lp-head">Add to studio themes</div><div class="lib-chips" id="lib-chips-${tid}">${libThemeChips(tid)}</div><button type="button" class="lp-x" onclick="toggleLibPanel('${tid}')">Done</button></div>`;
+  const themesPanel=`<div class="lib-panel" id="lib-panel-${tid}"><div class="lp-head">Add to Shots themes</div><div class="lib-chips" id="lib-chips-${tid}">${libThemeChips(tid)}</div><button type="button" class="lp-x" onclick="toggleLibPanel('${tid}')">Done</button></div>`;
   let actions,panel='';
   // (2026-07-02) In Studio ↔ Library only 개별 토글. in_studio!==false면 스튜디오에 있음.
   const inS=t.in_studio!==false;
-  const stBtn=`<button class="stbtn${inS?' on':''}" onclick="toggleInStudio('${tid}',${!inS})">${inS?'✓ In Studio':'↑ To Studio'}</button>`;
+  const stBtn=`<button class="stbtn${inS?' on':''}" onclick="toggleInStudio('${tid}',${!inS})">${inS?'✓ In use':'↑ Take out'}</button>`;
   if(kind==='mine'){
     actions=`${stBtn}<button class="del" onclick="delTpl('${tid}')">Delete</button><button onclick="toggleLibPanel('${tid}')">Themes</button><button onclick="tryTpl('${tid}')">Use</button>`;
     panel=themesPanel;
@@ -737,7 +737,7 @@ function renderMyTemplates(){
   const rows=typed.filter(inThemeFilter);
   if(!rows.length){
     const msg=(MYT.filter&&MYT.filter.kind!=='all')?'No templates in this theme yet.'
-      :(isOff?'아직 공식 템플릿이 없어요 — Explore에서 받아 추가하세요.':'아직 추가한 유저 템플릿이 없어요 — Explore·Studio에서 추가하세요.');
+      :(isOff?'아직 공식 템플릿이 없어요 — Explore에서 받아 추가하세요.':'아직 추가한 유저 템플릿이 없어요 — Explore·Shots에서 추가하세요.');
     grid.innerHTML=`<div class="tpl-empty-note">${msg}</div>`; return;
   }
   // ▲▲▲ 롤백: const rows=MYT.list.filter(inThemeFilter); if(!rows.length){ grid.innerHTML='...No templates in this theme yet.'; return; } ▲▲▲
@@ -751,11 +751,11 @@ function renderMyTemplates(){
   const idsOf=arr=>JSON.stringify(arr.map(x=>String(x.t.id)));
   // 두 그룹 헤더는 항상 표시(비어도) — 구조가 늘 보이고 카드를 옮길 수 있게. 빈 그룹은 안내문.
   const sec=(title,sub,arr,bulk,empty)=> `<div class="myt-sec">${title}<span class="myt-sec-sub">${sub}</span>${arr.length?bulk:''}</div>`+(arr.length?`<div class="grid">${arr.map(x=>tplCard(x.t,x.kind)).join('')}</div>`:`<div class="myt-empty">${empty}</div>`);
-  const bulkAdd = libOnly.length ? `<button type="button" class="myt-bulk" onclick='toggleInStudioBulk(${idsOf(libOnly)},true)'>↑ Add all to Studio</button>` : '';
-  const bulkRemove = inStudio.length ? `<button type="button" class="myt-bulk ghost" onclick='toggleInStudioBulk(${idsOf(inStudio)},false)'>↓ Move all to Library only</button>` : '';
+  const bulkAdd = libOnly.length ? `<button type="button" class="myt-bulk" onclick='toggleInStudioBulk(${idsOf(libOnly)},true)'>↑ Take all out</button>` : '';
+  const bulkRemove = inStudio.length ? `<button type="button" class="myt-bulk ghost" onclick='toggleInStudioBulk(${idsOf(inStudio)},false)'>↓ Store all</button>` : '';
   grid.innerHTML =
-    sec('In Studio','synced with your Studio',inStudio,bulkRemove,'Nothing in your Studio yet — add templates from Library only below.') +
-    sec('Library only','owned · not in your Studio',libOnly,bulkAdd,'Empty. Hit a card’s “✓ In Studio” (or “Move all to Library only”) to park templates here — they stay in your library but leave your Studio.');
+    sec('In use','shown when you make Shots',inStudio,bulkRemove,'Nothing taken out yet — take one out from Stored below.') +
+    sec('Stored','owned · not in use',libOnly,bulkAdd,'Empty. Hit a card’s “✓ In use” (or “Store all”) to park templates here — they stay in your library but stop showing when you make Shots.');
 }
 // (2026-07-02) In Studio ↔ Library only 이동(개별/일괄) — template_owns.in_studio 토글.
 async function toggleInStudio(id,inStudio){ return toggleInStudioBulk([String(id)],inStudio); }
@@ -766,7 +766,7 @@ async function toggleInStudioBulk(ids,inStudio){
     const set=new Set(ids.map(String));
     (MYT.list||[]).forEach(x=>{ if(set.has(String(x.t.id)))x.t.in_studio=inStudio; });
     renderMyTemplates();
-    if(window.toast)toast(inStudio?'Added to Studio':'Moved to Library only');
+    if(window.toast)toast(inStudio?'Taken out':'Put away');
   }catch(e){ if(window.toast)toast('Failed — try again'); }
 }
 function setMyThemeFilter(kind,key){
@@ -817,7 +817,7 @@ function libThemeChips(tid){
   const cus=(LIB.customs||[]).filter(c=> grp ? libCustomGroup(c)===grp : true );
   h+=cus.map(c=>{ const on=libCustomOn(c.id,tid), g=libCustomGroup(c); return libChip(on, esc(c.name), `toggleCustom('${esc(c.id)}','${tid}')`, !!active && g!==active && !on); }).join('');
   if(grp) h+=`<button type="button" class="lib-chip lib-new" onclick="newLibTheme('${tid}','${grp}')">＋ New theme</button>`;
-  return h||'<span class="lib-none">No themes yet — create one in Studio.</span>';
+  return h||'<span class="lib-none">No themes yet — create one in Shots.</span>';
 }
 // 카드 패널에서 새 커스텀 테마를 카드 대분류로 생성 → 곧장 이 카드에 추가.
 async function newLibTheme(tid,group){

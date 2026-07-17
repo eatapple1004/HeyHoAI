@@ -152,16 +152,16 @@
     <p class="home-sub">One product photo is enough — turn it into ad videos, cutouts, editorial and on-model shots. Pick a starting point; we handle the rest.</p>
   </header>
 
-  <!-- 대표 상품 2개(동급): Ad Video · Product & Model Photos -->
+  <!-- 대표 상품 2개(동급): Ad Video · Shots -->
   <div class="feats">
-    <a class="feat studio" href="/studio" aria-label="Create Product & Model Photos">
+    <a class="feat studio" href="/studio" aria-label="Create Shots">
       <div class="feat-media">
         <div class="orb"></div>
         <div class="deepstack" id="dstack" aria-hidden="true"></div>
       </div>
       <div class="feat-body">
         <span class="feat-badge">✦ Flagship</span>
-        <h2>Product &amp; Model Photos</h2>
+        <h2>Shots</h2>
         <p>Cutouts, editorial and on-model looks from one product photo — driven by ready-made templates.</p>
         <div class="feat-tags"><span>Cutout</span><span>Editorial</span><span>On-model</span></div>
         <span class="feat-cta">Create photos <span class="arw"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
@@ -238,12 +238,12 @@
   var strip=document.getElementById('popStrip');
   if(!strip)return;
   strip.innerHTML=TPLS.map(function(t){
-    return "<a class='pop-card' href='"+esc(t.href)+"' aria-label='Open "+esc(t.name)+" in Studio'>"
+    return "<a class='pop-card' href='"+esc(t.href)+"' aria-label='Open "+esc(t.name)+" in Shots'>"
       +"<div class='pc-img' style=\"background:url('"+esc(t.cover)+"') center/cover no-repeat, "+t.grad+"\"></div>"
       +"<div class='pc-shade'></div><div class='pc-type'>▦ Photo</div>"
       +"<div class='pc-foot'><div class='pc-name'>"+esc(t.name)+"</div>"
       +"<div class='pc-desc'>"+esc(t.desc)+"</div>"
-      +"<div class='pc-cta'><span class='pill'><svg viewBox='0 0 24 24'><path d='M5 12h14M13 6l6 6-6 6'/></svg></span> Open in Studio</div></div></a>";
+      +"<div class='pc-cta'><span class='pill'><svg viewBox='0 0 24 24'><path d='M5 12h14M13 6l6 6-6 6'/></svg></span> Open in Shots</div></div></a>";
   }).join('');
 })();
 </script>
@@ -304,7 +304,7 @@
   addEventListener('resize',function(){ clearTimeout(window.__ccT); window.__ccT=setTimeout(layout,150); });
   fetch('/api/generate/community?limit=80').then(function(r){return r.json();}).then(function(j){
     var d=(j&&j.data)||[];
-    if(!d.length){ grid.innerHTML="<div class='cc-empty'>Nothing here yet — create something in Studio with Public mode on, and it shows up here.</div>"; return; }
+    if(!d.length){ grid.innerHTML="<div class='cc-empty'>Nothing here yet — create something in Shots with Public mode on, and it shows up here.</div>"; return; }
     grid.innerHTML=d.map(card).join(''); playVids(); layout();
   }).catch(function(){ grid.innerHTML="<div class='cc-empty'>Couldn’t load community creations.</div>"; });
 })();

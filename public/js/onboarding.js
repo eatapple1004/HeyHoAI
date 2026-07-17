@@ -13,7 +13,7 @@
   var RAIL =
     '<div class="mk-rail">' +
       '<div class="mk-logo"></div>' +
-      '<div class="mk-nav on" id="mk-nav-studio"><span class="ic">✦</span><span class="lb">Studio</span></div>' +
+      '<div class="mk-nav on" id="mk-nav-studio"><span class="ic">✦</span><span class="lb">Shots</span></div>' +
       '<div class="mk-nav" id="mk-nav-library"><span class="ic">▦</span><span class="lb">Library</span></div>' +
       '<div class="mk-nav" id="mk-nav-store"><span class="ic">▤</span><span class="lb">Store</span></div>' +
       '<div class="mk-nav" id="mk-nav-community"><span class="ic">◎</span><span class="lb">Community</span></div>' +
@@ -76,7 +76,7 @@
     '</div>' +
     '<div class="mk-ctmodal">' +
       '<div class="mk-cth">Create template</div>' +
-      '<div class="mk-ctsub">Save this look as a private template in your Studio. Only you can see and use it.</div>' +
+      '<div class="mk-ctsub">Save this look as a private template. Only you can see and use it.</div>' +
       '<div class="mk-ctgrid">' +
         '<div class="mk-ctc">' +
           '<div class="mk-ctlbl">Cover</div><div class="mk-ctcover"></div>' +
@@ -137,7 +137,7 @@
         { target: 'mk-ctname', title: 'Name & category',
           body: 'Give it a name and pick a category so it is easy to reuse.' },
         { target: 'mk-ctthemes', title: 'Pick themes',
-          body: 'Choose at least one theme — it groups the template in your Studio.' },
+          body: 'Choose at least one theme — it groups the template in Shots.' },
         { target: 'mk-ctsave', title: 'Save',
           body: 'Save — it is now in My templates, ready to reuse anytime. No prompt needed next time.' }
       ]
@@ -307,7 +307,7 @@
     var inCompose = host.classList.contains('gen-bar');
     var btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'ob-help-btn' + (inCompose ? ' ob-in-compose' : '');
-    btn.title = 'Doppia guide — how Studio works'; btn.setAttribute('aria-label', 'Doppia guide');
+    btn.title = 'Doppia guide — how Shots works'; btn.setAttribute('aria-label', 'Doppia guide');
     btn.innerHTML = '<span class="ob-help-q">?</span><span class="ob-help-tx">doppia guide</span>';
     btn.addEventListener('click', openHelp);
     host.appendChild(btn);
