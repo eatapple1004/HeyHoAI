@@ -140,6 +140,9 @@
   .model-sel .ms-filters,.cut-sel .ms-filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
   .model-sel .ms-chip,.cut-sel .ms-chip{padding:5px 12px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
   .model-sel .ms-chip.on,.cut-sel .ms-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  /* 나이 탭(Adults/Kids) — 성별 필터(pill)와 구분되게 각진 모서리(Ad Video의 .ugc-mt와 같은 규칙) */
+  .model-sel .ms-agetab{border-radius:7px}
+  .model-sel .ms-agetab.on{background:color-mix(in srgb,var(--accent) 16%,transparent);border-color:var(--accent);color:var(--text)}
   .ax-row{margin:0 0 14px}
   .ax-row .ax-lbl{display:block;font-size:12px;font-weight:700;color:var(--dim);margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
   .ax-row .ms-filters{margin-bottom:0}
@@ -2812,12 +2815,14 @@ function setModalPreview(r){
 function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));const bg=document.getElementById('rmCutBg');if(bg)bg.classList.toggle('show',BG_CUTS.has(id));setModalPreview(modalRecipeObj);}
 
 // ── 모델 픽커 (Studio Model Cut · picker==='model') ──
-let modalModelId=null, modalModelFilter='all';
-function modelById(id){ return (window.MODELS||[]).find(m=>m.id===id)||null; }
-function modelsFor(f){ const M=window.MODELS||[]; return f==='all'?M:M.filter(m=>m.gender===f); }
+let modalModelId=null, modalModelFilter='all', modalModelAge='adult'; // modalModelAge: 'adult'|'kids' 탭(Ad Video와 동일 축 분리)
+function modalModelRoster(){ return modalModelAge==='kids' ? (window.MODELS_KIDS||[]) : (window.MODELS||[]); }
+// ⚠️ 성인·아동 양쪽에서 찾는다 — 선택된 게 아동일 수 있다(id가 유일하므로 합쳐 찾아도 충돌 없음).
+function modelById(id){ return (window.MODELS||[]).concat(window.MODELS_KIDS||[]).find(m=>m.id===id)||null; }
+function modelsFor(f){ const M=modalModelRoster(); return f==='all'?M:M.filter(m=>m.gender===f); }
 function modelCardsHtml(){
   return modelsFor(modalModelFilter).map(m=>
-    `<button type="button" class="model-card${modalModelId===m.id?' on':''}" data-model="${esc(m.id)}" onclick="setModalModel('${esc(m.id)}')" title="${esc(m.name)} · ${esc(m.descent)}">`
+    `<button type="button" class="model-card${modalModelId===m.id?' on':''}" data-model="${esc(m.id)}" onclick="setModalModel('${esc(m.id)}')" title="${esc(m.name)} · ${esc(m.descent)}${m.ageBandLabel?' · '+esc(m.ageBandLabel):''}">`
     +`<img class="mc-thumb" loading="lazy" src="${esc(m.img)}" alt=""><span class="mc-name">${esc(m.name)}</span></button>`).join('');
 }
 function renderModalModels(r){
@@ -2826,11 +2831,16 @@ function renderModalModels(r){
   modalModelId=(state.recipeId===r.id&&state.modelId)?state.modelId:null; // 재오픈 시 기존 선택 유지
   mw.style.display='';
   const chip=(v,l)=>`<button type="button" class="ms-chip${modalModelFilter===v?' on':''}" data-f="${v}" onclick="setModelFilter('${v}')">${l}</button>`;
+  // 나이 탭 — 성별 필터와 별도 축(한 줄에 섞으면 "Women Kids"가 필터인지 탭인지 모른다. Ad Video와 동일 규칙).
+  const tab=(v,l)=>`<button type="button" class="ms-chip ms-agetab${modalModelAge===v?' on':''}" data-a="${v}" onclick="setModelAge('${v}')">${l}</button>`;
   mw.innerHTML=`<span class="ms-lbl">Choose a model — pick one</span>`
+    +`<div class="ms-filters" style="margin-bottom:6px">${tab('adult','Adults')}${tab('kids','Kids')}</div>`
     +`<div class="ms-filters">${chip('all','All')}${chip('female','Women')}${chip('male','Men')}</div>`
     +`<div class="ms-grid" id="rmModelGrid">${modelCardsHtml()}</div>`;
 }
-function setModelFilter(v){ modalModelFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-chip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-f')===v)); }
+function setModelFilter(v){ modalModelFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-chip:not(.ms-agetab)').forEach(b=>b.classList.toggle('on',b.getAttribute('data-f')===v)); }
+// 나이 탭 전환 — 선택 해제 필수(안 하면 Kids에서 고른 걸 든 채 Adults 그리드가 보여 화면≠서버값. Ad Video와 동일).
+function setModelAge(a){ modalModelAge=a; modalModelId=null; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-agetab').forEach(b=>b.classList.toggle('on',b.getAttribute('data-a')===a)); }
 function setModalModel(id){ modalModelId=id; document.querySelectorAll('#rmModels .model-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-model')===id)); }
 
 // ── 배경 픽커 (Model Cut · Studio 기본 + 씬 40) ──
