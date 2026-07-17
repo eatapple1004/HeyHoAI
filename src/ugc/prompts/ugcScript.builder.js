@@ -123,7 +123,10 @@ function buildUgcScriptPrompt(input) {
     '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or spoken line across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
-    ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : []),
+    // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다.
+    //   Kling은 5s/10s 네이티브만 지원해 5초를 넘기면 10초를 뽑아 트림한다(clipPipeline: wantSec>5 ? 10 : 5)
+    //   = **비용 2배**. Auto가 6초를 고르면 사용자는 고른 적 없는 10초 단가를 낸다. → Auto는 5초 이하로.
+    ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : ['- Set each broll scene\'s "durationSec" to 5 or less (never more than 5).']),
     ...(voiceover ? [
       '- VOICE IS THE CAPTION — they are the SAME layer. "spoken" is BOTH what the voice says AND the on-screen subtitle (shown in sync as the voice speaks it).',
       '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
