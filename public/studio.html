@@ -974,11 +974,13 @@
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Sound</div>
         <div class="ugc-mode" id="ugcModeSeg">
-          <button type="button" class="ugc-mode-btn active" data-voice="1" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voiceover</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Voiceover?" onclick="ugcHelp(event,'snd-voice')" onkeydown="ugcHelpKey(event,'snd-voice')">?</span></button>
-          <button type="button" class="ugc-mode-btn" data-voice="0" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Music only?" onclick="ugcHelp(event,'snd-music')" onkeydown="ugcHelpKey(event,'snd-music')">?</span></button>
+          <button type="button" class="ugc-mode-btn active" data-voice="0" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Visual</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Visual?" onclick="ugcHelp(event,'snd-music')" onkeydown="ugcHelpKey(event,'snd-music')">?</span></button>
+          <button type="button" class="ugc-mode-btn" data-voice="1" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Narrated</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Narrated?" onclick="ugcHelp(event,'snd-voice')" onkeydown="ugcHelpKey(event,'snd-voice')">?</span></button>
         </div>
         <div id="ugcTip-snd" class="ugc-tip" style="display:none"></div>
-        <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 카드가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
+        <input type="checkbox" id="ugcVoice" style="display:none"><!-- 모드 모델(하위호환): 카드가 checked를 구동.
+           (2026-07-17) 기본을 Visual(음성 OFF)로 바꿨다 → checked 제거. 진입 시 :2232가 ugcSyncVoiceControls()를
+           불러 Voice/Speed/Preview를 숨기고 Length/scene을 띄운다. checked를 되살리면 Narrated가 다시 기본. -->
       </div>
       <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
       <div style="margin:10px 0 2px">
@@ -1050,7 +1052,7 @@
           </div>
         </div>
         <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
-        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Voiceover mode — length is set by the voice.</div>
+        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Narrated — length is set by the voice.</div>
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
       </div>
       <!-- Ad language: 대본·음성·자막·캡션의 언어(생성 프롬프트·영상 비주얼은 무관). 기본 English. -->
@@ -3406,7 +3408,7 @@ function ugcSceneStripHtml(b){
     </div>
     ${u.hasVoice?`<div class="ugc-arow">
       <span class="ugc-arow-lbl" style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voice</span>
-      <label class="ugc-arow-chk"><input type="checkbox" class="ugc-voice-on" checked> Voiceover</label>
+      <label class="ugc-arow-chk"><input type="checkbox" class="ugc-voice-on" checked> Narration</label>
       <select class="ugc-arow-sel ugc-voice-id" aria-label="Voice">${UGC_VOICE_OPTS}</select>
       <select class="ugc-arow-sel ugc-voice-speed" aria-label="Speed">
         <option value="0.85">Slow</option><option value="1" selected>Normal</option><option value="1.1">Fast</option>
@@ -5184,10 +5186,14 @@ const UGC_HELP={
     t:'<b>With a model</b> — a model wears or uses your product. You pick the model below.',
     fit:'Best for things that only make sense on a person — clothing, make-up, bags, shoes.'},
   'snd-voice':{g:'snd',
-    t:'<b>Voiceover</b> — AI narration over the video. The script gets spoken lines, and you pick the voice and speed. Scene length follows the voice, so the length control is hidden.',
+    t:'<b>Narrated</b> — AI narration over the video. The script gets spoken lines, and you pick the voice and speed. Scene length follows the voice, so the length control is hidden.',
     fit:'Best for products that need explaining — skincare, gadgets, anything with a benefit to spell out.'},
+  // (2026-07-17) 옛 본문: "The script speaks through on-screen text instead" — **자막을 껐으므로 거짓**이다
+  //   (config/index.js UGC_CAPTIONS_ENABLED 기본 false → assembler가 번인을 건너뛴다, 커밋 96e6c6e).
+  //   음악도 아래 별도 토글(#ugcMusic)이라 "Music only"라는 이름부터 틀렸다 — 음성모드에서도 음악이 켜지고,
+  //   이 모드에서 음악을 끄면 무음이 된다. 두 모드의 진짜 차이 = 목소리 유무 + 씬 길이를 누가 정하느냐.
   'snd-music':{g:'snd',
-    t:'<b>Music only</b> — background music, no narration. The script speaks through on-screen text instead, and you set scene length yourself.',
+    t:'<b>Visual</b> — no narration. The product carries it, and you set the scene length yourself. Background music is a separate toggle below.',
     fit:'Best for products that sell by being seen — jewellery, fashion, interiors, collectibles.'},
 };
 const UGC_HELP_OPEN={}; // 그룹별로 열린 key 하나(그룹끼리는 서로 안 건드린다)

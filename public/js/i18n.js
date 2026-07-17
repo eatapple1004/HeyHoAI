@@ -187,9 +187,15 @@
     'With a model': '모델과 함께', 'Product + a model using it': '제품 + 사용하는 모델',
     'What is Product only?': '‘제품만’이 뭔가요?', 'What is With a model?': '‘모델과 함께’가 뭔가요?',
     'Pick a model': '모델 고르기', 'Female': '여성', 'Male': '남성',
-    // 소리
-    'Sound': '소리', 'Voiceover': '보이스오버', 'Music only': '음악만',
-    'What is Voiceover?': '보이스오버가 뭔가요?', 'What is Music only?': '‘음악만’이 뭔가요?',
+    // 소리 — (2026-07-17) 옛 'Voiceover'/'Music only' 폐기.
+    //   'Music only'는 이름부터 틀렸다: 음악은 아래 별도 토글(#ugcMusic)이라 음성모드에서도 켜지고,
+    //   이 모드에서 음악을 끄면 무음이 된다. 자막도 껐다(UGC_CAPTIONS_ENABLED=false, 커밋 96e6c6e).
+    //   진짜 차이 = ① 목소리 유무 ② 씬 길이를 누가 정하느냐(음성모드=음성이 정함 / Visual=내가 고름).
+    //   '목소리 없이' 같은 부정형은 없는 걸로 이름 짓는 셈이라 기각 → 둘 다 '있는 것'의 이름으로.
+    'Sound': '소리', 'Narrated': '내레이션', 'Visual': '비주얼',
+    'What is Narrated?': '내레이션이 뭔가요?', 'What is Visual?': '비주얼이 뭔가요?',
+    // 결과 카드의 음성 트랙 토글 — 모드가 아니라 트랙 켜기/끄기라 명사형
+    'Narration': '내레이션',
     // 요약줄 · 포맷
     'Change': '변경', 'Edit': '수정',
     'Feed': '피드', 'Wide': '와이드',
@@ -198,7 +204,7 @@
     'Auto': '자동', 'Length / scene': '씬당 길이',
     '3s clips are trimmed from a 5s render, so they cost the same as 5s.':
       '3초 클립은 5초로 렌더한 뒤 잘라내므로 비용은 5초와 같습니다.',
-    '🎙️ Voiceover mode — length is set by the voice.': '🎙️ 보이스오버 모드 — 길이는 음성이 정합니다.',
+    '🎙️ Narrated — length is set by the voice.': '🎙️ 내레이션 — 길이는 음성이 정합니다.',
     // 언어
     'Ad language': '광고 언어', '— script, voice & captions': '— 대본 · 음성 · 자막',
     // CTA
