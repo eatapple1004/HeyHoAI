@@ -2965,8 +2965,11 @@ function openRecipeModal(id){
   document.getElementById('rmDesc').textContent=RECIPE_DESC[id]||'Description coming soon.';
   modalRecipeObj=r;
   const _isModel=(r.picker==='model');
+  // 상단 샘플 숨김: 아래 지정 템플릿만(세부 컷 카드가 이미 미리보기 역할 → 상단 중복 제거) + 기존 모델 픽커(_isModel) 유지.
+  const _NO_TOP_PREVIEW=new Set(['product-cut','product-hero','jewelry-product-cut','jewelry-worn-cut','jewelry-hero']);
+  const _hidePv=_isModel||_NO_TOP_PREVIEW.has(r.id);
   const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.add('wide'); // 모든 템플릿 모달 통일 wide(좌우 확장·잘림 방지)
-  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_isModel?'none':''; // 픽커만 상단 샘플 숨김(그 외 프리뷰 유지)
+  const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_hidePv?'none':''; // 지정 템플릿·모델 픽커만 상단 샘플 숨김(그 외 프리뷰 유지)
   renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
   renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
   renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
