@@ -59,7 +59,10 @@ function refClauses(refs) {
   refs.forEach((r, i) => ((r.kind === 'product') ? prod : model).push(i + 1));
   const out = [];
   if (model.length) {
-    out.push(`${refList(model)} ${model.length > 1 ? 'show' : 'is'} the SAME AI-generated fictional model (not a real person) — keep the SAME face, hair and features.`);
+    // 레퍼런스가 인물의 **절대 소스**다 — 성별·나이·외모 전부. 씬 텍스트가 인물을 다르게 말해도(예: 제품이
+    //   여성용이라 텍스트가 "woman/she"로 흘러도) 레퍼런스를 따른다. 안 그러면 Gemini가 텍스트를 따라
+    //   레퍼런스와 다른 사람을 낸다(실측: 남성 레퍼런스+"she" 텍스트 → 여자. 이 문장 넣으면 → 남자).
+    out.push(`${refList(model)} ${model.length > 1 ? 'show' : 'is'} the SAME AI-generated fictional model (not a real person). ${refList(model)} ${model.length > 1 ? 'are' : 'is'} the ONLY source for the person in the output — their gender, age, face, hair, body and skin ALL come from ${model.length > 1 ? 'these images' : 'this image'}, and from nothing else. IGNORE any person shown in the PRODUCT photos and IGNORE any person implied by the scene text (a different gender, age, or look): the person is always ${model.length > 1 ? 'these references' : 'this reference'}, exactly.`);
   }
   if (prod.length === 1) {
     out.push(`Image ${prod[0]} is the EXACT product to feature — keep its identity, shape, color, label and details unchanged.`);
@@ -74,7 +77,7 @@ function refClauses(refs) {
   //   이건 막는 게 아니라 **범위를 말해주는 것**이다: 착용컷은 계속 쓰되 인물만 안 베낀다(오탐 0, 거절 0).
   if (prod.length) {
     const those = prod.length > 1 ? 'those photos' : 'that photo';
-    out.push(`A person may be wearing, holding or modelling the product in ${those} — if so, take ONLY the product from ${prod.length > 1 ? 'them' : 'it'}. That person is a mannequin, not part of the product: never reproduce their face, body or identity.${model.length ? ` The only person in the output is the model from ${refList(model)}.` : ''}`);
+    out.push(`A person may be wearing, holding or modelling the product in ${those} — if so, take ONLY the product from ${prod.length > 1 ? 'them' : 'it'}. That person is a mannequin, not part of the product: never reproduce their face, body, gender, age or identity.${model.length ? ` The only person in the output is the model from ${refList(model)} — if the product photo's mannequin is a different gender or age than the model, the MODEL wins.` : ''}`);
   }
   return out;
 }
