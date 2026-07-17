@@ -1012,7 +1012,7 @@
       </div>
       <textarea class="script-ta" id="ugcConcept" placeholder="Describe your product and the mood or moment you want to evoke."></textarea>
       <div style="margin:2px 0 8px">
-        <button type="button" id="ugcDetailsToggle" onclick="ugcToggleDetails()" style="background:none;border:none;color:var(--dim);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0">▸ Product details (brand, key benefits, claims) — optional, sharper copy</button>
+        <button type="button" class="neg-toggle" id="ugcDetailsToggle" onclick="ugcToggleDetails()"><span class="pl">+</span> Product details</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
       </div>
       <!-- 카테고리 UI 제거(2026-07-09): builder가 사진 보고 카테고리 자동 판별·플레이북 적용 → 유저 선택 불필요 -->
@@ -5015,7 +5015,7 @@ function ugcToggleDetails(){
   const ta=document.getElementById('ugcDetails'),t=document.getElementById('ugcDetailsToggle');
   const open=ta.style.display==='none';
   ta.style.display=open?'':'none';
-  t.textContent=(open?'▾':'▸')+' Product details (brand, key benefits, claims) — optional, sharper copy';
+  const pl=t.querySelector('.pl'); if(pl)pl.textContent=open?'−':'+'; // +Negative식: 열면 −, 접으면 +
   if(open)ta.focus();
 }
 
@@ -5219,11 +5219,11 @@ const UGC_HELP={
   //   두 옵션의 정의 + "언제 고르나"(제품군)를 한 팝오버에. 음성모드 차이 = 목소리 유무 + 씬 길이를 누가 정하나
   //   (자막 껐음: UGC_CAPTIONS_ENABLED=false, 커밋 96e6c6e. "Music only"는 음악이 별도 토글이라 이름부터 틀림).
   'snd':{g:'snd',
-    t:'Most ads run without narration. <b>No narration</b> — the product carries it and you set the scene length yourself (background music is a separate toggle below). <b>Narrated</b> — AI reads spoken lines; you pick the voice and speed, and scene length follows the voice, so the length control is hidden.',
-    fit:'No narration suits products that sell by being seen — jewellery, fashion, interiors. Narrated suits products that need explaining — skincare, gadgets, anything with a benefit to spell out.'},
+    t:'Most ads run without narration.<br><b>No narration</b> — the product carries it and you set the scene length yourself (background music is a separate toggle below).<br><b>Narrated</b> — AI reads spoken lines; you pick the voice and speed, and scene length follows the voice, so the length control is hidden.',
+    fit:'No narration suits products that sell by being seen — jewellery, fashion, interiors.<br>Narrated suits products that need explaining — skincare, gadgets, anything with a benefit to spell out.'},
   'fmt':{g:'fmt',
-    t:'<b>Product only</b> — no people in the video; your photo stays locked into every scene. <b>With a model</b> — a model wears or uses your product, and you pick the model below.',
-    fit:'Product only suits things sold on detail, texture and finish — jewellery, watches, model kits, gadgets, food, homeware. With a model suits things that only make sense on a person — clothing, make-up, bags, shoes.'},
+    t:'<b>Product only</b> — no people in the video; your photo stays locked into every scene.<br><b>With a model</b> — a model wears or uses your product, and you pick the model below.',
+    fit:'Product only suits things sold on detail, texture and finish — jewellery, watches, model kits, gadgets, food, homeware.<br>With a model suits things that only make sense on a person — clothing, make-up, bags, shoes.'},
 };
 const UGC_HELP_OPEN={}; // 그룹별로 열린 key 하나(그룹끼리는 서로 안 건드린다)
 /**

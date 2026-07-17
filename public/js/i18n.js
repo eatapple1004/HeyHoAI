@@ -177,8 +177,7 @@
     'Add a photo and AI can write this for you': '사진을 넣으면 AI가 대신 써드립니다',
     'e.g. "clean, sensual lookbook for 20–30s"  ·  "red background, luxurious color"':
       '예) "20~30대를 위한 깔끔하고 감각적인 룩북"  ·  "빨간 배경, 고급스러운 컬러"',
-    '▸ Product details (brand, key benefits, claims) — optional, sharper copy':
-      '▸ 제품 상세 (브랜드, 핵심 장점, 강조점) — 선택, 카피가 더 날카로워집니다',
+    'Product details': '제품 상세',
     "Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims).":
       'AI가 쓸 수 있는 사실 — 예) 브랜드: Rouge Paris · 24시간 지속 · 비건 · 보습.  비워두면 카피가 일반적으로 나옵니다(없는 효능을 지어내지 않습니다).',
     'Video format': '영상 형식',
