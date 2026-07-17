@@ -47,8 +47,11 @@ function refList(ns) {
  *    하거나(뚜껑이 닫힌 동시에 열린?) 어느 쪽을 그릴지 헷갈린다.
  *    → "같은 제품의 여러 모습"으로 넓히고, **어느 상태를 그릴지는 씬 프롬프트가 정한다**고 명시한다.
  *
- * 제품은 항상 **하나**다(여러 제품은 미지원 — 그건 씬별 제품 라우팅이 필요한 별개 기능이고,
- * 스키마의 scene.subject가 product|model뿐이라 지목할 수단이 없다).
+ * ⚠️ **"제품 하나"는 물리적 개수가 아니라 "사진들이 같은 대상에 합의하는가"다.**
+ *    3색 세트를 한 컷에 찍은 사진은 **세트 전체가 그 하나**이고 지금도 잘 된다(세트를 파니 세트가 상품).
+ *    안 되는 건 사진1=A, 사진2=B처럼 **사진마다 대상이 바뀌는 것** — 모델은 판단하지 않고 "하나다"라고
+ *    듣고 융합하므로, 모순된 증거를 받으면 혼종을 만들거나 하나만 고르고 나머지를 버린다(조용히·비결정적).
+ *    그래서 세트도 하나로 친다고 **명시**한다 — 안 그러면 "ONE SINGLE product"가 세트 사진과 모순돼 보인다.
  * @param {{path:string,kind?:string}[]} refs 이미지 파트와 **같은 순서**(번호 1..N이 그 순서다)
  */
 function refClauses(refs) {
@@ -61,7 +64,7 @@ function refClauses(refs) {
   if (prod.length === 1) {
     out.push(`Image ${prod[0]} is the EXACT product to feature — keep its identity, shape, color, label and details unchanged.`);
   } else if (prod.length > 1) {
-    out.push(`${refList(prod)} all show ONE SINGLE product — they may differ in angle, in state (e.g. cap on vs off, folded vs opened) or in closeness. They are the SAME product, NOT several different products. Read them together to understand that one product, then feature it exactly as the scene below describes — including which state it is in — keeping its identity, shape, color, label and details unchanged.`);
+    out.push(`${refList(prod)} all show the SAME single product — the one being advertised. They are NOT different products to pick between. They may differ in angle, in state (e.g. cap on vs off, folded vs opened) or in closeness; and if the product is a set or bundle of several items, the WHOLE set is that one product. Read them together to understand it, then feature it exactly as the scene below describes — including which state it is in — keeping its identity, shape, color, label and details unchanged.`);
   }
   return out;
 }
