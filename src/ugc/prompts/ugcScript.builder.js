@@ -86,16 +86,22 @@ function buildUgcScriptPrompt(input) {
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
     ...(usesModel ? [
-      '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT invent a specific face. In "product" scenes brollPrompt is product-only.',
+      // ⚠️ 전엔 "do NOT invent a specific face"까지만 말해서 **나이·정체는 마음껏 썼다.**
+      //    브리프의 "appealing to confident young professionals"(타깃 관객)를 Claude가 화면 속 인물로 옮겨
+      //    "a confident young woman wearing..."을 썼다. 성인 모델이면 레퍼런스와 우연히 맞아 안 보이는데,
+      //    아동 모델을 고르면 즉시 드러난다 — 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성(실사고).
+      //    프롬프트(성인)와 레퍼런스(아이)가 싸우면 Gemini가 프롬프트를 따른다.
+      //    → 인물은 **레퍼런스 한 곳에서만** 온다(7e1f8dc의 마네킹 규칙과 같은 원리). 대본은 인물을 묘사하지 않는다.
+      '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT describe WHO they are — no age, life stage, gender, profession or looks ("a young woman", "a confident professional", "a child"). Say just "the model". Write only what they DO with the product, what they wear, and how it is shot. The brief\'s target audience is who the ad is FOR, never who appears on camera. In "product" scenes brollPrompt is product-only.',
       // ⚠️ 빌더는 선택된 모델이 성인인지 아동인지 **몰랐다**. 그래서 아동복 브리프엔 태연히
       //    "A child aged 5-7 wearing…"을 쓰고(레퍼런스는 성인), 아동 모델을 골라도 성인 화보처럼 썼다.
       //    둘 다 프롬프트와 레퍼런스가 어긋난 것 — 이 레포에서 반복되는 그 버그다.
       //    → 막는 게 아니라 **누가 나오는지 사실을 알려준다**. 나이는 밴드까지만(겉보기 나이가 ±3 흔들려
       //      숫자를 주면 그게 또 거짓말이 된다 — roster.kids.v1 주석 참조).
-      ...(model ? [
-        model.isMinor
-          ? `- THE MODEL IS A CHILD (${model.ageBandLabel || 'child'}) — not an adult. Every subject:"model" scene shows that child wearing or using the product, written the way a children's clothing catalogue would: natural age-appropriate posture, play and movement, fully clothed in the product. Never adult-editorial posing, styling or framing. Do not state the child's exact age in any line.`
-          : '- The model is an ADULT. Every subject:"model" scene shows that adult wearing or using the product — never write a child into a scene, because the reference we attach is this adult.',
+      // 위 규칙이 "인물을 묘사하지 마라"이므로 여기서는 **연출만** 말한다 — 누구인지는 레퍼런스가 정한다.
+      //   (전엔 "shows that child"라고 써서 위 규칙과 정면으로 부딪혔다.)
+      ...(model && model.isMinor ? [
+        `- The model reference is a CHILD (${model.ageBandLabel || 'child'}). Stage every subject:"model" scene the way a children's clothing catalogue would — natural age-appropriate posture, play and movement, fully clothed in the product; never adult-editorial posing, styling or framing.`,
       ] : []),
     ] : [
       '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
