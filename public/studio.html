@@ -663,11 +663,12 @@
   .ugc-recap b{color:var(--text)}
   .ugc-recap-edit{margin-left:auto;color:var(--accent2);font-weight:800;font-size:12px;background:none;border:none;cursor:pointer;font-family:inherit;flex:none}
   /* 진행 중엔 왼쪽이 '설정창'이 아니라 '영수증'. 바꿀 수 있는 게 없는데 편집 가능한 폼을 보여주는 건 거짓말이다.
-     busy = 대본 쓰는 몇 초(레이아웃 안 흔들고 잠그기만) / rendering = 영상 몇 분(요약 카드만, Edit 없음) */
+     busy = 대본 쓰는 몇 초(레이아웃 안 흔들고 잠그기만).
+     ('rendering' 클래스는 없앴다 — 렌더 중 Edit을 숨기던 게 유일한 용도였는데, 그건 재작성이 진행 중인
+      영상을 지우던 사고를 막으려던 것이라 H가 근본을 고치면서 이유가 사라졌고, 지금은 넓은 화면에서
+      아예 접지 않아 Edit 자체가 없다.) */
   #ugcInputBox.busy .ugc-foldable{opacity:.5;pointer-events:none}
-  /* (H) 렌더 중 Edit 숨김을 걷어냈다 — 같은 사고(재작성이 영상을 지움)를 막던 것이라 이유가 사라졌고,
-     ugcUncompact()로 가는 유일한 길이라 숨기면 렌더가 도는 동안 다음 영상을 시작할 수 없었다.
-     .rendering 클래스 자체는 남겨둔다(렌더 중 상태 표식으로 다른 데서 쓸 수 있게). */
+  /* 접기 = 좁은 화면 전용(ugcCompactIfNarrow). 넓은 화면은 좌우로 자리가 나므로 안 접는다. */
   .ugc-cols > #ugcInputBox.compact{flex:0 0 300px}
   @media(max-width:860px){.ugc-cols > #ugcInputBox.compact{flex:1 1 auto}}
 
@@ -4995,7 +4996,7 @@ function ugcRenderScriptPreview(data){
   //  영상이 조리대에서도 피드에서도 안 보인다. 이 함수는 씬 refine에서도 불리므로 부작용도 없어야 한다.)
   document.getElementById('ugcScriptPreview').style.display='';
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
-  ugcCompact(); // 대본이 나왔으니 왼쪽 입력은 요약 카드로 접고 오른쪽에 자리를 내준다
+  ugcCompactIfNarrow(); // 넓은 화면은 안 접는다(컨셉 보며 대본 검토 + [Edit] 혼동 제거). 좁으면 접어야 대본이 보인다
 }
 // 생성 전 대본 검토: 씬 자연어 편집 패널 토글 → refineScene(이미지/모션 라우팅). 프롬프트 미노출.
 function ugcEditScenePre(i){
@@ -5110,6 +5111,28 @@ function ugcToggleKnobs(){
 }
 /* 대본이 나오면 입력을 요약 카드로 접고, Edit로 되돌린다.
    o를 주면 폼 대신 그 값으로 채운다 — 새로고침 후 재연결은 폼이 비어 있어서(잡 데이터만 있음) 필요. */
+/**
+ * 접기는 **공간 문제 해결책**이다 — 그래서 공간이 없을 때만 접는다.
+ *   넓은 화면(>860px): 좌우로 놓을 자리가 있다(1300px 중 입력 540 + 대본 744) → 안 접는다.
+ *     접으면 생기는 [Edit] 버튼이 "이 영상을 편집한다"로 읽혀 피드의 [✎ Edit video](진짜 씬 편집)와
+ *     정면으로 헷갈렸다(한 화면에 뜻이 다른 Edit 둘). 안 접으면 그 버튼이 아예 없고, 컨셉을 보면서
+ *     대본을 검토하고, 다음 영상도 컨셉만 고쳐 [Write script] — 클릭이 하나 줄어든다.
+ *   좁은 화면(≤860px, 세로 스택): 안 접으면 671px짜리 폼을 다 지나야 대본·영상이 보인다(실측:
+ *     접으면 대본이 y=300으로 바로 보이고, 안 접으면 y=912라 263px 스크롤) → 접는다.
+ */
+function ugcCompactIfNarrow(o){ if(window.matchMedia('(max-width:860px)').matches) ugcCompact(o); }
+/**
+ * 새로고침 후 빈 입력칸을 잡 데이터로 되살린다 — 안 접으면 영수증이 없으므로 "뭘 만드는 중인지"가
+ *   폼 자체에 있어야 한다. 채워두면 좁은 화면의 ugcCompact()도 폼을 읽어 제대로 된 영수증을 만든다.
+ *   ⚠️ 제품 사진은 복원 불가(File 객체라 새로고침에 날아간다) → 사진 자리는 빈 채로 남는다.
+ *      이 상태로 [Write script]를 누르면 사진 없는 대본이 나온다(사진은 '권장'이라 막지는 않는다).
+ */
+function ugcFillFormFromJob(j){
+  const set=(id,v)=>{const el=document.getElementById(id); if(el)el.value=v||'';};
+  set('ugcProductName', j.product||j.title||'');
+  set('ugcConcept', j.concept||'');
+  if(j.output_type&&typeof ugcSetFormat==='function')ugcSetFormat(j.output_type); // 히든 input + 카드 활성 + 모델픽커
+}
 function ugcCompact(o){
   o=o||{};
   const box=document.getElementById('ugcInputBox'); if(!box)return;
@@ -5149,10 +5172,10 @@ async function ugcRenderVideo(){
   const hint=document.getElementById('ugcHint');
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
-  // 렌더 중 왼쪽은 '설정창'이 아니라 '영수증'이다 — 바꿀 수 있는 게 없으므로 요약 카드로 접고
-  // Edit도 감춘다(펼쳐두면 Write script가 살아나 진행 중인 렌더를 화면에서 지울 수 있었음).
-  ugcCompact();
-  const ibox=document.getElementById('ugcInputBox'); if(ibox)ibox.classList.add('rendering');
+  // 렌더 중에도 넓은 화면이면 입력칸을 접지 않는다. 접던 이유가 둘 다 사라졌다:
+  //   ① "펼쳐두면 Write script가 진행 중인 렌더를 화면에서 지운다" → H가 고쳤다(지우지 않고 오븐으로 내린다).
+  //   ② "렌더 중엔 바꿀 수 있는 게 없다" → 이제 있다. 렌더가 도는 동안 다음 영상의 입력을 쓰는 게 N개의 흐름이다.
+  ugcCompactIfNarrow();
   hint.textContent=''; // 진행 상황은 오른쪽 씬 스트립이 말한다(왼쪽에서 같은 얘기 반복 안 함)
   // 우측(대본 자리)로 전환: 대본·플레이스홀더 숨기고 인라인에 로딩→결과
   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';
@@ -5202,7 +5225,6 @@ async function ugcRenderVideo(){
   }finally{
     clearInterval(elapsedTimer);
     genActive=Math.max(0,genActive-1);rbtn.disabled=false;rbtn.innerHTML=oldLabel;
-    if(ibox)ibox.classList.remove('rendering'); // 렌더 끝 → Edit 복귀(요약 카드는 유지)
     loadCredits();
   }
 }
@@ -5331,12 +5353,12 @@ async function ugcReattachJob(j, onBench){
   STUDIO_BATCHES.unshift(b);
   renderStudioResults(); // 즉시 로딩 화면 = 떠날 때 그 화면
   const hint=onBench?document.getElementById('ugcHint'):null; // C: 힌트는 조리대 것만 말한다(오븐 것이 쓰면 서로 덮어씀)
-  const box=document.getElementById('ugcInputBox');
   if(onBench){
-    // 영수증은 잡 데이터로 채운다 — 새로고침 후엔 폼이 비어 있어 ugcCompact()가 폼을 읽으면 빈 카드가 된다.
-    // aspect는 ugc_jobs에 컬럼이 없어 생략(제목·포맷만으로도 "뭘 만드는 중인지"는 전달됨).
-    ugcCompact({name:j.title||j.product||'', concept:j.concept||'', fmt:j.output_type, ar:''});
-    if(box)box.classList.add('rendering');
+    // 새로고침 후엔 폼이 비어 있다 → 잡 데이터로 되살린다. 넓은 화면은 안 접으므로 영수증이 없고,
+    //   "뭘 만드는 중인지"가 폼 자체에 있어야 한다. 좁은 화면이면 이어서 접히는데, 폼이 채워졌으니
+    //   ugcCompact()가 폼을 읽어 제대로 된 영수증을 만든다(전엔 그래서 잡 데이터를 인자로 넘겼다).
+    ugcFillFormFromJob(j);
+    ugcCompactIfNarrow();
   }
   // 경과초의 기준은 **잡이 시작된 시각**이지 내가 다시 붙은 시각이 아니다. Date.now()로 잡으면 새로고침할
   //   때마다 0.0s부터 다시 세서, 3분 걸린 렌더가 "5초째"라고 거짓말한다(오래 걸리는 렌더일수록 자주 새로고침한다).
@@ -5357,7 +5379,6 @@ async function ugcReattachJob(j, onBench){
     if(hint)hint.textContent=(e&&e.timeout)?'Still rendering — it’ll be waiting for you here when it’s done.':'';
   }finally{
     clearInterval(timer); genActive=Math.max(0,genActive-1);
-    if(onBench&&box)box.classList.remove('rendering');
     loadCredits();
   }
 }
@@ -5385,7 +5406,7 @@ async function ugcRestoreDraft(j, onBench){
   ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad'); // 새 렌더 완성 때와 같은 매핑
   renderStudioResults();
   if(onBench){
-    ugcCompact({name:j.title||j.product||'',concept:j.concept||'',fmt:j.output_type,ar:''});
+    ugcFillFormFromJob(j); ugcCompactIfNarrow(); // 새로고침으로 빈 폼을 잡 데이터로 되살린다(위 ugcReattachJob과 동일)
     const hint=document.getElementById('ugcHint');
     if(hint)hint.textContent='Your video finished while you were away — save it to your gallery.';
   }
