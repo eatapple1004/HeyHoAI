@@ -12,8 +12,17 @@
     // ══ (2026-07-17) 누락분 보충 ══════════════════════════════════════════
     // 사전에 없는 문자열은 **영어로 남는다** → 레일이 "Home · 스튜디오 · Ad Video · 라이브러리"처럼
     // 뒤섞였다. 아래는 home/gallery/store/explore/creation/saas-login DOM 전수 대조로 뽑은 구멍.
-    // ⛔ 번역하지 않는 것: Doppia · Ad Video · Shots · 플랜명 · 엔진명 · Reels · TikTok · 비율 · 숫자 · ◈
-    //    (제품명·고유명사. 한국 SaaS 관행이자 Studio 영문 UI와의 정합.)
+    // ⛔ 번역하지 않는 것: Doppia · 플랜명 · 엔진명 · Reels · TikTok · 비율 · 숫자 · ◈ (고유명사)
+    //
+    // ✅ (2026-07-17 변경) **Ad Video·Shots는 번역한다** → 광고영상 · 컷.
+    //    옛 규칙("제품명이라 영어 유지")을 뒤집은 이유: 한국어 랜딩이 이미 본문·<title>·og에서
+    //    '광고영상'·'상세컷'으로 팔고 있었는데 nav·eyebrow만 영어라, 히어로에서 "상세컷"이라 불러서
+    //    데려온 셀러가 세 스크롤 아래에서 "Shots"를 만났다 = 한 페이지 안 불일치.
+    //    Shots→'컷'인 이유: 하위 항목이 전부 제품컷·착용컷·대표컷이라 '컷'이 이미 그 머리말이고(위계 자동),
+    //      매체 중립이라 릴(v1.1)이 열려도 안 깨진다. '사진'·'상세컷'은 릴에서 깨지고,
+    //      '제품컷'은 shots.tile.6(주얼리 Product Cut 패밀리)과 충돌한다.
+    //    ⚠️ 'Shots'·'Ad Video'는 텍스트 키다 — 화면에 그 글자가 있으면 전부 치환된다.
+    //    ⚠️ 영어 원본 UI는 Shots·Ad Video 그대로다. 바뀌는 건 한국어 모드뿐.
     // ⛔ billing.html은 **의도적으로 건너뛴다** — 미번역 67종 중 다수가 코드 근거 0인 날조다
     //    (Solo/Group lookbook · N concurrent slots · 2K quality · Concept cut · Edit results ·
     //     Video reels · Template reel · watermark-free). 번역하면 거짓을 한국어로 굳힌다.
@@ -24,8 +33,11 @@
     // 노드 단위 치환이라 어순을 못 바꾼다 → 조각을 한국어 어순에 맞게 배분해 "오늘 뭘 만들어 볼까요?"를 만든다.
     // <b> 강조가 영문 'create'에서 한국어 '만들어'로 자연히 옮겨간다(둘 다 동사).
     'What will you': '오늘 뭘', 'create': '만들어', 'today?': '볼까요?',
-    'Create photos': '사진 만들기', 'Create an ad video': 'Ad Video 만들기',
-    'Create Shots': 'Shots 만들기', 'Create an Ad Video': 'Ad Video 만들기',
+    // 대표 상품 2개 — 레일 라벨이자 home 카드 제목. 이 두 키가 없으면 레일이
+    //   "홈 · Shots · Ad Video · 라이브러리"로 섞인다(사전에 없는 문자열은 영어로 남는다).
+    'Shots': '컷', 'Ad Video': '광고영상',
+    'Create photos': '사진 만들기', 'Create an ad video': '광고영상 만들기',
+    'Create Shots': '컷 만들기', 'Create an Ad Video': '광고영상 만들기',
     'Cutout': '제품컷', 'Editorial': '화보컷',
     'Auto script': '대본 자동 생성', 'AI voice & music': 'AI 음성 · 음악',
     'View more': '더 보기', 'Best offer': '가장 알뜰한 선택',
@@ -45,7 +57,7 @@
     'Your email is used to sign in and can\'t be changed here.': '로그인에 쓰는 이메일이라 여기서는 변경할 수 없습니다.',
     'It saves to your gallery automatically even if you close this window.': '이 창을 닫아도 라이브러리에 자동으로 저장됩니다.',
     'add the ones you like': '마음에 드는 것을 담으세요',
-    '— then use them in Shots with your own product.': '— 담은 템플릿은 Shots에서 내 제품으로 바로 씁니다.',
+    '— then use them in Shots with your own product.': '— 담은 템플릿은 컷에서 내 제품으로 바로 씁니다.',
     'creations': '크리에이션',
     'Open any photo and hit': '아무 사진이나 열어서 누르세요 —',
     'Turn one look into a full week\'s set in a tap': '한 번 탭으로 일주일치 세트를 만듭니다',
@@ -94,7 +106,7 @@
     'Template photo (per image)': '템플릿 사진 (장당)',
     'Custom photo (per image)': '커스텀 사진 (장당)',
     'Photo — Flash (per image)': '사진 — Flash (장당)',
-    'Ad Video (per scene)': 'Ad Video (씬당)',
+    'Ad Video (per scene)': '광고영상 (씬당)',
     'Add-on (caption · enhance)': '애드온 (캡션 · 보강)',
     'A monthly subscription for AI content creation — your usage credits refill every month, and you can cancel anytime. Need more mid-cycle? Add an extra credit pack.':
       'AI 콘텐츠 제작 월 구독 — 크레딧이 매월 충전되고 언제든 해지할 수 있습니다. 중간에 더 필요하시면 크레딧 팩을 추가하세요.',
@@ -275,7 +287,7 @@
     'to the creator': '크리에이터에게', 'uses your generation credits': '생성 크레딧을 사용합니다',
     // 스튜디오 서브 카피 조각
     'Turn one look into a full week\'s set in a tap': '한 번의 룩을 탭 한 번으로 일주일치 세트로',
-    'Your creations. Manage templates in Shots · discover more in the Store.': '내 크리에이션. 템플릿은 Shots에서 관리하고 · 스토어에서 더 찾아보세요.',
+    'Your creations. Manage templates in Shots · discover more in the Store.': '내 크리에이션. 템플릿은 컷에서 관리하고 · 스토어에서 더 찾아보세요.',
 
     // ── 랜딩 페이지 전체 (히어로 조각 · 섹션 · 요금제 · 푸터) ──
     'One product photo.': '제품 사진 한 장.', 'A full content studio.': '완전한 콘텐츠 스튜디오.',
@@ -327,7 +339,7 @@
     // ── 온보딩 (Onboarding — doppia guide) ──
     // 플로우 라벨 · 메뉴 · 버튼
     'doppia guide': 'doppia 사용하는 법', 'Doppia guide': 'doppia 사용하는 법',
-    'Doppia guide — how Shots works': 'doppia 사용하는 법 — Shots 작동 방식',
+    'Doppia guide — how Shots works': 'doppia 사용하는 법 — 컷 작동 방식',
     'Guides': '가이드', 'What do you want to do?': '무엇을 하시겠어요?',
     'Create with a template': '템플릿으로 만들기', 'Write your own prompt': '직접 프롬프트 쓰기',
     'Save a creation as a template': '크리에이션을 템플릿으로 저장',
