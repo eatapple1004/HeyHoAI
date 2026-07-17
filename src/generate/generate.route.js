@@ -39,7 +39,8 @@ const ROSTER_KIDS = require('../models/roster.kids.v1.js');
  * 왜 필요한가: 대본 작성기는 모델 사진을 안 본다(제품 사진만 비전 입력). 그래서 모델을 "정확히" 묘사하려면
  *   우리가 그 모델을 **생성할 때 쓴 서술**(descent·gender·skin·hair·build)을 텍스트로 줘야 한다 —
  *   이게 이미지의 원본 소스라 사진 분석보다 정확하고, 텍스트=레퍼런스가 되어 렌더에서 안 싸운다.
- * ⚠️ age(숫자)는 안 넘긴다 — 렌더된 겉보기 나이가 라벨과 ±3까지 어긋난다(roster.kids 주석). 밴드까지만.
+ * age(숫자)도 넘긴다 — 렌더된 겉보기 나이가 라벨과 ±3까지 어긋나지만(roster.kids 주석), 사용자 결정으로
+ *   그 정도 오차는 감수하고 나이를 명시한다(모델 특징을 완벽히 짚어야 오류가 적다). 대본이 대략 나이대를 쓴다.
  */
 function modelMetaFor(imgPath) {
   if (!imgPath) return null;
@@ -47,7 +48,7 @@ function modelMetaFor(imgPath) {
   const id = imgPath.split('/').pop().replace(/\.(jpe?g|png|webp)$/i, '');
   const m = (isKid ? ROSTER_KIDS : ROSTER_ADULT).find((x) => x.id === id);
   if (!m) return null;
-  return { isMinor: !!m.isMinor, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null,
+  return { isMinor: !!m.isMinor, age: m.age || null, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null,
     gender: m.gender, descent: m.descent || '', skin: m.skin || '', hair: m.hair || '', build: m.build || '' };
 }
 

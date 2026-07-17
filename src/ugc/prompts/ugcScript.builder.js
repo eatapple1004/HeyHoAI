@@ -73,16 +73,16 @@ function buildUgcScriptPrompt(input) {
   const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
 
-  // 모델 외모 서술 — 로스터가 그 모델을 **생성할 때 쓴** descent·skin·hair·build로 짓는다(=이미지의 원본 소스).
+  // 모델 외모 서술 — 로스터가 그 모델을 **생성할 때 쓴** age·descent·skin·hair·build로 짓는다(=이미지의 원본 소스).
   //   대본이 사진을 안 보므로, 이 텍스트가 곧 대본이 아는 모델의 전부다. 텍스트=레퍼런스라 렌더에서 안 싸운다.
-  //   ⚠️ 나이 숫자는 안 쓴다 — 겉보기 나이가 라벨과 ±3 어긋난다(아동은 밴드까지만). 성인은 그냥 adult.
+  //   나이도 넣는다(사용자 결정) — 겉보기 나이가 ±3 어긋나지만 그 정도는 감수. "around N"으로 대략치임을 표시.
   let modelDesc = '', modelPron = '';
   if (model) {
     const genderWord = model.isMinor ? (model.gender === 'male' ? 'boy' : 'girl') : (model.gender === 'male' ? 'man' : 'woman');
     modelPron = model.gender === 'male' ? '"he"/"him"' : '"she"/"her"';
-    const look = [model.skin, model.hair, !model.isMinor && model.build].filter(Boolean).join(', '); // 아동은 build 생략(연출은 아래 카탈로그 규칙이 맡음)
-    const band = model.isMinor && model.ageBandLabel ? ` (${model.ageBandLabel})` : '';
-    modelDesc = `a ${model.descent ? model.descent + ' ' : ''}${genderWord}${band}${look ? `, ${look}` : ''}`;
+    const age = model.age ? `around ${model.age} years old` : ''; // 대략치(±3) — 렌더 겉보기와 완전히 같진 않다
+    const look = [age, model.skin, model.hair, !model.isMinor && model.build].filter(Boolean).join(', '); // 아동은 build 생략(연출은 카탈로그 규칙이 맡음)
+    modelDesc = `a ${model.descent ? model.descent + ' ' : ''}${genderWord}${look ? `, ${look}` : ''}`;
   }
 
   const system = [
