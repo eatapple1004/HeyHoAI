@@ -150,7 +150,7 @@ async function generateUgcScript(input) {
 // model = 선택된 로스터 모델 메타({isMinor, ageBand, ...}) — 있으면 컨셉의 타깃/톤을 그 모델에 맞춘다.
 //   대본(generateScript)엔 b32b9f4로 배선했는데 컨셉엔 빠져 있어, 아이 모델을 골라도 컨셉이 "for women"으로
 //   나왔다(모델을 몰라 제품만 보고 성인 타깃으로 씀). 같은 배선을 여기도 한다.
-async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad', model = null } = {}) {
+async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad', model = null, product = '' } = {}) {
   const imgs = (Array.isArray(images) && images.length ? images : (image ? [image] : [])).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
   const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
@@ -185,7 +185,10 @@ async function suggestConcept({ image, images, details = '', language = 'ko', ou
   // 여러 장이면 "같은 대상의 여러 모습"임을 밝힌다 — 안 그러면 제품이 여럿이라고 읽는다(refClauses와 같은 이유).
   //   각도로 못박지 않고(상태·클로즈업도 흔하다), 세트도 하나로 친다고 명시한다(3색 세트 컷은 세트가 그 하나다).
   const multi = imgs.length > 1 ? `The ${imgs.length} photos all show the SAME single product — different angles, states (e.g. cap on vs off) or close-ups, not several products to choose between. If it is a set or bundle, the whole set is that one product. ` : '';
-  const userText = `${multi}${details ? `Product facts (may use): ${details}\n` : ''}Draft the request.`;
+  // 제품명(선택) — details와 한 곳에 모아 userText로만 넣는다(system·details와 두 곳에서 제품을 말하지 않게).
+  //   사진에 안 보이는 것(브랜드·셰이드명·재질)을 컨셉이 집어낼 수 있게. 비면 아무것도 안 붙는다(대본과 동일 규약).
+  const prodLine = product && product.trim() ? `Product name: ${product.trim()}\n` : '';
+  const userText = `${multi}${prodLine}${details ? `Product facts (may use): ${details}\n` : ''}Draft the request.`;
 
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL, // sonnet-5(비전) — 한 줄 제안엔 충분·저렴

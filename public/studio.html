@@ -4982,6 +4982,7 @@ async function ugcSuggestConcept(){
     fd.append('language',ugcLang());
     // 🧍 선택 모델 — 컨셉이 타깃/톤을 그 모델(특히 아동)에 맞추게. 안 보내면 아동복인데 "for women" 컨셉이 나온다.
     if(cFmt==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg);
+    const cName=(document.getElementById('ugcProductName').value||'').trim(); if(cName)fd.append('product',cName); // 제품명(선택) — 사진에 안 보이는 브랜드·셰이드명 반영(대본과 동일)
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details);
     const res=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd});
