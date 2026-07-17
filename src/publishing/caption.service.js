@@ -4,33 +4,22 @@ const { buildCaptionPrompt, BANNED_HASHTAGS } = require('./prompts/captionPrompt
 
 const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-// ─── 캡션 안전성 검증 ───
+// ─── 해시태그 정제 ───
 
-// 캡션 금지어 — **솔리시테이션 전용**. 성인·미성년 어휘는 제거했다(2026-07-17, ugcScript.service와 같은 결정):
-//   실제 게이트는 이미지·영상 생성 레벨이고, 부분문자열 매칭이라 멀쩡한 말이 걸렸다 —
-//   'nude'→"rose-nude"(립스틱 셰이드) · 'loli'→**"lollipop"** · 'child'→"children" · 'teen'→"teenager".
-// 아래 3개는 남긴다 — 이미지·영상 모델이 못 보는 **텍스트 솔리시테이션**이고, 구라서 오탐이 없다.
-const CAPTION_BLOCKED_TERMS = [
-  'onlyfans', 'link in bio for more', 'dm for prices',
-];
+// ⛔ 캡션 금지어 검사 제거 (2026-07-17 사용자 결정) — 근거는 ugcScript.service.js의 같은 주석 참조.
+//   요약: 실제 게이트는 이미지·영상 생성 레벨이고, 이 목록은 **우리가 만든 우리 자신의 캡션**을
+//   부분문자열로 훑어 오탐만 냈다 — 'nude'→"rose-nude"(립스틱 셰이드) · 'loli'→**"lollipop"** ·
+//   'child'→"children" · 'teen'→"teenager". 목록이 사라지며 `safe`는 항상 true가 되므로
+//   그것과 422 throw도 같이 걷었다(영원히 안 터지는 가드를 남겨두면 다음 사람이 방어가 있다고 읽는다).
+// BANNED_HASHTAGS(f4f·like4like 등)는 유지 — 그건 안전이 아니라 **IG 노출 위생**이라 근거가 다르다.
 
 /**
- * 생성된 캡션 + 해시태그의 안전성을 검증한다.
- * @param {{ caption: string; hashtags: string[] }} data
- * @returns {{ safe: boolean; violations: string[]; sanitizedHashtags: string[] }}
+ * 해시태그 정제 — 스팸 태그 제거 + 중복 제거 + IG 제한(30자·30개).
+ * @param {{ hashtags: string[] }} data
+ * @returns {{ removed: string[]; sanitizedHashtags: string[] }}
  */
-function validateCaptionSafety({ caption, hashtags }) {
-  const violations = [];
-  const lower = caption.toLowerCase();
-
-  // 캡션 금지어 검사
-  for (const term of CAPTION_BLOCKED_TERMS) {
-    if (lower.includes(term)) {
-      violations.push(`Caption contains blocked term: "${term}"`);
-    }
-  }
-
-  // 해시태그 정제: 금지 태그 제거 + 중복 제거
+function sanitizeCaptionHashtags({ hashtags }) {
+  const removed = [];
   const seen = new Set();
   const sanitizedHashtags = hashtags
     .map((t) => t.toLowerCase().replace(/^#/, '').replace(/\s+/g, ''))
@@ -38,19 +27,15 @@ function validateCaptionSafety({ caption, hashtags }) {
       if (seen.has(t)) return false;
       seen.add(t);
       if (BANNED_HASHTAGS.includes(t)) {
-        violations.push(`Removed banned hashtag: #${t}`);
+        removed.push(t);
         return false;
       }
       return t.length > 0 && t.length <= 30; // IG 해시태그 최대 30자
     });
 
-  // IG 해시태그 최대 30개 제한
-  const finalHashtags = sanitizedHashtags.slice(0, 30);
-
   return {
-    safe: violations.filter((v) => !v.startsWith('Removed')).length === 0,
-    violations,
-    sanitizedHashtags: finalHashtags,
+    removed,
+    sanitizedHashtags: sanitizedHashtags.slice(0, 30), // IG 해시태그 최대 30개
   };
 }
 
@@ -94,25 +79,15 @@ async function generateCaption(input) {
 
   const raw = JSON.parse(jsonMatch[1]);
 
-  // 안전성 검증 + 해시태그 정제
-  const safety = validateCaptionSafety({
-    caption: raw.caption || '',
-    hashtags: raw.hashtags || [],
-  });
-
-  if (!safety.safe) {
-    throw Object.assign(
-      new Error(`Unsafe caption: ${safety.violations.join('; ')}`),
-      { statusCode: 422 }
-    );
-  }
+  // 해시태그 정제(스팸 태그·중복·IG 제한)
+  const { sanitizedHashtags } = sanitizeCaptionHashtags({ hashtags: raw.hashtags || [] });
 
   return {
     caption: raw.caption,
-    hashtags: safety.sanitizedHashtags,
+    hashtags: sanitizedHashtags,
     callToAction: raw.callToAction || '',
     altText: raw.altText || '',
   };
 }
 
-module.exports = { generateCaption, validateCaptionSafety };
+module.exports = { generateCaption, sanitizeCaptionHashtags };

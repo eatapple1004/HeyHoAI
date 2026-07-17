@@ -1,5 +1,4 @@
 const { buildVideoPrompt } = require('./videoPrompt.builder');
-const { validateMotionPromptSafety } = require('./video.validator');
 const videoAssetRepo = require('./videoAsset.repository');
 const videoJobRepo = require('./videoGenerationJob.repository');
 const imageAssetRepo = require('../images/imageAsset.repository');
@@ -151,15 +150,6 @@ async function generateForCharacter(characterId, opts = {}) {
     videoStyle,
     userPrompt,
   });
-
-  // 4) prompt 안전성 검증
-  const safety = validateMotionPromptSafety(promptResult.motionPrompt);
-  if (!safety.safe) {
-    throw Object.assign(
-      new Error(`Unsafe motion prompt: ${safety.violations.join('; ')}`),
-      { statusCode: 422 }
-    );
-  }
 
   // duration: 사용자 지정 > style 기본값, provider 최대치 이하로 클램핑
   const durationSec = Math.min(

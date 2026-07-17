@@ -39,31 +39,18 @@ const SCRIPT_SCHEMA = {
   required: ['title', 'format', 'durationSec', 'aspect', 'language', 'hook', 'scenes', 'cta', 'caption', 'hashtags', 'musicVibe'],
 };
 
-// 텍스트 금지어 — **주장(claim) 전용**. 성인·미성년 어휘는 제거했다(2026-07-17 사용자 결정):
-//   ① 실제 게이트는 이미지·영상 생성 레벨이다(Gemini·Kling 자체 정책). 이 목록이 훑는 건 **우리가 방금
-//      Claude로 만든 우리 자신의 출력**이라 원래 얇은 그물이었고, 남은 건 오탐뿐이었다.
-//   ② 부분문자열 매칭이라 멀쩡한 상거래 어휘가 걸렸다 — 'nude'→"rose-nude"(립스틱 셰이드) ·
-//      'child'→"children" · 'teen'→"teenager" · 'minor'→"minority".
-//      실제로 화장품 컨셉이 422로 죽었다: Unsafe script: Blocked term: "nude".
-//      ⚠️ 단어경계(\bnude\b)로 바꿔도 "rose-**nude**"는 하이픈이 경계라 그대로 걸린다 — 목록에서 빼야만 풀린다.
-// 아래 4개는 남긴다 — **이미지·영상 모델이 절대 못 보는 것**(텍스트 주장)이라 위 ①의 근거가 여기엔 안 닿고,
-//   구(句)라서 오탐도 없다. 약사법·표시광고법 쪽 위험이라 그물이 얇아도 값이 있다.
-const BLOCKED_TERMS = [
-  'guaranteed cure', 'cures cancer', 'lose 10kg', 'get rich quick',
-];
-
-/** 생성 대본의 허위·과장 주장 검증(대사·자막·CTA·캡션 전체 스캔). */
-function validateScriptSafety(script) {
-  const violations = [];
-  const blob = [
-    script.hook, script.cta, script.caption,
-    ...(script.scenes || []).flatMap((s) => [s.spoken, s.onScreenText]),
-  ].filter(Boolean).join(' \n ').toLowerCase();
-  for (const term of BLOCKED_TERMS) {
-    if (blob.includes(term)) violations.push(`Blocked term: "${term}"`);
-  }
-  return { safe: violations.length === 0, violations };
-}
+// ⛔ 대본 금지어 검사 제거 (2026-07-17 사용자 결정) — 부활시키기 전에 읽을 것.
+//   무엇이었나: 생성된 대본(hook·cta·caption·spoken·onScreenText)을 금지어 목록으로 훑어 걸리면 422로 죽였다.
+//   왜 없앴나:
+//     ① 실제 게이트는 이미지·영상 생성 레벨이다(Gemini·Kling 자체 정책). 이 목록이 훑던 건
+//        **우리가 방금 Claude로 만든 우리 자신의 출력**이고, 프롬프트가 이미 "no banned/adult content"를
+//        지시한다 → 같은 것을 두 번 막으면서 값은 거의 없었다.
+//     ② 부분문자열 매칭이라 멀쩡한 상거래 어휘를 막았다: 'nude'→"rose-nude"(립스틱 셰이드) ·
+//        'child'→"children" · 'teen'→"teenager" · 'minor'→"minority".
+//        실사고: 화장품 컨셉이 통째로 422로 죽었다 — Unsafe script: Blocked term: "nude".
+//        단어경계로 바꿔도 "rose-**nude**"는 하이픈이 경계라 안 풀린다 = 목록에 두는 한 화장품을 못 판다.
+//     ③ 워드리스트는 우회가 자명해서(막힌 'child' 옆에 'kid'는 통과) 실제 방어력이 아니라 연출에 가까웠다.
+//   ⚠️ 되살릴 거면 부분문자열 목록이 아니라 **구조화된 판정**으로 할 것(같은 오탐이 그대로 재발한다).
 
 /** 씬 배열 정규화(번호·타입·broll 프롬프트 보장). */
 function normalizeScenes(scenes) {
@@ -138,10 +125,6 @@ async function generateUgcScript(input) {
     musicVibe: raw.musicVibe || '',
   };
 
-  const safety = validateScriptSafety(script);
-  if (!safety.safe) {
-    throw Object.assign(new Error(`Unsafe script: ${safety.violations.join('; ')}`), { statusCode: 422 });
-  }
   return script;
 }
 
@@ -363,4 +346,4 @@ function normalizeAddSceneObj(sc, outputType = 'product-ad', voiceover = true) {
   };
 }
 
-module.exports = { generateUgcScript, validateScriptSafety, suggestConcept, refineScene, generateAddScene, suggestScenes, normalizeAddSceneObj };
+module.exports = { generateUgcScript, suggestConcept, refineScene, generateAddScene, suggestScenes, normalizeAddSceneObj };

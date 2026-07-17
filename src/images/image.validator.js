@@ -17,37 +17,13 @@ const generateImagesRequestSchema = z.object({
     .optional(),
 });
 
-// ─── 프롬프트 안전성 검증 ───
-
-const PROMPT_BLOCKED_TERMS = [
-  'child', 'minor', 'underage', 'teen', 'loli', 'juvenile',
-  'nude', 'naked', 'nsfw', 'explicit', 'sexual', 'fetish',
-  'lingerie', 'underwear', 'see-through',
-  'school uniform', 'young-looking', 'childlike',
-];
-
-/**
- * 최종 prompt 문자열에 금지어가 포함되어 있는지 검증한다.
- * (imagePrompt.builder가 생성한 결과도 한 번 더 확인)
- *
- * @param {string} prompt
- * @returns {{ safe: boolean; violations: string[] }}
- */
-function validatePromptSafety(prompt) {
-  const violations = [];
-  const lower = prompt.toLowerCase();
-
-  for (const term of PROMPT_BLOCKED_TERMS) {
-    // negative prompt 영역은 검사에서 제외하기 위해, positive prompt만 받는다
-    if (lower.includes(term)) {
-      violations.push(`Prompt contains blocked term: "${term}"`);
-    }
-  }
-
-  return { safe: violations.length === 0, violations };
-}
+// ⛔ 프롬프트 금지어 검사 제거 (2026-07-17 사용자 결정) — 근거는 ugcScript.service.js의 같은 주석 참조.
+//   실제 게이트는 이미지 생성 레벨이다(Gemini 자체 정책) — 위반 프롬프트는 우리가 안 막아도 거기서 거절된다.
+//   반면 부분문자열 목록은 멀쩡한 상거래 프롬프트를 막았다:
+//     'underwear'·'lingerie' → 속옷 브랜드는 광고 자체가 불가 · 'teen'→"teenager"·"sixteen" ·
+//     'child'→"children" · 'minor'→"minority" · 'nude'→"rose-nude"(립스틱 셰이드).
+//   ⚠️ 되살릴 거면 부분문자열 목록 말고 **구조화된 판정**으로. 같은 오탐이 그대로 재발한다.
 
 module.exports = {
   generateImagesRequestSchema,
-  validatePromptSafety,
 };

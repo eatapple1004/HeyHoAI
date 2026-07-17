@@ -57,27 +57,19 @@ const characterProfileSchema = z.object({
 
 // ─── 안전성 검증 ───
 
-const BLOCKED_TERMS = [
-  'child', 'minor', 'underage', 'teen', 'loli', 'juvenile',
-  'school uniform', 'student', 'young-looking', 'childlike', 'baby-faced',
-  'nude', 'naked', 'nsfw', 'explicit', 'sexual', 'fetish',
-  'lingerie', 'underwear', 'provocative', 'seductive',
-];
+// ⛔ 프로필 금지어 워드리스트 제거 (2026-07-17 사용자 결정) — 근거는 ugcScript.service.js의 같은 주석 참조.
+//   부분문자열이라 멀쩡한 페르소나를 막았다: 'student'→"graduate student" · 'teen'→"teenager"·"sixteen" ·
+//   'minor'→"minority" · 'nude'→"nude tone". 실제 게이트는 이미지 생성 레벨이다(Gemini 자체 정책).
+// ✅ 나이 하한(23)은 **남긴다** — 워드리스트가 아니라 **구조화된 필드 판정**이라 오탐이 원천적으로 없고,
+//    가상 인물을 만드는 기능의 유일한 실질 통제다. 위 제거의 근거(오탐·중복)가 여기엔 닿지 않는다.
 
 /**
- * Claude가 생성한 캐릭터 프로필의 안전성을 검증한다.
+ * Claude가 생성한 캐릭터 프로필의 안전성을 검증한다 — 나이 하한.
  * @param {object} profile
  * @returns {{ valid: boolean; violations: string[] }}
  */
 function validateSafety(profile) {
   const violations = [];
-  const text = JSON.stringify(profile).toLowerCase();
-
-  for (const term of BLOCKED_TERMS) {
-    if (text.includes(term)) {
-      violations.push(`Blocked term detected: "${term}"`);
-    }
-  }
 
   if (profile.age < 23) {
     violations.push(`Age ${profile.age} is below minimum (23)`);

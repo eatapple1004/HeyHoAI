@@ -9,36 +9,13 @@ const generateVideoRequestSchema = z.object({
   sourceImageUrl: z.string().min(1).optional(),             // image_assets에 없는 임의 이미지 URL 직접 사용
 });
 
-// ─── Motion Prompt 안전성 검증 ───
-
-const MOTION_BLOCKED_TERMS = [
-  'undress', 'strip', 'remove clothes', 'take off',
-  'nude', 'naked', 'nsfw', 'sexual', 'erotic', 'fetish',
-  'seduc', 'provocat', 'twerk', 'grinding', 'intimate',
-  'lingerie', 'underwear', 'bikini remov',
-  'child', 'minor', 'teen', 'school',
-  'violen', 'fight', 'weapon', 'blood', 'kill',
-];
-
-/**
- * motion prompt에 금지 패턴이 포함되어 있는지 검증한다.
- * @param {string} prompt
- * @returns {{ safe: boolean; violations: string[] }}
- */
-function validateMotionPromptSafety(prompt) {
-  const violations = [];
-  const lower = prompt.toLowerCase();
-
-  for (const term of MOTION_BLOCKED_TERMS) {
-    if (lower.includes(term)) {
-      violations.push(`Motion prompt contains blocked term: "${term}"`);
-    }
-  }
-
-  return { safe: violations.length === 0, violations };
-}
+// ⛔ Motion prompt 금지어 검사 제거 (2026-07-17 사용자 결정) — 근거는 ugcScript.service.js의 같은 주석 참조.
+//   실제 게이트는 영상 생성 레벨이다(Kling 자체 정책). 반면 이 목록은 부분문자열이라 오탐이 특히 심했다:
+//     'strip'→**"pinstripe"·"striped"**(줄무늬 옷) · 'kill'→**"skill"**("skilled craftsmanship") ·
+//     'take off'→**"take off the cap"**(립스틱 뚜껑 열기) · 'grinding'→커피 그라인더 ·
+//     'intimate'→"intimate lighting"(조명 용어) · 'school'→"old-school" · 'fight'→"fighter".
+//   ⚠️ 되살릴 거면 부분문자열 목록 말고 **구조화된 판정**으로. 같은 오탐이 그대로 재발한다.
 
 module.exports = {
   generateVideoRequestSchema,
-  validateMotionPromptSafety,
 };

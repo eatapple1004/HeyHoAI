@@ -3,11 +3,9 @@ const { env } = require('../config');
 
 const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-// Enhance 결과에 섞이면 안 되는 항목 — 유저가 검토 후 생성하므로 라이트 체크만.
-const BLOCKED_TERMS = [
-  'nude', 'naked', 'nsfw', 'sexual', 'explicit', 'fetish', 'erotic',
-  'underage', 'minor', 'child', 'teen', 'loli', 'gore',
-];
+// ⛔ Enhance 결과 금지어 검사 제거 (2026-07-17 사용자 결정) — 근거는 ugcScript.service.js의 같은 주석 참조.
+//   실제 게이트는 이미지 생성 레벨이고(Gemini 자체 정책), 부분문자열이라 'nude'→"rose-nude" ·
+//   'child'→"children" · 'teen'→"teenager" 같은 멀쩡한 프롬프트를 "Try rephrasing"으로 되돌렸다.
 
 const SYSTEM = `You expand a short idea into ONE vivid, concrete image-generation prompt.
 Rules:
@@ -47,11 +45,6 @@ async function enhancePrompt({ prompt, mode }) {
     .trim()
     .replace(/^["'`]+|["'`]+$/g, '') // 감싼 따옴표 제거
     .slice(0, 800);
-
-  const lower = text.toLowerCase();
-  if (BLOCKED_TERMS.some((t) => lower.includes(t))) {
-    throw Object.assign(new Error('Enhanced prompt was blocked by safety policy. Try rephrasing.'), { statusCode: 422 });
-  }
 
   if (!text) {
     throw new Error('Claude returned an empty prompt');

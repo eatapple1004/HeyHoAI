@@ -1,5 +1,4 @@
 const { buildImagePrompts, buildSinglePrompt } = require('./imagePrompt.builder');
-const { validatePromptSafety } = require('./image.validator');
 const imageAssetRepo = require('./imageAsset.repository');
 const jobRepo = require('./generationJob.repository');
 const characterRepo = require('../characters/character.repository');
@@ -114,17 +113,6 @@ async function generateForCharacter(characterId, opts = {}) {
   try {
     // 3) 프롬프트 생성
     const promptSpecs = buildImagePrompts(persona, { count, customScenes });
-
-    // 4) 프롬프트 안전성 검증
-    for (const spec of promptSpecs) {
-      const safety = validatePromptSafety(spec.prompt);
-      if (!safety.safe) {
-        throw Object.assign(
-          new Error(`Unsafe prompt detected: ${safety.violations.join('; ')}`),
-          { statusCode: 422 }
-        );
-      }
-    }
 
     // 5) Reference image 확인 (캐릭터에 대표 이미지가 있으면 사용)
     const referenceImagePath = character.reference_image_url || null;
