@@ -653,6 +653,11 @@
   .ugc-fieldhd{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
   .ugc-fieldhd label{font-size:12px;color:var(--dim);font-weight:650}
   .ugc-fieldhd label span{color:var(--faint);font-weight:400}
+  /* Step 1 섹션 그룹(2026-07-18): 얕은 구분선+제목으로 그룹 구분. 번호는 오른쪽 How this works(1·2·3)와 겹쳐 제거. 빠른 길 유지(게이트는 사진뿐) */
+  .ugc-sec-hd{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text);margin:0 0 10px}
+  .ugc-sec-div{border-top:1px solid var(--border2);margin-top:16px;padding-top:16px}
+  /* ③ Concept는 기존 fieldhd 재활용 — 섹션 제목이므로 라벨을 다른 섹션과 같은 굵기·밝기로(부제 span은 faint 유지) */
+  .ugc-fieldhd.ugc-sec-div label{font-size:13px;color:var(--text);font-weight:700}
   /* 사진이 들어오기 전엔 말로만 알려주고, 들어오면 진짜 버튼이 된다(호출은 여전히 수동) */
   #ugcInputBox:not(.has-photo) #ugcSuggestHero{display:none!important}
   #ugcInputBox.has-photo #ugcSuggestBtn{display:none!important}
@@ -926,8 +931,6 @@
   </div>
 
   <div class="step fade d2 hidden" id="scriptStep">
-    <div class="step-head"><div class="step-num" id="snScript">1</div><h2>Describe your ad</h2>
-      <span class="hint">Product + a one-line concept → AI writes a script → you review it → build the video.</span></div>
     <div class="ugc-cols">
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" multiple style="display:none" onchange="ugcPreview(this)">
@@ -943,6 +946,7 @@
       <div class="ugc-foldable">
       <!-- 사진 버튼 + ⓘ 는 한 줄, 설명(힌트)은 그 아래로 내린다 → 버튼 → 설명 → 제품명 순서.
            전엔 힌트가 버튼 '옆'에 있어 버튼과 제품명 칸이 세로로 붙어 보였다(설명이 사이가 아니라 옆). -->
+      <div class="ugc-sec-hd">Product</div>
       <div id="ugcDrop" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <div id="ugcThumbStrip" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <button type="button" id="ugcPickBtn" class="img-add labeled" onclick="document.getElementById('ugcProductImg').click()">
@@ -964,7 +968,8 @@
            Sound가 더 앞선 결정이라서다 — "말하는 광고냐 무드 영상이냐"(장르)를 정한 다음에 "누가 나오냐"(캐스팅)다.
            ⚠️ .ugc-fmt-btn을 재사용하면 안 된다 — ugcSetFormat이 그 셀렉터로 전부 훑어 active를 끄므로,
               포맷을 바꿀 때마다 Sound 선택이 풀린다. 그래서 시각(CSS)만 공유하고 클래스는 분리(.ugc-mode-btn). -->
-      <div style="margin:16px 0 2px">
+      <div class="ugc-sec-hd ugc-sec-div">Style</div>
+      <div style="margin:6px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Sound <span class="ugc-help" role="button" tabindex="0" aria-label="What do the Sound options mean?" onclick="ugcHelp(event,'snd')" onkeydown="ugcHelpKey(event,'snd')" style="margin-left:2px;vertical-align:middle">?</span></div>
         <div class="ugc-mode" id="ugcModeSeg">
           <button type="button" class="ugc-mode-btn active" data-voice="0" onclick="ugcSetMode(this)"><b>No narration</b></button>
@@ -1005,7 +1010,7 @@
       <!-- 컨셉 라벨 줄(2026-07-17): 원래 placeholder가 라벨 역할까지 했고(입력 시작하면 사라짐 = a11y 문제),
            "AI가 대신 써준다"는 구제책이 텍스트박스 '아래' 있어서 유저가 빈 박스라는 벽을 먼저 만난 뒤에야 사다리를 봤다.
            라벨 줄을 만들면서 그 줄 오른쪽에 제안을 얹어 라벨·위치·문구를 한 번에 해결. 높이 +24px. -->
-      <div class="ugc-fieldhd">
+      <div class="ugc-fieldhd ugc-sec-div">
         <label for="ugcConcept">Concept <span>— a sentence or a few keywords is enough</span></label>
         <button type="button" id="ugcSuggestHero" onclick="ugcSuggestConcept()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span id="ugcSuggestHeroTxt">Write it for me</span></button>
         <span id="ugcSuggestBtn"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor" opacity=".45"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Add a photo and AI can write this for you</span>
@@ -1018,7 +1023,8 @@
       <!-- 카테고리 UI 제거(2026-07-09): builder가 사진 보고 카테고리 자동 판별·플레이북 적용 → 유저 선택 불필요 -->
 
       <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐 -->
-      <div class="ugc-knobline">
+      <div class="ugc-knobline ugc-sec-div">
+        <div class="ugc-sec-hd">Format</div>
         <button type="button" class="ugc-knobline-btn" id="ugcKnobLine" onclick="ugcToggleKnobs()" aria-expanded="false" aria-controls="ugcKnobs">
           <span aria-hidden="true">🎬</span>
           <span class="ugc-knobline-txt" id="ugcKnobTxt"></span>

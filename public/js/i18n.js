@@ -159,10 +159,6 @@
     //    Juan·Jin·Minjoon) · 3s/5s(숫자) · CTA(마케팅 표준어) · UGC Ads(prod에서 flags.js ugc:launch:false로 숨김)
     // ⚠️ 보이스는 '이름 — 설명' 한 문자열이 통째로 <option> 텍스트다 → 이름은 두고 설명만 옮긴다.
 
-    // 스텝 1 헤더
-    'Describe your ad': '광고를 설명해 주세요',
-    'Product + a one-line concept → AI writes a script → you review it → build the video.':
-      '제품 + 한 줄 컨셉 → AI가 대본을 씁니다 → 검토하시고 → 영상을 만듭니다.',
     // 업로드
     'Add product photos': '제품 사진 추가',
     'Recommended — add multiple angles to keep your product consistent':
@@ -173,6 +169,8 @@
     'Type a product name… (optional)': '제품명을 입력하세요… (선택)',
     // 컨셉
     'Concept': '컨셉', '— a sentence or a few keywords is enough': '— 한 문장이나 키워드 몇 개면 충분합니다',
+    // Step 1 섹션 제목 (Product='제품'·Concept='컨셉'은 기존 키 재사용)
+    'Style': '스타일', 'Format': '형식',
     'Write it for me': '대신 써주세요',
     'Add a photo and AI can write this for you': '사진을 넣으면 AI가 대신 써드립니다',
     'e.g. "clean, sensual lookbook for 20–30s"  ·  "red background, luxurious color"':
