@@ -4874,6 +4874,9 @@ function ugcClearImg(){ ugcProductFiles=[]; ugcRenderProductThumbs(); }
 
 // ── UGC 광고 영상 (2단계: 대본 미리보기 → 검토 → 렌더) ──
 let ugcScript=null; // 1단계에서 받은 대본(2단계 렌더로 전달)
+// 렌더 중 조리대 안내 — "기다릴 필요 없다"를 말한다. 상수인 이유: 쓰는 곳(렌더 시작·재연결)과
+//   치우는 곳(마지막 렌더 종료)이 같은 문자열을 봐야, 그 사이 다른 문구로 바뀌었는지 판단할 수 있다.
+const UGC_WAIT_HINT='No need to wait — change the concept and write another. This one keeps building in Your creations.';
 
 // (선택) 제품 사진 → AI 컨셉 제안 → 컨셉 필드 채움. 컨셉 쓰기 귀찮은 유저용.
 async function ugcSuggestConcept(){
@@ -5208,7 +5211,12 @@ async function ugcRenderVideo(){
   //   ① "펼쳐두면 Write script가 진행 중인 렌더를 화면에서 지운다" → H가 고쳤다(지우지 않고 오븐으로 내린다).
   //   ② "렌더 중엔 바꿀 수 있는 게 없다" → 이제 있다. 렌더가 도는 동안 다음 영상의 입력을 쓰는 게 N개의 흐름이다.
   ugcCompactIfNarrow();
-  hint.textContent=''; // 진행 상황은 오른쪽 씬 스트립이 말한다(왼쪽에서 같은 얘기 반복 안 함)
+  // 진행 상황은 오른쪽이 말한다(왼쪽에서 반복 안 함). 대신 **기다릴 필요가 없다는 걸** 말한다 —
+  //   폼이 그대로 놓여 있는 것만으론 초대가 안 된다(컨셉 칸에 방금 쏜 그 컨셉이 남아 있어 "제출 기록"으로 읽힌다).
+  //   게다가 유저는 기다리도록 학습돼 있다: 예전 가드가 "wait for it to finish before rewriting"이라고 했고,
+  //   그 전엔 대본을 다시 쓰면 진행 중인 영상이 실제로 증발했다(splice). 벽을 조용히 치우면 학습은 안 지워진다.
+  //   조리대 얘기라 #ugcHint가 맞는 자리다(C: 힌트=조리대 전용). N개가 같은 문구를 써도 충돌 없음.
+  hint.textContent=UGC_WAIT_HINT;
   // 우측(조리대)를 렌더가 가져간다 — 대본·여정 패널을 내린다(flex 형제라 안 내리면 나란히 선다)
   const sp=document.getElementById('ugcScriptPreview'); // 실패 시 대본을 되돌리려고 잡아둔다(아래 catch)
   ugcHideBenchPanels();
@@ -5259,6 +5267,9 @@ async function ugcRenderVideo(){
     clearInterval(elapsedTimer);
     genActive=Math.max(0,genActive-1);
     freeBtn(); // 제출 전에 실패했으면 여기서 풀린다. 이미 놓았으면 무시 — 그 사이 쓴 새 대본의 라벨을 덮지 않는다
+    // 안내는 **마지막 렌더가 끝날 때만** 치운다 — 칸이 하나뿐이라 #1이 끝났다고 지우면 #2가 도는 중에 사라진다.
+    //   그 사이 다른 문구(실패·타임아웃·대본 작성 중)로 바뀌었으면 그건 남의 말이므로 건드리지 않는다.
+    if(!genActive && hint.textContent===UGC_WAIT_HINT) hint.textContent='';
     loadCredits();
   }
 }
@@ -5410,6 +5421,7 @@ async function ugcReattachJob(j, onBench){
     //   ugcCompact()가 폼을 읽어 제대로 된 영수증을 만든다(전엔 그래서 잡 데이터를 인자로 넘겼다).
     ugcFillFormFromJob(j);
     ugcCompactIfNarrow();
+    if(hint)hint.textContent=UGC_WAIT_HINT; // 새로고침해서 돌아와도 "기다릴 필요 없다"는 같다(렌더 시작과 동일)
   }
   // 경과초의 기준은 **잡이 시작된 시각**이지 내가 다시 붙은 시각이 아니다. Date.now()로 잡으면 새로고침할
   //   때마다 0.0s부터 다시 세서, 3분 걸린 렌더가 "5초째"라고 거짓말한다(오래 걸리는 렌더일수록 자주 새로고침한다).
@@ -5430,6 +5442,8 @@ async function ugcReattachJob(j, onBench){
     if(hint)hint.textContent=(e&&e.timeout)?'Still rendering — it’ll be waiting for you here when it’s done.':'';
   }finally{
     clearInterval(timer); genActive=Math.max(0,genActive-1);
+    // 위 ugcRenderVideo와 같은 규칙 — 마지막 렌더가 끝날 때만, 그리고 내 문구가 그대로일 때만 치운다
+    {const h=document.getElementById('ugcHint'); if(h&&!genActive&&h.textContent===UGC_WAIT_HINT)h.textContent='';}
     loadCredits();
   }
 }
