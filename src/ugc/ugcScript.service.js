@@ -145,7 +145,6 @@ async function generateUgcScript(input) {
  */
 async function suggestConcept({ image, details = '', language = 'ko', outputType = 'product-ad' } = {}) {
   if (!image || !image.data) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
-  const langName = language === 'en' ? 'English' : 'Korean';
   const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
   const system = [
     'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and draft the user\'s CREATIVE BRIEF for a TikTok / Instagram Reels ad — phrased as their own request.',
@@ -160,7 +159,12 @@ async function suggestConcept({ image, details = '', language = 'ko', outputType
       ? 'This ad shows the PRODUCT ONLY — no model or person. Do not suggest angles that require someone to wear, apply, or hold it on camera.'
       : 'This ad features a model wearing/using the product — the angle may involve the model.',
     // ★핵심: 완성된 슬로건이 아니라, 유저가 스스로 말하는 "요청" 문장.
-    `Write it in ${langName} as the user's OWN request in first person — natural "~하게 만들고 싶어" phrasing (e.g. "촉촉한 발색이 데일리로 물리지 않는 걸 보여주면서 20대 타깃 감각적인 광고로 만들고 싶어").`,
+    // ⚠️ 문형·예시를 언어별로 갈라야 한다. 전엔 "Write it in English"라고 해놓고 뒤에 한국어 문형
+    //    ("~하게 만들고 싶어")과 한국어 예시를 붙여서 지시가 자기모순이었다 — 그리고 **예시가 지시를 이겨서**
+    //    영어 모드에서도 한국어 컨셉이 나왔다. 예시는 반드시 그 언어로 쓴 것이어야 한다.
+    language === 'en'
+      ? `Write it in English as the user's OWN request in first person — natural "I want to..." phrasing (e.g. "I want an ad that shows how the color stays fresh all day, aimed at people in their 20s, with a stylish feel").`
+      : `Write it in Korean as the user's OWN request in first person — natural "~하게 만들고 싶어" phrasing (e.g. "촉촉한 발색이 데일리로 물리지 않는 걸 보여주면서 20대 타깃 감각적인 광고로 만들고 싶어").`,
     'It is a BRIEF (your intent/direction), NOT a finished tagline or ad slogan. One natural sentence, ~25 words max.',
     'No quotes, no preamble, no hashtags, no options — just the one request line.',
     'Do not invent unverifiable factual claims (exact wear time, ingredients, certifications, prices) unless given.',
