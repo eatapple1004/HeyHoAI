@@ -6,9 +6,11 @@ const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
 // ─── 캡션 안전성 검증 ───
 
+// 캡션 금지어 — **솔리시테이션 전용**. 성인·미성년 어휘는 제거했다(2026-07-17, ugcScript.service와 같은 결정):
+//   실제 게이트는 이미지·영상 생성 레벨이고, 부분문자열 매칭이라 멀쩡한 말이 걸렸다 —
+//   'nude'→"rose-nude"(립스틱 셰이드) · 'loli'→**"lollipop"** · 'child'→"children" · 'teen'→"teenager".
+// 아래 3개는 남긴다 — 이미지·영상 모델이 못 보는 **텍스트 솔리시테이션**이고, 구라서 오탐이 없다.
 const CAPTION_BLOCKED_TERMS = [
-  'nude', 'naked', 'nsfw', 'sexual', 'fetish', 'erotic',
-  'underage', 'minor', 'child', 'teen', 'loli',
   'onlyfans', 'link in bio for more', 'dm for prices',
 ];
 
