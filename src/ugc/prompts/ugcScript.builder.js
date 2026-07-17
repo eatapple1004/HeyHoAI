@@ -63,13 +63,12 @@ function buildUgcScriptPrompt(input) {
 
   const profile = getProfile(outputType);
   // 목표 길이 — 씬 개수·길이를 **둘 다** 지정했으면 그 곱(정확). 그 외엔 프로파일 기본(~20s).
-  // ⚠️ 씬 개수만 지정 + 길이 Auto면 기본 20s가 그대로 목표가 돼, Claude가 20÷3 ≈ 7초를 골랐다.
-  //    그런데 Auto 씬은 5초 이하여야 한다(AUTO_MAX_SCENE_SEC) → 목표(20s)와 상한(3×5=15s)이
-  //    한 프롬프트 안에서 **서로 다른 말**을 하고 있었다. 목표를 상한 안으로 들여 둘을 일치시킨다.
-  //    (6씬이면 6×5=30 > 20이라 기본 20s가 그대로 — 상한이 안 걸리는 경우는 무변화.)
+  // ⚠️ 씬 개수만 지정 + 길이 Auto일 때 총 목표를 주지 않는다(전엔 min(20, 씬수×5)로 줬다가 되돌림).
+  //    총 15초를 3씬에 주면 Claude가 15÷3=5초로 **균일하게** 나눠서, "Auto=대본이 씬마다 최적 길이"라는
+  //    약속이 깨졌다(전부 5초). Auto의 핵심은 씬마다 3·4·5초를 리듬대로 정하는 것 —
+  //    총량이 아니라 **씬당 상한(≤5, AUTO_MAX_SCENE_SEC)만** 프롬프트로 건다(144행). 상한은 10초 단가 방지가 목적.
   const baseDuration = input?.durationSec || profile.defaultDurationSec || 20;
-  const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration
-    : (sceneCount ? Math.min(baseDuration, sceneCount * AUTO_MAX_SCENE_SEC) : baseDuration);
+  const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration : baseDuration;
   const langName = language === 'en' ? 'English' : 'Korean';
   const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
@@ -142,7 +141,9 @@ function buildUgcScriptPrompt(input) {
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다(근거=AUTO_MAX_SCENE_SEC).
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`]
-      : [`- Set each broll scene's "durationSec" to ${AUTO_MAX_SCENE_SEC} or less (never more than ${AUTO_MAX_SCENE_SEC}).`]),
+      // Auto = 대본이 씬마다 최적 길이. 내용에 맞춰 3·4·5초로 **다르게** — 짧은 글린트/컷은 3초, 느린 리빌·모션은 5초.
+      //   전부 같은 값으로 만들지 말 것. 상한 5초는 10초 단가 방지(Kling은 >5초면 10초를 뽑아 트림 = 2배).
+      : [`- Set each broll scene's "durationSec" INDIVIDUALLY to fit that scene: a quick glint, cut, or simple reveal ≈ 3s; a slower reveal or a motion beat up to 5s. VARY the lengths to match each scene's content — do NOT give every scene the same length. Never exceed ${AUTO_MAX_SCENE_SEC} (a scene over ${AUTO_MAX_SCENE_SEC}s costs double to render).`]),
     ...(voiceover ? [
       '- VOICE IS THE CAPTION — they are the SAME layer. "spoken" is BOTH what the voice says AND the on-screen subtitle (shown in sync as the voice speaks it).',
       '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
@@ -197,7 +198,11 @@ function buildUgcScriptPrompt(input) {
     `Format: ${format}`,
     `Formats reference:\n${fmtLine(format)}`,
     `Platform: ${platform}`,
-    `Target duration: ~${durationSec}s`,
+    // 씬 개수 고정 + 길이 Auto면 총 목표를 주지 않는다 — 총량을 주면 Claude가 그걸 씬수로 나눠 균일하게 맞춘다
+    //   (총 15s ÷ 3씬 = 5초씩). Auto의 핵심은 씬마다 최적 길이라 총량은 씬 길이의 **결과**여야지 입력이 아니다.
+    (sceneCount && !sceneDuration)
+      ? 'Total length is whatever the scenes add up to — do NOT aim for a fixed total; choose each scene\'s length by its own content.'
+      : `Target duration: ~${durationSec}s`,
     `Tone: ${tone}`,
     `Language: ${langName}`,
     '',
