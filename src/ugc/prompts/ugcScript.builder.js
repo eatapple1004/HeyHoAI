@@ -53,6 +53,7 @@ function buildUgcScriptPrompt(input) {
     category = '',    // 제품군 지정 시 카테고리 플레이북 주입(씬레시피·스타일)
     sceneCount = 0,   // 유저 지정 broll 씬 개수(0=AI 자동)
     sceneDuration = 0, // 유저 지정 씬당 길이(초, 0=AI 자동)
+    model = null,     // 선택된 로스터 모델 메타 {isMinor, ageBand, ageBandLabel, gender} — usesModel 포맷에서만 의미
   } = input || {};
 
   const profile = getProfile(outputType);
@@ -73,9 +74,21 @@ function buildUgcScriptPrompt(input) {
     '- Parse the brief for: target audience, mood/tone, and any VISUAL cues — background, color, lighting, color grade, texture, setting, styling. Route every visual cue into the scene "direction" and "brollPrompt" so the rendered images actually reflect it (e.g. "빨강 배경" → red background in every brollPrompt). Route mood → copy tone; target → audience.',
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
-    usesModel
-      ? '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT invent a specific face. In "product" scenes brollPrompt is product-only.'
-      : '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
+    ...(usesModel ? [
+      '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT invent a specific face. In "product" scenes brollPrompt is product-only.',
+      // ⚠️ 빌더는 선택된 모델이 성인인지 아동인지 **몰랐다**. 그래서 아동복 브리프엔 태연히
+      //    "A child aged 5-7 wearing…"을 쓰고(레퍼런스는 성인), 아동 모델을 골라도 성인 화보처럼 썼다.
+      //    둘 다 프롬프트와 레퍼런스가 어긋난 것 — 이 레포에서 반복되는 그 버그다.
+      //    → 막는 게 아니라 **누가 나오는지 사실을 알려준다**. 나이는 밴드까지만(겉보기 나이가 ±3 흔들려
+      //      숫자를 주면 그게 또 거짓말이 된다 — roster.kids.v1 주석 참조).
+      ...(model ? [
+        model.isMinor
+          ? `- THE MODEL IS A CHILD (${model.ageBandLabel || 'child'}) — not an adult. Every subject:"model" scene shows that child wearing or using the product, written the way a children's clothing catalogue would: natural age-appropriate posture, play and movement, fully clothed in the product. Never adult-editorial posing, styling or framing. Do not state the child's exact age in any line.`
+          : '- The model is an ADULT. Every subject:"model" scene shows that adult wearing or using the product — never write a child into a scene, because the reference we attach is this adult.',
+      ] : []),
+    ] : [
+      '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
+    ]),
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, spoken and every brollPrompt to that category.',
     ...(playbook ? [
       `- CATEGORY PALETTE — ${playbook.label}: draw from these shot TYPES as a menu (pick, reorder, skip, or vary freely to fit THIS brief — it is not a fixed sequence, and two ads should not look identical): ${playbook.shots.join(', ')}.`,

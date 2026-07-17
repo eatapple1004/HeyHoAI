@@ -251,9 +251,11 @@ function pruneComposites(R, keepBasename) {
  * 1단계 — 대본만 생성(무료·미리보기). 과금·DB·렌더 없음. 유저 검토용.
  * @returns {Promise<{ script:object, nClips:number, cost:number }>}
  */
-async function generateScript({ product, concept, outputType = 'product-ad', image = null, images = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0, language = 'en' }) {
+// model = 선택된 로스터 모델의 메타({isMinor, ageBand, ageBandLabel, gender}) — 빌더가 나이에 맞는 씬을 쓰게 한다.
+//   안 넘기면 빌더는 모델이 성인인지 아동인지 모른 채 쓴다(= 프롬프트와 레퍼런스가 어긋난다).
+async function generateScript({ product, concept, outputType = 'product-ad', image = null, images = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0, language = 'en', model = null }) {
   if (!concept) { const e = new Error('concept is required'); e.statusCode = 400; throw e; }
-  const script = await generateUgcScript({ product, concept, outputType, image, images, details, voiceover, category, sceneCount, sceneDuration, language });
+  const script = await generateUgcScript({ product, concept, outputType, image, images, details, voiceover, category, sceneCount, sceneDuration, language, model });
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
   return { script, nClips, cost: estimateCost(script, false) };

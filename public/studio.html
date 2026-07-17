@@ -787,6 +787,9 @@
   .ugc-tip .ugc-tip-fit{display:block;margin-top:4px;color:var(--faint)}
   .ugc-mf{font-size:11.5px;padding:3px 9px;border:1px solid var(--border2);border-radius:999px;background:none;color:var(--dim);cursor:pointer;font-family:inherit}
   .ugc-mf.active{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  /* 나이 탭(Adults/Kids) — 성별 필터(.ugc-mf)와 같은 톤이되 각진 모서리로 "탭"임을 구분 */
+  .ugc-mt{font-size:11.5px;padding:3px 9px;border:1px solid var(--border2);border-radius:7px;background:none;color:var(--dim);cursor:pointer;font-family:inherit;font-weight:600}
+  .ugc-mt.active{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 14%,transparent)}
   #ugcModelGrid img{width:50px;height:50px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block}
   #ugcModelGrid img:hover{border-color:var(--border2)}
   #ugcModelGrid img.sel{border-color:var(--accent)}
@@ -992,8 +995,13 @@
         <div id="ugcTip-fmt" class="ugc-tip" style="display:none"></div>
         <input type="hidden" id="ugcFormat" value="product-ad">
         <div id="ugcModelPicker" style="display:none;margin-top:8px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
             <span style="font-size:12px;color:var(--dim)">Pick a model</span>
+            <!-- 나이 축은 성별 필터와 **별도 탭** — 두 축을 한 줄에 섞으면 "Female Kids"가 필터인지 탭인지 모른다 -->
+            <span style="display:flex;gap:5px">
+              <button type="button" class="ugc-mt active" data-a="adult" onclick="ugcModelAgeTab('adult')">Adults</button>
+              <button type="button" class="ugc-mt" data-a="kids" onclick="ugcModelAgeTab('kids')">Kids</button>
+            </span>
             <span id="ugcModelPick" style="font-size:11.5px;color:var(--accent2);font-weight:700"></span>
             <span style="margin-left:auto;display:flex;gap:5px">
               <button type="button" class="ugc-mf active" data-g="female" onclick="ugcModelFilter('female')">Female</button>
@@ -1624,6 +1632,7 @@
 <script src="/js/themes.js?v=7"></script>
 <script src="/js/taxonomy.js?v=8"></script>
 <script src="/js/models.roster.js?v=1"></script>
+<script src="/js/models.kids.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
 <script src="/js/ugcPlayer.js?v=4"></script>
 <script>
@@ -5050,6 +5059,9 @@ async function ugcWriteScript(){
     if(details)fd.append('details',details); // 옵션 제품 팩트(브랜드·클레임) — 카피 근거
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png'))); // Claude가 실제 제품(다각도) 보고 카피·brollPrompt 작성
     fd.append('voiceover',(document.getElementById('ugcVoice')||{}).checked!==false?'true':'false'); // 음성 여부→내레이션 대본 생성 분기
+    // 🧍 선택 모델 — 렌더에만 보내면 대본이 "누가 나오는지" 모른 채 써진다(성인 모델인데 "a child wearing…",
+    //   아동 모델인데 성인 화보). 픽커가 [Write script] 버튼 위에 있어 정상 흐름에선 여기서 이미 정해져 있다.
+    if(outputType==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg);
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택)
     const scD=(document.getElementById('ugcSceneDur')||{}).value; if(scD&&scD!=='0')fd.append('sceneDuration',scD); // 씬 길이(선택)
@@ -5164,7 +5176,7 @@ function ugcBindScriptEdits(){
 
 // 2단계 — 검토한 대본으로 렌더(여기서 과금). 기존 결과 피드에 채움.
 // 포맷 픽커(제품/모델) + 모델 로스터 선택
-let ugcSelectedModelImg=null, ugcModelGender='female';
+let ugcSelectedModelImg=null, ugcModelGender='female', ugcModelAge='adult'; // ugcModelAge: 'adult'|'kids' 탭
 /**
  * Video format·Sound 옵션의 ⓘ.
  *   옵션 밑 한 줄 설명("Just the product")을 대체한다 — 한 줄로는 "무엇인지"밖에 못 말하는데,
@@ -5226,10 +5238,24 @@ function ugcModelFilter(g){
   document.querySelectorAll('.ugc-mf').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
   ugcRenderModelGrid();
 }
+// 나이 탭(Adults/Kids) — 성인 로스터(window.MODELS)와 아동 로스터(window.MODELS_KIDS)를 가른다.
+//   ⚠️ 탭을 바꾸면 선택을 **반드시 해제**한다. 안 그러면 Kids에서 고른 아이가 선택된 채 Adults 탭으로 넘어가
+//      화면엔 성인 그리드인데 서버로는 아동 경로가 나간다(고른 것과 나가는 것이 다름 = 최악).
+function ugcModelAgeTab(a){
+  ugcModelAge=a;
+  document.querySelectorAll('.ugc-mt').forEach(b=>b.classList.toggle('active',b.dataset.a===a));
+  ugcSelectedModelImg=null;
+  const p=document.getElementById('ugcModelPick'); if(p)p.textContent='';
+  ugcRenderModelGrid();
+}
+function ugcModelRoster(){ return ugcModelAge==='kids' ? (window.MODELS_KIDS||[]) : (window.MODELS||[]); }
 function ugcRenderModelGrid(){
   const grid=document.getElementById('ugcModelGrid'); if(!grid) return;
-  const list=(window.MODELS||[]).filter(m=>m.gender===ugcModelGender);
-  grid.innerHTML=list.map(m=>`<img src="${m.img}" alt="" title="${m.name} · ${m.descent}, ${m.age}" data-img="${m.img}" data-name="${m.name}" class="${ugcSelectedModelImg===m.img?'sel':''}" role="button" tabindex="0" aria-label="${esc(m.name)}, ${esc(m.descent)}, ${esc(m.age)}" aria-pressed="${ugcSelectedModelImg===m.img}" onkeydown="keyClick(event)" onclick="ugcSelectModel(this)">`).join('');
+  const list=ugcModelRoster().filter(m=>m.gender===ugcModelGender);
+  // 아동은 age가 없다(밴드만) — 겉보기 나이가 라벨과 ±3 흔들려 슬림에서 일부러 뺐다(roster.kids 주석).
+  //   그대로 m.age를 쓰면 툴팁에 "undefined"가 뜬다.
+  grid.innerHTML=list.map(m=>{const sub=m.ageBandLabel||m.age;
+    return `<img src="${m.img}" alt="" title="${m.name} · ${m.descent}, ${sub}" data-img="${m.img}" data-name="${m.name}" class="${ugcSelectedModelImg===m.img?'sel':''}" role="button" tabindex="0" aria-label="${esc(m.name)}, ${esc(m.descent)}, ${esc(sub)}" aria-pressed="${ugcSelectedModelImg===m.img}" onkeydown="keyClick(event)" onclick="ugcSelectModel(this)">`;}).join('');
 }
 function ugcSelectModel(el){
   ugcSelectedModelImg=el.dataset.img;

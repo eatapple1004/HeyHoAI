@@ -27,6 +27,28 @@ const safeRefImage = (p) => (typeof p === 'string' && p && !p.includes('..') && 
   && (/^\/img\/[\w./-]+\.(jpe?g|png|webp)$/i.test(p) || /^tmp\/images\/[\w-]+\.(jpe?g|png|webp)$/i.test(p))) ? p : null;
 // #6: 워터마크 폐지 — 전 출력물 클린, 접근제어는 크레딧 하드게이트(charge→402)만 사용.
 
+// ── 모델 선택(🧍) — 로스터 경로 화이트리스트 + 메타 조회 ──
+// 화면에 나오는 사람은 **오직 우리 로스터에서만** 온다. 이 정규식이 Ad Video 경로에서 그걸 강제하는 유일한 지점이다.
+//   kids/ = 아동 로스터(roster.kids.v1). 하위 디렉터리를 이 하나만 명시적으로 연다 —
+//   [\w-]+ 는 점·슬래시를 안 받으므로 '..' 은 여전히 불가(kids/../x 도 거부).
+const safeModelPath = (p) => (typeof p === 'string' && /^\/img\/models\/(kids\/)?[\w-]+\.(jpe?g|png|webp)$/i.test(p)) ? p : null;
+const ROSTER_ADULT = require('../models/roster.v1.js');
+const ROSTER_KIDS = require('../models/roster.kids.v1.js');
+/**
+ * 로스터 경로 → 대본 작성기가 알아야 할 모델 메타.
+ * 왜 필요한가: 빌더가 모델의 나이를 **아예 모른다**. 아동 모델을 골라도 성인 화보처럼 쓴다
+ *   → 프롬프트("성인 화보")와 레퍼런스(아이)가 모순 = 이 레포에서 반복되는 그 버그.
+ * ⚠️ age는 안 넘긴다 — 렌더된 겉보기 나이가 라벨과 ±3까지 어긋난다(roster.kids 주석). 밴드까지만 주장한다.
+ */
+function modelMetaFor(imgPath) {
+  if (!imgPath) return null;
+  const isKid = imgPath.startsWith('/img/models/kids/');
+  const id = imgPath.split('/').pop().replace(/\.(jpe?g|png|webp)$/i, '');
+  const m = (isKid ? ROSTER_KIDS : ROSTER_ADULT).find((x) => x.id === id);
+  if (!m) return null;
+  return { isMinor: !!m.isMinor, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null, gender: m.gender };
+}
+
 // 레퍼런스 파일명 → base64. 로컬(tmp/images) 우선, 없으면 R2에서 복원(cleanup cron이 오래된 tmp를 지워도
 //   캐릭터/서브젝트 레퍼런스가 유실되지 않게). 복원분은 로컬에 다시 써 다음 요청을 빠르게. 실패 시 null.
 async function readRefBase64(filename) {
@@ -932,7 +954,10 @@ function saveProductImages(req) {
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
 router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language } = req.body || {};
+    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language, modelImage } = req.body || {};
+    // 🧍 선택 모델의 메타 — 대본이 "누가 나오는지"를 알아야 나이에 맞게 쓴다(아동 로스터 선택 시 특히).
+    //   여기서 안 주면 빌더는 모델을 성인으로 가정도 아동으로 인지도 못 한 채 쓴다.
+    const model = modelMetaFor(safeModelPath(modelImage));
     // 제품 사진들(다각도) base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피·정확한 brollPrompt)
     const images = [];
     for (const pf of (req.files?.productImage || [])) {
@@ -942,7 +967,7 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_
     const image = images[0] || null; // 하위호환(단일)
     const scN = Math.min(Math.max(parseInt(sceneCount, 10) || 0, 0), 12); // 씬 개수(0=자동, 최대 12)
     const scD = [3, 5, 10].includes(parseInt(sceneDuration, 10)) ? parseInt(sceneDuration, 10) : 0; // 씬 길이 3/5/10s(0=자동)
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en' });
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en', model });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
@@ -1002,8 +1027,7 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_
     try { script = JSON.parse(req.body.script || 'null'); } catch { return res.status(400).json({ success: false, error: 'invalid script JSON' }); }
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const spd = parseFloat(speed); // 말하기 속도(0.7~1.2), 없으면 undefined→기본 1.0
-    // 모델 선택(🧍 포맷): 로스터 경로만 허용(path traversal 방지)
-    const safeModel = (typeof modelImage === 'string' && /^\/img\/models\/[\w-]+\.(jpe?g|png|webp)$/i.test(modelImage)) ? modelImage : null;
+    const safeModel = safeModelPath(modelImage); // 로스터 경로만(성인 + kids/) — 정의·근거는 파일 상단 헬퍼
     // #1 보안: referenceImagePath는 공개 로스터(/img/…) 또는 업로드 산출물(tmp/images/<basename>)만 허용. absolute·'..' 거부(임의 파일 읽기·크로스테넌트 이미지 유출 차단).
     const safeRef = safeRefImage(referenceImagePath);
     const safeAspect = ['9:16', '1:1', '16:9'].includes(aspect) ? aspect : '9:16'; // Kling 지원 비율만
