@@ -965,10 +965,10 @@
            ⚠️ .ugc-fmt-btn을 재사용하면 안 된다 — ugcSetFormat이 그 셀렉터로 전부 훑어 active를 끄므로,
               포맷을 바꿀 때마다 Sound 선택이 풀린다. 그래서 시각(CSS)만 공유하고 클래스는 분리(.ugc-mode-btn). -->
       <div style="margin:16px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Sound <span style="color:var(--faint);font-weight:400">— music-only (Visual) is most common; pick Narrated only if you want a spoken voiceover</span></div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Sound <span class="ugc-help" role="button" tabindex="0" aria-label="What do the Sound options mean?" onclick="ugcHelp(event,'snd')" onkeydown="ugcHelpKey(event,'snd')" style="margin-left:2px;vertical-align:middle">?</span></div>
         <div class="ugc-mode" id="ugcModeSeg">
-          <button type="button" class="ugc-mode-btn active" data-voice="0" onclick="ugcSetMode(this)"><b>Visual</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Visual?" onclick="ugcHelp(event,'snd-music')" onkeydown="ugcHelpKey(event,'snd-music')">?</span></button>
-          <button type="button" class="ugc-mode-btn" data-voice="1" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Narrated</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Narrated?" onclick="ugcHelp(event,'snd-voice')" onkeydown="ugcHelpKey(event,'snd-voice')">?</span></button>
+          <button type="button" class="ugc-mode-btn active" data-voice="0" onclick="ugcSetMode(this)"><b>No narration</b></button>
+          <button type="button" class="ugc-mode-btn" data-voice="1" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Narrated</b></button>
         </div>
         <div id="ugcTip-snd" class="ugc-tip" style="display:none"></div>
         <input type="checkbox" id="ugcVoice" style="display:none"><!-- 모드 모델(하위호환): 카드가 checked를 구동.
@@ -977,10 +977,10 @@
       </div>
       <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
       <div style="margin:16px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Video format <span style="color:var(--faint);font-weight:400">— just the product, or a model wearing/using it (then pick who below)</span></div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Video format <span class="ugc-help" role="button" tabindex="0" aria-label="What do the Video format options mean?" onclick="ugcHelp(event,'fmt')" onkeydown="ugcHelpKey(event,'fmt')" style="margin-left:2px;vertical-align:middle">?</span></div>
         <div class="ugc-fmt">
-          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Product only?" onclick="ugcHelp(event,'fmt-product')" onkeydown="ugcHelpKey(event,'fmt-product')">?</span></button>
-          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>With a model</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is With a model?" onclick="ugcHelp(event,'fmt-model')" onkeydown="ugcHelpKey(event,'fmt-model')">?</span></button>
+          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b></button>
+          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>With a model</b></button>
         </div>
         <div id="ugcTip-fmt" class="ugc-tip" style="display:none"></div>
         <input type="hidden" id="ugcFormat" value="product-ad">
@@ -5202,10 +5202,10 @@ function ugcBindScriptEdits(){
 // 포맷 픽커(제품/모델) + 모델 로스터 선택
 let ugcSelectedModelImg=null, ugcModelGender='female', ugcModelAge='adult'; // ugcModelAge: 'adult'|'kids' 탭
 /**
- * Video format·Sound 옵션의 ⓘ.
- *   옵션 밑 한 줄 설명("Just the product")을 대체한다 — 한 줄로는 "무엇인지"밖에 못 말하는데,
- *   고를 때 실제로 필요한 건 **"언제 고르는지"**(어떤 제품군에 맞는지)라서 자리가 모자랐다.
- *   Voiceover 설명이 "씬 길이를 음성이 정한다"까지 말한다 — Length 컨트롤이 사라지는 이유가
+ * Sound·Video format 섹션 헤더의 ⓘ(2026-07-18: 옵션별 2개 → 헤더 1개로 통합).
+ *   헤더 한 줄 설명 + 옵션별 정의를 한 팝오버로 합쳤다 — 고를 때 필요한 건 "무엇인지"보다
+ *   **"언제 고르는지"**(어떤 제품군)라 옵션 밑 한 줄론 부족했다.
+ *   Narrated 설명이 "씬 길이를 음성이 정한다"까지 말한다 — Length 컨트롤이 사라지는 이유가
  *   화면 어디에도 없어 "초 설정 어디갔어"가 나왔던 것(설계문서 §7)을 여기서 답한다.
  */
 const UGC_HELP={
@@ -5215,22 +5215,15 @@ const UGC_HELP={
   'photos':{g:'photos',
     t:'<b>Every photo must show the same product</b> — different angles, different states (cap on vs off, folded vs opened) or close-ups all count. Up to 5.',
     fit:'A set or bundle counts as one product, as long as every photo shows that same set. Don\'t mix different products — they get merged into one and the result gets muddled. For separate products, make a separate video for each.'},
-  'fmt-product':{g:'fmt',
-    t:'<b>Product only</b> — no people in the video. Your photo stays locked into every scene.',
-    fit:'Best for things sold on detail, texture and finish — jewellery, watches, model kits, gadgets, food, homeware.'},
-  'fmt-model':{g:'fmt',
-    t:'<b>With a model</b> — a model wears or uses your product. You pick the model below.',
-    fit:'Best for things that only make sense on a person — clothing, make-up, bags, shoes.'},
-  'snd-voice':{g:'snd',
-    t:'<b>Narrated</b> — AI narration over the video. The script gets spoken lines, and you pick the voice and speed. Scene length follows the voice, so the length control is hidden.',
-    fit:'Best for products that need explaining — skincare, gadgets, anything with a benefit to spell out.'},
-  // (2026-07-17) 옛 본문: "The script speaks through on-screen text instead" — **자막을 껐으므로 거짓**이다
-  //   (config/index.js UGC_CAPTIONS_ENABLED 기본 false → assembler가 번인을 건너뛴다, 커밋 96e6c6e).
-  //   음악도 아래 별도 토글(#ugcMusic)이라 "Music only"라는 이름부터 틀렸다 — 음성모드에서도 음악이 켜지고,
-  //   이 모드에서 음악을 끄면 무음이 된다. 두 모드의 진짜 차이 = 목소리 유무 + 씬 길이를 누가 정하느냐.
-  'snd-music':{g:'snd',
-    t:'<b>Visual</b> — no narration. The product carries it, and you set the scene length yourself. Background music is a separate toggle below.',
-    fit:'Best for products that sell by being seen — jewellery, fashion, interiors, collectibles.'},
+  // Sound·Video format 통합 도움말(2026-07-18): 옵션별 ⓘ 2개 + 헤더 한 줄 설명을 헤더 ⓘ 하나로 합침.
+  //   두 옵션의 정의 + "언제 고르나"(제품군)를 한 팝오버에. 음성모드 차이 = 목소리 유무 + 씬 길이를 누가 정하나
+  //   (자막 껐음: UGC_CAPTIONS_ENABLED=false, 커밋 96e6c6e. "Music only"는 음악이 별도 토글이라 이름부터 틀림).
+  'snd':{g:'snd',
+    t:'Most ads run without narration. <b>No narration</b> — the product carries it and you set the scene length yourself (background music is a separate toggle below). <b>Narrated</b> — AI reads spoken lines; you pick the voice and speed, and scene length follows the voice, so the length control is hidden.',
+    fit:'No narration suits products that sell by being seen — jewellery, fashion, interiors. Narrated suits products that need explaining — skincare, gadgets, anything with a benefit to spell out.'},
+  'fmt':{g:'fmt',
+    t:'<b>Product only</b> — no people in the video; your photo stays locked into every scene. <b>With a model</b> — a model wears or uses your product, and you pick the model below.',
+    fit:'Product only suits things sold on detail, texture and finish — jewellery, watches, model kits, gadgets, food, homeware. With a model suits things that only make sense on a person — clothing, make-up, bags, shoes.'},
 };
 const UGC_HELP_OPEN={}; // 그룹별로 열린 key 하나(그룹끼리는 서로 안 건드린다)
 /**

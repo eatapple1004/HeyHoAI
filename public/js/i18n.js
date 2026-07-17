@@ -181,21 +181,19 @@
       '▸ 제품 상세 (브랜드, 핵심 장점, 강조점) — 선택, 카피가 더 날카로워집니다',
     "Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims).":
       'AI가 쓸 수 있는 사실 — 예) 브랜드: Rouge Paris · 24시간 지속 · 비건 · 보습.  비워두면 카피가 일반적으로 나옵니다(없는 효능을 지어내지 않습니다).',
-    // 영상 형식
     'Video format': '영상 형식',
-    '— just the product, or a model wearing/using it (then pick who below)': '— 제품만, 또는 모델이 착용·사용 (그러면 아래에서 모델 선택)',
     'Product only': '제품만', 'Just the product': '모델 없이 제품만',
     'With a model': '모델과 함께', 'Product + a model using it': '제품 + 사용하는 모델',
-    'What is Product only?': '‘제품만’이 뭔가요?', 'What is With a model?': '‘모델과 함께’가 뭔가요?',
+    // 옵션별 ⓘ(2026-07-18) → 헤더 ⓘ 하나로 통합. 도움말 본문은 <b> 포함이라 영어 전용(기존과 동일)
+    'What do the Video format options mean?': '영상 형식 옵션 설명',
     'Pick a model': '모델 고르기', 'Female': '여성', 'Male': '남성',
     // 소리 — (2026-07-17) 옛 'Voiceover'/'Music only' 폐기.
     //   'Music only'는 이름부터 틀렸다: 음악은 아래 별도 토글(#ugcMusic)이라 음성모드에서도 켜지고,
     //   이 모드에서 음악을 끄면 무음이 된다. 자막도 껐다(UGC_CAPTIONS_ENABLED=false, 커밋 96e6c6e).
     //   진짜 차이 = ① 목소리 유무 ② 씬 길이를 누가 정하느냐(음성모드=음성이 정함 / Visual=내가 고름).
     //   '목소리 없이' 같은 부정형은 없는 걸로 이름 짓는 셈이라 기각 → 둘 다 '있는 것'의 이름으로.
-    'Sound': '소리', 'Narrated': '내레이션', 'Visual': '비주얼',
-    '— music-only (Visual) is most common; pick Narrated only if you want a spoken voiceover': '— 대부분 음악만(비주얼)입니다. 목소리 내레이션이 필요할 때만 내레이션을 고르세요',
-    'What is Narrated?': '내레이션이 뭔가요?', 'What is Visual?': '비주얼이 뭔가요?',
+    'Sound': '소리', 'Narrated': '내레이션', 'No narration': '내레이션 없음',
+    'What do the Sound options mean?': '소리 옵션 설명',
     // 결과 카드의 음성 트랙 토글 — 모드가 아니라 트랙 켜기/끄기라 명사형
     'Narration': '내레이션',
     // 요약줄 · 포맷
