@@ -4977,8 +4977,11 @@ async function ugcSuggestConcept(){
   try{
     const fd=new FormData();
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png')));
-    fd.append('outputType',document.getElementById('ugcFormat').value||'product-ad'); // 무출연/모델 인지
+    const cFmt=document.getElementById('ugcFormat').value||'product-ad';
+    fd.append('outputType',cFmt); // 무출연/모델 인지
     fd.append('language',ugcLang());
+    // 🧍 선택 모델 — 컨셉이 타깃/톤을 그 모델(특히 아동)에 맞추게. 안 보내면 아동복인데 "for women" 컨셉이 나온다.
+    if(cFmt==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg);
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details);
     const res=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd});

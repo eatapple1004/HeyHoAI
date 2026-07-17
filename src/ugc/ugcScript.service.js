@@ -147,7 +147,10 @@ async function generateUgcScript(input) {
  *   ⚠️ 전엔 라우트가 첫 장만 넘겨서, 대본은 다각도를 다 보는데 컨셉만 앞면 하나로 썼다.
  *      뒷면에만 있는 특징(예: 소드팩)이 컨셉에서 통째로 빠진다.
  */
-async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad' } = {}) {
+// model = 선택된 로스터 모델 메타({isMinor, ageBand, ...}) — 있으면 컨셉의 타깃/톤을 그 모델에 맞춘다.
+//   대본(generateScript)엔 b32b9f4로 배선했는데 컨셉엔 빠져 있어, 아이 모델을 골라도 컨셉이 "for women"으로
+//   나왔다(모델을 몰라 제품만 보고 성인 타깃으로 씀). 같은 배선을 여기도 한다.
+async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad', model = null } = {}) {
   const imgs = (Array.isArray(images) && images.length ? images : (image ? [image] : [])).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
   const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
@@ -163,6 +166,11 @@ async function suggestConcept({ image, images, details = '', language = 'ko', ou
     noModel
       ? 'This ad shows the PRODUCT ONLY — no model or person. Do not suggest angles that require someone to wear, apply, or hold it on camera.'
       : 'This ad features a model wearing/using the product — the angle may involve the model.',
+    // 선택된 모델이 아이면 타깃/톤을 그에 맞춘다 — 안 그러면 아동복인데 컨셉이 "for young women"으로 나온다.
+    //   아이의 정확한 나이는 쓰지 않는다(밴드만) — 겉보기 나이가 라벨과 어긋난다(roster.kids 주석).
+    ...(model && model.isMinor
+      ? ['The model in this ad is a CHILD. Frame the request for a KIDS product — audience is parents/gift-buyers or the kids themselves, tone playful and wholesome. Do NOT aim it at "women" or adult self-purchase, and do not state the child\'s exact age.']
+      : []),
     // ★핵심: 완성된 슬로건이 아니라, 유저가 스스로 말하는 "요청" 문장.
     // ⚠️ 문형·예시를 언어별로 갈라야 한다. 전엔 "Write it in English"라고 해놓고 뒤에 한국어 문형
     //    ("~하게 만들고 싶어")과 한국어 예시를 붙여서 지시가 자기모순이었다 — 그리고 **예시가 지시를 이겨서**

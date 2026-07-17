@@ -1011,7 +1011,9 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
       try { fs.unlinkSync(pf.path); } catch {}
     }
     if (!images.length) return res.status(400).json({ success: false, error: 'product image is required' });
-    const concept = await ugcVideoService.suggestConcept({ images, details: req.body.details || '', outputType: req.body.outputType || 'product-ad', language: req.body.language === 'ko' ? 'ko' : 'en' });
+    // 🧍 선택 모델 메타 — 컨셉의 타깃/톤을 그 모델(특히 아동)에 맞춘다(대본 라우트와 같은 배선).
+    const model = modelMetaFor(safeModelPath(req.body.modelImage));
+    const concept = await ugcVideoService.suggestConcept({ images, details: req.body.details || '', outputType: req.body.outputType || 'product-ad', language: req.body.language === 'ko' ? 'ko' : 'en', model });
     res.json({ success: true, concept });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
