@@ -937,7 +937,7 @@
           <svg class="img-add-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg>
           <span class="img-add-label">Add product photos</span>
         </button>
-        <span id="ugcPickHint" style="font-size:12px;color:var(--dim)">Recommended — add multiple angles to keep your product consistent</span>
+        <span id="ugcPickHint" style="font-size:12px;color:var(--dim)">Required — one photo minimum. Add more angles to keep your product consistent.</span>
       </div>
       <input type="text" id="ugcProductName" placeholder="Product name — e.g. Rouge Velvet Matte  (optional)" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:var(--text);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px;font-family:inherit">
       <!-- 컨셉 라벨 줄(2026-07-17): 원래 placeholder가 라벨 역할까지 했고(입력 시작하면 사라짐 = a11y 문제),
@@ -4885,9 +4885,30 @@ function ugcRenderProductThumbs(){
   if(box)box.classList.toggle('has-photo',ugcProductFiles.length>0);
   var pick=document.getElementById('ugcPickBtn'); if(pick)pick.style.display=ugcProductFiles.length>=UGC_MAX_REF?'none':'';
   var hint=document.getElementById('ugcPickHint');
+  // 0장일 때 "Recommended"는 거짓말이 됐다 — 한 장은 필수다(아래 ugcNeedPhoto). 필수(1장)와 권장(여러 장)을 가른다.
   if(hint)hint.textContent=ugcProductFiles.length
     ? ugcProductFiles.length+'/'+UGC_MAX_REF+' — locked into every scene · add more angles for accuracy'
-    : 'Recommended — add multiple angles to keep your product consistent';
+    : 'Required — one photo minimum. Add more angles to keep your product consistent.';
+}
+/**
+ * 제품 사진은 **필수**다 — 없으면 대본도 렌더도 막는다.
+ *   Ad Video의 약속이 "내 제품이 전 씬에 박힌다"(화면: locked into every scene)인데, 사진이 없으면
+ *   잠글 게 없다: AI가 컨셉 텍스트만 보고 **남의 제품** 영상을 만든다. 그런데 ◈는 선차감되고
+ *   실패가 아니라 "성공"이라 환불도 안 된다.
+ *   Ad Video엔 사진 없는 정당한 경로가 없다 — 백엔드의 refKind:'person'(셀카) 분기는 Studio/Shots 것이고
+ *   이 UI는 referenceImagePath를 아예 안 보낸다. "With a model"도 제품이 필요하다(정의가 "Product + a model
+ *   using it"이고 모델 이미지는 modelImage로 따로 간다).
+ *   ⚠️ 새로고침하면 ugcProductFiles(File 객체)가 날아간다 — 그때 이 가드가 "다시 넣어라"를 대신 말해준다.
+ *      (컨셉·제품명·포맷은 잡 데이터로 되살아나서 폼이 복원된 것처럼 보이는데 사진만 비어 있다.)
+ * @returns {boolean} true = 막았음(호출부는 즉시 return)
+ */
+function ugcNeedPhoto(hintEl){
+  if(ugcProductFiles.length)return false;
+  const msg='⚠ Add a product photo first — it\'s what gets locked into every scene.';
+  if(hintEl)hintEl.textContent=msg; else if(window.toast)toast(msg,'error');
+  const strip=document.getElementById('ugcThumbStrip')||document.getElementById('ugcPickBtn');
+  if(strip&&strip.scrollIntoView)strip.scrollIntoView({behavior:'smooth',block:'center'}); // 넣을 자리를 보여준다
+  return true;
 }
 function ugcRemoveProductImg(i){ ugcProductFiles.splice(i,1); ugcRenderProductThumbs(); }
 function ugcClearImg(){ ugcProductFiles=[]; ugcRenderProductThumbs(); }
@@ -4974,6 +4995,7 @@ async function ugcWriteScript(){
   //   지워버리던 사고(영상 증발)를 막으려던 것이고, 이제 지우지 않고 조리대에서 내리기만 하므로
   //   막을 이유가 없다 — 렌더가 도는 동안 다음 영상의 대본을 쓸 수 있어야 N개가 성립한다.
   if(!concept){hint.textContent='⚠ Describe your ad — product + the angle.';return;}
+  if(ugcNeedPhoto(hint))return; // 대본 자체가 사진을 보고 써진다(Claude가 실제 제품 보고 카피·brollPrompt 작성) → 여기가 근본
   const wbtn=document.getElementById('ugcGenBtn'),rwbtn=document.getElementById('ugcRewriteBtn');
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
   const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('busy'); // 대본 쓰는 몇 초간 입력 잠금(헛수고 방지)
@@ -5259,6 +5281,9 @@ async function ugcRenderVideo(){
   const concept=(document.getElementById('ugcConcept').value||'').trim();
   const outputType=document.getElementById('ugcFormat').value||'product-ad';
   if(outputType==='model-editorial'&&!ugcSelectedModelImg){toast('Pick a model first for "With a model".');return;}
+  // 모델만 가드하고 제품은 안 봤다 — "With a model"도 정의가 "Product + a model using it"이라 제품이 필요하다.
+  //   과금(◈ 선차감) 직전이 마지막 방어선이다: 새로고침으로 사진만 날아간 채 대본이 남아 있으면 여기로 온다.
+  if(ugcNeedPhoto(null))return;
   const hint=document.getElementById('ugcHint');
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   // Generate 버튼은 하나인데 N개가 나눠 쓴다(#ugcHint·경과칸과 같은 문제) → **제출이 끝나면 바로 놓아준다.**
