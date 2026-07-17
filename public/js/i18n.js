@@ -152,6 +152,88 @@
     'Could not delete account.': '계정을 삭제하지 못했습니다.', 'Language': '언어', 'Choose your language': '언어 선택',
     'Applies across Doppia on this device.': '이 기기의 Doppia 전체에 적용됩니다.',
 
+    // ══ (2026-07-17) 광고영상(Ad Video) 화면 — /studio?mode=ugc ═══════════════════
+    // 사전에 4개(Aspect ratio·Count·English·Video)만 있어서 3번 스텝만 '비디오'로 뜨고
+    // 나머지가 통째로 영어였다 = 부분 번역이라 더 어색했다. 아래는 DOM 전수 대조로 뽑은 78건.
+    // ⛔ 번역하지 않음: Reels · Shorts(고유명사) · 보이스 이름(Yooni·JY·Hanabad·Nara·Mono Beige·
+    //    Juan·Jin·Minjoon) · 3s/5s(숫자) · CTA(마케팅 표준어) · UGC Ads(prod에서 flags.js ugc:launch:false로 숨김)
+    // ⚠️ 보이스는 '이름 — 설명' 한 문자열이 통째로 <option> 텍스트다 → 이름은 두고 설명만 옮긴다.
+
+    // 스텝 1 헤더
+    'Describe your ad': '광고를 설명해 주세요',
+    'Product + a one-line concept → AI writes a script → you review it → build the video.':
+      '제품 + 한 줄 컨셉 → AI가 대본을 씁니다 → 검토하시고 → 영상을 만듭니다.',
+    // 업로드
+    'Add product photos': '제품 사진 추가',
+    'Recommended — add multiple angles to keep your product consistent':
+      '권장 — 여러 각도를 넣으면 제품이 일관되게 유지됩니다',
+    'Required — at least one. Every photo must show the same product.':
+      '필수 — 최소 한 장. 모든 사진이 같은 제품이어야 합니다.',
+    'Which photos should I add?': '어떤 사진을 넣어야 하나요?',
+    'Product name — e.g. Rouge Velvet Matte  (optional)': '제품명 — 예) Rouge Velvet Matte  (선택)',
+    // 컨셉
+    'Concept': '컨셉', '— a sentence or a few keywords is enough': '— 한 문장이나 키워드 몇 개면 충분합니다',
+    'Write it for me': '대신 써주세요',
+    'Add a photo and AI can write this for you': '사진을 넣으면 AI가 대신 써드립니다',
+    'e.g. "clean, sensual lookbook for 20–30s"  ·  "red background, luxurious color"':
+      '예) "20~30대를 위한 깔끔하고 감각적인 룩북"  ·  "빨간 배경, 고급스러운 컬러"',
+    '▸ Product details (brand, key benefits, claims) — optional, sharper copy':
+      '▸ 제품 상세 (브랜드, 핵심 장점, 강조점) — 선택, 카피가 더 날카로워집니다',
+    "Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims).":
+      'AI가 쓸 수 있는 사실 — 예) 브랜드: Rouge Paris · 24시간 지속 · 비건 · 보습.  비워두면 카피가 일반적으로 나옵니다(없는 효능을 지어내지 않습니다).',
+    // 영상 형식
+    'Video format': '영상 형식',
+    'Product only': '제품만', 'Just the product': '모델 없이 제품만',
+    'With a model': '모델과 함께', 'Product + a model using it': '제품 + 사용하는 모델',
+    'What is Product only?': '‘제품만’이 뭔가요?', 'What is With a model?': '‘모델과 함께’가 뭔가요?',
+    'Pick a model': '모델 고르기', 'Female': '여성', 'Male': '남성',
+    // 소리
+    'Sound': '소리', 'Voiceover': '보이스오버', 'Music only': '음악만',
+    'What is Voiceover?': '보이스오버가 뭔가요?', 'What is Music only?': '‘음악만’이 뭔가요?',
+    // 요약줄 · 포맷
+    'Change': '변경', 'Edit': '수정',
+    'Feed': '피드', 'Wide': '와이드',
+    // 씬 · 길이
+    'Scenes & length': '씬 · 길이', '— Auto lets the script decide': '— 자동으로 두면 대본이 정합니다',
+    'Auto': '자동', 'Length / scene': '씬당 길이',
+    '3s clips are trimmed from a 5s render, so they cost the same as 5s.':
+      '3초 클립은 5초로 렌더한 뒤 잘라내므로 비용은 5초와 같습니다.',
+    '🎙️ Voiceover mode — length is set by the voice.': '🎙️ 보이스오버 모드 — 길이는 음성이 정합니다.',
+    // 언어
+    'Ad language': '광고 언어', '— script, voice & captions': '— 대본 · 음성 · 자막',
+    // CTA
+    'Write script': '대본 쓰기',
+    // How this works 패널
+    'How this works': '이렇게 만듭니다',
+    'Script': '대본', 'AI writes it. You can edit every line.': 'AI가 씁니다. 모든 줄을 고칠 수 있습니다.',
+    'Scenes': '씬',
+    "Each line becomes a scene. Don't like one? Remake just that scene — not the whole video.":
+      '한 줄이 한 씬이 됩니다. 마음에 안 드는 씬만 다시 만드세요 — 영상 전체가 아니라.',
+    // ⚠️ 3번 스텝은 <b>가 문장을 가른 조각 3개다(‘Your finished ad appears’ + <b>right here</b> + 나머지).
+    //    노드 단위 치환이라 어순을 못 바꾼다 → 한국어 어순에 맞게 조각을 재배분한다(home 히어로와 같은 수법).
+    //    <b> 강조가 'right here' → '바로 여기'로 자연히 옮겨간다.
+    'Your finished ad appears': '완성된 광고는',
+    'right here': '바로 여기',
+    ". Saved isn't final — come back and change any scene.":
+      '에 나옵니다. 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
+    // 음악 · 음성
+    'Add background music': '배경음악 넣기', 'Voice': '음성',
+    'Yooni — F, clear & calm': 'Yooni — 여성, 맑고 차분함',
+    'JY — F, trendy & upbeat': 'JY — 여성, 트렌디하고 경쾌함',
+    'Hanabad — F, confident': 'Hanabad — 여성, 자신감 있음',
+    'Nara — F, warm & mature': 'Nara — 여성, 따뜻하고 성숙함',
+    'Mono Beige — F, gentle': 'Mono Beige — 여성, 부드러움',
+    'Juan — M, deep storyteller': 'Juan — 남성, 깊은 이야기꾼',
+    'Jin — M, warm & classy': 'Jin — 남성, 따뜻하고 품격 있음',
+    'Minjoon — M, warm & clear': 'Minjoon — 남성, 따뜻하고 또렷함',
+    'Speed': '속도', 'Slow': '느리게', 'Normal': '보통', 'Fast': '빠르게',
+    'Music mood': '음악 분위기', 'Auto (AI)': '자동 (AI)',
+    'Upbeat': '경쾌하게', 'Calm': '차분하게', 'Luxury': '고급스럽게', 'Warm': '따뜻하게', 'Energetic': '활기차게',
+    'Preview voice': '음성 미리듣기',
+    // 대본 패널
+    'Rewrite': '다시 쓰기', 'Generate video': '영상 만들기', 'Writing your script': '대본을 쓰는 중',
+    'Hook': '훅',
+
     // ── 스튜디오 (Studio) ──
     'Custom': '커스텀', 'Select a product': '제품 선택', 'Add your product': '제품 추가', 'Add your face': '얼굴 추가',
     'Add your spokesperson': '모델 추가', 'Select a face': '얼굴 선택', 'Ratio': '비율', 'Aspect ratio': '화면 비율',
@@ -165,7 +247,7 @@
     'You only pay for what renders.': '나온 것만 크레딧이 나갑니다.',
     'Official': '공식',
     'My templates': '내 템플릿', 'My creations': '내 크리에이션', 'Your creations': '내 크리에이션',
-    'Image': '이미지', 'Video': '비디오', 'Photos': '사진', 'Reels': '릴스', 'Length': '길이', 'Audio': '오디오',
+    'Image': '이미지', 'Video': '영상', 'Photos': '사진', 'Reels': '릴스', 'Length': '길이', 'Audio': '오디오',
     'Reference': '레퍼런스', 'Options': '옵션', 'Negative': '네거티브', 'Negative prompt': '네거티브 프롬프트',
     'Type a prompt...': '프롬프트를 입력하세요...', 'Type a negative...': '네거티브를 입력하세요...',
     'Add detail (optional)': '디테일 추가 (선택)', 'Add your own touch — e.g. red dress, golden hour, soft smile': '나만의 터치 추가 — 예: 레드 드레스, 골든아워, 부드러운 미소',
