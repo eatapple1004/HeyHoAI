@@ -318,6 +318,10 @@
   .rb-up{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border)}
   .rb-up:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
   .rb-edit{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid var(--accent)}
+  /* 오븐 카드의 독립 저장 — 미저장 draft의 주 액션(조리대에선 스트립 안 .ugc-apply가 같은 일을 한다) */
+  .rb-save{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:#fff;background:var(--accent);border:1px solid var(--accent)}
+  .rb-save:hover{filter:brightness(1.08)}
+  .rb-save:disabled{background:var(--border);border-color:var(--border);color:var(--muted);cursor:default;filter:none}
   .rb-edit:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
   .rb-edit:disabled{opacity:.6;cursor:default}
   .rb-add.added{color:#5ee0d6;background:rgba(94,224,214,.12);border-color:rgba(94,224,214,.5);cursor:default}
@@ -3291,11 +3295,19 @@ function batchRowHtml(b){
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
       tplFromBtn+
-      // Ad Video 두 버튼은 하는 일이 다르다:
+      // Ad Video 카드의 버튼 셋은 하는 일이 다르다:
+      //   ✓ Save & finish = 오븐의 미저장 draft를 갤러리에 확정. **편집 없이 저장만** — 조리대에선 스트립 안 .ugc-apply가 같은 일을 한다.
+      //     여기 있는 이유: 재연결 시 최근 1개만 조리대고 나머지 draft는 오븐에 붙는데, 그것들도 저장할 수 있어야 한다.
       //   ↑ View up top = 자리만 옮긴다(이미 데이터가 있는 것 — 렌더 중이거나 b.ugc 보유).
       //     렌더 중이면 조리대도 오븐과 같은 함수(ugcLoadingVidHtml)를 그려서 그림은 같다 → 위치만 얻는다.
       //     완성된 draft면 조리대의 레이어드 플레이어(자막 오버레이·오디오 2트랙·타임라인)가 붙는다 — 그건 조리대에만 있다.
+      //     **편집하려면 반드시 여기로 올려야 한다** — 오븐은 보고·저장하고·올리는 곳이다(근거=아래 ugcStrip 주석).
       //   ✎ Edit video = 되찾아서 올린다(저장됐지만 b.ugc가 없는 히스토리 배치 — F).
+      ((()=>{const u=b.ugc;
+        if(!isUgc||b.loading||!u||!u.jobId)return '';               // 저장할 것이 없다(렌더 중 = 아직 결과 없음)
+        if(u._saved&&!u._dirty)return '';                           // 이미 갤러리에 있고 미적용 편집도 없다 → 버튼이 할 일이 없다
+        // 모드 게이트 없음 — 저장은 조리대가 필요없다(View up top과 다른 점).
+        return `<button class="rb-save" type="button" data-job="${esc(u.jobId)}" onclick="ugcSaveFinish('${esc(u.jobId)}')">${u._dirty?'Apply · Save & finish':'Save & finish'}</button>`;})())+
       ((()=>{
         if(!isUgc||state.mode!=='ugc')return '';                    // 조리대(#scriptStep)가 숨겨진 페이지면 올려도 안 보인다
         if(!(b.loading||b.ugc))return '';                           // 올릴 데이터가 없으면 Edit video 쪽 소관
@@ -3323,10 +3335,17 @@ function batchRowHtml(b){
   // (2026-07-03) 이 creation(배치) 삭제 — Library My creations에서도 사라짐(같은 행). 승격된 템플릿은 유지. 생성 중(placeholder)·idx 없는 건 버튼 숨김.
   const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
   const delBtn=delIdxs.length?`<div class="rb-del-row"><button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button></div>`:'';
-  // Ad Video 씬 스트립 — 렌더 중이면 로딩 씬 카드(E: 오븐 카드가 곧 "생성보기"), 끝났으면 편집 스트립
-  const ugcStrip=b.loading
-    ? (isUgc?ugcLoadingStripHtml(b):'')
-    : ((b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length)?ugcSceneStripHtml(b):'');
+  // Ad Video 씬 스트립 — 렌더 중일 때만. 이건 **진행 표시**지 편집기가 아니다(E: 오븐 카드가 곧 "생성보기").
+  // ⚠️ 완성분에 편집 스트립(ugcSceneStripHtml)을 붙이지 말 것. 편집은 조리대 전용이다(2026-07-17 결정):
+  //   ① 오븐엔 레이어드 플레이어가 없다(#ugcInline 전용) → 같은 버튼인데 "고치면 즉시 보임"이 "Apply→재굽기 왕복"이 된다.
+  //      같아 보이는 것이 같게 동작하지 않는 쪽이 아예 없는 것보다 나쁘다.
+  //   ② 편집 표면이 둘이면 씬 편집 기능마다 양쪽 검증이 필요한데 실제로 안 됐다 — ugcRefreshStrip이 #ugcInline
+  //      스코프라 오븐에선 no-op이었고, 그래서 씬 재생성 스피너·Add scene 플레이스홀더가 조용히 죽어 있었다
+  //      (크레딧은 나가는데 무반응 → 재클릭 유도). B가 경과타이머에서 푼 것과 같은 부류를 여기서 놓쳤던 것.
+  //   ③ 오븐 카드엔 이미 조리대로 가는 한 클릭 경로가 있다 — b.ugc면 [↑ View up top], 히스토리면 [✎ Edit video](F).
+  //   원래 이 스트립은 개발자가 피드용으로 썼다가(e66ff47) 같은 날 조리대로 옮기며(e732ac0) 죽은 코드가 됐고,
+  //   A(53b7c9c)의 축 분리가 8일 만에 깨워 되살아난 것이다. 설계된 적이 없다.
+  const ugcStrip=(b.loading&&isUgc)?ugcLoadingStripHtml(b):'';
   return `<div class="result-row"><div class="rb-media">${media}</div>${ugcStrip}<div class="rb-meta">${head}${specs}${delBtn}</div></div>`;
 }
 // ── Ad Video 결과 편집: 씬 스트립(재배치·삭제·자막수정, 무과금 재조립) ──
@@ -3452,7 +3471,14 @@ function ugcDrop(e,jobId,targetN){ e.preventDefault();
   let ni=a.findIndex(s=>String(s.n)===String(targetN));
   if(ni<0)ni=a.length; else if(fi<ti)ni++; // 오른쪽으로 드래그→대상 뒤로, 왼쪽으로→대상 앞으로
   a.splice(ni,0,m); b.ugc._dirty=true; ugcReflectEdit(jobId); } // C: 재배치 즉시(setScenes, 오디오 유지)
-function ugcApplyBtn(jobId){ const c=ugcCont(jobId); return c&&c.querySelector('.ugc-apply-row .ugc-apply'); } // Advanced 패널의 .ugc-apply 회피
+// 이 잡의 "저장 버튼" 하나를 찾는다 — 조리대면 스트립 안 .ugc-apply, 오븐이면 카드의 독립 .rb-save.
+// 편집이 조리대 전용이 된 뒤 오븐엔 스트립(=ugcCont)이 없다 → 폴백이 없으면 ugcSaveFinish가 btn=null로 돌아
+// "Saving…" 표시도 중복클릭 방지도 사라진다(동작은 하되 무반응처럼 보임).
+function ugcApplyBtn(jobId){
+  const c=ugcCont(jobId);
+  return (c&&c.querySelector('.ugc-apply-row .ugc-apply')) // Advanced 패널의 .ugc-apply 회피
+    || document.querySelector('.rb-save[data-job="'+jobId+'"]');
+}
 function ugcSceneMove(jobId,n,dir){
   const b=ugcFindBatch(jobId); if(!b)return; const a=b.ugc.scenes; const i=a.findIndex(s=>s.n===n); const j=i+dir;
   if(i<0||j<0||j>=a.length)return; const t=a[i];a[i]=a[j];a[j]=t; b.ugc._dirty=true; ugcReflectEdit(jobId); // C: 즉시 반영
