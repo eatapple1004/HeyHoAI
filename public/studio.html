@@ -314,7 +314,9 @@
   .rb-add:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
   .rb-tpl{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid var(--accent)}
   .rb-tpl:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
-  /* 피드의 Ad Video 카드 → 조리대로 되돌리는 편집 진입점 */
+  /* 피드의 Ad Video 카드 → 조리대로. rb-up=자리 옮김(부차, 고스트) / rb-edit=되찾아서 편집(주된 동작, 강조) */
+  .rb-up{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border)}
+  .rb-up:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
   .rb-edit{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent2);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid var(--accent)}
   .rb-edit:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
   .rb-edit:disabled{opacity:.6;cursor:default}
@@ -3249,9 +3251,17 @@ function batchRowHtml(b){
       `<div class="rb-actions"><button class="rb-more" type="button" style="display:none" onclick="toggleRbPrompt(this)">Show more</button>`+
       (b.promptText?`<button class="rb-copy" type="button" onclick="copyPromptBtn(this)" data-t="${esc(b.promptText)}">⧉ Copy prompt</button>`:'')+
       tplFromBtn+
-      // Ad Video만: 저장된 영상을 조리대로 되돌린다(씬 재배치·자막 수정). 렌더 중·idx 없는 건 되돌릴 게 없다.
+      // Ad Video 두 버튼은 하는 일이 다르다:
+      //   ↑ View up top = 자리만 옮긴다(이미 데이터가 있는 것 — 렌더 중이거나 b.ugc 보유).
+      //     렌더 중이면 조리대도 오븐과 같은 함수(ugcLoadingVidHtml)를 그려서 그림은 같다 → 위치만 얻는다.
+      //     완성된 draft면 조리대의 레이어드 플레이어(자막 오버레이·오디오 2트랙·타임라인)가 붙는다 — 그건 조리대에만 있다.
+      //   ✎ Edit video = 되찾아서 올린다(저장됐지만 b.ugc가 없는 히스토리 배치 — F).
+      ((()=>{
+        if(!isUgc||state.mode!=='ugc')return '';                    // 조리대(#scriptStep)가 숨겨진 페이지면 올려도 안 보인다
+        if(!(b.loading||b.ugc))return '';                           // 올릴 데이터가 없으면 Edit video 쪽 소관
+        return `<button class="rb-up" type="button" onclick="ugcBringUp(${b._uid})">↑ View up top</button>`;})())+
       ((()=>{const eidx=(b.items[0]&&b.items[0].idx);
-        if(!isUgc||b.loading||eidx==null)return '';
+        if(!isUgc||b.loading||b.ugc||eidx==null)return '';           // b.ugc 있으면 위의 View up top이 맡는다
         if(state.mode!=='ugc')return '';               // 조리대(#scriptStep)가 숨겨진 페이지 → 올려도 안 보인다(영상이 사라진 것처럼 됨)
         if(!b.ugc&&!UGC_EDITABLE.has(eidx))return '';  // 대본 없는 옛 영상은 재조립 불가 = 편집 불가. 안 되는 버튼은 안 띄운다
         return `<button class="rb-edit" type="button" onclick="ugcEditFromFeed(this,${eidx})">✎ Edit video</button>`;})())+
@@ -5282,6 +5292,15 @@ function ugcPutOnBench(b){
   ugcHideBenchPanels();
   renderStudioResults();
   const el=document.getElementById('ugcInline'); if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'start'}); // "어디 갔지" 방지
+}
+/**
+ * 피드 카드 [↑ View up top] → 조리대. **편집이 아니라 자리 옮김** — 데이터는 이미 배치에 있다.
+ *   렌더 중인 배치는 jobId도 result idx도 아직 없을 수 있어 배치 _uid로 찾는다(makePendingBatch가 붙인다.
+ *   히스토리 배치엔 _uid가 없지만 그건 b.ugc도 없어서 여기 오지 않는다 — Edit video 쪽 소관).
+ */
+function ugcBringUp(uid){
+  const b=STUDIO_BATCHES.find(x=>x._uid===uid);
+  if(b)ugcPutOnBench(b); // 조리대에 있던 건 자동 저장 후 오븐으로(G) · 대본 패널도 내려간다
 }
 /**
  * 피드 카드 [✎ Edit video] → 조리대. **저장하면 다시는 편집 못 하던 결함의 되돌아올 길.**
