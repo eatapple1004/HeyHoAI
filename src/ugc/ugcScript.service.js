@@ -176,8 +176,9 @@ async function suggestConcept({ image, images, details = '', language = 'ko', ou
     'No quotes, no preamble, no hashtags, no options — just the one request line.',
     'Do not invent unverifiable factual claims (exact wear time, ingredients, certifications, prices) unless given.',
   ].join('\n');
-  // 여러 장이면 "같은 제품의 다른 각도"임을 밝힌다 — 안 그러면 제품이 여럿이라고 읽는다(nanoBanana의 refClauses와 같은 이유).
-  const multi = imgs.length > 1 ? `The ${imgs.length} photos are ONE SINGLE product from different angles — not several products. ` : '';
+  // 여러 장이면 "같은 제품의 여러 모습"임을 밝힌다 — 안 그러면 제품이 여럿이라고 읽는다(refClauses와 같은 이유).
+  //   각도로 못박지 않는다: 상태(뚜껑 닫힘/열림)·클로즈업도 흔하고, 오히려 그쪽이 컨셉에 더 쓸모 있다(열린 립스틱=발색).
+  const multi = imgs.length > 1 ? `The ${imgs.length} photos all show ONE SINGLE product — different angles, states (e.g. cap on vs off) or close-ups, not several products. ` : '';
   const userText = `${multi}${details ? `Product facts (may use): ${details}\n` : ''}Draft the request.`;
 
   const response = await client.messages.create({

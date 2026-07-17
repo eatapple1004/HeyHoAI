@@ -146,8 +146,13 @@ function buildUgcScriptPrompt(input) {
     // product는 선택 — 보통 유저가 brief(concept)에 제품을 녹여서 씀. 있으면 명시.
     product ? `Product: ${product}` : '',
     `Creative brief / request (a sentence or loose keywords — interpret intent, don't echo): ${concept}`,
+    // ⚠️ "different angles"로만 말하면 안 된다 — 유저가 넣는 건 각도만이 아니다: 상태(립스틱 뚜껑 닫힘/열림,
+    //    로봇 접힘/펼침), 스케일(전체/디테일 클로즈업)도 흔하고 **오히려 더 유용하다**(열린 립스틱이 발색을 보여준다).
+    //    각도라고 못박으면 두 상태를 하나로 융합하려 하거나 어느 쪽을 그릴지 헷갈린다.
+    //    → "같은 제품의 여러 모습"으로 넓히고, **어느 상태를 쓸지는 씬이 정한다**고 말한다.
+    //    (여러 제품은 미지원 — scene에 제품을 지목할 필드가 없다.)
     hasImage ? (imageCount > 1
-      ? `${imageCount} photos of the SAME product from different angles are attached. Study them together to understand its full 3D structure and any moving/mechanical parts (e.g. a robot's joints, a truck's container). Ground the copy, spoken and every brollPrompt in its real appearance — color, form, structure, texture, finish — and use the angle that best shows the motion each scene needs.`
+      ? `${imageCount} photos of ONE SINGLE product are attached — they may show different angles, different states (e.g. cap on vs off, folded vs opened) or close-up details. They are the SAME product, not several. Study them together to understand its full 3D structure, its moving/mechanical parts (e.g. a robot's joints, a lipstick's cap) and how it looks in each state. Ground the copy, spoken and every brollPrompt in its real appearance — color, form, structure, texture, finish. Each scene may use whichever view or state serves it best, and a scene may show a state change (e.g. the cap coming off) if the photos support it — say so explicitly in that scene's brollPrompt.`
       : 'A photo of the actual product is attached. Ground the copy, spoken and every brollPrompt in its real appearance — color, form, packaging, texture, finish. Describe the product accurately in brollPrompt so the rendered scenes match it.') : '',
     details ? `Product facts / claims — use ONLY these, do not invent additional claims:\n${details}` : '',
     audience ? `Target audience: ${audience}` : '',

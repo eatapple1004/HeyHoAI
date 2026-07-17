@@ -42,6 +42,11 @@ function refList(ns) {
  *    accuracy")도 다각도라고 하는데 **정작 모델에게만 그 말을 안 하고 있었다.**
  *    → 사진을 더 넣을수록 좋아져야 하는데 오히려 나빠지던 원인.
  *
+ * ⚠️ "different angles"로만 말해도 안 된다 — 유저가 넣는 건 각도만이 아니다: 상태(립스틱 뚜껑
+ *    닫힘/열림), 스케일(전체/클로즈업)도 흔하다. 각도라고 못박으면 두 상태를 **하나로 융합**하려
+ *    하거나(뚜껑이 닫힌 동시에 열린?) 어느 쪽을 그릴지 헷갈린다.
+ *    → "같은 제품의 여러 모습"으로 넓히고, **어느 상태를 그릴지는 씬 프롬프트가 정한다**고 명시한다.
+ *
  * 제품은 항상 **하나**다(여러 제품은 미지원 — 그건 씬별 제품 라우팅이 필요한 별개 기능이고,
  * 스키마의 scene.subject가 product|model뿐이라 지목할 수단이 없다).
  * @param {{path:string,kind?:string}[]} refs 이미지 파트와 **같은 순서**(번호 1..N이 그 순서다)
@@ -56,7 +61,7 @@ function refClauses(refs) {
   if (prod.length === 1) {
     out.push(`Image ${prod[0]} is the EXACT product to feature — keep its identity, shape, color, label and details unchanged.`);
   } else if (prod.length > 1) {
-    out.push(`${refList(prod)} are ONE SINGLE product shot from different angles — NOT several different products. Read them together to understand that one product's full shape and details, then feature that same product with its identity, shape, color, label and details unchanged.`);
+    out.push(`${refList(prod)} all show ONE SINGLE product — they may differ in angle, in state (e.g. cap on vs off, folded vs opened) or in closeness. They are the SAME product, NOT several different products. Read them together to understand that one product, then feature it exactly as the scene below describes — including which state it is in — keeping its identity, shape, color, label and details unchanged.`);
   }
   return out;
 }
