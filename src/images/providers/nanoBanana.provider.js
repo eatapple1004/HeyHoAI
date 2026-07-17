@@ -66,6 +66,16 @@ function refClauses(refs) {
   } else if (prod.length > 1) {
     out.push(`${refList(prod)} all show the SAME single product — the one being advertised. They are NOT different products to pick between. They may differ in angle, in state (e.g. cap on vs off, folded vs opened) or in closeness; and if the product is a set or bundle of several items, the WHOLE set is that one product. Read them together to understand it, then feature it exactly as the scene below describes — including which state it is in — keeping its identity, shape, color, label and details unchanged.`);
   }
+  // 제품 사진 속 사람은 제품이 아니다 — 마네킹이다.
+  //   착용컷은 정상 제품컷이다(귀걸이는 귀에, 옷은 몸에 있다. accessories 시드의 3패밀리 중 하나가 Worn Cut).
+  //   그런데 위 문장은 "keep its identity ... unchanged"라고만 해서, 착용컷이면 **그 사람 얼굴까지 그대로 그리라는 말**로
+  //   읽혔다. 판매자가 계약한 모델이지 우리가 계약한 게 아닌데 그 얼굴을 새 장면에 재현하고 있었다(초상권).
+  //   → 사람은 오직 로스터에서만 온다. 업로드본에서는 제품만 가져온다.
+  //   이건 막는 게 아니라 **범위를 말해주는 것**이다: 착용컷은 계속 쓰되 인물만 안 베낀다(오탐 0, 거절 0).
+  if (prod.length) {
+    const those = prod.length > 1 ? 'those photos' : 'that photo';
+    out.push(`A person may be wearing, holding or modelling the product in ${those} — if so, take ONLY the product from ${prod.length > 1 ? 'them' : 'it'}. That person is a mannequin, not part of the product: never reproduce their face, body or identity.${model.length ? ` The only person in the output is the model from ${refList(model)}.` : ''}`);
+  }
   return out;
 }
 

@@ -13,11 +13,14 @@ const klingProvider = require('../videos/providers/kling.provider');
 const REELS_W = 1080;
 const REELS_H = 1920;
 
-// broll 렌더용 기본 네거티브(사람 얼굴/저품질 방어). 제품컷은 인물 배제.
-const BROLL_NEGATIVE = [
-  'human face', 'people', 'hands', 'text', 'watermark', 'logo',
-  'low quality', 'blurry', 'deformed', 'extra limbs',
-].join(', ');
+// broll 렌더용 네거티브.
+// ⚠️ 인물 배제는 **제품 씬에만** 걸어야 한다. 전엔 모델 씬에도 같이 걸려서 한 요청 안에서 정반대를 말했다:
+//    프롬프트="모델이 제품을 착용한 장면" + 레퍼런스="같은 얼굴·머리·이목구비를 유지하라" + 네거티브="human face, people 금지".
+//    주석은 "제품컷은 인물 배제"라고 스스로 말하면서 정작 제품컷에만 안 걸고 전부에 걸고 있었다.
+const NEG_QUALITY = ['text', 'watermark', 'logo', 'low quality', 'blurry', 'deformed', 'extra limbs'];
+const NEG_NO_PERSON = ['human face', 'people', 'hands'];
+const BROLL_NEGATIVE = [...NEG_NO_PERSON, ...NEG_QUALITY].join(', '); // 제품 씬(인물 없음)
+const BROLL_NEGATIVE_PERSON = NEG_QUALITY.join(', ');                 // 인물 레퍼런스가 있는 씬(모델이 나와야 함)
 
 /** provider.poll을 완료까지 폴링(videoGeneration.service.pollUntilDone 미러). */
 async function pollUntilDone(provider, providerJobId, { maxWaitMs = 600_000, intervalMs = 5_000 } = {}) {
@@ -73,11 +76,15 @@ async function renderSceneClip(scene, opts) {
     references = [{ path: referenceImagePath, kind: referenceKind }];
   }
 
+  // 인물 레퍼런스가 실린 씬은 사람이 나와야 하는 씬이다 → 인물 배제 네거티브를 빼야 한다.
+  //   kind!=='product' = 모델씬(위 라우팅) 또는 하위호환 단일 person ref. 둘 다 사람이 결과에 나오는 게 정상.
+  const hasPersonRef = references.some((r) => r.kind && r.kind !== 'product');
+
   // 1) 이미지 렌더 (nanoBanana / Gemini)
   log(`  [scene ${scene.n}] 이미지 렌더${references.length > 1 ? '(모델+제품)' : ''}…`);
   const image = await nanoBanana.generate({
     prompt,
-    negativePrompt: BROLL_NEGATIVE,
+    negativePrompt: hasPersonRef ? BROLL_NEGATIVE_PERSON : BROLL_NEGATIVE,
     width,
     height,
     ...(references.length ? { references } : {}),
