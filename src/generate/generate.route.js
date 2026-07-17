@@ -35,10 +35,11 @@ const safeModelPath = (p) => (typeof p === 'string' && /^\/img\/models\/(kids\/)
 const ROSTER_ADULT = require('../models/roster.v1.js');
 const ROSTER_KIDS = require('../models/roster.kids.v1.js');
 /**
- * 로스터 경로 → 대본 작성기가 알아야 할 모델 메타.
- * 왜 필요한가: 빌더가 모델의 나이를 **아예 모른다**. 아동 모델을 골라도 성인 화보처럼 쓴다
- *   → 프롬프트("성인 화보")와 레퍼런스(아이)가 모순 = 이 레포에서 반복되는 그 버그.
- * ⚠️ age는 안 넘긴다 — 렌더된 겉보기 나이가 라벨과 ±3까지 어긋난다(roster.kids 주석). 밴드까지만 주장한다.
+ * 로스터 경로 → 대본 작성기가 알아야 할 모델 메타 + **외모 서술**.
+ * 왜 필요한가: 대본 작성기는 모델 사진을 안 본다(제품 사진만 비전 입력). 그래서 모델을 "정확히" 묘사하려면
+ *   우리가 그 모델을 **생성할 때 쓴 서술**(descent·gender·skin·hair·build)을 텍스트로 줘야 한다 —
+ *   이게 이미지의 원본 소스라 사진 분석보다 정확하고, 텍스트=레퍼런스가 되어 렌더에서 안 싸운다.
+ * ⚠️ age(숫자)는 안 넘긴다 — 렌더된 겉보기 나이가 라벨과 ±3까지 어긋난다(roster.kids 주석). 밴드까지만.
  */
 function modelMetaFor(imgPath) {
   if (!imgPath) return null;
@@ -46,7 +47,8 @@ function modelMetaFor(imgPath) {
   const id = imgPath.split('/').pop().replace(/\.(jpe?g|png|webp)$/i, '');
   const m = (isKid ? ROSTER_KIDS : ROSTER_ADULT).find((x) => x.id === id);
   if (!m) return null;
-  return { isMinor: !!m.isMinor, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null, gender: m.gender };
+  return { isMinor: !!m.isMinor, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null,
+    gender: m.gender, descent: m.descent || '', skin: m.skin || '', hair: m.hair || '', build: m.build || '' };
 }
 
 // 레퍼런스 파일명 → base64. 로컬(tmp/images) 우선, 없으면 R2에서 복원(cleanup cron이 오래된 tmp를 지워도

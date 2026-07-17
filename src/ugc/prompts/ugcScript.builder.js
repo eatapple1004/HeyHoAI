@@ -73,6 +73,18 @@ function buildUgcScriptPrompt(input) {
   const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
 
+  // 모델 외모 서술 — 로스터가 그 모델을 **생성할 때 쓴** descent·skin·hair·build로 짓는다(=이미지의 원본 소스).
+  //   대본이 사진을 안 보므로, 이 텍스트가 곧 대본이 아는 모델의 전부다. 텍스트=레퍼런스라 렌더에서 안 싸운다.
+  //   ⚠️ 나이 숫자는 안 쓴다 — 겉보기 나이가 라벨과 ±3 어긋난다(아동은 밴드까지만). 성인은 그냥 adult.
+  let modelDesc = '', modelPron = '';
+  if (model) {
+    const genderWord = model.isMinor ? (model.gender === 'male' ? 'boy' : 'girl') : (model.gender === 'male' ? 'man' : 'woman');
+    modelPron = model.gender === 'male' ? '"he"/"him"' : '"she"/"her"';
+    const look = [model.skin, model.hair, !model.isMinor && model.build].filter(Boolean).join(', '); // 아동은 build 생략(연출은 아래 카탈로그 규칙이 맡음)
+    const band = model.isMinor && model.ageBandLabel ? ` (${model.ageBandLabel})` : '';
+    modelDesc = `a ${model.descent ? model.descent + ' ' : ''}${genderWord}${band}${look ? `, ${look}` : ''}`;
+  }
+
   const system = [
     'You are a top-tier short-form creative director for TikTok / Instagram Reels / YouTube Shorts.',
     'You turn a product + a one-line concept into a scroll-stopping, native-feeling video script.',
@@ -91,20 +103,17 @@ function buildUgcScriptPrompt(input) {
       //    아동 모델을 고르면 즉시 드러난다 — 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성(실사고).
       //    프롬프트(성인)와 레퍼런스(아이)가 싸우면 Gemini가 프롬프트를 따른다.
       //    → 인물은 **레퍼런스 한 곳에서만** 온다(7e1f8dc의 마네킹 규칙과 같은 원리). 대본은 인물을 묘사하지 않는다.
-      // ⚠️ 전엔 "the model로만 쓰고 성별도 쓰지 마라"였는데, 성별을 안 알려주니 Claude가 기본값으로 여성을
-      //    가정해 her·hair swept back 같은 여성 함의를 흘렸다 → 남성 레퍼런스인데 여자가 나왔다(실사고).
-      //    근본은 "묘사 금지"가 아니라 **레퍼런스와 일치**다. 성별·대명사는 레퍼런스에 맞추게 알려주되,
-      //    나이·직업·외모 같은 **발명**만 막는다(그건 레퍼런스가 정하고, 브리프 타깃과 혼동되던 것).
-      `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose). The model's identity comes from a reference image we attach, so match it and do NOT invent looks: the model is ${model && model.gender === 'male' ? 'MALE — use "he"/"him" and male styling' : model && model.gender === 'female' ? 'FEMALE — use "she"/"her" and female styling' : 'of the gender shown in the reference — match it'}. Refer to them as "the model"; never invent age, life stage, profession or appearance ("a young woman", "a confident professional"). Write only what they DO with the product, what they wear, and how it is shot. The brief's target audience is who the ad is FOR, never who appears on camera. In "product" scenes brollPrompt is product-only.`,
-      // ⚠️ 빌더는 선택된 모델이 성인인지 아동인지 **몰랐다**. 그래서 아동복 브리프엔 태연히
-      //    "A child aged 5-7 wearing…"을 쓰고(레퍼런스는 성인), 아동 모델을 골라도 성인 화보처럼 썼다.
-      //    둘 다 프롬프트와 레퍼런스가 어긋난 것 — 이 레포에서 반복되는 그 버그다.
-      //    → 막는 게 아니라 **누가 나오는지 사실을 알려준다**. 나이는 밴드까지만(겉보기 나이가 ±3 흔들려
-      //      숫자를 주면 그게 또 거짓말이 된다 — roster.kids.v1 주석 참조).
-      // 위 규칙이 "인물을 묘사하지 마라"이므로 여기서는 **연출만** 말한다 — 누구인지는 레퍼런스가 정한다.
-      //   (전엔 "shows that child"라고 써서 위 규칙과 정면으로 부딪혔다.)
+      // 모델을 **정확히 묘사**한다(로스터 서술 = 이미지 원본 소스). 전엔 "the model로만, 묘사 금지"였는데,
+      //   성별을 안 알려주니 Claude가 기본 여성을 가정해 her를 흘려 남성 레퍼런스와 싸웠다(실사고).
+      //   근본은 묘사 금지가 아니라 **레퍼런스와 일치**다 — 텍스트가 레퍼런스와 같은 사람을 가리키면 안 싸운다.
+      //   ⚠️ "누가 나오는지"(모델 서술)와 "누구를 위한 광고인지"(브리프 타깃)는 다르다. 타깃을 화면 인물로 옮기지 말 것.
+      //   ⚠️ 모델 씬엔 **모델 한 사람만** — 파트너·행인 등 제2인물 금지(레퍼런스가 하나뿐이라 그들은 난데없는 사람이 된다).
+      model
+        ? `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). THE MODEL IS: ${modelDesc}. In every subject:"model" scene, describe the model consistently as this exact person, use ${modelPron}, and match the attached reference image. The ONLY person on camera is this model — never introduce a second person (partner, friend, bystander, hands of another person), and never swap in a different age, gender, or look. The brief's target audience is who the ad is FOR, not who appears on camera. In "product" scenes brollPrompt is product-only.`
+        : '- SUBJECT per scene: intercut — some scenes product-only (subject:"product"), others show the model with the product (subject:"model"). The model comes from a reference image; refer to them as "the model", match the reference, and keep the SAME single person across all model scenes (no second person). In "product" scenes brollPrompt is product-only.',
+      // 아동은 연출만 추가로 지시(정체성은 위 모델 서술이 맡는다). 성인 에디토리얼 포즈 금지.
       ...(model && model.isMinor ? [
-        `- The model reference is a CHILD (${model.ageBandLabel || 'child'}). Stage every subject:"model" scene the way a children's clothing catalogue would — natural age-appropriate posture, play and movement, fully clothed in the product; never adult-editorial posing, styling or framing.`,
+        '- The model is a child: stage every subject:"model" scene the way a children\'s clothing catalogue would — natural age-appropriate posture, play and movement, fully clothed in the product; never adult-editorial posing, styling or framing.',
       ] : []),
     ] : [
       '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
