@@ -5319,7 +5319,11 @@ async function ugcRestoreActiveJobs(){
   // aspect는 ugc_jobs에 컬럼이 없어 생략(제목·포맷만으로도 "뭘 만드는 중인지"는 전달됨).
   ugcCompact({name:j.title||j.product||'', concept:j.concept||'', fmt:j.output_type, ar:''});
   const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('rendering'); // 렌더 중 = Edit 숨김
-  const t0=Date.now();
+  // 경과초의 기준은 **잡이 시작된 시각**이지 내가 다시 붙은 시각이 아니다. Date.now()로 잡으면 새로고침할
+  //   때마다 0.0s부터 다시 세서, 3분 걸린 렌더가 "5초째"라고 거짓말한다(오래 걸리는 렌더일수록 자주 새로고침한다).
+  //   created_at은 listActiveJobs가 이미 주고 있었다. 시계 오차로 음수가 나오지 않게 바닥을 막는다.
+  const startedAt=Date.parse(j.created_at);
+  const t0=Number.isFinite(startedAt)?Math.min(startedAt,Date.now()):Date.now();
   const ruid=pending._uid; // B: 재연결 렌더도 자기 배치 것만(위 ugcRenderVideo와 같은 이유)
   const timer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+ruid+'"]').forEach(el=>{el.textContent=s;});},100);
   genActive++; // 렌더 중 대본 재작성 차단 가드가 재연결에서도 걸리게
