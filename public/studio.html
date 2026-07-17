@@ -763,10 +763,13 @@
   .ugc-edit:focus{border-bottom-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
   .ugc-edit:empty:before{content:attr(data-ph);color:var(--faint)}
   /* Ad Video 포맷 픽커 + 모델 그리드 */
-  .ugc-fmt{display:flex;gap:8px}
-  .ugc-fmt-btn{flex:1;display:flex;align-items:center;text-align:left;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
-  .ugc-fmt-btn b{font-size:13.5px;display:inline-flex;align-items:center;gap:6px}
-  .ugc-fmt-btn.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  /* Sound와 Video format은 **동급 분기**(둘 다 대본 구조를 바꾼다) → 같은 카드 컴포넌트를 쓴다.
+     ⚠️ 클래스는 분리한다(.ugc-mode-btn ≠ .ugc-fmt-btn) — ugcSetFormat이 '.ugc-fmt-btn' 전부를 훑어
+        active를 끄므로, 합치면 포맷을 바꿀 때마다 Sound 선택이 풀린다. 공유하는 건 시각뿐. */
+  .ugc-fmt,.ugc-mode{display:flex;gap:8px}
+  .ugc-fmt-btn,.ugc-mode-btn{flex:1;display:flex;align-items:center;text-align:left;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+  .ugc-fmt-btn b,.ugc-mode-btn b{font-size:13.5px;display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .ugc-fmt-btn.active,.ugc-mode-btn.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
   /* (2026-07-17) 옵션 밑 한 줄 설명("Just the product")을 걷고 ⓘ로 옮겼다 — 한 줄로는 "무엇인지"밖에 못 말해
      "언제 고르는지"(어떤 제품군에 맞는지)를 못 담았는데, 고를 때 필요한 건 후자다. 설명을 지운 자리에
      Video format(큰 카드)과 Sound(작은 칩)의 시각 무게도 같아진다 — 둘은 동급 분기다(대본 구조를 바꾼다).
@@ -775,11 +778,6 @@
   .ugc-help{margin-left:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;padding:0;line-height:1}
   .ugc-help:hover{color:var(--text);border-color:var(--dim)}
   .ugc-help.on{color:var(--accent2);border-color:var(--accent)}
-  /* Sound는 칩(.ugc-seg-b)이라 자리가 좁다 — auto 여백을 빼서 라벨에 붙이고 살짝 줄인다.
-     선택된 칩은 배경이 accent라 dim 테두리가 묻힌다 → 흰 계열로 대비를 살린다. */
-  .ugc-seg-b .ugc-help{margin-left:3px;width:15px;height:15px;font-size:10px}
-  .ugc-seg-b.active .ugc-help{color:#fff;border-color:rgba(255,255,255,.55)}
-  .ugc-seg-b.active .ugc-help.on{color:#fff;border-color:#fff;background:rgba(255,255,255,.18)}
   .ugc-tip{margin-top:7px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:11.5px;line-height:1.55;color:var(--dim)}
   .ugc-tip b{color:var(--text);font-weight:700}
   .ugc-tip .ugc-tip-fit{display:block;margin-top:4px;color:var(--faint)}
@@ -956,8 +954,26 @@
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
       </div>
       <!-- 카테고리 UI 제거(2026-07-09): builder가 사진 보고 카테고리 자동 판별·플레이북 적용 → 유저 선택 불필요 -->
-      <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
+      <!-- Sound: 요약줄에 넣었다가 뺌(2026-07-17). 요약줄은 "기본값이 보통 맞는" 것만 진술하는 자리인데
+           Voiceover/Music only는 보통 맞는 쪽이 없는 창작 분기고(나레이션 광고 vs BGM 무드 영상),
+           틀리면 대본을 다시 써야 함(VO 카피 유무 = 대본 구조가 바뀜). 그래서 Format과 같은 층에 노출.
+           라벨도 'Mode'(뜻 없음) → 'Sound', 'Voice' → 'Voiceover'(Voice 모드에도 음악이 깔리므로 대비를 살림).
+           (2026-07-17 2차) **Format보다 위로 + 같은 카드 컴포넌트로.** 작은 칩으로 밑에 두니 화면이
+           "포맷은 큰 결정, 소리는 곁다리"라고 말했는데 둘 다 대본 구조를 바꾸는 동급 분기다. 순서를 바꾼 건
+           Sound가 더 앞선 결정이라서다 — "말하는 광고냐 무드 영상이냐"(장르)를 정한 다음에 "누가 나오냐"(캐스팅)다.
+           ⚠️ .ugc-fmt-btn을 재사용하면 안 된다 — ugcSetFormat이 그 셀렉터로 전부 훑어 active를 끄므로,
+              포맷을 바꿀 때마다 Sound 선택이 풀린다. 그래서 시각(CSS)만 공유하고 클래스는 분리(.ugc-mode-btn). -->
       <div style="margin:8px 0 2px">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Sound</div>
+        <div class="ugc-mode" id="ugcModeSeg">
+          <button type="button" class="ugc-mode-btn active" data-voice="1" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voiceover</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Voiceover?" onclick="ugcHelp(event,'snd-voice')" onkeydown="ugcHelpKey(event,'snd-voice')">?</span></button>
+          <button type="button" class="ugc-mode-btn" data-voice="0" onclick="ugcSetMode(this)"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Music only?" onclick="ugcHelp(event,'snd-music')" onkeydown="ugcHelpKey(event,'snd-music')">?</span></button>
+        </div>
+        <div id="ugcTip-snd" class="ugc-tip" style="display:none"></div>
+        <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 카드가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
+      </div>
+      <!-- 포맷(비주얼 타입): 제품만 vs 모델 -->
+      <div style="margin:10px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Video format</div>
         <div class="ugc-fmt">
           <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Product only?" onclick="ugcHelp(event,'fmt-product')" onkeydown="ugcHelpKey(event,'fmt-product')">?</span></button>
@@ -976,19 +992,6 @@
           </div>
           <div id="ugcModelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,50px);gap:6px;max-height:176px;overflow-y:auto;padding:2px"></div>
         </div>
-      </div>
-      <!-- Sound: 요약줄에 넣었다가 뺌(2026-07-17). 요약줄은 "기본값이 보통 맞는" 것만 진술하는 자리인데
-           Voiceover/Music only는 보통 맞는 쪽이 없는 창작 분기고(나레이션 광고 vs BGM 무드 영상),
-           틀리면 대본을 다시 써야 함(VO 카피 유무 = 대본 구조가 바뀜). 그래서 Format과 같은 층에 노출.
-           라벨도 'Mode'(뜻 없음) → 'Sound', 'Voice' → 'Voiceover'(Voice 모드에도 음악이 깔리므로 대비를 살림). -->
-      <div style="margin:10px 0 2px">
-        <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Sound</div>
-        <div class="ugc-seg" id="ugcModeSeg">
-          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voiceover<span class="ugc-help" role="button" tabindex="0" aria-label="What is Voiceover?" onclick="ugcHelp(event,'snd-voice')" onkeydown="ugcHelpKey(event,'snd-voice')">?</span></button>
-          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only<span class="ugc-help" role="button" tabindex="0" aria-label="What is Music only?" onclick="ugcHelp(event,'snd-music')" onkeydown="ugcHelpKey(event,'snd-music')">?</span></button>
-        </div>
-        <div id="ugcTip-snd" class="ugc-tip" style="display:none"></div>
-        <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 세그먼트가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
       </div>
 
       <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐 -->
@@ -5074,7 +5077,9 @@ async function ugcApplyScenePre(i){
 // P3 2모드 선택기 — 세그먼트(🎙️Voice/🎵Music)가 숨은 #ugcVoice checkbox(모델)를 구동 → 기존 모든 참조(.checked) 호환.
 function ugcSetMode(btn){
   const voice=btn.dataset.voice==='1';
-  const seg=btn.closest('.ugc-seg'); if(seg)seg.querySelectorAll('.ugc-seg-b').forEach(b=>b.classList.toggle('active',b===btn));
+  // .ugc-mode = 카드(Format과 동급 표기). .ugc-seg는 옛 칩 구조 — 되돌릴 때를 위해 둘 다 받는다.
+  const grp=btn.closest('.ugc-mode,.ugc-seg');
+  if(grp)grp.querySelectorAll('.ugc-mode-btn,.ugc-seg-b').forEach(b=>b.classList.toggle('active',b===btn));
   const cb=document.getElementById('ugcVoice'); if(cb)cb.checked=voice;
   if(typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls();
 }
