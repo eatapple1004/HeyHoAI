@@ -5290,7 +5290,11 @@ async function ugcEditFromFeed(btn, idx){
  * 백엔드는 이미 요청과 무관하게 렌더를 끝까지 돌리고 있었다(render()가 runPipeline을 await 안 함).
  * 없던 건 돌아올 길 하나뿐: getJob은 id를 알아야 하는데 새로고침하면 날아가고,
  * generation_results엔 commit 전까지 행이 없어 크리에이션 피드로도 안 잡혔다.
- * 화면이 아직 1개만 그리므로(renderUgcInline이 .find()) 최신 1개만 복원한다 — N개는 피드 전환(2단계) 후.
+ *
+ * N개(2026-07-17): 백엔드는 처음부터 최대 20개를 줬는데(listActiveJobs LIMIT 20) 화면이 1개만 그려서
+ *   list[0]만 붙였다. H로 동시 생성이 열린 뒤엔 2개 돌리다 새로고침하면 나머지가 화면에서 증발한다
+ *   (서버에선 계속 돌고 끝나면 draft·레일 배지로 잡히니 유실은 아니지만, 재연결이 없애려던 바로 그 느낌이다).
+ *   → 전부 붙인다. **가장 최근 1개는 조리대, 나머지는 오븐**(설계의 배치 규칙 그대로).
  */
 async function ugcRestoreActiveJobs(){
   let list=[],drafts=[]; // ⚠️ 'pending'으로 쓰면 아래 const pending(배치)과 같은 스코프에서 재선언 → 블록 전체 파싱 실패
@@ -5303,42 +5307,57 @@ async function ugcRestoreActiveJobs(){
     //   아래 early return들보다 먼저 둔다 — 렌더 중인 잡이 없어도 편집은 가능해야 하므로.
     if(d&&Array.isArray(d.editable)){ UGC_EDITABLE=new Set(d.editable); renderStudioResults(); }
   }catch(e){ return; } // 조회 실패는 조용히 — 없던 기능이라 새 에러를 만들지 않는다
-  // 렌더 중인 게 없고 "완성됐지만 미저장"만 있으면 그걸 붙인다(폴링 없이 바로 결과).
-  // 레일 배지가 이걸 세므로, 배지를 눌러 왔는데 빈 화면이면 안 된다.
-  if(!list.length){ if(drafts.length)await ugcRestoreDraft(drafts[0]); return; }
-  const j=list[0];
-  const hint=document.getElementById('ugcHint');
-  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true; pending._bench=true;
-  pending.sceneCount=j.n_clips||5;
-  STUDIO_BATCHES.unshift(pending);
-  // 여정 예고·대본 패널을 치운다 — ugcRenderVideo가 하는 것과 같음. 안 하면 "How this works"가 결과와 겹쳐 뜬다
+  if(!list.length&&!drafts.length)return;
+  // 조리대 = 가장 최근 것 하나. 렌더 중인 게 있으면 그게, 없으면 완성·미저장 draft가 올라간다.
+  //   (레일 배지가 draft를 세므로, 배지를 눌러 왔는데 빈 화면이면 안 된다.)
+  const benchId=list.length?list[0].id:drafts[0].id;
+  // 조리대를 쓰는 게 생겼으니 여정 예고·대본 패널을 치운다 — 안 하면 "How this works"가 결과와 겹쳐 뜬다
   {const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
    const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';}
+  // 화면은 최신이 위. unshift라 역순으로 넣는다. 렌더 중인 것을 draft(이미 끝난 것)보다 위에 둔다.
+  //   draft는 fetch 후에 unshift하므로 순서를 지키려면 순차로 기다린다(보통 0~2개).
+  for(const dj of [...drafts].reverse()){ await ugcRestoreDraft(dj, dj.id===benchId); }
+  [...list].reverse().forEach(aj=>{ ugcReattachJob(aj, aj.id===benchId); }); // 배치 생성·unshift는 await 앞이라 순서 보장
+}
+
+/**
+ * 진행 중인 잡 하나를 화면에 다시 붙인다 — 로딩 카드 + 자기 경과초 + 폴링 + 완료 처리.
+ *   onBench=true면 조리대(가장 최근 1개), false면 오븐. 오븐에 있어도 E(모양)·B(data-batch 타이머) 덕에
+ *   조리대와 똑같이 보이고 자기 초를 센다.
+ */
+async function ugcReattachJob(j, onBench){
+  const b=makePendingBatch(null,j.concept||'',1,true); b.isUgc=true; b._bench=!!onBench;
+  b.sceneCount=j.n_clips||5;
+  STUDIO_BATCHES.unshift(b);
   renderStudioResults(); // 즉시 로딩 화면 = 떠날 때 그 화면
-  // 영수증은 잡 데이터로 채운다 — 새로고침 후엔 폼이 비어 있어 ugcCompact()가 폼을 읽으면 빈 카드가 된다.
-  // aspect는 ugc_jobs에 컬럼이 없어 생략(제목·포맷만으로도 "뭘 만드는 중인지"는 전달됨).
-  ugcCompact({name:j.title||j.product||'', concept:j.concept||'', fmt:j.output_type, ar:''});
-  const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('rendering'); // 렌더 중 = Edit 숨김
+  const hint=onBench?document.getElementById('ugcHint'):null; // C: 힌트는 조리대 것만 말한다(오븐 것이 쓰면 서로 덮어씀)
+  const box=document.getElementById('ugcInputBox');
+  if(onBench){
+    // 영수증은 잡 데이터로 채운다 — 새로고침 후엔 폼이 비어 있어 ugcCompact()가 폼을 읽으면 빈 카드가 된다.
+    // aspect는 ugc_jobs에 컬럼이 없어 생략(제목·포맷만으로도 "뭘 만드는 중인지"는 전달됨).
+    ugcCompact({name:j.title||j.product||'', concept:j.concept||'', fmt:j.output_type, ar:''});
+    if(box)box.classList.add('rendering');
+  }
   // 경과초의 기준은 **잡이 시작된 시각**이지 내가 다시 붙은 시각이 아니다. Date.now()로 잡으면 새로고침할
   //   때마다 0.0s부터 다시 세서, 3분 걸린 렌더가 "5초째"라고 거짓말한다(오래 걸리는 렌더일수록 자주 새로고침한다).
   //   created_at은 listActiveJobs가 이미 주고 있었다. 시계 오차로 음수가 나오지 않게 바닥을 막는다.
   const startedAt=Date.parse(j.created_at);
   const t0=Number.isFinite(startedAt)?Math.min(startedAt,Date.now()):Date.now();
-  const ruid=pending._uid; // B: 재연결 렌더도 자기 배치 것만(위 ugcRenderVideo와 같은 이유)
-  const timer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+ruid+'"]').forEach(el=>{el.textContent=s;});},100);
-  genActive++; // 렌더 중 대본 재작성 차단 가드가 재연결에서도 걸리게
+  const uid=b._uid; // B: 자기 배치 경과칸만
+  const timer=setInterval(()=>{const s=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+uid+'"]').forEach(el=>{el.textContent=s;});},100);
+  genActive++; // 동시 상한(runaway) 카운트 — 재연결된 것도 진행 중인 렌더다
   try{
     const job=await pollUgcJob(j.id);
-    ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad');
+    ugcFillPendingFromJob(b,j.id,job,j.output_type||'product-ad');
     renderStudioResults();
-    // C: 완성 알림은 영상·[Save & finish]가 스스로 한다(위 ugcRenderVideo와 같은 이유 — 거짓말 + N개 덮어쓰기)
+    // C: 완성 알림은 영상·[Save & finish]가 스스로 한다(ugcRenderVideo와 같은 이유 — 거짓말 + N개 덮어쓰기)
   }catch(e){
-    const i=STUDIO_BATCHES.indexOf(pending); if(i>=0)STUDIO_BATCHES.splice(i,1);
+    const i=STUDIO_BATCHES.indexOf(b); if(i>=0)STUDIO_BATCHES.splice(i,1);
     renderStudioResults();
     if(hint)hint.textContent=(e&&e.timeout)?'Still rendering — it’ll be waiting for you here when it’s done.':'';
   }finally{
     clearInterval(timer); genActive=Math.max(0,genActive-1);
-    if(box)box.classList.remove('rendering');
+    if(onBench&&box)box.classList.remove('rendering');
     loadCredits();
   }
 }
@@ -5349,8 +5368,10 @@ async function ugcRestoreActiveJobs(){
  * 자리를 뜬 사이 렌더가 끝나면 status='succeeded'가 되지만 commit 전이라 result_idx가 없고,
  * 자동 커밋 스위퍼도 없어서 라이브러리에도 안 보인다 → 돌아와도 영상이 어디에도 없는 상태였다.
  * 레일 배지가 이 draft를 세므로, 눌러서 왔을 때 반드시 여기 떠 있어야 한다(Save & finish 가능).
+ *
+ * onBench: 가장 최근 것 1개만 조리대. 나머지 draft는 오븐에 카드로 붙는다(거기서도 [Save & finish] 가능).
  */
-async function ugcRestoreDraft(j){
+async function ugcRestoreDraft(j, onBench){
   let job=null;
   try{
     const r=await fetch('/api/generate/ugc/jobs/'+encodeURIComponent(j.id));
@@ -5358,16 +5379,16 @@ async function ugcRestoreDraft(j){
     job=(d&&d.success&&d.data)?d.data:null;
   }catch(e){ return; }
   if(!job||!job.resultUrl)return; // 결과 URL이 없으면 붙일 게 없다
-  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true; pending._bench=true;
+  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true; pending._bench=!!onBench;
   pending.sceneCount=j.n_clips||5;
   STUDIO_BATCHES.unshift(pending);
-  {const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
-   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';}
   ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad'); // 새 렌더 완성 때와 같은 매핑
   renderStudioResults();
-  ugcCompact({name:j.title||j.product||'',concept:j.concept||'',fmt:j.output_type,ar:''});
-  const hint=document.getElementById('ugcHint');
-  if(hint)hint.textContent='Your video finished while you were away — save it to your gallery.';
+  if(onBench){
+    ugcCompact({name:j.title||j.product||'',concept:j.concept||'',fmt:j.output_type,ar:''});
+    const hint=document.getElementById('ugcHint');
+    if(hint)hint.textContent='Your video finished while you were away — save it to your gallery.';
+  }
 }
 
 async function pollUgcJob(jobId){
