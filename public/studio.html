@@ -764,10 +764,25 @@
   .ugc-edit:empty:before{content:attr(data-ph);color:var(--faint)}
   /* Ad Video 포맷 픽커 + 모델 그리드 */
   .ugc-fmt{display:flex;gap:8px}
-  .ugc-fmt-btn{flex:1;display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+  .ugc-fmt-btn{flex:1;display:flex;align-items:center;text-align:left;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:rgba(255,255,255,.02);color:var(--text);cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
   .ugc-fmt-btn b{font-size:13.5px;display:inline-flex;align-items:center;gap:6px}
-  .ugc-fmt-btn span{font-size:11px;color:var(--dim)}
   .ugc-fmt-btn.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  /* (2026-07-17) 옵션 밑 한 줄 설명("Just the product")을 걷고 ⓘ로 옮겼다 — 한 줄로는 "무엇인지"밖에 못 말해
+     "언제 고르는지"(어떤 제품군에 맞는지)를 못 담았는데, 고를 때 필요한 건 후자다. 설명을 지운 자리에
+     Video format(큰 카드)과 Sound(작은 칩)의 시각 무게도 같아진다 — 둘은 동급 분기다(대본 구조를 바꾼다).
+     ⚠️ hover가 아니라 **탭**으로 연다: 모바일엔 hover가 없고, 이 제품엔 이미 "hover it for what it means"로
+        실패한 전례가 있다(설계문서 §7 "아이콘이 실패했다는 자백"). */
+  .ugc-help{margin-left:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;padding:0;line-height:1}
+  .ugc-help:hover{color:var(--text);border-color:var(--dim)}
+  .ugc-help.on{color:var(--accent2);border-color:var(--accent)}
+  /* Sound는 칩(.ugc-seg-b)이라 자리가 좁다 — auto 여백을 빼서 라벨에 붙이고 살짝 줄인다.
+     선택된 칩은 배경이 accent라 dim 테두리가 묻힌다 → 흰 계열로 대비를 살린다. */
+  .ugc-seg-b .ugc-help{margin-left:3px;width:15px;height:15px;font-size:10px}
+  .ugc-seg-b.active .ugc-help{color:#fff;border-color:rgba(255,255,255,.55)}
+  .ugc-seg-b.active .ugc-help.on{color:#fff;border-color:#fff;background:rgba(255,255,255,.18)}
+  .ugc-tip{margin-top:7px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:11.5px;line-height:1.55;color:var(--dim)}
+  .ugc-tip b{color:var(--text);font-weight:700}
+  .ugc-tip .ugc-tip-fit{display:block;margin-top:4px;color:var(--faint)}
   .ugc-mf{font-size:11.5px;padding:3px 9px;border:1px solid var(--border2);border-radius:999px;background:none;color:var(--dim);cursor:pointer;font-family:inherit}
   .ugc-mf.active{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 10%,transparent)}
   #ugcModelGrid img{width:50px;height:50px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block}
@@ -945,9 +960,10 @@
       <div style="margin:8px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Video format</div>
         <div class="ugc-fmt">
-          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b><span>Just the product</span></button>
-          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>With a model</b><span>Product + a model using it</span></button>
+          <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is Product only?" onclick="ugcHelp(event,'fmt-product')" onkeydown="ugcHelpKey(event,'fmt-product')">?</span></button>
+          <button type="button" class="ugc-fmt-btn" data-fmt="model-editorial" onclick="ugcSetFormat('model-editorial')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>With a model</b><span class="ugc-help" role="button" tabindex="0" aria-label="What is With a model?" onclick="ugcHelp(event,'fmt-model')" onkeydown="ugcHelpKey(event,'fmt-model')">?</span></button>
         </div>
+        <div id="ugcTip-fmt" class="ugc-tip" style="display:none"></div>
         <input type="hidden" id="ugcFormat" value="product-ad">
         <div id="ugcModelPicker" style="display:none;margin-top:8px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -968,9 +984,10 @@
       <div style="margin:10px 0 2px">
         <div style="font-size:12px;color:var(--dim);margin-bottom:5px">Sound</div>
         <div class="ugc-seg" id="ugcModeSeg">
-          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voiceover</button>
-          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only</button>
+          <button type="button" class="ugc-seg-b active" data-voice="1" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voiceover<span class="ugc-help" role="button" tabindex="0" aria-label="What is Voiceover?" onclick="ugcHelp(event,'snd-voice')" onkeydown="ugcHelpKey(event,'snd-voice')">?</span></button>
+          <button type="button" class="ugc-seg-b" data-voice="0" onclick="ugcSetMode(this)"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Music only<span class="ugc-help" role="button" tabindex="0" aria-label="What is Music only?" onclick="ugcHelp(event,'snd-music')" onkeydown="ugcHelpKey(event,'snd-music')">?</span></button>
         </div>
+        <div id="ugcTip-snd" class="ugc-tip" style="display:none"></div>
         <input type="checkbox" id="ugcVoice" checked style="display:none"><!-- 모드 모델(하위호환): 세그먼트가 checked를 구동. voice=음성모드/unchecked=음악모드 -->
       </div>
 
@@ -5087,6 +5104,45 @@ function ugcBindScriptEdits(){
 // 2단계 — 검토한 대본으로 렌더(여기서 과금). 기존 결과 피드에 채움.
 // 포맷 픽커(제품/모델) + 모델 로스터 선택
 let ugcSelectedModelImg=null, ugcModelGender='female';
+/**
+ * Video format·Sound 옵션의 ⓘ.
+ *   옵션 밑 한 줄 설명("Just the product")을 대체한다 — 한 줄로는 "무엇인지"밖에 못 말하는데,
+ *   고를 때 실제로 필요한 건 **"언제 고르는지"**(어떤 제품군에 맞는지)라서 자리가 모자랐다.
+ *   Voiceover 설명이 "씬 길이를 음성이 정한다"까지 말한다 — Length 컨트롤이 사라지는 이유가
+ *   화면 어디에도 없어 "초 설정 어디갔어"가 나왔던 것(설계문서 §7)을 여기서 답한다.
+ */
+const UGC_HELP={
+  'fmt-product':{g:'fmt',
+    t:'<b>Product only</b> — no people in the video. Your photo stays locked into every scene.',
+    fit:'Best for things sold on detail, texture and finish — jewellery, watches, model kits, gadgets, food, homeware.'},
+  'fmt-model':{g:'fmt',
+    t:'<b>With a model</b> — a model wears or uses your product. You pick the model below.',
+    fit:'Best for things that only make sense on a person — clothing, make-up, bags, shoes.'},
+  'snd-voice':{g:'snd',
+    t:'<b>Voiceover</b> — AI narration over the video. The script gets spoken lines, and you pick the voice and speed. Scene length follows the voice, so the length control is hidden.',
+    fit:'Best for products that need explaining — skincare, gadgets, anything with a benefit to spell out.'},
+  'snd-music':{g:'snd',
+    t:'<b>Music only</b> — background music, no narration. The script speaks through on-screen text instead, and you set scene length yourself.',
+    fit:'Best for products that sell by being seen — jewellery, fashion, interiors, collectibles.'},
+};
+const UGC_HELP_OPEN={}; // 그룹별로 열린 key 하나(그룹끼리는 서로 안 건드린다)
+/**
+ * ⚠️ stopPropagation 필수 — ⓘ가 옵션 버튼 **안에** 있어서, 안 막으면 설명을 보려다 포맷이 바뀐다.
+ *    hover가 아니라 탭으로 연다(모바일엔 hover가 없고, 이 제품엔 hover 툴팁 실패 전례가 있다).
+ */
+function ugcHelp(e,key){
+  e.stopPropagation(); e.preventDefault();
+  const it=UGC_HELP[key]; if(!it)return;
+  const box=document.getElementById('ugcTip-'+it.g); if(!box)return;
+  const btn=e.currentTarget;
+  const wasOpen=UGC_HELP_OPEN[it.g]===key;
+  const grp=btn.closest('.ugc-fmt,.ugc-seg'); // 이 그룹의 하이라이트만 끈다
+  if(grp)grp.querySelectorAll('.ugc-help.on').forEach(x=>x.classList.remove('on'));
+  if(wasOpen){ box.style.display='none'; UGC_HELP_OPEN[it.g]=null; return; } // 같은 걸 또 누르면 닫힌다
+  box.innerHTML=it.t+'<span class="ugc-tip-fit">'+it.fit+'</span>';
+  box.style.display=''; UGC_HELP_OPEN[it.g]=key; btn.classList.add('on');
+}
+function ugcHelpKey(e,key){ if(e.key==='Enter'||e.key===' ')ugcHelp(e,key); } // 키보드 도달(span이라 기본 동작 없음)
 function ugcSetFormat(fmt){
   const el=document.getElementById('ugcFormat'); if(el)el.value=fmt;
   document.querySelectorAll('.ugc-fmt-btn').forEach(b=>b.classList.toggle('active',b.dataset.fmt===fmt));
