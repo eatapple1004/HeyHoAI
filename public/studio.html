@@ -631,6 +631,9 @@
   /* Ad Video 좌우 2단: 왼쪽=입력(이미지·이름·컨셉), 오른쪽=대본 */
   .ugc-cols{display:flex;gap:16px;align-items:flex-start}
   .ugc-cols > #ugcInputBox{flex:1 1 0;min-width:0;max-width:540px}
+  /* 빈/입력 상태에선 왼쪽 폼도 늘려 오른쪽 히어로 패널과 세로 길이를 맞춘다(둘 중 긴 쪽에 정렬).
+     대본 상태(.compact=짧은 recap)는 제외 — 그땐 recap이 자기 높이로 위에 붙어야 한다. */
+  .ugc-cols > #ugcInputBox:not(.compact){align-self:stretch}
   .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{flex:1 1 0;min-width:0;align-self:stretch}
   @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{width:100%;max-width:none}}
 
@@ -687,7 +690,20 @@
   @media(max-width:860px){.ugc-cols > #ugcInputBox.compact{flex:1 1 auto}}
 
   /* 빈 상태 = 여정 예고. 대본만 약속하던 자리에서 "영상이 여기 나온다"까지 말해준다 */
-  .ugc-jrn{border:1px dashed var(--border2);border-radius:14px;padding:20px;background:rgba(255,255,255,.015)}
+  .ugc-jrn{border:1px solid var(--border2);border-radius:16px;padding:22px;background:radial-gradient(130% 90% at 100% 0%,rgba(106,64,224,.12),transparent 55%),rgba(255,255,255,.015)}
+  /* Ad Video 오리엔테이션 히어로 — 딱 봤을 때 "여기가 뭐하는 곳"을 시각으로 (2026-07-18) */
+  .ugc-hero-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent2);margin-bottom:11px}
+  .ugc-hero-eyebrow::before{content:'';width:15px;height:15px;border-radius:5px;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 4px 12px -3px var(--accent)}
+  .ugc-hero-title{font-family:'Sora';font-size:22px;line-height:1.22;font-weight:800;letter-spacing:-.4px;color:var(--text);margin-bottom:16px}
+  .ugc-hero-flow{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;margin-bottom:16px;border-radius:14px;border:1px solid var(--border2);background:linear-gradient(180deg,rgba(255,255,255,.025),transparent)}
+  .ugc-hero-step{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .ugc-hero-step > span{font-size:11px;color:var(--dim);font-weight:600;white-space:nowrap}
+  .ugc-hero-box{width:80px;height:96px;border-radius:13px;border:1px solid var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--faint)}
+  .ugc-hero-box svg{width:28px;height:28px}
+  .ugc-hero-box.reel{width:56px;border:1.5px solid transparent;background:linear-gradient(var(--surface2),var(--surface2)) padding-box,linear-gradient(150deg,var(--accent),var(--pink)) border-box;box-shadow:0 16px 38px -14px var(--accent)}
+  .ugc-hero-box.reel .play{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;padding-left:2px;box-shadow:0 6px 18px -4px var(--accent)}
+  .ugc-hero-arrow{flex:none;color:var(--accent2);font-size:20px;font-weight:800;margin-bottom:23px}
+  .ugc-hero-sub{font-size:12.5px;color:var(--dim);line-height:1.6;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid var(--border2)}
   .ugc-jrn-h{font-size:12px;color:var(--faint);margin-bottom:14px}
   .ugc-jrn-s{display:flex;gap:12px;padding:11px 0;align-items:flex-start}
   .ugc-jrn-s + .ugc-jrn-s{border-top:1px solid var(--border2)}
@@ -1098,6 +1114,20 @@
     <!-- 오른쪽 빈 상태 = 여정 예고. 이 슬롯엔 대본 → 씬 → 완성 영상이 차례로 들어오므로
          "대본이 나온다"만 말하던 옛 문구 대신 영상까지 약속해준다(광고 만들러 온 사람에게 영상 얘기를 해야 함) -->
     <div id="ugcScriptEmpty" class="ugc-jrn">
+      <div class="ugc-hero-eyebrow">Ad video</div>
+      <div class="ugc-hero-title">Turn a product photo into a finished ad video</div>
+      <div class="ugc-hero-flow">
+        <div class="ugc-hero-step">
+          <div class="ugc-hero-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg></div>
+          <span>Your photo</span>
+        </div>
+        <div class="ugc-hero-arrow" aria-hidden="true">→</div>
+        <div class="ugc-hero-step">
+          <div class="ugc-hero-box reel"><span class="play" aria-hidden="true">▶</span></div>
+          <span>Ad video</span>
+        </div>
+      </div>
+      <div class="ugc-hero-sub">A product photo and a one-line concept is all it takes. AI drafts the script, scenes and video — you edit any step, and only spend credits when you build.</div>
       <div class="ugc-jrn-h">How this works</div>
       <div class="ugc-jrn-s">
         <div class="ugc-jrn-n">1</div>

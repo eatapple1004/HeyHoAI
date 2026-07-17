@@ -212,6 +212,10 @@
     'Free — AI writes a script you review & edit first. You pick Generate next to build the video (that\'s when credits are used).':
       '무료 — AI가 먼저 대본을 씁니다. 검토·수정 후 다음 단계 Generate를 눌러 영상을 만듭니다(이때 크레딧이 사용됩니다).',
     // How this works 패널
+    'Ad video': '광고 영상', 'Your photo': '제품 사진',
+    'Turn a product photo into a finished ad video': '제품 사진을 완성된 광고 영상으로',
+    'A product photo and a one-line concept is all it takes. AI drafts the script, scenes and video — you edit any step, and only spend credits when you build.':
+      '제품 사진 한 장과 한 줄 컨셉이면 충분합니다. AI가 대본·씬·영상을 만들고 — 어느 단계든 직접 고치고, 크레딧은 만들 때만 듭니다.',
     'How this works': '이렇게 만듭니다',
     'Script': '대본', 'AI writes it. You can edit every line.': 'AI가 씁니다. 모든 줄을 고칠 수 있습니다.',
     'Scenes': '씬',
