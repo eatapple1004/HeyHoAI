@@ -52,6 +52,14 @@ const SCRIPT_SCHEMA = {
 //     ③ 워드리스트는 우회가 자명해서(막힌 'child' 옆에 'kid'는 통과) 실제 방어력이 아니라 연출에 가까웠다.
 //   ⚠️ 되살릴 거면 부분문자열 목록이 아니라 **구조화된 판정**으로 할 것(같은 오탐이 그대로 재발한다).
 
+// summary가 "placeholder"·빈값 등 쓸모없는 값일 때 걸러낸다.
+//   summary는 화면 표시용(사람이 씬을 알아보는 한 줄)이라 렌더엔 안 쓰인다. Claude가 스키마 required를
+//   채우느라 가끔(관측 ~4회 중 1회) 실제 설명 대신 literal "placeholder"를 뱉는다 — 프롬프트 지시는
+//   명확한데도 나는 모델의 간헐적 실수라 프롬프트로는 0%가 안 된다. 그래서 코드에서 direction으로 폴백한다
+//   (UI도 sc.summary||sc.direction로 폴백하지만, 여기서 잡아야 저장·이탈복원·재조회에도 안 샌다).
+const JUNK_SUMMARY = /^(placeholder|n\/a|none|tbd|\.*|-*)$/i;
+const cleanSummary = (s) => { const v = (s.summary || '').trim(); return (!v || JUNK_SUMMARY.test(v)) ? (s.direction || '') : v; };
+
 /** 씬 배열 정규화(번호·타입·broll 프롬프트 보장). */
 function normalizeScenes(scenes) {
   return (Array.isArray(scenes) ? scenes : []).map((s, i) => ({
@@ -62,7 +70,7 @@ function normalizeScenes(scenes) {
     spoken: s.spoken || '',
     onScreenText: s.onScreenText || '',
     direction: s.direction || '',
-    summary: s.summary || '',
+    summary: cleanSummary(s),
     ...(s.type === 'broll' ? {
       brollPrompt: s.brollPrompt || s.direction || '',
       subject: s.subject === 'model' ? 'model' : 'product', // 렌더 레퍼런스 라우팅용(기본=제품)
