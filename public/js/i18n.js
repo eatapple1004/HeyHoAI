@@ -170,7 +170,7 @@
     'Required — at least one. Every photo must show the same product.':
       '필수 — 최소 한 장. 모든 사진이 같은 제품이어야 합니다.',
     'Which photos should I add?': '어떤 사진을 넣어야 하나요?',
-    'Product name — e.g. Rouge Velvet Matte  (optional)': '제품명 — 예) Rouge Velvet Matte  (선택)',
+    'Type a product name… (optional)': '제품명을 입력하세요… (선택)',
     // 컨셉
     'Concept': '컨셉', '— a sentence or a few keywords is enough': '— 한 문장이나 키워드 몇 개면 충분합니다',
     'Write it for me': '대신 써주세요',
@@ -183,6 +183,7 @@
       'AI가 쓸 수 있는 사실 — 예) 브랜드: Rouge Paris · 24시간 지속 · 비건 · 보습.  비워두면 카피가 일반적으로 나옵니다(없는 효능을 지어내지 않습니다).',
     // 영상 형식
     'Video format': '영상 형식',
+    '— just the product, or a model wearing/using it (then pick who below)': '— 제품만, 또는 모델이 착용·사용 (그러면 아래에서 모델 선택)',
     'Product only': '제품만', 'Just the product': '모델 없이 제품만',
     'With a model': '모델과 함께', 'Product + a model using it': '제품 + 사용하는 모델',
     'What is Product only?': '‘제품만’이 뭔가요?', 'What is With a model?': '‘모델과 함께’가 뭔가요?',
@@ -193,6 +194,7 @@
     //   진짜 차이 = ① 목소리 유무 ② 씬 길이를 누가 정하느냐(음성모드=음성이 정함 / Visual=내가 고름).
     //   '목소리 없이' 같은 부정형은 없는 걸로 이름 짓는 셈이라 기각 → 둘 다 '있는 것'의 이름으로.
     'Sound': '소리', 'Narrated': '내레이션', 'Visual': '비주얼',
+    '— music-only (Visual) is most common; pick Narrated only if you want a spoken voiceover': '— 대부분 음악만(비주얼)입니다. 목소리 내레이션이 필요할 때만 내레이션을 고르세요',
     'What is Narrated?': '내레이션이 뭔가요?', 'What is Visual?': '비주얼이 뭔가요?',
     // 결과 카드의 음성 트랙 토글 — 모드가 아니라 트랙 켜기/끄기라 명사형
     'Narration': '내레이션',
@@ -207,8 +209,13 @@
     '🎙️ Narrated — length is set by the voice.': '🎙️ 내레이션 — 길이는 음성이 정합니다.',
     // 언어
     'Ad language': '광고 언어', '— script, voice & captions': '— 대본 · 음성 · 자막',
+    // 컨셉 placeholder(TEXTAREA는 텍스트치환 SKIP이나 placeholder는 ATTRS로 처리됨)
+    'Describe your product and the mood or moment you want to evoke.':
+      '제품과 담고 싶은 무드나 순간을 설명하세요.',
     // CTA
     'Write script': '대본 쓰기',
+    'Free — AI writes a script you review & edit first. You pick Generate next to build the video (that\'s when credits are used).':
+      '무료 — AI가 먼저 대본을 씁니다. 검토·수정 후 다음 단계 Generate를 눌러 영상을 만듭니다(이때 크레딧이 사용됩니다).',
     // How this works 패널
     'How this works': '이렇게 만듭니다',
     'Script': '대본', 'AI writes it. You can edit every line.': 'AI가 씁니다. 모든 줄을 고칠 수 있습니다.',
