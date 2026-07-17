@@ -17,8 +17,7 @@ const SAFETY_MOTION_NEGATIVE = [
   'undressing', 'removing clothes', 'nudity', 'naked', 'sexual movement',
   'suggestive pose', 'seductive', 'twerking', 'provocative', 'fetish',
   'bondage', 'lingerie reveal', 'erotic', 'intimate touching',
-  // 미성년 암시
-  'childlike movement', 'school', 'teen', 'minor',
+  // ⚠️ 미성년 암시 항목 제거(2026-07-17) — 아동 로스터와 싸운다(imagePrompt.builder의 같은 주석 참조).
   // 폭력 / 유해
   'violence', 'fighting', 'weapon', 'blood', 'smoking', 'drinking alcohol',
   // 품질 방어

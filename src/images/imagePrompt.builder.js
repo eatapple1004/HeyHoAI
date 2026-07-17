@@ -14,9 +14,9 @@
 // ─── 안전 가드 (모든 prompt에 자동 주입) ───
 
 const SAFETY_NEGATIVE_PROMPT = [
-  // 미성년 관련
-  'child', 'minor', 'underage', 'teen', 'teenager', 'loli', 'young girl', 'young boy',
-  'school uniform', 'childlike', 'baby face',
+  // ⚠️ 미성년 항목 제거(2026-07-17) — 아동 로스터(roster.kids.v1)와 정면으로 싸운다.
+  //    아이 레퍼런스를 붙여놓고 "child·childlike·baby face를 그리지 마라"고 하는 자기모순이 된다.
+  //    아동복 on-model이 제품이므로 다시 넣지 말 것. 성인 전용으로 되돌리려면 로스터부터 논의.
   // 성적/노출 관련
   'nude', 'naked', 'nsfw', 'explicit', 'sexual', 'erotic', 'fetish',
   'lingerie', 'underwear', 'see-through', 'cleavage', 'bikini top only',
