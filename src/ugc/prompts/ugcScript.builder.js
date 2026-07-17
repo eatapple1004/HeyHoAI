@@ -87,7 +87,13 @@ function buildUgcScriptPrompt(input) {
       ...playbookMenu(),
     ]),
     `- Write all spoken, cta, caption in ${langName}. brollPrompt stays in English.`,
-    `- For EACH scene also write "summary": a SPECIFIC 1-2 sentence description in ${langName} of what the viewer sees AND how it moves — concrete enough to picture the shot (subject, setting, key detail, the motion), but plain human language FOR THE USER, NOT a prompt (no camera/lens/render jargon list). e.g. "골드 케이스 립스틱이 어두운 배경에서 천천히 회전하며 골드 디테일에 빛이 스칩니다. 매트한 레드 심지가 드러나요." Keep it to 1-2 sentences — vivid but not overloaded. The actual prompts stay hidden.`,
+    // ⚠️ 예시는 반드시 그 언어로 쓴 것이어야 한다. 전엔 "in ${langName}"이라 해놓고 한국어 예시를 박아둬서
+    //    영어 모드인데 씬 설명만 한국어로 나왔다 — spoken·cta·caption(89행)은 언어를 타서 영어였으니
+    //    **한 화면에서 두 언어가 어긋났다**. 지시는 맞았는데 **예시가 지시를 이겼다**.
+    //    같은 것을 suggestConcept에서 이미 한 번 고쳤다(18b216f) — 지시에 ${langName}을 쓰면 예시도 같이 갈라야 한다.
+    `- For EACH scene also write "summary": a SPECIFIC 1-2 sentence description in ${langName} of what the viewer sees AND how it moves — concrete enough to picture the shot (subject, setting, key detail, the motion), but plain human language FOR THE USER, NOT a prompt (no camera/lens/render jargon list). e.g. ${language === 'en'
+      ? '"A gold-cased lipstick turns slowly against a dark background as light grazes the gold detail. The matte red bullet comes into view."'
+      : '"골드 케이스 립스틱이 어두운 배경에서 천천히 회전하며 골드 디테일에 빛이 스칩니다. 매트한 레드 심지가 드러나요."'} Keep it to 1-2 sentences — vivid but not overloaded. The actual prompts stay hidden.`,
     ...(language === 'ko' ? [
       '- KOREAN VOICE (critical — copy must NOT sound AI-generated or translated):',
       '  · Write like a real Korean creator/copywriter speaking to a friend — natural 구어체 rhythm, not a brochure or a machine.',
