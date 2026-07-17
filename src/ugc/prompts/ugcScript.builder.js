@@ -91,7 +91,11 @@ function buildUgcScriptPrompt(input) {
       //    아동 모델을 고르면 즉시 드러난다 — 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성(실사고).
       //    프롬프트(성인)와 레퍼런스(아이)가 싸우면 Gemini가 프롬프트를 따른다.
       //    → 인물은 **레퍼런스 한 곳에서만** 온다(7e1f8dc의 마네킹 규칙과 같은 원리). 대본은 인물을 묘사하지 않는다.
-      '- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose); the model identity comes from a reference image, so do NOT describe WHO they are — no age, life stage, gender, profession or looks ("a young woman", "a confident professional", "a child"). Say just "the model". Write only what they DO with the product, what they wear, and how it is shot. The brief\'s target audience is who the ad is FOR, never who appears on camera. In "product" scenes brollPrompt is product-only.',
+      // ⚠️ 전엔 "the model로만 쓰고 성별도 쓰지 마라"였는데, 성별을 안 알려주니 Claude가 기본값으로 여성을
+      //    가정해 her·hair swept back 같은 여성 함의를 흘렸다 → 남성 레퍼런스인데 여자가 나왔다(실사고).
+      //    근본은 "묘사 금지"가 아니라 **레퍼런스와 일치**다. 성별·대명사는 레퍼런스에 맞추게 알려주되,
+      //    나이·직업·외모 같은 **발명**만 막는다(그건 레퍼런스가 정하고, 브리프 타깃과 혼동되던 것).
+      `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). In "model" scenes brollPrompt describes the model + product together (styling, pose). The model's identity comes from a reference image we attach, so match it and do NOT invent looks: the model is ${model && model.gender === 'male' ? 'MALE — use "he"/"him" and male styling' : model && model.gender === 'female' ? 'FEMALE — use "she"/"her" and female styling' : 'of the gender shown in the reference — match it'}. Refer to them as "the model"; never invent age, life stage, profession or appearance ("a young woman", "a confident professional"). Write only what they DO with the product, what they wear, and how it is shot. The brief's target audience is who the ad is FOR, never who appears on camera. In "product" scenes brollPrompt is product-only.`,
       // ⚠️ 빌더는 선택된 모델이 성인인지 아동인지 **몰랐다**. 그래서 아동복 브리프엔 태연히
       //    "A child aged 5-7 wearing…"을 쓰고(레퍼런스는 성인), 아동 모델을 골라도 성인 화보처럼 썼다.
       //    둘 다 프롬프트와 레퍼런스가 어긋난 것 — 이 레포에서 반복되는 그 버그다.
