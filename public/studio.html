@@ -5177,9 +5177,9 @@ async function ugcRenderVideo(){
   //   ② "렌더 중엔 바꿀 수 있는 게 없다" → 이제 있다. 렌더가 도는 동안 다음 영상의 입력을 쓰는 게 N개의 흐름이다.
   ugcCompactIfNarrow();
   hint.textContent=''; // 진행 상황은 오른쪽 씬 스트립이 말한다(왼쪽에서 같은 얘기 반복 안 함)
-  // 우측(대본 자리)로 전환: 대본·플레이스홀더 숨기고 인라인에 로딩→결과
-  const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';
-  const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
+  // 우측(조리대)를 렌더가 가져간다 — 대본·여정 패널을 내린다(flex 형제라 안 내리면 나란히 선다)
+  const sp=document.getElementById('ugcScriptPreview'); // 실패 시 대본을 되돌리려고 잡아둔다(아래 catch)
+  ugcHideBenchPanels();
   const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true; pending._bench=true;
   pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 로딩 씬 카드 수
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
@@ -5264,12 +5264,22 @@ function ugcAutoSaveOffBench(b){
   try{ ugcSaveFinish(b.ugc.jobId); }catch(e){}
 }
 /**
+ * 조리대 자리를 비운다 — 대본·여정·작성중 패널을 내린다.
+ *   이 넷(#ugcScriptEmpty·Preview·Loading·Inline)은 .ugc-cols의 flex 형제라, 안 내리면 나란히 서서
+ *   입력칸까지 4칸으로 쭈그러든다. 조리대는 한 자리다.
+ */
+function ugcHideBenchPanels(){
+  ['ugcScriptEmpty','ugcScriptPreview','ugcScriptLoading'].forEach(id=>{const el=document.getElementById(id); if(el)el.style.display='none';});
+}
+/**
  * 조리대에 올린다 — 항상 1개("오븐엔 여러 개. 조리대엔 하나.").
  *   이전에 올라와 있던 배치는 **자동 저장 후** 오븐(피드)으로 내린다(G).
+ *   대본이 검토 중이었다면 그 패널도 내린다 — 조리대를 영상이 가져가므로(안 그러면 둘이 나란히 선다).
  */
 function ugcPutOnBench(b){
   STUDIO_BATCHES.forEach(x=>{ if(x!==b&&x._bench){ ugcAutoSaveOffBench(x); x._bench=false; } });
   b._bench=true;
+  ugcHideBenchPanels();
   renderStudioResults();
   const el=document.getElementById('ugcInline'); if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'start'}); // "어디 갔지" 방지
 }
@@ -5333,9 +5343,7 @@ async function ugcRestoreActiveJobs(){
   // 조리대 = 가장 최근 것 하나. 렌더 중인 게 있으면 그게, 없으면 완성·미저장 draft가 올라간다.
   //   (레일 배지가 draft를 세므로, 배지를 눌러 왔는데 빈 화면이면 안 된다.)
   const benchId=list.length?list[0].id:drafts[0].id;
-  // 조리대를 쓰는 게 생겼으니 여정 예고·대본 패널을 치운다 — 안 하면 "How this works"가 결과와 겹쳐 뜬다
-  {const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none';
-   const sp=document.getElementById('ugcScriptPreview'); if(sp)sp.style.display='none';}
+  ugcHideBenchPanels(); // 조리대를 쓰는 게 생겼다 — 안 치우면 "How this works"가 결과와 나란히 뜬다
   // 화면은 최신이 위. unshift라 역순으로 넣는다. 렌더 중인 것을 draft(이미 끝난 것)보다 위에 둔다.
   //   draft는 fetch 후에 unshift하므로 순서를 지키려면 순차로 기다린다(보통 0~2개).
   for(const dj of [...drafts].reverse()){ await ugcRestoreDraft(dj, dj.id===benchId); }
