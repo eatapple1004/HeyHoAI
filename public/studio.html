@@ -4928,6 +4928,13 @@ async function ugcWriteScript(){
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
   const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('busy'); // 대본 쓰는 몇 초간 입력 잠금(헛수고 방지)
   hint.textContent='Writing your script…';
+  // 새 대본을 쓰기 시작 = 조리대를 내준다. **스켈레톤을 띄우기 전에** 내려야 한다 —
+  //   ugcShowScriptLoading이 #ugcInline(조리대)을 숨기는데, 아직 _bench=true면 피드에서도 빠져 있어
+  //   렌더 중인 영상이 대본 쓰는 몇 초 동안 어디에도 안 보인다(대본이 다 나와야 아래에 나타났다).
+  //   (G) 내리기 전 자동 저장 — 완성해놓고 저장 안 한 걸 그냥 내리면 오븐에 draft로 남아 또 눌러야 한다.
+  //   렌더 중인 건 저장할 결과가 없어 그냥 내려간다(오븐에서 계속 돌고, 모양·경과초 유지 — E·B).
+  STUDIO_BATCHES.forEach(x=>{ if(x._bench){ ugcAutoSaveOffBench(x); x._bench=false; } });
+  renderStudioResults(); // 내려간 배치가 오븐 카드로 먼저 나타난 뒤에 조리대를 비운다(끊김 없이 이동)
   ugcShowScriptLoading(true); // 우측에 씬별 쓰여지는 스켈레톤
   try{
     const fd=new FormData();
@@ -4984,14 +4991,8 @@ function ugcRenderScriptPreview(data){
    document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?chk+`Generate video <span class="gen-cost">◈ ${data.cost}</span>`:chk+'Generate video';}
   const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display='none'; // 작성 스켈레톤 숨김
-  // H: 새 대본이 조리대를 차지한다 — 이전 배치는 **지우지 않고** 조리대에서만 내린다(오븐에 남아 계속
-  //    렌더되고, 완성되면 거기서 저장·편집한다). 전엔 isUgc 배치를 전부 splice해서, 렌더 중에 대본을
-  //    다시 쓰면 영상이 화면에서 증발했다(백엔드는 계속 돌고 크레딧도 그대로 나갔다). 그 사고를 막으려고
-  //    "렌더 중 재작성 금지" 가드를 걸어놨었고, 그 가드가 곧 두 번째 영상을 못 만들게 하던 벽이었다.
-  //    지우지 않게 된 지금은 가드도 필요 없다 → N개 동시 생성이 열린다.
-  //    (G) 내리기 전 자동 저장 — 완성해놓고 저장 안 한 걸 그냥 내리면 오븐에 draft로 남아 또 눌러야 한다.
-  STUDIO_BATCHES.forEach(x=>{ if(x._bench){ ugcAutoSaveOffBench(x); x._bench=false; } });
-  renderStudioResults(); // 내려간 배치는 오븐 카드로, 조리대는 빈 채로(새 대본이 곧 채운다)
+  // (조리대 내주기는 ugcWriteScript 시작 시점으로 옮겼다 — 여기서 하면 대본 쓰는 몇 초 동안 렌더 중인
+  //  영상이 조리대에서도 피드에서도 안 보인다. 이 함수는 씬 refine에서도 불리므로 부작용도 없어야 한다.)
   document.getElementById('ugcScriptPreview').style.display='';
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
   ugcCompact(); // 대본이 나왔으니 왼쪽 입력은 요약 카드로 접고 오른쪽에 자리를 내준다
@@ -5262,9 +5263,8 @@ function ugcPutOnBench(b){
 async function ugcEditFromFeed(btn, idx){
   const b=STUDIO_BATCHES.find(x=>x.items&&x.items.some(i=>i.idx===idx));
   if(!b)return;
-  const cur=STUDIO_BATCHES.find(x=>x._bench);
-  // 렌더 중인 걸 내리면 경과 타이머(#ugcInline 스코프)와 로딩 화면이 깨진다 — B·E 전까지는 막는다.
-  if(cur&&cur.loading){ if(window.toast)toast('Your video is still rendering — try again when it’s done.'); return; }
+  // (렌더 중이어도 막지 않는다 — 조리대에 있던 렌더는 오븐으로 내려가 계속 돌고, 거기서도 9:16 제 모양(E)에
+  //  자기 경과초(B, data-batch)를 센다. 그 둘이 없던 때는 내리면 타이머·로딩 화면이 깨져서 임시로 막아뒀었다.)
   if(!b.ugc){
     const o=btn?btn.textContent:'';
     if(btn){btn.disabled=true;btn.textContent='Opening…';}
