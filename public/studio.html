@@ -5181,6 +5181,12 @@ async function ugcRenderVideo(){
   if(outputType==='model-editorial'&&!ugcSelectedModelImg){toast('Pick a model first for "With a model".');return;}
   const hint=document.getElementById('ugcHint');
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
+  // Generate 버튼은 하나인데 N개가 나눠 쓴다(#ugcHint·경과칸과 같은 문제) → **제출이 끝나면 바로 놓아준다.**
+  //   잠금은 "이 대본을 두 번 쏘지 마라"는 뜻이지 "렌더가 끝날 때까지 기다려라"가 아니다. 폴링 끝까지 쥐고
+  //   있으면 2~5분간 잠긴 채라, 새 대본을 써도 라벨만 바뀌고(ugcRenderScriptPreview는 disabled를 안 만짐)
+  //   버튼은 회색이라 두 번째 영상을 시작할 수 없었다 — H가 걷어낸 벽 3개와 같은 종류의 네 번째 벽.
+  let btnFreed=false;
+  const freeBtn=()=>{ if(btnFreed)return; btnFreed=true; rbtn.disabled=false; rbtn.innerHTML=oldLabel; };
   genActive++;rbtn.disabled=true;rbtn.textContent='Generating…';
   // 렌더 중에도 넓은 화면이면 입력칸을 접지 않는다. 접던 이유가 둘 다 사라졌다:
   //   ① "펼쳐두면 Write script가 진행 중인 렌더를 화면에서 지운다" → H가 고쳤다(지우지 않고 오븐으로 내린다).
@@ -5215,6 +5221,7 @@ async function ugcRenderVideo(){
     const data=await sjson(res);
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
+    freeBtn(); // 잡이 접수됐다(과금·jobId 확정) → 이 대본은 떠났으니 버튼을 놓아준다. 다음 영상을 바로 쓸 수 있다.
     const job=await pollUgcJob(data.jobId);
     // 결과 매핑은 ugcFillPendingFromJob 하나로 — 재연결(ugcRestoreActiveJobs)과 같은 코드를 쓴다
     if(pending){ ugcFillPendingFromJob(pending,data.jobId,job,outputType); renderStudioResults(); } // 조리대에 완성 영상+씬 스트립
@@ -5234,7 +5241,8 @@ async function ugcRenderVideo(){
     else{ hint.textContent='⚠ '+(e.message||'Generation failed')+' — your script is ready, try again.'; toast((e.message||'Generation failed')+' — try again','error'); }
   }finally{
     clearInterval(elapsedTimer);
-    genActive=Math.max(0,genActive-1);rbtn.disabled=false;rbtn.innerHTML=oldLabel;
+    genActive=Math.max(0,genActive-1);
+    freeBtn(); // 제출 전에 실패했으면 여기서 풀린다. 이미 놓았으면 무시 — 그 사이 쓴 새 대본의 라벨을 덮지 않는다
     loadCredits();
   }
 }
