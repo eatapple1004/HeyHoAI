@@ -28,11 +28,37 @@ function guessMime(fp) {
   const e = fp.toLowerCase().split('.').pop();
   return e === 'jpg' || e === 'jpeg' ? 'image/jpeg' : e === 'webp' ? 'image/webp' : 'image/png';
 }
-// 레퍼런스 종류별 지시문(제품=정체성 고정, person/model=동일 인물 유지)
-function refClause(kind, idx) {
-  return kind === 'product'
-    ? `Image ${idx} is the EXACT product to feature — keep its identity, shape, color, label and details unchanged.`
-    : `Image ${idx} is an AI-generated fictional model (not a real person) — keep the SAME face, hair and features.`;
+function refList(ns) {
+  return ns.length === 1 ? `Image ${ns[0]}`
+    : ns.length === 2 ? `Images ${ns[0]} and ${ns[1]}`
+      : `Images ${ns.slice(0, -1).join(', ')} and ${ns[ns.length - 1]}`;
+}
+/**
+ * 레퍼런스 지시문 — **종류별로 묶어서** 말한다.
+ *
+ * ⚠️ 전엔 장마다 `Image N is the EXACT product`를 따로 붙였다. 그래서 제품 다각도 2장을 넣으면
+ *    "이게 **그** 제품이다"가 두 번 선언돼 모델이 **제품이 둘**이라고 읽었다 — 같은 제품의 다른
+ *    각도라는 말이 어디에도 없었다. 코드 주석("동일 제품 다각도")도 화면("add more angles for
+ *    accuracy")도 다각도라고 하는데 **정작 모델에게만 그 말을 안 하고 있었다.**
+ *    → 사진을 더 넣을수록 좋아져야 하는데 오히려 나빠지던 원인.
+ *
+ * 제품은 항상 **하나**다(여러 제품은 미지원 — 그건 씬별 제품 라우팅이 필요한 별개 기능이고,
+ * 스키마의 scene.subject가 product|model뿐이라 지목할 수단이 없다).
+ * @param {{path:string,kind?:string}[]} refs 이미지 파트와 **같은 순서**(번호 1..N이 그 순서다)
+ */
+function refClauses(refs) {
+  const prod = [], model = [];
+  refs.forEach((r, i) => ((r.kind === 'product') ? prod : model).push(i + 1));
+  const out = [];
+  if (model.length) {
+    out.push(`${refList(model)} ${model.length > 1 ? 'show' : 'is'} the SAME AI-generated fictional model (not a real person) — keep the SAME face, hair and features.`);
+  }
+  if (prod.length === 1) {
+    out.push(`Image ${prod[0]} is the EXACT product to feature — keep its identity, shape, color, label and details unchanged.`);
+  } else if (prod.length > 1) {
+    out.push(`${refList(prod)} are ONE SINGLE product shot from different angles — NOT several different products. Read them together to understand that one product's full shape and details, then feature that same product with its identity, shape, color, label and details unchanged.`);
+  }
+  return out;
 }
 
 /** @type {import('./types').ImageProvider} */
@@ -65,22 +91,23 @@ const nanoBananaProvider = {
 
     if (refs.length) {
       const imageParts = [];
-      const clauses = [];
-      let n = 0;
+      // ⚠️ 경로가 안 풀리면 건너뛴다 → refs와 실제 실린 이미지가 어긋난다. 설명문의 "Image N"은
+      //    imageParts 순서를 가리켜야 하므로, **실제로 실린 것(used)**으로만 번호를 매긴다.
+      //    hasProduct/hasModel도 used 기준 — refs로 보면 제품 경로가 유실됐는데도 "제품을 모델에게 입혀라"가 붙는다.
+      const used = [];
       for (const r of refs) {
         const abs = resolveRefPath(r.path);
         if (!abs) continue;
-        n += 1;
         imageParts.push({ inlineData: { mimeType: guessMime(abs), data: fs.readFileSync(abs).toString('base64') } });
-        clauses.push(refClause(r.kind || 'person', n));
+        used.push(r);
       }
       if (imageParts.length) {
-        const hasProduct = refs.some((r) => r.kind === 'product');
-        const hasModel = refs.some((r) => r.kind && r.kind !== 'product');
+        const hasProduct = used.some((r) => r.kind === 'product');
+        const hasModel = used.some((r) => r.kind && r.kind !== 'product');
         const combine = (imageParts.length > 1 && hasProduct && hasModel)
           ? 'Dress/place the product on the model naturally so the model is wearing or using that exact product. '
           : '';
-        const instruction = `${clauses.join(' ')}\n${combine}Generate this new scene:\n\n${fullPrompt}`;
+        const instruction = `${refClauses(used).join(' ')}\n${combine}Generate this new scene:\n\n${fullPrompt}`;
         contents = [{ role: 'user', parts: [...imageParts, { text: instruction }] }];
       } else {
         contents = fullPrompt;

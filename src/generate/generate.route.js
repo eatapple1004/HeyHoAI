@@ -978,11 +978,15 @@ router.post('/ugc/suggest-scenes', async (req, res, next) => {
 // (선택) 제품 사진 → AI 컨셉 제안. 컨셉 쓰기 귀찮은 유저용. 무과금.
 router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
-    const pf = req.files?.productImage?.[0];
-    if (!pf) return res.status(400).json({ success: false, error: 'product image is required' });
-    const image = { data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' };
-    try { fs.unlinkSync(pf.path); } catch {}
-    const concept = await ugcVideoService.suggestConcept({ image, details: req.body.details || '', outputType: req.body.outputType || 'product-ad', language: req.body.language === 'ko' ? 'ko' : 'en' });
+    // 동일 제품 다각도 전부를 본다(대본 라우트와 같은 규약) — 전엔 [0]만 읽어서 대본은 다각도를 다 보는데
+    //   컨셉만 앞면 하나로 썼고, **나머지 업로드 임시파일이 안 지워지고 남았다**(unlink도 [0]만 했다).
+    const images = [];
+    for (const pf of (req.files?.productImage || [])) {
+      try { images.push({ data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' }); } catch (e) {}
+      try { fs.unlinkSync(pf.path); } catch {}
+    }
+    if (!images.length) return res.status(400).json({ success: false, error: 'product image is required' });
+    const concept = await ugcVideoService.suggestConcept({ images, details: req.body.details || '', outputType: req.body.outputType || 'product-ad', language: req.body.language === 'ko' ? 'ko' : 'en' });
     res.json({ success: true, concept });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });

@@ -143,8 +143,15 @@ async function generateUgcScript(input) {
  * @param {{ image:{data:string,mediaType?:string}, details?:string, language?:string }} input
  * @returns {Promise<string>} 컨셉 한 줄
  */
-async function suggestConcept({ image, details = '', language = 'ko', outputType = 'product-ad' } = {}) {
-  if (!image || !image.data) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
+/**
+ * 컨셉 제안 — 제품 사진(동일 제품 다각도)을 보고 유저의 요청문 한 줄을 초안한다.
+ *   images(배열) 우선, 없으면 image(단일, 하위호환) — generateUgcScript와 같은 규약.
+ *   ⚠️ 전엔 라우트가 첫 장만 넘겨서, 대본은 다각도를 다 보는데 컨셉만 앞면 하나로 썼다.
+ *      뒷면에만 있는 특징(예: 소드팩)이 컨셉에서 통째로 빠진다.
+ */
+async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad' } = {}) {
+  const imgs = (Array.isArray(images) && images.length ? images : (image ? [image] : [])).filter((im) => im && im.data);
+  if (!imgs.length) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
   const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
   const system = [
     'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and draft the user\'s CREATIVE BRIEF for a TikTok / Instagram Reels ad — phrased as their own request.',
@@ -169,14 +176,16 @@ async function suggestConcept({ image, details = '', language = 'ko', outputType
     'No quotes, no preamble, no hashtags, no options — just the one request line.',
     'Do not invent unverifiable factual claims (exact wear time, ingredients, certifications, prices) unless given.',
   ].join('\n');
-  const userText = details ? `Product facts (may use): ${details}\nDraft the request.` : 'Draft the request.';
+  // 여러 장이면 "같은 제품의 다른 각도"임을 밝힌다 — 안 그러면 제품이 여럿이라고 읽는다(nanoBanana의 refClauses와 같은 이유).
+  const multi = imgs.length > 1 ? `The ${imgs.length} photos are ONE SINGLE product from different angles — not several products. ` : '';
+  const userText = `${multi}${details ? `Product facts (may use): ${details}\n` : ''}Draft the request.`;
 
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL, // sonnet-5(비전) — 한 줄 제안엔 충분·저렴
     max_tokens: 120,
     system,
     messages: [{ role: 'user', content: [
-      { type: 'image', source: { type: 'base64', media_type: image.mediaType || 'image/png', data: image.data } },
+      ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/png', data: im.data } })),
       { type: 'text', text: userText },
     ] }],
   });
