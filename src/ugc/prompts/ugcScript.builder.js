@@ -23,6 +23,11 @@ const FORMAT_HINTS = {
 
 function fmtLine(v) { return FORMAT_HINTS[v] ? `- ${v}: ${FORMAT_HINTS[v]}` : `- ${v}`; }
 
+// Auto(길이 미지정) 씬의 상한. Kling은 5s/10s 네이티브만 지원해 5초를 넘기면 10초를 뽑아 트림한다
+//   (clipPipeline: wantSec>5 ? 10 : 5) = 비용 2배. Auto가 7초를 고르면 유저는 **고른 적 없는 10초 단가**를 낸다.
+//   ⚠️ 목표 길이 계산과 프롬프트 문장이 **같은 값**을 써야 한다 — 갈라지면 한 프롬프트가 두 말을 하게 된다.
+const AUTO_MAX_SCENE_SEC = 5;
+
 /**
  * @param {{
  *   product: string,        // 제품명/설명 (필수)
@@ -57,8 +62,14 @@ function buildUgcScriptPrompt(input) {
   } = input || {};
 
   const profile = getProfile(outputType);
+  // 목표 길이 — 씬 개수·길이를 **둘 다** 지정했으면 그 곱(정확). 그 외엔 프로파일 기본(~20s).
+  // ⚠️ 씬 개수만 지정 + 길이 Auto면 기본 20s가 그대로 목표가 돼, Claude가 20÷3 ≈ 7초를 골랐다.
+  //    그런데 Auto 씬은 5초 이하여야 한다(AUTO_MAX_SCENE_SEC) → 목표(20s)와 상한(3×5=15s)이
+  //    한 프롬프트 안에서 **서로 다른 말**을 하고 있었다. 목표를 상한 안으로 들여 둘을 일치시킨다.
+  //    (6씬이면 6×5=30 > 20이라 기본 20s가 그대로 — 상한이 안 걸리는 경우는 무변화.)
+  const baseDuration = input?.durationSec || profile.defaultDurationSec || 20;
   const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration
-    : (input?.durationSec || profile.defaultDurationSec || 20);
+    : (sceneCount ? Math.min(baseDuration, sceneCount * AUTO_MAX_SCENE_SEC) : baseDuration);
   const langName = language === 'en' ? 'English' : 'Korean';
   const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
@@ -123,10 +134,9 @@ function buildUgcScriptPrompt(input) {
     '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or spoken line across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
-    // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다.
-    //   Kling은 5s/10s 네이티브만 지원해 5초를 넘기면 10초를 뽑아 트림한다(clipPipeline: wantSec>5 ? 10 : 5)
-    //   = **비용 2배**. Auto가 6초를 고르면 사용자는 고른 적 없는 10초 단가를 낸다. → Auto는 5초 이하로.
-    ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`] : ['- Set each broll scene\'s "durationSec" to 5 or less (never more than 5).']),
+    // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다(근거=AUTO_MAX_SCENE_SEC).
+    ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`]
+      : [`- Set each broll scene's "durationSec" to ${AUTO_MAX_SCENE_SEC} or less (never more than ${AUTO_MAX_SCENE_SEC}).`]),
     ...(voiceover ? [
       '- VOICE IS THE CAPTION — they are the SAME layer. "spoken" is BOTH what the voice says AND the on-screen subtitle (shown in sync as the voice speaks it).',
       '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
