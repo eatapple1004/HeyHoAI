@@ -28,6 +28,10 @@
  * ── 안전 ── no-person이라 벤더 노출게이트 트리거 없음. extra_negative가 person/skin/body 차단(정물 유지).
  *   온바디(faceswap) 착지 시 미성년·노출 하드가드는 그 파이프라인에서(설계문서 참조).
  */
+// 온바디 착용컷 공통 하드가드 (얼굴 배제 + 미성년·노출·선정성 차단). 전 Worn Cut 존에 재사용.
+//   ⚠️ 미성년/노출 토큰은 전역 SAFETY_NEGATIVE에서 빠졌으므로(kids 로스터 충돌) 여기서 반드시 재주입.
+const BODY_SAFETY_NEG = "face, head, chin, eyes, nose, lips, mouth, portrait, full head in frame, child, minor, teenager, teen, underage, youth, kid, nudity, nude, exposed genitals, genital outline, bulge emphasis, bare buttocks, sheer or see-through reveal, provocative or seductive pose, sexualized posing, distorted anatomy, extra limbs, extra fingers, plastic skin, harsh blown highlights, cluttered background, logos, text, watermark";
+
 module.exports = [
   // ════════════════════════════════════════════════════════════════════════
   // 패밀리 1 · Bodywear Product Cut — 사람 없는 정물 (품목 = garment axis)
@@ -279,5 +283,121 @@ module.exports = [
         { "scene": "water reflections", "pose": "three-quarter beside the water", "composition": "medium_shot" },
         { "scene": "tile, tight crop", "pose": "macro of the fabric in bright light", "composition": "closeup" },
         { "scene": "poolside set, wide", "pose": "full piece, bright resort negative space", "composition": "full_body" } ] }
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 패밀리 3 · Bodywear Worn Cut — 얼굴 없는 성인 부위 크롭 (몸 생성 · faceswap 불필요)
+  //   품목=garment axis(존 조건부 필터 + 성별 함의) · 피부톤=skin axis. age 축 의도적 제외(미성년 인접 리스크).
+  //   성별(설계 §3): bra·set 존→여성 함의, bottoms·swim→남녀 중립. 전 존 faceless·adult 25+·needs_human_review.
+  //   ⚠️ On Model(로스터 얼굴+faceswap)은 별개 패밀리로 파이프라인 착지 시 합류(14_underwear_작업기록.md).
+  // ════════════════════════════════════════════════════════════════════════
+  {
+    "mode": "product", "vertical": "bodywear", "category": "Worn Cut",
+    "name": "Bodywear Worn Cut", "output_type": "image_set", "credit_cost": 3, "sort_order": 15,
+    "rationale": "Show your innerwear or swimwear worn on the body — no photoshoot, no model booking. Pick your garment type (bottoms, bra, set or swimwear) and a body-zone crop; every shot is faceless by design and the exact piece stays locked to your reference. A model-face version is on the way. The default zone is a clean front crop.",
+    "meta": {
+      "axes": ["garment", "skin"],
+      "cuts": ["bodywear-front-crop", "bodywear-side-profile", "bodywear-back-crop", "bodywear-waistband-detail", "bodywear-bust-fit"],
+      "flags": ["experimental", "needs_human_review"],
+      "render_notes": "Faceless on-body composite: an adult body (25+) is generated wearing the uploaded garment, no model, no face in frame. meta.axes = studio chip selectors — garment (drives which zones show + implied gender: bra/set→female, bottoms/swim→neutral) and skin tone, injected into the prompt at generate time. Zone children carry meta.garment so the studio filters the zone list by the selected garment (same conditional pattern as Hero moods). config.relax_apparel_guards flags the future engine keyed-strip to run off THIS flag, not the shared preset name (leak-safe). High risk zone — verify no face in frame, clearly adult, opaque fit and no morph before delivery. (Face variant with model picker = 'Bodywear On Model', pipeline pending.)"
+    },
+    "config": {
+      "schema_version": 1, "mode": "product", "relax_apparel_guards": true,
+      "output": { "type": "image_set", "count": 4, "aspect_ratio": "4:5" },
+      "subject": { "type": "product", "reference_strategy": "product_composite", "min_refs": 1 },
+      "look": {
+        "style_preset": "Fashion",
+        "attributes": ["lighting:soft_box_key_plus_rim", "color:neutral_true", "texture:natural_skin"],
+        "extra_positive": "premium on-body innerwear and swimwear photography, the exact uploaded garment worn naturally on a realistic well-groomed adult body, clearly an adult aged 25 or older, cropped tightly to the worn body zone with the head and face out of frame, the piece locked to the reference — color, print, trims and fabric identical with no morph or drift, opaque fabric with a believable natural fit, true-to-life skin under soft flattering editorial light, tasteful and non-sexualized, shallow depth of field keeping the garment tack-sharp, clean neutral studio background",
+        "extra_negative": "full-body with face, model face, mannequin, warped silhouette, color or print mismatch, fabric morphing, "
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "clean neutral studio, soft key + rim", "pose": "adult body wearing the piece, front, face out of frame, cropped to the garment zone", "composition": "medium_shot" },
+        { "scene": "same studio, gentle shadow", "pose": "three-quarter showing the fit, no face", "composition": "medium_shot" },
+        { "scene": "neutral backdrop", "pose": "back or side of the worn piece, face out of frame", "composition": "medium_shot" },
+        { "scene": "same studio, tighter frame", "pose": "detail crop of the band / trim on the body", "composition": "closeup" }
+      ]
+    }
+  },
+  // ─── 자식 3-1 · Front Crop [all] (기본) ─────────────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "Worn Cut",
+    "name": "Bodywear Front Crop", "output_type": "image_set", "credit_cost": 3, "sort_order": 16,
+    "meta": { "garment": ["bottoms", "bra", "set", "swim"], "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless front crop, any garment. Verify head/face fully out of frame and clearly adult before delivery." },
+    "rationale": "The piece worn on the body, front-on and cropped to the garment zone — the clean default, no face.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-worn-cut",
+      "look": {
+        "extra_positive": "faceless front on-body crop, the uploaded garment worn on an adult body seen straight from the front, the framing cropped to the garment's body zone with the head and face out of frame, natural relaxed stance, the piece locked to the reference with an opaque believable fit, soft flattering editorial light, true-to-life skin, tasteful and non-sexualized, clean neutral studio, shallow depth of field keeping the garment tack-sharp",
+        "extra_negative": BODY_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "clean neutral studio, soft key light", "pose": "front-on, adult body, face out of frame, garment centered", "composition": "medium_shot" },
+        { "scene": "same studio, gentle contact shadow", "pose": "slight weight shift, front, no face", "composition": "medium_shot" },
+        { "scene": "neutral backdrop, tighter", "pose": "front crop on the garment's fit, no face", "composition": "closeup" },
+        { "scene": "same studio, detail", "pose": "front trim / logo on the body", "composition": "macro" } ] }
+  },
+  // ─── 자식 3-2 · Side Profile [all] ──────────────────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "Worn Cut",
+    "name": "Bodywear Side Profile", "output_type": "image_set", "credit_cost": 3, "sort_order": 17,
+    "meta": { "garment": ["bottoms", "bra", "set", "swim"], "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless three-quarter/side crop. Verify head/face out of frame and clearly adult." },
+    "rationale": "A three-quarter side angle showing the real fit and silhouette — faceless.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-worn-cut",
+      "look": {
+        "extra_positive": "faceless side-profile on-body crop, the uploaded garment worn on an adult body seen from a three-quarter side angle to reveal the natural fit and silhouette, the head and face out of frame, the piece locked to the reference with an opaque fit, soft flattering editorial light, true skin texture, tasteful and non-sexualized, clean neutral studio, shallow depth of field",
+        "extra_negative": BODY_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "clean neutral studio, soft side light", "pose": "three-quarter turn, adult body, face out of frame", "composition": "medium_shot" },
+        { "scene": "same studio, rim light", "pose": "full side profile of the fit, no face", "composition": "medium_shot" },
+        { "scene": "neutral backdrop, tighter", "pose": "side crop on the garment's edge and fit, no face", "composition": "closeup" },
+        { "scene": "same studio, detail", "pose": "side seam / trim on the body", "composition": "macro" } ] }
+  },
+  // ─── 자식 3-3 · Back Crop [all] ─────────────────────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "Worn Cut",
+    "name": "Bodywear Back Crop", "output_type": "image_set", "credit_cost": 3, "sort_order": 18,
+    "meta": { "garment": ["bottoms", "bra", "set", "swim"], "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless rear crop — brief back / bikini bottom / one-piece back / bra band and clasp. Verify head out of frame, adult, no bare buttocks exposure." },
+    "rationale": "The piece from behind — rear panel, band or clasp — cropped and faceless.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-worn-cut",
+      "look": {
+        "extra_positive": "faceless back on-body crop, the uploaded garment worn on an adult body seen from behind, the framing cropped to the garment's body zone with the head and face out of frame, showing the rear panel, band or clasp, the piece locked to the reference with an opaque fit that covers, soft flattering editorial light, true skin texture, tasteful and non-sexualized, clean neutral studio, shallow depth of field",
+        "extra_negative": BODY_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "clean neutral studio, soft key", "pose": "back-on, adult body, face out of frame, rear panel centered", "composition": "medium_shot" },
+        { "scene": "same studio, gentle shadow", "pose": "three-quarter rear showing band and fit, no face", "composition": "medium_shot" },
+        { "scene": "neutral backdrop, tighter", "pose": "back crop on the band / clasp, no face", "composition": "closeup" },
+        { "scene": "same studio, detail", "pose": "rear seam / logo on the body", "composition": "macro" } ] }
+  },
+  // ─── 자식 3-4 · Waistband Detail [bottoms, swim] ────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "Worn Cut",
+    "name": "Bodywear Waistband Detail", "output_type": "image_set", "credit_cost": 3, "sort_order": 19,
+    "meta": { "garment": ["bottoms", "swim"], "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless macro of the worn waistband/logo band (men's underwear & swim-trunk signature). Verify no bulge emphasis, adult, head far out of frame." },
+    "rationale": "Macro of the elastic waistband and logo worn on the body — the underwear brand signature.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-worn-cut",
+      "look": {
+        "extra_positive": "faceless macro of the worn waistband, the uploaded bottoms or swim trunks with the elastic waistband and logo band shown on an adult waist and hip, tightly cropped to the band with the face far out of frame, the band and logo locked to the reference, crisp raking light revealing the fabric and stitch, true skin texture, tasteful and non-sexualized, clean neutral studio",
+        "extra_negative": BODY_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "clean neutral studio, raking light", "pose": "front waistband on the waist, band and logo forward, no face", "composition": "closeup" },
+        { "scene": "same studio, side raking light", "pose": "side of the waistband showing the band width on the hip", "composition": "closeup" },
+        { "scene": "neutral backdrop, extreme close", "pose": "macro of the logo band lettering and stitch on the body", "composition": "macro" },
+        { "scene": "same studio, low grazing light", "pose": "macro of the elastic band grain against the skin", "composition": "macro" } ] }
+  },
+  // ─── 자식 3-5 · Bust Fit [bra, set] (여성 · 테이스트풀) ──────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "Worn Cut",
+    "name": "Bodywear Bust Fit", "output_type": "image_set", "credit_cost": 3, "sort_order": 20,
+    "meta": { "garment": ["bra", "set"], "flags": ["experimental", "needs_human_review"], "render_notes": "Faceless bust-fit crop on an adult woman's upper torso (bra/set only). Keep strictly tasteful, editorial and non-sexualized; verify head out of frame, adult, opaque supportive fit, no exposure." },
+    "rationale": "How the bra or set sits — cup, strap and band fit on the upper torso, faceless and tasteful.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-worn-cut",
+      "look": {
+        "extra_positive": "faceless bust-fit crop, the uploaded bra or lingerie set worn on an adult woman's upper torso showing the natural cup, strap and band fit, tightly cropped to the garment with the head and face out of frame and the framing kept tasteful and editorial, the piece locked to the reference with an opaque supportive fit, soft flattering diffuse light, true skin texture, elegant and non-sexualized, clean neutral studio, shallow depth of field",
+        "extra_negative": BODY_SAFETY_NEG + ", cleavage emphasis, nipple, areola, deep plunge exposure" },
+      "shot_strategy": "list", "shots": [
+        { "scene": "clean neutral studio, soft diffuse light", "pose": "front bust fit, adult woman, face out of frame, cups and band centered", "composition": "medium_shot" },
+        { "scene": "same studio, gentle shadow", "pose": "three-quarter showing strap and side band fit, no face", "composition": "closeup" },
+        { "scene": "neutral backdrop, tighter", "pose": "crop on the cup edge and underband fit, no face", "composition": "closeup" },
+        { "scene": "same studio, detail", "pose": "macro of the strap adjuster / trim on the body", "composition": "macro" } ] }
   }
 ];

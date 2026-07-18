@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 172,
-  "new_count": 139,
+  "total": 173,
+  "new_count": 140,
   "provisional_count": 17,
   "drift_guard": {
-    "seed_total": 172,
-    "status_total": 172,
+    "seed_total": 173,
+    "status_total": 173,
     "ok": true
   },
   "id_collisions": [],
@@ -3452,6 +3452,77 @@
         ],
         "axes": [
           "garment"
+        ]
+      },
+      {
+        "id": "bodywear-worn-cut",
+        "cat": "Worn Cut",
+        "name": "Bodywear Worn Cut",
+        "type": "image",
+        "cost": 3,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "cuts": [
+          {
+            "id": "bodywear-front-crop",
+            "name": "Bodywear Front Crop",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "bra",
+              "set",
+              "swim"
+            ]
+          },
+          {
+            "id": "bodywear-side-profile",
+            "name": "Bodywear Side Profile",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "bra",
+              "set",
+              "swim"
+            ]
+          },
+          {
+            "id": "bodywear-back-crop",
+            "name": "Bodywear Back Crop",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "bra",
+              "set",
+              "swim"
+            ]
+          },
+          {
+            "id": "bodywear-waistband-detail",
+            "name": "Bodywear Waistband Detail",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "swim"
+            ]
+          },
+          {
+            "id": "bodywear-bust-fit",
+            "name": "Bodywear Bust Fit",
+            "preview": null,
+            "garment": [
+              "bra",
+              "set"
+            ]
+          }
+        ],
+        "axes": [
+          "garment",
+          "skin"
         ]
       }
     ]
