@@ -64,8 +64,9 @@ async function processJob(job) {
   const swapped = await swapFace({ sourceFacePath, targetBuffer, jobId: job.id }); // facefusion nsfw+age 게이트 내장
 
   const filename = `${crypto.randomUUID()}.png`;
-  try { fs.mkdirSync(outputDir, { recursive: true }); fs.writeFileSync(path.join(outputDir, filename), swapped); } catch (e) {}
-  await mediaStore.put(filename, swapped); // R2 영속(미설정 시 no-op)
+  await mediaStore.put(filename, swapped); // R2 영속(웹서버가 여기서 서빙)
+  // 로컬 사본은 R2 미설정(순수 로컬)일 때만 — 워커가 웹서버와 다른 박스면 로컬 tmp는 아무도 안 읽어 누적만 됨.
+  if (!mediaStore.isRemote()) { try { fs.mkdirSync(outputDir, { recursive: true }); fs.writeFileSync(path.join(outputDir, filename), swapped); } catch (e) {} }
 
   const gm = (job.gen_meta && typeof job.gen_meta === 'object') ? job.gen_meta : {};
   const savedResult = await resultRepo.insert({
@@ -77,6 +78,7 @@ async function processJob(job) {
   });
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: job.prompt_idx, memo: 'faceswap on-model — needs human review' });
   await faceswapRepo.markSucceeded(job.id, { resultIdx: savedResult.idx, resultUrl: `/images/${filename}` });
+  await mediaStore.del(job.stage1_filename).catch(() => {}); // stage-1 중간물 정리 — 스왑 성공 후 불필요(R2 고아 방지)
   log.info(`job ${job.id} done ${Date.now() - t0}ms → result ${savedResult.idx}`);
   return savedResult.idx;
 }

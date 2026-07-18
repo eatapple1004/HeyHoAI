@@ -107,4 +107,13 @@ async function getObject(filename, range) {
   }
 }
 
-module.exports = { isRemote, put, putFile, remoteUrl, getObject, keyFor, contentTypeFor };
+// 오브젝트 삭제(중간물 정리용 — 예 faceswap stage-1). 미설정·실패 시 조용히 무시.
+async function del(filename) {
+  if (!isRemote()) return;
+  try {
+    const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+    await client().send(new DeleteObjectCommand({ Bucket: env.MEDIA_S3_BUCKET, Key: keyFor(filename) }));
+  } catch (e) {}
+}
+
+module.exports = { isRemote, put, putFile, remoteUrl, getObject, del, keyFor, contentTypeFor };
