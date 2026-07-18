@@ -4988,7 +4988,7 @@ async function generateImages(r,subj,count,pending){
     pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=effModelLabel(); pending.added=false; pending.pendingCount=ok.length;
     if(queued.length){ // async faceswap — 로딩 유지하고 잡을 폴링해서 완성되면 자동 표시(새로고침 불필요)
       pending.loading=true; pending.queued=queued.length; renderStudioResults();
-      pollFaceswapJobs(queued,pending,vis);
+      await pollFaceswapJobs(queued,pending,vis); // await = generate()의 경과 타이머가 스왑 완료까지 계속 돎(0.0s 얼음 방지)
     } else { pending.loading=false; renderStudioResults(); }
   }
   document.getElementById('resultHint').textContent=
@@ -5010,12 +5010,13 @@ async function pollFaceswapJobs(queued,pending,vis){
   };
   for(let t=0; t<60 && jobs.some(j=>!j.done); t++){
     await new Promise(r=>setTimeout(r, t<4?2000:4000)); // 초반 2s, 이후 4s (스왑 ~5-7s)
+    let changed=false;
     for(const j of jobs){ if(j.done)continue;
       try{ const d=await fetch('/api/generate/faceswap/jobs/'+j.id).then(r=>r.json());
-        if(d&&d.success&&d.data){ if(d.data.status==='succeeded'){ j.done=true; j.url=d.data.url; j.idx=d.data.resultIdx; } else if(d.data.status==='failed'){ j.done=true; j.failed=true; } }
+        if(d&&d.success&&d.data){ if(d.data.status==='succeeded'){ j.done=true; j.url=d.data.url; j.idx=d.data.resultIdx; changed=true; } else if(d.data.status==='failed'){ j.done=true; j.failed=true; changed=true; } }
       }catch(e){}
     }
-    apply();
+    if(changed) apply(); // 변경 시에만 재렌더 — 그동안 로딩박스 경과초는 generate() 타이머가 갱신(0.0s 얼음 방지)
   }
   if(jobs.some(j=>!j.done)){ jobs.forEach(j=>{ if(!j.done){ j.done=true; j.failed=true; } }); apply(); if(window.toast)toast('Some On Model shots are taking longer — check your Library shortly.'); }
   if(pending&&(pending.items||[]).length) state.lastPreview=pending.items.map(x=>x.url).slice(0,8);
