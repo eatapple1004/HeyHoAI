@@ -32,6 +32,10 @@
 //   ⚠️ 미성년/노출 토큰은 전역 SAFETY_NEGATIVE에서 빠졌으므로(kids 로스터 충돌) 여기서 반드시 재주입.
 const BODY_SAFETY_NEG = "face, head, chin, eyes, nose, lips, mouth, portrait, full head in frame, child, minor, teenager, teen, underage, youth, kid, nudity, nude, exposed genitals, genital outline, bulge emphasis, bare buttocks, sheer or see-through reveal, provocative or seductive pose, sexualized posing, distorted anatomy, extra limbs, extra fingers, plastic skin, harsh blown highlights, cluttered background, logos, text, watermark";
 
+// On Model(◈5) 하드가드 — 얼굴이 있는 온모델 컷(stage-1 생성 후 faceswap). 얼굴은 유지하되 미성년·노출·선정성 차단.
+//   ⚠️ face/head 미배제(온모델은 얼굴 노출) + identity drift/distorted face로 스왑 품질 방어.
+const ONMODEL_SAFETY_NEG = "child, minor, teenager, teen, underage, youth, kid, nudity, nude, topless, exposed genitals, genital outline, bare buttocks, sheer or see-through reveal, provocative or seductive pose, sexualized posing, cleavage emphasis, full-length crotch focus, identity drift, distorted face, deformed hands, extra limbs, extra fingers, plastic skin, warped garment, color or print mismatch, cluttered background, logos, text, watermark";
+
 module.exports = [
   // ════════════════════════════════════════════════════════════════════════
   // 패밀리 1 · Bodywear Product Cut — 사람 없는 정물 (품목 = garment axis)
@@ -399,5 +403,91 @@ module.exports = [
         { "scene": "same studio, gentle shadow", "pose": "three-quarter showing strap and side band fit, no face", "composition": "closeup" },
         { "scene": "neutral backdrop, tighter", "pose": "crop on the cup edge and underband fit, no face", "composition": "closeup" },
         { "scene": "same studio, detail", "pose": "macro of the strap adjuster / trim on the body", "composition": "macro" } ] }
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 패밀리 4 · Bodywear On Model — 로스터 얼굴 O (stage-1 생성 → faceswap stage-2)
+  //   ⚠️ 엔진(faceswap 파이프라인) 착지·검증 전까지 DEFAULT_OFFICIAL_RECIPES 미등록 = 카드 비노출(게이트).
+  //   설계: docs/onmodel_faceswap_설계_2026-07-18.md · 파이프라인: docs/섹션명령서/14_underwear_작업기록.md §5.
+  //   성별(설계 §3): garment→로스터 성별 필터(bra·set→여성, bottoms·swim→남녀). Kids 픽커 하드배제.
+  // ════════════════════════════════════════════════════════════════════════
+  {
+    "mode": "product", "vertical": "bodywear", "category": "On Model",
+    "name": "Bodywear On Model", "output_type": "image_set", "credit_cost": 5, "sort_order": 21,
+    "rationale": "Your innerwear or swimwear worn by a chosen model — no shoot, no casting. Pick your garment type, a model and a cut; every shot is reviewed before delivery. For a faceless body crop instead, use Bodywear Worn Cut.",
+    "meta": {
+      "axes": ["garment", "skin"],
+      "picker": "model",
+      "post": ["faceswap"],
+      "cuts": ["bodywear-on-model-front", "bodywear-on-model-three-quarter", "bodywear-on-model-editorial"],
+      "flags": ["experimental", "needs_human_review"],
+      "render_notes": "TWO-STAGE (engine): stage-1 generates the garment worn by an approximate model WITHOUT attaching the roster face image (vendor rejects face-ref + underwear) — the roster's TEXT description (descent/age/build/hair/skin) is injected instead (generate.route modelMetaFor). stage-2 = faceswapWorker swaps the chosen roster's own AI face onto stage-1 (faceswap_jobs queue → facefusion). meta.picker='model' = swap-target selection; Kids roster HARD-excluded for bodywear; garment drives roster gender filter (bra/set→female). meta.post=['faceswap'] signals the engine. config.relax_apparel_guards flags future keyed-strip off the flag, not the shared preset. Every cut needs_human_review — never auto-publish. Verify: clearly adult, no minor, opaque tasteful fit, no identity drift."
+    },
+    "config": {
+      "schema_version": 1, "mode": "product", "relax_apparel_guards": true,
+      "output": { "type": "image_set", "count": 4, "aspect_ratio": "4:5" },
+      "subject": { "type": "product", "reference_strategy": "product_composite", "min_refs": 1 },
+      "look": {
+        "style_preset": "Editorial",
+        "attributes": ["lighting:soft_box_key_plus_rim", "color:neutral_true", "texture:natural_skin", "context:editorial_set"],
+        "extra_positive": "premium editorial on-model campaign photography, the selected model wearing the uploaded innerwear or swimwear, clearly an adult aged 25 or older, upper-body to torso framing, the garment locked to the reference — color, print, trims and fabric identical with no morph or drift, opaque fabric with a believable natural fit, confident relaxed editorial pose, soft flattering campaign light, tasteful and non-sexualized, tack-sharp, clean premium studio or set",
+        "extra_negative": ONMODEL_SAFETY_NEG
+      },
+      "shot_strategy": "list",
+      "shots": [
+        { "scene": "clean premium studio, soft campaign light", "pose": "adult model facing camera wearing the piece, upper-body to torso, confident relaxed pose", "composition": "medium_shot" },
+        { "scene": "same set, gentle shadow", "pose": "three-quarter editorial angle showing the fit", "composition": "medium_shot" },
+        { "scene": "editorial set, tighter", "pose": "torso crop on the garment fit, tasteful", "composition": "closeup" },
+        { "scene": "premium set, wider", "pose": "confident campaign stance, generous negative space", "composition": "medium_shot" }
+      ]
+    }
+  },
+  // ─── 자식 4-1 · On Model Front ──────────────────────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "On Model",
+    "name": "Bodywear On Model Front", "output_type": "image_set", "credit_cost": 5, "sort_order": 22,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Front on-model campaign shot. Stage-1 no face-ref + faceswap. Verify clearly adult, opaque tasteful fit, no identity drift." },
+    "rationale": "The model facing camera wearing the piece — the clean campaign front, upper-body to torso.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-on-model",
+      "look": {
+        "extra_positive": "editorial on-model front campaign shot, the adult model facing the camera wearing the uploaded piece, upper-body to torso framing, confident relaxed pose, the garment locked to the reference with an opaque believable fit, soft flattering campaign light, tasteful and non-sexualized, clean premium studio backdrop, tack-sharp",
+        "extra_negative": ONMODEL_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "clean premium studio, soft key light", "pose": "adult model front-on, wearing the piece, upper-body to torso", "composition": "medium_shot" },
+        { "scene": "same studio, gentle shadow", "pose": "slight weight shift, front, confident", "composition": "medium_shot" },
+        { "scene": "premium backdrop, tighter", "pose": "torso crop on the front fit, tasteful", "composition": "closeup" },
+        { "scene": "studio, wider", "pose": "full front campaign stance, negative space", "composition": "medium_shot" } ] }
+  },
+  // ─── 자식 4-2 · On Model Three-Quarter ──────────────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "On Model",
+    "name": "Bodywear On Model Three-Quarter", "output_type": "image_set", "credit_cost": 5, "sort_order": 23,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Three-quarter on-model angle. Stage-1 no face-ref + faceswap. Verify adult, tasteful, no identity drift." },
+    "rationale": "A three-quarter editorial angle on the model — shows the fit and silhouette with campaign energy.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-on-model",
+      "look": {
+        "extra_positive": "editorial on-model three-quarter campaign shot, the adult model at a three-quarter angle wearing the uploaded piece, upper-body to torso framing revealing the fit and silhouette, confident editorial pose, the garment locked to the reference with an opaque fit, soft flattering campaign light, tasteful and non-sexualized, premium set, tack-sharp",
+        "extra_negative": ONMODEL_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "premium set, soft side light", "pose": "adult model three-quarter, wearing the piece", "composition": "medium_shot" },
+        { "scene": "same set, rim light", "pose": "turn showing the side fit and silhouette", "composition": "medium_shot" },
+        { "scene": "set, tighter", "pose": "three-quarter torso crop on the fit, tasteful", "composition": "closeup" },
+        { "scene": "editorial set, wider", "pose": "three-quarter campaign stance, negative space", "composition": "medium_shot" } ] }
+  },
+  // ─── 자식 4-3 · On Model Editorial ──────────────────────────────────────
+  {
+    "mode": "product", "vertical": "bodywear", "category": "On Model",
+    "name": "Bodywear On Model Editorial", "output_type": "image_set", "credit_cost": 5, "sort_order": 24,
+    "meta": { "flags": ["experimental", "needs_human_review"], "render_notes": "Wider editorial campaign mood. Stage-1 no face-ref + faceswap. Verify adult, tasteful, no identity drift." },
+    "rationale": "A wider campaign-mood editorial frame — the model and piece in a premium set with brand atmosphere.",
+    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-on-model",
+      "look": {
+        "extra_positive": "premium editorial campaign frame, the adult model wearing the uploaded piece in a styled premium set with rich brand atmosphere, upper-body to torso framing, confident relaxed editorial pose, cinematic flattering light, the garment locked to the reference with an opaque fit, tasteful and non-sexualized, elegant negative space, tack-sharp",
+        "extra_negative": ONMODEL_SAFETY_NEG },
+      "shot_strategy": "list", "shots": [
+        { "scene": "styled premium set, cinematic light", "pose": "adult model in campaign mood wearing the piece", "composition": "medium_shot" },
+        { "scene": "same set, deeper mood", "pose": "editorial three-quarter with atmosphere", "composition": "medium_shot" },
+        { "scene": "set, tighter", "pose": "torso crop with brand mood, tasteful", "composition": "closeup" },
+        { "scene": "wide editorial set", "pose": "campaign stance, generous premium negative space", "composition": "medium_shot" } ] }
   }
 ];

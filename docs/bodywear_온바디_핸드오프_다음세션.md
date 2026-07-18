@@ -5,18 +5,26 @@
 ---
 
 ## §0. 지금 어디까지 됐나 (완료·라이브)
-- **upstream/main = `52c33cd`**, worktree `~/doppia-underwear` (branch `feat/underwear-templates`), 미커밋 0.
+- **upstream/main = `7b9f9c9`** (2026-07-18 push), worktree `~/doppia-underwear` (branch `feat/underwear-templates`), 미커밋 0.
 - **no-person 완료 + 배포됨**: `bodywear` vertical (`src/recipes/seeds/recipes.bodywear.v2.js`) —
   Product Cut(4컷) + Hero(8무드). **Apparel > Innerwear & Swim** 에 노출.
   - 품목 = **garment axis**(studio.html `AXIS_DEFS.garment`: bottoms/bra/set/swim, 형태힌트 promptPhrase 주입). **이미 구축됨 — 온바디도 재사용.**
   - Hero 무드 = **품목별 조건부**(무드 cut `meta.garment` 태그 → contract 운반 → studio `cutsForFilter` 필터+재렌더). 패턴 확립됨.
+- **✅ Worn Cut 완료(2026-07-18, commit `7b9f9c9`, upstream/main push 완료)**: 패밀리 3 `Bodywear Worn Cut`(◈3) —
+  부모 + 5존(Front/Side/Back Crop·Waistband Detail·Bust Fit). 전 존 **faceless·성인 25+·needs_human_review**, faceswap 불필요.
+  - garment 조건부: bra·set→Bust Fit(여성 테이스트풀) · bottoms·swim→Waistband Detail · 전체→Front/Side/Back Crop.
+  - axes `["garment","skin"]`(age축 의도적 제외=미성년 인접 리스크). `config.relax_apparel_guards:true` **전방 선언**(미래 keyed-strip 트리거용, 현재 읽는 코드 없음).
+  - 배선: themes.js 2곳(DEFAULT_OFFICIAL_RECIPES·OFFICIAL_THEME_MAP) + studio.html ?v(recipes.generated 21·themes 10). taxonomy·studio C.bodywear는 자동. drift-guard 173/173 OK.
+  - ⚠️ 썸네일 `/img/bodywear/bodywear-worn-cut.png` 미제작 → 그라디언트 폴백(기존 Product Cut·Hero도 동일). 후속.
+  - ⚠️ 서버 배포(git pull+migrate+pm2 restart+CF Purge)는 사용자/개발자 실행 — push까지만 완료.
 - **taxonomy 3-카테고리 2-레벨**: Apparel[Clothing·Innerwear&Swim] / Beauty[Cosmetics·Nail] / Accessories.
 
-## §1. 이번 세션 목표 = 온바디 2 패밀리
+## §1. 남은 목표 = On Model 1 패밀리 (Worn Cut은 §0에서 완료)
 `bodywear`에 추가:
-1. **Worn Cut** (◈3) — 얼굴 없는 성인 몸/부위 크롭 (로스터 미사용, 몸 생성). faceswap **불필요**(얼굴 없음).
-2. **On Model** (◈5) — 로스터 얼굴 O. **faceswap 2-stage 필요.**
-둘 다 garment axis(품목)로 파라미터화 — 품목별로 프레이밍·안전이 달라짐(§3).
+1. ~~**Worn Cut** (◈3)~~ — **✅ 완료(§0)**.
+2. **On Model** (◈5) — 로스터 얼굴 O. **faceswap 2-stage 필요.** ← 다음 세션 핵심.
+On Model은 garment axis(품목)로 파라미터화 + 모델 픽커 — 품목별로 프레이밍·안전·성별 로스터가 달라짐(§3).
+⚠️ 모델 픽커 Kids 탭은 bodywear에서 **하드 배제** 필수(현재 studio 픽커에 adult/kids 탭 존재).
 
 ## §2. 선행 필수 = faceswap 파이프라인 (엔진/백엔드)
 **On Model은 이 파이프라인 없으면 실효 없음.** 전체 스펙 = **`docs/섹션명령서/14_underwear_작업기록.md`**

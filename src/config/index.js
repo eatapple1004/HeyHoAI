@@ -57,6 +57,16 @@ const envSchema = z.object({
   MEDIA_S3_PREFIX: z.string().default('images'),             // 버킷 내 키 접두사
   // 자격증명은 표준 AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 또는 EC2 인스턴스 프로파일(IAM Role)에서 자동 해석.
 
+  // On Model faceswap(stage-2) — facefusion 워커 설정. 미설정 시 홈디렉터리 ~/facefusion·CPU 기본.
+  //   설계: docs/onmodel_faceswap_설계_2026-07-18.md. 워커=node src/workers/faceswapWorker.js.
+  FACEFUSION_DIR: z.string().optional(),                     // facefusion 설치 경로(기본 ~/facefusion)
+  FACEFUSION_PYTHON: z.string().optional(),                  // venv python(기본 <dir>/venv/bin/python)
+  FACEFUSION_MODEL: z.string().default('inswapper_128'),     // face_swapper 모델
+  FACEFUSION_PROVIDERS: z.string().default('cpu'),           // execution providers(cpu / coreml / cuda, 콤마구분)
+  FACEFUSION_TIMEOUT_MS: z.coerce.number().default(120000),  // 이미지당 하드 타임아웃(좀비 방지)
+  FACEFUSION_CONCURRENCY: z.coerce.number().default(1),      // 동시 facefusion 캡
+  FACESWAP_POLL_MS: z.coerce.number().default(5000),         // 워커 큐 폴링 유휴 간격
+
   // Google OAuth (소셜 로그인) — 미설정 시 비활성. 콘솔에서 OAuth 클라이언트 생성 후 입력.
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

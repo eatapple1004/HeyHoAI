@@ -296,13 +296,14 @@
     "mode": "product",
     "status": "OK",
     "file": "recipes.bodywear.v2.js",
-    "count": 3,
+    "count": 4,
     "issues": [],
     "flags": [
       "Bodywear Product Cut [experimental,needs_human_review]",
       "Bodywear Hero [experimental,needs_human_review]",
       "Bodywear Worn Cut [experimental,needs_human_review]",
-      "파라미터형: 부모 3 + 컷 17 (개수/가격사다리 휴리스틱 면제)"
+      "Bodywear On Model [experimental,needs_human_review]",
+      "파라미터형: 부모 4 + 컷 20 (개수/가격사다리 휴리스틱 면제)"
     ],
     "overlay": []
   }

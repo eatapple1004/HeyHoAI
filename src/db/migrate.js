@@ -711,6 +711,35 @@ async function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_video_jobs_status ON video_jobs(status);
     CREATE INDEX IF NOT EXISTS idx_video_jobs_user ON video_jobs(user_id, created_at DESC);
+
+    -- On Model faceswap 잡 큐 (bodywear stage-2). video_jobs 미러.
+    --   stage-1(얼굴 미첨부 생성)을 enqueue → faceswapWorker가 로스터 얼굴로 스왑 → 결과 삽입.
+    --   설계: docs/onmodel_faceswap_설계_2026-07-18.md
+    CREATE TABLE IF NOT EXISTS faceswap_jobs (
+        id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        team_id           UUID REFERENCES teams(id) ON DELETE SET NULL,
+        prompt_idx        INT,                     -- generation_prompts.idx (결과 삽입용 링크)
+        character_id      UUID,
+        source_face_path  TEXT NOT NULL,           -- 로스터 얼굴(/img/models/<id>) = 스왑 소스
+        stage1_filename   TEXT NOT NULL,           -- stage-1 산출 파일명(mediaStore key) = 스왑 타겟
+        model_id          TEXT,                    -- 렌더 모델(result.model)
+        visibility        VARCHAR(10) NOT NULL DEFAULT 'public',
+        template_id       TEXT,
+        template_source   TEXT,
+        template_name     TEXT,
+        gen_meta          JSONB NOT NULL DEFAULT '{}'::jsonb, -- garment·source 모델명 등 컨텍스트
+        charge_amount     INT NOT NULL DEFAULT 0,  -- 실패 시 환불액
+        status            VARCHAR(20) NOT NULL DEFAULT 'queued', -- queued | processing | succeeded | failed
+        result_idx        INT,                     -- generation_results.idx (스왑 결과)
+        result_url        TEXT,
+        error             TEXT,
+        attempts          INT NOT NULL DEFAULT 0,
+        created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_faceswap_jobs_status ON faceswap_jobs(status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_faceswap_jobs_user ON faceswap_jobs(user_id, created_at DESC);
   `);
   // 오디오 옵션(비동기 video-to-audio 단계가 잡 완료 후 실행할지) 보존
   await pool.query(`ALTER TABLE video_jobs ADD COLUMN IF NOT EXISTS audio BOOLEAN NOT NULL DEFAULT false;`);

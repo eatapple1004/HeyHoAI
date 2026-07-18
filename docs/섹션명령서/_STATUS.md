@@ -1,6 +1,6 @@
 # 레시피 종합 현황 (자동생성 · `node scripts/consolidate_recipes.js`)
 
-**11/17 섹션 OK · 총 173개 템플릿**
+**11/17 섹션 OK · 총 174개 템플릿**
 
 | 섹션 | 상태 | 개수 | 파일 |
 |---|---|---|---|
@@ -20,7 +20,7 @@
 | studiomodel (스튜디오 모델컷) | OK | 1 | `recipes.studiomodel.v2.js` |
 | producthero (제품 히어로(화장품)) | OK | 1 | `recipes.producthero.v2.js` |
 | accessories (악세서리(주얼리)) | OK | 4 | `recipes.accessories.v2.js` |
-| bodywear (속옷·수영복(Innerwear & Swim)) | OK | 3 | `recipes.bodywear.v2.js` |
+| bodywear (속옷·수영복(Innerwear & Swim)) | OK | 4 | `recipes.bodywear.v2.js` |
 
 ## 이슈
 **influencer**
@@ -155,7 +155,8 @@ _없음_
 - Bodywear Product Cut [experimental,needs_human_review]
 - Bodywear Hero [experimental,needs_human_review]
 - Bodywear Worn Cut [experimental,needs_human_review]
-- 파라미터형: 부모 3 + 컷 17 (개수/가격사다리 휴리스틱 면제)
+- Bodywear On Model [experimental,needs_human_review]
+- 파라미터형: 부모 4 + 컷 20 (개수/가격사다리 휴리스틱 면제)
 
 ## 🅣 텍스트 오버레이 (text_overlay)
 **beauty**: Before/After Result Reel · Ingredient Claim Card

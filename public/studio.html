@@ -1804,8 +1804,10 @@ function buildTemplates(){
     shopping.push(m);
   });
   (C.bodywear||[]).forEach(c=>{ // 오피셜 Bodywear(Innerwear & Swim) — Product Cut·Hero. 품목=garment axis(형태힌트+무드 조건부). 온바디=faceswap 파이프라인 대기.
-    const m=mk(c,c.cat,'bodywear'); // cat=recipe.category → taxonomy Innerwear & Swim>Product Cut/Hero.
+    const m=mk(c,c.cat,'bodywear'); // cat=recipe.category → taxonomy Innerwear & Swim>Product Cut/Hero/Worn Cut/On Model.
     if(c.axes)m.axes=c.axes; // garment 축(형태힌트 주입 + 무드 조건부 필터)
+    if(c.picker)m.picker=c.picker; // On Model=모델 픽커(스왑 타깃)
+    if(c.post)m.post=c.post; // ['faceswap'] = On Model stage-2 신호(FE 분기·서버 enqueue)
     if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/bodywear/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
     if(!m.preview)m.preview='/img/bodywear/'+c.id+'.png'; // 카드 썸네일=부모 id
     shopping.push(m);
@@ -2928,7 +2930,10 @@ let modalModelId=null, modalModelFilter='all', modalModelAge='adult'; // modalMo
 function modalModelRoster(){ return modalModelAge==='kids' ? (window.MODELS_KIDS||[]) : (window.MODELS||[]); }
 // ⚠️ 성인·아동 양쪽에서 찾는다 — 선택된 게 아동일 수 있다(id가 유일하므로 합쳐 찾아도 충돌 없음).
 function modelById(id){ return (window.MODELS||[]).concat(window.MODELS_KIDS||[]).find(m=>m.id===id)||null; }
-function modelsFor(f){ const M=modalModelRoster(); return f==='all'?M:M.filter(m=>m.gender===f); }
+// bodywear On Model(post:faceswap) = Kids 하드배제 + garment→성별 제약(설계 §3). 공유 픽커 누수 금지: post 신호로만 트리거.
+function rmIsFaceswap(r){ r=r||modalRecipeObj; return !!(r&&r.post&&r.post.indexOf&&r.post.indexOf('faceswap')>=0); }
+function rmGarmentGender(){ const gm=(modalAxis&&modalAxis.garment)||'auto'; return (gm==='bra'||gm==='set')?'female':null; } // bra·set→여성
+function modelsFor(f){ const M=modalModelRoster(); const gg=rmIsFaceswap()?rmGarmentGender():null; const eff=gg||f; return eff==='all'?M:M.filter(m=>m.gender===eff); }
 function modelCardsHtml(){
   return modelsFor(modalModelFilter).map(m=>
     `<button type="button" class="model-card${modalModelId===m.id?' on':''}" data-model="${esc(m.id)}" onclick="setModalModel('${esc(m.id)}')" title="${esc(m.name)} · ${esc(m.descent)}${m.ageBandLabel?' · '+esc(m.ageBandLabel):''}">`
@@ -2937,14 +2942,16 @@ function modelCardsHtml(){
 function renderModalModels(r){
   const mw=document.getElementById('rmModels'); if(!mw)return;
   if(!(r&&r.picker==='model'&&(window.MODELS||[]).length)){ mw.style.display='none'; mw.innerHTML=''; modalModelId=null; return; }
+  const fs=rmIsFaceswap(r); if(fs)modalModelAge='adult'; // bodywear On Model: Kids 하드배제(안전 1층 — 절대선)
   modalModelId=(state.recipeId===r.id&&state.modelId)?state.modelId:null; // 재오픈 시 기존 선택 유지
   mw.style.display='';
   const chip=(v,l)=>`<button type="button" class="ms-chip${modalModelFilter===v?' on':''}" data-f="${v}" onclick="setModelFilter('${v}')">${l}</button>`;
   // 나이 탭 — 성별 필터와 별도 축(한 줄에 섞으면 "Women Kids"가 필터인지 탭인지 모른다. Ad Video와 동일 규칙).
   const tab=(v,l)=>`<button type="button" class="ms-chip ms-agetab${modalModelAge===v?' on':''}" data-a="${v}" onclick="setModelAge('${v}')">${l}</button>`;
-  mw.innerHTML=`<span class="ms-lbl">Choose a model — pick one</span>`
-    +`<div class="ms-filters" style="margin-bottom:6px">${tab('adult','Adults')}${tab('kids','Kids')}</div>`
-    +`<div class="ms-filters">${chip('all','All')}${chip('female','Women')}${chip('male','Men')}</div>`
+  const gg=fs?rmGarmentGender():null; // 품목이 성별을 강제(bra/set→여성)하면 성별칩 숨김 — 자연 제약
+  mw.innerHTML=`<span class="ms-lbl">Choose a model — pick one${gg?' · '+(gg==='female'?'Women':'Men'):''}</span>`
+    +(fs?'':`<div class="ms-filters" style="margin-bottom:6px">${tab('adult','Adults')}${tab('kids','Kids')}</div>`) // faceswap=Kids 탭 미렌더
+    +(gg?'':`<div class="ms-filters">${chip('all','All')}${chip('female','Women')}${chip('male','Men')}</div>`)
     +`<div class="ms-grid" id="rmModelGrid">${modelCardsHtml()}</div>`;
 }
 function setModelFilter(v){ modalModelFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-chip:not(.ms-agetab)').forEach(b=>b.classList.toggle('on',b.getAttribute('data-f')===v)); }
@@ -3034,7 +3041,8 @@ function setModalAxis(k,v){ modalAxis[k]=v; const d=AXIS_DEFS[k]; if(!d)return; 
     if(!vis.some(ct=>ct.id===modalCutId))modalCutId=vis.length?vis[0].id:null; // 현재 선택이 숨겨지면 첫 보이는 컷으로
     const g=document.getElementById('rmCutRow'); if(g)g.innerHTML=cutGridHtml(modalRecipeObj);
     setModalPreview(modalRecipeObj);
-  } }
+  }
+  if(k==='garment'&&rmIsFaceswap(modalRecipeObj)){ modalModelId=null; renderModalModels(modalRecipeObj); } } // On Model: 품목→로스터 성별 제약 갱신(선택 해제)
 // 선택된 축 → 프롬프트 구절(기본값은 스킵).
 function axisPhrase(){ if(!state.axis)return''; return AXIS_ORDER.map(k=>{ const d=AXIS_DEFS[k]; if(!d)return''; const o=d.opts.find(x=>x[0]===state.axis[k]); return o?o[2]:''; }).filter(Boolean).join(', '); }
 function renderModalCuts(r){
@@ -4957,18 +4965,28 @@ async function generateImages(r,subj,count,pending){
   for(let i=1;i<items.length;i++){
     if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}
   }
-  // Studio Model Cut: 선택한 로스터 모델 이미지를 정체성 레퍼런스로 추가(프롬프트가 "제공된 모델 레퍼런스의 인물"로 지시).
-  if(r&&r.picker==='model'&&state.modelId){ const mm=modelById(state.modelId); if(mm&&mm.img){ try{ const mb=await(await fetch(mm.img)).blob(); fd.append('referenceImages',mb,'model.jpg'); }catch(e){} } }
+  // Model 픽커: 선택 로스터를 정체성 레퍼런스(기존) 또는 스왑 타깃(bodywear On Model)으로.
+  if(r&&r.picker==='model'&&state.modelId){ const mm=modelById(state.modelId);
+    if(mm){
+      if(r.post&&r.post.indexOf('faceswap')>=0){ // bodywear On Model: 얼굴 미첨부(벤더 게이트 회피) → 서버가 로스터 텍스트 주입 + stage-2 스왑
+        const mpath=String(mm.img||'').replace(/^https?:\/\/[^/]+/,''); // 로스터 경로만(origin 제거) — safeModelPath 통과용
+        fd.append('modelImage',mpath); fd.append('faceswap','true');
+        if(state.axis&&state.axis.garment&&state.axis.garment!=='auto')fd.append('garment',state.axis.garment);
+      } else if(mm.img){ try{ const mb=await(await fetch(mm.img)).blob(); fd.append('referenceImages',mb,'model.jpg'); }catch(e){} } // 기존 On Model: 얼굴 레퍼 첨부
+    }
+  }
   const res=await fetch('/api/generate',{method:'POST',body:fd});
   const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
-  const ok=(data.results||[]).filter(x=>x.success);
+  const queued=(data.results||[]).filter(x=>x.queued); // On Model faceswap: 스왑 대기(결과는 워커가 스왑 후 Library에 삽입)
+  const ok=(data.results||[]).filter(x=>x.success&&!x.queued);
   const failedR=(data.results||[]).filter(x=>!x.success); // 실패 결과(부분 실패 포함) → 실패 슬롯
-  const fail=(data.results||[]).length-ok.length;
+  const fail=(data.results||[]).length-ok.length-queued.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
-  // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지 + 실패 슬롯)
-  if(pending){ const vis=privateOn()?'private':'public'; pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
+  if(queued.length&&window.toast)toast('Preparing your On Model shots — each is reviewed before delivery and will appear in your Library shortly.');
+  // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지 + 실패 슬롯). queued는 url 없음 → items 제외(깨진 썸네일 방지).
+  if(pending){ const vis=privateOn()?'private':'public'; pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.queued=queued.length; pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도

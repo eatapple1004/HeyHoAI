@@ -13,6 +13,7 @@ const characterRepo = require('../characters/character.repository');
 const promptRepo = require('./prompt.repository');
 const resultRepo = require('./result.repository');
 const reviewRepo = require('./review.repository');
+const faceswapRepo = require('../images/faceswapJob.repository'); // On Model stage-2 잡 큐(bodywear faceswap)
 const { mintAutoTemplate } = require('../marketplace/templateMint');
 const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
@@ -160,6 +161,23 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 네거티브 프롬프트: provider 관용대로 "Avoid:" 절로 합침
     if (negativePrompt) {
       finalPrompt += `\n\nAvoid: ${negativePrompt}`;
+    }
+
+    // ── On Model faceswap (bodywear stage-2) ──────────────────────────────────
+    //   기존 생성엔 무영향: req.body.faceswap 미전송 시 faceswapMode=false → 아래 전 분기 스킵.
+    //   방식: 얼굴 이미지 미첨부(벤더가 "얼굴레퍼+속옷" 거부) + 로스터 외모를 텍스트로 주입해 stage-1 생성 →
+    //         stage-2(faceswapWorker)가 이 로스터 얼굴로 스왑. 설계: docs/onmodel_faceswap_설계_2026-07-18.md
+    const faceswapReq = (req.body.faceswap === 'true' || req.body.faceswap === true);
+    const faceswapModelPath = faceswapReq ? safeModelPath(req.body.modelImage) : null;
+    const faceswapMeta = faceswapModelPath ? modelMetaFor(faceswapModelPath) : null;
+    const faceswapMode = !!(faceswapReq && faceswapModelPath && faceswapMeta);
+    if (faceswapReq) {
+      // 안전 1층 — KIDS 물리 배제 + 유효 성인 로스터 강제. kids/ 경로·미성년 스왑타깃 거부.
+      if (!faceswapMode || faceswapModelPath.startsWith('/img/models/kids/') || faceswapMeta.isMinor) {
+        return res.status(400).json({ success: false, error: 'On Model requires a valid adult model.' });
+      }
+      const g = faceswapMeta; // 얼굴 미첨부 → 외모 서술을 텍스트로(우리가 그 모델을 생성할 때 쓴 서술 = 가장 정확)
+      finalPrompt += `\n\nThe model is a clearly adult ${g.age ? g.age + '-year-old ' : ''}${g.descent} ${g.gender}, ${g.build}, ${g.skin}, ${g.hair}.`;
     }
 
     // Reference 이미지 결정 (최대 14개)
@@ -385,6 +403,19 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
         const filename = `${imageId}.png`;
         fs.writeFileSync(path.join(outputDir, filename), imageBuffer);
         await mediaStore.put(filename, imageBuffer); // 영속 스토리지 best-effort(미설정 시 no-op)
+
+        if (faceswapMode) {
+          // stage-1(중간 산출물) 저장 완료 → 스왑 잡 enqueue. 최종 결과는 워커가 스왑 후 삽입(needs_human_review).
+          const job = await faceswapRepo.insert({
+            userId: req.user.id, teamId: genTeamId, promptIdx: savedPrompt.idx, characterId: characterId || null,
+            sourceFacePath: faceswapModelPath, stage1Filename: filename, modelId,
+            visibility: resultVisibility, templateId, templateSource, templateName,
+            genMeta: { garment: req.body.garment || null, model_descent: faceswapMeta.descent },
+            chargeAmount: charge ? Math.round(charge.amount / generateCount) : 0,
+          });
+          results.push({ success: true, queued: true, jobId: job.id, status: 'queued', description });
+          continue; // 결과 삽입은 워커 소관 — 여기선 큐잉만
+        }
 
         const savedResult = await resultRepo.insert({
           promptIdx: savedPrompt.idx,

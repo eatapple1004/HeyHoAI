@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 173,
-  "new_count": 140,
+  "total": 174,
+  "new_count": 141,
   "provisional_count": 17,
   "drift_guard": {
-    "seed_total": 173,
-    "status_total": 173,
+    "seed_total": 174,
+    "status_total": 174,
     "ok": true
   },
   "id_collisions": [],
@@ -3523,6 +3523,45 @@
         "axes": [
           "garment",
           "skin"
+        ]
+      },
+      {
+        "id": "bodywear-on-model",
+        "cat": "On Model",
+        "name": "Bodywear On Model",
+        "type": "image",
+        "cost": 5,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "cuts": [
+          {
+            "id": "bodywear-on-model-front",
+            "name": "Bodywear On Model Front",
+            "preview": null
+          },
+          {
+            "id": "bodywear-on-model-three-quarter",
+            "name": "Bodywear On Model Three-Quarter",
+            "preview": null
+          },
+          {
+            "id": "bodywear-on-model-editorial",
+            "name": "Bodywear On Model Editorial",
+            "preview": null
+          }
+        ],
+        "picker": "model",
+        "axes": [
+          "garment",
+          "skin"
+        ],
+        "post": [
+          "faceswap"
         ]
       }
     ]
