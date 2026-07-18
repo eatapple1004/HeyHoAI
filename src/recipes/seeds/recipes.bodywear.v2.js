@@ -416,7 +416,7 @@ module.exports = [
     "name": "Bodywear On Model", "output_type": "image_set", "credit_cost": 5, "sort_order": 21,
     "rationale": "Your innerwear or swimwear worn by a chosen model — no shoot, no casting. Pick your garment type, a model and a cut; every shot is reviewed before delivery. For a faceless body crop instead, use Bodywear Worn Cut.",
     "meta": {
-      "axes": ["garment", "skin"],
+      "axes": ["garment"],
       "picker": "model",
       "post": ["faceswap"],
       "cuts": ["bodywear-on-model-front", "bodywear-on-model-three-quarter", "bodywear-on-model-editorial"],

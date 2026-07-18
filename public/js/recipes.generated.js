@@ -4146,8 +4146,7 @@
         ],
         "picker": "model",
         "axes": [
-          "garment",
-          "skin"
+          "garment"
         ],
         "post": [
           "faceswap"
