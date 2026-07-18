@@ -168,7 +168,7 @@
     'Which photos should I add?': '어떤 사진을 넣어야 하나요?',
     'Type a product name… (optional)': '제품명을 입력하세요… (선택)',
     // 컨셉
-    'Concept': '컨셉', '— a sentence or a few keywords is enough': '— 한 문장이나 키워드 몇 개면 충분합니다',
+    'Concept': '컨셉', '— required · a sentence or a few keywords': '— 필수 · 한 문장이나 키워드 몇 개',
     // Step 1 섹션 제목 (Product='제품'·Concept='컨셉'은 기존 키 재사용)
     'Style': '스타일', 'Format': '형식', 'Product name': '제품명', '— optional': '— 선택',
     'Write it for me': '대신 써주세요',
@@ -195,26 +195,26 @@
     'Narration': '내레이션',
     // 요약줄 · 포맷
     'Change': '변경', 'Edit': '수정',
-    'Feed': '피드', 'Wide': '와이드',
+    'Feed': '피드', 'Wide': '와이드', 'Where you\'ll post it': '어디에 올릴지',
     // 씬 · 길이
     'Scenes & length': '씬 · 길이', '— Auto lets the script decide': '— 자동으로 두면 대본이 정합니다',
-    'Auto': '자동', 'Length / scene': '씬당 길이',
-    '3s clips are trimmed from a 5s render, so they cost the same as 5s.':
-      '3초 클립은 5초로 렌더한 뒤 잘라내므로 비용은 5초와 같습니다.',
+    'Auto': '자동', 'Length / scene': '씬당 길이', 'scenes': '씬',
+    'Picking 3s makes shorter scenes but uses the same credits as 5s.':
+      '3초를 골라도 씬만 짧아지고 크레딧은 5초와 같습니다.',
     '🎙️ Narrated — length is set by the voice.': '🎙️ 내레이션 — 길이는 음성이 정합니다.',
     // 언어
-    'Ad language': '광고 언어', '— script, voice & captions': '— 대본 · 음성 · 자막',
+    'Ad language': '광고 언어', '— script & voice': '— 대본 · 음성',
     // 컨셉 placeholder(TEXTAREA는 텍스트치환 SKIP이나 placeholder는 ATTRS로 처리됨)
-    'Describe your product and the mood or moment you want to evoke.':
-      '제품과 담고 싶은 무드나 순간을 설명하세요.',
+    'e.g. A calming night serum for tired skin — cozy, candle-lit bedroom mood.':
+      '예) 지친 피부를 위한 진정 나이트 세럼 — 아늑한 캔들 조명 무드.',
     // CTA
     'Write script': '대본 쓰기',
-    'Free — AI writes a script you review & edit first. You pick Generate next to build the video (that\'s when credits are used).':
-      '무료 — AI가 먼저 대본을 씁니다. 검토·수정 후 다음 단계 Generate를 눌러 영상을 만듭니다(이때 크레딧이 사용됩니다).',
+    'Free — the AI concept and the script are yours to review & edit first. You pick Generate next to build the video, and the credit cost shows on that button before anything is charged.':
+      '무료 — AI 컨셉과 대본 모두 먼저 검토·수정할 수 있습니다. 다음 단계 Generate를 눌러 영상을 만들며, 크레딧 비용은 과금 전에 그 버튼에 표시됩니다.',
     // How this works 패널
     'Ad video': '광고 영상', 'Your photo': '제품 사진',
     'Turn a product photo into a finished ad video': '제품 사진을 완성된 광고 영상으로',
-    'A product photo and one line of concept — that\'s the whole brief. You only spend credits when you make the video.':
+    'A product photo and one line of concept — that\'s the whole brief. You only spend credits when you generate the video.':
       '제품 사진 한 장과 한 줄 컨셉 — 그게 브리프 전부입니다. 크레딧은 영상을 만들 때만 듭니다.',
     'How this works': '이렇게 만듭니다',
     'Script': '대본', 'AI drafts it. Edit any line.': 'AI가 초안을 씁니다. 어느 줄이든 고치세요.',
