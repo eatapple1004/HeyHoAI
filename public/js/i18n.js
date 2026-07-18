@@ -170,7 +170,7 @@
     // 컨셉
     'Concept': '컨셉', '— a sentence or a few keywords is enough': '— 한 문장이나 키워드 몇 개면 충분합니다',
     // Step 1 섹션 제목 (Product='제품'·Concept='컨셉'은 기존 키 재사용)
-    'Style': '스타일', 'Format': '형식',
+    'Style': '스타일', 'Format': '형식', 'Product name': '제품명', '— optional': '— 선택',
     'Write it for me': '대신 써주세요',
     'Add a photo and AI can write this for you': '사진을 넣으면 AI가 대신 써드립니다',
     'e.g. "clean, sensual lookbook for 20–30s"  ·  "red background, luxurious color"':
@@ -214,17 +214,17 @@
     // How this works 패널
     'Ad video': '광고 영상', 'Your photo': '제품 사진',
     'Turn a product photo into a finished ad video': '제품 사진을 완성된 광고 영상으로',
-    'A product photo and a one-line concept is all it takes. AI drafts the script, scenes and video — you edit any step, and only spend credits when you build.':
-      '제품 사진 한 장과 한 줄 컨셉이면 충분합니다. AI가 대본·씬·영상을 만들고 — 어느 단계든 직접 고치고, 크레딧은 만들 때만 듭니다.',
+    'A product photo and one line of concept — that\'s the whole brief. You only spend credits when you make the video.':
+      '제품 사진 한 장과 한 줄 컨셉 — 그게 브리프 전부입니다. 크레딧은 영상을 만들 때만 듭니다.',
     'How this works': '이렇게 만듭니다',
-    'Script': '대본', 'AI writes it. You can edit every line.': 'AI가 씁니다. 모든 줄을 고칠 수 있습니다.',
+    'Script': '대본', 'AI drafts it. Edit any line.': 'AI가 초안을 씁니다. 어느 줄이든 고치세요.',
     'Scenes': '씬',
-    "Each line becomes a scene. Don't like one? Remake just that scene — not the whole video.":
-      '한 줄이 한 씬이 됩니다. 마음에 안 드는 씬만 다시 만드세요 — 영상 전체가 아니라.',
+    'Each line becomes a scene. Remake just one — not the whole video.':
+      '한 줄이 한 씬이 됩니다. 마음에 안 드는 한 컷만 다시 — 영상 전체가 아니라.',
     // ⚠️ 3번 스텝은 <b>가 문장을 가른 조각 3개다(‘Your finished ad appears’ + <b>right here</b> + 나머지).
     //    노드 단위 치환이라 어순을 못 바꾼다 → 한국어 어순에 맞게 조각을 재배분한다(home 히어로와 같은 수법).
     //    <b> 강조가 'right here' → '바로 여기'로 자연히 옮겨간다.
-    'Your finished ad appears': '완성된 광고는',
+    'Your finished ad appears': '완성된 광고가 나오는 자리,',
     'right here': '바로 여기',
     ". Saved isn't final — come back and change any scene.":
       '에 나옵니다. 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
