@@ -1682,10 +1682,10 @@
     <div class="rm-preview" id="rmPreview"></div>
     <div class="rm-head"><h3 id="rmName" style="margin:0"></h3><span class="rm-badge" id="rmBadge"></span></div>
     <div class="rm-desc" id="rmDesc"></div>
+    <div id="rmAxes" class="cut-sel" style="display:none;margin:16px 0 0"></div>
     <div id="rmCuts" class="cut-sel" style="display:none;margin:16px 0 0;max-width:none"></div>
     <div id="rmModels" class="model-sel" style="display:none;margin:16px 0 0"></div>
     <div id="rmBackgrounds" class="model-sel" style="display:none;margin:16px 0 0"></div>
-    <div id="rmAxes" class="cut-sel" style="display:none;margin:16px 0 0"></div>
     <label for="rmDetail" style="display:block;font-size:12px;color:var(--dim);margin:14px 0 6px">Add detail (optional)</label>
     <textarea id="rmDetail" maxlength="300" placeholder="Add your own touch — e.g. red dress, golden hour, soft smile" style="width:100%;min-height:60px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:14px"></textarea>
     <button class="btn btn-primary" id="rmSelect" style="width:100%" onclick="selectFromModal()">Use this template</button>
@@ -4624,7 +4624,7 @@ async function generate(opts){
   const extra=extraPromptText();
   // 대상 필수 + (템플릿 또는 프롬프트 중 하나 이상)
   if(genActive>=8){toast('Too many generations at once — please wait a moment.');return;} // 동시 상한(런어웨이 방지). 크레딧도 매 생성 차감.
-  if(!subj&&!(state.mode==='custom'&&extra))return; // (테스트) Custom은 레퍼런스 없이 프롬프트만 허용
+  if(!subj&&!(state.mode==='custom'&&extra)){ if(r&&window.toast)toast('Add your product photo first ✨'); return; } // (테스트) Custom은 레퍼런스 없이 프롬프트만 허용 — 템플릿인데 대상 없으면 안내
   if(!r&&!extra&&!GAMMA_FROM)return; // γ 모드: 레시피·프롬프트 없이도 공개 creation 룩으로 생성
   if(r&&r.soon){toast('This template is coming soon.');return;}
   lastGenTemplate=r?r.name:'My prompt'; // 뷰어 모달에 표시할 템플릿
@@ -4979,20 +4979,46 @@ async function generateImages(r,subj,count,pending){
   const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
-  const queued=(data.results||[]).filter(x=>x.queued); // On Model faceswap: 스왑 대기(결과는 워커가 스왑 후 Library에 삽입)
+  const queued=(data.results||[]).filter(x=>x.queued); // On Model faceswap: 스왑 대기(워커가 몇 초 뒤 결과 삽입)
   const ok=(data.results||[]).filter(x=>x.success&&!x.queued);
   const failedR=(data.results||[]).filter(x=>!x.success); // 실패 결과(부분 실패 포함) → 실패 슬롯
   const fail=(data.results||[]).length-ok.length-queued.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
-  if(queued.length&&window.toast)toast('Preparing your On Model shots — each is reviewed before delivery and will appear in your Library shortly.');
-  // (테스트) placeholder 배치를 실제 결과로 채움(로딩 → 이미지 + 실패 슬롯). queued는 url 없음 → items 제외(깨진 썸네일 방지).
-  if(pending){ const vis=privateOn()?'private':'public'; pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.queued=queued.length; pending.loading=false; pending.model=effModelLabel(); pending.pendingCount=ok.length; pending.added=false; renderStudioResults(); }
+  if(pending){ const vis=privateOn()?'private':'public';
+    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=effModelLabel(); pending.added=false; pending.pendingCount=ok.length;
+    if(queued.length){ // async faceswap — 로딩 유지하고 잡을 폴링해서 완성되면 자동 표시(새로고침 불필요)
+      pending.loading=true; pending.queued=queued.length; renderStudioResults();
+      pollFaceswapJobs(queued,pending,vis);
+    } else { pending.loading=false; renderStudioResults(); }
+  }
   document.getElementById('resultHint').textContent=
     `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
   if(ok.some(x=>x.watermarked)){
     toast('Watermark added on the free plan — upgrade to Pro for clean images');
   }
+}
+
+// On Model faceswap 결과 폴링 — 워커가 스왑 완료하면 잡 status=succeeded+url → 로딩 배치를 실제 결과로 교체(새로고침 불필요).
+async function pollFaceswapJobs(queued,pending,vis){
+  const jobs=queued.map(x=>({id:x.jobId,done:false,url:null,idx:null,failed:false}));
+  const apply=()=>{ if(!pending)return;
+    pending.items=jobs.filter(j=>j.done&&j.url).map(j=>({url:j.url,type:'photo',idx:j.idx||null,visibility:vis}));
+    pending.failed=jobs.filter(j=>j.done&&j.failed).map(()=>({idx:null}));
+    pending.pendingCount=pending.items.length; pending.queued=jobs.filter(j=>!j.done).length;
+    pending.loading=jobs.some(j=>!j.done); renderStudioResults();
+  };
+  for(let t=0; t<60 && jobs.some(j=>!j.done); t++){
+    await new Promise(r=>setTimeout(r, t<4?2000:4000)); // 초반 2s, 이후 4s (스왑 ~5-7s)
+    for(const j of jobs){ if(j.done)continue;
+      try{ const d=await fetch('/api/generate/faceswap/jobs/'+j.id).then(r=>r.json());
+        if(d&&d.success&&d.data){ if(d.data.status==='succeeded'){ j.done=true; j.url=d.data.url; j.idx=d.data.resultIdx; } else if(d.data.status==='failed'){ j.done=true; j.failed=true; } }
+      }catch(e){}
+    }
+    apply();
+  }
+  if(jobs.some(j=>!j.done)){ jobs.forEach(j=>{ if(!j.done){ j.done=true; j.failed=true; } }); apply(); if(window.toast)toast('Some On Model shots are taking longer — check your Library shortly.'); }
+  if(pending&&(pending.items||[]).length) state.lastPreview=pending.items.map(x=>x.url).slice(0,8);
 }
 
 async function generateReel(r,subj,pending){

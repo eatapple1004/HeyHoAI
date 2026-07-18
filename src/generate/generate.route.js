@@ -953,6 +953,15 @@ router.get('/video/jobs/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// On Model faceswap(stage-2) 잡 상태 — FE 폴링용. 워커가 스왑 완료하면 status=succeeded + result_url.
+router.get('/faceswap/jobs/:id', async (req, res, next) => {
+  try {
+    const job = await faceswapRepo.findById(req.params.id);
+    if (!job || job.user_id !== req.user.id) return res.status(404).json({ success: false, error: 'Job not found' });
+    res.json({ success: true, data: { status: job.status, url: job.result_url, resultIdx: job.result_idx, error: job.error } });
+  } catch (err) { next(err); }
+});
+
 // ─── UGC 영상 엔진 (제품+컨셉 → 화보/광고 릴) ───
 //   2단계: /ugc/script(무료 대본 미리보기) → /ugc/render(검토 후 과금+렌더). 잡=ugc_jobs 테이블.
 //   대본→broll 클립(이미지→모션)→ffmpeg 조립. 다단계라 자체 오케스트레이션(ugcVideo.service).
