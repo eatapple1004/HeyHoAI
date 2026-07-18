@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/js/i18n.js?v=11" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script><!-- PortOne V2 결제창(window.PortOne) -->
 <style>
   .wrap{max-width:1120px;margin:0 auto;padding:24px 24px 90px;position:relative;z-index:2}
   /* 레오나도 /buy식 독립 전체 페이지 — 플로팅 백버튼만 (프로필·상단바 없음) */
@@ -367,10 +368,31 @@ async function loadBalance(){
   }catch(e){console.error(e);}
 }
 
-// ── 결제: Eximbay 우선, 미설정 시 Lemon Squeezy ──
-let EXIMBAY=null,sdkLoaded=false;
+// ── 결제: PortOne V2 우선 → Eximbay → Lemon Squeezy ──
+let EXIMBAY=null,PORTONE=null,sdkLoaded=false;
 async function loadPayConfig(){
+  try{ PORTONE=(await(await fetch('/api/billing/portone/config')).json()).data; }catch(e){ PORTONE={configured:false}; }
   try{ EXIMBAY=(await(await fetch('/api/billing/eximbay/config')).json()).data; }catch(e){ EXIMBAY={configured:false}; }
+}
+// PortOne V2 팩 결제: 준비 → 결제창 → 성공 시 서버 재검증(충전). 반환 true=처리됨.
+async function payWithPortOne(packId){
+  if(!(PORTONE&&PORTONE.configured&&window.PortOne))return false;
+  const d=await(await fetch('/api/billing/portone/pack/begin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
+  if(!d.success){notify(d.error||'Could not prepare payment.','error');return true;}
+  const p=d.data;
+  const resp=await window.PortOne.requestPayment({
+    storeId:p.storeId, channelKey:p.channelKey, paymentId:p.paymentId,
+    orderName:p.orderName, totalAmount:p.totalAmount, currency:p.currency||'CURRENCY_KRW',
+    payMethod:p.payMethod||'CARD',
+    customer:p.customer||undefined,
+    redirectUrl:location.origin+'/billing?purchased='+encodeURIComponent(packId) // 모바일 결제 복귀
+  });
+  if(resp&&resp.code!=null){ notify(resp.message||'Payment was cancelled.','error'); return true; }
+  // 서버가 PortOne API로 재검증 후 충전
+  const c=await(await fetch('/api/billing/portone/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:p.paymentId})})).json();
+  if(c.success){ notify('Payment complete — credits added.'); if(typeof loadBalance==='function')loadBalance(); }
+  else{ notify(c.error||'We are confirming your payment — credits will appear shortly.','error'); }
+  return true;
 }
 function loadEximbaySDK(){
   return new Promise((resolve,reject)=>{
@@ -383,6 +405,7 @@ function loadEximbaySDK(){
 async function buyPack(packId,btn){
   btn.disabled=true;const orig=btn.textContent;btn.textContent='Loading…';
   try{
+    if(await payWithPortOne(packId))return; // PortOne V2 우선(설정 시)
     if(EXIMBAY&&EXIMBAY.configured){
       const d=await(await fetch('/api/billing/eximbay/ready',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})})).json();
       if(!d.success){notify(d.error||'Could not prepare payment.','error');return;}
@@ -439,6 +462,12 @@ if(new URLSearchParams(location.search).get('purchased')){
   document.getElementById('purchasedBanner').classList.remove('hidden');
   setTimeout(loadBalance,3000);
 }
+// PortOne 모바일 리다이렉트 복귀 — redirectUrl에 paymentId(성공 시 code 없음) 붙어 돌아옴 → 서버 재검증·충전
+(function(){ const q=new URLSearchParams(location.search); const pid=q.get('paymentId'); if(!pid)return;
+  if(q.get('code')){ notify(q.get('message')||'Payment was cancelled.','error'); return; }
+  fetch('/api/billing/portone/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid})})
+    .then(r=>r.json()).then(c=>{ if(c.success){ notify('Payment complete — credits added.'); setTimeout(loadBalance,1500); } }).catch(function(){});
+})();
 // pricing.js 로드 타이밍 대응
 if(window.PRICING)syncBillingPricing();
 else window.addEventListener('DOMContentLoaded',syncBillingPricing);
