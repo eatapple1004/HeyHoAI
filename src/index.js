@@ -35,6 +35,16 @@ app.post('/api/billing/eximbay/status', express.text({ type: '*/*' }), async (re
   res.send('OK'); // Eximbay에 200 응답 (재전송 방지)
 });
 
+// PortOne V2 결제알림(웹훅) — raw body, 공개(인증 X). paymentId 추출 후 서버가 PortOne API로 재검증.
+app.post('/api/billing/portone/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+  try {
+    await require('./billing/portone.service').handleWebhook(req.body);
+  } catch (e) {
+    require('./lib/logger')('PortOne').error('webhook handler:', e.message);
+  }
+  res.send('OK'); // PortOne에 200 응답 (재전송 방지)
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
@@ -187,6 +197,7 @@ app.use('/api/accounts', requireAuth, accountRoutes);
 app.use('/api/credits', requireAuth, require('./credits/credit.route'));
 app.use('/api/billing', requireAuth, require('./billing/billing.route').router);
 app.use('/api/billing/eximbay', requireAuth, require('./billing/eximbay.route').router);
+app.use('/api/billing/portone', requireAuth, require('./billing/portone.route').router);
 app.use('/api/brand-kit', requireAuth, require('./brandkit/brandkit.route').router);
 app.use('/api/marketplace', requireAuth, require('./marketplace/marketplace.route').router);
 app.use('/api/studio', requireAuth, require('./studio/studioThemes.route').router);

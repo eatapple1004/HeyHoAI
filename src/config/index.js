@@ -130,6 +130,12 @@ const envSchema = z.object({
   EXIMBAY_API_KEY: z.string().optional(),        // Basic 인증용 API 키
   EXIMBAY_MID: z.string().optional(),            // 가맹점 ID
   EXIMBAY_ENV: z.enum(['test', 'production']).default('test'),
+
+  // Billing (PortOne V2 — 통합 결제창: KICC·카카오페이·엑심베이·토스 등 채널 중개)
+  //   STORE_ID·CHANNEL_KEY는 공개값(프론트 requestPayment). API_SECRET은 서버 결제검증 전용.
+  PORTONE_STORE_ID: z.string().optional(),       // store-...  (공개)
+  PORTONE_CHANNEL_KEY: z.string().optional(),    // channel-key-...  (공개, 테스트 채널)
+  PORTONE_API_SECRET: z.string().optional(),     // V2 API Secret (서버 검증)
 });
 
 const env = envSchema.parse(process.env);
