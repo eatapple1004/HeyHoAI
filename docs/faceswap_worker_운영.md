@@ -2,11 +2,18 @@
 
 설계 정본: `docs/onmodel_faceswap_설계_2026-07-18.md`. 이 문서는 "실제로 어떻게 켜고 지키나".
 
-## 지금 상태 (2026-07-18)
-- ✅ 코드 배포됨(upstream/main, 카드 게이트=비노출).
-- ✅ prod `faceswap_jobs` 테이블 생성됨.
-- ✅ 워커↔prod DB 폴링 연결 확인됨(tick 빈 큐 정상).
-- ⏳ 남은 것: **R2 creds를 이 Mac에 두기** → 워커 기동 → 카드 노출 → 실측 1건.
+## 지금 상태 (2026-07-19) — ✅ 라이브·end-to-end 작동 확인
+- ✅ 워커 상시 가동(pm2 `faceswap-worker`, R2 creds=`~/.doppia-r2.env`, DB/config=`~/HeyHoAI-launch/.env`).
+- ✅ On Model 카드 노출 + **실측 성공**: faceswap_jobs succeeded, 로스터 얼굴→stage-1 스왑 ~5-7초.
+- ✅ FE 폴링(`pollFaceswapJobs`) — 결과 자동 표시(새로고침 불필요), 잡 상태 `GET /api/generate/faceswap/jobs/:id`.
+
+## 🔴 배포 함정 (실제로 밟음 — 반드시 기억)
+1. **레시피 추가/변경 배포엔 `npm run migrate`(=seedRecipes) 필수.** git pull+pm2 restart만 하면 **recipes 테이블에 새 레시피가 안 들어가** → 리졸버(`/api/recipes/:id/resolve`)가 못 찾아 실패 → FE가 생성 POST도 못 보내고 "Failed"(프롬프트조차 안 생김). `recipeStore.init`이 **DB에서 로드**하므로 seed 후 **pm2 restart로 캐시 리로드**까지 해야 함.
+2. **R2는 `MEDIA_S3_REGION=auto` 필요** — config 기본값 `ap-northeast-2`는 R2가 거부(`region ... not valid`). mediaStore가 best-effort라 조용히 실패(업로드 안 됨). 워커 env에 `MEDIA_S3_REGION=auto` 넣음.
+3. faceswap_jobs 테이블만 수동 생성했다고 migrate 생략하면 안 됨(레시피 시딩이 빠짐).
+
+### 배포 체크리스트 (bodywear/레시피 변경 시)
+`git pull` → **`npm run migrate`**(레시피 시딩) → `pm2 restart heyhoai`(코드+recipeStore 리로드) → **CF Purge**(studio.html 등). 서버측만 가능(원격 EC2).
 
 ## 워커가 하는 일
 `faceswap_jobs` 큐를 폴링 → stage-1 이미지(웹이 R2에 저장)를 받아 → facefusion으로 선택 로스터 얼굴로 스왑 → 결과를 R2에 저장 + `generation_results`에 삽입(needs_human_review). 자기청소(좀비파일 0)·실패 시 크레딧 환불.

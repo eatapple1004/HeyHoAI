@@ -19,56 +19,56 @@ const GROUPS = [
     descents: ['Korean', 'Japanese', 'Chinese', 'Mongolian', 'Taiwanese'],
     m: ['Jinho', 'Haruki', 'Wei', 'Batu', 'Cheng'],
     f: ['Yerin', 'Aoi', 'Lian', 'Sarnai', 'Mei'],
-    skin: 'fair-to-warm ivory skin',
+    skin: 'fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish',
   },
   {
     key: 'southeast_asian', label: 'Southeast Asian',
     descents: ['Filipino', 'Thai', 'Indonesian', 'Vietnamese', 'Malaysian'],
     m: ['Mateo', 'Anon', 'Bayu', 'Minh', 'Faiz'],
     f: ['Liwayway', 'Kanya', 'Ayu', 'Linh', 'Nurul'],
-    skin: 'warm golden-tan skin',
+    skin: 'warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow',
   },
   {
     key: 'south_asian', label: 'South Asian',
     descents: ['Indian', 'Pakistani', 'Sri Lankan', 'Bangladeshi', 'Nepali'],
     m: ['Arjun', 'Zain', 'Ravindu', 'Rahim', 'Bibek'],
     f: ['Isha', 'Ayesha', 'Tharushi', 'Nabila', 'Sadhana'],
-    skin: 'warm deep-brown skin',
+    skin: 'warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen',
   },
   {
     key: 'black_african', label: 'Black / African',
     descents: ['Nigerian', 'Ethiopian', 'Ghanaian', 'Kenyan', 'African-American'],
     m: ['Chidi', 'Dawit', 'Kwame', 'Jomo', 'Marcus'],
     f: ['Amara', 'Sena', 'Efua', 'Zawadi', 'Imani'],
-    skin: 'rich deep-brown skin',
+    skin: 'rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen',
   },
   {
     key: 'white_european', label: 'White / European',
     descents: ['Scandinavian', 'Slavic', 'Italian', 'British', 'German'],
     m: ['Lukas', 'Ivan', 'Matteo', 'Oliver', 'Jonas'],
     f: ['Freya', 'Katya', 'Giulia', 'Amelia', 'Lena'],
-    skin: 'fair porcelain skin',
+    skin: 'fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish',
   },
   {
     key: 'hispanic_latino', label: 'Hispanic / Latino',
     descents: ['Mexican', 'Brazilian', 'Colombian', 'Argentine', 'Puerto Rican'],
     m: ['Diego', 'Rafael', 'Santiago', 'Tomas', 'Javier'],
     f: ['Valentina', 'Beatriz', 'Camila', 'Sofia', 'Lucia'],
-    skin: 'warm olive-tan skin',
+    skin: 'warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow',
   },
   {
     key: 'mena', label: 'Middle Eastern / North African',
     descents: ['Lebanese', 'Iranian', 'Turkish', 'Moroccan', 'Egyptian'],
     m: ['Karim', 'Darius', 'Emre', 'Youssef', 'Omar'],
     f: ['Layla', 'Roya', 'Elif', 'Salma', 'Nadia'],
-    skin: 'warm light-olive skin',
+    skin: 'warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish',
   },
   {
     key: 'mixed', label: 'Mixed / Multiracial',
     descents: ['Afro-European', 'Eurasian', 'Afro-Asian', 'Latino-Asian', 'MENA-European'],
     m: ['Elias', 'Kai', 'Andre', 'Noah', 'Sami'],
     f: ['Nia', 'Maya', 'Zoe', 'Elena', 'Yara'],
-    skin: 'warm caramel skin',
+    skin: 'warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow',
   },
 ];
 
@@ -87,12 +87,18 @@ const BUILD_M = [
   'statuesque classic build with balanced proportions',
 ];
 const HAIR_F = [
-  'long straight dark hair', 'shoulder-length wavy hair', 'sleek low bun',
-  'short textured bob', 'natural voluminous curls',
+  'long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen',
+  'shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces',
+  'dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges',
+  'a chin-length dark textured bob with soft natural movement and a light tousled finish',
+  'natural voluminous dark curls with defined springy coils and soft volume framing the face',
 ];
 const HAIR_M = [
-  'short neat crop', 'textured medium hair swept back', 'tight fade',
-  'natural short curls', 'slicked-back longer hair',
+  'a short neat crop with clean tapered sides and a lightly textured top, natural dark color',
+  'medium-length dark hair with natural texture swept back off the forehead, soft matte finish',
+  'a tight skin fade with short dark curls on top and crisp clean edges',
+  'short natural dark curls with defined texture and a neat rounded shape',
+  'longer dark hair slicked back smoothly with a glossy finish and a clean hairline',
 ];
 const AGES = [22, 24, 25, 27, 29]; // 모델 연령대 (군 내 5명에 분산)
 

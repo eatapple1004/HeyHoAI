@@ -13,10 +13,10 @@ module.exports = [
     "descent": "Nigerian",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "rich deep-brown skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Nigerian female fashion model, tall and slender editorial runway build, rich deep-brown skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Nigerian female fashion model, tall and slender editorial runway build, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -29,10 +29,10 @@ module.exports = [
     "descent": "Ethiopian",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "rich deep-brown skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Ethiopian female fashion model, tall athletic lean build with long limbs, rich deep-brown skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Ethiopian female fashion model, tall athletic lean build with long limbs, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -45,10 +45,10 @@ module.exports = [
     "descent": "Ghanaian",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "rich deep-brown skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Ghanaian female fashion model, willowy high-fashion build, rich deep-brown skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Ghanaian female fashion model, willowy high-fashion build, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -61,10 +61,10 @@ module.exports = [
     "descent": "Kenyan",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "rich deep-brown skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Kenyan female fashion model, toned commercial model build, rich deep-brown skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Kenyan female fashion model, toned commercial model build, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -77,10 +77,10 @@ module.exports = [
     "descent": "African-American",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "rich deep-brown skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old African-American female fashion model, statuesque elegant build with balanced proportions, rich deep-brown skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old African-American female fashion model, statuesque elegant build with balanced proportions, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -93,10 +93,10 @@ module.exports = [
     "descent": "Korean",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Korean female fashion model, tall and slender editorial runway build, fair-to-warm ivory skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Korean female fashion model, tall and slender editorial runway build, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -109,10 +109,10 @@ module.exports = [
     "descent": "Japanese",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Japanese female fashion model, tall athletic lean build with long limbs, fair-to-warm ivory skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Japanese female fashion model, tall athletic lean build with long limbs, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -125,10 +125,10 @@ module.exports = [
     "descent": "Chinese",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Chinese female fashion model, willowy high-fashion build, fair-to-warm ivory skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Chinese female fashion model, willowy high-fashion build, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -141,10 +141,10 @@ module.exports = [
     "descent": "Mongolian",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Mongolian female fashion model, toned commercial model build, fair-to-warm ivory skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Mongolian female fashion model, toned commercial model build, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -157,10 +157,10 @@ module.exports = [
     "descent": "Taiwanese",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Taiwanese female fashion model, statuesque elegant build with balanced proportions, fair-to-warm ivory skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Taiwanese female fashion model, statuesque elegant build with balanced proportions, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -173,10 +173,10 @@ module.exports = [
     "descent": "Mexican",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "warm olive-tan skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Mexican female fashion model, tall and slender editorial runway build, warm olive-tan skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Mexican female fashion model, tall and slender editorial runway build, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -189,10 +189,10 @@ module.exports = [
     "descent": "Brazilian",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "warm olive-tan skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Brazilian female fashion model, tall athletic lean build with long limbs, warm olive-tan skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Brazilian female fashion model, tall athletic lean build with long limbs, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -205,10 +205,10 @@ module.exports = [
     "descent": "Colombian",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "warm olive-tan skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Colombian female fashion model, willowy high-fashion build, warm olive-tan skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Colombian female fashion model, willowy high-fashion build, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -221,10 +221,10 @@ module.exports = [
     "descent": "Argentine",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "warm olive-tan skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Argentine female fashion model, toned commercial model build, warm olive-tan skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Argentine female fashion model, toned commercial model build, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -237,10 +237,10 @@ module.exports = [
     "descent": "Puerto Rican",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "warm olive-tan skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Puerto Rican female fashion model, statuesque elegant build with balanced proportions, warm olive-tan skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Puerto Rican female fashion model, statuesque elegant build with balanced proportions, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -253,10 +253,10 @@ module.exports = [
     "descent": "Lebanese",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "warm light-olive skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Lebanese female fashion model, tall and slender editorial runway build, warm light-olive skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Lebanese female fashion model, tall and slender editorial runway build, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -269,10 +269,10 @@ module.exports = [
     "descent": "Iranian",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "warm light-olive skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Iranian female fashion model, tall athletic lean build with long limbs, warm light-olive skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Iranian female fashion model, tall athletic lean build with long limbs, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -285,10 +285,10 @@ module.exports = [
     "descent": "Turkish",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "warm light-olive skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Turkish female fashion model, willowy high-fashion build, warm light-olive skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Turkish female fashion model, willowy high-fashion build, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -301,10 +301,10 @@ module.exports = [
     "descent": "Moroccan",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "warm light-olive skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Moroccan female fashion model, toned commercial model build, warm light-olive skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Moroccan female fashion model, toned commercial model build, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -317,10 +317,10 @@ module.exports = [
     "descent": "Egyptian",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "warm light-olive skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Egyptian female fashion model, statuesque elegant build with balanced proportions, warm light-olive skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Egyptian female fashion model, statuesque elegant build with balanced proportions, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -333,10 +333,10 @@ module.exports = [
     "descent": "Afro-European",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "warm caramel skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Afro-European female fashion model, tall and slender editorial runway build, warm caramel skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Afro-European female fashion model, tall and slender editorial runway build, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -349,10 +349,10 @@ module.exports = [
     "descent": "Eurasian",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "warm caramel skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Eurasian female fashion model, tall athletic lean build with long limbs, warm caramel skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Eurasian female fashion model, tall athletic lean build with long limbs, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -365,10 +365,10 @@ module.exports = [
     "descent": "Afro-Asian",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "warm caramel skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Afro-Asian female fashion model, willowy high-fashion build, warm caramel skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Afro-Asian female fashion model, willowy high-fashion build, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -381,10 +381,10 @@ module.exports = [
     "descent": "Latino-Asian",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "warm caramel skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Latino-Asian female fashion model, toned commercial model build, warm caramel skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Latino-Asian female fashion model, toned commercial model build, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -397,10 +397,10 @@ module.exports = [
     "descent": "MENA-European",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "warm caramel skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old MENA-European female fashion model, statuesque elegant build with balanced proportions, warm caramel skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old MENA-European female fashion model, statuesque elegant build with balanced proportions, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -413,10 +413,10 @@ module.exports = [
     "descent": "Indian",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "warm deep-brown skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Indian female fashion model, tall and slender editorial runway build, warm deep-brown skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Indian female fashion model, tall and slender editorial runway build, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -429,10 +429,10 @@ module.exports = [
     "descent": "Pakistani",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "warm deep-brown skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Pakistani female fashion model, tall athletic lean build with long limbs, warm deep-brown skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Pakistani female fashion model, tall athletic lean build with long limbs, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -445,10 +445,10 @@ module.exports = [
     "descent": "Sri Lankan",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "warm deep-brown skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Sri Lankan female fashion model, willowy high-fashion build, warm deep-brown skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Sri Lankan female fashion model, willowy high-fashion build, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -461,10 +461,10 @@ module.exports = [
     "descent": "Bangladeshi",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "warm deep-brown skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Bangladeshi female fashion model, toned commercial model build, warm deep-brown skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Bangladeshi female fashion model, toned commercial model build, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -477,10 +477,10 @@ module.exports = [
     "descent": "Nepali",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "warm deep-brown skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Nepali female fashion model, statuesque elegant build with balanced proportions, warm deep-brown skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Nepali female fashion model, statuesque elegant build with balanced proportions, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -493,10 +493,10 @@ module.exports = [
     "descent": "Filipino",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "warm golden-tan skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Filipino female fashion model, tall and slender editorial runway build, warm golden-tan skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Filipino female fashion model, tall and slender editorial runway build, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -509,10 +509,10 @@ module.exports = [
     "descent": "Thai",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "warm golden-tan skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Thai female fashion model, tall athletic lean build with long limbs, warm golden-tan skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Thai female fashion model, tall athletic lean build with long limbs, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -525,10 +525,10 @@ module.exports = [
     "descent": "Indonesian",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "warm golden-tan skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Indonesian female fashion model, willowy high-fashion build, warm golden-tan skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Indonesian female fashion model, willowy high-fashion build, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -541,10 +541,10 @@ module.exports = [
     "descent": "Vietnamese",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "warm golden-tan skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Vietnamese female fashion model, toned commercial model build, warm golden-tan skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Vietnamese female fashion model, toned commercial model build, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -557,10 +557,10 @@ module.exports = [
     "descent": "Malaysian",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "warm golden-tan skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Malaysian female fashion model, statuesque elegant build with balanced proportions, warm golden-tan skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Malaysian female fashion model, statuesque elegant build with balanced proportions, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -573,10 +573,10 @@ module.exports = [
     "descent": "Scandinavian",
     "age": 22,
     "build": "tall and slender editorial runway build",
-    "hair": "long straight dark hair",
-    "skin": "fair porcelain skin",
+    "hair": "long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Scandinavian female fashion model, tall and slender editorial runway build, fair porcelain skin, long straight dark hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Scandinavian female fashion model, tall and slender editorial runway build, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, long sleek straight dark hair with a soft center part, falling well past the shoulders with a smooth healthy sheen, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -589,10 +589,10 @@ module.exports = [
     "descent": "Slavic",
     "age": 24,
     "build": "tall athletic lean build with long limbs",
-    "hair": "shoulder-length wavy hair",
-    "skin": "fair porcelain skin",
+    "hair": "shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a stone-grey henley top",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Slavic female fashion model, tall athletic lean build with long limbs, fair porcelain skin, shoulder-length wavy hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Slavic female fashion model, tall athletic lean build with long limbs, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, shoulder-length loose wavy dark hair with soft natural volume and gentle face-framing pieces, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -605,10 +605,10 @@ module.exports = [
     "descent": "Italian",
     "age": 25,
     "build": "willowy high-fashion build",
-    "hair": "sleek low bun",
-    "skin": "fair porcelain skin",
+    "hair": "dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a black crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Italian female fashion model, willowy high-fashion build, fair porcelain skin, sleek low bun, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Italian female fashion model, willowy high-fashion build, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, dark hair pulled back into a sleek polished low bun with a clean center part and smooth edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a black crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -621,10 +621,10 @@ module.exports = [
     "descent": "British",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "short textured bob",
-    "skin": "fair porcelain skin",
+    "hair": "a chin-length dark textured bob with soft natural movement and a light tousled finish",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a beige crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old British female fashion model, toned commercial model build, fair porcelain skin, short textured bob, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old British female fashion model, toned commercial model build, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, a chin-length dark textured bob with soft natural movement and a light tousled finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -637,10 +637,10 @@ module.exports = [
     "descent": "German",
     "age": 29,
     "build": "statuesque elegant build with balanced proportions",
-    "hair": "natural voluminous curls",
-    "skin": "fair porcelain skin",
+    "hair": "natural voluminous dark curls with defined springy coils and soft volume framing the face",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a plain white crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old German female fashion model, statuesque elegant build with balanced proportions, fair porcelain skin, natural voluminous curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old German female fashion model, statuesque elegant build with balanced proportions, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -653,10 +653,10 @@ module.exports = [
     "descent": "Nigerian",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "rich deep-brown skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Nigerian male fashion model, tall lean editorial runway build, rich deep-brown skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Nigerian male fashion model, tall lean editorial runway build, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -669,10 +669,10 @@ module.exports = [
     "descent": "Ethiopian",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "rich deep-brown skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Ethiopian male fashion model, tall athletic build with broad shoulders and defined jaw, rich deep-brown skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Ethiopian male fashion model, tall athletic build with broad shoulders and defined jaw, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -685,10 +685,10 @@ module.exports = [
     "descent": "Ghanaian",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "rich deep-brown skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Ghanaian male fashion model, slim high-fashion build with long limbs, rich deep-brown skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Ghanaian male fashion model, slim high-fashion build with long limbs, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -701,10 +701,10 @@ module.exports = [
     "descent": "Kenyan",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "rich deep-brown skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Kenyan male fashion model, toned commercial model build, rich deep-brown skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Kenyan male fashion model, toned commercial model build, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -717,10 +717,10 @@ module.exports = [
     "descent": "African-American",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "rich deep-brown skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 29-year-old African-American male fashion model, statuesque classic build with balanced proportions, rich deep-brown skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old African-American male fashion model, statuesque classic build with balanced proportions, rich deep-brown skin with warm mahogany undertones, a smooth even complexion and a soft natural sheen, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -733,10 +733,10 @@ module.exports = [
     "descent": "Korean",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Korean male fashion model, tall lean editorial runway build, fair-to-warm ivory skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Korean male fashion model, tall lean editorial runway build, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -749,10 +749,10 @@ module.exports = [
     "descent": "Japanese",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Japanese male fashion model, tall athletic build with broad shoulders and defined jaw, fair-to-warm ivory skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Japanese male fashion model, tall athletic build with broad shoulders and defined jaw, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -765,10 +765,10 @@ module.exports = [
     "descent": "Chinese",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Chinese male fashion model, slim high-fashion build with long limbs, fair-to-warm ivory skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Chinese male fashion model, slim high-fashion build with long limbs, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -781,10 +781,10 @@ module.exports = [
     "descent": "Mongolian",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Mongolian male fashion model, toned commercial model build, fair-to-warm ivory skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Mongolian male fashion model, toned commercial model build, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -797,10 +797,10 @@ module.exports = [
     "descent": "Taiwanese",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "fair-to-warm ivory skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Taiwanese male fashion model, statuesque classic build with balanced proportions, fair-to-warm ivory skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Taiwanese male fashion model, statuesque classic build with balanced proportions, fair-to-warm ivory skin with soft neutral undertones, a smooth even luminous complexion and a natural satin finish, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -813,10 +813,10 @@ module.exports = [
     "descent": "Mexican",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "warm olive-tan skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Mexican male fashion model, tall lean editorial runway build, warm olive-tan skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Mexican male fashion model, tall lean editorial runway build, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -829,10 +829,10 @@ module.exports = [
     "descent": "Brazilian",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "warm olive-tan skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Brazilian male fashion model, tall athletic build with broad shoulders and defined jaw, warm olive-tan skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Brazilian male fashion model, tall athletic build with broad shoulders and defined jaw, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -845,10 +845,10 @@ module.exports = [
     "descent": "Colombian",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "warm olive-tan skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Colombian male fashion model, slim high-fashion build with long limbs, warm olive-tan skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Colombian male fashion model, slim high-fashion build with long limbs, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -861,10 +861,10 @@ module.exports = [
     "descent": "Argentine",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "warm olive-tan skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Argentine male fashion model, toned commercial model build, warm olive-tan skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Argentine male fashion model, toned commercial model build, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -877,10 +877,10 @@ module.exports = [
     "descent": "Puerto Rican",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "warm olive-tan skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Puerto Rican male fashion model, statuesque classic build with balanced proportions, warm olive-tan skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Puerto Rican male fashion model, statuesque classic build with balanced proportions, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -893,10 +893,10 @@ module.exports = [
     "descent": "Lebanese",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "warm light-olive skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Lebanese male fashion model, tall lean editorial runway build, warm light-olive skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Lebanese male fashion model, tall lean editorial runway build, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -909,10 +909,10 @@ module.exports = [
     "descent": "Iranian",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "warm light-olive skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Iranian male fashion model, tall athletic build with broad shoulders and defined jaw, warm light-olive skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Iranian male fashion model, tall athletic build with broad shoulders and defined jaw, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -925,10 +925,10 @@ module.exports = [
     "descent": "Turkish",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "warm light-olive skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Turkish male fashion model, slim high-fashion build with long limbs, warm light-olive skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Turkish male fashion model, slim high-fashion build with long limbs, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -941,10 +941,10 @@ module.exports = [
     "descent": "Moroccan",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "warm light-olive skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Moroccan male fashion model, toned commercial model build, warm light-olive skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Moroccan male fashion model, toned commercial model build, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -957,10 +957,10 @@ module.exports = [
     "descent": "Egyptian",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "warm light-olive skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Egyptian male fashion model, statuesque classic build with balanced proportions, warm light-olive skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Egyptian male fashion model, statuesque classic build with balanced proportions, warm light-olive skin with soft golden undertones, a smooth even complexion and a natural satin finish, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -973,10 +973,10 @@ module.exports = [
     "descent": "Afro-European",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "warm caramel skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Afro-European male fashion model, tall lean editorial runway build, warm caramel skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Afro-European male fashion model, tall lean editorial runway build, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -989,10 +989,10 @@ module.exports = [
     "descent": "Eurasian",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "warm caramel skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Eurasian male fashion model, tall athletic build with broad shoulders and defined jaw, warm caramel skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Eurasian male fashion model, tall athletic build with broad shoulders and defined jaw, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1005,10 +1005,10 @@ module.exports = [
     "descent": "Afro-Asian",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "warm caramel skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Afro-Asian male fashion model, slim high-fashion build with long limbs, warm caramel skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Afro-Asian male fashion model, slim high-fashion build with long limbs, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1021,10 +1021,10 @@ module.exports = [
     "descent": "Latino-Asian",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "warm caramel skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Latino-Asian male fashion model, toned commercial model build, warm caramel skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Latino-Asian male fashion model, toned commercial model build, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1037,10 +1037,10 @@ module.exports = [
     "descent": "MENA-European",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "warm caramel skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 29-year-old MENA-European male fashion model, statuesque classic build with balanced proportions, warm caramel skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old MENA-European male fashion model, statuesque classic build with balanced proportions, warm caramel skin with golden-honey undertones, a smooth even complexion and a soft radiant glow, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1053,10 +1053,10 @@ module.exports = [
     "descent": "Indian",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "warm deep-brown skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Indian male fashion model, tall lean editorial runway build, warm deep-brown skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Indian male fashion model, tall lean editorial runway build, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1069,10 +1069,10 @@ module.exports = [
     "descent": "Pakistani",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "warm deep-brown skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Pakistani male fashion model, tall athletic build with broad shoulders and defined jaw, warm deep-brown skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Pakistani male fashion model, tall athletic build with broad shoulders and defined jaw, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1085,10 +1085,10 @@ module.exports = [
     "descent": "Sri Lankan",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "warm deep-brown skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Sri Lankan male fashion model, slim high-fashion build with long limbs, warm deep-brown skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Sri Lankan male fashion model, slim high-fashion build with long limbs, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1101,10 +1101,10 @@ module.exports = [
     "descent": "Bangladeshi",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "warm deep-brown skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Bangladeshi male fashion model, toned commercial model build, warm deep-brown skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Bangladeshi male fashion model, toned commercial model build, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1117,10 +1117,10 @@ module.exports = [
     "descent": "Nepali",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "warm deep-brown skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Nepali male fashion model, statuesque classic build with balanced proportions, warm deep-brown skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Nepali male fashion model, statuesque classic build with balanced proportions, warm deep-brown skin with rich golden undertones, a smooth even complexion and a soft radiant sheen, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1133,10 +1133,10 @@ module.exports = [
     "descent": "Filipino",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "warm golden-tan skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Filipino male fashion model, tall lean editorial runway build, warm golden-tan skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Filipino male fashion model, tall lean editorial runway build, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1149,10 +1149,10 @@ module.exports = [
     "descent": "Thai",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "warm golden-tan skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Thai male fashion model, tall athletic build with broad shoulders and defined jaw, warm golden-tan skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Thai male fashion model, tall athletic build with broad shoulders and defined jaw, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1165,10 +1165,10 @@ module.exports = [
     "descent": "Indonesian",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "warm golden-tan skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Indonesian male fashion model, slim high-fashion build with long limbs, warm golden-tan skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Indonesian male fashion model, slim high-fashion build with long limbs, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1181,10 +1181,10 @@ module.exports = [
     "descent": "Vietnamese",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "warm golden-tan skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 27-year-old Vietnamese male fashion model, toned commercial model build, warm golden-tan skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old Vietnamese male fashion model, toned commercial model build, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1197,10 +1197,10 @@ module.exports = [
     "descent": "Malaysian",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "warm golden-tan skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old Malaysian male fashion model, statuesque classic build with balanced proportions, warm golden-tan skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old Malaysian male fashion model, statuesque classic build with balanced proportions, warm golden-tan skin with sun-kissed honey undertones, a smooth even complexion and a soft natural glow, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1213,10 +1213,10 @@ module.exports = [
     "descent": "Scandinavian",
     "age": 22,
     "build": "tall lean editorial runway build",
-    "hair": "short neat crop",
-    "skin": "fair porcelain skin",
+    "hair": "a short neat crop with clean tapered sides and a lightly textured top, natural dark color",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 22-year-old Scandinavian male fashion model, tall lean editorial runway build, fair porcelain skin, short neat crop, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 22-year-old Scandinavian male fashion model, tall lean editorial runway build, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, a short neat crop with clean tapered sides and a lightly textured top, natural dark color, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1229,10 +1229,10 @@ module.exports = [
     "descent": "Slavic",
     "age": 24,
     "build": "tall athletic build with broad shoulders and defined jaw",
-    "hair": "textured medium hair swept back",
-    "skin": "fair porcelain skin",
+    "hair": "medium-length dark hair with natural texture swept back off the forehead, soft matte finish",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a light grey crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 24-year-old Slavic male fashion model, tall athletic build with broad shoulders and defined jaw, fair porcelain skin, textured medium hair swept back, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 24-year-old Slavic male fashion model, tall athletic build with broad shoulders and defined jaw, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, medium-length dark hair with natural texture swept back off the forehead, soft matte finish, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1245,10 +1245,10 @@ module.exports = [
     "descent": "Italian",
     "age": 25,
     "build": "slim high-fashion build with long limbs",
-    "hair": "tight fade",
-    "skin": "fair porcelain skin",
+    "hair": "a tight skin fade with short dark curls on top and crisp clean edges",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a plain off-white crew-neck sweater",
-    "prompt": "upper-body studio casting portrait of a 25-year-old Italian male fashion model, slim high-fashion build with long limbs, fair porcelain skin, tight fade, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 25-year-old Italian male fashion model, slim high-fashion build with long limbs, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, a tight skin fade with short dark curls on top and crisp clean edges, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain off-white crew-neck sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1261,10 +1261,10 @@ module.exports = [
     "descent": "British",
     "age": 27,
     "build": "toned commercial model build",
-    "hair": "natural short curls",
-    "skin": "fair porcelain skin",
+    "hair": "short natural dark curls with defined texture and a neat rounded shape",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a soft cream fine-knit crew sweater",
-    "prompt": "upper-body studio casting portrait of a 27-year-old British male fashion model, toned commercial model build, fair porcelain skin, natural short curls, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 27-year-old British male fashion model, toned commercial model build, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, short natural dark curls with defined texture and a neat rounded shape, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -1277,10 +1277,10 @@ module.exports = [
     "descent": "German",
     "age": 29,
     "build": "statuesque classic build with balanced proportions",
-    "hair": "slicked-back longer hair",
-    "skin": "fair porcelain skin",
+    "hair": "longer dark hair slicked back smoothly with a glossy finish and a clean hairline",
+    "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a charcoal crew-neck t-shirt",
-    "prompt": "upper-body studio casting portrait of a 29-year-old German male fashion model, statuesque classic build with balanced proportions, fair porcelain skin, slicked-back longer hair, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "prompt": "upper-body studio casting portrait of a 29-year-old German male fashion model, statuesque classic build with balanced proportions, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, longer dark hair slicked back smoothly with a glossy finish and a clean hairline, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a charcoal crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   }
 ];
