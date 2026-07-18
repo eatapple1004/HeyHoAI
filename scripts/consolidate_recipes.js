@@ -21,11 +21,13 @@ const SECTIONS = [
   ['studiomodel','스튜디오 모델컷','product'],
   ['producthero','제품 히어로(화장품)','product'],
   ['accessories','악세서리(주얼리)','product'],
+  ['underwear','속옷(언더웨어)','product'],
 ];
 // 파라미터형 섹션 — 개수 6~8·◈2진입·싼릴스 휴리스틱 면제(카드는 부모 1장뿐).
 // studiomodel: 자식 컷 없이 부모 1장 + 모달 모델 픽커(컷 대신 모델 선택) → 동일 면제.
 // accessories: 부모 3(Product Cut·Worn Cut·Hero) + 파라미터형 자식 → 동일 면제.
-const PARAM_SECTIONS = new Set(['productcut', 'studiomodel', 'producthero', 'accessories']);
+// underwear: 부모 4(Product Cut·Worn Cut·On Model·Hero) + 파라미터형 자식 → 동일 면제.
+const PARAM_SECTIONS = new Set(['productcut', 'studiomodel', 'producthero', 'accessories', 'underwear']);
 
 function tryLoad(key){
   for (const f of [`recipes.${key}.v2.js`, `recipes.${key}.js`]) {

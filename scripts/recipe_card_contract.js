@@ -18,9 +18,9 @@ const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const guards = require(path.join(SEEDS, 'product.guards.v2.js')); // ← resolvedGuards 실호출
 
-const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel', 'producthero', 'accessories'];
+const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel', 'producthero', 'accessories', 'underwear'];
 const PRODUCT = new Set(['fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'general']);
-// productcut은 PRODUCT에 넣지 않음 — guards(product.guards.v2.js)에 vertical 없음. guards는 PREVIEW 전용이라 생략 안전.
+// productcut/accessories/underwear 등 파라미터형은 PRODUCT에 넣지 않음 — guards(product.guards.v2.js)에 vertical 없음. guards는 PREVIEW 전용이라 생략 안전.
 
 const slug = (s) => String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 

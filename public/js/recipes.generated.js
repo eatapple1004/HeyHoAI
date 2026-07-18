@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 170→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 172→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 170,
-  "new_count": 137,
+  "total": 172,
+  "new_count": 139,
   "overlay_count": 7,
   "guarded_count": 118,
   "provisional_count": 17,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 170,
-    "contract_total": 170,
-    "catalog_total": 170,
-    "status_total": 170,
+    "fe_total": 172,
+    "contract_total": 172,
+    "catalog_total": 172,
+    "status_total": 172,
     "ok": true
   },
   "cards": {
@@ -3890,6 +3890,88 @@
           {
             "id": "jewelry-floating-luxe",
             "name": "Jewelry Floating Luxe",
+            "preview": null
+          }
+        ]
+      }
+    ],
+    "underwear": [
+      {
+        "id": "underwear-product-cut",
+        "cat": "Product Cut",
+        "name": "Underwear Product Cut",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "🧍",
+        "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)",
+        "cuts": [
+          {
+            "id": "underwear-flat-lay",
+            "name": "Underwear Flat Lay",
+            "preview": null
+          },
+          {
+            "id": "underwear-ghost-mannequin",
+            "name": "Underwear Ghost Mannequin",
+            "preview": null
+          },
+          {
+            "id": "underwear-packaging",
+            "name": "Underwear Packaging",
+            "preview": null
+          },
+          {
+            "id": "underwear-fabric-macro",
+            "name": "Underwear Fabric Macro",
+            "preview": null
+          }
+        ]
+      },
+      {
+        "id": "underwear-hero",
+        "cat": "Hero",
+        "name": "Underwear Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "guards": [],
+        "held": true,
+        "emoji": "✨",
+        "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)",
+        "cuts": [
+          {
+            "id": "underwear-noir",
+            "name": "Underwear Noir",
+            "preview": null
+          },
+          {
+            "id": "underwear-athletic",
+            "name": "Underwear Athletic",
+            "preview": null
+          },
+          {
+            "id": "underwear-natural-linen",
+            "name": "Underwear Natural Linen",
+            "preview": null
+          },
+          {
+            "id": "underwear-spotlight",
+            "name": "Underwear Spotlight",
             "preview": null
           }
         ]

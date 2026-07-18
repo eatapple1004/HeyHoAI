@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 170,
-  "new_count": 137,
+  "total": 172,
+  "new_count": 139,
   "provisional_count": 17,
   "drift_guard": {
-    "seed_total": 170,
-    "status_total": 170,
+    "seed_total": 172,
+    "status_total": 172,
     "ok": true
   },
   "id_collisions": [],
@@ -3317,6 +3317,80 @@
           {
             "id": "jewelry-floating-luxe",
             "name": "Jewelry Floating Luxe",
+            "preview": null
+          }
+        ]
+      }
+    ],
+    "underwear": [
+      {
+        "id": "underwear-product-cut",
+        "cat": "Product Cut",
+        "name": "Underwear Product Cut",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "cuts": [
+          {
+            "id": "underwear-flat-lay",
+            "name": "Underwear Flat Lay",
+            "preview": null
+          },
+          {
+            "id": "underwear-ghost-mannequin",
+            "name": "Underwear Ghost Mannequin",
+            "preview": null
+          },
+          {
+            "id": "underwear-packaging",
+            "name": "Underwear Packaging",
+            "preview": null
+          },
+          {
+            "id": "underwear-fabric-macro",
+            "name": "Underwear Fabric Macro",
+            "preview": null
+          }
+        ]
+      },
+      {
+        "id": "underwear-hero",
+        "cat": "Hero",
+        "name": "Underwear Hero",
+        "type": "image",
+        "cost": 2,
+        "new": true,
+        "provisional": false,
+        "flags": [
+          "experimental",
+          "needs_human_review"
+        ],
+        "text_overlay": false,
+        "cuts": [
+          {
+            "id": "underwear-noir",
+            "name": "Underwear Noir",
+            "preview": null
+          },
+          {
+            "id": "underwear-athletic",
+            "name": "Underwear Athletic",
+            "preview": null
+          },
+          {
+            "id": "underwear-natural-linen",
+            "name": "Underwear Natural Linen",
+            "preview": null
+          },
+          {
+            "id": "underwear-spotlight",
+            "name": "Underwear Spotlight",
             "preview": null
           }
         ]
