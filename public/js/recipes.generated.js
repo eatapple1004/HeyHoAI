@@ -3895,11 +3895,11 @@
         ]
       }
     ],
-    "underwear": [
+    "bodywear": [
       {
-        "id": "underwear-product-cut",
+        "id": "bodywear-product-cut",
         "cat": "Product Cut",
-        "name": "Underwear Product Cut",
+        "name": "Bodywear Product Cut",
         "type": "image",
         "cost": 2,
         "new": true,
@@ -3915,31 +3915,34 @@
         "grad": "linear-gradient(150deg,#7c6cff,#5ee0d6)",
         "cuts": [
           {
-            "id": "underwear-flat-lay",
-            "name": "Underwear Flat Lay",
+            "id": "bodywear-flat-lay",
+            "name": "Bodywear Flat Lay",
             "preview": null
           },
           {
-            "id": "underwear-ghost-mannequin",
-            "name": "Underwear Ghost Mannequin",
+            "id": "bodywear-ghost-mannequin",
+            "name": "Bodywear Ghost Mannequin",
             "preview": null
           },
           {
-            "id": "underwear-packaging",
-            "name": "Underwear Packaging",
+            "id": "bodywear-packaging",
+            "name": "Bodywear Packaging",
             "preview": null
           },
           {
-            "id": "underwear-fabric-macro",
-            "name": "Underwear Fabric Macro",
+            "id": "bodywear-fabric-macro",
+            "name": "Bodywear Fabric Macro",
             "preview": null
           }
+        ],
+        "axes": [
+          "garment"
         ]
       },
       {
-        "id": "underwear-hero",
+        "id": "bodywear-hero",
         "cat": "Hero",
-        "name": "Underwear Hero",
+        "name": "Bodywear Hero",
         "type": "image",
         "cost": 2,
         "new": true,
@@ -3952,28 +3955,84 @@
         "guards": [],
         "held": true,
         "emoji": "✨",
-        "grad": "linear-gradient(150deg,#a99bff,#ff7eb6)",
+        "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)",
         "cuts": [
           {
-            "id": "underwear-noir",
-            "name": "Underwear Noir",
-            "preview": null
+            "id": "bodywear-clean",
+            "name": "Bodywear Clean",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "bra",
+              "set",
+              "swim"
+            ]
           },
           {
-            "id": "underwear-athletic",
-            "name": "Underwear Athletic",
-            "preview": null
+            "id": "bodywear-athletic",
+            "name": "Bodywear Athletic",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "swim"
+            ]
           },
           {
-            "id": "underwear-natural-linen",
-            "name": "Underwear Natural Linen",
-            "preview": null
+            "id": "bodywear-noir",
+            "name": "Bodywear Noir",
+            "preview": null,
+            "garment": [
+              "bottoms",
+              "bra",
+              "set"
+            ]
           },
           {
-            "id": "underwear-spotlight",
-            "name": "Underwear Spotlight",
-            "preview": null
+            "id": "bodywear-lace",
+            "name": "Bodywear Lace",
+            "preview": null,
+            "garment": [
+              "bra",
+              "set"
+            ]
+          },
+          {
+            "id": "bodywear-silk",
+            "name": "Bodywear Silk",
+            "preview": null,
+            "garment": [
+              "bra",
+              "set"
+            ]
+          },
+          {
+            "id": "bodywear-boudoir",
+            "name": "Bodywear Boudoir",
+            "preview": null,
+            "garment": [
+              "bra",
+              "set"
+            ]
+          },
+          {
+            "id": "bodywear-beach",
+            "name": "Bodywear Beach",
+            "preview": null,
+            "garment": [
+              "swim"
+            ]
+          },
+          {
+            "id": "bodywear-poolside",
+            "name": "Bodywear Poolside",
+            "preview": null,
+            "garment": [
+              "swim"
+            ]
           }
+        ],
+        "axes": [
+          "garment"
         ]
       }
     ]

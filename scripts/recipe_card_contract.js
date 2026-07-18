@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SEEDS = path.join(ROOT, 'src/recipes/seeds');
 const guards = require(path.join(SEEDS, 'product.guards.v2.js')); // ← resolvedGuards 실호출
 
-const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel', 'producthero', 'accessories', 'underwear'];
+const VERTICALS = ['influencer', 'fashion', 'beauty', 'jewelry', 'food', 'coffee', 'home', 'tech', 'pet', 'ugc', 'general', 'headshot', 'productcut', 'studiomodel', 'producthero', 'accessories', 'bodywear'];
 const PRODUCT = new Set(['fashion', 'beauty', 'jewelry', 'food', 'home', 'tech', 'pet', 'general']);
 // productcut/accessories/underwear 등 파라미터형은 PRODUCT에 넣지 않음 — guards(product.guards.v2.js)에 vertical 없음. guards는 PREVIEW 전용이라 생략 안전.
 
@@ -41,7 +41,7 @@ for (const v of VERTICALS) {
   for (const r of v2) {
     const pid = r.config && r.config.parent_id;
     if (!pid) continue;
-    (childrenByParent[pid] = childrenByParent[pid] || []).push({ id: slug(r.name), name: r.name, preview: r.preview || null, ...(r.meta && r.meta.fit ? { fit: r.meta.fit } : {}) });
+    (childrenByParent[pid] = childrenByParent[pid] || []).push({ id: slug(r.name), name: r.name, preview: r.preview || null, ...(r.meta && r.meta.fit ? { fit: r.meta.fit } : {}), ...(r.meta && r.meta.garment ? { garment: r.meta.garment } : {}) });
   }
   out[v] = v2.filter((r) => !(r.config && r.config.parent_id)).map((r) => {
     const isNew = netNew || !v1names.has((r.name || '').trim().toLowerCase());

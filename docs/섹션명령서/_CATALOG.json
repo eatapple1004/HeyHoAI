@@ -291,17 +291,17 @@
     "overlay": []
   },
   {
-    "key": "underwear",
-    "name": "속옷(언더웨어)",
+    "key": "bodywear",
+    "name": "속옷·수영복(Innerwear & Swim)",
     "mode": "product",
     "status": "OK",
-    "file": "recipes.underwear.v2.js",
+    "file": "recipes.bodywear.v2.js",
     "count": 2,
     "issues": [],
     "flags": [
-      "Underwear Product Cut [experimental,needs_human_review]",
-      "Underwear Hero [experimental,needs_human_review]",
-      "파라미터형: 부모 2 + 컷 8 (개수/가격사다리 휴리스틱 면제)"
+      "Bodywear Product Cut [experimental,needs_human_review]",
+      "Bodywear Hero [experimental,needs_human_review]",
+      "파라미터형: 부모 2 + 컷 12 (개수/가격사다리 휴리스틱 면제)"
     ],
     "overlay": []
   }

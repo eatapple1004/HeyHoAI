@@ -25,12 +25,13 @@
     categories: [
       {
         slug: 'apparel', label: 'Apparel', active: true, // 의류
-        verticals: ['fashion', 'productcut', 'studiomodel'], // 이 카테고리에 속한 기존 recipe.vertical
+        verticals: ['fashion', 'productcut', 'studiomodel', 'bodywear'], // 이 카테고리에 속한 기존 recipe.vertical
         themes: ['fashion', 'productcut'], // Store 카탈로그(테마 슬러그) 버킷용 — 이 테마의 마켓 템플릿이 이 카테고리 칩에 노출
         contentTypes: [
-          // (2026-07-08 사용자 지시: lookbook·fabric·editorial·video 콘텐츠타입 삭제. product-cut·on-model만 유지.)
-          { slug: 'product-cut', label: 'Product Cut', match: { vertical: ['productcut'] } }, // 제품컷
-          { slug: 'on-model',    label: 'On-model',    match: { category: ['OnModel'] } },     // 착용컷
+          // (2026-07-18 스몰카테고리 재편: 콘텐츠타입 = 품목 라인. Clothing=일반의류(fashion/productcut/studiomodel),
+          //  Innerwear & Swim=속옷·란제리·수영복(bodywear, 품목은 in-template garment axis). 설계=docs/apparel_bodywear_재편_설계_2026-07-18.md)
+          { slug: 'clothing',       label: 'Clothing',         match: { vertical: ['fashion', 'productcut', 'studiomodel'] } }, // 일반 의류
+          { slug: 'innerwear-swim', label: 'Innerwear & Swim', match: { vertical: ['bodywear'] } },                            // 속옷·란제리·수영복
         ],
       },
       // 화장품(Cosmetics). slug은 매핑·딥링크 위해 'beauty' 유지(Beauty→Cosmetics 라벨 변경, General 삭제 2026-07-08).
@@ -70,18 +71,7 @@
         ],
       },
 
-      // 속옷(Underwear) — 2026-07-18 신설. 라이브: Product Cut + Hero(사람 없음, 기존 파이프라인).
-      //   온바디(Worn Cut/On Model)는 faceswap 파이프라인 대기 → 착지 시 contentTypes에 worn-cut/on-model 추가.
-      //   라벨 'Underwear'는 i18n.js에 '속옷' 항목 추가 전까지 영어로 노출됨.
-      {
-        slug: 'underwear', label: 'Underwear', active: true,
-        verticals: ['underwear'],
-        themes: ['underwear'],
-        contentTypes: [
-          { slug: 'product-cut', label: 'Product Cut', match: { category: ['Product Cut'] } },
-          { slug: 'hero',        label: 'Hero',        match: { category: ['Hero'] } },
-        ],
-      },
+      // (2026-07-18) 옛 top-level 'underwear' 카테고리 제거 → Apparel > Innerwear & Swim(bodywear)로 흡수·재편.
 
       // 향후 추가 예정(예시 — 지금은 비활성):
       // { slug:'jewelry', label:'주얼리', active:false, verticals:['jewelry'],

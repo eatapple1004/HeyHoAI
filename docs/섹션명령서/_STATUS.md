@@ -20,7 +20,7 @@
 | studiomodel (스튜디오 모델컷) | OK | 1 | `recipes.studiomodel.v2.js` |
 | producthero (제품 히어로(화장품)) | OK | 1 | `recipes.producthero.v2.js` |
 | accessories (악세서리(주얼리)) | OK | 4 | `recipes.accessories.v2.js` |
-| underwear (속옷(언더웨어)) | OK | 2 | `recipes.underwear.v2.js` |
+| bodywear (속옷·수영복(Innerwear & Swim)) | OK | 2 | `recipes.bodywear.v2.js` |
 
 ## 이슈
 **influencer**
@@ -151,10 +151,10 @@ _없음_
 - Jewelry Hero [experimental,needs_human_review]
 - 파라미터형: 부모 4 + 컷 17 (개수/가격사다리 휴리스틱 면제)
 
-**underwear**
-- Underwear Product Cut [experimental,needs_human_review]
-- Underwear Hero [experimental,needs_human_review]
-- 파라미터형: 부모 2 + 컷 8 (개수/가격사다리 휴리스틱 면제)
+**bodywear**
+- Bodywear Product Cut [experimental,needs_human_review]
+- Bodywear Hero [experimental,needs_human_review]
+- 파라미터형: 부모 2 + 컷 12 (개수/가격사다리 휴리스틱 면제)
 
 ## 🅣 텍스트 오버레이 (text_overlay)
 **beauty**: Before/After Result Reel · Ingredient Claim Card

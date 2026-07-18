@@ -1716,9 +1716,9 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=19"></script>
-<script src="/js/themes.js?v=8"></script>
-<script src="/js/taxonomy.js?v=9"></script>
+<script src="/js/recipes.generated.js?v=20"></script>
+<script src="/js/themes.js?v=9"></script>
+<script src="/js/taxonomy.js?v=10"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/models.kids.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
@@ -1785,11 +1785,11 @@ function buildTemplates(){
     if(!m.preview)m.preview='/img/accessories/'+c.id+'.png'; // 카드 썸네일=부모 id
     shopping.push(m);
   });
-  (C.underwear||[]).forEach(c=>{ // 오피셜 Underwear — 부모 패밀리(Product Cut·Hero). 온바디(Worn/On Model)는 faceswap 파이프라인 대기.
-    const m=mk(c,c.cat,'underwear'); // cat=recipe.category → taxonomy Underwear>Product Cut/Hero.
-    if(c.picker)m.picker=c.picker;
-    if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/underwear/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
-    if(!m.preview)m.preview='/img/underwear/'+c.id+'.png'; // 카드 썸네일=부모 id
+  (C.bodywear||[]).forEach(c=>{ // 오피셜 Bodywear(Innerwear & Swim) — Product Cut·Hero. 품목=garment axis(형태힌트+무드 조건부). 온바디=faceswap 파이프라인 대기.
+    const m=mk(c,c.cat,'bodywear'); // cat=recipe.category → taxonomy Innerwear & Swim>Product Cut/Hero.
+    if(c.axes)m.axes=c.axes; // garment 축(형태힌트 주입 + 무드 조건부 필터)
+    if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/bodywear/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
+    if(!m.preview)m.preview='/img/bodywear/'+c.id+'.png'; // 카드 썸네일=부모 id
     shopping.push(m);
   });
   TEMPLATES={
@@ -2966,7 +2966,7 @@ function bgPhrase(){ const b=bgById(state.bgId); if(!b||b.id==='studio'||!b.scen
 let modalCutFilter='all';
 const CUT_FIT_LABEL={skincare:'Skincare',color:'Color',fragrance:'Fragrance',luxury:'Luxury',set:'Set',body:'Body'};
 function cutFitTags(r){ const s=[]; (r&&r.cuts||[]).forEach(ct=>{(ct.fit||[]).forEach(f=>{if(s.indexOf(f)<0)s.push(f);});}); return s; }
-function cutsForFilter(r,f){ return (r&&r.cuts||[]).filter(ct=> f==='all' || !ct.fit || !ct.fit.length || ct.fit.indexOf(f)>=0 ); } // 빈 fit=범용(항상)
+function cutsForFilter(r,f){ const gm=(modalAxis&&modalAxis.garment)||'auto'; return (r&&r.cuts||[]).filter(ct=> (f==='all' || !ct.fit || !ct.fit.length || ct.fit.indexOf(f)>=0) && (gm==='auto' || !ct.garment || !ct.garment.length || ct.garment.indexOf(gm)>=0) ); } // 빈 fit/garment=범용(항상). garment=현재 garment 축 선택(bodywear 품목별 조건부 무드)
 function cutCardHtml(r,ct){
   const img=ct.preview||('/img/productcut/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,var(--accent),#5ee0d6)';
   return `<button type="button" data-cut="${esc(ct.id)}" class="cut-card${modalCutId===ct.id?' on':''}" onclick="setModalCut('${esc(ct.id)}')">`
@@ -2983,10 +2983,11 @@ const AXIS_DEFS={
   skin:{title:'Skin tone',attr:'sk',mode:'swatch',opts:[['auto','Auto','','linear-gradient(135deg,#f4dcc7,#7c5233)'],['fair','Fair','fair porcelain skin','#f2d9c4'],['light','Light','light skin','#e6bf9c'],['medium','Medium','medium warm skin','#cf9e70'],['tan','Tan','tan sun-kissed skin','#b07a4e'],['deep','Deep','deep rich skin','#7c5233']]},
   age:{title:'Age',attr:'ag',mode:'chip',opts:[['auto','Auto',''],['20s','20s','youthful young-adult skin'],['30s','30s','natural skin in the 30s'],['40s','40s','mature refined skin in the 40s'],['50s','50s+','graceful mature senior skin']]},
   concept:{title:'Concept',attr:'cn',mode:'card',opts:[['studio','Studio','','/img/accessories/concept-studio.png'],['daylight','Daylight','in soft natural daylight with an airy bright mood','/img/accessories/concept-daylight.png'],['warm','Warm','warm editorial lighting with a cozy premium mood','/img/accessories/concept-warm.png'],['marble','Marble','on a pale marble surface with a bright gallery-luxe mood','/img/accessories/concept-marble.png'],['noir','Noir','against a dark backdrop with a warm rim light and a noir luxe mood','/img/accessories/concept-noir.png'],['golden','Golden','in golden-hour warm sunlight with a glowing mood','/img/accessories/concept-golden.png'],['pop','Pop','against a bold vivid saturated hot-pink backdrop with high-energy pop-art color and a glossy modern mood','/img/accessories/concept-pop.png'],['cobalt','Cobalt','against a bold electric cobalt-blue backdrop with a vivid saturated modern pop mood','/img/accessories/concept-cobalt.png'],['colorblock','Colorblock','against a bold graphic colorblock backdrop of two vivid contrasting colors with a playful pop mood','/img/accessories/concept-colorblock.png']]},
+  garment:{title:'Garment type',attr:'gm',mode:'chip',opts:[['auto','Auto',''],['bottoms','Bottoms','a brief, boxer or panty bottom with the waistband forward, opaque fabric'],['bra','Bra','a bra with structured cups, straps and band, cup shape formed'],['set','Set','a coordinated bra-and-bottom lingerie set shown together'],['swim','Swimwear','swimwear (trunks, one-piece or bikini) in swim fabric']]},
 };
-const AXIS_ORDER=['skin','age','concept'];
-const AXIS_DEFAULT={skin:'auto',age:'auto',concept:'studio'};
-let modalAxis={skin:'auto',age:'auto',concept:'studio'};
+const AXIS_ORDER=['skin','age','concept','garment'];
+const AXIS_DEFAULT={skin:'auto',age:'auto',concept:'studio',garment:'auto'};
+let modalAxis={skin:'auto',age:'auto',concept:'studio',garment:'auto'};
 function axisOptHtml(k,d,o,cur){
   const on=cur===o[0]?' on':'';
   if(d.mode==='swatch'){ const bg=o[3]||'#888';
@@ -3009,7 +3010,13 @@ function renderModalAxes(r){
     return `<div class="ax-row"><span class="ax-lbl">${esc(d.title)}</span>${wrap}</div>`;
   }).join('');
 }
-function setModalAxis(k,v){ modalAxis[k]=v; const d=AXIS_DEFS[k]; if(!d)return; document.querySelectorAll('#rmAxes [data-'+d.attr+']').forEach(b=>b.classList.toggle('on',b.getAttribute('data-'+d.attr)===v)); }
+function setModalAxis(k,v){ modalAxis[k]=v; const d=AXIS_DEFS[k]; if(!d)return; document.querySelectorAll('#rmAxes [data-'+d.attr+']').forEach(b=>b.classList.toggle('on',b.getAttribute('data-'+d.attr)===v));
+  if(k==='garment'&&modalRecipeObj&&modalRecipeObj.cuts&&modalRecipeObj.cuts.length){ // 품목 변경 → 조건부 무드 컷 재필터·재렌더
+    const vis=cutsForFilter(modalRecipeObj,modalCutFilter);
+    if(!vis.some(ct=>ct.id===modalCutId))modalCutId=vis.length?vis[0].id:null; // 현재 선택이 숨겨지면 첫 보이는 컷으로
+    const g=document.getElementById('rmCutRow'); if(g)g.innerHTML=cutGridHtml(modalRecipeObj);
+    setModalPreview(modalRecipeObj);
+  } }
 // 선택된 축 → 프롬프트 구절(기본값은 스킵).
 function axisPhrase(){ if(!state.axis)return''; return AXIS_ORDER.map(k=>{ const d=AXIS_DEFS[k]; if(!d)return''; const o=d.opts.find(x=>x[0]===state.axis[k]); return o?o[2]:''; }).filter(Boolean).join(', '); }
 function renderModalCuts(r){
@@ -3049,10 +3056,10 @@ function openRecipeModal(id){
   const _hidePv=_isModel||_NO_TOP_PREVIEW.has(r.id);
   const _mEl=document.querySelector('#recipeModal .modal'); if(_mEl)_mEl.classList.add('wide'); // 모든 템플릿 모달 통일 wide(좌우 확장·잘림 방지)
   const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_hidePv?'none':''; // 지정 템플릿·모델 픽커만 상단 샘플 숨김(그 외 프리뷰 유지)
-  renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — modalCutId 확정
+  renderModalAxes(r); // 축 칩(r.axes 있을 때만): Worn Cut 피부색·나이·컨셉 / bodywear garment. 컷 필터가 modalAxis.garment를 읽으므로 컷보다 먼저.
+  renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — bodywear는 garment로 조건부 필터 후 modalCutId 확정
   renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
   renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
-  renderModalAxes(r); // Worn Cut: 피부색·나이·컨셉 축 칩(r.axes 있을 때만)
   setModalPreview(r); // 예시 이미지(선택 컷 우선) — 없으면 placeholder
   document.getElementById('rmSelect').textContent=(state.recipeId===id)?'✓ Selected — tap to deselect':'Use this template';
   document.getElementById('recipeModal').classList.add('open');
@@ -3071,7 +3078,7 @@ function selectFromModal(){
   state.cutBg=(sel&&BG_CUTS.has(state.cutId)&&bgi)?bgi.value:''; // 지원 컷 선택 시만 배경색 유지
   state.modelId=(sel&&modalRecipeObj&&modalRecipeObj.picker==='model')?modalModelId:null; // 모델 픽커 템플릿만 유지
   state.bgId=(sel&&modalRecipeObj&&modalRecipeObj.picker==='model')?(modalBgId||'studio'):null; // 배경(Model Cut만, 기본 Studio)
-  state.axis=(sel&&modalRecipeObj&&modalRecipeObj.axes&&modalRecipeObj.axes.length)?{skin:modalAxis.skin,age:modalAxis.age,concept:modalAxis.concept}:null; // Worn Cut 축(피부색·나이·컨셉)
+  state.axis=(sel&&modalRecipeObj&&modalRecipeObj.axes&&modalRecipeObj.axes.length)?{skin:modalAxis.skin,age:modalAxis.age,concept:modalAxis.concept,garment:modalAxis.garment}:null; // 축(피부색·나이·컨셉 / bodywear garment)
   renderRecipes();updateBar();closeRecipeModal();
   if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
 }
