@@ -5,6 +5,16 @@
 
 ---
 
+## ✅ 완료 (2026-07-19) — 화질 개선 배선·실측 끝
+- **CLI 비교(로컬)로 조합 선정**: A baseline(inswapper_128)=🔴소프트/왁스 → **D = inswapper_128 + `--face-swapper-pixel-boost 512x512` + gfpgan_1.4 인핸서(blend 80)** 가 최고(정체성 보존+선명). hyperswap은 정체성 드리프트로 기각. 속도: D도 CPU ~8~10s(우려한 15~25s 아님, 타임아웃 120s 대비 여유).
+- **엔진 배선**: `src/config/index.js`에 env 4개 추가(`FACEFUSION_PIXEL_BOOST=512x512`·`FACEFUSION_FACE_ENHANCER=gfpgan_1.4`·`FACEFUSION_FACE_ENHANCER_BLEND=80`·`FACEFUSION_OUTPUT_QUALITY=100`, 전부 기본 ON, 빈값=끔). `src/images/faceswap.service.js`가 args에 조건부 주입 + 성공 로그에 `[모델 boost= enh=]` 표기.
+- **워커 반영**: `pm2 restart faceswap-worker` 완료(새 코드 가동 중). → **신규 On Model 잡은 지금부터 D조합으로 처리됨**(엔진 변경이라 레시피/migrate/배포 무관).
+- **실측**: `swapFace()` 격리 호출(prod DB/크레딧/R2 무관)로 baseline↔D 비교 — 눈·홍채·속눈썹·피부결 뚜렷 개선, 소스 정체성 보존 확인. 산출물 `scratchpad/faceswap-quality/COMPARE_*.png`.
+- ⚠️ **미커밋**: 위 편집은 워크트리에 있고 워커엔 반영됐으나 **git 커밋/푸시는 안 함(사용자 승인 대기)**. 튜닝 조절은 `~/HeyHoAI-launch/.env`에 `FACEFUSION_*` 넣고 `pm2 restart faceswap-worker`.
+- 남은 옵션(선택): 인핸서 blend 하향(60~70)으로 뷰티파이 완화 · 다른 인종/남성 로스터 일반화 확인 · 출력 PNG 무손실(저장비용↑ 트레이드오프) · GPU(`FACEFUSION_PROVIDERS=coreml/cuda`)로 속도.
+
+---
+
 ## §0. 지금 상태 (라이브·작동 확인됨)
 - **On Model** 카드 = doppia.ai Studio > Apparel > Innerwear & Swim. 실측 성공(남/여, 복서·란제리 온모델).
 - **2-stage**: stage-1(Gemini, 얼굴 미첨부 + 로스터 텍스트 주입) → `faceswap_jobs` 큐 → **워커(이 Mac)** facefusion 스왑 → R2 저장 → FE 폴링 자동표시.

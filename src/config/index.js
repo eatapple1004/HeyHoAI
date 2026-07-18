@@ -63,6 +63,12 @@ const envSchema = z.object({
   FACEFUSION_PYTHON: z.string().optional(),                  // venv python(기본 <dir>/venv/bin/python)
   FACEFUSION_MODEL: z.string().default('inswapper_128'),     // face_swapper 모델
   FACEFUSION_PROVIDERS: z.string().default('cpu'),           // execution providers(cpu / coreml / cuda, 콤마구분)
+  // 화질 개선(2026-07-19 CLI 비교로 선정): 스왑을 512로 재처리(정직한 선명화) + gfpgan로 피부결/디테일 마감.
+  //   기본 D조합 = boost512 + gfpgan(blend80). 빈값으로 세팅하면 해당 단계 끔. 상세: docs/onmodel_품질개선_다음세션.md §3.
+  FACEFUSION_PIXEL_BOOST: z.string().default('512x512'),        // '' 이면 boost 끔. 256x256/512x512/768x768/1024x1024
+  FACEFUSION_FACE_ENHANCER: z.string().default('gfpgan_1.4'),   // '' 이면 인핸서 끔. gfpgan_1.4/codeformer/gpen_bfr_512 등
+  FACEFUSION_FACE_ENHANCER_BLEND: z.coerce.number().default(80), // 인핸서 강도 0~100(높을수록 강함, 과하면 정체성 미세변형)
+  FACEFUSION_OUTPUT_QUALITY: z.coerce.number().default(100),     // 출력 JPEG 품질 0~100(기본 100=near-lossless)
   FACEFUSION_TIMEOUT_MS: z.coerce.number().default(120000),  // 이미지당 하드 타임아웃(좀비 방지)
   FACEFUSION_CONCURRENCY: z.coerce.number().default(1),      // 동시 facefusion 캡
   FACESWAP_POLL_MS: z.coerce.number().default(5000),         // 워커 큐 폴링 유휴 간격

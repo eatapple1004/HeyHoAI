@@ -14,6 +14,11 @@ const FF_DIR = env.FACEFUSION_DIR || path.join(os.homedir(), 'facefusion');
 const FF_PY = env.FACEFUSION_PYTHON || path.join(FF_DIR, 'venv', 'bin', 'python');
 const FF_MODEL = env.FACEFUSION_MODEL || 'inswapper_128';
 const FF_PROVIDERS = String(env.FACEFUSION_PROVIDERS || 'cpu').split(',').map((s) => s.trim()).filter(Boolean);
+// 화질 튜닝(2026-07-19): boost=스왑 고픽셀 재처리(정직한 선명화), enhancer=gfpgan 피부결 마감. 빈값=해당 단계 끔.
+const FF_PIXEL_BOOST = String(env.FACEFUSION_PIXEL_BOOST ?? '512x512').trim();   // '' 이면 boost 끔
+const FF_ENHANCER = String(env.FACEFUSION_FACE_ENHANCER ?? 'gfpgan_1.4').trim(); // '' 이면 인핸서 끔
+const FF_ENHANCER_BLEND = Number(env.FACEFUSION_FACE_ENHANCER_BLEND ?? 80);      // 인핸서 강도 0~100
+const FF_OUTPUT_QUALITY = Number(env.FACEFUSION_OUTPUT_QUALITY ?? 100);          // 출력 품질 0~100
 const TIMEOUT_MS = Number(env.FACEFUSION_TIMEOUT_MS || 120000); // 이미지당 하드 타임아웃(좀비 방지)
 const MAX_CONCURRENCY = Number(env.FACEFUSION_CONCURRENCY || 1); // facefusion 무더기 방지(자원 보호)
 const TMP_ROOT = path.join(process.cwd(), 'tmp', 'faceswap');
@@ -40,13 +45,21 @@ function cleanupOnBoot() {
 // facefusion headless-run — detached 프로세스 그룹 + 하드 타임아웃(그룹 몰살).
 function runFacefusion({ sourcePath, targetPath, outputPath, jobId }) {
   return new Promise((resolve, reject) => {
+    // processors: 스왑 먼저, 인핸서(설정 시)는 스왑 후 마감. 순서 중요.
+    const processors = ['face_swapper'];
+    if (FF_ENHANCER) processors.push('face_enhancer');
     const args = [
       'facefusion.py', 'headless-run',
-      '--processors', 'face_swapper',
+      '--processors', ...processors,
       '--face-swapper-model', FF_MODEL,
+    ];
+    if (FF_PIXEL_BOOST) args.push('--face-swapper-pixel-boost', FF_PIXEL_BOOST);
+    if (FF_ENHANCER) args.push('--face-enhancer-model', FF_ENHANCER, '--face-enhancer-blend', String(FF_ENHANCER_BLEND));
+    args.push(
       '-s', sourcePath, '-t', targetPath, '-o', outputPath,
       '--execution-providers', ...FF_PROVIDERS,
-    ];
+      '--output-image-quality', String(FF_OUTPUT_QUALITY),
+    );
     const child = spawn(FF_PY, args, { cwd: FF_DIR, detached: true, stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     let settled = false;
@@ -86,7 +99,7 @@ async function swapFace({ sourceFacePath, targetBuffer, jobId }) {
     await runFacefusion({ sourcePath: sourceFacePath, targetPath, outputPath, jobId });
     const ms = Number((process.hrtime.bigint() - t0) / 1000000n);
     const buf = fs.readFileSync(outputPath); // 성공 버퍼만 반환(실패는 위에서 throw)
-    log.info(`job ${jobId} swap ok ${ms}ms ${buf.length}B`);
+    log.info(`job ${jobId} swap ok ${ms}ms ${buf.length}B [${FF_MODEL}${FF_PIXEL_BOOST ? ' boost=' + FF_PIXEL_BOOST : ''}${FF_ENHANCER ? ' enh=' + FF_ENHANCER + '@' + FF_ENHANCER_BLEND : ''}]`);
     return buf;
   } finally {
     release();
