@@ -1716,9 +1716,9 @@
   #imgModal .img-dl:hover{background:var(--accent);border-color:var(--accent)}
 </style>
 
-<script src="/js/recipes.generated.js?v=18"></script>
-<script src="/js/themes.js?v=7"></script>
-<script src="/js/taxonomy.js?v=8"></script>
+<script src="/js/recipes.generated.js?v=19"></script>
+<script src="/js/themes.js?v=8"></script>
+<script src="/js/taxonomy.js?v=9"></script>
 <script src="/js/models.roster.js?v=1"></script>
 <script src="/js/models.kids.roster.js?v=1"></script>
 <script src="/js/backgrounds.roster.js?v=1"></script>
@@ -1783,6 +1783,13 @@ function buildTemplates(){
     if(c.axes)m.axes=c.axes; // Worn Cut: 피부색·나이·컨셉 축 칩(프롬프트 주입형)
     if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/accessories/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
     if(!m.preview)m.preview='/img/accessories/'+c.id+'.png'; // 카드 썸네일=부모 id
+    shopping.push(m);
+  });
+  (C.underwear||[]).forEach(c=>{ // 오피셜 Underwear — 부모 패밀리(Product Cut·Hero). 온바디(Worn/On Model)는 faceswap 파이프라인 대기.
+    const m=mk(c,c.cat,'underwear'); // cat=recipe.category → taxonomy Underwear>Product Cut/Hero.
+    if(c.picker)m.picker=c.picker;
+    if(m.cuts)m.cuts.forEach(ct=>{ if(!ct.preview)ct.preview='/img/underwear/'+ct.id+'.png'; }); // 컷 썸네일 컨벤션
+    if(!m.preview)m.preview='/img/underwear/'+c.id+'.png'; // 카드 썸네일=부모 id
     shopping.push(m);
   });
   TEMPLATES={
