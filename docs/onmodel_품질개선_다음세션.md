@@ -6,8 +6,13 @@
 ---
 
 ## ✅ 완료 (2026-07-19) — 화질 개선 배선·실측 끝
-- **CLI 비교(로컬)로 조합 선정**: A baseline(inswapper_128)=🔴소프트/왁스 → **D = inswapper_128 + `--face-swapper-pixel-boost 512x512` + gfpgan_1.4 인핸서(blend 80)** 가 최고(정체성 보존+선명). hyperswap은 정체성 드리프트로 기각. 속도: D도 CPU ~8~10s(우려한 15~25s 아님, 타임아웃 120s 대비 여유).
-- **엔진 배선**: `src/config/index.js`에 env 4개 추가(`FACEFUSION_PIXEL_BOOST=512x512`·`FACEFUSION_FACE_ENHANCER=gfpgan_1.4`·`FACEFUSION_FACE_ENHANCER_BLEND=80`·`FACEFUSION_OUTPUT_QUALITY=100`, 전부 기본 ON, 빈값=끔). `src/images/faceswap.service.js`가 args에 조건부 주입 + 성공 로그에 `[모델 boost= enh=]` 표기.
+- **CLI 비교(로컬)로 조합 선정**: A baseline(inswapper_128)=🔴소프트/왁스 → **D = inswapper_128 + `--face-swapper-pixel-boost 512x512` + 인핸서(blend 80)**.
+- **인핸서 2차 비교(다음 티어 모델 다운로드 후)**: gfpgan/codeformer/gpen_bfr_1024/simswap_512/hyperswap 비교 →
+  - boost 768·1024 = 512 대비 개선 없음(시간만↑) → **512 최적**. blend 60~100 = 선명도 아닌 취향(80 무난).
+  - codeformer ≈ gfpgan. **gpen_bfr_1024 = 피부결(모공) realism 한 단계 위 + 정체성 보존, +1.5s(~10.6s)** → **최종 채택**.
+  - simswap_512·hyperswap = 네이티브 샤프하나 정체성 드리프트 → 로스터 부적합, 기각.
+  - **최종 기본 = inswapper_128 + boost512 + gpen_bfr_1024(blend80)**. gfpgan은 "더 매끈한 폴리시" 대안으로 env 전환 가능.
+- **엔진 배선**: `src/config/index.js`에 env 4개 추가(`FACEFUSION_PIXEL_BOOST=512x512`·`FACEFUSION_FACE_ENHANCER=gpen_bfr_1024`·`FACEFUSION_FACE_ENHANCER_BLEND=80`·`FACEFUSION_OUTPUT_QUALITY=100`, 전부 기본 ON, 빈값=끔). `src/images/faceswap.service.js`가 args에 조건부 주입 + 성공 로그에 `[모델 boost= enh=]` 표기.
 - **워커 반영**: `pm2 restart faceswap-worker` 완료(새 코드 가동 중). → **신규 On Model 잡은 지금부터 D조합으로 처리됨**(엔진 변경이라 레시피/migrate/배포 무관).
 - **실측**: `swapFace()` 격리 호출(prod DB/크레딧/R2 무관)로 baseline↔D 비교 — 눈·홍채·속눈썹·피부결 뚜렷 개선, 소스 정체성 보존 확인. 산출물 `scratchpad/faceswap-quality/COMPARE_*.png`.
 - ⚠️ **미커밋**: 위 편집은 워크트리에 있고 워커엔 반영됐으나 **git 커밋/푸시는 안 함(사용자 승인 대기)**. 튜닝 조절은 `~/HeyHoAI-launch/.env`에 `FACEFUSION_*` 넣고 `pm2 restart faceswap-worker`.

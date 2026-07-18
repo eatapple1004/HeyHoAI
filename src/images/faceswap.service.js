@@ -16,7 +16,7 @@ const FF_MODEL = env.FACEFUSION_MODEL || 'inswapper_128';
 const FF_PROVIDERS = String(env.FACEFUSION_PROVIDERS || 'cpu').split(',').map((s) => s.trim()).filter(Boolean);
 // 화질 튜닝(2026-07-19): boost=스왑 고픽셀 재처리(정직한 선명화), enhancer=gfpgan 피부결 마감. 빈값=해당 단계 끔.
 const FF_PIXEL_BOOST = String(env.FACEFUSION_PIXEL_BOOST ?? '512x512').trim();   // '' 이면 boost 끔
-const FF_ENHANCER = String(env.FACEFUSION_FACE_ENHANCER ?? 'gfpgan_1.4').trim(); // '' 이면 인핸서 끔
+const FF_ENHANCER = String(env.FACEFUSION_FACE_ENHANCER ?? 'gpen_bfr_1024').trim(); // '' 이면 인핸서 끔(gfpgan=더 매끈)
 const FF_ENHANCER_BLEND = Number(env.FACEFUSION_FACE_ENHANCER_BLEND ?? 80);      // 인핸서 강도 0~100
 const FF_OUTPUT_QUALITY = Number(env.FACEFUSION_OUTPUT_QUALITY ?? 100);          // 출력 품질 0~100
 const TIMEOUT_MS = Number(env.FACEFUSION_TIMEOUT_MS || 120000); // 이미지당 하드 타임아웃(좀비 방지)
