@@ -34,25 +34,16 @@
           { slug: 'innerwear-swim', label: 'Innerwear & Swim', match: { vertical: ['bodywear'] } },                            // 속옷·란제리·수영복
         ],
       },
-      // 화장품(Cosmetics). slug은 매핑·딥링크 위해 'beauty' 유지(Beauty→Cosmetics 라벨 변경, General 삭제 2026-07-08).
-      //   (2026-07-08 사용자 지시: texture·onmodel·reel·lifestyle·infocard·shade 테마 삭제 → Hero만 큐레이션. auto 제거.)
+      // 뷰티(Beauty) — 2026-07-18 Phase2: 화장품+네일 통합. slug='beauty' 유지(딥링크 호환).
+      //   스몰카테고리 = Cosmetics(화장품: 스킨케어·메이크업·향수, vertical beauty/producthero) · Nail(네일, vertical nail).
+      //   nail 카드는 /owned label_themes에서 vertical:'nail' 스탬프 → Nail 스몰카테고리(vertical match).
+      //   설계=docs/apparel_bodywear_재편_설계_2026-07-18.md §2.
       {
-        slug: 'beauty', label: 'Cosmetics', active: true, verticals: ['beauty', 'producthero'],
-        themes: ['beauty'], // Store 카탈로그 버킷용
+        slug: 'beauty', label: 'Beauty', active: true, verticals: ['beauty', 'producthero', 'nail'],
+        themes: ['beauty', 'nail-base', 'nail-template'], // Store 카탈로그 버킷용
         contentTypes: [
-          { slug: 'hero', label: 'Hero', match: { category: ['Hero'] } }, // 제품 히어로컷 (Texture/OnModel/Reel/Lifestyle/InfoCard/Shade는 삭제됨)
-        ],
-      },
-
-      // 네일 — 공식(프롬프트 기반) 템플릿 전용 카테고리. 콘텐츠타입은 테마 slug(nail-base/nail-template)와 1:1로,
-      //   studio가 /owned label_themes로부터 카드에 vertical:'nail'+category:'NailBase'|'NailTemplate'를 스탬프 → 스위처가 매칭.
-      {
-        slug: 'nail', label: 'Nail', active: true,
-        verticals: ['nail'],
-        themes: ['nail-base', 'nail-template'], // Store 카탈로그 버킷용
-        contentTypes: [
-          { slug: 'nail-base',     label: 'Nail Base',     match: { category: ['NailBase'] } },
-          { slug: 'nail-template', label: 'Nail Template', match: { category: ['NailTemplate'] } },
+          { slug: 'cosmetics', label: 'Cosmetics', match: { vertical: ['beauty', 'producthero'] } }, // 화장품
+          { slug: 'nail',      label: 'Nail',      match: { vertical: ['nail'] } },                    // 네일
         ],
       },
 
