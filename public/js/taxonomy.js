@@ -70,6 +70,19 @@
         ],
       },
 
+      // 속옷(Underwear) — 2026-07-18 신설. 라이브: Product Cut + Hero(사람 없음, 기존 파이프라인).
+      //   온바디(Worn Cut/On Model)는 faceswap 파이프라인 대기 → 착지 시 contentTypes에 worn-cut/on-model 추가.
+      //   라벨 'Underwear'는 i18n.js에 '속옷' 항목 추가 전까지 영어로 노출됨.
+      {
+        slug: 'underwear', label: 'Underwear', active: true,
+        verticals: ['underwear'],
+        themes: ['underwear'],
+        contentTypes: [
+          { slug: 'product-cut', label: 'Product Cut', match: { category: ['Product Cut'] } },
+          { slug: 'hero',        label: 'Hero',        match: { category: ['Hero'] } },
+        ],
+      },
+
       // 향후 추가 예정(예시 — 지금은 비활성):
       // { slug:'jewelry', label:'주얼리', active:false, verticals:['jewelry'],
       //   contentTypes:[ {slug:'product-cut',label:'제품컷',match:{category:['Studio','Macro']}},
