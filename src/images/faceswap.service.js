@@ -28,6 +28,13 @@ const FF_COMBO_RADIUS = Number(env.FACEFUSION_COMBO_RADIUS ?? 12);
 const FF_COMBO_GAIN = Number(env.FACEFUSION_COMBO_GAIN ?? 1);          // 고주파 증폭(>1=더 선명)
 const FF_MASK_BLUR = String(env.FACEFUSION_MASK_BLUR ?? '').trim();    // 경계 페더링(빈값=facefusion 기본)
 const FF_MASK_TYPES = String(env.FACEFUSION_MASK_TYPES ?? '').trim();  // 마스크 타입(예 "box occlusion")
+// 질감복원(2026-07-20 확정): 스왑(inswapper_128)은 저주파 매끈 얼굴을 뱉어 주변 몸의 실제 질감 대비 얼굴만 CG처럼 뜬다.
+//   → 스왑결과의 저주파(정체성·톤) + **베이스(stage-1 실사)의 고주파(진짜 모공)** 를 합쳐 질감을 되살린다.
+//   인핸서가 지어낸 디테일이 아니라 실사에서 가져오므로 AI티가 안 생긴다. 스왑은 얼굴만 바꾸므로 몸은 픽셀 동일 → 무손상.
+//   정본: docs/로스터_몸매얼굴_시스템_규칙_2026-07-20.md §F
+const FF_RESTORE = !/^(0|false|off|no)$/i.test(String(env.FACEFUSION_TEXTURE_RESTORE ?? '1').trim()); // 기본 ON
+const FF_RESTORE_RADIUS = Number(env.FACEFUSION_RESTORE_RADIUS ?? 7);
+const FF_RESTORE_GAIN = Number(env.FACEFUSION_RESTORE_GAIN ?? 1.2);
 const COMBINE_SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'freq_combine.py'); // 주파수합성 헬퍼(facefusion venv python으로 실행)
 const TIMEOUT_MS = Number(env.FACEFUSION_TIMEOUT_MS || 120000); // 이미지당 하드 타임아웃(좀비 방지)
 const MAX_CONCURRENCY = Number(env.FACEFUSION_CONCURRENCY || 1); // facefusion 무더기 방지(자원 보호)
@@ -92,9 +99,9 @@ function runFacefusion({ sourcePath, targetPath, outputPath, jobId, pixelBoost =
 }
 
 // 주파수합성 헬퍼 실행 — B(톤)·D(디테일) → outputPath. facefusion venv python(PIL/numpy 보유)으로 셸아웃.
-function runCombine({ bPath, dPath, outputPath, jobId }) {
+function runCombine({ bPath, dPath, outputPath, jobId, radius = FF_COMBO_RADIUS, gain = FF_COMBO_GAIN }) {
   return new Promise((resolve, reject) => {
-    const args = [COMBINE_SCRIPT, bPath, dPath, outputPath, String(FF_COMBO_RADIUS), String(FF_OUTPUT_QUALITY), String(FF_COMBO_GAIN)];
+    const args = [COMBINE_SCRIPT, bPath, dPath, outputPath, String(radius), String(FF_OUTPUT_QUALITY), String(gain)];
     const child = spawn(FF_PY, args, { cwd: FF_DIR, detached: true, stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     let settled = false;
@@ -143,6 +150,17 @@ async function swapFace({ sourceFacePath, targetBuffer, jobId }) {
     } else {
       await runFacefusion({ sourcePath: sourceFacePath, targetPath, outputPath, jobId });
       tag = `${FF_MODEL}${FF_PIXEL_BOOST ? ' boost=' + FF_PIXEL_BOOST : ''}${FF_ENHANCER ? ' enh=' + FF_ENHANCER + '@' + FF_ENHANCER_BLEND : ''}${FF_MASK_BLUR ? ' maskblur=' + FF_MASK_BLUR : ''}${FF_MASK_TYPES ? ' mask=' + FF_MASK_TYPES : ''}`;
+      // 질감복원 1패스: 스왑 저주파(정체성) + 베이스 고주파(실제 모공). 실패해도 스왑 결과는 살린다(best-effort).
+      if (FF_RESTORE) {
+        const restPath = path.join(dir, 'restored.jpg');
+        try {
+          await runCombine({ bPath: outputPath, dPath: targetPath, outputPath: restPath, jobId, radius: FF_RESTORE_RADIUS, gain: FF_RESTORE_GAIN });
+          if (fs.existsSync(restPath) && fs.statSync(restPath).size > 0) {
+            fs.copyFileSync(restPath, outputPath);
+            tag += ` +restore(r=${FF_RESTORE_RADIUS},g=${FF_RESTORE_GAIN})`;
+          }
+        } catch (e) { log.warn(`job ${jobId} 질감복원 실패 — 스왑 원본 사용: ${e.message}`); }
+      }
     }
     const ms = Number((process.hrtime.bigint() - t0) / 1000000n);
     const buf = fs.readFileSync(outputPath); // 성공 버퍼만 반환(실패는 위에서 throw)

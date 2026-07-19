@@ -50,7 +50,12 @@ function modelMetaFor(imgPath) {
   const m = (isKid ? ROSTER_KIDS : ROSTER_ADULT).find((x) => x.id === id);
   if (!m) return null;
   return { isMinor: !!m.isMinor, age: m.age || null, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null,
-    gender: m.gender, descent: m.descent || '', skin: m.skin || '', hair: m.hair || '', build: m.build || '' };
+    gender: m.gender, descent: m.descent || '', skin: m.skin || '', hair: m.hair || '', build: m.build || '',
+    // v2 페르소나(로스터 재구축 2026-07-20): 얼굴 상세 + 화장 + 체형(크로키·볼륨텍스트).
+    //   ⚠️ 화장은 스왑이 안 옮기므로 stage-1 베이스에 반드시 주입해야 제품컷이 로스터와 일치한다.
+    face_shape: m.face_shape || '', eyes: m.eyes || '', lips: m.lips || '', mark: m.mark || '',
+    makeup: m.makeup || '', vibe: m.vibe || '', body_type: m.body_type || '',
+    croquis_path: m.croquis_path || '', body_text: m.body_text || '' };
 }
 
 // 레퍼런스 파일명 → base64. 로컬(tmp/images) 우선, 없으면 R2에서 복원(cleanup cron이 오래된 tmp를 지워도
@@ -176,8 +181,14 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       if (!faceswapMode || faceswapModelPath.startsWith('/img/models/kids/') || faceswapMeta.isMinor) {
         return res.status(400).json({ success: false, error: 'On Model requires a valid adult model.' });
       }
-      const g = faceswapMeta; // 얼굴 미첨부 → 외모 서술을 텍스트로(우리가 그 모델을 생성할 때 쓴 서술 = 가장 정확)
-      finalPrompt += `\n\nThe model is a clearly adult ${g.age ? g.age + '-year-old ' : ''}${g.descent} ${g.gender}, ${g.build}, ${g.skin}, ${g.hair}.`;
+      const g = faceswapMeta; // 얼굴 미첨부(벤더 차단) → 페르소나를 텍스트로 주입. 정본: docs/로스터_몸매얼굴_시스템_규칙_2026-07-20.md
+      // 얼굴 = 스왑 경계에 남는 것(형·머리·스킨) + 화장까지. 스왑은 화장을 안 옮기므로 베이스에 넣어야 로스터와 일치.
+      const faceBits = [g.face_shape, g.eyes, g.lips, (g.mark || '').trim()].filter(Boolean).join(', ');
+      finalPrompt += `\n\nThe model is a clearly adult ${g.age ? g.age + '-year-old ' : ''}${g.descent} ${g.gender}.`
+        + (faceBits ? ` FACE — ${faceBits}${g.makeup ? `, ${g.makeup}` : ''}.` : '')
+        + ` ${g.skin}, ${g.hair}.`
+        // 몸 = body_type 볼륨텍스트(크로키 이미지와 반드시 co-inject — 이미지만은 gemini가 볼륨을 정규화해 깎는다).
+        + (g.body_text ? `\n${g.body_text}` : (g.build ? ` She/He has ${g.build}.` : ''));
     }
 
     // Reference 이미지 결정 (최대 14개)
@@ -206,6 +217,16 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           referenceImages.push({ base64: fs.readFileSync(file.path).toString('base64'), source: 'upload' });
         }
       });
+    }
+
+    // 3) 체형 크로키 (bodywear faceswap 전용) — 라인아트 바디 가이드.
+    //    ⚠️ 얼굴 이미지는 못 붙이지만(벤더 차단) 크로키는 그림이라 통과한다. 위 body_text와 반드시 함께 가야
+    //    볼륨이 유지된다(이미지만 넣으면 gemini가 정규화해 깎음). 제품 이미지 뒤에 붙여 garment 우선순위 유지.
+    if (faceswapMode && faceswapMeta.croquis_path && referenceImages.length < 14) {
+      try {
+        const cp = path.join(process.cwd(), 'public', faceswapMeta.croquis_path.replace(/^\//, ''));
+        if (fs.existsSync(cp)) referenceImages.push({ base64: fs.readFileSync(cp).toString('base64'), source: 'croquis' });
+      } catch (e) { logger.warn({ err: e, id: faceswapMeta.croquis_path }, 'croquis ref load failed — 텍스트만으로 진행'); }
     }
 
     if (referenceImages.length > 0) {

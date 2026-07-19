@@ -2926,14 +2926,24 @@ function setModalPreview(r){
 function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));const bg=document.getElementById('rmCutBg');if(bg)bg.classList.toggle('show',BG_CUTS.has(id));setModalPreview(modalRecipeObj);}
 
 // ── 모델 픽커 (Studio Model Cut · picker==='model') ──
-let modalModelId=null, modalModelFilter='all', modalModelAge='adult'; // modalModelAge: 'adult'|'kids' 탭(Ad Video와 동일 축 분리)
+let modalModelId=null, modalModelFilter='all', modalModelAge='adult', modalBodyFilter='all'; // modalModelAge: 'adult'|'kids' 탭(Ad Video와 동일 축 분리) · modalBodyFilter: 체형(성인만)
 function modalModelRoster(){ return modalModelAge==='kids' ? (window.MODELS_KIDS||[]) : (window.MODELS||[]); }
 // ⚠️ 성인·아동 양쪽에서 찾는다 — 선택된 게 아동일 수 있다(id가 유일하므로 합쳐 찾아도 충돌 없음).
 function modelById(id){ return (window.MODELS||[]).concat(window.MODELS_KIDS||[]).find(m=>m.id===id)||null; }
 // bodywear On Model(post:faceswap) = Kids 하드배제 + garment→성별 제약(설계 §3). 공유 픽커 누수 금지: post 신호로만 트리거.
 function rmIsFaceswap(r){ r=r||modalRecipeObj; return !!(r&&r.post&&r.post.indexOf&&r.post.indexOf('faceswap')>=0); }
 function rmGarmentGender(){ const gm=(modalAxis&&modalAxis.garment)||'auto'; return (gm==='bra'||gm==='set')?'female':null; } // bra·set→여성
-function modelsFor(f){ const M=modalModelRoster(); const gg=rmIsFaceswap()?rmGarmentGender():null; const eff=gg||f; return eff==='all'?M:M.filter(m=>m.gender===eff); }
+function modelsFor(f){ const M=modalModelRoster(); const gg=rmIsFaceswap()?rmGarmentGender():null; const eff=gg||f;
+  let L = eff==='all'?M:M.filter(m=>m.gender===eff);
+  // 체형 필터 — 성인 로스터에만 body_group이 있다(kids는 없음 → 자동 무시).
+  if(modalBodyFilter!=='all') L = L.filter(m=>m.body_group===modalBodyFilter);
+  return L; }
+// 현재 성별 범위에서 실제 존재하는 체형 그룹만 칩으로 노출(성별 바뀌면 자동 적응).
+//   body_group을 쓰는 이유: 남 fit_v6f/fit_v3f는 크로키만 다른 같은 체형 → 칩이 "Fit" 하나로 나와야 한다.
+function bodyTypesFor(){ const M=modalModelRoster(); const gg=rmIsFaceswap()?rmGarmentGender():null; const eff=gg||modalModelFilter;
+  const L = eff==='all'?M:M.filter(m=>m.gender===eff); const seen=[];
+  L.forEach(m=>{ if(m.body_group && !seen.some(x=>x.k===m.body_group)) seen.push({k:m.body_group,l:m.body_group_label||m.body_group}); });
+  return seen; }
 function modelCardsHtml(){
   return modelsFor(modalModelFilter).map(m=>
     `<button type="button" class="model-card${modalModelId===m.id?' on':''}" data-model="${esc(m.id)}" onclick="setModalModel('${esc(m.id)}')" title="${esc(m.name)} · ${esc(m.descent)}${m.ageBandLabel?' · '+esc(m.ageBandLabel):''}">`
@@ -2952,11 +2962,18 @@ function renderModalModels(r){
   mw.innerHTML=`<span class="ms-lbl">Choose a model — pick one${gg?' · '+(gg==='female'?'Women':'Men'):''}</span>`
     +(fs?'':`<div class="ms-filters" style="margin-bottom:6px">${tab('adult','Adults')}${tab('kids','Kids')}</div>`) // faceswap=Kids 탭 미렌더
     +(gg?'':`<div class="ms-filters">${chip('all','All')}${chip('female','Women')}${chip('male','Men')}</div>`)
+    // 체형 축 — 성별과 별도 줄(같은 줄에 섞으면 무슨 축인지 모른다. 나이 탭과 동일 규칙).
+    +(()=>{ const bt=bodyTypesFor(); if(!bt.length) return '';
+        const bchip=(v,l)=>`<button type="button" class="ms-chip ms-bodychip${modalBodyFilter===v?' on':''}" data-b="${v}" onclick="setBodyFilter('${v}')">${l}</button>`;
+        return `<div class="ms-filters">${bchip('all','All bodies')}${bt.map(b=>bchip(b.k,b.l)).join('')}</div>`; })()
     +`<div class="ms-grid" id="rmModelGrid">${modelCardsHtml()}</div>`;
 }
-function setModelFilter(v){ modalModelFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-chip:not(.ms-agetab)').forEach(b=>b.classList.toggle('on',b.getAttribute('data-f')===v)); }
+function setBodyFilter(v){ modalBodyFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-bodychip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-b')===v)); }
+// 성별 전환 = 체형 축도 갈린다(western은 여성만, fit_*는 남성만) → 체형 필터 리셋 + 칩 전체 재렌더.
+//   안 하면 남성인데 'western' 필터가 남아 그리드가 0건이 된다.
+function setModelFilter(v){ modalModelFilter=v; modalBodyFilter='all'; renderModalModels(modalRecipeObj); }
 // 나이 탭 전환 — 선택 해제 필수(안 하면 Kids에서 고른 걸 든 채 Adults 그리드가 보여 화면≠서버값. Ad Video와 동일).
-function setModelAge(a){ modalModelAge=a; modalModelId=null; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-agetab').forEach(b=>b.classList.toggle('on',b.getAttribute('data-a')===a)); }
+function setModelAge(a){ modalModelAge=a; modalModelId=null; modalBodyFilter='all'; renderModalModels(modalRecipeObj); } // kids엔 body_type 없음 → 체형 축도 리셋·재렌더
 function setModalModel(id){ modalModelId=id; document.querySelectorAll('#rmModels .model-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-model')===id)); }
 
 // ── 배경 픽커 (Model Cut · Studio 기본 + 씬 40) ──
