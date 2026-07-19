@@ -63,13 +63,24 @@ const envSchema = z.object({
   FACEFUSION_PYTHON: z.string().optional(),                  // venv python(기본 <dir>/venv/bin/python)
   FACEFUSION_MODEL: z.string().default('inswapper_128'),     // face_swapper 모델
   FACEFUSION_PROVIDERS: z.string().default('cpu'),           // execution providers(cpu / coreml / cuda, 콤마구분)
-  // 화질 개선(2026-07-19 CLI 비교로 선정): 스왑을 512로 재처리(정직한 선명화) + gpen_bfr_1024로 피부결/디테일 마감.
-  //   기본 = boost512 + gpen_bfr_1024(blend80). gpen은 gfpgan보다 사실적 피부질감(모공)↑·정체성 보존, +1.5s(~10.6s).
-  //   swapper는 inswapper 유지(simswap/hyperswap은 네이티브 샤프하나 정체성 드리프트). 빈값=해당 단계 끔. 상세: docs/onmodel_품질개선_다음세션.md.
+  // 화질(2026-07-19 합성 어우러짐 비교로 재선정): pixel-boost 512로 스왑을 고픽셀 재처리(정직한 선명화)만.
+  //   기본 = boost512 + 인핸서 OFF. gpen/gfpgan 인핸서는 얼굴을 밝게·매끈하게 만들어 온모델 합성에서 얼굴이 몸보다 "뜸"
+  //   (얼굴만 확대해 화질 볼 땐 인핸서가 좋지만, 몸에 얹힌 어우러짐은 boost만이 자연스러움 — baseline 자연스러움 유지+뭉갬만 제거).
+  //   swapper는 inswapper 유지(simswap/hyperswap은 정체성 드리프트). 빈값=해당 단계 끔. 상세: docs/onmodel_품질개선_다음세션.md.
   FACEFUSION_PIXEL_BOOST: z.string().default('512x512'),          // '' 이면 boost 끔. 256x256/512x512/768x768/1024x1024
-  FACEFUSION_FACE_ENHANCER: z.string().default('gpen_bfr_1024'),  // '' 이면 인핸서 끔. gpen_bfr_1024/gfpgan_1.4/codeformer 등(gfpgan=더 매끈)
+  FACEFUSION_FACE_ENHANCER: z.string().default(''),               // 기본 OFF(합성 어우러짐 우선). gpen_bfr_1024/gfpgan_1.4/codeformer 넣으면 켜짐(선명↑·어우러짐↓)
   FACEFUSION_FACE_ENHANCER_BLEND: z.coerce.number().default(80), // 인핸서 강도 0~100(높을수록 강함, 과하면 정체성 미세변형)
   FACEFUSION_OUTPUT_QUALITY: z.coerce.number().default(100),     // 출력 JPEG 품질 0~100(기본 100=near-lossless)
+  // combo 모드(2026-07-19): 스왑 2회 순차(항상 facefusion 1개) → 주파수합성. B(boost만=어우러진 톤) 저주파 + D(boost+gpen=디테일) 고주파.
+  //   최대 선명 + 몸과 어우러진 톤 둘 다. 이미지당 시간 ~2배(needs_human_review라 허용). 동시성캡 1 유지 → 메모리 스파이크 없음.
+  FACEFUSION_COMBO: z.string().default(''),                      // '1'/'true'면 combo 모드 켬(빈값=단일패스)
+  FACEFUSION_COMBO_ENHANCER: z.string().default('gpen_bfr_1024'),// combo D패스(디테일 소스) 인핸서
+  FACEFUSION_COMBO_DETAIL_SWAPPER: z.string().default(''),      // combo D패스 스와퍼(빈값=B와 동일). simswap_unofficial_512=네이티브512 디테일↑(정체성은 B가 지킴)
+  FACEFUSION_COMBO_BLEND: z.coerce.number().default(80),         // combo D패스 인핸서 강도(고주파만 써서 밝기영향 없음 → 높게 OK)
+  FACEFUSION_COMBO_RADIUS: z.coerce.number().default(12),        // 주파수 분리 반경(px, 클수록 더 넓은 톤을 B에서 가져옴)
+  FACEFUSION_COMBO_GAIN: z.coerce.number().default(1),           // combo 고주파(디테일) 증폭. >1=더 선명(뭉개짐↓), 과하면 과샤프
+  FACEFUSION_MASK_BLUR: z.string().default(''),                  // 스왑 경계 페더링 0~1(빈값=facefusion 기본). ↑=턱·목 이음새 부드러움
+  FACEFUSION_MASK_TYPES: z.string().default(''),                 // 스왑 마스크 타입 공백구분(예 "box occlusion"). occlusion=머리카락 가림 처리
   FACEFUSION_TIMEOUT_MS: z.coerce.number().default(120000),  // 이미지당 하드 타임아웃(좀비 방지)
   FACEFUSION_CONCURRENCY: z.coerce.number().default(1),      // 동시 facefusion 캡
   FACESWAP_POLL_MS: z.coerce.number().default(5000),         // 워커 큐 폴링 유휴 간격

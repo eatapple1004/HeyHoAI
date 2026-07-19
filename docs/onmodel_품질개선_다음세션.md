@@ -5,13 +5,28 @@
 
 ---
 
+## 🟢 최신 상태 (2026-07-19 오후) — 여기부터 읽기
+- **현재 라이브 스왑 = "B+경계"**: `inswapper_128 + pixel-boost 512 + face-mask-blur 0.6 + occlusion 마스크` (인핸서·gain·combo 전부 OFF). env(`~/HeyHoAI-launch/.env`)의 `FACEFUSION_MASK_BLUR=0.6`·`FACEFUSION_MASK_TYPES="box occlusion"`가 이걸 활성화. 코드 default는 boost만(마스크는 env로).
+- **핵심 교훈**: 인핸서(gpen/codeformer)·gain 증폭 = **"지어낸 디테일" → AI 티**. 정직한 스왑(inswapper+boost)이 자연스러움. 요구 = ①안 뭉개짐 ②안 이질적. 얼굴만 확대 말고 **몸에 얹힌 합성 상태**로 판정할 것.
+- **env로 켤 수 있는 실험 기능(전부 기본 OFF, 코드에 배선됨)**: `FACEFUSION_FACE_ENHANCER`(단일패스 인핸서) · `FACEFUSION_COMBO=1`(2패스 B톤+D디테일 주파수합성, `scripts/freq_combine.py`) + `FACEFUSION_COMBO_ENHANCER/BLEND/GAIN/RADIUS/DETAIL_SWAPPER`. combo·detail-swapper는 실측상 선명하나 AI 티 → 보류.
+- **🔴 남은 미해결 = "밝은 피부 얼굴이 너무 매끈(AI 티)"**. 원인 = **로스터 소스 얼굴(밝은 피부)이 원래 에어브러시**(옛 프롬프트 "smooth even complexion"+옛 모델 2.5-flash). 스왑엔진 아니라 **입력(소스 얼굴)** 문제. 검증: 자연-질감 소스 얼굴로 스왑하면 결과도 자연스러워짐(로컬 확인 완료).
+  - **해결 방향**: 로스터에 **아이돌급 미모 + 자연 글래스스킨** 얼굴 **추가**(기존 40개 무손상). 프롬프트 골격 검증됨(gemini-3-pro-image + "visible pores/film grain/NOT airbrushed", "smooth even complexion" 제거). 규칙: **생성 전 테스트·미리보기 필수**, 추가는 prod 배포 필요(로스터=prod 픽커+stage-1).
+- ⚠️ **커밋 상태**: 위 엔진 변경은 커밋/푸시됨(서버 테스트 편의). **방식 확정 아님**(B+경계는 잠정 최적). 로스터 추가 작업은 미착수.
+
+---
+
 ## ✅ 완료 (2026-07-19) — 화질 개선 배선·실측 끝
 - **CLI 비교(로컬)로 조합 선정**: A baseline(inswapper_128)=🔴소프트/왁스 → **D = inswapper_128 + `--face-swapper-pixel-boost 512x512` + 인핸서(blend 80)**.
 - **인핸서 2차 비교(다음 티어 모델 다운로드 후)**: gfpgan/codeformer/gpen_bfr_1024/simswap_512/hyperswap 비교 →
   - boost 768·1024 = 512 대비 개선 없음(시간만↑) → **512 최적**. blend 60~100 = 선명도 아닌 취향(80 무난).
   - codeformer ≈ gfpgan. **gpen_bfr_1024 = 피부결(모공) realism 한 단계 위 + 정체성 보존, +1.5s(~10.6s)** → **최종 채택**.
   - simswap_512·hyperswap = 네이티브 샤프하나 정체성 드리프트 → 로스터 부적합, 기각.
-  - **최종 기본 = inswapper_128 + boost512 + gpen_bfr_1024(blend80)**. gfpgan은 "더 매끈한 폴리시" 대안으로 env 전환 가능.
+  - ~~최종 기본 = inswapper_128 + boost512 + gpen_bfr_1024(blend80)~~ ← **번복(2026-07-19 오후)**.
+- **⚠️ 재판정(합성 어우러짐 기준) — 최종 = B: inswapper_128 + boost512 + 인핸서 OFF**:
+  - 실제 온모델 결과(idx=11090)를 사용자가 보고 지적: gpen80은 **얼굴이 밝고 매끈해져 몸에서 "뜬다"**(톤·질감 어긋남). baseline은 자연스러웠으나 뭉갬.
+  - 실제 온모델 타겟에 baseline/boost만/gpen50/gpen80 스왑해 **합성 어우러짐** 비교 → **boost만(B)이 선명+자연 둘 다** = 정답. 인핸서(gpen/gfpgan)는 얼굴만 확대 땐 좋지만 합성에선 밝기·매끈함이 몸과 어긋남.
+  - **교훈: 얼굴 화질은 "얼굴만 확대"가 아니라 "몸에 얹힌 합성 상태"로 판정할 것.** 근본 개선(선명+어우러짐)은 인핸서가 아니라 **톤/조명 color-transfer** 레버.
+  - 다음 후보(원하면): boost + gpen 아주 약하게(blend 30) / facefusion 스킨-톤 매칭 / 소스 얼굴을 자연광·웜톤 세트로.
 - **엔진 배선**: `src/config/index.js`에 env 4개 추가(`FACEFUSION_PIXEL_BOOST=512x512`·`FACEFUSION_FACE_ENHANCER=gpen_bfr_1024`·`FACEFUSION_FACE_ENHANCER_BLEND=80`·`FACEFUSION_OUTPUT_QUALITY=100`, 전부 기본 ON, 빈값=끔). `src/images/faceswap.service.js`가 args에 조건부 주입 + 성공 로그에 `[모델 boost= enh=]` 표기.
 - **워커 반영**: `pm2 restart faceswap-worker` 완료(새 코드 가동 중). → **신규 On Model 잡은 지금부터 D조합으로 처리됨**(엔진 변경이라 레시피/migrate/배포 무관).
 - **실측**: `swapFace()` 격리 호출(prod DB/크레딧/R2 무관)로 baseline↔D 비교 — 눈·홍채·속눈썹·피부결 뚜렷 개선, 소스 정체성 보존 확인. 산출물 `scratchpad/faceswap-quality/COMPARE_*.png`.
