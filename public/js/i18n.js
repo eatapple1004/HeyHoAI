@@ -216,18 +216,31 @@
     'Turn a product photo into a finished ad video': '제품 사진을 완성된 광고 영상으로',
     'A product photo and one line of concept — that\'s the whole brief. You only spend credits when you generate the video.':
       '제품 사진 한 장과 한 줄 컨셉 — 그게 브리프 전부입니다. 크레딧은 영상을 만들 때만 듭니다.',
+    // WHAT YOU GET 블록(2026-07-20 신설). 칩 '9:16 · 1:1 · 16:9'와 'English · 한국어'는 번역 불필요(숫자·자기표기)
+    'What you get': '결과물',
+    'A finished ad video — your scenes cut together, ready to post.':
+      '완성된 광고 영상 한 편 — 씬이 이어 붙은 채로, 바로 올릴 수 있게.',
+    'Narration optional': '내레이션 선택', 'Music optional': '배경음악 선택',
     'How this works': '이렇게 만듭니다',
-    'Script': '대본', 'AI drafts it. Edit any line.': 'AI가 초안을 씁니다. 어느 줄이든 고치세요.',
+    // 1번(2026-07-20 신설) = 유저가 하는 일
+    'Your product': '제품',
+    'A photo and one line about the ad. No line in mind? AI writes it from your photo.':
+      '사진 한 장과 광고 한 줄. 한 줄이 안 떠오르면 AI가 사진을 보고 대신 씁니다.',
+    'Script': '대본',
+    'AI drafts it — free. Edit any line before anything is charged.':
+      'AI가 초안을 씁니다 — 무료. 과금 전에 어느 줄이든 고치세요.',
     'Scenes': '씬',
     'Each line becomes a scene. Remake just one — not the whole video.':
       '한 줄이 한 씬이 됩니다. 마음에 안 드는 한 컷만 다시 — 영상 전체가 아니라.',
-    // ⚠️ 3번 스텝은 <b>가 문장을 가른 조각 3개다(‘Your finished ad appears’ + <b>right here</b> + 나머지).
+    // ⚠️ 마지막 스텝은 <b>가 문장을 가른 조각 3개다(‘Your finished ad appears’ + <b>right here</b> + 나머지).
     //    노드 단위 치환이라 어순을 못 바꾼다 → 한국어 어순에 맞게 조각을 재배분한다(home 히어로와 같은 수법).
     //    <b> 강조가 'right here' → '바로 여기'로 자연히 옮겨간다.
-    'Your finished ad appears': '완성된 광고가 나오는 자리,',
+    //    (2026-07-20) 세 번째 조각은 영어 HTML에 그 문장이 아예 없어 매칭 0인 죽은 키였다 → HTML 복구와 함께 살아남.
+    //    이때 첫 조각이 '…나오는 자리,'였는데 꼬리가 붙으니 "나오는 자리, 바로 여기에 나옵니다"로 겹쳐 읽혀 다듬음.
+    'Your finished ad appears': '완성된 광고는',
     'right here': '바로 여기',
     ". Saved isn't final — come back and change any scene.":
-      '에 나옵니다. 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
+      '에 나타납니다. 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
     // 음악 · 음성
     'Add background music': '배경음악 넣기', 'Voice': '음성',
     'Yooni — F, clear & calm': 'Yooni — 여성, 맑고 차분함',
