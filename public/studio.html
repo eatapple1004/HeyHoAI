@@ -1344,7 +1344,10 @@
 
   <!-- (2026-07-02 템플릿-우선) 템플릿 갤러리를 페이지 인라인 히어로로(모달 해제). renderFilters/renderRecipes가 ID로 타겟팅 → 위치만 이동. Custom 모드에선 setMode가 #templateStep을 hidden. 롤백=다시 .modal-bg/.modal.media로 감싸고 toggleTemplatePicker를 모달 오픈으로. -->
   <div class="step fade d3" id="templateStep">
-        <div class="step-head">
+        <!-- (2026-07-20) 기본(템플릿 고르기) 상태에선 이 헤더 줄을 통째로 숨긴다 — setTplHead() 참조.
+             바로 위 컴포즈 카드가 이미 "Pick a template / Choose one below — no prompt needed"를 말해서
+             제목·부제가 화면에 두 번씩 나오고 있었다. Manage·ad format 상태에선 위에서 아무도 안 말해주므로 유지. -->
+        <div class="step-head" id="tplStepHead" style="display:none">
           <div class="step-num" id="snTemplate" style="display:none">2</div>
           <h2 id="step2Title">Pick a template</h2>
           <!-- (2026-07-17) 옛 부제 "just choose a look" — 헤딩은 template, 부제는 look이라 한 박스에서 같은 것을
@@ -2414,6 +2417,7 @@ function setMode(m,initialVertical){
   document.getElementById('snResult').style.display='none';
   document.getElementById('step2Title').textContent=ugc?'Pick an ad format':'Pick a template';
   document.getElementById('step2Hint').textContent=ugc?'Coming soon — UGC ads are not connected yet.':'No prompt needed — the template brings its own.';
+  setTplHead(ugc); // 기본(Pick a template)은 컴포즈 카드와 중복 → 숨김. ad format은 유지.
   const ep=document.getElementById('extraPrompt');
   if(ep)ep.placeholder=custom?'Type a prompt...':'Add a prompt (optional) — leave empty to use the template only';
   // Custom: 모델 픽커 → 타입 세그(Image|Video) + 툴 픽커로 교체 + Save as template 노출
@@ -2611,6 +2615,18 @@ function applyManageChrome(){
   document.body.classList.toggle('studio-managing',manageMode); // CSS가 .gen-bar·#subjectStep·#resultStep 숨김
   const h=document.getElementById('step2Title'); if(h)h.textContent=manageMode?'Manage templates':(state.mode==='ugc'?'Pick an ad format':'Pick a template');
   const hint=document.getElementById('step2Hint'); if(hint)hint.textContent=manageMode?'Organize what shows when you make Shots. Your creations are safe.':'No prompt needed — the template brings its own.';
+  setTplHead(manageMode||state.mode==='ugc');
+}
+// (2026-07-20) 템플릿 섹션 헤더 줄(제목+부제) 표시 여부.
+//   기본 '템플릿 고르기' 상태에서만 숨긴다 — 바로 위 컴포즈 카드의 [Pick a template / Choose one
+//   below — no prompt needed] CTA가 같은 말을 이미 해서, 화면에 '템플릿 선택'과 '프롬프트 불필요'가
+//   각각 두 번씩 나오고 있었다.
+//   ⚠️ 켜고 끄는 판단을 제목 텍스트로 하면 안 된다 — i18n이 텍스트노드를 한국어로 갈아치우므로
+//      'Pick a template' 비교가 한국어 모드에서 빗나간다. 그래서 호출부가 불리언을 넘긴다.
+//   전부 숨기려면(관리·광고포맷 화면 제목까지) 이 함수 본문을 el.style.display='none'으로.
+function setTplHead(show){
+  const el=document.getElementById('tplStepHead');
+  if(el)el.style.display=show?'':'none';
 }
 // ▲▲▲
 // group = 현재 모드의 대분류(Influencer/Shopping)로 커스텀 테마 생성. 모드에 대분류가 없으면(custom/ugc) Shopping 폴백.
