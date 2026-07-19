@@ -2970,7 +2970,9 @@ function cutLabel(n){return String(n||'')
 }
 
 // ── 컷 배경색(hex) — Flat Lay·Ghost Mannequin 컷만 지원 ──
-const BG_CUTS=new Set(['flat-lay-cut','ghost-mannequin-cut']);
+// 배경색을 고를 수 있는 컷 — "제품만 있고 배경이 단색 스윕"인 컷만. 일반 제품컷과 속옷 제품컷이
+//   같은 원리(플랫레이·고스트 마네킹)라 동일하게 지원한다. 온모델·매크로는 배경이 장면의 일부라 제외.
+const BG_CUTS=new Set(['flat-lay-cut','ghost-mannequin-cut','bodywear-flat-lay','bodywear-ghost-mannequin']);
 const CUT_INLINE_MAX=8; // 컷이 이보다 많으면(예: Product Hero 19) 컴포즈에서 접이식(선택만+▾). 적으면 인라인 그리드.
 let cutsExpanded=false; // 접이식 컷 펼침 상태(전환 UI 상태). 컷 선택/템플릿 변경 시 접힘.
 function toggleCutsExpand(){ cutsExpanded=!cutsExpanded; syncTplTrigger(); }

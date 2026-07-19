@@ -156,7 +156,7 @@ _없음_
 - Bodywear Hero [experimental,needs_human_review]
 - Bodywear Worn Cut [experimental,needs_human_review]
 - Bodywear On Model [experimental,needs_human_review]
-- 파라미터형: 부모 4 + 컷 20 (개수/가격사다리 휴리스틱 면제)
+- 파라미터형: 부모 4 + 컷 19 (개수/가격사다리 휴리스틱 면제)
 
 ## 🅣 텍스트 오버레이 (text_overlay)
 **beauty**: Before/After Result Reel · Ingredient Claim Card

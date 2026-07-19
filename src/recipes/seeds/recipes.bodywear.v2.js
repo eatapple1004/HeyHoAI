@@ -43,10 +43,10 @@ module.exports = [
   {
     "mode": "product", "vertical": "bodywear", "category": "Product Cut",
     "name": "Bodywear Product Cut", "output_type": "image_set", "credit_cost": 2, "sort_order": 1,
-    "rationale": "One innerwear or swimwear photo into clean, catalog-ready product shots — no model, no skin. Pick your garment type (bottoms, bra, set or swimwear) and a cut (flat lay, ghost mannequin, packaging or fabric macro); the exact piece is locked to your reference. Default cut is a clean ghost-mannequin packshot.",
+    "rationale": "One innerwear or swimwear photo into clean, catalog-ready product shots — no model, no skin. Pick your garment type (bottoms, bra, set or swimwear) and a cut (flat lay, ghost mannequin or fabric macro); the exact piece is locked to your reference. Default cut is a clean ghost-mannequin packshot.",
     "meta": {
       "axes": ["garment"],
-      "cuts": ["bodywear-flat-lay", "bodywear-ghost-mannequin", "bodywear-packaging", "bodywear-fabric-macro"],
+      "cuts": ["bodywear-flat-lay", "bodywear-ghost-mannequin", "bodywear-fabric-macro"],
       "flags": ["experimental", "needs_human_review"],
       "render_notes": "No person/skin. garment axis (studio AXIS_DEFS.garment) injects the shape hint (bottoms→waistband, bra→cup form, set→coordinated, swim→swimwear). Cut children inherit output/subject and override shots+look. Verify color, print, trims lock to the reference with no morph; ghost form must not read as bare skin."
     },
@@ -106,26 +106,6 @@ module.exports = [
         { "scene": "same studio, subtle floor shadow", "pose": "three-quarter showing 3D volume and side seam", "composition": "full_body" },
         { "scene": "same studio", "pose": "back hollow form showing rear panel and seams", "composition": "medium_shot" },
         { "scene": "same studio, tighter frame", "pose": "band / trim detail, fabric only", "composition": "closeup" }
-      ]
-    }
-  },
-  // ─── 자식 1-3 · Packaging ──────────────────────────────────────────────
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Product Cut",
-    "name": "Bodywear Packaging", "output_type": "image_set", "credit_cost": 2, "sort_order": 4,
-    "rationale": "Retail pack and multipack shots — folded garment with its pack band or box, and colorway lineups. Conversion-focused still life.",
-    "config": {
-      "schema_version": 1, "mode": "product", "parent_id": "bodywear-product-cut",
-      "look": {
-        "extra_positive": "retail packaging product photography, the folded garment presented with a clean premium pack band or box, and colorway multipack lineups arranged in an evenly spaced row, each unit color-accurate to the reference, plain seamless background, tidy commerce styling, tack-sharp, no body",
-        "extra_negative": "person, model, skin, body, duplicated item, miscount, color shift between units, uneven spacing, gibberish pack text, cluttered background, fabric morphing"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "plain seamless background", "pose": "single folded piece with a clean pack band, front hero", "composition": "medium_shot" },
-        { "scene": "same background, top-down", "pose": "three to five colorways in an evenly spaced flat-lay row", "composition": "full_body" },
-        { "scene": "same background", "pose": "multipack stack with band colors showing", "composition": "medium_shot" },
-        { "scene": "same background, tighter", "pose": "single representative colorway close for true tone", "composition": "closeup" }
       ]
     }
   },

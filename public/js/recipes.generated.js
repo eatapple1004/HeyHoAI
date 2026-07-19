@@ -3925,11 +3925,6 @@
             "preview": null
           },
           {
-            "id": "bodywear-packaging",
-            "name": "Bodywear Packaging",
-            "preview": null
-          },
-          {
             "id": "bodywear-fabric-macro",
             "name": "Bodywear Fabric Macro",
             "preview": null
