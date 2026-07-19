@@ -147,6 +147,40 @@ for (const g of GROUPS) {
   }
 }
 
+// ── EXTRAS (2026-07-19) — 아이돌급 미모 + 자연 글래스스킨 소스 얼굴 4종(테스트 추가).
+//   이미지는 gemini-3-pro-image로 별도 생성 후 public/img/models/에 직접 배치(자연 피부결 프롬프트).
+//   skin 서술을 "smooth even complexion" 대신 자연 텍스처로 → stage-1 바디도 덜 에어브러시(밝은 피부 AI티 완화).
+const EXTRAS = [
+  { id: 'f-east_asian-6', name: 'Seoyeon', gender: 'female', ethnicity_group: 'East Asian', ethnicity_key: 'east_asian', descent: 'Korean', age: 24,
+    build: 'toned commercial model build',
+    hair: 'dark hair smoothly pulled back off the face with a clean center part and soft baby hairs',
+    skin: 'fair-to-warm ivory skin with a luminous dewy glass-skin glow, visible natural pores and fine real skin micro-texture, an unretouched natural finish',
+    outfit: 'a plain white crew-neck t-shirt' },
+  { id: 'f-white_european-6', name: 'Sofie', gender: 'female', ethnicity_group: 'White / European', ethnicity_key: 'white_european', descent: 'Danish', age: 25,
+    build: 'willowy high-fashion build',
+    hair: 'long loose wavy blonde hair with natural volume and soft face-framing pieces',
+    skin: 'fair skin with natural real texture, visible pores and subtle soft freckling, a healthy luminous glow, unretouched',
+    outfit: 'a light grey crew-neck t-shirt' },
+  { id: 'f-hispanic_latino-6', name: 'Mariana', gender: 'female', ethnicity_group: 'Hispanic / Latino', ethnicity_key: 'hispanic_latino', descent: 'Colombian', age: 24,
+    build: 'toned commercial model build',
+    hair: 'long dark wavy hair with soft natural volume and gentle face-framing pieces',
+    skin: 'warm tan skin with golden undertones, natural pores and fine real skin texture, a dewy luminous glow, unretouched',
+    outfit: 'a beige crew-neck t-shirt' },
+  { id: 'f-southeast_asian-6', name: 'Ploy', gender: 'female', ethnicity_group: 'Southeast Asian', ethnicity_key: 'southeast_asian', descent: 'Thai', age: 23,
+    build: 'willowy high-fashion build',
+    hair: 'dark hair smoothly pulled back with a clean center part and a sleek finish',
+    skin: 'warm golden-tan skin with a dewy glass-skin glow, visible natural pores and fine real skin texture, unretouched',
+    outfit: 'a soft cream fine-knit crew sweater' },
+];
+let _seq = roster.length;
+for (const e of EXTRAS) {
+  _seq += 1;
+  e.seq = String(_seq).padStart(2, '0');
+  e.prompt = `beauty campaign casting portrait of a breathtakingly beautiful idol-level ${e.age}-year-old ${e.descent} female fashion model, ${e.build}, ${e.skin}, ${e.hair}, gorgeous refined symmetrical features with large luminous eyes and soft glam makeup, natural relaxed confident expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing ${e.outfit}, plain light grey seamless studio background, soft flattering beauty light with a gentle eye catchlight, shot on 85mm f/2.0, fine film grain, tack-sharp on the eyes, real luminous human skin that still shows subtle pores and micro-texture, NOT airbrushed, NOT plastic-smooth, professional beauty casting portrait`;
+  e.negative = NEGATIVE;
+  roster.push(e);
+}
+
 // 정렬: 성별 그룹핑 (여자 40 → 남자 40)로 보기 편하게
 roster.sort((a, b) => (a.gender === b.gender ? a.id.localeCompare(b.id) : a.gender === 'female' ? -1 : 1));
 

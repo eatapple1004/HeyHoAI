@@ -164,6 +164,22 @@ module.exports = [
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
+    "id": "f-east_asian-6",
+    "name": "Seoyeon",
+    "gender": "female",
+    "ethnicity_group": "East Asian",
+    "ethnicity_key": "east_asian",
+    "descent": "Korean",
+    "age": 24,
+    "build": "toned commercial model build",
+    "hair": "dark hair smoothly pulled back off the face with a clean center part and soft baby hairs",
+    "skin": "fair-to-warm ivory skin with a luminous dewy glass-skin glow, visible natural pores and fine real skin micro-texture, an unretouched natural finish",
+    "outfit": "a plain white crew-neck t-shirt",
+    "seq": "81",
+    "prompt": "beauty campaign casting portrait of a breathtakingly beautiful idol-level 24-year-old Korean female fashion model, toned commercial model build, fair-to-warm ivory skin with a luminous dewy glass-skin glow, visible natural pores and fine real skin micro-texture, an unretouched natural finish, dark hair smoothly pulled back off the face with a clean center part and soft baby hairs, gorgeous refined symmetrical features with large luminous eyes and soft glam makeup, natural relaxed confident expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, plain light grey seamless studio background, soft flattering beauty light with a gentle eye catchlight, shot on 85mm f/2.0, fine film grain, tack-sharp on the eyes, real luminous human skin that still shows subtle pores and micro-texture, NOT airbrushed, NOT plastic-smooth, professional beauty casting portrait",
+    "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
+  },
+  {
     "id": "f-hispanic_latino-1",
     "seq": "51",
     "name": "Valentina",
@@ -241,6 +257,22 @@ module.exports = [
     "skin": "warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow",
     "outfit": "a stone-grey henley top",
     "prompt": "upper-body studio casting portrait of a 29-year-old Puerto Rican female fashion model, statuesque elegant build with balanced proportions, warm olive-tan skin with golden bronze undertones, a smooth even complexion and a soft natural glow, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a stone-grey henley top, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
+  },
+  {
+    "id": "f-hispanic_latino-6",
+    "name": "Mariana",
+    "gender": "female",
+    "ethnicity_group": "Hispanic / Latino",
+    "ethnicity_key": "hispanic_latino",
+    "descent": "Colombian",
+    "age": 24,
+    "build": "toned commercial model build",
+    "hair": "long dark wavy hair with soft natural volume and gentle face-framing pieces",
+    "skin": "warm tan skin with golden undertones, natural pores and fine real skin texture, a dewy luminous glow, unretouched",
+    "outfit": "a beige crew-neck t-shirt",
+    "seq": "83",
+    "prompt": "beauty campaign casting portrait of a breathtakingly beautiful idol-level 24-year-old Colombian female fashion model, toned commercial model build, warm tan skin with golden undertones, natural pores and fine real skin texture, a dewy luminous glow, unretouched, long dark wavy hair with soft natural volume and gentle face-framing pieces, gorgeous refined symmetrical features with large luminous eyes and soft glam makeup, natural relaxed confident expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a beige crew-neck t-shirt, plain light grey seamless studio background, soft flattering beauty light with a gentle eye catchlight, shot on 85mm f/2.0, fine film grain, tack-sharp on the eyes, real luminous human skin that still shows subtle pores and micro-texture, NOT airbrushed, NOT plastic-smooth, professional beauty casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
@@ -564,6 +596,22 @@ module.exports = [
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
+    "id": "f-southeast_asian-6",
+    "name": "Ploy",
+    "gender": "female",
+    "ethnicity_group": "Southeast Asian",
+    "ethnicity_key": "southeast_asian",
+    "descent": "Thai",
+    "age": 23,
+    "build": "willowy high-fashion build",
+    "hair": "dark hair smoothly pulled back with a clean center part and a sleek finish",
+    "skin": "warm golden-tan skin with a dewy glass-skin glow, visible natural pores and fine real skin texture, unretouched",
+    "outfit": "a soft cream fine-knit crew sweater",
+    "seq": "84",
+    "prompt": "beauty campaign casting portrait of a breathtakingly beautiful idol-level 23-year-old Thai female fashion model, willowy high-fashion build, warm golden-tan skin with a dewy glass-skin glow, visible natural pores and fine real skin texture, unretouched, dark hair smoothly pulled back with a clean center part and a sleek finish, gorgeous refined symmetrical features with large luminous eyes and soft glam makeup, natural relaxed confident expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a soft cream fine-knit crew sweater, plain light grey seamless studio background, soft flattering beauty light with a gentle eye catchlight, shot on 85mm f/2.0, fine film grain, tack-sharp on the eyes, real luminous human skin that still shows subtle pores and micro-texture, NOT airbrushed, NOT plastic-smooth, professional beauty casting portrait",
+    "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
+  },
+  {
     "id": "f-white_european-1",
     "seq": "41",
     "name": "Freya",
@@ -641,6 +689,22 @@ module.exports = [
     "skin": "fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish",
     "outfit": "a plain white crew-neck t-shirt",
     "prompt": "upper-body studio casting portrait of a 29-year-old German female fashion model, statuesque elegant build with balanced proportions, fair porcelain skin with cool rosy undertones, a smooth even complexion and a soft matte finish, natural voluminous dark curls with defined springy coils and soft volume framing the face, clean well-groomed model look with defined features, natural relaxed neutral expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a plain white crew-neck t-shirt, soft light grey seamless studio background, soft even softbox lighting with a gentle catchlight in the eyes, shot on 85mm f/2.8, sharp focus on the eyes, realistic natural skin texture and pores, professional model casting portrait",
+    "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
+  },
+  {
+    "id": "f-white_european-6",
+    "name": "Sofie",
+    "gender": "female",
+    "ethnicity_group": "White / European",
+    "ethnicity_key": "white_european",
+    "descent": "Danish",
+    "age": 25,
+    "build": "willowy high-fashion build",
+    "hair": "long loose wavy blonde hair with natural volume and soft face-framing pieces",
+    "skin": "fair skin with natural real texture, visible pores and subtle soft freckling, a healthy luminous glow, unretouched",
+    "outfit": "a light grey crew-neck t-shirt",
+    "seq": "82",
+    "prompt": "beauty campaign casting portrait of a breathtakingly beautiful idol-level 25-year-old Danish female fashion model, willowy high-fashion build, fair skin with natural real texture, visible pores and subtle soft freckling, a healthy luminous glow, unretouched, long loose wavy blonde hair with natural volume and soft face-framing pieces, gorgeous refined symmetrical features with large luminous eyes and soft glam makeup, natural relaxed confident expression looking straight into the camera, head-and-shoulders to chest framing, centered, the full top of the head in frame with headroom, wearing a light grey crew-neck t-shirt, plain light grey seamless studio background, soft flattering beauty light with a gentle eye catchlight, shot on 85mm f/2.0, fine film grain, tack-sharp on the eyes, real luminous human skin that still shows subtle pores and micro-texture, NOT airbrushed, NOT plastic-smooth, professional beauty casting portrait",
     "negative": "deformed or extra fingers, malformed hands, distorted face, asymmetric eyes, exaggerated or unrealistic proportions, heavy glamour makeup, dramatic pose, cropped or cut-off top of head, tight extreme close-up, multiple people, cluttered background, props, logos, text, watermark, plastic over-retouched skin, low resolution"
   },
   {
