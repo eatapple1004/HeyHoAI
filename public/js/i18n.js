@@ -213,9 +213,9 @@
       '무료 — AI 컨셉과 대본 모두 먼저 검토·수정할 수 있습니다. 다음 단계 Generate를 눌러 영상을 만들며, 크레딧 비용은 과금 전에 그 버튼에 표시됩니다.',
     // How this works 패널
     'Ad video': '광고 영상', 'Your photo': '제품 사진',
-    'Turn a product photo into a finished ad video': '제품 사진을 완성된 광고 영상으로',
-    'A product photo and one line of concept — that\'s the whole brief. You only spend credits when you generate the video.':
-      '제품 사진 한 장과 한 줄 컨셉 — 그게 브리프 전부입니다. 크레딧은 영상을 만들 때만 듭니다.',
+    // (2026-07-20) 페이지 헤더 두 키 제거 — 마크업(.ugc-pagehd)이 사라져 매칭 대상이 없다.
+    //   내용은 우측 패널(결과물 블록·1번·2번 스텝)이 전부 안고 있다. 옛 키:
+    //   'Turn a product photo into a finished ad video' / 'A product photo and one line of concept — …'
     // WHAT YOU GET 블록(2026-07-20 신설). 칩 '9:16 · 1:1 · 16:9'와 'English · 한국어'는 번역 불필요(숫자·자기표기)
     'What you get': '결과물',
     'A finished ad video — your scenes cut together, ready to post.':

@@ -918,10 +918,8 @@
     --glow-accent:0 10px 26px -10px var(--accent);
     --mo-fast:.14s ease; --mo-base:.22s cubic-bezier(.2,.7,.3,1);
   }
-  /* 상단 페이지 제목 */
-  #scriptStep .ugc-pagehd{margin:0 0 24px}
-  #scriptStep .ugc-pagetitle{font-family:'Sora';font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-.5px;color:var(--text);margin:0 0 12px}
-  #scriptStep .ugc-pagesub{font-size:16px;color:var(--dim);line-height:1.5;max-width:62ch;margin:0}
+  /* (2026-07-20) 상단 페이지 제목 CSS 제거 — 마크업(.ugc-pagehd)이 사라져 죽은 규칙이 됐다.
+     삭제 이유·롤백은 #scriptStep 마크업 자리의 주석 참조. */
   /* 카드 */
   #scriptStep .script-box{border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   /* 사진 업로더 */
@@ -1038,10 +1036,18 @@
   </div>
 
   <div class="step fade d2 hidden" id="scriptStep">
-    <div class="ugc-pagehd">
-      <h2 class="ugc-pagetitle">Turn a product photo into a finished ad video</h2>
-      <p class="ugc-pagesub">A product photo and one line of concept — that's the whole brief. You only spend credits when you generate the video.</p>
-    </div>
+    <!-- (2026-07-20) 페이지 헤더(.ugc-pagehd: "Turn a product photo into a finished ad video" +
+         "A product photo and one line of concept … You only spend credits when you generate the video.") 제거.
+         우측 패널이 재구성되면서 세 문장이 전부 그쪽에 이미 있다:
+           결과물 블록  = "A finished ad video — your scenes cut together, ready to post."
+           1번 스텝     = "A photo and one line about the ad. No line in mind? AI writes it from your photo."
+           2번 스텝     = "AI drafts it — free. Edit any line before anything is charged."(+ 좌측 #ugcFreeNote)
+         → 같은 말을 두 번 하던 것. 특히 과금 안내는 세 곳에서 반복되고 있었다(헤더·2번·무료안내).
+         ⚠️ 이 화면엔 이제 heading 요소가 없다 — ugc 모드에선 subjectStep/templateStep이 숨고
+            resultStep은 생성 후에야 뜬다. 되살릴 거면 패널의 "What you get"(.ugc-jrn-hget)을
+            div→h2로 바꾸는 게 가장 싸다(.ugc-jrn-h는 클래스 선택자라 겉모습 그대로).
+         롤백: 이 주석 자리에 옛 .ugc-pagehd 블록 + CSS(#scriptStep .ugc-pagehd/-pagetitle/-pagesub)
+               + i18n 두 키 복원. -->
     <div class="ugc-cols">
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" multiple style="display:none" onchange="ugcPreview(this)">
@@ -1206,7 +1212,8 @@
          "그래서 내가 뭘 하면 되는데"의 답이 없었다. 또 끝까지 읽어도 결과물이 '무엇인지'는 안 나왔다
          (비율·내레이션·음악·언어는 전부 좌측 폼에만 있고 여기선 한 번도 약속하지 않았다).
          → 처음 온 사람이 갖는 질문 순서 그대로 답하게 고친다:
-           ① 여긴 뭐 하는 곳인가  = 페이지 헤더(.ugc-pagetitle)가 이미 답함 → 여기선 되풀이 금지
+           ① 여긴 뭐 하는 곳인가  = (2026-07-20 갱신) 옛날엔 페이지 헤더가 답했으나 그 헤더를 지웠다
+                                    → 이제 이 패널이 유일하게 답하는 곳이다. WHAT YOU GET을 줄이지 말 것.
            ② 뭘 받을 수 있나      = WHAT YOU GET (헤더가 못 말하는 결과물 '스펙'만)
            ③ 그러려면 뭘 하나     = HOW THIS WORKS 1번을 유저 행동으로 신설(2·3·4는 기존 1·2·3) -->
     <div id="ugcScriptEmpty" class="ugc-jrn">
