@@ -243,6 +243,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       && (req.body.autoModel === 'true' || req.body.autoModel === true);
     // 클로즈업 레시피(주얼리)는 얼굴만 — 클라가 rmShowsBody로 판정해 알려준다(서버는 레시피를 모른다).
     const autoWithBody = !(req.body.autoNoBody === 'true' || req.body.autoNoBody === true);
+    const batchId = String(req.body.batchId || '').slice(0, 64) || null; // 장별 분할 요청을 한 배치로 묶는 키
 
     const faceswapReq = (req.body.faceswap === 'true' || req.body.faceswap === true);
     const faceswapModelPath = faceswapReq ? pickedModelPath : null;
@@ -538,7 +539,12 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           visibility: resultVisibility, templateId, templateSource, templateName,
           // model_name = 크리에이션 카드에 "어떤 모델로 만들었는지"(이름만). Auto는 로스터 인물이 아니라
           //   장마다 랜덤이므로 'Auto'로 표기한다. 모델 픽커가 없는 템플릿은 아예 안 남긴다(undefined).
-          metadata: { description, ...(pickedModelMeta ? { model_name: pickedModelMeta.name } : (autoModel ? { model_name: 'Auto' } : {})) },
+          // batch_id = 프론트가 장별로 요청을 쪼갤 때(1장씩 병렬) 한 배치로 다시 묶는 키.
+          //   피드는 원래 prompt_idx로 묶는데 쪼개면 prompt 행이 N개가 되어 새로고침 시 N줄로 흩어진다.
+          //   형식 무관·표시용이 아니므로 길이만 자른다(JSONB 오염 방지).
+          metadata: { description,
+            ...(pickedModelMeta ? { model_name: pickedModelMeta.name } : (autoModel ? { model_name: 'Auto' } : {})),
+            ...(batchId ? { batch_id: batchId } : {}) },
         });
 
         const savedReview = await reviewRepo.insert({

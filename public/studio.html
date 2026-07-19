@@ -4736,8 +4736,10 @@ async function loadStudioResults(reset){
     const res=await fetch('/api/generate/results?limit='+STUDIO_PAGE+'&offset='+STUDIO_OFFSET);
     if(!res.ok)return;
     const raw=(await res.json()).data||[]; // 백엔드 원본(성공+실패 포함) — DONE 판정은 이걸로
-    raw.forEach(r=>{ // prompt_idx별 배치(성공=이미지 슬롯, 실패=실패 슬롯). 페이지 경계 넘어 병합.
-      const k=r.prompt_idx;
+    raw.forEach(r=>{ // 배치 단위(성공=이미지 슬롯, 실패=실패 슬롯). 페이지 경계 넘어 병합.
+      // batch_id 우선 — 장별로 따로 뜨게 하려고 요청을 1장씩 쪼개면 prompt 행이 N개가 되어
+      //   prompt_idx로 묶으면 한 배치가 N줄로 흩어진다. 쪼개기 전 생성물은 batch_id가 없어 prompt_idx로 폴백.
+      const k=(r.metadata&&r.metadata.batch_id)||r.prompt_idx;
       let b=STUDIO_BATCH_BY_KEY[k];
       // productImage=유저가 넣은 제품 사진(characters.reference_image_url) · modelName=쓴 로스터 모델 이름(또는 'Auto').
       //   "무엇으로 만들었는지"를 카드에서 바로 보게 하려는 것 — 둘 다 없을 수도 있다(모델 픽커 없는 템플릿).
@@ -5134,16 +5136,60 @@ async function generateImages(r,subj,count,pending){
       }
     }
   }
-  const res=await fetch('/api/generate',{method:'POST',body:fd});
-  const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
-  if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
-  if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
+  // ── 장별 분할 요청 ────────────────────────────────────────────────────────
+  //   서버는 한 요청에서 N장을 다 만든 뒤 한 번에 응답한다 → 4장을 시키면 4장이 동시에 나타난다
+  //   ("하나 끝나면 바로 보이게" 가 불가능). 그래서 **1장짜리 요청 N개를 병렬로** 보내고 도착하는 대로 그린다.
+  //   과금은 imageCost가 n×tier로 선형이라 총액이 같다(1×N = N×1).
+  //   ⚠️ faceswap(속옷 On Model)은 제외 — 이미 잡 큐로 장별 폴링이라 이 경로가 필요 없고,
+  //      쪼개면 폴러가 여러 개 붙어 같은 배치를 동시에 건드린다.
+  //   ⚠️ 쪼개면 prompt 행이 N개가 되므로 batchId를 실어 피드가 한 배치로 다시 묶게 한다.
+  const _isFsReq=!!(r&&r.post&&r.post.indexOf&&r.post.indexOf('faceswap')>=0&&state.modelId);
+  const _n=Math.max(1,parseInt(count,10)||1);
+  let data;
+  if(!_isFsReq&&_n>1){
+    const batchId=(self.crypto&&crypto.randomUUID)?crypto.randomUUID():('b'+Date.now()+Math.random().toString(36).slice(2));
+    const cloneFd=()=>{ const f=new FormData();
+      for(const [k,v] of fd.entries()){ if(k==='count')continue; f.append(k,v); }
+      f.append('count','1'); f.append('batchId',batchId); return f; };
+    const vis=privateOn()?'private':'public';
+    if(pending){ pending.pendingCount=_n; pending.items=[]; pending.failed=[]; pending.model=effModelLabel(); pending.added=false; pending.loading=true; renderStudioResults(); }
+    const settled=await Promise.all(Array.from({length:_n}).map(async()=>{
+      try{
+        const rs=await fetch('/api/generate',{method:'POST',body:cloneFd()});
+        const d=await sjson(rs);
+        if(rs.status===402){const e=new Error(d.error);e.code402=true;throw e;}
+        if(!rs.ok||!d.success)throw new Error(d.error||'generate failed');
+        const one=(d.results||[])[0];
+        if(pending){ // 도착하는 즉시 그 슬롯만 채운다 → 나머지는 계속 로딩
+          if(one&&one.success)pending.items.push({url:one.url,type:'photo',idx:one.resultIdx||one.idx||null,visibility:vis});
+          else pending.failed.push({idx:(one&&one.resultIdx)||null});
+          pending.loading=(pending.items.length+pending.failed.length)<_n; renderStudioResults();
+        }
+        return d;
+      }catch(e){
+        if(pending){ pending.failed.push({idx:null}); pending.loading=(pending.items.length+pending.failed.length)<_n; renderStudioResults(); }
+        return {__err:e};
+      }
+    }));
+    const firstErr=settled.find(x=>x&&x.__err);
+    if(firstErr&&!settled.some(x=>x&&!x.__err))throw firstErr.__err; // 전부 실패면 기존처럼 에러 표면화
+    data={success:true,results:settled.filter(x=>x&&!x.__err).flatMap(d=>d.results||[])};
+    if(pending)pending.loading=false;
+  } else {
+    const res=await fetch('/api/generate',{method:'POST',body:fd});
+    data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
+    if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
+    if(!res.ok||!data.success)throw new Error(data.error||'generate failed');
+  }
   const queued=(data.results||[]).filter(x=>x.queued); // On Model faceswap: 스왑 대기(워커가 몇 초 뒤 결과 삽입)
   const ok=(data.results||[]).filter(x=>x.success&&!x.queued);
   const failedR=(data.results||[]).filter(x=>!x.success); // 실패 결과(부분 실패 포함) → 실패 슬롯
   const fail=(data.results||[]).length-ok.length-queued.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
-  if(pending){ const vis=privateOn()?'private':'public';
+  // 분할 경로는 도착할 때마다 이미 채워 넣었다 — 여기서 다시 대입하면 그 결과를 통째로 덮어써
+  //   증분 표시가 무의미해진다(순서도 뒤집힌다). 집계는 아래 lastPreview·resultHint만 쓴다.
+  const _fannedOut=(!_isFsReq&&_n>1);
+  if(pending&&!_fannedOut){ const vis=privateOn()?'private':'public';
     // ⚠️ pendingCount = **요청 총 개수**여야 한다(완료 개수 아님). 렌더러가 "남은 = 총 - 완료 - 실패"로
     //   플레이스홀더 수를 세고, 실패 폴백(위 catch)도 이 값을 총 개수로 쓴다.
     //   스왑 대기분(queued)은 아직 items에 없으므로 반드시 더해야 한다 — 안 더하면 0이 된다.
