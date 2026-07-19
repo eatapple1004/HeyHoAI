@@ -27,7 +27,10 @@
     { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'], q: '!ugc' },
     { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
-    { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
+    // (2026-07-20) Store 레일 항목 제거 — 스토어 미운영(숨김). /store 페이지·카탈로그 코드는 그대로 두고 진입점만 뗀다.
+    //   같이 뗀 것: Shots 템플릿 관리의 [Get more templates] CTA(studio.html SHOW_STORE), Library 부제·빈 상태의 스토어 문구.
+    //   롤백: 아래 주석 복원 + studio.html SHOW_STORE=true + 두 문구 되돌리기.
+    // { h: '/store', l: 'Store', i: IC.store, m: ['/store'] },
     // (2026-07-11) Community(explore) 레일 항목 제거 — 홈 하단 'Community Creations' 섹션이 좋아요·크리에이터 링크까지 기능 동등하게 대체. 롤백: 아래 주석 복원.
     // { h: '/explore', l: 'Community', i: IC.explore, m: ['/explore'] },
     // (2026-07-11) Creator(earnings) 레일 항목 제거 — 유저 템플릿/크리에이터 수익 미운영(오피셜 전용). 롤백: 아래 주석 복원.

@@ -400,7 +400,8 @@
     'to the creator': '크리에이터에게', 'uses your generation credits': '생성 크레딧을 사용합니다',
     // 스튜디오 서브 카피 조각
     'Turn one look into a full week\'s set in a tap': '한 번의 룩을 탭 한 번으로 일주일치 세트로',
-    'Your creations. Manage templates in Shots · discover more in the Store.': '내 크리에이션. 템플릿은 컷에서 관리하고 · 스토어에서 더 찾아보세요.',
+    // (2026-07-20) 스토어 숨김 — 옛 키('… · discover more in the Store.')는 매칭 대상이 사라져 제거
+    'Your creations. Manage templates in Shots.': '내 크리에이션. 템플릿은 컷에서 관리하세요.',
 
     // ── 랜딩 페이지 전체 (히어로 조각 · 섹션 · 요금제 · 푸터) ──
     'One product photo.': '제품 사진 한 장.', 'A full content studio.': '완전한 콘텐츠 스튜디오.',
@@ -507,6 +508,8 @@
     'Nothing taken out yet — take one out from Stored below.': '아직 꺼낸 게 없어요 — 아래 ‘보관만’에서 꺼내세요.',
     'Empty. Hit a card’s “✓ In use” (or “Store all”) to park templates here — they stay in your library but stop showing when you make Shots.': '비어 있습니다. 카드의 ‘✓ 사용 중’(또는 ‘전부 보관’)을 눌러 여기에 보관하세요 — 라이브러리에는 남고 고를 때만 안 뜹니다.',
     'Store — stays in your Library': '보관 — 라이브러리에는 남습니다',
+    // (2026-07-20) Shots 템플릿 관리 '사용 중' 빈 상태 — 원래 사전에 없어 영어로 새던 문구(스토어 숨김으로 꼬리를 떼면서 같이 채움)
+    'Nothing here yet — take one out from Stored below (↑).': '아직 꺼낸 게 없어요 — 아래 ‘보관만’에서 꺼내세요(↑).',
     'Take out again': '다시 꺼내기',
     'Taken out': '꺼냈습니다', 'Put away': '보관했습니다',
     'Could not update': '업데이트하지 못했습니다', 'Failed — try again': '실패 — 다시 시도하세요'
