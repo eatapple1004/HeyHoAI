@@ -169,6 +169,13 @@
   .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:0 1 auto;min-width:0;max-width:calc(100% - 306px)}  /* grow 제거 → 정보가 미디어 옆에 밀착. 306=메타284+갭22 */
   .rb-media .result-card{height:300px;width:auto;max-width:100%}   /* 높이 기준(폭=비율) → 여러 장=균일 높이 그리드. 가로/세로/정사각 모두 크롭 없이 커버 */
   .rb-media .result-card:only-child{height:460px}                 /* 단독 = 큰 프리뷰 */
+  /* 로딩칸도 실제 요청 비율로. 이 레이아웃은 높이 기준(폭=비율)인데 로딩칸은 display:flex라
+     width:auto가 콘텐츠 폭(스피너)으로 풀려 aspect-ratio가 무력화된다 → 높이에서 폭을 직접 계산한다.
+     --ar = 가로/세로 (예: 16:9 → 1.7778). 모바일(≤760px)은 width:46%·height:auto라 aspect-ratio가 대신 몬다. */
+  @media(min-width:761px){
+    .rb-media .result-card.rb-loading{width:calc(300px * var(--ar,.8))}
+    .rb-media .result-card.rb-loading:only-child{width:calc(460px * var(--ar,.8))}
+  }
   .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
   /* ── Ad Video 결과 편집: 씬 스트립 ── */
   .ugc-scenes{flex:0 0 100%;order:3;margin-top:4px;padding-top:14px;border-top:1px dashed var(--border)}
@@ -3540,13 +3547,18 @@ function batchRowHtml(b){
   //   판정 축이 둘(히스토리=model / 인플라이트=플래그)이므로 둘 다 받는다.
   //   (E) media보다 위로 올렸다 — 로딩 모양을 Ad Video인지로 갈라야 하므로.
   const isUgc=!!b.isUgc||/^ugc/i.test(String(b.model||''));
-  const media=b.loading
+  // 완성된 슬롯은 **로딩 중에도 먼저 보여준다**. 예전엔 b.loading이 배치 전체에 하나뿐인 불리언이라
+  //   하나라도 남으면 완성분(b.items)을 통째로 무시하고 플레이스홀더만 그렸다 → 2장 중 1장이 끝나면
+  //   사진은 안 나오고 로딩칸만 1개로 줄어 "두 개가 하나로 합쳐진" 것처럼 보였다.
+  //   이제 남은 개수 = 요청 - 완료 - 실패 로 계산해 각 슬롯이 따로 끝난다.
+  const doneHtml=b.items.map(studioMediaCard).join('')+(b.failed||[]).map(f=>studioFailedCard(f.idx)).join(''); // 성공 슬롯 + 실패 슬롯(레오나르도식)
+  const phCount=b.loading?Math.max(0,(b.pendingCount||1)-b.items.length-((b.failed||[]).length)):0;
+  const _ar=ratioParts(b.aspect); const phStyle=`--ar:${_ar.num};aspect-ratio:${_ar.css}`; // 요청 비율대로(4:5 고정 아님)
+  const media=(b.loading&&isUgc)
     // E: 렌더 중인 Ad Video는 오븐에서도 자기 모양(9:16 + 경과초)으로 — 사진용 정사각 로딩칸을 쓰면
     //    "내가 만들던 세로 영상"이 아니라 남의 것처럼 보인다. 조리대와 같은 함수를 쓴다.
-    ? (isUgc
-        ? ugcLoadingVidHtml(b)
-        : Array.from({length:b.pendingCount||1}).map(()=>`<div class="result-card rb-loading"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join('')) // 생성 중: 이미지 칸 자리에서 로딩 + 실시간 경과 초
-    : b.items.map(studioMediaCard).join('')+(b.failed||[]).map(f=>studioFailedCard(f.idx)).join(''); // 성공 슬롯 + 실패 슬롯(레오나르도식)
+    ? ugcLoadingVidHtml(b)
+    : doneHtml+Array.from({length:phCount}).map(()=>`<div class="result-card rb-loading" style="${phStyle}"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join(''); // 생성 중 슬롯: 로딩 + 실시간 경과 초
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
   const usable=b.items.filter(i=>i.url); // 이 creation의 사진 또는 릴(영상 포함)
@@ -4268,7 +4280,11 @@ function renderStudioResults(){
  *   경과칸의 data-batch는 배치별 타이머가 자기 것을 찾는 열쇠(B) — 조리대든 오븐이든 따라간다.
  */
 function ugcLoadingVidHtml(b){
-  return `<div class="ugc-inline-vidwrap ugc-inline-loadvid"><div class="rb-spin rb-spin-lg"></div><div class="ugc-inline-loadcap">Building your video… <span class="rb-elapsed" data-batch="${b._uid}">0.0s</span></div></div>`;
+  // 로딩칸도 실제 요청 비율로 — CSS(.ugc-inline-loadvid)에 9/16이 박혀 있어 16:9 광고영상을 시켜도
+  //   세로칸이 돌았다. 배치에 실린 비율 우선, 없으면 현재 선택값(방금 제출한 그 값).
+  const el=document.getElementById('ugcAspect');
+  const ar=ratioParts((b&&b.aspect)||(el&&el.value)||'9:16');
+  return `<div class="ugc-inline-vidwrap ugc-inline-loadvid" style="aspect-ratio:${ar.css}"><div class="rb-spin rb-spin-lg"></div><div class="ugc-inline-loadcap">Building your video… <span class="rb-elapsed" data-batch="${b._uid}">0.0s</span></div></div>`;
 }
 function ugcLoadingStripHtml(b){
   const n=b.sceneCount||5; let cards='';
@@ -4696,8 +4712,14 @@ function ugcScheduleSilentSave(jobId,u){
 // 배치별 DOM 식별자 — 경과 타이머가 "내 카드"만 갱신하게 한다. jobId를 쓸 수 없다:
 //   렌더 POST 응답 전에 로딩 화면이 이미 떠서, 타이머가 시작될 땐 아직 잡 id가 없다.
 let BATCH_SEQ=0;
+// 요청 비율을 CSS aspect-ratio로. .result-card 기본값이 4/5로 박혀 있어, 1:1·16:9를 요청해도
+//   로딩칸만 세로로 돌아 "내가 시킨 것과 다른 게 만들어지는 중"처럼 보였다.
+//   --ar(가로/세로)는 데스크톱에서 폭 계산에, aspect-ratio는 모바일(height:auto)에서 높이 계산에 쓰인다.
+function ratioParts(a){ const m=String(a||'').match(/^(\d+)\s*:\s*(\d+)$/);
+  const w=m?+m[1]:4, h=m?+m[2]:5; return {css:`${w}/${h}`, num:(w/h).toFixed(4)}; }
 function makePendingBatch(r,extra,count,isReel){
   return {_uid:++BATCH_SEQ, items:[],loading:true,pendingCount:isReel?1:(count||4),
+    aspect:curAspect()||'', // 로딩칸을 실제 요청 비율로 그리기 위해 배치에 들고 간다
     promptText:r?'':extra, templateSource:r?(attribution().templateSource||'recipe'):'', templateName:r?r.name:'',
     model:isReel?'Reel':effModelLabel(), w:null,h:null, dateKey:dateKeyOf(),dateLabel:'Today'};
 }
@@ -5120,7 +5142,10 @@ async function generateImages(r,subj,count,pending){
   const fail=(data.results||[]).length-ok.length-queued.length;
   state.lastPreview=ok.map(x=>x.url).slice(0,8); // 템플릿 대표 이미지 후보(방금 만든 결과, 최대 8)
   if(pending){ const vis=privateOn()?'private':'public';
-    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=effModelLabel(); pending.added=false; pending.pendingCount=ok.length;
+    // ⚠️ pendingCount = **요청 총 개수**여야 한다(완료 개수 아님). 렌더러가 "남은 = 총 - 완료 - 실패"로
+    //   플레이스홀더 수를 세고, 실패 폴백(위 catch)도 이 값을 총 개수로 쓴다.
+    //   스왑 대기분(queued)은 아직 items에 없으므로 반드시 더해야 한다 — 안 더하면 0이 된다.
+    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=effModelLabel(); pending.added=false; pending.pendingCount=ok.length+queued.length+failedR.length;
     if(queued.length){ // async faceswap — 로딩 유지하고 잡을 폴링해서 완성되면 자동 표시(새로고침 불필요)
       pending.loading=true; pending.queued=queued.length; renderStudioResults();
       await pollFaceswapJobs(queued,pending,vis); // await = generate()의 경과 타이머가 스왑 완료까지 계속 돎(0.0s 얼음 방지)
@@ -5140,7 +5165,9 @@ async function pollFaceswapJobs(queued,pending,vis){
   const apply=()=>{ if(!pending)return;
     pending.items=jobs.filter(j=>j.done&&j.url).map(j=>({url:j.url,type:'photo',idx:j.idx||null,visibility:vis}));
     pending.failed=jobs.filter(j=>j.done&&j.failed).map(()=>({idx:null}));
-    pending.pendingCount=pending.items.length; pending.queued=jobs.filter(j=>!j.done).length;
+    // pendingCount는 손대지 않는다 — 총 개수 그대로 둬야 렌더러가 "남은 = 총 - 완료 - 실패"를 셀 수 있다.
+    //   (예전엔 여기서 완료 개수로 덮어써, 1장 완료 시 남은 칸이 1개로 줄고 완성분은 아예 안 그려졌다.)
+    pending.queued=jobs.filter(j=>!j.done).length;
     pending.loading=jobs.some(j=>!j.done); renderStudioResults();
   };
   for(let t=0; t<60 && jobs.some(j=>!j.done); t++){
