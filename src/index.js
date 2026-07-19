@@ -83,6 +83,17 @@ app.use('/vendor/ffmpeg', express.static(path.join(process.cwd(), 'node_modules/
 app.use('/vendor/ffmpeg-util', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/util/dist/esm')));
 app.use('/vendor/ffmpeg-core', express.static(path.join(process.cwd(), 'node_modules/@ffmpeg/core/dist/esm')));
 
+// ─── 스토어 폐쇄 (2026-07-20) ───
+// 진입점은 이미 뗐지만(js/rail.js 레일 항목 · studio.html SHOW_STORE=false) 클린 URL 라우트가
+// public/store.html을 그대로 서빙하므로 북마크·외부 링크로는 계속 들어와졌다. 여기서 막는다.
+// 404 대신 /studio 리다이렉트 — 옛 링크를 막다른 길이 아니라 앱 안으로 보낸다.
+// ⚠️ 반드시 아래 클린 URL 라우트보다 '먼저' 와야 한다(`/store`가 store.html로 잡히기 전에 가로챈다).
+//    `/store.html`은 클린 URL 라우트가 301 `/store`로 보내고 → 여기서 다시 /studio로 간다.
+// ⚠️ /template(템플릿 상세)은 건드리지 않는다 — creation의 [View …]가 쓰는 살아있는 진입점이고,
+//    보유/구매 CTA를 자체적으로 갖고 있어 스토어 없이도 자립한다.
+// 롤백: 이 라우트 삭제 + js/rail.js 주석 복원 + studio.html SHOW_STORE=true.
+app.get('/store', (_req, res) => res.redirect(302, '/studio'));
+
 // ─── 클린 URL: 확장자 없이 path로 페이지 로드 ───
 // `/studio` → public/studio.html 서빙, `/studio.html` → 301 `/studio` (쿼리스트링 보존).
 // 단일 세그먼트 GET만 대상이며, 정적 자원(css/js, /css/* 등 다중 세그먼트·확장자)은 건드리지 않는다.
