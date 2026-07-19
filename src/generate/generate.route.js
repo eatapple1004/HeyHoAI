@@ -35,6 +35,7 @@ const safeRefImage = (p) => (typeof p === 'string' && p && !p.includes('..') && 
 const safeModelPath = (p) => (typeof p === 'string' && /^\/img\/models\/(kids\/)?[\w-]+\.(jpe?g|png|webp)$/i.test(p)) ? p : null;
 const ROSTER_ADULT = require('../models/roster.v1.js');
 const ROSTER_KIDS = require('../models/roster.kids.v1.js');
+const { BODY_TYPES } = require('../models/bodyTypes.js');
 /**
  * 로스터 경로 → 대본 작성기가 알아야 할 모델 메타 + **외모 서술**.
  * 왜 필요한가: 대본 작성기는 모델 사진을 안 본다(제품 사진만 비전 입력). 그래서 모델을 "정확히" 묘사하려면
@@ -56,6 +57,62 @@ function modelMetaFor(imgPath) {
     face_shape: m.face_shape || '', eyes: m.eyes || '', lips: m.lips || '', mark: m.mark || '',
     makeup: m.makeup || '', vibe: m.vibe || '', body_type: m.body_type || '',
     croquis_path: m.croquis_path || '', body_text: m.body_text || '' };
+}
+
+// ── Auto 모델 (로스터 미선택 = "아무나 예쁜 사람") ────────────────────────────────
+//   로스터에서 고르지 않으므로 **스왑 소스 얼굴이 없다 → faceswap도 없다**. 결함이 아니라 정의다:
+//   스왑의 목적은 "결과를 특정 로스터 인물과 일치시키기"인데 Auto엔 강제할 정체성이 자체가 없다.
+//   덤으로 스왑의 질감 열화도, 워커 큐 점유도 없다.
+//   미모 문구 = 로스터 200장을 실제로 만든 face_prompt에서 **검증된 절만** 발췌해 재사용한다.
+//   ⚠️ realism 강가드(다큐·강한 필름그레인·superlative 더미)를 얹으면 미모가 눌려 평범해진다
+//      (L5 실패로 확인) → light texture 한 줄만. 포트레이트 전용 문구(front-facing·comp-card·
+//      85mm·backdrop)는 제품컷 프레이밍과 싸우므로 반드시 제외.
+//   인종·체형은 **장마다** 새로 뽑는다(사용자 결정) → 프롬프트가 이미지 루프 안에서 만들어진다.
+const AUTO_DESCENTS = [...new Set(ROSTER_ADULT.map((m) => m.descent).filter(Boolean))];
+const AUTO_MAKEUP = [...new Set(ROSTER_ADULT.map((m) => m.makeup).filter(Boolean))]; // 여성만 보유
+const autoPick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+// 체형 = 로스터와 **동일 비율(share)**로 추첨. 균등이 아니라 확정된 제품 믹스를 따른다
+//   (여 ideal .5/slender .3/curvy .2 · 남 slender .3/fit .7).
+function autoBodyText(gender) {
+  const entries = Object.entries(BODY_TYPES).filter(([k]) => k.startsWith(`${gender}:`));
+  if (!entries.length) return '';
+  let r = Math.random();
+  for (const [, v] of entries) {
+    r -= (v.share || 0);
+    if (r <= 0) return (autoPick(v.croquis || []) || {}).text || '';
+  }
+  return (autoPick(entries[entries.length - 1][1].croquis || []) || {}).text || '';
+}
+
+// 볼륨텍스트는 **크로키가 함께 간다는 전제**로 쓰였다("matches the body-shape guide image").
+//   Auto는 크로키를 안 붙이므로(장마다 체형이 달라 배치 공용 referenceImages와 구조적으로 충돌)
+//   그 참조를 걷어내야 한다 — 안 걷으면 **존재하지 않는 이미지를 가리키는 프롬프트**가 된다.
+//   로스터 선택 경로는 크로키를 실제로 붙이므로 원문 그대로 쓴다(이 함수를 안 탄다).
+function stripCroquisRefs(t) {
+  return String(t || '')
+    .replace(/\s*matches the body-shape guide image\s*—\s*do NOT copy its pose\s*—\s*but\s+(?:she|he)\s+is/gi, ' is')
+    .replace(/,?\s*matching the body-shape guide image\s*—\s*do NOT copy its pose/gi, '')
+    .replace(/The model's body matches the body-shape guide image\s*—\s*do NOT copy its pose\.\s*/gi, '')
+    .replace(/\s*Follow the body-shape guide image \(do NOT copy its pose\)\.?/gi, '')
+    .replace(/\s*Follow the guide's proportions closely\.?/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+// 이미지 1장분 Auto 페르소나 절. withBody=false면 얼굴만(주얼리 등 클로즈업 — 몸이 프레임에 없어
+//   체형텍스트가 타이트한 프레이밍과 싸우는 노이즈만 된다. 체형칩을 숨기는 규칙과 같은 이유다).
+function autoPersonaClause(gender, withBody) {
+  const g = gender === 'male' ? 'male' : 'female';
+  const descent = autoPick(AUTO_DESCENTS);
+  const age = 22 + Math.floor(Math.random() * 8); // 22~29 (성인 명시)
+  const head = g === 'female'
+    ? `breathtakingly beautiful, top-visual ${descent} woman aged ${age} — the prettiest most beautiful face`
+      + `${AUTO_MAKEUP.length ? `, ${autoPick(AUTO_MAKEUP)}` : ''}, glowing luminous skin with a hint of natural real texture`
+    : `extremely handsome, top-visual ${descent} man aged ${age} — handsome refined features,`
+      + ` glowing healthy skin with a hint of natural real texture and subtle pores`;
+  const body = withBody ? stripCroquisRefs(autoBodyText(g)) : '';
+  return `\n\nThe model is a clearly adult, ${head}.` + (body ? `\n${body}` : '');
 }
 
 // 레퍼런스 파일명 → base64. 로컬(tmp/images) 우선, 없으면 R2에서 복원(cleanup cron이 오래된 tmp를 지워도
@@ -176,6 +233,15 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     //   modelImage 미전송(모델 픽커가 없거나 주얼리 같은 클로즈업 레시피) = 아래 전 분기 스킵 → 기존 생성 무영향.
     const pickedModelPath = safeModelPath(req.body.modelImage);
     const pickedModelMeta = pickedModelPath ? modelMetaFor(pickedModelPath) : null;
+
+    // Auto 모델 — 로스터를 안 고른 경우. 로스터 선택이 있으면 그쪽이 이긴다(둘은 상호배타).
+    //   성별: 품목이 강제하면 그대로(bra/set→여성), 아니면 장마다 랜덤.
+    const autoGarment = String(req.body.garment || '');
+    const autoForcedGender = (autoGarment === 'bra' || autoGarment === 'set') ? 'female' : null;
+    const autoModel = !pickedModelMeta
+      && (req.body.autoModel === 'true' || req.body.autoModel === true);
+    // 클로즈업 레시피(주얼리)는 얼굴만 — 클라가 rmShowsBody로 판정해 알려준다(서버는 레시피를 모른다).
+    const autoWithBody = !(req.body.autoNoBody === 'true' || req.body.autoNoBody === true);
 
     const faceswapReq = (req.body.faceswap === 'true' || req.body.faceswap === true);
     const faceswapModelPath = faceswapReq ? pickedModelPath : null;
@@ -349,18 +415,26 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       try {
         let imageBuffer, description = '';
 
+        // Auto 모델은 **장마다** 인종·체형을 새로 뽑는다(사용자 결정) → 프롬프트가 여기서 갈린다.
+        //   Auto가 아니면 baseline과 동일한 finalPrompt 그대로 — 기존 두 경로에 영향 0.
+        //   ⚠️ DB 프롬프트 레코드(위 promptRepo.insert)는 배치당 1개라 베이스만 남는다(승인된 선택 A):
+        //   Auto는 "특정 인물을 원하지 않음"이 목적이라 장별 재현성을 의도적으로 포기한다.
+        const finalPromptForImage = autoModel
+          ? finalPrompt + autoPersonaClause(autoForcedGender || (Math.random() < 0.5 ? 'female' : 'male'), autoWithBody)
+          : finalPrompt;
+
         if (isGpt) {
           // ─── GPT Image Generation ───
           const OpenAI = require('openai');
           const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-          const gptParams = { model: modelId, prompt: finalPrompt, n: 1, size: gptSize, quality: gptQuality };
+          const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: gptQuality };
 
           // 레퍼런스 이미지가 있으면 편집 모드
           if (referenceImages.length > 0) {
             gptParams.prompt = enhance
-              ? `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`
-              : finalPrompt;
+              ? `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPromptForImage}`
+              : finalPromptForImage;
             // GPT Image는 edit 엔드포인트로 레퍼런스 지원
             const refBuffer = Buffer.from(referenceImages[0].base64, 'base64');
             const refFile = new File([refBuffer], 'ref.png', { type: 'image/png' });
@@ -388,16 +462,16 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
             });
             let promptText;
             if (!enhance) {
-              promptText = finalPrompt;
+              promptText = finalPromptForImage;
             } else if (referenceImages.length === 1) {
-              promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPrompt}`;
+              promptText = `${fictionalPrefix} Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPromptForImage}`;
             } else {
-              promptText = `${fictionalPrefix} Use these ${referenceImages.length} reference images. The first image is the main character reference. Generate a new photo maintaining consistency with all references.\n\n${finalPrompt}`;
+              promptText = `${fictionalPrefix} Use these ${referenceImages.length} reference images. The first image is the main character reference. Generate a new photo maintaining consistency with all references.\n\n${finalPromptForImage}`;
             }
             parts.push({ text: promptText });
             contents = [{ role: 'user', parts }];
           } else {
-            contents = finalPrompt;
+            contents = finalPromptForImage;
           }
 
           const imageConfig = {};

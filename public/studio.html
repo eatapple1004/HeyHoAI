@@ -3018,8 +3018,18 @@ function bodyTypesFor(){ const M=modalModelRoster(); const gg=rmIsFaceswap()?rmG
   const L = eff==='all'?M:M.filter(m=>m.gender===eff); const seen=[];
   L.forEach(m=>{ if(m.body_group && !seen.some(x=>x.k===m.body_group)) seen.push({k:m.body_group,l:m.body_group_label||m.body_group}); });
   return seen; }
+// Auto 카드 — "모델 미선택 = Auto"를 화면에 드러낸다.
+//   이게 있기 전엔 미선택이 **조용한 스킵**이었다(속옷인데 faceswap이 사라지는데 아무 표시가 없었다).
+//   Auto엔 스왑 소스 얼굴이 없으므로 스왑도 없다 — 이제 그건 버그가 아니라 명시된 동작이다.
+//   Kids 탭엔 안 띄운다(Auto는 성인만 생성).
+function autoCardHtml(){
+  if(modalModelAge==='kids')return '';
+  return `<button type="button" class="model-card${modalModelId===null?' on':''}" data-model="" onclick="setModalModel(null)" title="Auto — we pick the look for you">`
+    +`<span class="mc-thumb" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#5ee0d6);font-size:20px">✨</span>`
+    +`<span class="mc-name">Auto</span></button>`;
+}
 function modelCardsHtml(){
-  return modelsFor(modalModelFilter).map(m=>
+  return autoCardHtml()+modelsFor(modalModelFilter).map(m=>
     `<button type="button" class="model-card${modalModelId===m.id?' on':''}" data-model="${esc(m.id)}" onclick="setModalModel('${esc(m.id)}')" title="${esc(m.name)} · ${esc(m.descent)}${m.ageBandLabel?' · '+esc(m.ageBandLabel):''}">`
     +`<img class="mc-thumb" loading="lazy" src="${esc(m.img)}" alt=""><span class="mc-name">${esc(m.name)}</span></button>`).join('');
 }
@@ -3033,14 +3043,23 @@ function renderModalModels(r){
   // 나이 탭 — 성별 필터와 별도 축(한 줄에 섞으면 "Women Kids"가 필터인지 탭인지 모른다. Ad Video와 동일 규칙).
   const tab=(v,l)=>`<button type="button" class="ms-chip ms-agetab${modalModelAge===v?' on':''}" data-a="${v}" onclick="setModelAge('${v}')">${l}</button>`;
   const gg=fs?rmGarmentGender():null; // 품목이 성별을 강제(bra/set→여성)하면 성별칩 숨김 — 자연 제약
-  mw.innerHTML=`<span class="ms-lbl">Choose a model — pick one${gg?' · '+(gg==='female'?'Women':'Men'):''}</span>`
+  mw.innerHTML=`<span class="ms-lbl">Choose a model — or leave it on Auto${gg?' · '+(gg==='female'?'Women':'Men'):''}</span>`
     +(fs?'':`<div class="ms-filters" style="margin-bottom:6px">${tab('adult','Adults')}${tab('kids','Kids')}</div>`) // faceswap=Kids 탭 미렌더
     +(gg?'':`<div class="ms-filters">${chip('all','All')}${chip('female','Women')}${chip('male','Men')}</div>`)
     // 체형 축 — 성별과 별도 줄(같은 줄에 섞으면 무슨 축인지 모른다. 나이 탭과 동일 규칙).
-    +(()=>{ if(!rmShowsBody(r)) return ''; const bt=bodyTypesFor(); if(!bt.length) return '';
-        const bchip=(v,l)=>`<button type="button" class="ms-chip ms-bodychip${modalBodyFilter===v?' on':''}" data-b="${v}" onclick="setBodyFilter('${v}')">${l}</button>`;
-        return `<div class="ms-filters">${bchip('all','All bodies')}${bt.map(b=>bchip(b.k,b.l)).join('')}</div>`; })()
+    +`<span id="rmBodyChipsWrap">${bodyChipsHtml(r)}</span>`
     +`<div class="ms-grid" id="rmModelGrid">${modelCardsHtml()}</div>`;
+}
+// 체형칩 — 별도 함수인 이유: Auto↔모델 전환 때 이 줄만 갈아끼운다. 전체 재렌더를 쓰면
+//   renderModalModels가 modalModelId를 state에서 되돌려 방금 한 선택이 날아간다.
+function bodyChipsHtml(r){
+  r=r||modalRecipeObj;
+  // Auto(미선택)면 숨긴다 — Auto는 체형도 랜덤이라 칩을 띄우면 "고르면 반영된다"는 지키지 못할
+  //   약속이 된다(주얼리에 숨기는 것과 같은 규칙). 모델을 고르면 다시 나타난다.
+  if(!rmShowsBody(r)||modalModelId===null) return '';
+  const bt=bodyTypesFor(); if(!bt.length) return '';
+  const bchip=(v,l)=>`<button type="button" class="ms-chip ms-bodychip${modalBodyFilter===v?' on':''}" data-b="${v}" onclick="setBodyFilter('${v}')">${l}</button>`;
+  return `<div class="ms-filters">${bchip('all','All bodies')}${bt.map(b=>bchip(b.k,b.l)).join('')}</div>`;
 }
 function setBodyFilter(v){ modalBodyFilter=v; const g=document.getElementById('rmModelGrid'); if(g)g.innerHTML=modelCardsHtml(); document.querySelectorAll('#rmModels .ms-bodychip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-b')===v)); }
 // 성별 전환 = 체형 축도 갈린다(western은 여성만, fit_*는 남성만) → 체형 필터 리셋 + 칩 전체 재렌더.
@@ -3048,7 +3067,10 @@ function setBodyFilter(v){ modalBodyFilter=v; const g=document.getElementById('r
 function setModelFilter(v){ modalModelFilter=v; modalBodyFilter='all'; renderModalModels(modalRecipeObj); }
 // 나이 탭 전환 — 선택 해제 필수(안 하면 Kids에서 고른 걸 든 채 Adults 그리드가 보여 화면≠서버값. Ad Video와 동일).
 function setModelAge(a){ modalModelAge=a; modalModelId=null; modalBodyFilter='all'; renderModalModels(modalRecipeObj); } // kids엔 body_type 없음 → 체형 축도 리셋·재렌더
-function setModalModel(id){ modalModelId=id; document.querySelectorAll('#rmModels .model-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-model')===id)); }
+// id=null → Auto 카드. Auto↔모델 전환은 체형칩 노출을 바꾸므로 그 줄만 갈아끼운다(전체 재렌더 금지 — 위 주석).
+function setModalModel(id){ modalModelId=id;
+  document.querySelectorAll('#rmModels .model-card').forEach(b=>b.classList.toggle('on',(b.getAttribute('data-model')||'')===(id||'')));
+  const w=document.getElementById('rmBodyChipsWrap'); if(w)w.innerHTML=bodyChipsHtml(); }
 
 // ── 배경 픽커 (Model Cut · Studio 기본 + 씬 40) ──
 let modalBgId='studio', modalBgFilter='all';
@@ -5055,6 +5077,14 @@ async function generateImages(r,subj,count,pending){
   if(_fci)fd.append('fromCreationIdx',_fci); // γ: 서버가 이 creation의 프롬프트 해석(저장 템플릿=from_creation_idx / 직접 Use=GAMMA_FROM)
   for(let i=1;i<items.length;i++){
     if(items[i]&&items[i].url){try{const b=await(await fetch(items[i].url)).blob();fd.append('referenceImages',b,'ref'+i+'.png');}catch(e){}}
+  }
+  // Model 픽커 · Auto(모델 미선택) — 로스터를 안 골랐으면 서버가 장마다 인종·체형을 랜덤으로 뽑아
+  //   "아무나 예쁜 사람"을 만든다. 스왑 소스 얼굴이 없으니 faceswap도 없다(정의상 그렇다).
+  //   ⚠️ 이 분기가 생기기 전엔 미선택이 **조용한 스킵**이었다 — 속옷인데 스왑이 사라지고 아무 표시도 없었다.
+  if(r&&r.picker==='model'&&!state.modelId){
+    fd.append('autoModel','true');
+    if(!rmShowsBody(r))fd.append('autoNoBody','true'); // 주얼리 등 클로즈업 = 얼굴만(체형텍스트는 노이즈)
+    if(state.axis&&state.axis.garment&&state.axis.garment!=='auto')fd.append('garment',state.axis.garment); // bra/set → 여성 강제
   }
   // Model 픽커: 선택 로스터를 정체성 레퍼런스(기존) 또는 스왑 타깃(bodywear On Model)으로.
   if(r&&r.picker==='model'&&state.modelId){ const mm=modelById(state.modelId);
