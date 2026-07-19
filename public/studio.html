@@ -3001,6 +3001,11 @@ function modalModelRoster(){ return modalModelAge==='kids' ? (window.MODELS_KIDS
 function modelById(id){ return (window.MODELS||[]).concat(window.MODELS_KIDS||[]).find(m=>m.id===id)||null; }
 // bodywear On Model(post:faceswap) = Kids 하드배제 + garment→성별 제약(설계 §3). 공유 픽커 누수 금지: post 신호로만 트리거.
 function rmIsFaceswap(r){ r=r||modalRecipeObj; return !!(r&&r.post&&r.post.indexOf&&r.post.indexOf('faceswap')>=0); }
+// 체형이 결과에 드러나는 레시피인가 — 체형칩 노출과 체형 배선(크로키·볼륨텍스트 전송)을 **같은 술어로** 몬다.
+//   주얼리는 귀·목·손 클로즈업이라 몸이 프레임에 없다 → 칩을 띄우면 "고르면 반영된다"는 지키지 못할 약속이 되고,
+//   볼륨텍스트를 보내면 타이트한 프레이밍과 싸우는 프롬프트 노이즈만 된다. 둘 다 안 한다.
+const BODY_HIDDEN_RECIPES = new Set(['jewelry-on-model']);
+function rmShowsBody(r){ r=r||modalRecipeObj; return !!r && !BODY_HIDDEN_RECIPES.has(r.id); }
 function rmGarmentGender(){ const gm=(modalAxis&&modalAxis.garment)||'auto'; return (gm==='bra'||gm==='set')?'female':null; } // bra·set→여성
 function modelsFor(f){ const M=modalModelRoster(); const gg=rmIsFaceswap()?rmGarmentGender():null; const eff=gg||f;
   let L = eff==='all'?M:M.filter(m=>m.gender===eff);
@@ -3032,7 +3037,7 @@ function renderModalModels(r){
     +(fs?'':`<div class="ms-filters" style="margin-bottom:6px">${tab('adult','Adults')}${tab('kids','Kids')}</div>`) // faceswap=Kids 탭 미렌더
     +(gg?'':`<div class="ms-filters">${chip('all','All')}${chip('female','Women')}${chip('male','Men')}</div>`)
     // 체형 축 — 성별과 별도 줄(같은 줄에 섞으면 무슨 축인지 모른다. 나이 탭과 동일 규칙).
-    +(()=>{ const bt=bodyTypesFor(); if(!bt.length) return '';
+    +(()=>{ if(!rmShowsBody(r)) return ''; const bt=bodyTypesFor(); if(!bt.length) return '';
         const bchip=(v,l)=>`<button type="button" class="ms-chip ms-bodychip${modalBodyFilter===v?' on':''}" data-b="${v}" onclick="setBodyFilter('${v}')">${l}</button>`;
         return `<div class="ms-filters">${bchip('all','All bodies')}${bt.map(b=>bchip(b.k,b.l)).join('')}</div>`; })()
     +`<div class="ms-grid" id="rmModelGrid">${modelCardsHtml()}</div>`;
@@ -5054,11 +5059,16 @@ async function generateImages(r,subj,count,pending){
   // Model 픽커: 선택 로스터를 정체성 레퍼런스(기존) 또는 스왑 타깃(bodywear On Model)으로.
   if(r&&r.picker==='model'&&state.modelId){ const mm=modelById(state.modelId);
     if(mm){
+      const mpath=String(mm.img||'').replace(/^https?:\/\/[^/]+/,''); // 로스터 경로만(origin 제거) — safeModelPath 통과용
       if(r.post&&r.post.indexOf('faceswap')>=0){ // bodywear On Model: 얼굴 미첨부(벤더 게이트 회피) → 서버가 로스터 텍스트 주입 + stage-2 스왑
-        const mpath=String(mm.img||'').replace(/^https?:\/\/[^/]+/,''); // 로스터 경로만(origin 제거) — safeModelPath 통과용
         fd.append('modelImage',mpath); fd.append('faceswap','true');
         if(state.axis&&state.axis.garment&&state.axis.garment!=='auto')fd.append('garment',state.axis.garment);
-      } else if(mm.img){ try{ const mb=await(await fetch(mm.img)).blob(); fd.append('referenceImages',mb,'model.jpg'); }catch(e){} } // 기존 On Model: 얼굴 레퍼 첨부
+      } else { // 일반 On Model: 스왑 없음 — 얼굴은 레퍼 이미지가 지고, 텍스트 예산은 몸에 쓴다.
+        //   ⚠️ 로스터 얼굴은 가슴 위 정면 크롭이라 체형 정보가 물리적으로 없다. modelImage를 같이 보내야
+        //   서버가 크로키+볼륨텍스트를 붙여 픽커의 체형 선택이 결과에 반영된다(안 보내면 얼굴만 그 사람).
+        if(rmShowsBody(r))fd.append('modelImage',mpath);
+        if(mm.img){ try{ const mb=await(await fetch(mm.img)).blob(); fd.append('referenceImages',mb,'model.jpg'); }catch(e){} }
+      }
     }
   }
   const res=await fetch('/api/generate',{method:'POST',body:fd});

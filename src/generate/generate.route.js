@@ -168,13 +168,18 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       finalPrompt += `\n\nAvoid: ${negativePrompt}`;
     }
 
-    // ── On Model faceswap (bodywear stage-2) ──────────────────────────────────
-    //   기존 생성엔 무영향: req.body.faceswap 미전송 시 faceswapMode=false → 아래 전 분기 스킵.
-    //   방식: 얼굴 이미지 미첨부(벤더가 "얼굴레퍼+속옷" 거부) + 로스터 외모를 텍스트로 주입해 stage-1 생성 →
-    //         stage-2(faceswapWorker)가 이 로스터 얼굴로 스왑. 설계: docs/onmodel_faceswap_설계_2026-07-18.md
+    // ── On Model (로스터 모델 선택) ────────────────────────────────────────────
+    //   두 경로가 있고 **몸은 공통, 얼굴만 갈린다**:
+    //     · 속옷(faceswap=true) : 얼굴 ref 미첨부(벤더가 "얼굴레퍼+속옷" 거부) → 얼굴을 텍스트로 주입하고
+    //                             stage-2(faceswapWorker)가 로스터 얼굴로 스왑. docs/onmodel_faceswap_설계_2026-07-18.md
+    //     · 일반 의류(스왑 없음) : 얼굴 ref 이미지가 얼굴을 진다 → 얼굴 텍스트는 안 넣고 예산을 몸에 쓴다.
+    //   modelImage 미전송(모델 픽커가 없거나 주얼리 같은 클로즈업 레시피) = 아래 전 분기 스킵 → 기존 생성 무영향.
+    const pickedModelPath = safeModelPath(req.body.modelImage);
+    const pickedModelMeta = pickedModelPath ? modelMetaFor(pickedModelPath) : null;
+
     const faceswapReq = (req.body.faceswap === 'true' || req.body.faceswap === true);
-    const faceswapModelPath = faceswapReq ? safeModelPath(req.body.modelImage) : null;
-    const faceswapMeta = faceswapModelPath ? modelMetaFor(faceswapModelPath) : null;
+    const faceswapModelPath = faceswapReq ? pickedModelPath : null;
+    const faceswapMeta = faceswapReq ? pickedModelMeta : null;
     const faceswapMode = !!(faceswapReq && faceswapModelPath && faceswapMeta);
     if (faceswapReq) {
       // 안전 1층 — KIDS 물리 배제 + 유효 성인 로스터 강제. kids/ 경로·미성년 스왑타깃 거부.
@@ -186,9 +191,18 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       const faceBits = [g.face_shape, g.eyes, g.lips, (g.mark || '').trim()].filter(Boolean).join(', ');
       finalPrompt += `\n\nThe model is a clearly adult ${g.age ? g.age + '-year-old ' : ''}${g.descent} ${g.gender}.`
         + (faceBits ? ` FACE — ${faceBits}${g.makeup ? `, ${g.makeup}` : ''}.` : '')
-        + ` ${g.skin}, ${g.hair}.`
-        // 몸 = body_type 볼륨텍스트(크로키 이미지와 반드시 co-inject — 이미지만은 gemini가 볼륨을 정규화해 깎는다).
-        + (g.body_text ? `\n${g.body_text}` : (g.build ? ` She/He has ${g.build}.` : ''));
+        + ` ${g.skin}, ${g.hair}.`;
+    }
+
+    // 몸 = 두 경로 공통. body_type 볼륨텍스트는 크로키 이미지와 **반드시 co-inject**한다 —
+    //   이미지만 넣으면 gemini가 볼륨을 정규화해 깎는다(정본 §D-1).
+    //   일반 의류(스왑 없음)에도 필요한 이유: 로스터 얼굴은 가슴 위 크롭이라 체형 정보가 물리적으로 없다.
+    //   → 이게 없으면 픽커에서 체형을 골라도 얼굴만 그 사람이고 몸은 템플릿 기본값으로 나온다.
+    //   미성년(kids)은 배제 — 체형 시스템 자체가 성인 전용이다(kids는 body_text가 없어 자연 무해하나 명시 가드).
+    if (pickedModelMeta && !pickedModelMeta.isMinor) {
+      const b = pickedModelMeta;
+      if (b.body_text) finalPrompt += `\n${b.body_text}`;
+      else if (b.build && faceswapMode) finalPrompt += ` She/He has ${b.build}.`; // 구 로스터 폴백(v2는 전원 body_text 보유)
     }
 
     // Reference 이미지 결정 (최대 14개)
@@ -219,14 +233,15 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       });
     }
 
-    // 3) 체형 크로키 (bodywear faceswap 전용) — 라인아트 바디 가이드.
-    //    ⚠️ 얼굴 이미지는 못 붙이지만(벤더 차단) 크로키는 그림이라 통과한다. 위 body_text와 반드시 함께 가야
+    // 3) 체형 크로키 (몸이 보이는 On Model 전 경로) — 라인아트 바디 가이드.
+    //    ⚠️ 속옷은 얼굴 이미지를 못 붙이지만(벤더 차단) 크로키는 그림이라 통과한다. 위 body_text와 반드시 함께 가야
     //    볼륨이 유지된다(이미지만 넣으면 gemini가 정규화해 깎음). 제품 이미지 뒤에 붙여 garment 우선순위 유지.
-    if (faceswapMode && faceswapMeta.croquis_path && referenceImages.length < 14) {
+    //    일반 의류는 여기에 얼굴 ref까지 함께 간다 — 이미지=얼굴 / 크로키+텍스트=몸으로 역할이 갈려 서로 안 싸운다.
+    if (pickedModelMeta && !pickedModelMeta.isMinor && pickedModelMeta.croquis_path && referenceImages.length < 14) {
       try {
-        const cp = path.join(process.cwd(), 'public', faceswapMeta.croquis_path.replace(/^\//, ''));
+        const cp = path.join(process.cwd(), 'public', pickedModelMeta.croquis_path.replace(/^\//, ''));
         if (fs.existsSync(cp)) referenceImages.push({ base64: fs.readFileSync(cp).toString('base64'), source: 'croquis' });
-      } catch (e) { logger.warn({ err: e, id: faceswapMeta.croquis_path }, 'croquis ref load failed — 텍스트만으로 진행'); }
+      } catch (e) { logger.warn({ err: e, id: pickedModelMeta.croquis_path }, 'croquis ref load failed — 텍스트만으로 진행'); }
     }
 
     if (referenceImages.length > 0) {
