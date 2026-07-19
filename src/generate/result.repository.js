@@ -197,6 +197,9 @@ async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
   const owner = teamId || userId;
   const result = await query(
     `SELECT gr.*, p.prompt_text, p.tags, c.name as character_name,
+            -- 크리에이션 카드에 "무엇으로 만들었는지" 표시: 유저가 넣은 제품 사진(썸네일).
+            --   모델 이름은 gr.metadata->>'model_name' (gr.* 에 포함돼 이미 온다).
+            c.reference_image_url AS product_image,
             split_part(u.email, '@', 1) AS creator_handle,
             mt.id AS minted_template_id,
             EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = p.user_id) AS added_to_library

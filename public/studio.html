@@ -341,6 +341,9 @@
   .rb-specs .spec{display:inline;font-size:10.5px;font-weight:500;letter-spacing:.3px;color:var(--faint);line-height:1.5;font-variant-numeric:tabular-nums}
   .rb-specs .spec b{color:var(--dim);font-weight:600;font-variant-numeric:tabular-nums}
   .rb-specs .spec[hidden]{display:none}
+  /* "무엇으로 만들었는지"(제품 썸네일·모델 이름) — 스펙 줄과 같은 톤, 썸네일만 인라인 정렬 */
+  .rb-specs .spec.rb-src{display:inline-flex;align-items:center;gap:4px;vertical-align:middle}
+  .rb-src-thumb{width:14px;height:14px;border-radius:3px;object-fit:cover;border:1px solid var(--border);display:block}
   .rb-specs .spec:not(:first-child)::before{content:"·";margin:0 6px;color:rgba(255,255,255,.16);font-weight:400}
   .rb-del-row{margin-top:10px}
   .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
@@ -3593,6 +3596,10 @@ function batchRowHtml(b){
     +`<span class="spec rb-spec-ratio"${ratioStatic?'':' hidden'}>${ratioStatic?`<b>${ratioStatic}</b>`:''}</span>`
     +(isReelBatch?`<span class="spec rb-spec-dur" hidden></span>`:'')
     +(ML?`<span class="spec">${esc(ML)}</span>`:'')
+    // "무엇으로 만들었는지" — 제품 사진 썸네일 + 모델 이름. 스펙 줄과 같은 크기로 자그맣게 붙인다.
+    //   둘 다 선택적: 제품 없이 만든 것(커스텀 프롬프트)·모델 픽커 없는 템플릿이면 그냥 안 나온다.
+    +(b.productImage?`<span class="spec rb-src"><img class="rb-src-thumb" src="${esc(b.productImage)}" alt="" loading="lazy" onerror="this.parentNode.remove()">Product</span>`:'')
+    +(b.modelName?`<span class="spec rb-src">${esc(b.modelName)}</span>`:'')
     +`</div>`;
   // (2026-07-03) 이 creation(배치) 삭제 — Library My creations에서도 사라짐(같은 행). 승격된 템플릿은 유지. 생성 중(placeholder)·idx 없는 건 버튼 숨김.
   const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
@@ -4708,7 +4715,9 @@ async function loadStudioResults(reset){
     raw.forEach(r=>{ // prompt_idx별 배치(성공=이미지 슬롯, 실패=실패 슬롯). 페이지 경계 넘어 병합.
       const k=r.prompt_idx;
       let b=STUDIO_BATCH_BY_KEY[k];
-      if(!b){ b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
+      // productImage=유저가 넣은 제품 사진(characters.reference_image_url) · modelName=쓴 로스터 모델 이름(또는 'Auto').
+      //   "무엇으로 만들었는지"를 카드에서 바로 보게 하려는 것 — 둘 다 없을 수도 있다(모델 픽커 없는 템플릿).
+      if(!b){ b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImage:r.product_image||'',modelName:(r.metadata&&r.metadata.model_name)||'',dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
       if(r.status==='success'&&r.file_path){
         const fn=r.file_path.split('/').pop();
         if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx,visibility:r.visibility});

@@ -50,7 +50,8 @@ function modelMetaFor(imgPath) {
   const id = imgPath.split('/').pop().replace(/\.(jpe?g|png|webp)$/i, '');
   const m = (isKid ? ROSTER_KIDS : ROSTER_ADULT).find((x) => x.id === id);
   if (!m) return null;
-  return { isMinor: !!m.isMinor, age: m.age || null, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null,
+  return { name: m.name || '', // 크리에이션 카드에 "어떤 모델로 만들었는지" 표시용(이름만)
+    isMinor: !!m.isMinor, age: m.age || null, ageBand: m.ageBand || null, ageBandLabel: m.ageBandLabel || null,
     gender: m.gender, descent: m.descent || '', skin: m.skin || '', hair: m.hair || '', build: m.build || '',
     // v2 페르소나(로스터 재구축 2026-07-20): 얼굴 상세 + 화장 + 체형(크로키·볼륨텍스트).
     //   ⚠️ 화장은 스왑이 안 옮기므로 stage-1 베이스에 반드시 주입해야 제품컷이 로스터와 일치한다.
@@ -520,7 +521,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
             userId: req.user.id, teamId: genTeamId, promptIdx: savedPrompt.idx, characterId: characterId || null,
             sourceFacePath: faceswapModelPath, stage1Filename: filename, modelId,
             visibility: resultVisibility, templateId, templateSource, templateName,
-            genMeta: { garment: req.body.garment || null, model_descent: faceswapMeta.descent },
+            // genMeta는 워커가 generation_results.metadata에 그대로 펼쳐 넣는다 → model_name이 카드까지 간다.
+            genMeta: { garment: req.body.garment || null, model_descent: faceswapMeta.descent, model_name: faceswapMeta.name },
             chargeAmount: charge ? Math.round(charge.amount / generateCount) : 0,
           });
           results.push({ success: true, queued: true, jobId: job.id, status: 'queued', description });
@@ -534,7 +536,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           fileSizeKb: Math.round(imageBuffer.length / 1024),
           model: modelId,
           visibility: resultVisibility, templateId, templateSource, templateName,
-          metadata: { description },
+          // model_name = 크리에이션 카드에 "어떤 모델로 만들었는지"(이름만). Auto는 로스터 인물이 아니라
+          //   장마다 랜덤이므로 'Auto'로 표기한다. 모델 픽커가 없는 템플릿은 아예 안 남긴다(undefined).
+          metadata: { description, ...(pickedModelMeta ? { model_name: pickedModelMeta.name } : (autoModel ? { model_name: 'Auto' } : {})) },
         });
 
         const savedReview = await reviewRepo.insert({
