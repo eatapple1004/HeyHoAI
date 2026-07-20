@@ -280,6 +280,22 @@
     'Type a prompt...': '프롬프트를 입력하세요...', 'Type a negative...': '네거티브를 입력하세요...',
     'Add detail (optional)': '디테일 추가 (선택)', 'Add your own touch — e.g. red dress, golden hour, soft smile': '나만의 터치 추가 — 예: 레드 드레스, 골든아워, 부드러운 미소',
     'Cut type — pick one': '컷 유형 — 하나 선택', 'Cut type': '컷 유형', 'Background color': '배경색',
+    // ── (2026-07-21 컷UI 재설계 · 안 ㄹ) 작성 카드 신규 문구. 기존 항목 미수정, 추가만. ──
+    //   ⚠️ 'New'만 맥락의존적('새로 만들기') — 공유 페이지에 단독 'New' 텍스트노드 없음 확인(studio 카드만).
+    //   나머지(연령·각도·배경 등)는 어디서든 맞는 보편 번역이라 충돌 무해.
+    'New': '새로 만들기', 'Fold': '접기', 'Unfold': '펼치기',
+    'Skin tone': '피부톤', 'Age': '연령', 'Garment type': '품목', 'Jewelry type': '주얼리 종류',
+    'Angle': '각도', 'Background': '배경', 'Any model': '아무 모델',
+    // 축 옵션 값 — studio AXIS_DEFS 전용(다른 페이지 텍스트노드 충돌 0 확인). 카드가 인라인 노출하므로 번역.
+    //   ⚠️ 'Back'은 기존 '뒤로'(내비)를 물려받음(사전에 이미 있어 미수정) → angle의 Back은 '뒤로'로 표시.
+    'Fair': '밝은', 'Light': '라이트', 'Medium': '중간', 'Tan': '탠', 'Deep': '딥',
+    'Daylight': '자연광', 'Marble': '마블', 'Noir': '느와르', 'Golden': '골든', 'Pop': '팝', 'Cobalt': '코발트',
+    'Bottoms': '하의', 'Bra': '브라', 'Set': '세트', 'Swimwear': '스윔웨어', 'Front': '정면',
+    'Ring': '반지', 'Necklace': '목걸이', 'Earrings': '귀걸이', 'Bracelet': '팔찌',
+    'Women': '여성', 'Men': '남성',
+    // 선택된 템플릿 칩 부제(syncTplTrigger tpl-sel) — out=photos/reel 두 변형.
+    'Your photos will be made with this look · tap to change': '이 룩으로 사진이 만들어집니다 · 탭하여 변경',
+    'Your reel will be made with this look · tap to change': '이 룩으로 릴이 만들어집니다 · 탭하여 변경',
     'Generating… this takes ~20s': '생성 중… 약 20초 소요', 'Enhance': '향상', 'Try it': '체험하기',
     'Upload an image': '이미지 업로드', 'Upload a clear selfie — we keep your identity across every shot.': '선명한 셀피를 올려주세요 — 모든 컷에서 동일한 정체성을 유지합니다.',
     'Upload a product photo — we keep it consistent across scenes.': '제품 사진을 올려주세요 — 모든 장면에서 일관되게 유지합니다.',

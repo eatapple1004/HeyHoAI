@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=11" defer></script>
+<script src="/js/i18n.js?v=14" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -203,8 +203,10 @@
   body.cutui-looksheet.has-rail #templateStep{left:92px} /* 좌측 레일(92px)만큼 비켜 시작 */
   @media(max-width:700px){body.cutui-looksheet.has-rail #templateStep{left:0}} /* 모바일=레일이 하단바 → 오프셋 없음 */
   body.cutui-looksheet.cutui-looksheet-open #templateStep{transform:none!important}
-  body.cutui-looksheet #templateStep::before{content:'Pick a template';display:block;font-family:'Sora',sans-serif;
-    font-size:16px;font-weight:750;margin-bottom:14px;color:var(--text)}
+  /* 시트 제목은 실 DOM 요소(#cutuiSheetTitle) — ::before(CSS content)는 i18n 텍스트노드 치환이 못 잡는다. */
+  #cutuiSheetTitle{display:none;font-family:'Sora',sans-serif;font-size:16px;font-weight:750;margin-bottom:14px;color:var(--text)}
+  body.cutui-looksheet #cutuiSheetTitle{display:block}
+  body.studio-managing #cutuiSheetTitle{display:none} /* Manage 모드에선 기존 헤더가 'Manage templates'를 말함 */
   /* Manage 모드는 인라인 관리 화면 유지 — 시트 스타일 무효화(Manage는 body.studio-managing) */
   body.studio-managing #templateStep{position:static!important;transform:none!important;max-height:none!important;
     box-shadow:none!important;border-radius:0!important;background:transparent!important;padding:0!important;z-index:auto!important}
@@ -3645,6 +3647,13 @@ function syncCutCard(){
   const on=state.mode==='shopping';
   top.classList.toggle('cutui-card',on);
   document.body.classList.toggle('cutui-looksheet',on); // P5: shopping에서 갤러리를 하단 시트로(Manage는 CSS override로 인라인)
+  if(on){ // 룩 시트 제목 = 실 DOM 요소로(i18n이 'Pick a template'을 이미 사전에 가짐)
+    const ts=document.getElementById('templateStep');
+    if(ts&&!document.getElementById('cutuiSheetTitle')){
+      const t=document.createElement('div'); t.id='cutuiSheetTitle'; t.textContent='Pick a template';
+      ts.insertBefore(t,ts.firstChild);
+    }
+  }
   let head=document.getElementById('cutCardHead');
   if(!on){ if(head)head.remove(); top.classList.remove('folded'); closeLookSheet(); return; }
   if(!head){
