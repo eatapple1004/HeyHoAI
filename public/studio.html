@@ -772,10 +772,11 @@
   .ugc-cols.ugc-solo .ugc-knobline-btn{display:none}
   /* #ugcInputBox:not(.knobs-open) .ugc-knobs 가 id 특정성이라 여기도 id를 태워 이긴다(!important 회피) */
   .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{display:block;border:none;padding:0;margin:0}
-  /* 2단에선 왼쪽이 컨셉에서 끝나 아래가 빈다(오른쪽은 Options 6그룹으로 길다).
-     그 여백을 컨셉 입력칸으로 준다 — 어차피 여기가 유저가 가장 오래 머무는 칸이다. */
-  /* ⚠️ #scriptStep #ugcConcept{min-height:104px}(id 2개)를 이겨야 하므로 여기도 id 2개를 태운다 */
-  #scriptStep .ugc-cols.ugc-solo #ugcConcept{min-height:190px}
+  /* (2026-07-21) 컨셉·제품상세는 **텍스트에 붙어 자동으로 늘어난다**(ugcAutogrow) — 빈 큰칸 대신
+     내용만큼만 차지하고, 줄이 늘면 아래(제품상세·다음 섹션)가 그만큼 내려간다.
+     resize 수동 핸들은 끈다(자동과 충돌). overflow:hidden 으로 스크롤바 대신 높이가 자란다.
+     min-height 는 placeholder(2줄)가 보일 만큼만. 옛 solo 190px 고정은 제거(빈칸을 만들던 주범). */
+  #scriptStep #ugcConcept,#scriptStep #ugcDetails{resize:none;overflow:hidden;min-height:64px}
   /* 리드(결과물 한 줄 + 칩) = 빈 상태 전용. 대본 이후엔 우측이 진짜 결과물을 보여주므로 중복이 된다 */
   .ugc-cols:not(.ugc-solo) .ugc-lead{display:none}
   /* (2026-07-21) 리드가 .ugc-foldable 의 grid 자식 → .ugc-cols 의 flex 자식이 됐다(박스 밖·위).
@@ -1059,7 +1060,9 @@
   /* 컨셉 textarea — 포커스 링 */
   #scriptStep .script-ta{border-radius:12px}
   #scriptStep .script-ta:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(106,64,224,.16)}
-  #scriptStep #ugcConcept{min-height:104px}
+  /* (2026-07-21) 104→64: 자동 높이(ugcAutogrow)가 내용만큼 늘리므로 최소값은 placeholder(2줄)만 보이면 된다.
+     104면 1줄 입력에도 큰칸이 남아 "텍스트에 붙게" 안 됐다. 아래 solo 규칙과 값을 맞춘다(둘 다 2 id라 나중 것이 이김). */
+  #scriptStep #ugcConcept{min-height:64px}
   /* Write it for me — 절제 초대 */
   #scriptStep #ugcSuggestHero{background:var(--tint-sel);border-color:var(--bd-sel);border-radius:8px}
   /* Options 요약줄 + 쉐브론(색 강조 회수) */
@@ -1135,14 +1138,14 @@
   .ugc-cols.ugc-solo .ugc-foldable{column-gap:56px}
   .ugc-cols.ugc-solo .ugc-fold-b{border-left:none;padding-left:56px}
   .ugc-cols.ugc-solo .ugc-fold-c{border-top:1px solid var(--border2);margin-top:30px;padding-top:22px}
-  /* 번호 배지 — 숫자는 "해야 하는 것", ✓는 "안 해도 되는 것" */
+  /* 번호 배지 — 1·2·3·4 플로우(사진·컨셉·세팅·대본 생성). (2026-07-21) 전부 채운 번호로 통일.
+     옛 .ugc-step-opt(세팅 ✓용, "안 해도 됨")는 세팅이 3번 스텝으로 승격되며 죽어 제거. */
   .ugc-step{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;flex:none;
     border-radius:50%;margin-right:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));
     color:#fff;font-size:11px;font-weight:800;line-height:1;box-shadow:0 4px 12px -4px var(--accent)}
-  .ugc-step-opt{background:none;border:1px solid var(--border2);color:var(--faint);box-shadow:none}
   .ugc-stephd{display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
-  /* .ugc-fieldhd(gap:10px)·.ugc-sec-hd(gap:8px)는 이미 flex gap이 있어 margin이 겹친다 → 그 안에선 0 */
-  .ugc-fieldhd > .ugc-step,.ugc-sec-hd > .ugc-step{margin-right:0}
+  /* .ugc-fieldhd(gap:10px)·.ugc-sec-hd(gap:8px)·.script-ctrls(gap:10px)는 이미 flex gap이 있어 margin이 겹친다 → 그 안에선 0 */
+  .ugc-fieldhd > .ugc-step,.ugc-sec-hd > .ugc-step,.script-ctrls > .ugc-step{margin-right:0}
 
   /* ───── CTA (2026-07-20, 안 "E3") ─────
      세 불만을 각각 답한다: 게이트를 버튼이 말하고(언제) · AI가 쓴다고 말하고(무슨 기능) ·
@@ -1323,9 +1326,11 @@
       <div class="ugc-fold-b">
       <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐.
            ⚠️ 빈 상태(.ugc-solo)에선 요약줄 버튼만 숨고 노브가 그대로 펼쳐진다 — 접기는 폭이 540일 때
-              세로를 아끼려던 것인데(7f1b9bf), 전체 폭 2단에선 그 전제가 없다. 제목("Options")은 남는다. -->
+              세로를 아끼려던 것인데(7f1b9bf), 전체 폭 2단에선 그 전제가 없다.
+           (2026-07-21) "Options"→"Settings"(3번). 사용자 요청으로 1·2·3·4 플로우를 세운다:
+              ①제품 사진 ②컨셉 ③세팅(우측) ④대본 생성(CTA). ✓(선택)에서 번호로 승격 — 우측도 플로우의 한 걸음. -->
       <div class="ugc-knobline ugc-sec-div">
-        <div class="ugc-sec-hd"><span class="ugc-step ugc-step-opt" aria-hidden="true">✓</span>Options</div>
+        <div class="ugc-sec-hd"><span class="ugc-step" aria-hidden="true">3</span>Settings</div>
         <button type="button" class="ugc-knobline-btn" id="ugcKnobLine" onclick="ugcToggleKnobs()" aria-expanded="false" aria-controls="ugcKnobs">
           <span aria-hidden="true">🎬</span>
           <span class="ugc-knobline-txt" id="ugcKnobTxt"></span>
@@ -1445,7 +1450,10 @@
            ⚠️ hard disabled 를 쓰지 않는다: ugcWriteScript 의 busy 로직이 finally 에서 disabled=false 로
               되돌리기 때문에 서로 싸운다. 대신 aria-disabled + .is-blocked 로 알리고,
               눌리면 기존 가드가 힌트로 한 번 더 답한다(경로가 둘 다 살아 있음). -->
+      <!-- (2026-07-21) 4번 = 대본 생성. 1·2·3(사진·컨셉·세팅)에 이어 CTA가 플로우의 마지막 걸음이다.
+           배지는 버튼 밖(왼쪽)에 둔다 — 버튼 내부는 게이트 상태 문구가 갈아끼워지는 자리라 건드리지 않는다. -->
       <div class="script-ctrls">
+        <span class="ugc-step" aria-hidden="true">4</span>
         <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-describedby="ugcFreeNote" aria-disabled="true" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo and a concept</span><span class="cta-sub">A photo and one line starts it</span></span></button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
@@ -5797,7 +5805,7 @@ async function ugcSuggestConcept(){
     const res=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd});
     const data=await sjson(res);
     if(!res.ok||!data.success)throw new Error(data.error||'Suggestion failed');
-    document.getElementById('ugcConcept').value=data.concept;
+    { const c=document.getElementById('ugcConcept'); c.value=data.concept; ugcAutogrow(c); ugcCtaState(); } // AI가 채운 값도 높이·CTA에 반영
     hint.textContent='Concept suggested — edit it, or tap again for another.';
   }catch(e){ console.error(e); hint.textContent='⚠ '+(e.message||'Suggestion failed'); }
   finally{ btn.disabled=false; if(lbl)lbl.textContent=old; } // textContent로 되돌리면 버튼 안 SVG가 날아감 → 라벨 span만 복원
@@ -5809,7 +5817,7 @@ function ugcToggleDetails(){
   const open=ta.style.display==='none';
   ta.style.display=open?'':'none';
   const pl=t.querySelector('.pl'); if(pl)pl.textContent=open?'−':'+'; // +Negative식: 열면 −, 접으면 +
-  if(open)ta.focus();
+  if(open){ ugcAutogrow(ta); ta.focus(); } // 펼칠 때 placeholder 높이에 맞춘다(display:none 이면 scrollHeight=0이라 열고 나서 호출)
 }
 
 // 1단계 — 대본만(무료). 검토 패널에 표시.
@@ -5872,11 +5880,18 @@ function ugcCtaState(){
     : !hasPhoto ? 'Add a product photo' : 'Write one line of concept';
   sub.textContent = ok ? 'Free — edit it, then make the video' : 'A photo and one line starts it';
 }
+/**
+ * 텍스트에어리어 자동 높이(2026-07-21) — 내용만큼만 차지하고 줄이 늘면 아래가 밀려 내려간다.
+ * min-height(CSS)가 바닥을 잡으므로 빈 상태에서도 placeholder 가 보인다. overflow:hidden 이라 스크롤바 대신 자란다.
+ */
+function ugcAutogrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 function ugcCtaWatch(){
-  const c=document.getElementById('ugcConcept'), box=document.getElementById('ugcInputBox');
-  if(c)c.addEventListener('input',ugcCtaState);
+  const c=document.getElementById('ugcConcept'), d=document.getElementById('ugcDetails'),
+        box=document.getElementById('ugcInputBox');
+  if(c)c.addEventListener('input',function(){ ugcCtaState(); ugcAutogrow(c); });
+  if(d)d.addEventListener('input',function(){ ugcAutogrow(d); });
   if(box)new MutationObserver(ugcCtaState).observe(box,{attributes:true,attributeFilter:['class']});
-  ugcCtaState();
+  ugcCtaState(); ugcAutogrow(c); ugcAutogrow(d);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ugcCtaWatch);
 else ugcCtaWatch();
