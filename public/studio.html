@@ -3494,7 +3494,12 @@ function selectFromModal(){
 //   기존 진입점(scrollToTemplatePicker·toggleTemplatePicker)을 여기로 재배선. Manage 모드에선 인라인이라 열지 않음.
 function ensureCutuiScrim(){
   let s=document.getElementById('cutuiScrim');
-  if(!s){ s=document.createElement('div'); s.id='cutuiScrim'; s.onclick=closeLookSheet; document.body.appendChild(s); }
+  // ⚠️ .wrap이 z-index:2 스택 컨텍스트라, body 직속 스크림(58)이 .wrap 안의 시트(59)를 덮어버린다
+  //   (시트 흐려짐 + 클릭이 스크림에 맞아 선택 불가). 스크림을 시트와 같은 부모(.wrap)에 둬야 58<59가 먹는다.
+  const ts=document.getElementById('templateStep');
+  const parent=(ts&&ts.parentNode)?ts.parentNode:document.body;
+  if(!s){ s=document.createElement('div'); s.id='cutuiScrim'; s.onclick=closeLookSheet; }
+  if(s.parentNode!==parent)parent.appendChild(s);
   return s;
 }
 function openLookSheet(){
