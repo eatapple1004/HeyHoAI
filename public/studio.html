@@ -737,10 +737,10 @@
   /* topbar (mode toggle + brand kit) */
   .topbar{position:relative;display:flex;align-items:center;gap:14px;margin-bottom:32px;flex-wrap:wrap}
   .topbar .mode-toggle{margin-bottom:0}
-  /* (2026-07-07) DOPPIA.AI 로고(랜딩과 동일) — 좌측 정렬. guide는 margin-left:auto로 우측 끝. */
-  .studio-brand{display:inline-flex;align-items:center;text-decoration:none;margin-right:8px}
-  .studio-brand span{font-family:'Sora';font-weight:800;font-size:21px;letter-spacing:-.5px;
-    background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--accent2)}
+  /* (2026-07-21) 좌상단 DOPPIA.AI 로고 → 파트 설명 헤더(gallery .head 패턴). 컷 모드에서만 노출 — ugc(광고영상)는 우측 패널이 이미 설명(setMode에서 숨김). */
+  .studio-head{margin-right:auto;min-width:0}
+  .studio-head h1{font-family:'Sora';font-weight:800;font-size:25px;letter-spacing:-.5px;line-height:1.1;color:var(--text)}
+  .studio-head .sub{color:var(--dim);font-size:14px;margin-top:5px;line-height:1.5}
   .topbar .ob-help-btn{margin-left:auto}
   .bk-on{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--cyan);background:rgba(94,224,214,.16);padding:2px 7px;border-radius:6px}
 
@@ -1198,7 +1198,10 @@
 
 <div class="wrap">
   <div class="topbar fade d1">
-    <a class="studio-brand" href="/landing" title="Doppia"><span>DOPPIA.AI</span></a>
+    <div class="studio-head" id="studioHead">
+      <h1>Shots</h1>
+      <div class="sub">Turn a product photo into the shots your listing needs.</div>
+    </div>
     <!-- (2026-07-02 템플릿-우선) 기본=템플릿 갤러리(히어로). 모드 펠릿은 숨김(setMode 참조용 DOM 유지·Influencer 재활성 시 노출). Custom은 독립 CTA 버튼(#customCta)로 진입. -->
     <div class="mode-toggle" style="display:none">
       <button id="modeInfluencer" data-flag="influencer" onclick="setMode('influencer')">Influencer</button>
@@ -2599,6 +2602,7 @@ function setMode(m,initialVertical){
   document.getElementById('step1Title').textContent=STEP1[m][0];
   document.getElementById('step1Hint').textContent=STEP1[m][1];
   document.getElementById('scriptStep').classList.toggle('hidden',!ugc);
+  { const sh=document.getElementById('studioHead'); if(sh)sh.classList.toggle('hidden',ugc); } // 컷 헤더는 광고영상(ugc)에선 숨김 — 우측 패널이 설명
   if(ugc && typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls(); // (2026-07-13) 진입 시 Voice 기본상태 동기화 — 안 하면 Length/scene·음성힌트가 반대로 표시(토글 전까지)
   // (2026-07-17) 진행 중이던 렌더에 다시 붙는다. setMode는 모드 전환마다 불리므로 페이지 로드당 1회로 막고,
   // 이번 세션에서 이미 렌더가 도는 중이면(genActive>0) 같은 잡을 두 번 붙이지 않는다.

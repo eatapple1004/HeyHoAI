@@ -421,6 +421,7 @@
     'Turn one look into a full week\'s set in a tap': '한 번의 룩을 탭 한 번으로 일주일치 세트로',
     // (2026-07-20) 스토어 숨김 — 옛 키('… · discover more in the Store.')는 매칭 대상이 사라져 제거
     'Your creations. Manage templates in Shots.': '내 크리에이션. 템플릿은 컷에서 관리하세요.',
+    'Turn a product photo into the shots your listing needs.': '제품 사진 한 장으로, 상세페이지에 필요한 컷을 만들어요.',
 
     // ── 랜딩 페이지 전체 (히어로 조각 · 섹션 · 요금제 · 푸터) ──
     'One product photo.': '제품 사진 한 장.', 'A full content studio.': '완전한 콘텐츠 스튜디오.',
