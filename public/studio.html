@@ -192,7 +192,24 @@
   .cutui-plbl{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
   .cutui-pnm{font-size:12.5px;font-weight:650;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
   .cutui-pchev{color:var(--faint);font-size:11px;margin-left:4px}
-  /* ▲▲▲ P1 카드 셸 + P3 축 + P4 픽커 ▲▲▲ */
+  /* P5 룩 시트 — #templateStep(갤러리)을 하단 시트로. Manage 모드(body.studio-managing)에선 인라인 유지(아래 override). */
+  #cutuiScrim{position:fixed;inset:0;background:rgba(4,4,9,.55);z-index:58;opacity:0;pointer-events:none;transition:opacity .22s}
+  #cutuiScrim.on{opacity:1;pointer-events:auto}
+  body.cutui-looksheet #templateStep{position:fixed;left:0;right:0;bottom:0;z-index:59;max-height:82vh;
+    margin:0;padding:18px 26px 26px;overflow-y:auto;background:var(--bg2,#0c0c14);border-top:1px solid var(--border2);
+    border-radius:20px 20px 0 0;box-shadow:0 -24px 60px -24px #000;
+    animation:none!important;transform:translateY(102%)!important; /* ⚠️.step.fade 페이드 애니메이션이 transform을 덮으므로 끄고 강제 */
+    transition:transform .28s cubic-bezier(.4,0,.2,1)}
+  body.cutui-looksheet.has-rail #templateStep{left:92px} /* 좌측 레일(92px)만큼 비켜 시작 */
+  @media(max-width:700px){body.cutui-looksheet.has-rail #templateStep{left:0}} /* 모바일=레일이 하단바 → 오프셋 없음 */
+  body.cutui-looksheet.cutui-looksheet-open #templateStep{transform:none!important}
+  body.cutui-looksheet #templateStep::before{content:'Pick a template';display:block;font-family:'Sora',sans-serif;
+    font-size:16px;font-weight:750;margin-bottom:14px;color:var(--text)}
+  /* Manage 모드는 인라인 관리 화면 유지 — 시트 스타일 무효화(Manage는 body.studio-managing) */
+  body.studio-managing #templateStep{position:static!important;transform:none!important;max-height:none!important;
+    box-shadow:none!important;border-radius:0!important;background:transparent!important;padding:0!important;z-index:auto!important}
+  body.studio-managing #cutuiScrim{display:none}
+  /* ▲▲▲ P1 카드 셸 + P3 축 + P4 픽커 + P5 룩 시트 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
   .results-all{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap;cursor:pointer}
@@ -2743,7 +2760,7 @@ function findCard(id){ for(const m of Object.keys(TEMPLATES)){const c=TEMPLATES[
 function itemTypeOf(r){ return r&&r.source==='marketplace'?'template':'recipe'; }
 function setCustomTheme(id){ curTheme=id; state.filter='All'; renderFilters();renderRecipes(); }
 // ▼▼▼ (2026-07-03 A안·모드 격리) Manage = 템플릿 관리 전용 화면. 켜면 컴포즈(.gen-bar)·주체·결과를 숨겨 "만들기"와 분리(UI 안 더러워짐). 롤백: applyManageChrome 호출 + body.studio-managing CSS + step2Title 분기 제거 ▼▼▼
-function toggleManage(){ manageMode=!manageMode; applyManageChrome(); renderFilters();renderRecipes(); }
+function toggleManage(){ manageMode=!manageMode; if(typeof closeLookSheet==='function')closeLookSheet(); applyManageChrome(); renderFilters();renderRecipes(); } // (2026-07-21) Manage 진입 시 룩 시트 닫고 인라인 관리 화면으로
 function applyManageChrome(){
   document.body.classList.toggle('studio-managing',manageMode); // CSS가 .gen-bar·#subjectStep·#resultStep 숨김
   const h=document.getElementById('step2Title'); if(h)h.textContent=manageMode?'Manage templates':(state.mode==='ugc'?'Pick an ad format':'Pick a template');
@@ -2961,7 +2978,7 @@ function renderRecipes(){
       }
     }
     return `
-    <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')}${manageMode?'':` role="button" tabindex="0" aria-label="Preview ${esc(r.name)} template" onkeydown="keyClick(event)"`} onclick="${manageMode?'':`openRecipeModal('${r.id}')`}">
+    <div class="recipe-card ${state.recipeId===r.id?'selected':''}"${r.type==='reel'?' data-flag="reels"':(r.held!==false?' data-flag="held"':'')}${manageMode?'':` role="button" tabindex="0" aria-label="Select ${esc(r.name)} template" onkeydown="keyClick(event)"`} onclick="${manageMode?'':`pickLook('${r.id}')`}"><!-- (2026-07-21 컷UI·안ㄹ) 룩 시트 카드 클릭=룩 직접 선택(pickLook). 기존 openRecipeModal(상세 모달)에서 변경. 롤백: pickLook→openRecipeModal -->
       ${mc}
       <div class="preview" style="${r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad}`:`background:${r.grad}`}"><span class="type-badge">${r.type==='reel'?'▶ Reel':'▦ Photo'}</span>${valBadge}${r.held===false?'':'<span class="hold-badge">On hold</span>'}</div>
       <div class="meta"><div class="rname">${r.name}</div><div class="rcat">${r.soon?'Coming soon':esc(r.cat||'Template')}</div></div></div>`;
@@ -3074,6 +3091,24 @@ function pickRecipe(id){
   if(r&&r.source==='marketplace'&&r.tool){const tt=toolById(r.tool);if(tt)applyTool(r.tool);}
   syncDefaultCut();
   renderRecipes();updateBar();
+}
+// (2026-07-21 컷UI 재설계 · 안 ㄹ) P5 — 룩 시트에서 카드 클릭 = 룩만 직접 선택(상세 모달 안 거침).
+//   pickRecipe(선택/해제 토글+컷 기본값)에 더해 축·모델·배경·디테일 기본값을 초기화한다
+//   (selectFromModal의 select 분기와 동일 규칙). 선택 후 룩 시트를 닫고 카드가 라이브 렌더된다.
+function pickLook(id){
+  pickRecipe(id); // 토글 선택 + syncDefaultCut + tool + render
+  const r=curRecipe();
+  if(state.recipeId&&r){ // 새로 선택됨 → 기본값(selectFromModal 미러)
+    state.detail='';
+    state.axis=(r.axes&&r.axes.length)?(function(){const a={};AXIS_ORDER.forEach(k=>{a[k]=AXIS_DEFAULT[k];});return a;})():null;
+    state.modelId=(r.picker==='model')?null:null;
+    state.bgId=(r.picker==='model')?'studio':null;
+    state.cutBg='';
+  }else{ // 재클릭 해제 → 클리어(openRecipeModal 해제 분기와 동일)
+    state.detail=null;state.cutBg=null;state.modelId=null;state.bgId=null;state.axis=null;
+  }
+  closeLookSheet();
+  updateBar();
 }
 // 중첩 템플릿: 부모(cuts 보유) 선택 시 첫 컷을 기본, 그 외엔 컷 없음.
 function syncDefaultCut(){const r=curRecipe();state.cutId=(r&&r.cuts&&r.cuts.length)?r.cuts[0].id:null;}
@@ -3453,11 +3488,25 @@ function selectFromModal(){
 }
 
 // ── (2026-07-02 템플릿-우선) 갤러리 인라인 → 트리거=갤러리로 스크롤, close=no-op(selectFromModal/confirmUnlock 호환용) ──
-function toggleTemplatePicker(){
-  const g=document.getElementById('templateStep'); if(!g)return;
-  g.scrollIntoView({behavior:'smooth',block:'start'});
+// (2026-07-21 컷UI 재설계 · 안 ㄹ) P5 — 룩 시트. #templateStep(갤러리)을 하단 시트로 연다.
+//   기존 진입점(scrollToTemplatePicker·toggleTemplatePicker)을 여기로 재배선. Manage 모드에선 인라인이라 열지 않음.
+function ensureCutuiScrim(){
+  let s=document.getElementById('cutuiScrim');
+  if(!s){ s=document.createElement('div'); s.id='cutuiScrim'; s.onclick=closeLookSheet; document.body.appendChild(s); }
+  return s;
 }
-function closeTemplatePicker(){}
+function openLookSheet(){
+  if(manageMode)return; // Manage는 인라인 관리 화면 — 시트 안 씀
+  if(state.mode!=='shopping'){ const g=document.getElementById('templateStep'); if(g)g.scrollIntoView({behavior:'smooth',block:'start'}); return; } // 비shopping은 기존 스크롤
+  ensureCutuiScrim().classList.add('on');
+  document.body.classList.add('cutui-looksheet-open');
+}
+function closeLookSheet(){
+  document.body.classList.remove('cutui-looksheet-open');
+  const s=document.getElementById('cutuiScrim'); if(s)s.classList.remove('on');
+}
+function toggleTemplatePicker(){ openLookSheet(); } // 선택 칩 '탭하여 변경' → 룩 시트
+function closeTemplatePicker(){ closeLookSheet(); } // selectFromModal 등에서 호출 → 시트 닫기
 function clearTemplate(){state.recipeId=null;state.cutId=null;state.detail=null;state.cutBg=null;state.modelId=null;state.bgId=null;state.axis=null;cutsExpanded=false;renderRecipes();updateBar();}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
@@ -3554,10 +3603,7 @@ function syncTplTrigger(){
   }else{ c.style.display='none'; }
 }
 // "Pick a template" CTA → 템플릿 픽커 섹션으로 스크롤
-function scrollToTemplatePicker(){
-  const el=document.getElementById('templateStep');
-  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
-}
+function scrollToTemplatePicker(){ openLookSheet(); } // (2026-07-21) 'Pick a template' CTA → 룩 시트
 
 // ── 실제 업로드: 캐릭터 등록 (레퍼런스 이미지 포함) ──
 async function uploadSubject(inp){
@@ -3598,8 +3644,9 @@ function syncCutCard(){
   const top=document.getElementById('composeTop'); if(!top)return;
   const on=state.mode==='shopping';
   top.classList.toggle('cutui-card',on);
+  document.body.classList.toggle('cutui-looksheet',on); // P5: shopping에서 갤러리를 하단 시트로(Manage는 CSS override로 인라인)
   let head=document.getElementById('cutCardHead');
-  if(!on){ if(head)head.remove(); top.classList.remove('folded'); return; }
+  if(!on){ if(head)head.remove(); top.classList.remove('folded'); closeLookSheet(); return; }
   if(!head){
     head=document.createElement('div');
     head.id='cutCardHead'; head.className='cutui-head';
