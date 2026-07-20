@@ -229,8 +229,9 @@
     min-width:38px;padding:7px 0;font-size:12.5px;font-weight:650;color:var(--dim);cursor:pointer;font-family:inherit;text-align:center}
   .cutui-countseg button:hover{border-color:var(--accent)}
   .cutui-countseg button.on{border-color:var(--accent);background:rgba(106,64,224,.16);color:var(--text)}
-  /* P7'' 프로토타입 밀도 — 제품↔템플릿 좌우 한 줄, 칩 길게·컴팩트, 컷카드 축소, 간격 조임(세로 단축) */
-  #composeTop.cutui-card .cutui-toprow{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+  /* P7'' 프로토타입 밀도 — 컷카드 축소, 간격 조임(세로 단축) */
+  /* (2026-07-21) 사진 슬롯 ↔ 템플릿 = 다른 줄: prodhost(이미지) 위 / tpl-sel(템플릿) 아래로 세로 스택. */
+  #composeTop.cutui-card .cutui-toprow{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:14px}
   #composeTop.cutui-card .cutui-toprow .cutui-prodhost{flex:none;display:flex}
   /* (2026-07-21 이미지버튼) 제품 슬롯 = 58px 정사각(레오나르도식). 세로 stretch 아님, 칩 옆에서 세로 가운데. */
   #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;flex-direction:row;align-items:center;gap:8px;height:auto;align-self:center}
@@ -247,7 +248,7 @@
   #composeTop.cutui-card .cutui-toprow .ref-tile .ref-x{opacity:0;transition:opacity .12s}
   #composeTop.cutui-card .cutui-toprow .ref-tile:hover .ref-x{opacity:1}
   #composeTop.cutui-card .cutui-toprow .tpl-sel,
-  #composeTop.cutui-card .cutui-toprow .tpl-pick-cta{flex:1;max-width:none;margin:0} /* 템플릿 칩/CTA를 남는 폭 전부(길게) */
+  #composeTop.cutui-card .cutui-toprow .tpl-pick-cta{flex:none;max-width:none;margin:0} /* 별도 줄(세로 스택)이라 full-width는 align-items:stretch가 담당 — flex grow 불필요 */
   #composeTop.cutui-card .tpl-sel{padding:10px 12px;gap:12px}
   #composeTop.cutui-card .tpl-sel .ts-thumb{width:54px;height:54px}     /* 칩 컴팩트(72→54) */
   #composeTop.cutui-card .tpl-compose{gap:14px}
