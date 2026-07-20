@@ -207,8 +207,16 @@
     // 컨셉 placeholder(TEXTAREA는 텍스트치환 SKIP이나 placeholder는 ATTRS로 처리됨)
     'e.g. A calming night serum for tired skin — cozy, candle-lit bedroom mood.':
       '예) 지친 피부를 위한 진정 나이트 세럼 — 아늑한 캔들 조명 무드.',
-    // CTA
+    // CTA — (2026-07-20) "Write script" 단독 라벨을 버렸다. 유저에게 시키는 말투인데 실제로는 AI가 쓴다.
+    //   버튼이 게이트를 직접 말하므로 문구가 4가지다(준비됨 + 빠진 것 3가지). ugcCtaState 가 갈아끼우고
+    //   i18n MutationObserver 가 치환한다. 'Write script' 키는 #ugcRewriteBtn 등이 아직 쓸 수 있어 남긴다.
     'Write script': '대본 쓰기',
+    'AI writes the script': 'AI가 대본을 씁니다',
+    'Free — edit it, then make the video': '무료 — 고친 다음 영상으로',
+    'Add a product photo and a concept': '제품 사진과 컨셉이 필요합니다',
+    'Add a product photo': '제품 사진을 넣어주세요',
+    'Write one line of concept': '컨셉을 한 줄 써주세요',
+    'A photo and one line starts it': '사진과 한 줄이 있으면 시작합니다',
     // 과금 안내(#ugcFreeNote). (2026-07-20) 우측 패널 2번 스텝("AI drafts it — free…")을 흡수해
     //   한 줄로 합쳤다 — 과금 안내가 세 곳(헤더·2번·무료안내) → 두 곳 → **한 곳**이 된 마지막 단계.
     'The concept and the script are free — edit any line first. Credits are spent only when you generate the video, and the cost shows on that button.':

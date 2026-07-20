@@ -977,8 +977,10 @@
   #scriptStep .ugc-mt.active,#scriptStep .ugc-mf.active{border-color:var(--bd-sel);background:var(--tint-sel)}
   /* faux-bold 제거 */
   #scriptStep #ugcTotalLen{font-weight:700}
-  /* ── 발광 1점: Write script CTA ── */
-  #scriptStep .script-ctrls .btn-primary{box-shadow:0 4px 14px -4px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.13),var(--glow-accent)}
+  /* ── (2026-07-20) 옛 "발광 1점: Write script CTA" 제거 ──
+     그림자 3겹(글로우 포함)이었다. 미니멀로 바꾸며 화면의 채움·테두리를 다 걷어냈더니
+     이 버튼만 남아 혼자 튀었다. 실제 CTA 스타일은 아래 "CTA" 블록으로 옮겼다.
+     롤백용 옛 값: box-shadow:0 4px 14px -4px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.13),var(--glow-accent) */
   /* ── 좌우 높이: 강제 stretch 해제(자연 높이) + 우측 sticky ── */
   #scriptStep .ugc-cols > #ugcInputBox:not(.compact){align-self:flex-start}
   /* ── 접근성·마감 보강(2026-07-18, UX 검증 반영). 롤백=이 서브블록 삭제 ── */
@@ -1031,9 +1033,38 @@
   .ugc-stephd{display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
   /* .ugc-fieldhd(gap:10px)·.ugc-sec-hd(gap:8px)는 이미 flex gap이 있어 margin이 겹친다 → 그 안에선 0 */
   .ugc-fieldhd > .ugc-step,.ugc-sec-hd > .ugc-step{margin-right:0}
+
+  /* ───── CTA (2026-07-20, 안 "E3") ─────
+     세 불만을 각각 답한다: 게이트를 버튼이 말하고(언제) · AI가 쓴다고 말하고(무슨 기능) ·
+     글로우를 걷고 은은한 채움만 남긴다(안 튀게). 문구 교체는 ugcCtaState. */
+  #scriptStep .script-ctrls .btn-primary{
+    display:inline-flex;align-items:center;gap:10px;
+    border-radius:12px;padding:11px 20px;font-weight:700;box-shadow:none;
+    background:rgba(139,124,246,.16);border:1px solid rgba(139,124,246,.42);color:var(--text)}
+  #scriptStep .script-ctrls .btn-primary:hover{background:rgba(139,124,246,.26)}
+  .cta-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;min-width:0}
+  .cta-main{font-size:14px}
+  .cta-sub{font-size:11px;font-weight:600;color:var(--accent2)}
+  /* 차단 = 조용해지고 뭐가 빠졌는지 말한다. hard disabled 가 아닌 이유는 마크업 주석 참조 */
+  #scriptStep .script-ctrls .btn-primary.is-blocked{
+    background:none;border-color:var(--border2);color:var(--faint);cursor:not-allowed}
+  #ugcGenBtn.is-blocked .cta-sub{color:var(--faint)}
+  #ugcGenBtn.is-blocked .ugc-ic{opacity:.35}
+
+  /* E3 배치 — 푸터를 한 줄로: 무료 안내(좌) · CTA(우측 끝). 힌트는 항상 다음 줄.
+     넓은 화면(폼 단독)에서만. 540px 로 좁아지는 대본·조리대 상태에선 원래대로 쌓인다. */
+  .ugc-cols.ugc-solo .ugc-fold-c{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .ugc-cols.ugc-solo #ugcFreeNote{margin:0;flex:1 1 340px}
+  .ugc-cols.ugc-solo .script-ctrls{margin-left:auto;flex:none}
+  .ugc-cols.ugc-solo #ugcHint{flex:1 0 100%;margin-top:10px}
+
   @media(max-width:860px){
     .ugc-lead-t{font-size:17px}
     .ugc-cols.ugc-solo .ugc-fold-b{padding-left:0}
+    /* 좁으면 한 줄 정렬이 성립 안 함 → 쌓는다 */
+    .ugc-cols.ugc-solo .ugc-fold-c{display:block}
+    .ugc-cols.ugc-solo #ugcFreeNote{margin:2px 0 11px}
+    .ugc-cols.ugc-solo #ugcHint{margin-top:8px}
   }
 </style>
 </head>
@@ -1290,8 +1321,18 @@
            ⚠️ 인라인 <b> 금지 — i18n 텍스트노드 단위 치환(단일 노드 유지, 사전 키=이 문장 전체). -->
       <div id="ugcFreeNote" style="margin:2px 0 11px;font-size:12px;color:var(--dim);line-height:1.55">The concept and the script are free — edit any line first. Credits are spent only when you generate the video, and the cost shows on that button.</div>
       <!-- rank2: 연필→스파클(AI가 쓴다 신호, 'Write it for me'와 동일 아이콘). rank18: aria-describedby로 무료 안내를 CTA에 연결 -->
+      <!-- CTA(2026-07-20 개편) — 세 가지가 한 번에 안 읽히던 것을 버튼이 직접 말하게 바꿨다:
+             ① 언제 누르나 = 게이트를 버튼이 말한다. 사진·컨셉이 없으면 조용해지고 **뭐가 빠졌는지**를 쓴다.
+                (게이트는 ugcWriteScript 와 동일: 컨셉 + 사진. Options 는 기본값이 있어 게이트가 아니다)
+             ② 무슨 기능인가 = "대본 쓰기"(유저에게 시키는 말투)를 버렸다. 실제로는 AI가 쓴다.
+             ③ 왜 혼자 튀나 = 글로우 3겹을 걷고 은은한 채움으로. 미니멀에서 유일하게 남은 채움이었다.
+           ⚠️ 문구는 JS(ugcCtaState)가 갈아끼운다. 여기 적힌 건 **차단 상태 초깃값**이다 —
+              빈 화면에서 사진·컨셉이 둘 다 없으므로 첫 렌더가 곧 차단 상태다.
+           ⚠️ hard disabled 를 쓰지 않는다: ugcWriteScript 의 busy 로직이 finally 에서 disabled=false 로
+              되돌리기 때문에 서로 싸운다. 대신 aria-disabled + .is-blocked 로 알리고,
+              눌리면 기존 가드가 힌트로 한 번 더 답한다(경로가 둘 다 살아 있음). -->
       <div class="script-ctrls">
-        <button class="btn btn-primary" id="ugcGenBtn" aria-describedby="ugcFreeNote" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Write script</button>
+        <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-describedby="ugcFreeNote" aria-disabled="true" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo and a concept</span><span class="cta-sub">A photo and one line starts it</span></span></button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
       </div><!-- /.ugc-fold-c -->
@@ -5552,6 +5593,40 @@ async function ugcPreviewVoice(){
  *    폼이 solo(2단)인 채로 조리대와 나란히 서서 663px로 쭈그러들었다.
  *    → 토글을 뿌리지 말고 **한 곳에서 계산**한다. 옆자리를 건드린 곳은 이걸 부르기만 하면 된다.
  */
+/**
+ * CTA 상태 — 버튼이 게이트를 직접 말한다(안 "E3", 2026-07-20).
+ *   준비됨   = "AI writes the script" / "Free — edit it, then make the video"
+ *   덜 됨    = 빠진 것을 이름으로 부른다(사진 / 컨셉 / 둘 다)
+ * 판정은 ugcWriteScript 의 게이트와 **같은 두 가지**다(컨셉 + 사진). 갈라지면 버튼이 거짓말을 한다.
+ * ⚠️ 토글 지점을 뿌리지 않고 **상태에서 파생**시킨다(ugcSyncSolo 와 같은 이유) —
+ *    has-photo 는 ugcRenderThumbs 가, 컨셉은 타이핑이 바꾸므로 둘 다 관찰한다.
+ * ⚠️ disabled 는 안 건드린다: ugcWriteScript 가 요청 동안 disabled 를 쓰고 finally 에서 되돌리므로
+ *    여기서 같이 만지면 서로 덮어쓴다. 시각·a11y 신호만 담당한다.
+ */
+function ugcCtaState(){
+  const btn=document.getElementById('ugcGenBtn'); if(!btn)return;
+  const main=btn.querySelector('.cta-main'), sub=btn.querySelector('.cta-sub');
+  if(!main||!sub)return; // 마크업이 바뀌면 조용히 물러난다(옛 1줄 버튼과 공존 가능)
+  const box=document.getElementById('ugcInputBox');
+  const hasPhoto=!!(box&&box.classList.contains('has-photo'));
+  const hasConcept=!!((document.getElementById('ugcConcept')||{}).value||'').trim();
+  const ok=hasPhoto&&hasConcept;
+  btn.classList.toggle('is-blocked',!ok);
+  btn.setAttribute('aria-disabled',ok?'false':'true');
+  main.textContent = ok ? 'AI writes the script'
+    : (!hasPhoto&&!hasConcept) ? 'Add a product photo and a concept'
+    : !hasPhoto ? 'Add a product photo' : 'Write one line of concept';
+  sub.textContent = ok ? 'Free — edit it, then make the video' : 'A photo and one line starts it';
+}
+function ugcCtaWatch(){
+  const c=document.getElementById('ugcConcept'), box=document.getElementById('ugcInputBox');
+  if(c)c.addEventListener('input',ugcCtaState);
+  if(box)new MutationObserver(ugcCtaState).observe(box,{attributes:true,attributeFilter:['class']});
+  ugcCtaState();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ugcCtaWatch);
+else ugcCtaWatch();
+
 function ugcSyncSolo(){
   const cols=document.querySelector('.ugc-cols'); if(!cols)return;
   const busy=['ugcScriptPreview','ugcScriptLoading','ugcInline'].some(id=>{
