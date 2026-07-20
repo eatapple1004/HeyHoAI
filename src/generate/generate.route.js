@@ -1411,10 +1411,25 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
 
     const token = generateToken();
     let endpoint, body;
+    let sourceImageUrl = null; // 결과 카드에 표시할 "넣은 사진" URL(아래 sourceFile 분기에서 채움)
 
     if (sourceFile) {
       // Image-to-Video
       const imageBase64 = fs.readFileSync(sourceFile.path).toString('base64');
+      // 크리에이션 카드에 "고객이 어떤 사진을 넣었는지" 표시용 사본.
+      //   영상 결과엔 character_id가 안 실려 characters JOIN이 비고, 여기 sourceImage는 base64로
+      //   읽고 버려져(multer tmp/uploads는 웹 서빙도 안 됨) 남는 게 없었다 → tmp/images로 복사해
+      //   /images/<파일명>으로 서빙되게 하고 아래 결과 metadata에 URL을 남긴다(UGC와 동일 방식).
+      //   best-effort — 실패해도 생성은 계속한다(표시용일 뿐이다).
+      try {
+        const ext = (path.extname(sourceFile.originalname || '') || '.png').toLowerCase();
+        const keep = `${crypto.randomUUID()}${ext}`;
+        const dest = path.join(process.cwd(), 'tmp', 'images', keep);
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(sourceFile.path, dest);
+        await mediaStore.putFile(dest).catch(() => {}); // R2 영속(로컬 tmp는 정리 크론이 지운다)
+        sourceImageUrl = `/images/${keep}`;
+      } catch (e) { vlog.warn('source image keep failed — 표시용이라 생성은 계속', e.message); }
       endpoint = 'https://api.klingai.com/v1/videos/image2video';
       body = {
         model_name: 'kling-v3',
@@ -1635,7 +1650,10 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
             filePath: `tmp/images/${filename}`,
             fileSizeKb: Math.round(videoBuf.length / 1024),
             model: 'kling-v3',
-            metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed, audio: enableAudio },
+            // product_image = 고객이 넣은 시작 프레임(위에서 tmp/images로 보관). 사진 생성은 characters
+            //   JOIN으로 가져오지만 영상 결과엔 character_id가 안 실려 여기서 직접 남긴다(UGC와 동일).
+            metadata: { type: 'video', duration: videoDuration, mode, taskId, unitsUsed, audio: enableAudio,
+              ...(sourceImageUrl ? { product_image: sourceImageUrl } : {}) },
           });
           await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
         } catch (e) {
