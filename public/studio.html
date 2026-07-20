@@ -230,15 +230,22 @@
   .cutui-countseg button:hover{border-color:var(--accent)}
   .cutui-countseg button.on{border-color:var(--accent);background:rgba(106,64,224,.16);color:var(--text)}
   /* P7'' 프로토타입 밀도 — 제품↔템플릿 좌우 한 줄, 칩 길게·컴팩트, 컷카드 축소, 간격 조임(세로 단축) */
-  #composeTop.cutui-card .cutui-toprow{display:flex;gap:12px;align-items:stretch;margin-bottom:14px}
+  #composeTop.cutui-card .cutui-toprow{display:flex;gap:12px;align-items:center;margin-bottom:14px}
   #composeTop.cutui-card .cutui-toprow .cutui-prodhost{flex:none;display:flex}
-  /* 제품 영역: 세로 쌓임(base column) → 가로 한 줄, 칩/CTA 높이에 맞춰 stretch */
-  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;flex-direction:row;align-items:stretch;gap:8px;height:auto;align-self:stretch}
-  #composeTop.cutui-card .cutui-toprow .img-add-wrap{display:flex}
-  #composeTop.cutui-card .cutui-toprow .img-add.labeled{height:auto;align-self:stretch} /* 제품 선택 버튼도 높이 맞춤 */
-  #composeTop.cutui-card .cutui-toprow .ref-tiles{height:auto;align-items:stretch;flex-wrap:nowrap;flex:none}
-  /* ⚠️ aspect-ratio+width:auto는 flex 내재 폭 계산을 깨 타일이 CTA를 덮었다 → 폭 고정, 높이만 칩에 맞춰 stretch */
-  #composeTop.cutui-card .cutui-toprow .ref-tile{width:84px;height:auto;align-self:stretch;flex:none} /* 제품 이미지 세로 = 칩 세로 크기 */
+  /* (2026-07-21 이미지버튼) 제품 슬롯 = 58px 정사각(레오나르도식). 세로 stretch 아님, 칩 옆에서 세로 가운데. */
+  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;flex-direction:row;align-items:center;gap:8px;height:auto;align-self:center}
+  /* 순서: [이미지 타일…][＋버튼]. DOM은 [버튼][타일]이라 flex order로 뒤집음(JS 무변경). */
+  #composeTop.cutui-card .cutui-toprow .img-add-wrap{display:flex;order:1;align-self:center}
+  #composeTop.cutui-card .cutui-toprow .ref-tiles{order:0;height:auto;align-items:center;flex-wrap:nowrap;flex:none;gap:8px}
+  /* 이미지-넣기 버튼: 텍스트 없는 58px 정사각 아이콘 버튼(점선=add 어포던스). 라벨 숨김. 이미지 있을 때 오른쪽 ＋도 같은 요소. */
+  #composeTop.cutui-card .cutui-toprow .img-add.labeled{width:58px;height:58px;align-self:center;flex:none;padding:0;gap:0;border-radius:12px;border-style:dashed;justify-content:center}
+  #composeTop.cutui-card .cutui-toprow .img-add.labeled .img-add-label{display:none}
+  #composeTop.cutui-card .cutui-toprow .img-add.labeled .img-add-ic{width:24px;height:24px}
+  /* 제품 이미지 타일: 원본 비율 무관 58px 정사각 크롭(background center/cover). 깔끔 썸네일 — 이름 라벨 숨김, ✕는 hover 시만. */
+  #composeTop.cutui-card .cutui-toprow .ref-tile{width:58px;height:58px;align-self:center;flex:none;border-radius:12px}
+  #composeTop.cutui-card .cutui-toprow .ref-tile .ref-name{display:none}
+  #composeTop.cutui-card .cutui-toprow .ref-tile .ref-x{opacity:0;transition:opacity .12s}
+  #composeTop.cutui-card .cutui-toprow .ref-tile:hover .ref-x{opacity:1}
   #composeTop.cutui-card .cutui-toprow .tpl-sel,
   #composeTop.cutui-card .cutui-toprow .tpl-pick-cta{flex:1;max-width:none;margin:0} /* 템플릿 칩/CTA를 남는 폭 전부(길게) */
   #composeTop.cutui-card .tpl-sel{padding:10px 12px;gap:12px}
