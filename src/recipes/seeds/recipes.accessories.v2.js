@@ -3,7 +3,6 @@
  * 신규 오피셜 vertical "accessories" · 3 템플릿 패밀리(각 부모 1 + 파라미터형 자식).
  *   설계: 2026-07-08 세션(taxonomy accessories 빈 카테고리 → 주얼리 v1 큐레이션).
  *   결정: ① v1 범위 = 주얼리만(반지·목걸이·귀걸이·팔찌). ② 착용컷 = B안 부위 파라미터 컷.
- *         ③ 3패밀리 전부(제품컷·착용컷·히어로).
  *
  * 패밀리(부모=진입점 카드 1장씩, category=콘텐츠타입 라벨):
  *   1. Jewelry Product Cut (category "Product Cut", ◈2) — 모델없는 카탈로그 컷.
@@ -11,8 +10,22 @@
  *   2. Jewelry Worn Cut (category "Worn Cut", ◈3) — 부위별 착용 크롭(모델 로스터 없음, 부위 생성).
  *      컷 4종: On Hand(반지·팔찌) / On Neck(목걸이) / On Ears(귀걸이) / On Wrist(팔찌·뱅글).
  *      ⚠️ 손·해부학 고위험 → 전 컷 needs_human_review.
- *   3. Jewelry Hero (category "Hero", ◈2) — 프리미엄 에디토리얼 무드.
- *      스타일 5종: Noir Gold / Marble Plinth / Silk Drape / Spotlight / Floating Luxe.
+ *   3. Jewelry On Model (category "On Model", ◈5) — 로스터 모델 착용 뷰티 포트레이트.
+ *      컷 4종: Earrings / Necklace / Ring / Bracelet(착용 부위를 고정해 종류 오인을 막는다).
+ *
+ * ── 폐기 이력 ──
+ *  · Jewelry Hero 패밀리 전체 = 부모 + 무드 5(Noir Gold·Marble Plinth·Silk Drape·Spotlight·
+ *    Floating Luxe). 2026-07-20 사용자 지시로 폐기 — **컨셉은 좋으나 결과물 품질이 미달**.
+ *    🔖 **되살릴 때: `git show c06bf9f:src/recipes/seeds/recipes.accessories.v2.js`** 의
+ *       "패밀리 3" 블록(6레코드)을 그대로 되붙이면 된다. 같이 되돌릴 곳 = themes.js 2곳
+ *       (DEFAULT_OFFICIAL_RECIPES·OFFICIAL_THEME_MAP) · studio.html _NO_TOP_PREVIEW ·
+ *       marketplace_templates DB 행(scripts/audit_official_templates.js --apply) ·
+ *       랜딩 타일(landing.html·ko.html의 shots.tile.5) · 카드 파이프라인 3스크립트 재실행.
+ *    ⚠️ 되살리기 전 검토할 것 — Product Cut과 겹치는 무드가 있었다:
+ *       jewelry-floating vs jewelry-floating-luxe(둘 다 공중부양) ·
+ *       jewelry-pedestal vs jewelry-marble-plinth(둘 다 받침대, 조명 키만 다름).
+ *       concept 축에도 marble·noir·golden이 이미 값으로 있다(Worn Cut). 가격도 Product Cut과
+ *       같은 ◈2라 "프리미엄" 신호가 없었고, sort_order가 On Model과 충돌했다(11~15 중복).
  *
  * 중첩 규약(productcut/producthero와 동일):
  *   - 자식마다 config.parent_id = slug(부모 name). 예: 'jewelry-product-cut'.
@@ -530,198 +543,6 @@ module.exports = [
         { "scene": "chosen setting", "pose": "hand near the collarbone, bracelet wrapping the wrist toward camera", "composition": "medium_shot" },
         { "scene": "chosen setting", "pose": "tight crop on the wrist and bracelet", "composition": "closeup" },
         { "scene": "chosen setting", "pose": "upper-body editorial stance, wrist elegantly featured", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // 패밀리 3 · Jewelry Hero (히어로) — 프리미엄 에디토리얼 무드
-  // ════════════════════════════════════════════════════════════════════════
-  {
-    "mode": "product",
-    "vertical": "accessories",
-    "category": "Hero",
-    "name": "Jewelry Hero",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 11,
-    "rationale": "One jewelry photo into a premium editorial hero for your PDP and ads — no studio. Pick a mood style (noir gold, marble plinth, silk drape, spotlight, floating luxe). The piece is the hero, locked to your reference. The default style is Noir Gold.",
-    "meta": {
-      "axes": ["jewelry"],
-      "cuts": ["jewelry-noir-gold", "jewelry-marble-plinth", "jewelry-silk-drape", "jewelry-spotlight", "jewelry-floating-luxe"],
-      "flags": ["experimental", "needs_human_review"],
-      "render_notes": "Parent = shared base + default Noir Gold. Style children override look + shots. jewelry axis = Product Cut과 동일한 종류 힌트 — Hero도 'piece upright hero-centered'(marble-plinth)를 갖고 있어 목걸이·팔찌에 같은 모순이 있었다. Verify metal color, gemstones and reflections match the reference across every mood."
-    },
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "output": {
-        "type": "image_set",
-        "count": 4,
-        "aspect_ratio": "4:5"
-      },
-      "subject": {
-        "type": "product",
-        "reference_strategy": "product_composite",
-        "min_refs": 1
-      },
-      "look": {
-        "style_preset": "Studio Beauty",
-        "attributes": [
-          "lighting:dramatic_key_plus_rim",
-          "color:luxe_warm",
-          "texture:polished_metal_gemstone",
-          "context:editorial_set"
-        ],
-        "extra_positive": "luxury editorial jewelry hero photography, the uploaded piece as the dramatic centerpiece, exact piece locked to the reference — metal, gemstones and setting identical with no morph, cinematic directional lighting with a crisp specular rim revealing facets and polish, rich premium mood, tack-sharp macro focus, elegant negative space, shot on 100mm macro",
-        "extra_negative": "warped or melted metal, mismatched stone, gibberish engraving, doubled piece, flat lifeless lighting, plastic look, visible model, hands, harsh blown highlights, cluttered background, logos, text, watermark"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "editorial set, dramatic key + rim", "pose": "piece hero-centered, front angle", "composition": "closeup" },
-        { "scene": "same set, deeper shadow", "pose": "three-quarter angle emphasizing sparkle", "composition": "closeup" },
-        { "scene": "moody backdrop, tight crop", "pose": "macro on the gemstone in dramatic light", "composition": "macro" },
-        { "scene": "editorial set, wide", "pose": "full piece with generous negative space", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ─── 자식 3-1 · Noir Gold (블랙+골드 럭스) ───────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "accessories",
-    "category": "Hero",
-    "name": "Jewelry Noir Gold",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 12,
-    "rationale": "Black-and-gold luxe — the piece glows against deep shadow with warm dramatic light.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "jewelry-hero",
-      "look": {
-        "extra_positive": "noir gold luxury jewelry hero, the piece on a deep matte black surface with warm golden directional light, dramatic chiaroscuro, rich specular sparkle on facets, elegant reflection, opulent premium mood, tack-sharp macro",
-        "extra_negative": "flat lighting, washed-out background, plastic look, mismatched stone, cluttered props, harsh blown highlights, visible hands"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "matte black surface, warm key + rim", "pose": "piece hero-centered glowing in the dark", "composition": "closeup" },
-        { "scene": "black backdrop, golden side light", "pose": "three-quarter angle, deep shadow", "composition": "closeup" },
-        { "scene": "black surface, tight crop", "pose": "macro of gemstone with golden highlights", "composition": "macro" },
-        { "scene": "noir set, wide", "pose": "full piece with black negative space", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ─── 자식 3-2 · Marble Plinth (대리석 좌대) ──────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "accessories",
-    "category": "Hero",
-    "name": "Jewelry Marble Plinth",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 13,
-    "rationale": "White marble pedestal, bright and editorial — a clean gallery-luxe look.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "jewelry-hero",
-      "look": {
-        "extra_positive": "editorial jewelry hero on a white Carrara marble plinth, bright airy high-key light, soft gallery-luxe mood, subtle grey marble veining, clean shadow, tack-sharp macro with true reflections and sparkle",
-        "extra_negative": "dark muddy mood, cluttered props, mismatched stone, plastic look, harsh blown highlights, visible hands, busy veining"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "white marble plinth, high-key", "pose": "piece upright hero-centered", "composition": "closeup" },
-        { "scene": "marble surface, soft shadow", "pose": "three-quarter on the plinth", "composition": "closeup" },
-        { "scene": "marble, tight crop", "pose": "macro of setting against veined stone", "composition": "macro" },
-        { "scene": "marble set, wide", "pose": "full piece with bright negative space", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ─── 자식 3-3 · Silk Drape (실크) ────────────────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "accessories",
-    "category": "Hero",
-    "name": "Jewelry Silk Drape",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 14,
-    "rationale": "Piece nestled on flowing silk — soft, tactile, sensual luxe.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "jewelry-hero",
-      "look": {
-        "extra_positive": "luxury jewelry hero on flowing draped silk fabric, soft folds and gentle sheen in muted champagne tones, tactile sensual premium mood, soft directional light, the piece tack-sharp resting in the folds, true reflections and sparkle",
-        "extra_negative": "wrinkled cheap fabric, garish color, cluttered background, mismatched stone, plastic look, harsh shadow, visible hands"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "champagne silk folds, soft light", "pose": "piece resting in the drape, hero-centered", "composition": "closeup" },
-        { "scene": "silk sheen, gentle shadow", "pose": "three-quarter nestled in the folds", "composition": "closeup" },
-        { "scene": "silk, tight crop", "pose": "macro of the piece against the sheen", "composition": "macro" },
-        { "scene": "draped silk set, wide", "pose": "full piece amid flowing fabric", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ─── 자식 3-4 · Spotlight (스포트라이트) ─────────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "accessories",
-    "category": "Hero",
-    "name": "Jewelry Spotlight",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 15,
-    "rationale": "A single dramatic spotlight on a dark stage — pure sparkle and drama.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "jewelry-hero",
-      "look": {
-        "extra_positive": "dramatic spotlight jewelry hero, a single hard beam of light on the piece against a dark stage, intense specular sparkle across gemstone facets, crisp pool of light with soft falloff, theatrical premium mood, tack-sharp macro",
-        "extra_negative": "flat even lighting, bright background, washed out, mismatched stone, plastic look, cluttered props, visible hands"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "dark stage, single spotlight", "pose": "piece hero-centered in the beam", "composition": "closeup" },
-        { "scene": "dark set, hard side beam", "pose": "three-quarter with dramatic falloff", "composition": "closeup" },
-        { "scene": "spotlight pool, tight crop", "pose": "macro of facets exploding with sparkle", "composition": "macro" },
-        { "scene": "dark stage, wide", "pose": "full piece in a pool of light, black surround", "composition": "medium_shot" }
-      ]
-    }
-  },
-
-  // ─── 자식 3-5 · Floating Luxe (부양 럭스) ────────────────────────────────
-  {
-    "mode": "product",
-    "vertical": "accessories",
-    "category": "Hero",
-    "name": "Jewelry Floating Luxe",
-    "output_type": "image_set",
-    "credit_cost": 2,
-    "sort_order": 16,
-    "rationale": "Piece floating amid soft bokeh and light particles — dreamy, weightless luxe.",
-    "config": {
-      "schema_version": 1,
-      "mode": "product",
-      "parent_id": "jewelry-hero",
-      "look": {
-        "extra_positive": "dreamy luxury jewelry hero, the piece floating weightlessly amid soft golden bokeh and gentle drifting light particles, glowing rim light on the facets, ethereal premium atmosphere, tack-sharp piece against a soft dark gradient, true sparkle",
-        "extra_negative": "visible stand, wire, string, motion blur, harsh flat light, mismatched stone, plastic look, cluttered background, visible hands"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "dark gradient with golden bokeh", "pose": "piece floating hero-centered, glowing rim", "composition": "closeup" },
-        { "scene": "drifting particles, soft glow", "pose": "three-quarter float amid bokeh", "composition": "closeup" },
-        { "scene": "bokeh field, tight crop", "pose": "macro of facets glinting in the glow", "composition": "macro" },
-        { "scene": "ethereal set, wide", "pose": "full piece floating with dreamy negative space", "composition": "medium_shot" }
       ]
     }
   }

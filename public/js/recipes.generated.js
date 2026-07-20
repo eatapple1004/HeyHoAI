@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 173→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 172→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 173,
-  "new_count": 140,
+  "total": 172,
+  "new_count": 139,
   "overlay_count": 7,
   "guarded_count": 118,
   "provisional_count": 17,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 173,
-    "contract_total": 173,
-    "catalog_total": 173,
-    "status_total": 173,
+    "fe_total": 172,
+    "contract_total": 172,
+    "catalog_total": 172,
+    "status_total": 172,
     "ok": true
   },
   "cards": {
@@ -3854,54 +3854,6 @@
           }
         ],
         "picker": "model"
-      },
-      {
-        "id": "jewelry-hero",
-        "cat": "Hero",
-        "name": "Jewelry Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [],
-        "held": true,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#ff7eb6,#7c6cff)",
-        "cuts": [
-          {
-            "id": "jewelry-noir-gold",
-            "name": "Jewelry Noir Gold",
-            "preview": null
-          },
-          {
-            "id": "jewelry-marble-plinth",
-            "name": "Jewelry Marble Plinth",
-            "preview": null
-          },
-          {
-            "id": "jewelry-silk-drape",
-            "name": "Jewelry Silk Drape",
-            "preview": null
-          },
-          {
-            "id": "jewelry-spotlight",
-            "name": "Jewelry Spotlight",
-            "preview": null
-          },
-          {
-            "id": "jewelry-floating-luxe",
-            "name": "Jewelry Floating Luxe",
-            "preview": null
-          }
-        ],
-        "axes": [
-          "jewelry"
-        ]
       }
     ],
     "bodywear": [

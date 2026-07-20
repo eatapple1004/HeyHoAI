@@ -21,12 +21,17 @@
 | | 컷 · Necklace | `jewelry-on-model-necklace.png` | 〃 |
 | | 컷 · Ring | `jewelry-on-model-ring.png` | 〃 |
 | | 컷 · Bracelet | `jewelry-on-model-bracelet.png` | 〃 |
-| **Hero** | 부모 카드 | `jewelry-hero.png` | 그리드 카드 썸네일 |
-| | 스타일 · Noir Gold | `jewelry-noir-gold.png` | 모달 스타일 선택 미리보기 |
-| | 스타일 · Marble Plinth | `jewelry-marble-plinth.png` | 〃 |
-| | 스타일 · Silk Drape | `jewelry-silk-drape.png` | 〃 |
-| | 스타일 · Spotlight | `jewelry-spotlight.png` | 〃 |
-| | 스타일 · Floating Luxe | `jewelry-floating-luxe.png` | 〃 |
+| ~~**Hero**~~ | ~~부모 카드~~ | `jewelry-hero.png` | **폐기(2026-07-20)** — 아래 참조 |
+| ~~ ~~ | ~~스타일 · Noir Gold~~ | `jewelry-noir-gold.png` | 〃 |
+| ~~ ~~ | ~~스타일 · Marble Plinth~~ | `jewelry-marble-plinth.png` | 〃 |
+| ~~ ~~ | ~~스타일 · Silk Drape~~ | `jewelry-silk-drape.png` | 〃 |
+| ~~ ~~ | ~~스타일 · Spotlight~~ | `jewelry-spotlight.png` | 〃 |
+| ~~ ~~ | ~~스타일 · Floating Luxe~~ | `jewelry-floating-luxe.png` | 〃 |
+
+> **Hero 패밀리 폐기 (2026-07-20)** — 컨셉은 좋으나 결과물 품질이 미달이라 사용자 지시로 내렸다.
+> **이미지 파일 6개는 지우지 않았다**(되살릴 수 있고, 랜딩 타일이 `jewelry-hero.png`를 아직 쓴다).
+> 시드 복구 = `git show c06bf9f:src/recipes/seeds/recipes.accessories.v2.js` 의 "패밀리 3" 블록.
+> 되살릴 때 같이 되돌릴 곳은 `recipes.accessories.v2.js` 헤더의 폐기 이력에 적어 뒀다.
 
 권장: 4:5 비율(카드/모달 미리보기와 동일), 세로형.
 

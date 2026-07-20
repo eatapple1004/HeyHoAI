@@ -227,6 +227,9 @@
     'Narration optional': '내레이션 선택', 'Music optional': '배경음악 선택',
     'Your photo': '제품 사진',
     'Scenes': '씬',
+    // 번호 배지 1번 제목(2026-07-20 신설). 2번은 기존 'Concept', ✓는 기존 'Options'라 키가 이미 있다.
+    // 숫자·✓ 자체는 번역 대상이 아니다(aria-hidden).
+    'Your product photo': '제품 사진',
     // 씬 스트립 안내(ugcSceneStripHtml). (2026-07-20) 패널 3·4번 스텝의 약속 두 개가 여기로 내려왔다 —
     //   "한 컷만 다시"·"저장 후에도 편집"은 씬 재생성이 **실제로 사는 자리**에서 말하는 게 맞다(사용자 결정 D-3).
     //   ⚠️ 옛 문구("…🔄 re-generates a scene (uses credits).")는 사전에 키가 아예 없어 한국어 모드에서도

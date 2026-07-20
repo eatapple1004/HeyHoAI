@@ -35,7 +35,6 @@ const THUMB = {
   'jewelry-product-cut': '/img/accessories/jewelry-product-cut.png',
   'jewelry-worn-cut': '/img/accessories/jewelry-worn-cut.png',
   'jewelry-on-model': '/img/accessories/jewelry-on-model.png',
-  'jewelry-hero': '/img/accessories/jewelry-hero.png',
 };
 // ①에서 새로 만들 행(현재 오피셜인데 prod DB 행 없음) + 테마 배선
 const NEW_ROWS = [
@@ -43,10 +42,11 @@ const NEW_ROWS = [
   { rid: 'jewelry-product-cut', theme: 'accessories' },
   { rid: 'jewelry-worn-cut', theme: 'accessories' },
   { rid: 'jewelry-on-model', theme: 'accessories' },
-  { rid: 'jewelry-hero', theme: 'accessories' },
 ];
 // ④ 은퇴할 옛 슬러그(현재 recipe 세트에 없음). 비파괴 — visibility만 private.
-const RETIRE = ['ring-editorial-campaign', 'bracelet-editorial-campaign', 'top-down-hero', 'void-hero-cut', 'pet-product-hero', 'studio-model-cut'];
+//   jewelry-hero·bodywear-hero = 2026-07-20 폐기(행은 삭제됨). 여기 남겨두는 건 이 스크립트가
+//   되살리지 않게 하려는 것 — 위 THUMB/NEW_ROWS에서 빠졌으니 재생성도 안 된다.
+const RETIRE = ['ring-editorial-campaign', 'bracelet-editorial-campaign', 'top-down-hero', 'void-hero-cut', 'pet-product-hero', 'studio-model-cut', 'jewelry-hero', 'bodywear-hero'];
 // ③ 네일 갭
 const NAIL_GAP = { name: '신부 컨셉 네일', thumb: '/img/nail/bridal-concept-nail.png' };
 
