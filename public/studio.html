@@ -157,6 +157,42 @@
   .model-card .mc-name{display:block;padding:4px 4px 5px;font-size:10px;font-weight:600;text-align:center;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .model-card.on .mc-name{color:#fff;background:var(--accent)}
   /* ▲▲▲ 테스트 흡수 블록 끝 ▲▲▲ */
+  /* ▼▼▼ (2026-07-21 컷UI 재설계 · 안 ㄹ 작성 카드) P1 카드 셸 — #composeTop을 카드로 감싼다.
+       shopping 모드에서만 .cutui-card 부여(syncCutCard). 기존 .gen-bar/placeGenBar/#resultStep 미변경.
+       ⚠️ 클래스명 cutui-card — .cut-card(L102)는 이미 컷 선택 카드용(width:92px)이라 충돌 금지.
+       롤백: 이 블록 + syncCutCard/toggleCutCard/cutCardFolded + updateBar 호출 1줄 제거 ▼▼▼ */
+  #composeTop.cutui-card{border:1px solid var(--border2);border-radius:18px;background:var(--bg2,#0c0c14);overflow:hidden;margin-bottom:22px}
+  #composeTop.cutui-card .gen-bar{background:transparent;border:none;border-radius:0;margin:0}
+  .cutui-head{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border)}
+  .cutui-head .cch-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+  .cutui-head .cch-title{font-family:'Sora',sans-serif;font-size:14px;font-weight:750;letter-spacing:-.2px}
+  .cutui-head .cch-sum{font-size:11.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .cutui-head .cch-fold{margin-left:auto;background:none;border:none;color:var(--faint);font-size:11.5px;font-weight:650;cursor:pointer;display:flex;align-items:center;gap:5px;flex:none;font-family:inherit}
+  .cutui-head .cch-fold:hover{color:var(--text)}
+  .cutui-head .cch-fold .cch-chev{transition:transform .18s}
+  #composeTop.cutui-card.folded .cch-fold .cch-chev{transform:rotate(180deg)}
+  #composeTop.cutui-card.folded .gen-bar{display:none!important}
+  /* P3 컴포즈 축 편집 — .ax-row/.ax-lbl/.ms-filters/.cut-row(모달 축과 공유) 재사용.
+     concept(mode card 9장)만 가로 스크롤로(카드 높이 절약). 롤백: cutui-axscroll 제거. */
+  #composeTop.cutui-card .cutui-axrow{margin:12px 0 0;max-width:none}
+  #composeTop.cutui-card .cutui-axrow .ax-lbl{color:var(--accent2)}
+  .cut-row.cutui-axscroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;max-width:640px}
+  .cut-row.cutui-axscroll .cut-card{flex:0 0 auto}
+  /* ⚠️ .ms-filters/.ms-chip 는 .cut-sel/.model-sel 하위로 스코프(L140) → 컴포즈 축 행엔 안 먹는다. 미러한다. */
+  .cutui-axrow .ms-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0}
+  .cutui-axrow .ms-chip{padding:5px 12px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .cutui-axrow .ms-chip:hover{border-color:var(--accent)}
+  .cutui-axrow .ms-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  /* P4 모델·배경 요약 버튼(클릭→모달 픽커) */
+  .cutui-pickrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+  .cutui-pick{display:flex;align-items:center;gap:9px;border:1px solid var(--border2);border-radius:11px;padding:6px 10px 6px 6px;cursor:pointer;background:rgba(255,255,255,.03);font-family:inherit;transition:border-color .14s}
+  .cutui-pick:hover{border-color:var(--accent)}
+  .cutui-pth{width:32px;height:32px;border-radius:8px;flex:none;background-size:cover;background-position:center}
+  .cutui-pbody{display:flex;flex-direction:column;gap:1px;text-align:left;min-width:0}
+  .cutui-plbl{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
+  .cutui-pnm{font-size:12.5px;font-weight:650;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+  .cutui-pchev{color:var(--faint);font-size:11px;margin-left:4px}
+  /* ▲▲▲ P1 카드 셸 + P3 축 + P4 픽커 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
   .results-all{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap;cursor:pointer}
@@ -3042,6 +3078,44 @@ function pickRecipe(id){
 // 중첩 템플릿: 부모(cuts 보유) 선택 시 첫 컷을 기본, 그 외엔 컷 없음.
 function syncDefaultCut(){const r=curRecipe();state.cutId=(r&&r.cuts&&r.cuts.length)?r.cuts[0].id:null;}
 function setCut(id){state.cutId=id;cutsExpanded=false;syncTplTrigger();} // 컷 전환 — 선택 후 접이식이면 다시 접힘
+// (2026-07-21 컷UI 재설계 · 안 ㄹ) 컴포즈 카드에서 축 직접 편집 — state.axis 단일소스에 쓴다.
+//   modalAxis도 미러: cutsForFilter가 modalAxis.garment를 참조하고, 모달 재오픈 시 값 일관성 유지.
+//   garment 변경 → bodywear 품목별 조건부 컷 재필터 + 현재 컷이 숨겨지면 클램프(setModalAxis와 동일 규칙).
+function setComposeAxis(k,v){
+  if(!state.axis)state.axis={};
+  state.axis[k]=v; modalAxis[k]=v;
+  if(k==='garment'){
+    const r=curRecipe();
+    if(r&&r.cuts&&r.cuts.length){
+      const vis=cutsForFilter(r,'all'); // 컴포즈엔 fit 필터 UI 없음 → all 기준
+      if(!vis.some(ct=>ct.id===state.cutId))state.cutId=vis.length?vis[0].id:(r.cuts[0]&&r.cuts[0].id);
+    }
+  }
+  updateBar();
+}
+// (2026-07-21 컷UI 재설계 · 안 ㄹ) P4 — 컴포즈 카드의 모델·배경 칩 클릭 → 기존 모달을 재사용해 픽커를 연다.
+//   ⚠️ openRecipeModal은 재클릭=해제라 못 쓴다. 현재 state를 모달 변수에 실어 렌더 파이프라인만 돌리고,
+//      확정(selectFromModal)은 composeReconfig 플래그로 '유지'로 처리한다. which=모델/배경 섹션으로 스크롤.
+function openComposePicker(which){
+  const r=curRecipe(); if(!r||r.picker!=='model')return;
+  modalRecipeId=state.recipeId; modalRecipeObj=r; composeReconfig=true;
+  // 현재 선택을 모달 변수로 이식(모달이 현 state를 보여주며 열리도록)
+  modalCutId=(r.cuts&&r.cuts.length)?((state.cutId&&r.cuts.some(c=>c.id===state.cutId))?state.cutId:r.cuts[0].id):null;
+  AXIS_ORDER.forEach(k=>{ modalAxis[k]=(state.axis&&state.axis[k])||AXIS_DEFAULT[k]; });
+  modalModelId=state.modelId||null; modalBgId=state.bgId||'studio';
+  const dt=document.getElementById('rmDetail'); if(dt)dt.value=state.detail||''; // 디테일 보존(openRecipeModal은 비움)
+  document.getElementById('rmName').textContent=r.name;
+  document.getElementById('rmBadge').textContent=r.type==='reel'?'▶ Reel':'▦ Photo';
+  document.getElementById('rmDesc').textContent=RECIPE_DESC[r.id]||'Description coming soon.';
+  const mEl=document.querySelector('#recipeModal .modal'); if(mEl)mEl.classList.add('wide');
+  const pv=document.getElementById('rmPreview'); if(pv)pv.style.display='none'; // 모델 픽커는 상단 샘플 숨김(openRecipeModal 규칙)
+  renderModalAxes(r); renderModalCuts(r); renderModalAxes(r,true); // 순환 의존 — openRecipeModal과 동일 순서
+  renderModalModels(r); renderModalBackgrounds(r); setModalPreview(r);
+  document.getElementById('rmSelect').textContent='Use this template';
+  document.getElementById('recipeModal').classList.add('open');
+  const target=document.getElementById(which==='backgrounds'?'rmBackgrounds':'rmModels');
+  if(target)setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+}
 function cutLabel(n){return String(n||'')
   .replace(/\s*Cut$/,'')                 // "Flat Lay Cut" → "Flat Lay" (productcut)
   .replace(/^Jewelry On Model\s+/,'')    // "Jewelry On Model Earrings" → "Earrings"
@@ -3248,13 +3322,16 @@ let modalAxis={skin:'auto',age:'auto',concept:'studio',garment:'auto',angle:'aut
 //   "뒤에서" 같은 값이 자기 shots와 싸운다. 축을 부모에 달되 노출은 컷으로 건다.
 const CUT_AXES={angle:new Set(['bodywear-ghost-mannequin','ghost-mannequin-cut'])};
 function axisAllowedForCut(k,cutId){ const s=CUT_AXES[k]; return !s || s.has(cutId); }
-function axisOptHtml(k,d,o,cur){
+// (2026-07-21 컷UI) handler 파라미터 추가 — 모달은 기본값 setModalAxis(기존 호출 무변경),
+//   컴포즈 카드는 setComposeAxis를 넘겨 같은 렌더를 재사용한다.
+function axisOptHtml(k,d,o,cur,handler){
+  handler=handler||'setModalAxis';
   const on=cur===o[0]?' on':'';
   if(d.mode==='swatch'){ const bg=o[3]||'#888';
-    return `<button type="button" class="cut-card ax-swatch${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
+    return `<button type="button" class="cut-card ax-swatch${on}" data-${d.attr}="${esc(o[0])}" onclick="${handler}('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
   if(d.mode==='card'){ const grad='linear-gradient(150deg,var(--accent),#5ee0d6)'; const bg=o[3]?`url('${esc(o[3])}') center/cover no-repeat, ${grad}`:grad;
-    return `<button type="button" class="cut-card${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
-  return `<button type="button" class="ms-chip${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')">${esc(o[1])}</button>`;
+    return `<button type="button" class="cut-card${on}" data-${d.attr}="${esc(o[0])}" onclick="${handler}('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
+  return `<button type="button" class="ms-chip${on}" data-${d.attr}="${esc(o[0])}" onclick="${handler}('${k}','${esc(o[0])}')">${esc(o[1])}</button>`;
 }
 // preserve=true → 모달 안에서 컷을 바꿔 다시 그리는 경우. 이미 고른 축 값을 초기화하면 안 된다
 //   (품목을 bra로 골라둔 채 컷만 바꿨는데 auto로 돌아가는 버그).
@@ -3355,9 +3432,11 @@ function openRecipeModal(id){
   document.getElementById('recipeModal').classList.add('open');
 }
 function closeRecipeModal(){document.getElementById('recipeModal').classList.remove('open');}
+let composeReconfig=false; // (2026-07-21 컷UI) 컴포즈 카드에서 모델·배경 재선택으로 모달을 연 경우 — 확정 시 해제 대신 유지
 function selectFromModal(){
   if(!modalRecipeId)return;
-  const sel=(state.recipeId!==modalRecipeId); // 모달은 미선택 카드에서만 열림 → 항상 선택
+  // 컴포즈 재구성이면 항상 유지(sel=true) — 같은 템플릿이라 기본식 (recipeId!==modalRecipeId)이면 false(해제)가 되는 걸 막는다.
+  const sel=composeReconfig?true:(state.recipeId!==modalRecipeId); composeReconfig=false; // 모달은 미선택 카드에서만 열림 → 항상 선택
   state.recipeId=sel?modalRecipeId:null;
   cutsExpanded=false; // 새 템플릿 선택 → 접이식 컷 접힘으로 초기화
   const dt=document.getElementById('rmDetail');
@@ -3427,31 +3506,33 @@ function syncTplTrigger(){
         +`<input type="text" id="cbCutBgInput" class="cbg-inp" maxlength="7" placeholder="#RRGGBB" autocomplete="off" spellcheck="false" value="${esc(bgv)}" oninput="onCutBgInput(this)">`
         +`<input type="color" id="cbCutBgSw" class="cbg-sw" value="${expandHex6(bgv)||'#000000'}" oninput="onCutBgPick(this)" title="Pick a color"></div>`;
     }
-    // (2026-07-11) 모델 픽커 템플릿(Model Cut·Jewelry On Model): 선택한 모델·배경만 컴팩트 표시(표시 전용, 전체 픽커는 모달에만).
+    // (2026-07-21 컷UI 재설계 · 안 ㄹ) P4 — 모델·배경: 읽기전용 → 클릭 시 모달 픽커 오픈(openComposePicker).
+    //   무거운 픽커(모델 280·배경 40)는 카드 안에 안 펼치고 요약 버튼으로 두고, 클릭하면 기존 모달을 재사용한다.
+    //   롤백: 이 블록을 위 읽기전용 .pick-sel/.psel 버전으로 되돌림.
     let pickHtml='';
     if(r.picker==='model'){
       const mm=state.modelId?modelById(state.modelId):null;
       const bb=bgById(state.bgId||'studio');
       const mTh=(mm&&mm.img)?`url('${esc(mm.img)}') center/cover no-repeat`:'linear-gradient(150deg,var(--accent),#5ee0d6)';
       const bTh=(bb&&bb.img)?`url('${esc(bb.img)}') center/cover no-repeat`:'linear-gradient(135deg,#d6d6dd,#b6b6c1)';
-      pickHtml=`<div class="pick-sel">`
-        +`<div class="psel"><span class="psel-lbl">Model</span><span class="psel-chip"><span class="psel-th" style="background:${mTh}"></span><span class="psel-nm">${mm?esc(mm.name):'Any model'}</span></span></div>`
-        +`<div class="psel"><span class="psel-lbl">Background</span><span class="psel-chip"><span class="psel-th" style="background:${bTh}"></span><span class="psel-nm">${esc(bb.name)}</span></span></div>`
+      pickHtml=`<div class="cutui-pickrow">`
+        +`<button type="button" class="cutui-pick" onclick="openComposePicker('models')"><span class="cutui-pth" style="background:${mTh}"></span><span class="cutui-pbody"><span class="cutui-plbl">Model</span><span class="cutui-pnm">${mm?esc(mm.name):'Any model'}</span></span><span class="cutui-pchev">▾</span></button>`
+        +`<button type="button" class="cutui-pick" onclick="openComposePicker('backgrounds')"><span class="cutui-pth" style="background:${bTh}"></span><span class="cutui-pbody"><span class="cutui-plbl">Background</span><span class="cutui-pnm">${esc(bb.name)}</span></span><span class="cutui-pchev">▾</span></button>`
         +`</div>`;
     }
-    // (2026-07-11) Worn Cut 축(Skin tone·Age·Concept): 선택값만 컴팩트 표시(표시 전용, 전체 옵션은 모달에만).
+    // (2026-07-21 컷UI 재설계 · 안 ㄹ) 축(Skin tone·Age·Concept·Garment·Angle·Jewelry): 읽기전용→컴포즈 직접 편집.
+    //   state.axis 단일소스. CUT_AXES 게이팅(angle=고스트 컷 전용) 적용. concept(mode card 9장)은 가로 스크롤.
+    //   모달 렌더(axisOptHtml)를 handler=setComposeAxis로 재사용. 롤백: 이 블록을 위 읽기전용 chips 버전으로 되돌림.
     let axisHtml='';
     if(r.axes&&r.axes.length&&state.axis){
-      const chips=r.axes.filter(k=>AXIS_DEFS[k]).map(k=>{
+      const axes=r.axes.filter(k=>AXIS_DEFS[k]&&axisAllowedForCut(k,state.cutId)); // 컷 조건부 축 제외(모달과 동일 게이팅)
+      axisHtml=axes.map(k=>{
         const d=AXIS_DEFS[k];
-        const o=d.opts.find(x=>x[0]===state.axis[k])||d.opts[0];
-        let thumb='',txt='';
-        if(d.mode==='swatch')thumb=`<span class="psel-th" style="background:${o[3]||'#888'}"></span>`;
-        else if(d.mode==='card')thumb=`<span class="psel-th" style="background:${o[3]?`url('${esc(o[3])}') center/cover no-repeat`:'linear-gradient(150deg,var(--accent),#5ee0d6)'}"></span>`;
-        else txt=' txt';
-        return `<div class="psel"><span class="psel-lbl">${esc(d.title)}</span><span class="psel-chip${txt}">${thumb}<span class="psel-nm">${esc(o[1])}</span></span></div>`;
+        const cur=state.axis[k]||AXIS_DEFAULT[k];
+        const opts=d.opts.map(o=>axisOptHtml(k,d,o,cur,'setComposeAxis')).join('');
+        const cls=(d.mode==='chip')?'ms-filters':(d.mode==='card')?'cut-row cutui-axscroll':'cut-row';
+        return `<div class="ax-row cutui-axrow"><span class="ax-lbl">${esc(d.title)}</span><div class="${cls}">${opts}</div></div>`;
       }).join('');
-      axisHtml=`<div class="pick-sel">${chips}</div>`;
     }
     const detHtml=`<div class="det-compose"><span class="det-lbl">Add detail (optional)</span>`
       +`<textarea id="cbDetail" class="det-ta" maxlength="300" rows="1" placeholder="Add your own touch — e.g. red dress, golden hour" oninput="onComposeDetail(this)">${esc(state.detail||'')}</textarea></div>`;
@@ -3507,7 +3588,32 @@ async function uploadSubject(inp){
 
 function curRecipe(){return TEMPLATES[state.mode].find(r=>r.id===state.recipeId);}
 function curSubject(){return (SUBJECTS[state.mode]||[]).find(s=>s.id===state.subjectId);}
-function updateBar(){ syncTplTrigger(); updateBarCore(); syncTplBtn(); }
+function updateBar(){ syncTplTrigger(); updateBarCore(); syncTplBtn(); syncCutCard(); }
+// ── (2026-07-21 컷UI 재설계 · 안 ㄹ) P1 카드 셸 ──
+//   shopping 모드에서만 #composeTop을 카드로 감싸고 헤더(제목·요약·접기)를 얹는다.
+//   기존 렌더(syncTplTrigger)·placeGenBar·#resultStep 미변경 — 순수 추가. 다른 모드에선 클래스/헤더 제거.
+let cutCardFolded=false;
+function toggleCutCard(){ cutCardFolded=!cutCardFolded; syncCutCard(); }
+function syncCutCard(){
+  const top=document.getElementById('composeTop'); if(!top)return;
+  const on=state.mode==='shopping';
+  top.classList.toggle('cutui-card',on);
+  let head=document.getElementById('cutCardHead');
+  if(!on){ if(head)head.remove(); top.classList.remove('folded'); return; }
+  if(!head){
+    head=document.createElement('div');
+    head.id='cutCardHead'; head.className='cutui-head';
+    head.innerHTML=`<span class="cch-dot"></span><span class="cch-title">New</span>`
+      +`<span class="cch-sum" id="cutCardSum"></span>`
+      +`<button type="button" class="cch-fold" onclick="toggleCutCard()"><span class="cch-fold-t">Fold</span><span class="cch-chev">▾</span></button>`;
+    top.insertBefore(head,top.firstChild); // 카드 최상단(gen-bar 위)
+  }
+  top.classList.toggle('folded',cutCardFolded);
+  const ft=head.querySelector('.cch-fold-t'); if(ft)ft.textContent=cutCardFolded?'Unfold':'Fold';
+  // 요약줄 = updateBarCore가 채운 #genSummary 미러(텍스트만)
+  const sum=document.getElementById('cutCardSum'), gs=document.getElementById('genSummary');
+  if(sum&&gs)sum.textContent=gs.textContent||'';
+}
 // "Create template" 버튼: Custom 모드 + 사진(영상 제외)일 때만 노출, 프롬프트 있으면 활성.
 function syncTplBtn(){
   const b=document.getElementById('tplBtn'); if(!b)return;
