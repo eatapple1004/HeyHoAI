@@ -778,7 +778,10 @@
   #scriptStep .ugc-cols.ugc-solo #ugcConcept{min-height:190px}
   /* 리드(결과물 한 줄 + 칩) = 빈 상태 전용. 대본 이후엔 우측이 진짜 결과물을 보여주므로 중복이 된다 */
   .ugc-cols:not(.ugc-solo) .ugc-lead{display:none}
-  .ugc-lead{grid-column:1/-1;margin-bottom:2px}
+  /* (2026-07-21) 리드가 .ugc-foldable 의 grid 자식 → .ugc-cols 의 flex 자식이 됐다(박스 밖·위).
+     flex:1 0 100% 로 첫 행을 통째로 차지 → 아래 박스(#ugcInputBox)가 다음 행으로. 컨테이너 wrap 은 solo 에서 켠다. */
+  .ugc-cols.ugc-solo{flex-wrap:wrap}
+  .ugc-lead{flex:1 0 100%;margin:0}
   .ugc-lead-t{font-family:'Sora';font-size:19px;line-height:1.3;font-weight:800;letter-spacing:-.3px;color:var(--text);margin:0 0 10px}
   .ugc-lead-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
   .ugc-lead-chip{font-size:11px;color:var(--dim);border:1px solid var(--border2);border-radius:999px;padding:3px 9px;white-space:nowrap}
@@ -1105,6 +1108,13 @@
      ⚠️ 전부 #scriptStep 스코프다 — .script-ta/.script-box 는 다른 화면도 쓰는 공용 클래스라
         스코프를 벗기면 그쪽까지 밀린다. */
   #scriptStep .script-box{background:transparent;border:none;box-shadow:none;padding:4px 0 0}
+  /* (2026-07-21, 안 "B3") 빈 상태에서만 폼 전체를 라이트 카드로 감싼다 — 경계가 없어 "어디까지가 입력인지"가
+     약했다. solo(빈 상태)에만 준다: 대본·조리대 상태에선 좌측이 540 요약으로 줄고 우측이 주인공이라 박스가
+     오히려 어수선하다. 특정성 (1 id,2 class) 로 바로 위 #scriptStep .script-box(1 id,1 class)를 이긴다. */
+  .ugc-cols.ugc-solo #ugcInputBox{
+    border:1px solid var(--border2);border-radius:16px;padding:22px 24px;
+    background:rgba(255,255,255,.025);
+    box-shadow:0 20px 50px -30px #000,0 1px 0 rgba(255,255,255,.03) inset}
   #scriptStep .script-ta,#scriptStep .ugc-textin{
     background:transparent;border:none;border-bottom:1.5px solid var(--border2);
     border-radius:0;padding-left:0;padding-right:0}
@@ -1241,6 +1251,22 @@
     <!-- .ugc-solo = "이 자리에 폼밖에 없다"(빈 상태). 대본·작성중·조리대가 뜨면 JS가 뗀다(ugcSolo).
          빈 상태에서만 폼이 전체 폭 2단이 되고 Options 접기가 사라진다 — 근거는 .ugc-solo CSS 블록 참조. -->
     <div class="ugc-cols ugc-solo">
+    <!-- 리드(결과물 약속 + 칩) — 박스 밖·위(2026-07-21). 우측 "How this works" 패널이 흡수된 자리다:
+         패널이 답하던 것 중 남길 건 둘 뿐이었다 — ① 결과물이 뭔지(=여기) ② 과금 시점(=#ugcFreeNote).
+         .ugc-cols 의 첫 자식이라 solo 판정(.ugc-cols:not(.ugc-solo) .ugc-lead{display:none})이 그대로 닿는다.
+         ⚠️ <h2>인 이유: c4a7c56이 페이지 헤더를 지우며 "이 화면에 heading이 하나도 없다"를 손실로 적어뒀다.
+            그 자리를 이 리드가 메운다.
+         ⚠️ 칩은 전부 좌측 폼에 실재하는 선택지다(Where you'll post it·Sound·Add background music·Ad language).
+            없는 기능은 약속하지 않는다. -->
+    <div class="ugc-lead">
+      <h2 class="ugc-lead-t">A finished ad video — your scenes cut together, ready to post.</h2>
+      <div class="ugc-lead-chips">
+        <span class="ugc-lead-chip">9:16 · 1:1 · 16:9</span>
+        <span class="ugc-lead-chip">Narration optional</span>
+        <span class="ugc-lead-chip">Music optional</span>
+        <span class="ugc-lead-chip">English · 한국어</span>
+      </div>
+    </div>
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" multiple style="display:none" onchange="ugcPreview(this)">
       <!-- 대본이 나오면 입력 전체가 이 한 줄로 접힌다(오른쪽 대본·영상이 주인공) -->
@@ -1253,24 +1279,9 @@
         <button type="button" class="ugc-recap-edit" onclick="ugcUncompact()">Edit</button>
       </div>
       <div class="ugc-foldable">
-      <!-- (2026-07-20) 우측 "How this works" 패널이 흡수된 자리.
-           패널이 답하던 것 중 페이지에 남겨야 하는 건 둘뿐이었다 — ① 결과물이 뭔지 ② 과금 시점.
-           ①이 여기(리드+칩), ②는 아래 #ugcFreeNote. 나머지(1·2번 스텝)는 좌측 폼이 이미 같은 말을
-           하고 있었고(#ugcPickHint·#ugcSuggestHero), 3·4번 스텝의 약속은 씬 스트립으로 내려갔다
-           (ugcSceneStripHtml의 .ugc-scenes-hint — 씬 재생성이 실제로 사는 자리).
-           ⚠️ <h2>인 이유: c4a7c56이 페이지 헤더를 지우며 "이 화면에 heading이 하나도 없다"를
-              알고 넘어간 손실로 적어뒀다. 그 자리를 이 리드가 메운다. -->
-      <div class="ugc-lead">
-        <h2 class="ugc-lead-t">A finished ad video — your scenes cut together, ready to post.</h2>
-        <!-- ⚠️ 칩은 전부 좌측 폼에 실재하는 선택지다(Where you'll post it · Sound · Add background music ·
-             Ad language). 없는 기능을 약속하지 않는다 — 소요 시간은 실측 근거가 없어 넣지 않았다. -->
-        <div class="ugc-lead-chips">
-          <span class="ugc-lead-chip">9:16 · 1:1 · 16:9</span>
-          <span class="ugc-lead-chip">Narration optional</span>
-          <span class="ugc-lead-chip">Music optional</span>
-          <span class="ugc-lead-chip">English · 한국어</span>
-        </div>
-      </div>
+      <!-- (2026-07-21) 리드(.ugc-lead)를 박스 밖·위로 뺐다 — 아래 .ugc-cols 첫 자식으로 옮김.
+           박스(B3, #ugcInputBox)가 "입력 도구"를 감싸고, 결과물 약속(리드)은 그 위에서 박스를 소개한다.
+           박스 안에 두면 리드가 입력의 일부처럼 보였다. -->
       <div class="ugc-fold-a">
       <!-- 번호 배지(2026-07-20) — 우측 "How this works" 패널을 걷으면서 1·2번 스텝이 답하던
            "그래서 내가 뭘 하면 되는데"가 화면에서 사라졌다. 그 답을 **문장이 아니라 번호로** 되돌린다.
