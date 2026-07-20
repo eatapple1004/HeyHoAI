@@ -232,8 +232,15 @@
   /* P7'' 프로토타입 밀도 — 제품↔템플릿 좌우 한 줄, 칩 길게·컴팩트, 컷카드 축소, 간격 조임(세로 단축) */
   #composeTop.cutui-card .cutui-toprow{display:flex;gap:12px;align-items:stretch;margin-bottom:14px}
   #composeTop.cutui-card .cutui-toprow .cutui-prodhost{flex:none;display:flex}
-  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;gap:8px;height:100%}
-  #composeTop.cutui-card .cutui-toprow .tpl-sel{flex:1;max-width:none;margin:0} /* 템플릿 칩을 남는 폭 전부(길게) */
+  /* 제품 영역: 세로 쌓임(base column) → 가로 한 줄, 칩/CTA 높이에 맞춰 stretch */
+  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;flex-direction:row;align-items:stretch;gap:8px;height:auto;align-self:stretch}
+  #composeTop.cutui-card .cutui-toprow .img-add-wrap{display:flex}
+  #composeTop.cutui-card .cutui-toprow .img-add.labeled{height:auto;align-self:stretch} /* 제품 선택 버튼도 높이 맞춤 */
+  #composeTop.cutui-card .cutui-toprow .ref-tiles{height:auto;align-items:stretch;flex-wrap:nowrap;flex:none}
+  /* ⚠️ aspect-ratio+width:auto는 flex 내재 폭 계산을 깨 타일이 CTA를 덮었다 → 폭 고정, 높이만 칩에 맞춰 stretch */
+  #composeTop.cutui-card .cutui-toprow .ref-tile{width:84px;height:auto;align-self:stretch;flex:none} /* 제품 이미지 세로 = 칩 세로 크기 */
+  #composeTop.cutui-card .cutui-toprow .tpl-sel,
+  #composeTop.cutui-card .cutui-toprow .tpl-pick-cta{flex:1;max-width:none;margin:0} /* 템플릿 칩/CTA를 남는 폭 전부(길게) */
   #composeTop.cutui-card .tpl-sel{padding:10px 12px;gap:12px}
   #composeTop.cutui-card .tpl-sel .ts-thumb{width:54px;height:54px}     /* 칩 컴팩트(72→54) */
   #composeTop.cutui-card .tpl-compose{gap:14px}
@@ -3641,9 +3648,13 @@ function syncTplTrigger(){
     c.style.display='';
   }else if(wrap){ // 미선택 → "Pick a template" CTA(누르면 픽커로 스크롤). Custom 모드는 프롬프트 직접이라 숨김.
     if(state.mode!=='custom'){
-      wrap.innerHTML=`<button type="button" class="tpl-pick-cta" onclick="scrollToTemplatePicker()">`
+      // (2026-07-21 P7'') 미선택 상태에서도 제품 슬롯 ↔ 템플릿 CTA를 좌우 한 줄로(shopping 카드에서 .cutui-toprow가 스타일).
+      wrap.innerHTML=`<div class="cutui-toprow"><span class="cutui-prodhost" id="cutuiProdHost"></span>`
+        +`<button type="button" class="tpl-pick-cta" onclick="scrollToTemplatePicker()">`
         +`<span class="tpc-ic">▦</span>`
-        +`<span class="tpc-body"><span class="tpc-t">Pick a template</span><span class="tpc-s">Choose one below — no prompt needed</span></span></button>`;
+        +`<span class="tpc-body"><span class="tpc-t">Pick a template</span><span class="tpc-s">Choose one below — no prompt needed</span></span></button></div>`;
+      const _host2=document.getElementById('cutuiProdHost');
+      if(_host2&&_sr)_host2.appendChild(_sr); // 제품 슬롯을 CTA 왼쪽으로
       wrap.style.display=''; c.style.display='';
     }else{ wrap.innerHTML=''; wrap.style.display='none'; c.style.display='none'; }
   }else{ c.style.display='none'; }
