@@ -3300,6 +3300,13 @@ function openRecipeModal(id){
   const _pv=document.getElementById('rmPreview'); if(_pv)_pv.style.display=_hidePv?'none':''; // 지정 템플릿·모델 픽커만 상단 샘플 숨김(그 외 프리뷰 유지)
   renderModalAxes(r); // 축 칩(r.axes 있을 때만): Worn Cut 피부색·나이·컨셉 / bodywear garment. 컷 필터가 modalAxis.garment를 읽으므로 컷보다 먼저.
   renderModalCuts(r); // 중첩 템플릿: 컷 유형 선택(있으면) — bodywear는 garment로 조건부 필터 후 modalCutId 확정
+  // ⚠️ 축을 한 번 더 그린다 — 순환 의존을 푸는 자리다.
+  //   renderModalCuts는 modalAxis.garment를 읽어야 해서 축보다 뒤에 와야 하고(위 주석),
+  //   컷 조건부 축(CUT_AXES.angle)은 반대로 modalCutId를 읽어야 하는데 그건 renderModalCuts가 정한다.
+  //   1회차는 modalCutId가 **이전 모달 값이거나 null**이라 게이트가 틀린 답을 낸다 — 실제로
+  //   "Ghost Mannequin이 미리 선택된 채 모달을 다시 열면 Angle 칩이 안 뜨는" 버그였다.
+  //   preserve=true라 방금 초기화한 축 선택값은 그대로 두고 DOM만 올바른 컷 기준으로 다시 그린다.
+  renderModalAxes(r, true);
   renderModalModels(r); // Model Cut: 모델 픽커(picker==='model'일 때만) — modalModelId 확정
   renderModalBackgrounds(r); // Model Cut: 배경 픽커(Studio 기본 + 씬 40) — modalBgId 확정
   setModalPreview(r); // 예시 이미지(선택 컷 우선) — 없으면 placeholder
