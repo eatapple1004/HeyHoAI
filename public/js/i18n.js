@@ -209,38 +209,30 @@
       '예) 지친 피부를 위한 진정 나이트 세럼 — 아늑한 캔들 조명 무드.',
     // CTA
     'Write script': '대본 쓰기',
-    'Free — the AI concept and the script are yours to review & edit first. You pick Generate next to build the video, and the credit cost shows on that button before anything is charged.':
-      '무료 — AI 컨셉과 대본 모두 먼저 검토·수정할 수 있습니다. 다음 단계 Generate를 눌러 영상을 만들며, 크레딧 비용은 과금 전에 그 버튼에 표시됩니다.',
-    // How this works 패널
-    'Ad video': '광고 영상', 'Your photo': '제품 사진',
-    // (2026-07-20) 페이지 헤더 두 키 제거 — 마크업(.ugc-pagehd)이 사라져 매칭 대상이 없다.
-    //   내용은 우측 패널(결과물 블록·1번·2번 스텝)이 전부 안고 있다. 옛 키:
-    //   'Turn a product photo into a finished ad video' / 'A product photo and one line of concept — …'
-    // WHAT YOU GET 블록(2026-07-20 신설). 칩 '9:16 · 1:1 · 16:9'와 'English · 한국어'는 번역 불필요(숫자·자기표기)
-    'What you get': '결과물',
+    // 과금 안내(#ugcFreeNote). (2026-07-20) 우측 패널 2번 스텝("AI drafts it — free…")을 흡수해
+    //   한 줄로 합쳤다 — 과금 안내가 세 곳(헤더·2번·무료안내) → 두 곳 → **한 곳**이 된 마지막 단계.
+    'The concept and the script are free — edit any line first. Credits are spent only when you generate the video, and the cost shows on that button.':
+      '컨셉과 대본은 무료입니다 — 어느 줄이든 먼저 고치세요. 크레딧은 영상을 만들 때만 나가고, 비용은 그 버튼에 표시됩니다.',
+    // Ad Video 빈 상태 리드(2026-07-20 신설, .ugc-lead-t/-chip).
+    //   우측 "How this works" 패널이 제거되며 결과물 문장과 칩만 여기로 넘어왔다.
+    //   칩 '9:16 · 1:1 · 16:9'와 'English · 한국어'는 번역 불필요(숫자·자기표기).
+    //   ⚠️ 아래 죽은 키 12개를 같이 지웠다(패널과 함께 매칭 대상이 사라짐):
+    //     'What you get' · 'How this works' · 'Your product' · 'Script' · 'Scenes'(주: 씬 스트립용은 별도 유지) ·
+    //     'Ad video' · 'A photo and one line about the ad…' · 'AI drafts it — free…' ·
+    //     'Each line becomes a scene…' · 'Your finished ad appears' · 'right here' ·
+    //     ". Saved isn't final…" · 옛 #ugcFreeNote 긴 문장.
+    //   ('Your photo'는 landing.html이 쓰고 있어 남긴다. 'Scenes'는 ugcSceneStripHtml이 쓴다.)
     'A finished ad video — your scenes cut together, ready to post.':
       '완성된 광고 영상 한 편 — 씬이 이어 붙은 채로, 바로 올릴 수 있게.',
     'Narration optional': '내레이션 선택', 'Music optional': '배경음악 선택',
-    'How this works': '이렇게 만듭니다',
-    // 1번(2026-07-20 신설) = 유저가 하는 일
-    'Your product': '제품',
-    'A photo and one line about the ad. No line in mind? AI writes it from your photo.':
-      '사진 한 장과 광고 한 줄. 한 줄이 안 떠오르면 AI가 사진을 보고 대신 씁니다.',
-    'Script': '대본',
-    'AI drafts it — free. Edit any line before anything is charged.':
-      'AI가 초안을 씁니다 — 무료. 과금 전에 어느 줄이든 고치세요.',
+    'Your photo': '제품 사진',
     'Scenes': '씬',
-    'Each line becomes a scene. Remake just one — not the whole video.':
-      '한 줄이 한 씬이 됩니다. 마음에 안 드는 한 컷만 다시 — 영상 전체가 아니라.',
-    // ⚠️ 마지막 스텝은 <b>가 문장을 가른 조각 3개다(‘Your finished ad appears’ + <b>right here</b> + 나머지).
-    //    노드 단위 치환이라 어순을 못 바꾼다 → 한국어 어순에 맞게 조각을 재배분한다(home 히어로와 같은 수법).
-    //    <b> 강조가 'right here' → '바로 여기'로 자연히 옮겨간다.
-    //    (2026-07-20) 세 번째 조각은 영어 HTML에 그 문장이 아예 없어 매칭 0인 죽은 키였다 → HTML 복구와 함께 살아남.
-    //    이때 첫 조각이 '…나오는 자리,'였는데 꼬리가 붙으니 "나오는 자리, 바로 여기에 나옵니다"로 겹쳐 읽혀 다듬음.
-    'Your finished ad appears': '완성된 광고는',
-    'right here': '바로 여기',
-    ". Saved isn't final — come back and change any scene.":
-      '에 나타납니다. 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
+    // 씬 스트립 안내(ugcSceneStripHtml). (2026-07-20) 패널 3·4번 스텝의 약속 두 개가 여기로 내려왔다 —
+    //   "한 컷만 다시"·"저장 후에도 편집"은 씬 재생성이 **실제로 사는 자리**에서 말하는 게 맞다(사용자 결정 D-3).
+    //   ⚠️ 옛 문구("…🔄 re-generates a scene (uses credits).")는 사전에 키가 아예 없어 한국어 모드에서도
+    //      영어로 나오고 있었다. 이번에 키를 만들며 그 누락도 같이 메운다.
+    "Reorder, edit captions, or remove — free. 🔄 remakes that one scene, not the whole video (uses credits). Saved isn't final — come back and change any scene.":
+      '순서 바꾸기·자막 수정·삭제는 무료입니다. 🔄 는 영상 전체가 아니라 그 한 컷만 다시 만듭니다(크레딧 사용). 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
     // 음악 · 음성
     'Add background music': '배경음악 넣기', 'Voice': '음성',
     'Yooni — F, clear & calm': 'Yooni — 여성, 맑고 차분함',

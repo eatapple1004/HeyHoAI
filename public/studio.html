@@ -654,8 +654,45 @@
   /* 빈/입력 상태에선 왼쪽 폼도 늘려 오른쪽 히어로 패널과 세로 길이를 맞춘다(둘 중 긴 쪽에 정렬).
      대본 상태(.compact=짧은 recap)는 제외 — 그땐 recap이 자기 높이로 위에 붙어야 한다. */
   .ugc-cols > #ugcInputBox:not(.compact){align-self:stretch}
-  .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{flex:1 1 0;min-width:0;align-self:stretch}
-  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcScriptEmpty,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{width:100%;max-width:none}}
+  .ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{flex:1 1 0;min-width:0;align-self:stretch}
+  @media(max-width:860px){.ugc-cols{flex-direction:column}.ugc-cols > #ugcInputBox,.ugc-cols > #ugcScriptPreview,.ugc-cols > #ugcInline,.ugc-cols > #ugcScriptLoading{width:100%;max-width:none}}
+
+  /* ───── 빈 상태 = 폼 단독, 전체 폭 2단 (2026-07-20) ─────
+     우측 "How this works" 패널을 걷어낸 자리(마크업 주석에 실측·흡수표). 폭을 회수하는 이유가
+     "입력이 좁다"이므로 회수한 폭은 **입력에 되돌려준다** — 왼쪽=사진·컨셉(필수 경로), 오른쪽=Options.
+     세로가 남으므로 Options 접기(7f1b9bf)가 필요 없어진다: 그 접기는 **폭이 540일 때** 내린 결정이다.
+     대본이 나오면 .ugc-solo가 떨어져 전부 원래대로(2·3 상태 무변경) — 폭 변화엔 트랜지션. */
+  .ugc-cols > #ugcInputBox{transition:max-width .28s ease}
+  .ugc-cols.ugc-solo > #ugcInputBox{max-width:none}
+  .ugc-cols.ugc-solo .ugc-foldable{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:34px;align-items:start}
+  .ugc-cols.ugc-solo .ugc-fold-b{border-left:1px solid var(--border2);padding-left:34px}
+  .ugc-cols.ugc-solo .ugc-fold-c{grid-column:1/-1;border-top:1px solid var(--border2);margin-top:18px;padding-top:16px}
+  /* 접기 UI만 숨긴다 — 제목("Options")은 2단의 열 머리글로 남아야 한다 */
+  .ugc-cols.ugc-solo .ugc-knobline{border-top:none;margin-top:0;padding-top:0}
+  .ugc-cols.ugc-solo .ugc-knobline-btn{display:none}
+  /* #ugcInputBox:not(.knobs-open) .ugc-knobs 가 id 특정성이라 여기도 id를 태워 이긴다(!important 회피) */
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{display:block;border:none;padding:0;margin:0}
+  /* 2단에선 왼쪽이 컨셉에서 끝나 아래가 빈다(오른쪽은 Options 6그룹으로 길다).
+     그 여백을 컨셉 입력칸으로 준다 — 어차피 여기가 유저가 가장 오래 머무는 칸이다. */
+  /* ⚠️ #scriptStep #ugcConcept{min-height:104px}(id 2개)를 이겨야 하므로 여기도 id 2개를 태운다 */
+  #scriptStep .ugc-cols.ugc-solo #ugcConcept{min-height:190px}
+  /* 리드(결과물 한 줄 + 칩) = 빈 상태 전용. 대본 이후엔 우측이 진짜 결과물을 보여주므로 중복이 된다 */
+  .ugc-cols:not(.ugc-solo) .ugc-lead{display:none}
+  .ugc-lead{grid-column:1/-1;margin-bottom:2px}
+  .ugc-lead-t{font-family:'Sora';font-size:19px;line-height:1.3;font-weight:800;letter-spacing:-.3px;color:var(--text);margin:0 0 10px}
+  .ugc-lead-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .ugc-lead-chip{font-size:11px;color:var(--dim);border:1px solid var(--border2);border-radius:999px;padding:3px 9px;white-space:nowrap}
+  /* 좁은 화면은 2단이 성립 안 함 → 1단으로 되돌리고 접기도 되살린다 */
+  @media(max-width:860px){
+    .ugc-cols.ugc-solo .ugc-foldable{display:block}
+    .ugc-cols.ugc-solo .ugc-fold-b{border-left:none;padding-left:0}
+    .ugc-cols.ugc-solo .ugc-fold-c{border-top:none;margin-top:0;padding-top:0}
+    .ugc-cols.ugc-solo .ugc-knobline{border-top:1px solid var(--border2);margin-top:16px;padding-top:16px}
+    .ugc-cols.ugc-solo .ugc-knobline-btn{display:flex}
+    .ugc-cols.ugc-solo #ugcInputBox:not(.knobs-open) .ugc-knobs{display:none}
+    .ugc-cols.ugc-solo #ugcInputBox.knobs-open .ugc-knobs{border:1px solid var(--border2);border-top:none;padding:4px 12px 12px;margin-top:-2px}
+    .ugc-lead-t{font-size:17px}
+  }
 
   /* ───── Ad Video Step 1 정리(2026-07-17) ─────
      기본값이 잡힌 노브 4그룹(비율·씬수·모드·언어)을 요약줄 뒤로 접어 Write script를 첫 화면에 올린다.
@@ -709,8 +746,6 @@
   .ugc-cols > #ugcInputBox.compact{flex:0 0 300px}
   @media(max-width:860px){.ugc-cols > #ugcInputBox.compact{flex:1 1 auto}}
 
-  /* 빈 상태 = 여정 예고. 대본만 약속하던 자리에서 "영상이 여기 나온다"까지 말해준다 */
-  .ugc-jrn{border:1px solid var(--border2);border-radius:16px;padding:22px;background:radial-gradient(130% 90% at 100% 0%,rgba(106,64,224,.12),transparent 55%),rgba(255,255,255,.015)}
   /* Ad Video 오리엔테이션 히어로 — 딱 봤을 때 "여기가 뭐하는 곳"을 시각으로 (2026-07-18) */
   .ugc-hero-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent2);margin-bottom:11px}
   .ugc-hero-eyebrow::before{content:'';width:15px;height:15px;border-radius:5px;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 4px 12px -3px var(--accent)}
@@ -724,33 +759,6 @@
   .ugc-hero-box.reel .play{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;padding-left:2px;box-shadow:0 6px 18px -4px var(--accent)}
   .ugc-hero-arrow{flex:none;color:var(--accent2);font-size:20px;font-weight:800;margin-bottom:23px}
   .ugc-hero-sub{font-size:12.5px;color:var(--dim);line-height:1.6;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid var(--border2)}
-  .ugc-jrn-h{font-size:12px;color:var(--faint);margin-bottom:14px}
-  .ugc-jrn-s{display:flex;gap:12px;padding:11px 0;align-items:flex-start}
-  .ugc-jrn-s + .ugc-jrn-s{border-top:1px solid var(--border2)}
-  .ugc-jrn-n{width:22px;height:22px;flex:none;border-radius:50%;border:1px solid var(--border2);
-    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--dim)}
-  /* flex:1 = 세 단이 같은 폭에서 줄바꿈(안 주면 각 단이 제 텍스트 길이만큼 늘어나 아트박스 폭이 제각각) */
-  .ugc-jrn-b{min-width:0;flex:1}
-  .ugc-jrn-b > b{display:block;font-size:13.5px;color:var(--text);margin-bottom:3px}
-  .ugc-jrn-b > span{font-size:12px;color:var(--dim);line-height:1.5;display:block;max-width:44ch}
-  .ugc-jrn-art{margin-top:9px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.02);padding:9px 10px;max-width:240px}
-  .ugc-jrn-line{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--border2),transparent);margin:5px 0}
-  .ugc-jrn-thumbs{display:flex;gap:5px}
-  .ugc-jrn-th{width:26px;height:34px;border-radius:4px;background:linear-gradient(135deg,#332a4d,#1c1a2b);border:1px solid var(--border2)}
-  .ugc-jrn-vid{height:52px;border-radius:6px;background:linear-gradient(135deg,#3a2f52,#1d1b2e);border:1px solid var(--border2);
-    display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:17px}
-  /* 1번 스텝 아트(2026-07-20) — 좌측 [Add product photos] 버튼과 같은 아이콘을 써서 "저 버튼 얘기다"가 눈으로 붙게 */
-  .ugc-jrn-photo{height:52px;border-radius:6px;background:linear-gradient(135deg,#332a4d,#1c1a2b);border:1px solid var(--border2);
-    display:flex;align-items:center;justify-content:center;color:var(--dim)}
-  .ugc-jrn-photo svg{width:22px;height:22px}
-  /* WHAT YOU GET 블록(2026-07-20) — 헤더는 "무엇을 만드는 곳인가", 여긴 "결과물이 뭔가". 칩은 전부 좌측 폼의 실재 선택지 */
-  .ugc-jrn-hget{margin-bottom:8px}
-  .ugc-jrn-get{font-size:12.5px;color:var(--dim);line-height:1.55;margin:0 0 11px;max-width:44ch}
-  .ugc-jrn-chips{display:flex;flex-wrap:wrap;gap:6px}
-  .ugc-jrn-chip{font-size:11px;color:var(--dim);border:1px solid var(--border2);border-radius:999px;
-    padding:3px 9px;background:rgba(255,255,255,.02);white-space:nowrap}
-  /* 두 블록은 구분선으로 나눈다 — 안 나누면 칩이 1번 스텝의 부속처럼 읽힌다 */
-  .ugc-jrn-h2{margin-top:18px;padding-top:16px;border-top:1px solid var(--border2)}
 
   /* 대본 작성 중 스켈레톤 */
   .ugc-sk{display:flex;flex-direction:column;gap:13px;padding:16px 18px;border:1px solid var(--border2);border-radius:14px;background:rgba(255,255,255,.02);min-height:220px}
@@ -970,17 +978,8 @@
   #scriptStep #ugcTotalLen{font-weight:700}
   /* ── 발광 1점: Write script CTA ── */
   #scriptStep .script-ctrls .btn-primary{box-shadow:0 4px 14px -4px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.13),var(--glow-accent)}
-  /* ── 우측 = How this works (히어로 flow 제거됨). 하드코딩 색 토큰화 + radius ── */
-  #scriptStep .ugc-jrn{border-radius:16px;padding:24px}
-  #scriptStep .ugc-jrn-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--faint)}
-  #scriptStep .ugc-jrn-art{border-radius:12px}
-  #scriptStep .ugc-jrn-th{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface2)),var(--surface2))}
-  #scriptStep .ugc-jrn-vid{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface2)),var(--surface2));color:var(--faint)}
-  #scriptStep .ugc-jrn-photo{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface2)),var(--surface2));color:var(--faint)}
   /* ── 좌우 높이: 강제 stretch 해제(자연 높이) + 우측 sticky ── */
   #scriptStep .ugc-cols > #ugcInputBox:not(.compact){align-self:flex-start}
-  #scriptStep .ugc-cols > #ugcScriptEmpty{align-self:flex-start;position:sticky;top:24px}
-  @media(max-width:860px){#scriptStep .ugc-cols > #ugcScriptEmpty{position:static}}
   /* ── 접근성·마감 보강(2026-07-18, UX 검증 반영). 롤백=이 서브블록 삭제 ── */
   /* rank 3 — 세그먼트 active: ~12% 색 틴트뿐 → 인셋 링(색맹·저시력·글레어에서도 선택 인지). :935 !important와 무충돌(box-shadow만 추가) */
   #scriptStep .ugc-seg-b.active{box-shadow:inset 0 0 0 1px var(--bd-sel)}
@@ -990,10 +989,6 @@
   /* rank 12 — focus-visible 링(키보드 포커스 가시화, :focus-visible라 마우스 클릭엔 안 뜸) */
   #scriptStep .ugc-seg-b:focus-visible,#scriptStep .ugc-mode-btn:focus-visible,#scriptStep .ugc-fmt-btn:focus-visible,#scriptStep .ugc-ar-btn:focus-visible,#scriptStep .ugc-help:focus-visible,#scriptStep .ugc-mt:focus-visible,#scriptStep .ugc-mf:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
   #scriptStep #ugcModelGrid img:focus-visible{outline:2px solid var(--accent2);outline-offset:-2px}
-  /* rank 1(sibling) — 우측 "How this works" 헤더 대비 상향(--faint→--dim) */
-  #scriptStep .ugc-jrn-h{color:var(--dim)}
-  /* rank 13 — 모바일에서 "How this works"를 폼 위로(#ugcScriptEmpty에만 order; 로딩/결과 상태엔 display:none이라 무해) */
-  @media(max-width:860px){#scriptStep .ugc-cols > #ugcScriptEmpty{order:-1}}
   /* rank 22 — Options 필드 라벨 통일: 스택-위·12/600·--dim(서브 400/faint). Sound·Video format의 좌거터 opt-row를 스택으로 */
   #scriptStep .ugc-opt-row{flex-direction:column;align-items:stretch;gap:6px}
   #scriptStep .ugc-opt-lbl{width:auto;margin-bottom:0;align-self:flex-start}
@@ -1063,12 +1058,14 @@
            1번 스텝     = "A photo and one line about the ad. No line in mind? AI writes it from your photo."
            2번 스텝     = "AI drafts it — free. Edit any line before anything is charged."(+ 좌측 #ugcFreeNote)
          → 같은 말을 두 번 하던 것. 특히 과금 안내는 세 곳에서 반복되고 있었다(헤더·2번·무료안내).
-         ⚠️ 이 화면엔 이제 heading 요소가 없다 — ugc 모드에선 subjectStep/templateStep이 숨고
-            resultStep은 생성 후에야 뜬다. 되살릴 거면 패널의 "What you get"(.ugc-jrn-hget)을
-            div→h2로 바꾸는 게 가장 싸다(.ugc-jrn-h는 클래스 선택자라 겉모습 그대로).
+         ✅ (2026-07-20 후속) 그때 "알고 넘어간 손실"로 적어둔 heading 0개 문제는 해결됐다 —
+            우측 패널을 걷으며 결과물 문장을 폼 최상단 <h2 class="ugc-lead-t">로 올렸다.
+            과금 안내도 이제 #ugcFreeNote 한 곳뿐이다(세 곳 → 두 곳 → 한 곳).
          롤백: 이 주석 자리에 옛 .ugc-pagehd 블록 + CSS(#scriptStep .ugc-pagehd/-pagetitle/-pagesub)
-               + i18n 두 키 복원. -->
-    <div class="ugc-cols">
+               + i18n 두 키 복원. 단 지금은 .ugc-lead-t가 같은 일을 하므로 되살리면 제목이 둘이 된다. -->
+    <!-- .ugc-solo = "이 자리에 폼밖에 없다"(빈 상태). 대본·작성중·조리대가 뜨면 JS가 뗀다(ugcSolo).
+         빈 상태에서만 폼이 전체 폭 2단이 되고 Options 접기가 사라진다 — 근거는 .ugc-solo CSS 블록 참조. -->
+    <div class="ugc-cols ugc-solo">
     <div class="script-box" id="ugcInputBox">
       <input type="file" id="ugcProductImg" accept="image/*" multiple style="display:none" onchange="ugcPreview(this)">
       <!-- 대본이 나오면 입력 전체가 이 한 줄로 접힌다(오른쪽 대본·영상이 주인공) -->
@@ -1081,6 +1078,25 @@
         <button type="button" class="ugc-recap-edit" onclick="ugcUncompact()">Edit</button>
       </div>
       <div class="ugc-foldable">
+      <!-- (2026-07-20) 우측 "How this works" 패널이 흡수된 자리.
+           패널이 답하던 것 중 페이지에 남겨야 하는 건 둘뿐이었다 — ① 결과물이 뭔지 ② 과금 시점.
+           ①이 여기(리드+칩), ②는 아래 #ugcFreeNote. 나머지(1·2번 스텝)는 좌측 폼이 이미 같은 말을
+           하고 있었고(#ugcPickHint·#ugcSuggestHero), 3·4번 스텝의 약속은 씬 스트립으로 내려갔다
+           (ugcSceneStripHtml의 .ugc-scenes-hint — 씬 재생성이 실제로 사는 자리).
+           ⚠️ <h2>인 이유: c4a7c56이 페이지 헤더를 지우며 "이 화면에 heading이 하나도 없다"를
+              알고 넘어간 손실로 적어뒀다. 그 자리를 이 리드가 메운다. -->
+      <div class="ugc-lead">
+        <h2 class="ugc-lead-t">A finished ad video — your scenes cut together, ready to post.</h2>
+        <!-- ⚠️ 칩은 전부 좌측 폼에 실재하는 선택지다(Where you'll post it · Sound · Add background music ·
+             Ad language). 없는 기능을 약속하지 않는다 — 소요 시간은 실측 근거가 없어 넣지 않았다. -->
+        <div class="ugc-lead-chips">
+          <span class="ugc-lead-chip">9:16 · 1:1 · 16:9</span>
+          <span class="ugc-lead-chip">Narration optional</span>
+          <span class="ugc-lead-chip">Music optional</span>
+          <span class="ugc-lead-chip">English · 한국어</span>
+        </div>
+      </div>
+      <div class="ugc-fold-a">
       <!-- 사진 버튼 + ⓘ 는 한 줄, 설명(힌트)은 그 아래로 내린다 → 버튼 → 설명 → 제품명 순서.
            전엔 힌트가 버튼 '옆'에 있어 버튼과 제품명 칸이 세로로 붙어 보였다(설명이 사이가 아니라 옆). -->
       <div id="ugcDrop" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1110,7 +1126,11 @@
       </div>
       <!-- 카테고리 UI 제거(2026-07-09): builder가 사진 보고 카테고리 자동 판별·플레이북 적용 → 유저 선택 불필요 -->
 
-      <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐 -->
+      </div><!-- /.ugc-fold-a -->
+      <div class="ugc-fold-b">
+      <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐.
+           ⚠️ 빈 상태(.ugc-solo)에선 요약줄 버튼만 숨고 노브가 그대로 펼쳐진다 — 접기는 폭이 540일 때
+              세로를 아끼려던 것인데(7f1b9bf), 전체 폭 2단에선 그 전제가 없다. 제목("Options")은 남는다. -->
       <div class="ugc-knobline ugc-sec-div">
         <div class="ugc-sec-hd">Options</div>
         <button type="button" class="ugc-knobline-btn" id="ugcKnobLine" onclick="ugcToggleKnobs()" aria-expanded="false" aria-controls="ugcKnobs">
@@ -1213,83 +1233,40 @@
         <input type="hidden" id="ugcLangSel" value="en">
       </div>
       </div><!-- /.ugc-knobs -->
+      </div><!-- /.ugc-fold-b -->
+      <div class="ugc-fold-c">
       <!-- rank1(reorder+대비): 무료·비용 안심을 CTA '앞'에 둔다 — 위→아래 스캔에서 버튼보다 먼저 읽히게, --faint→--dim.
            rank6/10: 두 AI 도우미(컨셉·대본) 모두 무료 + 비용은 다음 Generate 버튼에 과금 전 표시.
            ⚠️ 인라인 <b> 금지 — i18n 텍스트노드 단위 치환(단일 노드 유지, 사전 키=이 문장 전체). -->
-      <div id="ugcFreeNote" style="margin:2px 0 11px;font-size:12px;color:var(--dim);line-height:1.55">Free — the AI concept and the script are yours to review &amp; edit first. You pick Generate next to build the video, and the credit cost shows on that button before anything is charged.</div>
+      <div id="ugcFreeNote" style="margin:2px 0 11px;font-size:12px;color:var(--dim);line-height:1.55">The concept and the script are free — edit any line first. Credits are spent only when you generate the video, and the cost shows on that button.</div>
       <!-- rank2: 연필→스파클(AI가 쓴다 신호, 'Write it for me'와 동일 아이콘). rank18: aria-describedby로 무료 안내를 CTA에 연결 -->
       <div class="script-ctrls">
         <button class="btn btn-primary" id="ugcGenBtn" aria-describedby="ugcFreeNote" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Write script</button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
+      </div><!-- /.ugc-fold-c -->
       </div><!-- /.ugc-foldable -->
     </div>
-    <!-- 오른쪽 빈 상태 = 여정 예고. 이 슬롯엔 대본 → 씬 → 완성 영상이 차례로 들어오므로
-         "대본이 나온다"만 말하던 옛 문구 대신 영상까지 약속해준다(광고 만들러 온 사람에게 영상 얘기를 해야 함)
+    <!-- (2026-07-20) 우측 "How this works" 패널(#ugcScriptEmpty / .ugc-jrn) 제거 — 빈 상태를 전체 폭으로.
+         실측(1440×900, 콘텐츠 폭 1300): 패널 744×843 vs 좌측 입력 폼 540×580. **설명이 도구보다 1.38배 넓고
+         1.45배 높았다.** 페이지를 뷰포트(900) 밖으로 늘린 것도 폼(y=680)이 아니라 패널(y=943)이었다
+         = 유저는 설명을 다 보려고 스크롤하지, 입력하려고 스크롤하지 않았다.
+         삽화 4개(.ugc-jrn-art)만 843px 중 약 260px을 먹으면서 정보는 0을 전달했다.
 
-         (2026-07-20 재구성) 위 설계는 '슬롯 예고'인데 1·2·3 번호를 달면서 '여정 안내'로 읽히게 됐다.
-         그 결과 여정이 유저 행동이 아니라 AI 출력(=대본)에서 시작해, 처음 온 사람이 1·2·3을 다 읽어도
-         "그래서 내가 뭘 하면 되는데"의 답이 없었다. 또 끝까지 읽어도 결과물이 '무엇인지'는 안 나왔다
-         (비율·내레이션·음악·언어는 전부 좌측 폼에만 있고 여기선 한 번도 약속하지 않았다).
-         → 처음 온 사람이 갖는 질문 순서 그대로 답하게 고친다:
-           ① 여긴 뭐 하는 곳인가  = (2026-07-20 갱신) 옛날엔 페이지 헤더가 답했으나 그 헤더를 지웠다
-                                    → 이제 이 패널이 유일하게 답하는 곳이다. WHAT YOU GET을 줄이지 말 것.
-           ② 뭘 받을 수 있나      = WHAT YOU GET (헤더가 못 말하는 결과물 '스펙'만)
-           ③ 그러려면 뭘 하나     = HOW THIS WORKS 1번을 유저 행동으로 신설(2·3·4는 기존 1·2·3) -->
-    <div id="ugcScriptEmpty" class="ugc-jrn">
-      <div class="ugc-jrn-h ugc-jrn-hget">What you get</div>
-      <div class="ugc-jrn-get">A finished ad video — your scenes cut together, ready to post.</div>
-      <!-- ⚠️ 칩은 전부 좌측 폼에 실재하는 선택지다(Where you'll post it · Sound · Add background music · Ad language).
-           없는 기능을 약속하지 않는다 — 소요 시간은 UI 어디에도 실측 근거가 없어 넣지 않았다. -->
-      <div class="ugc-jrn-chips">
-        <span class="ugc-jrn-chip">9:16 · 1:1 · 16:9</span>
-        <span class="ugc-jrn-chip">Narration optional</span>
-        <span class="ugc-jrn-chip">Music optional</span>
-        <span class="ugc-jrn-chip">English · 한국어</span>
-      </div>
-      <div class="ugc-jrn-h ugc-jrn-h2">How this works</div>
-      <!-- 1번(2026-07-20 신설) = 유저가 실제로 하는 일. 게이트는 사진'과' 컨셉 둘 다다
-           (ugcWriteScript: !concept 먼저 검사 → 그다음 ugcNeedPhoto). 그런데 컨셉은 [Write it for me]로
-           AI가 사진 보고 대신 써주므로, "한 줄이 안 떠올라도 막히지 않는다"까지 말해야 빈 칸의 벽이 없어진다. -->
-      <div class="ugc-jrn-s">
-        <div class="ugc-jrn-n">1</div>
-        <div class="ugc-jrn-b"><b>Your product</b><span>A photo and one line about the ad. No line in mind? AI writes it from your photo.</span>
-          <div class="ugc-jrn-art"><div class="ugc-jrn-photo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg></div></div>
-        </div>
-      </div>
-      <div class="ugc-jrn-s">
-        <div class="ugc-jrn-n">2</div>
-        <div class="ugc-jrn-b"><b>Script</b><span>AI drafts it — free. Edit any line before anything is charged.</span>
-          <div class="ugc-jrn-art"><div class="ugc-jrn-line" style="width:80%"></div><div class="ugc-jrn-line" style="width:62%"></div><div class="ugc-jrn-line" style="width:71%"></div></div>
-        </div>
-      </div>
-      <!-- (구 2번 → 2026-07-20 3번) 원래 "Each line becomes a shot."로 유저가 할 게 없는 부산물이었다(그래서 뒤 스텝과 합쳐도 될 것처럼 보임).
-           씬 단위 재생성이 이 제품의 제일 강한 안심 장치인데 화면 어디서도 말하지 않고 있어서 여기로 올림.
-           → 스텝이 전부 "유저가 통제하는 것"으로 통일된다: 사진과 한 줄을 주고, 대본을 고치고, 컷을 고치고, 나중에도 고친다.
-           재생성은 크레딧이 들므로 "free"라고 쓰지 않는다(정확한 과금은 씬 스트립이 안내). -->
-      <div class="ugc-jrn-s">
-        <div class="ugc-jrn-n">3</div>
-        <div class="ugc-jrn-b"><b>Scenes</b><span>Each line becomes a scene. Remake just one — not the whole video.</span>
-          <div class="ugc-jrn-art"><div class="ugc-jrn-thumbs"><div class="ugc-jrn-th"></div><div class="ugc-jrn-th"></div><div class="ugc-jrn-th"></div><div class="ugc-jrn-th"></div></div></div>
-        </div>
-      </div>
-      <!-- (2026-07-17, 구 3번 → 2026-07-20 4번) 마지막 스텝은 이 패널의 원칙(= 유저가 통제하는 것)에서 혼자 "받는다"로 수동적이었다.
-           바꿀 말이 없어서였다 — 저장하고 나면 되불러 편집할 길이 없어(b.ugc를 채우는 곳이 렌더·복원
-           경로뿐이었다) "나중에 고칠 수 있다"가 거짓말이었다. 피드 [✎ Edit video]로 되찾는 길이 생겨
-           처음으로 참인 말이 됐으므로 마지막도 통제로 승격시킨다 → 대본을 고치고, 컷을 고치고, 나중에도 고친다.
-           ⚠️ 2026-07-20 확인: 그 승격 문장("Saved isn't final…")이 i18n 사전(=한국어)과 이 주석에만 있고
-              정작 영어 HTML엔 안 들어가 있었다(꼬리가 마침표 하나뿐 → 사전 키가 매칭 0인 죽은 키였다).
-              양쪽 언어 모두 약속이 안 보이던 상태 — 여기서 문장을 복구한다. 되찾는 경로는 실재함(ugcEditFromFeed).
-           ⚠️ 동시 생성(N개)은 여기 넣지 않는다: 결과물 통제가 아니라 시간 얘기라 나머지 스텝과 결이 다르고,
-              이 패널을 읽는 t=0 독자는 영상 하나만 생각한다. 그건 Generate 직후 기다리는 동안이 가르칠
-              자리이고, 거긴 입력 폼을 안 접게 한 것(넓은 화면)이 이미 초대 역할을 한다. -->
-      <div class="ugc-jrn-s">
-        <div class="ugc-jrn-n">4</div>
-        <div class="ugc-jrn-b"><b>Video</b><span>Your finished ad appears <b style="color:var(--accent2);font-weight:700">right here</b>. Saved isn't final — come back and change any scene.</span>
-          <div class="ugc-jrn-art"><div class="ugc-jrn-vid" aria-hidden="true">▶</div></div>
-        </div>
-      </div>
-    </div>
+         패널이 답하던 것의 처분 (지운 게 아니라 옮겼다):
+           WHAT YOU GET + 칩 4개 → 폼 최상단 .ugc-lead (<h2>로 승격 — c4a7c56이 "heading 0개"로
+                                   남긴 손실을 이 리드가 메운다)
+           1번 Your product     → 삭제. 좌측 폼이 이미 같은 말을 한다(#ugcPickHint · #ugcSuggestHero)
+           2번 Script           → #ugcFreeNote에 병합. 과금 안내가 두 곳에서 반복되던 것을 한 곳으로
+                                   (c4a7c56이 세 곳→두 곳으로 줄인 것의 마지막 단계)
+           3·4번의 약속         → 씬 스트립(.ugc-scenes-hint)으로. "한 컷만 다시"·"저장 후에도 편집"은
+                                   씬 재생성이 **실제로 사는 자리**에서 말하는 게 맞다(사용자 결정 D-3).
+                                   ⚠️ 3c7926b가 이 두 문장을 의도적으로 넣었고(뒤 문장은 영어 HTML에
+                                      아예 없던 것을 복구), 그냥 지우면 그 구멍이 다시 열린다.
+
+         ⚠️ 되살리려면: 이 자리에 옛 .ugc-jrn 블록 + CSS(.ugc-jrn-* / #scriptStep .ugc-jrn-*
+            / #scriptStep .ugc-cols > #ugcScriptEmpty의 sticky·order·align 3개) + i18n 키 복원.
+            단 그 전에 위 실측부터 다시 잴 것 — 이 결정은 눈대중이 아니라 숫자로 내렸다. -->
     <!-- 2단계: 대본 미리보기 → 검토 후 렌더 -->
     <div id="ugcScriptPreview" style="display:none;border:1px solid var(--border2);border-radius:14px;padding:16px 18px;background:rgba(255,255,255,.02)">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
@@ -3726,7 +3703,7 @@ function ugcSceneStripHtml(b){
     return s.versions.map((_,vi)=>vi===activeV?mainCard():dimCard(vi)).join(''); // 버전 순서 유지: 활성=전체카드, 나머지=어두운 선택카드
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
-    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 re-generates a scene (uses credits).</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
+    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 remakes that one scene, not the whole video (uses credits). Saved isn't final — come back and change any scene.</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
     <div class="ugc-strip">${cards}${u._adding?`<div class="usc usc-loadcard usc-add-loading"><div class="usc-thumb"><div class="rb-spin"></div></div><div class="usc-add-loadcap" style="text-align:center;font-size:11px;color:var(--dim);padding:9px 4px">Adding a scene…</div></div>`:''}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
@@ -4354,8 +4331,8 @@ function ugcLoadingStripHtml(b){
 function renderUgcInline(b){
   const el=document.getElementById('ugcInline'); if(!el)return;
   ugcDestroyAllLayered(); // 재렌더/이탈 전 기존 레이어드 재생기·오디오 파기(좀비 오디오·중복 재생 방지 — <audio>는 DOM 밖이라 innerHTML='' 로 안 멈춤)
-  if(!b){ el.style.display='none'; el.innerHTML=''; return; }
-  el.style.display='';
+  if(!b){ el.style.display='none'; el.innerHTML=''; ugcSyncSolo(); return; }
+  el.style.display=''; ugcSyncSolo();
   if(b.loading){ el.innerHTML=ugcLoadingVidHtml(b)+ugcLoadingStripHtml(b); return; } // 조리대·오븐이 같은 모양을 쓴다(E)
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; const u=b.ugc; let html='';
@@ -5478,10 +5455,26 @@ async function ugcPreviewVoice(){
   }
 }
 
+/**
+ * 빈 상태(.ugc-solo = 전체 폭 2단 + Options 펼침 + 리드 노출)를 **옆자리 상태에서 파생**시킨다.
+ *   solo = 대본·작성중·조리대가 셋 다 비어 있다.
+ * ⚠️ 처음엔 "패널 숨기던 자리마다 수동 토글"로 짰다가 실제로 어긋났다 — renderUgcInline이
+ *    ugcHideBenchPanels를 안 거치고 조리대를 띄우는 경로가 있어서(재연결·renderStudioResults),
+ *    폼이 solo(2단)인 채로 조리대와 나란히 서서 663px로 쭈그러들었다.
+ *    → 토글을 뿌리지 말고 **한 곳에서 계산**한다. 옆자리를 건드린 곳은 이걸 부르기만 하면 된다.
+ */
+function ugcSyncSolo(){
+  const cols=document.querySelector('.ugc-cols'); if(!cols)return;
+  const busy=['ugcScriptPreview','ugcScriptLoading','ugcInline'].some(id=>{
+    const el=document.getElementById(id); return el && el.style.display!=='none';
+  });
+  cols.classList.toggle('ugc-solo',!busy);
+}
 // 대본 작성 중 우측 스켈레톤 표시/숨김
 function ugcShowScriptLoading(on){
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display=on?'':'none';
-  if(on){ ['ugcScriptEmpty','ugcScriptPreview','ugcInline'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}); }
+  if(on){ ['ugcScriptPreview','ugcInline'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}); }
+  ugcSyncSolo();
 }
 // Ad language(대본·음성·자막·캡션 언어). 기본 en. 생성 프롬프트·영상 비주얼과는 무관.
 function ugcLang(){ const el=document.getElementById('ugcLangSel'); return (el&&el.value==='ko')?'ko':'en'; }
@@ -5527,7 +5520,7 @@ async function ugcWriteScript(){
     ugcScript=data.script;
     ugcRenderScriptPreview(data);
     hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
-  }catch(e){ console.error(e); ugcShowScriptLoading(false); const emp=document.getElementById('ugcScriptEmpty'); if(emp&&!ugcScript)emp.style.display=''; hint.textContent='⚠ '+(e.message||'Script failed'); }
+  }catch(e){ console.error(e); ugcShowScriptLoading(false); ugcSyncSolo(); /* 대본이 끝내 없으면 빈 상태로 자동 복귀 */ hint.textContent='⚠ '+(e.message||'Script failed'); }
   finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); if(box)box.classList.remove('busy'); }
 }
 
@@ -5563,11 +5556,11 @@ function ugcRenderScriptPreview(data){
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
   {const chk='<svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
    document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?chk+`Generate video <span class="gen-cost">◈ ${data.cost}</span>`:chk+'Generate video';}
-  const emp=document.getElementById('ugcScriptEmpty'); if(emp)emp.style.display='none'; // 실제 대본 → 플레이스홀더 숨김
+  // (빈 상태 해제는 아래 ugcScriptPreview 표시 후 ugcSyncSolo가 파생시킨다)
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display='none'; // 작성 스켈레톤 숨김
   // (조리대 내주기는 ugcWriteScript 시작 시점으로 옮겼다 — 여기서 하면 대본 쓰는 몇 초 동안 렌더 중인
   //  영상이 조리대에서도 피드에서도 안 보인다. 이 함수는 씬 refine에서도 불리므로 부작용도 없어야 한다.)
-  document.getElementById('ugcScriptPreview').style.display='';
+  document.getElementById('ugcScriptPreview').style.display=''; ugcSyncSolo();
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
   ugcCompactIfNarrow(); // 넓은 화면은 안 접는다(컨셉 보며 대본 검토 + [Edit] 혼동 제거). 좁으면 접어야 대본이 보인다
 }
@@ -5922,11 +5915,13 @@ function ugcAutoSaveOffBench(b){
 }
 /**
  * 조리대 자리를 비운다 — 대본·여정·작성중 패널을 내린다.
- *   이 넷(#ugcScriptEmpty·Preview·Loading·Inline)은 .ugc-cols의 flex 형제라, 안 내리면 나란히 서서
- *   입력칸까지 4칸으로 쭈그러든다. 조리대는 한 자리다.
+ *   이 셋(Preview·Loading·Inline)은 .ugc-cols의 flex 형제라, 안 내리면 나란히 서서
+ *   입력칸까지 쭈그러든다. 조리대는 한 자리다.
+ *   (옛 #ugcScriptEmpty는 제거됐고 그 자리를 .ugc-solo 클래스가 대신한다 — 같이 떼야 폼이 540으로 돌아간다.)
  */
 function ugcHideBenchPanels(){
-  ['ugcScriptEmpty','ugcScriptPreview','ugcScriptLoading'].forEach(id=>{const el=document.getElementById(id); if(el)el.style.display='none';});
+  ['ugcScriptPreview','ugcScriptLoading'].forEach(id=>{const el=document.getElementById(id); if(el)el.style.display='none';});
+  ugcSyncSolo();
 }
 /**
  * 조리대에 올린다 — 항상 1개("오븐엔 여러 개. 조리대엔 하나.").
