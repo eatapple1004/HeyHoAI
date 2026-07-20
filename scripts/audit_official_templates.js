@@ -21,17 +21,27 @@ const { env } = require('../src/config');
 
 const APPLY = process.argv.includes('--apply');
 
-// 프론트 카드 목록(= 사용자가 실제로 고르는 진입점). 자식 컷은 부모로 귀속되므로 제외된다.
+// 대상 = **DEFAULT_OFFICIAL_RECIPES**(themes.js). 전체 174 카탈로그가 아니다 —
+//   컷 화면은 OFFICIAL_RECIPES에 든 카드만 노출하고, 그 출발점이 이 상수 + /api/marketplace/owned 병합이다.
+//   owned 쪽은 정의상 이미 DB 행이 있으므로, 행이 없을 수 있는 건 이 기본 목록뿐이다.
+//   ⚠️ 노출(클라 상수)과 상세페이지 카드(DB 테이블)가 분리돼 있어 한쪽만 있는 상태가 생긴다 —
+//      실제로 bodywear-on-model은 컷 화면엔 뜨는데 상세 카드가 없었다.
 function loadCards() {
-  const src = fs.readFileSync(path.join(__dirname, '..', 'public/js/recipes.generated.js'), 'utf8');
+  const themes = fs.readFileSync(path.join(__dirname, '..', 'public/js/themes.js'), 'utf8');
   const g = {};
-  new Function('window', src)(g);
-  const out = [];
-  const cards = (g.RECIPES && g.RECIPES.cards) || {};
+  new Function('window', themes)(g);
+  const ids = g.DEFAULT_OFFICIAL_RECIPES || [];
+
+  const src = fs.readFileSync(path.join(__dirname, '..', 'public/js/recipes.generated.js'), 'utf8');
+  const g2 = {};
+  new Function('window', src)(g2);
+  const byId = {};
+  const cards = (g2.RECIPES && g2.RECIPES.cards) || {};
   Object.keys(cards).forEach((sec) => {
-    if (Array.isArray(cards[sec])) cards[sec].forEach((r) => out.push({ section: sec, ...r }));
+    if (Array.isArray(cards[sec])) cards[sec].forEach((r) => { byId[r.id] = { section: sec, ...r }; });
   });
-  return out;
+
+  return ids.map((id) => byId[id] || { id, name: id, section: '(카탈로그에 없음)' });
 }
 
 async function main() {
@@ -44,7 +54,7 @@ async function main() {
   const have = new Set(rows.map((r) => r.recipe_id));
 
   const missing = cards.filter((c) => !have.has(c.id));
-  console.log(`카드 ${cards.length}개 · 공식 등록됨 ${cards.length - missing.length}개 · 누락 ${missing.length}개`);
+  console.log(`기본 공식 ${cards.length}개 · DB 등록됨 ${cards.length - missing.length}개 · 누락 ${missing.length}개`);
 
   if (!missing.length) { console.log('\n누락 없음 ✓'); return; }
 
