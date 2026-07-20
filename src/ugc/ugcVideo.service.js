@@ -997,11 +997,20 @@ async function _commitJobImpl(id, userId) {
     userId: j.user_id, promptText: `${j.title || ''} — ${j.caption || ''}`.slice(0, 2000),
     model: 'ugc-v1', tags: ['video', 'ugc', j.output_type], teamId: j.team_id,
   });
+  // 크리에이션 카드에 "고객이 어떤 제품 사진을 넣었는지" 표시용.
+  //   사진 생성은 characters JOIN(gr.character_id)으로 가져오는데 영상 결과엔 character_id가 안 실린다
+  //   → 여기서 metadata에 직접 남긴다. 원본은 재렌더용으로 이미 script._render.products[].clip에
+  //   보존돼 있고(tmp/images 파일명), 웹 서빙 경로가 /images/<파일명>이라 그대로 URL이 된다.
+  const _R = script._render || {};
+  const _prod = (Array.isArray(_R.products) && _R.products[0]) || _R.product || null;
+  const _prodUrl = (_prod && _prod.clip) ? `/images/${_prod.clip}` : null;
+
   const savedResult = await resultRepo.insert({
     promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
     fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
     metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
-      subtitleMode: j.subtitle_mode, clips: nClips },
+      subtitleMode: j.subtitle_mode, clips: nClips,
+      ...(_prodUrl ? { product_image: _prodUrl } : {}) },
     visibility: j.visibility === 'private' ? 'private' : 'public',
   });
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx }).catch(() => {});

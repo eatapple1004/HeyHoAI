@@ -4759,7 +4759,7 @@ async function loadStudioResults(reset){
       let b=STUDIO_BATCH_BY_KEY[k];
       // productImage=유저가 넣은 제품 사진(characters.reference_image_url) · modelName=쓴 로스터 모델 이름(또는 'Auto').
       //   "무엇으로 만들었는지"를 카드에서 바로 보게 하려는 것 — 둘 다 없을 수도 있다(모델 픽커 없는 템플릿).
-      if(!b){ b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImage:r.product_image||'',modelName:(r.metadata&&r.metadata.model_name)||'',dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
+      if(!b){ b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImage:r.product_image||(r.metadata&&r.metadata.product_image)||'',modelName:(r.metadata&&r.metadata.model_name)||'',dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
       if(r.status==='success'&&r.file_path){
         const fn=r.file_path.split('/').pop();
         if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx,visibility:r.visibility});
