@@ -3616,8 +3616,11 @@ function batchRowHtml(b){
   // 상세페이지와 동일한 마이크로 캡션 스펙: 타입 · 해상도 · 비율 · [길이] · 모델. 해상도/비율/길이는 미디어 로드 시 fillRbSpecs가 채움(b.w/h 있으면 즉시).
   const ML=rbModelLabel(b.model);
   const dimStatic=(b.w&&b.h)?`<b>${b.w}</b> × <b>${b.h}</b>`:'';
-  const ratioStatic=(b.w&&b.h)?rbRatioLabel(b.w,b.h):'';
-  const specs=b.loading?'':`<div class="rb-specs">`
+  //   비율은 결과 치수가 없어도 안다(요청값 b.aspect) → 로딩 중에도 보여준다. 치수는 결과가 나와야 채워진다.
+  const ratioStatic=(b.w&&b.h)?rbRatioLabel(b.w,b.h):(b.aspect||'');
+  // 로딩 중에도 스펙을 보여준다 — 타입·비율·엔진은 요청 시점에 이미 정해져 있고,
+  //   모르는 것(치수·길이)만 hidden으로 비워두면 결과 도착 시 fillRbSpecs가 채운다.
+  const specs=`<div class="rb-specs">`
     +`<span class="spec">${isReelBatch?'Reel':'Photo'}</span>`
     +`<span class="spec rb-spec-dim"${dimStatic?'':' hidden'}>${dimStatic}</span>`
     +`<span class="spec rb-spec-ratio"${ratioStatic?'':' hidden'}>${ratioStatic?`<b>${ratioStatic}</b>`:''}</span>`
@@ -3627,7 +3630,7 @@ function batchRowHtml(b){
   // "무엇으로 만들었는지" — 제품 사진 + 쓴 모델. 스펙 줄 안에 끼워넣었더니 썸네일이 글자 높이(14px)에
   //   갇혀 뭘 썼는지 분간이 안 됐다 → 별도 줄로 빼고 38px로 키운다. 모델은 라벨을 붙여야 이름만
   //   덩그러니 있을 때 그게 모델인지 알 수 있다. 둘 다 선택적(커스텀 프롬프트·모델 픽커 없는 템플릿).
-  const srcRow=b.loading?'':((b.productImage||b.modelName)?`<div class="rb-src-row">`
+  const srcRow=((b.productImage||b.modelName)?`<div class="rb-src-row">`
     +(b.productImage?`<img class="rb-src-thumb" src="${esc(b.productImage)}" alt="" loading="lazy" title="Product used" onerror="this.remove()">`:'')
     +(b.modelName?`<span class="rb-src-item rb-src-model"><span class="k">Model</span>${esc(b.modelName)}</span>`:'')
     +`</div>`:'');
@@ -4738,6 +4741,9 @@ function ratioParts(a){ const m=String(a||'').match(/^(\d+)\s*:\s*(\d+)$/);
 function makePendingBatch(r,extra,count,isReel){
   return {_uid:++BATCH_SEQ, items:[],loading:true,pendingCount:isReel?1:(count||4),
     aspect:curAspect()||'', // 로딩칸을 실제 요청 비율로 그리기 위해 배치에 들고 간다
+    // 로딩 중에도 "무엇으로 만드는 중인지" 보이게 — 제품·모델은 지금 이미 정해져 있다(결과를 기다릴 이유가 없다).
+    productImage:(slotItems('reference')[0]||{}).url||'',
+    modelName:(r&&r.picker==='model')?(state.modelId?((modelById(state.modelId)||{}).name||''):'Auto'):'',
     promptText:r?'':extra, templateSource:r?(attribution().templateSource||'recipe'):'', templateName:r?r.name:'',
     model:isReel?'Reel':effModelLabel(), w:null,h:null, dateKey:dateKeyOf(),dateLabel:'Today'};
 }
