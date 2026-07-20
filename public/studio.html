@@ -211,7 +211,25 @@
   body.studio-managing #templateStep{position:static!important;transform:none!important;max-height:none!important;
     box-shadow:none!important;border-radius:0!important;background:transparent!important;padding:0!important;z-index:auto!important}
   body.studio-managing #cutuiScrim{display:none}
-  /* ▲▲▲ P1 카드 셸 + P3 축 + P4 픽커 + P5 룩 시트 ▲▲▲ */
+  /* P7' 컴포즈 내부 배치를 프로토타입(작성 카드)처럼 — 카드(shopping)에서만. 모델엔진/Options/커스텀링크 숨김.
+     addons는 라벨-위·그룹 컴팩트로. 크기·비공개·비율은 유지(결정: 모델엔진만 숨김). */
+  #composeTop.cutui-card #legacyModelField{display:none!important} /* 모델엔진(Gemini Pro)=비선택지 → 숨김 */
+  #composeTop.cutui-card #optsBtn{display:none!important}          /* Options 버튼(프로토타입 없음) */
+  #composeTop.cutui-card #customLink{display:none!important}       /* "write your own prompt"(프로토타입 없음) */
+  #composeTop.cutui-card .addons{gap:24px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--border);border-bottom:none}
+  #composeTop.cutui-card .addons .field{flex-direction:column;align-items:flex-start;gap:8px}
+  #composeTop.cutui-card .addons .addon-label{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+  #composeTop.cutui-card .addons-right{margin-left:auto;align-self:center}   /* 비공개 토글은 우측 정렬 유지 */
+  #composeTop.cutui-card .gen-main{padding-top:14px;border-top:1px solid var(--border)}
+  #composeTop.cutui-card .gen-foot-left .summary{font-size:12.5px;color:var(--dim)}
+  /* 장수 = 드롭다운 → 버튼 세그(프로토타입). #countSel 숨기고 #cutuiCountSeg 노출 */
+  #composeTop.cutui-card #countSel{display:none}
+  .cutui-countseg{display:flex;gap:5px}
+  .cutui-countseg button{border:1px solid var(--border2);background:rgba(255,255,255,.03);border-radius:9px;
+    min-width:38px;padding:7px 0;font-size:12.5px;font-weight:650;color:var(--dim);cursor:pointer;font-family:inherit;text-align:center}
+  .cutui-countseg button:hover{border-color:var(--accent)}
+  .cutui-countseg button.on{border-color:var(--accent);background:rgba(106,64,224,.16);color:var(--text)}
+  /* ▲▲▲ P1~P5 + P7' 컴포즈 배치 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
   .results-all{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap;cursor:pointer}
@@ -3674,7 +3692,19 @@ function syncCutCard(){
   // 요약줄 = updateBarCore가 채운 #genSummary 미러(텍스트만)
   const sum=document.getElementById('cutCardSum'), gs=document.getElementById('genSummary');
   if(sum&&gs)sum.textContent=gs.textContent||'';
+  renderCutuiCountSeg(); // 장수 드롭다운(#countSel) → 버튼 세그 미러(프로토타입)
 }
+// (2026-07-21 P7') 장수 = #countSel(드롭다운, 스키마가 채움)을 버튼 세그로 미러. 값은 여전히 countSel이 단일소스.
+function renderCutuiCountSeg(){
+  const cf=document.getElementById('countField'), sel=document.getElementById('countSel');
+  if(!cf||!sel)return;
+  let seg=document.getElementById('cutuiCountSeg');
+  if(!seg){ seg=document.createElement('div'); seg.id='cutuiCountSeg'; seg.className='cutui-countseg'; cf.appendChild(seg); }
+  const cur=sel.value;
+  seg.innerHTML=[].map.call(sel.options,o=>
+    `<button type="button" class="${o.value===cur?'on':''}" onclick="pickCutuiCount('${o.value}')">${o.text}</button>`).join('');
+}
+function pickCutuiCount(v){ const sel=document.getElementById('countSel'); if(!sel)return; sel.value=v; updateBar(); }
 // "Create template" 버튼: Custom 모드 + 사진(영상 제외)일 때만 노출, 프롬프트 있으면 활성.
 function syncTplBtn(){
   const b=document.getElementById('tplBtn'); if(!b)return;
@@ -3707,7 +3737,9 @@ function updateBarCore(){
   const isReel=isVideoGen();
   const reelDur=(state.mode==='custom'&&curToolType()==='video')?curDuration():'5';
   const n=curCount(); const o=isReel?`1 reel (${reelDur}s)`:`${n} photo${n===1?'':'s'}`;
-  s.innerHTML=`${title} → ${o}${isReel?'':' · '+effModelLabel()}${costTxt}${isReel?' <span style="color:var(--faint)">(reels take a few minutes)</span>':''}`;
+  // (2026-07-21 P7') shopping에선 모델이 비선택지(픽커 숨김)이자 벤더명 노출 금지 → 요약에서 모델명 제외. custom은 유지.
+  const showModel=!isReel&&state.mode!=='shopping';
+  s.innerHTML=`${title} → ${o}${showModel?' · '+effModelLabel():''}${costTxt}${isReel?' <span style="color:var(--faint)">(reels take a few minutes)</span>':''}`;
 }
 
 // ── 실제 생성 ──
