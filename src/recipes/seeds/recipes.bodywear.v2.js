@@ -10,16 +10,20 @@
  *     · 레시피 프롬프트는 **품목-중립**(the uploaded garment) — 형태는 axis가 주입.
  *
  * ── 범위 ──
- *  no-person만(Product Cut + Hero). On-model = faceswap 파이프라인 대기(14_underwear_작업기록.md).
  *  Set = 이미지 1장 전제(유저가 세트를 한 컷으로 촬영). 2피스 업로드는 후속.
  *
  * ── 패밀리 ──
- *  1. Bodywear Product Cut (◈2) — 사람 없는 정물. meta.axes=['garment'].
- *     컷 4: Flat Lay / Ghost Mannequin / Packaging / Fabric Macro (샷타입, 품목-중립).
- *  2. Bodywear Hero (◈2) — 브랜드 무드. meta.axes=['garment'].
- *     무드 컷 = 품목별 조건부: 각 컷 meta.garment=[적용 품목] → studio가 선택 품목으로 필터·재렌더.
- *       Clean[all] · Athletic[bottoms,swim] · Noir[bottoms,bra,set] · Lace[bra,set] ·
- *       Silk[bra,set] · Boudoir[bra,set] · Beach[swim] · Poolside[swim]
+ *  1. Bodywear Product Cut (◈2) — 사람 없는 정물. meta.axes=['garment','angle'].
+ *     컷 3: Flat Lay / Ghost Mannequin / Fabric Macro (샷타입, 품목-중립).
+ *  2. Bodywear Worn Cut (◈3) — 얼굴 없는 온바디 존 크롭. meta.axes=['garment','skin'].
+ *  3. Bodywear On Model (◈5) — 로스터 얼굴 + faceswap. meta.picker='model'.
+ *
+ * ── 삭제 이력 ──
+ *  · Packaging 컷 (2026-07-20) — 없는 색상·멀티팩을 날조하는 shots였다(상세페이지 허위표기 위험).
+ *  · Bodywear Hero 패밀리 전체 = 부모 + 무드 8(Clean·Athletic·Noir·Lace·Silk·Boudoir·Beach·Poolside)
+ *    (2026-07-20, 사용자 지시). ⚠️ 이로써 garment='swim'의 **무드 게이트 소비자가 사라졌다** —
+ *    커밋 b838452가 축 개편을 기각하며 든 근거("swim은 Beach·Poolside·Athletic 무드 게이트라 잉여 아님")는
+ *    더 이상 유효하지 않다. swim은 여전히 Product/Worn/On Model 3곳이 쓰므로 값 자체는 유지.
  *
  * 중첩 규약: 자식 config.parent_id=slug(부모). deepMerge, 자식은 look·shots만 오버라이드. 자식은 카드 제외.
  * 입력: 제품 이미지 1장. reference_strategy='product_composite'. 비용 image=ceil(count×0.5)=◈2.
@@ -45,10 +49,10 @@ module.exports = [
     "name": "Bodywear Product Cut", "output_type": "image_set", "credit_cost": 2, "sort_order": 1,
     "rationale": "One innerwear or swimwear photo into clean, catalog-ready product shots — no model, no skin. Pick your garment type (bottoms, bra, set or swimwear) and a cut (flat lay, ghost mannequin or fabric macro); the exact piece is locked to your reference. Default cut is a clean ghost-mannequin packshot.",
     "meta": {
-      "axes": ["garment"],
+      "axes": ["garment", "angle"],
       "cuts": ["bodywear-flat-lay", "bodywear-ghost-mannequin", "bodywear-fabric-macro"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "No person/skin. garment axis (studio AXIS_DEFS.garment) injects the shape hint (bottoms→waistband, bra→cup form, set→coordinated, swim→swimwear). Cut children inherit output/subject and override shots+look. Verify color, print, trims lock to the reference with no morph; ghost form must not read as bare skin."
+      "render_notes": "No person/skin. garment axis (studio AXIS_DEFS.garment) injects the shape hint (bottoms→waistband, bra→cup form, set→coordinated, swim→swimwear). angle axis는 **컷 조건부**(studio CUT_AXES.angle) — 고스트 마네킹을 골랐을 때만 칩이 뜬다. flat-lay는 top-down이 정의고 fabric-macro는 매크로라 각도 선택이 자기 shots와 싸운다. Cut children inherit output/subject and override shots+look. Verify color, print, trims lock to the reference with no morph; ghost form must not read as bare skin."
     },
     "config": {
       "schema_version": 1, "mode": "product",
@@ -131,145 +135,6 @@ module.exports = [
   },
 
   // ════════════════════════════════════════════════════════════════════════
-  // 패밀리 2 · Bodywear Hero — 브랜드 무드 (품목 = garment axis · 무드 = 품목별 조건부 컷)
-  //   각 무드 컷 meta.garment=[적용 품목] → studio가 선택 garment로 필터·재렌더.
-  // ════════════════════════════════════════════════════════════════════════
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero",
-    "name": "Bodywear Hero", "output_type": "image_set", "credit_cost": 2, "sort_order": 6,
-    "rationale": "One photo into a premium brand hero for your PDP and ads — no model, no shoot. Pick your garment type and a mood; the mood options adapt to the garment (lace/silk for a bra, clean/athletic for bottoms, beach for swimwear). The garment is the hero, locked to your reference.",
-    "meta": {
-      "axes": ["garment"],
-      "cuts": ["bodywear-clean", "bodywear-athletic", "bodywear-noir", "bodywear-lace", "bodywear-silk", "bodywear-boudoir", "bodywear-beach", "bodywear-poolside"],
-      "flags": ["experimental", "needs_human_review"],
-      "render_notes": "No person. garment axis injects shape hint. Mood cuts are CONDITIONAL on garment: each cut carries meta.garment=[applicable types]; studio filters the mood list by the selected garment and re-renders on change. Default mood = Clean (all garments)."
-    },
-    "config": {
-      "schema_version": 1, "mode": "product",
-      "output": { "type": "image_set", "count": 4, "aspect_ratio": "4:5" },
-      "subject": { "type": "product", "reference_strategy": "product_composite", "min_refs": 1 },
-      "look": {
-        "style_preset": "Editorial",
-        "attributes": ["lighting:dramatic_key_plus_rim", "color:neutral_true", "texture:fabric_weave", "context:editorial_set"],
-        "extra_positive": "premium editorial brand hero photography, the uploaded garment as the dramatic centerpiece shown as a clean flat or hollow ghost form with no person, exact piece locked to the reference — color, print, trims and fabric identical with no morph, cinematic directional lighting revealing fabric texture, rich premium mood, tack-sharp, elegant negative space",
-        "extra_negative": "person, model, human, skin, body, warped silhouette, color or print mismatch, flat lifeless lighting, plastic look, harsh blown highlights, cluttered background, watermark"
-      },
-      "shot_strategy": "list",
-      "shots": [
-        { "scene": "editorial set, dramatic key + rim", "pose": "garment hero-centered, front, flat or ghost form", "composition": "medium_shot" },
-        { "scene": "same set, deeper shadow", "pose": "three-quarter emphasizing fabric texture", "composition": "medium_shot" },
-        { "scene": "moody backdrop, tight crop", "pose": "macro on the logo/trim in dramatic light", "composition": "closeup" },
-        { "scene": "editorial set, wide", "pose": "full garment with generous negative space", "composition": "full_body" }
-      ]
-    }
-  },
-  // ─── 무드 컷 (parent_id=bodywear-hero, meta.garment=적용 품목) ────────────
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Clean",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 7,
-    "meta": { "garment": ["bottoms", "bra", "set", "swim"] },
-    "rationale": "Bright, clean minimal studio — the versatile default mood for any piece.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "clean minimal brand hero, the garment on a bright plain seamless background, soft even high-key light, crisp modern retail mood, no person, tack-sharp", "extra_negative": "person, model, skin, body, muddy color, harsh shadow, plastic look, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "bright plain seamless, soft high-key", "pose": "garment hero-centered, ghost or flat form", "composition": "medium_shot" },
-        { "scene": "same, gentle shadow", "pose": "three-quarter clean angle", "composition": "medium_shot" },
-        { "scene": "same, tight crop", "pose": "macro of logo/trim", "composition": "closeup" },
-        { "scene": "bright set, wide", "pose": "full garment, airy negative space", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Athletic",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 8,
-    "meta": { "garment": ["bottoms", "swim"] },
-    "rationale": "Dynamic athletic energy — crisp bold light for performance fabric.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "dynamic athletic brand hero, the garment as a clean ghost form with crisp bright directional light, bold graphic energy, performance-fabric mood, saturated true color, no person, tack-sharp", "extra_negative": "person, model, skin, body, dull flat light, muddy color, plastic look, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "bright graphic backdrop, crisp light", "pose": "garment hero-centered, energetic ghost form", "composition": "medium_shot" },
-        { "scene": "bold color sweep", "pose": "three-quarter dynamic angle", "composition": "medium_shot" },
-        { "scene": "clean backdrop, tight crop", "pose": "macro of stretch band / mesh", "composition": "closeup" },
-        { "scene": "graphic set, wide", "pose": "full garment, bold negative space", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Noir",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 9,
-    "meta": { "garment": ["bottoms", "bra", "set"] },
-    "rationale": "Deep-shadow noir — the garment glows against darkness with dramatic light.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "noir brand hero, the garment on a deep matte black surface with dramatic directional light, chiaroscuro shadow, crisp rim revealing fabric texture, opulent premium mood, no person, tack-sharp", "extra_negative": "person, model, skin, body, flat lighting, washed-out background, plastic look, cluttered props" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "matte black surface, warm key + rim", "pose": "garment glowing in the dark, ghost form", "composition": "medium_shot" },
-        { "scene": "black backdrop, side light", "pose": "three-quarter, deep shadow", "composition": "medium_shot" },
-        { "scene": "black surface, tight crop", "pose": "macro of logo/trim with highlights", "composition": "closeup" },
-        { "scene": "noir set, wide", "pose": "full garment, black negative space", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Lace",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 10,
-    "meta": { "garment": ["bra", "set"] },
-    "rationale": "Delicate lace mood — soft light celebrating lace detail and texture.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "delicate lace brand hero, the garment on a soft neutral surface with gentle diffuse light celebrating the lace detail, fine texture and scalloped edges, refined feminine premium mood, no person, tack-sharp fabric detail", "extra_negative": "person, model, skin, body, harsh light, garish color, plastic look, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "soft neutral surface, diffuse light", "pose": "garment hero-centered, lace detail forward", "composition": "medium_shot" },
-        { "scene": "same, gentle shadow", "pose": "three-quarter on the lace texture", "composition": "medium_shot" },
-        { "scene": "tight crop", "pose": "macro of the lace / scalloped edge", "composition": "closeup" },
-        { "scene": "soft set, wide", "pose": "full garment, delicate negative space", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Silk",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 11,
-    "meta": { "garment": ["bra", "set"] },
-    "rationale": "Flowing silk mood — champagne tones and gentle sheen, tactile luxe.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "luxury brand hero on flowing draped silk, soft folds and gentle sheen in muted champagne tones, tactile sensual premium mood, soft directional light, the garment tack-sharp resting on the sheen, no person", "extra_negative": "person, model, skin, body, wrinkled cheap fabric, garish color, plastic look, harsh shadow, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "champagne silk folds, soft light", "pose": "garment resting in the drape, hero-centered", "composition": "medium_shot" },
-        { "scene": "silk sheen, gentle shadow", "pose": "three-quarter nestled in folds", "composition": "medium_shot" },
-        { "scene": "silk, tight crop", "pose": "macro of the piece against the sheen", "composition": "closeup" },
-        { "scene": "draped silk set, wide", "pose": "full garment amid flowing fabric", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Boudoir",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 12,
-    "meta": { "garment": ["bra", "set"] },
-    "rationale": "Tasteful boudoir mood — warm low light and intimate premium atmosphere, garment only.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "tasteful boudoir brand hero, the garment on soft bedding or a velvet surface with warm low intimate light, romantic premium atmosphere, refined and elegant, no person, tack-sharp", "extra_negative": "person, model, skin, body, exposed body, harsh light, garish color, plastic look, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "soft bedding, warm low light", "pose": "garment styled hero-centered", "composition": "medium_shot" },
-        { "scene": "velvet surface, gentle shadow", "pose": "three-quarter intimate mood", "composition": "medium_shot" },
-        { "scene": "tight crop", "pose": "macro of lace/trim in warm light", "composition": "closeup" },
-        { "scene": "boudoir set, wide", "pose": "full garment, warm negative space", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Beach",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 13,
-    "meta": { "garment": ["swim"] },
-    "rationale": "Sunlit beach mood — sand, bright sky and natural light for swimwear.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "sunlit beach brand hero, the swimwear on warm sand with bright natural sunlight and a soft ocean-toned backdrop, fresh summer premium mood, crisp true color, no person, tack-sharp", "extra_negative": "person, model, skin, body, dull flat light, muddy color, plastic look, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "warm sand, bright sunlight", "pose": "swimwear laid hero-centered", "composition": "medium_shot" },
-        { "scene": "ocean-toned backdrop", "pose": "three-quarter in natural light", "composition": "medium_shot" },
-        { "scene": "sand texture, tight crop", "pose": "macro of the fabric in sunlight", "composition": "closeup" },
-        { "scene": "beach set, wide", "pose": "full piece, airy summer negative space", "composition": "full_body" } ] }
-  },
-  {
-    "mode": "product", "vertical": "bodywear", "category": "Hero", "name": "Bodywear Poolside",
-    "output_type": "image_set", "credit_cost": 2, "sort_order": 14,
-    "meta": { "garment": ["swim"] },
-    "rationale": "Poolside mood — clean tile, water reflections and bright resort light for swimwear.",
-    "config": { "schema_version": 1, "mode": "product", "parent_id": "bodywear-hero",
-      "look": { "extra_positive": "poolside brand hero, the swimwear on clean pale tile beside bright turquoise water with soft reflections and crisp resort daylight, fresh modern premium mood, saturated true color, no person, tack-sharp", "extra_negative": "person, model, skin, body, harsh blown highlights, muddy color, plastic look, cluttered background" },
-      "shot_strategy": "list", "shots": [
-        { "scene": "pale tile, turquoise water, resort daylight", "pose": "swimwear laid hero-centered", "composition": "medium_shot" },
-        { "scene": "water reflections", "pose": "three-quarter beside the water", "composition": "medium_shot" },
-        { "scene": "tile, tight crop", "pose": "macro of the fabric in bright light", "composition": "closeup" },
-        { "scene": "poolside set, wide", "pose": "full piece, bright resort negative space", "composition": "full_body" } ] }
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
   // 패밀리 3 · Bodywear Worn Cut — 얼굴 없는 성인 부위 크롭 (몸 생성 · faceswap 불필요)
   //   품목=garment axis(존 조건부 필터 + 성별 함의) · 피부톤=skin axis. age 축 의도적 제외(미성년 인접 리스크).
   //   성별(설계 §3): bra·set 존→여성 함의, bottoms·swim→남녀 중립. 전 존 faceless·adult 25+·needs_human_review.
@@ -280,7 +145,8 @@ module.exports = [
     "name": "Bodywear Worn Cut", "output_type": "image_set", "credit_cost": 3, "sort_order": 15,
     "rationale": "Show your innerwear or swimwear worn on the body — no photoshoot, no model booking. Pick your garment type (bottoms, bra, set or swimwear) and a body-zone crop; every shot is faceless by design and the exact piece stays locked to your reference. A model-face version is on the way. The default zone is a clean front crop.",
     "meta": {
-      "axes": ["garment", "skin"],
+      "axes": ["garment", "skin", "body"],
+      "auto_body": true,
       "cuts": ["bodywear-front-crop", "bodywear-side-profile", "bodywear-back-crop", "bodywear-waistband-detail", "bodywear-bust-fit"],
       "flags": ["experimental", "needs_human_review"],
       "render_notes": "Faceless on-body composite: an adult body (25+) is generated wearing the uploaded garment, no model, no face in frame. meta.axes = studio chip selectors — garment (drives which zones show + implied gender: bra/set→female, bottoms/swim→neutral) and skin tone, injected into the prompt at generate time. Zone children carry meta.garment so the studio filters the zone list by the selected garment (same conditional pattern as Hero moods). config.relax_apparel_guards flags the future engine keyed-strip to run off THIS flag, not the shared preset name (leak-safe). High risk zone — verify no face in frame, clearly adult, opaque fit and no morph before delivery. (Face variant with model picker = 'Bodywear On Model', pipeline pending.)"

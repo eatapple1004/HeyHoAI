@@ -66,6 +66,7 @@ for (const v of VERTICALS) {
     if (r.meta && r.meta.picker) card.picker = r.meta.picker;    // 모달 서브픽커 종류('model' = 모델 선택 그리드)
     if (r.meta && r.meta.axes) card.axes = r.meta.axes;          // 모달 축 칩(skin/age/concept) — 프롬프트 주입형(시드 변형 아님)
     if (r.meta && r.meta.post) card.post = r.meta.post;          // 후처리 신호(['faceswap'] = On Model stage-2 트리거)
+    if (r.meta && r.meta.auto_body) card.auto_body = true;       // 모델 픽커 없이 최상단 체형+크로키 주입(Worn Cut)
     if (r.preview) card.preview = r.preview;                      // 예시 이미지(정적 경로) — 있으면 카드/모달에 노출
     return card;
   });

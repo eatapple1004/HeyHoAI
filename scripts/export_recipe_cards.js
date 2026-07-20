@@ -98,6 +98,7 @@ for (const v of FE_VERTICALS) {
       ...(r.picker ? { picker: r.picker } : {}),             // 모달 서브픽커 종류('model' = 모델 그리드)
       ...(r.axes ? { axes: r.axes } : {}),                   // 모달 축 칩(skin/age/concept)
       ...(r.post ? { post: r.post } : {}),                   // 후처리 신호(['faceswap'] = On Model stage-2)
+      ...(r.auto_body ? { auto_body: true } : {}),           // 픽커 없는 체형 주입(Worn Cut) — 서버에 autoBody로 전달
       ...(r.preview ? { preview: r.preview } : {}),          // 예시 이미지 경로
     };
   });

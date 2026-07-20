@@ -42,9 +42,10 @@ module.exports = [
     "sort_order": 1,
     "rationale": "One jewelry photo into clean, catalog-ready product shots — no model, no studio. Sellers pick a cut (flat lay, floating, pedestal or macro detail) and get PDP-ready images with the exact piece locked to the reference. The default cut is a clean floating studio shot.",
     "meta": {
+      "axes": ["jewelry"],
       "cuts": ["jewelry-flat-lay", "jewelry-floating", "jewelry-pedestal", "jewelry-macro-detail"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "Parent = shared base + default clean floating studio. Cut children inherit output/subject and override shots + look. Verify metal color, gemstones, engraving and clasp match the reference with no morph."
+      "render_notes": "Parent = shared base + default clean floating studio. Cut children inherit output/subject and override shots + look. jewelry axis(studio AXIS_DEFS.jewelry) = 종류 힌트 — 컷 프롬프트가 전부 'the piece' 단수·종류중립이라 ①귀걸이가 한 짝만 나오고 ②'upright on the riser'가 목걸이·팔찌에 불가능했다. 축이 pair·drape만 짧게 보탠다(형태는 사진이 이긴다). Verify metal color, gemstones, engraving and clasp match the reference with no morph."
     },
     "config": {
       "schema_version": 1,
@@ -546,9 +547,10 @@ module.exports = [
     "sort_order": 11,
     "rationale": "One jewelry photo into a premium editorial hero for your PDP and ads — no studio. Pick a mood style (noir gold, marble plinth, silk drape, spotlight, floating luxe). The piece is the hero, locked to your reference. The default style is Noir Gold.",
     "meta": {
+      "axes": ["jewelry"],
       "cuts": ["jewelry-noir-gold", "jewelry-marble-plinth", "jewelry-silk-drape", "jewelry-spotlight", "jewelry-floating-luxe"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "Parent = shared base + default Noir Gold. Style children override look + shots. Verify metal color, gemstones and reflections match the reference across every mood."
+      "render_notes": "Parent = shared base + default Noir Gold. Style children override look + shots. jewelry axis = Product Cut과 동일한 종류 힌트 — Hero도 'piece upright hero-centered'(marble-plinth)를 갖고 있어 목걸이·팔찌에 같은 모순이 있었다. Verify metal color, gemstones and reflections match the reference across every mood."
     },
     "config": {
       "schema_version": 1,

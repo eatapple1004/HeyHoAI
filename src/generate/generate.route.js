@@ -35,7 +35,7 @@ const safeRefImage = (p) => (typeof p === 'string' && p && !p.includes('..') && 
 const safeModelPath = (p) => (typeof p === 'string' && /^\/img\/models\/(kids\/)?[\w-]+\.(jpe?g|png|webp)$/i.test(p)) ? p : null;
 const ROSTER_ADULT = require('../models/roster.v1.js');
 const ROSTER_KIDS = require('../models/roster.kids.v1.js');
-const { BODY_TYPES } = require('../models/bodyTypes.js');
+const { BODY_TYPES, idealBody } = require('../models/bodyTypes.js');
 /**
  * 로스터 경로 → 대본 작성기가 알아야 할 모델 메타 + **외모 서술**.
  * 왜 필요한가: 대본 작성기는 모델 사진을 안 본다(제품 사진만 비전 입력). 그래서 모델을 "정확히" 묘사하려면
@@ -243,6 +243,20 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       && (req.body.autoModel === 'true' || req.body.autoModel === true);
     // 클로즈업 레시피(주얼리)는 얼굴만 — 클라가 rmShowsBody로 판정해 알려준다(서버는 레시피를 모른다).
     const autoWithBody = !(req.body.autoNoBody === 'true' || req.body.autoNoBody === true);
+    // ── 얼굴 없는 온바디(Worn Cut) 체형 주입 ─────────────────────────────────
+    //   Worn Cut은 모델 픽커가 없어 위 로스터 경로를 통째로 안 탄다 → 몸이 look의
+    //   "a realistic well-groomed adult body" 한 줄로만 묘사돼 gemini가 평균체형으로 정규화했다.
+    //   여기서 **최상단 체형 텍스트 + 크로키**만 붙인다. 얼굴 문구(autoPersonaClause)는 절대 안 붙인다 —
+    //   이 컷은 negative로 face/head를 하드 배제하는 faceless 설계다(시드 BODY_SAFETY_NEG).
+    //   체형은 추첨하지 않는다 — 성별별 **최상단 고정**(idealBody). 로스터 Auto(autoBodyText)의
+    //   share 가중 추첨과 다른 점이다: 거긴 slender가 30% 섞인다.
+    //   성별은 studio의 body 축(Model: Women|Men)이 bodyGender로 보낸다 — bra·set은 품목이
+    //   성별을 확정하지만 bottoms·swim은 남녀 공용이라 품목만으로는 못 가른다.
+    const autoBodyReq = req.body.autoBody === 'true' || req.body.autoBody === true;
+    //   bra·set은 품목이 성별을 확정하므로 유저가 Men을 골라도 여성으로 강제한다(autoForcedGender와 같은 규칙).
+    const wornGender = (autoGarment === 'bra' || autoGarment === 'set') ? 'female'
+      : (String(req.body.bodyGender || '') === 'male' ? 'male' : 'female');
+    const wornBody = (autoBodyReq && !pickedModelMeta) ? idealBody(wornGender, 0) : null;
     const batchId = String(req.body.batchId || '').slice(0, 64) || null; // 장별 분할 요청을 한 배치로 묶는 키
     // 유저 선택값(컷·배경색·배경·축·디테일·크기). 지금까지 프롬프트 문자열에 녹아 사라졌던 것들 —
     //   결과 카드에 되보여주려고 표시용 라벨로 받아 metadata에 그대로 싣는다(해석·검증은 안 한다).
@@ -287,6 +301,10 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       if (b.body_text) finalPrompt += `\n${b.body_text}`;
       else if (b.build && faceswapMode) finalPrompt += ` She/He has ${b.build}.`; // 구 로스터 폴백(v2는 전원 body_text 보유)
     }
+    // Worn Cut 체형 — 위 로스터 경로와 상호배타(wornBody는 pickedModelMeta 없을 때만 만들어진다).
+    //   크로키를 실제로 첨부하므로(아래 ref 블록) 볼륨텍스트의 "body-shape guide image" 참조가 유효하다
+    //   → stripCroquisRefs를 태우지 않는다. 텍스트만 넣으면 볼륨이 깎인다(기록된 실패 모드).
+    if (wornBody) finalPrompt += `\n${wornBody.bodyText}`;
 
     // Reference 이미지 결정 (최대 14개)
     const referenceImages = []; // { base64, source }
@@ -325,6 +343,13 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
         const cp = path.join(process.cwd(), 'public', pickedModelMeta.croquis_path.replace(/^\//, ''));
         if (fs.existsSync(cp)) referenceImages.push({ base64: fs.readFileSync(cp).toString('base64'), source: 'croquis' });
       } catch (e) { logger.warn({ err: e, id: pickedModelMeta.croquis_path }, 'croquis ref load failed — 텍스트만으로 진행'); }
+    }
+    // Worn Cut 크로키 — 위와 같은 이유로 텍스트와 반드시 짝을 이룬다. 제품 이미지 뒤에 붙여 garment 우선순위 유지.
+    if (wornBody && wornBody.croquisPath && referenceImages.length < 14) {
+      try {
+        const cp = path.join(process.cwd(), 'public', wornBody.croquisPath.replace(/^\//, ''));
+        if (fs.existsSync(cp)) referenceImages.push({ base64: fs.readFileSync(cp).toString('base64'), source: 'croquis' });
+      } catch (e) { logger.warn({ err: e, id: wornBody.croquisPath }, 'worn-cut croquis ref load failed — 텍스트만으로 진행'); }
     }
 
     if (referenceImages.length > 0) {

@@ -2991,7 +2991,7 @@ function setModalPreview(r){
   if(img){ pv.style.background=grad; pv.innerHTML=''; const im=new Image(); im.alt=''; im.style.cssText='width:100%;height:100%;object-fit:cover;display:block'; im.onerror=ph; im.src=img; pv.appendChild(im); }
   else ph();
 }
-function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));const bg=document.getElementById('rmCutBg');if(bg)bg.classList.toggle('show',BG_CUTS.has(id));setModalPreview(modalRecipeObj);}
+function setModalCut(id){modalCutId=id;document.querySelectorAll('#rmCuts .cut-card').forEach(b=>b.classList.toggle('on',b.getAttribute('data-cut')===id));const bg=document.getElementById('rmCutBg');if(bg)bg.classList.toggle('show',BG_CUTS.has(id));renderModalAxes(modalRecipeObj,true);setModalPreview(modalRecipeObj);} // 컷 조건부 축(angle) 노출 갱신 — preserve로 기존 축 선택 유지
 
 // ── 모델 픽커 (Studio Model Cut · picker==='model') ──
 let modalModelId=null, modalModelFilter='all', modalModelAge='adult', modalBodyFilter='all'; // modalModelAge: 'adult'|'kids' 탭(Ad Video와 동일 축 분리) · modalBodyFilter: 체형(성인만)
@@ -3129,10 +3129,32 @@ const AXIS_DEFS={
   //   'opaque'는 뺐다 — 몸이 드러나는 on-model·worn-cut은 자체 look에 opaque + sheer 네거티브를
   //      이미 갖고 있고, product-cut·hero는 사람이 없어 무의미하다(확인함).
   garment:{title:'Garment type',attr:'gm',mode:'chip',opts:[['auto','Auto',''],['bottoms','Bottoms','bottoms only, waistband forward'],['bra','Bra','a bra top only, cups and band formed'],['set','Set','a matching two-piece set, shown together'],['swim','Swimwear','swimwear in swim fabric']]},
+  // 고스트 마네킹 전용(CUT_AXES.angle). 컷의 4샷은 원래 front/3-4/back/detail을 이미 돌지만
+  //   **어느 각도로 찍을지 고를 수단이 없었다** — 이 축이 그 선택을 준다(샷 다양성은 유지).
+  //   ⚠️ 일반 ghost-mannequin-cut의 look에 박혀 있던 'front-facing'은 제거했다 —
+  //      그 문구가 자기 shots[1](three-quarter)·shots[2](back view)와 정면으로 싸우고 있었다.
+  angle:{title:'Angle',attr:'an',mode:'chip',opts:[['auto','Auto',''],['front','Front','shown front-facing, squared to camera'],['three-quarter','3/4','shown at a three-quarter turn revealing depth and the side seam'],['back','Back','shown from behind, rear panel and seams forward']]},
+  // 주얼리 정물(Product Cut·Hero) 전용. Worn Cut·On Model은 착용 부위 자식컷이 이미 종류를 고정해 불필요.
+  //   왜 필요한가 — 정물 컷 프롬프트가 전부 "the piece" **단수·종류중립**이라 두 가지가 실제로 깨진다:
+  //     ① 귀걸이가 **한 짝만** 렌더된다(pair를 말하는 문구가 어디에도 없었다)
+  //     ② "piece upright on the riser"(pedestal)·"piece upright hero-centered"(marble-plinth)는
+  //        목걸이·팔찌에 물리적으로 불가능하다 → 세우지 말고 늘어뜨리라고 말해줘야 한다.
+  //   값은 그 두 가지만 짧게 진다. 형태·재질은 업로드 사진이 이미 이긴다(garment 축과 같은 원칙).
+  jewelry:{title:'Jewelry type',attr:'jw',mode:'chip',opts:[['auto','Auto',''],['ring','Ring','a ring, band and setting forward'],['necklace','Necklace','a necklace, the chain arranged in a natural drape rather than standing upright'],['earrings','Earrings','a matching pair of earrings, both shown together'],['bracelet','Bracelet','a bracelet, resting in a natural open circle rather than standing upright']]},
+  // Worn Cut 전용 성별. **프롬프트 구절이 빈 문자열인 이유**: 체형은 클라가 문장으로 만들지 않는다 —
+  //   서버가 bodyGender로 받아 bodyTypes.idealBody(성별)의 볼륨텍스트 + 크로키 이미지를 붙인다
+  //   (이미지 없이 텍스트만 가면 gemini가 볼륨을 깎는다). 여기선 어느 쪽인지만 고른다.
+  //   garment로는 못 가른다 — bra·set은 여성 확정이지만 bottoms·swim은 남녀 공용이다.
+  body:{title:'Model',attr:'bd',mode:'chip',opts:[['women','Women',''],['men','Men','']]},
 };
-const AXIS_ORDER=['skin','age','concept','garment'];
-const AXIS_DEFAULT={skin:'auto',age:'auto',concept:'studio',garment:'auto'};
-let modalAxis={skin:'auto',age:'auto',concept:'studio',garment:'auto'};
+const AXIS_ORDER=['skin','age','concept','garment','angle','jewelry','body'];
+const AXIS_DEFAULT={skin:'auto',age:'auto',concept:'studio',garment:'auto',angle:'auto',jewelry:'auto',body:'women'};
+let modalAxis={skin:'auto',age:'auto',concept:'studio',garment:'auto',angle:'auto',jewelry:'auto',body:'women'};
+// 컷 조건부 축 — 그 컷을 골랐을 때만 칩이 뜨는 축(BG_CUTS와 같은 패턴).
+//   angle은 고스트 마네킹에서만 뜻이 있다: flat-lay는 top-down이 정의고 fabric-macro는 매크로라
+//   "뒤에서" 같은 값이 자기 shots와 싸운다. 축을 부모에 달되 노출은 컷으로 건다.
+const CUT_AXES={angle:new Set(['bodywear-ghost-mannequin','ghost-mannequin-cut'])};
+function axisAllowedForCut(k,cutId){ const s=CUT_AXES[k]; return !s || s.has(cutId); }
 function axisOptHtml(k,d,o,cur){
   const on=cur===o[0]?' on':'';
   if(d.mode==='swatch'){ const bg=o[3]||'#888';
@@ -3141,12 +3163,14 @@ function axisOptHtml(k,d,o,cur){
     return `<button type="button" class="cut-card${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')"><span class="cc-thumb" style="background:${bg}"></span><span class="cc-label">${esc(o[1])}</span></button>`; }
   return `<button type="button" class="ms-chip${on}" data-${d.attr}="${esc(o[0])}" onclick="setModalAxis('${k}','${esc(o[0])}')">${esc(o[1])}</button>`;
 }
-function renderModalAxes(r){
+// preserve=true → 모달 안에서 컷을 바꿔 다시 그리는 경우. 이미 고른 축 값을 초기화하면 안 된다
+//   (품목을 bra로 골라둔 채 컷만 바꿨는데 auto로 돌아가는 버그).
+function renderModalAxes(r,preserve){
   const w=document.getElementById('rmAxes'); if(!w)return;
-  const axes=(r&&r.axes)||[];
+  const axes=((r&&r.axes)||[]).filter(k=>axisAllowedForCut(k,modalCutId)); // 컷 조건부 축 제외
   if(!axes.length){ w.style.display='none'; w.innerHTML=''; return; }
   const keep=(state.recipeId===r.id&&state.axis); // 재오픈 시 기존 선택 유지
-  AXIS_ORDER.forEach(k=>{ modalAxis[k]=(keep&&state.axis[k])?state.axis[k]:AXIS_DEFAULT[k]; });
+  if(!preserve)AXIS_ORDER.forEach(k=>{ modalAxis[k]=(keep&&state.axis[k])?state.axis[k]:AXIS_DEFAULT[k]; });
   w.style.display='';
   w.innerHTML=axes.filter(k=>AXIS_DEFS[k]).map(k=>{
     const d=AXIS_DEFS[k];
@@ -3164,7 +3188,7 @@ function setModalAxis(k,v){ modalAxis[k]=v; const d=AXIS_DEFS[k]; if(!d)return; 
   }
   if(k==='garment'&&rmIsFaceswap(modalRecipeObj)){ modalModelId=null; renderModalModels(modalRecipeObj); } } // On Model: 품목→로스터 성별 제약 갱신(선택 해제)
 // 선택된 축 → 프롬프트 구절(기본값은 스킵).
-function axisPhrase(){ if(!state.axis)return''; return AXIS_ORDER.map(k=>{ const d=AXIS_DEFS[k]; if(!d)return''; const o=d.opts.find(x=>x[0]===state.axis[k]); return o?o[2]:''; }).filter(Boolean).join(', '); }
+function axisPhrase(){ if(!state.axis)return''; return AXIS_ORDER.map(k=>{ const d=AXIS_DEFS[k]; if(!d)return''; if(!axisAllowedForCut(k,state.cutId))return''; /* 컷 조건부 축은 그 컷일 때만 주입 */ const o=d.opts.find(x=>x[0]===state.axis[k]); return o?o[2]:''; }).filter(Boolean).join(', '); }
 // 유저가 고른 값 → **표시용 라벨**로 굳혀서 결과에 함께 저장한다.
 //   왜 라벨인가: 이 선택들은 지금까지 프롬프트 문자열에 녹아 사라졌다(컷은 resolve URL로만 쓰이고,
 //   배경색·배경·축·디테일은 문장에 합쳐졌다) → 결과만 보고는 뭘 골랐는지 알 길이 없었다.
@@ -3244,7 +3268,7 @@ function selectFromModal(){
   state.cutBg=(sel&&BG_CUTS.has(state.cutId)&&bgi)?bgi.value:''; // 지원 컷 선택 시만 배경색 유지
   state.modelId=(sel&&modalRecipeObj&&modalRecipeObj.picker==='model')?modalModelId:null; // 모델 픽커 템플릿만 유지
   state.bgId=(sel&&modalRecipeObj&&modalRecipeObj.picker==='model')?(modalBgId||'studio'):null; // 배경(Model Cut만, 기본 Studio)
-  state.axis=(sel&&modalRecipeObj&&modalRecipeObj.axes&&modalRecipeObj.axes.length)?{skin:modalAxis.skin,age:modalAxis.age,concept:modalAxis.concept,garment:modalAxis.garment}:null; // 축(피부색·나이·컨셉 / bodywear garment)
+  state.axis=(sel&&modalRecipeObj&&modalRecipeObj.axes&&modalRecipeObj.axes.length)?{skin:modalAxis.skin,age:modalAxis.age,concept:modalAxis.concept,garment:modalAxis.garment,angle:modalAxis.angle,jewelry:modalAxis.jewelry,body:modalAxis.body}:null; // 축(피부색·나이·컨셉 / bodywear garment / 고스트샷 angle / 주얼리 종류 / Worn Cut 성별)
   renderRecipes();updateBar();closeRecipeModal();
   if(sel)closeTemplatePicker(); // (테스트) 선택 완료 → 픽커 모달 닫고 컴포즈 박스로 복귀
 }
@@ -5161,6 +5185,12 @@ async function generateImages(r,subj,count,pending){
     fd.append('autoModel','true');
     if(!rmShowsBody(r))fd.append('autoNoBody','true'); // 주얼리 등 클로즈업 = 얼굴만(체형텍스트는 노이즈)
     if(state.axis&&state.axis.garment&&state.axis.garment!=='auto')fd.append('garment',state.axis.garment); // bra/set → 여성 강제
+  }
+  // 픽커 없는 체형 주입(Worn Cut) — 얼굴은 안 넣고 몸만. autoModel과 상호배타(그쪽은 얼굴 문구가 붙는다).
+  if(r&&r.auto_body&&!(r.picker==='model')){
+    fd.append('autoBody','true');
+    fd.append('bodyGender',(state.axis&&state.axis.body==='men')?'male':'female'); // 성별 → 서버가 그 성별의 최상단 체형 주입
+    if(state.axis&&state.axis.garment&&state.axis.garment!=='auto')fd.append('garment',state.axis.garment);
   }
   // Model 픽커: 선택 로스터를 정체성 레퍼런스(기존) 또는 스왑 타깃(bodywear On Model)으로.
   if(r&&r.picker==='model'&&state.modelId){ const mm=modelById(state.modelId);

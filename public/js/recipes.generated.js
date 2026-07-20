@@ -2,13 +2,13 @@
  * 생성: node scripts/export_recipe_cards.js
  * 소스: docs/섹션명령서/_card_contract.proposed.json (카드 계약 · 시드 credit_cost 단일원)
  * 카드 cost=시드 credit_cost (pricing.js 아님). emoji/grad=FE 결정론 파생(A2c). guards=PREVIEW 전용(resolver L148 미착지 → '보장' 카피 금지).
- * 템플릿이 174→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
+ * 템플릿이 173→~93 재export하면 이 파일만 재생성하면 studio가 자동 반영.
  */
 (function(){
   var R = {
   "generatedFrom": "_card_contract.proposed.json",
-  "total": 174,
-  "new_count": 141,
+  "total": 173,
+  "new_count": 140,
   "overlay_count": 7,
   "guarded_count": 118,
   "provisional_count": 17,
@@ -18,10 +18,10 @@
     "pet"
   ],
   "drift_guard": {
-    "fe_total": 174,
-    "contract_total": 174,
-    "catalog_total": 174,
-    "status_total": 174,
+    "fe_total": 173,
+    "contract_total": 173,
+    "catalog_total": 173,
+    "status_total": 173,
     "ok": true
   },
   "cards": {
@@ -3519,6 +3519,9 @@
             "name": "Ghost Mannequin Cut",
             "preview": null
           }
+        ],
+        "axes": [
+          "angle"
         ]
       }
     ],
@@ -3761,6 +3764,9 @@
             "name": "Jewelry Macro Detail",
             "preview": null
           }
+        ],
+        "axes": [
+          "jewelry"
         ]
       },
       {
@@ -3892,6 +3898,9 @@
             "name": "Jewelry Floating Luxe",
             "preview": null
           }
+        ],
+        "axes": [
+          "jewelry"
         ]
       }
     ],
@@ -3931,103 +3940,8 @@
           }
         ],
         "axes": [
-          "garment"
-        ]
-      },
-      {
-        "id": "bodywear-hero",
-        "cat": "Hero",
-        "name": "Bodywear Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "guards": [],
-        "held": true,
-        "emoji": "✨",
-        "grad": "linear-gradient(150deg,#5ee0d6,#7c6cff)",
-        "cuts": [
-          {
-            "id": "bodywear-clean",
-            "name": "Bodywear Clean",
-            "preview": null,
-            "garment": [
-              "bottoms",
-              "bra",
-              "set",
-              "swim"
-            ]
-          },
-          {
-            "id": "bodywear-athletic",
-            "name": "Bodywear Athletic",
-            "preview": null,
-            "garment": [
-              "bottoms",
-              "swim"
-            ]
-          },
-          {
-            "id": "bodywear-noir",
-            "name": "Bodywear Noir",
-            "preview": null,
-            "garment": [
-              "bottoms",
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-lace",
-            "name": "Bodywear Lace",
-            "preview": null,
-            "garment": [
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-silk",
-            "name": "Bodywear Silk",
-            "preview": null,
-            "garment": [
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-boudoir",
-            "name": "Bodywear Boudoir",
-            "preview": null,
-            "garment": [
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-beach",
-            "name": "Bodywear Beach",
-            "preview": null,
-            "garment": [
-              "swim"
-            ]
-          },
-          {
-            "id": "bodywear-poolside",
-            "name": "Bodywear Poolside",
-            "preview": null,
-            "garment": [
-              "swim"
-            ]
-          }
-        ],
-        "axes": [
-          "garment"
+          "garment",
+          "angle"
         ]
       },
       {
@@ -4102,8 +4016,10 @@
         ],
         "axes": [
           "garment",
-          "skin"
-        ]
+          "skin",
+          "body"
+        ],
+        "auto_body": true
       },
       {
         "id": "bodywear-on-model",

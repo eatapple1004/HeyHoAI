@@ -35,9 +35,10 @@ module.exports = [
     "sort_order": 1,
     "rationale": "One flat garment photo into a clean e-commerce product cut. Sellers pick a cut type (flat lay or ghost mannequin) and get catalog-ready shots with no model or studio. The default cut is a neutral floor flat lay; the cut selector swaps in a specialized child recipe.",
     "meta": {
+      "axes": ["angle"],
       "cuts": ["flat-lay-cut", "ghost-mannequin-cut"],
       "flags": ["experimental", "needs_human_review"],
-      "render_notes": "Parent = shared base + default flat-lay. Cut children inherit output/subject and override shots + look. Ghost mannequin (hollow-body) is high AI-risk — queue for human QA."
+      "render_notes": "Parent = shared base + default flat-lay. Cut children inherit output/subject and override shots + look. Ghost mannequin (hollow-body) is high AI-risk — queue for human QA. angle axis는 **컷 조건부**(studio CUT_AXES.angle) — ghost-mannequin-cut일 때만 노출된다(flat-lay는 top-down이 정의라 각도 선택이 무의미)."
     },
     "config": {
       "schema_version": 1,
@@ -117,7 +118,7 @@ module.exports = [
       "mode": "product",
       "parent_id": "product-cut",
       "look": {
-        "extra_positive": "ghost mannequin invisible-mannequin product photography, the garment holds a natural three-dimensional worn shape with a hollow interior showing the inside collar and back neckline, no visible person or mannequin, front-facing on a light grey seamless backdrop, soft even studio light, crisp true-to-life fabric structure and stitching",
+        "extra_positive": "ghost mannequin invisible-mannequin product photography, the garment holds a natural three-dimensional worn shape with a hollow interior showing the inside collar and back neckline, no visible person or mannequin, on a light grey seamless backdrop, soft even studio light, crisp true-to-life fabric structure and stitching",
         "extra_negative": "visible mannequin, human skin, face, arms, legs, phantom limbs, flat lifeless garment, warped silhouette, extra collar, harsh shadow"
       },
       "shot_strategy": "list",

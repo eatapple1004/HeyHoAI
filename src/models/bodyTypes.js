@@ -99,4 +99,19 @@ function forModel(m) {
   return { body_type: m.body_type, label: def.label, group: g.group, groupLabel: g.label, faceBuild: def.faceBuild, croquis: c.file, croquisPath: `${CROQUIS_DIR}/${c.file}`, bodyText: c.text };
 }
 
-module.exports = { BODY_TYPES, BODY_GROUP, CROQUIS_DIR, assign, forModel };
+/** 성별별 **최상단** 체형 — 모델 픽커가 없는 경로(Worn Cut)에서 쓴다.
+ *  로스터 Auto(autoBodyText)는 share 가중 추첨이라 slender가 30% 섞인다. 여기선 추첨하지 않는다:
+ *  "몸매 최상단 고정"(사용자 지시 2026-07-20)이라 각 성별의 이상형 버킷에서만 뽑는다.
+ *    여 = female:ideal(slim-thick 아워글래스) · 남 = male:fit_*(V-taper. 크로키 파일명도 m_ideal_*).
+ *  버킷 안에서는 변형을 돌려 4샷이 똑같이 굳지 않게 한다(전부 같은 등급이라 하향 없음). */
+const IDEAL_BUCKETS = { female: ['female:ideal'], male: ['male:fit_v6f', 'male:fit_v3f'] };
+
+function idealBody(gender, idx) {
+  const keys = IDEAL_BUCKETS[gender === 'male' ? 'male' : 'female'];
+  const variants = keys.flatMap((k) => (BODY_TYPES[k] ? BODY_TYPES[k].croquis : []));
+  if (!variants.length) return null;
+  const c = variants[Math.abs(idx || 0) % variants.length];
+  return { bodyText: c.text, croquisPath: `${CROQUIS_DIR}/${c.file}`, croquis: c.file };
+}
+
+module.exports = { BODY_TYPES, BODY_GROUP, CROQUIS_DIR, assign, forModel, idealBody };

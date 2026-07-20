@@ -4,12 +4,12 @@
     "is_new": "name이 recipes.<v>.js(v1)에 없으면 true; v1 없는 카탈로그=전부 true",
     "id": "slug(name) — PROVISIONAL"
   },
-  "total": 174,
-  "new_count": 141,
+  "total": 173,
+  "new_count": 140,
   "provisional_count": 17,
   "drift_guard": {
-    "seed_total": 174,
-    "status_total": 174,
+    "seed_total": 173,
+    "status_total": 173,
     "ok": true
   },
   "id_collisions": [],
@@ -2970,6 +2970,9 @@
             "name": "Ghost Mannequin Cut",
             "preview": null
           }
+        ],
+        "axes": [
+          "angle"
         ]
       }
     ],
@@ -3200,6 +3203,9 @@
             "name": "Jewelry Macro Detail",
             "preview": null
           }
+        ],
+        "axes": [
+          "jewelry"
         ]
       },
       {
@@ -3319,6 +3325,9 @@
             "name": "Jewelry Floating Luxe",
             "preview": null
           }
+        ],
+        "axes": [
+          "jewelry"
         ]
       }
     ],
@@ -3354,99 +3363,8 @@
           }
         ],
         "axes": [
-          "garment"
-        ]
-      },
-      {
-        "id": "bodywear-hero",
-        "cat": "Hero",
-        "name": "Bodywear Hero",
-        "type": "image",
-        "cost": 2,
-        "new": true,
-        "provisional": false,
-        "flags": [
-          "experimental",
-          "needs_human_review"
-        ],
-        "text_overlay": false,
-        "cuts": [
-          {
-            "id": "bodywear-clean",
-            "name": "Bodywear Clean",
-            "preview": null,
-            "garment": [
-              "bottoms",
-              "bra",
-              "set",
-              "swim"
-            ]
-          },
-          {
-            "id": "bodywear-athletic",
-            "name": "Bodywear Athletic",
-            "preview": null,
-            "garment": [
-              "bottoms",
-              "swim"
-            ]
-          },
-          {
-            "id": "bodywear-noir",
-            "name": "Bodywear Noir",
-            "preview": null,
-            "garment": [
-              "bottoms",
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-lace",
-            "name": "Bodywear Lace",
-            "preview": null,
-            "garment": [
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-silk",
-            "name": "Bodywear Silk",
-            "preview": null,
-            "garment": [
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-boudoir",
-            "name": "Bodywear Boudoir",
-            "preview": null,
-            "garment": [
-              "bra",
-              "set"
-            ]
-          },
-          {
-            "id": "bodywear-beach",
-            "name": "Bodywear Beach",
-            "preview": null,
-            "garment": [
-              "swim"
-            ]
-          },
-          {
-            "id": "bodywear-poolside",
-            "name": "Bodywear Poolside",
-            "preview": null,
-            "garment": [
-              "swim"
-            ]
-          }
-        ],
-        "axes": [
-          "garment"
+          "garment",
+          "angle"
         ]
       },
       {
@@ -3517,8 +3435,10 @@
         ],
         "axes": [
           "garment",
-          "skin"
-        ]
+          "skin",
+          "body"
+        ],
+        "auto_body": true
       },
       {
         "id": "bodywear-on-model",
