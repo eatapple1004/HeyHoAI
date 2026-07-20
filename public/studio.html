@@ -229,7 +229,19 @@
     min-width:38px;padding:7px 0;font-size:12.5px;font-weight:650;color:var(--dim);cursor:pointer;font-family:inherit;text-align:center}
   .cutui-countseg button:hover{border-color:var(--accent)}
   .cutui-countseg button.on{border-color:var(--accent);background:rgba(106,64,224,.16);color:var(--text)}
-  /* ▲▲▲ P1~P5 + P7' 컴포즈 배치 ▲▲▲ */
+  /* P7'' 프로토타입 밀도 — 제품↔템플릿 좌우 한 줄, 칩 길게·컴팩트, 컷카드 축소, 간격 조임(세로 단축) */
+  #composeTop.cutui-card .cutui-toprow{display:flex;gap:12px;align-items:stretch;margin-bottom:14px}
+  #composeTop.cutui-card .cutui-toprow .cutui-prodhost{flex:none;display:flex}
+  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;gap:8px;height:100%}
+  #composeTop.cutui-card .cutui-toprow .tpl-sel{flex:1;max-width:none;margin:0} /* 템플릿 칩을 남는 폭 전부(길게) */
+  #composeTop.cutui-card .tpl-sel{padding:10px 12px;gap:12px}
+  #composeTop.cutui-card .tpl-sel .ts-thumb{width:54px;height:54px}     /* 칩 컴팩트(72→54) */
+  #composeTop.cutui-card .tpl-compose{gap:14px}
+  #composeTop.cutui-card .cut-sel{margin-top:0}
+  #composeTop.cutui-card .cut-card{width:76px}                          /* 컷 카드 축소(92→76) */
+  #composeTop.cutui-card .cut-card .cc-thumb{height:62px}
+  #composeTop.cutui-card .det-compose .det-ta{min-height:42px}          /* 디테일 칸 낮게 */
+  /* ▲▲▲ P1~P5 + P7' + P7'' 컴포즈 배치 ▲▲▲ */
   /* ▼▼▼ (2026-06-28 테스트) 생성 결과 피드 — Leonardo식 배치당 한 행(좌 이미지 + 우 메타). 템플릿=템플릿명 / 커스텀=프롬프트 ▼▼▼ */
   #resultStep .step-head{align-items:baseline}
   .results-all{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap;cursor:pointer}
@@ -3543,6 +3555,10 @@ function syncTplTrigger(){
   const c=document.getElementById('tplCompose'); if(!c)return;
   const wrap=document.getElementById('tplSelWrap');
   const r=(state.mode==='custom')?null:curRecipe();
+  // (2026-07-21 P7'') ⚠️ 어느 브랜치든 wrap.innerHTML 재빌드 전에 #subjectRow를 wrap 밖(gen-bar)으로 대피.
+  //   Branch A는 이후 좌측 host로 다시 넣고, Branch B(CTA)는 gen-bar에 남는다. 안 하면 innerHTML이 제품 슬롯을 지운다.
+  const _sr=document.getElementById('subjectRow'), _gb=document.querySelector('.gen-bar');
+  if(_sr&&_gb&&_sr.parentNode!==_gb)_gb.insertBefore(_sr,_gb.firstChild);
   if(r&&wrap){ // 선택됨 → 강조 칩("이 템플릿으로 만들어진다"가 한눈에)
     const thumb=r.preview?`background:url('${esc(r.preview)}') center/cover no-repeat, ${r.grad||'#2a2a3a'}`:(r.grad?`background:${r.grad}`:'');
     const out=r.type==='reel'?'reel':'photos';
@@ -3610,12 +3626,17 @@ function syncTplTrigger(){
     }
     const detHtml=`<div class="det-compose"><span class="det-lbl">Add detail (optional)</span>`
       +`<textarea id="cbDetail" class="det-ta" maxlength="300" rows="1" placeholder="Add your own touch — e.g. red dress, golden hour" oninput="onComposeDetail(this)">${esc(state.detail||'')}</textarea></div>`;
-    wrap.innerHTML=`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
+    // (2026-07-21 P7'') 프로토타입처럼: 제품 슬롯 ↔ 템플릿 칩을 좌우 한 줄(.cutui-toprow)로.
+    //   (subjectRow 대피는 함수 최상단에서 완료 — 여기선 innerHTML 세팅 후 좌측 host로 넣는다.)
+    wrap.innerHTML=`<div class="cutui-toprow"><span class="cutui-prodhost" id="cutuiProdHost"></span>`
+      +`<div class="tpl-sel" title="Tap to change template" onclick="toggleTemplatePicker()">`
       +`<span class="ts-thumb" style="${thumb}"></span>`
       +`<span class="ts-body"><span class="ts-cap">Template selected</span><span class="ts-name">${esc(r.name)}</span>`
       +`<span class="ts-sub">Your ${out} will be made with this look · tap to change</span></span>`
-      +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div>`
+      +`<button class="ts-x" type="button" title="Remove template" onclick="event.stopPropagation();clearTemplate()">✕</button></div></div>`
       +cutHtml+bgHtml+pickHtml+axisHtml+detHtml;
+    const _host=document.getElementById('cutuiProdHost');
+    if(_host&&_sr)_host.appendChild(_sr); // 제품 슬롯을 칩 왼쪽으로
     wrap.style.display='';
     c.style.display='';
   }else if(wrap){ // 미선택 → "Pick a template" CTA(누르면 픽커로 스크롤). Custom 모드는 프롬프트 직접이라 숨김.
