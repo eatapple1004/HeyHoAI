@@ -198,7 +198,7 @@
   body.cutui-looksheet #templateStep{position:fixed;left:0;right:0;bottom:0;z-index:59;max-height:82vh;
     margin:0;padding:18px 26px 26px;overflow-y:auto;background:var(--bg2,#0c0c14);border-top:1px solid var(--border2);
     border-radius:20px 20px 0 0;box-shadow:0 -24px 60px -24px #000;
-    animation:none!important;transform:translateY(102%)!important; /* ⚠️.step.fade 페이드 애니메이션이 transform을 덮으므로 끄고 강제 */
+    animation:none!important;transform:translateY(102%)!important;opacity:1!important; /* ⚠️.fade(theme.css:125)=opacity:0+transform 애니메이션 → animation 끄면 opacity:0이 남아 시트가 투명해진다. opacity:1 강제 필수 */
     transition:transform .28s cubic-bezier(.4,0,.2,1)}
   body.cutui-looksheet.has-rail #templateStep{left:92px} /* 좌측 레일(92px)만큼 비켜 시작 */
   @media(max-width:700px){body.cutui-looksheet.has-rail #templateStep{left:0}} /* 모바일=레일이 하단바 → 오프셋 없음 */
