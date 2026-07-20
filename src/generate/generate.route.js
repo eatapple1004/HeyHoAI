@@ -244,6 +244,21 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 클로즈업 레시피(주얼리)는 얼굴만 — 클라가 rmShowsBody로 판정해 알려준다(서버는 레시피를 모른다).
     const autoWithBody = !(req.body.autoNoBody === 'true' || req.body.autoNoBody === true);
     const batchId = String(req.body.batchId || '').slice(0, 64) || null; // 장별 분할 요청을 한 배치로 묶는 키
+    // 유저 선택값(컷·배경색·배경·축·디테일·크기). 지금까지 프롬프트 문자열에 녹아 사라졌던 것들 —
+    //   결과 카드에 되보여주려고 표시용 라벨로 받아 metadata에 그대로 싣는다(해석·검증은 안 한다).
+    //   방어: JSON이 아니거나 객체가 아니면 버린다 · 키 12개·값 200자로 잘라 JSONB 비대 방지.
+    let choices = null;
+    try {
+      const c = JSON.parse(String(req.body.choices || 'null'));
+      if (c && typeof c === 'object' && !Array.isArray(c)) {
+        choices = {};
+        Object.keys(c).slice(0, 12).forEach((k) => {
+          const v = c[k];
+          if (v != null && v !== '') choices[String(k).slice(0, 24)] = String(v).slice(0, 200);
+        });
+        if (!Object.keys(choices).length) choices = null;
+      }
+    } catch (e) { /* 표시용일 뿐이라 조용히 무시 — 생성은 계속한다 */ }
 
     const faceswapReq = (req.body.faceswap === 'true' || req.body.faceswap === true);
     const faceswapModelPath = faceswapReq ? pickedModelPath : null;
@@ -523,7 +538,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
             sourceFacePath: faceswapModelPath, stage1Filename: filename, modelId,
             visibility: resultVisibility, templateId, templateSource, templateName,
             // genMeta는 워커가 generation_results.metadata에 그대로 펼쳐 넣는다 → model_name이 카드까지 간다.
-            genMeta: { garment: req.body.garment || null, model_descent: faceswapMeta.descent, model_name: faceswapMeta.name },
+            genMeta: { garment: req.body.garment || null, model_descent: faceswapMeta.descent, model_name: faceswapMeta.name,
+              ...(choices ? { choices } : {}) },
             chargeAmount: charge ? Math.round(charge.amount / generateCount) : 0,
           });
           results.push({ success: true, queued: true, jobId: job.id, status: 'queued', description });
@@ -544,7 +560,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
           //   형식 무관·표시용이 아니므로 길이만 자른다(JSONB 오염 방지).
           metadata: { description,
             ...(pickedModelMeta ? { model_name: pickedModelMeta.name } : (autoModel ? { model_name: 'Auto' } : {})),
-            ...(batchId ? { batch_id: batchId } : {}) },
+            ...(batchId ? { batch_id: batchId } : {}),
+            ...(choices ? { choices } : {}) },
         });
 
         const savedReview = await reviewRepo.insert({
