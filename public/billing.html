@@ -122,6 +122,20 @@
   .cur-krw .plan-card .price .pv,.cur-krw .plan-card .price .ev{font-size:27px;letter-spacing:-1px}
   .cur-krw .plan-card .price .cur{font-size:15px}
   .hidden{display:none!important}
+  /* 결제 완료 화면 (PortOne 성공 후) */
+  .pc-ov{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(8,8,14,.72);backdrop-filter:blur(6px)}
+  .pc-ov.on{display:flex}
+  .pc-modal{width:100%;max-width:420px;background:var(--surface,#14141f);border:1px solid var(--border);border-radius:18px;padding:30px 26px 24px;text-align:center;box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+  .pc-check{width:64px;height:64px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,#2ecc71,#27ae60);display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;font-weight:800}
+  .pc-title{font-family:'Sora',sans-serif;font-size:21px;font-weight:800;margin:0 0 4px;color:var(--text)}
+  .pc-sub{font-size:13px;color:var(--dim);margin-bottom:20px}
+  .pc-rows{text-align:left;border:1px solid var(--border);border-radius:12px;padding:6px 14px;margin-bottom:20px}
+  .pc-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:13.5px;border-bottom:1px solid var(--border)}
+  .pc-row:last-child{border-bottom:0}
+  .pc-row .k{color:var(--dim)}
+  .pc-row .v{color:var(--text);font-weight:600;text-align:right;word-break:break-all}
+  .pc-row .v.amt{color:var(--gold,#e7c46b);font-family:'Sora',sans-serif;font-size:15px}
+  .pc-modal .btn{width:100%}
 </style>
 </head>
 <body>
@@ -283,6 +297,22 @@
   </div>
 </div>
 
+<!-- 결제 완료 화면 -->
+<div class="pc-ov" id="payDone" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
+  <div class="pc-modal">
+    <div class="pc-check">✓</div>
+    <h2 class="pc-title" id="pcTitle">결제가 완료되었습니다</h2>
+    <div class="pc-sub">Payment complete</div>
+    <div class="pc-rows">
+      <div class="pc-row"><span class="k">상품명 / Product</span><span class="v" id="pcName">—</span></div>
+      <div class="pc-row"><span class="k">주문번호 / Order No.</span><span class="v" id="pcOrder">—</span></div>
+      <div class="pc-row"><span class="k">결제금액 / Amount</span><span class="v amt" id="pcAmount">—</span></div>
+      <div class="pc-row"><span class="k">충전 크레딧 / Credits</span><span class="v" id="pcCredits">—</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="closePayDone()">확인 / Done</button>
+  </div>
+</div>
+
 <script src="/js/pricing.js?v=1"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
@@ -391,10 +421,20 @@ async function payWithPortOne(packId){
   if(resp&&resp.code!=null){ notify(resp.message||'Payment was cancelled.','error'); return true; }
   // 서버가 PortOne API로 재검증 후 충전
   const c=await(await fetch('/api/billing/portone/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:p.paymentId})})).json();
-  if(c.success){ notify('Payment complete — credits added.'); if(typeof loadBalance==='function')loadBalance(); }
+  if(c.success){ showPayDone(p, c); if(typeof loadBalance==='function')loadBalance(); }
   else{ notify(c.error||'We are confirming your payment — credits will appear shortly.','error'); }
   return true;
 }
+// 결제 완료 화면 표시 (주문번호·결제금액·충전 크레딧)
+function showPayDone(p, c){
+  var krw = Number(p.totalAmount||0).toLocaleString('ko-KR');
+  document.getElementById('pcName').textContent = p.orderName||'—';
+  document.getElementById('pcOrder').textContent = p.paymentId||'—';
+  document.getElementById('pcAmount').textContent = krw+'원';
+  document.getElementById('pcCredits').textContent = c.credits!=null ? ('◈ '+Number(c.credits).toLocaleString('ko-KR')) : (c.already?'이미 충전됨':'—');
+  document.getElementById('payDone').classList.add('on');
+}
+function closePayDone(){ document.getElementById('payDone').classList.remove('on'); }
 function loadEximbaySDK(){
   return new Promise((resolve,reject)=>{
     if(sdkLoaded)return resolve();
