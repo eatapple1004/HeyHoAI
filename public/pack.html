@@ -54,25 +54,9 @@
     </div>
 
     <div class="card">
-      <div class="row">
-        <div>
-          <label class="f">카테고리</label>
-          <select id="vertical"><option value="beverage">음료 · 액상</option></select>
-        </div>
-        <div>
-          <label class="f">구성</label>
-          <div class="seg">
-            <label><input type="radio" name="kind" value="single" checked><span>단일 상품</span></label>
-            <label><input type="radio" name="kind" value="set"><span>세트 · 변형</span></label>
-          </div>
-        </div>
-      </div>
-      <label class="f">제품 한 줄 설명</label>
-      <input type="text" id="product" placeholder="예: 국내산 사과로 만든 애플사이다비니거 데일리 보틀">
-      <div id="setBox" class="hide">
-        <label class="f">세트 구성 — 한 줄에 하나 (라벨/변형)</label>
-        <textarea id="skus" placeholder="MON pink day-label&#10;TUE peach day-label&#10;..."></textarea>
-      </div>
+      <label class="f">한 줄 힌트 <span style="color:var(--sub);font-weight:400">(선택 — 사진만으로도 됩니다)</span></label>
+      <input type="text" id="product" placeholder="예: 국내산 사과 애사비 / 두피용 앰플 — 사진으로 안 보이는 것만">
+      <p style="font-size:12px;color:var(--sub);margin:8px 2px 0">카테고리 · 세트 여부는 사진을 분석해 자동으로 판단합니다.</p>
       <button class="go" id="go" disabled>콘텐츠 만들기</button>
     </div>
   </div>
@@ -106,21 +90,12 @@ function renderThumbs() {
   $('#go').disabled = files.length === 0;
 }
 
-document.querySelectorAll('input[name=kind]').forEach(r => r.onchange = () => {
-  $('#setBox').classList.toggle('hide', document.querySelector('input[name=kind]:checked').value !== 'set');
-});
-
 $('#go').onclick = async () => {
   $('#go').disabled = true;
   const fd = new FormData();
   files.forEach(f => fd.append('photos', f));
-  fd.append('vertical', $('#vertical').value);
-  fd.append('product', $('#product').value);
-  if (document.querySelector('input[name=kind]:checked').value === 'set') {
-    const skus = $('#skus').value.split('\n').map(s => s.trim()).filter(Boolean)
-      .map((label, i) => ({ sku: 'sku' + (i + 1), label }));
-    if (skus.length) fd.append('skus', JSON.stringify(skus));
-  }
+  const hint = $('#product').value.trim();
+  if (hint) fd.append('product', hint);       // 선택 힌트 — 카테고리·세트는 서버가 사진 분석해 자동
   const r = await fetch('/api/pack', { method: 'POST', body: fd });
   if (!r.ok) { alert('요청 실패: ' + r.status); $('#go').disabled = false; return; }
   const { id } = await r.json();

@@ -21,6 +21,19 @@ const PLAN_SCHEMA = {
     category: { type: 'string', description: 'inferred product category, e.g. beverage, cosmetics-skincare, cosmetics-color, haircare, apparel, footwear, bag, jewelry, food, home, tech' },
     ingredient: { type: 'string', description: 'the natural source ingredient/material to feature, or empty string if none' },
     isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple variants of the same product line' },
+    variants: {
+      type: 'array',
+      description: 'if isSet, one entry per distinct variant in the set; empty array if not a set',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          sku: { type: 'string', description: 'short slug id for the variant, e.g. mon, tue, red, blue' },
+          label: { type: 'string', description: 'brief description of this variant for baking, e.g. "pink MON day-label", "red colorway"' },
+        },
+        required: ['sku', 'label'],
+      },
+    },
     cuts: {
       type: 'array',
       items: {
@@ -36,7 +49,7 @@ const PLAN_SCHEMA = {
       },
     },
   },
-  required: ['product', 'category', 'ingredient', 'isSet', 'cuts'],
+  required: ['product', 'category', 'ingredient', 'isSet', 'variants', 'cuts'],
 };
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
@@ -59,6 +72,7 @@ function buildUserPrompt(nImgs, hint) {
     `  · jewelry → macro on seamless, on-hand/neck/ear, pedestal, editorial.`,
     `For EACH cut give: key (slug), label (short Korean), aspect (4:5 for hero/PDP, 1:1 or 16:9 where it fits), and a detailed English image prompt GROUNDED in the real product (its exact color/form/label). In every prompt keep the product's label and wordmark identical to the reference and do not fabricate lettering. Product-only (no people/hands) UNLESS the category needs on-model (apparel/footwear/jewelry-on-body) — say so explicitly in those.`,
     `Vary the shots — no two cuts should look the same. Ground the "ingredient" field in what you actually see (e.g. apple for apple vinegar, none for a tech gadget).`,
+    `If this is a SET (multiple variants of the same line, e.g. day-of-week bottles or colorways), set isSet=true and list EACH distinct variant in "variants" (sku + a brief label used to bake that variant, e.g. "pink MON day-label"). If it is a single product, isSet=false and variants=[].`,
     `Return ONLY the JSON object matching the schema.`,
   ].filter(Boolean).join('\n');
 }

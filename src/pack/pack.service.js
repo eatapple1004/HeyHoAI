@@ -43,6 +43,7 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
   // 0) 비전 플래너 — 사진 분석 → 이 제품에 맞는 컷·프롬프트(1순위). 실패/미사용 시 고정 suite 폴백.
   let cuts = suite.stills;
   let ctxProduct = product || '';
+  let planSkus = skus; // 폼이 세트를 안 줬으면 플래너가 감지한 변형으로 자동
   if (!noPlan && sourcePaths && sourcePaths.length) {
     try {
       const images = sourcePaths.map((p) => ({ data: fs.readFileSync(p).toString('base64'), mediaType: mimeOf(p) }));
@@ -51,8 +52,10 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
         cuts = plan.cuts;
         ctxProduct = plan.product || product || '';
         manifest.product = ctxProduct;
-        manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: plan.isSet };
-        emit({ stage: 'plan', category: plan.category, product: plan.product, cuts: cuts.length });
+        manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: plan.isSet, variants: plan.variants };
+        // 세트 자동: 폼이 skus를 안 줬는데 플래너가 세트+변형 2개↑ 감지 → 그걸로 굽는다.
+        if ((!skus || !skus.length) && plan.isSet && Array.isArray(plan.variants) && plan.variants.length > 1) planSkus = plan.variants;
+        emit({ stage: 'plan', category: plan.category, product: plan.product, cuts: cuts.length, isSet: plan.isSet, variants: (plan.variants || []).length });
       }
     } catch (e) {
       emit({ stage: 'plan', error: e.message }); // 폴백: 고정 suite
@@ -63,7 +66,7 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
   if (refs && refs.length) {
     manifest.refs = refs.map((r) => ({ sku: r.sku, key: `ref_${r.sku}`, path: r.path }));
   } else {
-    const baked = await bakeRefs({ sourcePaths, skus, refBake: suite.refBake });
+    const baked = await bakeRefs({ sourcePaths, skus: planSkus, refBake: suite.refBake });
     for (const b of baked) {
       const p = path.join(workDir, `ref_${b.sku}.jpg`);
       fs.writeFileSync(p, b.buffer);
