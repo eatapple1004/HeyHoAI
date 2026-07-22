@@ -72,7 +72,11 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
     const compSlots = refSkus.length > 1 ? suite.composites.map((c) => ({ kind: 'composite', key: c.key, label: c.label })) : [];
     const refSlots = refSkus.map((s) => ({ kind: 'ref', key: `ref_${s.sku}`, label: s.sku }));
     const slots = [...stillSlots, ...compSlots, ...refSlots];
-    try { onPlan && await onPlan({ total: slots.length, slots }); } catch (_) {}
+    // 컷 스펙(직렬화 가능분)·소스·컨텍스트도 함께 저장 → 라우트가 config.plan에 넣고 재생성/재굽기/컷추가에 재사용.
+    const planCuts = stillCuts.map((c) => ({ key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, aspect: c.aspect || null, promptText: c.promptText || null }));
+    try {
+      onPlan && await onPlan({ total: slots.length, slots, cuts: planCuts, refSkus, product: ctxProduct, vertical: suite.vertical, sources: sourcePaths || [] });
+    } catch (_) {}
     emit({ stage: 'plan-slots', total: slots.length });
   }
 

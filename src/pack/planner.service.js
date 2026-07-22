@@ -41,7 +41,7 @@ const PLAN_SCHEMA = {
         additionalProperties: false,
         properties: {
           key: { type: 'string', description: 'short slug id, e.g. hero_sunlit, swatch_macro, on_shoulder' },
-          label: { type: 'string', description: 'short Korean label for the UI' },
+          label: { type: 'string', description: 'short Korean USE-CASE label a shop owner instantly understands — WHERE they would use this image. e.g. "쇼핑몰 대표 이미지", "상세 디테일컷", "착용 느낌", "감성 SNS 컷", "성분 강조", "세트 로우". NOT photography jargon like "고스트 착장감"·"에디토리얼"·"플랫레이".' },
           aspect: { type: 'string', enum: ['4:5', '1:1', '16:9'] },
           prompt: { type: 'string', description: 'detailed English image prompt grounded in THIS product; label/wordmark identical to reference, no fabricated lettering; product-only unless the category needs on-model' },
         },
@@ -110,7 +110,8 @@ async function planPack({ images, hint }) {
   const NEG = 'garbled or fabricated lettering, distorted label, two or more products unless a set shot, duplicate product, warped product, extra caps, blown highlights';
   plan.cuts = (plan.cuts || []).map((c) => {
     const [w, h] = dimsFor(c.aspect);
-    return { key: c.key, label: c.label, w, h, neg: NEG, prompt: () => c.prompt };
+    // promptText/aspect도 보존 — config.plan에 직렬화 저장해 "컷 재생성"에 재사용(prompt는 함수라 직렬화 불가).
+    return { key: c.key, label: c.label, w, h, neg: NEG, aspect: c.aspect, promptText: c.prompt, prompt: () => c.prompt };
   });
   return plan;
 }
