@@ -57,6 +57,23 @@
   .rb-failed{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:14px;aspect-ratio:4/5}
   .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:12.5px}
   .rb-failed .rbf-msg{color:var(--dim);font-size:11px;line-height:1.5}
+  /* 내 크리에이션 — Shots·Ad Video 페이지와 동일한 공유 피드(전체 크리에이션) */
+  .works{margin-top:46px}
+  .works-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .works-head h2{font-family:'Sora';font-size:20px;font-weight:800;letter-spacing:-.4px}
+  .works-sub{color:var(--dim);font-size:13px}
+  .works-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .wcard{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg2);cursor:pointer;aspect-ratio:4/5}
+  .wcard .media{width:100%;height:100%;object-fit:cover;display:block}
+  .wcard .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s}
+  .wcard:hover .rc-tools,.wcard:focus-within .rc-tools{opacity:1;transform:none}
+  @media(hover:none){.wcard .rc-tools{opacity:1;transform:none}}
+  .rc-btn{width:30px;height:30px;border-radius:9px;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,transform .1s;text-decoration:none}
+  .rc-btn:hover{background:rgba(0,0,0,.8)}
+  .rc-btn:active{transform:scale(.9)}
+  .rc-btn svg{width:15px;height:15px;display:block}
+  .rc-btn.on{background:var(--accent)}
+  .works-empty{color:var(--dim);font-size:13px;padding:34px 0;text-align:center}
 </style>
 </head>
 <body class="has-rail">
@@ -101,6 +118,13 @@
       </div>
       <div class="sect" id="assets"></div>
     </div>
+  </div>
+
+  <!-- 내 크리에이션 — Shots·Ad Video 페이지와 동일 피드(전체 크리에이션). generation_results 공유 스토어. -->
+  <div class="works" id="worksSec">
+    <div class="works-head"><h2>내 크리에이션</h2><span class="works-sub" id="worksCount"></span></div>
+    <div class="works-grid" id="worksGrid"></div>
+    <div class="works-empty hide" id="worksEmpty">아직 만든 콘텐츠가 없어요. 위에서 상품 사진을 넣어 만들어 보세요.</div>
   </div>
 </div>
 
@@ -209,7 +233,7 @@ async function poll(id) {
   if (built) assets.forEach((a, i) => fillSlot(a, i));
   $('#dlAll').classList.toggle('hide', assets.length === 0);
 
-  if (pack.status === 'done') { finalizeSlots(); stopGen(); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; return; }
+  if (pack.status === 'done') { finalizeSlots(); stopGen(); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
   if (pack.status === 'failed') { finalizeSlots(); stopGen(); $('#status').innerHTML = '실패: ' + esc(pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
   $('#status').innerHTML = plan
     ? '<span class="spin"></span>생성 중 · ' + assets.length + '/' + plan.total
@@ -224,6 +248,62 @@ function downloadAll() {
     document.body.appendChild(el); el.click(); el.remove();
   }, i * 350)); // 스태거 — 브라우저 다중 다운로드 차단 회피
 }
+
+// ── 내 크리에이션 (전체 — Shots·Ad Video 페이지와 동일 피드. /api/generate/results = generation_results 공유 스토어) ──
+const RC_SVG = {
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
+  pub: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
+  priv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+};
+let WORKS = [];
+async function loadWorks() {
+  try {
+    const r = await fetch('/api/generate/results?limit=60');
+    if (!r.ok) return;
+    const raw = (await r.json()).data || [];
+    WORKS = raw.filter(x => x.status === 'success' && x.file_path).map(x => ({
+      idx: x.idx,
+      url: '/images/' + x.file_path.split('/').pop(),   // 피드 규약: basename → /images/<name>
+      type: /\.(mp4|webm|mov)$/i.test(x.file_path) ? 'reel' : 'photo',
+      visibility: x.visibility === 'public' ? 'public' : 'private',
+    }));
+    renderWorks();
+  } catch (e) {}
+}
+function renderWorks() {
+  const grid = $('#worksGrid'), empty = $('#worksEmpty');
+  $('#worksCount').textContent = WORKS.length ? WORKS.length + '개' : '';
+  if (!WORKS.length) { grid.innerHTML = ''; empty.classList.remove('hide'); return; }
+  empty.classList.add('hide');
+  grid.innerHTML = WORKS.map(it => {
+    const onerr = `onerror="var c=this.closest('.wcard');if(c)c.remove()"`; // 파일 누락(404) 카드 자동 제거
+    const media = it.type === 'reel'
+      ? `<video class="media" muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
+      : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
+    const vp = it.visibility === 'private';
+    const visBtn = `<button class="rc-btn${vp ? ' on' : ''}" type="button" title="${vp ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp ? RC_SVG.priv : RC_SVG.pub}</button>`;
+    const dlBtn = `<a class="rc-btn" href="${esc(it.url)}" download title="다운로드" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
+    return `<div class="wcard" role="link" tabindex="0" onclick="location.href='/creation?idx=${it.idx}&from=pack'"><div class="rc-tools">${visBtn}${dlBtn}</div>${media}</div>`;
+  }).join('');
+}
+async function toggleVis(idx, btn) {   // 글로브 = 공개/비공개 토글(Shots·Library와 동일 엔드포인트)
+  const it = WORKS.find(x => x.idx === idx); if (!it) return;
+  if (btn && btn.disabled) return;
+  const next = it.visibility === 'public' ? 'private' : 'public';
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/generate/results/' + idx + '/visibility', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visibility: next }) });
+    const d = await r.json();
+    if (!r.ok || !d.success) throw new Error(d.error || 'failed');
+    const vis = (d.data && d.data.visibility) || next;
+    it.visibility = vis;
+    const priv = vis === 'private';
+    if (btn) { btn.classList.toggle('on', priv); btn.title = priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'; btn.innerHTML = priv ? RC_SVG.priv : RC_SVG.pub; }
+    if (window.toast) toast(priv ? '비공개로 바꿨어요.' : '공개로 바꿨어요 — Explore에 노출됩니다.');
+  } catch (e) { if (window.toast) toast('변경 실패: ' + (e.message || e), 'error'); }
+  finally { if (btn) btn.disabled = false; }
+}
+loadWorks(); // 페이지 로드 시 피드 채우기
 </script>
 </body>
 </html>
