@@ -32,7 +32,7 @@ function mimeOf(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, category, workDir, refs, only, noPlan, onProgress, onAsset, onPlan }) {
+async function runPack({ sourcePaths, vertical, product, skus, category, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
@@ -95,6 +95,8 @@ async function runPack({ sourcePaths, vertical, product, skus, category, workDir
   for (const r of manifest.refs) await ship('ref', { key: r.key, label: r.sku, path: r.path });
   const primaryRef = manifest.refs[0].path;
   const ctx = { product: ctxProduct };
+
+  if (stopAfter === 'ref') return manifest; // 🔵 레퍼 소프트 게이트: 레퍼까지만 굽고 멈춘다(스틸은 사용자 확인 후 generate 단계에서).
 
   // 2) 스틸 배치 (플래너 컷 or suite)
   for (const cut of cuts) {

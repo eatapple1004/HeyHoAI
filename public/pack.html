@@ -85,6 +85,32 @@
   .cf-cancel:hover{color:var(--text);background:rgba(255,255,255,.05)}
   .cf-go{flex:1;font-family:inherit;font-size:14px;font-weight:700;padding:11px;border-radius:12px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13)}
   .cf-go:hover{filter:brightness(1.08)}
+  /* 레퍼 소프트 게이트 — 캐논 레퍼 확인 + 몇 컷 만들지 */
+  .rg-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+  .rg{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 60px -16px rgba(0,0,0,.7)}
+  .rg-h{font-family:'Sora';font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
+  .rg-note{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:14px}
+  .rg-note b{color:var(--text)}
+  .rg-img{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg2);margin-bottom:16px;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center}
+  .rg-img img{width:100%;height:100%;object-fit:contain;display:block}
+  .rg-depth-h{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:8px}
+  .rg-depths{display:flex;gap:8px;margin-bottom:14px}
+  .rg-depth{flex:1;font-family:inherit;font-size:13px;font-weight:700;padding:10px 6px;border-radius:11px;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;flex-direction:column;gap:2px;align-items:center}
+  .rg-depth span{font-size:10.5px;font-weight:500;color:var(--faint)}
+  .rg-depth:hover{color:var(--text);border-color:var(--border2)}
+  .rg-depth.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+  .rg-depth.on span{color:rgba(255,255,255,.8)}
+  .rg-rebake{display:flex;gap:8px;margin-bottom:16px}
+  .rg-rebake input{flex:1;min-width:0;font-family:inherit;font-size:12.5px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 11px}
+  .rg-rebake input::placeholder{color:var(--faint)}
+  .rg-rebake input:focus{outline:none;border-color:var(--accent2)}
+  .rg-rebake-go{flex:0 0 auto;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 13px;border-radius:10px;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border2);white-space:nowrap}
+  .rg-rebake-go:hover{color:var(--text);background:rgba(255,255,255,.09)}
+  .rg-rebake-go:disabled{opacity:.6;cursor:default}
+  .rg-actions{display:flex}
+  .rg-go{flex:1;font-family:inherit;font-size:14px;font-weight:700;padding:12px;border-radius:12px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13)}
+  .rg-go:hover{filter:brightness(1.08)}
+  .rg-go:disabled{opacity:.6;cursor:default}
   /* 생성 중 = 컷(Shots)과 동일 UX: 계획이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초 */
   .analyzing{display:flex;flex-direction:column;align-items:center;gap:13px;padding:44px 0;color:var(--text);font-size:14px;text-align:center}
   .analyzing .sub{color:var(--dim);font-size:12.5px}
@@ -293,6 +319,8 @@ const KIND_ORDER = ['still', 'composite', 'ref'];
 const filled = new Set();
 let built = false, genStartTs = 0, elapsedTimer = null;
 let PACK_ID = null, PACK = null;       // 현재 팩(액션 후 재렌더)
+let gatePassed = false;                // 레퍼 소프트 게이트 통과 여부
+let gateDepth = 0, gateTotal = 0;      // 게이트에서 고른 컷 수 / 전체
 const verIdx = {};                     // slotId → 보고 있는 버전 인덱스(기본 최신)
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slotId = (o) => o.kind + ':' + (o.key != null ? o.key : o.cut_key);
@@ -301,7 +329,7 @@ function slug(s) { return String(s == null ? '' : s).trim().replace(/[^\w가-힣
 function fname(a) { return slug(a.label || a.cut_key || a.kind) + '.jpg'; }  // 라벨 기반 파일명(용도가 파일명에)
 
 function startGen() {
-  built = false; filled.clear();
+  built = false; filled.clear(); gatePassed = false;
   showAnalyzing();
   genStartTs = Date.now();
   if (elapsedTimer) clearInterval(elapsedTimer);
@@ -340,14 +368,16 @@ function renderInteractive(pack) {
   PACK = pack;
   const plan = pack.config && pack.config.plan;
   const groups = versionsByCut(pack);
-  const done = pack.status === 'done' || pack.status === 'failed';
-  const slots = (plan && plan.slots ? plan.slots.slice() : []);
-  Object.keys(groups).forEach(id => { if (!slots.some(s => slotId(s) === id)) { const m = id.match(/^([^:]+):(.+)$/); if (m) slots.push({ kind: m[1], key: m[2], label: (groups[id][0].label) }); } }); // add-cut로 생긴 슬롯
+  // 자산이 있는 슬롯만(=실제로 만든 컷) — plan 순서 유지 + plan에 없는(add-cut) 것도 붙임.
+  //   depth로 안 만든 컷은 자산이 없어 안 뜬다(실패 카드 아님 — 정상).
+  const order = [];
+  if (plan && plan.slots) plan.slots.forEach(s => { if (groups[slotId(s)]) order.push(s); });
+  Object.keys(groups).forEach(id => { if (!order.some(s => slotId(s) === id)) { const m = id.match(/^([^:]+):(.+)$/); if (m) order.push({ kind: m[1], key: m[2], label: groups[id][0].label }); } });
   const byKind = {};
-  slots.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
+  order.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
   $('#assets').innerHTML = KIND_ORDER.filter(k => byKind[k]).map(k => {
-    const cards = byKind[k].map(s => cardHtml(s, groups[slotId(s)] || [], done)).join('');
-    const add = (k === 'still' && done) ? `<figure class="addcut" onclick="openAddCut()"><div class="addcut-in"><div class="addcut-plus">+</div><div>컨셉 추가</div></div></figure>` : '';
+    const cards = byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('');
+    const add = (k === 'still') ? `<figure class="addcut" onclick="openAddCut()"><div class="addcut-in"><div class="addcut-plus">+</div><div>컨셉 추가</div></div></figure>` : '';
     return `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${cards}${add}</div>`;
   }).join('');
 }
@@ -416,6 +446,12 @@ async function addCut(cutKey, btn) {
   } catch (e) { if (window.toast) toast('추가 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 
+function gatedSlots(plan) {   // 게이트에서 고른 depth만큼의 스틸 + 합성·레퍼(depth=0=전부)
+  if (!plan || !plan.slots) return [];
+  if (!gateDepth || gateDepth <= 0) return plan.slots;
+  const stills = plan.slots.filter(s => s.kind === 'still').slice(0, gateDepth);
+  return [...stills, ...plan.slots.filter(s => s.kind !== 'still')];
+}
 async function poll(id) {
   let pack;
   try { pack = await (await fetch('/api/pack/' + id)).json(); }
@@ -423,16 +459,71 @@ async function poll(id) {
   const plan = pack.config && pack.config.plan;
   const assets = pack.assets || [];
   window._packAssets = assets; PACK = pack;
-  if (plan && !built) buildGrid(plan.slots);
-  if (built) assets.forEach((a, i) => fillSlot(a, i));
-  $('#dlAll').classList.toggle('hide', assets.length === 0);
+  const status = pack.status;
 
-  if (pack.status === 'done') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
-  if (pack.status === 'failed') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '실패: ' + esc(pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
-  $('#status').innerHTML = plan
-    ? '<span class="spin"></span>생성 중 · ' + assets.length + '/' + plan.total
-    : '<span class="spin"></span>사진 분석 중…';
+  if (status === 'failed') { stopGen(); const g = document.querySelector('.rg-bg'); if (g) g.remove(); renderInteractive(pack); $('#status').innerHTML = '실패: ' + esc(pack.error || ''); return; }
+
+  // 🔵 레퍼 소프트 게이트 — 레퍼만 구워진 상태에서 확인받는다.
+  if (status === 'ref_ready' && !gatePassed) { showRefGate(pack); setTimeout(() => poll(id), 2500); return; }
+
+  // prep 단계(분석·레퍼 굽는 중, ref_ready 전) — 슬롯 대신 준비 화면.
+  if (status === 'processing' && !gatePassed) {
+    $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (plan ? '캐논 레퍼 굽는 중…<div class="sub">이걸 기준으로 컷을 만들어요</div>' : '제품 분석 중…<div class="sub">맞춤 컷을 고르고 있어요</div>') + '</div></div>';
+    $('#status').innerHTML = '<span class="spin"></span>' + (plan ? '레퍼 준비 중…' : '분석 중…');
+    setTimeout(() => poll(id), 1500); return;
+  }
+
+  // generate 단계(게이트 통과 후) — 슬롯 스피너 + 완료되는 대로 채움.
+  if (!built) buildGrid(gatedSlots(plan));
+  assets.forEach((a, i) => fillSlot(a, i));
+  $('#dlAll').classList.toggle('hide', assets.length === 0);
+  if (status === 'done') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
+  $('#status').innerHTML = '<span class="spin"></span>생성 중 · ' + assets.length + '개';
   setTimeout(() => poll(id), 1500);
+}
+
+// ── 레퍼 소프트 게이트 모달 ──
+function latestRef(pack) { const r = (pack.assets || []).filter(a => a.kind === 'ref'); return r[r.length - 1]; }
+function showRefGate(pack) {
+  const plan = pack.config && pack.config.plan;
+  const ref = latestRef(pack);
+  if (document.querySelector('.rg-bg')) { const img = document.getElementById('rgImg'); if (ref && img && img.dataset.u !== ref.url) { img.src = ref.url; img.dataset.u = ref.url; } return; }
+  const total = (plan && plan.cuts) ? plan.cuts.length : (plan ? (plan.slots || []).filter(s => s.kind === 'still').length : 8);
+  gateTotal = total; gateDepth = Math.min(8, total);
+  const opts = []; const seen = new Set();
+  [['핵심', Math.min(4, total)], ['표준', Math.min(8, total)], ['풀', total]].forEach(([k, n]) => { if (n > 0 && !seen.has(n)) { seen.add(n); opts.push({ k, n }); } });
+  document.body.insertAdjacentHTML('beforeend', `<div class="rg-bg"><div class="rg">
+    <div class="rg-h">캐논 레퍼 확인</div>
+    <div class="rg-note">이 레퍼를 기준으로 모든 컷을 만듭니다. <b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.</div>
+    <div class="rg-img"><img id="rgImg" src="${ref ? esc(ref.url) : ''}" data-u="${ref ? esc(ref.url) : ''}" alt="" onerror="this.style.opacity=.3"></div>
+    <div class="rg-depth-h">몇 컷 만들까요?</div>
+    <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
+    <div class="rg-rebake"><input type="text" id="rgHint" placeholder="다시 구울 때 교정(선택) — 예: 한 쌍으로"><button class="rg-rebake-go" onclick="gateRebake()">레퍼 다시 굽기</button></div>
+    <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
+  </div></div>`);
+}
+function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; }
+async function gateRebake() {
+  const btn = document.querySelector('.rg-rebake-go'); if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
+  const hint = (document.getElementById('rgHint').value || '').trim();
+  try {
+    const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku: 'main', hint }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    const img = document.getElementById('rgImg'); if (img && d.asset) { img.src = d.asset.url; img.dataset.u = d.asset.url; img.style.opacity = 1; }
+    document.getElementById('rgHint').value = '';
+    if (window.toast) toast('레퍼 다시 구웠어요 — 확인하고 진행하세요');
+  } catch (e) { if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); }
+  finally { btn.disabled = false; btn.textContent = t; }
+}
+async function gateProceed() {
+  const btn = document.querySelector('.rg-go'); if (btn && btn.disabled) return; if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/pack/' + PACK_ID + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depth: gateDepth >= gateTotal ? 0 : gateDepth }) });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error || '실패'); }
+    gatePassed = true; built = false; filled.clear();
+    const g = document.querySelector('.rg-bg'); if (g) g.remove();
+    $('#status').innerHTML = '<span class="spin"></span>생성 중…';
+  } catch (e) { if (btn) btn.disabled = false; if (window.toast) toast('생성 시작 실패: ' + (e.message || e), 'error'); }
 }
 function downloadAll() {   // 컷별 현재 보고 있는 버전만
   const g = versionsByCut(PACK || { assets: window._packAssets || [] });

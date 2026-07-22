@@ -20,6 +20,7 @@ const { runPack } = require('./pack.service');
 const { classifyProduct } = require('./planner.service');    // 확인 단계용 가벼운 분류
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
 const { genStill } = require('./stills.service');            // 컷 재생성·추가
+const { composeRow } = require('./compositor');              // 세트 합성(generate 단계)
 const { suiteFor } = require('./suites');                    // 컷 라이브러리(컨셉 추가) + refBake 스펙
 const promptRepo = require('../generate/prompt.repository'); // 크리에이션 dual-write(내 크리에이션·라이브러리·공유 = generation_results→prompts)
 const resultRepo = require('../generate/result.repository');
@@ -92,7 +93,8 @@ function latestRefPath(pack) {
   return null;
 }
 
-async function processPack(pack, { sourcePaths, vertical, product, skus, category, userId }) {
+// 1단계(prep): 분석 → 계획 저장 → **캐논 레퍼만 굽고** 멈춘다(status='ref_ready'). 스틸은 게이트 통과 후 generate에서.
+async function prepPack(pack, { sourcePaths, vertical, product, skus, category, userId }) {
   pack.config = pack.config || {};
   pack.product = pack.product || product;
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
@@ -105,14 +107,47 @@ async function processPack(pack, { sourcePaths, vertical, product, skus, categor
   });
   try {
     await runPack({
-      sourcePaths: durableSources, vertical, product, skus, category, workDir,
+      sourcePaths: durableSources, vertical, product, skus, category, workDir, stopAfter: 'ref',
       onPlan: async (plan) => { await repo.setPlan(pack.id, plan); },  // plan={total,slots,cuts,refSkus,product,vertical,sources}
       onAsset: async (a) => { await recordAsset(pack, { kind: a.kind, key: a.key, label: a.label, absPath: a.path, userId }); },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
     });
-    await repo.setStatus(pack.id, 'done');
+    await repo.setStatus(pack.id, 'ref_ready'); // 🔵 레퍼 소프트 게이트 대기
   } catch (e) {
-    logger.error?.(`[pack ${pack.id}] failed: ${e.message}`);
+    logger.error?.(`[pack ${pack.id}] prep failed: ${e.message}`);
+    await repo.setStatus(pack.id, 'failed', e.message);
+  }
+}
+
+// 2단계(generate): 게이트 통과 후 — 저장된 plan.cuts를 depth만큼 스틸 생성 + 세트면 합성. status='done'.
+async function generatePack(pack, { depth, userId }) {
+  try {
+    const fresh = await repo.getPack({ id: pack.id });
+    fresh.config = fresh.config || {};
+    const plan = fresh.config.plan || {};
+    const cuts = plan.cuts || [];
+    const refPath = latestRefPath(fresh);
+    if (!refPath) throw new Error('캐논 레퍼 없음');
+    const ctx = { product: plan.product || fresh.product || '' };
+    const limit = (depth && depth > 0) ? Math.min(depth, cuts.length) : cuts.length; // 0=전부
+    for (const c of cuts.slice(0, limit)) {
+      try {
+        const cut = { key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label };
+        const buf = await genStill({ canonRefPath: refPath, cut, ctx });
+        await recordAsset(fresh, { kind: 'still', key: c.key, label: c.label, buffer: buf, userId });
+      } catch (e) { logger.warn?.(`[pack ${fresh.id}] still ${c.key} 실패: ${e.message}`); }
+    }
+    // 세트(레퍼 2장 이상)면 합성
+    const refPaths = (fresh.assets || []).filter((a) => a.kind === 'ref').map((a) => localPathForUrl(a.url)).filter((p) => fs.existsSync(p));
+    if (refPaths.length > 1) {
+      for (const comp of (suiteFor(fresh.vertical).composites || [])) {
+        try { const buf = comp.method === 'row' ? await composeRow(refPaths) : null; if (buf) await recordAsset(fresh, { kind: 'composite', key: comp.key, label: comp.label, buffer: buf, userId }); }
+        catch (e) { logger.warn?.(`[pack ${fresh.id}] composite ${comp.key} 실패: ${e.message}`); }
+      }
+    }
+    await repo.setStatus(fresh.id, 'done');
+  } catch (e) {
+    logger.error?.(`[pack ${pack.id}] generate failed: ${e.message}`);
     await repo.setStatus(pack.id, 'failed', e.message);
   }
 }
@@ -143,7 +178,7 @@ router.post('/', upload.array('photos', 10), async (req, res, next) => {
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
-    setImmediate(() => processPack(pack, {
+    setImmediate(() => prepPack(pack, {
       sourcePaths: req.files.map((f) => f.path), vertical, product, skus, category, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
@@ -156,6 +191,19 @@ router.get('/:id', async (req, res, next) => {
     const pack = await repo.getPack(byId ? { id: Number(key) } : { shareId: key });
     if (!pack) return res.status(404).json({ error: 'not found' });
     res.json(pack);
+  } catch (e) { next(e); }
+});
+
+/** 레퍼 게이트 통과 → 스틸 생성 시작(depth = 만들 컷 수, 0=전부). ref_ready 상태에서만. */
+router.post('/:id/generate', async (req, res, next) => {
+  try {
+    const pack = await repo.getPack({ id: Number(req.params.id) });
+    if (!pack) return res.status(404).json({ error: 'not found' });
+    if (pack.status !== 'ref_ready') return res.status(409).json({ error: '게이트 대기 상태가 아니에요' });
+    const depth = Math.max(0, parseInt((req.body && req.body.depth) || 0, 10) || 0);
+    await repo.setStatus(pack.id, 'processing');
+    res.json({ ok: true });
+    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
   } catch (e) { next(e); }
 });
 
@@ -215,8 +263,9 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
     if (!sources.length) return res.status(409).json({ error: '소스 사진이 없어 재굽기 불가(이 팩은 재굽기 전 버전)' });
     const suite = suiteFor(pack.vertical);
     const sku = String((req.body && req.body.sku) || 'main');
+    const hint = String((req.body && req.body.hint) || '').slice(0, 200); // 교정(예: "한 쌍으로") — 낱개→페어 등
     const skuLabel = ((plan.refSkus || []).find((s) => s.sku === sku) || {}).label;
-    const buf = await bakeOne({ sourcePaths: sources, label: skuLabel, refBake: suite.refBake });
+    const buf = await bakeOne({ sourcePaths: sources, label: skuLabel, refBake: suite.refBake, hint });
     const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: sku, buffer: buf, userId: req.user && req.user.id });
     res.json({ asset });
   } catch (e) { next(e); }

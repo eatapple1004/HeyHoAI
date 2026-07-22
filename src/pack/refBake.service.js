@@ -18,12 +18,19 @@ const BAKE_NEG = 'garbled or gibberish lettering, misspelled wordmark, two or mo
  * @param {object}  [p.refBake]     suite.refBake 스펙
  * @returns {Promise<Buffer>}
  */
-async function bakeOne({ sourcePaths, label, refBake = {} }) {
+async function bakeOne({ sourcePaths, label, refBake = {}, hint }) {
   const variant = label ? ` This specific variant: ${label}.` : '';
-  const prompt = `Clean isolated e-commerce product photograph, ONE single product only (never duplicate), standing upright and front-facing, large and centered on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp label. Keep the product's exact shape, color, cap and the wordmark on its label identical to the reference — do not garble or invent lettering. No people, no hands, no props.${variant} 4:5.`;
+  // hint = 사용자 교정(예: "한 쌍으로"). 있으면 "ONE single product" 가정을 덮고, 페어를 막던 negative도 뺀다.
+  const unit = hint
+    ? `Present the product EXACTLY as the seller instructs: "${hint}". If they say a pair, show a matching PAIR of two identical pieces arranged neatly together; follow their instruction precisely.`
+    : `ONE single product only (never duplicate).`;
+  const neg = hint
+    ? 'garbled or gibberish lettering, misspelled wordmark, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights' // 페어 허용 위해 "two or more/duplicate" 제거
+    : BAKE_NEG;
+  const prompt = `Clean isolated e-commerce product photograph — ${unit} — standing upright and front-facing, large and centered on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp label. Keep the product's exact shape, color, cap and the wordmark on its label identical to the reference — do not garble or invent lettering. No people, no hands, no props.${variant} 4:5.`;
   const res = await provider.generate({
     prompt,
-    negativePrompt: BAKE_NEG,
+    negativePrompt: neg,
     width: 768, height: 960,
     references: (sourcePaths || []).map((p) => ({ path: p, kind: 'product' })),
   });
