@@ -15,6 +15,7 @@ const repo = require('./pack.repository');
 const { runPack } = require('./pack.service');
 const promptRepo = require('../generate/prompt.repository');   // 크리에이션 dual-write용(내 크리에이션·라이브러리·공유 = generation_results→prompts)
 const resultRepo = require('../generate/result.repository');
+const teamCredit = require('../teams/team.credit');            // 활성 팀 컨텍스트 — prompt.team_id에 붙여야 팀 유저 My creations 피드에 뜸
 
 const router = Router();
 
@@ -42,7 +43,9 @@ async function processPack(pack, { sourcePaths, vertical, product, skus, userId 
   async function ensurePrompt() {
     if (promptIdx != null || userId == null) return promptIdx;
     try {
-      const p = await promptRepo.insert({ userId, promptText: (product || '콘텐츠 팩'), model: PACK_MODEL, tags: ['pack'] });
+      // 팀 컨텍스트면 prompt.team_id에 붙인다(normal generate 경로와 동일) — 안 붙이면 팀 유저의 My creations 피드(team_id 필터)에서 안 보임.
+      const teamId = await teamCredit.activeTeamId(userId).catch(() => null);
+      const p = await promptRepo.insert({ userId, teamId, promptText: (product || '콘텐츠 팩'), model: PACK_MODEL, tags: ['pack'] });
       promptIdx = p.idx;
     } catch (e) { logger.warn?.(`[pack ${pack.id}] prompt insert failed: ${e.message}`); }
     return promptIdx;
