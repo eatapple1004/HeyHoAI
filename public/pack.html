@@ -67,6 +67,24 @@
   .addmenu-item{font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--border)}
   .addmenu-item:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent2)}
   .addmenu-item:disabled{opacity:.6;cursor:default}
+  /* 확인 스텝 — "이 제품 맞아요?" 카테고리 확정(오분류 사전 차단) */
+  .cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .cf{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:22px;max-width:460px;width:100%;box-shadow:0 24px 60px -16px rgba(0,0,0,.7)}
+  .cf-h{font-family:'Sora';font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:14px}
+  .cf-cat{font-size:12px;color:var(--dim);margin-bottom:7px}
+  .cf-badge{display:inline-block;font-size:13px;font-weight:700;color:var(--accent2);background:color-mix(in srgb,var(--accent) 16%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:8px;padding:3px 10px;margin-left:4px}
+  .cf-prod{font-size:14px;color:var(--text);line-height:1.5;margin-bottom:8px}
+  .cf-set{font-size:12px;color:var(--gold);margin-bottom:8px}
+  .cf-note{font-size:12px;color:var(--faint);line-height:1.5;margin-top:4px}
+  .cf-cats{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 4px;padding-top:12px;border-top:1px solid var(--border)}
+  .cf-chip{font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:999px;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  .cf-chip:hover{color:var(--text);border-color:var(--border2)}
+  .cf-chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+  .cf-actions{display:flex;gap:10px;margin-top:18px}
+  .cf-cancel{flex:0 0 auto;font-family:inherit;font-size:13px;font-weight:600;padding:11px 18px;border-radius:12px;cursor:pointer;color:var(--dim);background:none;border:1px solid var(--border2)}
+  .cf-cancel:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  .cf-go{flex:1;font-family:inherit;font-size:14px;font-weight:700;padding:11px;border-radius:12px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13)}
+  .cf-go:hover{filter:brightness(1.08)}
   /* 생성 중 = 컷(Shots)과 동일 UX: 계획이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초 */
   .analyzing{display:flex;flex-direction:column;align-items:center;gap:13px;padding:44px 0;color:var(--text);font-size:14px;text-align:center}
   .analyzing .sub{color:var(--dim);font-size:12.5px}
@@ -206,23 +224,66 @@ function renderThumbs() {
 }
 
 $('#go').onclick = async () => {
-  $('#go').disabled = true;
+  if (!files.length) return;
+  $('#go').disabled = true; const gt = $('#go').textContent; $('#go').textContent = '제품 분석 중…';
   const fd = new FormData();
   files.forEach(f => fd.append('photos', f));
   const hint = $('#product').value.trim();
-  if (hint) fd.append('product', hint);       // 선택 힌트 — 카테고리·세트는 서버가 사진 분석해 자동
+  if (hint) fd.append('product', hint);
+  let cls;
+  try { const r = await fetch('/api/pack/classify', { method: 'POST', body: fd }); cls = await r.json(); if (!r.ok) throw new Error(cls.error || r.status); }
+  catch (e) { cls = { category: 'other', product: '', isSet: false, variants: [] }; } // 분류 실패해도 확인창에서 직접 고르게(막지 않음)
+  $('#go').disabled = false; $('#go').textContent = gt;
+  showConfirm(cls, hint);
+};
+function fail(msg) { if (window.toast) toast(msg, 'error'); else alert(msg); } // toast=saas-auth 전역, 미로드 시 alert 폴백
+
+// ── 확인 스텝: "이 제품 맞아요?" — 오분류를 사람이 사전 차단(귀걸이가 음료로 나오는 참사 방지) ──
+const CATS = ['beverage', 'food', 'cosmetics-skincare', 'cosmetics-color', 'haircare', 'apparel', 'footwear', 'bag', 'jewelry', 'home', 'tech', 'other'];
+const CAT_LABELS = { beverage: '음료', food: '식품', 'cosmetics-skincare': '스킨케어', 'cosmetics-color': '색조 화장품', haircare: '헤어', apparel: '의류', footwear: '신발', bag: '가방', jewelry: '주얼리', home: '홈·리빙', tech: '테크·가전', other: '기타' };
+let confirmState = null;
+function showConfirm(cls, hint) {
+  confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '', isSet: !!cls.isSet, variants: cls.variants || [], hint };
+  const c = confirmState;
+  const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">세트 · ${c.variants.length}종 감지</div>` : '';
+  document.querySelector('.cf-bg') && document.querySelector('.cf-bg').remove();
+  document.body.insertAdjacentHTML('beforeend', `<div class="cf-bg"><div class="cf">
+    <div class="cf-h">이 제품 맞나요?</div>
+    <div class="cf-cat">감지된 카테고리 · <span class="cf-badge" id="cfBadge">${esc(CAT_LABELS[c.category] || c.category)}</span></div>
+    <div class="cf-prod">${esc(c.product || '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)')}</div>
+    ${setLine}
+    <div class="cf-note">카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.</div>
+    <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(CAT_LABELS[k])}</button>`).join('')}</div>
+    <div class="cf-actions">
+      <button class="cf-cancel" onclick="document.querySelector('.cf-bg').remove()">취소</button>
+      <button class="cf-go" onclick="confirmGenerate()">네, 이걸로 만들기</button>
+    </div>
+  </div></div>`);
+}
+function pickCat(k) {
+  confirmState.category = k;
+  document.querySelectorAll('#cfCats .cf-chip').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  const badge = document.getElementById('cfBadge'); if (badge) badge.textContent = CAT_LABELS[k] || k;
+}
+async function confirmGenerate() {
+  const c = confirmState;
+  const bg = document.querySelector('.cf-bg'); if (bg) bg.remove();
+  const fd = new FormData();
+  files.forEach(f => fd.append('photos', f));
+  if (c.hint) fd.append('product', c.hint);
+  fd.append('category', c.category);
+  if (c.isSet && c.variants.length) fd.append('skus', JSON.stringify(c.variants));
   let r;
   try { r = await fetch('/api/pack', { method: 'POST', body: fd }); }
-  catch (e) { fail('요청 실패: 네트워크'); $('#go').disabled = false; return; }
-  if (!r.ok) { fail('요청 실패: ' + r.status); $('#go').disabled = false; return; }
+  catch (e) { fail('요청 실패: 네트워크'); return; }
+  if (!r.ok) { fail('요청 실패: ' + r.status); return; }
   const { id } = await r.json();
   PACK_ID = id;
   $('#form').classList.add('hide');
   $('#result').classList.remove('hide');
   startGen();
   poll(id);
-};
-function fail(msg) { if (window.toast) toast(msg, 'error'); else alert(msg); } // toast=saas-auth 전역, 미로드 시 alert 폴백
+}
 
 // ── 생성 진행 표시 (컷/Shots 동일 UX) ──
 //   계획(config.plan)이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초를 깔고, 완료되는 대로 이미지로 채운다.
