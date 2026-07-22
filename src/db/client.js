@@ -4,7 +4,8 @@ const log = require('../lib/logger')('DB');
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  // 로컬 Postgres(localhost)는 SSL 미지원 → 로컬만 off, 원격(prod)은 기존대로 SSL.
+  ssl: /(?:localhost|127\.0\.0\.1)/.test(env.DATABASE_URL || '') ? false : { rejectUnauthorized: false },
 });
 
 pool.on('error', (err) => {
