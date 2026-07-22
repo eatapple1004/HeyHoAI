@@ -1,60 +1,70 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Product Pack · Doppia</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/rail.js?v=11" defer></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --bg:#f6f1ea; --card:#fff; --ink:#2b2320; --sub:#9a8f86; --accent:#c4424f; --line:#e7ddd2; }
-  body { background: var(--bg); color: var(--ink); font-family: 'Apple SD Gothic Neo', system-ui, sans-serif; }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
-  h1 { font-size: 26px; letter-spacing: -.02em; }
-  .lead { color: var(--sub); font-size: 14px; margin: 6px 0 26px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
-  label.f { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
-  input[type=text], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; }
-  textarea { min-height: 64px; resize: vertical; }
-  .drop { border: 2px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--sub); cursor: pointer; }
-  .drop.on { border-color: var(--accent); color: var(--ink); }
-  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
-  .row { display: flex; gap: 18px; flex-wrap: wrap; }
-  .row > div { flex: 1; min-width: 200px; }
-  button.go { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 13px 26px; font: inherit; font-weight: 500; cursor: pointer; margin-top: 22px; }
-  button.go:disabled { opacity: .5; cursor: default; }
-  .seg { display: flex; gap: 8px; }
-  .seg label { flex: 1; text-align: center; border: 1px solid var(--line); border-radius: 10px; padding: 9px; font-size: 13px; cursor: pointer; }
-  .seg input { display: none; }
-  .seg input:checked + span { color: var(--accent); font-weight: 500; }
-  .status { font-size: 14px; color: var(--sub); margin-bottom: 14px; }
-  .sect h2 { font-size: 15px; margin: 20px 0 10px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
-  .grid figure { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background:#efe9e1; }
-  .grid img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; }
-  .grid figcaption { font-size: 11px; padding: 6px 8px; color: #5f544d; }
-  .hide { display: none; }
-  .spin { display:inline-block; width:14px; height:14px; border:2px solid var(--line); border-top-color: var(--accent); border-radius:50%; animation: sp .8s linear infinite; vertical-align:-2px; margin-right:6px; }
-  @keyframes sp { to { transform: rotate(360deg); } }
-  .topbar { margin-bottom: 16px; }
-  .back { color: var(--sub); font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-  .back:hover { color: var(--ink); }
-  .rhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-  .rhead .status { margin: 0; }
-  .dlall { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 8px 16px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
-  .grid figure { position: relative; }
-  .dl { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 8px; background: rgba(0,0,0,.55); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 16px; opacity: 0; transition: opacity .15s; }
-  .grid figure:hover .dl { opacity: 1; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#1a1613; --card:#241f1b; --ink:#f0e8e0; --line:#39312b; } input,select,textarea { background:#1a1613; color:inherit; } }
+  /* pack = 앱 페이지. 색·폰트·레일 여백은 theme.css 토큰 사용(인라인 warm 테마 폐기). */
+  .wrap{max-width:820px;margin:0 auto;padding:34px 24px 90px;position:relative;z-index:2}
+  .phead{margin-bottom:24px}
+  h1{font-family:'Sora';font-size:28px;font-weight:800;letter-spacing:-.5px}
+  .lead{color:var(--dim);font-size:14px;margin-top:6px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+  label.f{display:block;font-size:13px;font-weight:600;margin:0 0 8px;color:var(--text)}
+  input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:12px;font:inherit;background:var(--bg2);color:var(--text);transition:border-color .15s}
+  input[type=text]::placeholder{color:var(--faint)}
+  input[type=text]:focus{outline:none;border-color:var(--accent2)}
+  .drop{border:2px dashed var(--border2);border-radius:14px;padding:30px;text-align:center;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+  .drop:hover{border-color:var(--accent2);color:var(--text)}
+  .drop.on{border-color:var(--accent);color:var(--text);background:rgba(124,108,255,.06)}
+  .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .thumbs img{width:70px;height:70px;object-fit:cover;border-radius:10px;border:1px solid var(--border)}
+  button.go{background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff;border:0;border-radius:999px;padding:13px 28px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;margin-top:20px;box-shadow:0 4px 14px -4px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.13);transition:transform .15s,box-shadow .15s}
+  button.go:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 9px 24px -6px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18)}
+  button.go:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  .status{font-size:14px;color:var(--dim)}
+  .sect h2{font-size:14px;font-weight:700;margin:22px 0 12px;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .grid figure{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg2)}
+  .grid img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+  .grid figcaption{font-size:11px;padding:7px 9px;color:var(--dim)}
+  .hide{display:none}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .rhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .dlall{background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff;border:0;border-radius:999px;padding:9px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.13);transition:filter .15s}
+  .dlall:hover{filter:brightness(1.08)}
+  .dl{position:absolute;top:7px;right:7px;width:30px;height:30px;border-radius:9px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;opacity:0;transition:opacity .15s}
+  .grid figure:hover .dl{opacity:1}
+  @media(hover:none){.dl{opacity:1}}
 </style>
 </head>
-<body>
-<div class="wrap">
-  <div class="topbar"><a class="back" href="/home.html">← Doppia 홈</a></div>
-  <h1>Product Pack</h1>
-  <p class="lead">상품 사진 1~몇 장을 넣으면 필요한 콘텐츠를 알아서 만들어 드립니다.</p>
+<body class="has-rail">
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grain"></div>
 
-  <div id="form">
+<nav>
+  <div class="nav-in">
+    <div class="brand" onclick="location.href='/landing'"><b>Doppia</b></div>
+    <div class="credits" id="saasUserBox"></div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="phead fade d1">
+    <h1>Product Pack</h1>
+    <p class="lead">상품 사진 1~몇 장을 넣으면 필요한 콘텐츠를 알아서 만들어 드립니다.</p>
+  </div>
+
+  <div id="form" class="fade d2">
     <div class="card">
       <div class="drop" id="drop">
         <div>사진을 끌어다 놓거나 클릭해서 업로드</div>
@@ -64,9 +74,9 @@
     </div>
 
     <div class="card">
-      <label class="f">한 줄 힌트 <span style="color:var(--sub);font-weight:400">(선택 — 사진만으로도 됩니다)</span></label>
+      <label class="f">한 줄 힌트 <span style="color:var(--dim);font-weight:400">(선택 — 사진만으로도 됩니다)</span></label>
       <input type="text" id="product" placeholder="예: 국내산 사과 애사비 / 두피용 앰플 — 사진으로 안 보이는 것만">
-      <p style="font-size:12px;color:var(--sub);margin:8px 2px 0">카테고리 · 세트 여부는 사진을 분석해 자동으로 판단합니다.</p>
+      <p style="font-size:12px;color:var(--dim);margin:8px 2px 0">카테고리 · 세트 여부는 사진을 분석해 자동으로 판단합니다.</p>
       <button class="go" id="go" disabled>콘텐츠 만들기</button>
     </div>
   </div>
@@ -110,7 +120,11 @@ $('#go').onclick = async () => {
   const hint = $('#product').value.trim();
   if (hint) fd.append('product', hint);       // 선택 힌트 — 카테고리·세트는 서버가 사진 분석해 자동
   const r = await fetch('/api/pack', { method: 'POST', body: fd });
-  if (!r.ok) { alert('요청 실패: ' + r.status); $('#go').disabled = false; return; }
+  if (!r.ok) {
+    const msg = '요청 실패: ' + r.status;
+    if (window.toast) toast(msg, 'error'); else alert(msg);   // toast = saas-auth.js 전역(앱 톤). 미로드 시 alert 폴백
+    $('#go').disabled = false; return;
+  }
   const { id } = await r.json();
   $('#form').classList.add('hide');
   $('#result').classList.remove('hide');
