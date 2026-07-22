@@ -45,6 +45,18 @@
   .dl{position:absolute;top:7px;right:7px;width:30px;height:30px;border-radius:9px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;opacity:0;transition:opacity .15s}
   .grid figure:hover .dl{opacity:1}
   @media(hover:none){.dl{opacity:1}}
+  /* 생성 중 = 컷(Shots)과 동일 UX: 계획이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초 */
+  .analyzing{display:flex;flex-direction:column;align-items:center;gap:13px;padding:44px 0;color:var(--text);font-size:14px;text-align:center}
+  .analyzing .sub{color:var(--dim);font-size:12.5px}
+  .grid figure.slot{display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:4/5;background:rgba(255,255,255,.03)}
+  .grid figure.slot .ph{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;width:100%}
+  .grid figure.slot figcaption{align-self:stretch}
+  .rb-spin{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:sp .8s linear infinite}
+  .rb-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
+  .grid figure.failed-fig{display:flex;flex-direction:column;background:rgba(255,90,90,.06);border-color:rgba(255,120,120,.28)}
+  .rb-failed{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:14px;aspect-ratio:4/5}
+  .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:12.5px}
+  .rb-failed .rbf-msg{color:var(--dim);font-size:11px;line-height:1.5}
 </style>
 </head>
 <body class="has-rail">
@@ -119,40 +131,90 @@ $('#go').onclick = async () => {
   files.forEach(f => fd.append('photos', f));
   const hint = $('#product').value.trim();
   if (hint) fd.append('product', hint);       // 선택 힌트 — 카테고리·세트는 서버가 사진 분석해 자동
-  const r = await fetch('/api/pack', { method: 'POST', body: fd });
-  if (!r.ok) {
-    const msg = '요청 실패: ' + r.status;
-    if (window.toast) toast(msg, 'error'); else alert(msg);   // toast = saas-auth.js 전역(앱 톤). 미로드 시 alert 폴백
-    $('#go').disabled = false; return;
-  }
+  let r;
+  try { r = await fetch('/api/pack', { method: 'POST', body: fd }); }
+  catch (e) { fail('요청 실패: 네트워크'); $('#go').disabled = false; return; }
+  if (!r.ok) { fail('요청 실패: ' + r.status); $('#go').disabled = false; return; }
   const { id } = await r.json();
   $('#form').classList.add('hide');
   $('#result').classList.remove('hide');
+  startGen();
   poll(id);
 };
+function fail(msg) { if (window.toast) toast(msg, 'error'); else alert(msg); } // toast=saas-auth 전역, 미로드 시 alert 폴백
 
-async function poll(id) {
-  const r = await fetch('/api/pack/' + id);
-  const pack = await r.json();
-  const assets = pack.assets || [];
-  renderAssets(assets);
-  if (pack.status === 'done') { $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; return; }
-  if (pack.status === 'failed') { $('#status').innerHTML = '실패: ' + (pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
-  $('#status').innerHTML = '<span class="spin"></span>생성 중 · 완료되는 대로 하나씩 올라옵니다 · ' + assets.length + '개';
-  setTimeout(() => poll(id), 1500);
+// ── 생성 진행 표시 (컷/Shots 동일 UX) ──
+//   계획(config.plan)이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초를 깔고, 완료되는 대로 이미지로 채운다.
+//   계획 전(사진 분석 중)엔 개수를 모르므로 "분석 중" 상태. 완료 시 안 채워진 슬롯 = 실패 카드.
+const KIND_LABEL = { still: '스틸', composite: '합성', ref: '캐논 레퍼' };
+const KIND_ORDER = ['still', 'composite', 'ref'];
+const filled = new Set();
+let built = false, genStartTs = 0, elapsedTimer = null;
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const slotId = (o) => o.kind + ':' + (o.key != null ? o.key : o.cut_key);
+const assetId = (a) => a.kind + ':' + (a.cut_key != null ? a.cut_key : a.key);
+function fname(a, i) { return (a.cut_key || a.kind || 'image').replace(/[^\w-]/g, '') + '_' + (i + 1) + '.jpg'; }
+
+function startGen() {
+  built = false; filled.clear();
+  showAnalyzing();
+  genStartTs = Date.now();
+  if (elapsedTimer) clearInterval(elapsedTimer);
+  elapsedTimer = setInterval(tickElapsed, 100);
+}
+function stopGen() { if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; } }
+function tickElapsed() {
+  const t = ((Date.now() - genStartTs) / 1000).toFixed(1) + 's';
+  document.querySelectorAll('.rb-elapsed').forEach(el => el.textContent = t);
+}
+function showAnalyzing() {
+  $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>사진을 분석하는 중…<div class="sub">맞춤 컷을 고르고 있어요</div></div></div>';
+}
+function buildGrid(slots) {
+  const byKind = {};
+  (slots || []).forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
+  $('#assets').innerHTML = KIND_ORDER.filter(k => byKind[k]).map(k =>
+    `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">` +
+    byKind[k].map(s => `<figure class="slot" data-slot="${esc(slotId(s))}"><div class="ph"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div><figcaption>${esc(s.label || s.key)}</figcaption></figure>`).join('') +
+    `</div>`).join('');
+  built = true;
+}
+function fillSlot(a, i) {
+  const key = assetId(a);
+  if (filled.has(key)) return;
+  let fig = null;
+  document.querySelectorAll('#assets figure.slot').forEach(f => { if (f.dataset.slot === key) fig = f; });
+  if (!fig) return;
+  filled.add(key);
+  fig.classList.remove('slot');
+  fig.innerHTML = `<a class="dl" href="${a.url}" download="${fname(a, i)}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy"><figcaption>${esc(a.label || a.cut_key || '')}</figcaption>`;
+}
+function finalizeSlots() {   // 완료/실패 시점에 아직 스피너인 슬롯 = 생성 실패
+  document.querySelectorAll('#assets figure.slot').forEach(fig => {
+    const cap = fig.querySelector('figcaption');
+    const label = cap ? cap.textContent : '';
+    fig.classList.remove('slot'); fig.classList.add('failed-fig');
+    fig.innerHTML = `<div class="rb-failed"><div class="rbf-ic">⚠ 실패</div><div class="rbf-msg">이 컷은 생성되지 않았어요</div></div><figcaption>${esc(label)}</figcaption>`;
+  });
 }
 
-const KIND_LABEL = { ref: '캐논 레퍼', still: '스틸', composite: '합성' };
-function fname(a, i) { return (a.cut_key || a.kind || 'image').replace(/[^\w-]/g, '') + '_' + (i + 1) + '.jpg'; }
-function renderAssets(assets) {
+async function poll(id) {
+  let pack;
+  try { pack = await (await fetch('/api/pack/' + id)).json(); }
+  catch (e) { setTimeout(() => poll(id), 2000); return; }
+  const plan = pack.config && pack.config.plan;
+  const assets = pack.assets || [];
   window._packAssets = assets;
+  if (plan && !built) buildGrid(plan.slots);
+  if (built) assets.forEach((a, i) => fillSlot(a, i));
   $('#dlAll').classList.toggle('hide', assets.length === 0);
-  const byKind = {};
-  assets.forEach(a => (byKind[a.kind] = byKind[a.kind] || []).push(a));
-  $('#assets').innerHTML = ['still', 'composite', 'ref'].filter(k => byKind[k]).map(k =>
-    `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">` +
-    byKind[k].map((a, i) => `<figure><a class="dl" href="${a.url}" download="${fname(a, i)}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy"><figcaption>${a.label || a.cut_key || ''}</figcaption></figure>`).join('') +
-    `</div>`).join('');
+
+  if (pack.status === 'done') { finalizeSlots(); stopGen(); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; return; }
+  if (pack.status === 'failed') { finalizeSlots(); stopGen(); $('#status').innerHTML = '실패: ' + esc(pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
+  $('#status').innerHTML = plan
+    ? '<span class="spin"></span>생성 중 · ' + assets.length + '/' + plan.total
+    : '<span class="spin"></span>사진 분석 중…';
+  setTimeout(() => poll(id), 1500);
 }
 function downloadAll() {
   const assets = window._packAssets || [];

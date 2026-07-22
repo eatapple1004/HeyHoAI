@@ -32,7 +32,7 @@ function mimeOf(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, only, noPlan, onProgress, onAsset }) {
+async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, only, noPlan, onProgress, onAsset, onPlan }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
@@ -60,6 +60,20 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
     } catch (e) {
       emit({ stage: 'plan', error: e.message }); // 폴백: 고정 suite
     }
+  }
+
+  // 0.5) 계획 확정 통지 — 플래너가 컷을 정한 직후 "생성될 자산 슬롯목록"을 라우트에 넘긴다.
+  //   → 폴링이 config.plan 으로 받아 유저에게 "생성되는 수만큼" 스피너를 즉시 깐다(컷 UX 동일).
+  //   순서는 UI 렌더 순서(스틸→합성→레퍼)로 맞춘다. 실제 생성은 레퍼가 먼저지만 그리드 배치는 이 순.
+  {
+    const refSkus = (planSkus && planSkus.length) ? planSkus : [{ sku: 'main' }];
+    const stillCuts = only ? cuts.filter((c) => only.includes(c.key)) : cuts;
+    const stillSlots = stillCuts.map((c) => ({ kind: 'still', key: c.key, label: c.label }));
+    const compSlots = refSkus.length > 1 ? suite.composites.map((c) => ({ kind: 'composite', key: c.key, label: c.label })) : [];
+    const refSlots = refSkus.map((s) => ({ kind: 'ref', key: `ref_${s.sku}`, label: s.sku }));
+    const slots = [...stillSlots, ...compSlots, ...refSlots];
+    try { onPlan && await onPlan({ total: slots.length, slots }); } catch (_) {}
+    emit({ stage: 'plan-slots', total: slots.length });
   }
 
   // 1) 레퍼 확보 — 주어졌으면 스킵, 아니면 베이크

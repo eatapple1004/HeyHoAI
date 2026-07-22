@@ -13,8 +13,12 @@ const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
 const { runPack } = require('./pack.service');
+const promptRepo = require('../generate/prompt.repository');   // 크리에이션 dual-write용(내 크리에이션·라이브러리·공유 = generation_results→prompts)
+const resultRepo = require('../generate/result.repository');
 
 const router = Router();
+
+const PACK_MODEL = 'Nano Banana'; // 크리에이션 카드 모델 라벨(스틸·합성·레퍼 모두 nano-banana 계열)
 
 const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -30,16 +34,44 @@ async function publishAsset(absPath, name) {
   return `/images/${name}`;
 }
 
-async function processPack(pack, { sourcePaths, vertical, product, skus }) {
+async function processPack(pack, { sourcePaths, vertical, product, skus, userId }) {
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
+  // 팩 = 하나의 생성요청 → prompts 1행에 모든 자산을 매단다(크리에이션 소유·피드가 generation_results→prompts로 도니까).
+  //   최초 자산 적재 때 지연 생성(prompt insert 실패해도 팩 자체는 계속 — 크리에이션 노출만 빠짐).
+  let promptIdx = null;
+  async function ensurePrompt() {
+    if (promptIdx != null || userId == null) return promptIdx;
+    try {
+      const p = await promptRepo.insert({ userId, promptText: (product || '콘텐츠 팩'), model: PACK_MODEL, tags: ['pack'] });
+      promptIdx = p.idx;
+    } catch (e) { logger.warn?.(`[pack ${pack.id}] prompt insert failed: ${e.message}`); }
+    return promptIdx;
+  }
   try {
     // onAsset: 각 컷이 **생성되는 즉시** 업로드+DB적재 → 폴링이 하나씩 집어감(완료되는대로 하나씩).
     await runPack({
       sourcePaths, vertical, product, skus, workDir,
+      onPlan: async (plan) => { await repo.setPlan(pack.id, plan); }, // 계획 확정 → 폴링이 슬롯 스피너를 깐다
       onAsset: async (a) => {
         const name = `pack_${pack.share_id}_${a.kind}_${a.key}.jpg`;
         const url = await publishAsset(a.path, name);
         await repo.addAsset({ packId: pack.id, kind: a.kind, cutKey: a.key, label: a.label, url });
+        // 크리에이션 dual-write: 각 자산을 generation_results 로도 적재 → 내 크리에이션·라이브러리 노출 + 글로브 공유.
+        //   기본 visibility='private'(개인 제품컷 보호) — 카드 글로브로 사용자가 공개 전환. 크레딧 미과금(과금은 generate 경로에만).
+        try {
+          const idx = await ensurePrompt();
+          if (idx != null) {
+            await resultRepo.insert({
+              promptIdx: idx,
+              filePath: `tmp/images/${name}`,   // 피드가 basename → /images/<name> 로 서빙(gallery.mapRow 규약)
+              model: PACK_MODEL,
+              metadata: { source: 'pack', kind: a.kind, cut_key: a.key, cut: a.label || null, pack_share_id: pack.share_id },
+              visibility: 'private',
+              templateSource: 'pack',           // 비어있지 않게 → auto-mint(마켓 자동민팅) 후보에서 제외
+              templateName: a.label || '콘텐츠 팩',
+            });
+          }
+        } catch (e) { logger.warn?.(`[pack ${pack.id}] result insert failed: ${e.message}`); }
       },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
     });
@@ -65,7 +97,7 @@ router.post('/', upload.array('photos', 10), async (req, res, next) => {
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
     setImmediate(() => processPack(pack, {
-      sourcePaths: req.files.map((f) => f.path), vertical, product, skus,
+      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
 });

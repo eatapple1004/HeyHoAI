@@ -54,6 +54,18 @@ async function setStatus(packId, status, error) {
     [packId, status, error || null]);
 }
 
+/** 플래너가 컷을 확정하는 즉시 예상 슬롯목록을 config.plan 에 병합 저장(JSONB merge — 스키마 변경 없음).
+ *  → GET 이 config.plan 을 실어주면 클라가 총개수·컷라벨을 알고 "생성되는 수만큼" 플레이스홀더를 깐다. */
+async function setPlan(packId, plan) {
+  await query(
+    `UPDATE content_packs
+        SET config = coalesce(config,'{}'::jsonb) || jsonb_build_object('plan', $2::jsonb),
+            updated_at = now()
+      WHERE id = $1`,
+    [packId, JSON.stringify(plan || {})]
+  );
+}
+
 async function addAsset({ packId, kind, cutKey, label, url, meta }) {
   const r = await query(
     `INSERT INTO pack_assets (pack_id, kind, cut_key, label, url, meta)
@@ -78,4 +90,4 @@ async function getPack({ id, shareId, userId }) {
   return pack;
 }
 
-module.exports = { ensureSchema, createPack, setStatus, addAsset, getPack };
+module.exports = { ensureSchema, createPack, setStatus, setPlan, addAsset, getPack };
