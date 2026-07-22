@@ -57,23 +57,56 @@
   .rb-failed{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:14px;aspect-ratio:4/5}
   .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:12.5px}
   .rb-failed .rbf-msg{color:var(--dim);font-size:11px;line-height:1.5}
-  /* 내 크리에이션 — Shots·Ad Video 페이지와 동일한 공유 피드(전체 크리에이션) */
-  .works{margin-top:46px}
-  .works-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
-  .works-head h2{font-family:'Sora';font-size:20px;font-weight:800;letter-spacing:-.4px}
+  /* 내 크리에이션 = Shots·Ad Video 페이지와 동일 피드(날짜 그룹 + 배치별 메타패널). studio.html에서 이식. */
+  .works{padding:0 24px 90px;position:relative;z-index:2}          /* 화면 넓게(풀폭) — studio 피드와 동일 */
+  .works-head{display:flex;align-items:baseline;gap:10px;margin:6px 0 4px}
+  .works-head h2{font-family:'Sora';font-size:22px;font-weight:800;letter-spacing:-.4px}
   .works-sub{color:var(--dim);font-size:13px}
-  .works-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
-  .wcard{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg2);cursor:pointer;aspect-ratio:4/5}
-  .wcard .media{width:100%;height:100%;object-fit:cover;display:block}
-  .wcard .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s}
-  .wcard:hover .rc-tools,.wcard:focus-within .rc-tools{opacity:1;transform:none}
-  @media(hover:none){.wcard .rc-tools{opacity:1;transform:none}}
-  .rc-btn{width:30px;height:30px;border-radius:9px;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,transform .1s;text-decoration:none}
-  .rc-btn:hover{background:rgba(0,0,0,.8)}
-  .rc-btn:active{transform:scale(.9)}
-  .rc-btn svg{width:15px;height:15px;display:block}
-  .rc-btn.on{background:var(--accent)}
   .works-empty{color:var(--dim);font-size:13px;padding:34px 0;text-align:center}
+  #resultsGrid{display:block}
+  .result-row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--border)}
+  .result-row:first-child{padding-top:8px}
+  .result-row:last-child{border-bottom:none}
+  .rb-media{display:flex;gap:12px;flex-wrap:wrap;flex:0 1 auto;min-width:0;max-width:calc(100% - 306px)}  /* 정보 패널이 미디어 옆에 밀착 */
+  .rb-media .result-card{height:300px;width:auto;max-width:100%}   /* 높이 기준(폭=비율) → 크롭 없이 자연 비율 */
+  .rb-media .result-card:only-child{height:460px}
+  .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
+  .result-card{border-radius:16px;overflow:hidden;position:relative;border:1px solid var(--border);background:#0c0c14}
+  .result-card .img{width:100%;height:100%;object-fit:cover;display:block}
+  .result-card .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:4}
+  .result-card:hover .rc-tools,.result-card:focus-within .rc-tools{opacity:1;transform:none}
+  @media(hover:none){.result-card .rc-tools{opacity:1;transform:none}}
+  .result-card .rc-btn{width:30px;height:30px;border-radius:9px;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;text-decoration:none;transition:background .15s,transform .1s}
+  .result-card .rc-btn:hover{background:rgba(0,0,0,.8)}
+  .result-card .rc-btn:active{transform:scale(.9)}
+  .result-card .rc-btn svg{width:15px;height:15px;display:block}
+  .result-card .rc-btn.on{background:var(--accent)}
+  .rb-badge{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:7px}
+  .rb-badge.tpl{color:var(--accent2);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+  .rb-badge.custom{color:#5ee0d6;background:rgba(94,224,214,.13)}
+  .rb-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
+  .rb-prompt{font-size:13.5px;line-height:1.55;color:var(--dim);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .rb-specs{display:flex;flex-wrap:wrap;align-items:baseline;gap:0;margin-top:2px}
+  .rb-specs .spec{display:inline;font-size:10.5px;font-weight:500;letter-spacing:.3px;color:var(--faint);line-height:1.5;font-variant-numeric:tabular-nums}
+  .rb-specs .spec b{color:var(--dim);font-weight:600}
+  .rb-specs .spec[hidden]{display:none}
+  .rb-specs .spec:not(:first-child)::before{content:"·";margin:0 6px;color:rgba(255,255,255,.16);font-weight:400}
+  .rb-src-row{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .rb-src-thumb{width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid var(--border);display:block;background:rgba(255,255,255,.04)}
+  .rb-src-item{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--dim);line-height:1.3}
+  .rb-src-item .k{font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--faint)}
+  .rb-src-model{padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--border)}
+  .rb-ch-row{margin-top:5px;gap:6px}
+  .rb-ch{padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.035);border:1px solid var(--border);font-size:11px}
+  .rb-ch .k{margin-right:1px}
+  .ch-dot{width:9px;height:9px;border-radius:3px;display:inline-block;border:1px solid rgba(255,255,255,.25);margin-right:1px}
+  .rb-del-row{margin-top:10px}
+  .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  .rb-del:hover{color:#ff5f6e;border-color:#ff5f6e;background:rgba(255,95,110,.1)}
+  .rb-del:disabled{opacity:.6;cursor:default}
+  .rb-date{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--dim);margin:8px 0 -6px;padding-top:18px;border-top:1px solid var(--border)}
+  .rb-date:first-child{border-top:none;padding-top:0;margin-top:2px}
+  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media{max-width:none}.rb-media .result-card{width:46%;height:auto;max-width:none}.rb-media .result-card:only-child{width:100%}}
 </style>
 </head>
 <body class="has-rail">
@@ -120,12 +153,13 @@
     </div>
   </div>
 
-  <!-- 내 크리에이션 — Shots·Ad Video 페이지와 동일 피드(전체 크리에이션). generation_results 공유 스토어. -->
-  <div class="works" id="worksSec">
-    <div class="works-head"><h2>내 크리에이션</h2><span class="works-sub" id="worksCount"></span></div>
-    <div class="works-grid" id="worksGrid"></div>
-    <div class="works-empty hide" id="worksEmpty">아직 만든 콘텐츠가 없어요. 위에서 상품 사진을 넣어 만들어 보세요.</div>
-  </div>
+</div>
+
+<!-- 내 크리에이션 — full-width, studio·Ad Video 페이지와 동일 피드(날짜 그룹 + 배치별 메타패널). generation_results 공유 스토어. -->
+<div class="works" id="worksSec">
+  <div class="works-head"><h2>내 크리에이션</h2><span class="works-sub" id="worksCount"></span></div>
+  <div id="resultsGrid"></div>
+  <div class="works-empty hide" id="worksEmpty">아직 만든 콘텐츠가 없어요. 위에서 상품 사진을 넣어 만들어 보세요.</div>
 </div>
 
 <script>
@@ -249,59 +283,134 @@ function downloadAll() {
   }, i * 350)); // 스태거 — 브라우저 다중 다운로드 차단 회피
 }
 
-// ── 내 크리에이션 (전체 — Shots·Ad Video 페이지와 동일 피드. /api/generate/results = generation_results 공유 스토어) ──
+// ── 내 크리에이션 = Shots·Ad Video 페이지와 동일 피드(날짜 그룹 + 배치별 메타패널). studio.html에서 이식. ──
+//   /api/generate/results(generation_results 공유 스토어) → batch_id||prompt_idx 로 배치 묶고, 날짜 헤더 + [미디어행 | 메타패널].
 const RC_SVG = {
   dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   pub: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
   priv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
 };
-let WORKS = [];
+let BATCHES = [];
+function dateKeyOf(iso) { const d = iso ? new Date(iso) : new Date(); if (isNaN(d)) return ''; return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+function fmtBatchDate(iso) { // Today / Yesterday / Wednesday, May 27, 2026
+  const d = iso ? new Date(iso) : new Date(); if (isNaN(d)) return '';
+  const t = new Date(); t.setHours(0, 0, 0, 0); const dd = new Date(d); dd.setHours(0, 0, 0, 0);
+  const diff = Math.round((t - dd) / 86400000);
+  if (diff === 0) return 'Today'; if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+function rbModelLabel(m) { m = String(m || '').trim(); if (!m) return ''; const l = m.toLowerCase();
+  if (l === 'pro') return 'Nano Banana Pro'; if (l === 'flash') return 'Nano Banana';
+  if (/gemini|nano.?banana/.test(l)) return /pro/.test(l) ? 'Nano Banana Pro' : 'Nano Banana';
+  if (/gpt/.test(l)) return /high|hd/.test(l) ? 'GPT Image HD' : 'GPT Image';
+  if (/kling/.test(l) || /^ugc/.test(l) || l === 'reel') return 'Kling';
+  return m; }
+function rbRatioLabel(w, h) { if (!w || !h) return ''; const r = w / h, C = [[9, 16], [4, 5], [2, 3], [3, 4], [1, 1], [4, 3], [3, 2], [16, 9]]; let best = C[0], bd = Infinity; C.forEach(c => { const d = Math.abs(r - c[0] / c[1]); if (d < bd) { bd = d; best = c; } }); return best[0] + ':' + best[1]; }
+function fitResultCard(el) { const w = el.videoWidth || el.naturalWidth, h = el.videoHeight || el.naturalHeight; if (!w || !h) return; const c = el.closest('.result-card'); if (c) c.style.aspectRatio = w + '/' + h; }
+function fillRbSpecs(root) {   // 첫 미디어 로드 시 해상도·비율 채움(정적으로 못 채운 것만)
+  (root || document).querySelectorAll('.result-row').forEach(row => {
+    const specs = row.querySelector('.rb-specs'); if (!specs) return;
+    const dimEl = specs.querySelector('.rb-spec-dim'), ratioEl = specs.querySelector('.rb-spec-ratio');
+    if (!dimEl || !dimEl.hasAttribute('hidden')) return;
+    const el = row.querySelector('.rb-media .result-card img, .rb-media .result-card video'); if (!el) return;
+    const apply = () => { const w = el.naturalWidth || el.videoWidth, h = el.naturalHeight || el.videoHeight;
+      if (w && h) { dimEl.innerHTML = '<b>' + w + '</b> × <b>' + h + '</b>'; dimEl.hidden = false;
+        if (ratioEl) { const lbl = rbRatioLabel(w, h); if (lbl) { ratioEl.innerHTML = '<b>' + lbl + '</b>'; ratioEl.hidden = false; } } } };
+    if (el.tagName === 'IMG') { if (el.complete && el.naturalWidth) apply(); else el.addEventListener('load', apply, { once: true }); }
+    else { if (el.readyState >= 1) apply(); else el.addEventListener('loadedmetadata', apply, { once: true }); }
+  });
+}
 async function loadWorks() {
   try {
-    const r = await fetch('/api/generate/results?limit=60');
+    const r = await fetch('/api/generate/results?limit=120');
     if (!r.ok) return;
     const raw = (await r.json()).data || [];
-    WORKS = raw.filter(x => x.status === 'success' && x.file_path).map(x => ({
-      idx: x.idx,
-      url: '/images/' + x.file_path.split('/').pop(),   // 피드 규약: basename → /images/<name>
-      type: /\.(mp4|webm|mov)$/i.test(x.file_path) ? 'reel' : 'photo',
-      visibility: x.visibility === 'public' ? 'public' : 'private',
-    }));
+    const byKey = Object.create(null); BATCHES = [];
+    raw.forEach(x => {
+      if (x.status !== 'success' || !x.file_path) return;
+      const k = (x.metadata && x.metadata.batch_id) || x.prompt_idx;
+      let b = byKey[k];
+      if (!b) {
+        b = { key: k, items: [], idxs: [], promptText: x.prompt_text || '', templateSource: x.template_source || '', templateName: x.template_name || '', model: x.model || '', w: x.width, h: x.height, productImage: x.product_image || (x.metadata && x.metadata.product_image) || '', modelName: (x.metadata && x.metadata.model_name) || '', choices: (x.metadata && x.metadata.choices) || null, dateKey: dateKeyOf(x.created_at), dateLabel: fmtBatchDate(x.created_at) };
+        byKey[k] = b; BATCHES.push(b);
+      }
+      const fn = x.file_path.split('/').pop();
+      b.items.push({ url: '/images/' + fn, type: /\.(mp4|webm|mov)$/i.test(fn) ? 'reel' : 'photo', idx: x.idx, visibility: x.visibility === 'public' ? 'public' : 'private' });
+      b.idxs.push(x.idx);
+    });
     renderWorks();
   } catch (e) {}
 }
-function renderWorks() {
-  const grid = $('#worksGrid'), empty = $('#worksEmpty');
-  $('#worksCount').textContent = WORKS.length ? WORKS.length + '개' : '';
-  if (!WORKS.length) { grid.innerHTML = ''; empty.classList.remove('hide'); return; }
-  empty.classList.add('hide');
-  grid.innerHTML = WORKS.map(it => {
-    const onerr = `onerror="var c=this.closest('.wcard');if(c)c.remove()"`; // 파일 누락(404) 카드 자동 제거
-    const media = it.type === 'reel'
-      ? `<video class="media" muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
-      : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
-    const vp = it.visibility === 'private';
-    const visBtn = `<button class="rc-btn${vp ? ' on' : ''}" type="button" title="${vp ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp ? RC_SVG.priv : RC_SVG.pub}</button>`;
-    const dlBtn = `<a class="rc-btn" href="${esc(it.url)}" download title="다운로드" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
-    return `<div class="wcard" role="link" tabindex="0" onclick="location.href='/creation?idx=${it.idx}&from=pack'"><div class="rc-tools">${visBtn}${dlBtn}</div>${media}</div>`;
-  }).join('');
+function studioMediaCard(o) {
+  const reel = (o.type === 'reel');
+  const inner = reel
+    ? `<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="metadata" style="object-fit:cover" onloadedmetadata="fitResultCard(this)"></video>`
+    : `<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover" onload="fitResultCard(this)" alt="" onerror="var c=this.closest('.result-card');if(c)c.remove()">`;
+  const priv = (o.visibility === 'private');
+  const visBtn = `<button class="rc-btn${priv ? ' on' : ''}" type="button" title="${priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'}" onclick="event.stopPropagation();toggleCardVis(this,${o.idx})">${priv ? RC_SVG.priv : RC_SVG.pub}</button>`;
+  const dlBtn = `<a class="rc-btn" href="${esc(o.url)}" download title="다운로드" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
+  return `<div class="result-card" role="link" tabindex="0" onclick="location.href='/creation?idx=${o.idx}&from=pack'" style="cursor:pointer">${inner}<div class="rc-tools">${visBtn}${dlBtn}</div></div>`;
 }
-async function toggleVis(idx, btn) {   // 글로브 = 공개/비공개 토글(Shots·Library와 동일 엔드포인트)
-  const it = WORKS.find(x => x.idx === idx); if (!it) return;
-  if (btn && btn.disabled) return;
-  const next = it.visibility === 'public' ? 'private' : 'public';
-  if (btn) btn.disabled = true;
+const CH_LBL = { cut: 'Cut', cutBg: 'BG color', bg: 'Scene', garment: 'Garment', skin: 'Skin', age: 'Age', concept: 'Concept', detail: 'Detail', size: 'Size' };
+const CH_ORDER = ['cut', 'garment', 'skin', 'age', 'concept', 'bg', 'cutBg', 'size', 'detail'];
+function batchRowHtml(b) {
+  const media = b.items.map(studioMediaCard).join('');
+  const isTpl = !!b.templateSource;
+  const head = isTpl
+    ? `<span class="rb-badge tpl">⬡ Template</span><div class="rb-title">${esc(b.templateName || 'Template')}</div>`
+    : `<span class="rb-badge custom">✎ Custom</span><div class="rb-prompt">${esc(b.promptText || 'Custom')}</div>`;
+  const ML = rbModelLabel(b.model);
+  const dimStatic = (b.w && b.h) ? `<b>${b.w}</b> × <b>${b.h}</b>` : '';
+  const ratioStatic = (b.w && b.h) ? rbRatioLabel(b.w, b.h) : '';
+  const isReelBatch = !!(b.items[0] && b.items[0].type === 'reel');
+  const specs = `<div class="rb-specs"><span class="spec">${isReelBatch ? 'Reel' : 'Photo'}</span>`
+    + `<span class="spec rb-spec-dim"${dimStatic ? '' : ' hidden'}>${dimStatic}</span>`
+    + `<span class="spec rb-spec-ratio"${ratioStatic ? '' : ' hidden'}>${ratioStatic ? `<b>${ratioStatic}</b>` : ''}</span>`
+    + (ML ? `<span class="spec">${esc(ML)}</span>` : '') + `</div>`;
+  const srcRow = ((b.productImage || b.modelName) ? `<div class="rb-src-row">`
+    + (b.productImage ? `<img class="rb-src-thumb" src="${esc(b.productImage)}" alt="" loading="lazy" title="사용한 제품" onerror="this.remove()">` : '')
+    + (b.modelName ? `<span class="rb-src-item rb-src-model"><span class="k">Model</span>${esc(b.modelName)}</span>` : '') + `</div>` : '');
+  const chRow = (() => { const c = b.choices; if (!c || typeof c !== 'object') return '';
+    const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });
+    return chips.length ? `<div class="rb-src-row rb-ch-row">${chips.join('')}</div>` : ''; })();
+  const del = `<div class="rb-del-row"><button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">🗑 삭제</button></div>`;
+  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${del}</div></div>`;
+}
+function renderWorks() {
+  const grid = $('#resultsGrid'), empty = $('#worksEmpty');
+  const total = BATCHES.reduce((n, b) => n + b.items.length, 0);
+  $('#worksCount').textContent = total ? total + '개' : '';
+  if (!BATCHES.length) { grid.innerHTML = ''; empty.classList.remove('hide'); return; }
+  empty.classList.add('hide');
+  let html = '', last = null;
+  BATCHES.forEach(b => { if (b.dateKey !== last) { html += `<div class="rb-date">${esc(b.dateLabel || '')}</div>`; last = b.dateKey; } html += batchRowHtml(b); });
+  grid.innerHTML = html;
+  fillRbSpecs(grid);
+}
+async function toggleCardVis(btn, idx) {   // 글로브 = 공개/비공개 토글(Shots·Library와 동일 엔드포인트)
+  if (btn.disabled) return;
+  const next = btn.classList.contains('on') ? 'public' : 'private';
+  btn.disabled = true;
   try {
     const r = await fetch('/api/generate/results/' + idx + '/visibility', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visibility: next }) });
     const d = await r.json();
     if (!r.ok || !d.success) throw new Error(d.error || 'failed');
-    const vis = (d.data && d.data.visibility) || next;
-    it.visibility = vis;
-    const priv = vis === 'private';
-    if (btn) { btn.classList.toggle('on', priv); btn.title = priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'; btn.innerHTML = priv ? RC_SVG.priv : RC_SVG.pub; }
-    if (window.toast) toast(priv ? '비공개로 바꿨어요.' : '공개로 바꿨어요 — Explore에 노출됩니다.');
+    const vis = (d.data && d.data.visibility) || next; const priv = (vis === 'private');
+    btn.classList.toggle('on', priv); btn.title = priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'; btn.innerHTML = priv ? RC_SVG.priv : RC_SVG.pub;
+    if (window.toast) { if (next === 'private' && vis !== 'private') toast('비공개는 유료 플랜이 필요해요 — 공개 유지.', 'error'); else toast(priv ? '비공개로 바꿨어요.' : '공개로 바꿨어요 — Explore에 노출됩니다.'); }
   } catch (e) { if (window.toast) toast('변경 실패: ' + (e.message || e), 'error'); }
-  finally { if (btn) btn.disabled = false; }
+  finally { btn.disabled = false; }
+}
+async function delBatch(btn, idxsCsv) {   // 크리에이션 삭제(배치 = 여러 장이면 전부). /api/generate/creations/:idx DELETE
+  if (btn.disabled) return;
+  if (!confirm('이 크리에이션을 삭제할까요?')) return;
+  btn.disabled = true;
+  const idxs = idxsCsv.split(',').filter(Boolean);
+  try {
+    await Promise.all(idxs.map(id => fetch('/api/generate/creations/' + id, { method: 'DELETE' }).then(r => r.ok).catch(() => false)));
+    const row = btn.closest('.result-row'); if (row) row.remove();
+    loadWorks();
+  } catch (e) { btn.disabled = false; if (window.toast) toast('삭제 실패', 'error'); }
 }
 loadWorks(); // 페이지 로드 시 피드 채우기
 </script>
