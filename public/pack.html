@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Product Pack · Doppia</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#f6f1ea; --card:#fff; --ink:#2b2320; --sub:#9a8f86; --accent:#c4424f; --line:#e7ddd2; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Apple SD Gothic Neo', system-ui, sans-serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 26px; letter-spacing: -.02em; }
+  .lead { color: var(--sub); font-size: 14px; margin: 6px 0 26px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+  label.f { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
+  input[type=text], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; }
+  textarea { min-height: 64px; resize: vertical; }
+  .drop { border: 2px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--sub); cursor: pointer; }
+  .drop.on { border-color: var(--accent); color: var(--ink); }
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 200px; }
+  button.go { background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 13px 26px; font: inherit; font-weight: 500; cursor: pointer; margin-top: 22px; }
+  button.go:disabled { opacity: .5; cursor: default; }
+  .seg { display: flex; gap: 8px; }
+  .seg label { flex: 1; text-align: center; border: 1px solid var(--line); border-radius: 10px; padding: 9px; font-size: 13px; cursor: pointer; }
+  .seg input { display: none; }
+  .seg input:checked + span { color: var(--accent); font-weight: 500; }
+  .status { font-size: 14px; color: var(--sub); margin-bottom: 14px; }
+  .sect h2 { font-size: 15px; margin: 20px 0 10px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
+  .grid figure { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background:#efe9e1; }
+  .grid img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; }
+  .grid figcaption { font-size: 11px; padding: 6px 8px; color: #5f544d; }
+  .hide { display: none; }
+  .spin { display:inline-block; width:14px; height:14px; border:2px solid var(--line); border-top-color: var(--accent); border-radius:50%; animation: sp .8s linear infinite; vertical-align:-2px; margin-right:6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1a1613; --card:#241f1b; --ink:#f0e8e0; --line:#39312b; } input,select,textarea { background:#1a1613; color:inherit; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Product Pack</h1>
+  <p class="lead">상품 사진 1~몇 장을 넣으면 필요한 콘텐츠를 알아서 만들어 드립니다.</p>
+
+  <div id="form">
+    <div class="card">
+      <div class="drop" id="drop">
+        <div>사진을 끌어다 놓거나 클릭해서 업로드</div>
+        <input type="file" id="file" accept="image/*" multiple class="hide">
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label class="f">카테고리</label>
+          <select id="vertical"><option value="beverage">음료 · 액상</option></select>
+        </div>
+        <div>
+          <label class="f">구성</label>
+          <div class="seg">
+            <label><input type="radio" name="kind" value="single" checked><span>단일 상품</span></label>
+            <label><input type="radio" name="kind" value="set"><span>세트 · 변형</span></label>
+          </div>
+        </div>
+      </div>
+      <label class="f">제품 한 줄 설명</label>
+      <input type="text" id="product" placeholder="예: 국내산 사과로 만든 애플사이다비니거 데일리 보틀">
+      <div id="setBox" class="hide">
+        <label class="f">세트 구성 — 한 줄에 하나 (라벨/변형)</label>
+        <textarea id="skus" placeholder="MON pink day-label&#10;TUE peach day-label&#10;..."></textarea>
+      </div>
+      <button class="go" id="go" disabled>콘텐츠 만들기</button>
+    </div>
+  </div>
+
+  <div id="result" class="hide">
+    <div class="card">
+      <div class="status" id="status"><span class="spin"></span>생성 중…</div>
+      <div class="sect" id="assets"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let files = [];
+
+const drop = $('#drop'), fileInput = $('#file');
+drop.onclick = () => fileInput.click();
+['dragover','dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.toggle('on', ev === 'dragover');
+  if (ev === 'drop') addFiles(e.dataTransfer.files);
+}));
+fileInput.onchange = () => addFiles(fileInput.files);
+function addFiles(list) {
+  for (const f of list) if (f.type.startsWith('image/')) files.push(f);
+  renderThumbs();
+}
+function renderThumbs() {
+  $('#thumbs').innerHTML = '';
+  files.forEach(f => { const img = new Image(); img.src = URL.createObjectURL(f); $('#thumbs').appendChild(img); });
+  $('#go').disabled = files.length === 0;
+}
+
+document.querySelectorAll('input[name=kind]').forEach(r => r.onchange = () => {
+  $('#setBox').classList.toggle('hide', document.querySelector('input[name=kind]:checked').value !== 'set');
+});
+
+$('#go').onclick = async () => {
+  $('#go').disabled = true;
+  const fd = new FormData();
+  files.forEach(f => fd.append('photos', f));
+  fd.append('vertical', $('#vertical').value);
+  fd.append('product', $('#product').value);
+  if (document.querySelector('input[name=kind]:checked').value === 'set') {
+    const skus = $('#skus').value.split('\n').map(s => s.trim()).filter(Boolean)
+      .map((label, i) => ({ sku: 'sku' + (i + 1), label }));
+    if (skus.length) fd.append('skus', JSON.stringify(skus));
+  }
+  const r = await fetch('/api/pack', { method: 'POST', body: fd });
+  if (!r.ok) { alert('요청 실패: ' + r.status); $('#go').disabled = false; return; }
+  const { id } = await r.json();
+  $('#form').classList.add('hide');
+  $('#result').classList.remove('hide');
+  poll(id);
+};
+
+async function poll(id) {
+  const r = await fetch('/api/pack/' + id);
+  const pack = await r.json();
+  renderAssets(pack.assets || []);
+  if (pack.status === 'done') { $('#status').textContent = '완료 · ' + (pack.assets || []).length + '개 자산'; return; }
+  if (pack.status === 'failed') { $('#status').textContent = '실패: ' + (pack.error || ''); return; }
+  setTimeout(() => poll(id), 2500);
+}
+
+const KIND_LABEL = { ref: '캐논 레퍼', still: '스틸', composite: '합성' };
+function renderAssets(assets) {
+  const byKind = {};
+  assets.forEach(a => (byKind[a.kind] = byKind[a.kind] || []).push(a));
+  $('#assets').innerHTML = ['still', 'composite', 'ref'].filter(k => byKind[k]).map(k =>
+    `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">` +
+    byKind[k].map(a => `<figure><img src="${a.url}" loading="lazy"><figcaption>${a.label || a.cut_key || ''}</figcaption></figure>`).join('') +
+    `</div>`).join('');
+}
+</script>
+</body>
+</html>

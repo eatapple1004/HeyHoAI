@@ -217,6 +217,7 @@ app.use('/api/teams', requireAuth, require('./teams/team.route').router);
 app.use('/api/dashboard', requireAuth, require('./dashboard/dashboard.route').router);
 app.use('/api/subscription', requireAuth, require('./subscription/subscription.route').router);
 app.use('/api/recipes', requireAuth, require('./recipes/recipe.route'));
+app.use('/api/pack', requireAuth, require('./pack/pack.route'));
 // 체험 계정 (라우트 내부에서 requireAdmin/requireAuth 자체 가드)
 app.use('/api', require('./trial/trial.route'));
 app.use('/api', require('./admin/adminRefine.route'));
