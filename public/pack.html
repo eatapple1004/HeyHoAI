@@ -45,6 +45,28 @@
   .dl{position:absolute;top:7px;right:7px;width:30px;height:30px;border-radius:9px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;opacity:0;transition:opacity .15s}
   .grid figure:hover .dl{opacity:1}
   @media(hover:none){.dl{opacity:1}}
+  /* 완료 후 인터랙티브: 버전 플립 + 컷별 액션(다시/레퍼 다시/studio) + 컨셉 추가 */
+  .grid figure.rescard figcaption{padding:7px 9px 9px}
+  .cut-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .cutbtn{font-family:inherit;font-size:10.5px;font-weight:600;padding:4px 8px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);text-decoration:none;line-height:1}
+  .cutbtn:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.09)}
+  .cutbtn:disabled{opacity:.6;cursor:default}
+  .ver{position:absolute;top:7px;left:7px;display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:8px;padding:2px 4px;z-index:3}
+  .ver span{font-size:10px;font-weight:700;color:#fff;padding:0 2px;font-variant-numeric:tabular-nums}
+  .verb{width:18px;height:18px;border:none;background:none;color:#fff;font-size:10px;cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0}
+  .verb:hover:not(:disabled){background:rgba(255,255,255,.2)}
+  .verb:disabled{opacity:.35;cursor:default}
+  .grid figure.addcut{display:flex;align-items:center;justify-content:center;aspect-ratio:4/5;border:1.5px dashed var(--border2);background:rgba(255,255,255,.02);cursor:pointer;color:var(--dim);transition:border-color .15s,color .15s}
+  .grid figure.addcut:hover{border-color:var(--accent2);color:var(--text)}
+  .addcut-in{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:600}
+  .addcut-plus{width:34px;height:34px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:400}
+  .addmenu-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .addmenu{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:16px;max-width:440px;width:100%;box-shadow:0 24px 60px -16px rgba(0,0,0,.7)}
+  .addmenu-h{font-family:'Sora';font-size:15px;font-weight:700;margin-bottom:12px}
+  .addmenu-list{display:flex;flex-wrap:wrap;gap:8px}
+  .addmenu-item{font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--border)}
+  .addmenu-item:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent2)}
+  .addmenu-item:disabled{opacity:.6;cursor:default}
   /* 생성 중 = 컷(Shots)과 동일 UX: 계획이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초 */
   .analyzing{display:flex;flex-direction:column;align-items:center;gap:13px;padding:44px 0;color:var(--text);font-size:14px;text-align:center}
   .analyzing .sub{color:var(--dim);font-size:12.5px}
@@ -194,6 +216,7 @@ $('#go').onclick = async () => {
   catch (e) { fail('요청 실패: 네트워크'); $('#go').disabled = false; return; }
   if (!r.ok) { fail('요청 실패: ' + r.status); $('#go').disabled = false; return; }
   const { id } = await r.json();
+  PACK_ID = id;
   $('#form').classList.add('hide');
   $('#result').classList.remove('hide');
   startGen();
@@ -208,10 +231,13 @@ const KIND_LABEL = { still: '스틸', composite: '합성', ref: '캐논 레퍼' 
 const KIND_ORDER = ['still', 'composite', 'ref'];
 const filled = new Set();
 let built = false, genStartTs = 0, elapsedTimer = null;
+let PACK_ID = null, PACK = null;       // 현재 팩(액션 후 재렌더)
+const verIdx = {};                     // slotId → 보고 있는 버전 인덱스(기본 최신)
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slotId = (o) => o.kind + ':' + (o.key != null ? o.key : o.cut_key);
 const assetId = (a) => a.kind + ':' + (a.cut_key != null ? a.cut_key : a.key);
-function fname(a, i) { return (a.cut_key || a.kind || 'image').replace(/[^\w-]/g, '') + '_' + (i + 1) + '.jpg'; }
+function slug(s) { return String(s == null ? '' : s).trim().replace(/[^\w가-힣.-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'image'; }
+function fname(a) { return slug(a.label || a.cut_key || a.kind) + '.jpg'; }  // 라벨 기반 파일명(용도가 파일명에)
 
 function startGen() {
   built = false; filled.clear();
@@ -247,13 +273,86 @@ function fillSlot(a, i) {
   fig.classList.remove('slot');
   fig.innerHTML = `<a class="dl" href="${a.url}" download="${fname(a, i)}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy"><figcaption>${esc(a.label || a.cut_key || '')}</figcaption>`;
 }
-function finalizeSlots() {   // 완료/실패 시점에 아직 스피너인 슬롯 = 생성 실패
-  document.querySelectorAll('#assets figure.slot').forEach(fig => {
-    const cap = fig.querySelector('figcaption');
-    const label = cap ? cap.textContent : '';
-    fig.classList.remove('slot'); fig.classList.add('failed-fig');
-    fig.innerHTML = `<div class="rb-failed"><div class="rbf-ic">⚠ 실패</div><div class="rbf-msg">이 컷은 생성되지 않았어요</div></div><figcaption>${esc(label)}</figcaption>`;
-  });
+// ── 완료 후 = 버전 인식 인터랙티브 렌더(컷별 최신+플립 + 다시/레퍼 다시/컨셉 추가/studio) ──
+function versionsByCut(pack) { const g = {}; (pack && pack.assets || []).forEach(a => { const id = assetId(a); (g[id] = g[id] || []).push(a); }); return g; }
+function renderInteractive(pack) {
+  PACK = pack;
+  const plan = pack.config && pack.config.plan;
+  const groups = versionsByCut(pack);
+  const done = pack.status === 'done' || pack.status === 'failed';
+  const slots = (plan && plan.slots ? plan.slots.slice() : []);
+  Object.keys(groups).forEach(id => { if (!slots.some(s => slotId(s) === id)) { const m = id.match(/^([^:]+):(.+)$/); if (m) slots.push({ kind: m[1], key: m[2], label: (groups[id][0].label) }); } }); // add-cut로 생긴 슬롯
+  const byKind = {};
+  slots.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
+  $('#assets').innerHTML = KIND_ORDER.filter(k => byKind[k]).map(k => {
+    const cards = byKind[k].map(s => cardHtml(s, groups[slotId(s)] || [], done)).join('');
+    const add = (k === 'still' && done) ? `<figure class="addcut" onclick="openAddCut()"><div class="addcut-in"><div class="addcut-plus">+</div><div>컨셉 추가</div></div></figure>` : '';
+    return `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${cards}${add}</div>`;
+  }).join('');
+}
+function cardHtml(slot, versions, done) {
+  const sid = slotId(slot);
+  if (!versions.length) {
+    if (!done) return `<figure class="slot" data-slot="${esc(sid)}"><div class="ph"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div><figcaption>${esc(slot.label || slot.key)}</figcaption></figure>`;
+    return `<figure class="failed-fig"><div class="rb-failed"><div class="rbf-ic">⚠ 실패</div><div class="rbf-msg">이 컷은 생성되지 않았어요</div></div><figcaption>${esc(slot.label || slot.key)}</figcaption></figure>`;
+  }
+  let idx = verIdx[sid]; if (idx == null || idx >= versions.length) idx = versions.length - 1; verIdx[sid] = idx;
+  const a = versions[idx];
+  const label = a.label || slot.label || a.cut_key || '';
+  const flip = versions.length > 1 ? `<div class="ver"><button class="verb" onclick="flipVer('${esc(sid)}',-1)"${idx === 0 ? ' disabled' : ''}>◄</button><span>${idx + 1}/${versions.length}</span><button class="verb" onclick="flipVer('${esc(sid)}',1)"${idx === versions.length - 1 ? ' disabled' : ''}>►</button></div>` : '';
+  const isRef = slot.kind === 'ref';
+  const acts = isRef
+    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">↻ 레퍼 다시 굽기</button>`
+    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)">↻ 다시</button><a class="cutbtn" href="/studio" title="studio에서 정밀 편집">✎ studio</a>`;
+  return `<figure class="rescard" data-slot="${esc(sid)}"><a class="dl" href="${a.url}" download="${esc(fname(a))}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy">${flip}<figcaption>${esc(label)}<div class="cut-actions">${acts}</div></figcaption></figure>`;
+}
+function flipVer(sid, dir) {
+  const g = versionsByCut(PACK)[sid] || []; if (!g.length) return;
+  let idx = (verIdx[sid] != null ? verIdx[sid] : g.length - 1) + dir;
+  idx = Math.max(0, Math.min(g.length - 1, idx)); verIdx[sid] = idx;
+  const fig = [...document.querySelectorAll('#assets figure.rescard')].find(f => f.dataset.slot === sid);
+  if (!fig) return;
+  const a = g[idx];
+  fig.querySelector('img').src = a.url;
+  const dl = fig.querySelector('.dl'); dl.href = a.url; dl.download = fname(a);
+  const v = fig.querySelector('.ver'); if (v) { v.querySelector('span').textContent = (idx + 1) + '/' + g.length; const b = v.querySelectorAll('.verb'); b[0].disabled = idx === 0; b[1].disabled = idx === g.length - 1; }
+}
+async function refreshPack() { try { const pack = await (await fetch('/api/pack/' + PACK_ID)).json(); renderInteractive(pack); loadWorks(); } catch (e) {} }
+async function regenCut(cutKey, btn) {
+  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '생성 중…';
+  try {
+    const r = await fetch('/api/pack/' + PACK_ID + '/regenerate-cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cutKey }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    verIdx['still:' + cutKey] = 1e9; await refreshPack();     // 최신(새 버전)으로
+    if (window.toast) toast('새 버전 생성됨 — ◄►로 이전과 비교');
+  } catch (e) { if (window.toast) toast('재생성 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+}
+async function rebakeRef(refKey, btn) {
+  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
+  try {
+    const sku = String(refKey).replace(/^ref_/, '');
+    const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    verIdx['ref:' + refKey] = 1e9; await refreshPack();
+    if (window.toast) toast('레퍼 새 버전 — 이제 "다시"는 이 레퍼로 생성됩니다');
+  } catch (e) { if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+}
+async function openAddCut() {
+  try {
+    const r = await fetch('/api/pack/' + PACK_ID + '/cut-library'); const d = await r.json();
+    const items = d.items || []; if (!items.length) { if (window.toast) toast('추가할 컨셉이 없어요(이미 다 있음)'); return; }
+    document.querySelector('.addmenu-bg')?.remove();
+    document.body.insertAdjacentHTML('beforeend', `<div class="addmenu-bg" onclick="if(event.target===this)this.remove()"><div class="addmenu"><div class="addmenu-h">추가할 컨셉 고르기</div><div class="addmenu-list">${items.map(it => `<button class="addmenu-item" onclick="addCut('${esc(it.key)}',this)">${esc(it.label || it.key)}</button>`).join('')}</div></div></div>`);
+  } catch (e) { if (window.toast) toast('목록 실패', 'error'); }
+}
+async function addCut(cutKey, btn) {
+  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '생성 중…';
+  try {
+    const r = await fetch('/api/pack/' + PACK_ID + '/add-cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cutKey }) });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    document.querySelector('.addmenu-bg')?.remove(); await refreshPack();
+    if (window.toast) toast('컨셉 추가됨');
+  } catch (e) { if (window.toast) toast('추가 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 
 async function poll(id) {
@@ -262,23 +361,24 @@ async function poll(id) {
   catch (e) { setTimeout(() => poll(id), 2000); return; }
   const plan = pack.config && pack.config.plan;
   const assets = pack.assets || [];
-  window._packAssets = assets;
+  window._packAssets = assets; PACK = pack;
   if (plan && !built) buildGrid(plan.slots);
   if (built) assets.forEach((a, i) => fillSlot(a, i));
   $('#dlAll').classList.toggle('hide', assets.length === 0);
 
-  if (pack.status === 'done') { finalizeSlots(); stopGen(); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
-  if (pack.status === 'failed') { finalizeSlots(); stopGen(); $('#status').innerHTML = '실패: ' + esc(pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
+  if (pack.status === 'done') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
+  if (pack.status === 'failed') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '실패: ' + esc(pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
   $('#status').innerHTML = plan
     ? '<span class="spin"></span>생성 중 · ' + assets.length + '/' + plan.total
     : '<span class="spin"></span>사진 분석 중…';
   setTimeout(() => poll(id), 1500);
 }
-function downloadAll() {
-  const assets = window._packAssets || [];
-  assets.forEach((a, i) => setTimeout(() => {
+function downloadAll() {   // 컷별 현재 보고 있는 버전만
+  const g = versionsByCut(PACK || { assets: window._packAssets || [] });
+  const items = Object.keys(g).map(sid => { const vs = g[sid]; let i = verIdx[sid]; if (i == null || i >= vs.length) i = vs.length - 1; return vs[i]; });
+  items.forEach((a, i) => setTimeout(() => {
     const el = document.createElement('a');
-    el.href = a.url; el.download = fname(a, i);
+    el.href = a.url; el.download = fname(a);
     document.body.appendChild(el); el.click(); el.remove();
   }, i * 350)); // 스태거 — 브라우저 다중 다운로드 차단 회피
 }
