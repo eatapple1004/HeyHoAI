@@ -17,6 +17,7 @@ const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
 const { runPack } = require('./pack.service');
+const { classifyProduct } = require('./planner.service');    // 확인 단계용 가벼운 분류
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
 const { genStill } = require('./stills.service');            // 컷 재생성·추가
 const { suiteFor } = require('./suites');                    // 컷 라이브러리(컨셉 추가) + refBake 스펙
@@ -91,7 +92,7 @@ function latestRefPath(pack) {
   return null;
 }
 
-async function processPack(pack, { sourcePaths, vertical, product, skus, userId }) {
+async function processPack(pack, { sourcePaths, vertical, product, skus, category, userId }) {
   pack.config = pack.config || {};
   pack.product = pack.product || product;
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
@@ -104,7 +105,7 @@ async function processPack(pack, { sourcePaths, vertical, product, skus, userId 
   });
   try {
     await runPack({
-      sourcePaths: durableSources, vertical, product, skus, workDir,
+      sourcePaths: durableSources, vertical, product, skus, category, workDir,
       onPlan: async (plan) => { await repo.setPlan(pack.id, plan); },  // plan={total,slots,cuts,refSkus,product,vertical,sources}
       onAsset: async (a) => { await recordAsset(pack, { kind: a.kind, key: a.key, label: a.label, absPath: a.path, userId }); },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
@@ -116,21 +117,34 @@ async function processPack(pack, { sourcePaths, vertical, product, skus, userId 
   }
 }
 
+/** 확인 단계 — 사진+힌트로 카테고리·제품 감지(가벼움). 프론트가 "이거 맞아요?" 확인받고 POST /로 확정 생성. */
+router.post('/classify', upload.array('photos', 10), async (req, res, next) => {
+  try {
+    if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
+    const hint = (req.body.product || '').slice(0, 300);
+    const images = req.files.map((f) => ({ data: fs.readFileSync(f.path).toString('base64'), mediaType: f.mimetype || 'image/jpeg' }));
+    const result = await classifyProduct({ images, hint });
+    req.files.forEach((f) => { try { fs.unlinkSync(f.path); } catch (_) {} }); // 분류용 임시 업로드 정리(생성은 별도 POST에서 재업로드)
+    res.json(result);
+  } catch (e) { next(e); }
+});
+
 router.post('/', upload.array('photos', 10), async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
     const vertical = req.body.vertical || 'beverage';
     const product = (req.body.product || '').slice(0, 300);
+    const category = (req.body.category || '').slice(0, 40) || null;  // 사용자가 확인·확정한 카테고리
     let skus = null;
     try { skus = req.body.skus ? JSON.parse(req.body.skus) : null; } catch (_) { skus = null; }
 
     const pack = await repo.createPack({
-      userId: req.user && req.user.id, vertical, product, config: { skus, photoCount: req.files.length },
+      userId: req.user && req.user.id, vertical, product, config: { skus, category, photoCount: req.files.length },
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
     setImmediate(() => processPack(pack, {
-      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, userId: req.user && req.user.id,
+      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, category, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
 });

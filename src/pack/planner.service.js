@@ -54,13 +54,17 @@ const PLAN_SCHEMA = {
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint) {
+function buildUserPrompt(nImgs, hint, confirmed) {
+  const known = (confirmed && confirmed.category)
+    ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
+    : `TASK: infer what the product is and its category first.`;
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
       : `A product photo is attached. Study its real appearance — form, color, material, finish, label/wordmark.`,
     hint ? `Seller note: ${hint}` : '',
-    `TASK: infer what the product is and its category, then plan a DIVERSE PACK of 10–14 still shots that best sell THIS product.`,
+    known,
+    `Plan a DIVERSE PACK of 8–12 still shots that best sell THIS product.`,
     `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
     `  · beverage/food → hero (sunlit / color-block / luxe), clean PDP (front, 3/4), ingredient-with-source, pour/texture macro, lifestyle (morning table / desk / iced), flat-lay, splash, editorial.`,
     `  · cosmetics-skincare → hero, PDP, texture/dollop macro, ingredient, on-skin swatch, dewy/glass hero, shelfie lifestyle.`,
@@ -86,25 +90,27 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {string} [p.hint]  판매자 메모(선택)
  * @returns {Promise<{product, category, ingredient, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint }) {
+async function planPack({ images, hint, category, product }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
-    max_tokens: 4200,
+    max_tokens: 8000, // 8~12컷 × 상세 프롬프트 → 4200은 JSON 잘림(→파싱실패→폴백)이 잦았다. 넉넉히.
     system: SYSTEM,
     messages: [{ role: 'user', content }],
     output_config: { format: { type: 'json_schema', schema: PLAN_SCHEMA } },
   });
   const text = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
   const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
-  if (!m) throw new Error('planner: Claude가 JSON을 반환하지 않음');
-  const plan = JSON.parse(m[1]);
+  if (!m) throw new Error(`planner: JSON 없음(len=${text.length}, stop=${resp.stop_reason})`);
+  let plan;
+  try { plan = JSON.parse(m[1]); }
+  catch (e) { throw new Error(`planner: JSON 파싱 실패(${e.message} · len=${text.length} · stop=${resp.stop_reason})`); } // 잘림이면 stop_reason=max_tokens로 드러남
 
   // 컷에 w/h 주입(aspect → 픽셀) + neg
   const NEG = 'garbled or fabricated lettering, distorted label, two or more products unless a set shot, duplicate product, warped product, extra caps, blown highlights';
@@ -116,4 +122,39 @@ async function planPack({ images, hint }) {
   return plan;
 }
 
-module.exports = { planPack, PLAN_SCHEMA };
+// ── 가벼운 분류(확인 단계용) — 출력이 작아 truncation 위험 없음. planPack 전에 카테고리를 확정받는다. ──
+const CATEGORIES = ['beverage', 'food', 'cosmetics-skincare', 'cosmetics-color', 'haircare', 'apparel', 'footwear', 'bag', 'jewelry', 'home', 'tech', 'other'];
+const CLASSIFY_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: {
+    product: { type: 'string', description: 'one-line description of the exact product (form, color, material, what it is)' },
+    category: { type: 'string', description: `product category, one of: ${CATEGORIES.join(', ')}` },
+    isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple distinct variants of the same line' },
+    variants: { type: 'array', description: 'if isSet, one entry per distinct variant; else empty', items: { type: 'object', additionalProperties: false, properties: { sku: { type: 'string' }, label: { type: 'string' } }, required: ['sku', 'label'] } },
+  },
+  required: ['product', 'category', 'isSet', 'variants'],
+};
+async function classifyProduct({ images, hint }) {
+  const imgs = (images || []).filter((im) => im && im.data);
+  if (!imgs.length) throw Object.assign(new Error('classify: 제품 사진 필요'), { statusCode: 400 });
+  const content = [
+    ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
+    { type: 'text', text: [
+      `Identify the product in the attached photo${imgs.length > 1 ? 's' : ''} precisely and concisely.`,
+      hint ? `Seller note: "${hint}" — trust this for the category.` : '',
+      `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants.`,
+    ].filter(Boolean).join('\n') },
+  ];
+  const resp = await client.messages.create({
+    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 600,
+    system: 'You identify consumer products from photos precisely and concisely.',
+    messages: [{ role: 'user', content }],
+    output_config: { format: { type: 'json_schema', schema: CLASSIFY_SCHEMA } },
+  });
+  const text = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+  const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+  if (!m) throw new Error('classify: JSON 없음');
+  return JSON.parse(m[1]);
+}
+
+module.exports = { planPack, classifyProduct, PLAN_SCHEMA, CATEGORIES };

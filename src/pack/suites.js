@@ -70,4 +70,21 @@ function suiteFor(vertical) {
   return SUITES[vertical] || SUITES.beverage;
 }
 
-module.exports = { SUITES, suiteFor };
+// 🔴 제품 중립 폴백 — 플래너 실패 시 여기로(beverage 아님!). 음료·성분 없이 어떤 제품에도 안전한 단품 컷만.
+//   귀걸이든 화장품이든 "얼음·레몬에 박히는" 참사 방지. 라벨은 용도 기반.
+const NEUTRAL_STILLS = [
+  S({ k: 'pdp_front', l: '쇼핑몰 대표 이미지' }, 768, 960, (c) =>
+    `Clean e-commerce product photograph, ONE single ${c.product} only — keep its exact shape, color, material and any label/design identical to the reference, do not fabricate lettering — centered and front-facing on a light grey seamless studio background, soft even softbox lighting, faint natural contact shadow, tack-sharp, catalog-grade. Product only, no people, no hands, no food, no drink.`),
+  S({ k: 'pdp_threequarter', l: '3/4 각도' }, 768, 960, (c) =>
+    `Clean e-commerce product photograph, ONE single ${c.product} only, identical to the reference — at a gentle three-quarter angle showing form and depth, light grey seamless background, soft studio light, subtle reflection. Product only, no people, no hands.`),
+  S({ k: 'detail_macro', l: '상세 디테일컷' }, 960, 960, (c) =>
+    `Extreme close-up macro of ONE single ${c.product}, identical to the reference — revealing material, texture and craftsmanship detail, crisp focus with soft directional light on a clean neutral surface. Product only, no people, no hands.`),
+  S({ k: 'hero_colorblock', l: '감성 컬러 배경' }, 768, 960, (c) =>
+    `Premium hero product photograph, ONE single ${c.product} only, identical to the reference — standing large and centered against a bold flat solid color-block studio background, crisp editorial lighting with a clean specular rim, minimal shadow, confident and premium. Product only, no people, no hands, no food, no drink.`),
+  S({ k: 'hero_pedestal', l: '히어로 · 페데스탈' }, 768, 960, (c) =>
+    `Luxury hero product photograph, ONE single ${c.product} only, identical to the reference — presented on a minimal stone or acrylic pedestal in a soft moody editorial scene, single soft key light with a specular rim, gentle shadow. Product only, no people, no hands.`),
+  S({ k: 'flat_lay', l: '플랫레이' }, 960, 960, (c) =>
+    `Tasteful top-down flat-lay of ONE single ${c.product}, identical to the reference — on a clean neutral textured surface with minimal, tasteful props appropriate to this exact product, soft daylight, balanced composition, product sharp and in focus. Product only, no people, no hands.`),
+];
+
+module.exports = { SUITES, suiteFor, NEUTRAL_STILLS };

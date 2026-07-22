@@ -8,7 +8,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { suiteFor } = require('./suites');
+const { suiteFor, NEUTRAL_STILLS } = require('./suites');
 const { bakeRefs } = require('./refBake.service');
 const { genStill } = require('./stills.service');
 const { composeRow } = require('./compositor');
@@ -32,7 +32,7 @@ function mimeOf(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, only, noPlan, onProgress, onAsset, onPlan }) {
+async function runPack({ sourcePaths, vertical, product, skus, category, workDir, refs, only, noPlan, onProgress, onAsset, onPlan }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
@@ -40,14 +40,14 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
   // 각 자산을 **생성 즉시** 라우트에 넘긴다(업로드+DB적재) → 유저가 완료되는대로 하나씩 받는다.
   const ship = async (kind, o) => { try { onAsset && await onAsset({ kind, ...o }); } catch (_) {} };
 
-  // 0) 비전 플래너 — 사진 분석 → 이 제품에 맞는 컷·프롬프트(1순위). 실패/미사용 시 고정 suite 폴백.
-  let cuts = suite.stills;
+  // 0) 비전 플래너 — 사진 분석 → 이 제품에 맞는 컷·프롬프트(1순위). 실패 시 🔴제품 중립 폴백(beverage 아님!).
+  let cuts = NEUTRAL_STILLS;    // 플래너 실패해도 음료·성분 안 씌우고 안전한 단품 컷으로만.
   let ctxProduct = product || '';
   let planSkus = skus; // 폼이 세트를 안 줬으면 플래너가 감지한 변형으로 자동
   if (!noPlan && sourcePaths && sourcePaths.length) {
     try {
       const images = sourcePaths.map((p) => ({ data: fs.readFileSync(p).toString('base64'), mediaType: mimeOf(p) }));
-      const plan = await planPack({ images, hint: product });
+      const plan = await planPack({ images, hint: product, category }); // category = 사용자가 확인·확정한 카테고리(오분류 제거)
       if (plan.cuts && plan.cuts.length) {
         cuts = plan.cuts;
         ctxProduct = plan.product || product || '';
