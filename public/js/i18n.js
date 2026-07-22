@@ -35,7 +35,7 @@
     'What will you': '오늘 뭘', 'create': '만들어', 'today?': '볼까요?',
     // 대표 상품 2개 — 레일 라벨이자 home 카드 제목. 이 두 키가 없으면 레일이
     //   "홈 · Shots · Ad Video · 라이브러리"로 섞인다(사전에 없는 문자열은 영어로 남는다).
-    'Shots': '컷', 'Ad Video': '광고영상',
+    'Shots': '컷', 'Ad Video': '광고영상', 'Content Pack': '콘텐츠팩',
     'Create photos': '사진 만들기', 'Create an ad video': '광고영상 만들기',
     'Create Shots': '컷 만들기', 'Create an Ad Video': '광고영상 만들기',
     'Cutout': '제품컷', 'Editorial': '화보컷',
