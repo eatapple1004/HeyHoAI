@@ -32,11 +32,13 @@ function mimeOf(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, only, noPlan, onProgress }) {
+async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, only, noPlan, onProgress, onAsset }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
   const emit = (e) => { try { onProgress && onProgress(e); } catch (_) {} };
+  // 각 자산을 **생성 즉시** 라우트에 넘긴다(업로드+DB적재) → 유저가 완료되는대로 하나씩 받는다.
+  const ship = async (kind, o) => { try { onAsset && await onAsset({ kind, ...o }); } catch (_) {} };
 
   // 0) 비전 플래너 — 사진 분석 → 이 제품에 맞는 컷·프롬프트(1순위). 실패/미사용 시 고정 suite 폴백.
   let cuts = suite.stills;
@@ -69,6 +71,7 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
       emit({ stage: 'ref', key: b.sku });
     }
   }
+  for (const r of manifest.refs) await ship('ref', { key: r.key, label: r.sku, path: r.path });
   const primaryRef = manifest.refs[0].path;
   const ctx = { product: ctxProduct };
 
@@ -81,6 +84,7 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
       fs.writeFileSync(p, buf);
       manifest.stills.push({ key: cut.key, label: cut.label, path: p });
       emit({ stage: 'still', key: cut.key });
+      await ship('still', { key: cut.key, label: cut.label, path: p });
     } catch (e) {
       emit({ stage: 'still', key: cut.key, error: e.message });
     }
@@ -97,6 +101,7 @@ async function runPack({ sourcePaths, vertical, product, skus, workDir, refs, on
         fs.writeFileSync(p, buf);
         manifest.composites.push({ key: comp.key, label: comp.label, path: p });
         emit({ stage: 'composite', key: comp.key });
+        await ship('composite', { key: comp.key, label: comp.label, path: p });
       } catch (e) {
         emit({ stage: 'composite', key: comp.key, error: e.message });
       }

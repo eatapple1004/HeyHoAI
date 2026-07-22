@@ -132,10 +132,12 @@ $('#go').onclick = async () => {
 async function poll(id) {
   const r = await fetch('/api/pack/' + id);
   const pack = await r.json();
-  renderAssets(pack.assets || []);
-  if (pack.status === 'done') { $('#status').textContent = '완료 · ' + (pack.assets || []).length + '개 자산'; return; }
-  if (pack.status === 'failed') { $('#status').textContent = '실패: ' + (pack.error || ''); return; }
-  setTimeout(() => poll(id), 2500);
+  const assets = pack.assets || [];
+  renderAssets(assets);
+  if (pack.status === 'done') { $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; return; }
+  if (pack.status === 'failed') { $('#status').innerHTML = '실패: ' + (pack.error || '') + (assets.length ? ' (그때까지 ' + assets.length + '개)' : ''); return; }
+  $('#status').innerHTML = '<span class="spin"></span>생성 중 · 완료되는 대로 하나씩 올라옵니다 · ' + assets.length + '개';
+  setTimeout(() => poll(id), 1500);
 }
 
 const KIND_LABEL = { ref: '캐논 레퍼', still: '스틸', composite: '합성' };

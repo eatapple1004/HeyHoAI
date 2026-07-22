@@ -18,36 +18,31 @@ const router = Router();
 
 const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
-const localMediaDir = path.join(process.cwd(), 'public', 'pack-media');
-fs.mkdirSync(localMediaDir, { recursive: true });
+const imagesDir = path.join(process.cwd(), 'tmp', 'images'); // 생성물은 /images 프록시(로컬우선→R2)로 서빙 — generate.route와 동일 규약
+fs.mkdirSync(imagesDir, { recursive: true });
 const upload = multer({ storage: multer.diskStorage({ destination: uploadDir }), limits: { fileSize: 12 * 1024 * 1024 } });
 
-/** 자산 파일 → 공개 URL. R2 있으면 R2, 없으면 public/pack-media 정적 서빙. */
+/** 자산 파일 → 공개 URL. tmp/images 로컬 write(dual-write) + R2 best-effort → /images/<name> 프록시가 서빙. */
 async function publishAsset(absPath, name) {
-  const dest = path.join(uploadDir, name);           // putFile은 basename으로 업로드하니 유니크 이름으로 복사
-  try { fs.copyFileSync(absPath, dest); } catch (_) { /* absPath가 이미 유니크면 무시 */ }
-  const uploaded = await mediaStore.putFile(dest).catch(() => false);
-  if (uploaded && mediaStore.isRemote()) return mediaStore.remoteUrl(name);
-  // 로컬 폴백: public/pack-media 로 복사 → 정적 서빙
-  fs.copyFileSync(absPath, path.join(localMediaDir, name));
-  return `/pack-media/${name}`;
+  const buffer = fs.readFileSync(absPath);
+  fs.writeFileSync(path.join(imagesDir, name), buffer);   // 로컬 우선 서빙
+  await mediaStore.put(name, buffer).catch(() => {});      // 영속(R2) best-effort — 미설정 시 no-op
+  return `/images/${name}`;
 }
 
 async function processPack(pack, { sourcePaths, vertical, product, skus }) {
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
   try {
-    const manifest = await runPack({
+    // onAsset: 각 컷이 **생성되는 즉시** 업로드+DB적재 → 폴링이 하나씩 집어감(완료되는대로 하나씩).
+    await runPack({
       sourcePaths, vertical, product, skus, workDir,
+      onAsset: async (a) => {
+        const name = `pack_${pack.share_id}_${a.kind}_${a.key}.jpg`;
+        const url = await publishAsset(a.path, name);
+        await repo.addAsset({ packId: pack.id, kind: a.kind, cutKey: a.key, label: a.label, url });
+      },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
     });
-    const groups = [['ref', manifest.refs], ['still', manifest.stills], ['composite', manifest.composites]];
-    for (const [kind, list] of groups) {
-      for (const a of list) {
-        const name = `pack_${pack.share_id}_${kind}_${a.key || a.sku}.jpg`;
-        const url = await publishAsset(a.path, name);
-        await repo.addAsset({ packId: pack.id, kind, cutKey: a.key || a.sku, label: a.label, url });
-      }
-    }
     await repo.setStatus(pack.id, 'done');
   } catch (e) {
     logger.error?.(`[pack ${pack.id}] failed: ${e.message}`);
