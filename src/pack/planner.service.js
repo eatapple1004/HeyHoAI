@@ -74,16 +74,26 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want) {
     prev.map((e) => `  · ${e}`).join('\n'),
     `Give ${n} MORE cuts that are genuinely DIFFERENT from every one above — a different setting, framing, styling, mood or story. Do NOT produce near-duplicates or trivial variations (e.g. "on grey background" vs "on light grey background"). If you have run out of genuinely distinct ideas, return fewer cuts rather than padding with repeats.`,
   ].join('\n') : '';
+  // 🟢 유저 컨셉 프롬프트 = 기획 주도 브리프. 있으면 표준 메뉴를 강제하지 않고 이 브리프대로 다시 기획한다.
+  //   단 상거래 필수컷(정면 PDP·디테일)은 브리프에 없어도 몇 컷 유지(결정: 프롬프트 우선 + 필수컷 유지).
+  const briefClause = hint ? [
+    `CREATIVE BRIEF from the seller — treat this as the PRIMARY driver of the whole pack: "${hint}".`,
+    `Plan MOST of the ${n} cuts to realize THIS brief in genuinely different ways — vary the setting, framing, props, lighting, mood and story while staying faithful to the brief AND to the real product (its exact shape/color/label/wordmark, no fabricated lettering).`,
+    `Always also include at least ONE clean front-facing PDP cut and ONE detail/macro cut so the product page still works commercially, even if the brief doesn't mention them.`,
+    `Do NOT ignore the brief and fall back to a generic category template.`,
+  ].join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
       : `A product photo is attached. Study its real appearance — form, color, material, finish, label/wordmark.`,
-    hint ? `Seller note: ${hint}` : '',
+    briefClause,
     known,
     stateFocus,
     roundClause,
     (state || prev.length) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
-    `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
+    hint
+      ? `Category shot types below are only LOOSE inspiration — the creative brief above takes priority over this menu:`
+      : `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
     `  · beverage/food → hero (sunlit / color-block / luxe), clean PDP (front, 3/4), ingredient-with-source, pour/texture macro, lifestyle (morning table / desk / iced), flat-lay, splash, editorial.`,
     `  · cosmetics-skincare → hero, PDP, texture/dollop macro, ingredient, on-skin swatch, dewy/glass hero, shelfie lifestyle.`,
     `  · cosmetics-color → shade swatch grid, texture macro, on-lips/on-skin, hero, gloss/mirror.`,
@@ -186,7 +196,7 @@ async function classifyProduct({ images, hint }) {
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
     { type: 'text', text: [
       `Identify the product in the attached photo${imgs.length > 1 ? 's' : ''} precisely and concisely.`,
-      hint ? `Seller note: "${hint}" — trust this for the category.` : '',
+      hint ? `Seller note: "${hint}" — this may describe the desired CONCEPT/mood rather than the product; identify the product itself from the PHOTO, and use the note only if it names the product or category.` : '',
       `Distinguish two different axes, and do not confuse them:`,
       `  · variants = DIFFERENT products/SKUs of one line (red vs blue, MON vs TUE bottle) → isSet + variants.`,
       `  · states   = the SAME single product shown differently (cap on vs cap off, closed vs open, folded vs unfolded, boxed vs unboxed) → states.`,

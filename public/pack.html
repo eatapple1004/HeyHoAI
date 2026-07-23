@@ -19,9 +19,10 @@
   .lead{color:var(--dim);font-size:14px;margin-top:6px}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
   label.f{display:block;font-size:13px;font-weight:600;margin:0 0 8px;color:var(--text)}
-  input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:12px;font:inherit;background:var(--bg2);color:var(--text);transition:border-color .15s}
-  input[type=text]::placeholder{color:var(--faint)}
-  input[type=text]:focus{outline:none;border-color:var(--accent2)}
+  input[type=text],textarea#product{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:12px;font:inherit;background:var(--bg2);color:var(--text);transition:border-color .15s}
+  input[type=text]::placeholder,textarea#product::placeholder{color:var(--faint)}
+  input[type=text]:focus,textarea#product:focus{outline:none;border-color:var(--accent2)}
+  textarea#product{resize:vertical;min-height:64px;line-height:1.5}
   .drop{border:2px dashed var(--border2);border-radius:14px;padding:30px;text-align:center;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s,background .15s}
   .drop:hover{border-color:var(--accent2);color:var(--text)}
   .drop.on{border-color:var(--accent);color:var(--text);background:rgba(124,108,255,.06)}
@@ -226,9 +227,9 @@
     </div>
 
     <div class="card">
-      <label class="f">한 줄 힌트 <span style="color:var(--dim);font-weight:400">(선택 — 사진만으로도 됩니다)</span></label>
-      <input type="text" id="product" placeholder="예: 국내산 사과 애사비 / 두피용 앰플 — 사진으로 안 보이는 것만">
-      <p style="font-size:12px;color:var(--dim);margin:8px 2px 0">카테고리 · 세트 여부는 사진을 분석해 자동으로 판단합니다.</p>
+      <label class="f">원하는 컨셉 · 분위기 <span style="color:var(--dim);font-weight:400">(선택 — 사진만으로도 됩니다)</span></label>
+      <textarea id="product" rows="2" placeholder="예: 따뜻한 카페에서 라떼와 함께 아침 감성 / 미니멀한 회색 배경의 럭셔리 컷 — 원하는 장면·무드를 자유롭게 적어주세요"></textarea>
+      <p style="font-size:12px;color:var(--dim);margin:8px 2px 0">적어주시면 그 컨셉을 기준으로 컷을 기획합니다. 비워두면 제품에 맞는 표준 구성으로 자동 생성돼요. (카테고리·세트 여부는 사진으로 자동 판단)</p>
       <button class="go" id="go" disabled>콘텐츠 만들기</button>
     </div>
   </div>
