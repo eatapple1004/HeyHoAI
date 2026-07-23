@@ -63,46 +63,78 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   //   refSku = "이 컷을 어느 캐논 레퍼로 그릴 것인가". 상태(닫힘/열림)든 변형(red/pink)이든 같은 필드를 쓴다.
   const tag = (list, st) => list.map((c) => ({ ...c, key: `${st.key}__${c.key}`, label: `${c.label} · ${st.label}`, refSku: st.key }));
 
+  // 🔵 컷 천장 — 플래너 한 호출의 안전선은 8~12컷이다(더 요구하면 JSON이 잘려 폴백으로 떨어진다).
+  //   "대량"을 채우려면 호출을 **차수(round)로 나눈다**: 2차부터 앞서 뽑은 라벨을 넘겨 "이것 말고 다른 것"을 받는다.
+  //   상태 분할과 같은 트릭 — 호출당 출력 크기는 그대로 두고 총량만 늘리므로 제품 종류와 무관하게 20컷+가 된다.
+  const TARGET_CUTS = 20, PER_ROUND = 10, MAX_ROUNDS = 3;
+  const roundsFor = (nUnits) => Math.max(1, Math.min(MAX_ROUNDS, Math.ceil(TARGET_CUTS / Math.max(1, nUnits) / PER_ROUND)));
+
+  /** 한 계획 단위(상태 1개 또는 제품 전체)에 대해 차수를 돌며 컷을 모은다. 실패해도 앞 차수 결과는 살린다. */
+  async function planUnit({ images, state, rounds, onMeta }) {
+    const got = [];
+    const taken = new Set();
+    for (let r = 1; r <= rounds; r++) {
+      try {
+        const plan = await planPack({ images, hint: product, category, state, exclude: got.map((c) => c.label) });
+        if (onMeta) onMeta(plan);
+        const list = (plan.cuts && plan.cuts.length) ? plan.cuts : [];
+        let added = 0;
+        for (const c of list) {
+          // 차수 간 키 충돌 방지 — 2차가 1차와 같은 key를 뱉을 수 있다(그러면 assetId가 겹쳐 카드가 덮인다).
+          let k = c.key;
+          if (taken.has(k)) k = `${k}_r${r}`;
+          if (taken.has(k)) continue;
+          taken.add(k); got.push({ ...c, key: k }); added++;
+        }
+        emit({ stage: 'plan', state: state ? state.key : null, round: r, added, total: got.length });
+        if (!added) break;   // 더 뽑을 게 없다고 판단 — 빈 차수를 더 돌리지 않는다
+      } catch (e) {
+        emit({ stage: 'plan', state: state ? state.key : null, round: r, error: e.message });
+        break;   // 이 단위는 여기까지(앞 차수에서 모은 건 그대로 쓴다)
+      }
+    }
+    return got;
+  }
+
   if (!noPlan && sourcePaths && sourcePaths.length) {
     if (stateMode) {
       planStates = stateList.map((s) => ({ key: s.key, label: s.label || s.key, sources: srcFor(s) }));
+      const rounds = roundsFor(planStates.length);   // 상태가 이미 총량을 늘리므로 보통 1차면 충분
       const perState = [];
       for (const st of planStates) {
-        try {
-          const plan = await planPack({ images: b64(st.sources), hint: product, category, state: { key: st.key, label: st.label, perState: 8 } });
-          const list = (plan.cuts && plan.cuts.length) ? plan.cuts : NEUTRAL_STILLS;
-          if (!ctxProduct) ctxProduct = plan.product || product || '';
-          if (!manifest.plan) manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: false, variants: [] };
-          perState.push(tag(list, st));
-          emit({ stage: 'plan', state: st.key, cuts: list.length });
-        } catch (e) {
-          emit({ stage: 'plan', state: st.key, error: e.message }); // 이 상태만 중립 폴백(다른 상태는 살린다)
-          perState.push(tag(NEUTRAL_STILLS, st));
-        }
+        const got = await planUnit({
+          images: b64(st.sources), rounds,
+          state: { key: st.key, label: st.label, perState: 8 },
+          onMeta: (plan) => {
+            if (!ctxProduct) ctxProduct = plan.product || product || '';
+            if (!manifest.plan) manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: false, variants: [] };
+          },
+        });
+        perState.push(tag(got.length ? got : NEUTRAL_STILLS, st));   // 이 상태만 중립 폴백(다른 상태는 살린다)
       }
       // 🔑 상태별 인터리브 — depth는 앞에서 N개를 자르므로, 번갈아 배치해야 부분 생성도 모든 상태를 커버한다.
-      //   (안 그러면 "표준 8컷" = 상태A 8컷 + 상태B 0컷이 된다.)
+      //   (안 그러면 "표준 8컷" = 상태A 8컷 + 상태B 0컷이 된다.) 각 상태 안에서는 1차 컷이 앞에 있다.
       cuts = [];
       const deepest = Math.max(...perState.map((a) => a.length));
       for (let i = 0; i < deepest; i++) for (const arr of perState) if (arr[i]) cuts.push(arr[i]);
       manifest.product = ctxProduct;
       planSkus = planStates.map((s) => ({ sku: s.key, label: s.label }));  // 레퍼를 상태마다 굽는다
-      emit({ stage: 'plan-states', states: planStates.length, cuts: cuts.length });
+      emit({ stage: 'plan-states', states: planStates.length, rounds, cuts: cuts.length });
     } else {
-      try {
-        const plan = await planPack({ images: b64(sourcePaths), hint: product, category }); // category = 사용자가 확인·확정한 카테고리(오분류 제거)
-        if (plan.cuts && plan.cuts.length) {
-          cuts = plan.cuts;
-          ctxProduct = plan.product || product || '';
-          manifest.product = ctxProduct;
-          manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: plan.isSet, variants: plan.variants };
-          // 세트 자동: 폼이 skus를 안 줬는데 플래너가 세트+변형 2개↑ 감지 → 그걸로 굽는다.
-          if ((!skus || !skus.length) && plan.isSet && Array.isArray(plan.variants) && plan.variants.length > 1) planSkus = plan.variants;
-          emit({ stage: 'plan', category: plan.category, product: plan.product, cuts: cuts.length, isSet: plan.isSet, variants: (plan.variants || []).length });
-        }
-      } catch (e) {
-        emit({ stage: 'plan', error: e.message }); // 폴백: 제품 중립 컷
-      }
+      // category = 사용자가 확인·확정한 카테고리(오분류 제거)
+      const got = await planUnit({
+        images: b64(sourcePaths), rounds: roundsFor(1),
+        onMeta: (plan) => {
+          if (!ctxProduct) ctxProduct = plan.product || product || '';
+          if (!manifest.plan) {
+            manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: plan.isSet, variants: plan.variants };
+            // 세트 자동: 폼이 skus를 안 줬는데 플래너가 세트+변형 2개↑ 감지 → 그걸로 굽는다.
+            if ((!skus || !skus.length) && plan.isSet && Array.isArray(plan.variants) && plan.variants.length > 1) planSkus = plan.variants;
+          }
+        },
+      });
+      if (got.length) { cuts = got; manifest.product = ctxProduct; }
+      emit({ stage: 'plan-done', rounds: roundsFor(1), cuts: cuts.length });
     }
   }
 

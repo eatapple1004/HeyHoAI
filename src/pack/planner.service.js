@@ -54,7 +54,7 @@ const PLAN_SCHEMA = {
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint, confirmed, state) {
+function buildUserPrompt(nImgs, hint, confirmed, state, exclude) {
   const known = (confirmed && confirmed.category)
     ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
     : `TASK: infer what the product is and its category first.`;
@@ -65,6 +65,14 @@ function buildUserPrompt(nImgs, hint, confirmed, state) {
     `Plan cuts that specifically showcase what makes THIS state worth seeing (what it reveals, its material detail, how a buyer judges it). Do NOT describe or depict the other states.`,
     `Give ${state.perState || 8}–${(state.perState || 8) + 2} cuts for this state.`,
   ].join('\n') : '';
+  // 🔵 차수(round) — 한 호출에 20컷을 요구하면 JSON이 잘린다(참사 원인). 대신 호출을 나누고,
+  //   2차부터는 앞서 뽑은 컷 라벨을 넘겨 "이것 말고 진짜 다른 것"을 받는다. 호출당 출력 크기는 그대로.
+  const prev = (exclude || []).filter(Boolean);
+  const roundClause = prev.length ? [
+    `This is an ADDITIONAL round of planning for the SAME product. These shots are ALREADY planned:`,
+    prev.map((e) => `  · ${e}`).join('\n'),
+    `Give ${Math.max(6, Math.min(10, prev.length))} MORE cuts that are genuinely DIFFERENT from every one above — a different setting, framing, styling, mood or story. Do NOT produce near-duplicates or trivial variations (e.g. "on grey background" vs "on light grey background"). If you have run out of genuinely distinct ideas, return fewer cuts rather than padding with repeats.`,
+  ].join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
@@ -72,7 +80,8 @@ function buildUserPrompt(nImgs, hint, confirmed, state) {
     hint ? `Seller note: ${hint}` : '',
     known,
     stateFocus,
-    state ? '' : `Plan a DIVERSE PACK of 8–12 still shots that best sell THIS product.`,
+    roundClause,
+    (state || prev.length) ? '' : `Plan a DIVERSE PACK of 8–12 still shots that best sell THIS product.`,
     `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
     `  · beverage/food → hero (sunlit / color-block / luxe), clean PDP (front, 3/4), ingredient-with-source, pour/texture macro, lifestyle (morning table / desk / iced), flat-lay, splash, editorial.`,
     `  · cosmetics-skincare → hero, PDP, texture/dollop macro, ingredient, on-skin swatch, dewy/glass hero, shelfie lifestyle.`,
@@ -97,15 +106,16 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {Array<{data:string, mediaType?:string}>} p.images  base64 제품 사진
  * @param {string} [p.hint]  판매자 메모(선택)
  * @param {{key:string,label:string,perState?:number}} [p.state]  상태 포커스(있으면 그 상태 전용 컷만 계획)
+ * @param {string[]} [p.exclude]  이미 뽑힌 컷 라벨 — 2차 이상 호출에서 중복을 피하려고 넘긴다
  * @returns {Promise<{product, category, ingredient, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint, category, product, state }) {
+async function planPack({ images, hint, category, product, state, exclude }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
