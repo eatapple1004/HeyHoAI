@@ -66,28 +66,37 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   // 🔵 컷 천장 — 플래너 한 호출의 안전선은 8~12컷이다(더 요구하면 JSON이 잘려 폴백으로 떨어진다).
   //   "대량"을 채우려면 호출을 **차수(round)로 나눈다**: 2차부터 앞서 뽑은 라벨을 넘겨 "이것 말고 다른 것"을 받는다.
   //   상태 분할과 같은 트릭 — 호출당 출력 크기는 그대로 두고 총량만 늘리므로 제품 종류와 무관하게 20컷+가 된다.
-  const TARGET_CUTS = 20, PER_ROUND = 10, MAX_ROUNDS = 3;
-  const roundsFor = (nUnits) => Math.max(1, Math.min(MAX_ROUNDS, Math.ceil(TARGET_CUTS / Math.max(1, nUnits) / PER_ROUND)));
+  const TARGET_CUTS = 20, PER_ROUND = 10, MAX_ROUNDS = 4;
+  // 단위당 목표 = 전체 목표를 계획 단위 수로 나눈 것. 상태 2개면 각 10컷 → 총 20컷.
+  const targetPerUnit = (nUnits) => Math.max(6, Math.ceil(TARGET_CUTS / Math.max(1, nUnits)));
+  // 라벨 정규화 — 근접 중복을 **코드로** 막는다. 프롬프트의 "중복 금지"는 소프트 지시라
+  //   모델이 "10개 더" 요청에 억지로 채워 보내는 경우를 못 막는다(차수를 늘릴수록 잦아진다).
+  const normLabel = (s) => String(s || '').toLowerCase().replace(/[\s·・‧,.\-_()[\]/]+/g, '');
 
-  /** 한 계획 단위(상태 1개 또는 제품 전체)에 대해 차수를 돌며 컷을 모은다. 실패해도 앞 차수 결과는 살린다. */
-  async function planUnit({ images, state, rounds, onMeta }) {
-    const got = [];
-    const taken = new Set();
-    for (let r = 1; r <= rounds; r++) {
+  /** 한 계획 단위(상태 1개 또는 제품 전체)에 대해 **목표 개수에 닿을 때까지** 차수를 돌며 컷을 모은다.
+   *  🔴 차수 수를 미리 계산하면(구버전) 플래너가 요청보다 적게 주는 순간 목표에 못 미친 채 끝난다 —
+   *     실제로 상태 2개짜리 차 제품에서 6+6=12컷에 멈췄다. 그래서 "부족한 만큼 더 요청"으로 바꾼다. */
+  async function planUnit({ images, state, target, onMeta }) {
+    const got = [], taken = new Set(), seenLabel = new Set();
+    for (let r = 1; r <= MAX_ROUNDS && got.length < target; r++) {
+      const want = Math.min(PER_ROUND, Math.max(4, target - got.length));
       try {
-        const plan = await planPack({ images, hint: product, category, state, exclude: got.map((c) => c.label) });
+        const plan = await planPack({ images, hint: product, category, state, want, exclude: got.map((c) => c.label) });
         if (onMeta) onMeta(plan);
-        const list = (plan.cuts && plan.cuts.length) ? plan.cuts : [];
-        let added = 0;
-        for (const c of list) {
+        let added = 0, dupes = 0;
+        for (const c of (plan.cuts || [])) {
+          // 같은 용도 라벨을 또 뱉으면 근접 중복 — 크레딧만 쓰고 같은 그림이 나온다.
+          const nl = normLabel(c.label);
+          if (nl && seenLabel.has(nl)) { dupes++; continue; }
           // 차수 간 키 충돌 방지 — 2차가 1차와 같은 key를 뱉을 수 있다(그러면 assetId가 겹쳐 카드가 덮인다).
           let k = c.key;
           if (taken.has(k)) k = `${k}_r${r}`;
-          if (taken.has(k)) continue;
-          taken.add(k); got.push({ ...c, key: k }); added++;
+          if (taken.has(k)) { dupes++; continue; }
+          taken.add(k); if (nl) seenLabel.add(nl);
+          got.push({ ...c, key: k }); added++;
         }
-        emit({ stage: 'plan', state: state ? state.key : null, round: r, added, total: got.length });
-        if (!added) break;   // 더 뽑을 게 없다고 판단 — 빈 차수를 더 돌리지 않는다
+        emit({ stage: 'plan', state: state ? state.key : null, round: r, want, added, dupes, total: got.length });
+        if (!added) break;   // 새로 준 게 하나도 없다 = 아이디어 고갈. 더 돌려도 중복만 나온다.
       } catch (e) {
         emit({ stage: 'plan', state: state ? state.key : null, round: r, error: e.message });
         break;   // 이 단위는 여기까지(앞 차수에서 모은 건 그대로 쓴다)
@@ -99,12 +108,12 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   if (!noPlan && sourcePaths && sourcePaths.length) {
     if (stateMode) {
       planStates = stateList.map((s) => ({ key: s.key, label: s.label || s.key, sources: srcFor(s) }));
-      const rounds = roundsFor(planStates.length);   // 상태가 이미 총량을 늘리므로 보통 1차면 충분
+      const target = targetPerUnit(planStates.length);   // 상태 2개면 각 10컷 → 총 20컷
       const perState = [];
       for (const st of planStates) {
         const got = await planUnit({
-          images: b64(st.sources), rounds,
-          state: { key: st.key, label: st.label, perState: 8 },
+          images: b64(st.sources), target,
+          state: { key: st.key, label: st.label },
           onMeta: (plan) => {
             if (!ctxProduct) ctxProduct = plan.product || product || '';
             if (!manifest.plan) manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: false, variants: [] };
@@ -119,11 +128,11 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
       for (let i = 0; i < deepest; i++) for (const arr of perState) if (arr[i]) cuts.push(arr[i]);
       manifest.product = ctxProduct;
       planSkus = planStates.map((s) => ({ sku: s.key, label: s.label }));  // 레퍼를 상태마다 굽는다
-      emit({ stage: 'plan-states', states: planStates.length, rounds, cuts: cuts.length });
+      emit({ stage: 'plan-states', states: planStates.length, target, cuts: cuts.length });
     } else {
       // category = 사용자가 확인·확정한 카테고리(오분류 제거)
       const got = await planUnit({
-        images: b64(sourcePaths), rounds: roundsFor(1),
+        images: b64(sourcePaths), target: targetPerUnit(1),
         onMeta: (plan) => {
           if (!ctxProduct) ctxProduct = plan.product || product || '';
           if (!manifest.plan) {
@@ -134,7 +143,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
         },
       });
       if (got.length) { cuts = got; manifest.product = ctxProduct; }
-      emit({ stage: 'plan-done', rounds: roundsFor(1), cuts: cuts.length });
+      emit({ stage: 'plan-done', target: targetPerUnit(1), cuts: cuts.length });
     }
   }
 
