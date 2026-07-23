@@ -107,11 +107,17 @@
   .rg-state-h{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px}
   /* 확인용 썸네일이라 크게 필요 없음 — 높이를 묶어 두 상태가 한눈에 들어오게. */
   .rg-state .rg-img{margin-bottom:10px;background:var(--surface);aspect-ratio:auto;height:min(300px,34vh)}
+  .rg-states.many .rg-state .rg-img{height:min(150px,20vh)}
+  .rg-states.many .rg-state{padding:8px}
+  .rg-states.many .rg-state-h{font-size:11.5px;margin-bottom:6px}
   .rg-state .rg-rebake{margin-bottom:0;flex-wrap:wrap}
   .rg-state .rg-rebake input{min-width:120px}
   @media(max-width:520px){.rg-states.two{grid-template-columns:1fr}}
   .rg-depth-h{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:8px}
   .rg-depth-sub{color:var(--faint);font-weight:500}
+  .rg-fallback{font-size:12.5px;line-height:1.6;color:var(--text);background:color-mix(in srgb,#e0a03a 14%,transparent);border:1px solid color-mix(in srgb,#e0a03a 42%,transparent);border-radius:11px;padding:10px 12px;margin-bottom:14px}
+  .rg-fallback b{color:#f0b755}
+  .rg-fb-why{display:block;margin-top:5px;color:var(--faint);font-size:11.5px;word-break:break-all}
   .rg-depths{display:flex;gap:8px;margin-bottom:14px}
   .rg-depth{flex:1;font-family:inherit;font-size:13px;font-weight:700;padding:10px 6px;border-radius:11px;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;flex-direction:column;gap:2px;align-items:center}
   .rg-depth span{font-size:10.5px;font-weight:500;color:var(--faint)}
@@ -288,7 +294,15 @@ const CAT_LABELS = { beverage: '음료', food: '식품', 'cosmetics-skincare': '
 let confirmState = null;
 function showConfirm(cls, hint) {
   // 상태(state) = 같은 제품의 다른 모습(뚜껑 닫음/열음). 2개 이상 켜면 상태마다 레퍼+컷세트를 만든다.
-  const states = (cls.states || []).filter(s => s && s.key).slice(0, 4);
+  const _n = v => String(v || '').toLowerCase().replace(/[\s·・‧,.\-_()[\]/]+/g, '');
+  const _seen = new Set();
+  const states = (cls.states || []).filter(s => {   // 같은 뜻의 상태가 두 번 오는 일이 있다("봉지 열림" ×2)
+    if (!s || !s.key) return false;
+    const k = _n(s.key), l = _n(s.label);
+    if (_seen.has(k) || (l && _seen.has(l))) return false;
+    _seen.add(k); if (l) _seen.add(l);
+    return true;
+  }).slice(0, 4);
   const unit = ['pair', 'with_package', 'group'].includes(cls.unit) ? cls.unit : null;   // 단품이 아니면 레퍼를 그 단위로 굽는다
   confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, hint };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
@@ -532,10 +546,14 @@ function latestRefsByKey(pack) {
   (pack.assets || []).filter(a => a.kind === 'ref' && a.url).forEach(a => { m[a.cut_key || 'ref_main'] = a; });
   return m;
 }
-/** 게이트에 보여줄 레퍼 단위 — 상태 2개↑면 상태별, 아니면 단일. */
+/** 게이트에 보여줄 레퍼 단위 — 상태 2개↑면 상태별, **세트(변형)면 종류별**, 아니면 단일.
+ *  🔴 예전엔 states만 봐서, 6종 세트처럼 레퍼를 6장 구워놓고도 게이트엔 1장만 떴다. */
 function gateUnits(plan) {
   const st = (plan && plan.states) || [];
-  return st.length > 1 ? st.map(s => ({ key: s.key, label: s.label || s.key })) : [{ key: 'main', label: '캐논 레퍼' }];
+  if (st.length > 1) return st.map(s => ({ key: s.key, label: s.label || s.key, kind: 'state' }));
+  const sk = (plan && plan.refSkus) || [];
+  if (sk.length > 1) return sk.map(s => ({ key: s.sku, label: s.label || s.sku, kind: 'variant' }));
+  return [{ key: 'main', label: '캐논 레퍼', kind: 'single' }];
 }
 function showRefGate(pack) {
   const plan = pack.config && pack.config.plan;
@@ -564,11 +582,19 @@ function showRefGate(pack) {
       <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? '예: 한 쌍으로' : '다시 구울 때 교정(선택) — 예: 한 쌍으로'}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">다시 굽기</button></div>`;
     return multi ? `<div class="rg-state"><div class="rg-state-h">${esc(u.label)}</div>${inner}</div>` : inner;
   }).join('');
+  const isState = units[0] && units[0].kind === 'state';
+  const unitWord = isState ? '상태' : '종류';
+  // 🔴 플래너가 실패해 기본 컷으로 떨어졌으면 **반드시 알린다** — 예전엔 조용히 폴백돼 "완료"처럼 보였다.
+  const fb = plan && plan.fallback
+    ? `<div class="rg-fallback"><b>⚠ 자동 분석이 실패해 기본 컷으로 진행합니다.</b> 이 제품에 맞춘 컷이 아니라 일반 제품컷이에요.
+        취소하고 다시 시도하거나, 판매자 메모에 제품 설명을 넣어보세요.${plan.fallbackReason ? `<span class="rg-fb-why">사유: ${esc(String(plan.fallbackReason).slice(0, 120))}</span>` : ''}</div>`
+    : '';
   document.body.insertAdjacentHTML('beforeend', `<div class="rg-bg"><div class="rg${multi ? ' wide' : ''}">
     <div class="rg-h">캐논 레퍼 확인</div>
-    <div class="rg-note">${multi ? '상태마다 각 레퍼를 기준으로 컷을 만듭니다.' : '이 레퍼를 기준으로 모든 컷을 만듭니다.'} <b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.</div>
-    <div class="rg-states${multi ? ' two' : ''}">${blocks}</div>
-    <div class="rg-depth-h">몇 컷 만들까요?${multi ? ' <span class="rg-depth-sub">상태별로 고루 나눠 만듭니다</span>' : ''}</div>
+    <div class="rg-note">${multi ? `${unitWord}마다 각 레퍼를 기준으로 컷을 만듭니다.` : '이 레퍼를 기준으로 모든 컷을 만듭니다.'} <b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.</div>
+    ${fb}
+    <div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>
+    <div class="rg-depth-h">몇 컷 만들까요?${multi ? ` <span class="rg-depth-sub">${unitWord}별로 고루 나눠 만듭니다</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
     <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
   </div></div>`);

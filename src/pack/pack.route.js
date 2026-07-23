@@ -201,7 +201,19 @@ router.post('/', upload.array('photos', 10), async (req, res, next) => {
     // 🔵 상태(뚜껑 닫음/열음 등) — 확인 스텝에서 사용자가 켠 것만 온다. 2개↑면 상태마다 레퍼+컷세트.
     let states = null;
     try { states = req.body.states ? JSON.parse(req.body.states) : null; } catch (_) { states = null; }
-    if (Array.isArray(states)) states = states.filter((s) => s && s.key).slice(0, 4);
+    // 🔴 중복 상태 제거 — classify가 같은 뜻의 상태를 두 번 뱉는 일이 실제로 있었다("봉지 열림" ×2).
+    //   그대로 두면 같은 모습의 레퍼를 두 장 굽고 컷도 2배로 만든다(크레딧 낭비). key·라벨 둘 다로 접는다.
+    if (Array.isArray(states)) {
+      const norm = (v) => String(v || '').toLowerCase().replace(/[\s·・‧,.\-_()[\]/]+/g, '');
+      const seen = new Set();
+      states = states.filter((s) => {
+        if (!s || !s.key) return false;
+        const k = norm(s.key), l = norm(s.label);
+        if (seen.has(k) || (l && seen.has(l))) return false;
+        seen.add(k); if (l) seen.add(l);
+        return true;
+      }).slice(0, 4);
+    }
     // 한 단위 판별(단품/한 쌍/본체+박스) — 캐논 레퍼를 몇 개로 구울지. 화이트리스트 밖은 무시(기본 단품).
     const unit = ['pair', 'with_package', 'group'].includes(req.body.unit) ? req.body.unit : null;
 

@@ -52,6 +52,9 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   let ctxProduct = product || '';
   let planSkus = skus; // 폼이 세트를 안 줬으면 플래너가 감지한 변형으로 자동
   let planStates = null;
+  // 🔴 플래너가 실패해 제품 중립 폴백으로 떨어졌는지 — 지금까지는 이게 **조용히** 일어나서
+  //   화면엔 "완료"로 보였다(6컷짜리 NEUTRAL_STILLS가 그 지문). 사용자에게 알려야 한다.
+  let fellBack = false, planError = null;
 
   const b64 = (paths) => paths.map((p) => ({ data: fs.readFileSync(p).toString('base64'), mediaType: mimeOf(p) }));
   // 상태 → 그 상태를 가장 잘 보여주는 소스 사진(지정이 없거나 범위 밖이면 전체 사진).
@@ -98,6 +101,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
         emit({ stage: 'plan', state: state ? state.key : null, round: r, want, added, dupes, total: got.length });
         if (!added) break;   // 새로 준 게 하나도 없다 = 아이디어 고갈. 더 돌려도 중복만 나온다.
       } catch (e) {
+        if (!planError) planError = e.message;   // 첫 실패 사유를 사용자에게 보여준다
         emit({ stage: 'plan', state: state ? state.key : null, round: r, error: e.message });
         break;   // 이 단위는 여기까지(앞 차수에서 모은 건 그대로 쓴다)
       }
@@ -119,6 +123,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
             if (!manifest.plan) manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: false, variants: [] };
           },
         });
+        if (!got.length) fellBack = true;
         perState.push(tag(got.length ? got : NEUTRAL_STILLS, st));   // 이 상태만 중립 폴백(다른 상태는 살린다)
       }
       // 🔑 상태별 인터리브 — depth는 앞에서 N개를 자르므로, 번갈아 배치해야 부분 생성도 모든 상태를 커버한다.
@@ -143,7 +148,8 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
         },
       });
       if (got.length) { cuts = got; manifest.product = ctxProduct; }
-      emit({ stage: 'plan-done', target: targetPerUnit(1), cuts: cuts.length });
+      else fellBack = true;   // cuts 는 NEUTRAL_STILLS 그대로 → 제품 맞춤 컷이 아니다
+      emit({ stage: 'plan-done', target: targetPerUnit(1), cuts: cuts.length, fallback: fellBack });
     }
   }
 
@@ -184,6 +190,8 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
         total: slots.length, slots, cuts: planCuts, refSkus, product: ctxProduct,
         vertical: suite.vertical, sources: sourcePaths || [],
         states: planStates,   // [{key,label,sources}] — 게이트 UI·상태별 재굽기가 씀
+        fallback: fellBack,                  // true면 제품 맞춤 컷이 아니라 기본 컷 — 게이트에서 경고한다
+        fallbackReason: fellBack ? planError : null,
         unit: unit || null,   // 'pair'|'with_package'|'group' — 재굽기도 같은 단위를 유지해야 한다
       });
     } catch (_) {}
