@@ -253,6 +253,26 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   manifest.refs.forEach((r) => { refBySku[r.sku] = r.path; });
   const refForCut = (cut) => (cut && cut.refSku && refBySku[cut.refSku]) || primaryRef;
 
+  // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉(브리프)이 있으면, 캐논 레퍼 기준으로 1장 렌더해
+  //   게이트/결과에서 "캐논 레퍼(생성 기준)"와 "내 컨셉 미리보기"를 나란히 보여준다.
+  //   (브리프가 없으면 만들지 않는다 — 불필요한 생성 방지.)
+  const briefText = (product || '').trim();
+  if (briefText) {
+    try {
+      const conceptCut = {
+        key: 'concept_preview', label: '컨셉 미리보기', w: 960, h: 960,
+        neg: 'garbled or fabricated lettering, distorted label, warped product, duplicate product, extra caps',
+        prompt: `Marketing photo of ONE single ${ctxProduct || 'product'}, identical to the reference — keep its exact shape, color and label/wordmark, do not fabricate lettering — realizing this concept and mood: "${briefText}". Ground the scene and styling in that concept while keeping the product accurate and tack-sharp.`,
+      };
+      const buf = await genStill({ canonRefPath: primaryRef, cut: conceptCut, ctx });
+      const cp = path.join(workDir, 'concept_preview.jpg');
+      fs.writeFileSync(cp, buf);
+      manifest.concept = { key: 'concept_preview', label: '컨셉 미리보기', path: cp };
+      await ship('concept', { key: 'concept_preview', label: '컨셉 미리보기', path: cp });
+      emit({ stage: 'concept' });
+    } catch (e) { emit({ stage: 'concept', error: e.message }); } // 실패해도 레퍼 게이트는 진행
+  }
+
   if (stopAfter === 'ref') return manifest; // 🔵 레퍼 소프트 게이트: 레퍼까지만 굽고 멈춘다(스틸은 사용자 확인 후 generate 단계에서).
 
   // 2) 스틸 배치 (플래너 컷 or suite)

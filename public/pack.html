@@ -106,6 +106,15 @@
   .rg-states.two{grid-template-columns:1fr 1fr}
   .rg-state{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg2)}
   .rg-state-h{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px}
+  /* 컨셉 미리보기 ↔ 캐논 레퍼 나란히 비교 */
+  .rg-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
+  @media(max-width:640px){.rg-compare{grid-template-columns:1fr}}
+  .rg-concept,.rg-canon{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg2)}
+  .rg-concept .rg-img{margin-bottom:8px;background:var(--surface);aspect-ratio:auto;height:min(300px,34vh)}
+  .rg-compare .rg-states{margin-bottom:0}
+  .rg-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.06);color:var(--dim);vertical-align:1px;margin-left:4px}
+  .rg-tag.on{background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff}
+  .rg-concept-note{font-size:11px;color:var(--dim);line-height:1.5}
   /* 확인용 썸네일이라 크게 필요 없음 — 높이를 묶어 두 상태가 한눈에 들어오게. */
   .rg-state .rg-img{margin-bottom:10px;background:var(--surface);aspect-ratio:auto;height:min(300px,34vh)}
   .rg-states.many .rg-state .rg-img{height:min(150px,20vh)}
@@ -442,7 +451,10 @@ function renderInteractive(pack) {
   Object.keys(groups).forEach(id => { if (!order.some(s => slotId(s) === id)) { const m = id.match(/^([^:]+):(.+)$/); if (m) order.push({ kind: m[1], key: m[2], label: groups[id][0].label }); } });
   const byKind = {};
   order.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
-  $('#assets').innerHTML = KIND_ORDER.filter(k => byKind[k]).map(k => {
+  // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉을 캐논 레퍼로 렌더한 예시. 결과 상단에 먼저 보여준다.
+  const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
+  const conceptHtml = concept ? `<h2>내 컨셉 미리보기</h2><div class="grid"><figure class="rescard"><a class="dl" href="${esc(concept.url)}" download="${esc(fname(concept))}" title="다운로드">⤓</a><img src="${esc(concept.url)}" loading="lazy"><figcaption>입력한 컨셉으로 만든 예시</figcaption></figure></div>` : '';
+  $('#assets').innerHTML = conceptHtml + KIND_ORDER.filter(k => byKind[k]).map(k => {
     const cards = byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('');
     const add = (k === 'still') ? `<figure class="addcut" onclick="openAddCut()"><div class="addcut-in"><div class="addcut-plus">+</div><div>컨셉 추가</div></div></figure>` : '';
     return `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${cards}${add}</div>`;
@@ -597,6 +609,13 @@ function showRefGate(pack) {
   }).join('');
   const isState = units[0] && units[0].kind === 'state';
   const unitWord = isState ? '상태' : '종류';
+  // 🟢 컨셉 미리보기(유저 입력 컨셉을 캐논 레퍼로 렌더한 예시) — 있으면 캐논 레퍼와 함께 보여준다.
+  const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
+  const conceptBlock = concept ? `<div class="rg-concept">
+      <div class="rg-state-h">내 컨셉 미리보기 <span class="rg-tag">참고</span></div>
+      <div class="rg-img"><img src="${esc(concept.url)}" alt="" onerror="this.style.opacity=.3"></div>
+      <div class="rg-concept-note">입력하신 컨셉으로 만든 예시예요. 실제 컷들은 이 방향으로 생성됩니다.</div>
+    </div>` : '';
   // 🔴 플래너가 실패해 기본 컷으로 떨어졌으면 **반드시 알린다** — 예전엔 조용히 폴백돼 "완료"처럼 보였다.
   const fb = plan && plan.fallback
     ? `<div class="rg-fallback"><b>⚠ 자동 분석이 실패해 기본 컷으로 진행합니다.</b> 이 제품에 맞춘 컷이 아니라 일반 제품컷이에요.
@@ -606,7 +625,7 @@ function showRefGate(pack) {
     <div class="rg-h">캐논 레퍼 확인</div>
     <div class="rg-note">${multi ? `${unitWord}마다 각 레퍼를 기준으로 컷을 만듭니다.` : '이 레퍼를 기준으로 모든 컷을 만듭니다.'} <b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.</div>
     ${fb}
-    <div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>
+    ${conceptBlock ? `<div class="rg-compare">${conceptBlock}<div class="rg-canon"><div class="rg-state-h">캐논 레퍼 <span class="rg-tag on">생성 기준</span></div><div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div></div></div>` : `<div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>`}
     <div class="rg-depth-h">몇 컷 만들까요?${multi ? ` <span class="rg-depth-sub">${unitWord}별로 고루 나눠 만듭니다</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
     <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
