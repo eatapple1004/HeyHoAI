@@ -189,7 +189,7 @@ async function generatePack(pack, { depth, userId }) {
 router.post('/classify', upload.array('photos', 10), async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
-    const hint = (req.body.product || '').slice(0, 300);
+    const hint = (req.body.product || '').slice(0, 600); // 컨셉 브리프(여러 줄) 수용
     const images = req.files.map((f) => ({ data: fs.readFileSync(f.path).toString('base64'), mediaType: f.mimetype || 'image/jpeg' }));
     const result = await classifyProduct({ images, hint });
     req.files.forEach((f) => { try { fs.unlinkSync(f.path); } catch (_) {} }); // 분류용 임시 업로드 정리(생성은 별도 POST에서 재업로드)
@@ -201,7 +201,7 @@ router.post('/', upload.array('photos', 10), async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
     const vertical = req.body.vertical || 'beverage';
-    const product = (req.body.product || '').slice(0, 300);
+    const product = (req.body.product || '').slice(0, 600); // 컨셉 브리프(여러 줄) = 기획 주도
     const category = (req.body.category || '').slice(0, 40) || null;  // 사용자가 확인·확정한 카테고리
     let skus = null;
     try { skus = req.body.skus ? JSON.parse(req.body.skus) : null; } catch (_) { skus = null; }
