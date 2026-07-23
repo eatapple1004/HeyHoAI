@@ -143,6 +143,9 @@
   .grid figure.slot .ph{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;width:100%}
   .grid figure.slot figcaption{align-self:stretch}
   .rb-spin{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:sp .8s linear infinite}
+  /* 액션 진행 오버레이 — 버튼 누른 대상(카드·레퍼 이미지)에 즉시 스피너를 덮어 "처리 중"을 눈에 띄게 */
+  .busy-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:rgba(10,10,16,.6);backdrop-filter:blur(1.5px);border-radius:inherit;z-index:6;font-size:11.5px;font-weight:600;color:#fff;text-align:center;padding:6px}
+  .busy-ov .rb-spin{width:26px;height:26px;border-width:3px}
   .rb-elapsed{font-size:12.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
   .grid figure.failed-fig{display:flex;flex-direction:column;background:rgba(255,90,90,.06);border-color:rgba(255,120,120,.28)}
   .rb-failed{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:14px;aspect-ratio:4/5}
@@ -288,6 +291,9 @@ $('#go').onclick = async () => {
   showConfirm(cls, hint);
 };
 function fail(msg) { if (window.toast) toast(msg, 'error'); else alert(msg); } // toast=saas-auth 전역, 미로드 시 alert 폴백
+// 액션 진행 오버레이 — 대상 요소(카드/이미지)에 스피너를 즉시 덮고, 끝나면 제거. 작은 버튼 글씨보다 눈에 띔.
+function busyOn(el, label) { if (!el) return null; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; const o = document.createElement('div'); o.className = 'busy-ov'; o.innerHTML = '<div class="rb-spin"></div>' + (label ? '<span>' + esc(label) + '</span>' : ''); el.appendChild(o); return o; }
+function busyOff(o) { if (o && o.parentNode) o.parentNode.removeChild(o); }
 
 // ── 확인 스텝: "이 제품 맞아요?" — 오분류를 사람이 사전 차단(귀걸이가 음료로 나오는 참사 방지) ──
 const CATS = ['beverage', 'food', 'cosmetics-skincare', 'cosmetics-color', 'haircare', 'apparel', 'footwear', 'bag', 'jewelry', 'home', 'tech', 'other'];
@@ -347,6 +353,11 @@ function toggleState(k) {   // 상태 끄기/켜기 — 0~1개만 남으면 단�
 async function confirmGenerate() {
   const c = confirmState;
   const bg = document.querySelector('.cf-bg'); if (bg) bg.remove();
+  // ⚡ 클릭 즉시 결과 화면 + 스피너로 전환 — 업로드가 걸리는 동안 무반응/빈 화면 방지.
+  $('#form').classList.add('hide');
+  $('#result').classList.remove('hide');
+  $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>사진 업로드 중…<div class="sub">잠시만 기다려 주세요</div></div></div>';
+  $('#status').innerHTML = '<span class="spin"></span>업로드 중…';
   const fd = new FormData();
   files.forEach(f => fd.append('photos', f));
   if (c.hint) fd.append('product', c.hint);
@@ -356,14 +367,13 @@ async function confirmGenerate() {
   const onStates = (c.states || []).filter(s => c.stateOn[s.key]);
   if (onStates.length > 1) fd.append('states', JSON.stringify(onStates));
   if (c.unit) fd.append('unit', c.unit);   // 한 쌍·제품+박스 등 — 첫 베이크부터 맞게
+  const revert = () => { $('#result').classList.add('hide'); $('#form').classList.remove('hide'); };
   let r;
   try { r = await fetch('/api/pack', { method: 'POST', body: fd }); }
-  catch (e) { fail('요청 실패: 네트워크'); return; }
-  if (!r.ok) { fail('요청 실패: ' + r.status); return; }
+  catch (e) { revert(); fail('요청 실패: 네트워크'); return; }
+  if (!r.ok) { revert(); fail('요청 실패: ' + r.status); return; }
   const { id } = await r.json();
   PACK_ID = id;
-  $('#form').classList.add('hide');
-  $('#result').classList.remove('hide');
   startGen();
   poll(id);
 }
@@ -468,22 +478,24 @@ function flipVer(sid, dir) {
 async function refreshPack() { try { const pack = await (await fetch('/api/pack/' + PACK_ID)).json(); renderInteractive(pack); loadWorks(); } catch (e) {} }
 async function regenCut(cutKey, btn) {
   if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '생성 중…';
+  const ov = busyOn(btn.closest('figure'), '새 버전 생성 중…');   // 카드에 오버레이 스피너
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/regenerate-cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cutKey }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
-    verIdx['still:' + cutKey] = 1e9; await refreshPack();     // 최신(새 버전)으로
+    verIdx['still:' + cutKey] = 1e9; await refreshPack();     // 최신(새 버전)으로 — refreshPack가 카드를 새로 그림(오버레이 함께 제거)
     if (window.toast) toast('새 버전 생성됨 — ◄►로 이전과 비교');
-  } catch (e) { if (window.toast) toast('재생성 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+  } catch (e) { busyOff(ov); if (window.toast) toast('재생성 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 async function rebakeRef(refKey, btn) {
   if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
+  const ov = busyOn(btn.closest('figure'), '레퍼 다시 굽는 중…');
   try {
     const sku = String(refKey).replace(/^ref_/, '');
     const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
     verIdx['ref:' + refKey] = 1e9; await refreshPack();
     if (window.toast) toast('레퍼 새 버전 — 이제 "다시"는 이 레퍼로 생성됩니다');
-  } catch (e) { if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+  } catch (e) { busyOff(ov); if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 async function openAddCut() {
   try {
@@ -607,6 +619,8 @@ async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의
   const pick = (sel) => [...document.querySelectorAll(sel)].find(el => el.dataset.s === sku);
   const inp = pick('.rg-bg .rgHint');
   const hint = ((inp && inp.value) || '').trim();
+  const imgEl = pick('.rg-bg img.rgImg');
+  const ov = busyOn(imgEl && imgEl.closest('.rg-img'), '다시 굽는 중…');   // 레퍼 이미지에 오버레이 스피너
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku, hint }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
@@ -614,17 +628,18 @@ async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의
     if (inp) inp.value = '';
     if (window.toast) toast('레퍼 다시 구웠어요 — 확인하고 진행하세요');
   } catch (e) { if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); }
-  finally { btn.disabled = false; btn.textContent = t; }
+  finally { busyOff(ov); btn.disabled = false; btn.textContent = t; }
 }
 async function gateProceed() {
-  const btn = document.querySelector('.rg-go'); if (btn && btn.disabled) return; if (btn) btn.disabled = true;
+  const btn = document.querySelector('.rg-go'); if (btn && btn.disabled) return;
+  if (btn) { btn.disabled = true; btn.dataset.t = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>생성 시작 중…'; }
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depth: gateDepth >= gateTotal ? 0 : gateDepth }) });
     if (!r.ok) { const d = await r.json(); throw new Error(d.error || '실패'); }
     gatePassed = true; built = false; filled.clear();
     const g = document.querySelector('.rg-bg'); if (g) g.remove();
     $('#status').innerHTML = '<span class="spin"></span>생성 중…';
-  } catch (e) { if (btn) btn.disabled = false; if (window.toast) toast('생성 시작 실패: ' + (e.message || e), 'error'); }
+  } catch (e) { if (btn) { btn.disabled = false; if (btn.dataset.t) btn.innerHTML = btn.dataset.t; } if (window.toast) toast('생성 시작 실패: ' + (e.message || e), 'error'); }
 }
 function downloadAll() {   // 컷별 현재 보고 있는 버전만
   const g = versionsByCut(PACK || { assets: window._packAssets || [] });
