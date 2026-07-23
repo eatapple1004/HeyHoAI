@@ -18,16 +18,30 @@ const BAKE_NEG = 'garbled or gibberish lettering, misspelled wordmark, two or mo
  * @param {object}  [p.refBake]     suite.refBake 스펙
  * @returns {Promise<Buffer>}
  */
-async function bakeOne({ sourcePaths, label, refBake = {}, hint }) {
-  const variant = label ? ` This specific variant: ${label}.` : '';
-  // hint = 사용자 교정(예: "한 쌍으로"). 있으면 "ONE single product" 가정을 덮고, 페어를 막던 negative도 뺀다.
-  const unit = hint
+// 🔵 unit = "이 상품의 한 단위". classify가 자동 판별해 넘긴다 — 기본 가정("단품 하나")이 틀리는 케이스를
+//   사용자가 게이트에서 손으로 교정("한 쌍으로")하기 전에, **첫 베이크부터** 맞추기 위한 것.
+const UNIT_PHRASE = {
+  pair: 'a matching PAIR of two identical pieces, arranged neatly together as the one sellable set',
+  with_package: 'the product together with its own box/packaging, both in frame as one presentation',
+  group: 'the full bundled group of pieces that are sold together as one unit, all in frame',
+};
+const NEG_MULTI = 'garbled or gibberish lettering, misspelled wordmark, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights'; // 개체가 둘 이상이 정상인 경우 — "two or more/duplicate"를 뺀다
+
+async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) {
+  // state = 같은 제품의 다른 모습(뚜껑 닫음/열음 등). 레퍼로 넘긴 사진 자체가 이미 그 상태라,
+  //   모델이 임의로 "완성된 모습"으로 되돌리지(뚜껑을 도로 닫지) 않게 사진 그대로를 못박는다.
+  const variant = state
+    ? ` The reference photo shows the product in one specific state: ${state}. Reproduce THAT exact state — same open/closed configuration, same parts visible or hidden — never change it, never "complete" or reassemble the product.`
+    : (label ? ` This specific variant: ${label}.` : '');
+  // 단위 결정 우선순위: 사용자 수동 교정(hint) > classify 자동 판별(unit) > 기본(단품 하나).
+  const phrase = UNIT_PHRASE[unit];
+  const unitClause = hint
     ? `Present the product EXACTLY as the seller instructs: "${hint}". If they say a pair, show a matching PAIR of two identical pieces arranged neatly together; follow their instruction precisely.`
-    : `ONE single product only (never duplicate).`;
-  const neg = hint
-    ? 'garbled or gibberish lettering, misspelled wordmark, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights' // 페어 허용 위해 "two or more/duplicate" 제거
-    : BAKE_NEG;
-  const prompt = `Clean isolated e-commerce product photograph — ${unit} — standing upright and front-facing, large and centered on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp label. Keep the product's exact shape, color, cap and the wordmark on its label identical to the reference — do not garble or invent lettering. No people, no hands, no props.${variant} 4:5.`;
+    : (phrase
+      ? `Show exactly ONE sellable unit, which for this product means ${phrase}. Do not add or remove objects.`
+      : `ONE single product only (never duplicate).`);
+  const neg = (hint || phrase) ? NEG_MULTI : BAKE_NEG;
+  const prompt = `Clean isolated e-commerce product photograph — ${unitClause} — standing upright and front-facing, large and centered on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp label. Keep the product's exact shape, color, cap and the wordmark on its label identical to the reference — do not garble or invent lettering. No people, no hands, no props.${variant} 4:5.`;
   const res = await provider.generate({
     prompt,
     negativePrompt: neg,
@@ -45,13 +59,13 @@ async function bakeOne({ sourcePaths, label, refBake = {}, hint }) {
  * @param {object} [p.refBake]
  * @returns {Promise<Array<{sku:string, buffer:Buffer}>>}
  */
-async function bakeRefs({ sourcePaths, skus, refBake }) {
+async function bakeRefs({ sourcePaths, skus, refBake, unit }) {
   if (!skus || !skus.length) {
-    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, refBake }) }];
+    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, refBake, unit }) }];
   }
   const out = [];
   for (const s of skus) {
-    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, refBake }) });
+    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, refBake, unit }) });
   }
   return out;
 }

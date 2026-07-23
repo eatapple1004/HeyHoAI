@@ -21,7 +21,7 @@ const { classifyProduct } = require('./planner.service');    // 확인 단계용
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
 const { genStill } = require('./stills.service');            // 컷 재생성·추가
 const { composeRow } = require('./compositor');              // 세트 합성(generate 단계)
-const { suiteFor } = require('./suites');                    // 컷 라이브러리(컨셉 추가) + refBake 스펙
+const { suiteFor, STATE_COMPOSITES } = require('./suites');  // 컷 라이브러리(컨셉 추가) + refBake 스펙 + 상태 합성
 const promptRepo = require('../generate/prompt.repository'); // 크리에이션 dual-write(내 크리에이션·라이브러리·공유 = generation_results→prompts)
 const resultRepo = require('../generate/result.repository');
 const teamCredit = require('../teams/team.credit');         // 활성 팀 — prompt.team_id에 붙여야 팀 유저 피드에 뜸
@@ -78,11 +78,12 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) 
 function resolveCut(pack, cutKey) {
   const plan = (pack.config && pack.config.plan) || {};
   const stored = (plan.cuts || []).find((c) => c.key === cutKey);
-  if (stored && stored.promptText) return { key: stored.key, label: stored.label, w: stored.w, h: stored.h, neg: stored.neg, prompt: stored.promptText };
+  // refSku = 이 컷이 어느 캐논 레퍼(상태 닫음/열음, 또는 변형 red/pink)로 생성돼야 하는지 — 재생성도 같은 레퍼를 써야 안 틀어진다.
+  if (stored && stored.promptText) return { key: stored.key, label: stored.label, w: stored.w, h: stored.h, neg: stored.neg, prompt: stored.promptText, refSku: stored.refSku || null };
   const suite = suiteFor(pack.vertical);
   const s = (suite.stills || []).find((c) => c.key === cutKey);
   if (s) return s; // suite 컷(prompt는 함수 — genStill이 처리)
-  if (stored) return { key: stored.key, label: stored.label, w: stored.w || 768, h: stored.h || 960, neg: stored.neg, prompt: stored.label }; // 최후: 라벨로라도
+  if (stored) return { key: stored.key, label: stored.label, w: stored.w || 768, h: stored.h || 960, neg: stored.neg, prompt: stored.label, refSku: stored.refSku || null }; // 최후: 라벨로라도
   return null;
 }
 
@@ -93,8 +94,29 @@ function latestRefPath(pack) {
   return null;
 }
 
+/** 특정 레퍼(상태 또는 변형 sku)의 최신 캐논 레퍼 경로. 그 레퍼가 없으면 전체 최신으로 폴백. */
+function latestRefPathFor(pack, sku) {
+  if (sku) {
+    const refs = (pack.assets || []).filter((a) => a.kind === 'ref' && a.url && a.cut_key === `ref_${sku}`);
+    for (let i = refs.length - 1; i >= 0; i--) { const p = localPathForUrl(refs[i].url); if (fs.existsSync(p)) return p; }
+  }
+  return latestRefPath(pack);
+}
+
+/** 합성용 레퍼 경로들 — 🔑 재굽기로 버전이 쌓이므로 **상태(sku)별 최신 1장씩**만.
+ *  (안 그러면 닫힘v1·열림v1·닫힘v2 3장이 전부 나란히 붙는다.) 순서는 plan의 상태/세트 순서를 따른다. */
+function composeRefPaths(pack) {
+  const plan = (pack.config && pack.config.plan) || {};
+  const latest = {};
+  (pack.assets || []).filter((a) => a.kind === 'ref' && a.url).forEach((a) => { latest[a.cut_key || 'ref_main'] = a.url; }); // id ASC → 뒤가 최신
+  const order = ((plan.states && plan.states.length) ? plan.states.map((s) => `ref_${s.key}`)
+    : (plan.refSkus || []).map((s) => `ref_${s.sku}`)).filter((k) => latest[k]);
+  const keys = order.length ? order : Object.keys(latest);
+  return keys.map((k) => localPathForUrl(latest[k])).filter((p) => fs.existsSync(p));
+}
+
 // 1단계(prep): 분석 → 계획 저장 → **캐논 레퍼만 굽고** 멈춘다(status='ref_ready'). 스틸은 게이트 통과 후 generate에서.
-async function prepPack(pack, { sourcePaths, vertical, product, skus, category, userId }) {
+async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, category, userId }) {
   pack.config = pack.config || {};
   pack.product = pack.product || product;
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
@@ -107,7 +129,8 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, category, 
   });
   try {
     await runPack({
-      sourcePaths: durableSources, vertical, product, skus, category, workDir, stopAfter: 'ref',
+      // states[].photoIndex 는 업로드 순서 기준 — durableSources가 같은 순서로 복사되므로 그대로 유효하다.
+      sourcePaths: durableSources, vertical, product, skus, states, unit, category, workDir, stopAfter: 'ref',
       onPlan: async (plan) => { await repo.setPlan(pack.id, plan); },  // plan={total,slots,cuts,refSkus,product,vertical,sources}
       onAsset: async (a) => { await recordAsset(pack, { kind: a.kind, key: a.key, label: a.label, absPath: a.path, userId }); },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
@@ -126,21 +149,24 @@ async function generatePack(pack, { depth, userId }) {
     fresh.config = fresh.config || {};
     const plan = fresh.config.plan || {};
     const cuts = plan.cuts || [];
-    const refPath = latestRefPath(fresh);
-    if (!refPath) throw new Error('캐논 레퍼 없음');
+    if (!latestRefPath(fresh)) throw new Error('캐논 레퍼 없음');
     const ctx = { product: plan.product || fresh.product || '' };
+    // depth는 앞에서 N개를 자른다 — plan.cuts가 상태별 인터리브로 저장돼 있어 부분 생성도 모든 상태를 커버한다.
     const limit = (depth && depth > 0) ? Math.min(depth, cuts.length) : cuts.length; // 0=전부
     for (const c of cuts.slice(0, limit)) {
       try {
-        const cut = { key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label };
-        const buf = await genStill({ canonRefPath: refPath, cut, ctx });
+        const cut = { key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label, refSku: c.refSku || null };
+        // 🔑 그 컷에 배정된 레퍼로 생성(상태든 변형이든).
+        //   예전엔 전부 최신 레퍼 1장만 써서, 레퍼를 N장 구워놓고도 스틸은 임의의 한 종만 나왔다.
+        const buf = await genStill({ canonRefPath: latestRefPathFor(fresh, c.refSku), cut, ctx });
         await recordAsset(fresh, { kind: 'still', key: c.key, label: c.label, buffer: buf, userId });
       } catch (e) { logger.warn?.(`[pack ${fresh.id}] still ${c.key} 실패: ${e.message}`); }
     }
-    // 세트(레퍼 2장 이상)면 합성
-    const refPaths = (fresh.assets || []).filter((a) => a.kind === 'ref').map((a) => localPathForUrl(a.url)).filter((p) => fs.existsSync(p));
+    // 레퍼 2장 이상이면 합성 — 상태 모드면 "상태 비교 · 나란히", 세트면 "세트 · 로우".
+    const refPaths = composeRefPaths(fresh);
+    const stateMode = (plan.states || []).length > 1;
     if (refPaths.length > 1) {
-      for (const comp of (suiteFor(fresh.vertical).composites || [])) {
+      for (const comp of (stateMode ? STATE_COMPOSITES : (suiteFor(fresh.vertical).composites || []))) {
         try { const buf = comp.method === 'row' ? await composeRow(refPaths) : null; if (buf) await recordAsset(fresh, { kind: 'composite', key: comp.key, label: comp.label, buffer: buf, userId }); }
         catch (e) { logger.warn?.(`[pack ${fresh.id}] composite ${comp.key} 실패: ${e.message}`); }
       }
@@ -172,14 +198,20 @@ router.post('/', upload.array('photos', 10), async (req, res, next) => {
     const category = (req.body.category || '').slice(0, 40) || null;  // 사용자가 확인·확정한 카테고리
     let skus = null;
     try { skus = req.body.skus ? JSON.parse(req.body.skus) : null; } catch (_) { skus = null; }
+    // 🔵 상태(뚜껑 닫음/열음 등) — 확인 스텝에서 사용자가 켠 것만 온다. 2개↑면 상태마다 레퍼+컷세트.
+    let states = null;
+    try { states = req.body.states ? JSON.parse(req.body.states) : null; } catch (_) { states = null; }
+    if (Array.isArray(states)) states = states.filter((s) => s && s.key).slice(0, 4);
+    // 한 단위 판별(단품/한 쌍/본체+박스) — 캐논 레퍼를 몇 개로 구울지. 화이트리스트 밖은 무시(기본 단품).
+    const unit = ['pair', 'with_package', 'group'].includes(req.body.unit) ? req.body.unit : null;
 
     const pack = await repo.createPack({
-      userId: req.user && req.user.id, vertical, product, config: { skus, category, photoCount: req.files.length },
+      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, category, photoCount: req.files.length },
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
     setImmediate(() => prepPack(pack, {
-      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, category, userId: req.user && req.user.id,
+      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, category, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
 });
@@ -226,7 +258,7 @@ router.post('/:id/regenerate-cut', async (req, res, next) => {
     if (!pack) return res.status(404).json({ error: 'not found' });
     const cut = resolveCut(pack, String((req.body && req.body.cutKey) || ''));
     if (!cut) return res.status(400).json({ error: 'unknown cut' });
-    const refPath = latestRefPath(pack);
+    const refPath = latestRefPathFor(pack, cut.refSku); // 그 컷에 배정된 레퍼로 재생성(안 그러면 다른 상태·변형으로 바뀐다)
     if (!refPath) return res.status(409).json({ error: '캐논 레퍼가 아직 없어요(먼저 생성 완료 필요)' });
     const ctx = { product: (pack.config && pack.config.plan && pack.config.plan.product) || pack.product || '' };
     const buf = await genStill({ canonRefPath: refPath, cut, ctx });
@@ -265,8 +297,16 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
     const sku = String((req.body && req.body.sku) || 'main');
     const hint = String((req.body && req.body.hint) || '').slice(0, 200); // 교정(예: "한 쌍으로") — 낱개→페어 등
     const skuLabel = ((plan.refSkus || []).find((s) => s.sku === sku) || {}).label;
-    const buf = await bakeOne({ sourcePaths: sources, label: skuLabel, refBake: suite.refBake, hint });
-    const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: sku, buffer: buf, userId: req.user && req.user.id });
+    // 상태 레퍼면 **그 상태를 찍은 사진**으로 다시 굽는다(전체 사진으로 구우면 다른 상태가 섞인다).
+    const st = (plan.states || []).find((s) => s.key === sku);
+    const stSources = st ? (st.sources || []).filter((p) => fs.existsSync(p)) : [];
+    const buf = await bakeOne({
+      sourcePaths: stSources.length ? stSources : sources,
+      label: st ? null : skuLabel, state: st ? st.label : null,
+      unit: plan.unit || (pack.config && pack.config.unit) || null,
+      refBake: suite.refBake, hint,
+    });
+    const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: req.user && req.user.id });
     res.json({ asset });
   } catch (e) { next(e); }
 });

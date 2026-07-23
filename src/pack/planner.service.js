@@ -54,17 +54,25 @@ const PLAN_SCHEMA = {
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint, confirmed) {
+function buildUserPrompt(nImgs, hint, confirmed, state) {
   const known = (confirmed && confirmed.category)
     ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
     : `TASK: infer what the product is and its category first.`;
+  // 🔵 상태 포커스 — 상태별로 플래너를 나눠 호출한다(호출당 출력이 작아 truncation 원천 차단 + 상태 수만큼 선형 확장).
+  const stateFocus = state ? [
+    `IMPORTANT — this plan is for ONE specific PRESENTATION STATE of the product: "${state.label}"${state.key ? ` (${state.key})` : ''}.`,
+    `The canonical reference used to render these cuts shows the product in THAT state, so every cut must depict the product in that state.`,
+    `Plan cuts that specifically showcase what makes THIS state worth seeing (what it reveals, its material detail, how a buyer judges it). Do NOT describe or depict the other states.`,
+    `Give ${state.perState || 8}–${(state.perState || 8) + 2} cuts for this state.`,
+  ].join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
       : `A product photo is attached. Study its real appearance — form, color, material, finish, label/wordmark.`,
     hint ? `Seller note: ${hint}` : '',
     known,
-    `Plan a DIVERSE PACK of 8–12 still shots that best sell THIS product.`,
+    stateFocus,
+    state ? '' : `Plan a DIVERSE PACK of 8–12 still shots that best sell THIS product.`,
     `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
     `  · beverage/food → hero (sunlit / color-block / luxe), clean PDP (front, 3/4), ingredient-with-source, pour/texture macro, lifestyle (morning table / desk / iced), flat-lay, splash, editorial.`,
     `  · cosmetics-skincare → hero, PDP, texture/dollop macro, ingredient, on-skin swatch, dewy/glass hero, shelfie lifestyle.`,
@@ -88,19 +96,22 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {object} p
  * @param {Array<{data:string, mediaType?:string}>} p.images  base64 제품 사진
  * @param {string} [p.hint]  판매자 메모(선택)
+ * @param {{key:string,label:string,perState?:number}} [p.state]  상태 포커스(있으면 그 상태 전용 컷만 계획)
  * @returns {Promise<{product, category, ingredient, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint, category, product }) {
+async function planPack({ images, hint, category, product, state }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
-    max_tokens: 8000, // 8~12컷 × 상세 프롬프트 → 4200은 JSON 잘림(→파싱실패→폴백)이 잦았다. 넉넉히.
+    // 8~12컷 × 상세 프롬프트 → 4200은 JSON 잘림(→파싱실패→폴백)이 잦았다. 넉넉히.
+    // 🔵 20컷+는 이 한 호출을 키워서가 아니라 **상태별로 호출을 나눠서** 얻는다(호출당 출력은 계속 8~12컷 수준 유지).
+    max_tokens: 8000,
     system: SYSTEM,
     messages: [{ role: 'user', content }],
     output_config: { format: { type: 'json_schema', schema: PLAN_SCHEMA } },
@@ -131,8 +142,30 @@ const CLASSIFY_SCHEMA = {
     category: { type: 'string', description: `product category, one of: ${CATEGORIES.join(', ')}` },
     isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple distinct variants of the same line' },
     variants: { type: 'array', description: 'if isSet, one entry per distinct variant; else empty', items: { type: 'object', additionalProperties: false, properties: { sku: { type: 'string' }, label: { type: 'string' } }, required: ['sku', 'label'] } },
+    // 🔵 unit = "이 상품의 한 단위가 무엇인가" — 캐논 레퍼를 구울 때 몇 개를 그릴지 결정한다.
+    //   기본 가정("단품 하나")이 틀리는 흔한 케이스: 귀걸이(한 쌍), 향수+박스(본체+패키지).
+    unit: {
+      type: 'string',
+      enum: ['single', 'pair', 'with_package', 'group'],
+      description: 'What makes up ONE sellable presentation of this product: "single" = one object on its own; "pair" = two identical pieces always sold/worn together (earrings, shoes, socks, gloves); "with_package" = the item shown together with its own box/pouch/packaging as one presentation; "group" = several pieces bundled and sold as one unit. Judge from the photo and from how this product is normally sold. Default "single" when unsure.',
+    },
+    // 🔵 상태(state) = 같은 하나의 제품을 "다르게 보여준 모습"(뚜껑 닫음/열음, 접힘/펼침, 포장/개봉).
+    //   변형(variants=다른 SKU·색상)과는 다른 축. 상태마다 캐논 레퍼를 따로 굽고 컷 세트를 따로 만든다.
+    states: {
+      type: 'array',
+      description: 'distinct PRESENTATION STATES of the SAME single product that are actually VISIBLE in the attached photos (e.g. cap-on vs cap-off, closed vs open, folded vs unfolded, boxed vs unboxed). If every photo shows the same state, return exactly ONE entry. Never invent a state that is not photographed.',
+      items: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          key: { type: 'string', description: 'short ascii slug, e.g. closed, open, folded' },
+          label: { type: 'string', description: 'very short Korean label a shop owner reads instantly, e.g. "뚜껑 닫음", "뚜껑 열림"' },
+          photoIndex: { type: 'number', description: '0-based index of the attached photo that best shows this state; -1 if no single photo shows it clearly' },
+        },
+        required: ['key', 'label', 'photoIndex'],
+      },
+    },
   },
-  required: ['product', 'category', 'isSet', 'variants'],
+  required: ['product', 'category', 'isSet', 'variants', 'states', 'unit'],
 };
 async function classifyProduct({ images, hint }) {
   const imgs = (images || []).filter((im) => im && im.data);
@@ -142,11 +175,18 @@ async function classifyProduct({ images, hint }) {
     { type: 'text', text: [
       `Identify the product in the attached photo${imgs.length > 1 ? 's' : ''} precisely and concisely.`,
       hint ? `Seller note: "${hint}" — trust this for the category.` : '',
-      `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants.`,
+      `Distinguish two different axes, and do not confuse them:`,
+      `  · variants = DIFFERENT products/SKUs of one line (red vs blue, MON vs TUE bottle) → isSet + variants.`,
+      `  · states   = the SAME single product shown differently (cap on vs cap off, closed vs open, folded vs unfolded, boxed vs unboxed) → states.`,
+      `A lipstick photographed with its cap on AND with the cap off is ONE product in TWO states — not two variants.`,
+      `⚠️ A different camera ANGLE, distance, crop or lighting of the SAME configuration is NOT a different state (front view vs side view vs close-up = one state). A state must differ in how the object itself is arranged — opened/closed, folded/unfolded, packed/unpacked, assembled/apart.`,
+      `Only list a state you can actually SEE in the attached photo${imgs.length > 1 ? 's' : ''}. If all photos show the same state, return exactly one state. Max 4.`,
+      `Also decide "unit" — how many objects make up ONE sellable presentation. Earrings are normally sold and worn as a PAIR; a perfume shown with its own box is "with_package". Getting this wrong makes every generated image show the wrong number of objects.`,
+      `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states, unit.`,
     ].filter(Boolean).join('\n') },
   ];
   const resp = await client.messages.create({
-    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 600,
+    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 900,
     system: 'You identify consumer products from photos precisely and concisely.',
     messages: [{ role: 'user', content }],
     output_config: { format: { type: 'json_schema', schema: CLASSIFY_SCHEMA } },

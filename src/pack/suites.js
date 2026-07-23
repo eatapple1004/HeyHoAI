@@ -87,4 +87,11 @@ const NEUTRAL_STILLS = [
     `Tasteful top-down flat-lay of ONE single ${c.product}, identical to the reference — on a clean neutral textured surface with minimal, tasteful props appropriate to this exact product, soft daylight, balanced composition, product sharp and in focus. Product only, no people, no hands.`),
 ];
 
-module.exports = { SUITES, suiteFor, NEUTRAL_STILLS };
+// 🔵 상태 모드 합성 — 상태가 2개 이상이면 "닫힘 | 열림"을 나란히 붙여 한 장으로.
+//   생성이 아니라 compositor(코드 합성)라 크레딧 0이고, 각 상태의 캐논 레퍼를 그대로 쓰므로 제품이 안 틀어진다.
+//   (세트 로우 'lineup'과 메커니즘은 같고 라벨/의미만 다르다 — 세트=다른 SKU, 상태=같은 제품의 다른 모습.)
+const STATE_COMPOSITES = [
+  { key: 'states_row', label: '상태 비교 · 나란히', method: 'row', needs: 'all' },
+];
+
+module.exports = { SUITES, suiteFor, NEUTRAL_STILLS, STATE_COMPOSITES };
