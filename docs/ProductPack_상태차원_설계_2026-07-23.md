@@ -211,6 +211,44 @@ return st.length > 1 ? st.map(...) : [{ key: 'main' }];   // 세트(변형)는 s
 검증 10건 추가(폴백 플래그·사유·부분 실패·세트 refSkus) + 기존 회귀 전부 통과.
 UI 실측: 게이트 6장·재굽기 6개·폴백 배너·중복 상태 1개로 접힘·"종류별로 고루 나눠 만듭니다".
 
+---
+
+# 🔴 "자동 분석 실패"의 근본 원인 — media_type 불일치 (경고 배너가 잡아냄)
+
+배너를 넣자마자 사유가 화면에 찍혔다:
+
+```
+400 {"type":"invalid_request_error","message":"messages.0.content.0.image.source.base64: The ima…"}
+```
+
+truncation이 아니라 **Anthropic이 이미지를 거부한 것.** 결정적 단서는 **분류는 성공했는데 플래너만 실패**한 것 —
+두 경로가 media_type 을 다르게 얻고 있었다.
+
+| 경로 | media_type 출처 | 결과 |
+|---|---|---|
+| classify | `req.files[i].mimetype` (multer가 준 진짜 MIME) | ✅ 정상 |
+| planPack | `mimeOf(path)` — **확장자로 추측** | ❌ 400 |
+
+`multer.diskStorage` 는 파일명을 `crypto.randomBytes(16).toString('hex')` 로 만든다 — **확장자가 없다.**
+그래서 durable 복사가 `path.extname(sp) || '.jpg'` 로 **전부 `.jpg`** 가 되고, `mimeOf()` 는 항상 `image/jpeg` 를
+선언한다. PNG 바이트에 `image/jpeg` 라벨을 붙여 보내니 Anthropic이 400으로 거부한다.
+
+**즉 PNG·WebP를 올리면 플래너가 100% 실패했다.** 앞서 차·립스틱이 됐던 건 그게 JPEG였기 때문.
+(`nanoBanana.provider` 도 확장자로 추측하지만 **Gemini가 관대해서** 통과했다 — 그래서 레퍼는 정상적으로 구워지고
+플래너만 죽는, 진단하기 어려운 모양이 됐다.)
+
+**수정**: 확장자를 믿지 않고 **매직바이트로 실제 포맷을 판정**한다(`sniffMime`).
+Claude 지원 4종(jpeg·png·gif·webp) 밖이면 sharp로 JPEG 변환해서라도 보낸다(아이폰 HEIC 등).
+변환마저 실패하면(손상 파일) **던지지 않고** 예전처럼 보낸다 — `b64` 는 `planUnit` 의 try 바깥이라
+여기서 던지면 팩 전체가 죽는다. 플래너가 실패하고 배너로 사유가 드러나는 편이 낫다.
+durable 파일명도 실제 바이트 기준으로 붙여 정직하게 만들었다.
+
+검증 10건: 매직바이트 판정 4종 · **이름이 `.jpg`인데 내용이 PNG → `image/png` 로 선언**(제보 재현) ·
+반대 경우 · WebP · 미지원(TIFF) → JPEG 변환.
+
+> 🔑 교훈: **경고 배너를 넣지 않았으면 이 버그를 못 찾았다.** "조용한 폴백"은 버그를 숨긴다.
+> 그리고 같은 파일을 두 경로가 각자 해석하면(하나는 MIME, 하나는 확장자) 반드시 어긋난다.
+
 ## 남은 것 / 알려진 갭
 
 - **「컨셉 추가」(add-cut)는 refSku 미인식** — 라이브러리 컷엔 refSku가 없어 최신 레퍼를 쓴다. v1 허용.

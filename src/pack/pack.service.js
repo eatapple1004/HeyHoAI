@@ -8,15 +8,41 @@
  */
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 const { suiteFor, NEUTRAL_STILLS, STATE_COMPOSITES } = require('./suites');
 const { bakeRefs, bakeOne } = require('./refBake.service');
 const { genStill } = require('./stills.service');
 const { composeRow } = require('./compositor');
 const { planPack } = require('./planner.service');
 
-function mimeOf(p) {
-  const e = (p.split('.').pop() || '').toLowerCase();
-  return e === 'png' ? 'image/png' : e === 'webp' ? 'image/webp' : 'image/jpeg';
+/**
+ * 🔴 확장자를 믿으면 안 된다 — multer 임시파일은 이름이 랜덤 hex라 **확장자가 없고**,
+ *    durable 복사가 전부 `.jpg`로 붙는다. 그 상태로 media_type=image/jpeg 를 선언하면
+ *    PNG를 올린 사용자에서 Anthropic이 400(invalid_request_error)으로 요청을 거부하고,
+ *    플래너가 통째로 죽어 6컷짜리 중립 폴백으로 떨어진다(실제 발생).
+ *    → **매직바이트로 실제 포맷을 판정**한다. 이름이 뭐든 상관없어진다.
+ */
+function sniffMime(buf) {
+  if (!buf || buf.length < 4) return null;
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
+  if (buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+  return null;   // Claude가 받는 4종이 아님(HEIC 등) → 호출부가 JPEG로 변환한다
+}
+
+/** 파일 → Claude 비전에 넣을 {data, mediaType}. 지원 밖 포맷이면 JPEG로 변환해서라도 보낸다. */
+async function toVisionImage(p) {
+  const buf = fs.readFileSync(p);
+  const m = sniffMime(buf);
+  if (m) return { data: buf.toString('base64'), mediaType: m };
+  try {
+    return { data: (await sharp(buf).jpeg({ quality: 90 }).toBuffer()).toString('base64'), mediaType: 'image/jpeg' };  // 아이폰 HEIC 등
+  } catch (_) {
+    // 변환도 실패(손상 파일 등). 여기서 던지면 **팩 전체가 죽는다** — b64는 planUnit의 try 바깥이다.
+    //   예전처럼 그냥 보내서, 플래너가 실패하고 폴백 배너로 사유가 드러나게 두는 편이 낫다.
+    return { data: buf.toString('base64'), mediaType: 'image/jpeg' };
+  }
 }
 
 /**
@@ -56,7 +82,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   //   화면엔 "완료"로 보였다(6컷짜리 NEUTRAL_STILLS가 그 지문). 사용자에게 알려야 한다.
   let fellBack = false, planError = null;
 
-  const b64 = (paths) => paths.map((p) => ({ data: fs.readFileSync(p).toString('base64'), mediaType: mimeOf(p) }));
+  const b64 = (paths) => Promise.all(paths.map(toVisionImage));
   // 상태 → 그 상태를 가장 잘 보여주는 소스 사진(지정이 없거나 범위 밖이면 전체 사진).
   const srcFor = (st) => {
     const i = Number(st && st.photoIndex);
@@ -116,7 +142,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
       const perState = [];
       for (const st of planStates) {
         const got = await planUnit({
-          images: b64(st.sources), target,
+          images: await b64(st.sources), target,
           state: { key: st.key, label: st.label },
           onMeta: (plan) => {
             if (!ctxProduct) ctxProduct = plan.product || product || '';
@@ -137,7 +163,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
     } else {
       // category = 사용자가 확인·확정한 카테고리(오분류 제거)
       const got = await planUnit({
-        images: b64(sourcePaths), target: targetPerUnit(1),
+        images: await b64(sourcePaths), target: targetPerUnit(1),
         onMeta: (plan) => {
           if (!ctxProduct) ctxProduct = plan.product || product || '';
           if (!manifest.plan) {
@@ -265,4 +291,4 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   return manifest;
 }
 
-module.exports = { runPack };
+module.exports = { runPack, sniffMime };

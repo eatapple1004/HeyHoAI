@@ -16,7 +16,7 @@ const fs = require('fs');
 const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
-const { runPack } = require('./pack.service');
+const { runPack, sniffMime } = require('./pack.service');
 const { classifyProduct } = require('./planner.service');    // 확인 단계용 가벼운 분류
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
 const { genStill } = require('./stills.service');            // 컷 재생성·추가
@@ -124,8 +124,15 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
   // 소스 사진을 durable 위치로 복사(멀터 임시 → 팩 workDir) → 레퍼 재굽기가 나중에 읽게.
   const durableSources = [];
   (sourcePaths || []).forEach((sp, i) => {
-    try { const dst = path.join(workDir, `src_${i}${path.extname(sp) || '.jpg'}`); fs.copyFileSync(sp, dst); durableSources.push(dst); }
-    catch (_) { durableSources.push(sp); }
+    // 🔴 확장자로 이름 붙이면 안 된다 — multer 임시파일은 이름이 랜덤 hex라 확장자가 없어서
+    //   전부 .jpg 로 붙었고, PNG를 올린 사용자에서 플래너가 media_type 불일치로 400을 맞았다.
+    //   실제 바이트를 보고 이름을 정한다(파일명이 정직해야 나중에 읽는 코드도 안 속는다).
+    try {
+      const buf = fs.readFileSync(sp);
+      const EXT = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif', 'image/webp': '.webp' };
+      const dst = path.join(workDir, `src_${i}${EXT[sniffMime(buf)] || path.extname(sp) || '.bin'}`);
+      fs.writeFileSync(dst, buf); durableSources.push(dst);
+    } catch (_) { durableSources.push(sp); }
   });
   try {
     await runPack({
