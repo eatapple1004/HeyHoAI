@@ -5,18 +5,12 @@
  *   먼저 **깨끗한 단품 캐논 레퍼**(단품·클린배경·라벨 보존)를 만들고, 거기서 모든 콘텐츠를 생성한다.
  *   세트/변형이면 SKU마다 1장(병 지오메트리 통일 + 라벨/색만 교체 전략도 가능 — 여기선 소스별 개별 베이크).
  */
-// PACK_IMAGE_MODEL — 레퍼는 **모든 컷의 상류**다. 여기서 모델이 갈리면 하류 N컷이 통째로 갈린다.
-const { resultToBuffer, PACK_IMAGE_MODEL } = require('./stills.service');
+// 모델·해상도는 **팩 전체가 같아야 한다** — 레퍼는 모든 컷의 상류다. 여기서 갈리면 하류 N컷이 통째로 갈린다.
+const { resultToBuffer, PACK_IMAGE_MODEL, PACK_IMAGE_SIZE } = require('./stills.service');
 const provider = require('../images/providers/nanoBanana.provider');
 
-/**
- * 🔍 레퍼는 **2K로 굽는다** — 라벨 글자에 배정되는 픽셀이 2배가 되어 워드마크가 살아남는다.
- *
- * 스틸(20~28장)이 아니라 레퍼(팩당 1~4장)에만 쓰는 이유: 레퍼는 상류라 **개선이 하류 전체에 전파**되는데
- *   장수는 몇 장뿐이라 비용 증가가 미미하다. 같은 돈으로 가장 넓게 먹히는 자리다.
- * 되돌리려면 배포 없이 `PACK_REF_IMAGE_SIZE=1K` + restart.
- */
-const PACK_REF_IMAGE_SIZE = process.env.PACK_REF_IMAGE_SIZE || '2K';
+// 레퍼만 따로 낮추고 싶을 때를 위한 오버라이드(보통은 팩 공통값 그대로 쓴다).
+const PACK_REF_IMAGE_SIZE = process.env.PACK_REF_IMAGE_SIZE || PACK_IMAGE_SIZE;
 
 const NEG_NOTEXT = 'added text, caption, watermark, words or letters printed on the cup plate bowl or background, invented lettering not on the real product';
 const BAKE_NEG = `garbled or gibberish lettering, misspelled wordmark, two or more products, duplicate product, extra caps, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights, ${NEG_NOTEXT}`;

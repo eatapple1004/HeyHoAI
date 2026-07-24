@@ -17,6 +17,17 @@ const provider = require('../images/providers/nanoBanana.provider');
  */
 const PACK_IMAGE_MODEL = process.env.PACK_IMAGE_MODEL || 'gemini-3-pro-image-preview';
 
+/**
+ * 🔍 Pack은 **전부 2K로 생성**한다 — 라벨 글자에 배정되는 픽셀이 2배다.
+ *
+ * 🔑 2K는 **공짜다**. Nano Banana Pro 단가는 해상도 구간으로 매겨지는데 **1K와 2K가 같은 구간**이다
+ *    (둘 다 1120토큰 = 장당 $0.134. 4K만 2000토큰 = $0.24 — Google 공식 단가 2026-07 확인).
+ *    처음엔 "비용 때문에 레퍼만 2K"로 넣었는데 그 근거가 틀렸다. 안 올릴 이유가 없다.
+ * 대가는 돈이 아니라 **시간·용량**이다(생성이 느려지고 파일이 커진다).
+ * 되돌리려면 배포 없이 `PACK_IMAGE_SIZE=1K` + restart.
+ */
+const PACK_IMAGE_SIZE = process.env.PACK_IMAGE_SIZE || '2K';
+
 /** provider.generate 응답(localPath|url|data)을 JPEG 버퍼로 정규화. */
 async function resultToBuffer(res) {
   const src = (res.metadata && res.metadata.localPath) || res.localPath;
@@ -51,8 +62,9 @@ async function genStill({ canonRefPath, brandRefPath, cut, ctx }) {
     height: cut.h || 960,
     references,
     model: PACK_IMAGE_MODEL,
+    imageSize: PACK_IMAGE_SIZE,
   });
   return resultToBuffer(res);
 }
 
-module.exports = { genStill, resultToBuffer, PACK_IMAGE_MODEL };
+module.exports = { genStill, resultToBuffer, PACK_IMAGE_MODEL, PACK_IMAGE_SIZE };
