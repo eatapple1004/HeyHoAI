@@ -90,7 +90,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   let cuts = NEUTRAL_STILLS;    // 플래너 실패해도 음료·성분 안 씌우고 안전한 단품 컷으로만.
   let ctxProduct = product || '';
   let planSkus = skus; // 폼이 세트를 안 줬으면 플래너가 감지한 변형으로 자동
-  let planStates = null;
+  let planStates = null, brandSku = null;
   // 🔴 플래너가 실패해 제품 중립 폴백으로 떨어졌는지 — 지금까지는 이게 **조용히** 일어나서
   //   화면엔 "완료"로 보였다(6컷짜리 NEUTRAL_STILLS가 그 지문). 사용자에게 알려야 한다.
   let fellBack = false, planError = null;
@@ -158,13 +158,19 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
 
   if (!noPlan && sourcePaths && sourcePaths.length) {
     if (stateMode) {
-      planStates = stateList.map((s) => ({ key: s.key, label: s.label || s.key, sources: srcFor(s) }));
+      planStates = stateList.map((s) => ({
+        key: s.key, label: s.label || s.key, desc: s.desc || '',
+        derived: s.showsPackage === false,   // 🏷 브랜드가 안 보이는 상태(내용물·완성형) → 컷에 포장을 함께 넣어야 한다
+        sources: srcFor(s),
+      }));
+      // 브랜드가 보이는 상태 = 파생 상태 컷에 함께 넣을 "포장 레퍼". 없으면 첫 상태.
+      brandSku = (planStates.find((s) => !s.derived) || planStates[0]).key;
       const target = targetPerUnit(planStates.length);   // 상태 2개면 각 10컷 → 총 20컷
       const perState = [];
       for (const st of planStates) {
         const got = await planUnit({
           images: await b64(st.sources), target,
-          state: { key: st.key, label: st.label },
+          state: { key: st.key, label: st.label, desc: st.desc || '', derived: !!st.derived },
           onMeta: (plan) => {
             if (!ctxProduct) ctxProduct = plan.product || product || '';
             if (!manifest.plan) manifest.plan = { product: plan.product, category: plan.category, ingredient: plan.ingredient, isSet: false, variants: [] };
@@ -241,6 +247,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
         fallback: fellBack,                  // true면 제품 맞춤 컷이 아니라 기본 컷 — 게이트에서 경고한다
         fallbackReason: fellBack ? planError : null,
         unit: unit || null,   // 'pair'|'with_package'|'group' — 재굽기도 같은 단위를 유지해야 한다
+        brandSku,             // 🏷 파생 상태 컷을 그릴 때 함께 참조할 '포장' 레퍼 sku
         lenses: activeLenses, // 🟣 제품이 정한 축 목록 — "더 뽑기"가 max(lensIdx)+1 부터 이 배열을 이어 순환
       });
     } catch (_) {}
@@ -253,7 +260,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   } else if (stateMode) {
     // 상태마다 **그 상태를 찍은 사진**으로 따로 굽는다(닫힘 레퍼는 닫힌 사진에서, 열림은 열린 사진에서).
     for (const st of planStates) {
-      const buffer = await bakeOne({ sourcePaths: st.sources, refBake: suite.refBake, state: st.label, unit });
+      const buffer = await bakeOne({ sourcePaths: st.sources, refBake: suite.refBake, state: st.desc || st.label, unit });
       const p = path.join(workDir, `ref_${st.key}.jpg`);
       fs.writeFileSync(p, buffer);
       manifest.refs.push({ sku: st.key, key: `ref_${st.key}`, label: st.label, path: p });
@@ -275,6 +282,9 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   const refBySku = {};
   manifest.refs.forEach((r) => { refBySku[r.sku] = r.path; });
   const refForCut = (cut) => (cut && cut.refSku && refBySku[cut.refSku]) || primaryRef;
+  // 🏷 파생 상태(브랜드 안 보임) 컷이면 포장 레퍼를 함께 참조 → 프롬프트가 "포장도 프레임에"일 때 라벨이 그려진다.
+  const derivedSkus = new Set((planStates || []).filter((s) => s.derived).map((s) => s.key));
+  const brandRefFor = (cut) => (cut && cut.refSku && derivedSkus.has(cut.refSku) && brandSku && refBySku[brandSku]) || null;
 
   // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉(브리프)이 있으면, 캐논 레퍼 기준으로 1장 렌더해
   //   게이트/결과에서 "캐논 레퍼(생성 기준)"와 "내 컨셉 미리보기"를 나란히 보여준다.
@@ -302,7 +312,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   for (const cut of cuts) {
     if (only && !only.includes(cut.key)) continue;
     try {
-      const buf = await genStill({ canonRefPath: refForCut(cut), cut, ctx });
+      const buf = await genStill({ canonRefPath: refForCut(cut), brandRefPath: brandRefFor(cut), cut, ctx });
       const p = path.join(workDir, `${cut.key}.jpg`);
       fs.writeFileSync(p, buf);
       manifest.stills.push({ key: cut.key, label: cut.label, path: p });

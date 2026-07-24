@@ -8,7 +8,8 @@
 const { resultToBuffer } = require('./stills.service');
 const provider = require('../images/providers/nanoBanana.provider');
 
-const BAKE_NEG = 'garbled or gibberish lettering, misspelled wordmark, two or more products, duplicate product, extra caps, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights';
+const NEG_NOTEXT = 'added text, caption, watermark, words or letters printed on the cup plate bowl or background, invented lettering not on the real product';
+const BAKE_NEG = `garbled or gibberish lettering, misspelled wordmark, two or more products, duplicate product, extra caps, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights, ${NEG_NOTEXT}`;
 
 /**
  * 단품 캐논 레퍼 1장 베이크.
@@ -25,13 +26,15 @@ const UNIT_PHRASE = {
   with_package: 'the product together with its own box/packaging, both in frame as one presentation',
   group: 'the full bundled group of pieces that are sold together as one unit, all in frame',
 };
-const NEG_MULTI = 'garbled or gibberish lettering, misspelled wordmark, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights'; // 개체가 둘 이상이 정상인 경우 — "two or more/duplicate"를 뺀다
+const NEG_MULTI = `garbled or gibberish lettering, misspelled wordmark, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights, ${NEG_NOTEXT}`; // 개체가 둘 이상이 정상인 경우 — "two or more/duplicate"를 뺀다
 
 async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) {
   // state = 같은 제품의 다른 모습(뚜껑 닫음/열음 등). 레퍼로 넘긴 사진 자체가 이미 그 상태라,
   //   모델이 임의로 "완성된 모습"으로 되돌리지(뚜껑을 도로 닫지) 않게 사진 그대로를 못박는다.
+  // 🔴 state 설명은 **장면 지시**이지 제품에 인쇄할 글자가 아니다. 한국어 라벨을 그대로 넘겼더니
+  //   모델이 그걸 라벨로 오해해 찻잔에 "우린 차"를 찍어버렸다(실제 발생) → 영어 desc + 각인 금지 명시.
   const variant = state
-    ? ` The reference photo shows the product in one specific state: ${state}. Reproduce THAT exact state — same open/closed configuration, same parts visible or hidden — never change it, never "complete" or reassemble the product.`
+    ? ` The reference photo shows the product in one specific physical state: ${state}. Reproduce THAT exact state — same open/closed configuration, same parts visible or hidden — never change it, never "complete" or reassemble the product. This state description is a scene instruction ONLY: never print, engrave or letter any of those words onto the product, cup, plate or background.`
     : (label ? ` This specific variant: ${label}.` : '');
   // 단위 결정 우선순위: 사용자 수동 교정(hint) > classify 자동 판별(unit) > 기본(단품 하나).
   const phrase = UNIT_PHRASE[unit];

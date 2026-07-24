@@ -61,11 +61,18 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens) {
     : `TASK: infer what the product is and its category first.`;
   // 🔵 상태 포커스 — 상태별로 플래너를 나눠 호출한다(호출당 출력이 작아 truncation 원천 차단 + 상태 수만큼 선형 확장).
   const stateFocus = state ? [
-    `IMPORTANT — this plan is for ONE specific PRESENTATION STATE of the product: "${state.label}"${state.key ? ` (${state.key})` : ''}.`,
-    `The canonical reference used to render these cuts shows the product in THAT state, so every cut must depict the product in that state.`,
+    `IMPORTANT — this plan is for ONE specific PRESENTATION STATE of the product: ${state.desc ? state.desc : `"${state.label}"`}${state.key ? ` (${state.key})` : ''}.`,
+    `The canonical reference used to render these cuts shows the product in THAT state, so EVERY cut must depict the product in that state.`,
+    // 🔒 상태 > 렌즈 — 실제로 "우린 차" 상태인데 렌즈가 찻잎 축이라 마른 찻잎 컷이 나왔다(라벨·내용 불일치).
+    `🔒 This state is a HARD constraint and OUTRANKS the lens/angle below. If a lens would show a different state (e.g. dry loose leaves when this state is brewed liquid), adapt that lens to THIS state instead — never plan a cut whose subject is a different state.`,
     `Plan cuts that specifically showcase what makes THIS state worth seeing (what it reveals, its material detail, how a buyer judges it). Do NOT describe or depict the other states.`,
+    // 🔴 브랜드 노출 — 파생 상태(내용물·완성형)만 찍으면 "어느 회사 제품인지 모르는 일반 사진"이 된다.
+    //   실측에서 27컷 중 브랜드가 보이는 게 8컷뿐이었다(나머지는 그냥 찻잎·찻물).
+    state.derived
+      ? `🏷 BRAND VISIBILITY — this state shows the contents/prepared form, not the branded package, so on its own it looks like a generic stock photo. Plan MOST cuts in this round with the product's own branded package ALSO in frame (standing beside it, behind it, being poured from it) so a shopper can tell whose product this is. Keep only 1–2 pure macro shots without the package. Say explicitly in those prompts that the branded package is in frame with its label facing the camera.`
+      : '',
     `Give ${n} cuts for this state.`,
-  ].join('\n') : '';
+  ].filter(Boolean).join('\n') : '';
   // 🔵 차수(round) — 한 호출에 20컷을 요구하면 JSON이 잘린다(참사 원인). 대신 호출을 나누고,
   //   2차부터는 앞서 뽑은 컷 라벨을 넘겨 "이것 말고 진짜 다른 것"을 받는다. 호출당 출력 크기는 그대로.
   const prev = (exclude || []).filter(Boolean);
@@ -88,7 +95,8 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens) {
   const lensClause = lens ? [
     `THIS ROUND'S LENS — plan all ${n} cuts through one specific angle: **${lens.label}** — ${lens.brief}`,
     `Every cut this round should belong to that lens, while keeping the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
-  ].join('\n') : '';
+    state ? `⚠️ If this lens conflicts with the STATE constraint above, the STATE wins — bend the lens to fit the state, never the other way round.` : '',
+  ].filter(Boolean).join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
@@ -189,10 +197,15 @@ const CLASSIFY_SCHEMA = {
         type: 'object', additionalProperties: false,
         properties: {
           key: { type: 'string', description: 'short ascii slug, e.g. closed, open, folded' },
-          label: { type: 'string', description: 'very short Korean label a shop owner reads instantly, e.g. "뚜껑 닫음", "뚜껑 열림"' },
+          label: { type: 'string', description: 'very short Korean label a shop owner reads instantly, e.g. "뚜껑 닫음", "뚜껑 열림". UI display only.' },
+          // 🔴 desc = 이미지 모델에게 주는 **영어** 상태 설명. 한국어 label을 그대로 넘기면 모델이 그걸
+          //   "제품에 인쇄할 글자"로 오해해 컵에 "우린 차"를 찍어버린다(실제 발생).
+          desc: { type: 'string', description: 'SHORT ENGLISH description of this physical state, for the image model. Describe what the object looks like, e.g. "cap on, tube closed", "cap off with the bullet extended", "loose dry tea leaves on a plate", "brewed tea in a cup". This is a scene instruction — never a label to print on the product.' },
+          // 🏷 브랜드가 보이는 상태인지 — 안 보이는 상태(내용물·완성형)는 그대로 찍으면 "일반 스톡사진"이 된다.
+          showsPackage: { type: 'boolean', description: 'true if this state shows the branded package itself (sealed pouch, box, labelled bottle) so the brand is readable; false if it shows only the contents or prepared form (loose leaves, brewed liquid, cream swatch, food plated) where no brand is visible.' },
           photoIndex: { type: 'number', description: '0-based index of the attached photo that best shows this state; -1 if no single photo shows it clearly' },
         },
-        required: ['key', 'label', 'photoIndex'],
+        required: ['key', 'label', 'desc', 'showsPackage', 'photoIndex'],
       },
     },
     // 🟣 렌즈(lenses) = 이 제품을 다양하게 찍는 "축"들, 유효순. 컷은 이 축을 하나씩 돌며 뽑힌다(축마다 소량).
@@ -226,13 +239,14 @@ function buildClassifyPrompt(nImgs, hint) {
     `A lipstick photographed with its cap on AND with the cap off is ONE product in TWO states — not two variants.`,
     `⚠️ A different camera ANGLE, distance, crop or lighting of the SAME configuration is NOT a different state (front view vs side view vs close-up = one state). A state must differ in how the object itself is arranged — opened/closed, folded/unfolded, packed/unpacked, assembled/apart.`,
     `Only list a state you can actually SEE in the attached photo${many ? 's' : ''}. If all photos show the same state, return exactly one state. Max 4.`,
+    `For each state also give "desc" — a SHORT ENGLISH description of how the object physically looks in that state (a scene instruction for an image model, NEVER text to print on the product) — and "showsPackage": whether the branded package is visible in that state (a sealed pouch shows it; loose contents or a brewed cup do not).`,
     `Also decide "unit" — how many objects make up ONE sellable presentation. Earrings are normally sold and worn as a PAIR; a perfume shown with its own box is "with_package". Getting this wrong makes every generated image show the wrong number of objects.`,
     // 🟣 렌즈 = 다양성 축. 컨셉이 있으면 "그 컨셉의 변주"로, 없으면 "제품 카테고리 축"으로.
     //   안 그러면 "카페 아침" 컨셉인데 렌즈가 "배경질감/시즌" 딴 축으로 끌어 컨셉을 배신한다.
     hint
       ? `Also give "lenses" — 6 to 10 DIFFERENT WAYS TO REALIZE THE SELLER'S CONCEPT ("${hint}"), most useful first. Each lens is a distinct angle/prop/moment/framing/lighting WITHIN that concept (concept "cozy cafe morning" → lenses like "라떼와 함께", "창가 햇살", "책과 함께", "김 나는 컵", "나무 테이블 위"). Keep them ALL faithful to that concept — do NOT drift to unrelated generic product angles like plain grey-background or seasonal shots. Keep each brief short.`
       : `Also give "lenses" — 6 to 10 distinct creative ANGLES for shooting THIS product, most valuable first (a clean PDP/detail angle near the top). Make them genuinely different from each other and specific to this product's category. Keep each brief short.`,
-    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states, unit, lenses.`,
+    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states (key/label/desc/showsPackage/photoIndex), unit, lenses.`,
   ].filter(Boolean).join('\n');
 }
 

@@ -165,7 +165,10 @@ async function generatePack(pack, { depth, userId }) {
         const cut = { key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label, refSku: c.refSku || null };
         // 🔑 그 컷에 배정된 레퍼로 생성(상태든 변형이든).
         //   예전엔 전부 최신 레퍼 1장만 써서, 레퍼를 N장 구워놓고도 스틸은 임의의 한 종만 나왔다.
-        const buf = await genStill({ canonRefPath: latestRefPathFor(fresh, c.refSku), cut, ctx });
+        // 🏷 파생 상태(브랜드 안 보임) 컷은 포장 레퍼를 함께 참조 → 라벨이 프레임에 들어간다.
+        const derived = (plan.states || []).some((s) => s.key === c.refSku && s.derived);
+        const brandRefPath = (derived && plan.brandSku) ? latestRefPathFor(fresh, plan.brandSku) : null;
+        const buf = await genStill({ canonRefPath: latestRefPathFor(fresh, c.refSku), brandRefPath, cut, ctx });
         await recordAsset(fresh, { kind: 'still', key: c.key, label: c.label, buffer: buf, userId });
       } catch (e) { logger.warn?.(`[pack ${fresh.id}] still ${c.key} 실패: ${e.message}`); }
     }

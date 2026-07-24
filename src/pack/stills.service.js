@@ -27,14 +27,18 @@ async function resultToBuffer(res) {
  * @param {object} p.ctx           프롬프트 컨텍스트 { product }
  * @returns {Promise<Buffer>}
  */
-async function genStill({ canonRefPath, cut, ctx }) {
+async function genStill({ canonRefPath, brandRefPath, cut, ctx }) {
   const prompt = typeof cut.prompt === 'function' ? cut.prompt(ctx) : cut.prompt;
+  // 🏷 파생 상태(내용물·완성형) 컷은 브랜드가 안 보여 "일반 스톡사진"이 된다 → 포장 레퍼를 함께 참조시켜
+  //   프롬프트가 "포장도 프레임에" 라고 할 때 실제 라벨을 그릴 수 있게 한다. (provider가 다중 제품 레퍼 지원)
+  const references = [{ path: canonRefPath, kind: 'product' }];
+  if (brandRefPath && brandRefPath !== canonRefPath) references.push({ path: brandRefPath, kind: 'product' });
   const res = await provider.generate({
     prompt,
     negativePrompt: cut.neg,
     width: cut.w || 768,
     height: cut.h || 960,
-    references: [{ path: canonRefPath, kind: 'product' }],
+    references,
   });
   return resultToBuffer(res);
 }
