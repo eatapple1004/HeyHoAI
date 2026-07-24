@@ -44,17 +44,24 @@ function sniffMime(buf) {
   return null;   // Claude가 받는 4종이 아님(HEIC 등) → 호출부가 JPEG로 변환한다
 }
 
-/** 파일 → Claude 비전에 넣을 {data, mediaType}. 지원 밖 포맷이면 JPEG로 변환해서라도 보낸다. */
+/** 파일 → Claude 비전에 넣을 {data, mediaType}.
+ *
+ *  형식 정규화는 **업로드 진입점**(pack.route normalizeUploads)에서 이미 끝났다 — 여기 오는 건
+ *  지원 4종이어야 한다. 그래도 아니면 sharp로 한 번 더 시도하고, 그마저 안 되면 **던진다**.
+ *
+ *  🔴 예전엔 실패해도 "그래도 jpeg다"라며 원본 바이트를 보냈다. 팩이 통째로 죽는 걸 막으려던 건데,
+ *     결과는 **실패를 숨기는 것**이었다: Anthropic이 400을 내고 → 플래너가 죽고 → 6컷 중립 폴백이
+ *     "완료"로 표시됐다. 판매자는 왜 6장뿐인지 알 방법이 없었다. 차라리 사유와 함께 실패하는 게 낫다
+ *     (prepPack이 잡아서 status='failed' + 화면에 메시지). 조용한 폴백은 버그를 숨긴다.
+ */
 async function toVisionImage(p) {
   const buf = fs.readFileSync(p);
   const m = sniffMime(buf);
   if (m) return { data: buf.toString('base64'), mediaType: m };
   try {
-    return { data: (await sharp(buf).jpeg({ quality: 90 }).toBuffer()).toString('base64'), mediaType: 'image/jpeg' };  // 아이폰 HEIC 등
-  } catch (_) {
-    // 변환도 실패(손상 파일 등). 여기서 던지면 **팩 전체가 죽는다** — b64는 planUnit의 try 바깥이다.
-    //   예전처럼 그냥 보내서, 플래너가 실패하고 폴백 배너로 사유가 드러나게 두는 편이 낫다.
-    return { data: buf.toString('base64'), mediaType: 'image/jpeg' };
+    return { data: (await sharp(buf).jpeg({ quality: 90 }).toBuffer()).toString('base64'), mediaType: 'image/jpeg' };
+  } catch (e) {
+    throw new Error(`읽을 수 없는 사진이에요(${path.basename(p)}) — JPG·PNG·WEBP·HEIC 로 다시 올려주세요.`);
   }
 }
 

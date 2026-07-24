@@ -15,6 +15,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const heicConvert = require('heic-convert');   // sharp가 못 푸는 HEIC(HEVC) 전용 디코더
 const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
@@ -49,6 +50,51 @@ fs.mkdirSync(uploadDir, { recursive: true });
 const imagesDir = path.join(process.cwd(), 'tmp', 'images'); // 생성물 = /images 프록시(로컬우선→R2) 서빙 — generate.route와 동일 규약
 fs.mkdirSync(imagesDir, { recursive: true });
 const upload = multer({ storage: multer.diskStorage({ destination: uploadDir }), limits: { fileSize: 12 * 1024 * 1024 } });
+
+// ─── 업로드 진입점 정규화 ────────────────────────────────────────────────
+// 🔑 형식 문제는 **받는 자리에서 한 번만** 처리한다. 그 뒤로는 아무도 원본 형식을 몰라도 되게.
+//   예전엔 경로마다 각자 해석했다 — 분류는 브라우저가 준 mimetype, 플래너는 매직바이트,
+//   provider는 파일 확장자. 그래서 아이폰 HEIC 한 장에 네 군데가 따로 터졌다:
+//     분류=Anthropic 거부 · 원본저장=sharp 실패 · 플래너=400 후 6컷 폴백 · 레퍼=HEIC를 png라고 전송.
+//   ⚠️ sharp는 HEIC 메타데이터는 읽지만 **픽셀은 못 푼다**(프리빌트에 HEVC 디코더 없음 — 특허 라이선스).
+//     그래서 "지원되는 것처럼" 보이다가 변환에서 죽는다. heic-convert(WASM 디코더)로 따로 푼다.
+const HEIF_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1', 'avif', 'avis']);
+function isHeif(buf) {
+  return !!buf && buf.length >= 12 && buf.toString('ascii', 4, 8) === 'ftyp'
+    && HEIF_BRANDS.has(buf.toString('ascii', 8, 12).toLowerCase());
+}
+
+async function normalizeUploads(req, res, next) {
+  const files = req.files || [];
+  const rejected = [];
+  for (const f of files) {
+    try {
+      let buf = fs.readFileSync(f.path);
+      let mime = sniffMime(buf);
+      if (!mime && isHeif(buf)) {
+        const jpeg = await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.92 });
+        buf = await sharp(jpeg).rotate().jpeg({ quality: 92, mozjpeg: true }).toBuffer();  // 회전 정리 + 용량 절감
+        fs.writeFileSync(f.path, buf);
+        f.size = buf.length;
+        mime = 'image/jpeg';
+        logger.info?.(`[pack] HEIC → JPEG 변환: ${f.originalname || f.filename} (${Math.round(buf.length / 1024)}KB)`);
+      }
+      if (!mime) { rejected.push(f.originalname || '파일'); continue; }
+      f.mimetype = mime;   // 🔑 브라우저가 말한 것 말고 **실제 바이트**로 교정(분류 경로가 이걸 그대로 쓴다)
+    } catch (e) {
+      logger.warn?.(`[pack] 업로드 정규화 실패(${f.originalname}): ${e.message}`);
+      rejected.push(f.originalname || '파일');
+    }
+  }
+  // 🔴 못 읽는 파일은 **거절한다**. 예전처럼 "그래도 jpeg라고 우기며 보내기"는 실패를 숨길 뿐이었다
+  //   (판매자 눈엔 원인 모를 6컷 폴백으로 보였다). 한 장이라도 못 읽으면 조용히 빼지 않고 알린다 —
+  //   그 사진을 고른 이유가 있다(상태별 사진 등).
+  if (rejected.length) {
+    files.forEach((f) => { try { fs.unlinkSync(f.path); } catch (_) {} });
+    return res.status(400).json({ error: `읽을 수 없는 이미지예요: ${rejected.join(', ')} — JPG·PNG·WEBP·HEIC 로 올려주세요.` });
+  }
+  next();
+}
 
 /** /images/<name> URL → 로컬 파일 경로(재생성이 캐논 레퍼를 참조로 읽을 때). */
 function localPathForUrl(url) { return path.join(imagesDir, String(url || '').split('/').pop()); }
@@ -228,7 +274,7 @@ async function generatePack(pack, { depth, userId }) {
 }
 
 /** 확인 단계 — 사진+힌트로 카테고리·제품 감지(가벼움). 프론트가 "이거 맞아요?" 확인받고 POST /로 확정 생성. */
-router.post('/classify', upload.array('photos', 10), async (req, res, next) => {
+router.post('/classify', upload.array('photos', 10), normalizeUploads, async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
     const hint = (req.body.product || '').slice(0, 600); // 컨셉 브리프(여러 줄) 수용
@@ -239,7 +285,7 @@ router.post('/classify', upload.array('photos', 10), async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/', upload.array('photos', 10), async (req, res, next) => {
+router.post('/', upload.array('photos', 10), normalizeUploads, async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
     const vertical = req.body.vertical || 'beverage';
