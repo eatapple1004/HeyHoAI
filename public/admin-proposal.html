@@ -179,7 +179,7 @@ function renderResItem(it) {
 }
 
 function toggleSelect(it, el) {
-  const item = { id: it.idx, beforeUrl: it.beforeUrl, afterUrl: it.afterUrl, label: it.label || '', caption: '' };
+  const item = { id: it.idx, beforeUrl: it.beforeUrl, altBeforeUrl: it.altBeforeUrl || '', beforeKind: it.beforeKind || 'original', afterUrl: it.afterUrl, label: it.label || '', caption: '' };
   const k = keyOf({ id: it.idx, beforeUrl: it.beforeUrl, afterUrl: it.afterUrl });
   const i = selected.findIndex(s => keyOf(s) === k);
   if (i >= 0) { selected.splice(i, 1); seen.delete(k); if (el) el.classList.remove('sel'); }
@@ -202,13 +202,23 @@ function renderTray() {
   $('#trayEmpty').style.display = selected.length ? 'none' : 'block';
   $('#selCount').textContent = selected.length ? (selected.length + '개 선택됨') : '';
   t.innerHTML = selected.map((s, i) => `<div class="tray-item">
-      <div class="thumbs"><img src="${esc(s.beforeUrl)}"><img src="${esc(s.afterUrl)}"></div>
-      <input class="cap" placeholder="이 컷 설명(선택) — 예: 상세페이지 대표 이미지" value="${esc(s.caption)}" oninput="selected[${i}].caption=this.value">
+      <div class="thumbs"><img src="${esc(s.beforeUrl)}" title="before"><img src="${esc(s.afterUrl)}" title="after"></div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <input class="cap" placeholder="이 컷 설명(선택) — 예: 상세페이지 대표 이미지" value="${esc(s.caption)}" oninput="selected[${i}].caption=this.value">
+        ${s.altBeforeUrl ? `<button class="rm" style="align-self:flex-start;color:var(--accent2);border-color:rgba(124,82,232,.4)" onclick="swapBefore(${i})">원본(before): ${s.beforeKind === 'original' ? '업로드 원본' : '캐논 레퍼'} ⇄ 전환</button>` : ''}
+      </div>
       <div style="display:flex;gap:6px;align-items:center">
         <div class="ord"><button onclick="move(${i},-1)">▲</button><button onclick="move(${i},1)">▼</button></div>
         <button class="rm" onclick="removeSel(${i})">삭제</button>
       </div>
     </div>`).join('');
+}
+// before 이미지 전환 — 업로드 원본 ↔ 캐논 레퍼(둘 다 있을 때만)
+function swapBefore(i) {
+  const s = selected[i]; if (!s || !s.altBeforeUrl) return;
+  const tmp = s.beforeUrl; s.beforeUrl = s.altBeforeUrl; s.altBeforeUrl = tmp;
+  s.beforeKind = s.beforeKind === 'original' ? 'canonical' : 'original';
+  renderTray();
 }
 function move(i, d) { const j = i + d; if (j < 0 || j >= selected.length) return; const [x] = selected.splice(i, 1); selected.splice(j, 0, x); renderTray(); }
 function removeSel(i) { const [x] = selected.splice(i, 1); seen.delete(keyOf(x)); document.querySelectorAll('.res-item').forEach(el => { if (el.dataset.k === keyOf(x)) el.classList.remove('sel'); }); renderTray(); }
