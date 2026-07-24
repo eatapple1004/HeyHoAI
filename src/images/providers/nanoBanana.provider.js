@@ -264,13 +264,30 @@ const nanoBananaProvider = {
   },
 };
 
+/**
+ * w×h → Gemini가 받는 비율 중 **가장 가까운 것**.
+ *
+ * 🔴 예전 구간 판정에는 경계 버그가 있었다: `ratio < 0.8` 이라 **정확히 0.8(=4:5)** 이 어느 구간에도
+ *    안 걸려 `1:1`로 떨어졌다. 그런데 4:5(768×960)는 이 코드베이스에서 가장 흔한 요청이다 —
+ *    pack 플래너가 `ASPECT_DIMS['4:5']=[768,960]`로 못박고, 베이크 프롬프트도 "4:5"로 끝나고,
+ *    스크립트들도 `// 4:5` 주석을 달아 넣는다. **그게 전부 정사각으로 생성돼 왔다.**
+ *
+ * 지원 10종은 studio가 이미 라이브로 쓰는 목록과 동일(`ASPECT_ALLOW`, flash·pro 공통) → 새 API 표면 없음.
+ * 거리는 log 비율로 잰다(2배 위/아래를 대칭으로 봄). 구간 판정보다 경계에서 안 틀린다.
+ *   달라지는 값: 0.8→`1:1`이던 것이 `4:5`(의도대로), 1.2 부근이 `4:3`→`5:4` 등 **더 가까운 쪽**으로.
+ */
+const GEMINI_ASPECTS = [
+  ['21:9', 21 / 9], ['16:9', 16 / 9], ['3:2', 3 / 2], ['4:3', 4 / 3], ['5:4', 5 / 4],
+  ['1:1', 1], ['4:5', 4 / 5], ['3:4', 3 / 4], ['2:3', 2 / 3], ['9:16', 9 / 16],
+];
 function getAspectRatio(width, height) {
-  const ratio = width / height;
-  if (ratio > 1.5) return '16:9';
-  if (ratio > 1.1) return '4:3';
-  if (ratio < 0.6) return '9:16';
-  if (ratio < 0.8) return '3:4';
-  return '1:1';
+  const ratio = (width > 0 && height > 0) ? width / height : 1;
+  let best = '1:1', bestDist = Infinity;
+  for (const [name, value] of GEMINI_ASPECTS) {
+    const dist = Math.abs(Math.log(ratio / value));
+    if (dist < bestDist) { bestDist = dist; best = name; }
+  }
+  return best;
 }
 
 module.exports = nanoBananaProvider;
