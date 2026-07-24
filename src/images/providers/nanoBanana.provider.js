@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const mediaStore = require('../../storage/mediaStore');
+const logger = require('../../lib/logger');
 
 let client;
 function getClient() {
@@ -11,6 +12,74 @@ function getClient() {
     client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
   }
   return client;
+}
+
+/**
+ * ⏱ 하드 타임아웃 + 재시도 — 예전엔 **둘 다 없었다**.
+ *
+ * `ai.models.generateContent`가 응답 없이 매달리면 그 await는 **영원히** 안 끝난다.
+ * 호출부의 try/catch는 *던져진* 에러만 잡으므로 hang은 못 넘긴다 — 던져줄 에러 자체가 안 생긴다.
+ * Pack은 컷을 **순차**로 돌아서 한 컷이 매달리면 그 뒤 전부 정지했다(실측: 6장 생성 후 21분 스피너).
+ *
+ * 2중 방어:
+ *   ① SDK `abortSignal` → 소켓까지 끊어 자원을 회수한다.
+ *   ② `Promise.race` 백스톱 → abort가 SDK 내부 어딘가에 안 닿아도 우리 promise는 **반드시** settle한다.
+ *      (hang의 정의상 "이론상 abort가 닿는다"를 믿으면 안 된다 — 못 닿는 지점이 hang의 원인일 수 있다.)
+ *
+ * ⚠️ 이 provider는 pack 전용이 아니다(pack·ugc clipPipeline·imageGeneration.service·scripts 공유).
+ *    imageGeneration.service는 자체 withRetry(2회)가 이미 있어 그 경로만 시도가 곱해진다 —
+ *    그래도 상한이 생긴 것이라 무한 대기보다 낫다.
+ */
+const GEN_TIMEOUT_MS = Number(process.env.IMAGE_GEN_TIMEOUT_MS) || 180000;  // 시도 1회 상한(adminRefine 생성 타임아웃과 동일 근거)
+// 추가 시도 수(총 1+N). 0 허용, 오타/빈값이면 기본값 — NaN이 들어가면 루프가 한 번도 안 돌아 조용히 망가진다.
+const GEN_RETRIES = Number.isFinite(Number(process.env.IMAGE_GEN_RETRIES)) ? Math.max(0, Number(process.env.IMAGE_GEN_RETRIES)) : 2;
+const GEN_TOTAL_MS = Number(process.env.IMAGE_GEN_TOTAL_MS) || 420000;     // 재시도 포함 총 상한
+const TIMEOUT_ATTEMPTS_MAX = 2;   // hang은 대개 체계적 → 3분씩 계속 태우지 않는다(싼 429/5xx는 끝까지 재시도).
+
+/** 재시도해도 결과가 달라질 수 있는 실패인가 — **전송 계층만**.
+ *  400(잘못된 요청)·안전 차단·"이미지 없음"은 다시 보내도 같은 값을 내고 크레딧만 태운다. */
+function isRetryable(e) {
+  const msg = String((e && e.message) || e || '');
+  const status = e && (e.status || e.statusCode || (e.response && e.response.status));
+  if (status === 429 || (status >= 500 && status < 600)) return true;
+  if (/\b(429|500|502|503|504)\b/.test(msg)) return true;
+  if (/timed? ?out|timeout|abort/i.test(msg)) return true;
+  if (/ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|EPIPE|socket hang up|fetch failed|network|terminated/i.test(msg)) return true;
+  return false;
+}
+
+/** generateContent를 타임아웃·재시도로 감싼다. 성공 응답을 그대로 반환, 최종 실패는 마지막 에러를 던진다. */
+async function generateContentGuarded(ai, params) {
+  const started = Date.now();
+  let timeouts = 0;
+  let lastErr;
+  for (let attempt = 1; attempt <= GEN_RETRIES + 1; attempt++) {
+    const ctrl = new AbortController();
+    let abortTimer, hardTimer, timedOut = false;
+    try {
+      return await Promise.race([
+        ai.models.generateContent({ ...params, config: { ...params.config, abortSignal: ctrl.signal } }),
+        new Promise((_, reject) => {
+          abortTimer = setTimeout(() => { timedOut = true; ctrl.abort(); }, GEN_TIMEOUT_MS);
+          hardTimer = setTimeout(() => reject(new Error(`image generation timeout after ${GEN_TIMEOUT_MS}ms`)), GEN_TIMEOUT_MS + 5000);
+        }),
+      ]);
+    } catch (e) {
+      lastErr = timedOut ? new Error(`image generation timeout after ${GEN_TIMEOUT_MS}ms`) : e;
+      if (timedOut) timeouts++;
+      const spent = Date.now() - started;
+      const canRetry = attempt <= GEN_RETRIES
+        && (timedOut || isRetryable(e))
+        && !(timedOut && timeouts >= TIMEOUT_ATTEMPTS_MAX)
+        && spent < GEN_TOTAL_MS;
+      logger.warn?.(`[nano-banana] 시도 ${attempt}/${GEN_RETRIES + 1} 실패(${spent}ms): ${lastErr.message}${canRetry ? ' → 재시도' : ''}`);
+      if (!canRetry) throw lastErr;
+      await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1))));
+    } finally {
+      clearTimeout(abortTimer); clearTimeout(hardTimer);
+    }
+  }
+  throw lastErr || new Error('image generation failed with no attempts');   // 도달 불가여야 정상(방어)
 }
 
 // 레퍼런스 경로 → 실제 파일 절대경로(로스터 /img/, tmp/images, 절대경로 모두 해석)
@@ -87,11 +156,16 @@ const nanoBananaProvider = {
    * Nano Banana (Gemini) 로 이미지를 생성한다.
    * referenceImagePath가 있으면 해당 이미지를 reference로 사용하여 동일 인물을 유지한다.
    *
-   * @param {import('./types').ImageGenerationRequest & { referenceImagePath?: string }} req
+   * @param {import('./types').ImageGenerationRequest & { referenceImagePath?: string, model?: string }} req
+   *   model 미지정 시 env.GEMINI_IMAGE_MODEL(기본 flash).
    * @returns {Promise<import('./types').ImageGenerationResult>}
    */
   async generate(req) {
     const ai = getClient();
+
+    // 모델은 **호출부가 고를 수 있다**. 예전엔 env 고정이라 Pack이 flash에 묶여 있었다
+    //   (studio는 자체 클라이언트로 pro, adminRefine도 pro인데 provider를 쓰는 Pack만 flash였다).
+    const model = req.model || env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
 
     const fullPrompt = req.negativePrompt
       ? `${req.prompt}\n\nAvoid: ${req.negativePrompt}`
@@ -134,8 +208,8 @@ const nanoBananaProvider = {
       contents = fullPrompt;
     }
 
-    const response = await ai.models.generateContent({
-      model: env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
+    const response = await generateContentGuarded(ai, {
+      model,
       contents,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
@@ -180,7 +254,7 @@ const nanoBananaProvider = {
       seed: null,
       providerJobId: imageId,
       metadata: {
-        model: env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
+        model,
         mimeType: imagePart.inlineData.mimeType,
         description: textPart?.text || '',
         localPath: filePath,
