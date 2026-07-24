@@ -200,7 +200,7 @@ const CLASSIFY_SCHEMA = {
     //   개수도 제품이 정함(보통 6~10). 생성량이 실제로 몇 개 축을 얼마 깊이 쓸지 결정한다.
     lenses: {
       type: 'array',
-      description: 'Ordered list of distinct CREATIVE ANGLES for shooting THIS product, most valuable first. These are the axes the pack will rotate through — each angle yields a few cuts, then move to the next. Tailor to the product: a tumbler → cafe/office, outdoors, surface-texture, minimal, seasonal; jewelry → on-body(hand/neck/ear), macro detail, pedestal, editorial; a drink → ingredient/source, lifestyle, splash/texture, iced/seasonal. Give 6–10 angles. Put the commercially essential ones first (a clean PDP/detail angle should be near the top).',
+      description: 'Ordered list of distinct CREATIVE ANGLES this pack rotates through for variety, most valuable first — each angle yields a few cuts, then the next. IF the seller gave a concept/mood note, these must be different ways to REALIZE THAT CONCEPT (vary prop/moment/framing/lighting within it), NOT unrelated generic angles. If NO concept was given, tailor them to the product category: tumbler → cafe/office, outdoors, surface-texture, minimal; jewelry → on-body, macro, pedestal, editorial; drink → ingredient, lifestyle, splash, iced. Give 6–10.',
       items: {
         type: 'object', additionalProperties: false,
         properties: {
@@ -214,24 +214,34 @@ const CLASSIFY_SCHEMA = {
   },
   required: ['product', 'category', 'isSet', 'variants', 'states', 'unit', 'lenses'],
 };
+/** classify 프롬프트 빌더 — 렌즈 지시가 컨셉(hint) 유무로 갈린다. 테스트용으로 추출. */
+function buildClassifyPrompt(nImgs, hint) {
+  const many = nImgs > 1;
+  return [
+    `Identify the product in the attached photo${many ? 's' : ''} precisely and concisely.`,
+    hint ? `Seller note: "${hint}" — this may describe the desired CONCEPT/mood rather than the product; identify the product itself from the PHOTO, and use the note only if it names the product or category.` : '',
+    `Distinguish two different axes, and do not confuse them:`,
+    `  · variants = DIFFERENT products/SKUs of one line (red vs blue, MON vs TUE bottle) → isSet + variants.`,
+    `  · states   = the SAME single product shown differently (cap on vs cap off, closed vs open, folded vs unfolded, boxed vs unboxed) → states.`,
+    `A lipstick photographed with its cap on AND with the cap off is ONE product in TWO states — not two variants.`,
+    `⚠️ A different camera ANGLE, distance, crop or lighting of the SAME configuration is NOT a different state (front view vs side view vs close-up = one state). A state must differ in how the object itself is arranged — opened/closed, folded/unfolded, packed/unpacked, assembled/apart.`,
+    `Only list a state you can actually SEE in the attached photo${many ? 's' : ''}. If all photos show the same state, return exactly one state. Max 4.`,
+    `Also decide "unit" — how many objects make up ONE sellable presentation. Earrings are normally sold and worn as a PAIR; a perfume shown with its own box is "with_package". Getting this wrong makes every generated image show the wrong number of objects.`,
+    // 🟣 렌즈 = 다양성 축. 컨셉이 있으면 "그 컨셉의 변주"로, 없으면 "제품 카테고리 축"으로.
+    //   안 그러면 "카페 아침" 컨셉인데 렌즈가 "배경질감/시즌" 딴 축으로 끌어 컨셉을 배신한다.
+    hint
+      ? `Also give "lenses" — 6 to 10 DIFFERENT WAYS TO REALIZE THE SELLER'S CONCEPT ("${hint}"), most useful first. Each lens is a distinct angle/prop/moment/framing/lighting WITHIN that concept (concept "cozy cafe morning" → lenses like "라떼와 함께", "창가 햇살", "책과 함께", "김 나는 컵", "나무 테이블 위"). Keep them ALL faithful to that concept — do NOT drift to unrelated generic product angles like plain grey-background or seasonal shots. Keep each brief short.`
+      : `Also give "lenses" — 6 to 10 distinct creative ANGLES for shooting THIS product, most valuable first (a clean PDP/detail angle near the top). Make them genuinely different from each other and specific to this product's category. Keep each brief short.`,
+    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states, unit, lenses.`,
+  ].filter(Boolean).join('\n');
+}
+
 async function classifyProduct({ images, hint }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('classify: 제품 사진 필요'), { statusCode: 400 });
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: [
-      `Identify the product in the attached photo${imgs.length > 1 ? 's' : ''} precisely and concisely.`,
-      hint ? `Seller note: "${hint}" — this may describe the desired CONCEPT/mood rather than the product; identify the product itself from the PHOTO, and use the note only if it names the product or category.` : '',
-      `Distinguish two different axes, and do not confuse them:`,
-      `  · variants = DIFFERENT products/SKUs of one line (red vs blue, MON vs TUE bottle) → isSet + variants.`,
-      `  · states   = the SAME single product shown differently (cap on vs cap off, closed vs open, folded vs unfolded, boxed vs unboxed) → states.`,
-      `A lipstick photographed with its cap on AND with the cap off is ONE product in TWO states — not two variants.`,
-      `⚠️ A different camera ANGLE, distance, crop or lighting of the SAME configuration is NOT a different state (front view vs side view vs close-up = one state). A state must differ in how the object itself is arranged — opened/closed, folded/unfolded, packed/unpacked, assembled/apart.`,
-      `Only list a state you can actually SEE in the attached photo${imgs.length > 1 ? 's' : ''}. If all photos show the same state, return exactly one state. Max 4.`,
-      `Also decide "unit" — how many objects make up ONE sellable presentation. Earrings are normally sold and worn as a PAIR; a perfume shown with its own box is "with_package". Getting this wrong makes every generated image show the wrong number of objects.`,
-      `Also give "lenses" — 6 to 10 distinct creative ANGLES for shooting THIS product, most valuable first (a clean PDP/detail angle near the top). These become the axes the pack rotates through for variety, so make them genuinely different from each other and specific to this product's category. Keep each brief short.`,
-      `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states, unit, lenses.`,
-    ].filter(Boolean).join('\n') },
+    { type: 'text', text: buildClassifyPrompt(imgs.length, hint) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 1400,   // lenses(6~10 × label+brief) 추가분 — 압축돼 있어 여유
@@ -245,4 +255,4 @@ async function classifyProduct({ images, hint }) {
   return JSON.parse(m[1]);
 }
 
-module.exports = { planPack, classifyProduct, PLAN_SCHEMA, CATEGORIES };
+module.exports = { planPack, classifyProduct, buildClassifyPrompt, PLAN_SCHEMA, CATEGORIES };
