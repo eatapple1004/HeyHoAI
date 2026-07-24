@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회사 맞춤 제안서 빌더 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:28px;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:1.6rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#d9608f)}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.92rem}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px}
+.card h2{font-size:1.02rem;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h2 .n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:.78rem;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:.8rem;color:var(--dim);font-weight:600}
+.field input,.field textarea{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);
+  padding:10px 12px;font-size:.94rem;font-family:inherit;width:100%}
+.field textarea{resize:vertical;min-height:74px;line-height:1.6}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent2)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.btn{background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff;border:none;border-radius:10px;
+  padding:11px 20px;font-size:.94rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--dim);padding:8px 14px;font-size:.84rem;font-weight:600}
+.btn.ghost.on{border-color:var(--accent2);color:var(--text);background:rgba(124,82,232,.12)}
+.btn.big{padding:14px 26px;font-size:1rem;width:100%}
+.hint{font-size:.8rem;color:var(--faint);margin-top:8px;line-height:1.6}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.spacer{flex:1}
+/* 결과 그리드 */
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.res-item{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel2);cursor:pointer;position:relative;transition:border-color .15s,transform .1s}
+.res-item:hover{border-color:var(--accent2)}
+.res-item.sel{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(124,82,232,.5)}
+.res-item .pair{display:grid;grid-template-columns:1fr 1fr;gap:2px;aspect-ratio:2/1.25;background:#000}
+.res-item .pair figure{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0a0a10}
+.res-item .pair img{width:100%;height:100%;object-fit:cover;display:block}
+.res-item .pair .tag{position:absolute;top:4px;left:4px;font-size:9px;font-weight:800;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,.6);color:#fff}
+.res-item .cap{padding:6px 8px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-item .chk{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;opacity:0;transition:opacity .12s}
+.res-item.sel .chk{opacity:1;background:var(--accent);border-color:var(--accent)}
+/* 선택 트레이 */
+.tray{display:flex;flex-direction:column;gap:10px}
+.tray-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--panel2)}
+.tray-item .thumbs{display:flex;gap:4px}
+.tray-item .thumbs img{width:52px;height:52px;object-fit:cover;border-radius:7px;background:#000}
+.tray-item input.cap{background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:.86rem;font-family:inherit;width:100%}
+.tray-item .ord{display:flex;flex-direction:column;gap:3px}
+.tray-item .ord button,.tray-item .rm{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;cursor:pointer;font-size:.8rem;padding:3px 8px;font-family:inherit}
+.tray-item .rm{color:var(--red);border-color:rgba(248,113,113,.35)}
+.empty{color:var(--faint);font-size:.88rem;padding:18px;text-align:center;border:1px dashed var(--border);border-radius:12px}
+.err{color:var(--red);font-size:.86rem;margin-top:10px}
+.upl{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.upl .field{margin-bottom:0}
+.count{font-size:.82rem;color:var(--dim)}
+a.topnav{color:var(--dim);text-decoration:none;font-size:.84rem;border:1px solid var(--border);padding:6px 12px;border-radius:8px}
+a.topnav:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div>
+      <h1><span class="dot"></span> 회사 맞춤 제안서 빌더</h1>
+      <div class="sub">우리 결과물의 <b>원본 → Doppia 결과</b> before/after를 골라, 특정 회사 맞춤 소개 HTML을 만듭니다. (이미지 포함 자체완결 파일)</div>
+    </div>
+    <a class="topnav" href="/studio">← 스튜디오</a>
+  </div>
+
+  <!-- 1. 회사 맞춤 정보 -->
+  <div class="card">
+    <h2><span class="n">1</span> 회사 맞춤 정보</h2>
+    <div class="grid2">
+      <div class="field"><label>대상 회사명</label><input id="company" placeholder="예: (주)브랜드컴퍼니"></div>
+      <div class="field"><label>제안 제목 (선택)</label><input id="ptitle" placeholder="예: AI 제품 콘텐츠 자동화 제안"></div>
+    </div>
+    <div class="field"><label>맞춤 소개 · 제안 문구</label><textarea id="intro" placeholder="그 회사에 맞춘 인사말·제안 메시지를 적으세요. 예: OO귀사의 신제품 라인에 맞춰, 사진 1장으로 촬영비 없이 상세페이지 전체 컷을 자동 생성한 예시를 준비했습니다."></textarea></div>
+    <div class="field"><label>우리 서비스 설명 (기본 제공 · 수정 가능)</label><textarea id="svc">Doppia는 제품 사진 1장만으로 히어로·상세·라이프스타일·컨셉 등 판매에 필요한 마케팅 이미지를 자동 생성하는 AI 서비스입니다. 촬영·편집 없이, 원본 사진의 제품을 그대로 유지한 채 다양한 컷을 즉시 만듭니다.</textarea></div>
+    <div class="grid2">
+      <div class="field"><label>CTA 버튼 문구</label><input id="ctaLabel" value="도입 상담 신청하기"></div>
+      <div class="field"><label>CTA 링크 (연락처·폼 URL)</label><input id="ctaUrl" placeholder="mailto:contact@doppia.ai 또는 https://..."></div>
+    </div>
+  </div>
+
+  <!-- 2. 결과물 고르기 -->
+  <div class="card">
+    <h2><span class="n">2</span> 결과물 고르기 <span class="count" id="selCount" style="margin-left:auto"></span></h2>
+    <div class="toolbar">
+      <button class="btn ghost on" id="scopeMine" onclick="setScope('mine')">내 계정 생성물</button>
+      <button class="btn ghost" id="scopeAll" onclick="setScope('all')">전체</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="reload" onclick="reloadResults()">↻ 새로고침</button>
+    </div>
+    <div id="resGrid" class="res-grid"></div>
+    <div id="resEmpty" class="empty" style="display:none">불러올 결과물이 없어요. (전체로 바꿔보거나, 아래에서 직접 업로드하세요)</div>
+    <div style="text-align:center;margin-top:14px"><button class="btn ghost" id="more" onclick="loadMore()" style="display:none">더 불러오기</button></div>
+    <div class="hint">클릭하면 아래 선택 목록에 담깁니다. 프라이버시: 기본은 <b>내 계정</b> 생성물만 보입니다.</div>
+  </div>
+
+  <!-- 2b. 직접 업로드 -->
+  <div class="card">
+    <h2><span class="n">+</span> before/after 직접 추가</h2>
+    <div class="upl">
+      <div class="field"><label>원본(before)</label><input type="file" id="upBefore" accept="image/*"></div>
+      <div class="field"><label>결과(after)</label><input type="file" id="upAfter" accept="image/*"></div>
+      <button class="btn" onclick="addManual()">추가</button>
+    </div>
+    <div class="hint">DB에 없는 최신 샘플을 넣을 때 사용하세요.</div>
+  </div>
+
+  <!-- 3. 선택 목록 -->
+  <div class="card">
+    <h2><span class="n">3</span> 선택 목록 (제안서에 들어갈 순서)</h2>
+    <div id="tray" class="tray"></div>
+    <div id="trayEmpty" class="empty">아직 고른 결과물이 없어요. 위에서 클릭하거나 직접 추가하세요.</div>
+  </div>
+
+  <!-- 4. 생성 -->
+  <div class="card">
+    <h2><span class="n">4</span> 제안서 HTML 생성</h2>
+    <button class="btn big" id="build" onclick="buildProposal()">📄 제안서 HTML 만들기 (이미지 포함 다운로드)</button>
+    <div id="buildErr" class="err"></div>
+    <div class="hint">이미지를 파일 안에 base64로 임베드해 <b>단독 .html 하나</b>로 저장됩니다 — 이메일 첨부·오프라인 열람 OK.</div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let scope = 'mine', offset = 0, loading = false;
+const PAGE = 60;
+const selected = [];           // {id, beforeUrl, afterUrl, label, caption, before(dataURL?), after(dataURL?)}
+const seen = new Set();        // 중복 방지 키
+
+function keyOf(it) { return it.id != null ? ('db:' + it.id) : ('m:' + it.beforeUrl + '|' + it.afterUrl); }
+
+function setScope(s) {
+  if (scope === s) return; scope = s; offset = 0;
+  $('#scopeMine').classList.toggle('on', s === 'mine');
+  $('#scopeAll').classList.toggle('on', s === 'all');
+  $('#resGrid').innerHTML = ''; loadMore();
+}
+function reloadResults() { offset = 0; $('#resGrid').innerHTML = ''; loadMore(); }
+
+async function loadMore() {
+  if (loading) return; loading = true; $('#more').disabled = true;
+  try {
+    const r = await fetch(`/api/admin/proposal/results?scope=${scope}&limit=${PAGE}&offset=${offset}`);
+    if (r.status === 403) { $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '관리자 권한이 필요합니다. admin 계정으로 로그인하세요.'; return; }
+    const d = await r.json();
+    const items = d.items || [];
+    offset += items.length;
+    items.forEach(renderResItem);
+    $('#resEmpty').style.display = (offset === 0 && !items.length) ? 'block' : 'none';
+    $('#more').style.display = d.hasMore ? 'inline-block' : 'none';
+  } catch (e) { $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '불러오기 실패: ' + (e.message || e); }
+  finally { loading = false; $('#more').disabled = false; }
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+function renderResItem(it) {
+  const k = keyOf(it);
+  const el = document.createElement('div');
+  el.className = 'res-item'; el.dataset.k = k;
+  if (seen.has(k)) el.classList.add('sel');
+  el.innerHTML = `<div class="pair">
+      <figure><span class="tag">원본</span><img loading="lazy" src="${esc(it.beforeUrl)}" onerror="this.style.opacity=.25"></figure>
+      <figure><span class="tag">결과</span><img loading="lazy" src="${esc(it.afterUrl)}" onerror="this.style.opacity=.25"></figure>
+    </div><div class="cap">${esc(it.label || 'result #' + (it.idx || ''))}</div><div class="chk">✓</div>`;
+  el.onclick = () => toggleSelect(it, el);
+  $('#resGrid').appendChild(el);
+}
+
+function toggleSelect(it, el) {
+  const item = { id: it.idx, beforeUrl: it.beforeUrl, afterUrl: it.afterUrl, label: it.label || '', caption: '' };
+  const k = keyOf({ id: it.idx, beforeUrl: it.beforeUrl, afterUrl: it.afterUrl });
+  const i = selected.findIndex(s => keyOf(s) === k);
+  if (i >= 0) { selected.splice(i, 1); seen.delete(k); if (el) el.classList.remove('sel'); }
+  else { selected.push(item); seen.add(k); if (el) el.classList.add('sel'); }
+  renderTray();
+}
+
+async function addManual() {
+  const bf = $('#upBefore').files[0], af = $('#upAfter').files[0];
+  if (!bf || !af) { alert('원본·결과 이미지를 둘 다 선택하세요'); return; }
+  const before = await fileToDataUrl(bf), after = await fileToDataUrl(af);
+  const item = { id: null, beforeUrl: before, afterUrl: after, before, after, label: '직접 추가', caption: '' };
+  selected.push(item); seen.add(keyOf(item)); renderTray();
+  $('#upBefore').value = ''; $('#upAfter').value = '';
+}
+function fileToDataUrl(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); }
+
+function renderTray() {
+  const t = $('#tray');
+  $('#trayEmpty').style.display = selected.length ? 'none' : 'block';
+  $('#selCount').textContent = selected.length ? (selected.length + '개 선택됨') : '';
+  t.innerHTML = selected.map((s, i) => `<div class="tray-item">
+      <div class="thumbs"><img src="${esc(s.beforeUrl)}"><img src="${esc(s.afterUrl)}"></div>
+      <input class="cap" placeholder="이 컷 설명(선택) — 예: 상세페이지 대표 이미지" value="${esc(s.caption)}" oninput="selected[${i}].caption=this.value">
+      <div style="display:flex;gap:6px;align-items:center">
+        <div class="ord"><button onclick="move(${i},-1)">▲</button><button onclick="move(${i},1)">▼</button></div>
+        <button class="rm" onclick="removeSel(${i})">삭제</button>
+      </div>
+    </div>`).join('');
+}
+function move(i, d) { const j = i + d; if (j < 0 || j >= selected.length) return; const [x] = selected.splice(i, 1); selected.splice(j, 0, x); renderTray(); }
+function removeSel(i) { const [x] = selected.splice(i, 1); seen.delete(keyOf(x)); document.querySelectorAll('.res-item').forEach(el => { if (el.dataset.k === keyOf(x)) el.classList.remove('sel'); }); renderTray(); }
+
+// URL 이미지를 base64 dataURL로 (자체포함 파일용). 같은 출처라 fetch 쿠키 인증 OK.
+async function urlToDataUrl(url) {
+  if (/^data:/.test(url)) return url;
+  const r = await fetch(url); if (!r.ok) throw new Error('이미지 로드 실패: ' + url);
+  const blob = await r.blob();
+  return await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
+}
+
+async function buildProposal() {
+  const btn = $('#build'), err = $('#buildErr'); err.textContent = '';
+  const company = $('#company').value.trim();
+  if (!company) { err.textContent = '대상 회사명을 입력하세요.'; return; }
+  if (!selected.length) { err.textContent = '결과물을 최소 1개 이상 고르세요.'; return; }
+  btn.disabled = true; const ot = btn.textContent; btn.textContent = '이미지 임베드 중… (0/' + selected.length + ')';
+  try {
+    // 선택분 이미지를 전부 base64로
+    const pairs = [];
+    for (let i = 0; i < selected.length; i++) {
+      const s = selected[i];
+      const before = s.before || await urlToDataUrl(s.beforeUrl);
+      const after = s.after || await urlToDataUrl(s.afterUrl);
+      pairs.push({ before, after, caption: s.caption || s.label || '' });
+      btn.textContent = '이미지 임베드 중… (' + (i + 1) + '/' + selected.length + ')';
+    }
+    const html = renderProposalHtml({
+      company, title: $('#ptitle').value.trim(), intro: $('#intro').value.trim(),
+      svc: $('#svc').value.trim(), ctaLabel: $('#ctaLabel').value.trim(), ctaUrl: $('#ctaUrl').value.trim(),
+      pairs,
+    });
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '제안서_' + company.replace(/[\\/:*?"<>|]/g, '') + '.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) { err.textContent = '생성 실패: ' + (e.message || e); }
+  finally { btn.disabled = false; btn.textContent = ot; }
+}
+
+// ── 자체포함 제안서 HTML 템플릿 ──
+function renderProposalHtml(o) {
+  const E = esc;
+  const sections = o.pairs.map((p, i) => `
+    <section class="ba">
+      <div class="ba-grid">
+        <figure><span class="ba-tag">BEFORE · 원본</span><img src="${p.before}" alt="before"></figure>
+        <figure><span class="ba-tag after">AFTER · Doppia</span><img src="${p.after}" alt="after"></figure>
+      </div>
+      ${p.caption ? `<p class="ba-cap">${E(p.caption)}</p>` : ''}
+    </section>`).join('');
+  const ctaBtn = o.ctaUrl ? `<a class="cta" href="${E(o.ctaUrl)}">${E(o.ctaLabel || '상담 신청')}</a>` : (o.ctaLabel ? `<span class="cta">${E(o.ctaLabel)}</span>` : '');
+  const year = '2026';
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${E(o.company)} 제안 · Doppia</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif;color:#17171f;background:#f6f5fb;line-height:1.65}
+.hero{background:linear-gradient(135deg,#6a40e0,#9a63d9);color:#fff;padding:64px 24px 56px;text-align:center}
+.hero .for{font-size:15px;opacity:.9;font-weight:600;letter-spacing:.5px}
+.hero h1{font-size:34px;font-weight:800;margin:10px 0 6px;line-height:1.25}
+.hero .brand{font-size:13px;opacity:.85;margin-top:18px}
+.wrap{max-width:940px;margin:0 auto;padding:0 20px}
+.intro{background:#fff;border-radius:16px;padding:28px 26px;margin:-28px auto 34px;max-width:900px;box-shadow:0 18px 50px -30px rgba(0,0,0,.4);white-space:pre-wrap;font-size:16px}
+.sec-h{font-size:22px;font-weight:800;margin:8px 4px 18px;color:#2a2340}
+.ba{background:#fff;border-radius:16px;padding:16px;margin-bottom:22px;box-shadow:0 12px 40px -30px rgba(0,0,0,.45)}
+.ba-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ba figure{position:relative;border-radius:11px;overflow:hidden;background:#0c0c12;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center}
+.ba img{width:100%;height:100%;object-fit:contain;display:block}
+.ba-tag{position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:7px;background:rgba(0,0,0,.62);color:#fff;letter-spacing:.4px}
+.ba-tag.after{background:linear-gradient(135deg,#6a40e0,#9a63d9)}
+.ba-cap{margin:12px 6px 4px;font-size:14.5px;color:#4a445c;font-weight:500}
+.svc{background:#fff;border-radius:16px;padding:26px;margin:34px 0 24px;white-space:pre-wrap;font-size:15.5px;color:#33304a;box-shadow:0 12px 40px -30px rgba(0,0,0,.45)}
+.svc h3{font-size:18px;font-weight:800;margin-bottom:10px;color:#2a2340}
+.cta-wrap{text-align:center;margin:28px 0 8px}
+.cta{display:inline-block;background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff;text-decoration:none;font-weight:800;font-size:16px;padding:15px 34px;border-radius:12px}
+footer{text-align:center;color:#8a869c;font-size:12.5px;padding:34px 20px 44px}
+@media(max-width:640px){.ba-grid{grid-template-columns:1fr}.hero h1{font-size:26px}}
+</style></head><body>
+<div class="hero">
+  <div class="for">${E(o.company)} 귀사를 위한 제안</div>
+  <h1>${E(o.title || 'AI 제품 콘텐츠 자동화 제안')}</h1>
+  <div class="brand">by Doppia · doppia.ai</div>
+</div>
+<div class="wrap">
+  ${o.intro ? `<div class="intro">${E(o.intro)}</div>` : ''}
+  <div class="sec-h">사진 1장 → 이렇게 바뀝니다 (Before / After)</div>
+  ${sections}
+  <div class="svc"><h3>Doppia 서비스</h3>${E(o.svc)}</div>
+  ${ctaBtn ? `<div class="cta-wrap">${ctaBtn}</div>` : ''}
+</div>
+<footer>© ${year} Doppia (주식회사 아담컴퍼니) · 본 제안서는 ${E(o.company)} 귀사를 위해 준비되었습니다.</footer>
+</body></html>`;
+}
+
+loadMore();
+</script>
+</body>
+</html>
