@@ -399,7 +399,10 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
     const stSources = st ? (st.sources || []).filter((p) => fs.existsSync(p)) : [];
     const buf = await bakeOne({
       sourcePaths: stSources.length ? stSources : sources,
-      label: st ? null : skuLabel, state: st ? st.label : null,
+      // 🔴 state 는 **영어 desc**(장면 설명)를 넘겨야 한다 — 한국어 label 을 넘기면 모델이 그걸
+      //   제품에 인쇄할 글자로 오해한다(찻잔에 "우린 차"가 찍혔던 그 버그). label 은 UI 표시 전용.
+      //   runPack 은 91a0dec 에서 고쳤는데 **이 재굽기 경로가 빠져 있었다**(게이트에서 누르면 재발).
+      label: st ? null : skuLabel, state: st ? (st.desc || st.label) : null,
       unit: plan.unit || (pack.config && pack.config.unit) || null,
       refBake: suite.refBake, hint,
     });
