@@ -9,6 +9,15 @@
 const { resultToBuffer, PACK_IMAGE_MODEL } = require('./stills.service');
 const provider = require('../images/providers/nanoBanana.provider');
 
+/**
+ * 🔍 레퍼는 **2K로 굽는다** — 라벨 글자에 배정되는 픽셀이 2배가 되어 워드마크가 살아남는다.
+ *
+ * 스틸(20~28장)이 아니라 레퍼(팩당 1~4장)에만 쓰는 이유: 레퍼는 상류라 **개선이 하류 전체에 전파**되는데
+ *   장수는 몇 장뿐이라 비용 증가가 미미하다. 같은 돈으로 가장 넓게 먹히는 자리다.
+ * 되돌리려면 배포 없이 `PACK_REF_IMAGE_SIZE=1K` + restart.
+ */
+const PACK_REF_IMAGE_SIZE = process.env.PACK_REF_IMAGE_SIZE || '2K';
+
 const NEG_NOTEXT = 'added text, caption, watermark, words or letters printed on the cup plate bowl or background, invented lettering not on the real product';
 const BAKE_NEG = `garbled or gibberish lettering, misspelled wordmark, two or more products, duplicate product, extra caps, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights, ${NEG_NOTEXT}`;
 
@@ -52,6 +61,7 @@ async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) 
     width: 768, height: 960,
     references: (sourcePaths || []).map((p) => ({ path: p, kind: 'product' })),
     model: PACK_IMAGE_MODEL,
+    imageSize: PACK_REF_IMAGE_SIZE,
   });
   return resultToBuffer(res);
 }

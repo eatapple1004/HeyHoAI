@@ -156,8 +156,8 @@ const nanoBananaProvider = {
    * Nano Banana (Gemini) 로 이미지를 생성한다.
    * referenceImagePath가 있으면 해당 이미지를 reference로 사용하여 동일 인물을 유지한다.
    *
-   * @param {import('./types').ImageGenerationRequest & { referenceImagePath?: string, model?: string }} req
-   *   model 미지정 시 env.GEMINI_IMAGE_MODEL(기본 flash).
+   * @param {import('./types').ImageGenerationRequest & { referenceImagePath?: string, model?: string, imageSize?: '1K'|'2K' }} req
+   *   model 미지정 시 env.GEMINI_IMAGE_MODEL(기본 flash). imageSize '2K'는 Pro 모델에서만 적용된다.
    * @returns {Promise<import('./types').ImageGenerationResult>}
    */
   async generate(req) {
@@ -166,6 +166,10 @@ const nanoBananaProvider = {
     // 모델은 **호출부가 고를 수 있다**. 예전엔 env 고정이라 Pack이 flash에 묶여 있었다
     //   (studio는 자체 클라이언트로 pro, adminRefine도 pro인데 provider를 쓰는 Pack만 flash였다).
     const model = req.model || env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+    // 🔍 2K = 라벨 글자에 배정되는 픽셀이 2배. 워드마크가 살아남는 데 가장 직접적인 레버다.
+    //   ⚠️ **Pro 전용**(flash는 1K 고정) — 모델이 pro가 아니면 조용히 무시한다(보내면 거부당한다).
+    //   studio는 이미 이 옵션을 쓰는데 provider엔 없어서, Pack이 pro로 올라가고도 1K로 뽑고 있었다.
+    const imageSize = (String(req.imageSize || '').toUpperCase() === '2K' && /pro/i.test(model)) ? '2K' : null;
 
     const fullPrompt = req.negativePrompt
       ? `${req.prompt}\n\nAvoid: ${req.negativePrompt}`
@@ -221,6 +225,7 @@ const nanoBananaProvider = {
         ],
         imageConfig: {
           aspectRatio,
+          ...(imageSize ? { imageSize } : {}),
         },
       },
     });
