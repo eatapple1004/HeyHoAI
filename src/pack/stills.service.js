@@ -6,6 +6,17 @@
 const sharp = require('sharp');
 const provider = require('../images/providers/nanoBanana.provider');
 
+/**
+ * Pack은 **품질 우선 → Nano Banana Pro**.
+ *
+ * 왜 명시하나: provider 기본값은 `env.GEMINI_IMAGE_MODEL`(=flash)인데, studio는 자체 클라이언트로
+ *   이미 pro를 쓰고 adminRefine도 pro다 — provider를 그대로 쓰던 **Pack만 flash에 묶여** 있었다.
+ *   Pack 결과가 studio보다 못한 구조적 이유였다(모델 차이지 프롬프트 차이가 아니었다).
+ * 되돌리려면 배포 없이 `PACK_IMAGE_MODEL=gemini-2.5-flash-image` + restart.
+ *   (pro는 장당 단가가 flash의 3배 남짓 — 팩 1개 20~25장 기준 차이가 그대로 곱해진다.)
+ */
+const PACK_IMAGE_MODEL = process.env.PACK_IMAGE_MODEL || 'gemini-3-pro-image-preview';
+
 /** provider.generate 응답(localPath|url|data)을 JPEG 버퍼로 정규화. */
 async function resultToBuffer(res) {
   const src = (res.metadata && res.metadata.localPath) || res.localPath;
@@ -39,8 +50,9 @@ async function genStill({ canonRefPath, brandRefPath, cut, ctx }) {
     width: cut.w || 768,
     height: cut.h || 960,
     references,
+    model: PACK_IMAGE_MODEL,
   });
   return resultToBuffer(res);
 }
 
-module.exports = { genStill, resultToBuffer };
+module.exports = { genStill, resultToBuffer, PACK_IMAGE_MODEL };

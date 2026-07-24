@@ -5,7 +5,8 @@
  *   먼저 **깨끗한 단품 캐논 레퍼**(단품·클린배경·라벨 보존)를 만들고, 거기서 모든 콘텐츠를 생성한다.
  *   세트/변형이면 SKU마다 1장(병 지오메트리 통일 + 라벨/색만 교체 전략도 가능 — 여기선 소스별 개별 베이크).
  */
-const { resultToBuffer } = require('./stills.service');
+// PACK_IMAGE_MODEL — 레퍼는 **모든 컷의 상류**다. 여기서 모델이 갈리면 하류 N컷이 통째로 갈린다.
+const { resultToBuffer, PACK_IMAGE_MODEL } = require('./stills.service');
 const provider = require('../images/providers/nanoBanana.provider');
 
 const NEG_NOTEXT = 'added text, caption, watermark, words or letters printed on the cup plate bowl or background, invented lettering not on the real product';
@@ -50,6 +51,7 @@ async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) 
     negativePrompt: neg,
     width: 768, height: 960,
     references: (sourcePaths || []).map((p) => ({ path: p, kind: 'product' })),
+    model: PACK_IMAGE_MODEL,
   });
   return resultToBuffer(res);
 }

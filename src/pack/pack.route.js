@@ -5,6 +5,7 @@
  *   POST /api/pack/:id/regenerate-cut  {cutKey}  같은 컨셉 재생성(새 버전)
  *   POST /api/pack/:id/rebake-ref      {sku?}    캐논 레퍼 재굽기(새 버전)
  *   POST /api/pack/:id/add-cut         {cutKey}  라이브러리에서 컨셉 추가
+ *   POST /api/pack/:id/resume          {depth?}  중단된 팩 이어서 만들기(남은 컷부터)
  *   GET  /api/pack/:id/cut-library                추가 가능한 컷(안 뽑힌 것)
  *
  * 통합 시 index.js 1줄: app.use('/api/pack', requireAuth, require('./pack/pack.route'));
@@ -20,7 +21,7 @@ const repo = require('./pack.repository');
 const { runPack, sniffMime } = require('./pack.service');
 const { classifyProduct } = require('./planner.service');    // 확인 단계용 가벼운 분류
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
-const { genStill } = require('./stills.service');            // 컷 재생성·추가
+const { genStill, PACK_IMAGE_MODEL } = require('./stills.service');   // 컷 재생성·추가 (+ 카드 라벨용 실제 모델)
 const { composeRow } = require('./compositor');              // 세트 합성(generate 단계)
 const { suiteFor, STATE_COMPOSITES } = require('./suites');  // 컷 라이브러리(컨셉 추가) + refBake 스펙 + 상태 합성
 const promptRepo = require('../generate/prompt.repository'); // 크리에이션 dual-write(내 크리에이션·라이브러리·공유 = generation_results→prompts)
@@ -29,7 +30,19 @@ const teamCredit = require('../teams/team.credit');         // 활성 팀 — pr
 
 const router = Router();
 
-const PACK_MODEL = 'Nano Banana'; // 크리에이션 카드 모델 라벨(스틸·합성·레퍼 모두 nano-banana 계열)
+// 크리에이션 카드 모델 라벨(스틸·합성·레퍼 모두 nano-banana 계열).
+//   실제 쓰는 모델에서 파생 — 하드코딩하면 pro로 올려놓고 카드는 계속 flash라고 말한다.
+const PACK_MODEL = /pro/i.test(PACK_IMAGE_MODEL) ? 'Nano Banana Pro' : 'Nano Banana';
+
+// 🧟 부팅 회수 — 프로세스가 죽으면 진행 중이던 팩(setImmediate 백그라운드)도 함께 사라지는데
+//   DB엔 'processing'이 남아 화면이 영원히 스피너였다. 뜰 때 한 번 훑어 내린다.
+//   (활동 창은 failStale이 지킨다 → 같은 DB를 보는 다른 프로세스의 진행 중 팩은 안 건드린다.)
+//   DB 준비 여유를 두고 1회. 실패해도 조회 경로(GET)가 같은 규칙으로 늦게라도 회수한다.
+setTimeout(() => {
+  repo.failStale()
+    .then((ids) => { if (ids.length) logger.warn?.(`[pack] 중단된 팩 ${ids.length}개 회수(failed): ${ids.join(',')}`); })
+    .catch((e) => logger.warn?.(`[pack] 부팅 회수 실패(무시): ${e.message}`));
+}, 20000).unref?.();
 
 const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -180,7 +193,11 @@ async function generatePack(pack, { depth, userId }) {
     const ctx = { product: plan.product || fresh.product || '' };
     // depth는 앞에서 N개를 자른다 — plan.cuts가 상태별 인터리브로 저장돼 있어 부분 생성도 모든 상태를 커버한다.
     const limit = (depth && depth > 0) ? Math.min(depth, cuts.length) : cuts.length; // 0=전부
+    // 🧟 이미 만든 컷은 건너뛴다 → "이어서 만들기"가 남은 컷부터 재개한다(다시 굽지 않으니 크레딧도 안 태움).
+    //   최초 생성에선 자산이 없어 no-op — 경로를 하나로 유지한다.
+    const doneCuts = new Set((fresh.assets || []).filter((a) => a.kind === 'still' && a.url).map((a) => a.cut_key));
     for (const c of cuts.slice(0, limit)) {
+      if (doneCuts.has(c.key)) continue;
       try {
         const cut = { key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label, refSku: c.refSku || null };
         // 🔑 그 컷에 배정된 레퍼로 생성(상태든 변형이든).
@@ -196,7 +213,9 @@ async function generatePack(pack, { depth, userId }) {
     const refPaths = composeRefPaths(fresh);
     const stateMode = (plan.states || []).length > 1;
     if (refPaths.length > 1) {
+      const doneComps = new Set((fresh.assets || []).filter((a) => a.kind === 'composite' && a.url).map((a) => a.cut_key));
       for (const comp of (stateMode ? STATE_COMPOSITES : (suiteFor(fresh.vertical).composites || []))) {
+        if (doneComps.has(comp.key)) continue;   // 재개 시 중복 합성 방지
         try { const buf = comp.method === 'row' ? await composeRow(refPaths) : null; if (buf) await recordAsset(fresh, { kind: 'composite', key: comp.key, label: comp.label, buffer: buf, userId }); }
         catch (e) { logger.warn?.(`[pack ${fresh.id}] composite ${comp.key} 실패: ${e.message}`); }
       }
@@ -268,6 +287,13 @@ router.get('/:id', async (req, res, next) => {
     const byId = /^\d+$/.test(key);
     const pack = await repo.getPack(byId ? { id: Number(key) } : { shareId: key });
     if (!pack) return res.status(404).json({ error: 'not found' });
+    // 🧟 폴링이 곧 회수 기회다 — 부팅 회수 이후에 죽은 팩도 여기서 걸린다(부팅 sweep만으론 늦다).
+    //   전체 sweep이 아니라 **이 행 하나**만 손본다(폴링마다 전역 UPDATE를 돌리면 안 된다).
+    if (repo.isStale(pack)) {
+      await repo.setStatus(pack.id, 'failed', repo.STALE_ERROR);
+      pack.status = 'failed'; pack.error = repo.STALE_ERROR;
+      logger.warn?.(`[pack ${pack.id}] 활동 없음 ${repo.STALE_MIN}분 → failed 로 회수`);
+    }
     res.json(pack);
   } catch (e) { next(e); }
 });
@@ -279,8 +305,33 @@ router.post('/:id/generate', async (req, res, next) => {
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status !== 'ref_ready') return res.status(409).json({ error: '게이트 대기 상태가 아니에요' });
     const depth = Math.max(0, parseInt((req.body && req.body.depth) || 0, 10) || 0);
+    await repo.mergeConfig(pack.id, { depth });   // 중단 후 "이어서 만들기"가 같은 깊이로 재개하도록 남긴다
     await repo.setStatus(pack.id, 'processing');
     res.json({ ok: true });
+    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
+  } catch (e) { next(e); }
+});
+
+/**
+ * 🧟 이어서 만들기 — 중단된 팩(서버 재시작·크래시·hang)에서 **남은 컷부터** 재개.
+ *   generatePack이 이미 있는 컷을 건너뛰므로 여기선 다시 태우기만 하면 된다.
+ *   ⚠️ 커버 범위 = **스틸 단계**(계획+캐논 레퍼가 이미 있는 팩). 레퍼 굽기 전에 죽은 팩은
+ *      플래너부터 다시 돌아야 해서 재개 대상이 아니다 → 처음부터 만들도록 안내한다.
+ */
+router.post('/:id/resume', async (req, res, next) => {
+  try {
+    const pack = await repo.getPack({ id: Number(req.params.id) });
+    if (!pack) return res.status(404).json({ error: 'not found' });
+    if (pack.status === 'done') return res.status(409).json({ error: '이미 완료된 팩이에요' });
+    if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요(깊이를 고르고 생성하세요)' });
+    if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
+    const plan = (pack.config && pack.config.plan) || {};
+    if (!(plan.cuts || []).length) return res.status(409).json({ error: '계획이 없어 재개할 수 없어요(처음부터 다시 만들어 주세요)' });
+    if (!latestRefPath(pack)) return res.status(409).json({ error: '캐논 레퍼가 없어 재개할 수 없어요(처음부터 다시 만들어 주세요)' });
+    // 깊이 = 요청 > 게이트에서 고른 값 > 전부. 재개인데 깊이가 줄면 남은 컷이 영영 안 나온다.
+    const depth = Math.max(0, parseInt((req.body && req.body.depth) || (pack.config && pack.config.depth) || 0, 10) || 0);
+    await repo.setStatus(pack.id, 'processing');
+    res.json({ ok: true, depth });
     setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
   } catch (e) { next(e); }
 });
