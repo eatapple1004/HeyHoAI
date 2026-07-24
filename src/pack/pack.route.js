@@ -13,6 +13,7 @@ const { Router } = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
@@ -46,11 +47,23 @@ async function ensurePackPrompt(pack, userId) {
   if (userId == null) return null;
   try {
     const teamId = await teamCredit.activeTeamId(userId).catch(() => null);
-    const p = await promptRepo.insert({ userId, teamId, promptText: (pack.product || '콘텐츠 팩'), model: PACK_MODEL, tags: ['pack'] });
+    // referenceImagePath = 유저 업로드 원본(첫 장). before/after(원본→결과)로 나열·제안서에 쓰이도록 연결.
+    const p = await promptRepo.insert({ userId, teamId, promptText: (pack.product || '콘텐츠 팩'), model: PACK_MODEL, tags: ['pack'], referenceImagePath: pack.config.sourceRef || null });
     pack.config.prompt_idx = p.idx;
     await repo.setPromptIdx(pack.id, p.idx);
     return p.idx;
   } catch (e) { logger.warn?.(`[pack ${pack.id}] prompt insert failed: ${e.message}`); return null; }
+}
+
+/** 업로드 원본을 영속 저장(tmp/images + R2) + pack_assets(kind='source'). 크리에이션 피드엔 안 올림.
+ *  반환 = prompts.reference_image_path에 넣을 'tmp/images/<name>' 경로(서빙 = /images/<name>). */
+async function recordSource(pack, absPath, i) {
+  const name = `pack_${pack.share_id}_source_${i}_${Date.now()}.jpg`;
+  const buf = await sharp(fs.readFileSync(absPath)).rotate().jpeg({ quality: 90, mozjpeg: true }).toBuffer();
+  fs.writeFileSync(path.join(imagesDir, name), buf);   // 로컬 서빙
+  await mediaStore.put(name, buf).catch(() => {});     // 영속(R2) best-effort
+  await repo.addAsset({ packId: pack.id, kind: 'source', cutKey: `source_${i}`, label: '원본', url: `/images/${name}` });
+  return `tmp/images/${name}`;
 }
 
 /** 자산 하나 적재: tmp/images 발행(+R2) + pack_assets(새 행=버전) + generation_results dual-write. 반환 {kind,cut_key,label,url}. */
@@ -134,6 +147,13 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
       fs.writeFileSync(dst, buf); durableSources.push(dst);
     } catch (_) { durableSources.push(sp); }
   });
+  // 업로드 원본을 영속 저장(R2·서빙) + 첫 장을 prompt.reference_image_path로 연결(before/after·제안서용).
+  try {
+    for (let i = 0; i < durableSources.length; i++) {
+      const ref = await recordSource(pack, durableSources[i], i);
+      if (i === 0) pack.config.sourceRef = ref; // 인메모리 — 같은 prepPack 실행 중 ensurePackPrompt가 읽어 prompt에 연결
+    }
+  } catch (e) { logger.warn?.(`[pack ${pack.id}] source persist failed: ${e.message}`); }
   try {
     await runPack({
       // states[].photoIndex 는 업로드 순서 기준 — durableSources가 같은 순서로 복사되므로 그대로 유효하다.

@@ -29,29 +29,49 @@ router.get('/results', async (req, res, next) => {
     const scope = req.query.scope === 'all' ? 'all' : 'mine';
 
     const params = [limit, offset];
-    let where = `pr.reference_image_path IS NOT NULL AND gr.file_path IS NOT NULL AND gr.taken_down = false`;
+    // 원본(before) 확보 = ① prompts.reference_image_path(업로드 원본) 또는 ② pack의 캐논 레퍼.
+    //   pack 결과는 metadata.pack_share_id → content_packs → pack_assets(kind='ref')로 캐논 레퍼를 붙인다.
+    //   (캐논 레퍼 자체(kind='ref')는 결과 목록에서 제외 — before==after 방지.)
+    let where = `gr.file_path IS NOT NULL AND gr.taken_down = false
+       AND COALESCE(gr.metadata->>'kind','') <> 'ref'
+       AND (pr.reference_image_path IS NOT NULL OR refpack.url IS NOT NULL)`;
     if (scope === 'mine' && req.user && req.user.id) {
       params.push(req.user.id);
       where += ` AND pr.user_id = $${params.length}`;
     }
     const r = await query(
       `SELECT gr.idx, gr.file_path, gr.model, gr.template_name, gr.template_source, gr.created_at,
-              pr.reference_image_path, pr.prompt_text
+              pr.reference_image_path, refpack.url AS canonical_ref
          FROM generation_results gr
          JOIN prompts pr ON gr.prompt_idx = pr.idx
+         LEFT JOIN LATERAL (
+           SELECT pa.url FROM pack_assets pa
+             JOIN content_packs cp ON cp.id = pa.pack_id
+            WHERE cp.share_id = (gr.metadata->>'pack_share_id') AND pa.kind = 'ref'
+            ORDER BY pa.id DESC LIMIT 1
+         ) refpack ON true
         WHERE ${where}
         ORDER BY gr.idx DESC
         LIMIT $1 OFFSET $2`,
       params
     );
-    const items = r.rows.map((row) => ({
-      idx: row.idx,
-      afterUrl: toUrl(row.file_path),
-      beforeUrl: toUrl(row.reference_image_path),
-      label: row.template_name || row.template_source || row.model || '',
-      model: row.model || '',
-      createdAt: row.created_at,
-    })).filter((it) => it.afterUrl && it.beforeUrl);
+    const items = r.rows.map((row) => {
+      const orig = row.reference_image_path ? toUrl(row.reference_image_path) : '';
+      const canon = row.canonical_ref ? toUrl(row.canonical_ref) : '';
+      const beforeUrl = orig || canon;                 // 원본 우선, 없으면 캐논 레퍼
+      const altBeforeUrl = (orig && canon) ? canon : ''; // 둘 다 있으면 캐논을 토글 대상으로
+      return {
+        idx: row.idx,
+        afterUrl: toUrl(row.file_path),
+        beforeUrl,
+        altBeforeUrl,
+        beforeKind: orig ? 'original' : 'canonical',   // 현재 before가 원본인지 캐논인지
+        isPack: row.template_source === 'pack',
+        label: row.template_name || row.template_source || row.model || '',
+        model: row.model || '',
+        createdAt: row.created_at,
+      };
+    }).filter((it) => it.afterUrl && it.beforeUrl);
 
     res.json({ success: true, items, scope, hasMore: r.rows.length === limit });
   } catch (e) { next(e); }
