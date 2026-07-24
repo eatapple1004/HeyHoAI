@@ -12,7 +12,7 @@ const visualRoutes = require('./visuals/visual.route');
 const generateRoutes = require('./generate/generate.route');
 const accountRoutes = require('./publishing/account.route');
 const authRoutes = require('./auth/auth.route');
-const { requireAuth, requirePage, requireAdminPage } = require('./middleware/auth');
+const { requireAuth, requirePage, requireAdmin, requireAdminPage } = require('./middleware/auth');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -190,6 +190,11 @@ app.get('/admin-templates', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-templates.html'));
 });
 
+// 관리자 전용: 회사 맞춤 제안서(before/after 소개 페이지) 빌더
+app.get('/admin-proposal', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-proposal.html'));
+});
+
 // 인증 라우트 (공개)
 app.use('/api/auth', authRoutes);
 
@@ -221,6 +226,7 @@ app.use('/api/pack', requireAuth, require('./pack/pack.route'));
 // 체험 계정 (라우트 내부에서 requireAdmin/requireAuth 자체 가드)
 app.use('/api', require('./trial/trial.route'));
 app.use('/api', require('./admin/adminRefine.route'));
+app.use('/api/admin/proposal', requireAuth, requireAdmin, require('./admin/proposal.route').router);
 
 // Health check
 app.get('/health', (_req, res) => {
