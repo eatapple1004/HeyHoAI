@@ -15,6 +15,19 @@ const { genStill } = require('./stills.service');
 const { composeRow } = require('./compositor');
 const { planPack } = require('./planner.service');
 
+// 🟣 렌즈(lens) — 뽑을수록 다양해지는 엔진. 차수마다 다른 축으로 플래너를 돌린다.
+//   같은 제품도 씬·무드·배경 조합은 사실상 무한 → 렌즈를 회전시키면 근접 중복 없이 계속 새 컷.
+//   순서 = 유효 씬 먼저, 실험 씬 나중(앞쪽일수록 실제 판매에 바로 쓰는 컷). "더 뽑기"가 이 배열을 이어서 돈다.
+const ROUND_LENS = [
+  { key: 'core', label: '핵심 판매컷', brief: 'the commercial essentials — a clean front-facing PDP, a 3/4 angle, a hero shot, and a detail/macro. What a product page needs first.' },
+  { key: 'life', label: '라이프스타일', brief: 'real-life usage scenes — the specific places and moments a buyer of THIS product actually uses it (match the product: a tumbler → cafe table, office desk, gym, camping; a serum → bathroom shelf, vanity). Hands/context ok, no full faces.' },
+  { key: 'art', label: '컨셉·아트', brief: 'bold art-directed campaign shots — color-block sets, floating/levitation, single dramatic key light, hard geometric shadows. Premium ad energy.' },
+  { key: 'surface', label: '배경·질감', brief: 'the SAME product on widely different surfaces and materials — marble, raw concrete, warm wood, linen, natural stone, brushed metal, water, sand. One striking surface per cut.' },
+  { key: 'season', label: '시즌·SNS', brief: 'seasonal and social-feed moods — gift/holiday styling, summer vs winter palettes, cozy or fresh moods, and clean copy-space claim cards for captions.' },
+  { key: 'explore', label: '실험 컨셉', brief: 'more experimental, scroll-stopping concepts that still keep the product accurate and tasteful — unexpected settings, playful scale, unusual but intentional lighting.' },
+];
+const lensAt = (i) => ROUND_LENS[((i % ROUND_LENS.length) + ROUND_LENS.length) % ROUND_LENS.length];
+
 /**
  * 🔴 확장자를 믿으면 안 된다 — multer 임시파일은 이름이 랜덤 hex라 **확장자가 없고**,
  *    durable 복사가 전부 `.jpg`로 붙는다. 그 상태로 media_type=image/jpeg 를 선언하면
@@ -60,7 +73,7 @@ async function toVisionImage(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, states, unit, category, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
+async function runPack({ sourcePaths, vertical, product, skus, states, unit, lenses, category, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
@@ -95,7 +108,14 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   // 🔵 컷 천장 — 플래너 한 호출의 안전선은 8~12컷이다(더 요구하면 JSON이 잘려 폴백으로 떨어진다).
   //   "대량"을 채우려면 호출을 **차수(round)로 나눈다**: 2차부터 앞서 뽑은 라벨을 넘겨 "이것 말고 다른 것"을 받는다.
   //   상태 분할과 같은 트릭 — 호출당 출력 크기는 그대로 두고 총량만 늘리므로 제품 종류와 무관하게 20컷+가 된다.
-  const TARGET_CUTS = 20, PER_ROUND = 10, MAX_ROUNDS = 4;
+  // 🟣 렌즈당 소량(5) × 렌즈를 많이 = 다양성 극대화. 각 축의 깊이가 다르므로(핵심=얕음 4~5, 배경=깊음)
+  //   렌즈당 10을 요구하면 얕은 축이 근접 중복을 낸다. 적게 요구하고 다음 축으로 넘어간다.
+  const TARGET_CUTS = 20, PER_ROUND = 5;
+  // 🟣 동적 렌즈 — classify가 제품 보고 뽑은 축(유효순). 없으면 범용 ROUND_LENS 폴백.
+  //   MAX_ROUNDS는 렌즈 수에 맞춘다(전 축을 한 바퀴 + 여유). 렌즈 다 쓰면 재순환(exclude로 계속 새로).
+  const activeLenses = (Array.isArray(lenses) && lenses.length) ? lenses : ROUND_LENS;
+  const lensPick = (i) => activeLenses[((i % activeLenses.length) + activeLenses.length) % activeLenses.length];
+  const MAX_ROUNDS = Math.max(6, activeLenses.length + 2);
   // 단위당 목표 = 전체 목표를 계획 단위 수로 나눈 것. 상태 2개면 각 10컷 → 총 20컷.
   const targetPerUnit = (nUnits) => Math.max(6, Math.ceil(TARGET_CUTS / Math.max(1, nUnits)));
   // 라벨 정규화 — 근접 중복을 **코드로** 막는다. 프롬프트의 "중복 금지"는 소프트 지시라
@@ -105,12 +125,13 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
   /** 한 계획 단위(상태 1개 또는 제품 전체)에 대해 **목표 개수에 닿을 때까지** 차수를 돌며 컷을 모은다.
    *  🔴 차수 수를 미리 계산하면(구버전) 플래너가 요청보다 적게 주는 순간 목표에 못 미친 채 끝난다 —
    *     실제로 상태 2개짜리 차 제품에서 6+6=12컷에 멈췄다. 그래서 "부족한 만큼 더 요청"으로 바꾼다. */
-  async function planUnit({ images, state, target, onMeta }) {
+  async function planUnit({ images, state, target, baseLens = 0, onMeta }) {
     const got = [], taken = new Set(), seenLabel = new Set();
     for (let r = 1; r <= MAX_ROUNDS && got.length < target; r++) {
       const want = Math.min(PER_ROUND, Math.max(4, target - got.length));
+      const lens = lensPick(baseLens + r - 1);   // 🟣 차수마다 렌즈 회전(제품이 정한 축) → 다양하게
       try {
-        const plan = await planPack({ images, hint: product, category, state, want, exclude: got.map((c) => c.label) });
+        const plan = await planPack({ images, hint: product, category, state, want, lens, exclude: got.map((c) => c.label) });
         if (onMeta) onMeta(plan);
         let added = 0, dupes = 0;
         for (const c of (plan.cuts || [])) {
@@ -122,9 +143,9 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
           if (taken.has(k)) k = `${k}_r${r}`;
           if (taken.has(k)) { dupes++; continue; }
           taken.add(k); if (nl) seenLabel.add(nl);
-          got.push({ ...c, key: k }); added++;
+          got.push({ ...c, key: k, lensIdx: baseLens + r - 1 }); added++;   // 렌즈 인덱스 기록 → "더 뽑기"가 다음 렌즈부터 이어감
         }
-        emit({ stage: 'plan', state: state ? state.key : null, round: r, want, added, dupes, total: got.length });
+        emit({ stage: 'plan', state: state ? state.key : null, round: r, lens: lens.key, want, added, dupes, total: got.length });
         if (!added) break;   // 새로 준 게 하나도 없다 = 아이디어 고갈. 더 돌려도 중복만 나온다.
       } catch (e) {
         if (!planError) planError = e.message;   // 첫 실패 사유를 사용자에게 보여준다
@@ -209,6 +230,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
     const planCuts = stillCuts.map((c) => ({
       key: c.key, label: c.label, w: c.w, h: c.h, neg: c.neg, aspect: c.aspect || null,
       refSku: c.refSku || null,
+      lensIdx: (c.lensIdx != null ? c.lensIdx : null),   // "더 뽑기"가 max(lensIdx)+1 부터 이어감
       promptText: c.promptText || (typeof c.prompt === 'function' ? c.prompt({ product: ctxProduct }) : null),
     }));
     try {
@@ -219,6 +241,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, cat
         fallback: fellBack,                  // true면 제품 맞춤 컷이 아니라 기본 컷 — 게이트에서 경고한다
         fallbackReason: fellBack ? planError : null,
         unit: unit || null,   // 'pair'|'with_package'|'group' — 재굽기도 같은 단위를 유지해야 한다
+        lenses: activeLenses, // 🟣 제품이 정한 축 목록 — "더 뽑기"가 max(lensIdx)+1 부터 이 배열을 이어 순환
       });
     } catch (_) {}
     emit({ stage: 'plan-slots', total: slots.length });

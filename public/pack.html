@@ -320,7 +320,8 @@ function showConfirm(cls, hint) {
     return true;
   }).slice(0, 4);
   const unit = ['pair', 'with_package', 'group'].includes(cls.unit) ? cls.unit : null;   // 단품이 아니면 레퍼를 그 단위로 굽는다
-  confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, hint };
+  const lenses = Array.isArray(cls.lenses) ? cls.lenses.filter(l => l && l.key && l.brief) : [];   // 제품 맞춤 촬영 축(유효순)
+  confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
   const c = confirmState;
   const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">세트 · ${c.variants.length}종 감지</div>` : '';
@@ -376,6 +377,7 @@ async function confirmGenerate() {
   const onStates = (c.states || []).filter(s => c.stateOn[s.key]);
   if (onStates.length > 1) fd.append('states', JSON.stringify(onStates));
   if (c.unit) fd.append('unit', c.unit);   // 한 쌍·제품+박스 등 — 첫 베이크부터 맞게
+  if (c.lenses && c.lenses.length) fd.append('lenses', JSON.stringify(c.lenses));   // 제품 맞춤 축 → 다양성 엔진
   const revert = () => { $('#result').classList.add('hide'); $('#form').classList.remove('hide'); };
   let r;
   try { r = await fetch('/api/pack', { method: 'POST', body: fd }); }

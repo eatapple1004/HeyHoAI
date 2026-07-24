@@ -116,7 +116,7 @@ function composeRefPaths(pack) {
 }
 
 // 1단계(prep): 분석 → 계획 저장 → **캐논 레퍼만 굽고** 멈춘다(status='ref_ready'). 스틸은 게이트 통과 후 generate에서.
-async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, category, userId }) {
+async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, lenses, category, userId }) {
   pack.config = pack.config || {};
   pack.product = pack.product || product;
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
@@ -137,7 +137,7 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
   try {
     await runPack({
       // states[].photoIndex 는 업로드 순서 기준 — durableSources가 같은 순서로 복사되므로 그대로 유효하다.
-      sourcePaths: durableSources, vertical, product, skus, states, unit, category, workDir, stopAfter: 'ref',
+      sourcePaths: durableSources, vertical, product, skus, states, unit, lenses, category, workDir, stopAfter: 'ref',
       onPlan: async (plan) => { await repo.setPlan(pack.id, plan); },  // plan={total,slots,cuts,refSkus,product,vertical,sources}
       onAsset: async (a) => { await recordAsset(pack, { kind: a.kind, key: a.key, label: a.label, absPath: a.path, userId }); },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
@@ -223,14 +223,18 @@ router.post('/', upload.array('photos', 10), async (req, res, next) => {
     }
     // 한 단위 판별(단품/한 쌍/본체+박스) — 캐논 레퍼를 몇 개로 구울지. 화이트리스트 밖은 무시(기본 단품).
     const unit = ['pair', 'with_package', 'group'].includes(req.body.unit) ? req.body.unit : null;
+    // 🟣 렌즈 — classify가 제품 보고 뽑은 촬영 축(유효순). 없으면 runPack이 범용 폴백을 쓴다.
+    let lenses = null;
+    try { lenses = req.body.lenses ? JSON.parse(req.body.lenses) : null; } catch (_) { lenses = null; }
+    if (Array.isArray(lenses)) lenses = lenses.filter((l) => l && l.key && l.brief).slice(0, 12);
 
     const pack = await repo.createPack({
-      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, category, photoCount: req.files.length },
+      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, lenses, category, photoCount: req.files.length },
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
     setImmediate(() => prepPack(pack, {
-      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, category, userId: req.user && req.user.id,
+      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, lenses, category, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
 });

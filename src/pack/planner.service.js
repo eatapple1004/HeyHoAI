@@ -54,7 +54,7 @@ const PLAN_SCHEMA = {
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want) {
+function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens) {
   const n = Math.max(4, Math.min(12, want || 10));   // 한 호출의 요청량 — 12를 넘기면 JSON이 잘린다
   const known = (confirmed && confirmed.category)
     ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
@@ -82,6 +82,13 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want) {
     `Always also include at least ONE clean front-facing PDP cut and ONE detail/macro cut so the product page still works commercially, even if the brief doesn't mention them.`,
     `Do NOT ignore the brief and fall back to a generic category template.`,
   ].join('\n') : '';
+  // 🟣 렌즈(lens) — 이번 라운드의 "축". 차수마다 다른 렌즈로 돌려 다양성을 낸다(핵심→라이프→아트→배경→시즌→실험).
+  //   같은 제품도 씬·무드·배경 조합은 사실상 무한이라, 렌즈를 회전시키면 근접 중복 없이 계속 새 컷이 나온다.
+  //   브리프가 있으면 브리프가 PRIMARY, 렌즈는 "그 브리프를 이번엔 이 각도로" 보조. Claude가 둘을 자연히 조화시킨다.
+  const lensClause = lens ? [
+    `THIS ROUND'S LENS — plan all ${n} cuts through one specific angle: **${lens.label}** — ${lens.brief}`,
+    `Every cut this round should belong to that lens, while keeping the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
+  ].join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
@@ -90,6 +97,7 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want) {
     known,
     stateFocus,
     roundClause,
+    lensClause,
     (state || prev.length) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
     hint
       ? `Category shot types below are only LOOSE inspiration — the creative brief above takes priority over this menu:`
@@ -119,15 +127,16 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {{key:string,label:string,perState?:number}} [p.state]  상태 포커스(있으면 그 상태 전용 컷만 계획)
  * @param {string[]} [p.exclude]  이미 뽑힌 컷 라벨 — 2차 이상 호출에서 중복을 피하려고 넘긴다
  * @param {number} [p.want]  이번 호출에서 받고 싶은 컷 수(4~12로 클램프 — 12 넘기면 JSON이 잘린다)
+ * @param {{key,label,brief}} [p.lens]  이번 라운드의 축(핵심·라이프·아트…) — 차수 회전으로 다양성
  * @returns {Promise<{product, category, ingredient, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint, category, product, state, exclude, want }) {
+async function planPack({ images, hint, category, product, state, exclude, want, lens }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
@@ -186,8 +195,24 @@ const CLASSIFY_SCHEMA = {
         required: ['key', 'label', 'photoIndex'],
       },
     },
+    // 🟣 렌즈(lenses) = 이 제품을 다양하게 찍는 "축"들, 유효순. 컷은 이 축을 하나씩 돌며 뽑힌다(축마다 소량).
+    //   고정 배열이 아니라 제품이 정한다: 음료엔 성분·원물, 주얼리엔 착용, 텀블러엔 카페·아웃도어…
+    //   개수도 제품이 정함(보통 6~10). 생성량이 실제로 몇 개 축을 얼마 깊이 쓸지 결정한다.
+    lenses: {
+      type: 'array',
+      description: 'Ordered list of distinct CREATIVE ANGLES for shooting THIS product, most valuable first. These are the axes the pack will rotate through — each angle yields a few cuts, then move to the next. Tailor to the product: a tumbler → cafe/office, outdoors, surface-texture, minimal, seasonal; jewelry → on-body(hand/neck/ear), macro detail, pedestal, editorial; a drink → ingredient/source, lifestyle, splash/texture, iced/seasonal. Give 6–10 angles. Put the commercially essential ones first (a clean PDP/detail angle should be near the top).',
+      items: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          key: { type: 'string', description: 'short ascii slug, e.g. cafe, ingredient, on_hand, surface' },
+          label: { type: 'string', description: 'very short Korean label a shop owner reads instantly, e.g. "카페 감성", "성분·원물", "착용컷", "배경·질감"' },
+          brief: { type: 'string', description: 'one concise English phrase telling the planner what this angle covers (max ~15 words)' },
+        },
+        required: ['key', 'label', 'brief'],
+      },
+    },
   },
-  required: ['product', 'category', 'isSet', 'variants', 'states', 'unit'],
+  required: ['product', 'category', 'isSet', 'variants', 'states', 'unit', 'lenses'],
 };
 async function classifyProduct({ images, hint }) {
   const imgs = (images || []).filter((im) => im && im.data);
@@ -204,11 +229,12 @@ async function classifyProduct({ images, hint }) {
       `⚠️ A different camera ANGLE, distance, crop or lighting of the SAME configuration is NOT a different state (front view vs side view vs close-up = one state). A state must differ in how the object itself is arranged — opened/closed, folded/unfolded, packed/unpacked, assembled/apart.`,
       `Only list a state you can actually SEE in the attached photo${imgs.length > 1 ? 's' : ''}. If all photos show the same state, return exactly one state. Max 4.`,
       `Also decide "unit" — how many objects make up ONE sellable presentation. Earrings are normally sold and worn as a PAIR; a perfume shown with its own box is "with_package". Getting this wrong makes every generated image show the wrong number of objects.`,
-      `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states, unit.`,
+      `Also give "lenses" — 6 to 10 distinct creative ANGLES for shooting THIS product, most valuable first (a clean PDP/detail angle near the top). These become the axes the pack rotates through for variety, so make them genuinely different from each other and specific to this product's category. Keep each brief short.`,
+      `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states, unit, lenses.`,
     ].filter(Boolean).join('\n') },
   ];
   const resp = await client.messages.create({
-    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 900,
+    model: env.CLAUDE_MODEL_SCRIPT, max_tokens: 1400,   // lenses(6~10 × label+brief) 추가분 — 압축돼 있어 여유
     system: 'You identify consumer products from photos precisely and concisely.',
     messages: [{ role: 'user', content }],
     output_config: { format: { type: 'json_schema', schema: CLASSIFY_SCHEMA } },
