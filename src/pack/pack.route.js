@@ -99,6 +99,22 @@ async function normalizeUploads(req, res, next) {
 /** /images/<name> URL → 로컬 파일 경로(재생성이 캐논 레퍼를 참조로 읽을 때). */
 function localPathForUrl(url) { return path.join(imagesDir, String(url || '').split('/').pop()); }
 
+/**
+ * 이 팩의 원본 사진 URL — 크리에이션 카드의 "무엇으로 만들었는지" 썸네일.
+ *
+ * 🔑 studio 카드는 이 썸네일을 `characters.reference_image_url` 조인으로 받는다. 그런데 팩 결과는
+ *   character_id 가 없어서(캐릭터를 안 쓴다) 그 조인이 항상 NULL → **팩만 썸네일이 비어 있었다.**
+ *   프론트가 `metadata.product_image` 를 폴백으로 이미 읽으므로, 거기에 직접 실어주면 된다
+ *   (API·프론트 수정 0 — studio 피드와 같은 자리에 같은 모양으로 뜬다).
+ * pack_assets(kind='source') 우선, 없으면 config.sourceRef.
+ */
+function packSourceUrl(pack) {
+  const a = (pack.assets || []).find((x) => x.kind === 'source' && x.url);
+  if (a) return a.url;
+  const ref = (pack.config && pack.config.sourceRef) || '';   // 'tmp/images/<name>'
+  return ref ? `/images/${String(ref).split('/').pop()}` : null;
+}
+
 /** 팩의 prompt_idx 확보(크리에이션 dual-write 그룹핑 — 재생성분도 같은 배치에 묶이게). config에 캐시·영속. */
 async function ensurePackPrompt(pack, userId) {
   pack.config = pack.config || {};
@@ -138,7 +154,9 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) 
     if (idx != null) {
       await resultRepo.insert({
         promptIdx: idx, filePath: `tmp/images/${name}`, model: PACK_MODEL,  // 피드가 basename → /images/<name> 서빙
-        metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id },
+        // product_image = 유저가 올린 원본 사진. studio 는 characters 조인으로 받지만 팩은 캐릭터가 없어
+        //   그 자리가 늘 비었다 → 여기서 직접 실어준다(프론트가 metadata 폴백을 이미 읽는다).
+        metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id, ...(packSourceUrl(pack) ? { product_image: packSourceUrl(pack) } : {}) },
         visibility: 'private', templateSource: 'pack', templateName: label || '콘텐츠 팩',
       });
     }
@@ -212,6 +230,9 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
       const ref = await recordSource(pack, durableSources[i], i);
       if (i === 0) pack.config.sourceRef = ref; // 인메모리 — 같은 prepPack 실행 중 ensurePackPrompt가 읽어 prompt에 연결
     }
+    // 🔑 DB에도 남긴다 — 재생성·컨셉추가·재개는 **별도 요청**이라 인메모리 값이 없다.
+    //   그 경로들도 크리에이션 카드에 원본 썸네일을 붙이려면 여기 저장된 걸 읽어야 한다.
+    if (pack.config.sourceRef) await repo.mergeConfig(pack.id, { sourceRef: pack.config.sourceRef });
   } catch (e) { logger.warn?.(`[pack ${pack.id}] source persist failed: ${e.message}`); }
   try {
     await runPack({
