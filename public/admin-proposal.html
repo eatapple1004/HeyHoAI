@@ -268,7 +268,6 @@ function renderProposalHtml(o) {
   const E = esc;
   const sections = o.pairs.map((p, i) => `
     <section class="ba">
-      <div class="ba-num">${String(i + 1).padStart(2, '0')}</div>
       <div class="ba-grid">
         <figure><span class="ba-tag">BEFORE · 원본</span><img src="${p.before}" alt="before" loading="lazy"></figure>
         <div class="ba-arrow"><span>→</span></div>
@@ -320,16 +319,16 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,-a
 /* 맞춤 인사말 */
 .intro{padding:26px 30px;font-size:16px;color:var(--sub);white-space:pre-wrap;border-left:4px solid var(--brand)}
 /* Before/After */
-.ba{padding:20px;margin-bottom:20px;position:relative}
-.ba-num{position:absolute;top:16px;left:20px;font-size:12px;font-weight:800;color:var(--brand);letter-spacing:1px;z-index:3}
-.ba-grid{display:grid;grid-template-columns:1fr 44px 1fr;align-items:center;gap:8px}
-.ba figure{position:relative;border-radius:12px;overflow:hidden;background:#0d0c14;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center}
+.ba{padding:16px;margin-bottom:18px;transition:box-shadow .2s ease,transform .2s ease}
+.ba:hover{transform:translateY(-3px);box-shadow:0 30px 64px -34px rgba(40,20,90,.6)}
+.ba-grid{display:grid;grid-template-columns:1fr 46px 1fr;align-items:center;gap:10px}
+.ba figure{position:relative;border-radius:14px;overflow:hidden;background:#f4f2fb;border:1px solid var(--line);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
 .ba img{width:100%;height:100%;object-fit:contain;display:block}
-.ba-tag{position:absolute;top:9px;left:9px;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:7px;background:rgba(0,0,0,.6);color:#fff;letter-spacing:.5px}
+.ba-tag{position:absolute;top:10px;left:10px;font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:8px;background:rgba(20,16,34,.72);color:#fff;letter-spacing:.5px;backdrop-filter:blur(4px)}
 .ba-tag.after{background:linear-gradient(135deg,var(--brand),var(--brand2))}
 .ba-arrow{display:flex;align-items:center;justify-content:center}
-.ba-arrow span{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;box-shadow:0 6px 16px -6px rgba(106,64,224,.7)}
-.ba-cap{margin:14px 4px 2px;font-size:14.5px;color:var(--sub);font-weight:500;text-align:center}
+.ba-arrow span{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;box-shadow:0 8px 18px -6px rgba(106,64,224,.75)}
+.ba-cap{margin:15px 4px 3px;font-size:14.5px;color:var(--sub);font-weight:600;text-align:center}
 /* 서비스 상세 */
 .svc{padding:30px;white-space:pre-wrap;font-size:15.5px;color:var(--sub)}
 .svc h3{font-size:18px;font-weight:800;margin-bottom:12px;color:var(--ink)}
