@@ -91,4 +91,86 @@ router.get('/results', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// ─── 저장(초안) — 작성한 제안서를 저장/수정/불러오기/삭제. 추후 edit용. ───
+//   selection = URL·dataURL만 저장(작음). 빌드 시 프론트가 base64 임베드. self-ensure 스키마.
+let _ensured = false;
+async function ensureSchema() {
+  if (_ensured) return;
+  await query(`
+    CREATE TABLE IF NOT EXISTS proposals (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id    UUID,
+      company    TEXT NOT NULL,
+      title      TEXT,
+      meta       JSONB NOT NULL DEFAULT '{}'::jsonb,      -- {about,intro,svc,ctaLabel,ctaUrl}
+      selection  JSONB NOT NULL DEFAULT '[]'::jsonb,      -- [{gkey,beforeUrl,altBeforeUrl,beforeKind,caption,results:[{afterUrl}]}]
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_proposals_user ON proposals(user_id, updated_at DESC);
+  `);
+  _ensured = true;
+}
+
+// 저장/수정 — id 있으면 update, 없으면 insert. 반환 {id}.
+router.post('/save', async (req, res, next) => {
+  try {
+    await ensureSchema();
+    const b = req.body || {};
+    const company = String(b.company || '').trim();
+    if (!company) return res.status(400).json({ success: false, error: '회사명이 필요합니다.' });
+    const meta = {
+      about: b.about || '', intro: b.intro || '', svc: b.svc || '',
+      ctaLabel: b.ctaLabel || '', ctaUrl: b.ctaUrl || '', title: b.title || '',
+    };
+    const selection = Array.isArray(b.selection) ? b.selection : [];
+    const uid = req.user && req.user.id;
+    if (b.id) {
+      const r = await query(
+        `UPDATE proposals SET company=$2, title=$3, meta=$4, selection=$5, updated_at=now()
+          WHERE id=$1 RETURNING id`,
+        [b.id, company, b.title || '', JSON.stringify(meta), JSON.stringify(selection)]
+      );
+      if (!r.rows[0]) return res.status(404).json({ success: false, error: 'not found' });
+      return res.json({ success: true, id: r.rows[0].id });
+    }
+    const r = await query(
+      `INSERT INTO proposals (user_id, company, title, meta, selection)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [uid || null, company, b.title || '', JSON.stringify(meta), JSON.stringify(selection)]
+    );
+    res.json({ success: true, id: r.rows[0].id });
+  } catch (e) { next(e); }
+});
+
+// 목록 — 최신순(내 것 우선 없이 전체 관리자 공유; 필요시 user 필터).
+router.get('/list', async (_req, res, next) => {
+  try {
+    await ensureSchema();
+    const r = await query(
+      `SELECT id, company, title, updated_at, jsonb_array_length(selection) AS groups
+         FROM proposals ORDER BY updated_at DESC LIMIT 100`
+    );
+    res.json({ success: true, items: r.rows });
+  } catch (e) { next(e); }
+});
+
+// 단건 — 편집용 전체 로드.
+router.get('/saved/:id', async (req, res, next) => {
+  try {
+    await ensureSchema();
+    const r = await query(`SELECT id, company, title, meta, selection FROM proposals WHERE id=$1`, [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ success: false, error: 'not found' });
+    res.json({ success: true, proposal: r.rows[0] });
+  } catch (e) { next(e); }
+});
+
+router.delete('/saved/:id', async (req, res, next) => {
+  try {
+    await ensureSchema();
+    await query(`DELETE FROM proposals WHERE id=$1`, [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { next(e); }
+});
+
 module.exports = { router };
