@@ -3816,7 +3816,8 @@ let STUDIO_BATCHES=[];
 const RC_SVG={
   dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
-  priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 };
 // 카드 키보드 활성(Enter·Space) → 상세페이지. gallery cardKey와 동일 패턴.
 function rcKey(e,idx){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); location.href='/creation?idx='+idx+'&from=library'; } }
@@ -3845,8 +3846,14 @@ function studioMediaCard(o){
     ?`<button class="rc-btn${priv?' on':''}" type="button" aria-pressed="${priv?'true':'false'}" title="${priv?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleCardVis(this,${o.idx})">${priv?RC_SVG.priv:RC_SVG.pub}</button>`
     :'';
   const dlBtn=`<a class="rc-btn" href="${esc(o.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
+  // 🎬 이 카드가 편집 가능한 영상이면 "Edit video"(이 영상만) — ugc 모드=바로 편집, 아니면 Ad Video로 이동. 배치 전체 아님.
+  const editBtn=(reel&&o.idx!=null&&UGC_EDITABLE.has(o.idx))
+    ?(state.mode==='ugc'
+        ?`<button class="rc-btn" type="button" title="Edit this video" onclick="event.stopPropagation();ugcEditFromFeed(this,${o.idx})">${RC_SVG.edit}</button>`
+        :`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${o.idx}" title="Edit this video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`)
+    :'';
   return `<div class="result-card" ${open}>${inner}
-      <div class="rc-tools">${visBtn}${dlBtn}</div></div>`;
+      <div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div></div>`;
 }
 // 카드 Private/Public 토글 — gallery와 동일 엔드포인트(서버가 private=구독 게이트). 재렌더에도 유지되게 STUDIO_BATCHES 동기화.
 async function toggleCardVis(btn,idx){
@@ -3995,16 +4002,8 @@ function batchRowHtml(b){
         if(!isUgc||state.mode!=='ugc')return '';                    // 조리대(#scriptStep)가 숨겨진 페이지면 올려도 안 보인다
         if(!(b.loading||b.ugc))return '';                           // 올릴 데이터가 없으면 Edit video 쪽 소관
         return `<button class="rb-up" type="button" onclick="ugcBringUp(${b._uid})">↑ View up top</button>`;})())+
-      ((()=>{
-        if(!isUgc||b.loading||b.ugc)return '';                       // b.ugc 있으면 위의 View up top이 맡는다
-        // 🎬 영상 아이템을 찾는다(섞인 배치=팩 이미지+영상 대비 — items[0]이 이미지일 수 있다). 편집 가능(대본)만.
-        const vit=(b.items||[]).find(i=>i.type==='reel'&&i.idx!=null&&UGC_EDITABLE.has(i.idx))
-                ||((b.items[0]&&b.items[0].idx!=null&&UGC_EDITABLE.has(b.items[0].idx))?b.items[0]:null);
-        if(!vit)return '';                                           // 대본 없는 옛 영상은 재조립 불가 = 편집 불가
-        // ugc 모드면 조리대로 바로(in-page), 아니면(컷·라이브러리 등 조리대 숨김) Ad Video로 이동(URL로 진입).
-        return state.mode==='ugc'
-          ? `<button class="rb-edit" type="button" onclick="ugcEditFromFeed(this,${vit.idx})">✎ Edit video</button>`
-          : `<a class="rb-edit" href="/studio?mode=ugc&editVideo=${vit.idx}" style="text-decoration:none">✎ Edit video</a>`;})())+
+      /* 🎬 Edit video는 배치 메타가 아니라 각 영상 카드(studioMediaCard rc-tools)로 옮겼다 — 섞인 팩 배치에서
+         "이 영상 하나에만" 적용됨을 명확히(배치 전체에 적용되는 것처럼 보이던 문제 해결). */
       ((()=>{const cidx=(b.items[0]&&b.items[0].idx)||0;
         if(!cidx || (typeof featureOn==='function'&&!featureOn('earnings')))return ''; // creation idx 필요 + Creator 숨김(earnings off) 시 승격 버튼도 숨김
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`

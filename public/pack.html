@@ -916,7 +916,8 @@ function downloadAll() {   // 컷별 현재 보고 있는 버전만
 const RC_SVG = {
   dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   pub: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
-  priv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  priv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 };
 let BATCHES = [];
 // 🎬 편집 가능한 영상 idx(대본 보유) — 크리에이션 카드 "Edit video" 노출 근거. Ad Video와 같은 소스(/ugc/jobs.editable).
@@ -987,7 +988,9 @@ function studioMediaCard(o) {
   const priv = (o.visibility === 'private');
   const visBtn = `<button class="rc-btn${priv ? ' on' : ''}" type="button" title="${priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'}" onclick="event.stopPropagation();toggleCardVis(this,${o.idx})">${priv ? RC_SVG.priv : RC_SVG.pub}</button>`;
   const dlBtn = `<a class="rc-btn" href="${esc(o.url)}" download title="다운로드" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
-  return `<div class="result-card" role="link" tabindex="0" onclick="location.href='/creation?idx=${o.idx}&from=pack'" style="cursor:pointer">${inner}<div class="rc-tools">${visBtn}${dlBtn}</div></div>`;
+  // 🎬 이 카드가 편집 가능한 영상이면 "Edit video"(이 영상만) → Ad Video로 이동. 배치 전체가 아니라 이 영상 하나에만 적용.
+  const editBtn = (reel && o.idx != null && PACK_EDITABLE.has(o.idx)) ? `<a class="rc-btn" href="/studio?mode=ugc&editVideo=${o.idx}" title="이 영상을 Ad Video에서 편집" onclick="event.stopPropagation()">${RC_SVG.edit}</a>` : '';
+  return `<div class="result-card" role="link" tabindex="0" onclick="location.href='/creation?idx=${o.idx}&from=pack'" style="cursor:pointer">${inner}<div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div></div>`;
 }
 const CH_LBL = { cut: 'Cut', cutBg: 'BG color', bg: 'Scene', garment: 'Garment', skin: 'Skin', age: 'Age', concept: 'Concept', detail: 'Detail', size: 'Size' };
 const CH_ORDER = ['cut', 'garment', 'skin', 'age', 'concept', 'bg', 'cutBg', 'size', 'detail'];
@@ -1019,10 +1022,8 @@ function batchRowHtml(b) {
     const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });
     return chips.length ? `<div class="rb-src-row rb-ch-row">${chips.join('')}</div>` : ''; })();
   const del = `<div class="rb-del-row"><button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">🗑 삭제</button></div>`;
-  // 🎬 배치에 편집 가능한 영상이 있으면 "Edit video" — 편집은 Ad Video에서만. 여기선 이동만(같은 idx로 studio 진입).
-  const _vid = (b.items || []).find(i => i.type === 'reel' && PACK_EDITABLE.has(i.idx));
-  const editRow = _vid ? `<div class="rb-edit-row"><a class="rb-editvid" href="/studio?mode=ugc&editVideo=${_vid.idx}">✎ Edit video</a></div>` : '';
-  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${editRow}${del}</div></div>`;
+  // 🎬 Edit video는 배치 메타가 아니라 각 영상 카드(studioMediaCard)에 붙는다 — "이 영상만" 명확히(팩 전체 아님).
+  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${del}</div></div>`;
 }
 function renderWorks() {
   const grid = $('#resultsGrid'), empty = $('#worksEmpty');
