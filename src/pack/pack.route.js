@@ -7,6 +7,7 @@
  *   POST /api/pack/:id/resume          {depth?}       중단된 팩 이어서 만들기(남은 컷부터)
  *   POST /api/pack/:id/extend          {count?}       이미 기획된 남은 컷 더 생성(플래너 0회)
  *   POST /api/pack/:id/more-like       {cutKey,count?} 이 컷과 같은 결로 형제 컷 N장(플래너 1회)
+ *   POST /api/pack/:id/concept-more    {brief,count?}  자유 컨셉으로 새 방향 컷 N장(플래너 1회)
  *
  * 통합 시 index.js 1줄: app.use('/api/pack', requireAuth, require('./pack/pack.route'));
  */
@@ -302,66 +303,74 @@ function sourcesForSeed(plan, refSku) {
 }
 
 /**
- * ✦ "이 컷처럼 더" — 씨앗 컷과 같은 결로 형제 컷 N장을 **재기획 후 즉시 생성**한다(백그라운드).
+ * 팩에 새 컷 N장을 **재기획 후 즉시 생성**해 붙인다(백그라운드). 두 방향을 한 몸으로 처리:
  *
- *   ① 씨앗의 렌즈·프롬프트로 planPack(seed) 호출 → 같은 무드, 다른 구도 N개
- *   ② 각 컷을 씨앗의 레퍼로 생성(같은 상태·변형 유지) → recordAsset(2K·원본썸네일 공통경로)
- *   ③ 새 컷을 config.plan 에 append → 이후 "다시"·"더 뽑기"가 이 컷도 인식
- *   status=processing 으로 두고, 완료 후 done. 프론트는 refreshPack 폴링으로 새 카드가 뜬다.
+ *   ✦ 씨앗(seedCutKey) — "이 컷처럼 더". 씨앗의 렌즈·프롬프트·상태를 물려 같은 결/다른 구도.
+ *   💡 컨셉(brief)     — "다른 컨셉으로 더". 자유 브리프가 기획을 주도(briefClause), 대표(브랜드) 레퍼로.
+ *
+ * 공통: exclude=기존 라벨 전부(복제 방지) · 확정 category 그라운딩(오분류 방지) · 새 컷을 config.plan에
+ *   append(이후 "다시"·"더 뽑기"가 인식) · 2K·원본썸네일은 recordAsset 공통경로라 자동. 완료 후 done.
  */
-async function moreLikePack(pack, { cutKey, count, userId }) {
+async function growPack(pack, { seedCutKey, brief, count, userId }) {
+  const mode = seedCutKey ? 'more-like' : 'concept-more';
   try {
     const fresh = await repo.getPack({ id: pack.id });
     const plan = (fresh.config && fresh.config.plan) || {};
     const cuts = plan.cuts || [];
-    const seed = cuts.find((c) => c.key === cutKey);
-    if (!seed) throw new Error('씨앗 컷을 찾을 수 없어요');
-    const refPath = latestRefPathFor(fresh, seed.refSku);
+
+    // 방향에 따라 (씨앗·렌즈·힌트·참조 상태)를 정한다.
+    let seed = null, lens = null, hint = fresh.product || '', refSku = null, seedLensIdx = null;
+    if (seedCutKey) {
+      const s = cuts.find((c) => c.key === seedCutKey);
+      if (!s) throw new Error('씨앗 컷을 찾을 수 없어요');
+      seed = { label: s.label, prompt: s.promptText || s.prompt };
+      lens = (plan.lenses || [])[s.lensIdx != null ? s.lensIdx : -1] || null;
+      refSku = s.refSku || null;
+      seedLensIdx = s.lensIdx != null ? s.lensIdx : null;
+    } else {
+      hint = String(brief || '').trim();
+      if (!hint) throw new Error('컨셉을 입력해 주세요');
+      // 컨셉은 새 방향이라 특정 상태에 안 묶는다 → 브랜드가 보이는 대표 레퍼로(포장이 프레임에 들어와야 상품이 산다).
+      refSku = plan.brandSku || (plan.refSkus && plan.refSkus[0] && plan.refSkus[0].sku) || null;
+    }
+    const refPath = latestRefPathFor(fresh, refSku);
     if (!refPath) throw new Error('캐논 레퍼가 없어요');
-    const srcPaths = sourcesForSeed(plan, seed.refSku);
+    // 소스 사진: 씨앗이면 그 상태 사진, 컨셉이면 전체(제품을 넓게 이해해야 새 방향이 산다).
+    const srcPaths = seedCutKey ? sourcesForSeed(plan, refSku) : (plan.sources || []).filter((p) => fs.existsSync(p));
     if (!srcPaths.length) throw new Error('소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)');
 
     const want = Math.max(2, Math.min(4, count || 3));
     const images = await Promise.all(srcPaths.map(toVisionImage));
-    const lens = (plan.lenses || [])[seed.lensIdx != null ? seed.lensIdx : -1] || null;
-    // category = 확정값(오분류 방지 — planPack이 이걸로 그라운딩). vertical 은 폴백.
-    const category = (fresh.config && fresh.config.category) || fresh.vertical || null;
-    const planned = await planPack({
-      images, hint: fresh.product || '', category, product: plan.product,
-      want, lens, exclude: cuts.map((c) => c.label),
-      seed: { label: seed.label, prompt: seed.promptText || seed.prompt },
-    });
+    const category = (fresh.config && fresh.config.category) || fresh.vertical || null;  // 확정 category 그라운딩
+    const planned = await planPack({ images, hint, category, product: plan.product, want, lens, exclude: cuts.map((c) => c.label), seed });
 
     const ctx = { product: plan.product || fresh.product || '' };
-    const derived = (plan.states || []).some((s) => s.key === seed.refSku && s.derived);
+    const derived = (plan.states || []).some((s) => s.key === refSku && s.derived);
     const brandRefPath = (derived && plan.brandSku) ? latestRefPathFor(fresh, plan.brandSku) : null;
-    // 키 충돌 방지 — 씨앗 형제도 기존 컷·자산과 key가 겹치면 카드가 덮인다.
+    // 키 충돌 방지 — 새 컷이 기존 컷·자산과 key가 겹치면 카드가 덮인다.
     const taken = new Set(cuts.map((c) => c.key).concat((fresh.assets || []).filter((a) => a.kind === 'still').map((a) => a.cut_key)));
     const newPlanCuts = [];
     for (const c of (planned.cuts || [])) {
       let key = c.key || 'more'; let i = 1;
       while (taken.has(key)) key = `${c.key || 'more'}_m${i++}`;
       taken.add(key);
-      const cut = { key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label, refSku: seed.refSku || null };
+      const cut = { key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label, refSku };
       try {
         const buf = await genStill({ canonRefPath: refPath, brandRefPath, cut, ctx });
         await recordAsset(fresh, { kind: 'still', key, label: cut.label, buffer: buf, userId });
-        // 새 컷 스펙을 계획에 남긴다(재생성·더뽑기가 재사용). promptText/refSku/lensIdx 보존.
-        newPlanCuts.push({ key, label: cut.label, w: cut.w, h: cut.h, neg: cut.neg, aspect: c.aspect || null, refSku: seed.refSku || null, lensIdx: seed.lensIdx != null ? seed.lensIdx : null, promptText: cut.prompt });
-      } catch (e) { logger.warn?.(`[pack ${fresh.id}] more-like ${key} 실패: ${e.message}`); }
+        // 컨셉 컷은 렌즈가 없다(브리프가 축) → lensIdx=null. 씨앗 컷은 씨앗의 렌즈를 물린다.
+        newPlanCuts.push({ key, label: cut.label, w: cut.w, h: cut.h, neg: cut.neg, aspect: c.aspect || null, refSku, lensIdx: seedLensIdx, promptText: cut.prompt });
+      } catch (e) { logger.warn?.(`[pack ${fresh.id}] ${mode} ${key} 실패: ${e.message}`); }
     }
-    if (newPlanCuts.length) {
-      const cur = await repo.getPack({ id: pack.id });
-      const cplan = (cur.config && cur.config.plan) || {};
-      cplan.cuts = (cplan.cuts || []).concat(newPlanCuts);
-      cplan.slots = (cplan.slots || []).concat(newPlanCuts.map((c) => ({ kind: 'still', key: c.key, label: c.label })));
-      await repo.setPlan(pack.id, cplan);
-    } else {
-      throw new Error('생성에 실패했어요 — 크레딧·한도를 확인해 주세요');
-    }
+    if (!newPlanCuts.length) throw new Error('생성에 실패했어요 — 크레딧·한도를 확인해 주세요');
+    const cur = await repo.getPack({ id: pack.id });
+    const cplan = (cur.config && cur.config.plan) || {};
+    cplan.cuts = (cplan.cuts || []).concat(newPlanCuts);
+    cplan.slots = (cplan.slots || []).concat(newPlanCuts.map((c) => ({ kind: 'still', key: c.key, label: c.label })));
+    await repo.setPlan(pack.id, cplan);
     await repo.setStatus(pack.id, 'done');
   } catch (e) {
-    logger.error?.(`[pack ${pack.id}] more-like failed: ${e.message}`);
+    logger.error?.(`[pack ${pack.id}] ${mode} failed: ${e.message}`);
     await repo.setStatus(pack.id, 'failed', e.message);
   }
 }
@@ -522,7 +531,29 @@ router.post('/:id/more-like', async (req, res, next) => {
     const count = Math.max(2, Math.min(4, parseInt((req.body && req.body.count) || 3, 10) || 3));
     await repo.setStatus(pack.id, 'processing');
     res.json({ ok: true, adding: count });
-    setImmediate(() => moreLikePack(pack, { cutKey, count, userId: req.user && req.user.id }));
+    setImmediate(() => growPack(pack, { seedCutKey: cutKey, count, userId: req.user && req.user.id }));
+  } catch (e) { next(e); }
+});
+
+/**
+ * 💡 컨셉으로 더 — 자유 브리프로 새 방향 컷 N장. "이런 걸로 더"가 있는 컷에 갇힌다면 이건 밖으로 나간다.
+ *   씨앗 대신 브리프가 기획을 주도하고(briefClause), 브랜드가 보이는 대표 레퍼로 생성한다.
+ */
+router.post('/:id/concept-more', async (req, res, next) => {
+  try {
+    const pack = await repo.getPack({ id: Number(req.params.id) });
+    if (!pack) return res.status(404).json({ error: 'not found' });
+    if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요' });
+    if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
+    const brief = String((req.body && req.body.brief) || '').trim().slice(0, 400);
+    if (!brief) return res.status(400).json({ error: '원하는 컨셉을 적어 주세요' });
+    const plan = (pack.config && pack.config.plan) || {};
+    if (!latestRefPath(pack)) return res.status(409).json({ error: '캐논 레퍼가 없어요' });
+    if (!(plan.sources || []).filter((p) => fs.existsSync(p)).length) return res.status(409).json({ error: '소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)' });
+    const count = Math.max(2, Math.min(4, parseInt((req.body && req.body.count) || 3, 10) || 3));
+    await repo.setStatus(pack.id, 'processing');
+    res.json({ ok: true, adding: count });
+    setImmediate(() => growPack(pack, { brief, count, userId: req.user && req.user.id }));
   } catch (e) { next(e); }
 });
 
