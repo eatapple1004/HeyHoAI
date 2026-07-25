@@ -3995,11 +3995,16 @@ function batchRowHtml(b){
         if(!isUgc||state.mode!=='ugc')return '';                    // 조리대(#scriptStep)가 숨겨진 페이지면 올려도 안 보인다
         if(!(b.loading||b.ugc))return '';                           // 올릴 데이터가 없으면 Edit video 쪽 소관
         return `<button class="rb-up" type="button" onclick="ugcBringUp(${b._uid})">↑ View up top</button>`;})())+
-      ((()=>{const eidx=(b.items[0]&&b.items[0].idx);
-        if(!isUgc||b.loading||b.ugc||eidx==null)return '';           // b.ugc 있으면 위의 View up top이 맡는다
-        if(state.mode!=='ugc')return '';               // 조리대(#scriptStep)가 숨겨진 페이지 → 올려도 안 보인다(영상이 사라진 것처럼 됨)
-        if(!b.ugc&&!UGC_EDITABLE.has(eidx))return '';  // 대본 없는 옛 영상은 재조립 불가 = 편집 불가. 안 되는 버튼은 안 띄운다
-        return `<button class="rb-edit" type="button" onclick="ugcEditFromFeed(this,${eidx})">✎ Edit video</button>`;})())+
+      ((()=>{
+        if(!isUgc||b.loading||b.ugc)return '';                       // b.ugc 있으면 위의 View up top이 맡는다
+        // 🎬 영상 아이템을 찾는다(섞인 배치=팩 이미지+영상 대비 — items[0]이 이미지일 수 있다). 편집 가능(대본)만.
+        const vit=(b.items||[]).find(i=>i.type==='reel'&&i.idx!=null&&UGC_EDITABLE.has(i.idx))
+                ||((b.items[0]&&b.items[0].idx!=null&&UGC_EDITABLE.has(b.items[0].idx))?b.items[0]:null);
+        if(!vit)return '';                                           // 대본 없는 옛 영상은 재조립 불가 = 편집 불가
+        // ugc 모드면 조리대로 바로(in-page), 아니면(컷·라이브러리 등 조리대 숨김) Ad Video로 이동(URL로 진입).
+        return state.mode==='ugc'
+          ? `<button class="rb-edit" type="button" onclick="ugcEditFromFeed(this,${vit.idx})">✎ Edit video</button>`
+          : `<a class="rb-edit" href="/studio?mode=ugc&editVideo=${vit.idx}" style="text-decoration:none">✎ Edit video</a>`;})())+
       ((()=>{const cidx=(b.items[0]&&b.items[0].idx)||0;
         if(!cidx || (typeof featureOn==='function'&&!featureOn('earnings')))return ''; // creation idx 필요 + Creator 숨김(earnings off) 시 승격 버튼도 숨김
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
@@ -6764,6 +6769,12 @@ async function maybeOpenPendingEditVideo(){
     ugcPutOnBench(b);
   }catch(e){ if(window.toast)toast('영상을 열 수 없어요','error'); }
 }
+// 🎬 편집 가능한 영상 idx를 모드 무관하게 채운다 — 컷·기본 페이지 피드의 "Edit video" 노출 근거.
+//   (ugcRestoreActiveJobs는 ugc 모드 진입 시에만 채운다 → 컷 페이지에선 비어 버튼이 안 떴다.)
+async function loadUgcEditable(){
+  try{ const r=await fetch('/api/generate/ugc/jobs'); const d=await r.json().catch(()=>null);
+    if(d&&Array.isArray(d.editable)){ UGC_EDITABLE=new Set(d.editable); renderStudioResults(); } }catch(e){}
+}
 if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootEditVideo() && !bootFromUrl()) setMode('shopping'); // (2026-07-01) 기본 모드=Shopping(Influencer 숨김)
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
 // ▼▼▼ (2026-07-03 A안) /studio?tpl=<uuid|slug> 딥링크 — 옛 Library "View template" 대체. 해당 템플릿이 든 서브탭 + Manage 뷰로 열고 하이라이트. 롤백: 이 함수 + _studioInit 호출 + MANAGE_HL/mgCard hl 제거 ▼▼▼
@@ -6799,6 +6810,7 @@ loadContextSwitcher();
 loadRecipeDesc();
 maybeOpenTplModal(); // 홈 Popular templates 카드 진입: /studio?openTpl=<id> → 실제 템플릿 모달 열기
 loadStudioResults().then(()=>maybeOpenPendingEditVideo()); // (테스트) 최근 생성 결과 복구 + editVideo 파라미터면 그 영상 조리대에
+if(state.mode!=='ugc') loadUgcEditable(); // 🎬 컷·기본 페이지에서도 영상 Edit video 뜨게(ugc 모드는 ugcRestoreActiveJobs가 채움)
 // (2026-07-02) 무한 스크롤: 피드 하단 근처 도달 시 다음 페이지 로드
 window.addEventListener('scroll',function(){
   if(STUDIO_LOADING||STUDIO_DONE)return;
