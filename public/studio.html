@@ -6736,7 +6736,35 @@ async function removeLookFromTheme(kind,key,idx){
 }
 // (폐기·P4) 룩-저장 테마 피커(openLookThemePicker/renderLookThemeList/pickLookTheme/pickLookThemeNew/closeLookTheme/LOOK_SAVE_IDX)
 //   + ?saveLook + saveCurrentLook 제거 — 수동 Save 일원화(creation 상세 Add to My templates). creationTilesHtml/useSavedLook/removeLookFromTheme는 유지.
-if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootFromUrl()) setMode('shopping'); // (2026-07-01) 기본 모드=Shopping(Influencer 숨김)
+// 🎬 다른 페이지 "Edit video" → /studio?mode=ugc&editVideo=<idx> 로 와서 그 영상을 조리대에 올린다.
+//   편집기는 여기(studio)에만 있고 다른 피드는 이동만 한다. 부트에선 pending만 잡고, 피드 로드 후 연다.
+let PENDING_EDIT_VIDEO=0;
+function bootEditVideo(){
+  const idx=parseInt(new URLSearchParams(location.search).get('editVideo'),10)||0;
+  if(!idx)return false;
+  PENDING_EDIT_VIDEO=idx;
+  setMode('ugc');
+  if(window.toast)toast('영상을 편집기로 불러오는 중…');
+  return true;
+}
+// 피드 로드 후 — pending 영상을 조리대에 올린다. 피드에 있으면 기존 경로 재사용(idx로 배치 찾음 → items[0] 무관),
+//   없으면(옛/다음 페이지) by-result로 최소 배치를 직접 구성해 올린다.
+async function maybeOpenPendingEditVideo(){
+  const idx=PENDING_EDIT_VIDEO; if(!idx)return; PENDING_EDIT_VIDEO=0;
+  if(STUDIO_BATCHES.find(x=>x.items&&x.items.some(i=>i.idx===idx))){ ugcEditFromFeed(null, idx); return; }
+  try{
+    const r=await fetch('/api/generate/ugc/jobs/by-result/'+encodeURIComponent(idx));
+    const d=await r.json().catch(()=>null);
+    const job=(d&&d.success&&d.data)?d.data:null;
+    if(!job||!job.resultUrl){ if(window.toast)toast('이 영상은 편집할 수 없어요','error'); return; }
+    const b={key:'edit_'+idx,items:[{url:job.resultUrl,type:'reel',idx:idx}],failed:[],dateKey:'',dateLabel:''};
+    ugcFillPendingFromJob(b, job.id, job, job.outputType||'product-ad');
+    b.ugc._saved=true;                                 // 이미 저장된 영상 — 이탈 시 자동 커밋 대상 아님
+    STUDIO_BATCHES.unshift(b);
+    ugcPutOnBench(b);
+  }catch(e){ if(window.toast)toast('영상을 열 수 없어요','error'); }
+}
+if(!applyTryTemplate() && !bootRecipe() && !bootFromCreation() && !bootEditVideo() && !bootFromUrl()) setMode('shopping'); // (2026-07-01) 기본 모드=Shopping(Influencer 숨김)
 // 보유 마켓 템플릿 머지 — flags.js(defer)가 featureOn을 정의한 뒤 실행해야 하므로 DOMContentLoaded로 지연.
 // ▼▼▼ (2026-07-03 A안) /studio?tpl=<uuid|slug> 딥링크 — 옛 Library "View template" 대체. 해당 템플릿이 든 서브탭 + Manage 뷰로 열고 하이라이트. 롤백: 이 함수 + _studioInit 호출 + MANAGE_HL/mgCard hl 제거 ▼▼▼
 function maybeOpenManageTpl(){
@@ -6770,7 +6798,7 @@ loadBrandkit();
 loadContextSwitcher();
 loadRecipeDesc();
 maybeOpenTplModal(); // 홈 Popular templates 카드 진입: /studio?openTpl=<id> → 실제 템플릿 모달 열기
-loadStudioResults(); // (테스트) 최근 생성 결과를 박스 아래 피드로 복구(reload-safe)
+loadStudioResults().then(()=>maybeOpenPendingEditVideo()); // (테스트) 최근 생성 결과 복구 + editVideo 파라미터면 그 영상 조리대에
 // (2026-07-02) 무한 스크롤: 피드 하단 근처 도달 시 다음 페이지 로드
 window.addEventListener('scroll',function(){
   if(STUDIO_LOADING||STUDIO_DONE)return;

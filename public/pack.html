@@ -248,6 +248,9 @@
   .ch-dot{width:9px;height:9px;border-radius:3px;display:inline-block;border:1px solid rgba(255,255,255,.25);margin-right:1px}
   .rb-del-row{margin-top:10px}
   .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  .rb-edit-row{margin-top:8px}
+  .rb-editvid{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);text-decoration:none}
+  .rb-editvid:hover{filter:brightness(1.1)}
   .rb-del:hover{color:#ff5f6e;border-color:#ff5f6e;background:rgba(255,95,110,.1)}
   .rb-del:disabled{opacity:.6;cursor:default}
   .rb-date{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--dim);margin:8px 0 -6px;padding-top:18px;border-top:1px solid var(--border)}
@@ -577,7 +580,8 @@ async function pollVideo(jid) {
   if (j.resultUrl) { vidStatus = 'done'; vidUrl = j.resultUrl; renderVideoBlock(); if (window.toast) toast('광고 영상 완성!');
     // 서버가 완성 즉시 자동 저장(autoCommit)하므로 내 크리에이션을 새로고침해 영상을 띄운다.
     //   즉시분은 스틸을, 지연분(2.5s)은 저장이 막 끝난 영상을 잡는다.
-    if (typeof loadWorks === 'function') { loadWorks(); setTimeout(loadWorks, 2500); } }
+    if (typeof loadWorks === 'function') { loadWorks(); setTimeout(loadWorks, 2500); }
+    if (typeof loadEditableVideos === 'function') setTimeout(loadEditableVideos, 2500); }   // 새 영상의 편집가능 반영
   else { vidStatus = 'failed'; renderVideoBlock(); fail('영상 생성 실패: ' + (j.error || '크레딧·한도 확인')); }
 }
 /**
@@ -915,6 +919,12 @@ const RC_SVG = {
   priv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
 };
 let BATCHES = [];
+// 🎬 편집 가능한 영상 idx(대본 보유) — 크리에이션 카드 "Edit video" 노출 근거. Ad Video와 같은 소스(/ugc/jobs.editable).
+let PACK_EDITABLE = new Set();
+async function loadEditableVideos() {
+  try { const r = await fetch('/api/generate/ugc/jobs'); const d = await r.json().catch(() => null);
+    if (d && Array.isArray(d.editable)) { PACK_EDITABLE = new Set(d.editable); renderWorks(); } } catch (e) {}
+}
 function dateKeyOf(iso) { const d = iso ? new Date(iso) : new Date(); if (isNaN(d)) return ''; return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
 function fmtBatchDate(iso) { // Today / Yesterday / Wednesday, May 27, 2026
   const d = iso ? new Date(iso) : new Date(); if (isNaN(d)) return '';
@@ -1009,7 +1019,10 @@ function batchRowHtml(b) {
     const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });
     return chips.length ? `<div class="rb-src-row rb-ch-row">${chips.join('')}</div>` : ''; })();
   const del = `<div class="rb-del-row"><button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">🗑 삭제</button></div>`;
-  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${del}</div></div>`;
+  // 🎬 배치에 편집 가능한 영상이 있으면 "Edit video" — 편집은 Ad Video에서만. 여기선 이동만(같은 idx로 studio 진입).
+  const _vid = (b.items || []).find(i => i.type === 'reel' && PACK_EDITABLE.has(i.idx));
+  const editRow = _vid ? `<div class="rb-edit-row"><a class="rb-editvid" href="/studio?mode=ugc&editVideo=${_vid.idx}">✎ Edit video</a></div>` : '';
+  return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${editRow}${del}</div></div>`;
 }
 function renderWorks() {
   const grid = $('#resultsGrid'), empty = $('#worksEmpty');
@@ -1079,6 +1092,7 @@ function openActivePack(pack) {
   poll(PACK_ID);   // 상태별 복원: ref_ready→게이트 / processing→prep·생성 / failed→이어서
 }
 loadWorks(); // 페이지 로드 시 피드 채우기
+loadEditableVideos(); // 🎬 영상 "Edit video" 노출 근거
 reconnectActivePack();
 </script>
 </body>
