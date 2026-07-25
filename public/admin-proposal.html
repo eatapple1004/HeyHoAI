@@ -136,7 +136,11 @@ a.topnav:hover{color:var(--text)}
     </div>
     <div id="resGrid" class="res-grid"></div>
     <div id="resEmpty" class="empty" style="display:none">불러올 결과물이 없어요. (전체로 바꿔보거나, 아래에서 직접 업로드하세요)</div>
-    <div style="text-align:center;margin-top:14px"><button class="btn ghost" id="more" onclick="loadMore()" style="display:none">더 불러오기</button></div>
+    <div id="pager" style="display:none;justify-content:center;align-items:center;gap:14px;margin-top:16px">
+      <button class="btn ghost" id="pgPrev" onclick="gotoPage(-1)">‹ 이전</button>
+      <span id="pgInfo" class="count"></span>
+      <button class="btn ghost" id="pgNext" onclick="gotoPage(1)">다음 ›</button>
+    </div>
     <div class="hint"><b>1개 레퍼런스 → 여러 결과</b>를 묶어서 보여줍니다. 카드를 클릭하면 그 레퍼런스와 결과들이 통째로 선택됩니다. 프라이버시: 기본은 <b>내 계정</b> 생성물만.</div>
   </div>
 
@@ -174,39 +178,50 @@ a.topnav:hover{color:var(--text)}
 
 <script>
 const $ = (s) => document.querySelector(s);
-let scope = 'mine', offset = 0, loading = false, autoFellBack = false;
-const PAGE = 24;               // 그룹(레퍼런스) 수 기준
+let scope = 'mine', page = 0, loading = false, autoFellBack = false, pageHasMore = false;
+const PAGE = 12;               // 페이지당 그룹(레퍼런스) 수
 const selected = [];           // 선택 그룹: {gkey, beforeUrl, altBeforeUrl, beforeKind, caption, results:[{afterUrl, after?}], before?}
 const seen = new Set();        // 선택된 gkey
 let manualSeq = 0;
 
 function setScope(s) {
-  if (scope === s) return; scope = s; offset = 0;
+  if (scope === s) return; scope = s; page = 0;
   $('#scopeMine').classList.toggle('on', s === 'mine');
   $('#scopeAll').classList.toggle('on', s === 'all');
-  $('#resGrid').innerHTML = ''; loadMore();
+  loadPage();
 }
-function reloadResults() { offset = 0; $('#resGrid').innerHTML = ''; loadMore(); }
+function reloadResults() { page = 0; loadPage(); }
+function gotoPage(d) { const np = Math.max(0, page + d); if (np === page) return; if (d > 0 && !pageHasMore) return; page = np; loadPage(); document.querySelector('#resGrid').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
-async function loadMore() {
-  if (loading) return; loading = true; $('#more').disabled = true;
+async function loadPage() {
+  if (loading) return; loading = true; $('#pgPrev').disabled = true; $('#pgNext').disabled = true;
   try {
-    const r = await fetch(`/api/admin/proposal/results?scope=${scope}&limit=${PAGE}&offset=${offset}`);
-    if (r.status === 403) { $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '관리자 권한이 필요합니다. admin 계정으로 로그인하세요.'; return; }
+    const r = await fetch(`/api/admin/proposal/results?scope=${scope}&limit=${PAGE}&offset=${page * PAGE}`);
+    if (r.status === 403) { $('#resGrid').innerHTML = ''; $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '관리자 권한이 필요합니다. admin 계정으로 로그인하세요.'; return; }
     const d = await r.json();
     const groups = d.groups || [];
-    // '내 계정'이 비어 있으면 자동으로 '전체'로 전환(관리자 본인 계정에 생성물이 없는 흔한 경우).
-    if (!groups.length && offset === 0 && scope === 'mine' && !autoFellBack) {
+    // '내 계정' 1페이지가 비면 자동으로 '전체'로 전환(관리자 본인 계정에 생성물이 없는 흔한 경우).
+    if (!groups.length && page === 0 && scope === 'mine' && !autoFellBack) {
       autoFellBack = true;
-      setTimeout(() => setScope('all'), 0); // finally에서 loading=false 처리된 뒤 실행
+      setTimeout(() => setScope('all'), 0);
       return;
     }
-    offset += groups.length;
+    $('#resGrid').innerHTML = '';
     groups.forEach(renderGroupCard);
-    $('#resEmpty').style.display = (offset === 0 && !groups.length) ? 'block' : 'none';
-    $('#more').style.display = d.hasMore ? 'inline-block' : 'none';
-  } catch (e) { $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '불러오기 실패: ' + (e.message || e); }
-  finally { loading = false; $('#more').disabled = false; }
+    pageHasMore = !!d.hasMore;
+    $('#resEmpty').style.display = (page === 0 && !groups.length) ? 'block' : 'none';
+    updatePager();
+  } catch (e) { $('#resGrid').innerHTML = ''; $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '불러오기 실패: ' + (e.message || e); }
+  finally { loading = false; updatePager(); }
+}
+function updatePager() {
+  const show = page > 0 || pageHasMore;
+  $('#pager').style.display = show ? 'flex' : 'none';
+  $('#pgInfo').textContent = show ? (page + 1) + ' 페이지' : '';
+  $('#pgPrev').disabled = page <= 0 || loading;
+  $('#pgNext').disabled = !pageHasMore || loading;
+  $('#pgPrev').style.visibility = page > 0 ? 'visible' : 'hidden';
+  $('#pgNext').style.visibility = pageHasMore ? 'visible' : 'hidden';
 }
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -560,7 +575,7 @@ footer b{color:var(--sub)}
 </body></html>`;
 }
 
-loadMore();
+loadPage();
 loadSavedList();
 updateCurBadge();
 </script>
