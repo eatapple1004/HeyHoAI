@@ -456,7 +456,7 @@ async function confirmGenerate() {
 //   계획(config.plan)이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초를 깔고, 완료되는 대로 이미지로 채운다.
 //   계획 전(사진 분석 중)엔 개수를 모르므로 "분석 중" 상태. 완료 시 안 채워진 슬롯 = 실패 카드.
 const KIND_LABEL = { still: '스틸', composite: '합성', ref: '캐논 레퍼' };
-const KIND_ORDER = ['still', 'composite', 'ref'];
+const KIND_ORDER = ['ref', 'still', 'composite'];   // 캐논 레퍼 먼저(완료 화면 renderInteractive와 동일 순서)
 const filled = new Set();
 let built = false, genStartTs = 0, elapsedTimer = null;
 let PACK_ID = null, PACK = null;       // 현재 팩(액션 후 재렌더)
@@ -489,7 +489,8 @@ function showAnalyzing() {
 function buildGrid(slots) {
   const byKind = {};
   (slots || []).forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
-  $('#assets').innerHTML = KIND_ORDER.filter(k => byKind[k]).map(k =>
+  // 🎬 최상단 영상 블록 컨테이너(생성 중 '만드는 중' 표시용) — 매 폴링 틱에 채운다.
+  $('#assets').innerHTML = '<div id="packVideo"></div>' + KIND_ORDER.filter(k => byKind[k]).map(k =>
     `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">` +
     byKind[k].map(s => `<figure class="slot" data-slot="${esc(slotId(s))}"><div class="ph"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div><figcaption>${esc(s.label || s.key)}</figcaption></figure>`).join('') +
     `</div>`).join('');
@@ -741,6 +742,10 @@ async function poll(id) {
   // generate 단계(게이트 통과 후) — 슬롯 스피너 + 완료되는 대로 채움.
   if (!built) buildGrid(gatedSlots(plan));
   assets.forEach((a, i) => fillSlot(a, i));
+  // 🎬 영상도 만드는 중이면 최상단 컨테이너에 '만드는 중' 블록(생성 화면엔 CTA 없이 진행상태만).
+  const vjid = vidJob || (pack.config && pack.config.videoJobId);
+  const pv = document.getElementById('packVideo');
+  if (pv) pv.innerHTML = (vidUrl || (vjid && vidStatus !== 'failed')) ? videoBlockInner(pack) : '';
   $('#dlAll').classList.toggle('hide', assets.length === 0);
   if (status === 'done') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
   $('#status').innerHTML = '<span class="spin"></span>생성 중 · ' + assets.length + '개';
