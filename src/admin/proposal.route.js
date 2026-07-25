@@ -22,58 +22,72 @@ function toUrl(p) {
   return '/images/' + s.split('/').pop();
 }
 
+// 1개 레퍼런스 → n개 결과. 같은 레퍼런스(gkey)를 가진 결과들을 묶어서 그룹 단위로 페이지네이션.
+//   gkey = pack이면 pack_share_id(한 팩의 모든 컷 = 한 레퍼런스), 아니면 prompts.reference_image_path.
 router.get('/results', async (req, res, next) => {
   try {
-    const limit = Math.min(120, Math.max(1, parseInt(req.query.limit, 10) || 60));
+    const limit = Math.min(60, Math.max(1, parseInt(req.query.limit, 10) || 24)); // 그룹 수 기준
     const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
     const scope = req.query.scope === 'all' ? 'all' : 'mine';
+    const MAX_PER_GROUP = 24;
 
     const params = [limit, offset];
-    // 원본(before) 확보 = ① prompts.reference_image_path(업로드 원본) 또는 ② pack의 캐논 레퍼.
-    //   pack 결과는 metadata.pack_share_id → content_packs → pack_assets(kind='ref')로 캐논 레퍼를 붙인다.
-    //   (캐논 레퍼 자체(kind='ref')는 결과 목록에서 제외 — before==after 방지.)
-    let where = `gr.file_path IS NOT NULL AND gr.taken_down = false
-       AND COALESCE(gr.metadata->>'kind','') <> 'ref'
-       AND (pr.reference_image_path IS NOT NULL OR refpack.url IS NOT NULL)`;
+    let scopeWhere = '';
     if (scope === 'mine' && req.user && req.user.id) {
       params.push(req.user.id);
-      where += ` AND pr.user_id = $${params.length}`;
+      scopeWhere = ` AND pr.user_id = $${params.length}`;
     }
     const r = await query(
-      `SELECT gr.idx, gr.file_path, gr.model, gr.template_name, gr.template_source, gr.created_at,
-              pr.reference_image_path, refpack.url AS canonical_ref
-         FROM generation_results gr
-         JOIN prompts pr ON gr.prompt_idx = pr.idx
-         LEFT JOIN LATERAL (
-           SELECT pa.url FROM pack_assets pa
-             JOIN content_packs cp ON cp.id = pa.pack_id
-            WHERE cp.share_id = (gr.metadata->>'pack_share_id') AND pa.kind = 'ref'
-            ORDER BY pa.id DESC LIMIT 1
-         ) refpack ON true
-        WHERE ${where}
-        ORDER BY gr.idx DESC
-        LIMIT $1 OFFSET $2`,
+      `WITH base AS (
+         SELECT gr.idx, gr.file_path, gr.model, gr.template_name, gr.template_source,
+                pr.reference_image_path, refpack.url AS canonical_ref,
+                COALESCE(gr.metadata->>'pack_share_id', pr.reference_image_path) AS gkey,
+                (gr.template_source = 'pack') AS is_pack
+           FROM generation_results gr
+           JOIN prompts pr ON gr.prompt_idx = pr.idx
+           LEFT JOIN LATERAL (
+             SELECT pa.url FROM pack_assets pa
+               JOIN content_packs cp ON cp.id = pa.pack_id
+              WHERE cp.share_id = (gr.metadata->>'pack_share_id') AND pa.kind = 'ref'
+              ORDER BY pa.id DESC LIMIT 1
+           ) refpack ON true
+          WHERE gr.file_path IS NOT NULL AND gr.taken_down = false
+            AND COALESCE(gr.metadata->>'kind','') <> 'ref'
+            AND (pr.reference_image_path IS NOT NULL OR refpack.url IS NOT NULL)${scopeWhere}
+       ),
+       g AS (
+         SELECT gkey, MAX(idx) AS max_idx FROM base GROUP BY gkey ORDER BY MAX(idx) DESC LIMIT $1 OFFSET $2
+       )
+       SELECT b.*, g.max_idx FROM base b JOIN g ON b.gkey = g.gkey
+        ORDER BY g.max_idx DESC, b.idx DESC`,
       params
     );
-    const items = r.rows.map((row) => {
-      const orig = row.reference_image_path ? toUrl(row.reference_image_path) : '';
-      const canon = row.canonical_ref ? toUrl(row.canonical_ref) : '';
-      const beforeUrl = orig || canon;                 // 원본 우선, 없으면 캐논 레퍼
-      const altBeforeUrl = (orig && canon) ? canon : ''; // 둘 다 있으면 캐논을 토글 대상으로
-      return {
-        idx: row.idx,
-        afterUrl: toUrl(row.file_path),
-        beforeUrl,
-        altBeforeUrl,
-        beforeKind: orig ? 'original' : 'canonical',   // 현재 before가 원본인지 캐논인지
-        isPack: row.template_source === 'pack',
-        label: row.template_name || row.template_source || row.model || '',
-        model: row.model || '',
-        createdAt: row.created_at,
-      };
-    }).filter((it) => it.afterUrl && it.beforeUrl);
 
-    res.json({ success: true, items, scope, hasMore: r.rows.length === limit });
+    // 그룹 조립
+    const map = new Map();
+    for (const row of r.rows) {
+      let grp = map.get(row.gkey);
+      if (!grp) {
+        const orig = row.reference_image_path ? toUrl(row.reference_image_path) : '';
+        const canon = row.canonical_ref ? toUrl(row.canonical_ref) : '';
+        grp = {
+          gkey: row.gkey,
+          beforeUrl: orig || canon,                        // 원본 우선, 없으면 캐논 레퍼
+          altBeforeUrl: (orig && canon) ? canon : '',      // 둘 다 있으면 캐논을 토글 대상으로
+          beforeKind: orig ? 'original' : 'canonical',
+          isPack: row.is_pack,
+          label: row.template_name || row.template_source || row.model || '',
+          results: [],
+        };
+        map.set(row.gkey, grp);
+      }
+      if (grp.results.length < MAX_PER_GROUP) {
+        grp.results.push({ idx: row.idx, afterUrl: toUrl(row.file_path), label: row.template_name || '' });
+      }
+    }
+    const groups = [...map.values()].filter((g) => g.beforeUrl && g.results.length);
+
+    res.json({ success: true, groups, scope, hasMore: map.size === limit });
   } catch (e) { next(e); }
 });
 
