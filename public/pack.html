@@ -859,7 +859,10 @@ async function loadWorks() {
       const k = (x.metadata && x.metadata.batch_id) || x.prompt_idx;
       let b = byKey[k];
       if (!b) {
-        b = { key: k, items: [], idxs: [], promptText: x.prompt_text || '', templateSource: x.template_source || '', templateName: x.template_name || '', model: x.model || '', w: x.width, h: x.height, productImage: x.product_image || (x.metadata && x.metadata.product_image) || '', modelName: (x.metadata && x.metadata.model_name) || '', choices: (x.metadata && x.metadata.choices) || null, dateKey: dateKeyOf(x.created_at), dateLabel: fmtBatchDate(x.created_at) };
+        const md = x.metadata || {};
+        // 🔑 원본 사진 여러 장 — product_images(배열) 우선, 없으면 단수 product_image 폴백(옛 데이터·studio).
+        const srcImgs = (Array.isArray(md.product_images) && md.product_images.length) ? md.product_images : ((x.product_image || md.product_image) ? [x.product_image || md.product_image] : []);
+        b = { key: k, items: [], idxs: [], promptText: x.prompt_text || '', templateSource: x.template_source || '', templateName: x.template_name || '', model: x.model || '', w: x.width, h: x.height, productImages: srcImgs, modelName: md.model_name || '', choices: md.choices || null, dateKey: dateKeyOf(x.created_at), dateLabel: fmtBatchDate(x.created_at) };
         byKey[k] = b; BATCHES.push(b);
       }
       const fn = x.file_path.split('/').pop();
@@ -895,9 +898,11 @@ function batchRowHtml(b) {
     + `<span class="spec rb-spec-dim"${dimStatic ? '' : ' hidden'}>${dimStatic}</span>`
     + `<span class="spec rb-spec-ratio"${ratioStatic ? '' : ' hidden'}>${ratioStatic ? `<b>${ratioStatic}</b>` : ''}</span>`
     + (ML ? `<span class="spec">${esc(ML)}</span>` : '') + `</div>`;
-  const srcRow = ((b.productImage || b.modelName) ? `<div class="rb-src-row">`
-    // data-u 로 넘긴다 — esc()가 따옴표를 엔티티로 바꿔서 onclick 안의 JS 문자열 리터럴에 직접 못 넣는다.
-    + (b.productImage ? `<img class="rb-src-thumb" src="${esc(b.productImage)}" data-u="${esc(b.productImage)}" alt="" loading="lazy" title="올린 원본 사진 — 클릭하면 크게 봅니다" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">` : '')
+  const srcImgs = b.productImages || [];
+  // 🔑 원본을 올린 개수만큼 다 보여준다(각 클릭 → 크게 보기). data-u 로 넘긴다(esc가 따옴표를 엔티티로 바꿔 onclick 리터럴에 직접 못 넣음).
+  const srcThumbs = srcImgs.map((u, i) => `<img class="rb-src-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="올린 원본 사진 ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — 클릭하면 크게 봅니다" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
+  const srcRow = ((srcImgs.length || b.modelName) ? `<div class="rb-src-row">`
+    + srcThumbs
     + (b.modelName ? `<span class="rb-src-item rb-src-model"><span class="k">Model</span>${esc(b.modelName)}</span>` : '') + `</div>` : '');
   const chRow = (() => { const c = b.choices; if (!c || typeof c !== 'object') return '';
     const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });

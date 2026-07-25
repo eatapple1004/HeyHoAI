@@ -116,6 +116,17 @@ function packSourceUrl(pack) {
   return ref ? `/images/${String(ref).split('/').pop()}` : null;
 }
 
+/** 이 팩에 올라온 원본 사진 **전부**(source_0, source_1…). 유저가 여러 각도를 넣으면 카드에 다 보여준다.
+ *  🔑 예전엔 첫 장(packSourceUrl)만 실어 "여러 개 넣었는데 하나만 보임" 버그. cut_key(source_N) 순으로 정렬. */
+function packSourceUrls(pack) {
+  const srcs = (pack.assets || []).filter((x) => x.kind === 'source' && x.url)
+    .sort((a, b) => String(a.cut_key || '').localeCompare(String(b.cut_key || ''), undefined, { numeric: true }))
+    .map((x) => x.url);
+  if (srcs.length) return srcs;
+  const one = packSourceUrl(pack);
+  return one ? [one] : [];
+}
+
 /** 팩의 prompt_idx 확보(크리에이션 dual-write 그룹핑 — 재생성분도 같은 배치에 묶이게). config에 캐시·영속. */
 async function ensurePackPrompt(pack, userId) {
   pack.config = pack.config || {};
@@ -139,7 +150,16 @@ async function recordSource(pack, absPath, i) {
   fs.writeFileSync(path.join(imagesDir, name), buf);   // 로컬 서빙
   await mediaStore.put(name, buf).catch(() => {});     // 영속(R2) best-effort
   await repo.addAsset({ packId: pack.id, kind: 'source', cutKey: `source_${i}`, label: '원본', url: `/images/${name}` });
-  return `tmp/images/${name}`;
+  return { durable: `tmp/images/${name}`, url: `/images/${name}` };
+}
+
+/** 이 팩 원본 사진 서빙 URL 전부 — assets(재조회 경로) 우선, 없으면 config(prepPack 인메모리). */
+function packSourceUrlsFrom(pack) {
+  const fromAssets = packSourceUrls(pack);
+  if (fromAssets.length) return fromAssets;
+  const cfg = pack.config || {};
+  if (Array.isArray(cfg.sourceRefs) && cfg.sourceRefs.length) return cfg.sourceRefs.map((r) => `/images/${String(r).split('/').pop()}`);
+  return cfg.sourceRef ? [`/images/${String(cfg.sourceRef).split('/').pop()}`] : [];
 }
 
 /** 자산 하나 적재: tmp/images 발행(+R2) + pack_assets(새 행=버전) + generation_results dual-write. 반환 {kind,cut_key,label,url}. */
@@ -153,12 +173,19 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) 
   try {
     const idx = await ensurePackPrompt(pack, userId);
     if (idx != null) {
+      // product_image(s) = 유저가 올린 원본 사진. studio 는 characters 조인으로 받지만 팩은 캐릭터가 없어
+      //   그 자리가 늘 비었다 → 직접 실어준다(프론트가 metadata 폴백을 읽는다).
+      //   🔑 여러 각도를 넣으면 전부(product_images) — 예전엔 첫 장만 실어 "하나만 보임" 버그.
+      const srcUrls = packSourceUrlsFrom(pack);
+      // 🏷 캐논 레퍼는 딜리버리 컷이 아니라 "생성 기준"이다 → 피드에서 그렇게 명시(안 그러면 'main' 결과물처럼 보인다).
+      const tName = kind === 'ref'
+        ? ('캐논 레퍼' + (label && label !== 'main' ? ` · ${label}` : ''))
+        : (label || '콘텐츠 팩');
       await resultRepo.insert({
         promptIdx: idx, filePath: `tmp/images/${name}`, model: PACK_MODEL,  // 피드가 basename → /images/<name> 서빙
-        // product_image = 유저가 올린 원본 사진. studio 는 characters 조인으로 받지만 팩은 캐릭터가 없어
-        //   그 자리가 늘 비었다 → 여기서 직접 실어준다(프론트가 metadata 폴백을 이미 읽는다).
-        metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id, ...(packSourceUrl(pack) ? { product_image: packSourceUrl(pack) } : {}) },
-        visibility: 'private', templateSource: 'pack', templateName: label || '콘텐츠 팩',
+        metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id,
+          ...(srcUrls[0] ? { product_image: srcUrls[0], product_images: srcUrls } : {}) },
+        visibility: 'private', templateSource: 'pack', templateName: tName,
       });
     }
   } catch (e) { logger.warn?.(`[pack ${pack.id}] result insert failed: ${e.message}`); }
@@ -227,13 +254,16 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
   });
   // 업로드 원본을 영속 저장(R2·서빙) + 첫 장을 prompt.reference_image_path로 연결(before/after·제안서용).
   try {
+    const sourceRefs = [];   // 🔑 원본 서빙 URL **전부**(여러 각도 넣으면 카드에 다 보이게)
     for (let i = 0; i < durableSources.length; i++) {
       const ref = await recordSource(pack, durableSources[i], i);
-      if (i === 0) pack.config.sourceRef = ref; // 인메모리 — 같은 prepPack 실행 중 ensurePackPrompt가 읽어 prompt에 연결
+      if (i === 0) pack.config.sourceRef = ref.durable; // 인메모리 — 같은 prepPack 실행 중 ensurePackPrompt가 읽어 prompt에 연결
+      sourceRefs.push(ref.url);
     }
+    pack.config.sourceRefs = sourceRefs;   // 인메모리(recordAsset이 프리p 중 dual-write할 때 읽음)
     // 🔑 DB에도 남긴다 — 재생성·컨셉추가·재개는 **별도 요청**이라 인메모리 값이 없다.
     //   그 경로들도 크리에이션 카드에 원본 썸네일을 붙이려면 여기 저장된 걸 읽어야 한다.
-    if (pack.config.sourceRef) await repo.mergeConfig(pack.id, { sourceRef: pack.config.sourceRef });
+    if (pack.config.sourceRef) await repo.mergeConfig(pack.id, { sourceRef: pack.config.sourceRef, sourceRefs });
   } catch (e) { logger.warn?.(`[pack ${pack.id}] source persist failed: ${e.message}`); }
   try {
     await runPack({
