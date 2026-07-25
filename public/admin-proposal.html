@@ -74,6 +74,16 @@ h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135d
 .upl{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
 .upl .field{margin-bottom:0}
 .count{font-size:.82rem;color:var(--dim)}
+/* 저장된 제안서 목록 */
+.saved-list{display:flex;flex-direction:column;gap:8px}
+.saved-item{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--panel2)}
+.saved-item.cur{border-color:var(--accent2);box-shadow:0 0 0 1px rgba(124,82,232,.4)}
+.saved-item .si-main{flex:1;min-width:0}
+.saved-item .si-co{font-weight:700;font-size:.92rem}
+.saved-item .si-sub{font-size:.78rem;color:var(--faint);margin-top:2px}
+.saved-item button{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;cursor:pointer;font-size:.8rem;padding:6px 12px;font-family:inherit}
+.saved-item button.edit{color:var(--accent2);border-color:rgba(124,82,232,.4)}
+.saved-item button.del{color:var(--red);border-color:rgba(248,113,113,.35)}
 a.topnav{color:var(--dim);text-decoration:none;font-size:.84rem;border:1px solid var(--border);padding:6px 12px;border-radius:8px}
 a.topnav:hover{color:var(--text)}
 </style>
@@ -86,6 +96,17 @@ a.topnav:hover{color:var(--text)}
       <div class="sub">우리 결과물의 <b>원본 → Doppia 결과</b> before/after를 골라, 특정 회사 맞춤 소개 HTML을 만듭니다. (이미지 포함 자체완결 파일)</div>
     </div>
     <a class="topnav" href="/studio">← 스튜디오</a>
+  </div>
+
+  <!-- 0. 저장된 제안서 -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <h2 style="margin:0">📁 저장된 제안서 <span class="count" id="curBadge"></span></h2>
+      <span class="spacer"></span>
+      <button class="btn ghost" onclick="newProposal()">＋ 새로 만들기</button>
+      <button class="btn ghost" onclick="loadSavedList()">↻ 새로고침</button>
+    </div>
+    <div id="savedList" class="saved-list"><div class="empty">불러오는 중…</div></div>
   </div>
 
   <!-- 1. 회사 맞춤 정보 -->
@@ -137,12 +158,15 @@ a.topnav:hover{color:var(--text)}
     <div id="trayEmpty" class="empty">아직 고른 결과물이 없어요. 위에서 클릭하거나 직접 추가하세요.</div>
   </div>
 
-  <!-- 4. 생성 -->
+  <!-- 4. 저장 & 생성 -->
   <div class="card">
-    <h2><span class="n">4</span> 제안서 HTML 생성</h2>
-    <button class="btn big" id="build" onclick="buildProposal()">📄 제안서 HTML 만들기 (이미지 포함 다운로드)</button>
+    <h2><span class="n">4</span> 저장 · 제안서 HTML 생성</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn" id="save" onclick="saveProposal()" style="background:transparent;border:1px solid var(--accent2);color:var(--accent2)">💾 저장 (나중에 편집)</button>
+      <button class="btn big" id="build" onclick="buildProposal()" style="flex:1;min-width:240px">📄 제안서 HTML 만들기 (이미지 포함 다운로드)</button>
+    </div>
     <div id="buildErr" class="err"></div>
-    <div class="hint">이미지를 파일 안에 base64로 임베드해 <b>단독 .html 하나</b>로 저장됩니다 — 이메일 첨부·오프라인 열람 OK.</div>
+    <div class="hint"><b>저장</b>하면 이 구성(회사 정보·선택 목록)이 서버에 보관돼 나중에 불러와 편집할 수 있습니다. <b>HTML 만들기</b>는 이미지 포함 단독 파일로 다운로드합니다.</div>
   </div>
 </div>
 
@@ -269,6 +293,91 @@ function zoomRef(i) { const s = selected[i]; if (s) showZoom(s.beforeUrl); }
 function zoomRes(i, ri) { const s = selected[i]; if (s && s.results[ri]) showZoom(s.results[ri].afterUrl); }
 function closeZoom() { $('#lightbox').classList.remove('on'); $('#lbImg').src = ''; }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(); });
+
+// ─── 저장 / 불러오기 / 편집 ───
+let currentId = null;   // 현재 편집 중인 저장 제안서 id(있으면 저장 시 update)
+function collectMeta() {
+  return {
+    company: $('#company').value.trim(), title: $('#ptitle').value.trim(),
+    about: $('#about').value.trim(), intro: $('#intro').value.trim(), svc: $('#svc').value.trim(),
+    ctaLabel: $('#ctaLabel').value.trim(), ctaUrl: $('#ctaUrl').value.trim(),
+  };
+}
+// 저장용 선택 목록 — URL/dataURL만(빌드 시 base64 임베드). 전송 크기 위해 transient 필드 제외.
+function selectionForSave() {
+  return selected.map(s => ({
+    gkey: s.gkey, beforeUrl: s.beforeUrl, altBeforeUrl: s.altBeforeUrl || '', beforeKind: s.beforeKind || 'original',
+    caption: s.caption || '', results: s.results.map(r => ({ afterUrl: r.afterUrl })),
+  }));
+}
+async function saveProposal() {
+  const btn = $('#save'), m = collectMeta();
+  if (!m.company) { $('#buildErr').textContent = '저장하려면 대상 회사명을 입력하세요.'; return; }
+  $('#buildErr').textContent = '';
+  btn.disabled = true; const t = btn.textContent; btn.textContent = '저장 중…';
+  try {
+    const body = { id: currentId || undefined, ...m, selection: selectionForSave() };
+    const r = await fetch('/api/admin/proposal/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json(); if (!d.success) throw new Error(d.error || '실패');
+    currentId = d.id; updateCurBadge();
+    await loadSavedList();
+    if (window.toast) toast('저장됐어요'); else btn.textContent = '저장됨 ✓';
+  } catch (e) { $('#buildErr').textContent = '저장 실패: ' + (e.message || e); }
+  finally { btn.disabled = false; btn.textContent = t; }
+}
+function updateCurBadge() { $('#curBadge').textContent = currentId ? '· 편집 중' : ''; }
+async function loadSavedList() {
+  const box = $('#savedList');
+  try {
+    const d = await (await fetch('/api/admin/proposal/list')).json();
+    const items = d.items || [];
+    if (!items.length) { box.innerHTML = '<div class="empty">저장된 제안서가 없어요. 아래에서 만들고 💾 저장을 누르세요.</div>'; return; }
+    box.innerHTML = items.map(it => `<div class="saved-item${it.id === currentId ? ' cur' : ''}">
+        <div class="si-main"><div class="si-co">${esc(it.company)}${it.title ? ' <span style="color:var(--faint);font-weight:400">· ' + esc(it.title) + '</span>' : ''}</div>
+          <div class="si-sub">레퍼런스 ${it.groups || 0}개 · ${new Date(it.updated_at).toLocaleString('ko-KR')}</div></div>
+        <button class="edit" onclick="editProposal('${it.id}')">불러오기</button>
+        <button class="del" onclick="deleteProposal('${it.id}','${esc(it.company)}')">삭제</button>
+      </div>`).join('');
+  } catch (e) { box.innerHTML = '<div class="empty">목록 실패: ' + esc(e.message || e) + '</div>'; }
+}
+async function editProposal(id) {
+  try {
+    const d = await (await fetch('/api/admin/proposal/saved/' + id)).json();
+    if (!d.success) throw new Error(d.error || '실패');
+    const p = d.proposal, m = p.meta || {};
+    $('#company').value = p.company || ''; $('#ptitle').value = m.title || p.title || '';
+    $('#about').value = m.about || ''; $('#intro').value = m.intro || ''; $('#svc').value = m.svc || '';
+    $('#ctaLabel').value = m.ctaLabel || ''; $('#ctaUrl').value = m.ctaUrl || '';
+    // 선택 목록 복원
+    selected.length = 0; seen.clear();
+    (p.selection || []).forEach(s => {
+      selected.push({ gkey: s.gkey, beforeUrl: s.beforeUrl, altBeforeUrl: s.altBeforeUrl || '', beforeKind: s.beforeKind || 'original', caption: s.caption || '', results: (s.results || []).map(r => ({ afterUrl: r.afterUrl })) });
+      seen.add(s.gkey);
+    });
+    currentId = id; updateCurBadge(); renderTray();
+    // 그리드에 이미 그려진 카드의 선택표시 동기화
+    document.querySelectorAll('.grp-card').forEach(el => el.classList.toggle('sel', seen.has(el.dataset.k)));
+    loadSavedList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.toast) toast('불러왔어요 — 편집 후 다시 저장하세요');
+  } catch (e) { $('#buildErr').textContent = '불러오기 실패: ' + (e.message || e); }
+}
+async function deleteProposal(id, co) {
+  if (!confirm(`'${co}' 제안서를 삭제할까요?`)) return;
+  try {
+    await fetch('/api/admin/proposal/saved/' + id, { method: 'DELETE' });
+    if (currentId === id) { currentId = null; updateCurBadge(); }
+    loadSavedList();
+  } catch (e) { $('#buildErr').textContent = '삭제 실패: ' + (e.message || e); }
+}
+function newProposal() {
+  currentId = null; updateCurBadge();
+  ['#company', '#ptitle', '#intro', '#ctaUrl'].forEach(s => { const el = $(s); if (el) el.value = ''; });
+  selected.length = 0; seen.clear(); renderTray();
+  document.querySelectorAll('.grp-card').forEach(el => el.classList.remove('sel'));
+  loadSavedList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 // URL 이미지를 base64 dataURL로 (자체포함 파일용). 같은 출처라 fetch 쿠키 인증 OK.
 async function urlToDataUrl(url) {
@@ -438,6 +547,8 @@ footer b{color:var(--sub)}
 }
 
 loadMore();
+loadSavedList();
+updateCurBadge();
 </script>
 </body>
 </html>
