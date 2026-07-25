@@ -65,6 +65,24 @@ h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135d
 .lb.on{display:flex}
 .lb img{max-width:94vw;max-height:92vh;border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
 .lb .lb-x{position:fixed;top:18px;right:22px;color:#fff;font-size:26px;font-weight:700;cursor:pointer;line-height:1;opacity:.85}
+/* 그룹 선택 모달 — 결과 크게 보고 개별 선택 */
+.gm{position:fixed;inset:0;z-index:95;display:none;align-items:center;justify-content:center;background:rgba(6,6,12,.82);padding:24px}
+.gm.on{display:flex}
+.gm-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:min(1040px,96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.gm-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.gm-head img.ref{width:56px;height:56px;object-fit:contain;border-radius:9px;background:#efeaf8;border:1px solid var(--border)}
+.gm-head .t{font-weight:700;font-size:.98rem}
+.gm-head .s{font-size:.8rem;color:var(--dim);margin-top:2px}
+.gm-head .allbtn{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:8px 13px;font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap}
+.gm-head .allbtn:hover{color:var(--text);border-color:var(--accent2)}
+.gm-body{overflow:auto;padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.gm-cell{position:relative;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;aspect-ratio:1/1;background:#f4f2fb}
+.gm-cell img{width:100%;height:100%;object-fit:contain;display:block}
+.gm-cell.on{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(124,82,232,.4)}
+.gm-cell .ck{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.5);border:1.5px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;opacity:.55;transition:opacity .12s}
+.gm-cell.on .ck{opacity:1;background:var(--accent);border-color:var(--accent)}
+.gm-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;padding:14px 20px;border-top:1px solid var(--border)}
+.gm-foot .cnt{margin-right:auto;font-size:.86rem;color:var(--dim);font-weight:600}
 .tray-item input.cap{background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:.86rem;font-family:inherit;width:100%}
 .tray-item .ord{display:flex;flex-direction:column;gap:3px}
 .tray-item .ord button,.tray-item .rm{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;cursor:pointer;font-size:.8rem;padding:3px 8px;font-family:inherit}
@@ -176,6 +194,19 @@ a.topnav:hover{color:var(--text)}
 
 <div class="lb" id="lightbox" onclick="closeZoom()"><span class="lb-x">✕</span><img id="lbImg" src="" alt=""></div>
 
+<!-- 그룹 선택 모달 -->
+<div class="gm" id="groupModal" onclick="if(event.target===this)closeGroupModal()">
+  <div class="gm-box">
+    <div class="gm-head" id="gmHead"></div>
+    <div class="gm-body" id="gmBody"></div>
+    <div class="gm-foot">
+      <span class="cnt" id="gmCnt"></span>
+      <button class="btn ghost" onclick="closeGroupModal()">취소</button>
+      <button class="btn" onclick="confirmGroupModal()">확정</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const $ = (s) => document.querySelector(s);
 let scope = 'mine', page = 0, loading = false, autoFellBack = false, pageHasMore = false;
@@ -238,18 +269,51 @@ function renderGroupCard(g) {
       <div class="grp-arrow">→</div>
       <div><div class="grp-afters-h">결과 ${n}종</div><div class="grp-strip">${strip}</div></div>
     </div><div class="chk">✓</div>`;
-  el.onclick = () => toggleSelectGroup(g, el);
+  el.onclick = () => openGroupModal(g);
   $('#resGrid').appendChild(el);
 }
 
-function toggleSelectGroup(g, el) {
+// ─── 그룹 선택 모달 — 결과 크게 보고 개별 선택 후 확정/취소 ───
+let gmGroup = null, gmPicked = new Set();
+function openGroupModal(g) {
+  gmGroup = g;
+  const existing = selected.find(s => s.gkey === g.gkey);
+  // 이미 선택된 그룹이면 그 선택을, 아니면 기본으로 전부 선택(원하면 해제).
+  gmPicked = new Set(existing ? existing.results.map(r => r.afterUrl) : g.results.map(r => r.afterUrl));
+  $('#gmHead').innerHTML = `<img class="ref" src="${esc(g.beforeUrl)}" alt="레퍼런스">
+      <div><div class="t">이 레퍼런스로 만든 결과 ${g.results.length}종</div><div class="s">제안서에 넣을 컷을 골라 확정하세요</div></div>
+      <button class="allbtn" onclick="gmToggleAll()">전체 선택 / 해제</button>`;
+  renderGmBody();
+  $('#groupModal').classList.add('on');
+}
+function renderGmBody() {
+  $('#gmBody').innerHTML = gmGroup.results.map((r, ri) =>
+    `<div class="gm-cell${gmPicked.has(r.afterUrl) ? ' on' : ''}" onclick="gmToggle(${ri})"><img src="${esc(r.afterUrl)}" loading="lazy" onerror="this.style.opacity=.25"><div class="ck">✓</div></div>`).join('');
+  updateGmCnt();
+}
+function gmToggle(ri) {
+  const u = gmGroup.results[ri].afterUrl;
+  if (gmPicked.has(u)) gmPicked.delete(u); else gmPicked.add(u);
+  const cell = $('#gmBody').children[ri]; if (cell) cell.classList.toggle('on', gmPicked.has(u));
+  updateGmCnt();
+}
+function gmToggleAll() {
+  if (gmPicked.size >= gmGroup.results.length) gmPicked.clear();
+  else gmGroup.results.forEach(r => gmPicked.add(r.afterUrl));
+  renderGmBody();
+}
+function updateGmCnt() { $('#gmCnt').textContent = `${gmPicked.size} / ${gmGroup.results.length}개 선택`; }
+function closeGroupModal() { $('#groupModal').classList.remove('on'); gmGroup = null; }
+function confirmGroupModal() {
+  if (!gmGroup) return;
+  const g = gmGroup;
+  const chosen = g.results.filter(r => gmPicked.has(r.afterUrl)).map(r => ({ afterUrl: r.afterUrl }));
   const i = selected.findIndex(s => s.gkey === g.gkey);
-  if (i >= 0) { selected.splice(i, 1); seen.delete(g.gkey); if (el) el.classList.remove('sel'); }
-  else {
-    selected.push({ gkey: g.gkey, beforeUrl: g.beforeUrl, altBeforeUrl: g.altBeforeUrl || '', beforeKind: g.beforeKind || 'original', caption: '', results: g.results.map(r => ({ afterUrl: r.afterUrl })) });
-    seen.add(g.gkey); if (el) el.classList.add('sel');
-  }
-  renderTray();
+  if (!chosen.length) { if (i >= 0) { selected.splice(i, 1); seen.delete(g.gkey); } }
+  else if (i >= 0) { selected[i].results = chosen; }
+  else { selected.push({ gkey: g.gkey, beforeUrl: g.beforeUrl, altBeforeUrl: g.altBeforeUrl || '', beforeKind: g.beforeKind || 'original', caption: '', results: chosen }); seen.add(g.gkey); }
+  document.querySelectorAll('.grp-card').forEach(el => el.classList.toggle('sel', seen.has(el.dataset.k)));
+  renderTray(); closeGroupModal();
 }
 
 async function addManual() {
@@ -307,7 +371,7 @@ function showZoom(url) { if (!url) return; $('#lbImg').src = url; $('#lightbox')
 function zoomRef(i) { const s = selected[i]; if (s) showZoom(s.beforeUrl); }
 function zoomRes(i, ri) { const s = selected[i]; if (s && s.results[ri]) showZoom(s.results[ri].afterUrl); }
 function closeZoom() { $('#lightbox').classList.remove('on'); $('#lbImg').src = ''; }
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeZoom(); closeGroupModal(); } });
 
 // ─── 저장 / 불러오기 / 편집 ───
 let currentId = null;   // 현재 편집 중인 저장 제안서 id(있으면 저장 시 update)
