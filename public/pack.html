@@ -71,6 +71,13 @@
   .more-btn.ghost{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);box-shadow:none}
   .more-btn.ghost:hover{color:var(--text);background:rgba(255,255,255,.09)}
   .more-btn:disabled{opacity:.55;cursor:default;filter:none}
+  /* 🎬 광고 영상 블록 — 결과 최상단 */
+  .pv-cta{margin:0 0 20px;padding:16px 20px;border:1px solid var(--border2);border-radius:14px;background:linear-gradient(180deg,rgba(124,82,232,.10),rgba(124,82,232,.02));display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .pv-cta.busy{background:rgba(255,255,255,.02);border-style:dashed}
+  .pv-txt{display:flex;flex-direction:column;gap:3px;min-width:200px;flex:1}
+  .pv-txt b{font-size:14px;font-weight:700;color:var(--text)}
+  .pv-txt span{font-size:12px;color:var(--dim);line-height:1.5}
+  .grid figure.rescard.vid video{width:100%;display:block;border-radius:12px 12px 0 0;background:#000;aspect-ratio:9/16;object-fit:contain}
   .ver{position:absolute;top:7px;left:7px;display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:8px;padding:2px 4px;z-index:3}
   .ver span{font-size:10px;font-weight:700;color:#fff;padding:0 2px;font-variant-numeric:tabular-nums}
   .verb{width:18px;height:18px;border:none;background:none;color:#fff;font-size:10px;cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0}
@@ -453,6 +460,7 @@ function fname(a) { return slug(a.label || a.cut_key || a.kind) + '.jpg'; }  // 
 
 function startGen() {
   built = false; filled.clear(); gatePassed = false;
+  vidJob = null; vidStatus = null; vidUrl = null; vidPolling = false;   // 새 팩 = 영상 상태 초기화
   showAnalyzing();
   genStartTs = Date.now();
   if (elapsedTimer) clearInterval(elapsedTimer);
@@ -504,7 +512,45 @@ function renderInteractive(pack) {
   // 섹션 하나 렌더(제목 + 그리드).
   const section = (k) => byKind[k] ? `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('')}</div>` : '';
   // 🔀 순서: **캐논 레퍼(생성 기준) 먼저** → 내 컨셉 미리보기 → 스틸. (합성은 더 이상 만들지 않음 — 옛 팩에 남아 있으면 스틸 뒤에.)
-  $('#assets').innerHTML = section('ref') + conceptHtml + section('still') + section('composite') + moreBarHtml(pack);
+  //   맨 위에 🎬 영상 블록(있으면 영상, 만드는 중, 또는 만들기 CTA).
+  $('#assets').innerHTML = `<div id="packVideo">${videoBlockInner(pack)}</div>` + section('ref') + conceptHtml + section('still') + section('composite') + moreBarHtml(pack);
+}
+// ── 🎬 광고 영상 (선택형·과금) ─────────────────────────────────────────────
+//   팩이 이미 분석한 제품·컨셉으로 Ad Video 엔진이 한 편. 매 생성마다 안 굽고 버튼 눌렀을 때만(영상=초당 과금).
+let vidJob = null, vidStatus = null, vidUrl = null, vidPolling = false;
+function videoBlockInner(pack) {
+  const jid = vidJob || (pack && pack.config && pack.config.videoJobId) || null;
+  if (vidUrl) {
+    return `<h2>광고 영상</h2><div class="grid"><figure class="rescard vid"><a class="dl" href="${esc(vidUrl)}" download="광고영상.mp4" title="다운로드">⤓</a><video src="${esc(vidUrl)}" controls playsinline preload="metadata"></video><figcaption>이 제품으로 만든 광고 영상</figcaption></figure></div>`;
+  }
+  if (jid && vidStatus !== 'failed') {
+    ensureVideoPoll(jid);
+    return `<div class="pv-cta busy"><div class="rb-spin"></div><div class="pv-txt"><b>광고 영상 만드는 중…</b><span>대본 → 씬 → 모션 → 조립까지 1~3분. 다 되면 여기에 떠요.</span></div></div>`;
+  }
+  return `<div class="pv-cta"><div class="pv-txt"><b>🎬 이 제품으로 광고 영상</b><span>팩이 분석한 제품·컨셉으로 릴스 광고 한 편 — 편집 없이 알아서. (크레딧 사용)</span></div><button class="more-btn" onclick="makeVideo(this)">영상 만들기</button></div>`;
+}
+function renderVideoBlock() { const el = document.getElementById('packVideo'); if (el) el.innerHTML = videoBlockInner(PACK); }
+async function makeVideo(btn) {
+  if (!confirm('이 제품으로 광고 영상 한 편을 만들까요?\n대본→영상까지 보통 1~3분 걸리고, 크레딧이 사용됩니다.')) return;
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/pack/' + PACK_ID + '/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    vidJob = d.jobId; vidStatus = 'processing'; vidUrl = null;
+    renderVideoBlock(); ensureVideoPoll(d.jobId);
+    if (window.toast) toast('영상 만들기 시작 — 완성되면 맨 위에 떠요');
+  } catch (e) { if (btn) btn.disabled = false; fail('영상 만들기 실패: ' + (e.message || e)); }
+}
+function ensureVideoPoll(jid) { if (vidPolling || !jid) return; vidPolling = true; pollVideo(jid); }
+async function pollVideo(jid) {
+  let j;
+  try { const r = await fetch('/api/generate/ugc/jobs/' + jid); const d = await r.json(); j = d.data; }
+  catch (e) { setTimeout(() => pollVideo(jid), 4000); return; }
+  if (!j) { vidPolling = false; return; }
+  if (j.status === 'processing') { setTimeout(() => pollVideo(jid), 4000); return; }
+  vidPolling = false;
+  if (j.resultUrl) { vidStatus = 'done'; vidUrl = j.resultUrl; renderVideoBlock(); if (window.toast) toast('광고 영상 완성!'); }
+  else { vidStatus = 'failed'; renderVideoBlock(); fail('영상 생성 실패: ' + (j.error || '크레딧·한도 확인')); }
 }
 /**
  * ➕ 더 뽑기 바 — 결과 하단. 두 갈래:

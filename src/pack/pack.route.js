@@ -8,6 +8,7 @@
  *   POST /api/pack/:id/extend          {count?}       이미 기획된 남은 컷 더 생성(플래너 0회)
  *   POST /api/pack/:id/more-like       {cutKey,count?} 이 컷과 같은 결로 형제 컷 N장(플래너 1회)
  *   POST /api/pack/:id/concept-more    {brief,count?}  자유 컨셉으로 새 방향 컷 N장(플래너 1회)
+ *   POST /api/pack/:id/video                           팩 재료로 광고 영상 1편(Ad Video 엔진, 선택형·과금)
  *
  * 통합 시 index.js 1줄: app.use('/api/pack', requireAuth, require('./pack/pack.route'));
  */
@@ -28,6 +29,7 @@ const { composeRow } = require('./compositor');              // 세트 합성(ge
 const { suiteFor, STATE_COMPOSITES } = require('./suites');  // 컷 라이브러리(컨셉 추가) + refBake 스펙 + 상태 합성
 const promptRepo = require('../generate/prompt.repository'); // 크리에이션 dual-write(내 크리에이션·라이브러리·공유 = generation_results→prompts)
 const resultRepo = require('../generate/result.repository');
+const ugcVideoService = require('../ugc/ugcVideo.service');   // 🎬 팩 재료로 광고 영상 1편(Ad Video 엔진 재사용)
 const teamCredit = require('../teams/team.credit');         // 활성 팀 — prompt.team_id에 붙여야 팀 유저 피드에 뜸
 
 const router = Router();
@@ -600,6 +602,55 @@ router.post('/:id/concept-more', async (req, res, next) => {
     res.json({ ok: true, adding: count, auto: !brief });
     setImmediate(() => growPack(pack, { brief, count, userId: req.user && req.user.id }));
   } catch (e) { next(e); }
+});
+
+/**
+ * 🎬 광고 영상 만들기 — 팩 재료(제품·카테고리·컨셉·캐논 레퍼)로 **한 편** 생성한다(Ad Video 엔진 재사용).
+ *
+ *   🔑 자동 아님·선택형: 영상은 초당 과금(Kling+ElevenLabs)이라 팩 생성마다 굽지 않는다. 버튼 눌렀을 때만 1편.
+ *   재료 매핑: product=플래너가 파악한 제품 설명 / concept=판매자 브리프 / productImagePaths=캐논 레퍼(깨끗한 2K로
+ *     전 씬 제품 고정, 없으면 원본 소스) / category=확정 카테고리 / 한국어.
+ *   엔진 흐름: 대본(Claude) → 씬별 프레임(캐논 레퍼 기준 생성) → Kling 모션 → 음성·음악 → 조립 → ugc_jobs.
+ *   결과는 ugc_jobs 잡으로 비동기 진행 → 프론트가 /api/generate/ugc/jobs/:id 폴링 → 완료 시 팩 화면에 영상.
+ */
+router.post('/:id/video', async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) return res.status(401).json({ error: '로그인이 필요해요' });
+    const pack = await repo.getPack({ id: Number(req.params.id) });
+    if (!pack) return res.status(404).json({ error: 'not found' });
+    const plan = (pack.config && pack.config.plan) || {};
+    if (!latestRefPath(pack)) return res.status(409).json({ error: '먼저 콘텐츠를 만들어 주세요(캐논 레퍼 없음)' });
+    // 이미 만드는 중이면 막는다(중복 과금 방지). config.videoJobId 잡이 processing이면 409.
+    if (pack.config && pack.config.videoJobId) {
+      try {
+        const prev = await ugcVideoService.getJob(pack.config.videoJobId, req.user.id);
+        if (prev && prev.status === 'processing') return res.status(409).json({ error: '이미 영상을 만들고 있어요', jobId: prev.id });
+      } catch (_) {}
+    }
+    // 재료: 캐논 레퍼(깨끗한 2K, 전 씬 제품 고정) 우선 — 없으면 원본 소스. 로컬 파일 경로로.
+    const refLocalPaths = packRefUrls(pack).map((u) => localPathForUrl(u)).filter((p) => fs.existsSync(p));
+    const srcPaths = (plan.sources || []).filter((p) => fs.existsSync(p));
+    const productImagePaths = (refLocalPaths.length ? refLocalPaths : srcPaths).slice(0, 5);   // UGC_MAX_PRODUCT_IMAGES
+    if (!productImagePaths.length) return res.status(409).json({ error: '영상에 쓸 제품 이미지가 없어요' });
+
+    const product = (plan.product || pack.product || '').slice(0, 500);   // 제품 설명(플래너 파악)
+    const concept = String(pack.product || '').slice(0, 1000);            // 판매자 브리프(팩 생성 시 입력)
+    const category = (pack.config && pack.config.category) || pack.vertical || '';
+
+    // submit = 대본 생성(Claude) → 과금 → 파이프라인 enqueue → {jobId,cost}. 대본 실패·크레딧 부족은 statusCode로 전파.
+    const out = await ugcVideoService.submit({
+      user: req.user, product, concept, category,
+      outputType: 'product-ad', language: 'ko',
+      productImagePaths,
+      dryRunVideo: false,          // LIVE
+      visibility: 'private',       // 제품 영상 보호(팩 컷과 동일 기본)
+    });
+    await repo.mergeConfig(pack.id, { videoJobId: out.jobId });
+    res.json({ ok: true, jobId: out.jobId, cost: out.cost });
+  } catch (e) {
+    if (e.statusCode) return res.status(e.statusCode).json({ error: e.message });   // 402 크레딧부족·403 등 그대로
+    next(e);
+  }
 });
 
 /** 컷 재생성 — 같은 컨셉, 새 표본(새 버전). 기존 캐논 레퍼로 다시 생성. */
