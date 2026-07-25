@@ -74,6 +74,12 @@
   /* 🎬 광고 영상 블록 — 결과 최상단 */
   .pv-cta{margin:0 0 20px;padding:16px 20px;border:1px solid var(--border2);border-radius:14px;background:linear-gradient(180deg,rgba(124,82,232,.10),rgba(124,82,232,.02));display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
   .pv-cta.busy{background:rgba(255,255,255,.02);border-style:dashed}
+  /* 🔁 나갔다 온 진행 중 팩 알림(같은 브라우저, localStorage) — 자동 재개 대신 선택 */
+  .reconn{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 18px;padding:11px 15px;border:1px solid var(--border2);border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,transparent);font-size:13px;color:var(--text)}
+  .reconn-act{display:flex;gap:8px}
+  .reconn button{font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text)}
+  .reconn-go{background:var(--accent);border-color:var(--accent);color:#fff}
+  .reconn button:hover{filter:brightness(1.08)}
   .pv-txt{display:flex;flex-direction:column;gap:3px;min-width:200px;flex:1}
   .pv-txt b{font-size:14px;font-weight:700;color:var(--text)}
   .pv-txt span{font-size:12px;color:var(--dim);line-height:1.5}
@@ -448,6 +454,7 @@ async function confirmGenerate() {
   if (!r.ok) { revert(); fail('요청 실패: ' + r.status); return; }
   const { id } = await r.json();
   PACK_ID = id;
+  setActivePack(id);   // 나갔다 와도 이 팩으로 돌아올 수 있게(같은 브라우저)
   startGen();
   poll(id);
 }
@@ -567,7 +574,10 @@ async function pollVideo(jid) {
   if (!j) { vidPolling = false; return; }
   if (j.status === 'processing') { setTimeout(() => pollVideo(jid), 4000); return; }
   vidPolling = false;
-  if (j.resultUrl) { vidStatus = 'done'; vidUrl = j.resultUrl; renderVideoBlock(); if (window.toast) toast('광고 영상 완성!'); }
+  if (j.resultUrl) { vidStatus = 'done'; vidUrl = j.resultUrl; renderVideoBlock(); if (window.toast) toast('광고 영상 완성!');
+    // 서버가 완성 즉시 자동 저장(autoCommit)하므로 내 크리에이션을 새로고침해 영상을 띄운다.
+    //   즉시분은 스틸을, 지연분(2.5s)은 저장이 막 끝난 영상을 잡는다.
+    if (typeof loadWorks === 'function') { loadWorks(); setTimeout(loadWorks, 2500); } }
   else { vidStatus = 'failed'; renderVideoBlock(); fail('영상 생성 실패: ' + (j.error || '크레딧·한도 확인')); }
 }
 /**
@@ -747,7 +757,7 @@ async function poll(id) {
   const pv = document.getElementById('packVideo');
   if (pv) pv.innerHTML = (vidUrl || (vjid && vidStatus !== 'failed')) ? videoBlockInner(pack) : '';
   $('#dlAll').classList.toggle('hide', assets.length === 0);
-  if (status === 'done') { stopGen(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
+  if (status === 'done') { stopGen(); clearActivePack(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
   $('#status').innerHTML = '<span class="spin"></span>생성 중 · ' + assets.length + '개';
   setTimeout(() => poll(id), 1500);
 }
@@ -1037,7 +1047,39 @@ async function delBatch(btn, idxsCsv) {   // 크리에이션 삭제(배치 = 여
     loadWorks();
   } catch (e) { btn.disabled = false; if (window.toast) toast('삭제 실패', 'error'); }
 }
+// ── 🔁 나갔다 와도 진행 중 팩으로 복귀(같은 브라우저) ──────────────────────
+//   팩 생성 시 id를 localStorage에 담아두고, 로드 시 그게 아직 안 끝났으면 "이어보기"를 띄운다.
+//   자동으로 안 여는 이유: ref_ready 게이트로 자동 진입하면 빠져나올 길이 없어(리로드가 되돌아옴) 덫이 된다.
+function setActivePack(id) { try { localStorage.setItem('pack:active', String(id)); } catch (_) {} }
+function clearActivePack() { try { localStorage.removeItem('pack:active'); } catch (_) {} }
+async function reconnectActivePack() {
+  let id; try { id = localStorage.getItem('pack:active'); } catch (_) { return; }
+  if (!id) return;
+  let pack;
+  try { const r = await fetch('/api/pack/' + id); if (!r.ok) throw 0; pack = await r.json(); }
+  catch (_) { clearActivePack(); return; }                                // 없어진/접근불가 팩 → 정리
+  if (!pack || pack.status === 'done') { clearActivePack(); return; }     // 끝난 팩은 내 크리에이션서 봄
+  const label = pack.status === 'ref_ready' ? '레퍼 확인 대기 중인 팩'
+    : pack.status === 'failed' ? '생성이 끊긴 팩' : '생성 중이던 팩';
+  const bar = document.createElement('div');
+  bar.className = 'reconn';
+  bar.innerHTML = '<span>⏳ ' + label + '이 있어요.</span><span class="reconn-act"><button class="reconn-go">이어보기</button><button class="reconn-x">새로 시작</button></span>';
+  const wrap = document.querySelector('.wrap') || document.body;
+  wrap.insertBefore(bar, wrap.firstChild);
+  bar.querySelector('.reconn-go').onclick = () => { bar.remove(); openActivePack(pack); };
+  bar.querySelector('.reconn-x').onclick = () => { bar.remove(); clearActivePack(); };
+}
+function openActivePack(pack) {
+  PACK_ID = String(pack.id);
+  // 🔑 poll은 processing을 prep/stills로 gatePassed(클라 상태)로만 나눈다. 재연결 땐 그게 없으니
+  //   서버 신호(config.depth=게이트 통과 시 세팅)로 되살려 stills 팩이 prep 화면으로 오인되지 않게.
+  gatePassed = !!(pack.config && pack.config.depth !== undefined);
+  $('#form').classList.add('hide'); $('#result').classList.remove('hide');
+  if (pack.status === 'processing') { genStartTs = Date.now(); if (elapsedTimer) clearInterval(elapsedTimer); elapsedTimer = setInterval(tickElapsed, 100); }
+  poll(PACK_ID);   // 상태별 복원: ref_ready→게이트 / processing→prep·생성 / failed→이어서
+}
 loadWorks(); // 페이지 로드 시 피드 채우기
+reconnectActivePack();
 </script>
 </body>
 </html>
