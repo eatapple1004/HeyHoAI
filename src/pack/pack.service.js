@@ -303,12 +303,21 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   const briefText = (product || '').trim();
   if (briefText) {
     try {
+      // 🔑 미리보기 레퍼 선택 — 상태가 여럿이면 **브랜드가 보이는 대표 상태**(대개 앞면/히어로)를 쓴다.
+      //   예전엔 무조건 첫 레퍼(refs[0])라, 첫 상태가 "뒷면 그래픽"이면 그 그래픽을 앞면에 얹는 앞/뒤 혼동이 났다.
+      const previewSku = (brandSku && refBySku[brandSku]) ? brandSku : manifest.refs[0].sku;
+      const previewRefPath = refBySku[previewSku] || primaryRef;
+      // 🔑 그 레퍼가 어느 상태인지 **명시** — 상태를 안 말해주면 모델이 앞/뒤·열림/닫힘을 섞는다(실측: 뒷면 그래픽→앞면).
+      const previewState = (planStates || []).find((s) => s.key === previewSku);
+      const stateClause = (previewState && previewState.desc)
+        ? ` The reference shows the product in this exact state: ${previewState.desc}. Reproduce THAT state precisely — never move, mirror or relocate any graphic, print or logo to a different side or face (a back print stays on the back, a front stays a front), and never merge two different states into one.`
+        : '';
       const conceptCut = {
         key: 'concept_preview', label: '컨셉 미리보기', w: 960, h: 960,
-        neg: 'garbled or fabricated lettering, distorted label, warped product, duplicate product, extra caps',
-        prompt: `Marketing photo of ONE single ${ctxProduct || 'product'}, identical to the reference — keep its exact shape, color and label/wordmark, do not fabricate lettering — realizing this concept and mood: "${briefText}". Ground the scene and styling in that concept while keeping the product accurate and tack-sharp.`,
+        neg: 'garbled or fabricated lettering, distorted label, warped product, duplicate product, extra caps, graphic printed on the wrong side, print moved to the opposite face, front and back merged',
+        prompt: `Marketing photo of ONE single ${ctxProduct || 'product'}, identical to the reference — keep its exact shape, color and label/wordmark, do not fabricate lettering — realizing this concept and mood: "${briefText}".${stateClause} Ground the scene and styling in that concept while keeping the product accurate and tack-sharp.`,
       };
-      const buf = await genStill({ canonRefPath: primaryRef, cut: conceptCut, ctx });
+      const buf = await genStill({ canonRefPath: previewRefPath, cut: conceptCut, ctx });
       const cp = path.join(workDir, 'concept_preview.jpg');
       fs.writeFileSync(cp, buf);
       manifest.concept = { key: 'concept_preview', label: '컨셉 미리보기', path: cp };
