@@ -644,6 +644,7 @@ router.post('/:id/video', async (req, res, next) => {
       productImagePaths,
       dryRunVideo: false,          // LIVE
       visibility: 'private',       // 제품 영상 보호(팩 컷과 동일 기본)
+      autoCommit: true,            // 🔖 에디터 없는 팩 영상 → 완성 즉시 자동 저장(내 크리에이션에 뜨게)
     });
     await repo.mergeConfig(pack.id, { videoJobId: out.jobId });
     res.json({ ok: true, jobId: out.jobId, cost: out.cost });
