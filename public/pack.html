@@ -160,6 +160,17 @@
   .rg-go{flex:1;font-family:inherit;font-size:14px;font-weight:700;padding:12px;border-radius:12px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13)}
   .rg-go:hover{filter:brightness(1.08)}
   .rg-go:disabled{opacity:.6;cursor:default}
+  /* 🎬 영상 토글(선택형·기본 꺼짐) — 깊이 버튼과 같은 토큰, 켜지면 .rg-depth.on처럼 보라 하이라이트 */
+  .rg-video{display:flex;align-items:center;gap:11px;margin-bottom:14px;padding:11px 13px;border-radius:12px;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);transition:border-color .12s,background .12s,color .12s}
+  .rg-video:hover{color:var(--text);border-color:var(--border2)}
+  .rg-video.on{color:var(--text);background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:var(--accent)}
+  .rg-video-check{flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border2);background:rgba(255,255,255,.03);position:relative}
+  .rg-video.on .rg-video-check{background:var(--accent);border-color:var(--accent)}
+  .rg-video.on .rg-video-check::after{content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .rg-video-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .rg-video-txt b{font-size:13px;font-weight:700}
+  .rg-video-txt span{font-size:11px;color:var(--faint);line-height:1.45}
+  .rg-video-txt em{font-style:normal;color:var(--accent);font-weight:600}
   /* 생성 중 = 컷(Shots)과 동일 UX: 계획이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초 */
   .analyzing{display:flex;flex-direction:column;align-items:center;gap:13px;padding:44px 0;color:var(--text);font-size:14px;text-align:center}
   .analyzing .sub{color:var(--dim);font-size:12.5px}
@@ -451,6 +462,7 @@ let built = false, genStartTs = 0, elapsedTimer = null;
 let PACK_ID = null, PACK = null;       // 현재 팩(액션 후 재렌더)
 let gatePassed = false;                // 레퍼 소프트 게이트 통과 여부
 let gateDepth = 0, gateTotal = 0;      // 게이트에서 고른 컷 수 / 전체
+let gateVideo = false;                 // 게이트에서 "영상도 같이" 선택 여부(기본 꺼짐 — 명시 선택만 과금)
 const verIdx = {};                     // slotId → 보고 있는 버전 인덱스(기본 최신)
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slotId = (o) => o.kind + ':' + (o.key != null ? o.key : o.cut_key);
@@ -530,14 +542,19 @@ function videoBlockInner(pack) {
   return `<div class="pv-cta"><div class="pv-txt"><b>🎬 이 제품으로 광고 영상</b><span>팩이 분석한 제품·컨셉으로 릴스 광고 한 편 — 편집 없이 알아서. (크레딧 사용)</span></div><button class="more-btn" onclick="makeVideo(this)">영상 만들기</button></div>`;
 }
 function renderVideoBlock() { const el = document.getElementById('packVideo'); if (el) el.innerHTML = videoBlockInner(PACK); }
-async function makeVideo(btn) {
+// POST /video 공통(게이트 체크·결과 버튼 공용). confirm/버튼 상태는 호출부 책임. 실패 시 throw.
+async function startPackVideo() {
+  const r = await fetch('/api/pack/' + PACK_ID + '/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+  vidJob = d.jobId; vidStatus = 'processing'; vidUrl = null;
+  renderVideoBlock(); ensureVideoPoll(d.jobId);
+  return d.jobId;
+}
+async function makeVideo(btn) {   // 결과 최상단 버튼(사후 추가용) — confirm 게이트 유지
   if (!confirm('이 제품으로 광고 영상 한 편을 만들까요?\n대본→영상까지 보통 1~3분 걸리고, 크레딧이 사용됩니다.')) return;
   if (btn) btn.disabled = true;
   try {
-    const r = await fetch('/api/pack/' + PACK_ID + '/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
-    vidJob = d.jobId; vidStatus = 'processing'; vidUrl = null;
-    renderVideoBlock(); ensureVideoPoll(d.jobId);
+    await startPackVideo();
     if (window.toast) toast('영상 만들기 시작 — 완성되면 맨 위에 떠요');
   } catch (e) { if (btn) btn.disabled = false; fail('영상 만들기 실패: ' + (e.message || e)); }
 }
@@ -761,6 +778,7 @@ function showRefGate(pack) {
   }
   const total = (plan && plan.cuts) ? plan.cuts.length : (plan ? (plan.slots || []).filter(s => s.kind === 'still').length : 8);
   gateTotal = total; gateDepth = Math.min(8, total);
+  gateVideo = false;   // 새 게이트 = 영상 선택 초기화(이전 팩 값이 새어들지 않게)
   // 상태가 붙으면 total이 20+까지 커지므로 8과 풀 사이에 '넉넉' 한 칸을 둔다.
   // 중간 티어는 total보다 **작을 때만** 넣는다 — 안 그러면 최대 티어가 '넉넉'으로 표시돼 "이게 전부"라는 게 안 읽힌다.
   const opts = [];
@@ -795,10 +813,15 @@ function showRefGate(pack) {
     ${conceptBlock ? `<div class="rg-compare">${conceptBlock}<div class="rg-canon"><div class="rg-state-h">캐논 레퍼 <span class="rg-tag on">생성 기준</span></div><div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div></div></div>` : `<div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>`}
     <div class="rg-depth-h">몇 컷 만들까요?${multi ? ` <span class="rg-depth-sub">${unitWord}별로 고루 나눠 만듭니다</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
+    <div class="rg-video${gateVideo ? ' on' : ''}" id="rgVideo" role="button" tabindex="0" onclick="toggleGateVideo()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGateVideo();}">
+      <div class="rg-video-check" aria-hidden="true"></div>
+      <div class="rg-video-txt"><b>🎬 광고 영상도 같이 만들기</b><span>이 제품·컨셉으로 릴스 광고 한 편 — 편집 없이 알아서. <em>크레딧 사용</em></span></div>
+    </div>
     <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
   </div></div>`);
 }
 function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; }
+function toggleGateVideo() { gateVideo = !gateVideo; const el = document.getElementById('rgVideo'); if (el) el.classList.toggle('on', gateVideo); }
 async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의 입력칸·이미지만 다룬다(다른 상태는 그대로).
   sku = sku || 'main';
   if (!btn || btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
@@ -842,13 +865,21 @@ async function resumePack(btn) {
 
 async function gateProceed() {
   const btn = document.querySelector('.rg-go'); if (btn && btn.disabled) return;
+  const wantVideo = gateVideo;   // 게이트가 닫히기 전에 선택을 잡아둔다
   if (btn) { btn.disabled = true; btn.dataset.t = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>생성 시작 중…'; }
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depth: gateDepth >= gateTotal ? 0 : gateDepth }) });
     if (!r.ok) { const d = await r.json(); throw new Error(d.error || '실패'); }
     gatePassed = true; built = false; filled.clear();
     const g = document.querySelector('.rg-bg'); if (g) g.remove();
-    $('#status').innerHTML = '<span class="spin"></span>생성 중…';
+    $('#status').innerHTML = '<span class="spin"></span>' + (wantVideo ? '생성 중… (영상도 함께)' : '생성 중…');
+    // 🎬 영상도 선택했으면 이어서 태운다 — **논블로킹**. 실패(크레딧·로그인)해도 컷 생성은 계속.
+    //   이 시점엔 캐논 레퍼가 이미 구워져 있어(ref_ready) 영상 재료가 준비돼 있다.
+    if (wantVideo) {
+      startPackVideo()
+        .then(() => { if (window.toast) toast('영상도 만들기 시작했어요 — 완성되면 맨 위에 떠요'); })
+        .catch((e) => { if (window.toast) toast('영상은 시작 못 했어요(컷은 계속 생성): ' + (e.message || e), 'error'); });
+    }
   } catch (e) { if (btn) { btn.disabled = false; if (btn.dataset.t) btn.innerHTML = btn.dataset.t; } if (window.toast) toast('생성 시작 실패: ' + (e.message || e), 'error'); }
 }
 function downloadAll() {   // 컷별 현재 보고 있는 버전만
