@@ -142,7 +142,7 @@ a.topnav:hover{color:var(--text)}
 
 <script>
 const $ = (s) => document.querySelector(s);
-let scope = 'mine', offset = 0, loading = false;
+let scope = 'mine', offset = 0, loading = false, autoFellBack = false;
 const PAGE = 24;               // 그룹(레퍼런스) 수 기준
 const selected = [];           // 선택 그룹: {gkey, beforeUrl, altBeforeUrl, beforeKind, caption, results:[{afterUrl, after?}], before?}
 const seen = new Set();        // 선택된 gkey
@@ -163,6 +163,12 @@ async function loadMore() {
     if (r.status === 403) { $('#resEmpty').style.display = 'block'; $('#resEmpty').textContent = '관리자 권한이 필요합니다. admin 계정으로 로그인하세요.'; return; }
     const d = await r.json();
     const groups = d.groups || [];
+    // '내 계정'이 비어 있으면 자동으로 '전체'로 전환(관리자 본인 계정에 생성물이 없는 흔한 경우).
+    if (!groups.length && offset === 0 && scope === 'mine' && !autoFellBack) {
+      autoFellBack = true;
+      setTimeout(() => setScope('all'), 0); // finally에서 loading=false 처리된 뒤 실행
+      return;
+    }
     offset += groups.length;
     groups.forEach(renderGroupCard);
     $('#resEmpty').style.display = (offset === 0 && !groups.length) ? 'block' : 'none';
