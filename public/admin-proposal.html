@@ -75,9 +75,9 @@ h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135d
 .gm-head .s{font-size:.8rem;color:var(--dim);margin-top:2px}
 .gm-head .allbtn{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:8px;padding:8px 13px;font-size:.82rem;cursor:pointer;font-family:inherit;white-space:nowrap}
 .gm-head .allbtn:hover{color:var(--text);border-color:var(--accent2)}
-.gm-body{overflow:auto;padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.gm-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));grid-auto-rows:min-content;align-content:start;gap:14px}
 .gm-cell{position:relative;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;aspect-ratio:1/1;background:#f4f2fb}
-.gm-cell img{width:100%;height:100%;object-fit:contain;display:block}
+.gm-cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .gm-cell.on{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(124,82,232,.4)}
 .gm-cell .ck{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.5);border:1.5px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;opacity:.55;transition:opacity .12s}
 .gm-cell.on .ck{opacity:1;background:var(--accent);border-color:var(--accent)}
