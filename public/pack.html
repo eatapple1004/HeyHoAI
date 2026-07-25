@@ -522,12 +522,13 @@ function moreBarHtml(pack) {
   }
   const note = remaining > 0
     ? `이미 기획해 둔 컷이 ${remaining}장 더 있어요 — 추가 분석 없이 바로 나옵니다.`
-    : `기획해 둔 컷은 다 만들었어요. 아래에 원하는 컨셉을 적거나, 마음에 드는 컷의 <b>✦ 이런 걸로 더</b>를 눌러 보세요.`;
-  // 💡 컨셉으로 더 — 세 번째 축(새 방향). 원본이 없는 옛 팩은 재기획을 못 하므로 숨긴다.
+    : `기획해 둔 컷은 다 만들었어요. 아래에서 새 컷을 뽑거나, 마음에 드는 컷의 <b>✦ 이런 걸로 더</b>를 눌러 보세요.`;
+  // 💡 컨셉으로 더 — 세 번째 축(새 방향). 비우고 누르면 AI가 안 겹치는 새 컨셉을 알아서 창안한다.
+  //   원본이 없는 옛 팩은 재기획을 못 하므로 숨긴다.
   const canConcept = (plan && (plan.sources || []).length) > 0;
   const conceptRow = canConcept ? `<div class="more-concept">
-      <input type="text" id="conceptInput" maxlength="200" placeholder="다른 컨셉으로 더 — 예: 겨울 홈카페, 니트와 함께" onkeydown="if(event.key==='Enter')conceptMore(this.nextElementSibling)">
-      <button class="more-btn" onclick="conceptMore(this)">💡 이 컨셉으로 3장</button>
+      <input type="text" id="conceptInput" maxlength="200" placeholder="원하는 컨셉을 적으세요 — 비우면 알아서 새로 뽑아요 (예: 겨울 홈카페)" onkeydown="if(event.key==='Enter')conceptMore(this.nextElementSibling)">
+      <button class="more-btn" onclick="conceptMore(this)">💡 새 컷 뽑기</button>
     </div>` : '';
   return `<div class="more-bar"><div class="more-top"><div class="more-note">${note}</div>${btns.length ? `<div class="more-btns">${btns.join('')}</div>` : ''}</div>${conceptRow}</div>`;
 }
@@ -629,10 +630,10 @@ function moreLike(cutKey, btn) {
 }
 function conceptMore(btn) {
   const inp = document.getElementById('conceptInput');
-  const brief = (inp && inp.value || '').trim();
-  if (!brief) { if (inp) inp.focus(); fail('원하는 컨셉을 적어 주세요'); return; }
+  const brief = (inp && inp.value || '').trim();   // 비면 서버가 자동 컨셉 모드(알아서 새로)
   if (btn) btn.disabled = true;
-  kickMore('/api/pack/' + PACK_ID + '/concept-more', { brief }, '"' + brief.slice(0, 20) + '" 컨셉으로 만드는 중…');
+  const msg = brief ? ('"' + brief.slice(0, 20) + '" 컨셉으로 만드는 중…') : '알아서 새 컨셉으로 만드는 중…';
+  kickMore('/api/pack/' + PACK_ID + '/concept-more', { brief }, msg);
 }
 
 function gatedSlots(plan) {   // 게이트에서 고른 depth만큼의 스틸 + 합성·레퍼(depth=0=전부)

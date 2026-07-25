@@ -303,23 +303,25 @@ function sourcesForSeed(plan, refSku) {
 }
 
 /**
- * 팩에 새 컷 N장을 **재기획 후 즉시 생성**해 붙인다(백그라운드). 두 방향을 한 몸으로 처리:
+ * 팩에 새 컷 N장을 **재기획 후 즉시 생성**해 붙인다(백그라운드). 세 방향을 한 몸으로 처리:
  *
  *   ✦ 씨앗(seedCutKey) — "이 컷처럼 더". 씨앗의 렌즈·프롬프트·상태를 물려 같은 결/다른 구도.
  *   💡 컨셉(brief)     — "다른 컨셉으로 더". 자유 브리프가 기획을 주도(briefClause), 대표(브랜드) 레퍼로.
+ *   🧠 자동(둘 다 없음) — "알아서 더". 여태 안 나온 **새 컨셉을 스스로 창안**(autoConcept). 잔여물 긁기 아님.
  *
  * 공통: exclude=기존 라벨 전부(복제 방지) · 확정 category 그라운딩(오분류 방지) · 새 컷을 config.plan에
  *   append(이후 "다시"·"더 뽑기"가 인식) · 2K·원본썸네일은 recordAsset 공통경로라 자동. 완료 후 done.
  */
 async function growPack(pack, { seedCutKey, brief, count, userId }) {
-  const mode = seedCutKey ? 'more-like' : 'concept-more';
+  const briefText = String(brief || '').trim();
+  const mode = seedCutKey ? 'more-like' : (briefText ? 'concept-more' : 'auto-concept');
   try {
     const fresh = await repo.getPack({ id: pack.id });
     const plan = (fresh.config && fresh.config.plan) || {};
     const cuts = plan.cuts || [];
 
-    // 방향에 따라 (씨앗·렌즈·힌트·참조 상태)를 정한다.
-    let seed = null, lens = null, hint = fresh.product || '', refSku = null, seedLensIdx = null;
+    // 방향에 따라 (씨앗·렌즈·힌트·참조 상태·자동)를 정한다.
+    let seed = null, lens = null, hint = fresh.product || '', refSku = null, seedLensIdx = null, autoConcept = false;
     if (seedCutKey) {
       const s = cuts.find((c) => c.key === seedCutKey);
       if (!s) throw new Error('씨앗 컷을 찾을 수 없어요');
@@ -328,21 +330,21 @@ async function growPack(pack, { seedCutKey, brief, count, userId }) {
       refSku = s.refSku || null;
       seedLensIdx = s.lensIdx != null ? s.lensIdx : null;
     } else {
-      hint = String(brief || '').trim();
-      if (!hint) throw new Error('컨셉을 입력해 주세요');
-      // 컨셉은 새 방향이라 특정 상태에 안 묶는다 → 브랜드가 보이는 대표 레퍼로(포장이 프레임에 들어와야 상품이 산다).
+      // 컨셉/자동 둘 다 새 방향이라 특정 상태에 안 묶는다 → 브랜드가 보이는 대표 레퍼로(포장이 프레임에 들어와야 상품이 산다).
       refSku = plan.brandSku || (plan.refSkus && plan.refSkus[0] && plan.refSkus[0].sku) || null;
+      if (briefText) hint = briefText;          // 컨셉: 브리프가 기획 주도
+      else { hint = ''; autoConcept = true; }    // 자동: 플래너가 새 컨셉 창안
     }
     const refPath = latestRefPathFor(fresh, refSku);
     if (!refPath) throw new Error('캐논 레퍼가 없어요');
-    // 소스 사진: 씨앗이면 그 상태 사진, 컨셉이면 전체(제품을 넓게 이해해야 새 방향이 산다).
+    // 소스 사진: 씨앗이면 그 상태 사진, 컨셉/자동이면 전체(제품을 넓게 이해해야 새 방향이 산다).
     const srcPaths = seedCutKey ? sourcesForSeed(plan, refSku) : (plan.sources || []).filter((p) => fs.existsSync(p));
     if (!srcPaths.length) throw new Error('소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)');
 
     const want = Math.max(2, Math.min(4, count || 3));
     const images = await Promise.all(srcPaths.map(toVisionImage));
     const category = (fresh.config && fresh.config.category) || fresh.vertical || null;  // 확정 category 그라운딩
-    const planned = await planPack({ images, hint, category, product: plan.product, want, lens, exclude: cuts.map((c) => c.label), seed });
+    const planned = await planPack({ images, hint, category, product: plan.product, want, lens, exclude: cuts.map((c) => c.label), seed, autoConcept });
 
     const ctx = { product: plan.product || fresh.product || '' };
     const derived = (plan.states || []).some((s) => s.key === refSku && s.derived);
@@ -537,7 +539,8 @@ router.post('/:id/more-like', async (req, res, next) => {
 
 /**
  * 💡 컨셉으로 더 — 자유 브리프로 새 방향 컷 N장. "이런 걸로 더"가 있는 컷에 갇힌다면 이건 밖으로 나간다.
- *   씨앗 대신 브리프가 기획을 주도하고(briefClause), 브랜드가 보이는 대표 레퍼로 생성한다.
+ *   🧠 **브리프를 비우면 자동 모드** — 플래너가 여태 안 나온 새 컨셉을 스스로 창안한다("알아서 더").
+ *   씨앗 대신 브리프(또는 자동 컨셉)가 기획을 주도하고, 브랜드가 보이는 대표 레퍼로 생성한다.
  */
 router.post('/:id/concept-more', async (req, res, next) => {
   try {
@@ -545,14 +548,13 @@ router.post('/:id/concept-more', async (req, res, next) => {
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요' });
     if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
-    const brief = String((req.body && req.body.brief) || '').trim().slice(0, 400);
-    if (!brief) return res.status(400).json({ error: '원하는 컨셉을 적어 주세요' });
+    const brief = String((req.body && req.body.brief) || '').trim().slice(0, 400);   // 비면 growPack이 자동 컨셉 모드로
     const plan = (pack.config && pack.config.plan) || {};
     if (!latestRefPath(pack)) return res.status(409).json({ error: '캐논 레퍼가 없어요' });
     if (!(plan.sources || []).filter((p) => fs.existsSync(p)).length) return res.status(409).json({ error: '소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)' });
     const count = Math.max(2, Math.min(4, parseInt((req.body && req.body.count) || 3, 10) || 3));
     await repo.setStatus(pack.id, 'processing');
-    res.json({ ok: true, adding: count });
+    res.json({ ok: true, adding: count, auto: !brief });
     setImmediate(() => growPack(pack, { brief, count, userId: req.user && req.user.id }));
   } catch (e) { next(e); }
 });

@@ -20,6 +20,7 @@ const PLAN_SCHEMA = {
     product: { type: 'string', description: 'one-line description of the exact product, grounded in the photo (form, color, material, what it is)' },
     category: { type: 'string', description: 'inferred product category, e.g. beverage, cosmetics-skincare, cosmetics-color, haircare, apparel, footwear, bag, jewelry, food, home, tech' },
     ingredient: { type: 'string', description: 'the natural source ingredient/material to feature, or empty string if none' },
+    concept: { type: 'string', description: 'ONLY when asked to invent a fresh concept for this round: a short Korean name for the new theme you chose (e.g. "겨울 홈카페", "미니멀 데스크"). Empty string otherwise.' },
     isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple variants of the same product line' },
     variants: {
       type: 'array',
@@ -49,12 +50,12 @@ const PLAN_SCHEMA = {
       },
     },
   },
-  required: ['product', 'category', 'ingredient', 'isSet', 'variants', 'cuts'],
+  required: ['product', 'category', 'ingredient', 'concept', 'isSet', 'variants', 'cuts'],
 };
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, seed) {
+function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, seed, autoConcept) {
   const n = Math.max(4, Math.min(12, want || 10));   // 한 호출의 요청량 — 12를 넘기면 JSON이 잘린다
   const known = (confirmed && confirmed.category)
     ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
@@ -76,7 +77,9 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, see
   // 🔵 차수(round) — 한 호출에 20컷을 요구하면 JSON이 잘린다(참사 원인). 대신 호출을 나누고,
   //   2차부터는 앞서 뽑은 컷 라벨을 넘겨 "이것 말고 진짜 다른 것"을 받는다. 호출당 출력 크기는 그대로.
   const prev = (exclude || []).filter(Boolean);
-  const roundClause = prev.length ? [
+  // autoConcept 모드에선 roundClause를 끈다 — "다른 것 주고 아이디어 없으면 적게"는 잔여물 긁기 프레임이라
+  //   테마 창안(autoConceptClause)과 충돌한다. 대신 여태 나온 라벨을 autoConceptClause 안에서 참조한다.
+  const roundClause = (prev.length && !autoConcept) ? [
     `This is an ADDITIONAL round of planning for the SAME product. These shots are ALREADY planned:`,
     prev.map((e) => `  · ${e}`).join('\n'),
     `Give ${n} MORE cuts that are genuinely DIFFERENT from every one above — a different setting, framing, styling, mood or story. Do NOT produce near-duplicates or trivial variations (e.g. "on grey background" vs "on light grey background"). If you have run out of genuinely distinct ideas, return fewer cuts rather than padding with repeats.`,
@@ -105,6 +108,15 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, see
     `  · ${seed.label || 'the selected cut'}${seed.prompt ? ` — ${seed.prompt}` : ''}`,
     `Plan ${n} NEW shots that feel like siblings of it — keep the SAME mood, lighting family, palette and setting TYPE — but make each one a genuinely distinct angle, framing, prop arrangement or composition. They should read as "more of this look", not near-duplicates of the seed or of each other. Keep the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
   ].join('\n') : '';
+  // 🧠 알아서 더 — 브리프 없이 "새로 뽑아줘". exclude(=여태 나온 라벨)만 주면 남은 걸 긁다 마른다.
+  //   그게 아니라 **한 발 위에서 새 컨셉(테마)을 스스로 창안**하게 한다 — 테마는 개별 컷보다 훨씬 무궁무진하고,
+  //   하나의 테마가 서로 어울리는 컷 묶음을 낳는다(흩어진 잔여물이 아니라 결이 있는 새 세트).
+  const autoConceptClause = autoConcept ? [
+    `AUTO-CONCEPT — the seller didn't specify a direction; they trust you to come up with a fresh one.`,
+    `Do NOT just scrape leftover shot ideas. Instead, INVENT ONE genuinely new creative concept/theme for THIS product — a specific mood, setting and story that a real brand might run — that is clearly DIFFERENT from every direction already covered. Think seasonal campaigns, a lifestyle moment, an editorial mood, a material/surface story, a gifting angle, a time-of-day scene — pick ONE and commit.`,
+    prev.length ? `Directions ALREADY covered (choose a theme unlike all of these):\n${prev.map((e) => `  · ${e}`).join('\n')}` : '',
+    `Name that theme in the "concept" field (short Korean), then plan all ${n} cuts to realize that single coherent theme in distinct framings. Keep the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
+  ].filter(Boolean).join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
@@ -115,7 +127,8 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, see
     roundClause,
     lensClause,
     seedClause,
-    (state || prev.length || seed) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
+    autoConceptClause,
+    (state || prev.length || seed || autoConcept) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
     hint
       ? `Category shot types below are only LOOSE inspiration — the creative brief above takes priority over this menu:`
       : `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
@@ -146,15 +159,16 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {number} [p.want]  이번 호출에서 받고 싶은 컷 수(4~12로 클램프 — 12 넘기면 JSON이 잘린다)
  * @param {{key,label,brief}} [p.lens]  이번 라운드의 축(핵심·라이프·아트…) — 차수 회전으로 다양성
  * @param {{label,prompt}} [p.seed]  "이 컷처럼 더" — 이 컷과 같은 결로 형제 컷 N장(무드 유지, 구도만 변주)
- * @returns {Promise<{product, category, ingredient, isSet, cuts:Array}>}
+ * @param {boolean} [p.autoConcept]  "알아서 더" — 브리프 없이, 여태 안 나온 **새 컨셉을 스스로 창안**해 N장
+ * @returns {Promise<{product, category, ingredient, concept, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint, category, product, state, exclude, want, lens, seed }) {
+async function planPack({ images, hint, category, product, state, exclude, want, lens, seed, autoConcept }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens, seed) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens, seed, autoConcept) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
