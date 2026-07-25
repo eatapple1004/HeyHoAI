@@ -36,6 +36,10 @@ const router = Router();
 //   실제 쓰는 모델에서 파생 — 하드코딩하면 pro로 올려놓고 카드는 계속 flash라고 말한다.
 const PACK_MODEL = /pro/i.test(PACK_IMAGE_MODEL) ? 'Nano Banana Pro' : 'Nano Banana';
 
+// 🚫 합성(상태 비교·세트 로우)은 만들지 않는다 — 중앙 슬라이스 방식이 넓적한 제품(봉투·박스)에서 잘려
+//   못 쓰는 컷이 나왔고(사용자 결정), 스틸만으로 충분하다. 되살리려면 PACK_COMPOSITES=1 + restart.
+const PACK_COMPOSITES = process.env.PACK_COMPOSITES === '1';
+
 // 🧟 부팅 회수 — 프로세스가 죽으면 진행 중이던 팩(setImmediate 백그라운드)도 함께 사라지는데
 //   DB엔 'processing'이 남아 화면이 영원히 스피너였다. 뜰 때 한 번 훑어 내린다.
 //   (활동 창은 failStale이 지킨다 → 같은 DB를 보는 다른 프로세스의 진행 중 팩은 안 건드린다.)
@@ -307,10 +311,10 @@ async function generatePack(pack, { depth, userId }) {
         await recordAsset(fresh, { kind: 'still', key: c.key, label: c.label, buffer: buf, userId });
       } catch (e) { logger.warn?.(`[pack ${fresh.id}] still ${c.key} 실패: ${e.message}`); }
     }
-    // 레퍼 2장 이상이면 합성 — 상태 모드면 "상태 비교 · 나란히", 세트면 "세트 · 로우".
+    // 레퍼 2장 이상이면 합성 — 상태 모드면 "상태 비교 · 나란히", 세트면 "세트 · 로우". (기본 OFF)
     const refPaths = composeRefPaths(fresh);
     const stateMode = (plan.states || []).length > 1;
-    if (refPaths.length > 1) {
+    if (PACK_COMPOSITES && refPaths.length > 1) {
       const doneComps = new Set((fresh.assets || []).filter((a) => a.kind === 'composite' && a.url).map((a) => a.cut_key));
       for (const comp of (stateMode ? STATE_COMPOSITES : (suiteFor(fresh.vertical).composites || []))) {
         if (doneComps.has(comp.key)) continue;   // 재개 시 중복 합성 방지

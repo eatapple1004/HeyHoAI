@@ -15,6 +15,10 @@ const { genStill } = require('./stills.service');
 const { composeRow } = require('./compositor');
 const { planPack } = require('./planner.service');
 
+// 🚫 합성(상태 비교·세트 로우)은 기본 OFF — 중앙 슬라이스가 넓적한 제품에서 잘려 못 쓰는 컷이 됐다(사용자 결정).
+//   pack.route 의 PACK_COMPOSITES 와 같은 스위치. 되살리려면 PACK_COMPOSITES=1 + restart.
+const PACK_COMPOSITES = process.env.PACK_COMPOSITES === '1';
+
 // 🟣 렌즈(lens) — 뽑을수록 다양해지는 엔진. 차수마다 다른 축으로 플래너를 돌린다.
 //   같은 제품도 씬·무드·배경 조합은 사실상 무한 → 렌즈를 회전시키면 근접 중복 없이 계속 새 컷.
 //   순서 = 유효 씬 먼저, 실험 씬 나중(앞쪽일수록 실제 판매에 바로 쓰는 컷). "더 뽑기"가 이 배열을 이어서 돈다.
@@ -234,7 +238,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
     const stillSlots = stillCuts.map((c) => ({ kind: 'still', key: c.key, label: c.label }));
     // 합성: 상태 모드면 "상태 비교 · 나란히", 세트(다른 SKU)면 기존 "세트 · 로우".
     const compList = stateMode ? STATE_COMPOSITES : suite.composites;
-    const compSlots = refSkus.length > 1 ? compList.map((c) => ({ kind: 'composite', key: c.key, label: c.label })) : [];
+    const compSlots = (PACK_COMPOSITES && refSkus.length > 1) ? compList.map((c) => ({ kind: 'composite', key: c.key, label: c.label })) : [];
     const refSlots = refSkus.map((s) => ({ kind: 'ref', key: `ref_${s.sku}`, label: s.label || s.sku }));
     const slots = [...stillSlots, ...compSlots, ...refSlots];
     // 컷 스펙(직렬화 가능분)·소스·컨텍스트도 함께 저장 → 라우트가 config.plan에 넣고 재생성/재굽기/컷추가에 재사용.
@@ -330,8 +334,8 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
     }
   }
 
-  // 3) 다개체 합성 — 레퍼 2장 이상일 때만(상태 비교 or 세트 로우)
-  if (manifest.refs.length > 1) {
+  // 3) 다개체 합성 — 레퍼 2장 이상일 때만(상태 비교 or 세트 로우). 기본 OFF.
+  if (PACK_COMPOSITES && manifest.refs.length > 1) {
     for (const comp of (stateMode ? STATE_COMPOSITES : suite.composites)) {
       try {
         const refPaths = manifest.refs.map((r) => r.path);

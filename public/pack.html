@@ -494,13 +494,13 @@ function renderInteractive(pack) {
   Object.keys(groups).forEach(id => { if (!order.some(s => slotId(s) === id)) { const m = id.match(/^([^:]+):(.+)$/); if (m) order.push({ kind: m[1], key: m[2], label: groups[id][0].label }); } });
   const byKind = {};
   order.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
-  // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉을 캐논 레퍼로 렌더한 예시. 결과 상단에 먼저 보여준다.
+  // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉을 캐논 레퍼로 렌더한 예시.
   const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
   const conceptHtml = concept ? `<h2>내 컨셉 미리보기</h2><div class="grid"><figure class="rescard"><a class="dl" href="${esc(concept.url)}" download="${esc(fname(concept))}" title="다운로드">⤓</a><img src="${esc(concept.url)}" loading="lazy"><figcaption>입력한 컨셉으로 만든 예시</figcaption></figure></div>` : '';
-  $('#assets').innerHTML = conceptHtml + KIND_ORDER.filter(k => byKind[k]).map(k => {
-    const cards = byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('');
-    return `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${cards}</div>`;
-  }).join('') + moreBarHtml(pack);
+  // 섹션 하나 렌더(제목 + 그리드).
+  const section = (k) => byKind[k] ? `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('')}</div>` : '';
+  // 🔀 순서: **캐논 레퍼(생성 기준) 먼저** → 내 컨셉 미리보기 → 스틸. (합성은 더 이상 만들지 않음 — 옛 팩에 남아 있으면 스틸 뒤에.)
+  $('#assets').innerHTML = section('ref') + conceptHtml + section('still') + section('composite') + moreBarHtml(pack);
 }
 /**
  * ➕ 더 뽑기 바 — 결과 하단. 두 갈래:
