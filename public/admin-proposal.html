@@ -57,8 +57,14 @@ h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135d
 .tray-thumbs img.ref{width:52px;height:52px;object-fit:contain;border-radius:7px;background:#efeaf8;border:1px solid var(--border)}
 .tray-thumbs .arw{color:var(--accent2);font-weight:800}
 .tray-thumbs .rth{position:relative}
-.tray-thumbs .rth img{width:46px;height:46px;object-fit:cover;border-radius:6px;background:#000}
-.tray-thumbs .rth button{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:0;background:var(--red);color:#fff;font-size:10px;cursor:pointer;line-height:1}
+.tray-thumbs .rth img{width:46px;height:46px;object-fit:cover;border-radius:6px;background:#000;cursor:zoom-in}
+.tray-thumbs img.ref{cursor:zoom-in}
+.tray-thumbs .rth button{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:0;background:var(--red);color:#fff;font-size:10px;cursor:pointer;line-height:1;z-index:2}
+/* 라이트박스 — 썸네일 클릭 시 크게 */
+.lb{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(6,6,12,.88);cursor:zoom-out;padding:28px}
+.lb.on{display:flex}
+.lb img{max-width:94vw;max-height:92vh;border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.lb .lb-x{position:fixed;top:18px;right:22px;color:#fff;font-size:26px;font-weight:700;cursor:pointer;line-height:1;opacity:.85}
 .tray-item input.cap{background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:.86rem;font-family:inherit;width:100%}
 .tray-item .ord{display:flex;flex-direction:column;gap:3px}
 .tray-item .ord button,.tray-item .rm{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;cursor:pointer;font-size:.8rem;padding:3px 8px;font-family:inherit}
@@ -139,6 +145,8 @@ a.topnav:hover{color:var(--text)}
     <div class="hint">이미지를 파일 안에 base64로 임베드해 <b>단독 .html 하나</b>로 저장됩니다 — 이메일 첨부·오프라인 열람 OK.</div>
   </div>
 </div>
+
+<div class="lb" id="lightbox" onclick="closeZoom()"><span class="lb-x">✕</span><img id="lbImg" src="" alt=""></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -226,8 +234,8 @@ function renderTray() {
   t.innerHTML = selected.map((s, i) => `<div class="tray-item">
       <div style="min-width:0">
         <div class="tray-thumbs">
-          <img class="ref" src="${esc(s.beforeUrl)}" title="레퍼런스"><span class="arw">→</span>
-          ${s.results.map((r, ri) => `<span class="rth"><img src="${esc(r.afterUrl)}"><button title="이 결과 제외" onclick="removeResult(${i},${ri})">✕</button></span>`).join('')}
+          <img class="ref" src="${esc(s.beforeUrl)}" title="레퍼런스(클릭하면 크게)" onclick="zoomRef(${i})"><span class="arw">→</span>
+          ${s.results.map((r, ri) => `<span class="rth"><img src="${esc(r.afterUrl)}" title="클릭하면 크게" onclick="zoomRes(${i},${ri})"><button title="이 결과 제외" onclick="removeResult(${i},${ri})">✕</button></span>`).join('')}
         </div>
         <input class="cap" placeholder="이 레퍼런스 그룹 설명(선택) — 예: 사진 1장으로 만든 상세페이지 컷" value="${esc(s.caption)}" oninput="selected[${i}].caption=this.value" style="width:100%">
         ${s.altBeforeUrl ? `<button class="rm" style="margin-top:8px;color:var(--accent2);border-color:rgba(124,82,232,.4)" onclick="swapBefore(${i})">레퍼런스: ${s.beforeKind === 'original' ? '업로드 원본' : '캐논 레퍼'} ⇄ 전환</button>` : ''}
@@ -255,6 +263,12 @@ function removeGroup(i) {
   document.querySelectorAll('.grp-card').forEach(el => { if (el.dataset.k === x.gkey) el.classList.remove('sel'); });
   renderTray();
 }
+// 라이트박스 — 선택 목록 썸네일 클릭 시 크게 보기
+function showZoom(url) { if (!url) return; $('#lbImg').src = url; $('#lightbox').classList.add('on'); }
+function zoomRef(i) { const s = selected[i]; if (s) showZoom(s.beforeUrl); }
+function zoomRes(i, ri) { const s = selected[i]; if (s && s.results[ri]) showZoom(s.results[ri].afterUrl); }
+function closeZoom() { $('#lightbox').classList.remove('on'); $('#lbImg').src = ''; }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(); });
 
 // URL 이미지를 base64 dataURL로 (자체포함 파일용). 같은 출처라 fetch 쿠키 인증 OK.
 async function urlToDataUrl(url) {
