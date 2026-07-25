@@ -54,7 +54,7 @@ const PLAN_SCHEMA = {
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens) {
+function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, seed) {
   const n = Math.max(4, Math.min(12, want || 10));   // 한 호출의 요청량 — 12를 넘기면 JSON이 잘린다
   const known = (confirmed && confirmed.category)
     ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
@@ -97,6 +97,14 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens) {
     `Every cut this round should belong to that lens, while keeping the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
     state ? `⚠️ If this lens conflicts with the STATE constraint above, the STATE wins — bend the lens to fit the state, never the other way round.` : '',
   ].filter(Boolean).join('\n') : '';
+  // ✦ 씨앗(seed) — "이 컷이 마음에 든다, 이런 걸로 더". roundClause/lensClause 는 "다른 것"을 요구하지만
+  //   이건 반대다: **같은 결**(무드·조명·세팅 종류)을 유지하고 각도·소품·구도만 바꾼 형제 컷을 뽑는다.
+  //   exclude 로 기존 라벨을 함께 넘겨 씨앗 자신·다른 기존 컷의 재현은 막는다(변주는 하되 복제는 안 함).
+  const seedClause = seed ? [
+    `THE SELLER LOVED THIS SHOT and wants MORE in the same vein:`,
+    `  · ${seed.label || 'the selected cut'}${seed.prompt ? ` — ${seed.prompt}` : ''}`,
+    `Plan ${n} NEW shots that feel like siblings of it — keep the SAME mood, lighting family, palette and setting TYPE — but make each one a genuinely distinct angle, framing, prop arrangement or composition. They should read as "more of this look", not near-duplicates of the seed or of each other. Keep the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
+  ].join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
@@ -106,7 +114,8 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens) {
     stateFocus,
     roundClause,
     lensClause,
-    (state || prev.length) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
+    seedClause,
+    (state || prev.length || seed) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
     hint
       ? `Category shot types below are only LOOSE inspiration — the creative brief above takes priority over this menu:`
       : `Adapt shot TYPES to the category — pick from a menu, don't force a fixed list:`,
@@ -136,15 +145,16 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {string[]} [p.exclude]  이미 뽑힌 컷 라벨 — 2차 이상 호출에서 중복을 피하려고 넘긴다
  * @param {number} [p.want]  이번 호출에서 받고 싶은 컷 수(4~12로 클램프 — 12 넘기면 JSON이 잘린다)
  * @param {{key,label,brief}} [p.lens]  이번 라운드의 축(핵심·라이프·아트…) — 차수 회전으로 다양성
+ * @param {{label,prompt}} [p.seed]  "이 컷처럼 더" — 이 컷과 같은 결로 형제 컷 N장(무드 유지, 구도만 변주)
  * @returns {Promise<{product, category, ingredient, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint, category, product, state, exclude, want, lens }) {
+async function planPack({ images, hint, category, product, state, exclude, want, lens, seed }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens, seed) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,

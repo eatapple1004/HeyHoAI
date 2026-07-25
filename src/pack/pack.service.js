@@ -351,4 +351,4 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   return manifest;
 }
 
-module.exports = { runPack, sniffMime };
+module.exports = { runPack, sniffMime, toVisionImage };

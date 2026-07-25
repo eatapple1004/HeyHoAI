@@ -2,11 +2,11 @@
  * Product Pack — API 라우트.
  *   POST /api/pack                  업로드 + 생성 시작(즉시 202, 백그라운드 처리)
  *   GET  /api/pack/:id              팩 + 자산 조회(상태 폴링)
- *   POST /api/pack/:id/regenerate-cut  {cutKey}  같은 컨셉 재생성(새 버전)
- *   POST /api/pack/:id/rebake-ref      {sku?}    캐논 레퍼 재굽기(새 버전)
- *   POST /api/pack/:id/add-cut         {cutKey}  라이브러리에서 컨셉 추가
- *   POST /api/pack/:id/resume          {depth?}  중단된 팩 이어서 만들기(남은 컷부터)
- *   GET  /api/pack/:id/cut-library                추가 가능한 컷(안 뽑힌 것)
+ *   POST /api/pack/:id/regenerate-cut  {cutKey}       같은 컨셉 재생성(새 버전)
+ *   POST /api/pack/:id/rebake-ref      {sku?}         캐논 레퍼 재굽기(새 버전)
+ *   POST /api/pack/:id/resume          {depth?}       중단된 팩 이어서 만들기(남은 컷부터)
+ *   POST /api/pack/:id/extend          {count?}       이미 기획된 남은 컷 더 생성(플래너 0회)
+ *   POST /api/pack/:id/more-like       {cutKey,count?} 이 컷과 같은 결로 형제 컷 N장(플래너 1회)
  *
  * 통합 시 index.js 1줄: app.use('/api/pack', requireAuth, require('./pack/pack.route'));
  */
@@ -19,8 +19,8 @@ const heicConvert = require('heic-convert');   // sharp가 못 푸는 HEIC(HEVC)
 const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
-const { runPack, sniffMime } = require('./pack.service');
-const { classifyProduct } = require('./planner.service');    // 확인 단계용 가벼운 분류
+const { runPack, sniffMime, toVisionImage } = require('./pack.service');
+const { classifyProduct, planPack } = require('./planner.service');    // 확인 단계용 분류 + "이런 걸로 더" 재기획
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
 const { genStill, PACK_IMAGE_MODEL } = require('./stills.service');   // 컷 재생성·추가 (+ 카드 라벨용 실제 모델)
 const { composeRow } = require('./compositor');              // 세트 합성(generate 단계)
@@ -294,6 +294,78 @@ async function generatePack(pack, { depth, userId }) {
   }
 }
 
+/** 씨앗 컷의 소스 사진 — 상태 컷이면 그 상태를 찍은 사진, 아니면 전체 소스(재굽기와 같은 규칙). */
+function sourcesForSeed(plan, refSku) {
+  const st = (plan.states || []).find((s) => s.key === refSku);
+  const paths = (st ? (st.sources || []) : (plan.sources || [])).filter((p) => fs.existsSync(p));
+  return paths.length ? paths : (plan.sources || []).filter((p) => fs.existsSync(p));
+}
+
+/**
+ * ✦ "이 컷처럼 더" — 씨앗 컷과 같은 결로 형제 컷 N장을 **재기획 후 즉시 생성**한다(백그라운드).
+ *
+ *   ① 씨앗의 렌즈·프롬프트로 planPack(seed) 호출 → 같은 무드, 다른 구도 N개
+ *   ② 각 컷을 씨앗의 레퍼로 생성(같은 상태·변형 유지) → recordAsset(2K·원본썸네일 공통경로)
+ *   ③ 새 컷을 config.plan 에 append → 이후 "다시"·"더 뽑기"가 이 컷도 인식
+ *   status=processing 으로 두고, 완료 후 done. 프론트는 refreshPack 폴링으로 새 카드가 뜬다.
+ */
+async function moreLikePack(pack, { cutKey, count, userId }) {
+  try {
+    const fresh = await repo.getPack({ id: pack.id });
+    const plan = (fresh.config && fresh.config.plan) || {};
+    const cuts = plan.cuts || [];
+    const seed = cuts.find((c) => c.key === cutKey);
+    if (!seed) throw new Error('씨앗 컷을 찾을 수 없어요');
+    const refPath = latestRefPathFor(fresh, seed.refSku);
+    if (!refPath) throw new Error('캐논 레퍼가 없어요');
+    const srcPaths = sourcesForSeed(plan, seed.refSku);
+    if (!srcPaths.length) throw new Error('소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)');
+
+    const want = Math.max(2, Math.min(4, count || 3));
+    const images = await Promise.all(srcPaths.map(toVisionImage));
+    const lens = (plan.lenses || [])[seed.lensIdx != null ? seed.lensIdx : -1] || null;
+    // category = 확정값(오분류 방지 — planPack이 이걸로 그라운딩). vertical 은 폴백.
+    const category = (fresh.config && fresh.config.category) || fresh.vertical || null;
+    const planned = await planPack({
+      images, hint: fresh.product || '', category, product: plan.product,
+      want, lens, exclude: cuts.map((c) => c.label),
+      seed: { label: seed.label, prompt: seed.promptText || seed.prompt },
+    });
+
+    const ctx = { product: plan.product || fresh.product || '' };
+    const derived = (plan.states || []).some((s) => s.key === seed.refSku && s.derived);
+    const brandRefPath = (derived && plan.brandSku) ? latestRefPathFor(fresh, plan.brandSku) : null;
+    // 키 충돌 방지 — 씨앗 형제도 기존 컷·자산과 key가 겹치면 카드가 덮인다.
+    const taken = new Set(cuts.map((c) => c.key).concat((fresh.assets || []).filter((a) => a.kind === 'still').map((a) => a.cut_key)));
+    const newPlanCuts = [];
+    for (const c of (planned.cuts || [])) {
+      let key = c.key || 'more'; let i = 1;
+      while (taken.has(key)) key = `${c.key || 'more'}_m${i++}`;
+      taken.add(key);
+      const cut = { key, label: c.label, w: c.w, h: c.h, neg: c.neg, prompt: c.promptText || c.label, refSku: seed.refSku || null };
+      try {
+        const buf = await genStill({ canonRefPath: refPath, brandRefPath, cut, ctx });
+        await recordAsset(fresh, { kind: 'still', key, label: cut.label, buffer: buf, userId });
+        // 새 컷 스펙을 계획에 남긴다(재생성·더뽑기가 재사용). promptText/refSku/lensIdx 보존.
+        newPlanCuts.push({ key, label: cut.label, w: cut.w, h: cut.h, neg: cut.neg, aspect: c.aspect || null, refSku: seed.refSku || null, lensIdx: seed.lensIdx != null ? seed.lensIdx : null, promptText: cut.prompt });
+      } catch (e) { logger.warn?.(`[pack ${fresh.id}] more-like ${key} 실패: ${e.message}`); }
+    }
+    if (newPlanCuts.length) {
+      const cur = await repo.getPack({ id: pack.id });
+      const cplan = (cur.config && cur.config.plan) || {};
+      cplan.cuts = (cplan.cuts || []).concat(newPlanCuts);
+      cplan.slots = (cplan.slots || []).concat(newPlanCuts.map((c) => ({ kind: 'still', key: c.key, label: c.label })));
+      await repo.setPlan(pack.id, cplan);
+    } else {
+      throw new Error('생성에 실패했어요 — 크레딧·한도를 확인해 주세요');
+    }
+    await repo.setStatus(pack.id, 'done');
+  } catch (e) {
+    logger.error?.(`[pack ${pack.id}] more-like failed: ${e.message}`);
+    await repo.setStatus(pack.id, 'failed', e.message);
+  }
+}
+
 /** 확인 단계 — 사진+힌트로 카테고리·제품 감지(가벼움). 프론트가 "이거 맞아요?" 확인받고 POST /로 확정 생성. */
 router.post('/classify', upload.array('photos', 10), normalizeUploads, async (req, res, next) => {
   try {
@@ -403,15 +475,54 @@ router.post('/:id/resume', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/** 추가 가능한 컨셉(그 카테고리 컷 라이브러리 중 아직 안 만든 것). "컨셉 추가" 메뉴용. */
-router.get('/:id/cut-library', async (req, res, next) => {
+/**
+ * ➕ 더 뽑기 — **이미 기획된** 남은 컷을 생성한다(플래너 재호출 0). 게이트 depth로 일부만 만든 뒤
+ *   "역시 더"일 때, 기획·지불은 이미 끝난 컷을 꺼낸다. generatePack이 이미 만든 컷을 건너뛴다.
+ *   count 미지정이면 남은 전부. done/failed/유휴 상태에서 동작(생성 중이면 409).
+ */
+router.post('/:id/extend', async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
-    const have = new Set((pack.assets || []).filter((a) => a.kind === 'still').map((a) => a.cut_key));
-    const suite = suiteFor(pack.vertical);
-    const items = (suite.stills || []).filter((c) => !have.has(c.key)).map((c) => ({ key: c.key, label: c.label }));
-    res.json({ items });
+    if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요(깊이를 고르고 생성하세요)' });
+    if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
+    const plan = (pack.config && pack.config.plan) || {};
+    const cuts = plan.cuts || [];
+    if (!cuts.length) return res.status(409).json({ error: '계획이 없어요(처음부터 다시 만들어 주세요)' });
+    if (!latestRefPath(pack)) return res.status(409).json({ error: '캐논 레퍼가 없어요(처음부터 다시 만들어 주세요)' });
+    const made = new Set((pack.assets || []).filter((a) => a.kind === 'still' && a.url).map((a) => a.cut_key));
+    const remaining = cuts.filter((c) => !made.has(c.key)).length;
+    if (remaining <= 0) return res.status(409).json({ error: '계획한 컷을 다 만들었어요 — 컷의 "이런 걸로 더"로 새 컷을 뽑아 보세요' });
+    const count = req.body && req.body.count ? Math.max(1, parseInt(req.body.count, 10) || 0) : remaining;
+    // depth = 앞에서 N개. generatePack이 이미 만든 컷을 건너뛰므로, (만든 수 + 원하는 만큼)까지 열면 그만큼 새로 나온다.
+    const depth = Math.min(made.size + count, cuts.length);
+    await repo.mergeConfig(pack.id, { depth });
+    await repo.setStatus(pack.id, 'processing');
+    res.json({ ok: true, remaining, adding: Math.min(count, remaining) });
+    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
+  } catch (e) { next(e); }
+});
+
+/**
+ * ✦ 이런 걸로 더 — 씨앗 컷과 같은 결로 형제 컷 N장(무드 유지, 구도 변주). 플래너 1회 + 생성.
+ *   done/failed/유휴 상태에서 동작. 백그라운드라 프론트는 refreshPack 폴링으로 새 카드를 받는다.
+ */
+router.post('/:id/more-like', async (req, res, next) => {
+  try {
+    const pack = await repo.getPack({ id: Number(req.params.id) });
+    if (!pack) return res.status(404).json({ error: 'not found' });
+    if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요' });
+    if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
+    const cutKey = String((req.body && req.body.cutKey) || '');
+    const plan = (pack.config && pack.config.plan) || {};
+    const seed = (plan.cuts || []).find((c) => c.key === cutKey);
+    if (!seed) return res.status(400).json({ error: '컷을 찾을 수 없어요' });
+    if (!latestRefPathFor(pack, seed.refSku)) return res.status(409).json({ error: '캐논 레퍼가 없어요' });
+    if (!sourcesForSeed(plan, seed.refSku).length) return res.status(409).json({ error: '소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)' });
+    const count = Math.max(2, Math.min(4, parseInt((req.body && req.body.count) || 3, 10) || 3));
+    await repo.setStatus(pack.id, 'processing');
+    res.json({ ok: true, adding: count });
+    setImmediate(() => moreLikePack(pack, { cutKey, count, userId: req.user && req.user.id }));
   } catch (e) { next(e); }
 });
 
@@ -431,23 +542,9 @@ router.post('/:id/regenerate-cut', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/** 컨셉 추가 — 라이브러리 컷 하나를 새로 생성(기존 레퍼로). */
-router.post('/:id/add-cut', async (req, res, next) => {
-  try {
-    const pack = await repo.getPack({ id: Number(req.params.id) });
-    if (!pack) return res.status(404).json({ error: 'not found' });
-    const cutKey = String((req.body && req.body.cutKey) || '');
-    const suite = suiteFor(pack.vertical);
-    const cut = (suite.stills || []).find((c) => c.key === cutKey) || resolveCut(pack, cutKey);
-    if (!cut) return res.status(400).json({ error: 'unknown cut' });
-    const refPath = latestRefPath(pack);
-    if (!refPath) return res.status(409).json({ error: '캐논 레퍼가 아직 없어요' });
-    const ctx = { product: (pack.config && pack.config.plan && pack.config.plan.product) || pack.product || '' };
-    const buf = await genStill({ canonRefPath: refPath, cut, ctx });
-    const asset = await recordAsset(pack, { kind: 'still', key: cut.key, label: cut.label, buffer: buf, userId: req.user && req.user.id });
-    res.json({ asset });
-  } catch (e) { next(e); }
-});
+// (제거됨) POST /:id/add-cut — suite 라이브러리에서 컷을 골라 추가했으나, SUITES에 beverage 하나뿐이라
+//   화장품·의류 팩에서도 음료 컷 목록이 떴다(오분류 계열 누수). "이런 걸로 더"(more-like)가 대체한다 —
+//   남의 카테고리 라이브러리에서 고르는 것보다 이 제품의 실제 컷을 씨앗으로 변주하는 게 맞다.
 
 /** 캐논 레퍼 재굽기 — 저장된 소스 사진에서 다시 베이크(새 버전). 이후 컷 재생성은 이 새 레퍼를 씀. */
 router.post('/:id/rebake-ref', async (req, res, next) => {

@@ -52,22 +52,24 @@
   .cutbtn{font-family:inherit;font-size:10.5px;font-weight:600;padding:4px 8px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--border);text-decoration:none;line-height:1}
   .cutbtn:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.09)}
   .cutbtn:disabled{opacity:.6;cursor:default}
+  /* ✦ 이런 걸로 더 — 확장 조작이라 재생성보다 한 톤 강조(accent 테두리) */
+  .cutbtn.accent{color:var(--accent2);border-color:color-mix(in srgb,var(--accent2) 45%,transparent)}
+  .cutbtn.accent:hover{color:#fff;background:var(--accent2);border-color:var(--accent2)}
+  /* ➕ 더 뽑기 바 — 결과 맨 아래, 섹션 폭 전체 */
+  .more-bar{margin:26px 0 8px;padding:18px 20px;border:1px dashed var(--border2);border-radius:14px;background:rgba(255,255,255,.02);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+  .more-note{font-size:13px;color:var(--dim);line-height:1.5;flex:1;min-width:200px}
+  .more-note b{color:var(--text);font-weight:600}
+  .more-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .more-btn{font-family:inherit;font-size:13px;font-weight:700;padding:10px 16px;border-radius:11px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13);white-space:nowrap}
+  .more-btn:hover{filter:brightness(1.08)}
+  .more-btn.ghost{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--dim);box-shadow:none}
+  .more-btn.ghost:hover{color:var(--text);background:rgba(255,255,255,.09)}
+  .more-btn:disabled{opacity:.55;cursor:default;filter:none}
   .ver{position:absolute;top:7px;left:7px;display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:8px;padding:2px 4px;z-index:3}
   .ver span{font-size:10px;font-weight:700;color:#fff;padding:0 2px;font-variant-numeric:tabular-nums}
   .verb{width:18px;height:18px;border:none;background:none;color:#fff;font-size:10px;cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0}
   .verb:hover:not(:disabled){background:rgba(255,255,255,.2)}
   .verb:disabled{opacity:.35;cursor:default}
-  .grid figure.addcut{display:flex;align-items:center;justify-content:center;aspect-ratio:4/5;border:1.5px dashed var(--border2);background:rgba(255,255,255,.02);cursor:pointer;color:var(--dim);transition:border-color .15s,color .15s}
-  .grid figure.addcut:hover{border-color:var(--accent2);color:var(--text)}
-  .addcut-in{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:600}
-  .addcut-plus{width:34px;height:34px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:400}
-  .addmenu-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
-  .addmenu{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:16px;max-width:440px;width:100%;box-shadow:0 24px 60px -16px rgba(0,0,0,.7)}
-  .addmenu-h{font-family:'Sora';font-size:15px;font-weight:700;margin-bottom:12px}
-  .addmenu-list{display:flex;flex-wrap:wrap;gap:8px}
-  .addmenu-item{font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;color:var(--text);background:rgba(255,255,255,.05);border:1px solid var(--border)}
-  .addmenu-item:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent2)}
-  .addmenu-item:disabled{opacity:.6;cursor:default}
   /* 확인 스텝 — "이 제품 맞아요?" 카테고리 확정(오분류 사전 차단) */
   .cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
   .cf{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:22px;max-width:460px;width:100%;box-shadow:0 24px 60px -16px rgba(0,0,0,.7)}
@@ -491,9 +493,31 @@ function renderInteractive(pack) {
   const conceptHtml = concept ? `<h2>내 컨셉 미리보기</h2><div class="grid"><figure class="rescard"><a class="dl" href="${esc(concept.url)}" download="${esc(fname(concept))}" title="다운로드">⤓</a><img src="${esc(concept.url)}" loading="lazy"><figcaption>입력한 컨셉으로 만든 예시</figcaption></figure></div>` : '';
   $('#assets').innerHTML = conceptHtml + KIND_ORDER.filter(k => byKind[k]).map(k => {
     const cards = byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('');
-    const add = (k === 'still') ? `<figure class="addcut" onclick="openAddCut()"><div class="addcut-in"><div class="addcut-plus">+</div><div>컨셉 추가</div></div></figure>` : '';
-    return `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${cards}${add}</div>`;
-  }).join('');
+    return `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${cards}</div>`;
+  }).join('') + moreBarHtml(pack);
+}
+/**
+ * ➕ 더 뽑기 바 — 결과 하단. 두 갈래:
+ *   · "N장 더" = 이미 기획된 남은 컷 생성(플래너 0회, 싸다). 남은 게 없으면 이 버튼은 숨김.
+ *   · 컷 카드의 "✦ 이런 걸로 더"(cardHtml)가 넓게 말고 깊게 파는 쪽.
+ * 계획 컷 수 - 만든 스틸 수 = 남은 수. 스틸이 하나도 없으면(생성 전) 바 자체를 안 그린다.
+ */
+function moreBarHtml(pack) {
+  const plan = pack.config && pack.config.plan;
+  const cuts = (plan && plan.cuts) || [];
+  const made = new Set((pack.assets || []).filter(a => a.kind === 'still' && a.url).map(a => a.cut_key));
+  if (!made.size) return '';
+  const remaining = cuts.filter(c => !made.has(c.key)).length;
+  const chunk = Math.min(8, remaining);
+  const btns = [];
+  if (remaining > 0) {
+    btns.push(`<button class="more-btn" onclick="extendPack(${chunk},this)">+ ${chunk}장 더 뽑기</button>`);
+    if (remaining > chunk) btns.push(`<button class="more-btn ghost" onclick="extendPack(0,this)">남은 ${remaining}장 전부</button>`);
+  }
+  const note = remaining > 0
+    ? `이미 기획해 둔 컷이 ${remaining}장 더 있어요 — 추가 분석 없이 바로 나옵니다.`
+    : `기획해 둔 컷은 다 만들었어요. 마음에 드는 컷의 <b>✦ 이런 걸로 더</b>로 그 결의 새 컷을 뽑아 보세요.`;
+  return `<div class="more-bar"><div class="more-note">${note}</div>${btns.length ? `<div class="more-btns">${btns.join('')}</div>` : ''}</div>`;
 }
 function cardHtml(slot, versions, done) {
   const sid = slotId(slot);
@@ -506,9 +530,15 @@ function cardHtml(slot, versions, done) {
   const label = a.label || slot.label || a.cut_key || '';
   const flip = versions.length > 1 ? `<div class="ver"><button class="verb" onclick="flipVer('${esc(sid)}',-1)"${idx === 0 ? ' disabled' : ''}>◄</button><span>${idx + 1}/${versions.length}</span><button class="verb" onclick="flipVer('${esc(sid)}',1)"${idx === versions.length - 1 ? ' disabled' : ''}>►</button></div>` : '';
   const isRef = slot.kind === 'ref';
+  // ✦ 이런 걸로 더 — 이 컷을 씨앗으로 같은 결의 형제 컷 3장. 기획된 컷(config.plan.cuts)만 씨앗이 된다
+  //   (프롬프트·렌즈가 있어야 변주가 가능). 레퍼·컨셉·계획에 없는 컷엔 안 붙인다.
+  const cutKey = slot.key;
+  const seedable = !isRef && slot.kind === 'still' && ((PACK.config && PACK.config.plan && PACK.config.plan.cuts) || []).some(c => c.key === cutKey);
   const acts = isRef
     ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">↻ 레퍼 다시 굽기</button>`
-    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)">↻ 다시</button><a class="cutbtn" href="/studio" title="studio에서 정밀 편집">✎ studio</a>`;
+    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)">↻ 다시</button>`
+      + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="이 컷과 같은 무드로 각도·구도만 다른 컷을 더 뽑아요">✦ 이런 걸로 더</button>` : '')
+      + `<a class="cutbtn" href="/studio" title="studio에서 정밀 편집">✎ studio</a>`;
   return `<figure class="rescard" data-slot="${esc(sid)}"><a class="dl" href="${a.url}" download="${esc(fname(a))}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy">${flip}<figcaption>${esc(label)}<div class="cut-actions">${acts}</div></figcaption></figure>`;
 }
 function flipVer(sid, dir) {
@@ -544,22 +574,46 @@ async function rebakeRef(refKey, btn) {
     if (window.toast) toast('레퍼 새 버전 — 이제 "다시"는 이 레퍼로 생성됩니다');
   } catch (e) { busyOff(ov); if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
-async function openAddCut() {
+/**
+ * ➕ 더 뽑기 / ✦ 이런 걸로 더 — 둘 다 백그라운드 생성이라, 킥오프 후 refreshPack 로 폴링한다.
+ *   done 화면(renderInteractive)은 자산이 있는 컷만 그리므로, 새 컷이 완성되는 대로 카드가 늘어난다.
+ *   생성 중엔 상단 상태줄이 "더 만드는 중"을 알린다. moreBusy 로 중복 킥오프를 막는다.
+ */
+let moreBusy = false;
+async function kickMore(url, body, startMsg) {
+  if (moreBusy) return;
+  moreBusy = true;
+  $('#status').innerHTML = '<span class="spin"></span>' + startMsg;
   try {
-    const r = await fetch('/api/pack/' + PACK_ID + '/cut-library'); const d = await r.json();
-    const items = d.items || []; if (!items.length) { if (window.toast) toast('추가할 컨셉이 없어요(이미 다 있음)'); return; }
-    document.querySelector('.addmenu-bg')?.remove();
-    document.body.insertAdjacentHTML('beforeend', `<div class="addmenu-bg" onclick="if(event.target===this)this.remove()"><div class="addmenu"><div class="addmenu-h">추가할 컨셉 고르기</div><div class="addmenu-list">${items.map(it => `<button class="addmenu-item" onclick="addCut('${esc(it.key)}',this)">${esc(it.label || it.key)}</button>`).join('')}</div></div></div>`);
-  } catch (e) { if (window.toast) toast('목록 실패', 'error'); }
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || '실패');
+    pollMore();   // 완료(done/failed)까지 refreshPack 반복
+  } catch (e) {
+    moreBusy = false; $('#status').innerHTML = '';
+    fail((startMsg.includes('이런') ? '더 만들기 실패: ' : '더 뽑기 실패: ') + (e.message || e));
+  }
 }
-async function addCut(cutKey, btn) {
-  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '생성 중…';
-  try {
-    const r = await fetch('/api/pack/' + PACK_ID + '/add-cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cutKey }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
-    document.querySelector('.addmenu-bg')?.remove(); await refreshPack();
-    if (window.toast) toast('컨셉 추가됨');
-  } catch (e) { if (window.toast) toast('추가 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+async function pollMore() {
+  let pack;
+  try { pack = await (await fetch('/api/pack/' + PACK_ID)).json(); }
+  catch (e) { setTimeout(pollMore, 2500); return; }
+  renderInteractive(pack);   // 자산 있는 컷만 → 완성되는 대로 카드가 늘어난다
+  const n = (pack.assets || []).filter(a => a.kind === 'still' && a.url).length;
+  if (pack.status === 'processing') { $('#status').innerHTML = '<span class="spin"></span>더 만드는 중 · 현재 ' + n + '컷'; setTimeout(pollMore, 2500); return; }
+  moreBusy = false;
+  if (pack.status === 'failed') { $('#status').innerHTML = ''; fail(pack.error || '생성이 끊겼어요'); loadWorks(); return; }
+  $('#status').innerHTML = '완료 · ' + (pack.assets || []).length + '개 자산'; loadWorks();
+}
+function extendPack(count, btn) {
+  if (btn) btn.disabled = true;
+  kickMore('/api/pack/' + PACK_ID + '/extend', { count }, count ? (count + '장 더 뽑는 중…') : '남은 컷 전부 만드는 중…');
+}
+function moreLike(cutKey, btn) {
+  if (btn && btn.disabled) return; if (btn) btn.disabled = true;
+  const ov = busyOn(btn && btn.closest('figure'), '이 결로 더 만드는 중…');
+  kickMore('/api/pack/' + PACK_ID + '/more-like', { cutKey }, '이런 걸로 더 만드는 중…')
+    .finally(() => { busyOff(ov); });
 }
 
 function gatedSlots(plan) {   // 게이트에서 고른 depth만큼의 스틸 + 합성·레퍼(depth=0=전부)
