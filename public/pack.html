@@ -205,6 +205,10 @@
   .rb-src-row{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
   .rb-src-thumb{width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid var(--border);display:block;background:rgba(255,255,255,.04);cursor:zoom-in}
   .rb-src-thumb:hover{border-color:var(--border2);filter:brightness(1.1)}
+  /* 캐논 레퍼 썸네일 — "생성 기준"이라 원본과 살짝 구분(점선 테두리) + 앞에 라벨 */
+  .rb-canon-thumb{border-style:dashed;border-color:var(--border2)}
+  .rb-canon-lbl{margin-left:2px}
+  .rb-canon-lbl .k{color:var(--accent2)}
   /* 🔍 원본 크게 보기 — 38px 썸네일로는 "뭘로 만들었는지"만 알 뿐, 라벨이 맞는지 확인이 안 된다. */
   .lb-bg{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
   .lb-box{display:flex;flex-direction:column;gap:12px;max-width:min(92vw,900px);max-height:92vh;cursor:default}
@@ -862,7 +866,8 @@ async function loadWorks() {
         const md = x.metadata || {};
         // 🔑 원본 사진 여러 장 — product_images(배열) 우선, 없으면 단수 product_image 폴백(옛 데이터·studio).
         const srcImgs = (Array.isArray(md.product_images) && md.product_images.length) ? md.product_images : ((x.product_image || md.product_image) ? [x.product_image || md.product_image] : []);
-        b = { key: k, items: [], idxs: [], promptText: x.prompt_text || '', templateSource: x.template_source || '', templateName: x.template_name || '', model: x.model || '', w: x.width, h: x.height, productImages: srcImgs, modelName: md.model_name || '', choices: md.choices || null, dateKey: dateKeyOf(x.created_at), dateLabel: fmtBatchDate(x.created_at) };
+        const canonRefs = Array.isArray(md.canonical_refs) ? md.canonical_refs : [];   // 🏷 캐논 레퍼 전부 — "생성 기준"
+        b = { key: k, items: [], idxs: [], promptText: x.prompt_text || '', templateSource: x.template_source || '', templateName: x.template_name || '', model: x.model || '', w: x.width, h: x.height, productImages: srcImgs, canonRefs, modelName: md.model_name || '', choices: md.choices || null, dateKey: dateKeyOf(x.created_at), dateLabel: fmtBatchDate(x.created_at) };
         byKey[k] = b; BATCHES.push(b);
       }
       const fn = x.file_path.split('/').pop();
@@ -899,10 +904,14 @@ function batchRowHtml(b) {
     + `<span class="spec rb-spec-ratio"${ratioStatic ? '' : ' hidden'}>${ratioStatic ? `<b>${ratioStatic}</b>` : ''}</span>`
     + (ML ? `<span class="spec">${esc(ML)}</span>` : '') + `</div>`;
   const srcImgs = b.productImages || [];
+  const canonRefs = b.canonRefs || [];
   // 🔑 원본을 올린 개수만큼 다 보여준다(각 클릭 → 크게 보기). data-u 로 넘긴다(esc가 따옴표를 엔티티로 바꿔 onclick 리터럴에 직접 못 넣음).
   const srcThumbs = srcImgs.map((u, i) => `<img class="rb-src-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="올린 원본 사진 ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — 클릭하면 크게 봅니다" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
-  const srcRow = ((srcImgs.length || b.modelName) ? `<div class="rb-src-row">`
-    + srcThumbs
+  // 🏷 캐논 레퍼 — "생성 기준". 원본 뒤에 라벨과 함께 나란히(구분 없이 다 보여줌).
+  const refThumbs = canonRefs.map((u) => `<img class="rb-src-thumb rb-canon-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="캐논 레퍼 — 이 결과를 만든 생성 기준(클릭하면 크게)" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
+  const canonBlock = canonRefs.length ? `<span class="rb-src-item rb-canon-lbl"><span class="k">캐논 레퍼</span></span>${refThumbs}` : '';
+  const srcRow = ((srcImgs.length || canonRefs.length || b.modelName) ? `<div class="rb-src-row">`
+    + srcThumbs + canonBlock
     + (b.modelName ? `<span class="rb-src-item rb-src-model"><span class="k">Model</span>${esc(b.modelName)}</span>` : '') + `</div>` : '');
   const chRow = (() => { const c = b.choices; if (!c || typeof c !== 'object') return '';
     const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });

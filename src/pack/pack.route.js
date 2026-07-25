@@ -166,6 +166,13 @@ function packSourceUrlsFrom(pack) {
   return cfg.sourceRef ? [`/images/${String(cfg.sourceRef).split('/').pop()}`] : [];
 }
 
+/** 이 팩 캐논 레퍼 URL 전부 — 상태/변형(cut_key)별 **최신 1장씩**(재굽기 버전은 최신만). 크리에이션 카드에 "생성 기준"으로 붙인다. */
+function packRefUrls(pack) {
+  const latest = {};   // cut_key → url (id ASC 라 뒤가 최신)
+  (pack.assets || []).filter((a) => a.kind === 'ref' && a.url).forEach((a) => { latest[a.cut_key || 'ref_main'] = a.url; });
+  return Object.values(latest);
+}
+
 /** 자산 하나 적재: tmp/images 발행(+R2) + pack_assets(새 행=버전) + generation_results dual-write. 반환 {kind,cut_key,label,url}. */
 async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) {
   const name = `pack_${pack.share_id}_${kind}_${key}_${Date.now()}.jpg`; // 버전마다 별 파일(재생성=비파괴)
@@ -174,6 +181,10 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) 
   await mediaStore.put(name, buf).catch(() => {});        // 영속(R2) best-effort
   const url = `/images/${name}`;
   await repo.addAsset({ packId: pack.id, kind, cutKey: key, label, url });
+  // 🚫 캐논 레퍼·합성은 크리에이션 피드(generation_results)에 **독립 항목으로 안 넣는다** — 딜리버리가 아니라 부품이라
+  //   피드 개수를 부풀리고 딜리버리처럼 보였다. 대신 스틸 카드 옆에 "생성 기준"으로 딸려 보인다(canonical_refs).
+  //   pack_assets 에는 그대로 남으니 pack 결과 페이지 "캐논 레퍼" 섹션·제안서 before/after(pack_assets 직접 조회)는 무영향.
+  if (kind === 'ref' || kind === 'composite') return { kind, cut_key: key, label, url };
   try {
     const idx = await ensurePackPrompt(pack, userId);
     if (idx != null) {
@@ -181,15 +192,13 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) 
       //   그 자리가 늘 비었다 → 직접 실어준다(프론트가 metadata 폴백을 읽는다).
       //   🔑 여러 각도를 넣으면 전부(product_images) — 예전엔 첫 장만 실어 "하나만 보임" 버그.
       const srcUrls = packSourceUrlsFrom(pack);
-      // 🏷 캐논 레퍼는 딜리버리 컷이 아니라 "생성 기준"이다 → 피드에서 그렇게 명시(안 그러면 'main' 결과물처럼 보인다).
-      const tName = kind === 'ref'
-        ? ('캐논 레퍼' + (label && label !== 'main' ? ` · ${label}` : ''))
-        : (label || '콘텐츠 팩');
+      const refUrls = packRefUrls(pack);   // 🏷 캐논 레퍼 전부 — 카드에 "생성 기준"으로 나란히
       await resultRepo.insert({
         promptIdx: idx, filePath: `tmp/images/${name}`, model: PACK_MODEL,  // 피드가 basename → /images/<name> 서빙
         metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id,
-          ...(srcUrls[0] ? { product_image: srcUrls[0], product_images: srcUrls } : {}) },
-        visibility: 'private', templateSource: 'pack', templateName: tName,
+          ...(srcUrls[0] ? { product_image: srcUrls[0], product_images: srcUrls } : {}),
+          ...(refUrls.length ? { canonical_refs: refUrls } : {}) },
+        visibility: 'private', templateSource: 'pack', templateName: label || '콘텐츠 팩',
       });
     }
   } catch (e) { logger.warn?.(`[pack ${pack.id}] result insert failed: ${e.message}`); }
