@@ -197,7 +197,7 @@ async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) 
       const refUrls = packRefUrls(pack);   // 🏷 캐논 레퍼 전부 — 카드에 "생성 기준"으로 나란히
       await resultRepo.insert({
         promptIdx: idx, filePath: `tmp/images/${name}`, model: PACK_MODEL,  // 피드가 basename → /images/<name> 서빙
-        metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id,
+        metadata: { source: 'pack', kind, cut_key: key, cut: label || null, pack_share_id: pack.share_id, batch_id: pack.share_id,
           ...(srcUrls[0] ? { product_image: srcUrls[0], product_images: srcUrls } : {}),
           ...(refUrls.length ? { canonical_refs: refUrls } : {}) },
         visibility: 'private', templateSource: 'pack', templateName: label || '콘텐츠 팩',
@@ -645,6 +645,7 @@ router.post('/:id/video', async (req, res, next) => {
       dryRunVideo: false,          // LIVE
       visibility: 'private',       // 제품 영상 보호(팩 컷과 동일 기본)
       autoCommit: true,            // 🔖 에디터 없는 팩 영상 → 완성 즉시 자동 저장(내 크리에이션에 뜨게)
+      batchId: pack.share_id,      // 🔗 팩 이미지와 같은 배치로 묶기(내 크리에이션에서 함께 보이게)
     });
     await repo.mergeConfig(pack.id, { videoJobId: out.jobId });
     res.json({ ok: true, jobId: out.jobId, cost: out.cost });

@@ -267,7 +267,7 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
   referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
-  audio = {}, autoCommit = false }) {
+  audio = {}, autoCommit = false, batchId = null }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -297,7 +297,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -311,7 +311,7 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false }) {
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
@@ -391,7 +391,7 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     // 🔖 에디터 없는 경로(팩 영상 등)는 여기서 바로 저장 확정(commit) → generation_results(내 크리에이션)에 뜬다.
     //   기본 false라 Ad Video 에디터 흐름(Save & finish)은 그대로. 서빙본은 이미 복사됐고, 실패해도 draft는 남으니 무시.
     if (autoCommit) {
-      await commitJob(jobId, userId).catch((e) => log.warn?.(`UGC job ${jobId} 자동커밋 실패(무시): ${e && e.message}`));
+      await commitJob(jobId, userId, batchId).catch((e) => log.warn?.(`UGC job ${jobId} 자동커밋 실패(무시): ${e && e.message}`));
     }
   } catch (err) {
     if (charge) await charge.refund().catch(() => {});
@@ -982,7 +982,7 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
  *   ⚠️ reRender와 같은 잡별 직렬화 큐(chainRun)에 태워 호출(commit vs 편집 경쟁 방지 — 아래 commitJob 래퍼).
  * @returns {Promise<{resultIdx:number, already?:boolean}|null>} null=없음/권한없음/미완성
  */
-async function _commitJobImpl(id, userId) {
+async function _commitJobImpl(id, userId, batchId) {
   const r = await query(
     `SELECT id, user_id, team_id, output_type, visibility, title, caption, hashtags,
             duration_sec, subtitle_mode, result_url, result_idx, script, status
@@ -1015,6 +1015,7 @@ async function _commitJobImpl(id, userId) {
     fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
     metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
       subtitleMode: j.subtitle_mode, clips: nClips,
+      ...(batchId != null ? { batch_id: String(batchId) } : {}),   // 🔗 팩 영상을 팩 이미지와 같은 배치로 묶기
       ...(_prodUrl ? { product_image: _prodUrl } : {}) },
     visibility: j.visibility === 'private' ? 'private' : 'public',
   });
@@ -1031,8 +1032,8 @@ async function _commitJobImpl(id, userId) {
   return { resultIdx: savedResult.idx };
 }
 // 공개 커밋 — reRender와 같은 잡별 큐에 태움(commit vs 편집 경쟁 방지). sendBeacon 자동커밋도 이 경로.
-function commitJob(id, userId) {
-  return chainRun(id, () => _commitJobImpl(id, userId));
+function commitJob(id, userId, batchId) {
+  return chainRun(id, () => _commitJobImpl(id, userId, batchId));
 }
 
 /**
