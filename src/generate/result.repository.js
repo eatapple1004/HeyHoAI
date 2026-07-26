@@ -191,9 +191,13 @@ async function findByPromptIdx(promptIdx) {
   return result.rows;
 }
 
-async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
+async function findAll({ userId, teamId, limit = 50, offset = 0, type } = {}) {
   // 팀 컨텍스트면 팀 소유 프롬프트의 결과물, 개인이면 본인 & 비팀
   const where = teamId ? 'p.team_id = $1' : 'p.user_id = $1 AND p.team_id IS NULL';
+  // type 필터: reel=영상 확장자만 / photo=영상 아닌 것만 (라이브러리 탭이 서버측으로 걸러 페이지네이션).
+  let typeClause = '';
+  if (type === 'reel') typeClause = " AND gr.file_path ~* '\\.(mp4|webm|mov)$'";
+  else if (type === 'photo') typeClause = " AND (gr.file_path IS NULL OR gr.file_path !~* '\\.(mp4|webm|mov)$')";
   const owner = teamId || userId;
   const result = await query(
     `SELECT gr.*, p.prompt_text, p.tags, c.name as character_name,
@@ -208,7 +212,7 @@ async function findAll({ userId, teamId, limit = 50, offset = 0 } = {}) {
      LEFT JOIN characters c ON c.id = gr.character_id
      LEFT JOIN users u ON u.id = p.user_id
      LEFT JOIN marketplace_templates mt ON mt.from_creation_idx = gr.idx AND mt.creator_id = p.user_id AND mt.origin = 'auto'
-     WHERE ${where}
+     WHERE ${where}${typeClause}
      ORDER BY gr.created_at DESC LIMIT $2 OFFSET $3`,
     [owner, limit, offset]
   );

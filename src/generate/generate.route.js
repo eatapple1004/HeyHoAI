@@ -800,13 +800,14 @@ router.get('/prompts/:idx', async (req, res, next) => {
 // ─── 결과물 목록 ───
 router.get('/results', async (req, res, next) => {
   try {
-    const { limit, offset } = req.query;
+    const { limit, offset, type } = req.query;
     const teamId = await teamCredit.activeTeamId(req.user.id);
     const data = await resultRepo.findAll({
       userId: teamId ? undefined : req.user.id,
       teamId,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
+      type: (type === 'reel' || type === 'photo') ? type : undefined,
     });
     res.json({ success: true, data });
   } catch (err) { next(err); }
