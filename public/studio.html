@@ -239,8 +239,11 @@
   #composeTop.cutui-card .cutui-toprow .tpl-pick-cta::before{position:absolute;top:10px;left:12px;font-size:10px;font-weight:800;letter-spacing:.7px;color:var(--faint);z-index:2;pointer-events:none}
   #composeTop.cutui-card .cutui-toprow .cutui-prodhost::before{content:'1 · YOUR PRODUCT'}
   #composeTop.cutui-card .cutui-toprow .tpl-pick-cta::before{content:'2 · TEMPLATE'}
+  /* 캡션은 CSS content라 i18n(텍스트노드 치환)이 못 잡음 → html[lang]로 한국어 대응 */
+  html[lang="ko"] #composeTop.cutui-card .cutui-toprow .cutui-prodhost::before{content:'1 · 내 제품'}
+  html[lang="ko"] #composeTop.cutui-card .cutui-toprow .tpl-pick-cta::before{content:'2 · 템플릿'}
   /* (2026-07-21 이미지버튼) 제품 슬롯 = 58px 정사각(레오나르도식). 세로 stretch 아님, 칩 옆에서 세로 가운데. */
-  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;flex-direction:row;align-items:center;gap:10px;height:auto;align-self:stretch;flex:1;width:100%}
+  #composeTop.cutui-card .cutui-toprow .subject-row{margin:0;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;height:auto;align-self:stretch;flex:1;width:100%}
   /* 순서: [이미지 타일…][＋버튼]. DOM은 [버튼][타일]이라 flex order로 뒤집음(JS 무변경). */
   #composeTop.cutui-card .cutui-toprow .img-add-wrap{display:flex;order:1;align-self:center;flex:1}
   #composeTop.cutui-card .cutui-toprow .ref-tiles{order:0;height:auto;align-items:center;flex-wrap:nowrap;flex:none;gap:8px}
