@@ -305,15 +305,19 @@ function mapRow(r){
     template:(r.tags||[]).filter(t=>typeof t==='string'&&t.indexOf('tpl:')===0).map(t=>t.slice(4))[0]||inferTemplate(r.prompt_text)
   };
 }
+// 현재 탭 → 서버 type 필터. Reels=영상만, Photos=사진만, All=전체.
+function typeParam(){ return filter==='Reels'?'reel':(filter==='Photos'?'photo':''); }
 async function loadMore(){
   if(LOADING||DONE)return; LOADING=true;
   try{
-    const res=await fetch('/api/generate/results?limit='+PAGE+'&offset='+OFFSET);
+    const tp=typeParam();
+    const pg=filter==='Reels'?20:PAGE;               // 릴스는 20개씩
+    const res=await fetch('/api/generate/results?limit='+pg+'&offset='+OFFSET+(tp?'&type='+tp:''));
     const data=await res.json();
     const raw=data.data||[];
     ITEMS=ITEMS.concat(raw.filter(r=>r.status==='success'&&r.file_path).map(mapRow));
-    OFFSET+=PAGE;
-    if(raw.length<PAGE)DONE=true;   // 마지막 페이지(원시 결과가 한 페이지 미만) → 종료
+    OFFSET+=pg;
+    if(raw.length<pg)DONE=true;   // 마지막 페이지 → 종료
     render();
   }catch(e){console.error('results load failed',e);}
   finally{LOADING=false;}
@@ -464,7 +468,14 @@ async function toggleLike(idx,btn){
   }catch(e){toast('Like failed: '+(e.message||e));}
   finally{btn.disabled=false;}
 }
-function setFilter(f){filter=f;renderFilters();render();}
+function setFilter(f){
+  if(filter===f)return;
+  filter=f; renderFilters();
+  // 탭 전환 = 서버측 type 필터로 새로 로드(페이지네이션 리셋). "전체 로딩 안 되면 릴스 안 보임" 문제 해소.
+  ITEMS=[]; OFFSET=0; DONE=false; LOADING=false;
+  document.getElementById('grid').innerHTML='';
+  loadMore();
+}
 function cardKey(e,idx){if(e.key==='Enter'||e.key===' '){e.preventDefault();location.href='/creation?idx='+idx+'&from=library';}}
 
 // ── 결과물 공개/비공개 토글 (My creations) — 카드 버튼 인플레이스 갱신(전체 render 없이=마이소니 깜빡임 방지) ──
