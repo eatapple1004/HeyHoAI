@@ -315,12 +315,25 @@ async function loadMore(){
     const res=await fetch('/api/generate/results?limit='+pg+'&offset='+OFFSET+(tp?'&type='+tp:''));
     const data=await res.json();
     const raw=data.data||[];
-    ITEMS=ITEMS.concat(raw.filter(r=>r.status==='success'&&r.file_path).map(mapRow));
+    const batch=raw.filter(r=>r.status==='success'&&r.file_path).map(mapRow);
+    const wasEmpty=ITEMS.length===0;
+    ITEMS=ITEMS.concat(batch);
     OFFSET+=pg;
     if(raw.length<pg)DONE=true;   // 마지막 페이지 → 종료
-    render();
+    // 첫 로드만 전체 render, 이후 무한스크롤 추가분은 append(innerHTML 통째 교체 금지 → 스크롤 위치 유지·최상단 튐 방지).
+    if(wasEmpty) render(); else appendCards(batch);
   }catch(e){console.error('results load failed',e);}
   finally{LOADING=false;}
+}
+// 새 카드만 그리드 끝에 추가(기존 DOM·스크롤 보존). 마소닉 span·영상 재생 배선은 새 카드에도 적용.
+function appendCards(items){
+  const list=items.filter(match);
+  document.getElementById('cnt').textContent=ITEMS.filter(match).length;
+  if(!list.length)return;
+  document.getElementById('empty').classList.add('hidden');
+  document.getElementById('grid').insertAdjacentHTML('beforeend', list.map(cardHtml).join(''));
+  playFeedVideos();
+  layoutGridMasonry();
 }
 async function load(){
   ITEMS=[]; OFFSET=0; DONE=false; LOADING=false;
@@ -370,31 +383,30 @@ const RC_SVG={
   priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 };
+function cardHtml(it){
+  // 릴스: preload=metadata(첫 프레임만)+hover 재생. 로드 실패 시 카드 제거(빈 카드 방지).
+  const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
+  const media=it.type==='reel'
+    ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
+    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
+  const vp=(it.visibility==='private');
+  const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
+  const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
+  const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${it.idx}" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
+  return `<div class="card" role="link" tabindex="0" aria-label="Open creation${it.name?' — '+esc(it.name):''}" onclick="location.href='/creation?idx=${it.idx}&from=library'" onkeydown="cardKey(event,${it.idx})">
+      <div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div>
+      ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
+      ${media}
+    </div>`;
+}
+// 전체 렌더(탭 전환·첫 로드). 무한스크롤 추가분은 appendCards로 붙여 스크롤 위치를 유지한다.
 function render(){
   const list=ITEMS.filter(match);
   document.getElementById('cnt').textContent=list.length;
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
   if(!list.length){grid.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
-  grid.innerHTML=list.map(it=>{
-    // 릴스: autoplay·preload=auto(전체 다운로드) 제거 → preload=metadata(첫 프레임만) + hover 시 1개만 재생. 다중 동시 다운로드/디코딩으로 인한 로딩지연·끊김 방지.
-    // 미디어 로드 실패(파일 누락 404 등) → 카드 자체 제거(빈 카드 안 뜨게)
-    const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
-    const media=it.type==='reel'
-      ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
-      : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
-    // 우상단 툴(studio와 동일): Private/Public 토글 + Download. (기존 좌상단 @핸들·♥는 제거)
-    const vp=(it.visibility==='private');
-    const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
-    const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
-    // 🎬 편집 가능한 영상이면 "Edit video"(Ad Video로 이동만) — 편집은 Ad Video에서.
-    const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${it.idx}" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
-    return `<div class="card" role="link" tabindex="0" aria-label="Open creation${it.name?' — '+esc(it.name):''}" onclick="location.href='/creation?idx=${it.idx}&from=library'" onkeydown="cardKey(event,${it.idx})">
-      <div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div>
-      ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
-      ${media}
-    </div>`;
-  }).join('');
+  grid.innerHTML=list.map(cardHtml).join('');
   playFeedVideos();
   layoutGridMasonry();
   // 사진이 하나라도 있으면 넛지 표시
