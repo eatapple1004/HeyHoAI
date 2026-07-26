@@ -302,7 +302,7 @@
   }
   function injectHelpButton() {
     if (document.querySelector('.ob-help-btn')) return;
-    var host = document.querySelector('.gen-bar') || document.querySelector('.topbar'); // 컴포즈 카드 우상단(빨간원), 없으면 헤더
+    var host = document.querySelector('.topbar') || document.querySelector('.gen-bar'); // (2026-07-26) 페이지 헤더(.topbar) 우상단 우선(레오나도식 Get Started 자리). 없으면 컴포즈 카드.
     if (!host) return;
     var inCompose = host.classList.contains('gen-bar');
     var btn = document.createElement('button');
