@@ -24,12 +24,42 @@
   .home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}
 
   /* 히어로 */
-  .home-hero{margin-bottom:34px}
+  .home-hero{margin-bottom:34px;text-align:center} /* (2026-07-26) create 바와 한 몸으로 중앙 정렬(레오나도식 중앙 히어로) */
+  .home-hero .home-eyebrow{justify-content:center}
+  .home-hero .home-sub{margin-left:auto;margin-right:auto}
   .home-eyebrow{font-family:'Sora';font-size:12.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:var(--accent2);margin-bottom:14px;display:flex;align-items:center;gap:9px}
   .home-eyebrow .dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 0 12px var(--accent)}
   .home-hero h1{font-family:'Sora';font-size:clamp(30px,4.4vw,46px);font-weight:800;line-height:1.08;letter-spacing:-1px;margin-bottom:14px}
   .home-hero h1 b{font-weight:800;background:linear-gradient(110deg,#fff 10%,var(--accent2) 55%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .home-sub{font-size:16px;color:var(--dim);max-width:600px;line-height:1.62}
+  /* (2026-07-26) 콘텐츠 팩 퀵스타트 — 레오나도식 프리미엄·중앙. 클릭 시 in-place 'Building'(이동 느낌 없이 거기서 생성처럼) → /pack.html. */
+  @view-transition{navigation:auto} /* 홈↔pack 부드러운 크로스페이드(지원 브라우저) */
+  .home-create{margin:30px auto 14px;max-width:760px}
+  .hc-bar{position:relative;display:flex;align-items:center;gap:10px;background:rgba(16,16,26,.62);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:none;border-radius:20px;padding:16px 16px 16px 18px;box-shadow:0 44px 100px -46px #000,0 0 80px -36px rgba(106,64,224,.5)}
+  .hc-bar::before{content:'';position:absolute;inset:0;border-radius:20px;padding:1.4px;background:linear-gradient(120deg,rgba(106,64,224,.85),rgba(94,224,214,.4) 46%,rgba(217,96,143,.7));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .hc-bar:focus-within{box-shadow:0 44px 100px -46px #000,0 0 92px -30px rgba(106,64,224,.72)}
+  .hc-photo{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:64px;height:64px;border:1.5px dashed var(--border2);border-radius:14px;background:transparent center/cover no-repeat;color:var(--dim);cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
+  .hc-photo:hover{border-color:var(--accent);color:var(--text)}
+  .hc-photo.has{border-style:solid;border-color:var(--accent)}
+  .hc-photo.has .hc-photo-ic,.hc-photo.has .hc-photo-t{display:none}
+  .hc-photo-ic svg{width:23px;height:23px}
+  .hc-photo-t{font-size:9.5px;font-weight:700;letter-spacing:.3px}
+  .hc-concept{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:15.5px;padding:0 4px}
+  .hc-concept::placeholder{color:var(--faint)}
+  .hc-go{flex:none;display:inline-flex;align-items:center;gap:8px;border:none;border-radius:14px;padding:14px 26px;font-family:'Sora';font-weight:700;font-size:15px;color:#fff;cursor:pointer;background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:0 12px 28px -12px var(--accent)}
+  .hc-go:hover{filter:brightness(1.07)}
+  .hc-go svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .hc-hint{margin:12px 2px 0;font-size:12.5px;color:var(--dim);text-align:center}
+  /* in-place 'Building' 상태 — 바 내용 페이드아웃 + 중앙 스피너 + 하단 프로그레스(이동 없이 그 자리에서 생성 시작 느낌) */
+  .hc-build{position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:12px;border-radius:20px;font-family:'Sora';font-weight:700;font-size:15px;color:#fff;letter-spacing:.2px}
+  .hc-bar.loading .hc-photo,.hc-bar.loading .hc-concept,.hc-bar.loading .hc-go{opacity:0;pointer-events:none;transition:opacity .18s}
+  .hc-bar.loading .hc-build{display:flex}
+  .hc-bar.loading{overflow:hidden}
+  .hc-build .spin{width:19px;height:19px;border-radius:50%;border:2.4px solid rgba(255,255,255,.22);border-top-color:#fff;animation:hcspin .7s linear infinite}
+  .hc-bar.loading::after{content:'';position:absolute;bottom:0;left:-40%;height:2.5px;width:40%;background:linear-gradient(90deg,transparent,var(--accent2),transparent);animation:hcprog 1.1s ease-in-out infinite}
+  @keyframes hcspin{to{transform:rotate(360deg)}}
+  @keyframes hcprog{0%{left:-40%}100%{left:100%}}
+  @media(max-width:600px){.hc-bar{flex-wrap:wrap}.hc-concept{order:3;flex:1 0 100%;padding:8px 4px 2px}.hc-go{flex:1;justify-content:center}}
 
   /* 대표 상품 2개(동급) — Ad Video · Studio Photos. 세로형 카드 나란히. */
   .feats{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -151,6 +181,47 @@
     <h1>What will you <b>create</b> today?</h1>
     <p class="home-sub">One product photo is enough — turn it into ad videos, cutouts, editorial and on-model shots. Pick a starting point; we handle the rest.</p>
   </header>
+
+  <!-- (2026-07-26) 콘텐츠 팩 퀵스타트 — 사진+컨셉 여기서 시작 → /pack.html 로 이동해 생성(레오나도식 디스패처) -->
+  <div class="home-create">
+    <div class="hc-bar">
+      <input type="file" id="hcFile" accept="image/*" hidden>
+      <button type="button" class="hc-photo" id="hcPhotoBtn" aria-label="Add product photo">
+        <span class="hc-photo-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 14.5l-4.5-4.5L5.5 21"/></svg></span>
+        <span class="hc-photo-t">Photo</span>
+      </button>
+      <input type="text" class="hc-concept" id="hcConcept" placeholder="Add a concept or mood — optional (a photo alone works)">
+      <button type="button" class="hc-go" id="hcGo">Create content pack <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <div class="hc-build" aria-hidden="true"><span class="spin"></span>Building your content pack…</div>
+    </div>
+    <p class="hc-hint">Start with your product photo — we build a full content pack. Or pick a specific tool below.</p>
+  </div>
+  <script>
+  (function(){
+    var file=document.getElementById('hcFile'), photoBtn=document.getElementById('hcPhotoBtn'),
+        concept=document.getElementById('hcConcept'), go=document.getElementById('hcGo');
+    if(!go) return;
+    var pending=null;
+    photoBtn.addEventListener('click', function(){ file.click(); });
+    file.addEventListener('change', function(){
+      var f=file.files && file.files[0]; if(!f) return;
+      var r=new FileReader();
+      r.onload=function(){ pending=r.result; photoBtn.classList.add('has'); photoBtn.style.backgroundImage="url('"+r.result+"')"; };
+      r.readAsDataURL(f);
+    });
+    function dispatch(){
+      try{
+        if(pending) sessionStorage.setItem('doppia_pack_photo', pending);
+        sessionStorage.setItem('doppia_pack_concept', concept.value||'');
+      }catch(e){}
+      var bar=document.querySelector('.hc-bar');
+      if(bar) bar.classList.add('loading'); // in-place 'Building' — 이동 느낌 없이 거기서 시작되는 것처럼
+      setTimeout(function(){ location.href='/pack.html'; }, 620); // 잠깐 보여주고 이동(view-transition으로 매끄럽게)
+    }
+    go.addEventListener('click', dispatch);
+    concept.addEventListener('keydown', function(e){ if(e.key==='Enter') dispatch(); });
+  })();
+  </script>
 
   <!-- 대표 상품 2개(동급): Ad Video · Shots -->
   <div class="feats">
