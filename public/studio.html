@@ -2715,8 +2715,12 @@ function setMode(m,initialVertical){
   // (2026-07-17) 진행 중이던 렌더에 다시 붙는다. setMode는 모드 전환마다 불리므로 페이지 로드당 1회로 막고,
   // 이번 세션에서 이미 렌더가 도는 중이면(genActive>0) 같은 잡을 두 번 붙이지 않는다.
   if(ugc && !window._ugcRestored && !genActive && typeof ugcRestoreActiveJobs==='function'){
-    window._ugcRestored=true; ugcRestoreActiveJobs();
-    if(typeof ugcReconnectWriteDraft==='function')ugcReconnectWriteDraft(); // 제출 전 작성 드래프트(컨셉·대본·설정·사진) 복원 바
+    window._ugcRestored=true;
+    // 재접속 바는 활성 잡 복원(async, genActive++)이 끝난 뒤 판정 — 동기로 먼저 부르면 genActive=0을 보고
+    //   생성 중에도 "이어보기" 바가 뜬다(생성 영상 + 초안복원 바 동시 표시 버그, 2026-07-27 수정).
+    Promise.resolve(ugcRestoreActiveJobs()).finally(function(){
+      if(typeof ugcReconnectWriteDraft==='function')ugcReconnectWriteDraft(); // 제출 전 작성 드래프트(컨셉·대본·설정·사진) 복원 바
+    });
   }
   // Custom·UGC 모드: 템플릿 그리드 숨김 — 직접 입력으로 생성(Custom=프롬프트칸, UGC=제품+컨셉 패널)
   document.getElementById('templateStep').classList.toggle('hidden',custom||ugc);
@@ -6047,7 +6051,7 @@ function ugcSaveDraft(){
     localStorage.setItem('ugc:draft',s);
   }catch(e){}
 }
-function ugcClearDraft(){ try{localStorage.removeItem('ugc:draft');}catch(e){} }
+function ugcClearDraft(){ try{localStorage.removeItem('ugc:draft');}catch(e){} var b=document.querySelector('.ugc-reconn'); if(b)b.remove(); } // 드래프트 지우면 화면의 '이어보기' 바도 제거(2026-07-27)
 function ugcReconnectWriteDraft(){ // ⚠️ 기존 ugcRestoreDraft(제출 잡 복원)와 이름 겹치면 안 됨 → 별도 이름
   var draft; try{ draft=JSON.parse(localStorage.getItem('ugc:draft')||'null'); }catch(e){ return; }
   if(!draft||!draft.ts) return;
