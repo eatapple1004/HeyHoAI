@@ -2279,7 +2279,7 @@ function genCost(r){
   const type=isVideoGen()?'reel':(r?r.type:'image'); // 템플릿 reel 또는 Custom 비디오 툴
   if(type==='reel'){
     const cv=(state.mode==='custom'&&curType()==='video');const dur=cv?parseInt(curDuration(),10):5;
-    const vt=(c.video&&c.video[dur])||[625,1250];
+    const vt=(c.video&&c.video[dur])||[810,1250];
     return (isTpl?vt[1]:vt[0])+cap;
   }
   const it=(c.img&&(c.img[effModelKey()]||c.img.pro))||[150,300];

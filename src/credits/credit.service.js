@@ -9,13 +9,19 @@ const SIGNUP_BONUS = 1500; // 가입 시 무료 크레딧 = 템플릿 5장(300×
 // 이미지: 모델티어별 [커스텀per장, 템플릿per장]. 총액 = count × per.
 const IMG_CREDIT = {
   flash: [45, 90],                 // Nano Banana (2.5 Flash Image)
-  pro: [150, 300],                 // Nano Banana Pro (3 Pro Image) — 스튜디오 기본
+  pro: [150, 300],                 // Nano Banana Pro (3 Pro Image) 1K/2K — 스튜디오 기본
+  'pro-4k': [270, 540],            // (2026-07-27) Pro 4K 원가 $0.24(2,000토큰)=2K의 1.79배 → 2K 마진 매칭가. ⚠️미배선: generate.route가 4K 미처리(imageSize 1K/2K만)·imageCost 해상도 무관. 4K 노출 시 해상도별 과금 배선 필요.
   'gpt-image-2': [150, 300],       // pro 티어 근사(별도 원가 확정 전)
   'gpt-image-2-high': [270, 540],  // 상위 티어 근사
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
+//   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)
+//   기준 최저 플랜(Elite ₩/cr) 마진 50% 바닥 목표. 근거 docs/생성원가_검증_마진_2026-07-26.md.
+//   ✅ 고객노출 카피 동기화 완료(2026-07-27): landing.html·ko.html("◆810/씬"·"20초 ◆3,240"),
+//      billing.html("◈810"), studio.html:2282 폴백[810,1250], LP-CONV 편수 divisor 3240.
+//   10s(1250)·template(1250)은 미변경(현재 유저 미노출) — 필요 시 별도 결정.
 const VIDEO_CREDIT = {
-  5: [625, 1250],
+  5: [810, 1250],
   10: [1250, 2500],
 };
 const COSTS = {
