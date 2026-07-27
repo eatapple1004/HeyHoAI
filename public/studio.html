@@ -820,6 +820,17 @@
   #scriptStep .ugc-advtoggle.open .ugc-adv-chev{transform:rotate(180deg)}
   #scriptStep .ugc-adv[hidden]{display:none}
   #scriptStep .ugc-adv{margin-top:2px}
+  /* (2026-07-27) Ad Video 설정 = Shots식 full-width 가로 바 + 기본 노출(사용자 요청). 위 '우측 컬럼' 솔로 규칙을 덮어씀.
+     롤백: 이 블록 통째 삭제 + HTML의 .ugc-in-product/.ugc-in-concept 래퍼 제거. */
+  .ugc-cols.ugc-solo .ugc-foldable{display:block}                                   /* 2열 그리드 해제 → 세로 스택 */
+  .ugc-cols.ugc-solo .ugc-fold-a{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}  /* 제품 | 컨셉 상단 2열 */
+  .ugc-cols.ugc-solo .ugc-fold-b{border-left:none;padding-left:0;border-top:1px solid var(--border2);margin-top:20px;padding-top:16px}  /* 설정 = full-width 가로 바 */
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{display:flex;flex-wrap:wrap;gap:16px 30px;align-items:flex-start}  /* Shots식 가로 라벨 그룹 */
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs > div{margin:0}
+  .ugc-cols.ugc-solo #ugcInputBox #ugcAdvBtn{display:none}                          /* 'More options' 토글 숨김(항상 노출) */
+  .ugc-cols.ugc-solo #ugcInputBox #ugcAdv{display:contents}                         /* 비율·씬·언어 그룹을 knobs 가로 흐름에 편입 */
+  .ugc-cols.ugc-solo #ugcInputBox #ugcAdv > div{margin:0}
+  @media(max-width:860px){.ugc-cols.ugc-solo .ugc-fold-a{grid-template-columns:1fr}.ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{gap:12px 20px}}
   /* (2026-07-26) 핵심 3종 강조 — 사진(드롭존 크게)·컨셉(크게)·대본 생성 버튼(크게·차단상태도 보이게). */
   #scriptStep #ugcDrop{align-items:stretch}
   #scriptStep #ugcPickBtn.img-add.labeled{flex:1;min-height:96px;flex-direction:column;gap:9px;border-style:dashed;border-width:1.5px;border-radius:14px;background:transparent}
@@ -1359,6 +1370,7 @@
            게이트는 정말 이 둘뿐이다(ugcWriteScript: !concept → ugcNeedPhoto). Options는 기본값이
            다 잡혀 있어 안 만져도 되므로 번호가 아니라 ✓다 — "해도 되고 안 해도 된다"는 뜻.
            ⚠️ 번호는 순서가 아니라 **개수**를 말한다(둘 다 있어야 하고 순서는 자유). -->
+      <div class="ugc-in-product"><!-- (2026-07-27) Shots식 상단 2열: 제품 | 컨셉 -->
       <div class="ugc-stephd"><span class="ugc-step">1</span><b>Your product photo</b></div>
       <!-- 사진 버튼 + ⓘ 는 한 줄, 설명(힌트)은 그 아래로 내린다 → 버튼 → 설명 → 제품명 순서.
            전엔 힌트가 버튼 '옆'에 있어 버튼과 제품명 칸이 세로로 붙어 보였다(설명이 사이가 아니라 옆). -->
@@ -1379,6 +1391,8 @@
       <!-- (2026-07-27) 컨셉 자동화 — 사진에서 컨셉을 자동 생성(유저에겐 안 보임). 직접 쓰고 싶을 때만 브리프를 편다.
            #ugcConcept는 자동 컨셉의 내부 운반체(hidden). ugcSuggestConcept가 여기 채우고 ugcWriteScript가 읽는다. -->
       <!-- (2026-07-27) 컨셉 박스 상시 노출(사용자 결정). 비워두면 Create 시 사진에서 자동 생성(ugcCreateAd), 쓰면 그 값 사용. -->
+      </div><!-- /.ugc-in-product -->
+      <div class="ugc-in-concept">
       <div class="ugc-fieldhd ugc-sec-div" id="ugcBriefHd">
         <label for="ugcConcept">Concept <span>— optional · we'll write it from your photo</span></label>
       </div>
@@ -1389,6 +1403,7 @@
       </div>
       <!-- 카테고리 UI 제거(2026-07-09): builder가 사진 보고 카테고리 자동 판별·플레이북 적용 → 유저 선택 불필요 -->
 
+      </div><!-- /.ugc-in-concept -->
       </div><!-- /.ugc-fold-a -->
       <div class="ugc-fold-b">
       <!-- 요약줄: 기본값이 이미 잡힌 노브들을 "질문"이 아니라 "진술"로. 눌러야 펼쳐짐.
