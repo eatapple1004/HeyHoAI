@@ -24,6 +24,7 @@ const mediaStore = require('../storage/mediaStore');
 
 const { generateUgcScript, suggestConcept, refineScene, generateAddScene, normalizeAddSceneObj } = require('./ugcScript.service');
 const { renderClips, renderSceneClip } = require('./clipPipeline.service');
+const refBake = require('../pack/refBake.service'); // 캐논 레퍼 bake(팩 파이프라인 재사용) — Ad Video 제품 일관성/라벨 보존
 const { buildRenderPlan, aspectDims } = require('./renderPlan');
 const { assemble, burnCaptions, muxAudio, probeDurationMs } = require('./assembler/ffmpeg.assembler');
 const music = require('./audio/music.service');
@@ -336,6 +337,22 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
         reuseVo = preVo.map((v) => ({ sceneN: v.sceneN, path: v.path, startMs: 0 }));
         voiceChunks = {}; for (const v of preVo) if (v.chunks && v.chunks.length) voiceChunks[v.sceneN] = v.chunks; // B: 씬별 실 타임스탬프 청크(없으면 균등 폴백)
         log.info(`[${jobId}] 음성모드: 씬별 VO ${preVo.length}개 선합성 → 클립을 음성 길이로 생성 (타임스탬프 청크 ${Object.keys(voiceChunks).length}씬)`);
+      }
+    }
+
+    // 🎯 캐논 레퍼 bake — 업로드 원본 대신 "깨끗한 단품 플레이트"에서 씬을 렌더(라벨 깨짐·씬간 드리프트↓).
+    //   팩 refBake 재사용(제품 정체성만 고정 — 씬 배경/구도는 brollPrompt가 결정). 영상당 1회·무과금(인프라).
+    //   실패 시 원본 업로드로 폴백(잡 유지). person(모델 전용)·제품 없음이면 스킵.
+    if (refKind === 'product' && Array.isArray(productImagePaths) && productImagePaths.length) {
+      try {
+        const bakedBuf = await refBake.bakeOne({ sourcePaths: productImagePaths });
+        fs.mkdirSync(servedDir, { recursive: true });
+        const bakedPath = path.join(servedDir, `ugcref_${crypto.randomUUID()}.jpg`); // resultToBuffer=JPEG → .jpg(guessMime 정합)
+        fs.writeFileSync(bakedPath, bakedBuf);
+        log.info(`[${jobId}] 캐논 레퍼 bake 완료 → ${path.basename(bakedPath)} (원본 ${productImagePaths.length}장 대체)`);
+        productImagePaths = [bakedPath]; refImages = [bakedPath]; refImage = bakedPath; // 씬 렌더 + 재렌더 영속화 모두 클린 플레이트로
+      } catch (e) {
+        log.warn?.(`[${jobId}] 캐논 레퍼 bake 실패 — 원본 업로드로 폴백: ${e && e.message}`);
       }
     }
 
