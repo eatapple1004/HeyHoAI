@@ -263,6 +263,9 @@
 </style>
 </head>
 <body class="has-rail">
+<!-- (2026-07-27) 홈 배경 글로우 이식(홈/컷/광고영상/콘텐츠팩/라이브러리 통일, 사용자 요청). z-index:-1=콘텐츠 뒤·body배경 위. 롤백: 이 div+style 제거. -->
+<div class="home-glow"></div>
+<style>.home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}.home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}.home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}.home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}</style>
 <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="grain"></div>
 

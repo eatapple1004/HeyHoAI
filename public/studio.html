@@ -1272,6 +1272,9 @@
 </style>
 </head>
 <body>
+<!-- (2026-07-27) 홈 배경 글로우 이식(홈/컷/광고영상/콘텐츠팩/라이브러리 통일, 사용자 요청). z-index:-1=콘텐츠 뒤·body배경 위. 롤백: 이 div+style 제거. -->
+<div class="home-glow"></div>
+<style>.home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}.home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}.home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}.home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}</style>
 <style>
 /* (2026-07-11) 유저 템플릿 생성/관리 진입점 숨김 — 오피셜 템플릿 전용 방향. 롤백: 이 style 블록 제거. */
 .cat-pill.mine,.cat-help,.cat-div{display:none!important}   /* 카테고리 줄 'My templates' pill·구분선·? 툴팁 */
@@ -1482,8 +1485,8 @@
       <div class="ugc-fold-settings">
       <div class="ugc-adv" id="ugcAdv">
       <div style="margin:8px 0 2px">
-        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Where you'll post it</div>
-        <div class="ugc-ar" role="group" aria-label="Where you'll post it">
+        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Ratio</div>
+        <div class="ugc-ar" role="group" aria-label="Ratio">
           <button type="button" class="ugc-ar-btn active" data-ar="9:16" onclick="ugcSetAspect('9:16')"><span class="ar-box ar-916"></span>9:16<span>Reels · Shorts</span></button>
           <button type="button" class="ugc-ar-btn" data-ar="1:1" onclick="ugcSetAspect('1:1')"><span class="ar-box ar-11"></span>1:1<span>Feed</span></button>
           <button type="button" class="ugc-ar-btn" data-ar="16:9" onclick="ugcSetAspect('16:9')"><span class="ar-box ar-169"></span>16:9<span>Wide</span></button>
@@ -1496,7 +1499,7 @@
            2026-07-17 한때 길이를 2단계로 옮겼다가 되돌림 — 대본이 나온 뒤엔 Rewrite 없이는 아무 효과가 없었고,
            대본이 이미 씬별 길이를 정해 보여주는데(4s 배지) 그 아래서 또 물어보는 모순이 생겼다. -->
       <div style="margin:8px 0 2px">
-        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes &amp; length <span style="color:var(--faint)">— Auto lets the script decide</span></div>
+        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes &amp; length</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
           <div>
             <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Count</div>
@@ -1516,7 +1519,6 @@
               <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
               <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
             </div>
-            <div style="font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5">Picking 3s makes shorter scenes but uses the same credits as 5s.</div>
           </div>
         </div>
         <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
