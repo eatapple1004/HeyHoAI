@@ -10,7 +10,7 @@ const SIGNUP_BONUS = 1500; // 가입 시 무료 크레딧 = 템플릿 5장(300×
 const IMG_CREDIT = {
   flash: [45, 90],                 // Nano Banana (2.5 Flash Image)
   pro: [150, 300],                 // Nano Banana Pro (3 Pro Image) 1K/2K — 스튜디오 기본
-  'pro-4k': [270, 540],            // (2026-07-27) Pro 4K 원가 $0.24(2,000토큰)=2K의 1.79배 → 2K 마진 매칭가. ⚠️미배선: generate.route가 4K 미처리(imageSize 1K/2K만)·imageCost 해상도 무관. 4K 노출 시 해상도별 과금 배선 필요.
+  'pro-4k': [270, 540],            // (2026-07-27) Pro 4K 원가 $0.24(2,000토큰)=2K의 1.79배 → 2K 마진 매칭가. ✅배선됨: generate.route:428 imageSize==='4K'→pro-4k + studio genCost도 4K→pro-4k 표시.
   'gpt-image-2': [150, 300],       // pro 티어 근사(별도 원가 확정 전)
   'gpt-image-2-high': [270, 540],  // 상위 티어 근사
 };
