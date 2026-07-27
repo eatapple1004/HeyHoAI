@@ -150,7 +150,10 @@
   .rg-fallback{font-size:12.5px;line-height:1.6;color:var(--text);background:color-mix(in srgb,#e0a03a 14%,transparent);border:1px solid color-mix(in srgb,#e0a03a 42%,transparent);border-radius:11px;padding:10px 12px;margin-bottom:14px}
   .rg-fallback b{color:#f0b755}
   .rg-fb-why{display:block;margin-top:5px;color:var(--faint);font-size:11.5px;word-break:break-all}
-  .rg-depths{display:flex;gap:8px;margin-bottom:14px}
+  .rg-depths{display:flex;gap:8px;margin-bottom:10px}
+  .rg-cost{font-size:12.5px;color:var(--dim);margin-bottom:14px;text-align:center}
+  .rg-cost b{color:var(--text);font-weight:700}
+  .rg-cost-sub{color:var(--faint);font-weight:500}
   .rg-depth{flex:1;font-family:inherit;font-size:13px;font-weight:700;padding:10px 6px;border-radius:11px;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;flex-direction:column;gap:2px;align-items:center}
   .rg-depth span{font-size:10.5px;font-weight:500;color:var(--faint)}
   .rg-depth:hover{color:var(--text);border-color:var(--border2)}
@@ -474,6 +477,7 @@ let PACK_ID = null, PACK = null;       // 현재 팩(액션 후 재렌더)
 let gatePassed = false;                // 레퍼 소프트 게이트 통과 여부
 let gateDepth = 0, gateTotal = 0;      // 게이트에서 고른 컷 수 / 전체
 let gateVideo = false;                 // 게이트에서 "영상도 같이" 선택 여부(기본 꺼짐 — 명시 선택만 과금)
+const PACK_CUT_CR = 300;               // 컷 1장 크레딧(= 서버 credit.service IMG_CREDIT['pro'][1] template). 변경 시 동기화.
 const verIdx = {};                     // slotId → 보고 있는 버전 인덱스(기본 최신)
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slotId = (o) => o.kind + ':' + (o.key != null ? o.key : o.cut_key);
@@ -600,8 +604,8 @@ function moreBarHtml(pack) {
   const chunk = Math.min(8, remaining);
   const btns = [];
   if (remaining > 0) {
-    btns.push(`<button class="more-btn" onclick="extendPack(${chunk},this)">+ ${chunk}장 더 뽑기</button>`);
-    if (remaining > chunk) btns.push(`<button class="more-btn ghost" onclick="extendPack(0,this)">남은 ${remaining}장 전부</button>`);
+    btns.push(`<button class="more-btn" onclick="extendPack(${chunk},this)">+ ${chunk}장 더 뽑기 · ◈${(chunk * PACK_CUT_CR).toLocaleString()}</button>`);
+    if (remaining > chunk) btns.push(`<button class="more-btn ghost" onclick="extendPack(0,this)">남은 ${remaining}장 전부 · ◈${(remaining * PACK_CUT_CR).toLocaleString()}</button>`);
   }
   const note = remaining > 0
     ? `이미 기획해 둔 컷이 ${remaining}장 더 있어요 — 추가 분석 없이 바로 나옵니다.`
@@ -611,7 +615,7 @@ function moreBarHtml(pack) {
   const canConcept = (plan && (plan.sources || []).length) > 0;
   const conceptRow = canConcept ? `<div class="more-concept">
       <input type="text" id="conceptInput" maxlength="200" placeholder="원하는 컨셉을 적으세요 — 비우면 알아서 새로 뽑아요 (예: 겨울 홈카페)" onkeydown="if(event.key==='Enter')conceptMore(this.nextElementSibling)">
-      <button class="more-btn" onclick="conceptMore(this)">💡 새 컷 뽑기</button>
+      <button class="more-btn" onclick="conceptMore(this)">💡 새 컷 뽑기 · ◈${(3 * PACK_CUT_CR).toLocaleString()}</button>
     </div>` : '';
   return `<div class="more-bar"><div class="more-top"><div class="more-note">${note}</div>${btns.length ? `<div class="more-btns">${btns.join('')}</div>` : ''}</div>${conceptRow}</div>`;
 }
@@ -632,8 +636,8 @@ function cardHtml(slot, versions, done) {
   const seedable = !isRef && slot.kind === 'still' && ((PACK.config && PACK.config.plan && PACK.config.plan.cuts) || []).some(c => c.key === cutKey);
   const acts = isRef
     ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">↻ 레퍼 다시 굽기</button>`
-    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)">↻ 다시</button>`
-      + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="이 컷과 같은 무드로 각도·구도만 다른 컷을 더 뽑아요">✦ 이런 걸로 더</button>` : '')
+    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)" title="새 버전 1장 · ◈${PACK_CUT_CR}">↻ 다시</button>`
+      + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="이 컷과 같은 무드로 각도·구도만 다른 컷을 3장 더 · ◈${(3 * PACK_CUT_CR).toLocaleString()}">✦ 이런 걸로 더</button>` : '')
       + `<a class="cutbtn" href="/studio" title="studio에서 정밀 편집">✎ studio</a>`;
   return `<figure class="rescard" data-slot="${esc(sid)}"><a class="dl" href="${a.url}" download="${esc(fname(a))}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy">${flip}<figcaption>${esc(label)}<div class="cut-actions">${acts}</div></figcaption></figure>`;
 }
@@ -833,6 +837,7 @@ function showRefGate(pack) {
     ${conceptBlock ? `<div class="rg-compare">${conceptBlock}<div class="rg-canon"><div class="rg-state-h">캐논 레퍼 <span class="rg-tag on">생성 기준</span></div><div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div></div></div>` : `<div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>`}
     <div class="rg-depth-h">몇 컷 만들까요?${multi ? ` <span class="rg-depth-sub">${unitWord}별로 고루 나눠 만듭니다</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
+    <div class="rg-cost">예상 크레딧 <b id="rgCost">◈${(gateDepth * PACK_CUT_CR).toLocaleString()}</b> <span class="rg-cost-sub">· 컷당 ◈${PACK_CUT_CR}</span></div>
     <div class="rg-video${gateVideo ? ' on' : ''}" id="rgVideo" role="button" tabindex="0" onclick="toggleGateVideo()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGateVideo();}">
       <div class="rg-video-check" aria-hidden="true"></div>
       <div class="rg-video-txt"><b>🎬 광고 영상도 같이 만들기</b><span>이 제품·컨셉으로 릴스 광고 한 편 — 편집 없이 알아서. <em>크레딧 사용</em></span></div>
@@ -840,7 +845,7 @@ function showRefGate(pack) {
     <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
   </div></div>`);
 }
-function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; }
+function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; const c = document.getElementById('rgCost'); if (c) c.textContent = '◈' + (n * PACK_CUT_CR).toLocaleString(); }
 function toggleGateVideo() { gateVideo = !gateVideo; const el = document.getElementById('rgVideo'); if (el) el.classList.toggle('on', gateVideo); }
 async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의 입력칸·이미지만 다룬다(다른 상태는 그대로).
   sku = sku || 'main';

@@ -30,7 +30,8 @@ const { suiteFor, STATE_COMPOSITES } = require('./suites');  // 컷 라이브러
 const promptRepo = require('../generate/prompt.repository'); // 크리에이션 dual-write(내 크리에이션·라이브러리·공유 = generation_results→prompts)
 const resultRepo = require('../generate/result.repository');
 const ugcVideoService = require('../ugc/ugcVideo.service');   // 🎬 팩 재료로 광고 영상 1편(Ad Video 엔진 재사용)
-const teamCredit = require('../teams/team.credit');         // 활성 팀 — prompt.team_id에 붙여야 팀 유저 피드에 뜸
+const teamCredit = require('../teams/team.credit');         // 활성 팀 — prompt.team_id에 붙여야 팀 유저 피드에 뜸 + 생성비 차감(chargeGeneration/refundGeneration)
+const creditService = require('../credits/credit.service');  // 단가표(imageCost) — 팩 스틸 = pro·template
 
 const router = Router();
 
@@ -41,6 +42,37 @@ const PACK_MODEL = /pro/i.test(PACK_IMAGE_MODEL) ? 'Nano Banana Pro' : 'Nano Ban
 // 🚫 합성(상태 비교·세트 로우)은 만들지 않는다 — 중앙 슬라이스 방식이 넓적한 제품(봉투·박스)에서 잘려
 //   못 쓰는 컷이 나왔고(사용자 결정), 스틸만으로 충분하다. 되살리려면 PACK_COMPOSITES=1 + restart.
 const PACK_COMPOSITES = process.env.PACK_COMPOSITES === '1';
+
+// ─── 과금(2026-07-27) — Shots(generate.route)와 **동일 패턴**: 라우트에서 동기 차감(부족=402·viewer=403 즉시 응답),
+//   백그라운드 생성 후 실패·미생성분 환불. 팩은 2K·자동기획(유저 프롬프트 없음) → pro·template.
+//   💸 레퍼(캐논 베이크·rebake-ref)는 딜리버리가 아니라 내부 부품(피드에도 안 올림)이라 무과금 — 스틸 단가가 원가를 흡수.
+//   ⚠️ imageCost(count)는 count를 ≤8로 클램프(studio 배치캡용)라 팩(12·풀 20+)엔 못 쓴다 → 단가만 받고 곱셈은 바깥에서.
+const STILL_UNIT = creditService.imageCost('pro', 1, true);   // = IMG_CREDIT['pro'][1](template) 300/장. 변경 시 pack.html PACK_CUT_CR 동기화.
+
+/** 스틸 n장 동기 차감. 부족(402)·viewer(403)는 statusCode 에러로 던짐(라우트가 상태코드로 응답). admin·개인면제·n≤0 → null. */
+async function chargeStills(user, n, description, refId) {
+  if (!user || !(n > 0)) return null;
+  return teamCredit.chargeGeneration(user, STILL_UNIT * n, description, refId);
+}
+
+/** 과금분 중 실제 생성 안 된 만큼 환불(부분·전량 공통). expected=청구 장수, ok=성공 장수. finally에서 호출. */
+async function settleRefund(charge, user, expected, ok, refId) {
+  if (!charge) return;
+  const refundN = Math.max(0, expected - ok);
+  if (refundN <= 0) return;
+  try {
+    if (refundN >= expected) await charge.refund();   // 전량 실패 = 전액
+    else await teamCredit.refundGeneration(user, STILL_UNIT * refundN, `팩 부분 실패 환불 (${refundN}장)`, refId);
+  } catch (_) {}
+}
+
+/** 이번 요청에서 실제 생성할 스틸 수(과금 대상) — depth 창 안에서 아직 안 만든 컷(generatePack 루프와 동일 규칙). */
+function stillsToGenerate(pack, depth) {
+  const cuts = ((pack.config && pack.config.plan) || {}).cuts || [];
+  const limit = (depth && depth > 0) ? Math.min(depth, cuts.length) : cuts.length;
+  const done = new Set((pack.assets || []).filter((a) => a.kind === 'still' && a.url).map((a) => a.cut_key));
+  return cuts.slice(0, limit).filter((c) => !done.has(c.key)).length;
+}
 
 // 🧟 부팅 회수 — 프로세스가 죽으면 진행 중이던 팩(setImmediate 백그라운드)도 함께 사라지는데
 //   DB엔 'processing'이 남아 화면이 영원히 스피너였다. 뜰 때 한 번 훑어 내린다.
@@ -296,7 +328,8 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
 }
 
 // 2단계(generate): 게이트 통과 후 — 저장된 plan.cuts를 depth만큼 스틸 생성 + 세트면 합성. status='done'.
-async function generatePack(pack, { depth, userId }) {
+async function generatePack(pack, { depth, userId, charge = null, user = null, expected = 0 }) {
+  let ok = 0;   // 실제 생성 성공 스틸 수 — finally 환불 정산에 사용
   try {
     const fresh = await repo.getPack({ id: pack.id });
     fresh.config = fresh.config || {};
@@ -320,6 +353,7 @@ async function generatePack(pack, { depth, userId }) {
         const brandRefPath = (derived && plan.brandSku) ? latestRefPathFor(fresh, plan.brandSku) : null;
         const buf = await genStill({ canonRefPath: latestRefPathFor(fresh, c.refSku), brandRefPath, cut, ctx });
         await recordAsset(fresh, { kind: 'still', key: c.key, label: c.label, buffer: buf, userId });
+        ok++;
       } catch (e) { logger.warn?.(`[pack ${fresh.id}] still ${c.key} 실패: ${e.message}`); }
     }
     // 레퍼 2장 이상이면 합성 — 상태 모드면 "상태 비교 · 나란히", 세트면 "세트 · 로우". (기본 OFF)
@@ -337,6 +371,8 @@ async function generatePack(pack, { depth, userId }) {
   } catch (e) {
     logger.error?.(`[pack ${pack.id}] generate failed: ${e.message}`);
     await repo.setStatus(pack.id, 'failed', e.message);
+  } finally {
+    await settleRefund(charge, user, expected, ok, pack.id);   // 미생성·실패분 환불(성공분만 과금 유지)
   }
 }
 
@@ -357,9 +393,10 @@ function sourcesForSeed(plan, refSku) {
  * 공통: exclude=기존 라벨 전부(복제 방지) · 확정 category 그라운딩(오분류 방지) · 새 컷을 config.plan에
  *   append(이후 "다시"·"더 뽑기"가 인식) · 2K·원본썸네일은 recordAsset 공통경로라 자동. 완료 후 done.
  */
-async function growPack(pack, { seedCutKey, brief, count, userId }) {
+async function growPack(pack, { seedCutKey, brief, count, userId, charge = null, user = null, expected = 0 }) {
   const briefText = String(brief || '').trim();
   const mode = seedCutKey ? 'more-like' : (briefText ? 'concept-more' : 'auto-concept');
+  let ok = 0;   // 실제 생성 성공 컷 수 — finally 환불 정산에 사용
   try {
     const fresh = await repo.getPack({ id: pack.id });
     const plan = (fresh.config && fresh.config.plan) || {};
@@ -405,6 +442,7 @@ async function growPack(pack, { seedCutKey, brief, count, userId }) {
       try {
         const buf = await genStill({ canonRefPath: refPath, brandRefPath, cut, ctx });
         await recordAsset(fresh, { kind: 'still', key, label: cut.label, buffer: buf, userId });
+        ok++;
         // 컨셉 컷은 렌즈가 없다(브리프가 축) → lensIdx=null. 씨앗 컷은 씨앗의 렌즈를 물린다.
         newPlanCuts.push({ key, label: cut.label, w: cut.w, h: cut.h, neg: cut.neg, aspect: c.aspect || null, refSku, lensIdx: seedLensIdx, promptText: cut.prompt });
       } catch (e) { logger.warn?.(`[pack ${fresh.id}] ${mode} ${key} 실패: ${e.message}`); }
@@ -419,6 +457,8 @@ async function growPack(pack, { seedCutKey, brief, count, userId }) {
   } catch (e) {
     logger.error?.(`[pack ${pack.id}] ${mode} failed: ${e.message}`);
     await repo.setStatus(pack.id, 'failed', e.message);
+  } finally {
+    await settleRefund(charge, user, expected, ok, pack.id);   // 계획부족·실패분 환불(성공분만 과금 유지)
   }
 }
 
@@ -500,10 +540,14 @@ router.post('/:id/generate', async (req, res, next) => {
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status !== 'ref_ready') return res.status(409).json({ error: '게이트 대기 상태가 아니에요' });
     const depth = Math.max(0, parseInt((req.body && req.body.depth) || 0, 10) || 0);
+    const expected = stillsToGenerate(pack, depth);
+    let charge;
+    try { charge = await chargeStills(req.user, expected, `팩 컷 생성 (${expected}장)`, pack.id); }
+    catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }   // 402 부족·403 viewer
     await repo.mergeConfig(pack.id, { depth });   // 중단 후 "이어서 만들기"가 같은 깊이로 재개하도록 남긴다
     await repo.setStatus(pack.id, 'processing');
     res.json({ ok: true });
-    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
+    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id, charge, user: req.user, expected }));
   } catch (e) { next(e); }
 });
 
@@ -525,9 +569,13 @@ router.post('/:id/resume', async (req, res, next) => {
     if (!latestRefPath(pack)) return res.status(409).json({ error: '캐논 레퍼가 없어 재개할 수 없어요(처음부터 다시 만들어 주세요)' });
     // 깊이 = 요청 > 게이트에서 고른 값 > 전부. 재개인데 깊이가 줄면 남은 컷이 영영 안 나온다.
     const depth = Math.max(0, parseInt((req.body && req.body.depth) || (pack.config && pack.config.depth) || 0, 10) || 0);
+    const expected = stillsToGenerate(pack, depth);
+    let charge;
+    try { charge = await chargeStills(req.user, expected, `팩 이어서 생성 (${expected}장)`, pack.id); }
+    catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }
     await repo.setStatus(pack.id, 'processing');
     res.json({ ok: true, depth });
-    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
+    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id, charge, user: req.user, expected }));
   } catch (e) { next(e); }
 });
 
@@ -552,10 +600,16 @@ router.post('/:id/extend', async (req, res, next) => {
     const count = req.body && req.body.count ? Math.max(1, parseInt(req.body.count, 10) || 0) : remaining;
     // depth = 앞에서 N개. generatePack이 이미 만든 컷을 건너뛰므로, (만든 수 + 원하는 만큼)까지 열면 그만큼 새로 나온다.
     const depth = Math.min(made.size + count, cuts.length);
+    // 실제 새로 생성될 컷(=과금 대상) = depth 창 안의 미생성 컷. generatePack 루프와 동일 산식이라
+    //   초기 실패로 생긴 갭 백필까지 정확히 반영(min(count,remaining)은 갭을 놓쳐 과소청구될 수 있었다).
+    const adding = stillsToGenerate(pack, depth);
+    let charge;
+    try { charge = await chargeStills(req.user, adding, `팩 컷 추가 (${adding}장)`, pack.id); }
+    catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }
     await repo.mergeConfig(pack.id, { depth });
     await repo.setStatus(pack.id, 'processing');
-    res.json({ ok: true, remaining, adding: Math.min(count, remaining) });
-    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id }));
+    res.json({ ok: true, remaining, adding });
+    setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id, charge, user: req.user, expected: adding }));
   } catch (e) { next(e); }
 });
 
@@ -576,9 +630,12 @@ router.post('/:id/more-like', async (req, res, next) => {
     if (!latestRefPathFor(pack, seed.refSku)) return res.status(409).json({ error: '캐논 레퍼가 없어요' });
     if (!sourcesForSeed(plan, seed.refSku).length) return res.status(409).json({ error: '소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)' });
     const count = Math.max(2, Math.min(4, parseInt((req.body && req.body.count) || 3, 10) || 3));
+    let charge;
+    try { charge = await chargeStills(req.user, count, `팩 "이런 걸로 더" (${count}장)`, pack.id); }
+    catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }
     await repo.setStatus(pack.id, 'processing');
     res.json({ ok: true, adding: count });
-    setImmediate(() => growPack(pack, { seedCutKey: cutKey, count, userId: req.user && req.user.id }));
+    setImmediate(() => growPack(pack, { seedCutKey: cutKey, count, userId: req.user && req.user.id, charge, user: req.user, expected: count }));
   } catch (e) { next(e); }
 });
 
@@ -598,9 +655,12 @@ router.post('/:id/concept-more', async (req, res, next) => {
     if (!latestRefPath(pack)) return res.status(409).json({ error: '캐논 레퍼가 없어요' });
     if (!(plan.sources || []).filter((p) => fs.existsSync(p)).length) return res.status(409).json({ error: '소스 사진이 없어 더 못 만들어요(이 팩은 원본 저장 전 버전)' });
     const count = Math.max(2, Math.min(4, parseInt((req.body && req.body.count) || 3, 10) || 3));
+    let charge;
+    try { charge = await chargeStills(req.user, count, `팩 컨셉으로 더 (${count}장)`, pack.id); }
+    catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }
     await repo.setStatus(pack.id, 'processing');
     res.json({ ok: true, adding: count, auto: !brief });
-    setImmediate(() => growPack(pack, { brief, count, userId: req.user && req.user.id }));
+    setImmediate(() => growPack(pack, { brief, count, userId: req.user && req.user.id, charge, user: req.user, expected: count }));
   } catch (e) { next(e); }
 });
 
@@ -664,10 +724,15 @@ router.post('/:id/regenerate-cut', async (req, res, next) => {
     if (!cut) return res.status(400).json({ error: 'unknown cut' });
     const refPath = latestRefPathFor(pack, cut.refSku); // 그 컷에 배정된 레퍼로 재생성(안 그러면 다른 상태·변형으로 바뀐다)
     if (!refPath) return res.status(409).json({ error: '캐논 레퍼가 아직 없어요(먼저 생성 완료 필요)' });
-    const ctx = { product: (pack.config && pack.config.plan && pack.config.plan.product) || pack.product || '' };
-    const buf = await genStill({ canonRefPath: refPath, cut, ctx });
-    const asset = await recordAsset(pack, { kind: 'still', key: cut.key, label: cut.label, buffer: buf, userId: req.user && req.user.id });
-    res.json({ asset });
+    let charge;
+    try { charge = await chargeStills(req.user, 1, `팩 컷 재생성 (${cut.label || cut.key})`, pack.id); }
+    catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }
+    try {
+      const ctx = { product: (pack.config && pack.config.plan && pack.config.plan.product) || pack.product || '' };
+      const buf = await genStill({ canonRefPath: refPath, cut, ctx });
+      const asset = await recordAsset(pack, { kind: 'still', key: cut.key, label: cut.label, buffer: buf, userId: req.user && req.user.id });
+      res.json({ asset });
+    } catch (e) { if (charge) await charge.refund().catch(() => {}); throw e; }   // 생성 실패 = 전액 환불
   } catch (e) { next(e); }
 });
 
