@@ -118,7 +118,7 @@
   .rg-h{font-family:'Sora';font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
   .rg-note{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:14px}
   .rg-note b{color:var(--text)}
-  .rg-img{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg2);margin-bottom:16px;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center}
+  .rg-img{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg2);margin-bottom:16px;height:min(340px,40vh);display:flex;align-items:center;justify-content:center}
   .rg-img img{width:100%;height:100%;object-fit:contain;display:block}
   .rg.wide{max-width:660px}
   /* 상태가 여러 개면 모달이 세로로 길어져 깊이 다이얼·진행버튼이 화면 밖으로 나간다.
@@ -555,7 +555,7 @@ function videoBlockInner(pack) {
     ensureVideoPoll(jid);
     return `<div class="pv-cta busy"><div class="rb-spin"></div><div class="pv-txt"><b>광고 영상 만드는 중…</b><span>대본 → 씬 → 모션 → 조립까지 1~3분. 다 되면 여기에 떠요.</span></div></div>`;
   }
-  return `<div class="pv-cta"><div class="pv-txt"><b>🎬 이 제품으로 광고 영상</b><span>팩이 분석한 제품·컨셉으로 릴스 광고 한 편 — 편집 없이 알아서. (크레딧 사용)</span></div><button class="more-btn" onclick="makeVideo(this)">영상 만들기</button></div>`;
+  return ''; // (2026-07-27) 팩 영상 제거 — 영상은 Ad Video(studio) 전용. 기존 생성된 영상은 위 vidUrl 분기로 계속 표시.
 }
 function renderVideoBlock() { const el = document.getElementById('packVideo'); if (el) el.innerHTML = videoBlockInner(PACK); }
 // POST /video 공통(게이트 체크·결과 버튼 공용). confirm/버튼 상태는 호출부 책임. 실패 시 throw.
@@ -838,15 +838,11 @@ function showRefGate(pack) {
     <div class="rg-depth-h">몇 컷 만들까요?${multi ? ` <span class="rg-depth-sub">${unitWord}별로 고루 나눠 만듭니다</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
     <div class="rg-cost">예상 크레딧 <b id="rgCost">◈${(gateDepth * PACK_CUT_CR).toLocaleString()}</b> <span class="rg-cost-sub">· 컷당 ◈${PACK_CUT_CR}</span></div>
-    <div class="rg-video${gateVideo ? ' on' : ''}" id="rgVideo" role="button" tabindex="0" onclick="toggleGateVideo()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGateVideo();}">
-      <div class="rg-video-check" aria-hidden="true"></div>
-      <div class="rg-video-txt"><b>🎬 광고 영상도 같이 만들기</b><span>이 제품·컨셉으로 릴스 광고 한 편 — 편집 없이 알아서. <em>크레딧 사용</em></span></div>
-    </div>
     <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
   </div></div>`);
 }
 function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; const c = document.getElementById('rgCost'); if (c) c.textContent = '◈' + (n * PACK_CUT_CR).toLocaleString(); }
-function toggleGateVideo() { gateVideo = !gateVideo; const el = document.getElementById('rgVideo'); if (el) el.classList.toggle('on', gateVideo); }
+// (2026-07-27) 팩 영상 제거 — toggleGateVideo/게이트 영상 토글 삭제. 영상은 Ad Video(studio) 전용.
 async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의 입력칸·이미지만 다룬다(다른 상태는 그대로).
   sku = sku || 'main';
   if (!btn || btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
@@ -890,21 +886,13 @@ async function resumePack(btn) {
 
 async function gateProceed() {
   const btn = document.querySelector('.rg-go'); if (btn && btn.disabled) return;
-  const wantVideo = gateVideo;   // 게이트가 닫히기 전에 선택을 잡아둔다
   if (btn) { btn.disabled = true; btn.dataset.t = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>생성 시작 중…'; }
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depth: gateDepth >= gateTotal ? 0 : gateDepth }) });
     if (!r.ok) { const d = await r.json(); throw new Error(d.error || '실패'); }
     gatePassed = true; built = false; filled.clear();
     const g = document.querySelector('.rg-bg'); if (g) g.remove();
-    $('#status').innerHTML = '<span class="spin"></span>' + (wantVideo ? '생성 중… (영상도 함께)' : '생성 중…');
-    // 🎬 영상도 선택했으면 이어서 태운다 — **논블로킹**. 실패(크레딧·로그인)해도 컷 생성은 계속.
-    //   이 시점엔 캐논 레퍼가 이미 구워져 있어(ref_ready) 영상 재료가 준비돼 있다.
-    if (wantVideo) {
-      startPackVideo()
-        .then(() => { if (window.toast) toast('영상도 만들기 시작했어요 — 완성되면 맨 위에 떠요'); })
-        .catch((e) => { if (window.toast) toast('영상은 시작 못 했어요(컷은 계속 생성): ' + (e.message || e), 'error'); });
-    }
+    $('#status').innerHTML = '<span class="spin"></span>생성 중…';
   } catch (e) { if (btn) { btn.disabled = false; if (btn.dataset.t) btn.innerHTML = btn.dataset.t; } if (window.toast) toast('생성 시작 실패: ' + (e.message || e), 'error'); }
 }
 function downloadAll() {   // 컷별 현재 보고 있는 버전만

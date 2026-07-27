@@ -1558,7 +1558,7 @@
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
         <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dim)">
           <span style="font-size:12.5px;color:var(--text);font-weight:600">Video quality</span>
-          <select id="ugcQuality" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:6px 9px;font-size:12.5px;max-width:360px">
+          <select id="ugcQuality" onchange="ugcSyncGenCost()" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:6px 9px;font-size:12.5px;max-width:360px">
             <option value="low" selected>Basic — ◈625 / scene</option>
             <option value="high">Premium — crisper frames &amp; smoother motion · ◈945 / scene</option>
           </select>
@@ -6062,8 +6062,7 @@ function ugcRenderScriptPreview(data){
     `<div style="margin-top:8px;color:var(--faint);font-size:11.5px">💡 Each line has an icon — hover it for what it means. Tap any line to edit before generating.</div>`;
   ugcBindScriptEdits();
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
-  {const chk='<svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
-   document.getElementById('ugcRenderBtn').innerHTML=data.cost!=null?chk+`Generate video <span class="gen-cost">◈ ${data.cost}</span>`:chk+'Generate video';}
+  ugcSyncGenCost(); // 버튼 가격 = 씬수 × 화질 티어(Basic 625 / Premium 945). 서버 data.cost(레거시 810)는 안 씀.
   // (빈 상태 해제는 아래 ugcScriptPreview 표시 후 ugcSyncSolo가 파생시킨다)
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display='none'; // 작성 스켈레톤 숨김
   // (조리대 내주기는 ugcWriteScript 시작 시점으로 옮겼다 — 여기서 하면 대본 쓰는 몇 초 동안 렌더 중인
@@ -6071,6 +6070,23 @@ function ugcRenderScriptPreview(data){
   document.getElementById('ugcScriptPreview').style.display=''; ugcSyncSolo();
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
   ugcCompactIfNarrow(); // 넓은 화면은 안 접는다(컨셉 보며 대본 검토 + [Edit] 혼동 제거). 좁으면 접어야 대본이 보인다
+}
+// Ad Video 예상 비용 — 씬별 klingGenDur × 화질 티어(Basic 625 / Premium 945). 백엔드 estimateCost와 동일 산식.
+function ugcGenCost(){
+  var scenes=(ugcScript&&ugcScript.scenes||[]).filter(function(s){return s.type==='broll';});
+  if(!scenes.length)return null;
+  var q=((document.getElementById('ugcQuality')||{}).value==='high')?'high':'low';
+  var av=(CREDITS&&CREDITS.costs&&CREDITS.costs.adVideo)||null;
+  var per=(av&&av[q])||(q==='high'?{5:945,10:1705}:{5:625,10:1195}); // 폴백=검증 단가
+  return scenes.reduce(function(sum,s){var d=(Number(s.durationSec)>5)?10:5;return sum+(per[d]||per[5]);},0);
+}
+// 버튼 라벨에 비용 반영 — 화질 셀렉터 변경 시에도 호출(가격 즉시 갱신).
+function ugcSyncGenCost(){
+  var btn=document.getElementById('ugcRenderBtn');if(!btn)return;
+  var chk='<svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  var c=ugcGenCost();
+  btn.innerHTML=(c!=null)?chk+'Generate video <span class="gen-cost">◈ '+c.toLocaleString()+'</span>':chk+'Generate video';
+  window.ugcLastCost=c;
 }
 // 생성 전 대본 검토: 씬 자연어 편집 패널 토글 → refineScene(이미지/모션 라우팅). 프롬프트 미노출.
 function ugcEditScenePre(i){
