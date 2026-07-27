@@ -823,20 +823,25 @@
   /* (2026-07-27) 세부설정(Where/Scenes/Length/Language) = fold-b 밖 full-width 가로 바(Shots식). Sound·Video format은 우측 컬럼 유지.
      좌: 제품·컨셉·상세 / 우: Sound·Video format / 하단 full-width: 세부설정 가로 바.
      롤백: 이 블록 삭제 + HTML의 .ugc-fold-settings 래퍼를 다시 knobs 안(#ugcAdv hidden)으로. */
+  /* ⚠️ 세부설정이 fold-b→fold-settings로 이동하며 fold-b 스코프 컴팩트 스타일(807·812)이 빠져 컨트롤이 커지고 들쭉날쭉해졌다.
+     여기서 .ugc-fold-settings 스코프로 다시 준다(제목·세그먼트 컴팩트·정렬 + 개별버튼 대비). */
   #scriptStep #ugcAdvBtn{display:none}                                 /* 'More options' 토글 제거(세부설정 항상 노출) */
-  .ugc-cols.ugc-solo .ugc-fold-settings{grid-column:1/-1;border-top:1px solid var(--border2);margin-top:18px;padding-top:16px}  /* fold-b 아래 full-width */
-  .ugc-cols.ugc-solo #ugcInputBox #ugcAdv{display:flex;flex-wrap:wrap;gap:16px 34px;align-items:flex-start}  /* Shots식 가로 라벨 그룹 */
-  .ugc-cols.ugc-solo #ugcInputBox #ugcAdv > div{margin:0}
-  @media(max-width:860px){.ugc-cols.ugc-solo #ugcInputBox #ugcAdv{gap:12px 20px}}
-  /* (2026-07-27) 세부설정 바 컴팩트(너무 세로 완화)·정렬 + 컨트롤 대비 Shots식(어디 눌러야 하는지 보이게). */
+  .ugc-cols.ugc-solo .ugc-fold-settings{grid-column:1/-1;border-top:1px solid var(--border2);margin-top:18px;padding-top:18px}
+  .ugc-cols.ugc-solo .ugc-fold-settings #ugcAdv{display:flex;flex-wrap:wrap;gap:18px 40px;align-items:flex-start}
+  .ugc-cols.ugc-solo .ugc-fold-settings #ugcAdv > div{margin:0}
+  /* 제목·설명 통일(컴팩트 대문자 한 줄 = 그룹 정렬 기준선). 인라인 '— 설명'만 소문자 유지 */
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-fieldlbl{font-size:10.5px!important;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin:0 0 8px!important;color:var(--faint)!important;white-space:nowrap}
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-fieldlbl span{text-transform:none;letter-spacing:0;font-weight:500}
+  /* 비율 박스: 세로→가로 컴팩트(높이↓), Reels·Shorts 서브라벨 숨김(Shots 컴팩트 바처럼) */
   .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar{gap:6px}
-  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn{flex-direction:row;align-items:center;gap:6px;padding:7px 11px}  /* 비율 박스 세로→가로 컴팩트 */
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn{flex-direction:row;align-items:center;gap:6px;padding:6px 11px;font-size:12px}
   .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn .ar-box{margin-bottom:0}
-  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn>span:last-child{display:none}   /* Reels·Shorts 서브라벨 숨김(Shots 컴팩트 바와 동일) */
-  /* 세그먼트(수량·씬길이·언어) = 공용 pill 컨테이너 대신 개별 버튼(Shots .viz-btn처럼 bg+border → 비활성도 보임) */
-  #scriptStep .ugc-seg{background:transparent;border:none;padding:0;gap:6px}
-  #scriptStep .ugc-seg-b{background:rgba(255,255,255,.035);border:1px solid var(--border2)}
-  #scriptStep .ugc-seg-b.active{background:var(--tint-sel)!important;border-color:var(--bd-sel)}
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn>span:last-child{display:none}
+  /* 세그먼트(수량·씬길이·언어): 개별 bg+border 버튼(Shots .viz-btn처럼 → 비활성도 보임)·컴팩트 */
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-seg{background:transparent;border:none;padding:0;gap:6px}
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-seg-b{background:rgba(255,255,255,.04)!important;border:1px solid var(--border2)!important;padding:5px 11px;font-size:11.5px}
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-seg-b.active{background:var(--tint-sel);border-color:var(--bd-sel);color:var(--text)}
+  @media(max-width:860px){.ugc-cols.ugc-solo .ugc-fold-settings #ugcAdv{gap:14px 24px}}
   /* (2026-07-26) 핵심 3종 강조 — 사진(드롭존 크게)·컨셉(크게)·대본 생성 버튼(크게·차단상태도 보이게). */
   #scriptStep #ugcDrop{align-items:stretch}
   #scriptStep #ugcPickBtn.img-add.labeled{flex:1;min-height:96px;flex-direction:column;gap:9px;border-style:dashed;border-width:1.5px;border-radius:14px;background:transparent}
@@ -1199,7 +1204,7 @@
      오히려 어수선하다. 특정성 (1 id,2 class) 로 바로 위 #scriptStep .script-box(1 id,1 class)를 이긴다. */
   .ugc-cols.ugc-solo #ugcInputBox{
     border:1px solid var(--border2);border-radius:16px;padding:22px 24px;
-    background:rgba(255,255,255,.025);
+    background:var(--bg2,#0c0c14);   /* (2026-07-27) Shots 카드와 동일 solid dark — 가시성(사용자 요청, 전엔 rgba(255,255,255,.025)로 배경과 안 구분) */
     box-shadow:0 20px 50px -30px #000,0 1px 0 rgba(255,255,255,.03) inset}
   #scriptStep .script-ta,#scriptStep .ugc-textin{
     background:transparent;border:none;border-bottom:1.5px solid var(--border2);
