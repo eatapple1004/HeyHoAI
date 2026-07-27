@@ -995,6 +995,12 @@
   .ugc-edit:hover{border-bottom-color:var(--border2);background:rgba(255,255,255,.03)}
   .ugc-edit:focus{border-bottom-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
   .ugc-edit:empty:before{content:attr(data-ph);color:var(--faint)}
+  /* Ad Video 작성 드래프트 복원 바(팩 reconnect와 동일 톤) */
+  .ugc-reconn{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:11px 15px;border-radius:12px;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);font-size:13px;color:var(--text)}
+  .ugc-reconn-act{display:flex;gap:8px}
+  .ugc-reconn button{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:9px;cursor:pointer}
+  .ugc-reconn-go{color:#fff;border:0;background:var(--accent)}
+  .ugc-reconn-x{color:var(--dim);background:transparent;border:1px solid var(--border2)}
   /* Ad Video 포맷 픽커 + 모델 그리드 */
   /* Sound와 Video format은 **동급 분기**(둘 다 대본 구조를 바꾼다) → 같은 카드 컴포넌트를 쓴다.
      ⚠️ 클래스는 분리한다(.ugc-mode-btn ≠ .ugc-fmt-btn) — ugcSetFormat이 '.ugc-fmt-btn' 전부를 훑어
@@ -2702,6 +2708,7 @@ function setMode(m,initialVertical){
   // 이번 세션에서 이미 렌더가 도는 중이면(genActive>0) 같은 잡을 두 번 붙이지 않는다.
   if(ugc && !window._ugcRestored && !genActive && typeof ugcRestoreActiveJobs==='function'){
     window._ugcRestored=true; ugcRestoreActiveJobs();
+    if(typeof ugcReconnectWriteDraft==='function')ugcReconnectWriteDraft(); // 제출 전 작성 드래프트(컨셉·대본·설정·사진) 복원 바
   }
   // Custom·UGC 모드: 템플릿 그리드 숨김 — 직접 입력으로 생성(Custom=프롬프트칸, UGC=제품+컨셉 패널)
   document.getElementById('templateStep').classList.toggle('hidden',custom||ugc);
@@ -5806,6 +5813,7 @@ function ugcPreview(input){
     if(ugcProductFiles.some(function(x){return x.name===f.name&&x.size===f.size;}))continue; // 중복 스킵
     ugcProductFiles.push(f);
   }
+  ugcProductFiles.forEach(function(f){ if(f._dataUrl)return; try{var fr=new FileReader();fr.onload=function(){f._dataUrl=fr.result;if(typeof ugcSaveDraft==='function')ugcSaveDraft();};fr.readAsDataURL(f);}catch(e){} }); // 드래프트용 data URL 캐시 + 저장
   ugcRenderProductThumbs();
 }
 function ugcRenderProductThumbs(){
@@ -5986,6 +5994,68 @@ function ugcShowScriptLoading(on){
 }
 // Ad language(대본·음성·자막·캡션 언어). 기본 en. 생성 프롬프트·영상 비주얼과는 무관.
 function ugcLang(){ const el=document.getElementById('ugcLangSel'); return (el&&el.value==='ko')?'ko':'en'; }
+
+// ── Ad Video 드래프트 유지(2026-07-27) — 팩 reconnectActivePack과 같은 UX. 제출 전 컨셉·대본·설정·사진을
+//    localStorage에 담아 이탈 후 복귀 시 복원. 생성 성공 시 clear. 사진은 추가 시 data URL 캐시(f._dataUrl).
+function ugcSaveDraft(){
+  try{
+    if(typeof state!=='object'||state.mode!=='ugc')return;
+    var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
+    var concept=g('ugcConcept');
+    var hasContent=(concept&&concept.trim())||(ugcScript&&ugcScript.scenes)||ugcProductFiles.length;
+    if(!hasContent){ try{localStorage.removeItem('ugc:draft');}catch(e){} return; }
+    var draft={ ts:Date.now(), concept:concept, productName:g('ugcProductName'), details:g('ugcDetails'),
+      script:(ugcScript&&ugcScript.scenes)?ugcScript:null,
+      settings:{ voice:!!(document.getElementById('ugcVoice')||{}).checked, music:!!(document.getElementById('ugcMusic')||{}).checked,
+        voiceId:g('ugcVoiceId'), speed:g('ugcSpeed'), quality:g('ugcQuality'), aspect:g('ugcAspect'),
+        format:g('ugcFormat'), modelImg:(typeof ugcSelectedModelImg!=='undefined'?ugcSelectedModelImg:null)||null,
+        lang:g('ugcLangSel'), sceneCount:g('ugcSceneCount'), sceneDur:g('ugcSceneDur') },
+      photos:ugcProductFiles.map(function(f){return f._dataUrl;}).filter(Boolean) };
+    var s=JSON.stringify(draft);
+    if(s.length>4500000){ draft.photos=[]; s=JSON.stringify(draft); } // 용량 가드(~4.5MB): 사진 크면 텍스트·대본만 저장
+    localStorage.setItem('ugc:draft',s);
+  }catch(e){}
+}
+function ugcClearDraft(){ try{localStorage.removeItem('ugc:draft');}catch(e){} }
+function ugcReconnectWriteDraft(){ // ⚠️ 기존 ugcRestoreDraft(제출 잡 복원)와 이름 겹치면 안 됨 → 별도 이름
+  var draft; try{ draft=JSON.parse(localStorage.getItem('ugc:draft')||'null'); }catch(e){ return; }
+  if(!draft||!draft.ts) return;
+  if(Date.now()-draft.ts > 7*24*3600*1000){ ugcClearDraft(); return; } // 7일 경과 폐기
+  if(genActive) return;                                   // 생성 중이면 안 띄움
+  if(document.querySelector('.ugc-reconn')) return;
+  var bar=document.createElement('div'); bar.className='ugc-reconn';
+  bar.innerHTML='<span>✎ 작성 중이던 광고영상이 있어요.</span><span class="ugc-reconn-act"><button type="button" class="ugc-reconn-go">이어보기</button><button type="button" class="ugc-reconn-x">지우기</button></span>';
+  var host=document.getElementById('scriptStep')||document.querySelector('.wrap')||document.body;
+  host.insertBefore(bar, host.firstChild);
+  bar.querySelector('.ugc-reconn-go').onclick=function(){ bar.remove(); ugcApplyDraft(draft); };
+  bar.querySelector('.ugc-reconn-x').onclick=function(){ bar.remove(); ugcClearDraft(); };
+}
+async function ugcApplyDraft(draft){
+  try{
+    var set=function(id,v){var e=document.getElementById(id);if(e&&v!=null)e.value=v;};
+    set('ugcConcept',draft.concept); set('ugcProductName',draft.productName); set('ugcDetails',draft.details);
+    var s=draft.settings||{};
+    set('ugcVoiceId',s.voiceId); set('ugcSpeed',s.speed); set('ugcQuality',s.quality); set('ugcAspect',s.aspect);
+    set('ugcFormat',s.format); set('ugcLangSel',s.lang); set('ugcSceneCount',s.sceneCount); set('ugcSceneDur',s.sceneDur);
+    var mu=document.getElementById('ugcMusic'); if(mu)mu.checked=!!s.music;
+    var vo=document.getElementById('ugcVoice'); if(vo)vo.checked=!!s.voice;
+    if(s.modelImg&&typeof ugcSelectedModelImg!=='undefined')ugcSelectedModelImg=s.modelImg;
+    if(typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls();
+    ugcProductFiles=[];
+    if(draft.photos&&draft.photos.length){
+      for(var i=0;i<draft.photos.length;i++){ try{ var b=await (await fetch(draft.photos[i])).blob(); var file=new File([b],'photo'+(i+1)+'.'+((b.type.split('/')[1])||'png'),{type:b.type||'image/png'}); file._dataUrl=draft.photos[i]; ugcProductFiles.push(file); }catch(e){} }
+    }
+    if(typeof ugcRenderProductThumbs==='function')ugcRenderProductThumbs();
+    if(draft.script&&draft.script.scenes){ ugcScript=draft.script; if(typeof ugcRenderScriptPreview==='function')ugcRenderScriptPreview({script:ugcScript,nClips:(ugcScript.scenes||[]).filter(function(x){return x.type==='broll';}).length,cost:null}); }
+    if(typeof ugcSyncGenCost==='function')ugcSyncGenCost();
+    if(window.toast)toast('작성 중이던 내용을 불러왔어요');
+  }catch(e){ if(window.toast)toast('불러오기 일부 실패','error'); }
+}
+// 자동 저장 훅 — 이탈(beforeunload) + 컨셉 입력(디바운스). 대본생성·사진추가는 각 지점서 직접 호출.
+(function(){ try{
+  window.addEventListener('beforeunload', ugcSaveDraft);
+  var t=null; document.addEventListener('input', function(e){ if(e.target&&e.target.id==='ugcConcept'){ clearTimeout(t); t=setTimeout(ugcSaveDraft,700); } });
+}catch(e){} })();
 function ugcSetLang(btn){ const el=document.getElementById('ugcLangSel'); if(el)el.value=btn.dataset.lang; const seg=btn.closest('.ugc-seg'); if(seg)seg.querySelectorAll('.ugc-seg-b').forEach(b=>b.classList.toggle('active',b===btn)); ugcRenderKnobLine(); }
 async function ugcWriteScript(){
   const concept=(document.getElementById('ugcConcept').value||'').trim();
@@ -6063,6 +6133,7 @@ function ugcRenderScriptPreview(data){
   ugcBindScriptEdits();
   const mood=document.getElementById('ugcMusicMood'); if(mood)mood.value=''; // 새 대본 → 무드 Auto(AI musicVibe)로 리셋
   ugcSyncGenCost(); // 버튼 가격 = 씬수 × 화질 티어(Basic 625 / Premium 945). 서버 data.cost(레거시 810)는 안 씀.
+  if(typeof ugcSaveDraft==='function')ugcSaveDraft(); // 대본 생성/편집 시 드래프트 저장(이탈 복원용)
   // (빈 상태 해제는 아래 ugcScriptPreview 표시 후 ugcSyncSolo가 파생시킨다)
   const ld=document.getElementById('ugcScriptLoading'); if(ld)ld.style.display='none'; // 작성 스켈레톤 숨김
   // (조리대 내주기는 ugcWriteScript 시작 시점으로 옮겼다 — 여기서 하면 대본 쓰는 몇 초 동안 렌더 중인
@@ -6385,6 +6456,7 @@ async function ugcRenderVideo(){
     if(res.status===402){const e=new Error(data.error||'Not enough credits');e.code402=true;throw e;}
     if(!res.ok||!data.success)throw new Error(data.error||'Ad video submit failed');
     freeBtn(); // 잡이 접수됐다(과금·jobId 확정) → 이 대본은 떠났으니 버튼을 놓아준다. 다음 영상을 바로 쓸 수 있다.
+    if(typeof ugcClearDraft==='function')ugcClearDraft(); // 생성 접수 → 작성 드래프트 정리(팩이 done에 clear하듯)
     const job=await pollUgcJob(data.jobId);
     // 결과 매핑은 ugcFillPendingFromJob 하나로 — 재연결(ugcRestoreActiveJobs)과 같은 코드를 쓴다
     if(pending){ ugcFillPendingFromJob(pending,data.jobId,job,outputType); renderStudioResults(); } // 조리대에 완성 영상+씬 스트립
