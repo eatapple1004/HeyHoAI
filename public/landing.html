@@ -215,11 +215,12 @@
   .band h2{max-width:none;margin:0 auto 12px}
   .band .lead{margin:0 auto 26px;font-size:15px;max-width:none;line-height:1.65}
 
-  /* FOOTER */
-  footer{border-top:1px solid var(--line);padding:38px 0 60px}
-  .foot{display:flex;gap:24px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--faint)}
-  .foot a{color:var(--faint)}.foot a:hover{color:var(--text)}
-  .foot .brand{font-size:16px}
+  /* FOOTER — 기존(원본) 복원: n-foot 네비 행 + biz-footer.js(전자상거래법 사업자정보) */
+  .n-foot{padding:34px 0 56px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--dim);border-top:1px solid var(--line)}
+  .n-foot>b{color:var(--text);font-weight:800;font-size:16px}
+  .n-foot a{color:var(--dim);text-decoration:none}
+  .n-foot a:hover{color:var(--text)}
+  .n-foot .lang-sw a[aria-current="true"]{color:var(--text)}
 </style>
 </head>
 <body>
@@ -412,15 +413,21 @@
   </div>
 </section>
 
-<!-- 8. FOOTER -->
+<!-- 8. FOOTER — 기존(원본) 복원: 네비 행 + 언어 스위처 + biz-footer.js 법적 사업자정보 -->
 <footer class="wrap">
-  <div class="foot">
-    <span class="brand grad">DOPPIA</span>
-    <a href="#features">기능</a><a href="#gallery">갤러리</a><a href="#pricing">가격</a><a href="#faq">FAQ</a>
-    <a href="#">로그인</a><a href="#">개인정보처리방침</a><a href="#">이용약관</a>
-    <span style="margin-left:auto">© Doppia</span>
-  </div>
+<div class="n-foot">
+<b data-i18n="footer.brand">DOPPIA</b>
+<a data-i18n="footer.link0" href="#advideo">Ad Video</a><a data-i18n="footer.link1" href="#shots">Shots</a><a data-i18n="footer.link2" href="#pricing">Pricing</a><a data-i18n="footer.link3" href="#faq">FAQ</a>
+<a data-i18n="footer.link4" href="/studio">Open app</a><a data-i18n="footer.link5" href="/saas-login">Log in</a>
+<a data-i18n="footer.link6" href="/privacy.html">Privacy</a><a data-i18n="footer.link7" href="/terms.html">Terms</a><a data-i18n="footer.link8" href="/refund.html">Refund</a>
+<span class="lang-sw" style="margin-left:auto">
+<a aria-current="true" data-lang="en" href="/" hreflang="en">English</a>
+<span aria-hidden="true" style="opacity:.4;margin:0 6px">·</span>
+<a data-lang="ko" href="/ko" hreflang="ko">한국어</a>
+</span>
+</div>
 </footer>
+<script src="/js/biz-footer.js?v=3"></script>
 
 <script>
   // tabs
