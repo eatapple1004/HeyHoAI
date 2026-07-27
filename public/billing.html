@@ -377,7 +377,7 @@ function syncBillingPricing(){
   // 통화 토글 활성 표시 + 안내(통화·VAT·자동결제·PG)
   document.querySelectorAll('.curtog button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-cur')===meta.code); });
   document.body.classList.toggle('cur-krw', meta.code==='KRW');
-  const cn=document.getElementById('curNote'); if(cn) cn.textContent = meta.symbol+' '+meta.code+' · '+meta.note+' · '+meta.pg;
+  const cn=document.getElementById('curNote'); if(cn) cn.textContent = meta.symbol+' '+meta.code+' · '+meta.note; // (2026-07-27) PG명(meta.pg) 표시 제거 — 빌링 화면엔 불필요(PG 고지는 privacy/refund/terms에 존재)
   setCycle(CYCLE, document.querySelector('.cycle button[data-cyc="'+CYCLE+'"]'));
 }
 
