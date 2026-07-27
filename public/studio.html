@@ -1377,13 +1377,13 @@
       <!-- 컨셉 라벨 줄(2026-07-17): 원래 placeholder가 라벨 역할까지 했고(입력 시작하면 사라짐 = a11y 문제),
            "AI가 대신 써준다"는 구제책이 텍스트박스 '아래' 있어서 유저가 빈 박스라는 벽을 먼저 만난 뒤에야 사다리를 봤다.
            라벨 줄을 만들면서 그 줄 오른쪽에 제안을 얹어 라벨·위치·문구를 한 번에 해결. 높이 +24px. -->
-      <div class="ugc-fieldhd ugc-sec-div">
-        <span class="ugc-step" aria-hidden="true">2</span>
-        <label for="ugcConcept">Concept <span>— required · a sentence or a few keywords</span></label>
-        <button type="button" id="ugcSuggestHero" onclick="ugcSuggestConcept()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span id="ugcSuggestHeroTxt">Write it for me</span></button>
-        <span id="ugcSuggestBtn"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor" opacity=".45"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg>Add a photo and AI can write this for you</span>
+      <!-- (2026-07-27) 컨셉 자동화 — 사진에서 컨셉을 자동 생성(유저에겐 안 보임). 직접 쓰고 싶을 때만 브리프를 편다.
+           #ugcConcept는 자동 컨셉의 내부 운반체(hidden). ugcSuggestConcept가 여기 채우고 ugcWriteScript가 읽는다. -->
+      <div class="ugc-fieldhd ugc-sec-div" id="ugcBriefHd">
+        <label for="ugcConcept">Concept <span>— written for you from your photo</span></label>
+        <button type="button" id="ugcBriefToggle" onclick="ugcToggleBrief()" aria-expanded="false"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Write your own brief</span></button>
       </div>
-      <textarea class="script-ta" id="ugcConcept" placeholder="e.g. A calming night serum for tired skin — cozy, candle-lit bedroom mood."></textarea>
+      <textarea class="script-ta" id="ugcConcept" style="display:none" placeholder="e.g. A calming night serum for tired skin — cozy, candle-lit bedroom mood."></textarea>
       <div style="margin:2px 0 8px">
         <button type="button" class="neg-toggle" id="ugcDetailsToggle" onclick="ugcToggleDetails()"><span class="pl">+</span> Product details</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
@@ -1398,7 +1398,7 @@
            (2026-07-21) "Options"→"Settings"(3번). 사용자 요청으로 1·2·3·4 플로우를 세운다:
               ①제품 사진 ②컨셉 ③세팅(우측) ④대본 생성(CTA). ✓(선택)에서 번호로 승격 — 우측도 플로우의 한 걸음. -->
       <div class="ugc-knobline ugc-sec-div">
-        <div class="ugc-sec-hd"><span class="ugc-step" aria-hidden="true">3</span>Settings</div>
+        <div class="ugc-sec-hd"><span class="ugc-step" aria-hidden="true">2</span>Settings</div>
         <button type="button" class="ugc-knobline-btn" id="ugcKnobLine" onclick="ugcToggleKnobs()" aria-expanded="false" aria-controls="ugcKnobs">
           <span aria-hidden="true">🎬</span>
           <span class="ugc-knobline-txt" id="ugcKnobTxt"></span>
@@ -1510,7 +1510,7 @@
       <!-- rank1(reorder+대비): 무료·비용 안심을 CTA '앞'에 둔다 — 위→아래 스캔에서 버튼보다 먼저 읽히게, --faint→--dim.
            rank6/10: 두 AI 도우미(컨셉·대본) 모두 무료 + 비용은 다음 Generate 버튼에 과금 전 표시.
            ⚠️ 인라인 <b> 금지 — i18n 텍스트노드 단위 치환(단일 노드 유지, 사전 키=이 문장 전체). -->
-      <div id="ugcFreeNote" style="margin:2px 0 11px;font-size:12px;color:var(--dim);line-height:1.55">The concept and the script are free — edit any line first. Credits are spent only when you generate the video, and the cost shows on that button.</div>
+      <div id="ugcFreeNote" style="margin:2px 0 11px;font-size:12px;color:var(--dim);line-height:1.55">Doppia writes the concept and script for you — free. Review them first; credits are spent only when you generate the video, and the cost shows on that button.</div>
       <!-- rank2: 연필→스파클(AI가 쓴다 신호, 'Write it for me'와 동일 아이콘). rank18: aria-describedby로 무료 안내를 CTA에 연결 -->
       <!-- CTA(2026-07-20 개편) — 세 가지가 한 번에 안 읽히던 것을 버튼이 직접 말하게 바꿨다:
              ① 언제 누르나 = 게이트를 버튼이 말한다. 사진·컨셉이 없으면 조용해지고 **뭐가 빠졌는지**를 쓴다.
@@ -1525,8 +1525,8 @@
       <!-- (2026-07-21) 4번 = 대본 생성. 1·2·3(사진·컨셉·세팅)에 이어 CTA가 플로우의 마지막 걸음이다.
            배지는 버튼 밖(왼쪽)에 둔다 — 버튼 내부는 게이트 상태 문구가 갈아끼워지는 자리라 건드리지 않는다. -->
       <div class="script-ctrls">
-        <span class="ugc-step" aria-hidden="true">4</span>
-        <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-describedby="ugcFreeNote" aria-disabled="true" onclick="ugcWriteScript()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo and a concept</span><span class="cta-sub">A photo and one line starts it</span></span></button>
+        <span class="ugc-step" aria-hidden="true">3</span>
+        <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-describedby="ugcFreeNote" aria-disabled="true" onclick="ugcCreateAd()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo</span><span class="cta-sub">Concept &amp; script are written for you — free</span></span></button>
       </div>
       <div class="hint" id="ugcHint" style="margin-top:8px"></div>
       </div><!-- /.ugc-fold-c -->
@@ -1560,7 +1560,15 @@
         <b style="font-size:15px" id="ugcScriptTitle"></b>
         <span class="hint" id="ugcScriptMeta"></span>
       </div>
-      <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
+      <!-- (2026-07-27) 압축 확인 = 훅 한 줄(읽기전용) + [Edit script]로 펼치는 씬 에디터 전체. 기본은 접힘(팩처럼 단순).
+           씬별 대본 편집이 '복잡함'의 정체였으므로 그걸 접고, 지출 전 확인은 훅+비용으로 유지한다. -->
+      <div id="ugcScriptHook" style="font-size:13.5px;line-height:1.5;margin-bottom:8px"></div>
+      <button type="button" class="ugc-advtoggle" id="ugcScriptEditBtn" onclick="ugcToggleScriptEdit()" aria-expanded="false" aria-controls="ugcScriptAdv" style="margin-bottom:6px">
+        <span class="ugc-advtoggle-t">✎ Edit script</span><span class="ugc-adv-sum" id="ugcScriptEditSum">hook · scenes · caption</span><span class="ugc-adv-chev" aria-hidden="true">▾</span>
+      </button>
+      <div id="ugcScriptAdv" hidden>
+        <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
+      </div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
         <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dim)">
           <span style="font-size:12.5px;color:var(--text);font-weight:600">Video quality</span>
@@ -5871,9 +5879,9 @@ async function ugcSuggestConcept(){
   const hint=document.getElementById('ugcHint');
   if(!ugcProductFiles.length){hint.textContent='⚠ Add a product photo first — then I can suggest a concept.';return;}
   // 로딩 표시는 실제 버튼(#ugcSuggestHero)에. 옛 #ugcSuggestBtn은 사진 없을 때만 뜨는 힌트 span으로 바뀜.
-  const btn=document.getElementById('ugcSuggestHero');
+  const btn=document.getElementById('ugcSuggestHero'); // 자동 체이닝(ugcCreateAd)에선 버튼이 없다 → 가드
   const lbl=document.getElementById('ugcSuggestHeroTxt');const old=lbl?lbl.textContent:'';
-  btn.disabled=true; if(lbl)lbl.textContent='Thinking…';
+  if(btn)btn.disabled=true; if(lbl)lbl.textContent='Thinking…';
   try{
     const fd=new FormData();
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png')));
@@ -5891,7 +5899,32 @@ async function ugcSuggestConcept(){
     { const c=document.getElementById('ugcConcept'); c.value=data.concept; ugcAutogrow(c); ugcCtaState(); } // AI가 채운 값도 높이·CTA에 반영
     hint.textContent='Concept suggested — edit it, or tap again for another.';
   }catch(e){ console.error(e); hint.textContent='⚠ '+(e.message||'Suggestion failed'); }
-  finally{ btn.disabled=false; if(lbl)lbl.textContent=old; } // textContent로 되돌리면 버튼 안 SVG가 날아감 → 라벨 span만 복원
+  finally{ if(btn)btn.disabled=false; if(lbl)lbl.textContent=old; } // textContent로 되돌리면 버튼 안 SVG가 날아감 → 라벨 span만 복원
+}
+
+// (2026-07-27) 브리프 토글 — 자동 컨셉 대신 직접 쓰고 싶을 때 숨은 #ugcConcept를 편다.
+function ugcToggleBrief(){
+  const ta=document.getElementById('ugcConcept'); if(!ta)return;
+  const open=ta.style.display==='none';
+  ta.style.display=open?'':'none';
+  const btn=document.getElementById('ugcBriefToggle'); if(btn)btn.setAttribute('aria-expanded',open?'true':'false');
+  if(open){ ugcAutogrow(ta); ta.focus(); }
+}
+function ugcRevealBrief(){ const ta=document.getElementById('ugcConcept'); if(ta&&ta.style.display==='none')ugcToggleBrief(); }
+// (2026-07-27) Create = 원탭. 컨셉 비었으면 사진에서 자동 생성 → 대본. 직접 쓴 브리프가 있으면 그걸 쓴다.
+async function ugcCreateAd(){
+  const hint=document.getElementById('ugcHint');
+  if(ugcNeedPhoto(hint))return;                 // 사진 필수(대본이 사진을 보고 써진다)
+  const c=document.getElementById('ugcConcept');
+  if(!(c&&(c.value||'').trim())){               // 자동 컨셉 — 유저에겐 안 보인다
+    const wbtn=document.getElementById('ugcGenBtn'); if(wbtn)wbtn.disabled=true;
+    if(hint)hint.textContent='Reading your product…';
+    try{ await ugcSuggestConcept(); } finally{ if(wbtn)wbtn.disabled=false; }
+  }
+  if(!((c&&c.value||'').trim())){               // 자동 실패 → 직접 쓰라고 브리프 연다
+    ugcRevealBrief(); if(hint)hint.textContent='⚠ Couldn\'t write a brief from the photo — add one line and try again.'; return;
+  }
+  await ugcWriteScript();
 }
 
 // 접힌 "제품 상세" 옵션 토글
@@ -5954,14 +5987,12 @@ function ugcCtaState(){
   if(!main||!sub)return; // 마크업이 바뀌면 조용히 물러난다(옛 1줄 버튼과 공존 가능)
   const box=document.getElementById('ugcInputBox');
   const hasPhoto=!!(box&&box.classList.contains('has-photo'));
-  const hasConcept=!!((document.getElementById('ugcConcept')||{}).value||'').trim();
-  const ok=hasPhoto&&hasConcept;
+  // (2026-07-27) 게이트=사진 하나. 컨셉은 자동 생성되므로 더는 게이트가 아니다(직접 쓰기는 선택).
+  const ok=hasPhoto;
   btn.classList.toggle('is-blocked',!ok);
   btn.setAttribute('aria-disabled',ok?'false':'true');
-  main.textContent = ok ? 'AI writes the script'
-    : (!hasPhoto&&!hasConcept) ? 'Add a product photo and a concept'
-    : !hasPhoto ? 'Add a product photo' : 'Write one line of concept';
-  sub.textContent = ok ? 'Free — edit it, then make the video' : 'A photo and one line starts it';
+  main.textContent = ok ? 'Create my ad video' : 'Add a product photo';
+  sub.textContent = ok ? 'Concept & script are written for you — free' : 'One product photo starts it';
 }
 /**
  * 텍스트에어리어 자동 높이(2026-07-21) — 내용만큼만 차지하고 줄이 늘면 아래가 밀려 내려간다.
@@ -6108,6 +6139,10 @@ function ugcRenderScriptPreview(data){
   if(data.cost!=null)window.ugcLastCost=data.cost; // refine 후 재렌더 때 비용 유지
   document.getElementById('ugcScriptTitle').textContent=s.title||'Your ad script';
   document.getElementById('ugcScriptMeta').textContent=`${data.nClips} scenes · ${s.durationSec||''}s`;
+  // (2026-07-27) 압축 확인 카드: 훅 한 줄(읽기전용) + [Edit script] 요약. 씬 에디터 전체는 #ugcScriptAdv에 접혀 있다.
+  { const hk=document.getElementById('ugcScriptHook');
+    if(hk)hk.innerHTML=`<span class="ugc-el-lbl" title="The opening line that grabs attention in the first second">🎣 Hook</span> — ${esc(s.hook||'')}`;
+    const esum=document.getElementById('ugcScriptEditSum'); if(esum)esum.textContent=`${data.nClips} scenes · caption`; }
   // 편집 가능 필드(클릭→수정, ugcScript에 즉시 반영). 회색 🎬줄=씬 비주얼 설명(읽기전용, 편집은 후속).
   const ce=(f,val,ph)=>`<span class="ugc-edit" contenteditable="true" data-f="${f}"${ph?` data-ph="${esc(ph)}"`:''}>${esc(val||'')}</span>`;
   const brollN=(s.scenes||[]).filter(x=>x.type==='broll').length||1;
@@ -6141,6 +6176,13 @@ function ugcRenderScriptPreview(data){
   document.getElementById('ugcScriptPreview').style.display=''; ugcSyncSolo();
   ugcSyncVoiceControls(); // 음성 OFF면 Voice/Speed/Preview 숨김
   ugcCompactIfNarrow(); // 넓은 화면은 안 접는다(컨셉 보며 대본 검토 + [Edit] 혼동 제거). 좁으면 접어야 대본이 보인다
+}
+// (2026-07-27) 압축↔에디터 토글 — 씬 에디터 전체(#ugcScriptAdv)를 편다/접는다. 이름 충돌 주의: ugcToggleAdv(6334)와 별개.
+function ugcToggleScriptEdit(){
+  const adv=document.getElementById('ugcScriptAdv'),btn=document.getElementById('ugcScriptEditBtn'); if(!adv)return;
+  const open=adv.hasAttribute('hidden');
+  if(open)adv.removeAttribute('hidden'); else adv.setAttribute('hidden','');
+  if(btn){ btn.setAttribute('aria-expanded',open?'true':'false'); const t=btn.querySelector('.ugc-advtoggle-t'); if(t)t.textContent=open?'✎ Hide editor':'✎ Edit script'; }
 }
 // Ad Video 예상 비용 — 씬별 klingGenDur × 화질 티어(Basic 625 / Premium 945). 백엔드 estimateCost와 동일 산식.
 function ugcGenCost(){
