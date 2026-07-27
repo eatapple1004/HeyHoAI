@@ -828,6 +828,15 @@
   .ugc-cols.ugc-solo #ugcInputBox #ugcAdv{display:flex;flex-wrap:wrap;gap:16px 34px;align-items:flex-start}  /* Shots식 가로 라벨 그룹 */
   .ugc-cols.ugc-solo #ugcInputBox #ugcAdv > div{margin:0}
   @media(max-width:860px){.ugc-cols.ugc-solo #ugcInputBox #ugcAdv{gap:12px 20px}}
+  /* (2026-07-27) 세부설정 바 컴팩트(너무 세로 완화)·정렬 + 컨트롤 대비 Shots식(어디 눌러야 하는지 보이게). */
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar{gap:6px}
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn{flex-direction:row;align-items:center;gap:6px;padding:7px 11px}  /* 비율 박스 세로→가로 컴팩트 */
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn .ar-box{margin-bottom:0}
+  .ugc-cols.ugc-solo .ugc-fold-settings .ugc-ar-btn>span:last-child{display:none}   /* Reels·Shorts 서브라벨 숨김(Shots 컴팩트 바와 동일) */
+  /* 세그먼트(수량·씬길이·언어) = 공용 pill 컨테이너 대신 개별 버튼(Shots .viz-btn처럼 bg+border → 비활성도 보임) */
+  #scriptStep .ugc-seg{background:transparent;border:none;padding:0;gap:6px}
+  #scriptStep .ugc-seg-b{background:rgba(255,255,255,.035);border:1px solid var(--border2)}
+  #scriptStep .ugc-seg-b.active{background:var(--tint-sel)!important;border-color:var(--bd-sel)}
   /* (2026-07-26) 핵심 3종 강조 — 사진(드롭존 크게)·컨셉(크게)·대본 생성 버튼(크게·차단상태도 보이게). */
   #scriptStep #ugcDrop{align-items:stretch}
   #scriptStep #ugcPickBtn.img-add.labeled{flex:1;min-height:96px;flex-direction:column;gap:9px;border-style:dashed;border-width:1.5px;border-radius:14px;background:transparent}
