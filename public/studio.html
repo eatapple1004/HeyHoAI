@@ -1499,10 +1499,9 @@
            2026-07-17 한때 길이를 2단계로 옮겼다가 되돌림 — 대본이 나온 뒤엔 Rewrite 없이는 아무 효과가 없었고,
            대본이 이미 씬별 길이를 정해 보여주는데(4s 배지) 그 아래서 또 물어보는 모순이 생겼다. -->
       <div style="margin:8px 0 2px">
-        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Scenes &amp; length</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
           <div>
-            <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Count</div>
+            <div class="ugc-fieldlbl">Count</div>
             <div class="ugc-seg" id="ugcCountSeg" role="group" aria-label="Count">
               <button type="button" class="ugc-seg-b active" data-c="0" onclick="ugcSetSceneCount(this)">Auto</button>
               <button type="button" class="ugc-seg-b" data-c="3" onclick="ugcSetSceneCount(this)">3</button>
@@ -1513,7 +1512,7 @@
           </div>
           <!-- 안내문은 wrap '안'에 둔다 — 형제로 두면 음성모드에서 컨트롤만 숨고 안내만 남는 유령 문구가 됨 -->
           <div id="ugcLenSceneWrap">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Length / scene</div>
+            <div class="ugc-fieldlbl">Length / scene</div>
             <div class="ugc-seg" id="ugcDurSeg" role="group" aria-label="Length / scene">
               <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
               <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
