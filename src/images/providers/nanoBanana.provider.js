@@ -169,7 +169,8 @@ const nanoBananaProvider = {
     // 🔍 2K = 라벨 글자에 배정되는 픽셀이 2배. 워드마크가 살아남는 데 가장 직접적인 레버다.
     //   ⚠️ **Pro 전용**(flash는 1K 고정) — 모델이 pro가 아니면 조용히 무시한다(보내면 거부당한다).
     //   studio는 이미 이 옵션을 쓰는데 provider엔 없어서, Pack이 pro로 올라가고도 1K로 뽑고 있었다.
-    const imageSize = (String(req.imageSize || '').toUpperCase() === '2K' && /pro/i.test(model)) ? '2K' : null;
+    const reqSize = String(req.imageSize || '').toUpperCase();
+    const imageSize = ((reqSize === '2K' || reqSize === '4K') && /pro/i.test(model)) ? reqSize : null;
 
     const fullPrompt = req.negativePrompt
       ? `${req.prompt}\n\nAvoid: ${req.negativePrompt}`

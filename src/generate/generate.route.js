@@ -191,8 +191,9 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     // 비율: Gemini API 지원값 화이트리스트. 그 외/빈값 → 미적용.
     const ASPECT_ALLOW = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']; // Gemini 10종(+4:5/5:4 = IG 피드)
     const aspectRatio = ASPECT_ALLOW.includes(req.body.aspectRatio) ? req.body.aspectRatio : null;
-    // 해상도: 2K는 Nano Banana Pro(model=pro) 전용. 4K는 보류(D1). 그 외 → 1K(미적용).
-    const imageSize = (model === 'pro' && String(req.body.imageSize || '').toUpperCase() === '2K') ? '2K' : null;
+    // 해상도: 2K·4K는 Nano Banana Pro(model=pro) 전용. 그 외 → 1K(미적용). (2026-07-27 4K 오픈)
+    const reqSize = String(req.body.imageSize || '').toUpperCase();
+    const imageSize = (model === 'pro' && (reqSize === '2K' || reqSize === '4K')) ? reqSize : null;
     // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 1000(입력란 maxlength와 일치).
     const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 1000);
 
@@ -424,7 +425,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
       try {
         charge = await teamCredit.chargeGeneration(
           req.user,
-          creditService.imageCost(model, generateCount, req.body.billingMode !== 'custom') + useRoyalty, // billingMode: 'custom'=커스텀(2~3배), 그 외=템플릿(4~6배)
+          creditService.imageCost(imageSize === '4K' ? 'pro-4k' : model, generateCount, req.body.billingMode !== 'custom') + useRoyalty, // 'custom'=커스텀/그 외=템플릿 · 4K=pro-4k 티어(원가 $0.24)
           `사진 생성 (${model}, ${generateCount}장)`
         );
       } catch (e) {
@@ -635,7 +636,7 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     const failCount = results.length - okCount;
     if (charge && failCount > 0) {
       if (okCount === 0) await charge.refund();
-      else await teamCredit.refundGeneration(req.user, creditService.imageCost(model, failCount, req.body.billingMode !== 'custom'), `부분 생성 실패 환불 (${failCount}장)`); // 실패 장수 × 장당(모델·커스텀/템플릿)
+      else await teamCredit.refundGeneration(req.user, creditService.imageCost(imageSize === '4K' ? 'pro-4k' : model, failCount, req.body.billingMode !== 'custom'), `부분 생성 실패 환불 (${failCount}장)`); // 실패 장수 × 장당(모델·커스텀/템플릿·4K=pro-4k)
     }
     // 체험 계정: 실제 생성 성공한 장수만 한도에서 차감
     if (trialInfo && okCount > 0) await trialService.consumeImages(req.user.id, okCount);
