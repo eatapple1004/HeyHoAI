@@ -169,6 +169,7 @@
     'Type a product name… (optional)': '제품명을 입력하세요… (선택)',
     // 컨셉
     'Concept': '컨셉', '— required · a sentence or a few keywords': '— 필수 · 한 문장이나 키워드 몇 개',
+    '— written for you from your photo': '— 사진에서 자동으로 써드립니다', // (2026-07-27) 컨셉 자동화 라벨
     // Step 1 섹션 제목 (Product='제품'·Concept='컨셉'은 기존 키 재사용)
     'Style': '스타일', 'Format': '형식', 'Product name': '제품명', '— optional': '— 선택',
     'Write it for me': '대신 써주세요',
@@ -217,10 +218,18 @@
     'Add a product photo': '제품 사진을 넣어주세요',
     'Write one line of concept': '컨셉을 한 줄 써주세요',
     'A photo and one line starts it': '사진과 한 줄이 있으면 시작합니다',
+    // (2026-07-27) 컨셉 자동화 — CTA 원탭·브리프 직접쓰기. 위 'AI writes the script' 등은 옛 게이트 문구(미사용·존치).
+    'Create my ad video': '내 광고영상 만들기',
+    'Concept & script are written for you — free': '컨셉·대본은 자동으로 써드립니다 — 무료',
+    'One product photo starts it': '제품 사진 한 장이면 시작됩니다',
+    'Write your own brief': '직접 브리프 쓰기',
+    'Reading your product…': '제품을 읽는 중…',
+    "⚠ Couldn't write a brief from the photo — add one line and try again.": '⚠ 사진으로 브리프를 쓰지 못했어요 — 한 줄 넣고 다시 시도하세요.',
     // 과금 안내(#ugcFreeNote). (2026-07-20) 우측 패널 2번 스텝("AI drafts it — free…")을 흡수해
     //   한 줄로 합쳤다 — 과금 안내가 세 곳(헤더·2번·무료안내) → 두 곳 → **한 곳**이 된 마지막 단계.
-    'The concept and the script are free — edit any line first. Credits are spent only when you generate the video, and the cost shows on that button.':
-      '컨셉과 대본은 무료입니다 — 어느 줄이든 먼저 고치세요. 크레딧은 영상을 만들 때만 나가고, 비용은 그 버튼에 표시됩니다.',
+    // (2026-07-27) 컨셉 자동화로 문구 갱신. 옛 'The concept and the script are free…' 키는 영어 원문이 사라져 제거.
+    'Doppia writes the concept and script for you — free. Review them first; credits are spent only when you generate the video, and the cost shows on that button.':
+      'Doppia가 컨셉과 대본을 자동으로 써드립니다 — 무료. 먼저 확인하세요. 크레딧은 영상을 만들 때만 나가고, 비용은 그 버튼에 표시됩니다.',
     // Ad Video 빈 상태 리드(2026-07-20 신설, .ugc-lead-t/-chip).
     //   우측 "How this works" 패널이 제거되며 결과물 문장과 칩만 여기로 넘어왔다.
     //   칩 '9:16 · 1:1 · 16:9'와 'English · 한국어'는 번역 불필요(숫자·자기표기).
@@ -263,6 +272,8 @@
     // 대본 패널
     'Rewrite': '다시 쓰기', 'Generate video': '영상 만들기', 'Writing your script': '대본을 쓰는 중',
     'Hook': '훅',
+    // (2026-07-27) 압축 확인 카드의 대본 에디터 토글
+    '✎ Edit script': '✎ 대본 편집', '✎ Hide editor': '✎ 에디터 접기',
 
     // ── 스튜디오 (Studio) ──
     'Custom': '커스텀', 'Select a product': '제품 선택', 'Add your product': '제품 추가', 'Add your face': '얼굴 추가',
