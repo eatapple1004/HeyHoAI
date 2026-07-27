@@ -117,10 +117,12 @@ async function updateJob(id, patch) {
 function klingGenDur(durationSec) { return (Number(durationSec) > 5) ? 10 : 5; }
 
 /** 크레딧 원가 추정 — 씬별 Kling 생성 길이(5/10) 단가 합산. 짧게(3~4s)는 5초 생성이라 5초 단가. */
-function estimateCost(script, isTemplate) {
+function estimateCost(script, quality, isTemplate) {
+  const isTier = (quality === 'low' || quality === 'high');   // Ad Video 화질 티어(625/945). 미지정=레거시(팩 비디오 810 보존)
+  const per = (dur) => isTier ? creditService.adVideoSceneCost(dur, quality) : creditService.videoCost(dur, 'pro', isTemplate);
   const broll = ((script && script.scenes) || []).filter((s) => s.type === 'broll');
-  if (!broll.length) return creditService.videoCost(5, 'pro', isTemplate);
-  return broll.reduce((sum, s) => sum + creditService.videoCost(klingGenDur(s.durationSec), 'pro', isTemplate), 0);
+  if (!broll.length) return per(5);
+  return broll.reduce((sum, s) => sum + per(klingGenDur(s.durationSec)), 0);
 }
 
 function brollCount(script) { return ((script && script.scenes) || []).filter((s) => s.type === 'broll').length; }
@@ -267,7 +269,7 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
   referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
-  audio = {}, autoCommit = false, batchId = null }) {
+  audio = {}, autoCommit = false, batchId = null, quality = null }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -281,8 +283,8 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const refKind = prodPaths.length ? 'product' : 'person';
 
   // 과금(씬별 길이 반영) — statusCode 에러(402/403) 그대로 전파. 승인 후에만.
-  const cost = estimateCost(script, isTemplate);
-  const charge = await teamCredit.chargeGeneration(user, cost, `UGC 영상 (${outputType}, ${nClips}컷)`);
+  const cost = estimateCost(script, quality, isTemplate);
+  const charge = await teamCredit.chargeGeneration(user, cost, `UGC 영상 (${outputType}, ${nClips}컷${quality ? `, ${quality}` : ''})`);
   const teamId = await teamCredit.activeTeamId(user.id);
 
   const vis = visibility === 'private' ? 'private' : 'public';
@@ -297,7 +299,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -311,7 +313,7 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null }) {
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
@@ -338,7 +340,7 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     }
 
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정. 음성모드는 위에서 durationSec=음성길이.
-    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
+    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const sceneClips = await persistSceneClips(clips); // 결과 편집(재배치·삭제·재생성)용 씬 클립 영속화
@@ -585,6 +587,20 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
   const curOrder = script.scenes.map((s) => s.n);
   if (order && order.length && (order.length !== curOrder.length || order.some((n, i) => Number(n) !== curOrder[i]))) return null; // 순서 변경 → 폴백
 
+  // ── 오디오 재생성 과금(2026-07-27) — 초기 생성은 베이스 포함/무과금, **편집 중 다시 만들 때만** 과금.
+  //   실제 재생성될 것만 사전 차감(음성=re-TTS 조건, 음악=게이트 a 조건과 동일). 402/403은 여기서 throw → 무료 폴백 방지.
+  const _audioNext = { ...(R.audio || {}) };
+  if (hasMusic) _audioNext.music = (mv.toLowerCase() !== 'none');
+  if (voice != null) _audioNext.voice = !!voice;
+  const _narrText = ((narration != null ? String(narration) : (script.narration || script.scenes.map((s) => (s.spoken || s.onScreenText || '').trim()).filter(Boolean).join(' '))) || '').trim();
+  const _durSec = Math.round((R.durationMs || R.caption.timings.reduce((m, t) => Math.max(m, t.startMs + t.durMs), 0) || 6000) / 1000);
+  let regenCredits = 0;
+  if (hasVoiceEdit && _audioNext.voice && _narrText && tts.isConfigured()) regenCredits += creditService.voiceRegenCost(_narrText.length);
+  if (hasMusic && _audioNext.music && music.isConfigured()) regenCredits += creditService.musicRegenCost(_durSec);
+  let rcCharge = null;
+  if (regenCredits > 0) rcCharge = await teamCredit.chargeGeneration(user, regenCredits, `오디오 재생성 (편집 ${jobId})`);
+  let ok = false;
+
   const rlog = (m) => log.info(`[recompose ${jobId}] ${m}`);
   const workDir = path.join(process.cwd(), 'tmp', 'ugc', `rc_${crypto.randomUUID().slice(0, 8)}`);
   fs.mkdirSync(workDir, { recursive: true });
@@ -645,11 +661,11 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
         else if (hasVoiceEdit && narrText && tts.isConfigured()) { rlog('VO 재합성 실패 → 무음 성공 방지, 전체 reRender 폴백'); return null; } // #8: 음성 편집 요청인데 합성 실패 시, 나레이션 없는 영상을 '성공'으로 내지 않고 전체 경로로 폴백(사용자에 오류 노출/재시도)
       } else if (R.audioAssets) { delete R.audioAssets.vo; } // voice off → VO 자산 제거
       if (wantMusic) {
-        if (music.isConfigured()) {
-          rlog('음악만 재생성 [elevenlabs music]');
+        if (hasMusic && music.isConfigured()) {   // 게이트(a): musicVibe 실제 변경 시만 재생성(+과금). 음성만 편집 시엔 아래에서 기존 음악 재사용.
+          rlog('음악 재생성 [elevenlabs music]');
           const m = await music.composeForScript(script, { durationMs: durMs, outPath: path.join(workDir, 'music.mp3') });
           if (m) { audioInputs.push({ file: m, volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); if (R.audioAssets) R.audioAssets.music = { file: await persistAudioFile(m), key: musicKey(script) }; }
-        } else if (R.audioAssets && R.audioAssets.music) { const mp = await restoreClipLocal(R.audioAssets.music.file); if (mp) audioInputs.push({ file: mp, volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); }
+        } else if (R.audioAssets && R.audioAssets.music) { const mp = await restoreClipLocal(R.audioAssets.music.file); if (mp) audioInputs.push({ file: mp, volume: audioInputs.length ? 0.18 : 0.5, kind: 'music' }); } // 재사용(vibe 미변경 or 미설정)
       } else if (R.audioAssets) { delete R.audioAssets.music; }
       if (audioInputs.length) baseAbs = await muxAudio(silent, audioInputs, Math.max(durMs / 1000, 1), workDir, 'base.mp4');
       else { baseAbs = path.join(workDir, 'base.mp4'); fs.copyFileSync(silent, baseAbs); }
@@ -673,12 +689,14 @@ async function tryReComposite({ user, jobId, order = null, removed = [], edits =
          JSON.stringify({ type: 'video', source: 'ugc', outputType: row.output_type, duration: durationSec, subtitleMode: burned.subtitleMode, edited: true })]);
     }
     await updateJob(jobId, { status: 'succeeded', result_url: `/images/${filename}`, duration_sec: durationSec, subtitle_mode: burned.subtitleMode, script: JSON.stringify(script) });
-    rlog(`값싼 재합성 완료(${(hasMusic || hasVoiceEdit) ? '오디오+' : ''}자막, 클립/재타이밍 0) → /images/${filename}`);
-    return { jobId, resultUrl: `/images/${filename}`, durationSec, cost: 0 };
+    ok = true;   // 성공 — finally에서 재생성 과금 환불 안 함
+    rlog(`값싼 재합성 완료(${(hasMusic || hasVoiceEdit) ? '오디오+' : ''}자막, 클립/재타이밍 0, 재생성과금 ${regenCredits}) → /images/${filename}`);
+    return { jobId, resultUrl: `/images/${filename}`, durationSec, cost: regenCredits };
   } catch (e) {
     log.warn(`[recompose ${jobId}] 실패 → 전체 재조립 폴백: ${e.message}`);
     return null; // 폴백(잡 미갱신 — 호출부 reRender가 원본 script로 다시 처리)
   } finally {
+    if (!ok && rcCharge) { try { await rcCharge.refund(); } catch {} } // 재합성 실패·폴백 시 재생성 과금 환불(성공분만 유지)
     try { fs.rmSync(workDir, { recursive: true, force: true }); } catch {}
   }
 }

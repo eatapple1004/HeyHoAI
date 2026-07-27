@@ -653,7 +653,7 @@
 </div>
 <div class="n-body">
 <p data-i18n="advideo.body1">Out comes 1080×1920, 30fps, H.264 — the Reels and TikTok upload spec.</p>
-<p data-i18n="advideo.body2"><b>The script comes first, and it costs nothing.</b> Read every line. Rewrite any of them. Only then does anything get charged — <b>◆810 per five-second scene</b>.</p>
+<p data-i18n="advideo.body2"><b>The script comes first, and it costs nothing.</b> Read every line. Rewrite any of them. Only then does anything get charged — <b>from ◆625 per five-second scene</b>.</p>
 <p data-i18n="advideo.body3">After it's made, tell any single scene what to change in plain language and redo just that one. Swapping the music or the speed on a finished ad is free.</p>
 </div>
 </section>
@@ -741,7 +741,7 @@
 <div class="n-faq">
 <details open=""><summary data-i18n="faq.q1">Will this work for what I sell?</summary><p data-i18n="faq.a1">Today Doppia is built for three things: apparel, jewelry and cosmetics. If that's what you sell, the looks are ready. If you sell food, electronics, furniture or pet — we're not there yet. We'd rather tell you now than take your signup.</p></details>
 <details><summary data-i18n="faq.q2">What do I have to give it?</summary><p data-i18n="faq.a2">One product photo. That's the whole input — no second angle, no reference sheet. For an ad video, add one line about the product, or let Doppia read the photo and draft that line for you. More angles help: an ad video reads up to five photos of the same product together.</p></details>
-<details><summary data-i18n="faq.q3">What does a credit actually buy?</summary><p data-i18n="faq.a3">A template photo is ◆300 and every run returns four. A custom-prompt photo is ◆150. An ad video is ◆810 per five-second scene — a 20-second ad is four scenes, ◆3,240. You only pay for what renders.</p></details>
+<details><summary data-i18n="faq.q3">What does a credit actually buy?</summary><p data-i18n="faq.a3">A template photo is ◆300 and every run returns four. A custom-prompt photo is ◆150. An ad video is ◆625 per five-second scene on Basic, or ◆945 on Premium (crisper frames, smoother motion) — a 20-second Basic ad is four scenes, ◆2,500. You only pay for what renders.</p></details>
 <details><summary data-i18n="faq.q4">What happens to my photos?</summary><p data-i18n="faq.a4">Your files sit on AWS Seoul. From there, Shots go to a single vendor — Google, in the US. Ad Video uses four: Claude for the script, Gemini for the scenes, ElevenLabs for the score, and Kling for the motion — the first three in the US, Kling in China. Every vendor is named in our privacy policy with its country, what we send it, and its privacy contact. Doppia doesn't train on your uploads. <a href="/privacy.html">Read the vendor table →</a></p></details>
 </div>
 </section>
@@ -885,14 +885,14 @@
 })();
 </script>
 <script src="/js/pricing.js?v=2"></script>
-<script>/*LP-CONV 크레딧 환산 — 템플릿 사진 ◈300/장(런당 4장) · Ad Video ◈810/5초씬 → 20초 4씬 = ◈3,240.
-  근거: src/credits/credit.service.js:12 pro:[150,300] · :18 5:[810,1250]. 크레딧은 PRICING에서 읽어 동적계산.
+<script>/*LP-CONV 크레딧 환산 — 템플릿 사진 ◈300/장(런당 4장) · Ad Video Basic ◈625/5초씬 → 20초 4씬 = ◈2,500.
+  근거: src/credits/credit.service.js pro:[150,300] · AD_VIDEO_CREDIT.low 5:625. 크레딧은 PRICING에서 읽어 동적계산.
   ⚠️ 이 문자열은 **런타임 조립**이라 data-i18n 사전이 원리적으로 못 덮는다 → /ko에 영어가 박제된다.
      그래서 documentElement.lang으로 분기한다(build_landing_ko.js가 ko.html의 <html lang>을 ko로 뒤집는다).*/
 (function(){
   function fill(){
     var P=window.PRICING; if(!P||!P.plans) return;
-    var PRO=300, VIDEO=3240;  // Ad Video 20초 = 4씬 × ◈810
+    var PRO=300, VIDEO=2500;  // Ad Video 20초 Basic = 4씬 × ◈625
     var ko = document.documentElement.lang === 'ko';
     document.querySelectorAll('[data-conv]').forEach(function(el){
       var k=el.getAttribute('data-conv'), pl=P.plans[k]; if(!pl) return;

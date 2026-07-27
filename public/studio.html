@@ -1556,6 +1556,13 @@
       </div>
       <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dim)">
+          <span style="font-size:12.5px;color:var(--text);font-weight:600">Video quality</span>
+          <select id="ugcQuality" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:6px 9px;font-size:12.5px;max-width:360px">
+            <option value="low" selected>Basic — ◈625 / scene</option>
+            <option value="high">Premium — crisper frames &amp; smoother motion · ◈945 / scene</option>
+          </select>
+        </label>
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="ugcMusic" checked> <span style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V4l11-2v13"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="15" r="3"/></svg>Add background music</span>
         </label>
@@ -4172,7 +4179,7 @@ function ugcSceneStripHtml(b){
         <option value="none">No music</option>
       </select>
       <input type="text" class="ugc-music-vibe" placeholder="or describe a vibe…" maxlength="120">
-      <button type="button" class="ugc-music-go" onclick="ugcChangeMusic('${esc(b.ugc.jobId)}')">Change music</button>
+      <button type="button" class="ugc-music-go" title="Regenerating music uses credits" onclick="ugcChangeMusic('${esc(b.ugc.jobId)}')">Change music</button>
     </div>
     ${u.hasVoice?`<div class="ugc-arow">
       <span class="ugc-arow-lbl" style="display:inline-flex;align-items:center;gap:5px"><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg>Voice</span>
@@ -6354,6 +6361,7 @@ async function ugcRenderVideo(){
     const mEl=document.getElementById('ugcMusic');fd.append('music',(mEl&&mEl.checked)?'true':'false'); // 배경음악
     const vIdEl=document.getElementById('ugcVoiceId');if(vIdEl&&vIdEl.value)fd.append('voiceId',vIdEl.value); // 영상별 보이스
     const spEl=document.getElementById('ugcSpeed');if(spEl&&spEl.value)fd.append('speed',spEl.value); // 말하기 속도
+    const qEl=document.getElementById('ugcQuality');fd.append('quality',(qEl&&qEl.value==='high')?'high':'low'); // 화질 티어(low=625/high=945)
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png'))); // 유저 실제 제품(다각도) → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});
     const data=await sjson(res);

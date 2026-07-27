@@ -54,7 +54,7 @@ async function mapLimit(items, limit, fn) {
  */
 async function renderSceneClip(scene, opts) {
   const { referenceImagePath = null, referenceKind = 'person', productImagePath = null, productImagePaths = null, modelImagePath = null,
-    width = REELS_W, height = REELS_H, aspect = '9:16', dryRunVideo = false, videoStyle = 'natural', log = () => {} } = opts;
+    width = REELS_W, height = REELS_H, aspect = '9:16', dryRunVideo = false, videoStyle = 'natural', quality = 'low', log = () => {} } = opts;
   const durationMs = Math.round((scene.durationSec || 3) * 1000);
   const prompt = scene.brollPrompt || scene.direction || '';
 
@@ -87,6 +87,8 @@ async function renderSceneClip(scene, opts) {
     negativePrompt: hasPersonRef ? BROLL_NEGATIVE_PERSON : BROLL_NEGATIVE,
     width,
     height,
+    // 화질 티어: high=Pro 2K 프레임(선명·팩과 통일), low=provider 기본(Flash 1K, 현행). 되돌리려면 UGC_FRAME_MODEL env.
+    ...(quality === 'high' ? { model: process.env.UGC_FRAME_MODEL || 'gemini-3-pro-image-preview', imageSize: '2K' } : {}),
     ...(references.length ? { references } : {}),
   });
   const imageUrl = image.url;
@@ -109,7 +111,7 @@ async function renderSceneClip(scene, opts) {
     width,
     height,
     aspectRatio: aspect,
-    style: videoStyle,
+    style: quality === 'high' ? 'cinematic' : videoStyle,   // high=Kling Pro(cinematic), low=Std(natural=현행)
   });
   const poll = await pollUntilDone(klingProvider, submit.providerJobId);
 

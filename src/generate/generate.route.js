@@ -1231,7 +1231,7 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
 router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect } = req.body || {};
+    const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect, quality } = req.body || {};
     let script;
     try { script = JSON.parse(req.body.script || 'null'); } catch { return res.status(400).json({ success: false, error: 'invalid script JSON' }); }
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
@@ -1240,6 +1240,7 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_
     // #1 보안: referenceImagePath는 공개 로스터(/img/…) 또는 업로드 산출물(tmp/images/<basename>)만 허용. absolute·'..' 거부(임의 파일 읽기·크로스테넌트 이미지 유출 차단).
     const safeRef = safeRefImage(referenceImagePath);
     const safeAspect = ['9:16', '1:1', '16:9'].includes(aspect) ? aspect : '9:16'; // Kling 지원 비율만
+    const safeQuality = (quality === 'high') ? 'high' : 'low'; // Ad Video 화질 티어(기본 low=625). 팩(submit 경로)은 quality 미전달 → 레거시 810 유지.
     const result = await ugcVideoService.render({
       user: req.user, script, product, concept,
       outputType: outputType || 'product-ad',
@@ -1254,7 +1255,7 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_
         voiceId: (voiceId && String(voiceId).trim()) || undefined,
         speed: Number.isFinite(spd) ? spd : undefined,
       },
-      visibility, isTemplate: false,
+      visibility, isTemplate: false, quality: safeQuality,
     });
     res.json({ success: true, jobId: result.jobId, cost: result.cost });
   } catch (err) {

@@ -24,11 +24,24 @@ const VIDEO_CREDIT = {
   5: [810, 1250],
   10: [1250, 2500],
 };
+// ─── Ad Video 화질 티어 (2026-07-27) — low=Flash프레임+Kling Std / high=Pro2K프레임+Kling Pro. 5s 씬·커스텀 기준.
+//   근거: docs/티어_low_high_가격설계_2026-07-27.md. 원가$×1,361(Elite 50% 바닥). low $0.459→625 · high $0.694→945.
+//   ⚠️ 팩 비디오는 미적용 — quality 미지정 시 videoCost(레거시 810) 유지(팩 현행 보존).
+const AD_VIDEO_CREDIT = {
+  low:  { 5: 625, 10: 1195 },
+  high: { 5: 945, 10: 1705 },
+};
+// 오디오 재생성(편집 중 "다시 만들기"만 과금 — 초기 생성은 베이스에 포함/무과금). ElevenLabs 실비 기반(추정 아님).
+//   음성 TTS multilingual_v2 $0.10/1,000자 ×1,361 = 136/1K자. 음악 music_v2 $0.15/분 ÷60 ×1,361 ≈ 3.4/초.
+//   ⚠️ 음악 분 반올림은 ElevenLabs 페이지에 명시 없음 → 초 비례 잠정(청구서 확인 후 확정).
+const AUDIO_REGEN_CREDIT = { voicePer1kChars: 136, musicPerSec: 3.4 };
 const COSTS = {
   caption: 30, // 캡션+해시태그 애드온 (옛 1 ×30)
   enhance: 30, // 프롬프트 Enhance 애드온 (옛 1 ×30)
   img: IMG_CREDIT,     // 클라 비용표시용 — {model:[커스텀,템플릿]}
   video: VIDEO_CREDIT, // {duration:[커스텀,템플릿]}
+  adVideo: AD_VIDEO_CREDIT,      // 클라 비용표시용 — {quality:{duration:cr}}
+  audioRegen: AUDIO_REGEN_CREDIT, // {voicePer1kChars, musicPerSec}
 };
 
 /** 이미지 생성 비용 = 장당(모델티어·커스텀/템플릿) × count. isTemplate=템플릿 기반(4~6배)/false=커스텀(2~3배). */
@@ -43,6 +56,17 @@ function videoCost(duration, mode, isTemplate = false) {
   const tier = VIDEO_CREDIT[parseInt(duration, 10)] || VIDEO_CREDIT[5];
   return isTemplate ? tier[1] : tier[0];
 }
+
+/** Ad Video 씬 1개 비용. quality 'low'|'high' = 화질 티어(625/945). 미지정 = 레거시(videoCost pro=810 — 팩 비디오 현행 유지). */
+function adVideoSceneCost(duration, quality) {
+  const d = (parseInt(duration, 10) === 10) ? 10 : 5;
+  if (quality === 'low' || quality === 'high') return AD_VIDEO_CREDIT[quality][d];
+  return videoCost(d, 'pro', false); // 레거시 810/1250 (quality 없는 팩 비디오)
+}
+/** 음성 재합성 비용(편집) = 글자수 기준. multilingual_v2 실비($0.10/1K자). */
+function voiceRegenCost(chars) { return Math.ceil((Math.max(0, parseInt(chars, 10) || 0) / 1000) * AUDIO_REGEN_CREDIT.voicePer1kChars); }
+/** 음악 재생성 비용(편집) = 초 기준. music_v2 실비($0.15/분, 분 반올림 미확정 → 초 비례 잠정). */
+function musicRegenCost(durationSec) { return Math.ceil(Math.max(0, parseInt(durationSec, 10) || 0) * AUDIO_REGEN_CREDIT.musicPerSec); }
 
 /** statusCode 402를 가진 에러 (errorHandler가 그대로 응답) */
 function insufficientError(balance, required) {
@@ -207,6 +231,9 @@ module.exports = {
   COSTS,
   imageCost,
   videoCost,
+  adVideoSceneCost,
+  voiceRegenCost,
+  musicRegenCost,
   getBalance,
   getLedger,
   addCredits,
