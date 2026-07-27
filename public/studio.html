@@ -820,17 +820,21 @@
   #scriptStep .ugc-advtoggle.open .ugc-adv-chev{transform:rotate(180deg)}
   #scriptStep .ugc-adv[hidden]{display:none}
   #scriptStep .ugc-adv{margin-top:2px}
-  /* (2026-07-27) Ad Video 설정 = Shots식 full-width 가로 바 + 기본 노출(사용자 요청). 위 '우측 컬럼' 솔로 규칙을 덮어씀.
+  /* (2026-07-27) Ad Video 작성 화면: 입력 제품|컨셉 2열 + '세부설정'(Where/Scenes/Language)만 Shots식 가로 바.
+     ⚠️ Sound·Video format은 세부설정 바에 합치지 않고 원래 위치(스택) 유지(사용자 요청).
      롤백: 이 블록 통째 삭제 + HTML의 .ugc-in-product/.ugc-in-concept 래퍼 제거. */
   .ugc-cols.ugc-solo .ugc-foldable{display:block}                                   /* 2열 그리드 해제 → 세로 스택 */
   .ugc-cols.ugc-solo .ugc-fold-a{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}  /* 제품 | 컨셉 상단 2열 */
-  .ugc-cols.ugc-solo .ugc-fold-b{border-left:none;padding-left:0;border-top:1px solid var(--border2);margin-top:20px;padding-top:16px}  /* 설정 = full-width 가로 바 */
-  .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{display:flex;flex-wrap:wrap;gap:16px 30px;align-items:flex-start}  /* Shots식 가로 라벨 그룹 */
-  .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs > div{margin:0}
-  .ugc-cols.ugc-solo #ugcInputBox #ugcAdvBtn{display:none}                          /* 'More options' 토글 숨김(항상 노출) */
-  .ugc-cols.ugc-solo #ugcInputBox #ugcAdv{display:contents}                         /* 비율·씬·언어 그룹을 knobs 가로 흐름에 편입 */
+  .ugc-cols.ugc-solo .ugc-fold-b{border-left:none;padding-left:0;border-top:1px solid var(--border2);margin-top:20px;padding-top:16px}  /* 설정 섹션 full-width */
+  /* Sound·Video format = 상단 2열(컴팩트) — 세부설정 가로 바에 안 합침(좁은 셀 폭이라 버튼이 안 늘어남) */
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{display:grid;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:12px;align-items:start}
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-opt-row{flex-wrap:wrap}                      /* 라벨+컨트롤이 셀 좁으면 줄바꿈 */
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-mode,.ugc-cols.ugc-solo #ugcInputBox .ugc-fmt{flex:none;width:auto}        /* 세그먼트 컨트롤 자연폭(안 늘어남) */
+  .ugc-cols.ugc-solo #ugcInputBox .ugc-mode-btn,.ugc-cols.ugc-solo #ugcInputBox .ugc-fmt-btn{flex:none}            /* 버튼도 자연폭(컴팩트) */
+  .ugc-cols.ugc-solo #ugcInputBox #ugcAdvBtn{display:none}                          /* 'More options' 토글 숨김(세부설정 상시 노출) */
+  .ugc-cols.ugc-solo #ugcInputBox #ugcAdv{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px 30px;align-items:flex-start;margin-top:6px}  /* 세부설정만 full-width 가로 바 */
   .ugc-cols.ugc-solo #ugcInputBox #ugcAdv > div{margin:0}
-  @media(max-width:860px){.ugc-cols.ugc-solo .ugc-fold-a{grid-template-columns:1fr}.ugc-cols.ugc-solo #ugcInputBox .ugc-knobs{gap:12px 20px}}
+  @media(max-width:860px){.ugc-cols.ugc-solo .ugc-fold-a{grid-template-columns:1fr}.ugc-cols.ugc-solo #ugcInputBox #ugcAdv{gap:12px 20px}}
   /* (2026-07-26) 핵심 3종 강조 — 사진(드롭존 크게)·컨셉(크게)·대본 생성 버튼(크게·차단상태도 보이게). */
   #scriptStep #ugcDrop{align-items:stretch}
   #scriptStep #ugcPickBtn.img-add.labeled{flex:1;min-height:96px;flex-direction:column;gap:9px;border-style:dashed;border-width:1.5px;border-radius:14px;background:transparent}
