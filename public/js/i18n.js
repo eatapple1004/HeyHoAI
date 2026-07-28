@@ -545,8 +545,49 @@
     'Nothing here yet — take one out from Stored below (↑).': '아직 꺼낸 게 없어요 — 아래 ‘보관만’에서 꺼내세요(↑).',
     'Take out again': '다시 꺼내기',
     'Taken out': '꺼냈습니다', 'Put away': '보관했습니다',
-    'Could not update': '업데이트하지 못했습니다', 'Failed — try again': '실패 — 다시 시도하세요'
+    'Could not update': '업데이트하지 못했습니다', 'Failed — try again': '실패 — 다시 시도하세요',
+
+    // ── (2026-07-29) 홈 컨셉바·팩 CTA — 미번역으로 새던 문구 ──
+    'Add a concept or mood — optional (a photo alone works)': '컨셉이나 무드를 한 줄 — 선택사항 (사진만으로도 충분해요)',
+    'Create content pack': '콘텐츠 팩 만들기',
+    'Start with your product photo — we build a full content pack. Or pick a specific tool below.': '제품 사진 한 장이면 콘텐츠 팩을 통째로 만들어 드려요. 아래에서 원하는 도구만 골라 시작해도 좋아요.',
+    'Open in Shots': '컷에서 열기',
+    // ── (2026-07-29) 템플릿 이름 한글판 — 홈 레일·스튜디오 픽커 카드 ──
+    'Model Cut': '모델 컷', 'Product Hero': '제품 화보',
+    'Jewelry Product Cut': '주얼리 제품 컷', 'Jewelry Worn Cut': '주얼리 착용 컷', 'Jewelry On Model': '주얼리 온모델',
+    'Bodywear Product Cut': '바디웨어 제품 컷', 'Bodywear Worn Cut': '바디웨어 착용 컷', 'Bodywear On Model': '바디웨어 온모델',
+    'Hand to Nail': '핸드 투 네일', 'Worn Cut': '착용 컷', 'On Model': '온모델',
+    // ── (2026-07-29) 홈 레일 템플릿 설명 한글판 ──
+    'Turn one flat garment photo into a clean e-commerce cut — flat lay or ghost mannequin, no model or studio needed.': '평면 의류 사진 한 장을 깔끔한 커머스 컷으로 — 플랫레이·고스트 마네킹, 모델도 스튜디오도 필요 없어요.',
+    'Put your product on a photorealistic model. Choose the model and setting, then get on-model catalog shots from a single photo.': '제품을 실사 모델에게 입혀 드려요. 모델과 배경만 고르면 사진 한 장으로 온모델 카탈로그 컷이 나와요.',
+    'Editorial hero shots for your product — dewy glass, liquid splash, noir gold and more premium sets to choose from.': '제품을 위한 에디토리얼 화보 — 듀이 글라스·리퀴드 스플래시·누아르 골드 등 프리미엄 세트에서 골라요.',
+    'Show jewelry worn on hand, neck, ears or wrist — close, tactile shots that sell scale and shine.': '손·목·귀·손목에 착용한 주얼리를 가까이 — 크기와 반짝임이 그대로 전해지는 착용 컷이에요.',
+    'Your jewelry on a styled model — earrings, necklace, ring or bracelet, shot editorial-clean.': '스타일링된 모델이 착용한 주얼리 — 귀걸이·목걸이·반지·팔찌를 에디토리얼 톤으로 찍어요.',
+    'Turn a bare-hand photo into polished nail-art shots — ideal for nail salons and press-on brands.': '맨손 사진 한 장을 완성된 네일아트 컷으로 — 네일샵·프레스온 브랜드에 딱이에요.',
+
+    // ── (2026-07-29) Ad Video(UGC) 페이지 — 미번역으로 새던 문구 ──
+    'A finished ad video — your scenes cut together, ready to post.': '완성된 광고영상 — 씬을 이어 붙여, 바로 올릴 준비까지.',
+    'Narration optional': '내레이션 선택', 'Music optional': '음악 선택',
+    'Video quality': '영상 화질',
+    'Basic — ◈625 / scene': '베이식 — 씬당 ◈625',
+    'Premium — crisper frames & smoother motion · ◈945 / scene': '프리미엄 — 더 선명한 프레임·부드러운 모션 · 씬당 ◈945',
+    "Review the script on the right, then generate — you're only charged when you build the video.": '오른쪽 대본을 확인한 뒤 생성하세요 — 크레딧은 영상을 만들 때만 차감돼요.',
+    'Building your video…': '영상을 만드는 중…',
+    'Each scene is being generated…': '각 씬을 생성하는 중…',
+    'No need to wait — change the concept and write another. This one keeps building in Your creations.': '기다릴 필요 없어요 — 컨셉을 바꿔 하나 더 써도 돼요. 이 영상은 내 크리에이션에서 계속 만들어져요.',
+    'Edit scene': '씬 편집', 'Add a scene': '씬 추가', 'Scenes': '씬',
+    'Music': '음악', 'Change music': '음악 바꾸기', 'or describe a vibe…': '원하는 분위기를 적어보세요…',
+    'Save & finish': '저장하고 끝내기',
+    "Not saved yet — it'll auto-save when you leave, or Save & finish now.": '아직 저장 전 — 나가면 자동 저장되고, 지금 저장하고 끝내도 돼요.',
+    'hook · scenes · caption': '훅 · 씬 · 자막',
+    '🎣 Hook': '🎣 훅'
   } };
+  // ── (2026-07-29) EN 모드 역방향 사전 — 한국어 원문(DB 오피셜 네일 템플릿명)을 영어로 ──
+  DICT.en = {
+    '네일 꾸꾸꾸!': 'Deco Nails!',
+    '신부 컨셉 네일': 'Bridal Nails',
+    '아기자기 글씨2': 'Cute Lettering 2'
+  };
 
   function getLang() {
     try { return localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { return 'en'; }

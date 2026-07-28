@@ -1,9 +1,31 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Doppia — 제품 사진 한 장으로, 광고도 카탈로그도</title>
+<title>Doppia — One product photo. The ad, and the catalog.</title>
+<meta name="description" content="One product photo is the whole upload. Doppia plans and shoots your detail cuts, on-model shots, editorials and ad videos — for any product you sell.">
+<link rel="canonical" href="https://doppia.ai/">
+<link rel="alternate" hreflang="en" href="https://doppia.ai/">
+<link rel="alternate" hreflang="ko" href="https://doppia.ai/ko">
+<link rel="alternate" hreflang="x-default" href="https://doppia.ai/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://doppia.ai/">
+<meta property="og:title" content="Doppia — One product photo. The ad, and the catalog.">
+<meta property="og:description" content="One product photo is the whole upload. Doppia plans and shoots your detail cuts, on-model shots, editorials and ad videos.">
+<meta property="og:image" content="https://doppia.ai/img/landing/e2e/s-hero.jpg">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script>/*LP-LANG — 명시적 선호(doppia_lang)가 ko면 /ko로. 저장값 없으면 브라우저 언어가 ko일 때만 이동.
+  Googlebot은 무쿠키·언어중립이라 영향 없음(hreflang으로 /ko 발견).*/
+(function(){try{
+  if(location.pathname!=='/'&&location.pathname!=='/landing')return;
+  var l=localStorage.getItem('doppia_lang')||(document.cookie.match(/(?:^|;\s*)doppia_lang=([^;]+)/)||[])[1];
+  if(!l&&(navigator.language||'').toLowerCase().slice(0,2)==='ko')l='ko';
+  if(l==='ko')location.replace('/ko'+location.search+location.hash);
+}catch(e){}})();
+</script>
 <style>
   /* 색 토큰 = home(css/theme.css)과 정합 — 배경·surface·border·accent·text 전부 일치 */
   :root{--bg:#07070c;--surface:#13131d;--surface2:#1a1a27;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--accent:#6a40e0;--accent2:#a394ee;--pink:#d9608f;--text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--good:#5ee0d6}
@@ -98,7 +120,7 @@
   .tab.on{background:var(--surface);border-color:var(--line2);color:var(--text)}
   .tab.on::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:linear-gradient(180deg,var(--accent),var(--pink))}
   .tab .ic{width:40px;height:40px;flex:0 0 auto;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--line2);color:var(--accent2)}
-  .tab.on .ic{background:linear-gradient(135deg,rgba(124,92,255,.28),rgba(217,96,143,.22));border-color:transparent;color:#fff}
+  .tab.on .ic{background:linear-gradient(135deg,rgba(124,92,255,.28),rgba(217,96,143,.22));border:0;color:#fff}
   .tab .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .tab .tt b{display:block;font-size:16px;font-weight:750;letter-spacing:-.01em}
   .tab .tt span{display:block;font-size:12.5px;color:var(--faint);margin-top:2px}
@@ -111,7 +133,7 @@
   .demo{display:flex;flex-direction:column;min-width:0}
   .dpills{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
   .dpill{font-size:12.5px;font-weight:600;color:var(--dim);background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:8px 15px;transition:.15s}
-  .dpill.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border-color:transparent}
+  .dpill.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border:0;padding:9px 16px}
   .flow{flex:1;display:flex;align-items:center;gap:16px}
   .inp{flex:0 0 128px;aspect-ratio:4/5;border-radius:14px;border:1px dashed var(--line2);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--faint);font-size:12px;padding:10px;gap:8px}
   .inp svg{width:26px;height:26px;stroke:var(--dim);fill:none;stroke-width:1.6}
@@ -260,7 +282,7 @@
   .e2e-ch h4{font-size:22px;font-weight:820;letter-spacing:-.015em}
   .e2e-chips{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:18px}
   .e2e-chip{font-size:13.5px;font-weight:650;color:var(--text);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:10px 18px}
-  .e2e-chip.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border-color:transparent}
+  .e2e-chip.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border:0;padding:11px 19px}
   /* 활용: 채널칩 국내/해외 그룹 + 클릭 시 목업 스왑(라온젠식, 로고 없이 색·레이아웃 암시만) */
   .e2e-chgroups{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:18px}
   .e2e-chg{display:flex;align-items:center;gap:12px}
@@ -341,7 +363,7 @@
   .tcard li{display:flex;gap:8px;font-size:13px;color:var(--text)}
   .tcard li::before{content:"·";color:var(--accent2);font-weight:800}
   .tcard .tb{margin-top:auto;display:block;text-decoration:none;text-align:center;font-weight:700;font-size:13.5px;padding:12px;border-radius:11px;background:var(--surface2);border:1px solid var(--line2);color:var(--text);cursor:pointer}
-  .tcard.feat .tb{background:linear-gradient(100deg,var(--accent),var(--pink));border-color:transparent;color:#fff}
+  .tcard.feat .tb{background:linear-gradient(100deg,var(--accent),var(--pink));border:0;padding:13px;color:#fff}
   @media(max-width:900px){.ptier{flex-wrap:wrap}.tcard{flex:1 1 calc(50% - 7px)}}
   @media(max-width:560px){.tcard{flex:1 1 100%}}
 
@@ -368,6 +390,7 @@
   .n-foot a{color:var(--dim);text-decoration:none}
   .n-foot a:hover{color:var(--text)}
   .n-foot .lang-sw a[aria-current="true"]{color:var(--text)}
+  nav .lang-sw a[aria-current="true"]{color:var(--text);font-weight:700}
 </style>
 </head>
 <body>
@@ -376,59 +399,59 @@
 <header class="ver" id="hero">
   <div class="dotgrid"></div>
   <div class="horbit" id="horbit">
-    <div class="oc" data-cat="wear" style="width:257px;height:322px"><span class="tag">착용컷</span><img src="/img/landing/picked/knit-04.jpg" alt="착용컷 예시"></div>
-    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag">상세컷</span><img src="/img/landing/picked/serum-03.jpg" alt="상세컷 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/sparkling-05.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/chocolate-06.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag">상세컷</span><img src="/img/landing/picked/earbuds-04.jpg" alt="상세컷 예시"></div>
-    <div class="oc" data-cat="wear" style="width:257px;height:322px"><span class="tag">착용컷</span><img src="/img/landing/picked/dress-07.jpg" alt="착용컷 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/perfume-02.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/vitamin-04.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag">상세컷</span><img src="/img/landing/picked/granola-03.jpg" alt="상세컷 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/handbag-03.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/pet-01.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag">화보</span><img src="/img/landing/picked/serum-07.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="wear" style="width:257px;height:322px"><span class="tag" data-i18n="tag.wear">On-Model</span><img src="/img/landing/picked/knit-04.jpg" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Detail Cut</span><img src="/img/landing/picked/serum-03.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/sparkling-05.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/chocolate-06.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Detail Cut</span><img src="/img/landing/picked/earbuds-04.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="wear" style="width:257px;height:322px"><span class="tag" data-i18n="tag.wear">On-Model</span><img src="/img/landing/picked/dress-07.jpg" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/perfume-02.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/vitamin-04.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Detail Cut</span><img src="/img/landing/picked/granola-03.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/handbag-03.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/pet-01.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img src="/img/landing/picked/serum-07.jpg" alt="화보 예시"></div>
   </div>
   <div class="callout" id="callout"></div>
   <div class="navbg"></div>
-  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features">기능</a><a href="#gallery">무엇을 팔든</a><a href="#e2e">전 과정</a><a href="#pricing">가격</a><a href="#faq">FAQ</a></span><span class="end"><a href="/saas-login">로그인</a><a class="btn btn-p" href="/studio">무료로 시작</a></span></nav>
+  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features" data-i18n="nav.features">Features</a><a href="#gallery" data-i18n="nav.gallery">Showcase</a><a href="#e2e" data-i18n="nav.e2e">Workflow</a><a href="#pricing" data-i18n="nav.pricing">Pricing</a><a href="#faq">FAQ</a></span><span class="end"><span class="lang-sw" style="font-size:13px;color:var(--faint)"><a data-lang="en" href="/" hreflang="en" aria-current="true">EN</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ko" href="/ko" hreflang="ko">KO</a></span><a href="/saas-login" data-i18n="nav.login">Log in</a><a class="btn btn-p" href="/studio" data-i18n="nav.start">Start free</a></span></nav>
   <div class="cctr">
-    <h1 class="giant">제품 사진 한 장이면,<br><span class="grad">기획·룩북·광고영상</span>까지 다 만들어드려요.</h1>
-    <p class="csub">상세컷·착용컷·화보·광고 영상까지 통째로 — 촬영도 마케터도 프롬프트도 없이.</p>
-    <div class="chcta"><a class="btn btn-p btn-lg" href="/studio">무료로 시작 — 사진 한 장 올리기</a></div>
-    <p class="cfine">카드 등록 없이 · 가입 즉시 1,500 크레딧</p>
+    <h1 class="giant" data-i18n="hero.title">One product photo —<br>the <span class="grad">plan, lookbook and ad video</span>, all done for you.</h1>
+    <p class="csub" data-i18n="hero.sub">Detail cuts, on-model shots, editorials and ad videos — the whole set. No shoots, no marketers, no prompts.</p>
+    <div class="chcta"><a class="btn btn-p btn-lg" href="/studio" data-i18n="hero.cta">Start free — upload one photo</a></div>
+    <p class="cfine" data-i18n="hero.fine">No card required · 1,500 credits on sign-up</p>
   </div>
 </header>
 
 <!-- 2. FEATURES -->
 <section class="wrap" id="features">
   <div class="eyebrow">ALL-IN-ONE</div>
-  <h2>촬영팀·편집자·마케터가 하던 일,<br>이제 <em>탭 하나</em>로 골라 쓰세요.</h2>
-  <p class="lead">제품 사진 한 장이면 상세컷·착용컷·화보·광고 영상까지 다 나와요. 아래 탭을 눌러 지금 뭐가 나오는지 직접 확인해 보세요.</p>
+  <h2 data-i18n="sec2.title">What a studio team used to do,<br>now behind <em>one tab</em>.</h2>
+  <p class="lead" data-i18n="sec2.lead">One product photo gives you detail cuts, on-model shots, editorials and ad videos. Tap a tab below and see exactly what comes out.</p>
   <div class="exp">
     <div class="tabs">
-      <button class="tab on" data-k="shots"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-4 4 3 3-2 4 3"/></svg></span><span class="tt"><b>Shots</b><span>카탈로그 기본기</span></span></button>
-      <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span>말하는 광고</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="pack"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span class="tt"><b>콘텐츠 팩</b><span>세트가 통째로</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b>수정하기</b><span>말 한마디로 다시</span></span></button>
+      <button class="tab on" data-k="shots"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-4 4 3 3-2 4 3"/></svg></span><span class="tt"><b>Shots</b><span data-i18n="tab.shots.sub">Catalog essentials</span></span></button>
+      <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span data-i18n="tab.video.sub">Ads that talk</span></span><span class="star">PUSH</span></button>
+      <button class="tab" data-k="pack"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span class="tt"><b data-i18n="tab.pack">Content Pack</b><span data-i18n="tab.pack.sub">A full set at once</span></span><span class="star">PUSH</span></button>
+      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b data-i18n="tab.edit">Edit</b><span data-i18n="tab.edit.sub">Say it, fix it</span></span></button>
     </div>
     <div class="pane">
       <div class="panel on" data-k="shots">
         <div class="demo">
-          <div class="dpills" id="sp"><button class="dpill on" data-s="ghost">제품샷</button><button class="dpill" data-s="look">룩북</button><button class="dpill" data-s="hero">화보</button><button class="dpill" data-s="tpl">다양한 템플릿</button></div>
+          <div class="dpills" id="sp"><button class="dpill on" data-s="ghost" data-i18n="dp.ghost">Product Shots</button><button class="dpill" data-s="look" data-i18n="dp.look">Lookbook</button><button class="dpill" data-s="hero" data-i18n="dp.hero">Editorial</button><button class="dpill" data-s="tpl" data-i18n="dp.tpl">Templates</button></div>
 
           <!-- ① 제품샷(고스트샷): [내 제품 사진 + 배경색] → 큰 결과 1장 (라온젠식 배치) -->
           <div class="sv on" data-v="ghost">
             <div class="sv-stack">
-              <figure class="sv-in"><img src="/img/productcut/flat-lay-cut.png" alt=""><figcaption>내 제품 사진</figcaption></figure>
+              <figure class="sv-in"><img src="/img/productcut/flat-lay-cut.png" alt=""><figcaption data-i18n="cap.myphoto">My product photo</figcaption></figure>
               <span class="sv-plus">+</span>
               <div class="sv-in">
                 <div class="sv-colorbox"><i style="background:#f4f1ec"></i><i style="background:#0e0e14"></i><i style="background:#e8b4c8"></i><i style="background:#9db8a1"></i><i style="background:#4a6cf7"></i><i class="sv-any">∞</i></div>
-                <figcaption>배경색 · 자유</figcaption>
+                <figcaption data-i18n="cap.bg">Background · any color</figcaption>
               </div>
             </div>
             <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img src="/img/productcut/ghost-mannequin-cut.png" alt=""><figcaption><i></i>생성 결과</figcaption></figure>
+            <figure class="sv-big"><img src="/img/productcut/ghost-mannequin-cut.png" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
           </div>
 
           <!-- ② 룩북: [모델 + 코디 + 배경] → 큰 결과 1장 -->
@@ -439,26 +462,26 @@
                   <span class="sv-th on" data-look="/img/landing/bikini/onmodel-hayul-pose2-final.jpg"><img src="/img/landing/bikini/face-hayul-1.jpg" alt=""></span>
                   <span class="sv-th" data-look="/img/landing/bikini/onmodel-elara-pose2-final.jpg"><img src="/img/landing/bikini/face-elara-6.jpg" alt=""></span>
                 </div>
-                <figcaption>모델 — 골라보세요</figcaption>
+                <figcaption data-i18n="cap.model">Model — pick one</figcaption>
               </div>
               <span class="sv-plus">+</span>
-              <figure class="sv-in"><img src="/img/landing/bikini/design-1-ecru-navy.jpg" alt=""><figcaption>코디</figcaption></figure>
+              <figure class="sv-in"><img src="/img/landing/bikini/design-1-ecru-navy.jpg" alt=""><figcaption data-i18n="cap.outfit">Outfit</figcaption></figure>
               <span class="sv-plus">+</span>
-              <figure class="sv-in"><img src="/img/landing/bikini/bg-poolside.jpg" alt=""><figcaption>배경</figcaption></figure>
+              <figure class="sv-in"><img src="/img/landing/bikini/bg-poolside.jpg" alt=""><figcaption data-i18n="cap.bgimg">Background</figcaption></figure>
             </div>
             <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img id="lookOut" src="/img/landing/bikini/onmodel-hayul-pose2-final.jpg" alt=""><figcaption><i></i>생성 결과</figcaption></figure>
+            <figure class="sv-big"><img id="lookOut" src="/img/landing/bikini/onmodel-hayul-pose2-final.jpg" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
           </div>
 
           <!-- ③ 화보: [템플릿 레퍼런스 + 내 제품] → 큰 결과 1장 -->
           <div class="sv" data-v="hero">
             <div class="sv-stack">
-              <figure class="sv-in"><img src="/img/producthero/bold-color-block.jpg" alt=""><figcaption>템플릿 · Product Hero</figcaption></figure>
+              <figure class="sv-in"><img src="/img/producthero/bold-color-block.jpg" alt=""><figcaption data-i18n="cap.tplhero">Template · Product Hero</figcaption></figure>
               <span class="sv-plus">+</span>
-              <figure class="sv-in"><img src="/img/landing/cand/lip-5.jpg" alt=""><figcaption>내 제품 사진</figcaption></figure>
+              <figure class="sv-in"><img src="/img/landing/cand/lip-5.jpg" alt=""><figcaption data-i18n="cap.myphoto">My product photo</figcaption></figure>
             </div>
             <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img src="/img/landing/tpl/hero-oxb-result.jpg" alt=""><figcaption><i></i>생성 결과</figcaption></figure>
+            <figure class="sv-big"><img src="/img/landing/tpl/hero-oxb-result.jpg" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
           </div>
 
           <!-- ④ 다양한 템플릿: 결과물 모자이크(원본 비율 그대로) -->
@@ -469,55 +492,55 @@
               <figure><img src="/img/landing/tpl/tpl-dewy.jpg" alt=""><figcaption>Product Hero</figcaption></figure>
               <figure><img src="/img/landing/tpl/tpl-jstudio.jpg" alt=""><figcaption>Jewelry Product Cut</figcaption></figure>
               <figure><img src="/img/landing/bikini/onmodel-hayul-pose2-final.jpg" alt=""><figcaption>Bodywear On Model</figcaption></figure>
-              <figure><img src="/img/landing/tpl/tpl-nail.jpg" alt=""><figcaption>아기자기 글씨2</figcaption></figure>
+              <figure><img src="/img/landing/tpl/tpl-nail.jpg" alt=""><figcaption data-i18n="cap.nail2">Cute Lettering 2</figcaption></figure>
             </div>
           </div>
         </div>
         <div class="desc">
-          <div class="sd on" data-v="ghost"><h3>제품샷</h3><div class="tl">고스트샷도, 배경색도 마음대로.</div><p>평면 사진 한 장이면 입체 고스트샷으로 살아나요. 배경색은 원하는 색을 고르면 그대로 — 상세페이지 톤에 맞춰 자유롭게요.</p><ul><li>고스트 마네킹 · 행거 · 플랫레이 컷</li><li>배경색 자유 지정</li><li>제품 디테일은 그대로</li></ul></div>
-          <div class="sd" data-v="look"><h3>룩북</h3><div class="tl">의상·모델·배경만 고르면 룩북.</div><p>의상 사진에 어울리는 모델과 배경을 고르면, 실착 느낌의 룩북 컷이 나와요. 촬영 없이 시즌 룩북을 채워요.</p><ul><li>버추얼 모델 · 배경 선택</li><li>실착 느낌의 룩북 컷</li><li>의류 · 주얼리 · 화장품</li></ul></div>
-          <div class="sd" data-v="hero"><h3>화보</h3><div class="tl">템플릿을 고르면 화보가 나와요.</div><p>마음에 드는 레퍼런스(템플릿)를 고르면 내 제품이 그 무드의 화보로. 컨셉별 템플릿이 준비돼 있어요.</p><ul><li>컨셉 템플릿에서 고르기</li><li>브랜드 톤 그대로</li><li>한 번에 4장 — 골라 쓰기</li></ul></div>
-          <div class="sd" data-v="tpl"><h3>다양한 템플릿</h3><div class="tl">카테고리별 템플릿, 계속 늘어나요.</div><p>실제 제공 중인 템플릿들이에요. 내 제품에 맞는 컷을 고르기만 하면 돼요.</p><ul><li>패션 · 뷰티 · 주얼리 · 바디웨어 · 네일</li><li>템플릿은 계속 추가</li><li>고르면 끝 — 프롬프트 없이</li></ul></div>
-          <a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p>
+          <div class="sd on" data-v="ghost"><h3 data-i18n="sd.ghost.h3">Product Shots</h3><div class="tl" data-i18n="sd.ghost.tl">Ghost shots, any background color.</div><p data-i18n="sd.ghost.p">One flat photo comes alive as a 3D ghost shot. Pick any background color and it renders exactly — matched to your product page.</p><ul data-i18n="sd.ghost.ul"><li>Ghost mannequin · hanger · flat-lay cuts</li><li>Any background color</li><li>Product details stay intact</li></ul></div>
+          <div class="sd" data-v="look"><h3 data-i18n="sd.look.h3">Lookbook</h3><div class="tl" data-i18n="sd.look.tl">Pick outfit, model, background — lookbook done.</div><p data-i18n="sd.look.p">Choose a model and scene that suit your garment, and get lookbook cuts that feel truly worn. Fill a season lookbook without a shoot.</p><ul data-i18n="sd.look.ul"><li>Virtual models · scene picker</li><li>True worn-in lookbook cuts</li><li>Apparel · jewelry · cosmetics</li></ul></div>
+          <div class="sd" data-v="hero"><h3 data-i18n="sd.hero.h3">Editorial</h3><div class="tl" data-i18n="sd.hero.tl">Pick a template, get an editorial.</div><p data-i18n="sd.hero.p">Choose a reference template you love, and your product is shot in that exact mood. Concept templates are ready to go.</p><ul data-i18n="sd.hero.ul"><li>Pick from concept templates</li><li>Your brand tone, kept</li><li>4 shots per run — keep the best</li></ul></div>
+          <div class="sd" data-v="tpl"><h3 data-i18n="sd.tpl.h3">Templates</h3><div class="tl" data-i18n="sd.tpl.tl">Templates by category, always growing.</div><p data-i18n="sd.tpl.p">These are live templates, available today. Just pick the cut that fits your product.</p><ul data-i18n="sd.tpl.ul"><li>Fashion · beauty · jewelry · bodywear · nails</li><li>New templates keep coming</li><li>Pick and done — no prompts</li></ul></div>
+          <a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p>
         </div>
       </div>
       <div class="panel" data-k="video">
         <div class="demo">
-          <div class="dpills"><span class="dpill on">9:16 · 릴스/틱톡</span></div>
+          <div class="dpills"><span class="dpill on" data-i18n="dp.video">9:16 · Reels/TikTok</span></div>
           <div class="flow">
-            <figure class="sv-in" style="align-self:center"><img src="/img/landing/reels/figure-ref.jpg" alt=""><figcaption>내 제품 사진 + 한 줄</figcaption></figure>
+            <figure class="sv-in" style="align-self:center"><img src="/img/landing/reels/figure-ref.jpg" alt=""><figcaption data-i18n="cap.photoline">My product photo + one line</figcaption></figure>
             <div class="arw">→</div>
             <div class="reelbox">
               <div class="rwrap" id="figReel">
                 <video class="ra on" muted playsinline preload="auto"></video>
                 <video class="rb" muted playsinline preload="auto"></video>
               </div>
-              <span class="badge"><i></i>생성 결과 · 5초 광고 릴스</span>
+              <span class="badge" data-i18n="badge.reel"><i></i>Generated · 5-second ad reel</span>
             </div>
           </div>
         </div>
-        <div class="desc"><h3>Ad Video</h3><div class="tl">대본까지 알아서, 영상으로.</div><p>사진과 한 줄이면 컨셉·씬·화면 문구를 전부 짜서 만들어요. 틱톡·릴스에 바로 올리는 9:16으로, 음성·음악까지 얹어 드려요.</p><ul><li>광고 대본을 무료로 먼저 보여주고 승인</li><li>9:16 · 음성 · 음악 포함 — 바로 업로드</li><li>나온 것만 크레딧, 실패는 자동 환불</li></ul><a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+        <div class="desc"><h3 data-i18n="video.h3">Ad Video</h3><div class="tl" data-i18n="video.tl">Script written for you, straight to video.</div><p data-i18n="video.p">A photo and one line is enough — Doppia plans the concept, scenes and on-screen copy, and renders a 9:16 ready for TikTok and Reels, voice and music included.</p><ul data-i18n="video.ul"><li>Free script preview before you approve</li><li>9:16 · voice · music — upload-ready</li><li>Pay only for what renders, failures auto-refund</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
       </div>
       <div class="panel" data-k="pack">
         <div class="demo">
-          <div class="dpills"><span class="dpill on">한 장 → 세트</span></div>
-          <div class="flow" style="gap:14px"><div class="inp inp-photo" style="align-self:center"><img src="/img/landing/pack2/src.jpg" alt=""><span>제품 사진 한 장</span></div><div class="arw" style="align-self:center">→</div><div class="setgrid"><div class="g"><img src="/img/landing/pack3/pdp_front_clean.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/hero_threequarter.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/hero_sunlit.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/macro_label_detail.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/ingredient_grape.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/picnic_blanket.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/desk_hot_day.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/cooler_ice.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/cvs_fridge.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/poolside_table.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/colorblock_lime_split.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/levitation_grapes.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/splash_frozen.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/hard_shadow_geo.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/pedestal_editorial.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/crushed_ice_bed.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/wet_stone_slab.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/marble_luxe.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/warm_linen.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/sand_ripples.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/midsummer_poolglow.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/gift_holiday_styling.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/claim_copyspace_card.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/cozy_autumn_warm.jpg" alt=""></div></div></div>
+          <div class="dpills"><span class="dpill on" data-i18n="dp.pack">One photo → full set</span></div>
+          <div class="flow" style="gap:14px"><div class="inp inp-photo" style="align-self:center"><img src="/img/landing/pack2/src.jpg" alt=""><span data-i18n="cap.onephoto">One product photo</span></div><div class="arw" style="align-self:center">→</div><div class="setgrid"><div class="g"><img src="/img/landing/pack3/pdp_front_clean.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/hero_threequarter.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/hero_sunlit.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/macro_label_detail.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/ingredient_grape.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/picnic_blanket.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/desk_hot_day.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/cooler_ice.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/cvs_fridge.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/poolside_table.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/colorblock_lime_split.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/levitation_grapes.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/splash_frozen.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/hard_shadow_geo.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/pedestal_editorial.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/crushed_ice_bed.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/wet_stone_slab.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/marble_luxe.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/warm_linen.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/sand_ripples.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/midsummer_poolglow.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/gift_holiday_styling.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/claim_copyspace_card.jpg" alt=""></div><div class="g"><img src="/img/landing/pack3/cozy_autumn_warm.jpg" alt=""></div></div></div>
         </div>
-        <div class="desc"><h3>콘텐츠 팩</h3><div class="tl">당신은 사진만. 기획은 Doppia가.</div><p>무드를 한 줄 적거나 아예 비워둬도 괜찮아요. 제품을 보고 어떤 컷을 몇 장 뽑을지 알아서 기획해 세트로 만들어 드려요 — 무엇을 팔든.</p><ul><li>컨셉·구성을 자동으로 기획</li><li>의류든 식품이든 — 무엇을 팔든</li><li>원하는 만큼, 나온 것만 과금</li></ul><a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+        <div class="desc"><h3 data-i18n="pack.h3">Content Pack</h3><div class="tl" data-i18n="pack.tl">You bring the photo. Doppia does the planning.</div><p data-i18n="pack.p">Write one line of mood — or nothing at all. Doppia looks at your product, plans which cuts to make and how many, and delivers a full set. Whatever you sell.</p><ul data-i18n="pack.ul"><li>Concept and lineup planned automatically</li><li>Apparel or food — whatever you sell</li><li>As many as you want, pay only for results</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
       </div>
       <div class="panel" data-k="edit">
         <div class="demo">
-          <div class="dpills"><span class="dpill on">말로 고치기</span></div>
-          <div class="ed-bar"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg><b>“배경만 골드로 바꿔줘”</b><span class="ed-go">↵</span></div>
+          <div class="dpills"><span class="dpill on" data-i18n="dp.edit">Fix it with words</span></div>
+          <div class="ed-bar"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg><b data-i18n="ed.cmd">“Make just the background gold”</b><span class="ed-go">↵</span></div>
           <div class="cmp" id="cmp">
             <img src="/img/landing/edit-after-new.jpg" alt="">
             <div class="cmp-bw"><img src="/img/landing/edit-before-new.jpg" alt=""></div>
-            <span class="cmp-lb" style="left:12px">수정 후</span><span class="cmp-lb" style="right:12px">수정 전</span>
+            <span class="cmp-lb" style="left:12px" data-i18n="ed.after">After</span><span class="cmp-lb" style="right:12px" data-i18n="ed.before">Before</span>
             <div class="cmp-hd"><span>↔</span></div>
           </div>
-          <div class="ed-chips"><span>“조명 더 따뜻하게”</span><span>“소품은 빼줘”</span><span>“모델이 살짝 웃게”</span><span>“이런 걸로 더”</span></div>
+          <div class="ed-chips"><span data-i18n="ed.c1">“Warmer lighting”</span><span data-i18n="ed.c2">“Remove the props”</span><span data-i18n="ed.c3">“Make her smile a little”</span><span data-i18n="ed.c4">“More like this one”</span></div>
         </div>
-        <div class="desc"><h3>수정하기</h3><div class="tl">재촬영 없이, 말로.</div><p>"배경만 바꿔줘", "더 밝게" — 마음에 안 드는 부분을 말로 고치면 돼요. 제품 디테일은 그대로, 반복은 자유롭게.</p><ul><li>인물 · 배경 · 소품 부분 수정</li><li>제품은 그대로 보존</li><li>재촬영 없이 무한 반복 · "이런 걸로 더"</li></ul><a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+        <div class="desc"><h3 data-i18n="edit.h3">Edit</h3><div class="tl" data-i18n="edit.tl">No reshoots. Just say it.</div><p data-i18n="edit.p">"Change the background", "a bit brighter" — fix what you don't like in plain words. Product details stay intact, iterate as much as you want.</p><ul data-i18n="edit.ul"><li>Edit people, background, props</li><li>The product itself is preserved</li><li>Unlimited retries — "more like this one"</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
       </div>
     </div>
   </div>
@@ -526,46 +549,46 @@
 <!-- 3. BREADTH — 무엇을 팔든 -->
 <section class="wrap" id="gallery">
   <div class="eyebrow">WHATEVER YOU SELL</div>
-  <h2>당신의 브랜드가 필요한 모든 걸,<br><em>사진 단 한 장으로.</em></h2>
-  <p class="lead">의류·주얼리·화장품은 기본이고, 식품이든 리빙이든 잡화든 — 카테고리를 가리지 않아요. 지금 파는 그 제품, 사진 한 장이면 충분해요.</p>
+  <h2 data-i18n="sec3.title">Everything your brand needs,<br><em>from one single photo.</em></h2>
+  <p class="lead" data-i18n="sec3.lead">Apparel, jewelry and cosmetics are just the start — food, home goods, anything. Whatever you sell right now, one photo is enough.</p>
   <div class="cats">
-    <span class="cat hi">의류</span><span class="cat hi">주얼리</span><span class="cat hi">화장품</span><span class="cat hi">뷰티</span><span class="cat hi">식품</span><span class="cat hi">카페</span><span class="cat hi">리빙</span><span class="cat hi">테크</span><span class="cat hi">반려</span><span class="cat hi">속옷</span><span class="cat hi">무엇이든</span>
+    <span class="cat hi" data-i18n="cat.apparel">Apparel</span><span class="cat hi" data-i18n="cat.jewelry">Jewelry</span><span class="cat hi" data-i18n="cat.cosmetics">Cosmetics</span><span class="cat hi" data-i18n="cat.beauty">Beauty</span><span class="cat hi" data-i18n="cat.food">Food</span><span class="cat hi" data-i18n="cat.cafe">Café</span><span class="cat hi" data-i18n="cat.home">Home</span><span class="cat hi" data-i18n="cat.tech">Tech</span><span class="cat hi" data-i18n="cat.pets">Pets</span><span class="cat hi" data-i18n="cat.bodywear">Bodywear</span><span class="cat hi" data-i18n="cat.anything">Anything</span>
   </div>
   <div class="wall">
-    <figure><figcaption>화장품</figcaption><img src="/img/landing/pool/cream-02.jpg" alt=""></figure>
-    <figure><figcaption>주얼리</figcaption><img src="/img/landing/wallcand/jw-4.jpg" alt=""></figure>
-    <figure><figcaption>의류</figcaption><img src="/img/landing/wallcand/ap-4.jpg" alt=""></figure>
-    <figure><figcaption>뷰티</figcaption><img src="/img/landing/pool/nail-02.jpg" alt=""></figure>
-    <figure><figcaption>식품</figcaption><img src="/img/landing/pool/hanwoo-02.jpg" alt=""></figure>
-    <figure><figcaption>카페</figcaption><img src="/img/landing/wallcand/cf-4.jpg" alt=""></figure>
-    <figure><figcaption>리빙</figcaption><img src="/img/landing/pool/candle-02.jpg" alt=""></figure>
-    <figure><figcaption>테크</figcaption><img src="/img/landing/wallcand/tc-3.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.cosmetics">Cosmetics</figcaption><img src="/img/landing/pool/cream-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.jewelry">Jewelry</figcaption><img src="/img/landing/wallcand/jw-4.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.apparel">Apparel</figcaption><img src="/img/landing/wallcand/ap-4.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.beauty">Beauty</figcaption><img src="/img/landing/pool/nail-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.food">Food</figcaption><img src="/img/landing/pool/hanwoo-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.cafe">Café</figcaption><img src="/img/landing/wallcand/cf-4.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.home">Home</figcaption><img src="/img/landing/pool/candle-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.tech">Tech</figcaption><img src="/img/landing/wallcand/tc-3.jpg" alt=""></figure>
   </div>
   <div class="addbar">
     <span class="plus">＋</span>
-    <div style="text-align:left"><b>여기에 당신의 제품도.</b> <span>식품이든 가전이든 — 사진 한 장이면 똑같이 화보가 돼요.</span></div>
+    <div style="text-align:left"><b data-i18n="add.b">Your product belongs here too.</b> <span data-i18n="add.s">Food or electronics — one photo turns it into the same editorial.</span></div>
   </div>
 </section>
 
 <!-- 4. END-TO-END -->
 <section class="wrap" id="e2e">
   <div class="eyebrow">END-TO-END</div>
-  <h2>제품 사진 한 장만 올리세요.<br>나머지 <em>모든 채널 자산</em>은 Doppia가 채워드려요.</h2>
-  <p class="lead">상세컷·착용컷·화보·광고 영상까지 한 흐름으로 나와요. 만든 결과는 라이브러리에 그대로 쌓여, 다음엔 더 빠르게 꺼내 써요.</p>
+  <h2 data-i18n="sec4.title">Upload one product photo.<br>Doppia fills in <em>every channel asset</em>.</h2>
+  <p class="lead" data-i18n="sec4.lead">Detail cuts, on-model shots, editorials and ad videos come out in one flow. Every result lands in your library, ready to reuse even faster next time.</p>
   <div class="e2e">
     <div class="e2e-apex">
       <div class="ph"><img src="/img/landing/e2e/s-src.jpg" alt=""></div>
-      <span class="pill">제품 사진 한 장이면 OK</span>
+      <span class="pill" data-i18n="apex.pill">One product photo is all it takes</span>
     </div>
     <svg class="e2e-fan" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
       <path d="M500 0 C500 50 125 50 125 100"/><path d="M500 0 C500 50 375 50 375 100"/><path d="M500 0 C500 50 625 50 625 100"/><path d="M500 0 C500 50 875 50 875 100"/>
     </svg>
     <div class="e2e-conn e2e-conn-m"></div>
     <div class="e2e-outs">
-      <div class="e2e-card"><div class="im"><img src="/img/landing/e2e/s-macro.jpg" alt=""></div><div class="cap"><b>상세컷</b><p>판매 페이지·광고용, 다양한 무드의 제품 컷.</p></div></div>
-      <div class="e2e-card"><div class="im"><img src="/img/landing/e2e/s-onmodel.jpg" alt=""></div><div class="cap"><b>착용컷</b><p>모델이 직접 착용한, 실착 느낌의 컷.</p></div></div>
-      <div class="e2e-card"><div class="im"><img src="/img/landing/e2e/s-hero.jpg" alt=""></div><div class="cap"><b>화보</b><p>브랜드 톤을 담은 에디토리얼 화보.</p></div></div>
-      <div class="e2e-card"><div class="im"><video src="/img/landing/e2e/s-reel.mp4" poster="/img/landing/e2e/s-reel-still.jpg" autoplay muted loop playsinline></video><span class="tag">9:16</span></div><div class="cap"><b>광고 영상</b><p>릴스·쇼츠·광고에 바로 쓰는 세로 영상.</p></div></div>
+      <div class="e2e-card"><div class="im"><img src="/img/landing/e2e/s-macro.jpg" alt=""></div><div class="cap"><b data-i18n="out.macro.b">Detail cuts</b><p data-i18n="out.macro.p">Product cuts in every mood, for pages and ads.</p></div></div>
+      <div class="e2e-card"><div class="im"><img src="/img/landing/e2e/s-onmodel.jpg" alt=""></div><div class="cap"><b data-i18n="out.wear.b">On-model</b><p data-i18n="out.wear.p">Worn by a model — a true fitted look.</p></div></div>
+      <div class="e2e-card"><div class="im"><img src="/img/landing/e2e/s-hero.jpg" alt=""></div><div class="cap"><b data-i18n="out.hero.b">Editorial</b><p data-i18n="out.hero.p">An editorial that carries your brand tone.</p></div></div>
+      <div class="e2e-card"><div class="im"><video src="/img/landing/e2e/s-reel.mp4" poster="/img/landing/e2e/s-reel-still.jpg" autoplay muted loop playsinline></video><span class="tag">9:16</span></div><div class="cap"><b data-i18n="out.video.b">Ad video</b><p data-i18n="out.video.p">Vertical video, ready for Reels, Shorts and ads.</p></div></div>
     </div>
     <svg class="e2e-fan" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
       <path d="M125 0 C125 50 500 50 500 100"/><path d="M375 0 C375 50 500 50 500 100"/><path d="M625 0 C625 50 500 50 500 100"/><path d="M875 0 C875 50 500 50 500 100"/>
@@ -573,23 +596,23 @@
     <div class="e2e-conn e2e-conn-m"></div>
     <div class="e2e-lib">
       <div class="thumbs">
-        <span><img src="/img/landing/e2e/s-macro.jpg" alt=""><i>상세컷</i></span>
-        <span><img src="/img/landing/e2e/s-onmodel.jpg" alt=""><i>착용컷</i></span>
-        <span><img src="/img/landing/e2e/s-hero.jpg" alt=""><i>화보</i></span>
+        <span><img src="/img/landing/e2e/s-macro.jpg" alt=""><i data-i18n="out.macro.b">Detail cuts</i></span>
+        <span><img src="/img/landing/e2e/s-onmodel.jpg" alt=""><i data-i18n="out.wear.b">On-model</i></span>
+        <span><img src="/img/landing/e2e/s-hero.jpg" alt=""><i data-i18n="out.hero.b">Editorial</i></span>
       </div>
       <div class="tx">
-        <span class="tag">내 라이브러리</span>
-        <h4>만든 결과가 <em class="grad">그대로 자산</em>으로 쌓여요.</h4>
-        <p>생성한 컷과 영상은 라이브러리에 저장돼, 언제든 클릭 한 번으로 다시 꺼내 써요.</p>
+        <span class="tag" data-i18n="lib.tag">My library</span>
+        <h4 data-i18n="lib.h4">Every result piles up as <em class="grad">brand assets</em>.</h4>
+        <p data-i18n="lib.p">Every cut and video is saved to your library — one click brings it back anytime.</p>
       </div>
     </div>
     <div class="e2e-arrow"><svg viewBox="0 0 40 52" aria-hidden="true"><defs><linearGradient id="e2eag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a40e0"/><stop offset="1" stop-color="#d9608f"/></linearGradient></defs><path d="M14 2h12v27h8L20 50 6 29h8z" fill="url(#e2eag)"/></svg></div>
     <div class="e2e-ch">
-      <span class="tag">활용</span>
-      <h4>그대로 <em class="grad">모든 채널</em>로 한 번에.</h4>
+      <span class="tag" data-i18n="ch.tag">Channels</span>
+      <h4 data-i18n="ch.h4">Straight to <em class="grad">every channel</em>, at once.</h4>
       <div class="e2e-chgroups">
-        <div class="e2e-chg"><b>국내</b><div class="e2e-chips"><button class="e2e-chip on" data-ch="detail">상세페이지</button><button class="e2e-chip" data-ch="smart">스마트스토어</button><button class="e2e-chip" data-ch="coupang">쿠팡</button><button class="e2e-chip" data-ch="kakao">카카오톡 채널</button></div></div>
-        <div class="e2e-chg"><b>해외</b><div class="e2e-chips"><button class="e2e-chip" data-ch="insta">Instagram</button><button class="e2e-chip" data-ch="tiktok">TikTok · Shorts</button><button class="e2e-chip" data-ch="banner">Display Ads</button><button class="e2e-chip" data-ch="amazon">Amazon</button></div></div>
+        <div class="e2e-chg"><b data-i18n="ch.kr">Korea</b><div class="e2e-chips"><button class="e2e-chip on" data-ch="detail" data-i18n="ch.detail">Product page</button><button class="e2e-chip" data-ch="smart" data-i18n="ch.smart">Smart Store</button><button class="e2e-chip" data-ch="coupang" data-i18n="ch.coupang">Coupang</button><button class="e2e-chip" data-ch="kakao" data-i18n="ch.kakao">KakaoTalk Channel</button></div></div>
+        <div class="e2e-chg"><b data-i18n="ch.gl">Global</b><div class="e2e-chips"><button class="e2e-chip" data-ch="insta">Instagram</button><button class="e2e-chip" data-ch="tiktok">TikTok · Shorts</button><button class="e2e-chip" data-ch="banner">Display Ads</button><button class="e2e-chip" data-ch="amazon">Amazon</button></div></div>
       </div>
 
       <div class="e2e-stage">
@@ -639,7 +662,7 @@
           <div class="mk-pad"><div class="sk w80"></div><div class="mk-stars" style="color:#e8a33d">★★★★☆ <span>1,2--</span></div><div class="sk sk-price w30"></div><span class="mk-btn" style="background:#f7ca00;color:#111">Add to Cart</span></div>
         </div></div>
       </div>
-      <p class="fine" style="margin-top:22px">촬영 한 번 찍을 값이면 — 이 전부를, 매번.</p>
+      <p class="fine" style="margin-top:22px" data-i18n="ch.fine">For the price of one photo shoot — all of this, every time.</p>
     </div>
   </div>
 </section>
@@ -647,39 +670,39 @@
 <!-- 5. PRICING -->
 <section class="wrap" id="pricing">
   <div class="eyebrow">PRICING</div>
-  <h2>필요한 만큼만,<br><em>가볍게</em> 시작하세요.</h2>
-  <p class="lead">모든 플랜이 같은 기능을 써요. 매달 자동으로 채워지는 구독, 필요할 때만 채우는 충전형 — 방식만 고르면 돼요.</p>
+  <h2 data-i18n="pr.title">Only what you need.<br>Start <em>light</em>.</h2>
+  <p class="lead" data-i18n="pr.lead">Every plan gets the same features. A subscription that refills monthly, or top-ups only when you need them — just pick how you pay.</p>
   <div class="pcards3">
-    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></div><b>구독 — 매달 자동으로</b><p>플랜을 고르면 매달 크레딧이 채워지고 전 기능이 열려요. 꾸준히 콘텐츠를 뽑는 셀러의 기본이에요.</p></div>
-    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><b>충전형 — 필요할 때만</b><p>구독 없이, 필요한 순간에만 크레딧을 채워둬요. 한 번 결제로 12개월 유효해요.</p></div>
-    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 00-4-12z"/></svg></div><b>둘을 섞어도 좋아요</b><p>평소엔 가벼운 구독으로 열어두고, 생성이 몰리는 달엔 충전형으로 크레딧만 더하면 돼요.</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></div><b data-i18n="pr.c1.b">Subscription — refills monthly</b><p data-i18n="pr.c1.p">Pick a plan and credits refill every month with all features open. The default for sellers who create steadily.</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><b data-i18n="pr.c2.b">Top-up — only when needed</b><p data-i18n="pr.c2.p">No subscription — add credits only when you need them. One payment stays valid for 12 months.</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 00-4-12z"/></svg></div><b data-i18n="pr.c3.b">Mix them freely</b><p data-i18n="pr.c3.p">Keep a light subscription running, and top up extra credits in your busy months.</p></div>
   </div>
-  <div class="pseg"><button class="ps on" data-seg="personal">개인 · 스몰팀</button><button class="ps" data-seg="enterprise">기업</button><button class="ps" data-seg="pack">충전형</button></div>
+  <div class="pseg"><button class="ps on" data-seg="personal" data-i18n="ps.personal">Personal · Small team</button><button class="ps" data-seg="enterprise" data-i18n="ps.ent">Business</button><button class="ps" data-seg="pack" data-i18n="ps.pack">Top-up</button></div>
   <div class="ptier" id="ptier"></div>
-  <p class="fine" style="margin-top:20px;text-align:center">VAT 포함 · 구독은 매월 자동결제 · 언제든 해지 · (표시 값은 예시)</p>
+  <p class="fine" style="margin-top:20px;text-align:center" data-i18n="pr.fine">VAT included · Subscriptions renew monthly · Cancel anytime · (Values shown are examples)</p>
 </section>
 
 <!-- 6. FAQ -->
 <section class="wrap" id="faq">
   <div class="eyebrow">FAQ</div>
-  <h2>시작 전, <em>가장 많이 묻는 질문</em></h2>
+  <h2 data-i18n="faq.title">Before you start — <em>the questions everyone asks</em></h2>
   <div class="faq">
-    <details open name="faq"><summary>정말 무료로 시작할 수 있나요?</summary><p>네. 가입하면 바로 1,500 크레딧을 드려요. 카드 등록도 필요 없고, 언제든 해지할 수 있어요. 먼저 만들어보고 결정하세요.</p></details>
-    <details name="faq"><summary>제가 파는 것도 되나요?</summary><p>무엇을 파시든 돼요. 제품 사진 한 장이면 상세컷·착용컷·화보부터 광고 영상까지, 카테고리 상관없이 다 만들어 드려요.</p></details>
-    <details name="faq"><summary>무엇을 준비해야 하나요?</summary><p>제품 사진 한 장이면 돼요 — 다른 각도도, 레퍼런스도 필요 없어요. 광고 영상은 제품 설명 한 줄만 더 넣으시거나, 비워두면 사진을 읽고 대신 써 드려요.</p></details>
-    <details name="faq"><summary>생성한 이미지를 상업적으로 써도 되나요?</summary><p>네, 무료 플랜을 포함해 모든 플랜에서 상업적으로 쓸 수 있어요 — 판매 페이지·광고·SNS, 어디든 자유롭게요.</p></details>
-    <details name="faq"><summary>크레딧은 어떻게 차감되나요?</summary><p>생성할 때마다 차감되고, 실패한 생성은 자동으로 환불돼요 — 나온 것만 크레딧이 나가요. 구독 크레딧은 매달 새로 채워지고, 충전형은 12개월간 유효해요.</p></details>
-    <details name="faq"><summary>구독과 충전형은 뭐가 다른가요?</summary><p>구독은 매달 크레딧이 자동으로 채워지고 전 기능이 열려요. 충전형은 구독 없이 필요할 때만 채우고, 한 번 결제로 12개월 유효해요. 둘을 섞어 써도 좋아요.</p></details>
+    <details open name="faq"><summary data-i18n="faq.q1">Can I really start for free?</summary><p data-i18n="faq.a1">Yes. You get 1,500 credits the moment you sign up — no card required, cancel anytime. Make something first, then decide.</p></details>
+    <details name="faq"><summary data-i18n="faq.q2">Will it work for what I sell?</summary><p data-i18n="faq.a2">Whatever you sell, yes. From one product photo we create detail cuts, on-model shots, editorials and ad videos — any category.</p></details>
+    <details name="faq"><summary data-i18n="faq.q3">What do I need to prepare?</summary><p data-i18n="faq.a3">Just one product photo — no extra angles, no references. For ad videos, add one line about your product, or leave it blank and Doppia writes it from the photo.</p></details>
+    <details name="faq"><summary data-i18n="faq.q4">Can I use the images commercially?</summary><p data-i18n="faq.a4">Yes — every plan, including Free, comes with commercial use. Product pages, ads, social — anywhere.</p></details>
+    <details name="faq"><summary data-i18n="faq.q5">How are credits charged?</summary><p data-i18n="faq.a5">Credits are spent per generation, and failed generations refund automatically — you only pay for what comes out. Subscription credits refill monthly; top-ups stay valid for 12 months.</p></details>
+    <details name="faq"><summary data-i18n="faq.q6">Subscription vs top-up — what's the difference?</summary><p data-i18n="faq.a6">Subscriptions refill credits automatically every month with all features open. Top-ups need no subscription — add credits when you want, valid for 12 months. Mixing both works great.</p></details>
   </div>
 </section>
 
 <!-- 7. CTA BAND -->
 <section class="wrap">
   <div class="band">
-    <h2>촬영 없이 완성하는 브랜드 콘텐츠,<br>오늘 <em>5분</em>이면 충분해요.</h2>
-    <p class="lead">지금 가지고 있는 제품 사진으로 바로 시작할 수 있어요.<br>아무것도 정하기 전에, 뭐가 나오는지부터 보세요.</p>
-    <a class="btn btn-p btn-lg" href="/studio">무료로 시작하기</a>
-    <p class="fine" style="margin-top:16px">카드 등록 없이 · 가입 즉시 1,500 크레딧 · 언제든 해지 가능</p>
+    <h2 data-i18n="band.title">Brand content without a photo shoot —<br><em>5 minutes</em> today is enough.</h2>
+    <p class="lead" data-i18n="band.lead">Start with the product photo you already have.<br>Before deciding anything — see what comes out first.</p>
+    <a class="btn btn-p btn-lg" href="/studio" data-i18n="band.btn">Start free</a>
+    <p class="fine" style="margin-top:16px" data-i18n="band.fine">No card required · 1,500 credits on sign-up · Cancel anytime</p>
   </div>
 </section>
 
@@ -689,11 +712,13 @@
 <script>
 // HERO 궤도 캐러셀 (정본 _hero_ring_orbit 이식) — 데스크톱 전용, ≤860px는 정적 그리드(탭=이동)
 (function(){
+  var KO=document.documentElement.lang==='ko';
+  function tt(en,k){return KO?k:en;}
   var T={
-    wear:{name:'착용컷 · On-Model',desc:'버추얼 모델이 제품을 착용한 컷 — 모델·배경만 고르면 즉시.',base:'/img/accessories/jewelry-product-cut.png'},
-    macro:{name:'상세 매크로컷',desc:'각도·조명을 바꿔가며 뽑는 클로즈업 디테일 컷.',base:'/img/accessories/jewelry-flat-lay.png'},
-    hero:{name:'화보 · Hero',desc:'배경·플린스 위에 올린 프리미엄 브랜드 화보.',base:'/img/producthero/swatch-beside.jpg'},
-    video:{name:'광고영상 · 9:16',desc:'제품 한 컷으로 만드는 세로 광고 영상.',base:'/img/producthero/gloss-mirror.jpg'}
+    wear:{name:tt('On-Model','착용컷 · On-Model'),desc:tt('Your product worn by a virtual model — pick model and scene, done.','버추얼 모델이 제품을 착용한 컷 — 모델·배경만 고르면 즉시.'),base:'/img/accessories/jewelry-product-cut.png'},
+    macro:{name:tt('Detail Macro','상세 매크로컷'),desc:tt('Close-up detail cuts across angles and lighting.','각도·조명을 바꿔가며 뽑는 클로즈업 디테일 컷.'),base:'/img/accessories/jewelry-flat-lay.png'},
+    hero:{name:tt('Editorial · Hero','화보 · Hero'),desc:tt('Premium brand editorials on plinths and sets.','배경·플린스 위에 올린 프리미엄 브랜드 화보.'),base:'/img/producthero/swatch-beside.jpg'},
+    video:{name:tt('Ad Video · 9:16','광고영상 · 9:16'),desc:tt('A vertical ad video from a single product cut.','제품 한 컷으로 만드는 세로 광고 영상.'),base:'/img/producthero/gloss-mirror.jpg'}
   };
   // 실배선: Shots류=스튜디오 기본 진입, 광고영상=사이트 전역 딥링크 규약 /studio?mode=ugc (home·rail과 동일)
   var DEST={wear:'/studio',macro:'/studio',hero:'/studio',video:'/studio?mode=ugc'};
@@ -751,7 +776,7 @@
 
   function setCallout(i){
     if(activeCat===cats[i])return; activeCat=cats[i]; var t=T[cats[i]];
-    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ 제품 사진 한 장 · 프롬프트 없이</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div>';
+    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ '+tt('One product photo · no prompts','제품 사진 한 장 · 프롬프트 없이')+'</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div>';
   }
 
   function physics(dt){
@@ -861,6 +886,8 @@
 })();
 </script>
 <script>
+  var KO=document.documentElement.lang==='ko';
+  function tt(en,k){return KO?k:en;}
   // tabs
   var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
   tabs.forEach(function(t){t.addEventListener('click',function(){var k=t.dataset.k;tabs.forEach(function(x){x.classList.toggle('on',x===t);});panels.forEach(function(p){p.classList.toggle('on',p.dataset.k===k);});});});
@@ -908,12 +935,11 @@
     document.querySelectorAll('.e2e-chip[data-ch]').forEach(function(x){x.classList.toggle('on',x===b);});
     document.querySelectorAll('.chm').forEach(function(p){p.classList.toggle('on',p.dataset.ch===b.dataset.ch);});
   });});
-  // 영문 방문자(브라우저 언어 기준): 국내 채널 숨기고 해외만 + 상세페이지(영문 라벨) — 정식 EN 페이지 전 임시 로케일 처리
-  var isKo=(navigator.language||'').toLowerCase().slice(0,2)==='ko';
-  if(!isKo){
+  // EN 페이지(문서 언어 기준): 국내 채널 그룹 숨기고 해외만 + 상세페이지 칩을 해외 그룹으로 이동
+  if(!KO){
     var dchip=document.querySelector('.e2e-chip[data-ch="detail"]');
     var grps=document.querySelectorAll('.e2e-chg');
-    if(dchip&&grps[1]){ dchip.textContent='Product page'; grps[1].querySelector('.e2e-chips').prepend(dchip); }
+    if(dchip&&grps[1]){ grps[1].querySelector('.e2e-chips').prepend(dchip); }
     if(grps[0]) grps[0].style.display='none';
     document.querySelectorAll('.e2e-chg>b').forEach(function(b){b.style.display='none';});
     var buy=document.querySelector('.chm[data-ch="detail"] .mk-btn'); if(buy) buy.textContent='Buy now';
@@ -933,22 +959,22 @@
   // pricing segments
   var SEG={
     personal:[
-      {nm:'Free',pv:'₩0',u:' /월',cr:'가입 즉시 1,500 크레딧',li:['전 기능 · 2K 화질','결과가 공개 피드에 게시'],cta:'무료로 시작'},
-      {nm:'Starter',pv:'₩31,000',u:' /월',cr:'매달 7,300 크레딧',li:['Private Mode — 결과 비공개','전 기능 · 커머셜 라이선스'],cta:'시작하기'},
-      {nm:'Standard',pv:'₩81,000',u:' /월',cr:'매달 20,300 크레딧',li:['Private Mode — 결과 비공개','전 기능 · 커머셜 라이선스'],cta:'시작하기',feat:'추천'},
-      {nm:'Pro',pv:'₩164,000',u:' /월',cr:'매달 44,000 크레딧',li:['Private Mode — 결과 비공개','전 기능 · 커머셜 라이선스'],cta:'시작하기'},
-      {nm:'Premium',pv:'₩329,000',u:' /월',cr:'매달 95,000 크레딧',li:['Private Mode — 결과 비공개','전 기능 · 커머셜 라이선스','최대 볼륨'],cta:'시작하기'}
+      {nm:'Free',pv:'₩0',u:tt(' /mo',' /월'),cr:tt('1,500 credits on sign-up','가입 즉시 1,500 크레딧'),li:[tt('All features · 2K quality','전 기능 · 2K 화질'),tt('Results post to the public feed','결과가 공개 피드에 게시')],cta:tt('Start free','무료로 시작')},
+      {nm:'Starter',pv:'₩31,000',u:tt(' /mo',' /월'),cr:tt('7,300 credits monthly','매달 7,300 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기')},
+      {nm:'Standard',pv:'₩81,000',u:tt(' /mo',' /월'),cr:tt('20,300 credits monthly','매달 20,300 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기'),feat:tt('Popular','추천')},
+      {nm:'Pro',pv:'₩164,000',u:tt(' /mo',' /월'),cr:tt('44,000 credits monthly','매달 44,000 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기')},
+      {nm:'Premium',pv:'₩329,000',u:tt(' /mo',' /월'),cr:tt('95,000 credits monthly','매달 95,000 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스'),tt('Highest volume','최대 볼륨')],cta:tt('Get started','시작하기')}
     ],
     enterprise:[
-      {nm:'Team',pv:'₩990,000',u:' /월',cr:'매달 362,000 크레딧',li:['팀 공유 크레딧 풀','동시 작업 10','전 기능'],cta:'상담 신청'},
-      {nm:'Enterprise Pro',pv:'₩1,490,000',u:' /월',cr:'매달 575,000 크레딧',li:['동시 작업 15','우선 지원','전 기능'],cta:'상담 신청',feat:'추천'},
-      {nm:'Elite',pv:'₩1,990,000',u:' /월',cr:'매달 813,000 크레딧',li:['동시 작업 20','전담 지원','최대 볼륨'],cta:'상담 신청'}
+      {nm:'Team',pv:'₩990,000',u:tt(' /mo',' /월'),cr:tt('362,000 credits monthly','매달 362,000 크레딧'),li:[tt('Shared team credit pool','팀 공유 크레딧 풀'),tt('10 concurrent jobs','동시 작업 10'),tt('All features','전 기능')],cta:tt('Talk to us','상담 신청'),mail:1},
+      {nm:'Enterprise Pro',pv:'₩1,490,000',u:tt(' /mo',' /월'),cr:tt('575,000 credits monthly','매달 575,000 크레딧'),li:[tt('15 concurrent jobs','동시 작업 15'),tt('Priority support','우선 지원'),tt('All features','전 기능')],cta:tt('Talk to us','상담 신청'),feat:tt('Popular','추천'),mail:1},
+      {nm:'Elite',pv:'₩1,990,000',u:tt(' /mo',' /월'),cr:tt('813,000 credits monthly','매달 813,000 크레딧'),li:[tt('20 concurrent jobs','동시 작업 20'),tt('Dedicated support','전담 지원'),tt('Highest volume','최대 볼륨')],cta:tt('Talk to us','상담 신청'),mail:1}
     ],
     pack:[
-      {nm:'Lite',pv:'₩15,000',u:'',cr:'3,000 크레딧 <span class="bo">+400 보너스</span>',li:['12개월 유효','결제 즉시 충전'],cta:'충전하기'},
-      {nm:'Standard',pv:'₩81,000',u:'',cr:'17,000 크레딧 <span class="bo">+2,200 보너스</span>',li:['12개월 유효'],cta:'충전하기'},
-      {nm:'Pro',pv:'₩329,000',u:'',cr:'72,000 크레딧 <span class="bo">+7,500 보너스</span>',li:['12개월 유효'],cta:'충전하기',feat:'추천'},
-      {nm:'Business',pv:'₩579,000',u:'',cr:'128,000 크레딧 <span class="bo">+14,000 보너스</span>',li:['12개월 유효','최저 단가'],cta:'충전하기'}
+      {nm:'Lite',pv:'₩15,000',u:'',cr:tt('3,000 credits <span class="bo">+400 bonus</span>','3,000 크레딧 <span class="bo">+400 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Credited instantly','결제 즉시 충전')],cta:tt('Top up','충전하기')},
+      {nm:'Standard',pv:'₩81,000',u:'',cr:tt('17,000 credits <span class="bo">+2,200 bonus</span>','17,000 크레딧 <span class="bo">+2,200 보너스</span>'),li:[tt('Valid 12 months','12개월 유효')],cta:tt('Top up','충전하기')},
+      {nm:'Pro',pv:'₩329,000',u:'',cr:tt('72,000 credits <span class="bo">+7,500 bonus</span>','72,000 크레딧 <span class="bo">+7,500 보너스</span>'),li:[tt('Valid 12 months','12개월 유효')],cta:tt('Top up','충전하기'),feat:tt('Popular','추천')},
+      {nm:'Business',pv:'₩579,000',u:'',cr:tt('128,000 credits <span class="bo">+14,000 bonus</span>','128,000 크레딧 <span class="bo">+14,000 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Lowest unit price','최저 단가')],cta:tt('Top up','충전하기')}
     ]
   };
   function renderTier(seg){
@@ -956,7 +982,7 @@
       return '<div class="tcard'+(c.feat?' feat':'')+'">'+(c.feat?'<span class="fb">'+c.feat+'</span>':'')+
         '<div class="nm">'+c.nm+'</div><div class="pv">'+c.pv+'<small>'+c.u+'</small></div>'+
         '<div class="cr">'+c.cr+'</div><ul>'+c.li.map(function(l){return '<li>'+l+'</li>';}).join('')+'</ul>'+
-        '<a class="tb" href="'+(c.cta==='상담 신청'?'mailto:support@doppia.ai':'/studio')+'">'+c.cta+'</a></div>';
+        '<a class="tb" href="'+(c.mail?'mailto:support@doppia.ai':'/studio')+'">'+c.cta+'</a></div>';
     }).join('');
   }
   renderTier('personal');
@@ -964,6 +990,17 @@
     document.querySelectorAll('.ps').forEach(function(x){x.classList.toggle('on',x===b);});
     renderTier(b.dataset.seg);
   });});
+</script>
+<script>/*LP-LANGSW — setLang() 호출 금지(reload가 이동 덮음). 동일 저장소 2곳 직접 기록.*/
+(function(){
+  document.querySelectorAll('.lang-sw a[data-lang]').forEach(function(a){
+    a.addEventListener('click',function(){
+      var l=a.getAttribute('data-lang');
+      try{localStorage.setItem('doppia_lang',l);}catch(e){}
+      document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax';
+    });
+  });
+})();
 </script>
 </body>
 </html>

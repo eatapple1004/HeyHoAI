@@ -6157,11 +6157,11 @@ function ugcRenderScriptPreview(data){
   const s=data.script||{};
   if(data.cost!=null)window.ugcLastCost=data.cost; // refine 후 재렌더 때 비용 유지
   document.getElementById('ugcScriptTitle').textContent=s.title||'Your ad script';
-  document.getElementById('ugcScriptMeta').textContent=`${data.nClips} scenes · ${s.durationSec||''}s`;
+  document.getElementById('ugcScriptMeta').textContent=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko')?`씬 ${data.nClips}개 · ${s.durationSec||''}초`:`${data.nClips} scenes · ${s.durationSec||''}s`;
   // (2026-07-27) 압축 확인 카드: 훅 한 줄(읽기전용) + [Edit script] 요약. 씬 에디터 전체는 #ugcScriptAdv에 접혀 있다.
   { const hk=document.getElementById('ugcScriptHook');
     if(hk)hk.innerHTML=`<span class="ugc-el-lbl" title="The opening line that grabs attention in the first second">🎣 Hook</span> — ${esc(s.hook||'')}`;
-    const esum=document.getElementById('ugcScriptEditSum'); if(esum)esum.textContent=`${data.nClips} scenes · caption`; }
+    const esum=document.getElementById('ugcScriptEditSum'); if(esum)esum.textContent=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko')?`씬 ${data.nClips}개 · 자막`:`${data.nClips} scenes · caption`; }
   // 편집 가능 필드(클릭→수정, ugcScript에 즉시 반영). 회색 🎬줄=씬 비주얼 설명(읽기전용, 편집은 후속).
   const ce=(f,val,ph)=>`<span class="ugc-edit" contenteditable="true" data-f="${f}"${ph?` data-ph="${esc(ph)}"`:''}>${esc(val||'')}</span>`;
   const brollN=(s.scenes||[]).filter(x=>x.type==='broll').length||1;
@@ -6454,7 +6454,7 @@ function ugcUpdateTotal(){
   const d=parseInt((document.getElementById('ugcSceneDur')||{}).value,10)||0;
   const el=document.getElementById('ugcTotalLen'); if(!el)return;
   if(c&&d)el.textContent=`${c} × ${d}s = ${c*d}s total`;
-  else if(c&&!d)el.textContent=`${c} scenes · length auto`;
+  else if(c&&!d)el.textContent=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko')?`씬 ${c}개 · 길이 자동`:`${c} scenes · length auto`;
   else if(!c&&d)el.textContent=`${d}s per scene · scene count auto`;
   else el.textContent='';
 }
