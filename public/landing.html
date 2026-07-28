@@ -10,7 +10,11 @@
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Pretendard,"Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-x:hidden}
-  /* 앰비언트 글로우 제거(2026-07-28) — 훅(무글로우 순수 다크 #07070c)과 전 섹션 톤 통일. 섹션 자체 글로우(§4 apex·§7 band)는 유지 */
+  /* home과 동일한 앰비언트 글로우 (좌상 보라 + 우측 핑크) — 콘텐츠 뒤(z:-1). 훅도 이 배경 위에 얹힘(훅이 기존 배경에 맞춤) */
+  .home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+  .home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}
+  .home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}
+  .home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}
   img,video{display:block;max-width:100%}
   a{color:inherit;text-decoration:none}
   button{font-family:inherit;cursor:pointer}
@@ -41,11 +45,11 @@
   .pill{display:inline-block;font-size:12.5px;font-weight:600;color:var(--accent2);border:1px solid var(--line2);border-radius:999px;padding:7px 15px;margin-bottom:22px}
   .fine{margin-top:20px;font-size:13px;color:var(--faint)}
   .fine b{color:var(--dim)}
-  .ver{position:relative;height:calc(100svh - 76px);min-height:720px;overflow:hidden;background:var(--bg);cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+  .ver{position:relative;height:calc(100svh - 76px);min-height:720px;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
   .ver.dragging{cursor:grabbing}
   .dotgrid{position:absolute;inset:0;z-index:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px;mask:radial-gradient(ellipse 84% 82% at 50% 46%,#000,transparent 94%);pointer-events:none}
-  .topfade{position:absolute;left:0;right:0;top:0;height:88px;z-index:25;background:linear-gradient(180deg,var(--bg) 30%,transparent);pointer-events:none}
-  .botfade{position:absolute;left:0;right:0;bottom:0;height:150px;z-index:25;background:linear-gradient(0deg,var(--bg) 12%,transparent);pointer-events:none}
+  /* 상·하 페이드 = 오버레이 대신 카드 레이어 자체 마스크 — 카드 픽셀이 투명해지며 사라져 배경(글로우 포함)이 그대로 비침. 경계 하드클립 원천 차단 */
+  .horbit{-webkit-mask:linear-gradient(180deg,transparent 0,#000 90px,#000 calc(100% - 200px),transparent 100%);mask:linear-gradient(180deg,transparent 0,#000 90px,#000 calc(100% - 200px),transparent 100%)}
   .cctr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;text-align:center;padding:0 44px;max-width:1000px;width:100%;pointer-events:none}
   .cctr .btn,.cctr a{pointer-events:auto;cursor:pointer}
   .cctr .pill{margin-bottom:18px;background:rgba(255,255,255,.03)}
@@ -73,10 +77,10 @@
     .ver{height:auto;min-height:0;display:flex;flex-direction:column;padding:44px 20px 36px;cursor:default;touch-action:auto;user-select:text;-webkit-user-select:text}
     .cctr{position:static;transform:none;order:-1;max-width:none;padding:0;pointer-events:auto;margin-bottom:28px}
     .giant{font-size:clamp(33px,8.8vw,44px)}
-    .horbit{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .horbit{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px;-webkit-mask:none;mask:none}
     .oc{position:relative;width:auto!important;height:auto!important;aspect-ratio:4/5;transform:none!important;opacity:1!important;filter:none!important;z-index:auto!important;cursor:pointer}
     .oc:nth-child(n+5){display:none}
-    .callout,.topfade,.botfade{display:none}
+    .callout{display:none}
   }
 
   /* FEATURES (tab explorer) */
@@ -246,6 +250,7 @@
 </style>
 </head>
 <body>
+<div class="home-glow"></div>
 <nav><div class="in">
   <span class="brand">DOPPIA</span>
   <span class="toc"><a href="#features">기능</a><a href="#gallery">갤러리</a><a href="#pricing">가격</a><a href="#faq">FAQ</a></span>
@@ -270,7 +275,6 @@
     <div class="oc" data-cat="macro" style="width:182px;height:228px"><span class="tag">상세컷</span><img src="/img/producthero/gloss-mirror.jpg" alt="상세컷 예시"></div>
   </div>
   <div class="callout" id="callout"></div>
-  <div class="topfade"></div><div class="botfade"></div>
   <div class="cctr">
     <span class="pill">의류 · 주얼리 · 화장품 · 무엇이든</span>
     <h1 class="giant">제품 사진 한 장.<br>기획도, 광고도, 카탈로그도 <span class="grad">Doppia가.</span></h1>
