@@ -2217,7 +2217,10 @@ async function mergeOwnedTemplates(){
         if(t.themes&&t.themes.length)card.themes=t.themes; // 테마 = /owned label(Library와 동일 어휘) — OFFICIAL_THEME_MAP 대체
         const pv=(t.preview_media||[]).filter(x=>x);       // Store와 동일 소스: preview_media[0] → 없으면 thumb(인기 creation 폴백).
         const cover=pv[0]||t.thumb||null;
-        if(cover)card.preview=cover;
+        // (2026-07-29) 절대 고정 대표이미지 — 아래 7종은 DB preview_media가 있어도 컨벤션 파일(/img/…)을 쓴다(사용자 확정).
+        //   DB 커버가 옛 이미지를 물고 있어 파일 교체가 화면에 안 먹던 버그의 근본 해결. 나머지 카드는 기존 DB 우선 유지.
+        const FIXED_COVERS={'model-cut':1,'jewelry-product-cut':1,'jewelry-worn-cut':1,'jewelry-on-model':1,'bodywear-product-cut':1,'bodywear-worn-cut':1,'bodywear-on-model':1};
+        if(cover && !FIXED_COVERS[String(t.recipe_id)])card.preview=cover;
         return;
       }
       // 공식 프롬프트 기반(recipe_id 없음) — 유저 카드처럼 prompt를 담아 카드 생성 후 '공식'으로 표시.
