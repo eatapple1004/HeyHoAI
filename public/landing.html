@@ -391,7 +391,7 @@
   </div>
   <div class="callout" id="callout"></div>
   <div class="navbg"></div>
-  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features">기능</a><a href="#gallery">갤러리</a><a href="#pricing">가격</a><a href="#faq">FAQ</a></span><span class="end"><a href="/saas-login">로그인</a><a class="btn btn-p" href="/studio">무료로 시작</a></span></nav>
+  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features">기능</a><a href="#gallery">무엇을 팔든</a><a href="#e2e">전 과정</a><a href="#pricing">가격</a><a href="#faq">FAQ</a></span><span class="end"><a href="/saas-login">로그인</a><a class="btn btn-p" href="/studio">무료로 시작</a></span></nav>
   <div class="cctr">
     <h1 class="giant">제품 사진 한 장이면,<br><span class="grad">기획·룩북·광고영상</span>까지 다 만들어드려요.</h1>
     <p class="csub">상세컷·착용컷·화보·광고 영상까지 통째로 — 촬영도 마케터도 프롬프트도 없이.</p>
@@ -548,7 +548,7 @@
 </section>
 
 <!-- 4. END-TO-END -->
-<section class="wrap">
+<section class="wrap" id="e2e">
   <div class="eyebrow">END-TO-END</div>
   <h2>제품 사진 한 장만 올리세요.<br>나머지 <em>모든 채널 자산</em>은 Doppia가 채워드려요.</h2>
   <p class="lead">상세컷·착용컷·화보·광고 영상까지 한 흐름으로 나와요. 만든 결과는 라이브러리에 그대로 쌓여, 다음엔 더 빠르게 꺼내 써요.</p>
@@ -683,20 +683,7 @@
   </div>
 </section>
 
-<!-- 8. FOOTER — 기존(원본) 복원: 네비 행 + 언어 스위처 + biz-footer.js 법적 사업자정보 -->
-<footer class="wrap">
-<div class="n-foot">
-<b data-i18n="footer.brand">DOPPIA</b>
-<a data-i18n="footer.link0" href="#advideo">Ad Video</a><a data-i18n="footer.link1" href="#shots">Shots</a><a data-i18n="footer.link2" href="#pricing">Pricing</a><a data-i18n="footer.link3" href="#faq">FAQ</a>
-<a data-i18n="footer.link4" href="/studio">Open app</a><a data-i18n="footer.link5" href="/saas-login">Log in</a>
-<a data-i18n="footer.link6" href="/privacy.html">Privacy</a><a data-i18n="footer.link7" href="/terms.html">Terms</a><a data-i18n="footer.link8" href="/refund.html">Refund</a>
-<span class="lang-sw" style="margin-left:auto">
-<a aria-current="true" data-lang="en" href="/" hreflang="en">English</a>
-<span aria-hidden="true" style="opacity:.4;margin:0 6px">·</span>
-<a data-lang="ko" href="/ko" hreflang="ko">한국어</a>
-</span>
-</div>
-</footer>
+<!-- 8. FOOTER — biz-footer.js 법적 사업자정보(PG 심사 필수, 삭제금지) -->
 <script src="/js/biz-footer.js?v=3"></script>
 
 <script>
@@ -728,7 +715,6 @@
     // 커서를 방금 움직였을 때만 호버(=정지) 걸림. 손 가만히 있는데 도는 카드가 커서 밑 지나가는 건 무시 → 플릭 안 막힘
     el.addEventListener('mouseenter',function(){if(!MQ.matches && !dragging && (nowMs()-lastUpT>220) && (nowMs()-lastMoveMouse<140)){hoverIdx=i;focusIdx=i;}});
     el.addEventListener('mouseleave',function(){if(hoverIdx===i)hoverIdx=-1;});
-    el.addEventListener('click',function(){ if(MQ.matches) window.location.href=DEST[cats[i]]; });  // 모바일 정적 그리드: 탭=이동
   });
 
   // 잡고 휙 돌리기 (드래그 + 관성)
@@ -759,15 +745,13 @@
   });
   function endDrag(){ if(!dragging)return; dragging=false; lastUpT=nowMs(); sec.classList.remove('dragging'); }   // w에 남은 속도가 physics에서 자연 감속(관성)
   sec.addEventListener('pointerup',function(e){
-    var wd=dragging, mv=moved, di=downIdx;
     endDrag();
-    if(wd && !mv && di>=0){ window.location.href=DEST[cats[di]]; }   // 안 움직였으면 = 클릭 → 해당 제품으로
   });
   sec.addEventListener('pointercancel',endDrag);
 
   function setCallout(i){
     if(activeCat===cats[i])return; activeCat=cats[i]; var t=T[cats[i]];
-    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ 제품 사진 한 장 · 프롬프트 없이</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div><div class="co-cta"><span>이 템플릿으로 만들기</span><span class="k">→</span></div>';
+    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ 제품 사진 한 장 · 프롬프트 없이</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div>';
   }
 
   function physics(dt){
