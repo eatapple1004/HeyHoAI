@@ -580,7 +580,24 @@
     'Save & finish': '저장하고 끝내기',
     "Not saved yet — it'll auto-save when you leave, or Save & finish now.": '아직 저장 전 — 나가면 자동 저장되고, 지금 저장하고 끝내도 돼요.',
     'hook · scenes · caption': '훅 · 씬 · 자막',
-    '🎣 Hook': '🎣 훅'
+    '🎣 Hook': '🎣 훅',
+
+    // ── (2026-07-29) 빌링 가격표 진실화 후 한글판 — 날조 제거된 새 불릿·각주 ──
+    'Subscription plans': '구독 플랜',
+    'Monthly': '월간',
+    'All features · 2K quality': '전 기능 · 2K 화질',
+    'Results post to the public feed': '결과가 공개 피드에 게시',
+    'Private Mode — results stay private': 'Private Mode — 결과 비공개',
+    'All features · commercial license': '전 기능 · 커머셜 라이선스',
+    'Highest volume': '최대 볼륨',
+    'Shared team credit pool': '팀 공유 크레딧 풀',
+    '10 concurrent jobs': '동시 작업 10',
+    '15 concurrent jobs': '동시 작업 15',
+    '20 concurrent jobs': '동시 작업 20',
+    'Priority support': '우선 지원',
+    'Dedicated support': '전담 지원',
+    '+% = more credits per won than Starter, at the same spend': '+% = 같은 금액으로 Starter보다 더 받는 크레딧 비율',
+    'Enterprise — annual, best value per credit': '기업 — 연간 결제, 크레딧당 단가 최저'
   } };
   // ── (2026-07-29) EN 모드 역방향 사전 — 한국어 원문(DB 오피셜 네일 템플릿명)을 영어로 ──
   DICT.en = {

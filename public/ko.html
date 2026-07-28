@@ -64,7 +64,7 @@
   .fine{margin-top:20px;font-size:13px;color:var(--faint)}
   .fine b{color:var(--dim)}
   /* 확정 프로토(_hero_ring_orbit) 이식 — 히어로를 nav 뒤까지 끌어올려(margin-top:-76px) 프로토처럼 카드가 반투명 nav 뒤로 지나감. 좌표계 = 프로토와 동일(페이지 top 기준) */
-  .ver{position:relative;height:calc(100svh + 300px);min-height:1060px;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+  .ver{position:relative;height:calc(100svh + 190px);min-height:950px;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
   .ver.dragging{cursor:grabbing}
   .dotgrid{position:absolute;inset:0;z-index:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px;mask:radial-gradient(ellipse 84% 82% at 50% 46%,#000,transparent 94%);pointer-events:none}
   /* 경계 페이드는 CSS 오버레이·마스크가 아니라 JS가 카드별 opacity로 직접 처리(frame() 참조) — 합성 GPU에서 오버레이/마스크가 안 먹히는 환경 실측 대응 */

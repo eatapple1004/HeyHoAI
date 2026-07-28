@@ -54,6 +54,7 @@
   .plan-card .price{font-family:'Sora';font-size:40px;font-weight:800;letter-spacing:-1.8px;line-height:1}
   .plan-card .price span{font-size:13px;font-weight:500;color:var(--faint);letter-spacing:0}
   .plan-card .credits-inc{font-size:13px;color:var(--gold);font-weight:600;margin:14px 0 18px}
+  .plan-card .credits-inc .bpct{font-style:normal;font-weight:800;color:var(--cyan);margin-left:4px}
   .plan-card ul{list-style:none;font-size:13px;color:var(--dim);flex:1;margin-bottom:22px;border-top:1px solid var(--border);padding-top:16px}
   .plan-card ul li{padding:5px 0;display:flex;gap:9px;align-items:flex-start}
   .plan-card ul li::before{content:'✓';color:var(--cyan);font-weight:700;flex-shrink:0}
@@ -179,14 +180,14 @@
       <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc">1,500 credits (one-time)</div>
-      <ul><li>Try all modes</li><li>Solo lookbook</li><li>2K quality</li><li>2 concurrent slots</li></ul>
+      <ul><li>All features · 2K quality</li><li>Results post to the public feed</li></ul>
       <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
     </div>
     <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
       <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
-      <ul><li>No watermark</li><li>Group lookbook</li><li>3 concurrent slots</li></ul>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
@@ -194,24 +195,25 @@
       <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
-      <ul><li>Everything in Starter</li><li>Edit results</li><li>4 concurrent slots</li></ul>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
       <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
-      <ul><li>Everything in Standard</li><li>Concept cut</li><li>5 concurrent slots</li></ul>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
     <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
       <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span class="per"> /mo</span></div>
       <div class="cyc-note"></div>
       <div class="credits-inc"></div>
-      <ul><li>Everything in Pro</li><li data-flag="reels">Video reels</li><li>Commercial license</li><li>6 concurrent slots</li></ul>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li><li>Highest volume</li></ul>
       <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
     </div>
   </div>
+  <div class="fade d2" style="font-size:11.5px;color:var(--faint);text-align:center;margin:-6px 0 14px">+% = more credits per won than Starter, at the same spend</div>
 
   <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
   <div class="plans ent-plans fade d3">
@@ -219,7 +221,7 @@
       <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span class="per"> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
-      <ul><li>Team roles &amp; shared pool</li><li>Commercial license</li><li>10 concurrent slots</li></ul>
+      <ul><li>Shared team credit pool</li><li>10 concurrent jobs</li><li>All features · commercial license</li></ul>
       <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
     </div>
     <div class="plan-card glass featured" data-ent="pro">
@@ -227,14 +229,14 @@
       <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span class="per"> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
-      <ul><li>Everything in Team</li><li>15 concurrent slots</li><li>Priority support</li></ul>
+      <ul><li>15 concurrent jobs</li><li>Priority support</li><li>All features · commercial license</li></ul>
       <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
     </div>
     <div class="plan-card glass" data-ent="elite">
       <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span class="per"> /mo</span></div>
       <div class="cyc-note">billed annually</div>
       <div class="credits-inc"></div>
-      <ul><li>Max scale</li><li>20 concurrent slots</li><li>Dedicated support</li></ul>
+      <ul><li>20 concurrent jobs</li><li>Dedicated support</li><li>Highest volume</li></ul>
       <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
     </div>
   </div>
@@ -353,7 +355,17 @@ function syncBillingPricing(){
       const yr=P.amount(p,true)*12, save=(P.amount(p,false)-P.amount(p,true))*12;
       card.setAttribute('data-yt', meta.symbol+P.fmt(yr)+'/yr billed annually · save '+meta.symbol+P.fmt(save));
     }
-    const ci=card.querySelector('.credits-inc'); if(ci) ci.textContent = k==='free' ? (P.fmt(p.cr)+' credits (one-time)') : (P.fmt(p.cr)+' credits / month');
+    const ci=card.querySelector('.credits-inc');
+    if(ci){
+      // 라온젠식 크레딧 이득 배지 — 기준=Starter의 (크레딧/현재통화 월가). 통화 전환 시 재계산되므로 항상 참.
+      const base=P.plans.starter.cr/P.amount(P.plans.starter,false);
+      const pct=(k==='free'||k==='starter')?0:Math.round(((p.cr/P.amount(p,false))/base-1)*100);
+      const KO=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+      const badge=pct>0?(' <em class="bpct">+'+pct+'%</em>'):'';
+      ci.innerHTML = k==='free'
+        ? (KO?('가입 시 '+P.fmt(p.cr)+' 크레딧 (1회)'):(P.fmt(p.cr)+' credits (one-time)'))
+        : ((KO?('매달 '+P.fmt(p.cr)+' 크레딧'):(P.fmt(p.cr)+' credits / month'))+badge);
+    }
   });
   // 기업(연간) — data-ent 카드
   if(P.enterprise) ['team','pro','elite'].forEach(function(k){
@@ -362,7 +374,13 @@ function syncBillingPricing(){
     if(cur)cur.textContent=meta.symbol;
     if(ev)ev.textContent=P.fmt(P.amount(e,false));
     if(per)per.textContent=meta.per;
-    const ci=card.querySelector('.credits-inc'); if(ci)ci.textContent=P.fmt(e.cr)+' credits / month';
+    const ci=card.querySelector('.credits-inc');
+    if(ci){
+      const base=P.plans.starter.cr/P.amount(P.plans.starter,false);
+      const pct=Math.round(((e.cr/P.amount(e,false))/base-1)*100);
+      const KO=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+      ci.innerHTML=(KO?('매달 '+P.fmt(e.cr)+' 크레딧'):(P.fmt(e.cr)+' credits / month'))+(pct>0?(' <em class="bpct">+'+pct+'%</em>'):'');
+    }
   });
   const pk=document.getElementById('packsGrid');
   if(pk) pk.innerHTML=P.packs.map(function(p){

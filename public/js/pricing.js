@@ -14,23 +14,23 @@
     // ⚠️ 기능·라이선스 축의 진실 = src/lib/entitlements.js PLANS. 여기 license/line은 표시용 파생이지 권한이 아니다.
     //    (2026-07-17) 상업권 유료 전티어 개방 → 유료 4티어 license='Commercial'.
     //    이 블록은 src/pricing/pricing.config.js 와 자구까지 동일해야 한다(서버가 /api/pricing으로 덮어씀).
-    //    ⚠️ line:의 slots·lookbook·Edit·Concept cut은 날조다(소비자 0건). 가격표 진실화에서 함께 교체할 것.
+    //    (2026-07-29) line: 가격표 진실화 완료 — 랜딩 확정 진실 세트(Private Mode·커머셜·기업 slots)로 교체.
     plans: {
       free:     { name: 'Free',     price: 0,   priceKRW: 0,      priceY: 0,   priceYKRW: 0,      cr: 1500,  license: 'Personal' },
       starter:  { name: 'Starter',  price: 19,  priceKRW: 31000,  priceY: 16,  priceYKRW: 26000,  cr: 7300,  license: 'Commercial',
-                  line: 'No watermark · group lookbook · ◈7,300/mo' },
+                  line: 'Private Mode · commercial · ◈7,300/mo' },
       standard: { name: 'Standard', price: 49,  priceKRW: 81000,  priceY: 41,  priceYKRW: 68000,  cr: 20300, license: 'Commercial', featured: true,
-                  line: 'Edit · 2K · 4 slots · ◈20,300/mo' },
+                  line: 'Private Mode · commercial · ◈20,300/mo' },
       pro:      { name: 'Pro',      price: 99,  priceKRW: 164000, priceY: 82,  priceYKRW: 136000, cr: 44000, license: 'Commercial',
-                  line: 'Concept cut · 5 slots · ◈44,000/mo' },
+                  line: 'Private Mode · commercial · ◈44,000/mo' },
       premium:  { name: 'Premium',  price: 199, priceKRW: 329000, priceY: 165, priceYKRW: 273000, cr: 95000, license: 'Commercial',
-                  line: 'Video · 6 slots · commercial · ◈95,000/mo' }
+                  line: 'Private Mode · commercial · highest volume · ◈95,000/mo' }
     },
     // 기업 (연간 결제, price=월환산$, priceKRW=월환산₩[VAT포함], cr=월 크레딧). 볼륨 최저가.
     enterprise: {
-      team:  { name: 'Enterprise Team', price: 599,  priceKRW: 990000,  cr: 362000, slots: 10, line: 'Team roles · shared pool · 10 slots' },
-      pro:   { name: 'Enterprise Pro',  price: 899,  priceKRW: 1490000, cr: 575000, slots: 15, featured: true, line: 'Everything · 15 slots · priority' },
-      elite: { name: 'Elite',           price: 1199, priceKRW: 1990000, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
+      team:  { name: 'Enterprise Team', price: 599,  priceKRW: 990000,  cr: 362000, slots: 10, line: 'Shared credit pool · 10 concurrent jobs' },
+      pro:   { name: 'Enterprise Pro',  price: 899,  priceKRW: 1490000, cr: 575000, slots: 15, featured: true, line: '15 concurrent jobs · priority support' },
+      elite: { name: 'Elite',           price: 1199, priceKRW: 1990000, cr: 813000, slots: 20, line: '20 concurrent jobs · dedicated support' }
     },
     // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$, priceKRW=₩[VAT포함]). 충동성=최고가.
     packs: [
