@@ -10,11 +10,7 @@
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Pretendard,"Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-x:hidden}
-  /* home과 동일한 앰비언트 글로우 (좌상 보라 + 우측 핑크) — 콘텐츠 뒤(z:-1) */
-  .home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-  .home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}
-  .home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}
-  .home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}
+  /* 앰비언트 글로우 제거(2026-07-28) — 훅(무글로우 순수 다크 #07070c)과 전 섹션 톤 통일. 섹션 자체 글로우(§4 apex·§7 band)는 유지 */
   img,video{display:block;max-width:100%}
   a{color:inherit;text-decoration:none}
   button{font-family:inherit;cursor:pointer}
@@ -41,21 +37,47 @@
   nav .end{margin-left:auto;display:flex;gap:12px;align-items:center}
   @media(max-width:820px){.toc{display:none}}
 
-  /* HERO */
-  .hero{display:grid;grid-template-columns:1.04fr .96fr;gap:44px;align-items:center;padding:70px 0 84px}
+  /* HERO — 궤도 캐러셀 (정본 _hero_ring_orbit 이식: 드래그로 잡고 휙 돌리기 + 호버 콜아웃) */
   .pill{display:inline-block;font-size:12.5px;font-weight:600;color:var(--accent2);border:1px solid var(--line2);border-radius:999px;padding:7px 15px;margin-bottom:22px}
-  .hero h1{font-size:clamp(40px,5.2vw,70px);line-height:1.03;letter-spacing:-.03em;font-weight:840}
-  .hero .sub{font-size:18px;color:var(--dim);margin:24px 0 32px;max-width:32em;line-height:1.6}
-  .hcta{display:flex;gap:12px;flex-wrap:wrap}
   .fine{margin-top:20px;font-size:13px;color:var(--faint)}
   .fine b{color:var(--dim)}
-  .stage{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:520px}
-  .stage .reel{grid-row:1/3;border-radius:20px;overflow:hidden;border:1px solid var(--line2);background:#000;position:relative;box-shadow:0 40px 80px -40px rgba(0,0,0,.8)}
-  .stage .reel video{width:100%;height:100%;object-fit:cover}
-  .stage .reel .tag{position:absolute;top:12px;left:12px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:7px;padding:4px 9px;backdrop-filter:blur(6px)}
-  .stage .pic{border-radius:16px;overflow:hidden;border:1px solid var(--line2)}
-  .stage .pic img{width:100%;height:100%;object-fit:cover}
-  @media(max-width:860px){.hero{grid-template-columns:1fr}.stage{height:400px}}
+  .ver{position:relative;height:calc(100svh - 76px);min-height:720px;overflow:hidden;background:var(--bg);cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+  .ver.dragging{cursor:grabbing}
+  .dotgrid{position:absolute;inset:0;z-index:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px;mask:radial-gradient(ellipse 84% 82% at 50% 46%,#000,transparent 94%);pointer-events:none}
+  .topfade{position:absolute;left:0;right:0;top:0;height:88px;z-index:25;background:linear-gradient(180deg,var(--bg) 30%,transparent);pointer-events:none}
+  .botfade{position:absolute;left:0;right:0;bottom:0;height:150px;z-index:25;background:linear-gradient(0deg,var(--bg) 12%,transparent);pointer-events:none}
+  .cctr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;text-align:center;padding:0 44px;max-width:1000px;width:100%;pointer-events:none}
+  .cctr .btn,.cctr a{pointer-events:auto;cursor:pointer}
+  .cctr .pill{margin-bottom:18px;background:rgba(255,255,255,.03)}
+  .giant{font-size:clamp(38px,5.7vw,74px);font-weight:880;letter-spacing:-.045em;line-height:.98;text-shadow:0 3px 22px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  .cctr .pill,.csub,.cfine{text-shadow:0 2px 12px rgba(0,0,0,.6)}
+  .csub{font-size:16px;color:var(--dim);margin:16px auto 24px;max-width:42ch;line-height:1.6}
+  .chcta{display:flex;justify-content:center}
+  .cfine{margin-top:14px;font-size:13px;color:var(--faint)}
+  .horbit{position:absolute;inset:0}
+  .oc{position:absolute;left:0;top:0;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);box-shadow:0 24px 56px -34px rgba(0,0,0,.7);background:#0d0d14;cursor:grab;transition:box-shadow .3s;will-change:transform,opacity;backface-visibility:hidden}
+  .oc img,.oc video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+  .oc.focus{box-shadow:0 48px 90px -24px rgba(0,0,0,.96),0 0 0 2px var(--accent2)}
+  .oc .tag{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:4px 8px;backdrop-filter:blur(6px);z-index:2;letter-spacing:.02em}
+  .callout{position:absolute;left:0;top:0;width:322px;z-index:50;pointer-events:none;background:rgba(17,17,26,.95);backdrop-filter:blur(16px);border:1px solid var(--line2);border-radius:16px;padding:15px 16px;box-shadow:0 34px 80px -18px rgba(0,0,0,.96);opacity:0;transition:opacity .28s}
+  .callout.show{opacity:1}
+  .co-head{display:flex;gap:12px;align-items:center}
+  .co-thumb{width:46px;height:58px;border-radius:9px;object-fit:cover;border:1px solid var(--line2);flex:0 0 auto;box-shadow:0 6px 14px rgba(0,0,0,.5)}
+  .co-lead{font-size:11.5px;font-weight:700;color:var(--accent2);letter-spacing:.01em;margin-bottom:3px}
+  .co-name{font-size:16.5px;font-weight:850;letter-spacing:-.02em;color:#fff;line-height:1.15}
+  .co-desc{margin:11px 0 12px;font-size:13px;line-height:1.5;color:var(--dim)}
+  .co-cta{border-top:1px dashed rgba(255,255,255,.16);padding-top:11px;font-size:12.5px;font-weight:800;color:var(--accent2);display:flex;align-items:center;justify-content:space-between}
+  .co-cta .k{background:linear-gradient(100deg,var(--accent2),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:15px}
+  /* 모바일: 12장 궤도 불가 → 정적 그리드(타입별 4카드) + 세로 흐름 */
+  @media(max-width:860px){
+    .ver{height:auto;min-height:0;display:flex;flex-direction:column;padding:44px 20px 36px;cursor:default;touch-action:auto;user-select:text;-webkit-user-select:text}
+    .cctr{position:static;transform:none;order:-1;max-width:none;padding:0;pointer-events:auto;margin-bottom:28px}
+    .giant{font-size:clamp(33px,8.8vw,44px)}
+    .horbit{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .oc{position:relative;width:auto!important;height:auto!important;aspect-ratio:4/5;transform:none!important;opacity:1!important;filter:none!important;z-index:auto!important;cursor:pointer}
+    .oc:nth-child(n+5){display:none}
+    .callout,.topfade,.botfade{display:none}
+  }
 
   /* FEATURES (tab explorer) */
   .exp{display:grid;grid-template-columns:288px 1fr;gap:22px;margin-top:44px}
@@ -224,29 +246,37 @@
 </style>
 </head>
 <body>
-<div class="home-glow"></div>
 <nav><div class="in">
   <span class="brand">DOPPIA</span>
   <span class="toc"><a href="#features">기능</a><a href="#gallery">갤러리</a><a href="#pricing">가격</a><a href="#faq">FAQ</a></span>
   <span class="end"><a href="/saas-login" style="font-size:14px;color:var(--dim)">로그인</a><a class="btn btn-p" href="/studio">무료로 시작</a></span>
 </div></nav>
 
-<!-- 1. HERO -->
-<header class="wrap hero">
-  <div>
-    <span class="pill">의류 · 주얼리 · 화장품 · 무엇이든</span>
-    <h1>제품 사진 한 장.<br>기획도, 광고도, 카탈로그도 <em class="grad">Doppia가.</em></h1>
-    <p class="sub">사진 한 장만 올리면 돼요. 컨셉 기획과 대본까지 알아서 — 상세컷·착용컷·화보·광고 영상까지 통째로 나와요. 마케터도, 촬영도, 프롬프트도 필요 없이.</p>
-    <div class="hcta">
-      <a class="btn btn-p btn-lg" href="/studio">무료로 시작 — 사진 한 장 올리기</a>
-      <a class="btn btn-g btn-lg" href="#gallery">결과물 보기</a>
-    </div>
-    <p class="fine"><b>◈ 1,500 크레딧 무료</b> · 카드 등록 없음 · 언제든 해지</p>
+<!-- 1. HERO — 궤도 캐러셀 (드래그로 잡고 휙 돌리기 · 호버 콜아웃 · 카드 클릭=해당 제품으로) -->
+<header class="ver" id="hero">
+  <div class="dotgrid"></div>
+  <div class="horbit" id="horbit">
+    <div class="oc" data-cat="wear" style="width:182px;height:228px"><span class="tag">착용컷</span><img src="/img/accessories/jewelry-on-model-necklace.png" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:182px;height:228px"><span class="tag">화보</span><img src="/img/producthero/noir-gold.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="macro" style="width:182px;height:228px"><span class="tag">상세컷</span><img src="/img/accessories/jewelry-hero.png" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="video" style="width:158px;height:281px"><span class="tag">광고영상 · 9:16</span><video src="/img/reels/r08.mp4" poster="/img/reels/p08.jpg" autoplay muted loop playsinline></video></div>
+    <div class="oc" data-cat="wear" style="width:182px;height:228px"><span class="tag">착용컷</span><img src="/img/accessories/jewelry-on-neck.png" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:182px;height:228px"><span class="tag">화보</span><img src="/img/producthero/stone-plinth-luxe.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="wear" style="width:182px;height:228px"><span class="tag">착용컷</span><img src="/img/accessories/jewelry-on-model-earrings.png" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:182px;height:228px"><span class="tag">화보</span><img src="/img/producthero/mineral-crystal.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="wear" style="width:182px;height:228px"><span class="tag">착용컷</span><img src="/img/accessories/jewelry-worn-cut.png" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="video" style="width:158px;height:281px"><span class="tag">광고영상 · 9:16</span><video src="/img/reels/r09.mp4" poster="/img/reels/p09.jpg" autoplay muted loop playsinline></video></div>
+    <div class="oc" data-cat="wear" style="width:182px;height:228px"><span class="tag">착용컷</span><img src="/img/accessories/jewelry-on-wrist.png" alt="착용컷 예시"></div>
+    <div class="oc" data-cat="macro" style="width:182px;height:228px"><span class="tag">상세컷</span><img src="/img/producthero/gloss-mirror.jpg" alt="상세컷 예시"></div>
   </div>
-  <div class="stage">
-    <div class="reel"><span class="tag">9:16 · 광고 영상</span><video src="/img/reels/r05.mp4" poster="/img/reels/p05.jpg" autoplay muted loop playsinline></video></div>
-    <div class="pic"><img src="/img/producthero/noir-gold.jpg" alt=""></div>
-    <div class="pic"><img src="/img/accessories/jewelry-floating-luxe.png" alt=""></div>
+  <div class="callout" id="callout"></div>
+  <div class="topfade"></div><div class="botfade"></div>
+  <div class="cctr">
+    <span class="pill">의류 · 주얼리 · 화장품 · 무엇이든</span>
+    <h1 class="giant">제품 사진 한 장.<br>기획도, 광고도, 카탈로그도 <span class="grad">Doppia가.</span></h1>
+    <p class="csub">상세컷·착용컷·화보·광고 영상까지 통째로 — 촬영도 마케터도 프롬프트도 없이.</p>
+    <div class="chcta"><a class="btn btn-p btn-lg" href="/studio">무료로 시작 — 사진 한 장 올리기</a></div>
+    <p class="cfine">카드 등록 없이 · 가입 즉시 1,500 크레딧</p>
   </div>
 </header>
 
@@ -429,6 +459,158 @@
 </footer>
 <script src="/js/biz-footer.js?v=3"></script>
 
+<script>
+// HERO 궤도 캐러셀 (정본 _hero_ring_orbit 이식) — 데스크톱 전용, ≤860px는 정적 그리드(탭=이동)
+(function(){
+  var T={
+    wear:{name:'착용컷 · On-Model',desc:'버추얼 모델이 제품을 착용한 컷 — 모델·배경만 고르면 즉시.',base:'/img/accessories/jewelry-product-cut.png'},
+    macro:{name:'상세 매크로컷',desc:'각도·조명을 바꿔가며 뽑는 클로즈업 디테일 컷.',base:'/img/accessories/jewelry-flat-lay.png'},
+    hero:{name:'화보 · Hero',desc:'배경·플린스 위에 올린 프리미엄 브랜드 화보.',base:'/img/producthero/swatch-beside.jpg'},
+    video:{name:'광고영상 · 9:16',desc:'제품 한 컷으로 만드는 세로 광고 영상.',base:'/img/producthero/gloss-mirror.jpg'}
+  };
+  // 실배선: Shots류=스튜디오 기본 진입, 광고영상=사이트 전역 딥링크 규약 /studio?mode=ugc (home·rail과 동일)
+  var DEST={wear:'/studio',macro:'/studio',hero:'/studio',video:'/studio?mode=ugc'};
+  var MQ=window.matchMedia('(max-width:860px)');
+  var sec=document.querySelector('.ver');
+  var els=[].slice.call(document.querySelectorAll('.oc'));
+  var cats=els.map(function(el){return el.getAttribute('data-cat');});
+  var N=els.length, LOOP=70000, omega=2*Math.PI/LOOP;
+  var callout=document.getElementById('callout');
+  var giant=document.querySelector('.giant');
+  var phase=0,lastT=null,hoverIdx=-1,focusIdx=-1,lift=0,dim=0,activeCat=null;
+  var w=omega, dragging=false, moved=false, downIdx=-1, lastAng=0, lastMoveT=0, lastUpT=-1e9;
+  function nowMs(){return performance.now();}
+  function ctr(){var r=sec.getBoundingClientRect();return {r:r,cx:r.width*0.5,cy:r.height*0.47};}
+
+  var lastMoveMouse=-1e9;
+  sec.addEventListener('mousemove',function(){ if(!dragging) lastMoveMouse=nowMs(); });   // 커서가 실제로 움직인 시각
+  els.forEach(function(el,i){
+    // 커서를 방금 움직였을 때만 호버(=정지) 걸림. 손 가만히 있는데 도는 카드가 커서 밑 지나가는 건 무시 → 플릭 안 막힘
+    el.addEventListener('mouseenter',function(){if(!MQ.matches && !dragging && (nowMs()-lastUpT>220) && (nowMs()-lastMoveMouse<140)){hoverIdx=i;focusIdx=i;}});
+    el.addEventListener('mouseleave',function(){if(hoverIdx===i)hoverIdx=-1;});
+    el.addEventListener('click',function(){ if(MQ.matches) window.location.href=DEST[cats[i]]; });  // 모바일 정적 그리드: 탭=이동
+  });
+
+  // 잡고 휙 돌리기 (드래그 + 관성)
+  sec.addEventListener('pointerdown',function(e){
+    if(MQ.matches) return;
+    if(e.target.closest('a')) return;
+    var cd=e.target.closest('.oc'); downIdx=cd?els.indexOf(cd):-1;
+    dragging=true; moved=false; hoverIdx=-1;
+    var c=ctr(); lastAng=Math.atan2((e.clientY-c.r.top)-c.cy,(e.clientX-c.r.left)-c.cx); lastMoveT=nowMs();
+    sec.classList.add('dragging'); try{sec.setPointerCapture(e.pointerId);}catch(_){}
+  });
+  sec.addEventListener('pointermove',function(e){
+    if(!dragging) return;
+    var c=ctr();
+    var evs=(e.getCoalescedEvents&&e.getCoalescedEvents().length)?e.getCoalescedEvents():[e];  // 촘촘한 서브이벤트까지 처리 → 빠른 드래그도 매끈
+    for(var k=0;k<evs.length;k++){
+      var ev=evs[k], dx=(ev.clientX-c.r.left)-c.cx, dy=(ev.clientY-c.r.top)-c.cy;
+      var a=Math.atan2(dy,dx), tt=ev.timeStamp||nowMs();
+      if(dx*dx+dy*dy > 55*55){                                // 중심 특이점만 회피
+        var da=a-lastAng; if(da>Math.PI)da-=2*Math.PI; else if(da<-Math.PI)da+=2*Math.PI;
+        if(da>1.2)da=1.2; else if(da<-1.2)da=-1.2;            // 랩 스파이크만 컷(빠른 드래그는 통과)
+        phase+=da;
+        var d=tt-lastMoveT; if(d>0){ var vv=da/d, cap=omega*60; w=vv<-cap?-cap:(vv>cap?cap:vv); }
+        if(Math.abs(da)>0.006) moved=true;
+      }
+      lastAng=a; lastMoveT=tt;
+    }
+  });
+  function endDrag(){ if(!dragging)return; dragging=false; lastUpT=nowMs(); sec.classList.remove('dragging'); }   // w에 남은 속도가 physics에서 자연 감속(관성)
+  sec.addEventListener('pointerup',function(e){
+    var wd=dragging, mv=moved, di=downIdx;
+    endDrag();
+    if(wd && !mv && di>=0){ window.location.href=DEST[cats[di]]; }   // 안 움직였으면 = 클릭 → 해당 제품으로
+  });
+  sec.addEventListener('pointercancel',endDrag);
+
+  function setCallout(i){
+    if(activeCat===cats[i])return; activeCat=cats[i]; var t=T[cats[i]];
+    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ 제품 사진 한 장 · 프롬프트 없이</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div><div class="co-cta"><span>이 템플릿으로 만들기</span><span class="k">→</span></div>';
+  }
+
+  function physics(dt){
+    if(dragging) return;
+    var target=(hoverIdx>=0)?0:omega;                     // 호버=정지, 그 외=관성/자동(같은 목표·같은 감속률)
+    var tau=(hoverIdx>=0)?300:950;                         // 감속률 일정 → 중간에 브레이크 밟듯 확 느려지는 것 없음, 관성 길게
+    w+=(target-w)*(1-Math.exp(-dt/tau));
+    phase+=dt*w;
+  }
+  // 호(arc-length) 균일화: 각도 대신 둘레를 일정 속도로 → 어느 지점이든 화면 속도 동일(원처럼 매끄럽게)
+  var lut=null, lutKey='';
+  function ellP(cx,cy,A,Bu,Bd,th){ var s=Math.sin(th); return [cx+A*Math.cos(th), cy+s*(Bu+(s>0?(Bd-Bu)*s:0))]; }
+  function buildLUT(cx,cy,A,Bu,Bd){
+    var STEPS=1200, cum=[0], ths=[0], total=0, prev=ellP(cx,cy,A,Bu,Bd,0);
+    for(var k=1;k<=STEPS;k++){
+      var th=k/STEPS*2*Math.PI, p=ellP(cx,cy,A,Bu,Bd,th), dx=p[0]-prev[0], dy=p[1]-prev[1];
+      total+=Math.sqrt(dx*dx+dy*dy); cum.push(total); ths.push(th); prev=p;
+    }
+    return {cum:cum,ths:ths,total:total};
+  }
+  function uToTheta(u){ var t=u*lut.total, cum=lut.cum, lo=0, hi=cum.length-1;
+    while(hi-lo>1){ var m=(lo+hi)>>1; if(cum[m]<t)lo=m; else hi=m; }
+    var seg=cum[hi]-cum[lo], f=seg>0?(t-cum[lo])/seg:0; return lut.ths[lo]+(lut.ths[hi]-lut.ths[lo])*f;
+  }
+  function frame(t){
+    if(lastT==null)lastT=t; var dt=Math.min(64,t-lastT); lastT=t;
+    if(MQ.matches){ callout.classList.remove('show'); requestAnimationFrame(frame); return; }  // 모바일=정적 그리드(CSS가 배치)
+    physics(dt);
+    var active=(hoverIdx>=0 && !dragging);
+    var lt=active?1:0; lift+=(lt-lift)*(1-Math.exp(-dt/170));
+    dim+=(lt-dim)*(1-Math.exp(-dt/200));                    // 주변 카드 어둡게(스포트라이트) 이징
+    if(active)focusIdx=hoverIdx;
+    var W=sec.clientWidth,H=sec.clientHeight;
+    var cx=W*0.5,cy=H*0.475, A=Math.min(W*0.45,600), Bu=H*0.43, Bd=H*0.55;   // 비대칭: 하단 반경(Bd)을 더 키워 아래로 더 벌어짐(0.55 = 전체본 3줄 제목에서 fine-print 스침 방지)
+    var gr=giant.getBoundingClientRect(), sr=sec.getBoundingClientRect();     // 실제 제목 박스 측정(화면크기 무관)
+    var GTL=gr.left-sr.left, GTR=gr.right-sr.left, GTT=gr.top-sr.top, GTB=gr.bottom-sr.top;
+    var lk=Math.round(cx)+'_'+Math.round(cy)+'_'+Math.round(A)+'_'+Math.round(Bu)+'_'+Math.round(Bd);
+    if(lk!==lutKey){ lut=buildLUT(cx,cy,A,Bu,Bd); lutKey=lk; }
+    var pu=phase/(2*Math.PI), P=[],S=[];
+    for(var i=0;i<N;i++){
+      var u=pu+i/N; u=u-Math.floor(u);                 // 둘레 균일 분포(호길이)
+      var th=uToTheta(u), sn=Math.sin(th), depth=(sn+1)/2, s=0.66+depth*0.58;
+      var p=ellP(cx,cy,A,Bu,Bd,th);
+      P.push({x:p[0],y:p[1],depth:depth}); S.push(s);
+    }
+    for(var i=0;i<N;i++){
+      var p=P[i], s=S[i], op=0.40+p.depth*0.60, z=Math.round(p.depth*20)+1, x=p.x, y=p.y, br=1;
+      if(i===focusIdx && lift>0.001){
+        s*=1+0.14*lift; op=op+(1-op)*lift; z=Math.min(34,Math.round(z+36*lift));   // 밝게·최상단, 제자리
+      } else {
+        op*=(1-dim*0.72); br=1-dim*0.55;          // 주변 카드만 어둡게(호버 시에만) — 회전 중엔 dim=0이라 filter 안 걸림
+      }
+      var el=els[i];
+      el.style.transform='translate3d('+x.toFixed(1)+'px,'+y.toFixed(1)+'px,0) scale('+s.toFixed(3)+') translate(-50%,-50%)';
+      el.style.opacity=op.toFixed(3); el.style.zIndex=z;
+      var fil=(br<0.999)?('brightness('+br.toFixed(3)+')'):'none';
+      if(el._fil!==fil){ el.style.filter=fil; el._fil=fil; }   // 값 바뀔 때만 filter 갱신
+      el.classList.toggle('focus', i===focusIdx && lift>0.4);
+    }
+    if(active && focusIdx>=0){
+      setCallout(focusIdx);
+      var ap=P[focusIdx], sAct=S[focusIdx]*(1+0.14*lift);
+      var shw=els[focusIdx].offsetWidth*sAct/2, shh=els[focusIdx].offsetHeight*sAct/2;
+      var clw=callout.offsetWidth||322, clh=callout.offsetHeight||150;
+      // x=카드 중심, y=카드의 세로 바깥쪽(위 카드는 위로/아래 카드는 아래로)
+      var lx=ap.x-clw/2;
+      var ly=(ap.y<cy)?(ap.y-shh-12-clh):(ap.y+shh+12);
+      // 하드 가드(매 프레임): 실제 제목 박스와 겹치면 무조건 제목 위/아래로 여유있게 밀어냄 → 절대 제목 안 덮음
+      if(lx<GTR+12 && lx+clw>GTL-12 && ly<GTB+22 && ly+clh>GTT-22){
+        var above=GTT-clh-22;
+        ly=(above>=118)?above:(GTB+22);
+      }
+      lx=Math.max(16,Math.min(W-clw-16,lx));
+      ly=Math.max(118,Math.min(H-clh-16,ly));
+      callout.style.left=lx+'px'; callout.style.top=ly+'px';
+      callout.classList.add('show');
+    } else { callout.classList.remove('show'); }
+    requestAnimationFrame(frame);
+  }
+  setCallout(0);
+  requestAnimationFrame(frame);
+})();
+</script>
 <script>
   // tabs
   var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
