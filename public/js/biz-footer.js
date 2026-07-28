@@ -53,12 +53,21 @@
     var el = document.createElement('div');
     el.className = 'bizf';
     el.id = 'bizf-block';
-    el.innerHTML =
-      '<div class="bizf-in">' +
-      '<div class="bizf-legal"><a href="/terms">이용약관</a>' + sep +
+    // 페이지 언어(문서 lang)에 따라 법적 문서 링크·라벨 스위칭 — EN 페이지는 영어 번역본(-en)으로.
+    // 사업자정보 행은 전자상거래법 표시사항이라 국문 유지.
+    var isKo = ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('en') !== 0);
+    var legal = isKo
+      ? '<a href="/terms">이용약관</a>' + sep +
         '<a href="/terms#ai-use-policy">AI 이용정책</a>' + sep +
         '<a href="/privacy"><b>개인정보처리방침</b></a>' + sep +
-        '<a href="/refund">취소·환불 및 청약철회</a></div>' +
+        '<a href="/refund">취소·환불 및 청약철회</a>'
+      : '<a href="/terms-en">Terms of Service</a>' + sep +
+        '<a href="/terms-en#ai-use-policy">AI Use Policy</a>' + sep +
+        '<a href="/privacy-en"><b>Privacy Policy</b></a>' + sep +
+        '<a href="/refund-en">Cancellation &amp; Refund</a>';
+    el.innerHTML =
+      '<div class="bizf-in">' +
+      '<div class="bizf-legal">' + legal + '</div>' +
       rows.join(sep) +
       '<div class="bizf-copy">© 2026 ' + BIZ.company + ' (' + BIZ.brand + '). All rights reserved.</div>' +
       '</div>';
