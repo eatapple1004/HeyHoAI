@@ -121,9 +121,18 @@
   .out>img,.out>video{width:100%;height:420px;object-fit:cover}
   .badge{position:absolute;left:12px;bottom:12px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;backdrop-filter:blur(6px);display:flex;gap:6px;align-items:center}
   .badge i{width:6px;height:6px;border-radius:50%;background:var(--good)}
-  .setgrid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;min-height:420px}
-  .setgrid .g{border-radius:12px;overflow:hidden;border:1px solid var(--line2);position:relative}
-  .setgrid .g img{width:100%;height:100%;object-fit:cover}
+  /* 콘텐츠 팩: 결과물 24장 모자이크(원본 비율, 안 잘림) — 12장 때와 같은 크기(4단), 위아래로 쌓임 */
+  .setgrid{flex:1;columns:4;column-gap:8px;min-height:0}
+  .setgrid .g{break-inside:avoid;margin:0 0 8px;border-radius:12px;overflow:hidden;border:1px solid var(--line2);position:relative}
+  .setgrid .g img{width:100%;height:auto;display:block}
+  /* 수정하기: 라온젠식 전/후 슬라이더(드래그) */
+  .cmp{position:relative;align-self:center;width:100%;max-width:520px;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line2);cursor:ew-resize;user-select:none;-webkit-user-select:none;touch-action:none;box-shadow:0 34px 80px -44px rgba(0,0,0,.85)}
+  .cmp>img{width:100%;height:auto;display:block}
+  .cmp-bw{position:absolute;inset:0;clip-path:inset(0 0 0 50%)}
+  .cmp-bw img{width:100%;height:100%;object-fit:cover;display:block}
+  .cmp-lb{position:absolute;top:12px;font-size:11.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 11px;backdrop-filter:blur(6px)}
+  .cmp-hd{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 14px rgba(0,0,0,.7)}
+  .cmp-hd span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;color:#15151f;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.5)}
   .ba{flex:1;display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;min-height:420px}
   .ba figure{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line2);height:420px}
   .ba figure img{width:100%;height:100%;object-fit:cover}
@@ -138,9 +147,42 @@
   .desc li{display:flex;gap:10px;font-size:14.5px}
   .desc li::before{content:"";width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));margin-top:7px;flex:0 0 auto}
   .desc .cta{align-self:flex-start}
+  /* Shots 서브탭(제품샷·룩북·화보·템플릿) — 라온젠식 배치: [작은 입력 스택 + →] 큰 결과 1장(원본 비율, 안 잘림) */
+  .sv{display:none;flex:1;align-items:center;justify-content:center;gap:24px;min-width:0}
+  .sv.on{display:flex;animation:fade .28s ease}
+  .sv-col{flex-direction:column;align-items:stretch}
+  .sv-stack{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .sv-in{margin:0;text-align:center;width:104px}
+  .sv-in img{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-in figcaption{margin-top:7px;font-size:12px;color:var(--dim)}
+  .sv-plus{color:var(--faint);font-size:15px;line-height:1;margin:4px 0}
+  .sv-colorbox{width:104px;height:128px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surface2);display:grid;grid-template-columns:repeat(3,1fr);place-items:center;padding:14px 10px}
+  .sv-colorbox i{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25)}
+  .sv-colorbox .sv-any{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px;font-weight:800;color:var(--accent2);background:transparent;border-color:var(--accent2)}
+  .sv-arw{font-size:24px;color:var(--accent2);flex:0 0 auto}
+  .sv-big{position:relative;flex:0 1 460px;min-width:0;margin:0;border-radius:18px;overflow:hidden;border:1px solid var(--line2);background:#0d0d14;box-shadow:0 34px 80px -44px rgba(0,0,0,.85)}
+  .sv-big img{width:100%;height:auto;max-height:585px;object-fit:contain;display:block}
+  .sv-big figcaption{position:absolute;left:12px;bottom:12px;font-size:11.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 11px;backdrop-filter:blur(6px);display:flex;gap:6px;align-items:center}
+  .sv-big figcaption i{width:6px;height:6px;border-radius:50%;background:var(--good)}
+  .sv-grid{columns:3;column-gap:10px}
+  .sv-grid figure{position:relative;break-inside:avoid;margin:0 0 10px;border-radius:12px;overflow:hidden;border:1px solid var(--line2)}
+  .sv-grid img{width:100%;height:auto;display:block}
+  .sv-grid figcaption{position:absolute;left:8px;top:8px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:6px;padding:3px 8px;backdrop-filter:blur(6px)}
+  .sd{display:none}
+  .sd.on{display:block;animation:fade .28s ease}
+  .desc .sd ul{margin-bottom:0}
+  .desc .cta{margin-top:22px}
+  @media(max-width:980px){
+    .sv{flex-direction:column}
+    .sv-stack{flex-direction:row;align-items:center}
+    .sv-arw{transform:rotate(90deg)}
+    .sv-big{flex:none;width:100%;max-width:420px;margin:0 auto}
+    .sv-big img{max-height:420px}
+    .sv-grid{columns:2}
+  }
   @media(max-width:980px){
     .exp{grid-template-columns:1fr}.tabs{flex-direction:row;overflow-x:auto}.tab{flex:0 0 auto;min-width:230px}.tab .star{display:none}
-    .panel.on{grid-template-columns:1fr}.out>img,.out>video{height:300px}.ba figure{height:280px}.setgrid{grid-auto-rows:120px;min-height:0}
+    .panel.on{grid-template-columns:1fr}.out>img,.out>video{height:300px}.ba figure{height:280px}.setgrid{columns:3}
     .flow{flex-direction:column;align-items:stretch}.inp{flex:none;width:100%;aspect-ratio:auto;flex-direction:row;height:56px}.arw{transform:rotate(90deg);align-self:center}
   }
 
@@ -148,15 +190,15 @@
   .cats{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}
   .cat{font-size:13.5px;font-weight:650;color:var(--dim);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:9px 16px}
   .cat.hi{color:#fff;background:linear-gradient(100deg,rgba(124,82,232,.26),rgba(217,96,143,.2));border-color:var(--accent)}
-  .wall{columns:4;column-gap:14px;margin-top:30px}
-  .wall figure{break-inside:avoid;margin-bottom:14px;border-radius:14px;overflow:hidden;border:1px solid var(--line);position:relative}
-  .wall figure img{width:100%}
+  .wall{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+  .wall figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);position:relative;aspect-ratio:4/5}
+  .wall figure img{width:100%;height:100%;object-fit:cover;display:block}
   .wall figcaption{position:absolute;left:10px;top:10px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:3px 9px;backdrop-filter:blur(6px)}
   .addbar{margin-top:16px;border-radius:16px;border:1.5px dashed var(--line2);background:linear-gradient(180deg,var(--surface),transparent);padding:20px 24px;display:flex;align-items:center;gap:16px;justify-content:center;text-align:center;flex-wrap:wrap}
   .addbar .plus{width:42px;height:42px;flex:0 0 auto;border-radius:50%;border:1.5px dashed var(--accent2);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent2)}
   .addbar b{font-size:15px;font-weight:750;color:var(--text)}
   .addbar span{font-size:13.5px;color:var(--dim)}
-  @media(max-width:900px){.wall{columns:3}}@media(max-width:600px){.wall{columns:2}}
+  @media(max-width:900px){.wall{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.wall{grid-template-columns:repeat(2,1fr)}}
 
   /* §4 END-TO-END — 라온젠식 다이아몬드 흐름 (apex→부챗살→카드→수렴→라이브러리→활용) */
   .e2e{margin-top:44px;display:flex;flex-direction:column;align-items:center}
@@ -196,6 +238,55 @@
   .e2e-chips{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:18px}
   .e2e-chip{font-size:13.5px;font-weight:650;color:var(--text);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:10px 18px}
   .e2e-chip.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border-color:transparent}
+  /* 활용: 채널칩 국내/해외 그룹 + 클릭 시 목업 스왑(라온젠식, 로고 없이 색·레이아웃 암시만) */
+  .e2e-chgroups{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .e2e-chg{display:flex;align-items:center;gap:12px}
+  .e2e-chg>b{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--faint)}
+  .e2e-chg .e2e-chips{margin-top:0}
+  .e2e-stage{display:flex;justify-content:center;margin-top:26px;min-height:430px}
+  .chm{display:none}
+  .chm.on{display:block;animation:fade .28s ease}
+  .mk{border-radius:18px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 30px 70px -40px rgba(0,0,0,.8)}
+  .mk-light{width:330px;background:#fdfdfd;color:#1c1c24}
+  .mk-dark{width:330px;background:#101018;color:var(--text)}
+  .mk-img{width:100%;height:250px;object-fit:cover;display:block}
+  .mk-pad{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+  .sk{height:10px;border-radius:5px;background:rgba(20,20,30,.12)}
+  .skd{height:10px;border-radius:5px;background:rgba(255,255,255,.16)}
+  .sk.w90,.skd.w90{width:90%}.sk.w80,.skd.w80{width:80%}.sk.w70{width:70%}.sk.w60,.skd.w60{width:60%}.sk.w55,.skd.w55{width:55%}.sk.w50,.skd.w50{width:50%}.sk.w40,.skd.w40{width:40%}.sk.w30{width:30%}.skd.w25{width:25%}
+  .sk-price{height:14px;background:rgba(20,20,30,.28)}
+  .mk-btn{display:inline-block;margin-top:4px;font-size:12.5px;font-weight:800;color:#fff;border-radius:9px;padding:9px 16px}
+  .mk-btn-grad{background:linear-gradient(100deg,var(--accent),var(--pink))}
+  .mk-webbar{display:flex;gap:5px;padding:10px 12px;background:#eef0f4}
+  .mk-webbar i{width:8px;height:8px;border-radius:50%;background:#d3d7e0}
+  .mk-bar{height:8px}
+  .mk-stars{font-size:12px;color:#f0b429;font-weight:700}
+  .mk-stars span{color:#9aa0ae;font-weight:500;font-size:11px}
+  .mk-row{width:400px;display:flex;gap:12px;padding:14px;align-items:flex-start}
+  .mk-thumb{width:110px;height:110px;object-fit:cover;border-radius:10px;flex:0 0 auto}
+  .mk-rowtx{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:2px}
+  .mk-fast{font-size:11px;font-weight:800;color:#2f7ae5}
+  .mk-chat{width:330px;background:#9fbdd4}
+  .mk-chathd{background:#89a8c2;color:#22303c;font-size:12.5px;font-weight:700;padding:10px 14px;text-align:center}
+  .mk-msg{display:flex;gap:8px;padding:16px 14px 22px;align-items:flex-start}
+  .mk-av{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--pink));flex:0 0 auto}
+  .mk-bubble{background:#fff;border-radius:4px 14px 14px 14px;overflow:hidden;max-width:220px}
+  .mk-bubble img{width:100%;height:200px;object-fit:cover;display:block}
+  .mk-bubtx{font-size:12px;color:#222;padding:9px 11px}
+  .mk-ighd{display:flex;gap:10px;align-items:center;padding:11px 13px}
+  .mk-ighd>div{display:flex;flex-direction:column;gap:5px;flex:1}
+  .mk-igav{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));flex:0 0 auto}
+  .mk-igact{display:flex;gap:14px;padding:11px 13px 2px;font-size:17px}
+  .mk-igact b{margin-left:auto;font-weight:600}
+  .mk-phone{width:250px;position:relative;background:#000}
+  .mk-phone video{width:100%;height:444px;object-fit:cover;display:block}
+  .mk-rail{position:absolute;right:10px;bottom:64px;display:flex;flex-direction:column;gap:14px}
+  .mk-rail i{font-style:normal;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff}
+  .mk-cap{position:absolute;left:12px;bottom:14px;right:60px;display:flex;flex-direction:column;gap:6px}
+  .mk-banner{width:460px;display:flex;gap:14px;background:#101018;padding:14px;align-items:center}
+  .mk-banner img{width:120px;height:120px;object-fit:cover;border-radius:10px;flex:0 0 auto}
+  .mk-bantx{flex:1;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+  @media(max-width:560px){.mk-light,.mk-dark,.mk-chat{width:100%;max-width:330px}.mk-row,.mk-banner{width:100%;max-width:420px}}
   /* 모바일 세로 점선 커넥터 (부챗살 대체) */
   .e2e-conn{height:28px;display:flex;align-items:center;justify-content:center}
   .e2e-conn::before{content:"";width:2px;height:100%;background:repeating-linear-gradient(180deg,var(--line2) 0 5px,transparent 5px 11px)}
@@ -301,10 +392,65 @@
     <div class="pane">
       <div class="panel on" data-k="shots">
         <div class="demo">
-          <div class="dpills" id="sp"><button class="dpill on" data-s="prod">제품컷</button><button class="dpill" data-s="worn">착용컷</button><button class="dpill" data-s="hero">화보</button></div>
-          <div class="flow"><div class="inp"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/></svg><b>내 제품 사진</b>한 장</div><div class="arw">→</div><div class="out"><img id="so" src="/img/productcut/flat-lay-cut.png" alt=""><span class="badge"><i></i>생성 결과</span></div></div>
+          <div class="dpills" id="sp"><button class="dpill on" data-s="ghost">제품샷</button><button class="dpill" data-s="look">룩북</button><button class="dpill" data-s="hero">화보</button><button class="dpill" data-s="tpl">다양한 템플릿</button></div>
+
+          <!-- ① 제품샷(고스트샷): [내 제품 사진 + 배경색] → 큰 결과 1장 (라온젠식 배치) -->
+          <div class="sv on" data-v="ghost">
+            <div class="sv-stack">
+              <figure class="sv-in"><img src="/img/productcut/flat-lay-cut.png" alt=""><figcaption>내 제품 사진</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <div class="sv-in">
+                <div class="sv-colorbox"><i style="background:#f4f1ec"></i><i style="background:#0e0e14"></i><i style="background:#e8b4c8"></i><i style="background:#9db8a1"></i><i style="background:#4a6cf7"></i><i class="sv-any">∞</i></div>
+                <figcaption>배경색 · 자유</figcaption>
+              </div>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><img src="/img/productcut/ghost-mannequin-cut.png" alt=""><figcaption><i></i>생성 결과</figcaption></figure>
+          </div>
+
+          <!-- ② 룩북: [모델 + 코디 + 배경] → 큰 결과 1장 -->
+          <div class="sv" data-v="look">
+            <div class="sv-stack">
+              <figure class="sv-in"><img src="/img/models/f001.jpg" alt=""><figcaption>모델</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img src="/img/productcut/flat-lay-cut.png" alt=""><figcaption>코디</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img src="/img/backgrounds/bg-golden-1.jpg" alt=""><figcaption>배경</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><img src="/img/studiomodel/model-cut.png" alt=""><figcaption><i></i>생성 결과</figcaption></figure>
+          </div>
+
+          <!-- ③ 화보: [템플릿 레퍼런스 + 내 제품] → 큰 결과 1장 -->
+          <div class="sv" data-v="hero">
+            <div class="sv-stack">
+              <figure class="sv-in"><img src="/img/accessories/concept-noir.png" alt=""><figcaption>템플릿 레퍼런스</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img src="/img/accessories/jewelry-product-cut.png" alt=""><figcaption>내 제품 사진</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><img src="/img/producthero/noir-gold.jpg" alt=""><figcaption><i></i>생성 결과</figcaption></figure>
+          </div>
+
+          <!-- ④ 다양한 템플릿: 결과물 모자이크(원본 비율 그대로) -->
+          <div class="sv sv-col" data-v="tpl">
+            <div class="sv-grid">
+              <figure><img src="/img/nail/bridal-concept-nail.png" alt=""><figcaption>네일</figcaption></figure>
+              <figure><img src="/img/hero/h01.jpg" alt=""></figure>
+              <figure><img src="/img/hero/h07.jpg" alt=""></figure>
+              <figure><img src="/img/hero/h13.jpg" alt=""></figure>
+              <figure><img src="/img/hero/h21.jpg" alt=""></figure>
+              <figure><img src="/img/hero/h30.jpg" alt=""></figure>
+            </div>
+          </div>
         </div>
-        <div class="desc"><h3>Shots</h3><div class="tl">필요한 컷이 다 나와요.</div><p>제품 사진 한 장이면 제품컷·착용컷·화보까지. 한 번 돌리면 네 장이 나오니까, 제대로 나온 걸 골라 쓰면 돼요.</p><ul><li>제품컷 · 착용컷 · 화보 전부 지원</li><li>한 번에 4장 — 골라 쓰기</li><li>의류 · 주얼리 · 화장품</li></ul><a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
+        <div class="desc">
+          <div class="sd on" data-v="ghost"><h3>제품샷</h3><div class="tl">고스트샷도, 배경색도 마음대로.</div><p>평면 사진 한 장이면 입체 고스트샷으로 살아나요. 배경색은 원하는 색을 고르면 그대로 — 상세페이지 톤에 맞춰 자유롭게요.</p><ul><li>고스트 마네킹 · 행거 · 플랫레이 컷</li><li>배경색 자유 지정</li><li>제품 디테일은 그대로</li></ul></div>
+          <div class="sd" data-v="look"><h3>룩북</h3><div class="tl">의상·모델·배경만 고르면 룩북.</div><p>의상 사진에 어울리는 모델과 배경을 고르면, 실착 느낌의 룩북 컷이 나와요. 촬영 없이 시즌 룩북을 채워요.</p><ul><li>버추얼 모델 · 배경 선택</li><li>실착 느낌의 룩북 컷</li><li>의류 · 주얼리 · 화장품</li></ul></div>
+          <div class="sd" data-v="hero"><h3>화보</h3><div class="tl">템플릿을 고르면 화보가 나와요.</div><p>마음에 드는 레퍼런스(템플릿)를 고르면 내 제품이 그 무드의 화보로. 컨셉별 템플릿이 준비돼 있어요.</p><ul><li>컨셉 템플릿에서 고르기</li><li>브랜드 톤 그대로</li><li>한 번에 4장 — 골라 쓰기</li></ul></div>
+          <div class="sd" data-v="tpl"><h3>다양한 템플릿</h3><div class="tl">네일부터 화장품까지, 계속 늘어나요.</div><p>카테고리별 템플릿에서 고르기만 하면 돼요. 내 제품에 맞는 컷이 이미 준비돼 있어요.</p><ul><li>네일 · 주얼리 · 뷰티 · 의류 · 리빙</li><li>템플릿은 계속 추가</li><li>고르면 끝 — 프롬프트 없이</li></ul></div>
+          <a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p>
+        </div>
       </div>
       <div class="panel" data-k="video">
         <div class="demo">
@@ -316,14 +462,19 @@
       <div class="panel" data-k="pack">
         <div class="demo">
           <div class="dpills"><span class="dpill on">한 장 → 세트</span></div>
-          <div class="flow" style="gap:14px"><div class="inp" style="align-self:center"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/></svg><b>제품 사진</b>한 장</div><div class="arw" style="align-self:center">→</div><div class="setgrid"><div class="g"><img src="/img/producthero/gift-set-group.jpg" alt=""><span class="badge"><i></i>생성 결과</span></div><div class="g"><img src="/img/producthero/dewy-glass.jpg" alt=""></div><div class="g"><img src="/img/accessories/jewelry-floating-luxe.png" alt=""></div><div class="g"><img src="/img/producthero/sunlit-pop.jpg" alt=""></div><div class="g"><img src="/img/producthero/aqua-float.jpg" alt=""></div><div class="g"><img src="/img/producthero/stone-plinth-luxe.jpg" alt=""></div></div></div>
+          <div class="flow" style="gap:14px"><div class="inp" style="align-self:center"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/></svg><b>제품 사진</b>한 장</div><div class="arw" style="align-self:center">→</div><div class="setgrid"><div class="g"><img src="/img/producthero/gift-set-group.jpg" alt=""><span class="badge"><i></i>생성 결과</span></div><div class="g"><img src="/img/producthero/dewy-glass.jpg" alt=""></div><div class="g"><img src="/img/accessories/jewelry-floating-luxe.png" alt=""></div><div class="g"><img src="/img/producthero/sunlit-pop.jpg" alt=""></div><div class="g"><img src="/img/producthero/aqua-float.jpg" alt=""></div><div class="g"><img src="/img/producthero/stone-plinth-luxe.jpg" alt=""></div><div class="g"><img src="/img/producthero/liquid-splash.jpg" alt=""></div><div class="g"><img src="/img/producthero/gloss-mirror.jpg" alt=""></div><div class="g"><img src="/img/producthero/mineral-crystal.jpg" alt=""></div><div class="g"><img src="/img/accessories/jewelry-hero.png" alt=""></div><div class="g"><img src="/img/producthero/silk-drape.jpg" alt=""></div><div class="g"><img src="/img/producthero/swatch-beside.jpg" alt=""></div><div class="g"><img src="/img/producthero/bath-ledge.jpg" alt=""></div><div class="g"><img src="/img/producthero/bold-color-block.jpg" alt=""></div><div class="g"><img src="/img/producthero/botanical-dew.jpg" alt=""></div><div class="g"><img src="/img/producthero/cryo-frost.jpg" alt=""></div><div class="g"><img src="/img/producthero/foam-and-suds.jpg" alt=""></div><div class="g"><img src="/img/producthero/light-caustics.jpg" alt=""></div><div class="g"><img src="/img/producthero/palette-flat-lay.jpg" alt=""></div><div class="g"><img src="/img/producthero/wet-tile-spa.jpg" alt=""></div><div class="g"><img src="/img/producthero/noir-gold.jpg" alt=""></div><div class="g"><img src="/img/accessories/jewelry-on-model-necklace.png" alt=""></div><div class="g"><img src="/img/accessories/jewelry-marble-plinth.png" alt=""></div><div class="g"><img src="/img/accessories/jewelry-spotlight.png" alt=""></div></div></div>
         </div>
         <div class="desc"><h3>콘텐츠 팩</h3><div class="tl">당신은 사진만. 기획은 Doppia가.</div><p>무드를 한 줄 적거나 아예 비워둬도 괜찮아요. 제품을 보고 어떤 컷을 몇 장 뽑을지 알아서 기획해 세트로 만들어 드려요 — 무엇을 팔든.</p><ul><li>컨셉·구성을 자동으로 기획</li><li>의류든 식품이든 — 무엇을 팔든</li><li>원하는 만큼, 나온 것만 과금</li></ul><a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
       </div>
       <div class="panel" data-k="edit">
         <div class="demo">
           <div class="dpills"><span class="dpill on">말로 고치기</span></div>
-          <div class="ba"><figure><span class="lbl">원본</span><img src="/img/producthero/silk-drape.jpg" alt=""></figure><div class="say"><span class="q">"배경만 골드로 바꿔줘"</span>→</div><figure><span class="lbl">수정 후</span><img src="/img/producthero/noir-gold.jpg" alt=""></figure></div>
+          <div class="cmp" id="cmp">
+            <img src="/img/producthero/noir-gold.jpg" alt="">
+            <div class="cmp-bw"><img src="/img/producthero/silk-drape.jpg" alt=""></div>
+            <span class="cmp-lb" style="left:12px">수정 후</span><span class="cmp-lb" style="right:12px">수정 전</span>
+            <div class="cmp-hd"><span>↔</span></div>
+          </div>
         </div>
         <div class="desc"><h3>수정하기</h3><div class="tl">재촬영 없이, 말로.</div><p>"배경만 바꿔줘", "더 밝게" — 마음에 안 드는 부분을 말로 고치면 돼요. 제품 디테일은 그대로, 반복은 자유롭게.</p><ul><li>인물 · 배경 · 소품 부분 수정</li><li>제품은 그대로 보존</li><li>재촬영 없이 무한 반복 · "이런 걸로 더"</li></ul><a class="btn btn-p cta" href="/studio">무료로 시작하기 →</a><p class="fine">◈ 1,500 크레딧 무료 · 카드 등록 없음</p></div>
       </div>
@@ -334,27 +485,20 @@
 <!-- 3. BREADTH — 무엇을 팔든 -->
 <section class="wrap" id="gallery">
   <div class="eyebrow">WHATEVER YOU SELL</div>
-  <h2>사진 한 장이면 끝나는 화보,<br><em>무엇을 팔든.</em></h2>
+  <h2>당신의 브랜드가 필요한 모든 걸,<br><em>사진 단 한 장으로.</em></h2>
   <p class="lead">의류·주얼리·화장품은 기본이고, 식품이든 리빙이든 잡화든 — 카테고리를 가리지 않아요. 지금 파는 그 제품, 사진 한 장이면 충분해요.</p>
   <div class="cats">
-    <span class="cat hi">의류</span><span class="cat hi">주얼리</span><span class="cat hi">화장품</span>
-    <span class="cat">뷰티</span><span class="cat">리빙</span><span class="cat">식품</span><span class="cat">잡화</span><span class="cat">반려</span><span class="cat">무엇이든</span>
+    <span class="cat hi">의류</span><span class="cat hi">주얼리</span><span class="cat hi">화장품</span><span class="cat hi">뷰티</span><span class="cat hi">식품</span><span class="cat hi">카페</span><span class="cat hi">리빙</span><span class="cat hi">테크</span><span class="cat hi">반려</span><span class="cat hi">속옷</span><span class="cat hi">무엇이든</span>
   </div>
   <div class="wall">
     <figure><figcaption>화장품</figcaption><img src="/img/producthero/gift-set-group.jpg" alt=""></figure>
-    <figure><figcaption>주얼리</figcaption><img src="/img/accessories/jewelry-on-model-necklace.png" alt=""></figure>
-    <figure><figcaption>의류</figcaption><img src="/img/productcut/flat-lay-cut.png" alt=""></figure>
-    <figure><figcaption>화장품</figcaption><img src="/img/producthero/dewy-glass.jpg" alt=""></figure>
     <figure><figcaption>주얼리</figcaption><img src="/img/accessories/jewelry-floating-luxe.png" alt=""></figure>
+    <figure><figcaption>의류</figcaption><img src="/img/studiomodel/model-cut.png" alt=""></figure>
+    <figure><figcaption>화장품</figcaption><img src="/img/producthero/sunlit-pop.jpg" alt=""></figure>
+    <figure><figcaption>주얼리</figcaption><img src="/img/accessories/jewelry-on-model-necklace.png" alt=""></figure>
     <figure><figcaption>화장품</figcaption><img src="/img/producthero/silk-drape.jpg" alt=""></figure>
     <figure><figcaption>의류</figcaption><img src="/img/productcut/ghost-mannequin-cut.png" alt=""></figure>
-    <figure><figcaption>화장품</figcaption><img src="/img/producthero/liquid-splash.jpg" alt=""></figure>
-    <figure><figcaption>의류</figcaption><img src="/img/studiomodel/model-cut.png" alt=""></figure>
     <figure><figcaption>주얼리</figcaption><img src="/img/accessories/jewelry-on-hand.png" alt=""></figure>
-    <figure><figcaption>화장품</figcaption><img src="/img/producthero/stone-plinth-luxe.jpg" alt=""></figure>
-    <figure><figcaption>주얼리</figcaption><img src="/img/accessories/jewelry-hero.png" alt=""></figure>
-    <figure><figcaption>화장품</figcaption><img src="/img/producthero/sunlit-pop.jpg" alt=""></figure>
-    <figure><figcaption>주얼리</figcaption><img src="/img/accessories/jewelry-on-ears.png" alt=""></figure>
   </div>
   <div class="addbar">
     <span class="plus">＋</span>
@@ -402,8 +546,57 @@
     <div class="e2e-ch">
       <span class="tag">활용</span>
       <h4>그대로 <em class="grad">모든 채널</em>로 한 번에.</h4>
-      <div class="e2e-chips">
-        <span class="e2e-chip on">상세페이지</span><span class="e2e-chip">인스타그램</span><span class="e2e-chip">스마트스토어</span><span class="e2e-chip">광고 배너</span><span class="e2e-chip">틱톡 · 쇼츠</span>
+      <div class="e2e-chgroups">
+        <div class="e2e-chg"><b>국내</b><div class="e2e-chips"><button class="e2e-chip on" data-ch="detail">상세페이지</button><button class="e2e-chip" data-ch="smart">스마트스토어</button><button class="e2e-chip" data-ch="coupang">쿠팡</button><button class="e2e-chip" data-ch="kakao">카카오톡 채널</button></div></div>
+        <div class="e2e-chg"><b>해외</b><div class="e2e-chips"><button class="e2e-chip" data-ch="insta">Instagram</button><button class="e2e-chip" data-ch="tiktok">TikTok · Shorts</button><button class="e2e-chip" data-ch="banner">Display Ads</button><button class="e2e-chip" data-ch="amazon">Amazon</button></div></div>
+      </div>
+
+      <div class="e2e-stage">
+        <!-- 국내: 상세페이지(자사몰) -->
+        <div class="chm on" data-ch="detail"><div class="mk mk-light">
+          <div class="mk-webbar"><i></i><i></i><i></i></div>
+          <img class="mk-img" src="/img/producthero/noir-gold.jpg" alt="">
+          <div class="mk-pad"><div class="sk w70"></div><div class="sk w40"></div><div class="sk sk-price w30"></div><span class="mk-btn mk-btn-grad">구매하기</span></div>
+        </div></div>
+        <!-- 국내: 스마트스토어 -->
+        <div class="chm" data-ch="smart"><div class="mk mk-light">
+          <div class="mk-bar" style="background:#12b76a"></div>
+          <img class="mk-img" src="/img/producthero/sunlit-pop.jpg" alt="">
+          <div class="mk-pad"><div class="sk w70"></div><div class="mk-stars">★★★★★ <span>리뷰</span></div><div class="sk sk-price w30"></div><span class="mk-btn" style="background:#12b76a">스토어찜 · 구매하기</span></div>
+        </div></div>
+        <!-- 국내: 쿠팡(리스트 카드) -->
+        <div class="chm" data-ch="coupang"><div class="mk mk-light mk-row">
+          <img class="mk-thumb" src="/img/producthero/gift-set-group.jpg" alt="">
+          <div class="mk-rowtx"><div class="sk w90"></div><div class="sk w60"></div><div class="mk-fast">빠른배송</div><div class="sk sk-price w40"></div><div class="mk-stars">★★★★☆ <span>(999+)</span></div></div>
+        </div></div>
+        <!-- 국내: 카카오톡 채널 -->
+        <div class="chm" data-ch="kakao"><div class="mk mk-chat">
+          <div class="mk-chathd">내 브랜드 채널</div>
+          <div class="mk-msg"><span class="mk-av"></span><div class="mk-bubble"><img src="/img/producthero/silk-drape.jpg" alt=""><div class="mk-bubtx">신제품이 나왔어요 ✨</div></div></div>
+        </div></div>
+        <!-- 해외: Instagram 포스트 -->
+        <div class="chm" data-ch="insta"><div class="mk mk-dark">
+          <div class="mk-ighd"><span class="mk-igav"></span><div><div class="skd w40"></div><div class="skd w25"></div></div></div>
+          <img class="mk-img" src="/img/accessories/jewelry-on-model-necklace.png" alt="">
+          <div class="mk-igact"><span>♡</span><span>💬</span><span>➤</span><b>⌗</b></div>
+          <div class="mk-pad"><div class="skd w80"></div><div class="skd w50"></div></div>
+        </div></div>
+        <!-- 해외: TikTok/Shorts 9:16 -->
+        <div class="chm" data-ch="tiktok"><div class="mk mk-phone">
+          <video src="/img/reels/r05.mp4" poster="/img/reels/p05.jpg" autoplay muted loop playsinline></video>
+          <div class="mk-rail"><i>♡</i><i>💬</i><i>➤</i></div>
+          <div class="mk-cap"><div class="skd w60"></div><div class="skd w40"></div></div>
+        </div></div>
+        <!-- 해외: Display Ads 배너 -->
+        <div class="chm" data-ch="banner"><div class="mk mk-banner">
+          <img src="/img/producthero/stone-plinth-luxe.jpg" alt="">
+          <div class="mk-bantx"><div class="skd w80"></div><div class="skd w55"></div><span class="mk-btn mk-btn-grad">Shop Now</span></div>
+        </div></div>
+        <!-- 해외: Amazon 상품 카드 -->
+        <div class="chm" data-ch="amazon"><div class="mk mk-light">
+          <img class="mk-img" src="/img/accessories/jewelry-hero.png" alt="">
+          <div class="mk-pad"><div class="sk w80"></div><div class="mk-stars" style="color:#e8a33d">★★★★☆ <span>1,2--</span></div><div class="sk sk-price w30"></div><span class="mk-btn" style="background:#f7ca00;color:#111">Add to Cart</span></div>
+        </div></div>
       </div>
       <p class="fine" style="margin-top:22px">촬영 한 번 찍을 값이면 — 이 전부를, 매번.</p>
     </div>
@@ -646,10 +839,41 @@
   // tabs
   var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
   tabs.forEach(function(t){t.addEventListener('click',function(){var k=t.dataset.k;tabs.forEach(function(x){x.classList.toggle('on',x===t);});panels.forEach(function(p){p.classList.toggle('on',p.dataset.k===k);});});});
-  // shots pills
-  var SHOT={prod:'/img/productcut/flat-lay-cut.png',worn:'/img/studiomodel/model-cut.png',hero:'/img/producthero/noir-gold.jpg'};
-  var sp=document.getElementById('sp'),so=document.getElementById('so');
-  sp.querySelectorAll('.dpill').forEach(function(b){b.addEventListener('click',function(){sp.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});so.src=SHOT[b.dataset.s];});});
+  // shots 서브탭(제품샷·룩북·화보·템플릿): 데모(.sv)와 설명(.sd)을 같이 전환
+  var sp=document.getElementById('sp');
+  sp.querySelectorAll('.dpill').forEach(function(b){b.addEventListener('click',function(){
+    sp.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});
+    var v=b.dataset.s;
+    document.querySelectorAll('.sv').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+    document.querySelectorAll('.sd').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+  });});
+  // 활용 채널칩 → 목업 스왑
+  document.querySelectorAll('.e2e-chip[data-ch]').forEach(function(b){b.addEventListener('click',function(){
+    document.querySelectorAll('.e2e-chip[data-ch]').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.querySelectorAll('.chm').forEach(function(p){p.classList.toggle('on',p.dataset.ch===b.dataset.ch);});
+  });});
+  // 영문 방문자(브라우저 언어 기준): 국내 채널 숨기고 해외만 + 상세페이지(영문 라벨) — 정식 EN 페이지 전 임시 로케일 처리
+  var isKo=(navigator.language||'').toLowerCase().slice(0,2)==='ko';
+  if(!isKo){
+    var dchip=document.querySelector('.e2e-chip[data-ch="detail"]');
+    var grps=document.querySelectorAll('.e2e-chg');
+    if(dchip&&grps[1]){ dchip.textContent='Product page'; grps[1].querySelector('.e2e-chips').prepend(dchip); }
+    if(grps[0]) grps[0].style.display='none';
+    document.querySelectorAll('.e2e-chg>b').forEach(function(b){b.style.display='none';});
+    var buy=document.querySelector('.chm[data-ch="detail"] .mk-btn'); if(buy) buy.textContent='Buy now';
+  }
+  // 수정하기 전/후 슬라이더
+  var cmp=document.getElementById('cmp');
+  if(cmp){
+    var bw=cmp.querySelector('.cmp-bw'), hd=cmp.querySelector('.cmp-hd'), cdrag=false;
+    var setp=function(p){p=Math.max(6,Math.min(94,p));bw.style.clipPath='inset(0 0 0 '+p+'%)';hd.style.left=p+'%';};
+    setp(50);
+    var mv=function(e){var r=cmp.getBoundingClientRect();setp((e.clientX-r.left)/r.width*100);};
+    cmp.addEventListener('pointerdown',function(e){cdrag=true;mv(e);try{cmp.setPointerCapture(e.pointerId);}catch(_){}});
+    cmp.addEventListener('pointermove',function(e){if(cdrag)mv(e);});
+    cmp.addEventListener('pointerup',function(){cdrag=false;});
+    cmp.addEventListener('pointercancel',function(){cdrag=false;});
+  }
   // pricing segments
   var SEG={
     personal:[
