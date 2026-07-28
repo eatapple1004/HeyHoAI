@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=15" defer></script>
+<script src="/js/i18n.js?v=16" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -3490,8 +3490,9 @@ let modalCutFilter='all';
 const CUT_FIT_LABEL={skincare:'Skincare',color:'Color',fragrance:'Fragrance',luxury:'Luxury',set:'Set',body:'Body'};
 function cutFitTags(r){ const s=[]; (r&&r.cuts||[]).forEach(ct=>{(ct.fit||[]).forEach(f=>{if(s.indexOf(f)<0)s.push(f);});}); return s; }
 function cutsForFilter(r,f){ const gm=(modalAxis&&modalAxis.garment)||'auto'; return (r&&r.cuts||[]).filter(ct=> (f==='all' || !ct.fit || !ct.fit.length || ct.fit.indexOf(f)>=0) && (gm==='auto' || !ct.garment || !ct.garment.length || ct.garment.indexOf(gm)>=0) ); } // 빈 fit/garment=범용(항상). garment=현재 garment 축 선택(bodywear 품목별 조건부 무드)
+function cutImgDir(id){id=String(id||'');if(id.indexOf('bodywear-')===0)return 'bodywear';if(id.indexOf('jewelry-')===0)return 'accessories';return 'productcut';}
 function cutCardHtml(r,ct){
-  const img=ct.preview||('/img/productcut/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,var(--accent),#5ee0d6)';
+  const img=ct.preview||('/img/'+cutImgDir(ct.id)+'/'+ct.id+'.png'); const grad=r.grad||'linear-gradient(150deg,var(--accent),#5ee0d6)';
   return `<button type="button" data-cut="${esc(ct.id)}" class="cut-card${modalCutId===ct.id?' on':''}" onclick="setModalCut('${esc(ct.id)}')">`
     +`<span class="cc-thumb" style="background:url('${esc(img)}') center/cover no-repeat, ${grad}"></span>`
     +`<span class="cc-label">${esc(cutLabel(ct.name))}</span></button>`;
@@ -3719,7 +3720,7 @@ function syncTplTrigger(){
     if(r.cuts&&r.cuts.length){
       if(!state.cutId||!r.cuts.some(ct=>ct.id===state.cutId))state.cutId=r.cuts[0].id; // 방어: 항상 유효한 컷
       const grad=r.grad||'linear-gradient(150deg,var(--accent),#5ee0d6)';
-      const cutImg=ct=>ct.preview||('/img/productcut/'+ct.id+'.png');
+      const cutImg=ct=>ct.preview||('/img/'+cutImgDir(ct.id)+'/'+ct.id+'.png');
       // (2026-07-11) 컷이 임계값 초과(예: Product Hero 19)면 컴포즈를 꽉 채우지 않도록 접이식:
       //   기본=선택 컷만 칩+▾, 펼치면 전체 그리드(고르면 다시 접힘). 적으면(≤CUT_INLINE_MAX) 현행 그리드.
       const many=r.cuts.length>CUT_INLINE_MAX;
