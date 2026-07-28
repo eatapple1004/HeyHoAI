@@ -2867,7 +2867,9 @@ function renderSubjModalGrid(){
   const up=`<button class="media-card media-upload" type="button" onclick="document.getElementById('subjectFile').click()"><span class="media-up-ic">⬆</span><span class="media-up-t">Upload an image</span><span class="media-up-s">PNG or JPG · up to 10MB</span></button>`;
   const cards=subs.map(s=>{
     const on=subjPending.includes(s.id);
-    return `<button class="media-card ${on?'on':''}" type="button" onclick="pickPending('${s.id}')"><img class="media-img" src="${esc(s.reference_image_url)}" alt="" loading="lazy" onload="this.classList.add('loaded')" onerror="this.closest('.media-card').remove()">${on?'<span class="media-check">✓</span>':''}</button>`;
+    // 목록은 썸네일(/images/thumb_<fn>.jpg) 우선 — 404면 원본 폴백(백필 전 자산), 원본도 죽었으면 카드 제거.
+    const _tu=(u)=>u&&u.indexOf('/images/')===0?('/images/thumb_'+u.slice(8)+'.jpg'):u;
+    return `<button class="media-card ${on?'on':''}" type="button" onclick="pickPending('${s.id}')"><img class="media-img" src="${esc(_tu(s.reference_image_url))}" alt="" loading="lazy" data-orig="${esc(s.reference_image_url)}" onload="this.classList.add('loaded')" onerror="if(!this._f){this._f=1;this.src=this.getAttribute('data-orig');}else{this.closest('.media-card').remove();}">${on?'<span class="media-check">✓</span>':''}</button>`;
   }).join('');
   document.getElementById('subjModalGrid').innerHTML=up+cards;
   const c=document.getElementById('subjConfirm');if(c)c.disabled=!subjPending.length;
