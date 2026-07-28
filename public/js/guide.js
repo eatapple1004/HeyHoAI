@@ -31,7 +31,7 @@
       ],
       tour: [
         { sel: ['#subjectRow', '.compose-card'], t: 'Step 1 — your product', b: 'Click here and upload one product photo.' },
-        { sel: ['#step2Title', '.tpl-sel'], t: 'Step 2 — template', b: 'Pick a template below. Prices are shown per cut.' },
+        { sel: ['.tpl-pick-cta', '#tplSelWrap', '#step2Title'], t: 'Step 2 — template', b: 'Pick a template below. Prices are shown per cut.' },
         { sel: ['#ratioField', '#ratioWrap'], t: 'Step 3 — options', b: 'Ratio, size and count. Defaults are fine to start.' },
         { sel: ['#genBtn'], t: 'Step 4 — generate', b: 'Press Generate when ready. This uses real credits — failed runs auto-refund.', last: true },
       ],
