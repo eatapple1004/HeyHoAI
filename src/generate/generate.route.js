@@ -1161,7 +1161,7 @@ function saveProductImages(req) {
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
 router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language, modelImage, durationSec } = req.body || {};
+    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language, modelImage } = req.body || {};
     // 🧍 선택 모델의 메타 — 대본이 "누가 나오는지"를 알아야 나이에 맞게 쓴다(아동 로스터 선택 시 특히).
     //   여기서 안 주면 빌더는 모델을 성인으로 가정도 아동으로 인지도 못 한 채 쓴다.
     const model = modelMetaFor(safeModelPath(modelImage));
@@ -1174,11 +1174,7 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_
     const image = images[0] || null; // 하위호환(단일)
     const scN = Math.min(Math.max(parseInt(sceneCount, 10) || 0, 0), 12); // 씬 개수(0=자동, 최대 12)
     const scD = [3, 5, 10].includes(parseInt(sceneDuration, 10)) ? parseInt(sceneDuration, 10) : 0; // 씬 길이 3/5/10s(0=자동)
-    // (2026-07-30) 총 길이 = 유저가 주는 유일한 길이 신호(앞단 자유 입력). 대본엔 목표(~)로 전달 — 씬 개수·길이는 대본이 정한다.
-    //   미전송이면 undefined → 빌더가 프로파일 기본(20s)을 쓴다(하위호환).
-    const dSecRaw = parseInt(durationSec, 10);
-    const dSec = Number.isFinite(dSecRaw) ? Math.min(Math.max(dSecRaw, 10), 60) : undefined;
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, durationSec: dSec, language: language === 'ko' ? 'ko' : 'en', model });
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, language: language === 'ko' ? 'ko' : 'en', model });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });

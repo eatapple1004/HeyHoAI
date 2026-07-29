@@ -35,8 +35,6 @@ const SCRIPT_SCHEMA = {
     },
     cta: { type: 'string' }, caption: { type: 'string' },
     hashtags: { type: 'array', items: { type: 'string' } }, musicVibe: { type: 'string' },
-    // (2026-07-30) bpm = 컨셉이 정하는 템포(씬 컷을 이 비트 그리드에 스냅) · needsModel = 모델 씬 존재 여부(2패스 게이트)
-    bpm: { type: 'number' }, needsModel: { type: 'boolean' },
   },
   required: ['title', 'format', 'durationSec', 'aspect', 'language', 'hook', 'scenes', 'cta', 'caption', 'hashtags', 'musicVibe'],
 };
@@ -133,13 +131,6 @@ async function generateUgcScript(input) {
     hashtags: (Array.isArray(raw.hashtags) ? raw.hashtags : [])
       .map((t) => String(t).replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean).slice(0, 12),
     musicVibe: raw.musicVibe || '',
-    // (2026-07-30) bpm = 컨셉이 정한 템포(assembler가 이 비트 그리드로 씬 컷을 스냅). 범위 밖·미지정이면 100(중립).
-    bpm: Math.min(Math.max(Number(raw.bpm) || 100, 60), 160),
-    // needsModel = 모델 씬 존재 여부. 1패스에서 true면 UI가 모델 픽커를 띄우고, 고른 뒤 2패스로 모델 묘사를 채운다.
-    //   Claude가 안 줘도 씬의 subject로 복원 — 렌더 게이트가 이 값에 의존하므로 비어 있으면 안 된다.
-    needsModel: (typeof raw.needsModel === 'boolean')
-      ? raw.needsModel
-      : normalizeScenes(raw.scenes).some((s) => s.subject === 'model'),
   };
 
   return script;
@@ -162,9 +153,7 @@ async function generateUgcScript(input) {
 async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad', model = null, product = '' } = {}) {
   const imgs = (Array.isArray(images) && images.length ? images : (image ? [image] : [])).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
-  // (2026-07-30) 형식 토글 폐지 → outputType으로 모델 앵글을 금지하지 않는다. 사진을 보고 판단하게 한다.
-  //   전엔 noModel = outputType !== 'model-editorial' 이라, UI가 형식을 안 보내는 새 플로우에서는
-  //   **항상 제품만**이 강제돼 착용물(의류·주얼리)인데도 모델 앵글 제안이 원천 차단됐다.
+  const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
   const system = [
     'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and draft the user\'s CREATIVE BRIEF for a TikTok / Instagram Reels ad — phrased as their own request.',
     'Adapt the angle to the category you see:',
@@ -174,9 +163,9 @@ async function suggestConcept({ image, images, details = '', language = 'ko', ou
     '- Food/beverage → appetite, sensory detail, freshness, the moment.',
     '- Tech/gadgets/home → the key benefit or the problem it solves.',
     'Capture a STRATEGIC PROMISE (why stop scrolling / the payoff) + a vibe or target if it fits — NOT a specific shot or camera move (the script decides staging).',
-    model
-      ? 'This ad features a model wearing/using the product — the angle may involve the model.'
-      : 'Decide from the photo: if the product is worn, held or applied by a person (apparel, jewelry, bodywear, eyewear, bags, footwear, skincare or makeup on skin), the angle MAY involve a model. Otherwise keep it product-only — do not suggest angles that require someone on camera.',
+    noModel
+      ? 'This ad shows the PRODUCT ONLY — no model or person. Do not suggest angles that require someone to wear, apply, or hold it on camera.'
+      : 'This ad features a model wearing/using the product — the angle may involve the model.',
     // 선택된 모델이 아이면 타깃/톤을 그에 맞춘다 — 안 그러면 아동복인데 컨셉이 "for young women"으로 나온다.
     //   아이의 정확한 나이는 쓰지 않는다(밴드만) — 겉보기 나이가 라벨과 어긋난다(roster.kids 주석).
     ...(model && model.isMinor
@@ -305,8 +294,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
       : 'This ad has NO voiceover — leave spoken empty; put any on-screen words in onScreenText.',
     `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. brollPrompt = a detailed still-image prompt (product, setting, lighting, composition). direction = Kling camera/subject motion.`,
     `Also write "summary": a SPECIFIC 1-2 sentence description in ${lang} of what the viewer sees and how it moves — concrete enough to picture the shot, plain human language (NOT a prompt), 1-2 sentences, not overloaded.`,
-    // (2026-07-30) 상한 5→10 (Kling 물리한계). 5초 초과는 크레딧 약 2배라 필요할 때만.
-    'durationSec between 2 and 10 (over 5s costs roughly double — use only when the shot needs the time). Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
+    'durationSec between 2 and 5. Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. "${x.onScreenText || '(visual only)'}" — motion: ${x.direction || ''}`).join('\n') || '(none)'}`;
   const user = `${ctx}\n\n${String(instruction).trim() ? `USER DIRECTION for the new scene: ${String(instruction).trim()}` : 'Propose the single most natural next scene to add.'}\n\nReturn one new scene.`;
@@ -327,8 +315,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
     brollPrompt: String(raw.brollPrompt || raw.direction || '').slice(0, 2000),
     summary: String(raw.summary || '').slice(0, 300),
     subject: (!productOnly && raw.subject === 'model') ? 'model' : 'product',
-    // ⚠️ 코드 클램프 — 프롬프트 상한만 올리고 여기를 놓치면 8초 씬이 조용히 5초로 깎인다(2026-07-30 5→10).
-    durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 10),
+    durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 5),
   };
 }
 
@@ -350,7 +337,7 @@ async function suggestScenes({ script, outputType = 'product-ad', count = 4 } = 
     `You propose ${n} DIFFERENT candidate scenes the user could ADD to an existing short product-ad video. Each must be a DISTINCT natural next scene with a different angle/beat (e.g. a result shot, a hero product beauty shot, a detail macro, a lifestyle/gifting moment). Match the existing tone and product.`,
     productOnly ? 'PRODUCT ONLY — subject MUST be "product", no people.' : 'May use subject "model" when a scene needs a person, otherwise "product".',
     voiceover ? `Write spoken narration in ${lang} — natural, understated.` : 'NO voiceover — leave spoken empty.',
-    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = a SPECIFIC 1-2 sentence ${lang} description of what the viewer sees and how it moves (concrete but plain human language, not a prompt; not overloaded). durationSec 2-10.`,
+    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = a SPECIFIC 1-2 sentence ${lang} description of what the viewer sees and how it moves (concrete but plain human language, not a prompt; not overloaded). durationSec 2-5.`,
     'Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. ${x.summary || x.onScreenText || x.direction || ''}`).join('\n') || '(none)'}`;

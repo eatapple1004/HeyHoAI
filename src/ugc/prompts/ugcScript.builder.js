@@ -23,13 +23,10 @@ const FORMAT_HINTS = {
 
 function fmtLine(v) { return FORMAT_HINTS[v] ? `- ${v}: ${FORMAT_HINTS[v]}` : `- ${v}`; }
 
-// 씬 길이 상한 = Kling 물리 한계(10s). Kling은 5s/10s 네이티브만 지원해 5초를 넘기면 10초를 뽑아 트림 = 크레딧 약 2배
-//   (crediting: ugcGenCost가 durationSec>5면 10초 단가를 청구하므로 원가/과금은 어긋나지 않는다).
-//   ⚠️ (2026-07-30) 상한을 5→10으로 올렸다. 전엔 "10초 단가 방지"를 이유로 5에 묶었는데,
-//      그건 **비용을 이유로 연출을 제한**하는 가드였다. 사용자 결정: 낭비를 허용하고 컨셉에 맞는 배치를 우선한다.
-//      대신 프롬프트가 트레이드오프를 알려준다(금지 → 판단). 10초는 벤더가 못 넘는 물리 한계라 유지.
+// Auto(길이 미지정) 씬의 상한. Kling은 5s/10s 네이티브만 지원해 5초를 넘기면 10초를 뽑아 트림한다
+//   (clipPipeline: wantSec>5 ? 10 : 5) = 비용 2배. Auto가 7초를 고르면 유저는 **고른 적 없는 10초 단가**를 낸다.
 //   ⚠️ 목표 길이 계산과 프롬프트 문장이 **같은 값**을 써야 한다 — 갈라지면 한 프롬프트가 두 말을 하게 된다.
-const AUTO_MAX_SCENE_SEC = 10;
+const AUTO_MAX_SCENE_SEC = 5;
 
 /**
  * @param {{
@@ -73,9 +70,7 @@ function buildUgcScriptPrompt(input) {
   const baseDuration = input?.durationSec || profile.defaultDurationSec || 20;
   const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration : baseDuration;
   const langName = language === 'en' ? 'English' : 'Korean';
-  // (2026-07-30) 모델 등장 여부를 outputType(형식 토글)이 아니라 **브리프**가 정한다 → 토글 폐지.
-  //   hasModelMeta = 유저가 로스터에서 모델을 고른 뒤의 2패스인가. 1패스는 모델 미정이라 인물 묘사를 금지한다.
-  const hasModelMeta = !!model;
+  const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
 
   // 모델 외모 서술 — 로스터가 그 모델을 **생성할 때 쓴** age·descent·skin·hair·build로 짓는다(=이미지의 원본 소스).
@@ -101,26 +96,27 @@ function buildUgcScriptPrompt(input) {
     '- Parse the brief for: target audience, mood/tone, and any VISUAL cues — background, color, lighting, color grade, texture, setting, styling. Route every visual cue into the scene "direction" and "brollPrompt" so the rendered images actually reflect it (e.g. "빨강 배경" → red background in every brollPrompt). Route mood → copy tone; target → audience.',
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
-    // ⚠️ 실사고 기록(유지할 근거): 전엔 "do NOT invent a specific face"까지만 말해서 **나이·정체는 마음껏 썼다.**
-    //    브리프의 "confident young professionals"(타깃 관객)를 Claude가 화면 속 인물로 옮겨 "a confident young woman"을 썼고,
-    //    아동 모델을 고른 경우 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성이 됐다(실사고).
-    //    프롬프트(성인)와 레퍼런스(아이)가 싸우면 Gemini가 프롬프트를 따른다.
-    //    → 근본 해법은 "묘사 금지"가 아니라 **레퍼런스와 일치**다. 그래서 모델이 확정된 2패스에서만 묘사한다.
-    ...(hasModelMeta ? [
-      // 2패스 — 모델 확정. 로스터 서술(=이미지 원본 소스)로 정확히 묘사해 레퍼런스와 안 싸우게 한다.
-      `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). THE MODEL IS: ${modelDesc}. In every subject:"model" scene, describe the model consistently as this exact person, use ${modelPron}, and match the attached reference image. The ONLY person on camera is this model — never introduce a second person (partner, friend, bystander, hands of another person), and never swap in a different age, gender, or look. The brief's target audience is who the ad is FOR, not who appears on camera. In "product" scenes brollPrompt is product-only.`,
+    ...(usesModel ? [
+      // ⚠️ 전엔 "do NOT invent a specific face"까지만 말해서 **나이·정체는 마음껏 썼다.**
+      //    브리프의 "appealing to confident young professionals"(타깃 관객)를 Claude가 화면 속 인물로 옮겨
+      //    "a confident young woman wearing..."을 썼다. 성인 모델이면 레퍼런스와 우연히 맞아 안 보이는데,
+      //    아동 모델을 고르면 즉시 드러난다 — 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성(실사고).
+      //    프롬프트(성인)와 레퍼런스(아이)가 싸우면 Gemini가 프롬프트를 따른다.
+      //    → 인물은 **레퍼런스 한 곳에서만** 온다(7e1f8dc의 마네킹 규칙과 같은 원리). 대본은 인물을 묘사하지 않는다.
+      // 모델을 **정확히 묘사**한다(로스터 서술 = 이미지 원본 소스). 전엔 "the model로만, 묘사 금지"였는데,
+      //   성별을 안 알려주니 Claude가 기본 여성을 가정해 her를 흘려 남성 레퍼런스와 싸웠다(실사고).
+      //   근본은 묘사 금지가 아니라 **레퍼런스와 일치**다 — 텍스트가 레퍼런스와 같은 사람을 가리키면 안 싸운다.
+      //   ⚠️ "누가 나오는지"(모델 서술)와 "누구를 위한 광고인지"(브리프 타깃)는 다르다. 타깃을 화면 인물로 옮기지 말 것.
+      //   ⚠️ 모델 씬엔 **모델 한 사람만** — 파트너·행인 등 제2인물 금지(레퍼런스가 하나뿐이라 그들은 난데없는 사람이 된다).
+      model
+        ? `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). THE MODEL IS: ${modelDesc}. In every subject:"model" scene, describe the model consistently as this exact person, use ${modelPron}, and match the attached reference image. The ONLY person on camera is this model — never introduce a second person (partner, friend, bystander, hands of another person), and never swap in a different age, gender, or look. The brief's target audience is who the ad is FOR, not who appears on camera. In "product" scenes brollPrompt is product-only.`
+        : '- SUBJECT per scene: intercut — some scenes product-only (subject:"product"), others show the model with the product (subject:"model"). The model comes from a reference image; refer to them as "the model", match the reference, and keep the SAME single person across all model scenes (no second person). In "product" scenes brollPrompt is product-only.',
       // 아동은 연출만 추가로 지시(정체성은 위 모델 서술이 맡는다). 성인 에디토리얼 포즈 금지.
-      ...(model.isMinor ? [
+      ...(model && model.isMinor ? [
         '- The model is a child: stage every subject:"model" scene the way a children\'s clothing catalogue would — natural age-appropriate posture, play and movement, fully clothed in the product; never adult-editorial posing, styling or framing.',
       ] : []),
     ] : [
-      // 1패스 — 모델 미정. 필요 여부를 **판단**하고 needsModel로 알린다. 인물 묘사는 금지(누구인지 아직 모른다).
-      '- DECIDE whether a human model should appear, from the brief and the attached photo:',
-      '  · Use model scenes if the brief asks for it (model / worn / on-model / lookbook / editorial / 착용 / 화보 / 모델) OR the product is something a person wears, holds or applies (apparel, jewelry, bodywear, eyewear, bags, footwear, skincare or makeup on skin).',
-      '  · Otherwise EVERY scene is product-only.',
-      '- Set "subject" per scene accordingly ("model" or "product"), intercutting naturally (roughly half and half) when model scenes are used.',
-      '- Return "needsModel": true if ANY scene is subject:"model", else false.',
-      '- ⚠️ The model is NOT chosen yet — a reference image will be supplied later. In subject:"model" scenes do NOT describe the person at all (no age, gender, ethnicity, hair, body, face). Build the scene from styling, pose, framing, mood and setting, and refer to them only as "the model". Never introduce a second person. The brief\'s target audience is who the ad is FOR, not who appears on camera.',
+      '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
     ]),
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, spoken and every brollPrompt to that category.',
     ...(playbook ? [
@@ -154,21 +150,13 @@ function buildUgcScriptPrompt(input) {
       '  · Read each line aloud in your head: if a real person would never say it, rewrite it.',
     ]),
     '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or spoken line across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
-    // (2026-07-30) 잘림 내구성 — 렌더는 벤더 네이티브 길이(5s/10s)로 생성한 뒤 씬 길이로 트림한다. 즉 모든 클립이
-    //   중간에서 끊긴다. 완결형 동작(뚜껑이 닫힌다·캔이 열린다)이 잘리면 "미완성"으로 보이므로 지속형 모션을 유도한다.
-    '- MOTION must be CUT-SAFE: the clip will be trimmed, so design motion that looks natural cut at any moment — continuous or loopable movement (slow rotation, camera push-in or drift, light sweeping across, liquid or fabric flowing, steam rising). Avoid motion that needs to COMPLETE to read (a lid closing, a can popping open, a hand finishing a grab) unless that completion clearly finishes inside the scene.',
-    // 음악은 컨셉이 정한다. 씬 컷은 이 BPM의 비트 그리드에 스냅되므로 템포가 편집 리듬을 결정한다.
-    '- Choose "bpm" to fit THIS concept (60-160): slow/luxury/calm → 60-90, natural/lifestyle → 90-115, energetic/trendy → 115-160. Scene cuts will be aligned to this beat grid, so the tempo you pick sets the editing rhythm. Keep "musicVibe" consistent with it.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다(근거=AUTO_MAX_SCENE_SEC).
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`]
-      // Auto = 대본이 씬 개수·길이를 **컨셉에 맞게** 정한다(사용자 결정 2026-07-30: 기계적으로 초를 맞추지 말고
-      //   최상의 결과를 위해 배치 — 필요하면 적은 씬을 길게, 필요하면 많은 씬을 짧게. 낭비는 허용).
-      //   5초 초과의 비용 트레이드오프는 **금지가 아니라 판단 근거**로 알려준다(상한=Kling 물리한계 10초).
-      : [`- Decide the NUMBER of scenes and each scene's "durationSec" from what the concept needs — this is a creative call, not arithmetic. A punchy, energetic ad may want many short beats (2-3s each); a slow luxury reveal may want a few long ones (6-10s). Do NOT give every scene the same length unless the concept genuinely calls for a steady rhythm.`,
-         `- Scene length limits: minimum 2s, maximum ${AUTO_MAX_SCENE_SEC}s. A scene over 5s costs roughly double to render — use it when the shot truly needs the time, not by default.`,
-         `- Treat the target duration as a GUIDE, not a constraint: land near it, but let the content decide the exact total.`]),
+      // Auto = 대본이 씬마다 최적 길이. 내용에 맞춰 3·4·5초로 **다르게** — 짧은 글린트/컷은 3초, 느린 리빌·모션은 5초.
+      //   전부 같은 값으로 만들지 말 것. 상한 5초는 10초 단가 방지(Kling은 >5초면 10초를 뽑아 트림 = 2배).
+      : [`- Set each broll scene's "durationSec" INDIVIDUALLY to fit that scene: a quick glint, cut, or simple reveal ≈ 3s; a slower reveal or a motion beat up to 5s. VARY the lengths to match each scene's content — do NOT give every scene the same length. Never exceed ${AUTO_MAX_SCENE_SEC} (a scene over ${AUTO_MAX_SCENE_SEC}s costs double to render).`]),
     ...(voiceover ? [
       '- VOICE IS THE CAPTION — they are the SAME layer. "spoken" is BOTH what the voice says AND the on-screen subtitle (shown in sync as the voice speaks it).',
       '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
@@ -200,9 +188,7 @@ function buildUgcScriptPrompt(input) {
     '  "cta": string,',
     '  "caption": string,                    // ready-to-post caption',
     '  "hashtags": string[],                 // 5-12, no # prefix',
-    '  "musicVibe": string,                  // e.g. "upbeat lofi", "trendy pop"',
-    '  "bpm": number,                        // tempo fitting THIS concept (60-160) — scene cuts get snapped to this beat grid',
-    '  "needsModel": boolean                 // true if ANY scene is subject:"model"',
+    '  "musicVibe": string                   // e.g. "upbeat lofi", "trendy pop"',
     '}',
     `Allowed scene types for this output type: ${profile.sceneTypes.map((t) => `"${t}"`).join(', ')}.`,
   ].join('\n');
