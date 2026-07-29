@@ -91,8 +91,8 @@
     'e.g. camera slowly zooms in while hair sways gently': '예) 머리카락이 살랑이는 동안 카메라가 천천히 줌인',
     'Your very first result comes out watermark-free — make something you can post today.':
       '첫 결과물은 바로 올릴 수 있게 나옵니다.',  // ⚠️ 'watermark-free'는 배선 0(generate.route.js:385가 플랜 무관 watermarked:false) → 주장 제거
-    // saas-login — ⚠️ 'my own face/content'는 폐기된 인플루언서 시대 문구(flags influencer:false)
-    'I confirm this is my own face/content and I agree to the': '본인이 권리를 가진 콘텐츠임을 확인하며, 다음에 동의합니다:',
+    // saas-login — (2026-07-29) 얼굴앱 시대 문구('my own face/content')를 셀러 중립 문구로 교체(EN 원문·키 동시 변경, KO 뜻 동일)
+    'I confirm I have the rights to the content I upload and I agree to the': '본인이 권리를 가진 콘텐츠임을 확인하며, 다음에 동의합니다:',
     '✦ Flagship': '✦ 대표 상품',
     '— Reels reach far more people than photos.': '— Reels는 사진보다 훨씬 멀리 갑니다.',
 
@@ -662,6 +662,18 @@
     'One line of mood or concept. Empty is fine — Doppia plans from the photo.': '무드나 컨셉 한 줄. 비워도 괜찮아요 — 사진만 보고 기획해요.',
     'Step 3 — create': '3단계 — 만들기',
     'Start the pack. This uses real credits — you are charged only for delivered assets.': '팩을 시작해요. 실제 크레딧이 쓰이고, 도착한 결과물만 과금돼요.',
+
+    // ── (2026-07-29) pack.html 영어 원본화 — 본문·모달·버튼 (KO값 = 기존 하드코딩 문자열 그대로) ──
+    "Drop in one or a few product photos — we'll plan and make the content you need.": '상품 사진 1~몇 장을 넣으면 필요한 콘텐츠를 알아서 만들어 드립니다.',
+    'Drag & drop photos, or click to upload': '사진을 끌어다 놓거나 클릭해서 업로드',
+    'Concept · mood you want': '원하는 컨셉 · 분위기',
+    '(optional — photos alone are enough)': '(선택 — 사진만으로도 됩니다)',
+    'e.g. cozy morning café vibe with a latte / luxury cut on a minimal grey backdrop — describe any scene or mood you want': '예: 따뜻한 카페에서 라떼와 함께 아침 감성 / 미니멀한 회색 배경의 럭셔리 컷 — 원하는 장면·무드를 자유롭게 적어주세요',
+    'Write one and cuts are planned around that concept. Leave it empty and a standard set is planned for your product. (Category and set detection is automatic from the photos.)': '적어주시면 그 컨셉을 기준으로 컷을 기획합니다. 비워두면 제품에 맞는 표준 구성으로 자동 생성돼요. (카테고리·세트 여부는 사진으로 자동 판단)',
+    'Create content': '콘텐츠 만들기',
+    'Generating…': '생성 중…',
+    'Download all': '전체 다운로드',
+    'Nothing here yet. Add a product photo above to make your first content.': '아직 만든 콘텐츠가 없어요. 위에서 상품 사진을 넣어 만들어 보세요.',
 
     // ── (2026-07-29) 템플릿·컷·스타일 이름 전수 한글판 + 테마 칩 + 디테일 placeholder ──
     'Clothing': '의류',

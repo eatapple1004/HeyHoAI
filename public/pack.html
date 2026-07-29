@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/i18n.js?v=17" defer></script>
+<script src="/js/i18n.js?v=18" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <style>
   @view-transition{navigation:auto} /* (2026-07-26) 홈 create 바 → pack 부드러운 크로스페이드(양쪽 다 선언해야 동작) */
@@ -283,31 +283,31 @@
 <div class="wrap">
   <div class="phead fade d1">
     <h1>Product Pack</h1>
-    <p class="lead">상품 사진 1~몇 장을 넣으면 필요한 콘텐츠를 알아서 만들어 드립니다.</p>
+    <p class="lead">Drop in one or a few product photos — we'll plan and make the content you need.</p>
   </div>
 
   <div id="form" class="fade d2">
     <div class="card">
       <div class="drop" id="drop">
-        <div>사진을 끌어다 놓거나 클릭해서 업로드</div>
+        <div>Drag & drop photos, or click to upload</div>
         <input type="file" id="file" accept="image/*" multiple class="hide">
       </div>
       <div class="thumbs" id="thumbs"></div>
     </div>
 
     <div class="card">
-      <label class="f">원하는 컨셉 · 분위기 <span style="color:var(--dim);font-weight:400">(선택 — 사진만으로도 됩니다)</span></label>
-      <textarea id="product" rows="2" placeholder="예: 따뜻한 카페에서 라떼와 함께 아침 감성 / 미니멀한 회색 배경의 럭셔리 컷 — 원하는 장면·무드를 자유롭게 적어주세요"></textarea>
-      <p style="font-size:12px;color:var(--dim);margin:8px 2px 0">적어주시면 그 컨셉을 기준으로 컷을 기획합니다. 비워두면 제품에 맞는 표준 구성으로 자동 생성돼요. (카테고리·세트 여부는 사진으로 자동 판단)</p>
-      <button class="go" id="go" disabled>콘텐츠 만들기</button>
+      <label class="f">Concept · mood you want <span style="color:var(--dim);font-weight:400">(optional — photos alone are enough)</span></label>
+      <textarea id="product" rows="2" placeholder="e.g. cozy morning café vibe with a latte / luxury cut on a minimal grey backdrop — describe any scene or mood you want"></textarea>
+      <p style="font-size:12px;color:var(--dim);margin:8px 2px 0">Write one and cuts are planned around that concept. Leave it empty and a standard set is planned for your product. (Category and set detection is automatic from the photos.)</p>
+      <button class="go" id="go" disabled>Create content</button>
     </div>
   </div>
 
   <div id="result" class="hide">
     <div class="card">
       <div class="rhead">
-        <div class="status" id="status"><span class="spin"></span>생성 중…</div>
-        <button class="dlall hide" id="dlAll" onclick="downloadAll()">전체 다운로드</button>
+        <div class="status" id="status"><span class="spin"></span>Generating…</div>
+        <button class="dlall hide" id="dlAll" onclick="downloadAll()">Download all</button>
       </div>
       <div class="sect" id="assets"></div>
     </div>
@@ -317,13 +317,15 @@
 
 <!-- 내 크리에이션 — full-width, studio·Ad Video 페이지와 동일 피드(날짜 그룹 + 배치별 메타패널). generation_results 공유 스토어. -->
 <div class="works" id="worksSec">
-  <div class="works-head"><h2>내 크리에이션</h2><span class="works-sub" id="worksCount"></span></div>
+  <div class="works-head"><h2>Your creations</h2><span class="works-sub" id="worksCount"></span></div>
   <div id="resultsGrid"></div>
-  <div class="works-empty hide" id="worksEmpty">아직 만든 콘텐츠가 없어요. 위에서 상품 사진을 넣어 만들어 보세요.</div>
+  <div class="works-empty hide" id="worksEmpty">Nothing here yet. Add a product photo above to make your first content.</div>
 </div>
 
 <script>
 const $ = (s) => document.querySelector(s);
+// i18n — 보간 문자열은 사전 매칭 불가라 인라인 분기(studio.html 관례)
+const isKO = () => !!(window.i18n && window.i18n.getLang && window.i18n.getLang() === 'ko');
 let files = [];
 
 const drop = $('#drop'), fileInput = $('#file');
@@ -345,7 +347,7 @@ function renderThumbs() {
 
 $('#go').onclick = async () => {
   if (!files.length) return;
-  $('#go').disabled = true; const gt = $('#go').textContent; $('#go').textContent = '제품 분석 중…';
+  $('#go').disabled = true; const gt = $('#go').textContent; $('#go').textContent = isKO() ? '제품 분석 중…' : 'Analyzing product…';
   const fd = new FormData();
   files.forEach(f => fd.append('photos', f));
   const hint = $('#product').value.trim();
@@ -374,11 +376,11 @@ function openSrcLightbox(url) {
   document.body.insertAdjacentHTML('beforeend',
     `<div class="lb-bg" onclick="if(event.target===this)closeSrcLightbox()">
        <div class="lb-box">
-         <img class="lb-img" src="${esc(url)}" alt="올린 원본 사진">
+         <img class="lb-img" src="${esc(url)}" alt="${isKO() ? '올린 원본 사진' : 'Uploaded original photo'}">
          <div class="lb-bar">
-           <span class="lb-cap">올린 원본 사진 — 결과의 라벨이 이것과 같은지 대조해 보세요</span>
-           <a class="cutbtn" href="${esc(url)}" download="원본.${ext}">⤓ 다운로드</a>
-           <button class="cutbtn" type="button" onclick="closeSrcLightbox()">닫기</button>
+           <span class="lb-cap">${isKO() ? '올린 원본 사진 — 결과의 라벨이 이것과 같은지 대조해 보세요' : 'Your uploaded photo — check that labels in the results match this'}</span>
+           <a class="cutbtn" href="${esc(url)}" download="${isKO() ? '원본' : 'original'}.${ext}">⤓ ${isKO() ? '다운로드' : 'Download'}</a>
+           <button class="cutbtn" type="button" onclick="closeSrcLightbox()">${isKO() ? '닫기' : 'Close'}</button>
          </div>
        </div>
      </div>`);
@@ -389,7 +391,9 @@ function lbEsc(e) { if (e.key === 'Escape') closeSrcLightbox(); }
 
 // ── 확인 스텝: "이 제품 맞아요?" — 오분류를 사람이 사전 차단(귀걸이가 음료로 나오는 참사 방지) ──
 const CATS = ['beverage', 'food', 'cosmetics-skincare', 'cosmetics-color', 'haircare', 'apparel', 'footwear', 'bag', 'jewelry', 'home', 'tech', 'other'];
-const CAT_LABELS = { beverage: '음료', food: '식품', 'cosmetics-skincare': '스킨케어', 'cosmetics-color': '색조 화장품', haircare: '헤어', apparel: '의류', footwear: '신발', bag: '가방', jewelry: '주얼리', home: '홈·리빙', tech: '테크·가전', other: '기타' };
+const CAT_LABELS = { beverage: 'Beverage', food: 'Food', 'cosmetics-skincare': 'Skincare', 'cosmetics-color': 'Color cosmetics', haircare: 'Haircare', apparel: 'Apparel', footwear: 'Footwear', bag: 'Bags', jewelry: 'Jewelry', home: 'Home & living', tech: 'Tech & appliances', other: 'Other' };
+const CAT_LABELS_KO = { beverage: '음료', food: '식품', 'cosmetics-skincare': '스킨케어', 'cosmetics-color': '색조 화장품', haircare: '헤어', apparel: '의류', footwear: '신발', bag: '가방', jewelry: '주얼리', home: '홈·리빙', tech: '테크·가전', other: '기타' };
+const catLabel = (k) => (isKO() ? CAT_LABELS_KO : CAT_LABELS)[k];
 let confirmState = null;
 function showConfirm(cls, hint) {
   // 상태(state) = 같은 제품의 다른 모습(뚜껑 닫음/열음). 2개 이상 켜면 상태마다 레퍼+컷세트를 만든다.
@@ -407,37 +411,38 @@ function showConfirm(cls, hint) {
   confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
   const c = confirmState;
-  const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">세트 · ${c.variants.length}종 감지</div>` : '';
+  const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">${isKO() ? `세트 · ${c.variants.length}종 감지` : `Set · ${c.variants.length} variants detected`}</div>` : '';
   const stateLine = states.length > 1
     ? `<div class="cf-states">
-        <div class="cf-states-h">상태 ${states.length}개 감지 — 상태마다 컷 세트를 만듭니다(컷 수가 그만큼 늘어요)</div>
+        <div class="cf-states-h">${isKO() ? `상태 ${states.length}개 감지 — 상태마다 컷 세트를 만듭니다(컷 수가 그만큼 늘어요)` : `${states.length} states detected — each state gets its own cut set (so the cut count grows)`}</div>
         <div class="cf-state-chips" id="cfStates">${states.map(s => `<button class="cf-chip on" data-s="${esc(s.key)}" onclick="toggleState('${esc(s.key)}')">${esc(s.label || s.key)}</button>`).join('')}</div>
       </div>`
     : (states.length === 1
-      ? `<div class="cf-states"><div class="cf-states-h dim">상태 1개(${esc(states[0].label || states[0].key)}) 감지 — 다른 모습(열린 상태·펼친 상태·개봉 등) 사진도 같이 올리면 컷이 배로 늘어납니다</div></div>`
+      ? `<div class="cf-states"><div class="cf-states-h dim">${isKO() ? `상태 1개(${esc(states[0].label || states[0].key)}) 감지 — 다른 모습(열린 상태·펼친 상태·개봉 등) 사진도 같이 올리면 컷이 배로 늘어납니다` : `1 state detected (${esc(states[0].label || states[0].key)}) — add photos of other states (opened, unfolded, unboxed) and you get twice the cuts`}</div></div>`
       : '');
   // 한 단위 = 단품이 아니면 알려준다(레퍼를 이 단위로 굽는다). 틀리면 게이트에서 교정 가능.
-  const UNIT_LABEL = { pair: '한 쌍', with_package: '제품 + 패키지', group: '묶음 세트' };
+  const UNIT_LABEL = { pair: 'a pair', with_package: 'product + package', group: 'bundle set' };
+  const UNIT_LABEL_KO = { pair: '한 쌍', with_package: '제품 + 패키지', group: '묶음 세트' };
   // 라벨 뒤에 조사를 붙이지 않는다 — "한 쌍"+"로" = "한 쌍로"(틀림). 조사 없이 끊어 쓴다.
-  const unitLine = unit ? `<div class="cf-set">한 단위 · ${esc(UNIT_LABEL[unit])} — 이 단위로 레퍼를 굽습니다</div>` : '';
+  const unitLine = unit ? `<div class="cf-set">${isKO() ? `한 단위 · ${esc(UNIT_LABEL_KO[unit])} — 이 단위로 레퍼를 굽습니다` : `One unit · ${esc(UNIT_LABEL[unit])} — the reference is baked at this unit`}</div>` : '';
   document.querySelector('.cf-bg') && document.querySelector('.cf-bg').remove();
   document.body.insertAdjacentHTML('beforeend', `<div class="cf-bg"><div class="cf">
-    <div class="cf-h">이 제품 맞나요?</div>
-    <div class="cf-cat">감지된 카테고리 · <span class="cf-badge" id="cfBadge">${esc(CAT_LABELS[c.category] || c.category)}</span></div>
-    <div class="cf-prod">${esc(c.product || '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)')}</div>
+    <div class="cf-h">${isKO() ? '이 제품 맞나요?' : 'Is this your product?'}</div>
+    <div class="cf-cat">${isKO() ? '감지된 카테고리 · ' : 'Detected category · '}<span class="cf-badge" id="cfBadge">${esc(catLabel(c.category) || c.category)}</span></div>
+    <div class="cf-prod">${esc(c.product || (isKO() ? '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)' : "(couldn't read the product — pick a category below)"))}</div>
     ${setLine}${unitLine}${stateLine}
-    <div class="cf-note">카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.</div>
-    <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(CAT_LABELS[k])}</button>`).join('')}</div>
+    <div class="cf-note">${isKO() ? '카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.' : "The right category gets you the right cuts. If it's wrong, fix it below."}</div>
+    <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(catLabel(k))}</button>`).join('')}</div>
     <div class="cf-actions">
-      <button class="cf-cancel" onclick="document.querySelector('.cf-bg').remove()">취소</button>
-      <button class="cf-go" onclick="confirmGenerate()">네, 이걸로 만들기</button>
+      <button class="cf-cancel" onclick="document.querySelector('.cf-bg').remove()">${isKO() ? '취소' : 'Cancel'}</button>
+      <button class="cf-go" onclick="confirmGenerate()">${isKO() ? '네, 이걸로 만들기' : 'Yes, make it with this'}</button>
     </div>
   </div></div>`);
 }
 function pickCat(k) {
   confirmState.category = k;
   document.querySelectorAll('#cfCats .cf-chip').forEach(b => b.classList.toggle('on', b.dataset.k === k));
-  const badge = document.getElementById('cfBadge'); if (badge) badge.textContent = CAT_LABELS[k] || k;
+  const badge = document.getElementById('cfBadge'); if (badge) badge.textContent = catLabel(k) || k;
 }
 function toggleState(k) {   // 상태 끄기/켜기 — 0~1개만 남으면 단일 모드로(레퍼 1장·컷 1세트) 자연스럽게 떨어진다.
   confirmState.stateOn[k] = !confirmState.stateOn[k];
@@ -449,8 +454,8 @@ async function confirmGenerate() {
   // ⚡ 클릭 즉시 결과 화면 + 스피너로 전환 — 업로드가 걸리는 동안 무반응/빈 화면 방지.
   $('#form').classList.add('hide');
   $('#result').classList.remove('hide');
-  $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>사진 업로드 중…<div class="sub">잠시만 기다려 주세요</div></div></div>';
-  $('#status').innerHTML = '<span class="spin"></span>업로드 중…';
+  $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (isKO() ? '사진 업로드 중…<div class="sub">잠시만 기다려 주세요</div>' : 'Uploading photos…<div class="sub">Just a moment</div>') + '</div></div>';
+  $('#status').innerHTML = '<span class="spin"></span>' + (isKO() ? '업로드 중…' : 'Uploading…');
   const fd = new FormData();
   files.forEach(f => fd.append('photos', f));
   if (c.hint) fd.append('product', c.hint);
@@ -464,8 +469,8 @@ async function confirmGenerate() {
   const revert = () => { $('#result').classList.add('hide'); $('#form').classList.remove('hide'); };
   let r;
   try { r = await fetch('/api/pack', { method: 'POST', body: fd }); }
-  catch (e) { revert(); fail('요청 실패: 네트워크'); return; }
-  if (!r.ok) { revert(); fail('요청 실패: ' + r.status); return; }
+  catch (e) { revert(); fail(isKO() ? '요청 실패: 네트워크' : 'Request failed: network'); return; }
+  if (!r.ok) { revert(); fail((isKO() ? '요청 실패: ' : 'Request failed: ') + r.status); return; }
   const { id } = await r.json();
   PACK_ID = id;
   setActivePack(id);   // 나갔다 와도 이 팩으로 돌아올 수 있게(같은 브라우저)
@@ -476,7 +481,9 @@ async function confirmGenerate() {
 // ── 생성 진행 표시 (컷/Shots 동일 UX) ──
 //   계획(config.plan)이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초를 깔고, 완료되는 대로 이미지로 채운다.
 //   계획 전(사진 분석 중)엔 개수를 모르므로 "분석 중" 상태. 완료 시 안 채워진 슬롯 = 실패 카드.
-const KIND_LABEL = { still: '스틸', composite: '합성', ref: '캐논 레퍼' };
+const KIND_LABEL = { still: 'Stills', composite: 'Composites', ref: 'Canonical reference' };
+const KIND_LABEL_KO = { still: '스틸', composite: '합성', ref: '캐논 레퍼' };
+const kindLabel = (k) => (isKO() ? KIND_LABEL_KO : KIND_LABEL)[k];
 const KIND_ORDER = ['ref', 'still', 'composite'];   // 캐논 레퍼 먼저(완료 화면 renderInteractive와 동일 순서)
 const filled = new Set();
 let built = false, genStartTs = 0, elapsedTimer = null;
@@ -506,14 +513,14 @@ function tickElapsed() {
   document.querySelectorAll('.rb-elapsed').forEach(el => el.textContent = t);
 }
 function showAnalyzing() {
-  $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>사진을 분석하는 중…<div class="sub">맞춤 컷을 고르고 있어요</div></div></div>';
+  $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (isKO() ? '사진을 분석하는 중…<div class="sub">맞춤 컷을 고르고 있어요</div>' : 'Analyzing your photos…<div class="sub">Picking cuts that fit</div>') + '</div></div>';
 }
 function buildGrid(slots) {
   const byKind = {};
   (slots || []).forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
   // 🎬 최상단 영상 블록 컨테이너(생성 중 '만드는 중' 표시용) — 매 폴링 틱에 채운다.
   $('#assets').innerHTML = '<div id="packVideo"></div>' + KIND_ORDER.filter(k => byKind[k]).map(k =>
-    `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">` +
+    `<h2>${kindLabel(k) || k}</h2><div class="grid">` +
     byKind[k].map(s => `<figure class="slot" data-slot="${esc(slotId(s))}"><div class="ph"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div><figcaption>${esc(s.label || s.key)}</figcaption></figure>`).join('') +
     `</div>`).join('');
   built = true;
@@ -526,7 +533,7 @@ function fillSlot(a, i) {
   if (!fig) return;
   filled.add(key);
   fig.classList.remove('slot');
-  fig.innerHTML = `<a class="dl" href="${a.url}" download="${fname(a, i)}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy"><figcaption>${esc(a.label || a.cut_key || '')}</figcaption>`;
+  fig.innerHTML = `<a class="dl" href="${a.url}" download="${fname(a, i)}" title="${isKO() ? '다운로드' : 'Download'}">⤓</a><img src="${a.url}" loading="lazy"><figcaption>${esc(a.label || a.cut_key || '')}</figcaption>`;
 }
 // ── 완료 후 = 버전 인식 인터랙티브 렌더(컷별 최신+플립 + 다시/레퍼 다시/컨셉 추가/studio) ──
 function versionsByCut(pack) { const g = {}; (pack && pack.assets || []).forEach(a => { const id = assetId(a); (g[id] = g[id] || []).push(a); }); return g; }
@@ -543,9 +550,9 @@ function renderInteractive(pack) {
   order.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
   // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉을 캐논 레퍼로 렌더한 예시.
   const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
-  const conceptHtml = concept ? `<h2>내 컨셉 미리보기</h2><div class="grid"><figure class="rescard"><a class="dl" href="${esc(concept.url)}" download="${esc(fname(concept))}" title="다운로드">⤓</a><img src="${esc(concept.url)}" loading="lazy"><figcaption>입력한 컨셉으로 만든 예시</figcaption></figure></div>` : '';
+  const conceptHtml = concept ? `<h2>${isKO() ? '내 컨셉 미리보기' : 'My concept preview'}</h2><div class="grid"><figure class="rescard"><a class="dl" href="${esc(concept.url)}" download="${esc(fname(concept))}" title="${isKO() ? '다운로드' : 'Download'}">⤓</a><img src="${esc(concept.url)}" loading="lazy"><figcaption>${isKO() ? '입력한 컨셉으로 만든 예시' : 'An example made from your concept'}</figcaption></figure></div>` : '';
   // 섹션 하나 렌더(제목 + 그리드).
-  const section = (k) => byKind[k] ? `<h2>${KIND_LABEL[k] || k}</h2><div class="grid">${byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('')}</div>` : '';
+  const section = (k) => byKind[k] ? `<h2>${kindLabel(k) || k}</h2><div class="grid">${byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('')}</div>` : '';
   // 🔀 순서: **캐논 레퍼(생성 기준) 먼저** → 내 컨셉 미리보기 → 스틸. (합성은 더 이상 만들지 않음 — 옛 팩에 남아 있으면 스틸 뒤에.)
   //   맨 위에 🎬 영상 블록(있으면 영상, 만드는 중, 또는 만들기 CTA).
   $('#assets').innerHTML = `<div id="packVideo">${videoBlockInner(pack)}</div>` + section('ref') + conceptHtml + section('still') + section('composite') + moreBarHtml(pack);
@@ -556,11 +563,11 @@ let vidJob = null, vidStatus = null, vidUrl = null, vidPolling = false;
 function videoBlockInner(pack) {
   const jid = vidJob || (pack && pack.config && pack.config.videoJobId) || null;
   if (vidUrl) {
-    return `<h2>광고 영상</h2><div class="grid"><figure class="rescard vid"><a class="dl" href="${esc(vidUrl)}" download="광고영상.mp4" title="다운로드">⤓</a><video src="${esc(vidUrl)}" controls playsinline preload="metadata"></video><figcaption>이 제품으로 만든 광고 영상</figcaption></figure></div>`;
+    return `<h2>${isKO() ? '광고 영상' : 'Ad video'}</h2><div class="grid"><figure class="rescard vid"><a class="dl" href="${esc(vidUrl)}" download="${isKO() ? '광고영상.mp4' : 'ad-video.mp4'}" title="${isKO() ? '다운로드' : 'Download'}">⤓</a><video src="${esc(vidUrl)}" controls playsinline preload="metadata"></video><figcaption>${isKO() ? '이 제품으로 만든 광고 영상' : 'An ad video made from this product'}</figcaption></figure></div>`;
   }
   if (jid && vidStatus !== 'failed') {
     ensureVideoPoll(jid);
-    return `<div class="pv-cta busy"><div class="rb-spin"></div><div class="pv-txt"><b>광고 영상 만드는 중…</b><span>대본 → 씬 → 모션 → 조립까지 1~3분. 다 되면 여기에 떠요.</span></div></div>`;
+    return `<div class="pv-cta busy"><div class="rb-spin"></div><div class="pv-txt"><b>${isKO() ? '광고 영상 만드는 중…' : 'Making your ad video…'}</b><span>${isKO() ? '대본 → 씬 → 모션 → 조립까지 1~3분. 다 되면 여기에 떠요.' : 'Script → scenes → motion → assembly, 1–3 min. It shows up here when done.'}</span></div></div>`;
   }
   return ''; // (2026-07-27) 팩 영상 제거 — 영상은 Ad Video(studio) 전용. 기존 생성된 영상은 위 vidUrl 분기로 계속 표시.
 }
@@ -568,18 +575,18 @@ function renderVideoBlock() { const el = document.getElementById('packVideo'); i
 // POST /video 공통(게이트 체크·결과 버튼 공용). confirm/버튼 상태는 호출부 책임. 실패 시 throw.
 async function startPackVideo() {
   const r = await fetch('/api/pack/' + PACK_ID + '/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-  const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+  const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
   vidJob = d.jobId; vidStatus = 'processing'; vidUrl = null;
   renderVideoBlock(); ensureVideoPoll(d.jobId);
   return d.jobId;
 }
 async function makeVideo(btn) {   // 결과 최상단 버튼(사후 추가용) — confirm 게이트 유지
-  if (!confirm('이 제품으로 광고 영상 한 편을 만들까요?\n대본→영상까지 보통 1~3분 걸리고, 크레딧이 사용됩니다.')) return;
+  if (!confirm(isKO() ? '이 제품으로 광고 영상 한 편을 만들까요?\n대본→영상까지 보통 1~3분 걸리고, 크레딧이 사용됩니다.' : 'Make one ad video from this product?\nScript to video usually takes 1–3 min, and credits will be used.')) return;
   if (btn) btn.disabled = true;
   try {
     await startPackVideo();
-    if (window.toast) toast('영상 만들기 시작 — 완성되면 맨 위에 떠요');
-  } catch (e) { if (btn) btn.disabled = false; fail('영상 만들기 실패: ' + (e.message || e)); }
+    if (window.toast) toast(isKO() ? '영상 만들기 시작 — 완성되면 맨 위에 떠요' : 'Video started — it shows up at the top when done');
+  } catch (e) { if (btn) btn.disabled = false; fail((isKO() ? '영상 만들기 실패: ' : 'Video failed: ') + (e.message || e)); }
 }
 function ensureVideoPoll(jid) { if (vidPolling || !jid) return; vidPolling = true; pollVideo(jid); }
 async function pollVideo(jid) {
@@ -589,12 +596,12 @@ async function pollVideo(jid) {
   if (!j) { vidPolling = false; return; }
   if (j.status === 'processing') { setTimeout(() => pollVideo(jid), 4000); return; }
   vidPolling = false;
-  if (j.resultUrl) { vidStatus = 'done'; vidUrl = j.resultUrl; renderVideoBlock(); if (window.toast) toast('광고 영상 완성!');
+  if (j.resultUrl) { vidStatus = 'done'; vidUrl = j.resultUrl; renderVideoBlock(); if (window.toast) toast(isKO() ? '광고 영상 완성!' : 'Ad video done!');
     // 서버가 완성 즉시 자동 저장(autoCommit)하므로 내 크리에이션을 새로고침해 영상을 띄운다.
     //   즉시분은 스틸을, 지연분(2.5s)은 저장이 막 끝난 영상을 잡는다.
     if (typeof loadWorks === 'function') { loadWorks(); setTimeout(loadWorks, 2500); }
     if (typeof loadEditableVideos === 'function') setTimeout(loadEditableVideos, 2500); }   // 새 영상의 편집가능 반영
-  else { vidStatus = 'failed'; renderVideoBlock(); fail('영상 생성 실패: ' + (j.error || '크레딧·한도 확인')); }
+  else { vidStatus = 'failed'; renderVideoBlock(); fail((isKO() ? '영상 생성 실패: ' : 'Video generation failed: ') + (j.error || (isKO() ? '크레딧·한도 확인' : 'check credits and limits'))); }
 }
 /**
  * ➕ 더 뽑기 바 — 결과 하단. 두 갈래:
@@ -611,18 +618,18 @@ function moreBarHtml(pack) {
   const chunk = Math.min(8, remaining);
   const btns = [];
   if (remaining > 0) {
-    btns.push(`<button class="more-btn" onclick="extendPack(${chunk},this)">+ ${chunk}장 더 뽑기 · ◈${(chunk * PACK_CUT_CR).toLocaleString()}</button>`);
-    if (remaining > chunk) btns.push(`<button class="more-btn ghost" onclick="extendPack(0,this)">남은 ${remaining}장 전부 · ◈${(remaining * PACK_CUT_CR).toLocaleString()}</button>`);
+    btns.push(`<button class="more-btn" onclick="extendPack(${chunk},this)">${isKO() ? `+ ${chunk}장 더 뽑기` : `+ ${chunk} more cuts`} · ◈${(chunk * PACK_CUT_CR).toLocaleString()}</button>`);
+    if (remaining > chunk) btns.push(`<button class="more-btn ghost" onclick="extendPack(0,this)">${isKO() ? `남은 ${remaining}장 전부` : `All ${remaining} remaining`} · ◈${(remaining * PACK_CUT_CR).toLocaleString()}</button>`);
   }
   const note = remaining > 0
-    ? `이미 기획해 둔 컷이 ${remaining}장 더 있어요 — 추가 분석 없이 바로 나옵니다.`
-    : `기획해 둔 컷은 다 만들었어요. 아래에서 새 컷을 뽑거나, 마음에 드는 컷의 <b>✦ 이런 걸로 더</b>를 눌러 보세요.`;
+    ? (isKO() ? `이미 기획해 둔 컷이 ${remaining}장 더 있어요 — 추가 분석 없이 바로 나옵니다.` : `${remaining} more cuts are already planned — they render right away, no extra analysis.`)
+    : (isKO() ? `기획해 둔 컷은 다 만들었어요. 아래에서 새 컷을 뽑거나, 마음에 드는 컷의 <b>✦ 이런 걸로 더</b>를 눌러 보세요.` : `Every planned cut is done. Draw new cuts below, or press <b>✦ More like this</b> on a cut you like.`);
   // 💡 컨셉으로 더 — 세 번째 축(새 방향). 비우고 누르면 AI가 안 겹치는 새 컨셉을 알아서 창안한다.
   //   원본이 없는 옛 팩은 재기획을 못 하므로 숨긴다.
   const canConcept = (plan && (plan.sources || []).length) > 0;
   const conceptRow = canConcept ? `<div class="more-concept">
-      <input type="text" id="conceptInput" maxlength="200" placeholder="원하는 컨셉을 적으세요 — 비우면 알아서 새로 뽑아요 (예: 겨울 홈카페)" onkeydown="if(event.key==='Enter')conceptMore(this.nextElementSibling)">
-      <button class="more-btn" onclick="conceptMore(this)">💡 새 컷 뽑기 · ◈${(3 * PACK_CUT_CR).toLocaleString()}</button>
+      <input type="text" id="conceptInput" maxlength="200" placeholder="${isKO() ? '원하는 컨셉을 적으세요 — 비우면 알아서 새로 뽑아요 (예: 겨울 홈카페)' : 'Write a concept — leave it empty and a fresh one is invented (e.g. winter home café)'}" onkeydown="if(event.key==='Enter')conceptMore(this.nextElementSibling)">
+      <button class="more-btn" onclick="conceptMore(this)">${isKO() ? '💡 새 컷 뽑기' : '💡 New cuts'} · ◈${(3 * PACK_CUT_CR).toLocaleString()}</button>
     </div>` : '';
   return `<div class="more-bar"><div class="more-top"><div class="more-note">${note}</div>${btns.length ? `<div class="more-btns">${btns.join('')}</div>` : ''}</div>${conceptRow}</div>`;
 }
@@ -630,7 +637,7 @@ function cardHtml(slot, versions, done) {
   const sid = slotId(slot);
   if (!versions.length) {
     if (!done) return `<figure class="slot" data-slot="${esc(sid)}"><div class="ph"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div><figcaption>${esc(slot.label || slot.key)}</figcaption></figure>`;
-    return `<figure class="failed-fig"><div class="rb-failed"><div class="rbf-ic">⚠ 실패</div><div class="rbf-msg">이 컷은 생성되지 않았어요</div></div><figcaption>${esc(slot.label || slot.key)}</figcaption></figure>`;
+    return `<figure class="failed-fig"><div class="rb-failed"><div class="rbf-ic">${isKO() ? '⚠ 실패' : '⚠ Failed'}</div><div class="rbf-msg">${isKO() ? '이 컷은 생성되지 않았어요' : "This cut didn't generate"}</div></div><figcaption>${esc(slot.label || slot.key)}</figcaption></figure>`;
   }
   let idx = verIdx[sid]; if (idx == null || idx >= versions.length) idx = versions.length - 1; verIdx[sid] = idx;
   const a = versions[idx];
@@ -642,11 +649,11 @@ function cardHtml(slot, versions, done) {
   const cutKey = slot.key;
   const seedable = !isRef && slot.kind === 'still' && ((PACK.config && PACK.config.plan && PACK.config.plan.cuts) || []).some(c => c.key === cutKey);
   const acts = isRef
-    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">↻ 레퍼 다시 굽기</button>`
-    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)" title="새 버전 1장 · ◈${PACK_CUT_CR}">↻ 다시</button>`
-      + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="이 컷과 같은 무드로 각도·구도만 다른 컷을 3장 더 · ◈${(3 * PACK_CUT_CR).toLocaleString()}">✦ 이런 걸로 더</button>` : '')
-      + `<a class="cutbtn" href="/studio" title="studio에서 정밀 편집">✎ studio</a>`;
-  return `<figure class="rescard" data-slot="${esc(sid)}"><a class="dl" href="${a.url}" download="${esc(fname(a))}" title="다운로드">⤓</a><img src="${a.url}" loading="lazy">${flip}<figcaption>${esc(label)}<div class="cut-actions">${acts}</div></figcaption></figure>`;
+    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">${isKO() ? '↻ 레퍼 다시 굽기' : '↻ Rebake reference'}</button>`
+    : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)" title="${isKO() ? `새 버전 1장 · ◈${PACK_CUT_CR}` : `1 new version · ◈${PACK_CUT_CR}`}">${isKO() ? '↻ 다시' : '↻ Redo'}</button>`
+      + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="${isKO() ? `이 컷과 같은 무드로 각도·구도만 다른 컷을 3장 더 · ◈${(3 * PACK_CUT_CR).toLocaleString()}` : `3 more cuts in this mood, varying only angle and framing · ◈${(3 * PACK_CUT_CR).toLocaleString()}`}">${isKO() ? '✦ 이런 걸로 더' : '✦ More like this'}</button>` : '')
+      + `<a class="cutbtn" href="/studio" title="${isKO() ? 'studio에서 정밀 편집' : 'Fine-tune in studio'}">✎ studio</a>`;
+  return `<figure class="rescard" data-slot="${esc(sid)}"><a class="dl" href="${a.url}" download="${esc(fname(a))}" title="${isKO() ? '다운로드' : 'Download'}">⤓</a><img src="${a.url}" loading="lazy">${flip}<figcaption>${esc(label)}<div class="cut-actions">${acts}</div></figcaption></figure>`;
 }
 function flipVer(sid, dir) {
   const g = versionsByCut(PACK)[sid] || []; if (!g.length) return;
@@ -661,25 +668,25 @@ function flipVer(sid, dir) {
 }
 async function refreshPack() { try { const pack = await (await fetch('/api/pack/' + PACK_ID)).json(); renderInteractive(pack); loadWorks(); } catch (e) {} }
 async function regenCut(cutKey, btn) {
-  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '생성 중…';
-  const ov = busyOn(btn.closest('figure'), '새 버전 생성 중…');   // 카드에 오버레이 스피너
+  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = isKO() ? '생성 중…' : 'Generating…';
+  const ov = busyOn(btn.closest('figure'), isKO() ? '새 버전 생성 중…' : 'Generating a new version…');   // 카드에 오버레이 스피너
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/regenerate-cut', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cutKey }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     verIdx['still:' + cutKey] = 1e9; await refreshPack();     // 최신(새 버전)으로 — refreshPack가 카드를 새로 그림(오버레이 함께 제거)
-    if (window.toast) toast('새 버전 생성됨 — ◄►로 이전과 비교');
-  } catch (e) { busyOff(ov); if (window.toast) toast('재생성 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+    if (window.toast) toast(isKO() ? '새 버전 생성됨 — ◄►로 이전과 비교' : 'New version ready — compare with ◄►');
+  } catch (e) { busyOff(ov); if (window.toast) toast((isKO() ? '재생성 실패: ' : 'Regenerate failed: ') + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 async function rebakeRef(refKey, btn) {
-  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
-  const ov = busyOn(btn.closest('figure'), '레퍼 다시 굽는 중…');
+  if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = isKO() ? '굽는 중…' : 'Baking…';
+  const ov = busyOn(btn.closest('figure'), isKO() ? '레퍼 다시 굽는 중…' : 'Rebaking the reference…');
   try {
     const sku = String(refKey).replace(/^ref_/, '');
     const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     verIdx['ref:' + refKey] = 1e9; await refreshPack();
-    if (window.toast) toast('레퍼 새 버전 — 이제 "다시"는 이 레퍼로 생성됩니다');
-  } catch (e) { busyOff(ov); if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+    if (window.toast) toast(isKO() ? '레퍼 새 버전 — 이제 "다시"는 이 레퍼로 생성됩니다' : 'New reference version — "Redo" now generates from this one');
+  } catch (e) { busyOff(ov); if (window.toast) toast((isKO() ? '재굽기 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 /**
  * ➕ 더 뽑기 / ✦ 이런 걸로 더 — 둘 다 백그라운드 생성이라, 킥오프 후 refreshPack 로 폴링한다.
@@ -694,11 +701,11 @@ async function kickMore(url, body, startMsg) {
   try {
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || '실패');
+    if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     pollMore();   // 완료(done/failed)까지 refreshPack 반복
   } catch (e) {
     moreBusy = false; $('#status').innerHTML = '';
-    fail((startMsg.includes('이런') ? '더 만들기 실패: ' : '더 뽑기 실패: ') + (e.message || e));
+    fail((startMsg.includes(isKO() ? '이런' : 'like this') ? (isKO() ? '더 만들기 실패: ' : 'More like this failed: ') : (isKO() ? '더 뽑기 실패: ' : 'More cuts failed: ')) + (e.message || e));
   }
 }
 async function pollMore() {
@@ -707,26 +714,26 @@ async function pollMore() {
   catch (e) { setTimeout(pollMore, 2500); return; }
   renderInteractive(pack);   // 자산 있는 컷만 → 완성되는 대로 카드가 늘어난다
   const n = (pack.assets || []).filter(a => a.kind === 'still' && a.url).length;
-  if (pack.status === 'processing') { $('#status').innerHTML = '<span class="spin"></span>더 만드는 중 · 현재 ' + n + '컷'; setTimeout(pollMore, 2500); return; }
+  if (pack.status === 'processing') { $('#status').innerHTML = '<span class="spin"></span>' + (isKO() ? '더 만드는 중 · 현재 ' + n + '컷' : 'Making more · ' + n + ' cuts so far'); setTimeout(pollMore, 2500); return; }
   moreBusy = false;
-  if (pack.status === 'failed') { $('#status').innerHTML = ''; fail(pack.error || '생성이 끊겼어요'); loadWorks(); return; }
-  $('#status').innerHTML = '완료 · ' + (pack.assets || []).length + '개 자산'; loadWorks();
+  if (pack.status === 'failed') { $('#status').innerHTML = ''; fail(pack.error || (isKO() ? '생성이 끊겼어요' : 'Generation was interrupted')); loadWorks(); return; }
+  $('#status').innerHTML = (isKO() ? '완료 · ' + (pack.assets || []).length + '개 자산' : 'Done · ' + (pack.assets || []).length + ' assets'); loadWorks();
 }
 function extendPack(count, btn) {
   if (btn) btn.disabled = true;
-  kickMore('/api/pack/' + PACK_ID + '/extend', { count }, count ? (count + '장 더 뽑는 중…') : '남은 컷 전부 만드는 중…');
+  kickMore('/api/pack/' + PACK_ID + '/extend', { count }, count ? (isKO() ? count + '장 더 뽑는 중…' : count + ' more cuts on the way…') : (isKO() ? '남은 컷 전부 만드는 중…' : 'Making all remaining cuts…'));
 }
 function moreLike(cutKey, btn) {
   if (btn && btn.disabled) return; if (btn) btn.disabled = true;
-  const ov = busyOn(btn && btn.closest('figure'), '이 결로 더 만드는 중…');
-  kickMore('/api/pack/' + PACK_ID + '/more-like', { cutKey }, '이런 걸로 더 만드는 중…')
+  const ov = busyOn(btn && btn.closest('figure'), isKO() ? '이 결로 더 만드는 중…' : 'Making more in this direction…');
+  kickMore('/api/pack/' + PACK_ID + '/more-like', { cutKey }, isKO() ? '이런 걸로 더 만드는 중…' : 'Making more like this…')
     .finally(() => { busyOff(ov); });
 }
 function conceptMore(btn) {
   const inp = document.getElementById('conceptInput');
   const brief = (inp && inp.value || '').trim();   // 비면 서버가 자동 컨셉 모드(알아서 새로)
   if (btn) btn.disabled = true;
-  const msg = brief ? ('"' + brief.slice(0, 20) + '" 컨셉으로 만드는 중…') : '알아서 새 컨셉으로 만드는 중…';
+  const msg = brief ? (isKO() ? '"' + brief.slice(0, 20) + '" 컨셉으로 만드는 중…' : 'Making cuts for "' + brief.slice(0, 20) + '"…') : (isKO() ? '알아서 새 컨셉으로 만드는 중…' : 'Inventing a fresh concept…');
   kickMore('/api/pack/' + PACK_ID + '/concept-more', { brief }, msg);
 }
 
@@ -750,8 +757,8 @@ async function poll(id) {
     // 🧟 중간에 끊긴 팩(서버 재시작·크래시)은 계획과 캐논 레퍼가 남아 있다 → 남은 컷부터 재개할 수 있다.
     //   처음부터 다시 만들면 이미 나온 컷까지 다시 태운다(크레딧·시간).
     const canResume = !!(plan && (plan.cuts || []).length) && assets.some(a => a.kind === 'ref' && a.url);
-    $('#status').innerHTML = '실패: ' + esc(pack.error || '')
-      + (canResume ? ' <button class="cutbtn" onclick="resumePack(this)">↻ 이어서 만들기</button>' : '');
+    $('#status').innerHTML = (isKO() ? '실패: ' : 'Failed: ') + esc(pack.error || '')
+      + (canResume ? ' <button class="cutbtn" onclick="resumePack(this)">' + (isKO() ? '↻ 이어서 만들기' : '↻ Resume') + '</button>' : '');
     return;
   }
 
@@ -760,8 +767,8 @@ async function poll(id) {
 
   // prep 단계(분석·레퍼 굽는 중, ref_ready 전) — 슬롯 대신 준비 화면.
   if (status === 'processing' && !gatePassed) {
-    $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (plan ? '캐논 레퍼 굽는 중…<div class="sub">이걸 기준으로 컷을 만들어요</div>' : '제품 분석 중…<div class="sub">맞춤 컷을 고르고 있어요</div>') + '</div></div>';
-    $('#status').innerHTML = '<span class="spin"></span>' + (plan ? '레퍼 준비 중…' : '분석 중…');
+    $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (plan ? (isKO() ? '캐논 레퍼 굽는 중…<div class="sub">이걸 기준으로 컷을 만들어요</div>' : 'Baking the canonical reference…<div class="sub">Every cut is made from this</div>') : (isKO() ? '제품 분석 중…<div class="sub">맞춤 컷을 고르고 있어요</div>' : 'Analyzing your product…<div class="sub">Picking cuts that fit it</div>')) + '</div></div>';
+    $('#status').innerHTML = '<span class="spin"></span>' + (plan ? (isKO() ? '레퍼 준비 중…' : 'Preparing reference…') : (isKO() ? '분석 중…' : 'Analyzing…'));
     setTimeout(() => poll(id), 1500); return;
   }
 
@@ -773,8 +780,8 @@ async function poll(id) {
   const pv = document.getElementById('packVideo');
   if (pv) pv.innerHTML = (vidUrl || (vjid && vidStatus !== 'failed')) ? videoBlockInner(pack) : '';
   $('#dlAll').classList.toggle('hide', assets.length === 0);
-  if (status === 'done') { stopGen(); clearActivePack(); renderInteractive(pack); $('#status').innerHTML = '완료 · ' + assets.length + '개 자산'; loadWorks(); return; }
-  $('#status').innerHTML = '<span class="spin"></span>생성 중 · ' + assets.length + '개';
+  if (status === 'done') { stopGen(); clearActivePack(); renderInteractive(pack); $('#status').innerHTML = (isKO() ? '완료 · ' + assets.length + '개 자산' : 'Done · ' + assets.length + ' assets'); loadWorks(); return; }
+  $('#status').innerHTML = '<span class="spin"></span>' + (isKO() ? '생성 중 · ' + assets.length + '개' : 'Generating · ' + assets.length);
   setTimeout(() => poll(id), 1500);
 }
 
@@ -793,7 +800,7 @@ function gateUnits(plan) {
   if (st.length > 1) return st.map(s => ({ key: s.key, label: s.label || s.key, kind: 'state' }));
   const sk = (plan && plan.refSkus) || [];
   if (sk.length > 1) return sk.map(s => ({ key: s.sku, label: s.label || s.sku, kind: 'variant' }));
-  return [{ key: 'main', label: '캐논 레퍼', kind: 'single' }];
+  return [{ key: 'main', label: isKO() ? '캐논 레퍼' : 'Canonical reference', kind: 'single' }];
 }
 function showRefGate(pack) {
   const plan = pack.config && pack.config.plan;
@@ -813,59 +820,61 @@ function showRefGate(pack) {
   // 상태가 붙으면 total이 20+까지 커지므로 8과 풀 사이에 '넉넉' 한 칸을 둔다.
   // 중간 티어는 total보다 **작을 때만** 넣는다 — 안 그러면 최대 티어가 '넉넉'으로 표시돼 "이게 전부"라는 게 안 읽힌다.
   const opts = [];
-  [['핵심', 4], ['표준', 8], ['넉넉', 12]].forEach(([k, n]) => { if (n < total) opts.push({ k, n }); });
-  if (total > 0) opts.push({ k: '풀', n: total });
+  (isKO() ? [['핵심', 4], ['표준', 8], ['넉넉', 12]] : [['Core', 4], ['Standard', 8], ['Plenty', 12]]).forEach(([k, n]) => { if (n < total) opts.push({ k, n }); });
+  if (total > 0) opts.push({ k: isKO() ? '풀' : 'Full', n: total });
   const multi = units.length > 1;
   const blocks = units.map(u => {
     const a = latest['ref_' + u.key] || (multi ? null : latestRef(pack));
     const url = a ? esc(a.url) : '';
     const inner = `<div class="rg-img"><img class="rgImg" data-s="${esc(u.key)}" src="${url}" data-u="${url}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? '예: 한 쌍으로' : '다시 구울 때 교정(선택) — 예: 한 쌍으로'}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">다시 굽기</button></div>`;
+      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '다시 구울 때 교정(선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '다시 굽기' : 'Rebake'}</button></div>`;
     return multi ? `<div class="rg-state"><div class="rg-state-h">${esc(u.label)}</div>${inner}</div>` : inner;
   }).join('');
   const isState = units[0] && units[0].kind === 'state';
-  const unitWord = isState ? '상태' : '종류';
+  const unitWord = isState ? (isKO() ? '상태' : 'state') : (isKO() ? '종류' : 'variant');
   // 🟢 컨셉 미리보기(유저 입력 컨셉을 캐논 레퍼로 렌더한 예시) — 있으면 캐논 레퍼와 함께 보여준다.
   const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
   const conceptBlock = concept ? `<div class="rg-concept">
-      <div class="rg-state-h">내 컨셉 미리보기 <span class="rg-tag">참고</span></div>
+      <div class="rg-state-h">${isKO() ? '내 컨셉 미리보기' : 'My concept preview'} <span class="rg-tag">${isKO() ? '참고' : 'For reference'}</span></div>
       <div class="rg-img"><img src="${esc(concept.url)}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-concept-note">입력하신 컨셉으로 만든 예시예요. 실제 컷들은 이 방향으로 생성됩니다.</div>
+      <div class="rg-concept-note">${isKO() ? '입력하신 컨셉으로 만든 예시예요. 실제 컷들은 이 방향으로 생성됩니다.' : 'An example made from your concept. The actual cuts follow this direction.'}</div>
     </div>` : '';
   // 🔴 플래너가 실패해 기본 컷으로 떨어졌으면 **반드시 알린다** — 예전엔 조용히 폴백돼 "완료"처럼 보였다.
   const fb = plan && plan.fallback
-    ? `<div class="rg-fallback"><b>⚠ 자동 분석이 실패해 기본 컷으로 진행합니다.</b> 이 제품에 맞춘 컷이 아니라 일반 제품컷이에요.
+    ? (isKO() ? `<div class="rg-fallback"><b>⚠ 자동 분석이 실패해 기본 컷으로 진행합니다.</b> 이 제품에 맞춘 컷이 아니라 일반 제품컷이에요.
         취소하고 다시 시도하거나, 판매자 메모에 제품 설명을 넣어보세요.${plan.fallbackReason ? `<span class="rg-fb-why">사유: ${esc(String(plan.fallbackReason).slice(0, 120))}</span>` : ''}</div>`
+      : `<div class="rg-fallback"><b>⚠ Auto analysis failed, so we're proceeding with default cuts.</b> These are generic product cuts, not tailored to this product.
+        Cancel and try again, or add a product description in the seller note.${plan.fallbackReason ? `<span class="rg-fb-why">Reason: ${esc(String(plan.fallbackReason).slice(0, 120))}</span>` : ''}</div>`)
     : '';
   document.body.insertAdjacentHTML('beforeend', `<div class="rg-bg"><div class="rg${multi ? ' wide' : ''}">
-    <button type="button" class="rg-back" onclick="location.reload()" title="처음 화면으로 — 이 팩은 아래 '이어보기'로 계속할 수 있어요">← 뒤로</button>
-    <div class="rg-h">캐논 레퍼 확인</div>
-    <div class="rg-note">${multi ? `${unitWord}마다 각 레퍼를 기준으로 컷을 만듭니다.` : '이 레퍼를 기준으로 모든 컷을 만듭니다.'} <b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.</div>
+    <button type="button" class="rg-back" onclick="location.reload()" title="${isKO() ? "처음 화면으로 — 이 팩은 아래 '이어보기'로 계속할 수 있어요" : "Back to the start — you can continue this pack via 'Resume' below"}">${isKO() ? '← 뒤로' : '← Back'}</button>
+    <div class="rg-h">${isKO() ? '캐논 레퍼 확인' : 'Confirm the canonical reference'}</div>
+    <div class="rg-note">${multi ? (isKO() ? `${unitWord}마다 각 레퍼를 기준으로 컷을 만듭니다.` : `Cuts are made from each ${unitWord}'s own reference.`) : (isKO() ? '이 레퍼를 기준으로 모든 컷을 만듭니다.' : 'Every cut is made from this reference.')} ${isKO() ? '<b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.' : "<b>If it's wrong — a single when it should be a pair, etc.</b> — rebake it."}</div>
     ${fb}
-    ${conceptBlock ? `<div class="rg-compare">${conceptBlock}<div class="rg-canon"><div class="rg-state-h">캐논 레퍼 <span class="rg-tag on">생성 기준</span></div><div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div></div></div>` : `<div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>`}
-    <div class="rg-depth-h">몇 컷 만들까요?${multi ? ` <span class="rg-depth-sub">${unitWord}별로 고루 나눠 만듭니다</span>` : ''}</div>
-    <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${o.n}컷</span></button>`).join('')}</div>
-    <div class="rg-cost">예상 크레딧 <b id="rgCost">◈${(gateDepth * PACK_CUT_CR).toLocaleString()}</b> <span class="rg-cost-sub">· 컷당 ◈${PACK_CUT_CR}</span></div>
-    <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">이대로 <b id="rgN">${gateDepth}</b>컷 만들기</button></div>
+    ${conceptBlock ? `<div class="rg-compare">${conceptBlock}<div class="rg-canon"><div class="rg-state-h">${isKO() ? '캐논 레퍼' : 'Canonical reference'} <span class="rg-tag on">${isKO() ? '생성 기준' : 'Generation base'}</span></div><div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div></div></div>` : `<div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>`}
+    <div class="rg-depth-h">${isKO() ? '몇 컷 만들까요?' : 'How many cuts?'}${multi ? ` <span class="rg-depth-sub">${isKO() ? `${unitWord}별로 고루 나눠 만듭니다` : `Split evenly per ${unitWord}`}</span>` : ''}</div>
+    <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${isKO() ? `${o.n}컷` : `${o.n} cuts`}</span></button>`).join('')}</div>
+    <div class="rg-cost">${isKO() ? '예상 크레딧' : 'Estimated credits'} <b id="rgCost">◈${(gateDepth * PACK_CUT_CR).toLocaleString()}</b> <span class="rg-cost-sub">${isKO() ? `· 컷당 ◈${PACK_CUT_CR}` : `· ◈${PACK_CUT_CR} / cut`}</span></div>
+    <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">${isKO() ? `이대로 <b id="rgN">${gateDepth}</b>컷 만들기` : `Make <b id="rgN">${gateDepth}</b> cuts`}</button></div>
   </div></div>`);
 }
 function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; const c = document.getElementById('rgCost'); if (c) c.textContent = '◈' + (n * PACK_CUT_CR).toLocaleString(); }
 // (2026-07-27) 팩 영상 제거 — toggleGateVideo/게이트 영상 토글 삭제. 영상은 Ad Video(studio) 전용.
 async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의 입력칸·이미지만 다룬다(다른 상태는 그대로).
   sku = sku || 'main';
-  if (!btn || btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = '굽는 중…';
+  if (!btn || btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = isKO() ? '굽는 중…' : 'Baking…';
   const pick = (sel) => [...document.querySelectorAll(sel)].find(el => el.dataset.s === sku);
   const inp = pick('.rg-bg .rgHint');
   const hint = ((inp && inp.value) || '').trim();
   const imgEl = pick('.rg-bg img.rgImg');
-  const ov = busyOn(imgEl && imgEl.closest('.rg-img'), '다시 굽는 중…');   // 레퍼 이미지에 오버레이 스피너
+  const ov = busyOn(imgEl && imgEl.closest('.rg-img'), isKO() ? '다시 굽는 중…' : 'Rebaking…');   // 레퍼 이미지에 오버레이 스피너
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku, hint }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error || '실패');
+    const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     const img = pick('.rg-bg img.rgImg'); if (img && d.asset) { img.src = d.asset.url; img.dataset.u = d.asset.url; img.style.opacity = 1; }
     if (inp) inp.value = '';
-    if (window.toast) toast('레퍼 다시 구웠어요 — 확인하고 진행하세요');
-  } catch (e) { if (window.toast) toast('재굽기 실패: ' + (e.message || e), 'error'); }
+    if (window.toast) toast(isKO() ? '레퍼 다시 구웠어요 — 확인하고 진행하세요' : 'Reference rebaked — check it and continue');
+  } catch (e) { if (window.toast) toast((isKO() ? '재굽기 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); }
   finally { busyOff(ov); btn.disabled = false; btn.textContent = t; }
 }
 /**
@@ -874,34 +883,34 @@ async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의
  */
 async function resumePack(btn) {
   if (btn && btn.disabled) return;
-  if (btn) { btn.disabled = true; btn.textContent = '재개 중…'; }
+  if (btn) { btn.disabled = true; btn.textContent = isKO() ? '재개 중…' : 'Resuming…'; }
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/resume', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || '실패');
+    if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     gateDepth = d.depth || 0;              // 슬롯 수를 실제 생성량에 맞춘다(0=전부)
     gatePassed = true; built = false; filled.clear();
     genStartTs = Date.now();
     if (elapsedTimer) clearInterval(elapsedTimer);
     elapsedTimer = setInterval(tickElapsed, 100);
-    $('#status').innerHTML = '<span class="spin"></span>이어서 생성 중…';
+    $('#status').innerHTML = '<span class="spin"></span>' + (isKO() ? '이어서 생성 중…' : 'Resuming generation…');
     poll(PACK_ID);                          // failed 분기에서 멈춘 폴링을 다시 돌린다
   } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = '↻ 이어서 만들기'; }
-    fail('이어서 만들기 실패: ' + (e.message || e));
+    if (btn) { btn.disabled = false; btn.textContent = isKO() ? '↻ 이어서 만들기' : '↻ Resume'; }
+    fail((isKO() ? '이어서 만들기 실패: ' : 'Resume failed: ') + (e.message || e));
   }
 }
 
 async function gateProceed() {
   const btn = document.querySelector('.rg-go'); if (btn && btn.disabled) return;
-  if (btn) { btn.disabled = true; btn.dataset.t = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>생성 시작 중…'; }
+  if (btn) { btn.disabled = true; btn.dataset.t = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>' + (isKO() ? '생성 시작 중…' : 'Starting…'); }
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depth: gateDepth >= gateTotal ? 0 : gateDepth }) });
-    if (!r.ok) { const d = await r.json(); throw new Error(d.error || '실패'); }
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error || (isKO() ? '실패' : 'Failed')); }
     gatePassed = true; built = false; filled.clear();
     const g = document.querySelector('.rg-bg'); if (g) g.remove();
-    $('#status').innerHTML = '<span class="spin"></span>생성 중…';
-  } catch (e) { if (btn) { btn.disabled = false; if (btn.dataset.t) btn.innerHTML = btn.dataset.t; } if (window.toast) toast('생성 시작 실패: ' + (e.message || e), 'error'); }
+    $('#status').innerHTML = '<span class="spin"></span>' + (isKO() ? '생성 중…' : 'Generating…');
+  } catch (e) { if (btn) { btn.disabled = false; if (btn.dataset.t) btn.innerHTML = btn.dataset.t; } if (window.toast) toast((isKO() ? '생성 시작 실패: ' : 'Failed to start: ') + (e.message || e), 'error'); }
 }
 function downloadAll() {   // 컷별 현재 보고 있는 버전만
   const g = versionsByCut(PACK || { assets: window._packAssets || [] });
@@ -988,10 +997,10 @@ function studioMediaCard(o) {
     ? `<video class="img" src="${esc(o.url)}" autoplay muted loop playsinline preload="metadata" style="object-fit:cover" onloadedmetadata="fitResultCard(this)"></video>`
     : `<img class="img" src="${esc(o.url)}" loading="lazy" style="object-fit:cover" onload="fitResultCard(this)" alt="" onerror="var c=this.closest('.result-card');if(c)c.remove()">`;
   const priv = (o.visibility === 'private');
-  const visBtn = `<button class="rc-btn${priv ? ' on' : ''}" type="button" title="${priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'}" onclick="event.stopPropagation();toggleCardVis(this,${o.idx})">${priv ? RC_SVG.priv : RC_SVG.pub}</button>`;
-  const dlBtn = `<a class="rc-btn" href="${esc(o.url)}" download title="다운로드" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
+  const visBtn = `<button class="rc-btn${priv ? ' on' : ''}" type="button" title="${priv ? (isKO() ? '비공개 — 나만 봅니다' : 'Private — only you can see it') : (isKO() ? '공개 — Explore에 노출' : 'Public — shown in Explore')}" onclick="event.stopPropagation();toggleCardVis(this,${o.idx})">${priv ? RC_SVG.priv : RC_SVG.pub}</button>`;
+  const dlBtn = `<a class="rc-btn" href="${esc(o.url)}" download title="${isKO() ? '다운로드' : 'Download'}" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
   // 🎬 이 카드가 편집 가능한 영상이면 "Edit video"(이 영상만) → Ad Video로 이동. 배치 전체가 아니라 이 영상 하나에만 적용.
-  const editBtn = (reel && o.idx != null && PACK_EDITABLE.has(o.idx)) ? `<a class="rc-btn" href="/studio?mode=ugc&editVideo=${o.idx}" title="이 영상을 Ad Video에서 편집" onclick="event.stopPropagation()">${RC_SVG.edit}</a>` : '';
+  const editBtn = (reel && o.idx != null && PACK_EDITABLE.has(o.idx)) ? `<a class="rc-btn" href="/studio?mode=ugc&editVideo=${o.idx}" title="${isKO() ? '이 영상을 Ad Video에서 편집' : 'Edit this video in Ad Video'}" onclick="event.stopPropagation()">${RC_SVG.edit}</a>` : '';
   return `<div class="result-card" role="link" tabindex="0" onclick="location.href='/creation?idx=${o.idx}&from=pack'" style="cursor:pointer">${inner}<div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div></div>`;
 }
 const CH_LBL = { cut: 'Cut', cutBg: 'BG color', bg: 'Scene', garment: 'Garment', skin: 'Skin', age: 'Age', concept: 'Concept', detail: 'Detail', size: 'Size' };
@@ -1013,24 +1022,24 @@ function batchRowHtml(b) {
   const srcImgs = b.productImages || [];
   const canonRefs = b.canonRefs || [];
   // 🔑 원본을 올린 개수만큼 다 보여준다(각 클릭 → 크게 보기). data-u 로 넘긴다(esc가 따옴표를 엔티티로 바꿔 onclick 리터럴에 직접 못 넣음).
-  const srcThumbs = srcImgs.map((u, i) => `<img class="rb-src-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="올린 원본 사진 ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — 클릭하면 크게 봅니다" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
+  const srcThumbs = srcImgs.map((u, i) => `<img class="rb-src-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="${isKO() ? `올린 원본 사진 ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — 클릭하면 크게 봅니다` : `Uploaded photo ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — click to enlarge`}" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
   // 🏷 캐논 레퍼 — "생성 기준". 원본 뒤에 라벨과 함께 나란히(구분 없이 다 보여줌).
-  const refThumbs = canonRefs.map((u) => `<img class="rb-src-thumb rb-canon-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="캐논 레퍼 — 이 결과를 만든 생성 기준(클릭하면 크게)" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
-  const canonBlock = canonRefs.length ? `<span class="rb-src-item rb-canon-lbl"><span class="k">캐논 레퍼</span></span>${refThumbs}` : '';
+  const refThumbs = canonRefs.map((u) => `<img class="rb-src-thumb rb-canon-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="${isKO() ? '캐논 레퍼 — 이 결과를 만든 생성 기준(클릭하면 크게)' : 'Canonical reference — the base this result was generated from (click to enlarge)'}" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
+  const canonBlock = canonRefs.length ? `<span class="rb-src-item rb-canon-lbl"><span class="k">${isKO() ? '캐논 레퍼' : 'Canonical ref'}</span></span>${refThumbs}` : '';
   const srcRow = ((srcImgs.length || canonRefs.length || b.modelName) ? `<div class="rb-src-row">`
     + srcThumbs + canonBlock
     + (b.modelName ? `<span class="rb-src-item rb-src-model"><span class="k">Model</span>${esc(b.modelName)}</span>` : '') + `</div>` : '');
   const chRow = (() => { const c = b.choices; if (!c || typeof c !== 'object') return '';
     const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });
     return chips.length ? `<div class="rb-src-row rb-ch-row">${chips.join('')}</div>` : ''; })();
-  const del = `<div class="rb-del-row"><button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">🗑 삭제</button></div>`;
+  const del = `<div class="rb-del-row"><button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">${isKO() ? '🗑 삭제' : '🗑 Delete'}</button></div>`;
   // 🎬 Edit video는 배치 메타가 아니라 각 영상 카드(studioMediaCard)에 붙는다 — "이 영상만" 명확히(팩 전체 아님).
   return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${del}</div></div>`;
 }
 function renderWorks() {
   const grid = $('#resultsGrid'), empty = $('#worksEmpty');
   const total = BATCHES.reduce((n, b) => n + b.items.length, 0);
-  $('#worksCount').textContent = total ? total + '개' : '';
+  $('#worksCount').textContent = total ? (isKO() ? total + '개' : String(total)) : '';
   if (!BATCHES.length) { grid.innerHTML = ''; empty.classList.remove('hide'); return; }
   empty.classList.add('hide');
   let html = '', last = null;
@@ -1047,21 +1056,21 @@ async function toggleCardVis(btn, idx) {   // 글로브 = 공개/비공개 토�
     const d = await r.json();
     if (!r.ok || !d.success) throw new Error(d.error || 'failed');
     const vis = (d.data && d.data.visibility) || next; const priv = (vis === 'private');
-    btn.classList.toggle('on', priv); btn.title = priv ? '비공개 — 나만 봅니다' : '공개 — Explore에 노출'; btn.innerHTML = priv ? RC_SVG.priv : RC_SVG.pub;
-    if (window.toast) { if (next === 'private' && vis !== 'private') toast('비공개는 유료 플랜이 필요해요 — 공개 유지.', 'error'); else toast(priv ? '비공개로 바꿨어요.' : '공개로 바꿨어요 — Explore에 노출됩니다.'); }
-  } catch (e) { if (window.toast) toast('변경 실패: ' + (e.message || e), 'error'); }
+    btn.classList.toggle('on', priv); btn.title = priv ? (isKO() ? '비공개 — 나만 봅니다' : 'Private — only you can see it') : (isKO() ? '공개 — Explore에 노출' : 'Public — shown in Explore'); btn.innerHTML = priv ? RC_SVG.priv : RC_SVG.pub;
+    if (window.toast) { if (next === 'private' && vis !== 'private') toast(isKO() ? '비공개는 유료 플랜이 필요해요 — 공개 유지.' : 'Private Mode needs a paid plan — kept public.', 'error'); else toast(priv ? (isKO() ? '비공개로 바꿨어요.' : 'Now private.') : (isKO() ? '공개로 바꿨어요 — Explore에 노출됩니다.' : 'Now public — shown in Explore.')); }
+  } catch (e) { if (window.toast) toast((isKO() ? '변경 실패: ' : 'Update failed: ') + (e.message || e), 'error'); }
   finally { btn.disabled = false; }
 }
 async function delBatch(btn, idxsCsv) {   // 크리에이션 삭제(배치 = 여러 장이면 전부). /api/generate/creations/:idx DELETE
   if (btn.disabled) return;
-  if (!confirm('이 크리에이션을 삭제할까요?')) return;
+  if (!confirm(isKO() ? '이 크리에이션을 삭제할까요?' : 'Delete this creation?')) return;
   btn.disabled = true;
   const idxs = idxsCsv.split(',').filter(Boolean);
   try {
     await Promise.all(idxs.map(id => fetch('/api/generate/creations/' + id, { method: 'DELETE' }).then(r => r.ok).catch(() => false)));
     const row = btn.closest('.result-row'); if (row) row.remove();
     loadWorks();
-  } catch (e) { btn.disabled = false; if (window.toast) toast('삭제 실패', 'error'); }
+  } catch (e) { btn.disabled = false; if (window.toast) toast(isKO() ? '삭제 실패' : 'Delete failed', 'error'); }
 }
 // ── 🔁 나갔다 와도 진행 중 팩으로 복귀(같은 브라우저) ──────────────────────
 //   팩 생성 시 id를 localStorage에 담아두고, 로드 시 그게 아직 안 끝났으면 "이어보기"를 띄운다.
@@ -1075,11 +1084,11 @@ async function reconnectActivePack() {
   try { const r = await fetch('/api/pack/' + id); if (!r.ok) throw 0; pack = await r.json(); }
   catch (_) { clearActivePack(); return; }                                // 없어진/접근불가 팩 → 정리
   if (!pack || pack.status === 'done') { clearActivePack(); return; }     // 끝난 팩은 내 크리에이션서 봄
-  const label = pack.status === 'ref_ready' ? '레퍼 확인 대기 중인 팩'
-    : pack.status === 'failed' ? '생성이 끊긴 팩' : '생성 중이던 팩';
+  const label = pack.status === 'ref_ready' ? (isKO() ? '레퍼 확인 대기 중인 팩' : 'a pack waiting for reference review')
+    : pack.status === 'failed' ? (isKO() ? '생성이 끊긴 팩' : 'a pack whose generation was interrupted') : (isKO() ? '생성 중이던 팩' : 'a pack that was generating');
   const bar = document.createElement('div');
   bar.className = 'reconn';
-  bar.innerHTML = '<span>⏳ ' + label + '이 있어요.</span><span class="reconn-act"><button class="reconn-go">이어보기</button><button class="reconn-x">새로 시작</button></span>';
+  bar.innerHTML = '<span>⏳ ' + (isKO() ? label + '이 있어요.' : 'You have ' + label + '.') + '</span><span class="reconn-act"><button class="reconn-go">' + (isKO() ? '이어보기' : 'Resume') + '</button><button class="reconn-x">' + (isKO() ? '새로 시작' : 'Start fresh') + '</button></span>';
   const wrap = document.querySelector('.wrap') || document.body;
   wrap.insertBefore(bar, wrap.firstChild);
   bar.querySelector('.reconn-go').onclick = () => { bar.remove(); openActivePack(pack); };
