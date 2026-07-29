@@ -206,6 +206,8 @@
     // 언어
     // (2026-07-30) 내레이션 폐지 → '음성' 제거. 옛 키('— script & voice')는 남겨둔다(다른 화면 잔존 대비, 무해).
     'Ad language': '광고 언어', '— script': '— 대본', '— script & voice': '— 대본 · 음성',
+    // (2026-07-30 폼 축소) Count·Length/scene·언어 선택 폐지 — 총 길이 하나만 받는다
+    'Total length': '총 길이',
     // 컨셉 placeholder(TEXTAREA는 텍스트치환 SKIP이나 placeholder는 ATTRS로 처리됨)
     'e.g. A calming night serum for tired skin — cozy, candle-lit bedroom mood.':
       '예) 지친 피부를 위한 진정 나이트 세럼 — 아늑한 캔들 조명 무드.',

@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=19" defer></script>
+<script src="/js/i18n.js?v=20" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -1375,8 +1375,7 @@
       <h2 class="ugc-lead-t">A finished ad video — your scenes cut together, ready to post.</h2>
       <div class="ugc-lead-chips">
         <span class="ugc-lead-chip">9:16 · 1:1 · 16:9</span>
-        <span class="ugc-lead-chip">Music optional</span>
-        <span class="ugc-lead-chip">English · 한국어</span>
+        <span class="ugc-lead-chip">Music optional</span><!-- (2026-07-30) 'English·한국어' 칩 제거 — 언어 선택이 폼에서 사라짐(앱 언어 자동) -->
       </div>
     </div>
     <div class="script-box" id="ugcInputBox">
@@ -1417,7 +1416,9 @@
       </div>
       <div id="ugcTip-photos" class="ugc-tip" style="display:none;margin-top:8px"></div>
       <div style="margin:10px 0 2px">
-        <button type="button" class="neg-toggle" id="ugcDetailsToggle" onclick="ugcToggleDetails()"><span class="pl">+</span> Product details</button>
+        <!-- (2026-07-30 폼 축소) Product details 토글 숨김 — 제품 사실은 컨셉 한 줄에 녹이면 된다.
+             #ugcDetails textarea·읽는 JS는 존치(값=빈 문자열이면 미전송). 되돌리려면 display:none만 제거. -->
+        <button type="button" class="neg-toggle" id="ugcDetailsToggle" style="display:none" onclick="ugcToggleDetails()"><span class="pl">+</span> Product details</button>
         <textarea class="script-ta" id="ugcDetails" style="display:none;margin-top:8px" placeholder="Facts the AI may use — e.g. Brand: Rouge Paris · 24h wear · vegan · hydrating.  Leave blank to keep copy general (AI won't invent claims)."></textarea>
       </div>
       </div><!-- /.ugc-fold-a -->
@@ -1454,8 +1455,11 @@
         <div id="ugcTip-snd" class="ugc-tip" style="display:none"></div>
         <input type="checkbox" id="ugcVoice" style="display:none">
       </div>
+      <!-- (2026-07-30 폼 축소) Video format 선택 숨김 — 폼은 항상 product-ad(제품만)로 생성한다.
+           ⚠️ 결과: '모델과 함께'는 이 폼에서 일시 불가(모델 픽커 트리거가 이 토글뿐). 컨셉 기반 자동 판별은 다음 단계.
+           #ugcFormat hidden·마크업 존치(참조 다수) — 되돌리려면 이 행의 display:none만 제거. -->
       <div style="margin:8px 0 2px">
-        <div class="ugc-opt-row">
+        <div class="ugc-opt-row" style="display:none">
           <span class="ugc-opt-lbl">Video format <span class="ugc-help" role="button" tabindex="0" aria-label="What do the Video format options mean?" onclick="ugcHelp(event,'fmt')" onkeydown="ugcHelpKey(event,'fmt')">?</span></span>
           <div class="ugc-fmt" role="group" aria-label="Video format">
             <button type="button" class="ugc-fmt-btn active" data-fmt="product-ad" onclick="ugcSetFormat('product-ad')"><b><svg class="ugc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.3 7.5 12 12.5l8.7-5M12 12.5V21.5"/></svg>Product only</b></button>
@@ -1503,34 +1507,28 @@
            /api/generate/ugc/script 로 보내 AI가 그 길이에 맞춰 대본을 쓴다(대본 스키마의 scenes[].durationSec).
            2026-07-17 한때 길이를 2단계로 옮겼다가 되돌림 — 대본이 나온 뒤엔 Rewrite 없이는 아무 효과가 없었고,
            대본이 이미 씬별 길이를 정해 보여주는데(4s 배지) 그 아래서 또 물어보는 모순이 생겼다. -->
+      <!-- (2026-07-30 폼 축소) Count·Length/scene 세그먼트 → **총 길이(초) 하나**로 교체.
+           씬 개수·씬별 길이는 대본 Auto가 정한다(기존 Auto 경로 그대로 — 프롬프트 변경 없음).
+           총 길이는 durationSec으로 대본 생성에 목표(~)로 전달된다.
+           hidden #ugcSceneCount/#ugcSceneDur는 0(Auto) 고정 존치(읽는 JS 다수). 되돌리기: 이 블록을 세그먼트로 복원. -->
       <div style="margin:8px 0 2px">
-        <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <div>
-            <div class="ugc-fieldlbl">Count</div>
-            <div class="ugc-seg" id="ugcCountSeg" role="group" aria-label="Count">
-              <button type="button" class="ugc-seg-b active" data-c="0" onclick="ugcSetSceneCount(this)">Auto</button>
-              <button type="button" class="ugc-seg-b" data-c="3" onclick="ugcSetSceneCount(this)">3</button>
-              <button type="button" class="ugc-seg-b" data-c="4" onclick="ugcSetSceneCount(this)">4</button>
-              <button type="button" class="ugc-seg-b" data-c="5" onclick="ugcSetSceneCount(this)">5</button>
-              <button type="button" class="ugc-seg-b" data-c="6" onclick="ugcSetSceneCount(this)">6</button>
-            </div>
-          </div>
-          <!-- 안내문은 wrap '안'에 둔다 — 형제로 두면 음성모드에서 컨트롤만 숨고 안내만 남는 유령 문구가 됨 -->
-          <div id="ugcLenSceneWrap">
-            <div class="ugc-fieldlbl">Length / scene</div>
-            <div class="ugc-seg" id="ugcDurSeg" role="group" aria-label="Length / scene">
-              <button type="button" class="ugc-seg-b active" data-d="0" onclick="ugcSetSceneDur(this)">Auto</button>
-              <button type="button" class="ugc-seg-b" data-d="3" onclick="ugcSetSceneDur(this)">3s</button>
-              <button type="button" class="ugc-seg-b" data-d="5" onclick="ugcSetSceneDur(this)">5s</button>
-            </div>
-          </div>
+        <div class="ugc-fieldlbl">Total length</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="ugcTotalSec" value="25" min="10" max="60" step="1" inputmode="numeric" aria-label="Total length in seconds"
+            oninput="ugcSyncTotalSec()" onchange="ugcSyncTotalSec()"
+            style="width:78px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:14px;font-weight:650">
+          <span style="font-size:13px;color:var(--dim)">sec</span>
+          <span id="ugcTotalHint" style="font-size:11.5px;color:var(--faint)"></span>
         </div>
-        <div id="ugcTotalLen" style="font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
+        <div id="ugcLenSceneWrap" style="display:none"></div>
+        <div id="ugcTotalLen" style="display:none;font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
         <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Narrated — length is set by the voice.</div>
         <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
       </div>
-      <!-- Ad language: 대본·음성·자막·캡션의 언어(생성 프롬프트·영상 비주얼은 무관). 기본 English. -->
-      <div style="margin:8px 0 2px">
+      <!-- Ad language: 대본·캡션의 언어(영상 비주얼과 무관).
+           (2026-07-30 폼 축소) 선택 숨김 — 대신 hidden #ugcLangSel을 **앱 언어에 동기화**한다(ugcSyncLangToApp).
+           전엔 기본 'en'이라 한국어 앱을 쓰는 셀러가 무심코 영어 대본을 받았다. 되돌리기: display:none 제거. -->
+      <div style="margin:8px 0 2px;display:none">
         <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Ad language <span style="color:var(--faint)">— script</span></div>
         <div class="ugc-seg" id="ugcLangSeg" role="group" aria-label="Ad language">
           <button type="button" class="ugc-seg-b active" data-lang="en" onclick="ugcSetLang(this)">English</button>
@@ -6095,7 +6093,9 @@ async function ugcApplyDraft(draft){
     set('ugcConcept',draft.concept); set('ugcProductName',draft.productName); set('ugcDetails',draft.details);
     var s=draft.settings||{};
     set('ugcVoiceId',s.voiceId); set('ugcSpeed',s.speed); set('ugcQuality',s.quality); set('ugcAspect',s.aspect);
-    set('ugcFormat',s.format); set('ugcLangSel',s.lang); set('ugcSceneCount',s.sceneCount); set('ugcSceneDur',s.sceneDur);
+    // (2026-07-30 폼 축소) format·lang·sceneCount·sceneDur는 **복원하지 않는다** — 선택 UI가 숨겨져
+    //   유저가 되돌릴 수단이 없다(옛 초안이 model-editorial·en·씬3을 되살리면 보이지 않는 상태로 생성됨).
+    //   format=product-ad 고정 · lang=앱 언어(ugcSyncLangToApp) · 씬 배치=Auto(0) 고정.
     var mu=document.getElementById('ugcMusic'); if(mu)mu.checked=!!s.music;
     // (2026-07-30) 내레이션 폐지 — 옛 초안이 voice:true로 저장돼 있어도 음악 모드로 강제(숨긴 UI라 되돌릴 수단이 없다).
     var vo=document.getElementById('ugcVoice'); if(vo)vo.checked=false;
@@ -6150,7 +6150,10 @@ async function ugcWriteScript(){
     //   아동 모델인데 성인 화보). 픽커가 [Write script] 버튼 위에 있어 정상 흐름에선 여기서 이미 정해져 있다.
     if(outputType==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg);
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
-    const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택)
+    // (2026-07-30 폼 축소) 총 길이 = 유저가 주는 유일한 길이 신호(빌더가 목표 ~Ns로 사용). 씬 배치는 대본 Auto가 정한다.
+    const tSec=parseInt((document.getElementById('ugcTotalSec')||{}).value,10);
+    if(Number.isFinite(tSec)&&tSec>0)fd.append('durationSec',String(Math.min(Math.max(tSec,10),60)));
+    const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택·현재 UI 없음=항상 0)
     const scD=(document.getElementById('ugcSceneDur')||{}).value; if(scD&&scD!=='0')fd.append('sceneDuration',scD); // 씬 길이(선택)
     const res=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});
     const data=await sjson(res);
@@ -6399,7 +6402,10 @@ function ugcRenderKnobLine(){
   // 소리·형식도 접힌 Options 안으로 들어갔으니 요약줄에 포함(활성 버튼 텍스트 → i18n 자동 반영)
   const at=(sel,fb)=>{const el=document.querySelector(sel);return el?el.textContent.trim():fb;};
   // (2026-07-30) 요약줄에서 Sound 제거 — 선택지가 숨겨졌는데 결과만 표기하면 "고를 수 없는 선택"을 announce하게 된다.
-  txt.innerHTML=[b(at('.ugc-fmt-btn.active','Product only')), b(ar)+arSub, b(lang), b(cnt?String(cnt):'Auto')+' scenes'].join(' · ');
+  // (2026-07-30 폼 축소) 요약줄은 유저가 실제로 고를 수 있는 것만 — 비율 + 총 길이.
+  //   숨긴 선택지(형식·언어·씬수)를 결과로만 표기하면 "고를 수 없는 선택"을 announce하게 된다.
+  const tSec=parseInt(v('ugcTotalSec'),10);
+  txt.innerHTML=[b(ar)+arSub, b((Number.isFinite(tSec)?tSec:25)+'s')].join(' · ');
   const advSum=document.getElementById('ugcAdvSum'); // (2026-07-26) 접힌 'More options' 요약(비율·언어·씬)
   if(advSum) advSum.textContent=ar+arSub+' · '+lang+' · '+(cnt?String(cnt):'Auto')+' scenes';
 }
@@ -6460,6 +6466,25 @@ function ugcCompact(o){
 }
 function ugcUncompact(){ const box=document.getElementById('ugcInputBox'); if(box)box.classList.remove('compact'); }
 function ugcEsc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+// (2026-07-30 폼 축소) 총 길이 자유 입력 — 10~60초 클램프 + 권장 구간(15~30) 힌트.
+//   씬 개수·씬별 길이는 대본 Auto가 정하므로 앞단에서 크레딧을 계산할 수 없다(확정 금액=대본 확인의 Generate 버튼).
+function ugcSyncTotalSec(){
+  const el=document.getElementById('ugcTotalSec'); if(!el)return;
+  const hint=document.getElementById('ugcTotalHint');
+  const ko=!!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+  let v=parseInt(el.value,10);
+  if(!Number.isFinite(v)){ if(hint)hint.textContent=''; return; }   // 타이핑 중(빈칸)엔 잔소리하지 않는다
+  if(v<10)v=10; if(v>60)v=60;
+  if(String(v)!==el.value)el.value=String(v);
+  if(hint)hint.textContent=(v>=15&&v<=30)?(ko?'권장 구간':'sweet spot'):(ko?'15~30초를 권합니다':'15–30s works best');
+  ugcRenderKnobLine();
+}
+// hidden #ugcLangSel을 앱 언어에 맞춘다 — 언어 선택을 폼에서 숨겼으므로(2026-07-30) 유저가 바꿀 수단이 없다.
+//   전엔 기본 'en'이라 한국어 앱을 쓰는 셀러가 무심코 영어 대본을 받았다.
+function ugcSyncLangToApp(){
+  const el=document.getElementById('ugcLangSel'); if(!el)return;
+  el.value=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko')?'ko':'en';
+}
 function ugcUpdateTotal(){
   const c=parseInt((document.getElementById('ugcSceneCount')||{}).value,10)||0;
   const d=parseInt((document.getElementById('ugcSceneDur')||{}).value,10)||0;
@@ -7028,7 +7053,12 @@ async function maybeOpenTplModal(){
   }
 }
 // ▲▲▲
-function _studioInit(){ Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();maybeOpenManageTpl();}); }
+function _studioInit(){
+  // (2026-07-30 폼 축소) 숨긴 hidden(언어)을 앱 언어에 맞추고 총 길이 힌트를 초기 렌더. i18n.js가 defer라 이 시점엔 준비돼 있다.
+  if(typeof ugcSyncLangToApp==='function')ugcSyncLangToApp();
+  if(typeof ugcSyncTotalSec==='function')ugcSyncTotalSec();
+  Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();maybeOpenManageTpl();});
+}
 if(document.readyState==='loading')addEventListener('DOMContentLoaded',_studioInit);else _studioInit();
 loadTools(); // 툴 카탈로그(+폼 스키마) 서버 정본 로드 → 픽커/폼 갱신 (실패 시 FALLBACK 유지)
 loadSubscription(); // 구독 상태 → Private Mode 게이트
