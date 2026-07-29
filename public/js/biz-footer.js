@@ -19,8 +19,17 @@
     hosting: 'Amazon Web Services',  // 호스팅 제공자 (선택)
   };
 
+  // 영문 표기(EN 페이지 전용) — 법정 정본은 국문. 로마자는 사업자등록증 표기 기준 병기.
+  var BIZ_EN = {
+    company: 'ADAM Company Inc. (주식회사아담컴퍼니)',
+    ceo: 'Yedam Jeon',
+    mailOrderNo: '2026-Incheon Seo-gu-2621',
+    address: '1003, 7-29, Cheongnahannae-ro 72beon-gil, Seo-gu, Incheon, Republic of Korea',
+    tel: '+82-70-8098-3546',
+  };
   var sep = '<span class="bizf-sep">|</span>';
-  var rows = [
+  var isKoDoc = ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('en') !== 0);
+  var rows = isKoDoc ? [
     '상호 <b>' + BIZ.company + '</b> (' + BIZ.brand + ')',
     '대표자 <b>' + BIZ.ceo + '</b>',
     '사업자등록번호 <b>' + BIZ.bizNo + '</b>',
@@ -29,6 +38,15 @@
     '대표전화 ' + BIZ.tel,
     '이메일 <a href="mailto:' + BIZ.email + '">' + BIZ.email + '</a>',
     '호스팅 ' + BIZ.hosting,
+  ] : [
+    'Company <b>' + BIZ_EN.company + '</b> (' + BIZ.brand + ')',
+    'CEO <b>' + BIZ_EN.ceo + '</b>',
+    'Business Registration No. <b>' + BIZ.bizNo + '</b>',
+    'E-commerce Report No. <b>' + BIZ_EN.mailOrderNo + '</b>',
+    'Address ' + BIZ_EN.address,
+    'Tel ' + BIZ_EN.tel,
+    'Email <a href="mailto:' + BIZ.email + '">' + BIZ.email + '</a>',
+    'Hosting ' + BIZ.hosting,
   ];
 
   var css =
@@ -69,7 +87,7 @@
       '<div class="bizf-in">' +
       '<div class="bizf-legal">' + legal + '</div>' +
       rows.join(sep) +
-      '<div class="bizf-copy">© 2026 ' + BIZ.company + ' (' + BIZ.brand + '). All rights reserved.</div>' +
+      '<div class="bizf-copy">© 2026 ' + (isKoDoc ? BIZ.company : 'ADAM Company Inc.') + ' (' + BIZ.brand + '). All rights reserved.</div>' +
       '</div>';
 
     // 마운트 우선순위: #biz-footer 지정 위치 → 기존 <footer> 뒤 → body 끝
