@@ -14,11 +14,14 @@ module.exports = {
   sceneTypes: ['broll'],
 
   // 시스템 프롬프트에 주입해 연출 방향을 고정
+  // (2026-07-30) 통합 가이드 — 제품 단독/모델 착용을 **브리프에서 판단**한다(형식 토글 폐지).
+  //   ⚠️ 씬별 SUBJECT 판단 규칙은 builder가 단독으로 소유한다(여기서 "NO people"을 못박으면
+  //      builder의 모델 씬 지시와 한 프롬프트 안에서 싸운다 — 그래서 절대 금지문을 뺐다).
   systemGuide: [
-    'OUTPUT TYPE: product ad — NO on-camera presenter / talking head. Any narration is voiceover played over product b-roll (text placement is defined elsewhere).',
-    '- Every scene is a product-focused visual — no person talking to camera.',
-    '- Vary shots across the ad: hero shot, macro/texture detail, product-in-use or styled scene, and a final CTA card.',
-    '- "brollPrompt": a vivid product photo prompt (subject, angle, lighting, surface, mood). NO human faces, NO people.',
+    'OUTPUT TYPE: product ad — no talking head, no dialogue, no lip-sync. The video is carried by visuals + background music.',
+    '- Every scene is type "broll".',
+    '- Vary shots across the ad: hero shot, macro/texture detail, product-in-use or styled scene, and a final CTA beat.',
+    '- "brollPrompt": a vivid photo prompt (subject, angle, lighting, surface, mood).',
     '- First 2s must be a scroll-stopping visual; end on a hard CTA.',
   ].join('\n'),
 
