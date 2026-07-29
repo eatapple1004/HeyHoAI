@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=20" defer></script>
+<script src="/js/i18n.js?v=21" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -1468,6 +1468,8 @@
         <div id="ugcTip-fmt" class="ugc-tip" style="display:none"></div>
         <input type="hidden" id="ugcFormat" value="product-ad">
         <div id="ugcModelPicker" style="display:none;margin-top:8px">
+          <!-- (2026-07-30) 대본이 모델 씬을 배분했을 때만 열린다(ugcSyncModelNeed). 왜 열렸는지 한 줄로 알려준다. -->
+          <div id="ugcModelNeedHint" style="font-size:12px;color:var(--accent2);font-weight:650;margin-bottom:6px"></div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
             <span style="font-size:12px;color:var(--dim)">Pick a model</span>
             <span style="display:flex;gap:5px">
@@ -5914,7 +5916,7 @@ async function ugcSuggestConcept(){
     fd.append('outputType',cFmt); // 무출연/모델 인지
     fd.append('language',ugcLang());
     // 🧍 선택 모델 — 컨셉이 타깃/톤을 그 모델(특히 아동)에 맞추게. 안 보내면 아동복인데 "for women" 컨셉이 나온다.
-    if(cFmt==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg);
+    if(ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg); // (2026-07-30) 형식 무관 — 고른 모델이 있으면 컨셉 제안도 그 모델 기준
     const cName=(document.getElementById('ugcProductName').value||'').trim(); if(cName)fd.append('product',cName); // 제품명(선택) — 사진에 안 보이는 브랜드·셰이드명 반영(대본과 동일)
     const details=(document.getElementById('ugcDetails').value||'').trim();
     if(details)fd.append('details',details);
@@ -6145,7 +6147,7 @@ async function ugcWriteScript(){
     fd.append('voiceover',(document.getElementById('ugcVoice')||{}).checked!==false?'true':'false'); // 음성 여부→내레이션 대본 생성 분기
     // 🧍 선택 모델 — 렌더에만 보내면 대본이 "누가 나오는지" 모른 채 써진다(성인 모델인데 "a child wearing…",
     //   아동 모델인데 성인 화보). 픽커가 [Write script] 버튼 위에 있어 정상 흐름에선 여기서 이미 정해져 있다.
-    if(outputType==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg);
+    if(ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg); // (2026-07-30) 형식 토글 폐지 → outputType이 아니라 '고른 모델이 있는가'로 판정
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택·현재 UI 없음=0)
     const scD=(document.getElementById('ugcSceneDur')||{}).value; if(scD&&scD!=='0')fd.append('sceneDuration',scD); // 씬 길이(선택·현재 UI 없음=0)
@@ -6156,6 +6158,7 @@ async function ugcWriteScript(){
     const data=await sjson(res);
     if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
     ugcScript=data.script;
+    ugcSyncModelNeed();   // (2026-07-30) 대본이 모델 씬을 배분했으면 여기서 픽커를 연다(형식 토글 폐지 → 대본이 결정)
     ugcRenderScriptPreview(data);
     hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
   }catch(e){ console.error(e); ugcShowScriptLoading(false); ugcSyncSolo(); /* 대본이 끝내 없으면 빈 상태로 자동 복귀 */ hint.textContent='⚠ '+(e.message||'Script failed'); }
@@ -6334,6 +6337,27 @@ function ugcHelp(e,key){
   box.style.display=''; UGC_HELP_OPEN[it.g]=key; btn.classList.add('on');
 }
 function ugcHelpKey(e,key){ if(e.key==='Enter'||e.key===' ')ugcHelp(e,key); } // 키보드 도달(span이라 기본 동작 없음)
+/**
+ * (2026-07-30) 대본이 모델 씬을 배분했는가에 따라 모델 픽커를 연다.
+ * 형식 토글(제품만/모델과 함께)을 폐지했으므로 **대본의 needsModel이 유일한 트리거**다.
+ * ⚠️ 이게 없으면 대본은 subject:"model" 씬을 만드는데 유저가 모델을 고를 수단이 없고,
+ *    렌더 시 모델 레퍼런스 없이 "the model" 프롬프트만 남아 난데없는 인물이 나온다(=반드시 필요한 게이트).
+ */
+function ugcNeedsModel(){ return !!(ugcScript && ugcScript.needsModel); }
+function ugcSyncModelNeed(){
+  const mp=document.getElementById('ugcModelPicker'); if(!mp)return;
+  const need=ugcNeedsModel();
+  mp.style.display=need?'':'none';
+  if(need){
+    ugcRenderModelGrid();
+    const n=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.subject==='model').length;
+    const lbl=document.getElementById('ugcModelNeedHint');
+    if(lbl)lbl.textContent=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko')
+      ? `이 대본에 모델 씬이 ${n}개 있어요 — 얼굴을 골라주세요`
+      : `${n} scene${n===1?'':'s'} in this script feature a model — pick a face`;
+  }
+  ugcSyncGenCost();
+}
 function ugcSetFormat(fmt){
   const el=document.getElementById('ugcFormat'); if(el)el.value=fmt;
   document.querySelectorAll('.ugc-fmt-btn').forEach(b=>b.classList.toggle('active',b.dataset.fmt===fmt));
@@ -6504,6 +6528,15 @@ async function ugcRenderVideo(){
   //   과금(◈ 선차감) 직전이 마지막 방어선이다: 새로고침으로 사진만 날아간 채 대본이 남아 있으면 여기로 온다.
   if(ugcNeedPhoto(null))return;
   const hint=document.getElementById('ugcHint');
+  // (2026-07-30) 🔴 모델 게이트 — 대본이 모델 씬을 배분했는데 얼굴을 안 골랐으면 렌더를 막는다.
+  //   막지 않으면: 모델 레퍼런스 없이 "the model" 프롬프트만 남고, 네거티브는 인물을 배제해 서로 싸운다
+  //   → 난데없는 인물이나 사람 없는 착용컷이 나온 채 **과금까지 된다**. 여기가 과금 직전 마지막 방어선.
+  if(ugcNeedsModel()&&!ugcSelectedModelImg){
+    const mp=document.getElementById('ugcModelPicker'); if(mp){ mp.style.display=''; ugcRenderModelGrid(); mp.scrollIntoView({block:'center',behavior:'smooth'}); }
+    const ko=!!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+    if(hint)hint.textContent=ko?'⚠ 이 대본엔 모델 씬이 있어요 — 먼저 얼굴을 골라주세요.':'⚠ This script has model scenes — pick a face first.';
+    return;
+  }
   const rbtn=document.getElementById('ugcRenderBtn');const oldLabel=rbtn.innerHTML;
   // Generate 버튼은 하나인데 N개가 나눠 쓴다(#ugcHint·경과칸과 같은 문제) → **제출이 끝나면 바로 놓아준다.**
   //   잠금은 "이 대본을 두 번 쏘지 마라"는 뜻이지 "렌더가 끝날 때까지 기다려라"가 아니다. 폴링 끝까지 쥐고
@@ -6536,7 +6569,7 @@ async function ugcRenderVideo(){
   try{
     const fd=new FormData();
     const moodEl=document.getElementById('ugcMusicMood'); if(moodEl&&moodEl.value&&ugcScript)ugcScript.musicVibe=moodEl.value; // 음악 무드 선택 시 musicVibe 오버라이드
-    if(outputType==='model-editorial'&&ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg); // 🧍 선택 모델(로스터 경로)
+    if(ugcSelectedModelImg)fd.append('modelImage',ugcSelectedModelImg); // (2026-07-30) 형식 토글 폐지 → outputType이 아니라 '고른 모델이 있는가'로 판정 // 🧍 선택 모델(로스터 경로)
     fd.append('aspect',(document.getElementById('ugcAspect')||{}).value||'9:16'); // 비율(Kling)
     fd.append('script',JSON.stringify(ugcScript));
     fd.append('concept',concept);fd.append('outputType',outputType);
