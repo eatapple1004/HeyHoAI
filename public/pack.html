@@ -113,6 +113,9 @@
   .cf-go{flex:1;font-family:inherit;font-size:14px;font-weight:700;padding:11px;border-radius:12px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13)}
   .cf-go:hover{filter:brightness(1.08)}
   /* 레퍼 소프트 게이트 — 캐논 레퍼 확인 + 몇 컷 만들지 */
+  .rg{position:relative}
+  .rg-back{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#c9c6dd;border-radius:10px;font-size:12.5px;font-weight:700;padding:7px 12px;cursor:pointer}
+  .rg-back:hover{color:#fff;border-color:rgba(163,148,238,.5)}
   .rg-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
   .rg{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 60px -16px rgba(0,0,0,.7)}
   .rg-h{font-family:'Sora';font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
@@ -834,6 +837,7 @@ function showRefGate(pack) {
         취소하고 다시 시도하거나, 판매자 메모에 제품 설명을 넣어보세요.${plan.fallbackReason ? `<span class="rg-fb-why">사유: ${esc(String(plan.fallbackReason).slice(0, 120))}</span>` : ''}</div>`
     : '';
   document.body.insertAdjacentHTML('beforeend', `<div class="rg-bg"><div class="rg${multi ? ' wide' : ''}">
+    <button type="button" class="rg-back" onclick="location.reload()" title="처음 화면으로 — 이 팩은 아래 '이어보기'로 계속할 수 있어요">← 뒤로</button>
     <div class="rg-h">캐논 레퍼 확인</div>
     <div class="rg-note">${multi ? `${unitWord}마다 각 레퍼를 기준으로 컷을 만듭니다.` : '이 레퍼를 기준으로 모든 컷을 만듭니다.'} <b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.</div>
     ${fb}
@@ -1102,6 +1106,9 @@ reconnectActivePack();
       fetch(photo).then(function(r){return r.blob();}).then(function(b){
         var f=new File([b],'product.png',{type:b.type||'image/png'});
         if(typeof addFiles==='function') addFiles([f]);
+        // (2026-07-30) 홈에서 사진 들고 온 경우 = 의도가 명확 → '콘텐츠 만들기'를 누른 것과 동일하게
+        //   제품 분석(classify 확인 모달)까지 자동 진행. 사진 없이 컨셉만이면 자동 시작 안 함.
+        setTimeout(function(){ var go=document.getElementById('go'); if(go&&!go.disabled) go.click(); },200);
       }).catch(function(){});
     }
   }catch(e){}
