@@ -389,6 +389,44 @@ function retimeByVoice(plan, voSegs, sceneOpts = {}) {
 }
 
 /**
+ * (2026-07-30) 씬 컷을 음악 비트 그리드에 스냅한다 — retimeByVoice가 비운 자리(음성 폐지)의 대칭 함수.
+ *   컷이 박자에 떨어져야 "편집된" 느낌이 난다. 안 맞으면 사진 슬라이드에 BGM 얹은 것으로 읽힌다.
+ *   음악은 이 함수가 끝난 뒤의 plan.meta.durationMs로 생성되므로 **총 길이가 항상 음악과 일치**한다
+ *   (그래서 루프 이음새도 페이드도 필요 없다 — 길이 협상 자체가 사라진다).
+ *
+ * ⚠️ 반드시 **내림(floor)**만 한다. 클립은 벤더 네이티브 길이(5s/10s)로 생성돼 durMs로 트림된 상태라,
+ *    올림하면 실제 클립보다 길어져 마지막에 빈 프레임이 생긴다. 손실은 씬당 1비트 미만.
+ * @param {object} plan  buildRenderPlan 산출(직접 갱신)
+ * @param {number} bpm   대본이 컨셉에 맞춰 고른 템포
+ * @returns {boolean} 스냅 적용 여부
+ */
+function retimeToBeat(plan, bpm) {
+  const b = Number(bpm);
+  if (!Number.isFinite(b) || b < 40 || b > 220) return false;
+  const beat = 60000 / b;
+  const vids = plan.tracks.video || [];
+  if (!vids.length) return false;
+  // ⚠️ 경계는 **누적 비트 수**로 계산한다. 씬마다 반올림한 durMs를 더하면 비트가 정수 ms가 아닐 때
+  //    (예: 104BPM = 576.9ms) 오차가 누적돼 뒤쪽 컷이 그리드에서 밀린다(단위 테스트로 잡은 실제 버그).
+  let beatsAcc = 0;
+  for (const v of vids) {
+    const orig = v.durMs;
+    const nb = Math.max(1, Math.floor(orig / beat));            // 이 씬이 차지할 비트 수(내림)
+    const start = Math.round(beatsAcc * beat);
+    const end = Math.round((beatsAcc + nb) * beat);
+    v.startMs = start;
+    v.durMs = Math.min(end - start, orig);                       // 방어: 반올림으로도 클립 길이를 넘지 않게
+    beatsAcc += nb;
+  }
+  for (const s of (plan.tracks.subtitle || [])) {
+    const v = vids.find((x) => x.sceneN === s.sceneN);
+    if (v) { s.startMs = v.startMs; s.durMs = v.durMs; }
+  }
+  plan.meta.durationMs = Math.round(beatsAcc * beat);
+  return true;
+}
+
+/**
  * 베이스 영상(영상+음성, 자막 없음) 위에 자막만 1패스 번인 → 최종 mp4. 오디오는 copy로 유지.
  *   B+ 자막 굽기의 핵심: 자막 편집 시 클립/음성 재작업 0, 이 함수만 재실행하면 됨(빠르고 실패지점 1개).
  *   libass 없으면 사이드카 폴백(베이스 그대로 + subs.srt). subtitle 비면 베이스=최종.
@@ -441,6 +479,12 @@ async function assemble(plan, opts = {}) {
   const voSegsData = await synthVoSegments(opts, plan, workDir, log);
   const sceneOpts = {}; ((opts.script && opts.script.scenes) || []).forEach((s) => { sceneOpts[s.n] = { leadInMs: s.leadInMs, tailMs: s.tailMs }; });
   const voStart = retimeByVoice(plan, voSegsData, sceneOpts); // 씬별 음성 시작 시각 map(없으면 null)
+  // (2026-07-30) 음성이 없으면(=화보 영상 기본) 대신 **음악 비트**가 타이밍을 정한다. 둘은 배타 —
+  //   음성이 있으면 그쪽이 우선(말이 잘리면 안 된다), 없으면 컷을 박자에 맞춘다.
+  if (!voStart) {
+    const bpm = (opts.script && opts.script.bpm) || 0;
+    if (retimeToBeat(plan, bpm)) log(`컷을 비트에 정렬(${bpm} BPM) → 총 ${(plan.meta.durationMs / 1000).toFixed(1)}s`);
+  }
 
   // B: 실 타임스탬프 청크가 있으면 자막 트랙을 청크 단위(실 발화 타이밍)로 교체. 청크 상대시각 → voStart(씬 음성시작) 기준 절대시각.
   //    청크 없는 씬은 기존 씬 엔트리 유지(균등 청킹 폴백). chunked:true 플래그로 하류(번인·오버레이)가 재청킹 안 함.
@@ -528,4 +572,4 @@ async function assemble(plan, opts = {}) {
   };
 }
 
-module.exports = { assemble, burnCaptions, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, probeDurationMs, TARGET_W, TARGET_H, FPS };
+module.exports = { assemble, burnCaptions, muxAudio, buildAss, buildSrt, voSegments, retimeByVoice, retimeToBeat, probeDurationMs, TARGET_W, TARGET_H, FPS };
