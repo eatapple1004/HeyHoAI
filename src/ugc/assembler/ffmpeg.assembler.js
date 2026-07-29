@@ -394,8 +394,11 @@ function retimeByVoice(plan, voSegs, sceneOpts = {}) {
  *   음악은 이 함수가 끝난 뒤의 plan.meta.durationMs로 생성되므로 **총 길이가 항상 음악과 일치**한다
  *   (그래서 루프 이음새도 페이드도 필요 없다 — 길이 협상 자체가 사라진다).
  *
- * ⚠️ 반드시 **내림(floor)**만 한다. 클립은 벤더 네이티브 길이(5s/10s)로 생성돼 durMs로 트림된 상태라,
- *    올림하면 실제 클립보다 길어져 마지막에 빈 프레임이 생긴다. 손실은 씬당 1비트 미만.
+ * ⚠️ **가장 가까운 비트로 반올림**하되 실제 클립 길이를 넘지 않는다.
+ *    처음엔 내림만 했는데, 씬마다 최대 1비트씩 잃어 총 길이가 **매번 짧아졌다**(14초 요청 → 12.3초, -12%).
+ *    클립은 벤더 네이티브(5s/10s)로 생성해 durMs로 트림한 상태라 **위쪽에 여유가 있다**
+ *    (예: 3초 씬 = 5초 클립에서 3초만 사용 → 2초 여유). 그 여유 안에서는 올려도 빈 프레임이 안 생긴다.
+ *    여유가 없는 경우(5초 씬 = 5초 클립)만 내림으로 떨어진다.
  * @param {object} plan  buildRenderPlan 산출(직접 갱신)
  * @param {number} bpm   대본이 컨셉에 맞춰 고른 템포
  * @returns {boolean} 스냅 적용 여부
@@ -411,11 +414,15 @@ function retimeToBeat(plan, bpm) {
   let beatsAcc = 0;
   for (const v of vids) {
     const orig = v.durMs;
-    const nb = Math.max(1, Math.floor(orig / beat));            // 이 씬이 차지할 비트 수(내림)
+    // 실제로 확보된 클립 길이 = 벤더 네이티브(clipPipeline: wantSec>5 ? 10s : 5s)와 같은 규칙.
+    //   여기까지가 올릴 수 있는 천장이다(그 위로 가면 소스가 없어 빈 프레임).
+    const nativeMs = orig > 5000 ? 10000 : 5000;
+    let nb = Math.max(1, Math.round(orig / beat));               // 가장 가까운 비트 수
+    while (nb > 1 && Math.round(nb * beat) > nativeMs) nb -= 1;  // 천장을 넘으면 한 비트씩 내린다
     const start = Math.round(beatsAcc * beat);
     const end = Math.round((beatsAcc + nb) * beat);
     v.startMs = start;
-    v.durMs = Math.min(end - start, orig);                       // 방어: 반올림으로도 클립 길이를 넘지 않게
+    v.durMs = Math.min(end - start, nativeMs);                   // 방어: 어떤 경우에도 소스 길이를 안 넘는다
     beatsAcc += nb;
   }
   for (const s of (plan.tracks.subtitle || [])) {
