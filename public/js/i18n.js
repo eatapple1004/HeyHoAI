@@ -204,7 +204,8 @@
       '3초를 골라도 씬만 짧아지고 크레딧은 5초와 같습니다.',
     '🎙️ Narrated — length is set by the voice.': '🎙️ 내레이션 — 길이는 음성이 정합니다.',
     // 언어
-    'Ad language': '광고 언어', '— script & voice': '— 대본 · 음성',
+    // (2026-07-30) 내레이션 폐지 → '음성' 제거. 옛 키('— script & voice')는 남겨둔다(다른 화면 잔존 대비, 무해).
+    'Ad language': '광고 언어', '— script': '— 대본', '— script & voice': '— 대본 · 음성',
     // 컨셉 placeholder(TEXTAREA는 텍스트치환 SKIP이나 placeholder는 ATTRS로 처리됨)
     'e.g. A calming night serum for tired skin — cozy, candle-lit bedroom mood.':
       '예) 지친 피부를 위한 진정 나이트 세럼 — 아늑한 캔들 조명 무드.',

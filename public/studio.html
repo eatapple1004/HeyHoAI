@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=18" defer></script>
+<script src="/js/i18n.js?v=19" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -1375,7 +1375,6 @@
       <h2 class="ugc-lead-t">A finished ad video — your scenes cut together, ready to post.</h2>
       <div class="ugc-lead-chips">
         <span class="ugc-lead-chip">9:16 · 1:1 · 16:9</span>
-        <span class="ugc-lead-chip">Narration optional</span>
         <span class="ugc-lead-chip">Music optional</span>
         <span class="ugc-lead-chip">English · 한국어</span>
       </div>
@@ -1441,7 +1440,10 @@
            대본·생성 JS가 .value 참조 → hidden input으로 남겨 안전(값=빈 문자열이면 미전송). -->
       <input type="hidden" id="ugcProductName" value="">
 
-      <div style="margin:8px 0 2px">
+      <!-- (2026-07-30) Sound 선택 숨김 — 제품을 "화보 영상"(음악만)으로 확정. 내레이션은 로드맵행.
+           마크업은 남긴다(#ugcVoice를 읽는 참조가 대본생성·렌더·복원 등 다수라 제거하면 광범위 수정).
+           숨김 상태의 #ugcVoice는 항상 unchecked = 음악 모드. 되돌리려면 이 div의 display:none만 제거. -->
+      <div style="margin:8px 0 2px;display:none">
         <div class="ugc-opt-row">
           <span class="ugc-opt-lbl">Sound <span class="ugc-help" role="button" tabindex="0" aria-label="What do the Sound options mean?" onclick="ugcHelp(event,'snd')" onkeydown="ugcHelpKey(event,'snd')">?</span></span>
           <div class="ugc-mode" id="ugcModeSeg" role="group" aria-label="Sound">
@@ -1529,7 +1531,7 @@
       </div>
       <!-- Ad language: 대본·음성·자막·캡션의 언어(생성 프롬프트·영상 비주얼은 무관). 기본 English. -->
       <div style="margin:8px 0 2px">
-        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Ad language <span style="color:var(--faint)">— script &amp; voice</span></div>
+        <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Ad language <span style="color:var(--faint)">— script</span></div>
         <div class="ugc-seg" id="ugcLangSeg" role="group" aria-label="Ad language">
           <button type="button" class="ugc-seg-b active" data-lang="en" onclick="ugcSetLang(this)">English</button>
           <button type="button" class="ugc-seg-b" data-lang="ko" lang="ko" onclick="ugcSetLang(this)">한국어</button>
@@ -6095,7 +6097,8 @@ async function ugcApplyDraft(draft){
     set('ugcVoiceId',s.voiceId); set('ugcSpeed',s.speed); set('ugcQuality',s.quality); set('ugcAspect',s.aspect);
     set('ugcFormat',s.format); set('ugcLangSel',s.lang); set('ugcSceneCount',s.sceneCount); set('ugcSceneDur',s.sceneDur);
     var mu=document.getElementById('ugcMusic'); if(mu)mu.checked=!!s.music;
-    var vo=document.getElementById('ugcVoice'); if(vo)vo.checked=!!s.voice;
+    // (2026-07-30) 내레이션 폐지 — 옛 초안이 voice:true로 저장돼 있어도 음악 모드로 강제(숨긴 UI라 되돌릴 수단이 없다).
+    var vo=document.getElementById('ugcVoice'); if(vo)vo.checked=false;
     if(s.modelImg&&typeof ugcSelectedModelImg!=='undefined')ugcSelectedModelImg=s.modelImg;
     if(typeof ugcSyncVoiceControls==='function')ugcSyncVoiceControls();
     ugcProductFiles=[];
@@ -6395,7 +6398,8 @@ function ugcRenderKnobLine(){
   const cnt=parseInt(v('ugcSceneCount'),10)||0;
   // 소리·형식도 접힌 Options 안으로 들어갔으니 요약줄에 포함(활성 버튼 텍스트 → i18n 자동 반영)
   const at=(sel,fb)=>{const el=document.querySelector(sel);return el?el.textContent.trim():fb;};
-  txt.innerHTML=[b(at('.ugc-fmt-btn.active','Product only')), b(at('.ugc-mode-btn.active','No narration')), b(ar)+arSub, b(lang), b(cnt?String(cnt):'Auto')+' scenes'].join(' · ');
+  // (2026-07-30) 요약줄에서 Sound 제거 — 선택지가 숨겨졌는데 결과만 표기하면 "고를 수 없는 선택"을 announce하게 된다.
+  txt.innerHTML=[b(at('.ugc-fmt-btn.active','Product only')), b(ar)+arSub, b(lang), b(cnt?String(cnt):'Auto')+' scenes'].join(' · ');
   const advSum=document.getElementById('ugcAdvSum'); // (2026-07-26) 접힌 'More options' 요약(비율·언어·씬)
   if(advSum) advSum.textContent=ar+arSub+' · '+lang+' · '+(cnt?String(cnt):'Auto')+' scenes';
 }
