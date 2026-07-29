@@ -377,7 +377,8 @@
     'Terms': '이용약관', 'Privacy': '개인정보', 'Content policy': '콘텐츠 정책', 'Made for brands, everywhere.': '어디서나, 브랜드를 위해.',
 
     // ── 로그인 (saas-login) ──
-    'Your face. Any look. Content on autopilot.': '당신의 얼굴로, 어떤 룩이든. 콘텐츠를 자동으로.', 'Log in': '로그인', 'Sign up': '회원가입',
+    // (2026-07-29) 옛 얼굴앱 태그라인 교체 — 랜딩 히어로와 같은 목소리(셀러 포지셔닝)로 통일
+    'One product photo — the plan, lookbook and ad video, all done for you.': '제품 사진 한 장이면, 기획·룩북·광고영상까지 다 만들어드려요.', 'Log in': '로그인', 'Sign up': '회원가입',
     'Sign up & get 10 free credits': '가입하고 무료 크레딧 10개 받기', 'Password': '비밀번호', 'Confirm password': '비밀번호 확인',
     'Create account': '계정 만들기', 'Continue with Google': 'Google로 계속하기', 'New here?': '처음이신가요?',
     'Create an account': '계정 만들기', 'Already have an account?': '이미 계정이 있으신가요?', 'Creating…': '생성 중…',
@@ -604,6 +605,9 @@
     'How Shots works': '컷, 이렇게 써요',
     'How Ad Video works': '광고영상, 이렇게 써요',
     'How Content Pack works': '콘텐츠 팩, 이렇게 써요',
+    // (2026-07-29) pack.html이 i18n을 로드하면서 드러난 페이지 크롬 + studio 미디어 픽커 제목
+    'Product Pack': '콘텐츠 팩',
+    'Select Media': '미디어 선택',
     'One product photo is all you need': '제품 사진 한 장이면 충분해요',
     'Detail cuts, editorials, on-model shots and ad videos — everything starts from a single photo.': '상세컷·화보·착용컷·광고영상까지 — 전부 사진 한 장에서 시작돼요.',
     'Three ways to create': '만드는 방법은 세 가지',
