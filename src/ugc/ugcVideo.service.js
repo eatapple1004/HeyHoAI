@@ -256,10 +256,14 @@ function pruneComposites(R, keepBasename) {
  */
 // model = 선택된 로스터 모델의 메타({isMinor, ageBand, ageBandLabel, gender}) — 빌더가 나이에 맞는 씬을 쓰게 한다.
 //   안 넘기면 빌더는 모델이 성인인지 아동인지 모른 채 쓴다(= 프롬프트와 레퍼런스가 어긋난다).
-async function generateScript({ product, concept, outputType = 'product-ad', image = null, images = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0, durationSec = undefined, language = 'en', model = null }) {
+// ⚠️ 이 함수는 인자를 **화이트리스트로 구조분해**한다 — 여기 이름을 안 적으면 라우트가 보내도 조용히 사라진다.
+//   실사고(2026-07-30): scenePlan(대본 직접 쓰기)을 라우트·빌더·서비스에 다 붙여놓고 **이 줄만 빼먹어서**
+//   유저가 쓴 씬이 통째로 무시됐다. 안쪽 generateUgcScript 를 직접 호출해 테스트하는 바람에 이 층을 건너뛰어
+//   검증에서도 안 걸렸다. 새 입력을 추가할 땐 **여기와 아래 호출 두 곳 모두**에 이름을 적을 것.
+async function generateScript({ product, concept, outputType = 'product-ad', image = null, images = null, details = '', voiceover = true, category = '', sceneCount = 0, sceneDuration = 0, durationSec = undefined, language = 'en', model = null, scenePlan = null }) {
   if (!concept) { const e = new Error('concept is required'); e.statusCode = 400; throw e; }
   // durationSec = 앞단 총 길이(목표) — 빌더의 기존 입력(baseDuration = input.durationSec || 프로파일 기본)에 그대로 얹힌다.
-  const script = await generateUgcScript({ product, concept, outputType, image, images, details, voiceover, category, sceneCount, sceneDuration, durationSec, language, model });
+  const script = await generateUgcScript({ product, concept, outputType, image, images, details, voiceover, category, sceneCount, sceneDuration, durationSec, language, model, scenePlan });
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script produced no broll scenes'); e.statusCode = 422; throw e; }
   return { script, nClips, cost: estimateCost(script, false) };
