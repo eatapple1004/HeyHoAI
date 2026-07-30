@@ -1120,7 +1120,9 @@ router.get('/video/jobs/:id', async (req, res, next) => {
     if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
     res.json({
       success: true,
-      data: { status: job.status, url: job.result_url, error: job.error, duration: job.duration },
+      // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
+      //   상세(/creation)가 아니라 뷰어 라이트박스로 열렸다(faceswap 응답은 이미 노출하고 있었다).
+      data: { status: job.status, url: job.result_url, resultIdx: job.result_idx || null, error: job.error, duration: job.duration },
     });
   } catch (err) { next(err); }
 });

@@ -349,7 +349,7 @@ async function pollOnce() {
 /** 잡 상태 조회 (소유자 본인 또는 팀 멤버) */
 async function getJob(id, userId) {
   const r = await query(
-    `SELECT v.id, v.status, v.result_url, v.error, v.duration
+    `SELECT v.id, v.status, v.result_url, v.error, v.duration, v.result_idx
      FROM video_jobs v
      WHERE v.id = $1 AND (
        v.user_id = $2

@@ -5946,9 +5946,9 @@ async function generateReel(r,subj,pending){
   const data=await sjson(res); // 방어 파싱(프록시 HTML 대비)
   if(res.status===402){const e=new Error(data.error);e.code402=true;throw e;}
   if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
-  const url=await pollVideoJob(data.jobId);
-  // (테스트) placeholder 릴 배치를 실제 결과로 채움
-  if(pending){ pending.items=[{url:url,type:'reel',idx:null}]; pending.loading=false; renderStudioResults(); }
+  const vr=await pollVideoJob(data.jobId);
+  // placeholder 릴 배치를 실제 결과로 채움 — idx 를 채워야 카드가 /creation 상세로 열린다
+  if(pending){ pending.items=[{url:vr.url,type:'reel',idx:vr.resultIdx||null}]; pending.loading=false; renderStudioResults(); }
   document.getElementById('resultHint').textContent=`1 reel ready — saved to your gallery`;
 }
 
@@ -5959,7 +5959,8 @@ async function pollVideoJob(jobId){
     let d;
     try{ d=(await(await fetch('/api/generate/video/jobs/'+jobId)).json()).data; }catch(e){ continue; }
     if(!d)continue;
-    if(d.status==='succeeded')return d.url;
+    // (2026-07-30) resultIdx 를 함께 반환 — 카드 idx 가 있어야 다른 결과물처럼 /creation 상세로 열린다
+    if(d.status==='succeeded')return {url:d.url, resultIdx:d.resultIdx||null};
     if(d.status==='failed')throw new Error(d.error||'Reel generation failed');
   }
   throw new Error('This reel is taking a while. Check your gallery again shortly.');
@@ -7618,8 +7619,8 @@ async function runHandoff(){
       const data=await sjson(res);
       if(res.status===402){fail('Not enough credits — top up in Billing.');return;}
       if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
-      const url=await pollVideoJob(data.jobId);
-      pending.items=[{url:url,type:'reel',idx:null,visibility:vis}]; pending.loading=false; renderStudioResults();
+      const vr=await pollVideoJob(data.jobId);
+      pending.items=[{url:vr.url,type:'reel',idx:vr.resultIdx||null,visibility:vis}]; pending.loading=false; renderStudioResults();
     }else{
       const fd=new FormData();
       // "지시한 것만 바뀐다" 약속 — creation 쪽과 같은 래핑(문구를 바꾸면 두 표면이 다른 편집이 된다)
@@ -7654,8 +7655,8 @@ async function reattachReels(){
     const t0=Number.isFinite(startedAt)?Math.min(startedAt,Date.now()):Date.now(); // 경과초 = 잡 시작 기준(ugc 재연결과 동일)
     const timer=setInterval(()=>{const s2=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+uid+'"]').forEach(x=>{x.textContent=s2;});},100);
     (async()=>{ try{
-        const url=await pollVideoJob(j.id);
-        b.items=[{url:url,type:'reel',idx:null,visibility:'public'}]; b.loading=false;
+        const vr=await pollVideoJob(j.id);
+        b.items=[{url:vr.url,type:'reel',idx:vr.resultIdx||null,visibility:'public'}]; b.loading=false;
       }catch(e){ b.loading=false; b.items=[]; b.failed=[{idx:null}]; }
       finally{ clearInterval(timer); renderStudioResults(); } })();
   }
