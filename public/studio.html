@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=21" defer></script>
+<script src="/js/i18n.js?v=22" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=11" defer></script>
 <script src="/js/flags.js" defer></script>
@@ -4207,7 +4207,7 @@ function ugcSceneStripHtml(b){
     return s.versions.map((_,vi)=>vi===activeV?mainCard():dimCard(vi)).join(''); // 버전 순서 유지: 활성=전체카드, 나머지=어두운 선택카드
   }).join('');
   return `<div class="ugc-scenes" data-job="${esc(b.ugc.jobId)}">
-    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder, edit captions, or remove — free. 🔄 remakes that one scene, not the whole video (uses credits). Saved isn't final — come back and change any scene.</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
+    <div class="ugc-scenes-hd"><span>Scenes</span><span class="ugc-scenes-hint">Reorder or remove — free. 🔄 remakes that one scene, not the whole video (uses credits).</span><button type="button" class="ugc-hd-apply" style="display:${dirty?'':'none'}" onclick="ugcApplyEdits('${esc(b.ugc.jobId)}')">✓ Apply changes — free</button></div>
     <div class="ugc-strip">${cards}${u._adding?`<div class="usc usc-loadcard usc-add-loading"><div class="usc-thumb"><div class="rb-spin"></div></div><div class="usc-add-loadcap" style="text-align:center;font-size:11px;color:var(--dim);padding:9px 4px">Adding a scene…</div></div>`:''}${u.scenes.length<12?`<div class="usc usc-add" onclick="ugcAddScene('${esc(u.jobId)}')" title="Add a scene"><div class="usc-add-in"><div class="usc-add-plus">＋</div><div class="usc-add-t">Add a scene</div></div></div>`:''}</div>
     <div class="ugc-add" id="ugcAdd-${esc(u.jobId)}" style="display:none"></div>
     <div class="ugc-adv" id="ugcAdv-${esc(b.ugc.jobId)}" style="display:none"></div>
@@ -4863,7 +4863,12 @@ function renderUgcInline(b){
     +`<video class="ugc-inline-vid" src="${esc(it.url)}" autoplay muted loop playsinline onloadeddata="ugcTryUnmute(this)" onclick="openImageModal('${esc(it.url)}','reel')"></video>`
     +`<button class="reel-mute on" title="Toggle sound" onclick="ugcToggleSound(event,this)">🔊</button>`
     +'</div>'; }
-  if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
+  // (2026-07-30) 씬 편집 스트립 제거 — 사용자 결정: "편집기 없애자, 결과는 바로 크리에이션에".
+  //   완성된 영상은 조리대에서 재생만 하고, 보관·재조회는 아래 '내 크리에이션' 피드가 맡는다.
+  //   ⚠️ ugcSceneStripHtml과 그 액션들(ugcSceneRedo/Move/Remove/ToggleAdv·ugcRefreshStrip 등)은 **남겨둔다** —
+  //      되돌리려면 이 줄의 주석만 풀면 되고, 지우면 20+개 함수를 함께 걷어내야 한다.
+  //   되돌리기: 아래 한 줄의 주석 해제.
+  // if(b.ugc&&Array.isArray(b.ugc.scenes)&&b.ugc.scenes.length){ html+=ugcSceneStripHtml(b); }
   el.innerHTML=html;
   if(useLayered)ugcMountLayered(u,(it&&it.url)||u.previewUrl); // innerHTML 이후 마운트(요소 존재해야 player append 가능)
 }
@@ -6588,7 +6593,16 @@ async function ugcRenderVideo(){
     if(typeof ugcClearDraft==='function')ugcClearDraft(); // 생성 접수 → 작성 드래프트 정리(팩이 done에 clear하듯)
     const job=await pollUgcJob(data.jobId);
     // 결과 매핑은 ugcFillPendingFromJob 하나로 — 재연결(ugcRestoreActiveJobs)과 같은 코드를 쓴다
-    if(pending){ ugcFillPendingFromJob(pending,data.jobId,job,outputType); renderStudioResults(); } // 조리대에 완성 영상+씬 스트립
+    // (2026-07-30) 완성 즉시 **크리에이션으로 승격**한다 — 사용자 결정: "편집기 없애자, 결과 바로 크리에이션에".
+    //   ⚠️ 이건 2026-07-17 착지 설계("조리대는 최근 1개, 새 대본 쓸 때만 내려감")를 **뒤집는 것**이다.
+    //      그때 자동승격을 기각한 이유는 조리대에 씬 편집 스트립이 있어서였다 — 편집할 자리를 뺏으면 안 됐다.
+    //      이제 편집기를 없앴으므로 조리대가 완성분을 붙잡아 둘 고유 가치가 사라졌다(재생은 피드 카드도 한다).
+    //   ugcAutoSaveOffBench = 내리기 전 저장(안 하면 오븐에 draft로 남아 유저가 또 눌러야 한다).
+    if(pending){
+      ugcFillPendingFromJob(pending,data.jobId,job,outputType);
+      ugcAutoSaveOffBench(pending); pending._bench=false;   // 저장 → 조리대에서 내림 → 피드(내 크리에이션)에 등장
+      renderStudioResults();
+    }
     // C: 완성 알림을 여기(공용 #ugcHint)서 하지 않는다 — ① 거짓말이었다: 완성은 draft일 뿐 갤러리에 없다
     //    (자동 커밋 스위퍼 없음). 바로 옆 스트립이 "Not saved yet … Save & finish"라고 정반대를 말하고 있었다.
     //    ② 배치별 사실을 배치가 여럿일 수 없는 칸에 쓰면 N개에서 서로 덮어쓴다. 완성은 영상·[Save & finish]가

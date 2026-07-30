@@ -256,8 +256,10 @@
     //   "한 컷만 다시"·"저장 후에도 편집"은 씬 재생성이 **실제로 사는 자리**에서 말하는 게 맞다(사용자 결정 D-3).
     //   ⚠️ 옛 문구("…🔄 re-generates a scene (uses credits).")는 사전에 키가 아예 없어 한국어 모드에서도
     //      영어로 나오고 있었다. 이번에 키를 만들며 그 누락도 같이 메운다.
-    "Reorder, edit captions, or remove — free. 🔄 remakes that one scene, not the whole video (uses credits). Saved isn't final — come back and change any scene.":
-      '순서 바꾸기·자막 수정·삭제는 무료입니다. 🔄 는 영상 전체가 아니라 그 한 컷만 다시 만듭니다(크레딧 사용). 저장했다고 끝이 아닙니다 — 언제든 돌아와 어느 씬이든 바꾸세요.',
+    // (2026-07-30) '자막 수정'을 뺐다 — UGC_CAPTIONS_ENABLED=false이고 무음성이라 spoken이 비어 있어
+    //   **수정할 자막이 존재하지 않는다**. 없는 기능을 무료라고 광고하던 문구였다.
+    "Reorder or remove — free. 🔄 remakes that one scene, not the whole video (uses credits).":
+      '순서 바꾸기·삭제는 무료입니다. 🔄 는 영상 전체가 아니라 그 한 컷만 다시 만듭니다(크레딧 사용).',
     // 음악 · 음성
     'Add background music': '배경음악 넣기', 'Voice': '음성',
     'Yooni — F, clear & calm': 'Yooni — 여성, 맑고 차분함',
