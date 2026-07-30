@@ -1280,6 +1280,29 @@
   .ugc-lenfoot #ugcTotalHint{flex:1;text-align:center}
   .ugc-lentick{font-size:10.5px;color:var(--faint);flex:none}
   .ugc-lencost{margin-top:7px;font-size:12px;font-weight:650;color:var(--accent2)}
+  /* ── 대본 직접 쓰기 (2026-07-30) ── */
+  .ugc-planbtn{background:none;border:1px solid var(--border2);color:var(--dim);cursor:pointer;font-family:inherit;
+    font-size:12px;padding:7px 12px;border-radius:9px}
+  .ugc-planbtn:hover{color:var(--text);border-color:var(--accent2)}
+  .ugc-planbtn[aria-expanded="true"]{color:var(--accent2);border-color:var(--accent2)}
+  .ugc-plan-rows{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .ugc-plan-row{display:flex;align-items:center;gap:8px}
+  .ugc-plan-n{flex:none;width:16px;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .ugc-plan-sec{flex:none;width:58px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;
+    padding:6px 8px;color:var(--text);font-family:inherit;font-size:13px;font-variant-numeric:tabular-nums}
+  .ugc-plan-dir{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;
+    padding:6px 10px;color:var(--text);font-family:inherit;font-size:13px}
+  .ugc-plan-dir:focus,.ugc-plan-sec:focus{outline:none;border-color:var(--accent2)}
+  .ugc-plan-del{flex:none;background:none;border:none;color:var(--faint);cursor:pointer;font-size:15px;line-height:1;padding:4px 6px}
+  .ugc-plan-del:hover{color:#ff7eb6}
+  .ugc-plan-foot{display:flex;align-items:center;gap:12px;margin-top:9px}
+  .ugc-plan-add{background:none;border:1px dashed var(--border2);color:var(--dim);cursor:pointer;font-family:inherit;
+    font-size:12px;padding:6px 11px;border-radius:8px}
+  .ugc-plan-add:hover{color:var(--text);border-color:var(--accent2)}
+  .ugc-plan-add:disabled{opacity:.4;cursor:not-allowed}
+  .ugc-plan-sum{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent2)}
+  .ugc-plan-sum.short{color:#ff7eb6}
+  #scriptStep #ugcAdv #ugcPlanWrap{flex:1 1 100%}
   .ugc-lencost.short{color:#ff7eb6} /* 잔액 부족·자동 축소 — 돈 얘기라 눈에 띄어야 한다 */
   .ugc-lenslider{-webkit-appearance:none;appearance:none;flex:1;min-width:150px;height:22px;
     background:transparent;cursor:pointer;margin:0}
@@ -1603,10 +1626,20 @@
         <!-- (2026-07-30) 원샷 토글 — 대본 확인을 건너뛰고 바로 만든다.
              ⚠️ 반드시 **CTA 옆(항상 떠 있는 자리)**에 둔다. 대본 미리보기 안에 두면 렌더가 시작될 때
                 ugcHideBenchPanels()가 그 패널을 내려서 **끄는 스위치가 같이 사라진다**(켜면 못 끄는 함정). -->
-        <label id="ugcOneShotWrap" style="display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:var(--dim);cursor:pointer">
-          <input type="checkbox" id="ugcOneShotCb" onchange="ugcSetOneShot(this.checked)">
-          <span id="ugcOneShotLbl">Skip script review — generate straight away</span>
-        </label>
+        <!-- (2026-07-30) 대본 확인 건너뛰기 체크박스 삭제 — 이제 **항상** 바로 만든다(모드 개념 없음).
+             그 자리에 '대본 직접 쓰기'. 여기서 씬 개수·각 씬 길이·내용을 유저가 정한다. -->
+        <div id="ugcPlanWrap">
+          <button type="button" class="ugc-planbtn" id="ugcPlanToggle" onclick="ugcTogglePlan()" aria-expanded="false" aria-controls="ugcPlanBox">
+            <span id="ugcPlanToggleLbl">Write the shot list myself</span>
+          </button>
+          <div id="ugcPlanBox" hidden>
+            <div class="ugc-plan-rows" id="ugcPlanRows"></div>
+            <div class="ugc-plan-foot">
+              <button type="button" class="ugc-plan-add" onclick="ugcPlanAdd()">+ <span id="ugcPlanAddLbl">Add a shot</span></button>
+              <span class="ugc-plan-sum" id="ugcPlanSum"></span>
+            </div>
+          </div>
+        </div>
         <div id="ugcLenSceneWrap" style="display:none"></div>
         <div id="ugcTotalLen" style="display:none;font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
         <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Narrated — length is set by the voice.</div>
@@ -6112,24 +6145,86 @@ async function ugcPreviewVoice(){
       공짜로 들리는 버튼이 돈을 쓰면 안 된다.
    저장 = 브라우저 localStorage(사용자 결정 A · 계정 단위는 서버 변경이 필요해 보류).
    문구는 i18n.js 사전 대신 인라인 ko/en 분기(ugcSyncModelNeed 와 같은 방식) — 캐시버스터 범프 불필요. */
-/* (2026-07-30 간소화) **기본이 ON**으로 바뀌었다(사용자 결정) — 저장값이 없으면 건너뛴다.
-   그래서 판정이 ==='1' 이 아니라 !=='0' 이다. 끌 때 키를 지우지 않고 '0'을 넣는 이유도 이것.
-   ⚠️ 대가: 처음 쓰는 사람도 첫 시도에서 대본을 못 보고 과금된다. 되돌리려면 이 두 줄만 뒤집으면 된다. */
-function ugcOneShot(){ try{ return localStorage.getItem('ugc:oneshot')!=='0'; }catch(e){ return true; } }
+/* (2026-07-30) 대본 확인은 **항상 건너뛴다** — 끄는 체크박스를 없앴다(사용자 결정).
+   모드가 하나뿐이라 분기 자체가 사라졌다. 대본을 손대고 싶은 사람은 '대본 직접 쓰기'(ugcScenePlan)를 쓴다.
+   ⚠️ 함수는 남긴다 — 호출부가 여럿이고, 되돌릴 때 여기 한 줄만 바꾸면 되기 때문.
+   ⚠️ 대가: 처음 쓰는 사람도 첫 시도에서 대본을 못 보고 과금된다. */
+function ugcOneShot(){ return true; }
 function ugcIsKo(){ return !!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko'); }
-function ugcSetOneShot(on){
-  try{ localStorage.setItem('ugc:oneshot', on?'1':'0'); }catch(e){} // 끌 때도 명시 저장(없음=ON 이므로 삭제하면 안 된다)
-  ugcCtaState();        // 'free' 약속을 즉시 걷거나 되돌린다
-  ugcSyncOneShotUI();
+/* ───── 대본 직접 쓰기 (2026-07-30) ─────
+   유저가 씬 개수·각 씬 길이·내용을 직접 정한다. 서버는 scenePlan 으로 받아 **완성도에 비례해서만** 다듬는다
+   (프롬프트급으로 써두면 거의 그대로 나간다 — ugcScript.builder 의 HOW MUCH TO REWRITE).
+   ⚠️ 켜면 총 길이 슬라이더는 **입력이 아니라 결과**가 된다 — 합계가 총 길이다. 그래서 슬라이더를 숨긴다.
+      같은 값을 두 곳에서 정하게 두면 어느 쪽이 이기는지 유저가 알 수 없다.
+   ⚠️ 켜면 가격이 **정확해진다.** 씬 길이가 다 정해져 있어 5초 초과 씬 개수가 확정되기 때문
+      (비용은 그 개수만으로 갈린다). Auto 일 때만 "최대"로 말한다. */
+let ugcScenePlan=null;              // null=끔 / [{durationSec, direction}]
+const UGC_PLAN_MAX=12;              // 서버 라우트의 slice(0,12)와 같아야 한다
+function ugcPlanOn(){ return Array.isArray(ugcScenePlan)&&ugcScenePlan.length>0; }
+function ugcTogglePlan(){
+  ugcScenePlan = ugcPlanOn() ? null : [{durationSec:5,direction:''},{durationSec:5,direction:''}];
+  ugcRenderPlan(); ugcSyncTotalSec(); ugcCtaState();
 }
-function ugcSyncOneShotUI(){
-  const cb=document.getElementById('ugcOneShotCb'); if(cb)cb.checked=ugcOneShot();
-  const lbl=document.getElementById('ugcOneShotLbl'); if(!lbl)return;
-  const ko=ugcIsKo();
-  lbl.textContent = ugcOneShot()
-    ? (ko?'대본 확인을 건너뜁니다 — 대본이 나오면 바로 만들어요 (크레딧 차감)'
-        :'Skipping script review — generates as soon as the script is ready (uses credits)')
-    : (ko?'대본 확인 없이 바로 만들기':'Skip script review — generate straight away');
+function ugcPlanAdd(){
+  if(!ugcPlanOn()||ugcScenePlan.length>=UGC_PLAN_MAX)return;
+  ugcScenePlan.push({durationSec:5,direction:''});
+  ugcRenderPlan(); ugcSyncTotalSec(); ugcCtaState();
+}
+function ugcPlanDel(i){
+  if(!ugcPlanOn())return;
+  ugcScenePlan.splice(i,1);
+  if(!ugcScenePlan.length)ugcScenePlan=null;   // 마지막 씬을 지우면 Auto 로 돌아간다
+  ugcRenderPlan(); ugcSyncTotalSec(); ugcCtaState();
+}
+function ugcPlanSet(i,field,val){
+  if(!ugcPlanOn()||!ugcScenePlan[i])return;
+  if(field==='durationSec'){
+    const n=parseInt(val,10);
+    ugcScenePlan[i].durationSec=Number.isFinite(n)?Math.min(Math.max(n,2),10):5; // Kling 물리 한계
+  } else ugcScenePlan[i].direction=String(val||'');
+  if(field==='durationSec'){ ugcRenderPlan(); ugcSyncTotalSec(); ugcCtaState(); }
+  else ugcPlanSyncSum();   // 텍스트는 매 글자 재렌더하면 포커스가 튄다 — 합계만 갱신
+}
+/** 계획이 있을 때의 **정확한** 비용(추정 아님) — 씬 ≤5초=5초 단가, >5초=10초 단가. */
+function ugcPlanCost(){
+  if(!ugcPlanOn())return null;
+  const u=ugcUnitCost();
+  return ugcScenePlan.reduce((a,x)=>a+((Number(x.durationSec)>5)?u[10]:u[5]),0);
+}
+function ugcPlanSyncSum(){
+  const el=document.getElementById('ugcPlanSum'); if(!el)return;
+  if(!ugcPlanOn()){ el.textContent=''; return; }
+  const ko=ugcIsKo(), t=ugcScenePlan.reduce((a,x)=>a+(Number(x.durationSec)||0),0), c=ugcPlanCost();
+  const bal=ugcBalance(), over=(bal!==null&&bal!==Infinity&&c>bal);
+  el.classList.toggle('short',over);
+  el.textContent = over
+    ? (ko?`총 ${t}초 · ◈${c.toLocaleString()} — 잔액 ◈${bal.toLocaleString()} 부족`
+        :`${t}s · ◈${c.toLocaleString()} — over your ◈${bal.toLocaleString()}`)
+    : (ko?`총 ${t}초 · ◈${c.toLocaleString()}`:`${t}s · ◈${c.toLocaleString()}`);
+}
+function ugcRenderPlan(){
+  const box=document.getElementById('ugcPlanBox'), btn=document.getElementById('ugcPlanToggle'),
+        rows=document.getElementById('ugcPlanRows'), lenF=document.querySelector('.ugc-lenfield');
+  if(!box||!btn||!rows)return;
+  const on=ugcPlanOn(), ko=ugcIsKo();
+  box.hidden=!on; btn.setAttribute('aria-expanded',String(on));
+  const tl=document.getElementById('ugcPlanToggleLbl');
+  if(tl)tl.textContent=on?(ko?'대본 직접 쓰기 끄기':'Back to automatic'):(ko?'대본 직접 쓰기':'Write the shot list myself');
+  if(lenF)lenF.style.display=on?'none':'';   // 총 길이는 합계로 결정된다 → 슬라이더를 숨긴다
+  const add=document.querySelector('.ugc-plan-add'); if(add)add.disabled=on&&ugcScenePlan.length>=UGC_PLAN_MAX;
+  const addLbl=document.getElementById('ugcPlanAddLbl'); if(addLbl)addLbl.textContent=ko?'씬 추가':'Add a shot';
+  if(!on){ rows.innerHTML=''; ugcPlanSyncSum(); return; }
+  rows.innerHTML=ugcScenePlan.map((sc,i)=>
+    `<div class="ugc-plan-row">`
+    +`<span class="ugc-plan-n">${i+1}</span>`
+    +`<input type="number" class="ugc-plan-sec" min="2" max="10" step="1" value="${Number(sc.durationSec)||5}"`
+    +` aria-label="${ko?'씬 길이(초)':'Shot length in seconds'}" oninput="ugcPlanSet(${i},'durationSec',this.value)">`
+    +`<input type="text" class="ugc-plan-dir" value="${esc(sc.direction||'')}"`
+    +` placeholder="${ko?'이 씬에서 무엇을 보여줄지 — 자세히 쓸수록 그대로 나갑니다':'What this shot shows — the more precise, the less it gets rewritten'}"`
+    +` aria-label="${ko?'씬 설명':'Shot description'}" oninput="ugcPlanSet(${i},'direction',this.value)">`
+    +`<button type="button" class="ugc-plan-del" onclick="ugcPlanDel(${i})" aria-label="${ko?'이 씬 삭제':'Remove this shot'}">×</button>`
+    +`</div>`).join('');
+  ugcPlanSyncSum();
 }
 function ugcCtaState(){
   const btn=document.getElementById('ugcGenBtn'); if(!btn)return;
@@ -6141,7 +6236,13 @@ function ugcCtaState(){
   // (2026-07-30) 두 번째 게이트=크레딧. **가장 짧은 영상(2초)의 최대가**도 못 내면 눌러도 402로 죽으므로
   //   여기서 막고 이유를 말한다. 판정은 ugcRenderCost 와 **같은 함수**를 쓴다 — 갈리면 버튼은 눌리는데
   //   화면엔 이유가 없거나, 그 반대가 된다.
-  const canAfford=(typeof ugcMaxAffordableSec!=='function')||ugcMaxAffordableSec(30)>=2;
+  // 대본 직접 쓰기: 정확한 비용 하나로 판정한다. **자동으로 줄이지 않는다** —
+  //   유저가 손으로 짠 씬을 우리가 잘라내면 그건 다른 영상이다. 모자라면 그냥 막고 말한다.
+  const planCost=(typeof ugcPlanCost==='function')?ugcPlanCost():null;
+  const bal0=(typeof ugcBalance==='function')?ugcBalance():null;
+  const canAfford=(planCost!=null)
+    ? (bal0===null||bal0===Infinity||planCost<=bal0)
+    : ((typeof ugcMaxAffordableSec!=='function')||ugcMaxAffordableSec(30)>=2);
   const ok=hasPhoto&&canAfford;
   btn.classList.toggle('is-blocked',!ok);
   btn.setAttribute('aria-disabled',ok?'false':'true');
@@ -6169,7 +6270,7 @@ function ugcCtaWatch(){
   if(c)c.addEventListener('input',function(){ ugcCtaState(); ugcAutogrow(c); });
   if(d)d.addEventListener('input',function(){ ugcAutogrow(d); });
   if(box)new MutationObserver(ugcCtaState).observe(box,{attributes:true,attributeFilter:['class']});
-  ugcSyncOneShotUI(); ugcCtaState(); ugcAutogrow(c); ugcAutogrow(d); // 저장된 원샷 상태를 진입 시 복원
+  ugcRenderPlan(); ugcCtaState(); ugcAutogrow(c); ugcAutogrow(d);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ugcCtaWatch);
 else ugcCtaWatch();
@@ -6313,7 +6414,9 @@ async function ugcWriteScript(){
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     // (2026-07-30 폼 축소) 총 길이 = 유저가 주는 유일한 길이 신호(빌더가 목표 ~Ns로 사용). 씬 배치는 대본 Auto가 정한다.
     const tSec=parseInt((document.getElementById('ugcTotalSec')||{}).value,10);
-    if(Number.isFinite(tSec)&&tSec>0){
+    // 대본 직접 쓰기 — 씬 계획을 보내면 서버가 개수·길이·순서를 그대로 따른다(총 길이는 합계로 결정).
+    if(ugcPlanOn())fd.append('scenePlan',JSON.stringify(ugcScenePlan));
+    if(!ugcPlanOn()&&Number.isFinite(tSec)&&tSec>0){
       let t=Math.min(Math.max(tSec,2),30);
       // (2026-07-30) 잔액에 맞춰 **자동 축소**. 딱 맞출 필요는 없고 허용 크레딧 안에 들어가기만 하면 된다.
       //   여기서 안 줄이면 렌더가 402로 죽는데, 그때는 이미 대본을 쓴 뒤라 유저는 이유 없이 실패를 본다.
@@ -6772,6 +6875,8 @@ function ugcSyncTotalSec(){
  */
 function ugcRenderCost(v, ko){
   const el=document.getElementById('ugcLenCost'); if(!el)return;
+  // 대본 직접 쓰기 중엔 슬라이더가 숨겨져 있고 합계줄(ugcPlanSum)이 정확한 값을 말한다 → 여기선 침묵.
+  if(ugcPlanOn()){ el.textContent=''; el.classList.remove('short'); ugcPlanSyncSum(); return; }
   const b=ugcCostBounds(v), bal=ugcBalance();
   const max='◈'+b.max.toLocaleString();
   // 무제한(Infinity)이거나 아직 모르면(null) 잔액 얘기를 꺼내지 않는다 — 최대가만 말한다.
