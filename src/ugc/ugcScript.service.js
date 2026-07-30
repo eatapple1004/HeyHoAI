@@ -57,6 +57,36 @@ const SCRIPT_SCHEMA = {
 //   채우느라 가끔(관측 ~4회 중 1회) 실제 설명 대신 literal "placeholder"를 뱉는다 — 프롬프트 지시는
 //   명확한데도 나는 모델의 간헐적 실수라 프롬프트로는 0%가 안 된다. 그래서 코드에서 direction으로 폴백한다
 //   (UI도 sc.summary||sc.direction로 폴백하지만, 여기서 잡아야 저장·이탈복원·재조회에도 안 샌다).
+/**
+ * (2026-07-30) 총 길이 보정 — 유저가 고른 초에 **정확히** 맞춘다.
+ *   프롬프트가 "합 = 정확히 N초"를 요구하지만 모델은 산수를 가끔 틀린다(관측: 40초 요청 → 36초).
+ *   유저가 직접 고른 값이라 어긋나면 약속 위반이므로 코드가 마지막 방어선이 된다.
+ *   ⚠️ 씬 **개수·분배는 건드리지 않는다**(연출은 대본 몫) — 차이를 흡수할 씬만 골라 조정한다.
+ *      늘릴 땐 여유가 가장 큰 씬, 줄일 땐 가장 긴 씬. 씬당 2~10초 범위는 항상 지킨다.
+ *   범위(2~10 × 씬수) 밖이라 못 맞추면 최대한 근접시키고 만다(무한 루프 방지).
+ */
+function fitTotalDuration(scenes, targetSec) {
+  const t = Number(targetSec);
+  const broll = (scenes || []).filter((s) => s.type === 'broll');
+  if (!Number.isFinite(t) || t <= 0 || !broll.length) return scenes;
+  const MIN = 2, MAX = 10;
+  let guard = 0;
+  const sum = () => broll.reduce((a, s) => a + (Number(s.durationSec) || 0), 0);
+  while (sum() !== t && guard++ < 200) {
+    const diff = t - sum();
+    if (diff > 0) { // 늘려야 함 — 여유(MAX까지)가 가장 큰 씬에
+      const c = broll.filter((s) => s.durationSec < MAX).sort((a, b) => (MAX - b.durationSec) - (MAX - a.durationSec))[0];
+      if (!c) break;
+      c.durationSec = Math.min(MAX, c.durationSec + Math.min(diff, MAX - c.durationSec));
+    } else {        // 줄여야 함 — 가장 긴 씬에서
+      const c = broll.filter((s) => s.durationSec > MIN).sort((a, b) => b.durationSec - a.durationSec)[0];
+      if (!c) break;
+      c.durationSec = Math.max(MIN, c.durationSec + Math.max(diff, MIN - c.durationSec));
+    }
+  }
+  return scenes;
+}
+
 const JUNK_SUMMARY = /^(placeholder|n\/a|none|tbd|\.*|-*)$/i;
 const cleanSummary = (s) => { const v = (s.summary || '').trim(); return (!v || JUNK_SUMMARY.test(v)) ? (s.direction || '') : v; };
 
@@ -125,7 +155,9 @@ async function generateUgcScript(input) {
     aspect: raw.aspect || '9:16',
     language: raw.language || input.language || 'ko',
     hook: raw.hook || '',
-    scenes: normalizeScenes(raw.scenes),
+    // 총 길이 보정: 유저가 총 길이를 고른 경우에만(input.durationSec) 합을 정확히 맞춘다.
+    //   미지정(하위호환 경로)이면 대본이 낸 길이를 그대로 둔다.
+    scenes: fitTotalDuration(normalizeScenes(raw.scenes), input.durationSec),
     cta: raw.cta || '',
     caption: raw.caption || '',
     hashtags: (Array.isArray(raw.hashtags) ? raw.hashtags : [])
@@ -294,7 +326,8 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
       : 'This ad has NO voiceover — leave spoken empty; put any on-screen words in onScreenText.',
     `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. brollPrompt = a detailed still-image prompt (product, setting, lighting, composition). direction = Kling camera/subject motion.`,
     `Also write "summary": a SPECIFIC 1-2 sentence description in ${lang} of what the viewer sees and how it moves — concrete enough to picture the shot, plain human language (NOT a prompt), 1-2 sentences, not overloaded.`,
-    'durationSec between 2 and 5. Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
+    // (2026-07-30) 상한 5→10(Kling 물리한계). >5s는 크레딧 약 2배라 필요할 때만.
+    'durationSec between 2 and 10 (over 5s costs roughly double — use only when the shot needs it). Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. "${x.onScreenText || '(visual only)'}" — motion: ${x.direction || ''}`).join('\n') || '(none)'}`;
   const user = `${ctx}\n\n${String(instruction).trim() ? `USER DIRECTION for the new scene: ${String(instruction).trim()}` : 'Propose the single most natural next scene to add.'}\n\nReturn one new scene.`;
@@ -315,7 +348,8 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
     brollPrompt: String(raw.brollPrompt || raw.direction || '').slice(0, 2000),
     summary: String(raw.summary || '').slice(0, 300),
     subject: (!productOnly && raw.subject === 'model') ? 'model' : 'product',
-    durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 5),
+    // ⚠️ 코드 클램프 — 프롬프트 상한만 올리고 여기를 놓치면 8초 씬이 조용히 5초로 깎인다(2026-07-30 5→10).
+    durationSec: Math.min(Math.max(Number(raw.durationSec) || 3, 2), 10),
   };
 }
 
@@ -337,7 +371,7 @@ async function suggestScenes({ script, outputType = 'product-ad', count = 4 } = 
     `You propose ${n} DIFFERENT candidate scenes the user could ADD to an existing short product-ad video. Each must be a DISTINCT natural next scene with a different angle/beat (e.g. a result shot, a hero product beauty shot, a detail macro, a lifestyle/gifting moment). Match the existing tone and product.`,
     productOnly ? 'PRODUCT ONLY — subject MUST be "product", no people.' : 'May use subject "model" when a scene needs a person, otherwise "product".',
     voiceover ? `Write spoken narration in ${lang} — natural, understated.` : 'NO voiceover — leave spoken empty.',
-    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = a SPECIFIC 1-2 sentence ${lang} description of what the viewer sees and how it moves (concrete but plain human language, not a prompt; not overloaded). durationSec 2-5.`,
+    `onScreenText in ${lang}. direction and brollPrompt in ENGLISH. summary = a SPECIFIC 1-2 sentence ${lang} description of what the viewer sees and how it moves (concrete but plain human language, not a prompt; not overloaded). durationSec 2-10.`,
     'Keep product identity (shape, color, label) intact. Do not invent unverifiable claims.',
   ].join('\n');
   const ctx = `Ad concept/title: ${s.title || '(none)'}\nExisting scenes:\n${scenes.map((x, i) => `${i + 1}. ${x.summary || x.onScreenText || x.direction || ''}`).join('\n') || '(none)'}`;

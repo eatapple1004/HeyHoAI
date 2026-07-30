@@ -23,10 +23,14 @@ const FORMAT_HINTS = {
 
 function fmtLine(v) { return FORMAT_HINTS[v] ? `- ${v}: ${FORMAT_HINTS[v]}` : `- ${v}`; }
 
-// Auto(길이 미지정) 씬의 상한. Kling은 5s/10s 네이티브만 지원해 5초를 넘기면 10초를 뽑아 트림한다
-//   (clipPipeline: wantSec>5 ? 10 : 5) = 비용 2배. Auto가 7초를 고르면 유저는 **고른 적 없는 10초 단가**를 낸다.
-//   ⚠️ 목표 길이 계산과 프롬프트 문장이 **같은 값**을 써야 한다 — 갈라지면 한 프롬프트가 두 말을 하게 된다.
-const AUTO_MAX_SCENE_SEC = 5;
+// 씬 길이 상한 = Kling 물리 한계(10s). >5초면 10초를 뽑아 트림 = 크레딧 약 2배(ugcGenCost가 그대로 청구하므로
+//   원가/과금은 어긋나지 않는다).
+//   ⚠️ (2026-07-30) 5→10으로 올렸다. 전엔 "10초 단가 방지"를 이유로 5에 묶었는데 그건 **비용을 이유로 연출을
+//      제한**하는 가드였다. 사용자 결정: 컨셉에 맞는 배치가 우선 — 필요하면 적은 씬을 길게, 많은 씬을 짧게.
+//      대신 프롬프트가 트레이드오프를 알려준다(금지 → 판단).
+//   ⚠️ 이 상한은 **3곳**에 흩어져 있다: 여기 · ugcScript.service의 addScene 프롬프트 2곳 · 같은 파일의 코드 클램프.
+//      코드 클램프를 안 고치면 프롬프트만 올려도 8초 씬이 조용히 5초로 깎인다(실제로 겪은 함정).
+const AUTO_MAX_SCENE_SEC = 10;
 
 /**
  * @param {{
@@ -154,9 +158,12 @@ function buildUgcScriptPrompt(input) {
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다(근거=AUTO_MAX_SCENE_SEC).
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`]
-      // Auto = 대본이 씬마다 최적 길이. 내용에 맞춰 3·4·5초로 **다르게** — 짧은 글린트/컷은 3초, 느린 리빌·모션은 5초.
-      //   전부 같은 값으로 만들지 말 것. 상한 5초는 10초 단가 방지(Kling은 >5초면 10초를 뽑아 트림 = 2배).
-      : [`- Set each broll scene's "durationSec" INDIVIDUALLY to fit that scene: a quick glint, cut, or simple reveal ≈ 3s; a slower reveal or a motion beat up to 5s. VARY the lengths to match each scene's content — do NOT give every scene the same length. Never exceed ${AUTO_MAX_SCENE_SEC} (a scene over ${AUTO_MAX_SCENE_SEC}s costs double to render).`]),
+      // (2026-07-30) Auto = **씬 개수와 각 길이를 컨셉이 정한다.** 산수가 아니라 연출 판단 —
+      //   빠른 광고는 짧은 비트 여러 개, 느린 럭셔리 리빌은 긴 씬 몇 개. 단 **합은 목표와 정확히 일치**해야 한다
+      //   (유저가 고른 총 길이라 어긋나면 약속 위반). 개수·분배는 자유, 합만 제약.
+      : [`- Decide the NUMBER of scenes and each scene's "durationSec" from what the concept needs — this is a creative call, not arithmetic. A punchy, energetic ad may want many short beats (2-3s each); a slow, luxurious reveal may want a few long ones (6-10s). Do NOT give every scene the same length unless the concept genuinely calls for a steady rhythm.`,
+         `- Scene length limits: minimum 2s, maximum ${AUTO_MAX_SCENE_SEC}s. A scene over 5s costs roughly double to render — use it when the shot truly needs the time, not by default.`,
+         `- 🔴 HARD CONSTRAINT: the scene "durationSec" values MUST sum to EXACTLY ${durationSec}. Choose how many scenes and how long each one is, then verify the total before you answer. If it does not add up, adjust a scene until it does.`]),
     ...(voiceover ? [
       '- VOICE IS THE CAPTION — they are the SAME layer. "spoken" is BOTH what the voice says AND the on-screen subtitle (shown in sync as the voice speaks it).',
       '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
@@ -215,7 +222,8 @@ function buildUgcScriptPrompt(input) {
     //   (총 15s ÷ 3씬 = 5초씩). Auto의 핵심은 씬마다 최적 길이라 총량은 씬 길이의 **결과**여야지 입력이 아니다.
     (sceneCount && !sceneDuration)
       ? 'Total length is whatever the scenes add up to — do NOT aim for a fixed total; choose each scene\'s length by its own content.'
-      : `Target duration: ~${durationSec}s`,
+      // (2026-07-30) 유저가 고른 총 길이 → **정확히** 맞춰야 한다(개수·분배는 자유, 합만 제약). 물결(~) 제거.
+      : `Total duration: EXACTLY ${durationSec}s — scene durations must sum to ${durationSec}.`,
     `Tone: ${tone}`,
     `Language: ${langName}`,
     '',
