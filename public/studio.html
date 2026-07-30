@@ -1290,6 +1290,7 @@
   .ugc-plan-n{flex:none;width:16px;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
   .ugc-plan-sec{flex:none;width:58px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;
     padding:6px 8px;color:var(--text);font-family:inherit;font-size:13px;font-variant-numeric:tabular-nums}
+  .ugc-plan-unit{flex:none;margin-left:-3px;font-size:11.5px;color:var(--faint)}
   .ugc-plan-dir{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:8px;
     padding:6px 10px;color:var(--text);font-family:inherit;font-size:13px}
   .ugc-plan-dir:focus,.ugc-plan-sec:focus{outline:none;border-color:var(--accent2)}
@@ -6163,6 +6164,22 @@ function ugcIsKo(){ return !!(window.i18n&&window.i18n.getLang&&window.i18n.getL
       (비용은 그 개수만으로 갈린다). Auto 일 때만 "최대"로 말한다. */
 let ugcScenePlan=null;              // null=끔 / [{durationSec, direction}]
 const UGC_PLAN_MAX=12;              // 서버 라우트의 slice(0,12)와 같아야 한다
+/* placeholder 로 쓰는 **예시 문장**. 행마다 돌려 쓴다 —
+   짧은 것부터 프롬프트급까지 섞어 두면 "어디까지 써도 되는지"가 설명 없이 보인다. */
+const UGC_PLAN_EG={
+  ko:['대리석 위 제품 클로즈업, 카메라가 천천히 내려옴',
+      '제품을 천천히 회전시키며 라벨이 보이게',
+      '물방울이 제품에 떨어지는 순간, 슬로우 모션 매크로',
+      '손이 제품을 집어 드는 장면, 따뜻한 자연광',
+      '배경이 흐려지며 제품만 또렷해짐',
+      '매크로 100mm, 하드 림라이트, 어두운 슬레이트 위, 얕은 심도'],
+  en:['Close-up on marble, camera slowly craning down',
+      'The product rotates slowly until the label faces camera',
+      'A droplet lands on the product, slow-motion macro',
+      'A hand picks the product up, warm natural light',
+      'Background falls away as the product snaps into focus',
+      'Macro 100mm, hard rim light, dark slate, shallow depth of field'],
+};
 function ugcPlanOn(){ return Array.isArray(ugcScenePlan)&&ugcScenePlan.length>0; }
 function ugcTogglePlan(){
   ugcScenePlan = ugcPlanOn() ? null : [{durationSec:5,direction:''},{durationSec:5,direction:''}];
@@ -6222,8 +6239,12 @@ function ugcRenderPlan(){
     +`<span class="ugc-plan-n">${i+1}</span>`
     +`<input type="number" class="ugc-plan-sec" min="2" max="10" step="1" value="${Number(sc.durationSec)||5}"`
     +` aria-label="${ko?'씬 길이(초)':'Shot length in seconds'}" oninput="ugcPlanSet(${i},'durationSec',this.value)">`
+    // 단위를 적어준다 — 숫자만 있으면 그게 초인지 씬 번호인지 알 수 없다(사용자 지적)
+    +`<span class="ugc-plan-unit">${ko?'초':'s'}</span>`
     +`<input type="text" class="ugc-plan-dir" value="${esc(sc.direction||'')}"`
-    +` placeholder="${ko?'이 씬에서 무엇을 보여줄지 — 자세히 쓸수록 그대로 나갑니다':'What this shot shows — the more precise, the less it gets rewritten'}"`
+    // placeholder = 설명이 아니라 **예시 문장**(사용자 요청). 규칙을 말로 설명하는 것보다
+    //   실제로 이렇게 쓰면 된다는 걸 보여주는 게 빠르다. 행마다 다른 예시라 폭도 자연히 드러난다.
+    +` placeholder="${esc(UGC_PLAN_EG[ko?'ko':'en'][i%UGC_PLAN_EG.ko.length])}"`
     +` aria-label="${ko?'씬 설명':'Shot description'}" oninput="ugcPlanSet(${i},'direction',this.value)">`
     +`<button type="button" class="ugc-plan-del" onclick="ugcPlanDel(${i})" aria-label="${ko?'이 씬 삭제':'Remove this shot'}">×</button>`
     +`</div>`).join('');
