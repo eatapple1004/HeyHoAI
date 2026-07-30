@@ -549,11 +549,11 @@ async function ensureThemes(){ if(!_themesCache){ try{ _themesCache=(await(await
 
 // ── 사진 → 릴스 (기존 /api/generate/video 재사용) ──
 let REEL_SRC=null,reelBusy=false;
-let REEL_COST=1250; // (2026-07-06) 영상 5초 템플릿 기준(Kling Pro). tier=[커스텀,템플릿].
+let REEL_COST=810; // (2026-07-30) 커스텀 단가로 정정 — 이 릴은 템플릿을 안 쓴다(사진+유저 프롬프트뿐).
 async function loadReelCost(){
   try{const d=(await(await fetch('/api/credits')).json()).data;
-    // 새 단가표: costs.video[5]=[커스텀,템플릿] → 대표값은 템플릿(index 1).
-    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][1]||1250;}catch(e){}
+    // costs.video[5]=[커스텀,템플릿] → 이 기능은 커스텀(index 0). 전엔 [1](1,250)을 표시·청구했다.
+    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][0]||810;}catch(e){}
 }
 function openReel(url,name){
   REEL_SRC=url;
@@ -576,6 +576,7 @@ async function createReel(){
     const blob=await(await fetch(REEL_SRC)).blob();
     const fd=new FormData();
     fd.append('prompt',prompt);fd.append('duration','5');fd.append('mode','std');
+    fd.append('billingMode','custom'); // 템플릿 미사용 → 커스텀 단가(안 보내면 템플릿 1,250 청구)
     fd.append('sourceImage',blob,'source.png');
     // 비동기: 제출 → jobId → 폴링 (Cloudflare 100초 타임아웃 회피)
     const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});

@@ -622,13 +622,19 @@ async function copyImage(){
    실행은 여기서 하지 않는다 — stashAndGo 가 요청을 sessionStorage 에 담아 **스튜디오로 넘긴다**
    (studio.html 의 runHandoff 가 '내 크리에이션' 로딩 카드를 띄우고 실행·채움까지 담당).
    여기서는 입력 검증 + 원본 404 가드 + 원본 치수 실측(비율·해상도 원본 맞춤용)만. */
-let EDIT_COST=300, REEL_COST=1250, _otBusy=false;
+let EDIT_COST=150, EDIT_COST_4K=270, REEL_COST=810, _otBusy=false;
 (async function loadOwnerCosts(){
   try{const d=(await(await fetch('/api/credits')).json()).data;
-    if(d.costs&&d.costs.img&&d.costs.img.pro)EDIT_COST=d.costs.img.pro[0]||300;         // 커스텀 단가(index 0)
-    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][1]||1250;    // 갤러리와 동일(템플릿 단가)
+    if(d.costs&&d.costs.img&&d.costs.img.pro)EDIT_COST=d.costs.img.pro[0]||150;                      // pro 1K/2K 커스텀
+    if(d.costs&&d.costs.img&&d.costs.img['pro-4k'])EDIT_COST_4K=d.costs.img['pro-4k'][0]||270;       // 🔴 4K 는 별도 단가 — 150 으로 표시하면 차감(270)이 표시를 넘는다
+    // (2026-07-30) 릴 = 커스텀 단가[0]. 템플릿 단가[1]=1,250 을 물던 것 수정 — 이 릴은 템플릿을 안 쓴다
+    //   (사진+유저 프롬프트뿐). 원가 검산: Kling Pro 5s $0.56 × 1361 = 바닥 ◈762 → 810 은 규칙 +6%.
+    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][0]||810;
   }catch(e){}
 })();
+/** 편집 표시가 — 원본 긴 변으로 4K 여부 판정. ⚠️ 임계값 2800은 스튜디오 sizeForSource 와 같아야 한다
+ *  (여기서 150 을 보여주고 스튜디오가 4K 로 보내면 표시<차감 — 오늘 세운 "차감은 표시 이하" 위반). */
+function editCostFor(w,h){ return Math.max(w||0,h||0)>=2800 ? EDIT_COST_4K : EDIT_COST; }
 function ownerTools(){
   if(!IT.isOwn||IT.type==='video')return '';
   return `<div class="otool-row">
@@ -650,9 +656,10 @@ function showTool(mode){
   inp.placeholder=mode==='edit'
     ? (ko?'예: 배경만 골드로 바꿔줘':'e.g. make the background gold')
     : (ko?'예: 카메라가 천천히 다가가고 빛이 흐르게 — 비워도 돼요':'e.g. camera slowly zooms in — optional');
+  const img=document.querySelector('.stage img'); // 원본 실측 — 4K 원본이면 편집 표시가도 4K 단가
   document.getElementById('itGo').textContent=(mode==='edit'
     ? (ko?'수정 적용':'Apply edit') : (ko?'릴스 만들기':'Create Reel'))
-    +' · ◈ '+(mode==='edit'?EDIT_COST:REEL_COST);
+    +' · ◈ '+(mode==='edit'?editCostFor(img&&img.naturalWidth,img&&img.naturalHeight):REEL_COST);
   bar.classList.add('open');
   inp.focus();
 }

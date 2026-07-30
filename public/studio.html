@@ -7613,6 +7613,7 @@ async function runHandoff(){
       fd.append('prompt',(h.prompt||'').trim()||'gentle natural motion, subtle camera movement, cinematic');
       fd.append('duration','5'); fd.append('mode','std');
       const ar=nearestAspect(ASPECT_ALLOW_REEL,h.w,h.h); if(ar)fd.append('aspectRatio',ar); // 릴도 원본 비율(9:16 고정이던 것)
+      fd.append('billingMode','custom'); // 템플릿 미사용 → 커스텀 단가(810). 안 보내면 서버가 템플릿(1,250)로 청구
       fd.append('sourceImage',blob,'source.png');
       if(vis==='private')fd.append('privateMode','true');
       const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
