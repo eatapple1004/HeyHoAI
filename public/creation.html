@@ -10,7 +10,7 @@
 <script src="/js/themes.js?v=7"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
-<script src="/js/i18n.js?v=22" defer></script>
+<script src="/js/i18n.js?v=23" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <style>
   /* ── Studio Tool look: immersive stage, slim filmstrip, calm action stack ── */
@@ -235,6 +235,28 @@
     *{transition:none!important;animation:none!important}
     .th:hover,.like:active{transform:none}
   }
+  /* ── (2026-07-30) 오너 도구: Edit(말로 고치기)·Reel(영상으로) ──
+     갤러리 reelModal의 모달 CSS를 그대로 이식(같은 토큰 사용). */
+  .otool-row{display:flex;gap:8px;margin:14px 0 2px}
+  .otool{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 10px;border-radius:12px;
+    background:var(--surface2,rgba(255,255,255,.05));border:1px solid var(--border2);color:var(--text);
+    font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none}
+  .otool:hover{border-color:var(--accent2);color:var(--accent2)}
+  .otool svg{width:15px;height:15px}
+  .modal-bg{position:fixed;inset:0;z-index:80;background:rgba(5,5,10,.66);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px}
+  .modal-bg.open{display:flex}
+  .modal{width:min(440px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:26px;position:relative}
+  .modal h3{font-family:'Sora';font-size:18px;font-weight:700;margin-bottom:4px}
+  .modal .msub{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.5}
+  .modal .x{position:absolute;top:7px;right:10px;font-size:16px;line-height:1;padding:8px;color:var(--dim);cursor:pointer;background:none;border:none}
+  .modal textarea{width:100%;min-height:72px;resize:vertical;font-family:inherit;font-size:14px;color:var(--text);
+    background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .modal .go{width:100%;padding:13px;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-size:14.5px;font-weight:800;color:#fff;
+    background:linear-gradient(100deg,var(--accent),var(--accent2))}
+  .modal .go:disabled{opacity:.5;cursor:not-allowed}
+  .modal .prog{display:none;margin-top:14px;text-align:center;color:var(--dim);font-size:13px}
+  .modal .spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 10px}
+  @keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -256,6 +278,29 @@
   <button class="sbmodal-nav prev" id="sbPrev" onclick="sceneModalGo(-1)" aria-label="Previous scene" title="Previous scene"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
   <button class="sbmodal-nav next" id="sbNext" onclick="sceneModalGo(1)" aria-label="Next scene" title="Next scene"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
   <span class="sbmodal-cap" id="sbCap"></span>
+</div>
+<!-- (2026-07-30) 오너 도구 모달 — Edit(말로 고치기) · Reel(사진→영상, gallery.html reelModal 이식) -->
+<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeEditM()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Edit this image with words">
+    <button class="x" onclick="closeEditM()" aria-label="Close">✕</button>
+    <h3>Edit with words</h3>
+    <div class="msub">Say what to change — everything else stays the same.</div>
+    <img id="editSrcPreview" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px" alt="">
+    <textarea id="editPrompt" aria-label="Describe the change" placeholder="e.g. make the background gold"></textarea>
+    <button class="go" id="editGoBtn" onclick="applyEditM()">Apply edit · <span id="editCost">◈ —</span></button>
+    <div class="prog" id="editProgress"><div class="spin"></div>Editing… usually under a minute.</div>
+  </div>
+</div>
+<div class="modal-bg" id="reelModal" onclick="if(event.target===this)closeReelM()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Turn photo into a Reel">
+    <button class="x" onclick="closeReelM()" aria-label="Close">✕</button>
+    <h3>Turn photo into a Reel</h3>
+    <div class="msub">Turn this photo into a moving 5-second Reel. Describe the motion you want.</div>
+    <img id="reelSrcPreview" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:14px" alt="">
+    <textarea id="reelPrompt" aria-label="Describe the motion for your Reel" placeholder="e.g. camera slowly zooms in while light drifts across"></textarea>
+    <button class="go" id="reelGoBtn" onclick="createReelM()">Create Reel · <span id="reelCost">◈ —</span></button>
+    <div class="prog" id="reelProgress"><div class="spin"></div>Creating your Reel… usually takes 2-5 minutes. <b style="color:var(--text)">It saves to your gallery automatically even if you close this window.</b></div>
+  </div>
 </div>
 <script>
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -530,6 +575,7 @@ function render(){
     <div class="date">${esc(dateStr)}</div>
     ${creator}
     ${specsBlock}
+    ${ownerTools()}
     <div class="hair"></div>
     ${templateCard()}
     ${promptPanel()}
@@ -581,6 +627,93 @@ async function copyImage(){
   }catch(e){ toast('Copy failed — try Download'); }
 }
 // creation 삭제 — 내 것만(백엔드도 403 게이트). 확인 후 DELETE, 성공 시 뒤로.
+/* ── (2026-07-30) 오너 도구: Edit(말로 고치기) · Reel(사진→영상) ──
+   노출 = **내 것 + 이미지**일 때만. 타인의 creation을 편집/영상화하게 두면 커뮤니티 저작물이
+   무단 파생되므로 isOwn 게이트가 정책이다(다운로드·공유와 다른 축).
+   Edit  → 기존 POST /api/generate 재사용: 이 이미지를 referenceImages로, 지시문을 프롬프트로.
+           enhance=false(정체성 프리픽스가 편집 지시를 오염시키지 않게) · 결과 resultIdx로 바로 이동.
+   Reel  → gallery.html의 openReel/createReel/pollReelJob 이식(같은 /api/generate/video/async).
+           완료 시 갤러리로(비디오 잡 응답엔 resultIdx가 없어 상세로 못 보낸다 — url뿐). */
+let EDIT_COST=300, REEL_COST=1250, _otBusy=false;
+(async function loadOwnerCosts(){
+  try{const d=(await(await fetch('/api/credits')).json()).data;
+    if(d.costs&&d.costs.img&&d.costs.img.pro)EDIT_COST=d.costs.img.pro[0]||300;         // 커스텀 단가(index 0)
+    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][1]||1250;    // 갤러리와 동일(템플릿 단가)
+  }catch(e){}
+})();
+function ownerTools(){
+  if(!IT.isOwn||IT.type==='video')return '';
+  return `<div class="otool-row">
+    <button class="otool" onclick="openEditM()">${IC.pencil}<span>Edit with words</span></button>
+    <button class="otool" onclick="openReelM()">${IC.play}<span>Turn into a Reel</span></button>
+  </div>`;
+}
+function openEditM(){ document.getElementById('editSrcPreview').src=IT.url; document.getElementById('editPrompt').value='';
+  document.getElementById('editCost').textContent='◈ '+EDIT_COST;
+  document.getElementById('editProgress').style.display='none'; document.getElementById('editGoBtn').style.display='';
+  document.getElementById('editModal').classList.add('open'); }
+function closeEditM(){ if(!_otBusy)document.getElementById('editModal').classList.remove('open'); }
+async function applyEditM(){
+  if(_otBusy)return;
+  const inst=document.getElementById('editPrompt').value.trim();
+  if(!inst){ toast('Describe the change first.'); return; }
+  _otBusy=true;
+  document.getElementById('editGoBtn').style.display='none';
+  document.getElementById('editProgress').style.display='block';
+  try{
+    const blob=await(await fetch(IT.url)).blob();
+    const fd=new FormData();
+    // "같은 컷에서 지시한 것만 바뀐다"가 이 기능의 약속 — 프롬프트 래핑이 그 약속을 캐리한다.
+    fd.append('prompt','Edit the attached image: '+inst+'. Keep everything else exactly the same as the attached image.');
+    fd.append('referenceImages',blob,'source.png');
+    fd.append('model','pro'); fd.append('count','1');
+    fd.append('enhance','false'); // 정체성 고정 프리픽스 제외 — 편집 지시 원문 그대로
+    if(IT.visibility==='private')fd.append('privateMode','true'); // 원본이 비공개면 편집본도
+    const res=await fetch('/api/generate',{method:'POST',body:fd});
+    const data=await res.json();
+    if(res.status===402){ toast('Not enough credits. Top up in Billing.'); setTimeout(()=>location.href='/billing',1200); return; }
+    if(!res.ok||!data.success)throw new Error(data.error||'edit failed');
+    const ok=(data.results||[]).find(x=>x.success&&x.resultIdx);
+    if(!ok)throw new Error((data.results&&data.results[0]&&data.results[0].error)||'edit failed');
+    location.href='/creation?idx='+ok.resultIdx+'&from='+encodeURIComponent(FROM||'library'); // 결과로 바로 이동
+  }catch(e){ toast(e.message||'Edit failed');
+    document.getElementById('editGoBtn').style.display=''; document.getElementById('editProgress').style.display='none'; }
+  finally{ _otBusy=false; }
+}
+function openReelM(){ document.getElementById('reelSrcPreview').src=IT.url; document.getElementById('reelPrompt').value='';
+  document.getElementById('reelCost').textContent='◈ '+REEL_COST;
+  document.getElementById('reelProgress').style.display='none'; document.getElementById('reelGoBtn').style.display='';
+  document.getElementById('reelModal').classList.add('open'); }
+function closeReelM(){ if(!_otBusy)document.getElementById('reelModal').classList.remove('open'); }
+async function createReelM(){
+  if(_otBusy)return;
+  const prompt=document.getElementById('reelPrompt').value.trim()||'gentle natural motion, subtle camera movement, cinematic';
+  _otBusy=true;
+  document.getElementById('reelGoBtn').style.display='none';
+  document.getElementById('reelProgress').style.display='block';
+  try{
+    const blob=await(await fetch(IT.url)).blob();
+    const fd=new FormData();
+    fd.append('prompt',prompt); fd.append('duration','5'); fd.append('mode','std');
+    fd.append('sourceImage',blob,'source.png');
+    if(IT.visibility==='private')fd.append('privateMode','true');
+    const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
+    const data=await res.json();
+    if(res.status===402){ toast('Not enough credits. Top up in Billing.'); setTimeout(()=>location.href='/billing',1200); return; }
+    if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
+    for(let i=0;i<90;i++){ // gallery pollReelJob과 동일한 폴링
+      await new Promise(r=>setTimeout(r,8000));
+      let d; try{ d=(await(await fetch('/api/generate/video/jobs/'+data.jobId)).json()).data; }catch(e){ continue; }
+      if(!d)continue;
+      if(d.status==='succeeded'){ toast('Your Reel is ready!'); location.href='/gallery'; return; } // 잡 응답에 resultIdx가 없어 상세로 못 간다
+      if(d.status==='failed')throw new Error(d.error||'Reel creation failed');
+    }
+    throw new Error('Timed out — check your gallery in a moment.');
+  }catch(e){ toast(e.message||'Reel failed');
+    document.getElementById('reelGoBtn').style.display=''; document.getElementById('reelProgress').style.display='none'; }
+  finally{ _otBusy=false; }
+}
+
 async function deleteCreation(){
   if(!IT||!IT.isOwn){ return; }
   if(!confirm('Delete this creation? This can’t be undone.'))return;

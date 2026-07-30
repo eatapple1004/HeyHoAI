@@ -43,6 +43,19 @@
     // (2026-07-30) Ad Video 는 무음성(음악만)이다 — 홈 카드 태그에서 'AI voice & music' 를 걷고
     //   대신 오늘 만든 '대본 직접 쓰기'를 알린다. 위 옛 키는 다른 화면 참조가 있을 수 있어 남겨둔다.
     'Or write it yourself': '대본 직접 쓰기',
+    // (2026-07-30) creation 상세 — 오너 도구(Edit·Reel)
+    'Edit with words': '말로 고치기',
+    'Turn into a Reel': '영상으로 만들기',
+    'Say what to change — everything else stays the same.': '바꿀 것만 말하세요 — 나머지는 그대로 유지됩니다.',
+    'e.g. make the background gold': '예: 배경만 골드로 바꿔줘',
+    'Apply edit ·': '수정 적용 ·',
+    'Editing… usually under a minute.': '수정하는 중… 보통 1분 안에 끝나요.',
+    'Turn photo into a Reel': '사진을 영상으로',
+    'Turn this photo into a moving 5-second Reel. Describe the motion you want.': '이 사진이 움직이는 5초 릴스가 됩니다. 원하는 움직임을 적어주세요.',
+    'e.g. camera slowly zooms in while light drifts across': '예: 카메라가 천천히 다가가고 빛이 흐르게',
+    'Create Reel ·': '릴스 만들기 ·',
+    'Describe the change first.': '바꿀 내용을 먼저 적어주세요.',
+    'Your Reel is ready!': '릴스가 완성됐어요!',
     'View more': '더 보기', 'Best offer': '가장 알뜰한 선택',
     'Search templates': '템플릿 검색', 'Creation preview': '결과 미리보기',
     'Scene preview': '씬 미리보기', 'Next scene': '다음 씬', 'Previous scene': '이전 씬',
