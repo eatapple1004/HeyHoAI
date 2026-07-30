@@ -35,8 +35,10 @@ const SCRIPT_SCHEMA = {
     },
     cta: { type: 'string' }, caption: { type: 'string' },
     hashtags: { type: 'array', items: { type: 'string' } }, musicVibe: { type: 'string' },
+    // (2026-07-30) needsModel = 모델 씬 존재 여부. UI가 이 값으로 모델 픽커를 열고 렌더를 게이트한다.
+    needsModel: { type: 'boolean' },
   },
-  required: ['title', 'format', 'durationSec', 'aspect', 'language', 'hook', 'scenes', 'cta', 'caption', 'hashtags', 'musicVibe'],
+  required: ['title', 'format', 'durationSec', 'aspect', 'language', 'hook', 'scenes', 'cta', 'caption', 'hashtags', 'musicVibe', 'needsModel'],
 };
 
 // ⛔ 대본 금지어 검사 제거 (2026-07-17 사용자 결정) — 부활시키기 전에 읽을 것.
@@ -163,6 +165,10 @@ async function generateUgcScript(input) {
     hashtags: (Array.isArray(raw.hashtags) ? raw.hashtags : [])
       .map((t) => String(t).replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean).slice(0, 12),
     musicVibe: raw.musicVibe || '',
+    // Claude가 빠뜨려도 씬의 subject로 복원 — 렌더 게이트가 이 값에 의존하므로 비어 있으면 안 된다.
+    needsModel: (typeof raw.needsModel === 'boolean')
+      ? raw.needsModel
+      : (Array.isArray(raw.scenes) && raw.scenes.some((x) => x && x.subject === 'model')),
   };
 
   return script;
@@ -185,7 +191,9 @@ async function generateUgcScript(input) {
 async function suggestConcept({ image, images, details = '', language = 'ko', outputType = 'product-ad', model = null, product = '' } = {}) {
   const imgs = (Array.isArray(images) && images.length ? images : (image ? [image] : [])).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('product image is required'), { statusCode: 400 });
-  const noModel = outputType !== 'model-editorial'; // product-ad 등 = 무출연(제품컷만)
+  // (2026-07-30) 형식 토글 폐지 → outputType으로 모델 앵글을 금지하지 않는다. **사진을 보고 판단**하게 한다.
+  //   전엔 noModel = outputType !== 'model-editorial' 이라, 형식을 안 보내는 새 폼에서는 항상 '제품만'이 강제돼
+  //   착용물(의류·주얼리)인데도 모델 앵글 제안이 원천 차단됐다(브리프를 비운 경로에서 특히 치명적).
   const system = [
     'You are a short-form ad strategist. Look at the product photo, infer the product CATEGORY, and draft the user\'s CREATIVE BRIEF for a TikTok / Instagram Reels ad — phrased as their own request.',
     'Adapt the angle to the category you see:',
@@ -195,9 +203,9 @@ async function suggestConcept({ image, images, details = '', language = 'ko', ou
     '- Food/beverage → appetite, sensory detail, freshness, the moment.',
     '- Tech/gadgets/home → the key benefit or the problem it solves.',
     'Capture a STRATEGIC PROMISE (why stop scrolling / the payoff) + a vibe or target if it fits — NOT a specific shot or camera move (the script decides staging).',
-    noModel
-      ? 'This ad shows the PRODUCT ONLY — no model or person. Do not suggest angles that require someone to wear, apply, or hold it on camera.'
-      : 'This ad features a model wearing/using the product — the angle may involve the model.',
+    model
+      ? 'This ad features a model wearing/using the product — the angle may involve the model.'
+      : 'Decide from the photo: if the product is worn, held or applied by a person (apparel, jewelry, bodywear, eyewear, bags, footwear, skincare or makeup on skin), the angle MAY involve a model. Otherwise keep it product-only — do not suggest angles that require someone on camera.',
     // 선택된 모델이 아이면 타깃/톤을 그에 맞춘다 — 안 그러면 아동복인데 컨셉이 "for young women"으로 나온다.
     //   아이의 정확한 나이는 쓰지 않는다(밴드만) — 겉보기 나이가 라벨과 어긋난다(roster.kids 주석).
     ...(model && model.isMinor

@@ -62,7 +62,7 @@ function buildUgcScriptPrompt(input) {
     category = '',    // 제품군 지정 시 카테고리 플레이북 주입(씬레시피·스타일)
     sceneCount = 0,   // 유저 지정 broll 씬 개수(0=AI 자동)
     sceneDuration = 0, // 유저 지정 씬당 길이(초, 0=AI 자동)
-    model = null,     // 선택된 로스터 모델 메타 {isMinor, ageBand, ageBandLabel, gender} — usesModel 포맷에서만 의미
+    model = null,     // 선택된 로스터 모델 메타 {isMinor, ageBand, ageBandLabel, gender} — 있으면 2패스(모델 확정)
   } = input || {};
 
   const profile = getProfile(outputType);
@@ -74,7 +74,10 @@ function buildUgcScriptPrompt(input) {
   const baseDuration = input?.durationSec || profile.defaultDurationSec || 20;
   const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration : baseDuration;
   const langName = language === 'en' ? 'English' : 'Korean';
-  const usesModel = outputType === 'model-editorial' || outputType === 'ugc-talking'; // 모델 등장 포맷
+  // (2026-07-30) 모델 등장 여부를 outputType(형식 토글)이 아니라 **브리프·사진**이 정한다 → 토글 폐지.
+  //   hasModelMeta = 유저가 로스터에서 모델을 고른 뒤의 2패스인가. 1패스는 모델 미정이라 인물 묘사를 금지한다
+  //   (누구인지 모르는 채 묘사하면 나중에 붙는 레퍼런스와 싸운다 — 아래 실사고 기록 참조).
+  const hasModelMeta = !!model;
   const playbook = getPlaybook(category); // 제품군 플레이북(씬레시피·스타일·음악) — 없으면 기존 추론
 
   // 모델 외모 서술 — 로스터가 그 모델을 **생성할 때 쓴** age·descent·skin·hair·build로 짓는다(=이미지의 원본 소스).
@@ -100,27 +103,26 @@ function buildUgcScriptPrompt(input) {
     '- Parse the brief for: target audience, mood/tone, and any VISUAL cues — background, color, lighting, color grade, texture, setting, styling. Route every visual cue into the scene "direction" and "brollPrompt" so the rendered images actually reflect it (e.g. "빨강 배경" → red background in every brollPrompt). Route mood → copy tone; target → audience.',
     '- Hook must land in the first 2 seconds (a scroll-stopper: bold claim, question, or pattern interrupt).',
     '- One core benefit, not a feature dump. Conversational, native — never corporate.',
-    ...(usesModel ? [
-      // ⚠️ 전엔 "do NOT invent a specific face"까지만 말해서 **나이·정체는 마음껏 썼다.**
-      //    브리프의 "appealing to confident young professionals"(타깃 관객)를 Claude가 화면 속 인물로 옮겨
-      //    "a confident young woman wearing..."을 썼다. 성인 모델이면 레퍼런스와 우연히 맞아 안 보이는데,
-      //    아동 모델을 고르면 즉시 드러난다 — 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성(실사고).
-      //    프롬프트(성인)와 레퍼런스(아이)가 싸우면 Gemini가 프롬프트를 따른다.
-      //    → 인물은 **레퍼런스 한 곳에서만** 온다(7e1f8dc의 마네킹 규칙과 같은 원리). 대본은 인물을 묘사하지 않는다.
-      // 모델을 **정확히 묘사**한다(로스터 서술 = 이미지 원본 소스). 전엔 "the model로만, 묘사 금지"였는데,
-      //   성별을 안 알려주니 Claude가 기본 여성을 가정해 her를 흘려 남성 레퍼런스와 싸웠다(실사고).
-      //   근본은 묘사 금지가 아니라 **레퍼런스와 일치**다 — 텍스트가 레퍼런스와 같은 사람을 가리키면 안 싸운다.
-      //   ⚠️ "누가 나오는지"(모델 서술)와 "누구를 위한 광고인지"(브리프 타깃)는 다르다. 타깃을 화면 인물로 옮기지 말 것.
-      //   ⚠️ 모델 씬엔 **모델 한 사람만** — 파트너·행인 등 제2인물 금지(레퍼런스가 하나뿐이라 그들은 난데없는 사람이 된다).
-      model
-        ? `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). THE MODEL IS: ${modelDesc}. In every subject:"model" scene, describe the model consistently as this exact person, use ${modelPron}, and match the attached reference image. The ONLY person on camera is this model — never introduce a second person (partner, friend, bystander, hands of another person), and never swap in a different age, gender, or look. The brief's target audience is who the ad is FOR, not who appears on camera. In "product" scenes brollPrompt is product-only.`
-        : '- SUBJECT per scene: intercut — some scenes product-only (subject:"product"), others show the model with the product (subject:"model"). The model comes from a reference image; refer to them as "the model", match the reference, and keep the SAME single person across all model scenes (no second person). In "product" scenes brollPrompt is product-only.',
+    // ⚠️ 실사고 기록(유지할 근거): 전엔 "do NOT invent a specific face"까지만 말해서 나이·정체를 마음껏 썼다.
+    //    브리프의 "confident young professionals"(타깃 관객)를 Claude가 화면 속 인물로 옮겨 "a confident young woman"을 썼고,
+    //    아동 모델을 고른 경우 1번 씬은 그 아이, 2번 씬은 난데없는 성인 여성이 됐다. 프롬프트와 레퍼런스가 싸우면 Gemini가 프롬프트를 따른다.
+    //    → 근본 해법은 "묘사 금지"가 아니라 **레퍼런스와 일치**다. 그래서 모델이 확정된 2패스에서만 묘사한다.
+    ...(hasModelMeta ? [
+      // 2패스 — 모델 확정. 로스터 서술(= 이미지 원본 소스)로 정확히 묘사해 레퍼런스와 안 싸우게 한다.
+      `- SUBJECT per scene: intercut like a real editorial — some scenes are the product alone (subject:"product"), others show the model wearing/using/applying the product (subject:"model"). Aim for a natural mix (roughly half and half). THE MODEL IS: ${modelDesc}. In every subject:"model" scene, describe the model consistently as this exact person, use ${modelPron}, and match the attached reference image. The ONLY person on camera is this model — never introduce a second person (partner, friend, bystander, hands of another person), and never swap in a different age, gender, or look. The brief's target audience is who the ad is FOR, not who appears on camera. In "product" scenes brollPrompt is product-only.`,
       // 아동은 연출만 추가로 지시(정체성은 위 모델 서술이 맡는다). 성인 에디토리얼 포즈 금지.
-      ...(model && model.isMinor ? [
+      ...(model.isMinor ? [
         '- The model is a child: stage every subject:"model" scene the way a children\'s clothing catalogue would — natural age-appropriate posture, play and movement, fully clothed in the product; never adult-editorial posing, styling or framing.',
       ] : []),
     ] : [
-      '- SUBJECT: every scene is product-only — set subject:"product" for all scenes (no model/person).',
+      // 1패스 — 모델 미정. **브리프·사진으로 필요 여부를 판단**하고 needsModel로 알린다. 인물 묘사는 금지.
+      '- DECIDE whether a human model should appear. Make this call FIRST, before you plan any scene:',
+      '  · WEARABLES ALWAYS GET MODEL SCENES. If the product is worn on or applied to the body — apparel, swimwear, bodywear, lingerie, jewelry, watches, eyewear, bags, footwear, hats, or makeup/skincare that goes on skin — then model scenes are REQUIRED. Showing a wearable only as a flat product is a weak ad: the buyer needs to see how it sits on a body. Do NOT default to product-only just because the attached photo happens to be a flat/packshot.',
+      '  · Also use model scenes if the brief asks for them (model / worn / on-model / lookbook / editorial / 착용 / 화보 / 모델), whatever the product is.',
+      '  · Only if the product is NOT worn and the brief does not ask for a person (food, drinks, home goods, tech, supplements, packaged goods) does EVERY scene stay product-only.',
+      '- Set "subject" per scene accordingly ("model" or "product"), intercutting naturally (roughly half and half) when model scenes are used.',
+      '- Return "needsModel": true if ANY scene is subject:"model", else false.',
+      '- ⚠️ The model is NOT chosen yet — a reference image will be supplied later. In subject:"model" scenes do NOT describe the person at all (no age, gender, ethnicity, hair, body, face). Build the scene from styling, pose, framing, mood and setting, and refer to them only as "the model". Never introduce a second person. The brief\'s target audience is who the ad is FOR, not who appears on camera.',
     ]),
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, spoken and every brollPrompt to that category.',
     ...(playbook ? [
@@ -182,7 +184,7 @@ function buildUgcScriptPrompt(input) {
       '  · "spoken" = one natural, conversational sentence the voice says in this scene, which also appears on screen as the subtitle. Keep it concise and subtitle-friendly (about 4-12 words), ONE sentence per scene. Fill "spoken" for EVERY scene.',
       '  · Set "onScreenText" to "" (empty). Do NOT write a separate headline/keyword caption — the subtitle IS the spoken line. Any extra graphic captions are added by the user later, never by you.',
     ] : [
-      '- NO VOICEOVER MODE: this ad has no narration and no on-screen captions — it is a silent, visual-only ad carried by the product visuals and background music.',
+      '- NO VOICEOVER MODE: this ad has no narration and no on-screen captions — it is a silent, visual-only ad carried by the visuals and background music.',
       '  · Set "onScreenText" to "" (empty) and "spoken" to "" for EVERY scene. Do NOT write any narration or caption lines.',
       '  · Put all your craft into "direction" and "brollPrompt" (the visuals & motion). Still fill title, hook, cta, caption, hashtags, musicVibe normally (used off-screen for the post, not shown in the video).',
     ]),
@@ -208,7 +210,8 @@ function buildUgcScriptPrompt(input) {
     '  "cta": string,',
     '  "caption": string,                    // ready-to-post caption',
     '  "hashtags": string[],                 // 5-12, no # prefix',
-    '  "musicVibe": string                   // e.g. "upbeat lofi", "trendy pop"',
+    '  "musicVibe": string,                  // e.g. "upbeat lofi", "trendy pop"',
+    '  "needsModel": boolean                 // true if ANY scene is subject:"model"',
     '}',
     `Allowed scene types for this output type: ${profile.sceneTypes.map((t) => `"${t}"`).join(', ')}.`,
   ].join('\n');
