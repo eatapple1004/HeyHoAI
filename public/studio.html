@@ -6509,7 +6509,13 @@ function ugcToggleKnobs(){
  * ⚠️ ugcToggleKnobs와 라벨·aria를 반드시 같이 맞춘다. 안 그러면 상자는 열렸는데 버튼은 'Change'라고 우긴다.
  */
 function ugcOpenKnobs(){
-  const box=document.getElementById('ugcInputBox'); if(!box||box.classList.contains('knobs-open'))return;
+  const box=document.getElementById('ugcInputBox'); if(!box)return;
+  // (2026-07-30) 접히는 층이 **둘**이다 — 하나만 펴면 픽커는 여전히 안 보인다(모바일에서 실제로 그랬다):
+  //   바깥 `#ugcInputBox.compact` → `.ugc-foldable{display:none}`(937행). 좁은 화면 요약 카드.
+  //   안쪽 `#ugcInputBox:not(.knobs-open) .ugc-knobs{display:none}`(913행).
+  //   픽커는 .ugc-foldable > .ugc-fold-b > .ugc-knobs 안이라 **둘 다** 펴야 도달한다.
+  if(typeof ugcUncompact==='function')ugcUncompact();
+  if(box.classList.contains('knobs-open'))return;
   box.classList.add('knobs-open');
   const line=document.getElementById('ugcKnobLine'); if(line)line.setAttribute('aria-expanded','true');
   const chg=document.getElementById('ugcKnobChg'); if(chg)chg.textContent='Done';
@@ -6525,7 +6531,13 @@ function ugcOpenKnobs(){
  *   좁은 화면(≤860px, 세로 스택): 안 접으면 671px짜리 폼을 다 지나야 대본·영상이 보인다(실측:
  *     접으면 대본이 y=300으로 바로 보이고, 안 접으면 y=912라 263px 스크롤) → 접는다.
  */
-function ugcCompactIfNarrow(o){ if(window.matchMedia('(max-width:860px)').matches) ugcCompact(o); }
+function ugcCompactIfNarrow(o){
+  // (2026-07-30) 얼굴을 아직 골라야 하면 **접지 않는다.** 접으면 .ugc-foldable 이 통째로 사라져 모델 픽커가
+  //   숨고, 유저는 Generate 를 눌러 경고를 본 뒤에야 픽커에 닿는다 = 좁은 화면에서만 남아 있던 데드엔드.
+  //   ugcSyncModelNeed()가 픽커를 연 **직후** 여기가 도로 접던 것이 원인이었다(호출 순서: 6267행).
+  if(ugcNeedsModel()&&!ugcSelectedModelImg)return;
+  if(window.matchMedia('(max-width:860px)').matches) ugcCompact(o);
+}
 /**
  * 새로고침 후 빈 입력칸을 잡 데이터로 되살린다 — 안 접으면 영수증이 없으므로 "뭘 만드는 중인지"가
  *   폼 자체에 있어야 한다. 채워두면 좁은 화면의 ugcCompact()도 폼을 읽어 제대로 된 영수증을 만든다.
