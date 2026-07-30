@@ -6191,13 +6191,22 @@ function ugcRenderScriptPreview(data){
     const hasText=((sc.spoken||sc.onScreenText)||'').trim(); // 음성자막=spoken(옛 잡 onScreenText 폴백)
     const dur=sc.durationSec||evenDur;
     const durBadge=sc.type==='broll'?`<span class="ugc-scene-dur" title="Scene length">${dur}s</span>`:'';
+    // (2026-07-30) 무음성이 **기본값**이라(No narration + UGC_CAPTIONS=false) spoken이 거의 항상 빈다.
+    //   그러면 예전엔 본문 줄이 "visual only"(흐린 자리표시자)가 되고, 정작 내용인 🎬 summary 가
+    //   그 아래 dim 12px 보조줄로 깔렸다 = **자리표시자가 제목, 내용이 각주**.
+    //   유저(대부분 셀러)가 과금 전에 확인하는 건 "얘가 내 제품을 알아들었나"이고 그 답이 summary 다.
+    //   → 음성이 없으면 summary 를 **본문 줄로 승격**하고 "visual only" 는 지운다.
+    //   음성이 있을 때의 출력은 이전과 완전히 동일하다(spoken 주인공 · 🎬 보조줄).
+    const sum=esc(sc.summary||sc.direction||'');
+    const shotIc=`<span class="ugc-el-ic" title="What this scene shows — the visuals & motion">🎬</span>`;
+    const chgBtn=sc.type==='broll'?` <button type="button" class="ugc-sum-edit" onclick="ugcEditScenePre(${i})" title="Change this scene">✎ change</button>`:'';
     const line=hasText
       ? `<b>${i+1}.</b>${durBadge} <span class="ugc-el-ic" title="${UGC_CAPTIONS?'What\'s said & shown — voice + caption for this scene':'Voice narration for this scene'}">${UGC_CAPTIONS?'💬':'🎙️'}</span> <span class="ugc-edit" contenteditable="true" data-scene="${i}" data-ph="what's said in this scene">${esc(sc.spoken||sc.onScreenText||'')}</span>`
-      : `<b>${i+1}.</b>${durBadge} <span style="color:var(--faint);font-size:12px">visual only</span>`;
+      : `<b>${i+1}.</b>${durBadge} ${shotIc} <span>${sum}</span>${chgBtn}`;
     return `<div style="padding:8px 0;border-top:1px solid var(--border)">${line}`
-      +`<div class="ugc-scene-sum"><span class="ugc-el-ic" title="What this scene shows — the visuals & motion">🎬</span> <span>${esc(sc.summary||sc.direction||'')}</span>`
-      +(sc.type==='broll'?` <button type="button" class="ugc-sum-edit" onclick="ugcEditScenePre(${i})" title="Change this scene">✎ change</button>`:'')
-      +`</div><div class="ugc-sum-panel" id="ugcSumPanel-${i}" style="display:none"></div></div>`;
+      // 승격했으면 같은 문장을 두 번 쓰지 않는다(🎬 보조줄은 음성이 있을 때만)
+      +(hasText?`<div class="ugc-scene-sum">${shotIc} <span>${sum}</span>${chgBtn}</div>`:'')
+      +`<div class="ugc-sum-panel" id="ugcSumPanel-${i}" style="display:none"></div></div>`;
   }).join('');
   document.getElementById('ugcScriptBody').innerHTML=
     `<div style="margin-bottom:6px"><span class="ugc-el-lbl" title="The opening line that grabs attention in the first second">🎣 Hook</span> — ${ce('hook',s.hook,'hook line')}</div>`+
