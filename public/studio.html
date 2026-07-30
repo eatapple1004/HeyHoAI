@@ -2363,6 +2363,10 @@ async function loadCredits(){
     const data=await res.json();
     if(!data.success)return;
     CREDITS=data.data;
+    // (2026-07-30) 잔액이 **도착한 뒤** 비용 줄·CTA를 다시 그린다.
+    //   이게 없으면 초기 렌더(잔액 미상)에서 계산한 화면이 그대로 굳어, 유저가 슬라이더를 건드려야만 고쳐졌다.
+    if(typeof ugcSyncTotalSec==='function')ugcSyncTotalSec();
+    if(typeof ugcCtaState==='function')ugcCtaState();
     document.getElementById('creditBalance').textContent=CREDITS.unlimited?'∞':CREDITS.balance;
     const isTeam=CREDITS.context&&CREDITS.context.type==='team';
     document.getElementById('creditCtxLabel').textContent=isTeam?('· '+CREDITS.context.teamName):'credits';
@@ -6755,10 +6759,10 @@ function ugcSyncTotalSec(){
  */
 function ugcRenderCost(v, ko){
   const el=document.getElementById('ugcLenCost'); if(!el)return;
-  const b=ugcCostBounds(v), unl=!!(CREDITS&&CREDITS.unlimited);
-  const bal=(CREDITS&&Number.isFinite(Number(CREDITS.balance)))?Number(CREDITS.balance):null;
+  const b=ugcCostBounds(v), bal=ugcBalance();
   const max='◈'+b.max.toLocaleString();
-  if(unl||bal===null){ el.textContent=(ko?'최대 ':'up to ')+max; el.classList.remove('short'); return; }
+  // 무제한(Infinity)이거나 아직 모르면(null) 잔액 얘기를 꺼내지 않는다 — 최대가만 말한다.
+  if(bal===null||bal===Infinity){ el.textContent=(ko?'최대 ':'up to ')+max; el.classList.remove('short'); return; }
   const fit=ugcMaxAffordableSec(30);
   if(fit<2){ // 가장 짧은 영상도 못 만든다
     el.classList.add('short');
@@ -6805,10 +6809,26 @@ function ugcCostBounds(T){
   if(!any){ const c=u[5]; return {min:c,max:c}; } // T가 너무 짧아 1씬뿐인 경우
   return {min:lo, max:hi};
 }
-/** 잔액으로 감당 가능한 가장 긴 총 길이(최대가 기준). 없으면 0. */
+/**
+ * 잔액 — 숫자 / 무제한이면 Infinity / **아직 모르면 null**.
+ * 🔴 `Number(null) === 0` 이고 `Number.isFinite(0) === true` 다. 그래서 isFinite 만으로 거르면
+ *    `/api/credits` 응답 **전**의 초기값(balance:null)이 "잔액 0"으로 읽힌다 —
+ *    무제한 계정에서 "잔액 ◈0 · 크레딧이 부족해요"가 뜨고, 슬라이더를 건드려 다시 그려질 때(그땐 로드 완료)
+ *    에야 멀쩡해지는 버그가 실제로 났다. **null 을 명시적으로 먼저 거른다.**
+ * 판정을 여기 하나로 모은다 — 표시(ugcRenderCost)와 차단(ugcCtaState)이 갈리면
+ * 버튼은 눌리는데 이유는 안 보이거나 그 반대가 된다.
+ */
+function ugcBalance(){
+  if(!CREDITS||CREDITS.unlimited)return Infinity;
+  const b=CREDITS.balance;
+  if(b===null||b===undefined||b==='')return null;   // 아직 안 불러왔다 ≠ 0원
+  const n=Number(b);
+  return Number.isFinite(n)?n:null;
+}
+/** 잔액으로 감당 가능한 가장 긴 총 길이(최대가 기준). 모르거나 무제한이면 요청값 그대로. */
 function ugcMaxAffordableSec(maxT){
-  if(!CREDITS||CREDITS.unlimited)return maxT;
-  const bal=Number(CREDITS.balance); if(!Number.isFinite(bal))return maxT; // 잔액 미상이면 막지 않는다
+  const bal=ugcBalance();
+  if(bal===null||bal===Infinity)return maxT;        // 모르는 상태에서 막지 않는다
   for(let t=maxT;t>=2;t--){ if(ugcCostBounds(t).max<=bal)return t; }
   return 0;
 }
