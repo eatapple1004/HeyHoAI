@@ -4960,7 +4960,8 @@ function renderUgcInline(b){
   ugcDestroyAllLayered(); // 재렌더/이탈 전 기존 레이어드 재생기·오디오 파기(좀비 오디오·중복 재생 방지 — <audio>는 DOM 밖이라 innerHTML='' 로 안 멈춤)
   if(!b){ el.style.display='none'; el.innerHTML=''; ugcSyncSolo(); return; }
   el.style.display=''; ugcSyncSolo();
-  if(b.loading){ el.innerHTML=ugcLoadingVidHtml(b)+ugcLoadingStripHtml(b); return; } // 조리대·오븐이 같은 모양을 쓴다(E)
+  // (2026-07-30) 씬별 스트립 제거 — 피드 카드에서 이미 뺐다(93f7542). 두 표면이 다른 말을 하면 안 된다.
+  if(b.loading){ el.innerHTML=ugcLoadingVidHtml(b); return; } // 조리대·오븐이 같은 모양을 쓴다(E)
   if((!b.items||!b.items.length)&&b.failed&&b.failed.length){ el.innerHTML='<div class="ugc-inline-fail">⚠ Generation failed<div class="ugc-inline-cap" style="color:inherit;font-weight:400">'+esc(b.failMsg||'Please try again.')+'</div></div>'; return; }
   const it=b.items&&b.items[0]; const u=b.ugc; let html='';
   const useOverlay=u&&u.previewUrl; // B+ 편집 중엔 자막 없는 미리보기 + HTML 오버레이(즉시 반영). 확대·공유는 구운 최종.
@@ -7235,33 +7236,28 @@ async function ugcRestoreActiveJobs(){
   if(!list.length&&!drafts.length)return;
   // 조리대 = 가장 최근 것 하나. 렌더 중인 게 있으면 그게, 없으면 완성·미저장 draft가 올라간다.
   //   (레일 배지가 draft를 세므로, 배지를 눌러 왔는데 빈 화면이면 안 된다.)
-  const benchId=list.length?list[0].id:drafts[0].id;
-  ugcHideBenchPanels(); // 조리대를 쓰는 게 생겼다 — 안 치우면 "How this works"가 결과와 나란히 뜬다
+  // (2026-07-30) 새로고침 재연결도 **조리대를 쓰지 않는다**(사용자 요청 — "잠깐 지금 있는 것도 불허").
+  //   렌더 시작 경로는 8e668fa 에서 이미 조리대를 뗐는데 재연결만 남아 있어서, 새로고침하면
+  //   진행 중인 영상이 우측 조리대로 튀어 올라오고 폼까지 옛 잡 데이터로 채워졌다(= "옛날 흔적").
+  //   이제 전부 '내 크리에이션' 카드 하나로만 보인다.
+  ugcHideBenchPanels();
   // 화면은 최신이 위. unshift라 역순으로 넣는다. 렌더 중인 것을 draft(이미 끝난 것)보다 위에 둔다.
   //   draft는 fetch 후에 unshift하므로 순서를 지키려면 순차로 기다린다(보통 0~2개).
-  for(const dj of [...drafts].reverse()){ await ugcRestoreDraft(dj, dj.id===benchId); }
-  [...list].reverse().forEach(aj=>{ ugcReattachJob(aj, aj.id===benchId); }); // 배치 생성·unshift는 await 앞이라 순서 보장
+  for(const dj of [...drafts].reverse()){ await ugcRestoreDraft(dj); }
+  [...list].reverse().forEach(aj=>{ ugcReattachJob(aj); }); // 배치 생성·unshift는 await 앞이라 순서 보장
 }
 
 /**
  * 진행 중인 잡 하나를 화면에 다시 붙인다 — 로딩 카드 + 자기 경과초 + 폴링 + 완료 처리.
- *   onBench=true면 조리대(가장 최근 1개), false면 오븐. 오븐에 있어도 E(모양)·B(data-batch 타이머) 덕에
- *   조리대와 똑같이 보이고 자기 초를 센다.
+ *   (2026-07-30) 조리대는 안 쓴다 — 항상 피드('내 크리에이션') 카드로만 붙는다. E(모양)·B(data-batch 타이머)
+ *   덕에 카드가 조리대와 똑같이 보이고 자기 경과초를 센다. 폼도 건드리지 않는다(옛 잡 데이터로 채우면 흔적이 남는다).
  */
-async function ugcReattachJob(j, onBench){
-  const b=makePendingBatch(null,j.concept||'',1,true); b.isUgc=true; b._bench=!!onBench;
+async function ugcReattachJob(j){
+  const b=makePendingBatch(null,j.concept||'',1,true); b.isUgc=true;
   b.sceneCount=j.n_clips||5;
   STUDIO_BATCHES.unshift(b);
   renderStudioResults(); // 즉시 로딩 화면 = 떠날 때 그 화면
-  const hint=onBench?document.getElementById('ugcHint'):null; // C: 힌트는 조리대 것만 말한다(오븐 것이 쓰면 서로 덮어씀)
-  if(onBench){
-    // 새로고침 후엔 폼이 비어 있다 → 잡 데이터로 되살린다. 넓은 화면은 안 접으므로 영수증이 없고,
-    //   "뭘 만드는 중인지"가 폼 자체에 있어야 한다. 좁은 화면이면 이어서 접히는데, 폼이 채워졌으니
-    //   ugcCompact()가 폼을 읽어 제대로 된 영수증을 만든다(전엔 그래서 잡 데이터를 인자로 넘겼다).
-    ugcFillFormFromJob(j);
-    ugcCompactIfNarrow();
-    if(hint)hint.textContent=''; // 재연결도 렌더 시작과 동일 — 문구 없음(카드가 말한다)
-  }
+  const hint=null; // 진행 문구를 안 쓴다(카드가 말한다) — 폼도 안 채운다
   // 경과초의 기준은 **잡이 시작된 시각**이지 내가 다시 붙은 시각이 아니다. Date.now()로 잡으면 새로고침할
   //   때마다 0.0s부터 다시 세서, 3분 걸린 렌더가 "5초째"라고 거짓말한다(오래 걸리는 렌더일수록 자주 새로고침한다).
   //   created_at은 listActiveJobs가 이미 주고 있었다. 시계 오차로 음수가 나오지 않게 바닥을 막는다.
@@ -7294,9 +7290,9 @@ async function ugcReattachJob(j, onBench){
  * 자동 커밋 스위퍼도 없어서 라이브러리에도 안 보인다 → 돌아와도 영상이 어디에도 없는 상태였다.
  * 레일 배지가 이 draft를 세므로, 눌러서 왔을 때 반드시 여기 떠 있어야 한다(Save & finish 가능).
  *
- * onBench: 가장 최근 것 1개만 조리대. 나머지 draft는 오븐에 카드로 붙는다(거기서도 [Save & finish] 가능).
+ * (2026-07-30) 조리대 미사용 — draft 도 전부 '내 크리에이션' 카드로만 붙는다([Save & finish]는 카드에서 가능).
  */
-async function ugcRestoreDraft(j, onBench){
+async function ugcRestoreDraft(j){
   let job=null;
   try{
     const r=await fetch('/api/generate/ugc/jobs/'+encodeURIComponent(j.id));
@@ -7304,16 +7300,11 @@ async function ugcRestoreDraft(j, onBench){
     job=(d&&d.success&&d.data)?d.data:null;
   }catch(e){ return; }
   if(!job||!job.resultUrl)return; // 결과 URL이 없으면 붙일 게 없다
-  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true; pending._bench=!!onBench;
+  const pending=makePendingBatch(null,j.concept||'',1,true); pending.isUgc=true;
   pending.sceneCount=j.n_clips||5;
   STUDIO_BATCHES.unshift(pending);
   ugcFillPendingFromJob(pending,j.id,job,j.output_type||'product-ad'); // 새 렌더 완성 때와 같은 매핑
   renderStudioResults();
-  if(onBench){
-    ugcFillFormFromJob(j); ugcCompactIfNarrow(); // 새로고침으로 빈 폼을 잡 데이터로 되살린다(위 ugcReattachJob과 동일)
-    const hint=document.getElementById('ugcHint');
-    if(hint)hint.textContent='Your video finished while you were away — save it to your gallery.';
-  }
 }
 
 async function pollUgcJob(jobId){
