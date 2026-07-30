@@ -373,4 +373,21 @@ function startPoller() {
   log.info(`Video job poller started (every ${POLL_INTERVAL_MS / 1000}s)`);
 }
 
-module.exports = { submit, getJob, pollOnce, startPoller };
+/**
+ * (2026-07-30) 진행 중인 릴 잡 목록 — 스튜디오 '내 크리에이션' 재연결용.
+ * ugc 쪽 listActiveJobs 와 같은 목적: 새로고침/재방문해도 돌아가는 릴이 로딩 카드로 보여야 한다.
+ * 30분 컷 — Kling 릴은 보통 2~5분, 그보다 오래 processing 이면 리퍼가 정리할 좀비다.
+ */
+async function listActiveJobs(userId, { maxAgeMinutes = 30 } = {}) {
+  const r = await query(
+    `SELECT id, prompt, duration, status, created_at
+     FROM video_jobs
+     WHERE user_id = $1 AND status IN ('processing','finalizing')
+       AND created_at > now() - ($2 || ' minutes')::interval
+     ORDER BY created_at DESC`,
+    [userId, maxAgeMinutes]
+  );
+  return r.rows;
+}
+
+module.exports = { submit, getJob, pollOnce, startPoller, listActiveJobs };

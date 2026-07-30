@@ -619,10 +619,9 @@ async function copyImage(){
 /* ── (2026-07-30) 오너 도구: Edit(말로 고치기) · Reel(사진→영상) ──
    노출 = **내 것 + 이미지**일 때만. 타인의 creation을 편집/영상화하게 두면 커뮤니티 저작물이
    무단 파생되므로 isOwn 게이트가 정책이다(다운로드·공유와 다른 축).
-   Edit  → 기존 POST /api/generate 재사용: 이 이미지를 referenceImages로, 지시문을 프롬프트로.
-           enhance=false(정체성 프리픽스가 편집 지시를 오염시키지 않게) · 결과 resultIdx로 바로 이동.
-   Reel  → gallery.html의 openReel/createReel/pollReelJob 이식(같은 /api/generate/video/async).
-           완료 시 갤러리로(비디오 잡 응답엔 resultIdx가 없어 상세로 못 보낸다 — url뿐). */
+   실행은 여기서 하지 않는다 — stashAndGo 가 요청을 sessionStorage 에 담아 **스튜디오로 넘긴다**
+   (studio.html 의 runHandoff 가 '내 크리에이션' 로딩 카드를 띄우고 실행·채움까지 담당).
+   여기서는 입력 검증 + 원본 404 가드 + 원본 치수 실측(비율·해상도 원본 맞춤용)만. */
 let EDIT_COST=300, REEL_COST=1250, _otBusy=false;
 (async function loadOwnerCosts(){
   try{const d=(await(await fetch('/api/credits')).json()).data;
@@ -673,54 +672,32 @@ async function fetchSourceBlob(){
   if(!/^image\//.test(b.type||''))throw new Error('Source image unavailable — it may have been moved or deleted.');
   return b;
 }
+/**
+ * (2026-07-30) 실행하지 않는다 — 요청을 sessionStorage 에 담아 **스튜디오로 넘긴다**(핸드오프).
+ * "누르면 바로 내 크리에이션에 로딩 카드"(사용자 요청)의 로딩카드·채움 인프라가 전부 스튜디오에 있다.
+ * 여기서 하는 일 셋: ① 입력 검증 ② 원본 404/HTML 가드(떠나기 전에 잡아야 크레딧이 안 나간다)
+ * ③ 원본 실측 치수 동봉 — 스튜디오가 이걸로 **비율·해상도를 원본에 맞춘다**(사용자 요청).
+ */
+async function stashAndGo(kind, prompt){
+  _toolBusy(true);
+  try{
+    await fetchSourceBlob(); // 가드만 — blob 자체는 스튜디오가 다시 받는다(sessionStorage 에 못 담는다)
+    const dim=await new Promise(res=>{ const i=new Image();
+      i.onload=()=>res({w:i.naturalWidth,h:i.naturalHeight}); i.onerror=()=>res({w:0,h:0}); i.src=IT.url; });
+    sessionStorage.setItem('doppiaHandoff', JSON.stringify({
+      kind, srcUrl:IT.url, prompt, w:dim.w, h:dim.h, visibility:IT.visibility||'public' }));
+    location.href='/studio';
+  }catch(e){ toast(e.message||'Failed'); _toolBusy(false); }
+}
 async function applyEditM(){
   if(_otBusy)return;
   const inst=document.getElementById('itInput').value.trim();
   if(!inst){ toast('Describe the change first.'); return; }
-  _toolBusy(true);
-  try{
-    const blob=await fetchSourceBlob(); // 404/HTML 가드 — 안 거르면 0KB HTML이 Gemini로 가서 400(실측 idx70)
-    const fd=new FormData();
-    // "같은 컷에서 지시한 것만 바뀐다"가 이 기능의 약속 — 프롬프트 래핑이 그 약속을 캐리한다.
-    fd.append('prompt','Edit the attached image: '+inst+'. Keep everything else exactly the same as the attached image.');
-    fd.append('referenceImages',blob,'source.png');
-    fd.append('model','pro'); fd.append('count','1');
-    fd.append('enhance','false'); // 정체성 고정 프리픽스 제외 — 편집 지시 원문 그대로
-    if(IT.visibility==='private')fd.append('privateMode','true'); // 원본이 비공개면 편집본도
-    const res=await fetch('/api/generate',{method:'POST',body:fd});
-    const data=await res.json();
-    if(res.status===402){ toast('Not enough credits. Top up in Billing.'); setTimeout(()=>location.href='/billing',1200); return; }
-    if(!res.ok||!data.success)throw new Error(data.error||'edit failed');
-    const ok=(data.results||[]).find(x=>x.success&&x.resultIdx);
-    if(!ok)throw new Error((data.results&&data.results[0]&&data.results[0].error)||'edit failed');
-    location.href='/creation?idx='+ok.resultIdx+'&from='+encodeURIComponent(FROM||'library'); // 결과로 바로 이동
-  }catch(e){ toast(e.message||'Edit failed'); }
-  finally{ _toolBusy(false); }
+  stashAndGo('edit', inst);
 }
 async function createReelM(){
   if(_otBusy)return;
-  const prompt=document.getElementById('itInput').value.trim()||'gentle natural motion, subtle camera movement, cinematic';
-  _toolBusy(true);
-  try{
-    const blob=await fetchSourceBlob(); // 404/HTML 가드(applyEditM 과 동일)
-    const fd=new FormData();
-    fd.append('prompt',prompt); fd.append('duration','5'); fd.append('mode','std');
-    fd.append('sourceImage',blob,'source.png');
-    if(IT.visibility==='private')fd.append('privateMode','true');
-    const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
-    const data=await res.json();
-    if(res.status===402){ toast('Not enough credits. Top up in Billing.'); setTimeout(()=>location.href='/billing',1200); return; }
-    if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
-    for(let i=0;i<90;i++){ // gallery pollReelJob과 동일한 폴링
-      await new Promise(r=>setTimeout(r,8000));
-      let d; try{ d=(await(await fetch('/api/generate/video/jobs/'+data.jobId)).json()).data; }catch(e){ continue; }
-      if(!d)continue;
-      if(d.status==='succeeded'){ toast('Your Reel is ready!'); location.href='/gallery'; return; } // 잡 응답에 resultIdx가 없어 상세로 못 간다
-      if(d.status==='failed')throw new Error(d.error||'Reel creation failed');
-    }
-    throw new Error('Timed out — check your gallery in a moment.');
-  }catch(e){ toast(e.message||'Reel failed'); }
-  finally{ _toolBusy(false); }
+  stashAndGo('reel', document.getElementById('itInput').value.trim());
 }
 
 async function deleteCreation(){

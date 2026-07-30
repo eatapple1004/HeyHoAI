@@ -1106,6 +1106,14 @@ router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 },
   }
 });
 
+// (2026-07-30) 진행 중 릴 목록 — 스튜디오 '내 크리에이션' 재연결용(ugc /jobs 와 같은 목적).
+router.get('/video/jobs', async (req, res, next) => {
+  try {
+    const rows = await videoJobService.listActiveJobs(req.user.id);
+    res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
+});
+
 router.get('/video/jobs/:id', async (req, res, next) => {
   try {
     const job = await videoJobService.getJob(req.params.id, req.user.id);

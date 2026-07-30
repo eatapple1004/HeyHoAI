@@ -4194,7 +4194,7 @@ function batchRowHtml(b){
     // E: 렌더 중인 Ad Video는 오븐에서도 자기 모양(9:16 + 경과초)으로 — 사진용 정사각 로딩칸을 쓰면
     //    "내가 만들던 세로 영상"이 아니라 남의 것처럼 보인다. 조리대와 같은 함수를 쓴다.
     ? ugcLoadingVidHtml(b)
-    : doneHtml+Array.from({length:phCount}).map(()=>`<div class="result-card rb-loading" style="${phStyle}"><div class="rb-spin"></div><div class="rb-elapsed">0.0s</div></div>`).join(''); // 생성 중 슬롯: 로딩 + 실시간 경과 초
+    : doneHtml+Array.from({length:phCount}).map(()=>`<div class="result-card rb-loading" style="${phStyle}"><div class="rb-spin"></div><div class="rb-elapsed"${b._jobT0?` data-batch="${b._uid}"`:``}>0.0s</div></div>`).join(''); // 생성 중 슬롯: 로딩 + 실시간 경과 초
   // 카드 규칙(설계 정본): 템플릿=어떤 템플릿인지 / 커스텀=프롬프트(스튜디오=본인만이라 안전)
   const isTpl=!!b.templateSource;
   const usable=b.items.filter(i=>i.url); // 이 creation의 사진 또는 릴(영상 포함)
@@ -7573,9 +7573,99 @@ async function maybeOpenTplModal(){
   }
 }
 // ▲▲▲
+/* ───── (2026-07-30) creation 상세 → 스튜디오 핸드오프 ─────
+   creation 페이지의 [말로 고치기]·[영상으로 만들기]는 **실행하지 않는다** — 요청을 sessionStorage 에
+   담아 여기로 온다. 이유: "누르면 바로 내 크리에이션에 로딩 카드"(사용자 요청)를 만들 수 있는
+   로딩카드·채움·과금 인프라(STUDIO_BATCHES)가 전부 이 페이지에 있다. 딴 데서 재발명하지 않는다.
+   ⚠️ 편집은 동기 API 라 새로고침하면 카드는 사라진다 — 서버는 끝까지 처리해 결과물은 피드에 남는다. */
+const ASPECT_ALLOW_IMG=['1:1','2:3','3:2','3:4','4:3','4:5','5:4','9:16','16:9','21:9']; // 서버 화이트리스트와 동일
+const ASPECT_ALLOW_REEL=['9:16','1:1','16:9'];                                           // KLING_ASPECTS 와 동일
+function nearestAspect(list,w,h){
+  if(!w||!h)return null;
+  const r=w/h; let best=null,bd=1e9;
+  for(const a of list){ const [x,y]=a.split(':').map(Number); const d=Math.abs(Math.log((x/y)/r));
+    if(d<bd){bd=d;best=a;} }
+  return best;
+}
+/** 원본 해상도를 따라간다(사용자 요청) — 긴 변 기준 2K/4K, 그 이하는 미전송(=1K). 서버가 pro 전용으로 걸러준다. */
+function sizeForSource(w,h){ const m=Math.max(w||0,h||0); return m>=2800?'4K':(m>=1500?'2K':null); }
+
+async function runHandoff(){
+  let h=null; try{ h=JSON.parse(sessionStorage.getItem('doppiaHandoff')||'null'); }catch(e){}
+  if(!h||!h.kind||!h.srcUrl)return;
+  sessionStorage.removeItem('doppiaHandoff'); // 새로고침으로 이중 실행(=이중 과금) 금지 — 읽자마자 소비
+  const isReel=h.kind==='reel';
+  const pending=makePendingBatch(null, h.prompt||(isReel?'Reel':'Edit'), 1, isReel);
+  pending.aspect=nearestAspect(isReel?ASPECT_ALLOW_REEL:ASPECT_ALLOW_IMG, h.w, h.h)||pending.aspect;
+  if(!isReel)pending.model='Nano Banana Pro';
+  STUDIO_BATCHES.unshift(pending); renderStudioResults();
+  // 경과초는 전역 타이머(rb-elapsed:not([data-batch]))가 맡는다 — 지금 시작한 작업이라 0.0s부터가 정확하다.
+  const fail=(msg)=>{ pending.loading=false; pending.items=[]; pending.failed=[{idx:null}]; renderStudioResults(); if(window.toast)toast(msg||'Failed'); };
+  try{
+    const r=await fetch(h.srcUrl);
+    if(!r.ok)throw new Error('Source image unavailable.');
+    const blob=await r.blob();
+    if(!/^image\//.test(blob.type||''))throw new Error('Source image unavailable.');
+    const vis=(h.visibility==='private')?'private':'public';
+    if(isReel){
+      const fd=new FormData();
+      fd.append('prompt',(h.prompt||'').trim()||'gentle natural motion, subtle camera movement, cinematic');
+      fd.append('duration','5'); fd.append('mode','std');
+      const ar=nearestAspect(ASPECT_ALLOW_REEL,h.w,h.h); if(ar)fd.append('aspectRatio',ar); // 릴도 원본 비율(9:16 고정이던 것)
+      fd.append('sourceImage',blob,'source.png');
+      if(vis==='private')fd.append('privateMode','true');
+      const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});
+      const data=await sjson(res);
+      if(res.status===402){fail('Not enough credits — top up in Billing.');return;}
+      if(!res.ok||!data.success)throw new Error(data.error||'video submit failed');
+      const url=await pollVideoJob(data.jobId);
+      pending.items=[{url:url,type:'reel',idx:null,visibility:vis}]; pending.loading=false; renderStudioResults();
+    }else{
+      const fd=new FormData();
+      // "지시한 것만 바뀐다" 약속 — creation 쪽과 같은 래핑(문구를 바꾸면 두 표면이 다른 편집이 된다)
+      fd.append('prompt','Edit the attached image: '+h.prompt+'. Keep everything else exactly the same as the attached image.');
+      fd.append('referenceImages',blob,'source.png');
+      fd.append('model','pro'); fd.append('count','1'); fd.append('enhance','false');
+      const ar=nearestAspect(ASPECT_ALLOW_IMG,h.w,h.h); if(ar)fd.append('aspectRatio',ar);   // 비율 = 원본(사용자 요청)
+      const size=sizeForSource(h.w,h.h); if(size)fd.append('imageSize',size);                // 해상도 = 원본 따라(사용자 요청)
+      if(vis==='private')fd.append('privateMode','true');
+      const res=await fetch('/api/generate',{method:'POST',body:fd});
+      const data=await sjson(res);
+      if(res.status===402){fail('Not enough credits — top up in Billing.');return;}
+      if(!res.ok||!data.success)throw new Error(data.error||'edit failed');
+      const one=(data.results||[]).find(x=>x.success);
+      if(!one)throw new Error((data.results&&data.results[0]&&data.results[0].error)||'edit failed');
+      pending.items=[{url:one.url,type:'photo',idx:one.resultIdx||one.idx||null,visibility:vis}];
+      pending.loading=false; renderStudioResults();
+    }
+  }catch(e){ fail(e.message); }
+}
+
+/* 진행 중 릴 재연결 — 새로고침/재방문해도 돌아가는 릴이 로딩 카드로 보인다(Ad Video 재연결과 같은 목적). */
+async function reattachReels(){
+  let list=[];
+  try{ const d=await(await fetch('/api/generate/video/jobs')).json(); list=(d&&d.success&&Array.isArray(d.data))?d.data:[]; }catch(e){ return; }
+  for(const j of [...list].reverse()){
+    const b=makePendingBatch(null, j.prompt||'Reel', 1, true);
+    b._jobT0=true; // 경과초 = 잡 시작 시각 기준 — placeholder 가 이 플래그로 data-batch 를 붙인다
+    STUDIO_BATCHES.unshift(b); renderStudioResults();
+    const uid=b._uid;
+    const startedAt=Date.parse(j.created_at);
+    const t0=Number.isFinite(startedAt)?Math.min(startedAt,Date.now()):Date.now(); // 경과초 = 잡 시작 기준(ugc 재연결과 동일)
+    const timer=setInterval(()=>{const s2=((Date.now()-t0)/1000).toFixed(1)+'s';document.querySelectorAll('.rb-elapsed[data-batch="'+uid+'"]').forEach(x=>{x.textContent=s2;});},100);
+    (async()=>{ try{
+        const url=await pollVideoJob(j.id);
+        b.items=[{url:url,type:'reel',idx:null,visibility:'public'}]; b.loading=false;
+      }catch(e){ b.loading=false; b.items=[]; b.failed=[{idx:null}]; }
+      finally{ clearInterval(timer); renderStudioResults(); } })();
+  }
+}
+
 function _studioInit(){
   // (2026-07-30 폼 축소) 숨긴 hidden(언어)을 앱 언어에 맞추고 총 길이 힌트를 초기 렌더. i18n.js가 defer라 이 시점엔 준비돼 있다.
   if(typeof ugcSyncLangToApp==='function')ugcSyncLangToApp();
+  runHandoff();     // creation 상세에서 넘어온 편집/릴 — 즉시 로딩 카드
+  reattachReels();  // 진행 중 릴 재연결
   if(typeof ugcSyncTotalSec==='function')ugcSyncTotalSec();
   Promise.resolve(mergeOwnedTemplates()).then(()=>applyRecipeGates()).finally(()=>{loadStudioThemes();maybeOpenManageTpl();});
 }
