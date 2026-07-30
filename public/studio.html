@@ -5982,6 +5982,9 @@ function ugcClearImg(){ ugcProductFiles=[]; ugcRenderProductThumbs(); }
 let ugcScript=null; // 1단계에서 받은 대본(2단계 렌더로 전달)
 // 렌더 중 조리대 안내 — "기다릴 필요 없다"를 말한다. 상수인 이유: 쓰는 곳(렌더 시작·재연결)과
 //   치우는 곳(마지막 렌더 종료)이 같은 문자열을 봐야, 그 사이 다른 문구로 바뀌었는지 판단할 수 있다.
+// (2026-07-30) 원샷에서 **대본 쓰기 전에** 미리 띄운 로딩 카드. ugcRenderVideo 가 이걸 재사용한다
+//   (안 하면 카드가 두 개 뜬다). 대본이 실패하면 피드에서 걷어내야 하므로 참조를 들고 있는다.
+let ugcPrePending=null;
 const UGC_WAIT_HINT='No need to wait — change the concept and write another. This one keeps building in Your creations.';
 
 // (선택) 제품 사진 → AI 컨셉 제안 → 컨셉 필드 채움. 컨셉 쓰기 귀찮은 유저용.
@@ -6262,7 +6265,20 @@ async function ugcWriteScript(){
   //   렌더 중인 건 저장할 결과가 없어 그냥 내려간다(오븐에서 계속 돌고, 모양·경과초 유지 — E·B).
   STUDIO_BATCHES.forEach(x=>{ if(x._bench){ ugcAutoSaveOffBench(x); x._bench=false; } });
   renderStudioResults(); // 내려간 배치가 오븐 카드로 먼저 나타난 뒤에 조리대를 비운다(끊김 없이 이동)
-  ugcShowScriptLoading(true); // 우측에 씬별 쓰여지는 스켈레톤
+  // (2026-07-30) 원샷이면 **대본 과정을 안 보여준다.** 유저는 대본을 건너뛰기로 했는데
+  //   "대본을 쓰는 중" 스켈레톤을 몇 초 보여주는 건 건너뛴 걸 다시 보여주는 셈이다.
+  //   대신 '내 크리에이션'에 로딩 카드를 **지금 바로** 띄운다 — 누른 순간 뭔가 돌아가는 게 보여야 한다.
+  //   ⚠️ 이 카드를 ugcRenderVideo 가 **재사용**한다(ugcPrePending). 안 그러면 카드가 두 개 뜬다.
+  if(ugcOneShot()){
+    const t=parseInt((document.getElementById('ugcTotalSec')||{}).value,10)||15;
+    const p=makePendingBatch(null,concept,1,true); p.isUgc=true;
+    p.sceneCount=Math.max(1,Math.min(6,Math.round(t/4))); // 대본 전이라 씬 수 미상 → 로딩칸 개수만 추정
+    STUDIO_BATCHES.unshift(p); renderStudioResults();
+    ugcPrePending=p;
+    hint.textContent=UGC_WAIT_HINT;
+  } else {
+    ugcShowScriptLoading(true); // 우측에 씬별 쓰여지는 스켈레톤
+  }
   try{
     const fd=new FormData();
     fd.append('concept',concept);fd.append('outputType',outputType);fd.append('language',ugcLang());
@@ -6291,14 +6307,22 @@ async function ugcWriteScript(){
     const data=await sjson(res);
     if(!res.ok||!data.success)throw new Error(data.error||'Script failed');
     ugcScript=data.script;
-    ugcSyncModelNeed();   // (2026-07-30) 대본이 모델 씬을 배분했으면 여기서 픽커를 연다(형식 토글 폐지 → 대본이 결정)
-    ugcRenderScriptPreview(data);
-    // (2026-07-30) 원샷 — 확인을 끈 사용자면 여기서 곧장 렌더로 넘어간다.
-    //   모델 씬이 있는데 얼굴을 안 골랐으면 ugcRenderVideo 의 게이트가 멈추고 픽커를 연다
-    //   = 착용물일 때만 자연히 2단계로 내려앉는다(자동 캐스팅 없이 안전). hint 도 그쪽이 갱신한다.
-    if(ugcOneShot()) ugcRenderVideo();
-    else hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
-  }catch(e){ console.error(e); ugcShowScriptLoading(false); ugcSyncSolo(); /* 대본이 끝내 없으면 빈 상태로 자동 복귀 */ hint.textContent='⚠ '+(e.message||'Script failed'); }
+    if(ugcOneShot()){
+      // 대본을 건너뛰기로 한 사람에게 대본 화면을 보여주지 않는다 — 미리보기도, 픽커도 열지 않는다.
+      //   얼굴만 조용히 정하고(ugcAutoCastModel) 곧장 렌더로 간다. 이미 떠 있는 로딩 카드가 그대로 채워진다.
+      //   ⚠️ 자동 캐스팅이 실패하면(로스터 미로드 등) ugcRenderVideo 의 게이트가 멈추고 픽커를 연다 = 안전망.
+      ugcAutoCastModel();
+      ugcRenderVideo();   // hint 는 여기서 UGC_WAIT_HINT 로 갱신된다
+    } else {
+      ugcSyncModelNeed(); // 대본이 모델 씬을 배분했으면 픽커를 열고 얼굴을 자동으로 골라둔다
+      ugcRenderScriptPreview(data);
+      hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
+    }
+  }catch(e){ console.error(e); ugcShowScriptLoading(false);
+    // (2026-07-30) 원샷에서 미리 띄운 로딩 카드를 걷어낸다 — 안 걷으면 대본이 실패했는데도
+    //   '내 크리에이션'에서 영원히 도는 유령 카드가 남는다(폴링할 잡 자체가 없다).
+    if(ugcPrePending){ const i=STUDIO_BATCHES.indexOf(ugcPrePending); if(i>=0)STUDIO_BATCHES.splice(i,1); ugcPrePending=null; renderStudioResults(); }
+    ugcSyncSolo(); /* 대본이 끝내 없으면 빈 상태로 자동 복귀 */ hint.textContent='⚠ '+(e.message||'Script failed'); }
   finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); if(box)box.classList.remove('busy'); }
 }
 
@@ -6850,9 +6874,13 @@ async function ugcRenderVideo(){
   // (2026-07-30) 조리대를 쓰지 않는다 — 로딩 카드가 처음부터 '내 크리에이션'에 뜨고 **그 자리에서** 영상으로 채워진다.
   //   전엔 _bench=true라 렌더 중엔 피드에서 빠지고 조리대에만 보였다 → 완성 순간 카드가 아래로 튀어나오는 이동이 생겼다.
   //   피드는 이미 로딩 배치를 그릴 줄 안다(조리대·오븐이 같은 로딩 UI를 공유).
-  const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true;
-  pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 로딩 씬 카드 수
-  STUDIO_BATCHES.unshift(pending); renderStudioResults();
+  // (2026-07-30) 원샷이면 대본 쓰기 전에 이미 카드를 띄워놨다 → **그걸 이어서 쓴다**(새로 만들면 두 개가 된다).
+  const pending=ugcPrePending||makePendingBatch(null,concept,1,true);
+  pending.isUgc=true;
+  pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 이제 실제 씬 수를 안다
+  if(ugcPrePending)ugcPrePending=null;               // 이미 STUDIO_BATCHES 안에 있다
+  else STUDIO_BATCHES.unshift(pending);
+  renderStudioResults();
   const t0=Date.now();
   // B: 내 배치의 경과만 갱신한다. 전엔 '#ugcInline .rb-elapsed'였다 — 칸이 하나뿐이라 N개가 같은 숫자를
   //    쓰고, 로딩 카드가 오븐으로 가면(E) 스코프 밖이라 타이머가 아예 멎었다. data-batch는 둘 다 푼다.
