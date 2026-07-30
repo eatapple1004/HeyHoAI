@@ -1545,6 +1545,13 @@
           <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-disabled="true" onclick="ugcCreateAd()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo</span><span class="cta-sub">Concept &amp; script are written for you — free</span></span></button>
         </div>
         <div class="hint" id="ugcHint" style="margin-top:8px"></div>
+        <!-- (2026-07-30) 원샷 토글 — 대본 확인을 건너뛰고 바로 만든다.
+             ⚠️ 반드시 **CTA 옆(항상 떠 있는 자리)**에 둔다. 대본 미리보기 안에 두면 렌더가 시작될 때
+                ugcHideBenchPanels()가 그 패널을 내려서 **끄는 스위치가 같이 사라진다**(켜면 못 끄는 함정). -->
+        <label id="ugcOneShotWrap" style="display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="ugcOneShotCb" onchange="ugcSetOneShot(this.checked)">
+          <span id="ugcOneShotLbl">Skip script review — generate straight away</span>
+        </label>
       </div>
       </div><!-- /.ugc-adv -->
       </div><!-- /.ugc-fold-settings -->
@@ -6014,6 +6021,30 @@ async function ugcPreviewVoice(){
  * ⚠️ disabled 는 안 건드린다: ugcWriteScript 가 요청 동안 disabled 를 쓰고 finally 에서 되돌리므로
  *    여기서 같이 만지면 서로 덮어쓴다. 시각·a11y 신호만 담당한다.
  */
+/* ───── 원샷: 대본 확인 건너뛰기 (2026-07-30) ─────
+   대본 확인의 가치는 **쓸수록 떨어진다** — 첫 사용자는 꼭 보고, 열 번째는 안 읽고 누른다.
+   그래서 없애지 않고 끌 수 있게만 한다.
+   🔴 켜면 크레딧이 **바로** 나간다. 환불은 기술적 실패만 커버하고(ugcVideo.service.js 의 charge.refund)
+      "잘 나왔는데 마음에 안 듦"은 안 돌려준다 → CTA 의 'free' 약속을 반드시 걷는다.
+      공짜로 들리는 버튼이 돈을 쓰면 안 된다.
+   저장 = 브라우저 localStorage(사용자 결정 A · 계정 단위는 서버 변경이 필요해 보류).
+   문구는 i18n.js 사전 대신 인라인 ko/en 분기(ugcSyncModelNeed 와 같은 방식) — 캐시버스터 범프 불필요. */
+function ugcOneShot(){ try{ return localStorage.getItem('ugc:oneshot')==='1'; }catch(e){ return false; } }
+function ugcIsKo(){ return !!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko'); }
+function ugcSetOneShot(on){
+  try{ on ? localStorage.setItem('ugc:oneshot','1') : localStorage.removeItem('ugc:oneshot'); }catch(e){}
+  ugcCtaState();        // 'free' 약속을 즉시 걷거나 되돌린다
+  ugcSyncOneShotUI();
+}
+function ugcSyncOneShotUI(){
+  const cb=document.getElementById('ugcOneShotCb'); if(cb)cb.checked=ugcOneShot();
+  const lbl=document.getElementById('ugcOneShotLbl'); if(!lbl)return;
+  const ko=ugcIsKo();
+  lbl.textContent = ugcOneShot()
+    ? (ko?'대본 확인을 건너뜁니다 — 대본이 나오면 바로 만들어요 (크레딧 차감)'
+        :'Skipping script review — generates as soon as the script is ready (uses credits)')
+    : (ko?'대본 확인 없이 바로 만들기':'Skip script review — generate straight away');
+}
 function ugcCtaState(){
   const btn=document.getElementById('ugcGenBtn'); if(!btn)return;
   const main=btn.querySelector('.cta-main'), sub=btn.querySelector('.cta-sub');
@@ -6024,8 +6055,13 @@ function ugcCtaState(){
   const ok=hasPhoto;
   btn.classList.toggle('is-blocked',!ok);
   btn.setAttribute('aria-disabled',ok?'false':'true');
-  main.textContent = ok ? 'Create my ad video' : 'Add a product photo';
-  sub.textContent = ok ? 'Concept & script are written for you — free' : 'One product photo starts it';
+  // 원샷이면 '무료'라고 말하지 않는다 — 이 버튼이 바로 과금으로 이어진다.
+  const one=ugcOneShot(), ko=ugcIsKo();
+  main.textContent = ok ? (one?(ko?'바로 영상 만들기':'Make my ad video now'):'Create my ad video') : 'Add a product photo';
+  sub.textContent = ok
+    ? (one?(ko?'대본 확인을 건너뜁니다 — 크레딧이 차감돼요':'Skips script review — credits are charged')
+         :'Concept & script are written for you — free')
+    : 'One product photo starts it';
 }
 /**
  * 텍스트에어리어 자동 높이(2026-07-21) — 내용만큼만 차지하고 줄이 늘면 아래가 밀려 내려간다.
@@ -6038,7 +6074,7 @@ function ugcCtaWatch(){
   if(c)c.addEventListener('input',function(){ ugcCtaState(); ugcAutogrow(c); });
   if(d)d.addEventListener('input',function(){ ugcAutogrow(d); });
   if(box)new MutationObserver(ugcCtaState).observe(box,{attributes:true,attributeFilter:['class']});
-  ugcCtaState(); ugcAutogrow(c); ugcAutogrow(d);
+  ugcSyncOneShotUI(); ugcCtaState(); ugcAutogrow(c); ugcAutogrow(d); // 저장된 원샷 상태를 진입 시 복원
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ugcCtaWatch);
 else ugcCtaWatch();
@@ -6168,7 +6204,11 @@ async function ugcWriteScript(){
     ugcScript=data.script;
     ugcSyncModelNeed();   // (2026-07-30) 대본이 모델 씬을 배분했으면 여기서 픽커를 연다(형식 토글 폐지 → 대본이 결정)
     ugcRenderScriptPreview(data);
-    hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
+    // (2026-07-30) 원샷 — 확인을 끈 사용자면 여기서 곧장 렌더로 넘어간다.
+    //   모델 씬이 있는데 얼굴을 안 골랐으면 ugcRenderVideo 의 게이트가 멈추고 픽커를 연다
+    //   = 착용물일 때만 자연히 2단계로 내려앉는다(자동 캐스팅 없이 안전). hint 도 그쪽이 갱신한다.
+    if(ugcOneShot()) ugcRenderVideo();
+    else hint.textContent='Review the script on the right, then generate — you\'re only charged when you build the video.';
   }catch(e){ console.error(e); ugcShowScriptLoading(false); ugcSyncSolo(); /* 대본이 끝내 없으면 빈 상태로 자동 복귀 */ hint.textContent='⚠ '+(e.message||'Script failed'); }
   finally{ [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=false;}); if(box)box.classList.remove('busy'); }
 }
