@@ -4243,7 +4243,10 @@ function batchRowHtml(b){
   //   ③ 오븐 카드엔 이미 조리대로 가는 한 클릭 경로가 있다 — b.ugc면 [↑ View up top], 히스토리면 [✎ Edit video](F).
   //   원래 이 스트립은 개발자가 피드용으로 썼다가(e66ff47) 같은 날 조리대로 옮기며(e732ac0) 죽은 코드가 됐고,
   //   A(53b7c9c)의 축 분리가 8일 만에 깨워 되살아난 것이다. 설계된 적이 없다.
-  const ugcStrip=(b.loading&&isUgc)?ugcLoadingStripHtml(b):'';
+  // (2026-07-30) 피드 로딩 카드의 씬 스트립 제거(사용자 요청) — 위 주석대로 **설계된 적이 없는** 부활 코드다.
+  //   유저가 기다리는 동안 알아야 할 건 "돌아가는 중 · 얼마나 됐나"이지 씬 1·2·3·4 빈칸이 아니다.
+  //   되돌리려면 ugcLoadingStripHtml(b) 로 복구(함수는 존치 — renderUgcInline 이 아직 참조).
+  const ugcStrip='';
   return `<div class="result-row"><div class="rb-media">${media}</div>${ugcStrip}<div class="rb-meta">${head}${specs}${srcRow}${chRow}${delBtn}</div></div>`;
 }
 // ── Ad Video 결과 편집: 씬 스트립(재배치·삭제·자막수정, 무과금 재조립) ──
