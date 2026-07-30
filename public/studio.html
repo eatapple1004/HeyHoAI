@@ -6357,6 +6357,7 @@ function ugcSyncModelNeed(){
   const need=ugcNeedsModel();
   mp.style.display=need?'':'none';
   if(need){
+    ugcOpenKnobs(); // 픽커는 접히는 노브 상자 안에 있다 — 상자를 안 펴면 display만 켜도 화면엔 안 나온다
     ugcRenderModelGrid();
     const n=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.subject==='model').length;
     const lbl=document.getElementById('ugcModelNeedHint');
@@ -6450,6 +6451,20 @@ function ugcToggleKnobs(){
   const line=document.getElementById('ugcKnobLine'); if(line)line.setAttribute('aria-expanded',String(open));
   const chg=document.getElementById('ugcKnobChg'); if(chg)chg.textContent=open?'Done':'Change';
 }
+/**
+ * (2026-07-30) 노브 상자를 **편다**(토글 아님 — 이미 열려 있으면 그대로 둔다).
+ * 왜 필요한가: 모델 픽커(#ugcModelPicker)가 이 상자 안에 있다. 대본이 나오면 ugcSyncSolo가 .ugc-solo를
+ *   떼는데, 그 순간 `#ugcInputBox:not(.knobs-open) .ugc-knobs{display:none}`(CSS)가 발동해 **상자째 접힌다**.
+ *   그래서 픽커의 style.display만 켜봐야 조상이 none이라 화면엔 아무것도 안 나왔다 —
+ *   "얼굴을 골라주세요" 경고만 뜨고 고를 픽커는 없는 데드엔드가 이것이었다.
+ * ⚠️ ugcToggleKnobs와 라벨·aria를 반드시 같이 맞춘다. 안 그러면 상자는 열렸는데 버튼은 'Change'라고 우긴다.
+ */
+function ugcOpenKnobs(){
+  const box=document.getElementById('ugcInputBox'); if(!box||box.classList.contains('knobs-open'))return;
+  box.classList.add('knobs-open');
+  const line=document.getElementById('ugcKnobLine'); if(line)line.setAttribute('aria-expanded','true');
+  const chg=document.getElementById('ugcKnobChg'); if(chg)chg.textContent='Done';
+}
 /* 대본이 나오면 입력을 요약 카드로 접고, Edit로 되돌린다.
    o를 주면 폼 대신 그 값으로 채운다 — 새로고침 후 재연결은 폼이 비어 있어서(잡 데이터만 있음) 필요. */
 /**
@@ -6537,7 +6552,7 @@ async function ugcRenderVideo(){
   //   막지 않으면 모델 레퍼런스 없이 "the model" 프롬프트만 남아 난데없는 인물/사람 없는 착용컷이 나온 채 **과금된다**.
   if(ugcNeedsModel()&&!ugcSelectedModelImg){
     const mp=document.getElementById('ugcModelPicker');
-    if(mp){ mp.style.display=''; ugcRenderModelGrid(); mp.scrollIntoView({block:'center',behavior:'smooth'}); }
+    if(mp){ ugcOpenKnobs(); mp.style.display=''; ugcRenderModelGrid(); mp.scrollIntoView({block:'center',behavior:'smooth'}); } // 상자부터 펴야 scrollIntoView도 먹는다(접힌 요소는 no-op)
     const ko=!!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
     if(hint)hint.textContent=ko?'⚠ 이 대본엔 모델 씬이 있어요 — 먼저 얼굴을 골라주세요.':'⚠ This script has model scenes — pick a face first.';
     return;
