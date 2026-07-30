@@ -6263,7 +6263,11 @@ async function ugcWriteScript(){
   if(ugcNeedPhoto(hint))return; // 대본 자체가 사진을 보고 써진다(Claude가 실제 제품 보고 카피·brollPrompt 작성) → 여기가 근본
   const wbtn=document.getElementById('ugcGenBtn'),rwbtn=document.getElementById('ugcRewriteBtn');
   [wbtn,rwbtn].forEach(b=>{if(b)b.disabled=true;});
-  const box=document.getElementById('ugcInputBox'); if(box)box.classList.add('busy'); // 대본 쓰는 몇 초간 입력 잠금(헛수고 방지)
+  // (2026-07-30) 원샷에선 폼을 잠그지 않는다. `.busy` 는 `.ugc-foldable` 전체를 opacity .5 + pointer-events:none
+  //   으로 만드는데(948행), 원샷은 바로 그 순간 "기다릴 필요 없어요 — 하나 더 써도 돼요"라고 말한다.
+  //   말과 화면이 반대였다. 중복 제출은 아래 버튼 disabled 로 이미 막히므로 잠금까지 걸 이유가 없다.
+  const box=document.getElementById('ugcInputBox');
+  if(box&&!ugcOneShot())box.classList.add('busy'); // 대본 검토 모드에서만 잠근다(헛수고 방지)
   hint.textContent='Writing your script…';
   // 새 대본을 쓰기 시작 = 조리대를 내준다. **스켈레톤을 띄우기 전에** 내려야 한다 —
   //   ugcShowScriptLoading이 #ugcInline(조리대)을 숨기는데, 아직 _bench=true면 피드에서도 빠져 있어
