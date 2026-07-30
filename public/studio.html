@@ -6476,14 +6476,44 @@ function ugcSyncModelNeed(){
   const need=ugcNeedsModel();
   mp.style.display=need?'':'none';
   if(need){
-    ugcOpenKnobs(); // 픽커는 접히는 노브 상자 안에 있다 — 상자를 안 펴면 display만 켜도 화면엔 안 나온다
+    ugcOpenKnobs(); // 접힘 두 층(compact/knobs)을 편다 — 안 펴면 display만 켜도 화면엔 안 나온다
+    const picked=ugcAutoCastModel();  // 🎬 얼굴을 자동으로 고른다 — 유저는 고르지 않는다
     ugcRenderModelGrid();
     const n=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.subject==='model').length;
     const lbl=document.getElementById('ugcModelNeedHint');
-    if(lbl)lbl.textContent=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko')
-      ? `이 대본에 모델 씬이 ${n}개 있어요 — 얼굴을 골라주세요`
-      : `${n} scene${n===1?'':'s'} in this script feature a model — pick a face`;
+    const ko=!!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+    if(lbl)lbl.textContent = picked
+      ? (ko ? `모델 씬 ${n}개 · 얼굴은 ${picked}(으)로 골랐어요 — 바꾸려면 아래에서 고르세요`
+            : `${n} model scene${n===1?'':'s'} · cast ${picked} — pick another face below to change`)
+      : (ko ? `이 대본에 모델 씬이 ${n}개 있어요 — 얼굴을 골라주세요`
+            : `${n} scene${n===1?'':'s'} in this script feature a model — pick a face`);
   }
+}
+/**
+ * (2026-07-30) 자동 캐스팅 — 대본이 정한 성별(modelGender)로 얼굴을 고른다. 유저는 아무것도 안 고른다.
+ * 왜 안전한가: 1패스 프롬프트가 인물 묘사를 **금지**한다("no age, gender, ethnicity, hair, body, face" ·
+ *   씬에서는 "the model"로만 지칭) → 대본 본문에 성별 언급이 없어 **어떤 얼굴을 붙여도 대본과 안 싸운다.**
+ *   제품과의 모순(남성 속옷에 여성 모델)만 문제라서 성별 하나만 서버에서 받는다.
+ * ⚠️ **성인 로스터(window.MODELS)에서만** 고른다. MODELS_KIDS 는 절대 자동 선택하지 않는다 —
+ *    미성년 모델은 유저가 직접 고른 경우에만 등장해야 한다.
+ * ⚠️ 랜덤 금지 — 대본을 다시 쓸 때마다 얼굴이 튄다. 제목 해시로 **결정적**으로 고른다(같은 대본=같은 얼굴).
+ * @returns {string|null} 고른 모델 이름(이미 유저가 골랐거나 로스터 미로드면 null)
+ */
+function ugcAutoCastModel(){
+  if(ugcSelectedModelImg)return null;              // 유저가 이미 고른 얼굴을 덮어쓰지 않는다
+  const all=window.MODELS||[]; if(!all.length)return null;   // 로스터 미로드 → 수동 경로로 떨어진다
+  const g=(ugcScript&&ugcScript.modelGender==='male')?'male':'female';
+  const pool=all.filter(m=>m.gender===g); if(!pool.length)return null;
+  let h=0; const key=String((ugcScript&&ugcScript.title)||'')+g;
+  for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+  const pick=pool[h%pool.length]; if(!pick)return null;
+  ugcSelectedModelImg=pick.img;
+  // 픽커를 열었을 때 **고른 얼굴이 실제로 보이는** 탭·필터로 맞춘다(안 맞추면 선택은 됐는데 그리드엔 없다)
+  ugcModelGender=g; ugcModelAge='adult';
+  document.querySelectorAll('.ugc-mf').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
+  document.querySelectorAll('.ugc-mt').forEach(b=>b.classList.toggle('active',b.dataset.a==='adult'));
+  const p=document.getElementById('ugcModelPick'); if(p)p.textContent='✓ '+pick.name;
+  return pick.name;
 }
 function ugcSetFormat(fmt){
   const el=document.getElementById('ugcFormat'); if(el)el.value=fmt;
