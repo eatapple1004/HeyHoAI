@@ -6563,7 +6563,10 @@ async function ugcRenderVideo(){
   // 우측(조리대)를 렌더가 가져간다 — 대본·여정 패널을 내린다(flex 형제라 안 내리면 나란히 선다)
   const sp=document.getElementById('ugcScriptPreview'); // 실패 시 대본을 되돌리려고 잡아둔다(아래 catch)
   ugcHideBenchPanels();
-  const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true; pending._bench=true;
+  // (2026-07-30) 조리대를 쓰지 않는다 — 로딩 카드가 처음부터 '내 크리에이션'에 뜨고 **그 자리에서** 영상으로 채워진다.
+  //   전엔 _bench=true라 렌더 중엔 피드에서 빠지고 조리대에만 보였다 → 완성 순간 카드가 아래로 튀어나오는 이동이 생겼다.
+  //   피드는 이미 로딩 배치를 그릴 줄 안다(조리대·오븐이 같은 로딩 UI를 공유).
+  const pending=makePendingBatch(null,concept,1,true); pending.isUgc=true;
   pending.sceneCount=((ugcScript&&ugcScript.scenes)||[]).filter(s=>s.type==='broll').length||5; // 로딩 씬 카드 수
   STUDIO_BATCHES.unshift(pending); renderStudioResults();
   const t0=Date.now();
@@ -6593,14 +6596,13 @@ async function ugcRenderVideo(){
     if(typeof ugcClearDraft==='function')ugcClearDraft(); // 생성 접수 → 작성 드래프트 정리(팩이 done에 clear하듯)
     const job=await pollUgcJob(data.jobId);
     // 결과 매핑은 ugcFillPendingFromJob 하나로 — 재연결(ugcRestoreActiveJobs)과 같은 코드를 쓴다
-    // (2026-07-30) 완성 즉시 **크리에이션으로 승격**한다 — 사용자 결정: "편집기 없애자, 결과 바로 크리에이션에".
-    //   ⚠️ 이건 2026-07-17 착지 설계("조리대는 최근 1개, 새 대본 쓸 때만 내려감")를 **뒤집는 것**이다.
-    //      그때 자동승격을 기각한 이유는 조리대에 씬 편집 스트립이 있어서였다 — 편집할 자리를 뺏으면 안 됐다.
-    //      이제 편집기를 없앴으므로 조리대가 완성분을 붙잡아 둘 고유 가치가 사라졌다(재생은 피드 카드도 한다).
-    //   ugcAutoSaveOffBench = 내리기 전 저장(안 하면 오븐에 draft로 남아 유저가 또 눌러야 한다).
+    // (2026-07-30) 카드는 이미 피드에 있다(조리대 미사용) → 그 자리에서 로딩이 영상으로 바뀐다. 승격 불필요.
+    //   ⚠️ 2026-07-17 착지 설계("조리대는 최근 1개")를 폐기한다. 그 설계의 전제는 조리대의 씬 편집 스트립이었는데
+    //      편집기를 없앴으므로 조리대가 완성분을 붙잡아 둘 고유 가치가 사라졌다.
+    //   자동 저장은 유지 — 안 하면 draft로 남아 유저가 [Save & finish]를 한 번 더 눌러야 한다.
     if(pending){
       ugcFillPendingFromJob(pending,data.jobId,job,outputType);
-      ugcAutoSaveOffBench(pending); pending._bench=false;   // 저장 → 조리대에서 내림 → 피드(내 크리에이션)에 등장
+      ugcAutoSaveOffBench(pending);
       renderStudioResults();
     }
     // C: 완성 알림을 여기(공용 #ugcHint)서 하지 않는다 — ① 거짓말이었다: 완성은 draft일 뿐 갤러리에 없다
