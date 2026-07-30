@@ -1341,6 +1341,8 @@
   .cta-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;min-width:0}
   .cta-main{font-size:14px}
   .cta-sub{font-size:11px;font-weight:600;color:rgba(255,255,255,.82)}
+  /* (2026-07-30) 부제가 비면 줄을 접는다 — 안 접으면 빈 줄만큼 버튼이 계속 두 줄 높이로 남는다 */
+  .cta-sub:empty{display:none}
   /* 차단 = 같은 보라 버튼을 흐리게(비활성처럼). 여전히 '이게 그 최종 버튼'으로 보인다. hard disabled 아닌 이유는 마크업 주석 참조 */
   #scriptStep .script-ctrls .btn-primary.is-blocked{
     opacity:.5;cursor:not-allowed;box-shadow:none}
@@ -6276,11 +6278,14 @@ function ugcCtaState(){
   //   사진을 넣어도 안 풀려서 유저가 이유를 못 찾는다.
   const noCredit=hasPhoto&&!canAfford;
   main.textContent = noCredit ? (ko?'크레딧이 부족해요':'Not enough credits')
-    : ok ? (one?(ko?'바로 영상 만들기':'Make my ad video now'):'Create my ad video')
+    : ok ? (ko?'바로 영상 만들기':'Generate video')
     : 'Add a product photo';
+  // (2026-07-30) 준비된 상태에선 **부제를 비운다**(사용자 요청) — "대본 확인을 건너뜁니다…"는
+  //   모드가 하나뿐이 된 지금 설명할 것이 없는 말이고, 버튼이 두 줄이라 시선만 끌었다.
+  //   ⚠️ **막힌 상태에서는 남긴다** — 거기선 부제가 "왜 안 눌리는지"를 말하는 유일한 자리다.
+  //   비면 .cta-sub:empty 가 줄을 접어 버튼이 한 줄로 붙는다.
   sub.textContent = noCredit ? (ko?'결제에서 충전하면 바로 만들 수 있어요':'Top up in Billing to start')
-    : ok ? (one?(ko?'대본 확인을 건너뜁니다 — 크레딧이 차감돼요':'Skips script review — credits are charged')
-             :'Concept & script are written for you — free')
+    : ok ? ''
     : 'One product photo starts it';
 }
 /**
