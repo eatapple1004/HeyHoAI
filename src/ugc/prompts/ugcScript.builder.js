@@ -122,6 +122,10 @@ function buildUgcScriptPrompt(input) {
       '  · Only if the product is NOT worn and the brief does not ask for a person (food, drinks, home goods, tech, supplements, packaged goods) does EVERY scene stay product-only.',
       '- Set "subject" per scene accordingly ("model" or "product"), intercutting naturally (roughly half and half) when model scenes are used.',
       '- Return "needsModel": true if ANY scene is subject:"model", else false.',
+      // (2026-07-30) 자동 캐스팅 — 유저는 얼굴을 고르지 않는다. 씬 본문에서는 여전히 인물을 묘사하지 않고(아래 ⚠️),
+      //   **이 필드 하나로만** 성별을 알린다. UI가 이 값으로 성인 로스터를 걸러 얼굴을 자동 선택한다.
+      //   needsModel 이 false 여도 채우게 한다 — 선택 필드로 두면 Claude 가 자주 빠뜨린다(summary·needsModel 전례).
+      '- Return "modelGender": "female" or "male" — who should wear/use this product on camera. Decide from the PRODUCT, not from the buyer: men\'s underwear or a men\'s watch gets "male", a bikini or women\'s dress gets "female". If the product is unisex or no model appears, pick whichever suits the brief and styling. Always return one of the two.',
       '- ⚠️ The model is NOT chosen yet — a reference image will be supplied later. In subject:"model" scenes do NOT describe the person at all (no age, gender, ethnicity, hair, body, face). Build the scene from styling, pose, framing, mood and setting, and refer to them only as "the model". Never introduce a second person. The brief\'s target audience is who the ad is FOR, not who appears on camera.',
     ]),
     '- Infer the product CATEGORY (from the brief and the attached photo, if any) and use category-fitting persuasion: cosmetics → shade/finish/result; jewelry → emotion/craft/light/occasion; apparel → styling/fit/versatility; food → appetite/sensory; tech/home → key benefit. Match hook, spoken and every brollPrompt to that category.',
@@ -211,7 +215,8 @@ function buildUgcScriptPrompt(input) {
     '  "caption": string,                    // ready-to-post caption',
     '  "hashtags": string[],                 // 5-12, no # prefix',
     '  "musicVibe": string,                  // e.g. "upbeat lofi", "trendy pop"',
-    '  "needsModel": boolean                 // true if ANY scene is subject:"model"',
+    '  "needsModel": boolean,                // true if ANY scene is subject:"model"',
+    '  "modelGender": "female"|"male"        // who wears/uses the product on camera (always fill, even if needsModel is false)',
     '}',
     `Allowed scene types for this output type: ${profile.sceneTypes.map((t) => `"${t}"`).join(', ')}.`,
   ].join('\n');

@@ -37,8 +37,14 @@ const SCRIPT_SCHEMA = {
     hashtags: { type: 'array', items: { type: 'string' } }, musicVibe: { type: 'string' },
     // (2026-07-30) needsModel = 모델 씬 존재 여부. UI가 이 값으로 모델 픽커를 열고 렌더를 게이트한다.
     needsModel: { type: 'boolean' },
+    // (2026-07-30) modelGender = 자동 캐스팅용 성별 신호.
+    //   왜 이것만 받나: 1패스는 인물 묘사를 **금지**하므로("no age, gender, ethnicity...") 대본 본문에는
+    //   성별 언급이 없다 → 어떤 얼굴을 붙여도 대본과 모순되지 않는다. 하지만 **제품과는 모순될 수 있다**
+    //   (남성 속옷에 여성 모델). 그래서 로스터 필터에 쓸 성별 하나만 대본이 정한다.
+    //   ⚠️ 값은 로스터(models.roster.js)의 gender 와 정확히 일치해야 한다 — 문자열 매칭으로 거른다.
+    modelGender: { type: 'string', enum: ['female', 'male'] },
   },
-  required: ['title', 'format', 'durationSec', 'aspect', 'language', 'hook', 'scenes', 'cta', 'caption', 'hashtags', 'musicVibe', 'needsModel'],
+  required: ['title', 'format', 'durationSec', 'aspect', 'language', 'hook', 'scenes', 'cta', 'caption', 'hashtags', 'musicVibe', 'needsModel', 'modelGender'],
 };
 
 // ⛔ 대본 금지어 검사 제거 (2026-07-17 사용자 결정) — 부활시키기 전에 읽을 것.
@@ -169,6 +175,9 @@ async function generateUgcScript(input) {
     needsModel: (typeof raw.needsModel === 'boolean')
       ? raw.needsModel
       : (Array.isArray(raw.scenes) && raw.scenes.some((x) => x && x.subject === 'model')),
+    // Claude 가 빠뜨리거나 엉뚱한 값을 주면 female 로 떨어뜨린다 — 자동 캐스팅이 이 값으로 로스터를 거르므로
+    //   비어 있으면 필터가 전부 걸러 얼굴을 못 고른다(빈 그리드 = 렌더 게이트에 걸림).
+    modelGender: (raw.modelGender === 'male' || raw.modelGender === 'female') ? raw.modelGender : 'female',
   };
 
   return script;
