@@ -1626,6 +1626,14 @@
         <!-- (2026-07-30) 원샷 토글 — 대본 확인을 건너뛰고 바로 만든다.
              ⚠️ 반드시 **CTA 옆(항상 떠 있는 자리)**에 둔다. 대본 미리보기 안에 두면 렌더가 시작될 때
                 ugcHideBenchPanels()가 그 패널을 내려서 **끄는 스위치가 같이 사라진다**(켜면 못 끄는 함정). -->
+        <div id="ugcLenSceneWrap" style="display:none"></div>
+        <div id="ugcTotalLen" style="display:none;font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
+        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Narrated — length is set by the voice.</div>
+        <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
+      </div>
+        <!-- ⚠️ 이 블록은 반드시 .ugc-lenfield **밖**에 있어야 한다. 안에 두면 계획을 켤 때
+             ugcRenderPlan 이 .ugc-lenfield 를 숨기면서 계획 상자와 그걸 켠 버튼까지 같이 사라진다
+             (2026-07-30 실제로 그랬다 — 오늘 같은 종류의 사고 세 번째). -->
         <!-- (2026-07-30) 대본 확인 건너뛰기 체크박스 삭제 — 이제 **항상** 바로 만든다(모드 개념 없음).
              그 자리에 '대본 직접 쓰기'. 여기서 씬 개수·각 씬 길이·내용을 유저가 정한다. -->
         <div id="ugcPlanWrap">
@@ -1640,11 +1648,6 @@
             </div>
           </div>
         </div>
-        <div id="ugcLenSceneWrap" style="display:none"></div>
-        <div id="ugcTotalLen" style="display:none;font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
-        <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Narrated — length is set by the voice.</div>
-        <input type="hidden" id="ugcSceneCount" value="0"><input type="hidden" id="ugcSceneDur" value="0">
-      </div>
       <!-- Ad language: 대본·캡션의 언어(영상 비주얼과 무관).
            (2026-07-30 폼 축소) 선택 숨김 — 대신 hidden #ugcLangSel을 **앱 언어에 동기화**한다(ugcSyncLangToApp).
            전엔 기본 'en'이라 한국어 앱을 쓰는 셀러가 무심코 영어 대본을 받았다. 되돌리기: display:none 제거. -->
