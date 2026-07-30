@@ -622,14 +622,14 @@ async function copyImage(){
    실행은 여기서 하지 않는다 — stashAndGo 가 요청을 sessionStorage 에 담아 **스튜디오로 넘긴다**
    (studio.html 의 runHandoff 가 '내 크리에이션' 로딩 카드를 띄우고 실행·채움까지 담당).
    여기서는 입력 검증 + 원본 404 가드 + 원본 치수 실측(비율·해상도 원본 맞춤용)만. */
-let EDIT_COST=150, EDIT_COST_4K=270, REEL_COST=810, _otBusy=false;
+let EDIT_COST=185, EDIT_COST_4K=330, REEL_COST=820, _otBusy=false; // 폴백 = 서버 정본과 동일(2026-07-30 인상)
 (async function loadOwnerCosts(){
   try{const d=(await(await fetch('/api/credits')).json()).data;
-    if(d.costs&&d.costs.img&&d.costs.img.pro)EDIT_COST=d.costs.img.pro[0]||150;                      // pro 1K/2K 커스텀
-    if(d.costs&&d.costs.img&&d.costs.img['pro-4k'])EDIT_COST_4K=d.costs.img['pro-4k'][0]||270;       // 🔴 4K 는 별도 단가 — 150 으로 표시하면 차감(270)이 표시를 넘는다
+    if(d.costs&&d.costs.img&&d.costs.img.pro)EDIT_COST=d.costs.img.pro[0]||185;                      // pro 1K/2K 커스텀
+    if(d.costs&&d.costs.img&&d.costs.img['pro-4k'])EDIT_COST_4K=d.costs.img['pro-4k'][0]||330;       // 🔴 4K 는 별도 단가 — 150 으로 표시하면 차감(270)이 표시를 넘는다
     // (2026-07-30) 릴 = 커스텀 단가[0]. 템플릿 단가[1]=1,250 을 물던 것 수정 — 이 릴은 템플릿을 안 쓴다
     //   (사진+유저 프롬프트뿐). 원가 검산: Kling Pro 5s $0.56 × 1361 = 바닥 ◈762 → 810 은 규칙 +6%.
-    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][0]||810;
+    if(d.costs&&d.costs.video&&d.costs.video[5])REEL_COST=d.costs.video[5][0]||820;
   }catch(e){}
 })();
 /** 편집 표시가 — 원본 긴 변으로 4K 여부 판정. ⚠️ 임계값 2800은 스튜디오 sizeForSource 와 같아야 한다

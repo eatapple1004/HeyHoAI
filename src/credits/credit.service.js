@@ -7,12 +7,15 @@ const { pool, query } = require('../db/client');
 const SIGNUP_BONUS = 1500; // 가입 시 무료 크레딧 = 템플릿 5장(300×5). Free 티어와 동일.
 
 // 이미지: 모델티어별 [커스텀per장, 템플릿per장]. 총액 = count × per.
+// (2026-07-30) 커스텀[0] 인상 — 규칙 바닥(검증원가 × 1,361) 미달분 정리(사용자 지시: 마진 무조건).
+//   flash 45→55(원가 $0.039→바닥 53) · pro 150→185($0.134→182) · pro-4k 270→330($0.24→327).
+//   gpt-image-2 계열은 "pro 근사" 방침 유지라 동행 인상. 템플릿[1]은 전부 바닥 위라 그대로.
 const IMG_CREDIT = {
-  flash: [45, 90],                 // Nano Banana (2.5 Flash Image)
-  pro: [150, 300],                 // Nano Banana Pro (3 Pro Image) 1K/2K — 스튜디오 기본
-  'pro-4k': [270, 540],            // (2026-07-27) Pro 4K 원가 $0.24(2,000토큰)=2K의 1.79배 → 2K 마진 매칭가. ✅배선됨: generate.route:428 imageSize==='4K'→pro-4k + studio genCost도 4K→pro-4k 표시.
-  'gpt-image-2': [150, 300],       // pro 티어 근사(별도 원가 확정 전)
-  'gpt-image-2-high': [270, 540],  // 상위 티어 근사
+  flash: [55, 90],                 // Nano Banana (2.5 Flash Image) — 원가 $0.039
+  pro: [185, 300],                 // Nano Banana Pro (3 Pro Image) 1K/2K — 스튜디오 기본. 원가 $0.134
+  'pro-4k': [330, 540],            // Pro 4K 원가 $0.24(2,000토큰). ✅배선: generate.route:428 imageSize==='4K'→pro-4k + studio genCost 동일
+  'gpt-image-2': [185, 300],       // pro 티어 근사(별도 원가 확정 전)
+  'gpt-image-2-high': [330, 540],  // 상위 티어 근사
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
 //   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)
@@ -20,9 +23,12 @@ const IMG_CREDIT = {
 //   ✅ 고객노출 카피 동기화 완료(2026-07-27): landing.html·ko.html("◆810/씬"·"20초 ◆3,240"),
 //      billing.html("◈810"), studio.html:2282 폴백[810,1250], LP-CONV 편수 divisor 3240.
 //   10s(1250)·template(1250)은 미변경(현재 유저 미노출) — 필요 시 별도 결정.
+// (2026-07-30) 커스텀[0] 인상 — Kling v3 Pro 검증원가 $0.112/s(티어 설계문서, kling.ai):
+//   5s: 프레임 포함 최악 원가 $0.599 → 바닥 815 → 820 (810은 5 모자랐다)
+//   10s: $1.12 + 프레임 $0.039 = $1.159 → 바닥 1,578 → 1,580 (1,250은 -21% 역마진이었다)
 const VIDEO_CREDIT = {
-  5: [810, 1250],
-  10: [1250, 2500],
+  5: [820, 1250],
+  10: [1580, 2500],
 };
 // ─── Ad Video 화질 티어 (2026-07-27) — low=Flash프레임+Kling Std / high=Pro2K프레임+Kling Pro. 5s 씬·커스텀 기준.
 //   근거: docs/티어_low_high_가격설계_2026-07-27.md. 원가$×1,361(Elite 50% 바닥). low $0.459→625 · high $0.694→945.

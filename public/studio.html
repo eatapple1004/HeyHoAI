@@ -2441,11 +2441,11 @@ function genCost(r){
   const type=isVideoGen()?'reel':(r?r.type:'image'); // 템플릿 reel 또는 Custom 비디오 툴
   if(type==='reel'){
     const cv=(state.mode==='custom'&&curType()==='video');const dur=cv?parseInt(curDuration(),10):5;
-    const vt=(c.video&&c.video[dur])||[810,1250];
+    const vt=(c.video&&c.video[dur])||[820,1250];
     return (isTpl?vt[1]:vt[0])+cap;
   }
   const mk=(curSize()==='4K')?'pro-4k':effModelKey(); // 4K=pro-4k 티어(백엔드 generate.route:428과 동일). 4K는 pro 전용이라 curSize=4K면 항상 pro-4k.
-  const it=(c.img&&(c.img[mk]||c.img[effModelKey()]||c.img.pro))||[150,300];
+  const it=(c.img&&(c.img[mk]||c.img[effModelKey()]||c.img.pro))||[185,300];
   return curCount()*(isTpl?it[1]:it[0])+cap; // 장당 × count (+ 캡션) = 총액
 }
 function notEnough(cost){return !CREDITS.unlimited&&CREDITS.balance!==null&&cost!==null&&CREDITS.balance<cost;}
