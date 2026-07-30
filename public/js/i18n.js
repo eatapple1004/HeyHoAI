@@ -40,6 +40,9 @@
     'Create Shots': '컷 만들기', 'Create an Ad Video': '광고영상 만들기',
     'Cutout': '제품컷', 'Editorial': '화보컷',
     'Auto script': '대본 자동 생성', 'AI voice & music': 'AI 음성 · 음악',
+    // (2026-07-30) Ad Video 는 무음성(음악만)이다 — 홈 카드 태그에서 'AI voice & music' 를 걷고
+    //   대신 오늘 만든 '대본 직접 쓰기'를 알린다. 위 옛 키는 다른 화면 참조가 있을 수 있어 남겨둔다.
+    'Or write it yourself': '대본 직접 쓰기',
     'View more': '더 보기', 'Best offer': '가장 알뜰한 선택',
     'Search templates': '템플릿 검색', 'Creation preview': '결과 미리보기',
     'Scene preview': '씬 미리보기', 'Next scene': '다음 씬', 'Previous scene': '이전 씬',
@@ -80,8 +83,8 @@
       '제품 사진 한 장이면 충분합니다 — 광고영상, 제품컷, 화보컷, 모델 착용컷으로 바꿔 드립니다. 시작할 곳만 고르시면 나머지는 저희가 합니다.',
     'Cutouts, editorial and on-model looks from one product photo — driven by ready-made templates.':
       '제품 사진 한 장으로 제품컷 · 화보컷 · 모델 착용컷까지. 준비된 템플릿이 알아서 합니다.',
-    'Turn a product photo into a narrated short — scenes, voice and music, ready for Reels & TikTok.':
-      '제품 사진 한 장을 내레이션 숏폼으로. 씬 · 음성 · 음악까지 붙어 Reels · TikTok에 바로 올립니다.',
+    'Turn a product photo into a finished ad — scenes cut together with music, ready for Reels & TikTok.':
+      '제품 사진 한 장을 완성된 광고로. 씬을 이어 붙이고 음악까지 얹어 Reels · TikTok에 바로 올립니다.',
     // gallery
     '4 categories · dozens of templates, zero prompts': '4개 카테고리 · 템플릿 수십 종, 프롬프트 없이',
     'Come back daily — your streak earns free credits': '매일 들르시면 연속 출석으로 크레딧이 쌓입니다',
