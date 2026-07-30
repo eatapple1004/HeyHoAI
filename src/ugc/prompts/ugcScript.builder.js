@@ -31,6 +31,12 @@ function fmtLine(v) { return FORMAT_HINTS[v] ? `- ${v}: ${FORMAT_HINTS[v]}` : `-
 //   ⚠️ 이 상한은 **3곳**에 흩어져 있다: 여기 · ugcScript.service의 addScene 프롬프트 2곳 · 같은 파일의 코드 클램프.
 //      코드 클램프를 안 고치면 프롬프트만 올려도 8초 씬이 조용히 5초로 깎인다(실제로 겪은 함정).
 const AUTO_MAX_SCENE_SEC = 10;
+// (2026-07-30) Auto 씬 **개수** 상한. 길이 상한(위)과 다른 축이다.
+//   왜 필요한가: 개수에 상한이 없으면 15초를 2초씩 7컷(◈4,375), 30초를 15컷(◈9,375)까지 쪼갤 수 있어
+//   **생성 전에 최대 비용을 말할 수 없다**. 유저에게 "최대 ◈X"를 약속하려면 개수가 유계여야 한다.
+//   6은 리듬을 거의 안 깎는다 — 15초에 6컷이면 평균 2.5초로 이미 촘촘하고, 7~8초 긴 호흡도 그대로 가능하다.
+//   ⚠️ 프롬프트 지시만으로는 보장이 안 되므로 ugcScript.service 의 capBrollCount 가 코드로 한 번 더 막는다.
+const AUTO_MAX_SCENES = 6;
 
 /**
  * @param {{
@@ -181,6 +187,7 @@ function buildUgcScriptPrompt(input) {
       //   빠른 광고는 짧은 비트 여러 개, 느린 럭셔리 리빌은 긴 씬 몇 개. 단 **합은 목표와 정확히 일치**해야 한다
       //   (유저가 고른 총 길이라 어긋나면 약속 위반). 개수·분배는 자유, 합만 제약.
       : [`- Decide the NUMBER of scenes and each scene's "durationSec" from what the concept needs — this is a creative call, not arithmetic. A punchy, energetic ad may want many short beats (2-3s each); a slow, luxurious reveal may want a few long ones (6-10s). Do NOT give every scene the same length unless the concept genuinely calls for a steady rhythm.`,
+         `- Use AT MOST ${AUTO_MAX_SCENES} broll scenes — fewer, well-chosen shots beat many tiny ones.`,
          `- Scene length limits: minimum 2s, maximum ${AUTO_MAX_SCENE_SEC}s. A scene over 5s costs roughly double to render — use it when the shot truly needs the time, not by default.`,
          `- 🔴 HARD CONSTRAINT: the scene "durationSec" values MUST sum to EXACTLY ${durationSec}. Choose how many scenes and how long each one is, then verify the total before you answer. If it does not add up, adjust a scene until it does.`]),
     ...(voiceover ? [
@@ -254,4 +261,4 @@ function buildUgcScriptPrompt(input) {
   return { system, user, profile };
 }
 
-module.exports = { buildUgcScriptPrompt, FORMAT_HINTS };
+module.exports = { buildUgcScriptPrompt, FORMAT_HINTS, AUTO_MAX_SCENES };

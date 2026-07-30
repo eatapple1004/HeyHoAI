@@ -6,7 +6,7 @@
  */
 const Anthropic = require('@anthropic-ai/sdk');
 const { env } = require('../config');
-const { buildUgcScriptPrompt } = require('./prompts/ugcScript.builder');
+const { buildUgcScriptPrompt, AUTO_MAX_SCENES } = require('./prompts/ugcScript.builder');
 const { DEFAULT_OUTPUT_TYPE } = require('./profiles');
 
 const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
@@ -95,6 +95,23 @@ function fitTotalDuration(scenes, targetSec) {
   return scenes;
 }
 
+/**
+ * broll 씬 개수 상한 강제 (2026-07-30).
+ * 왜 코드로도 막나: UI가 생성 **전에** "최대 ◈X"를 약속하는데, 그 계산이 개수 상한을 전제한다.
+ *   프롬프트 지시(AT MOST N)만 믿으면 Claude가 한 번 어길 때 유저가 약속보다 더 내게 된다.
+ * 무엇을 버리나: 초과분은 **가운데**를 버리고 앞 N-1개 + **마지막 씬**을 남긴다 —
+ *   마지막은 보통 CTA/히어로라, 끝을 버리는 것보다 중간을 버리는 쪽이 손해가 적다.
+ *   합은 뒤이어 fitTotalDuration 이 다시 정확히 맞춘다.
+ * ⚠️ 유저가 씬 개수를 명시한 경우(sceneCount)엔 그 뜻을 존중해 건드리지 않는다.
+ */
+function capBrollCount(scenes, cap) {
+  if (!Array.isArray(scenes) || !cap) return scenes;
+  const brollIdx = scenes.map((s, i) => (s && s.type === 'broll' ? i : -1)).filter((i) => i >= 0);
+  if (brollIdx.length <= cap) return scenes;
+  const keep = new Set([...brollIdx.slice(0, cap - 1), brollIdx[brollIdx.length - 1]]);
+  return scenes.filter((s, i) => s.type !== 'broll' || keep.has(i));
+}
+
 const JUNK_SUMMARY = /^(placeholder|n\/a|none|tbd|\.*|-*)$/i;
 const cleanSummary = (s) => { const v = (s.summary || '').trim(); return (!v || JUNK_SUMMARY.test(v)) ? (s.direction || '') : v; };
 
@@ -165,7 +182,11 @@ async function generateUgcScript(input) {
     hook: raw.hook || '',
     // 총 길이 보정: 유저가 총 길이를 고른 경우에만(input.durationSec) 합을 정확히 맞춘다.
     //   미지정(하위호환 경로)이면 대본이 낸 길이를 그대로 둔다.
-    scenes: fitTotalDuration(normalizeScenes(raw.scenes), input.durationSec),
+    scenes: fitTotalDuration(
+      // 개수 상한을 **먼저** 적용하고 합을 맞춘다(순서 반대면 버린 씬의 초가 사라져 총 길이가 어긋난다)
+      capBrollCount(normalizeScenes(raw.scenes), input.sceneCount ? 0 : AUTO_MAX_SCENES),
+      input.durationSec,
+    ),
     cta: raw.cta || '',
     caption: raw.caption || '',
     hashtags: (Array.isArray(raw.hashtags) ? raw.hashtags : [])
