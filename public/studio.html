@@ -1279,6 +1279,8 @@
   .ugc-lenfoot{display:flex;align-items:center;gap:8px;margin-top:5px}
   .ugc-lenfoot #ugcTotalHint{flex:1;text-align:center}
   .ugc-lentick{font-size:10.5px;color:var(--faint);flex:none}
+  .ugc-lencost{margin-top:7px;font-size:12px;font-weight:650;color:var(--accent2)}
+  .ugc-lencost.short{color:#ff7eb6} /* 잔액 부족·자동 축소 — 돈 얘기라 눈에 띄어야 한다 */
   .ugc-lenslider{-webkit-appearance:none;appearance:none;flex:1;min-width:150px;height:22px;
     background:transparent;cursor:pointer;margin:0}
   .ugc-lenslider:focus-visible{outline:2px solid var(--accent2);outline-offset:3px;border-radius:8px}
@@ -1597,6 +1599,7 @@
           <span id="ugcTotalHint" style="font-size:11.5px;color:var(--faint)"></span>
           <span class="ugc-lentick">30s</span>
         </div>
+        <div class="ugc-lencost" id="ugcLenCost"></div>
         <!-- (2026-07-30) 원샷 토글 — 대본 확인을 건너뛰고 바로 만든다.
              ⚠️ 반드시 **CTA 옆(항상 떠 있는 자리)**에 둔다. 대본 미리보기 안에 두면 렌더가 시작될 때
                 ugcHideBenchPanels()가 그 패널을 내려서 **끄는 스위치가 같이 사라진다**(켜면 못 끄는 함정). -->
@@ -6122,15 +6125,24 @@ function ugcCtaState(){
   const box=document.getElementById('ugcInputBox');
   const hasPhoto=!!(box&&box.classList.contains('has-photo'));
   // (2026-07-27) 게이트=사진 하나. 컨셉은 자동 생성되므로 더는 게이트가 아니다(직접 쓰기는 선택).
-  const ok=hasPhoto;
+  // (2026-07-30) 두 번째 게이트=크레딧. **가장 짧은 영상(2초)의 최대가**도 못 내면 눌러도 402로 죽으므로
+  //   여기서 막고 이유를 말한다. 판정은 ugcRenderCost 와 **같은 함수**를 쓴다 — 갈리면 버튼은 눌리는데
+  //   화면엔 이유가 없거나, 그 반대가 된다.
+  const canAfford=(typeof ugcMaxAffordableSec!=='function')||ugcMaxAffordableSec(30)>=2;
+  const ok=hasPhoto&&canAfford;
   btn.classList.toggle('is-blocked',!ok);
   btn.setAttribute('aria-disabled',ok?'false':'true');
   // 원샷이면 '무료'라고 말하지 않는다 — 이 버튼이 바로 과금으로 이어진다.
   const one=ugcOneShot(), ko=ugcIsKo();
-  main.textContent = ok ? (one?(ko?'바로 영상 만들기':'Make my ad video now'):'Create my ad video') : 'Add a product photo';
-  sub.textContent = ok
-    ? (one?(ko?'대본 확인을 건너뜁니다 — 크레딧이 차감돼요':'Skips script review — credits are charged')
-         :'Concept & script are written for you — free')
+  // 막힌 이유가 사진인지 크레딧인지 **구분해서** 말한다 — "Add a product photo"만 띄우면
+  //   사진을 넣어도 안 풀려서 유저가 이유를 못 찾는다.
+  const noCredit=hasPhoto&&!canAfford;
+  main.textContent = noCredit ? (ko?'크레딧이 부족해요':'Not enough credits')
+    : ok ? (one?(ko?'바로 영상 만들기':'Make my ad video now'):'Create my ad video')
+    : 'Add a product photo';
+  sub.textContent = noCredit ? (ko?'결제에서 충전하면 바로 만들 수 있어요':'Top up in Billing to start')
+    : ok ? (one?(ko?'대본 확인을 건너뜁니다 — 크레딧이 차감돼요':'Skips script review — credits are charged')
+             :'Concept & script are written for you — free')
     : 'One product photo starts it';
 }
 /**
@@ -6265,7 +6277,14 @@ async function ugcWriteScript(){
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     // (2026-07-30 폼 축소) 총 길이 = 유저가 주는 유일한 길이 신호(빌더가 목표 ~Ns로 사용). 씬 배치는 대본 Auto가 정한다.
     const tSec=parseInt((document.getElementById('ugcTotalSec')||{}).value,10);
-    if(Number.isFinite(tSec)&&tSec>0)fd.append('durationSec',String(Math.min(Math.max(tSec,2),30)));
+    if(Number.isFinite(tSec)&&tSec>0){
+      let t=Math.min(Math.max(tSec,2),30);
+      // (2026-07-30) 잔액에 맞춰 **자동 축소**. 딱 맞출 필요는 없고 허용 크레딧 안에 들어가기만 하면 된다.
+      //   여기서 안 줄이면 렌더가 402로 죽는데, 그때는 이미 대본을 쓴 뒤라 유저는 이유 없이 실패를 본다.
+      const fit=ugcMaxAffordableSec(t);
+      if(fit>=2&&fit<t)t=fit;
+      fd.append('durationSec',String(t));
+    }
     const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택·현재 UI 없음=항상 0)
     const scD=(document.getElementById('ugcSceneDur')||{}).value; if(scD&&scD!=='0')fd.append('sceneDuration',scD); // 씬 길이(선택)
     const res=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});
@@ -6699,7 +6718,72 @@ function ugcSyncTotalSec(){
     rg.style.setProperty('--fill', Math.round((v-2)/28*100)+'%');
   }
   const out=document.getElementById('ugcTotalOut'); if(out)out.textContent=v+'s';
+  ugcRenderCost(v, ko);
   ugcRenderKnobLine();
+}
+/**
+ * 슬라이더 아래 비용 줄 — "최대 ◈X". 실제 차감은 이 값 **이하**다(설명은 ugcCostBounds 주석).
+ * 잔액이 모자라면 여기서 바로 말하고, ugcCtaState 가 버튼을 막는다(같은 판정을 두 곳에서 쓰므로
+ * 값이 갈리면 버튼은 눌리는데 이유는 안 보이는 상태가 된다 — 반드시 ugcMaxAffordableSec 하나만 본다).
+ */
+function ugcRenderCost(v, ko){
+  const el=document.getElementById('ugcLenCost'); if(!el)return;
+  const b=ugcCostBounds(v), unl=!!(CREDITS&&CREDITS.unlimited);
+  const bal=(CREDITS&&Number.isFinite(Number(CREDITS.balance)))?Number(CREDITS.balance):null;
+  const max='◈'+b.max.toLocaleString();
+  if(unl||bal===null){ el.textContent=(ko?'최대 ':'up to ')+max; el.classList.remove('short'); return; }
+  const fit=ugcMaxAffordableSec(30);
+  if(fit<2){ // 가장 짧은 영상도 못 만든다
+    el.classList.add('short');
+    el.textContent=ko?`최대 ${max} · 잔액 ◈${bal.toLocaleString()} — 크레딧이 부족해요`
+                     :`up to ${max} · balance ◈${bal.toLocaleString()} — not enough credits`;
+  } else if(fit<v){ // 이 길이는 무리 — 잔액에 맞춰 줄여서 만든다
+    el.classList.add('short');
+    el.textContent=ko?`최대 ${max} · 잔액 ◈${bal.toLocaleString()} — ${fit}초로 줄여서 만들어요`
+                     :`up to ${max} · balance ◈${bal.toLocaleString()} — will make ${fit}s to fit`;
+  } else {
+    el.classList.remove('short');
+    el.textContent=(ko?'최대 ':'up to ')+max;
+  }
+}
+/* ───── 생성 전 비용 추정 (2026-07-30) ─────
+   왜 "최대"인가: 씬 배치는 대본이 정하므로(연출 판단) 생성 전엔 정확한 값을 모른다.
+     같은 15초도 10+5면 ◈1,820, 7+8이면 ◈2,390 — 차액은 **낭비**다(7초는 10초를 만들어 3초 버림).
+     낭비를 막으려고 6~9초를 금지하면 결과물이 깎이므로(사용자 결정) 대신 **최대치를 약속**한다.
+     실제 차감은 그 이하 → 유저가 예상보다 더 내는 일이 없다.
+   ⚠️ 이 계산은 **씬 개수 상한**을 전제한다(서버 AUTO_MAX_SCENES=6 · capBrollCount 가 코드로 강제).
+      상한이 없으면 15초를 2초씩 7컷(◈4,375)까지 가능해 "최대"를 말할 수 없다. 두 값은 반드시 같이 움직인다.
+   비용 규칙: 씬 ≤5초 = 5초 클립 단가, >5초 = 10초 클립 단가. 즉 비용은 **5초 초과 씬의 개수**만으로 갈린다. */
+const UGC_AUTO_MAX_SCENES=6; // ⚠️ 서버 ugcScript.builder.AUTO_MAX_SCENES 와 같아야 한다
+function ugcUnitCost(){
+  const q=((document.getElementById('ugcQuality')||{}).value==='high')?'high':'low';
+  const av=(CREDITS&&CREDITS.costs&&CREDITS.costs.adVideo)||null;
+  return (av&&av[q])||(q==='high'?{5:945,10:1705}:{5:625,10:1195}); // 폴백=검증 단가
+}
+/** 총 T초로 만들 수 있는 모든 씬 배치 중 최저/최고 비용. 배치는 씬당 2~10초·합 정확히 T·개수 ≤ 상한. */
+function ugcCostBounds(T){
+  const u=ugcUnitCost(), d=(u[10]-u[5]);
+  let lo=Infinity, hi=0, any=false;
+  const nMin=Math.ceil(T/10), nMax=Math.min(UGC_AUTO_MAX_SCENES, Math.floor(T/2));
+  for(let N=Math.max(1,nMin); N<=Math.max(1,nMax); N++){
+    if(N*2>T || N*10<T) continue;            // 씬당 2~10초로 합 T가 불가능한 개수는 건너뛴다
+    any=true;
+    // 5초 초과가 **강제되는** 개수: 전부 5초 이하면 합이 5N까지밖에 안 되므로 모자란 만큼 길게 가야 한다
+    const kMin=Math.max(0, Math.ceil((T-5*N)/5));
+    // 5초 초과가 **가능한** 개수: 한 씬을 6초로 올리려면 최소치(2초)보다 4초를 더 써야 한다
+    const kMax=Math.min(N, Math.floor((T-2*N)/4));
+    lo=Math.min(lo, u[5]*N + d*kMin);
+    hi=Math.max(hi, u[5]*N + d*Math.max(kMin,kMax));
+  }
+  if(!any){ const c=u[5]; return {min:c,max:c}; } // T가 너무 짧아 1씬뿐인 경우
+  return {min:lo, max:hi};
+}
+/** 잔액으로 감당 가능한 가장 긴 총 길이(최대가 기준). 없으면 0. */
+function ugcMaxAffordableSec(maxT){
+  if(!CREDITS||CREDITS.unlimited)return maxT;
+  const bal=Number(CREDITS.balance); if(!Number.isFinite(bal))return maxT; // 잔액 미상이면 막지 않는다
+  for(let t=maxT;t>=2;t--){ if(ugcCostBounds(t).max<=bal)return t; }
+  return 0;
 }
 /** 슬라이더 → 진실의 원천(#ugcTotalSec)으로 값을 밀고, 나머지는 ugcSyncTotalSec 이 파생시킨다. */
 function ugcLenFromSlider(v){
