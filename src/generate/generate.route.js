@@ -1176,7 +1176,10 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_
     const scD = [3, 5, 10].includes(parseInt(sceneDuration, 10)) ? parseInt(sceneDuration, 10) : 0; // 씬 길이 3/5/10s(0=자동)
     // (2026-07-30 폼 축소) durationSec = 앞단 총 길이(목표 ~Ns). 미전송이면 undefined → 빌더가 프로파일 기본(20s) 사용.
     const dSecRaw = parseInt(durationSec, 10);
-    const dSec = Number.isFinite(dSecRaw) ? Math.min(Math.max(dSecRaw, 10), 60) : undefined;
+    // 🔴 (2026-07-30) 하한을 10→2, 상한을 60→30 으로. 앞단 슬라이더가 2~30초인데 여기가 10~60 이라
+    //   **2~9초 주문이 조용히 10초로 올라갔다** — 유저는 5초를 골랐는데 10초가 만들어지고,
+    //   화면이 약속한 "최대 ◈625"보다 실제 차감이 커졌다(가격 약속 위반). 두 값은 반드시 같이 움직인다.
+    const dSec = Number.isFinite(dSecRaw) ? Math.min(Math.max(dSecRaw, 2), 30) : undefined;
     const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, durationSec: dSec, language: language === 'ko' ? 'ko' : 'en', model });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
