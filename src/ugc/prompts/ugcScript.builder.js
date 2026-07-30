@@ -154,6 +154,19 @@ function buildUgcScriptPrompt(input) {
       '  · Read each line aloud in your head: if a real person would never say it, rewrite it.',
     ]),
     '- Every scene is a DISTINCT moment — a different shot, angle, or action. Never repeat the same beat, visual idea, or spoken line across scenes (e.g. do NOT write two "light hits the case" scenes). Vary the visuals scene to scene.',
+    // ── (2026-07-30) 씬 "사이"를 설계한다 ─────────────────────────────────────
+    //   전엔 씬 하나하나의 영상미만 지시했다(샷 다양성·카테고리 조명·distinct). 그 결과 컷은 예쁜데
+    //   이어 붙이면 "예쁜 사진을 순서대로 튼 느낌"이 났다 — 컷과 컷 **사이가 비어 있어서**다.
+    //   조립부는 하드컷(xfade 없음)이고 클립은 각자 독립 생성되므로, 연결은 **대본이 설계해야** 생긴다.
+    '- SEQUENCE — design the CUTS, not just the shots. The clips are hard-cut together with no transition effects, so the edit has to work on paper:',
+    '  · SCALE RHYTHM: alternate framing between neighbours (wide → medium → macro). Never cut between two shots of nearly the same size and angle — that reads as a glitch, not a cut.',
+    '  · ANGLE CHANGE: each cut should change the viewpoint meaningfully (side → three-quarter → overhead). A cut that barely moves the camera looks like a mistake.',
+    '  · VISUAL BRIDGE: give adjacent scenes ONE thing in common — a color, a material, a light direction, or a movement direction — so the cut feels intentional instead of random. Keep the overall lighting and color grade consistent across the whole ad; only the framing and staging should jump.',
+    '  · ENERGY CURVE: open strong (the hook beat), let the middle breathe (a slower, more detailed beat), and finish decisively on the CTA. Do not keep the same intensity from start to end.',
+    '  · Order the scenes so each one answers the previous: grab attention → show what it is → show it in context / in use → close.',
+    // 잘림 내구성 — 렌더는 벤더 네이티브(5s/10s)로 생성한 뒤 씬 길이로 트림한다. 즉 모든 클립이 중간에서 끊긴다.
+    //   완결형 동작(뚜껑이 닫힌다·캔이 열린다)이 잘리면 "미완성"으로 보이므로 지속형 모션을 유도한다.
+    '- MOTION must be CUT-SAFE: every clip gets trimmed, so design motion that still reads if it is cut at any moment — continuous or loopable movement (slow rotation, camera push-in or drift, light sweeping across, liquid or fabric flowing, steam rising). Avoid motion that must COMPLETE to make sense (a lid closing, a can popping open, a hand finishing a grab) unless that completion clearly lands inside the scene.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
     ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
     // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다(근거=AUTO_MAX_SCENE_SEC).
