@@ -1242,6 +1242,56 @@
   #scriptStep .ugc-fieldhd label{font-size:14px}
   .ugc-cols.ugc-solo .ugc-foldable{column-gap:56px}
   .ugc-cols.ugc-solo .ugc-fold-b{border-left:none;padding-left:56px}
+  /* ───── (2026-07-30) Ad Video 간소화 ─────
+     메인 폼에 남는 것은 **사진 · 텍스트 · 생성 버튼** 셋뿐이다(+필요할 때만 모델 픽커).
+     비율·총 길이·대본확인 건너뛰기는 '세부설정' 패널로 접었다.
+     ⚠️ 아래 3개는 기존 규칙을 이기려고 일부러 특정성을 올렸다(#scriptStep 을 태움) — !important 회피. */
+  #scriptStep .ugc-fold-b{display:none}                    /* 안의 유일한 가시 요소였던 모델 픽커가 fold-a 로 갔다 */
+  .ugc-cols.ugc-solo .ugc-foldable{grid-template-columns:minmax(0,1fr)}  /* 2단 → 1단(오른쪽 빈칸 제거) */
+  #scriptStep #ugcAdv[hidden]{display:none}                /* 기본은 닫힘 — 전엔 항상 펼쳐진 전체폭 바였다 */
+  #scriptStep #ugcAdv:not([hidden]){display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-start;
+    background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;margin-top:10px}
+  /* 설정 아이콘 — .ugc-bar 우측(Arcads 레퍼런스와 같은 자리) */
+  .ugc-gear{background:none;border:none;color:var(--dim);cursor:pointer;padding:4px;border-radius:8px;
+    display:inline-flex;align-items:center;line-height:0;flex:none}
+  .ugc-gear:hover{color:var(--text);background:rgba(255,255,255,.06)}
+  .ugc-gear[aria-expanded="true"]{color:var(--accent2);background:rgba(255,255,255,.08)}
+  /* ⓘ 와 기어를 같은 높이로. 실측 y265 vs y287 로 22px 어긋나 있어서 한 줄인데 두 줄처럼 보였다. */
+  .ugc-bar .ugc-help,.ugc-bar .ugc-gear{align-self:center;margin-top:0}
+  /* 설정이 자기 카드(테두리·배경)를 갖게 됐으니 옛 구분선·여백은 중복이다.
+     닫혀 있을 때 실측 19px 빈 줄 + 가로선만 남아 "뭔가 잘린 것처럼" 보였다. */
+  #scriptStep .ugc-cols.ugc-solo .ugc-fold-settings,#scriptStep .ugc-fold-settings{border-top:none;margin-top:0;padding-top:0}
+  /* 하단 줄 = [상태문구 ····· 생성버튼]. 전엔 207px 버튼이 1050px 카드 왼쪽에 홀로 떠 있고
+     그 아래 70px 죽은 공간이 남았다. 문구를 왼쪽에 두고 버튼을 오른쪽 끝으로 보낸다. */
+  #scriptStep .ugc-cta-wrap{display:flex;align-items:center;gap:14px;margin-top:14px}
+  #scriptStep .ugc-cta-wrap .script-ctrls{order:2;margin-left:auto;flex:none}
+  #scriptStep .ugc-cta-wrap #ugcHint{order:1;flex:1;min-width:0;margin-top:0}
+  /* ───── 총 길이 슬라이더 (2026-07-30) ─────
+     전엔 78px 숫자칸 + 스피너였다 — 25초를 40초로 바꾸려면 화살표를 15번 누르거나 타이핑해야 했다.
+     ⚠️ 크로스브라우저: 트랙/썸 의사요소는 -webkit- 와 -moz- 를 **따로** 써야 한다(한 셀렉터로 묶으면
+        규칙 전체가 무효가 된다 — 하나라도 모르는 의사요소면 브라우저가 통째로 버린다). */
+  /* 슬라이더는 패널 한 줄을 통째로 쓴다 — flex 아이템으로 두면 291px 로 쪼그라들어 "긴 줄"이 안 된다 */
+  #scriptStep #ugcAdv .ugc-lenfield{flex:1 1 100%;min-width:0}
+  #scriptStep #ugcAdv #ugcOneShotWrap{flex:1 1 100%}
+  .ugc-lenrow{display:flex;align-items:center;gap:14px;margin-top:4px}
+  .ugc-lenval{flex:none;min-width:46px;text-align:right;font-size:15px;font-weight:750;color:var(--accent2);
+    font-variant-numeric:tabular-nums}
+  .ugc-lenfoot{display:flex;align-items:center;gap:8px;margin-top:5px}
+  .ugc-lenfoot #ugcTotalHint{flex:1;text-align:center}
+  .ugc-lentick{font-size:10.5px;color:var(--faint);flex:none}
+  .ugc-lenslider{-webkit-appearance:none;appearance:none;flex:1;min-width:150px;height:22px;
+    background:transparent;cursor:pointer;margin:0}
+  .ugc-lenslider:focus-visible{outline:2px solid var(--accent2);outline-offset:3px;border-radius:8px}
+  .ugc-lenslider::-webkit-slider-runnable-track{height:6px;border-radius:99px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)) no-repeat,rgba(255,255,255,.10);
+    background-size:var(--fill,33%) 100%}
+  .ugc-lenslider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;
+    border-radius:50%;background:#fff;border:none;margin-top:-6px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .ugc-lenslider:hover::-webkit-slider-thumb{transform:scale(1.12)}
+  .ugc-lenslider::-moz-range-track{height:6px;border-radius:99px;background:rgba(255,255,255,.10)}
+  .ugc-lenslider::-moz-range-progress{height:6px;border-radius:99px;background:var(--accent2)}
+  .ugc-lenslider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:none;
+    box-shadow:0 2px 8px rgba(0,0,0,.5)}
   .ugc-cols.ugc-solo .ugc-fold-c{border-top:1px solid var(--border2);margin-top:30px;padding-top:22px}
   /* 번호 배지 — 1·2·3·4 플로우(사진·컨셉·세팅·대본 생성). (2026-07-21) 전부 채운 번호로 통일.
      옛 .ugc-step-opt(세팅 ✓용, "안 해도 됨")는 세팅이 3번 스텝으로 승격되며 죽어 제거. */
@@ -1373,7 +1423,9 @@
             없는 기능은 약속하지 않는다. -->
     <div class="ugc-lead">
       <h2 class="ugc-lead-t">A finished ad video — your scenes cut together, ready to post.</h2>
-      <div class="ugc-lead-chips">
+      <!-- (2026-07-30 간소화) 리드 칩 제거 — 비율·음악이 '세부설정' 창으로 들어갔다.
+           설정 창에 넣어놓고 위에서 또 광고하면, 없애려던 시각적 소음이 그대로 남는다. -->
+      <div class="ugc-lead-chips" style="display:none">
         <span class="ugc-lead-chip">9:16 · 1:1 · 16:9</span>
         <span class="ugc-lead-chip">Music optional</span><!-- (2026-07-30) 'English·한국어' 칩 제거 — 언어 선택이 폼에서 사라짐(앱 언어 자동) -->
       </div>
@@ -1413,8 +1465,38 @@
         </div>
         <textarea class="script-ta" id="ugcConcept" placeholder="Add a concept or mood — optional (a photo alone works)"></textarea>
         <span class="ugc-help" role="button" tabindex="0" aria-label="Which photos should I add?" onclick="ugcHelp(event,'photos')" onkeydown="ugcHelpKey(event,'photos')">?</span>
+        <!-- (2026-07-30 간소화) 세부설정 열기 — 비율·총 길이·대본확인 건너뛰기. 기존 ugcToggleAdv()를 그대로 쓴다. -->
+        <button type="button" class="ugc-gear" id="ugcGearBtn" onclick="ugcToggleAdv()" aria-expanded="false" aria-controls="ugcAdv" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="14" cy="18" r="2"/></svg>
+        </button>
       </div>
       <div id="ugcTip-photos" class="ugc-tip" style="display:none;margin-top:8px"></div>
+        <div id="ugcModelPicker" style="display:none;margin-top:8px">
+          <!-- (2026-07-30) 대본이 모델 씬을 배분했을 때만 열린다(ugcSyncModelNeed). 왜 열렸는지 한 줄로 알려준다. -->
+          <div id="ugcModelNeedHint" style="font-size:12px;color:var(--accent2);font-weight:650;margin-bottom:6px"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--dim)">Pick a model</span>
+            <span style="display:flex;gap:5px">
+              <button type="button" class="ugc-mt active" data-a="adult" onclick="ugcModelAgeTab('adult')">Adults</button>
+              <button type="button" class="ugc-mt" data-a="kids" onclick="ugcModelAgeTab('kids')">Kids</button>
+            </span>
+            <span id="ugcModelPick" style="font-size:11.5px;color:var(--accent2);font-weight:700"></span>
+            <span style="margin-left:auto;display:flex;gap:5px">
+              <button type="button" class="ugc-mf active" data-g="female" onclick="ugcModelFilter('female')">Female</button>
+              <button type="button" class="ugc-mf" data-g="male" onclick="ugcModelFilter('male')">Male</button>
+            </span>
+          </div>
+          <div id="ugcModelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,50px);gap:6px;max-height:176px;overflow-y:auto;padding:2px"></div>
+        </div>
+      <!-- (2026-07-30 간소화) 생성 버튼 = 메인 폼. 전엔 설정 창(#ugcAdv) 안 우측 끝에 있었다. -->
+      <!-- (2026-07-27) CTA를 설정 창(#ugcAdv 보라 테두리) 안 우측 끝에 넣음(사용자 요청) — 기존 fold-c 제거.
+           ⚠️ CTA 문구·상태는 JS(ugcCtaState)가 갈아끼운다(여기 값=차단 상태 초깃값). 눌리면 가드가 #ugcHint로 답. -->
+      <div class="ugc-cta-wrap">
+        <div class="script-ctrls">
+          <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-disabled="true" onclick="ugcCreateAd()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo</span><span class="cta-sub">Concept &amp; script are written for you — free</span></span></button>
+        </div>
+        <div class="hint" id="ugcHint" style="margin-top:8px"></div>
+      </div>
       <div style="margin:10px 0 2px">
         <!-- (2026-07-30 폼 축소) Product details 토글 숨김 — 제품 사실은 컨셉 한 줄에 녹이면 된다.
              #ugcDetails textarea·읽는 JS는 존치(값=빈 문자열이면 미전송). 되돌리려면 display:none만 제거. -->
@@ -1468,23 +1550,9 @@
         </div>
         <div id="ugcTip-fmt" class="ugc-tip" style="display:none"></div>
         <input type="hidden" id="ugcFormat" value="product-ad">
-        <div id="ugcModelPicker" style="display:none;margin-top:8px">
-          <!-- (2026-07-30) 대본이 모델 씬을 배분했을 때만 열린다(ugcSyncModelNeed). 왜 열렸는지 한 줄로 알려준다. -->
-          <div id="ugcModelNeedHint" style="font-size:12px;color:var(--accent2);font-weight:650;margin-bottom:6px"></div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-            <span style="font-size:12px;color:var(--dim)">Pick a model</span>
-            <span style="display:flex;gap:5px">
-              <button type="button" class="ugc-mt active" data-a="adult" onclick="ugcModelAgeTab('adult')">Adults</button>
-              <button type="button" class="ugc-mt" data-a="kids" onclick="ugcModelAgeTab('kids')">Kids</button>
-            </span>
-            <span id="ugcModelPick" style="font-size:11.5px;color:var(--accent2);font-weight:700"></span>
-            <span style="margin-left:auto;display:flex;gap:5px">
-              <button type="button" class="ugc-mf active" data-g="female" onclick="ugcModelFilter('female')">Female</button>
-              <button type="button" class="ugc-mf" data-g="male" onclick="ugcModelFilter('male')">Male</button>
-            </span>
-          </div>
-          <div id="ugcModelGrid" style="display:grid;grid-template-columns:repeat(auto-fill,50px);gap:6px;max-height:176px;overflow-y:auto;padding:2px"></div>
-        </div>
+        <!-- (2026-07-30 간소화) 모델 픽커는 여기 있었다 → .ugc-fold-a(메인 폼)로 옮겼다.
+             이유: 픽커는 옵션이 아니라 렌더 필수 입력이다. 접히는 상자(.ugc-knobs/.compact) 안에 두었기 때문에
+             오늘 데드엔드를 두 번 고쳐야 했다 — 밖으로 꺼내 그 버그 종류를 구조적으로 없앤다. -->
       </div>
       <!-- (2026-07-26) 비필수 설정(비율·씬&길이·언어)을 'More options'로 접음. Sound·Video format만 상시 노출. -->
       <button type="button" class="ugc-advtoggle" id="ugcAdvBtn" onclick="ugcToggleAdv()" aria-expanded="false" aria-controls="ugcAdv">
@@ -1494,7 +1562,7 @@
       </div><!-- /.ugc-fold-b -->
       <!-- (2026-07-27) 세부설정(비율·씬&길이·언어) = fold-b 밖 full-width 가로 바(Shots식). Sound·Video format은 우측 컬럼 유지. -->
       <div class="ugc-fold-settings">
-      <div class="ugc-adv" id="ugcAdv">
+      <div class="ugc-adv" id="ugcAdv" hidden>
       <div style="margin:8px 0 2px">
         <div class="ugc-fieldlbl" style="font-size:12px;color:var(--dim);margin-bottom:5px">Ratio</div>
         <div class="ugc-ar" role="group" aria-label="Ratio">
@@ -1513,15 +1581,29 @@
            씬 개수·씬별 길이는 대본 Auto가 정한다(기존 Auto 경로 그대로 — 프롬프트 변경 없음).
            총 길이는 durationSec으로 대본 생성에 목표(~)로 전달된다.
            hidden #ugcSceneCount/#ugcSceneDur는 0(Auto) 고정 존치(읽는 JS 다수). 되돌리기: 이 블록을 세그먼트로 복원. -->
-      <div style="margin:8px 0 2px">
+      <div class="ugc-lenfield" style="margin:8px 0 2px">
         <div class="ugc-fieldlbl">Total length</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="number" id="ugcTotalSec" value="25" min="10" max="60" step="1" inputmode="numeric" aria-label="Total length in seconds"
-            oninput="ugcSyncTotalSec()" onchange="ugcSyncTotalSec()"
-            style="width:78px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:9px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:14px;font-weight:650">
-          <span style="font-size:13px;color:var(--dim)">sec</span>
-          <span id="ugcTotalHint" style="font-size:11.5px;color:var(--faint)"></span>
+        <!-- (2026-07-30) 총 길이 = **드래그 슬라이더**. 전엔 78px 숫자칸 + 스피너라 초 단위를 눌러 올려야 했다.
+             ⚠️ 진실의 원천은 여전히 hidden #ugcTotalSec 이다 — ugcWriteScript·ugcRenderKnobLine 등
+                .value 를 읽는 곳이 여럿이라, 슬라이더는 그 값을 밀어넣기만 한다(양방향은 ugcSyncTotalSec). -->
+        <div class="ugc-lenrow">
+          <input type="range" class="ugc-lenslider" id="ugcTotalRange" min="2" max="30" step="1" value="15"
+            aria-label="Total length in seconds" oninput="ugcLenFromSlider(this.value)">
+          <output class="ugc-lenval" id="ugcTotalOut" for="ugcTotalRange">15s</output>
         </div>
+        <input type="hidden" id="ugcTotalSec" value="15">
+        <div class="ugc-lenfoot">
+          <span class="ugc-lentick">2s</span>
+          <span id="ugcTotalHint" style="font-size:11.5px;color:var(--faint)"></span>
+          <span class="ugc-lentick">30s</span>
+        </div>
+        <!-- (2026-07-30) 원샷 토글 — 대본 확인을 건너뛰고 바로 만든다.
+             ⚠️ 반드시 **CTA 옆(항상 떠 있는 자리)**에 둔다. 대본 미리보기 안에 두면 렌더가 시작될 때
+                ugcHideBenchPanels()가 그 패널을 내려서 **끄는 스위치가 같이 사라진다**(켜면 못 끄는 함정). -->
+        <label id="ugcOneShotWrap" style="display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="ugcOneShotCb" onchange="ugcSetOneShot(this.checked)">
+          <span id="ugcOneShotLbl">Skip script review — generate straight away</span>
+        </label>
         <div id="ugcLenSceneWrap" style="display:none"></div>
         <div id="ugcTotalLen" style="display:none;font-size:12.5px;color:var(--accent2);font-weight:650;margin-top:6px"></div>
         <div id="ugcVoiceLenHint" style="display:none;font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.55">🎙️ Narrated — length is set by the voice.</div>
@@ -1537,21 +1619,6 @@
           <button type="button" class="ugc-seg-b" data-lang="ko" lang="ko" onclick="ugcSetLang(this)">한국어</button>
         </div>
         <input type="hidden" id="ugcLangSel" value="en">
-      </div>
-      <!-- (2026-07-27) CTA를 설정 창(#ugcAdv 보라 테두리) 안 우측 끝에 넣음(사용자 요청) — 기존 fold-c 제거.
-           ⚠️ CTA 문구·상태는 JS(ugcCtaState)가 갈아끼운다(여기 값=차단 상태 초깃값). 눌리면 가드가 #ugcHint로 답. -->
-      <div class="ugc-cta-wrap">
-        <div class="script-ctrls">
-          <button class="btn btn-primary is-blocked" id="ugcGenBtn" aria-disabled="true" onclick="ugcCreateAd()"><svg class="ugc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 5.1a4 4 0 0 0 2.5 2.5L21.5 11l-5.3 1.4a4 4 0 0 0-2.5 2.5L12 20l-1.7-5.1a4 4 0 0 0-2.5-2.5L2.5 11l5.3-1.4a4 4 0 0 0 2.5-2.5z"/></svg><span class="cta-txt"><span class="cta-main">Add a product photo</span><span class="cta-sub">Concept &amp; script are written for you — free</span></span></button>
-        </div>
-        <div class="hint" id="ugcHint" style="margin-top:8px"></div>
-        <!-- (2026-07-30) 원샷 토글 — 대본 확인을 건너뛰고 바로 만든다.
-             ⚠️ 반드시 **CTA 옆(항상 떠 있는 자리)**에 둔다. 대본 미리보기 안에 두면 렌더가 시작될 때
-                ugcHideBenchPanels()가 그 패널을 내려서 **끄는 스위치가 같이 사라진다**(켜면 못 끄는 함정). -->
-        <label id="ugcOneShotWrap" style="display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:var(--dim);cursor:pointer">
-          <input type="checkbox" id="ugcOneShotCb" onchange="ugcSetOneShot(this.checked)">
-          <span id="ugcOneShotLbl">Skip script review — generate straight away</span>
-        </label>
       </div>
       </div><!-- /.ugc-adv -->
       </div><!-- /.ugc-fold-settings -->
@@ -6195,7 +6262,7 @@ async function ugcWriteScript(){
     // category 전송 제거 — builder가 사진 보고 자동 판별·플레이북 적용
     // (2026-07-30 폼 축소) 총 길이 = 유저가 주는 유일한 길이 신호(빌더가 목표 ~Ns로 사용). 씬 배치는 대본 Auto가 정한다.
     const tSec=parseInt((document.getElementById('ugcTotalSec')||{}).value,10);
-    if(Number.isFinite(tSec)&&tSec>0)fd.append('durationSec',String(Math.min(Math.max(tSec,10),60)));
+    if(Number.isFinite(tSec)&&tSec>0)fd.append('durationSec',String(Math.min(Math.max(tSec,2),30)));
     const scC=(document.getElementById('ugcSceneCount')||{}).value; if(scC&&scC!=='0')fd.append('sceneCount',scC); // 씬 개수(선택·현재 UI 없음=항상 0)
     const scD=(document.getElementById('ugcSceneDur')||{}).value; if(scD&&scD!=='0')fd.append('sceneDuration',scD); // 씬 길이(선택)
     const res=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});
@@ -6493,6 +6560,10 @@ function ugcToggleAdv(){ // (2026-07-26) 비필수 설정 접기/펼치기
   if(willOpen)a.removeAttribute('hidden'); else a.setAttribute('hidden','');
   const btn=document.getElementById('ugcAdvBtn');
   if(btn){ btn.classList.toggle('open',willOpen); btn.setAttribute('aria-expanded',String(willOpen)); }
+  // (2026-07-30 간소화) 실제로 보이는 여는 버튼은 .ugc-bar 의 기어다(#ugcAdvBtn 은 CSS로 숨겨져 있다).
+  //   상태를 안 맞추면 패널은 열렸는데 아이콘은 닫힘이라고 말한다(스크린리더에도 거짓).
+  const gear=document.getElementById('ugcGearBtn');
+  if(gear)gear.setAttribute('aria-expanded',String(willOpen));
 }
 function ugcToggleKnobs(){
   const box=document.getElementById('ugcInputBox'); if(!box)return;
@@ -6501,8 +6572,12 @@ function ugcToggleKnobs(){
   const chg=document.getElementById('ugcKnobChg'); if(chg)chg.textContent=open?'Done':'Change';
 }
 /**
- * (2026-07-30) 노브 상자를 **편다**(토글 아님 — 이미 열려 있으면 그대로 둔다).
- * 왜 필요한가: 모델 픽커(#ugcModelPicker)가 이 상자 안에 있다. 대본이 나오면 ugcSyncSolo가 .ugc-solo를
+ * (2026-07-30) 접힌 입력 영역을 **편다**(토글 아님 — 이미 열려 있으면 그대로 둔다).
+ * ⚠️ 갱신: 간소화로 모델 픽커는 이제 .ugc-knobs 밖(.ugc-fold-a)에 있다. 그래서 knobs 부분은 사실상 무의미하고,
+ *    **여전히 필요한 건 ugcUncompact()** 다 — `#ugcInputBox.compact .ugc-foldable{display:none}` 이
+ *    fold-a 까지 통째로 덮으므로 좁은 화면에선 픽커가 그대로 숨는다.
+ * 아래는 옮기기 전 기록(왜 이 함수가 생겼는지):
+ * 왜 필요했나: 모델 픽커(#ugcModelPicker)가 이 상자 안에 있었다. 대본이 나오면 ugcSyncSolo가 .ugc-solo를
  *   떼는데, 그 순간 `#ugcInputBox:not(.knobs-open) .ugc-knobs{display:none}`(CSS)가 발동해 **상자째 접힌다**.
  *   그래서 픽커의 style.display만 켜봐야 조상이 none이라 화면엔 아무것도 안 나왔다 —
  *   "얼굴을 골라주세요" 경고만 뜨고 고를 픽커는 없는 데드엔드가 이것이었다.
@@ -6578,10 +6653,26 @@ function ugcSyncTotalSec(){
   const ko=!!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
   let v=parseInt(el.value,10);
   if(!Number.isFinite(v)){ if(hint)hint.textContent=''; return; }   // 타이핑 중(빈칸)엔 잔소리하지 않는다
-  if(v<10)v=10; if(v>60)v=60;
+  if(v<2)v=2; if(v>30)v=30;
   if(String(v)!==el.value)el.value=String(v);
   if(hint)hint.textContent=(v>=15&&v<=30)?(ko?'권장 구간':'sweet spot'):(ko?'15~30초를 권합니다':'15–30s works best');
+  // (2026-07-30) 슬라이더·숫자 표시를 값에 맞춘다. 여기로 들어오는 경로가 슬라이더만 있는 게 아니라
+  //   (초안 복원·잡 재연결 등도 #ugcTotalSec 을 직접 쓴다) **표시는 항상 여기서 파생**시킨다.
+  const rg=document.getElementById('ugcTotalRange');
+  if(rg){
+    if(rg.value!==String(v))rg.value=String(v);
+    // WebKit 은 채워진 구간을 안 그려준다(Firefox 의 ::-moz-range-progress 같은 게 없다) →
+    //   트랙 배경을 --fill 퍼센트로 직접 칠한다. 10~60 범위를 0~100%로 환산.
+    rg.style.setProperty('--fill', Math.round((v-2)/28*100)+'%');
+  }
+  const out=document.getElementById('ugcTotalOut'); if(out)out.textContent=v+'s';
   ugcRenderKnobLine();
+}
+/** 슬라이더 → 진실의 원천(#ugcTotalSec)으로 값을 밀고, 나머지는 ugcSyncTotalSec 이 파생시킨다. */
+function ugcLenFromSlider(v){
+  const el=document.getElementById('ugcTotalSec'); if(!el)return;
+  el.value=String(v);
+  ugcSyncTotalSec();
 }
 // hidden #ugcLangSel을 앱 언어에 맞춘다 — 언어 선택을 폼에서 숨겼으므로(2026-07-30) 유저가 바꿀 수단이 없다.
 //   전엔 기본 'en'이라 한국어 앱을 쓰는 셀러가 무심코 영어 대본을 받았다.
