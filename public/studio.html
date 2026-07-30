@@ -6096,10 +6096,13 @@ async function ugcPreviewVoice(){
       공짜로 들리는 버튼이 돈을 쓰면 안 된다.
    저장 = 브라우저 localStorage(사용자 결정 A · 계정 단위는 서버 변경이 필요해 보류).
    문구는 i18n.js 사전 대신 인라인 ko/en 분기(ugcSyncModelNeed 와 같은 방식) — 캐시버스터 범프 불필요. */
-function ugcOneShot(){ try{ return localStorage.getItem('ugc:oneshot')==='1'; }catch(e){ return false; } }
+/* (2026-07-30 간소화) **기본이 ON**으로 바뀌었다(사용자 결정) — 저장값이 없으면 건너뛴다.
+   그래서 판정이 ==='1' 이 아니라 !=='0' 이다. 끌 때 키를 지우지 않고 '0'을 넣는 이유도 이것.
+   ⚠️ 대가: 처음 쓰는 사람도 첫 시도에서 대본을 못 보고 과금된다. 되돌리려면 이 두 줄만 뒤집으면 된다. */
+function ugcOneShot(){ try{ return localStorage.getItem('ugc:oneshot')!=='0'; }catch(e){ return true; } }
 function ugcIsKo(){ return !!(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko'); }
 function ugcSetOneShot(on){
-  try{ on ? localStorage.setItem('ugc:oneshot','1') : localStorage.removeItem('ugc:oneshot'); }catch(e){}
+  try{ localStorage.setItem('ugc:oneshot', on?'1':'0'); }catch(e){} // 끌 때도 명시 저장(없음=ON 이므로 삭제하면 안 된다)
   ugcCtaState();        // 'free' 약속을 즉시 걷거나 되돌린다
   ugcSyncOneShotUI();
 }
