@@ -68,6 +68,7 @@ function buildUgcScriptPrompt(input) {
     category = '',    // 제품군 지정 시 카테고리 플레이북 주입(씬레시피·스타일)
     sceneCount = 0,   // 유저 지정 broll 씬 개수(0=AI 자동)
     sceneDuration = 0, // 유저 지정 씬당 길이(초, 0=AI 자동)
+    scenePlan = null, // 유저가 직접 쓴 씬 계획 [{durationSec, direction}] — 있으면 개수·길이·내용이 전부 확정
     model = null,     // 선택된 로스터 모델 메타 {isMinor, ageBand, ageBandLabel, gender} — 있으면 2패스(모델 확정)
   } = input || {};
 
@@ -78,7 +79,11 @@ function buildUgcScriptPrompt(input) {
   //    약속이 깨졌다(전부 5초). Auto의 핵심은 씬마다 3·4·5초를 리듬대로 정하는 것 —
   //    총량이 아니라 **씬당 상한(≤5, AUTO_MAX_SCENE_SEC)만** 프롬프트로 건다(144행). 상한은 10초 단가 방지가 목적.
   const baseDuration = input?.durationSec || profile.defaultDurationSec || 20;
-  const durationSec = (sceneCount && sceneDuration) ? sceneCount * sceneDuration : baseDuration;
+  // 유저가 씬을 직접 썼으면 총 길이는 **그 합**이다(입력이 아니라 결과). 슬라이더 값보다 우선한다.
+  const plan = (Array.isArray(scenePlan) && scenePlan.length) ? scenePlan : null;
+  const durationSec = plan
+    ? plan.reduce((a, x) => a + (Number(x.durationSec) || 0), 0)
+    : ((sceneCount && sceneDuration) ? sceneCount * sceneDuration : baseDuration);
   const langName = language === 'en' ? 'English' : 'Korean';
   // (2026-07-30) 모델 등장 여부를 outputType(형식 토글)이 아니라 **브리프·사진**이 정한다 → 토글 폐지.
   //   hasModelMeta = 유저가 로스터에서 모델을 고른 뒤의 2패스인가. 1패스는 모델 미정이라 인물 묘사를 금지한다
@@ -180,7 +185,17 @@ function buildUgcScriptPrompt(input) {
     //   완결형 동작(뚜껑이 닫힌다·캔이 열린다)이 잘리면 "미완성"으로 보이므로 지속형 모션을 유도한다.
     '- MOTION must be CUT-SAFE: every clip gets trimmed, so design motion that still reads if it is cut at any moment — continuous or loopable movement (slow rotation, camera push-in or drift, light sweeping across, liquid or fabric flowing, steam rising). Avoid motion that must COMPLETE to make sense (a lid closing, a can popping open, a hand finishing a grab) unless that completion clearly lands inside the scene.',
     '- Keep total on-screen/spoken words realistic for the target duration (~2.5 words/sec).',
-    ...(sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : []),
+    ...(plan ? [
+      // (2026-07-30) 대본 직접 쓰기 — 개수·길이·내용을 유저가 정했다. AI는 **연출을 대신 정하지 않는다.**
+      `- The user wrote the shot list themselves. Create EXACTLY ${plan.length} broll scenes, in this order, with these exact durationSec values:`,
+      ...plan.map((x, i) => `  ${i + 1}. durationSec=${Number(x.durationSec) || 0} — ${String(x.direction || '').trim() || '(no note — you decide this shot)'}`),
+      // 🔴 핵심 규칙(사용자 결정): 완성도가 높을수록 덜 건드린다.
+      `- HOW MUCH TO REWRITE — scale it to how complete the user's note already is:`,
+      `  · Already prompt-like (specific subject, framing, camera move, lighting, mood — especially if written in English): keep it as the brollPrompt almost verbatim. Translate only if needed and add nothing they did not ask for.`,
+      `  · Half-written ("제품을 천천히 회전"): keep their subject and action exactly, and add only what a render needs — the actual product from the photo, framing, lighting, background.`,
+      `  · Vague or empty: you write the shot.`,
+      `  · NEVER contradict, drop, or "improve away" a detail the user specified. Their words win over your instincts. Do not merge, split, reorder or re-time their scenes.`,
+    ] : (sceneCount ? [`- Create EXACTLY ${sceneCount} broll scenes — no more, no fewer.`] : [])),
     // Auto(sceneDuration=0)일 땐 전엔 길이에 대해 아무 말도 안 해서 Claude가 자유롭게 정했다(근거=AUTO_MAX_SCENE_SEC).
     ...(sceneDuration ? [`- Set each broll scene's "durationSec" to ${sceneDuration}.`]
       // (2026-07-30) Auto = **씬 개수와 각 길이를 컨셉이 정한다.** 산수가 아니라 연출 판단 —

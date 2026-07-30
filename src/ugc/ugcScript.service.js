@@ -112,6 +112,28 @@ function capBrollCount(scenes, cap) {
   return scenes.filter((s, i) => s.type !== 'broll' || keep.has(i));
 }
 
+/**
+ * 유저가 직접 쓴 씬 계획을 **코드로 확정**한다 (2026-07-30).
+ * 프롬프트로도 "이 길이 그대로"라고 시키지만, 유저가 손으로 정한 타이밍은 모델의 성의에 맡길 값이 아니다.
+ *   - 개수: 계획보다 많으면 자르고, 모자라면 그대로 둔다(없는 씬을 지어내지 않는다).
+ *   - 길이: 계획값으로 **덮어쓴다.** 이게 곧 총 길이이자 표시 가격의 근거다(어긋나면 가격이 거짓이 된다).
+ * 내용(brollPrompt)은 건드리지 않는다 — 다듬는 정도는 프롬프트가 정한다("완성도 높을수록 덜 건드린다").
+ */
+function applyScenePlan(scenes, plan) {
+  if (!Array.isArray(scenes) || !Array.isArray(plan) || !plan.length) return scenes;
+  const broll = scenes.filter((s) => s && s.type === 'broll');
+  const keep = new Set(broll.slice(0, plan.length));
+  const out = scenes.filter((s) => s.type !== 'broll' || keep.has(s));
+  let i = 0;
+  for (const s of out) {
+    if (s.type !== 'broll') continue;
+    const d = Number(plan[i] && plan[i].durationSec);
+    if (Number.isFinite(d) && d > 0) s.durationSec = Math.min(Math.max(Math.round(d), 2), 10);
+    i += 1;
+  }
+  return out;
+}
+
 const JUNK_SUMMARY = /^(placeholder|n\/a|none|tbd|\.*|-*)$/i;
 const cleanSummary = (s) => { const v = (s.summary || '').trim(); return (!v || JUNK_SUMMARY.test(v)) ? (s.direction || '') : v; };
 
@@ -182,11 +204,14 @@ async function generateUgcScript(input) {
     hook: raw.hook || '',
     // 총 길이 보정: 유저가 총 길이를 고른 경우에만(input.durationSec) 합을 정확히 맞춘다.
     //   미지정(하위호환 경로)이면 대본이 낸 길이를 그대로 둔다.
-    scenes: fitTotalDuration(
-      // 개수 상한을 **먼저** 적용하고 합을 맞춘다(순서 반대면 버린 씬의 초가 사라져 총 길이가 어긋난다)
-      capBrollCount(normalizeScenes(raw.scenes), input.sceneCount ? 0 : AUTO_MAX_SCENES),
-      input.durationSec,
-    ),
+    scenes: (Array.isArray(input.scenePlan) && input.scenePlan.length)
+      // 유저가 직접 쓴 계획 = 개수·길이가 이미 확정. 상한(6)도 총길이 보정도 끼어들면 안 된다.
+      ? applyScenePlan(normalizeScenes(raw.scenes), input.scenePlan)
+      : fitTotalDuration(
+        // 개수 상한을 **먼저** 적용하고 합을 맞춘다(순서 반대면 버린 씬의 초가 사라져 총 길이가 어긋난다)
+        capBrollCount(normalizeScenes(raw.scenes), input.sceneCount ? 0 : AUTO_MAX_SCENES),
+        input.durationSec,
+      ),
     cta: raw.cta || '',
     caption: raw.caption || '',
     hashtags: (Array.isArray(raw.hashtags) ? raw.hashtags : [])

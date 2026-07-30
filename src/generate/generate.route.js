@@ -1161,7 +1161,7 @@ function saveProductImages(req) {
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
 router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
   try {
-    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language, modelImage, durationSec } = req.body || {};
+    const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language, modelImage, durationSec, scenePlan } = req.body || {};
     // 🧍 선택 모델의 메타 — 대본이 "누가 나오는지"를 알아야 나이에 맞게 쓴다(아동 로스터 선택 시 특히).
     //   여기서 안 주면 빌더는 모델을 성인으로 가정도 아동으로 인지도 못 한 채 쓴다.
     const model = modelMetaFor(safeModelPath(modelImage));
@@ -1180,7 +1180,19 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_
     //   **2~9초 주문이 조용히 10초로 올라갔다** — 유저는 5초를 골랐는데 10초가 만들어지고,
     //   화면이 약속한 "최대 ◈625"보다 실제 차감이 커졌다(가격 약속 위반). 두 값은 반드시 같이 움직인다.
     const dSec = Number.isFinite(dSecRaw) ? Math.min(Math.max(dSecRaw, 2), 30) : undefined;
-    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', sceneCount: scN, sceneDuration: scD, durationSec: dSec, language: language === 'ko' ? 'ko' : 'en', model });
+    // 대본 직접 쓰기 — 유저가 쓴 씬 계획 [{durationSec, direction}]. 씬당 2~10초, 최대 12개.
+    //   신뢰하지 않고 여기서 정리한다(길이는 Kling 물리 한계, 개수는 비용 폭주 방지).
+    let plan = null;
+    try {
+      const raw = typeof scenePlan === 'string' ? JSON.parse(scenePlan) : scenePlan;
+      if (Array.isArray(raw) && raw.length) {
+        plan = raw.slice(0, 12).map((x) => ({
+          durationSec: Math.min(Math.max(Math.round(Number(x && x.durationSec) || 5), 2), 10),
+          direction: String((x && x.direction) || '').slice(0, 600),
+        }));
+      }
+    } catch (e) { plan = null; }   // 깨진 입력이면 그냥 Auto 로 떨어진다(요청을 죽이지 않는다)
+    const r = await ugcVideoService.generateScript({ product, concept, outputType: outputType || 'product-ad', image, images, details: details || '', voiceover: voiceover !== 'false' && voiceover !== false, category: category || '', scenePlan: plan, sceneCount: scN, sceneDuration: scD, durationSec: dSec, language: language === 'ko' ? 'ko' : 'en', model });
     res.json({ success: true, script: r.script, nClips: r.nClips, cost: r.cost });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
