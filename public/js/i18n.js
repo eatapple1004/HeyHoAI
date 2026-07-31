@@ -937,6 +937,21 @@
       var norm = key.replace(/\s+/g, ' ');
       if (norm !== key) hit = dict[norm];
     }
+    // 아이콘·기호가 붙어서 못 찾는 경우 — 화면은 '🗑 Delete' 인데 사전엔 'Delete' 만 있는 식.
+    //   정확일치가 항상 먼저다: 사전엔 '⬇ Download'·'✓ In Library' 처럼 아이콘까지 키에 넣은 항목이
+    //   이미 30개 있고, 그건 위에서 걸리므로 기존 동작은 바뀌지 않는다.
+    //   좁게 잡는다 — 기호 1~2자 + 공백으로 떨어져 있을 때만, 그리고 남은 알맹이가 사전에
+    //   그대로 있을 때만. (공백을 요구하므로 '◈303' 이나 '(Doppia)' 는 손대지 않는다.)
+    if (hit == null) {
+      var lead = '', tail = '', core = key, m;
+      if ((m = core.match(/^([^\p{L}\p{N}]{1,2}\s+)/u))) { lead = m[1]; core = core.slice(lead.length); }
+      if ((m = core.match(/(\s+[^\p{L}\p{N}]{1,2})$/u))) { tail = m[1]; core = core.slice(0, core.length - tail.length); }
+      if (core && core !== key) {
+        var inner = dict[core];
+        if (inner == null) { var cn = core.replace(/\s+/g, ' '); if (cn !== core) inner = dict[cn]; }
+        if (inner != null) hit = lead + inner + tail;
+      }
+    }
     if (hit == null) return raw;
     // 앞뒤 공백/개행을 유지해 레이아웃이 깨지지 않게 함.
     var lead = raw.match(/^\s*/)[0];
