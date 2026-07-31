@@ -318,6 +318,11 @@
 <script src="/js/pricing.js?v=1"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
+// 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
+//   i18n.js 는 defer 라 그때 window.i18n 이 아직 없다 → 예전엔 KO 판정이 매번 false 여서, 코드에 멀쩡히 있던
+//   '매달 N 크레딧' 이 한 번도 안 나오고 'N credits / month' 가 나갔다(한국어 사용자에게도).
+//   getLang() 이 내부에서 읽는 것과 같은 저장값을 직접 본다 — 값도 같고 로드 순서에 안 걸린다.
+function koNow(){ try{ return localStorage.getItem('doppia_lang')==='ko'; }catch(e){ return false; } }
 function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
@@ -360,7 +365,7 @@ function syncBillingPricing(){
       // 라온젠식 크레딧 이득 배지 — 기준=Starter의 (크레딧/현재통화 월가). 통화 전환 시 재계산되므로 항상 참.
       const base=P.plans.starter.cr/P.amount(P.plans.starter,false);
       const pct=(k==='free'||k==='starter')?0:Math.round(((p.cr/P.amount(p,false))/base-1)*100);
-      const KO=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+      const KO=koNow();
       const badge=pct>0?(' <em class="bpct">+'+pct+'%</em>'):'';
       ci.innerHTML = k==='free'
         ? (KO?('가입 시 '+P.fmt(p.cr)+' 크레딧 (1회)'):(P.fmt(p.cr)+' credits (one-time)'))
@@ -378,7 +383,7 @@ function syncBillingPricing(){
     if(ci){
       const base=P.plans.starter.cr/P.amount(P.plans.starter,false);
       const pct=Math.round(((e.cr/P.amount(e,false))/base-1)*100);
-      const KO=(window.i18n&&window.i18n.getLang&&window.i18n.getLang()==='ko');
+      const KO=koNow();
       ci.innerHTML=(KO?('매달 '+P.fmt(e.cr)+' 크레딧'):(P.fmt(e.cr)+' credits / month'))+(pct>0?(' <em class="bpct">+'+pct+'%</em>'):'');
     }
   });
