@@ -904,7 +904,50 @@
     'Tech Unbox ASMR': '테크 언박싱 ASMR',
     'TikTok Discovery POV': '틱톡 디스커버리 POV',
     'Unboxing Reaction': '언박싱 리액션',
-    'Wait For The Zoomies': '주무비 릴'
+    'Wait For The Zoomies': '주무비 릴',
+
+    // ── (2026-07-31) 한국어가 없어 영어로 새던 문구 — 17개 페이지를 한국어로 켜고 전수 수집 ──
+    //   ⚠️ 여기 없는 것들은 일부러 뺐다:
+    //     · flags.js 로 런칭에서 꺼둔 기능의 문구 8종(caption·ugc·influencer·reels·brandkit) — prod에서 도달 불가
+    //     · business·earnings·affiliate·join-team 페이지 문구 84종 — prod가 홈으로 리다이렉트하는 페이지
+    //     · 고유명사(Doppia·Nano Banana·Gemini·폰트명·언어명)와 사용자가 쓴 프롬프트 — 번역하면 그게 버그
+    //     · 탭 제목(<title>) — translate()가 body만 훑어서 사전으로는 안 바뀐다(별도 처리 필요)
+    //   숫자가 박힌 조립 문장(출석 보너스 등)도 사전 키를 만들 수 없어 호출부 분기로 처리한다.
+    'Adults': '성인',
+    'Kids': '아이',
+    'More options': '옵션 더 보기',
+    'Reels · Shorts': '릴스 · 쇼츠',
+    'Write the shot list myself': '장면을 직접 쓸게요',
+    'Add a shot': '장면 추가',
+    'Clear': '지우기',
+    'Select media': '미디어 선택',
+    'Template': '템플릿',
+    'Upgrade': '업그레이드',
+    'Save as template': '템플릿으로 저장',
+    'Total length in seconds': '전체 길이(초)',
+    'Number of images': '이미지 수',
+    'Maybe later': '나중에 할게요',
+    'Keep creating': '계속 만들기',
+    '✎ Edit prompt': '✎ 프롬프트 수정',
+    '↻ Regenerate preview': '↻ 미리보기 다시 만들기',
+    '— what to avoid (optional)': '— 피하고 싶은 것 (선택)',
+    '— unlock once, yours forever': '— 한 번 열어두면 계속 쓸 수 있어요',
+    'Pick a generation engine — each tool has different inputs & options.': '생성 엔진을 고르세요 — 도구마다 넣는 것과 설정이 달라요.',
+    'Enhance auto-refines your prompt for stronger results. Turn it off to use your exact wording.': '보강을 켜면 문장을 자동으로 다듬어 결과를 끌어올려요. 쓴 그대로 쓰려면 꺼 주세요.',
+    'Prompt changed — regenerate the preview before saving.': '문장이 바뀌었어요 — 저장 전에 미리보기를 다시 만들어 주세요.',
+    'Describe the look this template should produce…': '이 템플릿이 만들 분위기를 적어 주세요…',
+    'e.g. Luxe marble editorial': '예: 럭셔리 대리석 화보',
+    'e.g. Editorial marble backdrop for skincare & fragrance hero shots.': '예: 스킨케어·향수 대표컷용 대리석 화보 배경',
+    'Your balance refills the moment you\'re back — just hit Generate again.': '크레딧이 충전되면 바로 이어서 만들 수 있어요 — 생성만 다시 눌러 주세요.',
+    'Payment complete': '결제 완료',
+    'Ad Video (per scene · Basic / Premium)': '광고영상 (장면당 · 베이직 / 프리미엄)',
+    'Photo': '사진',
+    'Add product photo': '제품 사진 추가',
+    'Building your content pack…': '콘텐츠팩을 만들고 있어요…',
+    'Drop in one or a few product photos — we\'ll plan and make the content you need.': '제품 사진 한두 장만 올려 주세요 — 필요한 콘텐츠를 기획해서 만들어 드려요.',
+    'Open Shots →': '컷 열기 →',
+    'Be the first — create something in Shots (Public mode on) and it shows up here.': '처음을 열어 보세요 — 컷에서 공개 모드로 만들면 여기에 올라와요.',
+    'Shopping': '쇼핑'
   } };
   // ── (2026-07-29) EN 모드 역방향 사전 — 한국어 원문(DB 오피셜 네일 템플릿명)을 영어로 ──
   DICT.en = {
