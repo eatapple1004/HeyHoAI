@@ -27,12 +27,20 @@ router.get('/admin/trials', requireAdmin, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// 관리자: 활성/비활성 토글
+// 관리자: 기존 계정 수정 — 토큰 추가 지급 / 기간 변경 / 활성·비활성 토글
+// PATCH /api/admin/trials/:id  { addCredits?, days?, status? }
 router.patch('/admin/trials/:id', requireAdmin, async (req, res, next) => {
   try {
-    const status = await trial.setStatus(req.params.id, (req.body || {}).status);
-    res.json({ success: true, data: { id: req.params.id, status } });
-  } catch (err) { next(err); }
+    const body = req.body || {};
+    const out = { id: req.params.id };
+    if (body.addCredits != null) out.credits = await trial.grantCredits(req.params.id, body.addCredits);
+    if (body.days != null) out.days = await trial.setDays(req.params.id, body.days);
+    if (body.status != null) out.status = await trial.setStatus(req.params.id, body.status);
+    res.json({ success: true, data: out });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
 });
 
 // 본인 체험 상태(스튜디오 배너용). 비-체험이면 data=null.

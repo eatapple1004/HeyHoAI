@@ -156,7 +156,30 @@ async function setStatus(userId, status) {
   return s;
 }
 
+/**
+ * 관리자: 기존 체험 계정에 토큰(◈ 크레딧) 추가 지급.
+ * 크레딧 잔액을 늘리고, 발급액 표시(trial_image_quota)도 함께 증가시킨다(목록 바 정합).
+ * @returns {Promise<{balance:number, granted:number, added:number}>}
+ */
+async function grantCredits(userId, amount) {
+  const amt = Math.max(1, Math.min(parseInt(amount, 10) || 0, 10000000));
+  const chk = await query('SELECT is_trial FROM users WHERE id = $1', [userId]);
+  if (!chk.rows[0] || !chk.rows[0].is_trial) { const e = new Error('체험 계정이 아닙니다.'); e.statusCode = 404; throw e; }
+  await addCredits(userId, amt, { type: 'trial_grant', description: `체험 계정 토큰 추가 지급 ◈${amt}` });
+  const r = await query(
+    `UPDATE users SET trial_image_quota = trial_image_quota + $2, updated_at = now()
+       WHERE id = $1 RETURNING credit_balance, trial_image_quota`, [userId, amt]);
+  return { balance: r.rows[0].credit_balance, granted: r.rows[0].trial_image_quota, added: amt };
+}
+
+/** 관리자: 체험 기간(일) 변경. 첫 로그인 기준 N일. */
+async function setDays(userId, days) {
+  const d = Math.max(1, Math.min(parseInt(days, 10) || 7, 365));
+  await query('UPDATE users SET trial_days = $2, updated_at = now() WHERE id = $1 AND is_trial = true', [userId, d]);
+  return d;
+}
+
 module.exports = {
   createTrialAccount, startTrialIfNeeded, assertCanGenerate, consumeImages,
-  getStatus, listTrials, setStatus,
+  getStatus, listTrials, setStatus, grantCredits, setDays,
 };

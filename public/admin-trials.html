@@ -47,6 +47,7 @@ td .em{color:var(--dim);font-size:.8rem}
 .b-wait{background:rgba(255,206,122,.15);color:var(--gold)}
 .b-off{background:rgba(154,154,178,.15);color:var(--dim)}
 .bar{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:5px;width:120px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#d9608f)}
 .err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;padding:14px 16px;border-radius:12px;display:none}
 .err.show{display:block}
@@ -146,19 +147,43 @@ async function load(){
       const toggle=t.status==='disabled'
         ? `<button class="btn ghost" onclick="setStatus('${t.id}','active')">활성화</button>`
         : `<button class="btn ghost" onclick="setStatus('${t.id}','disabled')">비활성</button>`;
+      const actions=`<div class="acts">`
+        +`<button class="btn ghost" onclick="addTokens('${t.id}')">토큰+</button>`
+        +`<button class="btn ghost" onclick="editDays('${t.id}',${t.days})">기간</button>`
+        +`${toggle}</div>`;
       return `<tr>
         <td><b>${esc(t.companyName||'-')}</b><div class="em">${esc(t.email)}</div></td>
         <td>${statusBadge(t)}</td>
         <td>${left}</td>
         <td>◈${balance.toLocaleString()} / ◈${granted.toLocaleString()}<div class="bar"><i style="width:${pct}%"></i></div></td>
         <td class="em">${new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
-        <td>${toggle}</td></tr>`;
+        <td>${actions}</td></tr>`;
     }).join('');
   }catch(e){showErr('목록 불러오기 실패');}
 }
-async function setStatus(id,status){
-  await fetch('/api/admin/trials/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+async function patchTrial(id,payload,okMsg){
+  clearErr();
+  const res=await fetch('/api/admin/trials/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(res.status===403){showErr('관리자 권한이 필요합니다. admin 계정으로 로그인하세요.');return false;}
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok||!d.success){showErr(d.error||'수정 실패');return false;}
   load();
+  return true;
+}
+async function setStatus(id,status){ await patchTrial(id,{status}); }
+async function addTokens(id){
+  const v=prompt('추가 지급할 토큰(◈) 수량을 입력하세요.',' 1500');
+  if(v==null)return;
+  const n=parseInt(v,10);
+  if(!n||n<1){showErr('1 이상의 숫자를 입력하세요.');return;}
+  await patchTrial(id,{addCredits:n});
+}
+async function editDays(id,cur){
+  const v=prompt('체험 기간(일)을 입력하세요. (첫 로그인 기준)',String(cur||7));
+  if(v==null)return;
+  const n=parseInt(v,10);
+  if(!n||n<1){showErr('1 이상의 숫자를 입력하세요.');return;}
+  await patchTrial(id,{days:n});
 }
 load();
 </script>
