@@ -582,7 +582,7 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,-a
 .grp-out-h b{color:var(--brand)}
 /* 결과 = 넘겨보는 페이지(캐러셀) — 아래로 늘어지지 않게 */
 .caro{display:flex;align-items:center;gap:12px}
-.caro-stage{position:relative;flex:1;min-width:0;aspect-ratio:4/3;background:#f4f2fb;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.caro-stage{position:relative;flex:1;min-width:0;aspect-ratio:4/3;background:#f4f2fb;border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:pan-y;cursor:grab}
 .caro-slide{position:absolute;inset:0;display:none;align-items:center;justify-content:center}
 .caro-slide.on{display:flex}
 .caro-slide img{width:100%;height:100%;object-fit:contain}
@@ -635,7 +635,25 @@ footer b{color:var(--sub)}
   ${ctaBtn ? `<div class="cta-band"><h3>도입을 검토해 보시겠어요?</h3><p>${E(o.company)} 귀사에 맞는 활용 방안을 상담해 드립니다.</p>${ctaBtn}</div>` : ''}
 </div>
 <footer>© ${year} <b>Doppia</b> · 주식회사 아담컴퍼니 · doppia.ai<br>본 제안서는 ${E(o.company)} 귀사를 위해 준비되었습니다.</footer>
-<script>function dpToggle(el){var g=el.closest('.grp');if(g)g.classList.toggle('open');}function caroMove(btn,dir){var c=btn.closest('.caro');var s=c.querySelectorAll('.caro-slide');if(!s.length)return;var i=(parseInt(c.dataset.i||0,10)+dir+s.length)%s.length;c.dataset.i=i;for(var k=0;k<s.length;k++)s[k].classList.toggle('on',k===i);var cc=c.querySelector('.caro-count .cur');if(cc)cc.textContent=i+1;}<\/script>
+<script>
+function dpToggle(el){var g=el.closest('.grp');if(g)g.classList.toggle('open');}
+function caroGo(c,dir){var s=c.querySelectorAll('.caro-slide');if(!s.length)return;var i=(parseInt(c.dataset.i||0,10)+dir+s.length)%s.length;c.dataset.i=i;for(var k=0;k<s.length;k++)s[k].classList.toggle('on',k===i);var cc=c.querySelector('.caro-count .cur');if(cc)cc.textContent=i+1;}
+function caroMove(btn,dir){var c=btn.closest('.caro');if(c)caroGo(c,dir);}
+document.addEventListener('DOMContentLoaded',function(){
+  var caros=document.querySelectorAll('.caro');
+  for(var n=0;n<caros.length;n++){(function(c){
+    var stage=c.querySelector('.caro-stage')||c,x0=null,y0=null,swiping=false;
+    function start(x,y){x0=x;y0=y;swiping=false;}
+    function move(x,y){if(x0===null)return;if(Math.abs(x-x0)>Math.abs(y-y0)&&Math.abs(x-x0)>10)swiping=true;}
+    function end(x){if(x0===null)return;var dx=x-x0;x0=null;if(Math.abs(dx)>40)caroGo(c,dx<0?1:-1);}
+    stage.addEventListener('touchstart',function(e){var t=e.changedTouches[0];start(t.clientX,t.clientY);},{passive:true});
+    stage.addEventListener('touchmove',function(e){var t=e.changedTouches[0];move(t.clientX,t.clientY);},{passive:true});
+    stage.addEventListener('touchend',function(e){var t=e.changedTouches[0];end(t.clientX);},{passive:true});
+    stage.addEventListener('mousedown',function(e){start(e.clientX,e.clientY);e.preventDefault();});
+    window.addEventListener('mouseup',function(e){if(x0!==null)end(e.clientX);});
+  })(caros[n]);}
+});
+<\/script>
 </body></html>`;
 }
 
