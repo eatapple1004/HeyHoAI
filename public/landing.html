@@ -23,7 +23,20 @@
   if(location.pathname!=='/'&&location.pathname!=='/landing')return;
   var l=localStorage.getItem('doppia_lang')||(document.cookie.match(/(?:^|;\s*)doppia_lang=([^;]+)/)||[])[1];
   if(!l&&(navigator.language||'').toLowerCase().slice(0,2)==='ko')l='ko';
-  if(l==='ko')location.replace('/ko'+location.search+location.hash);
+  if(l==='ko'){window.__lpRedirect=1;location.replace('/ko'+location.search+location.hash);return;}
+}catch(e){}})();
+</script>
+<script>/*LP-LANGKEEP — 지금 보고 있는 랜딩의 언어를 선호로 저장한다.
+  이게 없으면 /ko(한국어 랜딩)를 봐도 doppia_lang이 비어 있고, 앱의 i18n.js는 저장값이 없으면 'en'이라
+  "랜딩은 한글인데 스튜디오는 영어"가 된다(실측: /ko → 무료로 시작 → /studio 가 html lang=en).
+  언어는 <html lang>에서 읽는다 — 이 스크립트는 ko.html에도 그대로 복사되고 거기선 lang="ko"이기 때문.
+  (LP-LANG 블록은 생성기가 /ko용으로 지우므로 여기에 얹으면 안 된다.)
+  저장소·키는 스위치(LP-LANGSW)와 동일 — 두 경로가 같은 값을 쓴다. */
+(function(){try{
+  if(window.__lpRedirect)return;   // /ko로 넘어가는 중이면 그쪽에서 쓴다
+  var l=document.documentElement.lang==='ko'?'ko':'en';
+  if(localStorage.getItem('doppia_lang')!==l)localStorage.setItem('doppia_lang',l);
+  document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax';
 }catch(e){}})();
 </script>
 <style>
