@@ -1,14 +1,18 @@
 const crypto = require('crypto');
 const { query } = require('../db/client');
 const { hashPassword } = require('../auth/password');
+const { addCredits } = require('../credits/credit.service');
 
 /**
- * 체험 계정 모듈 — 회사별 전용 계정. 첫 로그인 시점부터 N일 + 이미지 M장 제한.
- *  - createTrialAccount: 관리자 발급 (role='user', is_trial=true)
+ * 체험 계정 모듈 — 회사별 전용 계정. 첫 로그인 시점부터 N일 + 토큰(◈ 크레딧) 한도.
+ *  - createTrialAccount: 관리자 발급 (role='user', is_trial=true) + 토큰 지급
  *  - startTrialIfNeeded: 첫 로그인 시 trial_started_at 세팅 (카운트 시작점)
- *  - assertCanGenerate: 생성 전 게이트 (만료/소진 시 statusCode 에러 throw)
- *  - consumeImages: 생성 성공 후 사용량 증가
+ *  - assertCanGenerate: 생성 전 게이트 (기간 만료 시 throw · 사용량은 크레딧 잔액이 담당)
  *  - listTrials / getStatus: 관리자 목록 / 본인 상태
+ *
+ * ⚠️ 순수 토큰 기반(2026-07-31): 사용 한도 = 크레딧 잔액(일반 유저처럼 생성 시 정상 차감,
+ *    0이면 402). 과거 '사진 장수(trial_image_quota)' 게이팅은 폐지 — 해당 컬럼은 이제
+ *    '지급 토큰(발급액)' 표시용으로 재활용한다(관리자 목록의 사용/잔액 바 계산).
  */
 
 function genPassword(len = 10) {
@@ -33,12 +37,13 @@ async function uniqueEmail(base) {
 
 /**
  * 체험 계정 생성. email/password 미지정 시 자동 생성. 평문 비밀번호를 1회 반환한다.
- * @returns {Promise<{id,email,password,companyName,quota,days}>}
+ * 지급 토큰(◈ 크레딧)만큼 크레딧 원장에 적립한다(발급액 = trial_image_quota에 표시용 기록).
+ * @returns {Promise<{id,email,password,companyName,credits,days}>}
  */
-async function createTrialAccount({ companyName, email, password, quota = 200, days = 7 }) {
+async function createTrialAccount({ companyName, email, password, credits = 1500, days = 7 }) {
   const company = String(companyName || '').trim();
   if (!company) { const e = new Error('회사명을 입력하세요.'); e.statusCode = 400; throw e; }
-  const q = Math.max(1, Math.min(parseInt(quota, 10) || 200, 100000));
+  const c = Math.max(1, Math.min(parseInt(credits, 10) || 1500, 10000000));
   const d = Math.max(1, Math.min(parseInt(days, 10) || 7, 365));
   const mail = (email && String(email).trim().toLowerCase()) || await uniqueEmail(company);
   const dup = await query('SELECT 1 FROM users WHERE email = $1', [mail]);
@@ -47,12 +52,15 @@ async function createTrialAccount({ companyName, email, password, quota = 200, d
 
   const r = await query(
     `INSERT INTO users (email, password_hash, display_name, company_name, role, status,
-        is_trial, trial_days, trial_image_quota, trial_image_used)
-     VALUES ($1,$2,$3,$3,'user','active', true,$4,$5,0)
+        is_trial, trial_days, trial_image_quota, trial_image_used, credit_balance)
+     VALUES ($1,$2,$3,$3,'user','active', true,$4,$5,0,0)
      RETURNING id, email, company_name`,
-    [mail, hashPassword(pw), company, d, q]
+    [mail, hashPassword(pw), company, d, c] // trial_image_quota=발급 토큰(표시용)
   );
-  return { id: r.rows[0].id, email: mail, password: pw, companyName: company, quota: q, days: d };
+  const userId = r.rows[0].id;
+  // 토큰(크레딧) 지급 — 원장 기록 포함. 이후 생성은 이 잔액에서 정상 차감된다.
+  await addCredits(userId, c, { type: 'trial_grant', description: `체험 계정 발급 지급 ◈${c}` });
+  return { id: userId, email: mail, password: pw, companyName: company, credits: c, days: d };
 }
 
 /** 첫 로그인 시 카운트다운 시작점 기록 (체험 계정 + 아직 시작 안 한 경우만). */
@@ -65,13 +73,15 @@ async function startTrialIfNeeded(userId) {
 }
 
 /**
- * 생성 게이트. 체험 계정이면 만료/소진 검사. 비-체험 계정은 null 반환(제한 없음).
- * @throws statusCode 403 (만료/소진) — message에 사유.
- * @returns {Promise<null|{used,quota,remaining}>}
+ * 생성 게이트. 체험 계정이면 기간(일) 만료만 검사한다.
+ * 사용량 한도는 크레딧 잔액이 담당 → null을 반환해 generate.route가 일반 크레딧 차감을 적용하게 한다.
+ * (잔액 0이면 chargeGeneration이 402를 던짐)
+ * @throws statusCode 403 (기간 만료) — message에 사유.
+ * @returns {Promise<null>}
  */
-async function assertCanGenerate(userId, count = 1) {
+async function assertCanGenerate(userId) {
   const r = await query(
-    `SELECT is_trial, trial_started_at, trial_days, trial_image_quota, trial_image_used,
+    `SELECT is_trial, trial_started_at, trial_days,
             (trial_started_at + (trial_days || ' days')::interval) AS expires_at,
             now() AS now
        FROM users WHERE id = $1`, [userId]);
@@ -83,12 +93,7 @@ async function assertCanGenerate(userId, count = 1) {
   else if (u.now > u.expires_at) {
     const e = new Error(`체험 기간(${u.trial_days}일)이 만료되었습니다.`); e.statusCode = 403; e.trial = true; throw e;
   }
-  if (u.trial_image_used + count > u.trial_image_quota) {
-    const left = Math.max(0, u.trial_image_quota - u.trial_image_used);
-    const e = new Error(`체험 생성 한도를 초과했습니다. (남은 ${left}장 / 총 ${u.trial_image_quota}장)`);
-    e.statusCode = 403; e.trial = true; throw e;
-  }
-  return { used: u.trial_image_used, quota: u.trial_image_quota, remaining: u.trial_image_quota - u.trial_image_used };
+  return null; // 사용 한도 = 크레딧 잔액. 일반 차감 경로로 진행.
 }
 
 /** 생성 성공 후 사용량 증가(체험 계정만). */
@@ -99,10 +104,10 @@ async function consumeImages(userId, count = 1) {
   ).catch(() => {});
 }
 
-/** 본인 체험 상태(스튜디오 배너용). 비-체험이면 null. */
+/** 본인 체험 상태(스튜디오 배너용). 비-체험이면 null. quota=발급 토큰·balance=잔액. */
 async function getStatus(userId) {
   const r = await query(
-    `SELECT is_trial, company_name, trial_started_at, trial_days, trial_image_quota, trial_image_used,
+    `SELECT is_trial, company_name, trial_started_at, trial_days, trial_image_quota, credit_balance,
             (trial_started_at + (trial_days || ' days')::interval) AS expires_at, now() AS now
        FROM users WHERE id = $1`, [userId]);
   const u = r.rows[0];
@@ -110,31 +115,36 @@ async function getStatus(userId) {
   const started = !!u.trial_started_at;
   const expired = started && u.now > u.expires_at;
   const daysLeft = started ? Math.max(0, Math.ceil((u.expires_at - u.now) / 86400000)) : u.trial_days;
+  const granted = u.trial_image_quota;          // 발급 토큰(표시용)
+  const balance = u.credit_balance;             // 남은 토큰
   return {
     isTrial: true, companyName: u.company_name,
     started, expired,
-    daysLeft, quota: u.trial_image_quota, used: u.trial_image_used,
-    remaining: Math.max(0, u.trial_image_quota - u.trial_image_used),
+    daysLeft, quota: granted, balance, used: Math.max(0, granted - balance),
+    remaining: Math.max(0, balance),
     expiresAt: u.expires_at,
   };
 }
 
-/** 관리자: 전체 체험 계정 + 상태. */
+/** 관리자: 전체 체험 계정 + 상태. quota=발급 토큰·balance=잔액·used=사용(발급-잔액). */
 async function listTrials() {
   const r = await query(
     `SELECT id, email, company_name, status, created_at, trial_started_at, trial_days,
-            trial_image_quota, trial_image_used,
+            trial_image_quota, credit_balance,
             (trial_started_at + (trial_days || ' days')::interval) AS expires_at, now() AS now
        FROM users WHERE is_trial = true ORDER BY created_at DESC`);
   return r.rows.map((u) => {
     const started = !!u.trial_started_at;
     const expired = started && u.now > u.expires_at;
     const daysLeft = started ? Math.max(0, Math.ceil((u.expires_at - u.now) / 86400000)) : u.trial_days;
+    const granted = u.trial_image_quota;        // 발급 토큰(표시용)
+    const balance = u.credit_balance;           // 남은 토큰
     return {
       id: u.id, email: u.email, companyName: u.company_name, status: u.status,
       createdAt: u.created_at, startedAt: u.trial_started_at, started, expired,
-      days: u.trial_days, daysLeft, quota: u.trial_image_quota, used: u.trial_image_used,
-      remaining: Math.max(0, u.trial_image_quota - u.trial_image_used),
+      days: u.trial_days, daysLeft,
+      quota: granted, balance, used: Math.max(0, granted - balance),
+      remaining: Math.max(0, balance),
     };
   });
 }

@@ -56,7 +56,7 @@ td .em{color:var(--dim);font-size:.8rem}
 <body>
 <div class="wrap">
   <h1><span class="dot"></span> 체험 계정 관리</h1>
-  <div class="sub">회사별 전용 체험 계정 발급 — <b>첫 로그인 시점부터 7일 · 사진 200장</b> 제한. (관리자 전용)</div>
+  <div class="sub">회사별 전용 체험 계정 발급 — <b>첫 로그인 시점부터 N일 · 토큰 ◈N</b> 지급. 토큰(크레딧)은 생성 시 정상 차감되고, 0이 되면 중단됩니다. (관리자 전용)</div>
 
   <div class="err" id="err"></div>
 
@@ -67,7 +67,7 @@ td .em{color:var(--dim);font-size:.8rem}
       <div class="field"><label>회사명 *</label><input id="company" placeholder="예: 요고마요"></div>
       <div class="field"><label>이메일 (비우면 자동생성)</label><input id="email" placeholder="auto@trial.doppia.ai"></div>
       <div class="field"><label>기간(일)</label><input id="days" class="sm" type="number" value="7"></div>
-      <div class="field"><label>사진 한도</label><input id="quota" class="sm" type="number" value="200"></div>
+      <div class="field"><label>지급 토큰(◈)</label><input id="credits" class="sm" type="number" value="1500" step="100"></div>
       <button class="btn" id="createBtn" onclick="createTrial()">발급</button>
     </div>
     <div class="hint">발급 시 이메일·비밀번호가 1회 표시됩니다. 비밀번호는 다시 볼 수 없으니 꼭 복사해 전달하세요.</div>
@@ -85,7 +85,7 @@ td .em{color:var(--dim);font-size:.8rem}
   <div class="card">
     <h2>발급된 계정 <button class="btn ghost" onclick="load()" style="margin-left:8px">새로고침</button></h2>
     <table>
-      <thead><tr><th>회사 / 이메일</th><th>상태</th><th>남은 기간</th><th>사진 사용</th><th>발급일</th><th></th></tr></thead>
+      <thead><tr><th>회사 / 이메일</th><th>상태</th><th>남은 기간</th><th>토큰 (잔액/발급)</th><th>발급일</th><th></th></tr></thead>
       <tbody id="rows"><tr><td colspan="6" class="empty">불러오는 중…</td></tr></tbody>
     </table>
   </div>
@@ -99,7 +99,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 function cp(id){navigator.clipboard.writeText($(id).textContent);}
 let LAST=null;
 function cpAll(){if(!LAST)return;navigator.clipboard.writeText(
-  `Doppia 체험 계정\n회사: ${LAST.companyName}\n로그인: https://doppia.ai/saas-login\n이메일: ${LAST.email}\n비밀번호: ${LAST.password}\n제한: 첫 로그인 후 ${LAST.days}일 · 사진 ${LAST.quota}장`);}
+  `Doppia 체험 계정\n회사: ${LAST.companyName}\n로그인: https://doppia.ai/saas-login\n이메일: ${LAST.email}\n비밀번호: ${LAST.password}\n제한: 첫 로그인 후 ${LAST.days}일 · 토큰 ◈${LAST.credits}`);}
 
 async function createTrial(){
   clearErr();
@@ -109,7 +109,7 @@ async function createTrial(){
   try{
     const res=await fetch('/api/admin/trials',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({companyName:company,email:$('email').value.trim()||undefined,
-        days:parseInt($('days').value,10)||7,quota:parseInt($('quota').value,10)||200})});
+        days:parseInt($('days').value,10)||7,credits:parseInt($('credits').value,10)||1500})});
     const d=await res.json();
     if(res.status===403){showErr('관리자 권한이 필요합니다. admin 계정으로 로그인하세요.');return;}
     if(!res.ok||!d.success){showErr(d.error||'발급 실패');return;}
@@ -117,7 +117,7 @@ async function createTrial(){
     $('cCompany').textContent=d.data.companyName;
     $('cEmail').textContent=d.data.email;
     $('cPw').textContent=d.data.password;
-    $('cLimit').textContent=`첫 로그인 후 ${d.data.days}일 · 사진 ${d.data.quota}장`;
+    $('cLimit').textContent=`첫 로그인 후 ${d.data.days}일 · 토큰 ◈${d.data.credits}`;
     $('cred').classList.add('show');
     $('company').value='';$('email').value='';
     load();
@@ -140,7 +140,8 @@ async function load(){
     const list=d.data||[];
     if(!list.length){$('rows').innerHTML='<tr><td colspan="6" class="empty">아직 발급된 계정이 없습니다.</td></tr>';return;}
     $('rows').innerHTML=list.map(t=>{
-      const pct=Math.min(100,Math.round(t.used/t.quota*100));
+      const granted=t.quota||0, balance=t.balance||0;
+      const pct=granted>0?Math.min(100,Math.round(t.used/granted*100)):0;
       const left=t.started?(t.expired?'만료됨':`D-${t.daysLeft}`):`${t.days}일(대기)`;
       const toggle=t.status==='disabled'
         ? `<button class="btn ghost" onclick="setStatus('${t.id}','active')">활성화</button>`
@@ -149,7 +150,7 @@ async function load(){
         <td><b>${esc(t.companyName||'-')}</b><div class="em">${esc(t.email)}</div></td>
         <td>${statusBadge(t)}</td>
         <td>${left}</td>
-        <td>${t.used} / ${t.quota}<div class="bar"><i style="width:${pct}%"></i></div></td>
+        <td>◈${balance.toLocaleString()} / ◈${granted.toLocaleString()}<div class="bar"><i style="width:${pct}%"></i></div></td>
         <td class="em">${new Date(t.createdAt).toLocaleDateString('ko-KR')}</td>
         <td>${toggle}</td></tr>`;
     }).join('');

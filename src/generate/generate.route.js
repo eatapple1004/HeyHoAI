@@ -417,7 +417,8 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
     }
 
     // ─── 크레딧 차감 (개인=admin면제, 팀=풀차감/viewer 403, 부족 시 402) ───
-    //     체험 계정은 크레딧 대신 체험 한도로 게이팅 → 과금 면제(charge=null).
+    //     체험 계정도 순수 토큰 기반(2026-07-31): assertCanGenerate가 기간만 게이팅하고 null 반환
+    //     → 아래 일반 차감 경로를 그대로 타서 발급 토큰(크레딧)에서 정상 차감된다.
     const creditService = require('../credits/credit.service');
     const teamCredit = require('../teams/team.credit');
     let charge = null;
