@@ -175,8 +175,8 @@ app.get('/heyhoai/accounts/:id/analytics', requirePage, (_req, res) => {
 app.get('/heyhoai/editor/page', requirePage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'editor.html'));
 });
-// 관리자: 체험 계정 발급 페이지 (로그인 필요 + API는 admin 가드)
-app.get('/admin-trials', requirePage, (_req, res) => {
+// 관리자 전용: 체험 계정 발급 페이지 (페이지 로드부터 admin 가드 · 비관리자 403)
+app.get('/admin-trials', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-trials.html'));
 });
 
