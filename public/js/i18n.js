@@ -100,7 +100,6 @@
       '제품 사진 한 장을 완성된 광고로. 씬을 이어 붙이고 음악까지 얹어 Reels · TikTok에 바로 올립니다.',
     // gallery
     '4 categories · dozens of templates, zero prompts': '4개 카테고리 · 템플릿 수십 종, 프롬프트 없이',
-    'Come back daily — your streak earns free credits': '매일 들르시면 연속 출석으로 크레딧이 쌓입니다',
     'Turn one look into a full week\'s set in a tap': '한 번 탭으로 일주일치 세트를 만듭니다',
     'Create Reel ·': 'Reel 만들기 ·',
     'Describe the motion for your Reel': 'Reel에 넣을 움직임을 적어주세요',
@@ -927,7 +926,6 @@
     'Total length in seconds': '전체 길이(초)',
     'Number of images': '이미지 수',
     'Maybe later': '나중에 할게요',
-    'Keep creating': '계속 만들기',
     '✎ Edit prompt': '✎ 프롬프트 수정',
     '↻ Regenerate preview': '↻ 미리보기 다시 만들기',
     '— what to avoid (optional)': '— 피하고 싶은 것 (선택)',

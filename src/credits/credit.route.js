@@ -31,19 +31,9 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-/**
- * POST /api/credits/checkin
- * 일일 출석 → 스트릭/데일리 보너스. (첫 생성 경험 있는 사용자만)
- */
-router.post('/checkin', async (req, res, next) => {
-  try {
-    const streakService = require('./streak.service');
-    const result = await streakService.checkin(req.user.id, req.user.role);
-    res.json({ success: true, data: result });
-  } catch (err) {
-    next(err);
-  }
-});
+// (2026-07-31) POST /api/credits/checkin 삭제 — 데일리 보너스/스트릭 기능 폐지(사용자 결정).
+//   streak.service.js 도 함께 제거. users.streak_count·streak_best·last_bonus_at 컬럼은 남겨 둔다
+//   (지난 지급 이력이고, 지우는 건 되돌릴 수 없다. 읽는 코드는 이제 없다).
 
 /**
  * POST /api/credits/points/exchange  { amount }
