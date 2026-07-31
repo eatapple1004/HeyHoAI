@@ -254,8 +254,14 @@
   .rb-ch{padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.035);border:1px solid var(--border);font-size:11px}
   .rb-ch .k{margin-right:1px}
   .ch-dot{width:9px;height:9px;border-radius:3px;display:inline-block;border:1px solid rgba(255,255,255,.25);margin-right:1px}
-  .rb-del-row{margin-top:10px}
-  .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  .rb-del-row{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rb-del,.rb-dl{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  /* 일괄 저장 = 삭제와 같은 칩 모양, 색만 중립(강조 없음). 아이콘은 카드 다운로드(RC_SVG.dl)와 같은 선 아이콘. */
+  .rb-dl svg{width:13px;height:13px;display:block;opacity:.9}
+  .rb-dl .n{color:var(--faint);font-weight:600}
+  .rb-dl:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
+  .rb-dl:hover .n{color:var(--dim)}
+  .rb-dl:disabled{opacity:.6;cursor:default}
   .rb-edit-row{margin-top:8px}
   .rb-editvid{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);text-decoration:none}
   .rb-editvid:hover{filter:brightness(1.1)}
@@ -1032,7 +1038,11 @@ function batchRowHtml(b) {
   const chRow = (() => { const c = b.choices; if (!c || typeof c !== 'object') return '';
     const chips = CH_ORDER.filter(k => c[k]).map(k => { const v = String(c[k]); const dot = (k === 'cutBg') ? `<i class="ch-dot" style="background:${esc(v)}"></i>` : ''; const txt = (k === 'detail' && v.length > 28) ? v.slice(0, 28) + '…' : v; return `<span class="rb-src-item rb-ch" title="${esc((CH_LBL[k] || k) + ': ' + v)}"><span class="k">${esc(CH_LBL[k] || k)}</span>${dot}${esc(txt)}</span>`; });
     return chips.length ? `<div class="rb-src-row rb-ch-row">${chips.join('')}</div>` : ''; })();
-  const del = `<div class="rb-del-row"><button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">${isKO() ? '🗑 삭제' : '🗑 Delete'}</button></div>`;
+  // ⤓ 일괄 저장 — 이 크리에이션(배치)의 결과물 전부. 1장짜리는 카드 호버 다운로드가 이미 있어 숨긴다.
+  const dlAll = (b.items.length > 1)
+    ? `<button class="rb-dl" type="button" onclick="downloadBatch(this,${b.items[0].idx})" title="${isKO() ? '이 크리에이션의 결과물을 전부 저장합니다' : 'Save every result in this creation'}">${RC_SVG.dl}${isKO() ? '전체 다운로드' : 'Download all'}<span class="n">${b.items.length}</span></button>`
+    : '';
+  const del = `<div class="rb-del-row">${dlAll}<button class="rb-del" type="button" onclick="delBatch(this,'${b.idxs.join(',')}')">${isKO() ? '🗑 삭제' : '🗑 Delete'}</button></div>`;
   // 🎬 Edit video는 배치 메타가 아니라 각 영상 카드(studioMediaCard)에 붙는다 — "이 영상만" 명확히(팩 전체 아님).
   return `<div class="result-row"><div class="rb-media">${media}</div><div class="rb-meta">${head}${specs}${srcRow}${chRow}${del}</div></div>`;
 }
@@ -1060,6 +1070,33 @@ async function toggleCardVis(btn, idx) {   // 글로브 = 공개/비공개 토�
     if (window.toast) { if (next === 'private' && vis !== 'private') toast(isKO() ? '비공개는 유료 플랜이 필요해요 — 공개 유지.' : 'Private Mode needs a paid plan — kept public.', 'error'); else toast(priv ? (isKO() ? '비공개로 바꿨어요.' : 'Now private.') : (isKO() ? '공개로 바꿨어요 — Explore에 노출됩니다.' : 'Now public — shown in Explore.')); }
   } catch (e) { if (window.toast) toast((isKO() ? '변경 실패: ' : 'Update failed: ') + (e.message || e), 'error'); }
   finally { btn.disabled = false; }
+}
+// ⤓ 배치 일괄 저장 — 미디어가 동일 출처(/images/...)라 download 속성이 그대로 먹는다(파일명 지정 가능).
+//   ZIP이 아니라 개별 파일 연속 저장이다. 브라우저가 "여러 파일 다운로드 허용?"을 사이트당 1회 묻는다(허용하면 이후 안 물음).
+//   스태거(350ms)는 pack downloadAll()과 같은 이유 — 동시에 쏘면 브라우저가 뒤쪽을 조용히 버린다.
+function batchFileBase(b) {
+  const raw = String(b.templateName || b.promptText || 'doppia').trim();
+  const slug = raw.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return 'doppia-' + (slug || 'creation');
+}
+function downloadBatch(btn, idx) {
+  if (btn.disabled) return;
+  const b = BATCHES.find(x => x.items.some(i => i.idx === idx));
+  const items = b ? b.items.filter(i => i.url) : [];
+  if (!items.length) return;
+  const base = batchFileBase(b), n = items.length, restore = btn.innerHTML;
+  btn.disabled = true;
+  items.forEach((it, i) => setTimeout(() => {
+    const ext = (String(it.url).split('.').pop() || 'jpg').split(/[?#]/)[0];
+    const a = document.createElement('a');
+    a.href = it.url; a.download = base + '-' + String(i + 1).padStart(2, '0') + '.' + ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    btn.innerHTML = RC_SVG.dl + (isKO() ? '저장 중' : 'Saving') + '<span class="n">' + (i + 1) + '/' + n + '</span>';
+    if (i === n - 1) setTimeout(() => {
+      btn.innerHTML = restore; btn.disabled = false;
+      if (window.toast) toast(isKO() ? n + '장을 저장했어요.' : 'Saved ' + n + ' files.');
+    }, 500);
+  }, i * 350));
 }
 async function delBatch(btn, idxsCsv) {   // 크리에이션 삭제(배치 = 여러 장이면 전부). /api/generate/creations/:idx DELETE
   if (btn.disabled) return;

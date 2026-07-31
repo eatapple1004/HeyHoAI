@@ -492,8 +492,14 @@
   .rb-ch .k{margin-right:1px}
   .ch-dot{width:9px;height:9px;border-radius:3px;display:inline-block;border:1px solid rgba(255,255,255,.25);margin-right:1px}
   .rb-specs .spec:not(:first-child)::before{content:"·";margin:0 6px;color:rgba(255,255,255,.16);font-weight:400}
-  .rb-del-row{margin-top:10px}
-  .rb-del{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  .rb-del-row{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rb-del,.rb-dl{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border)}
+  /* 일괄 저장 = 삭제와 같은 칩 모양, 색만 중립(강조 없음). 아이콘은 카드 다운로드(RC_SVG.dl)와 같은 선 아이콘. */
+  .rb-dl svg{width:13px;height:13px;display:block;opacity:.9}
+  .rb-dl .n{color:var(--faint);font-weight:600}
+  .rb-dl:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.08)}
+  .rb-dl:hover .n{color:var(--dim)}
+  .rb-dl:disabled{opacity:.6;cursor:default}
   .rb-del:hover{color:#ff5f6e;border-color:#ff5f6e;background:rgba(255,95,110,.1)}
   .rb-del:disabled{opacity:.6;cursor:default}
   .rb-date{font-size:12.5px;font-weight:700;letter-spacing:.3px;color:var(--dim);margin:8px 0 -6px;padding-top:18px;border-top:1px solid var(--border)}
@@ -4275,7 +4281,9 @@ function batchRowHtml(b){
     return chips.length?`<div class="rb-src-row rb-ch-row">${chips.join('')}</div>`:''; })();
   // (2026-07-03) 이 creation(배치) 삭제 — Library My creations에서도 사라짐(같은 행). 승격된 템플릿은 유지. 생성 중(placeholder)·idx 없는 건 버튼 숨김.
   const delIdxs=b.loading?[]:b.items.map(i=>i.idx).filter(x=>x!=null);
-  const delBtn=delIdxs.length?`<div class="rb-del-row"><button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button></div>`:'';
+  // ⤓ 일괄 저장 — 이 creation의 결과물 전부. 1장짜리는 카드 호버 다운로드가 이미 있어 숨긴다. 생성 중엔 안 띄운다.
+  const dlAllBtn=(!b.loading&&usable.length>1)?`<button class="rb-dl" type="button" onclick="downloadBatch(this,${usable[0].idx})" title="Save every result in this creation">${RC_SVG.dl}Download all<span class="n">${usable.length}</span></button>`:'';
+  const delBtn=(delIdxs.length||dlAllBtn)?`<div class="rb-del-row">${dlAllBtn}${delIdxs.length?`<button class="rb-del" type="button" onclick='deleteStudioBatch(this,${JSON.stringify(delIdxs)})' title="Delete this creation">🗑 Delete</button>`:''}</div>`:'';
   // Ad Video 씬 스트립 — 렌더 중일 때만. 이건 **진행 표시**지 편집기가 아니다(E: 오븐 카드가 곧 "생성보기").
   // ⚠️ 완성분에 편집 스트립(ugcSceneStripHtml)을 붙이지 말 것. 편집은 조리대 전용이다(2026-07-17 결정):
   //   ① 오븐엔 레이어드 플레이어가 없다(#ugcInline 전용) → 같은 버튼인데 "고치면 즉시 보임"이 "Apply→재굽기 왕복"이 된다.
@@ -4880,6 +4888,31 @@ async function deleteStudioFailed(btn,idx){
   }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('Delete failed','error'); }
 }
 // 이 배치(creation)의 모든 이미지 삭제 → 서버(generation_results 행) 제거 + 피드에서 행 제거. Library My creations도 같은 행이라 자동 반영. 승격 템플릿은 영향 없음.
+// ⤓ 배치 일괄 저장 — 미디어가 동일 출처(/images/...)라 download 속성이 그대로 먹는다(파일명 지정 가능).
+//   ZIP이 아니라 개별 파일 연속 저장이다. 브라우저가 "여러 파일 다운로드 허용?"을 사이트당 1회 묻는다(허용하면 이후 안 물음).
+//   스태거(350ms) — 동시에 쏘면 브라우저가 뒤쪽을 조용히 버린다.
+function batchFileBase(b){
+  const raw=String(b.templateName||b.promptText||'doppia').trim();
+  const slug=raw.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  return 'doppia-'+(slug||'creation');
+}
+function downloadBatch(btn,idx){
+  if(btn.disabled)return;
+  const b=STUDIO_BATCHES.find(x=>x.items.some(i=>i.idx===idx));
+  const items=b?b.items.filter(i=>i.url):[];
+  if(!items.length)return;
+  const base=batchFileBase(b),n=items.length,restore=btn.innerHTML;
+  btn.disabled=true;
+  items.forEach((it,i)=>setTimeout(()=>{
+    const ext=(String(it.url).split('.').pop()||'jpg').split(/[?#]/)[0];
+    const a=document.createElement('a');
+    a.href=it.url; a.download=base+'-'+String(i+1).padStart(2,'0')+'.'+ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    btn.innerHTML=RC_SVG.dl+'Saving<span class="n">'+(i+1)+'/'+n+'</span>';
+    if(i===n-1)setTimeout(()=>{ btn.innerHTML=restore; btn.disabled=false;
+      if(window.toast)toast('Saved '+n+' files.'); },500);
+  },i*350));
+}
 async function deleteStudioBatch(btn,idxs){
   if(!idxs||!idxs.length)return;
   if(!confirm('Delete this creation? It’s removed from your Library too. Templates you already added stay.'))return;
