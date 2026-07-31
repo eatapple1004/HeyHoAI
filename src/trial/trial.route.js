@@ -5,11 +5,14 @@ const trial = require('./trial.service');
 const router = Router();
 
 // ── 관리자: 체험 계정 발급 ──
-// POST /api/admin/trials  { companyName, email?, password?, quota?, days? }
+// POST /api/admin/trials  { companyName, email?, password?, credits?, days? }
 router.post('/admin/trials', requireAdmin, async (req, res, next) => {
   try {
-    const { companyName, email, password, quota, days } = req.body || {};
-    const acct = await trial.createTrialAccount({ companyName, email, password, quota, days });
+    const { companyName, email, password, credits, quota, days } = req.body || {};
+    const acct = await trial.createTrialAccount({
+      companyName, email, password, days,
+      credits: credits != null ? credits : quota, // quota=구버전 클라 호환
+    });
     res.json({ success: true, data: acct }); // password는 이 응답에서만 1회 노출
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
