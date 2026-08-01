@@ -154,6 +154,9 @@ const envSchema = z.object({
   PORTONE_STORE_ID: z.string().optional(),       // store-...  (공개)
   PORTONE_CHANNEL_KEY: z.string().optional(),    // channel-key-...  (공개, 테스트 채널)
   PORTONE_API_SECRET: z.string().optional(),     // V2 API Secret (서버 검증)
+  // 심사 대기 등으로 PortOne을 임시로 끄고 싶을 때(키는 보존). false/0/off면 configured()=false
+  // → buyPack 폴백이 Eximbay·Lemon Squeezy로 넘어감. 승인되면 이 값만 지우면 원복.
+  PORTONE_ENABLED: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);

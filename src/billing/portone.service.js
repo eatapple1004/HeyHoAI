@@ -12,6 +12,9 @@ const { PACKS } = require('./billing.route');
 const API = 'https://api.portone.io';
 
 function configured() {
+  // 임시 킬스위치: PORTONE_ENABLED=false/0/off/no 면 키가 있어도 비활성 처리(심사 대기 중 LS 브릿지 우선용).
+  const flag = String(env.PORTONE_ENABLED == null ? '' : env.PORTONE_ENABLED).trim().toLowerCase();
+  if (flag === 'false' || flag === '0' || flag === 'off' || flag === 'no') return false;
   return Boolean(env.PORTONE_STORE_ID && env.PORTONE_CHANNEL_KEY && env.PORTONE_API_SECRET);
 }
 // 프론트 노출용 공개 설정(시크릿 제외)
