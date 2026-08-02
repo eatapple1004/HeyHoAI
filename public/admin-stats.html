@@ -6,11 +6,11 @@
 <title>통계 · Doppia Admin</title>
 <style>
 :root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
-  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;--blue:#60a5fa;
   --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
-.wrap{max-width:1120px;margin:0 auto}
+.wrap{max-width:1180px;margin:0 auto}
 h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
 h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
 .sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
@@ -18,34 +18,56 @@ h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135d
 .nav a{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px}
 .nav a:hover{color:var(--text);border-color:var(--accent2)}
 .nav a.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
-.sechead{font-size:.8rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--faint);margin:26px 2px 12px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 18px 16px}
-.stat .k{font-size:.78rem;color:var(--dim);font-weight:600;margin-bottom:8px}
-.stat .v{font-size:1.9rem;font-weight:800;letter-spacing:-.5px}
-.stat .s{font-size:.76rem;color:var(--faint);margin-top:5px}
-.stat .v.grn{color:var(--green)} .stat .v.gld{color:var(--gold)} .stat .v.pnk{color:var(--pink)} .stat .v.acc{color:var(--accent2)}
-.panelbox{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-top:6px}
+.sechead{font-size:.8rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--faint);margin:26px 2px 12px;display:flex;align-items:center;gap:8px}
+.sechead .hint{font-size:.72rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--faint)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:14px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 16px 14px}
+.stat .k{font-size:.76rem;color:var(--dim);font-weight:600;margin-bottom:8px}
+.stat .v{font-size:1.75rem;font-weight:800;letter-spacing:-.5px}
+.stat .s{font-size:.74rem;color:var(--faint);margin-top:5px}
+.stat .v.grn{color:var(--green)} .stat .v.gld{color:var(--gold)} .stat .v.pnk{color:var(--pink)} .stat .v.acc{color:var(--accent2)} .stat .v.blu{color:var(--blue)} .stat .v.red{color:var(--red)}
+.panelbox{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-top:6px;overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.9rem}
-th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border)}
-th{color:var(--dim);font-weight:600;font-size:.78rem}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{color:var(--dim);font-weight:600;font-size:.76rem}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .bar-inline{display:inline-block;height:7px;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--pink));vertical-align:middle;margin-right:8px}
+.pill{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--dim)}
+.pill.recipe{color:var(--accent2);border-color:#43356e} .pill.marketplace{color:var(--gold);border-color:#5c4a24} .pill.custom{color:var(--faint)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
-@media(max-width:820px){.two{grid-template-columns:1fr}}
-.refresh{float:right;background:var(--panel);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:.8rem;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer}
+@media(max-width:860px){.two{grid-template-columns:1fr}}
+.refresh{margin-left:auto;background:var(--panel);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:.8rem;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer}
 .refresh:hover{color:var(--text);border-color:var(--accent2)}
 .err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px}
 .err.show{display:block}
 .muted{color:var(--faint);font-size:.85rem}
+/* 기능별 사용량 카드 */
+.feat{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.featcard{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.featcard .ft{font-size:.82rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.featcard .big{font-size:1.9rem;font-weight:800;letter-spacing:-.5px}
+.featcard .row{display:flex;gap:12px;margin-top:10px;font-size:.76rem;color:var(--dim);flex-wrap:wrap}
+.featcard .row b{font-variant-numeric:tabular-nums}
+.dotg{color:var(--green)} .dotr{color:var(--red)} .doty{color:var(--gold)}
+/* 시계열 차트 */
+.chart{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 20px 14px;margin-top:6px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:.78rem;color:var(--dim)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.plot{display:flex;align-items:flex-end;gap:6px;height:190px;overflow-x:auto;padding-bottom:4px}
+.daycol{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:34px;flex:1}
+.bars{display:flex;align-items:flex-end;gap:2px;height:160px}
+.bars b{width:6px;border-radius:2px 2px 0 0;min-height:1px;transition:height .3s}
+.bars b.i{background:var(--accent2)} .bars b.v{background:var(--pink)} .bars b.u{background:var(--gold)} .bars b.s{background:var(--green)}
+.daylbl{font-size:.64rem;color:var(--faint);font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1><span class="dot"></span> 통계 <button class="refresh" onclick="load()">↻ 새로고침</button></h1>
-  <div class="sub">유저 · 크리에이션 · 결제 기본 집계. (관리자 전용)</div>
+  <h1><span class="dot"></span> 통계 대시보드 <button class="refresh" onclick="load()">↻ 새로고침</button></h1>
+  <div class="sub">유저 · 생성물(이미지/영상) · 기능별 사용량 · 매출 · 템플릿 · 인게이지먼트. (관리자 전용, 읽기 전용)</div>
   <div class="nav">
-    <a href="/admin-creations">🖼 크리에이션</a>
+    <a href="/admin-creations">🖼 크리에이션(비공개 포함)</a>
     <a href="/admin-stats" class="on">📊 통계</a>
     <a href="/admin-trials">🎟 체험 계정</a>
     <a href="/admin-templates">🧩 템플릿</a>
@@ -56,10 +78,24 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   <div class="sechead">유저</div>
   <div class="cards" id="userCards"><div class="muted">불러오는 중…</div></div>
 
-  <div class="sechead">크리에이션</div>
+  <div class="sechead">생성물 <span class="hint">이미지 vs 영상 구분</span></div>
   <div class="cards" id="creationCards"></div>
 
-  <div class="sechead">결제 (누적)</div>
+  <div class="sechead">기능별 사용량 <span class="hint">영상·광고(UGC)·온모델·팩 잡</span></div>
+  <div class="feat" id="featCards"></div>
+
+  <div class="sechead">최근 14일 추이 <span class="hint">일별 이미지·영상·광고·가입</span></div>
+  <div class="chart">
+    <div class="legend">
+      <span><i style="background:var(--accent2)"></i>이미지</span>
+      <span><i style="background:var(--pink)"></i>영상</span>
+      <span><i style="background:var(--gold)"></i>광고(UGC)</span>
+      <span><i style="background:var(--green)"></i>가입</span>
+    </div>
+    <div class="plot" id="plot"><div class="muted">불러오는 중…</div></div>
+  </div>
+
+  <div class="sechead">매출 (누적)</div>
   <div class="cards" id="payCards"></div>
 
   <div class="two">
@@ -68,10 +104,35 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="panelbox"><table><thead><tr><th>결제사</th><th class="num">주문</th><th class="num">매출($)</th></tr></thead><tbody id="providerRows"></tbody></table></div>
     </div>
     <div>
-      <div class="sechead">인기 템플릿 (최근 30일)</div>
+      <div class="sechead">인기 템플릿 <span class="hint">사용 횟수 (누적)</span></div>
       <div class="panelbox"><table><tbody id="tplRows"></tbody></table></div>
     </div>
   </div>
+
+  <div class="two">
+    <div>
+      <div class="sechead">템플릿 출처별</div>
+      <div class="panelbox"><table><thead><tr><th>출처</th><th class="num">생성 수</th></tr></thead><tbody id="srcRows"></tbody></table></div>
+    </div>
+    <div>
+      <div class="sechead">이미지 모델별</div>
+      <div class="panelbox"><table><tbody id="modelRows"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div>
+      <div class="sechead">광고(UGC) 유형별</div>
+      <div class="panelbox"><table><thead><tr><th>유형</th><th class="num">생성 수</th></tr></thead><tbody id="ugcTypeRows"></tbody></table></div>
+    </div>
+    <div>
+      <div class="sechead">헤비 유저 <span class="hint">생성물 수 상위</span></div>
+      <div class="panelbox"><table><thead><tr><th>유저</th><th class="num">전체</th><th class="num">이미지</th><th class="num">영상</th></tr></thead><tbody id="topUserRows"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="sechead">커뮤니티 인게이지먼트</div>
+  <div class="cards" id="engCards"></div>
 
   <div class="sechead">최근 결제</div>
   <div class="panelbox"><table><thead><tr><th>일시</th><th>유저</th><th>팩</th><th class="num">$</th><th class="num">◈</th><th>결제사</th></tr></thead><tbody id="recentRows"></tbody></table></div>
@@ -85,6 +146,9 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 function n(v){return (v==null?0:Number(v)).toLocaleString('ko-KR');}
 function fmtDate(s){try{return new Date(s).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
 function card(k,v,cls,s){return `<div class="stat"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;}
+function featCard(icon,title,total,extra){return `<div class="featcard"><div class="ft">${icon} ${title}</div><div class="big">${n(total)}</div><div class="row">${extra}</div></div>`;}
+function barRow(label,val,max,extra){const w=Math.round((val/(max||1))*90)+10;return `<tr><td><span class="bar-inline" style="width:${w}px"></span>${label}</td><td class="num">${n(val)}${extra||''}</td></tr>`;}
+function srcPill(s){const k=String(s||'custom').toLowerCase();const cls=k==='recipe'?'recipe':k==='marketplace'?'marketplace':'custom';return `<span class="pill ${cls}">${esc(s||'custom')}</span>`;}
 
 async function load(){
   clearErr();
@@ -93,38 +157,91 @@ async function load(){
     if(res.status===403){showErr('관리자 권한이 필요합니다. admin 계정으로 로그인하세요.');return;}
     const d=await res.json();
     if(!res.ok||!d.success){showErr(d.error||'불러오기 실패');return;}
-    const s=d.data;
+    const s=d.data, U=s.users||{}, C=s.creations||{}, P=s.payments||{};
 
     $('userCards').innerHTML=[
-      card('전체 유저', n(s.users.total), 'acc'),
-      card('신규 (24h)', n(s.users.new1d)),
-      card('신규 (7d)', n(s.users.new7d)),
-      card('체험 계정', n(s.users.trials), 'gld'),
-      card('미사용 크레딧', '◈'+n(s.users.credit_outstanding), '', '전 유저 잔액 합'),
+      card('전체 유저', n(U.total), 'acc'),
+      card('신규 24h', n(U.new1d), '', '7일: '+n(U.new7d)+' · 30일: '+n(U.new30d)),
+      card('체험 계정', n(U.trials), 'gld'),
+      card('크리에이터', n(U.creators), 'pnk'),
+      card('유료 플랜', n(U.paid_plan), 'grn'),
+      card('미사용 크레딧', '◈'+n(U.credit_outstanding), '', '전 유저 잔액 합'),
+      card('미사용 포인트', n(U.point_outstanding), '', '전 유저 잔액 합'),
     ].join('');
 
     $('creationCards').innerHTML=[
-      card('전체 생성물', n(s.creations.total)),
-      card('공개', n(s.creations.public), 'grn'),
-      card('비공개', n(s.creations.private), 'pnk'),
-      card('실패', n(s.creations.failed), s.creations.failed?'':''),
-      card('최근 24h', n(s.creations.last1d), '', '7일: '+n(s.creations.last7d)),
+      card('전체 생성물', n(C.total)),
+      card('🖼 이미지', n(C.images), 'acc'),
+      card('🎬 영상', n(C.videos), 'pnk'),
+      card('공개', n(C.public), 'grn'),
+      card('비공개', n(C.private), 'gld'),
+      card('실패', n(C.failed), C.failed?'red':''),
+      card('테이크다운', n(C.taken_down), C.taken_down?'red':''),
+      card('누적 좋아요', '♥'+n(C.likes)),
+      card('최근 24h', n(C.last1d), '', '7일: '+n(C.last7d)+' · 30일: '+n(C.last30d)),
     ].join('');
 
+    const vj=s.videoJobs||{}, uj=s.ugcJobs||{}, fs=s.faceswap||{}, pk=s.packs||{};
+    const jobRow=j=>`<b class="dotg">✓ ${n(j.succeeded)}</b> <b class="dotr">✕ ${n(j.failed)}</b> <b class="doty">⧗ ${n(j.processing)}</b> · 7일 ${n(j.last7d)} · 유저 ${n(j.users)}`;
+    $('featCards').innerHTML=[
+      featCard('🎬','영상 생성 (Kling)', vj.total, jobRow(vj)),
+      featCard('📣','광고 만들기 (UGC)', uj.total, jobRow(uj)+` · 클립 ${n(uj.clips)} · ${n(uj.seconds)}초`),
+      featCard('🧍','온모델 (faceswap)', fs.total, jobRow(fs)),
+      featCard('📦','콘텐츠 팩', pk.total, `7일 ${n(pk.last7d)} · 유저 ${n(pk.users)}`),
+    ].join('');
+
+    // 14일 시계열 차트
+    const ts=s.timeseries||[];
+    const max=ts.reduce((m,r)=>Math.max(m,r.images,r.videos,r.ugc,r.signups),0)||1;
+    const H=160;
+    $('plot').innerHTML=ts.length? ts.map(r=>{
+      const b=(v,c)=>`<b class="${c}" style="height:${Math.round((v/max)*H)}px" title="${v}"></b>`;
+      return `<div class="daycol"><div class="bars">${b(r.images,'i')}${b(r.videos,'v')}${b(r.ugc,'u')}${b(r.signups,'s')}</div><div class="daylbl">${esc(r.label)}</div></div>`;
+    }).join('') : `<div class="muted">데이터 없음</div>`;
+
     $('payCards').innerHTML=[
-      card('총 주문', n(s.payments.orders)),
-      card('총 매출', '$'+n(s.payments.revenue_usd), 'grn'),
-      card('판매 크레딧', '◈'+n(s.payments.credits_sold), 'gld'),
+      card('총 주문', n(P.orders)),
+      card('총 매출', '$'+n(P.revenue_usd), 'grn'),
+      card('30일 매출', '$'+n(P.revenue30d), '', '주문 '+n(P.orders30d)),
+      card('결제 유저', n(P.paying_users), 'blu'),
+      card('판매 크레딧', '◈'+n(P.credits_sold), 'gld'),
     ].join('');
 
     $('providerRows').innerHTML=(s.byProvider||[]).length
       ? s.byProvider.map(r=>`<tr><td>${esc(r.provider)}</td><td class="num">${n(r.orders)}</td><td class="num">$${n(r.revenue)}</td></tr>`).join('')
       : `<tr><td colspan="3" class="muted">결제 없음</td></tr>`;
 
-    const tpl=s.topTemplates||[]; const max=tpl.reduce((m,r)=>Math.max(m,r.n),0)||1;
+    const tpl=s.topTemplates||[], tmax=tpl.reduce((m,r)=>Math.max(m,r.n),0)||1;
     $('tplRows').innerHTML=tpl.length
-      ? tpl.map(r=>`<tr><td><span class="bar-inline" style="width:${Math.round(r.n/max*90)+10}px"></span>${esc(r.name)}</td><td class="num">${n(r.n)}</td></tr>`).join('')
+      ? tpl.map(r=>`<tr><td><span class="bar-inline" style="width:${Math.round(r.n/tmax*80)+10}px"></span>${esc(r.name)} ${srcPill(r.source)}</td><td class="num">${n(r.n)}</td></tr>`).join('')
       : `<tr><td class="muted">데이터 없음</td></tr>`;
+
+    const src=s.templateSources||[], smax=src.reduce((m,r)=>Math.max(m,r.n),0)||1;
+    $('srcRows').innerHTML=src.length
+      ? src.map(r=>barRow(srcPill(r.source),r.n,smax)).join('')
+      : `<tr><td colspan="2" class="muted">데이터 없음</td></tr>`;
+
+    const mdl=s.topModels||[], mmax=mdl.reduce((m,r)=>Math.max(m,r.n),0)||1;
+    $('modelRows').innerHTML=mdl.length
+      ? mdl.map(r=>barRow(esc(r.model),r.n,mmax)).join('')
+      : `<tr><td class="muted">데이터 없음</td></tr>`;
+
+    const ut=s.ugcByType||[], utmax=ut.reduce((m,r)=>Math.max(m,r.n),0)||1;
+    $('ugcTypeRows').innerHTML=ut.length
+      ? ut.map(r=>barRow(esc(r.type),r.n,utmax)).join('')
+      : `<tr><td colspan="2" class="muted">데이터 없음</td></tr>`;
+
+    $('topUserRows').innerHTML=(s.topUsers||[]).length
+      ? s.topUsers.map(r=>`<tr><td>${esc(r.email||r.display_name||'—')}</td><td class="num">${n(r.creations)}</td><td class="num">${n(r.images)}</td><td class="num">${n(r.videos)}</td></tr>`).join('')
+      : `<tr><td colspan="4" class="muted">데이터 없음</td></tr>`;
+
+    const E=s.engagement||{};
+    $('engCards').innerHTML=[
+      card('총 좋아요', '♥'+n(E.likes), 'pnk'),
+      card('팔로우', n(E.follows), 'acc'),
+      card('신고 누적', n(E.reports), E.reports?'red':''),
+      card('마켓 등록 템플릿', n(E.listed_templates), 'gld'),
+    ].join('');
 
     $('recentRows').innerHTML=(s.recentPayments||[]).length
       ? s.recentPayments.map(r=>`<tr><td>${fmtDate(r.created_at)}</td><td>${esc(r.email||'—')}</td><td>${esc(r.product||'')}</td><td class="num">${n(r.amount_usd)}</td><td class="num">${n(r.credits)}</td><td>${esc(r.provider)}</td></tr>`).join('')
