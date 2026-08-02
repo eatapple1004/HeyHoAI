@@ -2440,7 +2440,7 @@ function genCost(r){
   const c=CREDITS.costs;
   if(!c)return null;
   const cap=captionOn()?(c.caption||30):0;
-  const isTpl=state.mode!=='custom'; // (2026-07-06) 커스텀 모드 아니면 템플릿 과금. tier=[커스텀,템플릿]
+  const isTpl=!!r; // (2026-08-02) 템플릿이 실제 선택됐을 때만 템플릿 과금. 미선택(프롬프트만)=커스텀 요율. tier=[커스텀,템플릿]
   const type=isVideoGen()?'reel':(r?r.type:'image'); // 템플릿 reel 또는 Custom 비디오 툴
   if(type==='reel'){
     const cv=(state.mode==='custom'&&curType()==='video');const dur=cv?parseInt(curDuration(),10):5;
@@ -5809,7 +5809,7 @@ async function generateImages(r,subj,count,pending){
   else if(state.mode==='influencer'||state.mode==='shopping'){fd.append('aspectRatio',curAspect());fd.append('imageSize',curSize());} // 템플릿 모드도 비율·해상도 전송(기본 4:5, 2K=Pro만)
   fd.append('privateMode',privateOn()?'true':'false'); // 자동 공개
   fd.append('enhance',enhanceOn()?'true':'false'); // Enhance OFF=완전 raw(캐릭터 프리픽스 제거)
-  fd.append('billingMode',state.mode==='custom'?'custom':'template'); // (2026-07-06) 과금: 커스텀(2~3배) vs 템플릿(4~6배)
+  fd.append('billingMode',r?'template':'custom'); // (2026-08-02) 템플릿 실제 선택 시만 template 요율. 미선택(제품+프롬프트)=custom.
   // 유저 선택값(컷·배경색·배경·축·디테일·크기) → 결과에 함께 저장해 크리에이션 카드에 되보여준다.
   //   한 덩어리로 보내는 이유: 항목마다 필드를 늘리면 축이 추가될 때마다 배선을 또 해야 한다.
   const _ch=currentChoices(r); if(_ch)fd.append('choices',JSON.stringify(_ch));
