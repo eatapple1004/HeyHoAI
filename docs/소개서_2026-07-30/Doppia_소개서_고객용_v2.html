@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Doppia 소개서 — 고객용 v2 (2026-07-30)</title>
+<style>
+  /* ══ Doppia 소개서 · 고객용 v2 · 16:9 슬라이드 → Chrome 인쇄로 PDF ══
+     인쇄: Chrome 열기 → ⌘P → 대상 PDF · "여백 없음" — @page가 슬라이드 크기 지정
+
+     ── v2 재구성 원칙 (글로브 덱 벤치마크, 2026-07-30) ──
+     ① 한 장 = 한 메시지. v1은 장당 헤드라인+부제+불릿 3~4개+각주 = 메시지 5~6개였다.
+        "무슨 말인지 모르겠다"는 평가의 근원. 부제는 한 줄, 불릿은 장당 최대 0개.
+     ② 서사 = 질문 → 도발 → 고통 → 해결. v1은 통계 나열로 시작했다(숫자 4개가 각자 떠 있음).
+     ③ 고객 언어만. "무프롬프트"·"풀스택"·"버추얼"·"기획 세트" 같은 내부어 금지.
+     ④ 실물이 주인공 — 글로브는 22장 중 절반이 실물이다.
+     ⑤ 가격 즉답 — 첫 장과 가격 장에 물건 단위 숫자(컷 24장/월 31,000원). 크레딧 암산 강요 금지.
+     ── v2.1 (2026-07-30 저녁, 사용자 피드백) ──
+     ⑥ 내부 용어 절대 금지 — "템플릿"·"크레딧"·"히어로 컷"·"매크로"·"콘텐츠 팩" 전부 셀러 말로.
+     ⑦ before 사진 = 진짜 막 찍은 폰샷(실제 생성물 s-phone.png — 스튜디오 티 나던 s-src 교체).
+     ⑧ 도발 단독 장("촬영, 잡으시게요?") 삭제 — 12장. */
+  :root{
+    --bg:#0b0b12; --card:#14141f;
+    --text:#edecf5; --dim:#9a97ad; --faint:#5b586e;
+    --accent:#7c6cff; --accent2:#a394ee; --pink:#d9608f;
+    --border:rgba(255,255,255,.09);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#000}
+  body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;color:var(--text)}
+  .slide{position:relative;width:1280px;height:720px;margin:24px auto;background:var(--bg);overflow:hidden;
+    border-radius:8px;padding:64px 80px;display:flex;flex-direction:column}
+  @media print{
+    @page{size:1280px 720px;margin:0}
+    body{background:var(--bg)}
+    .slide{margin:0;border-radius:0;page-break-after:always;width:1280px;height:720px}
+  }
+  .logo{position:absolute;left:80px;top:48px;font-size:19px;font-weight:800;letter-spacing:.02em}
+  .foot{position:absolute;left:80px;right:80px;bottom:26px;display:flex;justify-content:space-between;
+    font-size:12px;color:var(--faint)}
+  h1{font-size:64px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .big{font-size:52px;font-weight:800;letter-spacing:-.02em;line-height:1.3}
+  .sub{font-size:20px;color:var(--dim);line-height:1.65}
+  /* 🔴 그라디언트 클립 텍스트 금지 — PDF 뷰어마다 다르게 깨진다(실측: macOS 미리보기=글자 투명,
+     poppler=그라디언트가 사각 박스로). 강조는 단색으로만. (화면용 랜딩과 달리 이 파일의 최종 매체는 PDF다) */
+  .grad{color:var(--accent2)}
+  img{object-fit:cover;background:#22222e}
+  .cap{font-size:14px;color:var(--dim);margin-top:10px;text-align:center}
+  .glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.45;pointer-events:none}
+  /* 중앙 한 문장 장(글로브식) */
+  .punch{justify-content:center;align-items:center;text-align:center}
+  /* 상품 장: 좌측 제목 / 우측 실물 */
+  .split{flex-direction:row;align-items:center;gap:56px}
+  .split .txt{width:400px;flex:none}
+  .split .txt .k{font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--accent2);margin-bottom:16px}
+  .split .txt h2{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1.28;margin-bottom:18px}
+  .split .txt p{font-size:17px;color:var(--dim);line-height:1.7}
+  .split .imgs{flex:1;display:flex;gap:12px;align-items:center;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<!-- ════ 1. 표지 — 무엇을·얼마에·어디서 (글로브 1장 문법) ════ -->
+<section class="slide punch">
+  <div class="glow" style="width:560px;height:560px;left:-140px;top:-200px;background:radial-gradient(circle,rgba(106,64,224,.6),transparent 70%)"></div>
+  <div class="glow" style="width:480px;height:480px;right:-120px;bottom:-160px;background:radial-gradient(circle,rgba(217,96,143,.4),transparent 70%)"></div>
+  <div style="font-size:24px;font-weight:800;letter-spacing:.02em;margin-bottom:36px" class="grad">DOPPIA</div>
+  <h1>한 장의 사진으로,<br><span class="grad">한 달 치 콘텐츠</span>를<br>만들어드립니다.</h1>
+  <p class="sub" style="margin-top:26px">촬영 한 번 <b style="color:var(--text)">150만원</b> · 일주일 &nbsp;→&nbsp; Doppia는 <b style="color:var(--text)">월 31,000원</b>에 매달 컷 24장</p>
+  <p class="sub" style="margin-top:10px;font-size:17px">가입 즉시 5장 무료 · 카드 등록 없음</p>
+  <div style="position:absolute;bottom:64px;font-size:15px;color:var(--faint)">촬영 단가는 국내 제작 업계 추정(2026) · doppia.ai · support@doppia.ai · 주식회사 아담컴퍼니</div>
+</section>
+
+<!-- ════ 2. 질문 — 지금 상태를 보여준다 (글로브 6장 문법) ════ -->
+<section class="slide">
+  <div class="logo">Doppia</div>
+  <h1 style="font-size:46px;text-align:center;margin-top:60px">대표님 제품, 지금 <span class="grad">어떤 사진</span>으로 팔고 계세요?</h1>
+  <div style="display:flex;gap:48px;justify-content:center;align-items:flex-end;margin-top:52px">
+    <div style="text-align:center">
+      <img src="../../public/img/landing/e2e/s-phone.png" style="width:240px;height:320px;border-radius:14px;border:1px solid var(--border)">
+      <div class="cap">핸드폰으로 대충 찍은 사진</div>
+    </div>
+    <div style="font-size:26px;color:var(--faint);padding-bottom:150px">VS</div>
+    <div style="text-align:center">
+      <div style="display:flex;gap:12px">
+        <img src="../../public/img/landing/e2e/s-hero.jpg" style="width:213px;height:320px;border-radius:14px;border:1px solid var(--border)">
+        <img src="../../public/img/landing/e2e/s-onmodel.jpg" style="width:213px;height:320px;border-radius:14px;border:1px solid var(--border)">
+      </div>
+      <div class="cap">같은 제품, Doppia 컷</div>
+    </div>
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>02 · 전부 실제 Doppia 출력물</span></div>
+</section>
+
+<!-- ════ 4. 고통 4개 — 큰 글씨 4줄, 그 이상 없음 (글로브 8장 문법) ════ -->
+<section class="slide punch">
+  <div class="logo">Doppia</div>
+  <div style="display:flex;flex-direction:column;gap:44px">
+    <div><div class="big">모델 촬영 1건 150만원+</div><p class="sub" style="margin-top:8px">모델·스튜디오·연출 포함, 업계 추정</p></div>
+    <div><div class="big">기획부터 보정까지 1주일</div><p class="sub" style="margin-top:8px">그 사이 신상은 이미 다음 신상</p></div>
+    <div><div class="big">시즌·신상마다 다시 반복</div><p class="sub" style="margin-top:8px">컬러 하나 바뀌어도 처음부터 리슛</p></div>
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>03 · 국내 제작 단가 업계 추정(2026)</span></div>
+</section>
+
+<!-- ════ 5. 해결 선언 — 같은 원본 한 장에서 전부 (v1 3장 소재 그대로 — 최고 자산) ════ -->
+<section class="slide">
+  <div class="logo">Doppia</div>
+  <h1 style="font-size:44px;text-align:center;margin-top:52px">사진 한 장이 <span class="grad">스튜디오</span>가 됩니다</h1>
+  <div style="display:flex;gap:14px;justify-content:center;align-items:center;margin-top:44px">
+    <div style="text-align:center">
+      <img src="../../public/img/landing/e2e/s-src.jpg" style="width:180px;height:240px;border-radius:12px;border:1px solid var(--border)">
+      <div class="cap">올린 사진 1장</div>
+    </div>
+    <div style="font-size:30px;color:var(--accent2);margin:0 6px;padding-bottom:30px">→</div>
+    <div style="text-align:center"><img src="../../public/img/landing/e2e/s-hero.jpg" style="width:180px;height:240px;border-radius:12px;border:1px solid var(--border)"><div class="cap">대표 컷</div></div>
+    <div style="text-align:center"><img src="../../public/img/landing/e2e/s-macro.jpg" style="width:180px;height:240px;border-radius:12px;border:1px solid var(--border)"><div class="cap">클로즈업 컷</div></div>
+    <div style="text-align:center"><img src="../../public/img/landing/e2e/s-onmodel.jpg" style="width:180px;height:240px;border-radius:12px;border:1px solid var(--border)"><div class="cap">모델 착용컷</div></div>
+    <div style="text-align:center"><img src="../../public/img/landing/e2e/s-reel-still.jpg" style="width:180px;height:240px;border-radius:12px;border:1px solid var(--border)"><div class="cap">광고영상 (스틸)</div></div>
+  </div>
+  <p class="sub" style="text-align:center;margin-top:36px">라벨·색·형태는 원본 그대로 — <b style="color:var(--text)">내 제품이 그대로</b> 모든 컷에 등장합니다.</p>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>04 · 전부 같은 원본 한 장에서 나온 실제 출력물</span></div>
+</section>
+
+<!-- ════ 6. 상품① 상세컷 (글로브 2~4장 문법: 유형 + 한 줄 + 실물) ════ -->
+<section class="slide split">
+  <div class="logo">Doppia</div>
+  <div class="txt">
+    <div class="k">01 · 상세페이지 컷</div>
+    <h2>예시를 고르면,<br>내 제품으로 그대로</h2>
+    <p>화장품·패션·주얼리·식품 등 9개 업종, 144가지 연출이 준비돼 있어요. 고르기만 하면 끝 — 쓸 만큼 뽑고, 최대 4K로 받습니다.</p>
+  </div>
+  <div class="imgs">
+    <img src="../../public/img/landing/picked/serum-03.jpg" style="width:162px;height:270px;border-radius:12px;border:1px solid var(--border)">
+    <img src="../../public/img/landing/picked/perfume-02.jpg" style="width:162px;height:270px;border-radius:12px;border:1px solid var(--border);transform:translateY(18px)">
+    <img src="../../public/img/landing/picked/chocolate-06.jpg" style="width:162px;height:270px;border-radius:12px;border:1px solid var(--border)">
+    <img src="../../public/img/landing/picked/earbuds-04.jpg" style="width:162px;height:270px;border-radius:12px;border:1px solid var(--border);transform:translateY(18px)">
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>05 · 전부 실제 Doppia 출력물</span></div>
+</section>
+
+<!-- ════ 7. 상품② 모델 착용컷 ════ -->
+<section class="slide split">
+  <div class="logo">Doppia</div>
+  <div class="txt">
+    <div class="k">02 · 모델 착용컷</div>
+    <h2>모델 캐스팅 없이,<br>착용컷과 화보</h2>
+    <p>AI 모델 200명 중에 브랜드에 맞는 얼굴을 고르면, 제품을 실제로 입은 컷이 나옵니다. 시즌이 바뀌어도 같은 모델로.</p>
+  </div>
+  <div class="imgs">
+    <div style="text-align:center">
+      <img src="../../public/img/landing/bikini/design-1-ecru-navy.jpg" style="width:170px;height:227px;border-radius:12px;border:1px solid var(--border)">
+      <div class="cap">제품 (원본)</div>
+    </div>
+    <div style="font-size:26px;color:var(--accent2);padding-bottom:26px">→</div>
+    <div style="text-align:center">
+      <img src="../../public/img/landing/bikini/onmodel-elara-pose1-final.jpg" style="width:200px;height:300px;border-radius:12px;border:1px solid var(--border)">
+      <div class="cap">모델 A 착용</div>
+    </div>
+    <div style="text-align:center">
+      <img src="../../public/img/landing/bikini/onmodel-hayul-pose2-final.jpg" style="width:200px;height:300px;border-radius:12px;border:1px solid var(--border)">
+      <div class="cap">모델 B 착용</div>
+    </div>
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>06 · 전부 실제 Doppia 출력물</span></div>
+</section>
+
+<!-- ════ 8. 상품③ 광고영상 (⚠️ 음성 아님 — 음악만. 2026-07-30 카피 정리와 일치시킬 것) ════ -->
+<section class="slide split">
+  <div class="logo">Doppia</div>
+  <div class="txt">
+    <div class="k">03 · 광고영상</div>
+    <h2>사진 한 장이,<br>광고영상이 됩니다</h2>
+    <p>사진과 한 줄이면 장면 구성까지 알아서 — 음악 얹은 세로 영상으로 릴스·틱톡에 바로 올립니다. 원하면 장면 수·길이도 직접 정할 수 있어요.</p>
+  </div>
+  <div class="imgs">
+    <img src="../../public/img/landing/e2e/s-reel-still.jpg" style="width:200px;height:356px;border-radius:14px;border:1px solid var(--border)">
+    <img src="../../public/img/landing/pack3/splash_frozen.jpg" style="width:200px;height:356px;border-radius:14px;border:1px solid var(--border);transform:translateY(14px)">
+    <img src="../../public/img/landing/pack3/levitation_grapes.jpg" style="width:200px;height:356px;border-radius:14px;border:1px solid var(--border)">
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>07 · 실제 생성 영상의 스틸컷</span></div>
+</section>
+
+<!-- ════ 9. 상품④ 세트 위임 ════ -->
+<section class="slide">
+  <div class="logo">Doppia</div>
+  <div style="display:flex;align-items:center;gap:56px;height:100%">
+    <div style="width:400px;flex:none">
+      <div style="font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--accent2);margin-bottom:16px">04 · 통째로 맡기기</div>
+      <h2 style="font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1.28;margin-bottom:18px">아예 통째로<br>맡기셔도 됩니다</h2>
+      <p style="font-size:17px;color:var(--dim);line-height:1.7">사진 1장을 올리면 어떤 컷이 필요한지 AI가 직접 기획해 <b style="color:var(--text)">한 세트 20컷</b>으로 만들어 드립니다 — 판매컷·라이프스타일·시즌까지. 아래는 탄산음료 한 캔으로 만든 세트 중 8컷.</p>
+    </div>
+    <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <img src="../../public/img/landing/pack3/hero_sunlit.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/pdp_front_clean.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/crushed_ice_bed.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/marble_luxe.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/picnic_blanket.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/cvs_fridge.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/gift_holiday_styling.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+      <img src="../../public/img/landing/pack3/cozy_autumn_warm.jpg" style="width:100%;height:160px;border-radius:10px;border:1px solid var(--border)">
+    </div>
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>08 · 동일 제품 1장으로 만든 실제 세트</span></div>
+</section>
+
+<!-- ════ 10. 프로세스 — 하실 일 두 가지 (글로브 10장 문법) ════ -->
+<section class="slide">
+  <div class="logo">Doppia</div>
+  <div style="display:flex;align-items:center;gap:72px;height:100%">
+    <div style="width:430px;flex:none">
+      <h2 style="font-size:46px;font-weight:800;letter-spacing:-.02em;line-height:1.3">대표님이 하실 일은<br><span class="grad">두 가지</span>뿐입니다</h2>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+      <div style="background:linear-gradient(90deg,rgba(124,108,255,.85),rgba(217,96,143,.85));border-radius:14px;padding:22px 28px;font-size:22px;font-weight:800">1 &nbsp; 제품 사진 업로드</div>
+      <div style="background:linear-gradient(90deg,rgba(124,108,255,.85),rgba(217,96,143,.85));border-radius:14px;padding:22px 28px;font-size:22px;font-weight:800">2 &nbsp; 마음에 드는 연출 고르기 — 또는 통째로 맡기기</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 28px;font-size:22px;font-weight:700;color:var(--faint)">3 &nbsp; 기획 · 연출 · 생성 — Doppia가</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 28px;font-size:22px;font-weight:700;color:var(--faint)">4 &nbsp; 4K 다운로드 → 바로 게시</div>
+    </div>
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>09</span></div>
+</section>
+
+<!-- ════ 11. 수정 — 말로 고친다 ════ -->
+<section class="slide">
+  <div class="logo">Doppia</div>
+  <h1 style="font-size:44px;text-align:center;margin-top:56px">마음에 안 들면, <span class="grad">말로 고치세요</span></h1>
+  <div style="display:flex;gap:22px;justify-content:center;align-items:center;margin-top:46px">
+    <div style="text-align:center">
+      <img src="../../public/img/landing/edit-before-new.jpg" style="width:230px;height:307px;border-radius:14px;border:1px solid var(--border)">
+      <div class="cap">Before</div>
+    </div>
+    <div style="text-align:center;padding-bottom:26px">
+      <div style="font-size:19px;font-weight:700;color:var(--accent2);background:var(--card);border:1px solid var(--border);border-radius:999px;padding:12px 24px">"배경만 골드로 바꿔줘"</div>
+      <div style="font-size:26px;color:var(--accent2);margin-top:12px">→</div>
+    </div>
+    <div style="text-align:center">
+      <img src="../../public/img/landing/edit-after-new.jpg" style="width:230px;height:307px;border-radius:14px;border:1px solid var(--border)">
+      <div class="cap">After — 같은 컷, 배경만</div>
+    </div>
+  </div>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>10 · 실제 Doppia 출력물</span></div>
+</section>
+
+<!-- ════ 12. 가격 — 즉답 (글로브 16장 문법: 큰 숫자 하나) ════ -->
+<section class="slide punch">
+  <div class="logo">Doppia</div>
+  <div class="big" style="margin-bottom:10px">무료로 시작하세요</div>
+  <div style="font-size:72px;font-weight:800;letter-spacing:-.02em" class="grad">가입하면 컷 5장 공짜</div>
+  <p class="sub" style="margin-top:18px">지금 바로 · 카드 등록 없음</p>
+  <div style="display:flex;gap:44px;margin-top:52px;font-size:17px;color:var(--dim)">
+    <span>월 31,000원에 매달 컷 24장</span>
+    <span>광고영상 10초 = 컷 4장 값부터</span>
+  </div>
+  <p style="margin-top:26px;font-size:14px;color:var(--faint)">나온 결과물에만 과금 · 실패는 자동 환불 · 전체 요금 doppia.ai/billing</p>
+  <div class="foot"><span>Doppia · 서비스 소개서</span><span>11 · 요금은 doppia.ai/billing 기준(변동 가능)</span></div>
+</section>
+
+<!-- ════ 13. 문의 (글로브 22장 문법) ════ -->
+<section class="slide punch">
+  <div class="glow" style="width:560px;height:560px;left:50%;top:-260px;transform:translateX(-50%);background:radial-gradient(circle,rgba(106,64,224,.5),transparent 70%)"></div>
+  <div style="font-size:22px;font-weight:800;margin-bottom:18px" class="grad">DOPPIA</div>
+  <h1 style="font-size:52px">다음 촬영 일정 대신,<br>지금 사진 한 장 올려보세요</h1>
+  <div style="margin-top:40px;font-size:18px;color:var(--dim)">doppia.ai</div>
+  <div style="margin-top:10px;font-size:15px;color:var(--faint)">도입 문의 · 파트너십 — 주식회사 아담컴퍼니 · support@doppia.ai</div>
+  <div class="foot"><span>Doppia · 주식회사 아담컴퍼니</span><span>12</span></div>
+</section>
+
+</body>
+</html>
