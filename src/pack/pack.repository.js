@@ -41,6 +41,8 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );`);
   await query(`CREATE INDEX IF NOT EXISTS idx_pack_assets_pack ON pack_assets(pack_id);`);
+  // 한도 판정(countUnusedPacks·countRebakesSince)이 굽기마다 도는 쿼리 — user_id 범위 스캔.
+  await query(`CREATE INDEX IF NOT EXISTS idx_content_packs_user ON content_packs(user_id);`);
   _ensured = true;
 }
 
@@ -137,6 +139,61 @@ async function addAsset({ packId, kind, cutKey, label, url, meta }) {
   return r.rows[0].id;
 }
 
+// ─── 팩 미리보기 한도 판정용 조회 ───────────────────────────────────────────
+/**
+ * ⚠️ req.user 는 JWT payload라 {id, role}뿐이다(auth/token.js:25) — plan이 없어 티어를 못 정한다.
+ *    planKey()도 "만료 반영하려면 조회 지점에서 plan_renews_at을 넣으라"고 못박아 뒀다.
+ */
+async function getUserPlanFields(userId) {
+  if (userId == null) return {};
+  const r = await query('SELECT plan, plan_renews_at, created_at FROM users WHERE id = $1', [userId]);
+  return r.rows[0] || {};
+}
+
+/**
+ * 안 쓴 팩 = 컷(kind='still')이 한 장도 없는 내 팩. **전 기간**(주기 무관).
+ * 컷을 뽑는 순간 조건에서 빠져 한 칸이 저절로 비워진다 ⇒ 해제 로직·타이머 불필요.
+ */
+async function countUnusedPacks(userId) {
+  await ensureSchema();
+  if (userId == null) return 0;
+  const r = await query(
+    `SELECT count(*)::int AS n FROM content_packs p
+      WHERE p.user_id = $1
+        AND NOT EXISTS (SELECT 1 FROM pack_assets a WHERE a.pack_id = p.id AND a.kind = 'still')`,
+    [String(userId)]
+  );
+  return (r.rows[0] && r.rows[0].n) || 0;
+}
+
+/**
+ * 이 팩의 레퍼 굽기 횟수 = { initial, rebakes }.
+ * recordAsset이 버전마다 **새 행**을 쌓으므로(재생성=비파괴), 키 종류 수 = 초기 굽기,
+ * 나머지가 재생성이다. 별도 카운터 컬럼이 필요 없다.
+ */
+async function countRefBakes(packId) {
+  const r = await query(
+    `SELECT count(*)::int AS total, count(DISTINCT cut_key)::int AS keys
+       FROM pack_assets WHERE pack_id = $1 AND kind = 'ref'`, [packId]);
+  const row = r.rows[0] || { total: 0, keys: 0 };
+  return { initial: row.keys, rebakes: Math.max(0, row.total - row.keys) };
+}
+
+/** 이번 주기에 이 사용자가 쓴 재생성 총 횟수(전 팩 합산). */
+async function countRebakesSince(userId, since) {
+  await ensureSchema();
+  if (userId == null) return 0;
+  const r = await query(
+    `SELECT COALESCE(SUM(t.total - t.keys), 0)::int AS n FROM (
+        SELECT count(*) AS total, count(DISTINCT a.cut_key) AS keys
+          FROM pack_assets a JOIN content_packs p ON p.id = a.pack_id
+         WHERE p.user_id = $1 AND a.kind = 'ref' AND a.created_at >= $2
+         GROUP BY a.pack_id) t`,
+    [String(userId), since]
+  );
+  return (r.rows[0] && r.rows[0].n) || 0;
+}
+
 /** 소유권 포함 조회(공유 링크는 share_id, 내 팩은 id). */
 async function getPack({ id, shareId, userId }) {
   await ensureSchema();
@@ -156,4 +213,5 @@ async function getPack({ id, shareId, userId }) {
 module.exports = {
   ensureSchema, createPack, setStatus, setPlan, setPromptIdx, addAsset, getPack,
   failStale, isStale, mergeConfig, STALE_MIN, STALE_ERROR,
+  getUserPlanFields, countUnusedPacks, countRefBakes, countRebakesSince,
 };

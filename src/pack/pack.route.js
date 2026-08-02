@@ -32,6 +32,7 @@ const resultRepo = require('../generate/result.repository');
 const ugcVideoService = require('../ugc/ugcVideo.service');   // 🎬 팩 재료로 광고 영상 1편(Ad Video 엔진 재사용)
 const teamCredit = require('../teams/team.credit');         // 활성 팀 — prompt.team_id에 붙여야 팀 유저 피드에 뜸 + 생성비 차감(chargeGeneration/refundGeneration)
 const creditService = require('../credits/credit.service');  // 단가표(imageCost) — 팩 스틸 = pro·template
+const { REF_FREE_INITIAL, packUnusedCap, refRebakeFree, refPeriodStart } = require('../lib/entitlements');  // 팩 미리보기 3축 한도
 
 const router = Router();
 
@@ -53,6 +54,45 @@ const STILL_UNIT = creditService.imageCost('pro', 1, true);   // = IMG_CREDIT['p
 async function chargeStills(user, n, description, refId) {
   if (!user || !(n > 0)) return null;
   return teamCredit.chargeGeneration(user, STILL_UNIT * n, description, refId);
+}
+
+// ─── 팩 미리보기(캐논 레퍼) 정산 (2026-08-03) ─────────────────────────────────
+//   위 48행 "레퍼는 무과금" 주석은 이제 **무료 구간에 한해** 참이다. 세 축 모두 초과분만 ◈100.
+//   기능을 자르는 곳은 없다 — 변형이 많은 세트도 다 굽고, 값만 받는다.
+const REF_UNIT = 100;
+
+/** 화면이 비용·잔여를 말하기 위한 값. 확인 모달(팩 생성 전)과 게이트(생성 후) 둘 다 쓴다. */
+async function refInfo(userId, pack) {
+  if (!userId) return null;
+  const u = await repo.getUserPlanFields(userId);
+  const user = { id: userId, ...u };
+  const [unused, rebakesUsed] = await Promise.all([
+    repo.countUnusedPacks(userId),
+    repo.countRebakesSince(userId, refPeriodStart(user)),
+  ]);
+  const info = {
+    unit: REF_UNIT,
+    freeInitial: REF_FREE_INITIAL,
+    unused, unusedCap: packUnusedCap(user),
+    rebakesUsed, rebakeFree: refRebakeFree(user),
+  };
+  if (pack) {
+    const b = await repo.countRefBakes(pack.id);
+    info.initial = b.initial; info.rebakes = b.rebakes;
+  }
+  return info;
+}
+
+/** 굽기 1회 차감(초과분). 실패해도 이미 구운 이미지는 버리지 않는다 — ◈100 때문에 유저 자산을 없애는 건 과하다. */
+async function chargeRefBake(userId, packId, why) {
+  try {
+    const u = await repo.getUserPlanFields(userId);
+    return await teamCredit.chargeGeneration({ id: userId, ...u }, REF_UNIT, why, packId);
+  } catch (e) {
+    if (e.statusCode) throw e;                    // 402·403 은 호출부가 상태코드로 응답
+    logger.warn?.(`[pack ${packId}] ref charge skipped: ${e.message}`);
+    return null;
+  }
 }
 
 /** 과금분 중 실제 생성 안 된 만큼 환불(부분·전량 공통). expected=청구 장수, ok=성공 장수. finally에서 호출. */
@@ -208,13 +248,21 @@ function packRefUrls(pack) {
 }
 
 /** 자산 하나 적재: tmp/images 발행(+R2) + pack_assets(새 행=버전) + generation_results dual-write. 반환 {kind,cut_key,label,url}. */
-async function recordAsset(pack, { kind, key, label, absPath, buffer, userId }) {
+async function recordAsset(pack, { kind, key, label, absPath, buffer, userId, skipRefCharge }) {
   const name = `pack_${pack.share_id}_${kind}_${key}_${Date.now()}.jpg`; // 버전마다 별 파일(재생성=비파괴)
   const buf = buffer || fs.readFileSync(absPath);
   fs.writeFileSync(path.join(imagesDir, name), buf);      // 로컬 우선 서빙
   await mediaStore.put(name, buf).catch(() => {});        // 영속(R2) best-effort
   const url = `/images/${name}`;
   await repo.addAsset({ packId: pack.id, kind, cutKey: key, label, url });
+  // ① 초기 굽기: 팩당 REF_FREE_INITIAL 장까지 무료, 초과분만 ◈100.
+  //   재생성은 라우트에서 선차감하므로 여기 오지 않는다(skipRefCharge).
+  if (kind === 'ref' && userId && !skipRefCharge) {
+    const b = await repo.countRefBakes(pack.id);            // 방금 넣은 행 포함
+    if (b.initial > REF_FREE_INITIAL) {
+      await chargeRefBake(userId, pack.id, `미리보기 추가 (${b.initial}번째)`).catch(() => {});
+    }
+  }
   // 🚫 캐논 레퍼·합성은 크리에이션 피드(generation_results)에 **독립 항목으로 안 넣는다** — 딜리버리가 아니라 부품이라
   //   피드 개수를 부풀리고 딜리버리처럼 보였다. 대신 스틸 카드 옆에 "생성 기준"으로 딸려 보인다(canonical_refs).
   //   pack_assets 에는 그대로 남으니 pack 결과 페이지 "캐논 레퍼" 섹션·제안서 before/after(pack_assets 직접 조회)는 무영향.
@@ -470,7 +518,8 @@ router.post('/classify', upload.array('photos', 10), normalizeUploads, async (re
     const images = req.files.map((f) => ({ data: fs.readFileSync(f.path).toString('base64'), mediaType: f.mimetype || 'image/jpeg' }));
     const result = await classifyProduct({ images, hint });
     req.files.forEach((f) => { try { fs.unlinkSync(f.path); } catch (_) {} }); // 분류용 임시 업로드 정리(생성은 별도 POST에서 재업로드)
-    res.json(result);
+    // 확인 모달이 비용·잔여를 말하려면 **팩이 생기기 전에** 알아야 한다 → 여기 실어 보낸다(추가 왕복 없음).
+    res.json({ ...result, ref: await refInfo(req.user && req.user.id) });
   } catch (e) { next(e); }
 });
 
@@ -505,8 +554,23 @@ router.post('/', upload.array('photos', 10), normalizeUploads, async (req, res, 
     try { lenses = req.body.lenses ? JSON.parse(req.body.lenses) : null; } catch (_) { lenses = null; }
     if (Array.isArray(lenses)) lenses = lenses.filter((l) => l && l.key && l.brief).slice(0, 12);
 
+    // ② 안 쓴 팩(컷 0장)이 상한 이상이면 새 팩을 막는다. 과금이 아니라 차단 —
+    //   "만들고 방치"만 겨냥하고, 컷을 뽑으면 칸이 저절로 비어 해제 로직이 필요 없다.
+    const userId = req.user && req.user.id;
+    if (userId) {
+      const u = await repo.getUserPlanFields(userId);
+      const cap = packUnusedCap({ id: userId, ...u });
+      const unused = await repo.countUnusedPacks(userId);
+      if (unused >= cap) {
+        return res.status(409).json({
+          error: `안 쓴 미리보기가 ${unused}개 있어요. 그중 하나에서 컷을 만들고 다시 시도해주세요.`,
+          unused, unusedCap: cap,
+        });
+      }
+    }
+
     const pack = await repo.createPack({
-      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, lenses, category, photoCount: req.files.length },
+      userId, vertical, product, config: { skus, states, unit, lenses, category, photoCount: req.files.length },
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
@@ -529,6 +593,7 @@ router.get('/:id', async (req, res, next) => {
       pack.status = 'failed'; pack.error = repo.STALE_ERROR;
       logger.warn?.(`[pack ${pack.id}] 활동 없음 ${repo.STALE_MIN}분 → failed 로 회수`);
     }
+    pack.ref = await refInfo(req.user && req.user.id, pack);   // 게이트가 재생성 비용·잔여를 말하려면 필요
     res.json(pack);
   } catch (e) { next(e); }
 });
@@ -742,12 +807,25 @@ router.post('/:id/regenerate-cut', async (req, res, next) => {
 
 /** 캐논 레퍼 재굽기 — 저장된 소스 사진에서 다시 베이크(새 버전). 이후 컷 재생성은 이 새 레퍼를 씀. */
 router.post('/:id/rebake-ref', async (req, res, next) => {
+  let rbCharge = null;   // 굽기 실패 시 되돌리려면 catch에서 보여야 한다(try 안에 두면 스코프 밖)
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
+    // ③ 재생성: 주기당 refRebakeFree 회까지 무료, 초과분은 굽기 전에 **동기 차감**한다.
+    //   여기가 컷을 안 뽑아도 무한 반복되는 남용 경로라 402를 제대로 돌려줘야 한다.
+    const rbUser = req.user && req.user.id;
+    if (rbUser) {
+      const u = await repo.getUserPlanFields(rbUser);
+      const user = { id: rbUser, ...u };
+      const used = await repo.countRebakesSince(rbUser, refPeriodStart(user));
+      if (used >= refRebakeFree(user)) {
+        try { rbCharge = await chargeRefBake(rbUser, pack.id, '미리보기 재생성(무료 횟수 초과)'); }
+        catch (e) { if (e.statusCode) return res.status(e.statusCode).json({ error: e.message }); throw e; }
+      }
+    }
     const plan = (pack.config && pack.config.plan) || {};
     const sources = (plan.sources || []).filter((p) => fs.existsSync(p));
-    if (!sources.length) return res.status(409).json({ error: '소스 사진이 없어 재굽기 불가(이 팩은 재굽기 전 버전)' });
+    if (!sources.length) { if (rbCharge) await rbCharge.refund().catch(() => {}); return res.status(409).json({ error: '소스 사진이 없어 재굽기 불가(이 팩은 재굽기 전 버전)' }); }
     const suite = suiteFor(pack.vertical);
     const sku = String((req.body && req.body.sku) || 'main');
     const hint = String((req.body && req.body.hint) || '').slice(0, 200); // 교정(예: "한 쌍으로") — 낱개→페어 등
@@ -764,9 +842,9 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
       unit: plan.unit || (pack.config && pack.config.unit) || null,
       refBake: suite.refBake, hint,
     });
-    const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: req.user && req.user.id });
-    res.json({ asset });
-  } catch (e) { next(e); }
+    const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: rbUser, skipRefCharge: true });
+    res.json({ asset, refCharged: !!rbCharge, ref: await refInfo(rbUser, pack) });
+  } catch (e) { if (rbCharge) await rbCharge.refund().catch(() => {}); next(e); }   // 굽기 실패 = 방금 받은 ◈100 환불
 });
 
 module.exports = router;
