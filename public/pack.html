@@ -164,8 +164,9 @@
   .rg-depth.on{color:#fff;background:var(--accent);border-color:var(--accent)}
   .rg-depth.on span{color:rgba(255,255,255,.8)}
   .rg-rebake{display:flex;gap:8px;margin-bottom:16px}
-  .rg-refnote{font-size:12px;color:var(--dim);text-align:center;margin:2px 0 10px}
-  .cf-refnote{font-size:12px;color:var(--dim);text-align:center;margin:10px 0 0}
+  .rg-help{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;
+    background:rgba(255,255,255,.07);color:var(--faint);font-size:10.5px;cursor:help;vertical-align:middle;margin-left:5px}
+  .rg-help:hover{color:var(--text);background:rgba(255,255,255,.14)}
   .rg-rebake input{flex:1;min-width:0;font-family:inherit;font-size:12.5px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 11px}
   .rg-rebake input::placeholder{color:var(--faint)}
   .rg-rebake input:focus{outline:none;border-color:var(--accent2)}
@@ -371,15 +372,17 @@ $('#go').onclick = async () => {
   // 서버가 classify 응답과 GET /:id 에 실어준다. 없으면(비로그인·옛 팩) 안내를 아예 안 띄운다.
   //   무료 구간에서는 화면이 예전과 똑같다 — 넘어갈 때만 숫자가 붙는다.
   var REF = null;
-  function refOverRebake() { return REF && REF.rebakesUsed != null && REF.rebakesUsed >= REF.rebakeFree; }
-  function refRebakeTag()  { return refOverRebake() ? (' \u00b7 \u25c8' + REF.unit) : ''; }
-  function refRebakeLeft() {
-    if (!REF || REF.rebakeFree == null) return '';
-    var left = Math.max(0, REF.rebakeFree - (REF.rebakesUsed || 0));
-    if (left > 0) return isKO() ? ('\uBB34\uB8CC ' + left + '\uD68C \uB0A8\uC74C') : (left + ' free left');
-    return isKO() ? ('\uBB34\uB8CC \uD68C\uC218\uB97C \uB2E4 \uC37C\uC5B4\uC694 \u00b7 \uC774\uD6C4 1\uD68C\uB2F9 \u25c8' + REF.unit)
-                  : ('No free regenerations left \u00b7 \u25c8' + REF.unit + ' each');
+  function refOver() { return REF && REF.used != null && REF.used >= REF.free; }
+  function refTag()  { return refOver() ? (' \u00b7 \u25c8' + REF.unit) : ''; }
+  // 남은 횟수는 화면에 안 깐다 — 물음표 툴팁 안에만 둔다(정상 사용자는 평생 볼 일이 없다).
+  function refHelp() {
+    if (!REF || REF.free == null) return '';
+    var left = Math.max(0, REF.free - (REF.used || 0));
+    return isKO()
+      ? ('\uBBF8\uB9AC\uBCF4\uAE30 \uB9CC\uB4E4\uAE30\uB294 \uC8FC\uAE30\uB2F9 ' + REF.free + '\uD68C\uAE4C\uC9C0 \uBB34\uB8CC\uC608\uC694 (\uC9C0\uAE08 ' + (REF.used || 0) + '\uD68C \uC0AC\uC6A9). \uB118\uC73C\uBA74 1\uD68C\uB2F9 \u25c8' + REF.unit + '.')
+      : ('Previews are free ' + REF.free + ' times per cycle (' + (REF.used || 0) + ' used). \u25c8' + REF.unit + ' each after that.');
   }
+  function refHelpMark() { return refHelp() ? (' <span class="rg-help" title="' + refHelp() + '">?</span>') : ''; }
   function fail(msg) { if (window.toast) toast(msg, 'error'); else alert(msg); } // toast=saas-auth 전역, 미로드 시 alert 폴백
 // 액션 진행 오버레이 — 대상 요소(카드/이미지)에 스피너를 즉시 덮고, 끝나면 제거. 작은 버튼 글씨보다 눈에 띔.
 function busyOn(el, label) { if (!el) return null; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; const o = document.createElement('div'); o.className = 'busy-ov'; o.innerHTML = '<div class="rb-spin"></div>' + (label ? '<span>' + esc(label) + '</span>' : ''); el.appendChild(o); return o; }
@@ -455,10 +458,7 @@ function showConfirm(cls, hint) {
     ${setLine}${unitLine}${stateLine}
     <div class="cf-note">${isKO() ? '카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.' : "The right category gets you the right cuts. If it's wrong, fix it below."}</div>
     <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(catLabel(k))}</button>`).join('')}</div>
-    ${(REF && REF.unusedCap && REF.unused >= REF.unusedCap - 1) ? `<div class="cf-refnote">${isKO()
-        ? `안 쓴 미리보기 ${REF.unused}개 / ${REF.unusedCap}개 — 컷을 만들면 자리가 다시 생겨요`
-        : `${REF.unused} of ${REF.unusedCap} previews unused — making cuts frees a slot`}</div>` : ''}
-      <div class="cf-actions">
+    <div class="cf-actions">
       <button class="cf-cancel" onclick="document.querySelector('.cf-bg').remove()">${isKO() ? '취소' : 'Cancel'}</button>
       <button class="cf-go" onclick="confirmGenerate()">${isKO() ? '네, 이걸로 만들기' : 'Yes, make it with this'}</button>
     </div>
@@ -674,7 +674,7 @@ function cardHtml(slot, versions, done) {
   const cutKey = slot.key;
   const seedable = !isRef && slot.kind === 'still' && ((PACK.config && PACK.config.plan && PACK.config.plan.cuts) || []).some(c => c.key === cutKey);
   const acts = isRef
-    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">${isKO() ? '↻ 미리보기 재생성' : '↻ Regenerate preview'}${refRebakeTag()}</button>`
+    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">${isKO() ? '↻ 미리보기 재생성' : '↻ Regenerate preview'}${refTag()}</button>`
     : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)" title="${isKO() ? `새 버전 1장 · ◈${PACK_CUT_CR}` : `1 new version · ◈${PACK_CUT_CR}`}">${isKO() ? '↻ 다시' : '↻ Redo'}</button>`
       + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="${isKO() ? `이 컷과 같은 무드로 각도·구도만 다른 컷을 3장 더 · ◈${(3 * PACK_CUT_CR).toLocaleString()}` : `3 more cuts in this mood, varying only angle and framing · ◈${(3 * PACK_CUT_CR).toLocaleString()}`}">${isKO() ? '✦ 이런 걸로 더' : '✦ More like this'}</button>` : '')
       + `<a class="cutbtn" href="/studio" title="${isKO() ? 'studio에서 정밀 편집' : 'Fine-tune in studio'}">✎ studio</a>`;
@@ -852,7 +852,7 @@ function showRefGate(pack) {
     const a = latest['ref_' + u.key] || (multi ? null : latestRef(pack));
     const url = a ? esc(a.url) : '';
     const inner = `<div class="rg-img"><img class="rgImg" data-s="${esc(u.key)}" src="${url}" data-u="${url}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '다시 구울 때 교정(선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '미리보기 재생성' : 'Regenerate preview'}${refRebakeTag()}</button></div>`;
+      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '다시 구울 때 교정(선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '미리보기 재생성' : 'Regenerate preview'}${refTag()}</button>${refHelpMark()}</div>`;
     return multi ? `<div class="rg-state"><div class="rg-state-h">${esc(u.label)}</div>${inner}</div>` : inner;
   }).join('');
   const isState = units[0] && units[0].kind === 'state';
@@ -880,8 +880,7 @@ function showRefGate(pack) {
     <div class="rg-depth-h">${isKO() ? '몇 컷 만들까요?' : 'How many cuts?'}${multi ? ` <span class="rg-depth-sub">${isKO() ? `${unitWord}별로 고루 나눠 만듭니다` : `Split evenly per ${unitWord}`}</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${isKO() ? `${o.n}컷` : `${o.n} cuts`}</span></button>`).join('')}</div>
     <div class="rg-cost">${isKO() ? '예상 크레딧' : 'Estimated credits'} <b id="rgCost">◈${(gateDepth * PACK_CUT_CR).toLocaleString()}</b> <span class="rg-cost-sub">${isKO() ? `· 컷당 ◈${PACK_CUT_CR}` : `· ◈${PACK_CUT_CR} / cut`}</span></div>
-    ${refRebakeLeft() ? `<div class="rg-refnote">${isKO() ? '미리보기 재생성 · ' : 'Preview regeneration · '}${refRebakeLeft()}</div>` : ''}
-      <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">${isKO() ? `이대로 <b id="rgN">${gateDepth}</b>컷 만들기` : `Make <b id="rgN">${gateDepth}</b> cuts`}</button></div>
+    <div class="rg-actions"><button class="rg-go" onclick="gateProceed()">${isKO() ? `이대로 <b id="rgN">${gateDepth}</b>컷 만들기` : `Make <b id="rgN">${gateDepth}</b> cuts`}</button></div>
   </div></div>`);
 }
 function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; const c = document.getElementById('rgCost'); if (c) c.textContent = '◈' + (n * PACK_CUT_CR).toLocaleString(); }
@@ -899,7 +898,7 @@ async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의
     const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     const img = pick('.rg-bg img.rgImg'); if (img && d.asset) { img.src = d.asset.url; img.dataset.u = d.asset.url; img.style.opacity = 1; }
     if (inp) inp.value = '';
-    if (window.toast) toast(isKO() ? ('미리보기를 다시 만들었어요' + (refRebakeLeft() ? ' · ' + refRebakeLeft() : '')) : 'Preview regenerated');
+    if (window.toast) toast(isKO() ? '미리보기를 다시 만들었어요' : 'Preview regenerated');
   } catch (e) { if (window.toast) toast((isKO() ? '미리보기 재생성 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); }
   finally { busyOff(ov); btn.disabled = false; btn.textContent = t; }
 }
