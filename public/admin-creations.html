@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>크리에이션(비공개 포함) · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+.nav{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.nav a{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px}
+.nav a:hover{color:var(--text);border-color:var(--accent2)}
+.nav a.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.seg button{font-family:inherit;background:none;border:none;color:var(--dim);font-size:.85rem;font-weight:600;padding:8px 14px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+input.search{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.9rem;font-family:inherit;min-width:240px}
+input.search:focus{outline:none;border-color:var(--accent2)}
+.count{margin-left:auto;color:var(--faint);font-size:.85rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.card .media{position:relative;aspect-ratio:4/5;background:var(--panel2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card .media img,.card .media video{width:100%;height:100%;object-fit:cover;display:block}
+.card .media .ph{color:var(--faint);font-size:.8rem}
+.badges{position:absolute;top:8px;left:8px;display:flex;gap:5px;flex-wrap:wrap}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:.68rem;font-weight:700;backdrop-filter:blur(4px)}
+.b-priv{background:rgba(217,96,143,.85);color:#fff}
+.b-pub{background:rgba(74,222,128,.85);color:#06210f}
+.b-fail{background:rgba(248,113,113,.9);color:#2a0b0b}
+.b-down{background:rgba(154,154,178,.9);color:#111}
+.b-reel{position:absolute;top:8px;right:8px;background:rgba(20,16,34,.75);color:#fff;padding:3px 8px;border-radius:20px;font-size:.68rem;font-weight:700}
+.meta{padding:10px 12px;font-size:.78rem;line-height:1.5}
+.meta .em{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .tpl{color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .dt{color:var(--faint);font-size:.72rem;margin-top:2px}
+.more{display:block;margin:26px auto 0;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:.9rem;font-weight:600;padding:11px 26px;border-radius:11px;cursor:pointer}
+.more:hover{border-color:var(--accent2)}
+.more:disabled{opacity:.5;cursor:default}
+.empty{color:var(--faint);text-align:center;padding:60px 20px}
+.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px}
+.err.show{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 크리에이션 뷰어</h1>
+  <div class="sub">모든 유저의 생성물을 <b>비공개(private) 포함</b> 확인합니다. (관리자 전용 · 읽기)</div>
+  <div class="nav">
+    <a href="/admin-creations" class="on">🖼 크리에이션</a>
+    <a href="/admin-stats">📊 통계</a>
+    <a href="/admin-trials">🎟 체험 계정</a>
+    <a href="/admin-templates">🧩 템플릿</a>
+  </div>
+
+  <div class="err" id="err"></div>
+
+  <div class="bar">
+    <div class="seg" id="visSeg">
+      <button data-v="private" class="on" onclick="setVis('private',this)">비공개</button>
+      <button data-v="" onclick="setVis('',this)">전체</button>
+      <button data-v="public" onclick="setVis('public',this)">공개</button>
+    </div>
+    <div class="seg" id="statSeg">
+      <button data-s="" class="on" onclick="setStat('',this)">전체 상태</button>
+      <button data-s="success" onclick="setStat('success',this)">성공</button>
+      <button data-s="failed" onclick="setStat('failed',this)">실패</button>
+    </div>
+    <input class="search" id="q" placeholder="이메일·템플릿 검색…" onkeydown="if(event.key==='Enter')reload()">
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <button class="more" id="moreBtn" style="display:none" onclick="loadMore()">더 보기</button>
+  <div class="empty" id="empty" style="display:none">결과가 없습니다.</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let state={visibility:'private',status:'',q:'',offset:0,loading:false};
+function showErr(m){const e=$('err');e.textContent='⚠ '+m;e.classList.add('show');}
+function clearErr(){$('err').classList.remove('show');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmtDate(s){try{return new Date(s).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
+
+function setVis(v,btn){state.visibility=v;segOn('visSeg',btn);reload();}
+function setStat(s,btn){state.status=s;segOn('statSeg',btn);reload();}
+function segOn(id,btn){[...document.getElementById(id).children].forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+
+function cardHtml(c){
+  const media = !c.url ? `<div class="ph">no file</div>`
+    : c.isReel ? `<video src="${esc(c.url)}#t=0.1" muted playsinline preload="metadata"></video><span class="b-reel">▶ reel</span>`
+    : `<img src="${esc(c.url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=ph>load fail</div>'">`;
+  const badges = [
+    c.visibility==='private'?`<span class="badge b-priv">비공개</span>`:`<span class="badge b-pub">공개</span>`,
+    c.status && c.status!=='success'?`<span class="badge b-fail">${esc(c.status)}</span>`:'',
+    c.takenDown?`<span class="badge b-down">테이크다운</span>`:''
+  ].join('');
+  return `<div class="card">
+    <div class="media">${media}<div class="badges">${badges}</div></div>
+    <div class="meta">
+      <div class="em">${esc(c.userEmail||c.userName||'—')}</div>
+      <div class="tpl">${esc(c.templateName||'(Custom / 프롬프트)')}</div>
+      <div class="dt">${fmtDate(c.createdAt)}${c.likes?` · ♥ ${c.likes}`:''}${c.width&&c.height?` · ${c.width}×${c.height}`:''}</div>
+    </div>
+  </div>`;
+}
+
+async function load(reset){
+  if(state.loading)return; state.loading=true; clearErr();
+  if(reset){state.offset=0;$('grid').innerHTML='';}
+  $('moreBtn').disabled=true;
+  try{
+    const p=new URLSearchParams();
+    if(state.visibility)p.set('visibility',state.visibility);
+    if(state.status)p.set('status',state.status);
+    if(state.q)p.set('q',state.q);
+    p.set('limit','60');p.set('offset',String(state.offset));
+    const res=await fetch('/api/admin/creations?'+p.toString());
+    if(res.status===403){showErr('관리자 권한이 필요합니다.');$('empty').style.display='block';return;}
+    const d=await res.json();
+    const rows=d.data||[];
+    $('grid').insertAdjacentHTML('beforeend',rows.map(cardHtml).join(''));
+    state.offset+=rows.length;
+    $('count').textContent=`${state.offset}개 로드됨`;
+    $('empty').style.display=(state.offset===0)?'block':'none';
+    $('moreBtn').style.display=d.hasMore?'block':'none';
+  }catch(e){showErr('불러오기 실패');}
+  finally{state.loading=false;$('moreBtn').disabled=false;}
+}
+function reload(){state.q=$('q').value.trim();load(true);}
+function loadMore(){load(false);}
+load(true);
+</script>
+</body>
+</html>
