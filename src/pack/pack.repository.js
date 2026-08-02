@@ -41,7 +41,7 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );`);
   await query(`CREATE INDEX IF NOT EXISTS idx_pack_assets_pack ON pack_assets(pack_id);`);
-  // 한도 판정(countUnusedPacks·countRebakesSince)이 굽기마다 도는 쿼리 — user_id 범위 스캔.
+  // 한도 판정(countBakesSince)이 굽기마다 도는 쿼리 — user_id 범위 스캔.
   await query(`CREATE INDEX IF NOT EXISTS idx_content_packs_user ON content_packs(user_id);`);
   _ensured = true;
 }
@@ -151,44 +151,20 @@ async function getUserPlanFields(userId) {
 }
 
 /**
- * 안 쓴 팩 = 컷(kind='still')이 한 장도 없는 내 팩. **전 기간**(주기 무관).
- * 컷을 뽑는 순간 조건에서 빠져 한 칸이 저절로 비워진다 ⇒ 해제 로직·타이머 불필요.
+ * 이번 주기에 이 사용자가 구운 레퍼 총 횟수(새로 굽기 + 재굽기 합산, 전 팩).
+ *
+ * 🔴 status='failed' 는 뺀다 — 서버 재시작 등으로 끊긴 팩은 **사용자 잘못이 아니다**.
+ *    처음엔 안 걸렀는데, 실측에서 한 계정에 21건이 잡혔고 대부분이 끊긴 팩이었다.
+ * recordAsset이 버전마다 새 행을 쌓으므로(재생성=비파괴) 행 수가 곧 굽기 횟수다 — 카운터 컬럼 불필요.
  */
-async function countUnusedPacks(userId) {
+async function countBakesSince(userId, since) {
   await ensureSchema();
   if (userId == null) return 0;
   const r = await query(
-    `SELECT count(*)::int AS n FROM content_packs p
-      WHERE p.user_id = $1
-        AND NOT EXISTS (SELECT 1 FROM pack_assets a WHERE a.pack_id = p.id AND a.kind = 'still')`,
-    [String(userId)]
-  );
-  return (r.rows[0] && r.rows[0].n) || 0;
-}
-
-/**
- * 이 팩의 레퍼 굽기 횟수 = { initial, rebakes }.
- * recordAsset이 버전마다 **새 행**을 쌓으므로(재생성=비파괴), 키 종류 수 = 초기 굽기,
- * 나머지가 재생성이다. 별도 카운터 컬럼이 필요 없다.
- */
-async function countRefBakes(packId) {
-  const r = await query(
-    `SELECT count(*)::int AS total, count(DISTINCT cut_key)::int AS keys
-       FROM pack_assets WHERE pack_id = $1 AND kind = 'ref'`, [packId]);
-  const row = r.rows[0] || { total: 0, keys: 0 };
-  return { initial: row.keys, rebakes: Math.max(0, row.total - row.keys) };
-}
-
-/** 이번 주기에 이 사용자가 쓴 재생성 총 횟수(전 팩 합산). */
-async function countRebakesSince(userId, since) {
-  await ensureSchema();
-  if (userId == null) return 0;
-  const r = await query(
-    `SELECT COALESCE(SUM(t.total - t.keys), 0)::int AS n FROM (
-        SELECT count(*) AS total, count(DISTINCT a.cut_key) AS keys
-          FROM pack_assets a JOIN content_packs p ON p.id = a.pack_id
-         WHERE p.user_id = $1 AND a.kind = 'ref' AND a.created_at >= $2
-         GROUP BY a.pack_id) t`,
+    `SELECT count(*)::int AS n
+       FROM pack_assets a JOIN content_packs p ON p.id = a.pack_id
+      WHERE p.user_id = $1 AND a.kind = 'ref' AND a.created_at >= $2
+        AND p.status <> 'failed'`,
     [String(userId), since]
   );
   return (r.rows[0] && r.rows[0].n) || 0;
@@ -213,5 +189,5 @@ async function getPack({ id, shareId, userId }) {
 module.exports = {
   ensureSchema, createPack, setStatus, setPlan, setPromptIdx, addAsset, getPack,
   failStale, isStale, mergeConfig, STALE_MIN, STALE_ERROR,
-  getUserPlanFields, countUnusedPacks, countRefBakes, countRebakesSince,
+  getUserPlanFields, countBakesSince,
 };

@@ -20,14 +20,13 @@ const PLANS = {
   //                  (studio.html:4560의 업셀 토스트는 그래서 한 번도 발화하지 않는다.)
   // hd            ⛔ 선언만 있고 미배선. 해상도를 플랜으로 나누는 코드가 없다(subscription API 응답에만 노출).
   //                  ⇒ watermarkFree·hd는 배선 전까지 가격표에서 차별점으로 팔지 말 것 = 지금 지키지 못하는 약속.
-  // ── 콘텐츠 팩 미리보기(캐논 레퍼) 3축 (2026-08-03) — 아래 '팩 미리보기 정산' 주석에 근거 계산 있음 ──
-  // packUnusedCap  안 쓴 팩(컷 0장) 동시 보유 상한. 넘으면 새 팩 생성 차단(409). 컷을 뽑으면 저절로 비워진다.
-  // refRebakeFree  주기당 무료 재생성 횟수. 초과분은 굽기당 ◈100.
-  free:     { name: 'Free',     rank: 0, monthlyCredits: 1500,  packUnusedCap: 3,  refRebakeFree: 5,   watermarkFree: false, hd: false, commercial: false, privateMode: false },
-  starter:  { name: 'Starter',  rank: 1, monthlyCredits: 7300,  packUnusedCap: 5,  refRebakeFree: 15,  watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
-  standard: { name: 'Standard', rank: 2, monthlyCredits: 20300, packUnusedCap: 8,  refRebakeFree: 35,  watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
-  pro:      { name: 'Pro',      rank: 3, monthlyCredits: 44000, packUnusedCap: 12, refRebakeFree: 70,  watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
-  premium:  { name: 'Premium',  rank: 4, monthlyCredits: 95000, packUnusedCap: 20, refRebakeFree: 130, watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
+  // refBakeFree ✅ 캐논 레퍼 굽기(새로 굽기 + 재굽기 **합산**) 주기당 무료 횟수. 초과분은 굽기당 ◈200.
+  //                아래 '팩 미리보기 정산' 주석에 근거 계산 있음.
+  free:     { name: 'Free',     rank: 0, monthlyCredits: 1500,  refBakeFree: 5,   watermarkFree: false, hd: false, commercial: false, privateMode: false },
+  starter:  { name: 'Starter',  rank: 1, monthlyCredits: 7300,  refBakeFree: 15,  watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
+  standard: { name: 'Standard', rank: 2, monthlyCredits: 20300, refBakeFree: 35,  watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
+  pro:      { name: 'Pro',      rank: 3, monthlyCredits: 44000, refBakeFree: 70,  watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
+  premium:  { name: 'Premium',  rank: 4, monthlyCredits: 95000, refBakeFree: 130, watermarkFree: true,  hd: true,  commercial: true,  privateMode: true  },
   // ⇒ 개방 결과: 유료 4티어는 기능 축이 완전히 동일하고 monthlyCredits(쓰는 양)만 다르다.
   //    가격표도 정확히 그렇게 말할 것 — 없는 차별점을 지어내면 slots/Concept cut 사태가 반복된다.
   //
@@ -37,33 +36,25 @@ const PLANS = {
   //    권한은 Free(◈1,500·상업권 없음)가 된다. 고객이 아직 0명이라 안 터졌을 뿐이다.
   // 키 이름이 가격표와 다른 이유: 가격표는 enterprise.{team,pro,elite} 중첩이고 여기는 평평한 키라
   //    'pro'가 개인 Pro와 충돌한다 ⇒ entTeam·entPro·elite. users.plan에 저장될 값도 이것.
-  entTeam:  { name: 'Enterprise Team', rank: 5, monthlyCredits: 362000, packUnusedCap: 40, refRebakeFree: 360, watermarkFree: true, hd: true, commercial: true, privateMode: true },
-  entPro:   { name: 'Enterprise Pro',  rank: 6, monthlyCredits: 575000, packUnusedCap: 60, refRebakeFree: 540, watermarkFree: true, hd: true, commercial: true, privateMode: true },
-  elite:    { name: 'Elite',           rank: 7, monthlyCredits: 813000, packUnusedCap: 80, refRebakeFree: 700, watermarkFree: true, hd: true, commercial: true, privateMode: true },
+  entTeam:  { name: 'Enterprise Team', rank: 5, monthlyCredits: 362000, refBakeFree: 360, watermarkFree: true, hd: true, commercial: true, privateMode: true },
+  entPro:   { name: 'Enterprise Pro',  rank: 6, monthlyCredits: 575000, refBakeFree: 540, watermarkFree: true, hd: true, commercial: true, privateMode: true },
+  elite:    { name: 'Elite',           rank: 7, monthlyCredits: 813000, refBakeFree: 700, watermarkFree: true, hd: true, commercial: true, privateMode: true },
 };
 
 // ─── 팩 미리보기(캐논 레퍼) 정산 ────────────────────────────────────────────────
-// 원칙: **기본은 넉넉히 무료, 넘으면 값.** 기능을 자르는 곳은 한 군데도 없다.
+// 규칙은 **하나뿐**이다: 굽기(새로 굽기 + 재굽기 합산)가 주기당 refBakeFree 회까지 무료,
+//   초과분은 굽기당 ◈200. 기능을 자르는 곳은 없다 — 변형 많은 세트도 다 굽고 값만 받는다.
 //
-//   ① 초기 굽기   팩당 REF_FREE_INITIAL(6)장까지 무료 · 초과분 굽기당 ◈100
-//   ② 새 팩 생성  안 쓴 팩이 packUnusedCap 이상이면 409 차단(과금 아님)
-//   ③ 재생성      주기당 refRebakeFree 회까지 무료 · 초과분 굽기당 ◈100
+// 🔑 왜 초기/재굽기를 나누지 않는가 — 원가가 같기 때문이다(둘 다 nano-banana 1장 $0.149).
+//    나누면 축이 늘고, 팩당 한도는 팩 개수가 무제한이라 총량을 못 잡는다. **주기당 총량 하나**면
+//    어떻게 굴리든 노출이 확정된다.
 //
-// 🔑 왜 축마다 통제 방식이 다른가 — **수입이 비용을 따라오는가**가 갈린다.
-//   · 초기 굽기는 게이트 최소 선택이 4컷이라 팩당 최소 4컷 수입이 항상 동반된다.
-//     굽기 1회 원가 $0.149 vs 4컷 마진 $1.02(최악 Elite) ⇒ 레퍼 6장까지 흑자(손익분기 6.8).
-//     그래서 6까지 무료로 열어도 안전하고, 그 위는 값을 받되 **자르지는 않는다**
-//     (변형 10색 세트를 6색으로 조용히 깎으면 셀러 눈엔 제품 손실이다).
-//   · 재생성은 컷을 안 뽑아도 무한 반복이 된다 ⇒ 수입 0에 비용만 쌓인다.
-//     팩당 한도로는 못 막는다(팩 개수가 무제한이라 총량이 안 잡힘) ⇒ **주기당 총량**으로 막는다.
-//     refRebakeFree는 최악(무료분을 다 쓰고 컷을 하나도 안 뽑음)에도 원가가 월 마진의 15% 안이 되게 잡았다.
-//   · 새 팩 생성은 "만들고 방치"만 겨냥한다. 컷을 뽑으면 칸이 저절로 비므로 해제 로직이 필요 없고,
-//     돈을 안 받으니 "무료라며 왜 돈 내냐"는 반발도 없다.
-//
-// ⚠️ 상위 티어일수록 컷당 마진이 **낮다**(볼륨 할인: Starter $0.552 → Elite $0.255).
-//    그래서 "상위 플랜에 더 준다"는 **팩당 기준으로는 성립하지 않는다** — 주기당 총량 기준으로만 성립한다
-//    (월 마진이 Starter $13 vs Elite $691이라 총량으로는 정직하게 더 줄 수 있다).
-const REF_FREE_INITIAL = 6;
+// 숫자 근거 — 최악(무료분을 다 쓰고 컷을 하나도 안 뽑음) 원가가 월 마진의 15~17% 안에 들도록 잡았다.
+//    정상 사용량 검산: 팩 하나에 레퍼 2장·컷 8장쯤 뽑으므로 실사용 ≈ (월 컷 ÷ 8) × 2.
+//      Elite 2,710÷8×2 = 678회 필요 vs 700 제공 · Starter 24÷8×2 = 6회 필요 vs 15 제공.
+// ⚠️ 상위 티어일수록 컷당 마진이 **낮다**(볼륨 할인 Starter $0.552 → Elite $0.255).
+//    그래서 초과 단가 ◈200은 최악(Elite 손익분기 ◈175)보다 위로 잡아야 전 티어가 안전하다.
+//    ◈100이면 Premium 이상에서 받을수록 손해였다(◈100의 마진 $0.085 < 굽기 원가 $0.149).
 
 /** 사용자의 유효 플랜 키 (admin은 최상위 premium 권한으로 취급) */
 function planKey(user) {
@@ -84,16 +75,10 @@ function entitlementsFor(user) {
   return PLANS[planKey(user)];
 }
 
-/** 안 쓴 팩(컷 0장) 동시 보유 상한 */
-function packUnusedCap(user) {
+/** 주기당 무료 굽기 횟수(새로 굽기 + 재굽기 합산) */
+function refBakeFree(user) {
   const e = entitlementsFor(user);
-  return (e && e.packUnusedCap) || PLANS.free.packUnusedCap;
-}
-
-/** 주기당 무료 재생성 횟수 */
-function refRebakeFree(user) {
-  const e = entitlementsFor(user);
-  return (e && e.refRebakeFree) || PLANS.free.refRebakeFree;
+  return (e && e.refBakeFree) || PLANS.free.refBakeFree;
 }
 
 // ── 재생성 주기의 경계 ──────────────────────────────────────────────────────
@@ -161,4 +146,4 @@ function requirePlan(minPlan) {
 }
 
 module.exports = { PLANS, planKey, entitlementsFor, isPro, isWatermarkExempt, requirePlan,
-  REF_FREE_INITIAL, packUnusedCap, refRebakeFree, refPeriodStart };
+  refBakeFree, refPeriodStart };
