@@ -300,31 +300,10 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉(브리프)이 있으면, 캐논 레퍼 기준으로 1장 렌더해
   //   게이트/결과에서 "캐논 레퍼(생성 기준)"와 "내 컨셉 미리보기"를 나란히 보여준다.
   //   (브리프가 없으면 만들지 않는다 — 불필요한 생성 방지.)
-  const briefText = (product || '').trim();
-  if (briefText) {
-    try {
-      // 🔑 미리보기 레퍼 선택 — 상태가 여럿이면 **브랜드가 보이는 대표 상태**(대개 앞면/히어로)를 쓴다.
-      //   예전엔 무조건 첫 레퍼(refs[0])라, 첫 상태가 "뒷면 그래픽"이면 그 그래픽을 앞면에 얹는 앞/뒤 혼동이 났다.
-      const previewSku = (brandSku && refBySku[brandSku]) ? brandSku : manifest.refs[0].sku;
-      const previewRefPath = refBySku[previewSku] || primaryRef;
-      // 🔑 그 레퍼가 어느 상태인지 **명시** — 상태를 안 말해주면 모델이 앞/뒤·열림/닫힘을 섞는다(실측: 뒷면 그래픽→앞면).
-      const previewState = (planStates || []).find((s) => s.key === previewSku);
-      const stateClause = (previewState && previewState.desc)
-        ? ` The reference shows the product in this exact state: ${previewState.desc}. Reproduce THAT state precisely — never move, mirror or relocate any graphic, print or logo to a different side or face (a back print stays on the back, a front stays a front), and never merge two different states into one.`
-        : '';
-      const conceptCut = {
-        key: 'concept_preview', label: '컨셉 미리보기', w: 960, h: 960,
-        neg: 'garbled or fabricated lettering, distorted label, warped product, duplicate product, extra caps, graphic printed on the wrong side, print moved to the opposite face, front and back merged',
-        prompt: `Marketing photo of ONE single ${ctxProduct || 'product'}, identical to the reference — keep its exact shape, color and label/wordmark, do not fabricate lettering — realizing this concept and mood: "${briefText}".${stateClause} Ground the scene and styling in that concept while keeping the product accurate and tack-sharp.`,
-      };
-      const buf = await genStill({ canonRefPath: previewRefPath, cut: conceptCut, ctx });
-      const cp = path.join(workDir, 'concept_preview.jpg');
-      fs.writeFileSync(cp, buf);
-      manifest.concept = { key: 'concept_preview', label: '컨셉 미리보기', path: cp };
-      await ship('concept', { key: 'concept_preview', label: '컨셉 미리보기', path: cp });
-      emit({ stage: 'concept' });
-    } catch (e) { emit({ stage: 'concept', error: e.message }); } // 실패해도 레퍼 게이트는 진행
-  }
+    // (2026-08-03 제거) 컨셉 미리보기 — 브리프를 레퍼로 한 번 렌더해 보여주던 참고 1장.
+    //   게이트에 '컨셉을 고쳐 다시' 입력칸이 없어 **보고도 손댈 수 없었다**(취소하고 처음부터가 유일한 길).
+    //   못 고치는 걸 보여주려고 팩마다 이미지 1장을 더 굽는 값이 안 맞아 뺐다.
+    //   되살리려면 게이트에 컨셉 수정 입력칸을 같이 붙일 것 — 그래야 원래 의도대로 굴러간다.
 
   if (stopAfter === 'ref') return manifest; // 🔵 레퍼 소프트 게이트: 레퍼까지만 굽고 멈춘다(스틸은 사용자 확인 후 generate 단계에서).
 

@@ -132,15 +132,11 @@
   .rg-states.two{grid-template-columns:1fr 1fr}
   .rg-state{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg2)}
   .rg-state-h{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px}
-  /* 컨셉 미리보기 ↔ 캐논 레퍼 나란히 비교 */
   .rg-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
   @media(max-width:640px){.rg-compare{grid-template-columns:1fr}}
-  .rg-concept,.rg-canon{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg2)}
-  .rg-concept .rg-img{margin-bottom:8px;background:var(--surface);aspect-ratio:auto;height:min(300px,34vh)}
   .rg-compare .rg-states{margin-bottom:0}
   .rg-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.06);color:var(--dim);vertical-align:1px;margin-left:4px}
   .rg-tag.on{background:linear-gradient(180deg,#7c52e8,#5c33c2);color:#fff}
-  .rg-concept-note{font-size:11px;color:var(--dim);line-height:1.5}
   /* 확인용 썸네일이라 크게 필요 없음 — 높이를 묶어 두 상태가 한눈에 들어오게. */
   .rg-state .rg-img{margin-bottom:10px;background:var(--surface);aspect-ratio:auto;height:min(300px,34vh)}
   .rg-states.many .rg-state .rg-img{height:min(150px,20vh)}
@@ -365,10 +361,10 @@ $('#go').onclick = async () => {
   try { const r = await fetch('/api/pack/classify', { method: 'POST', body: fd }); cls = await r.json(); if (!r.ok) throw new Error(cls.error || r.status); }
   catch (e) { cls = { category: 'other', product: '', isSet: false, variants: [] }; } // 분류 실패해도 확인창에서 직접 고르게(막지 않음)
   $('#go').disabled = false; $('#go').textContent = gt;
-  if (cls && cls.ref) REF = cls.ref;   // 미리보기 비용·잔여 안내용
+  if (cls && cls.ref) REF = cls.ref;   // 기준 사진 비용·잔여 안내용
     showConfirm(cls, hint);
 };
-// ── 미리보기(캐논 레퍼) 한도 안내 ──────────────────────────────────────────
+// ── 기준 사진(캐논 레퍼) 한도 안내 ──────────────────────────────────────────
   // 서버가 classify 응답과 GET /:id 에 실어준다. 없으면(비로그인·옛 팩) 안내를 아예 안 띄운다.
   //   무료 구간에서는 화면이 예전과 똑같다 — 넘어갈 때만 숫자가 붙는다.
   var REF = null;
@@ -379,8 +375,8 @@ $('#go').onclick = async () => {
     if (!REF || REF.free == null) return '';
     var left = Math.max(0, REF.free - (REF.used || 0));
     return isKO()
-      ? ('\uBBF8\uB9AC\uBCF4\uAE30 \uB9CC\uB4E4\uAE30\uB294 \uC8FC\uAE30\uB2F9 ' + REF.free + '\uD68C\uAE4C\uC9C0 \uBB34\uB8CC\uC608\uC694 (\uC9C0\uAE08 ' + (REF.used || 0) + '\uD68C \uC0AC\uC6A9). \uB118\uC73C\uBA74 1\uD68C\uB2F9 \u25c8' + REF.unit + '.')
-      : ('Previews are free ' + REF.free + ' times per cycle (' + (REF.used || 0) + ' used). \u25c8' + REF.unit + ' each after that.');
+      ? ('\uAE30\uC900 \uC0AC\uC9C4 \uB9CC\uB4E4\uAE30\uB294 \uC8FC\uAE30\uB2F9 ' + REF.free + '\uD68C\uAE4C\uC9C0 \uBB34\uB8CC\uC608\uC694 (\uC9C0\uAE08 ' + (REF.used || 0) + '\uD68C \uC0AC\uC6A9). \uB118\uC73C\uBA74 1\uD68C\uB2F9 \u25c8' + REF.unit + '.')
+      : ('Base photos are free ' + REF.free + ' times per cycle (' + (REF.used || 0) + ' used). \u25c8' + REF.unit + ' each after that.');
   }
   function refHelpMark() { return refHelp() ? (' <span class="rg-help" title="' + refHelp() + '">?</span>') : ''; }
   function fail(msg) { if (window.toast) toast(msg, 'error'); else alert(msg); } // toast=saas-auth 전역, 미로드 시 alert 폴백
@@ -449,7 +445,7 @@ function showConfirm(cls, hint) {
   const UNIT_LABEL = { pair: 'a pair', with_package: 'product + package', group: 'bundle set' };
   const UNIT_LABEL_KO = { pair: '한 쌍', with_package: '제품 + 패키지', group: '묶음 세트' };
   // 라벨 뒤에 조사를 붙이지 않는다 — "한 쌍"+"로" = "한 쌍로"(틀림). 조사 없이 끊어 쓴다.
-  const unitLine = unit ? `<div class="cf-set">${isKO() ? `한 단위 · ${esc(UNIT_LABEL_KO[unit])} — 이 단위로 미리보기를 만듭니다` : `One unit · ${esc(UNIT_LABEL[unit])} — the reference is baked at this unit`}</div>` : '';
+  const unitLine = unit ? `<div class="cf-set">${isKO() ? `한 단위 · ${esc(UNIT_LABEL_KO[unit])} — 이 단위로 기준 사진을 만듭니다` : `One unit · ${esc(UNIT_LABEL[unit])} — the reference is baked at this unit`}</div>` : '';
   document.querySelector('.cf-bg') && document.querySelector('.cf-bg').remove();
   document.body.insertAdjacentHTML('beforeend', `<div class="cf-bg"><div class="cf">
     <div class="cf-h">${isKO() ? '이 제품 맞나요?' : 'Is this your product?'}</div>
@@ -507,7 +503,7 @@ async function confirmGenerate() {
 //   계획(config.plan)이 정해지는 즉시 "생성되는 수만큼" 스피너 슬롯 + 경과초를 깔고, 완료되는 대로 이미지로 채운다.
 //   계획 전(사진 분석 중)엔 개수를 모르므로 "분석 중" 상태. 완료 시 안 채워진 슬롯 = 실패 카드.
 const KIND_LABEL = { still: 'Stills', composite: 'Composites', ref: 'Canonical reference' };
-const KIND_LABEL_KO = { still: '스틸', composite: '합성', ref: '미리보기' };
+const KIND_LABEL_KO = { still: '스틸', composite: '합성', ref: '기준 사진' };
 const kindLabel = (k) => (isKO() ? KIND_LABEL_KO : KIND_LABEL)[k];
 const KIND_ORDER = ['ref', 'still', 'composite'];   // 캐논 레퍼 먼저(완료 화면 renderInteractive와 동일 순서)
 const filled = new Set();
@@ -573,14 +569,12 @@ function renderInteractive(pack) {
   Object.keys(groups).forEach(id => { if (!order.some(s => slotId(s) === id)) { const m = id.match(/^([^:]+):(.+)$/); if (m) order.push({ kind: m[1], key: m[2], label: groups[id][0].label }); } });
   const byKind = {};
   order.forEach(s => (byKind[s.kind] = byKind[s.kind] || []).push(s));
-  // 🟢 컨셉 미리보기 — 유저가 입력한 컨셉을 캐논 레퍼로 렌더한 예시.
-  const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
-  const conceptHtml = concept ? `<h2>${isKO() ? '내 컨셉 미리보기' : 'My concept preview'}</h2><div class="grid"><figure class="rescard"><a class="dl" href="${esc(concept.url)}" download="${esc(fname(concept))}" title="${isKO() ? '다운로드' : 'Download'}">⤓</a><img src="${esc(concept.url)}" loading="lazy"><figcaption>${isKO() ? '입력한 컨셉으로 만든 예시' : 'An example made from your concept'}</figcaption></figure></div>` : '';
+  // (2026-08-03) 컨셉 미리보기 제거 — 보고도 고칠 수단이 없어(취소 후 처음부터가 유일) 값이 안 맞았다.
   // 섹션 하나 렌더(제목 + 그리드).
   const section = (k) => byKind[k] ? `<h2>${kindLabel(k) || k}</h2><div class="grid">${byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('')}</div>` : '';
-  // 🔀 순서: **캐논 레퍼(생성 기준) 먼저** → 내 컨셉 미리보기 → 스틸. (합성은 더 이상 만들지 않음 — 옛 팩에 남아 있으면 스틸 뒤에.)
+  // 🔀 순서: **기준 사진 먼저** → 스틸. (합성은 더 이상 만들지 않음 — 옛 팩에 남아 있으면 스틸 뒤에.)
   //   맨 위에 🎬 영상 블록(있으면 영상, 만드는 중, 또는 만들기 CTA).
-  $('#assets').innerHTML = `<div id="packVideo">${videoBlockInner(pack)}</div>` + section('ref') + conceptHtml + section('still') + section('composite') + moreBarHtml(pack);
+  $('#assets').innerHTML = `<div id="packVideo">${videoBlockInner(pack)}</div>` + section('ref') + + section('still') + section('composite') + moreBarHtml(pack);
 }
 // ── 🎬 광고 영상 (선택형·과금) ─────────────────────────────────────────────
 //   팩이 이미 분석한 제품·컨셉으로 Ad Video 엔진이 한 편. 매 생성마다 안 굽고 버튼 눌렀을 때만(영상=초당 과금).
@@ -674,7 +668,7 @@ function cardHtml(slot, versions, done) {
   const cutKey = slot.key;
   const seedable = !isRef && slot.kind === 'still' && ((PACK.config && PACK.config.plan && PACK.config.plan.cuts) || []).some(c => c.key === cutKey);
   const acts = isRef
-    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">${isKO() ? '↻ 미리보기 재생성' : '↻ Regenerate preview'}${refTag()}</button>`
+    ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">${isKO() ? '↻ 기준 사진 다시 만들기' : '↻ Remake base photo'}${refTag()}</button>`
     : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)" title="${isKO() ? `새 버전 1장 · ◈${PACK_CUT_CR}` : `1 new version · ◈${PACK_CUT_CR}`}">${isKO() ? '↻ 다시' : '↻ Redo'}</button>`
       + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="${isKO() ? `이 컷과 같은 무드로 각도·구도만 다른 컷을 3장 더 · ◈${(3 * PACK_CUT_CR).toLocaleString()}` : `3 more cuts in this mood, varying only angle and framing · ◈${(3 * PACK_CUT_CR).toLocaleString()}`}">${isKO() ? '✦ 이런 걸로 더' : '✦ More like this'}</button>` : '')
       + `<a class="cutbtn" href="/studio" title="${isKO() ? 'studio에서 정밀 편집' : 'Fine-tune in studio'}">✎ studio</a>`;
@@ -704,14 +698,14 @@ async function regenCut(cutKey, btn) {
 }
 async function rebakeRef(refKey, btn) {
   if (btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = isKO() ? '만드는 중…' : 'Making…';
-  const ov = busyOn(btn.closest('figure'), isKO() ? '미리보기 다시 만드는 중…' : 'Regenerating the preview…');
+  const ov = busyOn(btn.closest('figure'), isKO() ? '기준 사진 다시 만드는 중…' : 'Remaking the base photo…');
   try {
     const sku = String(refKey).replace(/^ref_/, '');
     const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     verIdx['ref:' + refKey] = 1e9; await refreshPack();
-    if (window.toast) toast(isKO() ? '미리보기가 바뀌었어요 — 이제 이걸 기준으로 만듭니다' : 'New reference version — "Redo" now generates from this one');
-  } catch (e) { busyOff(ov); if (window.toast) toast((isKO() ? '미리보기 재생성 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
+    if (window.toast) toast(isKO() ? '기준 사진이 바뀌었어요 — 이제 이걸로 컷을 만듭니다' : 'New reference version — "Redo" now generates from this one');
+  } catch (e) { busyOff(ov); if (window.toast) toast((isKO() ? '기준 사진 다시 만들기 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); btn.disabled = false; btn.textContent = t; }
 }
 /**
  * ➕ 더 뽑기 / ✦ 이런 걸로 더 — 둘 다 백그라운드 생성이라, 킥오프 후 refreshPack 로 폴링한다.
@@ -792,8 +786,8 @@ async function poll(id) {
 
   // prep 단계(분석·레퍼 굽는 중, ref_ready 전) — 슬롯 대신 준비 화면.
   if (status === 'processing' && !gatePassed) {
-    $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (plan ? (isKO() ? '미리보기 만드는 중…<div class="sub">이걸 기준으로 컷을 만들어요</div>' : 'Baking the canonical reference…<div class="sub">Every cut is made from this</div>') : (isKO() ? '제품 분석 중…<div class="sub">맞춤 컷을 고르고 있어요</div>' : 'Analyzing your product…<div class="sub">Picking cuts that fit it</div>')) + '</div></div>';
-    $('#status').innerHTML = '<span class="spin"></span>' + (plan ? (isKO() ? '미리보기 준비 중…' : 'Preparing reference…') : (isKO() ? '분석 중…' : 'Analyzing…'));
+    $('#assets').innerHTML = '<div class="analyzing"><div class="rb-spin"></div><div>' + (plan ? (isKO() ? '기준 사진 만드는 중…<div class="sub">이걸 기준으로 컷을 만들어요</div>' : 'Baking the canonical reference…<div class="sub">Every cut is made from this</div>') : (isKO() ? '제품 분석 중…<div class="sub">맞춤 컷을 고르고 있어요</div>' : 'Analyzing your product…<div class="sub">Picking cuts that fit it</div>')) + '</div></div>';
+    $('#status').innerHTML = '<span class="spin"></span>' + (plan ? (isKO() ? '기준 사진 준비 중…' : 'Preparing reference…') : (isKO() ? '분석 중…' : 'Analyzing…'));
     setTimeout(() => poll(id), 1500); return;
   }
 
@@ -825,7 +819,7 @@ function gateUnits(plan) {
   if (st.length > 1) return st.map(s => ({ key: s.key, label: s.label || s.key, kind: 'state' }));
   const sk = (plan && plan.refSkus) || [];
   if (sk.length > 1) return sk.map(s => ({ key: s.sku, label: s.label || s.sku, kind: 'variant' }));
-  return [{ key: 'main', label: isKO() ? '미리보기' : 'Canonical reference', kind: 'single' }];
+  return [{ key: 'main', label: isKO() ? '기준 사진' : 'Canonical reference', kind: 'single' }];
 }
 function showRefGate(pack) {
   const plan = pack.config && pack.config.plan;
@@ -852,18 +846,11 @@ function showRefGate(pack) {
     const a = latest['ref_' + u.key] || (multi ? null : latestRef(pack));
     const url = a ? esc(a.url) : '';
     const inner = `<div class="rg-img"><img class="rgImg" data-s="${esc(u.key)}" src="${url}" data-u="${url}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '다시 구울 때 교정(선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '미리보기 재생성' : 'Regenerate preview'}${refTag()}</button>${refHelpMark()}</div>`;
+      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '다시 구울 때 교정(선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '기준 사진 다시 만들기' : 'Remake base photo'}${refTag()}</button>${refHelpMark()}</div>`;
     return multi ? `<div class="rg-state"><div class="rg-state-h">${esc(u.label)}</div>${inner}</div>` : inner;
   }).join('');
   const isState = units[0] && units[0].kind === 'state';
   const unitWord = isState ? (isKO() ? '상태' : 'state') : (isKO() ? '종류' : 'variant');
-  // 🟢 컨셉 미리보기(유저 입력 컨셉을 캐논 레퍼로 렌더한 예시) — 있으면 캐논 레퍼와 함께 보여준다.
-  const concept = (pack.assets || []).filter(a => a.kind === 'concept').pop();
-  const conceptBlock = concept ? `<div class="rg-concept">
-      <div class="rg-state-h">${isKO() ? '내 컨셉 미리보기' : 'My concept preview'} <span class="rg-tag">${isKO() ? '참고' : 'For reference'}</span></div>
-      <div class="rg-img"><img src="${esc(concept.url)}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-concept-note">${isKO() ? '입력하신 컨셉으로 만든 예시예요. 실제 컷들은 이 방향으로 생성됩니다.' : 'An example made from your concept. The actual cuts follow this direction.'}</div>
-    </div>` : '';
   // 🔴 플래너가 실패해 기본 컷으로 떨어졌으면 **반드시 알린다** — 예전엔 조용히 폴백돼 "완료"처럼 보였다.
   const fb = plan && plan.fallback
     ? (isKO() ? `<div class="rg-fallback"><b>⚠ 자동 분석이 실패해 기본 컷으로 진행합니다.</b> 이 제품에 맞춘 컷이 아니라 일반 제품컷이에요.
@@ -873,10 +860,10 @@ function showRefGate(pack) {
     : '';
   document.body.insertAdjacentHTML('beforeend', `<div class="rg-bg"><div class="rg${multi ? ' wide' : ''}">
     <button type="button" class="rg-back" onclick="location.reload()" title="${isKO() ? "처음 화면으로 — 이 팩은 아래 '이어보기'로 계속할 수 있어요" : "Back to the start — you can continue this pack via 'Resume' below"}">${isKO() ? '← 뒤로' : '← Back'}</button>
-    <div class="rg-h">${isKO() ? '미리보기 확인' : 'Check the preview'}</div>
-    <div class="rg-note">${multi ? (isKO() ? `${unitWord}마다 각 미리보기를 기준으로 컷을 만듭니다.` : `Cuts are made from each ${unitWord}'s own reference.`) : (isKO() ? '이 미리보기를 기준으로 모든 컷을 만듭니다.' : 'Every cut is made from this reference.')} ${isKO() ? '<b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.' : "<b>If it's wrong — a single when it should be a pair, etc.</b> — rebake it."}</div>
+    <div class="rg-h">${isKO() ? '기준 사진 확인' : 'Check the base photo'}</div>
+    <div class="rg-note">${multi ? (isKO() ? `${unitWord}마다 각 기준 사진으로 컷을 만듭니다.` : `Cuts are made from each ${unitWord}'s own reference.`) : (isKO() ? '이 기준 사진으로 모든 컷을 만듭니다.' : 'Every cut is made from this reference.')} ${isKO() ? '<b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.' : "<b>If it's wrong — a single when it should be a pair, etc.</b> — rebake it."}</div>
     ${fb}
-    ${conceptBlock ? `<div class="rg-compare">${conceptBlock}<div class="rg-canon"><div class="rg-state-h">${isKO() ? '미리보기' : 'Canonical reference'} <span class="rg-tag on">${isKO() ? '생성 기준' : 'Generation base'}</span></div><div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div></div></div>` : `<div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>`}
+    <div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>
     <div class="rg-depth-h">${isKO() ? '몇 컷 만들까요?' : 'How many cuts?'}${multi ? ` <span class="rg-depth-sub">${isKO() ? `${unitWord}별로 고루 나눠 만듭니다` : `Split evenly per ${unitWord}`}</span>` : ''}</div>
     <div class="rg-depths" id="rgDepths">${opts.map(o => `<button class="rg-depth${o.n === gateDepth ? ' on' : ''}" data-n="${o.n}" onclick="pickDepth(${o.n})">${o.k}<span>${isKO() ? `${o.n}컷` : `${o.n} cuts`}</span></button>`).join('')}</div>
     <div class="rg-cost">${isKO() ? '예상 크레딧' : 'Estimated credits'} <b id="rgCost">◈${(gateDepth * PACK_CUT_CR).toLocaleString()}</b> <span class="rg-cost-sub">${isKO() ? `· 컷당 ◈${PACK_CUT_CR}` : `· ◈${PACK_CUT_CR} / cut`}</span></div>
@@ -892,14 +879,14 @@ async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의
   const inp = pick('.rg-bg .rgHint');
   const hint = ((inp && inp.value) || '').trim();
   const imgEl = pick('.rg-bg img.rgImg');
-  const ov = busyOn(imgEl && imgEl.closest('.rg-img'), isKO() ? '미리보기 다시 만드는 중…' : 'Regenerating…');   // 레퍼 이미지에 오버레이 스피너
+  const ov = busyOn(imgEl && imgEl.closest('.rg-img'), isKO() ? '기준 사진 다시 만드는 중…' : 'Remaking…');   // 레퍼 이미지에 오버레이 스피너
   try {
     const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku, hint }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     const img = pick('.rg-bg img.rgImg'); if (img && d.asset) { img.src = d.asset.url; img.dataset.u = d.asset.url; img.style.opacity = 1; }
     if (inp) inp.value = '';
-    if (window.toast) toast(isKO() ? '미리보기를 다시 만들었어요' : 'Preview regenerated');
-  } catch (e) { if (window.toast) toast((isKO() ? '미리보기 재생성 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); }
+    if (window.toast) toast(isKO() ? '기준 사진을 다시 만들었어요' : 'Base photo remade');
+  } catch (e) { if (window.toast) toast((isKO() ? '기준 사진 다시 만들기 실패: ' : 'Rebake failed: ') + (e.message || e), 'error'); }
   finally { busyOff(ov); btn.disabled = false; btn.textContent = t; }
 }
 /**
@@ -1049,8 +1036,8 @@ function batchRowHtml(b) {
   // 🔑 원본을 올린 개수만큼 다 보여준다(각 클릭 → 크게 보기). data-u 로 넘긴다(esc가 따옴표를 엔티티로 바꿔 onclick 리터럴에 직접 못 넣음).
   const srcThumbs = srcImgs.map((u, i) => `<img class="rb-src-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="${isKO() ? `올린 원본 사진 ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — 클릭하면 크게 봅니다` : `Uploaded photo ${srcImgs.length > 1 ? (i + 1) + '/' + srcImgs.length : ''} — click to enlarge`}" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
   // 🏷 캐논 레퍼 — "생성 기준". 원본 뒤에 라벨과 함께 나란히(구분 없이 다 보여줌).
-  const refThumbs = canonRefs.map((u) => `<img class="rb-src-thumb rb-canon-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="${isKO() ? '미리보기 — 이 결과를 만든 기준(클릭하면 크게)' : 'Canonical reference — the base this result was generated from (click to enlarge)'}" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
-  const canonBlock = canonRefs.length ? `<span class="rb-src-item rb-canon-lbl"><span class="k">${isKO() ? '미리보기' : 'Canonical ref'}</span></span>${refThumbs}` : '';
+  const refThumbs = canonRefs.map((u) => `<img class="rb-src-thumb rb-canon-thumb" src="${esc(u)}" data-u="${esc(u)}" alt="" loading="lazy" title="${isKO() ? '기준 사진 — 이 결과를 만든 기준(클릭하면 크게)' : 'Canonical reference — the base this result was generated from (click to enlarge)'}" onerror="this.remove()" onclick="openSrcLightbox(this.dataset.u)">`).join('');
+  const canonBlock = canonRefs.length ? `<span class="rb-src-item rb-canon-lbl"><span class="k">${isKO() ? '기준 사진' : 'Canonical ref'}</span></span>${refThumbs}` : '';
   const srcRow = ((srcImgs.length || canonRefs.length || b.modelName) ? `<div class="rb-src-row">`
     + srcThumbs + canonBlock
     + (b.modelName ? `<span class="rb-src-item rb-src-model"><span class="k">Model</span>${esc(b.modelName)}</span>` : '') + `</div>` : '');
@@ -1140,7 +1127,7 @@ async function reconnectActivePack() {
   try { const r = await fetch('/api/pack/' + id); if (!r.ok) throw 0; pack = await r.json(); }
   catch (_) { clearActivePack(); return; }                                // 없어진/접근불가 팩 → 정리
   if (!pack || pack.status === 'done') { clearActivePack(); return; }     // 끝난 팩은 내 크리에이션서 봄
-  const label = pack.status === 'ref_ready' ? (isKO() ? '미리보기 확인이 남은 작업' : 'a pack waiting for reference review')
+  const label = pack.status === 'ref_ready' ? (isKO() ? '기준 사진 확인이 남은 작업' : 'a pack waiting for reference review')
     : pack.status === 'failed' ? (isKO() ? '생성이 끊긴 팩' : 'a pack whose generation was interrupted') : (isKO() ? '생성 중이던 팩' : 'a pack that was generating');
   const bar = document.createElement('div');
   bar.className = 'reconn';
