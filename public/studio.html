@@ -1978,6 +1978,7 @@
   </div>
   <div class="prompt-row" id="promptRow">
     <div class="pfield pfield-main">
+      <div class="pfield-head"><span class="pfield-label">Personal prompt <i>optional</i></span></div>
       <textarea id="extraPrompt" class="pfield-ta" maxlength="8000" rows="1" autocomplete="off"
         placeholder="Type a prompt..." oninput="autoGrowPrompt(this);updateBar()"></textarea>
       <button class="prompt-clear hidden" id="extraClear" title="Clear" onclick="var e=document.getElementById('extraPrompt');e.value='';autoGrowPrompt(e);document.getElementById('extraClear').classList.add('hidden');updateBar()">✕</button>
@@ -2881,8 +2882,9 @@ function setMode(m,initialVertical){
   // Custom 풀 컨트롤: 툴 픽커(type 그룹) + 툴 타입별 컨트롤(이미지=비율/해상도/네거티브, 비디오=길이)
   renderToolPicker();
   applyToolSchema();
-  // 하단 프롬프트 칸: Custom 전용 — 템플릿 모드는 레시피 모달의 Add detail 사용
-  document.getElementById('promptRow').style.display=custom?'':'none';
+  // (2026-08-02) Personal prompt 칸: 전 이미지 모드에서 항상 노출(UGC 광고영상 플로우만 제외).
+  //   과거엔 Custom 전용 + 템플릿은 인라인 Add detail → 통합(det-compose 폐지).
+  document.getElementById('promptRow').style.display=(state.mode==='ugc')?'none':'';
   placeGenBar(custom);
   renderStudioResults(); // (테스트) 결과 피드는 모드 전환에도 유지(결과 있으면 표시)
   document.getElementById('customBar').style.display=custom?'':'none'; // Custom 정체성(컴포즈 안 한 줄)
@@ -3901,8 +3903,8 @@ function syncTplTrigger(){
         return `<div class="ax-row cutui-axrow"><span class="ax-lbl">${esc(d.title)}</span><div class="${cls}">${opts}</div></div>`;
       }).join('');
     }
-    const detHtml=`<div class="det-compose"><span class="det-lbl">Add detail (optional)</span>`
-      +`<textarea id="cbDetail" class="det-ta" maxlength="300" rows="1" placeholder="Add your own touch — e.g. red dress, golden hour" oninput="onComposeDetail(this)">${esc(state.detail||'')}</textarea></div>`;
+    // (2026-08-02) 인라인 Add detail 폐지 → 하단 Personal prompt(#promptRow, 항상 노출)로 통합. 중복 방지.
+    const detHtml='';
     // (2026-07-21 P7'') 프로토타입처럼: 제품 슬롯 ↔ 템플릿 칩을 좌우 한 줄(.cutui-toprow)로.
     //   (subjectRow 대피는 함수 최상단에서 완료 — 여기선 innerHTML 세팅 후 좌측 host로 넣는다.)
     wrap.innerHTML=`<div class="cutui-toprow"><span class="cutui-prodhost" id="cutuiProdHost"></span>`
@@ -5547,11 +5549,12 @@ function closeImageModal(){
   if(typeof ugcResumeInline==='function')ugcResumeInline(); // 인라인 재생 재개(이전 음소거 상태 보존)
 }
 
-// 사용자가 한 줄로 추가한 커스텀 프롬프트 (선택)
-// 추가 프롬프트 소스: Custom=하단 칸 / 템플릿 모드=레시피 모달의 Add detail(state.detail)
+// 사용자가 추가한 Personal prompt (선택) — (2026-08-02) 전 모드에서 하단 promptRow(#extraPrompt) 단일 사용.
+//   비어있으면 레시피 모달의 Add detail(state.detail) 폴백(하위호환).
 function extraPromptText(){
-  if(state.mode==='custom'){const el=document.getElementById('extraPrompt');return el?el.value.trim():'';}
-  return (state.detail||'').trim();
+  const el=document.getElementById('extraPrompt');
+  const v=el?el.value.trim():'';
+  return v || (state.detail||'').trim();
 }
 // 글로벌 테마 칩(크리에이터 다중 태그) — 캐시 + 렌더 + 수집.
 let _themesCache=null;
