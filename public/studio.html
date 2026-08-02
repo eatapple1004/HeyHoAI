@@ -601,6 +601,8 @@
   /* Custom 프롬프트 입력칸 — 일반/네거티브 명확히 구분(라벨 + 박스 + 색조) */
   .prompt-row{display:block}
   .pfield{position:relative;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;transition:border-color .16s,box-shadow .16s}
+  /* (2026-08-02) Personal prompt 박스 = 은은하게(배경 투명도 낮춤 — 덜 튀게) */
+  #promptRow .pfield{background:rgba(255,255,255,.03)}
   .pfield:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(106,64,224,.16)}
   .pfield-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
   .pfield-label{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim)}
