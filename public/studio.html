@@ -162,7 +162,8 @@
        shopping 모드에서만 .cutui-card 부여(syncCutCard). 기존 .gen-bar/placeGenBar/#resultStep 미변경.
        ⚠️ 클래스명 cutui-card — .cut-card(L102)는 이미 컷 선택 카드용(width:92px)이라 충돌 금지.
        롤백: 이 블록 + syncCutCard/toggleCutCard/cutCardFolded + updateBar 호출 1줄 제거 ▼▼▼ */
-  #composeTop.cutui-card{border:1px solid var(--border2);border-radius:18px;background:var(--bg2,#0c0c14);overflow:hidden;margin-bottom:22px}
+  /* overflow:visible — 비율 Custom 팝오버가 카드 경계에 잘리지 않게(내부 가로 스크롤 행들은 각자 overflow-x:auto 보유). */
+  #composeTop.cutui-card{border:1px solid var(--border2);border-radius:18px;background:var(--bg2,#0c0c14);overflow:visible;margin-bottom:22px}
   #composeTop.cutui-card .gen-bar{background:transparent;border:none;border-radius:0;margin:0;padding-top:22px}
   /* (2026-07-26) 카드 헤더 제거 — .cutui-head('New'·요약·Fold)·.folded 규칙 삭제.
      'New'=정적 라벨(설명기능 0)·Fold=비영속 토글이라 둘 다 무용 → syncCutCard도 헤더 미생성.
