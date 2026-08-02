@@ -190,6 +190,16 @@ app.get('/admin-templates', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-templates.html'));
 });
 
+// 관리자 전용: 전체 크리에이션(비공개 포함) 뷰어
+app.get('/admin-creations', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-creations.html'));
+});
+
+// 관리자 전용: 기본 통계 대시보드
+app.get('/admin-stats', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-stats.html'));
+});
+
 // 관리자 전용: 회사 맞춤 제안서(before/after 소개 페이지) 빌더
 app.get('/admin-proposal', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-proposal.html'));
@@ -226,6 +236,7 @@ app.use('/api/pack', requireAuth, require('./pack/pack.route'));
 // 체험 계정 (라우트 내부에서 requireAdmin/requireAuth 자체 가드)
 app.use('/api', require('./trial/trial.route'));
 app.use('/api', require('./admin/adminRefine.route'));
+app.use('/api', require('./admin/adminData.route')); // 관리자: 전체 크리에이션(비공개 포함) + 통계
 app.use('/api/admin/proposal', requireAuth, requireAdmin, require('./admin/proposal.route').router);
 
 // Health check
