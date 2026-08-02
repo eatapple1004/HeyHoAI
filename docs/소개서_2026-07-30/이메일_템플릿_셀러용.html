@@ -7,8 +7,17 @@
 <!--
   ══ Doppia 셀러 콜드메일 템플릿 (Gmail·네이버·아웃룩 호환: 테이블 레이아웃 + 인라인 스타일) ══
   · 이미지는 doppia.ai 라이브 URL 핫링크 (수신자 측에서 로드)
-  · 발송 전 치환: {수신거부_링크} {회사_주소}
+  · 치환 자리 없음 — 그대로 복사해 보내면 된다.
+  · 수신거부 = support@doppia.ai 로 메일 오는 방식(mailto, 제목 "수신거부"가 자동 입력됨).
+    1차 300통 규모라 손으로 처리 가능. 오면 즉시 명단에서 뺄 것 — 처리 지연 자체가 위반이다.
+    🔴 수천 통 규모로 넘어가면 이 방식은 감당 안 된다. 발송 도구(Instantly·Smartlead 등)의
+       자동 수신거부 링크로 교체할 것.
+  · 추천 추적(/r/<코드>)은 뺐다 — 1차는 발신자 1명이라 구분할 게 없음. 두 사람 이상이 나눠
+    보내게 되면 CTA를 https://doppia.ai/r/{추천코드} 로 되돌릴 것(어필리에이트 시스템은 살아 있음).
+    ⚠️ 그때 주의: 피추천인이 결제하면 추천인에게 구매액 30%가 크레딧으로 자동 지급된다
+       (affiliate.service.js COMMISSION_RATE). 실적만 셀 거면 첫 결제 전에 예외 처리.
   · 제목 앞 "(광고)" 표기 + 수신거부 고지는 정보통신망법 필수 — 지우지 말 것
+  · 회사 주소는 하드코딩됨(인천 서구 청라한내로72번길 7-29 1003호). 이전하면 여기 고칠 것.
 -->
 </head>
 <body style="margin:0;padding:0;background:#f4f4f7">
@@ -62,11 +71,11 @@
   <!-- 푸터 (정보통신망법 필수 요소) -->
   <tr><td style="background:#f7f7fa;padding:20px 44px;border-top:1px solid #ececf1">
     <p style="margin:0 0 6px;font-size:11.5px;line-height:1.6;color:#9a97ad">
-      주식회사 아담컴퍼니 · {회사_주소} · <a href="mailto:support@doppia.ai" style="color:#7c6cff;text-decoration:none">support@doppia.ai</a>
+      주식회사 아담컴퍼니 · 인천광역시 서구 청라한내로72번길 7-29 1003호 · <a href="mailto:support@doppia.ai" style="color:#7c6cff;text-decoration:none">support@doppia.ai</a>
     </p>
     <p style="margin:0;font-size:11.5px;line-height:1.6;color:#9a97ad">
       본 메일은 사업자 공개 정보를 기반으로 발송된 서비스 소개입니다.
-      더 이상 수신을 원치 않으시면 <a href="{수신거부_링크}" style="color:#7c6cff">수신거부</a>를 눌러주세요. 즉시 반영됩니다.
+      더 이상 수신을 원치 않으시면 <a href="mailto:support@doppia.ai?subject=%EC%88%98%EC%8B%A0%EA%B1%B0%EB%B6%80" style="color:#7c6cff">수신거부</a>를 눌러주세요. 확인하는 대로 바로 명단에서 제외해 드립니다.
     </p>
   </td></tr>
 
