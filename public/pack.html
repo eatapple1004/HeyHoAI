@@ -113,6 +113,7 @@
   .cf-cancel:hover{color:var(--text);background:rgba(255,255,255,.05)}
   .cf-go{flex:1;font-family:inherit;font-size:14px;font-weight:700;padding:11px;border-radius:12px;cursor:pointer;color:#fff;border:0;background:linear-gradient(180deg,#7c52e8,#5c33c2);box-shadow:inset 0 1px 0 rgba(255,255,255,.13)}
   .cf-go:hover{filter:brightness(1.08)}
+  .cf-note2{font-size:12px;color:var(--dim);text-align:center;margin:14px 0 0}
   /* 레퍼 소프트 게이트 — 캐논 레퍼 확인 + 몇 컷 만들지 */
   .rg{position:relative}
   .rg-back{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#c9c6dd;border-radius:10px;font-size:12.5px;font-weight:700;padding:7px 12px;cursor:pointer}
@@ -450,13 +451,15 @@ function showConfirm(cls, hint) {
   document.body.insertAdjacentHTML('beforeend', `<div class="cf-bg"><div class="cf">
     <div class="cf-h">${isKO() ? '이 제품 맞나요?' : 'Is this your product?'}</div>
     <div class="cf-cat">${isKO() ? '감지된 카테고리 · ' : 'Detected category · '}<span class="cf-badge" id="cfBadge">${esc(catLabel(c.category) || c.category)}</span></div>
-    <div class="cf-prod">${esc(c.product || (isKO() ? '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)' : "(couldn't read the product — pick a category below)"))}</div>
+    <div class="cf-prod">${esc((isKO() && c.productKo) || c.product || (isKO() ? '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)' : "(couldn't read the product — pick a category below)"))}</div>
     ${setLine}${unitLine}${stateLine}
     <div class="cf-note">${isKO() ? '카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.' : "The right category gets you the right cuts. If it's wrong, fix it below."}</div>
     <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(catLabel(k))}</button>`).join('')}</div>
-    <div class="cf-actions">
+    <div class="cf-note2">${isKO() ? '먼저 기준 사진을 만들어요 (30초~1분) · 컷은 다음 단계에서 고릅니다'
+        : 'We make the base photo first (30–60s) · you pick the cuts next'}</div>
+      <div class="cf-actions">
       <button class="cf-cancel" onclick="document.querySelector('.cf-bg').remove()">${isKO() ? '취소' : 'Cancel'}</button>
-      <button class="cf-go" onclick="confirmGenerate()">${isKO() ? '네, 이걸로 만들기' : 'Yes, make it with this'}</button>
+      <button class="cf-go" onclick="confirmGenerate()">${isKO() ? '네, 이걸로 만들기' : 'Yes, make it with this'}${refTag()}</button>${refHelpMark()}
     </div>
   </div></div>`);
 }

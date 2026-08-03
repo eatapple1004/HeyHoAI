@@ -202,6 +202,10 @@ const CLASSIFY_SCHEMA = {
   type: 'object', additionalProperties: false,
   properties: {
     product: { type: 'string', description: 'one-line description of the exact product (form, color, material, what it is)' },
+      // 🔴 productKo = **화면 표시 전용**. product(영어)는 그대로 이미지 프롬프트로 들어가므로 한국어로 바꾸면 안 된다 —
+      //   한국어를 프롬프트에 넣으면 모델이 "제품에 인쇄할 글자"로 오해한다(찻잔에 "우린 차"를 찍은 그 사고. refBake.service.js:39).
+      //   상태의 label(한국어 UI) ↔ desc(영어 프롬프트)와 **같은 분리**다.
+      productKo: { type: 'string', description: 'the same product description in natural Korean, for UI display only — never used in image prompts' },
     category: { type: 'string', description: `product category, one of: ${CATEGORIES.join(', ')}` },
     isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple distinct variants of the same line' },
     variants: { type: 'array', description: 'if isSet, one entry per distinct variant; else empty', items: { type: 'object', additionalProperties: false, properties: { sku: { type: 'string' }, label: { type: 'string' } }, required: ['sku', 'label'] } },
@@ -249,13 +253,15 @@ const CLASSIFY_SCHEMA = {
       },
     },
   },
-  required: ['product', 'category', 'isSet', 'variants', 'states', 'unit', 'lenses'],
+  required: ['product', 'productKo', 'category', 'isSet', 'variants', 'states', 'unit', 'lenses'],
 };
 /** classify 프롬프트 빌더 — 렌즈 지시가 컨셉(hint) 유무로 갈린다. 테스트용으로 추출. */
 function buildClassifyPrompt(nImgs, hint) {
   const many = nImgs > 1;
   return [
     `Identify the product in the attached photo${many ? 's' : ''} precisely and concisely.`,
+    // 화면에 뜨는 건 productKo 다 — 한국 셀러가 읽을 문장이어야 한다. product(영어)는 프롬프트 전용이라 손대지 않는다.
+    `Write "product" in English (it feeds image prompts) and "productKo" as the same description in natural Korean that a Korean shop owner reads instantly.`,
     hint ? `Seller note: "${hint}" — this may describe the desired CONCEPT/mood rather than the product; identify the product itself from the PHOTO, and use the note only if it names the product or category.` : '',
     `Distinguish two different axes, and do not confuse them:`,
     `  · variants = DIFFERENT products/SKUs of one line (red vs blue, MON vs TUE bottle) → isSet + variants.`,
