@@ -674,7 +674,7 @@ function cardHtml(slot, versions, done) {
     ? `<button class="cutbtn" onclick="rebakeRef('${esc(slot.key)}',this)">${isKO() ? '↻ 기준 사진 다시 만들기' : '↻ Remake base photo'}${refTag()}</button>`
     : `<button class="cutbtn" onclick="regenCut('${esc(slot.key)}',this)" title="${isKO() ? `새 버전 1장 · ◈${PACK_CUT_CR}` : `1 new version · ◈${PACK_CUT_CR}`}">${isKO() ? '↻ 다시' : '↻ Redo'}</button>`
       + (seedable ? `<button class="cutbtn accent" onclick="moreLike('${esc(cutKey)}',this)" title="${isKO() ? `이 컷과 같은 무드로 각도·구도만 다른 컷을 3장 더 · ◈${(3 * PACK_CUT_CR).toLocaleString()}` : `3 more cuts in this mood, varying only angle and framing · ◈${(3 * PACK_CUT_CR).toLocaleString()}`}">${isKO() ? '✦ 이런 걸로 더' : '✦ More like this'}</button>` : '')
-      + `<a class="cutbtn" href="/studio" title="${isKO() ? 'studio에서 정밀 편집' : 'Fine-tune in studio'}">✎ studio</a>`;
+      + `<a class="cutbtn" href="/studio" title="${isKO() ? 'Shots에서 정밀 편집' : 'Fine-tune in Shots'}">✎ Shots</a>`;
   return `<figure class="rescard" data-slot="${esc(sid)}"><a class="dl" href="${a.url}" download="${esc(fname(a))}" title="${isKO() ? '다운로드' : 'Download'}">⤓</a><img src="${a.url}" loading="lazy">${flip}<figcaption>${esc(label)}<div class="cut-actions">${acts}</div></figcaption></figure>`;
 }
 function flipVer(sid, dir) {
@@ -849,7 +849,7 @@ function showRefGate(pack) {
     const a = latest['ref_' + u.key] || (multi ? null : latestRef(pack));
     const url = a ? esc(a.url) : '';
     const inner = `<div class="rg-img"><img class="rgImg" data-s="${esc(u.key)}" src="${url}" data-u="${url}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '다시 구울 때 교정(선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '기준 사진 다시 만들기' : 'Remake base photo'}${refTag()}</button>${refHelpMark()}</div>`;
+      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '고칠 점을 적어주세요 (선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '기준 사진 다시 만들기' : 'Remake base photo'}${refTag()}</button>${refHelpMark()}</div>`;
     return multi ? `<div class="rg-state"><div class="rg-state-h">${esc(u.label)}</div>${inner}</div>` : inner;
   }).join('');
   const isState = units[0] && units[0].kind === 'state';
@@ -864,7 +864,7 @@ function showRefGate(pack) {
   document.body.insertAdjacentHTML('beforeend', `<div class="rg-bg"><div class="rg${multi ? ' wide' : ''}">
     <button type="button" class="rg-back" onclick="location.reload()" title="${isKO() ? "처음 화면으로 — 이 팩은 아래 '이어보기'로 계속할 수 있어요" : "Back to the start — you can continue this pack via 'Resume' below"}">${isKO() ? '← 뒤로' : '← Back'}</button>
     <div class="rg-h">${isKO() ? '기준 사진 확인' : 'Check the base photo'}</div>
-    <div class="rg-note">${multi ? (isKO() ? `${unitWord}마다 각 기준 사진으로 컷을 만듭니다.` : `Cuts are made from each ${unitWord}'s own reference.`) : (isKO() ? '이 기준 사진으로 모든 컷을 만듭니다.' : 'Every cut is made from this reference.')} ${isKO() ? '<b>낱개인데 한 쌍이어야 하는 등</b> 틀리면 다시 구우세요.' : "<b>If it's wrong — a single when it should be a pair, etc.</b> — rebake it."}</div>
+    <div class="rg-note">${multi ? (isKO() ? `${unitWord}마다 각 기준 사진으로 컷을 만듭니다.` : `Cuts are made from each ${unitWord}'s own reference.`) : (isKO() ? '이 기준 사진으로 모든 컷을 만듭니다.' : 'Every cut is made from this reference.')} ${isKO() ? '<b>낱개인데 한 쌍이어야 하는 등</b> 다른 부분이 있다면 다시 만드세요.' : "<b>If it's wrong — a single when it should be a pair, etc.</b> — rebake it."}</div>
     ${fb}
     <div class="rg-states${multi ? ' two' : ''}${units.length > 2 ? ' many' : ''}">${blocks}</div>
     <div class="rg-depth-h">${isKO() ? '몇 컷 만들까요?' : 'How many cuts?'}${multi ? ` <span class="rg-depth-sub">${isKO() ? `${unitWord}별로 고루 나눠 만듭니다` : `Split evenly per ${unitWord}`}</span>` : ''}</div>
