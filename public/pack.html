@@ -430,7 +430,10 @@ function showConfirm(cls, hint) {
   }).slice(0, 4);
   const unit = ['pair', 'with_package', 'group'].includes(cls.unit) ? cls.unit : null;   // 단품이 아니면 레퍼를 그 단위로 굽는다
   const lenses = Array.isArray(cls.lenses) ? cls.lenses.filter(l => l && l.key && l.brief) : [];   // 제품 맞춤 촬영 축(유효순)
-  confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint };
+  confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '',
+      // 🔴 productKo 를 여기 안 담으면 화면이 영어로 떨어진다 — 담는 걸 빠뜨려 실제로 그랬다.
+      //   product(영어)는 서버가 이미지 프롬프트에 쓰는 값이라 그대로 두고, 표시용만 따로 나른다.
+      productKo: cls.productKo || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
   const c = confirmState;
   const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">${isKO() ? `세트 · ${c.variants.length}종 감지` : `Set · ${c.variants.length} variants detected`}</div>` : '';
