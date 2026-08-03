@@ -216,7 +216,7 @@
   .rb-meta{width:284px;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding-top:2px}
   .result-card{border-radius:16px;overflow:hidden;position:relative;border:1px solid var(--border);background:#0c0c14}
   /* 진행 중 카드 — 안이 비어 width:auto 로 접히므로 자리(비율)를 잡아준다 */
-  .rb-media .result-card.rb-loading{width:225px;aspect-ratio:3/4;height:300px;display:flex;align-items:center;justify-content:center;background:var(--bg2)}
+  .rb-media .result-card.rb-loading{height:300px;display:flex;align-items:center;justify-content:center;background:var(--bg2)}
   .rb-badge.run{background:rgba(124,108,255,.14);color:var(--accent2)}
   .result-card .img{width:100%;height:100%;object-fit:cover;display:block}
   .result-card .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:4}
@@ -514,7 +514,6 @@ async function confirmGenerate() {
   const { id } = await r.json();
   PACK_ID = id;
   setActivePack(id);   // 나갔다 와도 이 팩으로 돌아올 수 있게(같은 브라우저)
-  setPending(1, isKO() ? '기준 사진 만드는 중' : 'Making the base photo');   // 피드에도 즉시 진행 표시
   startGen();
   poll(id);
 }
@@ -790,6 +789,10 @@ async function poll(id) {
   const assets = pack.assets || [];
   window._packAssets = assets; PACK = pack;
   const status = pack.status;
+  // 컷이 하나 늘 때마다 피드를 갱신하고 자리표시자를 그만큼 줄인다 — 완성된 것부터 바로 보이게.
+  //   개수가 안 늘었으면 아무것도 안 한다(1.5초마다 헛호출하지 않게).
+  const stills = assets.filter(a => a.kind === 'still').length;
+  if (stills !== _lastStills) { _lastStills = stills; trimPending(stills); loadWorks(); }
 
   if (status === 'failed') {
     stopGen(); clearPending(); const g = document.querySelector('.rg-bg'); if (g) g.remove(); renderInteractive(pack);
@@ -1004,12 +1007,31 @@ function fillRbSpecs(root) {   // 첫 미디어 로드 시 해상도·비율 채
 // 서버 generation_results 에는 **완성된 것만** 들어간다(status=success). 그래서 진행 표시는
 //   클라이언트가 먼저 가짜 배치를 피드 맨 앞에 꽂아 그린다 — studio·Ad Video 가 쓰는 방식 그대로.
 // ⚠️ 인메모리라 페이지를 나가면 사라진다. 나갔다 와도 추적되는 건 pack:actives(localStorage) 몫.
-let PENDING = null;
+let PENDING = null, _lastStills = -1;
+// ratio = 실제로 만들 컷의 가로/세로. 자리표시자를 결과와 **같은 크기**로 세우기 위해 받는다
+//   (계획(plan.cuts)에 w·h 가 있다 — 없으면 4:5, 팩 컷의 기본 비율).
+function planRatio() {
+  const cuts = (PACK && PACK.config && PACK.config.plan && PACK.config.plan.cuts) || [];
+  const c = cuts.find(x => x && x.w && x.h);
+  return c ? (c.w / c.h) : 0.8;
+}
 function setPending(count, label) {
-  PENDING = { key: '_pending', items: [], idxs: [], loading: true, pendingCount: Math.max(1, count | 0),
-    promptText: '', templateSource: 'pack', templateName: label || (isKO() ? '만드는 중' : 'Generating'),
+  const n = Math.max(1, count | 0);
+  // 🔑 base = 시작 시점에 **이미 나와 있는** 컷 수. '이어서 만들기'는 컷이 남아 있는 상태에서 시작하므로
+  //   이걸 안 빼면 trimPending 이 옛 컷까지 완성분으로 세어 자리표시자가 즉시 사라진다.
+  const base = ((window._packAssets || []).filter(a => a.kind === 'still')).length;
+  PENDING = { key: '_pending', items: [], idxs: [], loading: true, pendingCount: n, total: n, base, ratio: planRatio(),
+    promptText: '', templateSource: '', templateName: label || (isKO() ? '만드는 중' : 'Generating'),
     model: '', productImages: [], canonRefs: [], dateKey: dateKeyOf(), dateLabel: fmtBatchDate() };
   renderWorks();
+}
+/** 완성된 컷 수만큼 자리표시자를 줄인다. 다 차면 없앤다. */
+function trimPending(stills) {
+  if (!PENDING) return;
+  const done = Math.max(0, stills - (PENDING.base || 0));         // 이번 회차에 새로 나온 컷만
+  const remain = Math.max(0, (PENDING.total || PENDING.pendingCount) - done);
+  if (remain <= 0) { clearPending(); return; }
+  if (remain !== PENDING.pendingCount) { PENDING.pendingCount = remain; renderWorks(); }
 }
 function clearPending() { if (PENDING) { PENDING = null; renderWorks(); } }
 
@@ -1055,7 +1077,10 @@ const CH_ORDER = ['cut', 'garment', 'skin', 'age', 'concept', 'bg', 'cutBg', 'si
 function batchRowHtml(b) {
   // 진행 중 배치 = 만들 개수만큼 스피너 카드(studio 와 같은 모양).
   const media = b.loading
-    ? Array.from({ length: b.pendingCount }).map(() => '<div class="result-card rb-loading"><div class="rb-spin"></div></div>').join('')
+    // 결과 카드는 height:300px·width:auto 라 이미지 비율이 폭을 만든다. 자리표시자는 만들 게 없으니
+    //   같은 비율을 직접 물려 **완성 후와 같은 크기**로 서게 한다(안 그러면 폭 0으로 접힌다).
+    ? Array.from({ length: b.pendingCount }).map(() =>
+        `<div class="result-card rb-loading" style="width:${Math.round(300 * (b.ratio || 0.8))}px"><div class="rb-spin"></div></div>`).join('')
     : b.items.map(studioMediaCard).join('');
   const isTpl = !!b.templateSource;
   // 진행 중 배치는 템플릿도 커스텀도 아니다 — 라벨만 보여준다('템플릿' 배지는 사실도 아니고 내부어다).
