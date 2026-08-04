@@ -50,6 +50,7 @@ const PRESENTATION_DEFAULT = 'standing upright and front-facing';
 // 네거티브는 **물리적 결함어만** 남긴다(글자 관련은 MARKINGS 로 승격, cup/plate/bowl·cap 은 음료 어휘라 삭제).
 const BAKE_NEG = 'warped or distorted product, two or more products, duplicate product, people, hands, props, cluttered background, harsh blown highlights';
 const NEG_MULTI = 'warped or distorted product, people, hands, props, cluttered background, harsh blown highlights'; // 개체가 둘 이상이 정상인 경우 — "two or more/duplicate"를 뺀다
+const NEG_DERIVED = 'people, hands, cluttered background, harsh blown highlights';   // 파생(내용물) — 그릇·거품이 prop 으로 걸리면 안 된다
 
 /**
  * 단품 캐논 레퍼 1장 베이크.
@@ -118,11 +119,33 @@ async function bakeOne({ sourcePaths, label, hint, state, unit, category, derive
     : (phrase
       ? `Show exactly ONE sellable unit, which for this product means ${phrase}. Do not add or remove objects.`
       : `Show exactly ONE single product — never a second copy, never a front-and-back pair side by side.`);
-  const neg = (hint || phrase) ? NEG_MULTI : BAKE_NEG;
+  // 파생은 네거티브에서도 `props`·`duplicate`를 뺀다 — 유리잔·거품이 prop으로, 낱알 여러 개가 duplicate로 걸린다.
+  const neg = derived ? NEG_DERIVED : ((hint || phrase) ? NEG_MULTI : BAKE_NEG);
   const presentation = PRESENTATION[category] || PRESENTATION_DEFAULT;
   const aspect = await outputAspect(sourcePaths);
 
-  const prompt = `A brand-new clean isolated e-commerce product photograph, shot from scratch in a studio. ${unitClause}
+  /**
+   * 🔴 골격이 **둘**이다. 문장 하나로 갈라선 안 된다(2026-08-05 실측).
+   *
+   *   · 포장 상태 = **격리(누끼)** — 배경·사람·소품을 지우고 제품만 남긴다
+   *   · 파생 상태 = **연출(촬영)** — 소스에 없던 그릇·거품·조리형태를 만들어낸다
+   *
+   * 처음엔 격리 골격 끝에 "사실은 내용물이 주인공" 한 문단만 덧붙였다. 안 먹혔다 —
+   * 앞에서 격리를 네 번(도입부·unitClause·SOURCE_HYGIENE·THE PHOTOGRAPH) 말하고 뒤에서 한 번
+   * 뒤집는 꼴이라, `컵에 따름`이 6장 중 5장 파우치로 나왔다(유리잔 1/6).
+   * → 파생이면 격리 골격을 **아예 쓰지 않는다**. SOURCE_HYGIENE·unitClause·THE PHOTOGRAPH 전부 제외.
+   *   포장은 자기 레퍼가 따로 있으므로(brandSku/brandRefFor) 여기서 빠져도 컷 단계에서 붙는다.
+   *   ⚠️ classify가 파생 desc에 포장을 써 넣기도 한다(팩101 "…beside the pouch") → desc 우선.
+   */
+  const prompt = (derived && state)
+    ? `A brand-new studio photograph of this product's CONTENTS, prepared and served: ${state}.
+
+The reference photographs show the PACKAGED product — use them ONLY to learn the contents' true colour, texture and consistency. The packaging (pouch, box, bottle, wrapper) is NOT in this frame unless the description above explicitly asks for it; it has its own separate photograph. Do not copy, reuse or outpaint any region of a reference — every pixel of the output is newly rendered.
+
+THE PHOTOGRAPH: compose it as a clean, appetising studio still — large and centred on a light grey seamless background, soft even lighting, tack-sharp detail. The vessel, foam, plate or prepared form named above is part of the SUBJECT, not a prop. ${EXCLUDE}
+
+MARKINGS: ${MARKINGS}${NO_ENGRAVE} ${aspect.name}.`
+    : `A brand-new clean isolated e-commerce product photograph, shot from scratch in a studio. ${unitClause}
 
 ${SOURCE_HYGIENE}
 
