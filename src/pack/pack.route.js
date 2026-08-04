@@ -804,7 +804,6 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
     const plan = (pack.config && pack.config.plan) || {};
     const sources = (plan.sources || []).filter((p) => fs.existsSync(p));
     if (!sources.length) { if (rbCharge) await rbCharge.refund().catch(() => {}); return res.status(409).json({ error: '소스 사진이 없어 재굽기 불가(이 팩은 재굽기 전 버전)' }); }
-    const suite = suiteFor(pack.vertical);
     const sku = String((req.body && req.body.sku) || 'main');
     const hint = String((req.body && req.body.hint) || '').slice(0, 200); // 교정(예: "한 쌍으로") — 낱개→페어 등
     const skuLabel = ((plan.refSkus || []).find((s) => s.sku === sku) || {}).label;
@@ -818,7 +817,8 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
       //   runPack 은 91a0dec 에서 고쳤는데 **이 재굽기 경로가 빠져 있었다**(게이트에서 누르면 재발).
       label: st ? null : skuLabel, state: st ? (st.desc || st.label) : null,
       unit: plan.unit || (pack.config && pack.config.unit) || null,
-      refBake: suite.refBake, hint,
+      // 카테고리는 플래너가 이미 판별해 config 에 저장해둔 값 — 재굽기도 같은 제시 방식을 써야 한다.
+      category: (pack.config && pack.config.category) || null, hint,
     });
     const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: rbUser, skipRefCharge: true });
     res.json({ asset, refCharged: !!rbCharge, ref: await refInfo(rbUser) });

@@ -271,14 +271,14 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   } else if (stateMode) {
     // 상태마다 **그 상태를 찍은 사진**으로 따로 굽는다(닫힘 레퍼는 닫힌 사진에서, 열림은 열린 사진에서).
     for (const st of planStates) {
-      const buffer = await bakeOne({ sourcePaths: st.sources, refBake: suite.refBake, state: st.desc || st.label, unit });
+      const buffer = await bakeOne({ sourcePaths: st.sources, state: st.desc || st.label, unit, category });
       const p = path.join(workDir, `ref_${st.key}.jpg`);
       fs.writeFileSync(p, buffer);
       manifest.refs.push({ sku: st.key, key: `ref_${st.key}`, label: st.label, path: p });
       emit({ stage: 'ref', key: st.key });
     }
   } else {
-    const baked = await bakeRefs({ sourcePaths, skus: planSkus, refBake: suite.refBake, unit });
+    const baked = await bakeRefs({ sourcePaths, skus: planSkus, unit, category });
     for (const b of baked) {
       const p = path.join(workDir, `ref_${b.sku}.jpg`);
       fs.writeFileSync(p, b.buffer);

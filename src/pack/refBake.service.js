@@ -12,15 +12,50 @@ const provider = require('../images/providers/nanoBanana.provider');
 // 레퍼만 따로 낮추고 싶을 때를 위한 오버라이드(보통은 팩 공통값 그대로 쓴다).
 const PACK_REF_IMAGE_SIZE = process.env.PACK_REF_IMAGE_SIZE || PACK_IMAGE_SIZE;
 
-const NEG_NOTEXT = 'added text, caption, watermark, words or letters printed on the cup plate bowl or background, invented lettering not on the real product';
-const BAKE_NEG = `garbled or gibberish lettering, misspelled wordmark, two or more products, duplicate product, extra caps, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights, ${NEG_NOTEXT}`;
+/**
+ * 🔴 소스는 "증거"지 "캔버스"가 아니다.
+ *
+ * 실측(2026-08-04, 프로드 팩 86과 **바이트 동일한** 네이버 스크린샷 소스로 48장):
+ *   - 쇼핑몰 배지 `4명 이상 구매`·갤러리 카운터 `1/6`이 원위치에 그대로 재현되거나(프로드 팩 169),
+ *     또렷하게 다시 그려지고, 프레임 아래 끝에 원본 사진의 띠(바지·매장 바닥)가 남았다.
+ *   - 소스가 스크린샷이 아닌 깨끗한 AI 전신컷이어도 흰 운동화·벽 모서리가 남았다(프로드 팩 167).
+ * 즉 모델이 입력을 **편집할 캔버스**로 읽는다. 프롬프트가 "입력에 제품이 아닌 것이 섞여 있을 수 있다"고
+ * 한 번도 말한 적이 없었다(7/22 첫 커밋 이후 이 문장 없음).
+ */
+const SOURCE_HYGIENE = `The reference images are EVIDENCE of the product's shape, colour, material and markings — they are NOT a canvas to edit. They may be shop-page screenshots or lifestyle photos that also contain things which are NOT the product: buy-count badges, image counters, carousel arrows, price tags, watermarks, shop interiors, furniture, mannequins, models, and other garments or items worn or held alongside it. None of that belongs to the product. Take the product; leave everything else behind. Do not copy, reuse, extend or outpaint any region of a reference — every pixel of the output is a newly rendered photograph.`;
+
+// 프레임 전면 지배 — 예전 문구는 "large and centered"뿐이라 **아래 20%에 다른 패널이 들어와도 위반이 아니었다.**
+const FRAME = `The background is ONE continuous seamless sweep filling the entire frame, edge to edge and top to bottom — no panels, bands, strips, borders or leftover slices of another photo anywhere, especially along the bottom edge. The whole product is inside the frame, and nothing else is.`;
+
+/**
+ * 🔴 금지어 나열은 실패했다 — `invented lettering`·`garbled lettering`이 이미 네거티브에 있었는데도
+ *   없는 브랜드를 지어냈다(`TAOK SHIMP`·`YENAEN BEASKE`·`DREASEAN`·`MBBFB CSICOEN`).
+ *   Gemini엔 진짜 negative 채널이 없어 네거티브는 `Avoid: …` 평문으로 꼬리에 붙을 뿐이고,
+ *   금지어를 적으면 오히려 그 개념을 활성화한다. → **원하는 상태를 긍정문으로** 기술한다.
+ *   (2K가 글자를 그릴 픽셀을 주는데 그릴 글자가 없으면 지어내서 채운다 — 실측상 지어내기는 2K 칸에만 나왔다.)
+ */
+const MARKINGS = `Reproduce only the lettering physically printed, woven or embossed on the product itself in the reference, exactly as it reads there. If no logo or text is visible on it, the product carries none — leave those surfaces blank. Never invent a brand name, neck tag, hem tag, care label or wordmark.`;
+
+// 카테고리별 제시 방식. 플래너가 이미 `config.category` 로 판별해 저장하는데 **베이크만 그걸 안 읽고 있었다**
+//   → 옷에도 "standing upright"(병 어휘)가 나가고 있었다. 없는 카테고리는 기본값.
+const PRESENTATION = {
+  apparel: 'presented on an invisible ghost mannequin — filled out as if worn, front-facing, symmetrical, sleeves and hem falling naturally',
+  footwear: 'the pair placed front-facing at a slight three-quarter angle',
+  jewelry: 'laid flat and front-facing at macro scale',
+  bag: 'standing upright and front-facing with its handles or strap arranged naturally',
+};
+const PRESENTATION_DEFAULT = 'standing upright and front-facing';
+
+// 네거티브는 **물리적 결함어만** 남긴다(글자 관련은 MARKINGS 로 승격, cup/plate/bowl·cap 은 음료 어휘라 삭제).
+const BAKE_NEG = 'warped or distorted product, two or more products, duplicate product, people, hands, props, cluttered background, harsh blown highlights';
+const NEG_MULTI = 'warped or distorted product, people, hands, props, cluttered background, harsh blown highlights'; // 개체가 둘 이상이 정상인 경우 — "two or more/duplicate"를 뺀다
 
 /**
  * 단품 캐논 레퍼 1장 베이크.
  * @param {object} p
  * @param {string[]} p.sourcePaths  업로드 소스(같은 제품 여러 각도 가능)
  * @param {string}  [p.label]       라벨/변형 지시(예: 'MON pink day-label') — 세트일 때
- * @param {object}  [p.refBake]     suite.refBake 스펙
+ * @param {string}  [p.category]    플래너가 판별한 카테고리(apparel/footwear/… ) — 제시 방식 분기
  * @returns {Promise<Buffer>}
  */
 // 🔵 unit = "이 상품의 한 단위". classify가 자동 판별해 넘긴다 — 기본 가정("단품 하나")이 틀리는 케이스를
@@ -30,15 +65,14 @@ const UNIT_PHRASE = {
   with_package: 'the product together with its own box/packaging, both in frame as one presentation',
   group: 'the full bundled group of pieces that are sold together as one unit, all in frame',
 };
-const NEG_MULTI = `garbled or gibberish lettering, misspelled wordmark, warped product, distorted label, people, hands, props, cluttered background, harsh blown highlights, ${NEG_NOTEXT}`; // 개체가 둘 이상이 정상인 경우 — "two or more/duplicate"를 뺀다
 
-async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) {
+async function bakeOne({ sourcePaths, label, hint, state, unit, category }) {
   // state = 같은 제품의 다른 모습(뚜껑 닫음/열음 등). 레퍼로 넘긴 사진 자체가 이미 그 상태라,
   //   모델이 임의로 "완성된 모습"으로 되돌리지(뚜껑을 도로 닫지) 않게 사진 그대로를 못박는다.
   // 🔴 state 설명은 **장면 지시**이지 제품에 인쇄할 글자가 아니다. 한국어 라벨을 그대로 넘겼더니
   //   모델이 그걸 라벨로 오해해 찻잔에 "우린 차"를 찍어버렸다(실제 발생) → 영어 desc + 각인 금지 명시.
   const variant = state
-    ? ` The reference photo shows the product in one specific physical state: ${state}. Reproduce THAT exact state — same open/closed configuration, same parts visible or hidden — never change it, never "complete" or reassemble the product. This state description is a scene instruction ONLY: never print, engrave or letter any of those words onto the product, cup, plate or background.`
+    ? ` The reference photo shows the product in one specific physical state: ${state}. Reproduce THAT exact state — same open/closed configuration, same parts visible or hidden — never change it, never "complete" or reassemble the product. This state description is a scene instruction ONLY: never print, engrave or letter any of those words onto the product or the background.`
     : (label ? ` This specific variant: ${label}.` : '');
   // 단위 결정 우선순위: 사용자 수동 교정(hint) > classify 자동 판별(unit) > 기본(단품 하나).
   const phrase = UNIT_PHRASE[unit];
@@ -46,9 +80,18 @@ async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) 
     ? `Present the product EXACTLY as the seller instructs: "${hint}". If they say a pair, show a matching PAIR of two identical pieces arranged neatly together; follow their instruction precisely.`
     : (phrase
       ? `Show exactly ONE sellable unit, which for this product means ${phrase}. Do not add or remove objects.`
-      : `ONE single product only (never duplicate).`);
+      : `Show exactly ONE single product — never a second copy, never a front-and-back pair side by side.`);
   const neg = (hint || phrase) ? NEG_MULTI : BAKE_NEG;
-  const prompt = `Clean isolated e-commerce product photograph — ${unitClause} — standing upright and front-facing, large and centered on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp label. Keep the product's exact shape, color, cap and the wordmark on its label identical to the reference — do not garble or invent lettering. No people, no hands, no props.${variant} 4:5.`;
+  const presentation = PRESENTATION[category] || PRESENTATION_DEFAULT;
+
+  const prompt = `A brand-new clean isolated e-commerce product photograph, shot from scratch in a studio. ${unitClause}
+
+${SOURCE_HYGIENE}
+
+THE PHOTOGRAPH: the product ${presentation}, large and centred on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp detail, true to its real shape, colour and material. ${FRAME}
+
+MARKINGS: ${MARKINGS}${variant} 4:5.`;
+
   const res = await provider.generate({
     prompt,
     negativePrompt: neg,
@@ -65,16 +108,15 @@ async function bakeOne({ sourcePaths, label, refBake = {}, hint, state, unit }) 
  * @param {object} p
  * @param {string[]} p.sourcePaths
  * @param {Array<{sku:string,label?:string}>} [p.skus]  세트 구성(없으면 단일)
- * @param {object} [p.refBake]
  * @returns {Promise<Array<{sku:string, buffer:Buffer}>>}
  */
-async function bakeRefs({ sourcePaths, skus, refBake, unit }) {
+async function bakeRefs({ sourcePaths, skus, unit, category }) {
   if (!skus || !skus.length) {
-    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, refBake, unit }) }];
+    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, unit, category }) }];
   }
   const out = [];
   for (const s of skus) {
-    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, refBake, unit }) });
+    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, unit, category }) });
   }
   return out;
 }
