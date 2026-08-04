@@ -593,7 +593,7 @@ function renderInteractive(pack) {
   const section = (k) => byKind[k] ? `<h2>${kindLabel(k) || k}</h2><div class="grid">${byKind[k].map(s => cardHtml(s, groups[slotId(s)], true)).join('')}</div>` : '';
   // 🔀 순서: **기준 사진 먼저** → 스틸. (합성은 더 이상 만들지 않음 — 옛 팩에 남아 있으면 스틸 뒤에.)
   //   맨 위에 🎬 영상 블록(있으면 영상, 만드는 중, 또는 만들기 CTA).
-  $('#assets').innerHTML = `<div id="packVideo">${videoBlockInner(pack)}</div>` + section('ref') + + section('still') + section('composite') + moreBarHtml(pack);
+  $('#assets').innerHTML = `<div id="packVideo">${videoBlockInner(pack)}</div>` + section('ref') + section('still') + section('composite') + moreBarHtml(pack);
 }
 // ── 🎬 광고 영상 (선택형·과금) ─────────────────────────────────────────────
 //   팩이 이미 분석한 제품·컨셉으로 Ad Video 엔진이 한 편. 매 생성마다 안 굽고 버튼 눌렀을 때만(영상=초당 과금).
