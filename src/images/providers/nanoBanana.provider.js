@@ -297,3 +297,6 @@ function getAspectRatio(width, height) {
 }
 
 module.exports = nanoBananaProvider;
+// 베이크가 **소스 비율을 그대로 따라가려고** 쓴다(레퍼는 중간 산출물이라 4:5로 고정할 이유가 없다).
+//   목록을 refBake 쪽에 복사하면 드리프트하므로 여기서 하나만 노출한다.
+module.exports.getAspectRatio = getAspectRatio;

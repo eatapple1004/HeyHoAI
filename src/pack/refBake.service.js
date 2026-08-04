@@ -6,6 +6,7 @@
  *   세트/변형이면 SKU마다 1장(병 지오메트리 통일 + 라벨/색만 교체 전략도 가능 — 여기선 소스별 개별 베이크).
  */
 // 모델·해상도는 **팩 전체가 같아야 한다** — 레퍼는 모든 컷의 상류다. 여기서 갈리면 하류 N컷이 통째로 갈린다.
+const sharp = require('sharp');
 const { resultToBuffer, PACK_IMAGE_MODEL, PACK_IMAGE_SIZE } = require('./stills.service');
 const provider = require('../images/providers/nanoBanana.provider');
 
@@ -66,6 +67,30 @@ const UNIT_PHRASE = {
   group: 'the full bundled group of pieces that are sold together as one unit, all in frame',
 };
 
+/**
+ * 출력 비율 = **소스 비율에 가장 가까운 지원 비율**.
+ *
+ * 🔴 왜 4:5 고정을 풀었나(실측 2026-08-04, 같은 소스 12장씩):
+ *      Pro + 4:5 + 2K = 오염 4/12(33%)  ← 현행. 세 조건이 **모두** 모인 칸만 크게 샌다
+ *      Pro + 1:1 + 2K = 1/12( 8%)       ← 소스(589×632)가 거의 정사각이라 늘릴 캔버스가 없다
+ *      Pro + 4:5 + 1K = 0/4 · flash 계열 = 0/8
+ *    소스보다 세로로 긴 캔버스를 요구하면 모델이 **늘어난 자리를 소스로 이어 채운다**(바지 띠·배지 이동).
+ *    레퍼는 중간 산출물이고 최종 컷은 각자 비율로 따로 생성되므로(genStill 이 cut.w/cut.h 사용)
+ *    레퍼를 4:5로 못박을 이유가 애초에 없었다.
+ *    ⚠️ 완치가 아니라 완화다(8% 잔존) — 위 SOURCE_HYGIENE/FRAME 과 **함께** 써야 한다.
+ *    ⚠️ 워드마크는 안 깨진다: 아메리카노 `ANS BAKERY` 현행 3/3 · 소스비율 3/3 모두 또렷(실측).
+ */
+async function outputAspect(sourcePaths) {
+  const FALLBACK = { w: 768, h: 960, name: '4:5' };
+  const first = (sourcePaths || [])[0];
+  if (!first) return FALLBACK;
+  try {
+    const { width, height } = await sharp(first).metadata();
+    if (width > 0 && height > 0) return { w: width, h: height, name: provider.getAspectRatio(width, height) };
+  } catch (_) { /* 못 읽으면 종전 동작 그대로 */ }
+  return FALLBACK;
+}
+
 async function bakeOne({ sourcePaths, label, hint, state, unit, category }) {
   // state = 같은 제품의 다른 모습(뚜껑 닫음/열음 등). 레퍼로 넘긴 사진 자체가 이미 그 상태라,
   //   모델이 임의로 "완성된 모습"으로 되돌리지(뚜껑을 도로 닫지) 않게 사진 그대로를 못박는다.
@@ -83,6 +108,7 @@ async function bakeOne({ sourcePaths, label, hint, state, unit, category }) {
       : `Show exactly ONE single product — never a second copy, never a front-and-back pair side by side.`);
   const neg = (hint || phrase) ? NEG_MULTI : BAKE_NEG;
   const presentation = PRESENTATION[category] || PRESENTATION_DEFAULT;
+  const aspect = await outputAspect(sourcePaths);
 
   const prompt = `A brand-new clean isolated e-commerce product photograph, shot from scratch in a studio. ${unitClause}
 
@@ -90,12 +116,12 @@ ${SOURCE_HYGIENE}
 
 THE PHOTOGRAPH: the product ${presentation}, large and centred on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp detail, true to its real shape, colour and material. ${FRAME}
 
-MARKINGS: ${MARKINGS}${variant} 4:5.`;
+MARKINGS: ${MARKINGS}${variant} ${aspect.name}.`;
 
   const res = await provider.generate({
     prompt,
     negativePrompt: neg,
-    width: 768, height: 960,
+    width: aspect.w, height: aspect.h,   // provider 가 지원 비율 중 최근접으로 매핑한다
     references: (sourcePaths || []).map((p) => ({ path: p, kind: 'product' })),
     model: PACK_IMAGE_MODEL,
     imageSize: PACK_REF_IMAGE_SIZE,
