@@ -91,14 +91,26 @@ async function outputAspect(sourcePaths) {
   return FALLBACK;
 }
 
-async function bakeOne({ sourcePaths, label, hint, state, unit, category }) {
-  // state = 같은 제품의 다른 모습(뚜껑 닫음/열음 등). 레퍼로 넘긴 사진 자체가 이미 그 상태라,
-  //   모델이 임의로 "완성된 모습"으로 되돌리지(뚜껑을 도로 닫지) 않게 사진 그대로를 못박는다.
+async function bakeOne({ sourcePaths, label, hint, state, unit, category, derived }) {
+  // state = 같은 제품의 다른 모습(포장/개봉, 뚜껑 닫음/열음, 컵에 따름 등).
+  //
+  // 🔴 예전 문구는 "레퍼 사진이 **이미** 그 상태다 → 그대로 재현하라"였다. 그 전제가 자주 틀린다:
+  //   프로드 팩 172(사진 1장, 상태 2개) — 한 장에 파우치와 유리잔이 **같이** 있었는데 두 상태 모두
+  //   파우치로 나왔다. 모델이 "레퍼=파우치"로 읽고 desc(`clear glass filled with amber juice`)를 버린 것.
+  //   → 전제를 뒤집는다: 사진은 **제품 정체성의 증거**일 뿐이고, **어느 상태로 그릴지는 이 문장이 정한다.**
+  //   SOURCE_HYGIENE("옆에 놓인 다른 물건은 제품이 아니다")과 부딪히지 않도록 **맨 뒤에** 두어 이 절이 이긴다.
+  //
   // 🔴 state 설명은 **장면 지시**이지 제품에 인쇄할 글자가 아니다. 한국어 라벨을 그대로 넘겼더니
   //   모델이 그걸 라벨로 오해해 찻잔에 "우린 차"를 찍어버렸다(실제 발생) → 영어 desc + 각인 금지 명시.
+  const NO_ENGRAVE = ` This state description is a scene instruction ONLY: never print, engrave or letter any of those words onto the product or the background.`;
   const variant = state
-    ? ` The reference photo shows the product in one specific physical state: ${state}. Reproduce THAT exact state — same open/closed configuration, same parts visible or hidden — never change it, never "complete" or reassemble the product. This state description is a scene instruction ONLY: never print, engrave or letter any of those words onto the product or the background.`
+    ? ` STATE: render the product in exactly this physical state — ${state}. The reference may show it in a different state, or show several states at once; take the product's identity, colour, material and markings from the reference and ignore whatever state it happens to be in there. Never "complete", close or reassemble the product to make it look tidier.${NO_ENGRAVE}`
     : (label ? ` This specific variant: ${label}.` : '');
+  // 🔴 `No people, no hands, no props.` — 7/22 원본에 있던 문장. 어제 개편에서 빼면서 유연함이 죽었다.
+  //   이 문장은 **상태 desc와 싸워서 이긴다**: 팩50의 desc가 `held in two wet hands`로 손을 명시하는데도
+  //   7/24 결과에는 손이 없었다. 빼고 나니 같은 입력 6장 중 5장에 손이 남았다 — 하던 일이 있는 문장이다.
+  //   ⚠️ 단 `no props`는 **포장 상태에만** 맞다. 파생 상태에선 유리잔·거품이 prop으로 분류돼 지워진다.
+  const EXCLUDE = derived ? 'No people, no hands.' : 'No people, no hands, no props.';
   // 단위 결정 우선순위: 사용자 수동 교정(hint) > classify 자동 판별(unit) > 기본(단품 하나).
   const phrase = UNIT_PHRASE[unit];
   const unitClause = hint
@@ -114,7 +126,7 @@ async function bakeOne({ sourcePaths, label, hint, state, unit, category }) {
 
 ${SOURCE_HYGIENE}
 
-THE PHOTOGRAPH: the product ${presentation}, large and centred on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp detail, true to its real shape, colour and material. ${FRAME}
+THE PHOTOGRAPH: the product ${presentation}, large and centred on a light grey seamless studio background with a soft natural contact shadow, even softbox lighting, tack-sharp detail, true to its real shape, colour and material. ${FRAME} ${EXCLUDE}
 
 MARKINGS: ${MARKINGS}${variant} ${aspect.name}.`;
 

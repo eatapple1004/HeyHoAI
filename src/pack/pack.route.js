@@ -819,6 +819,7 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
       unit: plan.unit || (pack.config && pack.config.unit) || null,
       // 카테고리는 플래너가 이미 판별해 config 에 저장해둔 값 — 재굽기도 같은 제시 방식을 써야 한다.
       category: (pack.config && pack.config.category) || null, hint,
+      derived: !!(st && st.derived),   // 파생 상태(내용물)면 굽기 문구가 갈린다 — 재굽기도 같은 갈래로
     });
     const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: rbUser, skipRefCharge: true });
     res.json({ asset, refCharged: !!rbCharge, ref: await refInfo(rbUser) });
