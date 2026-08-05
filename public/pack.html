@@ -446,7 +446,8 @@ function showConfirm(cls, hint) {
   confirmState = { category: CATS.includes(cls.category) ? cls.category : 'other', product: cls.product || '',
       // 🔴 productKo 를 여기 안 담으면 화면이 영어로 떨어진다 — 담는 걸 빠뜨려 실제로 그랬다.
       //   product(영어)는 서버가 이미지 프롬프트에 쓰는 값이라 그대로 두고, 표시용만 따로 나른다.
-      productKo: cls.productKo || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint };
+      productKo: cls.productKo || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint,
+      sourceHasModel: !!cls.sourceHasModel };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
   const c = confirmState;
   const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">${isKO() ? `세트 · ${c.variants.length}종 감지` : `Set · ${c.variants.length} variants detected`}</div>` : '';
@@ -505,6 +506,8 @@ async function confirmGenerate() {
   const onStates = (c.states || []).filter(s => c.stateOn[s.key]);
   if (onStates.length > 1) fd.append('states', JSON.stringify(onStates));
   if (c.unit) fd.append('unit', c.unit);   // 한 쌍·제품+박스 등 — 첫 베이크부터 맞게
+  // 소스가 사람 착용컷이면 기준 사진을 재구성형 모델로 굽는다(Pro는 사람 전신에 고착돼 얼굴·다리가 남는다).
+  if (c.sourceHasModel) fd.append('sourceHasModel', 'true');
   if (c.lenses && c.lenses.length) fd.append('lenses', JSON.stringify(c.lenses));   // 제품 맞춤 축 → 다양성 엔진
   const revert = () => { $('#result').classList.add('hide'); $('#form').classList.remove('hide'); };
   let r;

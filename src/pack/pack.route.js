@@ -322,7 +322,7 @@ function composeRefPaths(pack) {
 }
 
 // 1단계(prep): 분석 → 계획 저장 → **캐논 레퍼만 굽고** 멈춘다(status='ref_ready'). 스틸은 게이트 통과 후 generate에서.
-async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, lenses, category, userId }) {
+async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, userId }) {
   pack.config = pack.config || {};
   pack.product = pack.product || product;
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
@@ -356,7 +356,7 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
   try {
     await runPack({
       // states[].photoIndex 는 업로드 순서 기준 — durableSources가 같은 순서로 복사되므로 그대로 유효하다.
-      sourcePaths: durableSources, vertical, product, skus, states, unit, lenses, category, workDir, stopAfter: 'ref',
+      sourcePaths: durableSources, vertical, product, skus, states, unit, lenses, category, sourceHasModel, workDir, stopAfter: 'ref',
       onPlan: async (plan) => { await repo.setPlan(pack.id, plan); },  // plan={total,slots,cuts,refSkus,product,vertical,sources}
       onAsset: async (a) => { await recordAsset(pack, { kind: a.kind, key: a.key, label: a.label, absPath: a.path, userId }); },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
@@ -542,18 +542,20 @@ router.post('/', upload.array('photos', 10), normalizeUploads, async (req, res, 
     }
     // 한 단위 판별(단품/한 쌍/본체+박스) — 캐논 레퍼를 몇 개로 구울지. 화이트리스트 밖은 무시(기본 단품).
     const unit = ['pair', 'with_package', 'group'].includes(req.body.unit) ? req.body.unit : null;
+    // 🔴 소스가 사람 착용컷인지 — 기준 사진을 어느 모델로 구울지가 갈린다(refBake PACK_BAKE_MODEL_ONMODEL 주석).
+    const sourceHasModel = String(req.body.sourceHasModel) === 'true';
     // 🟣 렌즈 — classify가 제품 보고 뽑은 촬영 축(유효순). 없으면 runPack이 범용 폴백을 쓴다.
     let lenses = null;
     try { lenses = req.body.lenses ? JSON.parse(req.body.lenses) : null; } catch (_) { lenses = null; }
     if (Array.isArray(lenses)) lenses = lenses.filter((l) => l && l.key && l.brief).slice(0, 12);
 
     const pack = await repo.createPack({
-      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, lenses, category, photoCount: req.files.length },
+      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, lenses, category, sourceHasModel, photoCount: req.files.length },
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
     setImmediate(() => prepPack(pack, {
-      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, lenses, category, userId: req.user && req.user.id,
+      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, lenses, category, sourceHasModel, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
 });
@@ -820,6 +822,7 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
       // 카테고리는 플래너가 이미 판별해 config 에 저장해둔 값 — 재굽기도 같은 제시 방식을 써야 한다.
       category: (pack.config && pack.config.category) || null, hint,
       derived: !!(st && st.derived),   // 파생 상태(내용물)면 굽기 문구가 갈린다 — 재굽기도 같은 갈래로
+      sourceHasModel: !!(pack.config && pack.config.sourceHasModel),   // 재굽기도 같은 모델로 구워야 결과가 안 튄다
     });
     const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: rbUser, skipRefCharge: true });
     res.json({ asset, refCharged: !!rbCharge, ref: await refInfo(rbUser) });

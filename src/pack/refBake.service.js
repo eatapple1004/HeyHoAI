@@ -14,6 +14,27 @@ const provider = require('../images/providers/nanoBanana.provider');
 const PACK_REF_IMAGE_SIZE = process.env.PACK_REF_IMAGE_SIZE || PACK_IMAGE_SIZE;
 
 /**
+ * 🔴 소스가 **사람 착용컷**이면 굽기 모델을 바꾼다.
+ *
+ * Pro 는 소스의 **구도 안에서 편집**한다 — "흰 배경에 그려줘" 를 받으면 배경만 바꾸고 프레임 구성은
+ * 원본을 유지한다. 그래서 사람 전신 착용컷에서는 상의 자리에 상의를 그리고 하의 자리의 청바지·신발은
+ * 그대로 남긴다. 실측(2026-08-05, 프로드 팩180 소스 = 남성 전신 착용컷):
+ *
+ *   프롬프트 설계 6가지 · 약 50장 — 전부 실패
+ *     품목 지목 한 줄 0/4 · 제품 못박기+인물 지목 1/6(차단 3) · 최소 2문장 3/6
+ *     최소+"다른 건 안 나옴" 2/6(차단 1) · 컷아웃 재설계 0/6(차단 4)
+ *     ⭐ 우리 코드를 통째로 우회하고 **한 문장만** 준 것도 6/6 오염 — 프롬프트 문제가 아니다
+ *   flash — 3/4 · 4/4 · 6/6. 사람을 지우고 옷만 새로 구성한다
+ *
+ * ⚠️ 전부 flash 로 바꾸면 안 된다 — 파생 상태는 flash 0/3 대 Pro 5/6, 한글 라벨 파우치는 Pro 만 정밀,
+ *    마네킹·플랫레이 소스는 Pro 가 6/6 이다. **사람이 있을 때만** 갈아탄다(classify 판정 12/12 정확).
+ * ⚠️ 대가: flash 는 2K 를 못 써서 레퍼 해상도가 낮아진다(약 1K). 얼굴·다리 남은 레퍼보다는 낫다는 판단.
+ * ⚠️ 속옷 착용컷에서 Pro 는 안전 필터로 3~4/6 이 아예 응답을 안 준다. flash 는 0.
+ * 되돌리려면 배포 없이 `PACK_BAKE_MODEL_ONMODEL=gemini-3-pro-image-preview` + restart.
+ */
+const PACK_BAKE_MODEL_ONMODEL = process.env.PACK_BAKE_MODEL_ONMODEL || 'gemini-2.5-flash-image';
+
+/**
  * 🔴 소스는 "증거"지 "캔버스"가 아니다.
  *
  * 실측(2026-08-04, 프로드 팩 86과 **바이트 동일한** 네이버 스크린샷 소스로 48장):
@@ -92,7 +113,7 @@ async function outputAspect(sourcePaths) {
   return FALLBACK;
 }
 
-async function bakeOne({ sourcePaths, label, hint, state, unit, category, derived }) {
+async function bakeOne({ sourcePaths, label, hint, state, unit, category, derived, sourceHasModel }) {
   // state = 같은 제품의 다른 모습(포장/개봉, 뚜껑 닫음/열음, 컵에 따름 등).
   //
   // 🔴 예전 문구는 "레퍼 사진이 **이미** 그 상태다 → 그대로 재현하라"였다. 그 전제가 자주 틀린다:
@@ -158,7 +179,8 @@ MARKINGS: ${MARKINGS}${variant} ${aspect.name}.`;
     negativePrompt: neg,
     width: aspect.w, height: aspect.h,   // provider 가 지원 비율 중 최근접으로 매핑한다
     references: (sourcePaths || []).map((p) => ({ path: p, kind: 'product' })),
-    model: PACK_IMAGE_MODEL,
+    // 사람 착용컷이면 재구성형 모델로(위 PACK_BAKE_MODEL_ONMODEL 주석). 그 외엔 팩 공통 Pro.
+    model: sourceHasModel ? PACK_BAKE_MODEL_ONMODEL : PACK_IMAGE_MODEL,
     imageSize: PACK_REF_IMAGE_SIZE,
   });
   return resultToBuffer(res);
@@ -171,13 +193,13 @@ MARKINGS: ${MARKINGS}${variant} ${aspect.name}.`;
  * @param {Array<{sku:string,label?:string}>} [p.skus]  세트 구성(없으면 단일)
  * @returns {Promise<Array<{sku:string, buffer:Buffer}>>}
  */
-async function bakeRefs({ sourcePaths, skus, unit, category }) {
+async function bakeRefs({ sourcePaths, skus, unit, category, sourceHasModel }) {
   if (!skus || !skus.length) {
-    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, unit, category }) }];
+    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, unit, category, sourceHasModel }) }];
   }
   const out = [];
   for (const s of skus) {
-    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, unit, category }) });
+    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, unit, category, sourceHasModel }) });
   }
   return out;
 }

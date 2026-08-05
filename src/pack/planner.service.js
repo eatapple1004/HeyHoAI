@@ -207,6 +207,11 @@ const CLASSIFY_SCHEMA = {
       //   상태의 label(한국어 UI) ↔ desc(영어 프롬프트)와 **같은 분리**다.
       productKo: { type: 'string', description: 'the same product description in natural Korean, for UI display only — never used in image prompts' },
     category: { type: 'string', description: `product category, one of: ${CATEGORIES.join(', ')}` },
+    // 🔴 소스가 "사람이 착용/소지한 사진"인지 — 기준 사진을 **어느 모델로 구울지**가 여기서 갈린다.
+    //   실측(2026-08-05, 사람 전신 착용컷 소스): Nano Banana Pro 는 사람 구조에 고착돼 얼굴·다리·신발을
+    //   못 지운다(0/8). 같은 프롬프트로 flash 는 3/4 가 깨끗했다 — 지우는 게 아니라 **잘라내 다시 그리는**
+    //   작업이라 재구성이 자유로운 모델이 이긴다. 마네킹·플랫레이 소스에서는 Pro 가 6/6 이므로 그대로 둔다.
+    sourceHasModel: { type: 'boolean', description: 'true if a REAL PERSON is wearing, holding or using the product in any attached photo (a full-body or half-body model shot). false for mannequins, flat-lays, packshots and product-only photos.' },
     isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple distinct variants of the same line' },
     variants: { type: 'array', description: 'if isSet, one entry per distinct variant; else empty', items: { type: 'object', additionalProperties: false, properties: { sku: { type: 'string' }, label: { type: 'string' } }, required: ['sku', 'label'] } },
     // 🔵 unit = "이 상품의 한 단위가 무엇인가" — 캐논 레퍼를 구울 때 몇 개를 그릴지 결정한다.
@@ -253,7 +258,7 @@ const CLASSIFY_SCHEMA = {
       },
     },
   },
-  required: ['product', 'productKo', 'category', 'isSet', 'variants', 'states', 'unit', 'lenses'],
+  required: ['product', 'productKo', 'category', 'sourceHasModel', 'isSet', 'variants', 'states', 'unit', 'lenses'],
 };
 /** classify 프롬프트 빌더 — 렌즈 지시가 컨셉(hint) 유무로 갈린다. 테스트용으로 추출. */
 function buildClassifyPrompt(nImgs, hint) {
@@ -276,7 +281,9 @@ function buildClassifyPrompt(nImgs, hint) {
     hint
       ? `Also give "lenses" — 6 to 10 DIFFERENT WAYS TO REALIZE THE SELLER'S CONCEPT ("${hint}"), most useful first. Each lens is a distinct angle/prop/moment/framing/lighting WITHIN that concept (concept "cozy cafe morning" → lenses like "라떼와 함께", "창가 햇살", "책과 함께", "김 나는 컵", "나무 테이블 위"). Keep them ALL faithful to that concept — do NOT drift to unrelated generic product angles like plain grey-background or seasonal shots. Keep each brief short.`
       : `Also give "lenses" — 6 to 10 distinct creative ANGLES for shooting THIS product, most valuable first (a clean PDP/detail angle near the top). Make them genuinely different from each other and specific to this product's category. Keep each brief short.`,
-    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), isSet, variants, states (key/label/desc/showsPackage/photoIndex), unit, lenses.`,
+    // 🔴 굽기 모델이 이 값으로 갈린다 — 사람 착용컷이면 "지우기"가 아니라 "잘라내 다시 그리기"라 재구성형 모델이 이긴다.
+    `Also decide "sourceHasModel": is a REAL PERSON wearing, holding or using the product in any attached photo? A headless mannequin, dress form, flat-lay or plain packshot is NOT a person.`,
+    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), sourceHasModel, isSet, variants, states (key/label/desc/showsPackage/photoIndex), unit, lenses.`,
   ].filter(Boolean).join('\n');
 }
 
