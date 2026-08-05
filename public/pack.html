@@ -447,11 +447,26 @@ function showConfirm(cls, hint) {
       // 🔴 productKo 를 여기 안 담으면 화면이 영어로 떨어진다 — 담는 걸 빠뜨려 실제로 그랬다.
       //   product(영어)는 서버가 이미지 프롬프트에 쓰는 값이라 그대로 두고, 표시용만 따로 나른다.
       productKo: cls.productKo || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint,
-      sourceHasModel: !!cls.sourceHasModel };
+      sourceHasModel: !!cls.sourceHasModel,
+      // 🔴 두 축이 동시에 잡히면 **사용자가 고른다**. 예전엔 상태가 변형을 조용히 덮어썼다 —
+      //   runPack 의 `planSkus = planStates.map(...)` 가 변형을 통째로 버린다. 프로드 실측:
+      //   팩72 는 6가지 맛(쌀·밤·팥·옥수수·말차·초코누텔라)을 감지해놓고 상태 2개만 구웠고,
+      //   팩43(6종)·팩50(7종)·팩73(2종)도 같았다. 사용자는 그 사실을 알 방법이 없었다.
+      //   기본값은 '종류별' — 그게 지금 버려지는 쪽이고, 셀러가 따로 파는 단위다.
+      axis: (cls.isSet && (cls.variants || []).length > 1 && states.length > 1) ? 'variants' : null };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
   const c = confirmState;
-  const setLine = (c.isSet && c.variants.length) ? `<div class="cf-set">${isKO() ? `세트 · ${c.variants.length}종 감지` : `Set · ${c.variants.length} variants detected`}</div>` : '';
-  const stateLine = states.length > 1
+  const bothAxes = !!c.axis;   // 종류 2개↑ + 상태 2개↑ 가 동시에 잡힘
+  const axisLine = bothAxes ? `<div class="cf-states">
+      <div class="cf-states-h">${isKO() ? '이 사진에서 <b>두 가지 축</b>이 보여요 — 어느 쪽으로 만들까요?' : 'Two axes detected — which one should the pack follow?'}</div>
+      <div class="cf-state-chips" id="cfAxis">
+        <button class="cf-chip on" data-a="variants" onclick="pickAxis('variants')">${isKO() ? `종류별 · ${c.variants.length}종` : `By variant · ${c.variants.length}`}</button>
+        <button class="cf-chip" data-a="states" onclick="pickAxis('states')">${isKO() ? `상태별 · ${states.length}가지` : `By state · ${states.length}`}</button>
+      </div>
+      <div class="cf-states-h dim" id="cfAxisWhy">${axisWhy('variants', c.variants, states)}</div>
+    </div>` : '';
+  const setLine = (!bothAxes && c.isSet && c.variants.length) ? `<div class="cf-set">${isKO() ? `세트 · ${c.variants.length}종 감지` : `Set · ${c.variants.length} variants detected`}</div>` : '';
+  const stateLine = bothAxes ? '' : states.length > 1
     ? `<div class="cf-states">
         <div class="cf-states-h">${isKO() ? `상태 ${states.length}개 감지 — 상태마다 컷 세트를 만듭니다(컷 수가 그만큼 늘어요)` : `${states.length} states detected — each state gets its own cut set (so the cut count grows)`}</div>
         <div class="cf-state-chips" id="cfStates">${states.map(s => `<button class="cf-chip on" data-s="${esc(s.key)}" onclick="toggleState('${esc(s.key)}')">${esc(s.label || s.key)}</button>`).join('')}</div>
@@ -469,7 +484,7 @@ function showConfirm(cls, hint) {
     <div class="cf-h">${isKO() ? '이 제품 맞나요?' : 'Is this your product?'}</div>
     <div class="cf-cat">${isKO() ? '감지된 카테고리 · ' : 'Detected category · '}<span class="cf-badge" id="cfBadge">${esc(catLabel(c.category) || c.category)}</span></div>
     <div class="cf-prod">${esc((isKO() && c.productKo) || c.product || (isKO() ? '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)' : "(couldn't read the product — pick a category below)"))}</div>
-    ${setLine}${unitLine}${stateLine}
+    ${axisLine}${setLine}${unitLine}${stateLine}
     <div class="cf-note">${isKO() ? '카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.' : "The right category gets you the right cuts. If it's wrong, fix it below."}</div>
     <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(catLabel(k))}</button>`).join('')}</div>
     <div class="cf-note2">${isKO() ? '먼저 기준 사진을 만들어요 (30초~1분) · 컷은 다음 단계에서 고릅니다'
@@ -484,6 +499,25 @@ function pickCat(k) {
   confirmState.category = k;
   document.querySelectorAll('#cfCats .cf-chip').forEach(b => b.classList.toggle('on', b.dataset.k === k));
   const badge = document.getElementById('cfBadge'); if (badge) badge.textContent = catLabel(k) || k;
+}
+function axisWhy(a, variants, states) {   // 고른 축이 무엇을 만들고 무엇을 뺐는지 — 영어 원본 + 한국어
+  const cut = (arr, f) => arr.map(f).slice(0, 3).join(' · ') + (arr.length > 3 ? ' …' : '');
+  const v = esc(cut(variants || [], x => x.label || x.sku));
+  const st = esc(cut(states || [], x => x.label || x.key));
+  if (a === 'variants') {
+    return isKO()
+      ? `종류별: ${v} — 종류마다 기준 사진과 컷을 따로 만듭니다. 상태(${st})는 이번 팩에 안 들어가요.`
+      : `By variant: ${v} — each variant gets its own base photo and cuts. The states (${st}) are not included in this pack.`;
+  }
+  return isKO()
+    ? `상태별: ${st} — 상태마다 기준 사진과 컷을 따로 만듭니다. 종류(${v})는 이번 팩에 안 들어가요.`
+    : `By state: ${st} — each state gets its own base photo and cuts. The variants (${v}) are not included in this pack.`;
+}
+function pickAxis(a) {   // 두 축이 동시에 잡혔을 때 하나만 고른다(고르지 않은 축은 서버로 안 보낸다).
+  confirmState.axis = a;
+  document.querySelectorAll('#cfAxis .cf-chip').forEach(b => b.classList.toggle('on', b.dataset.a === a));
+  const why = document.getElementById('cfAxisWhy'); if (!why) return;
+  why.innerHTML = axisWhy(a, confirmState.variants, confirmState.states);
 }
 function toggleState(k) {   // 상태 끄기/켜기 — 0~1개만 남으면 단일 모드로(레퍼 1장·컷 1세트) 자연스럽게 떨어진다.
   confirmState.stateOn[k] = !confirmState.stateOn[k];
@@ -501,10 +535,12 @@ async function confirmGenerate() {
   files.forEach(f => fd.append('photos', f));
   if (c.hint) fd.append('product', c.hint);
   fd.append('category', c.category);
-  if (c.isSet && c.variants.length) fd.append('skus', JSON.stringify(c.variants));
+  // 🔴 두 축이 동시에 잡혔으면 **고른 쪽만** 보낸다. 둘 다 보내면 서버가 상태를 우선해
+  //   변형을 통째로 버린다(pack.service `planSkus = planStates.map(...)`) — 그게 조용한 손실이었다.
+  if (c.isSet && c.variants.length && c.axis !== 'states') fd.append('skus', JSON.stringify(c.variants));
   // 상태는 2개 이상 켰을 때만 보낸다(1개면 상태 축이 의미 없어 기존 단일 경로가 맞다).
   const onStates = (c.states || []).filter(s => c.stateOn[s.key]);
-  if (onStates.length > 1) fd.append('states', JSON.stringify(onStates));
+  if (onStates.length > 1 && c.axis !== 'variants') fd.append('states', JSON.stringify(onStates));
   if (c.unit) fd.append('unit', c.unit);   // 한 쌍·제품+박스 등 — 첫 베이크부터 맞게
   // 소스가 사람 착용컷이면 기준 사진을 재구성형 모델로 굽는다(Pro는 사람 전신에 고착돼 얼굴·다리가 남는다).
   if (c.sourceHasModel) fd.append('sourceHasModel', 'true');
