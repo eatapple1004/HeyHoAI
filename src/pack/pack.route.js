@@ -811,6 +811,7 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
     if (!sources.length) { if (rbCharge) await rbCharge.refund().catch(() => {}); return res.status(409).json({ error: '소스 사진이 없어 재굽기 불가(이 팩은 재굽기 전 버전)' }); }
     const sku = String((req.body && req.body.sku) || 'main');
     const hint = String((req.body && req.body.hint) || '').slice(0, 200); // 교정(예: "한 쌍으로") — 낱개→페어 등
+    const rbMode = ['text', 'extract'].includes(req.body && req.body.mode) ? req.body.mode : null;
     const skuLabel = ((plan.refSkus || []).find((s) => s.sku === sku) || {}).label;
     // 상태 레퍼면 **그 상태를 찍은 사진**으로 다시 굽는다(전체 사진으로 구우면 다른 상태가 섞인다).
     const st = (plan.states || []).find((s) => s.key === sku);
@@ -825,7 +826,9 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
       // 카테고리는 플래너가 이미 판별해 config 에 저장해둔 값 — 재굽기도 같은 제시 방식을 써야 한다.
       category: (pack.config && pack.config.category) || null, hint,
       derived: !!(st && st.derived),   // 파생 상태(내용물)면 굽기 문구가 갈린다 — 재굽기도 같은 갈래로
-      sourceHasModel: !!(pack.config && pack.config.sourceHasModel),   // 재굽기도 같은 모델로 구워야 결과가 안 튄다
+      // 🔵 게이트에서 사용자가 모드를 고르면 그게 이긴다 — 'text'=글자 살리기(Pro) / 'extract'=제품만 뽑기(재구성형).
+      //   안 고르면 classify 판정(팩 기본값)을 그대로 쓴다.
+      sourceHasModel: rbMode ? rbMode === 'extract' : !!(pack.config && pack.config.sourceHasModel),
       item: (pack.config && pack.config.item) || null,   // 재굽기도 같은 품목을 지목해야 다른 게 안 나온다
     });
     const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: rbUser, skipRefCharge: true });

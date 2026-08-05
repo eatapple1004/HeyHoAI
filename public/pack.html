@@ -161,6 +161,10 @@
   .rg-depth.on{color:#fff;background:var(--accent);border-color:var(--accent)}
   .rg-depth.on span{color:rgba(255,255,255,.8)}
   .rg-rebake{display:flex;gap:8px;margin-bottom:16px}
+  .rg-mode{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:-8px 0 14px}
+  .rg-mode .rg-mlab{font-size:11.5px;color:var(--faint);margin-right:2px}
+  .rg-mode .cf-chip{font-size:11.5px;padding:5px 10px}
+  .rg-mode .cf-chip.on{color:#fff;background:var(--accent);border-color:transparent}
   .rg-help{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;
     background:rgba(255,255,255,.07);color:var(--faint);font-size:10.5px;cursor:help;vertical-align:middle;margin-left:5px}
   .rg-help:hover,.rg-help:focus{color:var(--text);background:rgba(255,255,255,.14);outline:none}
@@ -935,7 +939,12 @@ function showRefGate(pack) {
     const a = latest['ref_' + u.key] || (multi ? null : latestRef(pack));
     const url = a ? esc(a.url) : '';
     const inner = `<div class="rg-img"><img class="rgImg" data-s="${esc(u.key)}" src="${url}" data-u="${url}" alt="" onerror="this.style.opacity=.3"></div>
-      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '고칠 점을 적어주세요 (선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '기준 사진 다시 만들기' : 'Remake base photo'}${refTag()}</button>${refHelpMark()}</div>`;
+      <div class="rg-rebake"><input type="text" class="rgHint" data-s="${esc(u.key)}" placeholder="${multi ? (isKO() ? '예: 한 쌍으로' : 'e.g. as a pair') : (isKO() ? '고칠 점을 적어주세요 (선택) — 예: 한 쌍으로' : 'Correction for the rebake (optional) — e.g. as a pair')}"><button class="rg-rebake-go" onclick="gateRebake('${esc(u.key)}',this)">${isKO() ? '기준 사진 다시 만들기' : 'Remake base photo'}${refTag()}</button>${refHelpMark()}</div>
+      <div class="rg-mode" data-s="${esc(u.key)}">
+        <span class="rg-mlab">${isKO() ? '다시 만들 때:' : 'When remaking:'}</span>
+        <button class="cf-chip${gateMode[u.key] === 'extract' ? '' : ' on'}" data-m="text" onclick="pickMode('${esc(u.key)}','text')">${isKO() ? '글자 살리기' : 'Keep lettering'}</button>
+        <button class="cf-chip${gateMode[u.key] === 'extract' ? ' on' : ''}" data-m="extract" onclick="pickMode('${esc(u.key)}','extract')">${isKO() ? '제품만 뽑기' : 'Extract product'}</button>
+      </div>`;
     return multi ? `<div class="rg-state"><div class="rg-state-h">${esc(u.label)}</div>${inner}</div>` : inner;
   }).join('');
   const isState = units[0] && units[0].kind === 'state';
@@ -961,6 +970,18 @@ function showRefGate(pack) {
 }
 function pickDepth(n) { gateDepth = n; document.querySelectorAll('#rgDepths .rg-depth').forEach(b => b.classList.toggle('on', +b.dataset.n === n)); const el = document.getElementById('rgN'); if (el) el.textContent = n; const c = document.getElementById('rgCost'); if (c) c.textContent = '◈' + (n * PACK_CUT_CR).toLocaleString(); }
 // (2026-07-27) 팩 영상 제거 — toggleGateVideo/게이트 영상 토글 삭제. 영상은 Ad Video(studio) 전용.
+/**
+ * 게이트 재굽기 모드 — 기준 사진에는 성격이 다른 두 작업이 섞여 있다:
+ *   · 글자·라벨 살리기 = 이미 제품컷인 소스를 크고 깨끗하게 (입력에 충실할수록 좋다 → Pro 2K)
+ *   · 제품만 깨끗하게 뽑기 = 착용컷·매장컷에서 제품만 (입력을 버릴 줄 알아야 한다 → 재구성형)
+ * 기본값은 classify 의 sourceHasModel 판정(프로드 12/12 정확). 결과가 이상하면 여기서 뒤집는다.
+ */
+const gateMode = {};   // ref key → 'text' | 'extract' (미설정이면 서버가 팩 기본값을 쓴다)
+function pickMode(sku, m) {
+  gateMode[sku] = m;
+  const row = [...document.querySelectorAll('.rg-mode')].find(e => e.dataset.s === sku);
+  if (row) row.querySelectorAll('.cf-chip').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+}
 async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의 입력칸·이미지만 다룬다(다른 상태는 그대로).
   sku = sku || 'main';
   if (!btn || btn.disabled) return; btn.disabled = true; const t = btn.textContent; btn.textContent = isKO() ? '만드는 중…' : 'Making…';
@@ -970,7 +991,7 @@ async function gateRebake(sku, btn) {   // 상태별 재굽기 — 그 상태의
   const imgEl = pick('.rg-bg img.rgImg');
   const ov = busyOn(imgEl && imgEl.closest('.rg-img'), isKO() ? '기준 사진 다시 만드는 중…' : 'Remaking…');   // 레퍼 이미지에 오버레이 스피너
   try {
-    const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku, hint }) });
+    const r = await fetch('/api/pack/' + PACK_ID + '/rebake-ref', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sku, hint, mode: gateMode[sku] || undefined }) });
     const d = await r.json(); if (!r.ok) throw new Error(d.error || (isKO() ? '실패' : 'Failed'));
     const img = pick('.rg-bg img.rgImg'); if (img && d.asset) { img.src = d.asset.url; img.dataset.u = d.asset.url; img.style.opacity = 1; }
     if (inp) inp.value = '';
