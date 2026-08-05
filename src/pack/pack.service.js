@@ -84,7 +84,7 @@ async function toVisionImage(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
+async function runPack({ sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
@@ -142,7 +142,10 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
       const want = Math.min(PER_ROUND, Math.max(4, target - got.length));
       const lens = lensPick(baseLens + r - 1);   // 🟣 차수마다 렌즈 회전(제품이 정한 축) → 다양하게
       try {
-        const plan = await planPack({ images, hint: product, category, state, want, lens, exclude: got.map((c) => c.label) });
+        // 🔴 `product: item` — 플래너에 "이미 확정된 제품이니 재판정하지 마라" 문구가 있는데(buildUserPrompt 의 known)
+        //   초기 호출이 category 만 넘기고 product 를 안 넘겨 **매번 다시 판정**했다. 그래서 착용컷에서
+        //   plan.product 가 "맨투맨, 바지, 신발" 같은 목록이 됐고 컷 프롬프트에 그대로 박혔다.
+        const plan = await planPack({ images, hint: product, category, product: item || undefined, state, want, lens, exclude: got.map((c) => c.label) });
         if (onMeta) onMeta(plan);
         let added = 0, dupes = 0;
         for (const c of (plan.cuts || [])) {
@@ -271,14 +274,14 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   } else if (stateMode) {
     // 상태마다 **그 상태를 찍은 사진**으로 따로 굽는다(닫힘 레퍼는 닫힌 사진에서, 열림은 열린 사진에서).
     for (const st of planStates) {
-      const buffer = await bakeOne({ sourcePaths: st.sources, state: st.desc || st.label, unit, category, derived: !!st.derived, sourceHasModel });
+      const buffer = await bakeOne({ sourcePaths: st.sources, state: st.desc || st.label, unit, category, derived: !!st.derived, sourceHasModel, item });
       const p = path.join(workDir, `ref_${st.key}.jpg`);
       fs.writeFileSync(p, buffer);
       manifest.refs.push({ sku: st.key, key: `ref_${st.key}`, label: st.label, path: p });
       emit({ stage: 'ref', key: st.key });
     }
   } else {
-    const baked = await bakeRefs({ sourcePaths, skus: planSkus, unit, category, sourceHasModel });
+    const baked = await bakeRefs({ sourcePaths, skus: planSkus, unit, category, sourceHasModel, item });
     for (const b of baked) {
       const p = path.join(workDir, `ref_${b.sku}.jpg`);
       fs.writeFileSync(p, b.buffer);

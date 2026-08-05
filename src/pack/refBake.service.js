@@ -113,7 +113,7 @@ async function outputAspect(sourcePaths) {
   return FALLBACK;
 }
 
-async function bakeOne({ sourcePaths, label, hint, state, unit, category, derived, sourceHasModel }) {
+async function bakeOne({ sourcePaths, label, hint, state, unit, category, derived, sourceHasModel, item }) {
   // state = 같은 제품의 다른 모습(포장/개봉, 뚜껑 닫음/열음, 컵에 따름 등).
   //
   // 🔴 예전 문구는 "레퍼 사진이 **이미** 그 상태다 → 그대로 재현하라"였다. 그 전제가 자주 틀린다:
@@ -158,6 +158,11 @@ async function bakeOne({ sourcePaths, label, hint, state, unit, category, derive
    *   포장은 자기 레퍼가 따로 있으므로(brandSku/brandRefFor) 여기서 빠져도 컷 단계에서 붙는다.
    *   ⚠️ classify가 파생 desc에 포장을 써 넣기도 한다(팩101 "…beside the pouch") → desc 우선.
    */
+  // 🔴 item = 여러 품목이 보일 때 사용자가 고른 것(영어). 짧게, 맨 앞에 둔다.
+  //   ⚠️ 이것만으로 **사람 착용컷의 오염이 줄지는 않는다** — 같은 소스로 지목 유/무 각 4장이 0/4 동일했다.
+  //      착용컷은 모델 전환(sourceHasModel)이 담당한다. 이 절의 값은 "사진에 제품이 여럿일 때
+  //      어느 것을 그릴지"를 정하는 것이고, 그 케이스는 아직 실측 표본이 없다.
+  const itemLine = item ? `The product to photograph is: ${item}.\n\n` : '';
   const prompt = (derived && state)
     ? `A brand-new studio photograph of this product's CONTENTS, prepared and served: ${state}.
 
@@ -166,7 +171,7 @@ The reference photographs show the PACKAGED product — use them ONLY to learn t
 THE PHOTOGRAPH: compose it as a clean, appetising studio still — large and centred on a light grey seamless background, soft even lighting, tack-sharp detail. The vessel, foam, plate or prepared form named above is part of the SUBJECT, not a prop. ${EXCLUDE}
 
 MARKINGS: ${MARKINGS}${NO_ENGRAVE} ${aspect.name}.`
-    : `A brand-new clean isolated e-commerce product photograph, shot from scratch in a studio. ${unitClause}
+    : `${itemLine}A brand-new clean isolated e-commerce product photograph, shot from scratch in a studio. ${unitClause}
 
 ${SOURCE_HYGIENE}
 
@@ -193,13 +198,13 @@ MARKINGS: ${MARKINGS}${variant} ${aspect.name}.`;
  * @param {Array<{sku:string,label?:string}>} [p.skus]  세트 구성(없으면 단일)
  * @returns {Promise<Array<{sku:string, buffer:Buffer}>>}
  */
-async function bakeRefs({ sourcePaths, skus, unit, category, sourceHasModel }) {
+async function bakeRefs({ sourcePaths, skus, unit, category, sourceHasModel, item }) {
   if (!skus || !skus.length) {
-    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, unit, category, sourceHasModel }) }];
+    return [{ sku: 'main', buffer: await bakeOne({ sourcePaths, unit, category, sourceHasModel, item }) }];
   }
   const out = [];
   for (const s of skus) {
-    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, unit, category, sourceHasModel }) });
+    out.push({ sku: s.sku, buffer: await bakeOne({ sourcePaths, label: s.label, unit, category, sourceHasModel, item }) });
   }
   return out;
 }

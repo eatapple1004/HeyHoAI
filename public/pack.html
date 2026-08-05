@@ -448,6 +448,11 @@ function showConfirm(cls, hint) {
       //   product(영어)는 서버가 이미지 프롬프트에 쓰는 값이라 그대로 두고, 표시용만 따로 나른다.
       productKo: cls.productKo || '', isSet: !!cls.isSet, variants: cls.variants || [], states, stateOn: {}, unit, lenses, hint,
       sourceHasModel: !!cls.sourceHasModel,
+      // 🔴 items = 이 사진에서 따로 팔 수 있는 **서로 다른 품목**(맨투맨 / 바지 / 신발).
+      //   예전엔 이 축이 없어 "맨투맨, 바지, 신발" 이 제품 이름 한 줄에 뭉쳐 들어갔고,
+      //   그 한국어가 그대로 컷 프롬프트에 박혔다. 여러 개면 하나만 고르게 한다(팩을 나눌 신호).
+      items: Array.isArray(cls.items) ? cls.items.filter(i => i && i.key && i.desc) : [],
+      itemKey: (Array.isArray(cls.items) && cls.items[0] && cls.items[0].key) || null,
       // 🔴 두 축이 동시에 잡히면 **사용자가 고른다**. 예전엔 상태가 변형을 조용히 덮어썼다 —
       //   runPack 의 `planSkus = planStates.map(...)` 가 변형을 통째로 버린다. 프로드 실측:
       //   팩72 는 6가지 맛(쌀·밤·팥·옥수수·말차·초코누텔라)을 감지해놓고 상태 2개만 구웠고,
@@ -456,6 +461,12 @@ function showConfirm(cls, hint) {
       axis: (cls.isSet && (cls.variants || []).length > 1 && states.length > 1) ? 'variants' : null };
   states.forEach(s => { confirmState.stateOn[s.key] = true; });   // 기본 전부 켬
   const c = confirmState;
+  const multiItem = (c.items || []).length > 1;
+  const itemLine = multiItem ? `<div class="cf-states">
+      <div class="cf-states-h">${isKO() ? `제품이 <b>${c.items.length}개</b>로 보여요 — 어느 걸 만들까요?` : `<b>${c.items.length}</b> separate products detected — which one should we make?`}</div>
+      <div class="cf-state-chips" id="cfItems">${c.items.map((it, i) => `<button class="cf-chip${i === 0 ? ' on' : ''}" data-i="${esc(it.key)}" onclick="pickItem('${esc(it.key)}')">${esc(it.label || it.key)}</button>`).join('')}</div>
+      <div class="cf-states-h dim">${isKO() ? '한 팩은 제품 하나예요. 나머지는 사진을 다시 올려 따로 만들 수 있어요.' : 'One pack covers one product. Upload again to make the others.'}</div>
+    </div>` : '';
   const bothAxes = !!c.axis;   // 종류 2개↑ + 상태 2개↑ 가 동시에 잡힘
   const axisLine = bothAxes ? `<div class="cf-states">
       <div class="cf-states-h">${isKO() ? '이 사진에서 <b>두 가지 축</b>이 보여요 — 어느 쪽으로 만들까요?' : 'Two axes detected — which one should the pack follow?'}</div>
@@ -484,7 +495,7 @@ function showConfirm(cls, hint) {
     <div class="cf-h">${isKO() ? '이 제품 맞나요?' : 'Is this your product?'}</div>
     <div class="cf-cat">${isKO() ? '감지된 카테고리 · ' : 'Detected category · '}<span class="cf-badge" id="cfBadge">${esc(catLabel(c.category) || c.category)}</span></div>
     <div class="cf-prod">${esc((isKO() && c.productKo) || c.product || (isKO() ? '(제품 설명을 못 읽었어요 — 카테고리를 골라주세요)' : "(couldn't read the product — pick a category below)"))}</div>
-    ${axisLine}${setLine}${unitLine}${stateLine}
+    ${itemLine}${axisLine}${setLine}${unitLine}${stateLine}
     <div class="cf-note">${isKO() ? '카테고리가 맞아야 딱 맞는 컷이 나옵니다. 틀렸으면 아래에서 바꿔주세요.' : "The right category gets you the right cuts. If it's wrong, fix it below."}</div>
     <div class="cf-cats" id="cfCats">${CATS.map(k => `<button class="cf-chip${k === c.category ? ' on' : ''}" data-k="${k}" onclick="pickCat('${k}')">${esc(catLabel(k))}</button>`).join('')}</div>
     <div class="cf-note2">${isKO() ? '먼저 기준 사진을 만들어요 (30초~1분) · 컷은 다음 단계에서 고릅니다'
@@ -499,6 +510,10 @@ function pickCat(k) {
   confirmState.category = k;
   document.querySelectorAll('#cfCats .cf-chip').forEach(b => b.classList.toggle('on', b.dataset.k === k));
   const badge = document.getElementById('cfBadge'); if (badge) badge.textContent = catLabel(k) || k;
+}
+function pickItem(k) {   // 여러 품목이 보일 때 하나만 고른다 — 고른 것의 **영어 desc** 가 기획·굽기로 간다.
+  confirmState.itemKey = k;
+  document.querySelectorAll('#cfItems .cf-chip').forEach(b => b.classList.toggle('on', b.dataset.i === k));
 }
 function axisWhy(a, variants, states) {   // 고른 축이 무엇을 만들고 무엇을 뺐는지 — 영어 원본 + 한국어
   const cut = (arr, f) => arr.map(f).slice(0, 3).join(' · ') + (arr.length > 3 ? ' …' : '');
@@ -544,6 +559,12 @@ async function confirmGenerate() {
   if (c.unit) fd.append('unit', c.unit);   // 한 쌍·제품+박스 등 — 첫 베이크부터 맞게
   // 소스가 사람 착용컷이면 기준 사진을 재구성형 모델로 굽는다(Pro는 사람 전신에 고착돼 얼굴·다리가 남는다).
   if (c.sourceHasModel) fd.append('sourceHasModel', 'true');
+  // 🔴 품목이 여럿일 때만 보낸다 — 고른 것의 **영어 desc**. 한국어 label 은 화면 전용이라 절대 안 보낸다
+  //   (한국어가 이미지 프롬프트에 들어가면 모델이 제품에 인쇄할 글자로 오해한다).
+  if ((c.items || []).length > 1) {
+    const it = c.items.find(x => x.key === c.itemKey) || c.items[0];
+    if (it && it.desc) fd.append('item', it.desc);
+  }
   if (c.lenses && c.lenses.length) fd.append('lenses', JSON.stringify(c.lenses));   // 제품 맞춤 축 → 다양성 엔진
   const revert = () => { $('#result').classList.add('hide'); $('#form').classList.remove('hide'); };
   let r;

@@ -212,6 +212,23 @@ const CLASSIFY_SCHEMA = {
     //   못 지운다(0/8). 같은 프롬프트로 flash 는 3/4 가 깨끗했다 — 지우는 게 아니라 **잘라내 다시 그리는**
     //   작업이라 재구성이 자유로운 모델이 이긴다. 마네킹·플랫레이 소스에서는 Pro 가 6/6 이므로 그대로 둔다.
     sourceHasModel: { type: 'boolean', description: 'true if a REAL PERSON is wearing, holding or using the product in any attached photo (a full-body or half-body model shot). false for mannequins, flat-lays, packshots and product-only photos.' },
+    // 🔴 items = 이 사진에서 **따로 팔 수 있는 서로 다른 품목**. variants(같은 라인의 SKU)와 다르다.
+    //   이 축이 없어서 "맨투맨, 바지, 신발" 같은 목록이 `product` 문자열에 뭉쳐 들어갔고,
+    //   그 한국어가 그대로 컷 프롬프트에 박혔다(`ONE single 맨투맨, 바지, 신발 only`).
+    //   → desc(영어)를 따로 받아 프롬프트로 쓰고, label(한국어)은 화면 표시 전용으로 분리한다.
+    items: {
+      type: 'array',
+      description: 'DISTINCT PRODUCTS visible in the photos that a seller would sell on SEPARATE product pages (a sweatshirt, the trousers worn with it, the shoes). If everything in the photo belongs to ONE sellable product — including a set or bundle sold together, or several variants of one line — return exactly ONE entry. This is NOT the same as variants.',
+      items: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          key: { type: 'string', description: 'short ascii slug, e.g. sweatshirt, trousers, shoes' },
+          label: { type: 'string', description: 'very short Korean label a shop owner reads instantly, e.g. "맨투맨", "바지". UI display only.' },
+          desc: { type: 'string', description: 'SHORT ENGLISH one-line description of this product for the image model (form, colour, material). Never Korean — it goes straight into image prompts.' },
+        },
+        required: ['key', 'label', 'desc'],
+      },
+    },
     isSet: { type: 'boolean', description: 'true if the photo shows a set / multiple distinct variants of the same line' },
     variants: { type: 'array', description: 'if isSet, one entry per distinct variant; else empty', items: { type: 'object', additionalProperties: false, properties: { sku: { type: 'string' }, label: { type: 'string' } }, required: ['sku', 'label'] } },
     // 🔵 unit = "이 상품의 한 단위가 무엇인가" — 캐논 레퍼를 구울 때 몇 개를 그릴지 결정한다.
@@ -258,7 +275,7 @@ const CLASSIFY_SCHEMA = {
       },
     },
   },
-  required: ['product', 'productKo', 'category', 'sourceHasModel', 'isSet', 'variants', 'states', 'unit', 'lenses'],
+  required: ['product', 'productKo', 'category', 'sourceHasModel', 'items', 'isSet', 'variants', 'states', 'unit', 'lenses'],
 };
 /** classify 프롬프트 빌더 — 렌즈 지시가 컨셉(hint) 유무로 갈린다. 테스트용으로 추출. */
 function buildClassifyPrompt(nImgs, hint) {
@@ -269,6 +286,7 @@ function buildClassifyPrompt(nImgs, hint) {
     `Write "product" in English (it feeds image prompts) and "productKo" as the same description in natural Korean that a Korean shop owner reads instantly.`,
     hint ? `Seller note: "${hint}" — this may describe the desired CONCEPT/mood rather than the product; identify the product itself from the PHOTO, and use the note only if it names the product or category.` : '',
     `Distinguish two different axes, and do not confuse them:`,
+    `  · items    = SEPARATE products a seller lists on different product pages (a sweatshirt vs the trousers vs the shoes worn with it) → items.`,
     `  · variants = DIFFERENT products/SKUs of one line (red vs blue, MON vs TUE bottle) → isSet + variants.`,
     `  · states   = the SAME single product shown differently (cap on vs cap off, closed vs open, folded vs unfolded, boxed vs unboxed) → states.`,
     `A lipstick photographed with its cap on AND with the cap off is ONE product in TWO states — not two variants.`,
@@ -283,7 +301,8 @@ function buildClassifyPrompt(nImgs, hint) {
       : `Also give "lenses" — 6 to 10 distinct creative ANGLES for shooting THIS product, most valuable first (a clean PDP/detail angle near the top). Make them genuinely different from each other and specific to this product's category. Keep each brief short.`,
     // 🔴 굽기 모델이 이 값으로 갈린다 — 사람 착용컷이면 "지우기"가 아니라 "잘라내 다시 그리기"라 재구성형 모델이 이긴다.
     `Also decide "sourceHasModel": is a REAL PERSON wearing, holding or using the product in any attached photo? A headless mannequin, dress form, flat-lay or plain packshot is NOT a person.`,
-    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), sourceHasModel, isSet, variants, states (key/label/desc/showsPackage/photoIndex), unit, lenses.`,
+    `Also give "items" — the separate sellable PRODUCTS visible. A model wearing a sweatshirt, trousers and shoes is THREE items even though it is one photo. Six flavours of one snack line is ONE item (that is variants). A gift set sold as one box is ONE item. Give exactly one entry when in doubt.`,
+    `Return: product (one line), category (exactly one of: ${CATEGORIES.join(', ')}), sourceHasModel, items (key/label/desc), isSet, variants, states (key/label/desc/showsPackage/photoIndex), unit, lenses.`,
   ].filter(Boolean).join('\n');
 }
 
