@@ -23,13 +23,16 @@ python3 -m http.server 4173 --directory public
 ## 2. 풀 앱 실행 (백엔드 연결 후)
 
 ```bash
-npm install
+npm ci                    # lock 그대로 설치 (배포 표준 — package-lock dirty 방지)
 cp .env.example .env      # 키 채우기 (아래 3번)
 npm run migrate           # DB 스키마 생성 (src/db/migrate.js)
 npm start                 # node src/index.js  (dev: npm run dev)
 ```
 
 Node/Express + PostgreSQL. PM2 스크립트도 있음(`npm run pm2:start`).
+
+**배포(서버, 재배포)**: `npm run deploy` (= `deploy/deploy.sh`) — git pull → **npm ci** → migrate → pm2 restart를 한 번에.
+`npm install`은 package-lock.json을 수정해 서버에서 `git pull`이 막히는 원인이 되므로 배포에는 **npm ci**를 사용.
 
 ---
 
