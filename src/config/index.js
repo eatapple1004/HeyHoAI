@@ -1,4 +1,11 @@
-require('dotenv').config();
+// ── 환경별 설정 로딩 (dev / staging / prod) ──
+//   NODE_ENV는 프로세스에서 주입(PM2 ecosystem env 또는 셸)돼야 함 — .env 파일보다 먼저 결정.
+//   로드 순서: .env.<NODE_ENV>(환경 전용, 우선) → .env(공통 폴백, 이미 설정된 값은 안 덮음).
+//   ⚠️ prod 무변경 보장: .env.production이 없으면 기존처럼 .env만 로드됨.
+const dotenv = require('dotenv');
+const _nodeEnv = process.env.NODE_ENV || 'development';
+dotenv.config({ path: `.env.${_nodeEnv}` }); // 환경 전용(있으면 우선 적용)
+dotenv.config();                              // .env 공통 폴백(누락값만 채움)
 const { z } = require('zod');
 
 const envSchema = z.object({
@@ -10,7 +17,7 @@ const envSchema = z.object({
   CLAUDE_MODEL_SCRIPT: z.string().default('claude-opus-4-8'),   // 대본생성(ugc) — 템플릿 저작 수준
   CLAUDE_MODEL_ENHANCE: z.string().default('claude-opus-4-8'),  // 프롬프트 Enhance — 결과 이미지 품질 직결
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'staging', 'production', 'test']).default('development'),
 
   // Auth (JWT + 쿠키 기반 세션)
   JWT_SECRET: z.string().min(16, 'JWT_SECRET is required (16자 이상)'),
