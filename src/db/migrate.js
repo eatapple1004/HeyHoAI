@@ -399,6 +399,20 @@ async function migrate() {
   `;
 
   console.log('Running migrations...');
+  // ⚠️ 기반 엔진 테이블을 먼저 생성 — 빈(신규) DB 부트스트랩 순서 보장.
+  //   template_data 등이 characters(id)를 FK 참조하므로 characters가 앞서야 함.
+  //   (프레시 DB에서 42P01 "relation characters does not exist" 방지. prod는 IF NOT EXISTS라 무영향.)
+  await pool.query(CREATE_CHARACTERS_TABLE);
+  await pool.query(CREATE_GENERATION_JOBS_TABLE);
+  await pool.query(CREATE_IMAGE_ASSETS_TABLE);
+  await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);
+  await pool.query(CREATE_VIDEO_ASSETS_TABLE);
+  await pool.query(CREATE_CONTENTS_TABLE);
+  await pool.query(CREATE_PUBLISH_JOBS_TABLE);
+  await pool.query(CREATE_VISUAL_ATTRIBUTE_CATEGORIES_TABLE);
+  await pool.query(CREATE_VISUAL_ATTRIBUTES_TABLE);
+  await pool.query(CREATE_CHARACTER_VISUAL_PRESETS_TABLE);
+
   await pool.query(CREATE_TEMPLATE_DATA_TABLE);
   await pool.query(CREATE_SOCIAL_ACCOUNTS_TABLE);
   await pool.query(CREATE_ACCOUNT_MEDIA_TABLE);
@@ -417,16 +431,6 @@ async function migrate() {
     ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS reel_post_url TEXT;
     ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS bgm_media_id UUID REFERENCES account_media(id) ON DELETE SET NULL;
   `);
-  await pool.query(CREATE_CHARACTERS_TABLE);
-  await pool.query(CREATE_GENERATION_JOBS_TABLE);
-  await pool.query(CREATE_IMAGE_ASSETS_TABLE);
-  await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);
-  await pool.query(CREATE_VIDEO_ASSETS_TABLE);
-  await pool.query(CREATE_CONTENTS_TABLE);
-  await pool.query(CREATE_PUBLISH_JOBS_TABLE);
-  await pool.query(CREATE_VISUAL_ATTRIBUTE_CATEGORIES_TABLE);
-  await pool.query(CREATE_VISUAL_ATTRIBUTES_TABLE);
-  await pool.query(CREATE_CHARACTER_VISUAL_PRESETS_TABLE);
   await pool.query(SEED_CATEGORIES);
   await pool.query(SEED_ATTRIBUTES);
 
@@ -597,6 +601,11 @@ async function migrate() {
     ADD COLUMN IF NOT EXISTS template_name    TEXT;
     CREATE INDEX IF NOT EXISTS idx_gen_results_public ON generation_results(visibility, taken_down, created_at DESC);
   `);
+  // ─── 인증/멀티테넌시: users 테이블 + 루트 테이블 user_id ───
+  //   아래 result_reports/result_likes/follows가 users(id)를 FK 참조하므로 users를 먼저 생성.
+  //   (프레시 DB 부트스트랩 순서. prod는 이미 존재라 무영향 — migrateAuth는 멱등.)
+  await migrateAuth();
+
   // 공개 결과물 신고(중복 무시) — 누적 시 자동 테이크다운
   await pool.query(`
     CREATE TABLE IF NOT EXISTS result_reports (
@@ -652,8 +661,7 @@ async function migrate() {
     ALTER TABLE video_assets ALTER COLUMN source_image_id DROP NOT NULL;
   `).catch((e) => console.warn('[migrate] drop NOT NULL on video_assets.source_image_id skipped:', e.message));
 
-  // ─── 인증/멀티테넌시: users 테이블 + 루트 테이블 user_id ───
-  await migrateAuth();
+  // (migrateAuth는 위 result_reports/likes/follows 이전으로 이동됨 — users 선행 생성)
 
   // ─── 크레딧/결제 ───
   await migrateCredits();
