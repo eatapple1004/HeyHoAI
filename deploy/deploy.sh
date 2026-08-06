@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
 # Doppia 배포 스크립트 — 환경별(prod/staging), npm ci로 고정.
-#   사용:  bash deploy/deploy.sh [prod|staging]   (기본 prod)
-#          npm run deploy           # = prod
-#          npm run deploy:staging   # = staging
+#   사용:  bash deploy/deploy.sh [prod|staging|dev]   (기본 prod)
+#          npm run deploy           # = prod   (~/HeyHoAI,        main)
+#          npm run deploy:staging   # = staging (~/HeyHoAI-staging, staging)
+#          npm run deploy:dev       # = dev     (~/HeyHoAI-dev,     develop)
 #
 #   npm ci를 쓰는 이유: package-lock.json을 "읽기만" 함 → 서버에서 lock이 dirty해져
 #     git pull이 막히던 문제 재발 방지 + 매 배포 결정적(node_modules 재현).
@@ -14,9 +15,10 @@ ENVN="${1:-prod}"
 cd "$(dirname "$0")/.."   # 레포 루트
 
 case "$ENVN" in
-  prod)     APP="heyhoai";          NODE_ENV="production" ;;
-  staging)  APP="heyhoai-staging";  NODE_ENV="staging"   ;;
-  *) echo "❌ 알 수 없는 환경: $ENVN (prod|staging)"; exit 1 ;;
+  prod)     APP="heyhoai";          NODE_ENV="production"  ;;
+  staging)  APP="heyhoai-staging";  NODE_ENV="staging"     ;;
+  dev)      APP="heyhoai-dev";      NODE_ENV="development" ;;
+  *) echo "❌ 알 수 없는 환경: $ENVN (prod|staging|dev)"; exit 1 ;;
 esac
 echo "▶ 배포 대상: $ENVN  (PM2=$APP, NODE_ENV=$NODE_ENV)"
 
