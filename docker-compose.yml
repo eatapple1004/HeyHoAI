@@ -1,0 +1,26 @@
+# 로컬 개발용 Postgres — dev 환경이 운영 DB를 쓰지 않도록 격리.
+#   기동:  docker compose up -d   (= npm run db:up)
+#   종료:  docker compose down     (= npm run db:down)
+#   접속:  postgresql://doppia:doppia@localhost:5432/doppia_dev
+#   → .env.development 의 DATABASE_URL 에 위 주소를 넣고 `npm run migrate` 로 스키마 생성.
+services:
+  db:
+    image: postgres:16
+    container_name: doppia-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: doppia
+      POSTGRES_PASSWORD: doppia
+      POSTGRES_DB: doppia_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - doppia_dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doppia -d doppia_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  doppia_dev_pgdata:
