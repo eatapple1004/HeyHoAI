@@ -27,8 +27,11 @@ module.exports = {
       env: { NODE_ENV: 'staging' }, // PORT는 .env.staging(3001)에서 로드
     },
     {
+      // dev는 NestJS(strangler)로 부팅 — dist/main.js가 Nest를 띄우고 레거시 Express를 폴백 마운트.
+      //   배포 시 npm run build(tsc)로 nest/*.ts → dist/ 생성 후 이 스크립트를 실행.
+      //   (prod/staging은 여전히 src/index.js 직접 실행 — 무변경)
       name: 'heyhoai-dev',
-      script: 'src/index.js',
+      script: 'dist/main.js',
       instances: 1,
       autorestart: true,
       watch: false,

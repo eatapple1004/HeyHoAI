@@ -247,9 +247,9 @@ app.get('/health', (_req, res) => {
 // Error handler
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
-  log.info(`Running on port ${env.PORT}`);
-
+// 서버 부팅 후 백그라운드 초기화(레시피 로드·스케줄러·영상폴러·UGC 리퍼).
+//   listen 콜백에서 분리 — NestJS(strangler)가 이 Express 앱을 마운트할 때도 동일 초기화를 호출할 수 있게 함.
+function startBackground() {
   // 레시피 정본을 DB(recipes 테이블)에서 메모리로 로드. 실패/0행이면 시드 JS 폴백.
   const { pool } = require('./db/client');
   require('./recipes/recipeStore').init(pool)
@@ -289,6 +289,17 @@ app.listen(env.PORT, () => {
       setInterval(() => ugc.reapStaleProcessing().catch(() => {}), 5 * 60 * 1000).unref();
     }
   }
-});
+}
+
+// 직접 실행(node src/index.js — prod/staging의 pm2가 이 파일을 스크립트로 구동)일 때만 리슨.
+//   NestJS 등이 require로 이 앱을 마운트할 땐 리슨하지 않음(포트는 상위 Nest 앱이 소유).
+//   → prod/staging 동작 완전 동일. dev만 nest/main.ts가 이 앱을 감싸 startBackground()를 호출.
+if (require.main === module) {
+  app.listen(env.PORT, () => {
+    log.info(`Running on port ${env.PORT}`);
+    startBackground();
+  });
+}
 
 module.exports = app;
+module.exports.startBackground = startBackground;
