@@ -15,7 +15,7 @@ const legacyApp: any = require(path.join(__dirname, '..', 'src', 'index.js'));
 //   여기 나열된 접두사만 NestJS가 처리하고, 나머지 모든 경로는 레거시 Express로 폴백한다.
 //   도메인을 Nest로 포팅할 때마다 이 배열에 그 경로를 추가(예: '/api/pricing').
 //   Nest가 매칭 실패 시 자체 404를 내버려 레거시로 안 내려가는 문제를, "소유 경로 화이트리스트"로 명시 해결.
-const NEST_PREFIXES = ['/nest'];
+const NEST_PREFIXES = ['/nest', '/api/pricing'];
 
 async function bootstrap() {
   // bodyParser:false — 레거시 Express가 자체적으로 body를 파싱하므로 이중 파싱 방지.
