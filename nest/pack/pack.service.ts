@@ -1,0 +1,33 @@
+import { Injectable } from '@nestjs/common';
+import * as path from 'path';
+
+// 팩 파이프라인 재사용(중복 금지) — 멀티파트·HEIC 정규화·크레딧 정산·백그라운드 작업이 얽혀 있어
+//   레거시 핸들러를 그대로 실행한다(Nest는 라우팅·가드·에러 필터만 가져간다).
+//   ⚠️ 팩 응답은 다른 도메인과 달리 {success,data} 봉투를 쓰지 않는다({...}/{error}) — 핸들러 위임이 형태 보존에도 안전.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const packRoute = require(path.join(__dirname, '..', '..', 'src', 'pack', 'pack.route.js'));
+
+export const packHandlers = packRoute.handlers;
+// 업로드 정규화(HEIC→JPEG 변환·매직바이트 검증) — 멀티파트 라우트에서 핸들러 앞에 태운다.
+export const normalizeUploads = packRoute.normalizeUploads;
+// 레거시와 동일한 multer 설정(tmp/uploads 디스크 저장·12MB) — FileInterceptor에 그대로 넘긴다.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const multer = require('multer');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const nodePath = require('path');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const fs = require('fs');
+const packUploadDir = nodePath.join(process.cwd(), 'tmp', 'uploads');
+fs.mkdirSync(packUploadDir, { recursive: true });
+export const PACK_UPLOAD_OPTIONS = {
+  storage: multer.diskStorage({ destination: packUploadDir }),
+  limits: { fileSize: 12 * 1024 * 1024 },
+};
+
+@Injectable()
+export class PackService {
+  // 핸들러를 Express 시그니처 그대로 실행(응답은 핸들러가 직접 씀).
+  run(name: string, req: any, res: any, next: any) {
+    return packHandlers[name](req, res, next);
+  }
+}
