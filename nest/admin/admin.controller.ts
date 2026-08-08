@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Req, UseGuards, HttpCode } from '@nestjs/common';
-import { AdminService } from './admin.service';
+import { Controller, Get, Post, Delete, Body, Param, Query, Req, Res, UseGuards, HttpCode } from '@nestjs/common';
+import { AdminService, refineHandler, refineApplyHandler } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
 
 // /api/admin/creations · /api/admin/stats — 관리자 전용 읽기(= 레거시 requireAdmin).
@@ -59,5 +59,44 @@ export class AdminProposalController {
   async remove(@Param('id') id: string) {
     await this.admin.removeProposal(id);
     return { success: true };
+  }
+}
+
+// /api/admin/refine — 프롬프트 자동 정밀화(author → generate → judge → revise 루프).
+//   POST 2종은 NDJSON 스트리밍이라 @Res()로 레거시 핸들러에 그대로 위임한다(로직 이중화 금지).
+@Controller('api/admin/refine')
+@UseGuards(AdminGuard)
+export class AdminRefineController {
+  constructor(private readonly admin: AdminService) {}
+
+  // GET /api/admin/refine/runs — 최신 100개
+  @Get('runs')
+  async runs() {
+    return { success: true, data: await this.admin.listRefineRuns() };
+  }
+
+  // GET /api/admin/refine/runs/:id — 전체 iter 상세
+  @Get('runs/:id')
+  async run(@Param('id') id: string) {
+    return { success: true, data: await this.admin.getRefineRun(id) };
+  }
+
+  // DELETE /api/admin/refine/runs/:id — 레코드 + 이미지 파일 삭제
+  @Delete('runs/:id')
+  async removeRun(@Param('id') id: string) {
+    await this.admin.removeRefineRun(id);
+    return { success: true };
+  }
+
+  // POST /api/admin/refine — 정밀화 루프(NDJSON 스트리밍)
+  @Post()
+  refine(@Req() req: any, @Res() res: any) {
+    return refineHandler(req, res);
+  }
+
+  // POST /api/admin/refine/apply — 고정 프롬프트를 레퍼런스에 적용해 N장 생성(NDJSON 스트리밍)
+  @Post('apply')
+  apply(@Req() req: any, @Res() res: any) {
+    return refineApplyHandler(req, res);
   }
 }

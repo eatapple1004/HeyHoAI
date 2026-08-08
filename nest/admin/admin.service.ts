@@ -6,6 +6,11 @@ import * as path from 'path';
 const adminData = require(path.join(__dirname, '..', '..', 'src', 'admin', 'adminData.service.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const proposal = require(path.join(__dirname, '..', '..', 'src', 'admin', 'proposal.service.js'));
+// refine: 스트리밍(NDJSON) 핸들러는 Express 응답을 직접 다루므로 레거시 핸들러를 그대로 재사용한다.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const refineRoute = require(path.join(__dirname, '..', '..', 'src', 'admin', 'adminRefine.route.js'));
+export const refineHandler = refineRoute.handler;
+export const refineApplyHandler = refineRoute.applyHandler;
 
 @Injectable()
 export class AdminService {
@@ -37,5 +42,18 @@ export class AdminService {
 
   removeProposal(id: string) {
     return proposal.removeSaved(id);
+  }
+
+  // ── refine 기록(refine_runs) ──
+  listRefineRuns() {
+    return refineRoute.runsApi.listRuns();
+  }
+
+  getRefineRun(id: string) {
+    return refineRoute.runsApi.getRun(id);
+  }
+
+  removeRefineRun(id: string) {
+    return refineRoute.runsApi.removeRun(id);
   }
 }
