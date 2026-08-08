@@ -503,6 +503,313 @@ async function unbookmarkTemplate(userId, id) {
   return { bookmarked: false };
 }
 
+// ─────────────────────────────────────────────────────────────
+// 크리에이터·라이브러리 영역 (themes / me / earnings / apply / creators / bookmarks /
+// recipe-gates / owned / default-officials)
+// ─────────────────────────────────────────────────────────────
+
+/** 글로벌 테마 목록(크리에이터 태깅·Explore 칩·스튜디오 시드용). */
+async function listThemes() {
+  const r = await query('SELECT slug, name FROM themes ORDER BY sort_order, name');
+  return r.rows;
+}
+
+/** 크리에이터 상태 + 내가 게시한 템플릿 + 오피셜 마스터 */
+async function getMe(userId) {
+  const u = await query('SELECT is_creator FROM users WHERE id = $1', [userId]);
+  // My templates = 내가 추가한 것만. auto 자동민팅(origin='auto') 중 아직 추가(owns) 안 한 건 제외(누출 방지).
+  //   manual(수동 Save·시드)은 항상 포함, 추가된 auto는 owns 있어 포함.
+  const mine = await query(
+    `SELECT ${PUBLIC_COLS}, from_creation_idx, origin,
+            EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1) AS added_to_library,
+            ${THEMES_SUBQ} FROM marketplace_templates
+      WHERE creator_id = $1
+        AND (origin <> 'auto' OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1))
+      ORDER BY created_at DESC`,
+    [userId]
+  );
+  // My templates 마스터: 내 것(저장/생성) + 오피셜(플랫폼 공식). 둘 다 studio 테마에 넣다뺐다 가능.
+  const official = await query(
+    `SELECT ${PUBLIC_COLS}, from_creation_idx, origin,
+            EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $1) AS added_to_library,
+            ${THEMES_SUBQ} FROM marketplace_templates WHERE is_official = true AND status = 'active' AND visibility = 'public' ORDER BY created_at DESC`,
+    [userId]
+  );
+  return { isCreator: u.rows[0]?.is_creator || false, templates: mine.rows, official: official.rows };
+}
+
+/**
+ * 셀러(크리에이터) 정산 대시보드.
+ * 로열티는 '포인트'로 적립(point_ledger type='royalty', ref_id=템플릿id). 총수익·템플릿별·최근·현재 포인트 잔액.
+ * @param {{id:string, email?:string}} user
+ */
+async function getEarnings(user) {
+  const u = await query('SELECT is_creator, point_balance FROM users WHERE id = $1', [user.id]);
+  const isCreator = u.rows[0]?.is_creator || false;
+
+  // 총 수익(누적 포인트) + 적립 건수
+  const totals = await query(
+    `SELECT COALESCE(SUM(amount), 0)::int AS total_earned, COUNT(*)::int AS payout_count
+     FROM point_ledger WHERE user_id = $1 AND type = 'royalty'`,
+    [user.id]
+  );
+
+  // 템플릿별 수익 (ref_id=템플릿 UUID를 TEXT로 저장 → 캐스팅 조인)
+  const byTemplate = await query(
+    `SELECT mt.id, mt.name, mt.description, mt.emoji, mt.category, mt.type, mt.price_credits, mt.use_price_credits, mt.usage_count, mt.visibility,
+            mt.origin, mt.from_creation_idx, mt.created_at,
+            COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order) FROM template_themes tt JOIN themes th ON th.id = tt.theme_id WHERE tt.template_id = mt.id), '{}') AS themes,
+            EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = mt.id AND o.user_id = $1) AS added_to_library,
+            COALESCE(SUM(pl.amount), 0)::int AS earned,
+            COUNT(pl.id)::int AS uses_paid
+     FROM marketplace_templates mt
+     LEFT JOIN point_ledger pl
+       ON pl.ref_id = mt.id::text AND pl.user_id = $1 AND pl.type = 'royalty'
+     WHERE mt.creator_id = $1
+       -- 자동민팅 폐지(2026-07-01): 승격(owns)하지 않은 옛 auto 템플릿은 Creator Studio에서 숨김(/me와 동일 규칙)
+       AND (mt.origin <> 'auto' OR EXISTS(SELECT 1 FROM template_owns o2 WHERE o2.template_id = mt.id AND o2.user_id = $1))
+     GROUP BY mt.id
+     ORDER BY earned DESC, mt.created_at DESC`,
+    [user.id]
+  );
+
+  // 최근 적립 내역
+  const recent = await query(
+    `SELECT amount, description, created_at
+     FROM point_ledger WHERE user_id = $1 AND type = 'royalty'
+     ORDER BY created_at DESC LIMIT 20`,
+    [user.id]
+  );
+
+  return {
+    isCreator,
+    handle: '@' + String(user.email || 'creator').split('@')[0],
+    creatorShare: CREATOR_SHARE,
+    pointBalance: u.rows[0]?.point_balance || 0, // 교환 가능한 현재 포인트
+    totalEarned: totals.rows[0].total_earned,
+    payoutCount: totals.rows[0].payout_count,
+    templates: byTemplate.rows,
+    recent: recent.rows,
+  };
+}
+
+/** 크리에이터 신청(즉시 승인) */
+async function applyCreator(userId) {
+  await query('UPDATE users SET is_creator = true WHERE id = $1', [userId]);
+  return { isCreator: true };
+}
+
+/**
+ * 크리에이터 공개 스토어프론트.
+ * 공개·active 템플릿 + 쇼케이스(해당 크리에이터 공개 결과물). prompt(레시피)는 노출 안 함(블랙박스 보호).
+ */
+async function getCreator(userId, handleParam) {
+  const raw = String(handleParam || '').replace(/^@+/, '').slice(0, 80);
+  if (!raw) throw httpError(400, 'handle이 필요합니다.');
+  const handle = '@' + raw;
+  // 핸들 → 실제 소유자(user) 해석. 템플릿은 brittle한 creator_handle 문자열이 아니라 소유자(creator_id)로 매칭
+  // (creator_handle이 소유자와 어긋나면 본인 공개 템플릿이 프로필에 0건으로 뜨던 버그 방지). 공식(creator_id NULL)은 handle로.
+  const cu = await query("SELECT id FROM users WHERE split_part(email, '@', 1) = $1 LIMIT 1", [raw]);
+  const creatorId = cu.rows[0] ? cu.rows[0].id : null;
+  const tpls = await query(
+    `SELECT id, creator_handle, name, category, type, style, tool, emoji,
+            price_credits, usage_count, likes_count, preview_media, is_official, created_at,
+            EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked
+     FROM marketplace_templates
+     WHERE status = 'active' AND visibility = 'public'
+       AND ( ($3::uuid IS NOT NULL AND creator_id = $3) OR (creator_id IS NULL AND creator_handle = $1) )
+     ORDER BY is_official DESC, usage_count DESC, created_at DESC LIMIT 100`,
+    [handle, userId, creatorId]
+  );
+  const showcase = await query(
+    `SELECT gr.idx, gr.file_path, gr.metadata
+     FROM generation_results gr
+     JOIN prompts p ON p.idx = gr.prompt_idx
+     JOIN users u   ON u.id = p.user_id
+     WHERE split_part(u.email, '@', 1) = $1 AND gr.visibility = 'public'
+       AND gr.status = 'success' AND gr.taken_down = false AND gr.file_path IS NOT NULL
+     ORDER BY gr.created_at DESC LIMIT 12`,
+    [raw]
+  );
+  if (!tpls.rows.length && !showcase.rows.length) {
+    throw httpError(404, '크리에이터를 찾을 수 없습니다.');
+  }
+  const totalLikes = tpls.rows.reduce((s, t) => s + (t.likes_count || 0), 0);
+  // 팔로우 상태(위에서 해석한 creatorId 재사용)
+  const isOwn = !!creatorId && creatorId === userId;
+  let followers = 0, following = false;
+  if (creatorId) {
+    followers = (await query('SELECT count(*)::int AS n FROM follows WHERE creator_id = $1', [creatorId])).rows[0].n;
+    if (!isOwn) following = (await query('SELECT 1 FROM follows WHERE creator_id = $1 AND follower_id = $2', [creatorId, userId])).rowCount > 0;
+  }
+  return {
+    handle,
+    templateCount: tpls.rows.length,
+    totalLikes,
+    followers,
+    following,
+    isOwn,
+    templates: tpls.rows,
+    showcase: showcase.rows.map((r) => ({
+      idx: r.idx,
+      url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+      type: (r.metadata && r.metadata.type === 'video') ? 'video' : 'image',
+    })),
+  };
+}
+
+// 크리에이터 팔로우/언팔로우 — handle을 creator user id로 해석. 자기 자신 금지, 멱등.
+async function resolveCreatorId(raw) {
+  const r = await query("SELECT id FROM users WHERE split_part(email, '@', 1) = $1 LIMIT 1", [raw]);
+  return r.rows[0] ? r.rows[0].id : null;
+}
+async function followerCount(creatorId) {
+  return (await query('SELECT count(*)::int AS n FROM follows WHERE creator_id = $1', [creatorId])).rows[0].n;
+}
+
+/** 팔로우(멱등, 자기 자신 금지) */
+async function followCreator(userId, handleParam) {
+  const raw = String(handleParam || '').replace(/^@+/, '').slice(0, 80);
+  const creatorId = await resolveCreatorId(raw);
+  if (!creatorId) throw httpError(404, '크리에이터를 찾을 수 없습니다.');
+  if (creatorId === userId) throw httpError(400, '자기 자신은 팔로우할 수 없습니다.');
+  await query('INSERT INTO follows (follower_id, creator_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, creatorId]);
+  return { following: true, followers: await followerCount(creatorId) };
+}
+
+/** 언팔로우(멱등) */
+async function unfollowCreator(userId, handleParam) {
+  const raw = String(handleParam || '').replace(/^@+/, '').slice(0, 80);
+  const creatorId = await resolveCreatorId(raw);
+  if (!creatorId) throw httpError(404, '크리에이터를 찾을 수 없습니다.');
+  await query('DELETE FROM follows WHERE follower_id = $1 AND creator_id = $2', [userId, creatorId]);
+  return { following: false, followers: await followerCount(creatorId) };
+}
+
+/** 내가 저장한 템플릿(Library Saved 탭). active만, 최근 저장순. */
+async function listBookmarks(userId) {
+  const r = await query(
+    `SELECT ${MT_COLS}, (mt.creator_id = $1) AS mine, true AS bookmarked
+     FROM template_bookmarks tb
+     JOIN marketplace_templates mt ON mt.id = tb.template_id
+     WHERE tb.user_id = $1 AND mt.status = 'active'
+     ORDER BY tb.created_at DESC`,
+    [userId]
+  );
+  return r.rows;
+}
+
+/** recipe-backed 유료 템플릿 게이트. 스튜디오: 미보유=recipe 숨김 / 보유=노출. */
+async function listRecipeGates(userId) {
+  const r = await query(
+    `SELECT mt.id, mt.recipe_id, mt.price_credits,
+            EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1) AS owned,
+            COALESCE((SELECT ow.in_studio FROM template_owns ow WHERE ow.template_id = mt.id AND ow.user_id = $1), true) AS in_studio
+     FROM marketplace_templates mt
+     WHERE mt.recipe_id IS NOT NULL AND mt.status = 'active' AND mt.price_credits > 0`,
+    [userId]
+  );
+  // owned=보유 → 메인 그리드 노출 / 미보유 → 프리미엄 업셀. (in_studio 폐기·안A: studio 노출은 테마 멤버십이 결정)
+  return r.rows.map((x) => ({ templateId: x.id, recipeId: x.recipe_id, price: x.price_credits, owned: x.owned, in_studio: x.in_studio }));
+}
+
+/** 내가 보유(무료추가/구매)한 템플릿 전부. §5: Library My templates의 정본 소스(owns 기준). */
+async function listOwned(uid) {
+  const r = await query(
+    `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, true AS owned, COALESCE(ow.source, 'default') AS own_source, COALESCE(ow.in_studio, true) AS in_studio,
+            (mt.creator_id = $1) AS mine,
+            COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
+               WHERE ((gr.template_source='marketplace' AND gr.template_id = mt.id::text)
+                   OR (mt.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = mt.recipe_id))
+                 AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL
+               ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb,
+            COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
+              FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+              WHERE tt.template_id = mt.id), '{}') AS label_themes
+     FROM marketplace_templates mt
+     LEFT JOIN template_owns ow ON ow.template_id = mt.id AND ow.user_id = $1
+     WHERE mt.status = 'active' AND (ow.user_id IS NOT NULL OR (mt.is_official = true AND mt.price_credits = 0)) -- (2026-07-06) 무료 오피셜=기본제공=행 없이도 보유로 노출
+     ORDER BY COALESCE(ow.created_at, mt.created_at) DESC`,
+    [uid]
+  );
+  const rows = r.rows;
+  // 테마 판단 규칙(사용자 확정 2026-06-27): 공식=라벨(template_themes·처음부터 스튜디오에 존재) / 비공식=포스트잇(개인 배치).
+  //   포스트잇 = 기본테마 오버라이드(user_theme_overrides) + 커스텀테마 배치(user_studio_theme_items→macro_group).
+  //   themes(기본테마 slug)는 Library 칩·Studio 기본필터용 / macroGroup(Influencer|Shopping)은 Studio 모드 배치용.
+  const ids = rows.filter((t) => !t.is_official).map((t) => String(t.id));
+  const ovAdd = {}, ovRem = {}, customGrp = {};
+  if (ids.length) {
+    const ov = await query(
+      `SELECT item_id, theme_slug, action FROM user_theme_overrides
+        WHERE user_id = $1 AND item_type = 'template' AND item_id = ANY($2)`, [uid, ids]);
+    ov.rows.forEach((o) => { const m = (o.action === 'add' ? ovAdd : ovRem); (m[o.item_id] = m[o.item_id] || new Set()).add(o.theme_slug); });
+    const ci = await query(
+      `SELECT i.item_id, t.macro_group FROM user_studio_theme_items i
+         JOIN user_studio_themes t ON t.id = i.user_studio_theme_id
+        WHERE i.user_id = $1 AND i.item_type = 'template' AND i.item_id = ANY($2)`, [uid, ids]);
+    ci.rows.forEach((x) => { (customGrp[x.item_id] = customGrp[x.item_id] || new Set()).add(x.macro_group === 'Influencer' ? 'Influencer' : 'Shopping'); });
+  }
+  const INFLU = new Set(['people']);
+  const slugGroup = (s) => (INFLU.has(s) ? 'Influencer' : 'Shopping');
+  return rows.map((t) => {
+    const id = String(t.id);
+    const label = t.label_themes || [];
+    delete t.label_themes;
+    if (t.is_official) {
+      return { ...t, themes: label, macroGroup: label.some((s) => INFLU.has(s)) ? 'Influencer' : 'Shopping' };
+    }
+    // 비공식 = 포스트잇 우선. 기본테마 오버라이드 add가 있으면 그것만(라벨 무시), 없으면 라벨−remove로 폴백.
+    const adds = [...(ovAdd[id] || [])];
+    const removes = ovRem[id] || new Set();
+    const customGroups = [...(customGrp[id] || [])];
+    const hasPostit = adds.length > 0 || customGroups.length > 0;
+    const themes = adds.length ? adds : (hasPostit ? [] : label.filter((s) => !removes.has(s)));
+    const groups = new Set([...adds.map(slugGroup), ...customGroups]);
+    if (!groups.size) themes.forEach((s) => groups.add(slugGroup(s)));
+    const macroGroup = groups.has('Influencer') ? 'Influencer' : 'Shopping';
+    return { ...t, themes, macroGroup };
+  });
+}
+
+/**
+ * (2026-07-02 부활) 보유 템플릿 일괄 스튜디오 배치/해제
+ *  = In Studio ↔ Library only 이동. in_studio=false면 Library only(대기조), true면 스튜디오 노출.
+ */
+async function setOwnedInStudio(userId, body = {}) {
+  const ids = Array.isArray(body.ids) ? body.ids.map(String).filter((x) => UUID_RE.test(x)) : [];
+  const inStudio = body.in_studio !== false;
+  if (!ids.length) throw httpError(400, 'ids가 필요합니다.');
+  const r = await query(
+    `UPDATE template_owns SET in_studio = $3 WHERE user_id = $1 AND template_id = ANY($2::uuid[]) RETURNING template_id`,
+    [userId, ids, inStudio]
+  );
+  return { updated: r.rows.map((x) => x.template_id), in_studio: inStudio };
+}
+
+/**
+ * 기본공개(무료) 프롬프트 기반 공식 템플릿 — 소유 무관 전 유저 스튜디오 노출용.
+ *   조건: is_official=true · price_credits=0 · recipe_id NULL. 응답 shape은 /owned 카드빌드와 호환.
+ */
+async function listDefaultOfficials(uid) {
+  const r = await query(
+    `SELECT ${MT_COLS}, mt.from_creation_idx, mt.origin, false AS owned, (mt.creator_id = $1) AS mine,
+            COALESCE(mt.preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
+               WHERE gr.template_source='marketplace' AND gr.template_id = mt.id::text
+                 AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL
+               ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb,
+            COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
+              FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
+              WHERE tt.template_id = mt.id), '{}') AS themes
+       FROM marketplace_templates mt
+      WHERE mt.is_official = true AND mt.status = 'active'
+        AND mt.price_credits = 0 AND mt.recipe_id IS NULL
+      ORDER BY mt.created_at DESC`,
+    [uid]
+  );
+  const INFLU = new Set(['people']);
+  return r.rows.map((t) => ({ ...t, in_studio: true, macroGroup: (t.themes || []).some((s) => INFLU.has(s)) ? 'Influencer' : 'Shopping' }));
+}
+
 module.exports = {
   CATEGORIES,
   TYPES,
@@ -529,4 +836,16 @@ module.exports = {
   reportTemplate,
   bookmarkTemplate,
   unbookmarkTemplate,
+  listThemes,
+  getMe,
+  getEarnings,
+  applyCreator,
+  getCreator,
+  followCreator,
+  unfollowCreator,
+  listBookmarks,
+  listRecipeGates,
+  listOwned,
+  setOwnedInStudio,
+  listDefaultOfficials,
 };

@@ -61,3 +61,59 @@ export class MarketplaceService {
     return legacy.unbookmarkTemplate(userId, id);
   }
 }
+
+// ── 크리에이터·라이브러리 영역 (이관 12단계) ──
+@Injectable()
+export class MarketplaceCreatorsService {
+  // 글로벌 테마 목록(크리에이터 태깅·Explore 칩)
+  listThemes() {
+    return legacy.listThemes();
+  }
+
+  // 크리에이터 상태 + 내가 게시한 템플릿 + 오피셜 마스터
+  getMe(userId: string) {
+    return legacy.getMe(userId);
+  }
+
+  // 정산 대시보드(로열티 포인트 집계)
+  getEarnings(user: any) {
+    return legacy.getEarnings(user);
+  }
+
+  applyCreator(userId: string) {
+    return legacy.applyCreator(userId);
+  }
+
+  getCreator(userId: string, handle: string) {
+    return legacy.getCreator(userId, handle);
+  }
+
+  followCreator(userId: string, handle: string) {
+    return legacy.followCreator(userId, handle);
+  }
+
+  unfollowCreator(userId: string, handle: string) {
+    return legacy.unfollowCreator(userId, handle);
+  }
+
+  listBookmarks(userId: string) {
+    return legacy.listBookmarks(userId);
+  }
+
+  listRecipeGates(userId: string) {
+    return legacy.listRecipeGates(userId);
+  }
+
+  // Library My templates 정본(owns 기준) — 테마/macroGroup 파생 포함
+  listOwned(userId: string) {
+    return legacy.listOwned(userId);
+  }
+
+  setOwnedInStudio(userId: string, body: any) {
+    return legacy.setOwnedInStudio(userId, body || {});
+  }
+
+  listDefaultOfficials(userId: string) {
+    return legacy.listDefaultOfficials(userId);
+  }
+}

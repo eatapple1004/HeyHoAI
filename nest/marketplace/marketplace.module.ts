@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MarketplaceController } from './marketplace.controller';
-import { MarketplaceService } from './marketplace.service';
+import { MarketplaceCreatorsController } from './marketplace-creators.controller';
+import { MarketplaceService, MarketplaceCreatorsService } from './marketplace.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Module({
-  controllers: [MarketplaceController],
-  providers: [MarketplaceService, JwtAuthGuard],
+  // ⚠️ 등록 순서: 구체 경로(/templates/**)를 먼저 → 그 다음 나머지 /api/marketplace/**.
+  controllers: [MarketplaceController, MarketplaceCreatorsController],
+  providers: [MarketplaceService, MarketplaceCreatorsService, JwtAuthGuard],
 })
 export class MarketplaceModule {}
