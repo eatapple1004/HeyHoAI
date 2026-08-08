@@ -16,6 +16,7 @@ import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
 import { PublishingModule } from './publishing/publishing.module';
 import { AdminModule } from './admin/admin.module';
+import { AuthModule } from './auth/auth.module';
 
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
@@ -36,6 +37,7 @@ import { AdminModule } from './admin/admin.module';
     TrialModule,
     PublishingModule,
     AdminModule,
+    AuthModule,
   ],
   controllers: [HealthController],
 })
