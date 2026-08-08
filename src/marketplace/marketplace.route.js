@@ -1,181 +1,113 @@
 const { Router } = require('express');
 const { query } = require('../db/client');
-const { env } = require('../config');
-const creditService = require('../credits/credit.service');
-const { resolveToolId } = require('../tools/registry');
+const svc = require('./marketplace.service');
 
 const router = Router();
 
-const CATEGORIES = new Set(['Influencer', 'Shopping', 'UGC', 'Custom']);
-const TYPES = new Set(['image', 'reel']);
-const CREATOR_SHARE = 0.7; // 크리에이터 70% 수익분배
+// 공용 상수/헬퍼는 marketplace.service.js 단일소스(레거시·Nest 공용).
+const { PUBLIC_COLS, MT_COLS, UUID_RE, THEMES_SUBQ, CREATOR_SHARE } = svc;
 
-// 유료 과금이 실제로 도는가? 공식 시드(is_official)는 배포 즉시 라이브 유료(게이트 무관),
-// 비공식(유저 생성) 유료 템플릿은 MARKETPLACE_PAID 점화 전엔 무료 취급(가격은 노출·저장만).
-function paidActive(tpl) {
-  return env.MARKETPLACE_PAID === true || tpl.is_official === true;
+// statusCode 도메인 에러는 그대로 응답(402는 data 동봉 — toErrorBody가 처리).
+function handle(err, res, next) {
+  if (err.statusCode) return res.status(err.statusCode).json(svc.toErrorBody(err));
+  next(err);
 }
 
-const PUBLIC_COLS = `id, creator_id, creator_handle, name, description, category, type, style, prompt,
-  negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, recipe_id, usage_count, likes_count,
-  preview_media, reference_examples, target_image_url, is_official, created_at`;
-// JOIN(template_bookmarks)에서 created_at 모호성 회피용 mt. 한정 버전
-const MT_COLS = PUBLIC_COLS.split(',').map((c) => 'mt.' + c.trim()).join(', ');
-// 템플릿 id = UUID. 비UUID(예: recipe 슬러그)를 id로 넘기면 `WHERE id = $1`이 캐스트 에러로 500 → 404로 가드.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-// 각 템플릿의 글로벌 테마 slug 배열(크리에이터 다중 태그) — Explore 칩 표시·필터용. 없으면 빈 배열.
-const THEMES_SUBQ = `COALESCE((SELECT array_agg(th.slug ORDER BY th.sort_order)
-    FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
-    WHERE tt.template_id = marketplace_templates.id), '{}') AS themes`;
+// ─────────────────────────────────────────────────────────────
+// /templates 서브트리 = NestJS로 이관 완료(dev). 아래는 prod/staging용 얇은 라우트로,
+// 로직은 marketplace.service.js를 그대로 호출한다(로직 이중화 금지).
+// ─────────────────────────────────────────────────────────────
 
-// 템플릿의 글로벌 테마 태그를 슬러그 배열로 재설정(기존 삭제 후 유효 슬러그만 재삽입). 반환=확정 슬러그 배열.
-async function setTemplateThemes(templateId, slugs) {
-  const arr = Array.isArray(slugs)
-    ? [...new Set(slugs.filter((s) => typeof s === 'string' && s))].slice(0, 12) : [];
-  await query('DELETE FROM template_themes WHERE template_id = $1', [templateId]);
-  if (arr.length) {
-    await query(
-      `INSERT INTO template_themes (template_id, theme_id)
-       SELECT $1, th.id FROM themes th WHERE th.slug = ANY($2::text[])
-       ON CONFLICT DO NOTHING`,
-      [templateId, arr]
-    );
-  }
-  // 유효 테마가 하나도 안 남으면(미설정 or 전부 무효 slug) 'general' 폴백 — "테마 없음 = General".
-  const cnt = await query('SELECT count(*)::int AS c FROM template_themes WHERE template_id = $1', [templateId]);
-  if (cnt.rows[0].c === 0) {
-    await query(`INSERT INTO template_themes (template_id, theme_id) SELECT $1, id FROM themes WHERE slug = 'general' ON CONFLICT DO NOTHING`, [templateId]);
-  }
-  const r = await query(
-    `SELECT th.slug FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
-      WHERE tt.template_id = $1 ORDER BY th.sort_order`,
-    [templateId]
-  );
-  return r.rows.map((x) => x.slug);
-}
-
-/**
- * GET /api/marketplace/templates?category=Influencer&feed=1
- * 기본: 공개 + 내 비공개(타인 비공개 누수 방지).
- * feed=1: 공개 무료(price_credits=0)만, 좋아요순 — Library Feed용.
- */
+/** GET /api/marketplace/templates?category=&feed=1&theme= — 카탈로그 */
 router.get('/templates', async (req, res, next) => {
   try {
-    const { category, feed, theme } = req.query;
-    const isFeed = feed === '1' || feed === 'true';
-    const params = [req.user.id];
-    // Explore 카탈로그 = 공개(발행)된 것만. 내 미공개(private·auto 자동민팅)는 Explore에 노출 안 함 — Creator Studio/My templates에서만 관리.
-    //   ($1=req.user.id은 아래 SELECT의 mine/bookmarked/owned 표시에 계속 사용)
-    let where = isFeed
-      ? `status = 'active' AND visibility = 'public' AND price_credits = 0`
-      : `status = 'active' AND visibility = 'public'`;
-    if (category && CATEGORIES.has(category)) {
-      params.push(category);
-      where += ` AND category = $${params.length}`;
-    }
-    if (theme) {
-      params.push(theme);
-      where += ` AND EXISTS(SELECT 1 FROM template_themes tt JOIN themes th ON th.id = tt.theme_id
-                            WHERE tt.template_id = marketplace_templates.id AND th.slug = $${params.length})`;
-    }
-    const order = isFeed ? 'likes_count DESC, usage_count DESC' : 'is_official DESC, usage_count DESC';
-    const r = await query(
-      `SELECT ${PUBLIC_COLS}, (creator_id = $1) AS mine,
-              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $1) AS bookmarked,
-              (EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $1)
-                 OR (marketplace_templates.is_official = true AND marketplace_templates.price_credits = 0)) AS owned, -- (2026-07-06) 무료 오피셜=기본제공=항상 보유
-              COALESCE(preview_media->>0, (SELECT '/'||regexp_replace(gr.file_path,'^tmp/','') FROM generation_results gr
-                 WHERE ((gr.template_source='marketplace' AND gr.template_id = marketplace_templates.id::text)
-                     OR (marketplace_templates.recipe_id IS NOT NULL AND gr.template_source='recipe' AND gr.template_id = marketplace_templates.recipe_id))
-                   AND gr.visibility='public' AND gr.status='success' AND gr.taken_down=false AND gr.file_path IS NOT NULL
-                 ORDER BY gr.likes_count DESC, gr.created_at DESC LIMIT 1)) AS thumb,
-              ${THEMES_SUBQ}
-       FROM marketplace_templates WHERE ${where}
-       ORDER BY ${order} LIMIT 200`,
-      params
-    );
-    res.json({ success: true, data: r.rows });
-  } catch (err) { next(err); }
+    res.json({ success: true, data: await svc.listTemplates(req.user.id, req.query) });
+  } catch (err) { handle(err, res, next); }
 });
 
-/** GET /api/marketplace/templates/:id — 템플릿 상세(상품 페이지용). 공개 또는 내 것만.
- *  ⚠️ 유료 템플릿은 prompt(레시피) 비공개(블랙박스) — 결과·예시만 노출. */
+/** GET /api/marketplace/templates/:id — 템플릿 상세(유료는 prompt 블랙박스) */
 router.get('/templates/:id', async (req, res, next) => {
   try {
-    if (!UUID_RE.test(req.params.id)) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-    const r = await query(
-      `SELECT ${PUBLIC_COLS}, marketplace_templates.from_creation_idx, (creator_id = $2) AS mine,
-              EXISTS(SELECT 1 FROM template_bookmarks tb WHERE tb.template_id = marketplace_templates.id AND tb.user_id = $2) AS bookmarked,
-              (EXISTS(SELECT 1 FROM template_owns ow WHERE ow.template_id = marketplace_templates.id AND ow.user_id = $2)
-                 OR (marketplace_templates.is_official = true AND marketplace_templates.price_credits = 0)) AS owned, -- (2026-07-06) 무료 오피셜=기본제공=항상 보유
-              ${THEMES_SUBQ}
-       FROM marketplace_templates
-       WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
-      [req.params.id, req.user.id]
-    );
-    const tpl = r.rows[0];
-    if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-    // 블랙박스: 보유(구매/제작)하지 않은 유료 템플릿은 prompt 숨김. 보유/내 것은 그대로.
-    if (tpl.price_credits > 0 && !tpl.mine && !tpl.owned) { tpl.prompt = null; tpl.negative_prompt = null; }
-    // 포인터형 템플릿(from_creation_idx, prompt='') — 내 것이면 원본 creation의 실제 프롬프트를 폴백 노출(편집 시 비어보이지 않게).
-    if (tpl.mine && tpl.from_creation_idx && (!tpl.prompt || !String(tpl.prompt).trim())) {
-      const src = await query(
-        `SELECT p.prompt_text FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx WHERE gr.idx = $1`,
-        [tpl.from_creation_idx]
-      );
-      if (src.rows[0]?.prompt_text) tpl.prompt = src.rows[0].prompt_text;
-    }
-    delete tpl.from_creation_idx; // 내부 포인터는 응답에서 제거
-
-    // 이 템플릿으로 만들어진 creation 수 + 좋아요 합. ⚠️ recipe-backed 공식 템플릿은 creation이
-    // source='recipe', template_id=recipe_id 로 귀속되므로 그것도 매칭(마켓 귀속 + 레시피 귀속 둘 다).
-    const agg = await query(
-      `SELECT COUNT(*)::int AS creations, COALESCE(SUM(likes_count), 0)::int AS likes
-         FROM generation_results
-        WHERE ((template_source = 'marketplace' AND template_id = $1)
-            OR ($2 <> '' AND template_source = 'recipe' AND template_id = $2))
-          AND status = 'success' AND taken_down = false`,
-      [req.params.id, tpl.recipe_id || '']
-    );
-    tpl.creationsCount = agg.rows[0].creations;
-    tpl.totalLikes = agg.rows[0].likes;
-    // 수익은 본인 템플릿에만 노출(남의 수익 비공개). 로열티 포인트(type='royalty', ref_id=템플릿id) 합 — earnings와 동일 계산.
-    if (tpl.mine) {
-      const rev = await query(
-        `SELECT COALESCE(SUM(amount), 0)::int AS revenue
-           FROM point_ledger WHERE user_id = $1 AND type = 'royalty' AND ref_id = $2`,
-        [req.user.id, String(req.params.id)]
-      );
-      tpl.revenue = rev.rows[0].revenue;
-    }
-    res.json({ success: true, data: tpl });
-  } catch (err) { next(err); }
+    res.json({ success: true, data: await svc.getTemplate(req.user.id, req.params.id) });
+  } catch (err) { handle(err, res, next); }
 });
 
-/** GET /api/marketplace/templates/:id/creations — 이 템플릿으로 만든 공개 creation들, 좋아요순(이미지/영상 갤러리·사회적 증명). */
+/** GET /api/marketplace/templates/:id/creations — 이 템플릿으로 만든 공개 creation들 */
 router.get('/templates/:id/creations', async (req, res, next) => {
   try {
-    // recipe-backed 공식 템플릿은 creation이 source='recipe', template_id=recipe_id 로 귀속 → 마켓·레시피 둘 다 매칭.
-    const r = await query(
-      `SELECT gr.idx, gr.file_path, gr.metadata, gr.likes_count
-         FROM generation_results gr
-         JOIN marketplace_templates mt ON mt.id = $1
-        WHERE ((gr.template_source = 'marketplace' AND gr.template_id = mt.id::text)
-            OR (mt.recipe_id IS NOT NULL AND gr.template_source = 'recipe' AND gr.template_id = mt.recipe_id))
-          AND gr.visibility = 'public' AND gr.status = 'success'
-          AND gr.taken_down = false AND gr.file_path IS NOT NULL
-        ORDER BY gr.likes_count DESC, gr.created_at DESC
-        LIMIT 60`,
-      [req.params.id]
-    );
-    res.json({ success: true, data: r.rows.map((x) => ({
-      idx: x.idx,
-      url: x.file_path ? `/${x.file_path.replace(/^tmp\//, '')}` : null,
-      type: (x.metadata && x.metadata.type === 'video') ? 'video' : 'image',
-      likes: x.likes_count || 0,
-    })) });
-  } catch (err) { next(err); }
+    res.json({ success: true, data: await svc.getTemplateCreations(req.params.id) });
+  } catch (err) { handle(err, res, next); }
 });
+
+/** POST /api/marketplace/templates — 템플릿 저장(Save as template) */
+router.post('/templates', async (req, res, next) => {
+  try {
+    res.status(201).json({ success: true, data: await svc.createTemplate(req.user, req.body || {}) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** PATCH /api/marketplace/templates/:id — 내 템플릿 편집 */
+router.patch('/templates/:id', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await svc.updateTemplate(req.user.id, req.params.id, req.body || {}) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** DELETE /api/marketplace/templates/:id — 내 템플릿 내리기 */
+router.delete('/templates/:id', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await svc.deleteTemplate(req.user.id, req.params.id) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** POST /api/marketplace/templates/:id/use — 사용(보유 게이트) */
+router.post('/templates/:id/use', async (req, res, next) => {
+  try {
+    const out = await svc.useTemplate(req.user.id, req.params.id);
+    res.json({ success: true, ...out });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** POST /api/marketplace/templates/:id/acquire — 보유 획득(유료면 과금+로열티) */
+router.post('/templates/:id/acquire', async (req, res, next) => {
+  try {
+    const out = await svc.acquireTemplate(req.user, req.params.id);
+    res.json({ success: true, ...out });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** POST /api/marketplace/templates/:id/add-to-my-templates — 내 템플릿을 My templates에 추가(멱등) */
+router.post('/templates/:id/add-to-my-templates', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await svc.addToMyTemplates(req.user.id, req.params.id) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** POST /api/marketplace/templates/:id/report — 신고(누적 시 자동 테이크다운) */
+router.post('/templates/:id/report', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await svc.reportTemplate(req.user.id, req.params.id, (req.body || {}).reason) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** POST /api/marketplace/templates/:id/bookmark — 저장(멱등) */
+router.post('/templates/:id/bookmark', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await svc.bookmarkTemplate(req.user.id, req.params.id) });
+  } catch (err) { handle(err, res, next); }
+});
+
+/** DELETE /api/marketplace/templates/:id/bookmark — 저장 해제 */
+router.delete('/templates/:id/bookmark', async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await svc.unbookmarkTemplate(req.user.id, req.params.id) });
+  } catch (err) { handle(err, res, next); }
+});
+
+// ─────────────────────────────────────────────────────────────
+// 아래는 아직 레거시 전용(다음 이관 단계 대상): themes·me·earnings·apply·creators·
+// bookmarks·recipe-gates·owned·default-officials
+// ─────────────────────────────────────────────────────────────
 
 /** GET /api/marketplace/themes — 글로벌 테마 목록(크리에이터 태깅·Explore 칩·스튜디오 시드용). */
 router.get('/themes', async (req, res, next) => {
@@ -275,321 +207,6 @@ router.post('/apply', async (req, res, next) => {
   try {
     await query('UPDATE users SET is_creator = true WHERE id = $1', [req.user.id]);
     res.json({ success: true, data: { isCreator: true } });
-  } catch (err) { next(err); }
-});
-
-/**
- * POST /api/marketplace/templates — 템플릿 저장(Save as template).
- * 비공개(개인용)는 마찰 없이 누구나 / 공개 게시만 크리에이터 게이트.
- * tool(레지스트리 해석)·visibility·previewMedia·negativePrompt 저장.
- */
-router.post('/templates', async (req, res, next) => {
-  try {
-    const {
-      name, description = '', category, type = 'image', style = 'Natural', prompt,
-      negativePrompt = '', emoji = '🎨', priceCredits = 0, usePriceCredits = 0,
-      tool, visibility = 'private', previewMedia = [], referenceExamples = [],
-      themeSlugs = [], // 크리에이터 다중 테마 태그(글로벌 themes.slug 배열)
-      sourceResultIdx, // 이 템플릿의 씨앗 creation(역링크 + 누적 좋아요 롤업용, 선택)
-      targetImageUrl = null, // 생성 시 함께 보낼 레이아웃 타깃 이미지(admin, URL 또는 data URL)
-    } = req.body || {};
-    if (!name || !prompt) return res.status(400).json({ success: false, error: 'name과 prompt는 필수입니다.' });
-    if (!CATEGORIES.has(category)) return res.status(400).json({ success: false, error: '유효한 category가 필요합니다.' });
-    const t = TYPES.has(type) ? type : 'image';
-    const vis = visibility === 'public' ? 'public' : 'private';
-
-    // 공개 게시만 크리에이터 게이트 — 비공개 개인 저장은 마찰 없이 허용
-    if (vis === 'public') {
-      const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
-      if (!u.rows[0]?.is_creator) {
-        return res.status(403).json({ success: false, error: '공개 게시는 먼저 크리에이터로 신청해 주세요.' });
-      }
-    }
-
-    const resolvedTool = resolveToolId(tool, t === 'reel' ? 'reel' : 'image');
-    const price = Math.max(0, Math.min(parseInt(priceCredits, 10) || 0, 100));
-    const usePrice = Math.max(0, Math.min(parseInt(usePriceCredits, 10) || 0, 50)); // 사용당 로열티(소액, ≤50)
-    const preview = Array.isArray(previewMedia) ? previewMedia.slice(0, 6) : [];
-    // 전시용 레퍼런스(제작에 쓴 입력 이미지) — 생성엔 미주입, 상세페이지 갤러리 전용. 문자열 URL만 통과·최대 6장.
-    const refExamples = Array.isArray(referenceExamples)
-      ? referenceExamples.filter((u) => typeof u === 'string' && u).slice(0, 6) : [];
-    const desc = String(description || '').slice(0, 600);
-    const handle = '@' + String(req.user.email || 'creator').split('@')[0];
-    const targetImg = targetImageUrl ? String(targetImageUrl).slice(0, 4_000_000) : null; // URL 또는 data URL(캡)
-
-    const r = await query(
-      `INSERT INTO marketplace_templates
-         (creator_id, creator_handle, name, description, category, type, style, prompt, negative_prompt, tool, visibility, emoji, price_credits, use_price_credits, preview_media, reference_examples, target_image_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,$17) RETURNING ${PUBLIC_COLS}`,
-      [req.user.id, handle, String(name).slice(0, 120), desc, category, t, String(style).slice(0, 50),
-       String(prompt).slice(0, 8000), String(negativePrompt).slice(0, 1000), resolvedTool, vis,
-       String(emoji).slice(0, 8), price, usePrice, JSON.stringify(preview), JSON.stringify(refExamples), targetImg]
-    );
-    const created = r.rows[0];
-
-    // 크리에이터는 자기 템플릿 자동 보유 → studio 픽커(mergeOwnedTemplates)에 떠서 테마 배치·사용 가능.
-    await query(`INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`, [req.user.id, created.id]);
-
-    // 씨앗 creation 역링크 + 누적 좋아요 롤업(등록 즉시 사회적 증명). 본인 소유·아직 미귀속(Custom) 결과만.
-    // 공개(마켓) 게시일 때만 — 비공개(개인) 템플릿은 마켓 노출이 없어 역링크 시 creation에 막다른 Get CTA가 생김.
-    const srcIdx = parseInt(sourceResultIdx, 10);
-    if (srcIdx && vis === 'public') {
-      const link = await query(
-        `UPDATE generation_results gr
-            SET template_id = $1, template_source = 'marketplace'
-           FROM prompts p
-          WHERE p.idx = gr.prompt_idx AND gr.idx = $2 AND p.user_id = $3
-            AND gr.template_id IS NULL
-          RETURNING gr.likes_count`,
-        [created.id, srcIdx, req.user.id]
-      );
-      const seedLikes = link.rows[0] ? (link.rows[0].likes_count || 0) : 0;
-      if (seedLikes > 0) {
-        await query('UPDATE marketplace_templates SET likes_count = likes_count + $2 WHERE id = $1', [created.id, seedLikes]);
-        created.likes_count = (created.likes_count || 0) + seedLikes;
-      }
-    }
-    created.themes = await setTemplateThemes(created.id, themeSlugs);
-    res.status(201).json({ success: true, data: created });
-  } catch (err) { next(err); }
-});
-
-/**
- * PATCH /api/marketplace/templates/:id — 내 템플릿 편집(이름·프롬프트·가격·공개·카테고리·네거티브).
- * 비공개→공개 전환은 크리에이터 게이트. 가격 0~100 클램프(0=무료). 부분 업데이트.
- */
-router.patch('/templates/:id', async (req, res, next) => {
-  try {
-    const cur = await query(
-      `SELECT id, visibility, from_creation_idx FROM marketplace_templates WHERE id = $1 AND creator_id = $2`,
-      [req.params.id, req.user.id]
-    );
-    if (!cur.rows[0]) return res.status(404).json({ success: false, error: '내 템플릿이 아니거나 없습니다.' });
-
-    const body = req.body || {};
-    const sets = [];
-    const params = [];
-    if (typeof body.name === 'string' && body.name.trim()) {
-      params.push(body.name.trim().slice(0, 120)); sets.push(`name = $${params.length}`);
-    }
-    if (body.category !== undefined && CATEGORIES.has(body.category)) {
-      params.push(body.category); sets.push(`category = $${params.length}`);
-    }
-    if (body.description !== undefined) {
-      params.push(String(body.description || '').slice(0, 600)); sets.push(`description = $${params.length}`);
-    }
-    if (body.priceCredits !== undefined) {
-      const price = Math.max(0, Math.min(parseInt(body.priceCredits, 10) || 0, 100));
-      params.push(price); sets.push(`price_credits = $${params.length}`);
-    }
-    if (body.usePriceCredits !== undefined) {
-      const usePrice = Math.max(0, Math.min(parseInt(body.usePriceCredits, 10) || 0, 50));
-      params.push(usePrice); sets.push(`use_price_credits = $${params.length}`);
-    }
-    if (typeof body.prompt === 'string' && body.prompt.trim()) {
-      params.push(String(body.prompt).slice(0, 8000)); sets.push(`prompt = $${params.length}`);
-    }
-    if (body.negativePrompt !== undefined) {
-      params.push(String(body.negativePrompt).slice(0, 1000)); sets.push(`negative_prompt = $${params.length}`);
-    }
-    if (body.targetImageUrl !== undefined) {
-      const v = body.targetImageUrl ? String(body.targetImageUrl).slice(0, 4_000_000) : null;
-      params.push(v); sets.push(`target_image_url = $${params.length}`);
-    }
-    if (body.visibility !== undefined) {
-      const vis = body.visibility === 'public' ? 'public' : 'private';
-      // 공개 전환만 게이트(이미 공개거나 비공개 전환은 자유)
-      if (vis === 'public' && cur.rows[0].visibility !== 'public') {
-        const u = await query('SELECT is_creator FROM users WHERE id = $1', [req.user.id]);
-        if (!u.rows[0]?.is_creator) {
-          return res.status(403).json({ success: false, error: '공개 게시는 먼저 크리에이터로 신청해 주세요.' });
-        }
-        // 🆕 선행조건(요구1/2): from_creation_idx가 있으면 그 creation이 공개(Private OFF)여야만 Explore Templates 공개 가능.
-        if (cur.rows[0].from_creation_idx) {
-          const cr = await query(
-            `SELECT 1 FROM generation_results WHERE idx = $1 AND visibility = 'public' AND taken_down = false`,
-            [cur.rows[0].from_creation_idx]
-          );
-          if (!cr.rows[0]) return res.status(409).json({ success: false, error: '원본 creation을 공개(Private Mode OFF)한 뒤에 Explore에 공개할 수 있습니다.' });
-        }
-      }
-      params.push(vis); sets.push(`visibility = $${params.length}`);
-    }
-    const hasThemes = body.themeSlugs !== undefined; // 테마만 바꾸는 것도 허용
-    if (!sets.length && !hasThemes) return res.status(400).json({ success: false, error: '변경할 내용이 없습니다.' });
-
-    let row;
-    if (sets.length) {
-      params.push(req.params.id);
-      const r = await query(
-        `UPDATE marketplace_templates SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${PUBLIC_COLS}`,
-        params
-      );
-      row = r.rows[0];
-    } else {
-      const r = await query(`SELECT ${PUBLIC_COLS} FROM marketplace_templates WHERE id = $1`, [req.params.id]);
-      row = r.rows[0];
-    }
-    if (hasThemes) row.themes = await setTemplateThemes(req.params.id, body.themeSlugs);
-    res.json({ success: true, data: row });
-  } catch (err) { next(err); }
-});
-
-/** DELETE /api/marketplace/templates/:id — 내 템플릿 내리기 */
-router.delete('/templates/:id', async (req, res, next) => {
-  try {
-    const r = await query(
-      `DELETE FROM marketplace_templates WHERE id = $1 AND creator_id = $2 RETURNING id`,
-      [req.params.id, req.user.id]
-    );
-    if (r.rowCount === 0) return res.status(404).json({ success: false, error: '내 템플릿이 아니거나 없습니다.' });
-    res.json({ success: true, data: { id: r.rows[0].id } });
-  } catch (err) { next(err); }
-});
-
-/**
- * POST /api/marketplace/templates/:id/use
- * 사용 기록 + (유료면) 사용료 차감 → 크리에이터 70% 분배. 스튜디오 적용용 파라미터(tool 포함) 반환.
- * 비공개는 본인 것만 사용 가능(타인 비공개 누수 방지).
- */
-async function isOwned(userId, tpl) {
-  if (tpl.creator_id === userId) return true; // 제작자는 자동 보유
-  const o = await query('SELECT 1 FROM template_owns WHERE user_id = $1 AND template_id = $2', [userId, tpl.id]);
-  return !!o.rows[0];
-}
-
-router.post('/templates/:id/use', async (req, res, next) => {
-  try {
-    const r = await query(
-      `SELECT ${PUBLIC_COLS} FROM marketplace_templates
-        WHERE id = $1 AND status = 'active'
-          AND (visibility = 'public' OR creator_id = $2
-               OR EXISTS(SELECT 1 FROM template_owns o WHERE o.template_id = marketplace_templates.id AND o.user_id = $2))`,
-      [req.params.id, req.user.id]
-    );
-    const tpl = r.rows[0];
-    if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-
-    // buy-to-own: 보유해야 사용. 유료 미보유 → 402(구매 필요). 무료 미보유 → 자동 보유(추가).
-    if (!(await isOwned(req.user.id, tpl))) {
-      if (tpl.price_credits > 0) {
-        return res.status(402).json({ success: false, error: '먼저 구매해야 사용할 수 있습니다.', data: { needPurchase: true, price: tpl.price_credits } });
-      }
-      await query(
-        `INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`,
-        [req.user.id, tpl.id]
-      );
-    }
-
-    await query('UPDATE marketplace_templates SET usage_count = usage_count + 1 WHERE id = $1', [tpl.id]);
-    res.json({
-      success: true,
-      data: {
-        id: tpl.id, name: tpl.name, category: tpl.category, type: tpl.type, style: tpl.style,
-        prompt: tpl.prompt, negativePrompt: tpl.negative_prompt || '', tool: tpl.tool || null, emoji: tpl.emoji,
-        recipeId: tpl.recipe_id || null, // recipe-backed면 스튜디오가 리치 recipe를 로드
-      },
-      charged: 0, // 사용 시점엔 과금 없음(구매료=/acquire / 사용당 로열티=생성 시점)
-    });
-  } catch (err) { next(err); }
-});
-
-/**
- * POST /api/marketplace/templates/:id/acquire — 보유 획득.
- * 무료=즉시 보유(추가). 유료=price_credits 1회 과금 + 크리에이터 70% 로열티 + 보유. 이미 보유=멱등(무과금).
- */
-router.post('/templates/:id/acquire', async (req, res, next) => {
-  let charge = null;
-  try {
-    const r = await query(
-      `SELECT ${PUBLIC_COLS} FROM marketplace_templates
-        WHERE id = $1 AND status = 'active'
-          AND (visibility = 'public' OR creator_id = $2
-               OR EXISTS(SELECT 1 FROM generation_results gr WHERE gr.idx = marketplace_templates.from_creation_idx AND gr.visibility = 'public' AND gr.taken_down = false))`,
-      [req.params.id, req.user.id]
-    );
-    const tpl = r.rows[0];
-    if (!tpl) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-
-    if (await isOwned(req.user.id, tpl)) {
-      return res.json({ success: true, data: { id: tpl.id, owned: true, alreadyOwned: true }, charged: 0 });
-    }
-
-    // 점화 게이트: 비공식 유료 템플릿은 MARKETPLACE_PAID 전엔 가격 0 취급(무료 언락). 공식은 항상 과금.
-    const effectivePrice = paidActive(tpl) ? tpl.price_credits : 0;
-    let source = 'free', pricePaid = 0;
-    if (effectivePrice > 0) {
-      charge = await creditService.charge(req.user, effectivePrice, {
-        type: 'template_purchase', description: `템플릿 구매: ${tpl.name}`, refId: tpl.id,
-      });
-      source = 'purchase';
-      pricePaid = charge ? charge.amount : effectivePrice;
-    }
-
-    const ins = await query(
-      `INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,$3,$4)
-       ON CONFLICT (user_id, template_id) DO NOTHING RETURNING user_id`,
-      [req.user.id, tpl.id, source, pricePaid]
-    );
-    if (ins.rowCount === 0) { // 동시 획득 — 이미 보유. 과금했으면 환불.
-      if (charge) await charge.refund();
-      return res.json({ success: true, data: { id: tpl.id, owned: true, alreadyOwned: true }, charged: 0 });
-    }
-    // 구매 성공 후에만 로열티 분배(70%) → 크리에이터 포인트(현금성, credit 아님)
-    if (charge && tpl.creator_id && effectivePrice > 0) {
-      const royalty = Math.round(effectivePrice * CREATOR_SHARE);
-      if (royalty > 0) await creditService.addPoints(tpl.creator_id, royalty, {
-        type: 'royalty', description: `템플릿 판매: ${tpl.name}`, refId: tpl.id,
-      }).catch(() => {});
-    }
-    res.json({ success: true, data: { id: tpl.id, owned: true, source }, charged: pricePaid });
-  } catch (err) {
-    if (charge) await charge.refund();
-    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
-    next(err);
-  }
-});
-
-/** POST /api/marketplace/templates/:id/add-to-my-templates — 내 템플릿(주로 auto 자동민팅)을 My templates에 추가(owns INSERT). 멱등.
- *  내 것 전용 — 타인 템플릿은 /acquire(구매)로 추가. */
-router.post('/templates/:id/add-to-my-templates', async (req, res, next) => {
-  try {
-    const r = await query(
-      `SELECT id FROM marketplace_templates WHERE id = $1 AND status = 'active' AND creator_id = $2`,
-      [req.params.id, req.user.id]
-    );
-    if (!r.rows[0]) return res.status(404).json({ success: false, error: '내 템플릿이 아니거나 없습니다.' });
-    await query(
-      `INSERT INTO template_owns (user_id, template_id, source, price_paid) VALUES ($1,$2,'free',0) ON CONFLICT DO NOTHING`,
-      [req.user.id, req.params.id]
-    );
-    res.json({ success: true, data: { id: req.params.id, added: true } });
-  } catch (err) { next(err); }
-});
-
-const REPORT_THRESHOLD = 3; // 서로 다른 신고자 N명 이상 → 자동 비공개(테이크다운)
-
-/** POST /api/marketplace/templates/:id/report — 공개 템플릿 신고(중복 무시). 누적 시 자동 테이크다운. */
-router.post('/templates/:id/report', async (req, res, next) => {
-  try {
-    const reason = String((req.body && req.body.reason) || 'other').slice(0, 40);
-    const tpl = await query(`SELECT id, creator_id, status FROM marketplace_templates WHERE id = $1`, [req.params.id]);
-    if (!tpl.rows[0]) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-    if (tpl.rows[0].creator_id === req.user.id) return res.status(400).json({ success: false, error: '본인 템플릿은 신고할 수 없습니다.' });
-
-    await query(
-      `INSERT INTO template_reports (template_id, reporter_id, reason) VALUES ($1,$2,$3)
-       ON CONFLICT (template_id, reporter_id) DO NOTHING`,
-      [req.params.id, req.user.id, reason]
-    );
-    // 서로 다른 신고자 수 → 임계 초과 + 아직 active면 자동 비공개
-    const cnt = await query(`SELECT COUNT(DISTINCT reporter_id)::int AS n FROM template_reports WHERE template_id = $1`, [req.params.id]);
-    let takenDown = false;
-    if (cnt.rows[0].n >= REPORT_THRESHOLD && tpl.rows[0].status === 'active') {
-      await query(`UPDATE marketplace_templates SET status = 'taken_down' WHERE id = $1`, [req.params.id]);
-      takenDown = true;
-    }
-    res.json({ success: true, data: { reported: true, takenDown } });
   } catch (err) { next(err); }
 });
 
@@ -820,30 +437,6 @@ router.get('/default-officials', async (req, res, next) => {
     const INFLU = new Set(['people']);
     const data = r.rows.map((t) => ({ ...t, in_studio: true, macroGroup: (t.themes || []).some((s) => INFLU.has(s)) ? 'Influencer' : 'Shopping' }));
     res.json({ success: true, data });
-  } catch (err) { next(err); }
-});
-
-/** POST /api/marketplace/templates/:id/bookmark — 템플릿 저장(Saved). 공개 또는 내 것만. (멱등) */
-router.post('/templates/:id/bookmark', async (req, res, next) => {
-  try {
-    const t = await query(
-      `SELECT id FROM marketplace_templates WHERE id = $1 AND status = 'active' AND (visibility = 'public' OR creator_id = $2)`,
-      [req.params.id, req.user.id]
-    );
-    if (!t.rows[0]) return res.status(404).json({ success: false, error: '템플릿을 찾을 수 없습니다.' });
-    await query(
-      `INSERT INTO template_bookmarks (user_id, template_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [req.user.id, req.params.id]
-    );
-    res.json({ success: true, data: { bookmarked: true } });
-  } catch (err) { next(err); }
-});
-
-/** DELETE /api/marketplace/templates/:id/bookmark — 저장 해제 */
-router.delete('/templates/:id/bookmark', async (req, res, next) => {
-  try {
-    await query(`DELETE FROM template_bookmarks WHERE user_id = $1 AND template_id = $2`, [req.user.id, req.params.id]);
-    res.json({ success: true, data: { bookmarked: false } });
   } catch (err) { next(err); }
 });
 
