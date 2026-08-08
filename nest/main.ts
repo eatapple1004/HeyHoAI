@@ -20,7 +20,10 @@ const cookieParser = require('cookie-parser');
 //   여기 나열된 접두사만 NestJS가 처리하고, 나머지 모든 경로는 레거시 Express로 폴백한다.
 //   도메인을 Nest로 포팅할 때마다 이 배열에 그 경로를 추가(예: '/api/pricing').
 //   Nest가 매칭 실패 시 자체 404를 내버려 레거시로 안 내려가는 문제를, "소유 경로 화이트리스트"로 명시 해결.
-const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits'];
+const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing'];
+// /api/billing 접두사에 걸리지만 레거시로 남겨둘 경로 = 웹훅(raw body·무인증, index.js에 json 파싱 전 직접 마운트).
+//   Nest로 넘기면 body가 json 파싱돼 서명검증이 깨지고 가드가 401을 냄 → 반드시 예외 처리.
+const NEST_EXCLUDE = ['/api/billing/webhook', '/api/billing/eximbay/status', '/api/billing/portone/webhook'];
 
 async function bootstrap() {
   // bodyParser:false — 레거시 Express가 자체적으로 body를 파싱하므로 이중 파싱 방지.
@@ -36,8 +39,9 @@ async function bootstrap() {
   const jsonMw = express.json({ limit: '10mb' });
   server.use((req: any, res: any, next: any) => {
     const p = req.path || req.url || '';
-    const ownedByNest = NEST_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
-    if (!ownedByNest) return legacyApp(req, res, next);   // → 레거시 Express(포팅 안 된 전부)
+    const excluded = NEST_EXCLUDE.some((e) => p === e);   // 웹훅 등은 접두사 매칭돼도 레거시 유지
+    const ownedByNest = !excluded && NEST_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
+    if (!ownedByNest) return legacyApp(req, res, next);   // → 레거시 Express(포팅 안 된 전부 + 웹훅)
     // Nest 경로: 쿠키 → JSON 파싱 후 Nest 컨트롤러로(가드가 req.cookies/req.body를 읽음)
     cookieMw(req, res, (e1: any) => (e1 ? next(e1) : jsonMw(req, res, next)));
   });
