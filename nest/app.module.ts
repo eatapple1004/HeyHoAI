@@ -11,6 +11,7 @@ import { AffiliateModule } from './affiliate/affiliate.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { StudioModule } from './studio/studio.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
+import { MediaModule } from './media/media.module';
 
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
@@ -26,6 +27,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
     RecipesModule,
     StudioModule,
     MarketplaceModule,
+    MediaModule,
   ],
   controllers: [HealthController],
 })
