@@ -504,7 +504,7 @@ async function growPack(pack, { seedCutKey, brief, count, userId, charge = null,
 }
 
 /** 확인 단계 — 사진+힌트로 카테고리·제품 감지(가벼움). 프론트가 "이거 맞아요?" 확인받고 POST /로 확정 생성. */
-router.post('/classify', upload.array('photos', 10), normalizeUploads, async (req, res, next) => {
+const classifyHandler = async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
     const hint = (req.body.product || '').slice(0, 600); // 컨셉 브리프(여러 줄) 수용
@@ -514,9 +514,9 @@ router.post('/classify', upload.array('photos', 10), normalizeUploads, async (re
     // 확인 모달이 비용·잔여를 말하려면 **팩이 생기기 전에** 알아야 한다 → 여기 실어 보낸다(추가 왕복 없음).
     res.json({ ...result, ref: await refInfo(req.user && req.user.id) });
   } catch (e) { next(e); }
-});
+};
 
-router.post('/', upload.array('photos', 10), normalizeUploads, async (req, res, next) => {
+const createHandler = async (req, res, next) => {
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: '사진을 업로드하세요' });
     const vertical = req.body.vertical || 'beverage';
@@ -561,9 +561,9 @@ router.post('/', upload.array('photos', 10), normalizeUploads, async (req, res, 
       sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
-});
+};
 
-router.get('/:id', async (req, res, next) => {
+const getPackGetHandler = async (req, res, next) => {
   try {
     const key = String(req.params.id);
     const byId = /^\d+$/.test(key);
@@ -579,10 +579,10 @@ router.get('/:id', async (req, res, next) => {
     pack.ref = await refInfo(req.user && req.user.id);   // 게이트가 굽기 비용·잔여를 말하려면 필요
     res.json(pack);
   } catch (e) { next(e); }
-});
+};
 
 /** 레퍼 게이트 통과 → 스틸 생성 시작(depth = 만들 컷 수, 0=전부). ref_ready 상태에서만. */
-router.post('/:id/generate', async (req, res, next) => {
+const generateHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
@@ -597,7 +597,7 @@ router.post('/:id/generate', async (req, res, next) => {
     res.json({ ok: true });
     setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id, charge, user: req.user, expected }));
   } catch (e) { next(e); }
-});
+};
 
 /**
  * 🧟 이어서 만들기 — 중단된 팩(서버 재시작·크래시·hang)에서 **남은 컷부터** 재개.
@@ -605,7 +605,7 @@ router.post('/:id/generate', async (req, res, next) => {
  *   ⚠️ 커버 범위 = **스틸 단계**(계획+캐논 레퍼가 이미 있는 팩). 레퍼 굽기 전에 죽은 팩은
  *      플래너부터 다시 돌아야 해서 재개 대상이 아니다 → 처음부터 만들도록 안내한다.
  */
-router.post('/:id/resume', async (req, res, next) => {
+const resumeHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
@@ -625,14 +625,14 @@ router.post('/:id/resume', async (req, res, next) => {
     res.json({ ok: true, depth });
     setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id, charge, user: req.user, expected }));
   } catch (e) { next(e); }
-});
+};
 
 /**
  * ➕ 더 뽑기 — **이미 기획된** 남은 컷을 생성한다(플래너 재호출 0). 게이트 depth로 일부만 만든 뒤
  *   "역시 더"일 때, 기획·지불은 이미 끝난 컷을 꺼낸다. generatePack이 이미 만든 컷을 건너뛴다.
  *   count 미지정이면 남은 전부. done/failed/유휴 상태에서 동작(생성 중이면 409).
  */
-router.post('/:id/extend', async (req, res, next) => {
+const extendHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
@@ -659,13 +659,13 @@ router.post('/:id/extend', async (req, res, next) => {
     res.json({ ok: true, remaining, adding });
     setImmediate(() => generatePack(pack, { depth, userId: req.user && req.user.id, charge, user: req.user, expected: adding }));
   } catch (e) { next(e); }
-});
+};
 
 /**
  * ✦ 이런 걸로 더 — 씨앗 컷과 같은 결로 형제 컷 N장(무드 유지, 구도 변주). 플래너 1회 + 생성.
  *   done/failed/유휴 상태에서 동작. 백그라운드라 프론트는 refreshPack 폴링으로 새 카드를 받는다.
  */
-router.post('/:id/more-like', async (req, res, next) => {
+const moreLikeHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
@@ -685,14 +685,14 @@ router.post('/:id/more-like', async (req, res, next) => {
     res.json({ ok: true, adding: count });
     setImmediate(() => growPack(pack, { seedCutKey: cutKey, count, userId: req.user && req.user.id, charge, user: req.user, expected: count }));
   } catch (e) { next(e); }
-});
+};
 
 /**
  * 💡 컨셉으로 더 — 자유 브리프로 새 방향 컷 N장. "이런 걸로 더"가 있는 컷에 갇힌다면 이건 밖으로 나간다.
  *   🧠 **브리프를 비우면 자동 모드** — 플래너가 여태 안 나온 새 컨셉을 스스로 창안한다("알아서 더").
  *   씨앗 대신 브리프(또는 자동 컨셉)가 기획을 주도하고, 브랜드가 보이는 대표 레퍼로 생성한다.
  */
-router.post('/:id/concept-more', async (req, res, next) => {
+const conceptMoreHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
@@ -710,7 +710,7 @@ router.post('/:id/concept-more', async (req, res, next) => {
     res.json({ ok: true, adding: count, auto: !brief });
     setImmediate(() => growPack(pack, { brief, count, userId: req.user && req.user.id, charge, user: req.user, expected: count }));
   } catch (e) { next(e); }
-});
+};
 
 /**
  * 🎬 광고 영상 만들기 — 팩 재료(제품·카테고리·컨셉·캐논 레퍼)로 **한 편** 생성한다(Ad Video 엔진 재사용).
@@ -721,7 +721,7 @@ router.post('/:id/concept-more', async (req, res, next) => {
  *   엔진 흐름: 대본(Claude) → 씬별 프레임(캐논 레퍼 기준 생성) → Kling 모션 → 음성·음악 → 조립 → ugc_jobs.
  *   결과는 ugc_jobs 잡으로 비동기 진행 → 프론트가 /api/generate/ugc/jobs/:id 폴링 → 완료 시 팩 화면에 영상.
  */
-router.post('/:id/video', async (req, res, next) => {
+const videoHandler = async (req, res, next) => {
   try {
     if (!req.user || !req.user.id) return res.status(401).json({ error: '로그인이 필요해요' });
     const pack = await repo.getPack({ id: Number(req.params.id) });
@@ -761,10 +761,10 @@ router.post('/:id/video', async (req, res, next) => {
     if (e.statusCode) return res.status(e.statusCode).json({ error: e.message });   // 402 크레딧부족·403 등 그대로
     next(e);
   }
-});
+};
 
 /** 컷 재생성 — 같은 컨셉, 새 표본(새 버전). 기존 캐논 레퍼로 다시 생성. */
-router.post('/:id/regenerate-cut', async (req, res, next) => {
+const regenerateCutHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
     if (!pack) return res.status(404).json({ error: 'not found' });
@@ -782,14 +782,14 @@ router.post('/:id/regenerate-cut', async (req, res, next) => {
       res.json({ asset });
     } catch (e) { if (charge) await charge.refund().catch(() => {}); throw e; }   // 생성 실패 = 전액 환불
   } catch (e) { next(e); }
-});
+};
 
 // (제거됨) POST /:id/add-cut — suite 라이브러리에서 컷을 골라 추가했으나, SUITES에 beverage 하나뿐이라
 //   화장품·의류 팩에서도 음료 컷 목록이 떴다(오분류 계열 누수). "이런 걸로 더"(more-like)가 대체한다 —
 //   남의 카테고리 라이브러리에서 고르는 것보다 이 제품의 실제 컷을 씨앗으로 변주하는 게 맞다.
 
 /** 캐논 레퍼 재굽기 — 저장된 소스 사진에서 다시 베이크(새 버전). 이후 컷 재생성은 이 새 레퍼를 씀. */
-router.post('/:id/rebake-ref', async (req, res, next) => {
+const rebakeRefHandler = async (req, res, next) => {
   let rbCharge = null;   // 굽기 실패 시 되돌리려면 catch에서 보여야 한다(try 안에 두면 스코프 밖)
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
@@ -834,6 +834,36 @@ router.post('/:id/rebake-ref', async (req, res, next) => {
     const asset = await recordAsset(pack, { kind: 'ref', key: `ref_${sku}`, label: (st && st.label) || sku, buffer: buf, userId: rbUser, skipRefCharge: true });
     res.json({ asset, refCharged: !!rbCharge, ref: await refInfo(rbUser) });
   } catch (e) { if (rbCharge) await rbCharge.refund().catch(() => {}); next(e); }   // 굽기 실패 = 방금 받은 ◈100 환불
-});
+};
+
+// ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
+router.post('/classify', upload.array('photos', 10), normalizeUploads, classifyHandler);
+router.post('/', upload.array('photos', 10), normalizeUploads, createHandler);
+router.get('/:id', getPackGetHandler);
+router.post('/:id/generate', generateHandler);
+router.post('/:id/resume', resumeHandler);
+router.post('/:id/extend', extendHandler);
+router.post('/:id/more-like', moreLikeHandler);
+router.post('/:id/concept-more', conceptMoreHandler);
+router.post('/:id/video', videoHandler);
+router.post('/:id/regenerate-cut', regenerateCutHandler);
+router.post('/:id/rebake-ref', rebakeRefHandler);
 
 module.exports = router;
+// Nest(nest/pack)가 라우팅만 가져가고 파이프라인(멀티파트·HEIC 정규화·크레딧 정산·백그라운드 작업)은
+// 이 핸들러를 그대로 재사용한다 — 로직 이중화 금지.
+module.exports.handlers = {
+  classify: classifyHandler,
+  create: createHandler,
+  getPack: getPackGetHandler,
+  generate: generateHandler,
+  resume: resumeHandler,
+  extend: extendHandler,
+  moreLike: moreLikeHandler,
+  conceptMore: conceptMoreHandler,
+  video: videoHandler,
+  regenerateCut: regenerateCutHandler,
+  rebakeRef: rebakeRefHandler,
+};
+module.exports.upload = upload;
+module.exports.normalizeUploads = normalizeUploads;
