@@ -20,7 +20,7 @@ const cookieParser = require('cookie-parser');
 //   여기 나열된 접두사만 NestJS가 처리하고, 나머지 모든 경로는 레거시 Express로 폴백한다.
 //   도메인을 Nest로 포팅할 때마다 이 배열에 그 경로를 추가(예: '/api/pricing').
 //   Nest가 매칭 실패 시 자체 404를 내버려 레거시로 안 내려가는 문제를, "소유 경로 화이트리스트"로 명시 해결.
-const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing', '/api/subscription', '/api/dashboard'];
+const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing', '/api/subscription', '/api/dashboard', '/api/brand-kit'];
 // /api/billing 접두사에 걸리지만 레거시로 남겨둘 경로 = 웹훅(raw body·무인증, index.js에 json 파싱 전 직접 마운트).
 //   Nest로 넘기면 body가 json 파싱돼 서명검증이 깨지고 가드가 401을 냄 → 반드시 예외 처리.
 const NEST_EXCLUDE = ['/api/billing/webhook', '/api/billing/eximbay/status', '/api/billing/portone/webhook'];
