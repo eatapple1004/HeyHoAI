@@ -6,6 +6,7 @@ import {
   Query,
   Req,
   UseGuards,
+  HttpCode,
   HttpException,
 } from '@nestjs/common';
 import { CreditsService } from './credits.service';
@@ -26,6 +27,7 @@ export class CreditsController {
 
   // POST /api/credits/points/exchange  { amount }
   @Post('points/exchange')
+  @HttpCode(200) // 레거시 res.json=200에 맞춤(Nest POST 기본 201 방지)
   async exchange(@Req() req: any, @Body() body: any) {
     try {
       const out = await this.credits.exchange(req.user.id, body && body.amount);
