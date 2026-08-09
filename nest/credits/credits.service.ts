@@ -1,44 +1,109 @@
 import { Injectable } from '@nestjs/common';
+import * as path from 'path';
+import { CreditRepository } from './credit.repository';
 import { CreditOverviewDto, PointExchangeResultDto } from './dto/credits.dto';
 import { LedgerEntryVo } from '../common/vo/ledger.vo';
-import * as path from 'path';
 
-// 기존 크레딧 로직 재사용(중복 금지) — DB 접근·계산은 레거시 credit.service.js / team.credit.js가 담당.
-//   Nest는 이 로직을 @Injectable 서비스로 감싸 컨트롤러에 주입한다(점진 이관).
+/**
+ * ⚠️ **가격표(COSTS·imageCost·videoCost 등)는 이식하지 않고 단일소스를 그대로 쓴다.**
+ *    값을 복제하면 한쪽만 바뀌었을 때 청구액이 갈린다(매출 사고). 가격 변경은 언제나 한 곳에서.
+ *    docs/생성원가_마진_분석_2026-07-06.md 근거로 산정된 표라 코드 이식 대상이 아니다.
+ */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const creditService = require(path.join(__dirname, '..', '..', 'src', 'credits', 'credit.service.js'));
+const pricing = require(path.join(__dirname, '..', '..', 'src', 'credits', 'credit.service.js'));
+// 팀 컨텍스트(개인/팀 풀 판정)는 teams 크레딧과 얽혀 있어 아직 재사용.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const teamCredit = require(path.join(__dirname, '..', '..', 'src', 'teams', 'team.credit.js'));
 
+/** 차감 결과 — refund()로 되돌릴 수 있다(멱등: 두 번 불러도 한 번만 환불) */
+export interface ChargeHandle {
+  amount: number;
+  balanceAfter: number;
+  refund: () => Promise<void>;
+}
+
 @Injectable()
 export class CreditsService {
-  // GET /api/credits — 현재 컨텍스트(개인/팀) 잔액 + 포인트 + 가격표. admin(개인)만 unlimited.
+  constructor(private readonly repo: CreditRepository) {}
+
+  /** 현재 컨텍스트(개인/팀) 잔액 + 포인트 + 가격표. admin(개인)만 unlimited */
   async overview(user: { id: string; role: string }): Promise<CreditOverviewDto> {
     const ctx = await teamCredit.resolveContext(user.id);
     const isTeam = ctx.type === 'team';
-    const balance = isTeam
-      ? await teamCredit.getBalance(ctx.teamId)
-      : await creditService.getBalance(user.id);
+    const balance = isTeam ? await teamCredit.getBalance(ctx.teamId) : await this.repo.getBalance(user.id);
     return {
       balance,
-      points: await creditService.getPoints(user.id),
+      points: await this.repo.getPoints(user.id),
       unlimited: !isTeam && user.role === 'admin',
-      costs: creditService.COSTS,
+      costs: pricing.COSTS,
       context: isTeam
         ? { type: 'team', teamId: ctx.teamId, teamName: ctx.teamName, role: ctx.role }
         : { type: 'personal' },
     };
   }
 
-  exchange(userId: string, amount: any): Promise<PointExchangeResultDto> {
-    return creditService.exchangePointsToCredits(userId, amount);
+  ledger(userId: string, limit: number): Promise<LedgerEntryVo[]> {
+    return this.repo.getLedger(userId, limit);
   }
 
   pointLedger(userId: string, limit: number): Promise<LedgerEntryVo[]> {
-    return creditService.getPointLedger(userId, limit);
+    return this.repo.getPointLedger(userId, limit);
   }
 
-  ledger(userId: string, limit: number): Promise<LedgerEntryVo[]> {
-    return creditService.getLedger(userId, limit);
+  /** 포인트 → 크레딧 교환(1:1) */
+  exchange(userId: string, amount: unknown): Promise<PointExchangeResultDto> {
+    const amt = Math.floor(Math.abs(parseInt(String(amount), 10) || 0));
+    if (amt <= 0) throw Object.assign(new Error('교환할 포인트 수량을 입력하세요.'), { statusCode: 400 });
+    return this.repo.exchangePointsToCredits(userId, amt);
+  }
+
+  addCredits(userId: string, amount: number, o: { type: string; description?: string; refId?: string | null }) {
+    return this.repo.applyDelta(userId, Math.abs(amount), o);
+  }
+
+  addPoints(userId: string, amount: number, o: { type: string; description?: string; refId?: string | null }) {
+    return this.repo.applyPointDelta(userId, Math.abs(amount), o);
+  }
+
+  /**
+   * 차감 — **admin은 무과금**(운영 계정), 0 이하도 무시.
+   * 반환된 handle.refund()로 되돌릴 수 있다(생성 실패 시 환불 경로).
+   */
+  async charge(
+    user: { id: string; role?: string } | null,
+    amount: number,
+    o: { type?: string; description?: string; refId?: string | null } = {},
+  ): Promise<ChargeHandle | null> {
+    if (!user || user.role === 'admin') return null;
+    if (amount <= 0) return null;
+    const { type = 'generation', description = '', refId = null } = o;
+    const balanceAfter = await this.repo.applyDelta(user.id, -amount, { type, description, refId });
+    let refunded = false;
+    return {
+      amount,
+      balanceAfter,
+      refund: async () => {
+        if (refunded) return;   // 멱등 — 중복 환불 방지
+        refunded = true;
+        await this.addCredits(user.id, amount, {
+          type: 'refund', description: `환불: ${description}`, refId,
+        }).catch(() => {});
+      },
+    };
+  }
+
+  /** 가입 보너스 — 금액은 단일소스(SIGNUP_BONUS) */
+  grantSignupBonus(userId: string) {
+    return this.addCredits(userId, pricing.SIGNUP_BONUS, {
+      type: 'signup_bonus', description: `가입 보너스 ◈${pricing.SIGNUP_BONUS}`,
+    });
+  }
+
+  // ── 가격 계산(단일소스 위임) ──
+  imageCost(model: string, count?: number, isTemplate?: boolean): number {
+    return pricing.imageCost(model, count, isTemplate);
+  }
+  videoCost(duration: number | string, mode?: string, isTemplate?: boolean): number {
+    return pricing.videoCost(duration, mode, isTemplate);
   }
 }
