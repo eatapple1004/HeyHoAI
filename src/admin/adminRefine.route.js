@@ -17,16 +17,16 @@ const { GoogleGenAI } = require('@google/genai');
 const Anthropic = require('@anthropic-ai/sdk');
 const { requireAdmin } = require('../middleware/auth');
 const { query } = require('../db/client');
+const { ensureSchema } = require('../db/ensureSchema');
 const mediaStore = require('../storage/mediaStore');
 
 const router = Router();
 
 // ── 기록(refine_runs) 저장 — 실행 결과를 조회할 수 있게 DB+이미지 파일로 남긴다 ──
 // 이미지는 tmp/images(=/images 정적 서빙)에 저장 → URL /images/<file>. 테이블은 최초 저장 시 자동 생성.
-let _refineTableReady = false;
-async function ensureRefineTable() {
-  if (_refineTableReady) return;
-  await query(`CREATE TABLE IF NOT EXISTS refine_runs (
+// 동시 요청/다중 프로세스에서 CREATE TABLE이 경쟁해 500이 나던 문제 → 공용 ensureSchema로 통일.
+const REFINE_RUNS_SQL = [
+  `CREATE TABLE IF NOT EXISTS refine_runs (
     id         UUID PRIMARY KEY,
     user_id    UUID,
     goal       TEXT,
@@ -40,9 +40,11 @@ async function ensureRefineTable() {
     converged  BOOLEAN NOT NULL DEFAULT false,
     max_iters  INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  );
-  CREATE INDEX IF NOT EXISTS idx_refine_runs_created ON refine_runs(created_at DESC);`);
-  _refineTableReady = true;
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_refine_runs_created ON refine_runs(created_at DESC);`,
+];
+function ensureRefineTable() {
+  return ensureSchema('refine_runs', REFINE_RUNS_SQL);
 }
 
 // iters = [{ i, b64, mime, okCount, total, scores, converged }] → 파일로 쓰고 DB에 기록. runId 반환(실패 시 null).
