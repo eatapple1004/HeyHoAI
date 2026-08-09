@@ -754,66 +754,19 @@ const postEnhanceHandler = async (req, res, next) => {
 // ─── 툴 카탈로그 (툴별 폼 스키마 정본 — 스튜디오가 폼을 동적 렌더) ───
 // 노출 = 레지스트리 enabled 큐레이션(단일 정본). 이미지·비디오 동일 규칙.
 //   비디오 = enabled 툴만(현재 kling). 프론트는 카탈로그에 비디오가 있으면 Image/Video 타입 선택 노출.
-const getToolsHandler = (_req, res) => {
-  const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
-  res.json({
-    success: true,
-    data: {
-      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
-      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
-    },
-  });
-};
+const getToolsHandler = (_req, res, next) => sendRead(res, next, () => reads.tools());
 
 // ─── 스타일 프리셋 목록 ───
-const getStylesHandler = async (_req, res, next) => {
-  try {
-    const data = await styleRepo.findAll();
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-};
+const getStylesHandler = (_req, res, next) => sendRead(res, next, () => reads.styles());
 
 // ─── 프롬프트 목록 ───
-const getPromptsHandler = async (req, res, next) => {
-  try {
-    const { limit, offset } = req.query;
-    const teamId = await teamCredit.activeTeamId(req.user.id);
-    const data = await promptRepo.findAll({
-      userId: teamId ? undefined : req.user.id,
-      teamId,
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
-    });
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-};
+const getPromptsHandler = (req, res, next) => sendRead(res, next, () => reads.prompts(req.user.id, req.query));
 
 // ─── 프롬프트 상세 + 결과물 ───
-const getPrompts2Handler = async (req, res, next) => {
-  try {
-    const prompt = await promptRepo.findByIdx(req.params.idx);
-    if (!prompt) return res.status(404).json({ success: false, error: 'Prompt not found' });
-    await assertPromptOwned(prompt.idx, req.user.id);
-    const results = await resultRepo.findByPromptIdx(prompt.idx);
-    res.json({ success: true, data: { prompt, results } });
-  } catch (err) { next(err); }
-};
+const getPrompts2Handler = (req, res, next) => sendRead(res, next, () => reads.promptDetail(req.user.id, req.params.idx));
 
 // ─── 결과물 목록 ───
-const getResultsHandler = async (req, res, next) => {
-  try {
-    const { limit, offset, type } = req.query;
-    const teamId = await teamCredit.activeTeamId(req.user.id);
-    const data = await resultRepo.findAll({
-      userId: teamId ? undefined : req.user.id,
-      teamId,
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
-      type: (type === 'reel' || type === 'photo') ? type : undefined,
-    });
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-};
+const getResultsHandler = (req, res, next) => sendRead(res, next, () => reads.results(req.user.id, req.query));
 
 // ─── 커뮤니티 피드(Explore): 모든 유저의 공개 결과물 (자동공개) ───
 const getCommunityHandler = async (req, res, next) => {
@@ -1025,19 +978,7 @@ const deleteCreationsHandler = async (req, res, next) => {
 };
 
 // ─── 크리에이터 Overview(γ 넛지): 총 좋아요 + 미등록 인기 creation Top ───
-const getCreatorOverviewHandler = async (req, res, next) => {
-  try {
-    const d = await resultRepo.creatorLikeOverview(req.user.id);
-    res.json({ success: true, data: {
-      totalLikes: d.totalLikes,
-      topLikable: d.topLikable.map((r) => ({
-        idx: r.idx,
-        url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
-        likes: r.likes_count || 0,
-      })),
-    } });
-  } catch (err) { next(err); }
-};
+const getCreatorOverviewHandler = (req, res, next) => sendRead(res, next, () => reads.creatorOverview(req.user.id));
 
 // ─── 리뷰 목록 ───
 const getReviewsHandler = async (req, res, next) => {
@@ -1108,34 +1049,12 @@ const postVideoAsyncHandler = async (req, res, next) => {
 };
 
 // (2026-07-30) 진행 중 릴 목록 — 스튜디오 '내 크리에이션' 재연결용(ugc /jobs 와 같은 목적).
-const getVideoJobsHandler = async (req, res, next) => {
-  try {
-    const rows = await videoJobService.listActiveJobs(req.user.id);
-    res.json({ success: true, data: rows });
-  } catch (err) { next(err); }
-};
+const getVideoJobsHandler = (req, res, next) => sendRead(res, next, () => reads.videoJobs(req.user.id));
 
-const getVideoJobs2Handler = async (req, res, next) => {
-  try {
-    const job = await videoJobService.getJob(req.params.id, req.user.id);
-    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({
-      success: true,
-      // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
-      //   상세(/creation)가 아니라 뷰어 라이트박스로 열렸다(faceswap 응답은 이미 노출하고 있었다).
-      data: { status: job.status, url: job.result_url, resultIdx: job.result_idx || null, error: job.error, duration: job.duration },
-    });
-  } catch (err) { next(err); }
-};
+const getVideoJobs2Handler = (req, res, next) => sendRead(res, next, () => reads.videoJob(req.user.id, req.params.id));
 
 // On Model faceswap(stage-2) 잡 상태 — FE 폴링용. 워커가 스왑 완료하면 status=succeeded + result_url.
-const getFaceswapJobsHandler = async (req, res, next) => {
-  try {
-    const job = await faceswapRepo.findById(req.params.id);
-    if (!job || job.user_id !== req.user.id) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({ success: true, data: { status: job.status, url: job.result_url, resultIdx: job.result_idx, error: job.error } });
-  } catch (err) { next(err); }
-};
+const getFaceswapJobsHandler = (req, res, next) => sendRead(res, next, () => reads.faceswapJob(req.user.id, req.params.id));
 
 // ─── UGC 영상 엔진 (제품+컨셉 → 화보/광고 릴) ───
 //   2단계: /ugc/script(무료 대본 미리보기) → /ugc/render(검토 후 과금+렌더). 잡=ugc_jobs 테이블.
@@ -1320,36 +1239,13 @@ const postUgcAsyncHandler = async (req, res, next) => {
 
 // 진행 중인 내 Ad Video 잡 목록 — 새로고침·이탈 후 클라이언트가 다시 붙기 위한 유일한 통로.
 // (반드시 '/ugc/jobs/:id' 보다 위에 둘 것 — 아래면 'jobs'가 :id로 먹힌다)
-const getUgcJobsHandler = async (req, res, next) => {
-  try {
-    // data = 렌더 중 / pending = 완성됐지만 미저장(draft). 레일 배지 = 둘의 합 = "나를 기다리는 것".
-    // editable = 저장됐고 대본이 있어 되불러 편집 가능한 result_idx들(피드 [Edit] 노출 판단).
-    const [rows, pending, editable] = await Promise.all([
-      ugcVideoService.listActiveJobs(req.user.id),
-      ugcVideoService.listPendingReview(req.user.id),
-      ugcVideoService.listEditableResultIdxs(req.user.id),
-    ]);
-    res.json({ success: true, data: rows, pending, editable });
-  } catch (err) { next(err); }
-};
+const getUgcJobsHandler = (req, res, next) => sendRead(res, next, () => reads.ugcJobs(req.user.id), (o) => ({ success: true, ...o }));
 
 // 저장된 결과로 잡 되찾기 — 피드 카드([Edit])가 아는 열쇠는 result_idx 하나뿐.
 //   ':id'는 한 세그먼트만 먹으므로 경로가 겹치지 않지만, 읽는 순서를 위해 위에 둔다.
-const getUgcJobsByResultHandler = async (req, res, next) => {
-  try {
-    const job = await ugcVideoService.getJobByResultIdx(req.params.idx, req.user.id);
-    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({ success: true, data: job });
-  } catch (err) { next(err); }
-};
+const getUgcJobsByResultHandler = (req, res, next) => sendRead(res, next, () => reads.ugcJobByResult(req.user.id, req.params.idx));
 
-const getUgcJobs2Handler = async (req, res, next) => {
-  try {
-    const job = await ugcVideoService.getJob(req.params.id, req.user.id);
-    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({ success: true, data: job });
-  } catch (err) { next(err); }
-};
+const getUgcJobs2Handler = (req, res, next) => sendRead(res, next, () => reads.ugcJob(req.user.id, req.params.id));
 
 // Save & finish / 이탈 시 자동 — draft를 갤러리·Explore에 확정 저장(멱등). sendBeacon도 이 라우트 사용.
 //   D: 본문에 미굽힌 편집(order/removed/edits/setVersions)이 있으면 그 상태로 먼저 굽고(무과금) 커밋
@@ -1818,17 +1714,7 @@ const postBgmUploadHandler = (req, res) => {
   res.json({ success: true, data: { filename: req.file.filename, url: `/bgm/${req.file.filename}` } });
 };
 
-const getBgmListHandler = (_req, res) => {
-  if (!fs.existsSync(bgmDir)) return res.json({ success: true, data: [] });
-  const files = fs.readdirSync(bgmDir)
-    .filter(f => /\.(mp3|wav|m4a|ogg|aac)$/i.test(f))
-    .map(f => {
-      const stat = fs.statSync(path.join(bgmDir, f));
-      return { filename: f, url: `/bgm/${f}`, size: Math.round(stat.size / 1024) + 'KB', createdAt: stat.mtime.toISOString() };
-    })
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.json({ success: true, data: files });
-};
+const getBgmListHandler = (_req, res, next) => sendRead(res, next, () => reads.bgmList());
 
 const deleteBgmHandler = (req, res) => {
   const filePath = path.join(bgmDir, path.basename(req.params.filename)); // #2 보안: basename으로 path traversal 차단(%2f 디코드 후 '../' 방지)
@@ -1936,6 +1822,146 @@ const getLogsFilesHandler = (_req, res) => {
   res.json({ success: true, data: files });
 };
 
+// ── 조회 API (reads) — 레거시 라우트와 Nest(nest/generate)가 함께 쓰는 단일소스 ──
+//   응답 객체를 만들지 않고 **데이터만 반환**한다(= Spring @Service). 404 등은 statusCode 에러로 throw해
+//   레거시 handle()·Nest LegacyErrorFilter가 같은 형식으로 응답한다.
+function readError(statusCode, message) {
+  return Object.assign(new Error(message), { statusCode });
+}
+
+const reads = {
+  /** 사용 가능한 이미지·영상 도구(공개 필드만) */
+  tools() {
+    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
+    return {
+      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
+      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
+    };
+  },
+
+  /** 스타일 프리셋 전체 */
+  styles() {
+    return styleRepo.findAll();
+  },
+
+  /** 내(또는 활성 팀) 프롬프트 목록 */
+  async prompts(userId, { limit, offset } = {}) {
+    const teamId = await teamCredit.activeTeamId(userId);
+    return promptRepo.findAll({
+      userId: teamId ? undefined : userId,
+      teamId,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+  },
+
+  /** 프롬프트 상세 + 그 결과물(소유 검증) */
+  async promptDetail(userId, idx) {
+    const prompt = await promptRepo.findByIdx(idx);
+    if (!prompt) throw readError(404, 'Prompt not found');
+    await assertPromptOwned(prompt.idx, userId);
+    const results = await resultRepo.findByPromptIdx(prompt.idx);
+    return { prompt, results };
+  },
+
+  /** 내(또는 활성 팀) 생성 결과 목록 */
+  async results(userId, { limit, offset, type } = {}) {
+    const teamId = await teamCredit.activeTeamId(userId);
+    return resultRepo.findAll({
+      userId: teamId ? undefined : userId,
+      teamId,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+      type: (type === 'reel' || type === 'photo') ? type : undefined,
+    });
+  },
+
+  /** 크리에이터 좋아요 개요(총 좋아요 + 상위 결과물) */
+  async creatorOverview(userId) {
+    const d = await resultRepo.creatorLikeOverview(userId);
+    return {
+      totalLikes: d.totalLikes,
+      topLikable: d.topLikable.map((r) => ({
+        idx: r.idx,
+        url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+        likes: r.likes_count || 0,
+      })),
+    };
+  },
+
+  /** 진행 중인 영상 작업 */
+  videoJobs(userId) {
+    return videoJobService.listActiveJobs(userId);
+  },
+
+  /** 영상 작업 단건 */
+  async videoJob(userId, id) {
+    const job = await videoJobService.getJob(id, userId);
+    if (!job) throw readError(404, 'Job not found');
+    // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
+    //   상세(/creation)가 아니라 뷰어 라이트박스로 열렸다(faceswap 응답은 이미 노출하고 있었다).
+    return { status: job.status, url: job.result_url, resultIdx: job.result_idx || null, error: job.error, duration: job.duration };
+  },
+
+  /** faceswap 작업 단건(소유 검증) */
+  async faceswapJob(userId, id) {
+    const job = await faceswapRepo.findById(id);
+    if (!job || job.user_id !== userId) throw readError(404, 'Job not found');
+    return { status: job.status, url: job.result_url, resultIdx: job.result_idx, error: job.error };
+  },
+
+  /**
+   * UGC 작업 레일 — data = 렌더 중 / pending = 완성됐지만 미저장(draft). 배지 = 둘의 합.
+   * editable = 저장됐고 대본이 있어 되불러 편집 가능한 result_idx들(피드 [Edit] 노출 판단).
+   * (data 외 pending·editable은 응답 최상위 필드라 호출측이 펼쳐서 내려준다)
+   */
+  async ugcJobs(userId) {
+    const [rows, pending, editable] = await Promise.all([
+      ugcVideoService.listActiveJobs(userId),
+      ugcVideoService.listPendingReview(userId),
+      ugcVideoService.listEditableResultIdxs(userId),
+    ]);
+    return { data: rows, pending, editable };
+  },
+
+  /** 결과물 idx로 UGC 작업 찾기 */
+  async ugcJobByResult(userId, idx) {
+    const job = await ugcVideoService.getJobByResultIdx(idx, userId);
+    if (!job) throw readError(404, 'Job not found');
+    return job;
+  },
+
+  /** UGC 작업 단건 */
+  async ugcJob(userId, id) {
+    const job = await ugcVideoService.getJob(id, userId);
+    if (!job) throw readError(404, 'Job not found');
+    return job;
+  },
+
+  /** 업로드된 BGM 목록(최신순) */
+  bgmList() {
+    if (!fs.existsSync(bgmDir)) return [];
+    return fs.readdirSync(bgmDir)
+      .filter((f) => /\.(mp3|wav|m4a|ogg|aac)$/i.test(f))
+      .map((f) => {
+        const stat = fs.statSync(path.join(bgmDir, f));
+        return { filename: f, url: `/bgm/${f}`, size: Math.round(stat.size / 1024) + 'KB', createdAt: stat.mtime.toISOString() };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+};
+
+// 조회 라우트용 얇은 어댑터 — statusCode 에러는 레거시 형식으로, 나머지는 errorHandler로.
+function sendRead(res, next, run, wrap) {
+  Promise.resolve()
+    .then(run)
+    .then((out) => res.json(wrap ? wrap(out) : { success: true, data: out }))
+    .catch((err) => {
+      if (err && err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+      next(err);
+    });
+}
+
 // ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
 router.post('/', upload.array('referenceImages', 14), postRootHandler);
 router.post('/caption', postCaptionHandler);
@@ -2035,3 +2061,5 @@ module.exports.handlers = {
 module.exports.upload = upload;
 module.exports.bgmUpload = bgmUpload;
 module.exports.UGC_MAX_PRODUCT_IMAGES = UGC_MAX_PRODUCT_IMAGES;
+// 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
+module.exports.reads = reads;

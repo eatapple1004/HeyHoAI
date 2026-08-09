@@ -13,6 +13,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 export const generateHandlers = generateRoute.handlers;
+// 조회 API — 데이터만 반환하는 단일소스(@Res() 위임 없이 컨트롤러가 직접 호출).
+const reads = generateRoute.reads;
 export const UGC_MAX_PRODUCT_IMAGES = generateRoute.UGC_MAX_PRODUCT_IMAGES;
 
 // 레거시와 동일한 multer 설정 — 저장경로(tmp/uploads)·uuid 파일명·10MB.
@@ -43,4 +45,20 @@ export class GenerateService {
   run(name: string, req: any, res: any, next: any) {
     return generateHandlers[name](req, res, next);
   }
+
+  // ── 조회(reads) — 응답은 Nest가 직렬화한다 ──
+  tools() { return reads.tools(); }
+  styles() { return reads.styles(); }
+  prompts(userId: string, q: any) { return reads.prompts(userId, q || {}); }
+  promptDetail(userId: string, idx: string) { return reads.promptDetail(userId, idx); }
+  results(userId: string, q: any) { return reads.results(userId, q || {}); }
+  creatorOverview(userId: string) { return reads.creatorOverview(userId); }
+  videoJobs(userId: string) { return reads.videoJobs(userId); }
+  videoJob(userId: string, id: string) { return reads.videoJob(userId, id); }
+  faceswapJob(userId: string, id: string) { return reads.faceswapJob(userId, id); }
+  // { data, pending, editable } — pending·editable은 응답 최상위 필드
+  ugcJobs(userId: string) { return reads.ugcJobs(userId); }
+  ugcJobByResult(userId: string, idx: string) { return reads.ugcJobByResult(userId, idx); }
+  ugcJob(userId: string, id: string) { return reads.ugcJob(userId, id); }
+  bgmList() { return reads.bgmList(); }
 }
