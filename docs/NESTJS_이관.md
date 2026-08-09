@@ -124,12 +124,20 @@ diff <(curl -s :3002/api/... -H "$JWT") <(curl -s :3003/api/... -H "$JWT")
 ### 자동화 — `scripts/nest_parity_check.js`
 위 diff를 케이스 목록으로 고정한 스크립트. 두 서버를 띄운 뒤:
 ```bash
-node scripts/nest_parity_check.js --token <user JWT> --admin-token <admin JWT>
-# --only /api/generate  로 일부만, 불일치 있으면 종료코드 1
+node scripts/nest_parity_check.js --token <user JWT> --admin-token <admin JWT> --mutations --seed
+# --only /api/generate  일부만 · --verbose  SKIP 사유 · 불일치 있으면 종료코드 1
 ```
-조회·에러 경로·권한(401/403) 케이스를 상태코드 + 본문 바이트로 비교한다.
-비결정적 응답(`ugc/voice-preview` 같은 생성 오디오)은 상태·Content-Type만 본다.
-**도메인을 새로 포팅하거나 위임을 네이티브로 바꿀 때마다 케이스를 추가할 것.**
+조회·에러 경로·권한(401/403)을 상태코드 + 본문 **바이트** 비교. 비결정적 응답(`ugc/voice-preview` 생성 오디오)은 상태·Content-Type만 본다.
+**도메인을 새로 포팅하거나 위임을 네이티브로 바꿀 때마다 `CASES`/`MUTATIONS`에 케이스를 추가할 것.**
+
+#### 동적 값(계정 id·프롬프트 idx 등)을 다루는 3가지 장치
+| 장치 | 설명 |
+|---|---|
+| **① 플레이스홀더 + 런타임 해석** | 경로에 `{accountId}`·`{templateId}`·`{resultIdx}` 처럼 쓰면 `RESOLVERS`가 목록 API로 실제 값을 찾아 치환. **두 서버가 같은 DB**를 보므로 같은 id를 양쪽에 던질 수 있다. 못 찾으면 FAIL이 아니라 **SKIP**. 계정 하위(media·post-queue)는 `scanAccounts`가 데이터가 실제로 있는 계정을 찾아 `{mediaAccountId}` 같은 파생 키까지 채운다 |
+| **② 정규화 비교(`normalize`)** | 쓰기는 서버마다 **다른 행**이 생기므로(uuid·시각·`secondsLeft`·초대 code) 마스킹 후 비교. `--mutations` 케이스에 적용 |
+| **③ 픽스처 seed/cleanup** | `--seed` 는 비어 있어 SKIP되는 것(팀·프롬프트·결과물)을 만든다. 팀은 API로, 프롬프트/결과물은 외부 생성 API가 필요해 리포지토리로 직접 삽입하고 **끝나면 되돌린다**. `--mutations` 케이스도 각자 만든 것을 `cleanup` 에서 지운다 |
+
+실측: 시드 없이 **92 통과 / 5 SKIP**, `--mutations --seed` 로 **111 통과 / 0 SKIP**.
 
 ---
 

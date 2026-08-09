@@ -3,7 +3,7 @@
  * NestJS 이관 parity 체크 — Nest(dist/main.js)와 레거시(src/index.js) 응답이 같은지 자동 비교.
  *
  * 이관 작업의 표준 검증(docs/NESTJS_이관.md §6)을 스크립트로 고정한 것.
- * 두 서버를 **직접 띄운 뒤** 같은 JWT로 같은 요청을 보내고, 상태코드 + 본문을 바이트 비교한다.
+ * 두 서버를 **직접 띄운 뒤** 같은 JWT로 같은 요청을 보내고 상태코드 + 본문을 비교한다.
  *
  * 사용법:
  *   # 1) 두 서버를 각각 띄운다(프레시 로컬 DB 권장 — createdb doppia_migtest && npm run migrate:dev)
@@ -13,25 +13,36 @@
  *   node scripts/nest_parity_check.js --token <JWT> [--admin-token <JWT>]
  *
  * 옵션:
- *   --nest <url>    기본 http://localhost:3002
- *   --legacy <url>  기본 http://localhost:3003
- *   --only <substr> 경로에 substr이 포함된 케이스만 실행
+ *   --nest <url>     기본 http://localhost:3002
+ *   --legacy <url>   기본 http://localhost:3003
+ *   --only <substr>  경로에 substr이 포함된 케이스만 실행
+ *   --mutations      쓰기(POST/PATCH/DELETE) parity까지 실행 — 픽스처를 만들고 지운다
+ *   --seed           비어 있는 픽스처를 만들어 SKIP을 줄인다(팀·프롬프트·결과물). 끝나면 되돌린다
+ *   --verbose        SKIP 사유까지 출력
  *
- * 종료코드: 불일치가 하나라도 있으면 1.
+ * 종료코드: 불일치가 하나라도 있으면 1. (SKIP은 실패가 아님)
  *
- * ⚠️ 비결정적 응답(생성 오디오·랜덤 id 등)은 NONDETERMINISTIC에 넣어 상태코드/Content-Type만 비교한다.
+ * ── 동적 값을 다루는 방법 (세 가지) ─────────────────────────────────────────
+ *  ① 플레이스홀더: 경로에 `{accountId}` 처럼 쓰면 RESOLVERS가 목록 API로 실제 값을 찾아 치환한다.
+ *     두 서버가 **같은 DB**를 보므로 같은 id를 양쪽에 던질 수 있다. 못 찾으면 그 케이스는 SKIP.
+ *  ② 정규화: 쓰기는 서버마다 다른 행이 생기므로(uuid·시각이 다름) normalize()로 마스킹 후 비교한다.
+ *  ③ 픽스처: --mutations 는 각 서버에 자기 몫의 데이터를 만들고 비교한 뒤 cleanup 에서 지운다.
  */
 const args = process.argv.slice(2);
 const opt = (name, dflt) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : dflt;
 };
+const flag = (name) => args.includes(`--${name}`);
 
 const NEST = opt('nest', 'http://localhost:3002');
 const LEGACY = opt('legacy', 'http://localhost:3003');
 const TOKEN = opt('token', process.env.PARITY_TOKEN || '');
 const ADMIN_TOKEN = opt('admin-token', process.env.PARITY_ADMIN_TOKEN || TOKEN);
 const ONLY = opt('only', '');
+const RUN_MUTATIONS = flag('mutations');
+const SEED = flag('seed');
+const VERBOSE = flag('verbose');
 
 if (!TOKEN) {
   console.error('토큰이 필요합니다: --token <JWT> (관리자 케이스는 --admin-token)');
@@ -39,7 +50,91 @@ if (!TOKEN) {
   process.exit(2);
 }
 
-/** 케이스: [method, path, {admin?, query?, body?}] — GET/조회 위주(부수효과 없는 것만) */
+// ─────────────────────────────────────────────────────────────────────────────
+// 요청 헬퍼
+// ─────────────────────────────────────────────────────────────────────────────
+async function hit(base, method, path, o = {}) {
+  const headers = {};
+  if (!o.noAuth) headers.Authorization = `Bearer ${o.admin ? ADMIN_TOKEN : TOKEN}`;
+  let body;
+  if (o.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(o.body);
+  }
+  const res = await fetch(base + path, { method, headers, body });
+  const ct = (res.headers.get('content-type') || '').split(';')[0];
+  const text = ct.startsWith('audio/') || ct.startsWith('image/') || ct.startsWith('video/')
+    ? `<binary ${ct}>` : await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch (_) {}
+  return { status: res.status, ct, body: text, json };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ① 플레이스홀더 해석 — 목록 API에서 실제 id/idx를 찾아 ctx에 채운다.
+//    두 서버가 같은 DB를 보므로 **레거시 한쪽에서만** 조회하면 된다(읽기 전용).
+//    못 찾으면 undefined → 해당 케이스는 SKIP 처리.
+// ─────────────────────────────────────────────────────────────────────────────
+const RESOLVERS = {
+  accountId:   async (c) => (await pick('/api/accounts', (d) => d[0]?.id)),
+  characterId: async (c) => (await pick('/api/characters', (d) => d[0]?.id)),
+  teamId:      async (c) => (await pick('/api/teams', (d) => d[0]?.id)),
+  templateId:  async (c) => (await pick('/api/marketplace/owned', (d) => d[0]?.id)),
+  promptIdx:   async (c) => (await pick('/api/generate/prompts', (d) => d[0]?.idx)),
+  resultIdx:   async (c) => (await pick('/api/generate/results', (d) => d[0]?.idx)),
+  recipeId:    async (c) => (await pick('/api/recipes', (d) => d[0]?.id)),
+  themeSlug:   async (c) => (await pick('/api/marketplace/themes', (d) => d[0]?.slug)),
+  // 계정 하위 리소스 — 첫 계정에 데이터가 없을 수 있으므로 **계정들을 훑어** 실제로 있는 걸 찾는다.
+  //   찾은 계정을 mediaAccountId/queueAccountId 로도 남겨 경로에 함께 쓸 수 있게 한다.
+  mediaId:     (c) => scanAccounts(c, 'media', 'mediaAccountId'),
+  queueId:     (c) => scanAccounts(c, 'post-queue', 'queueAccountId'),
+  proposalId:  async (c) => (await pick('/api/admin/proposal/list', (d) => d[0]?.id, { admin: true, key: 'items' })),
+};
+const RESOLVE_ORDER = ['accountId', 'characterId', 'teamId', 'templateId', 'promptIdx', 'resultIdx', 'recipeId', 'themeSlug', 'mediaId', 'queueId', 'proposalId'];
+
+/** 계정 목록을 훑어 하위 리소스(media·post-queue)가 있는 첫 계정을 찾는다. */
+async function scanAccounts(ctx, sub, accountKey) {
+  const r = await hit(LEGACY, 'GET', '/api/accounts');
+  const accounts = (r.json && r.json.data) || [];
+  for (const a of accounts.slice(0, 10)) {
+    const sr = await hit(LEGACY, 'GET', `/api/accounts/${a.id}/${sub}`);
+    const first = sr.json && Array.isArray(sr.json.data) ? sr.json.data[0] : null;
+    if (first && first.id) { ctx[accountKey] = a.id; return first.id; }
+  }
+  return undefined;
+}
+
+async function pick(path, fn, { admin = false, key = 'data' } = {}) {
+  const r = await hit(LEGACY, 'GET', path, { admin });
+  if (r.status !== 200 || !r.json) return undefined;
+  const arr = r.json[key];
+  return Array.isArray(arr) ? fn(arr) : undefined;
+}
+
+function fill(path, ctx) {
+  const missing = [];
+  const out = path.replace(/\{(\w+)\}/g, (_, k) => {
+    if (ctx[k] === undefined || ctx[k] === null) { missing.push(k); return `{${k}}`; }
+    return String(ctx[k]);
+  });
+  return { path: out, missing };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ② 정규화 — 쓰기 비교용. 서버마다 달라지는 값(uuid·시각·잔여초·자동증가 id)을 마스킹.
+// ─────────────────────────────────────────────────────────────────────────────
+function normalize(text) {
+  return String(text)
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')
+    .replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/g, '<ts>')
+    .replace(/"(idx|id|sort_order|sortOrder|secondsLeft|expiresAt|createdAt|created_at|updated_at)":\s*("?[^",}]*"?)/g, '"$1":<masked>')
+    .replace(/"name":"(parity|PARITY)[^"]*"/g, '"name":"<fixture>"')
+    .replace(/code=[A-Za-z0-9_-]+/g, 'code=<code>');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 읽기 케이스 — [method, path, opts]. path에 {placeholder} 사용 가능.
+// ─────────────────────────────────────────────────────────────────────────────
 const CASES = [
   // 공통·과금
   ['GET', '/api/pricing'],
@@ -53,6 +148,8 @@ const CASES = [
   // 팀·추천
   ['GET', '/api/teams'],
   ['GET', '/api/teams/context'],
+  ['GET', '/api/teams/{teamId}'],
+  ['GET', '/api/teams/{teamId}/credits/ledger?limit=5'],
   ['GET', '/api/affiliate'],
   // 템플릿·스튜디오·마켓
   ['GET', '/api/recipes'],
@@ -60,6 +157,9 @@ const CASES = [
   ['GET', '/api/studio/themes'],
   ['GET', '/api/marketplace/templates'],
   ['GET', '/api/marketplace/templates?feed=1'],
+  ['GET', '/api/marketplace/templates?theme={themeSlug}'],
+  ['GET', '/api/marketplace/templates/{templateId}'],
+  ['GET', '/api/marketplace/templates/{templateId}/creations'],
   ['GET', '/api/marketplace/themes'],
   ['GET', '/api/marketplace/me'],
   ['GET', '/api/marketplace/earnings'],
@@ -70,30 +170,54 @@ const CASES = [
   ['GET', '/api/template-data'],
   // 캐릭터·미디어
   ['GET', '/api/characters'],
+  ['GET', '/api/characters/{characterId}'],
+  ['GET', '/api/characters/{characterId}/images'],
+  ['GET', '/api/characters/{characterId}/images/jobs'],
+  ['GET', '/api/characters/{characterId}/videos'],
+  ['GET', '/api/characters/{characterId}/videos/jobs'],
+  ['GET', '/api/characters/{characterId}/visual-presets'],
+  ['GET', '/api/characters/{characterId}/contents'],
+  ['GET', '/api/characters/{characterId}/publish-jobs'],
   ['GET', '/api/visuals/categories'],
   ['GET', '/api/visuals/attributes'],
   // 생성 엔진(조회)
   ['GET', '/api/generate/tools'],
   ['GET', '/api/generate/styles'],
   ['GET', '/api/generate/prompts'],
+  ['GET', '/api/generate/prompts/{promptIdx}'],
   ['GET', '/api/generate/results'],
   ['GET', '/api/generate/results?type=reel'],
   ['GET', '/api/generate/community'],
+  ['GET', '/api/generate/creations/{resultIdx}'],
   ['GET', '/api/generate/creator-overview'],
   ['GET', '/api/generate/reviews'],
   ['GET', '/api/generate/video/jobs'],
   ['GET', '/api/generate/ugc/jobs'],
+  ['GET', '/api/generate/ugc/jobs/by-result/{resultIdx}'],
   ['GET', '/api/generate/bgm/list'],
   ['GET', '/api/generate/images'],
   ['GET', '/api/generate/logs/files'],
-  // 계정(조회)
+  ['GET', '/api/generate/ugc/voice-preview'],   // 비결정적 — 상태/타입만
+  // 계정
   ['GET', '/api/accounts'],
+  ['GET', '/api/accounts/{accountId}'],
+  ['GET', '/api/accounts/{accountId}/base-photo'],
+  ['GET', '/api/accounts/{accountId}/reel-templates'],
+  ['GET', '/api/accounts/{accountId}/outfit-prompts'],
+  ['GET', '/api/accounts/{accountId}/post-queue'],
+  ['GET', '/api/accounts/{accountId}/post-queue?status=pending'],
+  ['GET', '/api/accounts/{accountId}/media'],
+  ['GET', '/api/accounts/{accountId}/media?limit=1'],
+  ['GET', '/api/accounts/{mediaAccountId}/media'],        // 미디어가 실제로 있는 계정
+  ['GET', '/api/accounts/{queueAccountId}/post-queue'],   // 큐 항목이 실제로 있는 계정
   // 체험·관리자
   ['GET', '/api/trial/me'],
   ['GET', '/api/admin/trials', { admin: true }],
   ['GET', '/api/admin/stats', { admin: true }],
   ['GET', '/api/admin/creations?limit=5', { admin: true }],
   ['GET', '/api/admin/proposal/list', { admin: true }],
+  ['GET', '/api/admin/proposal/results?limit=3', { admin: true }],
+  ['GET', '/api/admin/proposal/saved/{proposalId}', { admin: true }],
   ['GET', '/api/admin/refine/runs', { admin: true }],
   // 에러 경로 — 형식·상태코드가 갈리기 쉬운 곳
   ['GET', '/api/generate/prompts/999999'],
@@ -113,7 +237,7 @@ const CASES = [
   ['GET', '/api/accounts/00000000-0000-0000-0000-000000000000'],
   ['GET', '/api/admin/proposal/saved/00000000-0000-0000-0000-000000000000', { admin: true }],
   ['GET', '/api/admin/refine/runs/00000000-0000-0000-0000-000000000000', { admin: true }],
-  // 인증·권한 — 토큰 없이/일반 유저로
+  // 인증·권한
   ['GET', '/api/credits', { noAuth: true }],
   ['GET', '/api/generate/tools', { noAuth: true }],
   ['GET', '/api/admin/stats'],                    // 일반 유저 → 403
@@ -123,50 +247,230 @@ const CASES = [
 /** 본문이 매 호출 달라지는 경로 — 상태코드·Content-Type만 비교 */
 const NONDETERMINISTIC = ['/api/generate/ugc/voice-preview'];
 
-async function hit(base, method, path, o = {}) {
-  const headers = {};
-  if (!o.noAuth) headers.Authorization = `Bearer ${o.admin ? ADMIN_TOKEN : TOKEN}`;
-  const res = await fetch(base + path, { method, headers });
-  const ct = res.headers.get('content-type') || '';
-  const body = ct.startsWith('audio/') || ct.startsWith('image/') || ct.startsWith('video/')
-    ? `<binary ${ct}>` : await res.text();
-  return { status: res.status, ct: ct.split(';')[0], body };
+// ─────────────────────────────────────────────────────────────────────────────
+// ③ 쓰기 parity (--mutations) — 서버별로 자기 픽스처를 만들고, 정규화 비교 후 지운다.
+//    run(base) 은 { status, body } 를 돌려주고, cleanup(base, state) 이 뒷정리한다.
+// ─────────────────────────────────────────────────────────────────────────────
+const MUTATIONS = [
+  {
+    name: 'POST /api/teams → 생성 후 삭제',
+    async run(base, tag) {
+      const r = await hit(base, 'POST', '/api/teams', { body: { name: `parity-${tag}` } });
+      return { r, state: r.json?.data?.id };
+    },
+    cleanup: (base, id) => id && hit(base, 'DELETE', `/api/teams/${id}`),
+  },
+  {
+    name: 'POST /api/teams 이름 누락 → 400',
+    run: (base) => hit(base, 'POST', '/api/teams', { body: { name: '  ' } }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/studio/themes → 생성 후 삭제',
+    async run(base, tag) {
+      const r = await hit(base, 'POST', '/api/studio/themes', { body: { name: `parity-${tag}`, group: 'Shopping' } });
+      return { r, state: r.json?.data?.id };
+    },
+    cleanup: (base, id) => id && hit(base, 'DELETE', `/api/studio/themes/${id}`),
+  },
+  {
+    name: 'PATCH /api/studio/themes/:id 변경내용 없음 → 400',
+    run: (base) => hit(base, 'PATCH', '/api/studio/themes/00000000-0000-0000-0000-000000000000', { body: {} }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/template-data → 생성 후 삭제',
+    async run(base, tag) {
+      const r = await hit(base, 'POST', '/api/template-data', { body: { templateType: 'studio', name: `parity-${tag}`, data: { a: 1 } } });
+      return { r, state: r.json?.data?.id };
+    },
+    cleanup: (base, id) => id && hit(base, 'DELETE', `/api/template-data/${id}`),
+  },
+  {
+    name: 'POST /api/template-data 필수값 누락 → 400',
+    run: (base) => hit(base, 'POST', '/api/template-data', { body: { name: 'x' } }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/subscription/offer/start (멱등)',
+    run: (base) => hit(base, 'POST', '/api/subscription/offer/start').then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/subscription/upgrade (비admin → 501 comingSoon)',
+    run: (base) => hit(base, 'POST', '/api/subscription/upgrade', { body: { plan: 'pro' } }).then((r) => ({ r })),
+  },
+  {
+    name: 'PATCH /api/brand-kit (색상 변경, 멱등)',
+    run: (base) => hit(base, 'PATCH', '/api/brand-kit', { body: { primaryColor: '#123456' } }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/generate 필수값 누락 → 400',
+    run: (base) => hit(base, 'POST', '/api/generate', { body: {} }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/marketplace/templates 필수값 누락 → 400',
+    run: (base) => hit(base, 'POST', '/api/marketplace/templates', { body: { name: 'x' } }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/accounts/{accountId}/base-photo mediaId 누락 → 400',
+    needs: ['accountId'],
+    run: (base, tag, ctx) => hit(base, 'POST', `/api/accounts/${ctx.accountId}/base-photo`, { body: {} }).then((r) => ({ r })),
+  },
+  {
+    name: 'PATCH /api/accounts/{accountId}/status 잘못된 값 → 400',
+    needs: ['accountId'],
+    run: (base, tag, ctx) => hit(base, 'PATCH', `/api/accounts/${ctx.accountId}/status`, { body: { status: 'nope' } }).then((r) => ({ r })),
+  },
+  {
+    name: 'POST /api/marketplace/templates/{templateId}/bookmark → 해제 (멱등)',
+    needs: ['templateId'],
+    async run(base, tag, ctx) {
+      const r = await hit(base, 'POST', `/api/marketplace/templates/${ctx.templateId}/bookmark`);
+      await hit(base, 'DELETE', `/api/marketplace/templates/${ctx.templateId}/bookmark`);
+      return { r };
+    },
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ③ 시드(--seed) — 비어 있어서 SKIP 되는 픽스처를 만든다. 만든 것만 되돌린다.
+//    팀은 API로, 프롬프트/결과물은 외부 생성 API 없이 만들 수 없어 DB에 직접 넣는다(테스트 전용).
+// ─────────────────────────────────────────────────────────────────────────────
+async function seed() {
+  const created = { teamId: null, promptIdx: null, userId: null };
+  // 팀 — 목록이 비어 있을 때만
+  const teams = await hit(LEGACY, 'GET', '/api/teams');
+  if (teams.json && Array.isArray(teams.json.data) && teams.json.data.length === 0) {
+    const r = await hit(LEGACY, 'POST', '/api/teams', { body: { name: 'parity-seed' } });
+    created.teamId = r.json?.data?.id || null;
+  }
+  // 프롬프트 + 결과물 — 생성 API는 외부 프로바이더가 필요하므로 리포지토리로 직접 삽입
+  const results = await hit(LEGACY, 'GET', '/api/generate/results');
+  if (results.json && Array.isArray(results.json.data) && results.json.data.length === 0) {
+    try {
+      const { verifyToken } = require('../src/auth/token');
+      const payload = verifyToken(TOKEN);
+      const promptRepo = require('../src/generate/prompt.repository');
+      const resultRepo = require('../src/generate/result.repository');
+      const prompt = await promptRepo.insert({ userId: payload.id, promptText: 'parity-seed prompt', model: 'parity' });
+      await resultRepo.insert({
+        promptIdx: prompt.idx, filePath: 'tmp/images/parity-seed.png',
+        width: 1, height: 1, model: 'parity', metadata: { parity: true },
+      });
+      created.promptIdx = prompt.idx;
+      created.userId = payload.id;
+    } catch (e) {
+      console.log(`   (시드 경고: 프롬프트/결과물 생성 실패 — ${e.message})`);
+    }
+  }
+  return created;
 }
 
+async function unseed(created) {
+  if (created.teamId) await hit(LEGACY, 'DELETE', `/api/teams/${created.teamId}`);
+  if (created.promptIdx) {
+    try {
+      const { query } = require('../src/db/client');
+      await query('DELETE FROM generation_results WHERE prompt_idx = $1', [created.promptIdx]);
+      await query('DELETE FROM prompts WHERE idx = $1', [created.promptIdx]);
+    } catch (_) {}
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 (async () => {
-  const cases = CASES.filter(([, p]) => !ONLY || p.includes(ONLY));
-  let pass = 0;
+  let seeded = null;
+  if (SEED) {
+    seeded = await seed();
+    const made = Object.entries(seeded).filter(([k, v]) => v && k !== 'userId').map(([k]) => k);
+    console.log(`시드: ${made.length ? made.join(', ') + ' 생성' : '추가 생성 없음(이미 데이터 있음)'}`);
+  }
+
+  // ① 컨텍스트 해석
+  const ctx = {};
+  for (const key of RESOLVE_ORDER) {
+    try { ctx[key] = await RESOLVERS[key](ctx); } catch (_) { ctx[key] = undefined; }
+  }
+  // 파생 키(mediaAccountId 등)는 스캔 과정에서 ctx에 함께 들어가므로 분모와 따로 센다.
+  const resolved = Object.entries(ctx).filter(([, v]) => v !== undefined && v !== null);
+  const core = RESOLVE_ORDER.filter((k) => ctx[k] !== undefined && ctx[k] !== null).length;
+  console.log(`컨텍스트 해석: ${core}/${RESOLVE_ORDER.length}${resolved.length > core ? ` (+파생 ${resolved.length - core})` : ''}`
+    + (VERBOSE ? '\n' + resolved.map(([k, v]) => `   ${k} = ${v}`).join('\n') : ''));
+  const unresolved = RESOLVE_ORDER.filter((k) => ctx[k] === undefined || ctx[k] === null);
+  if (unresolved.length) console.log(`   (미해석 → 관련 케이스 SKIP: ${unresolved.join(', ')})`);
+
+  let pass = 0, skip = 0;
   const fails = [];
 
-  for (const [method, path, o = {}] of cases) {
+  // 읽기 케이스
+  console.log('\n── 읽기 parity ──');
+  for (const [method, rawPath, o = {}] of CASES) {
+    const { path, missing } = fill(rawPath, ctx);
+    if (ONLY && !rawPath.includes(ONLY)) continue;
+    if (missing.length) {
+      skip++;
+      if (VERBOSE) console.log(`  - ${method} ${rawPath}  (SKIP: ${missing.join(',')} 없음)`);
+      continue;
+    }
     let n, l;
     try {
       [n, l] = await Promise.all([hit(NEST, method, path, o), hit(LEGACY, method, path, o)]);
     } catch (e) {
-      fails.push({ path, why: `요청 실패: ${e.message} (두 서버가 떠 있는지 확인)` });
+      fails.push({ path: `${method} ${path}`, why: `요청 실패: ${e.message} (두 서버가 떠 있는지 확인)` });
       continue;
     }
-    const nondet = NONDETERMINISTIC.some((p) => path.startsWith(p));
+    const nondet = NONDETERMINISTIC.some((p) => rawPath.startsWith(p));
     const same = nondet
       ? n.status === l.status && n.ct === l.ct
       : n.status === l.status && n.body === l.body;
-    if (same) {
-      pass++;
-      process.stdout.write(`  ✓ ${method} ${path}${nondet ? ' (상태/타입만)' : ''}\n`);
-    } else {
+    if (same) { pass++; console.log(`  ✓ ${method} ${path}${nondet ? ' (상태/타입만)' : ''}`); }
+    else {
       fails.push({
         path: `${method} ${path}`,
-        why: n.status !== l.status
-          ? `상태코드 Nest=${n.status} vs 레거시=${l.status}`
-          : '본문 불일치',
-        nest: n.body.slice(0, 300),
-        legacy: l.body.slice(0, 300),
+        why: n.status !== l.status ? `상태코드 Nest=${n.status} vs 레거시=${l.status}` : '본문 불일치',
+        nest: n.body.slice(0, 300), legacy: l.body.slice(0, 300),
       });
-      process.stdout.write(`  ✗ ${method} ${path}\n`);
+      console.log(`  ✗ ${method} ${path}`);
     }
   }
 
-  console.log(`\n── parity ${pass}/${cases.length} 통과 ──`);
+  // 쓰기 케이스
+  if (RUN_MUTATIONS) {
+    console.log('\n── 쓰기 parity (정규화 비교) ──');
+    for (const m of MUTATIONS) {
+      if (ONLY && !m.name.includes(ONLY)) continue;
+      if (m.needs && m.needs.some((k) => ctx[k] === undefined || ctx[k] === null)) {
+        skip++;
+        if (VERBOSE) console.log(`  - ${m.name}  (SKIP: ${m.needs.join(',')} 없음)`);
+        continue;
+      }
+      let a, b;
+      try {
+        a = await m.run(NEST, 'nest', ctx);
+        b = await m.run(LEGACY, 'legacy', ctx);
+      } catch (e) {
+        fails.push({ path: m.name, why: `실행 실패: ${e.message}` });
+        continue;
+      }
+      const same = a.r.status === b.r.status && normalize(a.r.body) === normalize(b.r.body);
+      if (same) { pass++; console.log(`  ✓ ${m.name}`); }
+      else {
+        fails.push({
+          path: m.name,
+          why: a.r.status !== b.r.status ? `상태코드 Nest=${a.r.status} vs 레거시=${b.r.status}` : '정규화 본문 불일치',
+          nest: normalize(a.r.body).slice(0, 300), legacy: normalize(b.r.body).slice(0, 300),
+        });
+        console.log(`  ✗ ${m.name}`);
+      }
+      // ③ cleanup — 만든 픽스처 제거(각 서버가 만든 것 각각)
+      if (m.cleanup) {
+        try { await m.cleanup(NEST, a.state); await m.cleanup(LEGACY, b.state); } catch (_) {}
+      }
+    }
+  } else {
+    console.log('\n(쓰기 parity는 --mutations 로 실행 — 픽스처를 만들고 지웁니다)');
+  }
+
+  if (seeded) { await unseed(seeded); console.log('\n시드 정리 완료'); }
+
+  console.log(`\n── parity ${pass} 통과 / ${fails.length} 실패 / ${skip} 건너뜀 ──`);
   if (fails.length) {
     console.log('\n실패 상세:');
     for (const f of fails) {
