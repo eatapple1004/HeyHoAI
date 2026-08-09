@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Get, Post, Patch, Delete, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, HttpCode, Get, Post, Patch, Delete, Param, Query, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   GenerateService,
@@ -38,34 +38,34 @@ export class GenerateController {
     return this.generate.run('postEnhance', req, res, next);
   }
 
-  // GET /api/generate/tools
+  // GET /api/generate/tools — 사용 가능한 이미지·영상 도구
   @Get('tools')
-  getTools(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getTools', req, res, next);
+  async tools() {
+    return { success: true, data: await this.generate.tools() };
   }
 
-  // GET /api/generate/styles
+  // GET /api/generate/styles — 스타일 프리셋
   @Get('styles')
-  getStyles(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getStyles', req, res, next);
+  async styles() {
+    return { success: true, data: await this.generate.styles() };
   }
 
-  // GET /api/generate/prompts
+  // GET /api/generate/prompts — 내(또는 활성 팀) 프롬프트 목록
   @Get('prompts')
-  getPrompts(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getPrompts', req, res, next);
+  async prompts(@Req() req: any, @Query() q: any) {
+    return { success: true, data: await this.generate.prompts(req.user.id, q) };
   }
 
-  // GET /api/generate/prompts/:idx
+  // GET /api/generate/prompts/:idx — 프롬프트 상세 + 결과물(소유 검증)
   @Get('prompts/:idx')
-  getPrompts2(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getPrompts2', req, res, next);
+  async promptDetail(@Req() req: any, @Param('idx') idx: string) {
+    return { success: true, data: await this.generate.promptDetail(req.user.id, idx) };
   }
 
-  // GET /api/generate/results
+  // GET /api/generate/results — 내(또는 활성 팀) 결과물 목록
   @Get('results')
-  getResults(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getResults', req, res, next);
+  async results(@Req() req: any, @Query() q: any) {
+    return { success: true, data: await this.generate.results(req.user.id, q) };
   }
 
   // GET /api/generate/community
@@ -119,10 +119,10 @@ export class GenerateController {
     return this.generate.run('deleteCreations', req, res, next);
   }
 
-  // GET /api/generate/creator-overview
+  // GET /api/generate/creator-overview — 총 좋아요 + 상위 결과물
   @Get('creator-overview')
-  getCreatorOverview(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getCreatorOverview', req, res, next);
+  async creatorOverview(@Req() req: any) {
+    return { success: true, data: await this.generate.creatorOverview(req.user.id) };
   }
 
   // GET /api/generate/reviews
@@ -151,22 +151,22 @@ export class GenerateController {
     return this.generate.run('postVideoAsync', req, res, next);
   }
 
-  // GET /api/generate/video/jobs
+  // GET /api/generate/video/jobs — 진행 중인 영상 작업
   @Get('video/jobs')
-  getVideoJobs(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getVideoJobs', req, res, next);
+  async videoJobs(@Req() req: any) {
+    return { success: true, data: await this.generate.videoJobs(req.user.id) };
   }
 
-  // GET /api/generate/video/jobs/:id
+  // GET /api/generate/video/jobs/:id — 영상 작업 단건
   @Get('video/jobs/:id')
-  getVideoJobs2(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getVideoJobs2', req, res, next);
+  async videoJob(@Req() req: any, @Param('id') id: string) {
+    return { success: true, data: await this.generate.videoJob(req.user.id, id) };
   }
 
-  // GET /api/generate/faceswap/jobs/:id
+  // GET /api/generate/faceswap/jobs/:id — faceswap 작업 단건
   @Get('faceswap/jobs/:id')
-  getFaceswapJobs(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getFaceswapJobs', req, res, next);
+  async faceswapJob(@Req() req: any, @Param('id') id: string) {
+    return { success: true, data: await this.generate.faceswapJob(req.user.id, id) };
   }
 
   // POST /api/generate/ugc/script
@@ -215,22 +215,22 @@ export class GenerateController {
     return this.generate.run('postUgcAsync', req, res, next);
   }
 
-  // GET /api/generate/ugc/jobs
+  // GET /api/generate/ugc/jobs — 렌더 중(data) + 미저장(pending) + 편집가능(editable)
   @Get('ugc/jobs')
-  getUgcJobs(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getUgcJobs', req, res, next);
+  async ugcJobs(@Req() req: any) {
+    return { success: true, ...(await this.generate.ugcJobs(req.user.id)) };
   }
 
-  // GET /api/generate/ugc/jobs/by-result/:idx
+  // GET /api/generate/ugc/jobs/by-result/:idx — 결과물 idx로 작업 찾기(:id보다 먼저)
   @Get('ugc/jobs/by-result/:idx')
-  getUgcJobsByResult(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getUgcJobsByResult', req, res, next);
+  async ugcJobByResult(@Req() req: any, @Param('idx') idx: string) {
+    return { success: true, data: await this.generate.ugcJobByResult(req.user.id, idx) };
   }
 
-  // GET /api/generate/ugc/jobs/:id
+  // GET /api/generate/ugc/jobs/:id — UGC 작업 단건
   @Get('ugc/jobs/:id')
-  getUgcJobs2(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getUgcJobs2', req, res, next);
+  async ugcJob(@Req() req: any, @Param('id') id: string) {
+    return { success: true, data: await this.generate.ugcJob(req.user.id, id) };
   }
 
   // POST /api/generate/ugc/jobs/:id/commit
@@ -269,10 +269,10 @@ export class GenerateController {
     return this.generate.run('postBgmUpload', req, res, next);
   }
 
-  // GET /api/generate/bgm/list
+  // GET /api/generate/bgm/list — 업로드된 BGM 목록
   @Get('bgm/list')
-  getBgmList(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.generate.run('getBgmList', req, res, next);
+  async bgmList() {
+    return { success: true, data: await this.generate.bgmList() };
   }
 
   // DELETE /api/generate/bgm/:filename
