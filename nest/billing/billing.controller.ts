@@ -1,6 +1,8 @@
 import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiResponse } from '../common/dto/api-response.dto';
+import { PacksDto } from './dto/billing.dto';
 
 // /api/billing — 크레딧 팩·체크아웃·결제내역(전부 인증 필요).
 //   ⚠️ 웹훅(/api/billing/webhook 등)은 raw body·무인증이라 레거시 유지(main.ts NEST_EXCLUDE).
@@ -10,7 +12,7 @@ export class BillingController {
   constructor(private readonly billing: BillingService) {}
 
   @Get('packs')
-  packs() {
+  packs(): ApiResponse<PacksDto> {
     return { success: true, data: this.billing.packs() };
   }
 

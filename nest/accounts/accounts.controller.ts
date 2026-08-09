@@ -2,6 +2,9 @@ import { Controller, HttpCode, Get, Post, Patch, Delete, Param, Query, Req, Res,
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AccountsService, ACCOUNT_UPLOAD_OPTIONS } from './accounts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiResponse, ApiWithTotal } from '../common/dto/api-response.dto';
+import { SocialAccountVo, AccountMediaVo, PostQueueItemVo, ReelTemplateVo, OutfitPromptVo } from './vo/account.vo';
+import { ListAccountsQueryDto, ListMediaQueryDto, ListPostQueueQueryDto } from './dto/account.dto';
 
 // /api/accounts — 소셜 계정 연결·미디어·의상/릴스 생성·발행 큐. 전 엔드포인트 인증 필요(= 레거시 requireAuth).
 //   응답은 레거시 핸들러가 직접 쓴다(@Res) — 202·{error} 형태·백그라운드 작업까지 그대로 보존.
@@ -21,13 +24,13 @@ export class AccountsController {
 
   // GET /api/accounts — 저장된 계정 목록
   @Get()
-  async list(@Req() req: any, @Query() q: any) {
+  async list(@Req() req: any, @Query() q: ListAccountsQueryDto): Promise<ApiResponse<SocialAccountVo[]>> {
     return { success: true, data: await this.accounts.list(req.user.id, q) };
   }
 
   // GET /api/accounts/:id — 계정 상세
   @Get(':id')
-  async getAccount(@Req() req: any, @Param('id') id: string) {
+  async getAccount(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<SocialAccountVo>> {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return { success: true, data: await this.accounts.account(id) };
   }
@@ -77,7 +80,7 @@ export class AccountsController {
 
   // GET /api/accounts/:id/base-photo — 기본 사진 조회
   @Get(':id/base-photo')
-  async getBasePhoto(@Req() req: any, @Param('id') id: string) {
+  async getBasePhoto(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<AccountMediaVo | null>> {
     await this.accounts.assertOwned(id, req.user.id);
     return { success: true, data: await this.accounts.basePhoto(id) };
   }
@@ -100,7 +103,7 @@ export class AccountsController {
 
   // GET /api/accounts/:id/reel-templates — 릴스 프롬프트 템플릿 목록
   @Get(':id/reel-templates')
-  async getReelTemplates(@Req() req: any, @Param('id') id: string) {
+  async getReelTemplates(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<ReelTemplateVo[]>> {
     await this.accounts.assertOwned(id, req.user.id);
     return { success: true, data: await this.accounts.reelTemplates(id) };
   }
@@ -113,7 +116,7 @@ export class AccountsController {
 
   // GET /api/accounts/:id/outfit-prompts — 의상 프롬프트 목록
   @Get(':id/outfit-prompts')
-  async getOutfitPrompts(@Req() req: any, @Param('id') id: string) {
+  async getOutfitPrompts(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<OutfitPromptVo[]>> {
     await this.accounts.assertOwned(id, req.user.id);
     return { success: true, data: await this.accounts.outfitPrompts(id) };
   }
@@ -148,7 +151,7 @@ export class AccountsController {
 
   // GET /api/accounts/:id/post-queue — 발행 큐 목록
   @Get(':id/post-queue')
-  async getPostQueue(@Req() req: any, @Param('id') id: string, @Query() q: any) {
+  async getPostQueue(@Req() req: any, @Param('id') id: string, @Query() q: ListPostQueueQueryDto): Promise<ApiResponse<PostQueueItemVo[]>> {
     await this.accounts.assertOwned(id, req.user.id);
     return { success: true, data: await this.accounts.postQueue(id, q) };
   }
@@ -204,7 +207,7 @@ export class AccountsController {
 
   // GET /api/accounts/:id/media — 계정 미디어 목록(+total)
   @Get(':id/media')
-  async getMedia(@Req() req: any, @Param('id') id: string, @Query() q: any) {
+  async getMedia(@Req() req: any, @Param('id') id: string, @Query() q: ListMediaQueryDto): Promise<ApiWithTotal<AccountMediaVo[]>> {
     await this.accounts.assertOwned(id, req.user.id);
     const { data, total } = await this.accounts.media(id, q);
     return { success: true, data, total };

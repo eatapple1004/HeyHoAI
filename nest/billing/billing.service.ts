@@ -1,4 +1,5 @@
 import { HttpException, Injectable } from '@nestjs/common';
+import { PacksDto } from './dto/billing.dto';
 import * as path from 'path';
 
 // 팩 목록은 레거시 billing.route.js가 pricing.config에서 파생해 export한 PACKS를 그대로 재사용(단일소스).
@@ -25,7 +26,7 @@ function variantIdFor(packId: string): string | null {
 
 @Injectable()
 export class BillingService {
-  packs() {
+  packs(): PacksDto {
     return {
       packs: PACKS.map((p: any) => ({ ...p, available: lsConfigured() && Boolean(variantIdFor(p.id)) })),
       configured: lsConfigured(),

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpException, Post, Req, UseGuards } from '@nestjs/common';
 import { EximbayService } from './eximbay.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PgConfigDto } from './dto/billing.dto';
 
 // /api/billing/eximbay — 해외 결제(Eximbay) 준비. status 웹훅은 레거시(NEST_EXCLUDE).
 @Controller('api/billing/eximbay')
@@ -9,7 +10,7 @@ export class EximbayController {
   constructor(private readonly eximbay: EximbayService) {}
 
   @Get('config')
-  config() {
+  config(): PgConfigDto {
     return { success: true, data: this.eximbay.config() };
   }
 

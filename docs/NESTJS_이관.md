@@ -195,10 +195,15 @@ NestJS에 **DTO는 1급 개념**(공식 문서 권장)이지만 **VO는 프레�
 
 **Spring 대응**: `ApiResponse<T>`=공통 응답 래퍼 · 요청 DTO=`@Valid @RequestBody` 대상 · VO=JPA 엔티티 자리(단 우리는 ORM 없이 raw row).
 
-**적용 현황**: `common` · `subscription` · `dashboard` · `credits` · `brand-kit` · `teams` · `marketplace`(VO9/DTO20) · **`publishing`(VO2/DTO7) · `characters`(VO2/DTO5) · `media`(VO7/DTO7)** — 컨트롤러 반환 타입까지 부착 완료(총 9개 도메인).
+**적용 현황: 전 도메인 완료** — 타입 파일 33개 / 1,504줄. **모든 컨트롤러의 네이티브 라우트에 반환 타입이 붙어 있다**(미부착 0, 스크립트로 확인).
+`common`(응답봉투·원장) · `subscription` · `dashboard` · `credits` · `brand-kit` · `teams` · `marketplace`(VO9/DTO20) · `publishing` · `characters` · `media` · `studio` · `accounts` · `admin` · `trial` · `template-data` · `recipes` · `affiliate` · `auth` · `billing` · `generate`(조회) · `pricing` · `health`
+
+> `@Res()` 위임 라우트(generate 31 · accounts 23 · pack 10 · refine 3)는 응답을 핸들러가 직접 쓰므로 반환 타입이 없다 — 네이티브로 전환할 때 함께 붙인다.
 효과 실측 — 타입을 붙이자마자 `teams` 이체에서 `parseInt(number)` 타입 오류가 컴파일에서 잡혔다(런타임은 정상이었지만 계약이 모호했던 지점).
 
-**미적용(다음 대상)**: studio · accounts · generate · admin · trial · template-data · recipes · affiliate · billing · pricing · auth.
+**타입이 잡아낸 실제 오류 2건**(둘 다 런타임은 정상이었지만 계약이 틀렸던 곳):
+1. `teams` 이체 — `parseInt(number)` : JSON 바디가 숫자/문자 둘 다 가능한데 코드가 암묵적으로 넘기고 있었다 → DTO를 `number | string`으로 정확히 표현.
+2. `billing/packs` — 응답을 `{success, ...packs}`로 **잘못 가정**하고 타입을 썼더니 컴파일 실패. 실제는 `{success, data:{packs, configured}}` 표준 봉투였다 → 추측이 즉시 걸러진 사례.
 
 **응답 봉투 예외도 타입으로 고정한다**: 표준은 `ApiResponse<T>`지만 실제로는 최상위 필드가 더 붙는 곳이 있다 —
 `ApiWithCharged<T>`(marketplace use/acquire의 `charged`) · `ApiPaginated<T>`(characters·contents) · `ApiWithTotal<T>`(accounts media) · `ApiWithHasMore<T>`(admin creations) · pack은 봉투 없이 객체 그대로.

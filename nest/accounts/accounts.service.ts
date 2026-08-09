@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { SocialAccountVo, AccountMediaVo, PostQueueItemVo, ReelTemplateVo, OutfitPromptVo } from './vo/account.vo';
+import { DefaultCaptionsDto, ListAccountsQueryDto, ListMediaQueryDto, ListPostQueueQueryDto } from './dto/account.dto';
 import * as path from 'path';
 
 // 계정(소셜) 파이프라인 재사용(중복 금지) — Zernio 동기화·Gemini 의상생성·Kling 릴스·발행 큐·미디어 업로드가
@@ -43,14 +45,14 @@ export class AccountsService {
   }
 
   // ── 조회(reads) — 응답은 Nest가 직렬화한다. 소유권은 컨트롤러가 먼저 검증한 뒤 호출 ──
-  list(userId: string, q: any) { return reads.list(userId, q || {}); }
-  account(accountId: string) { return reads.account(accountId); }
+  list(userId: string, q: ListAccountsQueryDto): Promise<SocialAccountVo[]> { return reads.list(userId, q || {}); }
+  account(accountId: string): Promise<SocialAccountVo> { return reads.account(accountId); }
   analyticsDetail(accountId: string) { return reads.analyticsDetail(accountId); }
   analyticsPosts(accountId: string) { return reads.analyticsPosts(accountId); }
-  basePhoto(accountId: string) { return reads.basePhoto(accountId); }
-  reelTemplates(accountId: string) { return reads.reelTemplates(accountId); }
-  outfitPrompts(accountId: string) { return reads.outfitPrompts(accountId); }
-  postQueue(accountId: string, q: any) { return reads.postQueue(accountId, q || {}); }
+  basePhoto(accountId: string): Promise<AccountMediaVo | null> { return reads.basePhoto(accountId); }
+  reelTemplates(accountId: string): Promise<ReelTemplateVo[]> { return reads.reelTemplates(accountId); }
+  outfitPrompts(accountId: string): Promise<OutfitPromptVo[]> { return reads.outfitPrompts(accountId); }
+  postQueue(accountId: string, q: ListPostQueueQueryDto): Promise<PostQueueItemVo[]> { return reads.postQueue(accountId, q || {}); }
   // { data, total } — total은 응답 최상위 필드
-  media(accountId: string, q: any) { return reads.media(accountId, q || {}); }
+  media(accountId: string, q: ListMediaQueryDto): Promise<{ data: AccountMediaVo[]; total: number }> { return reads.media(accountId, q || {}); }
 }

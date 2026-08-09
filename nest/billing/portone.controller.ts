@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpException, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { PortoneService } from './portone.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PgConfigDto } from './dto/billing.dto';
 
 // /api/billing/portone — 국내 결제(PortOne V2) 준비/완료검증. webhook은 레거시(NEST_EXCLUDE).
 @Controller('api/billing/portone')
@@ -9,7 +10,7 @@ export class PortoneController {
   constructor(private readonly portone: PortoneService) {}
 
   @Get('config')
-  config() {
+  config(): PgConfigDto {
     return { success: true, data: this.portone.publicConfig() };
   }
 
