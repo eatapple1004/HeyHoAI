@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Get, Post, Param, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, HttpCode, HttpException, Get, Post, Param, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PackService, normalizeUploads, PACK_UPLOAD_OPTIONS } from './pack.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -28,10 +28,16 @@ export class PackController {
     return normalizeUploads(req, res, () => this.pack.run('create', req, res, next));
   }
 
-  // GET /api/pack/:id — 팩 상태 폴링(id 또는 shareId)
+  // GET /api/pack/:id — 팩 상태 폴링(id 또는 shareId). 응답은 팩 객체 그대로, 에러는 {error}.
   @Get(':id')
-  getPack(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.pack.run('getPack', req, res, next);
+  async getPack(@Req() req: any, @Param('id') id: string) {
+    try {
+      return await this.pack.pack(req.user.id, id);
+    } catch (err: any) {
+      // 팩 도메인은 {success,error}가 아니라 {error} 형태 — 전역 필터 대신 여기서 맞춘다.
+      if (err && err.statusCode) throw new HttpException({ error: err.message }, err.statusCode);
+      throw err;
+    }
   }
 
   // POST /api/pack/:id/generate — 레퍼 게이트 통과 → 컷 생성 시작(크레딧 차감)

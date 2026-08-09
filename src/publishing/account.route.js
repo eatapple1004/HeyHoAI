@@ -66,32 +66,12 @@ const syncHandler = async (req, res, next) => {
  * GET /api/accounts
  * 저장된 계정 목록 조회
  */
-const listHandler = async (req, res, next) => {
-  try {
-    const { platform, status } = req.query;
-    const accounts = await accountRepo.findAll({
-      userId: req.user.id,
-      platform: platform || undefined,
-      status: status || undefined,
-    });
-    res.json({ success: true, data: accounts });
-  } catch (err) {
-    next(err);
-  }
-};
+const listHandler = (req, res, next) => sendRead(res, next, () => reads.list(req.user.id, req.query));
 
 /**
  * GET /api/accounts/:id
  */
-const getAccountHandler = async (req, res, next) => {
-  try {
-    const account = await accountRepo.findById(req.params.id);
-    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
-    res.json({ success: true, data: account });
-  } catch (err) {
-    next(err);
-  }
-};
+const getAccountHandler = (req, res, next) => sendRead(res, next, () => reads.account(req.params.id));
 
 /**
  * PATCH /api/accounts/:id/status
@@ -133,23 +113,9 @@ const patchDefaultCaptionsHandler = async (req, res, next) => {
 
 // ── Analytics ──
 
-const getAnalyticsDetailHandler = async (req, res, next) => {
-  try {
-    const account = await accountRepo.findById(req.params.id);
-    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
-    const data = await zernio.getAccountDetail(account.account_id);
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-};
+const getAnalyticsDetailHandler = (req, res, next) => sendRead(res, next, () => reads.analyticsDetail(req.params.id));
 
-const getAnalyticsPostsHandler = async (req, res, next) => {
-  try {
-    const account = await accountRepo.findById(req.params.id);
-    if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
-    const data = await zernio.getPosts(account.account_id);
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-};
+const getAnalyticsPostsHandler = (req, res, next) => sendRead(res, next, () => reads.analyticsPosts(req.params.id));
 
 /**
  * DELETE /api/accounts/:id
@@ -188,12 +154,7 @@ const postBasePhotoHandler = async (req, res, next) => {
 /**
  * GET /api/accounts/:id/base-photo
  */
-const getBasePhotoHandler = async (req, res, next) => {
-  try {
-    const media = await mediaRepo.findBase(req.params.id);
-    res.json({ success: true, data: media });
-  } catch (err) { next(err); }
-};
+const getBasePhotoHandler = (req, res, next) => sendRead(res, next, () => reads.basePhoto(req.params.id));
 
 /**
  * POST /api/accounts/:id/generate-outfits
@@ -401,12 +362,7 @@ const postGenerateReelHandler = async (req, res, next) => {
 /**
  * GET /api/accounts/:id/reel-templates
  */
-const getReelTemplatesHandler = async (req, res, next) => {
-  try {
-    const templates = await reelTemplateRepo.findByAccountId(req.params.id);
-    res.json({ success: true, data: templates });
-  } catch (err) { next(err); }
-};
+const getReelTemplatesHandler = (req, res, next) => sendRead(res, next, () => reads.reelTemplates(req.params.id));
 
 /**
  * DELETE /api/accounts/reel-templates/:templateId
@@ -422,12 +378,7 @@ const deleteReelTemplatesHandler = async (req, res, next) => {
 
 // ── Outfit Prompts ──
 
-const getOutfitPromptsHandler = async (req, res, next) => {
-  try {
-    const prompts = await outfitPromptRepo.findByAccountId(req.params.id);
-    res.json({ success: true, data: prompts });
-  } catch (err) { next(err); }
-};
+const getOutfitPromptsHandler = (req, res, next) => sendRead(res, next, () => reads.outfitPrompts(req.params.id));
 
 const postOutfitPromptsHandler = async (req, res, next) => {
   try {
@@ -582,13 +533,7 @@ const postBatchReelsHandler = async (req, res, next) => {
 // ══════════════════════════════════════
 const postQueueRepo = require('./postQueue.repository');
 
-const getPostQueueHandler = async (req, res, next) => {
-  try {
-    const { status } = req.query;
-    const items = await postQueueRepo.findByAccountId(req.params.id, { status: status || undefined });
-    res.json({ success: true, data: items });
-  } catch (err) { next(err); }
-};
+const getPostQueueHandler = (req, res, next) => sendRead(res, next, () => reads.postQueue(req.params.id, req.query));
 
 const postPostQueueHandler = async (req, res, next) => {
   try {
@@ -700,18 +645,7 @@ const deletePostQueueHandler = async (req, res, next) => {
 /**
  * GET /api/accounts/:id/media
  */
-const getMediaHandler = async (req, res, next) => {
-  try {
-    const { status, limit, offset } = req.query;
-    const media = await mediaRepo.findByAccountId(req.params.id, {
-      status: status || undefined,
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
-    });
-    const count = await mediaRepo.countByAccountId(req.params.id);
-    res.json({ success: true, data: media, total: count });
-  } catch (err) { next(err); }
-};
+const getMediaHandler = (req, res, next) => sendRead(res, next, () => reads.media(req.params.id, req.query), (o) => ({ success: true, data: o.data, total: o.total }));
 
 /**
  * POST /api/accounts/:id/media/upload
@@ -791,6 +725,81 @@ const deleteMediaHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── 조회 API (reads) — 레거시 라우트와 Nest(nest/accounts)가 함께 쓰는 단일소스 ──
+//   응답 객체를 만들지 않고 **데이터만 반환**한다(= Spring @Service). 404는 statusCode 에러로 throw.
+//   ⚠️ 계정 소유권 검증은 호출측(레거시 router.param / Nest 컨트롤러)이 이미 끝낸 뒤 들어온다.
+function readError(statusCode, message) {
+  return Object.assign(new Error(message), { statusCode });
+}
+
+const reads = {
+  /** 내 소셜 계정 목록(platform·status 필터) */
+  list(userId, { platform, status } = {}) {
+    return accountRepo.findAll({ userId, platform: platform || undefined, status: status || undefined });
+  },
+
+  /** 계정 단건 */
+  async account(accountId) {
+    const account = await accountRepo.findById(accountId);
+    if (!account) throw readError(404, 'Account not found');
+    return account;
+  },
+
+  /** Zernio 계정 지표 */
+  async analyticsDetail(accountId) {
+    const account = await this.account(accountId);
+    return zernio.getAccountDetail(account.account_id);
+  },
+
+  /** Zernio 게시물 지표 */
+  async analyticsPosts(accountId) {
+    const account = await this.account(accountId);
+    return zernio.getPosts(account.account_id);
+  },
+
+  /** 기본 사진(없으면 null) */
+  basePhoto(accountId) {
+    return mediaRepo.findBase(accountId);
+  },
+
+  /** 릴스 프롬프트 템플릿 */
+  reelTemplates(accountId) {
+    return reelTemplateRepo.findByAccountId(accountId);
+  },
+
+  /** 의상 프롬프트 */
+  outfitPrompts(accountId) {
+    return outfitPromptRepo.findByAccountId(accountId);
+  },
+
+  /** 발행 큐(status 필터) */
+  postQueue(accountId, { status } = {}) {
+    return postQueueRepo.findByAccountId(accountId, { status: status || undefined });
+  },
+
+  /** 계정 미디어 목록 + 총 개수(total은 응답 최상위 필드) */
+  async media(accountId, { status, limit, offset } = {}) {
+    const items = await mediaRepo.findByAccountId(accountId, {
+      status: status || undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+    const total = await mediaRepo.countByAccountId(accountId);
+    return { data: items, total };
+  },
+};
+
+// 조회 라우트용 얇은 어댑터 — statusCode 에러는 레거시 형식으로, 나머지는 errorHandler로.
+function sendRead(res, next, run, wrap) {
+  Promise.resolve()
+    .then(run)
+    .then((out) => res.json(wrap ? wrap(out) : { success: true, data: out }))
+    .catch((err) => {
+      if (err && err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+      next(err);
+    });
+}
+
 // ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
 router.post('/sync', syncHandler);
 router.get('/', listHandler);
@@ -864,3 +873,5 @@ module.exports.handlers = {
   deleteMedia: deleteMediaHandler,
 };
 module.exports.upload = upload;
+// 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
+module.exports.reads = reads;
