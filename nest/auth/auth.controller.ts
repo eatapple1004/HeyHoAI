@@ -12,6 +12,9 @@ import {
 } from '@nestjs/common';
 import { AuthApiService, setAuthCookie, clearAuthCookie, googleHandlers } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ApiResponse, ApiOk } from '../common/dto/api-response.dto';
+import { UserVo } from './vo/user.vo';
+import { SignupDto, LoginDto, UpdateProfileDto } from './dto/auth.dto';
 
 // /api/auth — 로그인/가입은 공개, /me 3종은 인증 필요.
 //   ⚠️ 이 도메인은 응답에 쿠키·리다이렉트가 있어 @Res({passthrough:true})로 Express 응답을 직접 다룬다.
@@ -22,7 +25,7 @@ export class AuthController {
 
   // POST /api/auth/signup — 가입 + 인증 쿠키(레거시도 201)
   @Post('signup')
-  async signup(@Req() req: any, @Body() body: any, @Res({ passthrough: true }) res: any) {
+  async signup(@Req() req: any, @Body() body: SignupDto, @Res({ passthrough: true }) res: any): Promise<ApiResponse<UserVo>> {
     const refCode = req.cookies && req.cookies.ref; // 추천 쿠키(있으면 추천 관계 연결)
     const { user, refLinked } = await this.auth.signup(body, refCode);
     if (refLinked) res.clearCookie('ref', { path: '/' });
@@ -33,7 +36,7 @@ export class AuthController {
   // POST /api/auth/login — 로그인 + 인증 쿠키
   @Post('login')
   @HttpCode(200) // 레거시 res.json=200
-  async login(@Body() body: any, @Res({ passthrough: true }) res: any) {
+  async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: any): Promise<ApiResponse<UserVo>> {
     const user = await this.auth.login(body);
     setAuthCookie(res, user);
     return { success: true, data: user };
@@ -42,7 +45,7 @@ export class AuthController {
   // POST /api/auth/logout — 쿠키 제거
   @Post('logout')
   @HttpCode(200)
-  logout(@Res({ passthrough: true }) res: any) {
+  logout(@Res({ passthrough: true }) res: any): ApiOk {
     clearAuthCookie(res);
     return { success: true };
   }
@@ -65,21 +68,21 @@ export class AuthController {
   // GET /api/auth/me (인증)
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@Req() req: any) {
+  async me(@Req() req: any): Promise<ApiResponse<UserVo>> {
     return { success: true, data: await this.auth.me(req.user.id) };
   }
 
   // PATCH /api/auth/me (인증) — 표시 이름 변경
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@Req() req: any, @Body() body: any) {
+  async updateProfile(@Req() req: any, @Body() body: UpdateProfileDto): Promise<ApiResponse<UserVo>> {
     return { success: true, data: await this.auth.updateProfile(req.user.id, body) };
   }
 
   // DELETE /api/auth/me (인증) — 계정 소프트 삭제 + 로그아웃
   @Delete('me')
   @UseGuards(JwtAuthGuard)
-  async deleteAccount(@Req() req: any, @Res({ passthrough: true }) res: any) {
+  async deleteAccount(@Req() req: any, @Res({ passthrough: true }) res: any): Promise<ApiOk> {
     await this.auth.deleteAccount(req.user.id);
     clearAuthCookie(res);
     return { success: true };

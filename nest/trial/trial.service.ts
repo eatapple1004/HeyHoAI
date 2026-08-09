@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { TrialAccountDto, TrialStatusDto, TrialPatchResultDto, CreateTrialDto, PatchTrialDto } from './dto/trial.dto';
 import * as path from 'path';
 
 // 체험 계정 로직 재사용(중복 금지) — 레거시 trial.service.js 단일소스.
@@ -8,7 +9,7 @@ const legacy = require(path.join(__dirname, '..', '..', 'src', 'trial', 'trial.s
 @Injectable()
 export class TrialService {
   // 관리자: 체험 계정 발급(password는 이 응답에서만 1회 노출)
-  createTrialAccount(body: any = {}) {
+  createTrialAccount(body: CreateTrialDto = {} as CreateTrialDto): Promise<TrialAccountDto> {
     const { companyName, email, password, credits, quota, days } = body;
     return legacy.createTrialAccount({
       companyName, email, password, days,
@@ -16,12 +17,12 @@ export class TrialService {
     });
   }
 
-  listTrials() {
+  listTrials(): Promise<unknown[]> {
     return legacy.listTrials();
   }
 
   // 관리자: 토큰 추가 지급 / 기간 변경 / 활성·비활성 토글(전달된 필드만 적용)
-  async patchTrial(id: string, body: any = {}) {
+  async patchTrial(id: string, body: PatchTrialDto = {}): Promise<TrialPatchResultDto> {
     const out: any = { id };
     if (body.addCredits != null) out.credits = await legacy.grantCredits(id, body.addCredits);
     if (body.days != null) out.days = await legacy.setDays(id, body.days);
@@ -30,7 +31,7 @@ export class TrialService {
   }
 
   // 본인 체험 상태(스튜디오 배너용). 비-체험이면 null.
-  getStatus(userId: string) {
+  getStatus(userId: string): Promise<TrialStatusDto> {
     return legacy.getStatus(userId);
   }
 }

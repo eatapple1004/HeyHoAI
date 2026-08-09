@@ -7,6 +7,8 @@ import {
   UGC_MAX_PRODUCT_IMAGES,
 } from './generate.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiResponse } from '../common/dto/api-response.dto';
+import { ToolsDto, BgmFileDto, StylePresetDto } from './dto/generate.dto';
 
 // /api/generate — 생성 엔진(이미지·영상·UGC 광고·커뮤니티·리뷰·BGM·로그). 전 엔드포인트 인증 필요(= 레거시 requireAuth).
 //   응답은 레거시 핸들러가 직접 쓴다(@Res) — 스트리밍·202·{error} 형태·백그라운드 작업을 그대로 보존.
@@ -40,13 +42,13 @@ export class GenerateController {
 
   // GET /api/generate/tools — 사용 가능한 이미지·영상 도구
   @Get('tools')
-  async tools() {
+  async tools(): Promise<ApiResponse<ToolsDto>> {
     return { success: true, data: await this.generate.tools() };
   }
 
   // GET /api/generate/styles — 스타일 프리셋
   @Get('styles')
-  async styles() {
+  async styles(): Promise<ApiResponse<StylePresetDto[]>> {
     return { success: true, data: await this.generate.styles() };
   }
 
@@ -271,7 +273,7 @@ export class GenerateController {
 
   // GET /api/generate/bgm/list — 업로드된 BGM 목록
   @Get('bgm/list')
-  async bgmList() {
+  async bgmList(): Promise<ApiResponse<BgmFileDto[]>> {
     return { success: true, data: await this.generate.bgmList() };
   }
 

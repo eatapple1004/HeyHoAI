@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { UserVo } from './vo/user.vo';
+import { SignupDto, LoginDto, UpdateProfileDto } from './dto/auth.dto';
 import * as path from 'path';
 
 // 인증 오케스트레이션·쿠키 재사용(중복 금지) — 레거시 auth.api.js / cookie.js 단일소스.
@@ -17,16 +19,16 @@ export const googleHandlers = google;
 @Injectable()
 export class AuthApiService {
   // { user, refLinked } — refLinked면 컨트롤러가 ref 쿠키를 지운다.
-  signup(body: any, refCode?: string) {
+  signup(body: SignupDto, refCode?: string): Promise<{ user: UserVo; refLinked: boolean }> {
     return legacy.signup(body || {}, refCode);
   }
-  login(body: any) {
+  login(body: LoginDto): Promise<UserVo> {
     return legacy.login(body || {});
   }
-  me(userId: string) {
+  me(userId: string): Promise<UserVo> {
     return legacy.me(userId);
   }
-  updateProfile(userId: string, body: any) {
+  updateProfile(userId: string, body: UpdateProfileDto): Promise<UserVo> {
     return legacy.updateProfile(userId, body || {});
   }
   deleteAccount(userId: string) {
