@@ -232,7 +232,41 @@ NestJS에 **DTO는 1급 개념**(공식 문서 권장)이지만 **VO는 프레�
 `ApiWithCharged<T>`(marketplace use/acquire의 `charged`) · `ApiPaginated<T>`(characters·contents) · `ApiWithTotal<T>`(accounts media) · `ApiWithHasMore<T>`(admin creations) · pack은 봉투 없이 객체 그대로.
 새 도메인에 타입을 붙일 땐 **먼저 실제 응답을 확인**하고 맞는 봉투 타입을 고를 것(추측 금지).
 
-## 10. 남은 과제
+## 10. 레거시 완전 제거 로드맵 (진행 중)
+
+**목표**: dev에서 `src/` 레거시 없이 Nest만으로 동작.
+
+### 규모 (실측)
+```
+src/ 전체        182파일 · 48,783줄
+  ├ recipes/     17,998줄  ← 시드 데이터(코드 아님)
+  ├ models/       7,451줄  ← 로스터 데이터(자동생성)
+  └ 실제 코드    ~23,300줄
+       ├ *.route.js      5,604줄  ← 진짜 "레거시 Express"
+       ├ *.service.js    7,872줄
+       ├ *.repository.js 1,928줄 (20개)
+       └ 프로바이더·엔진 등
+```
+
+### 단계
+| 단계 | 내용 | 상태 |
+|---|---|---|
+| ① 라우트 이관 | 225 라우트 → Nest | ✅ |
+| ② 응답 소유권 회수 | `@Res()` 위임 67 → 5 | ✅ |
+| ③ DTO/VO 계약 | 33파일 · 1,504줄 | ✅ |
+| ④ **리포지토리·서비스 이식** | `nest/<도메인>/*.repository.ts` + `*.service.ts` | 🔄 characters 완료 |
+| ⑤ `src/` 라우터 제거 + stg/prd 전환 | | ⬜ |
+
+### ④ 방법 (characters가 본보기)
+1. **`nest/db/db.service.ts`** — `@Injectable` DB 프로바이더(전역 `DbModule`). 커넥션 풀은 `src/db/client.js` 단일소스를 그대로 재사용(풀을 두 개 만들면 커넥션이 두 배).
+2. **`nest/<도메인>/<X>.repository.ts`** — `@Injectable`, `DbService` 주입, SQL은 여기 밖으로 안 샌다. 반환 타입은 이미 만들어둔 VO.
+3. **`nest/<도메인>/<X>.service.ts`** — `@Injectable`, 리포지토리 주입. 아직 이식 안 한 엔진/공용 모듈만 `require`로 남기고 **주석으로 이식 대상 표시**.
+4. 도메인 모듈에 `providers: [Service, Repository]` 등록.
+5. **parity로 검증** — `src/`는 기준선이므로 ⑤ 전까지 지우지 않는다.
+
+⚠️ `AppModule` imports 순서: `MediaModule`(`:characterId/**`)이 `CharactersModule`(`:id`)보다 **먼저**. 안 그러면 `:id`가 하위 경로를 잡아챈다.
+
+## 11. 남은 과제
 
 1. dev에서 충분히 검증 후 staging/prod도 `dist/main.js` 로 전환(ecosystem·deploy.sh)
 2. 위임형(B) 4개 도메인을 순수 데이터 핸들러부터 서비스 추출형(A)으로 전환
