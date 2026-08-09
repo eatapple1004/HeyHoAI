@@ -6,6 +6,8 @@ import {
   VisualsController,
 } from './media.controller';
 import { MediaService } from './media.service';
+import { MediaRepository } from './media.repository';
+import { OwnershipService } from '../common/security/ownership.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 // 캐릭터 하위 미디어(이미지·영상·비주얼). 캐릭터 자체는 CharactersModule이 담당한다.
@@ -17,6 +19,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
     VideosController,
     VisualsController,
   ],
-  providers: [MediaService, JwtAuthGuard],
+  providers: [MediaService, MediaRepository, OwnershipService, JwtAuthGuard],
 })
 export class MediaModule {}
