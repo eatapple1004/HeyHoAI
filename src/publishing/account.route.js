@@ -800,6 +800,61 @@ function sendRead(res, next, run, wrap) {
     });
 }
 
+/**
+ * 응답 수집 어댑터 — Express 핸들러를 **데이터 반환 함수**로 바꾼다.
+ *   Nest가 @Res() 위임 없이 반환값 방식으로 응답을 소유하게 하려고 만든 것.
+ *   핸들러 본문은 그대로 두고(파이프라인 무변경), res.status/json 호출만 가로채 { status, body }로 모은다.
+ */
+function asOps(handler) {
+  return async (req) => {
+    let status = 200;
+    let body;
+    const res = {
+      status(code) { status = code; return this; },
+      json(payload) { body = payload; return this; },
+    };
+    let failed;
+    await handler(req, res, (e) => { failed = e; });
+    if (failed) throw failed;
+    return { status, body };
+  };
+}
+
+const ops = {
+  sync: asOps(syncHandler),
+  list: asOps(listHandler),
+  getAccount: asOps(getAccountHandler),
+  patchStatus: asOps(patchStatusHandler),
+  patchDefaultCaptions: asOps(patchDefaultCaptionsHandler),
+  getAnalyticsDetail: asOps(getAnalyticsDetailHandler),
+  getAnalyticsPosts: asOps(getAnalyticsPostsHandler),
+  deleteAccount: asOps(deleteAccountHandler),
+  postBasePhoto: asOps(postBasePhotoHandler),
+  getBasePhoto: asOps(getBasePhotoHandler),
+  postGenerateOutfits: asOps(postGenerateOutfitsHandler),
+  postGenerateReel: asOps(postGenerateReelHandler),
+  getReelTemplates: asOps(getReelTemplatesHandler),
+  deleteReelTemplates: asOps(deleteReelTemplatesHandler),
+  getOutfitPrompts: asOps(getOutfitPromptsHandler),
+  postOutfitPrompts: asOps(postOutfitPromptsHandler),
+  patchOutfitPrompts: asOps(patchOutfitPromptsHandler),
+  deleteOutfitPrompts: asOps(deleteOutfitPromptsHandler),
+  postBatchReels: asOps(postBatchReelsHandler),
+  getPostQueue: asOps(getPostQueueHandler),
+  postPostQueue: asOps(postPostQueueHandler),
+  patchPostQueue: asOps(patchPostQueueHandler),
+  postPublishNow: asOps(postPublishNowHandler),
+  postPostQueuePublish: asOps(postPostQueuePublishHandler),
+  postPostQueueDuplicate: asOps(postPostQueueDuplicateHandler),
+  postPostQueueReupload: asOps(postPostQueueReuploadHandler),
+  deletePostQueue: asOps(deletePostQueueHandler),
+  getMedia: asOps(getMediaHandler),
+  postMediaUpload: asOps(postMediaUploadHandler),
+  postMediaRegister: asOps(postMediaRegisterHandler),
+  patchMedia: asOps(patchMediaHandler),
+  deleteMedia: asOps(deleteMediaHandler),
+};
+
 // ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
 router.post('/sync', syncHandler);
 router.get('/', listHandler);
@@ -875,3 +930,5 @@ module.exports.handlers = {
 module.exports.upload = upload;
 // 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
 module.exports.reads = reads;
+// 데이터 반환 버전 — Nest가 응답을 직접 만든다(@Res 위임 제거용).
+module.exports.ops = ops;
