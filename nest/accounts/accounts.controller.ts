@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, HttpCode, Get, Post, Patch, Delete, Param, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AccountsService, ACCOUNT_UPLOAD_OPTIONS } from './accounts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -14,6 +14,7 @@ export class AccountsController {
 
   // POST /api/accounts/sync — Zernio에서 연결된 계정 목록을 가져와 DB 동기화
   @Post('sync')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   sync(@Req() req: any, @Res() res: any, @Next() next: any) {
     return this.accounts.run('sync', req, res, next);
   }
@@ -68,6 +69,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/base-photo — 기본 사진 지정
   @Post(':id/base-photo')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postBasePhoto(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postBasePhoto', req, res, next);
@@ -82,6 +84,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/generate-outfits — 기본 사진 기반 의상 변경 생성(Gemini)
   @Post(':id/generate-outfits')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postGenerateOutfits(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postGenerateOutfits', req, res, next);
@@ -89,6 +92,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/generate-reel — 사진 → 릴스 생성(Kling) + 템플릿 저장
   @Post(':id/generate-reel')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postGenerateReel(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postGenerateReel', req, res, next);
@@ -116,6 +120,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/outfit-prompts — 의상 프롬프트 저장
   @Post(':id/outfit-prompts')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postOutfitPrompts(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postOutfitPrompts', req, res, next);
@@ -135,6 +140,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/batch-reels — 릴스 일괄 생성
   @Post(':id/batch-reels')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postBatchReels(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postBatchReels', req, res, next);
@@ -149,6 +155,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/post-queue — 발행 큐 추가
   @Post(':id/post-queue')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postPostQueue(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postPostQueue', req, res, next);
@@ -162,6 +169,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/publish-now — 즉시 발행
   @Post(':id/publish-now')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postPublishNow(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postPublishNow', req, res, next);
@@ -169,18 +177,21 @@ export class AccountsController {
 
   // POST /api/accounts/post-queue/:queueId/publish — 큐 항목 발행
   @Post('post-queue/:queueId/publish')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   postPostQueuePublish(@Req() req: any, @Res() res: any, @Next() next: any) {
     return this.accounts.run('postPostQueuePublish', req, res, next);
   }
 
   // POST /api/accounts/post-queue/:queueId/duplicate — 큐 항목 복제
   @Post('post-queue/:queueId/duplicate')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   postPostQueueDuplicate(@Req() req: any, @Res() res: any, @Next() next: any) {
     return this.accounts.run('postPostQueueDuplicate', req, res, next);
   }
 
   // POST /api/accounts/post-queue/:queueId/reupload — 큐 항목 미디어 재업로드
   @Post('post-queue/:queueId/reupload')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   postPostQueueReupload(@Req() req: any, @Res() res: any, @Next() next: any) {
     return this.accounts.run('postPostQueueReupload', req, res, next);
   }
@@ -201,6 +212,7 @@ export class AccountsController {
   // POST /api/accounts/:id/media/upload — 미디어 업로드(multipart file)
   @UseInterceptors(FileInterceptor('file', ACCOUNT_UPLOAD_OPTIONS))
   @Post(':id/media/upload')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postMediaUpload(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postMediaUpload', req, res, next);
@@ -208,6 +220,7 @@ export class AccountsController {
 
   // POST /api/accounts/:id/media/register — 생성물 파일명을 미디어로 등록
   @Post(':id/media/register')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postMediaRegister(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
     return this.accounts.run('postMediaRegister', req, res, next);
