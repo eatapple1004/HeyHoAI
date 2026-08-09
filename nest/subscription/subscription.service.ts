@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { SubscriptionDto, ActivatePlanResultDto } from './dto/subscription.dto';
 import * as path from 'path';
 
 // 기존 구독 로직 재사용(중복 금지) — DB 접근·플랜 계산·크레딧 지급은 레거시 subscription.service.js가 담당.
@@ -9,7 +10,7 @@ const legacy = require(path.join(__dirname, '..', '..', 'src', 'subscription', '
 @Injectable()
 export class SubscriptionService {
   // 현재 플랜·권한·24h 오퍼 상태. nowMs는 컨트롤러가 주입(레거시 라우트와 동일 — 테스트 용이).
-  getSubscription(user: { id: string; role: string }, nowMs: number) {
+  getSubscription(user: { id: string; role: string }, nowMs: number): Promise<SubscriptionDto> {
     return legacy.getSubscription(user, nowMs);
   }
 
@@ -19,7 +20,7 @@ export class SubscriptionService {
   }
 
   // 기간권(선불) 활성화. ⚠️ 결제 미연동 — 현재는 admin 수동만(컨트롤러에서 role 검사).
-  activatePlan(userId: string, plan: string, nowMs: number, months: number) {
+  activatePlan(userId: string, plan: string, nowMs: number, months: number): Promise<ActivatePlanResultDto> {
     return legacy.activatePlan(userId, plan, nowMs, months);
   }
 }

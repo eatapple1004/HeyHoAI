@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiResponse } from '../common/dto/api-response.dto';
+import { SubscriptionDto, ActivatePlanResultDto, UpgradePlanDto } from './dto/subscription.dto';
 
 // /api/subscription — 전 엔드포인트 인증 필요(= 레거시 requireAuth). Spring: @RestController + @PreAuthorize.
 //   응답 형식은 레거시와 동일하게 { success, data } 유지.
@@ -20,14 +22,14 @@ export class SubscriptionController {
 
   // GET /api/subscription — 현재 플랜·권한·24h 오퍼 상태
   @Get()
-  async get(@Req() req: any) {
+  async get(@Req() req: any): Promise<ApiResponse<SubscriptionDto>> {
     return { success: true, data: await this.subscription.getSubscription(req.user, Date.now()) };
   }
 
   // POST /api/subscription/offer/start — 24h 업그레이드 오퍼 시작(멱등)
   @Post('offer/start')
   @HttpCode(200) // 레거시 res.json=200에 맞춤(Nest POST 기본 201 방지)
-  async startOffer(@Req() req: any) {
+  async startOffer(@Req() req: any): Promise<ApiResponse<SubscriptionDto>> {
     await this.subscription.startOffer(req.user.id, Date.now());
     return { success: true, data: await this.subscription.getSubscription(req.user, Date.now()) };
   }
@@ -40,7 +42,7 @@ export class SubscriptionController {
    */
   @Post('upgrade')
   @HttpCode(200)
-  async upgrade(@Req() req: any, @Body() body: any) {
+  async upgrade(@Req() req: any, @Body() body: UpgradePlanDto): Promise<ApiResponse<ActivatePlanResultDto>> {
     const { plan = 'pro', months = 3 } = body || {};
     if (req.user.role !== 'admin') {
       // 레거시와 동일한 501 + comingSoon 페이로드(프론트가 이 플래그로 안내 문구를 띄움).

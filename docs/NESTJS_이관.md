@@ -180,7 +180,27 @@ kill %1
 - **`/health`**
 - **백그라운드** — 레시피 로드·스케줄러·영상 폴러 (`startBackground()`, Nest 부팅 후 호출)
 
-## 9. 남은 과제
+## 9. DTO / VO 컨벤션
+
+NestJS에 **DTO는 1급 개념**(공식 문서 권장)이지만 **VO는 프레임워크 개념이 아니다**(DDD 용어). 그래서 이 프로젝트는 둘을 이렇게 나눠 쓴다.
+
+| | 무엇 | 위치 | 형태 | 표기 |
+|---|---|---|---|---|
+| **VO** | **DB 행 스냅샷** — repository/서비스가 다루는 내부 표현 | `nest/<도메인>/vo/*.vo.ts` | `interface` + `readonly` | **snake_case 유지** |
+| **DTO** | **API 경계 객체** — 요청/응답 계약 | `nest/<도메인>/dto/*.dto.ts` | 응답=`interface`, 요청=`class` | camelCase(응답에 VO가 그대로 나가면 예외) |
+
+- **왜 VO는 snake_case인가**: 응답 JSON에 DB 컬럼명이 그대로 나가고 **프론트가 그 이름을 읽는다**(`logo_url`·`price_credits`·`my_role`). 이름을 바꾸면 프론트가 깨진다. VO는 "지금 실제로 나가는 모양"을 고정하는 안전장치다.
+- **왜 요청 DTO만 class인가**: TS `interface`는 컴파일 후 사라져 런타임 메타데이터가 없다. 나중에 `class-validator` 데코레이터(`@IsUUID()` 등)와 `ValidationPipe`를 붙이려면 class여야 한다. 지금은 **타입 전용**(런타임 동작 변화 0).
+- 공통 계약: `nest/common/dto/api-response.dto.ts` — `ApiResponse<T>`(`{success,data}`) · `ApiOk` · `ApiError` · `ApiPaginated<T>` · `ApiWithTotal<T>` · `ApiWithHasMore<T>`. 공용 VO는 `nest/common/vo/`(예: `LedgerEntryVo`).
+
+**Spring 대응**: `ApiResponse<T>`=공통 응답 래퍼 · 요청 DTO=`@Valid @RequestBody` 대상 · VO=JPA 엔티티 자리(단 우리는 ORM 없이 raw row).
+
+**적용 현황**: `common` · `subscription` · `dashboard` · `credits` · `brand-kit` · `teams` (컨트롤러 반환 타입까지 부착 완료).
+효과 실측 — 타입을 붙이자마자 `teams` 이체에서 `parseInt(number)` 타입 오류가 컴파일에서 잡혔다(런타임은 정상이었지만 계약이 모호했던 지점).
+
+**미적용(다음 대상)**: marketplace · studio · characters/media · publishing · accounts · generate · admin · trial · template-data · recipes · affiliate · billing · pricing · auth.
+
+## 10. 남은 과제
 
 1. dev에서 충분히 검증 후 staging/prod도 `dist/main.js` 로 전환(ecosystem·deploy.sh)
 2. 위임형(B) 4개 도메인을 순수 데이터 핸들러부터 서비스 추출형(A)으로 전환
