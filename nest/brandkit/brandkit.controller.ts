@@ -14,6 +14,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BrandkitService, LOGO_MULTER_OPTIONS } from './brandkit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiResponse } from '../common/dto/api-response.dto';
+import { BrandKitVo } from './vo/brand-kit.vo';
+import { UpdateBrandKitDto } from './dto/brand-kit.dto';
 
 // /api/brand-kit — 전 엔드포인트 인증 필요(= 레거시 requireAuth).
 //   응답 형식은 레거시와 동일하게 { success, data } 유지.
@@ -24,13 +27,13 @@ export class BrandkitController {
 
   // GET /api/brand-kit
   @Get()
-  async get(@Req() req: any) {
+  async get(@Req() req: any): Promise<ApiResponse<BrandKitVo>> {
     return { success: true, data: await this.brandkit.get(req.user.id) };
   }
 
   // PATCH /api/brand-kit { primaryColor?, fontName?, enabled? }
   @Patch()
-  async update(@Req() req: any, @Body() body: any) {
+  async update(@Req() req: any, @Body() body: UpdateBrandKitDto): Promise<ApiResponse<BrandKitVo>> {
     return { success: true, data: await this.brandkit.update(req.user.id, body) };
   }
 
@@ -39,7 +42,7 @@ export class BrandkitController {
   @Post('logo')
   @HttpCode(200) // 레거시 res.json=200에 맞춤(Nest POST 기본 201 방지)
   @UseInterceptors(FileInterceptor('logo', LOGO_MULTER_OPTIONS))
-  async uploadLogo(@Req() req: any, @UploadedFile() file: any) {
+  async uploadLogo(@Req() req: any, @UploadedFile() file: any): Promise<ApiResponse<BrandKitVo>> {
     if (!file) {
       throw new HttpException({ success: false, error: 'logo file required' }, 400);
     }

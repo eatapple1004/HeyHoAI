@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { CreditOverviewDto, PointExchangeResultDto } from './dto/credits.dto';
+import { LedgerEntryVo } from '../common/vo/ledger.vo';
 import * as path from 'path';
 
 // 기존 크레딧 로직 재사용(중복 금지) — DB 접근·계산은 레거시 credit.service.js / team.credit.js가 담당.
@@ -11,7 +13,7 @@ const teamCredit = require(path.join(__dirname, '..', '..', 'src', 'teams', 'tea
 @Injectable()
 export class CreditsService {
   // GET /api/credits — 현재 컨텍스트(개인/팀) 잔액 + 포인트 + 가격표. admin(개인)만 unlimited.
-  async overview(user: { id: string; role: string }) {
+  async overview(user: { id: string; role: string }): Promise<CreditOverviewDto> {
     const ctx = await teamCredit.resolveContext(user.id);
     const isTeam = ctx.type === 'team';
     const balance = isTeam
@@ -28,15 +30,15 @@ export class CreditsService {
     };
   }
 
-  exchange(userId: string, amount: any) {
+  exchange(userId: string, amount: any): Promise<PointExchangeResultDto> {
     return creditService.exchangePointsToCredits(userId, amount);
   }
 
-  pointLedger(userId: string, limit: number) {
+  pointLedger(userId: string, limit: number): Promise<LedgerEntryVo[]> {
     return creditService.getPointLedger(userId, limit);
   }
 
-  ledger(userId: string, limit: number) {
+  ledger(userId: string, limit: number): Promise<LedgerEntryVo[]> {
     return creditService.getLedger(userId, limit);
   }
 }

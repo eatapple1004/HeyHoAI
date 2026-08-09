@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { BrandKitVo } from './vo/brand-kit.vo';
+import { UpdateBrandKitDto } from './dto/brand-kit.dto';
 import * as path from 'path';
 
 // 브랜드킷 로직 재사용(중복 금지) — DB·업로드 설정은 레거시 brandkit.service.js 단일소스가 담당.
@@ -14,17 +16,17 @@ export const LOGO_MULTER_OPTIONS = legacy.multerOptions(multer);
 @Injectable()
 export class BrandkitService {
   // 사용자 브랜드킷 조회(없으면 기본값)
-  get(userId: string) {
+  get(userId: string): Promise<BrandKitVo> {
     return legacy.getBrandKit(userId);
   }
 
   // 색상·폰트·사용여부 부분 수정(upsert)
-  update(userId: string, body: any) {
+  update(userId: string, body: UpdateBrandKitDto): Promise<BrandKitVo> {
     return legacy.updateBrandKit(userId, body || {});
   }
 
   // 업로드된 로고 파일명을 브랜드킷에 반영
-  setLogo(userId: string, filename: string) {
+  setLogo(userId: string, filename: string): Promise<BrandKitVo> {
     return legacy.setLogo(userId, filename);
   }
 }
