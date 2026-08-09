@@ -36,11 +36,16 @@ async function bootstrap() {
   app.useGlobalFilters(new LegacyErrorFilter());
 
   const server = app.getHttpAdapter().getInstance();
+  // 레거시 app과 동일한 Express 설정 — Nest는 **자체 Express 인스턴스**라 src/index.js의 설정이 적용되지 않는다.
+  //   trust proxy: nginx/Cloudflare 뒤에서 req.protocol/ip를 X-Forwarded-*로 판단.
+  //   미설정 시 https 요청이 http로 보여 팀 초대 링크·OAuth redirect_uri·결제 리턴 URL이 http로 생성된다(실측).
+  server.set('trust proxy', 1);
   // 라우팅 스위치 — Nest 소유 경로면 Nest로, 아니면 레거시 Express가 처리.
   //   Nest 라우트 등록(app.listen 내부 init)보다 먼저 걸리므로 폴백이 확실히 동작.
   //   ⚠️ 파싱은 Nest 경로에만 적용 — 레거시 경로는 레거시 자체 파서가 처리(이중파싱/limit 충돌 회피).
   const cookieMw = cookieParser();
-  const jsonMw = express.json({ limit: '10mb' });
+  // 바디 상한도 레거시(src/index.js)와 동일하게 50mb — 10mb였을 때 제안서 저장 등 큰 data URL 요청이 413으로 깨졌다(실측).
+  const jsonMw = express.json({ limit: '50mb' });
   server.use((req: any, res: any, next: any) => {
     const p = req.path || req.url || '';
     const excluded = NEST_EXCLUDE.some((e) => p === e);   // 웹훅 등은 접두사 매칭돼도 레거시 유지
