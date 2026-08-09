@@ -14,6 +14,8 @@ const multer = require('multer');
 const fs = require('fs');
 
 export const accountHandlers = accountRoute.handlers;
+// 조회 API — 데이터만 반환하는 단일소스(@Res() 위임 없이 컨트롤러가 직접 호출).
+const reads = accountRoute.reads;
 
 // 레거시와 동일한 multer 설정(tmp/images 디스크 저장·100MB) — FileInterceptor에 그대로 넘긴다.
 const uploadDir = path.join(process.cwd(), 'tmp', 'images');
@@ -39,4 +41,16 @@ export class AccountsService {
   run(name: string, req: any, res: any, next: any) {
     return accountHandlers[name](req, res, next);
   }
+
+  // ── 조회(reads) — 응답은 Nest가 직렬화한다. 소유권은 컨트롤러가 먼저 검증한 뒤 호출 ──
+  list(userId: string, q: any) { return reads.list(userId, q || {}); }
+  account(accountId: string) { return reads.account(accountId); }
+  analyticsDetail(accountId: string) { return reads.analyticsDetail(accountId); }
+  analyticsPosts(accountId: string) { return reads.analyticsPosts(accountId); }
+  basePhoto(accountId: string) { return reads.basePhoto(accountId); }
+  reelTemplates(accountId: string) { return reads.reelTemplates(accountId); }
+  outfitPrompts(accountId: string) { return reads.outfitPrompts(accountId); }
+  postQueue(accountId: string, q: any) { return reads.postQueue(accountId, q || {}); }
+  // { data, total } — total은 응답 최상위 필드
+  media(accountId: string, q: any) { return reads.media(accountId, q || {}); }
 }

@@ -8,6 +8,8 @@ import * as path from 'path';
 const packRoute = require(path.join(__dirname, '..', '..', 'src', 'pack', 'pack.route.js'));
 
 export const packHandlers = packRoute.handlers;
+// 조회 API — 데이터만 반환하는 단일소스(@Res() 위임 없이 컨트롤러가 직접 호출).
+const reads = packRoute.reads;
 // 업로드 정규화(HEIC→JPEG 변환·매직바이트 검증) — 멀티파트 라우트에서 핸들러 앞에 태운다.
 export const normalizeUploads = packRoute.normalizeUploads;
 // 레거시와 동일한 multer 설정(tmp/uploads 디스크 저장·12MB) — FileInterceptor에 그대로 넘긴다.
@@ -29,5 +31,10 @@ export class PackService {
   // 핸들러를 Express 시그니처 그대로 실행(응답은 핸들러가 직접 씀).
   run(name: string, req: any, res: any, next: any) {
     return packHandlers[name](req, res, next);
+  }
+
+  /** 팩 상태 폴링(숫자 id 또는 shareId). 미존재는 statusCode 404 에러. */
+  pack(userId: string, key: string) {
+    return reads.pack(userId, key);
   }
 }

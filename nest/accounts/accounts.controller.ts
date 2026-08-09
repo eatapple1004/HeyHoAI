@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Get, Post, Patch, Delete, Param, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, HttpCode, Get, Post, Patch, Delete, Param, Query, Req, Res, Next, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AccountsService, ACCOUNT_UPLOAD_OPTIONS } from './accounts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,15 +21,15 @@ export class AccountsController {
 
   // GET /api/accounts — 저장된 계정 목록
   @Get()
-  list(@Req() req: any, @Res() res: any, @Next() next: any) {
-    return this.accounts.run('list', req, res, next);
+  async list(@Req() req: any, @Query() q: any) {
+    return { success: true, data: await this.accounts.list(req.user.id, q) };
   }
 
   // GET /api/accounts/:id — 계정 상세
   @Get(':id')
-  async getAccount(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
+  async getAccount(@Req() req: any, @Param('id') id: string) {
     await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getAccount', req, res, next);
+    return { success: true, data: await this.accounts.account(id) };
   }
 
   // PATCH /api/accounts/:id/status — active|paused|disabled 전환
@@ -48,16 +48,16 @@ export class AccountsController {
 
   // GET /api/accounts/:id/analytics/detail — Zernio 계정 지표
   @Get(':id/analytics/detail')
-  async getAnalyticsDetail(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getAnalyticsDetail', req, res, next);
+  async getAnalyticsDetail(@Req() req: any, @Param('id') id: string) {
+    await this.accounts.assertOwned(id, req.user.id);
+    return { success: true, data: await this.accounts.analyticsDetail(id) };
   }
 
   // GET /api/accounts/:id/analytics/posts — Zernio 게시물 지표
   @Get(':id/analytics/posts')
-  async getAnalyticsPosts(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getAnalyticsPosts', req, res, next);
+  async getAnalyticsPosts(@Req() req: any, @Param('id') id: string) {
+    await this.accounts.assertOwned(id, req.user.id);
+    return { success: true, data: await this.accounts.analyticsPosts(id) };
   }
 
   // DELETE /api/accounts/:id — 계정 연결 해제
@@ -77,9 +77,9 @@ export class AccountsController {
 
   // GET /api/accounts/:id/base-photo — 기본 사진 조회
   @Get(':id/base-photo')
-  async getBasePhoto(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getBasePhoto', req, res, next);
+  async getBasePhoto(@Req() req: any, @Param('id') id: string) {
+    await this.accounts.assertOwned(id, req.user.id);
+    return { success: true, data: await this.accounts.basePhoto(id) };
   }
 
   // POST /api/accounts/:id/generate-outfits — 기본 사진 기반 의상 변경 생성(Gemini)
@@ -100,9 +100,9 @@ export class AccountsController {
 
   // GET /api/accounts/:id/reel-templates — 릴스 프롬프트 템플릿 목록
   @Get(':id/reel-templates')
-  async getReelTemplates(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getReelTemplates', req, res, next);
+  async getReelTemplates(@Req() req: any, @Param('id') id: string) {
+    await this.accounts.assertOwned(id, req.user.id);
+    return { success: true, data: await this.accounts.reelTemplates(id) };
   }
 
   // DELETE /api/accounts/reel-templates/:templateId — 릴스 템플릿 삭제
@@ -113,9 +113,9 @@ export class AccountsController {
 
   // GET /api/accounts/:id/outfit-prompts — 의상 프롬프트 목록
   @Get(':id/outfit-prompts')
-  async getOutfitPrompts(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getOutfitPrompts', req, res, next);
+  async getOutfitPrompts(@Req() req: any, @Param('id') id: string) {
+    await this.accounts.assertOwned(id, req.user.id);
+    return { success: true, data: await this.accounts.outfitPrompts(id) };
   }
 
   // POST /api/accounts/:id/outfit-prompts — 의상 프롬프트 저장
@@ -148,9 +148,9 @@ export class AccountsController {
 
   // GET /api/accounts/:id/post-queue — 발행 큐 목록
   @Get(':id/post-queue')
-  async getPostQueue(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getPostQueue', req, res, next);
+  async getPostQueue(@Req() req: any, @Param('id') id: string, @Query() q: any) {
+    await this.accounts.assertOwned(id, req.user.id);
+    return { success: true, data: await this.accounts.postQueue(id, q) };
   }
 
   // POST /api/accounts/:id/post-queue — 발행 큐 추가
@@ -202,11 +202,12 @@ export class AccountsController {
     return this.accounts.run('deletePostQueue', req, res, next);
   }
 
-  // GET /api/accounts/:id/media — 계정 미디어 목록
+  // GET /api/accounts/:id/media — 계정 미디어 목록(+total)
   @Get(':id/media')
-  async getMedia(@Req() req: any, @Res() res: any, @Next() next: any, @Param('id') id: string) {
-    await this.accounts.assertOwned(id, req.user.id); // 레거시 router.param('id')와 동일
-    return this.accounts.run('getMedia', req, res, next);
+  async getMedia(@Req() req: any, @Param('id') id: string, @Query() q: any) {
+    await this.accounts.assertOwned(id, req.user.id);
+    const { data, total } = await this.accounts.media(id, q);
+    return { success: true, data, total };
   }
 
   // POST /api/accounts/:id/media/upload — 미디어 업로드(multipart file)

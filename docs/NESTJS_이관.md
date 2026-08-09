@@ -103,6 +103,9 @@ if (!ownedByNest) return legacyApp(req, res, next);
 적용: admin refine(2) · pack(11) · accounts(32) · generate(44)
 
 > (B)는 최종 형태가 아니라 중간 단계다. 여유가 생기면 순수 데이터 핸들러부터 (A)로 옮긴다.
+>
+> **전환 방법(PR#196·#197에서 사용)**: 레거시 라우터 파일 안에 `reads` 객체를 만들어 **데이터만 반환**(404는 `statusCode` 에러 throw) → 레거시 라우트는 `sendRead` 얇은 어댑터로 기존 응답 유지 → Nest 컨트롤러는 `@Res()` 없이 반환값 방식. 헬퍼가 라우터 파일에 몰려 있어 파일을 쪼개지 않고 같은 모듈에 두는 게 안전하다.
+> 진행: generate 조회 13 · accounts 조회 9 · pack `getPack` 1 전환 완료(잔여 위임 = generate 31 · accounts 23 · pack 10 · refine 2).
 
 ---
 
@@ -117,6 +120,16 @@ diff <(curl -s :3002/api/... -H "$JWT") <(curl -s :3003/api/... -H "$JWT")
 ```
 정상 응답뿐 아니라 **에러 응답·상태코드**까지 바이트 동일한지 본다. 변경 시퀀스는 양쪽에서 각각 돌려 비교.
 검증 후 `.env.development` 삭제 + 서버 kill.
+
+### 자동화 — `scripts/nest_parity_check.js`
+위 diff를 케이스 목록으로 고정한 스크립트. 두 서버를 띄운 뒤:
+```bash
+node scripts/nest_parity_check.js --token <user JWT> --admin-token <admin JWT>
+# --only /api/generate  로 일부만, 불일치 있으면 종료코드 1
+```
+조회·에러 경로·권한(401/403) 케이스를 상태코드 + 본문 바이트로 비교한다.
+비결정적 응답(`ugc/voice-preview` 같은 생성 오디오)은 상태·Content-Type만 본다.
+**도메인을 새로 포팅하거나 위임을 네이티브로 바꿀 때마다 케이스를 추가할 것.**
 
 ---
 

@@ -563,22 +563,10 @@ const createHandler = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-const getPackGetHandler = async (req, res, next) => {
-  try {
-    const key = String(req.params.id);
-    const byId = /^\d+$/.test(key);
-    const pack = await repo.getPack(byId ? { id: Number(key) } : { shareId: key });
-    if (!pack) return res.status(404).json({ error: 'not found' });
-    // 🧟 폴링이 곧 회수 기회다 — 부팅 회수 이후에 죽은 팩도 여기서 걸린다(부팅 sweep만으론 늦다).
-    //   전체 sweep이 아니라 **이 행 하나**만 손본다(폴링마다 전역 UPDATE를 돌리면 안 된다).
-    if (repo.isStale(pack)) {
-      await repo.setStatus(pack.id, 'failed', repo.STALE_ERROR);
-      pack.status = 'failed'; pack.error = repo.STALE_ERROR;
-      logger.warn?.(`[pack ${pack.id}] 활동 없음 ${repo.STALE_MIN}분 → failed 로 회수`);
-    }
-    pack.ref = await refInfo(req.user && req.user.id);   // 게이트가 굽기 비용·잔여를 말하려면 필요
-    res.json(pack);
-  } catch (e) { next(e); }
+const getPackGetHandler = (req, res, next) => {
+  reads.pack(req.user && req.user.id, req.params.id)
+    .then((pack) => res.json(pack))
+    .catch((e) => (e && e.statusCode ? res.status(e.statusCode).json({ error: e.message }) : next(e)));
 };
 
 /** 레퍼 게이트 통과 → 스틸 생성 시작(depth = 만들 컷 수, 0=전부). ref_ready 상태에서만. */
@@ -836,6 +824,30 @@ const rebakeRefHandler = async (req, res, next) => {
   } catch (e) { if (rbCharge) await rbCharge.refund().catch(() => {}); next(e); }   // 굽기 실패 = 방금 받은 ◈100 환불
 };
 
+// ── 조회 API (reads) — 레거시 라우트와 Nest(nest/pack)가 함께 쓰는 단일소스 ──
+//   ⚠️ 팩 응답 봉투는 {success,data}가 아니라 **팩 객체 그대로**, 에러는 {error} 다. 그대로 보존한다.
+const reads = {
+  /**
+   * 팩 상태 폴링 — key는 숫자 id 또는 shareId.
+   * 죽은 팩 회수(stale sweep)를 이 행 하나에만 적용하는 기존 동작 유지.
+   */
+  async pack(userId, key) {
+    const k = String(key);
+    const byId = /^\d+$/.test(k);
+    const pack = await repo.getPack(byId ? { id: Number(k) } : { shareId: k });
+    if (!pack) throw Object.assign(new Error('not found'), { statusCode: 404 });
+    // 🧟 폴링이 곧 회수 기회다 — 부팅 회수 이후에 죽은 팩도 여기서 걸린다(부팅 sweep만으론 늦다).
+    //   전체 sweep이 아니라 **이 행 하나**만 손본다(폴링마다 전역 UPDATE를 돌리면 안 된다).
+    if (repo.isStale(pack)) {
+      await repo.setStatus(pack.id, 'failed', repo.STALE_ERROR);
+      pack.status = 'failed'; pack.error = repo.STALE_ERROR;
+      logger.warn?.(`[pack ${pack.id}] 활동 없음 ${repo.STALE_MIN}분 → failed 로 회수`);
+    }
+    pack.ref = await refInfo(userId);   // 게이트가 굽기 비용·잔여를 말하려면 필요
+    return pack;
+  },
+};
+
 // ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
 router.post('/classify', upload.array('photos', 10), normalizeUploads, classifyHandler);
 router.post('/', upload.array('photos', 10), normalizeUploads, createHandler);
@@ -867,3 +879,5 @@ module.exports.handlers = {
 };
 module.exports.upload = upload;
 module.exports.normalizeUploads = normalizeUploads;
+// 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
+module.exports.reads = reads;
