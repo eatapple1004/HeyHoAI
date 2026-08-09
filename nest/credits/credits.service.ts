@@ -3,6 +3,7 @@ import * as path from 'path';
 import { CreditRepository } from './credit.repository';
 import { CreditOverviewDto, PointExchangeResultDto } from './dto/credits.dto';
 import { LedgerEntryVo } from '../common/vo/ledger.vo';
+import { TeamCreditRepository } from '../teams/team-credit.repository';
 
 /**
  * ⚠️ **가격표(COSTS·imageCost·videoCost 등)는 이식하지 않고 단일소스를 그대로 쓴다.**
@@ -11,9 +12,6 @@ import { LedgerEntryVo } from '../common/vo/ledger.vo';
  */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pricing = require(path.join(__dirname, '..', '..', 'src', 'credits', 'credit.service.js'));
-// 팀 컨텍스트(개인/팀 풀 판정)는 teams 크레딧과 얽혀 있어 아직 재사용.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const teamCredit = require(path.join(__dirname, '..', '..', 'src', 'teams', 'team.credit.js'));
 
 /** 차감 결과 — refund()로 되돌릴 수 있다(멱등: 두 번 불러도 한 번만 환불) */
 export interface ChargeHandle {
@@ -24,13 +22,18 @@ export interface ChargeHandle {
 
 @Injectable()
 export class CreditsService {
-  constructor(private readonly repo: CreditRepository) {}
+  constructor(
+    private readonly repo: CreditRepository,
+    // 서비스가 아니라 **리포지토리**를 주입한다 — TeamCreditService가 CreditsService를 쓰므로
+    // 서비스끼리 주입하면 순환 의존이 된다(forwardRef 없이 푸는 방향).
+    private readonly teamCredit: TeamCreditRepository,
+  ) {}
 
   /** 현재 컨텍스트(개인/팀) 잔액 + 포인트 + 가격표. admin(개인)만 unlimited */
   async overview(user: { id: string; role: string }): Promise<CreditOverviewDto> {
-    const ctx = await teamCredit.resolveContext(user.id);
+    const ctx = await this.teamCredit.resolveContext(user.id);
     const isTeam = ctx.type === 'team';
-    const balance = isTeam ? await teamCredit.getBalance(ctx.teamId) : await this.repo.getBalance(user.id);
+    const balance = isTeam ? await this.teamCredit.getBalance(ctx.teamId) : await this.repo.getBalance(user.id);
     return {
       balance,
       points: await this.repo.getPoints(user.id),
@@ -40,6 +43,11 @@ export class CreditsService {
         ? { type: 'team', teamId: ctx.teamId, teamName: ctx.teamName, role: ctx.role }
         : { type: 'personal' },
     };
+  }
+
+  /** 개인 잔액 */
+  getBalance(userId: string): Promise<number> {
+    return this.repo.getBalance(userId);
   }
 
   ledger(userId: string, limit: number): Promise<LedgerEntryVo[]> {

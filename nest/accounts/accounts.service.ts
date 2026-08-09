@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { OwnershipService } from '../common/security/ownership.service';
 import { SocialAccountVo, AccountMediaVo, PostQueueItemVo, ReelTemplateVo, OutfitPromptVo } from './vo/account.vo';
 import { DefaultCaptionsDto, ListAccountsQueryDto, ListMediaQueryDto, ListPostQueueQueryDto } from './dto/account.dto';
 import * as path from 'path';
@@ -7,9 +8,6 @@ import * as path from 'path';
 //   한 핸들러에 얽혀 있어 레거시 핸들러를 그대로 실행한다(Nest는 라우팅·가드만 가져간다). pack과 동일한 방식.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const accountRoute = require(path.join(__dirname, '..', '..', 'src', 'publishing', 'account.route.js'));
-// 레거시 router.param('id')가 하던 계정 소유권 검증 — Nest에선 컨트롤러가 직접 호출한다.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { assertAccountOwned } = require(path.join(__dirname, '..', '..', 'src', 'middleware', 'ownership.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -36,9 +34,12 @@ export const ACCOUNT_UPLOAD_OPTIONS = {
 
 @Injectable()
 export class AccountsService {
+  /** 레거시 router.param('id')가 하던 계정 소유권 검증 — Nest에선 컨트롤러/서비스가 직접 호출한다. */
+  constructor(private readonly ownership: OwnershipService) {}
+
   /** 계정 소유권 검증(= 레거시 router.param('id')). 실패 시 statusCode 에러 throw. */
   assertOwned(accountId: string, userId: string) {
-    return assertAccountOwned(accountId, userId);
+    return this.ownership.assertAccountOwned(accountId, userId);
   }
 
   /** 레거시 핸들러를 Express 시그니처 그대로 실행(응답은 핸들러가 직접 씀). */
