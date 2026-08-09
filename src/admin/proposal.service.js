@@ -1,4 +1,5 @@
 const { query } = require('../db/client');
+const { ensureSchema } = require('../db/ensureSchema');
 
 // 제안서(회사 맞춤 소개 페이지) 빌더 로직 단일소스 — 레거시 라우트(proposal.route.js)와 Nest(nest/admin) 공용.
 
@@ -86,28 +87,27 @@ async function listResults(userId, q = {}) {
 
 // ─── 저장(초안) — 작성한 제안서를 저장/수정/불러오기/삭제. ───
 //   selection = URL·dataURL만 저장(작음). 빌드 시 프론트가 base64 임베드. self-ensure 스키마.
-let _ensured = false;
-async function ensureSchema() {
-  if (_ensured) return;
-  await query(`
-    CREATE TABLE IF NOT EXISTS proposals (
-      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id    UUID,
-      company    TEXT NOT NULL,
-      title      TEXT,
-      meta       JSONB NOT NULL DEFAULT '{}'::jsonb,      -- {about,intro,svc,ctaLabel,ctaUrl}
-      selection  JSONB NOT NULL DEFAULT '[]'::jsonb,      -- [{gkey,beforeUrl,altBeforeUrl,beforeKind,caption,results:[{afterUrl}]}]
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE INDEX IF NOT EXISTS idx_proposals_user ON proposals(user_id, updated_at DESC);
-  `);
-  _ensured = true;
+// 동시 요청/다중 프로세스 경쟁에 안전하도록 공용 ensureSchema 사용(중복 생성 에러는 성공으로 간주).
+const PROPOSALS_SQL = `
+  CREATE TABLE IF NOT EXISTS proposals (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID,
+    company    TEXT NOT NULL,
+    title      TEXT,
+    meta       JSONB NOT NULL DEFAULT '{}'::jsonb,      -- {about,intro,svc,ctaLabel,ctaUrl}
+    selection  JSONB NOT NULL DEFAULT '[]'::jsonb,      -- [{gkey,beforeUrl,altBeforeUrl,beforeKind,caption,results:[{afterUrl}]}]
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_proposals_user ON proposals(user_id, updated_at DESC);
+`;
+function ensureSchemaProposals() {
+  return ensureSchema('proposals', PROPOSALS_SQL);
 }
 
 /** 저장/수정 — id 있으면 update, 없으면 insert. 반환 {id}. */
 async function save(userId, b = {}) {
-  await ensureSchema();
+  await ensureSchemaProposals();
   const company = String(b.company || '').trim();
   if (!company) throw httpError(400, '회사명이 필요합니다.');
   const meta = {
@@ -134,7 +134,7 @@ async function save(userId, b = {}) {
 
 /** 목록 — 최신순(관리자 공유). */
 async function list() {
-  await ensureSchema();
+  await ensureSchemaProposals();
   const r = await query(
     `SELECT id, company, title, updated_at, jsonb_array_length(selection) AS groups
        FROM proposals ORDER BY updated_at DESC LIMIT 100`
@@ -144,7 +144,7 @@ async function list() {
 
 /** 단건 — 편집용 전체 로드. */
 async function getSaved(id) {
-  await ensureSchema();
+  await ensureSchemaProposals();
   const r = await query(`SELECT id, company, title, meta, selection FROM proposals WHERE id=$1`, [id]);
   if (!r.rows[0]) throw httpError(404, 'not found');
   return r.rows[0];
@@ -152,7 +152,7 @@ async function getSaved(id) {
 
 /** 삭제 */
 async function removeSaved(id) {
-  await ensureSchema();
+  await ensureSchemaProposals();
   await query(`DELETE FROM proposals WHERE id=$1`, [id]);
 }
 
