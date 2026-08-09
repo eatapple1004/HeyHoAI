@@ -195,10 +195,14 @@ NestJS에 **DTO는 1급 개념**(공식 문서 권장)이지만 **VO는 프레�
 
 **Spring 대응**: `ApiResponse<T>`=공통 응답 래퍼 · 요청 DTO=`@Valid @RequestBody` 대상 · VO=JPA 엔티티 자리(단 우리는 ORM 없이 raw row).
 
-**적용 현황**: `common` · `subscription` · `dashboard` · `credits` · `brand-kit` · `teams` (컨트롤러 반환 타입까지 부착 완료).
+**적용 현황**: `common` · `subscription` · `dashboard` · `credits` · `brand-kit` · `teams` · **`marketplace`(24라우트·VO 9종/DTO 20종)** — 컨트롤러 반환 타입까지 부착 완료.
 효과 실측 — 타입을 붙이자마자 `teams` 이체에서 `parseInt(number)` 타입 오류가 컴파일에서 잡혔다(런타임은 정상이었지만 계약이 모호했던 지점).
 
-**미적용(다음 대상)**: marketplace · studio · characters/media · publishing · accounts · generate · admin · trial · template-data · recipes · affiliate · billing · pricing · auth.
+**미적용(다음 대상)**: studio · characters/media · publishing · accounts · generate · admin · trial · template-data · recipes · affiliate · billing · pricing · auth.
+
+**응답 봉투 예외도 타입으로 고정한다**: 표준은 `ApiResponse<T>`지만 실제로는 최상위 필드가 더 붙는 곳이 있다 —
+`ApiWithCharged<T>`(marketplace use/acquire의 `charged`) · `ApiPaginated<T>`(characters·contents) · `ApiWithTotal<T>`(accounts media) · `ApiWithHasMore<T>`(admin creations) · pack은 봉투 없이 객체 그대로.
+새 도메인에 타입을 붙일 땐 **먼저 실제 응답을 확인**하고 맞는 봉투 타입을 고를 것(추측 금지).
 
 ## 10. 남은 과제
 
