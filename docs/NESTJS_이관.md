@@ -1,0 +1,139 @@
+# NestJS 이관 (strangler) — 아키텍처 & 작업 규칙
+
+> **왜**: 백엔드 코드를 Spring MVC 멘탈모델(@RestController/@Service/DI/가드)로 읽고 디버깅하기 위해 Express → NestJS로 **점진 이관**.
+> **범위**: **dev(develop)만** NestJS로 부팅. staging/prod는 `node src/index.js` 그대로라 무영향.
+> **현황(2026-08-09)**: 마운트된 API 라우트 **225/225 = 100%** Nest 소유. 레거시로 남긴 것은 결제 웹훅 3개 + 정적/페이지/백그라운드.
+
+---
+
+## 1. 구조
+
+```
+nest/                 TypeScript 소스 (rootDir)
+  main.ts             NestFactory 부팅 + 라우팅 스위치 + 전역 설정
+  app.module.ts       도메인 모듈 등록 (= Spring @ComponentScan 자리)
+  common/             전역 예외 필터
+  auth/               JwtAuthGuard · AdminGuard · auth 도메인
+  <도메인>/            *.controller.ts · *.service.ts · *.module.ts
+src/                  레거시 Express (도메인 로직·리포지토리·프로바이더)
+dist/                 tsc 산출물 (outDir) — dev는 `node dist/main.js` 로 뜬다
+```
+
+- 빌드: `npm run build` (= `tsc -p tsconfig.json`)
+- 실행: dev = `dist/main.js`, staging/prod = `src/index.js`
+- `ecosystem.config.js`: `heyhoai-dev` 만 script=`dist/main.js`
+- `deploy/deploy.sh`: `ENVN=dev` 일 때만 `npm run build` 단계 추가
+
+### 레거시 앱을 감싸는 방식
+
+`src/index.js`는 `app.listen`을 `require.main === module` 로 감싸고, 백그라운드 초기화(레시피 로드·스케줄러·영상 폴러)를 `startBackground()` 로 분리해 export 한다.
+→ prod/staging은 그대로 단독 실행되고, dev에서는 `nest/main.ts` 가 그 앱을 **미들웨어로 마운트**한 뒤 `startBackground()` 를 직접 호출한다.
+
+---
+
+## 2. 라우팅 스위치 = 이관 원장
+
+`nest/main.ts` 의 **`NEST_PREFIXES`** 배열에 나열된 접두사만 Nest가 처리하고, 나머지는 전부 레거시 Express로 폴백한다.
+
+```ts
+const ownedByNest = !excluded && NEST_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
+if (!ownedByNest) return legacyApp(req, res, next);
+```
+
+- 화이트리스트 방식인 이유: Nest가 매칭 실패 시 **자체 404**를 내버려 레거시로 안 내려갔기 때문.
+- **`NEST_EXCLUDE`**: 접두사에 걸려도 레거시로 보낼 경로. **완전일치 비교**라 동적 경로(`:id`)에는 못 쓴다.
+  현재 값 = 결제 웹훅 3개(`/api/billing/webhook`, `/api/billing/eximbay/status`, `/api/billing/portone/webhook`) — raw/text body 서명 검증이라 JSON 파싱되면 깨진다.
+- Nest 경로에만 `cookie-parser` + `express.json` 을 태운다(레거시 경로는 레거시 자체 파서 사용 → 이중 파싱·limit 충돌 회피).
+
+---
+
+## 3. 포팅 방법 (도메인 1개씩)
+
+1. 로직이 라우트/컨트롤러에 인라인이면 **먼저 `src/<도메인>/<도메인>.service.js`(또는 `.api.js`)로 추출** → 레거시 라우트는 얇게, Nest 서비스는 그걸 `require`. **로직을 두 벌로 만들지 않는다.**
+2. `nest/<도메인>/` 에 controller/service/module 작성 → `app.module.ts` imports 등록
+3. `NEST_PREFIXES` 에 경로 추가
+4. 2서버 diff로 검증(아래 §6) → PR → develop 머지
+
+| Spring | Nest |
+|---|---|
+| `@RestController` | `@Controller` |
+| `@Service` | `@Injectable` |
+| `@Autowired` | 생성자 주입 |
+| `@PreAuthorize` / `hasRole('ADMIN')` | `@UseGuards(JwtAuthGuard)` / `AdminGuard` |
+| `@ControllerAdvice` | `LegacyErrorFilter` (전역) |
+| `application-{profile}.yml` | `.env.<env>` |
+
+### 인증
+- `nest/auth/jwt-auth.guard.ts` — 레거시 `extractToken`+`verifyToken` 재사용, `req.user = {id, role}`, 실패 401
+- `nest/auth/admin.guard.ts` — 미인증 401 / 비관리자 403 (레거시 `requireAdmin` 과 동일 문구)
+
+### 에러 형식
+`nest/common/legacy-error.filter.ts` 가 레거시 `src/middleware/errorHandler.js` 에 위임 → `statusCode` 에러 / Zod 400 / 500 응답이 레거시와 동일한 `{success, error}` 형태로 나간다.
+⚠️ 402처럼 **부가 `data`를 실어야 하는 에러**는 errorHandler가 버리므로, 컨트롤러에서 `toErrorBody(err)` 로 직접 `HttpException` 을 만든다(marketplace `use` 사례).
+
+---
+
+## 4. 함정 6가지 (전부 실제로 겪음)
+
+| # | 함정 | 대응 |
+|---|---|---|
+| ① | **라우트 선언 순서** — `:id` 가 고정 경로를 잡아먹음 | `/context`·`/register`·`jobs` 같은 고정 경로를 `:id` 보다 **먼저** 선언. 모듈 `controllers` 배열도 구체 경로 컨트롤러를 먼저 |
+| ② | **POST 기본 201** — 레거시 `res.json()` 은 200 | 포팅한 POST에 `@HttpCode(200)`. `@Res()` 위임 라우트에도 **똑같이 적용됨**(실측: `generate/bgm/upload` 201) |
+| ③ | **접두사 충돌** — `app.use('/api', ...)` 로 마운트된 레거시 라우터와 같은 접두사를 Nest가 가져가면 미포팅 경로가 Nest 404 | 접두사 추가 전 `grep -oE "router\.(get\|post)\('[^']*'" <대상라우터>` 로 경로 충돌 확인. 실제 사고: `/api/characters/:id/contents` (PR#185 → #187에서 복구) |
+| ④ | **`router.param()` 훅 소실** — Express 라우터 레벨 훅은 Nest에 없다 | 컨트롤러가 직접 호출. accounts의 계정 소유권 검증 `assertAccountOwned` 20곳 |
+| ⑤ | **Nest는 자체 Express 인스턴스** — `src/index.js` 의 `app.set/use` 가 안 따라옴 | `nest/main.ts` 에도 반영. 현재 `trust proxy: 1`(미설정 시 `req.protocol`=http → 초대 링크·OAuth redirect_uri·결제 리턴 URL이 http), `express.json({limit:'50mb'})`(10mb였을 때 큰 data URL 요청 413) |
+| ⑥ | **큰 도메인은 메서드로 못 나눔** — 스위치가 경로 접두사 기반 | **경로 서브트리 단위**로 분할. marketplace = `/templates/**` 먼저(PR#183) → 나머지 후 `/api/marketplace` 로 확장(PR#184) |
+
+---
+
+## 5. 두 가지 포팅 스타일
+
+### (A) 서비스 추출형 — 기본
+로직을 `src/` 서비스로 뽑고 레거시 라우트와 Nest 컨트롤러가 **같은 함수**를 호출.
+적용: pricing · credits · billing · subscription · dashboard · brand-kit · teams · affiliate · recipes · studio · marketplace · characters/미디어 · template-data · trial · publishing · admin(data·proposal) · auth
+
+### (B) `@Res()` 위임형 — 예외
+아래가 얽혀 응답 형태·타이밍을 그대로 보존해야 하는 도메인은 **라우팅·가드만** Nest가 가져가고 핸들러는 레거시 함수를 그대로 호출한다.
+- NDJSON **스트리밍**(admin refine)
+- **202 응답 후 `setImmediate` 백그라운드 작업**(pack·accounts·generate)
+- 크레딧 차감/환불 정산, 외부 API(Zernio·Gemini·Kling)
+- 응답 봉투가 `{success,data}` 가 아님(`{...}` / `{error}`)
+
+방법: 레거시 라우터 파일에서 인라인 핸들러를 **이름 있는 핸들러로 분리** → `module.exports.handlers` 로 노출 → Nest 컨트롤러가 `@Res()`로 호출. 멀티파트는 레거시와 **동일한 multer 설정**을 `FileInterceptor`/`FilesInterceptor`/`FileFieldsInterceptor` 에 넘긴다.
+적용: admin refine(2) · pack(11) · accounts(32) · generate(44)
+
+> (B)는 최종 형태가 아니라 중간 단계다. 여유가 생기면 순수 데이터 핸들러부터 (A)로 옮긴다.
+
+---
+
+## 6. 검증 방법 — 2서버 diff (가장 강력)
+
+```bash
+createdb doppia_migtest && npm run migrate:dev        # 프레시 로컬 DB
+# 임시 .env.development — 결제·외부 키는 빈값으로 덮어 prod 키 유출/실호출 방지
+NODE_ENV=development node dist/main.js &              # Nest  :3002
+NODE_ENV=development PORT=3003 node src/index.js &    # 레거시 :3003
+diff <(curl -s :3002/api/... -H "$JWT") <(curl -s :3003/api/... -H "$JWT")
+```
+정상 응답뿐 아니라 **에러 응답·상태코드**까지 바이트 동일한지 본다. 변경 시퀀스는 양쪽에서 각각 돌려 비교.
+검증 후 `.env.development` 삭제 + 서버 kill.
+
+---
+
+## 7. 레거시에 남는 것 (설계상 정상)
+
+- **결제 웹훅 3개** — raw/text body 서명 검증 (`NEST_EXCLUDE`)
+- **정적·미디어** — `/images/:file`(로컬 우선 → R2 302, Range 지원), `/bgm`, `/vendor/ffmpeg*`, `public/`
+- **페이지 라우트 22개** — `/`, `/login`, `/signup`, `/r/:code`, `/heyhoai/**`, `/admin-*` (HTML 서빙·`requirePage` 리다이렉트)
+- **`/health`**
+- **백그라운드** — 레시피 로드·스케줄러·영상 폴러 (`startBackground()`, Nest 부팅 후 호출)
+
+## 8. 남은 과제
+
+1. dev에서 충분히 검증 후 staging/prod도 `dist/main.js` 로 전환(ecosystem·deploy.sh)
+2. 위임형(B) 4개 도메인을 순수 데이터 핸들러부터 서비스 추출형(A)으로 전환
+3. DTO + class-validator 도입(현재는 레거시 zod 스키마 재사용)
+
+## 부록 — 이관 PR 목록
+
+`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb)
