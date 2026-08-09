@@ -271,7 +271,8 @@ node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
 | ② 단일소스 | 가격표·환경설정·시드 — 복제하면 값이 갈린다 | 유지 |
 | ③ 엔진/외부 | PG·Gemini·Kling·팩 파이프라인 | 유지 |
 
-현재: **① 8건** (32건 중). 도메인 22개 중 7개(`brandkit·dashboard·health·studio·teams·template-data·trial`)가 src 의존 0.
+현재: **① 4건** (31건 중) — `marketplace`·`accounts(account.route)`·`admin refine`·`main.ts→index(⑤단계에서 제거)`.
+도메인 22개 중 7개(`brandkit·dashboard·health·studio·teams·template-data·trial`)가 src 의존 0.
 
 **⚠️ 이식하면 안 되는 것 — 단일소스 유지**
 | 대상 | 왜 |
@@ -293,6 +294,9 @@ node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
 | `nest/media/media.repository.ts` | `imageAsset`·`videoAsset`·`generationJob`·`videoGenerationJob`·`visualAttribute` 리포지토리 5종 | 미디어 전체 |
 | `nest/auth/{user.repository,password.service}.ts` | `src/auth/{user.repository,password,auth.service,auth.api}.js` | 가입·로그인·프로필 |
 | `nest/trial/trial.repository.ts` | `src/trial/trial.service.js` | 체험 계정 |
+| `nest/publishing/publishing.repository.ts` | `content`·`publishJob` 리포지토리 + 두 서비스 + `publishing.api` | 콘텐츠·발행 |
+| `nest/admin/{admin,proposal}.repository.ts` | `admin/{adminData,proposal}.service.js` | 관리자 통계·제안서 |
+| `DbService.ensureSchema()` | `src/db/ensureSchema.js` | 지연 테이블 생성 |
 
 ⚠️ `TokenService.sign`의 payload는 `{sub, role}`, `verify` 결과는 `{id, role}` — **레거시와 동일해야 기존 토큰이 안 깨진다**.
 ⚠️ `DbService`는 커넥션 풀을 새로 만들지 않고 `src/db/client.js` 풀을 재사용한다(풀 이중 생성 = 커넥션 2배).
@@ -320,4 +324,4 @@ node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
 
 ## 부록 — 이관 PR 목록
 
-`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb) · `#195`~`#208` DTO/VO 도입 · `#209` 공용 보안(ownership·token) · `#211` teams · `#212` credits · `#213` subscription·팀크레딧·쿠키·에러필터 + 진행률 측정 스크립트 · `#214` media·auth·trial 네이티브화
+`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb) · `#195`~`#208` DTO/VO 도입 · `#209` 공용 보안(ownership·token) · `#211` teams · `#212` credits · `#213` subscription·팀크레딧·쿠키·에러필터 + 진행률 측정 스크립트 · `#214` media·auth·trial 네이티브화 · `#215` publishing·admin 네이티브화
