@@ -8,6 +8,8 @@ import * as path from 'path';
 const packRoute = require(path.join(__dirname, '..', '..', 'src', 'pack', 'pack.route.js'));
 
 export const packHandlers = packRoute.handlers;
+// 응답 수집 어댑터가 만든 데이터 반환 버전 — Nest가 응답을 직접 만든다(@Res 위임 제거).
+const ops = packRoute.ops;
 // 조회 API — 데이터만 반환하는 단일소스(@Res() 위임 없이 컨트롤러가 직접 호출).
 const reads = packRoute.reads;
 // 업로드 정규화(HEIC→JPEG 변환·매직바이트 검증) — 멀티파트 라우트에서 핸들러 앞에 태운다.
@@ -28,9 +30,9 @@ export const PACK_UPLOAD_OPTIONS = {
 
 @Injectable()
 export class PackService {
-  // 핸들러를 Express 시그니처 그대로 실행(응답은 핸들러가 직접 씀).
-  run(name: string, req: any, res: any, next: any) {
-    return packHandlers[name](req, res, next);
+  /** 핸들러를 실행하고 응답을 { status, body }로 받는다(응답 쓰기는 Nest가 담당). */
+  op(name: string, req: any): Promise<{ status: number; body: any }> {
+    return ops[name](req);
   }
 
   /** 팩 상태 폴링(숫자 id 또는 shareId). 미존재는 statusCode 404 에러. */
