@@ -1,21 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { DashboardRepository } from './dashboard.repository';
 import { DashboardOverviewDto, CalendarItemDto } from './dto/dashboard.dto';
-import * as path from 'path';
 
-// 조회 로직 재사용(중복 금지) — SQL은 레거시 dashboard.service.js 단일소스가 담당.
-//   dist/dashboard/dashboard.service.js 기준 ../../src/... = <repo>/src/...
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const legacy = require(path.join(__dirname, '..', '..', 'src', 'dashboard', 'dashboard.service.js'));
-
+/** 대시보드 도메인 서비스 — 집계 결과를 화면이 쓰는 형태로 변환한다. */
 @Injectable()
 export class DashboardService {
-  // 소셜 계정 전체 발행 집계(계정수·게시·대기·예약 + 최근 7일 일별)
-  overview(userId: string): Promise<DashboardOverviewDto> {
-    return legacy.getOverview(userId);
+  constructor(private readonly dashboard: DashboardRepository) {}
+
+  /** 소셜 계정 전체 발행 집계 + 최근 7일 일별 */
+  async overview(userId: string): Promise<DashboardOverviewDto> {
+    const counts = await this.dashboard.countsByUser(userId);
+    const daily = await this.dashboard.dailyPosts(userId);
+    return {
+      accounts: parseInt(counts.accounts, 10),
+      published: parseInt(counts.published, 10),
+      queued: parseInt(counts.queued, 10),
+      scheduled: parseInt(counts.scheduled, 10),
+      daily: daily.map((r) => ({ day: r.day, count: parseInt(r.cnt, 10) })),
+    };
   }
 
-  // 캘린더 렌더용 예약/게시 항목 목록(최근 80건)
-  calendar(userId: string): Promise<CalendarItemDto[]> {
-    return legacy.getCalendar(userId);
+  /** 캘린더 렌더용 목록 */
+  async calendar(userId: string): Promise<CalendarItemDto[]> {
+    const rows = await this.dashboard.calendarItems(userId);
+    return rows.map((r) => ({
+      id: r.id,
+      status: r.status,
+      effectiveAt: r.effective_at,
+      scheduledAt: r.scheduled_at,
+      postedAt: r.posted_at,
+      type: r.has_reel ? 'reel' : (r.has_image ? 'photo' : 'post'),
+      username: r.username,
+      platform: r.platform,
+    }));
   }
 }
