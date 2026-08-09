@@ -31,6 +31,7 @@ const RULES = [
   [/storage\/mediaStore/,      'engine', 'R2 스토리지 래퍼'],
   [/characters\/(character\.service|refThumb|character\.validator)/, 'engine', 'Claude 캐릭터 생성·썸네일'],
   [/publishing\/(zernio|scheduler)/, 'engine', 'Zernio 발행'],
+  [/publishing\/accountGeneration/, 'engine', 'Gemini 의상·Kling 릴스'],
   [/billing\/(eximbay|portone|billing\.route)/, 'engine', 'PG 연동'],
   [/auth\/(google|password)/,  'engine', 'OAuth·해시'],
   [/admin\/adminRefine/,       'engine', 'refine 스트리밍'],
