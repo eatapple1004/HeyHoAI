@@ -17,11 +17,11 @@ export interface CreditOverviewDto {
   context: CreditContextDto;
 }
 
-/** 포인트 → 크레딧 교환 결과 */
+/** 포인트 → 크레딧 교환 결과 — 1:1 교환 후 두 잔액과 교환량 */
 export interface PointExchangeResultDto {
-  points: number;
-  credits: number;
-  [k: string]: unknown;
+  pointBalance: number;
+  creditBalance: number;
+  exchanged: number;
 }
 
 /** POST /api/credits/points/exchange 요청 */
