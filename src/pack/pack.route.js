@@ -848,6 +848,42 @@ const reads = {
   },
 };
 
+/**
+ * 응답 수집 어댑터 — Express 핸들러를 **데이터 반환 함수**로 바꾼다.
+ *   Nest가 @Res() 위임 없이 반환값 방식으로 응답을 소유하게 하려고 만든 것.
+ *   핸들러 본문은 그대로 두고(생성 파이프라인은 손대지 않는다), res.status/json 호출만 가로채
+ *   { status, body } 로 모은다. setImmediate 백그라운드 작업은 원래대로 등록된다
+ *   (핸들러가 res.json 뒤에 등록하든 앞에 등록하든 다음 tick에 시작하는 건 동일).
+ */
+function asOps(handler) {
+  return async (req) => {
+    let status = 200;
+    let body;
+    const res = {
+      status(code) { status = code; return this; },
+      json(payload) { body = payload; return this; },
+    };
+    let failed;
+    await handler(req, res, (e) => { failed = e; });
+    if (failed) throw failed;
+    return { status, body };
+  };
+}
+
+// 각 핸들러의 데이터 반환 버전 — Nest 컨트롤러가 이걸 쓴다(레거시 라우트는 기존 핸들러 그대로).
+const ops = {
+  classify: asOps(classifyHandler),
+  create: asOps(createHandler),
+  generate: asOps(generateHandler),
+  resume: asOps(resumeHandler),
+  extend: asOps(extendHandler),
+  moreLike: asOps(moreLikeHandler),
+  conceptMore: asOps(conceptMoreHandler),
+  video: asOps(videoHandler),
+  regenerateCut: asOps(regenerateCutHandler),
+  rebakeRef: asOps(rebakeRefHandler),
+};
+
 // ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
 router.post('/classify', upload.array('photos', 10), normalizeUploads, classifyHandler);
 router.post('/', upload.array('photos', 10), normalizeUploads, createHandler);
@@ -881,3 +917,5 @@ module.exports.upload = upload;
 module.exports.normalizeUploads = normalizeUploads;
 // 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
 module.exports.reads = reads;
+// 데이터 반환 버전 — Nest가 응답을 직접 만들 수 있게 한다(@Res 위임 제거용).
+module.exports.ops = ops;
