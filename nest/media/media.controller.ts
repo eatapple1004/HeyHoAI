@@ -12,6 +12,9 @@ import {
 } from '@nestjs/common';
 import { MediaService } from './media.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiResponse } from '../common/dto/api-response.dto';
+import { ImageAssetVo, VideoAssetVo, GenerationJobVo, VideoJobVo, VisualAttributeVo, VisualCategoryVo, VisualPresetVo } from './vo/media.vo';
+import { GenerateImagesResultDto, GenerateVideoResultDto, CompilePromptResultDto, ListByStatusQueryDto, CreateVisualPresetDto, CompilePromptDto, ListAttributesQueryDto } from './dto/media.dto';
 
 // 캐릭터 하위 미디어 경로 — 레거시에서 image/video/visual 라우터가 /api 루트에 나눠 마운트돼
 //   /api/characters/:characterId/... 를 공유하던 것을 하나의 컨트롤러로 모았다.
@@ -23,19 +26,19 @@ export class CharacterMediaController {
 
   // POST /api/characters/:characterId/images/generate (201)
   @Post('images/generate')
-  async generateImages(@Req() req: any, @Param('characterId') characterId: string, @Body() body: any) {
+  async generateImages(@Req() req: any, @Param('characterId') characterId: string, @Body() body: any): Promise<ApiResponse<GenerateImagesResultDto>> {
     return { success: true, data: await this.media.generateImages(req.user.id, characterId, body) };
   }
 
   // GET /api/characters/:characterId/images/jobs — :imageId보다 먼저 선언
   @Get('images/jobs')
-  async imageJobs(@Req() req: any, @Param('characterId') characterId: string) {
+  async imageJobs(@Req() req: any, @Param('characterId') characterId: string): Promise<ApiResponse<GenerationJobVo[]>> {
     return { success: true, data: await this.media.listImageJobs(req.user.id, characterId) };
   }
 
   // GET /api/characters/:characterId/images
   @Get('images')
-  async images(@Req() req: any, @Param('characterId') characterId: string, @Query() q: any) {
+  async images(@Req() req: any, @Param('characterId') characterId: string, @Query() q: ListByStatusQueryDto): Promise<ApiResponse<ImageAssetVo[]>> {
     return { success: true, data: await this.media.listImages(req.user.id, characterId, q) };
   }
 
@@ -45,37 +48,37 @@ export class CharacterMediaController {
     @Req() req: any,
     @Param('characterId') characterId: string,
     @Param('imageId') imageId: string,
-  ) {
+  ): Promise<ApiResponse<ImageAssetVo>> {
     return { success: true, data: await this.media.setMasterImage(req.user.id, characterId, imageId) };
   }
 
   // POST /api/characters/:characterId/videos/generate (201)
   @Post('videos/generate')
-  async generateVideo(@Req() req: any, @Param('characterId') characterId: string, @Body() body: any) {
+  async generateVideo(@Req() req: any, @Param('characterId') characterId: string, @Body() body: any): Promise<ApiResponse<GenerateVideoResultDto>> {
     return { success: true, data: await this.media.generateVideo(req.user.id, characterId, body) };
   }
 
   // GET /api/characters/:characterId/videos/jobs
   @Get('videos/jobs')
-  async videoJobs(@Req() req: any, @Param('characterId') characterId: string) {
+  async videoJobs(@Req() req: any, @Param('characterId') characterId: string): Promise<ApiResponse<VideoJobVo[]>> {
     return { success: true, data: await this.media.listVideoJobs(req.user.id, characterId) };
   }
 
   // GET /api/characters/:characterId/videos
   @Get('videos')
-  async videos(@Req() req: any, @Param('characterId') characterId: string, @Query() q: any) {
+  async videos(@Req() req: any, @Param('characterId') characterId: string, @Query() q: ListByStatusQueryDto): Promise<ApiResponse<VideoAssetVo[]>> {
     return { success: true, data: await this.media.listVideos(req.user.id, characterId, q) };
   }
 
   // POST /api/characters/:characterId/visual-presets (201)
   @Post('visual-presets')
-  async createPreset(@Req() req: any, @Param('characterId') characterId: string, @Body() body: any) {
+  async createPreset(@Req() req: any, @Param('characterId') characterId: string, @Body() body: CreateVisualPresetDto): Promise<ApiResponse<VisualPresetVo>> {
     return { success: true, data: await this.media.createPreset(req.user.id, characterId, body) };
   }
 
   // GET /api/characters/:characterId/visual-presets
   @Get('visual-presets')
-  async listPresets(@Req() req: any, @Param('characterId') characterId: string) {
+  async listPresets(@Req() req: any, @Param('characterId') characterId: string): Promise<ApiResponse<VisualPresetVo[]>> {
     return { success: true, data: await this.media.listPresets(req.user.id, characterId) };
   }
 }
@@ -88,7 +91,7 @@ export class ImagesController {
 
   // GET /api/images/:id
   @Get(':id')
-  async getById(@Req() req: any, @Param('id') id: string) {
+  async getById(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<ImageAssetVo>> {
     return { success: true, data: await this.media.getImage(req.user.id, id) };
   }
 }
@@ -101,13 +104,13 @@ export class VideosController {
 
   // GET /api/videos/jobs/:jobId — :id보다 먼저 선언
   @Get('jobs/:jobId')
-  async getJob(@Req() req: any, @Param('jobId') jobId: string) {
+  async getJob(@Req() req: any, @Param('jobId') jobId: string): Promise<ApiResponse<VideoJobVo>> {
     return { success: true, data: await this.media.getVideoJob(req.user.id, jobId) };
   }
 
   // GET /api/videos/:id
   @Get(':id')
-  async getById(@Req() req: any, @Param('id') id: string) {
+  async getById(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<VideoAssetVo>> {
     return { success: true, data: await this.media.getVideo(req.user.id, id) };
   }
 }
@@ -120,26 +123,26 @@ export class VisualsController {
 
   // GET /api/visuals/categories
   @Get('categories')
-  async categories() {
+  async categories(): Promise<ApiResponse<VisualCategoryVo[]>> {
     return { success: true, data: await this.media.listCategories() };
   }
 
   // GET /api/visuals/attributes?category=&tags=
   @Get('attributes')
-  async attributes(@Query() q: any) {
+  async attributes(@Query() q: ListAttributesQueryDto): Promise<ApiResponse<VisualAttributeVo[]>> {
     return { success: true, data: await this.media.listAttributes(q) };
   }
 
   // POST /api/visuals/attributes (201)
   @Post('attributes')
-  async createAttribute(@Body() body: any) {
+  async createAttribute(@Body() body: any): Promise<ApiResponse<VisualAttributeVo>> {
     return { success: true, data: await this.media.createAttribute(body) };
   }
 
   // POST /api/visuals/compile — attribute_ids → 조합 프롬프트
   @Post('compile')
   @HttpCode(200) // 레거시 res.json=200
-  async compile(@Body() body: any) {
+  async compile(@Body() body: CompilePromptDto): Promise<ApiResponse<CompilePromptResultDto>> {
     return { success: true, data: await this.media.compilePrompt(body) };
   }
 }
