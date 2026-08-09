@@ -35,7 +35,7 @@ const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
  * GET /api/accounts/sync
  * Zernio에서 연결된 계정 목록을 가져와 DB에 동기화
  */
-router.post('/sync', async (req, res, next) => {
+const syncHandler = async (req, res, next) => {
   try {
     const accounts = await zernio.listAccounts();
     const synced = [];
@@ -60,13 +60,13 @@ router.post('/sync', async (req, res, next) => {
     log.error('Sync failed:', err.message);
     next(err);
   }
-});
+};
 
 /**
  * GET /api/accounts
  * 저장된 계정 목록 조회
  */
-router.get('/', async (req, res, next) => {
+const listHandler = async (req, res, next) => {
   try {
     const { platform, status } = req.query;
     const accounts = await accountRepo.findAll({
@@ -78,12 +78,12 @@ router.get('/', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
 /**
  * GET /api/accounts/:id
  */
-router.get('/:id', async (req, res, next) => {
+const getAccountHandler = async (req, res, next) => {
   try {
     const account = await accountRepo.findById(req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
@@ -91,12 +91,12 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
 /**
  * PATCH /api/accounts/:id/status
  */
-router.patch('/:id/status', async (req, res, next) => {
+const patchStatusHandler = async (req, res, next) => {
   try {
     const { status } = req.body;
     if (!['active', 'paused', 'disabled'].includes(status)) {
@@ -108,12 +108,12 @@ router.patch('/:id/status', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
 /**
  * PATCH /api/accounts/:id/default-captions
  */
-router.patch('/:id/default-captions', async (req, res, next) => {
+const patchDefaultCaptionsHandler = async (req, res, next) => {
   try {
     const { defaultImageCaption, defaultReelCaption } = req.body;
     const account = await accountRepo.findById(req.params.id);
@@ -129,32 +129,32 @@ router.patch('/:id/default-captions', async (req, res, next) => {
     log.info(`Default captions saved for account ${req.params.id}`);
     res.json({ success: true, data: metadata });
   } catch (err) { next(err); }
-});
+};
 
 // ── Analytics ──
 
-router.get('/:id/analytics/detail', async (req, res, next) => {
+const getAnalyticsDetailHandler = async (req, res, next) => {
   try {
     const account = await accountRepo.findById(req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
     const data = await zernio.getAccountDetail(account.account_id);
     res.json({ success: true, data });
   } catch (err) { next(err); }
-});
+};
 
-router.get('/:id/analytics/posts', async (req, res, next) => {
+const getAnalyticsPostsHandler = async (req, res, next) => {
   try {
     const account = await accountRepo.findById(req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
     const data = await zernio.getPosts(account.account_id);
     res.json({ success: true, data });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * DELETE /api/accounts/:id
  */
-router.delete('/:id', async (req, res, next) => {
+const deleteAccountHandler = async (req, res, next) => {
   try {
     const account = await accountRepo.remove(req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Account not found' });
@@ -162,7 +162,7 @@ router.delete('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
 // ══════════════════════════════════════
 // Workflow: Base Photo, Outfits, Reels
@@ -174,7 +174,7 @@ const outfitPromptRepo = require('./outfitPrompt.repository');
  * POST /api/accounts/:id/base-photo
  * 기본 사진 설정
  */
-router.post('/:id/base-photo', async (req, res, next) => {
+const postBasePhotoHandler = async (req, res, next) => {
   try {
     const { mediaId } = req.body;
     if (!mediaId) return res.status(400).json({ success: false, error: 'mediaId is required' });
@@ -183,23 +183,23 @@ router.post('/:id/base-photo', async (req, res, next) => {
     log.info(`Base photo set: ${media.file_path} for account ${req.params.id}`);
     res.json({ success: true, data: media });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * GET /api/accounts/:id/base-photo
  */
-router.get('/:id/base-photo', async (req, res, next) => {
+const getBasePhotoHandler = async (req, res, next) => {
   try {
     const media = await mediaRepo.findBase(req.params.id);
     res.json({ success: true, data: media });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/:id/generate-outfits
  * 기본 사진 기반 의상 변경 사진 생성
  */
-router.post('/:id/generate-outfits', async (req, res, next) => {
+const postGenerateOutfitsHandler = async (req, res, next) => {
   try {
     const { prompt, count = 1, model = 'pro' } = req.body;
     if (!prompt) return res.status(400).json({ success: false, error: 'Prompt is required' });
@@ -270,13 +270,13 @@ router.post('/:id/generate-outfits', async (req, res, next) => {
     log.info(`Outfit generation: ${results.filter(r => r.success).length}/${generateCount} for account ${req.params.id}`);
     res.json({ success: true, results });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/:id/generate-reel
  * 사진으로 릴스 생성 + 프롬프트 템플릿 저장
  */
-router.post('/:id/generate-reel', async (req, res, next) => {
+const postGenerateReelHandler = async (req, res, next) => {
   try {
     const { mediaId, prompt, endFrameMediaId, duration = '5', mode = 'std', saveTemplate = false, templateName = '' } = req.body;
     if (!prompt) return res.status(400).json({ success: false, error: 'Prompt is required' });
@@ -396,40 +396,40 @@ router.post('/:id/generate-reel', async (req, res, next) => {
 
     res.json({ success: false, error: 'Timeout after 10min' });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * GET /api/accounts/:id/reel-templates
  */
-router.get('/:id/reel-templates', async (req, res, next) => {
+const getReelTemplatesHandler = async (req, res, next) => {
   try {
     const templates = await reelTemplateRepo.findByAccountId(req.params.id);
     res.json({ success: true, data: templates });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * DELETE /api/accounts/reel-templates/:templateId
  */
-router.delete('/reel-templates/:templateId', async (req, res, next) => {
+const deleteReelTemplatesHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('reel_templates', req.params.templateId, req.user.id);
     const t = await reelTemplateRepo.remove(req.params.templateId);
     if (!t) return res.status(404).json({ success: false, error: 'Template not found' });
     res.json({ success: true, data: t });
   } catch (err) { next(err); }
-});
+};
 
 // ── Outfit Prompts ──
 
-router.get('/:id/outfit-prompts', async (req, res, next) => {
+const getOutfitPromptsHandler = async (req, res, next) => {
   try {
     const prompts = await outfitPromptRepo.findByAccountId(req.params.id);
     res.json({ success: true, data: prompts });
   } catch (err) { next(err); }
-});
+};
 
-router.post('/:id/outfit-prompts', async (req, res, next) => {
+const postOutfitPromptsHandler = async (req, res, next) => {
   try {
     const { name, prompt } = req.body;
     if (!prompt) return res.status(400).json({ success: false, error: 'Prompt is required' });
@@ -440,9 +440,9 @@ router.post('/:id/outfit-prompts', async (req, res, next) => {
     });
     res.status(201).json({ success: true, data: saved });
   } catch (err) { next(err); }
-});
+};
 
-router.patch('/outfit-prompts/:promptId', async (req, res, next) => {
+const patchOutfitPromptsHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('outfit_prompts', req.params.promptId, req.user.id);
     const { name, prompt } = req.body;
@@ -450,22 +450,22 @@ router.patch('/outfit-prompts/:promptId', async (req, res, next) => {
     if (!updated) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: updated });
   } catch (err) { next(err); }
-});
+};
 
-router.delete('/outfit-prompts/:promptId', async (req, res, next) => {
+const deleteOutfitPromptsHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('outfit_prompts', req.params.promptId, req.user.id);
     const deleted = await outfitPromptRepo.remove(req.params.promptId);
     if (!deleted) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: deleted });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/:id/batch-reels
  * 저장된 템플릿으로 여러 사진에 릴스 배치 생성
  */
-router.post('/:id/batch-reels', async (req, res, next) => {
+const postBatchReelsHandler = async (req, res, next) => {
   try {
     const { templateId, mediaIds } = req.body;
     if (!templateId || !mediaIds || !Array.isArray(mediaIds) || mediaIds.length === 0) {
@@ -575,22 +575,22 @@ router.post('/:id/batch-reels', async (req, res, next) => {
     log.info(`Batch reels: ${results.filter(r => r.success).length}/${mediaIds.length}`);
     res.json({ success: true, results });
   } catch (err) { next(err); }
-});
+};
 
 // ══════════════════════════════════════
 // Post Queue
 // ══════════════════════════════════════
 const postQueueRepo = require('./postQueue.repository');
 
-router.get('/:id/post-queue', async (req, res, next) => {
+const getPostQueueHandler = async (req, res, next) => {
   try {
     const { status } = req.query;
     const items = await postQueueRepo.findByAccountId(req.params.id, { status: status || undefined });
     res.json({ success: true, data: items });
   } catch (err) { next(err); }
-});
+};
 
-router.post('/:id/post-queue', async (req, res, next) => {
+const postPostQueueHandler = async (req, res, next) => {
   try {
     const { imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags, bgmMediaId } = req.body;
     if (!imageMediaId && !reelMediaId) {
@@ -602,9 +602,9 @@ router.post('/:id/post-queue', async (req, res, next) => {
     log.info(`Post queue added: image=${imageMediaId}, reel=${reelMediaId}`);
     res.status(201).json({ success: true, data: item });
   } catch (err) { next(err); }
-});
+};
 
-router.patch('/post-queue/:queueId', async (req, res, next) => {
+const patchPostQueueHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const { imageCaption, reelCaption, hashtags, status, bgmMediaId } = req.body;
@@ -612,38 +612,38 @@ router.patch('/post-queue/:queueId', async (req, res, next) => {
     if (!item) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: item });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/:id/publish-now
  * 수동으로 즉시 업로드 트리거
  */
-router.post('/:id/publish-now', async (req, res, next) => {
+const postPublishNowHandler = async (req, res, next) => {
   try {
     const { publishConfirmedItems } = require('./scheduler');
     await publishConfirmedItems();
     res.json({ success: true, message: 'Publish triggered' });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/post-queue/:queueId/publish
  * 개별 Queue 아이템 즉시 업로드
  */
-router.post('/post-queue/:queueId/publish', async (req, res, next) => {
+const postPostQueuePublishHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const { publishSingleItem } = require('./scheduler');
     const result = await publishSingleItem(req.params.queueId);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/post-queue/:queueId/duplicate
  * Queue 아이템 복제 (pending 상태로)
  */
-router.post('/post-queue/:queueId/duplicate', async (req, res, next) => {
+const postPostQueueDuplicateHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const original = await postQueueRepo.findById(req.params.queueId);
@@ -661,13 +661,13 @@ router.post('/post-queue/:queueId/duplicate', async (req, res, next) => {
     log.info(`Queue duplicated: ${req.params.queueId} → ${copy.id}`);
     res.status(201).json({ success: true, data: copy });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/post-queue/:queueId/reupload
  * posted 상태를 리셋하고 다시 업로드
  */
-router.post('/post-queue/:queueId/reupload', async (req, res, next) => {
+const postPostQueueReuploadHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     // 상태 리셋
@@ -682,16 +682,16 @@ router.post('/post-queue/:queueId/reupload', async (req, res, next) => {
     const result = await publishSingleItem(req.params.queueId);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
-});
+};
 
-router.delete('/post-queue/:queueId', async (req, res, next) => {
+const deletePostQueueHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('post_queue', req.params.queueId, req.user.id);
     const item = await postQueueRepo.remove(req.params.queueId);
     if (!item) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, data: item });
   } catch (err) { next(err); }
-});
+};
 
 // ══════════════════════════════════════
 // Account Media
@@ -700,7 +700,7 @@ router.delete('/post-queue/:queueId', async (req, res, next) => {
 /**
  * GET /api/accounts/:id/media
  */
-router.get('/:id/media', async (req, res, next) => {
+const getMediaHandler = async (req, res, next) => {
   try {
     const { status, limit, offset } = req.query;
     const media = await mediaRepo.findByAccountId(req.params.id, {
@@ -711,13 +711,13 @@ router.get('/:id/media', async (req, res, next) => {
     const count = await mediaRepo.countByAccountId(req.params.id);
     res.json({ success: true, data: media, total: count });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/:id/media/upload
  * 이미지 직접 업로드
  */
-router.post('/:id/media/upload', upload.single('file'), async (req, res, next) => {
+const postMediaUploadHandler = async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'File is required' });
     const account = await accountRepo.findById(req.params.id);
@@ -739,13 +739,13 @@ router.post('/:id/media/upload', upload.single('file'), async (req, res, next) =
     log.info(`Media uploaded: ${filename} → account ${account.username}`);
     res.status(201).json({ success: true, data: media });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * POST /api/accounts/:id/media/register
  * Generate 페이지에서 기존 이미지를 계정에 등록
  */
-router.post('/:id/media/register', async (req, res, next) => {
+const postMediaRegisterHandler = async (req, res, next) => {
   try {
     const { filePath, mediaType, caption, hashtags } = req.body;
     if (!filePath) return res.status(400).json({ success: false, error: 'filePath is required' });
@@ -764,12 +764,12 @@ router.post('/:id/media/register', async (req, res, next) => {
     log.info(`Media registered: ${filePath} → account ${account.username}`);
     res.status(201).json({ success: true, data: media });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * PATCH /api/accounts/media/:mediaId
  */
-router.patch('/media/:mediaId', async (req, res, next) => {
+const patchMediaHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('account_media', req.params.mediaId, req.user.id);
     const { caption, hashtags, status } = req.body;
@@ -777,18 +777,90 @@ router.patch('/media/:mediaId', async (req, res, next) => {
     if (!media) return res.status(404).json({ success: false, error: 'Media not found' });
     res.json({ success: true, data: media });
   } catch (err) { next(err); }
-});
+};
 
 /**
  * DELETE /api/accounts/media/:mediaId
  */
-router.delete('/media/:mediaId', async (req, res, next) => {
+const deleteMediaHandler = async (req, res, next) => {
   try {
     await assertAccountResourceOwned('account_media', req.params.mediaId, req.user.id);
     const media = await mediaRepo.remove(req.params.mediaId);
     if (!media) return res.status(404).json({ success: false, error: 'Media not found' });
     res.json({ success: true, data: media });
   } catch (err) { next(err); }
-});
+};
+
+// ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
+router.post('/sync', syncHandler);
+router.get('/', listHandler);
+router.get('/:id', getAccountHandler);
+router.patch('/:id/status', patchStatusHandler);
+router.patch('/:id/default-captions', patchDefaultCaptionsHandler);
+router.get('/:id/analytics/detail', getAnalyticsDetailHandler);
+router.get('/:id/analytics/posts', getAnalyticsPostsHandler);
+router.delete('/:id', deleteAccountHandler);
+router.post('/:id/base-photo', postBasePhotoHandler);
+router.get('/:id/base-photo', getBasePhotoHandler);
+router.post('/:id/generate-outfits', postGenerateOutfitsHandler);
+router.post('/:id/generate-reel', postGenerateReelHandler);
+router.get('/:id/reel-templates', getReelTemplatesHandler);
+router.delete('/reel-templates/:templateId', deleteReelTemplatesHandler);
+router.get('/:id/outfit-prompts', getOutfitPromptsHandler);
+router.post('/:id/outfit-prompts', postOutfitPromptsHandler);
+router.patch('/outfit-prompts/:promptId', patchOutfitPromptsHandler);
+router.delete('/outfit-prompts/:promptId', deleteOutfitPromptsHandler);
+router.post('/:id/batch-reels', postBatchReelsHandler);
+router.get('/:id/post-queue', getPostQueueHandler);
+router.post('/:id/post-queue', postPostQueueHandler);
+router.patch('/post-queue/:queueId', patchPostQueueHandler);
+router.post('/:id/publish-now', postPublishNowHandler);
+router.post('/post-queue/:queueId/publish', postPostQueuePublishHandler);
+router.post('/post-queue/:queueId/duplicate', postPostQueueDuplicateHandler);
+router.post('/post-queue/:queueId/reupload', postPostQueueReuploadHandler);
+router.delete('/post-queue/:queueId', deletePostQueueHandler);
+router.get('/:id/media', getMediaHandler);
+router.post('/:id/media/upload', upload.single('file'), postMediaUploadHandler);
+router.post('/:id/media/register', postMediaRegisterHandler);
+router.patch('/media/:mediaId', patchMediaHandler);
+router.delete('/media/:mediaId', deleteMediaHandler);
 
 module.exports = router;
+// Nest(nest/accounts)가 라우팅만 가져가고 파이프라인(Zernio 동기화·Gemini 의상생성·Kling 릴스·
+// 발행 큐·미디어 업로드)은 이 핸들러를 그대로 재사용한다 — 로직 이중화 금지.
+//   ⚠️ router.param('id')로 걸던 계정 소유권 검증은 Nest에선 컨트롤러가 assertAccountOwned로 직접 수행한다.
+module.exports.handlers = {
+  sync: syncHandler,
+  list: listHandler,
+  getAccount: getAccountHandler,
+  patchStatus: patchStatusHandler,
+  patchDefaultCaptions: patchDefaultCaptionsHandler,
+  getAnalyticsDetail: getAnalyticsDetailHandler,
+  getAnalyticsPosts: getAnalyticsPostsHandler,
+  deleteAccount: deleteAccountHandler,
+  postBasePhoto: postBasePhotoHandler,
+  getBasePhoto: getBasePhotoHandler,
+  postGenerateOutfits: postGenerateOutfitsHandler,
+  postGenerateReel: postGenerateReelHandler,
+  getReelTemplates: getReelTemplatesHandler,
+  deleteReelTemplates: deleteReelTemplatesHandler,
+  getOutfitPrompts: getOutfitPromptsHandler,
+  postOutfitPrompts: postOutfitPromptsHandler,
+  patchOutfitPrompts: patchOutfitPromptsHandler,
+  deleteOutfitPrompts: deleteOutfitPromptsHandler,
+  postBatchReels: postBatchReelsHandler,
+  getPostQueue: getPostQueueHandler,
+  postPostQueue: postPostQueueHandler,
+  patchPostQueue: patchPostQueueHandler,
+  postPublishNow: postPublishNowHandler,
+  postPostQueuePublish: postPostQueuePublishHandler,
+  postPostQueueDuplicate: postPostQueueDuplicateHandler,
+  postPostQueueReupload: postPostQueueReuploadHandler,
+  deletePostQueue: deletePostQueueHandler,
+  getMedia: getMediaHandler,
+  postMediaUpload: postMediaUploadHandler,
+  postMediaRegister: postMediaRegisterHandler,
+  patchMedia: patchMediaHandler,
+  deleteMedia: deleteMediaHandler,
+};
+module.exports.upload = upload;
