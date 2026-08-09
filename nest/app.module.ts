@@ -12,6 +12,8 @@ import { RecipesModule } from './recipes/recipes.module';
 import { StudioModule } from './studio/studio.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MediaModule } from './media/media.module';
+import { CharactersModule } from './characters/characters.module';
+import { DbModule } from './db/db.module';
 import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
 import { PublishingModule } from './publishing/publishing.module';
@@ -24,6 +26,7 @@ import { GenerateModule } from './generate/generate.module';
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
   imports: [
+    DbModule,           // 전역 — 리포지토리가 DbService를 주입받는다
     PricingModule,
     CreditsModule,
     BillingModule,
@@ -36,6 +39,7 @@ import { GenerateModule } from './generate/generate.module';
     StudioModule,
     MarketplaceModule,
     MediaModule,
+    CharactersModule,   // ⚠️ MediaModule 뒤 — :characterId/** 구체 경로가 :id보다 먼저 등록돼야 한다
     TemplateDataModule,
     TrialModule,
     PublishingModule,
