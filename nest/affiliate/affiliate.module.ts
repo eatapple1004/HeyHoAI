@@ -7,5 +7,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Module({
   controllers: [AffiliateController],
   providers: [AffiliateService, AffiliateRepository, JwtAuthGuard],
+  exports: [AffiliateService],   // 가입 시 추천 연결(AuthModule)
 })
 export class AffiliateModule {}

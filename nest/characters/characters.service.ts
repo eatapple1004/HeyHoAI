@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { CharacterRepository } from './character.repository';
 import { TeamCreditRepository } from '../teams/team-credit.repository';
-import { ImageAssetRepository } from '../images/image-asset.repository';
+import { MediaRepository } from '../media/media.repository';
 import { OwnershipService } from '../common/security/ownership.service';
 import { CharacterVo, CharacterPersonaVo } from './vo/character.vo';
 import {
@@ -77,7 +77,7 @@ export class CharactersService {
     private readonly characters: CharacterRepository,
     private readonly ownership: OwnershipService,
     private readonly teamCredit: TeamCreditRepository,
-    private readonly imageAssets: ImageAssetRepository,
+    private readonly media: MediaRepository,
   ) {}
 
   /** 활성 작업 컨텍스트의 팀 id (개인이면 null) */
@@ -121,7 +121,7 @@ export class CharactersService {
   /** 대표 이미지 지정 — 그 캐릭터의 이미지여야 한다 */
   async setReferenceImage(userId: string, id: string, imageId: string): Promise<CharacterVo | null> {
     await this.ownership.assertCharacterOwned(id, userId);
-    const image = await this.imageAssets.findById(imageId);
+    const image = await this.media.findImageById(imageId);
     if (!image || image.character_id !== id) {
       throw httpError(404, 'Image not found for this character');
     }
