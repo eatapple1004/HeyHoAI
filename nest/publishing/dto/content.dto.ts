@@ -10,10 +10,11 @@ export interface SchedulePublishResultDto {
 }
 
 /** 즉시 발행(approve → schedule → execute) 결과 */
-export interface PublishNowResultDto {
-  publishJob?: PublishJobVo;
-  [k: string]: unknown;
-}
+/**
+ * 즉시 게시·재시도의 결과 = 실행된 publish_job 행 그대로.
+ * (레거시 위임 시절엔 모양을 몰라 느슨한 인덱스 시그니처였는데, 이식하면서 실제 반환으로 고정했다.)
+ */
+export type PublishNowResultDto = PublishJobVo;
 
 // ── 요청 (zod 스키마 content.validator.js 와 같은 모양 — 나중에 class-validator로 대체 가능) ──
 

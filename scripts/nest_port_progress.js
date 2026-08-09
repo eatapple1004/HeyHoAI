@@ -34,6 +34,8 @@ const RULES = [
   [/billing\/(eximbay|portone|billing\.route)/, 'engine', 'PG 연동'],
   [/auth\/(google|password)/,  'engine', 'OAuth·해시'],
   [/admin\/adminRefine/,       'engine', 'refine 스트리밍'],
+  // zod 검증 스키마 — 규칙을 복제하면 두 곳이 갈린다. class-validator 도입 시 함께 이식.
+  [/\.validator$/,             'single', 'zod 검증 스키마(단일소스)'],
   [/(image|video|visual|account|content|postQueue|publishJob|prompt|result|review|stylePreset|user|reelTemplate|outfitPrompt|faceswapJob|generationJob|videoGenerationJob|accountMedia|imageAsset|videoAsset|visualAttribute)\.repository/, 'port', 'SQL 리포지토리'],
 ];
 
