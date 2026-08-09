@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { CharacterRepository } from './character.repository';
+import { OwnershipService } from '../common/security/ownership.service';
 import { CharacterVo, CharacterPersonaVo } from './vo/character.vo';
 import {
   CharacterListDto, CreateCharacterDto, RegisterCharacterDto,
@@ -15,8 +16,6 @@ import {
 const characterCore = require(path.join(__dirname, '..', '..', 'src', 'characters', 'character.service.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { createCharacterRequestSchema } = require(path.join(__dirname, '..', '..', 'src', 'characters', 'character.validator.js'));
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { assertCharacterOwned } = require(path.join(__dirname, '..', '..', 'src', 'middleware', 'ownership.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const imageAssetRepo = require(path.join(__dirname, '..', '..', 'src', 'images', 'imageAsset.repository.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -76,7 +75,10 @@ function defaultPersona(name: string, concept: string): CharacterPersonaVo {
  */
 @Injectable()
 export class CharactersService {
-  constructor(private readonly characters: CharacterRepository) {}
+  constructor(
+    private readonly characters: CharacterRepository,
+    private readonly ownership: OwnershipService,
+  ) {}
 
   /** 활성 작업 컨텍스트의 팀 id (개인이면 null) */
   private async activeTeamId(userId: string): Promise<string | null> {
@@ -118,7 +120,7 @@ export class CharactersService {
 
   /** 대표 이미지 지정 — 그 캐릭터의 이미지여야 한다 */
   async setReferenceImage(userId: string, id: string, imageId: string): Promise<CharacterVo | null> {
-    await assertCharacterOwned(id, userId);
+    await this.ownership.assertCharacterOwned(id, userId);
     const image = await imageAssetRepo.findById(imageId);
     if (!image || image.character_id !== id) {
       throw httpError(404, 'Image not found for this character');
@@ -130,7 +132,7 @@ export class CharactersService {
 
   /** 대표 이미지 해제 */
   async clearReferenceImage(userId: string, id: string): Promise<CharacterVo | null> {
-    await assertCharacterOwned(id, userId);
+    await this.ownership.assertCharacterOwned(id, userId);
     return this.characters.clearReferenceImage(id);
   }
 
@@ -177,7 +179,7 @@ export class CharactersService {
 
   /** 소프트 삭제(status → archived) */
   async remove(userId: string, id: string): Promise<CharacterVo> {
-    await assertCharacterOwned(id, userId);
+    await this.ownership.assertCharacterOwned(id, userId);
     const character = await this.characters.updateStatus(id, 'archived');
     if (!character) throw httpError(404, 'Character not found');
     return character;
