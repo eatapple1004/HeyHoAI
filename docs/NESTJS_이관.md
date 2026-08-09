@@ -264,7 +264,17 @@ src/ 전체        182파일 · 48,783줄
 | affiliate | 1 | 🔄 크레딧 적립만 잔존 |
 | 나머지 17개 | 1~7 | ⬜ |
 
-전체 `src/` require **46건** — 이 숫자가 0이 되면 ⑤단계(레거시 제거) 가능.
+전체 `src/` require **42건** — 이 숫자가 0이 되면 ⑤단계(레거시 제거) 가능.
+
+**공용 인프라 이식 완료**(여러 도메인의 의존을 한 번에 없애는 것부터):
+| 이식본 | 대체한 것 | 쓰는 곳 |
+|---|---|---|
+| `nest/db/db.service.ts` (전역 `DbModule`) | `src/db/client.js` | 모든 리포지토리 |
+| `nest/common/security/ownership.service.ts` (전역 `SecurityModule`) | `src/middleware/ownership.js` | 소유권 검증 7종 |
+| `nest/common/security/token.service.ts` | `src/auth/token.js` + `extractToken` | `JwtAuthGuard`·`AdminGuard` |
+
+⚠️ `TokenService.sign`의 payload는 `{sub, role}`, `verify` 결과는 `{id, role}` — **레거시와 동일해야 기존 토큰이 안 깨진다**.
+⚠️ `DbService`는 커넥션 풀을 새로 만들지 않고 `src/db/client.js` 풀을 재사용한다(풀 이중 생성 = 커넥션 2배).
 | ⑤ `src/` 라우터 제거 + stg/prd 전환 | | ⬜ |
 
 ### ④ 방법 (characters가 본보기)
