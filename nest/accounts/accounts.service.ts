@@ -18,6 +18,8 @@ const fs = require('fs');
 export const accountHandlers = accountRoute.handlers;
 // 조회 API — 데이터만 반환하는 단일소스(@Res() 위임 없이 컨트롤러가 직접 호출).
 const reads = accountRoute.reads;
+// 응답 수집 어댑터가 만든 데이터 반환 버전 — Nest가 응답을 직접 만든다(@Res 위임 제거).
+const ops = accountRoute.ops;
 
 // 레거시와 동일한 multer 설정(tmp/images 디스크 저장·100MB) — FileInterceptor에 그대로 넘긴다.
 const uploadDir = path.join(process.cwd(), 'tmp', 'images');
@@ -40,6 +42,11 @@ export class AccountsService {
   }
 
   /** 레거시 핸들러를 Express 시그니처 그대로 실행(응답은 핸들러가 직접 씀). */
+  /** 핸들러를 실행하고 응답을 { status, body }로 받는다(응답 쓰기는 Nest가 담당). */
+  op(name: string, req: any): Promise<{ status: number; body: any }> {
+    return ops[name](req);
+  }
+
   run(name: string, req: any, res: any, next: any) {
     return accountHandlers[name](req, res, next);
   }

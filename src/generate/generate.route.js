@@ -1962,6 +1962,73 @@ function sendRead(res, next, run, wrap) {
     });
 }
 
+/**
+ * 응답 수집 어댑터 — Express 핸들러를 **데이터 반환 함수**로 바꾼다.
+ *   Nest가 @Res() 위임 없이 반환값 방식으로 응답을 소유하게 하려고 만든 것.
+ *   핸들러 본문은 그대로 두고(파이프라인 무변경), res.status/json 호출만 가로채 { status, body }로 모은다.
+ */
+function asOps(handler) {
+  return async (req) => {
+    let status = 200;
+    let body;
+    const res = {
+      status(code) { status = code; return this; },
+      json(payload) { body = payload; return this; },
+    };
+    let failed;
+    await handler(req, res, (e) => { failed = e; });
+    if (failed) throw failed;
+    return { status, body };
+  };
+}
+
+// ⚠️ getUgcVoicePreview는 제외 — mp3 바이너리 + 헤더를 직접 쓰므로 수집 어댑터로 감쌀 수 없다(@Res 위임 유지).
+const ops = {
+  postRoot: asOps(postRootHandler),
+  postCaption: asOps(postCaptionHandler),
+  postEnhance: asOps(postEnhanceHandler),
+  getTools: asOps(getToolsHandler),
+  getStyles: asOps(getStylesHandler),
+  getPrompts: asOps(getPromptsHandler),
+  getPrompts2: asOps(getPrompts2Handler),
+  getResults: asOps(getResultsHandler),
+  getCommunity: asOps(getCommunityHandler),
+  patchResultsVisibility: asOps(patchResultsVisibilityHandler),
+  postResultsReport: asOps(postResultsReportHandler),
+  postResultsLike: asOps(postResultsLikeHandler),
+  deleteResultsLike: asOps(deleteResultsLikeHandler),
+  getCreations: asOps(getCreationsHandler),
+  postCreationsAddToMyTemplates: asOps(postCreationsAddToMyTemplatesHandler),
+  deleteCreations: asOps(deleteCreationsHandler),
+  getCreatorOverview: asOps(getCreatorOverviewHandler),
+  getReviews: asOps(getReviewsHandler),
+  patchReviews: asOps(patchReviewsHandler),
+  deleteReviews: asOps(deleteReviewsHandler),
+  postVideoAsync: asOps(postVideoAsyncHandler),
+  getVideoJobs: asOps(getVideoJobsHandler),
+  getVideoJobs2: asOps(getVideoJobs2Handler),
+  getFaceswapJobs: asOps(getFaceswapJobsHandler),
+  postUgcScript: asOps(postUgcScriptHandler),
+  postUgcRefineScene: asOps(postUgcRefineSceneHandler),
+  postUgcSuggestScenes: asOps(postUgcSuggestScenesHandler),
+  postUgcSuggestConcept: asOps(postUgcSuggestConceptHandler),
+  postUgcRender: asOps(postUgcRenderHandler),
+  postUgcAsync: asOps(postUgcAsyncHandler),
+  getUgcJobs: asOps(getUgcJobsHandler),
+  getUgcJobsByResult: asOps(getUgcJobsByResultHandler),
+  getUgcJobs2: asOps(getUgcJobs2Handler),
+  postUgcJobsCommit: asOps(postUgcJobsCommitHandler),
+  postUgcReRender: asOps(postUgcReRenderHandler),
+  postVideo: asOps(postVideoHandler),
+  postBgmUpload: asOps(postBgmUploadHandler),
+  getBgmList: asOps(getBgmListHandler),
+  deleteBgm: asOps(deleteBgmHandler),
+  patchBgm: asOps(patchBgmHandler),
+  getImages: asOps(getImagesHandler),
+  getLogs: asOps(getLogsHandler),
+  getLogsFiles: asOps(getLogsFilesHandler),
+};
+
 // ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
 router.post('/', upload.array('referenceImages', 14), postRootHandler);
 router.post('/caption', postCaptionHandler);
@@ -2063,3 +2130,5 @@ module.exports.bgmUpload = bgmUpload;
 module.exports.UGC_MAX_PRODUCT_IMAGES = UGC_MAX_PRODUCT_IMAGES;
 // 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
 module.exports.reads = reads;
+// 데이터 반환 버전 — Nest가 응답을 직접 만든다(@Res 위임 제거용).
+module.exports.ops = ops;

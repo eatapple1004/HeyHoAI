@@ -92,7 +92,7 @@ if (!ownedByNest) return legacyApp(req, res, next);
 로직을 `src/` 서비스로 뽑고 레거시 라우트와 Nest 컨트롤러가 **같은 함수**를 호출.
 적용: pricing · credits · billing · subscription · dashboard · brand-kit · teams · affiliate · recipes · studio · marketplace · characters/미디어 · template-data · trial · publishing · admin(data·proposal) · auth
 
-### (B) `@Res()` 위임형 — 예외
+### (B) `@Res()` 위임형 — 예외 (거의 해소됨)
 아래가 얽혀 응답 형태·타이밍을 그대로 보존해야 하는 도메인은 **라우팅·가드만** Nest가 가져가고 핸들러는 레거시 함수를 그대로 호출한다.
 - NDJSON **스트리밍**(admin refine)
 - **202 응답 후 `setImmediate` 백그라운드 작업**(pack·accounts·generate)
@@ -100,7 +100,30 @@ if (!ownedByNest) return legacyApp(req, res, next);
 - 응답 봉투가 `{success,data}` 가 아님(`{...}` / `{error}`)
 
 방법: 레거시 라우터 파일에서 인라인 핸들러를 **이름 있는 핸들러로 분리** → `module.exports.handlers` 로 노출 → Nest 컨트롤러가 `@Res()`로 호출. 멀티파트는 레거시와 **동일한 multer 설정**을 `FileInterceptor`/`FilesInterceptor`/`FileFieldsInterceptor` 에 넘긴다.
-적용: admin refine(2) · pack(11) · accounts(32) · generate(44)
+**2026-08-09 해소**: 응답 수집 어댑터(`asOps`)를 도입해 위임 **67 → 5**로 줄였다.
+```js
+// 레거시 라우터 파일 안
+function asOps(handler) {          // Express 핸들러 → 데이터 반환 함수
+  return async (req) => {
+    let status = 200, body;
+    const res = { status(c){status=c; return this;}, json(o){body=o; return this;} };
+    let failed; await handler(req, res, (e) => { failed = e; });
+    if (failed) throw failed;
+    return { status, body };        // ← Nest가 이걸 받아 응답을 만든다
+  };
+}
+```
+핸들러 본문·미들웨어 순서·`setImmediate` 백그라운드 등록은 **그대로 두고** 응답 소유권만 Nest로 가져온다.
+컨트롤러는 `send()` 헬퍼로 4xx/5xx는 `HttpException`(전역 필터), 202 같은 비200 성공만 passthrough로 상태 지정.
+
+**남은 `@Res()` 5개는 전부 정당한 사유** — 되돌리지 말 것:
+| 위치 | 왜 필요한가 |
+|---|---|
+| `auth` google · google/callback (2) | 302 **리다이렉트** |
+| `admin` refine · refine/apply (2) | **NDJSON 스트리밍**(res.write) |
+| `generate` ugc/voice-preview (1) | **mp3 바이너리** + Content-Type 헤더 |
+
+⚠️ 실제로 `voice-preview`를 어댑터로 감쌌다가 parity가 잡아냈다(`res.setHeader`/`res.send`는 수집 불가). **응답을 직접 쓰는 핸들러는 감싸면 안 된다.**
 
 > (B)는 최종 형태가 아니라 중간 단계다. 여유가 생기면 순수 데이터 핸들러부터 (A)로 옮긴다.
 >
