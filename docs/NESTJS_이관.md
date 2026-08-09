@@ -139,9 +139,40 @@ node scripts/nest_parity_check.js --token <user JWT> --admin-token <admin JWT> -
 
 실측: 시드 없이 **92 통과 / 5 SKIP**, `--mutations --seed` 로 **111 통과 / 0 SKIP**.
 
+#### 흔한 실수 (스크립트가 미리 잡아준다)
+- **토큰에 dotenv 배너가 섞임** — `node -e "…signToken…"` 은 `◇ injecting env …` 를 stdout에 같이 뱉는다.
+  반드시 `2>/dev/null | tail -1` 로 마지막 줄만 취할 것. 안 그러면 `Authorization` 헤더 생성 단계에서 전 케이스가 터진다.
+- **`<uuid>` 자리표시자를 그대로 사용** — 실제 유저 uuid를 넣어야 한다.
+  `NODE_ENV=development node -e "require('./src/db/client').query('SELECT id,email,role FROM users LIMIT 5').then(r=>{console.table(r.rows);process.exit(0)})" 2>/dev/null`
+- **비교용 레거시를 띄우자마자 실행** — 부팅에 10~15초 걸린다. 스크립트가 `/health` 로 최대 30초 대기한다.
+
+#### EC2(dev)에서 돌릴 때
+dev는 서버 3개·DB 3개 구성(§7 아래 표)이라, **dev DB를 보는 레거시 비교군**을 임시 포트로 하나 더 띄운다.
+```bash
+cd ~/HeyHoAI-dev
+NODE_ENV=development PORT=3009 node src/index.js > /tmp/legacy-cmp.log 2>&1 &
+TOKEN=$(NODE_ENV=development node -e "console.log(require('./src/auth/token').signToken({id:'<실제 uuid>',role:'user'}))" 2>/dev/null | tail -1)
+node scripts/nest_parity_check.js --nest http://localhost:3002 --legacy http://localhost:3009 --token "$TOKEN"
+kill %1
+```
+⚠️ EC2에서는 **`--mutations`·`--seed` 금지** — 실제 dev DB에 쓰기가 발생한다.
+
 ---
 
-## 7. 레거시에 남는 것 (설계상 정상)
+## 7. 실환경 구성 (EC2 1대 · 서버 3개 · DB 3개)
+
+| 브랜치 | 환경 | PM2 앱 | 실행 | 포트 | DB | 클론 |
+|---|---|---|---|---|---|---|
+| `main` | prod | `heyhoai` | `src/index.js` (레거시) | 3000 | 현행 | `~/HeyHoAI` |
+| `staging` | stg | `heyhoai-staging` | `src/index.js` (레거시) | 3001 | `doppia_staging` | `~/HeyHoAI-staging` |
+| `develop` | dev | `heyhoai-dev` | **`dist/main.js` (NestJS)** | 3002 | `doppia_dev` | `~/HeyHoAI-dev` |
+
+- **Nest로 도는 것은 dev 하나뿐** — staging/prod는 코드·DB 모두 무영향.
+- 배포: `npm run deploy:dev` (= `git pull` → `npm ci` → **`npm run build`(tsc)** → `migrate` → `pm2 restart heyhoai-dev`)
+- 부팅 확인: `grep -a "strangler" ~/.pm2/logs/heyhoai-dev-out.log | tail -3`
+  또는 `curl -s -o /dev/null -w '%{http_code}' localhost:3002/api/pricing`(200=Nest) · `/health`(200=레거시 폴백)
+
+## 8. 레거시에 남는 것 (설계상 정상)
 
 - **결제 웹훅 3개** — raw/text body 서명 검증 (`NEST_EXCLUDE`)
 - **정적·미디어** — `/images/:file`(로컬 우선 → R2 302, Range 지원), `/bgm`, `/vendor/ffmpeg*`, `public/`
@@ -149,7 +180,7 @@ node scripts/nest_parity_check.js --token <user JWT> --admin-token <admin JWT> -
 - **`/health`**
 - **백그라운드** — 레시피 로드·스케줄러·영상 폴러 (`startBackground()`, Nest 부팅 후 호출)
 
-## 8. 남은 과제
+## 9. 남은 과제
 
 1. dev에서 충분히 검증 후 staging/prod도 `dist/main.js` 로 전환(ecosystem·deploy.sh)
 2. 위임형(B) 4개 도메인을 순수 데이터 핸들러부터 서비스 추출형(A)으로 전환

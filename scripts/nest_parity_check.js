@@ -35,10 +35,26 @@ const opt = (name, dflt) => {
 };
 const flag = (name) => args.includes(`--${name}`);
 
+/**
+ * 토큰 정제 — `node -e "...signToken..."` 출력에는 dotenv 배너(◇ injecting env ...)가 섞이기 쉽다.
+ * 마지막 줄만 취하고 JWT 형태(점 2개·ASCII)인지 검사해 **헤더 만들다 터지기 전에** 알려준다.
+ */
+function cleanToken(raw, label) {
+  const t = String(raw || '').trim().split('\n').pop().trim();
+  if (!t) return '';
+  if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(t)) {
+    console.error(`❌ ${label} 값이 JWT 형태가 아닙니다: ${JSON.stringify(t.slice(0, 60))}...`);
+    console.error('   dotenv 배너가 섞였을 수 있습니다. 이렇게 만드세요:');
+    console.error('   TOKEN=$(NODE_ENV=development node -e "console.log(require(\'./src/auth/token\').signToken({id:\'<실제 uuid>\',role:\'user\'}))" 2>/dev/null | tail -1)');
+    process.exit(2);
+  }
+  return t;
+}
+
 const NEST = opt('nest', 'http://localhost:3002');
 const LEGACY = opt('legacy', 'http://localhost:3003');
-const TOKEN = opt('token', process.env.PARITY_TOKEN || '');
-const ADMIN_TOKEN = opt('admin-token', process.env.PARITY_ADMIN_TOKEN || TOKEN);
+const TOKEN = cleanToken(opt('token', process.env.PARITY_TOKEN || ''), '--token');
+const ADMIN_TOKEN = cleanToken(opt('admin-token', process.env.PARITY_ADMIN_TOKEN || TOKEN), '--admin-token');
 const ONLY = opt('only', '');
 const RUN_MUTATIONS = flag('mutations');
 const SEED = flag('seed');
@@ -374,8 +390,42 @@ async function unseed(created) {
   }
 }
 
+/** 두 서버가 응답할 때까지 대기. 안 뜨면 원인을 알려주고 종료(전 케이스가 줄줄이 실패하는 것 방지). */
+async function preflight() {
+  const targets = [['Nest', NEST], ['레거시', LEGACY]];
+  for (const [label, base] of targets) {
+    let ok = false, waited = false;
+    for (let i = 0; i < 30; i++) {
+      try { await fetch(base + '/health'); ok = true; break; } catch (_) {}
+      if (i === 0) process.stdout.write(`${label}(${base}) 기다리는 중`);
+      process.stdout.write('.');
+      waited = true;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    if (!ok) {
+      console.error(`\n❌ ${label} 서버(${base})가 응답하지 않습니다.`);
+      console.error('   비교용 레거시는 부팅에 10~15초 걸립니다 — 띄운 뒤 잠시 기다렸다 실행하세요.');
+      console.error(`   확인: curl -s -o /dev/null -w '%{http_code}\\n' ${base}/health`);
+      process.exit(2);
+    }
+    if (waited) process.stdout.write(' 준비됨\n');
+  }
+  // 토큰이 실제로 통하는지(=해당 유저가 존재하는지) 확인 — 401이면 케이스가 전부 401로 "일치"해 무의미해진다.
+  const probe = await hit(LEGACY, 'GET', '/api/credits');
+  if (probe.status === 401) {
+    console.error('❌ 토큰이 거부됩니다(401). JWT_SECRET이 이 서버 것과 같은지, id가 실제 유저 uuid인지 확인하세요.');
+    console.error("   유저 확인: NODE_ENV=development node -e \"require('./src/db/client').query('SELECT id,email,role FROM users LIMIT 5').then(r=>{console.table(r.rows);process.exit(0)})\" 2>/dev/null");
+    process.exit(2);
+  }
+  if (probe.status >= 500) {
+    console.error(`⚠️  토큰 사용자로 조회 시 ${probe.status} — id가 실제 uuid가 아닐 수 있습니다: ${probe.body.slice(0, 120)}`);
+    process.exit(2);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 (async () => {
+  await preflight();
   let seeded = null;
   if (SEED) {
     seeded = await seed();
