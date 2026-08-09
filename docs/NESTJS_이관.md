@@ -256,15 +256,22 @@ src/ 전체        182파일 · 48,783줄
 | ③ DTO/VO 계약 | 33파일 · 1,504줄 | ✅ |
 | ④ **리포지토리·서비스 이식** | `nest/<도메인>/*.repository.ts` + `*.service.ts` | 🔄 4/21 도메인 |
 
-**④ 진행 현황** — `src/` require 건수로 측정(0이면 그 도메인은 레거시 의존 없음):
-| 도메인 | src require | 상태 |
-|---|---|---|
-| dashboard · template-data · **brand-kit** · **studio** | **0** | ✅ 완전 이식 |
-| characters | 7 | 🔄 리포지토리·서비스 이식됨(엔진만 잔존) |
-| affiliate · **teams** | 1 | 🔄 크레딧 계열만 잔존 |
-| 나머지 17개 | 1~7 | ⬜ |
+**④ 진행 현황** — `scripts/nest_port_progress.js` 로 **자동 측정**한다(사람이 세지 않는다):
 
-전체 `src/` require **38건**(가격표·엔진 등 **의도적 단일소스 유지분 포함**) — 이 숫자가 0이 되면 ⑤단계(레거시 제거) 가능.
+```
+node scripts/nest_port_progress.js          # 요약
+node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
+```
+
+`nest/`의 모든 `require(src/...)`를 세 갈래로 분류해, **①이 0이 되면 ⑤단계(레거시 제거) 가능**이다.
+
+| 갈래 | 뜻 | 목표 |
+|---|---|---|
+| ① 이식 대상 | 도메인 로직·SQL 리포지토리 | **0** |
+| ② 단일소스 | 가격표·환경설정·시드 — 복제하면 값이 갈린다 | 유지 |
+| ③ 엔진/외부 | PG·Gemini·Kling·팩 파이프라인 | 유지 |
+
+현재: **① 11건** (33건 중). 도메인 22개 중 6개(`brandkit·dashboard·health·studio·teams·template-data`)가 src 의존 0.
 
 **⚠️ 이식하면 안 되는 것 — 단일소스 유지**
 | 대상 | 왜 |
@@ -279,9 +286,18 @@ src/ 전체        182파일 · 48,783줄
 | `nest/db/db.service.ts` (전역 `DbModule`) | `src/db/client.js` | 모든 리포지토리 |
 | `nest/common/security/ownership.service.ts` (전역 `SecurityModule`) | `src/middleware/ownership.js` | 소유권 검증 7종 |
 | `nest/common/security/token.service.ts` | `src/auth/token.js` + `extractToken` | `JwtAuthGuard`·`AdminGuard` |
+| `nest/common/security/cookie.service.ts` | `src/auth/cookie.js` | 로그인·소셜로그인·로그아웃 |
+| `nest/common/legacy-error.filter.ts` (자체 구현) | `src/middleware/errorHandler.js` | 전역 예외 |
+| `nest/credits/wallet.module.ts` (전역 `WalletModule`) | — | 개인 크레딧 + 팀 풀 |
+| `nest/teams/team-credit.repository.ts`·`team-credit.service.ts` | `src/teams/team.credit.js` | 컨텍스트 인지 과금(개인/팀) |
+| `nest/images/image-asset.repository.ts` | `src/images/imageAsset.repository.js` | 캐릭터 이미지 에셋 |
 
 ⚠️ `TokenService.sign`의 payload는 `{sub, role}`, `verify` 결과는 `{id, role}` — **레거시와 동일해야 기존 토큰이 안 깨진다**.
 ⚠️ `DbService`는 커넥션 풀을 새로 만들지 않고 `src/db/client.js` 풀을 재사용한다(풀 이중 생성 = 커넥션 2배).
+⚠️ **여러 도메인이 쓰는 프로바이더는 전역 모듈로** 둔다. 모듈마다 `providers`에 복사하면 하나 빠뜨렸을 때
+   컴파일은 통과하고 **부팅 시점 DI 에러**로만 드러난다(`WalletModule` 만들기 전 실제로 겪음).
+⚠️ 크레딧은 `CreditsService`(개인) ↔ `TeamCreditService`(팀)가 서로를 필요로 한다 —
+   **서비스끼리 주입하면 순환**이므로 `CreditsService`는 `TeamCreditRepository`(리포지토리)를 주입받는다.
 | ⑤ `src/` 라우터 제거 + stg/prd 전환 | | ⬜ |
 
 ### ④ 방법 (characters가 본보기)
@@ -289,7 +305,8 @@ src/ 전체        182파일 · 48,783줄
 2. **`nest/<도메인>/<X>.repository.ts`** — `@Injectable`, `DbService` 주입, SQL은 여기 밖으로 안 샌다. 반환 타입은 이미 만들어둔 VO.
 3. **`nest/<도메인>/<X>.service.ts`** — `@Injectable`, 리포지토리 주입. 아직 이식 안 한 엔진/공용 모듈만 `require`로 남기고 **주석으로 이식 대상 표시**.
 4. 도메인 모듈에 `providers: [Service, Repository]` 등록.
-5. **parity로 검증** — `src/`는 기준선이므로 ⑤ 전까지 지우지 않는다.
+5. **부팅 확인** — `npm run build && PORT=3999 node dist/main.js`. DI 오류는 **컴파일이 아니라 부팅**에서 난다.
+6. **parity로 검증** — `src/`는 기준선이므로 ⑤ 전까지 지우지 않는다.
 
 ⚠️ `AppModule` imports 순서: `MediaModule`(`:characterId/**`)이 `CharactersModule`(`:id`)보다 **먼저**. 안 그러면 `:id`가 하위 경로를 잡아챈다.
 
@@ -301,4 +318,4 @@ src/ 전체        182파일 · 48,783줄
 
 ## 부록 — 이관 PR 목록
 
-`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb)
+`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb) · `#195`~`#208` DTO/VO 도입 · `#209` 공용 보안(ownership·token) · `#211` teams · `#212` credits · `#213` subscription·팀크레딧·쿠키·에러필터·이미지에셋 + 진행률 측정 스크립트

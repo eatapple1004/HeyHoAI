@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { CharacterRepository } from './character.repository';
+import { TeamCreditRepository } from '../teams/team-credit.repository';
+import { ImageAssetRepository } from '../images/image-asset.repository';
 import { OwnershipService } from '../common/security/ownership.service';
 import { CharacterVo, CharacterPersonaVo } from './vo/character.vo';
 import {
@@ -17,13 +19,9 @@ const characterCore = require(path.join(__dirname, '..', '..', 'src', 'character
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { createCharacterRequestSchema } = require(path.join(__dirname, '..', '..', 'src', 'characters', 'character.validator.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const imageAssetRepo = require(path.join(__dirname, '..', '..', 'src', 'images', 'imageAsset.repository.js'));
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { makeRefThumb } = require(path.join(__dirname, '..', '..', 'src', 'characters', 'refThumb.service.js'));
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const teamCredit = require(path.join(__dirname, '..', '..', 'src', 'teams', 'team.credit.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
 
@@ -78,11 +76,13 @@ export class CharactersService {
   constructor(
     private readonly characters: CharacterRepository,
     private readonly ownership: OwnershipService,
+    private readonly teamCredit: TeamCreditRepository,
+    private readonly imageAssets: ImageAssetRepository,
   ) {}
 
   /** 활성 작업 컨텍스트의 팀 id (개인이면 null) */
   private async activeTeamId(userId: string): Promise<string | null> {
-    const ctx = await teamCredit.resolveContext(userId);
+    const ctx = await this.teamCredit.resolveContext(userId);
     return ctx.type === 'team' ? ctx.teamId : null;
   }
 
@@ -121,7 +121,7 @@ export class CharactersService {
   /** 대표 이미지 지정 — 그 캐릭터의 이미지여야 한다 */
   async setReferenceImage(userId: string, id: string, imageId: string): Promise<CharacterVo | null> {
     await this.ownership.assertCharacterOwned(id, userId);
-    const image = await imageAssetRepo.findById(imageId);
+    const image = await this.imageAssets.findById(imageId);
     if (!image || image.character_id !== id) {
       throw httpError(404, 'Image not found for this character');
     }

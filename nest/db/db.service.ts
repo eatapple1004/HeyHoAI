@@ -25,4 +25,9 @@ export class DbService {
   get pool() {
     return client.pool;
   }
+
+  /** 트랜잭션용 커넥션 대여 — 반드시 finally에서 release() 할 것(누수 시 풀 고갈) */
+  connect(): Promise<any> {
+    return client.pool.connect();
+  }
 }

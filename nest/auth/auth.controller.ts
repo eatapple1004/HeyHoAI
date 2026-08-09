@@ -10,7 +10,8 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { AuthApiService, setAuthCookie, clearAuthCookie, googleHandlers } from './auth.service';
+import { AuthApiService, googleHandlers } from './auth.service';
+import { CookieService } from '../common/security/cookie.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiResponse, ApiOk } from '../common/dto/api-response.dto';
 import { UserVo } from './vo/user.vo';
@@ -21,7 +22,10 @@ import { SignupDto, LoginDto, UpdateProfileDto } from './dto/auth.dto';
 //      (passthrough=true라 반환값은 평소처럼 Nest가 JSON으로 직렬화한다.)
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly auth: AuthApiService) {}
+  constructor(
+    private readonly auth: AuthApiService,
+    private readonly cookies: CookieService,
+  ) {}
 
   // POST /api/auth/signup — 가입 + 인증 쿠키(레거시도 201)
   @Post('signup')
@@ -29,7 +33,7 @@ export class AuthController {
     const refCode = req.cookies && req.cookies.ref; // 추천 쿠키(있으면 추천 관계 연결)
     const { user, refLinked } = await this.auth.signup(body, refCode);
     if (refLinked) res.clearCookie('ref', { path: '/' });
-    setAuthCookie(res, user);
+    this.cookies.setAuthCookie(res, user);
     return { success: true, data: user };
   }
 
@@ -38,7 +42,7 @@ export class AuthController {
   @HttpCode(200) // 레거시 res.json=200
   async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: any): Promise<ApiResponse<UserVo>> {
     const user = await this.auth.login(body);
-    setAuthCookie(res, user);
+    this.cookies.setAuthCookie(res, user);
     return { success: true, data: user };
   }
 
@@ -46,7 +50,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   logout(@Res({ passthrough: true }) res: any): ApiOk {
-    clearAuthCookie(res);
+    this.cookies.clearAuthCookie(res);
     return { success: true };
   }
 
@@ -84,7 +88,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async deleteAccount(@Req() req: any, @Res({ passthrough: true }) res: any): Promise<ApiOk> {
     await this.auth.deleteAccount(req.user.id);
-    clearAuthCookie(res);
+    this.cookies.clearAuthCookie(res);
     return { success: true };
   }
 }

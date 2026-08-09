@@ -7,13 +7,10 @@ import * as path from 'path';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const legacy = require(path.join(__dirname, '..', '..', 'src', 'auth', 'auth.api.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const cookie = require(path.join(__dirname, '..', '..', 'src', 'auth', 'cookie.js'));
 // Google OAuth 핸들러는 리다이렉트 전용 Express 핸들러라 그대로 재사용한다(로직 이중화 금지).
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const google = require(path.join(__dirname, '..', '..', 'src', 'auth', 'google.js'));
 
-export const setAuthCookie = cookie.setAuthCookie;
-export const clearAuthCookie = cookie.clearAuthCookie;
 export const googleHandlers = google;
 
 @Injectable()

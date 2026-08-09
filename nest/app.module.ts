@@ -14,6 +14,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MediaModule } from './media/media.module';
 import { CharactersModule } from './characters/characters.module';
 import { DbModule } from './db/db.module';
+import { WalletModule } from './credits/wallet.module';
 import { SecurityModule } from './common/security/security.module';
 import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
@@ -27,7 +28,8 @@ import { GenerateModule } from './generate/generate.module';
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
   imports: [
-    DbModule,           // 전역 — 리포지토리가 DbService를 주입받는다
+    DbModule,               // 전역 — 리포지토리가 DbService를 주입받는다
+    WalletModule,           // 전역 — 개인/팀 크레딧(거의 모든 도메인이 사용)
     SecurityModule,     // 전역 — 소유권 검증(OwnershipService)·JWT(TokenService)
     PricingModule,
     CreditsModule,

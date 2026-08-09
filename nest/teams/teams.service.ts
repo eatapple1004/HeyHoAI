@@ -2,15 +2,13 @@ import { Injectable } from '@nestjs/common';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { TeamRepository } from './team.repository';
+import { TeamCreditRepository } from './team-credit.repository';
 import { TeamVo, MyTeamVo, TeamInviteVo, TeamRole } from './vo/team.vo';
 import { TeamLedgerEntryVo } from '../common/vo/ledger.vo';
 import {
   TeamContextDto, TeamDetailDto, AcceptInviteResultDto, CreditTransferResultDto,
 } from './dto/team.dto';
 
-// 팀 크레딧 풀(이체·차감·컨텍스트 해석)은 크레딧 도메인과 얽혀 있어 아직 재사용 — credits 이식 시 함께 정리.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const teamCredit = require(path.join(__dirname, '..', '..', 'src', 'teams', 'team.credit.js'));
 
 /** 역할 등급 — 상위 등급이 하위 권한을 포함한다 */
 const ROLES: TeamRole[] = ['owner', 'editor', 'viewer'];
@@ -22,7 +20,10 @@ function httpError(statusCode: number, message: string) {
 
 @Injectable()
 export class TeamsService {
-  constructor(private readonly repo: TeamRepository) {}
+  constructor(
+    private readonly repo: TeamRepository,
+    private readonly teamCredit: TeamCreditRepository,
+  ) {}
 
   /**
    * 권한 검사 — 멤버가 아니면 **404**(팀 존재 자체를 숨긴다), 등급 미달이면 403.
@@ -43,14 +44,14 @@ export class TeamsService {
 
   // ── 컨텍스트(개인/팀) ──
   resolveContext(userId: string): Promise<TeamContextDto> {
-    return teamCredit.resolveContext(userId);
+    return this.teamCredit.resolveContext(userId);
   }
 
   /** 컨텍스트 전환 — teamId가 있으면 멤버 확인 후 세팅, 없으면 개인 복귀 */
   async switchContext(userId: string, teamId?: string | null): Promise<TeamContextDto> {
     if (teamId) await this.assertRole(teamId, userId, 'viewer');
     await this.repo.setActiveTeam(userId, teamId ?? null);
-    return teamCredit.resolveContext(userId);
+    return this.teamCredit.resolveContext(userId);
   }
 
   // ── 팀 ──
@@ -70,7 +71,7 @@ export class TeamsService {
     const myRole = await this.assertRole(teamId, userId, 'viewer');
     const team = await this.getTeamOrThrow(teamId);
     const members = await this.repo.listMembers(teamId);
-    const creditBalance = await teamCredit.getBalance(teamId);
+    const creditBalance = await this.teamCredit.getBalance(teamId);
     return { ...team, members, credit_balance: creditBalance, my_role: myRole };
   }
 
@@ -133,11 +134,11 @@ export class TeamsService {
   // ── 팀 크레딧 풀 ──
   async transferCredits(teamId: string, userId: string, amount: number): Promise<CreditTransferResultDto> {
     await this.assertRole(teamId, userId, 'owner');
-    return teamCredit.transferFromUser(userId, teamId, amount);
+    return this.teamCredit.transferFromUser(userId, teamId, amount);
   }
 
   async creditLedger(teamId: string, userId: string, limit: number): Promise<TeamLedgerEntryVo[]> {
     await this.assertRole(teamId, userId, 'viewer');
-    return teamCredit.getLedger(teamId, limit);
+    return this.teamCredit.getLedger(teamId, limit);
   }
 }
