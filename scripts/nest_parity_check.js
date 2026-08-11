@@ -345,8 +345,13 @@ const MUTATIONS = [
     run: (base) => hit(base, 'POST', '/api/subscription/offer/start').then((r) => ({ r })),
   },
   {
-    name: 'POST /api/subscription/upgrade (비admin → 501 comingSoon)',
-    run: (base) => hit(base, 'POST', '/api/subscription/upgrade', { body: { plan: 'pro' } }).then((r) => ({ r })),
+    // ⚠️ 성공 경로(free→pro)는 parity로 못 돌린다 — **상태를 바꾸는 데다 누적**된다.
+    //    먼저 호출한 서버가 플랜을 올려버려서, 두 번째 서버는 "연장(extended)"으로 시작한다
+    //    → 항상 불일치로 보인다(실측: Nest upgraded:true / Legacy extended:true).
+    //    2026-08-11 dev에서 **양쪽 모두 plan=free로 리셋한 뒤** 각각 호출해 응답이 완전히 같음을 확인했다.
+    //    여기서는 상태를 바꾸지 않는 검증 경로만 비교한다.
+    name: 'POST /api/subscription/upgrade 잘못된 플랜 → 400',
+    run: (base) => hit(base, 'POST', '/api/subscription/upgrade', { body: { plan: 'no-such-plan' } }).then((r) => ({ r })),
   },
   {
     name: 'PATCH /api/brand-kit (색상 변경, 멱등)',
