@@ -293,6 +293,11 @@ const NONDETERMINISTIC = ['/api/generate/ugc/voice-preview', '/health'];
  */
 const INTENTIONAL_DIFFS = [
   {
+    path: '/api/admin/business/** · /admin-business',
+    why: 'Nest에만 있는 신규 도메인(레거시에 대응 라우트 자체가 없다) → parity 비교 대상이 아니다. '
+       + 'CASES에 넣으면 레거시 404 vs Nest 200으로 항상 실패한다. 신규 기능은 parity가 아니라 직접 스모크로 검증할 것.',
+  },
+  {
     path: '/admin-*',
     why: '레거시는 클린URL 라우트(/^\\/([a-z0-9-]+)$/)가 먼저 매칭돼 requireAdminPage가 실행되지 않았다 '
        + '→ 비로그인도 관리자 페이지 셸이 200으로 서빙됨. Nest는 AdminPageGuard가 실제로 걸려 302 /login(또는 403).',
