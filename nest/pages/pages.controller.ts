@@ -148,6 +148,15 @@ export class PagesController {
   @Get('admin-proposal')
   adminProposal(@Res() res: any) { return res.sendFile(page('admin-proposal.html')); }
 
+  /** 사업체 인스타 관리 — 목록. 상세(`:id`)보다 먼저 선언해야 한다. */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business')
+  adminBusiness(@Res() res: any) { return res.sendFile(page('admin-business.html')); }
+
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id')
+  adminBusinessDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
+
   // ── 클린 URL (맨 마지막) ──
 
   /**

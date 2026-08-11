@@ -205,6 +205,16 @@ app.get('/admin-proposal', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-proposal.html'));
 });
 
+// 관리자 전용: 사업체 인스타그램 관리(목록 → 상세)
+//   ⚠️ API(/api/admin/business)는 Nest 소유다 — 레거시 단독 기동(staging/prod)에서는 페이지만 뜨고
+//   데이터는 안 붙는다. dev(NestJS)에서 동작하며, 이관 완료 시 그대로 살아난다.
+app.get('/admin-business', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business.html'));
+});
+app.get('/admin-business/:id', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-detail.html'));
+});
+
 // 인증 라우트 (공개)
 app.use('/api/auth', authRoutes);
 
