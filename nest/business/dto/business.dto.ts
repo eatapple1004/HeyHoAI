@@ -32,6 +32,38 @@ export interface RegisterMediaDto {
   caption?: string;
 }
 
+/** 팩 옵션 제안 요청 — 선택한 원본 이미지 + 컨셉 브리프 */
+export interface ClassifyPackDto {
+  mediaIds: string[];
+  /** 컨셉 브리프(여러 줄 가능) — 팩 기획을 주도하는 값 */
+  product?: string;
+}
+
+/**
+ * 팩 생성 요청. classify가 제안한 값을 관리자가 확인·수정해 그대로 돌려보낸다
+ * (레거시 팩 라우트가 기대하는 필드 이름을 유지한다 — 이름을 바꾸면 파이프라인이 못 읽는다).
+ */
+export interface CreatePackDto {
+  mediaIds: string[];
+  product?: string;
+  vertical?: string;
+  category?: string;
+  /** 여러 품목이 보일 때 고른 영어 제품 서술 */
+  item?: string;
+  /** single(기본) | pair | with_package | group */
+  unit?: string;
+  /** 사람 착용컷인지 — 기준 사진을 어느 모델로 구울지가 갈린다 */
+  sourceHasModel?: boolean;
+  states?: { key: string; label?: string }[];
+  skus?: unknown[];
+  lenses?: { key: string; brief: string }[];
+}
+
+/** 컷 생성 시작 — depth 0이면 계획된 컷 전부 */
+export interface GeneratePackDto {
+  depth?: number;
+}
+
 /** AI 캡션 생성 요청 */
 export interface GenerateCaptionDto {
   /** 캡션의 근거가 될 미디어 — 선택된 이미지/영상 */
