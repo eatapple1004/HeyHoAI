@@ -50,6 +50,14 @@ button:disabled{opacity:.5;cursor:default}
 .tile .acts{position:absolute;bottom:0;left:0;right:0;display:flex;gap:4px;padding:6px;background:linear-gradient(transparent,rgba(10,10,18,.9));opacity:0;transition:opacity .15s}
 .tile:hover .acts{opacity:1}
 .tile .acts button{flex:1;padding:4px 0;font-size:.68rem;border-radius:7px}
+.builder{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;background:var(--panel2)}
+.prog{color:var(--faint);font-size:.78rem}
+.tile.pick{cursor:pointer}
+.tile.pick.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,206,122,.22)}
+.tile .num{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#2a1d05;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:.78rem;cursor:pointer;background:var(--panel)}
+.chip.on{border-color:var(--accent2);background:rgba(106,64,224,.18)}
+.chip input{width:auto}
 .pack{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
 .pack .h{display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:.85rem;color:var(--dim);flex-wrap:wrap}
 .compose{display:grid;grid-template-columns:190px 1fr;gap:18px}
@@ -126,8 +134,68 @@ button:disabled{opacity:.5;cursor:default}
     </div>
     <div id="paneMedia"><div class="tiles" id="mediaTiles"></div></div>
     <div id="panePack" style="display:none">
+      <!-- 팩 만들기: 원본 선택 → 분석 → 생성 → 레퍼 확인 → 컷 생성 -->
+      <div class="builder">
+        <div class="row" style="justify-content:space-between">
+          <b style="font-size:.92rem">🎨 오리지널로 팩 만들기</b>
+          <button class="sm" onclick="toggleBuilder()" id="builderToggle">펼치기</button>
+        </div>
+        <div id="builderBody" style="display:none;margin-top:14px">
+          <div class="field">
+            <label>원본 선택 (최대 10장 · 여러 각도를 넣으면 결과가 좋아집니다)</label>
+            <div class="tiles" id="packSrcTiles"></div>
+          </div>
+          <div class="field">
+            <label>컨셉 브리프 — 무엇을 어떻게 보여주고 싶은지</label>
+            <textarea id="packBrief" rows="2" placeholder="예: 가을 시즌 레오파드 언더웨어. 따뜻한 톤, 침실·러그 위 연출 위주로."></textarea>
+          </div>
+          <div class="row">
+            <button class="primary" onclick="classifyPack()" id="clsBtn">① 분석하기</button>
+            <span class="prog" id="clsHint">원본을 고르고 분석을 누르면 AI가 카테고리·상태·촬영 축을 제안합니다.</span>
+          </div>
+
+          <!-- 분석 결과 확인 -->
+          <div id="clsResult" style="display:none;margin-top:14px">
+            <div class="row" style="margin-bottom:10px">
+              <input id="clsCategory" placeholder="카테고리" style="width:170px">
+              <input id="clsItem" placeholder="품목(영문 서술)" style="flex:1;min-width:180px">
+              <select id="clsUnit">
+                <option value="">단품</option>
+                <option value="pair">한 쌍</option>
+                <option value="with_package">본체+패키지</option>
+                <option value="group">여러 개</option>
+              </select>
+              <label style="display:flex;align-items:center;gap:6px;color:var(--dim);font-size:.8rem">
+                <input type="checkbox" id="clsOnModel" style="width:auto"> 사람 착용컷
+              </label>
+            </div>
+            <div class="field" id="clsStatesWrap">
+              <label>상태 — 켠 것마다 기준 사진과 컷 세트가 따로 만들어집니다</label>
+              <div id="clsStates" class="row"></div>
+            </div>
+            <div class="row">
+              <button class="primary" onclick="createPack()" id="crtBtn">② 팩 만들기</button>
+              <span class="prog" id="crtHint"></span>
+            </div>
+          </div>
+
+          <!-- 진행 상태 -->
+          <div id="packProg" style="display:none;margin-top:14px">
+            <div class="row" style="margin-bottom:10px">
+              <span class="badge b-wait" id="progBadge">진행중</span>
+              <span class="prog" id="progText"></span>
+            </div>
+            <div class="tiles" id="progTiles"></div>
+            <div class="row" id="gateRow" style="margin-top:12px;display:none">
+              <button class="primary" onclick="generateCuts()" id="genBtn">컷 생성 시작</button>
+              <span class="prog" id="genHint"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="row" style="margin-bottom:14px">
-        <input id="packKey" placeholder="팩 ID 또는 공유 ID(share_id)" style="flex:1;min-width:220px">
+        <input id="packKey" placeholder="이미 만든 팩 연결 — 팩 ID 또는 공유 ID(share_id)" style="flex:1;min-width:260px">
         <button onclick="linkPack()">팩 연결</button>
       </div>
       <div id="packs"></div>
@@ -308,7 +376,10 @@ function renderMedia() {
     ? generated.map((m) => tileHtml(m, {
         acts: '<button class="sm danger" onclick="event.stopPropagation();delMedia(\'' + m.id + '\')">삭제</button>',
       })).join('')
-    : '<div class="empty">생성 결과물이 없습니다. 콘텐츠팩 탭에서 팩을 연결하세요.</div>';
+    : '<div class="empty">생성 결과물이 없습니다. 콘텐츠팩 탭에서 팩을 만들거나 연결하세요.</div>';
+
+  // 팩 빌더가 열려 있으면 원본 후보도 같이 갱신(업로드 직후 바로 고를 수 있게)
+  if ($('builderBody').style.display !== 'none') renderPackSources();
 }
 
 function renderPacks() {
@@ -338,6 +409,175 @@ function renderSlots() {
   }
 }
 function clearSlot(slot) { sel[slot] = null; renderMedia(); renderPacks(); renderSlots(); }
+
+// ── 팩 만들기 (원본 → 분석 → 생성 → 레퍼 확인 → 컷) ──
+
+/** 발행용 선택(sel)과 별개다 — 팩 소스는 여러 장을 고르므로 자체 상태를 둔다 */
+let pb = { srcIds: [], cls: null, packId: null, timer: null };
+
+function toggleBuilder() {
+  const open = $('builderBody').style.display === 'none';
+  $('builderBody').style.display = open ? '' : 'none';
+  $('builderToggle').textContent = open ? '접기' : '펼치기';
+  if (open) renderPackSources();
+}
+
+/** 팩 소스 후보 = 관리자가 올린 원본 이미지(영상은 팩 입력이 아니다) */
+function renderPackSources() {
+  const cands = state.media.filter((m) => m.source === 'upload' && m.media_type === 'image');
+  $('packSrcTiles').innerHTML = cands.length ? cands.map((m) => {
+    const i = pb.srcIds.indexOf(m.id);
+    return '<div class="tile pick' + (i >= 0 ? ' on' : '') + '" onclick="togglePackSrc(\'' + m.id + '\')">'
+      + '<img src="' + esc(m.url) + '" alt="" loading="lazy">'
+      + (i >= 0 ? '<div class="num">' + (i + 1) + '</div>' : '')
+      + (m.is_base ? '<div class="tag base">★</div>' : '')
+      + '</div>';
+  }).join('') : '<div class="empty">먼저 위에서 오리지널 이미지를 업로드하세요.</div>';
+}
+
+function togglePackSrc(id) {
+  const i = pb.srcIds.indexOf(id);
+  if (i >= 0) pb.srcIds.splice(i, 1);
+  else if (pb.srcIds.length >= 10) return flash('err', '원본은 최대 10장까지 넣을 수 있습니다.');
+  else pb.srcIds.push(id);
+  renderPackSources();
+}
+
+/** ① 분석 — AI가 카테고리·상태·촬영 축을 제안. 관리자가 확인·수정한 뒤 생성으로 넘어간다 */
+async function classifyPack() {
+  clearMsg();
+  if (!pb.srcIds.length) return flash('err', '팩에 쓸 원본을 선택하세요.');
+  $('clsBtn').disabled = true;
+  $('clsHint').textContent = '분석 중… (사진 장수에 따라 10~30초)';
+  try {
+    const { data } = await api('/api/admin/business/' + BIZ_ID + '/packs/classify', {
+      method: 'POST',
+      body: JSON.stringify({ mediaIds: pb.srcIds, product: $('packBrief').value.trim() }),
+    });
+    pb.cls = data;
+    $('clsCategory').value = data.category || '';
+    $('clsItem').value = data.item || '';
+    $('clsUnit').value = data.unit || '';
+    $('clsOnModel').checked = !!data.sourceHasModel;
+    // 상태는 기본 전체 켜짐 — 켠 개수만큼 레퍼·컷 세트가 늘어난다는 걸 힌트로 알린다
+    const states = Array.isArray(data.states) ? data.states : [];
+    $('clsStatesWrap').style.display = states.length ? '' : 'none';
+    $('clsStates').innerHTML = states.map((s) =>
+      '<label class="chip on"><input type="checkbox" checked onchange="syncChip()" '
+      + 'data-key="' + esc(s.key) + '" data-label="' + esc(s.label || '') + '"> ' + esc(s.label || s.key) + '</label>').join('');
+    $('clsResult').style.display = '';
+    const refHint = data.ref
+      ? ` 기준 사진 굽기: 이번 주기 ${data.ref.used}/${data.ref.free}회 사용(초과 시 회당 ◈${data.ref.unit}).`
+      : '';
+    $('clsHint').textContent = '분석 완료 — 확인하고 팩을 만드세요.';
+    $('crtHint').textContent = '만들기를 누르면 기준 사진을 먼저 굽습니다.' + refHint;
+  } catch (e) {
+    flash('err', e.message);
+    $('clsHint').textContent = '분석 실패';
+  } finally { $('clsBtn').disabled = false; }
+}
+
+/** 체크박스 상태를 chip 스타일에 반영 */
+function syncChip() {
+  [...$('clsStates').querySelectorAll('.chip')].forEach((c) => {
+    c.classList.toggle('on', c.querySelector('input').checked);
+  });
+}
+
+/** ② 팩 생성 — 202로 즉시 반환되고 기준 사진은 백그라운드로 구워진다 */
+async function createPack() {
+  clearMsg();
+  $('crtBtn').disabled = true;
+  $('crtHint').textContent = '팩 생성 중…';
+  try {
+    const states = [...$('clsStates').querySelectorAll('input:checked')]
+      .map((el) => ({ key: el.dataset.key, label: el.dataset.label }));
+    const { data } = await api('/api/admin/business/' + BIZ_ID + '/packs/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        mediaIds: pb.srcIds,
+        product: $('packBrief').value.trim(),
+        vertical: (pb.cls && pb.cls.vertical) || undefined,
+        category: $('clsCategory').value.trim() || undefined,
+        item: $('clsItem').value.trim() || undefined,
+        unit: $('clsUnit').value || undefined,
+        sourceHasModel: $('clsOnModel').checked,
+        states: states.length ? states : undefined,
+        skus: (pb.cls && pb.cls.skus) || undefined,
+        lenses: (pb.cls && pb.cls.lenses) || undefined,
+      }),
+    });
+    pb.packId = data.packId;
+    $('clsResult').style.display = 'none';
+    $('packProg').style.display = '';
+    flash('ok', '팩 #' + data.packId + ' 생성을 시작했습니다.');
+    pollPack();
+    load(); // 팩 목록에 즉시 등장(연결은 서버가 이미 걸어뒀다)
+  } catch (e) {
+    flash('err', e.message);
+    $('crtHint').textContent = '생성 실패';
+  } finally { $('crtBtn').disabled = false; }
+}
+
+/** 진행 폴링 — processing 동안만 돈다. ref_ready/done/failed면 멈춘다. */
+async function pollPack() {
+  if (pb.timer) clearTimeout(pb.timer);
+  if (!pb.packId) return;
+  try {
+    const { data } = await api('/api/admin/business/' + BIZ_ID + '/packs/' + pb.packId + '/status');
+    const LABEL = {
+      processing: ['b-wait', '진행중'], ref_ready: ['b-wait', '기준 사진 완료'],
+      done: ['b-done', '완료'], failed: ['b-off', '실패'],
+    };
+    const [cls, label] = LABEL[data.status] || ['b-off', data.status];
+    $('progBadge').className = 'badge ' + cls;
+    $('progBadge').textContent = label;
+
+    if (data.status === 'failed') {
+      $('progText').textContent = data.error || '실패했습니다.';
+    } else if (data.status === 'ref_ready') {
+      $('progText').textContent = '기준 사진을 확인하세요. 계획된 컷 ' + data.plannedCuts + '장.';
+    } else if (data.status === 'done') {
+      $('progText').textContent = '컷 ' + data.stillsDone + '장 완료 — 아래 팩 목록에서 고를 수 있습니다.';
+    } else {
+      $('progText').textContent = data.plannedCuts
+        ? '컷 생성 중… ' + data.stillsDone + '/' + data.plannedCuts
+        : '기준 사진 굽는 중…';
+    }
+
+    const shots = (data.refUrls || []).concat(data.stillUrls || []);
+    $('progTiles').innerHTML = shots.map((u) =>
+      '<div class="tile"><img src="' + esc(u) + '" alt="" loading="lazy"></div>').join('');
+
+    // 게이트: 기준 사진이 나온 시점에만 컷 생성 버튼을 연다(여기서 크레딧이 나간다)
+    const gate = data.status === 'ref_ready' && data.remaining > 0;
+    $('gateRow').style.display = gate ? '' : 'none';
+    if (gate) {
+      $('genBtn').textContent = '컷 ' + data.remaining + '장 생성';
+      $('genHint').textContent = '일반 계정 기준 ◈' + data.stillCost.toLocaleString() + ' (관리자 계정은 차감 면제)';
+    }
+
+    if (data.status === 'processing') pb.timer = setTimeout(pollPack, 3000);
+    else load();
+  } catch (e) {
+    $('progText').textContent = '상태 조회 실패: ' + e.message;
+  }
+}
+
+/** ③ 컷 생성 시작 — 레퍼를 눈으로 확인한 뒤 누르는 게이트 */
+async function generateCuts() {
+  clearMsg();
+  $('genBtn').disabled = true;
+  try {
+    await api('/api/admin/business/' + BIZ_ID + '/packs/' + pb.packId + '/generate', {
+      method: 'POST', body: JSON.stringify({ depth: 0 }),
+    });
+    $('gateRow').style.display = 'none';
+    flash('ok', '컷 생성을 시작했습니다.');
+    pollPack();
+  } catch (e) { flash('err', e.message); }
+  finally { $('genBtn').disabled = false; }
+}
 
 function setTab(t) {
   $('tabMedia').classList.toggle('on', t === 'media');

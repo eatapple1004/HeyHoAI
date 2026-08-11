@@ -5,10 +5,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminGuard } from '../auth/admin.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { BusinessService } from './business.service';
+import { BusinessPackService } from './business-pack.service';
 import { ACCOUNT_UPLOAD_OPTIONS } from '../accounts/accounts.service';
 import {
-  CreateBusinessDto, EnqueueDto, GenerateCaptionDto, LinkAccountDto, LinkPackDto,
-  RegisterMediaDto, UpdateBusinessDto, UpdateQueueDto,
+  ClassifyPackDto, CreateBusinessDto, CreatePackDto, EnqueueDto, GenerateCaptionDto, GeneratePackDto,
+  LinkAccountDto, LinkPackDto, RegisterMediaDto, UpdateBusinessDto, UpdateQueueDto,
 } from './dto/business.dto';
 import {
   BusinessAccountVo, BusinessListItemVo, BusinessMediaVo, BusinessPackVo,
@@ -25,7 +26,10 @@ import {
 @Controller('api/admin/business')
 @UseGuards(AdminGuard)
 export class BusinessController {
-  constructor(private readonly business: BusinessService) {}
+  constructor(
+    private readonly business: BusinessService,
+    private readonly packFlow: BusinessPackService,
+  ) {}
 
   // ── 고정 경로(반드시 :id 계열보다 위) ──
 
@@ -145,6 +149,45 @@ export class BusinessController {
   @HttpCode(200)
   async linkPack(@Param('id') id: string, @Body() body: LinkPackDto): Promise<ApiResponse<BusinessPackVo[]>> {
     return { success: true, data: await this.business.linkPack(id, body) };
+  }
+
+  /**
+   * POST /api/admin/business/:id/packs/classify — 원본 사진을 AI가 훑어 팩 옵션을 제안.
+   * ⚠️ `:packId` 계열보다 위에 있어야 한다(고정 세그먼트 우선).
+   */
+  @Post(':id/packs/classify')
+  @HttpCode(200)
+  async classifyPack(@Req() req: any, @Param('id') id: string, @Body() body: ClassifyPackDto) {
+    await this.business.get(id);
+    return { success: true, data: await this.packFlow.classify(req.user, id, body.mediaIds, body.product) };
+  }
+
+  /** POST /api/admin/business/:id/packs/create — 팩 생성 시작(캐논 레퍼는 백그라운드) */
+  @Post(':id/packs/create')
+  @HttpCode(200)
+  async createPack(@Req() req: any, @Param('id') id: string, @Body() body: CreatePackDto) {
+    await this.business.get(id);
+    return { success: true, data: await this.packFlow.create(req.user, id, body) };
+  }
+
+  /** GET /api/admin/business/:id/packs/:packId/status — 진행 상태 폴링 */
+  @Get(':id/packs/:packId/status')
+  async packStatus(@Req() req: any, @Param('id') id: string, @Param('packId') packId: string) {
+    await this.business.get(id);
+    return { success: true, data: await this.packFlow.status(req.user, id, packId) };
+  }
+
+  /** POST /api/admin/business/:id/packs/:packId/generate — 레퍼 확인 후 컷 생성 시작 */
+  @Post(':id/packs/:packId/generate')
+  @HttpCode(200)
+  async generatePack(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('packId') packId: string,
+    @Body() body: GeneratePackDto,
+  ) {
+    await this.business.get(id);
+    return { success: true, data: await this.packFlow.generate(req.user, id, packId, body.depth || 0) };
   }
 
   @Delete(':id/packs/:packId')
