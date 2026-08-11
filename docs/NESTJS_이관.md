@@ -318,6 +318,44 @@ node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
 
 ⚠️ `AppModule` imports 순서: `MediaModule`(`:characterId/**`)이 `CharactersModule`(`:id`)보다 **먼저**. 안 그러면 `:id`가 하위 경로를 잡아챈다.
 
+## 10-b. 프론트 서빙 이관 (2026-08-11, PR#218)
+
+페이지·정적 서빙까지 Nest가 소유한다. **요청 파이프라인이 바뀌었으니 이 절을 먼저 읽을 것.**
+
+### 파이프라인 (main.ts)
+```
+요청
+ ├ 웹훅 3개  → 레거시 직행 (파싱 전에 넘겨야 raw body 서명검증이 산다)
+ └ 그 외
+    ├ cookie-parser + express.json(50mb)
+    ├ Nest 라우트  (API 컨트롤러 → PagesController → AssetsController)
+    ├ 정적         (public · /bgm · /vendor/ffmpeg*)     ← app.listen() **이후** 등록
+    └ 레거시 폴백  (여기 오면 Nest에 라우트가 없다는 뜻 — /api/* 는 경고 로그)
+```
+
+⚠️ **`adapter.setNotFoundHandler`를 no-op으로 만든다.** Nest는 init 때 catch-all 404 미들웨어를 붙이는데,
+그게 있으면 **뒤에 등록한 정적·폴백이 영원히 실행되지 않는다**(실측: 모든 정적 파일이 404).
+
+⚠️ **정적은 반드시 페이지 컨트롤러 뒤.** 앞에 두면 `/studio.html`이 그대로 서빙돼 클린 URL 301이 사라진다.
+
+⚠️ **`PagesModule`은 AppModule imports의 맨 마지막.** 클린 URL `:name`이 단일 세그먼트를 전부 잡는다.
+
+### 구성
+| 파일 | 역할 |
+|---|---|
+| `nest/pages/pages.controller.ts` | `/` · `/login` · `/signup` · `/store` · `/r/:code` · `/health` · `/heyhoai/**`(11) · `/admin-*`(6) · 클린 URL `:name` |
+| `nest/pages/assets.controller.ts` | `/images/:file` — 로컬 우선 → R2(공개 302 / 비공개 프록시 스트리밍, Range 전달) |
+| `nest/pages/page-auth.guard.ts` | `PageGuard`(→ `/login?next=`) · `AdminPageGuard`(→ 403 화면) |
+| `nest/pages/page-exception.filter.ts` | 위 예외를 화면 응답으로. **가드가 res를 직접 쓰면 "headers already sent"** |
+
+페이지 컨트롤러의 `@Res()`는 정상이다 — 파일 전송·리다이렉트가 목적이라 응답 객체가 필요하다.
+
+### ⚠️ 의도적 동작 변경 — 관리자 페이지 게이트가 이제 **실제로 걸린다**
+레거시는 클린 URL 라우트(`/^\/([a-z0-9-]+)$/`, index.js:101)가 `/admin-stats` 같은 경로를 **먼저** 잡아
+아래 `requireAdminPage`(index.js:199~)가 **한 번도 실행되지 않았다**. 비로그인도 관리자 페이지 셸이 200으로 서빙됐다
+(데이터는 API가 AdminGuard로 막고 있어 유출은 아니었다). Nest는 선언 순서상 가드가 먼저라 302 `/login` 또는 403이 나간다.
+= 레거시 코드의 **원래 의도대로** 동작.
+
 ## 11. 남은 과제
 
 1. dev에서 충분히 검증 후 staging/prod도 `dist/main.js` 로 전환(ecosystem·deploy.sh)
@@ -326,4 +364,4 @@ node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
 
 ## 부록 — 이관 PR 목록
 
-`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb) · `#195`~`#208` DTO/VO 도입 · `#209` 공용 보안(ownership·token) · `#211` teams · `#212` credits · `#213` subscription·팀크레딧·쿠키·에러필터 + 진행률 측정 스크립트 · `#214` media·auth·trial 네이티브화 · `#215` publishing·admin 네이티브화 · `#216` marketplace 네이티브화 · `#217` accounts 네이티브화(④단계 완료)
+`#173` 파일럿 · `#174` pricing · `#175` credits · `#176` billing · `#177` subscription · `#178` dashboard · `#179` brand-kit · `#180` teams+전역 에러 필터 · `#181` affiliate·recipes · `#182` studio · `#183`·`#184` marketplace · `#185` characters+미디어 · `#186` template-data·trial+AdminGuard · `#187` publishing(회귀 수정) · `#188` admin data·proposal · `#189` auth · `#190` admin refine · `#191` pack · `#192` accounts · `#193` generate+상태코드 보정 · `#194` Express 설정 정합(trust proxy·50mb) · `#195`~`#208` DTO/VO 도입 · `#209` 공용 보안(ownership·token) · `#211` teams · `#212` credits · `#213` subscription·팀크레딧·쿠키·에러필터 + 진행률 측정 스크립트 · `#214` media·auth·trial 네이티브화 · `#215` publishing·admin 네이티브화 · `#216` marketplace 네이티브화 · `#217` accounts 네이티브화(④단계 완료) · `#218` 프론트(페이지·정적) 서빙 이관

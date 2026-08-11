@@ -151,6 +151,29 @@ function normalize(text) {
 // ─────────────────────────────────────────────────────────────────────────────
 // 읽기 케이스 — [method, path, opts]. path에 {placeholder} 사용 가능.
 // ─────────────────────────────────────────────────────────────────────────────
+const PAGE_CASES = [
+  // 프론트 서빙 — 페이지·클린URL·정적. 인증 없이(noAuth) 레거시와 바이트 동일해야 한다.
+  ['GET', '/', { noAuth: true }],
+  ['GET', '/login', { noAuth: true }],
+  ['GET', '/signup', { noAuth: true }],
+  ['GET', '/studio', { noAuth: true }],          // 클린 URL → public/studio.html
+  ['GET', '/studio.html', { noAuth: true }],     // → 301 /studio (정규 URL)
+  ['GET', '/store', { noAuth: true }],           // → 302 /studio (스토어 폐쇄)
+  ['GET', '/store.html', { noAuth: true }],
+  ['GET', '/landing', { noAuth: true }],
+  ['GET', '/billing', { noAuth: true }],
+  ['GET', '/marketplace', { noAuth: true }],
+  ['GET', '/nonexistent-page', { noAuth: true }],// 미매칭 → 레거시 폴백 404
+  ['GET', '/heyhoai/editor/page', { noAuth: true }],   // 비로그인 → /login?next=
+  ['GET', '/heyhoai/templates/birth-reel', { noAuth: true }],
+  ['GET', '/r/BADCODE', { noAuth: true }],       // 추천코드 무효 → 쿠키 없이 / 로
+  ['GET', '/js/pricing.js', { noAuth: true }],   // 정적(public)
+  ['GET', '/auth-ui.js', { noAuth: true }],
+  ['GET', '/css', { noAuth: true }],             // 디렉터리 → 301 /css/
+  ['GET', '/images/nope.png', { noAuth: true }], // 미디어 미존재 → 404
+  ['GET', '/health', { noAuth: true }],
+];
+
 const CASES = [
   // 공통·과금
   ['GET', '/api/pricing'],
@@ -261,7 +284,20 @@ const CASES = [
 ];
 
 /** 본문이 매 호출 달라지는 경로 — 상태코드·Content-Type만 비교 */
-const NONDETERMINISTIC = ['/api/generate/ugc/voice-preview'];
+// 매 요청 값이 달라지는 응답 — 상태/Content-Type만 비교한다.
+const NONDETERMINISTIC = ['/api/generate/ugc/voice-preview', '/health'];
+
+/**
+ * **의도적 차이** — 이식하며 고친 것들. 실패로 세지 않고 별도로 보고한다.
+ *   여기 없는 차이가 나면 그건 회귀다.
+ */
+const INTENTIONAL_DIFFS = [
+  {
+    path: '/admin-*',
+    why: '레거시는 클린URL 라우트(/^\\/([a-z0-9-]+)$/)가 먼저 매칭돼 requireAdminPage가 실행되지 않았다 '
+       + '→ 비로그인도 관리자 페이지 셸이 200으로 서빙됨. Nest는 AdminPageGuard가 실제로 걸려 302 /login(또는 403).',
+  },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ③ 쓰기 parity (--mutations) — 서버별로 자기 픽스처를 만들고, 정규화 비교 후 지운다.
@@ -451,7 +487,7 @@ async function preflight() {
 
   // 읽기 케이스
   console.log('\n── 읽기 parity ──');
-  for (const [method, rawPath, o = {}] of CASES) {
+  for (const [method, rawPath, o = {}] of [...CASES, ...PAGE_CASES]) {
     const { path, missing } = fill(rawPath, ctx);
     if (ONLY && !rawPath.includes(ONLY)) continue;
     if (missing.length) {
@@ -521,6 +557,10 @@ async function preflight() {
   if (seeded) { await unseed(seeded); console.log('\n시드 정리 완료'); }
 
   console.log(`\n── parity ${pass} 통과 / ${fails.length} 실패 / ${skip} 건너뜀 ──`);
+  if (INTENTIONAL_DIFFS.length) {
+    console.log('\n의도적 차이(회귀 아님):');
+    for (const d of INTENTIONAL_DIFFS) console.log(`  · ${d.path} — ${d.why}`);
+  }
   if (fails.length) {
     console.log('\n실패 상세:');
     for (const f of fails) {

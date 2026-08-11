@@ -15,6 +15,7 @@ import { MediaModule } from './media/media.module';
 import { CharactersModule } from './characters/characters.module';
 import { DbModule } from './db/db.module';
 import { WalletModule } from './credits/wallet.module';
+import { PagesModule } from './pages/pages.module';
 import { SecurityModule } from './common/security/security.module';
 import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
@@ -52,6 +53,7 @@ import { GenerateModule } from './generate/generate.module';
     PackModule,
     AccountsModule,
     GenerateModule,
+    PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],
 })
