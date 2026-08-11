@@ -25,6 +25,7 @@ import { AuthModule } from './auth/auth.module';
 import { PackModule } from './pack/pack.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { GenerateModule } from './generate/generate.module';
+import { BusinessModule } from './business/business.module';
 
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
@@ -53,6 +54,7 @@ import { GenerateModule } from './generate/generate.module';
     PackModule,
     AccountsModule,
     GenerateModule,
+    BusinessModule,      // 관리자 전용 사업체 인스타 관리(/api/admin/business)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],
