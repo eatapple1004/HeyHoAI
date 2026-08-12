@@ -28,6 +28,13 @@ async function beginPack({ user, packId }) {
   if (!configured()) { const e = new Error('결제가 아직 설정되지 않았습니다. (PortOne 키 필요)'); e.statusCode = 503; throw e; }
   const pack = findPack(packId);
   if (!pack) { const e = new Error('Unknown pack'); e.statusCode = 400; throw e; }
+  // 🔒 국내 1회 충전 한도(PG 심사 요건) — 화면에서 숨기는 것만으론 부족하다.
+  //   구버전 화면이 캐시돼 있거나 API를 직접 부르면 그대로 결제가 열리므로 서버가 최종 판정한다.
+  if (!pack.krwSellable) {
+    const e = new Error('국내 결제는 1회 충전 한도(10만원 미만) 팩만 이용할 수 있습니다.');
+    e.statusCode = 400;
+    throw e;
+  }
 
   const paymentId = 'dp' + crypto.randomBytes(12).toString('hex'); // 영숫자 결제건 식별자
   await query(

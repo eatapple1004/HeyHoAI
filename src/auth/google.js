@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { env } = require('../config');
 const authService = require('./auth.service');
-const { setAuthCookie } = require('./auth.controller');
+const { setAuthCookie } = require('./cookie'); // 순환 참조 회피 — 쿠키 로직은 cookie.js 단일소스
 const log = require('../lib/logger')('GoogleOAuth');
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';

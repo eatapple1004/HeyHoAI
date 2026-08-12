@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2021",
+    "moduleResolution": "node",
+    "rootDir": "./nest",
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "sourceMap": true,
+    "declaration": false
+  },
+  "include": ["nest/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
