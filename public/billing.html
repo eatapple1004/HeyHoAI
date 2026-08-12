@@ -205,22 +205,28 @@
   </div>
   <div class="note">Template looks cost more than custom prompts.</div>
 
-  <!-- (2026-07-05) Auto top-up 미지원 → 섹션 숨김. 기능 활성화 시 display:none 제거 -->
-  <div class="section-label fade d4" style="margin-top:46px;display:none">Wallet automation</div>
-  <div class="frow glass fade d4" style="display:none">
-    <div>
-      <div class="lead">Auto top-up</div>
-      <div class="desc">Never run out mid-generation. When your balance drops below the threshold, we auto-buy a pack so your renders never stop.</div>
-      <div class="cfg off" id="topupCfg">
-        <label>When below
-          <select><option>20 credits</option><option>50 credits</option><option>100 credits</option></select>
+  <!--
+    결제수단(빌링키) — 카드를 한 번 등록해두면 결제창 없이 충전할 수 있다.
+    PortOne이 설정된 경우에만 노출한다(미설정이면 등록할 수단 자체가 없다) → JS가 display를 켠다.
+    ※ 이전에 여기 있던 "Auto top-up" 목업은 USD·구 크레딧 수치가 박힌 상태로 숨겨져 있어 걷어냈다.
+       자동 재청구(임계값 도달 시 자동 구매)는 스케줄러가 붙은 뒤 이 자리에 얹는다.
+  -->
+  <div class="section-label fade d4" id="pmLabel" style="margin-top:46px;display:none">Payment method · 결제수단</div>
+  <div class="frow glass fade d4" id="pmRow" style="display:none">
+    <div style="width:100%">
+      <div class="lead">등록 카드</div>
+      <div class="desc" id="pmDesc">카드를 등록해두면 결제창을 다시 열지 않고 크레딧을 충전할 수 있습니다. 카드 정보는 결제사(PortOne)가 보관하며, 저희는 카드번호를 저장하지 않습니다.</div>
+      <div class="cfg" id="pmCharge" style="display:none;margin-top:14px">
+        <label>충전할 팩
+          <select id="pmPack"></select>
         </label>
-        <label>auto-buy
-          <select><option>50 credits — $5</option><option selected>220 credits — $18</option><option>580 credits — $40</option></select>
-        </label>
+        <button class="btn btn-primary" id="pmChargeBtn" onclick="chargeWithCard(this)">지금 충전</button>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="pmAddBtn" onclick="registerCard(this)">카드 등록</button>
+        <button class="btn btn-ghost" id="pmDelBtn" style="display:none" onclick="removeCard(this)">카드 해지</button>
       </div>
     </div>
-    <label class="sw"><input type="checkbox" id="topupSw" onchange="toggleTopup(this)"><span class="tr"></span><span class="kn"></span></label>
   </div>
 
   <!-- (2026-07-02) 단발성 이용권 → 관리할 정기결제 없음(일시정지/취소 무의미). 정기결제 재점화 시 display:none 제거 -->
@@ -280,7 +286,99 @@ function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidd
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
 function reallyCancel(){ hideCancel(); notify('Cancellation is coming soon — your gallery and trained faces are kept.'); }
-function toggleTopup(el){ el.checked=false; document.getElementById('topupCfg').classList.add('off'); notify('Auto top-up is coming soon.'); }
+// 카드 브랜드는 PG가 준 문자열이다 — innerHTML에 그대로 넣지 않는다.
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+// ── 결제수단(빌링키) — 카드 등록/해지 + 등록 카드로 즉시 충전 ──
+//   PortOne이 설정된 경우에만 섹션을 켠다. 카드번호는 여기에 오지 않는다(브랜드·끝 4자리만).
+
+/** 등록 카드 상태를 읽어 섹션을 그린다. PortOne 미설정이면 섹션 자체를 숨긴 채 둔다. */
+async function loadCard(){
+  if(!(PORTONE&&PORTONE.configured))return;   // 등록할 수단이 없으면 노출하지 않는다
+  document.getElementById('pmLabel').style.display='';
+  document.getElementById('pmRow').style.display='';
+  try{
+    const r=await(await fetch('/api/billing/portone/billing-key')).json();
+    renderCard(r&&r.success?r.data:null);
+  }catch(e){ renderCard(null); }
+}
+
+function renderCard(card){
+  const has=!!card;
+  const brand=has?(card.card_brand||'카드'):'';
+  const last4=has?(card.card_last4||'****'):'';
+  document.getElementById('pmDesc').innerHTML = has
+    ? '등록됨 — <b>'+esc(brand)+' ****'+esc(last4)+'</b><br>이 카드로 결제창 없이 충전할 수 있습니다. 카드번호는 결제사(PortOne)가 보관하며 저희는 저장하지 않습니다.'
+    : '카드를 등록해두면 결제창을 다시 열지 않고 크레딧을 충전할 수 있습니다. 카드 정보는 결제사(PortOne)가 보관하며, 저희는 카드번호를 저장하지 않습니다.';
+  document.getElementById('pmAddBtn').textContent = has?'카드 교체':'카드 등록';
+  document.getElementById('pmDelBtn').style.display = has?'':'none';
+  document.getElementById('pmCharge').style.display = has?'':'none';
+  if(has)fillPackOptions();
+}
+
+/** 충전 팩 후보 = 현재 통화로 판매 가능한 팩(KRW는 1회 한도 미만만) */
+function fillPackOptions(){
+  const P=window.PRICING; if(!P)return;
+  const sel=document.getElementById('pmPack'); if(!sel||sel.options.length)return;
+  const meta=P.curMeta();
+  const list=(typeof P.sellablePacks==='function')?P.sellablePacks():(P.packs||[]);
+  sel.innerHTML=list.map(function(p){
+    return '<option value="'+p.id+'">◈ '+P.fmt(p.cr+p.bonus)+' — '+meta.symbol+P.fmt(P.amount(p,false))+'</option>';
+  }).join('');
+}
+
+/** 카드 등록 — PortOne 결제창(빌링키 발급)을 열고, 받은 토큰을 서버가 재확인해 저장한다 */
+async function registerCard(btn){
+  if(!window.PortOne){ notify('결제 모듈을 불러오지 못했습니다. 광고 차단을 끄고 새로고침해 주세요.','error'); return; }
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='여는 중…';
+  try{
+    const pr=await(await fetch('/api/billing/portone/billing-key/params')).json();
+    if(!pr.success){ notify(pr.error||'카드 등록을 시작하지 못했습니다.','error'); return; }
+    const resp=await window.PortOne.requestIssueBillingKey(Object.assign({},pr.data,{
+      redirectUrl:location.origin+'/billing'   // 모바일 리다이렉트 복귀
+    }));
+    // requestPayment와 같은 규약: code가 있으면 실패/취소
+    if(resp&&resp.code!=null){ notify(resp.message||'카드 등록이 취소되었습니다.','error'); return; }
+    const save=await(await fetch('/api/billing/portone/billing-key',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({billingKey:resp&&resp.billingKey})
+    })).json();
+    if(!save.success){ notify(save.error||'카드 저장에 실패했습니다.','error'); return; }
+    notify('카드가 등록되었습니다.');
+    renderCard(save.data);
+  }catch(e){ notify('카드 등록 중 오류가 발생했습니다.','error'); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
+
+async function removeCard(btn){
+  if(!confirm('등록된 카드를 해지할까요? 자동 충전이 있다면 함께 중지됩니다.'))return;
+  btn.disabled=true;
+  try{
+    const r=await(await fetch('/api/billing/portone/billing-key',{method:'DELETE'})).json();
+    if(!r.success){ notify(r.error||'해지에 실패했습니다.','error'); return; }
+    notify('카드를 해지했습니다.');
+    renderCard(null);
+  }catch(e){ notify('해지 중 오류가 발생했습니다.','error'); }
+  finally{ btn.disabled=false; }
+}
+
+/** 등록 카드로 즉시 충전 — 결제창이 뜨지 않고 서버가 바로 승인 요청한다 */
+async function chargeWithCard(btn){
+  const packId=document.getElementById('pmPack').value;
+  if(!packId){ notify('충전할 팩을 선택하세요.','error'); return; }
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='결제 중…';
+  try{
+    const r=await(await fetch('/api/billing/portone/billing-key/charge',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packId})
+    })).json();
+    if(!r.success){ notify(r.error||'결제에 실패했습니다.','error'); return; }
+    if(r.data&&r.data.pending){ notify('결제 확인 중입니다 — 잠시 후 잔액에 반영됩니다.'); }
+    else{ notify('충전 완료 — ◈'+((r.data&&r.data.credits)||0).toLocaleString()+' 적립되었습니다.'); }
+    loadBalance();
+  }catch(e){ notify('결제 중 오류가 발생했습니다.','error'); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
 
 let CYCLE='m';
 function setCycle(c,btn){
@@ -385,6 +483,7 @@ let EXIMBAY=null,PORTONE=null,sdkLoaded=false;
 async function loadPayConfig(){
   try{ PORTONE=(await(await fetch('/api/billing/portone/config')).json()).data; }catch(e){ PORTONE={configured:false}; }
   try{ EXIMBAY=(await(await fetch('/api/billing/eximbay/config')).json()).data; }catch(e){ EXIMBAY={configured:false}; }
+  loadCard();   // PORTONE 설정을 안 뒤에야 결제수단 섹션을 켤지 판단할 수 있다
 }
 // PortOne V2 팩 결제: 준비 → 결제창 → 성공 시 서버 재검증(충전). 반환 true=처리됨.
 async function payWithPortOne(packId){
