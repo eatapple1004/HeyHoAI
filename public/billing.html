@@ -262,7 +262,9 @@
   </div>
 </div>
 
-<script src="/js/pricing.js?v=1"></script>
+<!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
+     낡은 파일이 그대로 나간다. v=2: sellablePacks()(KRW 1회 충전 한도) 추가 -->
+<script src="/js/pricing.js?v=2"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -335,8 +337,16 @@ function syncBillingPricing(){
     }
   });
   const pk=document.getElementById('packsGrid');
-  // 🔒 KRW는 PG 심사 요건상 1회 충전 한도 미만 팩만 노출(pricing.js가 통화별로 판정).
-  if(pk) pk.innerHTML=P.sellablePacks().map(function(p){
+  // 🔒 KRW는 PG 심사 요건상 1회 충전 한도 미만 팩만 노출.
+  //   pricing.js가 캐시로 낡아 sellablePacks()가 없을 수 있다(정적 자산 max-age 4시간) —
+  //   그때 그냥 호출하면 TypeError로 이 아래 전부(통화 토글·안내)까지 안 그려진다.
+  //   같은 규칙을 인라인으로 한 번 더 두어, 낡은 캐시에서도 한도는 지켜지고 화면은 살아남게 한다.
+  const sellable = (typeof P.sellablePacks==='function')
+    ? P.sellablePacks()
+    : (P.packs||[]).filter(function(p){
+        return meta.code!=='KRW' || Number(p.priceKRW) < (P.krwOneTimeChargeLimit||100000);
+      });
+  if(pk) pk.innerHTML=sellable.map(function(p){
     const total=p.cr+p.bonus, bonus=p.bonus?(' <small>+'+p.bonus+' bonus</small>'):'';
     const amt=P.amount(p,false), per=total?(meta.symbol+(amt/total).toFixed(meta.code==='KRW'?1:4)):'';
     const btn = p.id
