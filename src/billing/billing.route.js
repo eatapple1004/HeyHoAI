@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { env } = require('../config');
 const { query } = require('../db/client');
 const creditService = require('../credits/credit.service');
-const { PRICING } = require('../pricing/pricing.config');
+const { PRICING, isKrwSellable } = require('../pricing/pricing.config');
 const log = require('../lib/logger')('Billing');
 
 const router = express.Router();
@@ -19,6 +19,8 @@ const PACKS = PRICING.packs.map((p) => {
     bonus: p.bonus,
     usd: p.price,
     krw: p.priceKRW,
+    // 🔒 KRW 1회 충전 한도(PG 심사 요건) 미만인 팩만 국내 결제 가능. USD 경로는 무관.
+    krwSellable: isKrwSellable(p),
     best: Boolean(p.best),
     label: `◈ ${credits.toLocaleString()}`,
   };

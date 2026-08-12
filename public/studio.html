@@ -7414,13 +7414,15 @@ async function openPaywall(cost){
   document.getElementById('paywallModal').classList.add('open');
   try{
     if(!PACKS_CACHE){PACKS_CACHE=(await(await fetch('/api/billing/packs')).json()).data;}
-    const packs=PACKS_CACHE.packs||[];
+    // 통화 감지(경량, studio는 pricing.js 미로드 — doppia_currency/언어 기반). 엔진 PACKS는 usd·krw 둘 다 포함.
+    const cur=(function(){try{var s=localStorage.getItem('doppia_currency');if(s==='KRW'||s==='USD')return s;var l=localStorage.getItem('doppia_lang')||'';if(l==='ko')return 'KRW';}catch(e){}return (navigator.language||'').toLowerCase().indexOf('ko')===0?'KRW':'USD';})();
+    // 🔒 KRW는 PG 심사 요건상 1회 충전 한도 미만 팩만 판매 가능(서버가 krwSellable로 판정).
+    //   여기서 안 거르면 결제 버튼은 뜨는데 서버가 400을 던져 "왜 안 되지"가 된다.
+    const packs=(PACKS_CACHE.packs||[]).filter(p=>cur!=='KRW'||p.krwSellable!==false);
     if(!packs.length){
       box.innerHTML=`<div class="pw-soon">Payments open soon.<br>Manage them on the <a href="/billing">Billing page</a>.</div>`;
       return;
     }
-    // 통화 감지(경량, studio는 pricing.js 미로드 — doppia_currency/언어 기반). 엔진 PACKS는 usd·krw 둘 다 포함.
-    const cur=(function(){try{var s=localStorage.getItem('doppia_currency');if(s==='KRW'||s==='USD')return s;var l=localStorage.getItem('doppia_lang')||'';if(l==='ko')return 'KRW';}catch(e){}return (navigator.language||'').toLowerCase().indexOf('ko')===0?'KRW':'USD';})();
     const sym=cur==='KRW'?'₩':'$';
     box.innerHTML=packs.map(p=>{
       const bonus=p.bonus||0; const amt=(cur==='KRW'?p.krw:p.usd)||0;
@@ -7433,7 +7435,7 @@ async function openPaywall(cost){
         </div>
         <div class="pw-usd">${sym}${amt.toLocaleString()}</div>
       </button>`;
-    }).join('')+`<a href="/billing" class="pw-all">See all plans →</a>`;
+    }).join('')+`<a href="/billing" class="pw-all">See credit packs →</a>`;
   }catch(e){ box.innerHTML='<div class="pw-soon" style="color:#ff7eb6">Failed to load</div>'; }
 }
 function closePaywall(){document.getElementById('paywallModal').classList.remove('open');}

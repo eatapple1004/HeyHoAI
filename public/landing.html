@@ -684,15 +684,14 @@
 <section class="wrap" id="pricing">
   <div class="eyebrow">PRICING</div>
   <h2 data-i18n="pr.title">Only what you need.<br>Start <em>light</em>.</h2>
-  <p class="lead" data-i18n="pr.lead">Every plan gets the same features. A subscription that refills monthly, or top-ups only when you need them — just pick how you pay.</p>
+  <p class="lead" data-i18n="pr.lead">Every account gets the same features. Add credits when you need them — no subscription, no monthly commitment.</p>
   <div class="pcards3">
-    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></div><b data-i18n="pr.c1.b">Subscription — refills monthly</b><p data-i18n="pr.c1.p">Pick a plan and credits refill every month with all features open. The default for sellers who create steadily.</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></div><b data-i18n="pr.c1.b">Every feature, every account</b><p data-i18n="pr.c1.p">Nothing is locked behind a tier. What you buy is generation capacity, not access to features.</p></div>
     <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><b data-i18n="pr.c2.b">Top-up — only when needed</b><p data-i18n="pr.c2.p">No subscription — add credits only when you need them. One payment stays valid for 12 months.</p></div>
-    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 00-4-12z"/></svg></div><b data-i18n="pr.c3.b">Mix them freely</b><p data-i18n="pr.c3.p">Keep a light subscription running, and top up extra credits in your busy months.</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 00-4-12z"/></svg></div><b data-i18n="pr.c3.b">Valid for 12 months</b><p data-i18n="pr.c3.p">Credits stay valid for 12 months from purchase. Unused credits are refundable within 1 year, to the original payment method.</p></div>
   </div>
-  <div class="pseg"><button class="ps on" data-seg="personal" data-i18n="ps.personal">Personal · Small team</button><button class="ps" data-seg="enterprise" data-i18n="ps.ent">Business</button><button class="ps" data-seg="pack" data-i18n="ps.pack">Top-up</button></div>
   <div class="ptier" id="ptier"></div>
-  <p class="fine" style="margin-top:20px;text-align:center" data-i18n="pr.fine">VAT included · Subscriptions renew monthly · Cancel anytime · (Values shown are examples)</p>
+  <p class="fine" style="margin-top:20px;text-align:center" data-i18n="pr.fine">VAT included · Credits valid 12 months · Refundable within 1 year to the original payment method · One-time top-up capped at ₩100,000 for domestic payments</p>
 </section>
 
 <!-- 6. FAQ -->
@@ -704,8 +703,8 @@
     <details name="faq"><summary data-i18n="faq.q2">Will it work for what I sell?</summary><p data-i18n="faq.a2">Whatever you sell, yes. From one product photo we create detail cuts, on-model shots, editorials and ad videos — any category.</p></details>
     <details name="faq"><summary data-i18n="faq.q3">What do I need to prepare?</summary><p data-i18n="faq.a3">Just one product photo — no extra angles, no references. For ad videos, add one line about your product, or leave it blank and Doppia writes it from the photo.</p></details>
     <details name="faq"><summary data-i18n="faq.q4">Can I use the images commercially?</summary><p data-i18n="faq.a4">Yes — every plan, including Free, comes with commercial use. Product pages, ads, social — anywhere.</p></details>
-    <details name="faq"><summary data-i18n="faq.q5">How are credits charged?</summary><p data-i18n="faq.a5">Credits are spent per generation, and failed generations refund automatically — you only pay for what comes out. Subscription credits refill monthly; top-ups stay valid for 12 months.</p></details>
-    <details name="faq"><summary data-i18n="faq.q6">Subscription vs top-up — what's the difference?</summary><p data-i18n="faq.a6">Subscriptions refill credits automatically every month with all features open. Top-ups need no subscription — add credits when you want, valid for 12 months. Mixing both works great.</p></details>
+    <details name="faq"><summary data-i18n="faq.q5">How are credits charged?</summary><p data-i18n="faq.a5">Credits are spent per generation, and failed generations refund automatically — you only pay for what comes out. Purchased credits stay valid for 12 months.</p></details>
+    <details name="faq"><summary data-i18n="faq.q6">Can I get a refund?</summary><p data-i18n="faq.a6">Unused credits are refundable within 1 year of purchase, to the original payment method. Credits already spent on completed generations are not refundable. See the refund policy for details.</p></details>
   </div>
 </section>
 
@@ -970,24 +969,17 @@
     cmp.addEventListener('pointercancel',function(){cdrag=false;});
   }
   // pricing segments
+  // 🔒 가격표 = 충전형(크레딧 팩) 단일 세그먼트 — 2026-08.
+  //   ① 구독·기업 플랜: 정기결제(빌링) 미연동 상태에서 PG 심사에 "판매 중인 상품"으로 읽히지 않도록
+  //      가격 노출을 걷었다(권한 체계 entitlements.js는 그대로 유지 — 지운 건 판매 노출뿐).
+  //   ② 충전 팩: 국내 1회 충전 한도(10만원 미만, PG 심사 요건)를 넘는 Pro/Business를 뺐다.
+  //   ⚠️ 이 파일은 pricing.js를 쓰지 않고 값을 하드코딩한다 — 가격을 바꿀 때 여기도 같이 고칠 것.
+  //      되살릴 때는 git 히스토리에서 personal/enterprise 세그먼트를 복원한다.
   var SEG={
-    personal:[
-      {nm:'Free',pv:'₩0',u:tt(' /mo',' /월'),cr:tt('1,500 credits on sign-up','가입 즉시 1,500 크레딧'),li:[tt('All features · 2K quality','전 기능 · 2K 화질'),tt('Results post to the public feed','결과가 공개 피드에 게시')],cta:tt('Start free','무료로 시작')},
-      {nm:'Starter',pv:'₩31,000',u:tt(' /mo',' /월'),cr:tt('7,300 credits monthly','매달 7,300 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기')},
-      {nm:'Standard',pv:'₩81,000',u:tt(' /mo',' /월'),cr:tt('20,300 credits monthly','매달 20,300 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기'),feat:tt('Popular','추천')},
-      {nm:'Pro',pv:'₩164,000',u:tt(' /mo',' /월'),cr:tt('44,000 credits monthly','매달 44,000 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스')],cta:tt('Get started','시작하기')},
-      {nm:'Premium',pv:'₩329,000',u:tt(' /mo',' /월'),cr:tt('95,000 credits monthly','매달 95,000 크레딧'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개'),tt('All features · commercial license','전 기능 · 커머셜 라이선스'),tt('Highest volume','최대 볼륨')],cta:tt('Get started','시작하기')}
-    ],
-    enterprise:[
-      {nm:'Team',pv:'₩990,000',u:tt(' /mo',' /월'),cr:tt('362,000 credits monthly','매달 362,000 크레딧'),li:[tt('Shared team credit pool','팀 공유 크레딧 풀'),tt('10 concurrent jobs','동시 작업 10'),tt('All features','전 기능')],cta:tt('Talk to us','상담 신청'),mail:1},
-      {nm:'Enterprise Pro',pv:'₩1,490,000',u:tt(' /mo',' /월'),cr:tt('575,000 credits monthly','매달 575,000 크레딧'),li:[tt('15 concurrent jobs','동시 작업 15'),tt('Priority support','우선 지원'),tt('All features','전 기능')],cta:tt('Talk to us','상담 신청'),feat:tt('Popular','추천'),mail:1},
-      {nm:'Elite',pv:'₩1,990,000',u:tt(' /mo',' /월'),cr:tt('813,000 credits monthly','매달 813,000 크레딧'),li:[tt('20 concurrent jobs','동시 작업 20'),tt('Dedicated support','전담 지원'),tt('Highest volume','최대 볼륨')],cta:tt('Talk to us','상담 신청'),mail:1}
-    ],
     pack:[
       {nm:'Lite',pv:'₩15,000',u:'',cr:tt('3,000 credits <span class="bo">+400 bonus</span>','3,000 크레딧 <span class="bo">+400 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Credited instantly','결제 즉시 충전')],cta:tt('Top up','충전하기')},
-      {nm:'Standard',pv:'₩81,000',u:'',cr:tt('17,000 credits <span class="bo">+2,200 bonus</span>','17,000 크레딧 <span class="bo">+2,200 보너스</span>'),li:[tt('Valid 12 months','12개월 유효')],cta:tt('Top up','충전하기')},
-      {nm:'Pro',pv:'₩329,000',u:'',cr:tt('72,000 credits <span class="bo">+7,500 bonus</span>','72,000 크레딧 <span class="bo">+7,500 보너스</span>'),li:[tt('Valid 12 months','12개월 유효')],cta:tt('Top up','충전하기'),feat:tt('Popular','추천')},
-      {nm:'Business',pv:'₩579,000',u:'',cr:tt('128,000 credits <span class="bo">+14,000 bonus</span>','128,000 크레딧 <span class="bo">+14,000 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Lowest unit price','최저 단가')],cta:tt('Top up','충전하기')}
+      {nm:'Standard',pv:'₩81,000',u:'',cr:tt('17,000 credits <span class="bo">+2,200 bonus</span>','17,000 크레딧 <span class="bo">+2,200 보너스</span>'),li:[tt('Valid 12 months','12개월 유효'),tt('Best value','가장 알찬 구성')],cta:tt('Top up','충전하기'),feat:tt('Popular','추천')},
+      {nm:tt('Larger volume','대량 · 기업'),pv:tt('Contact','문의'),u:'',cr:tt('Set up for your team','팀 단위 · 대량 제작 상담'),li:[tt('Volume pricing','볼륨 단가'),tt('Dedicated support','전담 지원')],cta:tt('Talk to us','상담 신청'),mail:1}
     ]
   };
   function renderTier(seg){
@@ -998,7 +990,7 @@
         '<a class="tb" href="'+(c.mail?'mailto:support@doppia.ai':'/studio')+'">'+c.cta+'</a></div>';
     }).join('');
   }
-  renderTier('personal');
+  renderTier('pack');
   document.querySelectorAll('.ps').forEach(function(b){b.addEventListener('click',function(){
     document.querySelectorAll('.ps').forEach(function(x){x.classList.toggle('on',x===b);});
     renderTier(b.dataset.seg);
