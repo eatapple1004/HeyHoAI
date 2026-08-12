@@ -50,13 +50,26 @@ const PRICING = {
   ],
   // 신규 24h 첫 결제 할인율(%)
   firstMonthOff: 50,
+  /**
+   * 🔒 국내(KRW) 1회 충전 한도 — **PG 심사 요건이지 가격 정책이 아니다.**
+   *   토스페이먼츠 계약팀 요건(2026-08): 포인트충전 업종은 1회 충전 최고가액을 10만원 **미만**으로
+   *   제한해야 한다. 이 값 이상인 팩은 KRW 결제 경로에서 노출·결제 모두 차단된다
+   *   (USD/해외 PG는 이 규제 대상이 아니므로 그대로 판매한다).
+   *   ⚠️ 낮추는 건 자유지만 올릴 때는 PG 심사 조건을 먼저 확인할 것.
+   */
+  krwOneTimeChargeLimit: 100000,
   // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
   currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
 };
+
+/** KRW 결제로 판매 가능한 팩인가(1회 충전 한도 미만). USD 경로에는 적용하지 않는다. */
+function isKrwSellable(pack) {
+  return Number(pack.priceKRW) < PRICING.krwOneTimeChargeLimit;
+}
 
 /** 가격 단일 소스(메타 포함)를 반환. GET /api/pricing 의 응답 본문. */
 function getPricing() {
   return PRICING;
 }
 
-module.exports = { PRICING, getPricing };
+module.exports = { PRICING, getPricing, isKrwSellable };

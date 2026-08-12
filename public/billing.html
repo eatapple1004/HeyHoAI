@@ -169,82 +169,29 @@
     <div class="curnote" id="curNote"></div>
   </div>
 
-  <h2 class="section-label fade d2">Subscription plans</h2>
-  <!-- (2026-07-14) 자동갱신 구독 전환 → 월/연 토글 재노출. 실제 연간 청구 로직은 백엔드 정기결제 연동 후. -->
-  <div class="cycle fade d2">
-    <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
-    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 17%</span></button>
-  </div>
-  <div class="plans fade d3">
-    <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
-      <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span class="per"> /mo</span></div>
-      <div class="cyc-note"></div>
-      <div class="credits-inc">1,500 credits (one-time)</div>
-      <ul><li>All features · 2K quality</li><li>Results post to the public feed</li></ul>
-      <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
-    </div>
-    <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
-      <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span class="per"> /mo</span></div>
-      <div class="cyc-note"></div>
-      <div class="credits-inc"></div>
-      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
-    </div>
-    <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
-      <div class="ribbon">Most popular</div>
-      <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span class="per"> /mo</span></div>
-      <div class="cyc-note"></div>
-      <div class="credits-inc"></div>
-      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
-    </div>
-    <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
-      <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span class="per"> /mo</span></div>
-      <div class="cyc-note"></div>
-      <div class="credits-inc"></div>
-      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
-    </div>
-    <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
-      <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span class="per"> /mo</span></div>
-      <div class="cyc-note"></div>
-      <div class="credits-inc"></div>
-      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li><li>Highest volume</li></ul>
-      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
-    </div>
-  </div>
-  <div class="fade d2" style="font-size:11.5px;color:var(--faint);text-align:center;margin:-6px 0 14px">+% = more credits per won than Starter, at the same spend</div>
+  <!--
+    🔒 구독 플랜(개인·기업) 판매 중단 — 2026-08.
+      정기결제(빌링)가 미연동 상태이고(POST /api/subscription/upgrade → 501 comingSoon),
+      PG 심사에서 "판매 중인 상품"으로 읽히지 않도록 가격·구독 버튼을 전면 제거했다.
+      ⚠️ 플랜 **권한 체계**(src/lib/entitlements.js)는 그대로 살아 있다 — 기존에 부여된
+      플랜 사용자의 권한이 깨지면 안 되므로, 여기서 지운 것은 "판매 노출"뿐이다.
+      정기결제 연동 후 되살릴 때는 git 히스토리에서 이 블록을 복원할 것.
+  -->
 
-  <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
-  <div class="plans ent-plans fade d3">
-    <div class="plan-card glass" data-ent="team">
-      <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span class="per"> /mo</span></div>
-      <div class="cyc-note">billed annually</div>
-      <div class="credits-inc"></div>
-      <ul><li>Shared team credit pool</li><li>10 concurrent jobs</li><li>All features · commercial license</li></ul>
-      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
-    </div>
-    <div class="plan-card glass featured" data-ent="pro">
-      <div class="ribbon">Best offer</div>
-      <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span class="per"> /mo</span></div>
-      <div class="cyc-note">billed annually</div>
-      <div class="credits-inc"></div>
-      <ul><li>15 concurrent jobs</li><li>Priority support</li><li>All features · commercial license</li></ul>
-      <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
-    </div>
-    <div class="plan-card glass" data-ent="elite">
-      <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span class="per"> /mo</span></div>
-      <div class="cyc-note">billed annually</div>
-      <div class="credits-inc"></div>
-      <ul><li>20 concurrent jobs</li><li>Dedicated support</li><li>Highest volume</li></ul>
-      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
-    </div>
-  </div>
-
-  <h2 class="section-label fade d3">Extra credits (one-time)</h2>
+  <h2 class="section-label fade d2">Credits</h2>
   <div class="packs fade d4" id="packsGrid"></div>
-  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">A subscription gives the best value per credit — extra credit packs are for one-off needs. Credits are in-service usage units with no cash value and are non-refundable once used. <a href="/refund" style="color:var(--accent2);text-decoration:none">Refund policy</a></div>
-  <div style="font-size:12px;color:var(--dim);margin-top:8px;text-align:center">Credits are delivered instantly on payment and are valid for 12 months from the purchase date (service provision period). Subscription plans provide service for 1 month per billing cycle (auto-renewed monthly).<br>크레딧은 결제 즉시 지급되며 서비스 제공기간(유효기간)은 충전일로부터 12개월입니다. 구독 플랜의 서비스 제공기간은 1회 결제당 1개월(매월 자동갱신)입니다.</div>
+  <div style="font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center">Buy credits as you need them. Credits are in-service usage units with no cash value and are non-refundable once used. <a href="/refund" style="color:var(--accent2);text-decoration:none">Refund policy</a></div>
+  <div style="font-size:12px;color:var(--dim);margin-top:8px;text-align:center">Credits are delivered instantly on payment and are valid for 12 months from the purchase date (service provision period). Refunds are available within 1 year of purchase, to the original payment method.<br>크레딧은 결제 즉시 지급되며 서비스 제공기간(유효기간)은 충전일로부터 12개월입니다. 환불 가능 기간은 결제일로부터 1년이며, 원 결제수단으로 환불됩니다. 국내 원화 결제는 1회 충전 10만원 미만으로 제한됩니다.</div>
+
+  <!-- 구독 플랜을 내린 자리 — 대량·기업 수요는 영업 리드로 받는다(결제 상품이 아니다) -->
+  <div class="glass fade d4" style="margin-top:34px;padding:28px 24px;border-radius:var(--r);text-align:center">
+    <div style="font-family:'Sora';font-size:17px;font-weight:700;margin-bottom:8px">Need a larger volume?</div>
+    <div style="font-size:13.5px;color:var(--dim);line-height:1.7;margin-bottom:18px">
+      For teams and high-volume production, we set up a plan for you directly.<br>
+      팀 단위·대량 제작은 별도로 상담해 드립니다.
+    </div>
+    <button class="btn btn-primary" onclick="location.href='/business'">Contact us · 도입 문의</button>
+  </div>
 
   <h2 class="section-label fade d4" style="margin-top:40px">What credits buy</h2>
   <div class="costtable glass fade d4">
@@ -388,7 +335,8 @@ function syncBillingPricing(){
     }
   });
   const pk=document.getElementById('packsGrid');
-  if(pk) pk.innerHTML=P.packs.map(function(p){
+  // 🔒 KRW는 PG 심사 요건상 1회 충전 한도 미만 팩만 노출(pricing.js가 통화별로 판정).
+  if(pk) pk.innerHTML=P.sellablePacks().map(function(p){
     const total=p.cr+p.bonus, bonus=p.bonus?(' <small>+'+p.bonus+' bonus</small>'):'';
     const amt=P.amount(p,false), per=total?(meta.symbol+(amt/total).toFixed(meta.code==='KRW'?1:4)):'';
     const btn = p.id
