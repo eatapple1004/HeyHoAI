@@ -1384,6 +1384,30 @@ async function migrateCredits() {
     CREATE INDEX IF NOT EXISTS idx_billing_orders_user ON billing_orders(user_id, created_at DESC);
   `);
 
+  // 빌링키(정기결제용 카드 토큰) — PortOne V2.
+  //   ⚠️ 카드번호는 저장하지 않는다. PG가 보관하고 우리는 토큰(billing_key)과 표시용 last4/브랜드만 갖는다.
+  //   해지는 행 삭제가 아니라 status='deleted' — 과거 청구 건의 추적성을 남긴다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS billing_keys (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider    VARCHAR(30) NOT NULL DEFAULT 'portone',
+        billing_key TEXT NOT NULL,
+        card_brand  VARCHAR(60),
+        card_last4  VARCHAR(8),
+        status      VARCHAR(20) NOT NULL DEFAULT 'active',   -- active | deleted
+        raw         JSONB DEFAULT '{}',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_billing_keys_user ON billing_keys(user_id);
+  `);
+  // 유저당 활성 카드는 1장 — 부분 유니크 인덱스라 deleted 이력은 얼마든지 쌓인다.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_keys_one_active
+        ON billing_keys(user_id) WHERE status = 'active';
+  `);
+
   // 결제 기록 — PG 주문 멱등 처리용 (provider+order_id UNIQUE)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS payments (
