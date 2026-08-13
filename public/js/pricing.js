@@ -47,7 +47,7 @@
     // 구독 판매 여부 — 서버(/api/pricing)가 환경 값으로 덮어쓴다. 기본 켜짐.
     //   급히 내릴 땐 서버에서 SUBSCRIPTIONS_FOR_SALE=false (코드 수정 없이 즉시 차단).
     subscriptionsForSale: true,
-    // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
+    // 통화·PG: KRW=국내(토스페이먼츠, 포트원 연동), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
     currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
     // 확정가 — 실원가 재검증(2026-07-06, docs/생성원가_마진_분석). 커스텀 2~3배/템플릿 4~6배 + 크레딧 30배. 서버(/api/pricing)가 동일값으로 덮어씀.
     estimated: false,
@@ -62,7 +62,7 @@
     }
   };
 
-  // ── 통화(currency): 표시통화 = 결제통화 = PG. KRW→국내(NHN KCP), USD→해외(Eximbay). ──
+  // ── 통화(currency): 표시통화 = 결제통화 = PG. KRW→국내(토스페이먼츠, 포트원 연동), USD→해외(Eximbay). ──
   //   기본값 = 지역 자동감지 프록시(저장 언어 ko 또는 브라우저 언어 ko → KRW, 그 외 USD). doppia_currency로 독립 오버라이드.
   var CUR_KEY = 'doppia_currency';
   function detectCurrency() {
@@ -80,7 +80,7 @@
   //      개시가 지연되면 이 문구가 라이브 거짓이 되므로 런칭 전 반드시 재확인할 것.
   //   소비처: pricing.js:101(data-price) · billing.html:308 — 한 소스라 양쪽이 함께 움직인다.
   var CUR_META = {
-    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
+    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: '토스페이먼츠', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
     USD: { code: 'USD', symbol: '$', per: ' /mo', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · billed monthly · cancel anytime' }
   };
   PRICING.getCurrency = function () { return CURRENCY; };

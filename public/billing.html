@@ -305,23 +305,26 @@
     </div>
   </div>
 
-  <!-- (2026-07-02) 단발성 이용권 → 관리할 정기결제 없음(일시정지/취소 무의미). 정기결제 재점화 시 display:none 제거 -->
-  <div class="section-label fade d4" style="margin-top:38px;display:none">Manage subscription</div>
-  <div class="frow glass fade d4" style="display:none">
+  <!--
+    구독 관리 — 진행 중인 정기결제가 있을 때만 JS가 켠다(loadSubscription).
+    환불정책 제5조가 "서비스 내 '결제/구독 관리' 화면에서 언제든지 해지 신청"을 약속하고 있어
+    이 화면은 반드시 실재해야 한다(PG 심사에서 약관과 화면이 대조된다).
+    ※ 일시정지(Pause)는 백엔드가 없다 — 동작하지 않는 버튼을 심사관에게 보이는 편이 더 위험해서 걷어냈다.
+  -->
+  <div class="section-label fade d4" id="manageLabel" style="margin-top:38px;display:none">Manage subscription · 구독 관리</div>
+  <div class="frow glass fade d4" id="manageRow" style="display:none">
     <div style="width:100%">
-      <div class="lead">Need a break?</div>
-      <div class="desc">Pause keeps your account, gallery and trained faces — billing stops and resumes whenever you're back. Most people pause instead of cancelling.</div>
+      <div class="lead">구독 해지</div>
+      <div class="desc" id="manageDesc">해지하면 다음 결제일부터 청구되지 않습니다. 이미 결제한 기간은 만료일까지 그대로 이용할 수 있고, 갤러리와 학습된 얼굴은 그대로 남습니다.</div>
       <div class="manage">
-        <button class="btn btn-ghost" onclick="pauseFlow()">Pause subscription</button>
-        <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">Cancel</button>
+        <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">구독 해지</button>
       </div>
-      <div class="pausebox hidden" id="pauseBox"><b>Subscription paused</b> — no charges until you resume. Your credits and gallery stay safe.</div>
       <div class="cancelbox hidden" id="cancelBox">
-        <div class="cbh">Before you cancel…</div>
-        <div class="cbb">You'll lose your monthly credits, watermark-free exports and Pro features. Your gallery &amp; trained faces stay — but the perks stop. Most creators pause instead.</div>
+        <div class="cbh">해지하시겠어요?</div>
+        <div class="cbb">다음 결제일부터 청구가 멈춥니다. <b id="cancelUntil"></b> 이미 결제한 기간은 만료일까지 이용할 수 있고, 갤러리와 학습된 얼굴은 그대로 유지됩니다. 남은 크레딧은 유효기간(충전일로부터 12개월) 내 계속 사용할 수 있습니다.</div>
         <div class="cbcta">
-          <button class="btn btn-primary" onclick="hideCancel();pauseFlow()">Pause instead (recommended)</button>
-          <button class="btn btn-ghost" onclick="reallyCancel()" style="color:var(--faint)">Cancel anyway</button>
+          <button class="btn btn-primary" onclick="hideCancel()">계속 이용하기</button>
+          <button class="btn btn-ghost" onclick="reallyCancel(this)" style="color:var(--faint)">해지하기</button>
         </div>
       </div>
     </div>
@@ -346,7 +349,7 @@
 
 <!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
      낡은 파일이 그대로 나간다. v=3: subscriptionsForSale(구독 판매 플래그) 추가 -->
-<script src="/js/pricing.js?v=5"></script>
+<script src="/js/pricing.js?v=6"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -358,10 +361,21 @@ function goBack(){ if(history.length>1) history.back(); else location.href='/stu
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
 function planSoon(){ notify('Plan changes are coming soon — for now, add an extra credit pack.'); }
-function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidden'); }
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
-function reallyCancel(){ hideCancel(); notify('Cancellation is coming soon — your gallery and trained faces are kept.'); }
+/** 기말 해지 — 이미 낸 기간은 그대로 쓰고 다음 결제만 멈춘다(POST /api/subscription/cancel). */
+async function reallyCancel(btn){
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='해지 중…';
+  try{
+    const d=await(await fetch('/api/subscription/cancel',{method:'POST'})).json();
+    if(d.success){
+      hideCancel();
+      notify('구독이 해지되었습니다. 결제한 기간이 끝날 때까지는 그대로 이용하실 수 있습니다.');
+      loadSubscription(); loadCard();
+    } else notify(d.error||'해지에 실패했습니다.','error');
+  }catch(e){ notify('해지 요청에 실패했습니다.','error'); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
 // 카드 브랜드는 PG가 준 문자열이다 — innerHTML에 그대로 넣지 않는다.
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -638,6 +652,13 @@ async function loadSubscription(){
       setTxt('planName',sub.planName);
       // 구독: renewsAt=다음 결제 예정일. 백엔드 정기결제 연동 시 매월 자동갱신.
       if(sub.renewsAt) setTxt('planNote','Renews '+new Date(sub.renewsAt).toLocaleDateString()+' · cancel anytime');
+      // 정기결제 진행 중일 때만 해지 화면을 노출한다(선불 기간권은 해지할 청구가 없다).
+      const bk=await(await fetch('/api/billing/portone/billing-key')).json().catch(function(){return{};});
+      if(bk&&bk.success&&bk.data){
+        document.getElementById('manageLabel').style.display='';
+        document.getElementById('manageRow').style.display='';
+        if(sub.renewsAt) setTxt('cancelUntil','다음 결제 예정일: '+new Date(sub.renewsAt).toLocaleDateString()+'.');
+      }
     } else {
       setTxt('planLabel',''); // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }

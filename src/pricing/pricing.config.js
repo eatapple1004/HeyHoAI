@@ -69,7 +69,7 @@ const PRICING = {
    *   구독 플랜(₩31,000~₩1,990,000)은 대상이 아닐 가능성이 높으나 회신으로 확답을 받을 것.
    */
   subscriptionsForSale: String(process.env.SUBSCRIPTIONS_FOR_SALE || '').trim().toLowerCase() !== 'false',
-  // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
+  // 통화·PG: KRW=국내(토스페이먼츠, 포트원 연동), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
   currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
 };
 
