@@ -197,8 +197,13 @@ kill %1
   - `deploy.sh`가 pm2에 등록된 script 경로를 확인해 바뀌었으면 `delete` 후 `start` 한다
     (`pm2 restart`는 등록 당시 경로를 유지해서 전환이 반영되지 않는다 — 함정 #실제로 겪음).
 - 포트 폴백: `PORT`가 비면 NODE_ENV별 기본값(prod 3000 · stg 3001 · dev 3002). 실제 포트는 `.env.<NODE_ENV>`가 결정.
-- 부팅 확인: `grep -a "strangler" ~/.pm2/logs/heyhoai-dev-out.log | tail -3`
-  또는 `curl -s -o /dev/null -w '%{http_code}' localhost:3002/api/pricing`(200=Nest) · `/health`(200=레거시 폴백)
+- **부팅 확인은 `/nest/health`로** — Nest에만 있는 라우트라 판별이 확실하다.
+  ```bash
+  curl -s localhost:3002/nest/health   # {"framework":"NestJS","ok":true,"env":"development",...}
+  pm2 describe heyhoai-dev | grep -i "script path"   # …/dist/main.js 여야 한다
+  ```
+  ⚠️ `/api/pricing` 200은 판별 근거가 **아니다** — 레거시(`src/index.js`)에도 같은 라우트가 살아 있어
+  둘 다 200이다. 예전에 이 방법을 적어뒀다가 실제로 오판했다.
 
 ## 8. 레거시에 남는 것 (설계상 정상)
 
