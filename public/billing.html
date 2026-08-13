@@ -170,13 +170,85 @@
   </div>
 
   <!--
-    🔒 구독 플랜(개인·기업) 판매 중단 — 2026-08.
-      정기결제(빌링)가 미연동 상태이고(POST /api/subscription/upgrade → 501 comingSoon),
-      PG 심사에서 "판매 중인 상품"으로 읽히지 않도록 가격·구독 버튼을 전면 제거했다.
-      ⚠️ 플랜 **권한 체계**(src/lib/entitlements.js)는 그대로 살아 있다 — 기존에 부여된
-      플랜 사용자의 권한이 깨지면 안 되므로, 여기서 지운 것은 "판매 노출"뿐이다.
-      정기결제 연동 후 되살릴 때는 git 히스토리에서 이 블록을 복원할 것.
+    구독 플랜 — PG 심사 대응으로 **기본 숨김**(2026-08). 지우지 않고 플래그로 가린다.
+      표시 조건: /api/pricing 의 subscriptionsForSale === true
+        · dev   : SUBSCRIPTIONS_FOR_SALE=true 로 켜서 정기결제 개발·검증
+        · prod  : 미설정=꺼짐 → 승격해도 심사 화면에 구독이 안 나온다
+      ⚠️ 켜기 전 확인: 플랜가(₩164,000~₩1,990,000)는 1회 충전 한도(10만원) 밖이다.
+         토스에 "구독도 충전으로 보는지" 회신을 받은 뒤 prod에서 켤 것.
+      권한 체계(entitlements.js)는 플래그와 무관하게 항상 살아 있다.
   -->
+  <div id="subsSection" style="display:none">
+  <h2 class="section-label fade d2">Subscription plans</h2>
+  <!-- (2026-07-14) 자동갱신 구독 전환 → 월/연 토글 재노출. 실제 연간 청구 로직은 백엔드 정기결제 연동 후. -->
+  <div class="cycle fade d2">
+    <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
+    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 17%</span></button>
+  </div>
+  <div class="plans fade d3">
+    <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
+      <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc">1,500 credits (one-time)</div>
+      <ul><li>All features · 2K quality</li><li>Results post to the public feed</li></ul>
+      <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
+    </div>
+    <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
+      <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+    <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
+      <div class="ribbon">Most popular</div>
+      <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+    <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
+      <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+    <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
+      <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li><li>Highest volume</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+  </div>
+  <div class="fade d2" style="font-size:11.5px;color:var(--faint);text-align:center;margin:-6px 0 14px">+% = more credits per won than Starter, at the same spend</div>
+  <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
+  <div class="plans ent-plans fade d3">
+    <div class="plan-card glass" data-ent="team">
+      <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span class="per"> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>Shared team credit pool</li><li>10 concurrent jobs</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
+    </div>
+    <div class="plan-card glass featured" data-ent="pro">
+      <div class="ribbon">Best offer</div>
+      <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span class="per"> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>15 concurrent jobs</li><li>Priority support</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
+    </div>
+    <div class="plan-card glass" data-ent="elite">
+      <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span class="per"> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>20 concurrent jobs</li><li>Dedicated support</li><li>Highest volume</li></ul>
+      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
+  </div>
+
 
   <h2 class="section-label fade d2">Credits</h2>
   <div class="packs fade d4" id="packsGrid"></div>
@@ -269,8 +341,8 @@
 </div>
 
 <!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
-     낡은 파일이 그대로 나간다. v=2: sellablePacks()(KRW 1회 충전 한도) 추가 -->
-<script src="/js/pricing.js?v=2"></script>
+     낡은 파일이 그대로 나간다. v=3: subscriptionsForSale(구독 판매 플래그) 추가 -->
+<script src="/js/pricing.js?v=3"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -434,6 +506,11 @@ function syncBillingPricing(){
       ci.innerHTML=(KO?('매달 '+P.fmt(e.cr)+' 크레딧'):(P.fmt(e.cr)+' credits / month'))+(pct>0?(' <em class="bpct">+'+pct+'%</em>'):'');
     }
   });
+  // 🔒 구독 섹션은 플래그가 켜졌을 때만 노출(PG 심사 중에는 꺼둔다).
+  //   서버 /api/pricing 값이 진실원본 — 임베드 폴백은 항상 false라 하이드레이트 전엔 숨어 있다.
+  const subs=document.getElementById('subsSection');
+  if(subs) subs.style.display = P.subscriptionsForSale ? '' : 'none';
+
   const pk=document.getElementById('packsGrid');
   // 🔒 KRW는 PG 심사 요건상 1회 충전 한도 미만 팩만 노출.
   //   pricing.js가 캐시로 낡아 sellablePacks()가 없을 수 있다(정적 자산 max-age 4시간) —
