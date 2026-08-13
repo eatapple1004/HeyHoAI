@@ -67,18 +67,50 @@ if [ ! -f "$WANT_SCRIPT" ]; then
   echo "   복구: npm run build && pm2 start ecosystem.config.js --only $APP"
   exit 1
 fi
-CUR_SCRIPT=$(pm2 jlist 2>/dev/null | node -e "
+# pm2 상태를 한 번만 읽어 (1) 이 이름의 등록 여부·script 경로 (2) 같은 디렉터리에서 **다른 이름**으로
+#   도는 앱이 있는지를 함께 뽑는다. 두 값을 각각 조회하면 그 사이에 상태가 바뀔 수 있다.
+PM2_STATE=$(pm2 jlist 2>/dev/null | node -e "
   let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
-    try { const a=JSON.parse(s).find(x=>x.name==='$APP'); process.stdout.write(a?a.pm2_env.pm_exec_path:''); } catch (_) {}
+    let cur='', stray=[];
+    try {
+      const list = JSON.parse(s);
+      const me = list.find(x => x.name === '$APP');           // 이름은 **완전 일치**로만 찾는다
+      if (me) cur = me.pm2_env.pm_exec_path || '';
+      // 같은 클론에서 다른 이름으로 도는 앱 = 옛 등록. 이게 살아 있으면 배포가 그걸 갱신하지 못한다.
+      stray = list.filter(x => x.name !== '$APP' && x.pm2_env && x.pm2_env.pm_cwd === '$(pwd)')
+                  .map(x => x.name);
+    } catch (_) {}
+    // ⚠️ 접두사(CUR=/STRAY=)가 필요하다. 값이 비면 그 줄이 빈 줄이 되는데, 명령치환은 끝의
+    //   개행을 잘라내므로 마지막 줄이 사라져 head/tail이 같은 값을 집는다(오탐으로 매 배포 중단).
+    process.stdout.write('CUR=' + cur + '\\nSTRAY=' + stray.join(' '));
   });")
-if [ -n "$CUR_SCRIPT" ] && [ "$CUR_SCRIPT" != "$(pwd)/$WANT_SCRIPT" ]; then
+CUR_SCRIPT="${PM2_STATE%%$'\n'*}"; CUR_SCRIPT="${CUR_SCRIPT#CUR=}"
+STRAY_APPS="${PM2_STATE##*$'\n'}"; STRAY_APPS="${STRAY_APPS#STRAY=}"
+
+# ⚠️ pm2는 이름이 정확히 없으면 **부분일치로 다른 앱을 잡는다.**
+#   2026-08-14 prod: ecosystem은 'heyhoai'인데 실제 등록명이 'HeyHoAI'(대문자)여서
+#   `pm2 restart heyhoai`가 엉뚱하게 heyhoai-dev·heyhoai-staging을 재시작했다.
+#   prod를 배포했는데 dev/staging이 재시작된 것 — 그래서 아래는 전부 완전 일치로만 판단한다.
+if [ -n "$STRAY_APPS" ]; then
+  echo "❌ 같은 디렉터리($(pwd))에서 다른 이름으로 도는 pm2 앱이 있습니다: $STRAY_APPS"
+  echo "   ecosystem의 이름($APP)과 달라 이 배포는 그 프로세스를 갱신하지 못합니다."
+  echo "   (pm2가 부분일치로 다른 환경의 앱을 재시작해버릴 수도 있습니다)"
+  echo "   정리: pm2 delete $STRAY_APPS && pm2 start ecosystem.config.js --only $APP && pm2 save"
+  exit 1
+fi
+
+if [ -z "$CUR_SCRIPT" ]; then
+  echo "   pm2에 '$APP' 등록이 없습니다 — 새로 등록합니다."
+  pm2 start ecosystem.config.js --only "$APP"
+elif [ "$CUR_SCRIPT" != "$(pwd)/$WANT_SCRIPT" ]; then
   echo "   ⚠️ script 경로 불일치 — 등록 재생성"
   echo "      현재: $CUR_SCRIPT"
   echo "      기대: $(pwd)/$WANT_SCRIPT"
-  pm2 delete "$APP" || true
+  pm2 delete "$APP"
   pm2 start ecosystem.config.js --only "$APP"
 else
-  pm2 restart "$APP" --update-env || pm2 start ecosystem.config.js --only "$APP"
+  # ecosystem 경유 restart = 이름 완전 일치(설정 파일에 정의된 앱만 대상). 맨이름 restart의 부분일치를 피한다.
+  pm2 restart ecosystem.config.js --only "$APP" --update-env
 fi
 pm2 save >/dev/null 2>&1 || true
 echo "   실행 스크립트: $(pm2 jlist 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s).find(x=>x.name==='$APP');console.log(a?a.pm2_env.pm_exec_path:'?')}catch(_){console.log('?')}});")"
