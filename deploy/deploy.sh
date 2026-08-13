@@ -30,12 +30,10 @@ git pull --ff-only
 echo "▶ 2/4  의존성 설치 (npm ci)"
 npm ci
 
-# dev는 NestJS(strangler)로 구동 → nest/*.ts를 dist/로 빌드해야 함(pm2가 dist/main.js 실행).
-#   prod/staging은 src/index.js 직접 실행이라 빌드 불필요.
-if [ "$ENVN" = "dev" ]; then
-  echo "▶ 2.5/4  NestJS 빌드 (tsc → dist/)"
-  npm run build
-fi
+# 세 환경 모두 NestJS(strangler)로 구동 → nest/*.ts를 dist/로 빌드해야 함(pm2가 dist/main.js 실행).
+#   dist/는 .gitignore라 git pull로 안 따라온다 — 여기서 만들지 않으면 pm2가 없는 파일을 실행한다.
+echo "▶ 2.5/4  NestJS 빌드 (tsc → dist/)"
+npm run build
 
 echo "▶ 3/4  DB 마이그레이션 ($ENVN DB · idempotent)"
 NODE_ENV="$NODE_ENV" npm run migrate

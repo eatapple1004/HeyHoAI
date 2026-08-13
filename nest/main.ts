@@ -64,7 +64,12 @@ async function bootstrap() {
     cookieMw(req, res, (e1: any) => (e1 ? next(e1) : jsonMw(req, res, next)));
   });
 
-  const port = Number(process.env.PORT) || 3002;
+  // 폴백 3002는 dev 전용 값이었다 — Nest를 staging/prod로 확대하면서 그대로 두면 PORT 누락 시
+  //   prod가 3002에 붙어 nginx(→3000)와 어긋난다. 반대로 일괄 3000으로 바꾸면 이번엔 dev가
+  //   PORT 없을 때 prod 포트를 물어 충돌한다. 그래서 폴백을 환경별로 나눈다.
+  //   실제 포트는 언제나 .env.<NODE_ENV>의 PORT가 결정하고, 이건 그게 비었을 때의 안전망일 뿐이다.
+  const DEFAULT_PORT: Record<string, number> = { production: 3000, staging: 3001, development: 3002 };
+  const port = Number(process.env.PORT) || DEFAULT_PORT[process.env.NODE_ENV || ''] || 3000;
   await app.listen(port);
 
   // ── Nest 라우트가 잡지 못한 요청의 흐름 ──
