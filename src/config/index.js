@@ -174,6 +174,9 @@ const envSchema = z.object({
   // 구독 정기청구 스케줄러 옵트인('on'일 때만 기동). ⚠️ 실청구가 발생하므로 켜는 환경은 한 곳뿐이어야 한다.
   //   ⚠️ 여기 선언하지 않으면 zod가 걸러내 env에서 사라진다 — "켰는데 안 켜지는" 조용한 실패가 된다.
   BILLING_SCHEDULER: z.string().optional(),
+  // 구독 판매 노출('false'면 가격표에서 숨김). pricing.config.js가 process.env를 직접 읽으므로
+  //   zod를 거치지 않아도 동작하지만, "선언된 키 == example의 키"를 유지해야 누락 점검이 성립한다.
+  SUBSCRIPTIONS_FOR_SALE: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);
