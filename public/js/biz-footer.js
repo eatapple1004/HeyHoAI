@@ -28,8 +28,17 @@
     tel: '+82-70-8098-3546',
   };
   var sep = '<span class="bizf-sep">|</span>';
-  var isKoDoc = ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('en') !== 0);
-  var rows = isKoDoc ? [
+  // ⚠️ **함수로 감싼 이유** — 최상위에서 계산하면 안 된다.
+  //   이 스크립트는 body 파싱 중 즉시 실행되는데, i18n.js는 defer라 그 **뒤에** 돌면서
+  //   <html lang>을 사용자 언어로 바꾼다. 최상위에서 lang을 읽으면 HTML에 하드코딩된 값
+  //   (billing.html은 lang="en")만 보게 돼, 한국어로 전환해도 사업자정보가 계속 영문으로 나온다.
+  //   실제로 그 상태였다 — 링크(mount 안에서 판정)는 국문인데 사업자정보만 영문인 기묘한 푸터.
+  //   mount()는 DOMContentLoaded에 불리므로 그때는 i18n이 lang을 이미 정해뒀다.
+  function isKoDocNow() {
+    return ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('en') !== 0);
+  }
+  function buildRows() {
+  return isKoDocNow() ? [
     '상호 <b>' + BIZ.company + '</b> (' + BIZ.brand + ')',
     '대표자 <b>' + BIZ.ceo + '</b>',
     '사업자등록번호 <b>' + BIZ.bizNo + '</b>',
@@ -48,6 +57,7 @@
     'Email <a href="mailto:' + BIZ.email + '">' + BIZ.email + '</a>',
     'Hosting ' + BIZ.hosting,
   ];
+  }
 
   var css =
     '.bizf{border-top:1px solid rgba(255,255,255,.08);margin-top:0;padding:22px 24px 30px;' +
@@ -73,7 +83,8 @@
     el.id = 'bizf-block';
     // 페이지 언어(문서 lang)에 따라 법적 문서 링크·라벨 스위칭 — EN 페이지는 영어 번역본(-en)으로.
     // 사업자정보 행은 전자상거래법 표시사항이라 국문 유지.
-    var isKo = ((document.documentElement.getAttribute('lang') || 'ko').toLowerCase().indexOf('en') !== 0);
+    var isKo = isKoDocNow();
+    var rows = buildRows();
     var legal = isKo
       ? '<a href="/terms">이용약관</a>' + sep +
         '<a href="/terms#ai-use-policy">AI 이용정책</a>' + sep +
@@ -87,7 +98,7 @@
       '<div class="bizf-in">' +
       '<div class="bizf-legal">' + legal + '</div>' +
       rows.join(sep) +
-      '<div class="bizf-copy">© 2026 ' + (isKoDoc ? BIZ.company : 'ADAM Company Inc.') + ' (' + BIZ.brand + '). All rights reserved.</div>' +
+      '<div class="bizf-copy">© 2026 ' + (isKo ? BIZ.company : 'ADAM Company Inc.') + ' (' + BIZ.brand + '). All rights reserved.</div>' +
       '</div>';
 
     // 마운트 우선순위: #biz-footer 지정 위치 → 기존 <footer> 뒤 → body 끝
