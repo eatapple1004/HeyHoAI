@@ -31,6 +31,38 @@ function assertConfigured() {
   if (!portone.configured()) throw fail('PortOne 결제가 설정되지 않았습니다.', 503);
 }
 
+/**
+ * 빌링(자동결제) 전용 채널. 일반결제와 **PG 계약이 별개**라 PortOne 채널도 따로 만들어야 한다.
+ * 미설정이면 일반결제 채널로 폴백하지만, 그 채널은 빌링 미계약이라 PG가 거절한다
+ * (그래서 아래 billingAvailable()이 기본 꺼짐이다 — 폴백은 계약 후 키만 옮기는 과도기용).
+ */
+function billingChannelKey() {
+  return env.PORTONE_BILLING_CHANNEL_KEY || env.PORTONE_CHANNEL_KEY;
+}
+
+/**
+ * 빌링을 실제로 쓸 수 있는가. PORTONE_BILLING_ENABLED=true/1/on/yes 일 때만 켜진다(fail-closed).
+ *
+ * ⚠️ 왜 기본을 끄는가: 계약 전에 requestIssueBillingKey를 부르면 PG가 거절하면서
+ *   **PortOne이 자체 iframe 에러창**("자동 결제(빌링) 계약이 안 되어 있습니다")을 띄우는데,
+ *   그 창의 닫기 버튼이 동작하지 않아 사용자가 새로고침 말고는 빠져나갈 방법이 없다.
+ *   우리 화면에서 먼저 막는 편이 유일하게 사용자를 구할 수 있는 지점이다.
+ */
+function billingAvailable() {
+  const flag = String(env.PORTONE_BILLING_ENABLED == null ? '' : env.PORTONE_BILLING_ENABLED)
+    .trim()
+    .toLowerCase();
+  const on = flag === 'true' || flag === '1' || flag === 'on' || flag === 'yes';
+  return on && portone.configured() && Boolean(billingChannelKey());
+}
+
+function assertBillingAvailable() {
+  assertConfigured();
+  if (!billingAvailable()) {
+    throw fail('자동결제(정기결제)는 준비 중입니다. PG 자동결제 계약 승인 후 이용할 수 있습니다.', 503);
+  }
+}
+
 function findPack(packId) {
   return PACKS.find((p) => p.id === packId) || null;
 }
@@ -45,10 +77,10 @@ function newIssueId() {
 
 /** 프론트가 카드 등록창을 띄우는 데 필요한 파라미터(공개값만). */
 function issueParams(user) {
-  assertConfigured();
+  assertBillingAvailable();
   return {
     storeId: env.PORTONE_STORE_ID,
-    channelKey: env.PORTONE_CHANNEL_KEY,
+    channelKey: billingChannelKey(),
     billingKeyMethod: 'CARD',
     issueId: newIssueId(),
     customer: {
@@ -86,7 +118,7 @@ async function getActiveKey(userId) {
  *   확인한 뒤에만 저장한다(단건 결제에서 결제건을 재조회하는 것과 같은 이유).
  */
 async function registerCard(user, billingKey) {
-  assertConfigured();
+  assertBillingAvailable();
   if (!billingKey || typeof billingKey !== 'string') throw fail('billingKey가 필요합니다.', 400);
 
   const res = await fetch(`${API}/billing-keys/${encodeURIComponent(billingKey)}`, {
@@ -153,7 +185,7 @@ async function deleteCard(user, opts = {}) {
  * 승인 후에는 단건 결제와 똑같이 verifyAndComplete가 PortOne을 재조회해 충전한다.
  */
 async function chargePack(user, packId) {
-  assertConfigured();
+  assertBillingAvailable();
   const pack = findPack(packId);
   if (!pack) throw fail('Unknown pack', 400);
   // 국내 결제라 1회 충전 한도(PG 심사 요건)를 여기서도 지킨다 — 자동 청구는 화면을 안 거친다.
@@ -176,7 +208,7 @@ async function chargePack(user, packId) {
     headers: authHeaders(),
     body: JSON.stringify({
       storeId: env.PORTONE_STORE_ID,
-      channelKey: env.PORTONE_CHANNEL_KEY,
+      channelKey: billingChannelKey(),
       billingKey: key.billing_key,
       orderName: `Doppia credits ${pack.credits} (${pack.id})`,
       amount: { total: Number(pack.krw) },
@@ -209,4 +241,7 @@ async function chargePack(user, packId) {
   return { paymentId, credits: done.credits || null, already: !!done.already };
 }
 
-module.exports = { issueParams, getCard, registerCard, deleteCard, chargePack };
+module.exports = {
+  issueParams, getCard, registerCard, deleteCard, chargePack,
+  billingAvailable, assertBillingAvailable, billingChannelKey,
+};

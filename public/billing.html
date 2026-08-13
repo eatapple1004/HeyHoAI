@@ -372,6 +372,10 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
 /** 등록 카드 상태를 읽어 섹션을 그린다. PortOne 미설정이면 섹션 자체를 숨긴 채 둔다. */
 async function loadCard(){
   if(!(PORTONE&&PORTONE.configured))return;   // 등록할 수단이 없으면 노출하지 않는다
+  // 자동결제(빌링)는 일반결제와 PG 계약이 별개다. 계약 전에 등록창을 띄우면 PG가 거절하면서
+  //   PortOne 자체 에러창이 뜨는데 그 창은 닫기가 동작하지 않아 새로고침 말곤 못 빠져나온다.
+  //   그래서 아예 노출하지 않는다.
+  if(!PORTONE.billingAvailable){ console.info('[billing] 빌링 미계약 — 결제수단 섹션 숨김'); return; }
   document.getElementById('pmLabel').style.display='';
   document.getElementById('pmRow').style.display='';
   try{
@@ -647,6 +651,10 @@ async function loadSubscription(){
  */
 async function upgradeToPro(btn){
   const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
+  // PG 자동결제 계약 전이면 여기서 끝낸다 — 내려가면 PortOne이 못 닫는 에러창을 띄운다.
+  if(!(PORTONE&&PORTONE.billingAvailable)){
+    notify('정기결제는 준비 중입니다. 자동결제 심사 승인 후 열립니다.','error'); return;
+  }
   btn.disabled=true;const orig=btn.textContent;
   try{
     // 1) 결제수단 확인 — 없으면 카드 등록(빌링 결제창)부터
@@ -671,6 +679,7 @@ async function upgradeToPro(btn){
 
 /** 카드 등록 결제창을 띄우고 저장까지. 성공하면 true. (구독 흐름 안에서 재사용) */
 async function registerCardInline(){
+  if(!(PORTONE&&PORTONE.billingAvailable)){ notify('정기결제는 준비 중입니다. 자동결제 심사 승인 후 열립니다.','error'); return false; }
   if(!window.PortOne){ notify('결제 모듈을 불러오지 못했습니다. 광고 차단을 끄고 새로고침해 주세요.','error'); return false; }
   const pr=await(await fetch('/api/billing/portone/billing-key/params')).json();
   if(!pr.success){ notify(pr.error||'카드 등록을 시작하지 못했습니다.','error'); return false; }

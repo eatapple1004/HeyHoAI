@@ -20,6 +20,7 @@ const log = require('../lib/logger')('SubBilling');
 const { PRICING } = require('../pricing/pricing.config');
 const { PLANS } = require('../lib/entitlements');
 const portone = require('./portone.service');
+const portoneBilling = require('./portoneBilling.service');
 const subscriptionService = require('../subscription/subscription.service');
 
 const API = 'https://api.portone.io';
@@ -88,7 +89,7 @@ async function chargeOnce(sub, billingKey, periodStart) {
     headers: { Authorization: `PortOne ${env.PORTONE_API_SECRET}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       storeId: env.PORTONE_STORE_ID,
-      channelKey: env.PORTONE_CHANNEL_KEY,
+      channelKey: portoneBilling.billingChannelKey(), // 빌링은 일반결제와 채널(=PG계약)이 다르다
       billingKey,
       orderName: `Doppia ${planName} 구독 (1개월)`,
       amount: { total: Number(sub.amount_krw) },
@@ -140,6 +141,8 @@ async function verifyPaid(paymentId, expectKrw) {
  * 카드 등록(빌링키 발급)은 프론트가 먼저 끝내둔 상태를 전제한다.
  */
 async function subscribe(user, plan) {
+  // 계약 전이면 여기서 끝낸다 — 아래로 내려가면 PG가 거절해 구독행만 만들었다 지우는 낭비가 된다.
+  portoneBilling.assertBillingAvailable();
   const amountKrw = assertSellablePlan(plan);
 
   const existing = await getSubscription(user.id);
