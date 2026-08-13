@@ -1408,6 +1408,56 @@ async function migrateCredits() {
         ON billing_keys(user_id) WHERE status = 'active';
   `);
 
+  // 구독(정기결제) — 빌링키로 매월 재청구하는 계약.
+  //   users.plan/plan_renews_at 은 "지금 무슨 권한인가"(=엔타이틀먼트)를 들고,
+  //   이 테이블은 "언제 얼마를 다시 청구할 것인가"(=청구 계약)를 들고 간다. 축이 다르므로 분리한다.
+  //   status: active(청구중) | canceled(기말 해지 예약/해지됨) | past_due(청구 실패, 재시도 대기)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        plan            VARCHAR(30) NOT NULL,
+        billing_key_id  UUID REFERENCES billing_keys(id) ON DELETE SET NULL,
+        amount_krw      INT NOT NULL,
+        status          VARCHAR(20) NOT NULL DEFAULT 'active',
+        next_charge_at  TIMESTAMPTZ,
+        canceled_at     TIMESTAMPTZ,
+        fail_count      INT NOT NULL DEFAULT 0,
+        last_error      TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_due ON subscriptions(status, next_charge_at);
+  `);
+  // 유저당 살아있는 구독은 1건 — 중복 구독으로 이중 청구되는 사고를 스키마에서 막는다.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_one_active
+        ON subscriptions(user_id) WHERE status IN ('active', 'past_due');
+  `);
+
+  // 구독 청구 이력 — 멱등 키(payment_id)로 같은 주기의 이중 청구를 막는다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscription_charges (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        subscription_id  UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+        user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        payment_id       TEXT NOT NULL UNIQUE,
+        period_start     TIMESTAMPTZ NOT NULL,
+        amount_krw       INT NOT NULL,
+        status           VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending | paid | failed
+        error            TEXT,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_sub_charges_sub ON subscription_charges(subscription_id, created_at DESC);
+  `);
+  // 같은 구독의 같은 주기는 한 번만 청구된다 — 스케줄러가 겹쳐 돌아도 두 번 긁히지 않는다.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_charges_period
+        ON subscription_charges(subscription_id, period_start);
+  `);
+
   // 결제 기록 — PG 주문 멱등 처리용 (provider+order_id UNIQUE)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS payments (

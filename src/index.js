@@ -270,6 +270,16 @@ function startBackground() {
   const { startScheduler } = require('./publishing/scheduler');
   startScheduler();
 
+  // 구독 정기청구 스케줄러 — **실제 돈이 빠지므로 기본 꺼짐**(off-by-default).
+  //   BILLING_SCHEDULER=on 인 프로세스에서만 돈다. 여러 환경이 같은 DB를 보는 구성에서
+  //   둘 다 켜면 이중 청구 위험이 있으므로, 켜는 곳은 **한 곳뿐**이어야 한다.
+  //   (멱등 인덱스가 최종 방어선이지만, 애초에 두 번 시도하지 않는 게 맞다.)
+  if (String(env.BILLING_SCHEDULER || '').trim().toLowerCase() === 'on') {
+    require('./billing/subscriptionScheduler').start();
+  } else {
+    log.info('Subscription billing scheduler off (BILLING_SCHEDULER≠on)');
+  }
+
   // 비동기 릴스 생성 폴러 시작 — 로컬(prod DB에 붙는 :3001)에선 DISABLE_VIDEO_POLLER=true로 꺼서
   //   prod 폴러와의 이중 폴링(같은 잡 중복 finalize·attempts 부풀림) 방지. 기본 실행(prod 무변경).
   if (env.DISABLE_VIDEO_POLLER) {

@@ -34,6 +34,10 @@ function offerPrice(plan = OFFER.plan): number {
   return Math.round((PRICES[plan] || 0) * (1 - OFFER.discountPct / 100));
 }
 
+// 정기결제(빌링키 월 재청구) — 레거시 단일소스 위임.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const subBilling = require(path.join(__dirname, '..', '..', 'src', 'billing', 'subscriptionBilling.service.js'));
+
 @Injectable()
 export class SubscriptionService {
   constructor(
@@ -125,5 +129,20 @@ export class SubscriptionService {
       plan: effPlan, expiresAt: expires, months: m, creditsGranted: credits,
       extended: base > nowMs, upgraded: newRank > curRank,
     };
+  }
+
+  // ── 정기결제(구독) ──
+
+  /** 진행 중인 구독(카드 정보 포함). 없으면 null */
+  subscription(userId: string) {
+    return subBilling.getSubscription(userId);
+  }
+  /** 구독 개시 — 등록 카드로 첫 달 청구 + 플랜 활성화 */
+  subscribe(user: any, plan: string) {
+    return subBilling.subscribe(user, plan);
+  }
+  /** 기말 해지 — 이미 낸 기간은 그대로 쓴다 */
+  cancelSubscription(userId: string) {
+    return subBilling.cancel(userId);
   }
 }

@@ -61,18 +61,21 @@
   .plan-card .btn{width:100%}
   .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
 
-  .packs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-  @media(max-width:860px){.packs{grid-template-columns:repeat(2,1fr)}}
+  /* 팩 개수가 통화·한도에 따라 달라진다(국내는 2종, 해외는 4종) — 고정 4열이면 2종일 때 카드가
+     1/4 너비로 쪼그라든다. auto-fit + minmax 로 개수에 맞춰 넓어지게 하고, 전체 폭을 묶어
+     2종일 때 지나치게 늘어나지도 않게 한다. */
+  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;
+    max-width:960px;margin:0 auto}
   @media(max-width:480px){.packs{grid-template-columns:1fr}}
-  .pack-card{padding:22px;text-align:center;transition:transform .2s;position:relative}
+  .pack-card{padding:30px 24px;text-align:center;transition:transform .2s;position:relative}
   .pack-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -24px rgba(0,0,0,.6)}
   .pack-card.best{border-color:color-mix(in srgb,var(--gold) 50%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 35%,transparent)}
   .pack-card .ptag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),var(--pink));color:#1a1a27;white-space:nowrap}
-  .pack-card .amt{font-family:'Sora';font-size:24px;font-weight:800;color:var(--gold)}
-  .pack-card .amt small{font-size:12px;color:var(--dim);font-weight:500}
-  .pack-card .ppc{font-size:11px;color:var(--dim);margin:4px 0 12px}
-  .pack-card .price{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:14px}
-  .pack-card .btn{width:100%}
+  .pack-card .amt{font-family:'Sora';font-size:30px;font-weight:800;color:var(--gold);line-height:1.1}
+  .pack-card .amt small{display:block;font-size:13px;color:var(--dim);font-weight:600;margin-top:6px}
+  .pack-card .ppc{font-size:12px;color:var(--dim);margin:8px 0 16px}
+  .pack-card .price{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:18px}
+  .pack-card .btn{width:100%;padding:13px 0;font-size:14.5px}
 
   .note{font-size:12.5px;color:var(--dim);margin-top:14px;text-align:center}
   .note b{color:var(--dim)}
@@ -247,8 +250,9 @@
       <div class="credits-inc"></div>
       <ul><li>20 concurrent jobs</li><li>Dedicated support</li><li>Highest volume</li></ul>
       <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
-  </div>
-
+    </div>
+  </div><!-- /.ent-plans -->
+  </div><!-- /#subsSection -->
 
   <h2 class="section-label fade d2">Credits</h2>
   <div class="packs fade d4" id="packsGrid"></div>
@@ -342,7 +346,7 @@
 
 <!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
      낡은 파일이 그대로 나간다. v=3: subscriptionsForSale(구독 판매 플래그) 추가 -->
-<script src="/js/pricing.js?v=3"></script>
+<script src="/js/pricing.js?v=5"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -402,23 +406,9 @@ function fillPackOptions(){
 
 /** 카드 등록 — PortOne 결제창(빌링키 발급)을 열고, 받은 토큰을 서버가 재확인해 저장한다 */
 async function registerCard(btn){
-  if(!window.PortOne){ notify('결제 모듈을 불러오지 못했습니다. 광고 차단을 끄고 새로고침해 주세요.','error'); return; }
   btn.disabled=true; const orig=btn.textContent; btn.textContent='여는 중…';
   try{
-    const pr=await(await fetch('/api/billing/portone/billing-key/params')).json();
-    if(!pr.success){ notify(pr.error||'카드 등록을 시작하지 못했습니다.','error'); return; }
-    const resp=await window.PortOne.requestIssueBillingKey(Object.assign({},pr.data,{
-      redirectUrl:location.origin+'/billing'   // 모바일 리다이렉트 복귀
-    }));
-    // requestPayment와 같은 규약: code가 있으면 실패/취소
-    if(resp&&resp.code!=null){ notify(resp.message||'카드 등록이 취소되었습니다.','error'); return; }
-    const save=await(await fetch('/api/billing/portone/billing-key',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({billingKey:resp&&resp.billingKey})
-    })).json();
-    if(!save.success){ notify(save.error||'카드 저장에 실패했습니다.','error'); return; }
-    notify('카드가 등록되었습니다.');
-    renderCard(save.data);
+    if(await registerCardInline()) notify('카드가 등록되었습니다.');
   }catch(e){ notify('카드 등록 중 오류가 발생했습니다.','error'); }
   finally{ btn.disabled=false; btn.textContent=orig; }
 }
@@ -650,17 +640,46 @@ async function loadSubscription(){
     markCurrentPlan(sub.plan||'free');
   }catch(e){console.error(e);}
 }
+/**
+ * 구독하기 — 빌링키 정기결제.
+ *   카드가 없으면 먼저 등록 결제창(requestIssueBillingKey)을 띄우고,
+ *   등록이 끝나면 서버가 첫 달을 청구하고 플랜을 활성화한다. 이후 청구는 서버 스케줄러가 한다.
+ */
 async function upgradeToPro(btn){
-  btn.disabled=true;const orig=btn.textContent;btn.textContent='…';
+  const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
+  btn.disabled=true;const orig=btn.textContent;
   try{
-    const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
-    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // ⚠️ 레거시 기간권 계약. 자동갱신 구독 전환 시 개발자가 정기결제 엔드포인트로 교체(설계: docs/원화_빌링키_정기결제_설계).
+    // 1) 결제수단 확인 — 없으면 카드 등록(빌링 결제창)부터
+    btn.textContent='카드 확인…';
+    const cardRes=await(await fetch('/api/billing/portone/billing-key')).json();
+    if(!(cardRes.success&&cardRes.data)){
+      btn.textContent='카드 등록…';
+      const registered=await registerCardInline();
+      if(!registered) return;            // 사용자가 취소했거나 실패 — 안내는 안에서 이미 띄웠다
+    }
+    // 2) 첫 달 청구 + 플랜 활성화(서버가 금액을 정한다 — 클라 금액은 보내지 않는다)
+    btn.textContent='결제 중…';
+    const res=await fetch('/api/subscription/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
     const d=await res.json();
-    if(d.success){ notify('Subscription activated!'); loadSubscription();loadBalance(); }
-    else if(d.comingSoon){ notify('Subscriptions are coming soon — they activate once payment review passes.'); }
-    else notify(d.error||'Purchase failed.','error');
-  }catch(e){ notify('Payment connection failed.','error'); }
+    if(d.success){
+      notify('구독이 시작되었습니다.');
+      loadSubscription(); loadBalance(); loadCard();
+    } else notify(d.error||'구독에 실패했습니다.','error');
+  }catch(e){ notify('결제 연결에 실패했습니다.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }
+}
+
+/** 카드 등록 결제창을 띄우고 저장까지. 성공하면 true. (구독 흐름 안에서 재사용) */
+async function registerCardInline(){
+  if(!window.PortOne){ notify('결제 모듈을 불러오지 못했습니다. 광고 차단을 끄고 새로고침해 주세요.','error'); return false; }
+  const pr=await(await fetch('/api/billing/portone/billing-key/params')).json();
+  if(!pr.success){ notify(pr.error||'카드 등록을 시작하지 못했습니다.','error'); return false; }
+  const resp=await window.PortOne.requestIssueBillingKey(Object.assign({},pr.data,{redirectUrl:location.origin+'/billing'}));
+  if(resp&&resp.code!=null){ notify(resp.message||'카드 등록이 취소되었습니다.','error'); return false; }
+  const save=await(await fetch('/api/billing/portone/billing-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({billingKey:resp&&resp.billingKey})})).json();
+  if(!save.success){ notify(save.error||'카드 저장에 실패했습니다.','error'); return false; }
+  renderCard(save.data);
+  return true;
 }
 
 // 결제 완료 복귀 (?purchased=packXX)
