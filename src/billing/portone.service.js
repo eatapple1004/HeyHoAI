@@ -19,7 +19,16 @@ function configured() {
 }
 // 프론트 노출용 공개 설정(시크릿 제외)
 function publicConfig() {
-  return { configured: configured(), storeId: env.PORTONE_STORE_ID || '', channelKey: env.PORTONE_CHANNEL_KEY || '' };
+  // 순환 참조 회피 — portoneBilling이 이 모듈을 require한다. 호출 시점엔 양쪽 다 로드가 끝나 있다.
+  const { billingAvailable } = require('./portoneBilling.service');
+  return {
+    configured: configured(),
+    storeId: env.PORTONE_STORE_ID || '',
+    channelKey: env.PORTONE_CHANNEL_KEY || '',
+    // 자동결제(빌링) 계약이 열렸는지. false면 프론트가 결제창을 아예 띄우지 않는다
+    // (PG 거절 시 뜨는 PortOne 자체 에러창은 닫기가 동작하지 않아 사용자가 갇힌다).
+    billingAvailable: billingAvailable(),
+  };
 }
 function findPack(packId) { return PACKS.find((p) => p.id === packId) || null; }
 

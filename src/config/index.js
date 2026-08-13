@@ -161,6 +161,13 @@ const envSchema = z.object({
   PORTONE_STORE_ID: z.string().optional(),       // store-...  (공개)
   PORTONE_CHANNEL_KEY: z.string().optional(),    // channel-key-...  (공개, 테스트 채널)
   PORTONE_API_SECRET: z.string().optional(),     // V2 API Secret (서버 검증)
+  // 자동결제(빌링)는 PG와 **일반결제와 별개로 계약·심사**한다 → PortOne 콘솔에서도 채널이 따로 생긴다.
+  //   미설정 시 일반결제 채널로 폴백하는데, 그 채널엔 빌링 계약이 없어서 PG가
+  //   "자동 결제(빌링) 계약이 안 되어 있습니다"로 거절한다(PortOne 자체 에러창 — 우리가 못 닫는다).
+  PORTONE_BILLING_CHANNEL_KEY: z.string().optional(),
+  // 빌링 계약이 실제로 열렸을 때만 true. 기본 꺼짐(fail-closed) — 안 열린 상태로 결제창을 띄우면
+  //   사용자가 닫을 수 없는 PG 에러창에 갇힌다. 켜기 전 채널키부터 넣을 것.
+  PORTONE_BILLING_ENABLED: z.string().optional(),
   // 심사 대기 등으로 PortOne을 임시로 끄고 싶을 때(키는 보존). false/0/off면 configured()=false
   // → buyPack 폴백이 Eximbay·Lemon Squeezy로 넘어감. 승인되면 이 값만 지우면 원복.
   PORTONE_ENABLED: z.string().optional(),
