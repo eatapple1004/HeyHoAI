@@ -44,9 +44,9 @@
     // 🔒 국내(KRW) 1회 충전 한도 — PG 심사 요건(토스페이먼츠, 포인트충전 업종: 10만원 미만).
     //   가격 정책이 아니라 규제값이다. 서버 pricing.config.js와 반드시 같은 값을 유지할 것.
     krwOneTimeChargeLimit: 100000,
-    // 🔒 구독 판매 여부 — 서버(/api/pricing)가 환경별 값으로 덮어쓴다. 임베드 폴백은 항상 꺼짐.
-    //   PG 심사 중에는 꺼두고, dev에서만 SUBSCRIPTIONS_FOR_SALE=true 로 켜서 개발한다.
-    subscriptionsForSale: false,
+    // 구독 판매 여부 — 서버(/api/pricing)가 환경 값으로 덮어쓴다. 기본 켜짐.
+    //   급히 내릴 땐 서버에서 SUBSCRIPTIONS_FOR_SALE=false (코드 수정 없이 즉시 차단).
+    subscriptionsForSale: true,
     // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
     currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
     // 확정가 — 실원가 재검증(2026-07-06, docs/생성원가_마진_분석). 커스텀 2~3배/템플릿 4~6배 + 크레딧 30배. 서버(/api/pricing)가 동일값으로 덮어씀.

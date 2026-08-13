@@ -59,15 +59,16 @@ const PRICING = {
    */
   krwOneTimeChargeLimit: 100000,
   /**
-   * 🔒 구독 플랜 판매 여부 — **환경별로 갈리는 스위치**(기본 꺼짐).
-   *   2026-08 PG 심사 대응으로 구독 판매를 내렸다(판매 중인 상품으로 읽히면 심사가 막힌다).
-   *   정기결제(빌링) 개발은 계속해야 하므로, 화면을 지우는 대신 이 플래그로 가린다.
-   *   - dev: `SUBSCRIPTIONS_FOR_SALE=true` 로 켜서 개발·검증
-   *   - prod/staging: 미설정 = 꺼짐 → 승격해도 심사 화면에 구독이 안 나온다
-   *   켜기 전 확인: 구독 플랜은 ₩164,000~₩1,990,000으로 **1회 충전 한도(10만원) 밖**이다.
-   *   토스에 "구독도 충전으로 보는지" 회신을 받은 뒤 prod에서 켤 것.
+   * 구독 플랜 판매 여부 — **기본 켜짐**.
+   *   2026-08-12 PG 심사 대응으로 잠시 내렸다가, 빌링(정기결제)을 심사 범위에 포함하기로 하면서
+   *   2026-08-13 판매를 재개했다. 빌링 결제경로를 제출하려면 구독 상품이 화면에 있어야 한다.
+   *   급히 내려야 할 때만 `SUBSCRIPTIONS_FOR_SALE=false` 로 끈다(코드 수정·배포 없이 즉시 차단).
+   *
+   *   참고: 1회 10만원 한도는 **충전형 상품에만** 걸리는 규제로 보인다 —
+   *   토스 충전업종 가이드(4p·12p)에만 나오고 빌링 가이드에는 금액 한도 언급이 없다.
+   *   구독 플랜(₩31,000~₩1,990,000)은 대상이 아닐 가능성이 높으나 회신으로 확답을 받을 것.
    */
-  subscriptionsForSale: String(process.env.SUBSCRIPTIONS_FOR_SALE || '').trim().toLowerCase() === 'true',
+  subscriptionsForSale: String(process.env.SUBSCRIPTIONS_FOR_SALE || '').trim().toLowerCase() !== 'false',
   // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
   currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
 };
