@@ -61,18 +61,21 @@
   .plan-card .btn{width:100%}
   .plan-card .btn.current{background:transparent;color:var(--faint);border:1px solid var(--border);cursor:default}
 
-  .packs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-  @media(max-width:860px){.packs{grid-template-columns:repeat(2,1fr)}}
+  /* 팩 개수가 통화·한도에 따라 달라진다(국내는 2종, 해외는 4종) — 고정 4열이면 2종일 때 카드가
+     1/4 너비로 쪼그라든다. auto-fit + minmax 로 개수에 맞춰 넓어지게 하고, 전체 폭을 묶어
+     2종일 때 지나치게 늘어나지도 않게 한다. */
+  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;
+    max-width:960px;margin:0 auto}
   @media(max-width:480px){.packs{grid-template-columns:1fr}}
-  .pack-card{padding:22px;text-align:center;transition:transform .2s;position:relative}
+  .pack-card{padding:30px 24px;text-align:center;transition:transform .2s;position:relative}
   .pack-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -24px rgba(0,0,0,.6)}
   .pack-card.best{border-color:color-mix(in srgb,var(--gold) 50%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 35%,transparent)}
   .pack-card .ptag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:7px;background:linear-gradient(120deg,var(--gold),var(--pink));color:#1a1a27;white-space:nowrap}
-  .pack-card .amt{font-family:'Sora';font-size:24px;font-weight:800;color:var(--gold)}
-  .pack-card .amt small{font-size:12px;color:var(--dim);font-weight:500}
-  .pack-card .ppc{font-size:11px;color:var(--dim);margin:4px 0 12px}
-  .pack-card .price{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:14px}
-  .pack-card .btn{width:100%}
+  .pack-card .amt{font-family:'Sora';font-size:30px;font-weight:800;color:var(--gold);line-height:1.1}
+  .pack-card .amt small{display:block;font-size:13px;color:var(--dim);font-weight:600;margin-top:6px}
+  .pack-card .ppc{font-size:12px;color:var(--dim);margin:8px 0 16px}
+  .pack-card .price{font-family:'Sora';font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:18px}
+  .pack-card .btn{width:100%;padding:13px 0;font-size:14.5px}
 
   .note{font-size:12.5px;color:var(--dim);margin-top:14px;text-align:center}
   .note b{color:var(--dim)}
@@ -170,13 +173,86 @@
   </div>
 
   <!--
-    🔒 구독 플랜(개인·기업) 판매 중단 — 2026-08.
-      정기결제(빌링)가 미연동 상태이고(POST /api/subscription/upgrade → 501 comingSoon),
-      PG 심사에서 "판매 중인 상품"으로 읽히지 않도록 가격·구독 버튼을 전면 제거했다.
-      ⚠️ 플랜 **권한 체계**(src/lib/entitlements.js)는 그대로 살아 있다 — 기존에 부여된
-      플랜 사용자의 권한이 깨지면 안 되므로, 여기서 지운 것은 "판매 노출"뿐이다.
-      정기결제 연동 후 되살릴 때는 git 히스토리에서 이 블록을 복원할 것.
+    구독 플랜 — PG 심사 대응으로 **기본 숨김**(2026-08). 지우지 않고 플래그로 가린다.
+      표시 조건: /api/pricing 의 subscriptionsForSale === true
+        · dev   : SUBSCRIPTIONS_FOR_SALE=true 로 켜서 정기결제 개발·검증
+        · prod  : 미설정=꺼짐 → 승격해도 심사 화면에 구독이 안 나온다
+      ⚠️ 켜기 전 확인: 플랜가(₩164,000~₩1,990,000)는 1회 충전 한도(10만원) 밖이다.
+         토스에 "구독도 충전으로 보는지" 회신을 받은 뒤 prod에서 켤 것.
+      권한 체계(entitlements.js)는 플래그와 무관하게 항상 살아 있다.
   -->
+  <div id="subsSection" style="display:none">
+  <h2 class="section-label fade d2">Subscription plans</h2>
+  <!-- (2026-07-14) 자동갱신 구독 전환 → 월/연 토글 재노출. 실제 연간 청구 로직은 백엔드 정기결제 연동 후. -->
+  <div class="cycle fade d2">
+    <button class="on" data-cyc="m" onclick="setCycle('m',this)">Monthly</button>
+    <button data-cyc="y" onclick="setCycle('y',this)">Annual <span class="save">SAVE 17%</span></button>
+  </div>
+  <div class="plans fade d3">
+    <div class="plan-card glass" data-plan="free" data-m="0" data-y="0" data-yt="">
+      <div class="pname">Free</div><div class="price"><span class="cur">$</span><span class="pv">0</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc">1,500 credits (one-time)</div>
+      <ul><li>All features · 2K quality</li><li>Results post to the public feed</li></ul>
+      <button class="btn btn-ghost" onclick="planSoon('Free')">Free tier</button>
+    </div>
+    <div class="plan-card glass" data-plan="starter" data-m="19" data-y="16" data-yt="">
+      <div class="pname">Starter</div><div class="price"><span class="cur">$</span><span class="pv">19</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+    <div class="plan-card glass featured" data-plan="standard" data-m="49" data-y="41" data-yt="">
+      <div class="ribbon">Most popular</div>
+      <div class="pname">Standard</div><div class="price"><span class="cur">$</span><span class="pv">49</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+    <div class="plan-card glass" data-plan="pro" data-m="99" data-y="82" data-yt="">
+      <div class="pname">Pro</div><div class="price"><span class="cur">$</span><span class="pv">99</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+    <div class="plan-card glass" data-plan="premium" data-m="199" data-y="165" data-yt="">
+      <div class="pname">Premium</div><div class="price"><span class="cur">$</span><span class="pv">199</span><span class="per"> /mo</span></div>
+      <div class="cyc-note"></div>
+      <div class="credits-inc"></div>
+      <ul><li>Private Mode — results stay private</li><li>All features · commercial license</li><li>Highest volume</li></ul>
+      <button class="btn btn-primary" onclick="upgradeToPro(this)">Subscribe</button>
+    </div>
+  </div>
+  <div class="fade d2" style="font-size:11.5px;color:var(--faint);text-align:center;margin:-6px 0 14px">+% = more credits per won than Starter, at the same spend</div>
+  <h2 class="section-label fade d3" style="margin-top:6px">Enterprise — annual, best value per credit</h2>
+  <div class="plans ent-plans fade d3">
+    <div class="plan-card glass" data-ent="team">
+      <div class="pname">Enterprise Team</div><div class="price"><span class="cur">$</span><span class="ev">599</span><span class="per"> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>Shared team credit pool</li><li>10 concurrent jobs</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
+    </div>
+    <div class="plan-card glass featured" data-ent="pro">
+      <div class="ribbon">Best offer</div>
+      <div class="pname">Enterprise Pro</div><div class="price"><span class="cur">$</span><span class="ev">899</span><span class="per"> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>15 concurrent jobs</li><li>Priority support</li><li>All features · commercial license</li></ul>
+      <button class="btn btn-primary" onclick="location.href='/business'">Contact sales</button>
+    </div>
+    <div class="plan-card glass" data-ent="elite">
+      <div class="pname">Elite</div><div class="price"><span class="cur">$</span><span class="ev">1,199</span><span class="per"> /mo</span></div>
+      <div class="cyc-note">billed annually</div>
+      <div class="credits-inc"></div>
+      <ul><li>20 concurrent jobs</li><li>Dedicated support</li><li>Highest volume</li></ul>
+      <button class="btn btn-ghost" onclick="location.href='/business'">Contact sales</button>
+    </div>
+  </div><!-- /.ent-plans -->
+  </div><!-- /#subsSection -->
 
   <h2 class="section-label fade d2">Credits</h2>
   <div class="packs fade d4" id="packsGrid"></div>
@@ -229,23 +305,26 @@
     </div>
   </div>
 
-  <!-- (2026-07-02) 단발성 이용권 → 관리할 정기결제 없음(일시정지/취소 무의미). 정기결제 재점화 시 display:none 제거 -->
-  <div class="section-label fade d4" style="margin-top:38px;display:none">Manage subscription</div>
-  <div class="frow glass fade d4" style="display:none">
+  <!--
+    구독 관리 — 진행 중인 정기결제가 있을 때만 JS가 켠다(loadSubscription).
+    환불정책 제5조가 "서비스 내 '결제/구독 관리' 화면에서 언제든지 해지 신청"을 약속하고 있어
+    이 화면은 반드시 실재해야 한다(PG 심사에서 약관과 화면이 대조된다).
+    ※ 일시정지(Pause)는 백엔드가 없다 — 동작하지 않는 버튼을 심사관에게 보이는 편이 더 위험해서 걷어냈다.
+  -->
+  <div class="section-label fade d4" id="manageLabel" style="margin-top:38px;display:none">Manage subscription · 구독 관리</div>
+  <div class="frow glass fade d4" id="manageRow" style="display:none">
     <div style="width:100%">
-      <div class="lead">Need a break?</div>
-      <div class="desc">Pause keeps your account, gallery and trained faces — billing stops and resumes whenever you're back. Most people pause instead of cancelling.</div>
+      <div class="lead">구독 해지</div>
+      <div class="desc" id="manageDesc">해지하면 다음 결제일부터 청구되지 않습니다. 이미 결제한 기간은 만료일까지 그대로 이용할 수 있고, 갤러리와 학습된 얼굴은 그대로 남습니다.</div>
       <div class="manage">
-        <button class="btn btn-ghost" onclick="pauseFlow()">Pause subscription</button>
-        <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">Cancel</button>
+        <button class="btn btn-ghost" onclick="cancelFlow()" style="color:var(--faint)">구독 해지</button>
       </div>
-      <div class="pausebox hidden" id="pauseBox"><b>Subscription paused</b> — no charges until you resume. Your credits and gallery stay safe.</div>
       <div class="cancelbox hidden" id="cancelBox">
-        <div class="cbh">Before you cancel…</div>
-        <div class="cbb">You'll lose your monthly credits, watermark-free exports and Pro features. Your gallery &amp; trained faces stay — but the perks stop. Most creators pause instead.</div>
+        <div class="cbh">해지하시겠어요?</div>
+        <div class="cbb">다음 결제일부터 청구가 멈춥니다. <b id="cancelUntil"></b> 이미 결제한 기간은 만료일까지 이용할 수 있고, 갤러리와 학습된 얼굴은 그대로 유지됩니다. 남은 크레딧은 유효기간(충전일로부터 12개월) 내 계속 사용할 수 있습니다.</div>
         <div class="cbcta">
-          <button class="btn btn-primary" onclick="hideCancel();pauseFlow()">Pause instead (recommended)</button>
-          <button class="btn btn-ghost" onclick="reallyCancel()" style="color:var(--faint)">Cancel anyway</button>
+          <button class="btn btn-primary" onclick="hideCancel()">계속 이용하기</button>
+          <button class="btn btn-ghost" onclick="reallyCancel(this)" style="color:var(--faint)">해지하기</button>
         </div>
       </div>
     </div>
@@ -269,8 +348,8 @@
 </div>
 
 <!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
-     낡은 파일이 그대로 나간다. v=2: sellablePacks()(KRW 1회 충전 한도) 추가 -->
-<script src="/js/pricing.js?v=2"></script>
+     낡은 파일이 그대로 나간다. v=3: subscriptionsForSale(구독 판매 플래그) 추가 -->
+<script src="/js/pricing.js?v=6"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -282,10 +361,21 @@ function goBack(){ if(history.length>1) history.back(); else location.href='/stu
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
 function planSoon(){ notify('Plan changes are coming soon — for now, add an extra credit pack.'); }
-function pauseFlow(){ document.getElementById('pauseBox').classList.remove('hidden'); }
 function cancelFlow(){ document.getElementById('cancelBox').classList.remove('hidden'); }
 function hideCancel(){ document.getElementById('cancelBox').classList.add('hidden'); }
-function reallyCancel(){ hideCancel(); notify('Cancellation is coming soon — your gallery and trained faces are kept.'); }
+/** 기말 해지 — 이미 낸 기간은 그대로 쓰고 다음 결제만 멈춘다(POST /api/subscription/cancel). */
+async function reallyCancel(btn){
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='해지 중…';
+  try{
+    const d=await(await fetch('/api/subscription/cancel',{method:'POST'})).json();
+    if(d.success){
+      hideCancel();
+      notify('구독이 해지되었습니다. 결제한 기간이 끝날 때까지는 그대로 이용하실 수 있습니다.');
+      loadSubscription(); loadCard();
+    } else notify(d.error||'해지에 실패했습니다.','error');
+  }catch(e){ notify('해지 요청에 실패했습니다.','error'); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
 // 카드 브랜드는 PG가 준 문자열이다 — innerHTML에 그대로 넣지 않는다.
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -296,6 +386,10 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
 /** 등록 카드 상태를 읽어 섹션을 그린다. PortOne 미설정이면 섹션 자체를 숨긴 채 둔다. */
 async function loadCard(){
   if(!(PORTONE&&PORTONE.configured))return;   // 등록할 수단이 없으면 노출하지 않는다
+  // 자동결제(빌링)는 일반결제와 PG 계약이 별개다. 계약 전에 등록창을 띄우면 PG가 거절하면서
+  //   PortOne 자체 에러창이 뜨는데 그 창은 닫기가 동작하지 않아 새로고침 말곤 못 빠져나온다.
+  //   그래서 아예 노출하지 않는다.
+  if(!PORTONE.billingAvailable){ console.info('[billing] 빌링 미계약 — 결제수단 섹션 숨김'); return; }
   document.getElementById('pmLabel').style.display='';
   document.getElementById('pmRow').style.display='';
   try{
@@ -330,23 +424,9 @@ function fillPackOptions(){
 
 /** 카드 등록 — PortOne 결제창(빌링키 발급)을 열고, 받은 토큰을 서버가 재확인해 저장한다 */
 async function registerCard(btn){
-  if(!window.PortOne){ notify('결제 모듈을 불러오지 못했습니다. 광고 차단을 끄고 새로고침해 주세요.','error'); return; }
   btn.disabled=true; const orig=btn.textContent; btn.textContent='여는 중…';
   try{
-    const pr=await(await fetch('/api/billing/portone/billing-key/params')).json();
-    if(!pr.success){ notify(pr.error||'카드 등록을 시작하지 못했습니다.','error'); return; }
-    const resp=await window.PortOne.requestIssueBillingKey(Object.assign({},pr.data,{
-      redirectUrl:location.origin+'/billing'   // 모바일 리다이렉트 복귀
-    }));
-    // requestPayment와 같은 규약: code가 있으면 실패/취소
-    if(resp&&resp.code!=null){ notify(resp.message||'카드 등록이 취소되었습니다.','error'); return; }
-    const save=await(await fetch('/api/billing/portone/billing-key',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({billingKey:resp&&resp.billingKey})
-    })).json();
-    if(!save.success){ notify(save.error||'카드 저장에 실패했습니다.','error'); return; }
-    notify('카드가 등록되었습니다.');
-    renderCard(save.data);
+    if(await registerCardInline()) notify('카드가 등록되었습니다.');
   }catch(e){ notify('카드 등록 중 오류가 발생했습니다.','error'); }
   finally{ btn.disabled=false; btn.textContent=orig; }
 }
@@ -434,6 +514,11 @@ function syncBillingPricing(){
       ci.innerHTML=(KO?('매달 '+P.fmt(e.cr)+' 크레딧'):(P.fmt(e.cr)+' credits / month'))+(pct>0?(' <em class="bpct">+'+pct+'%</em>'):'');
     }
   });
+  // 🔒 구독 섹션은 플래그가 켜졌을 때만 노출(PG 심사 중에는 꺼둔다).
+  //   서버 /api/pricing 값이 진실원본 — 임베드 폴백은 항상 false라 하이드레이트 전엔 숨어 있다.
+  const subs=document.getElementById('subsSection');
+  if(subs) subs.style.display = P.subscriptionsForSale ? '' : 'none';
+
   const pk=document.getElementById('packsGrid');
   // 🔒 KRW는 PG 심사 요건상 1회 충전 한도 미만 팩만 노출.
   //   pricing.js가 캐시로 낡아 sellablePacks()가 없을 수 있다(정적 자산 max-age 4시간) —
@@ -567,23 +652,64 @@ async function loadSubscription(){
       setTxt('planName',sub.planName);
       // 구독: renewsAt=다음 결제 예정일. 백엔드 정기결제 연동 시 매월 자동갱신.
       if(sub.renewsAt) setTxt('planNote','Renews '+new Date(sub.renewsAt).toLocaleDateString()+' · cancel anytime');
+      // 정기결제 진행 중일 때만 해지 화면을 노출한다(선불 기간권은 해지할 청구가 없다).
+      const bk=await(await fetch('/api/billing/portone/billing-key')).json().catch(function(){return{};});
+      if(bk&&bk.success&&bk.data){
+        document.getElementById('manageLabel').style.display='';
+        document.getElementById('manageRow').style.display='';
+        if(sub.renewsAt) setTxt('cancelUntil','다음 결제 예정일: '+new Date(sub.renewsAt).toLocaleDateString()+'.');
+      }
     } else {
       setTxt('planLabel',''); // 활성 패스 없음 → 라벨 없이 "Pay as you go"
     }
     markCurrentPlan(sub.plan||'free');
   }catch(e){console.error(e);}
 }
+/**
+ * 구독하기 — 빌링키 정기결제.
+ *   카드가 없으면 먼저 등록 결제창(requestIssueBillingKey)을 띄우고,
+ *   등록이 끝나면 서버가 첫 달을 청구하고 플랜을 활성화한다. 이후 청구는 서버 스케줄러가 한다.
+ */
 async function upgradeToPro(btn){
-  btn.disabled=true;const orig=btn.textContent;btn.textContent='…';
+  const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
+  // PG 자동결제 계약 전이면 여기서 끝낸다 — 내려가면 PortOne이 못 닫는 에러창을 띄운다.
+  if(!(PORTONE&&PORTONE.billingAvailable)){
+    notify('정기결제는 준비 중입니다. 자동결제 심사 승인 후 열립니다.','error'); return;
+  }
+  btn.disabled=true;const orig=btn.textContent;
   try{
-    const plan=btn.closest('.plan-card')?.getAttribute('data-plan')||'pro';
-    const res=await fetch('/api/subscription/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,months:3})}); // ⚠️ 레거시 기간권 계약. 자동갱신 구독 전환 시 개발자가 정기결제 엔드포인트로 교체(설계: docs/원화_빌링키_정기결제_설계).
+    // 1) 결제수단 확인 — 없으면 카드 등록(빌링 결제창)부터
+    btn.textContent='카드 확인…';
+    const cardRes=await(await fetch('/api/billing/portone/billing-key')).json();
+    if(!(cardRes.success&&cardRes.data)){
+      btn.textContent='카드 등록…';
+      const registered=await registerCardInline();
+      if(!registered) return;            // 사용자가 취소했거나 실패 — 안내는 안에서 이미 띄웠다
+    }
+    // 2) 첫 달 청구 + 플랜 활성화(서버가 금액을 정한다 — 클라 금액은 보내지 않는다)
+    btn.textContent='결제 중…';
+    const res=await fetch('/api/subscription/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
     const d=await res.json();
-    if(d.success){ notify('Subscription activated!'); loadSubscription();loadBalance(); }
-    else if(d.comingSoon){ notify('Subscriptions are coming soon — they activate once payment review passes.'); }
-    else notify(d.error||'Purchase failed.','error');
-  }catch(e){ notify('Payment connection failed.','error'); }
+    if(d.success){
+      notify('구독이 시작되었습니다.');
+      loadSubscription(); loadBalance(); loadCard();
+    } else notify(d.error||'구독에 실패했습니다.','error');
+  }catch(e){ notify('결제 연결에 실패했습니다.','error'); }
   finally{ btn.disabled=false;btn.textContent=orig; }
+}
+
+/** 카드 등록 결제창을 띄우고 저장까지. 성공하면 true. (구독 흐름 안에서 재사용) */
+async function registerCardInline(){
+  if(!(PORTONE&&PORTONE.billingAvailable)){ notify('정기결제는 준비 중입니다. 자동결제 심사 승인 후 열립니다.','error'); return false; }
+  if(!window.PortOne){ notify('결제 모듈을 불러오지 못했습니다. 광고 차단을 끄고 새로고침해 주세요.','error'); return false; }
+  const pr=await(await fetch('/api/billing/portone/billing-key/params')).json();
+  if(!pr.success){ notify(pr.error||'카드 등록을 시작하지 못했습니다.','error'); return false; }
+  const resp=await window.PortOne.requestIssueBillingKey(Object.assign({},pr.data,{redirectUrl:location.origin+'/billing'}));
+  if(resp&&resp.code!=null){ notify(resp.message||'카드 등록이 취소되었습니다.','error'); return false; }
+  const save=await(await fetch('/api/billing/portone/billing-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({billingKey:resp&&resp.billingKey})})).json();
+  if(!save.success){ notify(save.error||'카드 저장에 실패했습니다.','error'); return false; }
+  renderCard(save.data);
+  return true;
 }
 
 // 결제 완료 복귀 (?purchased=packXX)

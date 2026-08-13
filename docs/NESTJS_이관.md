@@ -186,12 +186,17 @@ kill %1
 
 | 브랜치 | 환경 | PM2 앱 | 실행 | 포트 | DB | 클론 |
 |---|---|---|---|---|---|---|
-| `main` | prod | `heyhoai` | `src/index.js` (레거시) | 3000 | 현행 | `~/HeyHoAI` |
-| `staging` | stg | `heyhoai-staging` | `src/index.js` (레거시) | 3001 | `doppia_staging` | `~/HeyHoAI-staging` |
+| `main` | prod | `heyhoai` | **`dist/main.js` (NestJS)** | 3000 | 현행 | `~/HeyHoAI` |
+| `staging` | stg | `heyhoai-staging` | **`dist/main.js` (NestJS)** | 3001 | `doppia_staging` | `~/HeyHoAI-staging` |
 | `develop` | dev | `heyhoai-dev` | **`dist/main.js` (NestJS)** | 3002 | `doppia_dev` | `~/HeyHoAI-dev` |
 
-- **Nest로 도는 것은 dev 하나뿐** — staging/prod는 코드·DB 모두 무영향.
-- 배포: `npm run deploy:dev` (= `git pull` → `npm ci` → **`npm run build`(tsc)** → `migrate` → `pm2 restart heyhoai-dev`)
+- **2026-08-14: 세 환경 모두 NestJS로 전환.** dev에서 2026-08-07~14 검증 후 확대.
+- 배포: `npm run deploy[:staging|:dev]` (= `git pull` → `npm ci` → **`npm run build`(tsc)** → `migrate` → pm2 재시작)
+  - 빌드는 이제 **전 환경**에서 돈다. `dist/`는 `.gitignore`라 `git pull`로 따라오지 않으므로
+    빌드를 건너뛰면 pm2가 없는 파일을 실행한다.
+  - `deploy.sh`가 pm2에 등록된 script 경로를 확인해 바뀌었으면 `delete` 후 `start` 한다
+    (`pm2 restart`는 등록 당시 경로를 유지해서 전환이 반영되지 않는다 — 함정 #실제로 겪음).
+- 포트 폴백: `PORT`가 비면 NODE_ENV별 기본값(prod 3000 · stg 3001 · dev 3002). 실제 포트는 `.env.<NODE_ENV>`가 결정.
 - 부팅 확인: `grep -a "strangler" ~/.pm2/logs/heyhoai-dev-out.log | tail -3`
   또는 `curl -s -o /dev/null -w '%{http_code}' localhost:3002/api/pricing`(200=Nest) · `/health`(200=레거시 폴백)
 
@@ -358,7 +363,7 @@ node scripts/nest_port_progress.js --list   # 남은 항목 파일별로
 
 ## 11. 남은 과제
 
-1. dev에서 충분히 검증 후 staging/prod도 `dist/main.js` 로 전환(ecosystem·deploy.sh)
+1. ~~staging/prod 전환~~ ✅ 2026-08-14 완료
 2. 위임형(B) 4개 도메인을 순수 데이터 핸들러부터 서비스 추출형(A)으로 전환
 3. DTO + class-validator 도입(현재는 레거시 zod 스키마 재사용)
 
