@@ -34,25 +34,54 @@ export class SubscriptionController {
     return { success: true, data: await this.subscription.getSubscription(req.user, Date.now()) };
   }
 
+  // ── 정기결제(구독) ──
+  //   결제창은 카드 등록(빌링키 발급) 때 한 번 뜨고, 이후 청구는 서버가 직접 한다.
+  //   흐름: [카드 등록 = /api/billing/portone/billing-key] → subscribe → 매월 스케줄러 재청구
+
+  /** GET /api/subscription/billing — 진행 중인 구독(카드 브랜드·끝4자리 포함). 없으면 data:null */
+  @Get('billing')
+  async billing(@Req() req: any) {
+    return { success: true, data: await this.subscription.subscription(req.user.id) };
+  }
+
+  /** POST /api/subscription/subscribe { plan } — 등록 카드로 첫 달 청구 + 플랜 활성화 */
+  @Post('subscribe')
+  @HttpCode(200)
+  async subscribe(@Req() req: any, @Body() body: any) {
+    try {
+      return { success: true, data: await this.subscription.subscribe(req.user, body && body.plan) };
+    } catch (err: any) {
+      if (err && err.statusCode) throw new HttpException({ success: false, error: err.message }, err.statusCode);
+      throw err;
+    }
+  }
+
+  /** POST /api/subscription/cancel — 기말 해지(이미 낸 기간은 그대로 사용) */
+  @Post('cancel')
+  @HttpCode(200)
+  async cancel(@Req() req: any) {
+    try {
+      return { success: true, data: await this.subscription.cancelSubscription(req.user.id) };
+    } catch (err: any) {
+      if (err && err.statusCode) throw new HttpException({ success: false, error: err.message }, err.statusCode);
+      throw err;
+    }
+  }
+
   /**
    * POST /api/subscription/upgrade { plan, months }
-   * ⚠️ 구독 결제 미연동. 실제 과금 플로우는 Eximbay 구독상품 심사 통과 후
-   *    결제 성공 webhook에서 activatePlan(...)을 호출하도록 연결 예정.
-   * 현재는 운영/테스트(admin)만 결제 없이 플랜을 활성화할 수 있다.
+   * 기간권(선불) 수동 활성화 — **결제 없이** 플랜을 부여하므로 admin 전용으로 남긴다.
+   * 일반 사용자의 유료 구독은 위 `subscribe`(빌링키 정기결제)를 쓴다.
    */
   @Post('upgrade')
   @HttpCode(200)
   async upgrade(@Req() req: any, @Body() body: UpgradePlanDto): Promise<ApiResponse<ActivatePlanResultDto>> {
     const { plan = 'pro', months = 3 } = body || {};
     if (req.user.role !== 'admin') {
-      // 레거시와 동일한 501 + comingSoon 페이로드(프론트가 이 플래그로 안내 문구를 띄움).
+      // 결제 없는 플랜 부여라 일반 사용자에게 열어줄 수 없다. 유료 경로는 subscribe로 안내한다.
       throw new HttpException(
-        {
-          success: false,
-          error: '이용권 결제는 곧 오픈됩니다. (가맹점 심사 대기 중)',
-          comingSoon: true,
-        },
-        501,
+        { success: false, error: '구독은 결제수단 등록 후 이용해주세요.', useSubscribe: true },
+        403,
       );
     }
     try {

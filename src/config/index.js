@@ -164,6 +164,9 @@ const envSchema = z.object({
   // 심사 대기 등으로 PortOne을 임시로 끄고 싶을 때(키는 보존). false/0/off면 configured()=false
   // → buyPack 폴백이 Eximbay·Lemon Squeezy로 넘어감. 승인되면 이 값만 지우면 원복.
   PORTONE_ENABLED: z.string().optional(),
+  // 구독 정기청구 스케줄러 옵트인('on'일 때만 기동). ⚠️ 실청구가 발생하므로 켜는 환경은 한 곳뿐이어야 한다.
+  //   ⚠️ 여기 선언하지 않으면 zod가 걸러내 env에서 사라진다 — "켰는데 안 켜지는" 조용한 실패가 된다.
+  BILLING_SCHEDULER: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);
