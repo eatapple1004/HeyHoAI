@@ -41,7 +41,13 @@
     ],
     // 신규 24h 첫 결제 할인율(%)
     firstMonthOff: 50,
-    // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
+    // 🔒 국내(KRW) 1회 충전 한도 — PG 심사 요건(토스페이먼츠, 포인트충전 업종: 10만원 미만).
+    //   가격 정책이 아니라 규제값이다. 서버 pricing.config.js와 반드시 같은 값을 유지할 것.
+    krwOneTimeChargeLimit: 100000,
+    // 구독 판매 여부 — 서버(/api/pricing)가 환경 값으로 덮어쓴다. 기본 켜짐.
+    //   급히 내릴 땐 서버에서 SUBSCRIPTIONS_FOR_SALE=false (코드 수정 없이 즉시 차단).
+    subscriptionsForSale: true,
+    // 통화·PG: KRW=국내(토스페이먼츠, 포트원 연동), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
     currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
     // 확정가 — 실원가 재검증(2026-07-06, docs/생성원가_마진_분석). 커스텀 2~3배/템플릿 4~6배 + 크레딧 30배. 서버(/api/pricing)가 동일값으로 덮어씀.
     estimated: false,
@@ -56,7 +62,7 @@
     }
   };
 
-  // ── 통화(currency): 표시통화 = 결제통화 = PG. KRW→국내(NHN KCP), USD→해외(Eximbay). ──
+  // ── 통화(currency): 표시통화 = 결제통화 = PG. KRW→국내(토스페이먼츠, 포트원 연동), USD→해외(Eximbay). ──
   //   기본값 = 지역 자동감지 프록시(저장 언어 ko 또는 브라우저 언어 ko → KRW, 그 외 USD). doppia_currency로 독립 오버라이드.
   var CUR_KEY = 'doppia_currency';
   function detectCurrency() {
@@ -74,7 +80,7 @@
   //      개시가 지연되면 이 문구가 라이브 거짓이 되므로 런칭 전 반드시 재확인할 것.
   //   소비처: pricing.js:101(data-price) · billing.html:308 — 한 소스라 양쪽이 함께 움직인다.
   var CUR_META = {
-    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: 'NHN KCP', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
+    KRW: { code: 'KRW', symbol: '₩', per: ' /월', pg: '토스페이먼츠', tax: 'VAT 포함', note: 'VAT 포함 · 매월 자동결제 · 언제든 해지' },
     USD: { code: 'USD', symbol: '$', per: ' /mo', pg: 'Eximbay', tax: 'VAT excl.', note: 'VAT excl. · billed monthly · cancel anytime' }
   };
   PRICING.getCurrency = function () { return CURRENCY; };
@@ -87,6 +93,19 @@
   // 현재 통화 금액 포맷 문자열(기호 포함). "₩31,000" | "$19".
   PRICING.priceOf = function (o, annual) {
     return CUR_META[CURRENCY].symbol + PRICING.fmt(PRICING.amount(o, annual));
+  };
+  /**
+   * 🔒 현재 통화로 **판매 가능한** 크레딧 팩만 돌려준다.
+   *   KRW는 PG 심사 요건상 1회 충전 한도(krwOneTimeChargeLimit) 미만만 판매할 수 있다.
+   *   USD(해외 PG)는 이 규제 대상이 아니라 전량 그대로 노출한다.
+   *   ⚠️ 팩을 그리는 화면은 PRICING.packs 대신 **이 함수**를 써야 한다 —
+   *      화면마다 조건을 각자 쓰면 한 곳을 빠뜨렸을 때 심사가 다시 반려된다.
+   */
+  PRICING.sellablePacks = function () {
+    var list = PRICING.packs || [];
+    if (CURRENCY !== 'KRW') return list;
+    var limit = PRICING.krwOneTimeChargeLimit || Infinity;
+    return list.filter(function (p) { return Number(p.priceKRW) < limit; });
   };
   PRICING.setCurrency = function (c) {
     if (c !== 'KRW' && c !== 'USD') c = 'USD';
@@ -129,6 +148,9 @@
         if (s.team) PRICING.team = s.team;
         if (s.currency) PRICING.currency = s.currency;
         if (typeof s.firstMonthOff === 'number') PRICING.firstMonthOff = s.firstMonthOff;
+        // 규제값이라 서버가 진실원본 — 임베드 폴백이 낡아도 서버 값이 이긴다.
+        if (typeof s.krwOneTimeChargeLimit === 'number') PRICING.krwOneTimeChargeLimit = s.krwOneTimeChargeLimit;
+        if (typeof s.subscriptionsForSale === 'boolean') PRICING.subscriptionsForSale = s.subscriptionsForSale;
         if (typeof s.estimated === 'boolean') PRICING.estimated = s.estimated;
         applyDP();
       })

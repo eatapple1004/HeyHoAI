@@ -167,7 +167,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 /**
  * POST /api/generate
  */
-router.post('/', upload.array('referenceImages', 14), async (req, res, next) => {
+const postRootHandler = async (req, res, next) => {
   try {
     let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
     // enhance 토글(기본 ON): OFF면 인물 정체성 고정 프리픽스를 빼고 사용자 프롬프트 원문 그대로 생성(완전 raw)
@@ -665,12 +665,12 @@ router.post('/', upload.array('referenceImages', 14), async (req, res, next) => 
   } catch (err) {
     next(err);
   }
-});
+};
 
 // ─── 캡션 + 해시태그 생성 (Claude, 다국어) ───
 const CAPTION_LANGS = { en: 'English', ko: 'Korean', ja: 'Japanese', es: 'Spanish', pt: 'Portuguese', zh: 'Chinese' };
 
-router.post('/caption', async (req, res, next) => {
+const postCaptionHandler = async (req, res, next) => {
   const creditService = require('../credits/credit.service');
   let charge = null;
   try {
@@ -720,10 +720,10 @@ router.post('/caption', async (req, res, next) => {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // ─── 프롬프트 Enhance (Claude 확장, Custom 애드온) ───
-router.post('/enhance', async (req, res, next) => {
+const postEnhanceHandler = async (req, res, next) => {
   const creditService = require('../credits/credit.service');
   let charge = null;
   try {
@@ -749,74 +749,27 @@ router.post('/enhance', async (req, res, next) => {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // ─── 툴 카탈로그 (툴별 폼 스키마 정본 — 스튜디오가 폼을 동적 렌더) ───
 // 노출 = 레지스트리 enabled 큐레이션(단일 정본). 이미지·비디오 동일 규칙.
 //   비디오 = enabled 툴만(현재 kling). 프론트는 카탈로그에 비디오가 있으면 Image/Video 타입 선택 노출.
-router.get('/tools', (_req, res) => {
-  const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
-  res.json({
-    success: true,
-    data: {
-      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
-      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
-    },
-  });
-});
+const getToolsHandler = (_req, res, next) => sendRead(res, next, () => reads.tools());
 
 // ─── 스타일 프리셋 목록 ───
-router.get('/styles', async (_req, res, next) => {
-  try {
-    const data = await styleRepo.findAll();
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-});
+const getStylesHandler = (_req, res, next) => sendRead(res, next, () => reads.styles());
 
 // ─── 프롬프트 목록 ───
-router.get('/prompts', async (req, res, next) => {
-  try {
-    const { limit, offset } = req.query;
-    const teamId = await teamCredit.activeTeamId(req.user.id);
-    const data = await promptRepo.findAll({
-      userId: teamId ? undefined : req.user.id,
-      teamId,
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
-    });
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-});
+const getPromptsHandler = (req, res, next) => sendRead(res, next, () => reads.prompts(req.user.id, req.query));
 
 // ─── 프롬프트 상세 + 결과물 ───
-router.get('/prompts/:idx', async (req, res, next) => {
-  try {
-    const prompt = await promptRepo.findByIdx(req.params.idx);
-    if (!prompt) return res.status(404).json({ success: false, error: 'Prompt not found' });
-    await assertPromptOwned(prompt.idx, req.user.id);
-    const results = await resultRepo.findByPromptIdx(prompt.idx);
-    res.json({ success: true, data: { prompt, results } });
-  } catch (err) { next(err); }
-});
+const getPrompts2Handler = (req, res, next) => sendRead(res, next, () => reads.promptDetail(req.user.id, req.params.idx));
 
 // ─── 결과물 목록 ───
-router.get('/results', async (req, res, next) => {
-  try {
-    const { limit, offset, type } = req.query;
-    const teamId = await teamCredit.activeTeamId(req.user.id);
-    const data = await resultRepo.findAll({
-      userId: teamId ? undefined : req.user.id,
-      teamId,
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
-      type: (type === 'reel' || type === 'photo') ? type : undefined,
-    });
-    res.json({ success: true, data });
-  } catch (err) { next(err); }
-});
+const getResultsHandler = (req, res, next) => sendRead(res, next, () => reads.results(req.user.id, req.query));
 
 // ─── 커뮤니티 피드(Explore): 모든 유저의 공개 결과물 (자동공개) ───
-router.get('/community', async (req, res, next) => {
+const getCommunityHandler = async (req, res, next) => {
   try {
     const { limit, offset } = req.query;
     const data = await resultRepo.findCommunity({
@@ -842,10 +795,10 @@ router.get('/community', async (req, res, next) => {
     }));
     res.json({ success: true, data: items });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 내 결과물 공개/비공개 토글 (My creations에서 항목별 공개·재공개) ───
-router.patch('/results/:idx/visibility', async (req, res, next) => {
+const patchResultsVisibilityHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
@@ -875,20 +828,20 @@ router.patch('/results/:idx/visibility', async (req, res, next) => {
     }
     res.json({ success: true, data: updated });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 공개 결과물 신고 → 누적 시 자동 테이크다운 ───
-router.post('/results/:idx/report', async (req, res, next) => {
+const postResultsReportHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
     const out = await resultRepo.report(idx, req.user.id, (req.body && req.body.reason) || 'other');
     res.json({ success: true, data: out });
   } catch (err) { next(err); }
-});
+};
 
 // ─── creation 좋아요 토글 (Explore 피드) — POST=좋아요 / DELETE=취소, 멱등 ───
-router.post('/results/:idx/like', async (req, res, next) => {
+const postResultsLikeHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
@@ -896,18 +849,18 @@ router.post('/results/:idx/like', async (req, res, next) => {
     if (!out.found) return res.status(404).json({ success: false, error: 'creation not available' });
     res.json({ success: true, data: { liked: out.liked, likes: out.likes } });
   } catch (err) { next(err); }
-});
-router.delete('/results/:idx/like', async (req, res, next) => {
+};
+const deleteResultsLikeHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
     const out = await resultRepo.toggleLike(idx, req.user.id, false); // 취소는 멱등 no-op 허용
     res.json({ success: true, data: { liked: out.liked, likes: out.likes } });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 단일 creation 상세 (공개 또는 본인) — creation.html ───
-router.get('/creations/:idx', async (req, res, next) => {
+const getCreationsHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
@@ -972,12 +925,12 @@ router.get('/creations/:idx', async (req, res, next) => {
       createdAt: r.created_at,
     } });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 폴백: 연결 템플릿이 없는 내 creation을 즉석 민팅+보유 추가 ───
 //   relTemplate=null 케이스 전부 커버(γ template_source='creation'·배포 전 legacy·자동민팅 실패·auto 템플릿 삭제 후).
 //   auto 템플릿 멱등 민팅(없으면 생성, 있으면 재사용) → template_owns INSERT → templateId 반환(프론트는 /gallery?tpl=로 이동).
-router.post('/creations/:idx/add-to-my-templates', async (req, res, next) => {
+const postCreationsAddToMyTemplatesHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid result id' });
@@ -1006,11 +959,11 @@ router.post('/creations/:idx/add-to-my-templates', async (req, res, next) => {
     }
     res.json({ success: true, data: { templateId: tid } });
   } catch (err) { next(err); }
-});
+};
 
 // ─── creation(생성물) 삭제 — Studio 피드·Library My creations에서 제거(같은 generation_results 행). ───
 //   승격/추가된 템플릿(marketplace_templates.from_creation_idx)은 **영향 없음**: FK 없어 안 지워지고, 템플릿 미리보기가 같은 이미지 파일을 참조하므로 파일도 남김(행만 삭제).
-router.delete('/creations/:idx', async (req, res, next) => {
+const deleteCreationsHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
     if (!idx) return res.status(400).json({ success: false, error: 'invalid creation id' });
@@ -1022,25 +975,13 @@ router.delete('/creations/:idx', async (req, res, next) => {
     await query('DELETE FROM generation_results WHERE idx = $1', [idx]);
     res.json({ success: true, data: { idx } });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 크리에이터 Overview(γ 넛지): 총 좋아요 + 미등록 인기 creation Top ───
-router.get('/creator-overview', async (req, res, next) => {
-  try {
-    const d = await resultRepo.creatorLikeOverview(req.user.id);
-    res.json({ success: true, data: {
-      totalLikes: d.totalLikes,
-      topLikable: d.topLikable.map((r) => ({
-        idx: r.idx,
-        url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
-        likes: r.likes_count || 0,
-      })),
-    } });
-  } catch (err) { next(err); }
-});
+const getCreatorOverviewHandler = (req, res, next) => sendRead(res, next, () => reads.creatorOverview(req.user.id));
 
 // ─── 리뷰 목록 ───
-router.get('/reviews', async (req, res, next) => {
+const getReviewsHandler = async (req, res, next) => {
   try {
     const { posted, status, type, reviewed, sort, limit, offset } = req.query;
     const data = await reviewRepo.findAll({
@@ -1055,10 +996,10 @@ router.get('/reviews', async (req, res, next) => {
     });
     res.json({ success: true, data });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 리뷰 수정 ───
-router.patch('/reviews/:idx', async (req, res, next) => {
+const patchReviewsHandler = async (req, res, next) => {
   try {
     await assertReviewOwned(parseInt(req.params.idx), req.user.id);
     const { naturalScore, sexualScore, postRate, posted, hookLevel, memo } = req.body;
@@ -1068,23 +1009,23 @@ router.patch('/reviews/:idx', async (req, res, next) => {
     if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
     res.json({ success: true, data: review });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 리뷰 삭제 (soft delete) ───
-router.delete('/reviews/:idx', async (req, res, next) => {
+const deleteReviewsHandler = async (req, res, next) => {
   try {
     await assertReviewOwned(parseInt(req.params.idx), req.user.id);
     const review = await reviewRepo.deactivate(parseInt(req.params.idx));
     if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
     res.json({ success: true, data: review });
   } catch (err) { next(err); }
-});
+};
 
 // ─── 비동기 릴스 생성 (제출 → jobId, 백그라운드 폴링) ───
 // Cloudflare 100초 타임아웃 회피용. 스튜디오/갤러리가 이 경로를 사용.
 const videoJobService = require('./videoJob.service');
 
-router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }]), async (req, res, next) => {
+const postVideoAsyncHandler = async (req, res, next) => {
   try {
     const { prompt, duration = '5', mode = 'std', aspectRatio, audio } = req.body;
     // 자동공개(P2): 이미지 경로와 동일 — Private Mode 끄면(기본) 공개 + 출처 템플릿 attribution.
@@ -1105,37 +1046,15 @@ router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 },
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // (2026-07-30) 진행 중 릴 목록 — 스튜디오 '내 크리에이션' 재연결용(ugc /jobs 와 같은 목적).
-router.get('/video/jobs', async (req, res, next) => {
-  try {
-    const rows = await videoJobService.listActiveJobs(req.user.id);
-    res.json({ success: true, data: rows });
-  } catch (err) { next(err); }
-});
+const getVideoJobsHandler = (req, res, next) => sendRead(res, next, () => reads.videoJobs(req.user.id));
 
-router.get('/video/jobs/:id', async (req, res, next) => {
-  try {
-    const job = await videoJobService.getJob(req.params.id, req.user.id);
-    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({
-      success: true,
-      // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
-      //   상세(/creation)가 아니라 뷰어 라이트박스로 열렸다(faceswap 응답은 이미 노출하고 있었다).
-      data: { status: job.status, url: job.result_url, resultIdx: job.result_idx || null, error: job.error, duration: job.duration },
-    });
-  } catch (err) { next(err); }
-});
+const getVideoJobs2Handler = (req, res, next) => sendRead(res, next, () => reads.videoJob(req.user.id, req.params.id));
 
 // On Model faceswap(stage-2) 잡 상태 — FE 폴링용. 워커가 스왑 완료하면 status=succeeded + result_url.
-router.get('/faceswap/jobs/:id', async (req, res, next) => {
-  try {
-    const job = await faceswapRepo.findById(req.params.id);
-    if (!job || job.user_id !== req.user.id) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({ success: true, data: { status: job.status, url: job.result_url, resultIdx: job.result_idx, error: job.error } });
-  } catch (err) { next(err); }
-});
+const getFaceswapJobsHandler = (req, res, next) => sendRead(res, next, () => reads.faceswapJob(req.user.id, req.params.id));
 
 // ─── UGC 영상 엔진 (제품+컨셉 → 화보/광고 릴) ───
 //   2단계: /ugc/script(무료 대본 미리보기) → /ugc/render(검토 후 과금+렌더). 잡=ugc_jobs 테이블.
@@ -1170,7 +1089,7 @@ function saveProductImages(req) {
 }
 
 // 1단계: 대본만(무료·미리보기). 과금·렌더 없음. 유저 검토용.
-router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
+const postUgcScriptHandler = async (req, res, next) => {
   try {
     const { product, concept, outputType, details, voiceover, category, sceneCount, sceneDuration, language, modelImage, durationSec, scenePlan } = req.body || {};
     // 🧍 선택 모델의 메타 — 대본이 "누가 나오는지"를 알아야 나이에 맞게 쓴다(아동 로스터 선택 시 특히).
@@ -1209,10 +1128,10 @@ router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // 생성 전 대본 편집: 한 씬을 자연어로 수정 → Claude가 이미지(brollPrompt)/모션(direction) 라우팅 + 사람용 요약(summary) 갱신. 무과금.
-router.post('/ugc/refine-scene', async (req, res, next) => {
+const postUgcRefineSceneHandler = async (req, res, next) => {
   try {
     const b = req.body || {};
     const { refineScene } = require('../ugc/ugcScript.service');
@@ -1222,10 +1141,10 @@ router.post('/ugc/refine-scene', async (req, res, next) => {
     });
     res.json({ success: true, ...r });
   } catch (err) { next(err); }
-});
+};
 
 // 씬 추가 — AI가 다음 씬 후보 N개(기본 4)를 사람용 설명으로 제안. 유저는 summary만 보고 선택. 무과금.
-router.post('/ugc/suggest-scenes', async (req, res, next) => {
+const postUgcSuggestScenesHandler = async (req, res, next) => {
   try {
     const b = req.body || {};
     const { suggestScenes } = require('../ugc/ugcScript.service');
@@ -1234,10 +1153,10 @@ router.post('/ugc/suggest-scenes', async (req, res, next) => {
     const r = await suggestScenes({ script, outputType: b.outputType || 'product-ad', count: 4 });
     res.json({ success: true, scenes: r });
   } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
-});
+};
 
 // (선택) 제품 사진 → AI 컨셉 제안. 컨셉 쓰기 귀찮은 유저용. 무과금.
-router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
+const postUgcSuggestConceptHandler = async (req, res, next) => {
   try {
     // 동일 제품 다각도 전부를 본다(대본 라우트와 같은 규약) — 전엔 [0]만 읽어서 대본은 다각도를 다 보는데
     //   컨셉만 앞면 하나로 썼고, **나머지 업로드 임시파일이 안 지워지고 남았다**(unlink도 [0]만 했다).
@@ -1255,10 +1174,10 @@ router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCo
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
-router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
+const postUgcRenderHandler = async (req, res, next) => {
   try {
     const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect, quality } = req.body || {};
     let script;
@@ -1291,10 +1210,10 @@ router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // 원샷(하위호환): 대본+렌더 한방
-router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), async (req, res, next) => {
+const postUgcAsyncHandler = async (req, res, next) => {
   try {
     const { product, concept, outputType, referenceImagePath, dryRun } = req.body || {};
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
@@ -1316,45 +1235,22 @@ router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_M
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // 진행 중인 내 Ad Video 잡 목록 — 새로고침·이탈 후 클라이언트가 다시 붙기 위한 유일한 통로.
 // (반드시 '/ugc/jobs/:id' 보다 위에 둘 것 — 아래면 'jobs'가 :id로 먹힌다)
-router.get('/ugc/jobs', async (req, res, next) => {
-  try {
-    // data = 렌더 중 / pending = 완성됐지만 미저장(draft). 레일 배지 = 둘의 합 = "나를 기다리는 것".
-    // editable = 저장됐고 대본이 있어 되불러 편집 가능한 result_idx들(피드 [Edit] 노출 판단).
-    const [rows, pending, editable] = await Promise.all([
-      ugcVideoService.listActiveJobs(req.user.id),
-      ugcVideoService.listPendingReview(req.user.id),
-      ugcVideoService.listEditableResultIdxs(req.user.id),
-    ]);
-    res.json({ success: true, data: rows, pending, editable });
-  } catch (err) { next(err); }
-});
+const getUgcJobsHandler = (req, res, next) => sendRead(res, next, () => reads.ugcJobs(req.user.id), (o) => ({ success: true, ...o }));
 
 // 저장된 결과로 잡 되찾기 — 피드 카드([Edit])가 아는 열쇠는 result_idx 하나뿐.
 //   ':id'는 한 세그먼트만 먹으므로 경로가 겹치지 않지만, 읽는 순서를 위해 위에 둔다.
-router.get('/ugc/jobs/by-result/:idx', async (req, res, next) => {
-  try {
-    const job = await ugcVideoService.getJobByResultIdx(req.params.idx, req.user.id);
-    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({ success: true, data: job });
-  } catch (err) { next(err); }
-});
+const getUgcJobsByResultHandler = (req, res, next) => sendRead(res, next, () => reads.ugcJobByResult(req.user.id, req.params.idx));
 
-router.get('/ugc/jobs/:id', async (req, res, next) => {
-  try {
-    const job = await ugcVideoService.getJob(req.params.id, req.user.id);
-    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-    res.json({ success: true, data: job });
-  } catch (err) { next(err); }
-});
+const getUgcJobs2Handler = (req, res, next) => sendRead(res, next, () => reads.ugcJob(req.user.id, req.params.id));
 
 // Save & finish / 이탈 시 자동 — draft를 갤러리·Explore에 확정 저장(멱등). sendBeacon도 이 라우트 사용.
 //   D: 본문에 미굽힌 편집(order/removed/edits/setVersions)이 있으면 그 상태로 먼저 굽고(무과금) 커밋
 //      → C의 클라이언트 즉시 편집 후 이탈해도 최종본이 현재 상태와 일치(sendBeacon JSON blob).
-router.post('/ugc/jobs/:id/commit', async (req, res, next) => {
+const postUgcJobsCommitHandler = async (req, res, next) => {
   try {
     const b = req.body || {};
     const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
@@ -1367,10 +1263,10 @@ router.post('/ugc/jobs/:id/commit', async (req, res, next) => {
     if (!r) return res.status(404).json({ success: false, error: 'Job not found or not ready' });
     res.json({ success: true, resultIdx: r.resultIdx, already: !!r.already });
   } catch (err) { next(err); }
-});
+};
 
 // 무과금 편집: 저장된 씬 클립을 재사용해 재배치·삭제·자막수정을 반영(재조립). Kling/이미지 재호출 0 → 크레딧 미과금.
-router.post('/ugc/re-render', async (req, res, next) => {
+const postUgcReRenderHandler = async (req, res, next) => {
   try {
     const b = req.body || {};
     const parseArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } } return []; };
@@ -1416,10 +1312,10 @@ router.post('/ugc/re-render', async (req, res, next) => {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // (선택) 보이스·속도 미리듣기 — 짧은 샘플 TTS(mp3 스트림). 렌더 전 오디션용. Doppia 크레딧 미과금.
-router.get('/ugc/voice-preview', async (req, res, next) => {
+const getUgcVoicePreviewHandler = async (req, res, next) => {
   try {
     const tts = require('../ugc/audio/tts.service');
     if (!tts.isConfigured()) return res.status(400).json({ success: false, error: 'TTS not configured' });
@@ -1438,10 +1334,10 @@ router.get('/ugc/voice-preview', async (req, res, next) => {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
     next(err);
   }
-});
+};
 
 // ─── 비디오 생성 (Kling V3) — 동기 (운영툴/오디오용, 기존 유지) ───
-router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), async (req, res, next) => {
+const postVideoHandler = async (req, res, next) => {
   const vlog = logger('Video');
   const alog = logger('Audio');
   const creditService = require('../credits/credit.service');
@@ -1799,7 +1695,7 @@ router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { nam
       source: 'server',
     });
   }
-});
+};
 
 // ─── BGM 관리 ───
 const bgmDir = path.join(process.cwd(), 'tmp', 'bgm');
@@ -1813,31 +1709,21 @@ const bgmUpload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-router.post('/bgm/upload', bgmUpload.single('file'), (req, res) => {
+const postBgmUploadHandler = (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, error: 'File required' });
   res.json({ success: true, data: { filename: req.file.filename, url: `/bgm/${req.file.filename}` } });
-});
+};
 
-router.get('/bgm/list', (_req, res) => {
-  if (!fs.existsSync(bgmDir)) return res.json({ success: true, data: [] });
-  const files = fs.readdirSync(bgmDir)
-    .filter(f => /\.(mp3|wav|m4a|ogg|aac)$/i.test(f))
-    .map(f => {
-      const stat = fs.statSync(path.join(bgmDir, f));
-      return { filename: f, url: `/bgm/${f}`, size: Math.round(stat.size / 1024) + 'KB', createdAt: stat.mtime.toISOString() };
-    })
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.json({ success: true, data: files });
-});
+const getBgmListHandler = (_req, res, next) => sendRead(res, next, () => reads.bgmList());
 
-router.delete('/bgm/:filename', (req, res) => {
+const deleteBgmHandler = (req, res) => {
   const filePath = path.join(bgmDir, path.basename(req.params.filename)); // #2 보안: basename으로 path traversal 차단(%2f 디코드 후 '../' 방지)
   if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Not found' });
   fs.unlinkSync(filePath);
   res.json({ success: true });
-});
+};
 
-router.patch('/bgm/:filename', (req, res) => {
+const patchBgmHandler = (req, res) => {
   const oldName = path.basename(req.params.filename); // #2 보안: basename으로 srcPath traversal 차단
   const rawNew = (req.body && req.body.newName) || '';
   if (!rawNew) return res.status(400).json({ success: false, error: 'newName required' });
@@ -1863,10 +1749,10 @@ router.patch('/bgm/:filename', (req, res) => {
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
-});
+};
 
 // ─── 생성된 이미지 목록 (파일 기반) ───
-router.get('/images', (_req, res) => {
+const getImagesHandler = (_req, res) => {
   const outputDir = path.join(process.cwd(), 'tmp', 'images');
   if (!fs.existsSync(outputDir)) return res.json({ success: true, data: [] });
 
@@ -1884,10 +1770,10 @@ router.get('/images', (_req, res) => {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   res.json({ success: true, data: files });
-});
+};
 
 // ─── 로그 조회 API ───
-router.get('/logs', (req, res) => {
+const getLogsHandler = (req, res) => {
   const logDir = path.join(process.cwd(), 'logs');
   if (!fs.existsSync(logDir)) return res.json({ success: true, data: [] });
 
@@ -1918,10 +1804,10 @@ router.get('/logs', (req, res) => {
   content = content.slice(-limit);
 
   res.json({ success: true, date: logDate, count: content.length, data: content });
-});
+};
 
 // ─── 로그 파일 목록 ───
-router.get('/logs/files', (_req, res) => {
+const getLogsFilesHandler = (_req, res) => {
   const logDir = path.join(process.cwd(), 'logs');
   if (!fs.existsSync(logDir)) return res.json({ success: true, data: [] });
 
@@ -1934,6 +1820,315 @@ router.get('/logs/files', (_req, res) => {
     .sort((a, b) => b.name.localeCompare(a.name));
 
   res.json({ success: true, data: files });
-});
+};
+
+// ── 조회 API (reads) — 레거시 라우트와 Nest(nest/generate)가 함께 쓰는 단일소스 ──
+//   응답 객체를 만들지 않고 **데이터만 반환**한다(= Spring @Service). 404 등은 statusCode 에러로 throw해
+//   레거시 handle()·Nest LegacyErrorFilter가 같은 형식으로 응답한다.
+function readError(statusCode, message) {
+  return Object.assign(new Error(message), { statusCode });
+}
+
+const reads = {
+  /** 사용 가능한 이미지·영상 도구(공개 필드만) */
+  tools() {
+    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
+    return {
+      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
+      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
+    };
+  },
+
+  /** 스타일 프리셋 전체 */
+  styles() {
+    return styleRepo.findAll();
+  },
+
+  /** 내(또는 활성 팀) 프롬프트 목록 */
+  async prompts(userId, { limit, offset } = {}) {
+    const teamId = await teamCredit.activeTeamId(userId);
+    return promptRepo.findAll({
+      userId: teamId ? undefined : userId,
+      teamId,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+    });
+  },
+
+  /** 프롬프트 상세 + 그 결과물(소유 검증) */
+  async promptDetail(userId, idx) {
+    const prompt = await promptRepo.findByIdx(idx);
+    if (!prompt) throw readError(404, 'Prompt not found');
+    await assertPromptOwned(prompt.idx, userId);
+    const results = await resultRepo.findByPromptIdx(prompt.idx);
+    return { prompt, results };
+  },
+
+  /** 내(또는 활성 팀) 생성 결과 목록 */
+  async results(userId, { limit, offset, type } = {}) {
+    const teamId = await teamCredit.activeTeamId(userId);
+    return resultRepo.findAll({
+      userId: teamId ? undefined : userId,
+      teamId,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
+      type: (type === 'reel' || type === 'photo') ? type : undefined,
+    });
+  },
+
+  /** 크리에이터 좋아요 개요(총 좋아요 + 상위 결과물) */
+  async creatorOverview(userId) {
+    const d = await resultRepo.creatorLikeOverview(userId);
+    return {
+      totalLikes: d.totalLikes,
+      topLikable: d.topLikable.map((r) => ({
+        idx: r.idx,
+        url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
+        likes: r.likes_count || 0,
+      })),
+    };
+  },
+
+  /** 진행 중인 영상 작업 */
+  videoJobs(userId) {
+    return videoJobService.listActiveJobs(userId);
+  },
+
+  /** 영상 작업 단건 */
+  async videoJob(userId, id) {
+    const job = await videoJobService.getJob(id, userId);
+    if (!job) throw readError(404, 'Job not found');
+    // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
+    //   상세(/creation)가 아니라 뷰어 라이트박스로 열렸다(faceswap 응답은 이미 노출하고 있었다).
+    return { status: job.status, url: job.result_url, resultIdx: job.result_idx || null, error: job.error, duration: job.duration };
+  },
+
+  /** faceswap 작업 단건(소유 검증) */
+  async faceswapJob(userId, id) {
+    const job = await faceswapRepo.findById(id);
+    if (!job || job.user_id !== userId) throw readError(404, 'Job not found');
+    return { status: job.status, url: job.result_url, resultIdx: job.result_idx, error: job.error };
+  },
+
+  /**
+   * UGC 작업 레일 — data = 렌더 중 / pending = 완성됐지만 미저장(draft). 배지 = 둘의 합.
+   * editable = 저장됐고 대본이 있어 되불러 편집 가능한 result_idx들(피드 [Edit] 노출 판단).
+   * (data 외 pending·editable은 응답 최상위 필드라 호출측이 펼쳐서 내려준다)
+   */
+  async ugcJobs(userId) {
+    const [rows, pending, editable] = await Promise.all([
+      ugcVideoService.listActiveJobs(userId),
+      ugcVideoService.listPendingReview(userId),
+      ugcVideoService.listEditableResultIdxs(userId),
+    ]);
+    return { data: rows, pending, editable };
+  },
+
+  /** 결과물 idx로 UGC 작업 찾기 */
+  async ugcJobByResult(userId, idx) {
+    const job = await ugcVideoService.getJobByResultIdx(idx, userId);
+    if (!job) throw readError(404, 'Job not found');
+    return job;
+  },
+
+  /** UGC 작업 단건 */
+  async ugcJob(userId, id) {
+    const job = await ugcVideoService.getJob(id, userId);
+    if (!job) throw readError(404, 'Job not found');
+    return job;
+  },
+
+  /** 업로드된 BGM 목록(최신순) */
+  bgmList() {
+    if (!fs.existsSync(bgmDir)) return [];
+    return fs.readdirSync(bgmDir)
+      .filter((f) => /\.(mp3|wav|m4a|ogg|aac)$/i.test(f))
+      .map((f) => {
+        const stat = fs.statSync(path.join(bgmDir, f));
+        return { filename: f, url: `/bgm/${f}`, size: Math.round(stat.size / 1024) + 'KB', createdAt: stat.mtime.toISOString() };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+};
+
+// 조회 라우트용 얇은 어댑터 — statusCode 에러는 레거시 형식으로, 나머지는 errorHandler로.
+function sendRead(res, next, run, wrap) {
+  Promise.resolve()
+    .then(run)
+    .then((out) => res.json(wrap ? wrap(out) : { success: true, data: out }))
+    .catch((err) => {
+      if (err && err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+      next(err);
+    });
+}
+
+/**
+ * 응답 수집 어댑터 — Express 핸들러를 **데이터 반환 함수**로 바꾼다.
+ *   Nest가 @Res() 위임 없이 반환값 방식으로 응답을 소유하게 하려고 만든 것.
+ *   핸들러 본문은 그대로 두고(파이프라인 무변경), res.status/json 호출만 가로채 { status, body }로 모은다.
+ */
+function asOps(handler) {
+  return async (req) => {
+    let status = 200;
+    let body;
+    const res = {
+      status(code) { status = code; return this; },
+      json(payload) { body = payload; return this; },
+    };
+    let failed;
+    await handler(req, res, (e) => { failed = e; });
+    if (failed) throw failed;
+    return { status, body };
+  };
+}
+
+// ⚠️ getUgcVoicePreview는 제외 — mp3 바이너리 + 헤더를 직접 쓰므로 수집 어댑터로 감쌀 수 없다(@Res 위임 유지).
+const ops = {
+  postRoot: asOps(postRootHandler),
+  postCaption: asOps(postCaptionHandler),
+  postEnhance: asOps(postEnhanceHandler),
+  getTools: asOps(getToolsHandler),
+  getStyles: asOps(getStylesHandler),
+  getPrompts: asOps(getPromptsHandler),
+  getPrompts2: asOps(getPrompts2Handler),
+  getResults: asOps(getResultsHandler),
+  getCommunity: asOps(getCommunityHandler),
+  patchResultsVisibility: asOps(patchResultsVisibilityHandler),
+  postResultsReport: asOps(postResultsReportHandler),
+  postResultsLike: asOps(postResultsLikeHandler),
+  deleteResultsLike: asOps(deleteResultsLikeHandler),
+  getCreations: asOps(getCreationsHandler),
+  postCreationsAddToMyTemplates: asOps(postCreationsAddToMyTemplatesHandler),
+  deleteCreations: asOps(deleteCreationsHandler),
+  getCreatorOverview: asOps(getCreatorOverviewHandler),
+  getReviews: asOps(getReviewsHandler),
+  patchReviews: asOps(patchReviewsHandler),
+  deleteReviews: asOps(deleteReviewsHandler),
+  postVideoAsync: asOps(postVideoAsyncHandler),
+  getVideoJobs: asOps(getVideoJobsHandler),
+  getVideoJobs2: asOps(getVideoJobs2Handler),
+  getFaceswapJobs: asOps(getFaceswapJobsHandler),
+  postUgcScript: asOps(postUgcScriptHandler),
+  postUgcRefineScene: asOps(postUgcRefineSceneHandler),
+  postUgcSuggestScenes: asOps(postUgcSuggestScenesHandler),
+  postUgcSuggestConcept: asOps(postUgcSuggestConceptHandler),
+  postUgcRender: asOps(postUgcRenderHandler),
+  postUgcAsync: asOps(postUgcAsyncHandler),
+  getUgcJobs: asOps(getUgcJobsHandler),
+  getUgcJobsByResult: asOps(getUgcJobsByResultHandler),
+  getUgcJobs2: asOps(getUgcJobs2Handler),
+  postUgcJobsCommit: asOps(postUgcJobsCommitHandler),
+  postUgcReRender: asOps(postUgcReRenderHandler),
+  postVideo: asOps(postVideoHandler),
+  postBgmUpload: asOps(postBgmUploadHandler),
+  getBgmList: asOps(getBgmListHandler),
+  deleteBgm: asOps(deleteBgmHandler),
+  patchBgm: asOps(patchBgmHandler),
+  getImages: asOps(getImagesHandler),
+  getLogs: asOps(getLogsHandler),
+  getLogsFiles: asOps(getLogsFilesHandler),
+};
+
+// ── 라우트 등록 ── (핸들러는 위에 이름으로 분리 — Nest가 같은 핸들러를 그대로 재사용한다)
+router.post('/', upload.array('referenceImages', 14), postRootHandler);
+router.post('/caption', postCaptionHandler);
+router.post('/enhance', postEnhanceHandler);
+router.get('/tools', getToolsHandler);
+router.get('/styles', getStylesHandler);
+router.get('/prompts', getPromptsHandler);
+router.get('/prompts/:idx', getPrompts2Handler);
+router.get('/results', getResultsHandler);
+router.get('/community', getCommunityHandler);
+router.patch('/results/:idx/visibility', patchResultsVisibilityHandler);
+router.post('/results/:idx/report', postResultsReportHandler);
+router.post('/results/:idx/like', postResultsLikeHandler);
+router.delete('/results/:idx/like', deleteResultsLikeHandler);
+router.get('/creations/:idx', getCreationsHandler);
+router.post('/creations/:idx/add-to-my-templates', postCreationsAddToMyTemplatesHandler);
+router.delete('/creations/:idx', deleteCreationsHandler);
+router.get('/creator-overview', getCreatorOverviewHandler);
+router.get('/reviews', getReviewsHandler);
+router.patch('/reviews/:idx', patchReviewsHandler);
+router.delete('/reviews/:idx', deleteReviewsHandler);
+router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }]), postVideoAsyncHandler);
+router.get('/video/jobs', getVideoJobsHandler);
+router.get('/video/jobs/:id', getVideoJobs2Handler);
+router.get('/faceswap/jobs/:id', getFaceswapJobsHandler);
+router.post('/ugc/script', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), postUgcScriptHandler);
+router.post('/ugc/refine-scene', postUgcRefineSceneHandler);
+router.post('/ugc/suggest-scenes', postUgcSuggestScenesHandler);
+router.post('/ugc/suggest-concept', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), postUgcSuggestConceptHandler);
+router.post('/ugc/render', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), postUgcRenderHandler);
+router.post('/ugc/async', upload.fields([{ name: 'productImage', maxCount: UGC_MAX_PRODUCT_IMAGES }]), postUgcAsyncHandler);
+router.get('/ugc/jobs', getUgcJobsHandler);
+router.get('/ugc/jobs/by-result/:idx', getUgcJobsByResultHandler);
+router.get('/ugc/jobs/:id', getUgcJobs2Handler);
+router.post('/ugc/jobs/:id/commit', postUgcJobsCommitHandler);
+router.post('/ugc/re-render', postUgcReRenderHandler);
+router.get('/ugc/voice-preview', getUgcVoicePreviewHandler);
+router.post('/video', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrameImage', maxCount: 1 }]), postVideoHandler);
+router.post('/bgm/upload', bgmUpload.single('file'), postBgmUploadHandler);
+router.get('/bgm/list', getBgmListHandler);
+router.delete('/bgm/:filename', deleteBgmHandler);
+router.patch('/bgm/:filename', patchBgmHandler);
+router.get('/images', getImagesHandler);
+router.get('/logs', getLogsHandler);
+router.get('/logs/files', getLogsFilesHandler);
 
 module.exports = router;
+// Nest(nest/generate)가 라우팅만 가져가고 생성 파이프라인(멀티파트·크레딧 정산·프로바이더 호출·
+// 백그라운드 작업)은 이 핸들러를 그대로 재사용한다 — 로직 이중화 금지.
+module.exports.handlers = {
+  postRoot: postRootHandler,
+  postCaption: postCaptionHandler,
+  postEnhance: postEnhanceHandler,
+  getTools: getToolsHandler,
+  getStyles: getStylesHandler,
+  getPrompts: getPromptsHandler,
+  getPrompts2: getPrompts2Handler,
+  getResults: getResultsHandler,
+  getCommunity: getCommunityHandler,
+  patchResultsVisibility: patchResultsVisibilityHandler,
+  postResultsReport: postResultsReportHandler,
+  postResultsLike: postResultsLikeHandler,
+  deleteResultsLike: deleteResultsLikeHandler,
+  getCreations: getCreationsHandler,
+  postCreationsAddToMyTemplates: postCreationsAddToMyTemplatesHandler,
+  deleteCreations: deleteCreationsHandler,
+  getCreatorOverview: getCreatorOverviewHandler,
+  getReviews: getReviewsHandler,
+  patchReviews: patchReviewsHandler,
+  deleteReviews: deleteReviewsHandler,
+  postVideoAsync: postVideoAsyncHandler,
+  getVideoJobs: getVideoJobsHandler,
+  getVideoJobs2: getVideoJobs2Handler,
+  getFaceswapJobs: getFaceswapJobsHandler,
+  postUgcScript: postUgcScriptHandler,
+  postUgcRefineScene: postUgcRefineSceneHandler,
+  postUgcSuggestScenes: postUgcSuggestScenesHandler,
+  postUgcSuggestConcept: postUgcSuggestConceptHandler,
+  postUgcRender: postUgcRenderHandler,
+  postUgcAsync: postUgcAsyncHandler,
+  getUgcJobs: getUgcJobsHandler,
+  getUgcJobsByResult: getUgcJobsByResultHandler,
+  getUgcJobs2: getUgcJobs2Handler,
+  postUgcJobsCommit: postUgcJobsCommitHandler,
+  postUgcReRender: postUgcReRenderHandler,
+  getUgcVoicePreview: getUgcVoicePreviewHandler,
+  postVideo: postVideoHandler,
+  postBgmUpload: postBgmUploadHandler,
+  getBgmList: getBgmListHandler,
+  deleteBgm: deleteBgmHandler,
+  patchBgm: patchBgmHandler,
+  getImages: getImagesHandler,
+  getLogs: getLogsHandler,
+  getLogsFiles: getLogsFilesHandler,
+};
+// 멀티파트 설정도 Nest 인터셉터가 그대로 쓴다(동일 저장경로·파일명·용량 제한).
+module.exports.upload = upload;
+module.exports.bgmUpload = bgmUpload;
+module.exports.UGC_MAX_PRODUCT_IMAGES = UGC_MAX_PRODUCT_IMAGES;
+// 조회 API — Nest 컨트롤러가 @Res() 위임 없이 직접 호출해 데이터만 받아간다.
+module.exports.reads = reads;
+// 데이터 반환 버전 — Nest가 응답을 직접 만든다(@Res 위임 제거용).
+module.exports.ops = ops;

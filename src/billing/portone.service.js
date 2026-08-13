@@ -19,7 +19,16 @@ function configured() {
 }
 // 프론트 노출용 공개 설정(시크릿 제외)
 function publicConfig() {
-  return { configured: configured(), storeId: env.PORTONE_STORE_ID || '', channelKey: env.PORTONE_CHANNEL_KEY || '' };
+  // 순환 참조 회피 — portoneBilling이 이 모듈을 require한다. 호출 시점엔 양쪽 다 로드가 끝나 있다.
+  const { billingAvailable } = require('./portoneBilling.service');
+  return {
+    configured: configured(),
+    storeId: env.PORTONE_STORE_ID || '',
+    channelKey: env.PORTONE_CHANNEL_KEY || '',
+    // 자동결제(빌링) 계약이 열렸는지. false면 프론트가 결제창을 아예 띄우지 않는다
+    // (PG 거절 시 뜨는 PortOne 자체 에러창은 닫기가 동작하지 않아 사용자가 갇힌다).
+    billingAvailable: billingAvailable(),
+  };
 }
 function findPack(packId) { return PACKS.find((p) => p.id === packId) || null; }
 
@@ -28,6 +37,13 @@ async function beginPack({ user, packId }) {
   if (!configured()) { const e = new Error('결제가 아직 설정되지 않았습니다. (PortOne 키 필요)'); e.statusCode = 503; throw e; }
   const pack = findPack(packId);
   if (!pack) { const e = new Error('Unknown pack'); e.statusCode = 400; throw e; }
+  // 🔒 국내 1회 충전 한도(PG 심사 요건) — 화면에서 숨기는 것만으론 부족하다.
+  //   구버전 화면이 캐시돼 있거나 API를 직접 부르면 그대로 결제가 열리므로 서버가 최종 판정한다.
+  if (!pack.krwSellable) {
+    const e = new Error('국내 결제는 1회 충전 한도(10만원 미만) 팩만 이용할 수 있습니다.');
+    e.statusCode = 400;
+    throw e;
+  }
 
   const paymentId = 'dp' + crypto.randomBytes(12).toString('hex'); // 영숫자 결제건 식별자
   await query(

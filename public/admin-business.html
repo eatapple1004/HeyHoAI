@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사업체 인스타 관리 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+.nav{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.nav a{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px}
+.nav a:hover{color:var(--text);border-color:var(--accent2)}
+.nav a.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.count{margin-left:auto;color:var(--faint);font-size:.85rem}
+input,select,textarea{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.9rem;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+button{font-family:inherit;font-size:.88rem;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.primary{background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+.form{display:grid;grid-template-columns:1.4fr 1fr 2fr auto;gap:10px;align-items:start;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.biz{display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;transition:border-color .15s}
+.biz:hover{border-color:var(--accent2)}
+.biz .top{display:flex;gap:12px;align-items:center}
+.biz .avatar{width:46px;height:46px;border-radius:50%;background:var(--panel2);object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:1.1rem;font-weight:700}
+.biz .name{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.biz .meta{color:var(--dim);font-size:.8rem;margin-top:2px}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.b-on{background:rgba(74,222,128,.16);color:var(--green)}
+.b-off{background:rgba(154,154,178,.16);color:var(--dim)}
+.b-paused{background:rgba(255,206,122,.16);color:var(--gold)}
+.stats{display:flex;gap:16px;border-top:1px solid var(--border);padding-top:12px}
+.stat{flex:1}
+.stat .n{font-size:1.2rem;font-weight:800}
+.stat .l{color:var(--faint);font-size:.72rem;margin-top:1px}
+.empty{color:var(--faint);text-align:center;padding:60px 20px;grid-column:1/-1}
+.msg{padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px;font-size:.9rem}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+.msg.ok{background:rgba(74,222,128,.12);border:1px solid #2e5b3a;color:#86efac}
+@media(max-width:720px){body{padding:18px}.form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 사업체 인스타 관리</h1>
+  <div class="sub">마케팅·홍보를 대행하는 사업체 계정을 관리합니다. 원본 사진 → 콘텐츠 선택 → AI 캡션 → 예약 발행. (관리자 전용)</div>
+  <div class="nav">
+    <a href="/admin-business" class="on">🏪 사업체</a>
+    <a href="/admin-creations">🖼 크리에이션</a>
+    <a href="/admin-stats">📊 통계</a>
+    <a href="/admin-trials">🎟 체험 계정</a>
+    <a href="/admin-templates">🧩 템플릿</a>
+  </div>
+
+  <div class="msg err" id="err"></div>
+  <div class="msg ok" id="ok"></div>
+
+  <div class="card form">
+    <input id="name" placeholder="사업체 이름 *">
+    <input id="industry" placeholder="업종 (예: 네일샵, 카페)">
+    <input id="memo" placeholder="참고사항 (톤·강조 포인트 — AI 캡션에 반영됩니다)">
+    <button class="primary" id="addBtn" onclick="createBiz()">+ 사업체 추가</button>
+  </div>
+
+  <div class="bar">
+    <button onclick="syncAccounts()" id="syncBtn">🔄 인스타 계정 불러오기</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function flash(kind, text) {
+  const el = $(kind === 'err' ? 'err' : 'ok');
+  el.textContent = text;
+  el.classList.add('show');
+  if (kind !== 'err') setTimeout(() => el.classList.remove('show'), 3000);
+}
+function clearMsg() { $('err').classList.remove('show'); $('ok').classList.remove('show'); }
+
+/** 모든 호출이 같은 실패 처리를 타도록 감싼다(403=권한, 그 외=서버 메시지 노출) */
+async function api(url, opts = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (res.status === 403) throw new Error('관리자 권한이 필요합니다.');
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.success === false) throw new Error(body.error || body.message || `요청 실패 (${res.status})`);
+  return body;
+}
+
+function statusBadge(b) {
+  if (b.status === 'paused') return '<span class="badge b-paused">일시중지</span>';
+  return b.active_accounts > 0
+    ? '<span class="badge b-on">연결됨 · ' + b.active_accounts + '</span>'
+    : '<span class="badge b-off">미연결</span>';
+}
+
+function cardHtml(b) {
+  const avatar = b.primary_profile_image
+    ? '<img class="avatar" src="' + esc(b.primary_profile_image) + '" alt="">'
+    : '<div class="avatar">' + esc((b.name || '?').trim().charAt(0)) + '</div>';
+  const handle = b.primary_username ? '@' + esc(b.primary_username) : '계정 없음';
+  return '<a class="card biz" href="/admin-business/' + b.id + '">'
+    + '<div class="top">' + avatar
+    + '<div style="min-width:0;flex:1">'
+    + '<div class="name">' + esc(b.name) + '</div>'
+    + '<div class="meta">' + (b.industry ? esc(b.industry) + ' · ' : '') + handle + '</div>'
+    + '</div>' + statusBadge(b) + '</div>'
+    + '<div class="stats">'
+    + '<div class="stat"><div class="n">' + (b.followers || 0).toLocaleString() + '</div><div class="l">팔로워</div></div>'
+    + '<div class="stat"><div class="n">' + b.pending + '</div><div class="l">발행 대기</div></div>'
+    + '<div class="stat"><div class="n">' + b.scheduled + '</div><div class="l">예약</div></div>'
+    + '<div class="stat"><div class="n">' + b.posted + '</div><div class="l">게시됨</div></div>'
+    + '</div></a>';
+}
+
+async function load() {
+  try {
+    const { data } = await api('/api/admin/business');
+    $('count').textContent = data.length + '개 사업체';
+    $('grid').innerHTML = data.length
+      ? data.map(cardHtml).join('')
+      : '<div class="empty">등록된 사업체가 없습니다. 위에서 추가하세요.</div>';
+  } catch (e) {
+    flash('err', e.message);
+    $('grid').innerHTML = '<div class="empty">불러오지 못했습니다.</div>';
+  }
+}
+
+async function createBiz() {
+  clearMsg();
+  const name = $('name').value.trim();
+  if (!name) return flash('err', '사업체 이름을 입력하세요.');
+  $('addBtn').disabled = true;
+  try {
+    await api('/api/admin/business', {
+      method: 'POST',
+      body: JSON.stringify({ name, industry: $('industry').value.trim(), memo: $('memo').value.trim() }),
+    });
+    $('name').value = $('industry').value = $('memo').value = '';
+    flash('ok', '추가했습니다.');
+    load();
+  } catch (e) { flash('err', e.message); }
+  finally { $('addBtn').disabled = false; }
+}
+
+/** Zernio에 연결된 인스타 계정을 DB로 끌어온다 — 이후 상세 화면에서 사업체에 붙인다 */
+async function syncAccounts() {
+  clearMsg();
+  $('syncBtn').disabled = true;
+  try {
+    const { data } = await api('/api/admin/business/accounts/sync', { method: 'POST' });
+    flash('ok', data.length + '개 계정을 불러왔습니다. 사업체 상세에서 연결하세요.');
+  } catch (e) { flash('err', e.message); }
+  finally { $('syncBtn').disabled = false; }
+}
+
+load();
+</script>
+</body>
+</html>

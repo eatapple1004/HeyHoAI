@@ -14,3 +14,6 @@ public/js/recipe_sig.local.js
 scripts/build_recipe_sig.local.js
 # auto-refine 스크래치 산출물
 scripts/_refine*
+
+# NestJS 빌드 산출물
+dist/

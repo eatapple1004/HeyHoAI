@@ -17,16 +17,16 @@ const { GoogleGenAI } = require('@google/genai');
 const Anthropic = require('@anthropic-ai/sdk');
 const { requireAdmin } = require('../middleware/auth');
 const { query } = require('../db/client');
+const { ensureSchema } = require('../db/ensureSchema');
 const mediaStore = require('../storage/mediaStore');
 
 const router = Router();
 
 // ── 기록(refine_runs) 저장 — 실행 결과를 조회할 수 있게 DB+이미지 파일로 남긴다 ──
 // 이미지는 tmp/images(=/images 정적 서빙)에 저장 → URL /images/<file>. 테이블은 최초 저장 시 자동 생성.
-let _refineTableReady = false;
-async function ensureRefineTable() {
-  if (_refineTableReady) return;
-  await query(`CREATE TABLE IF NOT EXISTS refine_runs (
+// 동시 요청/다중 프로세스에서 CREATE TABLE이 경쟁해 500이 나던 문제 → 공용 ensureSchema로 통일.
+const REFINE_RUNS_SQL = [
+  `CREATE TABLE IF NOT EXISTS refine_runs (
     id         UUID PRIMARY KEY,
     user_id    UUID,
     goal       TEXT,
@@ -40,9 +40,11 @@ async function ensureRefineTable() {
     converged  BOOLEAN NOT NULL DEFAULT false,
     max_iters  INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  );
-  CREATE INDEX IF NOT EXISTS idx_refine_runs_created ON refine_runs(created_at DESC);`);
-  _refineTableReady = true;
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_refine_runs_created ON refine_runs(created_at DESC);`,
+];
+function ensureRefineTable() {
+  return ensureSchema('refine_runs', REFINE_RUNS_SQL);
 }
 
 // iters = [{ i, b64, mime, okCount, total, scores, converged }] → 파일로 쓰고 DB에 기록. runId 반환(실패 시 null).
@@ -241,37 +243,25 @@ async function refineHandler(req, res) {
 }
 router.post('/admin/refine', requireAdmin, refineHandler);
 
-// ── 기록 조회/삭제 (admin 전용) ──
-// 목록: 최신순 100개(썸네일=best_file, 프롬프트 요약, 점수, 반복수, 날짜)
+// ── 기록 조회/삭제 (admin 전용) — 로직은 아래 runsApi(레거시·Nest 공용) ──
 router.get('/admin/refine/runs', requireAdmin, async (_req, res, next) => {
   try {
-    await ensureRefineTable();
-    const { rows } = await query(
-      `SELECT id, goal, left(prompt, 180) AS prompt, best_file, best_ok, total, converged, max_iters,
-              jsonb_array_length(iters) AS iter_count, created_at
-         FROM refine_runs ORDER BY created_at DESC LIMIT 100`
-    );
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: await runsApi.listRuns() });
   } catch (e) { next(e); }
 });
 
-// 상세: 전체 iter 이미지·프롬프트·체크리스트
 router.get('/admin/refine/runs/:id', requireAdmin, async (req, res, next) => {
   try {
-    await ensureRefineTable();
-    const { rows } = await query(`SELECT * FROM refine_runs WHERE id = $1`, [req.params.id]);
-    if (!rows[0]) return res.status(404).json({ success: false, error: '기록을 찾을 수 없습니다.' });
-    res.json({ success: true, data: rows[0] });
-  } catch (e) { next(e); }
+    res.json({ success: true, data: await runsApi.getRun(req.params.id) });
+  } catch (e) {
+    if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
+    next(e);
+  }
 });
 
-// 삭제: DB 레코드 + 이미지 파일
 router.delete('/admin/refine/runs/:id', requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await query(`DELETE FROM refine_runs WHERE id = $1 RETURNING iters`, [req.params.id]);
-    for (const it of (rows[0]?.iters || [])) {
-      try { fs.unlinkSync(path.join(process.cwd(), 'tmp', 'images', it.file)); } catch (_) {}
-    }
+    await runsApi.removeRun(req.params.id);
     res.json({ success: true });
   } catch (e) { next(e); }
 });
@@ -369,6 +359,35 @@ async function applyHandler(req, res) {
 }
 router.post('/admin/refine/apply', requireAdmin, applyHandler);
 
+// 기록(refine_runs) 조회·삭제 단일소스 — 레거시 라우트와 Nest(nest/admin)가 함께 쓴다.
+const runsApi = {
+  /** 목록: 최신순 100개(썸네일=best_file, 프롬프트 요약, 점수, 반복수, 날짜) */
+  async listRuns() {
+    await ensureRefineTable();
+    const { rows } = await query(
+      `SELECT id, goal, left(prompt, 180) AS prompt, best_file, best_ok, total, converged, max_iters,
+              jsonb_array_length(iters) AS iter_count, created_at
+         FROM refine_runs ORDER BY created_at DESC LIMIT 100`
+    );
+    return rows;
+  },
+  /** 상세: 전체 iter 이미지·프롬프트·체크리스트 */
+  async getRun(id) {
+    await ensureRefineTable();
+    const { rows } = await query(`SELECT * FROM refine_runs WHERE id = $1`, [id]);
+    if (!rows[0]) throw Object.assign(new Error('기록을 찾을 수 없습니다.'), { statusCode: 404 });
+    return rows[0];
+  },
+  /** 삭제: DB 레코드 + 이미지 파일 */
+  async removeRun(id) {
+    const { rows } = await query(`DELETE FROM refine_runs WHERE id = $1 RETURNING iters`, [id]);
+    for (const it of (rows[0]?.iters || [])) {
+      try { fs.unlinkSync(path.join(process.cwd(), 'tmp', 'images', it.file)); } catch (_) {}
+    }
+  },
+};
+
 module.exports = router;
-module.exports.handler = refineHandler; // 로컬 미리보기 서버(scripts/refine_local_server.js)에서 인증 없이 재사용
+module.exports.handler = refineHandler; // 로컬 미리보기 서버(scripts/refine_local_server.js)·Nest에서 재사용(NDJSON 스트리밍)
 module.exports.applyHandler = applyHandler;
+module.exports.runsApi = runsApi;

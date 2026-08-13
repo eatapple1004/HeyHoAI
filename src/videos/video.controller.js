@@ -1,99 +1,40 @@
-const { generateForCharacter, listVideos, getVideo } = require('./videoGeneration.service');
-const { generateVideoRequestSchema } = require('./video.validator');
-const videoJobRepo = require('./videoGenerationJob.repository');
-const { assertCharacterOwned } = require('../middleware/ownership');
+const api = require('./video.api');
 
-/**
- * POST /api/characters/:characterId/videos/generate
- */
+// 얇은 Express 어댑터 — 오케스트레이션은 video.api.js 단일소스(레거시·Nest 공용).
+
+/** POST /api/characters/:characterId/videos/generate */
 async function generate(req, res, next) {
   try {
-    const { characterId } = req.params;
-    await assertCharacterOwned(characterId, req.user.id);
-    const opts = generateVideoRequestSchema.parse(req.body || {});
-
-    const result = await generateForCharacter(characterId, opts);
-
-    res.status(201).json({
-      success: true,
-      data: {
-        job: {
-          id: result.job.id,
-          status: result.job.status,
-          provider: result.job.provider,
-          attempt: result.job.attempt,
-        },
-        video: {
-          id: result.video.id,
-          videoUrl: result.video.video_url,
-          durationMs: result.video.duration_ms,
-          videoStyle: result.video.video_style,
-          sourceImageId: result.video.source_image_id,
-          status: result.video.status,
-        },
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
+    res.status(201).json({ success: true, data: await api.generate(req.user.id, req.params.characterId, req.body) });
+  } catch (err) { next(err); }
 }
 
-/**
- * GET /api/characters/:characterId/videos
- */
+/** GET /api/characters/:characterId/videos */
 async function listByCharacter(req, res, next) {
   try {
-    const { characterId } = req.params;
-    await assertCharacterOwned(characterId, req.user.id);
-    const { status } = req.query;
-    const videos = await listVideos(characterId, { status });
-
-    res.json({ success: true, data: videos });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ success: true, data: await api.listByCharacter(req.user.id, req.params.characterId, req.query) });
+  } catch (err) { next(err); }
 }
 
-/**
- * GET /api/videos/:id
- */
+/** GET /api/videos/:id */
 async function getById(req, res, next) {
   try {
-    const video = await getVideo(req.params.id);
-    await assertCharacterOwned(video.character_id, req.user.id);
-    res.json({ success: true, data: video });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ success: true, data: await api.getById(req.user.id, req.params.id) });
+  } catch (err) { next(err); }
 }
 
-/**
- * GET /api/characters/:characterId/videos/jobs
- */
+/** GET /api/characters/:characterId/videos/jobs */
 async function listJobs(req, res, next) {
   try {
-    await assertCharacterOwned(req.params.characterId, req.user.id);
-    const jobs = await videoJobRepo.findByCharacterId(req.params.characterId);
-    res.json({ success: true, data: jobs });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ success: true, data: await api.listJobs(req.user.id, req.params.characterId) });
+  } catch (err) { next(err); }
 }
 
-/**
- * GET /api/videos/jobs/:jobId
- */
+/** GET /api/videos/jobs/:jobId */
 async function getJob(req, res, next) {
   try {
-    const job = await videoJobRepo.findById(req.params.jobId);
-    if (!job) {
-      return res.status(404).json({ success: false, error: 'Job not found' });
-    }
-    await assertCharacterOwned(job.character_id, req.user.id);
-    res.json({ success: true, data: job });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ success: true, data: await api.getJob(req.user.id, req.params.jobId) });
+  } catch (err) { next(err); }
 }
 
 module.exports = { generate, listByCharacter, getById, listJobs, getJob };

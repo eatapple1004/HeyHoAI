@@ -6,6 +6,7 @@
  */
 const crypto = require('crypto');
 const { query } = require('../db/client');
+const { ensureSchema: ensureSchemaOnce } = require('../db/ensureSchema');
 
 // 활동이 이 시간 넘게 없는 'processing' 팩 = 죽은 것으로 본다.
 //   창은 **정상 생성의 최대 공백**보다 넉넉해야 한다: 플래너 차수(최대 4회 × 상태 수) + 레퍼 베이크가
@@ -13,11 +14,10 @@ const { query } = require('../db/client');
 const STALE_MIN = Number(process.env.PACK_STALE_MIN) || 15;
 const STALE_ERROR = '생성이 중간에 끊겼어요(서버 재시작 등). "이어서 만들기"를 누르면 남은 컷부터 계속합니다.';
 
-let _ensured = false;
-async function ensureSchema() {
-  if (_ensured) return;
-  await query(`
-    CREATE TABLE IF NOT EXISTS content_packs (
+// 동시 요청/다중 프로세스에서 CREATE TABLE이 경쟁해 500이 나던 문제 → 공용 ensureSchema로 통일.
+//   (진행 중 Promise 공유 + "이미 있음" 에러 무시)
+const PACK_SQL = [
+  `CREATE TABLE IF NOT EXISTS content_packs (
       id         BIGSERIAL PRIMARY KEY,
       share_id   TEXT UNIQUE NOT NULL,
       user_id    TEXT,
@@ -28,9 +28,8 @@ async function ensureSchema() {
       error      TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );`);
-  await query(`
-    CREATE TABLE IF NOT EXISTS pack_assets (
+    );`,
+  `CREATE TABLE IF NOT EXISTS pack_assets (
       id         BIGSERIAL PRIMARY KEY,
       pack_id    BIGINT NOT NULL,
       kind       TEXT NOT NULL,
@@ -39,11 +38,13 @@ async function ensureSchema() {
       url        TEXT,
       meta       JSONB DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_pack_assets_pack ON pack_assets(pack_id);`);
+    );`,
+  `CREATE INDEX IF NOT EXISTS idx_pack_assets_pack ON pack_assets(pack_id);`,
   // 한도 판정(countBakesSince)이 굽기마다 도는 쿼리 — user_id 범위 스캔.
-  await query(`CREATE INDEX IF NOT EXISTS idx_content_packs_user ON content_packs(user_id);`);
-  _ensured = true;
+  `CREATE INDEX IF NOT EXISTS idx_content_packs_user ON content_packs(user_id);`,
+];
+function ensureSchema() {
+  return ensureSchemaOnce('content_packs', PACK_SQL);
 }
 
 async function createPack({ userId, vertical, product, config }) {

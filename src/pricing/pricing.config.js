@@ -50,13 +50,37 @@ const PRICING = {
   ],
   // 신규 24h 첫 결제 할인율(%)
   firstMonthOff: 50,
-  // 통화·PG: KRW=국내(NHN KCP), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
+  /**
+   * 🔒 국내(KRW) 1회 충전 한도 — **PG 심사 요건이지 가격 정책이 아니다.**
+   *   토스페이먼츠 계약팀 요건(2026-08): 포인트충전 업종은 1회 충전 최고가액을 10만원 **미만**으로
+   *   제한해야 한다. 이 값 이상인 팩은 KRW 결제 경로에서 노출·결제 모두 차단된다
+   *   (USD/해외 PG는 이 규제 대상이 아니므로 그대로 판매한다).
+   *   ⚠️ 낮추는 건 자유지만 올릴 때는 PG 심사 조건을 먼저 확인할 것.
+   */
+  krwOneTimeChargeLimit: 100000,
+  /**
+   * 구독 플랜 판매 여부 — **기본 켜짐**.
+   *   2026-08-12 PG 심사 대응으로 잠시 내렸다가, 빌링(정기결제)을 심사 범위에 포함하기로 하면서
+   *   2026-08-13 판매를 재개했다. 빌링 결제경로를 제출하려면 구독 상품이 화면에 있어야 한다.
+   *   급히 내려야 할 때만 `SUBSCRIPTIONS_FOR_SALE=false` 로 끈다(코드 수정·배포 없이 즉시 차단).
+   *
+   *   참고: 1회 10만원 한도는 **충전형 상품에만** 걸리는 규제로 보인다 —
+   *   토스 충전업종 가이드(4p·12p)에만 나오고 빌링 가이드에는 금액 한도 언급이 없다.
+   *   구독 플랜(₩31,000~₩1,990,000)은 대상이 아닐 가능성이 높으나 회신으로 확답을 받을 것.
+   */
+  subscriptionsForSale: String(process.env.SUBSCRIPTIONS_FOR_SALE || '').trim().toLowerCase() !== 'false',
+  // 통화·PG: KRW=국내(토스페이먼츠, 포트원 연동), USD=해외(Eximbay). 표시통화=결제통화=PG. KRW는 고정가 페그(VAT 포함).
   currency: { krwPeggedFx: 1503.60, krwVatIncluded: true, peggedOn: '2026-07-13' },
 };
+
+/** KRW 결제로 판매 가능한 팩인가(1회 충전 한도 미만). USD 경로에는 적용하지 않는다. */
+function isKrwSellable(pack) {
+  return Number(pack.priceKRW) < PRICING.krwOneTimeChargeLimit;
+}
 
 /** 가격 단일 소스(메타 포함)를 반환. GET /api/pricing 의 응답 본문. */
 function getPricing() {
   return PRICING;
 }
 
-module.exports = { PRICING, getPricing };
+module.exports = { PRICING, getPricing, isKrwSellable };

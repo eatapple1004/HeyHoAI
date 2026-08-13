@@ -18,6 +18,12 @@ AI 마케팅 콘텐츠 생성 SaaS. 얼굴 셀카 또는 제품 사진 1장 + �
 - **개발자(eatapple1004) 소유·레거시 파일 건드리지 말 것**: `login/signup/index/account-*`, `baby-growth/birth-reel/character/editor/logs/templates`. 우리 소유 = `studio·landing·billing·gallery·marketplace·affiliate·business·earnings·saas-login` + `js/{hh,pricing}` + `src/recipes`·`docs`·`scripts`.
 - **시크릿 커밋 금지**(푸시 전 스캔). 커밋 메시지 끝에 `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 
+## 🧩 백엔드 = NestJS 점진 이관 중 (dev만)
+dev(develop)는 **NestJS(`nest/` → `dist/main.js`)** 로 뜬다. staging/prod는 `node src/index.js` 그대로. API 라우트 225개 전부 Nest 소유(웹훅 3·정적·페이지·백그라운드는 레거시).
+**백엔드 손대기 전 `docs/NESTJS_이관.md` 필독** — 라우팅 스위치(`NEST_PREFIXES` = 이관 원장)·포팅 규칙·함정 6가지(라우트 순서, POST 201, 접두사 충돌, `router.param` 소실, Nest 자체 Express 인스턴스, 서브트리 분할)·2서버 diff 검증법.
+- 새 API 라우트를 추가하면 **레거시 라우터가 아니라 `nest/`에** 만들고 `NEST_PREFIXES` 확인.
+- `src/index.js`에 `app.set/use` 를 추가하면 **`nest/main.ts`에도 반영**(안 하면 Nest 경로만 설정이 빠진다).
+
 ## 현재 핵심 상태
 - 가격 = **추정 placeholder**(엔진 costMeter 실원가 확정 전까지 확정 금지). 단일소스 `public/js/pricing.js` → 백엔드 시 `/api/pricing`.
 - ⚠️ **라이브 doppia.ai = 옛/부분 배포로 PR #8 작업 미반영** → `public/` 전체를 통째 재배포 필요(호스팅 방식 사용자 확인).

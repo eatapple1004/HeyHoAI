@@ -431,6 +431,59 @@ async function migrate() {
     ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS reel_post_url TEXT;
     ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS bgm_media_id UUID REFERENCES account_media(id) ON DELETE SET NULL;
   `);
+
+  // ─── 사업체(마케팅 대행 대상) ───
+  //   social_accounts는 "인스타 계정" 단위라 사업체 개념이 없다. 한 사업체가 계정을 여러 개
+  //   가질 수 있고(브랜드 본계정/서브계정) 나중에 다른 플랫폼도 붙으므로 별도 테이블로 둔다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS businesses (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name        VARCHAR(200) NOT NULL,
+        industry    VARCHAR(50),
+        memo        TEXT,
+        status      VARCHAR(20) NOT NULL DEFAULT 'active',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_businesses_status ON businesses(status);
+  `);
+
+  // 기존 계정 데이터는 business_id NULL로 그대로 산다(미연결 계정 = 사업체에 붙이기 전 상태).
+  await pool.query(`
+    ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS business_id UUID REFERENCES businesses(id) ON DELETE SET NULL;
+    CREATE INDEX IF NOT EXISTS idx_social_accounts_business ON social_accounts(business_id);
+  `);
+
+  // 오리지널 이미지는 인스타 계정을 붙이기 **전에도** 올릴 수 있어야 한다(사업체 온보딩 순서상
+  //   자료 수령이 계정 연동보다 먼저다) → account_media를 사업체에도 매달고 account_id를 옵셔널로 푼다.
+  //   기존 코드 경로는 전부 account_id를 채우므로 제약만 완화될 뿐 동작은 그대로다.
+  await pool.query(`
+    ALTER TABLE account_media ADD COLUMN IF NOT EXISTS business_id UUID REFERENCES businesses(id) ON DELETE CASCADE;
+    ALTER TABLE account_media ALTER COLUMN account_id DROP NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_account_media_business ON account_media(business_id);
+  `);
+
+  // 관리자가 직접 올린 원본(upload)과 팩·생성물에서 편입한 것(import)을 갈라야
+  //   상세 화면이 "오리지널"과 "생성 결과물"을 구분해 보여줄 수 있다. 기존 행은 NULL로 남는다.
+  await pool.query(`ALTER TABLE account_media ADD COLUMN IF NOT EXISTS source VARCHAR(20);`);
+
+  // 사업체 ↔ 콘텐츠팩 연결. content_packs는 pack.repository가 지연 생성하는 테이블이라
+  //   여기서 FK를 걸 수 없다(마이그레이션 시점에 아직 없을 수 있음) → pack_id만 보관한다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_packs (
+        business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        pack_id     BIGINT NOT NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (business_id, pack_id)
+    );
+  `);
+
+  // 예약 발행 — scheduled_at은 이미 post_queue에 있으나 스케줄러가 안 쓰던 컬럼이다.
+  //   도래분을 분 단위로 훑으므로 (status, scheduled_at) 인덱스를 깔아준다.
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_post_queue_due ON post_queue(status, scheduled_at);
+  `);
+
   await pool.query(SEED_CATEGORIES);
   await pool.query(SEED_ATTRIBUTES);
 
@@ -1329,6 +1382,80 @@ async function migrateCredits() {
         updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_billing_orders_user ON billing_orders(user_id, created_at DESC);
+  `);
+
+  // 빌링키(정기결제용 카드 토큰) — PortOne V2.
+  //   ⚠️ 카드번호는 저장하지 않는다. PG가 보관하고 우리는 토큰(billing_key)과 표시용 last4/브랜드만 갖는다.
+  //   해지는 행 삭제가 아니라 status='deleted' — 과거 청구 건의 추적성을 남긴다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS billing_keys (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider    VARCHAR(30) NOT NULL DEFAULT 'portone',
+        billing_key TEXT NOT NULL,
+        card_brand  VARCHAR(60),
+        card_last4  VARCHAR(8),
+        status      VARCHAR(20) NOT NULL DEFAULT 'active',   -- active | deleted
+        raw         JSONB DEFAULT '{}',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_billing_keys_user ON billing_keys(user_id);
+  `);
+  // 유저당 활성 카드는 1장 — 부분 유니크 인덱스라 deleted 이력은 얼마든지 쌓인다.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_keys_one_active
+        ON billing_keys(user_id) WHERE status = 'active';
+  `);
+
+  // 구독(정기결제) — 빌링키로 매월 재청구하는 계약.
+  //   users.plan/plan_renews_at 은 "지금 무슨 권한인가"(=엔타이틀먼트)를 들고,
+  //   이 테이블은 "언제 얼마를 다시 청구할 것인가"(=청구 계약)를 들고 간다. 축이 다르므로 분리한다.
+  //   status: active(청구중) | canceled(기말 해지 예약/해지됨) | past_due(청구 실패, 재시도 대기)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        plan            VARCHAR(30) NOT NULL,
+        billing_key_id  UUID REFERENCES billing_keys(id) ON DELETE SET NULL,
+        amount_krw      INT NOT NULL,
+        status          VARCHAR(20) NOT NULL DEFAULT 'active',
+        next_charge_at  TIMESTAMPTZ,
+        canceled_at     TIMESTAMPTZ,
+        fail_count      INT NOT NULL DEFAULT 0,
+        last_error      TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_due ON subscriptions(status, next_charge_at);
+  `);
+  // 유저당 살아있는 구독은 1건 — 중복 구독으로 이중 청구되는 사고를 스키마에서 막는다.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_one_active
+        ON subscriptions(user_id) WHERE status IN ('active', 'past_due');
+  `);
+
+  // 구독 청구 이력 — 멱등 키(payment_id)로 같은 주기의 이중 청구를 막는다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscription_charges (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        subscription_id  UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+        user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        payment_id       TEXT NOT NULL UNIQUE,
+        period_start     TIMESTAMPTZ NOT NULL,
+        amount_krw       INT NOT NULL,
+        status           VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending | paid | failed
+        error            TEXT,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_sub_charges_sub ON subscription_charges(subscription_id, created_at DESC);
+  `);
+  // 같은 구독의 같은 주기는 한 번만 청구된다 — 스케줄러가 겹쳐 돌아도 두 번 긁히지 않는다.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_sub_charges_period
+        ON subscription_charges(subscription_id, period_start);
   `);
 
   // 결제 기록 — PG 주문 멱등 처리용 (provider+order_id UNIQUE)
