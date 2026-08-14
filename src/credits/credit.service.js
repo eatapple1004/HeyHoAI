@@ -37,11 +37,32 @@ const AD_VIDEO_CREDIT = {
   low:  { 5: 625, 10: 1195 },
   high: { 5: 945, 10: 1705 },
 };
+// ─── Ad Studio (URL to Ad) — 단일패스 영상. Seedance(fal) 실단가 기준 (2026-08-14) ───
+//   fal 공식가: 720p standard $0.3024/s · fast $0.2419/s. ×1,361(Elite 50% 바닥)로 크레딧 환산.
+//   ⚠️ 480p·1080p 단가는 fal이 공개하지 않아 **경쟁사 실측 비율**(480p 28 / 720p 40 / 1080p 80)로
+//      추정했다 = 0.7배 / 1배 / 2배. fal 청구서로 실단가 확인되면 이 배수를 교체할 것.
+const AD_STUDIO_PER_SEC = { standard: 412, fast: 330 };   // 720p 기준 초당 크레딧
+const AD_STUDIO_RES_MULT = { '480p': 0.7, '720p': 1, '1080p': 2 };
+
+/**
+ * URL to Ad 영상 비용. 길이 정률(경쟁사도 초당 정률) × 해상도 배수.
+ * @param {number} durationSec 4~15
+ * @param {'standard'|'fast'} tier
+ * @param {'480p'|'720p'|'1080p'} resolution
+ */
+function adStudioCost(durationSec, tier = 'standard', resolution = '720p') {
+  const d = Math.min(15, Math.max(4, parseInt(durationSec, 10) || 8));
+  const perSec = AD_STUDIO_PER_SEC[tier] || AD_STUDIO_PER_SEC.standard;
+  const mult = AD_STUDIO_RES_MULT[resolution] || 1;
+  return Math.round(d * perSec * mult);
+}
+
 // 오디오 재생성(편집 중 "다시 만들기"만 과금 — 초기 생성은 베이스에 포함/무과금). ElevenLabs 실비 기반(추정 아님).
 //   음성 TTS multilingual_v2 $0.10/1,000자 ×1,361 = 136/1K자. 음악 music_v2 $0.15/분 ÷60 ×1,361 ≈ 3.4/초.
 //   ⚠️ 음악 분 반올림은 ElevenLabs 페이지에 명시 없음 → 초 비례 잠정(청구서 확인 후 확정).
 const AUDIO_REGEN_CREDIT = { voicePer1kChars: 136, musicPerSec: 3.4 };
 const COSTS = {
+  adStudio: { perSec: AD_STUDIO_PER_SEC, resMult: AD_STUDIO_RES_MULT }, // 클라 비용표시용
   caption: 30, // 캡션+해시태그 애드온 (옛 1 ×30)
   enhance: 30, // 프롬프트 Enhance 애드온 (옛 1 ×30)
   img: IMG_CREDIT,     // 클라 비용표시용 — {model:[커스텀,템플릿]}
@@ -237,6 +258,7 @@ module.exports = {
   COSTS,
   imageCost,
   videoCost,
+  adStudioCost,
   adVideoSceneCost,
   voiceRegenCost,
   musicRegenCost,
