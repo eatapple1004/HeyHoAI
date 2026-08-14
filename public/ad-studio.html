@@ -24,6 +24,11 @@
          font-size: 12px; display: grid; place-items: center; flex: none; }
 
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; resize: vertical;
+             border: 1px solid var(--line, #2a2a3a); background: var(--bg, #0c0c14); color: inherit;
+             font-size: 14px; font-family: inherit; line-height: 1.5; }
+  .chosen { font-size: 12.5px; color: var(--muted, #9a9ab0); margin: 8px 0; }
+  .chosen b { color: inherit; }
   input[type=text], input[type=url] { flex: 1; min-width: 220px; padding: 10px 12px; border-radius: 8px;
          border: 1px solid var(--line, #2a2a3a); background: var(--bg, #0c0c14); color: inherit; font-size: 14px; }
   button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--accent, #7c6cff);
@@ -102,11 +107,17 @@
 
   <!-- 2. 구성 -->
   <section class="step" id="s2" aria-disabled="true">
-    <h2><span class="num">2</span> 훅과 장소 고르기</h2>
-    <div class="label">훅 — 첫 3초에 할 말</div>
-    <div class="chips" id="hooks"></div>
-    <div class="label">장소</div>
-    <div class="chips" id="settings"></div>
+    <h2><span class="num">2</span> 어떻게 만들까요</h2>
+    <div class="label">원하는 느낌 <span style="opacity:.6">(비워두면 알아서 정합니다)</span></div>
+    <textarea id="direction" rows="3" placeholder="예) 20대 여성 타깃으로 상큼하게, 손 클로즈업 많이&#10;예) 캠핑장 분위기로, 가족이 쓰는 느낌"></textarea>
+
+    <details id="advanced" style="margin-top:10px">
+      <summary class="muted" style="cursor:pointer">훅·장소 직접 고르기</summary>
+      <div class="label">훅 — 첫 3초에 할 말</div>
+      <div class="chips" id="hooks"></div>
+      <div class="label">장소</div>
+      <div class="chips" id="settings"></div>
+    </details>
 
     <div class="label">길이 · 화질</div>
     <div class="chips" id="opts">
@@ -116,12 +127,14 @@
       <button class="chip" data-k="resolution" data-v="720p" aria-pressed="true">720p</button>
       <button class="chip" data-k="resolution" data-v="1080p">1080p</button>
     </div>
-    <div class="label">소리</div>
-    <div class="chips" id="audioOpts">
-      <button class="chip" data-v="on" aria-pressed="true">🔊 나레이션 넣기</button>
-      <button class="chip" data-v="off">🔇 무음</button>
-    </div>
-    <div class="muted" id="audioNote">대사를 한국어 음성으로 읽어 영상에 얹습니다.</div>
+    <details style="margin-top:10px">
+      <summary class="muted" style="cursor:pointer">소리 (실험 중)</summary>
+      <div class="chips" id="audioOpts" style="margin-top:8px">
+        <button class="chip" data-v="off" aria-pressed="true">🔇 무음</button>
+        <button class="chip" data-v="on">🔊 나레이션 넣기</button>
+      </div>
+      <div class="muted" id="audioNote">소리 없이 영상만 만듭니다.</div>
+    </details>
     <div class="row" style="margin-top:14px; align-items:center">
       <button id="btnCompile">미리보기 만들기</button>
       <span class="cost" id="costLine"></span>
@@ -132,6 +145,7 @@
   <!-- 3. 확인 -->
   <section class="step" id="s3" aria-disabled="true">
     <h2><span class="num">3</span> 확인하고 만들기</h2>
+    <div class="chosen" id="chosen"></div>
     <div id="shots"></div>
     <div id="warns"></div>
     <details style="margin-top:10px">
@@ -150,7 +164,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', generateAudio: true, compiled: null, jobId: null };
+  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', generateAudio: false, compiled: null, jobId: null };
 
   /** 응답 봉투가 {success,data} 또는 {success:false,error}. 에러는 서버 문구를 그대로 보여준다. */
   async function api(path, opts = {}) {
@@ -180,7 +194,6 @@
     $('productBox').hidden = false;
     $('manualBox').open = false;
     enable('s2', true);
-    loadLibrary();
     updateCost();
   }
 
@@ -240,6 +253,8 @@
     render($('settings'), settings, 'settingId');
   }
 
+  $('advanced').addEventListener('toggle', () => { if ($('advanced').open) loadLibrary(); });
+
   $('opts').querySelectorAll('.chip').forEach((c) => {
     c.onclick = () => {
       $('opts').querySelectorAll('.chip[data-k="' + c.dataset.k + '"]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
@@ -287,6 +302,7 @@
         name: state.product.name, price: state.product.price,
         attributes: state.product.attributes, images: state.product.images,
       } : undefined,
+      direction: ($('direction').value || '').trim() || undefined,
       hookId: state.hookId, settingId: state.settingId,
       durationSec: state.duration, resolution: state.resolution,
       aspectRatio: '9:16', generateAudio: state.generateAudio,
@@ -313,6 +329,12 @@
         '<div class="shot"><div class="tc">SHOT ' + s.index + ' · ' + s.startSec + '–' + s.endSec + '초</div>' +
         '<div>' + html(s.action) + '</div>' +
         (s.dialogueKo ? '<div class="say">🗣 "' + html(s.dialogueKo) + '"</div>' : '') + '</div>').join('');
+      // 자동으로 골랐으면 무엇을 골랐는지 보여준다 — 사용자가 결과를 이해하고 조정할 수 있어야 한다.
+      const ch = c.chosen || {};
+      $('chosen').innerHTML = (ch.auto && (ch.hook || ch.setting))
+        ? '자동 선택 — 훅 <b>' + html(ch.hook || '없음') + '</b> · 장소 <b>' + html(ch.setting || '없음') + '</b>'
+          + ' <span style="opacity:.7">(바꾸려면 위 [훅·장소 직접 고르기])</span>'
+        : '';
       $('warns').innerHTML = (c.warnings || []).map((w) => '<div class="warn">⚠️ ' + html(w) + '</div>').join('');
       $('prompt').textContent = c.enhancedPrompt;
       $('genCost').innerHTML = '<b>◈' + c.estimatedCredits.toLocaleString() + '</b> 차감';

@@ -68,26 +68,48 @@ export class AdStudioService {
     const hasProductImage = !!(product?.images || []).length;
     if (!product?.name) throw httpError(400, '제품 정보가 필요합니다.');
 
-    const [hook, setting] = await Promise.all([
+    let [hook, setting] = await Promise.all([
       body.hookId ? this.repo.findSetupItem(body.hookId, userId) : null,
       body.settingId ? this.repo.findSetupItem(body.settingId, userId) : null,
     ]);
     if (body.hookId && !hook) throw httpError(404, '훅을 찾을 수 없습니다.');
     if (body.settingId && !setting) throw httpError(404, '장소를 찾을 수 없습니다.');
 
+    // 사용자가 안 골랐으면 라이브러리를 통째로 넘겨 **모델이 고르게** 한다.
+    //   대부분의 사용자는 아무것도 고르지 않는다 — 그 상태가 기본값이어야 한다.
+    const auto = !hook || !setting;
+    const [hookLib, settingLib] = auto
+      ? await Promise.all([
+          hook ? Promise.resolve([]) : this.repo.listSetupItems('hook', userId),
+          setting ? Promise.resolve([]) : this.repo.listSetupItems('setting', userId),
+        ])
+      : [[], []];
+
     const attrs: any = product.attributes || {};
     // 훅 프롬프트의 {{product}}는 여기서 치환한다(시드에 박아둔 자리표시자).
     const hookPrompt = hook ? hook.prompt.replace(/\{\{product\}\}/g, product.name) : undefined;
 
-    const shots = await this.planner.plan({
+    const planned = await this.planner.plan({
       productName: product.name,
       productSummary: attrs.summary,
       sellingPoints: attrs.sellingPoints,
       hookPrompt,
       settingPrompt: setting?.prompt,
+      direction: (body.direction || '').trim() || undefined,
+      hookLibrary: hookLib.map((h) => ({ slug: h.slug, name: h.name, prompt: h.prompt })),
+      settingLibrary: settingLib.map((x) => ({ slug: x.slug, name: x.name, prompt: x.prompt })),
       durationSec,
       hasAvatar: !!(body.avatarIds || []).length,
     });
+    const shots = planned.shots;
+
+    // 모델이 고른 것을 실제 항목으로 되돌린다(LOCATION 블록에 장소 지시가 들어가야 한다).
+    if (!hook && planned.chosenHookSlug) {
+      hook = hookLib.find((h) => h.slug === planned.chosenHookSlug) || null;
+    }
+    if (!setting && planned.chosenSettingSlug) {
+      setting = settingLib.find((x) => x.slug === planned.chosenSettingSlug) || null;
+    }
 
     const compiled = this.compiler.compile({
       productName: product.name,
@@ -101,7 +123,11 @@ export class AdStudioService {
       generateAudio: body.generateAudio !== false,
     });
 
-    return { ...compiled, estimatedCredits: this.cost({ ...body, durationSec }).credits };
+    return {
+      ...compiled,
+      chosen: { hook: hook?.name || null, setting: setting?.name || null, auto },
+      estimatedCredits: this.cost({ ...body, durationSec }).credits,
+    };
   }
 
   /** Seedance가 4~15초만 받는다. 범위를 벗어나면 조용히 보정하지 않고 여기서 한 번만 클램프. */
