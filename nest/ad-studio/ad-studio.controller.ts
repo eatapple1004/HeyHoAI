@@ -1,6 +1,8 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdStudioService } from './ad-studio.service';
+import { AdJobService } from './ad-job.service';
+import { AdJobVo } from './ad-job.repository';
 import { AdCostDto, CompileAdDto, CompileResultDto } from './dto/ad-studio.dto';
 import { AdSetupItemVo } from './vo/ad-studio.vo';
 import { ApiResponse } from '../common/dto/api-response.dto';
@@ -9,7 +11,10 @@ import { ApiResponse } from '../common/dto/api-response.dto';
 @Controller('api/ad-studio')
 @UseGuards(JwtAuthGuard)
 export class AdStudioController {
-  constructor(private readonly ads: AdStudioService) {}
+  constructor(
+    private readonly ads: AdStudioService,
+    private readonly jobs: AdJobService,
+  ) {}
 
   @Get('hooks')
   async hooks(@Req() req: any): Promise<ApiResponse<AdSetupItemVo[]>> {
@@ -33,5 +38,26 @@ export class AdStudioController {
   @HttpCode(200)
   async compile(@Req() req: any, @Body() body: CompileAdDto): Promise<ApiResponse<CompileResultDto>> {
     return { success: true, data: await this.ads.compile(req.user.id, body || {}) };
+  }
+
+  /**
+   * 생성 시작 — 컴파일 → 과금 → 엔진 제출. 결과는 폴링으로 받는다.
+   * ⚠️ 200으로 내린다(Nest 기본 201이 아니라) — 생성 "완료"가 아니라 "접수"이기 때문.
+   */
+  @Post('jobs')
+  @HttpCode(200)
+  async createJob(@Req() req: any, @Body() body: CompileAdDto): Promise<ApiResponse<AdJobVo>> {
+    return { success: true, data: await this.jobs.create(req.user, body || {}) };
+  }
+
+  /** 잡 조회 — processing이면 여기서 provider를 확인해 상태를 전진시킨다(폴링 진입점). */
+  @Get('jobs/:id')
+  async getJob(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<AdJobVo>> {
+    return { success: true, data: await this.jobs.get(req.user, id) };
+  }
+
+  @Get('jobs')
+  async listJobs(@Req() req: any): Promise<ApiResponse<AdJobVo[]>> {
+    return { success: true, data: await this.jobs.list(req.user) };
   }
 }
