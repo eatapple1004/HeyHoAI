@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const log = require('../lib/logger')('AdStudio:frame');
+const { toLocalPath, isRemote } = require('../lib/servedPath');
 
 /**
  * 시작 프레임을 목표 비율로 맞춘다.
@@ -42,13 +43,13 @@ async function fitStartFrame(src, aspect = '9:16') {
   const [tw, th] = RATIOS[aspect] || RATIOS['9:16'];
 
   let buf;
-  if (/^https?:\/\//i.test(src)) {
+  if (isRemote(src)) {
     const res = await fetch(src);
     if (!res.ok) throw new Error(`시작 이미지 다운로드 실패 (${res.status})`);
     buf = Buffer.from(await res.arrayBuffer());
   } else {
-    const abs = path.isAbsolute(src) ? src : path.join(process.cwd(), src);
-    if (!fs.existsSync(abs)) throw new Error(`시작 이미지를 찾을 수 없습니다: ${src}`);
+    const abs = toLocalPath(src);
+    if (!abs) throw new Error(`시작 이미지를 찾을 수 없습니다: ${src}`);
     buf = fs.readFileSync(abs);
   }
 
