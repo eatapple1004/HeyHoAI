@@ -72,17 +72,21 @@
     <div class="muted" style="margin-top:8px">쿠팡·스마트스토어 등 일부 사이트는 자동 수집이 막혀 있습니다. 그럴 땐 아래 수동 입력이 열립니다.</div>
     <div id="collectMsg"></div>
 
-    <!-- 수집 실패 시에만 노출 -->
-    <div id="manualBox" hidden>
-      <div class="label">수동 입력</div>
-      <div class="row">
+    <details id="manualBox" style="margin-top:10px">
+      <summary class="muted" style="cursor:pointer">URL이 없거나 수집이 안 되면 — 직접 등록</summary>
+      <div class="row" style="margin-top:10px">
         <input type="text" id="mName" placeholder="제품명" />
       </div>
       <div class="row" style="margin-top:8px">
-        <input type="url" id="mImage" placeholder="제품 이미지 주소(https://...)" />
+        <input type="file" id="mFile" accept="image/*" style="flex:1" />
+        <button class="ghost" id="btnUpload">이미지 올리기</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input type="url" id="mImage" placeholder="또는 이미지 주소(https://...)" />
         <button class="ghost" id="btnManual">등록</button>
       </div>
-    </div>
+      <div class="muted" id="upMsg" style="margin-top:6px"></div>
+    </details>
 
     <div id="productBox" hidden style="margin-top:12px">
       <div class="product">
@@ -112,6 +116,12 @@
       <button class="chip" data-k="resolution" data-v="720p" aria-pressed="true">720p</button>
       <button class="chip" data-k="resolution" data-v="1080p">1080p</button>
     </div>
+    <div class="label">소리</div>
+    <div class="chips" id="audioOpts">
+      <button class="chip" data-v="on" aria-pressed="true">🔊 나레이션 넣기</button>
+      <button class="chip" data-v="off">🔇 무음</button>
+    </div>
+    <div class="muted" id="audioNote">대사를 한국어 음성으로 읽어 영상에 얹습니다.</div>
     <div class="row" style="margin-top:14px; align-items:center">
       <button id="btnCompile">미리보기 만들기</button>
       <span class="cost" id="costLine"></span>
@@ -140,7 +150,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', compiled: null, jobId: null };
+  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', generateAudio: true, compiled: null, jobId: null };
 
   /** 응답 봉투가 {success,data} 또는 {success:false,error}. 에러는 서버 문구를 그대로 보여준다. */
   async function api(path, opts = {}) {
@@ -168,7 +178,7 @@
     $('pImg').src = (p.images || [])[0] || '';
     $('pThumbs').innerHTML = (p.images || []).slice(1, 6).map((u) => '<img src="' + html(u) + '" alt="">').join('');
     $('productBox').hidden = false;
-    $('manualBox').hidden = true;
+    $('manualBox').open = false;
     enable('s2', true);
     loadLibrary();
     updateCost();
@@ -185,7 +195,7 @@
     } catch (e) {
       // 422 = 대상 사이트 문제 → 수동 입력을 연다(막다른 길로 두지 않는다)
       $('collectMsg').innerHTML = '<div class="err">' + html(e.message) + '</div>';
-      if (e.status === 422) $('manualBox').hidden = false;
+      if (e.status === 422) $('manualBox').open = true;   // 막다른 길로 두지 않는다
     } finally {
       $('btnCollect').disabled = false;
     }
@@ -239,6 +249,38 @@
     };
   });
 
+  $('audioOpts').querySelectorAll('.chip').forEach((c) => {
+    c.onclick = () => {
+      $('audioOpts').querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      c.setAttribute('aria-pressed', 'true');
+      state.generateAudio = c.dataset.v === 'on';
+      $('audioNote').textContent = state.generateAudio
+        ? '대사를 한국어 음성으로 읽어 영상에 얹습니다.'
+        : '소리 없이 영상만 만듭니다.';
+    };
+  });
+
+  /** 파일 업로드 → /images/<file> 경로를 받아 아래 URL 칸을 채운다. */
+  $('btnUpload').onclick = async () => {
+    const f = $('mFile').files[0];
+    if (!f) { $('upMsg').textContent = '이미지 파일을 먼저 고르세요.'; return; }
+    $('btnUpload').disabled = true;
+    $('upMsg').textContent = '올리는 중…';
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const r = await fetch('/api/ad-studio/upload', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!r.ok || j.success === false) throw new Error(j.error || '업로드 실패');
+      $('mImage').value = j.data.url;
+      $('upMsg').textContent = '업로드 완료 — 제품명을 넣고 [등록]을 누르세요.';
+    } catch (e) {
+      $('upMsg').textContent = e.message;
+    } finally {
+      $('btnUpload').disabled = false;
+    }
+  };
+
   function payload() {
     return {
       product: state.product ? {
@@ -247,7 +289,7 @@
       } : undefined,
       hookId: state.hookId, settingId: state.settingId,
       durationSec: state.duration, resolution: state.resolution,
-      aspectRatio: '9:16', generateAudio: false,
+      aspectRatio: '9:16', generateAudio: state.generateAudio,
     };
   }
 
