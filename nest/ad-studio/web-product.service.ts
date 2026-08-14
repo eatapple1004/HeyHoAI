@@ -74,13 +74,14 @@ export class WebProductService {
   }
 
   /** 수동 입력 폴백 — 수집이 막힌 사이트(쿠팡 등)는 사용자가 직접 넣는다. */
-  async manual(userId: string, d: { url?: string; name: string; price?: string; images: string[] }): Promise<WebProductVo> {
-    if (!d.name) throw httpError(400, '제품명이 필요합니다.');
+  async manual(userId: string, d: { url?: string; name?: string; price?: string; images: string[] }): Promise<WebProductVo> {
     if (!d.images?.length) throw httpError(400, '제품 이미지가 최소 1장 필요합니다.');
     let attributes: Record<string, any> = {};
     try { attributes = await extract(d); } catch (e: any) { attributes = { _error: e.message }; }
+    // 이름을 안 적었으면 vision이 읽은 카테고리로 채운다 — 이미지만 고르고 바로 시작할 수 있어야 한다.
+    const name = (d.name || '').trim() || attributes.category || '제품';
     return this.insert(userId, {
-      url: d.url || '', name: d.name, price: d.price, images: d.images,
+      url: d.url || '', name, price: d.price, images: d.images,
       attributes, collector: 'manual', status: 'ready',
     });
   }
