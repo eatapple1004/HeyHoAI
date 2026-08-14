@@ -1,6 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { env } = require('../config');
 const log = require('../lib/logger')('AdStudio:extract');
+const { toLocalPath } = require('../lib/servedPath');
 
 /**
  * 수집한 이미지 → 광고 대본에 쓸 제품 속성(구조화).
