@@ -44,6 +44,16 @@
 
   .product { display: flex; gap: 12px; align-items: center; }
   .product img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; background: #222; }
+  /* 이전 업로드 선택 — 매번 새로 올리지 않게. Shots와 같은 방식. */
+  .picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .picker button { padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden;
+                   background: none; line-height: 0; cursor: pointer; position: relative; }
+  .picker button:hover { border-color: var(--line, #2a2a3a); }
+  .picker button[aria-pressed="true"] { border-color: var(--accent, #7c6cff); }
+  .picker img { width: 64px; height: 64px; object-fit: cover; display: block; background: #222; }
+  .picker .cap { position: absolute; left: 0; right: 0; bottom: 0; font-size: 9px; line-height: 1.4;
+                 padding: 2px 3px; background: rgba(0,0,0,.62); color: #fff; text-align: center;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .thumbs img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 
@@ -97,8 +107,13 @@
       <input type="url" id="url" placeholder="https://... 상품 페이지 주소" />
       <button id="btnCollect">가져오기</button>
     </div>
-    <div class="muted" style="margin-top:8px">쿠팡·스마트스토어 등 일부 사이트는 자동 수집이 막혀 있습니다. 그럴 땐 아래 수동 입력이 열립니다.</div>
+    <div class="muted" style="margin-top:8px">쿠팡·스마트스토어 등 일부 사이트는 자동 수집이 막혀 있습니다. 그럴 땐 아래에서 이미지를 직접 고르거나 올리세요.</div>
     <div id="collectMsg"></div>
+
+    <div id="recentWrap" hidden>
+      <div class="label">예전에 올린 이미지 — 눌러서 바로 시작</div>
+      <div class="picker" id="recent"></div>
+    </div>
 
     <details id="manualBox" style="margin-top:10px">
       <summary class="muted" style="cursor:pointer">URL이 없거나 수집이 안 되면 — 직접 등록</summary>
@@ -198,6 +213,38 @@
 
   const enable = (id, on) => $(id).setAttribute('aria-disabled', on ? 'false' : 'true');
   const html = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ── 0. 예전에 올린 이미지 ──
+  /** 이미 올린 걸 다시 올리게 하지 않는다. 누르면 vision이 이름까지 붙여 바로 제품이 된다. */
+  async function loadRecent() {
+    let items = [];
+    try { items = await api('/recent-images'); } catch { return; }
+    if (!items.length) return;
+    $('recentWrap').hidden = false;
+    $('recent').innerHTML = items.map((it, i) =>
+      '<button data-i="' + i + '" title="' + html(it.label) + '">' +
+      '<img src="' + html(it.url) + '" alt="" loading="lazy">' +
+      '<span class="cap">' + html(it.label) + '</span></button>').join('');
+    $('recent').querySelectorAll('button').forEach((b) => {
+      b.onclick = async () => {
+        const it = items[+b.dataset.i];
+        $('recent').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+        // 이미 등록된 제품이면 그대로 쓰고, 아니면 이미지로 새로 등록한다(이름은 vision이 붙인다).
+        $('collectMsg').innerHTML = '<div class="muted">불러오는 중…</div>';
+        try {
+          const p = it.productId
+            ? await api('/web-products/' + it.productId)
+            : await api('/web-products/manual', { method: 'POST', body: JSON.stringify({ images: [it.url] }) });
+          showProduct(p);
+          $('collectMsg').innerHTML = '';
+        } catch (e) {
+          $('collectMsg').innerHTML = '<div class="err">' + html(e.message) + '</div>';
+        }
+      };
+    });
+  }
+  loadRecent();
 
   // ── 1. 수집 ──
   function showProduct(p) {

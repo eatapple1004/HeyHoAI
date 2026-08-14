@@ -29,6 +29,10 @@ export class AdStudioService {
     return this.repo.listSetupItems(type, userId);
   }
 
+  listRecentImages(userId: string) {
+    return this.repo.listRecentImages(userId);
+  }
+
   /** 생성 전 비용 — **무료**. 사용자가 길이·화질을 바꿔가며 확인할 수 있어야 한다. */
   cost(body: CompileAdDto): AdCostDto {
     const durationSec = this.clampDuration(body.durationSec);

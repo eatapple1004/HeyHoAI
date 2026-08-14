@@ -58,9 +58,20 @@ export class AdStudioController {
     return { success: true, data: { url: `/images/${file.filename}` } };
   }
 
+  /** 예전에 올린 이미지들 — 매번 새로 올리지 않게(Shots와 같은 방식) */
+  @Get('recent-images')
+  async recentImages(@Req() req: any): Promise<ApiResponse<Array<{ url: string; label: string; productId: string | null }>>> {
+    return { success: true, data: await this.ads.listRecentImages(req.user.id) };
+  }
+
   @Get('web-products')
   async listProducts(@Req() req: any): Promise<ApiResponse<WebProductVo[]>> {
     return { success: true, data: await this.products.list(req.user.id) };
+  }
+
+  @Get('web-products/:id')
+  async getProduct(@Req() req: any, @Param('id') id: string): Promise<ApiResponse<WebProductVo>> {
+    return { success: true, data: await this.products.find(req.user.id, id) };
   }
 
   /** 비용 산정 — 무료. 길이·화질을 바꿔가며 확인하는 용도라 과금하면 안 된다. */
