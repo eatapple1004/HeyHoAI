@@ -46,7 +46,12 @@ async function toImageUrl(src) {
   // 공개 URL이면 그대로 — fal이 직접 받아간다(업로드 비용·지연 절약)
   if (/^https?:\/\//i.test(s)) return s;
 
-  const abs = path.isAbsolute(s) ? s : path.join(process.cwd(), s);
+  // 우리 서빙 경로 `/images/<file>` 규약 — 실제 파일은 tmp/images에 있다(kling.provider와 동일 처리).
+  //   이걸 빼먹으면 시작 프레임 보정(frameFit)이 만든 경로를 못 읽는다.
+  const served = s.match(/^\/images\/([^/?#]+)$/);
+  const abs = served
+    ? path.join(process.cwd(), 'tmp', 'images', served[1])
+    : (path.isAbsolute(s) ? s : path.join(process.cwd(), s));
   if (!fs.existsSync(abs)) throw new Error(`Seedance: source image not found — ${s}`);
   const ext = path.extname(abs).toLowerCase();
   const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
