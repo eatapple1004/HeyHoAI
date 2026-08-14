@@ -24,8 +24,10 @@ const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 const SHOT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['shots'],
+  required: ['shots', 'chosenHookSlug', 'chosenSettingSlug'],
   properties: {
+    chosenHookSlug: { type: 'string', description: '고른 훅의 slug. 사용자가 이미 지정했으면 빈 문자열' },
+    chosenSettingSlug: { type: 'string', description: '고른 장소의 slug. 사용자가 이미 지정했으면 빈 문자열' },
     shots: {
       type: 'array',
       items: {
@@ -52,7 +54,11 @@ const SYSTEM = `너는 숏폼 광고 감독이다. 제품과 훅을 받아 세�
 - \`dialogueKo\`는 **한국어 구어체**로 쓴다. 번역투 금지. 실제 사람이 말하듯이.
 - 대사는 1초에 4~5글자가 자연스럽다. 2초 샷에 20글자를 넣으면 말이 빨라져 못 알아듣는다.
 - 제품에 대해 **주어진 정보에 없는 효능·수치·성분을 지어내지 않는다**(광고 심의 위반).
-- 첫 샷은 훅이다. 스크롤을 멈추게 하는 게 유일한 목적이다.`;
+- 첫 샷은 훅이다. 스크롤을 멈추게 하는 게 유일한 목적이다.
+
+훅·장소를 **네가 고르는 경우**(목록이 주어졌을 때):
+- 제품 성격과 사용자의 희망사항에 가장 맞는 것을 하나씩 고르고 slug를 돌려준다.
+- 고른 것을 실제 샷 구성에 반영한다. 고르기만 하고 무시하면 안 된다.`;
 
 @Injectable()
 export class ShotPlannerService {
@@ -66,16 +72,29 @@ export class ShotPlannerService {
     sellingPoints?: string[];
     hookPrompt?: string;
     settingPrompt?: string;
+    /** 사용자가 적은 희망사항 — 있으면 최우선으로 반영한다 */
+    direction?: string;
+    /** 훅·장소를 사용자가 안 골랐을 때 여기서 고르라고 넘기는 목록 */
+    hookLibrary?: Array<{ slug: string; name: string; prompt: string }>;
+    settingLibrary?: Array<{ slug: string; name: string; prompt: string }>;
     durationSec: number;
     hasAvatar: boolean;
-  }): Promise<ShotVo[]> {
+  }): Promise<{ shots: ShotVo[]; chosenHookSlug: string; chosenSettingSlug: string }> {
     const user = [
       `총 길이: ${input.durationSec}초 (마지막 샷 endSec = ${input.durationSec})`,
       `제품: ${input.productName}`,
       input.productSummary ? `설명: ${input.productSummary}` : '',
       input.sellingPoints?.length ? `셀링포인트: ${input.sellingPoints.join(' / ')}` : '',
+      // 사용자가 적은 희망사항이 최우선 — 라이브러리 선택도 여기에 맞춘다.
+      input.direction ? `\n★ 사용자 요청(최우선 반영): ${input.direction}\n` : '',
       input.hookPrompt ? `훅(첫 샷에 반영): ${input.hookPrompt}` : '',
       input.settingPrompt ? `배경/장소: ${input.settingPrompt}` : '',
+      input.hookLibrary?.length
+        ? `고를 수 있는 훅(slug: 이름 — 지시):\n${input.hookLibrary.map((h) => `  ${h.slug}: ${h.name} — ${h.prompt}`).join('\n')}`
+        : '',
+      input.settingLibrary?.length
+        ? `고를 수 있는 장소(slug: 이름 — 지시):\n${input.settingLibrary.map((x) => `  ${x.slug}: ${x.name} — ${x.prompt}`).join('\n')}`
+        : '',
       input.hasAvatar
         ? '화자(사람)가 등장한다. 대사를 넣어라.'
         : '사람이 등장하지 않는다. 제품 중심으로 구성하고 dialogueKo는 내레이션으로 쓴다.',
@@ -93,8 +112,9 @@ export class ShotPlannerService {
     const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
     if (!m) throw new Error('샷 계획: 유효한 JSON이 오지 않았습니다.');
 
-    const raw = JSON.parse(m[1]).shots || [];
-    return raw
+    const parsed = JSON.parse(m[1]);
+    const raw = parsed.shots || [];
+    const shots = raw
       .map((s: any, i: number) => ({
         index: i + 1,
         startSec: Number(s.startSec) || 0,
@@ -104,5 +124,11 @@ export class ShotPlannerService {
       }))
       .sort((a: ShotVo, b: ShotVo) => a.startSec - b.startSec)
       .map((s: ShotVo, i: number) => ({ ...s, index: i + 1 }));
+
+    return {
+      shots,
+      chosenHookSlug: String(parsed.chosenHookSlug || ''),
+      chosenSettingSlug: String(parsed.chosenSettingSlug || ''),
+    };
   }
 }
