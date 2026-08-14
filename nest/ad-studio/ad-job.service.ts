@@ -25,6 +25,9 @@ const seedanceProvider = require(path.join(__dirname, '..', '..', 'src', 'videos
 const klingProvider = require(path.join(__dirname, '..', '..', 'src', 'videos', 'providers', 'kling.provider.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
+// ⚠️ image2video 엔진은 aspect_ratio를 무시하고 **입력 이미지 비율**을 따라간다(실측).
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { fitStartFrame } = require(path.join(__dirname, '..', '..', 'src', 'ad-studio', 'frameFit.service.js'));
 
 const OUTPUT_DIR = path.join(process.cwd(), 'tmp', 'images');
 /** Kling은 5·10초만 받는다. Seedance는 4~15초 자유. */
@@ -67,10 +70,22 @@ export class AdJobService {
     const { name: engine, provider } = this.pickEngine();
 
     const cost = this.studio.cost(body);
-    const startImage = (body.product?.images || [])[0];
+    const aspectRatio = body.aspectRatio || '9:16';
+    let startImage = (body.product?.images || [])[0];
     if (engine === 'kling' && !startImage) {
       // Kling은 image2video라 첫 프레임이 반드시 있어야 한다.
       throw httpError(400, '이 엔진은 시작 이미지가 필요합니다. 제품 이미지를 먼저 준비해 주세요.');
+    }
+
+    // ── 시작 프레임 비율 보정 ──
+    //   요청 비율과 이미지 비율이 다르면 결과가 이미지 비율로 나온다(500×500 → 960×960 실측).
+    //   과금 **전에** 한다 — 여기서 실패하면 돈을 받지 않는다.
+    if (startImage) {
+      try {
+        startImage = (await fitStartFrame(startImage, aspectRatio)).url;
+      } catch (e: any) {
+        throw httpError(400, `시작 이미지를 처리할 수 없습니다: ${e.message}`);
+      }
     }
 
     // ── 과금 ── 팀 컨텍스트면 팀 풀에서, 개인이면 개인 잔액에서(admin 면제)
@@ -91,7 +106,7 @@ export class AdJobService {
         avatarIds: body.avatarIds || [],
         duration: cost.durationSec,
         resolution: cost.resolution,
-        aspectRatio: body.aspectRatio || '9:16',
+        aspectRatio,
         generateAudio: body.generateAudio !== false,
         enhancedPrompt: compiled.enhancedPrompt,
         engine,
@@ -109,7 +124,7 @@ export class AdJobService {
         motionPrompt: compiled.enhancedPrompt,
         negativePrompt: '',                       // Seedance는 미지원, Kling은 프롬프트에 포함시킨다
         durationSec: this.engineDuration(engine, cost.durationSec),
-        aspectRatio: body.aspectRatio || '9:16',
+        aspectRatio,
         resolution: cost.resolution,
         generateAudio: body.generateAudio !== false,
         tier: body.tier || 'standard',
