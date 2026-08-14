@@ -538,6 +538,7 @@ async function migrate() {
         enhanced_prompt TEXT,                             -- 컴파일 결과 보존 = 품질 회귀 추적의 근거
         engine          VARCHAR(30),                      -- 어떤 엔진으로 돌았나(경쟁사는 이걸 숨긴다)
         provider_job_id TEXT,
+        provider_meta   JSONB NOT NULL DEFAULT '{}'::jsonb,   -- 폴링에 필요한 status_url 등(엔진마다 다르다)
         status          VARCHAR(20) NOT NULL DEFAULT 'pending',
         result_url      TEXT,
         error           TEXT,
