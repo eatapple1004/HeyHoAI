@@ -536,6 +536,7 @@ async function migrate() {
         aspect_ratio    VARCHAR(10) NOT NULL DEFAULT '9:16',
         generate_audio  BOOLEAN NOT NULL DEFAULT true,
         enhanced_prompt TEXT,                             -- 컴파일 결과 보존 = 품질 회귀 추적의 근거
+        shots           JSONB NOT NULL DEFAULT '[]'::jsonb, -- 샷별 타임코드+대사(나레이션 합성에 필요)
         engine          VARCHAR(30),                      -- 어떤 엔진으로 돌았나(경쟁사는 이걸 숨긴다)
         provider_job_id TEXT,
         provider_meta   JSONB NOT NULL DEFAULT '{}'::jsonb,   -- 폴링에 필요한 status_url 등(엔진마다 다르다)
@@ -548,6 +549,11 @@ async function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_ad_jobs_user ON ad_jobs(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_ad_jobs_status ON ad_jobs(status) WHERE status IN ('pending','processing');
+  `);
+
+  // ad_jobs는 이미 배포됐을 수 있어 ALTER로도 보강한다(신규 DB는 위 CREATE로 이미 있음).
+  await pool.query(`
+    ALTER TABLE ad_jobs ADD COLUMN IF NOT EXISTS shots JSONB NOT NULL DEFAULT '[]'::jsonb;
   `);
 
   // 브랜드킷 확장 — URL 자동 추출이 채울 필드들. 기존 3개(logo_url·primary_color·font_name)는 그대로.
