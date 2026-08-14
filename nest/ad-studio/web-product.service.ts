@@ -9,6 +9,27 @@ const collectors = require(path.join(__dirname, '..', '..', 'src', 'ad-studio', 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { extract } = require(path.join(__dirname, '..', '..', 'src', 'ad-studio', 'productExtract.service.js'));
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const multer = require('multer');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const fsMod = require('fs');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cryptoMod = require('crypto');
+
+/** 제품 이미지 업로드 — tmp/images에 저장하고 /images/<file>로 서빙한다(기존 미디어 규약과 동일). */
+const UPLOAD_DIR = path.join(process.cwd(), 'tmp', 'images');
+fsMod.mkdirSync(UPLOAD_DIR, { recursive: true });
+export const AD_UPLOAD_OPTIONS = {
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    filename: (_req: any, file: any, cb: any) =>
+      cb(null, `${cryptoMod.randomUUID()}${path.extname(file.originalname) || '.jpg'}`),
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) =>
+    cb(null, /^image\//.test(file.mimetype || '')),   // 이미지가 아니면 조용히 거른다
+};
+
 function httpError(statusCode: number, message: string) {
   return Object.assign(new Error(message), { statusCode });
 }

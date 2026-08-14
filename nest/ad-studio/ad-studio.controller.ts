@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdStudioService } from './ad-studio.service';
 import { AdJobService } from './ad-job.service';
-import { WebProductService } from './web-product.service';
+import { AD_UPLOAD_OPTIONS, WebProductService } from './web-product.service';
 import { WebProductVo } from './vo/ad-studio.vo';
 import { AdJobVo } from './ad-job.repository';
 import { AdCostDto, CompileAdDto, CompileResultDto } from './dto/ad-studio.dto';
@@ -43,6 +44,18 @@ export class AdStudioController {
   @HttpCode(200)
   async manual(@Req() req: any, @Body() body: any): Promise<ApiResponse<WebProductVo>> {
     return { success: true, data: await this.products.manual(req.user.id, body || {}) };
+  }
+
+  /**
+   * 제품 이미지 업로드 — URL이 없는 사용자를 위한 경로.
+   * 대부분의 사람은 이미지를 **파일로** 갖고 있지 URL로 갖고 있지 않다.
+   */
+  @Post('upload')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('file', AD_UPLOAD_OPTIONS))
+  upload(@UploadedFile() file: any): ApiResponse<{ url: string }> {
+    if (!file) throw Object.assign(new Error('이미지 파일이 필요합니다.'), { statusCode: 400 });
+    return { success: true, data: { url: `/images/${file.filename}` } };
   }
 
   @Get('web-products')
