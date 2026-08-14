@@ -17,6 +17,7 @@ export interface AdJobVo {
   readonly aspect_ratio: string;
   readonly generate_audio: boolean;
   readonly enhanced_prompt: string | null;
+  readonly shots: Array<{ index: number; startSec: number; endSec: number; action: string; dialogueKo: string }>;
   readonly engine: string | null;
   readonly provider_job_id: string | null;
   readonly provider_meta: Record<string, any>;
@@ -42,16 +43,17 @@ export class AdJobRepository {
     webProductId: string | null; hookId: string | null; settingId: string | null;
     avatarIds: string[]; duration: number; resolution: string; aspectRatio: string;
     generateAudio: boolean; enhancedPrompt: string; engine: string; charged: number;
+    shots: any[];
   }): Promise<AdJobVo> {
     const r = await this.db.query<AdJobVo>(
       `INSERT INTO ad_jobs
          (user_id, team_id, mode, specific_mode, web_product_id, hook_id, setting_id, avatar_ids,
-          duration, resolution, aspect_ratio, generate_audio, enhanced_prompt, engine, charged, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,'pending')
+          duration, resolution, aspect_ratio, generate_audio, enhanced_prompt, engine, charged, shots, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,'pending')
        RETURNING *`,
       [d.userId, d.teamId, d.mode, d.specificMode, d.webProductId, d.hookId, d.settingId,
        JSON.stringify(d.avatarIds || []), d.duration, d.resolution, d.aspectRatio,
-       d.generateAudio, d.enhancedPrompt, d.engine, d.charged]);
+       d.generateAudio, d.enhancedPrompt, d.engine, d.charged, JSON.stringify(d.shots || [])]);
     return r.rows[0];
   }
 
