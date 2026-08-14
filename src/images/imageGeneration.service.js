@@ -168,7 +168,7 @@ async function generateForCharacter(characterId, opts = {}) {
       });
       throw Object.assign(
         new Error('All image generation attempts failed'),
-        { statusCode: 502 }
+        { statusCode: 503 }
       );
     }
 

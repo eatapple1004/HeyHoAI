@@ -18,7 +18,8 @@
     store: '<svg viewBox="0 0 24 24"><path d="M4 4h16l1 5a2.5 2.5 0 01-4.9.6 2.5 2.5 0 01-4.9 0 2.5 2.5 0 01-4.9 0A2.5 2.5 0 013 9z"/><path d="M5 11v8a1 1 0 001 1h12a1 1 0 001-1v-8"/></svg>',
     billing: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/></svg>',
     creator: '<svg viewBox="0 0 24 24"><path d="M4 4h16l-1 4.4a2.6 2.6 0 01-5 .3 2.6 2.6 0 01-5 0 2.6 2.6 0 01-5-.3z"/><path d="M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9"/><path d="M10 20v-5h4v5"/></svg>',
-    pack: '<svg viewBox="0 0 24 24"><path d="M12 3l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16.5l8 4 8-4"/></svg>'
+    pack: '<svg viewBox="0 0 24 24"><path d="M12 3l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16.5l8 4 8-4"/></svg>',
+    adstudio: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H4z"/><path d="M9 9.5l5 2.5-5 2.5z"/><path d="M8 20h8"/></svg>'
   };
   // (2026-07-09) 순서: Shots · Ad Video · Library · Store · Community · Creator(flag) · Billing.
   //   Shots·Ad Video = 대표 상품(둘 다 /studio, Ad Video는 mode=ugc 딥링크 → bootFromUrl이 ugc 모드로 진입).
@@ -27,6 +28,8 @@
     { h: '/home.html', l: 'Home', i: IC.home, m: ['/home'] }, // 정적 서빙(/home.html) — index.js 클린URL 라우트는 추후(충돌 회피)
     { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'], q: '!ugc' },
     { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
+    // (2026-08-14) Ad Studio — 상품 URL 하나로 광고 영상. 개발 중이라 우선 진입점만 연다.
+    { h: '/ad-studio', l: 'Ad Studio', i: IC.adstudio, m: ['/ad-studio'] },
     { h: '/pack.html', l: 'Content Pack', i: IC.pack, m: ['/pack'] }, // (2026-07-22) Product Pack — 사진→콘텐츠 자동 팩
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     // (2026-07-20) Store 레일 항목 제거 — 스토어 미운영(숨김). /store 페이지·카탈로그 코드는 그대로 두고 진입점만 뗀다.

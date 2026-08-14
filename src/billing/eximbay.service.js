@@ -58,7 +58,7 @@ async function ready({ user, packId, baseUrl }) {
   if (data.rescode !== '0000' || !data.fgkey) {
     log.error('ready failed:', JSON.stringify(data).slice(0, 300));
     await query(`UPDATE billing_orders SET status='failed', updated_at=now() WHERE order_id=$1`, [orderId]);
-    const e = new Error('결제 준비에 실패했습니다.'); e.statusCode = 502; throw e;
+    const e = new Error('결제 준비에 실패했습니다.'); e.statusCode = 503; throw e;
   }
 
   // 클라이언트 SDK가 fgkey와 함께 동일 파라미터로 결제창을 열어야 함
