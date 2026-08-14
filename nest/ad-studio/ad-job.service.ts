@@ -28,9 +28,8 @@ const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'm
 // ⚠️ image2video 엔진은 aspect_ratio를 무시하고 **입력 이미지 비율**을 따라간다(실측).
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { fitStartFrame } = require(path.join(__dirname, '..', '..', 'src', 'ad-studio', 'frameFit.service.js'));
-// Kling은 오디오를 만들지 않는다 — 컴파일러가 가진 샷별 대사를 TTS로 얹는다.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { addVoiceover } = require(path.join(__dirname, '..', '..', 'src', 'ad-studio', 'voiceover.service.js'));
+// ⚠️ 나레이션(voiceover.service)은 현재 **연결하지 않는다** — 무성 영상 정책(2026-08-14).
+//    되살리려면 persist()에서 addVoiceover를 다시 호출하면 된다.
 
 const OUTPUT_DIR = path.join(process.cwd(), 'tmp', 'images');
 /** Kling은 5·10초만 받는다. Seedance는 4~15초 자유. */
@@ -164,9 +163,7 @@ export class AdJobService {
     }
 
     if (poll.status === 'completed' && poll.videoUrl) {
-      // 나레이션은 **엔진이 오디오를 안 만들 때만** 얹는다. Seedance는 립싱크까지 하므로 이중이 된다.
-      const needsVo = job.generate_audio && job.engine !== 'seedance';
-      const stored = await this.persist(poll.videoUrl, needsVo ? job.shots : null).catch(() => poll.videoUrl);
+      const stored = await this.persist(poll.videoUrl).catch(() => poll.videoUrl);
       await this.repo.markCompleted(job.id, stored);
     } else if (poll.status === 'failed') {
       await this.repo.markFailed(job.id, poll.error || '엔진이 생성에 실패했습니다.');
@@ -186,7 +183,7 @@ export class AdJobService {
    * 결과 영상을 우리 스토리지로 옮긴다.
    * ⚠️ provider가 주는 URL은 **만료된다**(Kling·fal 모두 임시 URL). 그대로 저장하면 며칠 뒤 깨진다.
    */
-  private async persist(videoUrl: string, shots: any[] | null = null): Promise<string> {
+  private async persist(videoUrl: string): Promise<string> {
     const res = await fetch(videoUrl);
     if (!res.ok) throw new Error(`결과 다운로드 실패 (${res.status})`);
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -194,14 +191,7 @@ export class AdJobService {
     const abs = path.join(OUTPUT_DIR, filename);
     fs.writeFileSync(abs, Buffer.from(await res.arrayBuffer()));
 
-    // 나레이션 합성 — 실패해도 무음 원본을 살린다(영상을 잃는 것보다 낫다).
-    let finalPath = abs;
-    if (shots && shots.length) {
-      const vo = await addVoiceover(abs, shots);
-      finalPath = vo.videoPath;
-    }
-
-    await mediaStore.putFile(finalPath);   // R2 미설정이면 no-op(로컬만)
-    return `/images/${path.basename(finalPath)}`;
+    await mediaStore.putFile(abs);         // R2 미설정이면 no-op(로컬만)
+    return `/images/${path.basename(abs)}`;
   }
 }

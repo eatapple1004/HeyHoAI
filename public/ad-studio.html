@@ -59,6 +59,29 @@
   .cost { font-size: 13px; color: var(--muted, #9a9ab0); }
   .cost b { color: inherit; font-size: 15px; }
   video { width: 100%; max-width: 320px; border-radius: 12px; display: block; margin-top: 10px; }
+
+  /* 생성 진행 — 9:16 자리를 미리 잡아두고 그 안에서 빛이 훑고 지나간다.
+     결과가 어디에 얼마만 한 크기로 나올지 미리 보이면 기다림이 덜 답답하다. */
+  .prog { display: flex; gap: 16px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .frame { width: 180px; aspect-ratio: 9/16; border-radius: 12px; position: relative; overflow: hidden;
+           background: linear-gradient(180deg, #1b1b28, #12121c); border: 1px solid var(--line, #2a2a3a); }
+  .frame::after { content: ''; position: absolute; inset: 0;
+                  background: linear-gradient(100deg, transparent 20%, rgba(124,108,255,.35) 50%, transparent 80%);
+                  transform: translateX(-100%); animation: sweep 1.8s ease-in-out infinite; }
+  @keyframes sweep { to { transform: translateX(100%); } }
+  .frame .tick { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent, #7c6cff);
+                 width: 0; transition: width .6s linear; }
+
+  .steps { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+  .steps li { display: flex; align-items: center; gap: 8px; padding: 5px 0; color: var(--muted, #9a9ab0); }
+  .steps li .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; display: grid; place-items: center;
+                   border: 1.5px solid var(--line, #2a2a3a); font-size: 10px; }
+  .steps li[data-s="done"] { color: inherit; }
+  .steps li[data-s="done"] .dot { background: var(--accent, #7c6cff); border-color: transparent; color: #fff; }
+  .steps li[data-s="now"] { color: inherit; }
+  .steps li[data-s="now"] .dot { border-color: var(--accent, #7c6cff); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(124,108,255,.18); } }
+  .elapsed { font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--muted, #9a9ab0); margin-top: 8px; }
   .muted { color: var(--muted, #9a9ab0); font-size: 12.5px; }
 </style>
 </head>
@@ -127,14 +150,6 @@
       <button class="chip" data-k="resolution" data-v="720p" aria-pressed="true">720p</button>
       <button class="chip" data-k="resolution" data-v="1080p">1080p</button>
     </div>
-    <details style="margin-top:10px">
-      <summary class="muted" style="cursor:pointer">소리 (실험 중)</summary>
-      <div class="chips" id="audioOpts" style="margin-top:8px">
-        <button class="chip" data-v="off" aria-pressed="true">🔇 무음</button>
-        <button class="chip" data-v="on">🔊 나레이션 넣기</button>
-      </div>
-      <div class="muted" id="audioNote">소리 없이 영상만 만듭니다.</div>
-    </details>
     <div class="row" style="margin-top:14px; align-items:center">
       <button id="btnCompile">미리보기 만들기</button>
       <span class="cost" id="costLine"></span>
@@ -164,7 +179,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', generateAudio: false, compiled: null, jobId: null };
+  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', compiled: null, jobId: null, startedAt: 0 };
 
   /** 응답 봉투가 {success,data} 또는 {success:false,error}. 에러는 서버 문구를 그대로 보여준다. */
   async function api(path, opts = {}) {
@@ -264,17 +279,6 @@
     };
   });
 
-  $('audioOpts').querySelectorAll('.chip').forEach((c) => {
-    c.onclick = () => {
-      $('audioOpts').querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-      c.setAttribute('aria-pressed', 'true');
-      state.generateAudio = c.dataset.v === 'on';
-      $('audioNote').textContent = state.generateAudio
-        ? '대사를 한국어 음성으로 읽어 영상에 얹습니다.'
-        : '소리 없이 영상만 만듭니다.';
-    };
-  });
-
   /** 파일 업로드 → /images/<file> 경로를 받아 아래 URL 칸을 채운다. */
   $('btnUpload').onclick = async () => {
     const f = $('mFile').files[0];
@@ -305,7 +309,7 @@
       direction: ($('direction').value || '').trim() || undefined,
       hookId: state.hookId, settingId: state.settingId,
       durationSec: state.duration, resolution: state.resolution,
-      aspectRatio: '9:16', generateAudio: state.generateAudio,
+      aspectRatio: '9:16', generateAudio: false,   // 무성 영상 정책
     };
   }
 
@@ -327,8 +331,7 @@
       state.compiled = c;
       $('shots').innerHTML = c.shots.map((s) =>
         '<div class="shot"><div class="tc">SHOT ' + s.index + ' · ' + s.startSec + '–' + s.endSec + '초</div>' +
-        '<div>' + html(s.action) + '</div>' +
-        (s.dialogueKo ? '<div class="say">🗣 "' + html(s.dialogueKo) + '"</div>' : '') + '</div>').join('');
+        '<div>' + html(s.action) + '</div></div>').join('');
       // 자동으로 골랐으면 무엇을 골랐는지 보여준다 — 사용자가 결과를 이해하고 조정할 수 있어야 한다.
       const ch = c.chosen || {};
       $('chosen').innerHTML = (ch.auto && (ch.hook || ch.setting))
@@ -352,12 +355,42 @@
     try {
       const job = await api('/jobs', { method: 'POST', body: JSON.stringify(payload()) });
       state.jobId = job.id;
+      state.startedAt = Date.now();
+      renderProgress();
       poll();
     } catch (e) {
       $('jobBox').innerHTML = '<div class="err">' + html(e.message) + '</div>';
       $('btnGenerate').disabled = false;
     }
   };
+
+  /**
+   * 진행 표시 — "로딩중" 대신 **결과가 나올 자리(9:16)를 미리 보여주고** 단계를 짚어준다.
+   * 서버가 단계를 안 알려주므로 경과 시간으로 추정한다(보통 100~180초).
+   */
+  const STEPS = [
+    ['장면 구성', 0],
+    ['첫 프레임 준비', 8],
+    ['영상 생성', 20],
+    ['마무리', 150],
+  ];
+  function renderProgress() {
+    const sec = Math.floor((Date.now() - (state.startedAt || Date.now())) / 1000);
+    const cur = STEPS.reduce((acc, [, at], i) => (sec >= at ? i : acc), 0);
+    const pct = Math.min(96, Math.round((sec / 170) * 100));   // 100%는 완료 때만
+    $('jobBox').innerHTML =
+      '<div class="prog">' +
+        '<div class="frame"><div class="tick" style="width:' + pct + '%"></div></div>' +
+        '<div><ul class="steps">' +
+          STEPS.map(([label], i) =>
+            '<li data-s="' + (i < cur ? 'done' : i === cur ? 'now' : '') + '">' +
+            '<span class="dot">' + (i < cur ? '✓' : '') + '</span>' + label + '</li>').join('') +
+        '</ul>' +
+        '<div class="elapsed">' + String(Math.floor(sec / 60)).padStart(2, '0') + ':' +
+          String(sec % 60).padStart(2, '0') + ' 경과 · 보통 2~3분</div>' +
+        '</div>' +
+      '</div>';
+  }
 
   /** 서버가 요청 시점에 provider를 확인하므로, 폴링이 곧 진행 트리거다. */
   async function poll() {
@@ -378,7 +411,7 @@
       $('btnGenerate').disabled = false;
       return;
     }
-    $('jobBox').innerHTML = '<div class="muted">만드는 중… 보통 1~3분 걸립니다. 이 창을 열어두세요.</div>';
+    renderProgress();
     setTimeout(poll, 5000);
   }
 })();

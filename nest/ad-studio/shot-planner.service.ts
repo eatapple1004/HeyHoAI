@@ -33,12 +33,11 @@ const SHOT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['startSec', 'endSec', 'action', 'dialogueKo'],
+        required: ['startSec', 'endSec', 'action'],
         properties: {
           startSec: { type: 'number', description: '샷 시작 초' },
           endSec: { type: 'number', description: '샷 종료 초' },
           action: { type: 'string', description: '화면에서 벌어지는 일 — **영어로** (영상 모델이 읽는다)' },
-          dialogueKo: { type: 'string', description: '화자 대사 — **한국어로**. 없으면 빈 문자열' },
         },
       },
     },
@@ -51,8 +50,8 @@ const SYSTEM = `너는 숏폼 광고 감독이다. 제품과 훅을 받아 세�
 - **마지막 샷의 endSec은 주어진 총 길이와 정확히 같아야 한다.** 넘기면 영상이 잘린다.
 - 샷은 2~4개. 8초짜리에 9컷을 넣으면 아무것도 안 보인다.
 - \`action\`은 **영어**로 쓴다(영상 모델이 영어를 더 잘 알아듣는다).
-- \`dialogueKo\`는 **한국어 구어체**로 쓴다. 번역투 금지. 실제 사람이 말하듯이.
-- 대사는 1초에 4~5글자가 자연스럽다. 2초 샷에 20글자를 넣으면 말이 빨라져 못 알아듣는다.
+- ⚠️ **말·대사·자막·문자를 쓰지 않는다.** 소리 없는 영상이므로 **보이는 것만으로** 전달해야 한다.
+  손동작·표정·제품 변화·카메라 움직임으로 설명하라. 화면에 글자를 넣으라고 지시하지 마라.
 - 제품에 대해 **주어진 정보에 없는 효능·수치·성분을 지어내지 않는다**(광고 심의 위반).
 - 첫 샷은 훅이다. 스크롤을 멈추게 하는 게 유일한 목적이다.
 
@@ -96,8 +95,8 @@ export class ShotPlannerService {
         ? `고를 수 있는 장소(slug: 이름 — 지시):\n${input.settingLibrary.map((x) => `  ${x.slug}: ${x.name} — ${x.prompt}`).join('\n')}`
         : '',
       input.hasAvatar
-        ? '화자(사람)가 등장한다. 대사를 넣어라.'
-        : '사람이 등장하지 않는다. 제품 중심으로 구성하고 dialogueKo는 내레이션으로 쓴다.',
+        ? '사람의 손·동작이 등장한다. 말이 아니라 동작으로 보여줘라.'
+        : '사람이 등장하지 않는다. 제품 자체의 변화와 디테일로 구성하라.',
     ].filter(Boolean).join('\n');
 
     const res = await client.messages.create({
@@ -120,7 +119,7 @@ export class ShotPlannerService {
         startSec: Number(s.startSec) || 0,
         endSec: Number(s.endSec) || 0,
         action: String(s.action || '').trim(),
-        dialogueKo: String(s.dialogueKo || '').trim(),
+        dialogueKo: '',   // 대사는 쓰지 않는다(무성 영상). VO 부활 시 여기부터 되살린다.
       }))
       .sort((a: ShotVo, b: ShotVo) => a.startSec - b.startSec)
       .map((s: ShotVo, i: number) => ({ ...s, index: i + 1 }));
