@@ -139,7 +139,7 @@ export class AdJobService {
     } catch (e: any) {
       await this.repo.markFailed(job.id, e.message);
       if (charge) await charge.refund();
-      throw httpError(502, `영상 생성 요청에 실패했습니다: ${e.message}`);
+      throw httpError(503, `영상 생성 요청에 실패했습니다: ${e.message}`);
     }
 
     return (await this.repo.findById(job.id, user.id)) as AdJobVo;

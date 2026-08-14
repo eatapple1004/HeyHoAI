@@ -71,7 +71,7 @@ export class BillingService {
     const lsData: any = await lsRes.json().catch(() => ({}));
     const url = lsData?.data?.attributes?.url;
     if (!lsRes.ok || !url) {
-      throw new HttpException({ success: false, error: '결제 페이지 생성에 실패했습니다.' }, 502);
+      throw new HttpException({ success: false, error: '결제 페이지 생성에 실패했습니다.' }, 503);
     }
     return { url };
   }

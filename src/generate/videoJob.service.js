@@ -108,7 +108,7 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
       // 제출 실패 → 즉시 환불
       if (charge) await charge.refund();
       const e = new Error(`Kling submit failed: ${submitData.message || submitData.code || submitRes.status}`);
-      e.statusCode = 502; throw e;
+      e.statusCode = 503; throw e;
     }
 
     const ins = await query(
