@@ -41,24 +41,31 @@ export class AdStudioService {
    * 컴파일만 수행 — **크레딧 0**. 영상은 만들지 않는다.
    * 결과가 마음에 들 때까지 여기서 돌려보고, 확정되면 생성으로 넘어가는 흐름(Phase 5).
    */
-  async compile(userId: string, body: CompileAdDto): Promise<CompileResultDto> {
-    const durationSec = this.clampDuration(body.durationSec);
-
-    // 제품 — 저장된 수집물 우선, 없으면 인라인
-    let product = body.product;
-    let hasProductImage = !!(product?.images || []).length;
+  /**
+   * 제품 해석 — 저장된 수집물(webProductId) 우선, 없으면 인라인 product.
+   * ⚠️ compile과 생성(create) **양쪽이 같은 결과를 봐야 한다.** 예전엔 compile 안에만 있어서
+   *    webProductId로 생성하면 시작 이미지를 못 찾고 400이 났다(실측).
+   */
+  async resolveProduct(userId: string, body: CompileAdDto) {
     if (body.webProductId) {
       const wp = await this.repo.findWebProduct(body.webProductId, userId);
       if (!wp) throw httpError(404, '수집된 제품을 찾을 수 없습니다.');
       if (wp.status !== 'ready') throw httpError(409, '제품 수집이 아직 끝나지 않았습니다.');
-      product = {
+      return {
         name: wp.name || '',
         price: wp.price || '',
         attributes: wp.attributes || {},
         images: wp.images || [],
       };
-      hasProductImage = (wp.images || []).length > 0;
     }
+    return body.product;
+  }
+
+  async compile(userId: string, body: CompileAdDto): Promise<CompileResultDto> {
+    const durationSec = this.clampDuration(body.durationSec);
+
+    const product = await this.resolveProduct(userId, body);
+    const hasProductImage = !!(product?.images || []).length;
     if (!product?.name) throw httpError(400, '제품 정보가 필요합니다.');
 
     const [hook, setting] = await Promise.all([

@@ -74,7 +74,9 @@ export class AdJobService {
 
     const cost = this.studio.cost(body);
     const aspectRatio = body.aspectRatio || '9:16';
-    let startImage = (body.product?.images || [])[0];
+    // ⚠️ body.product만 보면 webProductId 경로에서 이미지를 놓친다(실측 버그) — compile과 같은 해석을 쓴다.
+    const product = await this.studio.resolveProduct(user.id, body);
+    let startImage = (product?.images || [])[0];
     if (engine === 'kling' && !startImage) {
       // Kling은 image2video라 첫 프레임이 반드시 있어야 한다.
       throw httpError(400, '이 엔진은 시작 이미지가 필요합니다. 제품 이미지를 먼저 준비해 주세요.');
