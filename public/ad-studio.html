@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ad Studio · Doppia</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/rail.js?v=12" defer></script>
+<style>
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted, #9a9ab0); font-size: 14px; margin-bottom: 24px; }
+
+  /* 단계 — 앞 단계가 끝나야 다음이 열린다. 순서를 눈으로 알 수 있어야 헤매지 않는다. */
+  .step { border: 1px solid var(--line, #2a2a3a); border-radius: 12px; padding: 18px; margin-bottom: 14px; background: var(--card, #16161f); }
+  .step[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+  .step h2 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent, #7c6cff); color: #fff;
+         font-size: 12px; display: grid; place-items: center; flex: none; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; resize: vertical;
+             border: 1px solid var(--line, #2a2a3a); background: var(--bg, #0c0c14); color: inherit;
+             font-size: 14px; font-family: inherit; line-height: 1.5; }
+  .chosen { font-size: 12.5px; color: var(--muted, #9a9ab0); margin: 8px 0; }
+  .chosen b { color: inherit; }
+  input[type=text], input[type=url] { flex: 1; min-width: 220px; padding: 10px 12px; border-radius: 8px;
+         border: 1px solid var(--line, #2a2a3a); background: var(--bg, #0c0c14); color: inherit; font-size: 14px; }
+  button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--accent, #7c6cff);
+           color: #fff; font-size: 14px; cursor: pointer; }
+  button.ghost { background: transparent; border: 1px solid var(--line, #2a2a3a); color: inherit; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line, #2a2a3a);
+          background: transparent; color: inherit; font-size: 13px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--accent, #7c6cff); border-color: transparent; color: #fff; }
+  .label { font-size: 12px; color: var(--muted, #9a9ab0); margin: 12px 0 6px; }
+
+  .product { display: flex; gap: 12px; align-items: center; }
+  .product img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; background: #222; }
+  /* 이전 업로드 선택 — 매번 새로 올리지 않게. Shots와 같은 방식. */
+  .picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .picker button { padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden;
+                   background: none; line-height: 0; cursor: pointer; position: relative; }
+  .picker button:hover { border-color: var(--line, #2a2a3a); }
+  .picker button[aria-pressed="true"] { border-color: var(--accent, #7c6cff); }
+  .picker img { width: 64px; height: 64px; object-fit: cover; display: block; background: #222; }
+  .picker .cap { position: absolute; left: 0; right: 0; bottom: 0; font-size: 9px; line-height: 1.4;
+                 padding: 2px 3px; background: rgba(0,0,0,.62); color: #fff; text-align: center;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .thumbs img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+
+  .shot { border-left: 2px solid var(--accent, #7c6cff); padding: 6px 0 6px 10px; margin: 8px 0; font-size: 13px; }
+  .shot .tc { color: var(--muted, #9a9ab0); font-size: 12px; }
+  .shot .say { margin-top: 4px; }
+  pre.prompt { white-space: pre-wrap; font-size: 12px; line-height: 1.5; background: var(--bg, #0c0c14);
+               padding: 12px; border-radius: 8px; max-height: 260px; overflow: auto; }
+  .warn { background: #3a2a00; border: 1px solid #6a4a00; color: #ffd479; padding: 8px 10px;
+          border-radius: 8px; font-size: 12.5px; margin: 6px 0; }
+  .err { background: #3a1a1a; border: 1px solid #6a2a2a; color: #ff9b9b; padding: 10px 12px;
+         border-radius: 8px; font-size: 13px; margin: 8px 0; }
+  .cost { font-size: 13px; color: var(--muted, #9a9ab0); }
+  .cost b { color: inherit; font-size: 15px; }
+  video { width: 100%; max-width: 320px; border-radius: 12px; display: block; margin-top: 10px; }
+
+  /* 생성 진행 — 9:16 자리를 미리 잡아두고 그 안에서 빛이 훑고 지나간다.
+     결과가 어디에 얼마만 한 크기로 나올지 미리 보이면 기다림이 덜 답답하다. */
+  .prog { display: flex; gap: 16px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .frame { width: 180px; aspect-ratio: 9/16; border-radius: 12px; position: relative; overflow: hidden;
+           background: linear-gradient(180deg, #1b1b28, #12121c); border: 1px solid var(--line, #2a2a3a); }
+  .frame::after { content: ''; position: absolute; inset: 0;
+                  background: linear-gradient(100deg, transparent 20%, rgba(124,108,255,.35) 50%, transparent 80%);
+                  transform: translateX(-100%); animation: sweep 1.8s ease-in-out infinite; }
+  @keyframes sweep { to { transform: translateX(100%); } }
+  .frame .tick { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent, #7c6cff);
+                 width: 0; transition: width .6s linear; }
+
+  .steps { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+  .steps li { display: flex; align-items: center; gap: 8px; padding: 5px 0; color: var(--muted, #9a9ab0); }
+  .steps li .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; display: grid; place-items: center;
+                   border: 1.5px solid var(--line, #2a2a3a); font-size: 10px; }
+  .steps li[data-s="done"] { color: inherit; }
+  .steps li[data-s="done"] .dot { background: var(--accent, #7c6cff); border-color: transparent; color: #fff; }
+  .steps li[data-s="now"] { color: inherit; }
+  .steps li[data-s="now"] .dot { border-color: var(--accent, #7c6cff); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(124,108,255,.18); } }
+  .elapsed { font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--muted, #9a9ab0); margin-top: 8px; }
+  .muted { color: var(--muted, #9a9ab0); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ad Studio</h1>
+  <div class="sub">상품 URL 하나로 광고 영상을 만듭니다.</div>
+
+  <!-- 1. 제품 -->
+  <section class="step" id="s1">
+    <h2><span class="num">1</span> 상품 가져오기</h2>
+    <div class="row">
+      <input type="url" id="url" placeholder="https://... 상품 페이지 주소" />
+      <button id="btnCollect">가져오기</button>
+    </div>
+    <div class="muted" style="margin-top:8px">쿠팡·스마트스토어 등 일부 사이트는 자동 수집이 막혀 있습니다. 그럴 땐 아래에서 이미지를 직접 고르거나 올리세요.</div>
+    <div id="collectMsg"></div>
+
+    <div id="recentWrap" hidden>
+      <div class="label">예전에 올린 이미지 — 눌러서 바로 시작</div>
+      <div class="picker" id="recent"></div>
+    </div>
+
+    <details id="manualBox" style="margin-top:10px">
+      <summary class="muted" style="cursor:pointer">URL이 없거나 수집이 안 되면 — 직접 등록</summary>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="mName" placeholder="제품명" />
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input type="file" id="mFile" accept="image/*" style="flex:1" />
+        <button class="ghost" id="btnUpload">이미지 올리기</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input type="url" id="mImage" placeholder="또는 이미지 주소(https://...)" />
+        <button class="ghost" id="btnManual">등록</button>
+      </div>
+      <div class="muted" id="upMsg" style="margin-top:6px"></div>
+    </details>
+
+    <div id="productBox" hidden style="margin-top:12px">
+      <div class="product">
+        <img id="pImg" alt="" />
+        <div>
+          <div id="pName" style="font-weight:600"></div>
+          <div class="muted" id="pMeta"></div>
+        </div>
+      </div>
+      <div class="thumbs" id="pThumbs"></div>
+    </div>
+  </section>
+
+  <!-- 2. 구성 -->
+  <section class="step" id="s2" aria-disabled="true">
+    <h2><span class="num">2</span> 어떻게 만들까요</h2>
+    <div class="label">원하는 느낌 <span style="opacity:.6">(비워두면 알아서 정합니다)</span></div>
+    <textarea id="direction" rows="3" placeholder="예) 20대 여성 타깃으로 상큼하게, 손 클로즈업 많이&#10;예) 캠핑장 분위기로, 가족이 쓰는 느낌"></textarea>
+
+    <details id="advanced" style="margin-top:10px">
+      <summary class="muted" style="cursor:pointer">훅·장소 직접 고르기</summary>
+      <div class="label">훅 — 첫 3초에 할 말</div>
+      <div class="chips" id="hooks"></div>
+      <div class="label">장소</div>
+      <div class="chips" id="settings"></div>
+    </details>
+
+    <div class="label">길이 · 화질</div>
+    <div class="chips" id="opts">
+      <button class="chip" data-k="duration" data-v="8" aria-pressed="true">8초</button>
+      <button class="chip" data-k="duration" data-v="10">10초</button>
+      <button class="chip" data-k="duration" data-v="15">15초</button>
+      <button class="chip" data-k="resolution" data-v="720p" aria-pressed="true">720p</button>
+      <button class="chip" data-k="resolution" data-v="1080p">1080p</button>
+    </div>
+    <div class="row" style="margin-top:14px; align-items:center">
+      <button id="btnCompile">미리보기 만들기</button>
+      <span class="cost" id="costLine"></span>
+    </div>
+    <div class="muted" style="margin-top:6px">미리보기는 크레딧이 들지 않습니다.</div>
+  </section>
+
+  <!-- 3. 확인 -->
+  <section class="step" id="s3" aria-disabled="true">
+    <h2><span class="num">3</span> 확인하고 만들기</h2>
+    <div class="chosen" id="chosen"></div>
+    <div id="shots"></div>
+    <div id="warns"></div>
+    <details style="margin-top:10px">
+      <summary class="muted" style="cursor:pointer">모델에 들어갈 프롬프트 보기</summary>
+      <pre class="prompt" id="prompt"></pre>
+    </details>
+    <div class="row" style="margin-top:14px; align-items:center">
+      <button id="btnGenerate">영상 만들기</button>
+      <span class="cost" id="genCost"></span>
+    </div>
+    <div id="jobBox"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', compiled: null, jobId: null, startedAt: 0 };
+
+  /** 응답 봉투가 {success,data} 또는 {success:false,error}. 에러는 서버 문구를 그대로 보여준다. */
+  async function api(path, opts = {}) {
+    const r = await fetch('/api/ad-studio' + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.success === false) {
+      const e = new Error(j.error || ('요청 실패 (' + r.status + ')'));
+      e.status = r.status; e.data = j.data;
+      throw e;
+    }
+    return j.data;
+  }
+
+  const enable = (id, on) => $(id).setAttribute('aria-disabled', on ? 'false' : 'true');
+  const html = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ── 0. 예전에 올린 이미지 ──
+  /** 이미 올린 걸 다시 올리게 하지 않는다. 누르면 vision이 이름까지 붙여 바로 제품이 된다. */
+  async function loadRecent() {
+    let items = [];
+    try { items = await api('/recent-images'); } catch { return; }
+    if (!items.length) return;
+    $('recentWrap').hidden = false;
+    $('recent').innerHTML = items.map((it, i) =>
+      '<button data-i="' + i + '" title="' + html(it.label) + '">' +
+      '<img src="' + html(it.url) + '" alt="" loading="lazy">' +
+      '<span class="cap">' + html(it.label) + '</span></button>').join('');
+    $('recent').querySelectorAll('button').forEach((b) => {
+      b.onclick = async () => {
+        const it = items[+b.dataset.i];
+        $('recent').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+        // 이미 등록된 제품이면 그대로 쓰고, 아니면 이미지로 새로 등록한다(이름은 vision이 붙인다).
+        $('collectMsg').innerHTML = '<div class="muted">불러오는 중…</div>';
+        try {
+          const p = it.productId
+            ? await api('/web-products/' + it.productId)
+            : await api('/web-products/manual', { method: 'POST', body: JSON.stringify({ images: [it.url] }) });
+          showProduct(p);
+          $('collectMsg').innerHTML = '';
+        } catch (e) {
+          $('collectMsg').innerHTML = '<div class="err">' + html(e.message) + '</div>';
+        }
+      };
+    });
+  }
+  loadRecent();
+
+  // ── 1. 수집 ──
+  function showProduct(p) {
+    state.product = p;
+    $('pName').textContent = p.name || '(이름 없음)';
+    $('pMeta').textContent = [p.price ? p.price + '원' : '', p.attributes?.category || ''].filter(Boolean).join(' · ');
+    $('pImg').src = (p.images || [])[0] || '';
+    $('pThumbs').innerHTML = (p.images || []).slice(1, 6).map((u) => '<img src="' + html(u) + '" alt="">').join('');
+    $('productBox').hidden = false;
+    $('manualBox').open = false;
+    enable('s2', true);
+    updateCost();
+  }
+
+  $('btnCollect').onclick = async () => {
+    const url = $('url').value.trim();
+    if (!url) return;
+    $('collectMsg').innerHTML = '<div class="muted">가져오는 중… (최대 30초)</div>';
+    $('btnCollect').disabled = true;
+    try {
+      showProduct(await api('/web-products', { method: 'POST', body: JSON.stringify({ url }) }));
+      $('collectMsg').innerHTML = '';
+    } catch (e) {
+      // 422 = 대상 사이트 문제 → 수동 입력을 연다(막다른 길로 두지 않는다)
+      $('collectMsg').innerHTML = '<div class="err">' + html(e.message) + '</div>';
+      if (e.status === 422) $('manualBox').open = true;   // 막다른 길로 두지 않는다
+    } finally {
+      $('btnCollect').disabled = false;
+    }
+  };
+
+  $('btnManual').onclick = async () => {
+    const name = $('mName').value.trim(), image = $('mImage').value.trim();
+    if (!name || !image) return;
+    $('btnManual').disabled = true;
+    try {
+      showProduct(await api('/web-products/manual', {
+        method: 'POST',
+        body: JSON.stringify({ url: $('url').value.trim(), name, images: [image] }),
+      }));
+      $('collectMsg').innerHTML = '';
+    } catch (e) {
+      $('collectMsg').innerHTML = '<div class="err">' + html(e.message) + '</div>';
+    } finally {
+      $('btnManual').disabled = false;
+    }
+  };
+
+  // ── 2. 라이브러리 ──
+  let libLoaded = false;
+  async function loadLibrary() {
+    if (libLoaded) return;
+    libLoaded = true;
+    const render = (el, items, key) => {
+      el.innerHTML = items.map((i) =>
+        '<button class="chip" data-id="' + i.id + '" title="' + html(i.prompt) + '">' + html(i.name) + '</button>').join('');
+      el.querySelectorAll('.chip').forEach((c) => {
+        c.onclick = () => {
+          const on = c.getAttribute('aria-pressed') === 'true';
+          el.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+          c.setAttribute('aria-pressed', on ? 'false' : 'true');   // 다시 누르면 해제(선택 안 함도 유효하다)
+          state[key] = on ? null : c.dataset.id;
+        };
+      });
+    };
+    const [hooks, settings] = await Promise.all([api('/hooks'), api('/settings')]);
+    render($('hooks'), hooks, 'hookId');
+    render($('settings'), settings, 'settingId');
+  }
+
+  $('advanced').addEventListener('toggle', () => { if ($('advanced').open) loadLibrary(); });
+
+  $('opts').querySelectorAll('.chip').forEach((c) => {
+    c.onclick = () => {
+      $('opts').querySelectorAll('.chip[data-k="' + c.dataset.k + '"]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      c.setAttribute('aria-pressed', 'true');
+      state[c.dataset.k] = c.dataset.k === 'duration' ? parseInt(c.dataset.v, 10) : c.dataset.v;
+      updateCost();
+    };
+  });
+
+  /** 파일 업로드 → /images/<file> 경로를 받아 아래 URL 칸을 채운다. */
+  $('btnUpload').onclick = async () => {
+    const f = $('mFile').files[0];
+    if (!f) { $('upMsg').textContent = '이미지 파일을 먼저 고르세요.'; return; }
+    $('btnUpload').disabled = true;
+    $('upMsg').textContent = '올리는 중…';
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const r = await fetch('/api/ad-studio/upload', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!r.ok || j.success === false) throw new Error(j.error || '업로드 실패');
+      $('mImage').value = j.data.url;
+      $('upMsg').textContent = '업로드 완료 — 제품명을 넣고 [등록]을 누르세요.';
+    } catch (e) {
+      $('upMsg').textContent = e.message;
+    } finally {
+      $('btnUpload').disabled = false;
+    }
+  };
+
+  function payload() {
+    return {
+      product: state.product ? {
+        name: state.product.name, price: state.product.price,
+        attributes: state.product.attributes, images: state.product.images,
+      } : undefined,
+      direction: ($('direction').value || '').trim() || undefined,
+      hookId: state.hookId, settingId: state.settingId,
+      durationSec: state.duration, resolution: state.resolution,
+      aspectRatio: '9:16', generateAudio: false,   // 무성 영상 정책
+    };
+  }
+
+  async function updateCost() {
+    try {
+      const c = await api('/cost', { method: 'POST', body: JSON.stringify(payload()) });
+      $('costLine').innerHTML = '예상 <b>◈' + c.credits.toLocaleString() + '</b>';
+      $('genCost').innerHTML = '<b>◈' + c.credits.toLocaleString() + '</b> 차감';
+    } catch { /* 비용 표시는 실패해도 흐름을 막지 않는다 */ }
+  }
+
+  // ── 3. 컴파일 ──
+  $('btnCompile').onclick = async () => {
+    $('btnCompile').disabled = true;
+    $('shots').innerHTML = '<div class="muted">대본을 짜는 중…</div>';
+    enable('s3', true);
+    try {
+      const c = await api('/compile', { method: 'POST', body: JSON.stringify(payload()) });
+      state.compiled = c;
+      $('shots').innerHTML = c.shots.map((s) =>
+        '<div class="shot"><div class="tc">SHOT ' + s.index + ' · ' + s.startSec + '–' + s.endSec + '초</div>' +
+        '<div>' + html(s.action) + '</div></div>').join('');
+      // 자동으로 골랐으면 무엇을 골랐는지 보여준다 — 사용자가 결과를 이해하고 조정할 수 있어야 한다.
+      const ch = c.chosen || {};
+      $('chosen').innerHTML = (ch.auto && (ch.hook || ch.setting))
+        ? '자동 선택 — 훅 <b>' + html(ch.hook || '없음') + '</b> · 장소 <b>' + html(ch.setting || '없음') + '</b>'
+          + ' <span style="opacity:.7">(바꾸려면 위 [훅·장소 직접 고르기])</span>'
+        : '';
+      $('warns').innerHTML = (c.warnings || []).map((w) => '<div class="warn">⚠️ ' + html(w) + '</div>').join('');
+      $('prompt').textContent = c.enhancedPrompt;
+      $('genCost').innerHTML = '<b>◈' + c.estimatedCredits.toLocaleString() + '</b> 차감';
+    } catch (e) {
+      $('shots').innerHTML = '<div class="err">' + html(e.message) + '</div>';
+    } finally {
+      $('btnCompile').disabled = false;
+    }
+  };
+
+  // ── 4. 생성 ──
+  $('btnGenerate').onclick = async () => {
+    $('btnGenerate').disabled = true;
+    $('jobBox').innerHTML = '<div class="muted">생성 요청 중…</div>';
+    try {
+      const job = await api('/jobs', { method: 'POST', body: JSON.stringify(payload()) });
+      state.jobId = job.id;
+      state.startedAt = Date.now();
+      renderProgress();
+      poll();
+    } catch (e) {
+      $('jobBox').innerHTML = '<div class="err">' + html(e.message) + '</div>';
+      $('btnGenerate').disabled = false;
+    }
+  };
+
+  /**
+   * 진행 표시 — "로딩중" 대신 **결과가 나올 자리(9:16)를 미리 보여주고** 단계를 짚어준다.
+   * 서버가 단계를 안 알려주므로 경과 시간으로 추정한다(보통 100~180초).
+   */
+  const STEPS = [
+    ['장면 구성', 0],
+    ['첫 프레임 준비', 8],
+    ['영상 생성', 20],
+    ['마무리', 150],
+  ];
+  function renderProgress() {
+    const sec = Math.floor((Date.now() - (state.startedAt || Date.now())) / 1000);
+    const cur = STEPS.reduce((acc, [, at], i) => (sec >= at ? i : acc), 0);
+    const pct = Math.min(96, Math.round((sec / 170) * 100));   // 100%는 완료 때만
+    $('jobBox').innerHTML =
+      '<div class="prog">' +
+        '<div class="frame"><div class="tick" style="width:' + pct + '%"></div></div>' +
+        '<div><ul class="steps">' +
+          STEPS.map(([label], i) =>
+            '<li data-s="' + (i < cur ? 'done' : i === cur ? 'now' : '') + '">' +
+            '<span class="dot">' + (i < cur ? '✓' : '') + '</span>' + label + '</li>').join('') +
+        '</ul>' +
+        '<div class="elapsed">' + String(Math.floor(sec / 60)).padStart(2, '0') + ':' +
+          String(sec % 60).padStart(2, '0') + ' 경과 · 보통 2~3분</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /** 서버가 요청 시점에 provider를 확인하므로, 폴링이 곧 진행 트리거다. */
+  async function poll() {
+    if (!state.jobId) return;
+    let job;
+    try { job = await api('/jobs/' + state.jobId); }
+    catch { return setTimeout(poll, 5000); }   // 일시적 실패는 재시도
+
+    if (job.status === 'completed') {
+      $('jobBox').innerHTML = '<video src="' + html(job.result_url) + '" controls playsinline></video>'
+        + '<div class="muted" style="margin-top:6px">엔진: ' + html(job.engine) + '</div>';
+      $('btnGenerate').disabled = false;
+      return;
+    }
+    if (job.status === 'failed') {
+      $('jobBox').innerHTML = '<div class="err">' + html(job.error || '생성에 실패했습니다.') + '</div>'
+        + '<div class="muted">차감된 크레딧은 환불됩니다.</div>';
+      $('btnGenerate').disabled = false;
+      return;
+    }
+    renderProgress();
+    setTimeout(poll, 5000);
+  }
+})();
+</script>
+</body>
+</html>

@@ -478,11 +478,116 @@ async function migrate() {
     );
   `);
 
+  // ─── Ad Studio (URL to Ad) ───
+  //   URL 하나로 광고 영상까지 가는 경로. 기존 UGC(대본→씬 조립)와 달리 "수집→컴파일→단일잡" 구조라
+  //   테이블을 따로 둔다. 엔진은 프로바이더 계층에서 갈아끼운다(seedance|kling).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS web_products (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        url         TEXT NOT NULL,
+        name        TEXT,
+        description TEXT,
+        price       TEXT,
+        screenshots JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [{viewport:'mobile'|'desktop', url}]
+        images      JSONB NOT NULL DEFAULT '[]'::jsonb,   -- 추출된 제품 이미지 URL
+        attributes  JSONB NOT NULL DEFAULT '{}'::jsonb,   -- vision 추출: 카테고리·소재·색·셀링포인트
+        collector   VARCHAR(20),                          -- html|playwright|api|manual (어느 경로로 모았나)
+        status      VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending|ready|failed
+        error       TEXT,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_web_products_user ON web_products(user_id, created_at DESC);
+  `);
+
+  // 훅(첫 3초 대사)과 장소는 성격이 같아 한 테이블 + type으로 나눈다.
+  //   locale이 핵심 — 경쟁사는 영어 고정이라 한국어 훅이 우리 차별점이다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ad_setup_items (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        type        VARCHAR(20) NOT NULL,                 -- 'hook' | 'setting'
+        slug        VARCHAR(60) NOT NULL,
+        name        TEXT NOT NULL,
+        prompt      TEXT NOT NULL,
+        locale      VARCHAR(10) NOT NULL DEFAULT 'ko',
+        is_official BOOLEAN NOT NULL DEFAULT false,
+        user_id     UUID REFERENCES users(id) ON DELETE CASCADE,  -- null = 공식 시드
+        sort_order  INT NOT NULL DEFAULT 0,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_ad_setup_official ON ad_setup_items(type, slug, locale) WHERE user_id IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_ad_setup_type ON ad_setup_items(type, locale, sort_order);
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ad_jobs (
+        id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        team_id         UUID,
+        mode            VARCHAR(40) NOT NULL DEFAULT 'ugc',
+        specific_mode   VARCHAR(40) NOT NULL DEFAULT 'web_product',
+        web_product_id  UUID REFERENCES web_products(id) ON DELETE SET NULL,
+        hook_id         UUID REFERENCES ad_setup_items(id) ON DELETE SET NULL,
+        setting_id      UUID REFERENCES ad_setup_items(id) ON DELETE SET NULL,
+        avatar_ids      JSONB NOT NULL DEFAULT '[]'::jsonb,
+        duration        INT NOT NULL DEFAULT 8,
+        resolution      VARCHAR(10) NOT NULL DEFAULT '720p',
+        aspect_ratio    VARCHAR(10) NOT NULL DEFAULT '9:16',
+        generate_audio  BOOLEAN NOT NULL DEFAULT true,
+        enhanced_prompt TEXT,                             -- 컴파일 결과 보존 = 품질 회귀 추적의 근거
+        shots           JSONB NOT NULL DEFAULT '[]'::jsonb, -- 샷별 타임코드+대사(나레이션 합성에 필요)
+        engine          VARCHAR(30),                      -- 어떤 엔진으로 돌았나(경쟁사는 이걸 숨긴다)
+        provider_job_id TEXT,
+        provider_meta   JSONB NOT NULL DEFAULT '{}'::jsonb,   -- 폴링에 필요한 status_url 등(엔진마다 다르다)
+        status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+        result_url      TEXT,
+        error           TEXT,
+        charged         INT NOT NULL DEFAULT 0,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        finished_at     TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS idx_ad_jobs_user ON ad_jobs(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_ad_jobs_status ON ad_jobs(status) WHERE status IN ('pending','processing');
+  `);
+
+  // ad_jobs는 이미 배포됐을 수 있어 ALTER로도 보강한다(신규 DB는 위 CREATE로 이미 있음).
+  await pool.query(`
+    ALTER TABLE ad_jobs ADD COLUMN IF NOT EXISTS shots JSONB NOT NULL DEFAULT '[]'::jsonb;
+  `);
+
+  // 브랜드킷 확장 — URL 자동 추출이 채울 필드들. 기존 3개(logo_url·primary_color·font_name)는 그대로.
+  await pool.query(`
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS website_url       TEXT;
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS industry          VARCHAR(80);
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS keywords          JSONB DEFAULT '[]'::jsonb;
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS business_overview TEXT;
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS tone_of_voice     TEXT;
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS secondary_color   VARCHAR(20);
+    ALTER TABLE brand_kits ADD COLUMN IF NOT EXISTS sns               JSONB DEFAULT '{}'::jsonb;
+  `);
+
   // 예약 발행 — scheduled_at은 이미 post_queue에 있으나 스케줄러가 안 쓰던 컬럼이다.
   //   도래분을 분 단위로 훑으므로 (status, scheduled_at) 인덱스를 깔아준다.
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_post_queue_due ON post_queue(status, scheduled_at);
   `);
+
+  // 훅·장소 공식 시드 — 재실행 안전(같은 type+slug+locale이면 내용만 갱신).
+  //   시드 원본은 src/ad-studio/setupItems.seed.js, 구조화 export는 docs/exports/ad_setup_items.csv.
+  {
+    const { rows: setupRows } = require('../ad-studio/setupItems.seed');
+    for (const r of setupRows()) {
+      await pool.query(
+        `INSERT INTO ad_setup_items (type, slug, name, prompt, locale, is_official, sort_order)
+         VALUES ($1,$2,$3,$4,$5,true,$6)
+         ON CONFLICT (type, slug, locale) WHERE user_id IS NULL
+         DO UPDATE SET name = EXCLUDED.name, prompt = EXCLUDED.prompt, sort_order = EXCLUDED.sort_order`,
+        [r.type, r.slug, r.name, r.prompt, r.locale, r.sort_order]
+      );
+    }
+    console.log(`  ✓ ad_setup_items 시드: ${setupRows().length}개`);
+  }
 
   await pool.query(SEED_CATEGORIES);
   await pool.query(SEED_ATTRIBUTES);

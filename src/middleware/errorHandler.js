@@ -1,5 +1,6 @@
 const { ZodError } = require('zod');
 const log = require('../lib/logger')('Error');
+const { isProviderError, classifyProviderError } = require('../lib/providerError');
 
 function errorHandler(err, _req, res, _next) {
   // Zod 검증 에러 (zod 4: err.issues; zod 3 호환: err.errors)
@@ -24,13 +25,17 @@ function errorHandler(err, _req, res, _next) {
     });
   }
 
-  // Anthropic API 에러
-  if (err.status && err.error) {
-    log.error('Anthropic API:', err.message);
-    return res.status(502).json({
+  // AI 제공자 에러 — 재시도로 풀릴 것과 아닌 것을 구분해 문구를 정직하게 낸다.
+  //   ⚠️ 502를 쓰지 않는다. Cloudflare가 오리진 502의 본문을 자기 에러 페이지로 갈아치워
+  //   우리가 넣은 메시지가 사용자에게 도달하지 못한다(2026-08-14 실측). 503은 그대로 통과한다.
+  if (isProviderError(err)) {
+    const c = classifyProviderError(err);
+    log.error(`${c.operator} [${c.kind}] ${err.message}`);
+    return res.status(c.status).json({
       success: false,
-      error: 'AI provider error',
-      message: err.message,
+      error: c.userMessage,
+      code: 'AI_PROVIDER_' + c.kind.toUpperCase(),
+      retryable: c.retryable,
     });
   }
 

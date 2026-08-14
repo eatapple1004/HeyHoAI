@@ -15,6 +15,7 @@ import { MediaModule } from './media/media.module';
 import { CharactersModule } from './characters/characters.module';
 import { DbModule } from './db/db.module';
 import { WalletModule } from './credits/wallet.module';
+import { AdStudioModule } from './ad-studio/ad-studio.module';
 import { PagesModule } from './pages/pages.module';
 import { SecurityModule } from './common/security/security.module';
 import { TemplateDataModule } from './template-data/template-data.module';
@@ -54,6 +55,7 @@ import { BusinessModule } from './business/business.module';
     PackModule,
     AccountsModule,
     GenerateModule,
+    AdStudioModule,
     BusinessModule,      // 관리자 전용 사업체 인스타 관리(/api/admin/business)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],

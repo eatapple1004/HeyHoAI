@@ -1326,7 +1326,7 @@ const getUgcVoicePreviewHandler = async (req, res, next) => {
       voiceId: (voiceId && String(voiceId).trim()) || undefined,
       speed: Number.isFinite(spd) ? spd : undefined,
     });
-    if (!buf) return res.status(502).json({ success: false, error: 'preview failed' });
+    if (!buf) return res.status(503).json({ success: false, error: 'preview failed' });
     res.set('Content-Type', 'audio/mpeg');
     res.set('Cache-Control', 'no-store');
     res.send(buf);
