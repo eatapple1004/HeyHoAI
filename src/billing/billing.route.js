@@ -103,7 +103,7 @@ router.post('/checkout', async (req, res, next) => {
     const url = lsData?.data?.attributes?.url;
     if (!lsRes.ok || !url) {
       log.error('Checkout create failed:', lsRes.status, JSON.stringify(lsData).slice(0, 300));
-      return res.status(502).json({ success: false, error: '결제 페이지 생성에 실패했습니다.' });
+      return res.status(503).json({ success: false, error: '결제 페이지 생성에 실패했습니다.' });
     }
     res.json({ success: true, data: { url } });
   } catch (err) {

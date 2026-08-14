@@ -401,7 +401,7 @@ async function generateAddScene({ script, instruction = '', outputType = 'produc
   });
   const text = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
   const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
-  if (!m) throw Object.assign(new Error('Could not generate the new scene'), { statusCode: 502 });
+  if (!m) throw Object.assign(new Error('Could not generate the new scene'), { statusCode: 503 });
   const raw = JSON.parse(m[1]);
   return {
     type: 'broll',
@@ -446,7 +446,7 @@ async function suggestScenes({ script, outputType = 'product-ad', count = 4 } = 
   });
   const text = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
   const m = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
-  if (!m) throw Object.assign(new Error('Could not suggest scenes'), { statusCode: 502 });
+  if (!m) throw Object.assign(new Error('Could not suggest scenes'), { statusCode: 503 });
   const raw = JSON.parse(m[1]);
   return (Array.isArray(raw.scenes) ? raw.scenes : []).slice(0, n).map((sc) => normalizeAddSceneObj(sc, outputType, voiceover));
 }

@@ -868,7 +868,7 @@ async function _reRenderImpl({ user, jobId, order = null, removed = [], edits = 
           width: w, height: h, aspect, dryRunVideo,
           log: (m) => log.info(`[re-render ${jobId}] ${m}`),
         });
-        if (!clip || !clip.clipUrl) throw Object.assign(new Error(`Scene ${s.n} could not be re-generated`), { statusCode: 502 });
+        if (!clip || !clip.clipUrl) throw Object.assign(new Error(`Scene ${s.n} could not be re-generated`), { statusCode: 503 });
         // 비파괴: 덮어쓰지 않고 versions[]에 추가 + 새 것을 활성으로. 이전 클립 보존 → 씬 카드에서 되돌리기 가능.
         const nm = await persistSceneClips([clip]);
         const ne = nm[s.n] || nm[String(s.n)];
