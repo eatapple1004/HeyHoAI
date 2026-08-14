@@ -19,9 +19,6 @@ import { ShotVo } from './vo/ad-studio.vo';
  */
 
 const MAX_SHOTS = 6;
-/** 1초에 4~5글자가 자연스러운 한국어 발화 속도. 넘으면 말이 빨라져 못 알아듣는다. */
-const CHARS_PER_SEC = 5;
-
 /** 사용자에게 보이는 초 표기 — 0.1초 단위로 자른다(7.299999999999999가 그대로 나가면 안 된다). */
 function sec1(v: number): number {
   return Math.round(v * 10) / 10;
@@ -74,14 +71,6 @@ export class PromptCompilerService {
       out[out.length - 1] = { ...last, endSec: durationSec };
     }
 
-    // 대사 길이 검사 — 자를 수는 없으니(의미가 깨진다) 경고만 남긴다.
-    out.forEach((s) => {
-      const budget = Math.floor((s.endSec - s.startSec) * CHARS_PER_SEC);
-      if (s.dialogueKo && s.dialogueKo.length > budget) {
-        warnings.push(`샷 ${s.index} 대사가 ${s.dialogueKo.length}자인데 ${sec1(s.endSec - s.startSec)}초라 빠듯하다(권장 ${budget}자 이내).`);
-      }
-    });
-
     return { shots: out.map((s, i) => ({ ...s, index: i + 1 })), warnings };
   }
 
@@ -108,15 +97,14 @@ export class PromptCompilerService {
     ].join('\n');
   }
 
-  private technicalBlock(aspectRatio: string, generateAudio: boolean): string {
+  private technicalBlock(aspectRatio: string, _generateAudio: boolean): string {
     return [
       '[TECHNICAL]',
       `Format: vertical ${aspectRatio}, smartphone-shot look, handheld with light natural shake.`,
       'Lens: 28mm equivalent, shallow depth of field on the product.',
       'Grade: natural color, no heavy filter, realistic skin tone.',
-      generateAudio
-        ? 'Audio: natural room tone, clear Korean speech, no background music.'
-        : 'Audio: none (music and voice are added in post).',
+      'No on-screen text, captions, subtitles, or written words of any kind.',
+      'No speech, no dialogue, no voice.',
     ].join('\n');
   }
 
@@ -141,11 +129,8 @@ export class PromptCompilerService {
     const angleLock = this.angleLockBlock(input.hasProductImage !== false);
     const location = input.settingPrompt ? `[LOCATION]\n${input.settingPrompt}` : '';
 
-    const shotLines = shots.map((s) => {
-      const line = `SHOT ${s.index} [${fmt(s.startSec)}–${fmt(s.endSec)}] ${s.action}`;
-      // 대사는 한국어 그대로 — 경쟁사는 여기서 영어로 바꿔버린다(prompt_language: en 고정).
-      return s.dialogueKo ? `${line}\n  SPEECH (Korean, spoken aloud): "${s.dialogueKo}"` : line;
-    });
+    // 무성 영상 — 대사·자막을 넣지 않는다. 보이는 것만으로 전달한다.
+    const shotLines = shots.map((s) => `SHOT ${s.index} [${fmt(s.startSec)}–${fmt(s.endSec)}] ${s.action}`);
     const shotsBlock = [
       '[SHOTS]',
       `Total length: exactly ${input.durationSec} seconds.`,
