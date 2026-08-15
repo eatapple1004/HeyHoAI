@@ -86,16 +86,25 @@ export class AdStudioService {
       style = lib.find((x) => x.slug === 'ugc-real') || null;
     }
     const styleCamera = style?.meta?.camera !== false;
+    // 스타일이 장소를 쓰지 않겠다고 하면(매크로처럼 배경이 방해가 되는 경우) 장소를 붙이지 않는다.
+    const styleUsesLocation = style?.meta?.location !== false;
+    // 화자가 없는 스타일(매크로·손시연·플랫레이)에 훅을 붙이면 "화자가 카메라를 보며 말한다"가
+    //   샷 계획에 섞여 사람이 등장한다. 훅은 말하는 사람이 있는 스타일에서만 의미가 있다.
+    const styleUsesHook = style?.meta?.hook !== false;
 
     // 사용자가 안 골랐으면 라이브러리를 통째로 넘겨 **모델이 고르게** 한다.
     //   대부분의 사용자는 아무것도 고르지 않는다 — 그 상태가 기본값이어야 한다.
     // 그래픽 스타일에는 화자가 없다 — 훅(대사 패턴)을 붙이면 "화자가 카메라를 보며 말한다"가 섞여 깨진다.
-    if (!styleCamera) hook = null;
-    const auto = styleCamera && (!hook || !setting);
+    if (!styleCamera || !styleUsesHook) hook = null;
+    if (!styleUsesLocation) setting = null;
+    const auto = (styleUsesHook && !hook) || (styleUsesLocation && styleCamera && !setting);
+    // ⚠️ 라이브러리를 넘기면 **모델이 거기서 고른다**. 스타일이 안 쓰겠다고 한 축은 빈 배열로 줘야
+    //   한다 — 안 그러면 hook=null로 비워둔 게 무의미해지고 모델이 훅을 도로 집어온다.
     const [hookLib, settingLib] = auto
       ? await Promise.all([
-          hook ? Promise.resolve([]) : this.repo.listSetupItems('hook', userId),
-          setting ? Promise.resolve([]) : this.repo.listSetupItems('setting', userId),
+          hook || !styleUsesHook ? Promise.resolve([]) : this.repo.listSetupItems('hook', userId),
+          setting || !styleUsesLocation || !styleCamera
+            ? Promise.resolve([]) : this.repo.listSetupItems('setting', userId),
         ])
       : [[], []];
 
@@ -107,7 +116,7 @@ export class AdStudioService {
       productName: product.name,
       productSummary: attrs.summary,
       sellingPoints: attrs.sellingPoints,
-      hookPrompt,
+      hookPrompt: styleUsesHook ? hookPrompt : undefined,
       settingPrompt: setting?.prompt,
       // 지시문이 비면 스타일의 기본 연출로 채운다 — 아무것도 안 써도 결과가 나와야 한다(프롬프트 0).
       direction: (body.direction || '').trim() || style?.meta?.direction || undefined,
@@ -131,9 +140,10 @@ export class AdStudioService {
       productSummary: attrs.summary,
       shots,
       durationSec,
-      settingPrompt: setting?.prompt,
+      settingPrompt: styleUsesLocation ? setting?.prompt : undefined,
       stylePrompt: style?.prompt,
       styleCamera,
+      styleTechnical: style?.meta?.technical,
       avatarNames: body.avatarIds || [],
       hasProductImage,
       aspectRatio: body.aspectRatio || '9:16',
