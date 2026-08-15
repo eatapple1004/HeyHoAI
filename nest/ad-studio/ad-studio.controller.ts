@@ -25,6 +25,11 @@ export class AdStudioController {
     return { success: true, data: await this.ads.listSetupItems('hook', req.user.id) };
   }
 
+  @Get('styles')
+  async styles(@Req() req: any): Promise<ApiResponse<AdSetupItemVo[]>> {
+    return { success: true, data: await this.ads.listSetupItems('style', req.user.id) };
+  }
+
   @Get('settings')
   async settings(@Req() req: any): Promise<ApiResponse<AdSetupItemVo[]>> {
     return { success: true, data: await this.ads.listSetupItems('setting', req.user.id) };

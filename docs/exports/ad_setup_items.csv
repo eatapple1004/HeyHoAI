@@ -1,36 +1,41 @@
-type,slug,name,prompt,locale,sort_order
-hook,problem,문제 제기,"영상 첫 2초에 화자가 카메라를 보며 말한다: ""이거 아직도 이렇게 쓰세요?"" 그 다음 {{product}}로 자연스럽게 넘어간다.",ko,1
-hook,turnaround,반전 후기,"화자가 솔직한 톤으로: ""솔직히 기대 안 했는데, 3일 써보고 생각이 바뀌었어요."" {{product}} 사용 장면으로 이어진다.",ko,2
-hook,before-after,비포 애프터,"화자가 화면을 가리키며: ""왼쪽이 쓰기 전, 오른쪽이 쓴 후예요."" 대비가 드러나는 컷으로 이어진다.",ko,3
-hook,price-shock,가격 충격,"놀란 표정으로: ""이 가격에 이게 된다고요?"" 곧바로 {{product}}를 보여준다.",ko,4
-hook,skeptic,의심하다 반함,"화자가 웃으며: ""저 진짜 안 믿었거든요."" 그리고 {{product}}를 직접 써보며 표정이 바뀐다.",ko,5
-hook,top3,사기 전 체크,"""이거 사기 전에 알았으면 좋았을 3가지"" 라고 말하고 손가락으로 하나씩 세며 {{product}}의 포인트를 짚는다.",ko,6
-hook,warning,경고형,"진지한 톤으로: ""이렇게 쓰면 오래 못 씁니다."" 잘못된 사용과 올바른 사용을 {{product}}로 비교한다.",ko,7
-hook,question,질문 던지기,"카메라에 대고: ""다들 이거 어떻게 쓰세요?"" 자기 방식을 {{product}}로 보여준다.",ko,8
-hook,new-arrival,신상 소개,"들뜬 목소리로: ""드디어 나왔습니다."" 포장을 열며 {{product}}를 공개한다.",ko,9
-hook,repurchase,재구매 인증,"""벌써 세 번째 사는 중이에요."" 여러 개를 보여주며 {{product}}를 왜 다시 사는지 말한다.",ko,10
-hook,review-quote,리뷰 인용,"""리뷰 보고 샀는데 진짜였어요."" 화면에 리뷰가 스치고 {{product}} 실사용으로 넘어간다.",ko,11
-hook,show-dont-tell,백문불여일견,"""말로 하면 못 믿으실 것 같아서요."" 곧바로 {{product}} 시연에 들어간다. 대사보다 손동작 위주.",ko,12
-hook,fail-story,실패담,"""이거 사기 전에 세 번 실패했어요."" 실패한 방식들을 빠르게 스치고 {{product}}로 마무리한다.",ko,13
-hook,target-call,타깃 호명,"""이거 쓰시는 분들 꼭 보세요."" 특정 상황을 콕 집어 부르고 {{product}}를 제시한다.",ko,14
-hook,time-save,시간 절약,"""10초면 끝나요."" 실제로 짧은 시간에 {{product}}로 해결되는 과정을 보여준다.",ko,15
-hook,unboxing,언박싱,"""박스부터 열어볼게요."" 개봉 순서대로 {{product}}를 꺼내 보여준다. 손 클로즈업 위주.",ko,16
-hook,one-week,일주일 변화,"""일주일 차이입니다."" 날짜 자막과 함께 {{product}} 사용 전후를 비교한다.",ko,17
-hook,no-need-pricey,가성비,"""비싼 거 살 필요 없더라고요."" 고가 대안과 비교하며 {{product}}를 제시한다.",ko,18
-hook,restock,재입고 알림,"""품절 전에 말씀드려요."" 급한 톤으로 {{product}}를 소개한다.",ko,19
-hook,relatable,공감 유도,"""저만 그런 거 아니죠?"" 흔한 불편을 짚고 {{product}}로 해결한다.",ko,20
-setting,cafe-window,카페 창가,"a bright cafe by a large window, soft natural daylight, wooden table, shallow depth of field",ko,1
-setting,vanity,화장대,"a tidy vanity desk with a mirror, warm bulb lighting, cosmetics neatly arranged",ko,2
-setting,bathroom,욕실 세면대,"a clean modern bathroom sink, bright even lighting, tiled wall, water droplets",ko,3
-setting,kitchen,주방,"a bright kitchen island with marble countertop, morning light from a side window",ko,4
-setting,bedroom,침실,"a cozy bedroom with soft bedding, late afternoon light, calm neutral tones",ko,5
-setting,closet,옷장 앞,"in front of an open wardrobe, clothes on hangers, soft indoor lighting",ko,6
-setting,desk,사무실 책상,"a minimal office desk with a laptop, cool daylight from a window, clean background",ko,7
-setting,gym,헬스장,"a modern gym interior, equipment softly blurred in the background, energetic lighting",ko,8
-setting,living-room,거실 소파,"a comfortable living room sofa, warm lamp light in the evening, homey atmosphere",ko,9
-setting,park,야외 공원,"an outdoor park with green trees, golden hour sunlight, gentle breeze",ko,10
-setting,street,도심 거리,"a city street with blurred pedestrians and storefronts, late afternoon, cinematic",ko,11
-setting,car,자동차 안,"inside a car in the driver seat, daylight through the windshield, shallow focus",ko,12
-setting,studio,스튜디오 무지,"a clean seamless studio backdrop, soft even studio lighting, no props",ko,13
-setting,convenience,편의점,"a convenience store aisle, bright fluorescent lighting, shelves in the background",ko,14
-setting,doorstep,현관 앞,"at an apartment doorstep with a delivery box, natural hallway lighting",ko,15
+type,slug,name,prompt,locale,sort_order,meta
+hook,problem,문제 제기,"영상 첫 2초에 화자가 카메라를 보며 말한다: ""이거 아직도 이렇게 쓰세요?"" 그 다음 {{product}}로 자연스럽게 넘어간다.",ko,1,
+hook,turnaround,반전 후기,"화자가 솔직한 톤으로: ""솔직히 기대 안 했는데, 3일 써보고 생각이 바뀌었어요."" {{product}} 사용 장면으로 이어진다.",ko,2,
+hook,before-after,비포 애프터,"화자가 화면을 가리키며: ""왼쪽이 쓰기 전, 오른쪽이 쓴 후예요."" 대비가 드러나는 컷으로 이어진다.",ko,3,
+hook,price-shock,가격 충격,"놀란 표정으로: ""이 가격에 이게 된다고요?"" 곧바로 {{product}}를 보여준다.",ko,4,
+hook,skeptic,의심하다 반함,"화자가 웃으며: ""저 진짜 안 믿었거든요."" 그리고 {{product}}를 직접 써보며 표정이 바뀐다.",ko,5,
+hook,top3,사기 전 체크,"""이거 사기 전에 알았으면 좋았을 3가지"" 라고 말하고 손가락으로 하나씩 세며 {{product}}의 포인트를 짚는다.",ko,6,
+hook,warning,경고형,"진지한 톤으로: ""이렇게 쓰면 오래 못 씁니다."" 잘못된 사용과 올바른 사용을 {{product}}로 비교한다.",ko,7,
+hook,question,질문 던지기,"카메라에 대고: ""다들 이거 어떻게 쓰세요?"" 자기 방식을 {{product}}로 보여준다.",ko,8,
+hook,new-arrival,신상 소개,"들뜬 목소리로: ""드디어 나왔습니다."" 포장을 열며 {{product}}를 공개한다.",ko,9,
+hook,repurchase,재구매 인증,"""벌써 세 번째 사는 중이에요."" 여러 개를 보여주며 {{product}}를 왜 다시 사는지 말한다.",ko,10,
+hook,review-quote,리뷰 인용,"""리뷰 보고 샀는데 진짜였어요."" 화면에 리뷰가 스치고 {{product}} 실사용으로 넘어간다.",ko,11,
+hook,show-dont-tell,백문불여일견,"""말로 하면 못 믿으실 것 같아서요."" 곧바로 {{product}} 시연에 들어간다. 대사보다 손동작 위주.",ko,12,
+hook,fail-story,실패담,"""이거 사기 전에 세 번 실패했어요."" 실패한 방식들을 빠르게 스치고 {{product}}로 마무리한다.",ko,13,
+hook,target-call,타깃 호명,"""이거 쓰시는 분들 꼭 보세요."" 특정 상황을 콕 집어 부르고 {{product}}를 제시한다.",ko,14,
+hook,time-save,시간 절약,"""10초면 끝나요."" 실제로 짧은 시간에 {{product}}로 해결되는 과정을 보여준다.",ko,15,
+hook,unboxing,언박싱,"""박스부터 열어볼게요."" 개봉 순서대로 {{product}}를 꺼내 보여준다. 손 클로즈업 위주.",ko,16,
+hook,one-week,일주일 변화,"""일주일 차이입니다."" 날짜 자막과 함께 {{product}} 사용 전후를 비교한다.",ko,17,
+hook,no-need-pricey,가성비,"""비싼 거 살 필요 없더라고요."" 고가 대안과 비교하며 {{product}}를 제시한다.",ko,18,
+hook,restock,재입고 알림,"""품절 전에 말씀드려요."" 급한 톤으로 {{product}}를 소개한다.",ko,19,
+hook,relatable,공감 유도,"""저만 그런 거 아니죠?"" 흔한 불편을 짚고 {{product}}로 해결한다.",ko,20,
+setting,cafe-window,카페 창가,"a bright cafe by a large window, soft natural daylight, wooden table, shallow depth of field",ko,1,
+setting,vanity,화장대,"a tidy vanity desk with a mirror, warm bulb lighting, cosmetics neatly arranged",ko,2,
+setting,bathroom,욕실 세면대,"a clean modern bathroom sink, bright even lighting, tiled wall, water droplets",ko,3,
+setting,kitchen,주방,"a bright kitchen island with marble countertop, morning light from a side window",ko,4,
+setting,bedroom,침실,"a cozy bedroom with soft bedding, late afternoon light, calm neutral tones",ko,5,
+setting,closet,옷장 앞,"in front of an open wardrobe, clothes on hangers, soft indoor lighting",ko,6,
+setting,desk,사무실 책상,"a minimal office desk with a laptop, cool daylight from a window, clean background",ko,7,
+setting,gym,헬스장,"a modern gym interior, equipment softly blurred in the background, energetic lighting",ko,8,
+setting,living-room,거실 소파,"a comfortable living room sofa, warm lamp light in the evening, homey atmosphere",ko,9,
+setting,park,야외 공원,"an outdoor park with green trees, golden hour sunlight, gentle breeze",ko,10,
+setting,street,도심 거리,"a city street with blurred pedestrians and storefronts, late afternoon, cinematic",ko,11,
+setting,car,자동차 안,"inside a car in the driver seat, daylight through the windshield, shallow focus",ko,12,
+setting,studio,스튜디오 무지,"a clean seamless studio backdrop, soft even studio lighting, no props",ko,13,
+setting,convenience,편의점,"a convenience store aisle, bright fluorescent lighting, shelves in the background",ko,14,
+setting,doorstep,현관 앞,"at an apartment doorstep with a delivery box, natural hallway lighting",ko,15,
+style,ugc-real,UGC 실사,"Filmed like a real person's phone video: handheld, natural indoor light, unpolished and believable.",ko,1,"{""camera"":true,""direction"":""제품을 실제로 쓰는 모습을 담백하게 보여줘.""}"
+style,product-motion-2d,2D 제품 모션,"Flat 2D motion-graphics product video. NO people, NO hands, NO real-world scene. The product is cut out cleanly from its background and floats on a smooth solid or gradient backdrop. Multiple identical copies of the SAME product drift, rotate gently and rearrange into deliberate compositions (radial burst, fan arc, grid, diagonal cascade) — every copy keeps the exact shape, color and detail of the source image. Motion is smooth and weightless with soft easing; add small sparkle and glow accents. Graphic-design look, like an animated poster — not a filmed scene.",ko,2,"{""camera"":false,""direction"":""제품이 화면을 떠다니며 리듬감 있게 배치가 바뀌도록.""}"
+style,macro-detail,매크로 디테일,"Extreme close-up macro shots of the product surface and texture, slow push-in, shallow depth of field, controlled studio light.",ko,3,"{""camera"":true,""direction"":""제품의 질감과 마감이 드러나도록 아주 가까이서.""}"
+style,hands-demo,손 시연,"Only hands interact with the product on a clean tabletop. No face, no speaking. Overhead and 3/4 angles, natural daylight.",ko,4,"{""camera"":true,""direction"":""손으로 제품을 다루는 과정을 순서대로 보여줘.""}"
+style,unbox-flatlay,언박싱 플랫레이,Top-down flatlay: packaging opens and contents are arranged neatly one by one on a clean surface. Only hands enter frame.,ko,5,"{""camera"":true,""direction"":""포장을 열고 구성품을 하나씩 늘어놓는 과정.""}"
