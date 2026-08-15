@@ -8,7 +8,7 @@ export interface AdSetupItemVo {
   readonly id: string;
   readonly type: SetupItemType;
   /** style 전용 — { camera:boolean, direction:string }. 그 외 타입은 null */
-  readonly meta?: { camera?: boolean; direction?: string } | null;
+  readonly meta?: { camera?: boolean; direction?: string; location?: boolean; hook?: boolean; technical?: string[] } | null;
   readonly slug: string;
   readonly name: string;
   readonly prompt: string;

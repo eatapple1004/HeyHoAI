@@ -57,14 +57,35 @@ const STYLES = [
     'Graphic-design look, like an animated poster — not a filmed scene.',
   ].join(' '), { camera: false, direction: '제품이 화면을 떠다니며 리듬감 있게 배치가 바뀌도록.' }],
 
-  ['macro-detail', '매크로 디테일', 'Extreme close-up macro shots of the product surface and texture, slow push-in, shallow depth of field, controlled studio light.',
-    { camera: true, direction: '제품의 질감과 마감이 드러나도록 아주 가까이서.' }],
+  ['macro-detail', '매크로 디테일',
+    'Macro product cinematography: the product fills the frame, slow push-in and slow rotation reveal surface, texture and finish.',
+    { camera: true, hook: false, location: false,
+      direction: '제품의 질감과 마감이 드러나도록 아주 가까이서.',
+      technical: [
+        'Shot on a tripod — locked-off or slow motorized move. No handheld shake.',
+        'Lens: 100mm macro equivalent, very shallow depth of field, focus riding the product surface.',
+        'Controlled studio light on a clean seamless backdrop. Neutral grade, no filter.',
+      ] }],
 
-  ['hands-demo', '손 시연', 'Only hands interact with the product on a clean tabletop. No face, no speaking. Overhead and 3/4 angles, natural daylight.',
-    { camera: true, direction: '손으로 제품을 다루는 과정을 순서대로 보여줘.' }],
+  ['hands-demo', '손 시연',
+    'Only hands interact with the product on a clean tabletop. No face, no speaking. The product stays the center of frame.',
+    { camera: true, hook: false,
+      direction: '손으로 제품을 다루는 과정을 순서대로 보여줘.',
+      technical: [
+        'Steady overhead and 3/4 angles, minimal shake, tripod or gimbal.',
+        'Lens: 35mm equivalent, product in sharp focus.',
+        'Soft natural daylight, realistic skin tone on the hands.',
+      ] }],
 
-  ['unbox-flatlay', '언박싱 플랫레이', 'Top-down flatlay: packaging opens and contents are arranged neatly one by one on a clean surface. Only hands enter frame.',
-    { camera: true, direction: '포장을 열고 구성품을 하나씩 늘어놓는 과정.' }],
+  ['unbox-flatlay', '언박싱 플랫레이',
+    'Top-down flatlay: packaging opens and contents are arranged neatly one by one on a clean surface. Only hands enter frame.',
+    { camera: true, hook: false,
+      direction: '포장을 열고 구성품을 하나씩 늘어놓는 과정.',
+      technical: [
+        'Locked-off top-down camera, perfectly level, no shake.',
+        'Lens: 50mm equivalent, everything in focus.',
+        'Even soft diffused light, clean neutral surface.',
+      ] }],
 ];
 
 /** 영어 장면 지시. 조명·시간대까지 포함해야 합성 티가 덜 난다. */

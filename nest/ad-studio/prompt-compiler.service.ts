@@ -94,6 +94,8 @@ export class PromptCompilerService {
       'Show only the product faces that are visible in the provided product image.',
       'Do NOT rotate, flip, or re-orient the product so that an unseen face becomes visible.',
       'Do NOT invent logos, labels, or text that are not present in the provided image.',
+      // 매크로처럼 바짝 붙는 스타일에서 제품이 추상 텍스처로 뭉개지는 것을 막는다.
+      'The product must stay clearly recognizable in every shot — never crop so close that it reads as an abstract texture.',
     ].join('\n');
   }
 
@@ -104,7 +106,7 @@ export class PromptCompilerService {
    *   모션그래픽 스타일(camera:false)에 그대로 붙이면 모델이 없는 카메라와 피부를 지어내
    *   그래픽이어야 할 화면에 실사 질감이 섞인다. 그래서 카메라 계열 지시를 통째로 바꾼다.
    */
-  private technicalBlock(aspectRatio: string, _generateAudio: boolean, camera = true): string {
+  private technicalBlock(aspectRatio: string, _generateAudio: boolean, camera = true, styleLines?: string[]): string {
     const common = [
       'No on-screen text, captions, subtitles, or written words of any kind.',
       'No speech, no dialogue, no voice.',
@@ -118,6 +120,13 @@ export class PromptCompilerService {
         'Clean solid or gradient background, crisp edges, even lighting on the product.',
         ...common,
       ].join('\n');
+    }
+    // ⚠️ 스타일이 카메라 문법을 직접 주면 그걸 쓴다.
+    //   기본값(스마트폰·28mm·핸드헬드)은 **UGC 실사 전용**이다. 매크로 스타일에 28mm(광각)와
+    //   손떨림이 붙으면 STYLE의 "extreme close-up macro"와 정면으로 충돌해, 모델이 둘을 절충하다
+    //   제품이 사라진 화면을 만든다(2026-08-15 실측 — 매크로에서 네일이 안 보였다).
+    if (styleLines && styleLines.length) {
+      return ['[TECHNICAL]', `Format: vertical ${aspectRatio}.`, ...styleLines, ...common].join('\n');
     }
     return [
       '[TECHNICAL]',
@@ -139,6 +148,8 @@ export class PromptCompilerService {
     settingPrompt?: string;
     /** 스타일 지시(모션그래픽·매크로 등). 블록 순서상 LOCATION보다 앞에 온다 — 영상의 종류가 먼저다. */
     stylePrompt?: string;
+    /** 스타일이 지정한 카메라 문법. 있으면 기본 스마트폰 지시를 대체한다. */
+    styleTechnical?: string[];
     /** false면 실사 촬영 지시를 빼고 그래픽용 TECHNICAL로 바꾼다 */
     styleCamera?: boolean;
     avatarNames?: string[];
@@ -165,7 +176,7 @@ export class PromptCompilerService {
       ...shotLines,
     ].join('\n');
 
-    const technical = this.technicalBlock(aspectRatio, input.generateAudio !== false, camera);
+    const technical = this.technicalBlock(aspectRatio, input.generateAudio !== false, camera, input.styleTechnical);
 
     // 그래픽 스타일이면 아바타(사람) 참조도 뺀다 — 사람이 안 나오는 영상이다.
     const enhancedPrompt = [camera ? reference : '', style, angleLock, location, shotsBlock, technical]
