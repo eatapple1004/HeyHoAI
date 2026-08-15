@@ -506,7 +506,7 @@ async function migrate() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ad_setup_items (
         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        type        VARCHAR(20) NOT NULL,                 -- 'hook' | 'setting'
+        type        VARCHAR(20) NOT NULL,                 -- 'hook' | 'setting' | 'style'
         slug        VARCHAR(60) NOT NULL,
         name        TEXT NOT NULL,
         prompt      TEXT NOT NULL,
@@ -516,6 +516,7 @@ async function migrate() {
         sort_order  INT NOT NULL DEFAULT 0,
         created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE ad_setup_items ADD COLUMN IF NOT EXISTS meta JSONB;  -- style 전용: {camera:false, direction:"기본 연출"}
     CREATE UNIQUE INDEX IF NOT EXISTS uniq_ad_setup_official ON ad_setup_items(type, slug, locale) WHERE user_id IS NULL;
     CREATE INDEX IF NOT EXISTS idx_ad_setup_type ON ad_setup_items(type, locale, sort_order);
   `);
@@ -579,11 +580,12 @@ async function migrate() {
     const { rows: setupRows } = require('../ad-studio/setupItems.seed');
     for (const r of setupRows()) {
       await pool.query(
-        `INSERT INTO ad_setup_items (type, slug, name, prompt, locale, is_official, sort_order)
-         VALUES ($1,$2,$3,$4,$5,true,$6)
+        `INSERT INTO ad_setup_items (type, slug, name, prompt, locale, is_official, sort_order, meta)
+         VALUES ($1,$2,$3,$4,$5,true,$6,$7)
          ON CONFLICT (type, slug, locale) WHERE user_id IS NULL
-         DO UPDATE SET name = EXCLUDED.name, prompt = EXCLUDED.prompt, sort_order = EXCLUDED.sort_order`,
-        [r.type, r.slug, r.name, r.prompt, r.locale, r.sort_order]
+         DO UPDATE SET name = EXCLUDED.name, prompt = EXCLUDED.prompt,
+                       sort_order = EXCLUDED.sort_order, meta = EXCLUDED.meta`,
+        [r.type, r.slug, r.name, r.prompt, r.locale, r.sort_order, r.meta ? JSON.stringify(r.meta) : null]
       );
     }
     console.log(`  ✓ ad_setup_items 시드: ${setupRows().length}개`);

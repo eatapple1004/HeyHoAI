@@ -97,14 +97,34 @@ export class PromptCompilerService {
     ].join('\n');
   }
 
-  private technicalBlock(aspectRatio: string, _generateAudio: boolean): string {
+  /**
+   * TECHNICAL — 스타일에 따라 갈린다.
+   *
+   * ⚠️ 기존 블록은 **실사 촬영을 전제**로 썼다("smartphone-shot look", "realistic skin tone").
+   *   모션그래픽 스타일(camera:false)에 그대로 붙이면 모델이 없는 카메라와 피부를 지어내
+   *   그래픽이어야 할 화면에 실사 질감이 섞인다. 그래서 카메라 계열 지시를 통째로 바꾼다.
+   */
+  private technicalBlock(aspectRatio: string, _generateAudio: boolean, camera = true): string {
+    const common = [
+      'No on-screen text, captions, subtitles, or written words of any kind.',
+      'No speech, no dialogue, no voice.',
+    ];
+    if (!camera) {
+      return [
+        '[TECHNICAL]',
+        `Format: ${aspectRatio}, flat 2D motion graphics, rendered look — not filmed footage.`,
+        'No camera artifacts: no lens flare, no handheld shake, no depth-of-field blur, no film grain.',
+        'No people, no hands, no skin, no real-world environment.',
+        'Clean solid or gradient background, crisp edges, even lighting on the product.',
+        ...common,
+      ].join('\n');
+    }
     return [
       '[TECHNICAL]',
       `Format: vertical ${aspectRatio}, smartphone-shot look, handheld with light natural shake.`,
       'Lens: 28mm equivalent, shallow depth of field on the product.',
       'Grade: natural color, no heavy filter, realistic skin tone.',
-      'No on-screen text, captions, subtitles, or written words of any kind.',
-      'No speech, no dialogue, no voice.',
+      ...common,
     ].join('\n');
   }
 
@@ -117,6 +137,10 @@ export class PromptCompilerService {
     shots: ShotVo[];
     durationSec: number;
     settingPrompt?: string;
+    /** 스타일 지시(모션그래픽·매크로 등). 블록 순서상 LOCATION보다 앞에 온다 — 영상의 종류가 먼저다. */
+    stylePrompt?: string;
+    /** false면 실사 촬영 지시를 빼고 그래픽용 TECHNICAL로 바꾼다 */
+    styleCamera?: boolean;
     avatarNames?: string[];
     hasProductImage?: boolean;
     aspectRatio?: string;
@@ -127,7 +151,10 @@ export class PromptCompilerService {
 
     const reference = this.referenceBlock(input.avatarNames || []);
     const angleLock = this.angleLockBlock(input.hasProductImage !== false);
-    const location = input.settingPrompt ? `[LOCATION]\n${input.settingPrompt}` : '';
+    const camera = input.styleCamera !== false;
+    const style = input.stylePrompt ? `[STYLE]\n${input.stylePrompt}` : '';
+    // 그래픽 스타일에는 장소가 의미 없다 — "카페 창가"가 붙으면 배경을 그리기 시작한다.
+    const location = camera && input.settingPrompt ? `[LOCATION]\n${input.settingPrompt}` : '';
 
     // 무성 영상 — 대사·자막을 넣지 않는다. 보이는 것만으로 전달한다.
     const shotLines = shots.map((s) => `SHOT ${s.index} [${fmt(s.startSec)}–${fmt(s.endSec)}] ${s.action}`);
@@ -138,9 +165,10 @@ export class PromptCompilerService {
       ...shotLines,
     ].join('\n');
 
-    const technical = this.technicalBlock(aspectRatio, input.generateAudio !== false);
+    const technical = this.technicalBlock(aspectRatio, input.generateAudio !== false, camera);
 
-    const enhancedPrompt = [reference, angleLock, location, shotsBlock, technical]
+    // 그래픽 스타일이면 아바타(사람) 참조도 뺀다 — 사람이 안 나오는 영상이다.
+    const enhancedPrompt = [camera ? reference : '', style, angleLock, location, shotsBlock, technical]
       .filter(Boolean)
       .join('\n\n');
 

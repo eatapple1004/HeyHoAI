@@ -146,7 +146,10 @@
   <!-- 2. 구성 -->
   <section class="step" id="s2" aria-disabled="true">
     <h2><span class="num">2</span> 어떻게 만들까요</h2>
-    <div class="label">원하는 느낌 <span style="opacity:.6">(비워두면 알아서 정합니다)</span></div>
+    <div class="label">영상 스타일</div>
+    <div class="chips" id="styles"></div>
+
+    <div class="label">원하는 느낌 <span style="opacity:.6">(비워두면 스타일에 맞춰 알아서 정합니다)</span></div>
     <textarea id="direction" rows="3" placeholder="예) 20대 여성 타깃으로 상큼하게, 손 클로즈업 많이&#10;예) 캠핑장 분위기로, 가족이 쓰는 느낌"></textarea>
 
     <details id="advanced" style="margin-top:10px">
@@ -194,7 +197,21 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { product: null, hookId: null, settingId: null, duration: 8, resolution: '720p', compiled: null, jobId: null, startedAt: 0 };
+  /** 칩 목록 렌더 — 훅·장소·스타일이 같은 동작(단일 선택, 다시 누르면 해제)을 공유한다. */
+  function renderChips(el, items, key) {
+    el.innerHTML = items.map((i) =>
+      '<button class="chip" data-id="' + i.id + '" title="' + html(i.prompt) + '">' + html(i.name) + '</button>').join('');
+    el.querySelectorAll('.chip').forEach((c) => {
+      c.onclick = () => {
+        const on = c.getAttribute('aria-pressed') === 'true';
+        el.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        c.setAttribute('aria-pressed', on ? 'false' : 'true');   // 다시 누르면 해제(선택 안 함도 유효하다)
+        state[key] = on ? null : c.dataset.id;
+      };
+    });
+  }
+
+  const state = { product: null, hookId: null, settingId: null, styleId: null, duration: 8, resolution: '720p', compiled: null, jobId: null, startedAt: 0 };
 
   /** 응답 봉투가 {success,data} 또는 {success:false,error}. 에러는 서버 문구를 그대로 보여준다. */
   async function api(path, opts = {}) {
@@ -298,24 +315,22 @@
   async function loadLibrary() {
     if (libLoaded) return;
     libLoaded = true;
-    const render = (el, items, key) => {
-      el.innerHTML = items.map((i) =>
-        '<button class="chip" data-id="' + i.id + '" title="' + html(i.prompt) + '">' + html(i.name) + '</button>').join('');
-      el.querySelectorAll('.chip').forEach((c) => {
-        c.onclick = () => {
-          const on = c.getAttribute('aria-pressed') === 'true';
-          el.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-          c.setAttribute('aria-pressed', on ? 'false' : 'true');   // 다시 누르면 해제(선택 안 함도 유효하다)
-          state[key] = on ? null : c.dataset.id;
-        };
-      });
-    };
+    const render = renderChips;
     const [hooks, settings] = await Promise.all([api('/hooks'), api('/settings')]);
     render($('hooks'), hooks, 'hookId');
     render($('settings'), settings, 'settingId');
   }
 
   $('advanced').addEventListener('toggle', () => { if ($('advanced').open) loadLibrary(); });
+
+  /** 스타일은 접기 안에 숨기지 않는다 — 영상의 종류를 먼저 고르는 게 자연스럽다. */
+  async function loadStyles() {
+    try {
+      const styles = await api('/styles');
+      renderChips($('styles'), styles, 'styleId');
+    } catch (e) { /* 목록을 못 받아도 생성은 가능하다(서버가 기본 스타일로 떨어진다) */ }
+  }
+  loadStyles();
 
   $('opts').querySelectorAll('.chip').forEach((c) => {
     c.onclick = () => {
@@ -354,7 +369,7 @@
         attributes: state.product.attributes, images: state.product.images,
       } : undefined,
       direction: ($('direction').value || '').trim() || undefined,
-      hookId: state.hookId, settingId: state.settingId,
+      hookId: state.hookId, settingId: state.settingId, styleId: state.styleId,
       durationSec: state.duration, resolution: state.resolution,
       aspectRatio: '9:16', generateAudio: false,   // 무성 영상 정책
     };
