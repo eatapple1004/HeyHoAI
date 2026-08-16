@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
 const { env } = require('../config');
 const log = require('../lib/logger')('AdStudio:extract');
@@ -50,6 +52,18 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 async function toVisionBlock(url) {
   try {
+    // ⚠️ 업로드 이미지는 `/images/<file>`로 서빙된다 — **상대 경로라 fetch가 못 읽는다.**
+    //   이걸 놓쳐서 비전이 사진을 한 장도 못 보고, 이름이 늘 '제품'으로 떨어졌다(2026-08-16 실측).
+    //   servedPath 주석이 "각자 판단하다 같은 버그를 세 번 냈다"고 경고한 그 지점이다. 헬퍼로 먼저 푼다.
+    const local = toLocalPath(url);
+    if (local) {
+      const buf = fs.readFileSync(local);
+      if (buf.length > MAX_IMAGE_BYTES) return null;
+      const ext = path.extname(local).toLowerCase();
+      const type = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp'
+        : ext === '.gif' ? 'image/gif' : 'image/jpeg';
+      return { type: 'image', source: { type: 'base64', media_type: type, data: buf.toString('base64') } };
+    }
     const res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) return null;
     const type = (res.headers.get('content-type') || '').split(';')[0];
