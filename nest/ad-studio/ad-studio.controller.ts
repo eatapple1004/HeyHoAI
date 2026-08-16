@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Patch, Get, HttpCode, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdStudioService } from './ad-studio.service';
@@ -80,6 +80,12 @@ export class AdStudioController {
   }
 
   /** 비용 산정 — 무료. 길이·화질을 바꿔가며 확인하는 용도라 과금하면 안 된다. */
+  /** PATCH /web-products/:id — 상품명·설명 수정(자동 추출값을 사람이 고친다) */
+  @Patch('web-products/:id')
+  async renameWebProduct(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.products.rename(req.user.id, id, body || {}) };
+  }
+
   @Post('cost')
   @HttpCode(200)
   cost(@Body() body: CompileAdDto): ApiResponse<AdCostDto> {

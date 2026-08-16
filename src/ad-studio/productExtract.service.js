@@ -18,8 +18,12 @@ const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 const PRODUCT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['category', 'summary', 'sellingPoints', 'materials', 'colors', 'targetAudience', 'useScene', 'toneHint'],
+  required: ['name', 'description', 'category', 'summary', 'sellingPoints', 'materials', 'colors', 'targetAudience', 'useScene', 'toneHint'],
   properties: {
+    // 이름·설명은 **사람이 상품 목록에서 볼 라벨**이다. 나머지 속성(대본 재료)과 용도가 다르다.
+    //   이미지만 올리는 경로에서는 수집기가 제목을 못 주므로, 이 둘이 없으면 이름이 '제품'으로 떨어진다.
+    name: { type: 'string', description: '상품명(한국어). 사진에서 읽히는 브랜드·제품 표기를 우선하고, 없으면 보이는 특징으로 짧게 짓는다. 20자 이내' },
+    description: { type: 'string', description: '상품 설명 2~3문장(한국어). 무엇이고 어떤 특징이며 어디에 쓰는지. 과장 없이.' },
     category: { type: 'string', description: '제품 카테고리(한국어, 예: 핸드크림·무선이어폰)' },
     summary: { type: 'string', description: '한 문장 요약(한국어)' },
     sellingPoints: { type: 'array', items: { type: 'string' }, description: '광고에 쓸 셀링포인트 3~5개(한국어)' },
@@ -34,6 +38,8 @@ const PRODUCT_SCHEMA = {
 const SYSTEM = `너는 커머스 광고 기획자다. 제품 사진과 페이지 정보를 보고 **영상 광고 대본에 바로 쓸 수 있는** 속성을 뽑는다.
 
 원칙:
+- 상품명(name)은 상품 목록에 그대로 표시된다. 사진에 브랜드·제품명이 보이면 그걸 쓰고, 없으면
+  보이는 특징으로 짧고 자연스럽게 짓는다("제품", "상품" 같은 무의미한 이름은 쓰지 않는다).
 - 사진에서 **실제로 보이는 것**만 쓴다. 안 보이는 성분·수치·효능을 지어내지 않는다.
 - 과장·의학적 효능 표현을 쓰지 않는다(광고 심의 위반).
 - 모르면 빈 값으로 둔다. 추측해서 채우면 대본이 거짓말을 하게 된다.
