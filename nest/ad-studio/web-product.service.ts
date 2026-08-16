@@ -128,6 +128,38 @@ export class WebProductService {
     return r.rows[0];
   }
 
+  /**
+   * 비어 있는 이름·설명을 사진으로 채운다.
+   *
+   * 자동 생성(#272)이 붙기 전에 만든 상품은 이름이 '제품'이고 설명이 비어 있다. 그런 행은
+   * 목록에서 무엇인지 알아볼 수가 없다. 사진은 그대로 있으니 다시 읽으면 채울 수 있다.
+   *
+   * @param force true면 값이 있어도 다시 짓는다(사용자가 '자동으로 채우기'를 누른 경우).
+   */
+  async autofill(userId: string, id: string, force = false): Promise<WebProductVo> {
+    const cur = await this.find(userId, id);
+    if (!cur) throw Object.assign(new Error('상품을 찾을 수 없습니다.'), { statusCode: 404 });
+
+    // 이름이 '제품'·'상품'처럼 무의미하거나 설명이 비었을 때만 부른다 — 불필요한 API 호출은 돈이다.
+    const nameIsPlaceholder = !cur.name || ['제품', '상품'].includes(String(cur.name).trim());
+    if (!force && !nameIsPlaceholder && cur.description) return cur;
+
+    const images = (cur.images as string[]) || [];
+    if (!images.length) return cur;
+
+    let attrs: any = {};
+    try { attrs = await extract({ name: cur.name, description: cur.description, images }); }
+    catch (e: any) { throw Object.assign(new Error(`자동 생성에 실패했습니다: ${e.message}`), { statusCode: 503 }); }
+
+    const name = force || nameIsPlaceholder ? (attrs.name || cur.name) : cur.name;
+    const description = force || !cur.description ? (attrs.description || cur.description) : cur.description;
+    const r = await this.db.query<WebProductVo>(
+      `UPDATE web_products SET name = $3, description = $4, attributes = $5, updated_at = now()
+        WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, userId, name, description, JSON.stringify({ ...(cur.attributes || {}), ...attrs })]);
+    return r.rows[0];
+  }
+
   private async insert(userId: string, d: any): Promise<WebProductVo> {
     const r = await this.db.query<WebProductVo>(
       `INSERT INTO web_products (user_id, url, name, description, price, screenshots, images, attributes, collector, status, error)
