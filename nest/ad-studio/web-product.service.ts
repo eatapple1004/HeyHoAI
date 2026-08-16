@@ -67,7 +67,12 @@ export class WebProductService {
     }
 
     return this.insert(userId, {
-      url: d.url, name: d.name, description: d.description, price: d.price,
+      url: d.url,
+      // 수집기(HTML title·meta)가 우선. 못 가져왔으면 비전이 사진에서 읽은 값으로 채운다.
+      //   이미지만 있는 상품·비표준 쇼핑몰에서 이름이 비는 걸 막는다.
+      name: (d.name || '').trim() || attributes.name || null,
+      description: (d.description || '').trim() || attributes.description || null,
+      price: d.price,
       images: d.images, screenshots: d.screenshots, attributes,
       collector: result.collector, status: 'ready',
     });
@@ -79,9 +84,12 @@ export class WebProductService {
     let attributes: Record<string, any> = {};
     try { attributes = await extract(d); } catch (e: any) { attributes = { _error: e.message }; }
     // 이름을 안 적었으면 vision이 읽은 카테고리로 채운다 — 이미지만 고르고 바로 시작할 수 있어야 한다.
-    const name = (d.name || '').trim() || attributes.category || '제품';
+    // 사용자가 이름을 안 적으면 비전이 지은 이름을 쓴다. category('핸드크림')나 '제품'은 최후 폴백 —
+    //   상품 목록에서 "제품"만 여러 개 보이면 고를 수가 없다.
+    const name = (d.name || '').trim() || attributes.name || attributes.category || '제품';
     return this.insert(userId, {
-      url: d.url || '', name, price: d.price, images: d.images,
+      url: d.url || '', name, description: attributes.description || null,
+      price: d.price, images: d.images,
       attributes, collector: 'manual', status: 'ready',
     });
   }
@@ -97,6 +105,27 @@ export class WebProductService {
     return this.db.query<WebProductVo>(
       `SELECT * FROM web_products WHERE user_id = $1 AND status = 'ready'
         ORDER BY created_at DESC LIMIT 20`, [userId]).then((r) => r.rows);
+  }
+
+  /**
+   * 이름·설명 수정. 자동 추출은 출발점일 뿐이라 사람이 고칠 수 있어야 한다 —
+   * 비전이 지은 이름이 어색하거나, 판매명이 따로 있는 경우가 흔하다.
+   * 본인 소유만 수정 가능(user_id 조건). 없으면 404.
+   */
+  async rename(userId: string, id: string, d: { name?: string; description?: string }): Promise<WebProductVo> {
+    const name = typeof d.name === 'string' ? d.name.trim().slice(0, 120) : undefined;
+    const description = typeof d.description === 'string' ? d.description.trim().slice(0, 2000) : undefined;
+    if (name !== undefined && !name) {
+      throw Object.assign(new Error('상품명은 비울 수 없습니다.'), { statusCode: 400 });
+    }
+    const r = await this.db.query<WebProductVo>(
+      `UPDATE web_products
+          SET name = COALESCE($3, name), description = COALESCE($4, description), updated_at = now()
+        WHERE id = $1 AND user_id = $2
+        RETURNING *`,
+      [id, userId, name ?? null, description ?? null]);
+    if (!r.rows[0]) throw Object.assign(new Error('상품을 찾을 수 없습니다.'), { statusCode: 404 });
+    return r.rows[0];
   }
 
   private async insert(userId: string, d: any): Promise<WebProductVo> {
