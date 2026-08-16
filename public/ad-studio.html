@@ -206,6 +206,30 @@
     </div>
     <div id="jobBox"></div>
   </section>
+
+  <!--
+    Marketing Studio — Ad Video 엔진을 그대로 쓴다(대본 → 씬별 클립 → 조립).
+    Ad Studio 본류(단일 생성)와 달리 **여러 씬이 나온다**. 힉스필드 Marketing Studio Video가
+    프롬프트+이미지만으로 여러 씬을 뽑아 보여주는 흐름이라, 그 대응물은 이쪽 엔진이다.
+    고르는 단계를 두지 않는다 — 상품과 문장 하나면 끝.
+  -->
+  <section class="card" id="s4">
+    <h2><span class="num">4</span> Marketing Studio <span class="hint">프롬프트 + 상품만으로 여러 씬</span></h2>
+    <div class="label">어떤 영상을 원하세요</div>
+    <textarea id="msPrompt" rows="2" placeholder="예) 아기자기하고 귀여운 영상을 만들어줘"></textarea>
+    <div class="chips" id="msOpts" style="margin-top:10px">
+      <button class="chip" data-k="aspect" data-v="9:16" aria-pressed="true">9:16</button>
+      <button class="chip" data-k="aspect" data-v="1:1">1:1</button>
+      <button class="chip" data-k="aspect" data-v="16:9">16:9</button>
+      <button class="chip" data-k="quality" data-v="low" aria-pressed="true">기본 화질</button>
+      <button class="chip" data-k="quality" data-v="high">고화질</button>
+    </div>
+    <div class="row" style="margin-top:14px; align-items:center">
+      <button id="btnMs">여러 씬으로 만들기</button>
+      <span class="cost" id="msMsg"></span>
+    </div>
+    <div id="msBox"></div>
+  </section>
 </div>
 
 <script>
@@ -294,6 +318,85 @@
     enable('s2', true);
     updateCost();
   }
+
+  // ── Marketing Studio (Ad Video 엔진 배선) ──
+  const ms = { aspect: '9:16', quality: 'low', busy: false };
+  $('msOpts').querySelectorAll('.chip').forEach((c) => {
+    c.onclick = () => {
+      $('msOpts').querySelectorAll('.chip[data-k="' + c.dataset.k + '"]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      c.setAttribute('aria-pressed', 'true');
+      ms[c.dataset.k] = c.dataset.v;
+    };
+  });
+
+  /** 상품 이미지를 URL로 넘긴다 — 서버가 /images/<file> 서빙 경로만 받아 로컬에서 읽는다. */
+  function msForm(extra) {
+    const fd = new FormData();
+    const p = state.product || {};
+    (p.images || []).slice(0, 5).forEach((u) => fd.append('productImageUrl', u));
+    fd.append('product', p.name || '제품');
+    fd.append('concept', $('msPrompt').value.trim() || '제품의 매력이 드러나는 광고 영상');
+    fd.append('language', 'ko');
+    fd.append('outputType', 'product-ad');
+    Object.entries(extra || {}).forEach(([k, v]) => fd.append(k, v));
+    return fd;
+  }
+
+  async function msPost(path, fd) {
+    const r = await fetch('/api/generate/ugc/' + path, { method: 'POST', body: fd });
+    const t = await r.text();
+    let j; try { j = JSON.parse(t); } catch { throw new Error('서버 응답을 읽지 못했습니다 (' + r.status + ')'); }
+    if (!r.ok || j.success === false) throw new Error(j.error || ('요청 실패 (' + r.status + ')'));
+    return j;
+  }
+
+  function msRender(job) {
+    const scenes = (job && (job.scenes || job.clips)) || [];
+    const done = scenes.filter((x) => x && (x.url || x.clipUrl)).length;
+    const vid = job && (job.videoUrl || job.url || job.resultUrl);
+    $('msBox').innerHTML =
+      '<div class="muted" style="margin-top:10px">상태: ' + html(job.status || '진행 중')
+      + (scenes.length ? ' · 씬 ' + done + '/' + scenes.length : '') + '</div>'
+      + (scenes.length ? '<div class="thumbs">' + scenes.map((sc) => {
+          const u = sc && (sc.url || sc.clipUrl);
+          return u ? '<video src="' + html(u) + '" muted playsinline style="width:110px;border-radius:8px"></video>'
+                   : '<div style="width:110px;height:150px;border-radius:8px;background:#1c1c28"></div>';
+        }).join('') + '</div>' : '')
+      + (vid ? '<video src="' + html(vid) + '" controls playsinline style="margin-top:12px;max-width:320px;border-radius:12px"></video>' : '');
+  }
+
+  $('btnMs').onclick = async () => {
+    if (ms.busy) return;
+    if (!state.product) { $('msMsg').textContent = '먼저 상품을 가져와 주세요.'; return; }
+    if (!(state.product.images || []).length) { $('msMsg').textContent = '상품 이미지가 필요합니다.'; return; }
+    ms.busy = true; $('btnMs').disabled = true; $('msBox').innerHTML = '';
+    try {
+      $('msMsg').textContent = '대본 쓰는 중…';
+      const sc = await msPost('script', msForm({ durationSec: '20' }));
+
+      $('msMsg').textContent = '씬 생성 중…';
+      const rd = await msPost('render', msForm({
+        script: JSON.stringify(sc.script), aspect: ms.aspect, quality: ms.quality,
+      }));
+
+      // 폴링 — Ad Video와 같은 잡 조회를 쓴다.
+      for (;;) {
+        const j = await (await fetch('/api/generate/ugc/jobs/' + encodeURIComponent(rd.jobId))).json();
+        const job = j.data || j.job || j;
+        msRender(job);
+        if (['done', 'completed', 'failed', 'error'].includes(String(job.status))) {
+          $('msMsg').textContent = String(job.status).startsWith('f') || job.status === 'error'
+            ? ('실패: ' + (job.error || '알 수 없는 오류')) : '완성되었습니다.';
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 4000));
+      }
+    } catch (e) {
+      $('msMsg').textContent = e.message || '생성에 실패했습니다.';
+    } finally {
+      ms.busy = false; $('btnMs').disabled = false;
+    }
+  };
 
   $('btnEditProduct').onclick = () => { $('pEdit').hidden = !$('pEdit').hidden; };
   $('btnCancelProduct').onclick = () => {
