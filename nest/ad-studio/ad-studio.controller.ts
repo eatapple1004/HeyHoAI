@@ -86,6 +86,13 @@ export class AdStudioController {
     return { success: true, data: await this.products.rename(req.user.id, id, body || {}) };
   }
 
+  /** POST /web-products/:id/autofill — 비어 있는 이름·설명을 사진으로 채운다(force=true면 재생성) */
+  @Post('web-products/:id/autofill')
+  @HttpCode(200)
+  async autofillWebProduct(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.products.autofill(req.user.id, id, body?.force === true) };
+  }
+
   @Post('cost')
   @HttpCode(200)
   cost(@Body() body: CompileAdDto): ApiResponse<AdCostDto> {
