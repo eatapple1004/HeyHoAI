@@ -193,63 +193,14 @@
     </div>
   </section>
 
-  <!-- 2. 구성 -->
-  <section class="step" id="s2" aria-disabled="true">
-    <h2><span class="num">2</span> 어떻게 만들까요</h2>
-    <div class="label">영상 스타일</div>
-    <div class="chips" id="styles"></div>
-
-    <div class="label">원하는 느낌 <span style="opacity:.6">(비워두면 스타일에 맞춰 알아서 정합니다)</span></div>
-    <textarea id="direction" rows="3" placeholder="예) 20대 여성 타깃으로 상큼하게, 손 클로즈업 많이&#10;예) 캠핑장 분위기로, 가족이 쓰는 느낌"></textarea>
-
-    <details id="advanced" style="margin-top:10px">
-      <summary class="muted" style="cursor:pointer">훅·장소 직접 고르기</summary>
-      <div class="label">훅 — 첫 3초에 할 말</div>
-      <div class="chips" id="hooks"></div>
-      <div class="label">장소</div>
-      <div class="chips" id="settings"></div>
-    </details>
-
-    <div class="label">길이 · 화질</div>
-    <div class="chips" id="opts">
-      <button class="chip" data-k="duration" data-v="8" aria-pressed="true">8초</button>
-      <button class="chip" data-k="duration" data-v="10">10초</button>
-      <button class="chip" data-k="duration" data-v="15">15초</button>
-      <button class="chip" data-k="resolution" data-v="720p" aria-pressed="true">720p</button>
-      <button class="chip" data-k="resolution" data-v="1080p">1080p</button>
-    </div>
-    <div class="row" style="margin-top:14px; align-items:center">
-      <button id="btnCompile">미리보기 만들기</button>
-      <span class="cost" id="costLine"></span>
-    </div>
-    <div class="muted" style="margin-top:6px">미리보기는 크레딧이 들지 않습니다.</div>
-  </section>
-
-  <!-- 3. 확인 -->
-  <section class="step" id="s3" aria-disabled="true">
-    <h2><span class="num">3</span> 확인하고 만들기</h2>
-    <div class="chosen" id="chosen"></div>
-    <div id="shots"></div>
-    <div id="warns"></div>
-    <details style="margin-top:10px">
-      <summary class="muted" style="cursor:pointer">모델에 들어갈 프롬프트 보기</summary>
-      <pre class="prompt" id="prompt"></pre>
-    </details>
-    <div class="row" style="margin-top:14px; align-items:center">
-      <button id="btnGenerate">영상 만들기</button>
-      <span class="cost" id="genCost"></span>
-    </div>
-    <div id="jobBox"></div>
-  </section>
-
   <!--
     Marketing Studio — Ad Video 엔진을 그대로 쓴다(대본 → 씬별 클립 → 조립).
     Ad Studio 본류(단일 생성)와 달리 **여러 씬이 나온다**. 힉스필드 Marketing Studio Video가
     프롬프트+이미지만으로 여러 씬을 뽑아 보여주는 흐름이라, 그 대응물은 이쪽 엔진이다.
     고르는 단계를 두지 않는다 — 상품과 문장 하나면 끝.
   -->
-  <section class="card" id="s4">
-    <h2><span class="num">4</span> Marketing Studio <span class="muted" style="font-size:13px;font-weight:400">프롬프트 + 상품만으로 여러 씬</span></h2>
+  <section class="card" id="s2">
+    <h2><span class="num">2</span> Marketing Studio <span class="muted" style="font-size:13px;font-weight:400">프롬프트 + 상품만으로 여러 씬</span></h2>
     <!--
       여기서 이미지를 바로 올린다. ①에서 상품을 먼저 등록하게 하면 단계가 늘어나는데,
       경쟁사는 **이미지 업로드 → 문장 → 생성** 세 단계가 전부다. 그 수를 맞춘다.
@@ -286,21 +237,9 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   /** 칩 목록 렌더 — 훅·장소·스타일이 같은 동작(단일 선택, 다시 누르면 해제)을 공유한다. */
-  function renderChips(el, items, key) {
-    el.innerHTML = items.map((i) =>
-      '<button class="chip" data-id="' + i.id + '" title="' + html(i.prompt) + '">' + html(i.name) + '</button>').join('');
-    el.querySelectorAll('.chip').forEach((c) => {
-      c.onclick = () => {
-        const on = c.getAttribute('aria-pressed') === 'true';
-        el.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-        c.setAttribute('aria-pressed', on ? 'false' : 'true');   // 다시 누르면 해제(선택 안 함도 유효하다)
-        state[key] = on ? null : c.dataset.id;
-      };
-    });
-  }
 
   let autofilling = false;   // 자동 채우기 재진입 방지(showProduct가 다시 불리므로)
-  const state = { product: null, hookId: null, settingId: null, styleId: null, duration: 8, resolution: '720p', compiled: null, jobId: null, startedAt: 0 };
+  const state = { product: null, compiled: null };   // ④(Marketing Studio)만 남아 상품만 쓴다
 
   /** 응답 봉투가 {success,data} 또는 {success:false,error}. 에러는 서버 문구를 그대로 보여준다. */
   async function api(path, opts = {}) {
@@ -402,8 +341,6 @@
         .catch(() => { $('pMeta').textContent = ''; })
         .finally(() => { autofilling = false; });
     }
-    enable('s2', true);
-    updateCost();
   }
 
   // ── Marketing Studio (Ad Video 엔진 배선) ──
@@ -653,34 +590,9 @@
 
   // ── 2. 라이브러리 ──
   let libLoaded = false;
-  async function loadLibrary() {
-    if (libLoaded) return;
-    libLoaded = true;
-    const render = renderChips;
-    const [hooks, settings] = await Promise.all([api('/hooks'), api('/settings')]);
-    render($('hooks'), hooks, 'hookId');
-    render($('settings'), settings, 'settingId');
-  }
 
-  $('advanced').addEventListener('toggle', () => { if ($('advanced').open) loadLibrary(); });
 
-  /** 스타일은 접기 안에 숨기지 않는다 — 영상의 종류를 먼저 고르는 게 자연스럽다. */
-  async function loadStyles() {
-    try {
-      const styles = await api('/styles');
-      renderChips($('styles'), styles, 'styleId');
-    } catch (e) { /* 목록을 못 받아도 생성은 가능하다(서버가 기본 스타일로 떨어진다) */ }
-  }
-  loadStyles();
 
-  $('opts').querySelectorAll('.chip').forEach((c) => {
-    c.onclick = () => {
-      $('opts').querySelectorAll('.chip[data-k="' + c.dataset.k + '"]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-      c.setAttribute('aria-pressed', 'true');
-      state[c.dataset.k] = c.dataset.k === 'duration' ? parseInt(c.dataset.v, 10) : c.dataset.v;
-      updateCost();
-    };
-  });
 
   /** 파일 업로드 → /images/<file> 경로를 받아 아래 URL 칸을 채운다. */
   $('btnUpload').onclick = async () => {
@@ -703,120 +615,6 @@
     }
   };
 
-  function payload() {
-    return {
-      product: state.product ? {
-        name: state.product.name, price: state.product.price,
-        attributes: state.product.attributes, images: state.product.images,
-      } : undefined,
-      direction: ($('direction').value || '').trim() || undefined,
-      hookId: state.hookId, settingId: state.settingId, styleId: state.styleId,
-      durationSec: state.duration, resolution: state.resolution,
-      aspectRatio: '9:16', generateAudio: false,   // 무성 영상 정책
-    };
-  }
-
-  async function updateCost() {
-    try {
-      const c = await api('/cost', { method: 'POST', body: JSON.stringify(payload()) });
-      $('costLine').innerHTML = '예상 <b>◈' + c.credits.toLocaleString() + '</b>';
-      $('genCost').innerHTML = '<b>◈' + c.credits.toLocaleString() + '</b> 차감';
-    } catch { /* 비용 표시는 실패해도 흐름을 막지 않는다 */ }
-  }
-
-  // ── 3. 컴파일 ──
-  $('btnCompile').onclick = async () => {
-    $('btnCompile').disabled = true;
-    $('shots').innerHTML = '<div class="muted">대본을 짜는 중…</div>';
-    enable('s3', true);
-    try {
-      const c = await api('/compile', { method: 'POST', body: JSON.stringify(payload()) });
-      state.compiled = c;
-      $('shots').innerHTML = c.shots.map((s) =>
-        '<div class="shot"><div class="tc">SHOT ' + s.index + ' · ' + s.startSec + '–' + s.endSec + '초</div>' +
-        '<div>' + html(s.action) + '</div></div>').join('');
-      // 자동으로 골랐으면 무엇을 골랐는지 보여준다 — 사용자가 결과를 이해하고 조정할 수 있어야 한다.
-      const ch = c.chosen || {};
-      $('chosen').innerHTML = (ch.auto && (ch.hook || ch.setting))
-        ? '자동 선택 — 훅 <b>' + html(ch.hook || '없음') + '</b> · 장소 <b>' + html(ch.setting || '없음') + '</b>'
-          + ' <span style="opacity:.7">(바꾸려면 위 [훅·장소 직접 고르기])</span>'
-        : '';
-      $('warns').innerHTML = (c.warnings || []).map((w) => '<div class="warn">⚠️ ' + html(w) + '</div>').join('');
-      $('prompt').textContent = c.enhancedPrompt;
-      $('genCost').innerHTML = '<b>◈' + c.estimatedCredits.toLocaleString() + '</b> 차감';
-    } catch (e) {
-      $('shots').innerHTML = '<div class="err">' + html(e.message) + '</div>';
-    } finally {
-      $('btnCompile').disabled = false;
-    }
-  };
-
-  // ── 4. 생성 ──
-  $('btnGenerate').onclick = async () => {
-    $('btnGenerate').disabled = true;
-    $('jobBox').innerHTML = '<div class="muted">생성 요청 중…</div>';
-    try {
-      const job = await api('/jobs', { method: 'POST', body: JSON.stringify(payload()) });
-      state.jobId = job.id;
-      state.startedAt = Date.now();
-      renderProgress();
-      poll();
-    } catch (e) {
-      $('jobBox').innerHTML = '<div class="err">' + html(e.message) + '</div>';
-      $('btnGenerate').disabled = false;
-    }
-  };
-
-  /**
-   * 진행 표시 — "로딩중" 대신 **결과가 나올 자리(9:16)를 미리 보여주고** 단계를 짚어준다.
-   * 서버가 단계를 안 알려주므로 경과 시간으로 추정한다(보통 100~180초).
-   */
-  const STEPS = [
-    ['장면 구성', 0],
-    ['첫 프레임 준비', 8],
-    ['영상 생성', 20],
-    ['마무리', 150],
-  ];
-  function renderProgress() {
-    const sec = Math.floor((Date.now() - (state.startedAt || Date.now())) / 1000);
-    const cur = STEPS.reduce((acc, [, at], i) => (sec >= at ? i : acc), 0);
-    const pct = Math.min(96, Math.round((sec / 170) * 100));   // 100%는 완료 때만
-    $('jobBox').innerHTML =
-      '<div class="prog">' +
-        '<div class="frame"><div class="tick" style="width:' + pct + '%"></div></div>' +
-        '<div><ul class="steps">' +
-          STEPS.map(([label], i) =>
-            '<li data-s="' + (i < cur ? 'done' : i === cur ? 'now' : '') + '">' +
-            '<span class="dot">' + (i < cur ? '✓' : '') + '</span>' + label + '</li>').join('') +
-        '</ul>' +
-        '<div class="elapsed">' + String(Math.floor(sec / 60)).padStart(2, '0') + ':' +
-          String(sec % 60).padStart(2, '0') + ' 경과 · 보통 2~3분</div>' +
-        '</div>' +
-      '</div>';
-  }
-
-  /** 서버가 요청 시점에 provider를 확인하므로, 폴링이 곧 진행 트리거다. */
-  async function poll() {
-    if (!state.jobId) return;
-    let job;
-    try { job = await api('/jobs/' + state.jobId); }
-    catch { return setTimeout(poll, 5000); }   // 일시적 실패는 재시도
-
-    if (job.status === 'completed') {
-      $('jobBox').innerHTML = '<video src="' + html(job.result_url) + '" controls playsinline></video>'
-        + '<div class="muted" style="margin-top:6px">엔진: ' + html(job.engine) + '</div>';
-      $('btnGenerate').disabled = false;
-      return;
-    }
-    if (job.status === 'failed') {
-      $('jobBox').innerHTML = '<div class="err">' + html(job.error || '생성에 실패했습니다.') + '</div>'
-        + '<div class="muted">차감된 크레딧은 환불됩니다.</div>';
-      $('btnGenerate').disabled = false;
-      return;
-    }
-    renderProgress();
-    setTimeout(poll, 5000);
-  }
 })();
 </script>
 </body>
