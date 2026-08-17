@@ -242,6 +242,8 @@
       <button class="chip" data-k="aspect" data-v="16:9">16:9</button>
       <button class="chip" data-k="quality" data-v="low" aria-pressed="true">기본 화질</button>
       <button class="chip" data-k="quality" data-v="high">고화질</button>
+      <button class="chip" data-k="voice" data-v="on" aria-pressed="true">내레이션</button>
+      <button class="chip" data-k="music" data-v="on" aria-pressed="true">배경음악</button>
     </div>
     <div class="row" style="margin-top:14px; align-items:center">
       <button id="btnMs">여러 씬으로 만들기</button>
@@ -377,12 +379,22 @@
   }
 
   // ── Marketing Studio (Ad Video 엔진 배선) ──
-  const ms = { aspect: '9:16', quality: 'low', busy: false };
+  // voice·music은 **기본 켜짐**이다. 서버는 'true'를 명시해야 오디오를 만드는데, 안 보내면
+  //   무음 영상이 나온다 — ElevenLabs를 붙여도 소리가 없다(실측으로 발견).
+  const ms = { aspect: '9:16', quality: 'low', voice: true, music: true, busy: false };
+  const TOGGLES = ['voice', 'music'];
+  let msScript = null;
   $('msOpts').querySelectorAll('.chip').forEach((c) => {
     c.onclick = () => {
-      $('msOpts').querySelectorAll('.chip[data-k="' + c.dataset.k + '"]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      const k = c.dataset.k;
+      if (TOGGLES.includes(k)) {                       // on/off
+        ms[k] = c.getAttribute('aria-pressed') !== 'true';
+        c.setAttribute('aria-pressed', ms[k] ? 'true' : 'false');
+        return;
+      }
+      $('msOpts').querySelectorAll('.chip[data-k="' + k + '"]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
       c.setAttribute('aria-pressed', 'true');
-      ms[c.dataset.k] = c.dataset.v;
+      ms[k] = c.dataset.v;
     };
   });
 
@@ -407,18 +419,41 @@
     return j;
   }
 
+  /**
+   * 씬 진행 상황. 힉스필드는 "여러 씬이 만들어지는 과정"을 보여주는 게 핵심 경험이라,
+   * 썸네일만 늘어놓지 않고 **몇 번째 씬이 무슨 내용인지** 같이 보여준다.
+   * 대본(msScript)은 렌더 전에 이미 받아둔 것 — 클립이 아직 없어도 내용은 먼저 뜬다.
+   */
   function msRender(job) {
-    const scenes = (job && (job.scenes || job.sceneClips || job.scene_clips || job.clips)) || [];
-    const done = scenes.filter((x) => x && (x.url || x.clipUrl)).length;
+    const clips = (job && (job.sceneClips || job.scene_clips || job.scenes || job.clips)) || [];
+    const plan = (msScript && msScript.scenes) || [];
+    const n = Math.max(clips.length, plan.length);
+    const done = clips.filter((x) => x && (x.url || x.clipUrl)).length;
     const vid = job && (job.resultUrl || job.result_url || job.videoUrl || job.url);
+
+    let cards = '';
+    for (let i = 0; i < n; i++) {
+      const c = clips[i] || {};
+      const u = c.url || c.clipUrl;
+      const sc = plan[i] || {};
+      const txt = sc.summary || sc.brollPrompt || sc.direction || '';
+      cards += '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">'
+        + (u ? '<video src="' + html(u) + '" muted playsinline loop autoplay style="width:92px;border-radius:8px;flex:0 0 auto"></video>'
+             : '<div style="width:92px;height:124px;border-radius:8px;background:#1c1c28;flex:0 0 auto"></div>')
+        + '<div style="min-width:0">'
+        +   '<div style="font-size:12.5px;font-weight:600">씬 ' + (i + 1)
+        +     (sc.durationSec ? ' <span class="muted" style="font-weight:400">· ' + sc.durationSec + '초</span>' : '')
+        +     (u ? '' : ' <span class="muted" style="font-weight:400">· 만드는 중…</span>') + '</div>'
+        +   '<div class="muted" style="font-size:12px;line-height:1.45">' + html(String(txt).slice(0, 120)) + '</div>'
+        + '</div></div>';
+    }
+
     $('msBox').innerHTML =
-      '<div class="muted" style="margin-top:10px">상태: ' + html(job.status || '진행 중')
-      + (scenes.length ? ' · 씬 ' + done + '/' + scenes.length : '') + '</div>'
-      + (scenes.length ? '<div class="thumbs">' + scenes.map((sc) => {
-          const u = sc && (sc.url || sc.clipUrl);
-          return u ? '<video src="' + html(u) + '" muted playsinline style="width:110px;border-radius:8px"></video>'
-                   : '<div style="width:110px;height:150px;border-radius:8px;background:#1c1c28"></div>';
-        }).join('') + '</div>' : '')
+      '<div class="muted" style="margin-top:10px">'
+      + (job.status === 'succeeded' ? '완성' : '만드는 중')
+      + (n ? ' · 씬 ' + done + '/' + n : '') + '</div>'
+      + (msScript && msScript.title ? '<div style="font-weight:600;margin-top:6px">' + html(msScript.title) + '</div>' : '')
+      + cards
       + (vid ? '<video src="' + html(vid) + '" controls playsinline style="margin-top:12px;max-width:320px;border-radius:12px"></video>' : '');
   }
 
@@ -453,10 +488,14 @@
     try {
       $('msMsg').textContent = '대본 쓰는 중…';
       const sc = await msPost('script', msForm({ durationSec: '20' }));
+      msScript = sc.script;                 // 씬 내용을 클립보다 먼저 띄우기 위해 보관
+      msRender({ status: 'processing' });   // 대본이 나온 순간 씬 목록이 보인다 — 빈 화면으로 기다리지 않게
 
       $('msMsg').textContent = '씬 생성 중…';
       const rd = await msPost('render', msForm({
         script: JSON.stringify(sc.script), aspect: ms.aspect, quality: ms.quality,
+        voice: ms.voice ? 'true' : 'false',   // 서버는 문자열 'true'만 참으로 본다
+        music: ms.music ? 'true' : 'false',
       }));
 
       // 폴링 — Ad Video(pollUgcJob)와 같은 규약·간격을 쓴다. 초반은 촘촘하게, 이후 4초.
