@@ -378,6 +378,7 @@
   let msScript = null;
   let msStartedAt = 0;
   let msLastJob = null;
+  let msSaved = '';   // '' | 'saved' | 'saved-already' | 'failed'
   /** 경과 시간 — 몇 분 걸리는 작업이라 "얼마나 됐는지"가 멈춤과 진행을 구분해 준다. */
   function msElapsed() {
     if (!msStartedAt) return '';
@@ -468,7 +469,9 @@
       +   (msElapsed() ? ' · ' + msElapsed() : '') + '</div>'
       + (msScript && msScript.title ? '<div style="font-weight:600;margin-top:8px">' + html(msScript.title) + '</div>' : '')
       + cards
-      + (vid ? '<video src="' + html(vid) + '" controls playsinline style="margin-top:12px;max-width:320px;border-radius:12px"></video>' : '');
+      + (vid ? '<video src="' + html(vid) + '" controls playsinline style="margin-top:12px;max-width:320px;border-radius:12px"></video>' : '')
+      + (vid && msSaved && msSaved !== 'failed'
+          ? '<div class="muted" style="margin-top:8px">갤러리에 저장됨 · <a href="/gallery">라이브러리에서 보기</a></div>' : '');
   }
 
   /** ④에서 고른 사진을 바로 상품으로 만든다 — 이름·설명은 서버가 사진 보고 붙인다. */
@@ -499,7 +502,7 @@
     if (!state.product) { $('msMsg').textContent = '먼저 상품을 가져와 주세요.'; return; }
     if (!(state.product.images || []).length) { $('msMsg').textContent = '상품 이미지가 필요합니다.'; return; }
     ms.busy = true; $('btnMs').disabled = true; $('msBox').innerHTML = '';
-    msScript = null; msStartedAt = Date.now();
+    msScript = null; msStartedAt = Date.now(); msSaved = '';
     msRender({ status: 'processing' });        // 누르는 즉시 단계 표시가 뜬다
     // 폴 간격이 4초라 그 사이 경과 시간이 멈춰 보인다 — 1초마다 다시 그린다.
     const tickTimer = setInterval(() => { if (ms.busy) msRender(msLastJob || { status: 'processing' }); }, 1000);
@@ -525,7 +528,22 @@
         msRender(job);
         // ⚠️ ugc_jobs의 종료 상태는 succeeded/failed 둘뿐이다(processing → 둘 중 하나).
         //   done·completed 같은 값은 없다 — 그걸로 판정해서 완료된 잡을 계속 폴링했다(실측).
-        if (job.status === 'succeeded') { $('msMsg').textContent = '완성되었습니다.'; break; }
+        if (job.status === 'succeeded') {
+          // ⚠️ 렌더가 끝나도 결과는 **draft**다 — commit을 안 하면 갤러리에 안 남고 사라진다.
+          //   Ad Video는 자동 저장(ugcAutoSaveOffBench)까지 하는데 여기엔 그 배선이 없었다.
+          //   편집 기능이 없으니 본문 없이 부른다(서버가 편집 없으면 commitJob으로 그대로 확정).
+          $('msMsg').textContent = '갤러리에 저장 중…';
+          try {
+            const cm = await (await fetch('/api/generate/ugc/jobs/' + encodeURIComponent(rd.jobId) + '/commit',
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json();
+            msSaved = cm && cm.success ? (cm.already ? 'saved-already' : 'saved') : 'failed';
+          } catch (e) { msSaved = 'failed'; }
+          $('msMsg').textContent = msSaved === 'failed'
+            ? '완성됐지만 갤러리 저장에 실패했습니다. 라이브러리에서 다시 시도해 주세요.'
+            : '완성 · 갤러리에 저장했습니다.';
+          msRender(job);
+          break;
+        }
         if (job.status === 'failed') { $('msMsg').textContent = '실패: ' + (job.error || '알 수 없는 오류'); break; }
         if (++tick > 240) { $('msMsg').textContent = '아직 만드는 중입니다 — 끝나면 여기에 나타납니다.'; break; }
         await new Promise((r) => setTimeout(r, tick < 4 ? 2500 : 4000));
