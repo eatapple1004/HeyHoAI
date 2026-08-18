@@ -55,7 +55,8 @@ export class BusinessCaptionService {
     businessName: string;
     industry?: string | null;
     memo?: string | null;
-    filePath?: string | null;
+    /** 캡션 근거가 될 파일들(캐러셀이면 슬라이드 순서). 읽히는 것만 첨부된다 */
+    filePaths?: string[];
     mediaType?: string;
     postType?: 'feed' | 'reel';
     tone?: string;
@@ -63,7 +64,10 @@ export class BusinessCaptionService {
     highlight?: string;
   }): Promise<CaptionDraftVo> {
     const postType = input.postType === 'reel' ? '릴스(짧은 세로 영상)' : '피드 게시물';
-    const image = input.mediaType === 'image' ? await this.loadImage(input.filePath) : null;
+    const images = input.mediaType === 'image'
+      ? (await Promise.all((input.filePaths || []).map((p) => this.loadImage(p)))).filter(Boolean) as
+        { data: string; mediaType: string }[]
+      : [];
 
     const user = `아래 사업체의 인스타그램 ${postType}에 올릴 캡션을 써주세요.
 
@@ -73,7 +77,11 @@ ${input.memo ? `참고사항: ${input.memo}` : ''}
 ${input.tone ? `말투: ${input.tone}` : ''}
 ${input.highlight ? `이번 게시물에서 강조할 것: ${input.highlight}` : ''}
 언어: ${input.language || 'ko'}
-${image ? '첨부된 사진이 이번에 올릴 이미지입니다. 사진 속 내용을 근거로 쓰세요.' : '(이미지 첨부 없음 — 업종과 참고사항만으로 무난하게 쓰세요.)'}
+${images.length > 1
+  ? `첨부된 사진 ${images.length}장이 이번에 올릴 여러 장 게시물(캐러셀)이며 첨부 순서가 슬라이드 순서입니다. 한 장만 설명하지 말고 묶음 전체를 아우르는 캡션을 쓰세요.`
+  : images.length === 1
+    ? '첨부된 사진이 이번에 올릴 이미지입니다. 사진 속 내용을 근거로 쓰세요.'
+    : '(이미지 첨부 없음 — 업종과 참고사항만으로 무난하게 쓰세요.)'}
 
 아래 JSON만 반환:
 {
@@ -84,7 +92,7 @@ ${image ? '첨부된 사진이 이번에 올릴 이미지입니다. 사진 속 �
 }`;
 
     const content: Anthropic.ContentBlockParam[] = [];
-    if (image) {
+    for (const image of images) {
       content.push({
         type: 'image',
         source: { type: 'base64', media_type: image.mediaType as any, data: image.data },

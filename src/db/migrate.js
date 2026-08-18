@@ -432,6 +432,10 @@ async function migrate() {
     ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS bgm_media_id UUID REFERENCES account_media(id) ON DELETE SET NULL;
   `);
 
+  // 캐러셀(여러 장 게시물) — 순서가 곧 인스타 슬라이드 순서라 배열로 둔다.
+  //   image_media_id는 그대로 첫 장을 가리킨다(썸네일·기존 조인이 전부 이 컬럼을 본다).
+  await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_media_ids UUID[];`);
+
   // ─── 사업체(마케팅 대행 대상) ───
   //   social_accounts는 "인스타 계정" 단위라 사업체 개념이 없다. 한 사업체가 계정을 여러 개
   //   가질 수 있고(브랜드 본계정/서브계정) 나중에 다른 플랫폼도 붙으므로 별도 테이블로 둔다.

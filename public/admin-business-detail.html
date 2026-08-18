@@ -60,17 +60,31 @@ button:disabled{opacity:.5;cursor:default}
 .chip input{width:auto}
 .pack{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
 .pack .h{display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:.85rem;color:var(--dim);flex-wrap:wrap}
+.pchoice{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel2);cursor:pointer;display:flex;flex-direction:column}
+.pchoice:hover{border-color:var(--accent2)}
+.pchoice img,.pchoice .noimg{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:var(--bg)}
+.pchoice .noimg{display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:.72rem}
+.pchoice .meta{padding:8px 10px;font-size:.72rem;color:var(--faint)}
+.pchoice .meta b{display:block;font-size:.8rem;color:var(--text);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pchoice.on{opacity:.5;cursor:default}
+.pchoice .badge{position:absolute;top:6px;left:6px}
 .compose{display:grid;grid-template-columns:190px 1fr;gap:18px}
 .slots{display:flex;flex-direction:column;gap:10px}
 .slot{border:1px dashed var(--border);border-radius:12px;padding:10px;text-align:center;font-size:.76rem;color:var(--faint)}
 .slot img,.slot video{width:100%;border-radius:8px;display:block;margin-bottom:6px}
 .slot .lbl{font-weight:700;color:var(--dim);margin-bottom:6px;font-size:.75rem}
+.slot .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:7px;margin-bottom:8px}
+.slot .pk{position:relative}
+.slot .pk img{aspect-ratio:4/5;object-fit:cover;margin:0}
+.slot .pk .ord{position:absolute;top:3px;left:3px;background:rgba(20,16,34,.85);color:#fff;border-radius:20px;font-size:.6rem;font-weight:800;padding:1px 5px}
+.slot .pk .x{position:absolute;top:-6px;right:-6px;width:19px;height:19px;padding:0;border-radius:50%;font-size:.72rem;line-height:1;background:var(--panel)}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:.78rem;color:var(--dim);margin-bottom:5px;font-weight:600}
 .qitem{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
 .qitem:last-child{border-bottom:none}
 .qitem .thumbs{display:flex;gap:6px;flex:none}
 .qitem .thumbs img,.qitem .thumbs video{width:56px;height:70px;object-fit:cover;border-radius:8px;background:var(--panel2)}
+.qitem .thumbs .more{width:36px;height:70px;border-radius:8px;background:var(--panel2);color:var(--dim);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
 .qitem .body{flex:1;min-width:0;font-size:.84rem}
 .qitem .cap{color:var(--dim);white-space:pre-wrap;margin-top:4px;max-height:4.6em;overflow:hidden}
 .qitem .when{color:var(--faint);font-size:.75rem;margin-top:4px}
@@ -127,7 +141,7 @@ button:disabled{opacity:.5;cursor:default}
 
   <!-- 4. 콘텐츠 풀 -->
   <div class="card">
-    <h2>콘텐츠 선택 <span class="hint">클릭하면 아래 발행 작성에 담깁니다 (이미지 → 게시물 / 영상 → 릴스)</span></h2>
+    <h2>콘텐츠 선택 <span class="hint">클릭하면 아래 발행 작성에 담깁니다 · 이미지는 여러 장 고르면 캐러셀(최대 10장, 고른 순서가 슬라이드 순서) · 영상 → 릴스</span></h2>
     <div class="tabs">
       <button id="tabMedia" class="on" onclick="setTab('media')">생성 결과물</button>
       <button id="tabPack" onclick="setTab('pack')">콘텐츠팩</button>
@@ -194,10 +208,15 @@ button:disabled{opacity:.5;cursor:default}
         </div>
       </div>
 
-      <div class="row" style="margin-bottom:14px">
-        <input id="packKey" placeholder="이미 만든 팩 연결 — 팩 ID 또는 공유 ID(share_id)" style="flex:1;min-width:260px">
-        <button onclick="linkPack()">팩 연결</button>
+      <!-- 이미 만든 팩 연결 — 대표 이미지를 보고 고른다 -->
+      <div class="row" style="margin-bottom:10px">
+        <b style="font-size:.9rem">이미 만든 팩 연결</b>
+        <label class="chip"><input type="checkbox" id="packAll" onchange="loadPackChoices()"> 전체 팩 보기</label>
+        <button class="sm" onclick="loadPackChoices()">↻ 새로고침</button>
+        <input id="packKey" placeholder="목록에 없으면 팩 ID·공유 ID 직접 입력" style="flex:1;min-width:220px">
+        <button onclick="linkPack()">연결</button>
       </div>
+      <div class="tiles" id="packChoices" style="margin-bottom:18px"></div>
       <div id="packs"></div>
     </div>
   </div>
@@ -256,8 +275,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':
 const isVideo = (u) => /\.(mp4|mov|webm|m4v)$/i.test(u || '');
 
 let state = { business: null, accounts: [], media: [], packs: [], queue: [] };
-/** 선택 슬롯 — mediaId(우리 미디어) 또는 url(팩 자산)로 지정한다 */
-let sel = { image: null, reel: null };
+/**
+ * 선택 슬롯 — mediaId(우리 미디어) 또는 url(팩 자산)로 지정한다.
+ * images는 여러 장 게시물(캐러셀): 고른 순서가 곧 인스타 슬라이드 순서다.
+ */
+let sel = { images: [], reel: null };
+/** 인스타 캐러셀 상한 — 서버(enqueue)와 같은 값 */
+const CAROUSEL_MAX = 10;
 
 function flash(kind, text) {
   const el = $(kind === 'err' ? 'err' : 'ok');
@@ -331,22 +355,34 @@ async function loadUnlinked() {
 function tileHtml(item, opts = {}) {
   const url = item.url;
   const key = item.id ? 'id:' + item.id : 'url:' + url;
-  const on = (sel.image && sel.image.key === key) || (sel.reel && sel.reel.key === key);
+  const idx = sel.images.findIndex((s) => s.key === key);
+  const on = idx >= 0 || (sel.reel && sel.reel.key === key);
   const media = isVideo(url) || item.media_type === 'video'
     ? '<video src="' + esc(url) + '" muted></video>'
     : '<img src="' + esc(url) + '" alt="" loading="lazy">';
   const tag = item.is_base ? '<div class="tag base">★ 원본</div>'
     : opts.label ? '<div class="tag">' + esc(opts.label) + '</div>' : '';
+  // 여러 장을 고른 동안엔 순서를 보여준다 — 캐러셀에선 순서가 곧 슬라이드 차례다.
+  const order = idx >= 0 && sel.images.length > 1 ? '<div class="num">' + (idx + 1) + '</div>' : '';
   const acts = opts.acts ? '<div class="acts">' + opts.acts + '</div>' : '';
-  return '<div class="tile' + (on ? ' sel' : '') + '" onclick="pick(\'' + key + '\')">' + media + tag + acts + '</div>';
+  return '<div class="tile' + (on ? ' sel' : '') + '" onclick="pick(\'' + key + '\')">' + media + tag + order + acts + '</div>';
 }
 
-/** 클릭 → 미디어 타입에 맞는 슬롯에 담는다(같은 걸 다시 누르면 해제) */
+/**
+ * 클릭 → 미디어 타입에 맞는 슬롯에 담는다(같은 걸 다시 누르면 해제).
+ * 이미지는 여러 장 담긴다(캐러셀) — 담은 순서가 유지된다.
+ */
 function pick(key) {
   const item = findByKey(key);
   if (!item) return;
-  const slot = (isVideo(item.url) || item.media_type === 'video') ? 'reel' : 'image';
-  sel[slot] = (sel[slot] && sel[slot].key === key) ? null : { key, url: item.url, mediaId: item.id || null };
+  if (isVideo(item.url) || item.media_type === 'video') {
+    sel.reel = (sel.reel && sel.reel.key === key) ? null : { key, url: item.url, mediaId: item.id || null };
+  } else {
+    const i = sel.images.findIndex((s) => s.key === key);
+    if (i >= 0) sel.images.splice(i, 1);
+    else if (sel.images.length >= CAROUSEL_MAX) return flash('err', '한 게시물에는 이미지를 최대 ' + CAROUSEL_MAX + '장까지 담을 수 있습니다.');
+    else sel.images.push({ key, url: item.url, mediaId: item.id || null });
+  }
   renderMedia(); renderPacks(); renderSlots();
 }
 
@@ -394,21 +430,70 @@ function renderPacks() {
     + (p.assets.length ? p.assets.map((a) => tileHtml(a, { label: a.label || a.kind })).join('')
        : '<div class="empty">자산이 없습니다.</div>')
     + '</div></div>').join('')
-    : '<div class="empty">연결된 콘텐츠팩이 없습니다. 위에 팩 ID를 넣어 연결하세요.</div>';
+    : '<div class="empty">연결된 콘텐츠팩이 없습니다. 위 목록에서 팩을 골라 연결하세요.</div>';
+}
+
+// ── 팩 고르기(대표 이미지 목록) ──
+
+/** 연결 후보 팩. 기본은 내가 만든 팩 + 이미 이 사업체에 붙은 팩, 체크하면 전체 */
+let packChoices = [];
+
+async function loadPackChoices() {
+  try {
+    const q = $('packAll').checked ? '?all=true' : '';
+    const { data } = await api('/api/admin/business/' + BIZ_ID + '/packs/available' + q);
+    packChoices = data;
+  } catch (e) { packChoices = []; flash('err', e.message); }
+  renderPackChoices();
+}
+
+function renderPackChoices() {
+  $('packChoices').innerHTML = packChoices.length ? packChoices.map((p) => {
+    const title = esc(p.product || p.vertical || '팩 #' + p.pack_id);
+    const cover = p.cover_url
+      ? '<img src="' + esc(p.cover_url) + '" alt="" loading="lazy">'
+      : '<div class="noimg">' + (p.status === 'processing' ? '생성 중…' : '이미지 없음') + '</div>';
+    // 완성된 팩은 상태를 굳이 안 띄운다 — 눈에 걸려야 하는 건 아직 굽는 중이거나 실패한 팩이다.
+    const badge = p.linked ? '<span class="badge b-done">연결됨</span>'
+      : (p.status === 'done' || p.status === 'ready') ? ''
+      : '<span class="badge b-wait">' + esc(p.status) + '</span>';
+    return '<div class="pchoice' + (p.linked ? ' on' : '') + '"'
+      + (p.linked ? '' : ' onclick="choosePack(\'' + p.pack_id + '\')"') + '>'
+      + cover + badge
+      + '<div class="meta"><b>' + title + '</b>'
+      + esc(p.vertical || '') + ' · 자산 ' + p.asset_count + '개 · #' + esc(p.pack_id)
+      + '</div></div>';
+  }).join('') : '<div class="empty">고를 수 있는 팩이 없습니다. 위에서 팩을 만들거나 “전체 팩 보기”를 켜보세요.</div>';
+}
+
+async function choosePack(packId) {
+  clearMsg();
+  try {
+    await api('/api/admin/business/' + BIZ_ID + '/packs', { method: 'POST', body: JSON.stringify({ pack: packId }) });
+    flash('ok', '팩 #' + packId + '을(를) 연결했습니다.');
+    load(); loadPackChoices();
+  } catch (e) { flash('err', e.message); }
 }
 
 function renderSlots() {
-  for (const slot of ['image', 'reel']) {
-    const el = $(slot === 'image' ? 'slotImage' : 'slotReel');
-    const label = slot === 'image' ? '게시물 이미지' : '릴스 영상';
-    const s = sel[slot];
-    el.innerHTML = '<div class="lbl">' + label + '</div>' + (s
-      ? (isVideo(s.url) ? '<video src="' + esc(s.url) + '" muted></video>' : '<img src="' + esc(s.url) + '" alt="">')
-        + '<button class="sm" onclick="clearSlot(\'' + slot + '\')">해제</button>'
+  const imgs = sel.images;
+  $('slotImage').innerHTML = '<div class="lbl">게시물 이미지'
+    + (imgs.length > 1 ? ' · ' + imgs.length + '장 (캐러셀)' : '') + '</div>'
+    + (imgs.length
+      ? '<div class="picks">' + imgs.map((s, i) =>
+          '<div class="pk"><img src="' + esc(s.url) + '" alt="">'
+          + '<span class="ord">' + (i + 1) + '</span>'
+          + '<button class="x" title="빼기" onclick="pick(\'' + s.key + '\')">×</button></div>').join('')
+        + '</div><button class="sm" onclick="clearImages()">모두 해제</button>'
       : '<span>미선택</span>');
-  }
+
+  const r = sel.reel;
+  $('slotReel').innerHTML = '<div class="lbl">릴스 영상</div>' + (r
+    ? '<video src="' + esc(r.url) + '" muted></video><button class="sm" onclick="clearSlot(\'reel\')">해제</button>'
+    : '<span>미선택</span>');
 }
 function clearSlot(slot) { sel[slot] = null; renderMedia(); renderPacks(); renderSlots(); }
+function clearImages() { sel.images = []; renderMedia(); renderPacks(); renderSlots(); }
 
 // ── 팩 만들기 (원본 → 분석 → 생성 → 레퍼 확인 → 컷) ──
 
@@ -584,6 +669,8 @@ function setTab(t) {
   $('tabPack').classList.toggle('on', t === 'pack');
   $('paneMedia').style.display = t === 'media' ? '' : 'none';
   $('panePack').style.display = t === 'pack' ? '' : 'none';
+  // 팩 탭을 처음 열 때만 후보를 불러온다(탭 전환마다 다시 부를 이유는 없다)
+  if (t === 'pack' && !packChoices.length) loadPackChoices();
 }
 
 // ── 큐 ──
@@ -597,6 +684,10 @@ function renderQueue() {
   $('queue').innerHTML = state.queue.length ? state.queue.map((q) => {
     const [cls, label] = QSTATUS[q.status] || ['b-off', q.status];
     const thumb = (u) => u ? (isVideo(u) ? '<video src="' + esc(u) + '" muted></video>' : '<img src="' + esc(u) + '" alt="">') : '';
+    // 캐러셀은 앞 3장만 보여주고 나머지는 개수로 — 큐 한 줄이 썸네일로 도배되지 않게
+    const imgs = (q.image_urls && q.image_urls.length ? q.image_urls : [q.image_url]).filter(Boolean);
+    const imgThumbs = imgs.slice(0, 3).map(thumb).join('')
+      + (imgs.length > 3 ? '<div class="more">+' + (imgs.length - 3) + '</div>' : '');
     const when = q.status === 'posted'
       ? '게시: ' + fmt(q.posted_at)
       : q.scheduled_at ? '예약: ' + fmt(q.scheduled_at) : '다음 발행 루프에서 게시';
@@ -605,7 +696,7 @@ function renderQueue() {
                    .filter(Boolean).join(' · ');
     const done = q.status === 'posted' || q.status === 'publishing';
     return '<div class="qitem">'
-      + '<div class="thumbs">' + thumb(q.image_url) + thumb(q.reel_url) + '</div>'
+      + '<div class="thumbs">' + imgThumbs + thumb(q.reel_url) + '</div>'
       + '<div class="body">'
       + '<span class="badge ' + cls + '">' + label + '</span> <b>@' + esc(q.account_username || '') + '</b>'
       + '<div class="cap">' + esc(q.image_caption || q.reel_caption || '(캡션 없음)') + '</div>'
@@ -713,7 +804,7 @@ async function linkPack() {
   try {
     await api('/api/admin/business/' + BIZ_ID + '/packs', { method: 'POST', body: JSON.stringify({ pack }) });
     $('packKey').value = '';
-    load();
+    load(); loadPackChoices();
   } catch (e) { flash('err', e.message); }
 }
 
@@ -721,22 +812,24 @@ async function unlinkPack(packId) {
   clearMsg();
   try {
     await api('/api/admin/business/' + BIZ_ID + '/packs/' + packId, { method: 'DELETE' });
-    load();
+    load(); loadPackChoices();
   } catch (e) { flash('err', e.message); }
 }
 
 /** 선택된 미디어를 근거로 캡션 초안을 받는다 — 없으면 업종·참고사항만으로 쓴다 */
+const mediaRef = (s) => (s.mediaId ? { mediaId: s.mediaId } : { url: s.url });
+
 async function genCaption() {
   clearMsg();
   const type = $('capType').value;
-  const s = type === 'reel' ? sel.reel : sel.image;
+  // 캐러셀이면 고른 이미지를 전부 넘긴다(서버가 앞에서 몇 장만 프롬프트에 싣는다)
+  const refs = type === 'reel' ? (sel.reel ? [mediaRef(sel.reel)] : []) : sel.images.map(mediaRef);
   $('capBtn').disabled = true;
   try {
     const { data } = await api('/api/admin/business/' + BIZ_ID + '/caption', {
       method: 'POST',
       body: JSON.stringify({
-        mediaId: s && s.mediaId ? s.mediaId : undefined,
-        url: s && !s.mediaId ? s.url : undefined,
+        images: refs.length ? refs : undefined,
         postType: type,
         tone: $('capTone').value.trim() || undefined,
         highlight: $('capHighlight').value.trim() || undefined,
@@ -765,7 +858,7 @@ function scheduledAtValue() {
 
 async function enqueue() {
   clearMsg();
-  if (!sel.image && !sel.reel) return flash('err', '게시할 이미지 또는 릴스를 선택하세요.');
+  if (!sel.images.length && !sel.reel) return flash('err', '게시할 이미지 또는 릴스를 선택하세요.');
   $('enqBtn').disabled = true;
   try {
     const tags = $('hashtags').value.split(/[\s,]+/).map((t) => t.replace(/^#/, '')).filter(Boolean);
@@ -773,8 +866,7 @@ async function enqueue() {
       method: 'POST',
       body: JSON.stringify({
         accountId: $('acctSel').value || undefined,
-        imageMediaId: sel.image && sel.image.mediaId ? sel.image.mediaId : undefined,
-        imageUrl: sel.image && !sel.image.mediaId ? sel.image.url : undefined,
+        images: sel.images.length ? sel.images.map(mediaRef) : undefined,
         reelMediaId: sel.reel && sel.reel.mediaId ? sel.reel.mediaId : undefined,
         reelUrl: sel.reel && !sel.reel.mediaId ? sel.reel.url : undefined,
         imageCaption: $('imageCaption').value.trim() || undefined,
@@ -783,7 +875,7 @@ async function enqueue() {
         scheduledAt: scheduledAtValue(),
       }),
     });
-    sel = { image: null, reel: null };
+    sel = { images: [], reel: null };
     $('imageCaption').value = $('reelCaption').value = $('hashtags').value = '';
     flash('ok', '발행 큐에 등록했습니다.');
     renderSlots();

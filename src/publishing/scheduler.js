@@ -13,6 +13,9 @@ const mediaStore = require('../storage/mediaStore');
 /** 예약 발행 폴링 주기 — 예약은 분 단위라 1분이면 충분하다 */
 const DUE_POLL_MS = 60 * 1000;
 
+/** 인스타 캐러셀 상한 — 넘겨 보내면 API가 통째로 거절한다 */
+const CAROUSEL_MAX = 10;
+
 /** 발행 파일이 공개되는 베이스 URL(Zernio가 여기로 미디어를 가져간다) */
 const baseUrl = () => env.PUBLIC_URL || `http://13.209.72.131:${env.PORT}`;
 
@@ -68,17 +71,25 @@ async function publishItem(item, zernioAccountId, accMeta = {}) {
   let imagePostUrl = null;
   let reelPostUrl = null;
 
-  // 1) 이미지 → 피드 게시물
-  if (item.image_path) {
+  // 1) 이미지 → 피드 게시물(2장 이상이면 캐러셀 한 건)
+  const imagePaths = (item.image_paths && item.image_paths.length)
+    ? item.image_paths
+    : (item.image_path ? [item.image_path] : []);
+  if (imagePaths.length) {
     try {
-      const imageFilename = item.image_path.split('/').pop();
+      if (imagePaths.length > CAROUSEL_MAX) {
+        log.warn(`Queue ${item.id}: ${imagePaths.length} images → 앞 ${CAROUSEL_MAX}장만 발행(인스타 캐러셀 상한)`);
+      }
+      const mediaItems = imagePaths.slice(0, CAROUSEL_MAX).map((p) => ({
+        type: 'image', url: `${baseUrl()}/images/${p.split('/').pop()}`,
+      }));
       const post = await zernio.postToInstagram({
         accountId: zernioAccountId,
         content: `${imageCaption}\n${tags}`,
-        mediaItems: [{ type: 'image', url: `${baseUrl()}/images/${imageFilename}` }],
+        mediaItems,
       });
       imagePostUrl = post?.platformPostUrl || post?._id || 'posted';
-      log.info(`Image posted: ${imagePostUrl}`);
+      log.info(`Image posted (${mediaItems.length} slide): ${imagePostUrl}`);
     } catch (err) {
       log.error(`Image post failed: ${err.message}`);
     }
