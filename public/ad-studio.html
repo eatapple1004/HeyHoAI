@@ -186,6 +186,9 @@
         <button class="chip" data-k="aspect" data-v="9:16" aria-pressed="true">9:16</button>
         <button class="chip" data-k="aspect" data-v="1:1">1:1</button>
         <button class="chip" data-k="aspect" data-v="16:9">16:9</button>
+        <button class="chip" data-k="dur" data-v="10">10초</button>
+        <button class="chip" data-k="dur" data-v="20" aria-pressed="true">20초</button>
+        <button class="chip" data-k="dur" data-v="30">30초</button>
         <button class="chip" data-k="quality" data-v="low" aria-pressed="true">기본</button>
         <button class="chip" data-k="quality" data-v="high">고화질</button>
         <button class="chip" data-k="voice" data-v="on" aria-pressed="true">🔊 내레이션</button>
@@ -404,12 +407,14 @@
   // ── Marketing Studio (Ad Video 엔진 배선) ──
   // voice·music은 **기본 켜짐**이다. 서버는 'true'를 명시해야 오디오를 만드는데, 안 보내면
   //   무음 영상이 나온다 — ElevenLabs를 붙여도 소리가 없다(실측으로 발견).
-  const ms = { aspect: '9:16', quality: 'low', voice: true, music: true, busy: false };
+  // dur = 목표 총 길이(초). 서버는 2~30을 받고 이 값으로 씬 개수를 정한다 → 비용에 직결된다.
+  const ms = { aspect: '9:16', quality: 'low', dur: '20', voice: true, music: true, busy: false };
   const TOGGLES = ['voice', 'music'];
   let msScript = null;
   let msStartedAt = 0;
   let msLastJob = null;
   let msSaved = '';   // '' | 'saved' | 'saved-already' | 'failed'
+  let msCost = '';
   /** 경과 시간 — 몇 분 걸리는 작업이라 "얼마나 됐는지"가 멈춤과 진행을 구분해 준다. */
   function msElapsed() {
     if (!msStartedAt) return '';
@@ -497,6 +502,7 @@
       + '<div class="ms-bar' + (indet ? ' indet' : '') + '"><i style="width:' + pct + '%"></i></div>'
       + '<div class="muted" style="margin-top:6px">'
       +   (ok ? '완성' : '만드는 중') + (n ? ' · 씬 ' + done + '/' + n + ' (' + pct + '%)' : '')
+      +   (msCost ? ' · ' + html(msCost) : '')
       +   (msElapsed() ? ' · ' + msElapsed() : '') + '</div>'
       + (msScript && msScript.title ? '<div style="font-weight:600;margin-top:8px">' + html(msScript.title) + '</div>' : '')
       + cards
@@ -533,14 +539,17 @@
     if (!state.product) { $('msMsg').textContent = '먼저 상품을 가져와 주세요.'; return; }
     if (!(state.product.images || []).length) { $('msMsg').textContent = '상품 이미지가 필요합니다.'; return; }
     ms.busy = true; $('btnMs').disabled = true; $('msBox').innerHTML = '';
-    msScript = null; msStartedAt = Date.now(); msSaved = '';
+    msScript = null; msStartedAt = Date.now(); msSaved = ''; msCost = '';
     msRender({ status: 'processing' });        // 누르는 즉시 단계 표시가 뜬다
     // 폴 간격이 4초라 그 사이 경과 시간이 멈춰 보인다 — 1초마다 다시 그린다.
     const tickTimer = setInterval(() => { if (ms.busy) msRender(msLastJob || { status: 'processing' }); }, 1000);
     try {
       $('msMsg').textContent = '대본 쓰는 중…';
-      const sc = await msPost('script', msForm({ durationSec: '20' }));
+      const sc = await msPost('script', msForm({ durationSec: ms.dur }));
       msScript = sc.script;                 // 씬 내용을 클립보다 먼저 띄우기 위해 보관
+      // 비용은 **대본이 나와야** 확정된다(씬 개수 × 씬당 단가). 그래서 생성 버튼에 미리 못 박고,
+      //   여기서 실제 값을 알려준다. 추정치를 먼저 띄우면 실제 차감과 어긋난다.
+      msCost = (sc.nClips ? sc.nClips + '개 씬' : '') + (sc.cost ? ' · ◈' + sc.cost : '');
       msRender({ status: 'processing' });   // 대본이 나온 순간 씬 목록이 보인다 — 빈 화면으로 기다리지 않게
 
       $('msMsg').textContent = '씬 생성 중…';
