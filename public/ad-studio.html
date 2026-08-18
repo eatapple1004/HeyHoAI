@@ -12,7 +12,9 @@
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/rail.js?v=12" defer></script>
 <style>
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 80px; }
+  /* full-bleed — Ad Video(studio.html)·Library와 같은 폭. 가운데 1080px로 묶으면
+     양옆이 비어 보이고 피드 카드가 좁아진다. 롤백: max-width:1080px;margin:0 auto */
+  .wrap { max-width: none; margin: 0; padding: 28px 24px 80px; }
   h1 { font-size: 24px; margin: 0 0 4px; }
   .sub { color: var(--muted, #9a9ab0); font-size: 14px; margin-bottom: 24px; }
 
@@ -99,14 +101,27 @@
               background: #0f0f18; }
   .composer textarea { width: 100%; background: transparent; border: 0; resize: none; outline: none;
               color: inherit; font: inherit; font-size: 15px; line-height: 1.5; padding: 4px 2px; }
-  .cbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .cbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
   .cbar .chips { margin: 0; flex: 1 1 auto; }
-  /* 상품 칩 — 고르기 전엔 '＋ 상품', 고르면 썸네일+이름 */
-  .prodchip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 12px;
-              border: 1px solid var(--line, #2a2a3a); background: #16161f; color: inherit;
-              font-size: 13px; cursor: pointer; max-width: 200px; }
-  .prodchip img { width: 26px; height: 26px; object-fit: cover; border-radius: 6px; }
-  .prodchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 상품 타일 — 프롬프트 왼쪽의 큰 점선 자리(Ad Video의 '사진' 타일과 같은 문법).
+     작은 칩으로 두면 '여기부터 시작'이라는 신호가 약해서 상품 없이 만들기를 누른다. */
+  .ctop { display: flex; gap: 14px; align-items: stretch; }
+  .ctop textarea { flex: 1 1 auto; min-height: 92px; }
+  .prodtile { position: relative; flex: none; width: 92px; height: 92px; padding: 0; overflow: hidden;
+              border-radius: 14px; border: 1px dashed #3a3a4e; background: transparent;
+              color: var(--muted, #9a9ab0); font-size: 12px; cursor: pointer;
+              display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .prodtile:hover { border-color: var(--accent, #7c6cff); color: inherit; }
+  .prodtile svg { width: 24px; height: 24px; }
+  .prodtile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .prodtile .nm { position: relative; z-index: 1; max-width: 100%; padding: 0 6px;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 고른 뒤 — 점선이 실선이 되고 썸네일이 타일을 채운다. 이름은 아래 띠로 내린다. */
+  .prodtile.has { border-style: solid; border-color: var(--accent, #7c6cff); }
+  .prodtile.has svg { display: none; }
+  .prodtile.has .nm { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 4px;
+                      background: rgba(0,0,0,.66); color: #fff; }
   .gen { padding: 10px 20px; border-radius: 12px; font-weight: 700; font-size: 14px; }
 
   /* 상품 모달 */
@@ -128,7 +143,7 @@
   /* Ad Video 피드와 같은 크기감 — 미디어를 크게 두고 옆에 설명을 붙인다.
      작은 썸네일은 결과를 확인하려면 다시 눌러야 해서, 만든 걸 '보는' 화면 구실을 못한다. */
   .fb { border-top: 1px solid rgba(255,255,255,.06); padding: 18px 0;
-        display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+        display: grid; grid-template-columns: 300px minmax(0, 760px); gap: 20px; align-items: start; }
   @media (max-width: 760px) { .fb { grid-template-columns: 1fr; } }
   .fb-date { font-size: 12.5px; color: var(--muted, #9a9ab0); margin: 22px 0 2px; }
   .fb-media { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -182,14 +197,20 @@
     우리도 같은 방식 — ①의 내용은 그대로 살아 있고 위치만 모달로 옮겼다.
   -->
   <section class="composer">
-    <textarea id="msPrompt" rows="2" placeholder="어떤 영상을 원하세요 — 예) 아기자기하고 귀여운 영상을 만들어줘"></textarea>
+    <div class="ctop">
+      <button type="button" class="prodtile" id="btnProd" title="상품 고르기">
+        <img id="msThumb" alt="" hidden />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/>
+        </svg>
+        <span class="nm" id="msProdName">상품</span>
+      </button>
+      <textarea id="msPrompt" rows="3" placeholder="어떤 영상을 원하세요 — 예) 아기자기하고 귀여운 영상을 만들어줘"></textarea>
+    </div>
 
     <div class="cbar">
-      <button type="button" class="prodchip" id="btnProd">
-        <img id="msThumb" alt="" hidden />
-        <span id="msProdName">＋ 상품</span>
-      </button>
-
       <div class="chips" id="msOpts">
         <button class="chip" data-k="aspect" data-v="9:16" aria-pressed="true">9:16</button>
         <button class="chip" data-k="aspect" data-v="1:1">1:1</button>
@@ -394,7 +415,7 @@
     if ($('msProdName')) {
       $('msProdName').textContent = p.name || '상품';
       const u0 = (p.images || [])[0];
-      if (u0) { $('msThumb').src = u0; $('msThumb').hidden = false; }
+      if (u0) { $('msThumb').src = u0; $('msThumb').hidden = false; $('btnProd').classList.add('has'); }
     }
     const dlg = $('prodDlg');
     if (dlg && dlg.open && !autofilling) dlg.close();
@@ -532,8 +553,8 @@
         method: 'POST', body: JSON.stringify({ images: [up.data.url] }),
       });
       showProduct(prod);                       // ①의 상품 카드도 같이 채워진다
-      $('msThumb').src = up.data.url; $('msThumb').hidden = false;
-      $('msProdName').textContent = prod.name || '';
+      $('msThumb').src = up.data.url; $('msThumb').hidden = false; $('btnProd').classList.add('has');
+      $('msProdName').textContent = prod.name || '상품';
       $('msMsg').textContent = '';
     } catch (e) {
       $('msMsg').textContent = e.message || '사진을 처리하지 못했습니다.';
