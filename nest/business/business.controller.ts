@@ -13,7 +13,7 @@ import {
 } from './dto/business.dto';
 import {
   BusinessAccountVo, BusinessListItemVo, BusinessMediaVo, BusinessPackVo,
-  BusinessQueueVo, BusinessVo, CaptionDraftVo,
+  BusinessQueueVo, BusinessVo, CaptionDraftVo, PackChoiceVo,
 } from './vo/business.vo';
 
 /**
@@ -143,6 +143,19 @@ export class BusinessController {
   async packs(@Param('id') id: string): Promise<ApiResponse<BusinessPackVo[]>> {
     await this.business.get(id);
     return { success: true, data: await this.business.packs(id) };
+  }
+
+  /**
+   * GET /api/admin/business/:id/packs/available — 연결 후보 팩 + 대표 이미지.
+   * ⚠️ `:id/packs/:packId` 계열보다 위에 있어야 한다(고정 세그먼트 우선).
+   */
+  @Get(':id/packs/available')
+  async availablePacks(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('all') all?: string,
+  ): Promise<ApiResponse<PackChoiceVo[]>> {
+    return { success: true, data: await this.business.availablePacks(id, req.user.id, all === 'true') };
   }
 
   @Post(':id/packs')

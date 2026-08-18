@@ -70,6 +70,21 @@ export interface BusinessPackVo {
   assets: PackAssetVo[];
 }
 
+/** 팩 연결 후보 — 목록에서 눈으로 고를 수 있도록 대표 이미지가 붙는다 */
+export interface PackChoiceVo {
+  pack_id: string;
+  share_id: string;
+  vertical: string | null;
+  product: string | null;
+  status: string;
+  created_at: string;
+  /** 이미 이 사업체에 연결돼 있는지 */
+  linked: boolean;
+  /** 대표 이미지(still > composite > ref > source 순으로 고른 첫 자산) */
+  cover_url: string | null;
+  asset_count: number;
+}
+
 export interface PackAssetVo {
   kind: string;
   cut_key: string | null;
@@ -84,10 +99,15 @@ export interface BusinessQueueVo {
   account_id: string;
   account_username: string | null;
   image_media_id: string | null;
+  /** 캐러셀 슬라이드 순서대로의 미디어 ID(한 장이어도 채운다) */
+  image_media_ids: string[] | null;
   reel_media_id: string | null;
   image_path: string | null;
   reel_path: string | null;
+  /** 첫 장 URL — 썸네일·구 화면 호환 */
   image_url: string | null;
+  /** 캐러셀 전체 URL(순서 유지) */
+  image_urls: string[];
   reel_url: string | null;
   image_caption: string | null;
   reel_caption: string | null;
