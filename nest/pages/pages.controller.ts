@@ -162,6 +162,15 @@ export class PagesController {
   @Get('admin-business-meta')
   adminBusinessMeta(@Res() res: any) { return res.sendFile(page('admin-business-meta.html')); }
 
+  /**
+   * Meta 섹션의 사업체 상세 — **같은 HTML을 그대로 재사용**한다.
+   * 화면이 부르는 API(`/api/admin/business/...`)는 계정 플랫폼과 무관하므로 파일을 복제할 이유가 없다.
+   * 페이지 스스로 경로를 보고 '뒤로' 링크와 활성 메뉴를 맞춘다.
+   */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business-meta/:id')
+  adminBusinessMetaDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
+
   // ── 클린 URL (맨 마지막) ──
 
   /**

@@ -24,6 +24,8 @@ export interface BusinessListItemVo extends BusinessVo {
   /** 대표 계정(팔로워 최다) 미리보기 */
   primary_username: string | null;
   primary_profile_image: string | null;
+  /** 이 사업체에 붙은 Meta 직결 계정 수(나머지는 Zernio) */
+  meta_accounts: number;
 }
 
 /** 사업체에 연결된(또는 미연결) 소셜 계정 */

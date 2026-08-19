@@ -41,6 +41,20 @@ button:disabled{opacity:.5;cursor:default}
 .b-warn{background:rgba(255,206,122,.16);color:var(--gold)}
 .b-err{background:rgba(248,113,113,.16);color:var(--red)}
 .empty{color:var(--faint);text-align:center;padding:60px 20px;grid-column:1/-1;line-height:1.7}
+.biz{display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;transition:border-color .15s}
+.biz:hover{border-color:var(--accent2)}
+.biz .top{display:flex;gap:12px;align-items:center}
+.biz .avatar{width:46px;height:46px;border-radius:50%;background:var(--panel2);object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:1.1rem;font-weight:700}
+.biz .name{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.biz .meta{color:var(--dim);font-size:.8rem;margin-top:2px}
+.biz .stats{display:flex;gap:16px;border-top:1px solid var(--border);padding-top:12px}
+.biz .stat{flex:1}
+.biz .stat .n{font-size:1.2rem;font-weight:800}
+.biz .stat .l{color:var(--faint);font-size:.72rem;margin-top:1px}
+.sechead{font-size:1.02rem;font-weight:700;margin:26px 0 12px;display:flex;align-items:baseline;gap:10px}
+.sechead .note{font-size:.78rem;font-weight:500;color:var(--faint)}
+.form{display:grid;grid-template-columns:1.4fr 1fr 2fr auto;gap:10px;align-items:start;margin-bottom:8px}
+@media(max-width:720px){.form{grid-template-columns:1fr}}
 .pub{margin-top:24px}
 .pub h2{font-size:1.05rem;margin-bottom:4px}
 .pub .hint{color:var(--faint);font-size:.8rem;line-height:1.7;margin-bottom:14px}
@@ -80,6 +94,24 @@ button:disabled{opacity:.5;cursor:default}
   </div>
 
   <div class="grid" id="grid"></div>
+
+  <!--
+    사업체 — Zernio 화면과 같은 흐름을 여기서도 연다.
+    카드를 누르면 /admin-business-meta/<id> 로 가고, 그 화면은 admin-business-detail.html 을
+    그대로 재사용한다(호출하는 API가 계정 플랫폼과 무관해 복제할 이유가 없다).
+  -->
+  <div class="sechead">🏪 사업체 <span class="note">— 계정을 붙이면 업로드·AI 캡션·예약 발행이 여기서 그대로 돌아갑니다</span>
+    <span class="count" id="bizCount" style="margin-left:auto"></span>
+  </div>
+
+  <div class="card form">
+    <input id="bizName" placeholder="사업체 이름 *">
+    <input id="bizIndustry" placeholder="업종 (예: 네일샵, 카페)">
+    <input id="bizMemo" placeholder="참고사항 (톤·강조 포인트 — AI 캡션에 반영됩니다)">
+    <button class="primary" id="bizAddBtn" onclick="createBiz()">+ 사업체 추가</button>
+  </div>
+
+  <div class="grid" id="bizGrid"></div>
 
   <!--
     테스트 발행 — Zernio를 거치지 않고 Graph API로 직접 올린다.
@@ -150,7 +182,7 @@ function cardHtml(a) {
   // 사업체에 붙이면 업로드·AI 캡션·예약 발행이 전부 기존 화면에서 그대로 돌아간다.
   const biz = a.business_name
     ? '연결됨 · ' + esc(a.business_name)
-    : '<a href="/admin-business" style="color:var(--accent2)">사업체에 연결하기 →</a>';
+    : '<span style="color:var(--faint)">사업체 미연결 — 아래에서 사업체를 골라 붙이세요</span>';
   return '<div class="card acc">'
     + '<div class="top">' + avatar
     + '<div style="min-width:0;flex:1">'
@@ -224,8 +256,60 @@ async function refreshAll() {
 async function disconnect(id, username) {
   if (!confirm('@' + username + ' 연결을 해제할까요?\n토큰만 삭제되고 계정·미디어 기록은 남습니다.')) return;
   clearMsg();
-  try { await api('/api/admin/business-meta/accounts/' + id, { method: 'DELETE' }); flash('ok', '연결을 해제했습니다.'); load(); }
+  try { await api('/api/admin/business-meta/accounts/' + id, { method: 'DELETE' }); flash('ok', '연결을 해제했습니다.'); load(); loadBiz(); }
   catch (e) { flash('err', e.message); }
+}
+
+/** 사업체 카드 — Meta 직결 계정이 붙어 있으면 배지로 알려준다(나머지는 Zernio로 나간다). */
+function bizCardHtml(b) {
+  const avatar = b.primary_profile_image
+    ? '<img class="avatar" src="' + esc(b.primary_profile_image) + '" alt="">'
+    : '<div class="avatar">' + esc((b.name || '?').trim().charAt(0)) + '</div>';
+  const handle = b.primary_username ? '@' + esc(b.primary_username) : '계정 없음';
+  const badge = b.meta_accounts > 0
+    ? '<span class="badge b-on">Meta 직결 ' + b.meta_accounts + '</span>'
+    : (b.active_accounts > 0 ? '<span class="badge b-warn">Zernio만</span>' : '<span class="badge b-off">미연결</span>');
+  return '<a class="card biz" href="/admin-business-meta/' + b.id + '">'
+    + '<div class="top">' + avatar
+    + '<div style="min-width:0;flex:1">'
+    + '<div class="name">' + esc(b.name) + '</div>'
+    + '<div class="meta">' + (b.industry ? esc(b.industry) + ' · ' : '') + handle + '</div>'
+    + '</div>' + badge + '</div>'
+    + '<div class="stats">'
+    + '<div class="stat"><div class="n">' + (b.followers || 0).toLocaleString() + '</div><div class="l">팔로워</div></div>'
+    + '<div class="stat"><div class="n">' + b.pending + '</div><div class="l">발행 대기</div></div>'
+    + '<div class="stat"><div class="n">' + b.scheduled + '</div><div class="l">예약</div></div>'
+    + '<div class="stat"><div class="n">' + b.posted + '</div><div class="l">게시됨</div></div>'
+    + '</div></a>';
+}
+
+async function loadBiz() {
+  try {
+    const { data } = await api('/api/admin/business');
+    $('bizCount').textContent = data.length + '개 사업체';
+    $('bizGrid').innerHTML = data.length
+      ? data.map(bizCardHtml).join('')
+      : '<div class="empty">등록된 사업체가 없습니다. 위에서 추가한 뒤 계정을 붙이세요.</div>';
+  } catch (e) {
+    $('bizGrid').innerHTML = '<div class="empty">사업체를 불러오지 못했습니다.</div>';
+  }
+}
+
+async function createBiz() {
+  clearMsg();
+  const name = $('bizName').value.trim();
+  if (!name) return flash('err', '사업체 이름을 입력하세요.');
+  $('bizAddBtn').disabled = true;
+  try {
+    await api('/api/admin/business', {
+      method: 'POST',
+      body: JSON.stringify({ name, industry: $('bizIndustry').value.trim(), memo: $('bizMemo').value.trim() }),
+    });
+    $('bizName').value = $('bizIndustry').value = $('bizMemo').value = '';
+    flash('ok', '추가했습니다. 카드를 눌러 계정을 붙이세요.');
+    loadBiz();
+  } catch (e) { flash('err', e.message); }
+  finally { $('bizAddBtn').disabled = false; }
 }
 
 async function loadQuota() {
@@ -285,7 +369,7 @@ function readCallbackResult() {
   if (location.search) history.replaceState(null, '', location.pathname);
 }
 
-(async () => { readCallbackResult(); await loadConfig(); load(); })();
+(async () => { readCallbackResult(); await loadConfig(); load(); loadBiz(); })();
 </script>
 <script src="/js/admin-nav.js?v=1" defer></script>
 </body>
