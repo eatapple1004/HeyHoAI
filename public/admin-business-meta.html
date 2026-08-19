@@ -56,14 +56,7 @@ button:disabled{opacity:.5;cursor:default}
 <div class="wrap">
   <h1><span class="dot"></span> Meta 직결 인스타 연동</h1>
   <div class="sub">중개(Zernio) 없이 Meta에 바로 붙는 경로입니다. 기존 <a href="/admin-business" style="color:var(--accent2)">사업체 관리</a>와 나란히 두고 비교하기 위한 화면이라, 여기서 연결한 계정도 사업체 상세에서 그대로 붙일 수 있습니다.</div>
-  <div class="nav">
-    <a href="/admin-business">🏪 사업체 (Zernio)</a>
-    <a href="/admin-business-meta" class="on">🔗 Meta 직결</a>
-    <a href="/admin-creations">🖼 크리에이션</a>
-    <a href="/admin-stats">📊 통계</a>
-    <a href="/admin-trials">🎟 체험 계정</a>
-    <a href="/admin-templates">🧩 템플릿</a>
-  </div>
+  <div id="adminNav"></div>
 
   <div class="msg err" id="err"></div>
   <div class="msg ok" id="ok"></div>
@@ -205,5 +198,6 @@ function readCallbackResult() {
 
 (async () => { readCallbackResult(); await loadConfig(); load(); })();
 </script>
+<script src="/js/admin-nav.js?v=1" defer></script>
 </body>
 </html>
