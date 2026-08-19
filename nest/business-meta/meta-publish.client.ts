@@ -13,6 +13,9 @@ import { graphBase, AuthMode } from './meta-ig.client';
  *   status_code가 FINISHED가 될 때까지 폴링해야 한다 — 이미지엔 없는 단계다.
  */
 
+/** 이미지 대기 — 인스타가 URL에서 파일을 가져오는 시간. 영상(5분)보다 훨씬 짧게 잡는다. */
+const IMAGE_WAIT = { timeoutMs: 90 * 1000, intervalMs: 1500 };
+
 /** 캐러셀 상한 — 넘기면 인스타가 거절한다. */
 export const CAROUSEL_MAX = 10;
 
@@ -60,7 +63,12 @@ async function createContainer(
 }
 
 /**
- * 영상 컨테이너가 준비될 때까지 대기.
+ * 컨테이너가 준비될 때까지 대기.
+ *
+ * ⚠️ **영상만이 아니라 이미지·캐러셀도 기다려야 한다**(2026-08-19 실측).
+ *   인스타는 우리가 준 URL로 파일을 **가지러 간다**. 그 가져오기가 끝나기 전에 발행을 부르면
+ *   `code 9007 — 아직 준비가 완료되지 않아 미디어를 게시할 수 없습니다`로 400이 난다.
+ *   이미지는 대개 1~3초면 끝나지만 '대개'에 기대면 간헐적으로 실패한다.
  * 실패를 오래 붙들고 있지 않도록 ERROR면 즉시 던진다 — 타임아웃까지 기다리면 원인이 묻힌다.
  */
 async function waitReady(
@@ -128,7 +136,8 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
     const url = (input.imageUrls || [])[0];
     if (!url) throw new Error('이미지 URL이 필요합니다');
     const c = await createContainer(base, igUserId, token, { image_url: url, caption });
-    return publishContainer(base, igUserId, token, c);
+    const waitedSec = await waitReady(base, c, token, IMAGE_WAIT);
+    return { ...(await publishContainer(base, igUserId, token, c)), waitedSec };
   }
 
   if (input.kind === 'carousel') {
@@ -137,12 +146,16 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
     // 자식 컨테이너는 is_carousel_item=true 로 만들고 캡션을 달지 않는다(캡션은 부모 것만 쓰인다).
     const children: string[] = [];
     for (const url of urls) {
-      children.push(await createContainer(base, igUserId, token, { image_url: url, is_carousel_item: 'true' }));
+      const child = await createContainer(base, igUserId, token, { image_url: url, is_carousel_item: 'true' });
+      // 자식이 준비되기 전에 부모를 만들면 부모가 통째로 ERROR가 된다 — 한 장씩 확인하고 넘어간다.
+      await waitReady(base, child, token, IMAGE_WAIT);
+      children.push(child);
     }
     const parent = await createContainer(base, igUserId, token, {
       media_type: 'CAROUSEL', children: children.join(','), caption,
     });
-    return publishContainer(base, igUserId, token, parent);
+    const waitedSec = await waitReady(base, parent, token, IMAGE_WAIT);
+    return { ...(await publishContainer(base, igUserId, token, parent)), waitedSec };
   }
 
   if (input.kind === 'reel') {
@@ -165,7 +178,7 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
     media_type: 'STORIES',
     ...(isVideo ? { video_url: url } : { image_url: url }),
   });
-  const waitedSec = isVideo ? await waitReady(base, c, token) : undefined;
+  const waitedSec = await waitReady(base, c, token, isVideo ? undefined : IMAGE_WAIT);
   return { ...(await publishContainer(base, igUserId, token, c)), waitedSec };
 }
 

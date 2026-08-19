@@ -458,6 +458,10 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_social_accounts_business ON social_accounts(business_id);
   `);
 
+  // 발행 실패 사유 — 실패했는데 'posted'로 적어 화면이 "게시됨"이라 거짓말을 하던 문제(2026-08-19).
+  //   이제 아무것도 못 올리면 status='failed' + 여기 사유를 남긴다. 화면이 그대로 보여준다.
+  await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS error TEXT;`);
+
   // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.
   //   ⚠️ social_accounts.metadata(JSONB)에 넣지 않는다 — 그 컬럼은 계정 목록 API가 통째로
   //     내려주므로 토큰이 관리자 화면 응답에 섞여 나간다. 별도 테이블로 두고 조회 API가

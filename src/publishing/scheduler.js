@@ -76,6 +76,7 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
 
   let imagePostUrl = null;
   let reelPostUrl = null;
+  const errors = [];   // 실패 사유 — 호출부가 '게시됨'으로 속이지 않도록 위로 올린다
 
   // 이미지 — 2장 이상이면 캐러셀 한 건(Zernio 경로와 같은 규칙)
   const imagePaths = (item.image_paths && item.image_paths.length)
@@ -97,6 +98,7 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
       log.info(`[meta] Image posted (${urls.length} slide): ${imagePostUrl}`);
     } catch (err) {
       log.error(`[meta] Image post failed: ${err.message}`);
+      errors.push(`이미지: ${err.message}`);
     }
   }
 
@@ -114,10 +116,11 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
       log.info(`[meta] Reel posted (인코딩 ${r.waitedSec ?? '?'}초): ${reelPostUrl}`);
     } catch (err) {
       log.error(`[meta] Reel post failed: ${err.message}`);
+      errors.push(`릴스: ${err.message}`);
     }
   }
 
-  return { imagePostUrl, reelPostUrl };
+  return { imagePostUrl, reelPostUrl, errors };
 }
 
 /**
@@ -141,13 +144,17 @@ async function publishItem(item, zernioAccountId, accMeta = {}, account = null) 
   // 벤더 분기 — 여기 한 곳뿐이다. 계정 정보가 없으면(옛 호출) 기존 Zernio 경로로 간다.
   if (account && account.platform === 'instagram_meta') {
     const r = await publishItemMeta(item, account, { imageCaption, reelCaption, tags });
+    // ⚠️ 하나도 못 올렸는데 'posted'로 적으면 화면이 "게시됨"이라 거짓말을 한다(2026-08-19 실측).
+    //   실제로 인스타 code 9007로 실패했는데 큐는 게시됨이었고, 링크만 비어 있어 알아채기 어려웠다.
+    const ok = Boolean(r.imagePostUrl || r.reelPostUrl);
     await postQueueRepo.update(item.id, {
-      status: 'posted',
-      postedAt: new Date().toISOString(),
+      status: ok ? 'posted' : 'failed',
+      postedAt: ok ? new Date().toISOString() : null,
       imagePostUrl: r.imagePostUrl,
       reelPostUrl: r.reelPostUrl,
+      error: (r.errors && r.errors.length) ? r.errors.join(' · ') : null,
     });
-    log.info(`Queue ${item.id} marked as posted (meta)`);
+    log.info(`Queue ${item.id} → ${ok ? 'posted' : 'failed'} (meta)${ok ? '' : ' — ' + (r.errors || []).join(' · ')}`);
     return r;
   }
 

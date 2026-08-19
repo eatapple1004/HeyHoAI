@@ -733,6 +733,7 @@ function setTab(t) {
 const QSTATUS = {
   pending: ['b-off', '작성중'], confirmed: ['b-wait', '발행 대기'], scheduled: ['b-wait', '예약'],
   publishing: ['b-wait', '발행중'], posted: ['b-done', '게시됨'], cancelled: ['b-off', '취소'],
+  failed: ['b-off', '실패'],
 };
 
 function renderQueue() {
@@ -746,6 +747,8 @@ function renderQueue() {
     const when = q.status === 'posted'
       ? '게시: ' + fmt(q.posted_at)
       : q.scheduled_at ? '예약: ' + fmt(q.scheduled_at) : '다음 발행 루프에서 게시';
+    // 실패 사유를 그대로 보여준다 — 예전엔 실패해도 '게시됨'이라 링크가 없는 것만이 유일한 단서였다.
+    const failMsg = q.error ? '<div class="when" style="color:#fca5a5">⚠️ ' + esc(q.error) + '</div>' : '';
     const links = [q.image_post_url && '<a href="' + esc(q.image_post_url) + '" target="_blank" rel="noopener">게시물</a>',
                    q.reel_post_url && '<a href="' + esc(q.reel_post_url) + '" target="_blank" rel="noopener">릴스</a>']
                    .filter(Boolean).join(' · ');
@@ -756,6 +759,7 @@ function renderQueue() {
       + '<span class="badge ' + cls + '">' + label + '</span> <b>@' + esc(q.account_username || '') + '</b>'
       + '<div class="cap">' + esc(q.image_caption || q.reel_caption || '(캡션 없음)') + '</div>'
       + '<div class="when">' + when + (links ? ' · ' + links : '') + '</div>'
+      + failMsg
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:6px">'
       + (done ? '' : '<button class="sm" onclick="reschedule(\'' + q.id + '\')">시각 변경</button>'
