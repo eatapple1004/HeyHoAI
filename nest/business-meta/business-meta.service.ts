@@ -9,6 +9,10 @@ import * as pub from './meta-publish.client';
 const logger = require(path.join(__dirname, '..', '..', 'src', 'lib', 'logger.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
+// 발행기는 스케줄러 단일소스를 그대로 쓴다 — BGM 합성·캐러셀 규칙·큐 상태 갱신이 이미 그 안에 있다.
+//   따로 구현하면 같은 로직이 두 벌이 되고 한쪽만 고쳐진다.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const scheduler = require(path.join(__dirname, '..', '..', 'src', 'publishing', 'scheduler.js'));
 const log = logger('BusinessMeta');
 
 /** OAuth state를 담는 쿠키 — CSRF 방지. 기존 구글 로그인(src/auth/google.js)과 같은 방식. */
@@ -175,6 +179,26 @@ export class BusinessMetaService implements OnModuleInit {
     });
     log.info(`발행 완료 @${account.username} ${kind} → ${r.permalink || r.mediaId}`);
     return r;
+  }
+
+  /** 사업체에 붙일 수 있는 Meta 직결 계정 */
+  unlinkedAccounts() {
+    return this.repo.unlinkedAccounts();
+  }
+
+  /**
+   * 큐 한 건 즉시 발행 — **Meta 직결 계정에만** 허용한다.
+   * 이 화면은 직결 전용이라, Zernio 계정 건이 섞여 들어오면 조용히 중개로 나가버린다.
+   * 그러면 "직결로 올렸다"는 확인이 무의미해지므로 여기서 막고 어디로 가야 하는지 알려준다.
+   */
+  async publishQueue(queueId: string): Promise<{ imagePostUrl: string | null; reelPostUrl: string | null }> {
+    const acc = await this.repo.queueAccount(queueId);
+    if (!acc) throw new NotFoundException('발행 건을 찾을 수 없습니다');
+    if (acc.platform !== 'instagram_meta') {
+      throw new BadRequestException(
+        `이 발행 건은 Zernio 계정(@${acc.username})에 걸려 있습니다 — 사업체 관리(Zernio) 화면에서 발행하세요.`);
+    }
+    return scheduler.publishSingleItem(queueId);
   }
 
   async quota(id: string): Promise<{ used: number; cap: number | null }> {

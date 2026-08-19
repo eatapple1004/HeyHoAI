@@ -140,6 +140,30 @@ export class BusinessMetaRepository {
     return rows[0] || null;
   }
 
+  /** 사업체에 아직 안 붙은 Meta 직결 계정 — 이 화면은 Zernio 계정을 아예 보여주지 않는다. */
+  unlinkedAccounts(): Promise<MetaAccountVo[]> {
+    return this.db.query<MetaAccountVo>(
+      `SELECT a.id, a.account_id, a.username, a.display_name, a.profile_image, a.followers,
+              a.status, a.business_id, t.auth_mode, t.expires_at AS token_expires_at, a.created_at AS connected_at
+         FROM social_accounts a
+         LEFT JOIN meta_ig_tokens t ON t.account_id = a.id
+        WHERE a.platform = $1 AND a.business_id IS NULL AND a.status = 'active'
+        ORDER BY a.created_at DESC`,
+      [META_PLATFORM],
+    ).then((r) => r.rows);
+  }
+
+  /** 큐 한 건이 걸려 있는 계정의 플랫폼 — 발행 경로를 확인하는 데 쓴다. */
+  async queueAccount(queueId: string): Promise<{ platform: string; username: string } | null> {
+    const { rows } = await this.db.query<{ platform: string; username: string }>(
+      `SELECT sa.platform, sa.username
+         FROM post_queue pq JOIN social_accounts sa ON sa.id = pq.account_id
+        WHERE pq.id = $1`,
+      [queueId],
+    );
+    return rows[0] || null;
+  }
+
   /**
    * 연결 해제 — 토큰만 지우고 계정 행은 `disabled`로 남긴다.
    * 행까지 지우면 사업체 연결과 그동안 쌓인 미디어(account_media)가 CASCADE로 함께 사라진다.

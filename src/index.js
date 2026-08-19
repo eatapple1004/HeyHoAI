@@ -214,9 +214,9 @@ app.get('/admin-business', requireAdminPage, (_req, res) => {
 app.get('/admin-business-meta', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-meta.html'));
 });
-// Meta 섹션의 사업체 상세 — 같은 HTML 재사용(API가 플랫폼과 무관해 복제할 이유가 없다)
+// Meta 섹션의 사업체 상세 — 별도 화면(계정 목록·즉시 발행이 직결 전용)
 app.get('/admin-business-meta/:id', requireAdminPage, (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-detail.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-meta-detail.html'));
 });
 app.get('/admin-business/:id', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-detail.html'));
