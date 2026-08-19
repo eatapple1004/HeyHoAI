@@ -628,7 +628,12 @@ async function pollPack() {
     $('progBadge').textContent = label;
 
     if (data.status === 'failed') {
-      $('progText').textContent = data.error || '실패했습니다.';
+      // 실패를 막다른 길로 두지 않는다 — 계획(plan)이 남아 있으면 남은 컷부터 이어서 만들 수 있고,
+      //   계획 전(기준 사진 단계)에서 끊겼으면 이어붙일 대상이 없으니 그 사실을 분명히 말한다.
+      $('progText').textContent = (data.error || '실패했습니다.')
+        + (data.remaining > 0
+            ? ''
+            : ' — 기준 사진 단계에서 끊겨 이어서 만들 수 없습니다. 원본을 다시 골라 새로 만들어 주세요.');
     } else if (data.status === 'ref_ready') {
       $('progText').textContent = '기준 사진을 확인하세요. 계획된 컷 ' + data.plannedCuts + '장.';
     } else if (data.status === 'done') {
@@ -643,11 +648,13 @@ async function pollPack() {
     $('progTiles').innerHTML = shots.map((u) =>
       '<div class="tile"><img src="' + esc(u) + '" alt="" loading="lazy"></div>').join('');
 
-    // 게이트: 기준 사진이 나온 시점에만 컷 생성 버튼을 연다(여기서 크레딧이 나간다)
-    const gate = data.status === 'ref_ready' && data.remaining > 0;
+    // 게이트: 기준 사진이 나온 시점에만 컷 생성 버튼을 연다(여기서 크레딧이 나간다).
+    //   중단된 팩(failed)도 남은 컷이 있으면 연다 — generate가 이미 만든 컷은 건너뛰므로
+    //   다시 굽지 않고 크레딧도 남은 장수만큼만 나간다.
+    const gate = (data.status === 'ref_ready' || data.status === 'failed') && data.remaining > 0;
     $('gateRow').style.display = gate ? '' : 'none';
     if (gate) {
-      $('genBtn').textContent = '컷 ' + data.remaining + '장 생성';
+      $('genBtn').textContent = (data.status === 'failed' ? '남은 컷 ' : '컷 ') + data.remaining + '장 생성';
       $('genHint').textContent = '일반 계정 기준 ◈' + data.stillCost.toLocaleString() + ' (관리자 계정은 차감 면제)';
     }
 
