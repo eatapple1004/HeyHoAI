@@ -56,12 +56,15 @@ export class BusinessRepository {
              COALESCE(q.pending, 0)::int         AS pending,
              COALESCE(q.scheduled, 0)::int       AS scheduled,
              COALESCE(q.posted, 0)::int          AS posted,
-             a.primary_username, a.primary_profile_image
+             a.primary_username, a.primary_profile_image,
+             COALESCE(a.meta_accounts, 0)::int    AS meta_accounts
         FROM businesses b
         LEFT JOIN (
           SELECT business_id,
                  COUNT(*)                                   AS accounts,
                  COUNT(*) FILTER (WHERE status = 'active')  AS active_accounts,
+                 -- Meta 직결 계정 수 — 목록에서 어느 사업체가 어느 경로로 나가는지 바로 보이게 한다
+                 COUNT(*) FILTER (WHERE platform = 'instagram_meta') AS meta_accounts,
                  SUM(followers)                             AS followers,
                  (ARRAY_AGG(username      ORDER BY followers DESC NULLS LAST))[1] AS primary_username,
                  (ARRAY_AGG(profile_image ORDER BY followers DESC NULLS LAST))[1] AS primary_profile_image

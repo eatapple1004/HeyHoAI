@@ -98,7 +98,7 @@ button:disabled{opacity:.5;cursor:default}
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="/admin-business">← 사업체 목록</a>
+  <a class="back" id="backLink" href="/admin-business">← 사업체 목록</a>
 
   <div id="adminNav"></div>
 
@@ -272,6 +272,16 @@ button:disabled{opacity:.5;cursor:default}
 
 <script>
 const BIZ_ID = location.pathname.split('/').filter(Boolean).pop();
+
+/**
+ * 이 화면은 두 경로에서 열린다 — `/admin-business/:id`(Zernio 섹션)와
+ * `/admin-business-meta/:id`(Meta 섹션). 같은 파일을 재사용하되 '뒤로'는 온 곳으로 돌아가야 한다.
+ * 여기서 안 맞추면 Meta 섹션에서 들어와도 Zernio 목록으로 튕겨 나간다.
+ */
+const SECTION = location.pathname.startsWith('/admin-business-meta') ? '/admin-business-meta' : '/admin-business';
+document.getElementById('backLink').href = SECTION;
+document.getElementById('backLink').textContent = SECTION === '/admin-business-meta'
+  ? '← Meta 직결 목록' : '← 사업체 목록';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isVideo = (u) => /\.(mp4|mov|webm|m4v)$/i.test(u || '');
