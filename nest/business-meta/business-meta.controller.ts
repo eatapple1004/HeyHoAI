@@ -53,7 +53,7 @@ export class BusinessMetaController {
     if (!q.code) return back({ error: '인증 코드가 없습니다.' });
 
     try {
-      const r = await this.svc.handleCallback(q.code, q.state, req.cookies?.[STATE_COOKIE], req);
+      const r = await this.svc.handleCallback(req.user.id, q.code, q.state, req.cookies?.[STATE_COOKIE], req);
       return back(r.mismatch
         ? { connected: r.username, mismatch: r.mismatch }
         : { connected: r.username });

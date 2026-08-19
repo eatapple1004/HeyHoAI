@@ -36,9 +36,13 @@ export class BusinessMetaRepository {
 
   /**
    * OAuth로 받은 계정을 저장한다. 같은 계정을 다시 연결하면 프로필만 갱신되고
-   * 사업체 연결(business_id)은 유지된다 — 재연결이 연결 해제처럼 동작하면 안 된다.
+   * 사업체 연결(business_id)·최초 소유자(user_id)는 유지된다 — 재연결이 연결 해제처럼 동작하면 안 된다.
+   *
+   * ⚠️ social_accounts.user_id 는 NOT NULL 이다(migrateAuth 에서 뒤늦게 추가된 컬럼).
+   *   INSERT 에서 빼면 연결 마지막 단계에서만 터진다 — OAuth 를 다 통과한 뒤라 원인이 멀어 보인다.
    */
   async upsertAccount(input: {
+    userId: string;
     accountId: string;
     username: string;
     displayName: string | null;
@@ -47,8 +51,8 @@ export class BusinessMetaRepository {
     metadata: Record<string, unknown>;
   }): Promise<{ id: string }> {
     const { rows } = await this.db.query<{ id: string }>(
-      `INSERT INTO social_accounts (platform, account_id, username, display_name, profile_image, followers, status, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, 'active', $7)
+      `INSERT INTO social_accounts (user_id, platform, account_id, username, display_name, profile_image, followers, status, metadata)
+       VALUES ($8, $1, $2, $3, $4, $5, $6, 'active', $7)
        ON CONFLICT (platform, account_id) DO UPDATE
          SET username = EXCLUDED.username,
              display_name = EXCLUDED.display_name,
@@ -59,7 +63,7 @@ export class BusinessMetaRepository {
              updated_at = now()
        RETURNING id`,
       [META_PLATFORM, input.accountId, input.username, input.displayName,
-        input.profileImage, input.followers, JSON.stringify(input.metadata)],
+        input.profileImage, input.followers, JSON.stringify(input.metadata), input.userId],
     );
     return rows[0];
   }
