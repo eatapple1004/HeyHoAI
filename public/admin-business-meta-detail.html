@@ -206,6 +206,10 @@ button:disabled{opacity:.5;cursor:default}
               <button class="primary" onclick="generateCuts()" id="genBtn">컷 생성 시작</button>
               <span class="prog" id="genHint"></span>
             </div>
+            <!-- 멈춘 팩을 회수(15분)까지 기다리지 않고 지금 끝낸다 -->
+            <div class="row" id="abortRow" style="margin-top:10px;display:none">
+              <button class="sm danger" onclick="abortPack()">중단 처리</button>
+            </div>
           </div>
         </div>
       </div>
@@ -613,6 +617,21 @@ async function createPack() {
   } finally { $('crtBtn').disabled = false; }
 }
 
+/** 이 시간 넘게 진행이 없으면 '멈춤?'으로 본다. 정상 구간(플래너 차수·레퍼 굽기)보다 넉넉하게. */
+const STALL_SEC = 150;
+
+/** 회수를 기다리지 않고 지금 끝낸다 — 서버 회수 기준(15분)까지 스피너를 볼 이유가 없다. */
+async function abortPack() {
+  if (!pb.packId) return;
+  if (!confirm('이 팩을 중단 처리할까요?\n이미 만들어진 컷은 남고, 다시 시작할 수 있게 됩니다.')) return;
+  clearMsg();
+  try {
+    await api('/api/admin/business/' + BIZ_ID + '/packs/' + pb.packId + '/abort', { method: 'POST' });
+    flash('ok', '중단 처리했습니다.');
+    pollPack();
+  } catch (e) { flash('err', e.message); }
+}
+
 /** 진행 폴링 — processing 동안만 돈다. ref_ready/done/failed면 멈춘다. */
 async function pollPack() {
   if (pb.timer) clearTimeout(pb.timer);
@@ -627,6 +646,8 @@ async function pollPack() {
     $('progBadge').className = 'badge ' + cls;
     $('progBadge').textContent = label;
 
+    if (data.status !== 'processing') $('abortRow').style.display = 'none';
+
     if (data.status === 'failed') {
       // 실패를 막다른 길로 두지 않는다 — 계획(plan)이 남아 있으면 남은 컷부터 이어서 만들 수 있고,
       //   계획 전(기준 사진 단계)에서 끊겼으면 이어붙일 대상이 없으니 그 사실을 분명히 말한다.
@@ -639,9 +660,27 @@ async function pollPack() {
     } else if (data.status === 'done') {
       $('progText').textContent = '컷 ' + data.stillsDone + '장 완료 — 아래 팩 목록에서 고를 수 있습니다.';
     } else {
-      $('progText').textContent = data.plannedCuts
+      // 🧟 멈춘 걸 화면이 바로 말한다.
+      //   서버가 재시작되면 백그라운드 생성이 사라지는데 DB엔 'processing'이 남아, 예전엔
+      //   스피너가 15분(회수 시각)까지 그대로 돌았다. 사용자는 되고 있는 줄 알고 기다린다.
+      //   진행이 STALL_SEC 넘게 없으면 배지를 바꾸고 무슨 일인지·언제 풀리는지 적는다.
+      const stalled = Number(data.stalledSec) || 0;
+      const base = data.plannedCuts
         ? '컷 생성 중… ' + data.stillsDone + '/' + data.plannedCuts
         : '기준 사진 굽는 중…';
+      if (stalled >= STALL_SEC) {
+        const leftMin = Math.max(0, Math.ceil(((data.staleMin || 15) * 60 - stalled) / 60));
+        $('progBadge').className = 'badge b-off';
+        $('progBadge').textContent = '멈춤?';
+        $('progText').innerHTML = '⚠️ <b>' + Math.floor(stalled / 60) + '분 ' + (stalled % 60) + '초째 진행이 없습니다.</b>'
+          + ' 서버가 재시작되면 만들던 작업이 사라지는데, 그때 이 상태가 됩니다.<br>'
+          + '<span style="color:var(--faint)">' + leftMin + '분 뒤 자동으로 실패 처리됩니다 — '
+          + '기다리지 않으려면 [중단 처리]를 누르세요.</span>';
+        $('abortRow').style.display = '';
+      } else {
+        $('progText').textContent = base + (stalled > 20 ? ' (' + stalled + '초째)' : '');
+        $('abortRow').style.display = 'none';
+      }
     }
 
     const shots = (data.refUrls || []).concat(data.stillUrls || []);

@@ -183,6 +183,14 @@ export class BusinessController {
     return { success: true, data: await this.packFlow.create(req.user, id, body) };
   }
 
+  /** POST /api/admin/business/:id/packs/:packId/abort — 멈춘 팩을 지금 실패 처리(회수 대기 없이) */
+  @Post(':id/packs/:packId/abort')
+  @HttpCode(200)
+  async abortPack(@Req() req: any, @Param('id') id: string, @Param('packId') packId: string) {
+    await this.business.get(id);
+    return { success: true, data: await this.packFlow.abort(req.user, id, packId) };
+  }
+
   /** GET /api/admin/business/:id/packs/:packId/status — 진행 상태 폴링 */
   @Get(':id/packs/:packId/status')
   async packStatus(@Req() req: any, @Param('id') id: string, @Param('packId') packId: string) {
