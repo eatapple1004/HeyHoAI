@@ -3,9 +3,12 @@ import * as crypto from 'crypto';
 import * as path from 'path';
 import { BusinessMetaRepository, MetaAccountVo } from './business-meta.repository';
 import * as ig from './meta-ig.client';
+import * as pub from './meta-publish.client';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const logger = require(path.join(__dirname, '..', '..', 'src', 'lib', 'logger.js'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
 const log = logger('BusinessMeta');
 
 /** OAuth state를 담는 쿠키 — CSRF 방지. 기존 구글 로그인(src/auth/google.js)과 같은 방식. */
@@ -123,5 +126,59 @@ export class BusinessMetaService implements OnModuleInit {
   async disconnect(id: string): Promise<void> {
     if (!(await this.repo.findAccount(id))) throw new NotFoundException('계정을 찾을 수 없습니다');
     await this.repo.disconnect(id);
+  }
+
+  // ── 발행 ──
+
+  /**
+   * 미디어 URL 정규화.
+   * 인스타는 **자기가 그 주소로 파일을 가지러 온다.** 그래서 상대경로(`/images/x.png`)를
+   * 그대로 넘기면 조용히 실패한다 — 절대 https URL로 바꿔 준다.
+   */
+  private absolute(url: string): string {
+    const u = String(url || '').trim();
+    if (!u) throw new BadRequestException('미디어 URL이 비어 있습니다');
+    if (/^https?:\/\//i.test(u)) return u;
+    const base = String(env.PUBLIC_URL || '').replace(/\/$/, '');
+    if (!base) throw new BadRequestException('PUBLIC_URL이 없어 상대경로를 절대 URL로 바꿀 수 없습니다');
+    return `${base}${u.startsWith('/') ? '' : '/'}${u}`;
+  }
+
+  /** 토큰 + 인스타 사용자 ID를 함께 꺼낸다(둘 다 있어야 발행이 가능하다). */
+  private async credentials(id: string) {
+    const account = await this.repo.findAccount(id);
+    if (!account) throw new NotFoundException('계정을 찾을 수 없습니다');
+    const token = await this.repo.findToken(id);
+    if (!token) throw new BadRequestException('저장된 토큰이 없습니다 — 다시 연결해 주세요.');
+    if (token.expires_at && new Date(token.expires_at) < new Date()) {
+      throw new BadRequestException('토큰이 만료됐습니다 — 다시 연결해 주세요(만료된 토큰은 갱신할 수 없습니다).');
+    }
+    return { account, token };
+  }
+
+  async publish(id: string, body: {
+    kind: pub.PublishKind; caption?: string; imageUrls?: string[]; videoUrl?: string; shareToFeed?: boolean;
+  }): Promise<pub.PublishResult> {
+    const { account, token } = await this.credentials(id);
+    const kind = body.kind || 'image';
+    if (!['image', 'carousel', 'reel', 'story'].includes(kind)) {
+      throw new BadRequestException('kind는 image | carousel | reel | story 중 하나여야 합니다');
+    }
+    const imageUrls = (body.imageUrls || []).filter(Boolean).map((u) => this.absolute(u));
+    const videoUrl = body.videoUrl ? this.absolute(body.videoUrl) : undefined;
+
+    const r = await pub.publish({
+      token: token.access_token,
+      igUserId: account.account_id,
+      authMode: token.auth_mode,
+      kind, caption: body.caption, imageUrls, videoUrl, shareToFeed: body.shareToFeed,
+    });
+    log.info(`발행 완료 @${account.username} ${kind} → ${r.permalink || r.mediaId}`);
+    return r;
+  }
+
+  async quota(id: string): Promise<{ used: number; cap: number | null }> {
+    const { account, token } = await this.credentials(id);
+    return pub.quota(account.account_id, token.access_token, token.auth_mode);
   }
 }

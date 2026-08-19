@@ -41,6 +41,15 @@ button:disabled{opacity:.5;cursor:default}
 .b-warn{background:rgba(255,206,122,.16);color:var(--gold)}
 .b-err{background:rgba(248,113,113,.16);color:var(--red)}
 .empty{color:var(--faint);text-align:center;padding:60px 20px;grid-column:1/-1;line-height:1.7}
+.pub{margin-top:24px}
+.pub h2{font-size:1.05rem;margin-bottom:4px}
+.pub .hint{color:var(--faint);font-size:.8rem;line-height:1.7;margin-bottom:14px}
+.pub .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.pub select,.pub input,.pub textarea{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.9rem;font-family:inherit}
+.pub input,.pub textarea{flex:1;min-width:280px}
+.pub textarea{width:100%;resize:vertical}
+.pub .res{margin-top:10px;font-size:.85rem;color:var(--dim);line-height:1.7}
+.pub .res a{color:var(--accent2)}
 .msg{padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px;font-size:.9rem;line-height:1.6}
 .msg.show{display:block}
 .msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
@@ -71,6 +80,38 @@ button:disabled{opacity:.5;cursor:default}
   </div>
 
   <div class="grid" id="grid"></div>
+
+  <!--
+    테스트 발행 — Zernio를 거치지 않고 Graph API로 직접 올린다.
+    "연결됐다"와 "실제로 올라간다"는 다른 이야기라, 눈으로 확인할 수단이 필요하다.
+  -->
+  <div class="card pub" id="pubBox" hidden>
+    <h2>🚀 테스트 발행 <span style="font-size:.78rem;font-weight:600;color:var(--faint)">— Graph API 직결</span></h2>
+    <div class="hint">
+      인스타는 파일을 받지 않고 <b>URL로 가져갑니다</b>. 공개 https 주소여야 하고, 상대경로(<code>/images/…</code>)는 자동으로 절대 URL로 바꿉니다.<br>
+      영상은 인스타 인코딩이 끝날 때까지 기다리므로 <b>수십 초</b> 걸릴 수 있습니다 — 그동안 버튼이 잠깁니다.
+    </div>
+    <div class="row">
+      <select id="pubAcc"></select>
+      <select id="pubKind">
+        <option value="image">이미지 1장</option>
+        <option value="carousel">캐러셀 (2~10장)</option>
+        <option value="reel">릴스</option>
+        <option value="story">스토리</option>
+      </select>
+      <button id="quotaBtn" onclick="loadQuota()">24시간 한도 확인</button>
+      <span id="quotaMsg" style="color:var(--faint);font-size:.82rem"></span>
+    </div>
+    <div class="row"><input id="pubMedia" placeholder="미디어 URL — 이미지 여러 장이면 쉼표로 구분 (릴스·영상 스토리는 mp4 URL)"></div>
+    <div class="row"><textarea id="pubCaption" rows="2" placeholder="캡션 (선택) — 스토리는 캡션이 무시됩니다"></textarea></div>
+    <div class="row">
+      <button class="primary" id="pubBtn" onclick="doPublish()">발행</button>
+      <label style="color:var(--dim);font-size:.84rem;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="pubShare" checked style="min-width:auto;flex:none"> 릴스를 피드에도 노출
+      </label>
+    </div>
+    <div class="res" id="pubRes"></div>
+  </div>
 </div>
 
 <script>
@@ -146,6 +187,10 @@ async function load() {
     $('grid').innerHTML = data.length
       ? data.map(cardHtml).join('')
       : '<div class="empty">연결된 계정이 없습니다.<br>위 [＋ 인스타 연결]을 누르면 인스타 동의 화면으로 이동합니다.</div>';
+    // 발행 패널은 토큰이 살아 있는 계정이 있을 때만 의미가 있다.
+    const usable = data.filter((a) => a.status === 'active' && a.token_expires_at);
+    $('pubBox').hidden = !usable.length;
+    $('pubAcc').innerHTML = usable.map((a) => '<option value="' + a.id + '">@' + esc(a.username) + '</option>').join('');
   } catch (e) {
     flash('err', e.message);
     $('grid').innerHTML = '<div class="empty">불러오지 못했습니다.</div>';
@@ -180,6 +225,49 @@ async function disconnect(id, username) {
   clearMsg();
   try { await api('/api/admin/business-meta/accounts/' + id, { method: 'DELETE' }); flash('ok', '연결을 해제했습니다.'); load(); }
   catch (e) { flash('err', e.message); }
+}
+
+async function loadQuota() {
+  $('quotaMsg').textContent = '확인 중…';
+  try {
+    const { data } = await api('/api/admin/business-meta/accounts/' + $('pubAcc').value + '/quota');
+    $('quotaMsg').textContent = data.cap != null
+      ? '24시간 내 ' + data.used + ' / ' + data.cap + '건 사용'
+      : '24시간 내 ' + data.used + '건 사용';
+  } catch (e) { $('quotaMsg').textContent = e.message; }
+}
+
+/** 발행 — 영상은 오래 걸리므로 진행 상태를 계속 보여준다(멈춘 것처럼 보이면 두 번 누른다). */
+async function doPublish() {
+  clearMsg();
+  const kind = $('pubKind').value;
+  const urls = $('pubMedia').value.split(',').map((u) => u.trim()).filter(Boolean);
+  if (!urls.length) return flash('err', '미디어 URL을 입력하세요.');
+  if (kind === 'carousel' && urls.length < 2) return flash('err', '캐러셀은 2장 이상이어야 합니다.');
+
+  const isVideo = (kind === 'reel') || (kind === 'story' && /\.mp4(\?|$)/i.test(urls[0]));
+  const body = {
+    kind,
+    caption: $('pubCaption').value.trim() || undefined,
+    shareToFeed: $('pubShare').checked,
+  };
+  if (isVideo) body.videoUrl = urls[0]; else body.imageUrls = urls;
+
+  $('pubBtn').disabled = true;
+  $('pubRes').textContent = isVideo ? '올리는 중… 인스타가 영상을 인코딩할 때까지 기다립니다(수십 초).' : '올리는 중…';
+  try {
+    const { data } = await api('/api/admin/business-meta/accounts/' + $('pubAcc').value + '/publish', {
+      method: 'POST', body: JSON.stringify(body),
+    });
+    const wait = data.waitedSec != null ? ' · 인코딩 ' + data.waitedSec + '초' : '';
+    $('pubRes').innerHTML = '✅ 발행 완료' + wait + (data.permalink
+      ? ' — <a href="' + esc(data.permalink) + '" target="_blank" rel="noopener">인스타에서 보기 →</a>'
+      : ' (media id ' + esc(data.mediaId) + ')');
+    flash('ok', '발행했습니다.');
+  } catch (e) {
+    $('pubRes').textContent = '';
+    flash('err', e.message);
+  } finally { $('pubBtn').disabled = false; }
 }
 
 /** OAuth 콜백이 결과를 쿼리로 실어 돌아온다 — 읽고 나면 주소창을 깨끗이 되돌린다. */

@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import * as path from 'path';
 import { AdminGuard } from '../auth/admin.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
@@ -80,6 +80,22 @@ export class BusinessMetaController {
   @HttpCode(200)
   async refreshOne(@Param('id') id: string): Promise<ApiResponse<MetaAccountVo>> {
     return { success: true, data: await this.svc.refreshOne(id) };
+  }
+
+  /** GET /accounts/:id/quota — 24시간 발행 한도(남은 게시 수) */
+  @Get('accounts/:id/quota')
+  async quota(@Param('id') id: string): Promise<ApiResponse<{ used: number; cap: number | null }>> {
+    return { success: true, data: await this.svc.quota(id) };
+  }
+
+  /**
+   * POST /accounts/:id/publish — Graph API로 직접 발행.
+   * 영상은 인스타 인코딩을 기다리므로 응답이 수십 초 걸릴 수 있다(정상).
+   */
+  @Post('accounts/:id/publish')
+  @HttpCode(200)
+  async publish(@Param('id') id: string, @Body() body: any): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.svc.publish(id, body || {}) };
   }
 
   /** DELETE /accounts/:id — 연결 해제(토큰 삭제, 계정 행은 남긴다) */
