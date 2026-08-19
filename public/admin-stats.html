@@ -66,12 +66,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 <div class="wrap">
   <h1><span class="dot"></span> 통계 대시보드 <button class="refresh" onclick="load()">↻ 새로고침</button></h1>
   <div class="sub">유저 · 생성물(이미지/영상) · 기능별 사용량 · 매출 · 템플릿 · 인게이지먼트. (관리자 전용, 읽기 전용)</div>
-  <div class="nav">
-    <a href="/admin-creations">🖼 크리에이션(비공개 포함)</a>
-    <a href="/admin-stats" class="on">📊 통계</a>
-    <a href="/admin-trials">🎟 체험 계정</a>
-    <a href="/admin-templates">🧩 템플릿</a>
-  </div>
+  <div id="adminNav"></div>
 
   <div class="err" id="err"></div>
 
@@ -250,5 +245,6 @@ async function load(){
 }
 load();
 </script>
+<script src="/js/admin-nav.js?v=1" defer></script>
 </body>
 </html>

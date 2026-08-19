@@ -53,12 +53,7 @@ input.search:focus{outline:none;border-color:var(--accent2)}
 <div class="wrap">
   <h1><span class="dot"></span> 크리에이션 뷰어</h1>
   <div class="sub">모든 유저의 생성물을 <b>비공개(private) 포함</b> 확인합니다. (관리자 전용 · 읽기)</div>
-  <div class="nav">
-    <a href="/admin-creations" class="on">🖼 크리에이션</a>
-    <a href="/admin-stats">📊 통계</a>
-    <a href="/admin-trials">🎟 체험 계정</a>
-    <a href="/admin-templates">🧩 템플릿</a>
-  </div>
+  <div id="adminNav"></div>
 
   <div class="err" id="err"></div>
 
@@ -139,5 +134,6 @@ function reload(){state.q=$('q').value.trim();load(true);}
 function loadMore(){load(false);}
 load(true);
 </script>
+<script src="/js/admin-nav.js?v=1" defer></script>
 </body>
 </html>
