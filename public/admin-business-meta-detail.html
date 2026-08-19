@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>사업체 상세 · Doppia Admin</title>
+<title>Meta 직결 · 사업체 상세 · Doppia Admin</title>
 <style>
 :root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
   --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
@@ -98,7 +98,7 @@ button:disabled{opacity:.5;cursor:default}
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="/admin-business">← 사업체 목록</a>
+  <a class="back" href="/admin-business-meta">← Meta 직결 목록</a>
 
   <div id="adminNav"></div>
 
@@ -122,12 +122,12 @@ button:disabled{opacity:.5;cursor:default}
 
   <!-- 2. 인스타 연결 -->
   <div class="card">
-    <h2>인스타그램 연결 <span class="hint">발행에 쓸 계정입니다</span></h2>
+    <h2>인스타그램 연결 <span class="hint">Meta 직결 계정만 보입니다 — 발행이 Graph API로 나갑니다</span></h2>
     <div id="accts"></div>
     <div class="row" style="margin-top:12px">
-      <select id="unlinked" style="flex:1;min-width:200px"><option value="">불러온 미연결 계정 없음</option></select>
+      <select id="unlinked" style="flex:1;min-width:200px"><option value="">연결된 Meta 계정 없음</option></select>
       <button onclick="linkAccount()">계정 연결</button>
-      <button onclick="syncAccounts()" id="syncBtn">🔄 계정 불러오기</button>
+      <button onclick="syncAccounts()" id="syncBtn">＋ 인스타 연결(OAuth)</button>
     </div>
   </div>
 
@@ -351,11 +351,11 @@ function renderAccounts() {
 
 async function loadUnlinked() {
   try {
-    const { data } = await api('/api/admin/business/accounts/unlinked');
+    const { data } = await api('/api/admin/business-meta/accounts/unlinked');
     $('unlinked').innerHTML = data.length
       ? data.map((a) => '<option value="' + a.id + '">@' + esc(a.username || a.account_id)
-          + ' · ' + esc(vendorLabel(a.platform)) + ' (' + (a.followers || 0).toLocaleString() + ')</option>').join('')
-      : '<option value="">미연결 계정 없음 — 계정 불러오기를 눌러보세요</option>';
+          + ' (' + (a.followers || 0).toLocaleString() + ')</option>').join('')
+      : '<option value="">미연결 Meta 계정 없음 — [＋ 인스타 연결]로 붙이세요</option>';
   } catch (e) { /* 목록 실패가 화면 전체를 막을 이유는 없다 */ }
 }
 
@@ -738,14 +738,9 @@ async function saveBiz() {
   } catch (e) { flash('err', e.message); }
 }
 
-async function syncAccounts() {
-  clearMsg(); $('syncBtn').disabled = true;
-  try {
-    const { data } = await api('/api/admin/business/accounts/sync', { method: 'POST' });
-    flash('ok', data.length + '개 계정을 불러왔습니다.');
-    loadUnlinked();
-  } catch (e) { flash('err', e.message); }
-  finally { $('syncBtn').disabled = false; }
+/** 이 화면엔 '불러오기'가 없다 — 직결은 계정을 끌어오는 게 아니라 OAuth로 붙인다. */
+function syncAccounts() {
+  location.href = '/api/admin/business-meta/oauth/start';
 }
 
 async function linkAccount() {
@@ -912,12 +907,20 @@ async function reschedule(queueId) {
   } catch (e) { flash('err', e.message); }
 }
 
+/**
+ * 즉시 발행 — **Meta 직결 전용 엔드포인트**로 보낸다.
+ * 서버가 계정 플랫폼을 확인해서 Zernio 계정이면 거절한다. 그래야 "직결로 올렸다"는
+ * 확인이 의미를 갖는다(공용 엔드포인트로 보내면 조용히 중개로 나갈 수 있다).
+ * 영상은 인스타 인코딩을 기다리므로 응답이 수십 초 걸릴 수 있다.
+ */
 async function publishNow(queueId) {
-  if (!confirm('지금 인스타그램에 발행할까요?')) return;
+  if (!confirm('지금 인스타그램에 발행할까요? (Meta 직결)\n영상이 포함되면 인코딩 때문에 수십 초 걸릴 수 있습니다.')) return;
   clearMsg();
+  flash('ok', 'Meta 직결로 발행 중… 영상이면 인코딩을 기다립니다.');
   try {
-    await api('/api/admin/business/' + BIZ_ID + '/queue/' + queueId + '/publish', { method: 'POST' });
-    flash('ok', '발행 요청을 보냈습니다.');
+    const { data } = await api('/api/admin/business-meta/queue/' + queueId + '/publish', { method: 'POST' });
+    const links = [data.imagePostUrl, data.reelPostUrl].filter(Boolean);
+    flash('ok', links.length ? '발행 완료 — ' + links.join(' · ') : '발행 요청을 처리했습니다.');
     load();
   } catch (e) { flash('err', e.message); }
 }

@@ -163,13 +163,13 @@ export class PagesController {
   adminBusinessMeta(@Res() res: any) { return res.sendFile(page('admin-business-meta.html')); }
 
   /**
-   * Meta 섹션의 사업체 상세 — **같은 HTML을 그대로 재사용**한다.
-   * 화면이 부르는 API(`/api/admin/business/...`)는 계정 플랫폼과 무관하므로 파일을 복제할 이유가 없다.
-   * 페이지 스스로 경로를 보고 '뒤로' 링크와 활성 메뉴를 맞춘다.
+   * Meta 섹션의 사업체 상세 — **별도 화면**이다.
+   * 계정 목록은 Meta 직결만 보여주고, 즉시 발행은 직결 전용 엔드포인트로 나간다.
+   * 공용 화면을 재사용하면 Zernio 계정이 섞여 들어와 어느 경로로 나갔는지 알 수 없다.
    */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta/:id')
-  adminBusinessMetaDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
+  adminBusinessMetaDetail(@Res() res: any) { return res.sendFile(page('admin-business-meta-detail.html')); }
 
   // ── 클린 URL (맨 마지막) ──
 

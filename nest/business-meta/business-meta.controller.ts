@@ -62,6 +62,19 @@ export class BusinessMetaController {
     }
   }
 
+  /** GET /accounts/unlinked — 사업체에 안 붙은 Meta 직결 계정 (`:id` 계열보다 위) */
+  @Get('accounts/unlinked')
+  async unlinked(): Promise<ApiResponse<MetaAccountVo[]>> {
+    return { success: true, data: await this.svc.unlinkedAccounts() };
+  }
+
+  /** POST /queue/:queueId/publish — 큐 한 건을 Graph API 직결로 즉시 발행 */
+  @Post('queue/:queueId/publish')
+  @HttpCode(200)
+  async publishQueue(@Param('queueId') queueId: string): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.svc.publishQueue(queueId) };
+  }
+
   /** GET /accounts — 연결된 Meta 직결 계정(토큰 제외) */
   @Get('accounts')
   async accounts(): Promise<ApiResponse<MetaAccountVo[]>> {
