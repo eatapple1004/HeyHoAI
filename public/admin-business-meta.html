@@ -64,7 +64,7 @@ button:disabled{opacity:.5;cursor:default}
 <body>
 <div class="wrap">
   <h1><span class="dot"></span> Meta 직결 인스타 연동</h1>
-  <div class="sub">중개(Zernio) 없이 Meta에 바로 붙는 경로입니다. 기존 <a href="/admin-business" style="color:var(--accent2)">사업체 관리</a>와 나란히 두고 비교하기 위한 화면이라, 여기서 연결한 계정도 사업체 상세에서 그대로 붙일 수 있습니다.</div>
+  <div class="sub">중개(Zernio) 없이 Meta에 바로 붙는 경로입니다. 여기서 연결한 계정을 <a href="/admin-business" style="color:var(--accent2)">사업체</a>에 붙이면 <b>원본 업로드 → 콘텐츠 선택 → AI 캡션 → 예약 발행</b>이 기존 화면 그대로 돌아가고, 발행만 Meta 직결로 나갑니다.</div>
   <div id="adminNav"></div>
 
   <div class="msg err" id="err"></div>
@@ -147,9 +147,10 @@ function cardHtml(a) {
   const avatar = a.profile_image
     ? '<img class="avatar" src="' + esc(a.profile_image) + '" alt="">'
     : '<div class="avatar">' + esc((a.username || '?').charAt(0).toUpperCase()) + '</div>';
+  // 사업체에 붙이면 업로드·AI 캡션·예약 발행이 전부 기존 화면에서 그대로 돌아간다.
   const biz = a.business_name
     ? '연결됨 · ' + esc(a.business_name)
-    : '<span style="color:var(--faint)">사업체 미연결</span>';
+    : '<a href="/admin-business" style="color:var(--accent2)">사업체에 연결하기 →</a>';
   return '<div class="card acc">'
     + '<div class="top">' + avatar
     + '<div style="min-width:0;flex:1">'

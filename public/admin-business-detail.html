@@ -324,6 +324,12 @@ function renderBiz() {
   $('fStatus').value = b.status || 'active';
 }
 
+/** 발행 경로 표시 — 같은 계정이 Zernio·Meta 양쪽에 붙어 있을 수 있어 구분이 필요하다.
+ *  어느 쪽으로 나가는지 모르면 실패했을 때 어디를 봐야 할지 알 수 없다. */
+function vendorLabel(platform) {
+  return platform === 'instagram_meta' ? 'Meta 직결' : 'Zernio';
+}
+
 function renderAccounts() {
   const list = state.accounts;
   $('accts').innerHTML = list.length ? list.map((a) =>
@@ -331,7 +337,7 @@ function renderAccounts() {
     + (a.profile_image ? '<img src="' + esc(a.profile_image) + '" alt="">' : '<img alt="">')
     + '<div style="flex:1;min-width:0">'
     + '<div style="font-weight:600">@' + esc(a.username || a.account_id) + '</div>'
-    + '<div style="color:var(--faint);font-size:.78rem">' + (a.followers || 0).toLocaleString() + ' 팔로워 · ' + esc(a.platform) + '</div>'
+    + '<div style="color:var(--faint);font-size:.78rem">' + (a.followers || 0).toLocaleString() + ' 팔로워 · ' + esc(vendorLabel(a.platform)) + '</div>'
     + '</div>'
     + (a.status === 'active' ? '<span class="badge b-on">활성</span>' : '<span class="badge b-off">' + esc(a.status) + '</span>')
     + '<button class="sm danger" onclick="unlinkAccount(\'' + a.id + '\')">연결 해제</button>'
@@ -347,7 +353,8 @@ async function loadUnlinked() {
   try {
     const { data } = await api('/api/admin/business/accounts/unlinked');
     $('unlinked').innerHTML = data.length
-      ? data.map((a) => '<option value="' + a.id + '">@' + esc(a.username || a.account_id) + ' (' + (a.followers || 0).toLocaleString() + ')</option>').join('')
+      ? data.map((a) => '<option value="' + a.id + '">@' + esc(a.username || a.account_id)
+          + ' · ' + esc(vendorLabel(a.platform)) + ' (' + (a.followers || 0).toLocaleString() + ')</option>').join('')
       : '<option value="">미연결 계정 없음 — 계정 불러오기를 눌러보세요</option>';
   } catch (e) { /* 목록 실패가 화면 전체를 막을 이유는 없다 */ }
 }
