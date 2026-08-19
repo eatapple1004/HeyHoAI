@@ -51,6 +51,9 @@ button:disabled{opacity:.5;cursor:default}
 .biz .stat{flex:1}
 .biz .stat .n{font-size:1.2rem;font-weight:800}
 .biz .stat .l{color:var(--faint);font-size:.72rem;margin-top:1px}
+/* 카드가 링크라는 걸 눈에 보이게 — 배지만 있으면 눌러도 되는지 알 수 없다 */
+.biz .go{border-top:1px solid var(--border);padding-top:10px;font-size:.82rem;font-weight:600;color:var(--accent2);display:flex;align-items:center;gap:6px}
+.biz:hover .go{color:#fff}
 .sechead{font-size:1.02rem;font-weight:700;margin:26px 0 12px;display:flex;align-items:baseline;gap:10px}
 .sechead .note{font-size:.78rem;font-weight:500;color:var(--faint)}
 .form{display:grid;grid-template-columns:1.4fr 1fr 2fr auto;gap:10px;align-items:start;margin-bottom:8px}
@@ -100,7 +103,7 @@ button:disabled{opacity:.5;cursor:default}
     카드를 누르면 /admin-business-meta/<id> 로 가고, 그 화면은 admin-business-detail.html 을
     그대로 재사용한다(호출하는 API가 계정 플랫폼과 무관해 복제할 이유가 없다).
   -->
-  <div class="sechead">🏪 사업체 <span class="note">— 계정을 붙이면 업로드·AI 캡션·예약 발행이 여기서 그대로 돌아갑니다</span>
+  <div class="sechead">🏪 사업체 <span class="note">— 카드를 누르면 <b>Meta 직결 전용 상세 화면</b>이 열립니다 (원본 업로드 · 콘텐츠 선택 · AI 캡션 · 발행)</span>
     <span class="count" id="bizCount" style="margin-left:auto"></span>
   </div>
 
@@ -268,7 +271,9 @@ function bizCardHtml(b) {
   const handle = b.primary_username ? '@' + esc(b.primary_username) : '계정 없음';
   const badge = b.meta_accounts > 0
     ? '<span class="badge b-on">Meta 직결 ' + b.meta_accounts + '</span>'
-    : (b.active_accounts > 0 ? '<span class="badge b-warn">Zernio만</span>' : '<span class="badge b-off">미연결</span>');
+    : (b.active_accounts > 0
+        ? '<span class="badge b-warn">Meta 계정 없음</span>'
+        : '<span class="badge b-off">미연결</span>');
   return '<a class="card biz" href="/admin-business-meta/' + b.id + '">'
     + '<div class="top">' + avatar
     + '<div style="min-width:0;flex:1">'
@@ -280,7 +285,9 @@ function bizCardHtml(b) {
     + '<div class="stat"><div class="n">' + b.pending + '</div><div class="l">발행 대기</div></div>'
     + '<div class="stat"><div class="n">' + b.scheduled + '</div><div class="l">예약</div></div>'
     + '<div class="stat"><div class="n">' + b.posted + '</div><div class="l">게시됨</div></div>'
-    + '</div></a>';
+    + '</div>'
+    + '<div class="go">🔗 Meta 직결로 관리·발행 →</div>'
+    + '</a>';
 }
 
 async function loadBiz() {
