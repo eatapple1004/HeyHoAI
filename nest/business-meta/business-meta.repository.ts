@@ -212,6 +212,32 @@ export class BusinessMetaRepository {
     }
   }
 
+  /**
+   * 사업체에 붙은 **Zernio(비직결) 계정을 전부 떼어낸다.**
+   *
+   * 대체할 Meta 계정이 없어도 뗀다 — 그 사업체는 발행 계정이 없는 상태가 된다(의도된 결과).
+   * ⚠️ 큐·원본은 옛 계정 id를 그대로 참조하므로 **자료는 지워지지 않는다.** 다만 사업체
+   *   화면에서는 보이지 않게 된다. 나중에 그 계정으로 OAuth를 태워 다시 붙일 수 있도록
+   *   원래 사업체 id를 metadata에 남긴다 — 안 남기면 어디 소속이었는지 복구할 근거가 사라진다.
+   */
+  async detachLegacy(): Promise<Array<{ username: string; business_id: string; queue_cnt: number; media_cnt: number }>> {
+    const { rows } = await this.db.query(`
+      UPDATE social_accounts SET
+        business_id = NULL,
+        status = 'disabled',
+        metadata = COALESCE(metadata, '{}'::jsonb)
+                   || jsonb_build_object('detached_from_business_id', business_id::text,
+                                         'detached_at', now()::text),
+        updated_at = now()
+      WHERE platform <> $1 AND business_id IS NOT NULL
+      RETURNING id, username,
+                (metadata->>'detached_from_business_id') AS business_id,
+                (SELECT COUNT(*)::int FROM post_queue q WHERE q.account_id = social_accounts.id)    AS queue_cnt,
+                (SELECT COUNT(*)::int FROM account_media m WHERE m.account_id = social_accounts.id) AS media_cnt`,
+      [META_PLATFORM]);
+    return rows as any;
+  }
+
   /** 큐 한 건이 걸려 있는 계정의 플랫폼 — 발행 경로를 확인하는 데 쓴다. */
   async queueAccount(queueId: string): Promise<{ platform: string; username: string } | null> {
     const { rows } = await this.db.query<{ platform: string; username: string }>(

@@ -106,6 +106,7 @@ button:disabled{opacity:.5;cursor:default}
   <div class="sechead">🏪 사업체 <span class="note">— 카드를 누르면 <b>Meta 직결 전용 상세 화면</b>이 열립니다 (원본 업로드 · 콘텐츠 선택 · AI 캡션 · 발행)</span>
     <span style="margin-left:auto;display:flex;align-items:center;gap:10px">
       <button id="migBtn" onclick="migrate()">⇄ Zernio → Meta 전환</button>
+      <button id="detachBtn" onclick="detachLegacy()">✂ Zernio 연결 전부 해제</button>
       <span class="count" id="bizCount"></span>
     </span>
   </div>
@@ -301,9 +302,12 @@ function bizCardHtml(b) {
 async function loadMigPlan() {
   try {
     const { data } = await api('/api/admin/business-meta/migrate/plan');
-    if (!data.movable.length && !data.blocked.length) { $('migPlan').hidden = true; $('migBtn').hidden = true; return; }
+    if (!data.movable.length && !data.blocked.length) {
+      $('migPlan').hidden = true; $('migBtn').hidden = true; $('detachBtn').hidden = true; return;
+    }
     $('migPlan').hidden = false;
     $('migBtn').disabled = !data.movable.length;
+    $('detachBtn').hidden = !(data.movable.length + data.blocked.length);
     const mv = data.movable.map((r) => '✅ <b>' + esc(r.business_name) + '</b> — @' + esc(r.old_username)
       + ' Zernio → Meta 직결 <span style="color:var(--faint)">(큐 ' + r.queue_cnt + ' · 원본 ' + r.media_cnt + '건 함께 이동)</span>').join('<br>');
     const bl = data.blocked.map((r) => '⛔ <b>' + esc(r.business_name) + '</b> — ' + esc(r.reason)).join('<br>');
@@ -320,6 +324,24 @@ async function migrate() {
     loadBiz(); load(); loadMigPlan();
   } catch (e) { flash('err', e.message); }
   finally { $('migBtn').disabled = false; }
+}
+
+/**
+ * Zernio 연결 전부 해제 — 대체 계정이 없어도 뗀다(그 사업체는 발행 계정이 없는 상태가 된다).
+ * 자료가 지워지는 건 아니지만 사업체 화면에서 안 보이게 되므로 그 사실을 확인창에 적는다.
+ */
+async function detachLegacy() {
+  if (!confirm('사업체에 붙은 Zernio 연결을 전부 해제합니다.\n\n· 대체할 Meta 계정이 있으면 먼저 그쪽으로 옮깁니다\n· 없는 사업체는 발행 계정이 없는 상태가 됩니다\n· 큐·원본 자료는 지워지지 않지만 사업체 화면에서는 보이지 않게 됩니다\n\n계속할까요?')) return;
+  clearMsg(); $('detachBtn').disabled = true;
+  try {
+    const { data } = await api('/api/admin/business-meta/migrate/detach-legacy', { method: 'POST' });
+    const parts = [];
+    if (data.moved.length) parts.push(data.moved.length + '개 Meta로 이관');
+    if (data.detached.length) parts.push(data.detached.length + '개 Zernio 연결 해제');
+    flash('ok', parts.length ? parts.join(' · ') : '해제할 Zernio 연결이 없습니다.');
+    loadBiz(); load(); loadMigPlan();
+  } catch (e) { flash('err', e.message); }
+  finally { $('detachBtn').disabled = false; }
 }
 
 async function loadBiz() {

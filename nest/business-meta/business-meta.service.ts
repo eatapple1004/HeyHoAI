@@ -225,6 +225,19 @@ export class BusinessMetaService implements OnModuleInit {
     return { moved, blocked: plan.blocked };
   }
 
+  /**
+   * Zernio 연결 전부 해제 — 옮길 수 있는 건 먼저 Meta로 옮기고, 나머지는 그냥 뗀다.
+   * 순서가 중요하다: 떼고 나서 옮기려 하면 짝을 찾을 근거(business_id)가 이미 사라진다.
+   */
+  async detachLegacy() {
+    const migrated = await this.migrate();          // 대체 가능한 것 먼저 이관
+    const detached = await this.repo.detachLegacy(); // 남은 Zernio 연결 해제
+    for (const d of detached) {
+      log.warn(`Zernio 연결 해제 @${d.username} — 큐 ${d.queue_cnt}·원본 ${d.media_cnt}건은 계정에 남아 있습니다(사업체 화면에서는 안 보임)`);
+    }
+    return { moved: migrated.moved, detached };
+  }
+
   async quota(id: string): Promise<{ used: number; cap: number | null }> {
     const { account, token } = await this.credentials(id);
     return pub.quota(account.account_id, token.access_token, token.auth_mode);
