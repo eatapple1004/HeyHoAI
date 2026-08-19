@@ -167,6 +167,7 @@ async function update(id, fields) {
   if (fields.imagePostUrl !== undefined) { sets.push(`image_post_url = $${i++}`); params.push(fields.imagePostUrl); }
   if (fields.reelPostUrl !== undefined) { sets.push(`reel_post_url = $${i++}`); params.push(fields.reelPostUrl); }
   if (fields.bgmMediaId !== undefined) { sets.push(`bgm_media_id = $${i++}`); params.push(fields.bgmMediaId); }
+  if (fields.error !== undefined) { sets.push(`error = $${i++}`); params.push(fields.error); }
 
   if (sets.length === 0) return findById(id);
   sets.push('updated_at = now()');
