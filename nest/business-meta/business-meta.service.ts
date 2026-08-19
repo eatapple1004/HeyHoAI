@@ -59,7 +59,7 @@ export class BusinessMetaService implements OnModuleInit {
    * 콜백 처리 — 코드 교환 → 장기 토큰 → 프로필 → 저장.
    * 반환값은 화면에 보여줄 결과만 담는다(토큰 없음).
    */
-  async handleCallback(code: string, state: string, cookieState: string | undefined, req: any): Promise<{
+  async handleCallback(userId: string, code: string, state: string, cookieState: string | undefined, req: any): Promise<{
     username: string; accountId: string; mismatch: string | null;
   }> {
     if (!cookieState || !state || state !== cookieState) {
@@ -76,6 +76,7 @@ export class BusinessMetaService implements OnModuleInit {
       ? expected : null;
 
     const account = await this.repo.upsertAccount({
+      userId,
       accountId: profile.id,
       username: profile.username,
       displayName: profile.username,
