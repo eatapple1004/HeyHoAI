@@ -201,6 +201,30 @@ export class BusinessMetaService implements OnModuleInit {
     return scheduler.publishSingleItem(queueId);
   }
 
+  /** 전환 계획 — 무엇이 옮겨지고 무엇이 왜 안 되는지 먼저 보여준다(누르기 전에 알아야 한다). */
+  async migrationPlan() {
+    const rows = await this.repo.migrationPlan();
+    return {
+      movable: rows.filter((r) => r.new_id),
+      blocked: rows.filter((r) => !r.new_id).map((r) => ({
+        ...r,
+        reason: `@${r.old_username} 의 Meta 직결 연결이 없습니다 — 앱에 Instagram 테스터로 초대·수락한 뒤 [＋ 인스타 연결]로 그 계정을 붙여야 합니다.`,
+      })),
+    };
+  }
+
+  /** 옮길 수 있는 것만 옮긴다. 막힌 건은 건드리지 않고 사유를 그대로 돌려준다. */
+  async migrate() {
+    const plan = await this.migrationPlan();
+    const moved: any[] = [];
+    for (const r of plan.movable) {
+      const counts = await this.repo.migrateOne(r.business_id, r.old_id, r.new_id as string);
+      log.info(`전환 ${r.business_name}: @${r.old_username} Zernio → Meta (큐 ${counts.queue} · 원본 ${counts.media})`);
+      moved.push({ business: r.business_name, username: r.old_username, ...counts });
+    }
+    return { moved, blocked: plan.blocked };
+  }
+
   async quota(id: string): Promise<{ used: number; cap: number | null }> {
     const { account, token } = await this.credentials(id);
     return pub.quota(account.account_id, token.access_token, token.auth_mode);
