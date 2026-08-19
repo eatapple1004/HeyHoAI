@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import * as path from 'path';
 import { DbService } from '../db/db.service';
+
+// 트랜잭션이 필요해 풀에 직접 접근한다 — DbService.query는 단건 실행만 제공한다.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const dbClient = require(path.join(__dirname, '..', '..', 'src', 'db', 'client.js'));
 import { AuthMode } from './meta-ig.client';
 
 /**
@@ -151,6 +156,60 @@ export class BusinessMetaRepository {
         ORDER BY a.created_at DESC`,
       [META_PLATFORM],
     ).then((r) => r.rows);
+  }
+
+  /**
+   * Zernio → Meta 전환 후보.
+   * 같은 인스타 핸들의 Meta 직결 계정(토큰 보유)이 이미 연결돼 있어야 옮길 수 있다.
+   * 없는 사업체는 그 계정으로 OAuth를 한 번 태워야 하므로 여기서 제외된다(사유를 같이 준다).
+   */
+  async migrationPlan(): Promise<Array<{
+    business_id: string; business_name: string;
+    old_id: string; old_username: string;
+    new_id: string | null; queue_cnt: number; media_cnt: number;
+  }>> {
+    const { rows } = await this.db.query(`
+      SELECT b.id AS business_id, b.name AS business_name,
+             old.id AS old_id, old.username AS old_username,
+             meta.id AS new_id,
+             (SELECT COUNT(*)::int FROM post_queue q WHERE q.account_id = old.id)     AS queue_cnt,
+             (SELECT COUNT(*)::int FROM account_media m WHERE m.account_id = old.id)  AS media_cnt
+        FROM businesses b
+        JOIN social_accounts old
+          ON old.business_id = b.id AND old.platform <> $1 AND old.status = 'active'
+        LEFT JOIN social_accounts meta
+          ON meta.platform = $1 AND lower(meta.username) = lower(old.username)
+         AND meta.status = 'active'
+         AND EXISTS (SELECT 1 FROM meta_ig_tokens t WHERE t.account_id = meta.id)
+       ORDER BY b.created_at DESC`, [META_PLATFORM]);
+    return rows as any;
+  }
+
+  /**
+   * 한 사업체의 연결을 Zernio 계정 → Meta 계정으로 옮긴다.
+   *
+   * ⚠️ 계정 행만 바꾸면 안 된다. 큐(post_queue)와 원본(account_media)이 **옛 계정 id를 참조**하므로
+   *   그대로 두면 화면에서 자료가 사라지고, 남아 있던 예약 건은 여전히 Zernio로 나간다.
+   *   넷을 한 트랜잭션으로 묶어 중간에 끊겨도 반쪽 상태가 남지 않게 한다.
+   */
+  async migrateOne(businessId: string, oldId: string, newId: string): Promise<{ queue: number; media: number }> {
+    const conn = await dbClient.pool.connect();
+    try {
+      await conn.query('BEGIN');
+      const q = await conn.query('UPDATE post_queue SET account_id = $1 WHERE account_id = $2', [newId, oldId]);
+      const m = await conn.query('UPDATE account_media SET account_id = $1 WHERE account_id = $2', [newId, oldId]);
+      await conn.query(
+        `UPDATE social_accounts SET business_id = NULL, status = 'disabled', updated_at = now() WHERE id = $1`, [oldId]);
+      await conn.query(
+        'UPDATE social_accounts SET business_id = $1, updated_at = now() WHERE id = $2', [businessId, newId]);
+      await conn.query('COMMIT');
+      return { queue: q.rowCount || 0, media: m.rowCount || 0 };
+    } catch (e) {
+      await conn.query('ROLLBACK');
+      throw e;
+    } finally {
+      conn.release();
+    }
   }
 
   /** 큐 한 건이 걸려 있는 계정의 플랫폼 — 발행 경로를 확인하는 데 쓴다. */

@@ -75,6 +75,19 @@ export class BusinessMetaController {
     return { success: true, data: await this.svc.publishQueue(queueId) };
   }
 
+  /** GET /migrate/plan — 전환 미리보기(무엇이 옮겨지고 무엇이 왜 막혔는지) */
+  @Get('migrate/plan')
+  async migratePlan(): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.svc.migrationPlan() };
+  }
+
+  /** POST /migrate — 사업체 연결을 Zernio → Meta 직결로 옮긴다(가능한 것만) */
+  @Post('migrate')
+  @HttpCode(200)
+  async migrate(): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.svc.migrate() };
+  }
+
   /** GET /accounts — 연결된 Meta 직결 계정(토큰 제외) */
   @Get('accounts')
   async accounts(): Promise<ApiResponse<MetaAccountVo[]>> {
