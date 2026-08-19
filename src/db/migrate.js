@@ -458,6 +458,26 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_social_accounts_business ON social_accounts(business_id);
   `);
 
+  // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.
+  //   ⚠️ social_accounts.metadata(JSONB)에 넣지 않는다 — 그 컬럼은 계정 목록 API가 통째로
+  //     내려주므로 토큰이 관리자 화면 응답에 섞여 나간다. 별도 테이블로 두고 조회 API가
+  //     이 테이블을 절대 join하지 않는 것으로 유출 경로를 원천 차단한다.
+  //   장기 토큰은 60일 만료다 — 갱신에 실패하면 게시가 에러 없이 조용히 멈추므로
+  //     expires_at을 남겨 화면에서 남은 일수를 보여준다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS meta_ig_tokens (
+        account_id    UUID PRIMARY KEY REFERENCES social_accounts(id) ON DELETE CASCADE,
+        auth_mode     VARCHAR(20) NOT NULL DEFAULT 'instagram',
+        access_token  TEXT NOT NULL,
+        scope         TEXT,
+        expires_at    TIMESTAMPTZ,
+        refreshed_at  TIMESTAMPTZ,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_meta_ig_tokens_expires ON meta_ig_tokens(expires_at);
+  `);
+
   // 오리지널 이미지는 인스타 계정을 붙이기 **전에도** 올릴 수 있어야 한다(사업체 온보딩 순서상
   //   자료 수령이 계정 연동보다 먼저다) → account_media를 사업체에도 매달고 account_id를 옵셔널로 푼다.
   //   기존 코드 경로는 전부 account_id를 채우므로 제약만 완화될 뿐 동작은 그대로다.

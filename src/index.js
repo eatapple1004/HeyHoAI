@@ -211,6 +211,9 @@ app.get('/admin-proposal', requireAdminPage, (_req, res) => {
 app.get('/admin-business', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-business.html'));
 });
+app.get('/admin-business-meta', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-meta.html'));
+});
 app.get('/admin-business/:id', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-detail.html'));
 });

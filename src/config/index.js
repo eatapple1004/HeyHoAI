@@ -142,6 +142,14 @@ const envSchema = z.object({
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
 
+  // Publishing (Meta 직결 — Instagram Business Login)
+  //   ⚠️ INSTAGRAM_APP_ID는 **Meta 앱 ID와 다른 숫자**다(Meta 앱 → Instagram → API 설정에 별도로 있다).
+  //     Meta 앱 ID를 넣으면 authorize 화면에서 "잘못된 client_id"로 막힌다.
+  INSTAGRAM_APP_ID: z.string().optional(),
+  INSTAGRAM_APP_SECRET: z.string().optional(),
+  // 미설정이면 요청 호스트에서 만든다(dev.doppia.ai). Meta 콘솔 등록값과 **완전히 같아야** 한다.
+  INSTAGRAM_REDIRECT_URI: z.string().optional(),
+
   // Billing (Lemon Squeezy — 크레딧 팩 결제)
   LEMONSQUEEZY_API_KEY: z.string().optional(),
   LEMONSQUEEZY_STORE_ID: z.string().optional(),
