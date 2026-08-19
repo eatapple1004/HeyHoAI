@@ -52,6 +52,75 @@ async function mergeBgm(reelPath, bgmPath) {
 }
 
 /**
+ * Meta 직결(platform='instagram_meta') 계정의 발행.
+ *
+ * 왜 여기서 갈라지나 — 업로드·콘텐츠 선택·AI 캡션·예약은 **벤더와 무관한 우리 로직**이다.
+ *   실제로 벤더가 갈리는 지점은 "마지막에 어디로 쏘느냐" 한 곳뿐이라, 화면도 큐도 그대로 두고
+ *   이 함수만 갈아 끼운다(Zernio 경로는 한 줄도 바뀌지 않는다).
+ *
+ * ⚠️ 컴파일된 Nest 모듈을 lazy require 한다 — 최상단에서 부르면 dist가 없는 상황(빌드 전)에
+ *   레거시 부팅까지 같이 죽는다. 이 분기에 들어올 때만 필요하다.
+ */
+async function publishItemMeta(item, account, { imageCaption, reelCaption, tags }) {
+  const pub = require(path.join(__dirname, '..', '..', 'dist', 'business-meta', 'meta-publish.client.js'));
+  const db = require('../db/client');
+
+  const { rows } = await db.query(
+    'SELECT access_token, auth_mode, expires_at FROM meta_ig_tokens WHERE account_id = $1', [account.id]);
+  const tok = rows[0];
+  if (!tok) throw new Error(`Meta 토큰이 없습니다(@${account.username}) — /admin-business-meta 에서 다시 연결하세요`);
+  if (tok.expires_at && new Date(tok.expires_at) < new Date()) {
+    throw new Error(`Meta 토큰이 만료됐습니다(@${account.username}) — 만료된 토큰은 갱신할 수 없어 재연결이 필요합니다`);
+  }
+  const common = { token: tok.access_token, igUserId: account.account_id, authMode: tok.auth_mode };
+
+  let imagePostUrl = null;
+  let reelPostUrl = null;
+
+  // 이미지 — 2장 이상이면 캐러셀 한 건(Zernio 경로와 같은 규칙)
+  const imagePaths = (item.image_paths && item.image_paths.length)
+    ? item.image_paths
+    : (item.image_path ? [item.image_path] : []);
+  if (imagePaths.length) {
+    try {
+      if (imagePaths.length > CAROUSEL_MAX) {
+        log.warn(`Queue ${item.id}: ${imagePaths.length} images → 앞 ${CAROUSEL_MAX}장만 발행(인스타 캐러셀 상한)`);
+      }
+      const urls = imagePaths.slice(0, CAROUSEL_MAX).map((x) => `${baseUrl()}/images/${x.split('/').pop()}`);
+      const r = await pub.publish({
+        ...common,
+        kind: urls.length > 1 ? 'carousel' : 'image',
+        imageUrls: urls,
+        caption: `${imageCaption}\n${tags}`,
+      });
+      imagePostUrl = r.permalink || r.mediaId;
+      log.info(`[meta] Image posted (${urls.length} slide): ${imagePostUrl}`);
+    } catch (err) {
+      log.error(`[meta] Image post failed: ${err.message}`);
+    }
+  }
+
+  // 릴스 — BGM 합성은 벤더 무관이라 그대로 재사용한다
+  if (item.reel_path) {
+    try {
+      const reelFilename = await mergeBgm(item.reel_path, item.bgm_path);
+      const r = await pub.publish({
+        ...common,
+        kind: 'reel',
+        videoUrl: `${baseUrl()}/images/${reelFilename}`,
+        caption: `${reelCaption}\n${tags}`,
+      });
+      reelPostUrl = r.permalink || r.mediaId;
+      log.info(`[meta] Reel posted (인코딩 ${r.waitedSec ?? '?'}초): ${reelPostUrl}`);
+    } catch (err) {
+      log.error(`[meta] Reel post failed: ${err.message}`);
+    }
+  }
+
+  return { imagePostUrl, reelPostUrl };
+}
+
+/**
  * 큐 한 건을 인스타그램에 올리고 결과를 기록한다.
  *
  * 확정(FIFO 루프)·예약(시각 도래)·수동 즉시 발행 세 경로가 전부 이 함수를 탄다 —
@@ -62,11 +131,25 @@ async function mergeBgm(reelPath, bgmPath) {
  * @param {object} item  post_queue 행(+ image_path/reel_path/bgm_path 조인)
  * @param {string} zernioAccountId  Zernio 계정 ID(social_accounts.account_id)
  * @param {object} accMeta  계정 metadata(기본 캡션 폴백)
+ * @param {object} [account]  social_accounts 행 — platform으로 발행 경로를 정한다
  */
-async function publishItem(item, zernioAccountId, accMeta = {}) {
+async function publishItem(item, zernioAccountId, accMeta = {}, account = null) {
   const imageCaption = item.image_caption || accMeta.defaultImageCaption || '';
   const reelCaption = item.reel_caption || accMeta.defaultReelCaption || '';
   const tags = (item.hashtags || []).join(' ');
+
+  // 벤더 분기 — 여기 한 곳뿐이다. 계정 정보가 없으면(옛 호출) 기존 Zernio 경로로 간다.
+  if (account && account.platform === 'instagram_meta') {
+    const r = await publishItemMeta(item, account, { imageCaption, reelCaption, tags });
+    await postQueueRepo.update(item.id, {
+      status: 'posted',
+      postedAt: new Date().toISOString(),
+      imagePostUrl: r.imagePostUrl,
+      reelPostUrl: r.reelPostUrl,
+    });
+    log.info(`Queue ${item.id} marked as posted (meta)`);
+    return r;
+  }
 
   let imagePostUrl = null;
   let reelPostUrl = null;
@@ -143,7 +226,7 @@ async function publishConfirmedItems() {
 
         log.info(`Publishing queue ${item.id} for account ${acc.account_id}`);
         const account = await accountRepo.findById(acc.account_id);
-        await publishItem(item, acc.zernio_account_id, account?.metadata || {});
+        await publishItem(item, acc.zernio_account_id, account?.metadata || {}, account);
       } catch (err) {
         log.error(`Publish error for account ${acc.account_id}: ${err.message}`);
       }
@@ -177,7 +260,7 @@ async function publishDueScheduled() {
           log.error(`Queue ${item.id}: account ${item.account_id} not found`);
           continue; // 선점 상태로 남았다가 reclaim이 되돌린다
         }
-        await publishItem(item, item.zernio_account_id || account.account_id, account.metadata || {});
+        await publishItem(item, item.zernio_account_id || account.account_id, account.metadata || {}, account);
       } catch (err) {
         log.error(`Scheduled publish error for queue ${item.id}: ${err.message}`);
       }
@@ -246,7 +329,7 @@ async function publishSingleItem(queueId) {
   if (!account) throw Object.assign(new Error('Account not found'), { statusCode: 404 });
 
   log.info(`Publishing single queue ${queueId}`);
-  return publishItem(item, account.account_id, account.metadata || {});
+  return publishItem(item, account.account_id, account.metadata || {}, account);
 }
 
 module.exports = { publishConfirmedItems, publishDueScheduled, publishSingleItem, startScheduler };
