@@ -88,6 +88,13 @@ export class BusinessMetaController {
     return { success: true, data: await this.svc.migrate() };
   }
 
+  /** POST /migrate/detach-legacy — Meta로 옮길 건 옮기고, 남은 Zernio 연결은 전부 해제 */
+  @Post('migrate/detach-legacy')
+  @HttpCode(200)
+  async detachLegacy(): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.svc.detachLegacy() };
+  }
+
   /** GET /accounts — 연결된 Meta 직결 계정(토큰 제외) */
   @Get('accounts')
   async accounts(): Promise<ApiResponse<MetaAccountVo[]>> {
