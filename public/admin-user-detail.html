@@ -45,6 +45,13 @@ td.wrap-t{white-space:normal;word-break:break-word;max-width:520px}
 .msg.show{display:block}
 .msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
 .scroll{overflow-x:auto}
+/* 결과 썸네일 — 프롬프트만으로는 무엇을 만들었는지 알 수 없다. 눈으로 봐야 판단된다. */
+.th{display:flex;gap:6px;flex-wrap:wrap}
+.th img,.th video{width:74px;height:74px;object-fit:cover;border-radius:8px;background:var(--panel2);
+  border:1px solid var(--border);display:block}
+.th a{line-height:0}
+.th img:hover{border-color:var(--accent2)}
+.noimg{color:var(--faint);font-size:.78rem}
 @media(max-width:820px){body{padding:16px}}
 </style>
 </head>
@@ -83,6 +90,23 @@ const statusTag = (s) => {
   return '<span class="tag ' + cls + '">' + esc(s || '—') + '</span>';
 };
 
+/**
+ * 결과 미리보기. 영상이면 <video>(음소거 없이 — 클릭해 확인하려는 것이므로),
+ * 이미지면 <img>. 새 창 링크로 감싸 원본을 바로 열 수 있게 한다.
+ * 깨진 파일은 숨긴다 — 회색 깨짐 아이콘이 줄줄이 남으면 표를 못 읽는다.
+ */
+function thumbs(urls) {
+  const list = (urls || []).filter(Boolean);
+  if (!list.length) return '<span class="noimg">—</span>';
+  return '<div class="th">' + list.slice(0, 6).map((u) => {
+    const v = /\.(mp4|webm|mov)(\?|$)/i.test(u);
+    const inner = v
+      ? '<video src="' + esc(u) + '" preload="metadata"></video>'
+      : '<img src="' + esc(u) + '" alt="" loading="lazy" onerror="this.closest(\'a\').style.display=\'none\'">';
+    return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + inner + '</a>';
+  }).join('') + (list.length > 6 ? '<span class="noimg">+' + (list.length - 6) + '</span>' : '') + '</div>';
+}
+
 /** 표 하나 그리기 — 비면 그 사실을 적는다(빈 표는 로딩 실패와 구분이 안 된다) */
 function table(el, rows, cols, emptyText) {
   if (!rows.length) { $(el).innerHTML = '<div class="empty">' + emptyText + '</div>'; return; }
@@ -119,7 +143,9 @@ async function load() {
     $('cImg').textContent = d.images.length + '건 (최근 60)';
     table('imgs', d.images, [
       { t: '만든 시각', v: (r) => fmt(r.created_at) },
-      { t: '프롬프트', cls: 'wrap-t', v: (r) => esc(cut(r.prompt_text, 220)) },
+      { t: '결과', v: (r) => thumbs(r.urls) },
+      { t: '원본', v: (r) => r.refUrl ? thumbs([r.refUrl]) : '<span class="noimg">—</span>' },
+      { t: '프롬프트', cls: 'wrap-t', v: (r) => esc(cut(r.prompt_text, 200)) },
       { t: '모델', v: (r) => esc(r.model || '—') },
       { t: '스타일', v: (r) => esc(r.style_preset || '—') },
     ], '만든 이미지가 없습니다.');
@@ -131,7 +157,8 @@ async function load() {
       { t: '프롬프트', cls: 'wrap-t', v: (r) => esc(cut(r.prompt, 180)) },
       { t: '모드', v: (r) => esc(r.mode || '—') },
       { t: '차감', cls: 'num', v: (r) => (r.charge_amount || 0).toLocaleString() },
-      { t: '결과', v: (r) => r.result_url ? '<a href="' + esc(r.result_url) + '" target="_blank" rel="noopener">열기</a>' : (r.error ? '<span class="t-bad">' + esc(cut(r.error, 60)) + '</span>' : '—') },
+      { t: '결과', v: (r) => r.result_url ? thumbs([r.result_url])
+          : (r.error ? '<span class="tag t-bad">' + esc(cut(r.error, 60)) + '</span>' : '<span class="noimg">—</span>') },
     ], '만든 영상이 없습니다.');
 
     $('cUgc').textContent = d.ugc.length + '건';
@@ -142,7 +169,8 @@ async function load() {
       { t: '컨셉', cls: 'wrap-t', v: (r) => esc(cut(r.concept, 160)) },
       { t: '컷', cls: 'num', v: (r) => r.n_clips ?? '—' },
       { t: '차감', cls: 'num', v: (r) => (r.charge_amount || 0).toLocaleString() },
-      { t: '결과', v: (r) => r.result_url ? '<a href="' + esc(r.result_url) + '" target="_blank" rel="noopener">열기</a>' : '—' },
+      { t: '결과', v: (r) => r.result_url ? thumbs([r.result_url])
+          : (r.error ? '<span class="tag t-bad">' + esc(cut(r.error, 60)) + '</span>' : '<span class="noimg">—</span>') },
     ], '만든 UGC가 없습니다.');
 
     $('cPack').textContent = d.packs.length + '건';
@@ -152,6 +180,7 @@ async function load() {
       { t: '제품', cls: 'wrap-t', v: (r) => esc(cut(r.product, 140)) },
       { t: '분야', v: (r) => esc(r.vertical || '—') },
       { t: '컷', cls: 'num', v: (r) => r.stills ?? 0 },
+      { t: '미리보기', v: (r) => thumbs(r.thumbs) },
       { t: '오류', cls: 'wrap-t', v: (r) => r.error ? esc(cut(r.error, 90)) : '—' },
     ], '만든 팩이 없습니다.');
 

@@ -16,6 +16,18 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  *   가능해지는 순간이 제일 위험하다(로컬 .env가 prod를 가리켜 dev.test 계정을 prod에 만든 전례가 있다).
  */
 
+/**
+ * 저장 경로 → 서빙 URL. admin.service의 규약과 같다 —
+ * R2/외부 URL·로스터(`/img/…`)는 그대로, 그 외 tmp 경로는 `/images/<파일명>`.
+ * ⚠️ 규약이 갈리면 같은 파일이 한 화면에선 보이고 다른 화면에선 깨진다.
+ */
+function toUrl(p: unknown): string {
+  const s = String(p || '');
+  if (!s) return '';
+  if (s.startsWith('/img/') || /^https?:\/\//i.test(s)) return s;
+  return '/images/' + s.split('/').pop();
+}
+
 export type EnvKey = 'development' | 'staging' | 'production';
 
 /** 환경 → 실제 DB 이름. 화면 라벨과 분리해 둔다(라벨이 바뀌어도 연결은 안 흔들린다). */
@@ -112,21 +124,44 @@ export class AdminUsersService implements OnModuleDestroy {
     delete (user as any).password_hash;   // 해시라도 화면에 내보낼 이유가 없다
 
     const [images, videos, ugc, packs, ledger, payments] = await Promise.all([
-      q(`SELECT idx, prompt_text, model, style_preset, reference_image_path, created_at
-           FROM prompts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60`, [userId]),
+      // 프롬프트만으로는 "무엇을 만들었는지" 알 수 없다 — 결과 파일까지 붙여야 눈으로 판단된다.
+      //   결과는 generation_results.prompt_idx 로 연결된다(한 프롬프트에 여러 장 나올 수 있다).
+      q(`SELECT p.idx, p.prompt_text, p.model, p.style_preset, p.reference_image_path, p.created_at,
+                COALESCE(
+                  array_agg(gr.file_path ORDER BY gr.created_at) FILTER (WHERE gr.file_path IS NOT NULL),
+                  ARRAY[]::text[]
+                ) AS files
+           FROM prompts p
+           LEFT JOIN generation_results gr ON gr.prompt_idx = p.idx AND gr.taken_down IS NOT TRUE
+          WHERE p.user_id = $1
+          GROUP BY p.idx, p.prompt_text, p.model, p.style_preset, p.reference_image_path, p.created_at
+          ORDER BY p.created_at DESC LIMIT 60`, [userId]),
       q(`SELECT id, prompt, mode, duration, status, charge_amount, result_url, error, created_at
            FROM video_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30`, [userId]),
       q(`SELECT id, title, product, concept, output_type, n_clips, status, charge_amount, result_url, error, created_at
            FROM ugc_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30`, [userId]),
-      q(`SELECT id, vertical, product, status, error, created_at,
-                (SELECT count(*)::int FROM pack_assets a WHERE a.pack_id = p.id AND a.kind = 'still') AS stills
-           FROM content_packs p WHERE p.user_id::text = $1 ORDER BY created_at DESC LIMIT 30`, [userId]),
+      q(`SELECT p.id, p.vertical, p.product, p.status, p.error, p.created_at,
+                (SELECT count(*)::int FROM pack_assets a WHERE a.pack_id = p.id AND a.kind = 'still') AS stills,
+                COALESCE((SELECT array_agg(a.url) FROM (
+                   SELECT url FROM pack_assets WHERE pack_id = p.id AND kind = 'still' AND url IS NOT NULL
+                   ORDER BY created_at LIMIT 4) a), ARRAY[]::text[]) AS thumbs
+           FROM content_packs p WHERE p.user_id::text = $1 ORDER BY p.created_at DESC LIMIT 30`, [userId]),
       q(`SELECT amount, balance_after, type, description, created_at
            FROM credit_ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60`, [userId]),
       q(`SELECT provider, order_id, product, amount_usd, credits, created_at
            FROM payments WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`, [userId]),
     ]);
 
-    return { env: key, label: ENV_LABEL[key], db: DB_NAME[key], user, images, videos, ugc, packs, ledger, payments };
+    const imagesOut = images.map((r: any) => ({
+      ...r,
+      files: undefined,
+      urls: (r.files || []).map(toUrl).filter(Boolean),
+      refUrl: toUrl(r.reference_image_path),
+    }));
+    const videosOut = videos.map((r: any) => ({ ...r, result_url: toUrl(r.result_url) }));
+    const ugcOut = ugc.map((r: any) => ({ ...r, result_url: toUrl(r.result_url) }));
+
+    return { env: key, label: ENV_LABEL[key], db: DB_NAME[key], user,
+      images: imagesOut, videos: videosOut, ugc: ugcOut, packs, ledger, payments };
   }
 }
