@@ -16,6 +16,9 @@ import { AffiliateService } from '../affiliate/affiliate.service';
  */
 
 /** dist/pages/pages.controller.js 기준 ../../public = <repo>/public */
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cfg = require(path.join(__dirname, '..', '..', 'src', 'config'));
+
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 /** 확장자 없는 클린 URL로 받아줄 이름 형식 — 레거시 정규식과 동일 */
 const CLEAN_URL_RE = /^[a-z0-9-]+$/i;
@@ -24,6 +27,9 @@ const REF_COOKIE = 'ref';
 const REF_COOKIE_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60일
 
 const page = (name: string) => path.join(PUBLIC_DIR, name);
+
+/** Meta 직결 스위치 — 꺼져 있으면 그 경로들이 존재하지 않는 것으로 취급한다. */
+const metaDirectOn = () => Boolean(cfg.env.META_DIRECT_ENABLED);
 
 @Controller()
 @UseFilters(PageExceptionFilter)
@@ -166,10 +172,16 @@ export class PagesController {
   @Get('admin-users/:id')
   adminUserDetail(@Res() res: any) { return res.sendFile(page('admin-user-detail.html')); }
 
-  /** Meta 직결 연동 콘솔 — `admin-business/:id`가 삼키지 않도록 별도 세그먼트다. */
+  /**
+   * Meta 직결 연동 콘솔 — `admin-business/:id`가 삼키지 않도록 별도 세그먼트다.
+   * ⚠️ META_DIRECT_ENABLED 가 꺼져 있으면 없는 페이지로 넘긴다(next() → 정적·레거시 폴백 → 404).
+   */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta')
-  adminBusinessMeta(@Res() res: any) { return res.sendFile(page('admin-business-meta.html')); }
+  adminBusinessMeta(@Res() res: any, @Next() next: any) {
+    if (!metaDirectOn()) return next();
+    return res.sendFile(page('admin-business-meta.html'));
+  }
 
   /**
    * Meta 섹션의 사업체 상세 — **별도 화면**이다.
@@ -178,7 +190,10 @@ export class PagesController {
    */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta/:id')
-  adminBusinessMetaDetail(@Res() res: any) { return res.sendFile(page('admin-business-meta-detail.html')); }
+  adminBusinessMetaDetail(@Res() res: any, @Next() next: any) {
+    if (!metaDirectOn()) return next();
+    return res.sendFile(page('admin-business-meta-detail.html'));
+  }
 
   // ── 클린 URL (맨 마지막) ──
 

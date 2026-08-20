@@ -142,6 +142,13 @@ const envSchema = z.object({
   // Publishing (Zernio)
   ZERNIO_API_KEY: z.string().optional(),
 
+  // Meta 직결 기능 스위치 — 기본 off. 켤 때만 화면·API·발행 분기가 열린다.
+  //   자격증명이 있어도 이게 false면 닫힌다(키를 지우지 않고 끌 수 있어야 되돌리기가 쉽다).
+  META_DIRECT_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // Publishing (Meta 직결 — Instagram Business Login)
   //   ⚠️ INSTAGRAM_APP_ID는 **Meta 앱 ID와 다른 숫자**다(Meta 앱 → Instagram → API 설정에 별도로 있다).
   //     Meta 앱 ID를 넣으면 authorize 화면에서 "잘못된 client_id"로 막힌다.

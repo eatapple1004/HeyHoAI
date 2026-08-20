@@ -3,6 +3,7 @@ import * as path from 'path';
 import { AdminGuard } from '../auth/admin.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { BusinessMetaService, STATE_COOKIE } from './business-meta.service';
+import { MetaDirectGuard } from './meta-direct.guard';
 import { MetaAccountVo } from './business-meta.repository';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -18,7 +19,7 @@ const { env } = require(path.join(__dirname, '..', '..', 'src', 'config'));
  *   이 이동에도 실려 오므로 AdminGuard가 그대로 통과한다(별도 예외 불필요).
  */
 @Controller('api/admin/business-meta')
-@UseGuards(AdminGuard)
+@UseGuards(MetaDirectGuard, AdminGuard)
 export class BusinessMetaController {
   constructor(private readonly svc: BusinessMetaService) {}
 
