@@ -1,4 +1,4 @@
-import { Controller, Get, Next, Param, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
+import { Controller, Get, Next, NotFoundException, Param, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { AdminPageGuard, PageGuard } from './page-auth.guard';
@@ -178,8 +178,10 @@ export class PagesController {
    */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta')
-  adminBusinessMeta(@Res() res: any, @Next() next: any) {
-    if (!metaDirectOn()) return next();
+  adminBusinessMeta(@Res() res: any) {
+    // ⚠️ next() 를 쓰면 안 된다 — 맨 아래 클린 URL(`:name`) 핸들러가 같은 파일을 다시 서빙한다(실측 200).
+    //   꺼진 기능은 여기서 끝내야 한다.
+    if (!metaDirectOn()) throw new NotFoundException();
     return res.sendFile(page('admin-business-meta.html'));
   }
 
@@ -190,8 +192,8 @@ export class PagesController {
    */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta/:id')
-  adminBusinessMetaDetail(@Res() res: any, @Next() next: any) {
-    if (!metaDirectOn()) return next();
+  adminBusinessMetaDetail(@Res() res: any) {
+    if (!metaDirectOn()) throw new NotFoundException();
     return res.sendFile(page('admin-business-meta-detail.html'));
   }
 
@@ -205,6 +207,8 @@ export class PagesController {
   cleanUrl(@Param('name') name: string, @Req() req: any, @Res() res: any, @Next() next: any) {
     const html = name.toLowerCase().endsWith('.html');
     const base = html ? name.slice(0, -5) : name;
+    // 기능 스위치로 닫은 페이지는 클린 URL 로도 열리면 안 된다(위 핸들러와 이중으로 막는다).
+    if (!metaDirectOn() && /^admin-business-meta(-detail)?$/i.test(base)) throw new NotFoundException();
     if (!CLEAN_URL_RE.test(base)) return next();
     if (html) {
       const q = req.originalUrl.indexOf('?');
