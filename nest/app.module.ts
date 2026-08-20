@@ -28,6 +28,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { GenerateModule } from './generate/generate.module';
 import { BusinessModule } from './business/business.module';
 import { BusinessMetaModule } from './business-meta/business-meta.module';
+import { AdminUsersModule } from './admin-users/admin-users.module';
 
 // NestJS 이관 루트 모듈 — 포팅한 도메인 모듈을 여기 imports에 하나씩 추가한다.
 @Module({
@@ -59,6 +60,7 @@ import { BusinessMetaModule } from './business-meta/business-meta.module';
     AdStudioModule,
     BusinessModule,      // 관리자 전용 사업체 인스타 관리(/api/admin/business)
     BusinessMetaModule,  // Meta 직결 인스타 연동(/api/admin/business-meta) — Zernio 대안 실측용
+    AdminUsersModule,    // 환경별 사용자·생성물 조회(/api/admin/users)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],
