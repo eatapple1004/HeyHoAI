@@ -157,6 +157,11 @@ export class PagesController {
   @Get('admin-business/:id')
   adminBusinessDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
 
+  /** 사용자·생성물(환경 선택) */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-users')
+  adminUsers(@Res() res: any) { return res.sendFile(page('admin-users.html')); }
+
   /** Meta 직결 연동 콘솔 — `admin-business/:id`가 삼키지 않도록 별도 세그먼트다. */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta')
