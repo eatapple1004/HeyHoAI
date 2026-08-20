@@ -142,6 +142,16 @@ async function publishItem(item, zernioAccountId, accMeta = {}, account = null) 
   const tags = (item.hashtags || []).join(' ');
 
   // 벤더 분기 — 여기 한 곳뿐이다. 계정 정보가 없으면(옛 호출) 기존 Zernio 경로로 간다.
+  //
+  // ⚠️ Meta 직결이 꺼져 있는데 meta 계정 건이 들어오면 **Zernio로 흘리지 않는다.**
+  //   그쪽은 이 계정을 모르기 때문에 엉뚱한 실패가 나고 원인이 안 보인다. 여기서 분명히 끊는다.
+  if (account && account.platform === 'instagram_meta' && !env.META_DIRECT_ENABLED) {
+    const msg = 'Meta 직결 기능이 꺼져 있어 발행할 수 없습니다 (META_DIRECT_ENABLED=false)';
+    log.error(`Queue ${item.id}: ${msg}`);
+    await postQueueRepo.update(item.id, { status: 'failed', error: msg });
+    return { imagePostUrl: null, reelPostUrl: null };
+  }
+
   if (account && account.platform === 'instagram_meta') {
     const r = await publishItemMeta(item, account, { imageCaption, reelCaption, tags });
     // ⚠️ 하나도 못 올렸는데 'posted'로 적으면 화면이 "게시됨"이라 거짓말을 한다(2026-08-19 실측).

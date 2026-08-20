@@ -12,7 +12,8 @@
 (function () {
   var PAGES = [
     { href: '/admin-business',      label: '🏪 사업체' },
-    { href: '/admin-business-meta', label: '🔗 Meta 직결' },
+    // Meta 직결은 기능 스위치(META_DIRECT_ENABLED)로 닫아 뒀다 — 켤 때 이 줄을 되살린다.
+    // { href: '/admin-business-meta', label: '🔗 Meta 직결' },
     { href: '/admin-users',         label: '👥 사용자' },
     { href: '/admin-creations',     label: '🖼 크리에이션' },
     { href: '/admin-stats',         label: '📊 통계' },
