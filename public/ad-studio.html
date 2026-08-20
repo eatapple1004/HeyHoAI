@@ -142,18 +142,33 @@
   /* 내 크리에이션 피드 */
   /* Ad Video 피드와 같은 크기감 — 미디어를 크게 두고 옆에 설명을 붙인다.
      작은 썸네일은 결과를 확인하려면 다시 눌러야 해서, 만든 걸 '보는' 화면 구실을 못한다. */
-  .fb { border-top: 1px solid rgba(255,255,255,.06); padding: 18px 0;
-        display: grid; grid-template-columns: 300px minmax(0, 760px); gap: 20px; align-items: start; }
-  @media (max-width: 760px) { .fb { grid-template-columns: 1fr; } }
+  /* ⚠️ Ad Video(studio.html)의 .result-row / .rb-media / .rb-meta 규칙을 그대로 옮긴 것.
+     숫자를 바꾸면 두 화면이 갈라진다 — 저쪽을 고치면 여기도 같이 고쳐야 한다.
+
+     핵심은 **폭이 아니라 높이 기준**이라는 점이다. 가로·세로·정사각이 섞여도
+     높이가 같아 줄이 가지런하고, 크롭 없이 원본 비율 그대로 보인다.
+     폭을 고정하면(예전 방식) 세로 영상이 길쭉하게 튀어나와 줄이 어긋난다. */
+  .fb { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start;
+        padding: 22px 0; border-bottom: 1px solid var(--line, #2a2a3a); }
   .fb-date { font-size: 12.5px; color: var(--muted, #9a9ab0); margin: 22px 0 2px; }
-  .fb-media { display: flex; gap: 10px; flex-wrap: wrap; }
-  .fb-media video, .fb-media img { width: 300px; max-width: 100%; border-radius: 12px;
-                                   background: #14141c; display: block; }
-  /* 한 배치에 여러 장이면 조금 줄여 나란히 */
-  .fb-media.multi video, .fb-media.multi img { width: 144px; }
+  /* 306 = 메타 284 + 갭 22 — 정보가 미디어 옆에 밀착한다(grow 없이) */
+  .fb-media { display: flex; gap: 12px; flex-wrap: wrap; flex: 0 1 auto; min-width: 0;
+              max-width: calc(100% - 306px); }
+  .fb-media video, .fb-media img { height: 300px; width: auto; max-width: 100%;
+                                   border-radius: 16px; background: #14141c; display: block; }
+  /* 단독이면 큰 프리뷰 */
+  .fb-media video:only-child, .fb-media img:only-child { height: 460px; }
+  .fb-info { width: 284px; flex-shrink: 0; display: flex; flex-direction: column; gap: 9px; padding-top: 2px; }
   .fb-meta { font-size: 13.5px; line-height: 1.6; color: #d7d7e2; }
-  .fb-sub { font-size: 12px; color: var(--muted, #9a9ab0); margin-top: 8px; }
-  .fb-fail { font-size: 12px; color: #ff9b9b; margin-top: 6px; }
+  .fb-sub { font-size: 12px; color: var(--muted, #9a9ab0); }
+  .fb-fail { font-size: 12px; color: #ff9b9b; }
+  @media (max-width: 760px) {
+    .fb { flex-direction: column; gap: 14px; }
+    .fb-info { width: 100%; }
+    .fb-media { max-width: none; }
+    .fb-media video, .fb-media img { width: 46%; height: auto; max-width: none; }
+    .fb-media video:only-child, .fb-media img:only-child { width: 100%; }
+  }
   #feedSentinel { height: 1px; }
 
   /* ── 생성 진행 표시 ──
@@ -676,13 +691,12 @@
     for (const bt of feedBatches) {
       const d = fmtDate(bt.created);
       if (d !== lastDate) { out += '<div class="fb-date">' + html(d) + '</div>'; lastDate = d; }
-      const multi = bt.items.length > 1 ? ' multi' : '';
       const kind = bt.items.some((i) => i.reel) ? '영상' : '사진';
-      out += '<div class="fb"><div class="fb-media' + multi + '">'
+      out += '<div class="fb"><div class="fb-media">'
         + bt.items.map((i) => i.reel
             ? '<video src="' + html(i.url) + '" controls playsinline preload="metadata"></video>'
             : '<img src="' + html(i.url) + '" alt="" loading="lazy">').join('')
-        + '</div><div>'
+        + '</div><div class="fb-info">'
         + (bt.prompt ? '<div class="fb-meta">' + html(bt.prompt) + '</div>' : '')
         + '<div class="fb-sub">' + kind + ' · ' + bt.items.length + '개</div>'
         + (bt.failed ? '<div class="fb-fail">실패 ' + bt.failed + '건</div>' : '')
