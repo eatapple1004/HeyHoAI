@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { AdminUsersService, EnvKey } from './admin-users.service';
@@ -14,5 +14,12 @@ export class AdminUsersController {
   async list(@Query('env') envKey?: string): Promise<ApiResponse<any>> {
     const key = (envKey as EnvKey) || this.svc.current();
     return { success: true, data: await this.svc.users(key) };
+  }
+
+  /** GET /api/admin/users/:id?env=… — 한 사용자의 계정·생성물·크레딧 내역 */
+  @Get(':id')
+  async detail(@Param('id') id: string, @Query('env') envKey?: string): Promise<ApiResponse<any>> {
+    const key = (envKey as EnvKey) || this.svc.current();
+    return { success: true, data: await this.svc.detail(key, id) };
   }
 }

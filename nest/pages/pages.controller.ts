@@ -162,6 +162,10 @@ export class PagesController {
   @Get('admin-users')
   adminUsers(@Res() res: any) { return res.sendFile(page('admin-users.html')); }
 
+  @UseGuards(AdminPageGuard)
+  @Get('admin-users/:id')
+  adminUserDetail(@Res() res: any) { return res.sendFile(page('admin-user-detail.html')); }
+
   /** Meta 직결 연동 콘솔 — `admin-business/:id`가 삼키지 않도록 별도 세그먼트다. */
   @UseGuards(AdminPageGuard)
   @Get('admin-business-meta')
