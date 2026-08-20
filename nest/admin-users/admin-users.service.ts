@@ -91,4 +91,42 @@ export class AdminUsersService implements OnModuleDestroy {
        ORDER BY u.created_at DESC`);
     return { env: key, label: ENV_LABEL[key], db: DB_NAME[key], users: rows };
   }
+
+  /**
+   * 한 사용자의 상세 — 계정 정보 + 무엇을 만들었는지 + 크레딧이 어디로 갔는지.
+   *
+   * 목록은 "몇 개"만 말한다. 여기서는 **무엇을** 만들었는지 봐야 한다 —
+   * 어뷰징인지 진짜 사용인지는 개수가 아니라 내용에서 갈린다.
+   * 각 목록은 최근 것부터 상한을 둔다(한 계정이 수천 건이면 화면이 못 버틴다).
+   */
+  async detail(key: EnvKey, userId: string) {
+    if (!DB_NAME[key]) throw new BadRequestException('env는 development | staging | production 중 하나여야 합니다');
+    if (!/^[0-9a-f-]{36}$/i.test(String(userId))) throw new BadRequestException('사용자 id 형식이 올바르지 않습니다');
+    const pool = this.poolFor(key);
+
+    const q = async (sql: string, params: any[] = []) => (await pool.query(sql, params)).rows;
+
+    const [user] = await q(
+      `SELECT u.*, (u.google_id IS NOT NULL) AS via_google FROM users u WHERE u.id = $1`, [userId]);
+    if (!user) throw new BadRequestException('사용자를 찾을 수 없습니다');
+    delete (user as any).password_hash;   // 해시라도 화면에 내보낼 이유가 없다
+
+    const [images, videos, ugc, packs, ledger, payments] = await Promise.all([
+      q(`SELECT idx, prompt_text, model, style_preset, reference_image_path, created_at
+           FROM prompts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60`, [userId]),
+      q(`SELECT id, prompt, mode, duration, status, charge_amount, result_url, error, created_at
+           FROM video_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30`, [userId]),
+      q(`SELECT id, title, product, concept, output_type, n_clips, status, charge_amount, result_url, error, created_at
+           FROM ugc_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30`, [userId]),
+      q(`SELECT id, vertical, product, status, error, created_at,
+                (SELECT count(*)::int FROM pack_assets a WHERE a.pack_id = p.id AND a.kind = 'still') AS stills
+           FROM content_packs p WHERE p.user_id::text = $1 ORDER BY created_at DESC LIMIT 30`, [userId]),
+      q(`SELECT amount, balance_after, type, description, created_at
+           FROM credit_ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60`, [userId]),
+      q(`SELECT provider, order_id, product, amount_usd, credits, created_at
+           FROM payments WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`, [userId]),
+    ]);
+
+    return { env: key, label: ENV_LABEL[key], db: DB_NAME[key], user, images, videos, ugc, packs, ledger, payments };
+  }
 }

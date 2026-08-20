@@ -44,7 +44,8 @@ th:hover{color:var(--text)}
 tbody tr:hover{background:var(--panel)}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 td.zero{color:var(--faint)}
-.mail{max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.mail{max-width:280px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom;color:var(--accent2);text-decoration:none}
+.mail:hover{text-decoration:underline}
 .tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:700}
 .t-admin{background:rgba(255,206,122,.16);color:var(--gold)}
 .t-ours{background:rgba(154,154,178,.16);color:var(--dim)}
@@ -98,7 +99,11 @@ const OURS_MAIL = new Set(['frank.virus0325@gmail.com', 'jeonyedam0@gmail.com', 
 const isOurs = (u) => OURS.test(u.email || '') || OURS_MAIL.has((u.email || '').toLowerCase());
 
 const COLS = [
-  { k: 'email',         t: '이메일',   cell: (u) => '<span class="mail">' + esc(u.email) + '</span>' },
+  { k: 'email',         t: '이메일',
+    // 환경을 쿼리로 넘긴다 — 안 넘기면 상세가 이 서버의 기본 환경(dev)을 보게 되어
+    // prod 계정을 눌렀는데 "찾을 수 없음"이 뜬다.
+    cell: (u) => '<a class="mail" href="/admin-users/' + esc(u.id) + '?env=' + encodeURIComponent(state.env) + '">'
+                 + esc(u.email) + '</a>' },
   { k: 'display_name',  t: '이름',     cell: (u) => esc(u.display_name || '—') },
   { k: 'kind',          t: '구분',     cell: (u) => u.role === 'admin' ? '<span class="tag t-admin">관리자</span>'
                                                  : isOurs(u) ? '<span class="tag t-ours">내부</span>'
