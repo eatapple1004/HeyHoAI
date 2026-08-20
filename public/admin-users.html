@@ -34,7 +34,11 @@ body.prod .envwarn{display:block}
 .sum .n{font-size:1.35rem;font-weight:800}
 .sum .l{color:var(--faint);font-size:.74rem;margin-top:2px}
 table{width:100%;border-collapse:collapse;font-size:.85rem}
-th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+/* 세로 선 — 숫자 열이 여럿이라 가로줄만으로는 어느 칸인지 눈이 흘러내린다.
+   마지막 칸은 오른쪽 선을 빼서 표 바깥에 테두리가 남지 않게 한다. */
+th,td{padding:9px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+      text-align:left;white-space:nowrap}
+th:last-child,td:last-child{border-right:0}
 th{color:var(--faint);font-size:.74rem;font-weight:700;position:sticky;top:0;background:var(--bg);cursor:pointer;user-select:none}
 th:hover{color:var(--text)}
 tbody tr:hover{background:var(--panel)}
