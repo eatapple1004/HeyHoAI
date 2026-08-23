@@ -26,8 +26,15 @@
 //   ⚠️ 'Shots'=대본 없는 것(확정결정 §2). 라벨만 Shots이고 URL·컨테이너는 /studio 그대로 — Studio는 사용자에게 안 보인다.
   var items = [
     { h: '/home.html', l: 'Home', i: IC.home, m: ['/home'] }, // 정적 서빙(/home.html) — index.js 클린URL 라우트는 추후(충돌 회피)
-    { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'], q: '!ugc' },
-    { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
+    // Ad Video 를 숨긴 뒤로는 /studio 전부(mode=ugc 포함)를 Shots 로 본다 —
+    //   q:'!ugc' 를 남겨두면 mode=ugc 로 들어갔을 때 활성 항목이 하나도 없어 어디에 있는지 알 수 없다.
+    //   롤백(Ad Video 복원) 시 q: '!ugc' 를 되살릴 것.
+    { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'] },
+    // (2026-08-23) Ad Video 레일 항목 제거 — 진입점만 뗀다(Store·Community와 같은 방식).
+    //   /studio?mode=ugc 페이지와 UGC 엔진·API는 그대로 살아 있어 주소로는 계속 들어간다.
+    //   배지 코드도 그대로 둔다 — data-badge 요소가 없으면 아래에서 return 하므로 폴링이 시작되지 않는다.
+    //   롤백: 아래 한 줄의 주석만 해제.
+    // { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
     // (2026-08-14) Ad Studio — 상품 URL 하나로 광고 영상. 개발 중이라 우선 진입점만 연다.
     { h: '/ad-studio', l: 'Ad Studio', i: IC.adstudio, m: ['/ad-studio'] },
     { h: '/pack.html', l: 'Content Pack', i: IC.pack, m: ['/pack'] }, // (2026-07-22) Product Pack — 사진→콘텐츠 자동 팩
