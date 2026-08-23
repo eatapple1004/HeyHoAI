@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Patch, Get, HttpCode, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdStudioService } from './ad-studio.service';
@@ -23,6 +23,11 @@ export class AdStudioController {
   @Get('hooks')
   async hooks(@Req() req: any): Promise<ApiResponse<AdSetupItemVo[]>> {
     return { success: true, data: await this.ads.listSetupItems('hook', req.user.id) };
+  }
+
+  @Get('styles')
+  async styles(@Req() req: any): Promise<ApiResponse<AdSetupItemVo[]>> {
+    return { success: true, data: await this.ads.listSetupItems('style', req.user.id) };
   }
 
   @Get('settings')
@@ -75,6 +80,19 @@ export class AdStudioController {
   }
 
   /** 비용 산정 — 무료. 길이·화질을 바꿔가며 확인하는 용도라 과금하면 안 된다. */
+  /** PATCH /web-products/:id — 상품명·설명 수정(자동 추출값을 사람이 고친다) */
+  @Patch('web-products/:id')
+  async renameWebProduct(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.products.rename(req.user.id, id, body || {}) };
+  }
+
+  /** POST /web-products/:id/autofill — 비어 있는 이름·설명을 사진으로 채운다(force=true면 재생성) */
+  @Post('web-products/:id/autofill')
+  @HttpCode(200)
+  async autofillWebProduct(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return { success: true, data: await this.products.autofill(req.user.id, id, body?.force === true) };
+  }
+
   @Post('cost')
   @HttpCode(200)
   cost(@Body() body: CompileAdDto): ApiResponse<AdCostDto> {

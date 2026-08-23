@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta 직결 인스타 연동 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#f09433,#dc2743)}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+.nav{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.nav a{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px}
+.nav a:hover{color:var(--text);border-color:var(--accent2)}
+.nav a.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.count{margin-left:auto;color:var(--faint);font-size:.85rem}
+input{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.9rem;font-family:inherit}
+input:focus{outline:none;border-color:var(--accent2)}
+button{font-family:inherit;font-size:.88rem;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.primary{background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent;color:#fff}
+button.tiny{font-size:.78rem;padding:6px 11px}
+button:disabled{opacity:.5;cursor:default}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.acc{display:flex;flex-direction:column;gap:12px}
+.acc .top{display:flex;gap:12px;align-items:center}
+.acc .avatar{width:46px;height:46px;border-radius:50%;background:var(--panel2);object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:1.1rem;font-weight:700}
+.acc .name{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc .meta{color:var(--dim);font-size:.8rem;margin-top:2px}
+.acc .acts{display:flex;gap:8px;border-top:1px solid var(--border);padding-top:12px}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.b-on{background:rgba(74,222,128,.16);color:var(--green)}
+.b-off{background:rgba(154,154,178,.16);color:var(--dim)}
+.b-warn{background:rgba(255,206,122,.16);color:var(--gold)}
+.b-err{background:rgba(248,113,113,.16);color:var(--red)}
+.empty{color:var(--faint);text-align:center;padding:60px 20px;grid-column:1/-1;line-height:1.7}
+.biz{display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;transition:border-color .15s}
+.biz:hover{border-color:var(--accent2)}
+.biz .top{display:flex;gap:12px;align-items:center}
+.biz .avatar{width:46px;height:46px;border-radius:50%;background:var(--panel2);object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:1.1rem;font-weight:700}
+.biz .name{font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.biz .meta{color:var(--dim);font-size:.8rem;margin-top:2px}
+.biz .stats{display:flex;gap:16px;border-top:1px solid var(--border);padding-top:12px}
+.biz .stat{flex:1}
+.biz .stat .n{font-size:1.2rem;font-weight:800}
+.biz .stat .l{color:var(--faint);font-size:.72rem;margin-top:1px}
+/* 카드가 링크라는 걸 눈에 보이게 — 배지만 있으면 눌러도 되는지 알 수 없다 */
+.biz .go{border-top:1px solid var(--border);padding-top:10px;font-size:.82rem;font-weight:600;color:var(--accent2);display:flex;align-items:center;gap:6px}
+.biz:hover .go{color:#fff}
+.sechead{font-size:1.02rem;font-weight:700;margin:26px 0 12px;display:flex;align-items:baseline;gap:10px}
+.sechead .note{font-size:.78rem;font-weight:500;color:var(--faint)}
+.form{display:grid;grid-template-columns:1.4fr 1fr 2fr auto;gap:10px;align-items:start;margin-bottom:8px}
+@media(max-width:720px){.form{grid-template-columns:1fr}}
+.pub{margin-top:24px}
+.pub h2{font-size:1.05rem;margin-bottom:4px}
+.pub .hint{color:var(--faint);font-size:.8rem;line-height:1.7;margin-bottom:14px}
+.pub .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.pub select,.pub input,.pub textarea{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.9rem;font-family:inherit}
+.pub input,.pub textarea{flex:1;min-width:280px}
+.pub textarea{width:100%;resize:vertical}
+.pub .res{margin-top:10px;font-size:.85rem;color:var(--dim);line-height:1.7}
+.pub .res a{color:var(--accent2)}
+.msg{padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px;font-size:.9rem;line-height:1.6}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+.msg.ok{background:rgba(74,222,128,.12);border:1px solid #2e5b3a;color:#86efac}
+.setup{margin-bottom:20px;font-size:.86rem;line-height:1.8;color:var(--dim)}
+.setup b{color:var(--text)}
+.setup code{background:var(--panel2);padding:2px 7px;border-radius:6px;font-size:.82rem;word-break:break-all}
+.setup ol{margin:8px 0 0 20px}
+@media(max-width:720px){body{padding:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> Meta 직결 인스타 연동</h1>
+  <div class="sub">중개(Zernio) 없이 Meta에 바로 붙는 경로입니다. 여기서 연결한 계정을 <a href="/admin-business" style="color:var(--accent2)">사업체</a>에 붙이면 <b>원본 업로드 → 콘텐츠 선택 → AI 캡션 → 예약 발행</b>이 기존 화면 그대로 돌아가고, 발행만 Meta 직결로 나갑니다.</div>
+  <div id="adminNav"></div>
+
+  <div class="msg err" id="err"></div>
+  <div class="msg ok" id="ok"></div>
+
+  <div class="card setup" id="setup" hidden></div>
+
+  <div class="bar">
+    <input id="expect" placeholder="붙일 계정 핸들 (예: doppia.ai) — 선택" style="min-width:260px">
+    <button class="primary" id="connBtn" onclick="connect()">＋ 인스타 연결</button>
+    <button id="refreshAllBtn" onclick="refreshAll()">🔄 만료 임박 토큰 갱신</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <!--
+    사업체 — Zernio 화면과 같은 흐름을 여기서도 연다.
+    카드를 누르면 /admin-business-meta/<id> 로 가고, 그 화면은 admin-business-detail.html 을
+    그대로 재사용한다(호출하는 API가 계정 플랫폼과 무관해 복제할 이유가 없다).
+  -->
+  <div class="sechead">🏪 사업체 <span class="note">— 카드를 누르면 <b>Meta 직결 전용 상세 화면</b>이 열립니다 (원본 업로드 · 콘텐츠 선택 · AI 캡션 · 발행)</span>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <button id="migBtn" onclick="migrate()">⇄ Zernio → Meta 전환</button>
+      <button id="detachBtn" onclick="detachLegacy()">✂ Zernio 연결 전부 해제</button>
+      <span class="count" id="bizCount"></span>
+    </span>
+  </div>
+  <div class="card" id="migPlan" style="margin-bottom:12px;font-size:.86rem;line-height:1.8" hidden></div>
+
+  <div class="card form">
+    <input id="bizName" placeholder="사업체 이름 *">
+    <input id="bizIndustry" placeholder="업종 (예: 네일샵, 카페)">
+    <input id="bizMemo" placeholder="참고사항 (톤·강조 포인트 — AI 캡션에 반영됩니다)">
+    <button class="primary" id="bizAddBtn" onclick="createBiz()">+ 사업체 추가</button>
+  </div>
+
+  <div class="grid" id="bizGrid"></div>
+
+  <!--
+    테스트 발행 — Zernio를 거치지 않고 Graph API로 직접 올린다.
+    "연결됐다"와 "실제로 올라간다"는 다른 이야기라, 눈으로 확인할 수단이 필요하다.
+  -->
+  <div class="card pub" id="pubBox" hidden>
+    <h2>🚀 테스트 발행 <span style="font-size:.78rem;font-weight:600;color:var(--faint)">— Graph API 직결</span></h2>
+    <div class="hint">
+      인스타는 파일을 받지 않고 <b>URL로 가져갑니다</b>. 공개 https 주소여야 하고, 상대경로(<code>/images/…</code>)는 자동으로 절대 URL로 바꿉니다.<br>
+      영상은 인스타 인코딩이 끝날 때까지 기다리므로 <b>수십 초</b> 걸릴 수 있습니다 — 그동안 버튼이 잠깁니다.
+    </div>
+    <div class="row">
+      <select id="pubAcc"></select>
+      <select id="pubKind">
+        <option value="image">이미지 1장</option>
+        <option value="carousel">캐러셀 (2~10장)</option>
+        <option value="reel">릴스</option>
+        <option value="story">스토리</option>
+      </select>
+      <button id="quotaBtn" onclick="loadQuota()">24시간 한도 확인</button>
+      <span id="quotaMsg" style="color:var(--faint);font-size:.82rem"></span>
+    </div>
+    <div class="row"><input id="pubMedia" placeholder="미디어 URL — 이미지 여러 장이면 쉼표로 구분 (릴스·영상 스토리는 mp4 URL)"></div>
+    <div class="row"><textarea id="pubCaption" rows="2" placeholder="캡션 (선택) — 스토리는 캡션이 무시됩니다"></textarea></div>
+    <div class="row">
+      <button class="primary" id="pubBtn" onclick="doPublish()">발행</button>
+      <label style="color:var(--dim);font-size:.84rem;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="pubShare" checked style="min-width:auto;flex:none"> 릴스를 피드에도 노출
+      </label>
+    </div>
+    <div class="res" id="pubRes"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function flash(kind, text) {
+  const el = $(kind === 'err' ? 'err' : 'ok');
+  el.innerHTML = text;
+  el.classList.add('show');
+  if (kind !== 'err') setTimeout(() => el.classList.remove('show'), 5000);
+}
+function clearMsg() { $('err').classList.remove('show'); $('ok').classList.remove('show'); }
+
+async function api(url, opts = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (res.status === 403) throw new Error('관리자 권한이 필요합니다.');
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.success === false) throw new Error(body.error || body.message || `요청 실패 (${res.status})`);
+  return body;
+}
+
+/** 만료까지 남은 일수 — 60일 토큰이라 이 숫자가 화면의 핵심 정보다. */
+function expiryBadge(iso) {
+  if (!iso) return '<span class="badge b-err">토큰 없음</span>';
+  const days = Math.floor((new Date(iso) - Date.now()) / 86400000);
+  if (days < 0) return '<span class="badge b-err">만료됨 · 재연결 필요</span>';
+  if (days <= 7) return '<span class="badge b-warn">' + days + '일 남음</span>';
+  return '<span class="badge b-on">' + days + '일 남음</span>';
+}
+
+function cardHtml(a) {
+  const avatar = a.profile_image
+    ? '<img class="avatar" src="' + esc(a.profile_image) + '" alt="">'
+    : '<div class="avatar">' + esc((a.username || '?').charAt(0).toUpperCase()) + '</div>';
+  // 사업체에 붙이면 업로드·AI 캡션·예약 발행이 전부 기존 화면에서 그대로 돌아간다.
+  const biz = a.business_name
+    ? '연결됨 · ' + esc(a.business_name)
+    : '<span style="color:var(--faint)">사업체 미연결 — 아래에서 사업체를 골라 붙이세요</span>';
+  return '<div class="card acc">'
+    + '<div class="top">' + avatar
+    + '<div style="min-width:0;flex:1">'
+    + '<div class="name">@' + esc(a.username) + '</div>'
+    + '<div class="meta">' + (a.followers || 0).toLocaleString() + ' 팔로워 · ' + biz + '</div>'
+    + '</div>' + expiryBadge(a.token_expires_at) + '</div>'
+    + '<div class="acts">'
+    + '<button class="tiny" onclick="refreshOne(\'' + a.id + '\')">토큰 갱신</button>'
+    + '<button class="tiny" onclick="disconnect(\'' + a.id + '\', \'' + esc(a.username) + '\')">연결 해제</button>'
+    + '</div></div>';
+}
+
+/** 자격증명이 없으면 무엇을 어디에 넣어야 하는지 화면에서 알려준다 — 콘솔 설정과 짝이 맞아야 동작한다. */
+async function loadConfig() {
+  try {
+    const { data } = await api('/api/admin/business-meta/config');
+    if (data.configured) { $('setup').hidden = true; return true; }
+    $('setup').hidden = false;
+    $('setup').innerHTML = '<b>⚠️ 아직 자격증명이 없습니다.</b> 서버 <code>.env</code>에 다음을 넣고 재시작하세요.'
+      + '<ol>'
+      + '<li><code>INSTAGRAM_APP_ID</code> — ⚠️ <b>Meta 앱 ID와 다른 숫자</b>입니다 (Meta 앱 → Instagram → API 설정)</li>'
+      + '<li><code>INSTAGRAM_APP_SECRET</code></li>'
+      + '<li>Meta 콘솔에 리디렉션 URI 등록: <code>' + esc(data.redirectUri) + '</code></li>'
+      + '<li>붙일 계정을 앱 <b>Instagram 테스터</b>로 초대 → 해당 계정에서 수락 (개발 모드에선 역할이 있는 계정만 인증됩니다)</li>'
+      + '</ol>';
+    $('connBtn').disabled = true;
+    return false;
+  } catch (e) { flash('err', e.message); return false; }
+}
+
+async function load() {
+  try {
+    const { data } = await api('/api/admin/business-meta/accounts');
+    $('count').textContent = data.length + '개 연결됨';
+    $('grid').innerHTML = data.length
+      ? data.map(cardHtml).join('')
+      : '<div class="empty">연결된 계정이 없습니다.<br>위 [＋ 인스타 연결]을 누르면 인스타 동의 화면으로 이동합니다.</div>';
+    // 발행 패널은 토큰이 살아 있는 계정이 있을 때만 의미가 있다.
+    const usable = data.filter((a) => a.status === 'active' && a.token_expires_at);
+    $('pubBox').hidden = !usable.length;
+    $('pubAcc').innerHTML = usable.map((a) => '<option value="' + a.id + '">@' + esc(a.username) + '</option>').join('');
+  } catch (e) {
+    flash('err', e.message);
+    $('grid').innerHTML = '<div class="empty">불러오지 못했습니다.</div>';
+  }
+}
+
+/** 동의 화면으로 이동 — 팝업이 아니라 전체 이동이다(팝업 차단·쿠키 문제를 피한다). */
+function connect() {
+  const expect = $('expect').value.trim().replace(/^@/, '');
+  location.href = '/api/admin/business-meta/oauth/start' + (expect ? '?expect=' + encodeURIComponent(expect) : '');
+}
+
+async function refreshOne(id) {
+  clearMsg();
+  try { await api('/api/admin/business-meta/accounts/' + id + '/refresh', { method: 'POST' }); flash('ok', '토큰을 갱신했습니다 (+60일).'); load(); }
+  catch (e) { flash('err', e.message); }
+}
+
+async function refreshAll() {
+  clearMsg();
+  $('refreshAllBtn').disabled = true;
+  try {
+    const { data } = await api('/api/admin/business-meta/accounts/refresh', { method: 'POST' });
+    flash('ok', data.tried ? data.ok + '/' + data.tried + '개 갱신했습니다.' : '만료가 임박한 토큰이 없습니다.');
+    load();
+  } catch (e) { flash('err', e.message); }
+  finally { $('refreshAllBtn').disabled = false; }
+}
+
+async function disconnect(id, username) {
+  if (!confirm('@' + username + ' 연결을 해제할까요?\n토큰만 삭제되고 계정·미디어 기록은 남습니다.')) return;
+  clearMsg();
+  try { await api('/api/admin/business-meta/accounts/' + id, { method: 'DELETE' }); flash('ok', '연결을 해제했습니다.'); load(); loadBiz(); }
+  catch (e) { flash('err', e.message); }
+}
+
+/** 사업체 카드 — Meta 직결 계정이 붙어 있으면 배지로 알려준다(나머지는 Zernio로 나간다). */
+function bizCardHtml(b) {
+  const avatar = b.primary_profile_image
+    ? '<img class="avatar" src="' + esc(b.primary_profile_image) + '" alt="">'
+    : '<div class="avatar">' + esc((b.name || '?').trim().charAt(0)) + '</div>';
+  const handle = b.primary_username ? '@' + esc(b.primary_username) : '계정 없음';
+  const badge = b.meta_accounts > 0
+    ? '<span class="badge b-on">Meta 직결 ' + b.meta_accounts + '</span>'
+    : (b.active_accounts > 0
+        ? '<span class="badge b-warn">Meta 계정 없음</span>'
+        : '<span class="badge b-off">미연결</span>');
+  return '<a class="card biz" href="/admin-business-meta/' + b.id + '">'
+    + '<div class="top">' + avatar
+    + '<div style="min-width:0;flex:1">'
+    + '<div class="name">' + esc(b.name) + '</div>'
+    + '<div class="meta">' + (b.industry ? esc(b.industry) + ' · ' : '') + handle + '</div>'
+    + '</div>' + badge + '</div>'
+    + '<div class="stats">'
+    + '<div class="stat"><div class="n">' + (b.followers || 0).toLocaleString() + '</div><div class="l">팔로워</div></div>'
+    + '<div class="stat"><div class="n">' + b.pending + '</div><div class="l">발행 대기</div></div>'
+    + '<div class="stat"><div class="n">' + b.scheduled + '</div><div class="l">예약</div></div>'
+    + '<div class="stat"><div class="n">' + b.posted + '</div><div class="l">게시됨</div></div>'
+    + '</div>'
+    + '<div class="go">🔗 Meta 직결로 관리·발행 →</div>'
+    + '</a>';
+}
+
+/**
+ * 전환 미리보기 — 누르기 전에 무엇이 옮겨지고 무엇이 왜 막혔는지 보여준다.
+ * 계정 연결을 바꾸는 건 되돌리기 번거로운 동작이라 결과를 먼저 알려주는 게 맞다.
+ */
+async function loadMigPlan() {
+  try {
+    const { data } = await api('/api/admin/business-meta/migrate/plan');
+    if (!data.movable.length && !data.blocked.length) {
+      $('migPlan').hidden = true; $('migBtn').hidden = true; $('detachBtn').hidden = true; return;
+    }
+    $('migPlan').hidden = false;
+    $('migBtn').disabled = !data.movable.length;
+    $('detachBtn').hidden = !(data.movable.length + data.blocked.length);
+    const mv = data.movable.map((r) => '✅ <b>' + esc(r.business_name) + '</b> — @' + esc(r.old_username)
+      + ' Zernio → Meta 직결 <span style="color:var(--faint)">(큐 ' + r.queue_cnt + ' · 원본 ' + r.media_cnt + '건 함께 이동)</span>').join('<br>');
+    const bl = data.blocked.map((r) => '⛔ <b>' + esc(r.business_name) + '</b> — ' + esc(r.reason)).join('<br>');
+    $('migPlan').innerHTML = (mv || '') + (mv && bl ? '<br>' : '') + (bl || '');
+  } catch (e) { $('migPlan').hidden = true; }
+}
+
+async function migrate() {
+  if (!confirm('사업체의 인스타 연결을 Zernio → Meta 직결로 옮깁니다.\n큐와 원본 자료도 함께 옮겨지고, 옛 Zernio 연결은 해제됩니다.\n계속할까요?')) return;
+  clearMsg(); $('migBtn').disabled = true;
+  try {
+    const { data } = await api('/api/admin/business-meta/migrate', { method: 'POST' });
+    flash('ok', data.moved.length ? data.moved.length + '개 사업체를 Meta 직결로 옮겼습니다.' : '옮길 수 있는 사업체가 없습니다.');
+    loadBiz(); load(); loadMigPlan();
+  } catch (e) { flash('err', e.message); }
+  finally { $('migBtn').disabled = false; }
+}
+
+/**
+ * Zernio 연결 전부 해제 — 대체 계정이 없어도 뗀다(그 사업체는 발행 계정이 없는 상태가 된다).
+ * 자료가 지워지는 건 아니지만 사업체 화면에서 안 보이게 되므로 그 사실을 확인창에 적는다.
+ */
+async function detachLegacy() {
+  if (!confirm('사업체에 붙은 Zernio 연결을 전부 해제합니다.\n\n· 대체할 Meta 계정이 있으면 먼저 그쪽으로 옮깁니다\n· 없는 사업체는 발행 계정이 없는 상태가 됩니다\n· 큐·원본 자료는 지워지지 않지만 사업체 화면에서는 보이지 않게 됩니다\n\n계속할까요?')) return;
+  clearMsg(); $('detachBtn').disabled = true;
+  try {
+    const { data } = await api('/api/admin/business-meta/migrate/detach-legacy', { method: 'POST' });
+    const parts = [];
+    if (data.moved.length) parts.push(data.moved.length + '개 Meta로 이관');
+    if (data.detached.length) parts.push(data.detached.length + '개 Zernio 연결 해제');
+    flash('ok', parts.length ? parts.join(' · ') : '해제할 Zernio 연결이 없습니다.');
+    loadBiz(); load(); loadMigPlan();
+  } catch (e) { flash('err', e.message); }
+  finally { $('detachBtn').disabled = false; }
+}
+
+async function loadBiz() {
+  try {
+    const { data } = await api('/api/admin/business');
+    $('bizCount').textContent = data.length + '개 사업체';
+    $('bizGrid').innerHTML = data.length
+      ? data.map(bizCardHtml).join('')
+      : '<div class="empty">등록된 사업체가 없습니다. 위에서 추가한 뒤 계정을 붙이세요.</div>';
+  } catch (e) {
+    $('bizGrid').innerHTML = '<div class="empty">사업체를 불러오지 못했습니다.</div>';
+  }
+}
+
+async function createBiz() {
+  clearMsg();
+  const name = $('bizName').value.trim();
+  if (!name) return flash('err', '사업체 이름을 입력하세요.');
+  $('bizAddBtn').disabled = true;
+  try {
+    await api('/api/admin/business', {
+      method: 'POST',
+      body: JSON.stringify({ name, industry: $('bizIndustry').value.trim(), memo: $('bizMemo').value.trim() }),
+    });
+    $('bizName').value = $('bizIndustry').value = $('bizMemo').value = '';
+    flash('ok', '추가했습니다. 카드를 눌러 계정을 붙이세요.');
+    loadBiz();
+  } catch (e) { flash('err', e.message); }
+  finally { $('bizAddBtn').disabled = false; }
+}
+
+async function loadQuota() {
+  $('quotaMsg').textContent = '확인 중…';
+  try {
+    const { data } = await api('/api/admin/business-meta/accounts/' + $('pubAcc').value + '/quota');
+    $('quotaMsg').textContent = data.cap != null
+      ? '24시간 내 ' + data.used + ' / ' + data.cap + '건 사용'
+      : '24시간 내 ' + data.used + '건 사용';
+  } catch (e) { $('quotaMsg').textContent = e.message; }
+}
+
+/** 발행 — 영상은 오래 걸리므로 진행 상태를 계속 보여준다(멈춘 것처럼 보이면 두 번 누른다). */
+async function doPublish() {
+  clearMsg();
+  const kind = $('pubKind').value;
+  const urls = $('pubMedia').value.split(',').map((u) => u.trim()).filter(Boolean);
+  if (!urls.length) return flash('err', '미디어 URL을 입력하세요.');
+  if (kind === 'carousel' && urls.length < 2) return flash('err', '캐러셀은 2장 이상이어야 합니다.');
+
+  const isVideo = (kind === 'reel') || (kind === 'story' && /\.mp4(\?|$)/i.test(urls[0]));
+  const body = {
+    kind,
+    caption: $('pubCaption').value.trim() || undefined,
+    shareToFeed: $('pubShare').checked,
+  };
+  if (isVideo) body.videoUrl = urls[0]; else body.imageUrls = urls;
+
+  $('pubBtn').disabled = true;
+  $('pubRes').textContent = isVideo ? '올리는 중… 인스타가 영상을 인코딩할 때까지 기다립니다(수십 초).' : '올리는 중…';
+  try {
+    const { data } = await api('/api/admin/business-meta/accounts/' + $('pubAcc').value + '/publish', {
+      method: 'POST', body: JSON.stringify(body),
+    });
+    const wait = data.waitedSec != null ? ' · 인코딩 ' + data.waitedSec + '초' : '';
+    $('pubRes').innerHTML = '✅ 발행 완료' + wait + (data.permalink
+      ? ' — <a href="' + esc(data.permalink) + '" target="_blank" rel="noopener">인스타에서 보기 →</a>'
+      : ' (media id ' + esc(data.mediaId) + ')');
+    flash('ok', '발행했습니다.');
+  } catch (e) {
+    $('pubRes').textContent = '';
+    flash('err', e.message);
+  } finally { $('pubBtn').disabled = false; }
+}
+
+/** OAuth 콜백이 결과를 쿼리로 실어 돌아온다 — 읽고 나면 주소창을 깨끗이 되돌린다. */
+function readCallbackResult() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('error')) flash('err', '연결 실패: ' + esc(q.get('error')));
+  else if (q.get('connected')) {
+    const mismatch = q.get('mismatch');
+    flash('ok', mismatch
+      ? '⚠️ <b>@' + esc(q.get('connected')) + '</b> 이(가) 연결됐습니다 — 입력하신 <b>@' + esc(mismatch)
+        + '</b> 와 다릅니다.<br>브라우저에 로그인돼 있던 계정이 붙은 것일 수 있습니다. 확인 후 필요하면 해제하고, 시크릿 창에서 다시 연결하세요.'
+      : '@' + esc(q.get('connected')) + ' 연결 완료.');
+  }
+  if (location.search) history.replaceState(null, '', location.pathname);
+}
+
+(async () => { readCallbackResult(); await loadConfig(); load(); loadBiz(); loadMigPlan(); })();
+</script>
+<script src="/js/admin-nav.js?v=1" defer></script>
+</body>
+</html>

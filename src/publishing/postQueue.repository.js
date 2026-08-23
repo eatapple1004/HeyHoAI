@@ -1,5 +1,13 @@
 const { query } = require('../db/client');
 
+/**
+ * 캐러셀(여러 장 게시물) 파일 경로 — 슬라이드 순서 그대로.
+ * 한 장짜리·구 데이터는 image_media_ids가 비어 NULL이 나오므로, 호출부는 image_path로 폴백한다.
+ */
+const CAROUSEL_PATHS = `(SELECT array_agg(am.file_path ORDER BY u.ord)
+         FROM unnest(COALESCE(pq.image_media_ids, ARRAY[]::uuid[])) WITH ORDINALITY AS u(mid, ord)
+         JOIN account_media am ON am.id = u.mid) AS image_paths`;
+
 async function insert({ accountId, imageMediaId, reelMediaId, imageCaption, reelCaption, hashtags, bgmMediaId }) {
   const result = await query(
     `INSERT INTO post_queue (account_id, image_media_id, reel_media_id, image_caption, reel_caption, hashtags, bgm_media_id, status)
@@ -20,6 +28,7 @@ async function findByAccountId(accountId, { status, limit = 50, offset = 0 } = {
   const result = await query(
     `SELECT pq.*,
        img.file_path as image_path,
+       ${CAROUSEL_PATHS},
        reel.file_path as reel_path,
        bgm.file_path as bgm_path
      FROM post_queue pq
@@ -37,6 +46,7 @@ async function findById(id) {
   const result = await query(
     `SELECT pq.*,
        img.file_path as image_path,
+       ${CAROUSEL_PATHS},
        reel.file_path as reel_path,
        bgm.file_path as bgm_path
      FROM post_queue pq
@@ -56,6 +66,7 @@ async function findNextConfirmed(accountId) {
   const result = await query(
     `SELECT pq.*,
        img.file_path as image_path,
+       ${CAROUSEL_PATHS},
        reel.file_path as reel_path,
        bgm.file_path as bgm_path,
        sa.account_id as zernio_account_id
@@ -98,6 +109,7 @@ async function claimDueScheduled(limit = 20) {
   const result = await query(
     `SELECT pq.*,
        img.file_path as image_path,
+       ${CAROUSEL_PATHS},
        reel.file_path as reel_path,
        bgm.file_path as bgm_path,
        sa.account_id as zernio_account_id
@@ -155,6 +167,7 @@ async function update(id, fields) {
   if (fields.imagePostUrl !== undefined) { sets.push(`image_post_url = $${i++}`); params.push(fields.imagePostUrl); }
   if (fields.reelPostUrl !== undefined) { sets.push(`reel_post_url = $${i++}`); params.push(fields.reelPostUrl); }
   if (fields.bgmMediaId !== undefined) { sets.push(`bgm_media_id = $${i++}`); params.push(fields.bgmMediaId); }
+  if (fields.error !== undefined) { sets.push(`error = $${i++}`); params.push(fields.error); }
 
   if (sets.length === 0) return findById(id);
   sets.push('updated_at = now()');

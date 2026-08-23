@@ -1,4 +1,4 @@
-import { Controller, Get, Next, Param, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
+import { Controller, Get, Next, NotFoundException, Param, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { AdminPageGuard, PageGuard } from './page-auth.guard';
@@ -16,6 +16,9 @@ import { AffiliateService } from '../affiliate/affiliate.service';
  */
 
 /** dist/pages/pages.controller.js 기준 ../../public = <repo>/public */
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cfg = require(path.join(__dirname, '..', '..', 'src', 'config'));
+
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 /** 확장자 없는 클린 URL로 받아줄 이름 형식 — 레거시 정규식과 동일 */
 const CLEAN_URL_RE = /^[a-z0-9-]+$/i;
@@ -24,6 +27,9 @@ const REF_COOKIE = 'ref';
 const REF_COOKIE_MAX_AGE = 60 * 24 * 60 * 60 * 1000; // 60일
 
 const page = (name: string) => path.join(PUBLIC_DIR, name);
+
+/** Meta 직결 스위치 — 꺼져 있으면 그 경로들이 존재하지 않는 것으로 취급한다. */
+const metaDirectOn = () => Boolean(cfg.env.META_DIRECT_ENABLED);
 
 @Controller()
 @UseFilters(PageExceptionFilter)
@@ -157,6 +163,40 @@ export class PagesController {
   @Get('admin-business/:id')
   adminBusinessDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
 
+  /** 사용자·생성물(환경 선택) */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-users')
+  adminUsers(@Res() res: any) { return res.sendFile(page('admin-users.html')); }
+
+  @UseGuards(AdminPageGuard)
+  @Get('admin-users/:id')
+  adminUserDetail(@Res() res: any) { return res.sendFile(page('admin-user-detail.html')); }
+
+  /**
+   * Meta 직결 연동 콘솔 — `admin-business/:id`가 삼키지 않도록 별도 세그먼트다.
+   * ⚠️ META_DIRECT_ENABLED 가 꺼져 있으면 없는 페이지로 넘긴다(next() → 정적·레거시 폴백 → 404).
+   */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business-meta')
+  adminBusinessMeta(@Res() res: any) {
+    // ⚠️ next() 를 쓰면 안 된다 — 맨 아래 클린 URL(`:name`) 핸들러가 같은 파일을 다시 서빙한다(실측 200).
+    //   꺼진 기능은 여기서 끝내야 한다.
+    if (!metaDirectOn()) throw new NotFoundException();
+    return res.sendFile(page('admin-business-meta.html'));
+  }
+
+  /**
+   * Meta 섹션의 사업체 상세 — **별도 화면**이다.
+   * 계정 목록은 Meta 직결만 보여주고, 즉시 발행은 직결 전용 엔드포인트로 나간다.
+   * 공용 화면을 재사용하면 Zernio 계정이 섞여 들어와 어느 경로로 나갔는지 알 수 없다.
+   */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business-meta/:id')
+  adminBusinessMetaDetail(@Res() res: any) {
+    if (!metaDirectOn()) throw new NotFoundException();
+    return res.sendFile(page('admin-business-meta-detail.html'));
+  }
+
   // ── 클린 URL (맨 마지막) ──
 
   /**
@@ -167,6 +207,8 @@ export class PagesController {
   cleanUrl(@Param('name') name: string, @Req() req: any, @Res() res: any, @Next() next: any) {
     const html = name.toLowerCase().endsWith('.html');
     const base = html ? name.slice(0, -5) : name;
+    // 기능 스위치로 닫은 페이지는 클린 URL 로도 열리면 안 된다(위 핸들러와 이중으로 막는다).
+    if (!metaDirectOn() && /^admin-business-meta(-detail)?$/i.test(base)) throw new NotFoundException();
     if (!CLEAN_URL_RE.test(base)) return next();
     if (html) {
       const q = req.originalUrl.indexOf('?');

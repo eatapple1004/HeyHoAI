@@ -13,7 +13,7 @@ import {
 } from './dto/business.dto';
 import {
   BusinessAccountVo, BusinessListItemVo, BusinessMediaVo, BusinessPackVo,
-  BusinessQueueVo, BusinessVo, CaptionDraftVo,
+  BusinessQueueVo, BusinessVo, CaptionDraftVo, PackChoiceVo,
 } from './vo/business.vo';
 
 /**
@@ -145,6 +145,19 @@ export class BusinessController {
     return { success: true, data: await this.business.packs(id) };
   }
 
+  /**
+   * GET /api/admin/business/:id/packs/available — 연결 후보 팩 + 대표 이미지.
+   * ⚠️ `:id/packs/:packId` 계열보다 위에 있어야 한다(고정 세그먼트 우선).
+   */
+  @Get(':id/packs/available')
+  async availablePacks(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('all') all?: string,
+  ): Promise<ApiResponse<PackChoiceVo[]>> {
+    return { success: true, data: await this.business.availablePacks(id, req.user.id, all === 'true') };
+  }
+
   @Post(':id/packs')
   @HttpCode(200)
   async linkPack(@Param('id') id: string, @Body() body: LinkPackDto): Promise<ApiResponse<BusinessPackVo[]>> {
@@ -168,6 +181,14 @@ export class BusinessController {
   async createPack(@Req() req: any, @Param('id') id: string, @Body() body: CreatePackDto) {
     await this.business.get(id);
     return { success: true, data: await this.packFlow.create(req.user, id, body) };
+  }
+
+  /** POST /api/admin/business/:id/packs/:packId/abort — 멈춘 팩을 지금 실패 처리(회수 대기 없이) */
+  @Post(':id/packs/:packId/abort')
+  @HttpCode(200)
+  async abortPack(@Req() req: any, @Param('id') id: string, @Param('packId') packId: string) {
+    await this.business.get(id);
+    return { success: true, data: await this.packFlow.abort(req.user, id, packId) };
   }
 
   /** GET /api/admin/business/:id/packs/:packId/status — 진행 상태 폴링 */

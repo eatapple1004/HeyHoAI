@@ -211,6 +211,24 @@ app.get('/admin-proposal', requireAdminPage, (_req, res) => {
 app.get('/admin-business', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-business.html'));
 });
+app.get('/admin-users', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-users.html'));
+});
+app.get('/admin-users/:id', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-user-detail.html'));
+});
+// Meta 직결 — META_DIRECT_ENABLED 가 꺼져 있으면 없는 페이지로 넘긴다(next() → 404)
+app.get('/admin-business-meta', requireAdminPage, (_req, res) => {
+  // next() 를 쓰면 정적 서빙이 같은 파일을 다시 내보낸다 — 여기서 끝낸다.
+  if (!env.META_DIRECT_ENABLED) return res.status(404).send('Not Found');
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-meta.html'));
+});
+// Meta 섹션의 사업체 상세 — 별도 화면(계정 목록·즉시 발행이 직결 전용)
+app.get('/admin-business-meta/:id', requireAdminPage, (_req, res) => {
+  // next() 를 쓰면 정적 서빙이 같은 파일을 다시 내보낸다 — 여기서 끝낸다.
+  if (!env.META_DIRECT_ENABLED) return res.status(404).send('Not Found');
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-meta-detail.html'));
+});
 app.get('/admin-business/:id', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-business-detail.html'));
 });

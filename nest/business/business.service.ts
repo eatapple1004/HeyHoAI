@@ -8,7 +8,7 @@ import {
 } from './dto/business.dto';
 import {
   BusinessAccountVo, BusinessListItemVo, BusinessMediaVo, BusinessPackVo,
-  BusinessQueueVo, BusinessVo, CaptionDraftVo,
+  BusinessQueueVo, BusinessVo, CaptionDraftVo, PackChoiceVo,
 } from './vo/business.vo';
 
 // 즉시 발행은 기존 스케줄러의 단일 항목 발행을 그대로 쓴다 —
@@ -23,6 +23,11 @@ const accountRepo = require(path.join(__dirname, '..', '..', 'src', 'publishing'
 /** 큐가 가질 수 있는 상태 — 임의 문자열이 들어오면 스케줄러가 영영 안 집는다 */
 const QUEUE_STATUSES = ['pending', 'confirmed', 'scheduled', 'posted', 'cancelled'];
 const BUSINESS_STATUSES = ['active', 'paused'];
+
+/** 인스타 캐러셀 상한 — 넘으면 발행 시점에 API가 거절하므로 등록에서 막는다 */
+const CAROUSEL_MAX = 10;
+/** 캡션 프롬프트에 실을 이미지 상한 — 캐러셀 전부를 넣으면 토큰·비용이 장수만큼 뛴다 */
+const CAPTION_IMAGE_MAX = 4;
 
 @Injectable()
 export class BusinessService {
@@ -190,6 +195,12 @@ export class BusinessService {
     return this.repo.packsOf(id);
   }
 
+  /** 연결 후보 팩 — 대표 이미지를 붙여 내려준다(관리자가 ID를 외우지 않아도 되게) */
+  async availablePacks(id: string, userId: string, all: boolean): Promise<PackChoiceVo[]> {
+    await this.get(id);
+    return this.repo.availablePacks(id, { userId, all });
+  }
+
   async unlinkPack(id: string, packId: string): Promise<void> {
     await this.get(id);
     await this.repo.unlinkPack(id, packId);
@@ -201,23 +212,30 @@ export class BusinessService {
     const business = await this.get(id);
 
     // 미디어를 지정했으면 그 파일을 실제로 보고 쓴다(vision). 없으면 업종·메모만으로 쓴다.
-    let filePath: string | null = null;
+    // 캐러셀이면 앞에서부터 몇 장을 함께 보여준다 — 캡션이 첫 장만 설명하면 나머지 슬라이드와 따로 논다.
+    const refs = body.images && body.images.length
+      ? body.images.slice(0, CAPTION_IMAGE_MAX)
+      : [{ mediaId: body.mediaId, url: body.url }].filter((r) => r.mediaId || r.url);
+
+    const filePaths: string[] = [];
     let mediaType = 'image';
-    if (body.mediaId) {
-      const media = await this.repo.findMedia(body.mediaId);
-      if (!media) throw new NotFoundException('미디어를 찾을 수 없습니다');
-      filePath = media.file_path;
-      mediaType = media.media_type;
-    } else if (body.url) {
-      filePath = toFilePath(body.url);
-      mediaType = /\.(mp4|mov|webm|m4v)$/i.test(body.url) ? 'video' : 'image';
+    for (const ref of refs) {
+      if (ref.mediaId) {
+        const media = await this.repo.findMedia(ref.mediaId);
+        if (!media) throw new NotFoundException('미디어를 찾을 수 없습니다');
+        filePaths.push(media.file_path);
+        mediaType = media.media_type;
+      } else if (ref.url) {
+        filePaths.push(toFilePath(ref.url));
+        mediaType = /\.(mp4|mov|webm|m4v)$/i.test(ref.url) ? 'video' : 'image';
+      }
     }
 
     return this.captions.draft({
       businessName: business.name,
       industry: business.industry,
       memo: business.memo,
-      filePath,
+      filePaths,
       mediaType,
       postType: body.postType,
       tone: body.tone,
@@ -241,15 +259,26 @@ export class BusinessService {
     await this.get(id);
     const accountId = await this.pickAccount(id, body.accountId);
 
-    const imageMediaId = body.imageMediaId
-      || (body.imageUrl ? (await this.resolveMedia(id, body.imageUrl, 'image')).id : null);
+    // 캐러셀 우선 — images가 있으면 그 순서가 슬라이드 순서다.
+    const imageRefs = body.images && body.images.length
+      ? body.images
+      : [{ mediaId: body.imageMediaId, url: body.imageUrl }].filter((r) => r.mediaId || r.url);
+    if (imageRefs.length > CAROUSEL_MAX) {
+      throw new BadRequestException(`한 게시물에는 이미지를 최대 ${CAROUSEL_MAX}장까지 담을 수 있습니다`);
+    }
+
+    const imageMediaIds: string[] = [];
+    for (const ref of imageRefs) {
+      const mediaId = ref.mediaId || (await this.resolveMedia(id, ref.url as string, 'image')).id;
+      if (!imageMediaIds.includes(mediaId)) imageMediaIds.push(mediaId);
+    }
     const reelMediaId = body.reelMediaId
       || (body.reelUrl ? (await this.resolveMedia(id, body.reelUrl, 'video')).id : null);
 
-    if (!imageMediaId && !reelMediaId) {
+    if (!imageMediaIds.length && !reelMediaId) {
       throw new BadRequestException('게시할 이미지 또는 릴스를 하나 이상 선택하세요');
     }
-    if (imageMediaId) await this.assertMediaOwned(id, imageMediaId);
+    for (const mediaId of imageMediaIds) await this.assertMediaOwned(id, mediaId);
     if (reelMediaId) await this.assertMediaOwned(id, reelMediaId);
 
     if (body.scheduledAt && new Date(body.scheduledAt).getTime() <= Date.now()) {
@@ -257,7 +286,8 @@ export class BusinessService {
     }
 
     return this.repo.insertQueue({
-      accountId, imageMediaId, reelMediaId, bgmMediaId: body.bgmMediaId,
+      accountId, imageMediaId: imageMediaIds[0] || null, imageMediaIds, reelMediaId,
+      bgmMediaId: body.bgmMediaId,
       imageCaption: body.imageCaption, reelCaption: body.reelCaption,
       hashtags: body.hashtags, scheduledAt: body.scheduledAt,
     });

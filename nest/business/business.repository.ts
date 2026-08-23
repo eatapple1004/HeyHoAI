@@ -3,6 +3,7 @@ import * as path from 'path';
 import { DbService } from '../db/db.service';
 import {
   BusinessAccountVo, BusinessListItemVo, BusinessMediaVo, BusinessPackVo, BusinessQueueVo, BusinessVo,
+  PackChoiceVo,
 } from './vo/business.vo';
 
 // content_packs / pack_assets는 마이그레이션이 아니라 팩 리포지토리가 **지연 생성**한다.
@@ -55,12 +56,15 @@ export class BusinessRepository {
              COALESCE(q.pending, 0)::int         AS pending,
              COALESCE(q.scheduled, 0)::int       AS scheduled,
              COALESCE(q.posted, 0)::int          AS posted,
-             a.primary_username, a.primary_profile_image
+             a.primary_username, a.primary_profile_image,
+             COALESCE(a.meta_accounts, 0)::int    AS meta_accounts
         FROM businesses b
         LEFT JOIN (
           SELECT business_id,
                  COUNT(*)                                   AS accounts,
                  COUNT(*) FILTER (WHERE status = 'active')  AS active_accounts,
+                 -- Meta 직결 계정 수 — 목록에서 어느 사업체가 어느 경로로 나가는지 바로 보이게 한다
+                 COUNT(*) FILTER (WHERE platform = 'instagram_meta') AS meta_accounts,
                  SUM(followers)                             AS followers,
                  (ARRAY_AGG(username      ORDER BY followers DESC NULLS LAST))[1] AS primary_username,
                  (ARRAY_AGG(profile_image ORDER BY followers DESC NULLS LAST))[1] AS primary_profile_image
@@ -227,6 +231,44 @@ export class BusinessRepository {
     return r.rows[0] || null;
   }
 
+  /**
+   * 연결 후보 팩 목록 — 대표 이미지(cover)를 붙여 눈으로 고를 수 있게 한다.
+   * 기본은 이 관리자가 만든 팩 + 이미 이 사업체에 붙은 팩. `all`이면 전체(고객 팩 포함).
+   * 대표 컷 우선순위: still > composite > ref > source (원본 사진이 표지가 되면 팩을 알아볼 수 없다).
+   */
+  async availablePacks(businessId: string, opts: { userId?: string; all?: boolean; limit?: number } = {}):
+    Promise<PackChoiceVo[]> {
+    await packRepo.ensureSchema();
+    const params: unknown[] = [businessId];
+    let scope = '';
+    if (!opts.all && opts.userId) {
+      params.push(String(opts.userId));
+      scope = `WHERE (p.user_id = $${params.length} OR bp.business_id IS NOT NULL)`;
+    }
+    params.push(opts.limit || 60);
+
+    const r = await this.db.query<PackChoiceVo>(
+      `SELECT p.id::text AS pack_id, p.share_id, p.vertical, p.product, p.status, p.created_at,
+              (bp.business_id IS NOT NULL) AS linked,
+              cover.url AS cover_url,
+              COALESCE(cnt.n, 0)::int AS asset_count
+         FROM content_packs p
+         LEFT JOIN business_packs bp ON bp.pack_id = p.id AND bp.business_id = $1
+         LEFT JOIN LATERAL (
+           SELECT a.url FROM pack_assets a
+            WHERE a.pack_id = p.id AND a.url IS NOT NULL
+            ORDER BY CASE a.kind WHEN 'still' THEN 0 WHEN 'composite' THEN 1 WHEN 'ref' THEN 2 ELSE 3 END, a.id
+            LIMIT 1
+         ) cover ON true
+         LEFT JOIN LATERAL (
+           SELECT count(*) AS n FROM pack_assets a WHERE a.pack_id = p.id AND a.url IS NOT NULL
+         ) cnt ON true
+         ${scope}
+        ORDER BY p.created_at DESC
+        LIMIT $${params.length}`, params);
+    return r.rows;
+  }
+
   async linkPack(businessId: string, packId: string): Promise<void> {
     await this.db.query(
       `INSERT INTO business_packs (business_id, pack_id) VALUES ($1, $2::bigint)
@@ -271,35 +313,50 @@ export class BusinessRepository {
     const params: unknown[] = [businessId];
     if (status) { conds.push(`pq.status = $${params.length + 1}`); params.push(status); }
 
-    const r = await this.db.query<BusinessQueueVo>(
+    const r = await this.db.query<BusinessQueueVo & { image_paths: string[] | null }>(
       `SELECT pq.*, sa.username AS account_username,
               img.file_path  AS image_path,
-              reel.file_path AS reel_path
+              reel.file_path AS reel_path,
+              carousel.paths AS image_paths
          FROM post_queue pq
          JOIN social_accounts sa ON sa.id = pq.account_id
          LEFT JOIN account_media img  ON img.id  = pq.image_media_id
          LEFT JOIN account_media reel ON reel.id = pq.reel_media_id
+         LEFT JOIN LATERAL (
+           SELECT array_agg(am.file_path ORDER BY u.ord) AS paths
+             FROM unnest(COALESCE(pq.image_media_ids, ARRAY[]::uuid[])) WITH ORDINALITY AS u(mid, ord)
+             JOIN account_media am ON am.id = u.mid
+         ) carousel ON true
         WHERE ${conds.join(' AND ')}
         ORDER BY COALESCE(pq.scheduled_at, pq.created_at) DESC`, params);
-    return r.rows.map((q) => ({
-      ...q,
-      image_url: toPublicUrl(q.image_path),
-      reel_url: toPublicUrl(q.reel_path),
-    }));
+    return r.rows.map((q) => {
+      // 캐러셀이면 배열이 진실, 아니면 단일 컬럼 한 장짜리로 본다(구 데이터 호환).
+      const paths = q.image_paths && q.image_paths.length ? q.image_paths : [q.image_path].filter(Boolean) as string[];
+      return {
+        ...q,
+        image_url: toPublicUrl(q.image_path),
+        reel_url: toPublicUrl(q.reel_path),
+        image_urls: paths.map((p) => toPublicUrl(p) as string),
+      };
+    });
   }
 
   async insertQueue(d: {
-    accountId: string; imageMediaId?: string | null; reelMediaId?: string | null; bgmMediaId?: string | null;
+    accountId: string; imageMediaId?: string | null; imageMediaIds?: string[]; reelMediaId?: string | null;
+    bgmMediaId?: string | null;
     imageCaption?: string | null; reelCaption?: string | null; hashtags?: string[]; scheduledAt?: string | null;
   }): Promise<BusinessQueueVo> {
     // 예약 시각이 있으면 scheduled(스케줄러가 도래분을 집는다), 없으면 confirmed(다음 발행 루프 대상).
     const status = d.scheduledAt ? 'scheduled' : 'confirmed';
+    const ids = d.imageMediaIds && d.imageMediaIds.length
+      ? d.imageMediaIds
+      : (d.imageMediaId ? [d.imageMediaId] : []);
     const r = await this.db.query<BusinessQueueVo>(
       `INSERT INTO post_queue
-         (account_id, image_media_id, reel_media_id, bgm_media_id,
+         (account_id, image_media_id, image_media_ids, reel_media_id, bgm_media_id,
           image_caption, reel_caption, hashtags, status, scheduled_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [d.accountId, d.imageMediaId || null, d.reelMediaId || null, d.bgmMediaId || null,
+       VALUES ($1,$2,$3::uuid[],$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [d.accountId, ids[0] || null, ids, d.reelMediaId || null, d.bgmMediaId || null,
        d.imageCaption || null, d.reelCaption || null, d.hashtags || [], status, d.scheduledAt || null]);
     return r.rows[0];
   }

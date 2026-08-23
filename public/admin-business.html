@@ -55,13 +55,7 @@ button:disabled{opacity:.5;cursor:default}
 <div class="wrap">
   <h1><span class="dot"></span> 사업체 인스타 관리</h1>
   <div class="sub">마케팅·홍보를 대행하는 사업체 계정을 관리합니다. 원본 사진 → 콘텐츠 선택 → AI 캡션 → 예약 발행. (관리자 전용)</div>
-  <div class="nav">
-    <a href="/admin-business" class="on">🏪 사업체</a>
-    <a href="/admin-creations">🖼 크리에이션</a>
-    <a href="/admin-stats">📊 통계</a>
-    <a href="/admin-trials">🎟 체험 계정</a>
-    <a href="/admin-templates">🧩 템플릿</a>
-  </div>
+  <div id="adminNav"></div>
 
   <div class="msg err" id="err"></div>
   <div class="msg ok" id="ok"></div>
@@ -171,5 +165,6 @@ async function syncAccounts() {
 
 load();
 </script>
+<script src="/js/admin-nav.js?v=1" defer></script>
 </body>
 </html>

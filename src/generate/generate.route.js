@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { toLocalPath } = require('../lib/servedPath');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const execFileP = promisify(execFile); // 비동기 ffmpeg — 이벤트 루프 블로킹 방지(구 execSync 대체)
@@ -1074,11 +1075,39 @@ function saveProductImage(req) {
   return dest;
 }
 
+/**
+ * 제품 사진 입력을 한 곳에서 푼다 — **업로드 파일**과 **이미 저장된 이미지 URL** 두 경로.
+ *
+ * 왜 필요한가: UGC 엔드포인트는 multipart 업로드만 받도록 쓰였는데, Ad Studio는 상품을 먼저
+ * 등록해 두고 `/images/<file>` 경로를 갖고 있다. 그대로는 두 기능을 이을 수 없어서 URL도 받는다.
+ *
+ * ⚠️ 보안: 서빙 경로(`/images/<basename>`)만 허용한다. servedPath.toLocalPath가 basename만
+ *   받아 tmp/images 안에서 찾으므로 `..`나 절대경로로 임의 파일을 읽을 수 없다.
+ *   원격 URL은 받지 않는다 — 서버가 외부를 긁게 하면 SSRF 표면이 열린다.
+ */
+/** 확장자 → media_type. 비전 입력에 정확한 타입이 필요하다. */
+function mimeOf(p) {
+  const e = path.extname(p).toLowerCase();
+  return e === '.png' ? 'image/png' : e === '.webp' ? 'image/webp' : e === '.gif' ? 'image/gif' : 'image/jpeg';
+}
+
+function resolveProductImagePaths(req) {
+  const raw = req.body?.productImageUrl;
+  const urls = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter(Boolean);
+  const out = [];
+  for (const u of urls.slice(0, UGC_MAX_PRODUCT_IMAGES)) {
+    const local = toLocalPath(u);
+    if (local) out.push(local);
+  }
+  return out;
+}
+
 // 업로드된 제품 사진들(동일 제품 다각도) → tmp/images 저장 → 경로 배열. 없으면 [].
 function saveProductImages(req) {
   const files = (req.files?.productImage) || [];
-  const out = [];
-  for (const pf of files.slice(0, UGC_MAX_PRODUCT_IMAGES)) {
+  // 이미 tmp/images에 있는 사진은 복사할 필요가 없다 — 경로를 그대로 쓴다.
+  const out = resolveProductImagePaths(req);
+  for (const pf of files.slice(0, Math.max(0, UGC_MAX_PRODUCT_IMAGES - out.length))) {
     const dest = path.join(process.cwd(), 'tmp', 'images', `${crypto.randomUUID()}.png`);
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(pf.path, dest);
@@ -1097,6 +1126,9 @@ const postUgcScriptHandler = async (req, res, next) => {
     const model = modelMetaFor(safeModelPath(modelImage));
     // 제품 사진들(다각도) base64로 읽어 Claude 비전 입력에 첨부(실제 제품 근거 카피·정확한 brollPrompt)
     const images = [];
+    for (const local of resolveProductImagePaths(req)) {
+      try { images.push({ data: fs.readFileSync(local).toString('base64'), mediaType: mimeOf(local) }); } catch (e) {}
+    }
     for (const pf of (req.files?.productImage || [])) {
       try { images.push({ data: fs.readFileSync(pf.path).toString('base64'), mediaType: pf.mimetype || 'image/png' }); } catch (e) {}
       try { fs.unlinkSync(pf.path); } catch {}

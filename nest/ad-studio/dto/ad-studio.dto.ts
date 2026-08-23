@@ -11,6 +11,8 @@ export class CompileAdDto {
   /** 직접 고를 때만. 비면 direction·제품을 보고 자동 선택 */
   hookId?: string;
   settingId?: string;
+  /** 영상 스타일(모션그래픽·실사 등). 비면 기본 스타일(ugc-real) */
+  styleId?: string;
   /** 로스터 모델 id. 지정하면 REFERENCE BLOCK이 붙는다 */
   avatarIds?: string[];
   mode?: string;
@@ -38,7 +40,7 @@ export interface CompileResultDto {
   /** 컴파일러가 스스로 잡아낸 문제(경쟁사는 이걸 안 해서 duration을 넘긴다) */
   warnings: string[];
   /** 자동으로 고른 훅·장소(사용자가 지정하지 않았을 때). 화면에 "이렇게 골랐습니다"로 보여준다. */
-  chosen: { hook: string | null; setting: string | null; auto: boolean };
+  chosen: { hook: string | null; setting: string | null; style: string | null; auto: boolean };
   durationSec: number;
   /** 생성 시 차감될 크레딧(참고용 — 실제 차감은 생성 시점) */
   estimatedCredits: number;

@@ -64,12 +64,20 @@ export interface GeneratePackDto {
   depth?: number;
 }
 
+/** 미디어 한 장 지정 — 우리 미디어(mediaId)거나 팩 자산(url) */
+export interface MediaRefDto {
+  mediaId?: string;
+  url?: string;
+}
+
 /** AI 캡션 생성 요청 */
 export interface GenerateCaptionDto {
   /** 캡션의 근거가 될 미디어 — 선택된 이미지/영상 */
   mediaId?: string;
   /** mediaId 대신 URL로도 받는다(팩 자산 즉시 캡션) */
   url?: string;
+  /** 캐러셀이면 고른 이미지 전부(순서대로). mediaId/url보다 우선한다 */
+  images?: MediaRefDto[];
   /** feed(피드 게시물) | reel(릴스) */
   postType?: 'feed' | 'reel';
   /** 말투 — 예: 친근한, 전문적인, 감성적인 */
@@ -85,6 +93,11 @@ export interface EnqueueDto {
   /** 발행할 계정(social_accounts.id). 생략하면 사업체의 유일한 활성 계정을 쓴다 */
   accountId?: string;
   imageMediaId?: string;
+  /**
+   * 캐러셀 — 고른 순서가 곧 인스타 슬라이드 순서(최대 10장). imageMediaId/imageUrl보다 우선한다.
+   * 우리 미디어와 팩 자산이 섞이므로 한 배열에 담아야 순서가 보존된다.
+   */
+  images?: MediaRefDto[];
   reelMediaId?: string;
   /** 미디어 대신 URL로 지정하면 서버가 account_media로 편입한 뒤 큐에 넣는다 */
   imageUrl?: string;

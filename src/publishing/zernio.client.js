@@ -14,13 +14,27 @@ function getClient() {
 }
 
 /**
+ * Zernio 계정 → 우리 필드명으로 정규화.
+ * SDK는 `followersCount`/`profilePicture`로 주는데 우리 DB는 `followers`/`profile_image`다 —
+ * 동기화 코드가 각자 acc.followers를 읽다가 전부 0으로 저장되던 원인이라 여기서 한 번만 맞춘다.
+ * (followersCount는 analytics 애드온이 있어야 내려온다 — 없으면 0)
+ */
+function normalizeAccount(acc) {
+  return {
+    ...acc,
+    followers: acc.followersCount ?? acc.followers ?? 0,
+    profileImage: acc.profilePicture ?? acc.profileImage ?? null,
+  };
+}
+
+/**
  * 연결된 계정 목록 조회
  */
 async function listAccounts() {
   log.info('Fetching accounts');
   const { data } = await getClient().accounts.listAccounts();
   log.info('Accounts found:', data.accounts?.length || 0);
-  return data.accounts || [];
+  return (data.accounts || []).map(normalizeAccount);
 }
 
 /**
@@ -31,7 +45,7 @@ async function getAccountDetail(accountId) {
   const { data } = await getClient().accounts.listAccounts();
   const account = (data.accounts || []).find(a => a._id === accountId);
   if (!account) throw new Error('Account not found in Zernio');
-  return account;
+  return normalizeAccount(account);
 }
 
 /**
