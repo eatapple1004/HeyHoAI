@@ -45,9 +45,9 @@
     //   롤백: 아래 한 줄의 주석만 해제.
     // { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
     // (2026-08-14) Ad Studio — 상품 URL 하나로 광고 영상.
-    // (2026-08-23) 아직 개발 중이라 **dev 에서만** 보인다(dev:true). stg·prd 는 진입점을 닫는다.
-    //   페이지·API 는 그대로 살아 있어 주소로는 들어간다. 공개할 때 dev:true 만 지우면 된다.
-    { h: '/ad-studio', l: 'Ad Studio', i: IC.adstudio, m: ['/ad-studio'], dev: true },
+    // (2026-08-23) 전 환경 공개. 잠깐 dev 전용(dev:true)이었다가 같은 날 열었다.
+    //   다시 닫으려면 `dev: true` 한 조각만 넣으면 된다(IS_DEV 판정은 아래에 그대로 있다).
+    { h: '/ad-studio', l: 'Ad Studio', i: IC.adstudio, m: ['/ad-studio'] },
     { h: '/pack.html', l: 'Content Pack', i: IC.pack, m: ['/pack'] }, // (2026-07-22) Product Pack — 사진→콘텐츠 자동 팩
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     // (2026-07-20) Store 레일 항목 제거 — 스토어 미운영(숨김). /store 페이지·카탈로그 코드는 그대로 두고 진입점만 뗀다.
