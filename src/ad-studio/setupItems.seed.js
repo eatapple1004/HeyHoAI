@@ -34,6 +34,60 @@ const HOOKS = [
   ['relatable',      '공감 유도',      '"저만 그런 거 아니죠?" 흔한 불편을 짚고 {{product}}로 해결한다.'],
 ];
 
+/**
+ * 스타일(style) — "어떤 종류의 영상인가". 훅·장소가 *무엇을 말하고 어디서*라면, 스타일은 *어떤 물성*이다.
+ *
+ * 왜 별도 타입인가: 훅·장소는 **사람이 나오는 실사 UGC**를 전제로 쓰였다. 그런데 제품 광고에는
+ * 사람이 아예 안 나오는 종류가 있다(제품만 떠다니는 모션그래픽·손만 나오는 시연 등).
+ * 그걸 훅·장소로 표현하려 하면 "화자가 카메라를 보며 말한다"가 따라붙어 결과가 깨진다.
+ *
+ * `camera:false` = 카메라·렌즈·피부톤 같은 실사 지시를 빼야 하는 스타일. 컴파일러가 TECHNICAL 블록을 바꾼다.
+ * `direction`    = 사용자가 지시문을 비웠을 때 쓸 기본 연출. **프롬프트 0을 유지하는 장치**다.
+ */
+const STYLES = [
+  ['ugc-real', 'UGC 실사', 'Filmed like a real person\'s phone video: handheld, natural indoor light, unpolished and believable.',
+    { camera: true, direction: '제품을 실제로 쓰는 모습을 담백하게 보여줘.' }],
+
+  ['product-motion-2d', '2D 제품 모션', [
+    'Flat 2D motion-graphics product video. NO people, NO hands, NO real-world scene.',
+    'The product is cut out cleanly from its background and floats on a smooth solid or gradient backdrop.',
+    'Multiple identical copies of the SAME product drift, rotate gently and rearrange into deliberate compositions',
+    '(radial burst, fan arc, grid, diagonal cascade) — every copy keeps the exact shape, color and detail of the source image.',
+    'Motion is smooth and weightless with soft easing; add small sparkle and glow accents.',
+    'Graphic-design look, like an animated poster — not a filmed scene.',
+  ].join(' '), { camera: false, direction: '제품이 화면을 떠다니며 리듬감 있게 배치가 바뀌도록.' }],
+
+  ['macro-detail', '매크로 디테일',
+    'Macro product cinematography: the product fills the frame, slow push-in and slow rotation reveal surface, texture and finish.',
+    { camera: true, hook: false, location: false,
+      direction: '제품의 질감과 마감이 드러나도록 아주 가까이서.',
+      technical: [
+        'Shot on a tripod — locked-off or slow motorized move. No handheld shake.',
+        'Lens: 100mm macro equivalent, very shallow depth of field, focus riding the product surface.',
+        'Controlled studio light on a clean seamless backdrop. Neutral grade, no filter.',
+      ] }],
+
+  ['hands-demo', '손 시연',
+    'Only hands interact with the product on a clean tabletop. No face, no speaking. The product stays the center of frame.',
+    { camera: true, hook: false,
+      direction: '손으로 제품을 다루는 과정을 순서대로 보여줘.',
+      technical: [
+        'Steady overhead and 3/4 angles, minimal shake, tripod or gimbal.',
+        'Lens: 35mm equivalent, product in sharp focus.',
+        'Soft natural daylight, realistic skin tone on the hands.',
+      ] }],
+
+  ['unbox-flatlay', '언박싱 플랫레이',
+    'Top-down flatlay: packaging opens and contents are arranged neatly one by one on a clean surface. Only hands enter frame.',
+    { camera: true, hook: false,
+      direction: '포장을 열고 구성품을 하나씩 늘어놓는 과정.',
+      technical: [
+        'Locked-off top-down camera, perfectly level, no shake.',
+        'Lens: 50mm equivalent, everything in focus.',
+        'Even soft diffused light, clean neutral surface.',
+      ] }],
+];
+
 /** 영어 장면 지시. 조명·시간대까지 포함해야 합성 티가 덜 난다. */
 const SETTINGS = [
   ['cafe-window',   '카페 창가',      'a bright cafe by a large window, soft natural daylight, wooden table, shallow depth of field'],
@@ -62,7 +116,10 @@ function rows() {
   SETTINGS.forEach(([slug, name, prompt], i) => {
     out.push({ type: 'setting', slug, name, prompt, locale: 'ko', sort_order: i + 1 });
   });
+  STYLES.forEach(([slug, name, prompt, meta], i) => {
+    out.push({ type: 'style', slug, name, prompt, meta: meta || null, locale: 'ko', sort_order: i + 1 });
+  });
   return out;
 }
 
-module.exports = { HOOKS, SETTINGS, rows };
+module.exports = { HOOKS, SETTINGS, STYLES, rows };

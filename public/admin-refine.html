@@ -76,6 +76,8 @@
   <h1>🎯 프롬프트 자동 정밀화</h1>
   <div class="sub">목표 사진 + 레퍼런스 사진을 올리면, 결과물이 목표 레이아웃에 가까워질 때까지 프롬프트를 자동 수정·재생성합니다.</div>
 
+  <div id="adminNav"></div>
+
   <div class="card">
     <div class="row">
       <label class="drop" id="dropTarget">
@@ -335,5 +337,6 @@ $('runDelete').addEventListener('click', async ()=>{
 document.addEventListener('keydown', e=>{ if(e.key==='Escape')closeRun(); });
 loadHistory();
 </script>
+<script src="/js/admin-nav.js?v=1" defer></script>
 </body>
 </html>

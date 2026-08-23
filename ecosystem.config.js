@@ -35,7 +35,13 @@ module.exports = {
       instances: 1,
       autorestart: true,
       watch: false,
-      max_memory_restart: '350M',
+      // 🔴 350M → 700M (2026-08-19). 350M에서 콘텐츠팩 생성이 반복적으로 죽었다.
+      //   원본 사진을 읽어 R2 업로드 + 비전 호출용 base64(원본의 약 1.33배)를 만드는 구간에서
+      //   순간 388~558MB까지 튀고, pm2가 SIGINT로 끊는다. 예외가 아니라 외부 종료라
+      //   **로그에 스택이 안 남고** prepPack의 catch도 안 돌아, 팩이 'processing'인 채로 남았다.
+      //   실측(~/.pm2/pm2.log): 하루 8회 "exceeds --max-memory-restart" — dev만 팩을 실제로 돌린다.
+      //   서버 여유 2.7GB라 700M은 안전. 근본 해결은 이미지 처리 메모리를 줄이는 것(별건).
+      max_memory_restart: '700M',
       env: { NODE_ENV: 'development' }, // PORT는 .env.development(3002)에서 로드
     },
   ],

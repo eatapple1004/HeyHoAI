@@ -1,12 +1,14 @@
 /**
  * Ad Studio 행 스냅샷(VO) — DB 컬럼명(snake_case) 유지.
  */
-export type SetupItemType = 'hook' | 'setting';
+export type SetupItemType = 'hook' | 'setting' | 'style';
 
 /** ad_setup_items 행 — 훅과 장소가 같은 테이블에 산다(type으로 구분) */
 export interface AdSetupItemVo {
   readonly id: string;
   readonly type: SetupItemType;
+  /** style 전용 — { camera:boolean, direction:string }. 그 외 타입은 null */
+  readonly meta?: { camera?: boolean; direction?: string; location?: boolean; hook?: boolean; technical?: string[] } | null;
   readonly slug: string;
   readonly name: string;
   readonly prompt: string;

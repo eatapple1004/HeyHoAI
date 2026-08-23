@@ -432,6 +432,10 @@ async function migrate() {
     ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS bgm_media_id UUID REFERENCES account_media(id) ON DELETE SET NULL;
   `);
 
+  // 캐러셀(여러 장 게시물) — 순서가 곧 인스타 슬라이드 순서라 배열로 둔다.
+  //   image_media_id는 그대로 첫 장을 가리킨다(썸네일·기존 조인이 전부 이 컬럼을 본다).
+  await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_media_ids UUID[];`);
+
   // ─── 사업체(마케팅 대행 대상) ───
   //   social_accounts는 "인스타 계정" 단위라 사업체 개념이 없다. 한 사업체가 계정을 여러 개
   //   가질 수 있고(브랜드 본계정/서브계정) 나중에 다른 플랫폼도 붙으므로 별도 테이블로 둔다.
@@ -452,6 +456,30 @@ async function migrate() {
   await pool.query(`
     ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS business_id UUID REFERENCES businesses(id) ON DELETE SET NULL;
     CREATE INDEX IF NOT EXISTS idx_social_accounts_business ON social_accounts(business_id);
+  `);
+
+  // 발행 실패 사유 — 실패했는데 'posted'로 적어 화면이 "게시됨"이라 거짓말을 하던 문제(2026-08-19).
+  //   이제 아무것도 못 올리면 status='failed' + 여기 사유를 남긴다. 화면이 그대로 보여준다.
+  await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS error TEXT;`);
+
+  // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.
+  //   ⚠️ social_accounts.metadata(JSONB)에 넣지 않는다 — 그 컬럼은 계정 목록 API가 통째로
+  //     내려주므로 토큰이 관리자 화면 응답에 섞여 나간다. 별도 테이블로 두고 조회 API가
+  //     이 테이블을 절대 join하지 않는 것으로 유출 경로를 원천 차단한다.
+  //   장기 토큰은 60일 만료다 — 갱신에 실패하면 게시가 에러 없이 조용히 멈추므로
+  //     expires_at을 남겨 화면에서 남은 일수를 보여준다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS meta_ig_tokens (
+        account_id    UUID PRIMARY KEY REFERENCES social_accounts(id) ON DELETE CASCADE,
+        auth_mode     VARCHAR(20) NOT NULL DEFAULT 'instagram',
+        access_token  TEXT NOT NULL,
+        scope         TEXT,
+        expires_at    TIMESTAMPTZ,
+        refreshed_at  TIMESTAMPTZ,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_meta_ig_tokens_expires ON meta_ig_tokens(expires_at);
   `);
 
   // 오리지널 이미지는 인스타 계정을 붙이기 **전에도** 올릴 수 있어야 한다(사업체 온보딩 순서상
@@ -506,7 +534,7 @@ async function migrate() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ad_setup_items (
         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        type        VARCHAR(20) NOT NULL,                 -- 'hook' | 'setting'
+        type        VARCHAR(20) NOT NULL,                 -- 'hook' | 'setting' | 'style'
         slug        VARCHAR(60) NOT NULL,
         name        TEXT NOT NULL,
         prompt      TEXT NOT NULL,
@@ -516,6 +544,7 @@ async function migrate() {
         sort_order  INT NOT NULL DEFAULT 0,
         created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE ad_setup_items ADD COLUMN IF NOT EXISTS meta JSONB;  -- style 전용: {camera:false, direction:"기본 연출"}
     CREATE UNIQUE INDEX IF NOT EXISTS uniq_ad_setup_official ON ad_setup_items(type, slug, locale) WHERE user_id IS NULL;
     CREATE INDEX IF NOT EXISTS idx_ad_setup_type ON ad_setup_items(type, locale, sort_order);
   `);
@@ -579,11 +608,12 @@ async function migrate() {
     const { rows: setupRows } = require('../ad-studio/setupItems.seed');
     for (const r of setupRows()) {
       await pool.query(
-        `INSERT INTO ad_setup_items (type, slug, name, prompt, locale, is_official, sort_order)
-         VALUES ($1,$2,$3,$4,$5,true,$6)
+        `INSERT INTO ad_setup_items (type, slug, name, prompt, locale, is_official, sort_order, meta)
+         VALUES ($1,$2,$3,$4,$5,true,$6,$7)
          ON CONFLICT (type, slug, locale) WHERE user_id IS NULL
-         DO UPDATE SET name = EXCLUDED.name, prompt = EXCLUDED.prompt, sort_order = EXCLUDED.sort_order`,
-        [r.type, r.slug, r.name, r.prompt, r.locale, r.sort_order]
+         DO UPDATE SET name = EXCLUDED.name, prompt = EXCLUDED.prompt,
+                       sort_order = EXCLUDED.sort_order, meta = EXCLUDED.meta`,
+        [r.type, r.slug, r.name, r.prompt, r.locale, r.sort_order, r.meta ? JSON.stringify(r.meta) : null]
       );
     }
     console.log(`  ✓ ad_setup_items 시드: ${setupRows().length}개`);

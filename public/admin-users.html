@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사용자 · 생성물 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+button,input{font-family:inherit;font-size:.88rem}
+button{font-weight:600;padding:8px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+button:disabled{opacity:.5;cursor:default}
+input{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 13px;min-width:240px}
+input:focus{outline:none;border-color:var(--accent2)}
+/* prod를 고르면 화면이 붉게 — 실서비스 데이터를 보고 있다는 걸 색으로 못박는다 */
+body.prod{background:#140c0e}
+body.prod h1 .dot{background:linear-gradient(135deg,#f87171,#dc2626)}
+.envwarn{display:none;background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;
+  padding:10px 14px;border-radius:10px;font-size:.85rem;margin-bottom:14px}
+body.prod .envwarn{display:block}
+.sum{display:flex;gap:20px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:14px 18px;margin-bottom:16px}
+.sum div span{display:block}
+.sum .n{font-size:1.35rem;font-weight:800}
+.sum .l{color:var(--faint);font-size:.74rem;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+/* 세로 선 — 숫자 열이 여럿이라 가로줄만으로는 어느 칸인지 눈이 흘러내린다.
+   마지막 칸은 오른쪽 선을 빼서 표 바깥에 테두리가 남지 않게 한다. */
+th,td{padding:9px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+      text-align:left;white-space:nowrap}
+th:last-child,td:last-child{border-right:0}
+th{color:var(--faint);font-size:.74rem;font-weight:700;position:sticky;top:0;background:var(--bg);cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+tbody tr:hover{background:var(--panel)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.zero{color:var(--faint)}
+.mail{max-width:280px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom;color:var(--accent2);text-decoration:none}
+.mail:hover{text-decoration:underline}
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:700}
+.t-admin{background:rgba(255,206,122,.16);color:var(--gold)}
+.t-ours{background:rgba(154,154,178,.16);color:var(--dim)}
+.t-ext{background:rgba(74,222,128,.14);color:var(--green)}
+.t-pay{background:rgba(124,82,232,.2);color:var(--accent2)}
+.empty{color:var(--faint);text-align:center;padding:50px}
+.msg{padding:12px 15px;border-radius:11px;margin-bottom:14px;display:none;font-size:.88rem}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+@media(max-width:820px){body{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 사용자 · 생성물</h1>
+  <div class="sub">누가 무엇을 만들었는지 봅니다. 환경을 골라 dev·staging·prod를 한 화면에서 확인합니다. (관리자 전용 · 읽기 전용)</div>
+
+  <div id="adminNav"></div>
+
+  <div class="envwarn">🔴 <b>prod — 실서비스 데이터</b>를 보고 있습니다. 조회 전용이라 바뀌지 않지만, 화면 공유·캡처 시 개인정보(이메일)가 노출됩니다.</div>
+  <div class="msg err" id="err"></div>
+
+  <div class="bar">
+    <button class="env" data-env="development">dev</button>
+    <button class="env" data-env="staging">staging</button>
+    <button class="env" data-env="production">prod</button>
+    <input id="q" placeholder="이메일·이름 검색" oninput="render()">
+    <button id="extOnly" onclick="toggleExt()">외부 계정만</button>
+    <span style="margin-left:auto;color:var(--faint);font-size:.82rem" id="dbinfo"></span>
+  </div>
+
+  <div class="sum" id="sum"></div>
+
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/js/admin-nav.js?v=1" defer></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/** 우리 계정 판별 — 외부 유입만 걸러 보려면 이걸 먼저 갈라야 한다.
+ *  도메인/패턴으로 잡는다(하드코딩 목록은 계정이 늘 때마다 어긋난다). */
+const OURS = /@(doppia\.ai|heyhoai\.local|trial\.doppia\.ai|test\.local|x\.local|local\.test)$/i;
+const OURS_MAIL = new Set(['frank.virus0325@gmail.com', 'jeonyedam0@gmail.com', 'adamcompanyofficial@gmail.com']);
+const isOurs = (u) => OURS.test(u.email || '') || OURS_MAIL.has((u.email || '').toLowerCase());
+
+const COLS = [
+  { k: 'email',         t: '이메일',
+    // 환경을 쿼리로 넘긴다 — 안 넘기면 상세가 이 서버의 기본 환경(dev)을 보게 되어
+    // prod 계정을 눌렀는데 "찾을 수 없음"이 뜬다.
+    cell: (u) => '<a class="mail" href="/admin-users/' + esc(u.id) + '?env=' + encodeURIComponent(state.env) + '">'
+                 + esc(u.email) + '</a>' },
+  { k: 'display_name',  t: '이름',     cell: (u) => esc(u.display_name || '—') },
+  { k: 'kind',          t: '구분',     cell: (u) => u.role === 'admin' ? '<span class="tag t-admin">관리자</span>'
+                                                 : isOurs(u) ? '<span class="tag t-ours">내부</span>'
+                                                 : '<span class="tag t-ext">외부</span>' },
+  { k: 'via_google',    t: '가입',     cell: (u) => u.via_google ? '구글' : '이메일' },
+  { k: 'plan',          t: '플랜',     cell: (u) => esc(u.plan || '—') },
+  { k: 'images',        t: '이미지',   num: true },
+  { k: 'videos',        t: '영상',     num: true },
+  { k: 'ugc',           t: 'UGC',      num: true },
+  { k: 'packs',         t: '팩',       num: true },
+  { k: 'credits_spent', t: '쓴 크레딧', num: true },
+  { k: 'credit_balance',t: '잔액',     num: true },
+  { k: 'payments',      t: '결제',     num: true,
+    cell: (u) => u.payments > 0 ? '<span class="tag t-pay">' + u.payments + '</span>' : '<span class="zero">0</span>' },
+  { k: 'created_at',    t: '가입',     cell: (u) => fmt(u.created_at) },
+];
+
+let state = { env: 'development', users: [], sort: 'created_at', desc: true, extOnly: false };
+
+function fmt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+async function api(url) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+  if (res.status === 403) throw new Error('관리자 권한이 필요합니다.');
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.success === false) throw new Error(body.error || body.message || ('요청 실패 (' + res.status + ')'));
+  return body;
+}
+
+async function load(envKey) {
+  state.env = envKey;
+  document.querySelectorAll('.env').forEach((b) => b.classList.toggle('on', b.dataset.env === envKey));
+  document.body.classList.toggle('prod', envKey === 'production');
+  $('err').classList.remove('show');
+  $('rows').innerHTML = '<tr><td colspan="' + COLS.length + '" class="empty">불러오는 중…</td></tr>';
+  try {
+    const { data } = await api('/api/admin/users?env=' + encodeURIComponent(envKey));
+    state.users = data.users || [];
+    $('dbinfo').textContent = data.label + ' · DB ' + data.db;
+    render();
+  } catch (e) {
+    $('err').textContent = e.message; $('err').classList.add('show');
+    $('rows').innerHTML = '<tr><td colspan="' + COLS.length + '" class="empty">불러오지 못했습니다.</td></tr>';
+    $('sum').innerHTML = '';
+  }
+}
+
+function toggleExt() {
+  state.extOnly = !state.extOnly;
+  $('extOnly').classList.toggle('on', state.extOnly);
+  render();
+}
+
+function sortBy(k) {
+  if (state.sort === k) state.desc = !state.desc; else { state.sort = k; state.desc = true; }
+  render();
+}
+
+function render() {
+  const q = ($('q').value || '').trim().toLowerCase();
+  let list = state.users.filter((u) => {
+    if (state.extOnly && (isOurs(u) || u.role === 'admin')) return false;
+    if (!q) return true;
+    return (u.email || '').toLowerCase().includes(q) || (u.display_name || '').toLowerCase().includes(q);
+  });
+
+  const k = state.sort;
+  list = list.slice().sort((a, b) => {
+    const va = k === 'created_at' ? new Date(a[k] || 0).getTime() : (typeof a[k] === 'number' ? a[k] : String(a[k] ?? ''));
+    const vb = k === 'created_at' ? new Date(b[k] || 0).getTime() : (typeof b[k] === 'number' ? b[k] : String(b[k] ?? ''));
+    if (va < vb) return state.desc ? 1 : -1;
+    if (va > vb) return state.desc ? -1 : 1;
+    return 0;
+  });
+
+  // 요약 — 전체가 아니라 **지금 보고 있는 목록** 기준(필터를 걸면 그 범위의 합이 나와야 한다)
+  const ext = list.filter((u) => !isOurs(u) && u.role !== 'admin');
+  const made = ext.filter((u) => (u.images + u.videos + u.ugc + u.packs) > 0);
+  const sum = (arr, f) => arr.reduce((n, u) => n + (f(u) || 0), 0);
+  $('sum').innerHTML = [
+    ['총 계정', list.length], ['외부 계정', ext.length], ['외부 중 실제 생성', made.length],
+    ['외부가 쓴 크레딧', sum(ext, (u) => u.credits_spent).toLocaleString()],
+    ['결제 건', sum(list, (u) => u.payments)],
+  ].map(([l, n]) => '<div><span class="n">' + n + '</span><span class="l">' + l + '</span></div>').join('');
+
+  $('head').innerHTML = COLS.map((c) =>
+    '<th onclick="sortBy(\'' + c.k + '\')">' + c.t + (state.sort === c.k ? (state.desc ? ' ▾' : ' ▴') : '') + '</th>').join('');
+
+  $('rows').innerHTML = list.length ? list.map((u) => '<tr>' + COLS.map((c) => {
+    if (c.cell) return '<td' + (c.num ? ' class="num"' : '') + '>' + c.cell(u) + '</td>';
+    const v = u[c.k];
+    if (c.num) return '<td class="num' + (v ? '' : ' zero') + '">' + (typeof v === 'number' ? v.toLocaleString() : v) + '</td>';
+    return '<td>' + esc(v ?? '—') + '</td>';
+  }).join('') + '</tr>').join('') : '<tr><td colspan="' + COLS.length + '" class="empty">해당하는 계정이 없습니다.</td></tr>';
+}
+
+document.querySelectorAll('.env').forEach((b) => b.addEventListener('click', () => load(b.dataset.env)));
+
+// 기본은 이 서버의 환경 — dev에서 열면 dev가 먼저 뜬다(실수로 prod를 보고 있지 않게)
+(async () => {
+  try {
+    const { data } = await api('/api/admin/users');
+    state.users = data.users || [];
+    state.env = data.env;
+    document.querySelectorAll('.env').forEach((b) => b.classList.toggle('on', b.dataset.env === data.env));
+    document.body.classList.toggle('prod', data.env === 'production');
+    $('dbinfo').textContent = data.label + ' · DB ' + data.db;
+    render();
+  } catch (e) { $('err').textContent = e.message; $('err').classList.add('show'); }
+})();
+</script>
+</body>
+</html>

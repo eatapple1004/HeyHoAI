@@ -13,6 +13,9 @@ const packRoute = require(path.join(__dirname, '..', '..', 'src', 'pack', 'pack.
 const creditService = require(path.join(__dirname, '..', '..', 'src', 'credits', 'credit.service.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
+// 회수 기준 시간(분) — 화면이 "언제까지 기다리면 되는지" 말하려면 필요하다. 숫자를 베끼면 갈라진다.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const packRepo = require(path.join(__dirname, '..', '..', 'src', 'pack', 'pack.repository.js'));
 
 const packOps = packRoute.ops;
 const packReads = packRoute.reads;
@@ -105,11 +108,23 @@ export class BusinessPackService {
       assets.filter((a: any) => a.kind === 'still' && a.url).map((a: any) => a.cut_key));
     const remaining = cuts.filter((c: any) => !stillsDone.has(c.key)).length;
 
+    /**
+     * 마지막 진행으로부터 흐른 시간.
+     * 서버가 재시작되면 백그라운드 생성이 통째로 사라지는데 DB엔 'processing'이 남는다.
+     * 화면은 그걸 알 길이 없어 스피너를 무한히 돌렸다 — 이 값을 내려 화면이 스스로 판단하게 한다.
+     * 회수(failed 전환) 기준 시간도 같이 줘서 "언제까지 기다리면 되는지"를 말할 수 있게 한다.
+     */
+    const lastAt = [pack.updated_at, ...assets.map((a: any) => a.created_at)]
+      .map((t: any) => new Date(t).getTime()).filter((n: number) => Number.isFinite(n));
+    const stalledSec = lastAt.length ? Math.max(0, Math.round((Date.now() - Math.max(...lastAt)) / 1000)) : 0;
+
     return {
       packId: String(pack.id),
       shareId: pack.share_id,
       status: pack.status,             // processing | ref_ready | done | failed
       error: pack.error || null,
+      stalledSec,
+      staleMin: packRepo.STALE_MIN,
       plannedCuts: cuts.length,
       stillsDone: stillsDone.size,
       remaining,
@@ -120,6 +135,24 @@ export class BusinessPackService {
       stillUrls: assets.filter((a: any) => a.kind === 'still' && a.url).map((a: any) => a.url),
       ref: pack.ref || null,           // 굽기 무료 잔여(refInfo)
     };
+  }
+
+  /**
+   * 멈춘 팩을 지금 끝낸다(회수 15분 대기 없이).
+   *
+   * 서버 재시작으로 죽은 팩은 활동 없음 15분이 지나야 자동 회수된다. 그동안 화면은 손쓸 수가 없었다.
+   * ⚠️ **processing 일 때만** 허용한다 — 정상 진행 중인 팩까지 끊는 버튼이면 안 된다.
+   *   실제로 도는 작업은 프로세스 안에 있어 여기서 죽일 수 없다. 상태만 바꾸는 것이므로,
+   *   살아 있는 작업이었다면 다음 자산 저장 때 계속 쓴다(파괴적이지 않다).
+   */
+  async abort(user: any, businessId: string, packId: string) {
+    await this.assertPackLinked(businessId, packId);
+    const pack = await packReads.pack(user.id, packId);
+    if (pack.status !== 'processing') {
+      throw new BadRequestException(`이미 ${pack.status} 상태입니다 — 중단할 것이 없습니다.`);
+    }
+    await packRepo.setStatus(pack.id, 'failed', packRepo.STALE_ERROR);
+    return { packId: String(pack.id), status: 'failed' };
   }
 
   /**
