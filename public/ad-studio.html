@@ -154,10 +154,26 @@
   /* 306 = 메타 284 + 갭 22 — 정보가 미디어 옆에 밀착한다(grow 없이) */
   .fb-media { display: flex; gap: 12px; flex-wrap: wrap; flex: 0 1 auto; min-width: 0;
               max-width: calc(100% - 306px); }
-  .fb-media video, .fb-media img { height: 300px; width: auto; max-width: 100%;
-                                   border-radius: 16px; background: #14141c; display: block; }
-  /* 단독이면 큰 프리뷰 */
-  .fb-media video:only-child, .fb-media img:only-child { height: 460px; }
+  /* 카드 = 미디어 + 호버 도구. studio.html의 .result-card 규약을 그대로 옮긴 것 —
+     클릭은 상세로, 우상단은 공개토글·다운로드. 두 화면이 같은 동작이어야 헷갈리지 않는다. */
+  .fb-card { height: 300px; width: auto; max-width: 100%; aspect-ratio: 4/5;
+             border-radius: 16px; overflow: hidden; position: relative;
+             border: 1px solid var(--line, #2a2a3a); background: #14141c; }
+  .fb-card:only-child { height: 460px; }
+  .fb-card > video, .fb-card > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* 호버 시 노출 · 터치 기기는 항상(hover가 없으니 숨기면 영영 못 쓴다) */
+  .fb-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px;
+              opacity: 0; transform: translateY(-3px); transition: opacity .15s, transform .15s; z-index: 4; }
+  .fb-card:hover .fb-tools, .fb-card:focus-within .fb-tools { opacity: 1; transform: none; }
+  @media (hover: none) { .fb-tools { opacity: 1; transform: none; } }
+  .fb-btn { width: 30px; height: 30px; border-radius: 9px; border: none; background: rgba(0,0,0,.55);
+            backdrop-filter: blur(6px); color: #fff; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; padding: 0; transition: background .15s, transform .1s; }
+  .fb-btn:hover { background: rgba(0,0,0,.8); }
+  .fb-btn:active { transform: scale(.9); }
+  .fb-btn svg { width: 15px; height: 15px; display: block; }
+  .fb-btn.on { background: var(--accent, #7c6cff); }   /* Private ON = 강조 */
+  .fb-btn.on:hover { background: var(--accent, #7c6cff); filter: brightness(1.12); }
   .fb-info { width: 284px; flex-shrink: 0; display: flex; flex-direction: column; gap: 9px; padding-top: 2px; }
   .fb-meta { font-size: 13.5px; line-height: 1.6; color: #d7d7e2; }
   .fb-sub { font-size: 12px; color: var(--muted, #9a9ab0); }
@@ -166,8 +182,8 @@
     .fb { flex-direction: column; gap: 14px; }
     .fb-info { width: 100%; }
     .fb-media { max-width: none; }
-    .fb-media video, .fb-media img { width: 46%; height: auto; max-width: none; }
-    .fb-media video:only-child, .fb-media img:only-child { width: 100%; }
+    .fb-card { width: 46%; height: auto; max-width: none; }
+    .fb-card:only-child { width: 100%; }
   }
   #feedSentinel { height: 1px; }
 
@@ -672,7 +688,8 @@
         if (x.status === 'success' && x.file_path) {
           const fn = String(x.file_path).split('/').pop();
           if (!bt.items.some((i) => i.idx === x.idx)) {
-            bt.items.push({ idx: x.idx, url: '/images/' + fn, reel: /\.(mp4|webm|mov)$/i.test(fn) });
+            bt.items.push({ idx: x.idx, url: '/images/' + fn, reel: /\.(mp4|webm|mov)$/i.test(fn),
+                            visibility: x.visibility });
           }
         } else if (x.status === 'failed') bt.failed++;
       });
@@ -684,6 +701,72 @@
     } finally { feedBusy = false; }
   }
 
+  /* ── 결과 카드 (studio.html의 studioMediaCard와 같은 동작) ──
+     아이콘·클래스·엔드포인트를 저쪽과 맞춘다. 두 화면에서 같은 버튼이 다르게 굴면 안 된다. */
+  const FB_SVG = {
+    dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
+    pub: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
+    priv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  };
+
+  /** 실제 미디어 비율을 카드에 반영 — 높이 기준 레이아웃에서 폭이 비율대로 정해져 크롭이 없다. */
+  window.fitFeedCard = function (el) {
+    const w = el.videoWidth || el.naturalWidth, h = el.videoHeight || el.naturalHeight;
+    if (!w || !h) return;
+    const card = el.closest('.fb-card');
+    if (card) card.style.aspectRatio = w + '/' + h;
+  };
+
+  /** Enter·Space 로도 열린다(마우스 전용이 되지 않게). studio.html rcKey 와 같은 패턴. */
+  window.fbKey = function (e, idx) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.href = '/creation?idx=' + idx + '&from=library'; }
+  };
+
+  /** 공개/비공개 토글 — gallery·studio 와 같은 엔드포인트(서버가 private 구독 게이트를 본다). */
+  window.fbToggleVis = async function (btn, idx) {
+    if (btn.disabled) return;
+    const next = btn.classList.contains('on') ? 'public' : 'private';
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/generate/results/' + idx + '/visibility', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visibility: next }),
+      });
+      const d = await r.json();
+      if (!r.ok || d.success === false) throw new Error(d.error || '변경하지 못했습니다');
+      const vis = (d.data && d.data.visibility) || next;
+      const priv = (vis === 'private');
+      btn.classList.toggle('on', priv);
+      btn.setAttribute('aria-pressed', priv ? 'true' : 'false');
+      btn.title = priv ? '비공개 — 나만 볼 수 있습니다' : '공개 — 커뮤니티에 보입니다';
+      btn.innerHTML = priv ? FB_SVG.priv : FB_SVG.pub;
+      // 재렌더에도 유지되게 원본 데이터를 같이 고친다(안 하면 스크롤 후 옛 상태로 되돌아온다)
+      for (const b of feedBatches) { const it = b.items.find((i) => i.idx === idx); if (it) { it.visibility = vis; break; } }
+    } catch (e) {
+      $('feedMsg').textContent = e.message;
+    } finally { btn.disabled = false; }
+  };
+
+  function feedCard(i) {
+    // 영상은 음소거 미리보기 루프 — 소리는 상세에서 듣는다(studio.html 카드와 같은 규칙).
+    const media = i.reel
+      ? '<video src="' + html(i.url) + '" autoplay muted loop playsinline preload="auto" onloadedmetadata="fitFeedCard(this)"></video>'
+      : '<img src="' + html(i.url) + '" alt="" loading="lazy" onload="fitFeedCard(this)">';
+    // idx 가 있으면 상세로, 없으면(아직 저장 전) 새 창으로 원본만
+    const open = (i.idx != null)
+      ? ' role="link" tabindex="0" aria-label="결과 열기" style="cursor:pointer"'
+        + ' onclick="location.href=\'/creation?idx=' + i.idx + '&from=library\'"'
+        + ' onkeydown="fbKey(event,' + i.idx + ')"'
+      : ' style="cursor:zoom-in" onclick="window.open(\'' + html(i.url) + '\',\'_blank\')"';
+    const priv = (i.visibility === 'private');
+    const visBtn = (i.idx != null)
+      ? '<button class="fb-btn' + (priv ? ' on' : '') + '" type="button" aria-pressed="' + (priv ? 'true' : 'false') + '"'
+        + ' title="' + (priv ? '비공개 — 나만 볼 수 있습니다' : '공개 — 커뮤니티에 보입니다') + '"'
+        + ' onclick="event.stopPropagation();fbToggleVis(this,' + i.idx + ')">' + (priv ? FB_SVG.priv : FB_SVG.pub) + '</button>'
+      : '';
+    const dlBtn = '<a class="fb-btn" href="' + html(i.url) + '" download title="다운로드" onclick="event.stopPropagation()">' + FB_SVG.dl + '</a>';
+    return '<div class="fb-card"' + open + '>' + media + '<div class="fb-tools">' + visBtn + dlBtn + '</div></div>';
+  }
+
   function renderFeed() {
     if (!feedBatches.length) { $('feedWrap').hidden = feedDone; $('feedMsg').textContent = feedDone ? '아직 만든 결과가 없습니다.' : ''; return; }
     $('feedWrap').hidden = false;
@@ -693,9 +776,7 @@
       if (d !== lastDate) { out += '<div class="fb-date">' + html(d) + '</div>'; lastDate = d; }
       const kind = bt.items.some((i) => i.reel) ? '영상' : '사진';
       out += '<div class="fb"><div class="fb-media">'
-        + bt.items.map((i) => i.reel
-            ? '<video src="' + html(i.url) + '" controls playsinline preload="metadata"></video>'
-            : '<img src="' + html(i.url) + '" alt="" loading="lazy">').join('')
+        + bt.items.map(feedCard).join('')
         + '</div><div class="fb-info">'
         + (bt.prompt ? '<div class="fb-meta">' + html(bt.prompt) + '</div>' : '')
         + '<div class="fb-sub">' + kind + ' · ' + bt.items.length + '개</div>'
