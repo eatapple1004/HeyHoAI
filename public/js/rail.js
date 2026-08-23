@@ -24,6 +24,15 @@
   // (2026-07-09) 순서: Shots · Ad Video · Library · Store · Community · Creator(flag) · Billing.
   //   Shots·Ad Video = 대표 상품(둘 다 /studio, Ad Video는 mode=ugc 딥링크 → bootFromUrl이 ugc 모드로 진입).
 //   ⚠️ 'Shots'=대본 없는 것(확정결정 §2). 라벨만 Shots이고 URL·컨테이너는 /studio 그대로 — Studio는 사용자에게 안 보인다.
+  /**
+   * 개발 환경인가 — dev 서버와 로컬만 true.
+   *
+   * ⚠️ flags.js 의 data-flag 를 쓰지 않는 이유: 그쪽 IS_LOCAL 은 localhost 만 개발로 본다.
+   *   dev.doppia.ai 를 거기 넣으면 숨겨둔 기능 11개(ugc·reels·teams·business…)가 한꺼번에
+   *   dev 에 튀어나온다. 여기서는 '레일 항목 하나'만 환경으로 가르면 되므로 좁게 판단한다.
+   */
+  var IS_DEV = /^(dev\.|localhost$|127\.0\.0\.1$)/.test(location.hostname) || location.port === '3002';
+
   var items = [
     { h: '/home.html', l: 'Home', i: IC.home, m: ['/home'] }, // 정적 서빙(/home.html) — index.js 클린URL 라우트는 추후(충돌 회피)
     // Ad Video 를 숨긴 뒤로는 /studio 전부(mode=ugc 포함)를 Shots 로 본다 —
@@ -35,8 +44,10 @@
     //   배지 코드도 그대로 둔다 — data-badge 요소가 없으면 아래에서 return 하므로 폴링이 시작되지 않는다.
     //   롤백: 아래 한 줄의 주석만 해제.
     // { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
-    // (2026-08-14) Ad Studio — 상품 URL 하나로 광고 영상. 개발 중이라 우선 진입점만 연다.
-    { h: '/ad-studio', l: 'Ad Studio', i: IC.adstudio, m: ['/ad-studio'] },
+    // (2026-08-14) Ad Studio — 상품 URL 하나로 광고 영상.
+    // (2026-08-23) 아직 개발 중이라 **dev 에서만** 보인다(dev:true). stg·prd 는 진입점을 닫는다.
+    //   페이지·API 는 그대로 살아 있어 주소로는 들어간다. 공개할 때 dev:true 만 지우면 된다.
+    { h: '/ad-studio', l: 'Ad Studio', i: IC.adstudio, m: ['/ad-studio'], dev: true },
     { h: '/pack.html', l: 'Content Pack', i: IC.pack, m: ['/pack'] }, // (2026-07-22) Product Pack — 사진→콘텐츠 자동 팩
     { h: '/gallery', l: 'Library', i: IC.library, m: ['/gallery', '/library'] },
     // (2026-07-20) Store 레일 항목 제거 — 스토어 미운영(숨김). /store 페이지·카탈로그 코드는 그대로 두고 진입점만 뗀다.
@@ -51,7 +62,7 @@
   ];
   // (2026-07-11) 레일 상단 브랜드/파비콘 클릭 비활성화 — 아무 동작 안 함(옛 onclick=/landing 제거). 롤백: onclick="location.href='/landing'" 복원.
   var html = '<div class="rail-brand" title="Doppia" style="cursor:default"><img src="/favicon-512.png" alt="Doppia"></div><div class="rail-nav">';
-  items.forEach(function (it) {
+  items.filter(function (it) { return !it.dev || IS_DEV; }).forEach(function (it) {
     html += '<a class="rail-item' + (active(it) ? ' active' : '') + '"' + (it.f ? ' data-flag="' + it.f + '"' : '') + (it.b ? ' data-badge="' + it.b + '"' : '') + ' onclick="location.href=\'' + it.h + '\'" title="' + it.l + '">' + it.i + '<span>' + it.l + '</span></a>';
   });
   html += '</div>';
