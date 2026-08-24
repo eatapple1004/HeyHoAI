@@ -127,6 +127,7 @@ button:disabled{opacity:.5;cursor:default}
     <div class="row" style="margin-top:12px">
       <select id="unlinked" style="flex:1;min-width:200px"><option value="">연결된 Meta 계정 없음</option></select>
       <button onclick="linkAccount()">계정 연결</button>
+      <button onclick="refreshAccounts()" id="refreshBtn" title="팔로워·프로필 사진을 인스타에서 다시 읽어옵니다">↻ 프로필 새로고침</button>
       <button onclick="syncAccounts()" id="syncBtn">＋ 인스타 연결(OAuth)</button>
     </div>
   </div>
@@ -786,6 +787,27 @@ async function saveBiz() {
     flash('ok', '저장했습니다.');
     load();
   } catch (e) { flash('err', e.message); }
+}
+
+/**
+ * 붙어 있는 계정의 팔로워·프로필 사진을 인스타에서 다시 읽는다.
+ * 연결(OAuth)과는 별개다 — 이미 붙은 계정의 값만 최신으로 맞춘다.
+ */
+async function refreshAccounts() {
+  clearMsg(); $('refreshBtn').disabled = true;
+  const old = $('refreshBtn').textContent;
+  $('refreshBtn').textContent = '읽는 중…';
+  try {
+    const { data } = await api('/api/admin/business/' + BIZ_ID + '/accounts/refresh', { method: 'POST' });
+    if (data.failed && data.failed.length) {
+      // 일부만 실패해도 나머지는 갱신된다 — 무엇이 왜 실패했는지 그대로 보여준다
+      flash('err', data.failed.map((f) => '@' + f.username + ': ' + f.reason).join(' · '));
+    } else {
+      flash('ok', data.updated + '개 계정을 갱신했습니다.');
+    }
+    load();
+  } catch (e) { flash('err', e.message); }
+  finally { $('refreshBtn').disabled = false; $('refreshBtn').textContent = old; }
 }
 
 /** 이 화면엔 '불러오기'가 없다 — 직결은 계정을 끌어오는 게 아니라 OAuth로 붙인다. */
