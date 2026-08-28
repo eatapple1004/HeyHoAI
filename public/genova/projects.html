@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects | Genova Honors</title>
+<meta name="description" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="projects" data-meta="pj" class="solid-header">
+
+<section class="page-hero">
+  <div class="wrap page-hero-inner">
+    <p class="kicker" data-i18n="nav.projects"></p>
+    <h1 data-i18n="pj.h1"></h1>
+    <p class="sub" data-i18n="pj.sub"></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="filters reveal" data-target="#pfGrid">
+      <button data-filter="all" class="on" data-i18n="pj.f.all"></button>
+      <button data-filter="res" data-i18n="pj.f.res"></button>
+      <button data-filter="com" data-i18n="pj.f.com"></button>
+      <button data-filter="dev" data-i18n="pj.f.dev"></button>
+    </div>
+
+    <div class="portfolio reveal" id="pfGrid">
+      <a class="pf" href="project-songdo.html" data-cat="res">
+        <img src="assets/img/projects/songdo/hero-golf-sunset.jpg" data-i18n-alt="pj.1.name" alt="">
+        <div class="pf-body">
+          <span class="no">01</span>
+          <h3 data-i18n="pj.1.name"></h3>
+          <div class="pf-meta">
+            <span data-i18n="pj.1.loc"></span>
+            <span data-i18n="pj.1.type"></span>
+            <span data-i18n="pj.1.year"></span>
+            <span data-i18n="pj.1.status"></span>
+          </div>
+        </div>
+      </a>
+      <div class="pf is-empty" data-cat="res com dev">
+        <div class="ph" style="border:0;background:none;aspect-ratio:auto">
+          <div class="ph-in">
+            <span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-layers"/></svg></span>
+            <b data-i18n="pj.empty.b"></b><span data-i18n="pj.empty.s"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="sub reveal" style="font-size:.85rem;margin-top:2rem" data-i18n="pj.note"></p>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap reveal">
+    <h2 data-i18n="cta.title"></h2>
+    <p data-i18n="cta.p"></p>
+    <a href="contact.html" class="btn btn-gold" data-i18n="cta.btn"></a>
+  </div>
+</section>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

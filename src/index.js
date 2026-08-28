@@ -110,6 +110,19 @@ app.get(/^\/([a-z0-9-]+)(\.html)?$/i, (req, res, next) => {
   next();
 });
 
+// /genova/* = 제노바 아너스 기업 홈페이지 시안 — **dev 전용**.
+//   1차 분리는 브랜치(develop)지만, 나중에 develop→staging→main 머지 때 public/genova/ 파일이
+//   딸려 올라갈 수 있다. staging/prod는 **이 파일(src/index.js)로 뜨므로** 여기 가드가 실효 가드다.
+//   (dev만 NestJS로 뜬다 — nest/main.ts에도 같은 가드가 있으니 한쪽만 고치지 말 것.)
+//   NODE_ENV 미설정 = 로컬 개발로 간주(레포 관례: src/config/index.js도 동일 기본값).
+//   정적 미들웨어보다 **먼저** 있어야 차단된다.
+app.use('/genova', (req, res, next) => {
+  if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+  // express.static이 index:false라 `/genova`·`/genova/`는 아무것도 매칭되지 않는다 → index.html 직접 서빙
+  if (req.path === '/') return res.sendFile(path.join(PUBLIC_DIR, 'genova', 'index.html'));
+  next();
+});
+
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
 // .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));

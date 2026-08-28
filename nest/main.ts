@@ -77,6 +77,15 @@ async function bootstrap() {
   //   따라서 **listen 이후에** 붙이는 이 미들웨어들은 "Nest가 처리하지 않은 요청"만 받는다.
   //   순서(레거시 src/index.js와 동일한 의미): 페이지 컨트롤러 → 정적 → 레거시.
   //   ⚠️ 정적을 컨트롤러보다 먼저 두면 `/studio.html`이 그대로 서빙돼 클린 URL 301이 사라진다.
+  // /genova/* = 제노바 아너스 기업 홈페이지 시안 — **dev 전용**. (src/index.js에 동일 가드 — 한쪽만 고치지 말 것)
+  //   dev는 이 경로로 뜨므로 여기가 "열어주는" 쪽이고, staging/prod를 실제로 막는 건 레거시 쪽 가드다.
+  //   useStaticAssets(=server.use(static))보다 **먼저** 등록돼야 차단·index 서빙이 동작한다.
+  server.use('/genova', (req: any, res: any, next: any) => {
+    if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+    if (req.path === '/') return res.sendFile(path.join(PUBLIC_DIR, 'genova', 'index.html'));
+    return next();
+  });
+
   app.useStaticAssets(PUBLIC_DIR, { index: false });
   app.useStaticAssets(path.join(process.cwd(), 'tmp', 'bgm'), { prefix: '/bgm' });
   // ffmpeg.wasm 자체 호스팅 — Worker는 동일 출처여야 로드된다.
