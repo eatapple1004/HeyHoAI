@@ -25,11 +25,20 @@ const GRAPH_IG = 'https://graph.instagram.com';
 const GRAPH_FB = 'https://graph.facebook.com';
 const API_VERSION = 'v23.0';
 
-/** 게시·댓글까지 필요한 최소 스코프. 늘리면 사용자가 동의 화면을 다시 통과해야 한다. */
+/**
+ * 게시·댓글·인사이트까지 필요한 최소 스코프. 늘리면 사용자가 동의 화면을 다시 통과해야 한다.
+ *
+ * insights 추가(2026-08-31): 사업체별 성과 통계를 위해 `{ig-media-id}/insights` 를 읽어야 한다.
+ *   추가 시점을 지금으로 잡은 이유 — 전 환경 통틀어 발급된 토큰이 1개(dev 테스트 계정)뿐이라
+ *   재연결 비용이 사실상 0이다. 실계정이 붙기 시작하면 이 비용이 계속 커진다.
+ *   ⚠️ 기존 토큰에는 이 권한이 없다. 스코프가 늘어난 뒤 발급된 토큰만 인사이트를 읽을 수 있으므로
+ *      이미 연결된 계정은 **연결 해제 후 재연결**해야 한다(meta_ig_tokens.scope 로 판별 가능).
+ */
 export const SCOPES = [
   'instagram_business_basic',
   'instagram_business_content_publish',
   'instagram_business_manage_comments',
+  'instagram_business_manage_insights',
 ].join(',');
 
 export type AuthMode = 'instagram' | 'facebook';

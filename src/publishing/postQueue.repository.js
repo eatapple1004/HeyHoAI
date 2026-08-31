@@ -166,6 +166,9 @@ async function update(id, fields) {
   if (fields.postedAt !== undefined) { sets.push(`posted_at = $${i++}`); params.push(fields.postedAt); }
   if (fields.imagePostUrl !== undefined) { sets.push(`image_post_url = $${i++}`); params.push(fields.imagePostUrl); }
   if (fields.reelPostUrl !== undefined) { sets.push(`reel_post_url = $${i++}`); params.push(fields.reelPostUrl); }
+  // 인사이트 조회 키 — permalink와 별개로 보관한다(URL에서 역추출 불가)
+  if (fields.imageIgMediaId !== undefined) { sets.push(`image_ig_media_id = $${i++}`); params.push(fields.imageIgMediaId); }
+  if (fields.reelIgMediaId !== undefined) { sets.push(`reel_ig_media_id = $${i++}`); params.push(fields.reelIgMediaId); }
   if (fields.bgmMediaId !== undefined) { sets.push(`bgm_media_id = $${i++}`); params.push(fields.bgmMediaId); }
   if (fields.error !== undefined) { sets.push(`error = $${i++}`); params.push(fields.error); }
 

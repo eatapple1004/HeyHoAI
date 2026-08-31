@@ -436,6 +436,16 @@ async function migrate() {
   //   image_media_id는 그대로 첫 장을 가리킨다(썸네일·기존 조인이 전부 이 컬럼을 본다).
   await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_media_ids UUID[];`);
 
+  // 인스타 미디어 ID — 인사이트 조회 키. `{ig-media-id}/insights` 는 이 값으로만 부를 수 있다.
+  //   ⚠️ image_post_url(permalink)에서 역추출이 **불가능**하다. 발행 응답에 담겨 오는 값을
+  //      그때 저장하지 않으면 그 게시물의 성과는 영영 못 읽는다(소급 불가) — 그래서 인사이트
+  //      기능(권한 심사·수집기)보다 이 컬럼을 **먼저** 넣는다.
+  //   기존 행은 NULL로 남는다. 이미 발행된 건은 계정 미디어 목록을 permalink로 역매칭해야 한다.
+  await pool.query(`
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_ig_media_id TEXT;
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS reel_ig_media_id  TEXT;
+  `);
+
   // ─── 사업체(마케팅 대행 대상) ───
   //   social_accounts는 "인스타 계정" 단위라 사업체 개념이 없다. 한 사업체가 계정을 여러 개
   //   가질 수 있고(브랜드 본계정/서브계정) 나중에 다른 플랫폼도 붙으므로 별도 테이블로 둔다.
