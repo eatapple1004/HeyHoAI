@@ -702,7 +702,10 @@ function syncBillingPricing(){
     const btn = p.id
       ? '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="buyPack(\''+p.id+'\',this)">Buy</button>'
       : '<button class="btn btn-ghost" disabled style="opacity:.5">Coming soon</button>';
-    return '<div class="pack-card glass'+(p.best?' best':'')+'">'+(p.best?'<span class="ptag">BEST VALUE</span>':'')+
+    // p.test = dev 전용 PG 검증용 ₩100 팩(서버가 prod에선 배열에서 아예 뺀다). 실제 상품과 헷갈리지 않게 표시한다.
+    const tag = p.test ? '<span class="ptag" style="background:linear-gradient(120deg,#ff6b6b,#ff9f43)">TEST · DEV ONLY</span>'
+              : p.best ? '<span class="ptag">BEST VALUE</span>' : '';
+    return '<div class="pack-card glass'+(p.best?' best':'')+'">'+tag+
       '<div class="amt">◈ '+P.fmt(p.cr)+bonus+'</div><div class="ppc">'+per+' / credit</div><div class="price">'+meta.symbol+P.fmt(amt)+'</div>'+btn+'</div>';
   }).join('');
   // 통화 토글 활성 표시 + 안내(통화·VAT·자동결제·PG)
