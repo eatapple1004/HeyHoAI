@@ -399,7 +399,21 @@
 //   '매달 N 크레딧' 이 한 번도 안 나오고 'N credits / month' 가 나갔다(한국어 사용자에게도).
 //   getLang() 이 내부에서 읽는 것과 같은 저장값을 직접 본다 — 값도 같고 로드 순서에 안 걸린다.
 function koNow(){ try{ return localStorage.getItem('doppia_lang')==='ko'; }catch(e){ return false; } }
-function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
+/**
+ * 뒤로 — history.length는 신뢰할 수 없다. 다른 사이트를 거쳐 들어오거나 주소창으로 직접 열어도
+ *   1보다 커서, back()이 우리 화면이 아닌 곳으로 가거나 **아무 일도 일어나지 않는다**(실측).
+ *   같은 출처에서 넘어온 경우에만 back()을 쓰고, 그마저 안 먹으면 앱 화면으로 보낸다.
+ */
+function goBack(){
+  var HOME='/studio';
+  var same=false;
+  try{ same = !!document.referrer && new URL(document.referrer).origin===location.origin; }catch(e){}
+  if(!same){ location.href=HOME; return; }
+  // back()이 실제로 페이지를 떠났으면 pagehide가 먼저 오고 타이머는 취소된다.
+  var t=setTimeout(function(){ location.href=HOME; },400);
+  window.addEventListener('pagehide',function(){ clearTimeout(t); },{once:true});
+  history.back();
+}
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
 function planSoon(){ notify('Plan changes are coming soon — for now, add an extra credit pack.'); }
