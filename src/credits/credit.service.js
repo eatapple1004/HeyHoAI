@@ -158,6 +158,16 @@ async function addCredits(userId, amount, opts) {
 }
 
 /**
+ * 크레딧 회수 (결제 취소 시 지급분 환수·커미션 환수).
+ *   charge()와 달리 user 객체가 아니라 userId만 받고 **admin도 면제하지 않는다** —
+ *   결제 취소는 운영 정책이 아니라 돈의 원상복구라 역할과 무관하게 되돌려야 한다.
+ *   잔액이 모자라면 applyDelta가 402를 던진다(부분 회수로 조용히 넘어가지 않는다).
+ */
+async function deductCredits(userId, amount, opts) {
+  return applyDelta(userId, -Math.abs(amount), opts);
+}
+
+/**
  * 범용 크레딧 차감. admin은 과금하지 않는다(기존 운영 플로우 보존).
  * @returns {Promise<{amount:number, balanceAfter:number, refund:Function}|null>}
  *   null = 과금 면제(admin). refund()는 실패 시 전액 환불.
@@ -265,6 +275,7 @@ module.exports = {
   getBalance,
   getLedger,
   addCredits,
+  deductCredits,
   charge,
   chargeForGeneration,
   grantSignupBonus,

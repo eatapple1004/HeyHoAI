@@ -1619,6 +1619,35 @@ async function migrateCredits() {
     );
     CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id, created_at DESC);
   `);
+
+  // 결제 취소·환불 이력 (PortOne 승인취소). **부분취소가 가능하므로 주문 1건에 여러 행이 쌓인다.**
+  //   status: requested(PG 호출 전) → succeeded | failed. 실패 행도 남긴다 — 회수했던 크레딧을
+  //   되돌린 사실까지 추적돼야 CS가 "왜 크레딧이 들락날락했나"를 설명할 수 있다.
+  //   payments.refunded_usd = 취소 누적액. 관리자 매출 집계가 환불을 빼고 보이려면 여기가 필요하다
+  //   (payments는 UNIQUE(provider, order_id)라 마이너스 행을 추가로 넣을 수 없다).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS billing_refunds (
+        id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_id       TEXT NOT NULL,                          -- billing_orders.order_id (= PortOne paymentId)
+        user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider       VARCHAR(30) NOT NULL DEFAULT 'portone',
+        amount_krw     INT NOT NULL,                           -- 실제 취소 요청 금액(원)
+        amount_usd     DECIMAL(10,2) NOT NULL DEFAULT 0,       -- 매출 집계 차감용 환산액
+        credits_clawed INT NOT NULL DEFAULT 0,                 -- 회수한 크레딧
+        reason         TEXT DEFAULT '',
+        requester      VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER', -- CUSTOMER | ADMIN
+        actor_user_id  UUID,                                   -- 관리자 취소 시 실행자
+        status         VARCHAR(20) NOT NULL DEFAULT 'requested', -- requested | succeeded | failed
+        pg_cancel_id   TEXT,
+        raw            JSONB DEFAULT '{}',
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_billing_refunds_order ON billing_refunds(order_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_billing_refunds_user ON billing_refunds(user_id, created_at DESC);
+    ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_usd DECIMAL(10,2) NOT NULL DEFAULT 0;
+    ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
+  `);
 }
 
 /**
