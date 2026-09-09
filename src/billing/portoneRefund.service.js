@@ -410,14 +410,19 @@ async function reconcileFromPg(paymentId) {
   return { ok: true, amountKRW: delta, creditsClawed: clawback, full: fullyCancelled };
 }
 
-/** 사용자의 환불 가능한 최근 결제 목록(셀프 환불 화면용). */
+/**
+ * 사용자의 결제 내역(셀프 환불 화면용).
+ *   `refunding`도 포함한다 — 취소 처리 중인 건이 화면에서 사라지면 사용자는 결제가
+ *   증발한 것처럼 본다. 결제창에서 이탈한 `pending`·`failed`만 감춘다.
+ */
 async function listRefundable(userId, limit = 20) {
   const r = await query(
     `SELECT o.order_id, o.pack_id, o.credits, o.amount_usd, o.status, o.updated_at,
             COALESCE(SUM(f.amount_krw) FILTER (WHERE f.status='succeeded'), 0)::int AS refunded_krw
        FROM billing_orders o
        LEFT JOIN billing_refunds f ON f.order_id = o.order_id
-      WHERE o.user_id = $1 AND o.provider = 'portone' AND o.status IN ('paid','refunded')
+      WHERE o.user_id = $1 AND o.provider = 'portone'
+        AND o.status IN ('paid','refunded','refunding')
       GROUP BY o.order_id
       ORDER BY o.updated_at DESC LIMIT $2`,
     [userId, Math.min(50, Math.max(1, limit))]
