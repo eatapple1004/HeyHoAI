@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpException, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpException, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { PortoneService } from './portone.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PgConfigDto } from './dto/billing.dto';
@@ -68,6 +68,36 @@ export class PortoneController {
     return this.wrap(async () => ({
       success: true,
       data: await this.portone.chargePack(req.user, body && body.packId),
+    }));
+  }
+
+  // ── 결제 취소(환불) ──
+  //   규정(public/refund.html 제2·3·4조)상 셀프 환불은 **미사용 + 7일 이내 전액**만 열린다.
+  //   부분사용분은 "회사 귀책이 있는 경우"에만 비례환불이라 사람이 판단해야 한다 → 관리자 경로.
+
+  /** GET /api/billing/portone/orders — 내 결제 내역(환불 가능 여부 표시용) */
+  @Get('orders')
+  async orders(@Req() req: any, @Query('limit') limit?: string) {
+    return { success: true, data: await this.portone.myOrders(req.user.id, Number(limit) || 20) };
+  }
+
+  /** GET /api/billing/portone/refund/:paymentId — 환불 가능 여부 미리보기(취소는 일어나지 않는다) */
+  @Get('refund/:paymentId')
+  async refundPreview(@Req() req: any, @Param('paymentId') paymentId: string) {
+    // 소유자 검증은 서비스가 한다 — 남의 결제번호를 넣으면 403(금액·시각이 새지 않는다).
+    return this.wrap(async () => ({
+      success: true,
+      data: await this.portone.assessRefund(paymentId, req.user.id),
+    }));
+  }
+
+  /** POST /api/billing/portone/refund { paymentId, reason } — 셀프 전액 환불 */
+  @Post('refund')
+  @HttpCode(200)
+  async refund(@Req() req: any, @Body() body: any) {
+    return this.wrap(async () => ({
+      success: true,
+      data: await this.portone.refundSelf(req.user.id, body && body.paymentId, body && body.reason),
     }));
   }
 
