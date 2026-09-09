@@ -11,6 +11,25 @@
  */
 
 /**
+ * ⚠️ 이 파일은 **모듈 로드 시점에 process.env를 읽는다.** 그런데 그 시점에 env가 올라와 있다는
+ *   보장이 없다 — NestJS는 AppModule을 import하면서 `nest/pricing/pricing.service.ts`를 통해
+ *   이 파일을 잡는데, 그건 `src/config`(dotenv 로더)가 실행되기 **전**일 수 있다(실측: dev에서
+ *   PG_TEST_PACK=on 인데도 팩이 안 나왔다).
+ *
+ *   그래서 여기서 dotenv를 한 번 더 부른다. `src/config/index.js`와 **같은 순서**로 읽고,
+ *   dotenv는 이미 설정된 값을 덮어쓰지 않으므로 몇 번 불려도 결과가 같다(멱등).
+ *   config를 require하지 않는 이유 = 순환 참조와 zod 검증(스크립트에서 이 파일만 쓸 때 터진다) 회피.
+ *
+ *   ⚠️ env로 동작이 갈리는 값을 이 파일에 새로 넣을 땐 이 로딩이 선행돼야 한다는 걸 기억할 것.
+ *      (`subscriptionsForSale`도 같은 위험에 있었다 — 기본값이 true라 증상이 안 보였을 뿐이다.)
+ */
+try {
+  const dotenv = require('dotenv');
+  dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
+  dotenv.config();
+} catch (e) { /* dotenv가 없으면 주입된 process.env만 쓴다 */ }
+
+/**
  * 🧪 PG 실채널 검증용 ₩100 팩 — **실서비스에는 존재하지 않는다.**
  *
  * 왜 있나: 실채널 전환 후 PortOne이 요구하는 "결제 및 환불 테스트"를 돌려야 하는데,
