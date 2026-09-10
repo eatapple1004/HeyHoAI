@@ -69,6 +69,32 @@ export class SubscriptionController {
   }
 
   /**
+   * GET /api/subscription/cancel/refund-preview — 중도해지 시 돌려받을 금액(부작용 없음)
+   *   규정 제5조 3항: 결제금액 − 경과일수분 − 이미 사용한 유상 크레딧 상당액. 음수면 0원.
+   */
+  @Get('cancel/refund-preview')
+  async refundPreview(@Req() req: any) {
+    try {
+      return { success: true, data: await this.subscription.assessCancelRefund(req.user.id) };
+    } catch (err: any) {
+      if (err && err.statusCode) throw new HttpException({ success: false, error: err.message }, err.statusCode);
+      throw err;
+    }
+  }
+
+  /** POST /api/subscription/cancel/refund — 즉시 해지 + 일할환불 */
+  @Post('cancel/refund')
+  @HttpCode(200)
+  async cancelWithRefund(@Req() req: any) {
+    try {
+      return { success: true, data: await this.subscription.refundAndCancel(req.user.id) };
+    } catch (err: any) {
+      if (err && err.statusCode) throw new HttpException({ success: false, error: err.message }, err.statusCode);
+      throw err;
+    }
+  }
+
+  /**
    * POST /api/subscription/upgrade { plan, months }
    * 기간권(선불) 수동 활성화 — **결제 없이** 플랜을 부여하므로 admin 전용으로 남긴다.
    * 일반 사용자의 유료 구독은 위 `subscribe`(빌링키 정기결제)를 쓴다.
