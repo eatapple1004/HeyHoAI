@@ -9,11 +9,17 @@ const characterRepo = require('../characters/character.repository');
 const runwayProvider = require('./providers/runway.provider');
 const klingProvider = require('./providers/kling.provider');
 const minimaxProvider = require('./providers/minimax.provider');
+// Veo·Sora는 결과가 바로 열리는 URL이 아니라(키 필요/바이너리) provider가 우리 저장소로 옮겨
+// `/images/...`를 돌려준다 — videoUrl 계약은 다른 provider와 동일하다. providers/persistVideo.js 참고.
+const veoProvider = require('./providers/veo.provider');
+const soraProvider = require('./providers/sora.provider');
 
 const providers = {
   runway: runwayProvider,
   kling: klingProvider,
   minimax: minimaxProvider,
+  veo: veoProvider,
+  sora: soraProvider,
 };
 
 function getProvider(name) {
