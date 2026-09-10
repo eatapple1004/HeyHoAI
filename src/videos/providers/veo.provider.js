@@ -52,7 +52,10 @@ const veoProvider = {
         }],
         parameters: {
           aspectRatio: aspectOf(req.width, req.height),
-          durationSeconds: String(snapDuration(req.durationSec, ALLOWED_SEC)),
+          // ⚠️ **숫자**여야 한다. 문자열로 보내면 400:
+          //   "The value type for `durationSeconds` needs to be a number" (실측 2026-09-10).
+          //   문서 예시는 "4"처럼 따옴표가 붙어 있어 그대로 따라 하면 틀린다.
+          durationSeconds: snapDuration(req.durationSec, ALLOWED_SEC),
           ...(env.VEO_RESOLUTION && { resolution: env.VEO_RESOLUTION }),
           ...(req.negativePrompt && { negativePrompt: req.negativePrompt }),
         },
