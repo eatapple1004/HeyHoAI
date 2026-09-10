@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>결제 취소 · 환불 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+button,input,textarea{font-family:inherit;font-size:.88rem}
+button{font-weight:600;padding:8px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button:disabled{opacity:.5;cursor:default}
+button.danger{background:linear-gradient(180deg,#e05252,#c23333);border-color:transparent;color:#fff}
+input,textarea{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 13px}
+input:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:4px}
+.card .hint{color:var(--faint);font-size:.8rem;line-height:1.6;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:12px 0}
+.kv{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 13px}
+.kv .l{color:var(--faint);font-size:.72rem;margin-bottom:3px}
+.kv .n{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kv .n.ok{color:var(--green)} .kv .n.warn{color:var(--gold)} .kv .n.bad{color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:9px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+th{color:var(--faint);font-size:.74rem;font-weight:700}
+tbody tr:hover{background:var(--panel2)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700}
+.t-ok{background:rgba(74,222,128,.14);color:var(--green)}
+.t-fail{background:rgba(248,113,113,.14);color:var(--red)}
+.t-wait{background:rgba(154,154,178,.16);color:var(--dim)}
+.msg{padding:12px 15px;border-radius:11px;margin-bottom:14px;display:none;font-size:.88rem;line-height:1.6}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+.msg.ok{background:rgba(74,222,128,.1);border:1px solid #2e5b3a;color:#86efac}
+.envwarn{background:rgba(255,206,122,.1);border:1px solid #5b4a2e;color:var(--gold);
+  padding:11px 15px;border-radius:10px;font-size:.85rem;line-height:1.6;margin-bottom:16px}
+.blockers{margin:8px 0 0;padding-left:18px;color:var(--gold);font-size:.82rem;line-height:1.7}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;color:var(--dim)}
+.empty{color:var(--faint);text-align:center;padding:40px}
+@media(max-width:820px){body{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 결제 취소 · 환불</h1>
+  <div class="sub">
+    사용자가 화면에서 스스로 못 하는 환불을 처리합니다 — 부분사용 후 비례환불(회사 귀책), 이중결제,
+    미성년자 결제 취소, PG 심사용 취소 테스트. (관리자 전용)
+  </div>
+
+  <div id="adminNav"></div>
+
+  <!--
+    ⚠️ 다른 어드민 화면과 달리 환경 선택이 없다. 저 화면들은 조회 전용이라 dev·staging·prod를
+    한 화면에서 봐도 안전하지만, 여기는 **실제로 돈을 되돌리는 쓰기 작업**이다. 환경을 잘못
+    고른 채 취소를 누르면 되돌릴 방법이 없어서, 지금 접속한 서버의 결제만 다루게 묶어 뒀다.
+  -->
+  <div class="envwarn">
+    ⚠️ 이 화면은 <b>지금 접속한 서버(<span id="envName">…</span>)의 결제만</b> 다룹니다.
+    조회 전용인 다른 어드민 화면과 달리 <b>실제로 승인취소가 일어나므로</b> 환경 선택을 두지 않았습니다.
+    prod 결제를 취소하려면 prod 어드민으로 접속하세요.
+  </div>
+
+  <div class="msg err" id="err"></div>
+  <div class="msg ok" id="ok"></div>
+
+  <!-- ① 조회 — 취소 전에 무조건 판정을 먼저 본다 -->
+  <div class="card">
+    <h2>결제 조회</h2>
+    <div class="hint">
+      주문번호(<span class="mono">dp…</span> 또는 <span class="mono">sub…</span>)를 넣고 조회하면
+      취소 가능액·사용 크레딧·비례환불액을 계산해 보여줍니다. 이 단계에서는 아무 일도 일어나지 않습니다.
+    </div>
+    <div class="bar">
+      <input id="pid" placeholder="주문번호 (paymentId)" style="min-width:340px" onkeydown="if(event.key==='Enter')assess()">
+      <button onclick="assess()" id="assessBtn">조회</button>
+    </div>
+    <div id="view"></div>
+  </div>
+
+  <!-- ② 취소 실행 — 조회에 성공했을 때만 열린다 -->
+  <div class="card" id="actCard" style="display:none">
+    <h2>취소 실행</h2>
+    <div class="hint">
+      금액을 비우면 <b>전액취소</b>, 넣으면 그 금액만 <b>부분취소</b>합니다.
+      회수 크레딧을 비우면 취소 금액 비율만큼 자동 회수합니다.<br>
+      크레딧을 <b>먼저 회수한 뒤</b> PG를 취소합니다 — PG 취소가 실패하면 크레딧은 자동으로 원복됩니다.
+    </div>
+    <div class="bar">
+      <input id="amt" type="number" min="1" placeholder="취소 금액(원) · 비우면 전액" style="width:230px">
+      <input id="crd" type="number" min="0" placeholder="회수 크레딧 · 비우면 비례" style="width:230px">
+      <input id="rsn" placeholder="취소 사유 (PG에 전달됨)" style="min-width:280px">
+    </div>
+    <div class="bar">
+      <button class="danger" onclick="doCancel()" id="cancelBtn">취소 실행</button>
+      <button onclick="prefillProrated()">비례환불액 채우기</button>
+    </div>
+  </div>
+
+  <!-- ③ PG 콘솔에서 이미 취소한 건 동기화 -->
+  <div class="card">
+    <h2>PG 취소 동기화</h2>
+    <div class="hint">
+      PortOne 콘솔에서 직접 취소했거나 카드사가 강제 취소한 건은 우리 크레딧이 회수되지 않은 채 남습니다.
+      웹훅이 정상 도착하면 자동으로 처리되지만, 놓친 건을 여기서 수동으로 맞출 수 있습니다.
+      <b>이미 반영된 건을 다시 눌러도 중복 회수되지 않습니다.</b>
+    </div>
+    <div class="bar">
+      <input id="rpid" placeholder="주문번호 (paymentId)" style="min-width:340px">
+      <button onclick="reconcile()" id="recBtn">동기화</button>
+    </div>
+  </div>
+
+  <!-- ④ 이력 -->
+  <div class="card">
+    <h2>취소 이력</h2>
+    <div class="hint">실패한 취소도 남습니다 — 회수했던 크레딧을 원복한 사실까지 추적돼야 CS가 설명할 수 있습니다.</div>
+    <div class="bar"><button onclick="loadHistory()">새로고침</button></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>일시</th><th>주문번호</th><th>이메일</th><th class="num">금액</th><th class="num">회수 ◈</th><th>요청자</th><th>상태</th><th>사유</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="8" class="empty">불러오는 중…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<script src="/js/admin-nav.js?v=1" defer></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = (n) => '₩' + Number(n || 0).toLocaleString('ko-KR');
+const cr  = (n) => '◈' + Number(n || 0).toLocaleString('ko-KR');
+
+let VIEW = null;   // 마지막 조회 결과 — 취소 실행이 이 값을 기준으로 검증한다
+
+function flash(el, text) {
+  const other = el === $('err') ? $('ok') : $('err');
+  other.classList.remove('show');
+  el.innerHTML = text; el.classList.add('show');
+  if (el === $('ok')) setTimeout(() => el.classList.remove('show'), 8000);
+}
+const showErr = (t) => flash($('err'), esc(t));
+const showOk  = (t) => flash($('ok'), t);
+
+/** 지금 붙어 있는 서버가 어느 환경인지 — 화면에 못박아 오조작을 줄인다 */
+async function loadEnv() {
+  try {
+    const r = await (await fetch('/nest/health')).json();
+    $('envName').textContent = r.env || '알 수 없음';
+    if ((r.env || '') === 'production') document.body.style.background = '#140c0e';
+  } catch (e) { $('envName').textContent = '알 수 없음'; }
+}
+
+/** 취소 전 판정 — 부작용 없음. 취소 실행은 이 결과를 본 뒤에만 열린다. */
+async function assess() {
+  const id = $('pid').value.trim();
+  if (!id) { showErr('주문번호를 입력하세요.'); return; }
+  $('assessBtn').disabled = true;
+  try {
+    const r = await (await fetch('/api/admin/refunds/assess/' + encodeURIComponent(id))).json();
+    if (!r.success) { VIEW = null; $('actCard').style.display = 'none'; $('view').innerHTML = ''; showErr(r.error || '조회에 실패했습니다.'); return; }
+    VIEW = r.data;
+    renderView(r.data);
+    $('actCard').style.display = '';
+    $('rsn').value = '';
+    $('amt').value = ''; $('crd').value = '';
+    $('err').classList.remove('show');
+  } catch (e) { showErr('조회 중 오류가 발생했습니다.'); }
+  finally { $('assessBtn').disabled = false; }
+}
+
+function renderView(v) {
+  const c = v.credits, a = v.amount;
+  const blockers = (v.blockers || []).length
+    ? '<ul class="blockers">' + v.blockers.map((b) => '<li>' + esc(b) + '</li>').join('') + '</ul>'
+    : '<div style="color:var(--green);font-size:.82rem;margin-top:8px">✓ 사용자가 화면에서 직접 전액 환불할 수 있는 상태입니다.</div>';
+  $('view').innerHTML =
+    '<div class="grid">'
+    + kv('결제 상태', v.status, v.status === 'PAID' ? 'ok' : '')
+    + kv('팩', v.packId || '—')
+    + kv('결제 금액', won(a.total))
+    + kv('이미 취소', won(a.cancelled), a.cancelled ? 'warn' : '')
+    + kv('취소 가능액', won(a.cancellable), a.cancellable > 0 ? 'ok' : 'bad')
+    + kv('경과일', v.daysElapsed + '일')
+    + kv('지급 크레딧', cr(c.purchased))
+    + kv('사용', cr(c.used), c.used ? 'warn' : '')
+    + kv('이미 회수', cr(c.clawedBack || 0))
+    + kv('미사용', cr(c.unused))
+    + kv('현재 잔액', cr(c.balance))
+    + kv('비례환불액', won(v.prorated.amountKRW) + ' / ' + cr(v.prorated.credits))
+    + '</div>'
+    + '<div style="font-size:.82rem;color:var(--dim)">셀프 환불 가능: <b>' + (v.selfRefundable ? '예' : '아니오') + '</b></div>'
+    + blockers;
+}
+function kv(l, n, cls) {
+  return '<div class="kv"><div class="l">' + esc(l) + '</div><div class="n ' + (cls || '') + '">' + esc(n) + '</div></div>';
+}
+
+/** 규정 제4조 ② 비례환불액을 입력란에 채운다(회사 귀책 케이스에서 쓰는 값) */
+function prefillProrated() {
+  if (!VIEW) return;
+  $('amt').value = VIEW.prorated.amountKRW;
+  $('crd').value = VIEW.prorated.credits;
+  if (!$('rsn').value) $('rsn').value = '회사 귀책 사유에 따른 미사용분 비례환불';
+}
+
+async function doCancel() {
+  if (!VIEW) { showErr('먼저 조회하세요.'); return; }
+  const amt = $('amt').value.trim(), crd = $('crd').value.trim(), rsn = $('rsn').value.trim();
+  if (!rsn) { showErr('취소 사유를 입력하세요. PG에 그대로 전달되고 이력에 남습니다.'); return; }
+
+  const label = amt ? (won(amt) + ' 부분취소') : (won(VIEW.amount.cancellable) + ' 전액취소');
+  const crLabel = crd ? cr(crd) : '취소 비율만큼';
+  if (!confirm('정말 취소할까요?\n\n주문 ' + VIEW.paymentId + '\n' + label + '\n크레딧 ' + crLabel + ' 회수\n\n실제 카드 승인취소가 일어납니다.')) return;
+
+  $('cancelBtn').disabled = true;
+  try {
+    const body = { paymentId: VIEW.paymentId, reason: rsn };
+    if (amt) body.amountKRW = Number(amt);
+    if (crd !== '') body.credits = Number(crd);
+    const r = await (await fetch('/api/admin/refunds', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })).json();
+    if (!r.success) { showErr(r.error || '취소에 실패했습니다.'); return; }
+    const d = r.data;
+    showOk('✅ 취소 완료 — <b>' + won(d.amountKRW) + '</b> 승인취소, <b>' + cr(d.creditsClawed) + '</b> 회수'
+      + (d.full ? ' (전액)' : ' · 남은 취소가능액 ' + won(d.remainingCancellable)));
+    assess(); loadHistory();
+  } catch (e) { showErr('취소 중 오류가 발생했습니다.'); }
+  finally { $('cancelBtn').disabled = false; }
+}
+
+async function reconcile() {
+  const id = $('rpid').value.trim();
+  if (!id) { showErr('주문번호를 입력하세요.'); return; }
+  $('recBtn').disabled = true;
+  try {
+    const r = await (await fetch('/api/admin/refunds/reconcile', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId: id }),
+    })).json();
+    if (!r.success) { showErr(r.error || '동기화에 실패했습니다.'); return; }
+    const d = r.data || {};
+    if (d.already) showOk('이미 반영된 건입니다 — 중복 회수하지 않았습니다.');
+    else if (!d.ok) showOk('반영할 취소가 없습니다. (' + esc(d.reason || '') + ')');
+    else showOk('✅ 동기화 완료 — <b>' + won(d.amountKRW) + '</b> 취소분 반영, <b>' + cr(d.creditsClawed) + '</b> 회수');
+    loadHistory();
+  } catch (e) { showErr('동기화 중 오류가 발생했습니다.'); }
+  finally { $('recBtn').disabled = false; }
+}
+
+async function loadHistory() {
+  try {
+    const r = await (await fetch('/api/admin/refunds?limit=100')).json();
+    const rows = (r.success && r.data) || [];
+    if (!rows.length) { $('rows').innerHTML = '<tr><td colspan="8" class="empty">취소 이력이 없습니다.</td></tr>'; return; }
+    $('rows').innerHTML = rows.map((f) => {
+      const tag = f.status === 'succeeded' ? '<span class="tag t-ok">성공</span>'
+                : f.status === 'failed'    ? '<span class="tag t-fail">실패</span>'
+                : '<span class="tag t-wait">요청</span>';
+      return '<tr>'
+        + '<td>' + esc(new Date(f.created_at).toLocaleString('ko-KR')) + '</td>'
+        + '<td class="mono">' + esc(f.order_id) + '</td>'
+        + '<td>' + esc(f.email || '—') + '</td>'
+        + '<td class="num">' + won(f.amount_krw) + '</td>'
+        + '<td class="num">' + cr(f.credits_clawed) + '</td>'
+        + '<td>' + esc(f.requester) + '</td>'
+        + '<td>' + tag + '</td>'
+        + '<td>' + esc(f.reason || '—') + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch (e) { $('rows').innerHTML = '<tr><td colspan="8" class="empty">불러오지 못했습니다.</td></tr>'; }
+}
+
+loadEnv();
+loadHistory();
+</script>
+</body>
+</html>

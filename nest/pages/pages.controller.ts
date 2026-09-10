@@ -154,6 +154,11 @@ export class PagesController {
   @Get('admin-proposal')
   adminProposal(@Res() res: any) { return res.sendFile(page('admin-proposal.html')); }
 
+  /** 결제 취소·환불 — 다른 어드민과 달리 **쓰기** 화면이라 환경 선택이 없다(접속한 서버만 다룬다). */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-refunds')
+  adminRefunds(@Res() res: any) { return res.sendFile(page('admin-refunds.html')); }
+
   /** 사업체 인스타 관리 — 목록. 상세(`:id`)보다 먼저 선언해야 한다. */
   @UseGuards(AdminPageGuard)
   @Get('admin-business')

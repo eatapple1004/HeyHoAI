@@ -209,6 +209,9 @@ app.get('/admin-creations', requireAdminPage, (_req, res) => {
 });
 
 // 관리자 전용: 기본 통계 대시보드
+app.get('/admin-refunds', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-refunds.html'));
+});
 app.get('/admin-stats', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-stats.html'));
 });
