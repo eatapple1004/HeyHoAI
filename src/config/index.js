@@ -114,6 +114,14 @@ const envSchema = z.object({
   KLING_MODEL: z.string().default('kling-v3'),
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
+  // Veo 3.1 (Gemini API) — 키는 GEMINI_API_KEY 공유(별도 발급 불필요).
+  //   VEO_RESOLUTION은 비워두면 모델 기본값. 1080p·4k는 길이가 8초로 강제된다(구글 제약).
+  VEO_MODEL: z.string().default('veo-3.1-generate-preview'),
+  VEO_RESOLUTION: z.string().optional(),
+  // Sora 2 (OpenAI) — 키는 OPENAI_API_KEY 공유.
+  //   SORA_SECONDS = 허용 길이 목록. 문서 개정으로 값이 바뀌어 와서 상수로 박지 않았다.
+  SORA_MODEL: z.string().default('sora-2'),
+  SORA_SECONDS: z.string().default('4,8,12'),
 
   // OpenAI (GPT Image + TTS 폴백)
   OPENAI_API_KEY: z.string().optional(),
