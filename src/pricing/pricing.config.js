@@ -52,7 +52,8 @@ function testPackEnabled() {
   const on = flag === 'on' || flag === 'true' || flag === '1';
   return on && (process.env.NODE_ENV || 'development') === 'development';
 }
-const TEST_PACK = { id: 'packtest', cr: 100, bonus: 0, price: 0.07, priceKRW: 100, ppc: '0.0007', test: true };
+//   ◈10 — 잔액에 얼마가 붙었는지 눈으로 바로 세지는 크기로 둔다(충전·환불 회수를 육안 검증).
+const TEST_PACK = { id: 'packtest', cr: 10, bonus: 0, price: 0.07, priceKRW: 100, ppc: '10', test: true };
 
 const BASE_PACKS = [
   { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   priceKRW: 15000,  ppc: '0.0026' },

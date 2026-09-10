@@ -391,7 +391,7 @@
 
 <!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
      낡은 파일이 그대로 나간다. v=3: subscriptionsForSale(구독 판매 플래그) 추가 -->
-<script src="/js/pricing.js?v=6"></script>
+<script src="/js/pricing.js?v=7"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -718,6 +718,8 @@ function syncBillingPricing(){
 // 통화 전환: 토글 클릭 → 저장 + dp:currency 이벤트 → 재렌더
 function pickCurrency(c){ if(window.PRICING&&window.PRICING.setCurrency) window.PRICING.setCurrency(c); }
 document.addEventListener('dp:currency', syncBillingPricing);
+// 서버(/api/pricing) 값이 도착하면 팩 그리드를 다시 그린다. 이게 없으면 임베드 폴백이 화면에 굳는다.
+document.addEventListener('dp:pricing', syncBillingPricing);
 
 async function loadBalance(){
   try{
