@@ -145,4 +145,16 @@ export class SubscriptionService {
   cancelSubscription(userId: string) {
     return subBilling.cancel(userId);
   }
+
+  // ── 중도해지 일할환불 (환불규정 제5조 3항) ──
+  //   기말 해지와는 다른 상품이다: 남은 기간을 돈으로 돌려받고 지금 끊는다.
+
+  /** 환불 예상액 판정(부작용 없음) — 화면이 확인시키는 값과 실제 환불이 같은 계산을 쓴다 */
+  assessCancelRefund(userId: string) {
+    return subBilling.assessCancelRefund(userId);
+  }
+  /** 즉시 해지 + 일할환불 실행 */
+  refundAndCancel(userId: string) {
+    return subBilling.refundAndCancel(userId);
+  }
 }

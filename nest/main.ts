@@ -21,7 +21,7 @@ const cookieParser = require('cookie-parser');
 //   ⚠️ **더 이상 게이트가 아니다**(2026-08-11 프론트 이관). 이제 웹훅을 뺀 모든 요청이 Nest로 먼저 들어가고,
 //      Nest가 못 잡은 것만 정적 → 레거시 순으로 흘러내린다(아래 bootstrap 참고).
 //      배열은 "무엇을 Nest가 소유하는가"를 기록·로깅하는 원장으로 남긴다.
-const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing', '/api/subscription', '/api/dashboard', '/api/brand-kit', '/api/teams', '/api/affiliate', '/api/recipes', '/api/studio', '/api/marketplace', '/api/characters', '/api/images', '/api/videos', '/api/visuals', '/api/template-data', '/api/admin/trials', '/api/trial', '/api/contents', '/api/publish-jobs', '/api/admin/creations', '/api/admin/stats', '/api/admin/proposal', '/api/admin/refine', '/api/admin/users', '/api/admin/business-meta', '/api/admin/business', '/api/auth', '/api/pack', '/api/accounts', '/api/generate', '/api/ad-studio'];
+const NEST_PREFIXES = ['/nest', '/api/pricing', '/api/credits', '/api/billing', '/api/subscription', '/api/dashboard', '/api/brand-kit', '/api/teams', '/api/affiliate', '/api/recipes', '/api/studio', '/api/marketplace', '/api/characters', '/api/images', '/api/videos', '/api/visuals', '/api/template-data', '/api/admin/trials', '/api/trial', '/api/contents', '/api/publish-jobs', '/api/admin/creations', '/api/admin/stats', '/api/admin/proposal', '/api/admin/refine', '/api/admin/refunds', '/api/admin/users', '/api/admin/business-meta', '/api/admin/business', '/api/auth', '/api/pack', '/api/accounts', '/api/generate', '/api/ad-studio'];
 // /api/billing 접두사에 걸리지만 레거시로 남겨둘 경로 = 웹훅(raw body·무인증, index.js에 json 파싱 전 직접 마운트).
 //   Nest로 넘기면 body가 json 파싱돼 서명검증이 깨지고 가드가 401을 냄 → 반드시 예외 처리.
 const NEST_EXCLUDE = ['/api/billing/webhook', '/api/billing/eximbay/status', '/api/billing/portone/webhook'];
@@ -77,6 +77,15 @@ async function bootstrap() {
   //   따라서 **listen 이후에** 붙이는 이 미들웨어들은 "Nest가 처리하지 않은 요청"만 받는다.
   //   순서(레거시 src/index.js와 동일한 의미): 페이지 컨트롤러 → 정적 → 레거시.
   //   ⚠️ 정적을 컨트롤러보다 먼저 두면 `/studio.html`이 그대로 서빙돼 클린 URL 301이 사라진다.
+  // /genova/* = 제노바 아너스 기업 홈페이지 시안 — **dev 전용**. (src/index.js에 동일 가드 — 한쪽만 고치지 말 것)
+  //   dev는 이 경로로 뜨므로 여기가 "열어주는" 쪽이고, staging/prod를 실제로 막는 건 레거시 쪽 가드다.
+  //   useStaticAssets(=server.use(static))보다 **먼저** 등록돼야 차단·index 서빙이 동작한다.
+  server.use('/genova', (req: any, res: any, next: any) => {
+    if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+    if (req.path === '/') return res.sendFile(path.join(PUBLIC_DIR, 'genova', 'index.html'));
+    return next();
+  });
+
   app.useStaticAssets(PUBLIC_DIR, { index: false });
   app.useStaticAssets(path.join(process.cwd(), 'tmp', 'bgm'), { prefix: '/bgm' });
   // ffmpeg.wasm 자체 호스팅 — Worker는 동일 출처여야 로드된다.

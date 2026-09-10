@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>News | Genova Honors</title>
+<meta name="description" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="news" data-meta="news" class="solid-header">
+
+<section class="page-hero">
+  <div class="wrap page-hero-inner">
+    <p class="kicker" data-i18n="nav.news"></p>
+    <h1 data-i18n="nw.h1"></h1>
+    <p class="sub" data-i18n="nw.sub"></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="filters reveal" data-target="#newsList">
+      <button data-filter="all" class="on" data-i18n="nw.f.all"></button>
+      <button data-filter="co" data-i18n="nw.f.co"></button>
+      <button data-filter="pj" data-i18n="nw.f.pj"></button>
+      <button data-filter="md" data-i18n="nw.f.md"></button>
+    </div>
+
+    <div class="news-list reveal" id="newsList">
+      <article class="news-item" data-cat="pj">
+        <time data-i18n="nw.1.date"></time>
+        <div><span class="cat" data-i18n="nw.1.cat"></span><h3 data-i18n="nw.1.h"></h3></div>
+        <span class="go">→</span>
+      </article>
+      <article class="news-item" data-cat="co">
+        <time data-i18n="nw.2.date"></time>
+        <div><span class="cat" data-i18n="nw.2.cat"></span><h3 data-i18n="nw.2.h"></h3></div>
+        <span class="go">→</span>
+      </article>
+      <article class="news-item" data-cat="co">
+        <time data-i18n="nw.3.date"></time>
+        <div><span class="cat" data-i18n="nw.3.cat"></span><h3 data-i18n="nw.3.h"></h3></div>
+        <span class="go">→</span>
+      </article>
+    </div>
+    <p class="sub reveal" style="font-size:.85rem;margin-top:2rem" data-i18n="nw.note"></p>
+  </div>
+</section>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

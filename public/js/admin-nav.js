@@ -17,6 +17,7 @@
     { href: '/admin-users',         label: '👥 사용자' },
     { href: '/admin-creations',     label: '🖼 크리에이션' },
     { href: '/admin-stats',         label: '📊 통계' },
+    { href: '/admin-refunds',       label: '↩︎ 환불' },
     { href: '/admin-trials',        label: '🎟 체험 계정' },
     { href: '/admin-templates',     label: '🧩 템플릿' },
     { href: '/admin-refine',        label: '🎯 프롬프트 정밀화' },

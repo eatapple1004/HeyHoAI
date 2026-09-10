@@ -133,6 +133,31 @@ export class BusinessRepository {
     return r.rows;
   }
 
+  /** 제공자에서 다시 읽어온 프로필을 반영. 팔로워·프로필사진만 — 소유(business_id)는 건드리지 않는다. */
+  async updateAccountProfile(accountId: string, p: {
+    username?: string | null; displayName?: string | null; profileImage?: string | null; followers?: number | null;
+  }): Promise<BusinessAccountVo | null> {
+    const { rows } = await this.db.query<BusinessAccountVo>(
+      `UPDATE social_accounts SET
+         username      = COALESCE($2, username),
+         display_name  = COALESCE($3, display_name),
+         profile_image = COALESCE($4, profile_image),
+         followers     = COALESCE($5, followers),
+         updated_at    = now()
+       WHERE id = $1 RETURNING *`,
+      [accountId, p.username ?? null, p.displayName ?? null, p.profileImage ?? null,
+        Number.isFinite(p.followers as number) ? p.followers : null],
+    );
+    return rows[0] || null;
+  }
+
+  /** 계정의 Meta 직결 토큰 — 내부 전용(응답에 싣지 않는다) */
+  async metaToken(accountId: string): Promise<{ access_token: string; auth_mode: string } | null> {
+    const { rows } = await this.db.query(
+      'SELECT access_token, auth_mode FROM meta_ig_tokens WHERE account_id = $1', [accountId]);
+    return rows[0] || null;
+  }
+
   async findAccount(accountId: string): Promise<BusinessAccountVo | null> {
     const r = await this.db.query<BusinessAccountVo>(
       'SELECT * FROM social_accounts WHERE id = $1', [accountId]);

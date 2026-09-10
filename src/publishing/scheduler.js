@@ -76,6 +76,10 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
 
   let imagePostUrl = null;
   let reelPostUrl = null;
+  // 인사이트 조회 키 — permalink와 별개. 아래에서 `r.permalink || r.mediaId` 로 URL을 정할 때
+  //   permalink가 있으면 mediaId가 버려지므로 여기에 따로 담는다.
+  let imageIgMediaId = null;
+  let reelIgMediaId = null;
   const errors = [];   // 실패 사유 — 호출부가 '게시됨'으로 속이지 않도록 위로 올린다
 
   // 이미지 — 2장 이상이면 캐러셀 한 건(Zernio 경로와 같은 규칙)
@@ -95,6 +99,8 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
         caption: `${imageCaption}\n${tags}`,
       });
       imagePostUrl = r.permalink || r.mediaId;
+      // permalink가 있으면 위에서 mediaId가 버려진다 — 인사이트 조회 키라 따로 잡아둔다.
+      imageIgMediaId = r.mediaId || null;
       log.info(`[meta] Image posted (${urls.length} slide): ${imagePostUrl}`);
     } catch (err) {
       log.error(`[meta] Image post failed: ${err.message}`);
@@ -113,6 +119,7 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
         caption: `${reelCaption}\n${tags}`,
       });
       reelPostUrl = r.permalink || r.mediaId;
+      reelIgMediaId = r.mediaId || null;
       log.info(`[meta] Reel posted (인코딩 ${r.waitedSec ?? '?'}초): ${reelPostUrl}`);
     } catch (err) {
       log.error(`[meta] Reel post failed: ${err.message}`);
@@ -120,7 +127,7 @@ async function publishItemMeta(item, account, { imageCaption, reelCaption, tags 
     }
   }
 
-  return { imagePostUrl, reelPostUrl, errors };
+  return { imagePostUrl, reelPostUrl, imageIgMediaId, reelIgMediaId, errors };
 }
 
 /**
@@ -162,6 +169,8 @@ async function publishItem(item, zernioAccountId, accMeta = {}, account = null) 
       postedAt: ok ? new Date().toISOString() : null,
       imagePostUrl: r.imagePostUrl,
       reelPostUrl: r.reelPostUrl,
+      imageIgMediaId: r.imageIgMediaId ?? null,
+      reelIgMediaId: r.reelIgMediaId ?? null,
       error: (r.errors && r.errors.length) ? r.errors.join(' · ') : null,
     });
     log.info(`Queue ${item.id} → ${ok ? 'posted' : 'failed'} (meta)${ok ? '' : ' — ' + (r.errors || []).join(' · ')}`);

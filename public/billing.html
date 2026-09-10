@@ -112,6 +112,32 @@
   .manage{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
   .pausebox{background:rgba(94,224,214,.08);border:1px solid rgba(94,224,214,.25);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px;color:var(--dim)}
   .pausebox b{color:var(--cyan)}
+  /* 결제 내역 — 환불 규정 제4조가 약속한 "화면에서 바로 환불"이 실재해야 한다(PG 심사에서 약관과 대조된다) */
+  .hist{padding:6px 22px 18px}
+  .hist .hnote{font-size:12px;color:var(--dim);line-height:1.65;padding:12px 0 6px;border-bottom:1px solid var(--border)}
+  .hist .hnote a{color:var(--accent2);text-decoration:none}
+  .hrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--border)}
+  .hrow:last-child{border-bottom:0}
+  .hrow .hmain{flex:1;min-width:170px}
+  .hrow .htop{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hrow .htop .cr{color:var(--gold)}
+  .hrow .hsub{font-size:11.5px;color:var(--faint);margin-top:4px;font-variant-numeric:tabular-nums}
+  .hrow .hamt{font-family:'Sora';font-size:15px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+  .hrow .hact{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .hbadge{font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:4px 9px;border-radius:7px;white-space:nowrap}
+  .hbadge.ok{background:rgba(94,224,214,.15);color:var(--cyan)}
+  .hbadge.ref{background:rgba(255,255,255,.06);color:var(--faint)}
+  .hbadge.part{background:rgba(255,196,84,.15);color:var(--gold)}
+  .hbadge.busy{background:rgba(255,255,255,.06);color:var(--dim)}
+  .hrow .hbtn{padding:8px 14px;font-size:12.5px}
+  .hbox{flex-basis:100%;background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:15px 16px;margin-top:2px}
+  .hbox .hh{font-size:13.5px;font-weight:700;margin-bottom:7px}
+  .hbox .hb{font-size:12.5px;color:var(--dim);line-height:1.6;margin-bottom:12px}
+  .hbox .hb b{color:var(--text)}
+  .hbox ul{list-style:none;margin:0 0 12px;padding:0}
+  .hbox ul li{font-size:12.5px;color:var(--dim);line-height:1.6;padding-left:14px;position:relative}
+  .hbox ul li::before{content:'·';position:absolute;left:4px;color:var(--faint)}
+  .hbox .hcta{display:flex;gap:9px;flex-wrap:wrap}
   .cancelbox{background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-top:14px}
   .cancelbox .cbh{font-size:14px;font-weight:700;margin-bottom:6px}
   .cancelbox .cbb{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:14px}
@@ -306,6 +332,22 @@
   </div>
 
   <!--
+    결제 내역 · 환불 — 결제 기록이 있을 때만 JS가 켠다(loadHistory).
+    환불규정 제4조가 "결제일부터 7일 이내이고 미사용이면 전액 환불"을 약속하므로 그 경로가
+    화면에 실재해야 한다(구독 해지 화면과 같은 이유 — 심사에서 약관과 화면을 대조한다).
+    부분사용분은 규정상 회사 귀책일 때만 비례환불이라 셀프 버튼을 열지 않고 고객센터로 보낸다.
+  -->
+  <div class="section-label fade d4" id="histLabel" style="margin-top:46px;display:none">Payment history · 결제 내역</div>
+  <div class="glass fade d4 hist" id="histRow" style="display:none;border-radius:var(--r)">
+    <div class="hnote">
+      결제일부터 <b>7일 이내</b>이고 충전한 크레딧을 <b>한 번도 사용하지 않은</b> 경우 이 화면에서 바로 전액 환불하실 수 있습니다.
+      환불은 원 결제수단(카드 승인취소)으로 처리됩니다. 그 밖의 경우는
+      <a href="/refund">환불 규정</a>에 따라 고객센터(support@doppia.ai · 070-8098-3546)에서 도와드립니다.
+    </div>
+    <div id="histList"></div>
+  </div>
+
+  <!--
     구독 관리 — 진행 중인 정기결제가 있을 때만 JS가 켠다(loadSubscription).
     환불정책 제5조가 "서비스 내 '결제/구독 관리' 화면에서 언제든지 해지 신청"을 약속하고 있어
     이 화면은 반드시 실재해야 한다(PG 심사에서 약관과 화면이 대조된다).
@@ -349,7 +391,7 @@
 
 <!-- ⚠️ pricing.js를 고치면 이 v를 반드시 올린다 — 정적 자산이 max-age=14400(4시간)로 캐시돼
      낡은 파일이 그대로 나간다. v=3: subscriptionsForSale(구독 판매 플래그) 추가 -->
-<script src="/js/pricing.js?v=6"></script>
+<script src="/js/pricing.js?v=7"></script>
 <script>
 // ═══ theirs 디자인 + main 실배선: /api/credits·/api/billing(eximbay/LS)·/api/subscription ═══
 // 언어 판정 — i18n.js 를 기다리지 않는다. 이 페이지는 syncBillingPricing() 을 파싱 중(맨 아래)에 바로 부르는데
@@ -357,7 +399,21 @@
 //   '매달 N 크레딧' 이 한 번도 안 나오고 'N credits / month' 가 나갔다(한국어 사용자에게도).
 //   getLang() 이 내부에서 읽는 것과 같은 저장값을 직접 본다 — 값도 같고 로드 순서에 안 걸린다.
 function koNow(){ try{ return localStorage.getItem('doppia_lang')==='ko'; }catch(e){ return false; } }
-function goBack(){ if(history.length>1) history.back(); else location.href='/studio'; }
+/**
+ * 뒤로 — history.length는 신뢰할 수 없다. 다른 사이트를 거쳐 들어오거나 주소창으로 직접 열어도
+ *   1보다 커서, back()이 우리 화면이 아닌 곳으로 가거나 **아무 일도 일어나지 않는다**(실측).
+ *   같은 출처에서 넘어온 경우에만 back()을 쓰고, 그마저 안 먹으면 앱 화면으로 보낸다.
+ */
+function goBack(){
+  var HOME='/studio';
+  var same=false;
+  try{ same = !!document.referrer && new URL(document.referrer).origin===location.origin; }catch(e){}
+  if(!same){ location.href=HOME; return; }
+  // back()이 실제로 페이지를 떠났으면 pagehide가 먼저 오고 타이머는 취소된다.
+  var t=setTimeout(function(){ location.href=HOME; },400);
+  window.addEventListener('pagehide',function(){ clearTimeout(t); },{once:true});
+  history.back();
+}
 function setTxt(id,t){ var e=document.getElementById(id); if(e)e.textContent=t; }
 function notify(msg,type){ if(window.toast)toast(msg,type); else alert(msg); }
 function planSoon(){ notify('Plan changes are coming soon — for now, add an extra credit pack.'); }
@@ -455,8 +511,119 @@ async function chargeWithCard(btn){
     if(!r.success){ notify(r.error||'결제에 실패했습니다.','error'); return; }
     if(r.data&&r.data.pending){ notify('결제 확인 중입니다 — 잠시 후 잔액에 반영됩니다.'); }
     else{ notify('충전 완료 — ◈'+((r.data&&r.data.credits)||0).toLocaleString()+' 적립되었습니다.'); }
-    loadBalance();
+    loadBalance(); loadHistory();
   }catch(e){ notify('결제 중 오류가 발생했습니다.','error'); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
+
+// ── 결제 내역 · 환불 ──
+//   목록은 우리 DB만 읽어 가볍다(행마다 PG를 조회하지 않는다). PG 조회는 [환불]을 눌러
+//   실제 판정이 필요한 순간에만 한 번 한다 — 내역을 여는 것만으로 PG를 N번 부르지 않기 위해서다.
+
+/** 팩 정가(₩) — PortOne은 언제나 원화 결제라 pricing 단일소스에서 되찾는다. */
+function packKRW(packId){
+  const P=window.PRICING; if(!P||!P.packs)return null;
+  const p=P.packs.find(function(x){ return x.id===packId; });
+  return p?p.priceKRW:null;
+}
+// 주문번호를 onclick 문자열에 넣기 전 안전화. esc()는 따옴표를 &#39;로 바꾸는데 그건 HTML 디코드
+//   후 JS 문자열을 깨뜨린다 — 속성 안에 코드로 들어가는 값은 화이트리스트로 거른다.
+function idSafe(s){ return String(s==null?'':s).replace(/[^A-Za-z0-9_-]/g,''); }
+function fmtKRW(n){ return '₩'+Number(n||0).toLocaleString('ko-KR'); }
+function fmtDate(s){ try{ return new Date(s).toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'}); }catch(e){ return ''; } }
+
+async function loadHistory(){
+  if(!(PORTONE&&PORTONE.configured))return;   // 결제 자체가 안 열리는 환경이면 내역도 없다
+  let rows=[];
+  try{
+    const r=await(await fetch('/api/billing/portone/orders')).json();
+    rows=(r&&r.success&&r.data)||[];
+  }catch(e){ return; }
+  if(!rows.length)return;                      // 결제가 한 번도 없으면 섹션을 켜지 않는다
+  document.getElementById('histLabel').style.display='';
+  document.getElementById('histRow').style.display='';
+  renderHistory(rows);
+}
+
+function renderHistory(rows){
+  document.getElementById('histList').innerHTML=rows.map(function(o){
+    const krw=packKRW(o.pack_id);
+    const refunded=Number(o.refunded_krw||0);
+    const partial=o.status==='paid'&&refunded>0;
+    const badge=o.status==='refunded' ? '<span class="hbadge ref">환불 완료</span>'
+      : o.status==='refunding' ? '<span class="hbadge busy">환불 처리 중</span>'
+      : partial ? '<span class="hbadge part">부분 환불 '+fmtKRW(refunded)+'</span>'
+      : '<span class="hbadge ok">충전 완료</span>';
+    // 환불 버튼은 아직 취소 여지가 있는 건에만. 판정(7일·미사용)은 눌렀을 때 서버가 한다.
+    const canTry=o.status==='paid'&&!partial;
+    return '<div class="hrow" data-id="'+esc(o.order_id)+'">'
+      +  '<div class="hmain">'
+      +    '<div class="htop"><span class="cr">◈ '+Number(o.credits).toLocaleString('ko-KR')+'</span>'+badge+'</div>'
+      +    '<div class="hsub">'+fmtDate(o.updated_at)+' · 주문번호 '+esc(o.order_id)+'</div>'
+      +  '</div>'
+      +  '<div class="hamt">'+(krw!=null?fmtKRW(krw):'$'+esc(o.amount_usd))+'</div>'
+      +  '<div class="hact">'+(canTry
+            ? '<button class="btn btn-ghost hbtn" onclick="openRefund(this,\''+idSafe(o.order_id)+'\')">환불 요청</button>'
+            : '')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+/** [환불 요청] — 서버 판정을 받아 가능/불가를 그 자리에 펼친다. 여기서는 아직 취소하지 않는다. */
+async function openRefund(btn,orderId){
+  const row=btn.closest('.hrow');
+  const open=row.querySelector('.hbox');
+  if(open){ open.remove(); btn.textContent='환불 요청'; return; }   // 토글
+  btn.disabled=true; btn.textContent='확인 중…';
+  let v=null,err=null;
+  try{
+    const r=await(await fetch('/api/billing/portone/refund/'+encodeURIComponent(orderId))).json();
+    if(r&&r.success)v=r.data; else err=(r&&r.error)||'환불 가능 여부를 확인하지 못했습니다.';
+  }catch(e){ err='환불 가능 여부를 확인하지 못했습니다.'; }
+  btn.disabled=false; btn.textContent='닫기';
+
+  const box=document.createElement('div');
+  box.className='hbox';
+  if(err){
+    box.innerHTML='<div class="hh">환불을 확인하지 못했습니다</div><div class="hb">'+esc(err)+'</div>'
+      +'<div class="hcta"><button class="btn btn-ghost" onclick="closeRefund(this)">닫기</button></div>';
+  } else if(v.selfRefundable){
+    box.innerHTML='<div class="hh">전액 환불하시겠어요?</div>'
+      +'<div class="hb"><b>'+fmtKRW(v.amount.cancellable)+'</b>이 결제하신 카드로 승인취소됩니다.'
+      +' 함께 지급된 <b>◈'+Number(v.credits.purchased).toLocaleString('ko-KR')+'</b> 크레딧은 계정에서 회수됩니다.'
+      +'<br>카드사 처리 일정에 따라 실제 반영까지 영업일 기준 3일 정도 걸릴 수 있습니다.</div>'
+      +'<div class="hcta">'
+      +  '<button class="btn btn-primary" onclick="doRefund(this,\''+idSafe(v.paymentId)+'\')">환불하기</button>'
+      +  '<button class="btn btn-ghost" onclick="closeRefund(this)">닫기</button>'
+      +'</div>';
+  } else {
+    box.innerHTML='<div class="hh">이 결제는 화면에서 바로 환불할 수 없습니다</div>'
+      +'<div class="hb">아래 사유로 즉시 환불 대상이 아닙니다. 고객센터(support@doppia.ai · 070-8098-3546)로 문의하시면 '
+      +'<a href="/refund" style="color:var(--accent2);text-decoration:none">환불 규정</a>에 따라 검토해 드립니다.</div>'
+      +'<ul>'+(v.blockers||[]).map(function(b){ return '<li>'+esc(b)+'</li>'; }).join('')+'</ul>'
+      +'<div class="hcta"><button class="btn btn-ghost" onclick="closeRefund(this)">닫기</button></div>';
+  }
+  row.appendChild(box);
+}
+function closeRefund(el){
+  const row=el.closest('.hrow');
+  const box=row.querySelector('.hbox'); if(box)box.remove();
+  const btn=row.querySelector('.hbtn'); if(btn)btn.textContent='환불 요청';
+}
+
+/** 실제 환불 실행 — 서버가 크레딧을 먼저 회수하고 PG를 취소한다. */
+async function doRefund(btn,paymentId){
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='환불 중…';
+  try{
+    const r=await(await fetch('/api/billing/portone/refund',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:paymentId})
+    })).json();
+    if(!r.success){ notify(r.error||'환불에 실패했습니다.','error'); return; }
+    const d=r.data||{};
+    notify('환불이 접수되었습니다 — '+fmtKRW(d.amountKRW)+' 승인취소, ◈'+Number(d.creditsClawed||0).toLocaleString('ko-KR')+' 회수되었습니다.');
+    closeRefund(btn);
+    loadBalance(); loadHistory();
+  }catch(e){ notify('환불 요청 중 오류가 발생했습니다.','error'); }
   finally{ btn.disabled=false; btn.textContent=orig; }
 }
 
@@ -535,7 +702,10 @@ function syncBillingPricing(){
     const btn = p.id
       ? '<button class="btn '+(p.best?'btn-primary':'btn-ghost')+'" onclick="buyPack(\''+p.id+'\',this)">Buy</button>'
       : '<button class="btn btn-ghost" disabled style="opacity:.5">Coming soon</button>';
-    return '<div class="pack-card glass'+(p.best?' best':'')+'">'+(p.best?'<span class="ptag">BEST VALUE</span>':'')+
+    // p.test = dev 전용 PG 검증용 ₩100 팩(서버가 prod에선 배열에서 아예 뺀다). 실제 상품과 헷갈리지 않게 표시한다.
+    const tag = p.test ? '<span class="ptag" style="background:linear-gradient(120deg,#ff6b6b,#ff9f43)">TEST · DEV ONLY</span>'
+              : p.best ? '<span class="ptag">BEST VALUE</span>' : '';
+    return '<div class="pack-card glass'+(p.best?' best':'')+'">'+tag+
       '<div class="amt">◈ '+P.fmt(p.cr)+bonus+'</div><div class="ppc">'+per+' / credit</div><div class="price">'+meta.symbol+P.fmt(amt)+'</div>'+btn+'</div>';
   }).join('');
   // 통화 토글 활성 표시 + 안내(통화·VAT·자동결제·PG)
@@ -548,6 +718,8 @@ function syncBillingPricing(){
 // 통화 전환: 토글 클릭 → 저장 + dp:currency 이벤트 → 재렌더
 function pickCurrency(c){ if(window.PRICING&&window.PRICING.setCurrency) window.PRICING.setCurrency(c); }
 document.addEventListener('dp:currency', syncBillingPricing);
+// 서버(/api/pricing) 값이 도착하면 팩 그리드를 다시 그린다. 이게 없으면 임베드 폴백이 화면에 굳는다.
+document.addEventListener('dp:pricing', syncBillingPricing);
 
 async function loadBalance(){
   try{
@@ -568,7 +740,8 @@ let EXIMBAY=null,PORTONE=null,sdkLoaded=false;
 async function loadPayConfig(){
   try{ PORTONE=(await(await fetch('/api/billing/portone/config')).json()).data; }catch(e){ PORTONE={configured:false}; }
   try{ EXIMBAY=(await(await fetch('/api/billing/eximbay/config')).json()).data; }catch(e){ EXIMBAY={configured:false}; }
-  loadCard();   // PORTONE 설정을 안 뒤에야 결제수단 섹션을 켤지 판단할 수 있다
+  loadCard();      // PORTONE 설정을 안 뒤에야 결제수단 섹션을 켤지 판단할 수 있다
+  loadHistory();   // 결제 내역·환불도 마찬가지 — PortOne 결제 기록이 있을 때만 켠다
 }
 // PortOne V2 팩 결제: 준비 → 결제창 → 성공 시 서버 재검증(충전). 반환 true=처리됨.
 async function payWithPortOne(packId){
@@ -594,7 +767,7 @@ async function payWithPortOne(packId){
   if(resp&&resp.code!=null){ notify(resp.message||'Payment was cancelled.','error'); return true; }
   // 서버가 PortOne API로 재검증 후 충전
   const c=await(await fetch('/api/billing/portone/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:p.paymentId})})).json();
-  if(c.success){ showPayDone(p, c); if(typeof loadBalance==='function')loadBalance(); }
+  if(c.success){ showPayDone(p, c); if(typeof loadBalance==='function')loadBalance(); loadHistory(); }
   else{ notify(c.error||'We are confirming your payment — credits will appear shortly.','error'); }
   return true;
 }
@@ -715,13 +888,13 @@ async function registerCardInline(){
 // 결제 완료 복귀 (?purchased=packXX)
 if(new URLSearchParams(location.search).get('purchased')){
   document.getElementById('purchasedBanner').classList.remove('hidden');
-  setTimeout(loadBalance,3000);
+  setTimeout(loadBalance,3000); setTimeout(loadHistory,3200);
 }
 // PortOne 모바일 리다이렉트 복귀 — redirectUrl에 paymentId(성공 시 code 없음) 붙어 돌아옴 → 서버 재검증·충전
 (function(){ const q=new URLSearchParams(location.search); const pid=q.get('paymentId'); if(!pid)return;
   if(q.get('code')){ notify(q.get('message')||'Payment was cancelled.','error'); return; }
   fetch('/api/billing/portone/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid})})
-    .then(r=>r.json()).then(c=>{ if(c.success){ notify('Payment complete — credits added.'); setTimeout(loadBalance,1500); } }).catch(function(){});
+    .then(r=>r.json()).then(c=>{ if(c.success){ notify('Payment complete — credits added.'); setTimeout(loadBalance,1500); setTimeout(loadHistory,1800); } }).catch(function(){});
 })();
 // pricing.js 로드 타이밍 대응
 if(window.PRICING)syncBillingPricing();

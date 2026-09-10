@@ -10,6 +10,58 @@
  * 프론트는 로드시 GET /api/pricing 으로 이 객체를 받아 폴백 값을 덮어쓴다.
  */
 
+/**
+ * ⚠️ 이 파일은 **모듈 로드 시점에 process.env를 읽는다.** 그런데 그 시점에 env가 올라와 있다는
+ *   보장이 없다 — NestJS는 AppModule을 import하면서 `nest/pricing/pricing.service.ts`를 통해
+ *   이 파일을 잡는데, 그건 `src/config`(dotenv 로더)가 실행되기 **전**일 수 있다(실측: dev에서
+ *   PG_TEST_PACK=on 인데도 팩이 안 나왔다).
+ *
+ *   그래서 여기서 dotenv를 한 번 더 부른다. `src/config/index.js`와 **같은 순서**로 읽고,
+ *   dotenv는 이미 설정된 값을 덮어쓰지 않으므로 몇 번 불려도 결과가 같다(멱등).
+ *   config를 require하지 않는 이유 = 순환 참조와 zod 검증(스크립트에서 이 파일만 쓸 때 터진다) 회피.
+ *
+ *   ⚠️ env로 동작이 갈리는 값을 이 파일에 새로 넣을 땐 이 로딩이 선행돼야 한다는 걸 기억할 것.
+ *      (`subscriptionsForSale`도 같은 위험에 있었다 — 기본값이 true라 증상이 안 보였을 뿐이다.)
+ */
+try {
+  const dotenv = require('dotenv');
+  dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
+  dotenv.config();
+} catch (e) { /* dotenv가 없으면 주입된 process.env만 쓴다 */ }
+
+/**
+ * 🧪 PG 실채널 검증용 ₩100 팩 — **실서비스에는 존재하지 않는다.**
+ *
+ * 왜 있나: 실채널 전환 후 PortOne이 요구하는 "결제 및 환불 테스트"를 돌려야 하는데,
+ *   국내 판매 최저가가 pack9(₩15,000)이라 검증 한 번에 15,000원이 실제로 청구된다.
+ *   승인취소로 돌아오지만 카드사 반영까지 며칠 걸리고, 회귀 검증을 반복할 수도 없다.
+ *
+ * 어떻게 막나: **두 조건이 모두** 맞아야 열린다(fail-closed).
+ *   ① PG_TEST_PACK=on  ② NODE_ENV === 'development'  ← dev 하나만. staging·prod는 플래그를 켜도 안 열린다.
+ *   ①만으로 두지 않는 이유 — .env가 환경 간에 그대로 복사되는 사고가 실제로 있었다
+ *   (staging에 live 키가 복사된 적 있음). 플래그 하나에 실서비스 노출을 걸 수는 없다.
+ *   ②를 `!== 'production'`이 아니라 `=== 'development'`로 쓰는 이유도 같다 — 화이트리스트가
+ *   블랙리스트보다 안전하고, 앞으로 환경이 늘어도 새 환경은 자동으로 닫힌 상태로 시작한다.
+ *
+ * 차단 지점: 꺼져 있으면 팩이 **배열에 아예 없다.** 그래서 화면에서 안 보이는 정도가 아니라
+ *   `beginPack`·`chargePack`의 findPack이 null을 돌려 400으로 끝난다 —
+ *   구버전 화면이 캐시돼 있거나 API를 직접 불러도 결제가 열리지 않는다.
+ */
+function testPackEnabled() {
+  const flag = String(process.env.PG_TEST_PACK || '').trim().toLowerCase();
+  const on = flag === 'on' || flag === 'true' || flag === '1';
+  return on && (process.env.NODE_ENV || 'development') === 'development';
+}
+//   ◈10 — 잔액에 얼마가 붙었는지 눈으로 바로 세지는 크기로 둔다(충전·환불 회수를 육안 검증).
+const TEST_PACK = { id: 'packtest', cr: 10, bonus: 0, price: 0.07, priceKRW: 100, ppc: '10', test: true };
+
+const BASE_PACKS = [
+  { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   priceKRW: 15000,  ppc: '0.0026' },
+  { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  priceKRW: 81000,  ppc: '0.0026' },
+  { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, priceKRW: 329000, ppc: '0.0025' },
+  { id: 'pack349', cr: 128000, bonus: 14000, price: 349, priceKRW: 579000, ppc: '0.0025', best: true }
+];
+
 const PRICING = {
   // --- 메타 (2026-07-06 재설계: 커스텀/템플릿 분리 + 크레딧 30배 + 티어 다양화) ---
   estimated: false,
@@ -42,12 +94,8 @@ const PRICING = {
     elite: { name: 'Elite',           price: 1199, priceKRW: 1990000, cr: 813000, slots: 20, line: 'Max scale · 20 slots · dedicated support' }
   },
   // 일회성 크레딧 팩 (id=결제연동 키, cr=기본, bonus=보너스, price=$, priceKRW=₩[VAT포함]). 충동성=최고가(5.5~5.9배).
-  packs: [
-    { id: 'pack9',   cr: 3000,   bonus: 400,   price: 9,   priceKRW: 15000,  ppc: '0.0026' },
-    { id: 'pack49',  cr: 17000,  bonus: 2200,  price: 49,  priceKRW: 81000,  ppc: '0.0026' },
-    { id: 'pack199', cr: 72000,  bonus: 7500,  price: 199, priceKRW: 329000, ppc: '0.0025' },
-    { id: 'pack349', cr: 128000, bonus: 14000, price: 349, priceKRW: 579000, ppc: '0.0025', best: true }
-  ],
+  //   맨 앞의 ₩100 팩은 **dev 전용 PG 검증용**이다(위 testPackEnabled 참고). prod에는 배열에 들어가지도 않는다.
+  packs: testPackEnabled() ? [TEST_PACK].concat(BASE_PACKS) : BASE_PACKS,
   // 신규 24h 첫 결제 할인율(%)
   firstMonthOff: 50,
   /**

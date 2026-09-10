@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact | Genova Honors</title>
+<meta name="description" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="contact" data-meta="ct" class="solid-header">
+
+<section class="page-hero">
+  <div class="wrap page-hero-inner">
+    <p class="kicker" data-i18n="nav.contact"></p>
+    <h1 data-i18n="ct.h1"></h1>
+    <p class="sub" data-i18n="ct.sub"></p>
+  </div>
+</section>
+
+<!-- 문의 유형 4종 (기획안 24) -->
+<section class="section">
+  <div class="wrap">
+    <div class="inq-grid reveal">
+      <article class="inq">
+        <span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-develop"/></svg></span>
+        <h3 data-i18n="ct.i1.h"></h3><p class="ko" data-i18n="ct.i1.ko"></p><p data-i18n="ct.i1.p"></p>
+      </article>
+      <article class="inq">
+        <span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-crane"/></svg></span>
+        <h3 data-i18n="ct.i2.h"></h3><p class="ko" data-i18n="ct.i2.ko"></p><p data-i18n="ct.i2.p"></p>
+      </article>
+      <article class="inq">
+        <span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-handshake"/></svg></span>
+        <h3 data-i18n="ct.i3.h"></h3><p class="ko" data-i18n="ct.i3.ko"></p><p data-i18n="ct.i3.p"></p>
+      </article>
+      <article class="inq">
+        <span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg></span>
+        <h3 data-i18n="ct.i4.h"></h3><p class="ko" data-i18n="ct.i4.ko"></p><p data-i18n="ct.i4.p"></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section navy">
+  <div class="wrap contact-grid">
+    <div class="reveal">
+      <p class="kicker" data-i18n="ct.f.kicker"></p>
+      <h2 class="display" data-i18n="ct.f.title"></h2>
+      <p class="lead" style="margin-top:1.2rem" data-i18n="ct.f.lead"></p>
+      <ul class="contact-meta">
+        <li><b data-i18n="ct.m1"></b><span data-i18n="ct.m1v"></span></li>
+        <li><b data-i18n="ct.m2"></b><span data-i18n="ct.m2v"></span></li>
+        <li><b data-i18n="ct.m3"></b><span data-i18n="ct.m3v"></span></li>
+        <li><b data-i18n="ct.m4"></b><span data-i18n="ct.m4v"></span></li>
+      </ul>
+    </div>
+
+    <form class="form reveal" id="inquiryForm" novalidate>
+      <div class="row">
+        <label><span data-i18n="ct.name"></span><input type="text" name="name" required data-i18n-placeholder="ct.p.name"></label>
+        <label><span data-i18n="ct.company"></span><input type="text" name="company" data-i18n-placeholder="ct.p.company"></label>
+      </div>
+      <div class="row">
+        <label><span data-i18n="ct.email"></span><input type="email" name="email" required data-i18n-placeholder="ct.p.email"></label>
+        <label><span data-i18n="ct.phone"></span><input type="tel" name="phone" data-i18n-placeholder="ct.p.phone"></label>
+      </div>
+      <label><span data-i18n="ct.type"></span>
+        <select name="type">
+          <option data-i18n="ct.i1.h"></option>
+          <option data-i18n="ct.i2.h"></option>
+          <option data-i18n="ct.i3.h"></option>
+          <option data-i18n="ct.i4.h"></option>
+        </select>
+      </label>
+      <label><span data-i18n="ct.msg"></span><textarea name="message" rows="5" data-i18n-placeholder="ct.p.msg"></textarea></label>
+      <label class="check"><input type="checkbox" name="agree" required><span data-i18n="ct.agree"></span></label>
+      <button type="submit" class="btn btn-gold full" data-i18n="ct.submit"></button>
+      <p class="form-msg" id="formMsg" role="status"></p>
+    </form>
+  </div>
+</section>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/layout.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

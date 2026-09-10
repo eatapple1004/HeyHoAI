@@ -436,6 +436,16 @@ async function migrate() {
   //   image_media_id는 그대로 첫 장을 가리킨다(썸네일·기존 조인이 전부 이 컬럼을 본다).
   await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_media_ids UUID[];`);
 
+  // 인스타 미디어 ID — 인사이트 조회 키. `{ig-media-id}/insights` 는 이 값으로만 부를 수 있다.
+  //   ⚠️ image_post_url(permalink)에서 역추출이 **불가능**하다. 발행 응답에 담겨 오는 값을
+  //      그때 저장하지 않으면 그 게시물의 성과는 영영 못 읽는다(소급 불가) — 그래서 인사이트
+  //      기능(권한 심사·수집기)보다 이 컬럼을 **먼저** 넣는다.
+  //   기존 행은 NULL로 남는다. 이미 발행된 건은 계정 미디어 목록을 permalink로 역매칭해야 한다.
+  await pool.query(`
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS image_ig_media_id TEXT;
+    ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS reel_ig_media_id  TEXT;
+  `);
+
   // ─── 사업체(마케팅 대행 대상) ───
   //   social_accounts는 "인스타 계정" 단위라 사업체 개념이 없다. 한 사업체가 계정을 여러 개
   //   가질 수 있고(브랜드 본계정/서브계정) 나중에 다른 플랫폼도 붙으므로 별도 테이블로 둔다.
@@ -1608,6 +1618,35 @@ async function migrateCredits() {
         UNIQUE(provider, order_id)
     );
     CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id, created_at DESC);
+  `);
+
+  // 결제 취소·환불 이력 (PortOne 승인취소). **부분취소가 가능하므로 주문 1건에 여러 행이 쌓인다.**
+  //   status: requested(PG 호출 전) → succeeded | failed. 실패 행도 남긴다 — 회수했던 크레딧을
+  //   되돌린 사실까지 추적돼야 CS가 "왜 크레딧이 들락날락했나"를 설명할 수 있다.
+  //   payments.refunded_usd = 취소 누적액. 관리자 매출 집계가 환불을 빼고 보이려면 여기가 필요하다
+  //   (payments는 UNIQUE(provider, order_id)라 마이너스 행을 추가로 넣을 수 없다).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS billing_refunds (
+        id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_id       TEXT NOT NULL,                          -- billing_orders.order_id (= PortOne paymentId)
+        user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider       VARCHAR(30) NOT NULL DEFAULT 'portone',
+        amount_krw     INT NOT NULL,                           -- 실제 취소 요청 금액(원)
+        amount_usd     DECIMAL(10,2) NOT NULL DEFAULT 0,       -- 매출 집계 차감용 환산액
+        credits_clawed INT NOT NULL DEFAULT 0,                 -- 회수한 크레딧
+        reason         TEXT DEFAULT '',
+        requester      VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER', -- CUSTOMER | ADMIN
+        actor_user_id  UUID,                                   -- 관리자 취소 시 실행자
+        status         VARCHAR(20) NOT NULL DEFAULT 'requested', -- requested | succeeded | failed
+        pg_cancel_id   TEXT,
+        raw            JSONB DEFAULT '{}',
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_billing_refunds_order ON billing_refunds(order_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_billing_refunds_user ON billing_refunds(user_id, created_at DESC);
+    ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_usd DECIMAL(10,2) NOT NULL DEFAULT 0;
+    ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ;
   `);
 }
 
