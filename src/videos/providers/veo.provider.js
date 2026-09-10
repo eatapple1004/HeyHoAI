@@ -45,7 +45,10 @@ const veoProvider = {
       body: JSON.stringify({
         instances: [{
           prompt: req.motionPrompt,
-          ...(image && { image: { inlineData: { mimeType: image.mimeType, data: image.data } } }),
+          // ⚠️ `inlineData`(generateContent 형식)가 아니다 — Veo는 predict 계열이라
+          //   `bytesBase64Encoded` + `mimeType`을 쓴다. inlineData로 보내면 400:
+          //   "`inlineData` isn't supported by this model" (실측 2026-09-10).
+          ...(image && { image: { bytesBase64Encoded: image.data, mimeType: image.mimeType } }),
         }],
         parameters: {
           aspectRatio: aspectOf(req.width, req.height),
