@@ -8,11 +8,14 @@ const characterRepo = require('../characters/character.repository');
 const replicateProvider = require('./providers/replicate.provider');
 const falProvider = require('./providers/fal.provider');
 const nanoBananaProvider = require('./providers/nanoBanana.provider');
+// Seedream = 생성·편집이 한 모델. 참조 이미지 최대 10장 합성(제품+모델+배경 동시 투입).
+const seedreamProvider = require('./providers/seedream.provider');
 
 const providers = {
   replicate: replicateProvider,
   fal: falProvider,
   'nano-banana': nanoBananaProvider,
+  seedream: seedreamProvider,
 };
 
 function getProvider(name) {
