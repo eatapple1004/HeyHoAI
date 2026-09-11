@@ -105,6 +105,8 @@ const envSchema = z.object({
   FAL_MODEL: z.string().default('fal-ai/flux/dev'),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_IMAGE_MODEL: z.string().default('gemini-2.5-flash-image'),
+  // Seedream(ByteDance) — fal 경유라 키는 FAL_API_KEY 공유. 참조 이미지가 있으면 edit 경로로 자동 전환.
+  SEEDREAM_MODEL: z.string().default('fal-ai/bytedance/seedream/v4.5/text-to-image'),
 
   // Video providers (최소 하나는 필요)
   RUNWAY_API_KEY: z.string().optional(),
