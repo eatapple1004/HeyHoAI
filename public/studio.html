@@ -4167,8 +4167,10 @@ function rbModelLabel(m){ m=String(m||'').trim(); if(!m) return ''; const l=m.to
 //   engines가 없으면(Seedance 도입 전 결과) 예전 라벨로 폴백한다.
 //   ⚠️ 예전엔 model이 'ugc-'로 시작하면 무조건 'Kling'이라고 했는데, Seedance가 들어온 뒤로는 거짓말이다.
 function rbEngineLabel(b){
-  const eng=b&&b.engines;
-  if(Array.isArray(eng)&&eng.length) return eng.map(rbModelLabel).join(' · ');
+  // 배치 객체(b.engines)와 DB 원본 행(b.metadata.engines) 둘 다 받는다 —
+  //   호출부가 어느 쪽을 넘기는지에 따라 조용히 폴백(=Kling)으로 새는 걸 막는다.
+  const eng=(b&&Array.isArray(b.engines)&&b.engines)||(b&&b.metadata&&Array.isArray(b.metadata.engines)&&b.metadata.engines)||null;
+  if(eng&&eng.length) return eng.map(rbModelLabel).join(' · ');
   return rbModelLabel(b&&b.model);
 }
 // intrinsic 크기 → 근접 표준 비율 라벨(상세페이지 ratioLabel과 동일).
@@ -5455,7 +5457,7 @@ async function loadStudioResults(reset){
       let b=STUDIO_BATCH_BY_KEY[k];
       // productImage=유저가 넣은 제품 사진(characters.reference_image_url) · modelName=쓴 로스터 모델 이름(또는 'Auto').
       //   "무엇으로 만들었는지"를 카드에서 바로 보게 하려는 것 — 둘 다 없을 수도 있다(모델 픽커 없는 템플릿).
-      if(!b){ const _md=r.metadata||{}; const _pimgs=(Array.isArray(_md.product_images)&&_md.product_images.length)?_md.product_images:((r.product_image||_md.product_image)?[r.product_image||_md.product_image]:[]); const _crefs=Array.isArray(_md.canonical_refs)?_md.canonical_refs:[]; b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImages:_pimgs,canonRefs:_crefs,modelName:_md.model_name||'',choices:_md.choices||null,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
+      if(!b){ const _md=r.metadata||{}; const _pimgs=(Array.isArray(_md.product_images)&&_md.product_images.length)?_md.product_images:((r.product_image||_md.product_image)?[r.product_image||_md.product_image]:[]); const _crefs=Array.isArray(_md.canonical_refs)?_md.canonical_refs:[]; b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImages:_pimgs,canonRefs:_crefs,modelName:_md.model_name||'',choices:_md.choices||null,engines:Array.isArray(_md.engines)?_md.engines:null,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
       if(r.status==='success'&&r.file_path){
         const fn=r.file_path.split('/').pop();
         if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx,visibility:r.visibility});
