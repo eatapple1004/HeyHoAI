@@ -20,10 +20,50 @@ python3 -m http.server 5501
 
 이전 사이트는 삭제하지 않았습니다. 확인 후 필요 없으면 지우셔도 됩니다.
 
+## 홈 화면 버전
+
+홈(첫 화면)만 여러 안을 만들어 비교합니다. 하위 8개 페이지는 두 버전이 공유합니다.
+
+| 파일 | 버전 | 성격 |
+|---|---|---|
+| `versions.html` | — | **버전 비교 페이지** (썸네일 + 차이 정리). 여기서 시작하세요 |
+| `index.html` | V1 · 다크 프리미엄 | 기획안 26번 컬러 그대로. 정지 히어로 + 에디토리얼 구성 |
+| `index-v2.html` | V2 · 브라이트 코퍼레이트 | `homilhodu.co.kr` 정보구조 참고. 슬라이더 + 퀵링크 중심 |
+
+### V2 가 레퍼런스에서 가져온 것
+
+`http://www.homilhodu.co.kr/` 의 **정보구조와 UX 패턴만** 차용했습니다 (디자인·카피는 제노바 아너스 기준).
+
+| 레퍼런스 | V2 반영 |
+|---|---|
+| `#HH_visual` 2장 슬라이더 (좌우·정지 버튼) | 3장 자동 슬라이더 + 진행바형 인디케이터 |
+| 전체화면 오버레이 메뉴 + 2뎁스 | 6개 대메뉴 × 서브메뉴, ESC·링크클릭 시 닫힘 |
+| `#HM_product` 카드 호버 → 배경 이미지 전환 | 사업영역 5종 카드에 동일 패턴 적용 |
+| `#HM_notice` 이미지형 공지 카드 4장 | 뉴스 카드 4장 + 더보기 |
+| `#HM_etc` 퀵링크 아이콘 5종 | 오시는 길 / 사업문의 / 프로젝트 / 상담전화 / 자료요청 |
+| `#HH_aside` 우측 고정 퀵메뉴 + TOP | 동일 + 모바일은 하단 고정바로 전환 |
+| `#popup_box` "하루동안 팝업 열지 않기" | 동일 (쿠키 대신 `localStorage`, 24시간) |
+| 푸터 약관 바 + 전화번호 블록 + 사업자정보 | 동일 구조 (값은 `— 입력 필요 —` 플레이스홀더) |
+
+### V2 파일
+
+```
+index-v2.html            홈 V2 (자체 헤더·푸터 포함, layout.js 사용 안 함)
+assets/css/v2.css        V2 전용 스타일 — 클래스 전부 .v2- 접두사
+assets/js/v2.js          슬라이더 / 오버레이 메뉴 / 배경전환 / 팝업 / 리빌
+assets/js/i18n-v2.js     V2 전용 문구만 window.I18N.ko / .en 에 추가 병합
+assets/img/versions/     버전 비교용 썸네일
+```
+
+**V1 에 영향 없음** — V2 는 `i18n.js` 사전만 공유하고 나머지는 전부 별도 파일입니다.
+확정된 버전을 `index.html` 로 올리면 그대로 배포됩니다.
+
 ## 페이지 구성 (기획안 30. 최종 사이트맵)
 
 ```
-index.html               HOME
+versions.html            버전 비교 (작업용)
+index.html               HOME (V1 · 다크)
+index-v2.html            HOME (V2 · 브라이트)
 about.html               ABOUT — Vision / What we do / Values / CEO / History
 business.html            BUSINESS — 5개 사업영역
 construction.html        CONSTRUCTION — 6단계 프로세스 / Before·During·After / 관리체계

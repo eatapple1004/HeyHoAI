@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GENOVA HONORS — 홈페이지 버전 비교</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#0d1526; --paper:#f7f5f0; --gold:#b4901f; --line:rgba(13,21,38,.14); --mute:#6a6f7d; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--paper); color:#1c2333;
+    font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+  }
+  img{ max-width:100%; display:block; }
+  a{ color:inherit; text-decoration:none; }
+  .wrap{ max-width:1180px; margin-inline:auto; padding:clamp(40px,6vw,80px) clamp(20px,5vw,40px); }
+
+  header.top{ border-bottom:1px solid var(--line); background:#fff; }
+  header.top .wrap{ padding-block:clamp(34px,5vw,56px); }
+  .kick{ font-size:.7rem; letter-spacing:.26em; text-transform:uppercase; color:var(--gold); font-weight:700; }
+  h1{ margin:.9rem 0 0; font-family:"Cormorant Garamond",serif; font-size:clamp(1.9rem,4vw,2.8rem); font-weight:600; }
+  header.top p{ margin:1rem 0 0; max-width:62ch; color:var(--mute); word-break:keep-all; }
+
+  .grid{ display:grid; gap:clamp(24px,3vw,36px); }
+  @media(min-width:820px){ .grid{ grid-template-columns:repeat(2,1fr); } }
+
+  .card{ background:#fff; border:1px solid var(--line); display:flex; flex-direction:column;
+         transition:transform .3s, box-shadow .3s; }
+  .card:hover{ transform:translateY(-5px); box-shadow:0 22px 48px rgba(13,21,38,.13); }
+  .card .shot{ aspect-ratio:8/5; overflow:hidden; background:#0d1526; border-bottom:1px solid var(--line); }
+  .card .shot img{ width:100%; height:100%; object-fit:cover; object-position:top center; }
+  .card .bd{ padding:1.6rem 1.5rem 1.7rem; display:flex; flex-direction:column; flex:1; }
+  .tagrow{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+  .badge{ font-size:.66rem; letter-spacing:.16em; font-weight:700; padding:.3rem .6rem;
+          border:1px solid var(--gold); color:var(--gold); text-transform:uppercase; }
+  .badge.live{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .card h2{ margin:.85rem 0 .2rem; font-size:1.22rem; font-weight:700; }
+  .card .en{ font-size:.7rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:700; }
+  .card p.desc{ margin:.9rem 0 0; font-size:.92rem; color:var(--mute); word-break:keep-all; }
+  .feat{ margin:1.2rem 0 0; padding:0; list-style:none; border-top:1px solid var(--line); }
+  .feat li{ font-size:.86rem; padding:.5rem 0 .5rem 1.1rem; position:relative; border-bottom:1px solid var(--line); }
+  .feat li::before{ content:""; position:absolute; left:0; top:1.05em; width:5px; height:5px; background:var(--gold); }
+  .acts{ margin-top:1.5rem; display:flex; gap:.6rem; flex-wrap:wrap; }
+  .btn{ display:inline-block; padding:.8rem 1.5rem; font-size:.76rem; font-weight:600;
+        letter-spacing:.12em; text-transform:uppercase; border:1px solid var(--ink); }
+  .btn.fill{ background:var(--ink); color:#fff; }
+  .btn.fill:hover{ background:var(--gold); border-color:var(--gold); }
+  .btn.ghost:hover{ background:var(--ink); color:#fff; }
+
+  .next{ border:1px dashed var(--line); background:transparent; display:flex; flex-direction:column;
+         align-items:center; justify-content:center; text-align:center; padding:3rem 1.6rem; color:var(--mute); }
+  .next b{ display:block; color:#1c2333; font-size:1.05rem; }
+  .next span{ font-size:.86rem; margin-top:.5rem; display:block; word-break:keep-all; }
+
+  .note{ margin-top:clamp(36px,4vw,56px); border-top:1px solid var(--line); padding-top:1.6rem;
+         font-size:.86rem; color:var(--mute); word-break:keep-all; }
+  .note b{ color:#1c2333; }
+  .note code{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.85em;
+              background:#fff; border:1px solid var(--line); padding:.1rem .4rem; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="kick">Genova Honors · Homepage Versions</span>
+    <h1>홈페이지 버전 비교</h1>
+    <p>같은 콘텐츠(회사 정보·사업영역·프로젝트·뉴스)를 서로 다른 구조와 톤으로 구성한 버전들입니다.
+       하위 페이지(회사소개·사업영역·건설·프로젝트·뉴스·문의)는 두 버전이 공유합니다.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+
+    <article class="card">
+      <a class="shot" href="index.html"><img src="assets/img/versions/v1.jpg" alt="버전 1 다크 프리미엄 홈 화면"></a>
+      <div class="bd">
+        <div class="tagrow">
+          <span class="badge live">V1 · 현재</span>
+          <span class="badge">Dark Premium</span>
+        </div>
+        <h2>다크 프리미엄 — 에디토리얼</h2>
+        <span class="en">index.html</span>
+        <p class="desc">기획안 26번 컬러(딥네이비 + 차콜 + 샴페인 골드)를 그대로 적용한 첫 버전.
+           한 화면에 하나의 메시지를 두는 에디토리얼 구성입니다.</p>
+        <ul class="feat">
+          <li>고정 헤더 + 인라인 메뉴 (레이어 없음)</li>
+          <li>단일 정지 히어로 + SCROLL TO EXPLORE</li>
+          <li>섹션 교차 배경(차콜 ↔ 네이비)</li>
+          <li>숫자 지표(stat) 4종 노출</li>
+          <li>공통 <code>layout.js</code> 헤더·푸터 주입</li>
+        </ul>
+        <div class="acts">
+          <a class="btn fill" href="index.html">열어보기</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <a class="shot" href="index-v2.html"><img src="assets/img/versions/v2.jpg" alt="버전 2 브라이트 코퍼레이트 홈 화면"></a>
+      <div class="bd">
+        <div class="tagrow">
+          <span class="badge live">V2 · 신규</span>
+          <span class="badge">Bright Corporate</span>
+        </div>
+        <h2>브라이트 코퍼레이트 — 정보형</h2>
+        <span class="en">index-v2.html</span>
+        <p class="desc">호밀호두(homilhodu.co.kr) 사이트의 정보구조를 참고해 재구성한 버전.
+           본문은 밝은 톤으로 바꾸고, 방문자가 찾는 항목을 첫 화면에서 바로 잡을 수 있게 배치했습니다.</p>
+        <ul class="feat">
+          <li>3장 자동 히어로 슬라이더 (좌우·인디케이터·정지)</li>
+          <li>전체화면 오버레이 메뉴 · 2뎁스 서브메뉴</li>
+          <li>사업영역 카드 호버 시 배경 이미지 전환</li>
+          <li>공지 카드 4종 + 퀵링크 아이콘 5종</li>
+          <li>우측 고정 퀵메뉴 / 모바일 하단 고정바</li>
+          <li>1일 숨김 공지 팝업 · 정보형 푸터</li>
+        </ul>
+        <div class="acts">
+          <a class="btn fill" href="index-v2.html">열어보기</a>
+        </div>
+      </div>
+    </article>
+
+    <div class="card next">
+      <b>V3 자리</b>
+      <span>다음 방향(예: 프로젝트 갤러리 중심 / 원페이지 스크롤 / 영상 히어로)을 정해 주시면
+            같은 방식으로 추가합니다.</span>
+    </div>
+
+  </div>
+
+  <p class="note">
+    <b>구조</b> — 두 버전 모두 <code>assets/js/i18n.js</code> 사전을 함께 쓰므로 문구는 한 곳에서 관리됩니다.
+    V2 전용 문구만 <code>assets/js/i18n-v2.js</code>에 따로 있고, V2 스타일·동작은
+    <code>assets/css/v2.css</code> / <code>assets/js/v2.js</code>에 격리되어 있어 V1에 영향을 주지 않습니다.
+    확정된 버전을 <code>index.html</code>로 올리면 됩니다.
+  </p>
+</main>
+
+</body>
+</html>
