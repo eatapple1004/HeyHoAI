@@ -347,7 +347,10 @@ function startBackground() {
     //   파이프라인은 프로세스 메모리에만 살고 pm2 instances:1 + fork(겹침 없음)라
     //   "새 프로세스가 떴다 = 이전 파이프라인 100% 사망"이 확정. 그래서 부팅 1회로 충분하고 안전하다.
     if (ugc.reapCrashedRenders) {
-      setTimeout(() => ugc.reapCrashedRenders().catch((e) => log.warn('UGC crashed-render reap failed: ' + e.message)), 8000).unref();
+      // 이 프로세스가 뜨기 전에 만들어진 잡 = 이전 파이프라인 소유 = 100% 사망(pm2 instances:1 + fork).
+      //   나이로 재면 부팅 직전에 시작된 잡을 놓치고, 회수기는 1회만 돌아 영원히 갇힌다(실측).
+      const bootAt = new Date();
+      setTimeout(() => ugc.reapCrashedRenders({ bootAt }).catch((e) => log.warn('UGC crashed-render reap failed: ' + e.message)), 8000).unref();
     }
     // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수. 시작 60s 후 + 5분 간격.
     if (ugc.reapStaleProcessing) {

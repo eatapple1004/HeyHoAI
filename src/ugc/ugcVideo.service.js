@@ -1167,18 +1167,25 @@ async function reapStaleProcessing({ maxAgeMinutes = 15 } = {}) {
  *   돌아온다 → 환불은 행당 1회. 갱신 후 환불 순서인 이유: 사이에서 죽으면 '환불 누락'(수동 복구 가능)이지
  *   '이중 환불'(돈이 나감)이 아니다.
  */
-async function reapCrashedRenders({ minAgeMinutes = 2 } = {}) {
+async function reapCrashedRenders({ minAgeMinutes = 2, bootAt = null } = {}) {
   let rows;
   try {
+    // ⚠️ 나이(minAgeMinutes)로 판단하면 **부팅 직전에 시작된 잡을 영원히 놓친다.**
+    //   회수기는 부팅 시 1회만 도는데, 그 순간 나이가 2분 미만이면 건너뛰고 다시는 안 본다(실측:
+    //   잡 시작 40초 뒤 배포 → 19분째 processing에 갇힘).
+    //   bootAt이 오면 **이 프로세스가 뜨기 전에 만들어진 잡**을 전부 죽은 것으로 본다 —
+    //   pm2 instances:1 + fork라 이전 파이프라인은 100% 사망이므로 나이와 무관하게 확정이다.
+    //   (bootAt 없이 부르는 호출부는 예전처럼 나이로 판단한다.)
+    const useBoot = bootAt instanceof Date && !Number.isNaN(bootAt.getTime());
     rows = (await query(
       `UPDATE ugc_jobs
           SET status='failed',
               error='Rendering was interrupted by a server restart — your credits were refunded.',
               updated_at=now()
         WHERE status='processing' AND script IS NULL
-          AND updated_at < now() - ($1 * interval '1 minute')
+          AND ${useBoot ? 'created_at < $1' : "updated_at < now() - ($1 * interval '1 minute')"}
         RETURNING id, user_id, charge_amount`,
-      [minAgeMinutes]
+      [useBoot ? bootAt.toISOString() : minAgeMinutes]
     )).rows;
   } catch (e) { log.warn(`reapCrashedRenders 쿼리 실패: ${e.message}`); return { reaped: 0, refunded: 0 }; }
   if (!rows.length) return { reaped: 0, refunded: 0 };
