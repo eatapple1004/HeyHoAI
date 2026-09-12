@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
 <script src="/js/i18n.js?v=26" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=17" defer></script>
+<script src="/js/rail.js?v=18" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/guide.js?v=2" defer></script>
@@ -4159,8 +4159,18 @@ function rbModelLabel(m){ m=String(m||'').trim(); if(!m) return ''; const l=m.to
   if(l==='pro') return 'Nano Banana Pro'; if(l==='flash') return 'Nano Banana';
   if(/gemini.*flash|flash.*image/.test(l)) return 'Nano Banana'; if(/gemini|nano.?banana/.test(l)) return /pro/.test(l)?'Nano Banana Pro':'Nano Banana';
   if(l==='gpt-image-2-high') return 'GPT Image HD'; if(/gpt/.test(l)) return 'GPT Image';
+  if(/seedance/.test(l)) return 'Seedance';
   if(/kling/.test(l)||/^ugc/.test(l)||l==='reel') return 'Kling';
   return m; }
+// Ad Video는 **씬마다 모션 엔진이 갈린다**(인물 씬은 Seedance가 거부해 kling으로 우회).
+//   그래서 엔진 하나로 못 부른다 — 실제로 쓴 것들을 그대로 이어 붙인다.
+//   engines가 없으면(Seedance 도입 전 결과) 예전 라벨로 폴백한다.
+//   ⚠️ 예전엔 model이 'ugc-'로 시작하면 무조건 'Kling'이라고 했는데, Seedance가 들어온 뒤로는 거짓말이다.
+function rbEngineLabel(b){
+  const eng=b&&b.engines;
+  if(Array.isArray(eng)&&eng.length) return eng.map(rbModelLabel).join(' · ');
+  return rbModelLabel(b&&b.model);
+}
 // intrinsic 크기 → 근접 표준 비율 라벨(상세페이지 ratioLabel과 동일).
 function rbRatioLabel(w,h){ if(!w||!h) return ''; const r=w/h, C=[[9,16],[4,5],[2,3],[3,4],[1,1],[4,3],[3,2],[16,9]]; let best=C[0],bd=Infinity; C.forEach(function(c){ const d=Math.abs(r-c[0]/c[1]); if(d<bd){bd=d;best=c;} }); return best[0]+':'+best[1]; }
 // 각 결과 행 첫 미디어 로드 시 해상도·비율·길이 채움(상세페이지 fillSpecs와 동일 로직).
@@ -4236,7 +4246,7 @@ function batchRowHtml(b){
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
           :`<button class="rb-add" type="button" onclick="addCreatorTemplate(this,${cidx})">＋ Add to Creator templates</button>`;})())+`</div>`;
   // 상세페이지와 동일한 마이크로 캡션 스펙: 타입 · 해상도 · 비율 · [길이] · 모델. 해상도/비율/길이는 미디어 로드 시 fillRbSpecs가 채움(b.w/h 있으면 즉시).
-  const ML=rbModelLabel(b.model);
+  const ML=rbEngineLabel(b);   // 씬별로 엔진이 갈릴 수 있어 집합으로 표시(예: 'Seedance · Kling')
   const dimStatic=(b.w&&b.h)?`<b>${b.w}</b> × <b>${b.h}</b>`:'';
   //   비율은 결과 치수가 없어도 안다(요청값 b.aspect) → 로딩 중에도 보여준다. 치수는 결과가 나와야 채워진다.
   const ratioStatic=(b.w&&b.h)?rbRatioLabel(b.w,b.h):(b.aspect||'');
