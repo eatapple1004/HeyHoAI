@@ -4171,6 +4171,13 @@ function rbEngineLabel(b){
   //   호출부가 어느 쪽을 넘기는지에 따라 조용히 폴백(=Kling)으로 새는 걸 막는다.
   const eng=(b&&Array.isArray(b.engines)&&b.engines)||(b&&b.metadata&&Array.isArray(b.metadata.engines)&&b.metadata.engines)||null;
   if(eng&&eng.length) return eng.map(rbModelLabel).join(' · ');
+  // 아직 렌더 중이면(b._jobT0) 실제 엔진을 알 수 없다 — 그렇다고 'Kling'이라 단정하면 거짓말이 된다.
+  //   요청한 엔진을 보여준다(완료되면 실제 사용분으로 교체된다).
+  //   ⚠️ 완료된 옛 결과에는 적용하지 않는다 — 그건 실제로 Kling으로 돌았을 수 있다.
+  if(b&&b._jobT0){
+    const qs=new URLSearchParams(location.search);
+    if(qs.get('engine')==='seedance'||(qs.get('mode')==='ugc'&&qs.get('engine')!=='kling')) return 'Seedance';
+  }
   return rbModelLabel(b&&b.model);
 }
 // intrinsic 크기 → 근접 표준 비율 라벨(상세페이지 ratioLabel과 동일).

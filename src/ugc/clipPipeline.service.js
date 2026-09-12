@@ -229,6 +229,11 @@ async function renderClips(script, opts = {}) {
   );
 
   const ok = clips.filter((c) => c.clipUrl);
+  // ⚠️ 실패 사유를 반드시 남긴다. 전엔 개수만 찍어서 "all clips failed to render"만 보이고
+  //   **왜** 실패했는지가 사라졌다(실측: Seedance가 file:// 소스를 못 읽어 전멸했는데 로그에 흔적이 없었다).
+  for (const c of clips) {
+    if (!c.clipUrl && c.error) log(`  [scene ${c.sceneN}] ❌ ${String(c.error).slice(0, 200)}`);
+  }
   log(`클립 완료: ${ok.length}/${brollScenes.length} 성공`);
   return clips;
 }
