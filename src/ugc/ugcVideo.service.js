@@ -398,9 +398,13 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     // B+ 재합성 토대: 무자막·무음 베이스(silentBase, 음악 교체용) + 자막 없는 미리보기 베이스(previewBase, 자막 1패스 재번인·오버레이용) + 자막 타이밍.
     const silentBase = await persistVideoFile(out.silentPath);
     const previewBase = await persistVideoFile(out.basePath);
+    // 씬마다 엔진이 갈릴 수 있다(인물 씬은 Seedance가 거부해 kling으로 우회) → **실제로 쓴 엔진 집합**을 남긴다.
+    //   안 남기면 결과 화면이 엔진을 알 길이 없어 예전처럼 전부 'Kling'이라고 거짓말하게 된다.
+    const enginesUsed = [...new Set(clips.map((c) => c.engine).filter(Boolean))].sort();
     const persistedScript = { ...script, _render: {
       audio: audio || {}, aspect, product: productRef, products, model: modelImagePath || null, audioAssets,
       silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
+      engines: enginesUsed,
     } };
     // 완성본 캐시 시드 — 최초 완성본(전 씬 v0)도 캐싱. 씬 재생성 후 되돌리면 첫 전환부터 즉시(재조립 0).
     persistedScript._render.composites = [{
@@ -1057,6 +1061,8 @@ async function _commitJobImpl(id, userId, batchId) {
     fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
     metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
       subtitleMode: j.subtitle_mode, clips: nClips,
+      // 실제로 쓴 모션 엔진(씬마다 갈릴 수 있다). model은 'ugc-v1' 판별자라 건드리지 않는다.
+      ...(Array.isArray(_R.engines) && _R.engines.length ? { engines: _R.engines } : {}),
       ...(batchId != null ? { batch_id: String(batchId) } : {}),   // 🔗 팩 영상을 팩 이미지와 같은 배치로 묶기
       ...(_prodUrl ? { product_image: _prodUrl } : {}) },
     visibility: j.visibility === 'private' ? 'private' : 'public',

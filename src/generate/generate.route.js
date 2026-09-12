@@ -783,6 +783,9 @@ const getCommunityHandler = async (req, res, next) => {
       url: r.file_path ? `/${r.file_path.replace(/^tmp\//, '')}` : null,
       type: (r.metadata && r.metadata.type === 'video') ? 'video' : 'image',
       model: r.model,
+      // Ad Video는 씬마다 모션 엔진이 갈릴 수 있다 → 실제로 쓴 엔진을 그대로 내보낸다.
+      //   없으면(옛 결과) 프론트가 예전 라벨로 폴백한다.
+      engines: (r.metadata && Array.isArray(r.metadata.engines)) ? r.metadata.engines : null,
       creatorHandle: r.creator_handle ? '@' + r.creator_handle : null,
       templateId: r.template_id,
       templateSource: r.template_source,
