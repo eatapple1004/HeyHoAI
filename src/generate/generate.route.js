@@ -1211,7 +1211,7 @@ const postUgcSuggestConceptHandler = async (req, res, next) => {
 // 2단계: 검토한 대본으로 렌더(여기서만 과금 + 제품 이미지). script=JSON 문자열 필드.
 const postUgcRenderHandler = async (req, res, next) => {
   try {
-    const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect, quality } = req.body || {};
+    const { product, concept, outputType, referenceImagePath, dryRun, voice, music, voiceId, speed, modelImage, aspect, quality, motionEngine } = req.body || {};
     let script;
     try { script = JSON.parse(req.body.script || 'null'); } catch { return res.status(400).json({ success: false, error: 'invalid script JSON' }); }
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
@@ -1221,6 +1221,9 @@ const postUgcRenderHandler = async (req, res, next) => {
     const safeRef = safeRefImage(referenceImagePath);
     const safeAspect = ['9:16', '1:1', '16:9'].includes(aspect) ? aspect : '9:16'; // Kling 지원 비율만
     const safeQuality = (quality === 'high') ? 'high' : 'low'; // Ad Video 화질 티어(기본 low=625). 팩(submit 경로)은 quality 미전달 → 레거시 810 유지.
+    // 모션 엔진 — 화이트리스트. 값이 없거나 모르는 값이면 null로 넘겨 서버 기본(UGC_MOTION_ENGINE→kling)을 따른다.
+    //   ⚠️ seedance를 골라도 **인물 씬은 clipPipeline이 자동으로 kling으로 돌린다**(Seedance가 실존 인물을 거부).
+    const safeEngine = ['kling', 'seedance'].includes(motionEngine) ? motionEngine : null;
     const result = await ugcVideoService.render({
       user: req.user, script, product, concept,
       outputType: outputType || 'product-ad',
@@ -1235,7 +1238,7 @@ const postUgcRenderHandler = async (req, res, next) => {
         voiceId: (voiceId && String(voiceId).trim()) || undefined,
         speed: Number.isFinite(spd) ? spd : undefined,
       },
-      visibility, isTemplate: false, quality: safeQuality,
+      visibility, isTemplate: false, quality: safeQuality, motionEngine: safeEngine,
     });
     res.json({ success: true, jobId: result.jobId, cost: result.cost });
   } catch (err) {

@@ -39,11 +39,15 @@
     //   q:'!ugc' 를 남겨두면 mode=ugc 로 들어갔을 때 활성 항목이 하나도 없어 어디에 있는지 알 수 없다.
     //   롤백(Ad Video 복원) 시 q: '!ugc' 를 되살릴 것.
     { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'] },
-    // (2026-08-23) Ad Video 레일 항목 제거 — 진입점만 뗀다(Store·Community와 같은 방식).
-    //   /studio?mode=ugc 페이지와 UGC 엔진·API는 그대로 살아 있어 주소로는 계속 들어간다.
-    //   배지 코드도 그대로 둔다 — data-badge 요소가 없으면 아래에서 return 하므로 폴링이 시작되지 않는다.
-    //   롤백: 아래 한 줄의 주석만 해제.
-    // { h: '/studio?mode=ugc', l: 'Ad Video', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo' },
+    // (2026-08-23) Ad Video 레일 항목 제거 → (2026-09-12) **UGC 란으로 되살림, dev 전용**.
+    //   페이지(/studio?mode=ugc)와 엔진·API는 내내 살아 있었고 진입점만 떼어져 있었다.
+    //   이름을 'Ad Video'가 아니라 'UGC'로 둔 이유: 옆의 'Ad Studio'(상품 URL→광고영상)와
+    //   글자가 거의 같아 둘 다 켜두면 사용자가 구분하지 못한다.
+    //   `engine=seedance` — 이 진입점으로 들어온 UGC는 제품 씬을 Seedance로 돌린다
+    //   (씬 길이를 네이티브로 뽑아 Kling 5/10초 양자화·트림이 사라진다).
+    //   ⚠️ 인물 씬은 엔진과 무관하게 kling으로 간다 — Seedance가 실존 인물을 거부한다.
+    //   전 환경에 열려면 `dev: true` 한 조각만 지우면 된다.
+    { h: '/studio?mode=ugc&engine=seedance', l: 'UGC', i: IC.advideo, m: ['/studio'], q: 'ugc', b: 'advideo', dev: true },
     // (2026-08-14) Ad Studio — 상품 URL 하나로 광고 영상.
     // (2026-08-23) 전 환경 공개. 잠깐 dev 전용(dev:true)이었다가 같은 날 열었다.
     //   다시 닫으려면 `dev: true` 한 조각만 넣으면 된다(IS_DEV 판정은 아래에 그대로 있다).
