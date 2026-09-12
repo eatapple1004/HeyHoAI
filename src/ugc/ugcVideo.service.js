@@ -275,7 +275,7 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
   referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
-  audio = {}, autoCommit = false, batchId = null, quality = null }) {
+  audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -305,7 +305,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality, motionEngine })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -319,7 +319,7 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null }) {
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
@@ -362,7 +362,9 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     }
 
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정. 음성모드는 위에서 durationSec=음성길이.
-    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
+    // motionEngine: 'kling'(기본) | 'seedance'. 요청에 없으면 UGC_MOTION_ENGINE env, 그것도 없으면 kling.
+    //   ⚠️ seedance를 켜도 **인물 씬은 clipPipeline이 자동으로 kling으로 돌린다**(Seedance가 실존 인물을 거부).
+    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, motionEngine, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const sceneClips = await persistSceneClips(clips); // 결과 편집(재배치·삭제·재생성)용 씬 클립 영속화

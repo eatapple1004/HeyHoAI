@@ -107,6 +107,11 @@ const envSchema = z.object({
   GEMINI_IMAGE_MODEL: z.string().default('gemini-2.5-flash-image'),
   // Seedream(ByteDance) — fal 경유라 키는 FAL_API_KEY 공유. 참조 이미지가 있으면 edit 경로로 자동 전환.
   SEEDREAM_MODEL: z.string().default('fal-ai/bytedance/seedream/v4.5/text-to-image'),
+  // UGC broll 클립의 기본 모션 엔진. 'seedance'면 제품 씬을 Seedance로 돌린다(씬 길이를 네이티브로 뽑아
+  //   Kling 5/10초 양자화·트림이 사라진다). **인물 씬은 엔진과 무관하게 항상 kling** — Seedance가 실존 인물을 거부한다.
+  //   요청별 override는 ugcVideo 옵션 motionEngine.
+  UGC_MOTION_ENGINE: z.string().default('kling'),
+  SEEDANCE_TIER: z.string().optional(),
 
   // Video providers (최소 하나는 필요)
   RUNWAY_API_KEY: z.string().optional(),
