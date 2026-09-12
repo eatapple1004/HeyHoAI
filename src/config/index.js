@@ -111,6 +111,11 @@ const envSchema = z.object({
   //   Kling 5/10초 양자화·트림이 사라진다). **인물 씬은 엔진과 무관하게 항상 kling** — Seedance가 실존 인물을 거부한다.
   //   요청별 override는 ugcVideo 옵션 motionEngine.
   UGC_MOTION_ENGINE: z.string().default('kling'),
+  // 고아 UGC 잡 회수기 스위치. 기본은 폴러 게이트를 따른다(prod 무변경).
+  //   자기 DB를 가진 환경(dev·staging)은 'on'으로 켠다 — 안 켜면 배포·크래시로 끊긴 잡이
+  //   영원히 processing에 갇히고 선차감 크레딧도 안 돌아온다.
+  //   ⚠️ 로컬에서 prod DATABASE_URL을 물고 켜면 살아있는 prod 잡을 죽이고 환불한다.
+  UGC_REAPER: z.string().optional(),
   SEEDANCE_TIER: z.string().optional(),
 
   // Video providers (최소 하나는 필요)

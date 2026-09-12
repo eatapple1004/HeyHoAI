@@ -320,8 +320,20 @@ function startBackground() {
     log.warn('Video job poller disabled (DISABLE_VIDEO_POLLER=true) — 로컬 전용');
   } else {
     require('./generate/videoJob.service').startPoller();
-    // UGC 완성본 캐시 백스톱 — 크래시로 방치된 잡의 비활성 컴포지트 정리(고아 파일 회수).
-    //   폴러와 동일 게이트라 prod에서만 실행(로컬 :3001은 prod DB에 붙으므로 sweep 금지). 시작 90s 후 1회 + 6h 간격.
+  }
+
+  // ── 고아 UGC 잡 회수 — **폴러와 다른 문제라 게이트를 분리한다** ──
+  //   폴러는 "살아있는 잡을 진행"시키고, 회수기는 "죽은 잡을 failed로 닫고 크레딧을 환불"한다.
+  //   전엔 둘이 같은 else 안에 묶여 있어서 DISABLE_VIDEO_POLLER=true 인 dev는 **회수를 아예 못 했다**
+  //   → 배포·크래시로 렌더가 끊기면 잡이 영원히 processing에 갇히고 선차감된 크레딧도 안 돌아왔다(실측 2026-09-12).
+  //
+  //   기본값은 예전 그대로(폴러가 도는 곳에서만 회수) — prod 무변경.
+  //   자기 DB를 가진 환경(dev·staging)은 UGC_REAPER=on 으로 켠다.
+  //   ⚠️ **로컬에서 prod DATABASE_URL을 물고 켜지 말 것** — 살아있는 prod 잡을 죽이고 환불해버린다.
+  //      그게 원래 이 게이트가 막던 사고다.
+  const reapOn = String(env.UGC_REAPER || '').trim().toLowerCase() === 'on' || !env.DISABLE_VIDEO_POLLER;
+  if (reapOn) {
+    // UGC 완성본 캐시 백스톱 — 크래시로 방치된 잡의 비활성 컴포지트 정리(고아 파일 회수). 시작 90s 후 1회 + 6h 간격.
     const ugc = require('./ugc/ugcVideo.service');
     if (ugc.sweepStaleComposites) {
       setTimeout(() => ugc.sweepStaleComposites().catch((e) => log.warn('UGC composite sweep failed: ' + e.message)), 90 * 1000);
@@ -337,7 +349,7 @@ function startBackground() {
     if (ugc.reapCrashedRenders) {
       setTimeout(() => ugc.reapCrashedRenders().catch((e) => log.warn('UGC crashed-render reap failed: ' + e.message)), 8000).unref();
     }
-    // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수(폴러와 동일 게이트=prod only). 시작 60s 후 + 5분 간격.
+    // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수. 시작 60s 후 + 5분 간격.
     if (ugc.reapStaleProcessing) {
       setTimeout(() => ugc.reapStaleProcessing().catch((e) => log.warn('UGC processing reap failed: ' + e.message)), 60 * 1000);
       setInterval(() => ugc.reapStaleProcessing().catch(() => {}), 5 * 60 * 1000).unref();
