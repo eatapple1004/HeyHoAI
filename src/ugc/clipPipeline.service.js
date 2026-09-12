@@ -11,9 +11,11 @@
  *   kling(기본)  : 5s·10s 네이티브만 → 씬 길이를 양자화해 뽑고 assembler가 트림한다.
  *   seedance     : 4~15초를 **네이티브로** 지원 → 씬 길이를 그대로 뽑아 트림 손실이 없다.
  *
- * ⚠️ **Seedance는 실존 인물 얼굴을 거부한다**(fal 422 content_policy_violation,
- *    "may contain likenesses of real people", 2026-09-12 실측). 그래서 엔진을 seedance로 켜도
- *    **인물 레퍼런스가 실린 씬은 자동으로 kling으로 보낸다.** 안 그러면 모델 씬만 통째로 실패한다.
+ * ⚠️ Seedance의 인물 정책은 "사람 금지"가 아니라 **실존 인물의 초상 금지**다(partner_validation_failed).
+ *    실제 사람 사진은 422로 거부되지만, **nanoBanana가 만든 합성 인물은 통과한다**(2026-09-12 실측).
+ *    UGC의 모델 씬은 후자라서 사전 차단하면 안 된다 — 한동안 인물 씬을 전부 kling으로 흘려보내
+ *    정작 Seedance를 써야 할 씬을 놓치고 있었다.
+ *    그래서 **추측으로 미리 가르지 않고**, Seedance가 실제로 정책 거부를 돌려줄 때만 그 씬을 kling으로 재시도한다.
  */
 const nanoBanana = require('../images/providers/nanoBanana.provider');
 const klingProvider = require('../videos/providers/kling.provider');
@@ -52,12 +54,20 @@ async function pollUntilDone(provider, providerJobId, { maxWaitMs = 600_000, int
  * 이 씬을 어느 엔진으로 돌릴지. **인물이 있으면 무조건 kling**이다(위 헤더의 정책 제약).
  * @returns {{ name:'kling'|'seedance', reason?:string }}
  */
-function pickEngine(motionEngine, hasPersonRef) {
+function pickEngine(motionEngine) {
   const want = String(motionEngine || process.env.UGC_MOTION_ENGINE || 'kling').toLowerCase();
   if (want !== 'seedance') return { name: 'kling' };
-  if (hasPersonRef) return { name: 'kling', reason: 'Seedance가 인물 이미지를 거부해 kling으로 우회' };
   if (!seedanceProvider.isConfigured()) return { name: 'kling', reason: 'FAL_API_KEY 없음 — kling으로 폴백' };
   return { name: 'seedance' };
+}
+
+/**
+ * Seedance가 **정책상** 못 만드는 건인가(=kling으로 재시도할 가치가 있는가).
+ * 네트워크·레이트 같은 일시 오류까지 kling으로 넘기면 Seedance가 조용히 안 쓰이게 되므로 좁게 본다.
+ */
+function isPolicyRejection(err) {
+  const m = String((err && err.message) || '');
+  return /content_policy_violation|partner_validation_failed|likenesses of real people/i.test(m);
 }
 
 /** 동시성 제한 map (Kling 부하/레이트 방어). */
@@ -128,10 +138,11 @@ async function renderSceneClip(scene, opts) {
 
   // 3) image2video 모션 — 엔진은 씬 단위로 고른다(인물 씬은 강제 kling).
   const wantSec = Math.round(durationMs / 1000); // 유저 지정 최종 길이
-  const engine = pickEngine(motionEngine, hasPersonRef);
+  const engine = pickEngine(motionEngine);
   if (engine.reason) log(`  [scene ${scene.n}] ${engine.reason}`);
 
   if (engine.name === 'seedance') {
+    try {
     // Seedance는 4~15초를 네이티브로 지원한다 → **양자화 없이 씬 길이 그대로** 뽑는다.
     //   fast 티어는 1080p를 지원하지 않으므로 화질에 따라 티어를 함께 고른다.
     const tier = quality === 'high' ? 'standard' : 'fast';
@@ -150,15 +161,21 @@ async function renderSceneClip(scene, opts) {
       tier,
     });
     const poll = await pollUntilDone(seedanceProvider, sub.providerJobId, { ctx: sub.metadata });
-    return {
-      sceneN: scene.n,
-      clipUrl: poll.videoUrl,
-      // 길이를 그대로 뽑았으므로 트림 여지가 거의 없다. 그래도 clamp는 남긴다(4s 하한 때문에 씬이 더 짧을 수 있다).
-      durationMs: Math.min(durationMs, seedDur * 1000),
-      isStill: false,
-      imageUrl,
-      engine: 'seedance',
-    };
+      return {
+        sceneN: scene.n,
+        clipUrl: poll.videoUrl,
+        // 길이를 그대로 뽑았으므로 트림 여지가 거의 없다. 그래도 clamp는 남긴다(4s 하한 때문에 씬이 더 짧을 수 있다).
+        durationMs: Math.min(durationMs, seedDur * 1000),
+        isStill: false,
+        imageUrl,
+        engine: 'seedance',
+      };
+    } catch (e) {
+      // 정책 거부만 kling으로 넘긴다(실존 인물 초상 등). 그 외 오류는 그대로 올려 보낸다 —
+      //   일시 오류까지 삼키면 Seedance가 조용히 안 쓰이는 상태로 굳는다.
+      if (!isPolicyRejection(e)) throw e;
+      log(`  [scene ${scene.n}] Seedance 정책 거부 → kling으로 재시도: ${String(e.message).slice(0, 120)}`);
+    }
   }
 
   // Kling은 5s/10s 네이티브만 지원(임의 초 불가)이라 양자화한다.
