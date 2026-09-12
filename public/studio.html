@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
 <script src="/js/i18n.js?v=26" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=16" defer></script>
+<script src="/js/rail.js?v=17" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/guide.js?v=2" defer></script>
@@ -7102,10 +7102,15 @@ async function ugcRenderVideo(prePending){
     const vIdEl=document.getElementById('ugcVoiceId');if(vIdEl&&vIdEl.value)fd.append('voiceId',vIdEl.value); // 영상별 보이스
     const spEl=document.getElementById('ugcSpeed');if(spEl&&spEl.value)fd.append('speed',spEl.value); // 말하기 속도
     const qEl=document.getElementById('ugcQuality');fd.append('quality',(qEl&&qEl.value==='high')?'high':'low'); // 화질 티어(low=625/high=945)
-    // 모션 엔진 — 레일의 UGC 진입점이 ?engine=seedance 로 들어온다. 값이 없으면 안 보내고 서버 기본(kling)을 따른다.
+    // 모션 엔진 — **UGC는 Seedance 기반이 기본**이다.
+    //   URL 파라미터에만 의존하면 페이지 안에서 주소가 바뀌거나 사용자가 링크를 직접 치고 들어왔을 때
+    //   조용히 Kling으로 돌아간다. 그래서 mode=ugc 면 기본을 seedance로 두고, ?engine=kling 으로만 되돌린다.
     //   ⚠️ seedance여도 인물 씬은 서버가 kling으로 돌린다(Seedance가 실존 인물을 거부).
-    const engineQ=new URLSearchParams(location.search).get('engine');
-    if(engineQ==='seedance'||engineQ==='kling')fd.append('motionEngine',engineQ);
+    const qs=new URLSearchParams(location.search);
+    const engineQ=qs.get('engine');
+    const isUgcMode=qs.get('mode')==='ugc';
+    const engine=(engineQ==='kling')?'kling':((engineQ==='seedance'||isUgcMode)?'seedance':null);
+    if(engine)fd.append('motionEngine',engine);
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png'))); // 유저 실제 제품(다각도) → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});
     const data=await sjson(res);

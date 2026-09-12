@@ -35,10 +35,11 @@
 
   var items = [
     { h: '/home.html', l: 'Home', i: IC.home, m: ['/home'] }, // 정적 서빙(/home.html) — index.js 클린URL 라우트는 추후(충돌 회피)
-    // Ad Video 를 숨긴 뒤로는 /studio 전부(mode=ugc 포함)를 Shots 로 본다 —
-    //   q:'!ugc' 를 남겨두면 mode=ugc 로 들어갔을 때 활성 항목이 하나도 없어 어디에 있는지 알 수 없다.
-    //   롤백(Ad Video 복원) 시 q: '!ugc' 를 되살릴 것.
-    { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'] },
+    // (2026-09-12) UGC 진입점을 되살리면서 q:'!ugc' 도 함께 복원했다.
+    //   둘 다 m:['/studio'] 라서 이게 없으면 mode=ugc 로 들어갔을 때 **Shots와 UGC가 동시에 활성**으로 보인다
+    //   (Shots에 q 조건이 없으면 /studio 이기만 하면 무조건 활성이다).
+    //   ⚠️ UGC 진입점을 다시 숨길 땐 이 q도 같이 빼야 한다 — 안 빼면 mode=ugc 에서 활성 항목이 하나도 없어진다.
+    { h: '/studio', l: 'Shots', i: IC.studio, m: ['/studio'], q: '!ugc' },
     // (2026-08-23) Ad Video 레일 항목 제거 → (2026-09-12) **UGC 란으로 되살림, dev 전용**.
     //   페이지(/studio?mode=ugc)와 엔진·API는 내내 살아 있었고 진입점만 떼어져 있었다.
     //   이름을 'Ad Video'가 아니라 'UGC'로 둔 이유: 옆의 'Ad Studio'(상품 URL→광고영상)와
