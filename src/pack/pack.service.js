@@ -13,7 +13,7 @@ const { suiteFor, NEUTRAL_STILLS, STATE_COMPOSITES } = require('./suites');
 const { bakeRefs, bakeOne } = require('./refBake.service');
 const { genStill } = require('./stills.service');
 const { composeRow } = require('./compositor');
-const { planPack } = require('./planner.service');
+const { planPack, normAspect, dimsFor } = require('./planner.service');
 
 // 🚫 합성(상태 비교·세트 로우)은 기본 OFF — 중앙 슬라이스가 넓적한 제품에서 잘려 못 쓰는 컷이 됐다(사용자 결정).
 //   pack.route 의 PACK_COMPOSITES 와 같은 스위치. 되살리려면 PACK_COMPOSITES=1 + restart.
@@ -77,6 +77,7 @@ async function toVisionImage(p) {
  * @param {Array<{sku,label}>} [p.skus]       세트/변형 구성(없으면 단일)
  * @param {Array<{key,label,photoIndex}>} [p.states]  상태 구성(뚜껑 닫음/열음 등). 2개↑면 상태마다 레퍼+컷세트.
  * @param {string}   [p.unit]                 한 단위 판별(single|pair|with_package|group) — 레퍼 베이크가 몇 개를 그릴지.
+ * @param {string}   [p.aspect]               사용자가 고른 컷 비율('4:5'|'1:1'|'16:9'|'9:16'). 없으면 플래너가 컷마다 자동 선택.
  * @param {string}   p.workDir                산출물 로컬 디렉터리
  * @param {Array<{sku,path}>}  [p.refs]       미리 준비된 캐논 레퍼(있으면 베이크 스킵)
  * @param {string[]} [p.only]                 생성할 cut key 화이트리스트
@@ -84,7 +85,7 @@ async function toVisionImage(p) {
  * @param {(e:object)=>void} [p.onProgress]
  * @returns {Promise<{vertical, product, plan, refs:[], stills:[], composites:[]}>}
  */
-async function runPack({ sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
+async function runPack({ sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, aspect, workDir, refs, only, noPlan, stopAfter, onProgress, onAsset, onPlan }) {
   fs.mkdirSync(workDir, { recursive: true });
   const suite = suiteFor(vertical);
   const manifest = { vertical: suite.vertical, product, plan: null, refs: [], stills: [], composites: [] };
@@ -145,7 +146,7 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
         // 🔴 `product: item` — 플래너에 "이미 확정된 제품이니 재판정하지 마라" 문구가 있는데(buildUserPrompt 의 known)
         //   초기 호출이 category 만 넘기고 product 를 안 넘겨 **매번 다시 판정**했다. 그래서 착용컷에서
         //   plan.product 가 "맨투맨, 바지, 신발" 같은 목록이 됐고 컷 프롬프트에 그대로 박혔다.
-        const plan = await planPack({ images, hint: product, category, product: item || undefined, state, want, lens, exclude: got.map((c) => c.label) });
+        const plan = await planPack({ images, hint: product, category, product: item || undefined, state, want, lens, exclude: got.map((c) => c.label), aspect });
         if (onMeta) onMeta(plan);
         let added = 0, dupes = 0;
         for (const c of (plan.cuts || [])) {
@@ -235,6 +236,16 @@ async function runPack({ sourcePaths, vertical, product, skus, states, unit, len
   // 0.5) 계획 확정 통지 — 플래너가 컷을 정한 직후 "생성될 자산 슬롯목록"을 라우트에 넘긴다.
   //   → 폴링이 config.plan 으로 받아 유저에게 "생성되는 수만큼" 스피너를 즉시 깐다(컷 UX 동일).
   //   순서는 UI 렌더 순서(스틸→합성→레퍼)로 맞춘다. 실제 생성은 레퍼가 먼저지만 그리드 배치는 이 순.
+  // 📐 비율 고정 마무리 — 플래너 경로는 planner가 이미 맞췄지만 **중립 폴백·suite 컷은 4:5 하드코딩**이라
+  //   여기서 한 번 더 덮어써야 "고른 비율"이 모든 경로(플래너 실패 포함)에서 지켜진다.
+  {
+    const forced = normAspect(aspect);
+    if (forced) {
+      const [fw, fh] = dimsFor(forced);
+      cuts = cuts.map((c) => ({ ...c, w: fw, h: fh, aspect: forced }));
+    }
+  }
+
   {
     const refSkus = (planSkus && planSkus.length) ? planSkus : [{ sku: 'main' }];
     const stillCuts = only ? cuts.filter((c) => only.includes(c.key)) : cuts;
