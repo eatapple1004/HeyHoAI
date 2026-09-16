@@ -52,6 +52,16 @@ export class RefundAdminController {
     }
   }
 
+  /**
+   * 그 환경에 환불 테이블이 아직 없는가(42P01 = undefined_table).
+   *
+   * 실측: dev에서 prod를 조회하면 500이었다 — prod DB에 `billing_refunds`가 없었다(환불 기능 미배포).
+   * 환경마다 배포 시점이 다르니 **정상적으로 생길 수 있는 상태**다. 500으로 떨어뜨리면 화면에는
+   * "Internal server error"만 남아 원인을 알 수가 없다. 자기 환경에서 나는 42P01은 진짜 사고이므로
+   * 교차 조회(db != null)일 때만 이렇게 다룬다.
+   */
+  private isMissingTable(e: any): boolean { return !!e && e.code === '42P01'; }
+
   /** GET /api/admin/refunds?env=&orderId=&limit= — 취소 이력(환경 선택 가능, 조회 전용) */
   @Get()
   async list(
@@ -60,14 +70,20 @@ export class RefundAdminController {
     @Query('limit') limit?: string,
   ) {
     const { key, db } = this.target(envKey);
-    return {
-      success: true,
-      data: await this.portone.refundHistory(orderId, Number(limit) || 50, db),
+    const meta = {
       env: key,
       label: this.envDb.label(key),
       db: this.envDb.dbName(key),
       current: this.envDb.current(),   // 화면이 "쓰기 가능한 환경"을 판단하는 기준
     };
+    try {
+      return { success: true, data: await this.portone.refundHistory(orderId, Number(limit) || 50, db), ...meta };
+    } catch (e: any) {
+      if (db && this.isMissingTable(e)) {
+        return { success: true, data: [], ...meta, note: `${meta.label} 환경에는 아직 환불 테이블이 없습니다(환불 기능 미배포).` };
+      }
+      throw e;
+    }
   }
 
   /**
@@ -92,6 +108,12 @@ export class RefundAdminController {
         //   화면에서 판단할 수가 없다. 두 경우의 안내가 정반대라 문구도 갈라 쓴다:
         //   · 404 = 그 환경 DB에 애초에 없는 주문(다른 환경에서 결제된 건) → 환경을 바꿔 보라는 말이 맞다.
         //   · 그 외(PG 조회 실패 등) = DB는 읽혔는데 PortOne 쪽에서 막힌 것 → 그 환경 어드민에서 재시도.
+        if (db && this.isMissingTable(e)) {
+          throw new HttpException(
+            { success: false, error: `${this.envDb.label(key)} 환경에는 아직 환불 테이블이 없습니다(환불 기능 미배포) — 판정을 계산할 수 없습니다.` },
+            400,
+          );
+        }
         if (db && e && e.message) {
           const lbl = this.envDb.label(key);
           e.message = e.statusCode === 404
