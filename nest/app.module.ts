@@ -15,6 +15,7 @@ import { MediaModule } from './media/media.module';
 import { CharactersModule } from './characters/characters.module';
 import { DbModule } from './db/db.module';
 import { EnvDbModule } from './common/env-db.module';
+import { AdminPaymentsModule } from './admin-payments/admin-payments.module';
 import { WalletModule } from './credits/wallet.module';
 import { AdStudioModule } from './ad-studio/ad-studio.module';
 import { PagesModule } from './pages/pages.module';
@@ -63,6 +64,7 @@ import { AdminUsersModule } from './admin-users/admin-users.module';
     BusinessModule,      // 관리자 전용 사업체 인스타 관리(/api/admin/business)
     BusinessMetaModule,  // Meta 직결 인스타 연동(/api/admin/business-meta) — Zernio 대안 실측용
     AdminUsersModule,    // 환경별 사용자·생성물 조회(/api/admin/users)
+    AdminPaymentsModule, // 환경별 결제 조회(/api/admin/payments)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],
