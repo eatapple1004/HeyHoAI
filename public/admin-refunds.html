@@ -313,7 +313,9 @@ async function loadHistory() {
     if (r.current) {   // 서버가 말한 값이 진실 — 쓰기 허용 여부가 여기서 갈린다
       ENVS.cur = r.current;
       ENVS.sel = r.env || r.current;
-      $('dbinfo').textContent = (r.label || '') + ' · DB ' + (r.db || '');
+      // note = "그 환경엔 아직 환불 테이블이 없음(미배포)" 같은 사정. 빈 목록만 보이면
+      //   이력이 없는 건지 기능이 없는 건지 구분이 안 된다.
+      $('dbinfo').textContent = (r.label || '') + ' · DB ' + (r.db || '') + (r.note ? ' · ' + r.note : '');
       applyEnvUI();
     }
     const rows = (r.success && r.data) || [];
