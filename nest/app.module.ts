@@ -14,6 +14,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MediaModule } from './media/media.module';
 import { CharactersModule } from './characters/characters.module';
 import { DbModule } from './db/db.module';
+import { EnvDbModule } from './common/env-db.module';
 import { WalletModule } from './credits/wallet.module';
 import { AdStudioModule } from './ad-studio/ad-studio.module';
 import { PagesModule } from './pages/pages.module';
@@ -34,6 +35,7 @@ import { AdminUsersModule } from './admin-users/admin-users.module';
 @Module({
   imports: [
     DbModule,               // 전역 — 리포지토리가 DbService를 주입받는다
+    EnvDbModule,            // 전역 — 관리자 화면의 환경(dev·stg·prd) 교차 **읽기 전용** 조회
     WalletModule,           // 전역 — 개인/팀 크레딧(거의 모든 도메인이 사용)
     SecurityModule,     // 전역 — 소유권 검증(OwnershipService)·JWT(TokenService)
     PricingModule,
