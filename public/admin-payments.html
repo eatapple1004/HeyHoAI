@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>결제 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+button,input{font-family:inherit;font-size:.88rem}
+button{font-weight:600;padding:8px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+input{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 13px;min-width:240px}
+input:focus{outline:none;border-color:var(--accent2)}
+/* prod를 고르면 화면이 붉게 — 실서비스 데이터를 보고 있다는 걸 색으로 못박는다 */
+body.prod{background:#140c0e}
+body.prod h1 .dot{background:linear-gradient(135deg,#f87171,#dc2626)}
+.envwarn{display:none;background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;
+  padding:10px 14px;border-radius:10px;font-size:.85rem;margin-bottom:14px}
+body.prod .envwarn{display:block}
+/* 그 환경엔 아직 없는 것(스키마 미배포 등)을 말하는 자리 — 값이 0인 것과 컬럼이 없는 것은 다르다 */
+.note{background:rgba(255,206,122,.1);border:1px solid #5b4a2e;color:var(--gold);
+  padding:10px 14px;border-radius:10px;font-size:.85rem;margin-bottom:14px;display:none}
+.note.show{display:block}
+.sum{display:flex;gap:20px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:14px 18px;margin-bottom:16px}
+.sum div span{display:block}
+.sum .n{font-size:1.35rem;font-weight:800}
+.sum .n.ok{color:var(--green)} .sum .n.bad{color:var(--red)}
+.sum .l{color:var(--faint);font-size:.74rem;margin-top:2px}
+.prov{color:var(--faint);font-size:.78rem;margin:-6px 0 16px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:9px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+      text-align:left;white-space:nowrap}
+th:last-child,td:last-child{border-right:0}
+th{color:var(--faint);font-size:.74rem;font-weight:700;position:sticky;top:0;background:var(--bg);cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+tbody tr:hover{background:var(--panel)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.zero{color:var(--faint)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;color:var(--dim)}
+.mail{max-width:260px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom;color:var(--accent2);text-decoration:none}
+.mail:hover{text-decoration:underline}
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:700}
+.t-portone{background:rgba(124,82,232,.2);color:var(--accent2)}
+.t-eximbay{background:rgba(74,222,128,.14);color:var(--green)}
+.t-ls{background:rgba(255,206,122,.16);color:var(--gold)}
+.t-etc{background:rgba(154,154,178,.16);color:var(--dim)}
+.refund{color:var(--red)}
+.empty{color:var(--faint);text-align:center;padding:50px}
+.msg{padding:12px 15px;border-radius:11px;margin-bottom:14px;display:none;font-size:.88rem}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+@media(max-width:820px){body{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 결제</h1>
+  <div class="sub">언제 누가 얼마를 결제했는지 봅니다. 환경을 골라 dev·staging·prod를 한 화면에서 확인합니다. (관리자 전용 · 읽기 전용)</div>
+
+  <div id="adminNav"></div>
+
+  <div class="envwarn">🔴 <b>prod — 실서비스 결제 데이터</b>를 보고 있습니다. 조회 전용이라 바뀌지 않지만, 화면 공유·캡처 시 개인정보(이메일)가 노출됩니다.</div>
+  <div class="note" id="note"></div>
+  <div class="msg err" id="err"></div>
+
+  <div class="bar">
+    <button class="env" data-env="development">dev</button>
+    <button class="env" data-env="staging">staging</button>
+    <button class="env" data-env="production">prod</button>
+    <input id="q" placeholder="이메일·주문번호·팩 검색" oninput="render()">
+    <span style="margin-left:auto;color:var(--faint);font-size:.82rem" id="dbinfo"></span>
+  </div>
+
+  <div class="sum" id="sum"></div>
+  <div class="prov" id="prov"></div>
+
+  <div style="overflow-x:auto"><table>
+    <thead><tr id="head"></tr></thead>
+    <tbody id="rows"><tr><td colspan="9" class="empty">불러오는 중…</td></tr></tbody>
+  </table></div>
+</div>
+
+<script src="/js/admin-nav.js?v=2" defer></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const usd = (n) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const won = (n) => '₩' + Math.round(Number(n || 0)).toLocaleString('ko-KR');
+
+// 🔀 환경 상태 — 기본값은 서버가 알려준다(화면이 스스로 prod를 먼저 고르지 않게).
+let state = { env: null, data: null, sort: 'created_at', desc: true };
+
+function fmt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+const PROV_CLASS = { portone: 't-portone', eximbay: 't-eximbay', lemonsqueezy: 't-ls' };
+const provTag = (p) => '<span class="tag ' + (PROV_CLASS[p] || 't-etc') + '">' + esc(p || '—') + '</span>';
+
+// 열 정의 — 정렬 키를 데이터 필드와 1:1로 맞춘다(헤더 클릭 정렬).
+const COLS = [
+  { k: 'created_at', t: '일시', cell: (r) => fmt(r.created_at) },
+  { k: 'email',      t: '이메일', cell: (r) => r.email
+      ? '<a class="mail" href="/admin-users/' + encodeURIComponent(r.user_id || '') + '?env=' + encodeURIComponent(state.env || '') + '">' + esc(r.email) + '</a>'
+      : '<span class="zero">—</span>' },
+  { k: 'product',    t: '상품', cell: (r) => esc(r.product || '—') },
+  { k: 'provider',   t: '채널', cell: (r) => provTag(r.provider) },
+  { k: 'amount_usd', t: '금액(USD)', num: true, cell: (r) => usd(r.amount_usd) },
+  { k: 'paid_krw',   t: '실청구(KRW)', num: true, cell: (r) => (r.paid_krw ? won(r.paid_krw) : '<span class="zero">—</span>') },
+  { k: 'credits',    t: '크레딧', num: true, cell: (r) => '◈' + Number(r.credits || 0).toLocaleString() },
+  { k: 'refunded_usd', t: '환불(USD)', num: true, cell: (r) =>
+      r.refunded_usd == null ? '<span class="zero">—</span>'
+      : (r.refunded_usd > 0 ? '<span class="refund">-' + usd(r.refunded_usd) + '</span>' : '<span class="zero">$0.00</span>') },
+  { k: 'order_id',   t: '주문번호', cell: (r) => '<span class="mono">' + esc(r.order_id || '') + '</span>' },
+];
+
+async function api(url) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+  if (res.status === 403) throw new Error('관리자 권한이 필요합니다.');
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.success === false) throw new Error(body.error || body.message || ('요청 실패 (' + res.status + ')'));
+  return body;
+}
+
+async function load(envKey) {
+  state.env = envKey || state.env;
+  document.querySelectorAll('.env').forEach((b) => b.classList.toggle('on', b.dataset.env === state.env));
+  document.body.classList.toggle('prod', state.env === 'production');
+  $('err').classList.remove('show');
+  $('rows').innerHTML = '<tr><td colspan="' + COLS.length + '" class="empty">불러오는 중…</td></tr>';
+  try {
+    const { data } = await api('/api/admin/payments' + (state.env ? '?env=' + encodeURIComponent(state.env) : ''));
+    state.data = data;
+    state.env = data.env;
+    document.querySelectorAll('.env').forEach((b) => b.classList.toggle('on', b.dataset.env === data.env));
+    document.body.classList.toggle('prod', data.env === 'production');
+    $('dbinfo').textContent = data.label + ' · DB ' + data.db;
+    // 환경마다 배포 시점이 달라 컬럼이 없을 수 있다(prod엔 payments.refunded_usd가 없다).
+    //   환불 열이 비어 있는 게 "환불이 0"인지 "기능이 아직 없음"인지 화면이 말해야 한다.
+    $('note').classList.toggle('show', !data.schema.refundedUsd);
+    if (!data.schema.refundedUsd) {
+      $('note').innerHTML = '⚠️ <b>' + esc(data.label) + '</b> 환경에는 아직 환불 스키마가 없습니다(환불 기능 미배포) — '
+        + '환불 열은 <b>0이 아니라 “알 수 없음”</b>입니다. 순매출도 환불을 못 뺀 값입니다.';
+    }
+    render();
+  } catch (e) {
+    $('err').textContent = e.message; $('err').classList.add('show');
+    $('rows').innerHTML = '<tr><td colspan="' + COLS.length + '" class="empty">불러오지 못했습니다.</td></tr>';
+    $('sum').innerHTML = ''; $('prov').textContent = '';
+  }
+}
+
+function sortBy(k) {
+  if (state.sort === k) state.desc = !state.desc; else { state.sort = k; state.desc = true; }
+  render();
+}
+
+function render() {
+  const d = state.data; if (!d) return;
+  const q = ($('q').value || '').trim().toLowerCase();
+  let list = (d.rows || []).filter((r) => !q
+    || (r.email || '').toLowerCase().includes(q)
+    || (r.order_id || '').toLowerCase().includes(q)
+    || (r.product || '').toLowerCase().includes(q));
+
+  const k = state.sort;
+  list = list.slice().sort((a, b) => {
+    const va = k === 'created_at' ? new Date(a[k] || 0).getTime() : (typeof a[k] === 'number' ? a[k] : String(a[k] ?? ''));
+    const vb = k === 'created_at' ? new Date(b[k] || 0).getTime() : (typeof b[k] === 'number' ? b[k] : String(b[k] ?? ''));
+    if (va < vb) return state.desc ? 1 : -1;
+    if (va > vb) return state.desc ? -1 : 1;
+    return 0;
+  });
+
+  // 요약은 **전체 기준**(서버 집계)이다 — 검색으로 거른 목록의 합을 매출로 읽으면 틀린다.
+  const s = d.summary;
+  const tiles = [
+    ['결제 건', s.count.toLocaleString(), ''],
+    ['결제한 계정', s.users.toLocaleString(), ''],
+    ['결제액 USD', usd(s.usd), ''],
+    ['실청구 KRW', won(s.krw), ''],
+  ];
+  if (d.schema.refundedUsd) {
+    tiles.push(['환불 USD', usd(s.refundedUsd), s.refundedUsd > 0 ? 'bad' : '']);
+    tiles.push(['순매출 USD', usd(s.netUsd), 'ok']);
+  }
+  tiles.push(['지급 크레딧', '◈' + s.credits.toLocaleString(), '']);
+  tiles.push(['최근 결제', fmt(s.lastAt), '']);
+  $('sum').innerHTML = tiles.map(([l, n, cls]) =>
+    '<div><span class="n ' + (cls || '') + '">' + n + '</span><span class="l">' + l + '</span></div>').join('');
+
+  $('prov').innerHTML = (s.byProvider || []).length
+    ? '채널별 · ' + s.byProvider.map((p) => esc(p.provider) + ' ' + p.n + '건 ' + usd(p.usd)).join('  ·  ')
+    : '';
+
+  $('head').innerHTML = COLS.map((c) =>
+    '<th onclick="sortBy(\'' + c.k + '\')">' + c.t + (state.sort === c.k ? (state.desc ? ' ▾' : ' ▴') : '') + '</th>').join('');
+
+  $('rows').innerHTML = list.length
+    ? list.map((r) => '<tr>' + COLS.map((c) => '<td' + (c.num ? ' class="num"' : '') + '>' + c.cell(r) + '</td>').join('') + '</tr>').join('')
+    : '<tr><td colspan="' + COLS.length + '" class="empty">' + (q ? '검색 결과가 없습니다.' : '결제 내역이 없습니다.') + '</td></tr>';
+}
+
+document.querySelectorAll('.env').forEach((b) => b.addEventListener('click', () => load(b.dataset.env)));
+load();   // 기본은 이 서버의 환경 — 서버 응답(env)이 정한다
+</script>
+</body>
+</html>
