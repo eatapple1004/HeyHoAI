@@ -88,10 +88,15 @@ export class RefundAdminController {
           current: this.envDb.current(),
         };
       } catch (e: any) {
-        // 교차 환경 조회에서 PG 조회가 막히는 경우(환경마다 PortOne 스토어가 다를 수 있다)
-        //   "왜 안 되는지"를 화면에서 바로 읽히게 한다 — 안 그러면 원인이 DB인지 PG인지 구분이 안 된다.
+        // 교차 환경 조회는 **어디서 막혔는지**를 말해 줘야 한다 — 원인이 DB인지 PG인지 구분이 안 되면
+        //   화면에서 판단할 수가 없다. 두 경우의 안내가 정반대라 문구도 갈라 쓴다:
+        //   · 404 = 그 환경 DB에 애초에 없는 주문(다른 환경에서 결제된 건) → 환경을 바꿔 보라는 말이 맞다.
+        //   · 그 외(PG 조회 실패 등) = DB는 읽혔는데 PortOne 쪽에서 막힌 것 → 그 환경 어드민에서 재시도.
         if (db && e && e.message) {
-          e.message = `${e.message} (${this.envDb.label(key)} 환경 조회 — 그 환경 어드민에서 다시 시도해 보세요)`;
+          const lbl = this.envDb.label(key);
+          e.message = e.statusCode === 404
+            ? `${e.message} (${lbl} DB에 이 주문이 없습니다 — 다른 환경에서 결제된 건인지 확인하세요)`
+            : `${e.message} (${lbl} 환경 조회 — 그 환경 어드민에서 다시 시도해 보세요)`;
         }
         throw e;
       }
