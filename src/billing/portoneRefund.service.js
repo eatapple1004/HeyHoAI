@@ -52,8 +52,8 @@ async function fetchPayment(paymentId) {
 }
 
 /** 우리 쪽 주문 + 결제기록. 없으면 404. */
-async function loadOrder(paymentId) {
-  const r = await query(
+async function loadOrder(paymentId, q = query) {
+  const r = await q(
     `SELECT o.order_id, o.user_id, o.provider, o.pack_id, o.credits, o.amount_usd, o.status,
             o.created_at, p.created_at AS paid_at, p.refunded_usd
        FROM billing_orders o
@@ -74,8 +74,8 @@ async function loadOrder(paymentId) {
  * (다른 잔액을 먼저 썼더라도 사용으로 세므로 회사가 유리해지지 않는다).
  * 우리가 회수한 분(type='purchase_refund'의 음수)은 소비가 아니므로 제외한다.
  */
-async function usedSince(userId, sinceISO) {
-  const r = await query(
+async function usedSince(userId, sinceISO, q = query) {
+  const r = await q(
     `SELECT COALESCE(SUM(-amount), 0)::int AS used
        FROM credit_ledger
       WHERE user_id = $1 AND amount < 0 AND type <> 'purchase_refund' AND created_at >= $2`,
@@ -85,8 +85,8 @@ async function usedSince(userId, sinceISO) {
 }
 
 /** 크레딧이 실제로 지급된 시각(원장) — 없으면 payments/주문 시각으로 폴백. */
-async function grantedAt(order) {
-  const r = await query(
+async function grantedAt(order, q = query) {
+  const r = await q(
     `SELECT created_at FROM credit_ledger
       WHERE ref_id = $1 AND type = 'purchase' ORDER BY created_at LIMIT 1`,
     [order.order_id]
@@ -104,7 +104,11 @@ const daysSince = (t) => (Date.now() - new Date(t).getTime()) / 86400000;
  * @returns {Promise<object>} 정책 판정 + 금액/크레딧 계산 결과
  */
 async function assess(paymentId, opts = {}) {
-  const order = await loadOrder(paymentId);
+  // 🔎 opts.db = **다른 환경(dev·stg·prd)의 읽기 전용 질의 함수**. 관리자 화면이 환경을 골라
+  //   조회할 때만 들어온다(nest/common/env-db.service). 안 주면 이 서버 자신의 DB.
+  //   ⚠️ 판정은 순수 조회다 — 여기에 쓰기가 섞이면 교차 환경 조회가 곧 교차 환경 쓰기가 된다.
+  const q = opts.db || query;
+  const order = await loadOrder(paymentId, q);
   if (opts.userId && String(order.user_id) !== String(opts.userId)) {
     throw fail('본인의 결제 건이 아닙니다.', 403);
   }
@@ -114,20 +118,21 @@ async function assess(paymentId, opts = {}) {
   const cancelled = Number((pay.amount && pay.amount.cancelled) || 0);
   const cancellable = Math.max(0, Number((pay.amount && pay.amount.paid) || total) - cancelled);
 
-  const granted = await grantedAt(order);
-  const used = await usedSince(order.user_id, granted);
+  const granted = await grantedAt(order, q);
+  const used = await usedSince(order.user_id, granted, q);
   const purchased = Number(order.credits);
   // 앞선 부분취소로 이미 회수한 분은 남은 권리에서 빼야 한다 — 안 빼면 같은 크레딧을
   // 두 번 환불 계산에 넣게 된다(부분취소를 두 번 이상 할 때 드러난다).
   const clawedBack = (
-    await query(
+    await q(
       `SELECT COALESCE(SUM(credits_clawed), 0)::int AS c FROM billing_refunds
         WHERE order_id = $1 AND status = 'succeeded'`,
       [paymentId]
     )
   ).rows[0].c;
   const unused = Math.max(0, purchased - used - clawedBack);
-  const balance = await creditService.getBalance(order.user_id);
+  // credit.service.getBalance 와 같은 조회 — 환경 교차 조회에서도 같은 값을 보려면 주입된 q로 읽어야 한다.
+  const balance = (await q('SELECT credit_balance FROM users WHERE id = $1', [order.user_id])).rows[0]?.credit_balance || 0;
 
   const elapsed = daysSince(granted);
   const withinWithdrawal = elapsed <= WITHDRAWAL_DAYS;
@@ -431,8 +436,8 @@ async function listRefundable(userId, limit = 20) {
 }
 
 /** 취소 이력(관리자). order_id를 주면 그 주문만. */
-async function listRefunds({ orderId = null, limit = 50 } = {}) {
-  const r = await query(
+async function listRefunds({ orderId = null, limit = 50, db = null } = {}) {
+  const r = await (db || query)(
     `SELECT f.*, u.email
        FROM billing_refunds f LEFT JOIN users u ON u.id = f.user_id
       WHERE ($1::text IS NULL OR f.order_id = $1)
