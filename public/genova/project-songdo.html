@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=20260923b">
 </head>
 <body data-page="projects" data-meta="sd" class="solid-header">
 
@@ -63,19 +63,29 @@
       <p class="sub" data-i18n="sd.w.sub"></p>
     </header>
     <div class="story">
-      <figure class="story-media reveal">
-        <img src="assets/img/projects/songdo/site/view-fairway-skyline.jpg" data-i18n-alt="sd.w.alt" alt="">
+      <figure class="story-media reveal kws" data-kws="#whyKw">
+        <div class="kws-track">
+          <div class="kws-slide"><img src="assets/img/projects/songdo/site/loc-airport.jpg" data-i18n-alt="sd.ws1.alt" alt=""><figcaption><b data-i18n="sd.w1.b"></b><span data-i18n="sd.ws1.cap"></span></figcaption></div>
+          <div class="kws-slide"><img src="assets/img/projects/songdo/site/loc-incheon-bridge.jpg" data-i18n-alt="sd.ws2.alt" alt="" loading="lazy"><figcaption><b data-i18n="sd.w2.b"></b><span data-i18n="sd.ws2.cap"></span></figcaption></div>
+          <div class="kws-slide"><img src="assets/img/projects/songdo/site/loc-igc.jpg" data-i18n-alt="sd.ws3.alt" alt="" loading="lazy"><figcaption><b data-i18n="sd.w3.b"></b><span data-i18n="sd.ws3.cap"></span></figcaption></div>
+          <div class="kws-slide"><img src="assets/img/projects/songdo/site/loc-central-park.jpg" data-i18n-alt="sd.ws4.alt" alt="" loading="lazy"><figcaption><b data-i18n="sd.w4.b"></b><span data-i18n="sd.ws4.cap"></span></figcaption></div>
+          <div class="kws-slide"><img src="assets/img/projects/songdo/site/view-fairway-skyline.jpg" data-i18n-alt="sd.ws5.alt" alt="" loading="lazy"><figcaption><b data-i18n="sd.w5.b"></b><span data-i18n="sd.ws5.cap"></span></figcaption></div>
+        </div>
+        <button type="button" class="kws-nav prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button type="button" class="kws-nav next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+        <div class="kws-dots"></div>
       </figure>
       <div class="reveal">
-        <div class="keyword-grid" style="margin-top:0">
-          <div class="kw"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-plane"/></svg></span><b data-i18n="sd.w1.b"></b><span data-i18n="sd.w1.s"></span></div>
-          <div class="kw"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-pin"/></svg></span><b data-i18n="sd.w2.b"></b><span data-i18n="sd.w2.s"></span></div>
-          <div class="kw"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-cap"/></svg></span><b data-i18n="sd.w3.b"></b><span data-i18n="sd.w3.s"></span></div>
-          <div class="kw"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-city"/></svg></span><b data-i18n="sd.w4.b"></b><span data-i18n="sd.w4.s"></span></div>
-          <div class="kw"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-leaf"/></svg></span><b data-i18n="sd.w5.b"></b><span data-i18n="sd.w5.s"></span></div>
+        <div class="keyword-grid" id="whyKw" style="margin-top:0">
+          <div class="kw" role="button" tabindex="0"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-plane"/></svg></span><b data-i18n="sd.w1.b"></b><span data-i18n="sd.w1.s"></span></div>
+          <div class="kw" role="button" tabindex="0"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-pin"/></svg></span><b data-i18n="sd.w2.b"></b><span data-i18n="sd.w2.s"></span></div>
+          <div class="kw" role="button" tabindex="0"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-cap"/></svg></span><b data-i18n="sd.w3.b"></b><span data-i18n="sd.w3.s"></span></div>
+          <div class="kw" role="button" tabindex="0"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-city"/></svg></span><b data-i18n="sd.w4.b"></b><span data-i18n="sd.w4.s"></span></div>
+          <div class="kw" role="button" tabindex="0"><span class="f-ico"><svg viewBox="0 0 24 24"><use href="#i-leaf"/></svg></span><b data-i18n="sd.w5.b"></b><span data-i18n="sd.w5.s"></span></div>
         </div>
       </div>
     </div>
+    <p class="kws-credit reveal" data-i18n-html="sd.ws.credit"></p>
   </div>
 </section>
 
@@ -223,8 +233,8 @@
   </div>
 </section>
 
-<script src="assets/js/i18n.js"></script>
-<script src="assets/js/layout.js"></script>
-<script src="assets/js/main.js"></script>
+<script src="assets/js/i18n.js?v=20260923b"></script>
+<script src="assets/js/layout.js?v=20260923b"></script>
+<script src="assets/js/main.js?v=20260923b"></script>
 </body>
 </html>

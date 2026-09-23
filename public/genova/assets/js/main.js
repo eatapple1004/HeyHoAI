@@ -127,3 +127,50 @@
     });
   }
 })();
+
+/* ---- keyword slider (project story 01) ---- */
+(function () {
+  document.querySelectorAll('.kws').forEach(function (box) {
+    var track = box.querySelector('.kws-track');
+    var n = track.children.length, cur = 0, timer;
+    var dotsBox = box.querySelector('.kws-dots');
+    var kws = box.dataset.kws ? document.querySelectorAll(box.dataset.kws + ' .kw') : [];
+    var dots = [];
+    for (var i = 0; i < n; i++) {
+      var d = document.createElement('button');
+      d.type = 'button'; d.setAttribute('aria-label', String(i + 1));
+      d.addEventListener('click', go.bind(null, i));
+      dotsBox.appendChild(d); dots.push(d);
+    }
+    function go(i) {
+      cur = (i + n) % n;
+      track.style.transform = 'translateX(' + (-100 * cur) + '%)';
+      dots.forEach(function (d, k) { d.classList.toggle('on', k === cur); });
+      Array.prototype.forEach.call(kws, function (el, k) { el.classList.toggle('on', k === cur); });
+      restart();
+    }
+    function restart() {
+      clearInterval(timer);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        timer = setInterval(function () { go(cur + 1); }, 5000);
+    }
+    box.querySelector('.prev').addEventListener('click', function () { go(cur - 1); });
+    box.querySelector('.next').addEventListener('click', function () { go(cur + 1); });
+    Array.prototype.forEach.call(kws, function (el, k) {
+      el.addEventListener('click', function () { go(k); });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(k); }
+      });
+    });
+    box.addEventListener('mouseenter', function () { clearInterval(timer); });
+    box.addEventListener('mouseleave', restart);
+    var x0 = null;
+    track.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) go(cur + (dx < 0 ? 1 : -1));
+    });
+    go(0);
+  });
+})();
