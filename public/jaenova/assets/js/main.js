@@ -56,11 +56,16 @@
     bar.addEventListener('click', function (e) {
       var btn = e.target.closest('button[data-filter]');
       if (!btn) return;
-      bar.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b === btn); });
+      bar.querySelectorAll('button').forEach(function (b) {
+        b.classList.toggle('on', b === btn);
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      });
       var f = btn.dataset.filter;
       Array.prototype.forEach.call(target.children, function (child) {
         var cats = (child.dataset.cat || '').split(/\s+/);
         child.hidden = !(f === 'all' || cats.indexOf(f) !== -1);
+        child.classList.remove('is-in');
+        if (!child.hidden) { void child.offsetWidth; child.classList.add('is-in'); }
       });
     });
   });
