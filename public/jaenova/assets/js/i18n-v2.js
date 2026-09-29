@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GENOVA HONORS — HOME v2 전용 사전
+   JAENOVA HONORS — HOME v2 전용 사전
    i18n.js 뒤에 로드되어 window.I18N.ko / .en 에 v2 키만 추가합니다.
    (기존 8개 페이지는 이 파일을 읽지 않으므로 영향 없음)
    ========================================================================== */
@@ -11,10 +11,10 @@
     /* ---------- HERO 슬라이드 ---------- */
     "v2.s1.kick": "Architecture · Development · Construction",
     "v2.s1.h": "공간의 가치를<br>짓습니다",
-    "v2.s1.p": "부지 검토부터 설계, 시공, 품질관리까지. 제노바 아너스는 프로젝트의 전 과정을 하나의 책임으로 수행합니다.",
+    "v2.s1.p": "부지 검토부터 설계, 시공, 품질관리까지. 재노바 아너스는 프로젝트의 전 과정을 하나의 책임으로 수행합니다.",
     "v2.s1.a1": "회사 소개",
     "v2.s1.a2": "사업영역 보기",
-    "v2.s1.alt": "제노바 아너스 대표 프로젝트 전경",
+    "v2.s1.alt": "재노바 아너스 대표 프로젝트 전경",
 
     "v2.s2.kick": "Construction Capability",
     "v2.s2.h": "설계 의도를<br>손실 없이 구현합니다",
@@ -42,7 +42,7 @@
 
     "v2.pj.kick": "Projects",
     "v2.pj.h": "대표 프로젝트",
-    "v2.pj.sub": "제노바 아너스가 실제로 만들어낸 결과물입니다.",
+    "v2.pj.sub": "재노바 아너스가 실제로 만들어낸 결과물입니다.",
     "v2.pj.more": "프로젝트 전체 보기",
 
     "v2.nw.kick": "News",
@@ -96,10 +96,10 @@
   Object.assign(window.I18N.en, {
     "v2.s1.kick": "Architecture · Development · Construction",
     "v2.s1.h": "We build<br>the value of space",
-    "v2.s1.p": "From site review to design, construction and quality control — Genova Honors carries the whole project under a single responsibility.",
+    "v2.s1.p": "From site review to design, construction and quality control — Jaenova Honors carries the whole project under a single responsibility.",
     "v2.s1.a1": "About Us",
     "v2.s1.a2": "Our Business",
-    "v2.s1.alt": "Flagship project by Genova Honors",
+    "v2.s1.alt": "Flagship project by Jaenova Honors",
 
     "v2.s2.kick": "Construction Capability",
     "v2.s2.h": "Design intent,<br>realised without loss",
@@ -126,7 +126,7 @@
 
     "v2.pj.kick": "Projects",
     "v2.pj.h": "Featured Projects",
-    "v2.pj.sub": "What Genova Honors has actually built.",
+    "v2.pj.sub": "What Jaenova Honors has actually built.",
     "v2.pj.more": "See all projects",
 
     "v2.nw.kick": "News",

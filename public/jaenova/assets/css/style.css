@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GENOVA HONORS — Corporate Website
+   JAENOVA HONORS — Corporate Website
    Architecture · Development · Construction
    Style: DARK PREMIUM CORPORATE (기획안 26번)
      MAIN   Deep Navy / Charcoal Black
@@ -669,6 +669,9 @@ html[lang="ko"] .kicker{ font-weight:700; font-size:.78rem; }
 }
 
 @media (max-width:560px){
+  .brand{ gap:10px; flex:0 1 auto; min-width:0; }
+  .brand-text em{ display:none; }
+  .brand-mark{ width:34px; height:34px; flex-basis:34px; font-size:.8rem; }
   .process{ grid-template-columns:1fr; }
   .foot-top{ grid-template-columns:1fr; gap:2rem; }
   .form .row{ grid-template-columns:1fr; }

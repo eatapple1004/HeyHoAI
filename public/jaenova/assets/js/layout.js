@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GENOVA HONORS — 공통 헤더 / 푸터 / 아이콘 스프라이트
+   JAENOVA HONORS — 공통 헤더 / 푸터 / 아이콘 스프라이트
    페이지마다 복사하지 않고 여기 한 곳만 고치면 전체에 반영됩니다.
    각 페이지 <body>에 data-page="about" 처럼 현재 메뉴를 표시하세요.
    ========================================================================== */
@@ -77,9 +77,9 @@
     '<header class="site-header" id="siteHeader">' +
       '<div class="wrap header-inner">' +
         '<a class="brand" href="index.html">' +
-          '<span class="brand-mark">GH</span>' +
+          '<span class="brand-mark">JH</span>' +
           '<span class="brand-text">' +
-            '<strong>Genova Honors</strong>' +
+            '<strong>Jaenova Honors</strong>' +
             '<em data-i18n="brand.sub"></em>' +
           '</span>' +
         '</a>' +
@@ -109,8 +109,8 @@
       '<div class="wrap">' +
         '<div class="foot-top">' +
           '<div class="foot-brand">' +
-            '<span class="brand-mark">GH</span>' +
-            '<strong>Genova Honors</strong>' +
+            '<span class="brand-mark">JH</span>' +
+            '<strong>Jaenova Honors</strong>' +
             '<em data-i18n="brand.sub"></em>' +
           '</div>' +
           col('foot.menu', [

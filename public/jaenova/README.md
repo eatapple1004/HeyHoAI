@@ -1,4 +1,4 @@
-# GENOVA HONORS — 기업 홈페이지
+# JAENOVA HONORS — 기업 홈페이지
 
 `홈페이지 기획안.docx` (31개 항목) 기준으로 제작한 **건설기업 코퍼레이트 사이트**입니다.
 빌드 도구 없이 순수 HTML / CSS / JS 로 구성되어 파일만 열면 동작합니다.
@@ -6,7 +6,7 @@
 ## 로컬 실행
 
 ```bash
-cd genova-honors
+cd jaenova-honors
 python3 -m http.server 5501
 # → http://localhost:5501
 ```
@@ -16,7 +16,7 @@ python3 -m http.server 5501
 | 폴더 | 내용 | 상태 |
 |---|---|---|
 | `../songdo-jacknicklaus/` | 송도 잭니클라우스 **단일 분양 랜딩** (이전 작업) | 그대로 보존. 참고용 |
-| `genova-honors/` | **제노바 아너스 기업 홈페이지** (현재) | 기획안 반영본 |
+| `jaenova-honors/` | **재노바 아너스 기업 홈페이지** (현재) | 기획안 반영본 |
 
 이전 사이트는 삭제하지 않았습니다. 확인 후 필요 없으면 지우셔도 됩니다.
 
@@ -32,7 +32,7 @@ python3 -m http.server 5501
 
 ### V2 가 레퍼런스에서 가져온 것
 
-`http://www.homilhodu.co.kr/` 의 **정보구조와 UX 패턴만** 차용했습니다 (디자인·카피는 제노바 아너스 기준).
+`http://www.homilhodu.co.kr/` 의 **정보구조와 UX 패턴만** 차용했습니다 (디자인·카피는 재노바 아너스 기준).
 
 | 레퍼런스 | V2 반영 |
 |---|---|

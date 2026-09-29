@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GENOVA HONORS — i18n
+   JAENOVA HONORS — i18n
    기획안 31: Korean / English / Chinese / Japanese 다국어 확장 대비 구조
 
    HTML 사용법:
@@ -27,8 +27,8 @@ ko: {
   "nav.contact": "문의",
 
   /* ---------- HOME ---------- */
-  "meta.home.title": "제노바 아너스 | 건축 · 개발 · 건설",
-  "meta.home.desc": "제노바 아너스는 기획부터 설계, 시공, 품질관리까지 수행하는 건설기업입니다. 건축을 통해 공간을 만들고 시공을 통해 가치를 완성합니다.",
+  "meta.home.title": "재노바 아너스 | 건축 · 개발 · 건설",
+  "meta.home.desc": "재노바 아너스는 기획부터 설계, 시공, 품질관리까지 수행하는 건설기업입니다. 건축을 통해 공간을 만들고 시공을 통해 가치를 완성합니다.",
   "home.h1a": "BUILDING",
   "home.h1b": "THE FUTURE",
   "home.tag": "Architecture That Creates Value",
@@ -38,9 +38,9 @@ ko: {
   "home.scroll": "Scroll to explore",
   "home.hero.alt": "노을 진 송도 잭니클라우스 골프클럽 코리아와 송도 스카이라인",
 
-  "home.i.kicker": "About Genova Honors",
+  "home.i.kicker": "About Jaenova Honors",
   "home.i.title": "공간을 만드는 기술,<br>가치를 완성하는 건설",
-  "home.i.lead": "제노바 아너스는 사업 기획부터 건축 설계, 시공, 품질관리, 준공 후 관리까지 건설의 전 과정을 수행하는 기업입니다. 부동산을 중개하거나 분양만 담당하는 회사가 아니라, 실제로 건물을 짓는 회사입니다.",
+  "home.i.lead": "재노바 아너스는 사업 기획부터 건축 설계, 시공, 품질관리, 준공 후 관리까지 건설의 전 과정을 수행하는 기업입니다. 부동산을 중개하거나 분양만 담당하는 회사가 아니라, 실제로 건물을 짓는 회사입니다.",
   "home.i.p": "우리는 도면 위의 계획을 현장의 결과물로 바꾸는 일을 합니다. 그 과정에서 품질과 안전은 타협의 대상이 아니며, 디자인은 기능과 분리되지 않습니다. 완성된 공간이 사람의 일상을 어떻게 바꾸는지가 우리의 기준입니다.",
   "home.i.more": "회사소개 자세히",
 
@@ -56,7 +56,7 @@ ko: {
 
   "home.p.kicker": "Our Projects",
   "home.p.title": "프로젝트",
-  "home.p.sub": "제노바 아너스가 실제로 만들어낸 결과물입니다.",
+  "home.p.sub": "재노바 아너스가 실제로 만들어낸 결과물입니다.",
   "home.p.more": "전체 프로젝트 보기",
 
   "home.c.kicker": "From Plan to Reality",
@@ -89,15 +89,15 @@ ko: {
   "pr.6.h": "Completion",      "pr.6.p": "준공 · 사후관리",
 
   /* ---------- ABOUT ---------- */
-  "meta.about.title": "회사소개 | 제노바 아너스",
-  "meta.about.desc": "제노바 아너스의 비전, 사업 역량, 연혁 그리고 대표 메시지를 소개합니다.",
-  "ab.h1": "About Genova Honors",
-  "ab.sub": "공간을 만드는 기술, 가치를 완성하는 건설. 제노바 아너스가 무엇을 하고, 어떻게 짓고, 무엇을 지키는 회사인지 소개합니다.",
+  "meta.about.title": "회사소개 | 재노바 아너스",
+  "meta.about.desc": "재노바 아너스의 비전, 사업 역량, 연혁 그리고 대표 메시지를 소개합니다.",
+  "ab.h1": "About Jaenova Honors",
+  "ab.sub": "공간을 만드는 기술, 가치를 완성하는 건설. 재노바 아너스가 무엇을 하고, 어떻게 짓고, 무엇을 지키는 회사인지 소개합니다.",
 
   "ab.v.kicker": "Vision",
   "ab.v.title": "BUILDING VALUE.<em>CREATING LIFESTYLE.</em>",
   "ab.v.lead": "건축을 통해 공간을 만들고, 시공을 통해 가치를 완성하며, 사람이 살아갈 수 있는 새로운 라이프스타일을 제안하는 기업.",
-  "ab.v.p": "건물은 완공되는 순간 끝나는 것이 아니라 그때부터 쓰이기 시작합니다. 제노바 아너스는 준공 이후의 시간을 기준으로 설계하고 시공합니다.",
+  "ab.v.p": "건물은 완공되는 순간 끝나는 것이 아니라 그때부터 쓰이기 시작합니다. 재노바 아너스는 준공 이후의 시간을 기준으로 설계하고 시공합니다.",
 
   "ab.w1.h": "What We Do", "ab.w1.p": "부지 기획과 사업 개발, 건축 설계, 건설·시공, 준공 후 관리까지 건설 전 과정을 수행합니다.",
   "ab.w2.h": "How We Build", "ab.w2.p": "기획 · 설계 · 엔지니어링 · 시공 · 품질관리 · 준공의 여섯 단계를 자체 관리 체계로 운영합니다.",
@@ -114,9 +114,9 @@ ko: {
   "ab.ceo.kicker": "Message from the CEO",
   "ab.ceo.title": "대표 인사말",
   "ab.ceo.quote": "\"우리는 건물을 파는 회사가 아니라, 건물을 짓는 회사입니다. 도면 한 장이 현장의 구조물이 되고 누군가의 일상이 되기까지, 그 전 과정에 책임을 집니다.\"",
-  "ab.ceo.p": "제노바 아너스는 기획과 시공을 함께 수행하는 구조를 통해 설계 의도가 현장에서 훼손되지 않도록 합니다. 이것이 저희가 가장 중요하게 생각하는 경쟁력입니다.",
+  "ab.ceo.p": "재노바 아너스는 기획과 시공을 함께 수행하는 구조를 통해 설계 의도가 현장에서 훼손되지 않도록 합니다. 이것이 저희가 가장 중요하게 생각하는 경쟁력입니다.",
   "ab.ceo.name": "대표이사",
-  "ab.ceo.role": "Genova Honors",
+  "ab.ceo.role": "Jaenova Honors",
   "ab.ceo.ph": "대표 사진 · 서명 이미지 필요",
   "ab.ceo.phs": "대표님 메시지 원문과 사진을 받아 교체 예정",
 
@@ -131,19 +131,19 @@ ko: {
   "ab.h6y": "2025", "ab.h6h": "신규 프로젝트",    "ab.h6p": "New Project",
 
   /* ---------- BUSINESS ---------- */
-  "meta.biz.title": "사업영역 | 제노바 아너스",
-  "meta.biz.desc": "개발사업, 건축설계, 건설·시공, 프로젝트 관리, 프리미엄 주거 — 제노바 아너스의 다섯 가지 사업 영역.",
+  "meta.biz.title": "사업영역 | 재노바 아너스",
+  "meta.biz.desc": "개발사업, 건축설계, 건설·시공, 프로젝트 관리, 프리미엄 주거 — 재노바 아너스의 다섯 가지 사업 영역.",
   "bz.h1": "Our Business",
-  "bz.sub": "제노바 아너스는 개발 기획부터 시공과 준공까지, 서로 끊기지 않는 하나의 흐름으로 사업을 수행합니다.",
+  "bz.sub": "재노바 아너스는 개발 기획부터 시공과 준공까지, 서로 끊기지 않는 하나의 흐름으로 사업을 수행합니다.",
   "bz.why.kicker": "Why Integrated",
   "bz.why.title": "기획과 시공을 함께 하는 이유",
-  "bz.why.p": "설계와 시공이 분리되면 도면의 의도가 현장에서 조정되는 과정에서 손실됩니다. 제노바 아너스는 기획 단계부터 시공 조건을 반영하고, 시공 단계에서 설계 의도를 유지합니다. 공정 지연과 추가 비용의 상당 부분이 이 단절에서 발생하기 때문입니다.",
+  "bz.why.p": "설계와 시공이 분리되면 도면의 의도가 현장에서 조정되는 과정에서 손실됩니다. 재노바 아너스는 기획 단계부터 시공 조건을 반영하고, 시공 단계에서 설계 의도를 유지합니다. 공정 지연과 추가 비용의 상당 부분이 이 단절에서 발생하기 때문입니다.",
 
   /* ---------- CONSTRUCTION ---------- */
-  "meta.con.title": "건설·시공 | 제노바 아너스",
+  "meta.con.title": "건설·시공 | 재노바 아너스",
   "meta.con.desc": "기획에서 준공까지 6단계 프로세스, 품질·안전 관리 체계, 실제 시공 역량을 소개합니다.",
   "cn.h1": "From Plan to Reality",
-  "cn.sub": "제노바 아너스는 직접 시공하는 회사입니다. 계획을 현실로 만드는 과정과 그 과정을 관리하는 방식을 공개합니다.",
+  "cn.sub": "재노바 아너스는 직접 시공하는 회사입니다. 계획을 현실로 만드는 과정과 그 과정을 관리하는 방식을 공개합니다.",
 
   "cn.pr.kicker": "Process",
   "cn.pr.title": "시공 프로세스",
@@ -166,10 +166,10 @@ ko: {
   "cn.q5.h": "Management",  "cn.q5.ko": "현장관리",   "cn.q5.p": "공정과 일정, 협력사를 통합적으로 관리합니다.",
 
   /* ---------- PROJECTS ---------- */
-  "meta.pj.title": "프로젝트 | 제노바 아너스",
-  "meta.pj.desc": "제노바 아너스가 수행한 프로젝트 포트폴리오.",
+  "meta.pj.title": "프로젝트 | 재노바 아너스",
+  "meta.pj.desc": "재노바 아너스가 수행한 프로젝트 포트폴리오.",
   "pj.h1": "Our Projects",
-  "pj.sub": "제노바 아너스가 실제로 만들어낸 결과물입니다. 각 프로젝트는 기획 의도와 시공 과정, 완공 결과를 함께 기록합니다.",
+  "pj.sub": "재노바 아너스가 실제로 만들어낸 결과물입니다. 각 프로젝트는 기획 의도와 시공 과정, 완공 결과를 함께 기록합니다.",
   "pj.f.all": "전체", "pj.f.res": "주거", "pj.f.com": "상업", "pj.f.dev": "개발",
   "pj.1.name": "송도 잭니클라우스 GL 프리미엄 레지던스",
   "pj.1.loc": "인천 송도", "pj.1.type": "프리미엄 주거", "pj.1.year": "2026", "pj.1.status": "진행중",
@@ -178,8 +178,8 @@ ko: {
   "pj.note": "※ 기획안대로 프로젝트가 추가될 때마다 카드만 늘리면 되는 구조입니다.",
 
   /* ---------- PROJECT DETAIL : SONGDO ---------- */
-  "meta.sd.title": "송도 잭니클라우스 GL 프리미엄 레지던스 | 제노바 아너스",
-  "meta.sd.desc": "제노바 아너스의 대표 프로젝트. 잭니클라우스 골프클럽 코리아에 인접한 송도동 117-37·38 단독형 주거, 잭니클라우스 GL.",
+  "meta.sd.title": "송도 잭니클라우스 GL 프리미엄 레지던스 | 재노바 아너스",
+  "meta.sd.desc": "재노바 아너스의 대표 프로젝트. 잭니클라우스 골프클럽 코리아에 인접한 송도동 117-37·38 단독형 주거, 잭니클라우스 GL.",
   "sd.crumb": "프로젝트",
   "sd.h1a": "Songdo Jack Nicklaus GL",
   "sd.h1b": "Premium Residence",
@@ -189,7 +189,7 @@ ko: {
   "sd.ov.kicker": "Project Overview",
   "sd.ov.title": "프로젝트 개요",
   "sd.ov.p": "잭니클라우스 GL은 송도국제도시 잭니클라우스 골프클럽 코리아에 인접한 단독형 프리미엄 주거입니다. 거실과 테라스에서 페어웨이와 서해 낙조가 그대로 펼쳐지며, 지하 라운지부터 2층 침실 영역까지 한 세대 안에서 층별로 생활을 나누어 설계했습니다.",
-  "sd.ov.p2": "제노바 아너스는 본 프로젝트에서 기획 검토부터 건축 설계, 시공, 품질관리까지 수행합니다.",
+  "sd.ov.p2": "재노바 아너스는 본 프로젝트에서 기획 검토부터 건축 설계, 시공, 품질관리까지 수행합니다.",
   "sd.f1.t": "위치",       "sd.f1.d": "인천광역시 연수구 송도동 117-37, 38",
   "sd.f2.t": "프로젝트 유형", "sd.f2.d": "골프장 인접 프리미엄 단독형 주거",
   "sd.f3.t": "수행 범위",   "sd.f3.d": "기획 · 설계 · 시공 · 품질관리",
@@ -287,21 +287,21 @@ ko: {
   "sd.imgnote": "※ 실내·조망·외관 사진은 현장 촬영본이며, 외관 투시도와 평면 모델링은 분양 자료 기준으로 실제와 일부 다를 수 있습니다.",
 
   /* ---------- NEWS ---------- */
-  "meta.news.title": "뉴스 | 제노바 아너스",
-  "meta.news.desc": "제노바 아너스의 회사 소식, 프로젝트 착공 및 준공 소식, 언론 보도.",
-  "nw.h1": "Genova Honors News",
+  "meta.news.title": "뉴스 | 재노바 아너스",
+  "meta.news.desc": "재노바 아너스의 회사 소식, 프로젝트 착공 및 준공 소식, 언론 보도.",
+  "nw.h1": "Jaenova Honors News",
   "nw.sub": "회사 소식과 프로젝트 진행 상황, 언론 보도를 전합니다.",
   "nw.f.all": "전체", "nw.f.co": "회사소식", "nw.f.pj": "프로젝트", "nw.f.md": "언론보도",
   "nw.1.cat": "프로젝트", "nw.1.date": "2026.08.20",
   "nw.1.h": "송도 잭니클라우스 프리미엄 레지던스 프로젝트 진행",
   "nw.2.cat": "회사소식", "nw.2.date": "2026.07.15",
-  "nw.2.h": "제노바 아너스 공식 홈페이지 개편",
+  "nw.2.h": "재노바 아너스 공식 홈페이지 개편",
   "nw.3.cat": "회사소식", "nw.3.date": "2026.06.02",
   "nw.3.h": "건설·시공 사업 영역 확대",
   "nw.note": "※ 위 게시물은 레이아웃 확인용 예시입니다. 실제 보도자료와 회사 소식으로 교체해야 합니다.",
 
   /* ---------- CONTACT ---------- */
-  "meta.ct.title": "문의 | 제노바 아너스",
+  "meta.ct.title": "문의 | 재노바 아너스",
   "meta.ct.desc": "사업 및 프로젝트 문의, 건설·시공 문의, 협력 및 제휴 문의.",
   "ct.h1": "Let's Build Something Great.",
   "ct.sub": "프로젝트 기획 단계든 시공 단계든, 어느 시점에서도 문의해 주십시오.",
@@ -337,7 +337,7 @@ ko: {
   "foot.addr": "— 주소 입력 필요 —",
   "foot.tel": "— 대표전화 입력 필요 —",
   "foot.email": "— 이메일 입력 필요 —",
-  "foot.copy": "© 2026 GENOVA HONORS. All rights reserved.",
+  "foot.copy": "© 2026 JAENOVA HONORS. All rights reserved.",
   "foot.privacy": "개인정보처리방침",
 
   /* ---------- 공용 플레이스홀더 ---------- */
@@ -358,8 +358,8 @@ en: {
   "nav.news": "News",
   "nav.contact": "Contact",
 
-  "meta.home.title": "Genova Honors | Architecture · Development · Construction",
-  "meta.home.desc": "Genova Honors is a construction company covering planning, design, construction and quality management. We build spaces through architecture and complete value through construction.",
+  "meta.home.title": "Jaenova Honors | Architecture · Development · Construction",
+  "meta.home.desc": "Jaenova Honors is a construction company covering planning, design, construction and quality management. We build spaces through architecture and complete value through construction.",
   "home.h1a": "BUILDING",
   "home.h1b": "THE FUTURE",
   "home.tag": "Architecture That Creates Value",
@@ -369,9 +369,9 @@ en: {
   "home.scroll": "Scroll to explore",
   "home.hero.alt": "Jack Nicklaus Golf Club Korea and the Songdo skyline at sunset",
 
-  "home.i.kicker": "About Genova Honors",
+  "home.i.kicker": "About Jaenova Honors",
   "home.i.title": "The Craft of Building,<br>The Completion of Value",
-  "home.i.lead": "Genova Honors carries out the full construction cycle — business planning, architectural design, construction, quality control and post-completion management. We are not a brokerage or a sales agency. We build.",
+  "home.i.lead": "Jaenova Honors carries out the full construction cycle — business planning, architectural design, construction, quality control and post-completion management. We are not a brokerage or a sales agency. We build.",
   "home.i.p": "Our work is turning plans on paper into results on site. In that process quality and safety are not negotiable, and design is never separated from function. Our standard is how the finished space changes daily life.",
   "home.i.more": "More about us",
 
@@ -387,7 +387,7 @@ en: {
 
   "home.p.kicker": "Our Projects",
   "home.p.title": "Projects",
-  "home.p.sub": "What Genova Honors has actually built.",
+  "home.p.sub": "What Jaenova Honors has actually built.",
   "home.p.more": "See all projects",
 
   "home.c.kicker": "From Plan to Reality",
@@ -417,15 +417,15 @@ en: {
   "pr.5.h": "Quality Control", "pr.5.p": "Quality management & inspection",
   "pr.6.h": "Completion",      "pr.6.p": "Handover & aftercare",
 
-  "meta.about.title": "About | Genova Honors",
-  "meta.about.desc": "The vision, capability, history and leadership message of Genova Honors.",
-  "ab.h1": "About Genova Honors",
+  "meta.about.title": "About | Jaenova Honors",
+  "meta.about.desc": "The vision, capability, history and leadership message of Jaenova Honors.",
+  "ab.h1": "About Jaenova Honors",
   "ab.sub": "The craft of building, the completion of value. What we do, how we build, and what we hold to.",
 
   "ab.v.kicker": "Vision",
   "ab.v.title": "BUILDING VALUE.<em>CREATING LIFESTYLE.</em>",
   "ab.v.lead": "A company that creates space through architecture, completes value through construction, and proposes a new way of living.",
-  "ab.v.p": "A building does not end at completion — that is when it begins to be used. Genova Honors designs and builds against the time that follows handover.",
+  "ab.v.p": "A building does not end at completion — that is when it begins to be used. Jaenova Honors designs and builds against the time that follows handover.",
 
   "ab.w1.h": "What We Do", "ab.w1.p": "Site planning, business development, architectural design, construction and post-completion management.",
   "ab.w2.h": "How We Build", "ab.w2.p": "Six stages — planning, design, engineering, construction, quality control and completion — under our own management system.",
@@ -442,9 +442,9 @@ en: {
   "ab.ceo.kicker": "Message from the CEO",
   "ab.ceo.title": "CEO Message",
   "ab.ceo.quote": "\"We are not a company that sells buildings — we are a company that builds them. From a single drawing to a structure on site and then to someone's daily life, we take responsibility for the whole of it.\"",
-  "ab.ceo.p": "By carrying out planning and construction together, Genova Honors ensures design intent is not eroded on site. That is the capability we value most.",
+  "ab.ceo.p": "By carrying out planning and construction together, Jaenova Honors ensures design intent is not eroded on site. That is the capability we value most.",
   "ab.ceo.name": "Chief Executive Officer",
-  "ab.ceo.role": "Genova Honors",
+  "ab.ceo.role": "Jaenova Honors",
   "ab.ceo.ph": "CEO portrait & signature needed",
   "ab.ceo.phs": "To be replaced with the CEO's own message and photograph",
 
@@ -458,18 +458,18 @@ en: {
   "ab.h5y": "2024", "ab.h5h": "Business Expansion",  "ab.h5p": "사업 영역 확대",
   "ab.h6y": "2025", "ab.h6h": "New Project",         "ab.h6p": "신규 프로젝트",
 
-  "meta.biz.title": "Business | Genova Honors",
+  "meta.biz.title": "Business | Jaenova Honors",
   "meta.biz.desc": "Development, architecture, construction, project management and premium residential.",
   "bz.h1": "Our Business",
   "bz.sub": "From development planning through construction to completion — carried out as one unbroken flow.",
   "bz.why.kicker": "Why Integrated",
   "bz.why.title": "Why we plan and build together",
-  "bz.why.p": "When design and construction are separated, the intent of the drawing is lost as it is adjusted on site. Genova Honors reflects construction conditions from the planning stage and preserves design intent during construction — because much of the delay and added cost in a project originates in that gap.",
+  "bz.why.p": "When design and construction are separated, the intent of the drawing is lost as it is adjusted on site. Jaenova Honors reflects construction conditions from the planning stage and preserves design intent during construction — because much of the delay and added cost in a project originates in that gap.",
 
-  "meta.con.title": "Construction | Genova Honors",
+  "meta.con.title": "Construction | Jaenova Honors",
   "meta.con.desc": "A six-stage process from planning to completion, with quality and safety management.",
   "cn.h1": "From Plan to Reality",
-  "cn.sub": "Genova Honors builds directly. Here is how a plan becomes reality, and how that process is managed.",
+  "cn.sub": "Jaenova Honors builds directly. Here is how a plan becomes reality, and how that process is managed.",
 
   "cn.pr.kicker": "Process",
   "cn.pr.title": "Construction Process",
@@ -491,10 +491,10 @@ en: {
   "cn.q4.h": "Engineering", "cn.q4.ko": "Engineering",      "cn.q4.p": "Structural and MEP review securing buildability.",
   "cn.q5.h": "Management",  "cn.q5.ko": "Site Management",  "cn.q5.p": "Integrated control of progress, schedule and partners.",
 
-  "meta.pj.title": "Projects | Genova Honors",
-  "meta.pj.desc": "The project portfolio of Genova Honors.",
+  "meta.pj.title": "Projects | Jaenova Honors",
+  "meta.pj.desc": "The project portfolio of Jaenova Honors.",
   "pj.h1": "Our Projects",
-  "pj.sub": "What Genova Honors has actually built. Each project records design intent, the construction process and the completed result.",
+  "pj.sub": "What Jaenova Honors has actually built. Each project records design intent, the construction process and the completed result.",
   "pj.f.all": "All", "pj.f.res": "Residential", "pj.f.com": "Commercial", "pj.f.dev": "Development",
   "pj.1.name": "Songdo Jack Nicklaus GL Premium Residence",
   "pj.1.loc": "Songdo, Incheon", "pj.1.type": "Premium Residential", "pj.1.year": "2026", "pj.1.status": "Ongoing",
@@ -502,8 +502,8 @@ en: {
   "pj.empty.s": "New projects will be added here as material becomes available",
   "pj.note": "※ As planned, adding a project only requires adding one more card.",
 
-  "meta.sd.title": "Songdo Jack Nicklaus GL Premium Residence | Genova Honors",
-  "meta.sd.desc": "A flagship project by Genova Honors — Jack Nicklaus GL, detached premium residences at 117-37·38 Songdo-dong beside Jack Nicklaus Golf Club Korea.",
+  "meta.sd.title": "Songdo Jack Nicklaus GL Premium Residence | Jaenova Honors",
+  "meta.sd.desc": "A flagship project by Jaenova Honors — Jack Nicklaus GL, detached premium residences at 117-37·38 Songdo-dong beside Jack Nicklaus Golf Club Korea.",
   "sd.crumb": "Projects",
   "sd.h1a": "Songdo Jack Nicklaus GL",
   "sd.h1b": "Premium Residence",
@@ -513,7 +513,7 @@ en: {
   "sd.ov.kicker": "Project Overview",
   "sd.ov.title": "Project Overview",
   "sd.ov.p": "Jack Nicklaus GL is a detached premium residence adjoining Jack Nicklaus Golf Club Korea in Songdo International City. The fairway and the West Sea sunset open up from the living room and terraces, and daily life is arranged level by level — from the lower-level lounge to the bedrooms upstairs.",
-  "sd.ov.p2": "Genova Honors covers planning review, architectural design, construction and quality management on this project.",
+  "sd.ov.p2": "Jaenova Honors covers planning review, architectural design, construction and quality management on this project.",
   "sd.f1.t": "Location",  "sd.f1.d": "117-37, 38 Songdo-dong, Yeonsu-gu, Incheon",
   "sd.f2.t": "Type",      "sd.f2.d": "Detached premium residence beside a golf course",
   "sd.f3.t": "Scope",     "sd.f3.d": "Planning · Design · Construction · QC",
@@ -610,20 +610,20 @@ en: {
 
   "sd.imgnote": "※ Interior, view and exterior photos were taken on site. Exterior renderings and floor models are from sales material and may differ in part from the built result.",
 
-  "meta.news.title": "News | Genova Honors",
-  "meta.news.desc": "Company news, project milestones and media coverage from Genova Honors.",
-  "nw.h1": "Genova Honors News",
+  "meta.news.title": "News | Jaenova Honors",
+  "meta.news.desc": "Company news, project milestones and media coverage from Jaenova Honors.",
+  "nw.h1": "Jaenova Honors News",
   "nw.sub": "Company news, project progress and media coverage.",
   "nw.f.all": "All", "nw.f.co": "Company", "nw.f.pj": "Project", "nw.f.md": "Media",
   "nw.1.cat": "Project", "nw.1.date": "2026.08.20",
   "nw.1.h": "Songdo Jack Nicklaus Premium Residence in progress",
   "nw.2.cat": "Company", "nw.2.date": "2026.07.15",
-  "nw.2.h": "Genova Honors official website renewed",
+  "nw.2.h": "Jaenova Honors official website renewed",
   "nw.3.cat": "Company", "nw.3.date": "2026.06.02",
   "nw.3.h": "Construction business scope expanded",
   "nw.note": "※ The posts above are layout examples. Replace with actual releases and company news.",
 
-  "meta.ct.title": "Contact | Genova Honors",
+  "meta.ct.title": "Contact | Jaenova Honors",
   "meta.ct.desc": "Business and project inquiries, construction inquiries, partnership inquiries.",
   "ct.h1": "Let's Build Something Great.",
   "ct.sub": "Get in touch at any point — whether at planning stage or already on site.",
@@ -658,7 +658,7 @@ en: {
   "foot.addr": "— address required —",
   "foot.tel": "— tel required —",
   "foot.email": "— email required —",
-  "foot.copy": "© 2026 GENOVA HONORS. All rights reserved.",
+  "foot.copy": "© 2026 JAENOVA HONORS. All rights reserved.",
   "foot.privacy": "Privacy Policy",
 
   "ph.con.b": "Construction photo required",
