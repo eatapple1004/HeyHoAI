@@ -120,6 +120,7 @@
             { href: 'projects.html',     key: 'nav.projects' }
           ]) +
           col('foot.info', [
+            { key: 'foot.bizno' },
             { key: 'foot.addr' },
             { key: 'foot.tel' },
             { key: 'foot.email' }
