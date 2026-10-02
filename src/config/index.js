@@ -42,6 +42,13 @@ const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
 
+  // 인물 요청(프롬프트 키워드·얼굴 사진) → GPT Image 자동 라우팅. src/generate/personRouting.js
+  //   기본 false = 기존 그대로(Gemini). 2026-10-02 현재 dev에서만 true.
+  PERSON_ROUTE_GPT: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // 영상 잡 폴러 비활성(로컬 개발용). 로컬 :3001이 prod DB에 붙으면 폴러가 prod 잡을 이중 폴링
   //   → 중복 finalize·attempts 부풀림(폴러 겹침). 로컬 프로세스만 DISABLE_VIDEO_POLLER=true로 폴러만 끔.
   //   기본 false(폴러 실행) → prod 무변경, 단일 폴러 유지.
