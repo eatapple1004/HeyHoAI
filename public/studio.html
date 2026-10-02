@@ -4167,6 +4167,9 @@ async function addCreatorTemplate(btn,idx){
   }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('Could not add: '+(e.message||e),'error'); }
 }
 // 모델 코드/라벨 → 친절명(상세페이지 modelLabel과 정합). 이미 친절라벨(effModelLabel)이면 그대로 통과.
+// 서버가 돌려준 결과별 실제 모델 → 표시 라벨. 인물 요청은 서버가 GPT로 바꾸거나 Gemini로 재시도하므로
+//   화면에서 고른 모델(effModelLabel)과 다를 수 있다. 결과에 model이 없으면(구 서버) 빈 문자열 → 호출부가 effModelLabel로 폴백.
+function actualModelLabel(rs){ const ls=[...new Set((rs||[]).filter(x=>x&&x.model).map(x=>rbModelLabel(x.model)).filter(Boolean))]; return ls.join(' · '); }
 function rbModelLabel(m){ m=String(m||'').trim(); if(!m) return ''; const l=m.toLowerCase();
   if(l==='pro') return 'Nano Banana Pro'; if(l==='flash') return 'Nano Banana';
   if(/gemini.*flash|flash.*image/.test(l)) return 'Nano Banana'; if(/gemini|nano.?banana/.test(l)) return /pro/.test(l)?'Nano Banana Pro':'Nano Banana';
@@ -5925,7 +5928,8 @@ async function generateImages(r,subj,count,pending){
         if(!rs.ok||!d.success)throw new Error(d.error||'generate failed');
         const one=(d.results||[])[0];
         if(pending){ // 도착하는 즉시 그 슬롯만 채운다 → 나머지는 계속 로딩
-          if(one&&one.success)pending.items.push({url:one.url,type:'photo',idx:one.resultIdx||one.idx||null,visibility:vis});
+          if(one&&one.success){ pending.items.push({url:one.url,type:'photo',idx:one.resultIdx||one.idx||null,visibility:vis});
+            (pending._res=pending._res||[]).push(one); pending.model=actualModelLabel(pending._res)||effModelLabel(); }
           else pending.failed.push({idx:(one&&one.resultIdx)||null});
           pending.loading=(pending.items.length+pending.failed.length)<_n; renderStudioResults();
         }
@@ -5957,14 +5961,14 @@ async function generateImages(r,subj,count,pending){
     // ⚠️ pendingCount = **요청 총 개수**여야 한다(완료 개수 아님). 렌더러가 "남은 = 총 - 완료 - 실패"로
     //   플레이스홀더 수를 세고, 실패 폴백(위 catch)도 이 값을 총 개수로 쓴다.
     //   스왑 대기분(queued)은 아직 items에 없으므로 반드시 더해야 한다 — 안 더하면 0이 된다.
-    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=effModelLabel(); pending.added=false; pending.pendingCount=ok.length+queued.length+failedR.length;
+    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=actualModelLabel(ok)||effModelLabel(); pending.added=false; pending.pendingCount=ok.length+queued.length+failedR.length;
     if(queued.length){ // async faceswap — 로딩 유지하고 잡을 폴링해서 완성되면 자동 표시(새로고침 불필요)
       pending.loading=true; pending.queued=queued.length; renderStudioResults();
       await pollFaceswapJobs(queued,pending,vis); // await = generate()의 경과 타이머가 스왑 완료까지 계속 돎(0.0s 얼음 방지)
     } else { pending.loading=false; renderStudioResults(); }
   }
   document.getElementById('resultHint').textContent=
-    `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
+    `${ok.length} photos ready · ${actualModelLabel(ok)||effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
   if(ok.some(x=>x.watermarked)){
     toast('Watermark added on the free plan — upgrade to Pro for clean images');

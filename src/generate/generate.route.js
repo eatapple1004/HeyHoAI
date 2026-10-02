@@ -643,6 +643,7 @@ const postRootHandler = async (req, res, next) => {
           size: Math.round(imageBuffer.length / 1024) + 'KB',
           description,
           watermarked: false,
+          model: usedModelId, // 실제로 그린 모델 — 인물 라우팅·Gemini 재시도로 고른 모델과 다를 수 있다(카드 라벨용)
           resultIdx: savedResult.idx,
           reviewIdx: savedReview.idx,
         });
@@ -689,10 +690,12 @@ const postRootHandler = async (req, res, next) => {
       }).catch(() => {});
     }
 
+    // 응답 model = 성공분이 한 모델이면 그 모델(실제 생성 모델), 섞였거나 없으면 요청 모델.
+    const usedModels = [...new Set(results.filter((r) => r.success && r.model).map((r) => r.model))];
     res.json({
       success: true,
       promptIdx: savedPrompt.idx,
-      model: modelId,
+      model: usedModels.length === 1 ? usedModels[0] : modelId,
       style: styled.styleName,
       referenceSource,
       characterId: characterId || null,
