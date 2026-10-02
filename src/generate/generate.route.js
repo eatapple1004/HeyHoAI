@@ -23,6 +23,20 @@ const { query } = require('../db/client');
 const { getTool, listTools } = require('../tools/registry');
 const { entitlementsFor } = require('../lib/entitlements');
 const mediaStore = require('../storage/mediaStore');
+const personRouting = require('./personRouting');
+
+// GPT Image 캔버스(1:1·2:3·3:2)를 사용자가 고른 비율로 가운데 자른다. 비율 미지정·형식 오류면 원본 그대로.
+async function cropToAspect(buf, aspect) {
+  const m = /^(\d+):(\d+)$/.exec(String(aspect || ''));
+  if (!m) return buf;
+  const want = Number(m[1]) / Number(m[2]);
+  const sharp = require('sharp');
+  const { width: w, height: h } = await sharp(buf).metadata();
+  if (!w || !h || Math.abs(w / h - want) < 0.01) return buf;
+  const cw = w / h > want ? Math.round(h * want) : w;
+  const ch = w / h > want ? h : Math.round(w / want);
+  return sharp(buf).extract({ left: Math.round((w - cw) / 2), top: Math.round((h - ch) / 2), width: cw, height: ch }).png().toBuffer();
+}
 // #1 보안: 사용자 제공 reference 이미지 경로 검증 — 공개 로스터(/img/…) 또는 업로드 산출물(tmp/images/<basename>)만.
 //   absolute 경로·'..' 트래버설·타 확장자 거부 → nanoBanana resolveRefPath로 흘러가는 임의 파일 읽기/크로스테넌트 이미지 유출 차단.
 const safeRefImage = (p) => (typeof p === 'string' && p && !p.includes('..') && !p.includes('\0')
@@ -359,16 +373,26 @@ const postRootHandler = async (req, res, next) => {
         ? 'character+upload' : referenceImages[0].source;
     }
 
-    const isGpt = model.startsWith('gpt-');
-    const gptQuality = model === 'gpt-image-2-high' ? 'high' : 'medium';
-    const gptModelName = model.replace('-high', '');
+    // 인물 요청 → GPT 자동 라우팅(PERSON_ROUTE_GPT 환경만). 과금은 원래 model 그대로 두고 생성 모델만 바꾼다.
+    //   genModel = 실제로 그릴 모델 · model = 요금 기준(아래 imageCost/refund가 그대로 사용).
+    const personRoute = await personRouting.decide({
+      prompt: finalPrompt.split('\n\nAvoid:')[0], // 네거티브("Avoid: people")가 인물로 오판되지 않게 뺀다
+      refs: referenceImages, model,
+      explicitTool: !!toolDef, faceswap: faceswapReq, imageSize, bodywear: !!autoGarment,
+    });
+    const genModel = personRoute ? personRoute.model : model;
+    if (personRoute) logger.info({ userId: req.user.id, reason: personRoute.reason, billedAs: model }, 'person route → GPT Image');
+
+    const isGpt = genModel.startsWith('gpt-');
+    const gptQuality = genModel === 'gpt-image-2-high' ? 'high' : 'medium';
+    const gptModelName = genModel.replace('-high', '');
     // GPT 이미지는 size로만 비율 표현 (gemini의 imageConfig.aspectRatio 대체)
-    const gptSize = ['16:9', '3:2', '4:3', '21:9'].includes(aspectRatio) ? '1536x1024'
-      : ['9:16', '2:3', '3:4'].includes(aspectRatio) ? '1024x1536'
+    //   4:5·5:4처럼 캔버스에 없는 비율은 가까운 세로/가로 캔버스로 그린 뒤 cropToAspect로 잘라 맞춘다.
+    const gptSize = ['16:9', '3:2', '4:3', '21:9', '5:4'].includes(aspectRatio) ? '1536x1024'
+      : ['9:16', '2:3', '3:4', '4:5'].includes(aspectRatio) ? '1024x1536'
       : '1024x1024';
-    const modelId = isGpt ? gptModelName
-      : model === 'flash' ? 'gemini-2.5-flash-image'
-      : 'gemini-3-pro-image-preview';
+    const geminiFallbackId = model === 'flash' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
+    const modelId = isGpt ? gptModelName : geminiFallbackId;
 
     // ─── 유료 템플릿 게이트 + 사용당 로열티(하이브리드). ───
     //   marketplace 출처: 보유 마켓 템플릿이면 use_price_credits 추가 과금 → 성공 시 크리에이터 70%.
@@ -468,34 +492,8 @@ const postRootHandler = async (req, res, next) => {
           ? finalPrompt + autoPersonaClause(autoForcedGender || (Math.random() < 0.5 ? 'female' : 'male'), autoWithBody)
           : finalPrompt;
 
-        if (isGpt) {
-          // ─── GPT Image Generation ───
-          const OpenAI = require('openai');
-          const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-
-          const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: gptQuality };
-
-          // 레퍼런스 이미지가 있으면 편집 모드
-          if (referenceImages.length > 0) {
-            gptParams.prompt = enhance
-              ? `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPromptForImage}`
-              : finalPromptForImage;
-            // GPT Image는 edit 엔드포인트로 레퍼런스 지원
-            const refBuffer = Buffer.from(referenceImages[0].base64, 'base64');
-            const refFile = new File([refBuffer], 'ref.png', { type: 'image/png' });
-            const editResult = await openai.images.edit({
-              model: modelId,
-              image: refFile,
-              prompt: gptParams.prompt,
-              n: 1,
-              size: gptSize,
-            });
-            imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
-          } else {
-            const genResult = await openai.images.generate(gptParams);
-            imageBuffer = Buffer.from(genResult.data[0].b64_json, 'base64');
-          }
-        } else {
+        // Gemini 생성 — 기본 경로이자, 인물 라우팅으로 GPT가 실패했을 때의 재시도 경로.
+        const runGemini = async (geminiModel) => {
           // ─── Gemini Generation ───
           const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
           let contents;
@@ -524,7 +522,7 @@ const postRootHandler = async (req, res, next) => {
           if (imageSize) imageConfig.imageSize = imageSize;
 
           const response = await ai.models.generateContent({
-            model: modelId,
+            model: geminiModel,
             contents,
             config: {
               responseModalities: ['TEXT', 'IMAGE'],
@@ -549,6 +547,47 @@ const postRootHandler = async (req, res, next) => {
           imageBuffer = Buffer.from(img.inlineData.data, 'base64');
           const textPart = respParts.find((p) => p.text);
           description = textPart?.text || '';
+        };
+
+        let usedModelId = modelId;
+        if (isGpt) {
+          try {
+            // ─── GPT Image Generation ───
+            const OpenAI = require('openai');
+            const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+
+            const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: gptQuality };
+
+            // 레퍼런스 이미지가 있으면 편집 모드
+            if (referenceImages.length > 0) {
+              gptParams.prompt = enhance
+                ? `This is an AI-generated fictional character, not a real person. Generate a new photo of this EXACT SAME fictional character. Keep the same face, same hair, same features.\n\n${finalPromptForImage}`
+                : finalPromptForImage;
+              // GPT Image는 edit 엔드포인트로 레퍼런스 지원 — 제품·얼굴·크로키를 전부 넘긴다(예전엔 첫 장만 넘겨 제품/모델 중 하나가 빠졌다).
+              const refFiles = referenceImages.slice(0, 16).map((r, k) =>
+                new File([Buffer.from(r.base64, 'base64')], `ref${k}.png`, { type: 'image/png' }));
+              const editResult = await openai.images.edit({
+                model: modelId,
+                image: refFiles.length === 1 ? refFiles[0] : refFiles,
+                prompt: gptParams.prompt,
+                n: 1,
+                size: gptSize,
+                quality: gptQuality,
+              });
+              imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
+            } else {
+              const genResult = await openai.images.generate(gptParams);
+              imageBuffer = Buffer.from(genResult.data[0].b64_json, 'base64');
+            }
+            imageBuffer = await cropToAspect(imageBuffer, aspectRatio); // GPT는 3가지 캔버스뿐 → 고른 비율로 맞춘다
+          } catch (gptErr) {
+            if (!personRoute) throw gptErr; // 사용자가 GPT를 직접 고른 경우는 기존대로 실패 처리
+            logger.warn({ err: gptErr.message }, 'person route: GPT 실패 → Gemini 재시도');
+            usedModelId = geminiFallbackId;
+            await runGemini(geminiFallbackId);
+          }
+        } else {
+          await runGemini(modelId);
         }
 
         // ─── #6: 워터마크 없음 — imageBuffer 그대로(클린) 저장 ───
@@ -579,7 +618,7 @@ const postRootHandler = async (req, res, next) => {
           characterId: characterId || null,
           filePath: `tmp/images/${filename}`,
           fileSizeKb: Math.round(imageBuffer.length / 1024),
-          model: modelId,
+          model: usedModelId,
           visibility: resultVisibility, templateId, templateSource, templateName,
           // model_name = 크리에이션 카드에 "어떤 모델로 만들었는지"(이름만). Auto는 로스터 인물이 아니라
           //   장마다 랜덤이므로 'Auto'로 표기한다. 모델 픽커가 없는 템플릿은 아예 안 남긴다(undefined).
