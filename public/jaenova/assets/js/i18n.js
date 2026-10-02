@@ -117,6 +117,7 @@ ko: {
   "ab.ceo.p": "재노바 아너스는 기획과 시공을 함께 수행하는 구조를 통해 설계 의도가 현장에서 훼손되지 않도록 합니다. 이것이 저희가 가장 중요하게 생각하는 경쟁력입니다.",
   "ab.ceo.name": "대표이사",
   "ab.ceo.role": "Jaenova Honors",
+  "ab.ceo.alt": "재노바 아너스 대표 인물 사진",
   "ab.ceo.ph": "대표 사진 · 서명 이미지 필요",
   "ab.ceo.phs": "대표님 메시지 원문과 사진을 받아 교체 예정",
 
@@ -472,6 +473,7 @@ en: {
   "ab.ceo.p": "By carrying out planning and construction together, Jaenova Honors ensures design intent is not eroded on site. That is the capability we value most.",
   "ab.ceo.name": "Chief Executive Officer",
   "ab.ceo.role": "Jaenova Honors",
+  "ab.ceo.alt": "Portrait of the CEO of Jaenova Honors",
   "ab.ceo.ph": "CEO portrait & signature needed",
   "ab.ceo.phs": "To be replaced with the CEO's own message and photograph",
 
