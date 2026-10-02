@@ -47,8 +47,9 @@ export class PortoneService {
 
   /** 환불 가능 여부·금액 판정(부작용 없음). 화면 안내와 실제 취소가 같은 판정을 쓴다.
    *  userId를 넘기면 소유자만 조회할 수 있다(관리자 호출은 생략). */
-  assessRefund(paymentId: string, userId?: string) {
-    return refunds.assess(paymentId, userId ? { userId } : {});
+  assessRefund(paymentId: string, userId?: string, db?: any) {
+    // db = 다른 환경(dev·stg·prd)의 **읽기 전용** 질의 함수. 관리자 화면이 환경을 골라 볼 때만 들어온다.
+    return refunds.assess(paymentId, { ...(userId ? { userId } : {}), ...(db ? { db } : {}) });
   }
   /** 사용자 셀프 환불 — 미사용·7일 이내 전액만 열린다(정책 위반은 서비스가 400으로 막는다). */
   refundSelf(userId: string, paymentId: string, reason?: string) {
@@ -63,8 +64,8 @@ export class PortoneService {
     return refunds.listRefundable(userId, limit);
   }
   /** 취소 이력(관리자) */
-  refundHistory(orderId?: string, limit?: number) {
-    return refunds.listRefunds({ orderId: orderId || null, limit });
+  refundHistory(orderId?: string, limit?: number, db?: any) {
+    return refunds.listRefunds({ orderId: orderId || null, limit, db: db || null });
   }
   /** PG에서 이미 일어난 취소를 우리 쪽에 반영(콘솔 취소 복구용) */
   reconcileRefund(paymentId: string) {

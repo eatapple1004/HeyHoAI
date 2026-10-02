@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { fileURLToPath } = require('url');
 
 /**
  * `/images/<file>` 서빙 경로 ↔ 실제 디스크 경로.
@@ -9,6 +10,10 @@ const fs = require('fs');
  * 각자 판단하다 **같은 버그를 세 번 냈다**(seedance.provider · productExtract · frameFit).
  *   `/images/x.png`는 path.isAbsolute()가 true라 그대로 fs에 넘기면 루트에서 찾다가 실패한다.
  * 그 판단을 여기 한 곳에 둔다.
+ *
+ * (2026-09-12) **네 번째 변종**: `file:///abs/path`. nanoBanana가 이 형태로 돌려주는데
+ *   path.isAbsolute('file:///…')가 false라 cwd 밑에서 찾다가 못 찾는다.
+ *   그 탓에 UGC의 Seedance 씬이 전부 "source image not found"로 죽었다(Kling은 다른 경로라 멀쩡).
  */
 
 const IMAGES_DIR = path.join(process.cwd(), 'tmp', 'images');
@@ -26,6 +31,14 @@ function isRemote(src) {
 function toLocalPath(src) {
   const s = String(src || '');
   if (!s || isRemote(s) || s.startsWith('data:')) return null;
+
+  // file:///abs/path — URL이지만 우리가 읽을 수 있는 로컬 파일이다. 스킴을 풀어 경로로 만든다.
+  if (/^file:\/\//i.test(s)) {
+    try {
+      const abs = fileURLToPath(s);
+      return fs.existsSync(abs) ? abs : null;
+    } catch (e) { return null; }
+  }
 
   const served = s.match(SERVED_RE);
   const abs = served ? path.join(IMAGES_DIR, served[1])

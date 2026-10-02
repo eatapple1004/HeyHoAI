@@ -22,7 +22,7 @@ const logger = require('../lib/logger');
 const mediaStore = require('../storage/mediaStore');
 const repo = require('./pack.repository');
 const { runPack, sniffMime, toVisionImage } = require('./pack.service');
-const { classifyProduct, planPack } = require('./planner.service');    // 확인 단계용 분류 + "이런 걸로 더" 재기획
+const { classifyProduct, planPack, normAspect } = require('./planner.service');    // 확인 단계용 분류 + "이런 걸로 더" 재기획 + 비율 정규화
 const { bakeOne } = require('./refBake.service');            // 레퍼 재굽기
 const { genStill, PACK_IMAGE_MODEL } = require('./stills.service');   // 컷 재생성·추가 (+ 카드 라벨용 실제 모델)
 const { composeRow } = require('./compositor');              // 세트 합성(generate 단계)
@@ -322,7 +322,7 @@ function composeRefPaths(pack) {
 }
 
 // 1단계(prep): 분석 → 계획 저장 → **캐논 레퍼만 굽고** 멈춘다(status='ref_ready'). 스틸은 게이트 통과 후 generate에서.
-async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, userId }) {
+async function prepPack(pack, { sourcePaths, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, aspect, userId }) {
   pack.config = pack.config || {};
   pack.product = pack.product || product;
   const workDir = path.join(process.cwd(), 'tmp', 'pack', pack.share_id);
@@ -356,7 +356,7 @@ async function prepPack(pack, { sourcePaths, vertical, product, skus, states, un
   try {
     await runPack({
       // states[].photoIndex 는 업로드 순서 기준 — durableSources가 같은 순서로 복사되므로 그대로 유효하다.
-      sourcePaths: durableSources, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, workDir, stopAfter: 'ref',
+      sourcePaths: durableSources, vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, aspect, workDir, stopAfter: 'ref',
       onPlan: async (plan) => { await repo.setPlan(pack.id, plan); },  // plan={total,slots,cuts,refSkus,product,vertical,sources}
       onAsset: async (a) => { await recordAsset(pack, { kind: a.kind, key: a.key, label: a.label, absPath: a.path, userId }); },
       onProgress: (e) => logger.info?.(`[pack ${pack.id}] ${JSON.stringify(e)}`),
@@ -467,7 +467,8 @@ async function growPack(pack, { seedCutKey, brief, count, userId, charge = null,
     const want = Math.max(2, Math.min(4, count || 3));
     const images = await Promise.all(srcPaths.map(toVisionImage));
     const category = (fresh.config && fresh.config.category) || fresh.vertical || null;  // 확정 category 그라운딩
-    const planned = await planPack({ images, hint, category, product: plan.product, want, lens, exclude: cuts.map((c) => c.label), seed, autoConcept });
+    const aspect = normAspect(fresh.config && fresh.config.aspect);   // 📐 팩 생성 때 고른 비율을 "더 뽑기"도 그대로 따른다
+    const planned = await planPack({ images, hint, category, product: plan.product, want, lens, exclude: cuts.map((c) => c.label), seed, autoConcept, aspect });
 
     const ctx = { product: plan.product || fresh.product || '' };
     const derived = (plan.states || []).some((s) => s.key === refSku && s.derived);
@@ -547,18 +548,21 @@ const createHandler = async (req, res, next) => {
     // 🔴 item = 여러 품목이 보일 때 사용자가 고른 **영어** 제품 서술. 플래너가 제품을 재판정하지 않게 못박고,
     //   굽기에도 "이 사진에서 features 할 것"으로 넘긴다. 없으면 종전대로 플래너가 알아서 판정한다.
     const item = (req.body.item || '').slice(0, 300) || null;
+    // 📐 컷 비율 — 확인 모달에서 사용자가 고른 값('4:5'|'1:1'|'16:9'|'9:16'). 없으면 종전대로 플래너가 컷마다 정한다.
+    //   config.aspect 에 남겨 "더 뽑기"(growPack)도 같은 비율로 이어가게 한다.
+    const aspect = normAspect(req.body.aspect);
     // 🟣 렌즈 — classify가 제품 보고 뽑은 촬영 축(유효순). 없으면 runPack이 범용 폴백을 쓴다.
     let lenses = null;
     try { lenses = req.body.lenses ? JSON.parse(req.body.lenses) : null; } catch (_) { lenses = null; }
     if (Array.isArray(lenses)) lenses = lenses.filter((l) => l && l.key && l.brief).slice(0, 12);
 
     const pack = await repo.createPack({
-      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, lenses, category, sourceHasModel, item, photoCount: req.files.length },
+      userId: req.user && req.user.id, vertical, product, config: { skus, states, unit, lenses, category, sourceHasModel, item, aspect, photoCount: req.files.length },
     });
     res.status(202).json({ id: pack.id, shareId: pack.share_id, status: 'processing' });
 
     setImmediate(() => prepPack(pack, {
-      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, userId: req.user && req.user.id,
+      sourcePaths: req.files.map((f) => f.path), vertical, product, skus, states, unit, lenses, category, sourceHasModel, item, aspect, userId: req.user && req.user.id,
     }));
   } catch (e) { next(e); }
 };

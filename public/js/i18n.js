@@ -36,6 +36,10 @@
     // 대표 상품 2개 — 레일 라벨이자 home 카드 제목. 이 두 키가 없으면 레일이
     //   "홈 · Shots · Ad Video · 라이브러리"로 섞인다(사전에 없는 문자열은 영어로 남는다).
     'Shots': '컷', 'Ad Video': '광고영상', 'Content Pack': '콘텐츠팩',
+    // (2026-09-17) 'Ad Studio'(상품 URL→광고영상)도 번역한다 — 한국어 모드에서 레일만 영어로 남아 있었다.
+    //   ⚠️ 'Ad Video'와 **같은 한국어**로 간다(사용자 결정). 영어 키가 다를 뿐이라 동작엔 문제가 없다.
+    //   레일에서는 안 겹친다 — Ad Video 진입점의 라벨이 'UGC'라서(js/rail.js 주석 참조).
+    'Ad Studio': '광고영상',
     'Create photos': '사진 만들기', 'Create an ad video': '광고영상 만들기',
     'Create Shots': '컷 만들기', 'Create an Ad Video': '광고영상 만들기',
     'Cutout': '제품컷', 'Editorial': '화보컷',

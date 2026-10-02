@@ -275,7 +275,7 @@ async function generateScript({ product, concept, outputType = 'product-ad', ima
  */
 async function render({ user, script, product, concept, outputType = 'product-ad',
   referenceImagePath = null, productImagePath = null, productImagePaths = null, modelImagePath = null, aspect = '9:16', dryRunVideo = false, visibility, isTemplate = false,
-  audio = {}, autoCommit = false, batchId = null, quality = null }) {
+  audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
   if (!script || !Array.isArray(script.scenes)) { const e = new Error('script is required'); e.statusCode = 400; throw e; }
   const nClips = brollCount(script);
   if (!nClips) { const e = new Error('script has no broll scenes'); e.statusCode = 422; throw e; }
@@ -305,7 +305,7 @@ async function render({ user, script, product, concept, outputType = 'product-ad
   const jobId = ins.rows[0].id;
   log.info(`UGC job ${jobId} render (${outputType}, ${nClips}컷, cost=${cost})`);
 
-  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality })
+  runPipeline({ jobId, script, refImage, refImages, refKind, productImagePaths: prodPaths, modelImagePath, aspect, dryRunVideo, visibility, teamId, userId: user.id, charge, audio, autoCommit, batchId, quality, motionEngine })
     .catch((err) => log.error(`UGC job ${jobId} pipeline crash: ${err.message}`));
 
   return { jobId, cost };
@@ -319,7 +319,7 @@ async function submit(input) {
 }
 
 /** 백그라운드: 클립 렌더 → 조립 → 서빙 디렉토리로 복사 → 결과 저장 → 잡 완료. 실패 시 환불. */
-async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null }) {
+async function runPipeline({ jobId, script, refImage, refImages = [], refKind, productImagePaths = [], modelImagePath, aspect = '9:16', dryRunVideo, visibility, teamId, userId, charge, audio = {}, autoCommit = false, batchId = null, quality = null, motionEngine = null }) {
   let renderWorkDir = null; // assemble 작업 폴더(스크래치) — 성공/실패 무관 finally에서 정리(디스크 누수 방지). 서빙본·베이스·씬클립은 이미 servedDir로 복사된 뒤라 안전.
   try {
     const { w, h } = aspectDims(aspect);
@@ -362,7 +362,9 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     }
 
     // 클립(이미지→모션) — 스튜디오는 LIVE(dryRunVideo=false)가 기본. refImage 있으면 제품/모델 고정. 음성모드는 위에서 durationSec=음성길이.
-    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
+    // motionEngine: 'kling'(기본) | 'seedance'. 요청에 없으면 UGC_MOTION_ENGINE env, 그것도 없으면 kling.
+    //   ⚠️ seedance를 켜도 **인물 씬은 clipPipeline이 자동으로 kling으로 돌린다**(Seedance가 실존 인물을 거부).
+    const clips = await renderClips(script, { dryRunVideo, referenceImagePath: refImage, referenceKind: refKind, productImagePaths, modelImagePath, width: w, height: h, aspect, quality, motionEngine, concurrency: 2, log: (m) => log.info(`[${jobId}] ${m}`) });
     if (!clips.some((c) => c.clipUrl)) throw new Error('all clips failed to render');
 
     const sceneClips = await persistSceneClips(clips); // 결과 편집(재배치·삭제·재생성)용 씬 클립 영속화
@@ -396,9 +398,13 @@ async function runPipeline({ jobId, script, refImage, refImages = [], refKind, p
     // B+ 재합성 토대: 무자막·무음 베이스(silentBase, 음악 교체용) + 자막 없는 미리보기 베이스(previewBase, 자막 1패스 재번인·오버레이용) + 자막 타이밍.
     const silentBase = await persistVideoFile(out.silentPath);
     const previewBase = await persistVideoFile(out.basePath);
+    // 씬마다 엔진이 갈릴 수 있다(인물 씬은 Seedance가 거부해 kling으로 우회) → **실제로 쓴 엔진 집합**을 남긴다.
+    //   안 남기면 결과 화면이 엔진을 알 길이 없어 예전처럼 전부 'Kling'이라고 거짓말하게 된다.
+    const enginesUsed = [...new Set(clips.map((c) => c.engine).filter(Boolean))].sort();
     const persistedScript = { ...script, _render: {
       audio: audio || {}, aspect, product: productRef, products, model: modelImagePath || null, audioAssets,
       silentBase, previewBase, caption: out.caption, durationMs: plan.meta.durationMs || 0,
+      engines: enginesUsed,
     } };
     // 완성본 캐시 시드 — 최초 완성본(전 씬 v0)도 캐싱. 씬 재생성 후 되돌리면 첫 전환부터 즉시(재조립 0).
     persistedScript._render.composites = [{
@@ -1055,6 +1061,8 @@ async function _commitJobImpl(id, userId, batchId) {
     fileSizeKb: fs.existsSync(served) ? Math.round(fs.statSync(served).size / 1024) : null, model: 'ugc-v1',
     metadata: { type: 'video', source: 'ugc', outputType: j.output_type, duration: j.duration_sec,
       subtitleMode: j.subtitle_mode, clips: nClips,
+      // 실제로 쓴 모션 엔진(씬마다 갈릴 수 있다). model은 'ugc-v1' 판별자라 건드리지 않는다.
+      ...(Array.isArray(_R.engines) && _R.engines.length ? { engines: _R.engines } : {}),
       ...(batchId != null ? { batch_id: String(batchId) } : {}),   // 🔗 팩 영상을 팩 이미지와 같은 배치로 묶기
       ...(_prodUrl ? { product_image: _prodUrl } : {}) },
     visibility: j.visibility === 'private' ? 'private' : 'public',
@@ -1159,18 +1167,25 @@ async function reapStaleProcessing({ maxAgeMinutes = 15 } = {}) {
  *   돌아온다 → 환불은 행당 1회. 갱신 후 환불 순서인 이유: 사이에서 죽으면 '환불 누락'(수동 복구 가능)이지
  *   '이중 환불'(돈이 나감)이 아니다.
  */
-async function reapCrashedRenders({ minAgeMinutes = 2 } = {}) {
+async function reapCrashedRenders({ minAgeMinutes = 2, bootAt = null } = {}) {
   let rows;
   try {
+    // ⚠️ 나이(minAgeMinutes)로 판단하면 **부팅 직전에 시작된 잡을 영원히 놓친다.**
+    //   회수기는 부팅 시 1회만 도는데, 그 순간 나이가 2분 미만이면 건너뛰고 다시는 안 본다(실측:
+    //   잡 시작 40초 뒤 배포 → 19분째 processing에 갇힘).
+    //   bootAt이 오면 **이 프로세스가 뜨기 전에 만들어진 잡**을 전부 죽은 것으로 본다 —
+    //   pm2 instances:1 + fork라 이전 파이프라인은 100% 사망이므로 나이와 무관하게 확정이다.
+    //   (bootAt 없이 부르는 호출부는 예전처럼 나이로 판단한다.)
+    const useBoot = bootAt instanceof Date && !Number.isNaN(bootAt.getTime());
     rows = (await query(
       `UPDATE ugc_jobs
           SET status='failed',
               error='Rendering was interrupted by a server restart — your credits were refunded.',
               updated_at=now()
         WHERE status='processing' AND script IS NULL
-          AND updated_at < now() - ($1 * interval '1 minute')
+          AND ${useBoot ? 'created_at < $1' : "updated_at < now() - ($1 * interval '1 minute')"}
         RETURNING id, user_id, charge_amount`,
-      [minAgeMinutes]
+      [useBoot ? bootAt.toISOString() : minAgeMinutes]
     )).rows;
   } catch (e) { log.warn(`reapCrashedRenders 쿼리 실패: ${e.message}`); return { reaped: 0, refunded: 0 }; }
   if (!rows.length) return { reaped: 0, refunded: 0 };

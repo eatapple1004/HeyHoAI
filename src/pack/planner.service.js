@@ -43,7 +43,7 @@ const PLAN_SCHEMA = {
         properties: {
           key: { type: 'string', description: 'short slug id, e.g. hero_sunlit, swatch_macro, on_shoulder' },
           label: { type: 'string', description: 'short Korean USE-CASE label a shop owner instantly understands — WHERE they would use this image. e.g. "쇼핑몰 대표 이미지", "상세 디테일컷", "착용 느낌", "감성 SNS 컷", "성분 강조", "세트 로우". NOT photography jargon like "고스트 착장감"·"에디토리얼"·"플랫레이".' },
-          aspect: { type: 'string', enum: ['4:5', '1:1', '16:9'] },
+          aspect: { type: 'string', enum: ['4:5', '1:1', '16:9', '9:16'] },   // 9:16 = 사용자가 릴스/스토리 비율을 고정했을 때
           prompt: { type: 'string', description: 'detailed English image prompt grounded in THIS product; label/wordmark identical to reference, no fabricated lettering; product-only unless the category needs on-model' },
         },
         required: ['key', 'label', 'aspect', 'prompt'],
@@ -55,7 +55,7 @@ const PLAN_SCHEMA = {
 
 const SYSTEM = `You are a senior e-commerce content director. You look at a product photo and plan the exact set of marketing images that would best sell THAT specific product on its product page and social feed. You adapt to the product's real category and appearance — you never apply a one-size-fits-all template.`;
 
-function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, seed, autoConcept) {
+function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, seed, autoConcept, aspect) {
   const n = Math.max(4, Math.min(12, want || 10));   // 한 호출의 요청량 — 12를 넘기면 JSON이 잘린다
   const known = (confirmed && confirmed.category)
     ? `This product has ALREADY been identified by the user as: category = "${confirmed.category}"${confirmed.product ? `, product = "${confirmed.product}"` : ''}. TRUST this — do NOT reclassify or drift to another category. Echo this category back and plan cuts tailored specifically to a "${confirmed.category}" product.`
@@ -117,6 +117,14 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, see
     prev.length ? `Directions ALREADY covered (choose a theme unlike all of these):\n${prev.map((e) => `  · ${e}`).join('\n')}` : '',
     `Name that theme in the "concept" field (short Korean), then plan all ${n} cuts to realize that single coherent theme in distinct framings. Keep the real product exact (shape/color/label/wordmark, no fabricated lettering).`,
   ].filter(Boolean).join('\n') : '';
+  // 📐 비율 고정(사용자 선택) — 플래너가 컷마다 고르던 aspect를 **사용자가 고른 하나**로 못박는다.
+  //   ⚠️ 숫자만 덮어쓰면(코드에서 w/h 교체) 프롬프트는 여전히 4:5 구도로 쓰여 세로 릴스에서 제품이 붕 뜬다 —
+  //   그래서 "이 비율로 찍는다"를 **기획 단계에** 넣어 구도 자체가 그 프레임에 맞게 나오게 한다.
+  const forcedAspect = normAspect(aspect);
+  const aspectClause = forcedAspect ? [
+    `🔒 FRAME RATIO — the seller needs EVERY cut in **${forcedAspect}**. Set aspect="${forcedAspect}" on every single cut, never another value.`,
+    `Compose each shot FOR that frame: ${ASPECT_BRIEF[forcedAspect]}`,
+  ].join('\n') : '';
   return [
     nImgs > 1
       ? `${nImgs} photos of the SAME single product are attached (different angles/states, or a set of variants). Study them together to understand its real appearance — form, color, material, finish, label/wordmark, and any moving parts.`
@@ -128,6 +136,7 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, see
     lensClause,
     seedClause,
     autoConceptClause,
+    aspectClause,
     (state || prev.length || seed || autoConcept) ? '' : `Plan a DIVERSE PACK of ${n} still shots that best sell THIS product.`,
     hint
       ? `Category shot types below are only LOOSE inspiration — the creative brief above takes priority over this menu:`
@@ -140,15 +149,27 @@ function buildUserPrompt(nImgs, hint, confirmed, state, exclude, want, lens, see
     `  · footwear → 3/4 studio, sole/profile, on-foot, styled.`,
     `  · bag → flat-lay, on-shoulder, interior/detail, styled lifestyle.`,
     `  · jewelry → macro on seamless, on-hand/neck/ear, pedestal, editorial.`,
-    `For EACH cut give: key (slug), label (short Korean), aspect (4:5 for hero/PDP, 1:1 or 16:9 where it fits), and a detailed English image prompt GROUNDED in the real product (its exact color/form/label). In every prompt keep the product's label and wordmark identical to the reference and do not fabricate lettering. Product-only (no people/hands) UNLESS the category needs on-model (apparel/footwear/jewelry-on-body) — say so explicitly in those.`,
+    `For EACH cut give: key (slug), label (short Korean), aspect (${forcedAspect ? `ALWAYS "${forcedAspect}"` : '4:5 for hero/PDP, 1:1 or 16:9 where it fits'}), and a detailed English image prompt GROUNDED in the real product (its exact color/form/label). In every prompt keep the product's label and wordmark identical to the reference and do not fabricate lettering. Product-only (no people/hands) UNLESS the category needs on-model (apparel/footwear/jewelry-on-body) — say so explicitly in those.`,
     `Vary the shots — no two cuts should look the same. Ground the "ingredient" field in what you actually see (e.g. apple for apple vinegar, none for a tech gadget).`,
     `If this is a SET (multiple variants of the same line, e.g. day-of-week bottles or colorways), set isSet=true and list EACH distinct variant in "variants" (sku + a brief label used to bake that variant, e.g. "pink MON day-label"). If it is a single product, isSet=false and variants=[].`,
     `Return ONLY the JSON object matching the schema.`,
   ].filter(Boolean).join('\n');
 }
 
-const ASPECT_DIMS = { '4:5': [768, 960], '1:1': [960, 960], '16:9': [1280, 720] };
+const ASPECT_DIMS = { '4:5': [768, 960], '1:1': [960, 960], '16:9': [1280, 720], '9:16': [720, 1280], '3:4': [816, 1088] };
 function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
+// 📐 사용자가 고를 수 있는 비율(팩 생성 확인 모달). 값이 있으면 플래너 판단을 **덮어쓴다**.
+//   w/h 는 비율 전달용일 뿐 — 실제 해상도는 stills.service 의 PACK_IMAGE_SIZE(2K)가 정한다
+//   (provider 가 w/h → Gemini aspectRatio 문자열로 환산: nanoBanana.provider getAspectRatio).
+const USER_ASPECTS = ['4:5', '1:1', '16:9', '9:16'];
+const ASPECT_BRIEF = {
+  '4:5': 'a slightly tall e-commerce frame — product large and centered, comfortable margins top and bottom.',
+  '1:1': 'a square feed frame — centered, balanced negative space on all four sides, nothing cropped at the edges.',
+  '16:9': 'a WIDE horizontal frame — build a real horizontal scene (props, surface and background spread left and right), product placed off-center with generous side space for banner copy. Never just a vertical shot with empty sides.',
+  '9:16': 'a TALL vertical full-screen frame (Reels/Stories) — a vertical scene with real depth top to bottom, product in the lower-middle third, clean headroom above for captions/text overlay. Never a wide shot letterboxed into a tall frame.',
+};
+/** 사용자가 보낸 비율을 화이트리스트로 정규화. 비었거나 모르는 값이면 null(=플래너 자동). */
+function normAspect(a) { const v = String(a || '').trim(); return USER_ASPECTS.includes(v) ? v : null; }
 
 /**
  * @param {object} p
@@ -162,13 +183,13 @@ function dimsFor(aspect) { return ASPECT_DIMS[aspect] || ASPECT_DIMS['4:5']; }
  * @param {boolean} [p.autoConcept]  "알아서 더" — 브리프 없이, 여태 안 나온 **새 컨셉을 스스로 창안**해 N장
  * @returns {Promise<{product, category, ingredient, concept, isSet, cuts:Array}>}
  */
-async function planPack({ images, hint, category, product, state, exclude, want, lens, seed, autoConcept }) {
+async function planPack({ images, hint, category, product, state, exclude, want, lens, seed, autoConcept, aspect }) {
   const imgs = (images || []).filter((im) => im && im.data);
   if (!imgs.length) throw Object.assign(new Error('planPack: 제품 사진 필요'), { statusCode: 400 });
 
   const content = [
     ...imgs.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType || 'image/jpeg', data: im.data } })),
-    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens, seed, autoConcept) },
+    { type: 'text', text: buildUserPrompt(imgs.length, hint, { category, product }, state, exclude, want, lens, seed, autoConcept, aspect) },
   ];
   const resp = await client.messages.create({
     model: env.CLAUDE_MODEL_SCRIPT,
@@ -188,7 +209,10 @@ async function planPack({ images, hint, category, product, state, exclude, want,
 
   // 컷에 w/h 주입(aspect → 픽셀) + neg
   const NEG = 'garbled or fabricated lettering, distorted label, two or more products unless a set shot, duplicate product, warped product, extra caps, blown highlights';
+  // 📐 비율 고정이면 모델이 뭘 골랐든 그 비율로 확정한다(프롬프트는 이미 그 프레임 기준으로 기획됐다).
+  const forced = normAspect(aspect);
   plan.cuts = (plan.cuts || []).map((c) => {
+    if (forced) c.aspect = forced;
     const [w, h] = dimsFor(c.aspect);
     // promptText/aspect도 보존 — config.plan에 직렬화 저장해 "컷 재생성"에 재사용(prompt는 함수라 직렬화 불가).
     return { key: c.key, label: c.label, w, h, neg: NEG, aspect: c.aspect, promptText: c.prompt, prompt: () => c.prompt };
@@ -325,4 +349,4 @@ async function classifyProduct({ images, hint }) {
   return JSON.parse(m[1]);
 }
 
-module.exports = { planPack, classifyProduct, buildClassifyPrompt, PLAN_SCHEMA, CATEGORIES };
+module.exports = { planPack, classifyProduct, buildClassifyPrompt, PLAN_SCHEMA, CATEGORIES, USER_ASPECTS, ASPECT_DIMS, dimsFor, normAspect };

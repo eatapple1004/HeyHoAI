@@ -9,11 +9,21 @@ const characterRepo = require('../characters/character.repository');
 const runwayProvider = require('./providers/runway.provider');
 const klingProvider = require('./providers/kling.provider');
 const minimaxProvider = require('./providers/minimax.provider');
+// Veo·Sora는 결과가 바로 열리는 URL이 아니라(키 필요/바이너리) provider가 우리 저장소로 옮겨
+// `/images/...`를 돌려준다 — videoUrl 계약은 다른 provider와 동일하다. providers/persistVideo.js 참고.
+const veoProvider = require('./providers/veo.provider');
+const soraProvider = require('./providers/sora.provider');
+// Seedance는 구현돼 있었는데 **레지스트리에 없어서 부를 방법이 자체가 없었다**(죽은 코드).
+//   ad-studio(URL to Ad)용 단일패스 엔진 — 모션·오디오·립싱크·멀티샷을 한 호출로 만든다.
+const seedanceProvider = require('./providers/seedance.provider');
 
 const providers = {
   runway: runwayProvider,
   kling: klingProvider,
   minimax: minimaxProvider,
+  veo: veoProvider,
+  sora: soraProvider,
+  seedance: seedanceProvider,
 };
 
 function getProvider(name) {
@@ -33,11 +43,15 @@ function getProvider(name) {
  * @returns {Promise<import('./providers/types').VideoPollResult>}
  */
 async function pollUntilDone(provider, providerJobId, opts = {}) {
-  const { maxWaitMs = 600_000, intervalMs = 5_000 } = opts; // 기본 10분, 5초 간격
+  const { maxWaitMs = 600_000, intervalMs = 5_000, ctx } = opts; // 기본 10분, 5초 간격
   const start = Date.now();
 
   while (Date.now() - start < maxWaitMs) {
-    const result = await provider.poll(providerJobId);
+    // ⚠️ submit이 돌려준 metadata를 poll에 그대로 넘긴다.
+    //   seedance는 fal이 준 status_url·response_url을 여기서 받아 쓴다 — 안 넘기면 경로를
+    //   standard 티어로 조립해버려서 fast·reference로 제출한 잡의 폴링이 엉뚱한 곳을 친다.
+    //   ctx를 안 쓰는 provider는 두 번째 인자를 무시하므로 기존 동작은 그대로다.
+    const result = await provider.poll(providerJobId, ctx);
 
     if (result.status === 'completed') return result;
     if (result.status === 'failed') {
@@ -205,7 +219,7 @@ async function generateForCharacter(characterId, opts = {}) {
       }
 
       // 7) 완료까지 폴링
-      const pollResult = await pollUntilDone(provider, submitResult.providerJobId);
+      const pollResult = await pollUntilDone(provider, submitResult.providerJobId, { ctx: submitResult.metadata });
 
       // 8) 결과 저장 (DB tracking이 켜진 경우만)
       if (trackInDb) {

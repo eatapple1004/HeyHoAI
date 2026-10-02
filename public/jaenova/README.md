@@ -1,0 +1,171 @@
+# JAENOVA HONORS — 기업 홈페이지
+
+`홈페이지 기획안.docx` (31개 항목) 기준으로 제작한 **건설기업 코퍼레이트 사이트**입니다.
+빌드 도구 없이 순수 HTML / CSS / JS 로 구성되어 파일만 열면 동작합니다.
+
+## 로컬 실행
+
+```bash
+cd jaenova-honors
+python3 -m http.server 5501
+# → http://localhost:5501
+```
+
+## 이전 버전과의 관계
+
+| 폴더 | 내용 | 상태 |
+|---|---|---|
+| `../songdo-jacknicklaus/` | 송도 잭니클라우스 **단일 분양 랜딩** (이전 작업) | 그대로 보존. 참고용 |
+| `jaenova-honors/` | **재노바 아너스 기업 홈페이지** (현재) | 기획안 반영본 |
+
+이전 사이트는 삭제하지 않았습니다. 확인 후 필요 없으면 지우셔도 됩니다.
+
+## 홈 화면 버전
+
+홈(첫 화면)만 여러 안을 만들어 비교합니다. 하위 8개 페이지는 두 버전이 공유합니다.
+
+| 파일 | 버전 | 성격 |
+|---|---|---|
+| `versions.html` | — | **버전 비교 페이지** (썸네일 + 차이 정리). 여기서 시작하세요 |
+| `index.html` | V1 · 다크 프리미엄 | 기획안 26번 컬러 그대로. 정지 히어로 + 에디토리얼 구성 |
+| `index-v2.html` | V2 · 브라이트 코퍼레이트 | `homilhodu.co.kr` 정보구조 참고. 슬라이더 + 퀵링크 중심 |
+
+### V2 가 레퍼런스에서 가져온 것
+
+`http://www.homilhodu.co.kr/` 의 **정보구조와 UX 패턴만** 차용했습니다 (디자인·카피는 재노바 아너스 기준).
+
+| 레퍼런스 | V2 반영 |
+|---|---|
+| `#HH_visual` 2장 슬라이더 (좌우·정지 버튼) | 3장 자동 슬라이더 + 진행바형 인디케이터 |
+| 전체화면 오버레이 메뉴 + 2뎁스 | 6개 대메뉴 × 서브메뉴, ESC·링크클릭 시 닫힘 |
+| `#HM_product` 카드 호버 → 배경 이미지 전환 | 사업영역 5종 카드에 동일 패턴 적용 |
+| `#HM_notice` 이미지형 공지 카드 4장 | 뉴스 카드 4장 + 더보기 |
+| `#HM_etc` 퀵링크 아이콘 5종 | 오시는 길 / 사업문의 / 프로젝트 / 상담전화 / 자료요청 |
+| `#HH_aside` 우측 고정 퀵메뉴 + TOP | 동일 + 모바일은 하단 고정바로 전환 |
+| `#popup_box` "하루동안 팝업 열지 않기" | 동일 (쿠키 대신 `localStorage`, 24시간) |
+| 푸터 약관 바 + 전화번호 블록 + 사업자정보 | 동일 구조 (값은 `— 입력 필요 —` 플레이스홀더) |
+
+### V2 파일
+
+```
+index-v2.html            홈 V2 (자체 헤더·푸터 포함, layout.js 사용 안 함)
+assets/css/v2.css        V2 전용 스타일 — 클래스 전부 .v2- 접두사
+assets/js/v2.js          슬라이더 / 오버레이 메뉴 / 배경전환 / 팝업 / 리빌
+assets/js/i18n-v2.js     V2 전용 문구만 window.I18N.ko / .en 에 추가 병합
+assets/img/versions/     버전 비교용 썸네일
+```
+
+**V1 에 영향 없음** — V2 는 `i18n.js` 사전만 공유하고 나머지는 전부 별도 파일입니다.
+확정된 버전을 `index.html` 로 올리면 그대로 배포됩니다.
+
+## 페이지 구성 (기획안 30. 최종 사이트맵)
+
+```
+versions.html            버전 비교 (작업용)
+index.html               HOME (V1 · 다크)
+index-v2.html            HOME (V2 · 브라이트)
+about.html               ABOUT — Vision / What we do / Values / CEO / History
+business.html            BUSINESS — 5개 사업영역
+construction.html        CONSTRUCTION — 6단계 프로세스 / Before·During·After / 관리체계
+projects.html            PROJECTS — 포트폴리오 (필터)
+project-songdo.html      PROJECT DETAIL — 송도 잭니클라우스 케이스 스터디
+news.html                NEWS (필터)
+contact.html             CONTACT — 문의 4종 + 폼
+```
+
+## 기획안 대비 반영 내역
+
+| 기획안 | 반영 |
+|---|---|
+| 01 · 31 | 송도를 **대표 프로젝트 1개**로 격하, 기업 홈페이지로 재구성 |
+| 02 | 컨셉 `BUILDING VALUE. CREATING LIFESTYLE.` → about 비전 섹션 |
+| 03 | TRUST·QUALITY·DESIGN·CONSTRUCTION·VALUE → about 브랜드 밸류 5종 |
+| 05 · 27 | HERO `BUILDING THE FUTURE` + `SCROLL TO EXPLORE` |
+| 06 | WHAT WE DO / HOW WE BUILD / WHAT WE VALUE 3단 구성 |
+| 07 | 사업영역 5종 카드 |
+| 08 | 6단계 프로세스 타임라인 |
+| 10~16 | 송도 프로젝트를 5개 STORY + 갤러리로 재구성 |
+| 17 | **BEFORE · DURING · AFTER** 3단 구성 |
+| 18 | QUALITY / SAFETY / TECHNOLOGY / ENGINEERING / MANAGEMENT |
+| 19 | 포트폴리오형 대형 이미지 + hover 시 프로젝트명·메타 노출 |
+| 20 | VISION → BUSINESS → CAPABILITY → PROJECTS → PEOPLE → CONTACT 순서 |
+| 21 · 22 | 연혁 타임라인, CEO 메시지 (자리만, 실제 자료 필요) |
+| 23 · 24 · 25 | NEWS / 문의 4종 / 푸터 |
+| 26 | Deep Navy + Charcoal + Champagne Gold |
+| 29 | **분양 관련 요소 전면 제거** (아래 참조) |
+| 31 | 다국어 구조 (KO/EN 완성, ZH/JA 확장 준비) |
+
+### ⚠️ 기획안 29번에 따라 삭제한 것
+
+이전 사이트에 있던 아래 요소는 "부동산·분양 홈페이지처럼 보이는" 항목이라 **전부 제거**했습니다.
+
+- 분양가표 (토지가격 / 건물가격 / 공급가액 / 부가세 / 총 분양가 $5,200,000)
+- 분양 면적표 (대지·전용·주차·계약면적)
+- "분양 정보 보기", "프라이빗 투어 신청", "분양 문의" CTA
+- "송도 최고의 프리미엄 주거" 류 카피
+
+> 분양 정보가 별도로 필요하시면 기업 홈페이지가 아닌 **별도 분양 페이지**로 분리하는 편이 기획 의도에 맞습니다. 기존 `songdo-jacknicklaus/` 폴더가 그 역할을 그대로 할 수 있습니다.
+
+## 구조
+
+```
+assets/
+├── css/style.css      디자인 토큰 → 컴포넌트 → 한국어 타이포 → 반응형
+└── js/
+    ├── i18n.js        번역 사전(KO/EN) + 언어 엔진
+    ├── layout.js      공통 헤더·푸터·아이콘 스프라이트 (여기만 고치면 8페이지 전체 반영)
+    └── main.js        스크롤/메뉴/필터/라이트박스/폼
+```
+
+**스크립트 순서 고정** — `i18n.js` → `layout.js` → `main.js`.
+layout.js 가 헤더를 주입한 뒤 main.js 가 그 요소를 잡습니다.
+
+### 메뉴 수정
+`layout.js` 상단 `NAV` 배열만 고치면 헤더·푸터가 함께 바뀝니다.
+
+### 문구 수정
+`i18n.js` 의 `ko` / `en` 사전에서 해당 키만 수정. HTML 은 건드릴 필요 없습니다.
+
+### 언어 추가 (중국어 / 일본어)
+1. `i18n.js` 에 `zh: { ... }` 를 `en` 과 **같은 키**로 추가
+2. `layout.js` 의 `LANGS` 배열에서 해당 줄 주석 해제
+
+현재 KO/EN 각 **약 300개 키**가 양쪽에 모두 존재합니다 (누락 0건 검증 완료).
+
+## 이미지 현황
+
+`assets/img/projects/songdo/` — 25장. 모두 **제공받은 브로슈어 PDF에서 추출한 참고용 시안**입니다
+(400dpi 렌더 후 문구 없는 영역만 크롭).
+
+기획안 마지막 `IMAGE REFERENCE 가이드`에 따라, **실제 사진이 없는 자리는 다른 사진으로 채우지 않고
+플레이스홀더로 비워 두었습니다.** 클라이언트에게 무엇이 필요한지 그대로 보이도록 한 의도입니다.
+
+플레이스홀더가 들어간 위치:
+- `construction.html` — Before(설계) / During(**시공 현장**)
+- `about.html` — CEO 사진
+- `project-songdo.html` — 갤러리 `시공 현장` 카테고리
+- `projects.html`, `index.html` — 추가 프로젝트 슬롯
+
+## 받아야 할 자료 (우선순위)
+
+1. **시공 현장 사진** — 기획안 17·29번의 핵심. 이게 없으면 시행사로 보입니다
+2. 회사 기본 정보 — 주소 / 대표전화 / 이메일 (현재 `— 입력 필요 —` 표시)
+3. 실제 회사 연혁 (현재 2020~2025 예시)
+4. CEO 메시지 원문 + 사진
+5. 보유 기술 / 면허 / 특허 / 인증 / 시공능력평가 → `construction.html` 관리체계 수치화
+6. 프로젝트별 고해상도 원본 (외관 1 + 시공현장 1 + 내부/디테일 1 이상)
+7. HOME HERO 용 초광각 대표 이미지 (16:9 이상)
+
+## 남은 작업
+
+- [ ] 문의 폼 백엔드 연결 — `main.js` 의 `TODO: 백엔드 연결`
+- [ ] NEWS 상세 페이지 (현재 목록만)
+- [ ] 개인정보처리방침 페이지
+- [ ] OG 이미지 / favicon / sitemap.xml
+- [ ] 이미지 webp 변환 + `loading="lazy"`
+- [ ] 기획안 04번엔 `DESIGN(건축·디자인)` 메뉴가 있으나 30번 최종 사이트맵엔 없어 **제외**했습니다. 필요 시 `layout.js` NAV 에 추가
+
+## 검증 완료
+
+8개 페이지 전체에 대해 헤드리스 크롬으로 확인:
+번역 키 누락 0 · 빈 텍스트 0 · 깨진 이미지 0 · 가로 스크롤 0 · 헤더/푸터 주입 정상
