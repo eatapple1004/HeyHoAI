@@ -54,6 +54,47 @@ async function payCommission(buyerUserId, purchasedCredits, refId) {
   await query('UPDATE referrals SET commission_earned = commission_earned + $1 WHERE id = $2', [commission, ref.id]);
 }
 
+/**
+ * 결제가 취소되면 그 결제로 지급했던 추천 커미션도 되돌린다.
+ *
+ * ⚠️ **실패해도 환불 자체를 막지 않는다**(payCommission과 대칭 — 호출부에서 catch).
+ *   추천인이 이미 커미션을 써버렸을 수 있는데, 그걸로 구매자의 환불을 붙잡아 둘 수는 없다.
+ *   그래서 잔액이 모자라면 **남은 만큼만** 환수하고 부족분은 로그로 남긴다.
+ *
+ * 환수액의 진실원본은 요율(COMMISSION_RATE)이 아니라 **그때 남긴 원장 행**이다 —
+ * 요율을 나중에 바꿔도 과거 결제는 지급했던 만큼만 정확히 되돌아간다.
+ * @returns {Promise<{reversed:number, shortfall:number}>}
+ */
+async function reverseCommission(buyerUserId, refId) {
+  const r = await query('SELECT id, referrer_id FROM referrals WHERE referred_user_id = $1', [buyerUserId]);
+  const ref = r.rows[0];
+  if (!ref) return { reversed: 0, shortfall: 0 };
+
+  const led = await query(
+    `SELECT COALESCE(SUM(amount), 0)::int AS paid FROM credit_ledger
+      WHERE user_id = $1 AND ref_id = $2 AND type = 'referral_commission'`,
+    [ref.referrer_id, refId]
+  );
+  const paid = led.rows[0].paid;
+  if (paid <= 0) return { reversed: 0, shortfall: 0 };
+
+  const balance = await creditService.getBalance(ref.referrer_id);
+  const take = Math.max(0, Math.min(paid, balance));
+  const shortfall = paid - take;
+  if (take > 0) {
+    await creditService.deductCredits(ref.referrer_id, take, {
+      type: 'referral_commission',
+      description: `추천 커미션 환수 (결제 취소${shortfall > 0 ? `, 잔액부족 ◈${shortfall} 미환수` : ''})`,
+      refId,
+    });
+    await query(
+      'UPDATE referrals SET commission_earned = GREATEST(0, commission_earned - $1) WHERE id = $2',
+      [take, ref.id]
+    );
+  }
+  return { reversed: take, shortfall };
+}
+
 /** 사용자 어필리에이트 통계 */
 async function getStats(userId) {
   let u = await query('SELECT referral_code FROM users WHERE id = $1', [userId]);
@@ -87,6 +128,7 @@ module.exports = {
   recordClick,
   linkReferral,
   payCommission,
+  reverseCommission,
   getStats,
   findUserByCode,
 };

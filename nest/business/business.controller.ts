@@ -77,6 +77,13 @@ export class BusinessController {
 
   // ── 계정 연결 ──
 
+  /** POST /:id/accounts/refresh — 붙어 있는 계정의 프로필(팔로워·사진)을 제공자에서 다시 읽는다 */
+  @Post(':id/accounts/refresh')
+  @HttpCode(200)
+  async refreshAccounts(@Param('id') id: string): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.business.refreshAccounts(id) };
+  }
+
   @Get(':id/accounts')
   async accounts(@Param('id') id: string): Promise<ApiResponse<BusinessAccountVo[]>> {
     await this.business.get(id);

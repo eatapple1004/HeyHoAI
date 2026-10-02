@@ -124,12 +124,27 @@ async function verifyAndComplete(paymentId) {
   return { ok: true, credits: o.credits };
 }
 
-/** 웹훅(결제알림) — paymentId 추출 후 verifyAndComplete(진실원본 재확인)로 위임. */
+/**
+ * 웹훅(결제알림) — paymentId 추출 후 진실원본(PortOne API) 재확인으로 위임.
+ *   결제 성공 → verifyAndComplete(충전) / 취소 → reconcileFromPg(크레딧 회수).
+ *
+ * 취소를 여기서 받아야 하는 이유: 취소는 우리 API 밖(PortOne 콘솔·카드사)에서도 일어난다.
+ * 그때 아무 것도 안 하면 돈만 돌아가고 크레딧은 남는다. 이벤트 타입 문자열에 의존하기보다
+ * `type`이 취소류일 때만 회수 경로로 보내되, 실제 판단은 reconcile 쪽이 PG 조회로 다시 한다.
+ */
 async function handleWebhook(rawBody) {
   let body = {};
   try { body = JSON.parse(typeof rawBody === 'string' ? rawBody : Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : ''); } catch { return; }
   const paymentId = body && body.data && (body.data.paymentId || body.data.payment_id);
   if (!paymentId) { log.warn('webhook without paymentId'); return; }
+
+  const type = String((body && body.type) || '');
+  if (/cancel/i.test(type)) {
+    await require('./portoneRefund.service')
+      .reconcileFromPg(paymentId)
+      .catch((e) => log.warn('webhook cancel:', e.message));
+    return;
+  }
   await verifyAndComplete(paymentId).catch((e) => log.warn('webhook complete:', e.message));
 }
 

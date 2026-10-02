@@ -110,6 +110,24 @@ app.get(/^\/([a-z0-9-]+)(\.html)?$/i, (req, res, next) => {
   next();
 });
 
+// /jaenova/* = 재노바 아너스 기업 홈페이지 시안 — **dev 전용**.
+//   1차 분리는 브랜치(develop)지만, 나중에 develop→staging→main 머지 때 public/jaenova/ 파일이
+//   딸려 올라갈 수 있다. staging/prod는 **이 파일(src/index.js)로 뜨므로** 여기 가드가 실효 가드다.
+//   (dev만 NestJS로 뜬다 — nest/main.ts에도 같은 가드가 있으니 한쪽만 고치지 말 것.)
+//   NODE_ENV 미설정 = 로컬 개발로 간주(레포 관례: src/config/index.js도 동일 기본값).
+//   정적 미들웨어보다 **먼저** 있어야 차단된다.
+//   옛 주소 /genova/* 는 같은 경로의 /jaenova/* 로 301 (사명 변경 전 공유된 링크 보존).
+app.use('/genova', (req, res) => {
+  if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+  res.redirect(301, '/jaenova' + req.url);
+});
+app.use('/jaenova', (req, res, next) => {
+  if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+  // express.static이 index:false라 `/jaenova`·`/jaenova/`는 아무것도 매칭되지 않는다 → index.html 직접 서빙
+  if (req.path === '/') return res.sendFile(path.join(PUBLIC_DIR, 'jaenova', 'index.html'));
+  next();
+});
+
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
 // .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));
@@ -196,6 +214,9 @@ app.get('/admin-creations', requireAdminPage, (_req, res) => {
 });
 
 // 관리자 전용: 기본 통계 대시보드
+app.get('/admin-refunds', requireAdminPage, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-refunds.html'));
+});
 app.get('/admin-stats', requireAdminPage, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-stats.html'));
 });
@@ -304,8 +325,20 @@ function startBackground() {
     log.warn('Video job poller disabled (DISABLE_VIDEO_POLLER=true) — 로컬 전용');
   } else {
     require('./generate/videoJob.service').startPoller();
-    // UGC 완성본 캐시 백스톱 — 크래시로 방치된 잡의 비활성 컴포지트 정리(고아 파일 회수).
-    //   폴러와 동일 게이트라 prod에서만 실행(로컬 :3001은 prod DB에 붙으므로 sweep 금지). 시작 90s 후 1회 + 6h 간격.
+  }
+
+  // ── 고아 UGC 잡 회수 — **폴러와 다른 문제라 게이트를 분리한다** ──
+  //   폴러는 "살아있는 잡을 진행"시키고, 회수기는 "죽은 잡을 failed로 닫고 크레딧을 환불"한다.
+  //   전엔 둘이 같은 else 안에 묶여 있어서 DISABLE_VIDEO_POLLER=true 인 dev는 **회수를 아예 못 했다**
+  //   → 배포·크래시로 렌더가 끊기면 잡이 영원히 processing에 갇히고 선차감된 크레딧도 안 돌아왔다(실측 2026-09-12).
+  //
+  //   기본값은 예전 그대로(폴러가 도는 곳에서만 회수) — prod 무변경.
+  //   자기 DB를 가진 환경(dev·staging)은 UGC_REAPER=on 으로 켠다.
+  //   ⚠️ **로컬에서 prod DATABASE_URL을 물고 켜지 말 것** — 살아있는 prod 잡을 죽이고 환불해버린다.
+  //      그게 원래 이 게이트가 막던 사고다.
+  const reapOn = String(env.UGC_REAPER || '').trim().toLowerCase() === 'on' || !env.DISABLE_VIDEO_POLLER;
+  if (reapOn) {
+    // UGC 완성본 캐시 백스톱 — 크래시로 방치된 잡의 비활성 컴포지트 정리(고아 파일 회수). 시작 90s 후 1회 + 6h 간격.
     const ugc = require('./ugc/ugcVideo.service');
     if (ugc.sweepStaleComposites) {
       setTimeout(() => ugc.sweepStaleComposites().catch((e) => log.warn('UGC composite sweep failed: ' + e.message)), 90 * 1000);
@@ -319,9 +352,12 @@ function startBackground() {
     //   파이프라인은 프로세스 메모리에만 살고 pm2 instances:1 + fork(겹침 없음)라
     //   "새 프로세스가 떴다 = 이전 파이프라인 100% 사망"이 확정. 그래서 부팅 1회로 충분하고 안전하다.
     if (ugc.reapCrashedRenders) {
-      setTimeout(() => ugc.reapCrashedRenders().catch((e) => log.warn('UGC crashed-render reap failed: ' + e.message)), 8000).unref();
+      // 이 프로세스가 뜨기 전에 만들어진 잡 = 이전 파이프라인 소유 = 100% 사망(pm2 instances:1 + fork).
+      //   나이로 재면 부팅 직전에 시작된 잡을 놓치고, 회수기는 1회만 돌아 영원히 갇힌다(실측).
+      const bootAt = new Date();
+      setTimeout(() => ugc.reapCrashedRenders({ bootAt }).catch((e) => log.warn('UGC crashed-render reap failed: ' + e.message)), 8000).unref();
     }
-    // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수(폴러와 동일 게이트=prod only). 시작 60s 후 + 5분 간격.
+    // #9: 크래시/재배포로 status='processing'에 갇힌 ugc_jobs 회수. 시작 60s 후 + 5분 간격.
     if (ugc.reapStaleProcessing) {
       setTimeout(() => ugc.reapStaleProcessing().catch((e) => log.warn('UGC processing reap failed: ' + e.message)), 60 * 1000);
       setInterval(() => ugc.reapStaleProcessing().catch(() => {}), 5 * 60 * 1000).unref();

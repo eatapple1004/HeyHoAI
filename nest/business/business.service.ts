@@ -129,6 +129,51 @@ export class BusinessService {
     return (await this.repo.setAccountBusiness(body.accountId, id)) as BusinessAccountVo;
   }
 
+  /**
+   * 연결된 계정의 프로필(팔로워·사진)을 제공자에서 다시 읽어온다.
+   *
+   * 기존 '계정 불러오기'(syncAccounts)는 **Zernio 목록을 통째로 끌어오는 것**이라
+   * Meta 직결 계정은 손도 대지 않는다 — 그래서 팔로워가 연결 시점 값에 멈춰 있었다.
+   * 여기서는 붙어 있는 계정만, 플랫폼에 맞는 경로로 갱신한다.
+   *
+   * ⚠️ Meta 조회는 META_DIRECT_ENABLED 와 무관하게 동작한다. 그 플래그는 '직결 콘솔'을 닫는 것이고,
+   *   이미 사업체에 붙은 계정의 프로필을 최신으로 유지하는 것은 그것과 별개다.
+   * 한 계정이 실패해도 나머지는 갱신한다(토큰 만료 하나가 전체를 막으면 안 된다).
+   */
+  async refreshAccounts(id: string): Promise<{ updated: number; failed: Array<{ username: string; reason: string }> }> {
+    await this.get(id);
+    const accounts = await this.repo.accountsOf(id);
+    let updated = 0;
+    const failed: Array<{ username: string; reason: string }> = [];
+
+    for (const a of accounts as any[]) {
+      try {
+        if (a.platform === 'instagram_meta') {
+          const tok = await this.repo.metaToken(a.id);
+          if (!tok) throw new Error('저장된 토큰이 없습니다 — 다시 연결해 주세요');
+          // dist 의 Meta 클라이언트를 lazy require — 빌드 전 상태에서 부팅이 같이 죽지 않게.
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const ig = require(path.join(__dirname, '..', 'business-meta', 'meta-ig.client.js'));
+          const me = await ig.me(tok.access_token, tok.auth_mode);
+          await this.repo.updateAccountProfile(a.id, {
+            username: me.username, displayName: me.username,
+            profileImage: me.profilePictureUrl, followers: me.followersCount,
+          });
+        } else {
+          const remote = await zernio.getAccountDetail(a.account_id);
+          await this.repo.updateAccountProfile(a.id, {
+            username: remote.username, displayName: remote.displayName || remote.username,
+            profileImage: remote.profileImage, followers: remote.followers,
+          });
+        }
+        updated += 1;
+      } catch (e: any) {
+        failed.push({ username: a.username || a.account_id, reason: e.message || '조회 실패' });
+      }
+    }
+    return { updated, failed };
+  }
+
   async unlinkAccount(id: string, accountId: string): Promise<void> {
     await this.get(id);
     const account = await this.repo.findAccount(accountId);

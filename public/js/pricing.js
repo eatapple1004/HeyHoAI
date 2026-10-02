@@ -153,6 +153,12 @@
         if (typeof s.subscriptionsForSale === 'boolean') PRICING.subscriptionsForSale = s.subscriptionsForSale;
         if (typeof s.estimated === 'boolean') PRICING.estimated = s.estimated;
         applyDP();
+        // ⚠️ applyDP()는 [data-dp]/[data-price] 요소만 채운다 — **팩 그리드는 안 건드린다.**
+        //   그래서 지금까지 /api/pricing이 팩 목록을 실제로 못 바꿨다: 화면은 파싱 시점에
+        //   임베드 폴백으로 한 번 그려지고, 서버 값이 도착해도 다시 그려지지 않았다(실측:
+        //   서버에만 있는 팩이 화면에 끝내 안 나옴). 통화 토글이 쓰는 것과 같은 방식으로
+        //   재렌더 신호를 보낸다 — 듣는 화면이 없으면 아무 일도 안 일어나니 안전하다.
+        try { document.dispatchEvent(new CustomEvent('dp:pricing')); } catch (e) {}
       })
       .catch(function () { /* 조용히 폴백 */ });
   }

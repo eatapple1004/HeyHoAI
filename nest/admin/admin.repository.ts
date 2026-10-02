@@ -127,18 +127,21 @@ export class AdminRepository {
   }
 
   paymentStats() {
+    // 매출은 **취소분을 뺀 순매출**이다. payments는 UNIQUE(provider, order_id)라 환불을
+    // 마이너스 행으로 넣을 수 없어, 취소 누적액을 payments.refunded_usd에 쌓고 여기서 뺀다.
     return this.one(`SELECT
         COUNT(*)::int AS orders,
-        COALESCE(SUM(amount_usd),0)::numeric(12,2) AS revenue_usd,
+        COALESCE(SUM(amount_usd - COALESCE(refunded_usd,0)),0)::numeric(12,2) AS revenue_usd,
         COALESCE(SUM(credits),0)::bigint AS credits_sold,
         COUNT(DISTINCT user_id)::int AS paying_users,
         COUNT(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS orders30d,
-        COALESCE(SUM(amount_usd) FILTER (WHERE created_at > now() - interval '30 days'),0)::numeric(12,2) AS revenue30d
+        COALESCE(SUM(amount_usd - COALESCE(refunded_usd,0)) FILTER (WHERE created_at > now() - interval '30 days'),0)::numeric(12,2) AS revenue30d
       FROM payments`);
   }
 
   revenueByProvider() {
-    return this.many(`SELECT provider, COUNT(*)::int AS orders, COALESCE(SUM(amount_usd),0)::numeric(12,2) AS revenue
+    return this.many(`SELECT provider, COUNT(*)::int AS orders,
+               COALESCE(SUM(amount_usd - COALESCE(refunded_usd,0)),0)::numeric(12,2) AS revenue
         FROM payments GROUP BY provider ORDER BY revenue DESC`);
   }
 

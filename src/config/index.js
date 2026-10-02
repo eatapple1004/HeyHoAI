@@ -42,6 +42,13 @@ const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
 
+  // 인물 요청(프롬프트 키워드·얼굴 사진) → GPT Image 자동 라우팅. src/generate/personRouting.js
+  //   기본 false = 기존 그대로(Gemini). 2026-10-02 현재 dev에서만 true.
+  PERSON_ROUTE_GPT: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // 영상 잡 폴러 비활성(로컬 개발용). 로컬 :3001이 prod DB에 붙으면 폴러가 prod 잡을 이중 폴링
   //   → 중복 finalize·attempts 부풀림(폴러 겹침). 로컬 프로세스만 DISABLE_VIDEO_POLLER=true로 폴러만 끔.
   //   기본 false(폴러 실행) → prod 무변경, 단일 폴러 유지.
@@ -105,6 +112,18 @@ const envSchema = z.object({
   FAL_MODEL: z.string().default('fal-ai/flux/dev'),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_IMAGE_MODEL: z.string().default('gemini-2.5-flash-image'),
+  // Seedream(ByteDance) — fal 경유라 키는 FAL_API_KEY 공유. 참조 이미지가 있으면 edit 경로로 자동 전환.
+  SEEDREAM_MODEL: z.string().default('fal-ai/bytedance/seedream/v4.5/text-to-image'),
+  // UGC broll 클립의 기본 모션 엔진. 'seedance'면 제품 씬을 Seedance로 돌린다(씬 길이를 네이티브로 뽑아
+  //   Kling 5/10초 양자화·트림이 사라진다). **인물 씬은 엔진과 무관하게 항상 kling** — Seedance가 실존 인물을 거부한다.
+  //   요청별 override는 ugcVideo 옵션 motionEngine.
+  UGC_MOTION_ENGINE: z.string().default('kling'),
+  // 고아 UGC 잡 회수기 스위치. 기본은 폴러 게이트를 따른다(prod 무변경).
+  //   자기 DB를 가진 환경(dev·staging)은 'on'으로 켠다 — 안 켜면 배포·크래시로 끊긴 잡이
+  //   영원히 processing에 갇히고 선차감 크레딧도 안 돌아온다.
+  //   ⚠️ 로컬에서 prod DATABASE_URL을 물고 켜면 살아있는 prod 잡을 죽이고 환불한다.
+  UGC_REAPER: z.string().optional(),
+  SEEDANCE_TIER: z.string().optional(),
 
   // Video providers (최소 하나는 필요)
   RUNWAY_API_KEY: z.string().optional(),
@@ -114,6 +133,14 @@ const envSchema = z.object({
   KLING_MODEL: z.string().default('kling-v3'),
   MINIMAX_API_KEY: z.string().optional(),
   MINIMAX_MODEL: z.string().default('video-01'),
+  // Veo 3.1 (Gemini API) — 키는 GEMINI_API_KEY 공유(별도 발급 불필요).
+  //   VEO_RESOLUTION은 비워두면 모델 기본값. 1080p·4k는 길이가 8초로 강제된다(구글 제약).
+  VEO_MODEL: z.string().default('veo-3.1-generate-preview'),
+  VEO_RESOLUTION: z.string().optional(),
+  // Sora 2 (OpenAI) — 키는 OPENAI_API_KEY 공유.
+  //   SORA_SECONDS = 허용 길이 목록. 문서 개정으로 값이 바뀌어 와서 상수로 박지 않았다.
+  SORA_MODEL: z.string().default('sora-2'),
+  SORA_SECONDS: z.string().default('4,8,12'),
 
   // OpenAI (GPT Image + TTS 폴백)
   OPENAI_API_KEY: z.string().optional(),

@@ -10,9 +10,9 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
-<script src="/js/i18n.js?v=26" defer></script>
+<script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=15" defer></script>
+<script src="/js/rail.js?v=18" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/guide.js?v=2" defer></script>
@@ -1714,6 +1714,18 @@
         <div id="ugcScriptBody" style="font-size:13.5px;line-height:1.55"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+        <!--
+          모션 엔진 선택 — 전엔 URL 파라미터(?engine=)로만 정해져서 사용자가 고를 방법이 없었다.
+          기본값은 페이지 진입 경로가 정한다(레일의 UGC 진입점 = seedance). ugcInitEngine()이 채운다.
+          ⚠️ Seedance는 실존 인물의 초상을 거부한다(합성 인물은 통과) — 그런 씬만 서버가 kling으로 재시도한다.
+        -->
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dim)">
+          <span style="font-size:12.5px;color:var(--text);font-weight:600">Motion engine</span>
+          <select id="ugcEngine" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:6px 9px;font-size:12.5px;max-width:360px">
+            <option value="seedance">Seedance — 씬 길이 그대로 생성(4~15초)</option>
+            <option value="kling">Kling — 5·10초 고정, 길이를 잘라 맞춤</option>
+          </select>
+        </label>
         <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dim)">
           <span style="font-size:12.5px;color:var(--text);font-weight:600">Video quality</span>
           <select id="ugcQuality" onchange="ugcSyncGenCost()" style="background:var(--surface,#1a1a1a);color:inherit;border:1px solid var(--border,#333);border-radius:7px;padding:6px 9px;font-size:12.5px;max-width:360px">
@@ -4155,12 +4167,55 @@ async function addCreatorTemplate(btn,idx){
   }catch(e){ btn.disabled=false; btn.innerHTML=o; if(window.toast)toast('Could not add: '+(e.message||e),'error'); }
 }
 // 모델 코드/라벨 → 친절명(상세페이지 modelLabel과 정합). 이미 친절라벨(effModelLabel)이면 그대로 통과.
+// 서버가 돌려준 결과별 실제 모델 → 표시 라벨. 인물 요청은 서버가 GPT로 바꾸거나 Gemini로 재시도하므로
+//   화면에서 고른 모델(effModelLabel)과 다를 수 있다. 결과에 model이 없으면(구 서버) 빈 문자열 → 호출부가 effModelLabel로 폴백.
+function actualModelLabel(rs){ const ls=[...new Set((rs||[]).filter(x=>x&&x.model).map(x=>rbModelLabel(x.model)).filter(Boolean))]; return ls.join(' · '); }
 function rbModelLabel(m){ m=String(m||'').trim(); if(!m) return ''; const l=m.toLowerCase();
   if(l==='pro') return 'Nano Banana Pro'; if(l==='flash') return 'Nano Banana';
   if(/gemini.*flash|flash.*image/.test(l)) return 'Nano Banana'; if(/gemini|nano.?banana/.test(l)) return /pro/.test(l)?'Nano Banana Pro':'Nano Banana';
   if(l==='gpt-image-2-high') return 'GPT Image HD'; if(/gpt/.test(l)) return 'GPT Image';
+  if(/seedance/.test(l)) return 'Seedance';
   if(/kling/.test(l)||/^ugc/.test(l)||l==='reel') return 'Kling';
   return m; }
+// Ad Video는 **씬마다 모션 엔진이 갈린다**(인물 씬은 Seedance가 거부해 kling으로 우회).
+//   그래서 엔진 하나로 못 부른다 — 실제로 쓴 것들을 그대로 이어 붙인다.
+//   engines가 없으면(Seedance 도입 전 결과) 예전 라벨로 폴백한다.
+//   ⚠️ 예전엔 model이 'ugc-'로 시작하면 무조건 'Kling'이라고 했는데, Seedance가 들어온 뒤로는 거짓말이다.
+/**
+ * 모션 엔진 셀렉트의 초기값 — 진입 경로가 정한다.
+ *   레일의 UGC 진입점은 ?engine=seedance 로 들어오고, mode=ugc 만 있어도 seedance가 기본이다.
+ *   ?engine=kling 으로 들어오면 kling이 선택된 채 시작한다. 사용자가 바꾸면 그 값이 최우선.
+ */
+function ugcInitEngine(){
+  const el=document.getElementById('ugcEngine'); if(!el)return;
+  const qs=new URLSearchParams(location.search);
+  const q=qs.get('engine');
+  el.value=(q==='kling')?'kling':((q==='seedance'||qs.get('mode')==='ugc')?'seedance':'kling');
+}
+if(document.readyState!=='loading')ugcInitEngine();
+else document.addEventListener('DOMContentLoaded',ugcInitEngine);
+
+function rbEngineLabel(b){
+  // 배치 객체(b.engines)와 DB 원본 행(b.metadata.engines) 둘 다 받는다 —
+  //   호출부가 어느 쪽을 넘기는지에 따라 조용히 폴백(=Kling)으로 새는 걸 막는다.
+  const eng=(b&&Array.isArray(b.engines)&&b.engines)||(b&&b.metadata&&Array.isArray(b.metadata.engines)&&b.metadata.engines)||null;
+  if(eng&&eng.length) return eng.map(rbModelLabel).join(' · ');
+  // 아직 렌더 중이면 실제 엔진을 알 수 없다 — 그렇다고 'Kling'이라 단정하면 거짓말이 된다.
+  //   요청한 엔진을 보여준다(완료되면 실제 사용분으로 교체된다).
+  //
+  //   ⚠️ 인플라이트 판정은 **b.isUgc**로 한다(batchRowHtml이 쓰는 것과 같은 축).
+  //      전엔 b._jobT0를 봤는데 그건 **릴스 재연결 경로에서만** 붙는 플래그라 UGC엔 없었고,
+  //      그 사이 makePendingBatch가 model을 'Reel'로 박아 rbModelLabel이 'Kling'을 돌려줬다.
+  //   ⚠️ 완료된 결과(engines 보유)는 위에서 이미 반환했고, engines 없는 옛 결과는 아래 폴백으로 간다 —
+  //      그건 실제로 Kling으로 돌았을 수 있으므로 여기서 건드리면 안 된다.
+  if(b&&(b.isUgc||b._jobT0)&&b.loading!==false){
+    const picked=(document.getElementById('ugcEngine')||{}).value;
+    if(picked==='seedance'||picked==='kling') return rbModelLabel(picked);
+    const qs=new URLSearchParams(location.search);
+    if(qs.get('engine')==='seedance'||(qs.get('mode')==='ugc'&&qs.get('engine')!=='kling')) return 'Seedance';
+  }
+  return rbModelLabel(b&&b.model);
+}
 // intrinsic 크기 → 근접 표준 비율 라벨(상세페이지 ratioLabel과 동일).
 function rbRatioLabel(w,h){ if(!w||!h) return ''; const r=w/h, C=[[9,16],[4,5],[2,3],[3,4],[1,1],[4,3],[3,2],[16,9]]; let best=C[0],bd=Infinity; C.forEach(function(c){ const d=Math.abs(r-c[0]/c[1]); if(d<bd){bd=d;best=c;} }); return best[0]+':'+best[1]; }
 // 각 결과 행 첫 미디어 로드 시 해상도·비율·길이 채움(상세페이지 fillSpecs와 동일 로직).
@@ -4236,7 +4291,7 @@ function batchRowHtml(b){
         return b.added?`<span class="rb-add added">✓ In Creator templates</span>`
           :`<button class="rb-add" type="button" onclick="addCreatorTemplate(this,${cidx})">＋ Add to Creator templates</button>`;})())+`</div>`;
   // 상세페이지와 동일한 마이크로 캡션 스펙: 타입 · 해상도 · 비율 · [길이] · 모델. 해상도/비율/길이는 미디어 로드 시 fillRbSpecs가 채움(b.w/h 있으면 즉시).
-  const ML=rbModelLabel(b.model);
+  const ML=rbEngineLabel(b);   // 씬별로 엔진이 갈릴 수 있어 집합으로 표시(예: 'Seedance · Kling')
   const dimStatic=(b.w&&b.h)?`<b>${b.w}</b> × <b>${b.h}</b>`:'';
   //   비율은 결과 치수가 없어도 안다(요청값 b.aspect) → 로딩 중에도 보여준다. 치수는 결과가 나와야 채워진다.
   const ratioStatic=(b.w&&b.h)?rbRatioLabel(b.w,b.h):(b.aspect||'');
@@ -5445,7 +5500,7 @@ async function loadStudioResults(reset){
       let b=STUDIO_BATCH_BY_KEY[k];
       // productImage=유저가 넣은 제품 사진(characters.reference_image_url) · modelName=쓴 로스터 모델 이름(또는 'Auto').
       //   "무엇으로 만들었는지"를 카드에서 바로 보게 하려는 것 — 둘 다 없을 수도 있다(모델 픽커 없는 템플릿).
-      if(!b){ const _md=r.metadata||{}; const _pimgs=(Array.isArray(_md.product_images)&&_md.product_images.length)?_md.product_images:((r.product_image||_md.product_image)?[r.product_image||_md.product_image]:[]); const _crefs=Array.isArray(_md.canonical_refs)?_md.canonical_refs:[]; b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImages:_pimgs,canonRefs:_crefs,modelName:_md.model_name||'',choices:_md.choices||null,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
+      if(!b){ const _md=r.metadata||{}; const _pimgs=(Array.isArray(_md.product_images)&&_md.product_images.length)?_md.product_images:((r.product_image||_md.product_image)?[r.product_image||_md.product_image]:[]); const _crefs=Array.isArray(_md.canonical_refs)?_md.canonical_refs:[]; b={key:k,items:[],failed:[],promptText:r.prompt_text||'',templateSource:r.template_source||'',templateName:r.template_name||'',model:r.model||'',w:r.width,h:r.height,added:!!r.added_to_library,productImages:_pimgs,canonRefs:_crefs,modelName:_md.model_name||'',choices:_md.choices||null,engines:Array.isArray(_md.engines)?_md.engines:null,dateKey:dateKeyOf(r.created_at),dateLabel:fmtBatchDate(r.created_at)}; STUDIO_BATCH_BY_KEY[k]=b; STUDIO_BATCHES.push(b); }
       if(r.status==='success'&&r.file_path){
         const fn=r.file_path.split('/').pop();
         if(!b.items.some(i=>i.idx===r.idx)) b.items.push({url:'/images/'+fn,type:/\.(mp4|webm|mov)$/i.test(fn)?'reel':'photo',idx:r.idx,visibility:r.visibility});
@@ -5873,7 +5928,8 @@ async function generateImages(r,subj,count,pending){
         if(!rs.ok||!d.success)throw new Error(d.error||'generate failed');
         const one=(d.results||[])[0];
         if(pending){ // 도착하는 즉시 그 슬롯만 채운다 → 나머지는 계속 로딩
-          if(one&&one.success)pending.items.push({url:one.url,type:'photo',idx:one.resultIdx||one.idx||null,visibility:vis});
+          if(one&&one.success){ pending.items.push({url:one.url,type:'photo',idx:one.resultIdx||one.idx||null,visibility:vis});
+            (pending._res=pending._res||[]).push(one); pending.model=actualModelLabel(pending._res)||effModelLabel(); }
           else pending.failed.push({idx:(one&&one.resultIdx)||null});
           pending.loading=(pending.items.length+pending.failed.length)<_n; renderStudioResults();
         }
@@ -5905,14 +5961,14 @@ async function generateImages(r,subj,count,pending){
     // ⚠️ pendingCount = **요청 총 개수**여야 한다(완료 개수 아님). 렌더러가 "남은 = 총 - 완료 - 실패"로
     //   플레이스홀더 수를 세고, 실패 폴백(위 catch)도 이 값을 총 개수로 쓴다.
     //   스왑 대기분(queued)은 아직 items에 없으므로 반드시 더해야 한다 — 안 더하면 0이 된다.
-    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=effModelLabel(); pending.added=false; pending.pendingCount=ok.length+queued.length+failedR.length;
+    pending.items=ok.map(x=>({url:x.url,type:'photo',idx:x.resultIdx||x.idx||null,visibility:vis})); pending.failed=failedR.map(x=>({idx:x.resultIdx||null})); pending.model=actualModelLabel(ok)||effModelLabel(); pending.added=false; pending.pendingCount=ok.length+queued.length+failedR.length;
     if(queued.length){ // async faceswap — 로딩 유지하고 잡을 폴링해서 완성되면 자동 표시(새로고침 불필요)
       pending.loading=true; pending.queued=queued.length; renderStudioResults();
       await pollFaceswapJobs(queued,pending,vis); // await = generate()의 경과 타이머가 스왑 완료까지 계속 돎(0.0s 얼음 방지)
     } else { pending.loading=false; renderStudioResults(); }
   }
   document.getElementById('resultHint').textContent=
-    `${ok.length} photos ready · ${effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
+    `${ok.length} photos ready · ${actualModelLabel(ok)||effModelLabel()}${fail?` · ${fail} failed`:''} — saved to your gallery`;
   // 워터마크 업셀: 워터마크가 찍힌 이미지가 하나라도 있으면 업그레이드 유도
   if(ok.some(x=>x.watermarked)){
     toast('Watermark added on the free plan — upgrade to Pro for clean images');
@@ -7102,6 +7158,18 @@ async function ugcRenderVideo(prePending){
     const vIdEl=document.getElementById('ugcVoiceId');if(vIdEl&&vIdEl.value)fd.append('voiceId',vIdEl.value); // 영상별 보이스
     const spEl=document.getElementById('ugcSpeed');if(spEl&&spEl.value)fd.append('speed',spEl.value); // 말하기 속도
     const qEl=document.getElementById('ugcQuality');fd.append('quality',(qEl&&qEl.value==='high')?'high':'low'); // 화질 티어(low=625/high=945)
+    // 모션 엔진 — **UGC는 Seedance 기반이 기본**이다.
+    //   URL 파라미터에만 의존하면 페이지 안에서 주소가 바뀌거나 사용자가 링크를 직접 치고 들어왔을 때
+    //   조용히 Kling으로 돌아간다. 그래서 mode=ugc 면 기본을 seedance로 두고, ?engine=kling 으로만 되돌린다.
+    //   ⚠️ seedance여도 인물 씬은 서버가 kling으로 돌린다(Seedance가 실존 인물을 거부).
+    //   화면에서 고른 값이 최우선. 없으면 URL/모드가 정한 기본값을 따른다.
+    const qs=new URLSearchParams(location.search);
+    const engineQ=qs.get('engine');
+    const isUgcMode=qs.get('mode')==='ugc';
+    const picked=(document.getElementById('ugcEngine')||{}).value;
+    const engine=(picked==='kling'||picked==='seedance')?picked
+      :((engineQ==='kling')?'kling':((engineQ==='seedance'||isUgcMode)?'seedance':null));
+    if(engine)fd.append('motionEngine',engine);
     ugcProductFiles.forEach((f,i)=>fd.append('productImage',f,f.name||('product'+i+'.png'))); // 유저 실제 제품(다각도) → 전 씬 고정
     const res=await fetch('/api/generate/ugc/render',{method:'POST',body:fd});
     const data=await sjson(res);

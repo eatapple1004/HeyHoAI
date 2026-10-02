@@ -177,7 +177,7 @@ async function subscribe(user, plan) {
 
 /**
  * 해지 — 기본은 **기말 해지**(이미 낸 기간은 그대로 쓰게 둔다).
- * 즉시 환불은 정책·정산이 얽혀 여기서 하지 않는다(고객센터 경유).
+ * 남은 기간을 돈으로 돌려받고 지금 끊는 건 아래 `refundAndCancel`(제5조 3항 일할환불)이다.
  */
 async function cancel(userId) {
   const sub = await getSubscription(userId);
@@ -187,6 +187,117 @@ async function cancel(userId) {
     [sub.id]);
   log.info(`구독 해지(기말): user ${userId}, sub ${sub.id}`);
   return { canceled: true, activeUntil: sub.next_charge_at };
+}
+
+// ─── 중도해지 일할환불 (환불규정 제5조 3항) ───────────────────────────────
+//
+// 규정 원문(public/refund.html 제5조 3항):
+//   · 이용 개시 전 · 7일 이내 + 크레딧 전혀 미사용 → **전액 환불**
+//   · 이용 개시 후 → 환불액 = 결제금액 − (결제금액 × 경과일수 ÷ 총 이용일수)
+//                              − 이미 사용한 유상 크레딧 상당액.  음수면 0원.
+//
+// 기말 해지(cancel)와는 **다른 상품**이다. 기말 해지는 낸 돈만큼 끝까지 쓰고 나가는 것이고,
+// 이건 남은 기간을 돈으로 돌려받고 지금 끊는 것이다. 규정이 둘 다 약속하므로 둘 다 있어야 한다.
+
+/** 이 주기에 실제로 청구된 건(환불 대상). 없으면 null — 무상 부여분은 환불할 돈이 없다. */
+async function currentCharge(sub) {
+  const r = await query(
+    `SELECT payment_id, period_start, amount_krw FROM subscription_charges
+      WHERE subscription_id = $1 AND status = 'paid'
+      ORDER BY period_start DESC LIMIT 1`,
+    [sub.id]
+  );
+  return r.rows[0] || null;
+}
+
+/**
+ * 중도해지 환불액 판정(부작용 없음). 미리보기와 실행이 **같은 함수**를 쓴다.
+ *
+ * "사용한 유상 크레딧"은 지급 시점 이후의 차감 합계로 본다 — 크레딧은 대체가능해서
+ * 구독분만 따로 추적할 수 없다. 우리가 회수한 분(purchase_refund)은 소비가 아니라 제외한다.
+ */
+async function assessCancelRefund(userId) {
+  const sub = await getSubscription(userId);
+  if (!sub) throw fail('진행 중인 구독이 없습니다.', 404);
+
+  const charge = await currentCharge(sub);
+  if (!charge) {
+    return { refundable: false, reason: '이 구독에는 환불할 결제 건이 없습니다.', sub: { plan: sub.plan } };
+  }
+
+  const amount = Number(charge.amount_krw);
+  const start = new Date(charge.period_start).getTime();
+  const end = sub.next_charge_at ? new Date(sub.next_charge_at).getTime() : start + 30 * DAY_MS;
+  const totalDays = Math.max(1, Math.round((end - start) / DAY_MS));
+  const elapsedDays = Math.max(0, Math.min(totalDays, Math.floor((Date.now() - start) / DAY_MS)));
+
+  const monthlyCredits = Number((PRICING.plans[sub.plan] || {}).cr || 0);
+  const used = (
+    await query(
+      `SELECT COALESCE(SUM(-amount), 0)::int AS used FROM credit_ledger
+        WHERE user_id = $1 AND amount < 0 AND type <> 'purchase_refund' AND created_at >= $2`,
+      [userId, charge.period_start]
+    )
+  ).rows[0].used;
+  const usedCredits = Math.min(used, monthlyCredits);
+  const unusedCredits = Math.max(0, monthlyCredits - usedCredits);
+
+  // 7일 이내 + 전혀 미사용 → 전액(제5조 3항 첫 줄)
+  const withinWithdrawal = elapsedDays <= 7 && usedCredits === 0;
+
+  const elapsedValue = withinWithdrawal ? 0 : Math.round((amount * elapsedDays) / totalDays);
+  const creditValue = monthlyCredits > 0 ? Math.round((amount * usedCredits) / monthlyCredits) : 0;
+  const refundKRW = Math.max(0, amount - elapsedValue - creditValue);
+
+  return {
+    refundable: refundKRW > 0,
+    paymentId: charge.payment_id,
+    plan: sub.plan,
+    amountKRW: amount,
+    refundKRW,
+    fullRefund: withinWithdrawal,
+    period: { start: charge.period_start, totalDays, elapsedDays },
+    credits: { granted: monthlyCredits, used: usedCredits, unused: unusedCredits },
+    deductions: { elapsedValue, creditValue },
+  };
+}
+
+/**
+ * 중도해지 + 일할환불 실행.
+ *
+ * 순서에 이유가 있다: **먼저 구독을 내리고(재청구 차단) 그 다음 환불**한다.
+ *   반대로 하면 환불이 끝난 직후 스케줄러 틱이 끼어들어 방금 환불한 구독을 다시 청구할 수 있다.
+ *   환불이 실패하면 해지는 그대로 두고 사유만 올린다 — 돈을 못 돌려준 채 재청구가 도는 것보다,
+ *   해지된 채 환불만 다시 시도하는 쪽이 언제나 복구하기 쉽다.
+ *
+ * 실제 취소는 portoneRefund가 한다(크레딧 선회수 → PG 취소 → 실패 시 원복). 여기서 다시 쓰지 않는다.
+ */
+async function refundAndCancel(userId) {
+  const view = await assessCancelRefund(userId);
+  if (!view.refundable) {
+    throw fail(view.reason || '환불 가능한 금액이 없습니다. 기말 해지로 진행해 주세요.', 400);
+  }
+  const sub = await getSubscription(userId);
+
+  await query(
+    `UPDATE subscriptions SET status='canceled', canceled_at=now(), next_charge_at=NULL, updated_at=now()
+      WHERE id=$1`,
+    [sub.id]
+  );
+  await subscriptionService.activatePlan(userId, 'free', Date.now(), 0)
+    .catch((e) => log.warn(`downgrade to free failed for ${userId}: ${e.message}`));
+
+  const refunds = require('./portoneRefund.service');
+  const r = await refunds.refund(view.paymentId, {
+    requester: 'ADMIN', // 규정에 따른 회사 처리 — 셀프 전액환불 조건(미사용·7일)과는 다른 경로다
+    amountKRW: view.refundKRW,
+    credits: view.credits.unused, // 안 쓴 만큼만 회수. 이미 쓴 분은 환불액에서 이미 뺐다
+    reason: `구독 중도해지 일할환불 (${view.plan}, ${view.period.elapsedDays}/${view.period.totalDays}일 경과)`,
+    actorUserId: userId,
+  });
+
+  log.info(`구독 중도해지+환불: user ${userId}, ₩${view.refundKRW.toLocaleString()} / −◈${r.creditsClawed}`);
+  return { canceled: true, refund: r, assessment: view };
 }
 
 /**
@@ -249,4 +360,7 @@ async function chargeDue(limit = 50) {
   return { processed: due.rows.length, ok, failed };
 }
 
-module.exports = { getSubscription, subscribe, cancel, chargeDue, planPriceKrw };
+module.exports = {
+  getSubscription, subscribe, cancel, chargeDue, planPriceKrw,
+  assessCancelRefund, refundAndCancel,
+};

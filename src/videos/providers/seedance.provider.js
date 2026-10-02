@@ -164,7 +164,15 @@ const seedanceProvider = {
 
     // 완료 — 결과 본문은 별도 URL에서 받는다.
     const rr = await falFetch(ctx.responseUrl || base);
-    if (!rr.ok) throw new Error(`Seedance result fetch failed (${rr.status})`);
+    if (!rr.ok) {
+      // ⚠️ 본문을 반드시 실어 보낸다. 상태만 던지면 **왜 실패했는지가 사라진다** —
+      //   status가 COMPLETED로 끝난 뒤 결과 조회에서 422가 나는 경우가 있는데(실측),
+      //   그 본문에만 사유가 들어 있다. 예: content_policy_violation
+      //   "images may contain likenesses of real people" (실존 인물 얼굴 거부).
+      //   상태만 보면 "완료됐는데 422"로만 보여 원인 추적이 불가능하다.
+      const body = await rr.text().catch(() => '');
+      throw new Error(`Seedance result fetch failed (${rr.status}): ${body.slice(0, 500)}`);
+    }
     const out = await rr.json();
     const video = out.video || {};
 
