@@ -25,7 +25,7 @@
 
     "v2.s3.kick": "Our Projects",
     "v2.s3.h": "결과로<br>증명합니다",
-    "v2.s3.p": "송도 잭니클라우스 프리미엄 레지던스를 비롯한 프로젝트의 기획 의도와 시공 과정을 기록으로 남깁니다.",
+    "v2.s3.p": "송도 아너스 재인노블하임을 비롯한 프로젝트의 기획 의도와 시공 과정을 기록으로 남깁니다.",
     "v2.s3.a1": "프로젝트 보기",
     "v2.s3.a2": "문의하기",
     "v2.s3.alt": "프리미엄 레지던스 준공 전경",
@@ -110,7 +110,7 @@
 
     "v2.s3.kick": "Our Projects",
     "v2.s3.h": "Proven by<br>what we deliver",
-    "v2.s3.p": "We record the design intent and the construction process of every project, starting with Songdo Jack Nicklaus Premium Residence.",
+    "v2.s3.p": "We record the design intent and the construction process of every project, starting with Honors Jaein Noble Heim in Songdo.",
     "v2.s3.a1": "View Projects",
     "v2.s3.a2": "Contact Us",
     "v2.s3.alt": "Completed premium residence",
