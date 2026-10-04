@@ -206,8 +206,12 @@ export class BusinessService {
 
     // R2 영속화 — prd는 tmp/images 를 48시간마다 지운다(crontab). 안 올리면 원본·배경음악이 이틀 뒤 사라진다.
     try { await mediaStore.putFile(file.path); } catch (e) { /* best-effort: 미설정 환경은 no-op */ }
+    // 배경음악은 목록에서 고를 때 알아볼 이름이 필요하다 — 저장 파일명은 UUID라 원래 이름을 caption에 둔다.
+    //   multer는 파일명을 latin1로 넘기므로 한글 이름은 utf8로 되돌린다.
+    const originalName = mediaType === 'audio' && file.originalname
+      ? Buffer.from(file.originalname, 'latin1').toString('utf8').slice(0, 200) : null;
     const media = await this.repo.insertMedia({
-      businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload',
+      businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload', caption: originalName,
     });
     return isBase ? ((await this.repo.setBaseMedia(id, media.id)) as BusinessMediaVo) : media;
   }
