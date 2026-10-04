@@ -31,6 +31,9 @@ async function mergeBgm(reelPath, bgmPath) {
   try {
     const reelFullPath = path.join(process.cwd(), reelPath);
     const bgmFullPath = path.join(process.cwd(), bgmPath);
+    // prd는 tmp/images 를 48시간마다 지운다 → 로컬에 없으면 R2에서 받아온다(없던 시절엔 BGM이 조용히 빠졌다).
+    await ensureLocal(reelFullPath);
+    await ensureLocal(bgmFullPath);
     if (!fs.existsSync(reelFullPath) || !fs.existsSync(bgmFullPath)) {
       log.warn('BGM or reel file not found, uploading without BGM');
       return reelFilename;
@@ -38,9 +41,10 @@ async function mergeBgm(reelPath, bgmPath) {
 
     const mergedFilename = `merged_${crypto.randomUUID()}.mp4`;
     const mergedPath = path.join(process.cwd(), 'tmp', 'images', mergedFilename);
+    // 음악이 영상보다 짧으면 반복(-stream_loop), 영상 길이에서 끊는다(-shortest). 영상 원래 소리는 음악으로 대체.
     execSync(
-      `ffmpeg -i "${reelFullPath}" -i "${bgmFullPath}" -map 0:v -map 1:a -c:v copy -c:a aac -shortest -y "${mergedPath}" 2>/dev/null`,
-      { timeout: 30000 }
+      `ffmpeg -i "${reelFullPath}" -stream_loop -1 -i "${bgmFullPath}" -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest -y "${mergedPath}" 2>/dev/null`,
+      { timeout: 60000 }
     );
     await mediaStore.putFile(mergedPath); // 영속 스토리지 best-effort(미설정 시 no-op)
     log.info(`BGM merged: ${mergedFilename}`);
@@ -48,6 +52,23 @@ async function mergeBgm(reelPath, bgmPath) {
   } catch (err) {
     log.warn(`BGM merge failed: ${err.message}, uploading without BGM`);
     return reelFilename;
+  }
+}
+
+/** 로컬에 없는 미디어 파일을 R2에서 내려받는다. 실패해도 조용히 넘어간다(호출부가 존재 여부를 다시 본다). */
+async function ensureLocal(fullPath) {
+  if (fs.existsSync(fullPath) || !mediaStore.isRemote()) return;
+  try {
+    const obj = await mediaStore.getObject(path.basename(fullPath));
+    if (!obj || !obj.Body) return;
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    await new Promise((resolve, reject) => {
+      const out = fs.createWriteStream(fullPath);
+      obj.Body.pipe(out).on('finish', resolve).on('error', reject);
+      obj.Body.on('error', reject);
+    });
+  } catch (e) {
+    log.warn(`R2 내려받기 실패(${path.basename(fullPath)}): ${e.message}`);
   }
 }
 

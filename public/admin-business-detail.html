@@ -125,11 +125,10 @@ button:disabled{opacity:.5;cursor:default}
     <h2>인스타그램 연결 <span class="hint">발행에 쓸 계정입니다</span></h2>
     <div id="accts"></div>
     <div class="row" style="margin-top:12px">
-      <select id="unlinked" style="flex:1;min-width:200px"><option value="">불러온 미연결 계정 없음</option></select>
+      <select id="unlinked" style="flex:1;min-width:200px"><option value="">연결 안 된 Meta 계정 없음</option></select>
       <button onclick="linkAccount()">계정 연결</button>
       <button onclick="connectMeta()" id="metaBtn" style="display:none" title="인스타그램 로그인으로 이 사업체에 Meta 직결 계정을 붙입니다(Zernio 없이)">📷 Meta로 연결</button>
       <button onclick="refreshAccounts()" id="refreshBtn" title="팔로워·프로필 사진을 인스타에서 다시 읽어옵니다">↻ 프로필 새로고침</button>
-      <button onclick="syncAccounts()" id="syncBtn">🔄 계정 불러오기</button>
     </div>
   </div>
 
@@ -236,6 +235,17 @@ button:disabled{opacity:.5;cursor:default}
       <div class="slots">
         <div class="slot" id="slotImage"><div class="lbl">게시물 이미지</div><span>미선택</span></div>
         <div class="slot" id="slotReel"><div class="lbl">릴스 영상</div><span>미선택</span></div>
+        <div class="slot" id="slotBgm">
+          <div class="lbl">배경음악 <span style="color:var(--faint);font-weight:400">· 릴스에만 입혀집니다</span></div>
+          <select id="bgmSel" onchange="previewBgm()" style="width:100%"><option value="">없음 (영상 원래 소리)</option></select>
+          <audio id="bgmPlayer" controls style="width:100%;margin-top:8px;display:none"></audio>
+          <div class="row" style="margin-top:8px">
+            <input type="file" id="bgmFile" accept="audio/*" style="flex:1;min-width:0">
+            <button class="sm" onclick="uploadBgm()" id="bgmUpBtn">음악 업로드</button>
+            <button class="sm danger" onclick="deleteBgm()" id="bgmDelBtn" style="display:none">삭제</button>
+          </div>
+          <div style="color:var(--faint);font-size:.74rem;margin-top:6px">인스타 음악 라이브러리는 API로 못 붙입니다. 저작권 문제가 없는 음원(무료 라이선스·직접 제작)만 올리세요 — 인기곡은 음소거·삭제될 수 있습니다.</div>
+        </div>
       </div>
       <div>
         <div class="row" style="margin-bottom:12px">
@@ -313,7 +323,7 @@ async function load() {
   try {
     const d = await api('/api/admin/business/' + BIZ_ID);
     state = { business: d.business, accounts: d.accounts, media: d.media, packs: d.packs, queue: d.queue };
-    renderBiz(); renderAccounts(); renderMedia(); renderPacks(); renderQueue(); loadUnlinked();
+    renderBiz(); renderAccounts(); renderMedia(); renderPacks(); renderQueue(); loadUnlinked(); renderBgm();
   } catch (e) { flash('err', e.message); }
 }
 
@@ -356,12 +366,14 @@ function renderAccounts() {
 }
 
 async function loadUnlinked() {
+  // Zernio는 쓰지 않는다(2026-10-04 결정) — 드롭다운엔 Meta 직결 계정만. 새 계정은 📷 Meta로 연결.
   try {
     const { data } = await api('/api/admin/business/accounts/unlinked');
-    $('unlinked').innerHTML = data.length
-      ? data.map((a) => '<option value="' + a.id + '">@' + esc(a.username || a.account_id)
-          + ' · ' + esc(vendorLabel(a.platform)) + ' (' + (a.followers || 0).toLocaleString() + ')</option>').join('')
-      : '<option value="">미연결 계정 없음 — 계정 불러오기를 눌러보세요</option>';
+    const meta = data.filter((a) => a.platform === 'instagram_meta');
+    $('unlinked').innerHTML = meta.length
+      ? meta.map((a) => '<option value="' + a.id + '">@' + esc(a.username || a.account_id)
+          + ' (' + (a.followers || 0).toLocaleString() + ')</option>').join('')
+      : '<option value="">연결 안 된 Meta 계정 없음 — 📷 Meta로 연결을 눌러 새로 붙이세요</option>';
   } catch (e) { /* 목록 실패가 화면 전체를 막을 이유는 없다 */ }
 }
 
@@ -413,8 +425,10 @@ function findByKey(key) {
 
 function renderMedia() {
   // 원본 = 관리자가 직접 올린 것(source=upload). 나머지(편입·계정 미디어)는 결과물 탭으로.
-  const originals = state.media.filter((m) => m.source === 'upload');
-  const generated = state.media.filter((m) => m.source !== 'upload');
+  // 오디오(배경음악)는 타일이 아니라 발행 작성의 배경음악 목록에서 다룬다.
+  const visual = state.media.filter((m) => m.media_type !== 'audio');
+  const originals = visual.filter((m) => m.source === 'upload');
+  const generated = visual.filter((m) => m.source !== 'upload');
 
   $('baseTiles').innerHTML = originals.length
     ? originals.map((m) => tileHtml(m, {
@@ -827,15 +841,6 @@ async function refreshAccounts() {
   finally { $('refreshBtn').disabled = false; $('refreshBtn').textContent = old; }
 }
 
-async function syncAccounts() {
-  clearMsg(); $('syncBtn').disabled = true;
-  try {
-    const { data } = await api('/api/admin/business/accounts/sync', { method: 'POST' });
-    flash('ok', data.length + '개 계정을 불러왔습니다.');
-    loadUnlinked();
-  } catch (e) { flash('err', e.message); }
-  finally { $('syncBtn').disabled = false; }
-}
 
 async function linkAccount() {
   clearMsg();
@@ -967,14 +972,17 @@ async function enqueue() {
         images: sel.images.length ? sel.images.map(mediaRef) : undefined,
         reelMediaId: sel.reel && sel.reel.mediaId ? sel.reel.mediaId : undefined,
         reelUrl: sel.reel && !sel.reel.mediaId ? sel.reel.url : undefined,
+        bgmMediaId: sel.reel && $('bgmSel').value ? $('bgmSel').value : undefined,
         imageCaption: $('imageCaption').value.trim() || undefined,
         reelCaption: $('reelCaption').value.trim() || undefined,
         hashtags: tags,
         scheduledAt: scheduledAtValue(),
       }),
     });
+    if ($('bgmSel').value && !sel.reel) flash('err', '배경음악은 릴스에만 입혀집니다 — 이번 게시물에는 적용되지 않았습니다.');
     sel = { images: [], reel: null };
     $('imageCaption').value = $('reelCaption').value = $('hashtags').value = '';
+    $('bgmSel').value = ''; previewBgm();
     flash('ok', '발행 큐에 등록했습니다.');
     renderSlots();
     load();
@@ -1021,6 +1029,53 @@ async function delQueue(queueId) {
 }
 
 renderSlots();
+// ── 배경음악 ──
+// 사업체 미디어(media_type=audio)로 저장한다 → 발행 큐의 bgm_media_id → 스케줄러가 릴스에 ffmpeg로 입힌다.
+function renderBgm() {
+  const cur = $('bgmSel').value;
+  const list = (state.media || []).filter((m) => m.media_type === 'audio');
+  $('bgmSel').innerHTML = '<option value="">없음 (영상 원래 소리)</option>' + list.map((m) =>
+    '<option value="' + m.id + '">♪ ' + esc((m.caption || m.file_path || '').split('/').pop()) + '</option>').join('');
+  if (list.some((m) => m.id === cur)) $('bgmSel').value = cur;
+  previewBgm();
+}
+function previewBgm() {
+  const id = $('bgmSel').value;
+  const m = (state.media || []).find((x) => x.id === id);
+  $('bgmPlayer').style.display = m ? '' : 'none';
+  $('bgmDelBtn').style.display = m ? '' : 'none';
+  if (m) $('bgmPlayer').src = m.url || ('/images/' + m.file_path.split('/').pop());
+  else $('bgmPlayer').removeAttribute('src');
+}
+async function uploadBgm() {
+  clearMsg();
+  const f = $('bgmFile').files[0];
+  if (!f) return flash('err', '올릴 음악 파일을 선택하세요.');
+  if (!f.type.startsWith('audio/')) return flash('err', '오디오 파일(mp3·m4a·wav)만 올릴 수 있습니다.');
+  $('bgmUpBtn').disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('file', f);
+    const res = await fetch('/api/admin/business/' + BIZ_ID + '/media', { method: 'POST', body: fd });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.success === false) throw new Error(body.error || '업로드 실패');
+    $('bgmFile').value = '';
+    await load();
+    if (body.data && body.data.id) { $('bgmSel').value = body.data.id; previewBgm(); }
+    flash('ok', '배경음악을 올렸습니다.');
+  } catch (e) { flash('err', e.message); }
+  finally { $('bgmUpBtn').disabled = false; }
+}
+async function deleteBgm() {
+  const id = $('bgmSel').value;
+  if (!id || !confirm('이 배경음악을 삭제할까요? 이미 큐에 등록된 건은 음악 없이 올라갈 수 있습니다.')) return;
+  try {
+    await api('/api/admin/business/' + BIZ_ID + '/media/' + id, { method: 'DELETE' });
+    $('bgmSel').value = '';
+    load();
+  } catch (e) { flash('err', e.message); }
+}
+
 // ── Meta 직결 연결(인스타 로그인) ──
 // 드롭다운은 '이미 불러온 미연결 계정'만 보여준다. Meta 직결 계정은 인스타 로그인(OAuth)으로만 생기므로
 //   여기서 바로 시작한다 → 콜백이 이 사업체에 붙이고 이 화면으로 돌아온다(state에 사업체 ID).
