@@ -132,6 +132,20 @@ export class BusinessMetaRepository {
     ).then((r) => r.rows);
   }
 
+  /**
+   * 사업체 화면에서 시작한 연결 — 방금 연결한 계정을 그 사업체에 붙인다.
+   * 이미 **다른** 사업체에 붙은 계정은 빼앗지 않는다(false 반환 → 화면에서 안내).
+   */
+  async attachToBusiness(accountId: string, businessId: string): Promise<boolean> {
+    const { rowCount } = await this.db.query(
+      `UPDATE social_accounts SET business_id = $1, updated_at = now()
+        WHERE id = $2 AND platform = $3 AND (business_id IS NULL OR business_id = $1)
+          AND EXISTS (SELECT 1 FROM businesses WHERE id = $1)`,
+      [businessId, accountId, META_PLATFORM],
+    );
+    return (rowCount || 0) > 0;
+  }
+
   async findAccount(id: string): Promise<MetaAccountVo | null> {
     const { rows } = await this.db.query<MetaAccountVo>(
       `SELECT a.id, a.account_id, a.username, a.display_name, a.profile_image, a.followers,

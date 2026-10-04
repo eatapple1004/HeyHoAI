@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import * as path from 'path';
 import { BusinessRepository, toFilePath } from './business.repository';
 import { BusinessCaptionService } from './business-caption.service';
+import { mirrorProfileImage } from './profile-image';
 import {
   CreateBusinessDto, EnqueueDto, GenerateCaptionDto, LinkAccountDto, LinkPackDto,
   RegisterMediaDto, UpdateBusinessDto, UpdateQueueDto,
@@ -157,13 +158,13 @@ export class BusinessService {
           const me = await ig.me(tok.access_token, tok.auth_mode);
           await this.repo.updateAccountProfile(a.id, {
             username: me.username, displayName: me.username,
-            profileImage: me.profilePictureUrl, followers: me.followersCount,
+            profileImage: await mirrorProfileImage(me.profilePictureUrl), followers: me.followersCount,
           });
         } else {
           const remote = await zernio.getAccountDetail(a.account_id);
           await this.repo.updateAccountProfile(a.id, {
             username: remote.username, displayName: remote.displayName || remote.username,
-            profileImage: remote.profileImage, followers: remote.followers,
+            profileImage: await mirrorProfileImage(remote.profileImage), followers: remote.followers,
           });
         }
         updated += 1;

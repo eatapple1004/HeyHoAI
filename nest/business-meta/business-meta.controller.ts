@@ -31,8 +31,8 @@ export class BusinessMetaController {
 
   /** GET /oauth/start — 인스타 동의 화면으로 302. `expect`는 붙일 계정의 기대 핸들. */
   @Get('oauth/start')
-  start(@Query('expect') expect: string, @Req() req: any, @Res() res: any) {
-    const { url, state } = this.svc.startUrl(expect, req);
+  start(@Query('expect') expect: string, @Query('business') business: string, @Req() req: any, @Res() res: any) {
+    const { url, state } = this.svc.startUrl(expect, req, business);
     res.cookie(STATE_COOKIE, state, {
       httpOnly: true, sameSite: 'lax', secure: env.COOKIE_SECURE, maxAge: 10 * 60 * 1000, path: '/',
     });
@@ -46,8 +46,11 @@ export class BusinessMetaController {
   @Get('oauth/callback')
   async callback(@Query() q: any, @Req() req: any, @Res() res: any) {
     res.clearCookie(STATE_COOKIE, { path: '/' });
+    // 사업체 화면(/admin-business/:id)에서 시작한 연결이면 그 화면으로 돌아간다. state 3번째 칸 = 사업체 ID.
+    const bizSeg = String(q.state || '').split('.')[2] || '';
+    const backPath = /^[0-9a-f-]{36}$/i.test(bizSeg) ? `/admin-business/${bizSeg}` : '/admin-business-meta';
     const back = (params: Record<string, string>) =>
-      res.redirect(`/admin-business-meta?${new URLSearchParams(params).toString()}`);
+      res.redirect(`${backPath}?${new URLSearchParams(params).toString()}`);
 
     // 사용자가 동의를 거부했거나 Meta가 에러를 실어 보낸 경우
     if (q.error) return back({ error: q.error_description || q.error_reason || q.error });
@@ -55,9 +58,10 @@ export class BusinessMetaController {
 
     try {
       const r = await this.svc.handleCallback(req.user.id, q.code, q.state, req.cookies?.[STATE_COOKIE], req);
-      return back(r.mismatch
-        ? { connected: r.username, mismatch: r.mismatch }
-        : { connected: r.username });
+      const p: Record<string, string> = { connected: r.username };
+      if (r.mismatch) p.mismatch = r.mismatch;
+      if (r.businessId && !r.attached) p.notAttached = '1'; // 다른 사업체에 이미 붙은 계정
+      return back(p);
     } catch (e: any) {
       return back({ error: e.message || '연결에 실패했습니다.' });
     }

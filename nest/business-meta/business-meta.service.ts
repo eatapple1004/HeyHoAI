@@ -4,6 +4,7 @@ import * as path from 'path';
 import { BusinessMetaRepository, MetaAccountVo } from './business-meta.repository';
 import * as ig from './meta-ig.client';
 import * as pub from './meta-publish.client';
+import { mirrorProfileImage } from '../business/profile-image';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const logger = require(path.join(__dirname, '..', '..', 'src', 'lib', 'logger.js'));
@@ -17,6 +18,7 @@ const log = logger('BusinessMeta');
 
 /** OAuth state를 담는 쿠키 — CSRF 방지. 기존 구글 로그인(src/auth/google.js)과 같은 방식. */
 export const STATE_COOKIE = 'ig_oauth_state';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * 토큰 갱신 여유. Meta는 **만료된 토큰을 갱신해 주지 않으므로** 임박해서 돌리면
@@ -53,12 +55,15 @@ export class BusinessMetaService implements OnModuleInit {
    * `expect`(기대 핸들)를 state에 실어 보낸다 — 브라우저에 로그인돼 있던 계정이 그대로 붙어
    * 엉뚱한 계정이 조용히 등록되는 사고가 실제로 있었다(ADAM HQ 기록). 콜백에서 대조한다.
    */
-  startUrl(expect: string | undefined, req: any): { url: string; state: string } {
+  startUrl(expect: string | undefined, req: any, businessId?: string): { url: string; state: string } {
     if (!ig.isConfigured()) {
       throw new BadRequestException('INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET 이 설정되지 않았습니다.');
     }
     const nonce = crypto.randomBytes(16).toString('hex');
-    const state = expect ? `${nonce}.${Buffer.from(expect).toString('base64url')}` : nonce;
+    // state = nonce.기대핸들(base64url, 없으면 빈칸).사업체ID(없으면 생략) — 사업체 화면에서 시작하면 콜백이 거기에 붙이고 돌아간다.
+    const biz = businessId && UUID_RE.test(businessId) ? businessId : '';
+    const exp = expect ? Buffer.from(expect).toString('base64url') : '';
+    const state = biz ? `${nonce}.${exp}.${biz}` : (exp ? `${nonce}.${exp}` : nonce);
     return { url: ig.authorizeUrl(state, req), state };
   }
 
@@ -67,7 +72,7 @@ export class BusinessMetaService implements OnModuleInit {
    * 반환값은 화면에 보여줄 결과만 담는다(토큰 없음).
    */
   async handleCallback(userId: string, code: string, state: string, cookieState: string | undefined, req: any): Promise<{
-    username: string; accountId: string; mismatch: string | null;
+    username: string; accountId: string; mismatch: string | null; businessId: string | null; attached: boolean;
   }> {
     if (!cookieState || !state || state !== cookieState) {
       throw new BadRequestException('OAuth state가 일치하지 않습니다 — 다시 시도해 주세요.');
@@ -87,7 +92,7 @@ export class BusinessMetaService implements OnModuleInit {
       accountId: profile.id,
       username: profile.username,
       displayName: profile.username,
-      profileImage: profile.profilePictureUrl,
+      profileImage: await mirrorProfileImage(profile.profilePictureUrl), // 인스타 CDN 주소는 만료된다 → 우리 저장소로 복사
       followers: profile.followersCount || 0,
       metadata: { source: 'meta_direct', accountType: profile.accountType || null, igUserId: profile.id },
     });
@@ -99,7 +104,10 @@ export class BusinessMetaService implements OnModuleInit {
     });
 
     log.info(`연결 완료: @${profile.username} (만료 ${long.expiresIn ? Math.round(long.expiresIn / 86400) : '?'}일 뒤)`);
-    return { username: profile.username, accountId: account.id, mismatch };
+    const bizSeg = state.split('.')[2] || '';
+    const businessId = UUID_RE.test(bizSeg) ? bizSeg : null;
+    const attached = businessId ? await this.repo.attachToBusiness(account.id, businessId) : false;
+    return { username: profile.username, accountId: account.id, mismatch, businessId, attached };
   }
 
   async refreshOne(id: string): Promise<MetaAccountVo> {

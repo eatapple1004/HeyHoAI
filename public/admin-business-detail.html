@@ -127,6 +127,7 @@ button:disabled{opacity:.5;cursor:default}
     <div class="row" style="margin-top:12px">
       <select id="unlinked" style="flex:1;min-width:200px"><option value="">불러온 미연결 계정 없음</option></select>
       <button onclick="linkAccount()">계정 연결</button>
+      <button onclick="connectMeta()" id="metaBtn" style="display:none" title="인스타그램 로그인으로 이 사업체에 Meta 직결 계정을 붙입니다(Zernio 없이)">📷 Meta로 연결</button>
       <button onclick="refreshAccounts()" id="refreshBtn" title="팔로워·프로필 사진을 인스타에서 다시 읽어옵니다">↻ 프로필 새로고침</button>
       <button onclick="syncAccounts()" id="syncBtn">🔄 계정 불러오기</button>
     </div>
@@ -339,7 +340,7 @@ function renderAccounts() {
   const list = state.accounts;
   $('accts').innerHTML = list.length ? list.map((a) =>
     '<div class="acct">'
-    + (a.profile_image ? '<img src="' + esc(a.profile_image) + '" alt="">' : '<img alt="">')
+    + (a.profile_image ? '<img src="' + esc(a.profile_image) + '" alt="" onerror="profileImgFailed(this)">' : '<img alt="">')
     + '<div style="flex:1;min-width:0">'
     + '<div style="font-weight:600">@' + esc(a.username || a.account_id) + '</div>'
     + '<div style="color:var(--faint);font-size:.78rem">' + (a.followers || 0).toLocaleString() + ' 팔로워 · ' + esc(vendorLabel(a.platform)) + '</div>'
@@ -794,6 +795,21 @@ async function saveBiz() {
  * '계정 불러오기'(아래)와 다르다 — 그건 Zernio 목록을 통째로 끌어오는 것이라
  * Meta 직결 계정은 손도 대지 않는다. 여기는 붙어 있는 계정만 플랫폼별로 갱신한다.
  */
+/**
+ * 프로필 사진 로드 실패 → 한 번만 조용히 다시 읽어온다.
+ * 인스타 CDN 주소는 만료된다. 서버가 새로 받아 우리 저장소(/images)에 복사해 두므로 다음부터는 깨지지 않는다.
+ */
+let profileAutoRefreshed = false;
+async function profileImgFailed(img) {
+  img.removeAttribute('src');
+  if (profileAutoRefreshed) return;
+  profileAutoRefreshed = true;
+  try {
+    await api('/api/admin/business/' + BIZ_ID + '/accounts/refresh', { method: 'POST' });
+    load();
+  } catch (e) { /* 실패하면 ↻ 프로필 새로고침 버튼으로 사유를 볼 수 있다 */ }
+}
+
 async function refreshAccounts() {
   clearMsg(); $('refreshBtn').disabled = true;
   const old = $('refreshBtn').textContent;
@@ -1005,7 +1021,36 @@ async function delQueue(queueId) {
 }
 
 renderSlots();
+// ── Meta 직결 연결(인스타 로그인) ──
+// 드롭다운은 '이미 불러온 미연결 계정'만 보여준다. Meta 직결 계정은 인스타 로그인(OAuth)으로만 생기므로
+//   여기서 바로 시작한다 → 콜백이 이 사업체에 붙이고 이 화면으로 돌아온다(state에 사업체 ID).
+//   META_DIRECT_ENABLED가 꺼진 환경은 config가 404 → 버튼을 숨긴다.
+async function initMetaConnect() {
+  try {
+    const { data } = await api('/api/admin/business-meta/config');
+    if (data && data.configured !== false) $('metaBtn').style.display = '';
+  } catch (e) { /* 꺼진 환경 — 버튼 숨김 유지 */ }
+}
+function connectMeta() {
+  const expect = prompt('연결할 인스타 계정 핸들(선택) — 적어두면 다른 계정이 잘못 붙었을 때 경고합니다.\n브라우저에 로그인된 인스타 계정이 그대로 붙으니, 다른 계정이면 시크릿 창에서 하세요.', '');
+  if (expect === null) return;
+  const q = new URLSearchParams({ business: BIZ_ID });
+  if (expect.trim()) q.set('expect', expect.trim().replace(/^@/, ''));
+  location.href = '/api/admin/business-meta/oauth/start?' + q.toString();
+}
+// 콜백에서 돌아온 결과 표시 후 주소창 정리
+(function showMetaResult() {
+  const p = new URLSearchParams(location.search);
+  if (!p.has('connected') && !p.has('error')) return;
+  if (p.get('error')) flash('err', 'Meta 연결 실패: ' + p.get('error'));
+  else if (p.get('notAttached')) flash('err', '@' + p.get('connected') + ' 은(는) 이미 다른 사업체에 연결된 계정이라 여기에 붙이지 않았습니다.');
+  else if (p.get('mismatch')) flash('err', '@' + p.get('connected') + ' 이(가) 연결됐습니다 — 입력한 @' + p.get('mismatch') + ' 과(와) 다릅니다. 맞는 계정인지 확인하세요.');
+  else flash('ok', '@' + p.get('connected') + ' Meta 직결로 연결했습니다.');
+  history.replaceState(null, '', location.pathname);
+})();
+
 load();
+initMetaConnect();
 </script>
 <script src="/js/admin-nav.js?v=2" defer></script>
 </body>
