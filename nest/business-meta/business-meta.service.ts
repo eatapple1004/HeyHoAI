@@ -26,6 +26,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  */
 const REFRESH_BEFORE_DAYS = 7;
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const BOOT_REFRESH_DELAY_MS = 3 * 60 * 1000;
 
 @Injectable()
 export class BusinessMetaService implements OnModuleInit {
@@ -34,8 +35,11 @@ export class BusinessMetaService implements OnModuleInit {
   /** 하루 한 번 만료 임박 토큰을 갱신한다. 없으면 두 달 뒤 게시가 **에러 없이** 멈춘다. */
   onModuleInit(): void {
     if (!ig.isConfigured()) return;
-    setInterval(() => { this.refreshExpiring().catch((e) => log.error('토큰 갱신 루프 실패:', e.message)); },
-      REFRESH_INTERVAL_MS).unref();
+    const run = () => { this.refreshExpiring().catch((e) => log.error('토큰 갱신 루프 실패:', e.message)); };
+    // 부팅 몇 분 뒤 한 번 먼저 돈다 — 24시간 타이머만 두면 하루에 한 번 이상 재배포하는 동안
+    //   갱신이 한 번도 안 돌아 60일 뒤 게시가 조용히 멈춘다(dev는 재시작 60회+). refreshExpiring은 멱등.
+    setTimeout(run, BOOT_REFRESH_DELAY_MS).unref();
+    setInterval(run, REFRESH_INTERVAL_MS).unref();
   }
 
   config() {
