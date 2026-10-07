@@ -46,6 +46,18 @@
         en: 'A 13-storey officetel and retail building in Pungmu-dong, Gimpo, with 43 officetels and 9 retail units. Developed by Noblesse Architecture and built by Jaein Construction.' },
       images: [['01.jpg', 'render'], ['02.jpg', 'int'], ['03.jpg', 'int'], ['04.jpg', 'int'], ['05.jpg', 'int'], ['06.jpg', 'int'], ['07.jpg', 'int']] },
 
+    { id: 'veritas-bupyeong', r: 'r6', role: 'ds', hero: 'assets/img/projects/track/lg/veritas-bupyeong.jpg',
+      desc: {
+        ko: '인천 부평구 십정동 경인로변의 지상 12층 주거복합 건물로, 오피스텔 46실과 아파트 4세대로 구성했습니다. 2016년 12월 준공했으며 천우가 시행·분양을 맡았습니다.',
+        en: 'A 12-storey mixed residential building on Gyeongin-ro in Sipjeong-dong, Bupyeong-gu, Incheon, with 46 officetels and 4 apartments. Completed in December 2016; developed and sold by Cheonwoo.' },
+      images: [['01.jpg', 'render']] },
+
+    { id: 'boston-hill', r: 'r7', hero: 'assets/img/projects/track/lg/boston-hill.jpg',
+      desc: {
+        ko: '인천 서구 원당동의 정원형 복층 단독주택 타운하우스입니다. 세대마다 테라스·다락방·정원과 독립 주차장을 두고, 지붕에는 약 3kW 태양광 발전 설비를 계획했습니다(분양 자료 기준).',
+        en: 'Garden duplex townhouses in Wondang-dong, Seo-gu, Incheon. Each home has its own terrace, attic room, garden and parking, with roughly 3 kW of rooftop solar planned (per sales material).' },
+      images: [['01.jpg', 'render'], ['02.jpg', 'plan'], ['03.jpg', 'ext'], ['04.jpg', 'ext'], ['05.jpg', 'int'], ['06.jpg', 'int'], ['07.jpg', 'int'], ['08.jpg', 'int'], ['09.jpg', 'int']] },
+
     { id: 'bullo', r: 'r9', role: 'ds', hero: 'assets/img/projects/track/lg/bullo.jpg',
       desc: {
         ko: '인천 서구 불로동의 38세대·2개동 타운하우스입니다. 단지 안에 바비큐 데크와 텃밭을 두어 이웃과 함께 쓰는 마당을 만들었습니다.',
@@ -57,13 +69,13 @@
     ko: { 'pd.crumb': '프로젝트', 'pd.kicker': 'Project Overview', 'pd.title': '프로젝트 개요',
           'pd.f.loc': '위치', 'pd.f.year': '연도', 'pd.f.scale': '규모', 'pd.f.use': '용도', 'pd.f.role': '역할',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': '전체',
-          'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.land': '조경 · 커뮤니티',
+          'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.plan': '단면 · 구성', 'pd.k.land': '조경 · 커뮤니티',
           'pd.note': '※ 관계사 (주)재인건설과 전신 법인의 실적입니다. 조감도는 분양 자료 기준이며 실제와 다를 수 있습니다.',
           'meta.pd.desc': '재노바 아너스와 뿌리를 같이하는 시공 실적.' },
     en: { 'pd.crumb': 'Projects', 'pd.kicker': 'Project Overview', 'pd.title': 'Overview',
           'pd.f.loc': 'Location', 'pd.f.year': 'Year', 'pd.f.scale': 'Scale', 'pd.f.use': 'Use', 'pd.f.role': 'Role',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': 'All',
-          'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.land': 'Landscape · Community',
+          'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.plan': 'Section · Layout', 'pd.k.land': 'Landscape · Community',
           'pd.note': '※ Record of our affiliate Jaein Construction and its predecessors. Renderings follow sales material and may differ from the built result.',
           'meta.pd.desc': 'Track record sharing its roots with Jaenova Honors.' }
   };
