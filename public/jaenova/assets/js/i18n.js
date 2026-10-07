@@ -158,6 +158,7 @@ ko: {
   "cn.bda.sub": "건물의 품질은 마감이 아니라 과정에서 결정됩니다. 그래서 기획과 시공 현장, 준공까지 함께 기록합니다.",
   "cn.bda1.t": "Before", "cn.bda1.h": "사업 및 설계", "cn.bda1.p": "부지 분석, 사업성 검토, 건축 설계와 인허가 단계.",
   "cn.bda2.t": "During", "cn.bda2.h": "건설·시공",   "cn.bda2.p": "골조, 설비, 마감에 이르는 실제 시공과 현장 관리 단계.",
+  "cn.bda.site": "현장: 봉천 재인구겐하임 (서울 관악구)",
   "cn.bda3.t": "After",  "cn.bda3.h": "준공",       "cn.bda3.p": "검수와 인계, 그리고 준공 이후의 사후관리 단계.",
 
   "cn.q.kicker": "Quality Built Into Every Detail",
@@ -514,6 +515,7 @@ en: {
   "cn.bda.sub": "Quality is decided in the process, not the finish. So we record planning, the site, and completion together.",
   "cn.bda1.t": "Before", "cn.bda1.h": "Planning & Design", "cn.bda1.p": "Site analysis, feasibility review, architectural design and permits.",
   "cn.bda2.t": "During", "cn.bda2.h": "Construction",      "cn.bda2.p": "Structure, MEP and finishing — the actual build and its management.",
+  "cn.bda.site": "Site: Jaein Guggenheim Bongcheon (Gwanak-gu, Seoul)",
   "cn.bda3.t": "After",  "cn.bda3.h": "Completion",        "cn.bda3.p": "Inspection, handover and post-completion care.",
 
   "cn.q.kicker": "Quality Built Into Every Detail",

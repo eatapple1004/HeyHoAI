@@ -313,6 +313,7 @@ body.solid-header .site-header{
 .bda .tag i{ flex:1; height:1px; background:var(--line); }
 .bda h4{ font-family:var(--serif); font-size:1.15rem; color:#fff; margin-top:1rem; }
 .bda p{ font-size:.88rem; color:var(--text-inv-m); margin-top:.35rem; }
+.bda .bda-site{ font-size:.72rem; letter-spacing:.06em; color:var(--gold); margin-top:.6rem; }
 
 /* ==========================================================================
    IMAGE PLACEHOLDER
