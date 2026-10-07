@@ -58,14 +58,12 @@
           'pd.f.loc': '위치', 'pd.f.year': '연도', 'pd.f.scale': '규모', 'pd.f.use': '용도', 'pd.f.role': '역할',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': '전체',
           'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.land': '조경 · 커뮤니티',
-          'pd.prev': '이전 프로젝트', 'pd.next': '다음 프로젝트', 'pd.all': '전체 프로젝트 보기',
           'pd.note': '※ 관계사 (주)재인건설과 전신 법인의 실적입니다. 조감도는 분양 자료 기준이며 실제와 다를 수 있습니다.',
           'meta.pd.desc': '재노바 아너스와 뿌리를 같이하는 시공 실적.' },
     en: { 'pd.crumb': 'Projects', 'pd.kicker': 'Project Overview', 'pd.title': 'Overview',
           'pd.f.loc': 'Location', 'pd.f.year': 'Year', 'pd.f.scale': 'Scale', 'pd.f.use': 'Use', 'pd.f.role': 'Role',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': 'All',
           'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.land': 'Landscape · Community',
-          'pd.prev': 'Previous project', 'pd.next': 'Next project', 'pd.all': 'All projects',
           'pd.note': '※ Record of our affiliate Jaein Construction and its predecessors. Renderings follow sales material and may differ from the built result.',
           'meta.pd.desc': 'Track record sharing its roots with Jaenova Honors.' }
   };
@@ -116,11 +114,16 @@
       '<figcaption data-i18n="pd.k.' + im[1] + '"></figcaption></figure>';
   }).join('');
 
-  // 이전 · 다음
-  var prev = PROJECTS[(idx - 1 + PROJECTS.length) % PROJECTS.length];
-  var next = PROJECTS[(idx + 1) % PROJECTS.length];
+  // 이전 · 다음 — 송도(별도 페이지 project-songdo.html)가 순환의 첫 번째
+  //   송도 페이지의 이전/다음 링크는 project-songdo.html 에 직접 적혀 있음: 이 순서를 바꾸면 같이 고칠 것
+  var NAV = [{ href: 'project-songdo.html', name: 'pj.1.name' }].concat(PROJECTS.map(function (p) {
+    return { href: 'project.html?p=' + p.id, name: 'tr.' + p.r + '.n' };
+  }));
+  var at = idx + 1;
+  var prev = NAV[(at - 1 + NAV.length) % NAV.length];
+  var next = NAV[(at + 1) % NAV.length];
   document.getElementById('pdNav').innerHTML =
-    '<a class="pd-nav-link" href="project.html?p=' + prev.id + '"><small data-i18n="pd.prev"></small><b data-i18n="tr.' + prev.r + '.n"></b></a>' +
+    '<a class="pd-nav-link" href="' + prev.href + '"><small data-i18n="pd.prev"></small><b data-i18n="' + prev.name + '"></b></a>' +
     '<a class="pd-nav-all" href="projects.html" data-i18n="pd.all"></a>' +
-    '<a class="pd-nav-link next" href="project.html?p=' + next.id + '"><small data-i18n="pd.next"></small><b data-i18n="tr.' + next.r + '.n"></b></a>';
+    '<a class="pd-nav-link next" href="' + next.href + '"><small data-i18n="pd.next"></small><b data-i18n="' + next.name + '"></b></a>';
 })();
