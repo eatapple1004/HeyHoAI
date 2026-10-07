@@ -483,6 +483,22 @@ html[lang="ko"] .rec h4, html[lang="ko"] .rec-spec{ word-break:keep-all; }
 .gallery img{ width:100%; height:210px; object-fit:cover; transition:transform .7s cubic-bezier(.2,.7,.3,1), opacity .35s; }
 .gallery figure:hover img{ transform:scale(1.07); opacity:.85; }
 .gallery figure[hidden]{ display:none; }
+.pd-gallery figure{ position:relative; }
+.pd-gallery img{ height:240px; }
+.pd-gallery figcaption{
+  position:absolute; left:0; right:0; bottom:0; padding:1.6rem .8rem .55rem;
+  font-size:.7rem; letter-spacing:.08em; color:#fff;
+  background:linear-gradient(to top, rgba(5,7,12,.75), rgba(5,7,12,0)); pointer-events:none;
+}
+.pd-nav{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:1rem; margin-top:3rem; padding-top:1.6rem; border-top:1px solid var(--line); }
+.pd-nav-link{ display:flex; flex-direction:column; gap:.2rem; min-width:0; }
+.pd-nav-link.next{ text-align:right; }
+.pd-nav-link small{ font-size:.68rem; letter-spacing:.14em; color:var(--gold); }
+.pd-nav-link b{ font-weight:500; color:#fff; font-size:.98rem; }
+.pd-nav-link:hover b{ color:var(--gold-lt); }
+.pd-nav-all{ font-size:.72rem; letter-spacing:.12em; color:var(--text-inv-m); border:1px solid var(--line-dark); padding:.55rem 1.1rem; }
+.pd-nav-all:hover{ border-color:var(--gold); color:var(--gold); }
+@media (max-width:560px){ .pd-nav{ grid-template-columns:1fr 1fr; } .pd-nav-all{ grid-column:1 / -1; grid-row:2; text-align:center; } }
 
 /* ==========================================================================
    ABOUT — history / ceo / values
