@@ -64,7 +64,16 @@
   .btn-ghost.sm{padding:9px 14px;font-size:13px}
   /* result */
   .res-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
-  /* 리포트 1쪽 — 문서 모양 */
+  /* 접수 확인 */
+  .rcv{background:#fff;border:1px solid var(--border);border-radius:18px;padding:28px 30px;box-shadow:0 1px 2px rgba(22,19,31,.03),0 24px 60px -36px rgba(22,19,31,.28)}
+  .rcv .q{font-size:clamp(24px,3.6vw,32px)}
+  .rcv-body{color:var(--dim);font-size:16px;line-height:1.65;margin-top:14px;max-width:60ch}
+  .rcv-due{display:inline-block;margin-top:18px;font-size:13px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:7px 12px}
+  .fh{font-family:'Sora',Inter,sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:40px}
+  .nxt{margin-top:28px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px 22px}
+  .nxt h2{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .nxt ol{padding-left:20px;display:grid;gap:8px;font-size:15px;line-height:1.5;color:var(--text)}
+  /* 리포트 1쪽 — 문서 모양 (현재 미사용: 분석을 보여주지 않기로 함. 팀용 리포트 템플릿에 재사용 예정) */
   .rpt{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 1px 2px rgba(22,19,31,.03),0 24px 60px -36px rgba(22,19,31,.28);padding:28px 30px;display:flex;flex-direction:column;gap:26px}
   @media(max-width:520px){.rpt{padding:22px 18px}}
   .rpt-h{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:20px}
@@ -183,7 +192,12 @@
       // 가게 정보 화면 (결과 직전)
       info: 'Last one — for the report', infoh: 'The name goes on the report. A link lets us pull your real numbers.',
       fBizInfo: 'Business or brand name', fLinkInfo: 'Instagram, store or map link (optional)', seeResult: 'See my results',
-      // 결과 = 리포트 1쪽
+      // 접수 확인 (분석 없음)
+      rcvEyebrow: 'Check-up received', rcvTitle: 'Thank you. Your report is being prepared.',
+      rcvBody: 'The Doppia Works team writes every report by hand and sends it within 1–2 business days. To make it about your business — not a template — we need a few more details below.',
+      rcvDue: 'Expected by {d}', nextH: 'What happens next',
+      next1: 'The team reviews every channel and link you give us', next2: 'We write a one-page report: where you stand, what we would change first, and the scope we would propose', next3: 'You receive it by email or phone — no commitment either way',
+      doneDue: 'Expected by {d}',
       rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
       secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia Works would take on',
       chEmpty: 'Add an Instagram, store or map link and this section fills in with your real numbers — last post, posting rhythm, map photos, reviews.',
@@ -218,7 +232,7 @@
       submit: 'Send me the report', sending: 'Sending…', cancel: 'Back to results',
       errRequired: 'Please fill in the required fields.', errContact: 'Please enter a valid email or phone number.',
       errNet: "Couldn't send right now. Your answers are kept — please try again in a moment.",
-      doneTitle: 'Received. Your report is in preparation.', doneBody: 'The Doppia Works team reviews your actual channels and writes it up within 1–2 business days. Meanwhile, you can try Doppia free with one product photo.',
+      doneTitle: 'All set. Your report is on its way.', doneBody: 'The Doppia Works team reviews your actual channels and writes it up within 1–2 business days. Meanwhile, you can try Doppia free with one product photo.',
       doneTry: 'Try Doppia free',
       // state fragments
       sell: { instore: ' from a physical location', online: ' online', both: ' both in-store and online', local: '' },
@@ -239,6 +253,11 @@
       seeMine: '내 사진이나 링크로 다시 보기', soon: '곧 열려요',
       leadSoon: '신청은 곧 받을 수 있어요. 지금은 무료로 먼저 써보세요 — 제품 사진 한 장이면 Doppia가 뭘 만드는지 볼 수 있어요.',
       restart: '처음부터 다시', otherPh: '직접 적어주세요', otherLabel: '기타 — 직접 적은 내용',
+      rcvEyebrow: '접수 완료', rcvTitle: '답변 잘 받았습니다. 리포트를 준비하겠습니다.',
+      rcvBody: 'Doppia Works 팀이 모든 리포트를 직접 작성해 1~2영업일 안에 보내드립니다. 템플릿이 아니라 사장님 업체 이야기가 되도록, 아래 정보를 조금 더 부탁드립니다.',
+      rcvDue: '{d}까지 발송 예정', nextH: '이후 진행',
+      next1: '팀이 적어주신 채널과 링크를 하나하나 직접 봅니다', next2: '한 장짜리 리포트를 씁니다 — 현재 상태, 먼저 바꿀 것, 제안 범위', next3: '이메일이나 전화로 받으십니다 — 어느 쪽이든 약정은 없습니다',
+      doneDue: '{d}까지 발송 예정',
       info: '마지막으로, 리포트에 쓸 정보', infoh: '이름은 리포트에 들어가요. 링크를 넣으면 실제 숫자를 가져올 수 있어요.',
       fBizInfo: '가게·브랜드 이름', fLinkInfo: '인스타·스토어·지도 링크 (선택)', seeResult: '결과 보기',
       rpTag: '마케팅 진단 · 1쪽', rpBizFallback: '우리 가게', rpMetaCh: '채널', rpMetaDate: '검토일',
@@ -273,7 +292,7 @@
       submit: '리포트 신청하기', sending: '보내는 중…', cancel: '결과로 돌아가기',
       errRequired: '필수 항목을 채워주세요.', errContact: '이메일이나 전화번호 형식을 확인해주세요.',
       errNet: '지금은 보낼 수 없습니다. 답변은 저장되어 있으니 잠시 후 다시 시도해주세요.',
-      doneTitle: '접수되었습니다. 리포트를 준비하겠습니다.', doneBody: 'Doppia Works 팀이 실제 채널을 검토해 1~2영업일 안에 보내드립니다. 그동안 제품 사진 한 장으로 Doppia를 무료로 써보실 수 있습니다.',
+      doneTitle: '접수되었습니다. 리포트를 보내드리겠습니다.', doneBody: 'Doppia Works 팀이 실제 채널을 검토해 1~2영업일 안에 보내드립니다. 그동안 제품 사진 한 장으로 Doppia를 무료로 써보실 수 있습니다.',
       doneTry: 'Doppia 무료로 써보기',
       sell: { instore: '매장에서 운영하는 ', online: '온라인에서 파는 ', both: '매장과 온라인 모두에서 파는 ', local: '' },
       promoNone: '아직 온라인에서 따로 알리고 있진 않아요', promoOn: '{list}{ro} 알리고 계세요', andMore: ' 등', and: '과 ',
@@ -406,7 +425,7 @@
     if (A.q0 !== 'local') s.push('q01');
     s.push('q02', 'q1');
     if (hasOnlineChannel()) s.push('q2');
-    s.push('q4', 'info');
+    s.push('q4');
     return s;
   }
   function t(k, vars) { var s = STR[lang][k]; if (vars) Object.keys(vars).forEach(function (v) { s = s.split('{' + v + '}').join(vars[v]); }); return s; }
@@ -439,7 +458,7 @@
 
   function render() {
     document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
-    if (done) { if (view === 'form') return renderForm(); if (view === 'done') return renderDone(); return renderResult(); }
+    if (done) { if (view === 'done') return renderDone(); return renderForm(); }
     var s = steps(); if (stepIdx >= s.length) stepIdx = s.length - 1;
     var q = s[stepIdx];
     var html = '<div class="dg-fade">';
@@ -626,10 +645,18 @@
         : '<input id="' + id + '" type="' + type + '" placeholder="' + esc(ph) + '" value="' + esc(val) + '"' + (req ? ' required' : '') + '>')
       + '</label>';
   }
+  function dueDate() {
+    // 영업일 2일 뒤 (주말 건너뜀)
+    var d = new Date(), n = 0; while (n < 2) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) n++; }
+    return lang === 'ko' ? (d.getMonth() + 1) + '월 ' + d.getDate() + '일' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
   function renderForm() {
     var S = STR[lang], tr = track();
-    var html = '<div class="dg-fade"><div class="res-eyebrow">' + esc(tr === 'brand' ? S.reportBrand : S.reportSmall) + '</div>';
-    html += '<h1 class="q">' + esc(S.formTitle) + '</h1><p class="q-hint">' + esc(tr === 'brand' ? S.formHintBrand : S.formHintSmall) + '</p>';
+    prefill();
+    var html = '<div class="dg-fade">';
+    html += '<section class="rcv"><div class="res-eyebrow">' + esc(S.rcvEyebrow) + '</div><h1 class="q">' + esc(S.rcvTitle) + '</h1>'
+         + '<p class="rcv-body">' + esc(S.rcvBody) + '</p><div class="rcv-due">' + esc(S.rcvDue.replace('{d}', dueDate())) + '</div></section>';
+    html += '<h2 class="fh">' + esc(S.formTitle) + '</h2><p class="q-hint">' + esc(tr === 'brand' ? S.formHintBrand : S.formHintSmall) + '</p>';
     html += '<form id="leadForm" class="lead" novalidate>';
     html += '<h3 class="fsec">' + esc(S.secContact) + '</h3>';
     if (tr === 'brand') {
@@ -659,7 +686,7 @@
     html += '</form></div>';
     app.innerHTML = html;
     window.scrollTo(0, 0);
-    var first = document.getElementById('fBiz'); if (first && !F.biz) first.focus();
+    postSession();
   }
   function readForm() {
     var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -668,7 +695,7 @@
   }
   function submitForm() {
     var S = STR[lang], tr = track();
-    readForm(); formErr = '';
+    readForm(); formErr = ''; A.biz = F.biz; save();
     if (!F.biz || !F.contact || (tr === 'brand' && !F.name)) formErr = S.errRequired;
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(F.contact) && !(tr !== 'brand' && /^\+?[\d\s\-().]{7,25}$/.test(F.contact))) formErr = S.errContact;
     if (formErr) return renderForm();
@@ -680,14 +707,20 @@
       sessionId: sessionId, track: tr, lang: lang, businessName: F.biz, contactName: F.name || undefined,
       contact: F.contact, links: linkList, message: F.msg || undefined, answers: A,
       details: { product: F.product, area: F.area, goal: F.goal, budget: S.budgets[Number(F.budget)] || '', metrics: M.state === 'ok' ? M.data : null }
-    }).then(function () { sending = false; view = 'done'; save(); render(); })
+    }).then(function () { sending = false; view = 'done'; save(); render(); silentLookup(linkList); })
       .catch(function () { sending = false; formErr = S.errNet; renderForm(); });
+  }
+  // 자동 조회는 화면에 내지 않는다(어설픈 분석 금지). 인스타·카카오만 조용히 세션에 저장해 팀이 리포트 쓸 때 본다.
+  function silentLookup(linkList) {
+    (linkList || []).filter(function (l) { return /instagram|maps|check-up/.test(l.channel) || /instagram\.com|^@|map\.kakao|kko\.to/i.test(l.url); }).slice(0, 2)
+      .forEach(function (l) { api('/api/diagnose/lookup', { sessionId: sessionId, link: l.url }).catch(function () {}); });
   }
   function renderDone() {
     var S = STR[lang];
-    app.innerHTML = '<div class="dg-fade"><div class="res-eyebrow">' + esc(S.resEyebrow) + '</div>'
-      + '<h1 class="q">' + esc(S.doneTitle) + '</h1><p class="q-hint" style="font-size:16px;max-width:56ch">' + esc(S.doneBody) + '</p>'
-      + '<div class="ctas"><a class="btn btn-primary" href="/signup">' + esc(S.doneTry) + '</a></div>'
+    app.innerHTML = '<div class="dg-fade"><section class="rcv"><div class="res-eyebrow">' + esc(S.rcvEyebrow) + '</div>'
+      + '<h1 class="q">' + esc(S.doneTitle) + '</h1><p class="rcv-body">' + esc(S.doneBody) + '</p><div class="rcv-due">' + esc(S.doneDue.replace('{d}', dueDate())) + '</div></section>'
+      + '<section class="nxt"><h2>' + esc(S.nextH) + '</h2><ol><li>' + esc(S.next1) + '</li><li>' + esc(S.next2) + '</li><li>' + esc(S.next3) + '</li></ol></section>'
+      + '<aside class="dop"><div><b>' + esc(S.dopH) + '</b><p>' + esc(S.dopP) + '</p></div><a class="btn btn-ghost" href="/signup">' + esc(S.dopBtn) + '</a></aside>'
       + '<div class="restart"><button type="button" data-act="restart">' + esc(S.restart) + '</button></div></div>';
     window.scrollTo(0, 0);
   }
