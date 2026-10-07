@@ -77,6 +77,16 @@
   .rpt .res-state{font-size:clamp(18px,2.4vw,22px)}
   .chbox{border:1px dashed var(--border2);border-radius:12px;padding:14px 16px;background:var(--tint);color:var(--dim);font-size:14px;display:flex;flex-direction:column;gap:10px}
   .chlink{font-weight:700;color:var(--accent-ink);word-break:break-all}
+  .chlink small{display:block;font-weight:500;color:var(--faint);font-size:12px;margin-top:2px}
+  .chload{color:var(--dim)}
+  .chload::after{content:"";display:inline-block;width:14px;height:14px;border:2px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;margin-left:8px;vertical-align:-2px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .kvs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .kv{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+  .kv b{font-family:'Sora',Inter,sans-serif;font-size:18px;letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
+  .kv span{font-size:11.5px;color:var(--faint)}
+  .kv.bad b{color:#b8336a}
+  .kv.good b{color:var(--accent-ink)}
   .chadd{display:flex;gap:8px;flex-wrap:wrap}
   .chadd input{flex:1 1 220px;font:inherit;font-size:14px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:10px 12px;outline:none}
   .chadd input:focus{border-color:var(--accent)}
@@ -173,7 +183,11 @@
       rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
       secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia Works would take on',
       chEmpty: 'Add an Instagram, store or map link and this section fills in with your real numbers — last post, posting rhythm, map photos, reviews.',
-      chAdd: 'Add link', chSoon: 'Live numbers arrive in the next update',
+      chAdd: 'Add link', chLoading: 'Checking your channel…', chRetry: 'Try another link',
+      chFail: { not_found: "We couldn't find that account or place. Check the link or name and try again.", private: 'This account is private, so we can only see the basics.', unsupported: "We can't read that site yet (Naver, Facebook, Smart Store, Coupang). Try an Instagram handle or a map link instead.", no_key: 'Live lookup is not enabled on this server yet.', upstream: 'The lookup timed out. Please try once more.', rate: 'Lookup limit reached for now — the full report will include these numbers anyway.' },
+      igFollowers: 'Followers', igPosts: 'Posts', igLast: 'Since last post', igLastV: '{n}d', igNever: 'No posts', ig30: 'Posts, last 30 days', igEng: 'Engagement', igReels: 'Reels share', igPriv: 'Private account — basics only',
+      kkName: 'Found on Kakao Map', kkPhotos: 'Map photos', kkReviews: 'Reviews', kkRating: 'Rating', kkRatingNa: 'Not enough reviews', kkBlog: 'Blog reviews', kkBlogLast: 'Since last blog post', kkIg: 'Instagram linked', kkIgNo: 'No Instagram linked', kkYes: 'Yes',
+      flagQuiet: 'quiet', flagOk: 'active',
       scopeCadence: { daily: 'Keep daily posting · we take over production', weekly: '4 posts a week · we take over scheduling', monthly: '3 posts a week · restart the rhythm', rarely: '3 posts a week · restart from zero', stopped: '3 posts a week · restart from zero', none: 'Open the channels first · then 3 posts a week' },
       scopeReport: 'Written report on the 1st of every month',
       sc_ch: 'Channel operations', sc_ads: 'Ads', sc_content: 'Content production', sc_maps: 'Maps & reviews', sc_crm: 'Customer relationships', sc_consult: 'Strategy consulting', sc_open: 'Channel setup',
@@ -219,7 +233,11 @@
       rpTag: '마케팅 진단 · 1쪽', rpBizFallback: '우리 가게', rpMetaCh: '채널', rpMetaDate: '검토일',
       secState: '현재 상태', secCh: '채널 상태', secSaid: '말씀하신 것', secScope: 'Doppia Works가 맡을 범위',
       chEmpty: '인스타·스토어·지도 링크를 넣으면 이 칸이 실제 숫자로 채워져요 — 마지막 게시, 게시 리듬, 지도 사진, 리뷰.',
-      chAdd: '링크 넣기', chSoon: '실제 숫자는 다음 업데이트에서 바로 표시돼요',
+      chAdd: '링크 넣기', chLoading: '채널 확인 중…', chRetry: '다른 링크로 다시',
+      chFail: { not_found: '계정이나 가게를 찾지 못했어요. 링크나 이름을 확인하고 다시 넣어주세요.', private: '비공개 계정이라 기본 정보만 볼 수 있어요.', unsupported: '아직 못 읽는 곳이에요(네이버·페이스북·스마트스토어·쿠팡). 인스타 아이디나 지도 링크로 넣어주세요.', no_key: '이 서버에는 실측이 아직 켜져 있지 않아요.', upstream: '조회가 늦어졌어요. 한 번만 다시 눌러주세요.', rate: '지금은 조회 횟수를 다 썼어요 — 신청하시면 리포트에는 이 숫자가 그대로 들어가요.' },
+      igFollowers: '팔로워', igPosts: '게시물', igLast: '마지막 게시 후', igLastV: '{n}일', igNever: '게시물 없음', ig30: '최근 30일 게시', igEng: '반응률', igReels: '릴스 비율', igPriv: '비공개 계정 — 기본 정보만',
+      kkName: '카카오맵에서 찾음', kkPhotos: '지도 사진', kkReviews: '리뷰', kkRating: '별점', kkRatingNa: '리뷰 부족', kkBlog: '블로그 리뷰', kkBlogLast: '블로그 마지막 글', kkIg: '인스타 연결', kkIgNo: '인스타 연결 없음', kkYes: '있음',
+      flagQuiet: '조용함', flagOk: '활발',
       scopeCadence: { daily: '매일 게시 유지 · 제작을 저희가', weekly: '주 4회 게시 · 예약·운영을 저희가', monthly: '주 3회 게시 · 리듬 되살리기', rarely: '주 3회 게시 · 처음부터 다시 쌓기', stopped: '주 3회 게시 · 처음부터 다시 쌓기', none: '채널 개설부터 · 그다음 주 3회' },
       scopeReport: '매월 1일 서면 리포트',
       sc_ch: '채널 운영', sc_ads: '광고 운영', sc_content: '콘텐츠 제작', sc_maps: '지도·리뷰 관리', sc_crm: '고객 관리', sc_consult: '전략 컨설팅', sc_open: '채널 개설',
@@ -349,10 +367,11 @@
   var stepIdx = 0, showMore = false, done = false;
   var view = 'result';          // result | form | done  (done 이후)
   var sessionId = null;         // POST /api/diagnose/sessions 결과
+  var M = { link: '', state: 'idle', data: null, reason: '' }; // 실측 결과 (link 기준 캐시)
   var F = { biz: '', name: '', contact: '', link: '', msg: '' }, formErr = '', sending = false;
   function prefill() { if (!F.biz && A.biz) F.biz = A.biz; if (!F.link && A.link) F.link = A.link; }
   var STORE_KEY = 'doppia_diagnose_v1';
-  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; } } catch (e) {}
+  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; if (saved.metrics && saved.metrics.link) M = saved.metrics; } } catch (e) {}
 
   function track() { return (A.q02 === 'team' || A.q02 === 'agency') ? 'brand' : 'small'; }
   function hasOnlineChannel() { return A.q1.some(function (id) { var o = OPT.q1.filter(function (x) { return x.id === id; })[0]; return o && o.online; }); }
@@ -369,7 +388,7 @@
   function label(o) { return lang === 'ko' ? o.ko : o.en; }
   function sub(o) { return lang === 'ko' ? o.sko : o.sen; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function save(extra) { try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign({ v: 1, answers: A, track: track(), lang: lang, done: done, sessionId: sessionId, submitted: view === 'done', ts: Date.now() }, extra || {}))); } catch (e) {} }
+  function save(extra) { try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign({ v: 1, answers: A, track: track(), lang: lang, done: done, sessionId: sessionId, submitted: view === 'done', metrics: M.state === 'ok' || M.state === 'fail' ? M : undefined, ts: Date.now() }, extra || {}))); } catch (e) {} }
 
   // ── 서버 저장 (2단계). 실패해도 화면은 멈추지 않는다 — 답은 localStorage에 있다 ──
   function api(path, body) {
@@ -484,6 +503,51 @@
     return out.replace(/\s+\./g, '.').replace(/\s{2,}/g, ' ').trim();
   }
 
+  // ── 채널 실측 (2단계) — 링크가 있으면 서버에 조회. 같은 링크는 한 번만. 실패해도 리포트는 그대로 ──
+  function runLookup() {
+    var link = (A.link || '').trim();
+    if (!link) return;
+    if (M.link === link && (M.state === 'ok' || M.state === 'loading')) return;
+    if (M.link === link && M.state === 'fail' && M.reason !== 'upstream') return;
+    M = { link: link, state: 'loading', data: null, reason: '' };
+    paintChannel();
+    api('/api/diagnose/lookup', { sessionId: sessionId, link: link })
+      .then(function (d) { M = { link: link, state: d.ok ? 'ok' : 'fail', data: d.metrics || null, reason: d.reason || '' }; save(); paintChannel(); })
+      .catch(function (e) { M = { link: link, state: 'fail', data: null, reason: /Too many/i.test(String(e && e.message)) ? 'rate' : 'upstream' }; paintChannel(); });
+  }
+  function fmtN(n) { return (Number(n) || 0).toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US'); }
+  function kv(label, val, flag) { return '<div class="kv' + (flag ? ' ' + flag : '') + '"><b>' + esc(val) + '</b><span>' + esc(label) + '</span></div>'; }
+  function channelHtml() {
+    var S = STR[lang];
+    if (!A.link) return '<p>' + esc(S.chEmpty) + '</p><div class="chadd"><input id="iLink2" type="text" placeholder="' + esc(t('fLinkPh')) + '" value=""><button type="button" class="btn btn-ghost sm" data-act="addlink">' + esc(S.chAdd) + '</button></div>';
+    var head = '<div class="chlink">' + esc(A.link) + '</div>';
+    if (M.state === 'loading' || M.state === 'idle') return head + '<p class="chload">' + esc(S.chLoading) + '</p>';
+    if (M.state === 'fail') return head + '<p>' + esc(S.chFail[M.reason] || S.chFail.upstream) + '</p><div class="chadd"><input id="iLink2" type="text" placeholder="' + esc(t('fLinkPh')) + '" value=""><button type="button" class="btn btn-ghost sm" data-act="addlink">' + esc(S.chRetry) + '</button></div>';
+    var d = M.data; if (!d) return head;
+    if (d.source === 'instagram') {
+      var html = head.replace('</div>', ' · @' + esc(d.username) + '</div>') + '<div class="kvs">';
+      html += kv(S.igFollowers, fmtN(d.followers)) + kv(S.igPosts, fmtN(d.media_count));
+      if (d.is_private) return html + '</div><p>' + esc(S.igPriv) + '</p>';
+      html += kv(S.igLast, d.days_since_last_post == null ? S.igNever : S.igLastV.replace('{n}', fmtN(d.days_since_last_post)), d.days_since_last_post == null || d.days_since_last_post > 30 ? 'bad' : 'good');
+      html += kv(S.ig30, fmtN(d.posts_30d), d.posts_30d === 0 ? 'bad' : (d.posts_30d >= 8 ? 'good' : ''));
+      html += kv(S.igEng, d.engagement_rate == null ? '—' : d.engagement_rate + '%');
+      html += kv(S.igReels, d.reels_ratio + '%');
+      return html + '</div>';
+    }
+    if (d.source === 'kakao') {
+      var h2 = '<div class="chlink">' + esc(S.kkName) + ' · ' + esc(d.name) + (d.address ? ' <small>' + esc(d.address) + '</small>' : '') + '</div><div class="kvs">';
+      h2 += kv(S.kkPhotos, fmtN(d.photo_count), d.photo_count === 0 ? 'bad' : (d.photo_count >= 10 ? 'good' : ''));
+      h2 += kv(S.kkReviews, fmtN(d.review_count));
+      h2 += kv(S.kkRating, d.rating == null ? S.kkRatingNa : String(d.rating));
+      h2 += kv(S.kkBlog, fmtN(d.blog_review_count));
+      h2 += kv(S.kkBlogLast, d.days_since_blog == null ? '—' : S.igLastV.replace('{n}', fmtN(d.days_since_blog)), d.days_since_blog == null || d.days_since_blog > 180 ? 'bad' : (d.days_since_blog <= 30 ? 'good' : ''));
+      h2 += kv(S.kkIg, d.instagram ? S.kkYes : S.kkIgNo, d.instagram ? 'good' : 'bad');
+      return h2 + '</div>';
+    }
+    return head;
+  }
+  function paintChannel() { var box = document.getElementById('chbox'); if (box) box.innerHTML = channelHtml(); }
+
   function renderResult() {
     var S = STR[lang], tr = track();
     var pool = tr === 'brand' ? OPT.q4brand : OPT.q4small;
@@ -500,10 +564,7 @@
     html += '<section class="rpt-s"><h2>' + esc(S.secState) + '</h2><p class="res-state">' + stateLine() + '</p>'
          + ((A.q1.indexOf('none') >= 0 || !A.q1.length) ? '<div class="note">' + esc(S.noneNote) + '</div>' : '') + '</section>';
     // 채널 상태 — 실측은 다음 단계(B). 링크가 있으면 '곧', 없으면 입력 유도
-    html += '<section class="rpt-s"><h2>' + esc(S.secCh) + '</h2><div class="chbox">'
-         + (A.link ? '<div class="chlink">' + esc(A.link) + '</div><p>' + esc(S.chSoon) + '</p>'
-                   : '<p>' + esc(S.chEmpty) + '</p><div class="chadd"><input id="iLink2" type="text" placeholder="' + esc(t('fLinkPh')) + '" value=""><button type="button" class="btn btn-ghost sm" data-act="addlink">' + esc(S.chAdd) + '</button></div>')
-         + '</div></section>';
+    html += '<section class="rpt-s"><h2>' + esc(S.secCh) + '</h2><div class="chbox" id="chbox">' + channelHtml() + '</div></section>';
     if (picked.length) {
       html += '<section class="rpt-s"><h2>' + esc(S.secSaid) + '</h2><div class="echo">' + picked.map(function (o) {
         var q = o.id === 'other' && A.q4Other ? A.q4Other : label(o);
@@ -522,6 +583,7 @@
     app.innerHTML = html;
     window.scrollTo(0, 0);
     postSession();
+    runLookup();
   }
 
   // ── 신청 폼 ──
@@ -589,7 +651,7 @@
     if (act === 'next') { advance(); return; }
     if (act === 'more') { showMore = !showMore; return render(); }
     if (act === 'report') { prefill(); view = 'form'; formErr = ''; return render(); }
-    if (act === 'addlink') { var li = document.getElementById('iLink2'); if (li && li.value.trim()) { A.link = li.value.trim().slice(0, 300); save(); render(); } return; }
+    if (act === 'addlink') { var li = document.getElementById('iLink2'); if (li && li.value.trim()) { A.link = li.value.trim().slice(0, 300); M = { link: '', state: 'idle', data: null, reason: '' }; save(); paintChannel(); runLookup(); } return; }
     if (act === 'cancel') { readForm(); view = 'result'; formErr = ''; return render(); }
     if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', biz: '', link: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
     if (!q) return;

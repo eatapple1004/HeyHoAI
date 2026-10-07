@@ -8,7 +8,7 @@ import { DiagnoseAnswersDto, DiagnoseRequestRowDto } from './dto/diagnose.dto';
  *   먼저 돌고, 3환경 공통인 migrate.js를 건드리면 staging/prod 배포에도 영향이 가기 때문.
  *   (ensureSchema는 동시 생성 경쟁을 합치고 "이미 있음"을 성공으로 본다 — db.service 주석 참고)
  */
-const SCHEMA_KEY = 'diagnose.v2';
+const SCHEMA_KEY = 'diagnose.v3';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS diagnose_sessions (
      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -22,6 +22,8 @@ const SCHEMA_SQL = [
   // 2026-10-07 추가 컬럼 — 기존 dev 테이블에도 붙도록 ADD COLUMN IF NOT EXISTS
   `ALTER TABLE diagnose_sessions ADD COLUMN IF NOT EXISTS business_name TEXT`,
   `ALTER TABLE diagnose_sessions ADD COLUMN IF NOT EXISTS link TEXT`,
+  `ALTER TABLE diagnose_sessions ADD COLUMN IF NOT EXISTS metrics JSONB`,
+  `ALTER TABLE diagnose_sessions ADD COLUMN IF NOT EXISTS metrics_at TIMESTAMPTZ`,
   `CREATE TABLE IF NOT EXISTS diagnose_requests (
      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
      session_id    UUID REFERENCES diagnose_sessions(id) ON DELETE SET NULL,
@@ -56,6 +58,14 @@ export class DiagnoseRepository {
       [d.track, d.lang, JSON.stringify(d.answers), d.ipHash, d.businessName, d.link],
     );
     return r.rows[0].id;
+  }
+
+  async saveMetrics(sessionId: string, link: string, metrics: unknown): Promise<void> {
+    await this.ensure();
+    await this.db.query(
+      `UPDATE diagnose_sessions SET link = COALESCE(NULLIF($2, ''), link), metrics = $3, metrics_at = now() WHERE id = $1`,
+      [sessionId, link, JSON.stringify(metrics)],
+    );
   }
 
   /** 세션 id가 우리 테이블에 실제로 있는지 — 없는 id를 FK에 넣으면 INSERT가 통째로 죽는다 */

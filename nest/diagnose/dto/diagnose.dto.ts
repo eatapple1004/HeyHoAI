@@ -47,6 +47,53 @@ export class CreateRequestDto {
   answers?: DiagnoseAnswersDto;
 }
 
+/** 실측 요청 — 인스타(@handle·URL) 또는 가게(카카오맵 URL·가게 이름) */
+export class LookupDto {
+  sessionId?: string;
+  link!: string;
+}
+
+export interface InstagramMetricsDto {
+  source: 'instagram';
+  username: string;
+  is_private: boolean;
+  followers: number;
+  media_count: number;
+  /** 마지막 게시 후 며칠 — 게시물 없으면 null */
+  days_since_last_post: number | null;
+  posts_30d: number;
+  /** 최근 게시물 평균 (좋아요+댓글)/팔로워 ×100, 소수 1자리 */
+  engagement_rate: number | null;
+  reels_ratio: number;
+  sampled: number;
+}
+
+export interface KakaoMetricsDto {
+  source: 'kakao';
+  place_id: string;
+  name: string;
+  status: string;
+  address: string;
+  category: string;
+  review_count: number;
+  rating: number | null;
+  photo_count: number;
+  blog_review_count: number;
+  blog_last_at: string;
+  days_since_blog: number | null;
+  instagram: string;
+  matched_from_search?: { id: string; name: string | null; address: string | null; candidates: number };
+}
+
+export type LookupMetricsDto = InstagramMetricsDto | KakaoMetricsDto;
+
+export interface LookupResultDto {
+  ok: boolean;
+  /** 실패 사유 코드 — not_found · private · no_key · upstream · unsupported */
+  reason?: string;
+  metrics?: LookupMetricsDto;
+}
+
 export interface SessionCreatedDto {
   id: string;
 }
