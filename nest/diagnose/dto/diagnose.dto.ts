@@ -13,6 +13,9 @@ export interface DiagnoseAnswersDto {
   q1: string[];
   q2: string | null;
   q4: string[];
+  /** '기타(직접 입력하기)'에 적은 글 — 최대 200자 */
+  q1Other?: string;
+  q4Other?: string;
 }
 
 export type DiagnoseTrack = 'small' | 'brand';

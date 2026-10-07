@@ -17,8 +17,8 @@ const Q01 = ['instore', 'online', 'both'];
 const Q02 = ['me', 'one', 'team', 'agency'];
 const Q1 = ['instagram', 'tiktok', 'facebook', 'youtube', 'influencers', 'maps', 'website', 'marketplaces', 'delivery', 'paidads', 'email', 'offline', 'wom', 'other', 'none'];
 const Q2 = ['daily', 'weekly', 'monthly', 'rarely', 'stopped'];
-const Q4_SMALL = ['nocust', 'how', 'spend', 'ads', 'nosales', 'compet', 'notime', 'agency', 'content', 'none'];
-const Q4_BRAND = ['volume', 'launch', 'cost', 'tone', 'variants', 'depend', 'local', 'measure', 'none'];
+const Q4_SMALL = ['nocust', 'how', 'spend', 'ads', 'nosales', 'compet', 'notime', 'agency', 'content', 'other', 'none'];
+const Q4_BRAND = ['volume', 'launch', 'cost', 'tone', 'variants', 'depend', 'local', 'measure', 'other', 'none'];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -66,6 +66,7 @@ export class DiagnoseService {
       return v as string[];
     };
     const q0 = one(o.q0, Q0, 'q0', true);
+    const free = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 200) : undefined);
     return {
       q0,
       q01: one(o.q01, Q01, 'q01', false),
@@ -73,6 +74,8 @@ export class DiagnoseService {
       q1: many(o.q1, Q1, 'q1', Q1.length),
       q2: one(o.q2, Q2, 'q2', false),
       q4: many(o.q4, track === 'brand' ? Q4_BRAND : Q4_SMALL, 'q4', 3),
+      q1Other: free(o.q1Other),
+      q4Other: free(o.q4Other),
     };
   }
 

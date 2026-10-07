@@ -56,7 +56,9 @@
   .opt[aria-pressed="true"],.opt[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
   .opt[aria-checked="true"]::after{content:"";position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;background:var(--accent2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
   .opt.quiet{border-style:dashed;color:var(--dim)}
-  .more{margin-top:12px;background:transparent;border:0;color:var(--accent2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:6px 0}
+  .other{margin-top:12px}
+  .other input{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none}
+  .other input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .acts{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:30px}
   .acts .cnt{color:var(--faint);font-size:13px}
   .btn-ghost.sm{padding:9px 14px;font-size:13px}
@@ -139,7 +141,7 @@
       resEyebrow: 'Your check-up', echoH: 'You told us', noneNote: "You don't have an online presence yet. Let's start by opening a channel.",
       seeMine: 'See it with your own photo or link', soon: 'Coming soon',
       leadSoon: 'Requests open shortly. For now, try it free — one product photo is enough to see what Doppia makes.',
-      restart: 'Start over',
+      restart: 'Start over', otherPh: 'Type it in your own words', otherLabel: 'Other — in your words',
       // buttons
       reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia Works', trySmall: 'Try Doppia now', tryBrand: 'Try Doppia with your product',
       reportHintSmall: 'Free. The Doppia Works team reviews your actual channels and sends a written report within 1–2 business days.',
@@ -174,7 +176,7 @@
       resEyebrow: '진단 결과', echoH: '이렇게 말씀하셨죠', noneNote: '아직 온라인에 가게가 없어요. 채널을 여는 것부터 같이 해요.',
       seeMine: '내 사진이나 링크로 다시 보기', soon: '곧 열려요',
       leadSoon: '신청은 곧 받을 수 있어요. 지금은 무료로 먼저 써보세요 — 제품 사진 한 장이면 Doppia가 뭘 만드는지 볼 수 있어요.',
-      restart: '처음부터 다시',
+      restart: '처음부터 다시', otherPh: '직접 적어주세요', otherLabel: '기타 — 직접 적은 내용',
       reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기', trySmall: 'Doppia 바로 써보기', tryBrand: '우리 제품으로 Doppia 써보기',
       reportHintSmall: '무료입니다. Doppia Works 팀이 실제 채널을 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
       reportHintBrand: '무료입니다. Doppia Works 팀이 채널을 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
@@ -236,7 +238,7 @@
       { id: 'email', en: 'Email / SMS / CRM', ko: '이메일·문자·CRM', online: true },
       { id: 'offline', en: 'Offline', ko: '오프라인', sen: 'Flyers, signage, events', sko: '전단·간판·현수막·행사', hideWhen: ['online'] },
       { id: 'wom', en: 'Word of mouth / regulars', ko: '입소문·단골' },
-      { id: 'other', en: 'Other', ko: '기타' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', free: true },
       { id: 'none', en: 'Not promoting yet', ko: '따로 안 하고 있어요', exclusive: true }
     ],
     q2: [
@@ -265,6 +267,8 @@
         len: "So we'll show you how to see results yourself, in about ten minutes.", lko: '그래서 사장님이 직접, 10분 안에 결과를 보는 방법을 먼저 보여드려요.' },
       { id: 'content', en: 'Making photos & videos is hard', ko: '사진·영상 만드는 게 어려워요', lean: 'self',
         len: 'One product photo is enough. Make cuts and videos right away, no photoshoot.', lko: '제품 사진 한 장이면 돼요. 촬영 없이 컷과 영상을 바로 만들어 보세요.' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', lean: 'both', free: true,
+        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.' },
       { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', lean: 'both', exclusive: true,
         len: "Let us show you an easier way to do what you're already doing.", lko: '지금 하고 계신 걸 더 쉽게 만드는 방법을 보여드릴게요.' }
     ],
@@ -285,19 +289,21 @@
         len: 'Take the same cut and swap in market-specific models and backgrounds.', lko: '같은 컷에 시장별 모델·배경 변형을 얹어요.' },
       { id: 'measure', en: 'Hard to tell which content actually performs', ko: '어떤 콘텐츠가 먹혔는지 알기 어려워요', lean: 'ops',
         len: 'When assets are built from parameters (model, background, angle), you can compare what actually changed.', lko: '소재를 파라미터(모델·배경·구도)로 만들어두면 무엇이 달랐는지 비교가 가능해져요.' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', lean: 'both', free: true,
+        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.' },
       { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', lean: 'both', exclusive: true,
         len: 'Upload one product on a team account and see.', lko: '팀 계정으로 제품 하나만 올려보세요.' }
     ]
   };
 
   // ── 상태 ──
-  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [] };
+  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '' };
   var stepIdx = 0, showMore = false, done = false;
   var view = 'result';          // result | form | done  (done 이후)
   var sessionId = null;         // POST /api/diagnose/sessions 결과
   var F = { biz: '', name: '', contact: '', link: '', msg: '' }, formErr = '', sending = false;
   var STORE_KEY = 'doppia_diagnose_v1';
-  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; } } catch (e) {}
+  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; } } catch (e) {}
 
   function track() { return (A.q02 === 'team' || A.q02 === 'agency') ? 'brand' : 'small'; }
   function hasOnlineChannel() { return A.q1.some(function (id) { var o = OPT.q1.filter(function (x) { return x.id === id; })[0]; return o && o.online; }); }
@@ -369,15 +375,20 @@
   }
 
   function renderMulti(q, opts, vals, max) {
-    var hidden = 0;
     var cards = opts.map(function (o) {
-      var hide = q === 'q1' && o.hideWhen && o.hideWhen.indexOf(A.q01 || 'instore') >= 0 && !showMore && vals.indexOf(o.id) < 0;
-      if (hide) { hidden++; return ''; }
       return '<button type="button" class="opt' + (o.exclusive ? ' quiet' : '') + '" role="checkbox" aria-checked="' + (vals.indexOf(o.id) >= 0) + '" data-q="' + q + '" data-id="' + o.id + '"><span class="t">' + esc(label(o)) + '</span>' + (sub(o) ? '<span class="s">' + esc(sub(o)) + '</span>' : '') + '</button>';
     }).join('');
-    var more = '';
-    if (q === 'q1' && (hidden || showMore)) more = '<button type="button" class="more" data-act="more">' + esc(showMore ? t('less') : t('more')) + '</button>';
-    return '<div class="opts" role="group">' + cards + '</div>' + more;
+    // 기타(직접 입력) — 고르면 입력칸이 열린다. 입력은 재렌더 없이 상태만 갱신.
+    var other = '<div class="other" id="other-' + q + '"' + (vals.indexOf('other') >= 0 ? '' : ' hidden') + '><input id="otherInput-' + q + '" type="text" maxlength="200" placeholder="' + esc(t('otherPh')) + '" value="' + esc(A[q + 'Other'] || '') + '"></div>';
+    return '<div class="opts" role="group">' + cards + '</div>' + other;
+  }
+  // 다중 선택은 화면을 다시 그리지 않고 누른 카드만 바꾼다 — 전체 재렌더는 깜빡임(등장 애니메이션+스크롤)을 만든다
+  function syncMulti(q) {
+    var vals = A[q];
+    document.querySelectorAll('.opt[data-q="' + q + '"]').forEach(function (b) { b.setAttribute('aria-checked', String(vals.indexOf(b.dataset.id) >= 0)); });
+    var o = document.getElementById('other-' + q); if (o) { o.hidden = vals.indexOf('other') < 0; if (!o.hidden) { var inp = o.querySelector('input'); if (inp && document.activeElement !== inp) inp.focus(); } }
+    var cnt = document.querySelector('.acts .cnt'); if (cnt && q === 'q4') cnt.textContent = t('picked', { n: vals.length });
+    var next = document.querySelector('[data-act="next"]'); if (next) next.disabled = !vals.length;
   }
 
   // ── 결과 1단계 (조립식) ──
@@ -411,7 +422,8 @@
     if (A.q1.indexOf('none') >= 0 || !A.q1.length) html += '<div class="note">' + esc(S.noneNote) + '</div>';
     if (picked.length) {
       html += '<section class="echo"><h2>' + esc(S.echoH) + '</h2>' + picked.map(function (o) {
-        return '<div class="item"><div class="quote">“' + esc(label(o)) + '”</div><div class="line">' + esc(lang === 'ko' ? o.lko : o.len) + '</div></div>';
+        var q = o.id === 'other' && A.q4Other ? A.q4Other : label(o);
+        return '<div class="item"><div class="quote">“' + esc(q) + '”</div><div class="line">' + esc(lang === 'ko' ? o.lko : o.len) + '</div></div>';
       }).join('') + '</section>';
     }
     html += '<div class="ctas"><button type="button" class="btn btn-primary" data-act="report">' + esc(tr === 'brand' ? S.reportBrand : S.reportSmall) + '</button>'
@@ -490,7 +502,7 @@
     if (act === 'more') { showMore = !showMore; return render(); }
     if (act === 'report') { view = 'form'; formErr = ''; return render(); }
     if (act === 'cancel') { readForm(); view = 'result'; formErr = ''; return render(); }
-    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [] }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
+    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
     if (!q) return;
     if (q === 'q1' || q === 'q4') {
       var pool = q === 'q1' ? OPT.q1 : (track() === 'brand' ? OPT.q4brand : OPT.q4small);
@@ -503,7 +515,7 @@
         if (q === 'q4' && A[q].length >= 3) return;
         A[q].push(id);
       }
-      save(); return render();
+      save(); return syncMulti(q);
     }
     // 단일 선택은 고르는 즉시 다음으로
     A[q] = id;
@@ -518,6 +530,7 @@
     stepIdx++; showMore = false; render();
   }
 
+  app.addEventListener('input', function (e) { var el = e.target; if (el && el.id && el.id.indexOf('otherInput-') === 0) { A[el.id.slice(11) + 'Other'] = el.value.slice(0, 200); save(); } });
   app.addEventListener('submit', function (e) { if (e.target && e.target.id === 'leadForm') { e.preventDefault(); submitForm(); } });
   document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { if (view === 'form') readForm(); setLang(b.dataset.lang); }); });
   render();
