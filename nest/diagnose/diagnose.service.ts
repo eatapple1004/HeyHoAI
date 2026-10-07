@@ -98,6 +98,7 @@ export class DiagnoseService {
       q4: many(o.q4, track === 'brand' ? Q4_BRAND : Q4_SMALL, 'q4', 3),
       q1Other: free(o.q1Other),
       q4Other: free(o.q4Other),
+      q0Other: free(o.q0Other),
     };
   }
 

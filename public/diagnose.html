@@ -295,7 +295,7 @@
       { id: 'tech', en: 'Tech & Gadgets', ko: '전자·가젯' },
       { id: 'kids', en: 'Kids & Hobbies', ko: '키즈·취미' },
       { id: 'local', en: 'Local Service', ko: '매장 서비스', sen: 'Restaurant, salon, studio, clinic, gym', sko: '음식점·미용실·스튜디오·클리닉·헬스장·필라테스' },
-      { id: 'other', en: 'Other', ko: '기타' }
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', free: true }
     ],
     q01: [
       { id: 'instore', en: 'In-store', ko: '매장에서' },
@@ -381,7 +381,7 @@
   };
 
   // ── 상태 ──
-  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', biz: '', link: '' };
+  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', q0Other: '', biz: '', link: '' };
   var stepIdx = 0, showMore = false, done = false;
   var view = 'result';          // result | form | done  (done 이후)
   var sessionId = null;         // POST /api/diagnose/sessions 결과
@@ -396,7 +396,7 @@
   var LINK_CHANNELS = ['instagram', 'tiktok', 'facebook', 'youtube', 'influencers', 'maps', 'website', 'marketplaces', 'delivery', 'paidads', 'email', 'offline'];
   function linkChannels() { return LINK_CHANNELS.filter(function (c) { return A.q1.indexOf(c) >= 0; }); }
   var STORE_KEY = 'doppia_diagnose_v1';
-  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; if (saved.metrics && saved.metrics.link) M = saved.metrics; } } catch (e) {}
+  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; A.q0Other = A.q0Other || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; if (saved.metrics && saved.metrics.link) M = saved.metrics; } } catch (e) {}
 
   function track() { return (A.q02 === 'team' || A.q02 === 'agency') ? 'brand' : 'small'; }
   function hasOnlineChannel() { return A.q1.some(function (id) { var o = OPT.q1.filter(function (x) { return x.id === id; })[0]; return o && o.online; }); }
@@ -453,6 +453,8 @@
     html += stepIdx > 0 ? '<button type="button" class="btn btn-ghost sm" data-act="back">' + esc(t('back')) + '</button>' : '<span></span>';
     if (q === 'info') {
       html += '<span class="cnt"></span><button type="button" class="btn btn-primary" data-act="next"' + (A.biz.trim() ? '' : ' disabled') + '>' + esc(t('seeResult')) + '</button>';
+    } else if (q === 'q0') {
+      html += '<span class="cnt"></span><button type="button" class="btn btn-primary" data-act="next" id="q0next"' + (A.q0 === 'other' ? '' : ' hidden') + '>' + esc(t('next')) + '</button>';
     } else if (q === 'q1' || q === 'q4') {
       var n = A[q].length;
       var cnt = q === 'q4' ? esc(t('picked', { n: n })) : '';
@@ -471,9 +473,13 @@
   }
   function renderSingle(q, opts, val) {
     var wide = opts.length <= 5;
-    return '<div class="opts' + (wide ? ' wide' : '') + '" role="radiogroup">' + opts.map(function (o) {
+    var html = '<div class="opts' + (wide ? ' wide' : '') + '" role="radiogroup">' + opts.map(function (o) {
       return '<button type="button" class="opt" role="radio" aria-pressed="' + (val === o.id) + '" data-q="' + q + '" data-id="' + o.id + '"><span class="t">' + esc(label(o)) + '</span>' + (sub(o) ? '<span class="s">' + esc(sub(o)) + '</span>' : '') + '</button>';
     }).join('') + '</div>';
+    // 기타(직접 입력) — 단일 선택은 보통 고르는 즉시 넘어가지만, 기타는 입력칸을 열고 '다음'으로 넘어간다
+    var free = opts.some(function (o) { return o.id === 'other' && o.free; });
+    if (free) html += '<div class="other" id="other-' + q + '"' + (val === 'other' ? '' : ' hidden') + '><input id="otherInput-' + q + '" type="text" maxlength="120" placeholder="' + esc(t('otherPh')) + '" value="' + esc(A[q + 'Other'] || '') + '"></div>';
+    return html;
   }
 
   function renderMulti(q, opts, vals, max) {
@@ -512,6 +518,7 @@
   function stateLine() {
     var S = STR[lang];
     var biz = OPT.q0.filter(function (o) { return o.id === A.q0; })[0];
+    var bizLabel = (A.q0 === 'other' && A.q0Other.trim()) ? A.q0Other.trim() : label(biz);
     var sellKey = A.q0 === 'local' ? 'local' : (A.q01 || 'instore');
     var chosen = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.id !== 'none'; });
     var promo;
@@ -524,7 +531,7 @@
     }
     var freq = A.q2 ? S.freq[A.q2] : '';
     var tpl = track() === 'brand' ? S.stateBrand : S.state;
-    var out = tpl.split('{biz}').join('<b>' + esc(label(biz)) + '</b>').split('{sell}').join(esc(S.sell[sellKey])).split('{promo}').join(esc(promo)).split('{freq}').join(esc(freq));
+    var out = tpl.split('{biz}').join('<b>' + esc(bizLabel) + '</b>').split('{sell}').join(esc(S.sell[sellKey])).split('{promo}').join(esc(promo)).split('{freq}').join(esc(freq));
     return out.replace(/\s+\./g, '.').replace(/\s{2,}/g, ' ').trim();
   }
 
@@ -695,7 +702,7 @@
     if (act === 'report') { prefill(); view = 'form'; formErr = ''; return render(); }
     if (act === 'addlink') { var li = document.getElementById('iLink2'); if (li && li.value.trim()) { A.link = li.value.trim().slice(0, 300); M = { link: '', state: 'idle', data: null, reason: '' }; save(); paintChannel(); runLookup(); } return; }
     if (act === 'cancel') { readForm(); view = 'result'; formErr = ''; return render(); }
-    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', biz: '', link: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
+    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', q0Other: '', biz: '', link: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
     if (!q) return;
     if (q === 'q1' || q === 'q4') {
       var pool = q === 'q1' ? OPT.q1 : (track() === 'brand' ? OPT.q4brand : OPT.q4small);
@@ -710,8 +717,16 @@
       }
       save(); return syncMulti(q);
     }
-    // 단일 선택은 고르는 즉시 다음으로
+    // 단일 선택은 고르는 즉시 다음으로 — 단, 기타(직접 입력)는 입력칸을 열고 멈춘다
     A[q] = id;
+    if (q === 'q0' && id === 'other') {
+      document.querySelectorAll('.opt[data-q="q0"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === id)); });
+      var ob = document.getElementById('other-q0'), nb = document.getElementById('q0next');
+      if (ob) { ob.hidden = false; var inp = ob.querySelector('input'); if (inp) inp.focus(); }
+      if (nb) nb.hidden = false;
+      save(); return;
+    }
+    if (q === 'q0') A.q0Other = '';
     if (q === 'q0' && id === 'local') A.q01 = 'instore';
     if (q === 'q02') A.q4 = []; // 트랙이 바뀌면 Q4 답은 무효
     save(); advance();
@@ -728,6 +743,7 @@
     if (el.id === 'iBiz') { A.biz = el.value.slice(0, 120); var n = document.querySelector('[data-act="next"]'); if (n) n.disabled = !A.biz.trim(); save(); }
     if (el.id === 'iLink') { A.link = el.value.slice(0, 300); save(); }
   });
+  app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && e.target.id === 'otherInput-q0' && A.q0 === 'other') { e.preventDefault(); advance(); } });
   app.addEventListener('submit', function (e) { if (e.target && e.target.id === 'leadForm') { e.preventDefault(); submitForm(); } if (e.target && e.target.id === 'infoForm') { e.preventDefault(); if (A.biz.trim()) advance(); } });
   document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { if (view === 'form') readForm(); setLang(b.dataset.lang); }); });
   render();
