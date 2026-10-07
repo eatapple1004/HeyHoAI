@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doppia Works — Every moment of marketing</title>
+<meta name="description" content="Promotion, ads and customer loyalty — marketing results, made by Doppia Works. Start with a free six-question check-up.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap">
+<!--
+  Doppia Works 랜딩 (2026-10-07). 설계 정본 = 노션 "Doppia 웹 진단 퍼널 — 사업 지도·질문 설계".
+  - Works = 운영·컨설팅 부문. 이 페이지는 "뭘 하는 곳인지" 말하고 /diagnose(질문 6개)로 보낸다.
+  - 톤: 팀이 맡아서 한다. "AI"라는 말은 쓰지 않는다. 인원수·성과 숫자·가격·후기는 적지 않는다(없는 건 안 쓴다).
+  - 범위는 콘텐츠 제작에 가두지 않는다 — 마케팅 운영 전반. (내부 사유: Doppia 툴 외에 협업 마케팅 팀에도 업무를 배정할 수 있어야 함. 고객에겐 언급하지 않음.)
+  - 제목은 구호체(리듬). "~합니다" 설명문 금지.
+  - 배경 문법은 피처링(featuring.co)에서, 색은 Doppia 것: 흰 기본 + 보라끼 틴트 + 포인트 보라 하나. 어두운 띠 없음(사용자: 전부 흰으로). 핑크는 헤드라인 그라데이션 꼬리에만.
+  - 정렬: 가운데 집합이 아니라 **왼쪽 정렬**(신뢰·전문성). 히어로는 왼쪽 글 + 오른쪽 리포트 프레임 2단.
+    메인 랜딩(어두움)과는 로고·보라·Sora로만 묶고 바탕은 일부러 밝게 — 제품 사이트와 서비스 부문을 구분.
+  - theme.css(어두운 body)를 쓰지 않고 자체 스타일. 다국어는 diagnose.html과 같은 방식(페이지 안 STR 표, doppia_lang 키 공유).
+  - 비워둔 자리: 리포트 샘플(히어로 아래 프레임, 어두운 띠 안) — 나중에 실제 이미지로 교체.
+-->
+<style>
+  :root{
+    --bg:#ffffff; --tint:#f6f4fc; --tint2:#eeeaf9; --ink:#16131f; --dim:#5f5a73; --faint:#8f8aa6;
+    --line:rgba(22,19,31,.10); --line2:rgba(22,19,31,.16);
+    --accent:#6a40e0; --accent-ink:#5b35cc; --accent-soft:#e9e2fb; --pink:#d9608f;
+    --night:#0f0d1c; --night2:#17132b; --night-line:rgba(255,255,255,.10); --night-dim:#b5aed0;
+    --maxw:1080px; --r:18px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-x:hidden}
+  a{text-decoration:none;color:inherit}
+  button{font-family:inherit}
+  .in{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ── nav ── */
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  nav .in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:66px}
+  .brand{font-family:'Sora',Inter,sans-serif;font-weight:800;font-size:18px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px;white-space:nowrap}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 0 0 4px var(--accent-soft)}
+  .brand .sfx{font-weight:600;color:var(--dim);margin-left:2px}
+  .nav-r{display:flex;align-items:center;gap:12px}
+  .lang{display:flex;gap:2px;border:1px solid var(--line2);border-radius:999px;padding:2px}
+  .lang button{background:transparent;border:0;color:var(--dim);font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer}
+  .lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+  /* ── buttons ── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;border-radius:12px;padding:12px 20px;border:1px solid transparent;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s;white-space:nowrap}
+  .btn-p{background:var(--accent);color:#fff;box-shadow:0 8px 20px -10px rgba(106,64,224,.7)}
+  .btn-p:hover{background:var(--accent-ink);transform:translateY(-1px)}
+  .btn-ink{background:var(--ink);color:#fff}
+  .btn-ink:hover{background:#2a2538;transform:translateY(-1px)}
+  .btn-white{background:#fff;color:var(--accent-ink)}
+  .btn-white:hover{transform:translateY(-1px)}
+  .btn-sm{padding:9px 14px;font-size:13px;border-radius:10px}
+  .btn-lg{padding:15px 26px;font-size:15px;border-radius:14px}
+
+  /* ── type ── */
+  .pill{display:inline-block;font-size:13px;font-weight:600;color:var(--dim);border:1px solid var(--line2);border-radius:999px;padding:7px 14px;background:#fff}
+  h1{font-family:'Sora',Inter,sans-serif;font-size:clamp(36px,5.6vw,66px);line-height:1.08;letter-spacing:-.03em;font-weight:800;text-wrap:balance}
+  h1 .grad,.grad{background:linear-gradient(95deg,var(--accent-ink) 0%,var(--accent) 55%,var(--pink) 115%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  h2{font-family:'Sora',Inter,sans-serif;font-size:clamp(26px,3.4vw,40px);line-height:1.18;letter-spacing:-.025em;font-weight:800;text-wrap:balance}
+  h2 .ac{color:var(--accent-ink)}
+  .lead{color:var(--dim);font-size:clamp(16px,1.5vw,19px);line-height:1.65;max-width:58ch}
+  .sec-head{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
+  .sec-head h2{max-width:22ch}
+
+  /* ── hero ── */
+  .hero{position:relative;padding:96px 0 88px;overflow:hidden;background:linear-gradient(180deg,#fff 0%,var(--tint) 70%,#fff 100%)}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+  .hero::before{width:620px;height:620px;left:-220px;top:-260px;background:radial-gradient(circle,rgba(106,64,224,.16),transparent 70%)}
+  .hero::after{width:560px;height:560px;right:-200px;top:40px;background:radial-gradient(circle,rgba(217,96,143,.10),transparent 70%)}
+  .hero .in{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+  @media(max-width:900px){.hero .in{grid-template-columns:1fr;gap:40px}}
+  .hero h1{margin-top:22px;max-width:none;font-size:clamp(32px,4.1vw,52px);white-space:normal}
+  .hero h1 .grad{white-space:nowrap}
+  .hero .lead{margin-top:22px}
+  .cta{margin-top:34px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .fine{color:var(--faint);font-size:13px;margin-top:14px}
+  .scope{display:flex;flex-wrap:wrap;gap:8px;margin-top:36px;max-width:620px}
+  .scope span{font-size:13px;font-weight:600;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:8px 14px;background:#fff}
+  .scope span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle}
+  /* 히어로 아래 프레임 — 피처링의 제품 화면 자리. 지금은 리포트 샘플 자리. */
+  .frame{border-radius:24px;background:var(--tint2);border:1px solid var(--line);padding:22px}
+  .frame .paper{background:#fff;border-radius:16px;border:1px solid var(--line);min-height:380px;box-shadow:0 24px 60px -30px rgba(22,19,31,.28);padding:28px 30px;display:grid;grid-template-columns:1.15fr .85fr;gap:26px;text-align:left}
+  @media(max-width:520px){.frame{padding:14px}.frame .paper{grid-template-columns:1fr;padding:22px}}
+  .paper .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:4px 10px}
+  .paper .ttl{font-family:'Sora',Inter,sans-serif;font-weight:700;font-size:20px;margin-top:12px;color:var(--ink)}
+  .sk{height:10px;border-radius:6px;background:var(--tint2);margin-top:12px}
+  .sk.w60{width:60%}.sk.w85{width:85%}.sk.w40{width:40%}
+  .paper .side{border-left:1px solid var(--line);padding-left:28px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:760px){.paper .side{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:18px}}
+  .kpi{display:flex;flex-direction:column;gap:4px}
+  .kpi b{font-family:'Sora',Inter,sans-serif;font-size:22px;color:var(--accent-ink);letter-spacing:-.02em}
+  .kpi span{font-size:12px;color:var(--faint)}
+  .paper .soon{margin-top:auto;font-size:12px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+  /* 가상 예시 리포트(움직이는 목업) */
+  .rp{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .rp .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--faint)}
+  .rp .ex{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:3px 8px}
+  .rp .biz{font-family:'Sora',Inter,sans-serif;font-weight:700;font-size:19px;color:var(--ink);line-height:1.25}
+  .rp .biz small{display:block;font-family:'Inter',sans-serif;font-weight:500;font-size:12px;color:var(--faint);margin-top:4px}
+  .bars{display:grid;gap:9px;margin-top:4px}
+  .bar{display:grid;grid-template-columns:76px 1fr 58px;align-items:center;gap:10px;font-size:12px;color:var(--dim)}
+  .bar .t{height:8px;border-radius:6px;background:var(--tint2);overflow:hidden}
+  .bar .t i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--accent),#a394ee);animation:fill 1.6s cubic-bezier(.2,.7,.2,1) forwards}
+  .bar b{font-family:'Sora',Inter,sans-serif;font-weight:700;color:var(--ink);text-align:right;font-size:12px}
+  .bar.warn .t i{background:linear-gradient(90deg,var(--pink),#f0a0bf)}
+  @keyframes fill{from{width:0}to{width:var(--w)}}
+  .plan{border-top:1px solid var(--line);padding-top:12px}
+  .plan .h{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:8px}
+  .plan div{font-size:13px;color:var(--ink);line-height:1.5;min-height:20px}
+  .plan div.cur::after{content:"";display:inline-block;width:2px;height:13px;background:var(--accent);margin-left:2px;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{to{opacity:0}}
+  .kpi b.cnt{font-variant-numeric:tabular-nums}
+  .kpi.bad b{color:#b8336a}
+  .scopechip{display:inline-block;margin-top:auto;font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:8px;padding:6px 10px;align-self:flex-start}
+  /* 패널 카드 더미 → 가상 운영 카드 */
+  .stack .c .l b{font-size:13px;color:var(--ink);font-weight:700}
+  .stack .c .l em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .stack .c .d{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
+  /* 리포트 섹션 샘플(2쪽 미리보기) */
+  .nsample{border:1px solid var(--line);border-radius:18px;background:var(--tint);padding:18px;display:grid;gap:12px}
+  .pg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 10px 28px -22px rgba(22,19,31,.3);transition:border-color .4s,box-shadow .4s,transform .4s}
+  .pg.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),0 14px 32px -20px rgba(106,64,224,.45);transform:translateY(-2px)}
+  .pg .h{display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .pg .h b{color:var(--accent-ink)}
+  .pg p{font-size:13px;color:var(--ink);line-height:1.55}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .tiles i{display:block;aspect-ratio:4/5;border-radius:8px;background:linear-gradient(160deg,#e9e2fb,#cdbff5)}
+  .tiles i:nth-child(2){background:linear-gradient(160deg,#fde7f0,#f3b9d0)}
+  .tiles i:nth-child(3){background:linear-gradient(160deg,#eeeaf9,#b9a6ee)}
+  .tiles i span{display:block;margin:8px;font-size:10px;font-weight:700;color:rgba(22,19,31,.55)}
+  .pg ul{list-style:none;display:grid;gap:6px;margin-top:8px}
+  .pg li{font-size:13px;color:var(--ink);display:flex;gap:8px;align-items:flex-start}
+  .pg li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);flex:0 0 6px;margin-top:7px}
+
+
+  /* ── sections ── */
+  section.sec{padding:120px 0}
+  section.sec.tint{background:var(--tint)}
+  .rows{margin-top:64px;display:flex;flex-direction:column;gap:72px}
+  .row{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center}
+  .row.flip{direction:rtl}.row.flip>*{direction:ltr}
+  @media(max-width:860px){.row,.row.flip{grid-template-columns:1fr;direction:ltr;gap:28px}}
+  .row .k{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);border:1px solid var(--accent-soft);background:var(--accent-soft);border-radius:8px;padding:5px 10px}
+  .row h3{font-family:'Sora',Inter,sans-serif;font-size:clamp(22px,2.4vw,28px);line-height:1.25;letter-spacing:-.02em;font-weight:800;margin-top:16px}
+  .row p{color:var(--dim);font-size:16px;margin-top:14px;max-width:46ch}
+  .row .to{display:inline-flex;align-items:center;gap:6px;margin-top:22px;color:var(--accent-ink);font-weight:700;font-size:14px}
+  /* 틴트 프레임 패널 — 안에 추상 카드 더미 (이미지 없이 공들인 느낌) */
+  .panel{background:linear-gradient(160deg,var(--tint2),#f8f6fd);border:1px solid var(--line);border-radius:22px;padding:34px;min-height:320px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .panel::after{content:"";position:absolute;inset:auto -60px -80px auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(106,64,224,.14),transparent 70%)}
+  .stack{position:relative;width:min(100%,380px);height:150px}
+  /* 불투명 카드 덱 — 뒤 카드는 위 테두리만 보인다(글자 비침 없음). 높이 고정으로 회전 시 들쭉날쭉 방지 */
+  .stack .c{position:absolute;left:0;right:0;top:30px;height:108px;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px -24px rgba(22,19,31,.3);transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .55s;transform-origin:50% 0}
+  .stack .c1{transform:translateY(-28px) scale(.92);z-index:1}
+  .stack .c2{transform:translateY(-14px) scale(.96);z-index:2}
+  .stack .c3{transform:none;z-index:3}
+  /* 앞 카드만 내용 표시 — 뒤 카드는 빈 종이라 전환 중에도 글자가 겹치지 않는다 */
+  .stack .c .l,.stack .c .d{transition:opacity .25s}
+  .stack .c:not(.c3) .l,.stack .c:not(.c3) .d{opacity:0}
+  .stack .c .l{display:flex;align-items:center;gap:10px}
+  .stack .c i{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);flex:0 0 28px}
+  .stack .c .l b{font-size:13px;color:var(--ink)}
+  .stack .c .sk{margin-top:10px}
+  .steps{margin-top:56px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px 26px 30px;box-shadow:0 1px 2px rgba(22,19,31,.03),0 12px 30px -24px rgba(22,19,31,.25)}
+  .step .n{font-family:'Sora',Inter,sans-serif;font-size:14px;font-weight:800;color:var(--accent-ink);background:var(--accent-soft);width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:18px;font-weight:700;margin-top:18px;line-height:1.3}
+  .step p{color:var(--dim);font-size:15px;margin-top:8px}
+
+  /* ── 리포트 섹션 (흰 바탕, 왼쪽 글 + 오른쪽 샘플 프레임) ── */
+  section.report{background:#fff;padding:120px 0;border-top:1px solid var(--line)}
+  .ngrid{margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+  @media(max-width:860px){.ngrid{grid-template-columns:1fr}}
+  .nlist{display:grid;gap:12px}
+  .nlist div{display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(22,19,31,.03),0 10px 24px -22px rgba(22,19,31,.25)}
+  .nlist i{flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#a394ee);margin-top:7px}
+  .nlist span{font-size:16px;line-height:1.5;color:var(--ink)}
+  .nslot{border:1px dashed var(--line2);border-radius:18px;min-height:300px;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:var(--tint)}
+
+  /* ── 마무리 배너 ── */
+  section.close{padding:120px 0}
+  .banner{background:linear-gradient(120deg,#4b2bb8 0%,var(--accent) 60%,#8a5cf0 100%);border-radius:28px;padding:64px 56px;color:#fff;position:relative;overflow:hidden;box-shadow:0 30px 80px -40px rgba(106,64,224,.7);display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
+  @media(max-width:760px){.banner{grid-template-columns:1fr;padding:44px 28px}}
+  .banner::after{content:"";position:absolute;width:420px;height:420px;right:-140px;bottom:-220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%)}
+  .banner h2{color:#fff;position:relative}
+  .banner .lead{color:rgba(255,255,255,.82);margin:16px 0 0;position:relative}
+  .banner .cta{position:relative;margin-top:0}
+
+  footer{border-top:1px solid var(--line);padding:30px 0 46px;color:var(--faint);font-size:13px}
+  footer .in{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="in">
+    <a class="brand" href="/"><span class="dot"></span><span>DOPPIA</span><span class="sfx">Works</span></a>
+    <div class="nav-r">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="ko">KO</button>
+      </div>
+      <a class="btn btn-p btn-sm" href="/diagnose" data-s="navCta"></a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="hero">
+    <div class="in">
+      <div>
+        <span class="pill" data-s="eyebrow"></span>
+        <h1 data-s="h1"></h1>
+        <p class="lead" data-s="lead"></p>
+        <div class="cta"><a class="btn btn-p btn-lg" href="/diagnose" data-s="cta"></a><a class="btn btn-ink btn-lg" href="/diagnose" data-s="ctaB"></a></div>
+        <p class="fine" data-s="fine"></p>
+        <div class="scope"><span data-s="sc1"></span><span data-s="sc2"></span><span data-s="sc3"></span><span data-s="sc4"></span><span data-s="sc5"></span><span data-s="sc6"></span><span data-s="sc7"></span><span data-s="sc8"></span></div>
+      </div>
+      <div class="frame" aria-hidden="true">
+        <div class="paper">
+          <div class="rp">
+            <div class="meta"><span class="tag" data-s="fr1"></span><span data-s="rpDate"></span></div>
+            <div class="biz" data-s="rpBiz"></div>
+            <div class="bars">
+              <div class="bar"><span data-s="b1"></span><span class="t"><i style="--w:22%"></i></span><b data-s="b1v"></b></div>
+              <div class="bar warn"><span data-s="b2"></span><span class="t"><i style="--w:12%"></i></span><b data-s="b2v"></b></div>
+              <div class="bar"><span data-s="b3"></span><span class="t"><i style="--w:48%"></i></span><b data-s="b3v"></b></div>
+              <div class="bar warn"><span data-s="b4"></span><span class="t"><i style="--w:6%"></i></span><b data-s="b4v"></b></div>
+            </div>
+            <div class="plan"><div class="h" data-s="planH"></div><div id="typeA"></div><div id="typeB"></div><div id="typeC"></div></div>
+          </div>
+          <div class="side">
+            <div class="kpi"><b class="cnt" data-n="4">0</b><span data-s="fr3"></span></div>
+            <div class="kpi bad"><b class="cnt" data-n="47" data-suf="d">0</b><span data-s="k2"></span></div>
+            <div class="kpi"><b class="cnt" data-n="3">0</b><span data-s="k3"></span></div>
+            <div class="kpi"><b class="cnt" data-n="12">0</b><span data-s="k4"></span></div>
+            <span class="scopechip" data-s="k5"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="in">
+      <div class="sec-head"><span class="pill" data-s="whoPill"></span><h2 data-s="whoH"></h2></div>
+      <div class="rows">
+        <div class="row">
+          <div><span class="k" data-s="who1k"></span><h3 data-s="who1h"></h3><p data-s="who1p"></p><a class="to" href="/diagnose" data-s="who1to"></a></div>
+          <div class="panel"><div class="stack">
+            <div class="c c1"><div class="l"><i></i><b data-s="st1a"></b><em data-s="st1ae"></em></div><div class="d" data-s="st1ad"></div></div>
+            <div class="c c2"><div class="l"><i></i><b data-s="st1b"></b><em data-s="st1be"></em></div><div class="d" data-s="st1bd"></div></div>
+            <div class="c c3"><div class="l"><i></i><b data-s="st1c"></b><em data-s="st1ce"></em></div><div class="d" data-s="st1cd"></div></div>
+          </div></div>
+        </div>
+        <div class="row flip">
+          <div><span class="k" data-s="who2k"></span><h3 data-s="who2h"></h3><p data-s="who2p"></p><a class="to" href="/diagnose" data-s="who2to"></a></div>
+          <div class="panel"><div class="stack">
+            <div class="c c1"><div class="l"><i></i><b data-s="st2a"></b><em data-s="st2ae"></em></div><div class="d" data-s="st2ad"></div></div>
+            <div class="c c2"><div class="l"><i></i><b data-s="st2b"></b><em data-s="st2be"></em></div><div class="d" data-s="st2bd"></div></div>
+            <div class="c c3"><div class="l"><i></i><b data-s="st2c"></b><em data-s="st2ce"></em></div><div class="d" data-s="st2cd"></div></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tint">
+    <div class="in">
+      <div class="sec-head"><span class="pill" data-s="howPill"></span><h2 data-s="howH"></h2></div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h3 data-s="how1h"></h3><p data-s="how1p"></p></div>
+        <div class="step"><div class="n">2</div><h3 data-s="how2h"></h3><p data-s="how2p"></p></div>
+        <div class="step"><div class="n">3</div><h3 data-s="how3h"></h3><p data-s="how3p"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="report">
+    <div class="in">
+      <div class="ngrid">
+        <div>
+          <div class="sec-head"><span class="pill" data-s="repPill"></span><h2 data-s="repH"></h2><p class="lead" data-s="repLead"></p></div>
+          <div class="nlist" style="margin-top:32px">
+          <div><i></i><span data-s="rep1"></span></div>
+          <div><i></i><span data-s="rep2"></span></div>
+          <div><i></i><span data-s="rep3"></span></div>
+          <div><i></i><span data-s="rep4"></span></div>
+          </div>
+        </div>
+        <div class="nsample" aria-hidden="true">
+          <div class="pg"><div class="h"><span data-s="pg1h"></span></div><p data-s="pg1p"></p></div>
+          <div class="pg"><div class="h"><span data-s="pg2h"></span></div><div class="tiles"><i><span data-s="t1"></span></i><i><span data-s="t2"></span></i><i><span data-s="t3"></span></i></div></div>
+          <div class="pg"><div class="h"><span data-s="pg3h"></span></div><ul><li data-s="pg3a"></li><li data-s="pg3b"></li><li data-s="pg3c"></li></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="close">
+    <div class="in">
+      <div class="banner">
+        <div><h2 data-s="closeH"></h2><p class="lead" data-s="closeLead"></p></div>
+        <div class="cta"><a class="btn btn-white btn-lg" href="/diagnose" data-s="cta2"></a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="in"><span data-s="foot"></span><span>© Doppia</span></div></footer>
+
+<script>
+(function () {
+  'use strict';
+  var LANG_KEY = 'doppia_lang';
+  function getLang() {
+    try { var v = localStorage.getItem(LANG_KEY); if (v === 'ko' || v === 'en') return v; } catch (e) {}
+    var m = document.cookie.match(/(?:^|; )doppia_lang=(ko|en)/); if (m) return m[1];
+    return /^ko/i.test(navigator.language || '') ? 'ko' : 'en';
+  }
+  var STR = {
+    en: {
+      navCta: 'Talk to us',
+      eyebrow: 'Marketing operations for brands and local businesses',
+      h1: 'Every moment of marketing,<br><span class="grad">with Doppia Works.</span>',
+      lead: 'Promotion, ads and customer loyalty — marketing results, made by Doppia Works.',
+      cta: 'Free marketing check-up', ctaB: 'Talk to us →', fine: 'Six questions, two minutes · written report within 1–2 business days',
+      sc1: 'Strategy & planning', sc2: 'Channel operations', sc3: 'Content production', sc4: 'Paid ads', sc5: 'Promotions & campaigns', sc6: 'Influencers & partnerships', sc7: 'Customer relationships (CRM)', sc8: 'Monthly report',
+      fr1: 'Marketing report', rpDate: 'Oct 2026', rpBiz: 'ARVO Skincare<small>Online store · 2 locations · Instagram · Maps · Ads</small>',
+      b1: 'Instagram', b1v: '31 / 100', b2: 'Maps & reviews', b2v: '18 / 100', b3: 'Online store', b3v: '54 / 100', b4: 'Ads', b4v: '9 / 100',
+      planH: 'Next month', planA: 'Week 1 — resume posting, 3 per week, lead with the best-seller line', planB: 'Week 2 — refresh store listings and map photos, answer every open review', planC: 'Weeks 3–4 — launch campaign across Instagram, store and ads',
+      fr3: 'Channels reviewed', k2: 'Since last post', k3: 'Map photos', k4: 'Reviews (unanswered 9)', k5: 'Proposed scope: Channel ops + Ads',
+      pg1h: 'Page 1 · Where you stand', pg1p: 'Instagram has been quiet for 47 days. Maps show 3 photos for 2 locations; 9 of 12 reviews have no reply. The online store is current, but nothing points customers to it.',
+      pg2h: 'Page 2 · Cuts from your product photo', t1: 'Hero', t2: 'Detail', t3: 'In use',
+      pg3h: 'Page 3 · Next month, and our proposed scope', pg3a: 'Posting: 3 per week, Mon · Wed · Fri', pg3b: 'Maps: 10 new photos, every review answered within 48h', pg3c: 'Scope: Channel operations + Ads · monthly report on the 1st',
+      whoPill: 'Who it is for', whoH: 'Two kinds of teams. <span class="ac">One partner.</span>',
+      who1k: 'Owner-operated', who1h: 'A marketing team, without hiring one.',
+      who1p: 'When one person runs the business, marketing is the first thing that goes quiet. We take over the whole of it — online and offline promotion, ads, regulars — and report back every month.',
+      who1to: 'Managed operations →',
+      st1a: 'Weekly posting plan', st1ae: '3 scheduled', st1ad: 'Mon · Wed · Fri — best-seller line, new arrival, behind the scenes',
+      st1b: 'Ads & promotions', st1be: 'Running', st1bd: 'Autumn promotion · Instagram + Maps · ends Oct 31',
+      st1c: 'Monthly report', st1ce: 'Sent Oct 1', st1cd: 'September: 13 posts, 10 map photos added, 12 reviews answered',
+      who2k: 'In-house team', who2h: 'An operations and execution unit alongside your team.',
+      who2p: 'Strategy consulting, campaign execution, production and channel operations — we take on the scopes your team is short on, one scope at a time.',
+      who2to: 'Consulting & execution →',
+      st2a: 'Campaign execution', st2ae: 'D-12', st2ad: 'Autumn launch — 3 channels, creator seeding 20 accounts',
+      st2b: 'Production support', st2be: 'Delivered', st2bd: 'New line: 24 cuts, 2 ad videos, 3 aspect ratios',
+      st2c: 'Channel rollout plan', st2ce: 'In review', st2cd: 'Instagram · TikTok · Store — week-by-week sequence',
+      howPill: 'How it starts', howH: 'Three steps <span class="ac">to start.</span>',
+      how1h: 'Marketing check-up', how1p: 'Six questions about what you sell, where, who runs marketing and what is hardest right now. Two minutes, no typing.',
+      how2h: 'Written report in 1–2 business days', how2p: 'We review your actual channels — not just your answers — and send a written assessment of where you stand and what to do next.',
+      how3h: 'Scope and start', how3p: 'Full operations, consulting, or a single scope such as ads or campaigns — we agree it with you. The report is yours either way.',
+      repPill: 'The report', repH: 'One report. <span class="grad">Everything that matters.</span>',
+      repLead: 'Specific to your business. Written by the team from what we actually find — not generated from your answers.',
+      rep1: 'Your channels, ads and customer touchpoints as they are today',
+      rep2: 'Maps, reviews and how customers find you, if you have a physical location',
+      rep3: 'Cuts made from your own product or shop photo',
+      rep4: 'A recommended plan for the next month, and the scope we would propose',
+      slot2: 'Report sample — in preparation',
+      closeH: 'See it first. Decide with the report in hand.',
+      closeLead: 'Six questions, a written report on your actual channels, and a proposed scope. No cost, no commitment.',
+      cta2: 'Start the free check-up',
+      foot: 'Doppia Works · Marketing operations for brands and local businesses.'
+    },
+    ko: {
+      navCta: '도입 문의',
+      eyebrow: '브랜드와 매장을 위한 마케팅 운영 파트너',
+      h1: '마케팅의 모든 순간,<br><span class="grad">Doppia Works와 함께.</span>',
+      lead: '홍보·광고·단골 관리까지, Doppia Works가 직접 만드는 마케팅 성과.',
+      cta: '무료 마케팅 진단', ctaB: '도입 문의하기 →', fine: '질문 6개, 2분 · 1~2영업일 안에 서면 리포트',
+      sc1: '전략·기획', sc2: '채널 운영', sc3: '콘텐츠 제작', sc4: '광고 운영', sc5: '프로모션·캠페인', sc6: '인플루언서·제휴', sc7: '고객 관리(CRM)', sc8: '월간 리포트',
+      fr1: '마케팅 진단 리포트', rpDate: '2026년 10월', rpBiz: 'ARVO 스킨케어<small>온라인 스토어 · 매장 2곳 · 인스타그램 · 지도 · 광고</small>',
+      b1: '인스타그램', b1v: '31 / 100', b2: '지도·리뷰', b2v: '18 / 100', b3: '온라인 스토어', b3v: '54 / 100', b4: '광고', b4v: '9 / 100',
+      planH: '다음 한 달', planA: '1주차 — 게시 재개, 주 3회, 베스트셀러 라인부터', planB: '2주차 — 스토어 상품 정보·지도 사진 교체, 미답글 리뷰 전부 답글', planC: '3~4주차 — 인스타·스토어·광고를 묶은 런칭 캠페인',
+      fr3: '검토한 채널', k2: '마지막 게시 후', k3: '지도 사진', k4: '리뷰 (미답글 9)', k5: '제안 범위: 채널 운영 + 광고',
+      pg1h: '1쪽 · 현재 상태', pg1p: '인스타그램은 47일째 조용합니다. 매장 2곳의 지도 사진은 3장뿐이고, 리뷰 12건 중 9건은 답글이 없습니다. 온라인 스토어는 최신 상태지만 고객을 스토어로 보내는 채널이 없습니다.',
+      pg2h: '2쪽 · 제품 사진으로 만든 컷', t1: '히어로', t2: '디테일', t3: '사용 장면',
+      pg3h: '3쪽 · 다음 한 달과 제안 범위', pg3a: '게시: 주 3회, 월·수·금', pg3b: '지도: 사진 10장 추가, 모든 리뷰 48시간 안에 답글', pg3c: '범위: 채널 운영 + 광고 · 매월 1일 리포트',
+      whoPill: '이런 팀을 위해', whoH: '두 종류의 팀, <span class="ac">하나의 파트너.</span>',
+      who1k: '대표 직접 운영', who1h: '채용 없이, 마케팅 팀 하나.',
+      who1p: '혼자 운영하면 가장 먼저 멈추는 게 마케팅입니다. 온라인·오프라인 홍보, 광고, 단골 관리까지 마케팅 전체를 이어받아 운영하고, 매달 리포트로 보고합니다.',
+      who1to: '운영 대행 →',
+      st1a: '주간 게시 계획', st1ae: '3건 예약', st1ad: '월·수·금 — 베스트셀러 라인, 신상품, 비하인드',
+      st1b: '광고·프로모션', st1be: '집행 중', st1bd: '가을 프로모션 · 인스타 + 지도 · 10월 31일까지',
+      st1c: '월간 리포트', st1ce: '10월 1일 발송', st1cd: '9월: 게시 13건, 지도 사진 10장 추가, 리뷰 12건 답글',
+      who2k: '마케팅 팀 보유', who2h: '팀 옆에 붙는 실행 조직.',
+      who2p: '전략 컨설팅, 캠페인 실행, 제작·채널 운영 보강까지. 팀이 부족한 부분을 범위 단위로 맡습니다.',
+      who2to: '컨설팅 · 실행 →',
+      st2a: '캠페인 실행', st2ae: 'D-12', st2ad: '가을 런칭 — 채널 3개, 크리에이터 시딩 20계정',
+      st2b: '제작 지원', st2be: '납품 완료', st2bd: '신제품 라인: 컷 24장, 광고 영상 2편, 비율 3종',
+      st2c: '채널별 전개 계획', st2ce: '검토 중', st2cd: '인스타 · 틱톡 · 스토어 — 주 단위 순서',
+      howPill: '시작 방법', howH: '시작은 <span class="ac">세 단계.</span>',
+      how1h: '마케팅 진단', how1p: '무엇을 어디서 파는지, 마케팅은 누가 하는지, 지금 가장 어려운 것이 무엇인지. 질문 6개, 2분, 타이핑 없이.',
+      how2h: '1~2영업일 안에 서면 리포트', how2p: '답변만이 아니라 실제 채널을 검토해서, 현재 상태와 다음 단계를 글로 정리해 보내드립니다.',
+      how3h: '범위를 정하고 시작', how3p: '전체 운영, 컨설팅, 또는 광고·캠페인 같은 단일 범위까지 함께 정합니다. 리포트는 어느 쪽이든 고객의 것입니다.',
+      repPill: '리포트', repH: '리포트 한 장에, <span class="grad">필요한 전부.</span>',
+      repLead: '고객의 비즈니스 기준으로, 실제로 확인한 것만 팀이 직접 작성합니다. 답변으로 자동 생성하지 않습니다.',
+      rep1: '채널·광고·고객 접점의 현재 상태',
+      rep2: '매장이 있다면 지도·리뷰·고객이 찾아오는 경로',
+      rep3: '고객의 제품·매장 사진으로 제작한 컷',
+      rep4: '다음 한 달의 권장 계획과, 저희가 제안하는 운영 범위',
+      slot2: '리포트 샘플 — 준비 중',
+      closeH: '먼저 보고, 리포트로 결정하다.',
+      closeLead: '질문 6개, 실제 채널을 검토한 서면 리포트, 그리고 제안 범위. 비용도 약정도 없이.',
+      cta2: '무료 진단 시작하기',
+      foot: 'Doppia Works · 브랜드와 매장을 위한 마케팅 운영 파트너.'
+    }
+  };
+  var lang = getLang();
+  function apply() {
+    document.documentElement.lang = lang;
+    var S = STR[lang];
+    document.querySelectorAll('[data-s]').forEach(function (el) { var k = el.getAttribute('data-s'); if (S[k] != null) el.innerHTML = S[k]; });
+    document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
+  }
+  document.querySelectorAll('.lang button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      lang = b.dataset.lang;
+      try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+      document.cookie = LANG_KEY + '=' + lang + ';path=/;max-age=31536000;samesite=lax';
+      apply();
+    });
+  });
+  apply();
+
+  // ── 목업 애니메이션: 전부 계속 반복 (사용자 지시 "계속계속 움직여야") ──
+  // 1) 히어로 리포트 — 9초마다 막대·숫자·타이핑을 처음부터 다시
+  var CYCLE = 9000;
+  function countUp() {
+    document.querySelectorAll('.cnt').forEach(function (el) {
+      var n = parseInt(el.getAttribute('data-n'), 10), suf = el.getAttribute('data-suf') || '';
+      var t0 = null; function step(ts) { if (!t0) t0 = ts; var p = Math.min(1, (ts - t0) / 1200); var e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(n * e) + suf; if (p < 1) requestAnimationFrame(step); }
+      requestAnimationFrame(step);
+    });
+  }
+  function refillBars() {
+    document.querySelectorAll('.bar .t i').forEach(function (i) { i.style.animation = 'none'; void i.offsetWidth; i.style.animation = ''; });
+  }
+  var typeTimer = null;
+  function typeOnce() {
+    var S = STR[lang], lines = [S.planA, S.planB, S.planC], els = [document.getElementById('typeA'), document.getElementById('typeB'), document.getElementById('typeC')];
+    if (!els[0]) return;
+    if (typeTimer) clearTimeout(typeTimer);
+    var li = 0, ci = 0;
+    els.forEach(function (el) { el.textContent = ''; el.classList.remove('cur'); });
+    function tick() {
+      if (li >= lines.length) return;
+      var el = els[li]; el.classList.add('cur');
+      el.textContent = lines[li].slice(0, ++ci);
+      if (ci >= lines[li].length) { el.classList.remove('cur'); li++; ci = 0; typeTimer = setTimeout(tick, 600); }
+      else typeTimer = setTimeout(tick, 26);
+    }
+    tick();
+  }
+  function heroCycle() { refillBars(); countUp(); typeOnce(); }
+  heroCycle(); setInterval(heroCycle, CYCLE);
+  document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', heroCycle); });
+
+  // 2) 운영 카드 더미 — 2.5초마다 맨 위 카드가 뒤로 가고 다음 카드가 올라옴
+  var ORDER = ['c1', 'c2', 'c3'];
+  document.querySelectorAll('.stack').forEach(function (st, k) {
+    var cards = [].slice.call(st.querySelectorAll('.c')); var pos = 0;
+    setInterval(function () {
+      pos = (pos + 1) % cards.length;
+      cards.forEach(function (c, i) { c.classList.remove('c1', 'c2', 'c3'); c.classList.add(ORDER[(i - pos + cards.length) % cards.length]); });
+    }, 2500 + k * 400);
+  });
+
+  // 3) 리포트 3쪽 — 차례로 강조
+  var pgs = [].slice.call(document.querySelectorAll('.nsample .pg')); var pi = 0;
+  if (pgs.length) { pgs[0].classList.add('on'); setInterval(function () { pgs[pi].classList.remove('on'); pi = (pi + 1) % pgs.length; pgs[pi].classList.add('on'); }, 2400); }
+})();
+</script>
+</body>
+</html>
