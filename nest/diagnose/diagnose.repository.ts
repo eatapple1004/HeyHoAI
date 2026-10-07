@@ -8,7 +8,7 @@ import { DiagnoseAnswersDto, DiagnoseRequestRowDto } from './dto/diagnose.dto';
  *   먼저 돌고, 3환경 공통인 migrate.js를 건드리면 staging/prod 배포에도 영향이 가기 때문.
  *   (ensureSchema는 동시 생성 경쟁을 합치고 "이미 있음"을 성공으로 본다 — db.service 주석 참고)
  */
-const SCHEMA_KEY = 'diagnose.v3';
+const SCHEMA_KEY = 'diagnose.v4';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS diagnose_sessions (
      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -41,6 +41,7 @@ const SCHEMA_SQL = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_diagnose_requests_created ON diagnose_requests(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_diagnose_requests_status ON diagnose_requests(status)`,
+  `ALTER TABLE diagnose_requests ADD COLUMN IF NOT EXISTS details JSONB`,
 ];
 
 @Injectable()
@@ -77,15 +78,16 @@ export class DiagnoseRepository {
 
   async insertRequest(d: {
     sessionId: string | null; track: string; lang: string | null; businessName: string; contactName: string | null;
-    contact: string; links: string[]; message: string | null; answers: DiagnoseAnswersDto | null; ipHash: string | null;
+    contact: string; links: Array<{ channel: string; url: string }>; message: string | null; answers: DiagnoseAnswersDto | null; ipHash: string | null;
+    details: Record<string, unknown> | null;
   }): Promise<string> {
     await this.ensure();
     const r = await this.db.query<{ id: string }>(
       `INSERT INTO diagnose_requests
-         (session_id, track, lang, business_name, contact_name, contact, links, message, answers, ip_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+         (session_id, track, lang, business_name, contact_name, contact, links, message, answers, ip_hash, details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
       [d.sessionId, d.track, d.lang, d.businessName, d.contactName, d.contact, JSON.stringify(d.links),
-       d.message, d.answers ? JSON.stringify(d.answers) : null, d.ipHash],
+       d.message, d.answers ? JSON.stringify(d.answers) : null, d.ipHash, d.details ? JSON.stringify(d.details) : null],
     );
     return r.rows[0].id;
   }
@@ -93,7 +95,7 @@ export class DiagnoseRepository {
   async listRequests(limit: number): Promise<DiagnoseRequestRowDto[]> {
     await this.ensure();
     const r = await this.db.query<DiagnoseRequestRowDto>(
-      `SELECT id, session_id, track, lang, business_name, contact_name, contact, links, message, answers, status, created_at
+      `SELECT id, session_id, track, lang, business_name, contact_name, contact, links, message, answers, details, status, created_at
          FROM diagnose_requests ORDER BY created_at DESC LIMIT $1`,
       [limit],
     );

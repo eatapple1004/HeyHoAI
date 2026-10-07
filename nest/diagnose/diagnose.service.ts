@@ -140,10 +140,20 @@ export class DiagnoseService {
     const contactName = this.text(body.contactName, 80) || null;
     if (track === 'brand' && !contactName) fail(400, 'contactName is required');
 
+    // 채널별 링크 — {channel,url} 또는 옛 클라의 문자열. 최대 15개
     const links = Array.isArray(body.links)
-      ? body.links.map((l) => this.text(l, 300)).filter(Boolean).slice(0, 3)
+      ? body.links.map((l: any) => (typeof l === 'string'
+          ? { channel: 'other', url: this.text(l, 300) }
+          : { channel: this.text(l && l.channel, 30) || 'other', url: this.text(l && l.url, 300) }))
+        .filter((l) => l.url).slice(0, 15)
       : [];
     const message = this.text(body.message, 1000) || null;
+    const d: any = body.details && typeof body.details === 'object' ? body.details : null;
+    const details = d ? {
+      product: this.text(d.product, 200) || undefined, area: this.text(d.area, 200) || undefined,
+      goal: this.text(d.goal, 300) || undefined, budget: this.text(d.budget, 60) || undefined,
+      metrics: d.metrics && typeof d.metrics === 'object' ? d.metrics : undefined,
+    } : null;
 
     // 답 스냅샷은 있으면 검증해서 싣고, 깨져 있으면 버린다(신청 자체는 받는다 — 연락처가 더 중요)
     let answers: DiagnoseAnswersDto | null = null;
@@ -155,7 +165,7 @@ export class DiagnoseService {
     }
 
     const id = await this.repo.insertRequest({
-      sessionId, track, lang: this.lang(body.lang), businessName, contactName, contact, links, message, answers, ipHash,
+      sessionId, track, lang: this.lang(body.lang), businessName, contactName, contact, links, message, answers, ipHash, details,
     });
     return { id };
   }

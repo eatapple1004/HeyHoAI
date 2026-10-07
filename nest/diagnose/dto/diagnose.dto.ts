@@ -40,9 +40,11 @@ export class CreateRequestDto {
   contactName?: string;
   /** 이메일 또는 전화 — 하나는 필수 */
   contact!: string;
-  /** 인스타·가게·스토어 주소 등. 비어도 됨 */
-  links?: string[];
+  /** 채널별 링크 {channel, url} (옛 클라 호환: 문자열 배열도 받음). 비어도 됨 */
+  links?: Array<{ channel: string; url: string } | string>;
   message?: string;
+  /** 업체 정보 — 주력 제품·지역·목표·예산 + 결과 화면 실측 스냅샷. 리포트 쓰는 사람이 본다 */
+  details?: { product?: string; area?: string; goal?: string; budget?: string; metrics?: unknown };
   /** 신청 시점의 답 스냅샷 — 진단서 쓸 때 세션 테이블을 안 뒤져도 되게 */
   answers?: DiagnoseAnswersDto;
 }
@@ -111,9 +113,10 @@ export interface DiagnoseRequestRowDto {
   business_name: string;
   contact_name: string | null;
   contact: string;
-  links: string[];
+  links: Array<{ channel: string; url: string }>;
   message: string | null;
   answers: DiagnoseAnswersDto | null;
+  details: Record<string, unknown> | null;
   status: string;
   created_at: string;
 }

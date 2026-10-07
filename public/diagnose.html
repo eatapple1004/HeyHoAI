@@ -114,6 +114,10 @@
   .cta-hint{margin-top:12px;color:var(--faint);font-size:13px}
   .lead{margin-top:26px;display:flex;flex-direction:column;gap:14px}
   .fld{display:flex;flex-direction:column;gap:6px}
+  .fsec{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:14px;padding-top:18px;border-top:1px solid var(--border)}
+  .fsec:first-child{margin-top:0;padding-top:0;border-top:0}
+  .fsec small{display:block;font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--dim);margin-top:4px}
+  .fld select{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none}
   .fld span{font-size:13px;font-weight:600;color:var(--dim)}
   .fld i{color:var(--pink);font-style:normal}
   .fld input,.fld textarea{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none;transition:border-color .15s}
@@ -183,8 +187,8 @@
       rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
       secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia Works would take on',
       chEmpty: 'Add an Instagram, store or map link and this section fills in with your real numbers — last post, posting rhythm, map photos, reviews.',
-      chAdd: 'Add link', chLoading: 'Checking your channel…', chRetry: 'Try another link',
-      chFail: { not_found: "We couldn't find that account or place. Check the link or name and try again.", private: 'This account is private, so we can only see the basics.', unsupported: "We can't read that site yet (Naver, Facebook, Smart Store, Coupang). Try an Instagram handle or a map link instead.", no_key: 'Live lookup is not enabled on this server yet.', upstream: 'The lookup timed out. Please try once more.', rate: 'Lookup limit reached for now — the full report will include these numbers anyway.' },
+      chAdd: 'Add link', chLoading: 'Checking your channel…', chRetry: 'Add another link',
+      chFail: { not_found: "We couldn't find that account or place. Check the link or name and try again.", private: 'This account is private, so we can only see the basics.', unsupported: 'Automatic lookup works for Instagram and Kakao Map only. We keep this link and check it ourselves when writing your report.', no_key: 'Live lookup is not enabled on this server yet.', upstream: 'The lookup timed out. Please try once more.', rate: 'Lookup limit reached for now — the full report will include these numbers anyway.' },
       igFollowers: 'Followers', igPosts: 'Posts', igLast: 'Since last post', igLastV: '{n}d', igNever: 'No posts', ig30: 'Posts, last 30 days', igEng: 'Engagement', igReels: 'Reels share', igPriv: 'Private account — basics only',
       kkName: 'Found on Kakao Map', kkPhotos: 'Map photos', kkReviews: 'Reviews', kkRating: 'Rating', kkRatingNa: 'Not enough reviews', kkBlog: 'Blog reviews', kkBlogLast: 'Since last blog post', kkIg: 'Instagram linked', kkIgNo: 'No Instagram linked', kkYes: 'Yes',
       flagQuiet: 'quiet', flagOk: 'active',
@@ -195,11 +199,18 @@
       dopBtn: 'Make something with Doppia',
       // buttons
       reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia Works',
-      reportHintSmall: 'Free. The Doppia Works team reviews your actual channels and sends a written report within 1–2 business days.',
-      reportHintBrand: 'Free. The Doppia Works team reviews your channels and sends a written report within 1–2 business days.',
+      reportHintSmall: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report within 1–2 business days.',
+      reportHintBrand: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report within 1–2 business days.',
       // form
-      formTitle: 'Where should we send it?', formHintSmall: 'One contact is enough. Add a link if you have one — the report gets much more specific.',
-      formHintBrand: 'A work email and a link or two — the report gets much more specific with them.',
+      formTitle: 'Tell us about the business', formHintSmall: 'The report is written by the team, from what you give us here. The more you add, the more specific it gets. Only the first three fields are required.',
+      formHintBrand: 'The report is written by the team, from what you give us here. The more you add, the more specific it gets. Only the first three fields are required.',
+      secContact: 'Contact', secLinks: 'Your channels', secLinksH: 'Paste whatever you have. We check each one ourselves.', secBiz: 'About the business',
+      fLinkOther: 'Any other link', fLinkOtherPh: 'Website, catalog, press…',
+      fProduct: 'Main product or service', fProductPh: 'e.g. handmade ceramics · skincare for sensitive skin · lunch sets',
+      fArea: 'Location (if you have one)', fAreaPh: 'e.g. Songdo, Incheon',
+      fGoal: 'What you want in the next 3 months', fGoalPh: 'e.g. more walk-ins on weekdays · launch a new line · first online sales',
+      fBudget: 'Monthly marketing budget (optional)', budgets: ['Prefer not to say', 'None yet', 'Under ₩500k', '₩500k – ₩2M', 'Over ₩2M'],
+      linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: 'A creator you worked with, or a campaign link', maps: 'Google Maps / Naver Place / Kakao Map link', website: 'Website, blog or store URL', marketplaces: 'Amazon / Coupang / Etsy store URL', delivery: 'Delivery or booking app page', paidads: 'Ad account or a recent ad (optional)', email: 'Newsletter or CRM tool (optional)', offline: 'Photo of a flyer or sign, if any (link)' },
       fBiz: 'Business or brand name', fBizPh: 'e.g. Mellow Bakery', fCompany: 'Company', fCompanyPh: 'e.g. Mellow Inc.',
       fName: 'Your name', fNamePh: 'e.g. Jamie Park', fContact: 'Email or phone', fContactPh: 'you@example.com or +82 10-0000-0000',
       fEmail: 'Work email', fEmailPh: 'you@company.com', fLink: 'Instagram, store or map link (optional)', fLinkPh: 'instagram.com/yourshop',
@@ -233,8 +244,8 @@
       rpTag: '마케팅 진단 · 1쪽', rpBizFallback: '우리 가게', rpMetaCh: '채널', rpMetaDate: '검토일',
       secState: '현재 상태', secCh: '채널 상태', secSaid: '말씀하신 것', secScope: 'Doppia Works가 맡을 범위',
       chEmpty: '인스타·스토어·지도 링크를 넣으면 이 칸이 실제 숫자로 채워져요 — 마지막 게시, 게시 리듬, 지도 사진, 리뷰.',
-      chAdd: '링크 넣기', chLoading: '채널 확인 중…', chRetry: '다른 링크로 다시',
-      chFail: { not_found: '계정이나 가게를 찾지 못했어요. 링크나 이름을 확인하고 다시 넣어주세요.', private: '비공개 계정이라 기본 정보만 볼 수 있어요.', unsupported: '아직 못 읽는 곳이에요(네이버·페이스북·스마트스토어·쿠팡). 인스타 아이디나 지도 링크로 넣어주세요.', no_key: '이 서버에는 실측이 아직 켜져 있지 않아요.', upstream: '조회가 늦어졌어요. 한 번만 다시 눌러주세요.', rate: '지금은 조회 횟수를 다 썼어요 — 신청하시면 리포트에는 이 숫자가 그대로 들어가요.' },
+      chAdd: '링크 넣기', chLoading: '채널 확인 중…', chRetry: '다른 링크도 넣기',
+      chFail: { not_found: '계정이나 가게를 찾지 못했어요. 링크나 이름을 확인하고 다시 넣어주세요.', private: '비공개 계정이라 기본 정보만 볼 수 있어요.', unsupported: '자동 조회는 인스타그램·카카오맵만 돼요. 이 링크는 저장해 두고 리포트를 쓸 때 팀이 직접 확인합니다.', no_key: '이 서버에는 실측이 아직 켜져 있지 않아요.', upstream: '조회가 늦어졌어요. 한 번만 다시 눌러주세요.', rate: '지금은 조회 횟수를 다 썼어요 — 신청하시면 리포트에는 이 숫자가 그대로 들어가요.' },
       igFollowers: '팔로워', igPosts: '게시물', igLast: '마지막 게시 후', igLastV: '{n}일', igNever: '게시물 없음', ig30: '최근 30일 게시', igEng: '반응률', igReels: '릴스 비율', igPriv: '비공개 계정 — 기본 정보만',
       kkName: '카카오맵에서 찾음', kkPhotos: '지도 사진', kkReviews: '리뷰', kkRating: '별점', kkRatingNa: '리뷰 부족', kkBlog: '블로그 리뷰', kkBlogLast: '블로그 마지막 글', kkIg: '인스타 연결', kkIgNo: '인스타 연결 없음', kkYes: '있음',
       flagQuiet: '조용함', flagOk: '활발',
@@ -244,10 +255,17 @@
       dopH: 'Doppia가 뭔가요?', dopP: 'Doppia는 제품 사진 한 장으로 컷과 광고 영상을 만드는 도구예요. Doppia Works가 운영할 때 쓰는 제작 엔진이고, 직접 써보셔도 돼요. 시작은 무료예요.',
       dopBtn: 'Doppia로 직접 만들어보기',
       reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기',
-      reportHintSmall: '무료입니다. Doppia Works 팀이 실제 채널을 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
-      reportHintBrand: '무료입니다. Doppia Works 팀이 채널을 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
-      formTitle: '어디로 보내드릴까요?', formHintSmall: '연락처 하나면 됩니다. 링크를 넣어주시면 리포트가 훨씬 구체적이 됩니다.',
-      formHintBrand: '업무 이메일과 링크 한두 개면 됩니다. 링크가 있으면 리포트가 훨씬 구체적이 됩니다.',
+      reportHintSmall: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
+      reportHintBrand: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
+      formTitle: '업체 정보를 알려주세요', formHintSmall: '리포트는 팀이 여기 적어주신 것을 바탕으로 직접 씁니다. 많이 적어주실수록 구체적이 돼요. 필수는 위 세 칸뿐이에요.',
+      formHintBrand: '리포트는 팀이 여기 적어주신 것을 바탕으로 직접 씁니다. 많이 적어주실수록 구체적이 돼요. 필수는 위 세 칸뿐이에요.',
+      secContact: '연락처', secLinks: '운영 중인 채널', secLinksH: '있는 건 다 붙여주세요. 하나하나 저희가 직접 확인합니다.', secBiz: '업체 정보',
+      fLinkOther: '그 외 링크', fLinkOtherPh: '홈페이지, 카탈로그, 기사 등',
+      fProduct: '주력 제품·서비스', fProductPh: '예: 수제 도자기 · 민감성 스킨케어 · 점심 세트',
+      fArea: '지역·주소 (매장이 있다면)', fAreaPh: '예: 인천 송도',
+      fGoal: '앞으로 3개월, 가장 원하는 것', fGoalPh: '예: 평일 방문 손님 늘리기 · 신제품 런칭 · 첫 온라인 매출',
+      fBudget: '월 홍보 예산 (선택)', budgets: ['말하기 어려움', '아직 없음', '50만 원 미만', '50만~200만 원', '200만 원 이상'],
+      linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: '함께한 크리에이터나 캠페인 링크', maps: '구글맵 · 네이버 플레이스 · 카카오맵 링크', website: '홈페이지·블로그·스토어 주소', marketplaces: '쿠팡·아마존·엣시 스토어 주소', delivery: '배달앱·예약앱 가게 페이지', paidads: '광고 계정 또는 최근 광고 (선택)', email: '뉴스레터·CRM 도구 (선택)', offline: '전단·간판 사진 링크 (있다면)' },
       fBiz: '가게·브랜드 이름', fBizPh: '예: 멜로우 베이커리', fCompany: '회사명', fCompanyPh: '예: 멜로우 주식회사',
       fName: '담당자 이름', fNamePh: '예: 박지민', fContact: '이메일 또는 전화', fContactPh: 'you@example.com 또는 010-0000-0000',
       fEmail: '업무 이메일', fEmailPh: 'you@company.com', fLink: '인스타·스토어·지도 링크 (선택)', fLinkPh: 'instagram.com/yourshop',
@@ -368,8 +386,15 @@
   var view = 'result';          // result | form | done  (done 이후)
   var sessionId = null;         // POST /api/diagnose/sessions 결과
   var M = { link: '', state: 'idle', data: null, reason: '' }; // 실측 결과 (link 기준 캐시)
-  var F = { biz: '', name: '', contact: '', link: '', msg: '' }, formErr = '', sending = false;
-  function prefill() { if (!F.biz && A.biz) F.biz = A.biz; if (!F.link && A.link) F.link = A.link; }
+  var F = { biz: '', name: '', contact: '', link: '', msg: '', links: {}, linkOther: '', product: '', area: '', goal: '', budget: '' }, formErr = '', sending = false;
+  function prefill() {
+    if (!F.biz && A.biz) F.biz = A.biz;
+    // 결과 직전에 넣은 링크를 종류에 맞는 칸에 미리 채움
+    if (A.link) { var ch = /instagram\.com|^@/i.test(A.link) ? 'instagram' : (/map|place|kko\.to/i.test(A.link) ? 'maps' : null); if (ch && A.q1.indexOf(ch) >= 0) { if (!F.links[ch]) F.links[ch] = A.link; } else if (!F.linkOther) F.linkOther = A.link; }
+    if (!F.area && A.q0 === 'local') F.area = '';
+  }
+  var LINK_CHANNELS = ['instagram', 'tiktok', 'facebook', 'youtube', 'influencers', 'maps', 'website', 'marketplaces', 'delivery', 'paidads', 'email', 'offline'];
+  function linkChannels() { return LINK_CHANNELS.filter(function (c) { return A.q1.indexOf(c) >= 0; }); }
   var STORE_KEY = 'doppia_diagnose_v1';
   try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; if (saved.metrics && saved.metrics.link) M = saved.metrics; } } catch (e) {}
 
@@ -599,15 +624,27 @@
     var html = '<div class="dg-fade"><div class="res-eyebrow">' + esc(tr === 'brand' ? S.reportBrand : S.reportSmall) + '</div>';
     html += '<h1 class="q">' + esc(S.formTitle) + '</h1><p class="q-hint">' + esc(tr === 'brand' ? S.formHintBrand : S.formHintSmall) + '</p>';
     html += '<form id="leadForm" class="lead" novalidate>';
+    html += '<h3 class="fsec">' + esc(S.secContact) + '</h3>';
     if (tr === 'brand') {
       html += field('fBiz', S.fCompany, S.fCompanyPh, 'text', F.biz, true);
       html += field('fName', S.fName, S.fNamePh, 'text', F.name, true);
       html += field('fContact', S.fEmail, S.fEmailPh, 'email', F.contact, true);
     } else {
       html += field('fBiz', S.fBiz, S.fBizPh, 'text', F.biz, true);
+      html += field('fName', S.fName, S.fNamePh, 'text', F.name, false);
       html += field('fContact', S.fContact, S.fContactPh, 'text', F.contact, true);
     }
-    html += field('fLink', S.fLink, S.fLinkPh, 'text', F.link, false);
+    // 운영 중인 채널 — Q1에서 고른 채널마다 링크 칸
+    var chs = linkChannels();
+    html += '<h3 class="fsec">' + esc(S.secLinks) + '<small>' + esc(S.secLinksH) + '</small></h3>';
+    chs.forEach(function (c) { var o = OPT.q1.filter(function (x) { return x.id === c; })[0]; html += field('fLink_' + c, label(o), S.linkPh[c] || '', 'text', F.links[c] || '', false); });
+    html += field('fLinkOther', S.fLinkOther, S.fLinkOtherPh, 'text', F.linkOther, false);
+    // 업체 정보
+    html += '<h3 class="fsec">' + esc(S.secBiz) + '</h3>';
+    html += field('fProduct', S.fProduct, S.fProductPh, 'text', F.product, false);
+    if (A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') html += field('fArea', S.fArea, S.fAreaPh, 'text', F.area, false);
+    html += field('fGoal', S.fGoal, S.fGoalPh, 'text', F.goal, false);
+    html += '<label class="fld"><span>' + esc(S.fBudget) + '</span><select id="fBudget">' + S.budgets.map(function (b, i) { return '<option value="' + i + '"' + (String(F.budget) === String(i) ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></label>';
     html += field('fMsg', S.fMsg, S.fMsgPh, 'textarea', F.msg, false);
     html += '<div class="ferr" id="formErr"' + (formErr ? '' : ' hidden') + '>' + esc(formErr) + '</div>';
     html += '<div class="acts"><button type="button" class="btn btn-ghost sm" data-act="cancel">' + esc(S.cancel) + '</button>'
@@ -619,7 +656,8 @@
   }
   function readForm() {
     var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-    F = { biz: g('fBiz'), name: g('fName'), contact: g('fContact'), link: g('fLink'), msg: g('fMsg') };
+    var links = {}; linkChannels().forEach(function (c) { var v = g('fLink_' + c); if (v) links[c] = v; });
+    F = { biz: g('fBiz'), name: g('fName'), contact: g('fContact'), link: F.link, msg: g('fMsg'), links: links, linkOther: g('fLinkOther'), product: g('fProduct'), area: g('fArea'), goal: g('fGoal'), budget: g('fBudget') };
   }
   function submitForm() {
     var S = STR[lang], tr = track();
@@ -628,9 +666,13 @@
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(F.contact) && !(tr !== 'brand' && /^\+?[\d\s\-().]{7,25}$/.test(F.contact))) formErr = S.errContact;
     if (formErr) return renderForm();
     sending = true; renderForm();
+    var linkList = Object.keys(F.links).map(function (c) { return { channel: c, url: F.links[c] }; });
+    if (F.linkOther) linkList.push({ channel: 'other', url: F.linkOther });
+    if (A.link && !linkList.some(function (l) { return l.url === A.link; })) linkList.push({ channel: 'check-up', url: A.link });
     api('/api/diagnose/requests', {
       sessionId: sessionId, track: tr, lang: lang, businessName: F.biz, contactName: F.name || undefined,
-      contact: F.contact, links: F.link ? [F.link] : [], message: F.msg || undefined, answers: A
+      contact: F.contact, links: linkList, message: F.msg || undefined, answers: A,
+      details: { product: F.product, area: F.area, goal: F.goal, budget: S.budgets[Number(F.budget)] || '', metrics: M.state === 'ok' ? M.data : null }
     }).then(function () { sending = false; view = 'done'; save(); render(); })
       .catch(function () { sending = false; formErr = S.errNet; renderForm(); });
   }
