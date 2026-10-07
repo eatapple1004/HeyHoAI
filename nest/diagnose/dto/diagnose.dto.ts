@@ -24,6 +24,9 @@ export class CreateSessionDto {
   answers!: DiagnoseAnswersDto;
   track!: DiagnoseTrack;
   lang?: string;
+  /** 결과 직전 화면에서 받은 가게 이름·링크(선택) — 리포트 헤더·실측(2단계)용 */
+  businessName?: string;
+  link?: string;
 }
 
 export class CreateRequestDto {

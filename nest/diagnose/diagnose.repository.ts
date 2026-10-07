@@ -8,7 +8,7 @@ import { DiagnoseAnswersDto, DiagnoseRequestRowDto } from './dto/diagnose.dto';
  *   먼저 돌고, 3환경 공통인 migrate.js를 건드리면 staging/prod 배포에도 영향이 가기 때문.
  *   (ensureSchema는 동시 생성 경쟁을 합치고 "이미 있음"을 성공으로 본다 — db.service 주석 참고)
  */
-const SCHEMA_KEY = 'diagnose.v1';
+const SCHEMA_KEY = 'diagnose.v2';
 const SCHEMA_SQL = [
   `CREATE TABLE IF NOT EXISTS diagnose_sessions (
      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -19,6 +19,9 @@ const SCHEMA_SQL = [
      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
    )`,
   `CREATE INDEX IF NOT EXISTS idx_diagnose_sessions_created ON diagnose_sessions(created_at)`,
+  // 2026-10-07 추가 컬럼 — 기존 dev 테이블에도 붙도록 ADD COLUMN IF NOT EXISTS
+  `ALTER TABLE diagnose_sessions ADD COLUMN IF NOT EXISTS business_name TEXT`,
+  `ALTER TABLE diagnose_sessions ADD COLUMN IF NOT EXISTS link TEXT`,
   `CREATE TABLE IF NOT EXISTS diagnose_requests (
      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
      session_id    UUID REFERENCES diagnose_sessions(id) ON DELETE SET NULL,
@@ -46,11 +49,11 @@ export class DiagnoseRepository {
     return this.db.ensureSchema(SCHEMA_KEY, SCHEMA_SQL);
   }
 
-  async insertSession(d: { track: string; lang: string | null; answers: DiagnoseAnswersDto; ipHash: string | null }): Promise<string> {
+  async insertSession(d: { track: string; lang: string | null; answers: DiagnoseAnswersDto; ipHash: string | null; businessName: string | null; link: string | null }): Promise<string> {
     await this.ensure();
     const r = await this.db.query<{ id: string }>(
-      `INSERT INTO diagnose_sessions (track, lang, answers, ip_hash) VALUES ($1, $2, $3, $4) RETURNING id`,
-      [d.track, d.lang, JSON.stringify(d.answers), d.ipHash],
+      `INSERT INTO diagnose_sessions (track, lang, answers, ip_hash, business_name, link) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [d.track, d.lang, JSON.stringify(d.answers), d.ipHash, d.businessName, d.link],
     );
     return r.rows[0].id;
   }

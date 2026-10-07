@@ -64,6 +64,30 @@
   .btn-ghost.sm{padding:9px 14px;font-size:13px}
   /* result */
   .res-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
+  /* 리포트 1쪽 — 문서 모양 */
+  .rpt{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 1px 2px rgba(22,19,31,.03),0 24px 60px -36px rgba(22,19,31,.28);padding:28px 30px;display:flex;flex-direction:column;gap:26px}
+  @media(max-width:520px){.rpt{padding:22px 18px}}
+  .rpt-h{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:20px}
+  .rpt-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:4px 10px}
+  .rpt-biz{font-family:'Sora',Inter,sans-serif;font-size:clamp(22px,3.2vw,30px);font-weight:800;letter-spacing:-.02em;margin-top:10px;line-height:1.2}
+  .rpt-meta{display:flex;gap:22px;margin:0}
+  .rpt-meta dt{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .rpt-meta dd{font-size:13px;color:var(--text);margin-top:3px;max-width:26ch}
+  .rpt-s h2{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .rpt .res-state{font-size:clamp(18px,2.4vw,22px)}
+  .chbox{border:1px dashed var(--border2);border-radius:12px;padding:14px 16px;background:var(--tint);color:var(--dim);font-size:14px;display:flex;flex-direction:column;gap:10px}
+  .chlink{font-weight:700;color:var(--accent-ink);word-break:break-all}
+  .chadd{display:flex;gap:8px;flex-wrap:wrap}
+  .chadd input{flex:1 1 220px;font:inherit;font-size:14px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:10px 12px;outline:none}
+  .chadd input:focus{border-color:var(--accent)}
+  .rpt .echo{margin-top:0}
+  .scope{display:flex;flex-wrap:wrap;gap:8px}
+  .scope span{font-size:13px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:7px 12px}
+  .scope-l{list-style:none;margin-top:12px;display:grid;gap:4px;font-size:14px;color:var(--text)}
+  .scope-l li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:10px;vertical-align:middle}
+  .dop{margin-top:28px;display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--border);border-radius:14px;padding:18px 20px;background:#fff}
+  .dop b{font-size:14px;display:block}
+  .dop p{color:var(--dim);font-size:14px;margin-top:4px;max-width:52ch}
   .res-state{font-family:'Sora',Inter,sans-serif;font-size:clamp(22px,3.4vw,30px);line-height:1.25;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
   .res-state b{background:linear-gradient(95deg,var(--accent-ink) 0%,var(--accent) 55%,var(--pink) 115%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
   .note{margin-top:18px;padding:12px 14px;border-radius:12px;background:var(--accent-soft);border:1px solid rgba(106,64,224,.25);color:var(--text);font-size:14px}
@@ -142,8 +166,21 @@
       seeMine: 'See it with your own photo or link', soon: 'Coming soon',
       leadSoon: 'Requests open shortly. For now, try it free — one product photo is enough to see what Doppia makes.',
       restart: 'Start over', otherPh: 'Type it in your own words', otherLabel: 'Other — in your words',
+      // 가게 정보 화면 (결과 직전)
+      info: 'Last one — for the report', infoh: 'The name goes on the report. A link lets us pull your real numbers.',
+      fBizInfo: 'Business or brand name', fLinkInfo: 'Instagram, store or map link (optional)', seeResult: 'See my results',
+      // 결과 = 리포트 1쪽
+      rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
+      secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia Works would take on',
+      chEmpty: 'Add an Instagram, store or map link and this section fills in with your real numbers — last post, posting rhythm, map photos, reviews.',
+      chAdd: 'Add link', chSoon: 'Live numbers arrive in the next update',
+      scopeCadence: { daily: 'Keep daily posting · we take over production', weekly: '4 posts a week · we take over scheduling', monthly: '3 posts a week · restart the rhythm', rarely: '3 posts a week · restart from zero', stopped: '3 posts a week · restart from zero', none: 'Open the channels first · then 3 posts a week' },
+      scopeReport: 'Written report on the 1st of every month',
+      sc_ch: 'Channel operations', sc_ads: 'Ads', sc_content: 'Content production', sc_maps: 'Maps & reviews', sc_crm: 'Customer relationships', sc_consult: 'Strategy consulting', sc_open: 'Channel setup',
+      dopH: 'What is Doppia?', dopP: 'Doppia turns one product photo into cuts and ad videos. It is the production engine Doppia Works runs on — and you can use it yourself, free to start.',
+      dopBtn: 'Make something with Doppia',
       // buttons
-      reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia Works', trySmall: 'Try Doppia now', tryBrand: 'Try Doppia with your product',
+      reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia Works',
       reportHintSmall: 'Free. The Doppia Works team reviews your actual channels and sends a written report within 1–2 business days.',
       reportHintBrand: 'Free. The Doppia Works team reviews your channels and sends a written report within 1–2 business days.',
       // form
@@ -177,7 +214,18 @@
       seeMine: '내 사진이나 링크로 다시 보기', soon: '곧 열려요',
       leadSoon: '신청은 곧 받을 수 있어요. 지금은 무료로 먼저 써보세요 — 제품 사진 한 장이면 Doppia가 뭘 만드는지 볼 수 있어요.',
       restart: '처음부터 다시', otherPh: '직접 적어주세요', otherLabel: '기타 — 직접 적은 내용',
-      reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기', trySmall: 'Doppia 바로 써보기', tryBrand: '우리 제품으로 Doppia 써보기',
+      info: '마지막으로, 리포트에 쓸 정보', infoh: '이름은 리포트에 들어가요. 링크를 넣으면 실제 숫자를 가져올 수 있어요.',
+      fBizInfo: '가게·브랜드 이름', fLinkInfo: '인스타·스토어·지도 링크 (선택)', seeResult: '결과 보기',
+      rpTag: '마케팅 진단 · 1쪽', rpBizFallback: '우리 가게', rpMetaCh: '채널', rpMetaDate: '검토일',
+      secState: '현재 상태', secCh: '채널 상태', secSaid: '말씀하신 것', secScope: 'Doppia Works가 맡을 범위',
+      chEmpty: '인스타·스토어·지도 링크를 넣으면 이 칸이 실제 숫자로 채워져요 — 마지막 게시, 게시 리듬, 지도 사진, 리뷰.',
+      chAdd: '링크 넣기', chSoon: '실제 숫자는 다음 업데이트에서 바로 표시돼요',
+      scopeCadence: { daily: '매일 게시 유지 · 제작을 저희가', weekly: '주 4회 게시 · 예약·운영을 저희가', monthly: '주 3회 게시 · 리듬 되살리기', rarely: '주 3회 게시 · 처음부터 다시 쌓기', stopped: '주 3회 게시 · 처음부터 다시 쌓기', none: '채널 개설부터 · 그다음 주 3회' },
+      scopeReport: '매월 1일 서면 리포트',
+      sc_ch: '채널 운영', sc_ads: '광고 운영', sc_content: '콘텐츠 제작', sc_maps: '지도·리뷰 관리', sc_crm: '고객 관리', sc_consult: '전략 컨설팅', sc_open: '채널 개설',
+      dopH: 'Doppia가 뭔가요?', dopP: 'Doppia는 제품 사진 한 장으로 컷과 광고 영상을 만드는 도구예요. Doppia Works가 운영할 때 쓰는 제작 엔진이고, 직접 써보셔도 돼요. 시작은 무료예요.',
+      dopBtn: 'Doppia로 직접 만들어보기',
+      reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기',
       reportHintSmall: '무료입니다. Doppia Works 팀이 실제 채널을 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
       reportHintBrand: '무료입니다. Doppia Works 팀이 채널을 검토해 1~2영업일 안에 서면 리포트로 보내드립니다.',
       formTitle: '어디로 보내드릴까요?', formHintSmall: '연락처 하나면 됩니다. 링크를 넣어주시면 리포트가 훨씬 구체적이 됩니다.',
@@ -297,13 +345,14 @@
   };
 
   // ── 상태 ──
-  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '' };
+  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', biz: '', link: '' };
   var stepIdx = 0, showMore = false, done = false;
   var view = 'result';          // result | form | done  (done 이후)
   var sessionId = null;         // POST /api/diagnose/sessions 결과
   var F = { biz: '', name: '', contact: '', link: '', msg: '' }, formErr = '', sending = false;
+  function prefill() { if (!F.biz && A.biz) F.biz = A.biz; if (!F.link && A.link) F.link = A.link; }
   var STORE_KEY = 'doppia_diagnose_v1';
-  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; } } catch (e) {}
+  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; } } catch (e) {}
 
   function track() { return (A.q02 === 'team' || A.q02 === 'agency') ? 'brand' : 'small'; }
   function hasOnlineChannel() { return A.q1.some(function (id) { var o = OPT.q1.filter(function (x) { return x.id === id; })[0]; return o && o.online; }); }
@@ -313,7 +362,7 @@
     if (A.q0 !== 'local') s.push('q01');
     s.push('q02', 'q1');
     if (hasOnlineChannel()) s.push('q2');
-    s.push('q4');
+    s.push('q4', 'info');
     return s;
   }
   function t(k, vars) { var s = STR[lang][k]; if (vars) Object.keys(vars).forEach(function (v) { s = s.split('{' + v + '}').join(vars[v]); }); return s; }
@@ -329,7 +378,7 @@
   }
   function postSession() {
     if (sessionId || !A.q0) return;
-    api('/api/diagnose/sessions', { answers: A, track: track(), lang: lang })
+    api('/api/diagnose/sessions', { answers: A, track: track(), lang: lang, businessName: A.biz, link: A.link })
       .then(function (d) { sessionId = d.id; save(); })
       .catch(function () { /* 정적 미리보기(API 없음)·일시 장애 — 신청 때 답 스냅샷을 같이 보내므로 괜찮다 */ });
   }
@@ -354,10 +403,13 @@
     html += '<h1 class="q">' + esc(t(q)) + '</h1><p class="q-hint">' + esc(t(q + 'h')) + '</p>';
     if (q === 'q1') html += renderMulti('q1', OPT.q1, A.q1, 99);
     else if (q === 'q4') html += renderMulti('q4', track() === 'brand' ? OPT.q4brand : OPT.q4small, A.q4, 3);
+    else if (q === 'info') html += renderInfo();
     else html += renderSingle(q, OPT[q], A[q]);
     html += '<div class="acts">';
     html += stepIdx > 0 ? '<button type="button" class="btn btn-ghost sm" data-act="back">' + esc(t('back')) + '</button>' : '<span></span>';
-    if (q === 'q1' || q === 'q4') {
+    if (q === 'info') {
+      html += '<span class="cnt"></span><button type="button" class="btn btn-primary" data-act="next"' + (A.biz.trim() ? '' : ' disabled') + '>' + esc(t('seeResult')) + '</button>';
+    } else if (q === 'q1' || q === 'q4') {
       var n = A[q].length;
       var cnt = q === 'q4' ? esc(t('picked', { n: n })) : '';
       html += '<span class="cnt">' + cnt + '</span><button type="button" class="btn btn-primary" data-act="next"' + (n ? '' : ' disabled') + '>' + esc(t('next')) + '</button>';
@@ -367,6 +419,12 @@
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
   }
 
+  function renderInfo() {
+    return '<form class="lead" id="infoForm" novalidate style="margin-top:26px">'
+      + field('iBiz', t('fBizInfo'), t('fBizPh'), 'text', A.biz, true)
+      + field('iLink', t('fLinkInfo'), t('fLinkPh'), 'text', A.link, false)
+      + '</form>';
+  }
   function renderSingle(q, opts, val) {
     var wide = opts.length <= 5;
     return '<div class="opts' + (wide ? ' wide' : '') + '" role="radiogroup">' + opts.map(function (o) {
@@ -390,6 +448,21 @@
     var cnt = document.querySelector('.acts .cnt'); if (cnt && q === 'q4') cnt.textContent = t('picked', { n: vals.length });
     var next = document.querySelector('[data-act="next"]'); if (next) next.disabled = !vals.length;
   }
+
+  // ── 제안 범위 (조언이 아니라 '우리가 맡을 일') — Q0-1·Q1·Q2·Q4 조합 규칙 ──
+  function scopeItems() {
+    var S = STR[lang], items = [], has = function (arr, ids) { return ids.some(function (i) { return arr.indexOf(i) >= 0; }); };
+    var online = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.online; }).map(label);
+    if (A.q1.indexOf('none') >= 0 || !A.q1.length) items.push(S.sc_open);
+    else items.push(S.sc_ch + (online.length ? ' · ' + online.slice(0, 3).join(', ') : ''));
+    if (A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') items.push(S.sc_maps);
+    if (has(A.q4, ['ads', 'spend', 'nocust', 'nosales', 'variants']) || A.q1.indexOf('paidads') >= 0) items.push(S.sc_ads);
+    if (has(A.q4, ['content', 'volume', 'launch', 'cost', 'tone'])) items.push(S.sc_content);
+    if (has(A.q4, ['nosales']) || A.q1.indexOf('email') >= 0) items.push(S.sc_crm);
+    if (track() === 'brand' && has(A.q4, ['depend', 'measure', 'local'])) items.push(S.sc_consult);
+    return items;
+  }
+  function cadence() { var S = STR[lang]; return (A.q1.indexOf('none') >= 0 || !A.q1.length) ? S.scopeCadence.none : (S.scopeCadence[A.q2] || S.scopeCadence.monthly); }
 
   // ── 결과 1단계 (조립식) ──
   function stateLine() {
@@ -416,19 +489,34 @@
     var pool = tr === 'brand' ? OPT.q4brand : OPT.q4small;
     var picked = A.q4.map(function (id) { return pool.filter(function (o) { return o.id === id; })[0]; }).filter(Boolean);
     // 메인 버튼은 항상 "진단서 받기" — 운영/셀프 성향(lean)은 진단서 안에서 제안할 때 쓴다
+    var chosen = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.id !== 'none'; }).map(label);
+    var today = new Date(), dateStr = lang === 'ko' ? (today.getFullYear() + '. ' + (today.getMonth() + 1) + '. ' + today.getDate()) : today.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     var html = '<div class="dg-fade">';
     html += '<div class="res-eyebrow">' + esc(S.resEyebrow) + '</div>';
-    html += '<p class="res-state">' + stateLine() + '</p>';
-    if (A.q1.indexOf('none') >= 0 || !A.q1.length) html += '<div class="note">' + esc(S.noneNote) + '</div>';
+    // 리포트 1쪽 (문서 모양)
+    html += '<article class="rpt">';
+    html += '<header class="rpt-h"><div><span class="rpt-tag">' + esc(S.rpTag) + '</span><h1 class="rpt-biz">' + esc(A.biz.trim() || S.rpBizFallback) + '</h1></div>'
+         + '<dl class="rpt-meta"><div><dt>' + esc(S.rpMetaCh) + '</dt><dd>' + esc(chosen.length ? chosen.join(' · ') : '—') + '</dd></div><div><dt>' + esc(S.rpMetaDate) + '</dt><dd>' + esc(dateStr) + '</dd></div></dl></header>';
+    html += '<section class="rpt-s"><h2>' + esc(S.secState) + '</h2><p class="res-state">' + stateLine() + '</p>'
+         + ((A.q1.indexOf('none') >= 0 || !A.q1.length) ? '<div class="note">' + esc(S.noneNote) + '</div>' : '') + '</section>';
+    // 채널 상태 — 실측은 다음 단계(B). 링크가 있으면 '곧', 없으면 입력 유도
+    html += '<section class="rpt-s"><h2>' + esc(S.secCh) + '</h2><div class="chbox">'
+         + (A.link ? '<div class="chlink">' + esc(A.link) + '</div><p>' + esc(S.chSoon) + '</p>'
+                   : '<p>' + esc(S.chEmpty) + '</p><div class="chadd"><input id="iLink2" type="text" placeholder="' + esc(t('fLinkPh')) + '" value=""><button type="button" class="btn btn-ghost sm" data-act="addlink">' + esc(S.chAdd) + '</button></div>')
+         + '</div></section>';
     if (picked.length) {
-      html += '<section class="echo"><h2>' + esc(S.echoH) + '</h2>' + picked.map(function (o) {
+      html += '<section class="rpt-s"><h2>' + esc(S.secSaid) + '</h2><div class="echo">' + picked.map(function (o) {
         var q = o.id === 'other' && A.q4Other ? A.q4Other : label(o);
         return '<div class="item"><div class="quote">“' + esc(q) + '”</div><div class="line">' + esc(lang === 'ko' ? o.lko : o.len) + '</div></div>';
-      }).join('') + '</section>';
+      }).join('') + '</div></section>';
     }
-    html += '<div class="ctas"><button type="button" class="btn btn-primary" data-act="report">' + esc(tr === 'brand' ? S.reportBrand : S.reportSmall) + '</button>'
-         + '<a class="btn secondary" href="/signup">' + esc(tr === 'brand' ? S.tryBrand : S.trySmall) + '</a></div>';
+    html += '<section class="rpt-s"><h2>' + esc(S.secScope) + '</h2><div class="scope">' + scopeItems().map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>'
+         + '<ul class="scope-l"><li>' + esc(cadence()) + '</li><li>' + esc(S.scopeReport) + '</li></ul></section>';
+    html += '</article>';
+    html += '<div class="ctas"><button type="button" class="btn btn-primary" data-act="report">' + esc(tr === 'brand' ? S.reportBrand : S.reportSmall) + '</button></div>';
     html += '<p class="cta-hint">' + esc(tr === 'brand' ? S.reportHintBrand : S.reportHintSmall) + '</p>';
+    // Doppia 설명 카드 (손님은 Doppia가 뭔지 모른다)
+    html += '<aside class="dop"><div><b>' + esc(S.dopH) + '</b><p>' + esc(S.dopP) + '</p></div><a class="btn btn-ghost" href="/signup">' + esc(S.dopBtn) + '</a></aside>';
     html += '<div class="restart"><button type="button" data-act="restart">' + esc(S.restart) + '</button></div>';
     html += '</div>';
     app.innerHTML = html;
@@ -500,9 +588,10 @@
     if (act === 'back') { stepIdx = Math.max(0, stepIdx - 1); return render(); }
     if (act === 'next') { advance(); return; }
     if (act === 'more') { showMore = !showMore; return render(); }
-    if (act === 'report') { view = 'form'; formErr = ''; return render(); }
+    if (act === 'report') { prefill(); view = 'form'; formErr = ''; return render(); }
+    if (act === 'addlink') { var li = document.getElementById('iLink2'); if (li && li.value.trim()) { A.link = li.value.trim().slice(0, 300); save(); render(); } return; }
     if (act === 'cancel') { readForm(); view = 'result'; formErr = ''; return render(); }
-    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
+    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', biz: '', link: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
     if (!q) return;
     if (q === 'q1' || q === 'q4') {
       var pool = q === 'q1' ? OPT.q1 : (track() === 'brand' ? OPT.q4brand : OPT.q4small);
@@ -530,8 +619,12 @@
     stepIdx++; showMore = false; render();
   }
 
-  app.addEventListener('input', function (e) { var el = e.target; if (el && el.id && el.id.indexOf('otherInput-') === 0) { A[el.id.slice(11) + 'Other'] = el.value.slice(0, 200); save(); } });
-  app.addEventListener('submit', function (e) { if (e.target && e.target.id === 'leadForm') { e.preventDefault(); submitForm(); } });
+  app.addEventListener('input', function (e) { var el = e.target; if (!el || !el.id) return;
+    if (el.id.indexOf('otherInput-') === 0) { A[el.id.slice(11) + 'Other'] = el.value.slice(0, 200); save(); }
+    if (el.id === 'iBiz') { A.biz = el.value.slice(0, 120); var n = document.querySelector('[data-act="next"]'); if (n) n.disabled = !A.biz.trim(); save(); }
+    if (el.id === 'iLink') { A.link = el.value.slice(0, 300); save(); }
+  });
+  app.addEventListener('submit', function (e) { if (e.target && e.target.id === 'leadForm') { e.preventDefault(); submitForm(); } if (e.target && e.target.id === 'infoForm') { e.preventDefault(); if (A.biz.trim()) advance(); } });
   document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { if (view === 'form') readForm(); setLang(b.dataset.lang); }); });
   render();
 })();

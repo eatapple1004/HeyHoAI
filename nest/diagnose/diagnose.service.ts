@@ -97,7 +97,10 @@ export class DiagnoseService {
     if (!allow('session', ipHash)) fail(429, 'Too many requests. Please try again later.');
     const track = this.track(body && body.track);
     const answers = this.validateAnswers(body && body.answers, track);
-    const id = await this.repo.insertSession({ track, lang: this.lang(body.lang), answers, ipHash });
+    const id = await this.repo.insertSession({
+      track, lang: this.lang(body.lang), answers, ipHash,
+      businessName: this.text(body.businessName, 120) || null, link: this.text(body.link, 300) || null,
+    });
     return { id };
   }
 
