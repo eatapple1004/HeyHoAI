@@ -147,7 +147,10 @@
   width:100%; max-width:var(--wrap); margin-inline:auto; padding-inline:var(--pad);
   display:flex; align-items:center; gap:1.2rem; min-width:0;
 }
-.v2-logo{ display:flex; flex-direction:column; line-height:1; margin-right:auto; min-width:0; }
+.v2-logo{ display:flex; align-items:center; gap:12px; line-height:1; margin-right:auto; min-width:0; }
+.v2-logo-mark{ height:42px; width:auto; flex:0 0 auto; }
+.v2-logo-text{ display:flex; flex-direction:column; min-width:0; }
+.v2-ft-logo{ display:block; width:160px; height:auto; margin-bottom:.8rem; }
 .v2-logo b{
   font-family:var(--serif); font-size:1.42rem; font-weight:600; letter-spacing:.1em;
   color:#fff; transition:color .3s;

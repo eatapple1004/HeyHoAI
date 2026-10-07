@@ -134,6 +134,7 @@ body.solid-header .site-header{
   border:1px solid var(--gold); color:var(--gold);
   font-family:var(--serif); font-size:.95rem; letter-spacing:.04em;
 }
+.brand-logo{ height:46px; width:auto; flex:0 0 auto; display:block; }
 .brand-text{ display:flex; flex-direction:column; line-height:1.24; }
 .brand-text strong{
   font-family:var(--serif); font-size:1.1rem; font-weight:600;
@@ -597,7 +598,7 @@ html[lang="ko"] .rec h4, html[lang="ko"] .rec-spec{ word-break:keep-all; }
    ========================================================================== */
 .site-footer{ background:var(--ink); color:var(--text-inv-m); padding:clamp(52px,6vw,84px) 0 36px; border-top:1px solid var(--line-dark); }
 .foot-top{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:2.4rem; padding-bottom:2.6rem; border-bottom:1px solid var(--line-dark); }
-.foot-brand .brand-mark{ margin-bottom:1.1rem; }
+.foot-logo{ display:block; width:168px; height:auto; margin-bottom:1rem; }
 .foot-brand strong{ display:block; font-family:var(--serif); font-size:1.2rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-inv); }
 .foot-brand em{ font-style:normal; display:block; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-top:.3rem; }
 .foot-col h4{ font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin-bottom:1.1rem; }
@@ -711,7 +712,7 @@ html[lang="ko"] .kicker{ font-weight:700; font-size:.78rem; }
 @media (max-width:560px){
   .brand{ gap:10px; flex:0 1 auto; min-width:0; }
   .brand-text em{ display:none; }
-  .brand-mark{ width:34px; height:34px; flex-basis:34px; font-size:.8rem; }
+  .brand-logo{ height:38px; }
   .process{ grid-template-columns:1fr; }
   .foot-top{ grid-template-columns:1fr; gap:2rem; }
   .form .row{ grid-template-columns:1fr; }
