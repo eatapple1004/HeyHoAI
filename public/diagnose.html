@@ -129,6 +129,7 @@
   .fld select{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none}
   .fld span{font-size:13px;font-weight:600;color:var(--dim)}
   .fld i{color:var(--pink);font-style:normal}
+  .fld.miss input,.fld.miss textarea,.fld.miss select{border-color:var(--pink);box-shadow:0 0 0 3px rgba(217,96,143,.14)}
   .fld input,.fld textarea{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none;transition:border-color .15s}
   .fld input:focus,.fld textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .fld textarea{resize:vertical;min-height:84px}
@@ -193,9 +194,9 @@
       info: 'Last one — for the report', infoh: 'The name goes on the report. A link lets us pull your real numbers.',
       fBizInfo: 'Business or brand name', fLinkInfo: 'Instagram, store or map link (optional)', seeResult: 'See my results',
       // 접수 확인 (분석 없음)
-      rcvEyebrow: 'Check-up received', rcvTitle: 'Thank you. Your report is being prepared.',
-      rcvBody: 'Every report is written by the Doppia Works team, in the order requests come in — allow 7–10 business days. To make it about your business, not a template, we need a few more details below.',
-      rcvDue: 'In order of request · expected by {d}', nextH: 'What happens next',
+      rcvEyebrow: 'Request received', formEyebrow: 'Last step', rcvTitle: 'Thanks for your answers. One more step before the report.',
+      rcvBody: 'The Doppia Works team writes every report from what you give us below — without it, there is nothing to write about. Once you send it, your request joins the queue and the report follows in 7–10 business days.',
+      nextH: 'What happens next',
       next1: 'The team reviews every channel and link you give us', next2: 'We write a one-page report: where you stand, what we would change first, and the scope we would propose', next3: 'You receive it by email or phone — no commitment either way',
       doneDue: 'In order of request · expected by {d}',
       rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
@@ -216,21 +217,21 @@
       reportHintSmall: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report in 7–10 business days.',
       reportHintBrand: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report in 7–10 business days.',
       // form
-      formTitle: 'Tell us about the business', formHintSmall: 'The report is written by the team, from what you give us here. The more you add, the more specific it gets. Only the first three fields are required.',
-      formHintBrand: 'The report is written by the team, from what you give us here. The more you add, the more specific it gets. Only the first three fields are required.',
-      secContact: 'Contact', secLinks: 'Your channels', secLinksH: 'Paste whatever you have. We check each one ourselves.', secBiz: 'About the business',
+      formTitle: 'Tell us about the business', formHintSmall: 'Fields marked * are what the team needs to write the report. Everything else makes it more specific.',
+      formHintBrand: 'Fields marked * are what the team needs to write the report. Everything else makes it more specific.',
+      secContact: 'Contact', secLinks: 'Your channels', secLinksH: 'The channels you said you run. We review each one ourselves before writing.', secBiz: 'About the business',
       fLinkOther: 'Any other link', fLinkOtherPh: 'Website, catalog, press…',
       fProduct: 'Main product or service', fProductPh: 'e.g. handmade ceramics · skincare for sensitive skin · lunch sets',
-      fArea: 'Location (if you have one)', fAreaPh: 'e.g. Songdo, Incheon',
+      fArea: 'Location of the store', fAreaPh: 'e.g. Songdo, Incheon',
       fGoal: 'What you want in the next 3 months', fGoalPh: 'e.g. more walk-ins on weekdays · launch a new line · first online sales',
-      fBudget: 'Monthly marketing budget (optional)', budgets: ['Prefer not to say', 'None yet', 'Under ₩500k', '₩500k – ₩2M', 'Over ₩2M'],
+      fBudget: 'Monthly marketing budget', budgetPick: 'Choose one', budgets: ['Prefer not to say', 'None yet', 'Under ₩500k', '₩500k – ₩2M', 'Over ₩2M'],
       linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: 'A creator you worked with, or a campaign link', maps: 'Google Maps / Naver Place / Kakao Map link', website: 'Website, blog or store URL', marketplaces: 'Amazon / Coupang / Etsy store URL', delivery: 'Delivery or booking app page', paidads: 'Ad account or a recent ad (optional)', email: 'Newsletter or CRM tool (optional)', offline: 'Photo of a flyer or sign, if any (link)' },
       fBiz: 'Business or brand name', fBizPh: 'e.g. Mellow Bakery', fCompany: 'Company', fCompanyPh: 'e.g. Mellow Inc.',
       fName: 'Your name', fNamePh: 'e.g. Jamie Park', fContact: 'Email or phone', fContactPh: 'you@example.com or +82 10-0000-0000',
       fEmail: 'Work email', fEmailPh: 'you@company.com', fLink: 'Instagram, store or map link (optional)', fLinkPh: 'instagram.com/yourshop',
       fMsg: 'Anything else? (optional)', fMsgPh: 'What you want to know, what you tried, deadlines…',
       submit: 'Send me the report', sending: 'Sending…', cancel: 'Back to results',
-      errRequired: 'Please fill in the required fields.', errContact: 'Please enter a valid email or phone number.',
+      errRequired: 'A few fields the report needs are still empty — they are marked below.', errContact: 'Please enter a valid email or phone number.',
       errNet: "Couldn't send right now. Your answers are kept — please try again in a moment.",
       doneTitle: 'All set. Your report is on its way.', doneBody: 'The Doppia Works team reviews your actual channels and writes it up in 7–10 business days. Meanwhile, you can try Doppia free with one product photo.',
       doneTry: 'Try Doppia free',
@@ -253,9 +254,9 @@
       seeMine: '내 사진이나 링크로 다시 보기', soon: '곧 열려요',
       leadSoon: '신청은 곧 받을 수 있어요. 지금은 무료로 먼저 써보세요 — 제품 사진 한 장이면 Doppia가 뭘 만드는지 볼 수 있어요.',
       restart: '처음부터 다시', otherPh: '직접 적어주세요', otherLabel: '기타 — 직접 적은 내용',
-      rcvEyebrow: '접수 완료', rcvTitle: '답변 잘 받았습니다. 리포트를 준비하겠습니다.',
-      rcvBody: '모든 리포트는 Doppia Works 팀이 접수 순서대로 직접 작성합니다. 영업일 기준 7~10일 정도 걸립니다. 템플릿이 아니라 사장님 업체 이야기가 되도록, 아래 정보를 조금 더 부탁드립니다.',
-      rcvDue: '접수 순서대로 진행 · {d}까지 발송 예정', nextH: '이후 진행',
+      rcvEyebrow: '접수 완료', formEyebrow: '마지막 단계', rcvTitle: '답변 감사합니다. 리포트를 쓰려면 아래 정보가 필요합니다.',
+      rcvBody: 'Doppia Works 팀은 아래 적어주신 내용을 바탕으로 리포트를 직접 씁니다. 이 정보가 없으면 쓸 수 있는 리포트가 없습니다. 보내주시는 순간 접수가 되고, 접수 순서대로 영업일 7~10일 안에 보내드립니다.',
+      nextH: '이후 진행',
       next1: '팀이 적어주신 채널과 링크를 하나하나 직접 봅니다', next2: '한 장짜리 리포트를 씁니다 — 현재 상태, 먼저 바꿀 것, 제안 범위', next3: '이메일이나 전화로 받으십니다 — 어느 쪽이든 약정은 없습니다',
       doneDue: '접수 순서대로 진행 · {d}까지 발송 예정',
       info: '마지막으로, 리포트에 쓸 정보', infoh: '이름은 리포트에 들어가요. 링크를 넣으면 실제 숫자를 가져올 수 있어요.',
@@ -276,21 +277,21 @@
       reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기',
       reportHintSmall: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 영업일 7~10일 안에 서면 리포트로 보내드립니다.',
       reportHintBrand: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 영업일 7~10일 안에 서면 리포트로 보내드립니다.',
-      formTitle: '업체 정보를 알려주세요', formHintSmall: '리포트는 팀이 여기 적어주신 것을 바탕으로 직접 씁니다. 많이 적어주실수록 구체적이 돼요. 필수는 위 세 칸뿐이에요.',
-      formHintBrand: '리포트는 팀이 여기 적어주신 것을 바탕으로 직접 씁니다. 많이 적어주실수록 구체적이 돼요. 필수는 위 세 칸뿐이에요.',
-      secContact: '연락처', secLinks: '운영 중인 채널', secLinksH: '있는 건 다 붙여주세요. 하나하나 저희가 직접 확인합니다.', secBiz: '업체 정보',
+      formTitle: '업체 정보를 알려주세요', formHintSmall: '* 표시는 리포트를 쓰는 데 꼭 필요한 항목입니다. 그 외도 적어주실수록 리포트가 구체적이 됩니다.',
+      formHintBrand: '* 표시는 리포트를 쓰는 데 꼭 필요한 항목입니다. 그 외도 적어주실수록 리포트가 구체적이 됩니다.',
+      secContact: '연락처', secLinks: '운영 중인 채널', secLinksH: '운영 중이라고 답하신 채널입니다. 리포트를 쓰기 전에 하나하나 저희가 직접 봅니다.', secBiz: '업체 정보',
       fLinkOther: '그 외 링크', fLinkOtherPh: '홈페이지, 카탈로그, 기사 등',
       fProduct: '주력 제품·서비스', fProductPh: '예: 수제 도자기 · 민감성 스킨케어 · 점심 세트',
-      fArea: '지역·주소 (매장이 있다면)', fAreaPh: '예: 인천 송도',
+      fArea: '매장 지역·주소', fAreaPh: '예: 인천 송도',
       fGoal: '앞으로 3개월, 가장 원하는 것', fGoalPh: '예: 평일 방문 손님 늘리기 · 신제품 런칭 · 첫 온라인 매출',
-      fBudget: '월 홍보 예산 (선택)', budgets: ['말하기 어려움', '아직 없음', '50만 원 미만', '50만~200만 원', '200만 원 이상'],
+      fBudget: '월 홍보 예산', budgetPick: '선택해주세요', budgets: ['말하기 어려움', '아직 없음', '50만 원 미만', '50만~200만 원', '200만 원 이상'],
       linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: '함께한 크리에이터나 캠페인 링크', maps: '구글맵 · 네이버 플레이스 · 카카오맵 링크', website: '홈페이지·블로그·스토어 주소', marketplaces: '쿠팡·아마존·엣시 스토어 주소', delivery: '배달앱·예약앱 가게 페이지', paidads: '광고 계정 또는 최근 광고 (선택)', email: '뉴스레터·CRM 도구 (선택)', offline: '전단·간판 사진 링크 (있다면)' },
       fBiz: '가게·브랜드 이름', fBizPh: '예: 멜로우 베이커리', fCompany: '회사명', fCompanyPh: '예: 멜로우 주식회사',
       fName: '담당자 이름', fNamePh: '예: 박지민', fContact: '이메일 또는 전화', fContactPh: 'you@example.com 또는 010-0000-0000',
       fEmail: '업무 이메일', fEmailPh: 'you@company.com', fLink: '인스타·스토어·지도 링크 (선택)', fLinkPh: 'instagram.com/yourshop',
       fMsg: '더 하실 말씀 (선택)', fMsgPh: '궁금한 것, 해본 것, 일정 등',
       submit: '리포트 신청하기', sending: '보내는 중…', cancel: '결과로 돌아가기',
-      errRequired: '필수 항목을 채워주세요.', errContact: '이메일이나 전화번호 형식을 확인해주세요.',
+      errRequired: '리포트에 꼭 필요한 항목이 비어 있습니다. 아래 표시된 칸을 채워주세요.', errContact: '이메일이나 전화번호 형식을 확인해주세요.',
       errNet: '지금은 보낼 수 없습니다. 답변은 저장되어 있으니 잠시 후 다시 시도해주세요.',
       doneTitle: '접수되었습니다. 리포트를 보내드리겠습니다.', doneBody: 'Doppia Works 팀이 실제 채널을 검토해 영업일 7~10일 안에 보내드립니다. 그동안 제품 사진 한 장으로 Doppia를 무료로 써보실 수 있습니다.',
       doneTry: 'Doppia 무료로 써보기',
@@ -413,6 +414,9 @@
     if (!F.area && A.q0 === 'local') F.area = '';
   }
   var LINK_CHANNELS = ['instagram', 'tiktok', 'facebook', 'youtube', 'influencers', 'maps', 'website', 'marketplaces', 'delivery', 'paidads', 'email', 'offline'];
+  // 주소가 있는 채널은 링크 필수(운영 중이라고 답한 채널이다) — 인플루언서·광고·메일·오프라인은 링크가 없을 수 있어 선택
+  var URL_REQUIRED = ['instagram', 'tiktok', 'facebook', 'youtube', 'maps', 'website', 'marketplaces', 'delivery'];
+  var missing = [];
   function linkChannels() { return LINK_CHANNELS.filter(function (c) { return A.q1.indexOf(c) >= 0; }); }
   var STORE_KEY = 'doppia_diagnose_v1';
   try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; A.q0Other = A.q0Other || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; if (saved.metrics && saved.metrics.link) M = saved.metrics; } } catch (e) {}
@@ -639,7 +643,7 @@
 
   // ── 신청 폼 ──
   function field(id, label, ph, type, val, req) {
-    return '<label class="fld"><span>' + esc(label) + (req ? ' <i>*</i>' : '') + '</span>'
+    return '<label class="fld" data-for="' + id + '"><span>' + esc(label) + (req ? ' <i>*</i>' : '') + '</span>'
       + (type === 'textarea'
         ? '<textarea id="' + id + '" rows="3" placeholder="' + esc(ph) + '">' + esc(val) + '</textarea>'
         : '<input id="' + id + '" type="' + type + '" placeholder="' + esc(ph) + '" value="' + esc(val) + '"' + (req ? ' required' : '') + '>')
@@ -654,8 +658,8 @@
     var S = STR[lang], tr = track();
     prefill();
     var html = '<div class="dg-fade">';
-    html += '<section class="rcv"><div class="res-eyebrow">' + esc(S.rcvEyebrow) + '</div><h1 class="q">' + esc(S.rcvTitle) + '</h1>'
-         + '<p class="rcv-body">' + esc(S.rcvBody) + '</p><div class="rcv-due">' + esc(S.rcvDue.replace('{d}', dueDate())) + '</div></section>';
+    html += '<section class="rcv"><div class="res-eyebrow">' + esc(S.formEyebrow) + '</div><h1 class="q">' + esc(S.rcvTitle) + '</h1>'
+         + '<p class="rcv-body">' + esc(S.rcvBody) + '</p></section>';
     html += '<h2 class="fh">' + esc(S.formTitle) + '</h2><p class="q-hint">' + esc(tr === 'brand' ? S.formHintBrand : S.formHintSmall) + '</p>';
     html += '<form id="leadForm" class="lead" novalidate>';
     html += '<h3 class="fsec">' + esc(S.secContact) + '</h3>';
@@ -665,27 +669,30 @@
       html += field('fContact', S.fEmail, S.fEmailPh, 'email', F.contact, true);
     } else {
       html += field('fBiz', S.fBiz, S.fBizPh, 'text', F.biz, true);
-      html += field('fName', S.fName, S.fNamePh, 'text', F.name, false);
+      html += field('fName', S.fName, S.fNamePh, 'text', F.name, true);
       html += field('fContact', S.fContact, S.fContactPh, 'text', F.contact, true);
     }
     // 운영 중인 채널 — Q1에서 고른 채널마다 링크 칸
     var chs = linkChannels();
     html += '<h3 class="fsec">' + esc(S.secLinks) + '<small>' + esc(S.secLinksH) + '</small></h3>';
-    chs.forEach(function (c) { var o = OPT.q1.filter(function (x) { return x.id === c; })[0]; html += field('fLink_' + c, label(o), S.linkPh[c] || '', 'text', F.links[c] || '', false); });
+    chs.forEach(function (c) { var o = OPT.q1.filter(function (x) { return x.id === c; })[0]; html += field('fLink_' + c, label(o), S.linkPh[c] || '', 'text', F.links[c] || '', URL_REQUIRED.indexOf(c) >= 0); });
     html += field('fLinkOther', S.fLinkOther, S.fLinkOtherPh, 'text', F.linkOther, false);
     // 업체 정보
     html += '<h3 class="fsec">' + esc(S.secBiz) + '</h3>';
-    html += field('fProduct', S.fProduct, S.fProductPh, 'text', F.product, false);
-    if (A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') html += field('fArea', S.fArea, S.fAreaPh, 'text', F.area, false);
-    html += field('fGoal', S.fGoal, S.fGoalPh, 'text', F.goal, false);
-    html += '<label class="fld"><span>' + esc(S.fBudget) + '</span><select id="fBudget">' + S.budgets.map(function (b, i) { return '<option value="' + i + '"' + (String(F.budget) === String(i) ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></label>';
+    html += field('fProduct', S.fProduct, S.fProductPh, 'text', F.product, true);
+    if (A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') html += field('fArea', S.fArea, S.fAreaPh, 'text', F.area, true);
+    html += field('fGoal', S.fGoal, S.fGoalPh, 'text', F.goal, true);
+    html += '<label class="fld" data-for="fBudget"><span>' + esc(S.fBudget) + ' <i>*</i></span><select id="fBudget"><option value=""' + (F.budget === '' ? ' selected' : '') + '>' + esc(S.budgetPick) + '</option>' + S.budgets.map(function (b, i) { return '<option value="' + i + '"' + (String(F.budget) === String(i) ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></label>';
     html += field('fMsg', S.fMsg, S.fMsgPh, 'textarea', F.msg, false);
     html += '<div class="ferr" id="formErr"' + (formErr ? '' : ' hidden') + '>' + esc(formErr) + '</div>';
     html += '<div class="acts"><button type="button" class="btn btn-ghost sm" data-act="cancel">' + esc(S.cancel) + '</button>'
          + '<button type="submit" class="btn btn-primary"' + (sending ? ' disabled' : '') + '>' + esc(sending ? S.sending : S.submit) + '</button></div>';
     html += '</form></div>';
     app.innerHTML = html;
-    window.scrollTo(0, 0);
+    if (formErr && missing.length) {
+      missing.forEach(function (id) { var l = app.querySelector('.fld[data-for="' + id + '"]'); if (l) l.classList.add('miss'); });
+      var first = app.querySelector('.fld.miss'); if (first) first.scrollIntoView({ block: 'center' });
+    } else window.scrollTo(0, 0);
     postSession();
   }
   function readForm() {
@@ -696,8 +703,14 @@
   function submitForm() {
     var S = STR[lang], tr = track();
     readForm(); formErr = ''; A.biz = F.biz; save();
-    if (!F.biz || !F.contact || (tr === 'brand' && !F.name)) formErr = S.errRequired;
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(F.contact) && !(tr !== 'brand' && /^\+?[\d\s\-().]{7,25}$/.test(F.contact))) formErr = S.errContact;
+    missing = [];
+    if (!F.biz) missing.push('fBiz'); if (!F.name) missing.push('fName'); if (!F.contact) missing.push('fContact');
+    linkChannels().forEach(function (c) { if (URL_REQUIRED.indexOf(c) >= 0 && !F.links[c]) missing.push('fLink_' + c); });
+    if (!F.product) missing.push('fProduct');
+    if ((A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') && !F.area) missing.push('fArea');
+    if (!F.goal) missing.push('fGoal'); if (F.budget === '') missing.push('fBudget');
+    if (missing.length) formErr = S.errRequired;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(F.contact) && !(tr !== 'brand' && /^\+?[\d\s\-().]{7,25}$/.test(F.contact))) { formErr = S.errContact; missing = ['fContact']; }
     if (formErr) return renderForm();
     sending = true; renderForm();
     var linkList = Object.keys(F.links).map(function (c) { return { channel: c, url: F.links[c] }; });
