@@ -58,6 +58,12 @@
         en: 'Garden duplex townhouses in Wondang-dong, Seo-gu, Incheon. Each home has its own terrace, attic room, garden and parking, with roughly 3 kW of rooftop solar planned (per sales material).' },
       images: [['01.jpg', 'render'], ['02.jpg', 'plan'], ['03.jpg', 'ext'], ['04.jpg', 'ext'], ['05.jpg', 'int'], ['06.jpg', 'int'], ['07.jpg', 'int'], ['08.jpg', 'int'], ['09.jpg', 'int']] },
 
+    { id: 'majeon', r: 'r14', hero: 'assets/img/projects/track/lg/majeon.jpg',
+      desc: {
+        ko: '인천 서구 마전동 마전지구의 4개동·40세대 공동주택으로, 2011년 첫 입주를 시작했습니다. 1층은 주차장, 2~5층은 2룸·3룸 세대와 5층 복층 세대로 구성했고 단지 안에 바비큐장과 야외 테라스를 두었습니다.',
+        en: 'A four-building, 40-unit housing complex in the Majeon district of Seo-gu, Incheon, first occupied in 2011 — parking on the ground floor, two- and three-room homes above with duplex units on the top floor, and a shared barbecue terrace.' },
+      images: [['01.jpg', 'ext'], ['02.jpg', 'ext'], ['03.jpg', 'land'], ['04.jpg', 'land'], ['05.jpg', 'land'], ['06.jpg', 'int'], ['07.jpg', 'int'], ['08.jpg', 'int'], ['09.jpg', 'int'], ['10.jpg', 'int'], ['11.jpg', 'int'], ['12.jpg', 'plan'], ['13.jpg', 'plan']] },
+
     { id: 'bullo', r: 'r9', role: 'ds', hero: 'assets/img/projects/track/lg/bullo.jpg',
       desc: {
         ko: '인천 서구 불로동의 38세대·2개동 타운하우스입니다. 단지 안에 바비큐 데크와 텃밭을 두어 이웃과 함께 쓰는 마당을 만들었습니다.',
@@ -69,13 +75,13 @@
     ko: { 'pd.crumb': '프로젝트', 'pd.kicker': 'Project Overview', 'pd.title': '프로젝트 개요',
           'pd.f.loc': '위치', 'pd.f.year': '연도', 'pd.f.scale': '규모', 'pd.f.use': '용도', 'pd.f.role': '역할',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': '전체',
-          'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.plan': '단면 · 구성', 'pd.k.land': '조경 · 커뮤니티',
+          'pd.k.ext': '외관', 'pd.k.int': '실내', 'pd.k.con': '시공 중', 'pd.k.render': '조감도', 'pd.k.plan': '평면 · 구성', 'pd.k.land': '조경 · 커뮤니티',
           'pd.note': '※ 관계사 (주)재인건설과 전신 법인의 실적입니다. 조감도는 분양 자료 기준이며 실제와 다를 수 있습니다.',
           'meta.pd.desc': '재노바 아너스와 뿌리를 같이하는 시공 실적.' },
     en: { 'pd.crumb': 'Projects', 'pd.kicker': 'Project Overview', 'pd.title': 'Overview',
           'pd.f.loc': 'Location', 'pd.f.year': 'Year', 'pd.f.scale': 'Scale', 'pd.f.use': 'Use', 'pd.f.role': 'Role',
           'pd.g.kicker': 'Project Gallery', 'pd.g.title': 'See the Project', 'pd.g.all': 'All',
-          'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.plan': 'Section · Layout', 'pd.k.land': 'Landscape · Community',
+          'pd.k.ext': 'Exterior', 'pd.k.int': 'Interior', 'pd.k.con': 'Under construction', 'pd.k.render': 'Rendering', 'pd.k.plan': 'Plans · Layout', 'pd.k.land': 'Landscape · Community',
           'pd.note': '※ Record of our affiliate Jaein Construction and its predecessors. Renderings follow sales material and may differ from the built result.',
           'meta.pd.desc': 'Track record sharing its roots with Jaenova Honors.' }
   };
