@@ -22,6 +22,7 @@ import { PagesModule } from './pages/pages.module';
 import { SecurityModule } from './common/security/security.module';
 import { TemplateDataModule } from './template-data/template-data.module';
 import { TrialModule } from './trial/trial.module';
+import { DiagnoseModule } from './diagnose/diagnose.module';
 import { PublishingModule } from './publishing/publishing.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
@@ -65,6 +66,7 @@ import { AdminUsersModule } from './admin-users/admin-users.module';
     BusinessMetaModule,  // Meta 직결 인스타 연동(/api/admin/business-meta) — Zernio 대안 실측용
     AdminUsersModule,    // 환경별 사용자·생성물 조회(/api/admin/users)
     AdminPaymentsModule, // 환경별 결제 조회(/api/admin/payments)
+    DiagnoseModule,      // 진단 퍼널 저장(/api/diagnose 공개 · /api/admin/diagnose 관리자)
     PagesModule,          // ⚠️ 반드시 마지막 — 클린 URL(:name)이 단일 세그먼트를 전부 잡는다
   ],
   controllers: [HealthController],

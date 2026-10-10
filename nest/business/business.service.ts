@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import * as path from 'path';
 import { BusinessRepository, toFilePath } from './business.repository';
 import { BusinessCaptionService } from './business-caption.service';
+import { mirrorProfileImage } from './profile-image';
 import {
   CreateBusinessDto, EnqueueDto, GenerateCaptionDto, LinkAccountDto, LinkPackDto,
   RegisterMediaDto, UpdateBusinessDto, UpdateQueueDto,
@@ -19,6 +20,8 @@ const scheduler = require(path.join(__dirname, '..', '..', 'src', 'publishing', 
 const zernio = require(path.join(__dirname, '..', '..', 'src', 'publishing', 'zernio.client.js'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const accountRepo = require(path.join(__dirname, '..', '..', 'src', 'publishing', 'account.repository.js'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mediaStore = require(path.join(__dirname, '..', '..', 'src', 'storage', 'mediaStore.js'));
 
 /** 큐가 가질 수 있는 상태 — 임의 문자열이 들어오면 스케줄러가 영영 안 집는다 */
 const QUEUE_STATUSES = ['pending', 'confirmed', 'scheduled', 'posted', 'cancelled'];
@@ -157,13 +160,13 @@ export class BusinessService {
           const me = await ig.me(tok.access_token, tok.auth_mode);
           await this.repo.updateAccountProfile(a.id, {
             username: me.username, displayName: me.username,
-            profileImage: me.profilePictureUrl, followers: me.followersCount,
+            profileImage: await mirrorProfileImage(me.profilePictureUrl), followers: me.followersCount,
           });
         } else {
           const remote = await zernio.getAccountDetail(a.account_id);
           await this.repo.updateAccountProfile(a.id, {
             username: remote.username, displayName: remote.displayName || remote.username,
-            profileImage: remote.profileImage, followers: remote.followers,
+            profileImage: await mirrorProfileImage(remote.profileImage), followers: remote.followers,
           });
         }
         updated += 1;
@@ -201,8 +204,14 @@ export class BusinessService {
     const mediaType = file.mimetype?.startsWith('video') ? 'video'
       : file.mimetype?.startsWith('audio') ? 'audio' : 'image';
 
+    // R2 영속화 — prd는 tmp/images 를 48시간마다 지운다(crontab). 안 올리면 원본·배경음악이 이틀 뒤 사라진다.
+    try { await mediaStore.putFile(file.path); } catch (e) { /* best-effort: 미설정 환경은 no-op */ }
+    // 배경음악은 목록에서 고를 때 알아볼 이름이 필요하다 — 저장 파일명은 UUID라 원래 이름을 caption에 둔다.
+    //   multer는 파일명을 latin1로 넘기므로 한글 이름은 utf8로 되돌린다.
+    const originalName = mediaType === 'audio' && file.originalname
+      ? Buffer.from(file.originalname, 'latin1').toString('utf8').slice(0, 200) : null;
     const media = await this.repo.insertMedia({
-      businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload',
+      businessId: id, filePath: `tmp/images/${file.filename}`, mediaType, source: 'upload', caption: originalName,
     });
     return isBase ? ((await this.repo.setBaseMedia(id, media.id)) as BusinessMediaVo) : media;
   }
@@ -325,6 +334,13 @@ export class BusinessService {
     }
     for (const mediaId of imageMediaIds) await this.assertMediaOwned(id, mediaId);
     if (reelMediaId) await this.assertMediaOwned(id, reelMediaId);
+    // 배경음악 — 릴스에만 입힌다(사진 게시물엔 음악을 붙일 수 없다). 이 사업체의 오디오 파일이어야 한다.
+    let bgmMediaId: string | null = null;
+    if (body.bgmMediaId && reelMediaId) {
+      const bgm = await this.assertMediaOwned(id, body.bgmMediaId);
+      if (bgm.media_type !== 'audio') throw new BadRequestException('배경음악은 오디오 파일이어야 합니다');
+      bgmMediaId = body.bgmMediaId;
+    }
 
     if (body.scheduledAt && new Date(body.scheduledAt).getTime() <= Date.now()) {
       throw new BadRequestException('예약 시각은 현재보다 미래여야 합니다');
@@ -332,7 +348,7 @@ export class BusinessService {
 
     return this.repo.insertQueue({
       accountId, imageMediaId: imageMediaIds[0] || null, imageMediaIds, reelMediaId,
-      bgmMediaId: body.bgmMediaId,
+      bgmMediaId,
       imageCaption: body.imageCaption, reelCaption: body.reelCaption,
       hashtags: body.hashtags, scheduledAt: body.scheduledAt,
     });
@@ -402,9 +418,11 @@ export class BusinessService {
     });
   }
 
-  private async assertMediaOwned(businessId: string, mediaId: string): Promise<void> {
+  private async assertMediaOwned(businessId: string, mediaId: string): Promise<BusinessMediaVo> {
     const all = await this.repo.mediaOf(businessId);
-    if (!all.some((m) => m.id === mediaId)) throw new NotFoundException('이 사업체의 미디어가 아닙니다');
+    const found = all.find((m) => m.id === mediaId);
+    if (!found) throw new NotFoundException('이 사업체의 미디어가 아닙니다');
+    return found;
   }
 
   private async assertQueueOwned(businessId: string, queueId: string): Promise<BusinessQueueVo> {

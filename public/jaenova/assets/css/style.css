@@ -134,6 +134,7 @@ body.solid-header .site-header{
   border:1px solid var(--gold); color:var(--gold);
   font-family:var(--serif); font-size:.95rem; letter-spacing:.04em;
 }
+.brand-logo{ height:46px; width:auto; flex:0 0 auto; display:block; }
 .brand-text{ display:flex; flex-direction:column; line-height:1.24; }
 .brand-text strong{
   font-family:var(--serif); font-size:1.1rem; font-weight:600;
@@ -312,6 +313,7 @@ body.solid-header .site-header{
 .bda .tag i{ flex:1; height:1px; background:var(--line); }
 .bda h4{ font-family:var(--serif); font-size:1.15rem; color:#fff; margin-top:1rem; }
 .bda p{ font-size:.88rem; color:var(--text-inv-m); margin-top:.35rem; }
+.bda .bda-site{ font-size:.72rem; letter-spacing:.06em; color:var(--gold); margin-top:.6rem; }
 
 /* ==========================================================================
    IMAGE PLACEHOLDER
@@ -481,6 +483,22 @@ html[lang="ko"] .rec h4, html[lang="ko"] .rec-spec{ word-break:keep-all; }
 .gallery img{ width:100%; height:210px; object-fit:cover; transition:transform .7s cubic-bezier(.2,.7,.3,1), opacity .35s; }
 .gallery figure:hover img{ transform:scale(1.07); opacity:.85; }
 .gallery figure[hidden]{ display:none; }
+.pd-gallery figure{ position:relative; }
+.pd-gallery img{ height:240px; }
+.pd-gallery figcaption{
+  position:absolute; left:0; right:0; bottom:0; padding:1.6rem .8rem .55rem;
+  font-size:.7rem; letter-spacing:.08em; color:#fff;
+  background:linear-gradient(to top, rgba(5,7,12,.75), rgba(5,7,12,0)); pointer-events:none;
+}
+.pd-nav{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:1rem; margin-top:3rem; padding-top:1.6rem; border-top:1px solid var(--line); }
+.pd-nav-link{ display:flex; flex-direction:column; gap:.2rem; min-width:0; }
+.pd-nav-link.next{ text-align:right; }
+.pd-nav-link small{ font-size:.68rem; letter-spacing:.14em; color:var(--gold); }
+.pd-nav-link b{ font-weight:500; color:#fff; font-size:.98rem; }
+.pd-nav-link:hover b{ color:var(--gold-lt); }
+.pd-nav-all{ font-size:.72rem; letter-spacing:.12em; color:var(--text-inv-m); border:1px solid var(--line-dark); padding:.55rem 1.1rem; }
+.pd-nav-all:hover{ border-color:var(--gold); color:var(--gold); }
+@media (max-width:560px){ .pd-nav{ grid-template-columns:1fr 1fr; } .pd-nav-all{ grid-column:1 / -1; grid-row:2; text-align:center; } }
 
 /* ==========================================================================
    ABOUT — history / ceo / values
@@ -587,13 +605,17 @@ html[lang="ko"] .rec h4, html[lang="ko"] .rec-spec{ word-break:keep-all; }
 .cta{ background:var(--navy); border-top:1px solid var(--line); padding:clamp(56px,7vw,92px) 0; text-align:center; }
 .cta h2{ font-family:var(--serif); font-size:clamp(1.8rem,3.6vw,3rem); color:#fff; line-height:1.2; }
 .cta p{ color:var(--text-inv-m); margin:1rem auto 2rem; max-width:52ch; }
+.cta .cta-tel{ display:flex; flex-wrap:wrap; justify-content:center; align-items:baseline; gap:.4rem 1.4rem; margin:1.8rem auto 0; font-size:.95rem; }
+.cta-tel b{ font-size:.72rem; letter-spacing:.14em; color:var(--gold); font-weight:600; }
+.cta-tel a{ color:#fff; letter-spacing:.04em; border-bottom:1px solid var(--line); }
+.cta-tel a:hover{ color:var(--gold-lt); }
 
 /* ==========================================================================
    FOOTER  (기획안 25)
    ========================================================================== */
 .site-footer{ background:var(--ink); color:var(--text-inv-m); padding:clamp(52px,6vw,84px) 0 36px; border-top:1px solid var(--line-dark); }
 .foot-top{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:2.4rem; padding-bottom:2.6rem; border-bottom:1px solid var(--line-dark); }
-.foot-brand .brand-mark{ margin-bottom:1.1rem; }
+.foot-logo{ display:block; width:168px; height:auto; margin-bottom:1rem; }
 .foot-brand strong{ display:block; font-family:var(--serif); font-size:1.2rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-inv); }
 .foot-brand em{ font-style:normal; display:block; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-top:.3rem; }
 .foot-col h4{ font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin-bottom:1.1rem; }
@@ -707,7 +729,7 @@ html[lang="ko"] .kicker{ font-weight:700; font-size:.78rem; }
 @media (max-width:560px){
   .brand{ gap:10px; flex:0 1 auto; min-width:0; }
   .brand-text em{ display:none; }
-  .brand-mark{ width:34px; height:34px; flex-basis:34px; font-size:.8rem; }
+  .brand-logo{ height:38px; }
   .process{ grid-template-columns:1fr; }
   .foot-top{ grid-template-columns:1fr; gap:2rem; }
   .form .row{ grid-template-columns:1fr; }

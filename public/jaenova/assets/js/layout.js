@@ -77,7 +77,7 @@
     '<header class="site-header" id="siteHeader">' +
       '<div class="wrap header-inner">' +
         '<a class="brand" href="index.html">' +
-          '<span class="brand-mark">JH</span>' +
+          '<img class="brand-logo" src="assets/img/brand/mark.png" alt="" width="181" height="295">' +
           '<span class="brand-text">' +
             '<strong>Jaenova Honors</strong>' +
             '<em data-i18n="brand.sub"></em>' +
@@ -109,8 +109,7 @@
       '<div class="wrap">' +
         '<div class="foot-top">' +
           '<div class="foot-brand">' +
-            '<span class="brand-mark">JH</span>' +
-            '<strong>Jaenova Honors</strong>' +
+            '<img class="foot-logo" src="assets/img/brand/lockup.png" alt="JAENOVA HONORS" width="641" height="496">' +
             '<em data-i18n="brand.sub"></em>' +
           '</div>' +
           col('foot.menu', [
