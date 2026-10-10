@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/works-icon.svg?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="/works-icon-32.png?v=2">
+<link rel="apple-touch-icon" href="/works-icon-180.png?v=2">
+<title>Doppia Works — Free marketing check-up</title>
+<meta name="description" content="Six quick taps. See where your marketing stands and what to do next — for a shop, a brand, or an online store.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap">
+<!--
+  진단 퍼널 1단계 (2026-10-07). 설계 정본 = 노션 "Doppia 웹 진단 퍼널 — 사업 지도·질문 설계".
+  - 질문 6개(Q0·Q0-1·Q0-2·Q1·Q2·Q4) → 결과 1단계(답 기반, 조립식) → 버튼 2개. 백엔드 없음.
+  - 다국어: 이 페이지는 /js/i18n.js(영문 키 치환)를 쓰지 않고 페이지 안의 STR 표로 직접 그린다.
+    이유 — 결과 "상태 한 줄"이 답을 조립한 문장이라 한국어 어순·조사가 영어 조각 치환으로는 안 나온다.
+    언어 저장 키(doppia_lang)·쿠키는 i18n.js와 동일하게 써서 다른 페이지와 선택이 이어진다.
+  - 답변은 localStorage(doppia_diagnose_v1)에만 둔다. 2단계(저장 API)에서 서버로 보낸다.
+-->
+<style>
+  /* 라이트 팔레트 — works.html과 동일 (theme.css의 어두운 body를 쓰지 않는다) */
+  :root{--maxw:760px;
+    --bg:#ffffff; --tint:#f6f4fc; --surface:#ffffff; --surface2:#f6f4fc; --border:rgba(22,19,31,.10); --border2:rgba(22,19,31,.16);
+    --text:#16131f; --dim:#5f5a73; --faint:#8f8aa6; --accent:#6a40e0; --accent-ink:#5b35cc; --accent2:#5b35cc; --accent-soft:#e9e2fb; --pink:#d9608f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',-apple-system,'Apple SD Gothic Neo','Pretendard',sans-serif;background:linear-gradient(180deg,#fff 0%,var(--tint) 40%,#fff 100%) fixed;color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;word-break:keep-all;min-height:100vh;display:flex;flex-direction:column}
+  a{text-decoration:none;color:inherit}
+  .brand{font-family:'Sora',Inter,sans-serif;font-weight:800;font-size:18px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px;white-space:nowrap}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 0 0 4px var(--accent-soft)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;border-radius:12px;padding:11px 20px;border:1px solid transparent;cursor:pointer;transition:transform .15s,background .15s;white-space:nowrap;font-family:inherit}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 8px 20px -10px rgba(106,64,224,.7)}
+  .btn-primary:hover:not(:disabled){background:var(--accent-ink);transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  .btn-ghost{background:#fff;color:var(--text);border-color:var(--border2)}
+  .btn-ghost:hover{background:var(--tint)}
+  .dotgrid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(106,64,224,.10) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(180deg,rgba(0,0,0,.8),rgba(0,0,0,.2) 60%,transparent)}
+  .dg-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(255,255,255,.86);border-bottom:1px solid var(--border)}
+  .dg-nav .in{max-width:var(--maxw);margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .lang{display:flex;gap:2px;border:1px solid var(--border2);border-radius:999px;padding:2px}
+  .lang button{background:transparent;border:0;color:var(--dim);font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer}
+  .lang button[aria-pressed="true"]{background:var(--text);color:#fff}
+  main{flex:1;width:100%;max-width:var(--maxw);margin:0 auto;padding:36px 20px 80px;position:relative;z-index:2}
+  .prog{display:flex;align-items:center;gap:12px;margin-bottom:28px;color:var(--faint);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+  .prog .bar{flex:1;height:3px;background:rgba(22,19,31,.08);border-radius:3px;overflow:hidden}
+  .prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--pink));transition:width .35s}
+  .q-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
+  h1.q{font-family:'Sora',Inter,sans-serif;font-size:clamp(24px,4vw,34px);line-height:1.18;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
+  .q-hint{color:var(--dim);font-size:14px;margin-top:10px}
+  .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:26px}
+  .opts.wide{grid-template-columns:1fr}
+  @media(max-width:480px){.opts{grid-template-columns:repeat(2,1fr)}.opts.wide{grid-template-columns:1fr}}
+  .opt{position:relative;text-align:left;background:#fff;box-shadow:0 1px 2px rgba(22,19,31,.03),0 10px 24px -20px rgba(22,19,31,.25);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--text);font:inherit;cursor:pointer;transition:border-color .15s,background .15s,transform .15s;min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:3px}
+  .opt:hover{border-color:var(--accent);background:#fff}
+  .opt:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+  .opt .t{font-weight:600;font-size:15px;line-height:1.3}
+  .opt .s{font-size:12px;color:var(--faint);line-height:1.35}
+  .opt[aria-pressed="true"],.opt[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+  .opt[aria-checked="true"]::after{content:"";position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;background:var(--accent2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
+  .opt.quiet{border-style:dashed;color:var(--dim)}
+  .other{margin-top:12px}
+  .other input{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none}
+  .other input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .acts{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:30px}
+  .acts .cnt{color:var(--faint);font-size:13px}
+  .btn-ghost.sm{padding:9px 14px;font-size:13px}
+  /* result */
+  .res-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
+  /* 접수 확인 */
+  .rcv{background:#fff;border:1px solid var(--border);border-radius:18px;padding:28px 30px;box-shadow:0 1px 2px rgba(22,19,31,.03),0 24px 60px -36px rgba(22,19,31,.28)}
+  .rcv .q{font-size:clamp(24px,3.6vw,32px)}
+  .rcv-body{color:var(--dim);font-size:16px;line-height:1.65;margin-top:14px;max-width:60ch}
+  .rcv-due{display:inline-block;margin-top:18px;font-size:13px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:7px 12px}
+  .fh{font-family:'Sora',Inter,sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:40px}
+  .nxt{margin-top:28px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px 22px}
+  .nxt h2{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .nxt ol{padding-left:20px;display:grid;gap:8px;font-size:15px;line-height:1.5;color:var(--text)}
+  /* 리포트 1쪽 — 문서 모양 (현재 미사용: 분석을 보여주지 않기로 함. 팀용 리포트 템플릿에 재사용 예정) */
+  .rpt{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 1px 2px rgba(22,19,31,.03),0 24px 60px -36px rgba(22,19,31,.28);padding:28px 30px;display:flex;flex-direction:column;gap:26px}
+  @media(max-width:520px){.rpt{padding:22px 18px}}
+  .rpt-h{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:20px}
+  .rpt-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:4px 10px}
+  .rpt-biz{font-family:'Sora',Inter,sans-serif;font-size:clamp(22px,3.2vw,30px);font-weight:800;letter-spacing:-.02em;margin-top:10px;line-height:1.2}
+  .rpt-meta{display:flex;gap:22px;margin:0}
+  .rpt-meta dt{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .rpt-meta dd{font-size:13px;color:var(--text);margin-top:3px;max-width:26ch}
+  .rpt-s h2{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .rpt .res-state{font-size:clamp(18px,2.4vw,22px)}
+  .chbox{border:1px dashed var(--border2);border-radius:12px;padding:14px 16px;background:var(--tint);color:var(--dim);font-size:14px;display:flex;flex-direction:column;gap:10px}
+  .chlink{font-weight:700;color:var(--accent-ink);word-break:break-all}
+  .chlink small{display:block;font-weight:500;color:var(--faint);font-size:12px;margin-top:2px}
+  .chload{color:var(--dim)}
+  .chload::after{content:"";display:inline-block;width:14px;height:14px;border:2px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;margin-left:8px;vertical-align:-2px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .kvs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .kv{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+  .kv b{font-family:'Sora',Inter,sans-serif;font-size:18px;letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
+  .kv span{font-size:11.5px;color:var(--faint)}
+  .kv.bad b{color:#b8336a}
+  .kv.good b{color:var(--accent-ink)}
+  .chadd{display:flex;gap:8px;flex-wrap:wrap}
+  .chadd input{flex:1 1 220px;font:inherit;font-size:14px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:10px;padding:10px 12px;outline:none}
+  .chadd input:focus{border-color:var(--accent)}
+  .rpt .echo{margin-top:0}
+  .scope{display:flex;flex-wrap:wrap;gap:8px}
+  .scope span{font-size:13px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:7px 12px}
+  .scope-l{list-style:none;margin-top:12px;display:grid;gap:4px;font-size:14px;color:var(--text)}
+  .scope-l li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:10px;vertical-align:middle}
+  .dop{margin-top:28px;display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--border);border-radius:14px;padding:18px 20px;background:#fff}
+  .dop b{font-size:14px;display:block}
+  .dop p{color:var(--dim);font-size:14px;margin-top:4px;max-width:52ch}
+  .res-state{font-family:'Sora',Inter,sans-serif;font-size:clamp(22px,3.4vw,30px);line-height:1.25;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
+  .res-state b{background:linear-gradient(95deg,var(--accent-ink) 0%,var(--accent) 55%,var(--pink) 115%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+  .note{margin-top:18px;padding:12px 14px;border-radius:12px;background:var(--accent-soft);border:1px solid rgba(106,64,224,.25);color:var(--text);font-size:14px}
+  .echo{margin-top:34px}
+  .echo h2{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+  .echo .item{border-left:2px solid var(--accent);padding:2px 0 2px 16px;margin-bottom:18px}
+  .echo .item .quote{color:var(--dim);font-size:14px;font-style:italic;margin-bottom:6px}
+  .echo .item .line{font-size:16px;line-height:1.55}
+  .ctas{display:flex;gap:12px;margin-top:36px;flex-wrap:wrap}
+  .ctas .btn{flex:1 1 220px;padding:15px 20px;font-size:15px;border-radius:14px}
+  .ctas .btn.secondary{background:#fff;border:1px solid var(--border2);color:var(--text)}
+  .ctas .btn.secondary:hover{background:var(--tint)}
+  .ctas.equal .btn{flex:1 1 220px}
+  .cta-hint{margin-top:12px;color:var(--faint);font-size:13px}
+  .lead{margin-top:26px;display:flex;flex-direction:column;gap:14px}
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fsec{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:14px;padding-top:18px;border-top:1px solid var(--border)}
+  .fsec:first-child{margin-top:0;padding-top:0;border-top:0}
+  .fsec small{display:block;font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--dim);margin-top:4px}
+  .fld select{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none}
+  .fld span{font-size:13px;font-weight:600;color:var(--dim)}
+  .fld i{color:var(--pink);font-style:normal}
+  .fld.miss input,.fld.miss textarea,.fld.miss select{border-color:var(--pink);box-shadow:0 0 0 3px rgba(217,96,143,.14)}
+  .fld input,.fld textarea{font:inherit;font-size:15px;color:var(--text);background:#fff;border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:100%;outline:none;transition:border-color .15s}
+  .fld input:focus,.fld textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .fld textarea{resize:vertical;min-height:84px}
+  .ferr{padding:10px 14px;border-radius:10px;background:rgba(217,96,143,.08);border:1px solid rgba(217,96,143,.35);color:#9b2f5b;font-size:14px}
+  .restart{margin-top:40px;text-align:center}
+  .restart button{background:transparent;border:0;color:var(--faint);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .dg-fade{animation:dgfade .25s ease}
+  @keyframes dgfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.dg-fade{animation:none}.prog .bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="dotgrid" aria-hidden="true"></div>
+
+<nav class="dg-nav">
+  <div class="in">
+    <a class="brand" href="/works"><span class="dot"></span><span>DOPPIA</span><span class="sfx" style="font-weight:600;color:var(--dim);margin-left:2px">Works</span></a>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="ko">KO</button>
+    </div>
+  </div>
+</nav>
+
+<main id="app" aria-live="polite"></main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── 언어 (i18n.js와 같은 키·쿠키를 써서 다른 페이지와 선택이 이어진다) ──
+  var LANG_KEY = 'doppia_lang';
+  function getLang() {
+    try { var v = localStorage.getItem(LANG_KEY); if (v === 'ko' || v === 'en') return v; } catch (e) {}
+    var m = document.cookie.match(/(?:^|; )doppia_lang=(ko|en)/);
+    if (m) return m[1];
+    return /^ko/i.test(navigator.language || '') ? 'ko' : 'en';
+  }
+  function setLang(l) {
+    try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+    document.cookie = LANG_KEY + '=' + l + ';path=/;max-age=31536000;samesite=lax';
+    lang = l; document.documentElement.lang = l; render();
+  }
+  var lang = getLang();
+  document.documentElement.lang = lang;
+
+  // ── 문구 (영어 원문 · 한국어). 정본 = 노션 §4·§5 ──
+  var STR = {
+    en: {
+      step: 'Step {n} of {total}', back: 'Back', next: 'Next', pick3: 'Pick up to 3', picked: '{n} of 3 picked', more: 'Show more options', less: 'Show fewer',
+      q0: 'What kind of business do you run?', q0h: 'Pick the closest one.',
+      q01: 'Where do you sell?', q01h: 'Pick one.',
+      q02: 'Who handles your marketing?', q02h: 'Pick one.',
+      q1: 'Where do you promote now?', q1h: 'Tap everything that applies.',
+      q2: 'How often do you post?', q2h: 'Across all your channels, roughly.',
+      q4: "What's hardest about marketing right now?", q4h: 'Pick up to three. Be honest — this is just for you.',
+      resEyebrow: 'Your check-up', echoH: 'You told us', noneNote: "You don't have an online presence yet. Let's start by opening a channel.",
+      seeMine: 'See it with your own photo or link', soon: 'Coming soon',
+      leadSoon: 'Requests open shortly. For now, try it free — one product photo is enough to see what Doppia makes.',
+      restart: 'Start over', otherPh: 'Type it in your own words', otherLabel: 'Other — in your words',
+      // 가게 정보 화면 (결과 직전)
+      info: 'Last one — for the report', infoh: 'The name goes on the report. A link lets us pull your real numbers.',
+      fBizInfo: 'Business or brand name', fLinkInfo: 'Instagram, store or map link (optional)', seeResult: 'See my results',
+      // 접수 확인 (분석 없음)
+      rcvEyebrow: 'Request received',
+      nextH: 'What happens next',
+      next1: 'The team reviews every channel and link you give us', next2: 'We write a one-page report: where you stand, what we would change first, and the scope we would propose', next3: 'You receive it by email or phone — no commitment either way',
+      doneDue: 'In order of request · expected by {d}',
+      rpTag: 'Marketing check-up · Page 1', rpBizFallback: 'Your business', rpMetaCh: 'Channels', rpMetaDate: 'Reviewed',
+      secState: 'Where you stand', secCh: 'Channel status', secSaid: 'What you told us', secScope: 'What Doppia Works would take on',
+      chEmpty: 'Add an Instagram, store or map link and this section fills in with your real numbers — last post, posting rhythm, map photos, reviews.',
+      chAdd: 'Add link', chLoading: 'Checking your channel…', chRetry: 'Add another link',
+      chFail: { not_found: "We couldn't find that account or place. Check the link or name and try again.", private: 'This account is private, so we can only see the basics.', unsupported: 'Automatic lookup works for Instagram and Kakao Map only. We keep this link and check it ourselves when writing your report.', no_key: 'Live lookup is not enabled on this server yet.', upstream: 'The lookup timed out. Please try once more.', rate: 'Lookup limit reached for now — the full report will include these numbers anyway.' },
+      igFollowers: 'Followers', igPosts: 'Posts', igLast: 'Since last post', igLastV: '{n}d', igNever: 'No posts', ig30: 'Posts, last 30 days', igEng: 'Engagement', igReels: 'Reels share', igPriv: 'Private account — basics only',
+      kkName: 'Found on Kakao Map', kkPhotos: 'Map photos', kkReviews: 'Reviews', kkRating: 'Rating', kkRatingNa: 'Not enough reviews', kkBlog: 'Blog reviews', kkBlogLast: 'Since last blog post', kkIg: 'Instagram linked', kkIgNo: 'No Instagram linked', kkYes: 'Yes',
+      flagQuiet: 'quiet', flagOk: 'active',
+      scopeCadence: { daily: 'Keep daily posting · we take over production', weekly: '4 posts a week · we take over scheduling', monthly: '3 posts a week · restart the rhythm', rarely: '3 posts a week · restart from zero', stopped: '3 posts a week · restart from zero', none: 'Open the channels first · then 3 posts a week' },
+      scopeReport: 'Written report on the 1st of every month',
+      sc_ch: 'Channel operations', sc_ads: 'Ads', sc_content: 'Content production', sc_maps: 'Maps & reviews', sc_crm: 'Customer relationships', sc_consult: 'Strategy consulting', sc_open: 'Channel setup',
+      dopH: 'What is Doppia?', dopP: 'Doppia turns one product photo into cuts and ad videos. It is the production engine Doppia Works runs on — and you can use it yourself, free to start.',
+      dopBtn: 'Make something with Doppia',
+      // buttons
+      reportSmall: 'Get my full report', reportBrand: 'Talk to Doppia Works',
+      reportHintSmall: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report in 7–10 business days.',
+      reportHintBrand: 'Free. Next, we ask for your channel links and a few facts — the team reviews each one and writes the report in 7–10 business days.',
+      // form
+      formTitle: 'About the business', formHintSmall: 'Your report is written from the details below.',
+      formHintBrand: 'Your report is written from the details below.',
+      secContact: 'Contact', secLinks: 'Your channels', secLinksH: 'The channels you said you run. Each one is reviewed before the report is written.', secBiz: 'About the business',
+      fLinkOther: 'Any other link', fLinkOtherPh: 'Website, catalog, press…',
+      fProduct: 'Main product or service', fProductPh: 'e.g. handmade ceramics · skincare for sensitive skin · lunch sets',
+      fArea: 'Location of the store', fAreaPh: 'e.g. Songdo, Incheon',
+      fGoal: 'What you want in the next 3 months', fGoalPh: 'e.g. more walk-ins on weekdays · launch a new line · first online sales',
+      fBudget: 'Monthly marketing budget', budgetPick: 'Choose one', budgets: ['Prefer not to say', 'None yet', 'Under ₩500k', '₩500k – ₩2M', 'Over ₩2M'],
+      linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: 'A creator you worked with, or a campaign link', maps: 'Google Maps / Naver Place / Kakao Map link', website: 'Website, blog or store URL', marketplaces: 'Amazon / Coupang / Etsy store URL', delivery: 'Delivery or booking app page', paidads: 'Ad account or a recent ad (optional)', email: 'Newsletter or CRM tool (optional)', offline: 'Photo of a flyer or sign, if any (link)' },
+      fBiz: 'Business or brand name', fBizPh: 'e.g. ARVO Skincare', fCompany: 'Company', fCompanyPh: 'e.g. ARVO Inc.',
+      fName: 'Your name', fNamePh: 'e.g. Jamie Park', fContact: 'Email or phone', fContactPh: 'you@example.com or +82 10-0000-0000',
+      fEmail: 'Work email', fEmailPh: 'you@company.com', fLink: 'Instagram, store or map link (optional)', fLinkPh: 'instagram.com/yourshop',
+      fMsg: 'Anything else? (optional)', fMsgPh: 'What you want to know, what you tried, deadlines…',
+      submit: 'Send me the report', sending: 'Sending…', cancel: 'Back to results',
+      errRequired: 'Please complete the marked fields.', errContact: 'Please enter a valid email or phone number.',
+      errNet: "Couldn't send right now. Your answers are kept — please try again in a moment.",
+      doneTitle: 'All set. Your report is on its way.', doneBody: 'The Doppia Works team reviews your actual channels and writes it up in 7–10 business days. Meanwhile, you can try Doppia free with one product photo.',
+      doneTry: 'Try Doppia free',
+      // state fragments
+      sell: { instore: ' from a physical location', online: ' online', both: ' both in-store and online', local: '' },
+      promoNone: "and you're not promoting online yet", promoOn: 'promoting on {list}', andMore: ' and more', and: ' and ',
+      freq: { daily: 'You post almost every day.', weekly: 'You post a few times a week.', monthly: 'You post a few times a month.', rarely: 'Posting has slowed to a trickle.', stopped: 'Posting has stopped.' },
+      state: 'You run a {biz} business{sell}, {promo}. {freq}',
+      stateBrand: 'Your team runs a {biz} brand{sell}, {promo}. {freq}'
+    },
+    ko: {
+      step: '{total}개 중 {n}번째', back: '이전', next: '다음', pick3: '최대 3개', picked: '3개 중 {n}개 선택', more: '선택지 더 보기', less: '접기',
+      q0: '어떤 가게·브랜드를 운영하고 계세요?', q0h: '가장 가까운 것 하나를 골라주세요.',
+      q01: '주로 어디서 파세요?', q01h: '하나만 골라주세요.',
+      q02: '마케팅은 누가 하세요?', q02h: '하나만 골라주세요.',
+      q1: '지금 어디서 알리고 계세요?', q1h: '해당하는 것을 모두 눌러주세요.',
+      q2: '얼마나 자주 올리세요?', q2h: '채널을 통틀어 대략이면 돼요.',
+      q4: '요즘 홍보·마케팅, 어떤 게 제일 힘드세요?', q4h: '최대 3개. 솔직하게 골라주세요 — 보는 건 사장님뿐이에요.',
+      resEyebrow: '진단 결과', echoH: '이렇게 말씀하셨죠', noneNote: '아직 온라인에 가게가 없어요. 채널을 여는 것부터 같이 해요.',
+      seeMine: '내 사진이나 링크로 다시 보기', soon: '곧 열려요',
+      leadSoon: '신청은 곧 받을 수 있어요. 지금은 무료로 먼저 써보세요 — 제품 사진 한 장이면 Doppia가 뭘 만드는지 볼 수 있어요.',
+      restart: '처음부터 다시', otherPh: '직접 적어주세요', otherLabel: '기타 — 직접 적은 내용',
+      rcvEyebrow: '접수 완료',
+      nextH: '이후 진행',
+      next1: '팀이 적어주신 채널과 링크를 하나하나 직접 봅니다', next2: '한 장짜리 리포트를 씁니다 — 현재 상태, 먼저 바꿀 것, 제안 범위', next3: '이메일이나 전화로 받으십니다 — 어느 쪽이든 약정은 없습니다',
+      doneDue: '접수 순서대로 진행 · {d}까지 발송 예정',
+      info: '마지막으로, 리포트에 쓸 정보', infoh: '이름은 리포트에 들어가요. 링크를 넣으면 실제 숫자를 가져올 수 있어요.',
+      fBizInfo: '가게·브랜드 이름', fLinkInfo: '인스타·스토어·지도 링크 (선택)', seeResult: '결과 보기',
+      rpTag: '마케팅 진단 · 1쪽', rpBizFallback: '우리 가게', rpMetaCh: '채널', rpMetaDate: '검토일',
+      secState: '현재 상태', secCh: '채널 상태', secSaid: '말씀하신 것', secScope: 'Doppia Works가 맡을 범위',
+      chEmpty: '인스타·스토어·지도 링크를 넣으면 이 칸이 실제 숫자로 채워져요 — 마지막 게시, 게시 리듬, 지도 사진, 리뷰.',
+      chAdd: '링크 넣기', chLoading: '채널 확인 중…', chRetry: '다른 링크도 넣기',
+      chFail: { not_found: '계정이나 가게를 찾지 못했어요. 링크나 이름을 확인하고 다시 넣어주세요.', private: '비공개 계정이라 기본 정보만 볼 수 있어요.', unsupported: '자동 조회는 인스타그램·카카오맵만 돼요. 이 링크는 저장해 두고 리포트를 쓸 때 팀이 직접 확인합니다.', no_key: '이 서버에는 실측이 아직 켜져 있지 않아요.', upstream: '조회가 늦어졌어요. 한 번만 다시 눌러주세요.', rate: '지금은 조회 횟수를 다 썼어요 — 신청하시면 리포트에는 이 숫자가 그대로 들어가요.' },
+      igFollowers: '팔로워', igPosts: '게시물', igLast: '마지막 게시 후', igLastV: '{n}일', igNever: '게시물 없음', ig30: '최근 30일 게시', igEng: '반응률', igReels: '릴스 비율', igPriv: '비공개 계정 — 기본 정보만',
+      kkName: '카카오맵에서 찾음', kkPhotos: '지도 사진', kkReviews: '리뷰', kkRating: '별점', kkRatingNa: '리뷰 부족', kkBlog: '블로그 리뷰', kkBlogLast: '블로그 마지막 글', kkIg: '인스타 연결', kkIgNo: '인스타 연결 없음', kkYes: '있음',
+      flagQuiet: '조용함', flagOk: '활발',
+      scopeCadence: { daily: '매일 게시 유지 · 제작을 저희가', weekly: '주 4회 게시 · 예약·운영을 저희가', monthly: '주 3회 게시 · 리듬 되살리기', rarely: '주 3회 게시 · 처음부터 다시 쌓기', stopped: '주 3회 게시 · 처음부터 다시 쌓기', none: '채널 개설부터 · 그다음 주 3회' },
+      scopeReport: '매월 1일 서면 리포트',
+      sc_ch: '채널 운영', sc_ads: '광고 운영', sc_content: '콘텐츠 제작', sc_maps: '지도·리뷰 관리', sc_crm: '고객 관리', sc_consult: '전략 컨설팅', sc_open: '채널 개설',
+      dopH: 'Doppia가 뭔가요?', dopP: 'Doppia는 제품 사진 한 장으로 컷과 광고 영상을 만드는 도구예요. Doppia Works가 운영할 때 쓰는 제작 엔진이고, 직접 써보셔도 돼요. 시작은 무료예요.',
+      dopBtn: 'Doppia로 직접 만들어보기',
+      reportSmall: '맞춤 진단 리포트 받기', reportBrand: 'Doppia Works와 상담하기',
+      reportHintSmall: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 영업일 7~10일 안에 서면 리포트로 보내드립니다.',
+      reportHintBrand: '무료입니다. 다음 화면에서 채널 링크와 업체 정보를 받고, 팀이 하나하나 직접 검토해 영업일 7~10일 안에 서면 리포트로 보내드립니다.',
+      formTitle: '업체 정보', formHintSmall: '리포트는 아래 정보를 기준으로 작성됩니다.',
+      formHintBrand: '리포트는 아래 정보를 기준으로 작성됩니다.',
+      secContact: '연락처', secLinks: '운영 중인 채널', secLinksH: '운영 중이라고 답하신 채널입니다. 리포트 작성 전 각 채널을 검토합니다.', secBiz: '업체 정보',
+      fLinkOther: '그 외 링크', fLinkOtherPh: '홈페이지, 카탈로그, 기사 등',
+      fProduct: '주력 제품·서비스', fProductPh: '예: 수제 도자기 · 민감성 스킨케어 · 점심 세트',
+      fArea: '매장 지역·주소', fAreaPh: '예: 인천 송도',
+      fGoal: '앞으로 3개월, 가장 원하는 것', fGoalPh: '예: 평일 방문 손님 늘리기 · 신제품 런칭 · 첫 온라인 매출',
+      fBudget: '월 홍보 예산', budgetPick: '선택해주세요', budgets: ['말하기 어려움', '아직 없음', '50만 원 미만', '50만~200만 원', '200만 원 이상'],
+      linkPh: { instagram: 'instagram.com/…', tiktok: 'tiktok.com/@…', facebook: 'facebook.com/…', youtube: 'youtube.com/@…', influencers: '함께한 크리에이터나 캠페인 링크', maps: '구글맵 · 네이버 플레이스 · 카카오맵 링크', website: '홈페이지·블로그·스토어 주소', marketplaces: '쿠팡·아마존·엣시 스토어 주소', delivery: '배달앱·예약앱 가게 페이지', paidads: '광고 계정 또는 최근 광고 (선택)', email: '뉴스레터·CRM 도구 (선택)', offline: '전단·간판 사진 링크 (있다면)' },
+      fBiz: '가게·브랜드 이름', fBizPh: '예: ARVO Skincare', fCompany: '회사명', fCompanyPh: '예: 주식회사 아르보',
+      fName: '담당자 이름', fNamePh: '예: 박지민', fContact: '이메일 또는 전화', fContactPh: 'you@example.com 또는 010-0000-0000',
+      fEmail: '업무 이메일', fEmailPh: 'you@company.com', fLink: '인스타·스토어·지도 링크 (선택)', fLinkPh: 'instagram.com/yourshop',
+      fMsg: '더 하실 말씀 (선택)', fMsgPh: '궁금한 것, 해본 것, 일정 등',
+      submit: '리포트 신청하기', sending: '보내는 중…', cancel: '결과로 돌아가기',
+      errRequired: '표시된 항목을 채워주세요.', errContact: '이메일이나 전화번호 형식을 확인해주세요.',
+      errNet: '지금은 보낼 수 없습니다. 답변은 저장되어 있으니 잠시 후 다시 시도해주세요.',
+      doneTitle: '접수되었습니다. 리포트를 보내드리겠습니다.', doneBody: 'Doppia Works 팀이 실제 채널을 검토해 영업일 7~10일 안에 보내드립니다. 그동안 제품 사진 한 장으로 Doppia를 무료로 써보실 수 있습니다.',
+      doneTry: 'Doppia 무료로 써보기',
+      sell: { instore: '매장에서 운영하는 ', online: '온라인에서 파는 ', both: '매장과 온라인 모두에서 파는 ', local: '' },
+      promoNone: '아직 온라인에서 따로 알리고 있진 않아요', promoOn: '{list}{ro} 알리고 계세요', andMore: ' 등', and: '과 ',
+      freq: { daily: '게시는 거의 매일 하고 계세요.', weekly: '게시는 주에 몇 번 하고 계세요.', monthly: '게시는 한 달에 몇 번 정도예요.', rarely: '게시는 가끔 하는 정도예요.', stopped: '게시는 하다가 멈춘 상태예요.' },
+      state: '{sell}{biz} 사업이고, {promo}. {freq}',
+      stateBrand: '{sell}{biz} 브랜드이고, {promo}. {freq}'
+    }
+  };
+
+  // 선택지. id는 로직용, 문구는 언어별. 정본 = 노션 §4
+  var OPT = {
+    q0: [
+      { id: 'fashion', en: 'Fashion & Accessories', ko: '패션·잡화' },
+      { id: 'beauty', en: 'Beauty & Skincare', ko: '화장품·뷰티' },
+      { id: 'food', en: 'Food & Beverage', ko: '식품·음료' },
+      { id: 'home', en: 'Home & Living', ko: '홈·리빙' },
+      { id: 'health', en: 'Health & Wellness', ko: '건강·웰니스', sen: 'Supplements, health foods and other products', sko: '영양제·건강식품 등 제품' },
+      { id: 'pets', en: 'Pets', ko: '반려동물' },
+      { id: 'tech', en: 'Tech & Gadgets', ko: '전자·가젯' },
+      { id: 'kids', en: 'Kids & Hobbies', ko: '키즈·취미' },
+      { id: 'local', en: 'Local Service', ko: '매장 서비스', sen: 'Restaurant, salon, studio, clinic, gym', sko: '음식점·미용실·스튜디오·클리닉·헬스장·필라테스' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', free: true }
+    ],
+    q01: [
+      { id: 'instore', en: 'In-store', ko: '매장에서' },
+      { id: 'online', en: 'Online', ko: '온라인에서' },
+      { id: 'both', en: 'Both', ko: '둘 다' }
+    ],
+    q02: [
+      { id: 'me', en: 'Just me', ko: '제가 직접 해요' },
+      { id: 'one', en: 'One person on the team', ko: '직원 한 명이 해요' },
+      { id: 'team', en: 'An in-house team', ko: '마케팅 팀이 있어요' },
+      { id: 'agency', en: 'An agency', ko: '대행사가 해요' }
+    ],
+    q1: [
+      { id: 'instagram', en: 'Instagram', ko: '인스타그램', online: true },
+      { id: 'tiktok', en: 'TikTok', ko: '틱톡', online: true },
+      { id: 'facebook', en: 'Facebook', ko: '페이스북', online: true },
+      { id: 'youtube', en: 'YouTube', ko: '유튜브', online: true },
+      { id: 'influencers', en: 'Influencers & creators', ko: '인플루언서·크리에이터', online: true },
+      { id: 'maps', en: 'Maps & local listings', ko: '지도·플레이스', sen: 'Google Maps, Naver Place, Kakao Map, Yelp', sko: '구글맵·네이버 플레이스·카카오맵', hideWhen: ['online'] },
+      { id: 'website', en: 'Website / Blog / Online store', ko: '홈페이지·블로그·스토어', sen: 'Shopify, Smart Store, Naver Blog', sko: '쇼피파이·스마트스토어·네이버 블로그', online: true },
+      { id: 'marketplaces', en: 'Marketplaces', ko: '오픈마켓', sen: 'Amazon, Coupang, Etsy', sko: '아마존·쿠팡·엣시', online: true, hideWhen: ['instore'] },
+      { id: 'delivery', en: 'Delivery & booking apps', ko: '배달·예약 앱', sen: 'Uber Eats, Baemin, Booksy', sko: '배민·쿠팡이츠·네이버예약', hideWhen: ['online'] },
+      { id: 'paidads', en: 'Paid ads', ko: '유료 광고', sen: 'Meta Ads, Google Ads', sko: '메타 광고·구글 광고', online: true },
+      { id: 'email', en: 'Email / SMS / CRM', ko: '이메일·문자·CRM', online: true },
+      { id: 'offline', en: 'Offline', ko: '오프라인', sen: 'Flyers, signage, events', sko: '전단·간판·현수막·행사', hideWhen: ['online'] },
+      { id: 'wom', en: 'Word of mouth / regulars', ko: '입소문·단골' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', free: true },
+      { id: 'none', en: 'Not promoting yet', ko: '따로 안 하고 있어요', exclusive: true }
+    ],
+    q2: [
+      { id: 'daily', en: 'Almost every day', ko: '거의 매일' },
+      { id: 'weekly', en: 'A few times a week', ko: '주에 몇 번' },
+      { id: 'monthly', en: 'A few times a month', ko: '한 달에 몇 번' },
+      { id: 'rarely', en: 'Rarely', ko: '가끔' },
+      { id: 'stopped', en: "I've stopped", ko: '하다가 멈췄어요' }
+    ],
+    q4small: [
+      { id: 'nocust', en: "New customers aren't coming", ko: '새 고객이 안 늘어요', lean: 'ops',
+        len: 'Right now your business is barely visible online. Step one is simply being seen more often.', lko: '지금 가게가 온라인에서 보이는 시간이 너무 짧아요. 보이는 시간을 늘리는 것부터예요.' },
+      { id: 'how', en: "Don't know how to get the word out", ko: '뭘 어떻게 알려야 할지 모르겠어요', lean: 'ops',
+        len: "You shouldn't have to plan it all yourself. We decide what to post; you just approve.", lko: '기획까지 사장님이 하실 필요 없어요. 뭘 올릴지는 저희가 정하고, 사장님은 확인만 하시면 돼요.' },
+      { id: 'spend', en: "Don't know where to spend", ko: '어디에 돈을 써야 할지 모르겠어요', lean: 'ops',
+        len: "Before spending more, make sure the channels you already have are working. That's the cheapest investment.", lko: '돈을 더 쓰기 전에, 지금 있는 채널이 제대로 돌아가는지부터예요. 그게 가장 싼 투자예요.' },
+      { id: 'ads', en: "Tried ads, couldn't see results", ko: '광고를 해봤는데 효과를 모르겠어요', lean: 'ops',
+        len: 'Ads burn money when the content behind them is weak. We fill the content first and send you the numbers every month.', lko: '광고는 보여줄 콘텐츠가 약하면 돈만 나가요. 콘텐츠를 먼저 채우고, 숫자는 매달 정리해서 보여드려요.' },
+      { id: 'nosales', en: 'Followers, but no sales', ko: '팔로워는 있는데 매출로 안 이어져요', lean: 'ops',
+        len: 'People are watching, which is the hard part. What turns watching into buying is what the posts say.', lko: '보는 사람은 있다는 뜻이에요. 보는 사람이 사게 만드는 건 게시물의 내용이에요.' },
+      { id: 'compet', en: 'Competitors stand out more', ko: '경쟁 업체가 더 눈에 띄어요', lean: 'ops',
+        len: "It's rarely the product that loses. It's usually how it's shown.", lko: '제품이 밀리는 게 아니라 보여주는 방식이 밀리는 경우가 대부분이에요.' },
+      { id: 'notime', en: 'No time to keep it up', ko: '꾸준히 할 시간이 없어요', lean: 'ops',
+        len: "We won't ask you to find time. Keep your hours; we handle the posting.", lko: '시간을 내시라고 안 할게요. 사장님 시간은 그대로 두고, 게시는 저희가 해요.' },
+      { id: 'agency', en: 'Agencies cost a lot, deliver little', ko: '대행사는 비싸고 믿기 어려워요', lean: 'self',
+        len: "So we'll show you how to see results yourself, in about ten minutes.", lko: '그래서 사장님이 직접, 10분 안에 결과를 보는 방법을 먼저 보여드려요.' },
+      { id: 'content', en: 'Making photos & videos is hard', ko: '사진·영상 만드는 게 어려워요', lean: 'self',
+        len: 'One product photo is enough. Make cuts and videos right away, no photoshoot.', lko: '제품 사진 한 장이면 돼요. 촬영 없이 컷과 영상을 바로 만들어 보세요.' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', lean: 'both', free: true,
+        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.' },
+      { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', lean: 'both', exclusive: true,
+        len: "Let us show you an easier way to do what you're already doing.", lko: '지금 하고 계신 걸 더 쉽게 만드는 방법을 보여드릴게요.' }
+    ],
+    q4brand: [
+      { id: 'volume', en: 'Never enough content for every channel and SKU', ko: '채널·제품은 늘어나는데 콘텐츠가 늘 부족해요', lean: 'self',
+        len: 'One product photo becomes a full set of cuts sized for every channel. The bottleneck was never ideas; it was production speed.', lko: '제품 사진 한 장으로 채널별 비율·포맷에 맞춘 컷이 한 번에 나와요. 부족한 건 아이디어가 아니라 생산 속도였을 거예요.' },
+      { id: 'launch', en: 'Every launch means another shoot', ko: '신제품 나올 때마다 촬영부터 다시 해요', lean: 'self',
+        len: 'A single sample photo before launch becomes the cut and video set. Launch content without booking a shoot.', lko: '런칭 전 샘플 사진 한 장으로 컷과 영상 세트를 만들어요. 촬영 일정 없이 런칭 콘텐츠를 준비할 수 있어요.' },
+      { id: 'cost', en: 'Production is too slow and expensive', ko: '제작 비용과 시간이 너무 커요', lean: 'self',
+        len: 'Minutes per cut, priced in credits. Run it yourselves and compare it to your current cost per asset.', lko: '컷 한 장에 몇 분, 비용은 크레딧 단위예요. 팀이 직접 돌려보고 지금 단가와 비교해 보세요.' },
+      { id: 'tone', en: 'Brand consistency slips across channels', ko: '채널마다 브랜드 톤이 흔들려요', lean: 'self',
+        len: 'Lock model, background and style in a brand kit, and every channel comes out in the same tone.', lko: '모델·배경·스타일을 브랜드킷으로 고정하면 채널이 달라도 같은 톤으로 나와요.' },
+      { id: 'variants', en: 'Not enough variants to test ads', ko: '광고 테스트할 소재 버전이 부족해요', lean: 'self',
+        len: 'Generate variants of the same product across backgrounds, models and angles. Testing needs volume.', lko: '같은 제품으로 배경·모델·구도를 바꾼 변형을 여러 개 뽑아요. 테스트에 필요한 건 소재의 양이에요.' },
+      { id: 'depend', en: 'Too dependent on agencies and influencers', ko: '대행사·인플루언서 의존도가 너무 높아요', lean: 'ops',
+        len: "Produce first-pass assets in-house and use partners for amplification only. We'll map the sequence together.", lko: '1차 소재는 내부에서 만들고 외부는 증폭에만 쓰는 구조로 바꿀 수 있어요. 순서는 상담에서 같이 잡아요.' },
+      { id: 'local', en: 'Localizing for other markets is a burden', ko: '해외·다국어 콘텐츠가 부담이에요', lean: 'ops',
+        len: 'Take the same cut and swap in market-specific models and backgrounds.', lko: '같은 컷에 시장별 모델·배경 변형을 얹어요.' },
+      { id: 'measure', en: 'Hard to tell which content actually performs', ko: '어떤 콘텐츠가 먹혔는지 알기 어려워요', lean: 'ops',
+        len: 'When assets are built from parameters (model, background, angle), you can compare what actually changed.', lko: '소재를 파라미터(모델·배경·구도)로 만들어두면 무엇이 달랐는지 비교가 가능해져요.' },
+      { id: 'other', en: 'Other (type your own)', ko: '기타 (직접 입력하기)', lean: 'both', free: true,
+        len: "You put it in your own words. We'll address exactly that in your report.", lko: '직접 적어주신 내용은 리포트에서 그대로 다룹니다.' },
+      { id: 'none', en: 'Nothing specific', ko: '딱히 없어요', lean: 'both', exclusive: true,
+        len: 'Upload one product on a team account and see.', lko: '팀 계정으로 제품 하나만 올려보세요.' }
+    ]
+  };
+
+  // ── 상태 ──
+  var A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', q0Other: '', biz: '', link: '' };
+  var stepIdx = 0, showMore = false, done = false;
+  var view = 'result';          // result | form | done  (done 이후)
+  var sessionId = null;         // POST /api/diagnose/sessions 결과
+  var M = { link: '', state: 'idle', data: null, reason: '' }; // 실측 결과 (link 기준 캐시)
+  var F = { biz: '', name: '', contact: '', link: '', msg: '', links: {}, linkOther: '', product: '', area: '', goal: '', budget: '' }, formErr = '', sending = false;
+  function prefill() {
+    if (!F.biz && A.biz) F.biz = A.biz;
+    // 결과 직전에 넣은 링크를 종류에 맞는 칸에 미리 채움
+    if (A.link) { var ch = /instagram\.com|^@/i.test(A.link) ? 'instagram' : (/map|place|kko\.to/i.test(A.link) ? 'maps' : null); if (ch && A.q1.indexOf(ch) >= 0) { if (!F.links[ch]) F.links[ch] = A.link; } else if (!F.linkOther) F.linkOther = A.link; }
+    if (!F.area && A.q0 === 'local') F.area = '';
+  }
+  var LINK_CHANNELS = ['instagram', 'tiktok', 'facebook', 'youtube', 'influencers', 'maps', 'website', 'marketplaces', 'delivery', 'paidads', 'email', 'offline'];
+  // 주소가 있는 채널은 링크 필수(운영 중이라고 답한 채널이다) — 인플루언서·광고·메일·오프라인은 링크가 없을 수 있어 선택
+  var URL_REQUIRED = ['instagram', 'tiktok', 'facebook', 'youtube', 'maps', 'website', 'marketplaces', 'delivery'];
+  var missing = [];
+  function linkChannels() { return LINK_CHANNELS.filter(function (c) { return A.q1.indexOf(c) >= 0; }); }
+  var STORE_KEY = 'doppia_diagnose_v1';
+  try { var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved && saved.answers) { A = saved.answers; A.q1Other = A.q1Other || ''; A.q4Other = A.q4Other || ''; A.biz = A.biz || ''; A.link = A.link || ''; A.q0Other = A.q0Other || ''; done = !!saved.done; sessionId = saved.sessionId || null; if (saved.submitted) view = 'done'; if (saved.metrics && saved.metrics.link) M = saved.metrics; } } catch (e) {}
+
+  function track() { return (A.q02 === 'team' || A.q02 === 'agency') ? 'brand' : 'small'; }
+  function hasOnlineChannel() { return A.q1.some(function (id) { var o = OPT.q1.filter(function (x) { return x.id === id; })[0]; return o && o.online; }); }
+  // 질문 순서. 건너뛰기 규칙은 여기 한 곳에만.
+  function steps() {
+    var s = ['q0'];
+    if (A.q0 !== 'local') s.push('q01');
+    s.push('q02', 'q1');
+    if (hasOnlineChannel()) s.push('q2');
+    s.push('q4');
+    return s;
+  }
+  function t(k, vars) { var s = STR[lang][k]; if (vars) Object.keys(vars).forEach(function (v) { s = s.split('{' + v + '}').join(vars[v]); }); return s; }
+  function label(o) { return lang === 'ko' ? o.ko : o.en; }
+  function sub(o) { return lang === 'ko' ? o.sko : o.sen; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function save(extra) { try { localStorage.setItem(STORE_KEY, JSON.stringify(Object.assign({ v: 1, answers: A, track: track(), lang: lang, done: done, sessionId: sessionId, submitted: view === 'done', metrics: M.state === 'ok' || M.state === 'fail' ? M : undefined, ts: Date.now() }, extra || {}))); } catch (e) {} }
+
+  // ── 서버 저장 (2단계). 실패해도 화면은 멈추지 않는다 — 답은 localStorage에 있다 ──
+  function api(path, body) {
+    return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j || j.success === false) throw new Error((j && j.error) || ('HTTP ' + r.status)); return j.data; }); });
+  }
+  function postSession() {
+    if (sessionId || !A.q0) return;
+    api('/api/diagnose/sessions', { answers: A, track: track(), lang: lang, businessName: A.biz, link: A.link })
+      .then(function (d) { sessionId = d.id; save(); })
+      .catch(function () { /* 정적 미리보기(API 없음)·일시 장애 — 신청 때 답 스냅샷을 같이 보내므로 괜찮다 */ });
+  }
+
+  // 한국어 조사 (으)로 — 받침 있고 ㄹ받침 아니면 '으로'
+  function ro(word) {
+    var c = word.charCodeAt(word.length - 1);
+    if (c < 0xAC00 || c > 0xD7A3) return '로';
+    var jong = (c - 0xAC00) % 28;
+    return (jong === 0 || jong === 8) ? '로' : '으로';
+  }
+
+  var app = document.getElementById('app');
+
+  // 진행 막대 — 총수에는 마지막 업체 정보 단계(폼)가 포함된다
+  function progBar(n, total) { return '<div class="prog"><span>' + esc(t('step', { n: n, total: total })) + '</span><span class="bar"><i style="width:' + Math.round((n / total) * 100) + '%"></i></span></div>'; }
+  function render() {
+    document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
+    if (done) { if (view === 'done') return renderDone(); return renderForm(); }
+    var s = steps(); if (stepIdx >= s.length) stepIdx = s.length - 1;
+    var q = s[stepIdx];
+    var html = '<div class="dg-fade">';
+    html += progBar(stepIdx + 1, s.length + 1);
+    html += '<h1 class="q">' + esc(t(q)) + '</h1><p class="q-hint">' + esc(t(q + 'h')) + '</p>';
+    if (q === 'q1') html += renderMulti('q1', OPT.q1, A.q1, 99);
+    else if (q === 'q4') html += renderMulti('q4', track() === 'brand' ? OPT.q4brand : OPT.q4small, A.q4, 3);
+    else if (q === 'info') html += renderInfo();
+    else html += renderSingle(q, OPT[q], A[q]);
+    html += '<div class="acts">';
+    html += stepIdx > 0 ? '<button type="button" class="btn btn-ghost sm" data-act="back">' + esc(t('back')) + '</button>' : '<span></span>';
+    if (q === 'info') {
+      html += '<span class="cnt"></span><button type="button" class="btn btn-primary" data-act="next"' + (A.biz.trim() ? '' : ' disabled') + '>' + esc(t('seeResult')) + '</button>';
+    } else if (q === 'q0') {
+      html += '<span class="cnt"></span><button type="button" class="btn btn-primary" data-act="next" id="q0next"' + (A.q0 === 'other' ? '' : ' hidden') + '>' + esc(t('next')) + '</button>';
+    } else if (q === 'q1' || q === 'q4') {
+      var n = A[q].length;
+      var cnt = q === 'q4' ? esc(t('picked', { n: n })) : '';
+      html += '<span class="cnt">' + cnt + '</span><button type="button" class="btn btn-primary" data-act="next"' + (n ? '' : ' disabled') + '>' + esc(t('next')) + '</button>';
+    }
+    html += '</div></div>';
+    app.innerHTML = html;
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  function renderInfo() {
+    return '<form class="lead" id="infoForm" novalidate style="margin-top:26px">'
+      + field('iBiz', t('fBizInfo'), t('fBizPh'), 'text', A.biz, true)
+      + field('iLink', t('fLinkInfo'), t('fLinkPh'), 'text', A.link, false)
+      + '</form>';
+  }
+  function renderSingle(q, opts, val) {
+    var wide = opts.length <= 5;
+    var html = '<div class="opts' + (wide ? ' wide' : '') + '" role="radiogroup">' + opts.map(function (o) {
+      return '<button type="button" class="opt" role="radio" aria-pressed="' + (val === o.id) + '" data-q="' + q + '" data-id="' + o.id + '"><span class="t">' + esc(label(o)) + '</span>' + (sub(o) ? '<span class="s">' + esc(sub(o)) + '</span>' : '') + '</button>';
+    }).join('') + '</div>';
+    // 기타(직접 입력) — 단일 선택은 보통 고르는 즉시 넘어가지만, 기타는 입력칸을 열고 '다음'으로 넘어간다
+    var free = opts.some(function (o) { return o.id === 'other' && o.free; });
+    if (free) html += '<div class="other" id="other-' + q + '"' + (val === 'other' ? '' : ' hidden') + '><input id="otherInput-' + q + '" type="text" maxlength="120" placeholder="' + esc(t('otherPh')) + '" value="' + esc(A[q + 'Other'] || '') + '"></div>';
+    return html;
+  }
+
+  function renderMulti(q, opts, vals, max) {
+    var cards = opts.map(function (o) {
+      return '<button type="button" class="opt' + (o.exclusive ? ' quiet' : '') + '" role="checkbox" aria-checked="' + (vals.indexOf(o.id) >= 0) + '" data-q="' + q + '" data-id="' + o.id + '"><span class="t">' + esc(label(o)) + '</span>' + (sub(o) ? '<span class="s">' + esc(sub(o)) + '</span>' : '') + '</button>';
+    }).join('');
+    // 기타(직접 입력) — 고르면 입력칸이 열린다. 입력은 재렌더 없이 상태만 갱신.
+    var other = '<div class="other" id="other-' + q + '"' + (vals.indexOf('other') >= 0 ? '' : ' hidden') + '><input id="otherInput-' + q + '" type="text" maxlength="200" placeholder="' + esc(t('otherPh')) + '" value="' + esc(A[q + 'Other'] || '') + '"></div>';
+    return '<div class="opts" role="group">' + cards + '</div>' + other;
+  }
+  // 다중 선택은 화면을 다시 그리지 않고 누른 카드만 바꾼다 — 전체 재렌더는 깜빡임(등장 애니메이션+스크롤)을 만든다
+  function syncMulti(q) {
+    var vals = A[q];
+    document.querySelectorAll('.opt[data-q="' + q + '"]').forEach(function (b) { b.setAttribute('aria-checked', String(vals.indexOf(b.dataset.id) >= 0)); });
+    var o = document.getElementById('other-' + q); if (o) { o.hidden = vals.indexOf('other') < 0; if (!o.hidden) { var inp = o.querySelector('input'); if (inp && document.activeElement !== inp) inp.focus(); } }
+    var cnt = document.querySelector('.acts .cnt'); if (cnt && q === 'q4') cnt.textContent = t('picked', { n: vals.length });
+    var next = document.querySelector('[data-act="next"]'); if (next) next.disabled = !vals.length;
+  }
+
+  // ── 제안 범위 (조언이 아니라 '우리가 맡을 일') — Q0-1·Q1·Q2·Q4 조합 규칙 ──
+  function scopeItems() {
+    var S = STR[lang], items = [], has = function (arr, ids) { return ids.some(function (i) { return arr.indexOf(i) >= 0; }); };
+    var online = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.online; }).map(label);
+    if (A.q1.indexOf('none') >= 0 || !A.q1.length) items.push(S.sc_open);
+    else items.push(S.sc_ch + (online.length ? ' · ' + online.slice(0, 3).join(', ') : ''));
+    if (A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') items.push(S.sc_maps);
+    if (has(A.q4, ['ads', 'spend', 'nocust', 'nosales', 'variants']) || A.q1.indexOf('paidads') >= 0) items.push(S.sc_ads);
+    if (has(A.q4, ['content', 'volume', 'launch', 'cost', 'tone'])) items.push(S.sc_content);
+    if (has(A.q4, ['nosales']) || A.q1.indexOf('email') >= 0) items.push(S.sc_crm);
+    if (track() === 'brand' && has(A.q4, ['depend', 'measure', 'local'])) items.push(S.sc_consult);
+    return items;
+  }
+  function cadence() { var S = STR[lang]; return (A.q1.indexOf('none') >= 0 || !A.q1.length) ? S.scopeCadence.none : (S.scopeCadence[A.q2] || S.scopeCadence.monthly); }
+
+  // ── 결과 1단계 (조립식) ──
+  function stateLine() {
+    var S = STR[lang];
+    var biz = OPT.q0.filter(function (o) { return o.id === A.q0; })[0];
+    var bizLabel = (A.q0 === 'other' && A.q0Other.trim()) ? A.q0Other.trim() : label(biz);
+    var sellKey = A.q0 === 'local' ? 'local' : (A.q01 || 'instore');
+    var chosen = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.id !== 'none'; });
+    var promo;
+    if (!chosen.length) promo = S.promoNone;
+    else {
+      var names = chosen.slice(0, 3).map(label);
+      var list = names.length > 1 ? names.slice(0, -1).join(', ') + S.and + names[names.length - 1] : names[0];
+      if (chosen.length > 3) list += S.andMore;
+      promo = S.promoOn.split('{list}').join(list).split('{ro}').join(lang === 'ko' ? ro(list) : '');
+    }
+    var freq = A.q2 ? S.freq[A.q2] : '';
+    var tpl = track() === 'brand' ? S.stateBrand : S.state;
+    var out = tpl.split('{biz}').join('<b>' + esc(bizLabel) + '</b>').split('{sell}').join(esc(S.sell[sellKey])).split('{promo}').join(esc(promo)).split('{freq}').join(esc(freq));
+    return out.replace(/\s+\./g, '.').replace(/\s{2,}/g, ' ').trim();
+  }
+
+  // ── 채널 실측 (2단계) — 링크가 있으면 서버에 조회. 같은 링크는 한 번만. 실패해도 리포트는 그대로 ──
+  function runLookup() {
+    var link = (A.link || '').trim();
+    if (!link) return;
+    if (M.link === link && (M.state === 'ok' || M.state === 'loading')) return;
+    if (M.link === link && M.state === 'fail' && M.reason !== 'upstream') return;
+    M = { link: link, state: 'loading', data: null, reason: '' };
+    paintChannel();
+    api('/api/diagnose/lookup', { sessionId: sessionId, link: link })
+      .then(function (d) { M = { link: link, state: d.ok ? 'ok' : 'fail', data: d.metrics || null, reason: d.reason || '' }; save(); paintChannel(); })
+      .catch(function (e) { M = { link: link, state: 'fail', data: null, reason: /Too many/i.test(String(e && e.message)) ? 'rate' : 'upstream' }; paintChannel(); });
+  }
+  function fmtN(n) { return (Number(n) || 0).toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US'); }
+  function kv(label, val, flag) { return '<div class="kv' + (flag ? ' ' + flag : '') + '"><b>' + esc(val) + '</b><span>' + esc(label) + '</span></div>'; }
+  function channelHtml() {
+    var S = STR[lang];
+    if (!A.link) return '<p>' + esc(S.chEmpty) + '</p><div class="chadd"><input id="iLink2" type="text" placeholder="' + esc(t('fLinkPh')) + '" value=""><button type="button" class="btn btn-ghost sm" data-act="addlink">' + esc(S.chAdd) + '</button></div>';
+    var head = '<div class="chlink">' + esc(A.link) + '</div>';
+    if (M.state === 'loading' || M.state === 'idle') return head + '<p class="chload">' + esc(S.chLoading) + '</p>';
+    if (M.state === 'fail') return head + '<p>' + esc(S.chFail[M.reason] || S.chFail.upstream) + '</p><div class="chadd"><input id="iLink2" type="text" placeholder="' + esc(t('fLinkPh')) + '" value=""><button type="button" class="btn btn-ghost sm" data-act="addlink">' + esc(S.chRetry) + '</button></div>';
+    var d = M.data; if (!d) return head;
+    if (d.source === 'instagram') {
+      var html = head.replace('</div>', ' · @' + esc(d.username) + '</div>') + '<div class="kvs">';
+      html += kv(S.igFollowers, fmtN(d.followers)) + kv(S.igPosts, fmtN(d.media_count));
+      if (d.is_private) return html + '</div><p>' + esc(S.igPriv) + '</p>';
+      html += kv(S.igLast, d.days_since_last_post == null ? S.igNever : S.igLastV.replace('{n}', fmtN(d.days_since_last_post)), d.days_since_last_post == null || d.days_since_last_post > 30 ? 'bad' : 'good');
+      html += kv(S.ig30, fmtN(d.posts_30d), d.posts_30d === 0 ? 'bad' : (d.posts_30d >= 8 ? 'good' : ''));
+      html += kv(S.igEng, d.engagement_rate == null ? '—' : d.engagement_rate + '%');
+      html += kv(S.igReels, d.reels_ratio + '%');
+      return html + '</div>';
+    }
+    if (d.source === 'kakao') {
+      var h2 = '<div class="chlink">' + esc(S.kkName) + ' · ' + esc(d.name) + (d.address ? ' <small>' + esc(d.address) + '</small>' : '') + '</div><div class="kvs">';
+      h2 += kv(S.kkPhotos, fmtN(d.photo_count), d.photo_count === 0 ? 'bad' : (d.photo_count >= 10 ? 'good' : ''));
+      h2 += kv(S.kkReviews, fmtN(d.review_count));
+      h2 += kv(S.kkRating, d.rating == null ? S.kkRatingNa : String(d.rating));
+      h2 += kv(S.kkBlog, fmtN(d.blog_review_count));
+      h2 += kv(S.kkBlogLast, d.days_since_blog == null ? '—' : S.igLastV.replace('{n}', fmtN(d.days_since_blog)), d.days_since_blog == null || d.days_since_blog > 180 ? 'bad' : (d.days_since_blog <= 30 ? 'good' : ''));
+      h2 += kv(S.kkIg, d.instagram ? S.kkYes : S.kkIgNo, d.instagram ? 'good' : 'bad');
+      return h2 + '</div>';
+    }
+    return head;
+  }
+  function paintChannel() { var box = document.getElementById('chbox'); if (box) box.innerHTML = channelHtml(); }
+
+  function renderResult() {
+    var S = STR[lang], tr = track();
+    var pool = tr === 'brand' ? OPT.q4brand : OPT.q4small;
+    var picked = A.q4.map(function (id) { return pool.filter(function (o) { return o.id === id; })[0]; }).filter(Boolean);
+    // 메인 버튼은 항상 "진단서 받기" — 운영/셀프 성향(lean)은 진단서 안에서 제안할 때 쓴다
+    var chosen = OPT.q1.filter(function (o) { return A.q1.indexOf(o.id) >= 0 && o.id !== 'none'; }).map(label);
+    var today = new Date(), dateStr = lang === 'ko' ? (today.getFullYear() + '. ' + (today.getMonth() + 1) + '. ' + today.getDate()) : today.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    var html = '<div class="dg-fade">';
+    html += '<div class="res-eyebrow">' + esc(S.resEyebrow) + '</div>';
+    // 리포트 1쪽 (문서 모양)
+    html += '<article class="rpt">';
+    html += '<header class="rpt-h"><div><span class="rpt-tag">' + esc(S.rpTag) + '</span><h1 class="rpt-biz">' + esc(A.biz.trim() || S.rpBizFallback) + '</h1></div>'
+         + '<dl class="rpt-meta"><div><dt>' + esc(S.rpMetaCh) + '</dt><dd>' + esc(chosen.length ? chosen.join(' · ') : '—') + '</dd></div><div><dt>' + esc(S.rpMetaDate) + '</dt><dd>' + esc(dateStr) + '</dd></div></dl></header>';
+    html += '<section class="rpt-s"><h2>' + esc(S.secState) + '</h2><p class="res-state">' + stateLine() + '</p>'
+         + ((A.q1.indexOf('none') >= 0 || !A.q1.length) ? '<div class="note">' + esc(S.noneNote) + '</div>' : '') + '</section>';
+    // 채널 상태 — 실측은 다음 단계(B). 링크가 있으면 '곧', 없으면 입력 유도
+    html += '<section class="rpt-s"><h2>' + esc(S.secCh) + '</h2><div class="chbox" id="chbox">' + channelHtml() + '</div></section>';
+    if (picked.length) {
+      html += '<section class="rpt-s"><h2>' + esc(S.secSaid) + '</h2><div class="echo">' + picked.map(function (o) {
+        var q = o.id === 'other' && A.q4Other ? A.q4Other : label(o);
+        return '<div class="item"><div class="quote">“' + esc(q) + '”</div><div class="line">' + esc(lang === 'ko' ? o.lko : o.len) + '</div></div>';
+      }).join('') + '</div></section>';
+    }
+    html += '<section class="rpt-s"><h2>' + esc(S.secScope) + '</h2><div class="scope">' + scopeItems().map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>'
+         + '<ul class="scope-l"><li>' + esc(cadence()) + '</li><li>' + esc(S.scopeReport) + '</li></ul></section>';
+    html += '</article>';
+    html += '<div class="ctas"><button type="button" class="btn btn-primary" data-act="report">' + esc(tr === 'brand' ? S.reportBrand : S.reportSmall) + '</button></div>';
+    html += '<p class="cta-hint">' + esc(tr === 'brand' ? S.reportHintBrand : S.reportHintSmall) + '</p>';
+    // Doppia 설명 카드 (손님은 Doppia가 뭔지 모른다)
+    html += '<aside class="dop"><div><b>' + esc(S.dopH) + '</b><p>' + esc(S.dopP) + '</p></div><a class="btn btn-ghost" href="/signup">' + esc(S.dopBtn) + '</a></aside>';
+    html += '<div class="restart"><button type="button" data-act="restart">' + esc(S.restart) + '</button></div>';
+    html += '</div>';
+    app.innerHTML = html;
+    window.scrollTo(0, 0);
+    postSession();
+    runLookup();
+  }
+
+  // ── 신청 폼 ──
+  function field(id, label, ph, type, val, req) {
+    return '<label class="fld" data-for="' + id + '"><span>' + esc(label) + (req ? ' <i>*</i>' : '') + '</span>'
+      + (type === 'textarea'
+        ? '<textarea id="' + id + '" rows="3" placeholder="' + esc(ph) + '">' + esc(val) + '</textarea>'
+        : '<input id="' + id + '" type="' + type + '" placeholder="' + esc(ph) + '" value="' + esc(val) + '"' + (req ? ' required' : '') + '>')
+      + '</label>';
+  }
+  function dueDate() {
+    // 영업일 10일 뒤 (주말 건너뜀) — 사용자: 7~10일로 잡아 기다리게 한다
+    var d = new Date(), n = 0; while (n < 10) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) n++; }
+    return lang === 'ko' ? (d.getMonth() + 1) + '월 ' + d.getDate() + '일' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function renderForm() {
+    var S = STR[lang], tr = track();
+    prefill();
+    var html = '<div class="dg-fade">';
+    var total = steps().length + 1;
+    html += progBar(total, total);
+    html += '<h1 class="q">' + esc(S.formTitle) + '</h1><p class="q-hint">' + esc(tr === 'brand' ? S.formHintBrand : S.formHintSmall) + '</p>';
+    html += '<form id="leadForm" class="lead" novalidate>';
+    html += '<h3 class="fsec">' + esc(S.secContact) + '</h3>';
+    if (tr === 'brand') {
+      html += field('fBiz', S.fCompany, S.fCompanyPh, 'text', F.biz, true);
+      html += field('fName', S.fName, S.fNamePh, 'text', F.name, true);
+      html += field('fContact', S.fEmail, S.fEmailPh, 'email', F.contact, true);
+    } else {
+      html += field('fBiz', S.fBiz, S.fBizPh, 'text', F.biz, true);
+      html += field('fName', S.fName, S.fNamePh, 'text', F.name, true);
+      html += field('fContact', S.fContact, S.fContactPh, 'text', F.contact, true);
+    }
+    // 운영 중인 채널 — Q1에서 고른 채널마다 링크 칸
+    var chs = linkChannels();
+    html += '<h3 class="fsec">' + esc(S.secLinks) + '<small>' + esc(S.secLinksH) + '</small></h3>';
+    chs.forEach(function (c) { var o = OPT.q1.filter(function (x) { return x.id === c; })[0]; html += field('fLink_' + c, label(o), S.linkPh[c] || '', 'text', F.links[c] || '', URL_REQUIRED.indexOf(c) >= 0); });
+    html += field('fLinkOther', S.fLinkOther, S.fLinkOtherPh, 'text', F.linkOther, false);
+    // 업체 정보
+    html += '<h3 class="fsec">' + esc(S.secBiz) + '</h3>';
+    html += field('fProduct', S.fProduct, S.fProductPh, 'text', F.product, true);
+    if (A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') html += field('fArea', S.fArea, S.fAreaPh, 'text', F.area, true);
+    html += field('fGoal', S.fGoal, S.fGoalPh, 'text', F.goal, true);
+    html += '<label class="fld" data-for="fBudget"><span>' + esc(S.fBudget) + ' <i>*</i></span><select id="fBudget"><option value=""' + (F.budget === '' ? ' selected' : '') + '>' + esc(S.budgetPick) + '</option>' + S.budgets.map(function (b, i) { return '<option value="' + i + '"' + (String(F.budget) === String(i) ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></label>';
+    html += field('fMsg', S.fMsg, S.fMsgPh, 'textarea', F.msg, false);
+    html += '<div class="ferr" id="formErr"' + (formErr ? '' : ' hidden') + '>' + esc(formErr) + '</div>';
+    html += '<div class="acts"><button type="button" class="btn btn-ghost sm" data-act="cancel">' + esc(S.cancel) + '</button>'
+         + '<button type="submit" class="btn btn-primary"' + (sending ? ' disabled' : '') + '>' + esc(sending ? S.sending : S.submit) + '</button></div>';
+    html += '</form></div>';
+    app.innerHTML = html;
+    if (formErr && missing.length) {
+      missing.forEach(function (id) { var l = app.querySelector('.fld[data-for="' + id + '"]'); if (l) l.classList.add('miss'); });
+      var first = app.querySelector('.fld.miss'); if (first) first.scrollIntoView({ block: 'center' });
+    } else window.scrollTo(0, 0);
+    postSession();
+  }
+  function readForm() {
+    var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var links = {}; linkChannels().forEach(function (c) { var v = g('fLink_' + c); if (v) links[c] = v; });
+    F = { biz: g('fBiz'), name: g('fName'), contact: g('fContact'), link: F.link, msg: g('fMsg'), links: links, linkOther: g('fLinkOther'), product: g('fProduct'), area: g('fArea'), goal: g('fGoal'), budget: g('fBudget') };
+  }
+  function submitForm() {
+    var S = STR[lang], tr = track();
+    readForm(); formErr = ''; A.biz = F.biz; save();
+    missing = [];
+    if (!F.biz) missing.push('fBiz'); if (!F.name) missing.push('fName'); if (!F.contact) missing.push('fContact');
+    linkChannels().forEach(function (c) { if (URL_REQUIRED.indexOf(c) >= 0 && !F.links[c]) missing.push('fLink_' + c); });
+    if (!F.product) missing.push('fProduct');
+    if ((A.q0 === 'local' || A.q01 === 'instore' || A.q01 === 'both') && !F.area) missing.push('fArea');
+    if (!F.goal) missing.push('fGoal'); if (F.budget === '') missing.push('fBudget');
+    if (missing.length) formErr = S.errRequired;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(F.contact) && !(tr !== 'brand' && /^\+?[\d\s\-().]{7,25}$/.test(F.contact))) { formErr = S.errContact; missing = ['fContact']; }
+    if (formErr) return renderForm();
+    sending = true; renderForm();
+    var linkList = Object.keys(F.links).map(function (c) { return { channel: c, url: F.links[c] }; });
+    if (F.linkOther) linkList.push({ channel: 'other', url: F.linkOther });
+    if (A.link && !linkList.some(function (l) { return l.url === A.link; })) linkList.push({ channel: 'check-up', url: A.link });
+    api('/api/diagnose/requests', {
+      sessionId: sessionId, track: tr, lang: lang, businessName: F.biz, contactName: F.name || undefined,
+      contact: F.contact, links: linkList, message: F.msg || undefined, answers: A,
+      details: { product: F.product, area: F.area, goal: F.goal, budget: S.budgets[Number(F.budget)] || '', metrics: M.state === 'ok' ? M.data : null }
+    }).then(function () { sending = false; view = 'done'; save(); render(); silentLookup(linkList); })
+      .catch(function () { sending = false; formErr = S.errNet; renderForm(); });
+  }
+  // 자동 조회는 화면에 내지 않는다(어설픈 분석 금지). 인스타·카카오만 조용히 세션에 저장해 팀이 리포트 쓸 때 본다.
+  function silentLookup(linkList) {
+    (linkList || []).filter(function (l) { return /instagram|maps|check-up/.test(l.channel) || /instagram\.com|^@|map\.kakao|kko\.to/i.test(l.url); }).slice(0, 2)
+      .forEach(function (l) { api('/api/diagnose/lookup', { sessionId: sessionId, link: l.url }).catch(function () {}); });
+  }
+  function renderDone() {
+    var S = STR[lang];
+    app.innerHTML = '<div class="dg-fade"><section class="rcv"><div class="res-eyebrow">' + esc(S.rcvEyebrow) + '</div>'
+      + '<h1 class="q">' + esc(S.doneTitle) + '</h1><p class="rcv-body">' + esc(S.doneBody) + '</p><div class="rcv-due">' + esc(S.doneDue.replace('{d}', dueDate())) + '</div></section>'
+      + '<section class="nxt"><h2>' + esc(S.nextH) + '</h2><ol><li>' + esc(S.next1) + '</li><li>' + esc(S.next2) + '</li><li>' + esc(S.next3) + '</li></ol></section>'
+      + '<aside class="dop"><div><b>' + esc(S.dopH) + '</b><p>' + esc(S.dopP) + '</p></div><a class="btn btn-ghost" href="/signup">' + esc(S.dopBtn) + '</a></aside>'
+      + '<div class="restart"><button type="button" data-act="restart">' + esc(S.restart) + '</button></div></div>';
+    window.scrollTo(0, 0);
+  }
+
+  // ── 이벤트 ──
+  app.addEventListener('click', function (e) {
+    var b = e.target.closest('button,a'); if (!b) return;
+    var act = b.dataset.act, q = b.dataset.q, id = b.dataset.id;
+    if (act === 'back') { stepIdx = Math.max(0, stepIdx - 1); return render(); }
+    if (act === 'next') { advance(); return; }
+    if (act === 'more') { showMore = !showMore; return render(); }
+    if (act === 'report') { prefill(); view = 'form'; formErr = ''; return render(); }
+    if (act === 'addlink') { var li = document.getElementById('iLink2'); if (li && li.value.trim()) { A.link = li.value.trim().slice(0, 300); M = { link: '', state: 'idle', data: null, reason: '' }; save(); paintChannel(); runLookup(); } return; }
+    if (act === 'cancel') { readForm(); view = 'result'; formErr = ''; return render(); }
+    if (act === 'restart') { A = { q0: null, q01: null, q02: null, q1: [], q2: null, q4: [], q1Other: '', q4Other: '', q0Other: '', biz: '', link: '' }; stepIdx = 0; done = false; showMore = false; view = 'result'; sessionId = null; F = { biz: '', name: '', contact: '', link: '', msg: '' }; save(); return render(); }
+    if (!q) return;
+    if (q === 'q1' || q === 'q4') {
+      var pool = q === 'q1' ? OPT.q1 : (track() === 'brand' ? OPT.q4brand : OPT.q4small);
+      var o = pool.filter(function (x) { return x.id === id; })[0];
+      var arr = A[q], i = arr.indexOf(id);
+      if (i >= 0) arr.splice(i, 1);
+      else if (o.exclusive) A[q] = [id];
+      else {
+        A[q] = arr.filter(function (x) { var ox = pool.filter(function (y) { return y.id === x; })[0]; return !(ox && ox.exclusive); });
+        if (q === 'q4' && A[q].length >= 3) return;
+        A[q].push(id);
+      }
+      save(); return syncMulti(q);
+    }
+    // 단일 선택은 고르는 즉시 다음으로 — 단, 기타(직접 입력)는 입력칸을 열고 멈춘다
+    A[q] = id;
+    if (q === 'q0' && id === 'other') {
+      document.querySelectorAll('.opt[data-q="q0"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === id)); });
+      var ob = document.getElementById('other-q0'), nb = document.getElementById('q0next');
+      if (ob) { ob.hidden = false; var inp = ob.querySelector('input'); if (inp) inp.focus(); }
+      if (nb) nb.hidden = false;
+      save(); return;
+    }
+    if (q === 'q0') A.q0Other = '';
+    if (q === 'q0' && id === 'local') A.q01 = 'instore';
+    if (q === 'q02') A.q4 = []; // 트랙이 바뀌면 Q4 답은 무효
+    save(); advance();
+  });
+
+  function advance() {
+    var s = steps();
+    if (stepIdx >= s.length - 1) { done = true; save(); return render(); }
+    stepIdx++; showMore = false; render();
+  }
+
+  app.addEventListener('input', function (e) { var el = e.target; if (!el || !el.id) return;
+    if (el.id.indexOf('otherInput-') === 0) { A[el.id.slice(11) + 'Other'] = el.value.slice(0, 200); save(); }
+    if (el.id === 'iBiz') { A.biz = el.value.slice(0, 120); var n = document.querySelector('[data-act="next"]'); if (n) n.disabled = !A.biz.trim(); save(); }
+    if (el.id === 'iLink') { A.link = el.value.slice(0, 300); save(); }
+  });
+  app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && e.target.id === 'otherInput-q0' && A.q0 === 'other') { e.preventDefault(); advance(); } });
+  app.addEventListener('submit', function (e) { if (e.target && e.target.id === 'leadForm') { e.preventDefault(); submitForm(); } if (e.target && e.target.id === 'infoForm') { e.preventDefault(); if (A.biz.trim()) advance(); } });
+  document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { if (view === 'form') readForm(); setLang(b.dataset.lang); }); });
+  render();
+})();
+</script>
+</body>
+</html>
