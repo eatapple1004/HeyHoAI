@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
+import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { LegacyErrorFilter } from './common/legacy-error.filter';
 
@@ -88,6 +89,19 @@ async function bootstrap() {
   server.use('/jaenova', (req: any, res: any, next: any) => {
     if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
     if (req.path === '/') return res.sendFile(path.join(PUBLIC_DIR, 'jaenova', 'index.html'));
+    return next();
+  });
+
+  // /hansung/* = (주)한성모빌리티 홈페이지 시안 — **dev 전용**. (src/index.js에 동일 가드 — 한쪽만 고치지 말 것)
+  //   `/hansung` → `/hansung/` (상대경로 링크 때문), 폴더 주소는 index.html 서빙.
+  server.use('/hansung', (req: any, res: any, next: any) => {
+    if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+    if (req.originalUrl === '/hansung' || req.originalUrl.startsWith('/hansung?')) return res.redirect(301, '/hansung/' + req.originalUrl.slice(8));
+    if (req.path.endsWith('/')) {
+      const root = path.join(PUBLIC_DIR, 'hansung');
+      const file = path.join(root, path.normalize(req.path), 'index.html');
+      if (file.startsWith(root + path.sep) && fs.existsSync(file)) return res.sendFile(file);
+    }
     return next();
   });
 

@@ -128,6 +128,20 @@ app.use('/jaenova', (req, res, next) => {
   next();
 });
 
+// /hansung/* = (주)한성모빌리티 홈페이지 시안 — **dev 전용**. /jaenova 와 같은 방식(nest/main.ts에도 동일 가드 — 한쪽만 고치지 말 것).
+//   사이트 안 링크가 모두 상대경로라 `/hansung` 은 반드시 `/hansung/` 으로 보내야 한다(아니면 ko/index.html 이 /ko/ 로 풀린다).
+//   폴더 주소(`/hansung/ko/` 등)는 그 폴더의 index.html 을 서빙한다. 정적 미들웨어보다 **먼저** 있어야 차단된다.
+app.use('/hansung', (req, res, next) => {
+  if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
+  if (req.originalUrl === '/hansung' || req.originalUrl.startsWith('/hansung?')) return res.redirect(301, '/hansung/' + req.originalUrl.slice(8));
+  if (req.path.endsWith('/')) {
+    const root = path.join(PUBLIC_DIR, 'hansung');
+    const file = path.join(root, path.normalize(req.path), 'index.html');
+    if (file.startsWith(root + path.sep) && fs.existsSync(file)) return res.sendFile(file);
+  }
+  next();
+});
+
 // public 디렉터리의 공유 자원 (editor-core.css / editor-core.js 등)
 // .html 등 페이지 자체는 위 클린 URL 라우트 / /heyhoai/* 라우트에서 sendFile로 서빙한다.
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: false }));
