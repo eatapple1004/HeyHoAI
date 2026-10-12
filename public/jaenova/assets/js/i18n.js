@@ -44,7 +44,7 @@ ko: {
   "home.i.p": "우리는 도면 위의 계획을 현장의 결과물로 바꾸는 일을 합니다. 그 과정에서 품질과 안전은 타협의 대상이 아니며, 디자인은 기능과 분리되지 않습니다. 완성된 공간이 사람의 일상을 어떻게 바꾸는지가 우리의 기준입니다.",
   "home.i.more": "회사소개 자세히",
 
-  "home.s1.b": "01", "home.s1.s": "대표 프로젝트",
+  "home.s1.b": "14", "home.s1.s": "프로젝트 실적",
   "home.s2.b": "05", "home.s2.s": "사업 영역",
   "home.s3.b": "06", "home.s3.s": "시공 프로세스",
   "home.s4.b": "100%", "home.s4.s": "자체 품질관리",
@@ -56,7 +56,7 @@ ko: {
 
   "home.p.kicker": "Our Projects",
   "home.p.title": "프로젝트",
-  "home.p.sub": "재노바 아너스가 실제로 만들어낸 결과물입니다.",
+  "home.p.sub": "1991년부터 이어온 현장 경험, 재노바 아너스가 실제로 지은 결과물입니다.",
   "home.p.more": "전체 프로젝트 보기",
 
   "home.c.kicker": "From Plan to Reality",
@@ -408,7 +408,7 @@ en: {
   "home.i.p": "Our work is turning plans on paper into results on site. In that process quality and safety are not negotiable, and design is never separated from function. Our standard is how the finished space changes daily life.",
   "home.i.more": "More about us",
 
-  "home.s1.b": "01", "home.s1.s": "Flagship Project",
+  "home.s1.b": "14", "home.s1.s": "Projects Delivered",
   "home.s2.b": "05", "home.s2.s": "Business Areas",
   "home.s3.b": "06", "home.s3.s": "Process Stages",
   "home.s4.b": "100%", "home.s4.s": "In-House QC",
@@ -420,7 +420,7 @@ en: {
 
   "home.p.kicker": "Our Projects",
   "home.p.title": "Projects",
-  "home.p.sub": "What Jaenova Honors has actually built.",
+  "home.p.sub": "Built on site experience since 1991 — what Jaenova Honors has actually built.",
   "home.p.more": "See all projects",
 
   "home.c.kicker": "From Plan to Reality",
