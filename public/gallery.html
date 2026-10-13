@@ -56,6 +56,7 @@
   .card .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:3}
   .card:hover .rc-tools,.card:focus-within .rc-tools{opacity:1;transform:none}
   @media(hover:none){.card .rc-tools{opacity:1;transform:none}}
+  .card .rc-btn.rc-up{width:auto;padding:0 7px 0 5px;gap:3px;font-size:10.5px;font-weight:700}.card .rc-btn.rc-up b{font-weight:700} /* 업스케일 ×2·×4 — 아이콘 + 배율 */
   .card .rc-btn{width:30px;height:30px;border-radius:9px;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,transform .1s}
   .card .rc-btn:hover{background:rgba(0,0,0,.8)}
   .card .rc-btn:active{transform:scale(.9)}
@@ -382,9 +383,9 @@ const RC_SVG={
 // (2026-10-13) 업스케일(Topaz ×2) — 사진만. 서버에 키 없으면 tools.upscale 이 비어 버튼이 안 뜬다. 결과는 새 creation 으로 맨 앞에.
 let UPSCALE=null;
 fetch('/api/generate/tools').then(r=>r.json()).then(d=>{UPSCALE=((d.data&&d.data.upscale)||[])[0]||null;if(UPSCALE)try{render()}catch(e){}}).catch(()=>{}); // 첫 render 가 먼저 끝났으면 버튼을 달기 위해 한 번 더
-async function upscaleItem(idx,btn){if(btn.disabled)return;btn.disabled=true;
-  try{const r=await fetch('/api/generate/upscale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resultIdx:idx,factor:2})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'failed');
-    toast('Upscaled ×2 · '+d.data.width+'×'+d.data.height+' — added to your library');setTimeout(()=>location.reload(),900);}
+async function upscaleItem(idx,btn,factor){if(btn.disabled)return;btn.disabled=true;
+  try{const r=await fetch('/api/generate/upscale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resultIdx:idx,factor})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Upscaled ×'+factor+' · '+d.data.width+'×'+d.data.height+' — added to your library');setTimeout(()=>location.reload(),900);}
   catch(e){toast('Upscale failed: '+(e.message||e),'error');btn.disabled=false;}}
 function cardHtml(it){
   // 릴스: preload=metadata(첫 프레임만)+hover 재생. 로드 실패 시 카드 제거(빈 카드 방지).
@@ -396,7 +397,7 @@ function cardHtml(it){
   const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
   const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
   const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${it.idx}" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
-  const upBtn=(it.type==='photo'&&UPSCALE)?`<button class="rc-btn" type="button" title="Upscale ×2 (◈${UPSCALE.pricing.perImage})" onclick="event.stopPropagation();upscaleItem(${it.idx},this)">${RC_SVG.up}</button>`:'';
+  const upBtn=(it.type==='photo'&&UPSCALE)?[2,4].map(f=>`<button class="rc-btn rc-up" type="button" title="Upscale ×${f} (◈${UPSCALE.pricing.perImage})" onclick="event.stopPropagation();upscaleItem(${it.idx},this,${f})">${RC_SVG.up}<b>×${f}</b></button>`).join(''):'';
   return `<div class="card" role="link" tabindex="0" aria-label="Open creation${it.name?' — '+esc(it.name):''}" onclick="location.href='/creation?idx=${it.idx}&from=library'" onkeydown="cardKey(event,${it.idx})">
       <div class="rc-tools">${upBtn}${editBtn}${visBtn}${dlBtn}</div>
       ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
