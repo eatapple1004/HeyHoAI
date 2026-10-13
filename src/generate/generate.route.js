@@ -2089,7 +2089,9 @@ const reads = {
     const pricing = (t) => (t.type === 'video'
       ? { perDuration: Object.fromEntries(((t.controls && t.controls.duration) || [5]).map((d) => [String(d), credit.videoCost(d, 'pro', false)])) }
       : { perImage: credit.imageCost(t.costKey || 'pro', 1, false) }); // image·upscale = 장당
-    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, provider: t.provider, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [], pricing: pricing(t) });
+    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, provider: t.provider, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [], pricing: pricing(t),
+      // (2026-10-13) 영상: 레퍼런스 줄(refModel 있으면 노출, refInput.max 장수) · 시작 프레임 없이도 가능(t2vModel). 엔드포인트 경로 자체는 프론트가 안 쓴다 — 불리언/장수만.
+      ...(t.type === 'video' ? { refModel: !!t.refModel, refInput: t.refInput ? { max: t.refInput.max || 10 } : null, t2vModel: !!t.t2vModel } : {}) });
     return {
       image: listTools({ type: 'image', enabledOnly: true, availableOnly: true }).map(pub),
       video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).map(pub),

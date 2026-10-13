@@ -4,7 +4,7 @@
 export interface ToolDto {
   id: string;
   label: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'upscale';
   /** 어댑터 키(src/images|videos/providers) — 프론트는 배지·설명 매핑에만 쓴다 */
   provider: string;
   model: string;
@@ -12,6 +12,10 @@ export interface ToolDto {
   imageSlots: unknown[];
   /** 커스텀 생성 단가(◈). image=장당, video=길이별 */
   pricing: { perImage?: number; perDuration?: Record<string, number> };
+  /** 영상만: 레퍼런스 이미지 받는지(reference-to-video) · 최대 장수 · 시작 프레임 없이 생성 가능한지(text-to-video) */
+  refModel?: boolean;
+  refInput?: { max: number } | null;
+  t2vModel?: boolean;
 }
 export interface ToolsDto {
   image: ToolDto[];
