@@ -16,6 +16,11 @@ const IMG_CREDIT = {
   'pro-4k': [330, 540],            // Pro 4K 원가 $0.24(2,000토큰). ✅배선: generate.route:428 imageSize==='4K'→pro-4k + studio genCost 동일
   'gpt-image-2': [185, 300],       // pro 티어 근사(별도 원가 확정 전)
   'gpt-image-2-high': [330, 540],  // 상위 티어 근사
+  // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. 원가 확정 전 pro 근사(placeholder, CLAUDE.md 가격 규칙).
+  //   실원가 참고: Seedream v4.5(fal) $0.03/장 · FLUX dev(fal) $0.025/장 · FLUX 1.1 Pro(Replicate) $0.04/장 → 전부 pro보다 싸서 마진 바닥 위.
+  seedream: [185, 300],
+  flux: [185, 300],
+  replicate: [185, 300],
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
 //   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)

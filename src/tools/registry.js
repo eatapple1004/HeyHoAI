@@ -46,8 +46,10 @@ const TOOLS = {
   'gpt-image': {
     id: 'gpt-image', label: 'GPT Image', type: 'image',
     provider: 'openai', model: 'gpt-image-2',
-    costKey: 'gpt-image-2', enabled: false,
-    controls: { aspectRatio: ['1:1', '3:4', '16:9'], negative: true },
+    // (2026-10-13) 베이스 1차 — 노출. generate.route가 model 키(gpt-image-2)로 OpenAI 경로를 이미 탄다.
+    costKey: 'gpt-image-2', enabled: true,
+    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edits from your references (up to 16).', multi: true }],
   },
   'gpt-image-hd': {
     id: 'gpt-image-hd', label: 'GPT Image HD', type: 'image',
@@ -60,6 +62,28 @@ const TOOLS = {
     provider: 'replicate', model: 'black-forest-labs/flux-1.1-pro',
     costKey: null, enabled: false,
     controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16'], negative: true },
+  },
+
+  // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. generate.route의 runExternal 분기가 provider 키로 디스패치한다.
+  //   costKey = credit.service IMG_CREDIT 키(원가 확정 전 pro 근사). 레퍼런스는 data URL로 넘긴다.
+  'seedream': {
+    id: 'seedream', label: 'Seedream', type: 'image',
+    provider: 'seedream', model: 'fal-ai/bytedance/seedream/v4.5',
+    costKey: 'seedream', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4] }, // negative 없음(스키마 미지원)
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit mode with up to 10 references.', multi: true }],
+  },
+  'flux': {
+    id: 'flux', label: 'FLUX', type: 'image',
+    provider: 'fal', model: 'fal-ai/flux/dev',
+    costKey: 'flux', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true }, // 텍스트→이미지만(레퍼런스 미지원)
+  },
+  'replicate': {
+    id: 'replicate', label: 'Replicate', type: 'image',
+    provider: 'replicate', model: 'black-forest-labs/flux-1.1-pro',
+    costKey: 'replicate', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true }, // REPLICATE_MODEL로 교체 가능
   },
 
   // ── 영상 ──
@@ -79,15 +103,67 @@ const TOOLS = {
       { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' },
     ],
   },
+  // (2026-10-13) 베이스 1차 — 영상 엔진 5종 노출. videoJob.service가 engine≠kling이면 src/videos/providers 어댑터로 제출·폴링한다.
+  //   ⚠️ 비용은 엔진별 실원가 확정 전이라 전부 Kling 표(videoCost)를 공용으로 쓴다(placeholder, CLAUDE.md 가격 규칙).
+  //   runway·minimax는 시작 프레임을 **공개 URL**로 받아야 해서 PUBLIC_URL이 필요하다(로컬에선 제출 실패 → 400 안내).
   'runway': {
     id: 'runway', label: 'Runway', type: 'video',
     provider: 'runway', model: 'gen4_turbo',
-    costKey: null, enabled: false,
-    controls: { duration: [5, 10] },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10], aspectRatio: ['9:16', '16:9', '1:1'] },
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
-  // 추가 툴(minimax, fal, veo 등)은 #9 어댑터 웨이브에서 검증 후 등록 — controls만 채우면 폼 자동.
+  'veo': {
+    id: 'veo', label: 'Veo 3.1', type: 'video',
+    provider: 'veo', model: 'veo-3.1-generate-preview',
+    costKey: null, enabled: true,
+    controls: { duration: [4, 6, 8], aspectRatio: ['16:9', '9:16'], audio: { type: 'toggle' } }, // 내장 사운드(native)
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'minimax': {
+    id: 'minimax', label: 'MiniMax Hailuo', type: 'video',
+    provider: 'minimax', model: 'video-01',
+    costKey: null, enabled: true,
+    controls: { duration: [6] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'sora': {
+    id: 'sora', label: 'Sora', type: 'video',
+    provider: 'sora', model: 'sora-2',
+    costKey: null, enabled: true,
+    controls: { duration: [4, 8, 12], aspectRatio: ['9:16', '16:9', '1:1'] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'seedance': {
+    id: 'seedance', label: 'Seedance', type: 'video',
+    provider: 'seedance', model: 'fal-ai/bytedance/seedance',
+    costKey: null, enabled: true,
+    controls: { duration: [5, 8, 10], aspectRatio: ['9:16', '16:9', '1:1'], resolution: ['720p', '1080p'] },
+    imageSlots: [
+      { key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' },
+      { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' },
+    ],
+  },
 };
+
+// ── 키 유무 판정 (2026-10-13) ──
+//   enabled는 "노출 의사", available은 "이 서버에 키가 있는가". 둘 다 참일 때만 목록에 나간다.
+//   staging/prod처럼 키가 없는 환경에서 새 엔진이 선택지로 보였다가 503을 내는 사고를 막는다.
+//   키 이름은 src/config/index.js의 zod 스키마와 같다. 프로바이더 모듈을 여기서 require하지 않는 이유:
+//   registry는 시드·스튜디오·라우트가 두루 읽는 가벼운 정본이라 외부 SDK 로딩을 끌어오면 안 된다.
+const PROVIDER_KEYS = {
+  gemini: ['GEMINI_API_KEY'], openai: ['OPENAI_API_KEY'],
+  fal: ['FAL_API_KEY'], seedream: ['FAL_API_KEY'], seedance: ['FAL_API_KEY'],
+  replicate: ['REPLICATE_API_TOKEN'],
+  kling: ['KLING_ACCESS_KEY', 'KLING_SECRET_KEY'], runway: ['RUNWAY_API_KEY'], minimax: ['MINIMAX_API_KEY'],
+  veo: ['GEMINI_API_KEY'], sora: ['OPENAI_API_KEY'],
+};
+/** 이 서버에 해당 프로바이더의 키가 전부 있는가 */
+function isToolAvailable(tool) {
+  const keys = PROVIDER_KEYS[tool && tool.provider] || [];
+  if (!keys.length) return true; // 키가 필요 없는 툴(없음) — 보수적으로 통과
+  return keys.every((k) => !!process.env[k]);
+}
 
 const DEFAULT_IMAGE_TOOL = 'nano-banana-pro';
 const DEFAULT_VIDEO_TOOL = 'kling';
@@ -107,11 +183,12 @@ function resolveToolId(id, type) {
   return (id && TOOLS[id]) ? id : defaultToolFor(type);
 }
 
-/** 목록 (옵션: type 필터, enabledOnly) */
-function listTools({ type, enabledOnly = false } = {}) {
+/** 목록 (옵션: type 필터, enabledOnly, availableOnly=키 있는 것만) */
+function listTools({ type, enabledOnly = false, availableOnly = false } = {}) {
   return Object.values(TOOLS)
     .filter((t) => !type || t.type === type)
-    .filter((t) => !enabledOnly || t.enabled);
+    .filter((t) => !enabledOnly || t.enabled)
+    .filter((t) => !availableOnly || isToolAvailable(t));
 }
 
 module.exports = {
@@ -122,4 +199,5 @@ module.exports = {
   defaultToolFor,
   resolveToolId,
   listTools,
+  isToolAvailable,
 };

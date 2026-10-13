@@ -5,9 +5,13 @@ export interface ToolDto {
   id: string;
   label: string;
   type: 'image' | 'video';
+  /** 어댑터 키(src/images|videos/providers) — 프론트는 배지·설명 매핑에만 쓴다 */
+  provider: string;
   model: string;
   controls: Record<string, unknown>;
   imageSlots: unknown[];
+  /** 커스텀 생성 단가(◈). image=장당, video=길이별 */
+  pricing: { perImage?: number; perDuration?: Record<string, number> };
 }
 export interface ToolsDto {
   image: ToolDto[];

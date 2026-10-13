@@ -996,6 +996,13 @@ async function migrate() {
   `);
   // 오디오 옵션(비동기 video-to-audio 단계가 잡 완료 후 실행할지) 보존
   await pool.query(`ALTER TABLE video_jobs ADD COLUMN IF NOT EXISTS audio BOOLEAN NOT NULL DEFAULT false;`);
+  // (2026-10-13) 베이스 1차 — 영상 엔진 다중화. engine='kling'(기존 인라인 경로) 외에는 src/videos/providers 어댑터로 제출·폴링.
+  //   ctx = 어댑터가 poll에 다시 받아야 하는 제출 메타(예: Seedance tier) — provider.submit()의 metadata 그대로.
+  await pool.query(`
+    ALTER TABLE video_jobs
+    ADD COLUMN IF NOT EXISTS engine VARCHAR(24) NOT NULL DEFAULT 'kling',
+    ADD COLUMN IF NOT EXISTS ctx    JSONB;
+  `);
 
   // 영상 결과 자동공개(P2): 잡이 visibility·출처 템플릿(attribution)을 운반 → finalize가 결과에 그대로 기록.
   // ⚠️ 기본 'private': 컬럼 미지정 잡(과거)은 비공개. 신규는 /video/async가 명시(이미지 경로와 동일 정책).

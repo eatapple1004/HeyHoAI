@@ -16,6 +16,19 @@ const creditService = require('../credits/credit.service');
 const teamCredit = require('../teams/team.credit');
 const mediaStore = require('../storage/mediaStore');
 
+// (2026-10-13) 베이스 1차 — 영상 엔진 다중화. kling은 아래 인라인 경로(실측 검증된 코드)를 그대로 두고,
+//   그 외 엔진은 src/videos/providers 어댑터(submit/poll 계약, providers/types.js)로 제출·폴링한다.
+//   ⚠️ 어댑터마다 시작 프레임을 받는 방식이 다르다 — seedance·veo·sora는 data URL/로컬 경로를 삼키지만,
+//   runway·minimax는 API가 직접 받아가는 **공개 URL**이 필요하다(PUBLIC_URL 없으면 제출 거부).
+const videoProviders = {
+  runway: require('../videos/providers/runway.provider'),
+  minimax: require('../videos/providers/minimax.provider'),
+  veo: require('../videos/providers/veo.provider'),
+  sora: require('../videos/providers/sora.provider'),
+  seedance: require('../videos/providers/seedance.provider'),
+};
+const NEEDS_PUBLIC_URL = new Set(['runway', 'minimax']);
+
 const POLL_INTERVAL_MS = 15000;   // 15초마다 폴링 틱
 const MAX_ATTEMPTS = 48;          // 48 * 15s = 12분 후 타임아웃
 const outputDir = path.join(process.cwd(), 'tmp', 'images');
@@ -59,7 +72,11 @@ async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
 async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate = false }) {
+  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution }) {
+  if (engine && engine !== 'kling') {
+    return submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
+      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution });
+  }
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
   const wantAudio = audio === true || audio === 'true';
@@ -129,6 +146,124 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
   }
 }
 
+/**
+ * (2026-10-13) kling 외 엔진 제출 — 어댑터 계약(submit → providerJobId)으로 통일. 과금·잡 레코드·환불은 kling 경로와 같다.
+ *   비용은 엔진별 실원가 확정 전이라 videoCost(길이) 공용(placeholder).
+ */
+async function submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
+  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution }) {
+  const provider = videoProviders[engine];
+  if (!provider) { const e = new Error(`Unknown video engine: ${engine}`); e.statusCode = 400; throw e; }
+  if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
+    const e = new Error(`${engine} API key not configured`); e.statusCode = 400; throw e;
+  }
+  if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }
+  if (!sourceImagePath && engine !== 'sora' && engine !== 'veo' && engine !== 'seedance') {
+    const e = new Error(`${engine} needs a start frame`); e.statusCode = 400; throw e; // runway·minimax = image-to-video 전용
+  }
+  if (NEEDS_PUBLIC_URL.has(engine) && !env.PUBLIC_URL) {
+    const e = new Error(`${engine} needs PUBLIC_URL (the provider fetches the start frame by URL)`); e.statusCode = 400; throw e;
+  }
+  const vis = visibility === 'private' ? 'private' : 'public';
+  const wantAudio = audio === true || audio === 'true';
+  const dur = Math.min(provider.maxDurationSec || 10, Math.max(1, parseInt(duration, 10) || 5));
+  const aspect = aspectRatio || '9:16';
+  const [w, h] = aspect === '16:9' ? [1280, 720] : aspect === '1:1' ? [1024, 1024] : [720, 1280];
+
+  const teamId = await teamCredit.activeTeamId(user.id);
+  const charge = await teamCredit.chargeGeneration(
+    user, creditService.videoCost(dur, 'pro', isTemplate), `릴스 생성 (${dur}s, ${engine})`
+  );
+  const chargeAmount = charge ? charge.amount : 0;
+
+  // 시작 프레임 전달 방식 — 어댑터별. 공개 URL이 필요한 엔진은 tmp/images에 복사해 /images/<uuid>로 노출한다.
+  const sourceFor = async (localPath) => {
+    if (!localPath) return null;
+    if (NEEDS_PUBLIC_URL.has(engine)) {
+      const name = `${crypto.randomUUID()}${path.extname(localPath) || '.png'}`;
+      fs.mkdirSync(outputDir, { recursive: true });
+      fs.copyFileSync(localPath, path.join(outputDir, name));
+      await mediaStore.putFile(path.join(outputDir, name)).catch(() => {});
+      return `${env.PUBLIC_URL.replace(/\/$/, '')}/images/${name}`;
+    }
+    if (engine === 'seedance') return localPath; // 어댑터가 로컬 경로를 data URL로 바꾼다
+    const ext = path.extname(localPath).toLowerCase();
+    const mime = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.webp' ? 'image/webp' : 'image/png';
+    return `data:${mime};base64,${fs.readFileSync(localPath).toString('base64')}`; // veo·sora: fetch(data:)로 읽는다
+  };
+
+  try {
+    const sub = await provider.submit({
+      sourceImageUrl: await sourceFor(sourceImagePath),
+      endImageUrl: await sourceFor(endFramePath),
+      motionPrompt: prompt, negativePrompt: 'ugly, deformed, blurry, static',
+      durationSec: dur, aspectRatio: aspect, width: w, height: h, resolution,
+      style: 'cinematic', audio: wantAudio,
+    });
+    if (!sub || !sub.providerJobId) throw Object.assign(new Error(`${engine} submit returned no job id`), { statusCode: 503 });
+    const ins = await query(
+      `INSERT INTO video_jobs (user_id, team_id, prompt, duration, mode, task_id, charge_amount, status, audio,
+         visibility, template_id, template_source, template_name, engine, ctx)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'processing',$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
+      [user.id, teamId, String(prompt).slice(0, 2000), String(dur), 'pro', String(sub.providerJobId), chargeAmount, wantAudio,
+       vis, templateId || null, templateSource || null, templateName ? String(templateName).slice(0, 120) : null,
+       engine, sub.metadata ? JSON.stringify(sub.metadata) : null]
+    );
+    log.info(`Submitted job ${ins.rows[0].id} engine=${engine} task=${sub.providerJobId} (${dur}s)`);
+    return { jobId: ins.rows[0].id };
+  } catch (err) {
+    if (charge) await charge.refund().catch(() => {}); // 제출 실패 = 그린 게 없다 → 전액 환불
+    if (!err.statusCode) err.statusCode = 503;
+    throw err;
+  } finally {
+    if (sourceImagePath) { try { fs.unlinkSync(sourceImagePath); } catch {} }
+    if (endFramePath) { try { fs.unlinkSync(endFramePath); } catch {} }
+  }
+}
+
+/** kling 외 엔진 잡 한 번 폴링 — 어댑터 poll(providerJobId, ctx) 계약. 완료 시 finalizeSucceeded로 합류. */
+async function pollExternal(job) {
+  const provider = videoProviders[job.engine];
+  if (!provider) throw new Error(`Unknown video engine on job: ${job.engine}`);
+  const r = await provider.poll(job.task_id, job.ctx || undefined);
+  if (r.status === 'completed') {
+    if (!r.videoUrl) throw new Error('completed but no video url');
+    const claim = await query(`UPDATE video_jobs SET status='finalizing', updated_at=now() WHERE id=$1 AND status='processing'`, [job.id]);
+    if (claim.rowCount === 0) return;
+    try {
+      await finalizeSucceeded(job, { url: r.videoUrl, duration: r.durationMs ? r.durationMs / 1000 : null, id: null }, undefined);
+    } catch (e) {
+      log.error(`Finalize failed job ${job.id}: ${e.message}`);
+      await refundJob(job);
+      await query(`UPDATE video_jobs SET status='failed', error=$1, updated_at=now() WHERE id=$2`, [String(e.message).slice(0, 300), job.id]).catch(() => {});
+    }
+  } else if (r.status === 'failed') {
+    const msg = r.error || `${job.engine} generation failed`;
+    await refundJob(job);
+    await query(`UPDATE video_jobs SET status='failed', error=$1, updated_at=now() WHERE id=$2`, [String(msg).slice(0, 300), job.id]);
+    log.warn(`Job ${job.id} failed: ${msg}`);
+  } else {
+    const attempts = job.attempts + 1;
+    if (attempts >= MAX_ATTEMPTS) {
+      await refundJob(job);
+      await query(`UPDATE video_jobs SET status='failed', error='timeout', attempts=$1, updated_at=now() WHERE id=$2`, [attempts, job.id]);
+      log.warn(`Job ${job.id} timed out`);
+    } else {
+      await query(`UPDATE video_jobs SET attempts=$1, updated_at=now() WHERE id=$2`, [attempts, job.id]);
+    }
+  }
+}
+
+/** 완성 영상 받기 — 어댑터가 우리 서빙 경로(/images/<file>, persistVideo)를 돌려준 경우는 로컬 파일을 읽는다. */
+async function fetchVideo(videoUrl) {
+  const m = /^\/images\/([^/?#]+)$/.exec(String(videoUrl || ''));
+  if (m) {
+    const local = path.join(outputDir, path.basename(m[1]));
+    if (fs.existsSync(local)) return fs.readFileSync(local);
+  }
+  return downloadBuf(videoUrl);
+}
+
 /** 실패 시 환불 (개인/팀 컨텍스트별) */
 async function refundJob(job) {
   if (!(job.charge_amount > 0)) return;
@@ -193,7 +328,7 @@ async function finalizeSucceeded(job, v, unitsUsed) {
 
   // (2026-07-06) 단계별 에러 라벨 — video_jobs.error에 원인(다운로드/파일쓰기)이 남아 진단 가능("output failed to save"의 실체).
   let videoBuf;
-  try { videoBuf = await downloadBuf(videoUrl); } // 타임아웃+4회 재시도 — 일시 'fetch failed'로 완성영상 잃지 않게
+  try { videoBuf = await fetchVideo(videoUrl); } // 타임아웃+4회 재시도 — 일시 'fetch failed'로 완성영상 잃지 않게 (로컬 서빙 경로면 파일 읽기)
   catch (e) { throw new Error(`video download failed: ${e.message}`); }
   const uuid = crypto.randomUUID();
   const filename = `${uuid}.mp4`;
@@ -203,7 +338,9 @@ async function finalizeSucceeded(job, v, unitsUsed) {
 
   // 오디오 옵션: video-to-audio → ffmpeg 합성. 실패해도 무음 영상으로 저장(품질 우선).
   let hasAudio = false;
-  if (job.audio) {
+  const isKling = !job.engine || job.engine === 'kling';
+  const modelLabel = isKling ? 'kling-v3' : String(job.engine);
+  if (job.audio && isKling) { // video-to-audio는 Kling 전용 API. 다른 엔진은 내장 사운드(veo) 또는 무음.
     try {
       const audioUrl = await generateAudioFor({ videoId, videoUrl, prompt: job.prompt });
       if (audioUrl) {
@@ -226,15 +363,15 @@ async function finalizeSucceeded(job, v, unitsUsed) {
   }
 
   const savedPrompt = await promptRepo.insert({
-    userId: job.user_id, promptText: job.prompt, model: 'kling-v3',
+    userId: job.user_id, promptText: job.prompt, model: modelLabel,
     tags: ['video', job.mode, job.duration + 's', ...(hasAudio ? ['audio'] : [])], teamId: job.team_id,
   });
   let savedResult;
   try {
     savedResult = await resultRepo.insert({
       promptIdx: savedPrompt.idx, filePath: `tmp/images/${filename}`,
-      fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: 'kling-v3',
-      metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio },
+      fileSizeKb: Math.round(fs.statSync(filePath).size / 1024), model: modelLabel,
+      metadata: { type: 'video', duration: videoDuration, mode: job.mode, taskId, unitsUsed, audio: hasAudio, engine: modelLabel },
       // 자동공개(P2): 잡이 운반한 visibility·출처 템플릿을 결과에 기록 → Explore 피드 노출.
       visibility: job.visibility, templateId: job.template_id, templateSource: job.template_source, templateName: job.template_name,
     });
@@ -304,6 +441,7 @@ async function pollOnce() {
   const jobs = (await query(`SELECT * FROM video_jobs WHERE status='processing' AND updated_at < now() - interval '12 seconds' ORDER BY created_at LIMIT 20`)).rows;
   for (const job of jobs) {
     try {
+      if (job.engine && job.engine !== 'kling') { await pollExternal(job); continue; } // 어댑터 경로
       const d = await pollKlingTask(job.task_id); // image2video/text2video 자동 판별
       const status = d.task_status;
 

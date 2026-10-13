@@ -20,12 +20,21 @@ const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 const teamCredit = require('../teams/team.credit');
 const { query } = require('../db/client');
-const { getTool, listTools } = require('../tools/registry');
+const { getTool, listTools, isToolAvailable } = require('../tools/registry');
 const { entitlementsFor } = require('../lib/entitlements');
 const mediaStore = require('../storage/mediaStore');
 const personRouting = require('./personRouting');
 
 // GPT Image 캔버스(1:1·2:3·3:2)를 사용자가 고른 비율로 가운데 자른다. 비율 미지정·형식 오류면 원본 그대로.
+/** 비율 → 외부 프로바이더용 픽셀 크기(긴 변 1024 기준, 8의 배수). 지원 밖 비율은 1:1. */
+function aspectToSize(aspect) {
+  const m = /^(\d+):(\d+)$/.exec(String(aspect || ''));
+  if (!m) return [1024, 1024];
+  const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+  const r8 = (n) => Math.max(256, Math.round(n / 8) * 8);
+  return a >= b ? [1024, r8(1024 * b / a)] : [r8(1024 * a / b), 1024];
+}
+
 async function cropToAspect(buf, aspect) {
   const m = /^(\d+):(\d+)$/.exec(String(aspect || ''));
   if (!m) return buf;
@@ -200,6 +209,14 @@ const postRootHandler = async (req, res, next) => {
     const toolDef = req.body.tool ? getTool(req.body.tool) : null;
     if (toolDef && toolDef.type === 'image' && toolDef.costKey) {
       model = toolDef.costKey;
+    }
+    // (2026-10-13) 베이스 1차 — 외부 프로바이더 디스패치. 레거시 model 키 경로(gemini·openai)에 없는 툴은
+    //   registry.provider(seedream·fal·replicate)로 src/images/providers 어댑터를 직접 부른다(아래 runExternal).
+    //   과금은 위에서 정한 model(=costKey) 그대로 — 어댑터는 그리기만 한다.
+    const EXTERNAL_IMAGE_PROVIDERS = ['seedream', 'fal', 'replicate'];
+    const extProvider = (toolDef && toolDef.type === 'image' && EXTERNAL_IMAGE_PROVIDERS.includes(toolDef.provider)) ? toolDef.provider : null;
+    if (extProvider && !isToolAvailable(toolDef)) {
+      return res.status(400).json({ success: false, error: `${toolDef.label} is not configured on this server` });
     }
 
     // ─── Custom 풀 컨트롤 (비율·해상도·네거티브) — 미지정 시 기존 동작 유지 ───
@@ -549,8 +566,30 @@ const postRootHandler = async (req, res, next) => {
           description = textPart?.text || '';
         };
 
+        // 외부 프로바이더 경로 — 결과 URL을 받아 PNG로 정규화해 아래 공통 저장(파일+DB)으로 흘린다.
+        //   레퍼런스는 data URL로 넘긴다(어댑터가 공개 URL·data URL·로컬 경로 중 자기 방식으로 처리).
+        const runExternal = async () => {
+          // eslint-disable-next-line global-require
+          const prov = require(`../images/providers/${extProvider}.provider`);
+          const [w, h] = aspectToSize(aspectRatio || '1:1');
+          const refUrls = referenceImages.map((r) => `data:image/png;base64,${r.base64}`);
+          const out = await prov.generate({ prompt: finalPromptForImage, width: w, height: h, referenceImageUrls: refUrls });
+          let buf;
+          if (String(out.url).startsWith('file://')) buf = fs.readFileSync(out.url.slice('file://'.length));
+          else {
+            const r = await fetch(out.url);
+            if (!r.ok) throw new Error(`${toolDef.label}: result download failed (${r.status})`);
+            buf = Buffer.from(await r.arrayBuffer());
+          }
+          usedModelId = (out.metadata && out.metadata.model) || toolDef.model;
+          // eslint-disable-next-line global-require
+          return require('sharp')(buf).png().toBuffer(); // 공통 저장이 .png로 쓰므로 포맷을 맞춘다(fal은 jpeg를 준다)
+        };
+
         let usedModelId = modelId;
-        if (isGpt) {
+        if (extProvider) {
+          imageBuffer = await runExternal();
+        } else if (isGpt) {
           try {
             // ─── GPT Image Generation ───
             const OpenAI = require('openai');
@@ -1079,8 +1118,17 @@ const postVideoAsyncHandler = async (req, res, next) => {
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const sourceFile = req.files?.sourceImage?.[0];
     const endFrameFile = req.files?.endFrame?.[0];
+    // (2026-10-13) 베이스 1차 — 영상 엔진 선택(tool). 미지정=kling(기존 경로 그대로). 모르는 툴·이미지 툴·키 없는 툴은 400.
+    const videoTool = req.body.tool ? getTool(req.body.tool) : null;
+    if (req.body.tool && (!videoTool || videoTool.type !== 'video' || !videoTool.enabled)) {
+      return res.status(400).json({ success: false, error: 'Unknown video tool' });
+    }
+    if (videoTool && !isToolAvailable(videoTool)) {
+      return res.status(400).json({ success: false, error: `${videoTool.label} is not configured on this server` });
+    }
     const result = await videoJobService.submit({
       user: req.user, prompt, duration, mode, aspectRatio, audio,
+      engine: videoTool ? videoTool.provider : 'kling', resolution: req.body.resolution,
       visibility, templateId: req.body.templateId || null,
       templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,
@@ -1912,10 +1960,16 @@ function readError(statusCode, message) {
 const reads = {
   /** 사용 가능한 이미지·영상 도구(공개 필드만) */
   tools() {
-    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
+    // (2026-10-13) 키 없는 툴은 목록에서 뺀다(availableOnly) + 단가(pricing)를 같이 내보낸다 — 새 Image·Video 페이지가 ◈를 그린다.
+    // eslint-disable-next-line global-require
+    const credit = require('../credits/credit.service');
+    const pricing = (t) => (t.type === 'image'
+      ? { perImage: credit.imageCost(t.costKey || 'pro', 1, false) }
+      : { perDuration: Object.fromEntries(((t.controls && t.controls.duration) || [5]).map((d) => [String(d), credit.videoCost(d, 'pro', false)])) });
+    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, provider: t.provider, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [], pricing: pricing(t) });
     return {
-      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
-      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
+      image: listTools({ type: 'image', enabledOnly: true, availableOnly: true }).map(pub),
+      video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).map(pub),
     };
   },
 
