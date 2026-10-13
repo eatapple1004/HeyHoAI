@@ -153,7 +153,7 @@ const TOOLS = {
   'soul': {
     id: 'soul', label: 'Higgsfield Soul 2', type: 'image',
     provider: 'higgsfield', model: 'higgsfield-ai/soul/v2/standard',
-    costKey: 'soul', enabled: true, // HIGGSFIELD_API_KEY_ID/SECRET 없으면 목록에서 빠진다
+    costKey: 'soul', enabled: true, // HIGGSFIELD_API_KEY 없으면 목록에서 빠진다
     controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1] }, // 텍스트 전용(참조는 custom_reference_id=학습 캐릭터뿐)
   },
 
@@ -226,7 +226,7 @@ const PROVIDER_KEYS = {
   gemini: ['GEMINI_API_KEY'], openai: ['OPENAI_API_KEY'],
   fal: ['FAL_API_KEY'], seedream: ['FAL_API_KEY'], seedance: ['FAL_API_KEY'],
   replicate: ['REPLICATE_API_TOKEN'],
-  xai: ['XAI_API_KEY'], higgsfield: ['HIGGSFIELD_API_KEY_ID', 'HIGGSFIELD_API_KEY_SECRET'],
+  xai: ['XAI_API_KEY'], higgsfield: ['HIGGSFIELD_API_KEY'],
   kling: ['KLING_ACCESS_KEY', 'KLING_SECRET_KEY'], runway: ['RUNWAY_API_KEY'], minimax: ['MINIMAX_API_KEY'],
   veo: ['GEMINI_API_KEY'], sora: ['OPENAI_API_KEY'],
 };

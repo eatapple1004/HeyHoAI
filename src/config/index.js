@@ -112,8 +112,7 @@ const envSchema = z.object({
   FAL_MODEL: z.string().default('fal-ai/flux/dev'),
   // (2026-10-13) xAI(Grok Imagine)·Higgsfield(Soul) — 키가 없으면 registry.isToolAvailable 이 해당 툴을 목록에서 뺀다.
   XAI_API_KEY: z.string().optional(),
-  HIGGSFIELD_API_KEY_ID: z.string().optional(),
-  HIGGSFIELD_API_KEY_SECRET: z.string().optional(),
+  HIGGSFIELD_API_KEY: z.string().optional(), // open.higgsfield.ai 콘솔이 주는 키 한 줄. 문서상 "Key <id>:<secret>" 형식이면 그대로(콜론 포함) 넣는다.
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_IMAGE_MODEL: z.string().default('gemini-2.5-flash-image'),
   // Seedream(ByteDance) — fal 경유라 키는 FAL_API_KEY 공유. 참조 이미지가 있으면 edit 경로로 자동 전환.
