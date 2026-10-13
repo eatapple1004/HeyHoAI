@@ -13,7 +13,7 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=5" defer></script>
+<script src="/js/topnav.js?v=6" defer></script>
 </head>
 <body>
 <!-- (2026-10-13) 베이스 1차 — Explore = 입구 여러 개(힉스필드 구조). 캐러셀(Image·Video·Engines live / Lens·Pack·KakaoTalk·MCP soon) → 카톡 배너(soon) + 툴 카드 → 커뮤니티 피드.
@@ -68,7 +68,7 @@ const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
 const car=$('#car');const step=()=>car.querySelector('.shc').getBoundingClientRect().width+16;
 $('#carL').addEventListener('click',()=>car.scrollBy({left:-step(),behavior:'smooth'}));$('#carR').addEventListener('click',()=>car.scrollBy({left:step(),behavior:'smooth'}));
 // 툴 카드
-const TC=[['🖼','Image','top','Every image engine · reference + prompt','/image'],['▶','Video','new','Kling · Veo · Runway · MiniMax · Sora','/video'],['📷','Cinematic Cameras','','Camera presets inside Image','/image'],['📚','Library','','Results · products · sets','/gallery'],['✦','Doppia Lens','soon','Model shots · product shots','/studio'],['📦','Content Pack','soon','Platform-ready listing → ZIP','/pack'],['💬','KakaoTalk','soon','Send a photo, get the shot back','#'],['✳','Doppia MCP','soon','Generate from Claude','#'],['💳','Billing','','Credits · plans','/billing']];
+const TC=[['🖼','Image','top','Every image engine · reference + prompt','/image'],['▶','Video','new','Kling · Veo · Runway · MiniMax · Sora','/video'],['📷','Cinematic Cameras','soon','Camera × lens picker','#'],['📚','Library','','Results · products · sets','/gallery'],['✦','Doppia Lens','soon','Model shots · product shots','/studio'],['📦','Content Pack','soon','Platform-ready listing → ZIP','/pack'],['💬','KakaoTalk','soon','Send a photo, get the shot back','#'],['✳','Doppia MCP','soon','Generate from Claude','#'],['💳','Billing','','Credits · plans','/billing']];
 $('#tcards').innerHTML=TC.map(c=>`<a class="tc ${c[2]==='soon'?'soon':''}" href="${c[4]}" ${c[4]==='#'?'onclick="return false"':''}><span class="ic">${c[0]}</span><b>${esc(c[1])}${c[2]?` <span class="bd ${c[2]}">${c[2]}</span>`:''}</b><small>${esc(c[3])}</small></a>`).join('');
 // 엔진 카드 = 카탈로그(키 있는 것만)
 const ICON={gemini:'🍌',openai:'G',seedream:'S',fal:'F',replicate:'R',xai:'X',higgsfield:'H',kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S'}; // topnav.js ICON 과 같은 표 — 프로바이더가 늘면 둘 다

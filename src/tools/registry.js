@@ -150,6 +150,12 @@ const TOOLS = {
     costKey: 'grok-imagine', enabled: true, // XAI_API_KEY 없으면 목록에서 빠진다(isToolAvailable)
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9'], imageSize: ['1K', '2K'], count: [1, 2, 3, 4] }, // 텍스트 전용 — edits(멀티파트)는 키 생기면 실측 후
   },
+  'soul-cinema': {
+    id: 'soul-cinema', label: 'Higgsfield Soul Cinema', type: 'image',
+    provider: 'higgsfield', model: 'higgsfield-ai/soul/cinema', // 10-13 실생성 확인. 입력은 Soul 2 와 동일(카메라·렌즈 파라미터는 API 에 없음 — 앱 전용)
+    costKey: 'soul', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1] },
+  },
   // (2026-10-13) 업스케일 — 생성 툴이 아니라 "결과물 1장 → 더 큰 1장". type:'upscale' 로 따로 묶어 모델 목록엔 안 나오고
   //   tools API 의 upscale[] 로 나간다(메가메뉴 Upscale 기능 = 이게 비어 있지 않으면 live). 경로는 POST /api/generate/upscale.
   'topaz': {

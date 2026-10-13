@@ -13,7 +13,7 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=5" defer></script>
+<script src="/js/topnav.js?v=6" defer></script>
 </head>
 <body>
 <!-- (2026-10-13) 베이스 1차 — Image: 좌 컴포저(엔진·레퍼런스·프롬프트·컨트롤) + 우 결과 피드. 힉스필드 구조, 로컬 프로토 이식.
@@ -29,8 +29,9 @@
       <div class="refs" id="libPick" hidden></div>
       <div class="lbl">Prompt <i id="plen">0</i></div>
       <textarea class="ff" id="prompt" maxlength="2000" placeholder="Describe the shot. Keep the product exactly as in the reference."></textarea>
-      <div class="lbl">Cinematic Cameras <i>· presets, tap to add</i></div>
-      <div class="presets" id="presets"></div>
+      <!-- (2026-10-13) Cinematic Cameras 프리셋 — 사용자 결정으로 soon 처리(우리가 만들 기능은 전부 coming soon, 하나씩 열기). 마크업·PRESETS 코드는 그대로, hidden 만 빼면 다시 켜진다. -->
+      <div class="lbl" hidden>Cinematic Cameras <i>· presets, tap to add</i></div>
+      <div class="presets" id="presets" hidden></div>
       <div id="negWrap"><div class="lbl">Negative <i>· optional</i></div><input class="ff" id="neg" maxlength="1000" placeholder="Avoid: text, logos, extra hands…"></div>
       <div class="lbl">Aspect ratio</div><div class="chips" id="ratios"></div>
       <div id="sizeWrap"><div class="lbl">Resolution</div><div class="chips" id="sizes"></div></div>

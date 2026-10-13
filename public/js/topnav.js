@@ -60,7 +60,7 @@
     image: [
       ['✎', 'Reference + prompt', 'Up to 14 references, any engine', 'live', '/image'],
       ['✎', 'Edit with words', 'Change one thing, keep the rest', 'live', '/image'],
-      ['📷', 'Cinematic Cameras', 'Lens · angle presets', 'live', '/image'],
+      ['📷', 'Cinematic Cameras', 'Camera × lens picker', 'soon'], // 우리가 만들어야 하는 것 → soon (프롬프트 프리셋 8개는 image.html 에 숨겨둠)
       ['◌', 'Inpaint', 'Select an area, describe the change', 'soon'],
       ['☀', 'Relight', 'Light position · color · brightness', 'soon'],
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'], // 'auto:<key>' = tools API 의 그 목록이 비어있지 않으면 live(키 없는 서버면 soon)
