@@ -213,7 +213,7 @@ const postRootHandler = async (req, res, next) => {
     // (2026-10-13) 베이스 1차 — 외부 프로바이더 디스패치. 레거시 model 키 경로(gemini·openai)에 없는 툴은
     //   registry.provider(seedream·fal·replicate)로 src/images/providers 어댑터를 직접 부른다(아래 runExternal).
     //   과금은 위에서 정한 model(=costKey) 그대로 — 어댑터는 그리기만 한다.
-    const EXTERNAL_IMAGE_PROVIDERS = ['seedream', 'fal', 'replicate'];
+    const EXTERNAL_IMAGE_PROVIDERS = ['seedream', 'fal', 'replicate', 'xai', 'higgsfield']; // (2026-10-13) xai·higgsfield 추가 — 키 없으면 isToolAvailable 이 막는다
     const extProvider = (toolDef && toolDef.type === 'image' && EXTERNAL_IMAGE_PROVIDERS.includes(toolDef.provider)) ? toolDef.provider : null;
     if (extProvider && !isToolAvailable(toolDef)) {
       return res.status(400).json({ success: false, error: `${toolDef.label} is not configured on this server` });
@@ -400,15 +400,19 @@ const postRootHandler = async (req, res, next) => {
     const genModel = personRoute ? personRoute.model : model;
     if (personRoute) logger.info({ userId: req.user.id, reason: personRoute.reason, billedAs: model }, 'person route → GPT Image');
 
-    const isGpt = genModel.startsWith('gpt-');
+    // (2026-10-13) 레지스트리 툴이 gemini/openai 면 모델 id 는 registry.model 을 쓴다(costKey 는 과금 키일 뿐).
+    //   → gpt-image-2.5-sunburst/flare · gemini-nano-banana-2.1 처럼 새 세대는 registry 한 줄로 붙는다. 툴 미지정(레거시 model 키)은 기존 매핑 그대로.
+    const regOpenai = !!(toolDef && toolDef.provider === 'openai' && toolDef.model);
+    const regGemini = !!(toolDef && toolDef.provider === 'gemini' && toolDef.model);
+    const isGpt = genModel.startsWith('gpt-') || (regOpenai && !personRoute);
     const gptQuality = genModel === 'gpt-image-2-high' ? 'high' : 'medium';
-    const gptModelName = genModel.replace('-high', '');
+    const gptModelName = regOpenai ? toolDef.model.replace('-high', '') : genModel.replace('-high', '');
     // GPT 이미지는 size로만 비율 표현 (gemini의 imageConfig.aspectRatio 대체)
     //   4:5·5:4처럼 캔버스에 없는 비율은 가까운 세로/가로 캔버스로 그린 뒤 cropToAspect로 잘라 맞춘다.
     const gptSize = ['16:9', '3:2', '4:3', '21:9', '5:4'].includes(aspectRatio) ? '1536x1024'
       : ['9:16', '2:3', '3:4', '4:5'].includes(aspectRatio) ? '1024x1536'
       : '1024x1024';
-    const geminiFallbackId = model === 'flash' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
+    const geminiFallbackId = regGemini ? toolDef.model : (model === 'flash' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview');
     const modelId = isGpt ? gptModelName : geminiFallbackId;
 
     // ─── 유료 템플릿 게이트 + 사용당 로열티(하이브리드). ───
@@ -573,7 +577,12 @@ const postRootHandler = async (req, res, next) => {
           const prov = require(`../images/providers/${extProvider}.provider`);
           const [w, h] = aspectToSize(aspectRatio || '1:1');
           const refUrls = referenceImages.map((r) => `data:image/png;base64,${r.base64}`);
-          const out = await prov.generate({ prompt: finalPromptForImage, width: w, height: h, referenceImageUrls: refUrls });
+          const out = await prov.generate({
+            prompt: finalPromptForImage, width: w, height: h, referenceImageUrls: refUrls,
+            // registry 가 정한 엔드포인트·입력 모양 — 어댑터(fal·seedream·xai·higgsfield)가 읽는다. 과금은 위 model(costKey) 그대로.
+            model: toolDef.model, editModel: toolDef.editModel, sizing: toolDef.sizing,
+            aspectRatio: aspectRatio || '1:1', imageSize, negativePrompt, negative: !!(toolDef.controls && toolDef.controls.negative),
+          });
           let buf;
           if (String(out.url).startsWith('file://')) buf = fs.readFileSync(out.url.slice('file://'.length));
           else {

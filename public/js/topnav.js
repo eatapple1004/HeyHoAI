@@ -55,7 +55,7 @@
   }
 
   // ── 메가메뉴 — 기능(live/soon 고정 목록) + 모델(카탈로그 = live, 나머지 soon) ──
-  var ICON = { gemini: '🍌', openai: 'G', seedream: 'S', fal: 'F', replicate: 'R', kling: 'K', veo: 'V', runway: 'R', minimax: 'M', sora: 'O', seedance: 'S' };
+  var ICON = { gemini: '🍌', openai: 'G', seedream: 'S', fal: 'F', replicate: 'R', xai: 'X', higgsfield: 'H', kling: 'K', veo: 'V', runway: 'R', minimax: 'M', sora: 'O', seedance: 'S' };
   var FEAT = {
     image: [
       ['✎', 'Reference + prompt', 'Up to 14 references, any engine', 'live', '/image'],
@@ -80,7 +80,8 @@
     ]
   };
   var SOON_MODELS = {
-    image: [['🍌', 'Nano Banana 2.1'], ['R', 'Recraft'], ['X', 'Grok Imagine'], ['Z', 'Z-Image'], ['▲', 'Topaz']],
+    // 카탈로그(힉스필드 Image 메뉴 기준). 라벨이 /api/generate/tools 의 라벨과 같으면 live 로 올라가고 여기선 빠진다 → 키가 없는 서버에선 자동으로 soon.
+    image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz']],
     video: [['K', 'Kling Motion Control'], ['K', 'Kling Omni Edit'], ['W', 'Wan'], ['X', 'Grok Imagine'], ['F', 'FLUX.3 Video'], ['G', 'Gemini Omni'], ['▲', 'Topaz Video']]
   };
   function item(ic, name, desc, st, href) {

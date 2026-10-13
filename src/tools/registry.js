@@ -67,23 +67,94 @@ const TOOLS = {
   // (2026-10-13) 베이스 1차 — 외부 프로바이더 3종. generate.route의 runExternal 분기가 provider 키로 디스패치한다.
   //   costKey = credit.service IMG_CREDIT 키(원가 확정 전 pro 근사). 레퍼런스는 data URL로 넘긴다.
   'seedream': {
-    id: 'seedream', label: 'Seedream', type: 'image',
-    provider: 'seedream', model: 'fal-ai/bytedance/seedream/v4.5',
+    id: 'seedream', label: 'Seedream 4.5', type: 'image',
+    provider: 'seedream', model: 'fal-ai/bytedance/seedream/v4.5/text-to-image', editModel: 'fal-ai/bytedance/seedream/v4.5/edit', // 전체 엔드포인트 경로(어댑터가 그대로 쓴다)
     costKey: 'seedream', enabled: true,
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4] }, // negative 없음(스키마 미지원)
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit mode with up to 10 references.', multi: true }],
   },
   'flux': {
-    id: 'flux', label: 'FLUX', type: 'image',
+    id: 'flux', label: 'FLUX dev', type: 'image',
     provider: 'fal', model: 'fal-ai/flux/dev',
     costKey: 'flux', enabled: true,
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true }, // 텍스트→이미지만(레퍼런스 미지원)
   },
   'replicate': {
-    id: 'replicate', label: 'Replicate', type: 'image',
+    id: 'replicate', label: 'FLUX 1.1 Pro', type: 'image',
     provider: 'replicate', model: 'black-forest-labs/flux-1.1-pro',
     costKey: 'replicate', enabled: true,
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true }, // REPLICATE_MODEL로 교체 가능
+  },
+
+  // (2026-10-13) 베이스 1차 2차분 — 힉스필드 Image 메뉴 기준으로 "우리에 없던 모델" 추가. 모델 id는 전부 벤더 API 목록/fal 큐에서 실존 확인(10-13).
+  //   gemini·openai 는 generate.route 의 기존 경로를 타되 모델 id만 여기 값(model)을 쓴다. fal 계열은 fal.provider(범용)이 model/editModel/sizing 을 읽는다.
+  //   editModel = 레퍼런스가 있을 때 쓰는 편집 엔드포인트(없으면 텍스트 전용). sizing='aspect' = image_size 대신 aspect_ratio+resolution 을 받는 스키마(FLUX 3).
+  //   costKey 는 전부 자리값(credit.service IMG_CREDIT) — 원가 확정 후 조정.
+  'nano-banana-2.1': {
+    id: 'nano-banana-2.1', label: 'Nano Banana 2.1', type: 'image',
+    provider: 'gemini', model: 'gemini-nano-banana-2.1',
+    costKey: 'nano-banana-2.1', enabled: true,
+    controls: { aspectRatio: IMG_ASPECTS, count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // imageSize 지원 여부 미확인 → 1K 고정(flash 와 동일 취급)
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
+  },
+  'gpt-image-2.5-sunburst': {
+    id: 'gpt-image-2.5-sunburst', label: 'GPT Image 2.5 Sunburst', type: 'image',
+    provider: 'openai', model: 'gpt-image-2.5-sunburst',
+    costKey: 'gpt-image-2.5-sunburst', enabled: true,
+    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edits from your references (up to 16).', multi: true }],
+  },
+  'gpt-image-2.5-flare': {
+    id: 'gpt-image-2.5-flare', label: 'GPT Image 2.5 Flare', type: 'image',
+    provider: 'openai', model: 'gpt-image-2.5-flare',
+    costKey: 'gpt-image-2.5-flare', enabled: true,
+    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edits from your references (up to 16).', multi: true }],
+  },
+  'seedream-5-pro': {
+    id: 'seedream-5-pro', label: 'Seedream 5.0 Pro', type: 'image',
+    provider: 'seedream', model: 'bytedance/seedream/v5/pro/text-to-image', editModel: 'bytedance/seedream/v5/pro/edit',
+    costKey: 'seedream-5-pro', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4] }, // negative 없음(스키마 미지원)
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit mode with up to 10 references.', multi: true }],
+  },
+  'flux-2-pro': {
+    id: 'flux-2-pro', label: 'FLUX.2 Pro', type: 'image',
+    provider: 'fal', model: 'fal-ai/flux-2-pro', editModel: 'fal-ai/flux-2-pro/edit',
+    costKey: 'flux-2-pro', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4] }, // negative_prompt 스키마 없음
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit from references.', multi: true }],
+  },
+  'flux-3': {
+    id: 'flux-3', label: 'FLUX 3', type: 'image',
+    provider: 'fal', model: 'blackforestlabs/flux-3/text-to-image', editModel: 'blackforestlabs/flux-3/edit-image', sizing: 'aspect',
+    costKey: 'flux-3', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9'], imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4] },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit from references.', multi: true }],
+  },
+  'recraft': {
+    id: 'recraft', label: 'Recraft V4.1', type: 'image',
+    provider: 'fal', model: 'fal-ai/recraft/v4.1/text-to-image',
+    costKey: 'recraft', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4] }, // 텍스트 전용 · negative 없음
+  },
+  'z-image': {
+    id: 'z-image', label: 'Z-Image', type: 'image',
+    provider: 'fal', model: 'fal-ai/z-image/turbo',
+    costKey: 'z-image', enabled: true,
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4] }, // 텍스트 전용(image-to-image 는 단일 image_url+strength 라 레퍼런스 슬롯과 뜻이 다름)
+  },
+  'grok-imagine': {
+    id: 'grok-imagine', label: 'Grok Imagine 2.0', type: 'image',
+    provider: 'xai', model: 'grok-imagine-image-2.0',
+    costKey: 'grok-imagine', enabled: true, // XAI_API_KEY 없으면 목록에서 빠진다(isToolAvailable)
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9'], imageSize: ['1K', '2K'], count: [1, 2, 3, 4] }, // 텍스트 전용 — edits(멀티파트)는 키 생기면 실측 후
+  },
+  'soul': {
+    id: 'soul', label: 'Higgsfield Soul 2', type: 'image',
+    provider: 'higgsfield', model: 'higgsfield-ai/soul/v2/standard',
+    costKey: 'soul', enabled: true, // HIGGSFIELD_API_KEY_ID/SECRET 없으면 목록에서 빠진다
+    controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1] }, // 텍스트 전용(참조는 custom_reference_id=학습 캐릭터뿐)
   },
 
   // ── 영상 ──
@@ -155,6 +226,7 @@ const PROVIDER_KEYS = {
   gemini: ['GEMINI_API_KEY'], openai: ['OPENAI_API_KEY'],
   fal: ['FAL_API_KEY'], seedream: ['FAL_API_KEY'], seedance: ['FAL_API_KEY'],
   replicate: ['REPLICATE_API_TOKEN'],
+  xai: ['XAI_API_KEY'], higgsfield: ['HIGGSFIELD_API_KEY_ID', 'HIGGSFIELD_API_KEY_SECRET'],
   kling: ['KLING_ACCESS_KEY', 'KLING_SECRET_KEY'], runway: ['RUNWAY_API_KEY'], minimax: ['MINIMAX_API_KEY'],
   veo: ['GEMINI_API_KEY'], sora: ['OPENAI_API_KEY'],
 };

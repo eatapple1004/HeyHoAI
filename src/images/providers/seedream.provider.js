@@ -91,7 +91,8 @@ const seedreamProvider = {
       throw Object.assign(new Error('Seedream: FAL_API_KEY not configured'), { statusCode: 503 });
     }
     const refs = (req.referenceImageUrls || []).filter(Boolean).slice(0, 10);
-    const model = refs.length ? EDIT : (env.SEEDREAM_MODEL || T2I);
+    // (2026-10-13) registry 가 model/editModel 을 주면 그걸 쓴다(Seedream 5.0 Pro = bytedance/seedream/v5/pro/…). 없으면 4.5 기본.
+    const model = refs.length ? (req.editModel || EDIT) : (req.model || env.SEEDREAM_MODEL || T2I);
 
     const input = {
       prompt: req.prompt,

@@ -21,6 +21,18 @@ const IMG_CREDIT = {
   seedream: [185, 300],
   flux: [185, 300],
   replicate: [185, 300],
+  // (2026-10-13) 2차분 — 전부 자리값. 실원가(벤더 공시): Seedream 5 Pro $0.0675~0.135 · FLUX.2 Pro ~$0.03 · FLUX 3 미확인 · Recraft ~$0.04
+  //   · Z-Image ~$0.005 · Grok Imagine 2 $0.04~0.08 · GPT Image 2.5 미확인 · Soul 미확인. 싼 것(flash급)은 flash, 나머지는 pro 근사.
+  'nano-banana-2.1': [55, 90],
+  'gpt-image-2.5-sunburst': [330, 540],
+  'gpt-image-2.5-flare': [185, 300],
+  'seedream-5-pro': [185, 300],
+  'flux-2-pro': [185, 300],
+  'flux-3': [185, 300],
+  recraft: [185, 300],
+  'z-image': [55, 90],
+  'grok-imagine': [185, 300],
+  soul: [185, 300],
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
 //   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)
