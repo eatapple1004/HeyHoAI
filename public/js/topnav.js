@@ -93,7 +93,7 @@
     // 카탈로그(힉스필드 Image 메뉴 기준). 라벨이 /api/generate/tools 의 라벨과 같으면 live 로 올라가고 여기선 빠진다 → 키가 없는 서버에선 자동으로 soon.
     image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz Upscale']],
     // 영상 모델 카탈로그(힉스필드 Video 메뉴 기준). Seedance 2.5·Kling 3.0·Wan 3.0·HappyHorse·Hailuo 2.3·Genjutsu·DOP 는 힉스필드 API 한 키로도 붙는다(open.higgsfield.ai 모델 목록 85개, 10-13 확인).
-    video: [['K', 'Kling Motion Control'], ['K', 'Kling 3.0 Omni Edit'], ['H', 'Higgsfield Genjutsu'], ['H', 'Higgsfield DOP'], ['X', 'Grok Imagine 1.5 Lite'], ['▲', 'Topaz Video']] // 나머지(Seedance 2.5·Wan 3.0·Hailuo 2.3·H3·Grok Video·HappyHorse·FLUX.3 Video·Gemini Omni)는 10-13 live 로
+    video: [['K', 'Kling Motion Control'], ['K', 'Kling 3.0 Omni Edit'], ['H', 'Higgsfield Genjutsu'], ['H', 'Higgsfield DOP'], ['X', 'Grok Imagine 1.5 Lite'], ['G', 'Gemini Omni Flash'], ['▲', 'Topaz Video']] // 나머지(Seedance 2.5·Wan 3.0·Hailuo 2.3·H3·Grok Video·HappyHorse·FLUX.3 Video·Gemini Omni)는 10-13 live 로
   };
   function item(ic, name, desc, st, href) {
     var live = st === 'live';

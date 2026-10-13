@@ -293,7 +293,8 @@ const TOOLS = {
     id: 'gemini-omni', label: 'Gemini Omni Flash', type: 'video',
     provider: 'fal', model: 'fal-ai/gemini-omni-flash/image-to-video',
     falInput: { image: 'image_url', duration: 'int', aspect: true }, // 해상도 필드 없음 · 비율은 16:9·9:16 만
-    costKey: null, enabled: true,
+    // ⚠️ enabled:false — 10-13 실측 3회(data URL·공개 URL·최소 입력) 전부 422 "Could not generate a video with the given inputs". 원인 미확인 → 숨김. 풀 때 실생성부터.
+    costKey: null, enabled: false,
     controls: { duration: [5, 8, 10], aspectRatio: ['9:16', '16:9'] },
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
