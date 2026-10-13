@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="/css/onboarding.css?v=25" />
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<script src="/js/topnav.js?v=2" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/guide.js?v=2" defer></script>
@@ -196,8 +197,7 @@
     border-radius:20px 20px 0 0;box-shadow:0 -24px 60px -24px #000;
     animation:none!important;transform:translateY(102%)!important;opacity:1!important; /* ⚠️.fade(theme.css:125)=opacity:0+transform 애니메이션 → animation 끄면 opacity:0이 남아 시트가 투명해진다. opacity:1 강제 필수 */
     transition:transform .28s cubic-bezier(.4,0,.2,1)}
-  body.cutui-looksheet.has-rail #templateStep{left:92px} /* 좌측 레일(92px)만큼 비켜 시작 */
-  @media(max-width:700px){body.cutui-looksheet.has-rail #templateStep{left:0}} /* 모바일=레일이 하단바 → 오프셋 없음 */
+  /* (2026-10-13) 좌측 레일→상단 nav 전환으로 레일 오프셋(body.has-rail #templateStep{left:92px}) 제거 — 시트는 bottom 고정이라 헤더와 안 겹친다 */
   body.cutui-looksheet.cutui-looksheet-open #templateStep{transform:none!important}
   /* 시트 제목은 실 DOM 요소(#cutuiSheetTitle) — ::before(CSS content)는 i18n 텍스트노드 치환이 못 잡는다. */
   #cutuiSheetTitle{display:none;font-family:'Sora',sans-serif;font-size:16px;font-weight:750;margin-bottom:14px;color:var(--text)}

@@ -13,7 +13,8 @@
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<script src="/js/topnav.js?v=2" defer></script>
 <style>
   .wrap{max-width:none;margin:0;padding:34px 24px 80px;position:relative;z-index:2}/* (2026-07-03) Leonardo식 full-bleed — 중앙 max-width 제거. 롤백: max-width:1080px;margin:0 auto 복원 */
   .head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:26px}
@@ -137,7 +138,7 @@
   @media(max-width:760px){.filter-row .chip{padding:9px 16px}}
 </style>
 </head>
-<body class="has-rail">
+<body>
 <!-- (2026-07-27) 홈 배경 통일(홈/컷/광고영상/콘텐츠팩/라이브러리): home-glow 이식 + theme.css 기본배경(mesh·grain) 숨김 → home과 동일(--bg+home-glow만). 롤백: 이 div+style 제거. -->
 <div class="home-glow"></div>
 <style>.home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}.home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}.home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}.home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}.mesh,.grain{display:none}/* mesh·grain=theme.css 기본배경(home엔 없음) 숨김. 롤백: 이 규칙 삭제 */</style>

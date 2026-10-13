@@ -11,7 +11,8 @@
 <link rel="stylesheet" href="/css/theme.css?v=6" />
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<script src="/js/topnav.js?v=2" defer></script>
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
 <style>
@@ -167,7 +168,7 @@
 </style>
 </head>
 <body>
-<!-- 레일 하단으로 이동됨(rail.js가 #creditBalance 칩 + #saasUserBox 아바타를 rail-foot로 relocate). 스튜디오와 동일 요소·API. -->
+<!-- 상단 nav 우측으로 이동됨(topnav.js가 #creditBalance 칩 + #saasUserBox 아바타를 .tn-r 로 relocate · 2026-10-13 레일→상단 nav). 스튜디오와 동일 요소·API. -->
 <div id="railFootSrc" style="display:none" aria-hidden="true">
   <div class="credits"><span class="coin">◈</span> <span id="creditBalance">—</span> <span id="creditCtxLabel">credits</span>
     <span class="buy" onclick="location.href='/billing'">+ Buy</span>

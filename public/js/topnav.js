@@ -1,5 +1,8 @@
-// 상단 nav + 메가메뉴 — 베이스 1차 페이지(explore·image·video) 공유. (2026-10-13) 로컬 프로토 이식.
-//   레일(rail.js)과 같은 페이지에 함께 넣지 않는다. 크레딧 칩(/api/credits)·아바타(#saasUserBox, saas-auth.js)는 여기서 자리만 만든다.
+// 상단 nav + 메가메뉴 — 전 앱 페이지 공유 (스타일은 topnav.css, body.has-topnav 토글). (2026-10-13) 베이스 1차.
+//   좌측 레일(rail.js, 2026-07~10)을 대체한다 — 레일의 Home·Shots·UGC·Ad Studio 항목은 1차 범위 밖이라 메뉴에서 뺐다
+//   (페이지·URL은 그대로 살아 있다. UGC 대기 배지(/api/generate/ugc/jobs 폴링)도 레일과 함께 내렸다). 롤백: git에서 rail.js 복원 + 각 페이지 include 되돌리기.
+//   크레딧 칩·아바타: 페이지가 이미 #creditBalance/#saasUserBox 를 갖고 있으면(studio·home·gallery…) 그 노드를 헤더로 **옮긴다**
+//   (rail.js 와 같은 방식 — ID·이벤트·데이터 흐름 보존, 페이지가 자기 칩을 계속 갱신한다). 없으면(explore·image·video) 여기서 만들고 /api/credits 로 채운다.
 //   모델 열은 GET /api/generate/tools(레지스트리 정본, 키 있는 것만)에서 채운다 — 새 엔진은 registry 한 줄이면 메뉴에 뜬다.
 (function () {
   if (document.querySelector('.tn')) return;
@@ -19,11 +22,22 @@
     var active = it.m.some(function (m) { return path === m || path.indexOf(m) === 0; });
     html += '<a' + (it.h ? ' href="' + it.h + '"' : ' href="#" onclick="return false"') + ' class="' + (active ? 'active' : '') + '"' + (it.mega ? ' data-mega="' + it.mega + '"' : '') + '>' + esc(it.l) + (it.bd ? ' <span class="bd ' + it.bd + '">' + it.bd + '</span>' : '') + '</a>';
   });
-  html += '</nav><div class="tn-r"><div class="credits" onclick="location.href=\'/billing\'"><span class="coin">◈</span> <span id="creditBalance">—</span></div><a class="tn-up" href="/billing">Upgrade</a><div id="saasUserBox"></div></div></header><div class="mega" id="tnMega"><div class="box" id="tnMegaBox"></div></div>';
+  // 페이지가 가진 칩·아바타를 먼저 찾는다 — 있으면 옮기고, 없으면 만든다 (ID 중복 방지: 같은 ID가 둘이면 saas-auth.js가 엉뚱한 쪽을 채운다)
+  var balEl = document.getElementById('creditBalance');
+  var ownPill = balEl ? balEl.closest('.credits') : null;
+  var ownUserBox = document.getElementById('saasUserBox');
+  html += '</nav><div class="tn-r">'
+    + (ownPill ? '' : '<div class="credits" onclick="location.href=\'/billing\'"><span class="coin">◈</span> <span id="creditBalance">—</span></div>')
+    + '<a class="tn-up" href="/billing">Upgrade</a>'
+    + (ownUserBox ? '' : '<div id="saasUserBox"></div>')
+    + '</div></header><div class="mega" id="tnMega"><div class="box" id="tnMegaBox"></div></div>';
   document.body.insertAdjacentHTML('afterbegin', html);
   document.body.classList.add('has-topnav');
+  var right = document.querySelector('.tn-r');
+  if (ownPill) right.insertBefore(ownPill, right.firstChild);
+  if (ownUserBox) right.appendChild(ownUserBox);
 
-  // ── 크레딧 칩 (스튜디오·홈과 같은 /api/credits) ──
+  // ── 크레딧 칩 (스튜디오·홈과 같은 /api/credits) — 페이지 칩을 옮겨 온 경우엔 페이지가 갱신하므로 여기선 안 건드린다 ──
   function refreshCredits() {
     return fetch('/api/credits').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
       var c = d && d.data; var b = document.getElementById('creditBalance');
@@ -31,7 +45,7 @@
       return c;
     }).catch(function () { return null; });
   }
-  refreshCredits();
+  if (!ownPill) refreshCredits();
 
   // ── 툴 카탈로그 (정본) — 페이지들도 같은 프로미스를 쓴다 ──
   var toolsP = null;
