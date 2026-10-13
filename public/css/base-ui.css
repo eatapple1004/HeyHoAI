@@ -42,6 +42,10 @@ textarea.ff{min-height:96px;resize:vertical}
 .acts{display:flex;gap:8px;flex-wrap:wrap}
 .btn2{border:1px solid var(--border2);border-radius:10px;padding:8px 13px;font-size:12.5px;background:var(--surface);color:var(--text);cursor:pointer;font-family:inherit}.btn2.pri{border-color:var(--accent2);background:rgba(106,64,224,.22)}.btn2.br{border-style:dashed;color:var(--accent2)}
 .empty{border:1.5px dashed var(--border2);border-radius:16px;padding:60px 20px;text-align:center;color:var(--faint)}
+/* 영상 길이 슬라이더 (video.html) */
+.durbar{display:flex;align-items:center;gap:12px;margin:4px 0 8px}
+.durbar input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer}
+.durbar b{min-width:38px;text-align:right;font-size:13px;color:var(--text)}
 /* ── explore ── */
 .wrap{padding:18px 22px 60px;max-width:1400px;margin:0 auto}
 .carwrap{position:relative;margin-bottom:26px}.car{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}.car::-webkit-scrollbar{display:none}.car .shc{flex:0 0 calc((100% - 32px)/3);min-width:0;scroll-snap-align:start} /* minmax(0,1fr)·min-width:0 — 1fr 은 min-content 하한이라 큰 이미지가 칸을 밀어 넓은 화면에서 카드가 옆 카드를 덮었다(dev 1900px 실측) */
