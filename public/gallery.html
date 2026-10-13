@@ -16,29 +16,27 @@
 <link rel="stylesheet" href="/css/topnav.css?v=1" />
 <script src="/js/topnav.js?v=2" defer></script>
 <style>
-  .wrap{max-width:none;margin:0;padding:34px 24px 80px;position:relative;z-index:2}/* (2026-07-03) Leonardo식 full-bleed — 중앙 max-width 제거. 롤백: max-width:1080px;margin:0 auto 복원 */
-  .head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:26px}
-  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
-  .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
-  .head .count{font-size:13px;color:var(--dim)}
-  .head .count b{color:var(--accent2)}
-
-  .filter-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px}
-  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
-  .chip:hover{color:var(--text)}
-  .chip.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+  /* (2026-10-13) 로컬 프로토 Library 와 동일: 폭 1320 중앙, 알약 탭, 촘촘한 masonry(간격 10px·모서리 12px). 롤백: git 8122562. */
+  .wrap{max-width:1320px;margin:0 auto;padding:18px 22px 60px;position:relative;z-index:2}
+  .head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  .head .count{font-size:12.5px;color:var(--faint)}
+  .head .count b{color:var(--dim)}
+  .tabs{display:inline-flex;border:1px solid var(--border2);border-radius:999px;padding:3px;background:var(--bg2)}
+  .tabs button{padding:6px 15px;border-radius:999px;font-size:13px;color:var(--dim);border:0;background:none;cursor:pointer;font-family:inherit;transition:color .15s}
+  .tabs button:hover{color:var(--text)}
+  .tabs button.on{background:var(--surface2);color:#fff}
 
   .grid{column-count:2;column-gap:16px}  /* 좁은 화면=2칸 고정(세로 1줄 방지) */
   @media(min-width:600px){.grid{column-count:auto;columns:6 185px}}  /* 다른 탭(템플릿/구매/저장) 폴백 */
   /* My creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
-  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:16px}
+  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:10px}
   @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media(min-width:1200px){#grid{grid-template-columns:repeat(5,minmax(0,1fr))}}/* (2026-07-03) Library=넓은 화면 한 줄 5개(Community는 4개 유지). 롤백: 이 줄 제거 */
   #grid .card{margin:0;align-self:start;break-inside:auto}
   #scrollSentinel{height:1px;width:100%}
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
-  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
+  .card{break-inside:avoid;margin:0 0 10px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
   .card .reelbadge{position:absolute;bottom:9px;left:9px;z-index:3;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;padding-left:2px;pointer-events:none;backdrop-filter:blur(2px)}
   .card:hover .reelbadge{opacity:0;transition:opacity .15s}
@@ -135,15 +133,10 @@
   .lp-x{margin-top:8px;flex-shrink:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
   .card:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
   .card:focus-within .ovt{opacity:1}
-  @media(max-width:760px){.filter-row .chip{padding:9px 16px}}
 </style>
 </head>
 <body>
-<!-- (2026-07-27) 홈 배경 통일(홈/컷/광고영상/콘텐츠팩/라이브러리): home-glow 이식 + theme.css 기본배경(mesh·grain) 숨김 → home과 동일(--bg+home-glow만). 롤백: 이 div+style 제거. -->
-<div class="home-glow"></div>
-<style>.home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}.home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}.home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}.home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}.mesh,.grain{display:none}/* mesh·grain=theme.css 기본배경(home엔 없음) 숨김. 롤백: 이 규칙 삭제 */</style>
-<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
-<div class="grain"></div>
+<!-- (2026-10-13) 배경 = 순수 --bg (explore·image·video 와 통일). 옛 home-glow·mesh·grain 제거. 롤백: git 8122562 의 이 자리 복원. -->
 
 <nav>
   <div class="nav-in">
@@ -160,9 +153,9 @@
 </nav>
 
 <div class="wrap">
+  <!-- (2026-10-13) 제목·부제 제거, 필터를 알약 탭으로 — 로컬 프로토 Library 와 같은 모양(탭 + 그리드만). 개수는 탭 오른쪽에 작게. -->
   <div class="head fade d1">
-    <!-- (2026-07-20) 스토어 숨김에 맞춰 '· discover more in the Store.' 제거 — 갈 수 없는 곳을 가리키던 문구. 롤백: js/rail.js 주석 복원과 함께 되돌릴 것. -->
-    <div><h1>Your Library</h1><div class="sub">Your creations. Manage templates in Shots.</div></div>
+    <div class="tabs" id="filterRow"></div>
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
@@ -173,7 +166,6 @@
       <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
       <span class="nudge-hint">Open any photo and hit <b>▶ Make a Reel</b>.</span>
     </div>
-    <div class="filter-row fade d1" id="filterRow"></div>
     <div class="grid fade d2" id="grid"></div>
     <div id="scrollSentinel"></div>
     <div class="empty hidden" id="empty">
@@ -372,7 +364,7 @@ function maybeOpenSave(){
   else { toast('Creation not found.'); }
 }
 function renderFilters(){
-  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<button type="button" class="chip ${filter===f?'active':''}" aria-pressed="${filter===f}" onclick="setFilter('${f}')">${f}</button>`).join('');
+  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<button type="button" class="${filter===f?'on':''}" aria-pressed="${filter===f}" onclick="setFilter('${f}')">${f}</button>`).join('');
 }
 function match(it){
   if(filter==='Photos')return it.type==='photo';
@@ -439,7 +431,7 @@ async function gotoMyTemplates(tid){
   setTimeout(()=>{ if(MYT.highlightId===target){ MYT.highlightId=null; renderMyTemplates(); } }, 2400);
 }
 // 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
-function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+16); }
+function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+10); } // +10 = .card margin-bottom(10px) — CSS 간격을 바꾸면 여기도 같이
 function layoutGridMasonry(){
   const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
   g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
