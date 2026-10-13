@@ -55,7 +55,7 @@
   }
 
   // ── 메가메뉴 — 기능(live/soon 고정 목록) + 모델(카탈로그 = live, 나머지 soon) ──
-  var ICON = { gemini: '🍌', openai: 'G', seedream: 'S', fal: 'F', replicate: 'R', xai: 'X', higgsfield: 'H', kling: 'K', veo: 'V', runway: 'R', minimax: 'M', sora: 'O', seedance: 'S' };
+  var ICON = { topaz: '▲', gemini: '🍌', openai: 'G', seedream: 'S', fal: 'F', replicate: 'R', xai: 'X', higgsfield: 'H', kling: 'K', veo: 'V', runway: 'R', minimax: 'M', sora: 'O', seedance: 'S' };
   var FEAT = {
     image: [
       ['✎', 'Reference + prompt', 'Up to 14 references, any engine', 'live', '/image'],
@@ -81,7 +81,7 @@
   };
   var SOON_MODELS = {
     // 카탈로그(힉스필드 Image 메뉴 기준). 라벨이 /api/generate/tools 의 라벨과 같으면 live 로 올라가고 여기선 빠진다 → 키가 없는 서버에선 자동으로 soon.
-    image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz']],
+    image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz Upscale']],
     video: [['K', 'Kling Motion Control'], ['K', 'Kling Omni Edit'], ['W', 'Wan'], ['X', 'Grok Imagine'], ['F', 'FLUX.3 Video'], ['G', 'Gemini Omni'], ['▲', 'Topaz Video']]
   };
   function item(ic, name, desc, st, href) {
@@ -96,8 +96,8 @@
   }
   function render(kind) {
     return tools().then(function (T) {
-      var list = kind === 'image' ? T.image : T.video;
-      var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id)); }).join('');
+      var list = kind === 'image' ? (T.image || []).concat(T.upscale || []) : T.video; // 업스케일(Topaz)도 모델 열에 — 키 있으면 live
+      var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id)); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
       var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
