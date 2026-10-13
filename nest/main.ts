@@ -82,6 +82,9 @@ async function bootstrap() {
   //   dev는 이 경로로 뜨므로 여기가 "열어주는" 쪽이고, staging/prod를 실제로 막는 건 레거시 쪽 가드다.
   //   useStaticAssets(=server.use(static))보다 **먼저** 등록돼야 차단·index 서빙이 동작한다.
   //   옛 주소 /genova/* 는 같은 경로의 /jaenova/* 로 301 (사명 변경 전 공유된 링크 보존).
+  // /q/<이름> = 짧은 주소 리다이렉트(QR용) — 전 환경. 목록은 src/shortlinks.js (src/index.js에도 동일 등록 — 한쪽만 고치지 말 것)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  server.use('/q', require(path.join(__dirname, '..', 'src', 'shortlinks.js')).shortlinkHandler);
   server.use('/genova', (req: any, res: any) => {
     if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
     return res.redirect(301, '/jaenova' + req.url);

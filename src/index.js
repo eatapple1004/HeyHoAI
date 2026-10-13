@@ -117,6 +117,8 @@ app.get(/^\/([a-z0-9-]+)(\.html)?$/i, (req, res, next) => {
 //   NODE_ENV 미설정 = 로컬 개발로 간주(레포 관례: src/config/index.js도 동일 기본값).
 //   정적 미들웨어보다 **먼저** 있어야 차단된다.
 //   옛 주소 /genova/* 는 같은 경로의 /jaenova/* 로 301 (사명 변경 전 공유된 링크 보존).
+// /q/<이름> = 짧은 주소 리다이렉트(QR용) — 전 환경. 목록은 src/shortlinks.js (nest/main.ts에도 동일 등록 — 한쪽만 고치지 말 것)
+app.use('/q', require('./shortlinks').shortlinkHandler);
 app.use('/genova', (req, res) => {
   if ((process.env.NODE_ENV || 'development') !== 'development') return res.status(404).end();
   res.redirect(301, '/jaenova' + req.url);
