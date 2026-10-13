@@ -71,7 +71,7 @@
       // (2026-10-13) 편집기 — 힉스필드 Layers 에 해당. 캔버스 하나에 도구 9개(레이어 분리·글자 편집·확장/자르기·배경 제거·색보정·피부 보정·릴라이트·앵글·업스케일). 우리도 만든다 → soon.
       ['▣', 'Editor', 'Layers · remove background · expand & crop · color grading · edit text · angles', 'soon']
     ],
-    // (2026-10-13) 영상 기능 카탈로그 = 힉스필드 Video 메뉴 전부(soon). 배선만으로 되는 것만 live. 뺀 것: Click to Ad(=옛 Ad Studio, 폐기) 하나.
+    // (2026-10-13) 영상 기능 카탈로그 = 힉스필드 Video 메뉴 전부(soon). 배선만으로 되는 것만 live. 17개 전부 포함.
     video: [
       ['▶', 'Image to video', 'Start from any image result', 'live', '/video'],
       ['♪', 'Sound', 'Native ambient sound (Veo · Kling)', 'live', '/video'],
@@ -91,7 +91,8 @@
       ['▣', 'Faceless Studio', 'A faceless channel in one click', 'soon'],
       ['▤', 'Explainer', 'Any topic → explainer video', 'soon'],
       ['⌗', 'Canvas', 'Visual ideation · repeatable workflows', 'soon'],
-      ['⧉', 'Mixed media', 'Mixed media projects', 'soon']
+      ['⧉', 'Mixed media', 'Mixed media projects', 'soon'],
+      ['⇥', 'Click to Ad', 'Product URL → video ad', 'soon'] // (2026-10-13) 사용자 지시로 soon 에 포함(옛 Ad Studio 자리)
     ]
   };
   var SOON_MODELS = {
