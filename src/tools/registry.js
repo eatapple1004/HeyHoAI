@@ -16,6 +16,9 @@
  */
 
 // controls = 툴별 생성 폼 스키마(정본). 스튜디오가 이걸로 컨트롤을 동적 렌더(Leonardo식 "툴마다 폼").
+//   (2026-10-13) extras = 엔진 고유 옵션 전부(벤더 스키마 실측). [{ key, label, hint?, values?[]|type:'toggle'|'number'(min,max,step)|'text', default? }]
+//     → image.html·video.html 이 자동 렌더, generate.route.pickExtras 가 선언된 키·값만 통과, 어댑터가 요청 본문에 합친다.
+//   durationRange{min,max} = 영상 길이 직접 입력 범위. refModel/refInput = 레퍼런스 이미지가 있을 때 쓰는 reference-to-video 엔드포인트. t2vModel = 시작 프레임 없을 때.
 //   aspectRatio: string[]  (select; 첫 값 = 기본)   imageSize/resolution: string[] (해상도 티어 select)
 //   duration: number[] (영상 길이 select; 's' 접미)  negative: bool (네거티브 입력)  audio: bool (오디오 토글)
 //   → 새 컨트롤 타입은 스튜디오 renderer에 케이스 1개만 추가하면 됨. 새 '툴'은 여기 한 줄로 폼이 생김.
@@ -40,7 +43,7 @@ const TOOLS = {
     id: 'nano-banana', label: 'Nano Banana', type: 'image',
     provider: 'gemini', model: 'gemini-2.5-flash-image',
     costKey: 'flash', enabled: true,
-    controls: { aspectRatio: IMG_ASPECTS, count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // flash=1K 고정(imageSize 없음)
+    controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // (10-13 구글 문서) 2.5 Flash 도 1K/2K/4K
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'gpt-image': {
@@ -48,7 +51,8 @@ const TOOLS = {
     provider: 'openai', model: 'gpt-image-2',
     // (2026-10-13) 베이스 1차 — 노출. generate.route가 model 키(gpt-image-2)로 OpenAI 경로를 이미 탄다.
     costKey: 'gpt-image-2', enabled: true,
-    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true },
+    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true,
+      extras: [{ key: 'quality', label: 'Quality', values: ['medium', 'low', 'high', 'auto'] }, { key: 'background', label: 'Background', values: ['auto', 'transparent', 'opaque'], hint: 'transparent = PNG with alpha' }, { key: 'moderation', label: 'Moderation', values: ['auto', 'low'] }] },
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edits from your references (up to 16).', multi: true }],
   },
   'gpt-image-hd': {
@@ -70,20 +74,22 @@ const TOOLS = {
     id: 'seedream', label: 'Seedream 4.5', type: 'image',
     provider: 'seedream', model: 'fal-ai/bytedance/seedream/v4.5/text-to-image', editModel: 'fal-ai/bytedance/seedream/v4.5/edit', // 전체 엔드포인트 경로(어댑터가 그대로 쓴다)
     costKey: 'seedream', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4] }, // negative 없음(스키마 미지원)
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4], extras: [{ key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // negative 없음(스키마 미지원)
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit mode with up to 10 references.', multi: true }],
   },
   'flux': {
     id: 'flux', label: 'FLUX dev', type: 'image',
     provider: 'fal', model: 'fal-ai/flux/dev',
     costKey: 'flux', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true }, // 텍스트→이미지만(레퍼런스 미지원)
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true,
+      extras: [{ key: 'guidance_scale', label: 'Guidance', type: 'number', min: 1, max: 20, step: 0.5, default: 3.5 }, { key: 'num_inference_steps', label: 'Steps', type: 'number', min: 1, max: 50, default: 28 }, { key: 'acceleration', label: 'Speed', values: ['none', 'regular', 'high'] }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // 텍스트→이미지만(레퍼런스 미지원)
   },
   'replicate': {
     id: 'replicate', label: 'FLUX 1.1 Pro', type: 'image',
     provider: 'replicate', model: 'black-forest-labs/flux-1.1-pro',
     costKey: 'replicate', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4], negative: true }, // REPLICATE_MODEL로 교체 가능
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '5:4'], count: [1, 2, 3, 4], negative: true,
+      extras: [{ key: 'safety_tolerance', label: 'Safety tolerance', type: 'number', min: 1, max: 6, default: 2, hint: '1 strict · 6 permissive' }, { key: 'prompt_upsampling', label: 'Prompt upsampling', type: 'toggle', hint: 'Engine rewrites the prompt' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // REPLICATE_MODEL로 교체 가능
   },
 
   // (2026-10-13) 베이스 1차 2차분 — 힉스필드 Image 메뉴 기준으로 "우리에 없던 모델" 추가. 모델 id는 전부 벤더 API 목록/fal 큐에서 실존 확인(10-13).
@@ -94,43 +100,47 @@ const TOOLS = {
     id: 'nano-banana-2.1', label: 'Nano Banana 2.1', type: 'image',
     provider: 'gemini', model: 'gemini-nano-banana-2.1',
     costKey: 'nano-banana-2.1', enabled: true,
-    controls: { aspectRatio: IMG_ASPECTS, count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // imageSize 지원 여부 미확인 → 1K 고정(flash 와 동일 취급)
+    controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // (10-13 구글 문서) 1K/2K/4K · 참조 최대 17장
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'gpt-image-2.5-sunburst': {
     id: 'gpt-image-2.5-sunburst', label: 'GPT Image 2.5 Sunburst', type: 'image',
     provider: 'openai', model: 'gpt-image-2.5-sunburst',
     costKey: 'gpt-image-2.5-sunburst', enabled: true,
-    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true },
+    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true,
+      extras: [{ key: 'quality', label: 'Quality', values: ['medium', 'low', 'high', 'xhigh', 'max', 'auto'] }, { key: 'background', label: 'Background', values: ['auto', 'transparent', 'opaque'], hint: 'transparent = PNG with alpha' }, { key: 'moderation', label: 'Moderation', values: ['auto', 'low'] }, { key: 'input_fidelity', label: 'Reference fidelity', values: ['low', 'high'], hint: 'edits only' }] },
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edits from your references (up to 16).', multi: true }],
   },
   'gpt-image-2.5-flare': {
     id: 'gpt-image-2.5-flare', label: 'GPT Image 2.5 Flare', type: 'image',
     provider: 'openai', model: 'gpt-image-2.5-flare',
     costKey: 'gpt-image-2.5-flare', enabled: true,
-    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true },
+    controls: { aspectRatio: ['1:1', '3:4', '16:9', '9:16', '4:5'], count: [1, 2, 3, 4], negative: true,
+      extras: [{ key: 'quality', label: 'Quality', values: ['medium', 'low', 'high', 'xhigh', 'max', 'auto'] }, { key: 'background', label: 'Background', values: ['auto', 'transparent', 'opaque'], hint: 'transparent = PNG with alpha' }, { key: 'moderation', label: 'Moderation', values: ['auto', 'low'] }, { key: 'input_fidelity', label: 'Reference fidelity', values: ['low', 'high'], hint: 'edits only' }] },
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edits from your references (up to 16).', multi: true }],
   },
   'seedream-5-pro': {
     id: 'seedream-5-pro', label: 'Seedream 5.0 Pro', type: 'image',
     provider: 'seedream', model: 'bytedance/seedream/v5/pro/text-to-image', editModel: 'bytedance/seedream/v5/pro/edit',
     costKey: 'seedream-5-pro', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4] }, // negative 없음(스키마 미지원)
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3'], count: [1, 2, 3, 4], extras: [{ key: 'enhance_prompt_mode', label: 'Prompt mode', values: ['standard', 'fast'], hint: 'standard = quality first' }] }, // negative 없음 · seed 없음(v5 스키마)
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit mode with up to 10 references.', multi: true }],
   },
   'flux-2-pro': {
     id: 'flux-2-pro', label: 'FLUX.2 Pro', type: 'image',
     provider: 'fal', model: 'fal-ai/flux-2-pro', editModel: 'fal-ai/flux-2-pro/edit',
     costKey: 'flux-2-pro', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4] }, // negative_prompt 스키마 없음
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4],
+      extras: [{ key: 'safety_tolerance', label: 'Safety tolerance', values: ['2', '1', '3', '4', '5'], hint: '1 strict · 5 permissive' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // negative_prompt 스키마 없음
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit from references.', multi: true }],
   },
   'flux-3': {
     id: 'flux-3', label: 'FLUX 3', type: 'image',
     provider: 'fal', model: 'blackforestlabs/flux-3/text-to-image', editModel: 'blackforestlabs/flux-3/edit-image', sizing: 'aspect',
     costKey: 'flux-3', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9'], imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4] },
-    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Edit from references.', multi: true }],
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9', '5:4', '5:7', '7:5', '2:1', '1:2'], imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4],
+      extras: [{ key: 'enable_prompt_expansion', label: 'Prompt expansion', type: 'toggle', hint: 'Engine expands the prompt' }, { key: 'safety_tolerance', label: 'Safety tolerance', type: 'number', min: 0, max: 4, default: 2, hint: '0 strict · 4 permissive' }] },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Up to 10 references (image 1…10 in prompt).', multi: true }],
   },
   'recraft': {
     id: 'recraft', label: 'Recraft V4.1', type: 'image',
@@ -142,19 +152,22 @@ const TOOLS = {
     id: 'z-image', label: 'Z-Image', type: 'image',
     provider: 'fal', model: 'fal-ai/z-image/turbo',
     costKey: 'z-image', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4] }, // 텍스트 전용(image-to-image 는 단일 image_url+strength 라 레퍼런스 슬롯과 뜻이 다름)
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4],
+      extras: [{ key: 'acceleration', label: 'Speed', values: ['regular', 'none', 'high'] }, { key: 'num_inference_steps', label: 'Steps', type: 'number', min: 1, max: 8, default: 8 }, { key: 'enable_prompt_expansion', label: 'Prompt expansion', type: 'toggle', hint: 'Costs more' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // 텍스트 전용(image-to-image 는 단일 image_url+strength 라 레퍼런스 슬롯과 뜻이 다름)
   },
   'grok-imagine': {
     id: 'grok-imagine', label: 'Grok Imagine 2.0', type: 'image',
     provider: 'xai', model: 'grok-imagine-image-2.0',
     costKey: 'grok-imagine', enabled: true, // XAI_API_KEY 없으면 목록에서 빠진다(isToolAvailable)
-    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9'], imageSize: ['1K', '2K'], count: [1, 2, 3, 4] }, // 텍스트 전용 — edits(멀티파트)는 키 생기면 실측 후
+    controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9', '2:1', '1:2', '20:9', '9:20'], imageSize: ['1K', '2K'], count: [1, 2, 3, 4],
+      extras: [{ key: 'quality', label: 'Quality', values: ['auto', 'low', 'medium'] }] }, // 텍스트 전용 — edits(멀티파트)는 실측 후
   },
   'soul-cinema': {
     id: 'soul-cinema', label: 'Higgsfield Soul Cinema', type: 'image',
     provider: 'higgsfield', model: 'higgsfield-ai/soul/cinema', // 10-13 실생성 확인. 입력은 Soul 2 와 동일(카메라·렌즈 파라미터는 API 에 없음 — 앱 전용)
     costKey: 'soul', enabled: true,
-    controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1] },
+    controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1, 2, 3, 4],
+      extras: [{ key: 'enhance_prompt', label: 'Enhance prompt', type: 'toggle', hint: 'Higgsfield rewrites the prompt' }, { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 1000000, hint: 'blank = random' }] },
   },
   // (2026-10-13) 업스케일 — 생성 툴이 아니라 "결과물 1장 → 더 큰 1장". type:'upscale' 로 따로 묶어 모델 목록엔 안 나오고
   //   tools API 의 upscale[] 로 나간다(메가메뉴 Upscale 기능 = 이게 비어 있지 않으면 live). 경로는 POST /api/generate/upscale.
@@ -169,7 +182,8 @@ const TOOLS = {
     id: 'soul', label: 'Higgsfield Soul 2', type: 'image',
     provider: 'higgsfield', model: 'higgsfield-ai/soul/v2/standard',
     costKey: 'soul', enabled: true, // HIGGSFIELD_API_KEY 없으면 목록에서 빠진다
-    controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1] }, // 텍스트 전용(참조는 custom_reference_id=학습 캐릭터뿐)
+    controls: { aspectRatio: ['1:1', '4:5', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2'], imageSize: ['720p', '1080p'], count: [1, 2, 3, 4],
+      extras: [{ key: 'enhance_prompt', label: 'Enhance prompt', type: 'toggle', hint: 'Higgsfield rewrites the prompt' }, { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 1000000, hint: 'blank = random' }] }, // 텍스트 전용(참조는 custom_reference_id=학습 캐릭터뿐)
   },
 
   // ── 영상 ──
@@ -183,6 +197,8 @@ const TOOLS = {
       quality: [{ value: 'pro', label: 'Pro' }], // Standard(std) 미연결 — 숨김. Pro만 노출.
       aspectRatio: ['9:16', '1:1', '16:9'],
       audio: { type: 'toggle' },   // 효과음/배경음 합성(선택)
+      // (2026-10-13) Kling v3 API 실측: cfg_scale·negative_prompt 통과, camera_control 은 "not supported by the current model".
+      extras: [{ key: 'cfg_scale', label: 'Prompt adherence', type: 'number', min: 0, max: 1, step: 0.05, default: 0.5, hint: 'cfg_scale' }, { key: 'negative_prompt', label: 'Negative', type: 'text', max: 500, default: 'ugly, deformed, blurry, static' }],
     },
     imageSlots: [
       { key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' },
@@ -196,15 +212,19 @@ const TOOLS = {
     id: 'runway', label: 'Runway', type: 'video',
     provider: 'runway', model: 'gen4_turbo',
     costKey: null, enabled: true,
-    controls: { duration: [5, 10], aspectRatio: ['9:16', '16:9', '1:1'] },
+    // (2026-10-13) Runway 검증 실측: ratio ∈ 1280:720·720:1280·1104:832·832:1104·960:960·1584:672 (어댑터가 비율→ratio 로 바꾼다) · seed ≥0
+    controls: { duration: [5, 10], aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4', '21:9'], extras: [{ key: 'seed', label: 'Seed', type: 'number', min: 0, max: 4294967295, hint: 'blank = random' }] },
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'veo': {
     id: 'veo', label: 'Veo 3.1', type: 'video',
     provider: 'veo', model: 'veo-3.1-generate-preview',
     costKey: null, enabled: true,
-    controls: { duration: [4, 6, 8], aspectRatio: ['16:9', '9:16'], audio: { type: 'toggle' } }, // 내장 사운드(native)
-    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+    // (2026-10-13 구글 문서) 1080p 는 8초만 · 참조 이미지 최대 3장(8초 고정) · lastFrame = 끝프레임
+    controls: { duration: [4, 6, 8], aspectRatio: ['16:9', '9:16'], resolution: ['720p', '1080p'], audio: { type: 'toggle' },
+      extras: [{ key: 'negativePrompt', label: 'Negative', type: 'text', max: 500 }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 4294967295, hint: 'blank = random' }] }, // 내장 사운드(native)
+    refModel: 'veo-3.1-generate-preview', refInput: { max: 3 }, // 어댑터가 instances.referenceImages 로 넣는다
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Last frame (interpolation)' }, { key: 'reference', label: 'Reference', hint: 'Up to 3 style/content references', multi: true }],
   },
   'minimax': {
     id: 'minimax', label: 'MiniMax Hailuo 01', type: 'video',
@@ -239,57 +259,65 @@ const TOOLS = {
     falInput: { image: 'image_url', duration: 'str', aspect: true, resolution: true, audio: 'generate_audio', endImage: 'end_image_url' },
     costKey: null, enabled: true,
     // (2026-10-13) 사용자: "툴이 주는 옵션은 다 연다" → duration 칩은 빠른 선택, durationRange 가 실제 허용폭(fal 검증 실측). extras = 엔진 고유 옵션(어댑터가 그대로 전달).
-    controls: { duration: [5, 8, 10, 15], durationRange: { min: 4, max: 30 }, aspectRatio: ['9:16', '16:9', '1:1'], resolution: ['720p', '1080p', '480p'], audio: { type: 'toggle' },
-      extras: [{ key: 'bitrate_mode', label: 'Bitrate', values: ['standard', 'high'] }, { key: 'draft', label: 'Draft', hint: 'Cheap 480p preview', type: 'toggle' }] },
-    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }],
+    refModel: 'bytedance/seedance-2.5/reference-to-video', refInput: { refs: 'image_urls', max: 9 }, t2vModel: 'bytedance/seedance-2.5/text-to-video',
+    controls: { duration: [5, 8, 10, 15], durationRange: { min: 4, max: 30 }, aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4', '21:9'], resolution: ['720p', '1080p', '480p'], audio: { type: 'toggle' },
+      extras: [{ key: 'bitrate_mode', label: 'Bitrate', values: ['standard', 'high'] }, { key: 'draft', label: 'Draft', hint: 'Cheap 480p preview', type: 'toggle' }, { key: 'codec', label: 'Codec', values: ['auto', 'H264', 'H265'] }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'reference mode only' }] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }, { key: 'reference', label: 'Reference', hint: 'Up to 9 images — @Image1… in the prompt. Replaces the start frame.', multi: true }],
   },
   'wan-3': {
     id: 'wan-3', label: 'Wan 3.0', type: 'video',
     provider: 'fal', model: 'alibaba/wan-3.0/image-to-video',
     falInput: { image: 'start_image_url', duration: 'int', aspect: true, resolution: true, audio: 'audio', endImage: 'end_image_url' },
     costKey: null, enabled: true,
+    refModel: 'alibaba/wan-3.0/reference-to-video', refInput: { refs: 'reference_image_urls', max: 10 }, t2vModel: 'alibaba/wan-3.0/text-to-video',
     controls: { duration: [5, 10, 15], durationRange: { min: 2, max: 30 }, aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4'], resolution: ['720p', '1080p', '480p'], audio: { type: 'toggle' },
-      extras: [{ key: 'enable_prompt_expansion', label: 'Prompt expansion', hint: 'Engine rewrites the prompt', type: 'toggle', default: true }] }, // 길이 ≤30(하한 미확인 → 2)
-    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }],
+      extras: [{ key: 'enable_prompt_expansion', label: 'Prompt expansion', hint: 'Engine rewrites the prompt', type: 'toggle', default: true }, { key: 'enable_thinking', label: 'Thinking', hint: 'Reason before generating (slower)', type: 'toggle' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // 길이 ≤30(하한 미확인 → 2)
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }, { key: 'reference', label: 'Reference', hint: 'Up to 10 images. Replaces the start frame.', multi: true }],
   },
   'hailuo-2.3': {
     id: 'hailuo-2.3', label: 'MiniMax Hailuo 2.3', type: 'video',
     provider: 'fal', model: 'fal-ai/minimax/hailuo-2.3/standard/image-to-video',
-    falInput: { image: 'image_url', duration: 'str', extra: { prompt_optimizer: false } }, // 비율·해상도 필드 없음(standard = 768p 고정)
+    falInput: { image: 'image_url', duration: 'str' }, // 비율·해상도 필드 없음(standard = 768p 고정)
     costKey: null, enabled: true,
-    controls: { duration: [6, 10] },
+    controls: { duration: [6, 10], extras: [{ key: 'prompt_optimizer', label: 'Prompt optimizer', type: 'toggle', hint: 'MiniMax rewrites the prompt' }] },
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'minimax-h3': {
     id: 'minimax-h3', label: 'MiniMax H3', type: 'video',
     provider: 'fal', model: 'minimax/h3/image-to-video',
-    falInput: { image: 'image_url', duration: 'int', resolution: true },
+    falInput: { image: 'image_url', duration: 'int', resolution: true, endImage: 'end_image_url' },
+    refModel: 'minimax/h3/reference-to-video', refInput: { refs: 'reference_image_urls', max: 8 }, t2vModel: 'minimax/h3/text-to-video',
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], durationRange: { min: 1, max: 15 }, resolution: ['768P', '2K', '4K', '480P'] }, // 길이 ≤15
-    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+    controls: { duration: [5, 10, 15], durationRange: { min: 5, max: 15 }, resolution: ['768P', '2K', '4K', '480P'],
+      extras: [{ key: 'prompt_expansion_mode', label: 'Prompt expansion', values: ['balanced', 'disabled', 'fast', 'quality'] }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // 길이 5~15
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }, { key: 'reference', label: 'Reference', hint: 'Subject/style images — Image 1, Image 2… in the prompt.', multi: true }],
   },
   'grok-video': {
     id: 'grok-video', label: 'Grok Imagine Video 1.5', type: 'video',
     provider: 'fal', model: 'xai/grok-imagine-video/image-to-video',
     falInput: { image: 'image_url', duration: 'int', aspect: true, resolution: true },
+    refModel: 'xai/grok-imagine-video/reference-to-video', refInput: { refs: 'reference_image_urls', max: 5 },
     costKey: null, enabled: true,
     controls: { duration: [6, 10, 15], durationRange: { min: 1, max: 15 }, aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3', '3:2', '2:3'], resolution: ['720p', '480p'] }, // 길이 ≤15
-    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'reference', label: 'Reference', hint: 'Style/content images — @Image1… in the prompt.', multi: true }],
   },
   'happyhorse': {
     id: 'happyhorse', label: 'HappyHorse 1.1', type: 'video',
     provider: 'fal', model: 'alibaba/happy-horse/v1.1/image-to-video',
     falInput: { image: 'image_url', duration: 'int', resolution: true }, // 비율 필드 없음(원본 비율 유지)
+    refModel: 'alibaba/happy-horse/v1.1/reference-to-video', refInput: { refs: 'image_urls', max: 9, aspect: true },
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], durationRange: { min: 3, max: 15 }, resolution: ['720p', '1080p'] }, // 길이 3~15
-    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+    controls: { duration: [5, 10, 15], durationRange: { min: 3, max: 15 }, resolution: ['720p', '1080p'], extras: [{ key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // 길이 3~15
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'reference', label: 'Reference', hint: 'Up to 9 subject images for consistency.', multi: true }],
   },
   'flux-3-video': {
     id: 'flux-3-video', label: 'FLUX.3 Video', type: 'video',
     provider: 'fal', model: 'blackforestlabs/flux-3/image-to-video',
     falInput: { image: 'image_url', duration: 'int', aspect: true, resolution: true, audio: 'generate_audio' },
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], durationRange: { min: 5, max: 20 }, aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3', '21:9'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 5~20
+    t2vModel: 'blackforestlabs/flux-3/text-to-video',
+    controls: { duration: [5, 10, 15], durationRange: { min: 5, max: 20 }, aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3', '21:9', '2:1'], resolution: ['720p', '1080p'], audio: { type: 'toggle' },
+      extras: [{ key: 'safety_tolerance', label: 'Safety tolerance', type: 'number', min: 0, max: 4, default: 2, hint: '0 strict · 4 permissive' }] }, // 길이 5~20
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'gemini-omni': {

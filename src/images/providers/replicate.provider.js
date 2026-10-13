@@ -29,6 +29,7 @@ const replicateProvider = {
           ...(req.seed != null && { seed: req.seed }),
           num_outputs: 1,
           output_format: 'png',
+          ...(req.extras && typeof req.extras === 'object' ? req.extras : {}), // registry extras(safety_tolerance · prompt_upsampling · seed)
         },
       }),
     });

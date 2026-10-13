@@ -26,6 +26,8 @@
       <div class="row"><img id="sf" alt="" style="width:92px;height:92px;object-fit:cover;border-radius:12px;background:var(--surface2)"><div class="refs" style="flex:1"><button class="add" id="sfAdd" type="button">+</button><button class="add" id="sfLib" type="button" style="font-size:12px">Lib</button><button class="add" id="sfClear" type="button" style="font-size:12px" title="Clear">✕</button></div></div>
       <input type="file" id="sfFile" accept="image/*" hidden>
       <div class="refs" id="libPick" hidden style="margin-top:6px"></div>
+      <!-- (2026-10-13) 레퍼런스 = "이렇게 생긴 것" 참고(구도 자유, 제품+모델 동시). 시작 프레임과 뜻이 다르다. refModel 있는 엔진에서만 보인다. -->
+      <div id="refWrap" hidden><div class="lbl">Reference <i id="vrefHint">· optional</i></div><div class="refs" id="vrefs"><button class="add" id="vrefAdd" type="button" title="Upload">+</button><button class="add" id="vrefLib" type="button" title="Pick from Library" style="font-size:12px">Lib</button></div><input type="file" id="vrefFile" accept="image/*" multiple hidden><div class="refs" id="vrefPick" hidden style="margin-top:6px"></div></div>
       <div id="efWrap" hidden><div class="lbl">End frame <i>· optional</i></div><div class="row"><img id="ef" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--surface2)"><button class="btn2" id="efAdd" type="button">Upload</button><button class="btn2" id="efClear" type="button">Clear</button></div><input type="file" id="efFile" accept="image/*" hidden></div>
       <div class="lbl">Prompt <i id="plen">0</i></div>
       <textarea class="ff" id="prompt" maxlength="2000" placeholder="Slow push-in, droplets catch the light, label stays readable."></textarea>
@@ -53,7 +55,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
 const ICON={'seedance-2.5':'S','wan-3':'W','hailuo-2.3':'M','minimax-h3':'M','grok-video':'X',happyhorse:'A','flux-3-video':'F','gemini-omni':'G',kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S',fal:'F'}; // id 우선, 없으면 provider (topnav.js ICON 과 같은 표)
 const NOTE={kling:'Image → video · text → video · video-to-audio',veo:'Native sound. 1080p forces 8s.',runway:'Needs a start frame.',minimax:'Needs a start frame · 6s',sora:'Text or image → video',seedance:'4–15s · 720p/1080p'};
-const st={tools:[],tool:null,dur:null,ratio:null,res:null,audio:false,priv:false,sf:null,ef:null,feed:'mine'};
+const st={tools:[],tool:null,dur:null,ratio:null,res:null,audio:false,priv:false,sf:null,ef:null,vrefs:[],feed:'mine'};
 function tool(){return st.tools.find(t=>t.id===st.tool)||st.tools[0];}
 function renderSel(){const t=tool();if(!t){$('#msel').innerHTML='<span class="ic">!</span><span><b>No video engine available</b><small>No API key on this server</small></span>';return}
   $('#msel').innerHTML=`<span class="ic">${ICON[t.id]||ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perDuration[st.dur]||'—'}/${st.dur}s</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(NOTE[x.provider]||x.provider)}</small></span><span class="pc">◈${Object.values(x.pricing.perDuration||{})[0]||'—'}</span></div>`).join('')}</div>`;}
@@ -68,13 +70,10 @@ function applyTool(){const t=tool();if(!t)return;const c=t.controls||{};
   if(dr){$('#durs').insertAdjacentHTML('beforeend',`<span class="chip ${durs.map(String).includes(String(st.dur))?'':'on'}" style="padding:0 6px 0 10px"><input id="durIn" type="number" min="${dr.min}" max="${dr.max}" step="1" value="${st.dur}" style="width:44px;background:none;border:0;color:inherit;font:inherit;outline:0"> s</span>`);$('#durHint').textContent=`· ${dr.min}–${dr.max}s`;
     $('#durIn').addEventListener('change',e=>{let v=parseInt(e.target.value,10);if(isNaN(v))return;v=Math.max(dr.min,Math.min(dr.max,v));st.dur=v;applyTool();});$('#durIn').addEventListener('click',e=>e.stopPropagation());}
   else $('#durHint').textContent='';
-  // 엔진 고유 옵션
-  const ex=c.extras||[];st.extras=st.extras||{};const keep={};ex.forEach(d=>{if(d.key in st.extras)keep[d.key]=st.extras[d.key];else if('default' in d)keep[d.key]=d.default;});st.extras=keep;
-  $('#extrasWrap').innerHTML=ex.map(d=>d.type==='toggle'
-    ?`<div class="lock ${st.extras[d.key]?'on':''}" data-x="${d.key}" style="margin-top:12px"><div><b>${esc(d.label)}</b><small>${esc(d.hint||'')}</small></div><span class="sw2"><i></i></span></div>`
-    :`<div class="lbl" style="margin-top:12px">${esc(d.label)}</div><div class="chips" data-xc="${d.key}">${d.values.map(v=>`<button type="button" class="chip ${(st.extras[d.key]||d.values[0])===v?'on':''}" data-v="${v}">${esc(v)}</button>`).join('')}</div>`).join('');
-  $$('#extrasWrap .lock[data-x]').forEach(el=>el.addEventListener('click',()=>{st.extras[el.dataset.x]=!st.extras[el.dataset.x];el.classList.toggle('on',st.extras[el.dataset.x]);}));
-  $$('#extrasWrap .chips[data-xc]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.extras[g.dataset.xc]=b.dataset.v;[...g.children].forEach(x=>x.classList.toggle('on',x===b));}));
+  renderExtras($('#extrasWrap'),c.extras,st);
+  // 레퍼런스 줄(refModel 있는 엔진만). 시작 프레임과 동시에 넣으면 레퍼런스가 우선(reference-to-video).
+  const rmax=(t.refInput&&t.refInput.max)||10;$('#refWrap').hidden=!t.refModel;if(!t.refModel)st.vrefs=[];st.vrefs=st.vrefs.slice(0,rmax);renderVrefs();
+  $('#vrefHint').textContent=t.refModel?`· up to ${rmax} · "looks like this", free composition. Replaces the start frame.`:'· optional';
   const ratios=c.aspectRatio||null;$('#ratioWrap').hidden=!ratios;if(ratios){if(!ratios.includes(st.ratio))st.ratio=ratios[0];chips('#ratios',ratios,st.ratio);}else st.ratio=null;
   const ress=c.resolution||null;$('#resWrap').hidden=!ress;if(ress){if(!ress.includes(st.res))st.res=ress[0];chips('#ress',ress,st.res);}else st.res=null;
   $('#audioWrap').hidden=!c.audio;if(!c.audio)st.audio=false;$('#audioLock').classList.toggle('on',st.audio);
@@ -86,8 +85,27 @@ $('#ress').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)
 $('#audioLock').addEventListener('click',()=>{st.audio=!st.audio;$('#audioLock').classList.toggle('on',st.audio)});
 $('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});
 function cost(){const t=tool();if(!t)return;const pd=t.pricing.perDuration||{};const keys=Object.keys(pd).map(Number).sort((a,b)=>a-b);let v=pd[String(st.dur)];if(v==null){const k=+st.dur>5?(keys.find(x=>x>=10)??keys[keys.length-1]):(keys.find(x=>x<=5)??keys[0]);v=pd[String(k)];}$('#cost').textContent=(v||0).toLocaleString('en-US');} // 서버 videoCost 와 같은 규칙(5초 초과=10초 티어)
+// (2026-10-13) 엔진 고유 옵션 렌더 — registry controls.extras 정본. 타입: values(칩) · toggle(.lock) · number(입력) · text(입력). 값은 st.extras 에, 전송은 FormData 'extras' JSON.
+function renderExtras(host,defs,st){defs=defs||[];st.extras=st.extras||{};const keep={};defs.forEach(d=>{if(d.key in st.extras)keep[d.key]=st.extras[d.key];else if('default' in d)keep[d.key]=d.default;});st.extras=keep;
+  host.innerHTML=defs.map(d=>{const v=st.extras[d.key];
+    if(d.type==='toggle')return `<div class="lock ${v?'on':''}" data-x="${d.key}" style="margin-top:12px"><div><b>${esc(d.label)}</b><small>${esc(d.hint||'')}</small></div><span class="sw2"><i></i></span></div>`;
+    if(d.type==='number')return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><input class="ff" type="number" data-xn="${d.key}" min="${d.min??''}" max="${d.max??''}" step="${d.step??1}" value="${v??''}" placeholder="${d.default??''}">`;
+    if(d.type==='text')return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><input class="ff" type="text" data-xt="${d.key}" maxlength="${d.max||500}" value="${esc(v??'')}">`;
+    return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><div class="chips" data-xc="${d.key}">${(d.values||[]).map(x=>`<button type="button" class="chip ${String(v??d.values[0])===String(x)?'on':''}" data-v="${x}">${esc(x)}</button>`).join('')}</div>`;}).join('');
+  host.querySelectorAll('.lock[data-x]').forEach(el=>el.addEventListener('click',()=>{st.extras[el.dataset.x]=!st.extras[el.dataset.x];el.classList.toggle('on',!!st.extras[el.dataset.x]);}));
+  host.querySelectorAll('.chips[data-xc]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.extras[g.dataset.xc]=b.dataset.v;[...g.children].forEach(x=>x.classList.toggle('on',x===b));}));
+  host.querySelectorAll('[data-xn]').forEach(i=>i.addEventListener('change',e=>{const v=e.target.value;st.extras[i.dataset.xn]=v===''?undefined:Number(v);}));
+  host.querySelectorAll('[data-xt]').forEach(i=>i.addEventListener('input',e=>{st.extras[i.dataset.xt]=e.target.value;}));}
 // ── 프레임 ──
 function setSf(x){st.sf=x;$('#sf').src=x?x.url:'';}
+// ── 레퍼런스 ──
+function renderVrefs(){const host=$('#vrefs');[...host.querySelectorAll('[data-i]')].forEach(x=>x.remove());st.vrefs.forEach((r,i)=>host.insertAdjacentHTML('beforeend',`<button type="button" data-i="${i}" title="remove"><img src="${r.url}" alt=""><span class="x">×</span></button>`));}
+$('#vrefAdd').addEventListener('click',()=>$('#vrefFile').click());
+$('#vrefFile').addEventListener('change',e=>{const t=tool();const m=(t&&t.refInput&&t.refInput.max)||10;[...e.target.files].slice(0,m-st.vrefs.length).forEach(f=>st.vrefs.push({file:f,url:URL.createObjectURL(f)}));renderVrefs();e.target.value=''});
+$('#vrefs').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b)return;st.vrefs.splice(+b.dataset.i,1);renderVrefs()});
+$('#vrefLib').addEventListener('click',async()=>{const p=$('#vrefPick');if(!p.hidden){p.hidden=true;return}p.hidden=false;p.innerHTML='<span class="note">loading…</span>';
+  try{const d=(await(await fetch('/api/generate/results?type=photo&limit=24')).json()).data||[];p.innerHTML=d.filter(r=>r.file_path).map(r=>`<button type="button" data-u="/images/${esc(r.file_path.split('/').pop())}"><img src="/images/${esc(r.file_path.split('/').pop())}" alt=""></button>`).join('')||'<span class="note">No images in Library yet.</span>';}catch(e){p.innerHTML='<span class="note">Library unavailable.</span>'}});
+$('#vrefPick').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;const t=tool();const m=(t&&t.refInput&&t.refInput.max)||10;if(st.vrefs.length>=m)return;st.vrefs.push({url:b.dataset.u,remote:true});renderVrefs();$('#vrefPick').hidden=true;});
 $('#sfAdd').addEventListener('click',()=>$('#sfFile').click());$('#sfFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)setSf({file:f,url:URL.createObjectURL(f)});e.target.value=''});
 $('#sfClear').addEventListener('click',()=>setSf(null));
 $('#efAdd').addEventListener('click',()=>$('#efFile').click());$('#efFile').addEventListener('change',e=>{const f=e.target.files[0];if(f){st.ef={file:f,url:URL.createObjectURL(f)};$('#ef').src=st.ef.url}e.target.value=''});$('#efClear').addEventListener('click',()=>{st.ef=null;$('#ef').src=''});
@@ -109,6 +127,7 @@ $('#gen').addEventListener('click',async()=>{const t=tool();if(!t)return;const p
   fd.append('billingMode','custom');fd.append('templateName','Video');fd.append('privateMode',st.priv?'true':'false');
   if(st.sf){try{const b=st.sf.file||await(await fetch(st.sf.url)).blob();fd.append('sourceImage',b,'start.png')}catch(e){return toast('Start frame could not be read')}}
   if(st.ef){try{const b=st.ef.file||await(await fetch(st.ef.url)).blob();fd.append('endFrame',b,'end.png')}catch(e){}}
+  for(const r of st.vrefs){try{const b=r.file||await(await fetch(r.url)).blob();fd.append('referenceImages',b,'ref.png');}catch(e){}}
   $('#gen').disabled=true;progStart();const f=$('#feed');$('#feedEmpty').hidden=true;const id='ph'+Date.now();f.insertAdjacentHTML('afterbegin',`<div class="rt pend" id="${id}">rendering · ${esc(t.label)} · ${st.dur}s</div>`);
   try{const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});const d=await sjson(res);
     if(res.status===402)throw Object.assign(new Error(d.error||'Not enough credits'),{c402:true});

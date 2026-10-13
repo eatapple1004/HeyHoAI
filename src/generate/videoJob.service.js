@@ -73,11 +73,12 @@ async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
 async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null, extras = null }) {
+  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null, extras = null, referenceImagePaths = [] }) {
   if (engine && engine !== 'kling') {
     return submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras });
+      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras, referenceImagePaths });
   }
+  for (const p of referenceImagePaths || []) { try { fs.unlinkSync(p); } catch {} } // kling 은 레퍼런스 미지원 — 업로드만 치운다
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
   const wantAudio = audio === true || audio === 'true';
@@ -109,6 +110,7 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
         negative_prompt: 'ugly, deformed, blurry, static', duration, mode, aspect_ratio: aspect };
       // 끝프레임(선택) → Kling image_tail
       if (endFramePath) { try { body.image_tail = fs.readFileSync(endFramePath).toString('base64'); } catch {} }
+      if (extras) Object.assign(body, extras); // registry extras(cfg_scale · negative_prompt) — 라우트가 화이트리스트
     } else {
       endpoint = 'https://api.klingai.com/v1/videos/text2video';
       body = { model_name: 'kling-v3', prompt,
@@ -152,15 +154,19 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
  *   비용은 엔진별 실원가 확정 전이라 videoCost(길이) 공용(placeholder).
  */
 async function submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null, extras = null }) {
+  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null, extras = null, referenceImagePaths = [] }) {
   const provider = videoProviders[engine];
   if (!provider) { const e = new Error(`Unknown video engine: ${engine}`); e.statusCode = 400; throw e; }
   if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
     const e = new Error(`${engine} API key not configured`); e.statusCode = 400; throw e;
   }
   if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }
-  if (!sourceImagePath && engine !== 'sora' && engine !== 'veo' && engine !== 'seedance') {
+  const refPaths = (referenceImagePaths || []).filter(Boolean);
+  if (!sourceImagePath && !refPaths.length && !(tool && tool.t2vModel) && engine !== 'sora' && engine !== 'veo' && engine !== 'seedance') {
     const e = new Error(`${engine} needs a start frame`); e.statusCode = 400; throw e; // runway·minimax = image-to-video 전용
+  }
+  if (refPaths.length && !(tool && tool.refModel)) {
+    const e = new Error(`${engine} does not take reference images`); e.statusCode = 400; throw e;
   }
   if (NEEDS_PUBLIC_URL.has(engine) && !env.PUBLIC_URL) {
     const e = new Error(`${engine} needs PUBLIC_URL (the provider fetches the start frame by URL)`); e.statusCode = 400; throw e;
@@ -198,9 +204,12 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   };
 
   try {
+    const refMax = (tool && tool.refInput && tool.refInput.max) || 10;
     const sub = await provider.submit({
       sourceImageUrl: await sourceFor(sourceImagePath),
       endImageUrl: await sourceFor(endFramePath),
+      referenceImageUrls: await Promise.all(refPaths.slice(0, refMax).map(sourceFor)), // reference-to-video 엔진(refModel)용
+      refModel: tool ? tool.refModel : undefined, refInput: tool ? tool.refInput : undefined, t2vModel: tool ? tool.t2vModel : undefined,
       motionPrompt: prompt, negativePrompt: 'ugly, deformed, blurry, static',
       durationSec: dur, aspectRatio: aspect, width: w, height: h, resolution,
       style: 'cinematic', audio: wantAudio,
@@ -225,6 +234,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   } finally {
     if (sourceImagePath) { try { fs.unlinkSync(sourceImagePath); } catch {} }
     if (endFramePath) { try { fs.unlinkSync(endFramePath); } catch {} }
+    for (const p of refPaths) { try { fs.unlinkSync(p); } catch {} }
   }
 }
 

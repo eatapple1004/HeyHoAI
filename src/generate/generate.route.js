@@ -225,7 +225,12 @@ const postRootHandler = async (req, res, next) => {
     const aspectRatio = ASPECT_ALLOW.includes(req.body.aspectRatio) ? req.body.aspectRatio : null;
     // 해상도: 2K·4K는 Nano Banana Pro(model=pro) 전용. 그 외 → 1K(미적용). (2026-07-27 4K 오픈)
     const reqSize = String(req.body.imageSize || '').toUpperCase();
-    const imageSize = (model === 'pro' && (reqSize === '2K' || reqSize === '4K')) ? reqSize : null;
+    // (2026-10-13) 툴이 imageSize 목록을 가지면 그 목록 기준(1K = 기본값 → null). 레거시 model 키 경로는 pro 2K/4K 그대로.
+    const sizeList = toolDef && toolDef.controls && toolDef.controls.imageSize;
+    const imageSize = sizeList
+      ? (sizeList.map((x) => String(x).toUpperCase()).includes(reqSize) && reqSize !== '1K' ? reqSize : null)
+      : ((model === 'pro' && (reqSize === '2K' || reqSize === '4K')) ? reqSize : null);
+    const extras = pickExtras(toolDef, req.body.extras) || {}; // 엔진 고유 옵션(registry 선언분만) — 어댑터/OpenAI 파라미터에 합친다
     // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 1000(입력란 maxlength와 일치).
     const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 1000);
 
@@ -582,6 +587,7 @@ const postRootHandler = async (req, res, next) => {
             // registry 가 정한 엔드포인트·입력 모양 — 어댑터(fal·seedream·xai·higgsfield)가 읽는다. 과금은 위 model(costKey) 그대로.
             model: toolDef.model, editModel: toolDef.editModel, sizing: toolDef.sizing,
             aspectRatio: aspectRatio || '1:1', imageSize, negativePrompt, negative: !!(toolDef.controls && toolDef.controls.negative),
+            extras,
           });
           let buf;
           if (String(out.url).startsWith('file://')) buf = fs.readFileSync(out.url.slice('file://'.length));
@@ -604,7 +610,8 @@ const postRootHandler = async (req, res, next) => {
             const OpenAI = require('openai');
             const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-            const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: gptQuality };
+            const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: extras.quality || gptQuality,
+              ...(extras.background && { background: extras.background }), ...(extras.moderation && { moderation: extras.moderation }) }; // (10-13) registry extras
 
             // 레퍼런스 이미지가 있으면 편집 모드
             if (referenceImages.length > 0) {
@@ -620,7 +627,9 @@ const postRootHandler = async (req, res, next) => {
                 prompt: gptParams.prompt,
                 n: 1,
                 size: gptSize,
-                quality: gptQuality,
+                quality: extras.quality || gptQuality,
+                ...(extras.background && { background: extras.background }), ...(extras.moderation && { moderation: extras.moderation }),
+                ...(extras.input_fidelity && { input_fidelity: extras.input_fidelity }),
               });
               imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
             } else {
@@ -974,7 +983,7 @@ const postUpscaleHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-/** 영상 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입으로 통과시킨다. 나머지는 버린다. */
+/** 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입(values·toggle·number·text)으로 통과시킨다. 이미지·영상 공용. */
 function pickExtras(tool, raw) {
   const defs = tool && tool.controls && Array.isArray(tool.controls.extras) ? tool.controls.extras : [];
   if (!defs.length || !raw) return null;
@@ -985,8 +994,11 @@ function pickExtras(tool, raw) {
   for (const d of defs) {
     if (!(d.key in obj)) continue;
     const v = obj[d.key];
+    if (v === '' || v == null) continue; // 빈값 = 엔진 기본값
     if (d.type === 'toggle') out[d.key] = v === true || v === 'true';
-    else if (Array.isArray(d.values) && d.values.includes(v)) out[d.key] = v;
+    else if (d.type === 'number') { const n = Number(v); if (Number.isFinite(n)) out[d.key] = Math.min(d.max ?? n, Math.max(d.min ?? n, n)); }
+    else if (d.type === 'text') out[d.key] = String(v).slice(0, d.max || 500);
+    else if (Array.isArray(d.values) && d.values.includes(String(v))) out[d.key] = String(v);
   }
   return Object.keys(out).length ? out : null;
 }
@@ -1226,6 +1238,7 @@ const postVideoAsyncHandler = async (req, res, next) => {
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const sourceFile = req.files?.sourceImage?.[0];
     const endFrameFile = req.files?.endFrame?.[0];
+    const refFiles = req.files?.referenceImages || []; // (2026-10-13) reference-to-video 엔진용(최대 10)
     // (2026-10-13) 베이스 1차 — 영상 엔진 선택(tool). 미지정=kling(기존 경로 그대로). 모르는 툴·이미지 툴·키 없는 툴은 400.
     const videoTool = req.body.tool ? getTool(req.body.tool) : null;
     if (req.body.tool && (!videoTool || videoTool.type !== 'video' || !videoTool.enabled)) {
@@ -1242,6 +1255,7 @@ const postVideoAsyncHandler = async (req, res, next) => {
       templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,
       endFramePath: endFrameFile ? endFrameFile.path : null,
+      referenceImagePaths: refFiles.map((f) => f.path),
       isTemplate: req.body.billingMode !== 'custom', // 'custom'=커스텀 릴(2~3배), 그 외=템플릿(4~6배)
     });
     res.json({ success: true, ...result });
@@ -2296,7 +2310,7 @@ router.get('/creator-overview', getCreatorOverviewHandler);
 router.get('/reviews', getReviewsHandler);
 router.patch('/reviews/:idx', patchReviewsHandler);
 router.delete('/reviews/:idx', deleteReviewsHandler);
-router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }]), postVideoAsyncHandler);
+router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }]), postVideoAsyncHandler);
 router.get('/video/jobs', getVideoJobsHandler);
 router.get('/video/jobs/:id', getVideoJobs2Handler);
 router.get('/faceswap/jobs/:id', getFaceswapJobsHandler);

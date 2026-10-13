@@ -33,6 +33,7 @@
       <div class="lbl" hidden>Cinematic Cameras <i>· presets, tap to add</i></div>
       <div class="presets" id="presets" hidden></div>
       <div id="negWrap"><div class="lbl">Negative <i>· optional</i></div><input class="ff" id="neg" maxlength="1000" placeholder="Avoid: text, logos, extra hands…"></div>
+      <div id="extrasWrap"></div><!-- (2026-10-13) 엔진 고유 옵션(registry controls.extras) — 품질·배경·시드·가이던스 등 -->
       <div class="lbl">Aspect ratio</div><div class="chips" id="ratios"></div>
       <div id="sizeWrap"><div class="lbl">Resolution</div><div class="chips" id="sizes"></div></div>
       <div class="lbl">Count</div><div class="chips" id="counts"></div>
@@ -68,7 +69,20 @@ function applyTool(){const t=tool();if(!t)return;renderSel();const c=t.controls|
   const sizes=c.imageSize||null;$('#sizeWrap').hidden=!sizes;if(sizes){if(!sizes.includes(st.size))st.size=sizes[0];chips('#sizes',sizes,st.size);}else st.size=null;
   const counts=(c.count||[1,2,3,4]).filter(n=>n<=4);if(!counts.includes(st.count))st.count=counts[0];chips('#counts',counts,st.count,n=>'× '+n);
   $('#negWrap').hidden=!c.negative;$('#refHint').textContent=t.imageSlots&&t.imageSlots.length?'· up to 14 · click a thumbnail to remove':'· this engine is text-only';
+  renderExtras($('#extrasWrap'),c.extras,st);
   cost();}
+// (2026-10-13) 엔진 고유 옵션 렌더 — registry controls.extras 정본. 타입: values(칩) · toggle(.lock) · number(입력) · text(입력). 값은 st.extras 에, 전송은 FormData 'extras' JSON.
+function renderExtras(host,defs,st){defs=defs||[];st.extras=st.extras||{};const keep={};defs.forEach(d=>{if(d.key in st.extras)keep[d.key]=st.extras[d.key];else if('default' in d)keep[d.key]=d.default;});st.extras=keep;
+  host.innerHTML=defs.map(d=>{const v=st.extras[d.key];
+    if(d.type==='toggle')return `<div class="lock ${v?'on':''}" data-x="${d.key}" style="margin-top:12px"><div><b>${esc(d.label)}</b><small>${esc(d.hint||'')}</small></div><span class="sw2"><i></i></span></div>`;
+    if(d.type==='number')return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><input class="ff" type="number" data-xn="${d.key}" min="${d.min??''}" max="${d.max??''}" step="${d.step??1}" value="${v??''}" placeholder="${d.default??''}">`;
+    if(d.type==='text')return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><input class="ff" type="text" data-xt="${d.key}" maxlength="${d.max||500}" value="${esc(v??'')}">`;
+    return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><div class="chips" data-xc="${d.key}">${(d.values||[]).map(x=>`<button type="button" class="chip ${String(v??d.values[0])===String(x)?'on':''}" data-v="${x}">${esc(x)}</button>`).join('')}</div>`;}).join('');
+  host.querySelectorAll('.lock[data-x]').forEach(el=>el.addEventListener('click',()=>{st.extras[el.dataset.x]=!st.extras[el.dataset.x];el.classList.toggle('on',!!st.extras[el.dataset.x]);}));
+  host.querySelectorAll('.chips[data-xc]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.extras[g.dataset.xc]=b.dataset.v;[...g.children].forEach(x=>x.classList.toggle('on',x===b));}));
+  host.querySelectorAll('[data-xn]').forEach(i=>i.addEventListener('change',e=>{const v=e.target.value;st.extras[i.dataset.xn]=v===''?undefined:Number(v);}));
+  host.querySelectorAll('[data-xt]').forEach(i=>i.addEventListener('input',e=>{st.extras[i.dataset.xt]=e.target.value;}));}
+
 $('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.ratio=b.dataset.v;chips('#ratios',tool().controls.aspectRatio,st.ratio)});
 $('#sizes').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.size=b.dataset.v;chips('#sizes',tool().controls.imageSize,st.size);cost()});
 $('#counts').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.count=+b.dataset.v;chips('#counts',(tool().controls.count||[1,2,3,4]).filter(n=>n<=4),st.count,n=>'× '+n);cost()});
@@ -102,7 +116,7 @@ $$('.tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.tabs [data-
 let progT=null;function progStart(){const el=$('#bar');$('#prog').hidden=false;let p=5;el.style.width='5%';progT=setInterval(()=>{p=Math.min(92,p+Math.random()*6);el.style.width=p+'%'},600)}function progStop(){clearInterval(progT);$('#bar').style.width='100%';setTimeout(()=>$('#prog').hidden=true,400)}
 $('#gen').addEventListener('click',async()=>{const t=tool();if(!t)return;const prompt=$('#prompt').value.trim();if(!prompt)return toast('Write a prompt first');
   const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt);fd.append('model',t.model);fd.append('tool',t.id);fd.append('count',String(st.count));fd.append('style','none');fd.append('brandKit','false');fd.append('templateName','Image');
-  fd.append('aspectRatio',st.ratio||'');fd.append('imageSize',st.size||'1K');fd.append('negativePrompt',$('#neg').value.trim());fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');
+  fd.append('aspectRatio',st.ratio||'');fd.append('imageSize',st.size||'1K');fd.append('negativePrompt',$('#neg').value.trim());if(st.extras&&Object.keys(st.extras).length)fd.append('extras',JSON.stringify(st.extras));fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');
   for(const r of st.refs){try{const b=r.file||await(await fetch(r.url)).blob();fd.append('referenceImages',b,'ref.png');}catch(e){}}
   $('#gen').disabled=true;progStart();const f=$('#feed');$('#feedEmpty').hidden=true;const ph=[];for(let i=0;i<st.count;i++){const id='ph'+Date.now()+i;ph.push(id);f.insertAdjacentHTML('afterbegin',`<div class="rt pend" id="${id}">generating · ${esc(t.label)}</div>`)}
   try{const res=await fetch('/api/generate',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));

@@ -81,6 +81,7 @@ const falProvider = {
       ...(req.negative && req.negativePrompt && { negative_prompt: req.negativePrompt }),
       ...(useEdit && { image_urls: refs }),
     };
+    if (req.extras && typeof req.extras === 'object') Object.assign(input, req.extras); // registry controls.extras(라우트 화이트리스트) — seed·guidance·steps·safety 등
     if (req.sizing === 'aspect') {
       input.aspect_ratio = req.aspectRatio || '1:1';
       input.resolution = toResolution(req.imageSize);

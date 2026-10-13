@@ -26,7 +26,7 @@ const falVideoProvider = {
   isConfigured() { return !!env.FAL_API_KEY; },
 
   /**
-   * @param {import('./types').VideoGenerationRequest & { model: string, falInput: object, endImageUrl?: string, resolution?: string, audio?: boolean, extras?: object }} req
+   * @param {import('./types').VideoGenerationRequest & { model: string, falInput: object, refModel?: string, refInput?: object, t2vModel?: string, referenceImageUrls?: string[], endImageUrl?: string, resolution?: string, audio?: boolean, extras?: object }} req
    */
   async submit(req) {
     if (!env.FAL_API_KEY) {
@@ -34,29 +34,37 @@ const falVideoProvider = {
     }
     if (!req.model) throw Object.assign(new Error('fal video: registry model(엔드포인트) 없음'), { statusCode: 400 });
     const f = req.falInput || {};
-    const body = {
-      prompt: req.motionPrompt,
-      [f.image || 'image_url']: req.sourceImageUrl,
-      ...(f.extra || {}),
-    };
+    const refs = (req.referenceImageUrls || []).filter(Boolean);
+    let model = req.model;
+    const body = { prompt: req.motionPrompt, ...(f.extra || {}) };
+    // 입력 모양 셋: ① 레퍼런스 → reference-to-video(refModel) ② 시작 프레임 없음 → text-to-video(t2vModel) ③ 기본 image-to-video
+    if (refs.length && req.refModel) {
+      const ri = req.refInput || {};
+      model = req.refModel;
+      body[ri.refs || 'reference_image_urls'] = refs.slice(0, ri.max || 10);
+    } else if (!req.sourceImageUrl && req.t2vModel) {
+      model = req.t2vModel;
+    } else {
+      body[f.image || 'image_url'] = req.sourceImageUrl;
+      if (f.endImage && req.endImageUrl) body[f.endImage] = req.endImageUrl;
+    }
     if (f.duration === 'str') body.duration = String(req.durationSec);
     else if (f.duration === 'int') body.duration = parseInt(req.durationSec, 10);
-    if (f.aspect && req.aspectRatio) body.aspect_ratio = req.aspectRatio;
+    if ((f.aspect || (refs.length && req.refInput && req.refInput.aspect)) && req.aspectRatio) body.aspect_ratio = req.aspectRatio;
     if (f.resolution && req.resolution) body.resolution = req.resolution;
     if (f.audio) body[f.audio] = req.audio === true;
-    if (f.endImage && req.endImageUrl) body[f.endImage] = req.endImageUrl;
     if (req.seed != null) body.seed = req.seed;
     if (req.extras && typeof req.extras === 'object') Object.assign(body, req.extras); // registry controls.extras 키만(라우트가 화이트리스트) — 비트레이트·드래프트 등 엔진 고유 옵션
 
-    const res = await fetch(`${FAL_QUEUE}/${req.model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    const res = await fetch(`${FAL_QUEUE}/${model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     if (!res.ok) {
-      throw new Error(`fal video submit failed (${req.model}, ${res.status}): ${(await res.text()).slice(0, 300)}`);
+      throw new Error(`fal video submit failed (${model}, ${res.status}): ${(await res.text()).slice(0, 300)}`);
     }
     const data = await res.json();
-    if (!data.request_id) throw new Error(`fal video submit: request_id 없음 (${req.model})`);
+    if (!data.request_id) throw new Error(`fal video submit: request_id 없음 (${model})`);
     return {
       providerJobId: data.request_id,
-      metadata: { model: req.model, statusUrl: data.status_url, responseUrl: data.response_url },
+      metadata: { model, statusUrl: data.status_url, responseUrl: data.response_url, mode: refs.length ? 'reference' : (req.sourceImageUrl ? 'image' : 'text') },
     };
   },
 

@@ -100,6 +100,7 @@ const seedreamProvider = {
       num_images: 1,
       ...(req.seed != null && { seed: req.seed }),
       ...(refs.length && { image_urls: refs }),
+      ...(req.extras && typeof req.extras === 'object' ? req.extras : {}), // registry extras(seed · enhance_prompt_mode)
     };
     // ⚠️ negative_prompt는 보내지 않는다 — Seedream 스키마에 없다.
     //   금지 지시는 프롬프트 본문에 녹여야 한다(Seedance와 같은 제약).

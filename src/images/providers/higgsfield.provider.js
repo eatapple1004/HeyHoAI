@@ -40,9 +40,10 @@ const higgsfieldProvider = {
       prompt: req.prompt,
       aspect_ratio: aspect,
       resolution: String(req.imageSize || '').toLowerCase() === '1080p' ? '1080p' : '720p',
-      enhance_prompt: false, // 힉스필드가 프롬프트를 서버에서 재작성한다 — 우리 프롬프트 그대로 가게 끈다
+      enhance_prompt: !!(req.extras && req.extras.enhance_prompt), // 기본 끔 — 힉스필드가 프롬프트를 서버에서 재작성한다. registry extras 로만 켠다
       batch_size: 1,
       ...(req.seed != null && { seed: req.seed }),
+      ...(req.extras && req.extras.seed != null && { seed: Number(req.extras.seed) }),
     };
     const submit = await fetch(`${API}/${model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     if (!submit.ok) {

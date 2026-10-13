@@ -32,6 +32,7 @@ const xaiProvider = {
       aspect_ratio: req.aspectRatio || '1:1',
       resolution: String(req.imageSize || '1K').toUpperCase() === '2K' ? '2k' : '1k',
       response_format: 'url',
+      ...(req.extras && req.extras.quality && { quality: req.extras.quality }),
     };
     const res = await fetch(`${API}/images/generations`, {
       method: 'POST',
