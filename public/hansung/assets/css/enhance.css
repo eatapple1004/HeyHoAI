@@ -1,0 +1,179 @@
+/* 디자인 보강 레이어 — 색은 style.css 토큰 그대로, 질감·리듬·움직임만 더한다.
+   롤백: build.mjs 의 enhance.css 링크를 지우거나, git 에서 before-redesign 태그로 돌아간다. */
+:root {
+  --grid-minor: rgba(21,25,28,.05);
+  --grid-major: rgba(21,25,28,.09);
+  --ease-out: cubic-bezier(.2,.7,.2,1);
+}
+
+/* ── 섹션 머리: 번호 + 빨간 선 + 큰 제목 ── */
+.sec-no { display: inline-flex; align-items: center; gap: 12px; margin-right: 14px; font-weight: 500; color: var(--signal); }
+.sec-no::after { content: ""; width: 32px; height: 1.5px; background: currentColor; }
+.sec-olive .sec-no { color: var(--olive-l); }
+.sec-hd h2, .custom-copy h2 { font-size: clamp(2rem, 4.2vw, 3.3rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.1; }
+html[lang="en"] :is(.sec-hd h2, .custom-copy h2) { font-family: var(--f-display); font-stretch: 82%; letter-spacing: -.01em; }
+
+/* ── 섹션 배경 워터마크 (외곽선 대형 문자) ── */
+.sec[data-mark] { position: relative; overflow: hidden; isolation: isolate; }
+.sec[data-mark]::before {
+  content: attr(data-mark); position: absolute; z-index: -1; right: -.04em; top: clamp(16px, 3vw, 40px);
+  font-family: var(--f-display); font-weight: 800; font-stretch: 75%; font-size: clamp(6rem, 17vw, 15rem); line-height: .8; letter-spacing: -.02em;
+  color: transparent; -webkit-text-stroke: 1.2px rgba(21,25,28,.09); white-space: nowrap; pointer-events: none;
+}
+:is(.sec-dark, .sec-olive)[data-mark]::before { -webkit-text-stroke-color: rgba(255,255,255,.09); }
+
+/* ── 도면 격자 배경 (가장자리로 갈수록 옅어짐) ── */
+.sec-bp { background: var(--tint); }
+.sec-bp::after {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size: 200px 200px, 200px 200px, 40px 40px, 40px 40px; background-position: -1px -1px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 35%, transparent 85%); mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 35%, transparent 85%);
+}
+
+/* ── 수치 띠: 격자 + 치수 눈금 ── */
+.proof { position: relative; background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px); background-size: 40px 40px; }
+.proof-grid a { position: relative; padding-top: 52px; }
+.proof-grid a::before { content: ""; position: absolute; top: 22px; left: 28px; width: 28px; height: 3px; background: var(--signal); transition: width .35s var(--ease-out); }
+.proof-grid li:first-child a::before { left: 0; }
+.proof-grid a:hover::before { width: 64px; }
+.proof-grid a::after { content: ""; position: absolute; top: 22px; right: 0; width: 1px; height: 10px; background: rgba(255,255,255,.25); }
+@media (max-width: 860px) { .proof-grid a::before { left: 16px; } .proof-grid li:nth-child(odd) a::before { left: 0; } }
+
+/* ── 흐르는 제품명 띠 ── */
+.marquee { overflow: hidden; border-block: 1px solid var(--line); padding: clamp(18px, 2.4vw, 30px) 0; background: var(--paper); }
+.marquee-in { display: flex; align-items: center; width: max-content; animation: marquee 48s linear infinite; }
+.marquee:hover .marquee-in { animation-play-state: paused; }
+.marquee span { font-family: var(--f-display); font-weight: 800; font-stretch: 75%; font-size: clamp(2rem, 5vw, 4.2rem); line-height: 1; letter-spacing: -.01em; white-space: nowrap; color: transparent; -webkit-text-stroke: 1.2px rgba(21,25,28,.4); }
+.marquee span:nth-of-type(3n+1) { color: var(--ink); -webkit-text-stroke: 0; }
+.marquee i { width: 12px; height: 12px; margin: 0 clamp(20px, 3vw, 40px); background: var(--signal); transform: rotate(45deg); flex: none; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ── 트랙 카드 ── */
+.track { min-height: 520px; }
+.track-no { position: absolute; z-index: 1; top: 22px; left: 32px; font-family: var(--f-display); font-weight: 800; font-stretch: 75%; font-size: 4.6rem; line-height: 1; color: transparent; -webkit-text-stroke: 1.2px rgba(255,255,255,.7); }
+.track-body { transition: transform .45s var(--ease-out); }
+.track:hover .track-body { transform: translateY(-8px); }
+.track .more { align-self: flex-start; padding-bottom: 4px; border-bottom: 1.5px solid var(--signal); }
+@media (max-width: 760px) { .track { min-height: 400px; } .track-no { left: 24px; font-size: 3.4rem; } }
+
+/* ── 제품군 카드 ── */
+.fam { position: relative; transition: translate .35s var(--ease-out), box-shadow .35s; }
+.fam::before { content: ""; position: absolute; z-index: 2; left: 0; right: 0; top: 0; height: 3px; background: var(--signal); transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease-out); }
+.fam:hover { translate: 0 -6px; box-shadow: 0 26px 50px -28px rgba(21,25,28,.45); }
+.fam:hover::before { transform: scaleX(1); }
+.fam-media { position: relative; }
+.fam-no { position: absolute; z-index: 1; left: 0; top: 0; padding: 6px 10px; font: 500 .75rem/1 var(--f-mono); letter-spacing: .08em; background: var(--ink); color: var(--white); }
+
+/* ── 방산 카드 ── */
+.sec-olive .pcard-dark { transition: translate .35s var(--ease-out); }
+.sec-olive a.pcard-dark:hover { translate: 0 -6px; }
+
+/* ── 맞춤 제작: 도면 프레임 ── */
+.custom-media { position: relative; isolation: isolate; }
+.custom-media::before { content: ""; position: absolute; z-index: -1; inset: 0; border: 1px solid var(--steel-2); transform: translate(16px, 16px); }
+.custom-media::after { content: "HSM · CUSTOM BUILD"; position: absolute; left: 0; bottom: 0; padding: 8px 12px; font: 500 .72rem/1 var(--f-mono); letter-spacing: .1em; background: var(--signal); color: var(--white); }
+
+/* ── 연혁: 핵심 이정표 6개 격자 (가로 스크롤 없음) ── */
+.ms-grid { display: grid; grid-template-columns: minmax(260px, 1fr) 2fr; gap: clamp(32px, 5vw, 80px); align-items: start; }
+.ms-head { position: sticky; top: calc(var(--hd-h) + 40px); }
+.ms-head .sec-hd { margin-bottom: 28px; }
+.ms-span { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; font-family: var(--f-display); font-weight: 800; font-stretch: 75%; font-size: clamp(2.4rem, 4vw, 3.4rem); line-height: 1; }
+.ms-span span:first-child { color: transparent; -webkit-text-stroke: 1.2px rgba(255,255,255,.7); }
+.ms-span span:last-child { color: var(--signal); }
+.ms-span i { flex: 1; max-width: 120px; height: 2px; background: linear-gradient(90deg, rgba(255,255,255,.35), var(--signal)); }
+.ms-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.12); }
+.ms-list li { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 30px; background: var(--ink); min-height: 220px; transition: background .3s; }
+.ms-list li::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 0; background: var(--signal); transition: width .45s var(--ease-out); }
+.ms-list li:hover { background: #1C2125; }
+.ms-list li:hover::before { width: 100%; }
+.ms-tag { font: 500 .7rem/1 var(--f-mono); letter-spacing: .14em; color: var(--steel-2); }
+.ms-y { font-family: var(--f-display); font-weight: 800; font-stretch: 75%; font-size: clamp(2.6rem, 4vw, 3.4rem); line-height: .9; color: transparent; -webkit-text-stroke: 1.2px rgba(255,255,255,.85); transition: color .3s; }
+.ms-list li:hover .ms-y { color: var(--white); -webkit-text-stroke: 0; }
+.ms-list li:last-child .ms-y { color: var(--signal); -webkit-text-stroke: 0; }
+.ms-list li:last-child .ms-tag { color: var(--signal); }
+.ms-t { margin-top: auto; font-size: .92rem; line-height: 1.6; color: rgba(255,255,255,.72); }
+@media (max-width: 1020px) { .ms-grid { grid-template-columns: 1fr; } .ms-head { position: static; } .ms-list { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .ms-list { grid-template-columns: 1fr; } .ms-list li { min-height: 0; } }
+
+/* ── 소식 ── */
+.sec-news .news { position: relative; transition: translate .35s var(--ease-out), box-shadow .35s; }
+.sec-news .news::before { content: ""; position: absolute; left: 0; top: 0; width: 40px; height: 3px; background: var(--signal); transition: width .45s var(--ease-out); }
+.sec-news .news:hover { translate: 0 -4px; box-shadow: 0 22px 44px -28px rgba(21,25,28,.4); }
+.sec-news .news:hover::before { width: 100%; }
+
+/* ── 하단 상담 띠: 사진 배경 ── */
+.cta-band { overflow: hidden; isolation: isolate; }
+.cta-bg { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center 62%; opacity: .32; filter: grayscale(.35); }
+.cta-band::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, var(--ink) 20%, rgba(21,25,28,.55) 70%, rgba(21,25,28,.3)); }
+.cta-in { padding-block: clamp(72px, 10vw, 136px); }
+.cta-in h2 { font-size: clamp(2rem, 4.4vw, 3.4rem); font-weight: 800; letter-spacing: -.035em; }
+
+/* ── 스크롤 진입 효과 (JS가 html.rv-on 을 붙였을 때만) ── */
+html.rv-on .rv { opacity: 0; transform: translateY(28px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); transition-delay: var(--d, 0ms); }
+html.rv-on .rv.is-in { opacity: 1; transform: none; }
+html.rv-on .rv-img img { clip-path: inset(0 100% 0 0); transition: clip-path 1.2s cubic-bezier(.7,0,.2,1), transform .6s var(--ease-out); transition-delay: var(--d, 0ms); }
+html.rv-on .rv-img.is-in img { clip-path: inset(0 0 0 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-in { animation: none; }
+  .fam, .track-body, .sec-news .news { transition: none; }
+}
+
+/* 트랙 번호가 밝은 사진 위에서도 보이도록 상단을 살짝 어둡게 */
+.track::before { content: ""; position: absolute; z-index: 1; inset: 0 0 auto; height: 45%; background: linear-gradient(180deg, rgba(14,17,19,.5), rgba(14,17,19,0)); pointer-events: none; }
+.track-no { z-index: 2; }
+@media (max-width: 760px) { .custom-media::before { transform: translate(8px, 8px); } }
+
+/* ── 메뉴: 언어별 표기. 영어는 기존처럼 대문자 디스플레이 글꼴, 나머지는 본문 글꼴 ── */
+html:not([lang="en"]) .nav-link { font-family: var(--f-body); font-weight: 700; font-size: 1rem; letter-spacing: -.01em; }
+html[lang="en"] .nav-link, html[lang="en"] .dr-link span, html[lang="en"] .ft-nav a { text-transform: uppercase; }
+html:not([lang="en"]) .dr-link span { font-family: var(--f-body); font-weight: 800; font-size: 1.4rem; letter-spacing: -.02em; }
+.dr-link small { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .12em; }
+html:not([lang="en"]) .ft-nav { font-family: var(--f-body); letter-spacing: 0; font-size: .92rem; }
+
+/* ───────── 모바일 최적화 ───────── */
+/* 하단 고정 상담 버튼: 휴대폰에서 어디서든 바로 전화·상담. 첫 화면을 지나면 나타난다 */
+.m-cta { display: none; }
+@media (max-width: 760px) {
+  .m-cta { position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1.4fr; gap: 1px; padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--ink); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.4); transform: translateY(110%); transition: transform .35s var(--ease-out); }
+  .m-cta.is-on { transform: none; }
+  .m-cta a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; font-weight: 700; font-size: .98rem; }
+  .m-cta-tel { color: var(--white); background: #1C2125; }
+  .m-cta-tel .i { color: var(--signal); }
+  .m-cta-quote { background: var(--signal); color: var(--white); }
+  body:has(.m-cta) .ft { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+
+  /* 메인 제품군·방산 카드: 세로로 길게 쌓지 않고 옆으로 넘긴다 */
+  .page-home :is(.fam-grid, .def-grid) { display: grid; grid-auto-flow: column; grid-auto-columns: 82%; grid-template-columns: none; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: calc(var(--gutter) * -1); padding: 4px var(--gutter) 18px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+  .page-home :is(.fam-grid, .def-grid)::-webkit-scrollbar { display: none; }
+  .page-home :is(.fam, .pcard, .def-dev) { scroll-snap-align: start; }
+  .page-home .def-grid .def-dev { grid-column: auto; }
+  .page-home .fam-media { aspect-ratio: 16 / 10; }
+  .swipe-hint { display: flex; align-items: center; gap: 8px; margin: -8px 0 14px; font: 500 .72rem/1 var(--f-mono); letter-spacing: .12em; color: var(--steel); }
+  .sec-olive .swipe-hint { color: var(--olive-l); }
+  .swipe-hint::after { content: ""; width: 28px; height: 1px; background: currentColor; animation: swipe 1.6s ease-in-out infinite; transform-origin: left; }
+  @keyframes swipe { 0%, 100% { transform: scaleX(.4); } 50% { transform: scaleX(1); } }
+
+  /* 연혁 이정표: 2열로 압축 */
+  .ms-list { grid-template-columns: 1fr 1fr; }
+  .ms-list li { padding: 18px 16px 20px; min-height: 0; gap: 8px; }
+  .ms-y { font-size: 2.1rem; }
+  .ms-tag { font-size: .62rem; letter-spacing: .1em; }
+  .ms-t { font-size: .84rem; }
+  .ms-span { font-size: 2.2rem; margin-bottom: 22px; }
+
+  /* 3D 첫 화면 문구 위치 */
+  .h3-explode { top: auto; bottom: 9%; left: var(--gutter); text-align: left; }
+  .h3-intro h1 { font-size: 2rem; }
+  .h3-lede { font-size: .95rem; }
+
+  /* 큰 워터마크 글자는 휴대폰에서 줄인다 */
+  .sec[data-mark]::before { font-size: 5.2rem; }
+  .track { min-height: 340px; }
+  .cta-in { padding-block: 56px; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) { .swipe-hint::after { animation: none; } .m-cta { transition: none; } }
+@media (min-width: 761px) { .swipe-hint { display: none; } }

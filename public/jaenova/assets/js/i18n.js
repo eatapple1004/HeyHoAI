@@ -44,7 +44,7 @@ ko: {
   "home.i.p": "우리는 도면 위의 계획을 현장의 결과물로 바꾸는 일을 합니다. 그 과정에서 품질과 안전은 타협의 대상이 아니며, 디자인은 기능과 분리되지 않습니다. 완성된 공간이 사람의 일상을 어떻게 바꾸는지가 우리의 기준입니다.",
   "home.i.more": "회사소개 자세히",
 
-  "home.s1.b": "01", "home.s1.s": "대표 프로젝트",
+  "home.s1.b": "14", "home.s1.s": "프로젝트 실적",
   "home.s2.b": "05", "home.s2.s": "사업 영역",
   "home.s3.b": "06", "home.s3.s": "시공 프로세스",
   "home.s4.b": "100%", "home.s4.s": "자체 품질관리",
@@ -56,7 +56,7 @@ ko: {
 
   "home.p.kicker": "Our Projects",
   "home.p.title": "프로젝트",
-  "home.p.sub": "재노바 아너스가 실제로 만들어낸 결과물입니다.",
+  "home.p.sub": "1991년부터 이어온 현장 경험, 재노바 아너스가 실제로 지은 결과물입니다.",
   "home.p.more": "전체 프로젝트 보기",
 
   "home.c.kicker": "From Plan to Reality",
@@ -346,7 +346,7 @@ ko: {
   "ct.f.title": "문의하기",
   "ct.f.lead": "아래 양식을 작성해 주시면 담당자가 확인 후 회신드립니다.",
   "ct.m1": "주소",   "ct.m1v": "인천광역시 연수구 송도동 117-38",
-  "ct.m2": "대표전화", "ct.m2v": "032-528-4980",
+  "ct.m2": "대표전화", "ct.m2v": "031-981-4988",
   "ct.m3": "이메일",  "ct.m3v": "k3084572@naver.com",
   "ct.m4": "운영시간", "ct.m4v": "월–금 09:00 – 18:00 (KST)",
   "ct.name": "성함", "ct.company": "회사명", "ct.email": "이메일", "ct.phone": "연락처",
@@ -368,7 +368,7 @@ ko: {
   "foot.menu": "메뉴", "foot.info": "회사 정보", "foot.inquiry": "문의",
   "foot.bizno": "사업자등록번호 632-03-02505",
   "foot.addr": "인천광역시 연수구 송도동 117-38",
-  "foot.tel": "T. 032-528-4980",
+  "foot.tel": "T. 031-981-4988",
   "foot.email": "E. k3084572@naver.com",
   "foot.copy": "© 2026 JAENOVA HONORS. All rights reserved.",
   "foot.privacy": "개인정보처리방침",
@@ -408,7 +408,7 @@ en: {
   "home.i.p": "Our work is turning plans on paper into results on site. In that process quality and safety are not negotiable, and design is never separated from function. Our standard is how the finished space changes daily life.",
   "home.i.more": "More about us",
 
-  "home.s1.b": "01", "home.s1.s": "Flagship Project",
+  "home.s1.b": "14", "home.s1.s": "Projects Delivered",
   "home.s2.b": "05", "home.s2.s": "Business Areas",
   "home.s3.b": "06", "home.s3.s": "Process Stages",
   "home.s4.b": "100%", "home.s4.s": "In-House QC",
@@ -420,7 +420,7 @@ en: {
 
   "home.p.kicker": "Our Projects",
   "home.p.title": "Projects",
-  "home.p.sub": "What Jaenova Honors has actually built.",
+  "home.p.sub": "Built on site experience since 1991 — what Jaenova Honors has actually built.",
   "home.p.more": "See all projects",
 
   "home.c.kicker": "From Plan to Reality",
@@ -701,7 +701,7 @@ en: {
   "ct.f.title": "Send an inquiry",
   "ct.f.lead": "Complete the form below and our team will review and respond.",
   "ct.m1": "Address", "ct.m1v": "117-38 Songdo-dong, Yeonsu-gu, Incheon, Korea",
-  "ct.m2": "Tel",     "ct.m2v": "+82 32-528-4980",
+  "ct.m2": "Tel",     "ct.m2v": "+82 31-981-4988",
   "ct.m3": "Email",   "ct.m3v": "k3084572@naver.com",
   "ct.m4": "Hours",   "ct.m4v": "Mon–Fri 09:00 – 18:00 (KST)",
   "ct.name": "Name", "ct.company": "Company", "ct.email": "Email", "ct.phone": "Phone",
@@ -722,7 +722,7 @@ en: {
   "foot.menu": "Menu", "foot.info": "Company", "foot.inquiry": "Inquiry",
   "foot.bizno": "Business Reg. No. 632-03-02505",
   "foot.addr": "117-38 Songdo-dong, Yeonsu-gu, Incheon, Korea",
-  "foot.tel": "T. +82 32-528-4980",
+  "foot.tel": "T. +82 31-981-4988",
   "foot.email": "E. k3084572@naver.com",
   "foot.copy": "© 2026 JAENOVA HONORS. All rights reserved.",
   "foot.privacy": "Privacy Policy",
