@@ -3,8 +3,8 @@
  *
  * (2026-10-13) POST https://api.x.ai/v1/images/generations (OpenAI 호환 모양, 동기 응답).
  *   모델 id 는 registry(model: grok-imagine-image-2.0). 비율은 aspect_ratio 문자열, 해상도는 resolution '1k'|'2k'.
- *   ⚠️ 텍스트 전용으로만 연결했다 — /v1/images/edits(멀티파트 레퍼런스)는 키가 생긴 뒤 실측하고 붙인다.
- *   ⚠️ 키 없는 상태에서 문서 기준으로 작성(10-13). 첫 실생성에서 필드명이 어긋나면 여기만 고친다.
+ *   레퍼런스가 있으면 POST /v1/images/edits — (10-13 실측) 멀티파트가 아니라 JSON `images:[{url}]`(여러 장) 또는 `image_url`(한 장). 최대 5장.
+ *   (10-13) generations 실생성 OK.
  */
 const { env } = require('../../config');
 
@@ -25,6 +25,7 @@ const xaiProvider = {
       throw Object.assign(new Error('xAI: XAI_API_KEY not configured'), { statusCode: 503 });
     }
     const model = req.model || 'grok-imagine-image-2.0';
+    const refs = (req.referenceImageUrls || []).filter(Boolean).slice(0, 5);
     const body = {
       model,
       prompt: req.prompt,
@@ -33,8 +34,9 @@ const xaiProvider = {
       resolution: String(req.imageSize || '1K').toUpperCase() === '2K' ? '2k' : '1k',
       response_format: 'url',
       ...(req.extras && req.extras.quality && { quality: req.extras.quality }),
+      ...(refs.length && { images: refs.map((url) => ({ url })) }),
     };
-    const res = await fetch(`${API}/images/generations`, {
+    const res = await fetch(`${API}/images/${refs.length ? 'edits' : 'generations'}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.XAI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -52,7 +54,7 @@ const xaiProvider = {
       url: first.url,
       seed: null,
       providerJobId: data.id || null,
-      metadata: { model, usage: data.usage || null },
+      metadata: { model, usage: data.usage || null, edited: refs.length > 0, referenceCount: refs.length },
     };
   },
 };

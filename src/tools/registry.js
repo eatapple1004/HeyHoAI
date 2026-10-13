@@ -90,6 +90,7 @@ const TOOLS = {
     costKey: 'replicate', enabled: true,
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '5:4'], count: [1, 2, 3, 4], negative: true,
       extras: [{ key: 'safety_tolerance', label: 'Safety tolerance', type: 'number', min: 1, max: 6, default: 2, hint: '1 strict · 6 permissive' }, { key: 'prompt_upsampling', label: 'Prompt upsampling', type: 'toggle', hint: 'Engine rewrites the prompt' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // REPLICATE_MODEL로 교체 가능
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'One image — FLUX Redux style/composition guide (image_prompt).' }], // 첫 장만 쓴다
   },
 
   // (2026-10-13) 베이스 1차 2차분 — 힉스필드 Image 메뉴 기준으로 "우리에 없던 모델" 추가. 모델 id는 전부 벤더 API 목록/fal 큐에서 실존 확인(10-13).
@@ -100,7 +101,8 @@ const TOOLS = {
     id: 'nano-banana-2.1', label: 'Nano Banana 2.1', type: 'image',
     provider: 'gemini', model: 'gemini-nano-banana-2.1',
     costKey: 'nano-banana-2.1', enabled: true,
-    controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true }, // (10-13 구글 문서) 1K/2K/4K · 참조 최대 17장
+    controls: { aspectRatio: IMG_ASPECTS, imageSize: ['1K', '2K', '4K'], count: [1, 2, 3, 4, 5, 6, 7, 8], negative: true,
+      extras: [{ key: 'thinking_level', label: 'Thinking', values: ['medium', 'minimal', 'high'], hint: 'More thinking = slower, better layout' }] }, // (10-13 구글 문서) 1K/2K/4K · 참조 최대 17장 · thinkingConfig.thinkingLevel 실측 통과
     imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'References the visual style and composition of an image to influence the output.', multi: true }],
   },
   'gpt-image-2.5-sunburst': {
@@ -150,17 +152,19 @@ const TOOLS = {
   },
   'z-image': {
     id: 'z-image', label: 'Z-Image', type: 'image',
-    provider: 'fal', model: 'fal-ai/z-image/turbo',
+    provider: 'fal', model: 'fal-ai/z-image/turbo', editModel: 'fal-ai/z-image/turbo/image-to-image', editSingle: true, // i2i 는 image_url 한 장 + strength
     costKey: 'z-image', enabled: true,
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3'], count: [1, 2, 3, 4],
-      extras: [{ key: 'acceleration', label: 'Speed', values: ['regular', 'none', 'high'] }, { key: 'num_inference_steps', label: 'Steps', type: 'number', min: 1, max: 8, default: 8 }, { key: 'enable_prompt_expansion', label: 'Prompt expansion', type: 'toggle', hint: 'Costs more' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] }, // 텍스트 전용(image-to-image 는 단일 image_url+strength 라 레퍼런스 슬롯과 뜻이 다름)
+      extras: [{ key: 'acceleration', label: 'Speed', values: ['regular', 'none', 'high'] }, { key: 'num_inference_steps', label: 'Steps', type: 'number', min: 1, max: 8, default: 8 }, { key: 'enable_prompt_expansion', label: 'Prompt expansion', type: 'toggle', hint: 'Costs more' }, { key: 'strength', label: 'Image strength', type: 'number', min: 0.1, max: 1, step: 0.05, default: 0.6, hint: 'image-to-image only' }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'One image — image-to-image with strength.' }],
   },
   'grok-imagine': {
     id: 'grok-imagine', label: 'Grok Imagine 2.0', type: 'image',
     provider: 'xai', model: 'grok-imagine-image-2.0',
     costKey: 'grok-imagine', enabled: true, // XAI_API_KEY 없으면 목록에서 빠진다(isToolAvailable)
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9', '2:1', '1:2', '20:9', '9:20'], imageSize: ['1K', '2K'], count: [1, 2, 3, 4],
-      extras: [{ key: 'quality', label: 'Quality', values: ['auto', 'low', 'medium'] }] }, // 텍스트 전용 — edits(멀티파트)는 실측 후
+      extras: [{ key: 'quality', label: 'Quality', values: ['auto', 'low', 'medium'] }] },
+    imageSlots: [{ key: 'reference', label: 'Image Reference', hint: 'Up to 5 images — /v1/images/edits.', multi: true }], // (10-13 실측) edits 는 JSON images:[{url}]
   },
   'soul-cinema': {
     id: 'soul-cinema', label: 'Higgsfield Soul Cinema', type: 'image',

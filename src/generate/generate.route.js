@@ -559,6 +559,7 @@ const postRootHandler = async (req, res, next) => {
                 { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
               ],
               ...(Object.keys(imageConfig).length ? { imageConfig } : {}),
+              ...(extras.thinking_level ? { thinkingConfig: { thinkingLevel: extras.thinking_level } } : {}), // (10-13) Nano Banana 2.1 — registry extras
             },
           });
 
@@ -585,7 +586,7 @@ const postRootHandler = async (req, res, next) => {
           const out = await prov.generate({
             prompt: finalPromptForImage, width: w, height: h, referenceImageUrls: refUrls,
             // registry 가 정한 엔드포인트·입력 모양 — 어댑터(fal·seedream·xai·higgsfield)가 읽는다. 과금은 위 model(costKey) 그대로.
-            model: toolDef.model, editModel: toolDef.editModel, sizing: toolDef.sizing,
+            model: toolDef.model, editModel: toolDef.editModel, editSingle: !!toolDef.editSingle, sizing: toolDef.sizing,
             aspectRatio: aspectRatio || '1:1', imageSize, negativePrompt, negative: !!(toolDef.controls && toolDef.controls.negative),
             extras,
           });

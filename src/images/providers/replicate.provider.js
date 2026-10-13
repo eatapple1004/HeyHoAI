@@ -29,6 +29,7 @@ const replicateProvider = {
           ...(req.seed != null && { seed: req.seed }),
           num_outputs: 1,
           output_format: 'png',
+          ...(req.referenceImageUrls && req.referenceImageUrls[0] && { image_prompt: req.referenceImageUrls[0] }), // (10-13) FLUX Redux — 첫 레퍼런스 한 장
           ...(req.extras && typeof req.extras === 'object' ? req.extras : {}), // registry extras(safety_tolerance · prompt_upsampling · seed)
         },
       }),

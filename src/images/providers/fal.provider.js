@@ -3,7 +3,7 @@
  *
  * (2026-10-13) FLUX dev 전용이던 것을 registry 가 주는 model/editModel/sizing 으로 돌아가게 넓혔다.
  *   · req.model      = fal 엔드포인트 경로(없으면 FAL_MODEL, 기본 fal-ai/flux/dev)
- *   · req.editModel  = 레퍼런스가 있을 때 쓰는 편집 엔드포인트(image_urls). 없으면 텍스트 전용으로 레퍼런스를 무시한다.
+ *   · req.editModel  = 레퍼런스가 있을 때 쓰는 편집 엔드포인트(image_urls · editSingle 이면 image_url 한 장). 없으면 텍스트 전용으로 레퍼런스를 무시한다.
  *   · req.sizing     = 'aspect' 면 aspect_ratio + resolution('1k'|'2k'|'4k') 스키마(FLUX 3), 아니면 image_size:{width,height}(FLUX·Recraft·Z-Image)
  *   · req.negative   = 스키마에 negative_prompt 가 있을 때만 true(registry controls.negative) — 없는 필드를 보내면 422
  * 큐 규약은 submit 이 돌려주는 status_url/response_url 을 그대로 따라간다(seedream.provider 와 동일 — 경로 규칙이 바뀌어도 안 깨진다).
@@ -79,7 +79,7 @@ const falProvider = {
       num_images: 1,
       ...(req.seed != null && { seed: req.seed }),
       ...(req.negative && req.negativePrompt && { negative_prompt: req.negativePrompt }),
-      ...(useEdit && { image_urls: refs }),
+      ...(useEdit && (req.editSingle ? { image_url: refs[0] } : { image_urls: refs })), // editSingle = Z-Image i2i 처럼 한 장만 받는 스키마
     };
     if (req.extras && typeof req.extras === 'object') Object.assign(input, req.extras); // registry controls.extras(라우트 화이트리스트) — seed·guidance·steps·safety 등
     if (req.sizing === 'aspect') {
