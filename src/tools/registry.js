@@ -238,7 +238,9 @@ const TOOLS = {
     provider: 'fal', model: 'bytedance/seedance-2.5/image-to-video',
     falInput: { image: 'image_url', duration: 'str', aspect: true, resolution: true, audio: 'generate_audio', endImage: 'end_image_url' },
     costKey: null, enabled: true,
-    controls: { duration: [5, 8, 10, 15], aspectRatio: ['9:16', '16:9', '1:1'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 4~30 중 노출만 4종
+    // (2026-10-13) 사용자: "툴이 주는 옵션은 다 연다" → duration 칩은 빠른 선택, durationRange 가 실제 허용폭(fal 검증 실측). extras = 엔진 고유 옵션(어댑터가 그대로 전달).
+    controls: { duration: [5, 8, 10, 15], durationRange: { min: 4, max: 30 }, aspectRatio: ['9:16', '16:9', '1:1'], resolution: ['480p', '720p', '1080p'], audio: { type: 'toggle' },
+      extras: [{ key: 'bitrate_mode', label: 'Bitrate', values: ['standard', 'high'] }, { key: 'draft', label: 'Draft', hint: 'Cheap 480p preview', type: 'toggle' }] },
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }],
   },
   'wan-3': {
@@ -246,7 +248,8 @@ const TOOLS = {
     provider: 'fal', model: 'alibaba/wan-3.0/image-to-video',
     falInput: { image: 'start_image_url', duration: 'int', aspect: true, resolution: true, audio: 'audio', endImage: 'end_image_url' },
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 ≤30
+    controls: { duration: [5, 10, 15], durationRange: { min: 2, max: 30 }, aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4'], resolution: ['480p', '720p', '1080p'], audio: { type: 'toggle' },
+      extras: [{ key: 'enable_prompt_expansion', label: 'Prompt expansion', hint: 'Engine rewrites the prompt', type: 'toggle', default: true }] }, // 길이 ≤30(하한 미확인 → 2)
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }],
   },
   'hailuo-2.3': {
@@ -262,7 +265,7 @@ const TOOLS = {
     provider: 'fal', model: 'minimax/h3/image-to-video',
     falInput: { image: 'image_url', duration: 'int', resolution: true },
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], resolution: ['768P', '2K'] }, // 480P·4K 도 받지만 노출 안 함(4K 는 원가 미확인)
+    controls: { duration: [5, 10, 15], durationRange: { min: 1, max: 15 }, resolution: ['480P', '768P', '2K', '4K'] }, // 길이 ≤15
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'grok-video': {
@@ -270,7 +273,7 @@ const TOOLS = {
     provider: 'fal', model: 'xai/grok-imagine-video/image-to-video',
     falInput: { image: 'image_url', duration: 'int', aspect: true, resolution: true },
     costKey: null, enabled: true,
-    controls: { duration: [6, 10, 15], aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3'], resolution: ['480p', '720p'] },
+    controls: { duration: [6, 10, 15], durationRange: { min: 1, max: 15 }, aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3', '3:2', '2:3'], resolution: ['480p', '720p'] }, // 길이 ≤15
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'happyhorse': {
@@ -278,7 +281,7 @@ const TOOLS = {
     provider: 'fal', model: 'alibaba/happy-horse/v1.1/image-to-video',
     falInput: { image: 'image_url', duration: 'int', resolution: true }, // 비율 필드 없음(원본 비율 유지)
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], resolution: ['720p', '1080p'] },
+    controls: { duration: [5, 10, 15], durationRange: { min: 3, max: 15 }, resolution: ['720p', '1080p'] }, // 길이 3~15
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'flux-3-video': {
@@ -286,7 +289,7 @@ const TOOLS = {
     provider: 'fal', model: 'blackforestlabs/flux-3/image-to-video',
     falInput: { image: 'image_url', duration: 'int', aspect: true, resolution: true, audio: 'generate_audio' },
     costKey: null, enabled: true,
-    controls: { duration: [5, 10, 15], aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 5~20
+    controls: { duration: [5, 10, 15], durationRange: { min: 5, max: 20 }, aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3', '21:9'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 5~20
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'gemini-omni': {

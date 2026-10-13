@@ -26,7 +26,7 @@ const falVideoProvider = {
   isConfigured() { return !!env.FAL_API_KEY; },
 
   /**
-   * @param {import('./types').VideoGenerationRequest & { model: string, falInput: object, endImageUrl?: string, resolution?: string, audio?: boolean }} req
+   * @param {import('./types').VideoGenerationRequest & { model: string, falInput: object, endImageUrl?: string, resolution?: string, audio?: boolean, extras?: object }} req
    */
   async submit(req) {
     if (!env.FAL_API_KEY) {
@@ -46,6 +46,7 @@ const falVideoProvider = {
     if (f.audio) body[f.audio] = req.audio === true;
     if (f.endImage && req.endImageUrl) body[f.endImage] = req.endImageUrl;
     if (req.seed != null) body.seed = req.seed;
+    if (req.extras && typeof req.extras === 'object') Object.assign(body, req.extras); // registry controls.extras 키만(라우트가 화이트리스트) — 비트레이트·드래프트 등 엔진 고유 옵션
 
     const res = await fetch(`${FAL_QUEUE}/${req.model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     if (!res.ok) {

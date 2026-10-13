@@ -73,10 +73,10 @@ async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
 async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null }) {
+  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null, extras = null }) {
   if (engine && engine !== 'kling') {
     return submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool });
+      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras });
   }
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
@@ -152,7 +152,7 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
  *   비용은 엔진별 실원가 확정 전이라 videoCost(길이) 공용(placeholder).
  */
 async function submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null }) {
+  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null, extras = null }) {
   const provider = videoProviders[engine];
   if (!provider) { const e = new Error(`Unknown video engine: ${engine}`); e.statusCode = 400; throw e; }
   if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
@@ -168,8 +168,10 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   const vis = visibility === 'private' ? 'private' : 'public';
   const wantAudio = audio === true || audio === 'true';
   // 길이 상한 = registry controls.duration(툴별 실측값) > 어댑터 maxDurationSec 순
-  const toolMax = tool && tool.controls && Array.isArray(tool.controls.duration) && tool.controls.duration.length ? Math.max(...tool.controls.duration) : null;
-  const dur = Math.min(toolMax || provider.maxDurationSec || 10, Math.max(1, parseInt(duration, 10) || 5));
+  const tc = (tool && tool.controls) || {};
+  const toolMax = tc.durationRange ? tc.durationRange.max : (Array.isArray(tc.duration) && tc.duration.length ? Math.max(...tc.duration) : null);
+  const toolMin = tc.durationRange ? tc.durationRange.min : 1;
+  const dur = Math.min(toolMax || provider.maxDurationSec || 10, Math.max(toolMin, parseInt(duration, 10) || 5));
   const aspect = aspectRatio || '9:16';
   const [w, h] = aspect === '16:9' ? [1280, 720] : aspect === '1:1' ? [1024, 1024] : [720, 1280];
 
@@ -203,6 +205,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
       durationSec: dur, aspectRatio: aspect, width: w, height: h, resolution,
       style: 'cinematic', audio: wantAudio,
       model: tool ? tool.model : undefined, falInput: tool ? tool.falInput : undefined, // 범용 fal 어댑터용(registry 가 정본)
+      extras: extras || undefined, // registry controls.extras 로 화이트리스트된 엔진 고유 옵션
     });
     if (!sub || !sub.providerJobId) throw Object.assign(new Error(`${engine} submit returned no job id`), { statusCode: 503 });
     const ins = await query(

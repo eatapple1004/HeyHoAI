@@ -974,6 +974,23 @@ const postUpscaleHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/** 영상 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입으로 통과시킨다. 나머지는 버린다. */
+function pickExtras(tool, raw) {
+  const defs = tool && tool.controls && Array.isArray(tool.controls.extras) ? tool.controls.extras : [];
+  if (!defs.length || !raw) return null;
+  let obj = raw;
+  if (typeof raw === 'string') { try { obj = JSON.parse(raw); } catch { return null; } }
+  if (!obj || typeof obj !== 'object') return null;
+  const out = {};
+  for (const d of defs) {
+    if (!(d.key in obj)) continue;
+    const v = obj[d.key];
+    if (d.type === 'toggle') out[d.key] = v === true || v === 'true';
+    else if (Array.isArray(d.values) && d.values.includes(v)) out[d.key] = v;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 const patchResultsVisibilityHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
@@ -1220,6 +1237,7 @@ const postVideoAsyncHandler = async (req, res, next) => {
     const result = await videoJobService.submit({
       user: req.user, prompt, duration, mode, aspectRatio, audio,
       engine: videoTool ? videoTool.provider : 'kling', resolution: req.body.resolution, tool: videoTool,
+      extras: pickExtras(videoTool, req.body.extras), // 엔진 고유 옵션 — registry controls.extras 에 적힌 키만 통과
       visibility, templateId: req.body.templateId || null,
       templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,
