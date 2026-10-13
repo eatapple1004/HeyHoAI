@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>월간 운영 · Doppia Admin</title>
+<style>
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto}
+a{color:var(--accent2)}
+.back{font-size:.82rem;font-weight:600;color:var(--dim);text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px;display:inline-block;margin-bottom:16px}
+.back:hover{color:var(--text);border-color:var(--accent2)}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+h2{font-size:1.05rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h2 .hint{font-weight:400;font-size:.8rem;color:var(--faint)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:.9rem;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+textarea{width:100%;resize:vertical;line-height:1.6}
+button{font-family:inherit;font-size:.86rem;font-weight:600;padding:9px 15px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent2)}
+button.primary{background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent;color:#fff}
+button.danger{color:#fca5a5}
+button.sm{padding:5px 10px;font-size:.76rem}
+button:disabled{opacity:.5;cursor:default}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.b-on{background:rgba(74,222,128,.16);color:var(--green)}
+.b-off{background:rgba(154,154,178,.16);color:var(--dim)}
+.b-wait{background:rgba(255,206,122,.16);color:var(--gold)}
+.b-done{background:rgba(106,64,224,.22);color:var(--accent2)}
+.acct{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.acct:last-child{border-bottom:none}
+.acct img{width:38px;height:38px;border-radius:50%;object-fit:cover;background:var(--panel2)}
+.tabs{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.tabs button{background:none;border:none;color:var(--dim);border-radius:0}
+.tabs button.on{background:var(--accent);color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.tile{position:relative;border:2px solid transparent;border-radius:12px;overflow:hidden;background:var(--panel2);cursor:pointer;aspect-ratio:4/5}
+.tile img,.tile video{width:100%;height:100%;object-fit:cover;display:block}
+.tile.sel{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(163,148,238,.25)}
+.tile .tag{position:absolute;top:6px;left:6px;background:rgba(20,16,34,.82);color:#fff;padding:2px 7px;border-radius:20px;font-size:.66rem;font-weight:700}
+.tile .tag.base{background:rgba(255,206,122,.9);color:#2a1d05}
+.tile .acts{position:absolute;bottom:0;left:0;right:0;display:flex;gap:4px;padding:6px;background:linear-gradient(transparent,rgba(10,10,18,.9));opacity:0;transition:opacity .15s}
+.tile:hover .acts{opacity:1}
+.tile .acts button{flex:1;padding:4px 0;font-size:.68rem;border-radius:7px}
+.builder{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;background:var(--panel2)}
+.prog{color:var(--faint);font-size:.78rem}
+.tile.pick{cursor:pointer}
+.tile.pick.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,206,122,.22)}
+.tile .num{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#2a1d05;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:.78rem;cursor:pointer;background:var(--panel)}
+.chip.on{border-color:var(--accent2);background:rgba(106,64,224,.18)}
+.chip input{width:auto}
+.pack{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+.pack .h{display:flex;gap:10px;align-items:center;margin-bottom:10px;font-size:.85rem;color:var(--dim);flex-wrap:wrap}
+.pchoice{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel2);cursor:pointer;display:flex;flex-direction:column}
+.pchoice:hover{border-color:var(--accent2)}
+.pchoice img,.pchoice .noimg{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:var(--bg)}
+.pchoice .noimg{display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:.72rem}
+.pchoice .meta{padding:8px 10px;font-size:.72rem;color:var(--faint)}
+.pchoice .meta b{display:block;font-size:.8rem;color:var(--text);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pchoice.on{opacity:.5;cursor:default}
+.pchoice .badge{position:absolute;top:6px;left:6px}
+.compose{display:grid;grid-template-columns:190px 1fr;gap:18px}
+.slots{display:flex;flex-direction:column;gap:10px}
+.slot{border:1px dashed var(--border);border-radius:12px;padding:10px;text-align:center;font-size:.76rem;color:var(--faint)}
+.slot img,.slot video{width:100%;border-radius:8px;display:block;margin-bottom:6px}
+.slot .lbl{font-weight:700;color:var(--dim);margin-bottom:6px;font-size:.75rem}
+.slot .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:7px;margin-bottom:8px}
+.slot .pk{position:relative}
+.slot .pk img{aspect-ratio:4/5;object-fit:cover;margin:0}
+.slot .pk .ord{position:absolute;top:3px;left:3px;background:rgba(20,16,34,.85);color:#fff;border-radius:20px;font-size:.6rem;font-weight:800;padding:1px 5px}
+.slot .pk .x{position:absolute;top:-6px;right:-6px;width:19px;height:19px;padding:0;border-radius:50%;font-size:.72rem;line-height:1;background:var(--panel)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.78rem;color:var(--dim);margin-bottom:5px;font-weight:600}
+.qitem{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
+.qitem:last-child{border-bottom:none}
+.qitem .thumbs{display:flex;gap:6px;flex:none}
+.qitem .thumbs img,.qitem .thumbs video{width:56px;height:70px;object-fit:cover;border-radius:8px;background:var(--panel2)}
+.qitem .thumbs .more{width:36px;height:70px;border-radius:8px;background:var(--panel2);color:var(--dim);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.qitem .body{flex:1;min-width:0;font-size:.84rem}
+.qitem .cap{color:var(--dim);white-space:pre-wrap;margin-top:4px;max-height:4.6em;overflow:hidden}
+.qitem .when{color:var(--faint);font-size:.75rem;margin-top:4px}
+.empty{color:var(--faint);text-align:center;padding:34px 20px;font-size:.88rem}
+.msg{padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px;font-size:.9rem}
+.msg.show{display:block}
+.msg.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5}
+.msg.ok{background:rgba(74,222,128,.12);border:1px solid #2e5b3a;color:#86efac}
+@media(max-width:860px){body{padding:18px}.compose{grid-template-columns:1fr}}
+
+
+.layout{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start}
+.plans .pl{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--panel2)}
+.plans .pl:hover{border-color:var(--accent2)}
+.plans .pl.on{border-color:var(--accent2);background:rgba(106,64,224,.16)}
+.plans .pl b{font-size:.95rem}
+.plans .pl .c{font-size:.72rem;color:var(--faint)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.steps .st{flex:1;min-width:110px;text-align:center;padding:8px 6px;border-radius:10px;border:1px solid var(--border);font-size:.76rem;color:var(--faint);background:var(--panel2)}
+.steps .st.done{color:var(--accent2);border-color:rgba(163,148,238,.4)}
+.steps .st.cur{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent;font-weight:700}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar .sp{flex:1}
+.ready{font-size:.8rem;color:var(--dim)}
+.ready b{color:var(--text)}
+.fb{background:rgba(255,206,122,.1);border:1px solid rgba(255,206,122,.35);color:var(--gold);border-radius:10px;padding:10px 12px;font-size:.84rem;margin-bottom:12px;white-space:pre-wrap}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .dh{text-align:center;font-size:.72rem;color:var(--faint);padding:4px 0;font-weight:700}
+.cal .day{min-height:118px;border:1px solid var(--border);border-radius:10px;padding:6px;background:var(--panel2);display:flex;flex-direction:column;gap:5px}
+.cal .day.out{background:transparent;border-style:dashed;opacity:.35}
+.cal .day .dn{font-size:.72rem;color:var(--faint);font-weight:700}
+.it{border:1px solid var(--border);border-radius:9px;background:var(--panel);cursor:pointer;overflow:hidden;font-size:.72rem}
+.it:hover{border-color:var(--accent2)}
+.it .th{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:var(--bg)}
+.it .noth{width:100%;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:.66rem;padding:6px;text-align:center;background:var(--bg)}
+.it .mt{padding:5px 6px}
+.it .mt .tt{color:var(--text);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmt{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.62rem;font-weight:800;margin-bottom:3px}
+.fmt.image{background:rgba(74,222,128,.15);color:var(--green)}
+.fmt.carousel{background:rgba(163,148,238,.18);color:var(--accent2)}
+.fmt.reel{background:rgba(217,96,143,.18);color:var(--pink)}
+.okdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:4px;vertical-align:middle}
+.okdot.y{background:var(--green)}.okdot.n{background:var(--gold)}
+.drawer{position:fixed;inset:0;background:rgba(5,5,10,.6);display:none;z-index:50}
+.drawer.show{display:block}
+.drawer .pane{position:absolute;right:0;top:0;bottom:0;width:min(560px,100%);background:var(--panel);border-left:1px solid var(--border);padding:20px;overflow:auto}
+.pane .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:300px;overflow:auto;padding:2px}
+.mtiles .mt2{position:relative;border:2px solid transparent;border-radius:9px;overflow:hidden;cursor:pointer;aspect-ratio:4/5;background:var(--panel2)}
+.mtiles .mt2 img,.mtiles .mt2 video{width:100%;height:100%;object-fit:cover;display:block}
+.mtiles .mt2.on{border-color:var(--accent2)}
+.mtiles .mt2 .n{position:absolute;top:4px;right:4px;background:var(--accent2);color:#14102a;border-radius:50%;width:18px;height:18px;font-size:.66rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.mtiles .mt2 .v{position:absolute;bottom:4px;left:4px;background:rgba(20,16,34,.85);color:#fff;font-size:.6rem;padding:1px 5px;border-radius:8px}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.cal{grid-template-columns:repeat(2,1fr)}.cal .dh,.cal .day.out{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" id="backLink" href="/admin-business">← 사업체 상세</a>
+  <h1><span class="dot"></span><span id="bizName">사업체</span> · 월간 운영</h1>
+  <div class="sub">한 달치 인스타 계획을 AI가 짜고 → Doppia 검수 → 고객 승인 → 날짜별로 자동 예약됩니다. 1차 채널: 인스타그램</div>
+  <div class="msg err" id="err"></div>
+  <div class="msg ok" id="ok"></div>
+
+  <div class="layout">
+    <!-- 왼쪽: 월별 플랜 -->
+    <div>
+      <div class="card plans">
+        <h2>월별 플랜</h2>
+        <div id="planList"><div class="empty">아직 플랜이 없습니다</div></div>
+      </div>
+      <div class="card">
+        <h2>새 달 플랜</h2>
+        <div class="field"><label>월</label><input type="month" id="nMonth" style="width:100%"></div>
+        <div class="field"><label>주당 게시 수</label>
+          <select id="nPpw" style="width:100%"><option value="2">주 2회 (화·금)</option><option value="3" selected>주 3회 (월·수·금)</option><option value="4">주 4회</option><option value="5">주 5회 (평일)</option><option value="7">매일</option></select></div>
+        <div class="field"><label>릴스 비율</label>
+          <select id="nReel" style="width:100%"><option value="0">0% (사진만)</option><option value="0.25">25%</option><option value="0.33" selected>33%</option><option value="0.5">50%</option></select></div>
+        <div class="field"><label>이번 달 강조할 것 (선택)</label><textarea id="nBrief" rows="3" placeholder="예: 가을 신메뉴 출시, 10월 말 할인 행사"></textarea></div>
+        <button class="primary" style="width:100%" onclick="createPlan()" id="createBtn">플랜 만들기</button>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 선택한 플랜 -->
+    <div>
+      <div class="card" id="planCard" style="display:none">
+        <div class="steps" id="steps"></div>
+        <div id="fbBox"></div>
+        <div class="toolbar">
+          <label class="ready" style="display:flex;gap:6px;align-items:center">계정 <select id="pAcct" onchange="saveSettings()"></select></label>
+          <label class="ready" style="display:flex;gap:6px;align-items:center">주당 <select id="pPpw" onchange="saveSettings()"><option value="1">1회</option><option value="2">2회</option><option value="3">3회</option><option value="4">4회</option><option value="5">5회</option><option value="6">6회</option><option value="7">7회</option></select></label>
+          <label class="ready" style="display:flex;gap:6px;align-items:center">릴스 <select id="pReel" onchange="saveSettings()"><option value="0">0%</option><option value="0.25">25%</option><option value="0.33">33%</option><option value="0.5">50%</option><option value="0.75">75%</option></select></label>
+          <span class="sp"></span>
+          <span class="ready" id="readySum"></span>
+        </div>
+        <div class="field"><label>이번 달 강조 · 방향</label><textarea id="pBrief" rows="2" onchange="saveSettings()"></textarea></div>
+        <div class="toolbar" id="actions"></div>
+        <div class="cal" id="cal"></div>
+      </div>
+      <div class="card" id="noPlan"><div class="empty">왼쪽에서 플랜을 고르거나 새 달 플랜을 만드세요.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 칸 편집 -->
+<div class="drawer" id="drawer" onclick="if(event.target===this)closeItem()">
+  <div class="pane">
+    <h2 id="dTitle">게시물 편집</h2>
+    <div class="grid2">
+      <div class="field"><label>게시 날짜·시간</label><input type="datetime-local" id="dWhen" style="width:100%"></div>
+      <div class="field"><label>형식</label><select id="dFmt" style="width:100%" onchange="renderPicker()"><option value="image">사진 1장</option><option value="carousel">캐러셀(여러 장)</option><option value="reel">릴스(영상)</option></select></div>
+    </div>
+    <div class="field"><label>주제</label><input id="dTheme" style="width:100%"></div>
+    <div class="field"><label>제작 지시 (무엇을·어떤 장면으로)</label><textarea id="dBrief" rows="3"></textarea></div>
+    <div class="field"><label>캡션</label><textarea id="dCaption" rows="4"></textarea></div>
+    <div class="field"><label>해시태그 (공백 구분, # 없이)</label><input id="dTags" style="width:100%"></div>
+    <div class="field"><label id="dPickLbl">콘텐츠 고르기</label><div class="mtiles" id="dPicker"></div>
+      <div class="prog" style="margin-top:6px">자동 생성은 다음 단계에서 붙습니다. 지금은 사업체에 올린 원본·생성물에서 고릅니다.</div></div>
+    <div class="field"><label>수정 메모 (고객·내부 의견)</label><textarea id="dFeedback" rows="2" placeholder="예: 이 컷은 밝게, 가격 빼고"></textarea></div>
+    <div class="row">
+      <button class="primary" onclick="saveItem()" id="dSave">저장</button>
+      <button onclick="closeItem()">닫기</button>
+      <span style="flex:1"></span>
+      <button class="danger" onclick="deleteItem()" id="dDel">이 칸 삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const BIZ_ID = location.pathname.split('/').filter(Boolean)[1];
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STEPS = [['draft', '초안'], ['doppia_approved', 'Doppia 검수'], ['sent', '고객 확인 중'], ['approved', '고객 승인'], ['scheduled', '예약 완료']];
+const FMT_KO = { image: '사진', carousel: '캐러셀', reel: '릴스' };
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+let plans = [], cur = null, editing = null, picked = [];
+
+function flash(kind, text) {
+  const el = $(kind === 'err' ? 'err' : 'ok');
+  el.textContent = text; el.classList.add('show');
+  if (kind !== 'err') setTimeout(() => el.classList.remove('show'), 3000);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function clearMsg() { $('err').classList.remove('show'); $('ok').classList.remove('show'); }
+async function api(url, opts = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (res.status === 403) throw new Error('관리자 권한이 필요합니다.');
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.success === false) throw new Error(body.error || body.message || `요청 실패 (${res.status})`);
+  return body;
+}
+const base = () => '/api/admin/business/' + BIZ_ID + '/plans';
+
+// KST 표시
+function kst(iso) { return new Date(new Date(iso).getTime() + 9 * 3600 * 1000); }
+function kstDate(iso) { return kst(iso).toISOString().slice(0, 10); }
+function kstLocalInput(iso) { return kst(iso).toISOString().slice(0, 16); }
+function fromLocalInput(v) { return v ? new Date(v + ':00+09:00').toISOString() : null; }
+
+async function loadPlans(selectId) {
+  const { data } = await api(base());
+  plans = data;
+  $('planList').innerHTML = plans.length ? plans.map((p) =>
+    '<div class="pl' + (cur && cur.plan.id === p.id ? ' on' : '') + '" onclick="openPlan(\'' + p.id + '\')">'
+    + '<div><b>' + esc(p.month) + '</b><div class="c">' + p.item_count + '개 · 주 ' + p.posts_per_week + '회</div></div>'
+    + '<span class="badge ' + badgeClass(p.status) + '">' + esc(stepName(p.status)) + '</span></div>').join('')
+    : '<div class="empty">아직 플랜이 없습니다</div>';
+  const target = selectId || (cur && cur.plan.id) || (plans[0] && plans[0].id);
+  if (target) await openPlan(target); else { $('planCard').style.display = 'none'; $('noPlan').style.display = ''; }
+}
+function stepName(s) { const f = STEPS.find((x) => x[0] === s); return f ? f[1] : s; }
+function badgeClass(s) { return s === 'scheduled' ? 'b-on' : s === 'approved' ? 'b-done' : s === 'draft' ? 'b-off' : 'b-wait'; }
+
+async function openPlan(planId) {
+  try {
+    const { data } = await api(base() + '/' + planId);
+    cur = data;
+    $('bizName').textContent = data.business.name;
+    document.querySelectorAll('.plans .pl').forEach((el) => el.classList.toggle('on', el.getAttribute('onclick').includes(planId)));
+    $('planCard').style.display = ''; $('noPlan').style.display = 'none';
+    renderPlan();
+  } catch (e) { flash('err', e.message); }
+}
+
+function readiness(it) {
+  const byId = new Map(cur.media.map((m) => [m.id, m]));
+  const ms = it.media_ids.map((id) => byId.get(id)).filter(Boolean);
+  const vids = ms.filter((m) => m.media_type === 'video').length, imgs = ms.length - vids;
+  if (!it.caption || !it.caption.trim()) return false;
+  if (it.format === 'reel') return vids > 0;
+  if (it.format === 'carousel') return imgs >= 2;
+  return imgs >= 1;
+}
+
+function renderPlan() {
+  const p = cur.plan, draft = p.status === 'draft';
+  const idx = STEPS.findIndex((s) => s[0] === p.status);
+  $('steps').innerHTML = STEPS.map((s, i) => '<div class="st ' + (i < idx ? 'done' : i === idx ? 'cur' : '') + '">' + (i < idx ? '✓ ' : '') + s[1] + '</div>').join('');
+  $('fbBox').innerHTML = p.customer_feedback ? '<div class="fb">💬 수정 요청 메모: ' + esc(p.customer_feedback) + '</div>' : '';
+  $('pAcct').innerHTML = cur.accounts.length ? cur.accounts.map((a) => '<option value="' + a.id + '"' + (a.id === p.account_id ? ' selected' : '') + '>@' + esc(a.username || a.account_id) + '</option>').join('') : '<option value="">연결된 계정 없음</option>';
+  $('pPpw').value = String(p.posts_per_week);
+  $('pReel').value = String(Number(p.reel_ratio));
+  if (![...$('pReel').options].some((o) => o.value === $('pReel').value)) $('pReel').value = '0.33';
+  $('pBrief').value = p.brief || '';
+  ['pAcct', 'pPpw', 'pReel', 'pBrief'].forEach((id) => { $(id).disabled = !draft; });
+
+  const n = cur.items.length, ok = cur.items.filter(readiness).length;
+  $('readySum').innerHTML = n ? '준비 <b>' + ok + '</b> / ' + n + '칸' : '';
+
+  const A = [];
+  if (draft) {
+    A.push('<button class="primary" onclick="aiDraft()" id="aiBtn">✨ AI로 한 달 초안 짜기</button>');
+    A.push('<button onclick="addItem()">+ 칸 추가</button>');
+    A.push('<span style="flex:1"></span><button class="primary" onclick="move(\'doppia_approve\')">✓ Doppia 검수 완료</button>');
+  } else if (p.status === 'doppia_approved') {
+    A.push('<button onclick="requestChanges()">↩ 초안으로 (수정)</button><span style="flex:1"></span>');
+    A.push('<button class="primary" onclick="move(\'send\')">📨 고객에게 보내기</button>');
+  } else if (p.status === 'sent') {
+    A.push('<button onclick="requestChanges(true)">💬 고객 수정 요청 받기</button><span style="flex:1"></span>');
+    A.push('<button class="primary" onclick="move(\'customer_approve\')">✓ 고객 승인 기록</button>');
+    A.push('<span class="prog" style="width:100%">고객 화면이 붙기 전까지는 고객 답변을 받아 여기서 대신 기록합니다.</span>');
+  } else if (p.status === 'approved') {
+    A.push('<button onclick="requestChanges()">↩ 초안으로 (수정)</button><span style="flex:1"></span>');
+    A.push('<button class="primary" onclick="schedule()" id="schBtn">📅 발행 큐에 일괄 예약</button>');
+  } else if (p.status === 'scheduled') {
+    A.push('<span class="ready">예약 완료 — 날짜마다 자동으로 게시됩니다. 진행 상황은 <a href="/admin-business/' + BIZ_ID + '">사업체 화면의 발행 큐</a>에서 봅니다.</span>');
+  }
+  if (p.status !== 'scheduled') A.push('<button class="sm danger" onclick="deletePlan()" style="margin-left:6px">플랜 삭제</button>');
+  $('actions').innerHTML = A.join('');
+  renderCal();
+}
+
+function renderCal() {
+  const [y, m] = cur.plan.month.split('-').map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const byDate = {};
+  cur.items.forEach((it) => { (byDate[kstDate(it.post_at)] = byDate[kstDate(it.post_at)] || []).push(it); });
+  const mediaById = new Map(cur.media.map((m2) => [m2.id, m2]));
+  let h = DOW.map((d) => '<div class="dh">' + d + '</div>').join('');
+  for (let i = 0; i < first; i++) h += '<div class="day out"></div>';
+  for (let d = 1; d <= days; d++) {
+    const date = cur.plan.month + '-' + String(d).padStart(2, '0');
+    const its = byDate[date] || [];
+    h += '<div class="day"><div class="dn">' + d + '</div>' + its.map((it) => {
+      const md = mediaById.get(it.media_ids[0]);
+      const th = md ? (md.media_type === 'video' ? '<video class="th" src="' + esc(md.url) + '" muted></video>' : '<img class="th" src="' + esc(md.url) + '" alt="" loading="lazy">')
+        : '<div class="noth">' + esc((it.brief || '콘텐츠 없음').slice(0, 60)) + '</div>';
+      return '<div class="it" onclick="openItem(\'' + it.id + '\')">' + th + '<div class="mt"><span class="fmt ' + it.format + '">' + FMT_KO[it.format] + '</span>'
+        + '<span class="okdot ' + (readiness(it) ? 'y' : 'n') + '" title="' + (readiness(it) ? '준비됨' : '콘텐츠·캡션 필요') + '"></span>'
+        + (it.queue_id ? ' <span class="prog">예약됨</span>' : '')
+        + '<div class="tt">' + esc(it.theme || '(주제 없음)') + '</div></div></div>';
+    }).join('') + '</div>';
+  }
+  $('cal').innerHTML = h;
+}
+
+// ── 플랜 ──
+async function createPlan() {
+  clearMsg();
+  const month = $('nMonth').value;
+  if (!month) return flash('err', '월을 고르세요.');
+  $('createBtn').disabled = true;
+  try {
+    const { data } = await api(base(), { method: 'POST', body: JSON.stringify({ month, postsPerWeek: Number($('nPpw').value), reelRatio: Number($('nReel').value), brief: $('nBrief').value.trim() || undefined }) });
+    $('nBrief').value = '';
+    flash('ok', month + ' 플랜을 만들었습니다. "AI로 한 달 초안 짜기"를 누르세요.');
+    await loadPlans(data.id);
+  } catch (e) { flash('err', e.message); }
+  finally { $('createBtn').disabled = false; }
+}
+async function saveSettings() {
+  try {
+    await api(base() + '/' + cur.plan.id, { method: 'PATCH', body: JSON.stringify({ accountId: $('pAcct').value || null, postsPerWeek: Number($('pPpw').value), reelRatio: Number($('pReel').value), brief: $('pBrief').value }) });
+    const { data } = await api(base() + '/' + cur.plan.id); cur = data; renderPlan();
+  } catch (e) { flash('err', e.message); }
+}
+async function aiDraft() {
+  clearMsg();
+  if (cur.items.length && !confirm('지금 초안을 지우고 AI가 한 달을 새로 짭니다. 계속할까요?')) return;
+  const b = $('aiBtn'); b.disabled = true; b.textContent = '짜는 중… (30초~1분)';
+  try {
+    const { data } = await api(base() + '/' + cur.plan.id + '/draft', { method: 'POST' });
+    cur = data; renderPlan(); loadPlans(cur.plan.id);
+    flash('ok', cur.items.length + '칸을 짰습니다. 칸을 눌러 콘텐츠를 붙이고 다듬으세요.');
+  } catch (e) { flash('err', e.message); b.disabled = false; b.textContent = '✨ AI로 한 달 초안 짜기'; }
+}
+async function move(action) {
+  clearMsg();
+  try { await api(base() + '/' + cur.plan.id + '/status', { method: 'POST', body: JSON.stringify({ action }) }); await loadPlans(cur.plan.id); flash('ok', '단계를 넘겼습니다.'); }
+  catch (e) { flash('err', e.message); }
+}
+async function requestChanges(fromCustomer) {
+  const fb = prompt(fromCustomer ? '고객이 요청한 수정 내용을 적어 주세요 (AI 재초안에도 반영됩니다)' : '수정 이유 (선택)', '');
+  if (fb === null) return;
+  try { await api(base() + '/' + cur.plan.id + '/status', { method: 'POST', body: JSON.stringify({ action: 'request_changes', feedback: fb.trim() || undefined }) }); await loadPlans(cur.plan.id); flash('ok', '초안 상태로 되돌렸습니다.'); }
+  catch (e) { flash('err', e.message); }
+}
+async function schedule() {
+  clearMsg();
+  if (!confirm('승인된 ' + cur.items.length + '칸을 날짜별로 발행 큐에 예약합니다. 계속할까요?')) return;
+  $('schBtn').disabled = true;
+  try {
+    const { data } = await api(base() + '/' + cur.plan.id + '/schedule', { method: 'POST' });
+    await loadPlans(cur.plan.id);
+    flash('ok', data.created + '건 예약했습니다.' + (data.skipped.length ? ' 건너뜀: ' + data.skipped.join(', ') : ''));
+  } catch (e) { flash('err', e.message); $('schBtn').disabled = false; }
+}
+async function deletePlan() {
+  if (!confirm(cur.plan.month + ' 플랜을 삭제할까요?')) return;
+  try { await api(base() + '/' + cur.plan.id, { method: 'DELETE' }); cur = null; await loadPlans(); flash('ok', '삭제했습니다.'); }
+  catch (e) { flash('err', e.message); }
+}
+
+// ── 칸 ──
+async function addItem() {
+  const [y, m] = cur.plan.month.split('-');
+  const day = prompt('며칠에 넣을까요? (1~31)', '15');
+  if (!day) return;
+  try {
+    const postAt = new Date(`${y}-${m}-${String(day).padStart(2, '0')}T19:00:00+09:00`).toISOString();
+    const { data } = await api(base() + '/' + cur.plan.id + '/items', { method: 'POST', body: JSON.stringify({ postAt, format: 'image' }) });
+    await openPlan(cur.plan.id); openItem(data.id);
+  } catch (e) { flash('err', e.message); }
+}
+function openItem(id) {
+  editing = cur.items.find((x) => x.id === id);
+  if (!editing) return;
+  const draft = cur.plan.status === 'draft';
+  picked = [...editing.media_ids];
+  const d = kst(editing.post_at);
+  $('dTitle').textContent = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '(' + DOW[d.getUTCDay()] + ') 게시물' + (draft ? '' : ' — 보기 전용');
+  $('dWhen').value = kstLocalInput(editing.post_at);
+  $('dFmt').value = editing.format;
+  $('dTheme').value = editing.theme || '';
+  $('dBrief').value = editing.brief || '';
+  $('dCaption').value = editing.caption || '';
+  $('dTags').value = (editing.hashtags || []).map((t) => t.replace(/^#/, '')).join(' ');
+  $('dFeedback').value = editing.feedback || '';
+  ['dWhen', 'dFmt', 'dTheme', 'dBrief', 'dCaption', 'dTags'].forEach((k) => { $(k).disabled = !draft; });
+  $('dDel').style.display = draft ? '' : 'none';
+  renderPicker();
+  $('drawer').classList.add('show');
+}
+function closeItem() { $('drawer').classList.remove('show'); editing = null; }
+function renderPicker() {
+  const fmt = $('dFmt').value, draft = cur.plan.status === 'draft';
+  const pool = cur.media.filter((m) => m.media_type !== 'audio' && (fmt === 'reel' ? m.media_type === 'video' : m.media_type !== 'video'));
+  $('dPickLbl').textContent = fmt === 'reel' ? '릴스 영상 고르기 (1개)' : fmt === 'carousel' ? '캐러셀 사진 고르기 (2~10장, 고른 순서 = 슬라이드 순서)' : '사진 고르기 (1장)';
+  $('dPicker').innerHTML = pool.length ? pool.map((m) => {
+    const i = picked.indexOf(m.id);
+    return '<div class="mt2' + (i >= 0 ? ' on' : '') + '" ' + (draft ? 'onclick="togglePick(\'' + m.id + '\')"' : '') + '>'
+      + (m.media_type === 'video' ? '<video src="' + esc(m.url) + '" muted></video><span class="v">영상</span>' : '<img src="' + esc(m.url) + '" alt="" loading="lazy">')
+      + (i >= 0 ? '<span class="n">' + (i + 1) + '</span>' : '') + '</div>';
+  }).join('') : '<div class="prog">고를 수 있는 ' + (fmt === 'reel' ? '영상' : '사진') + '이 없습니다 — 사업체 화면에서 먼저 올리세요.</div>';
+}
+function togglePick(id) {
+  const fmt = $('dFmt').value, max = fmt === 'carousel' ? 10 : 1;
+  const i = picked.indexOf(id);
+  if (i >= 0) picked.splice(i, 1);
+  else if (max === 1) picked = [id];
+  else if (picked.length < max) picked.push(id);
+  renderPicker();
+}
+async function saveItem() {
+  clearMsg();
+  const draft = cur.plan.status === 'draft';
+  const body = draft ? {
+    postAt: fromLocalInput($('dWhen').value), format: $('dFmt').value, theme: $('dTheme').value.trim(), brief: $('dBrief').value.trim(),
+    caption: $('dCaption').value.trim(), hashtags: $('dTags').value.trim(), mediaIds: picked, feedback: $('dFeedback').value.trim(),
+  } : { feedback: $('dFeedback').value.trim() };
+  $('dSave').disabled = true;
+  try {
+    await api(base() + '/' + cur.plan.id + '/items/' + editing.id, { method: 'PATCH', body: JSON.stringify(body) });
+    closeItem(); await openPlan(cur.plan.id); flash('ok', '저장했습니다.');
+  } catch (e) { flash('err', e.message); }
+  finally { $('dSave').disabled = false; }
+}
+async function deleteItem() {
+  if (!confirm('이 칸을 삭제할까요?')) return;
+  try { await api(base() + '/' + cur.plan.id + '/items/' + editing.id, { method: 'DELETE' }); closeItem(); await openPlan(cur.plan.id); }
+  catch (e) { flash('err', e.message); }
+}
+
+// 시작
+(function init() {
+  $('backLink').href = '/admin-business/' + BIZ_ID;
+  const now = new Date(Date.now() + 9 * 3600 * 1000);
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  $('nMonth').value = next.toISOString().slice(0, 7);
+  api('/api/admin/business/' + BIZ_ID).then((d) => { $('bizName').textContent = (d.business || {}).name || '사업체'; }).catch(() => {});
+  loadPlans().catch((e) => flash('err', e.message));
+})();
+</script>
+<script src="/js/admin-nav.js?v=2" defer></script>
+</body>
+</html>

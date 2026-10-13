@@ -472,6 +472,53 @@ async function migrate() {
   //   이제 아무것도 못 올리면 status='failed' + 여기 사유를 남긴다. 화면이 그대로 보여준다.
   await pool.query(`ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS error TEXT;`);
 
+  // ─── 월간 운영 플랜(2026-10-13) ───
+  //   한 달치 인스타 게시 계획을 자동으로 짜고 → Doppia 검수 → 고객 승인 → 발행 큐로 일괄 예약한다.
+  //   사람 손은 두 번의 컨펌뿐(사용자 결정). 1차 채널 = 인스타만.
+  //   status: draft(초안·수정 중) → doppia_approved(내부 검수 끝) → sent(고객 확인 대기)
+  //           → approved(고객 승인) → scheduled(post_queue 등록 완료). 수정 요청 시 draft로 되돌린다.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS business_month_plans (
+        id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        business_id          UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        account_id           UUID REFERENCES social_accounts(id) ON DELETE SET NULL,
+        month                CHAR(7) NOT NULL,
+        posts_per_week       INTEGER NOT NULL DEFAULT 3,
+        reel_ratio           NUMERIC(3,2) NOT NULL DEFAULT 0.33,
+        brief                TEXT,
+        status               VARCHAR(20) NOT NULL DEFAULT 'draft',
+        customer_feedback    TEXT,
+        doppia_approved_at   TIMESTAMPTZ,
+        doppia_approved_by   UUID,
+        sent_at              TIMESTAMPTZ,
+        customer_approved_at TIMESTAMPTZ,
+        scheduled_at         TIMESTAMPTZ,
+        created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (business_id, month)
+    );
+    CREATE INDEX IF NOT EXISTS idx_month_plans_business ON business_month_plans(business_id);
+
+    CREATE TABLE IF NOT EXISTS business_plan_items (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        plan_id     UUID NOT NULL REFERENCES business_month_plans(id) ON DELETE CASCADE,
+        post_at     TIMESTAMPTZ NOT NULL,
+        format      VARCHAR(10) NOT NULL DEFAULT 'image',
+        theme       VARCHAR(200),
+        brief       TEXT,
+        caption     TEXT,
+        hashtags    TEXT[] NOT NULL DEFAULT '{}',
+        media_ids   UUID[] NOT NULL DEFAULT '{}',
+        gen_status  VARCHAR(12) NOT NULL DEFAULT 'planned',
+        gen_error   TEXT,
+        feedback    TEXT,
+        queue_id    UUID REFERENCES post_queue(id) ON DELETE SET NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_plan_items_plan ON business_plan_items(plan_id, post_at);
+  `);
+
   // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.
   //   ⚠️ social_accounts.metadata(JSONB)에 넣지 않는다 — 그 컬럼은 계정 목록 API가 통째로
   //     내려주므로 토큰이 관리자 화면 응답에 섞여 나간다. 별도 테이블로 두고 조회 API가

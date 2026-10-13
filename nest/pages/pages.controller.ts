@@ -168,6 +168,11 @@ export class PagesController {
   @Get('admin-business/:id')
   adminBusinessDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
 
+  /** 월간 운영 플랜 — 한 달치 인스타 계획(AI 초안 → Doppia 검수 → 고객 승인 → 일괄 예약) */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id/plan')
+  adminBusinessPlan(@Res() res: any) { return res.sendFile(page('admin-business-plan.html')); }
+
   /** 결제(환경 선택) — 조회 전용. 취소·환불은 /admin-refunds. */
   @UseGuards(AdminPageGuard)
   @Get('admin-payments')
