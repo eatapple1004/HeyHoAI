@@ -67,22 +67,33 @@
       ['▦', 'Look set', 'One photo → a set in one aesthetic', 'soon'],
       ['👤', 'Virtual models', '80 licensed models', 'soon'],
       ['⇄', 'Face Swap', 'Our models + your face only', 'soon'],
-      ['✦', 'Doppia Lens', 'Model shots · product shots', 'soon']
+      ['✦', 'Doppia Lens', 'Model shots · product shots', 'soon'],
+      // (2026-10-13) 편집기 — 힉스필드 Layers 에 해당. 캔버스 하나에 도구 9개(레이어 분리·글자 편집·확장/자르기·배경 제거·색보정·피부 보정·릴라이트·앵글·업스케일). 우리도 만든다 → soon.
+      ['▣', 'Editor', 'Layers · remove background · expand & crop · color grading · edit text · angles', 'soon']
     ],
+    // (2026-10-13) 영상 기능 카탈로그 = 힉스필드 Video 메뉴 기준으로 전부 적고, 배선만으로 되는 것만 live. 뺀 것: Faceless Studio·Explainer(우리 고객용 아님) · Click to Ad(=옛 Ad Studio, 폐기) · Canvas·Mixed Media(워크플로 도구).
     video: [
       ['▶', 'Image to video', 'Start from any image result', 'live', '/video'],
       ['♪', 'Sound', 'Native ambient sound (Veo · Kling)', 'live', '/video'],
-      ['✦', 'Product reveal', 'Motion presets', 'soon'],
-      ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
+      ['✦', 'Product reveal', 'Motion presets for product shots', 'soon'],
+      ['🎬', 'Cinema Studio', 'Cinematic video with an AI director', 'soon'],
+      ['◇', '3D Jutsu', 'Build a 3D scene, turn it into video (previs)', 'soon'],
+      ['▭', 'Shorts Studio', 'Footage → ready-made shorts', 'soon'],
       ['✎', 'Edit video', 'Scenes · shots · elements', 'soon'],
-      ['▲', 'Video upscale', 'Enhance quality', 'soon'],
-      ['🎙', 'Lipsync', 'Own voice only', 'soon']
+      ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
+      ['◐', 'Change color palette', 'Tones · mood', 'soon'],
+      ['☀', 'Relight video', 'Light position · color · brightness', 'soon'],
+      ['🎙', 'Lipsync', 'Own voice only', 'soon'],
+      ['✍', 'Draw to video', 'Sketch turns into a shot', 'soon'],
+      ['✍', 'Draw to edit', 'Sketch on frames to guide edits', 'soon'],
+      ['▲', 'Video upscale', 'Topaz Video', 'soon']
     ]
   };
   var SOON_MODELS = {
     // 카탈로그(힉스필드 Image 메뉴 기준). 라벨이 /api/generate/tools 의 라벨과 같으면 live 로 올라가고 여기선 빠진다 → 키가 없는 서버에선 자동으로 soon.
     image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz Upscale']],
-    video: [['K', 'Kling Motion Control'], ['K', 'Kling Omni Edit'], ['W', 'Wan'], ['X', 'Grok Imagine'], ['F', 'FLUX.3 Video'], ['G', 'Gemini Omni'], ['▲', 'Topaz Video']]
+    // 영상 모델 카탈로그(힉스필드 Video 메뉴 기준). Seedance 2.5·Kling 3.0·Wan 3.0·HappyHorse·Hailuo 2.3·Genjutsu·DOP 는 힉스필드 API 한 키로도 붙는다(open.higgsfield.ai 모델 목록 85개, 10-13 확인).
+    video: [['S', 'Seedance 2.5'], ['K', 'Kling 3.0'], ['K', 'Kling Motion Control'], ['K', 'Kling 3.0 Omni Edit'], ['H', 'Higgsfield Genjutsu'], ['H', 'Higgsfield DOP'], ['G', 'Gemini Omni Flash'], ['F', 'FLUX.3 Video'], ['M', 'MiniMax H3'], ['M', 'MiniMax Hailuo 2.3'], ['W', 'Wan 3.0'], ['X', 'Grok Imagine 1.5'], ['X', 'Grok Imagine 1.5 Lite'], ['A', 'HappyHorse'], ['▲', 'Topaz Video']]
   };
   function item(ic, name, desc, st, href) {
     var live = st === 'live';
