@@ -51,12 +51,12 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
-const ICON={kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S'};
+const ICON={'seedance-2.5':'S','wan-3':'W','hailuo-2.3':'M','minimax-h3':'M','grok-video':'X',happyhorse:'A','flux-3-video':'F','gemini-omni':'G',kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S',fal:'F'}; // id 우선, 없으면 provider (topnav.js ICON 과 같은 표)
 const NOTE={kling:'Image → video · text → video · video-to-audio',veo:'Native sound. 1080p forces 8s.',runway:'Needs a start frame.',minimax:'Needs a start frame · 6s',sora:'Text or image → video',seedance:'4–15s · 720p/1080p'};
 const st={tools:[],tool:null,dur:null,ratio:null,res:null,audio:false,priv:false,sf:null,ef:null,feed:'mine'};
 function tool(){return st.tools.find(t=>t.id===st.tool)||st.tools[0];}
 function renderSel(){const t=tool();if(!t){$('#msel').innerHTML='<span class="ic">!</span><span><b>No video engine available</b><small>No API key on this server</small></span>';return}
-  $('#msel').innerHTML=`<span class="ic">${ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perDuration[st.dur]||'—'}/${st.dur}s</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(NOTE[x.provider]||x.provider)}</small></span><span class="pc">◈${Object.values(x.pricing.perDuration||{})[0]||'—'}</span></div>`).join('')}</div>`;}
+  $('#msel').innerHTML=`<span class="ic">${ICON[t.id]||ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perDuration[st.dur]||'—'}/${st.dur}s</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(NOTE[x.provider]||x.provider)}</small></span><span class="pc">◈${Object.values(x.pricing.perDuration||{})[0]||'—'}</span></div>`).join('')}</div>`;}
 $('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;applyTool();$('#msel').classList.remove('open');e.stopPropagation();return}$('#msel').classList.toggle('open')});
 document.addEventListener('click',e=>{if(!$('#msel').contains(e.target))$('#msel').classList.remove('open')});
 function chips(sel,arr,cur,fmt){$(sel).innerHTML=arr.map(v=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${v}">${fmt?fmt(v):v}</button>`).join('');}
