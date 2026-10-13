@@ -71,7 +71,7 @@
       // (2026-10-13) 편집기 — 힉스필드 Layers 에 해당. 캔버스 하나에 도구 9개(레이어 분리·글자 편집·확장/자르기·배경 제거·색보정·피부 보정·릴라이트·앵글·업스케일). 우리도 만든다 → soon.
       ['▣', 'Editor', 'Layers · remove background · expand & crop · color grading · edit text · angles', 'soon']
     ],
-    // (2026-10-13) 영상 기능 카탈로그 = 힉스필드 Video 메뉴 기준으로 전부 적고, 배선만으로 되는 것만 live. 뺀 것: Faceless Studio·Explainer(우리 고객용 아님) · Click to Ad(=옛 Ad Studio, 폐기) · Canvas·Mixed Media(워크플로 도구).
+    // (2026-10-13) 영상 기능 카탈로그 = 힉스필드 Video 메뉴 전부(soon). 배선만으로 되는 것만 live. 뺀 것: Click to Ad(=옛 Ad Studio, 폐기) 하나.
     video: [
       ['▶', 'Image to video', 'Start from any image result', 'live', '/video'],
       ['♪', 'Sound', 'Native ambient sound (Veo · Kling)', 'live', '/video'],
@@ -86,7 +86,12 @@
       ['🎙', 'Lipsync', 'Own voice only', 'soon'],
       ['✍', 'Draw to video', 'Sketch turns into a shot', 'soon'],
       ['✍', 'Draw to edit', 'Sketch on frames to guide edits', 'soon'],
-      ['▲', 'Video upscale', 'Topaz Video', 'soon']
+      ['▲', 'Video upscale', 'Topaz Video', 'soon'],
+      // (2026-10-13) 사용자 원칙 "일단 다 넣는다" — 처음에 뺐던 4개도 soon 으로. Click to Ad 만 제외(=폐기한 Ad Studio).
+      ['▣', 'Faceless Studio', 'A faceless channel in one click', 'soon'],
+      ['▤', 'Explainer', 'Any topic → explainer video', 'soon'],
+      ['⌗', 'Canvas', 'Visual ideation · repeatable workflows', 'soon'],
+      ['⧉', 'Mixed media', 'Mixed media projects', 'soon']
     ]
   };
   var SOON_MODELS = {
