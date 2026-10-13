@@ -236,7 +236,8 @@ const TOOLS = {
   'sora': {
     id: 'sora', label: 'Sora', type: 'video',
     provider: 'sora', model: 'sora-2',
-    costKey: null, enabled: true,
+    // (2026-10-13) enabled:false — OpenAI 문서: "Sora 2 models and Videos API were shut down on September 24, 2026". 어댑터·엔트리는 보존(사용자 지시로 숨김만).
+    costKey: null, enabled: false,
     controls: { duration: [4, 8, 12], aspectRatio: ['9:16', '16:9', '1:1'] },
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },

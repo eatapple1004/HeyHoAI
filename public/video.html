@@ -31,7 +31,7 @@
       <div id="efWrap" hidden><div class="lbl">End frame <i>· optional</i></div><div class="row"><img id="ef" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--surface2)"><button class="btn2" id="efAdd" type="button">Upload</button><button class="btn2" id="efClear" type="button">Clear</button></div><input type="file" id="efFile" accept="image/*" hidden></div>
       <div class="lbl">Prompt <i id="plen">0</i></div>
       <textarea class="ff" id="prompt" maxlength="2000" placeholder="Slow push-in, droplets catch the light, label stays readable."></textarea>
-      <!-- (2026-10-13) 길이 = 드래그 슬라이더로 통일(힉스필드와 같은 모양). 범위 엔진은 1초 단위, 고정값 엔진(Kling 5/10 · Veo 4/6/8 …)은 허용값에만 멈춘다. Sora 만 칩(4/8/12 고정, 사용자 결정). -->
+      <!-- (2026-10-13) 길이 = 드래그 슬라이더로 통일(힉스필드와 같은 모양). 범위 엔진은 1초 단위, 고정값 엔진(Kling 5/10 · Veo 4/6/8 …)은 허용값에만 멈춘다. -->
       <div class="lbl">Duration <i id="durHint"></i></div>
       <div class="durbar" id="durBar"><input type="range" id="durRange" aria-label="Duration"><b id="durVal">5s</b></div>
       <div class="chips" id="durs" hidden></div>
@@ -68,8 +68,8 @@ function chips(sel,arr,cur,fmt){$(sel).innerHTML=arr.map(v=>`<button type="butto
 function applyTool(){const t=tool();if(!t)return;const c=t.controls||{};
   const durs=c.duration||[5];const dr=c.durationRange||null;
   if(dr){if(!(+st.dur>=dr.min&&+st.dur<=dr.max))st.dur=durs[0];}else if(!durs.map(String).includes(String(st.dur)))st.dur=durs[0];
-  // Sora = 칩(4/8/12 고정). 그 외 = 슬라이더: 범위 엔진은 min~max 1초, 고정값 엔진은 허용값 인덱스를 끌어 허용값에만 멈춘다.
-  const useChips=t.id==='sora';$('#durs').hidden=!useChips;$('#durBar').hidden=useChips;
+  // 슬라이더: 범위 엔진은 min~max 1초, 고정값 엔진은 허용값 인덱스를 끌어 허용값에만 멈춘다. (칩 분기는 Sora 용이었는데 Sora 는 API 종료로 숨김 — 분기만 남겨둔다)
+  const useChips=false;$('#durs').hidden=!useChips;$('#durBar').hidden=useChips;
   if(useChips){chips('#durs',durs,st.dur,v=>v+'s');$('#durHint').textContent='';}
   else{const r=$('#durRange');const steps=dr?null:durs.map(Number).sort((x,y)=>x-y);
     if(dr){r.min=dr.min;r.max=dr.max;r.step=1;r.value=+st.dur;$('#durHint').textContent=`· ${dr.min}–${dr.max}s`;}
@@ -84,7 +84,7 @@ function applyTool(){const t=tool();if(!t)return;const c=t.controls||{};
   $('#audioWrap').hidden=!c.audio;if(!c.audio)st.audio=false;$('#audioLock').classList.toggle('on',st.audio);
   $('#efWrap').hidden=!(t.imageSlots||[]).some(s=>s.key==='endFrame');
   $('#engNote').textContent=NOTE[t.provider]||'';renderSel();cost();}
-$('#durs').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||!b.dataset.v)return;st.dur=b.dataset.v;applyTool()}); // Sora 칩만
+$('#durs').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||!b.dataset.v)return;st.dur=b.dataset.v;applyTool()}); // 칩 모드(현재 미사용)
 $('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.ratio=b.dataset.v;chips('#ratios',tool().controls.aspectRatio,st.ratio)});
 $('#ress').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.res=b.dataset.v;chips('#ress',tool().controls.resolution,st.res)});
 $('#audioLock').addEventListener('click',()=>{st.audio=!st.audio;$('#audioLock').classList.toggle('on',st.audio)});
