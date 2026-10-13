@@ -102,4 +102,25 @@ const falProvider = {
   },
 };
 
+/**
+ * Topaz 업스케일(fal-ai/topaz/upscale/image). 입력은 이미지 URL(data URI 가능) + 배율. 결과는 result.image.url.
+ * @param {{ model?: string, imageUrl: string, factor?: number }} req
+ * @returns {Promise<import('./types').ImageGenerationResult>}
+ */
+falProvider.upscale = async function upscale(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/topaz/upscale/image';
+  const factor = req.factor === 4 ? 4 : 2;
+  const { result, requestId } = await submitAndWait(model, {
+    image_url: req.imageUrl, upscale_factor: factor, model: 'Standard V2', output_format: 'png',
+  }, 300_000); // 4K 출력은 1~3분 걸린다
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal 업스케일 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, factor, width: image.width, height: image.height } };
+};
+
 module.exports = falProvider;

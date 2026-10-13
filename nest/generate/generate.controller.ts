@@ -152,6 +152,13 @@ export class GenerateController {
     return this.send(res, await this.generate.op('deleteReviews', req));
   }
 
+  // POST /api/generate/upscale — 내 결과물 1장 업스케일(Topaz) → 새 creation
+  @Post('upscale')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postUpscale(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postUpscale', req));
+  }
+
   // POST /api/generate/video/async
   @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }], GENERATE_UPLOAD_OPTIONS))
   @Post('video/async')

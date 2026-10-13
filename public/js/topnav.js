@@ -63,7 +63,7 @@
       ['📷', 'Cinematic Cameras', 'Lens · angle presets', 'live', '/image'],
       ['◌', 'Inpaint', 'Select an area, describe the change', 'soon'],
       ['☀', 'Relight', 'Light position · color · brightness', 'soon'],
-      ['⤢', 'Upscale', 'Up to 4K', 'soon'],
+      ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'], // 'auto:<key>' = tools API 의 그 목록이 비어있지 않으면 live(키 없는 서버면 soon)
       ['▦', 'Look set', 'One photo → a set in one aesthetic', 'soon'],
       ['👤', 'Virtual models', '80 licensed models', 'soon'],
       ['⇄', 'Face Swap', 'Our models + your face only', 'soon'],
@@ -100,7 +100,7 @@
       var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id)); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
-      var feats = FEAT[kind].map(function (f) { return item(f[0], f[1], f[2], f[3], f[4]); }).join('');
+      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
       document.getElementById('tnMegaBox').innerHTML = '<div class="cols"><div><h4>Features</h4>' + feats + '</div><div><h4 class="k">Models</h4>' + live + soon + '</div></div>';
     });
   }

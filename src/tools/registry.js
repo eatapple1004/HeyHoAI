@@ -150,6 +150,15 @@ const TOOLS = {
     costKey: 'grok-imagine', enabled: true, // XAI_API_KEY 없으면 목록에서 빠진다(isToolAvailable)
     controls: { aspectRatio: ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2', '2:3', '21:9'], imageSize: ['1K', '2K'], count: [1, 2, 3, 4] }, // 텍스트 전용 — edits(멀티파트)는 키 생기면 실측 후
   },
+  // (2026-10-13) 업스케일 — 생성 툴이 아니라 "결과물 1장 → 더 큰 1장". type:'upscale' 로 따로 묶어 모델 목록엔 안 나오고
+  //   tools API 의 upscale[] 로 나간다(메가메뉴 Upscale 기능 = 이게 비어 있지 않으면 live). 경로는 POST /api/generate/upscale.
+  'topaz': {
+    id: 'topaz', label: 'Topaz Upscale', type: 'upscale',
+    provider: 'fal', model: 'fal-ai/topaz/upscale/image',
+    costKey: 'upscale', enabled: true,
+    controls: { upscaleFactor: [2, 4] }, // Topaz 'Standard V2' 고정 · 얼굴 보정 기본값(0.8) 그대로
+    imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
+  },
   'soul': {
     id: 'soul', label: 'Higgsfield Soul 2', type: 'image',
     provider: 'higgsfield', model: 'higgsfield-ai/soul/v2/standard',

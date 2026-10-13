@@ -16,6 +16,8 @@ export interface ToolDto {
 export interface ToolsDto {
   image: ToolDto[];
   video: ToolDto[];
+  /** 업스케일 툴(Topaz). 키 없는 서버면 빈 배열 → 메가메뉴 Upscale 기능이 soon 으로 */
+  upscale: ToolDto[];
 }
 
 /** BGM 파일 */

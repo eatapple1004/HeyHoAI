@@ -14,7 +14,7 @@
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <link rel="stylesheet" href="/css/topnav.css?v=1" />
-<script src="/js/topnav.js?v=3" defer></script>
+<script src="/js/topnav.js?v=4" defer></script>
 <style>
   /* (2026-10-13) 로컬 프로토 Library 와 동일: 폭 1320 중앙, 알약 탭, 촘촘한 masonry(간격 10px·모서리 12px). 롤백: git 8122562. */
   .wrap{max-width:1320px;margin:0 auto;padding:18px 22px 60px;position:relative;z-index:2}
@@ -376,8 +376,16 @@ const RC_SVG={
   dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
   priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>'
 };
+// (2026-10-13) 업스케일(Topaz ×2) — 사진만. 서버에 키 없으면 tools.upscale 이 비어 버튼이 안 뜬다. 결과는 새 creation 으로 맨 앞에.
+let UPSCALE=null;
+fetch('/api/generate/tools').then(r=>r.json()).then(d=>{UPSCALE=((d.data&&d.data.upscale)||[])[0]||null;if(UPSCALE)try{render()}catch(e){}}).catch(()=>{}); // 첫 render 가 먼저 끝났으면 버튼을 달기 위해 한 번 더
+async function upscaleItem(idx,btn){if(btn.disabled)return;btn.disabled=true;
+  try{const r=await fetch('/api/generate/upscale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resultIdx:idx,factor:2})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'failed');
+    toast('Upscaled ×2 · '+d.data.width+'×'+d.data.height+' — added to your library');setTimeout(()=>location.reload(),900);}
+  catch(e){toast('Upscale failed: '+(e.message||e),'error');btn.disabled=false;}}
 function cardHtml(it){
   // 릴스: preload=metadata(첫 프레임만)+hover 재생. 로드 실패 시 카드 제거(빈 카드 방지).
   const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
@@ -388,8 +396,9 @@ function cardHtml(it){
   const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
   const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
   const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${it.idx}" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
+  const upBtn=(it.type==='photo'&&UPSCALE)?`<button class="rc-btn" type="button" title="Upscale ×2 (◈${UPSCALE.pricing.perImage})" onclick="event.stopPropagation();upscaleItem(${it.idx},this)">${RC_SVG.up}</button>`:'';
   return `<div class="card" role="link" tabindex="0" aria-label="Open creation${it.name?' — '+esc(it.name):''}" onclick="location.href='/creation?idx=${it.idx}&from=library'" onkeydown="cardKey(event,${it.idx})">
-      <div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div>
+      <div class="rc-tools">${upBtn}${editBtn}${visBtn}${dlBtn}</div>
       ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
       ${media}
     </div>`;

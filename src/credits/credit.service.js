@@ -33,6 +33,7 @@ const IMG_CREDIT = {
   'z-image': [55, 90],
   'grok-imagine': [185, 300],
   soul: [185, 300],
+  upscale: [90, 150], // Topaz(fal) 업스케일 1장 — 자리값(실원가 ~$0.05~0.1)
 };
 // 영상: 길이별 [커스텀per릴, 템플릿per릴]. 현재 Kling Pro 고정 기준.
 //   (2026-07-27) 5s 커스텀 625→810: Ad Video 5s Pro 실원가 $0.599(Kling Pro $0.56 + Flash 프레임 $0.039)
