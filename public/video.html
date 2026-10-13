@@ -61,7 +61,7 @@ const NOTE={kling:'Image → video · text → video · video-to-audio',veo:'Nat
 const st={tools:[],tool:null,dur:null,ratio:null,res:null,audio:false,priv:false,sf:null,ef:null,vrefs:[],feed:'mine'};
 function tool(){return st.tools.find(t=>t.id===st.tool)||st.tools[0];}
 function renderSel(){const t=tool();if(!t){$('#msel').innerHTML='<span class="ic">!</span><span><b>No video engine available</b><small>No API key on this server</small></span>';return}
-  $('#msel').innerHTML=`<span class="ic">${ICON[t.id]||ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perDuration[st.dur]||'—'}/${st.dur}s</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(NOTE[x.provider]||x.provider)}</small></span><span class="pc">◈${Object.values(x.pricing.perDuration||{})[0]||'—'}</span></div>`).join('')}</div>`;}
+  $('#msel').innerHTML=`<span class="ic">${ICON[t.id]||ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${costOf(t,st.dur)||'—'}/${st.dur}s</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(NOTE[x.provider]||x.provider)}</small></span><span class="pc">◈${Object.values(x.pricing.perDuration||{})[0]||'—'}</span></div>`).join('')}</div>`;}
 $('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;applyTool();$('#msel').classList.remove('open');e.stopPropagation();return}$('#msel').classList.toggle('open')});
 document.addEventListener('click',e=>{if(!$('#msel').contains(e.target))$('#msel').classList.remove('open')});
 function chips(sel,arr,cur,fmt){$(sel).innerHTML=arr.map(v=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${v}">${fmt?fmt(v):v}</button>`).join('');}
@@ -89,7 +89,9 @@ $('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!
 $('#ress').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.res=b.dataset.v;chips('#ress',tool().controls.resolution,st.res)});
 $('#audioLock').addEventListener('click',()=>{st.audio=!st.audio;$('#audioLock').classList.toggle('on',st.audio)});
 $('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});
-function cost(){const t=tool();if(!t)return;const pd=t.pricing.perDuration||{};const keys=Object.keys(pd).map(Number).sort((a,b)=>a-b);let v=pd[String(st.dur)];if(v==null){const k=+st.dur>5?(keys.find(x=>x>=10)??keys[keys.length-1]):(keys.find(x=>x<=5)??keys[0]);v=pd[String(k)];}$('#cost').textContent=(v||0).toLocaleString('en-US');} // 서버 videoCost 와 같은 규칙(5초 초과=10초 티어)
+// 길이별 단가 — 서버 videoCost 와 같은 규칙(표에 없는 길이는 5초 초과면 10초 티어, 아니면 5초 티어)
+function costOf(t,dur){const pd=(t&&t.pricing&&t.pricing.perDuration)||{};const keys=Object.keys(pd).map(Number).sort((a,b)=>a-b);let v=pd[String(dur)];if(v==null&&keys.length){const k=+dur>5?(keys.find(x=>x>=10)??keys[keys.length-1]):(keys.find(x=>x<=5)??keys[0]);v=pd[String(k)];}return v||0;}
+function cost(){const t=tool();if(!t)return;$('#cost').textContent=costOf(t,st.dur).toLocaleString('en-US');}
 // (2026-10-13) 엔진 고유 옵션 렌더 — registry controls.extras 정본. 타입: values(칩) · toggle(.lock) · number(입력) · text(입력). 값은 st.extras 에, 전송은 FormData 'extras' JSON.
 function renderExtras(host,defs,st){defs=defs||[];st.extras=st.extras||{};const keep={};defs.forEach(d=>{if(d.key in st.extras)keep[d.key]=st.extras[d.key];else if('default' in d)keep[d.key]=d.default;});st.extras=keep;
   host.innerHTML=defs.map(d=>{const v=st.extras[d.key];
