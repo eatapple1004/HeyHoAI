@@ -1219,7 +1219,7 @@ const postVideoAsyncHandler = async (req, res, next) => {
     }
     const result = await videoJobService.submit({
       user: req.user, prompt, duration, mode, aspectRatio, audio,
-      engine: videoTool ? videoTool.provider : 'kling', resolution: req.body.resolution,
+      engine: videoTool ? videoTool.provider : 'kling', resolution: req.body.resolution, tool: videoTool,
       visibility, templateId: req.body.templateId || null,
       templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,

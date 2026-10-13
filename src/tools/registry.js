@@ -174,7 +174,7 @@ const TOOLS = {
 
   // ── 영상 ──
   'kling': {
-    id: 'kling', label: 'Kling', type: 'video',
+    id: 'kling', label: 'Kling 3.0', type: 'video',
     provider: 'kling', model: 'kling-v3',
     costKey: null, enabled: true, // 비디오 툴 런칭 노출(2026-06-21). ⚠️ 실제 생성은 KLING_ACCESS/SECRET_KEY 필요.
     // 라이브 async 경로 실배선. start=sourceImage, end=image_tail, audio=video-to-audio.
@@ -207,7 +207,7 @@ const TOOLS = {
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'minimax': {
-    id: 'minimax', label: 'MiniMax Hailuo', type: 'video',
+    id: 'minimax', label: 'MiniMax Hailuo 01', type: 'video',
     provider: 'minimax', model: 'video-01',
     costKey: null, enabled: true,
     controls: { duration: [6] },
@@ -221,7 +221,7 @@ const TOOLS = {
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
   'seedance': {
-    id: 'seedance', label: 'Seedance', type: 'video',
+    id: 'seedance', label: 'Seedance 2.0', type: 'video',
     provider: 'seedance', model: 'fal-ai/bytedance/seedance',
     costKey: null, enabled: true,
     controls: { duration: [5, 8, 10], aspectRatio: ['9:16', '16:9', '1:1'], resolution: ['720p', '1080p'] },
@@ -229,6 +229,73 @@ const TOOLS = {
       { key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' },
       { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' },
     ],
+  },
+
+  // (2026-10-13) 영상 2차분 — 힉스필드 Video 메뉴 기준 "우리에 없던 모델". 전부 fal 큐 API(provider 'fal' → falVideo.provider, 키 FAL_API_KEY 공유).
+  //   falInput = 엔드포인트별 필드 모양(어댑터 주석 참조). controls 의 허용값은 fal 검증 오류로 실측(10-13). 비용은 videoCost(길이) 공용 자리값.
+  'seedance-2.5': {
+    id: 'seedance-2.5', label: 'Seedance 2.5', type: 'video',
+    provider: 'fal', model: 'bytedance/seedance-2.5/image-to-video',
+    falInput: { image: 'image_url', duration: 'str', aspect: true, resolution: true, audio: 'generate_audio', endImage: 'end_image_url' },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 8, 10, 15], aspectRatio: ['9:16', '16:9', '1:1'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 4~30 중 노출만 4종
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }],
+  },
+  'wan-3': {
+    id: 'wan-3', label: 'Wan 3.0', type: 'video',
+    provider: 'fal', model: 'alibaba/wan-3.0/image-to-video',
+    falInput: { image: 'start_image_url', duration: 'int', aspect: true, resolution: true, audio: 'audio', endImage: 'end_image_url' },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10, 15], aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 ≤30
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }, { key: 'endFrame', label: 'End frame', hint: 'Ending frame of the video' }],
+  },
+  'hailuo-2.3': {
+    id: 'hailuo-2.3', label: 'MiniMax Hailuo 2.3', type: 'video',
+    provider: 'fal', model: 'fal-ai/minimax/hailuo-2.3/standard/image-to-video',
+    falInput: { image: 'image_url', duration: 'str', extra: { prompt_optimizer: false } }, // 비율·해상도 필드 없음(standard = 768p 고정)
+    costKey: null, enabled: true,
+    controls: { duration: [6, 10] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'minimax-h3': {
+    id: 'minimax-h3', label: 'MiniMax H3', type: 'video',
+    provider: 'fal', model: 'minimax/h3/image-to-video',
+    falInput: { image: 'image_url', duration: 'int', resolution: true },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10, 15], resolution: ['768P', '2K'] }, // 480P·4K 도 받지만 노출 안 함(4K 는 원가 미확인)
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'grok-video': {
+    id: 'grok-video', label: 'Grok Imagine Video 1.5', type: 'video',
+    provider: 'fal', model: 'xai/grok-imagine-video/image-to-video',
+    falInput: { image: 'image_url', duration: 'int', aspect: true, resolution: true },
+    costKey: null, enabled: true,
+    controls: { duration: [6, 10, 15], aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3'], resolution: ['480p', '720p'] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'happyhorse': {
+    id: 'happyhorse', label: 'HappyHorse 1.1', type: 'video',
+    provider: 'fal', model: 'alibaba/happy-horse/v1.1/image-to-video',
+    falInput: { image: 'image_url', duration: 'int', resolution: true }, // 비율 필드 없음(원본 비율 유지)
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10, 15], resolution: ['720p', '1080p'] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'flux-3-video': {
+    id: 'flux-3-video', label: 'FLUX.3 Video', type: 'video',
+    provider: 'fal', model: 'blackforestlabs/flux-3/image-to-video',
+    falInput: { image: 'image_url', duration: 'int', aspect: true, resolution: true, audio: 'generate_audio' },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10, 15], aspectRatio: ['9:16', '16:9', '1:1', '3:4', '4:3'], resolution: ['720p', '1080p'], audio: { type: 'toggle' } }, // 길이 5~20
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
+  },
+  'gemini-omni': {
+    id: 'gemini-omni', label: 'Gemini Omni Flash', type: 'video',
+    provider: 'fal', model: 'fal-ai/gemini-omni-flash/image-to-video',
+    falInput: { image: 'image_url', duration: 'int', aspect: true }, // 해상도 필드 없음 · 비율은 16:9·9:16 만
+    costKey: null, enabled: true,
+    controls: { duration: [5, 8, 10], aspectRatio: ['9:16', '16:9'] },
+    imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
 };
 

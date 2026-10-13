@@ -98,7 +98,8 @@ function imageCost(model, count = 4, isTemplate = false) {
 
 /** 비디오(릴스) 생성 1회 비용. isTemplate=템플릿 릴(4~6배)/false=커스텀 릴(2~3배). mode는 Kling Pro 고정이라 현재 미사용(std 연결 시 확장). */
 function videoCost(duration, mode, isTemplate = false) {
-  const tier = VIDEO_CREDIT[parseInt(duration, 10)] || VIDEO_CREDIT[5];
+  const d = parseInt(duration, 10) || 5;
+  const tier = VIDEO_CREDIT[d] || (d > 5 ? VIDEO_CREDIT[10] : VIDEO_CREDIT[5]); // (2026-10-13) 6·8·15초 등 새 엔진 길이 — 5초 넘으면 10초 티어(자리값)
   return isTemplate ? tier[1] : tier[0];
 }
 
