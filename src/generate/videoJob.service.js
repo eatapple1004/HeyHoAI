@@ -27,8 +27,9 @@ const videoProviders = {
   sora: require('../videos/providers/sora.provider'),
   seedance: require('../videos/providers/seedance.provider'),
   fal: require('../videos/providers/falVideo.provider'), // (2026-10-13) 범용 — registry.model/falInput 로 8개 엔진
+  higgsfieldVideo: require('../videos/providers/higgsfieldVideo.provider'), // (2026-10-14) Kling Omni Edit · Genjutsu
 };
-const NEEDS_PUBLIC_URL = new Set(['runway', 'minimax']);
+const NEEDS_PUBLIC_URL = new Set(['runway', 'minimax', 'higgsfieldVideo']); // (10-14) 힉스필드도 이미지를 URL 로 받아간다
 
 const POLL_INTERVAL_MS = 15000;   // 15초마다 폴링 틱
 const MAX_ATTEMPTS = 48;          // 48 * 15s = 12분 후 타임아웃
@@ -73,12 +74,13 @@ async function downloadBuf(url, { timeoutMs = 120000, retries = 4 } = {}) {
  * @throws statusCode 붙은 에러 (402/403/400 등)
  */
 async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio, audio = false, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null, extras = null, referenceImagePaths = [] }) {
+  visibility, templateId, templateSource, templateName, isTemplate = false, engine = 'kling', resolution, tool = null, extras = null, referenceImagePaths = [],
+  sourceVideoPath = null, motionVideoPath = null }) {
   if (engine && engine !== 'kling') {
     return submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras, referenceImagePaths });
+      visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool, extras, referenceImagePaths, sourceVideoPath, motionVideoPath });
   }
-  for (const p of referenceImagePaths || []) { try { fs.unlinkSync(p); } catch {} } // kling 은 레퍼런스 미지원 — 업로드만 치운다
+  for (const p of [...(referenceImagePaths || []), sourceVideoPath, motionVideoPath]) { if (p) { try { fs.unlinkSync(p); } catch {} } } // kling 직결 경로는 레퍼런스·영상 입력 미지원 — 업로드만 치운다
   const KLING_ASPECTS = ['9:16', '1:1', '16:9'];
   const aspect = KLING_ASPECTS.includes(aspectRatio) ? aspectRatio : '9:16';
   const wantAudio = audio === true || audio === 'true';
@@ -154,7 +156,8 @@ async function submit({ user, prompt, duration = '5', mode = 'std', aspectRatio,
  *   비용은 엔진별 실원가 확정 전이라 videoCost(길이) 공용(placeholder).
  */
 async function submitExternal({ user, prompt, duration, aspectRatio, audio, sourceImagePath, endFramePath,
-  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null, extras = null, referenceImagePaths = [] }) {
+  visibility, templateId, templateSource, templateName, isTemplate, engine, resolution, tool = null, extras = null, referenceImagePaths = [],
+  sourceVideoPath = null, motionVideoPath = null }) {
   const provider = videoProviders[engine];
   if (!provider) { const e = new Error(`Unknown video engine: ${engine}`); e.statusCode = 400; throw e; }
   if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
@@ -162,7 +165,13 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   }
   if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }
   const refPaths = (referenceImagePaths || []).filter(Boolean);
-  if (!sourceImagePath && !refPaths.length && !(tool && tool.t2vModel) && engine !== 'sora' && engine !== 'veo' && engine !== 'seedance') {
+  // (2026-10-14) 영상 입력 툴 — imageSlots 에 sourceVideo/motionVideo 키가 있으면 그 파일이 필수
+  const slotKeys = new Set(((tool && tool.imageSlots) || []).map((s) => s.key));
+  const wantsVideo = slotKeys.has('sourceVideo') || slotKeys.has('motionVideo');
+  if (slotKeys.has('sourceVideo') && !sourceVideoPath) { const e = new Error(`${tool.label} needs a video`); e.statusCode = 400; throw e; }
+  if (slotKeys.has('motionVideo') && !motionVideoPath) { const e = new Error(`${tool.label} needs a motion video`); e.statusCode = 400; throw e; }
+  if (slotKeys.has('motionVideo') && !sourceImagePath) { const e = new Error(`${tool.label} needs a character image`); e.statusCode = 400; throw e; }
+  if (!wantsVideo && !sourceImagePath && !refPaths.length && !(tool && tool.t2vModel) && engine !== 'sora' && engine !== 'veo' && engine !== 'seedance') {
     const e = new Error(`${engine} needs a start frame`); e.statusCode = 400; throw e; // runway·minimax = image-to-video 전용
   }
   if (refPaths.length && !(tool && tool.refModel)) {
@@ -205,8 +214,19 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
 
   try {
     const refMax = (tool && tool.refInput && tool.refInput.max) || 10;
+    // 영상 파일은 항상 공개 URL 로(수십 MB 를 data URL 로 JSON 에 싣지 않는다). PUBLIC_URL 없는 로컬은 제출 거부.
+    const videoFor = async (localPath) => {
+      if (!localPath) return null;
+      if (!env.PUBLIC_URL) { const e = new Error('video input needs PUBLIC_URL (the engine fetches the file by URL)'); e.statusCode = 400; throw e; }
+      const name = `${crypto.randomUUID()}${path.extname(localPath) || '.mp4'}`;
+      fs.mkdirSync(outputDir, { recursive: true });
+      fs.copyFileSync(localPath, path.join(outputDir, name));
+      await mediaStore.putFile(path.join(outputDir, name)).catch(() => {});
+      return `${env.PUBLIC_URL.replace(/\/$/, '')}/images/${name}`;
+    };
     const sub = await provider.submit({
-      sourceImageUrl: await sourceFor(sourceImagePath),
+      sourceVideoUrl: await videoFor(sourceVideoPath || (slotKeys.has('motionVideo') ? motionVideoPath : null)), // motionVideo 는 falInput.video 자리로 들어간다
+      sourceImageUrl: wantsVideo && !slotKeys.has('startFrame') ? null : await sourceFor(sourceImagePath),
       endImageUrl: await sourceFor(endFramePath),
       referenceImageUrls: await Promise.all(refPaths.slice(0, refMax).map(sourceFor)), // reference-to-video 엔진(refModel)용
       refModel: tool ? tool.refModel : undefined, refInput: tool ? tool.refInput : undefined, t2vModel: tool ? tool.t2vModel : undefined,
@@ -234,7 +254,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   } finally {
     if (sourceImagePath) { try { fs.unlinkSync(sourceImagePath); } catch {} }
     if (endFramePath) { try { fs.unlinkSync(endFramePath); } catch {} }
-    for (const p of refPaths) { try { fs.unlinkSync(p); } catch {} }
+    for (const p of [...refPaths, sourceVideoPath, motionVideoPath]) { if (p) { try { fs.unlinkSync(p); } catch {} } }
   }
 }
 

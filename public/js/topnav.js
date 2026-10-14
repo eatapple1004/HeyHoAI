@@ -79,7 +79,7 @@
       ['🎬', 'Cinema Studio', 'Cinematic video with an AI director', 'soon'],
       ['◇', '3D Jutsu', 'Build a 3D scene, turn it into video (previs)', 'soon'],
       ['▭', 'Shorts Studio', 'Footage → ready-made shorts', 'soon'],
-      ['✎', 'Edit video', 'Scenes · shots · elements', 'soon'],
+      ['✎', 'Edit video', 'Seedance 2.5 Edit · Kling Omni Edit — upload a video, describe the change', 'auto:videoInput', '/video?tool=seedance-2.5-edit'],
       ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
       ['◐', 'Change color palette', 'Tones · mood', 'soon'],
       ['☀', 'Relight video', 'Light position · color · brightness', 'soon'],
@@ -99,7 +99,7 @@
     // 카탈로그(힉스필드 Image 메뉴 기준). 라벨이 /api/generate/tools 의 라벨과 같으면 live 로 올라가고 여기선 빠진다 → 키가 없는 서버에선 자동으로 soon.
     image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz Upscale']],
     // 영상 모델 카탈로그(힉스필드 Video 메뉴 기준). Seedance 2.5·Kling 3.0·Wan 3.0·HappyHorse·Hailuo 2.3·Genjutsu·DOP 는 힉스필드 API 한 키로도 붙는다(open.higgsfield.ai 모델 목록 85개, 10-13 확인).
-    video: [['K', 'Kling Motion Control'], ['K', 'Kling 3.0 Omni Edit'], ['H', 'Higgsfield Genjutsu'], ['H', 'Higgsfield DOP'], ['X', 'Grok Imagine 1.5 Lite'], ['G', 'Gemini Omni Flash']] // Topaz Video 는 모델이 아니라 'Video upscale' 기능의 엔진 → 모델 열에서 뺌 // 나머지(Seedance 2.5·Wan 3.0·Hailuo 2.3·H3·Grok Video·HappyHorse·FLUX.3 Video·Gemini Omni)는 10-13 live 로
+    video: [['H', 'Higgsfield DOP'], ['X', 'Grok Imagine 1.5 Lite'], ['G', 'Gemini Omni Flash']] // Kling Motion Control·Omni Edit·Genjutsu 는 10-14 live(영상 입력 칸) // Topaz Video 는 모델이 아니라 'Video upscale' 기능의 엔진 → 모델 열에서 뺌 // 나머지(Seedance 2.5·Wan 3.0·Hailuo 2.3·H3·Grok Video·HappyHorse·FLUX.3 Video·Gemini Omni)는 10-13 live 로
   };
   function item(ic, name, desc, st, href) {
     var live = st === 'live';
@@ -117,7 +117,7 @@
       var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id)); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
-      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
+      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
       document.getElementById('tnMegaBox').innerHTML = '<div class="cols"><div><h4>Features</h4>' + feats + '</div><div><h4 class="k">Models</h4>' + live + soon + '</div></div>';
     });
   }

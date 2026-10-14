@@ -3,6 +3,7 @@ import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestj
 import {
   GenerateService,
   GENERATE_UPLOAD_OPTIONS,
+  VIDEO_UPLOAD_OPTIONS,
   BGM_UPLOAD_OPTIONS,
   UGC_MAX_PRODUCT_IMAGES,
 } from './generate.service';
@@ -160,7 +161,7 @@ export class GenerateController {
   }
 
   // POST /api/generate/video/async
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }], GENERATE_UPLOAD_OPTIONS))
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }, { name: 'sourceVideo', maxCount: 1 }, { name: 'motionVideo', maxCount: 1 }], VIDEO_UPLOAD_OPTIONS))
   @Post('video/async')
   @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
   async postVideoAsync(@Req() req: any, @Res({ passthrough: true }) res: any) {

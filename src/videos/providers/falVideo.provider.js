@@ -4,7 +4,7 @@
  * (2026-10-13) Seedance 2.5 · Wan 3.0 · Hailuo 2.3 · MiniMax H3 · Grok Imagine Video · HappyHorse · FLUX.3 Video · Gemini Omni Flash 가
  *   전부 fal 큐 API 한 규약(submit → status_url → response_url, 결과 video.url)이라 어댑터 하나로 돌린다.
  *   엔드포인트마다 필드 이름·타입이 달라서 registry 의 `falInput` 이 모양을 정한다:
- *     image:'image_url'|'start_image_url'   duration:'str'|'int'|null   aspect:bool   resolution:bool
+ *     image:'image_url'|'start_image_url'   video:'video_url'|'video_urls'(영상 입력)   refs:'image_urls'(영상 입력과 함께 쓰는 참조)   duration:'str'|'int'|null   aspect:bool   resolution:bool
  *     audio:'generate_audio'|'audio'|null    endImage:'end_image_url'|null   extra:{고정 필드}
  *   허용값(길이·비율·해상도 enum)은 10-13 에 fal 검증 오류로 실측해 registry controls 에 적었다 — 여기선 검사하지 않는다.
  * 시작 프레임은 data URL 로 받는다(videoJob.sourceFor 기본 경로). 검증은 비동기라 잘못된 값은 poll 에서 failed 로 온다.
@@ -42,6 +42,11 @@ const falVideoProvider = {
       const ri = req.refInput || {};
       model = req.refModel;
       body[ri.refs || 'reference_image_urls'] = refs.slice(0, ri.max || 10);
+    } else if (f.video) {
+      // ④ 영상 입력(편집·연장·모션 전이): video_url 한 개 또는 video_urls 배열. 시작 이미지가 같이 필요한 엔진(Kling Motion Control)은 f.image 도 채운다.
+      body[f.video] = f.video.endsWith('s') ? [req.sourceVideoUrl] : req.sourceVideoUrl;
+      if (f.image && req.sourceImageUrl) body[f.image] = req.sourceImageUrl;
+      if (refs.length && f.refs) body[f.refs] = refs;
     } else if (!req.sourceImageUrl && req.t2vModel) {
       model = req.t2vModel;
     } else {

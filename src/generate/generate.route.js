@@ -187,6 +187,7 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const uploadVideo = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // (2026-10-14) /video/async — 영상 입력(편집·연장·모션) 50MB. nginx dev client_max_body_size 60M 안쪽.
 
 /**
  * POST /api/generate
@@ -1240,6 +1241,8 @@ const postVideoAsyncHandler = async (req, res, next) => {
     const sourceFile = req.files?.sourceImage?.[0];
     const endFrameFile = req.files?.endFrame?.[0];
     const refFiles = req.files?.referenceImages || []; // (2026-10-13) reference-to-video 엔진용(최대 10)
+    const sourceVideoFile = req.files?.sourceVideo?.[0]; // (2026-10-14) 편집·연장 대상 영상
+    const motionVideoFile = req.files?.motionVideo?.[0]; // (2026-10-14) 모션 참조 영상(Kling Motion Control · Genjutsu)
     // (2026-10-13) 베이스 1차 — 영상 엔진 선택(tool). 미지정=kling(기존 경로 그대로). 모르는 툴·이미지 툴·키 없는 툴은 400.
     const videoTool = req.body.tool ? getTool(req.body.tool) : null;
     if (req.body.tool && (!videoTool || videoTool.type !== 'video' || !videoTool.enabled)) {
@@ -1257,6 +1260,8 @@ const postVideoAsyncHandler = async (req, res, next) => {
       sourceImagePath: sourceFile ? sourceFile.path : null,
       endFramePath: endFrameFile ? endFrameFile.path : null,
       referenceImagePaths: refFiles.map((f) => f.path),
+      sourceVideoPath: sourceVideoFile ? sourceVideoFile.path : null,
+      motionVideoPath: motionVideoFile ? motionVideoFile.path : null,
       isTemplate: req.body.billingMode !== 'custom', // 'custom'=커스텀 릴(2~3배), 그 외=템플릿(4~6배)
     });
     res.json({ success: true, ...result });
@@ -2313,7 +2318,7 @@ router.get('/creator-overview', getCreatorOverviewHandler);
 router.get('/reviews', getReviewsHandler);
 router.patch('/reviews/:idx', patchReviewsHandler);
 router.delete('/reviews/:idx', deleteReviewsHandler);
-router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }]), postVideoAsyncHandler);
+router.post('/video/async', uploadVideo.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }, { name: 'sourceVideo', maxCount: 1 }, { name: 'motionVideo', maxCount: 1 }]), postVideoAsyncHandler);
 router.get('/video/jobs', getVideoJobsHandler);
 router.get('/video/jobs/:id', getVideoJobs2Handler);
 router.get('/faceswap/jobs/:id', getFaceswapJobsHandler);

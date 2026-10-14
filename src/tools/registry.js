@@ -325,6 +325,49 @@ const TOOLS = {
       extras: [{ key: 'safety_tolerance', label: 'Safety tolerance', type: 'number', min: 0, max: 4, default: 2, hint: '0 strict · 4 permissive' }] }, // 길이 5~20
     imageSlots: [{ key: 'startFrame', label: 'Start frame', hint: 'Starting frame of the video' }],
   },
+  // (2026-10-14) 영상 입력 툴 — soon 1번 "영상 입력 칸". imageSlots 의 sourceVideo/motionVideo 키가 영상 칸이다(video.html 이 키로 분기).
+  //   Seedance 편집·연장 = fal reference-to-video 의 task · Kling Motion Control = fal v3/pro/motion-control(실측) · Kling Omni Edit·Genjutsu = 힉스필드 API(fal 에 경로 없음, 실측).
+  'seedance-2.5-edit': {
+    id: 'seedance-2.5-edit', label: 'Seedance 2.5 Edit', type: 'video',
+    provider: 'fal', model: 'bytedance/seedance-2.5/reference-to-video',
+    falInput: { video: 'video_urls', refs: 'image_urls', duration: 'str', aspect: true, resolution: true, audio: 'generate_audio', extra: { task: 'editing' } },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 8, 10, 15], durationRange: { min: 4, max: 30 }, aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4', '21:9'], resolution: ['720p', '1080p', '480p'], audio: { type: 'toggle' },
+      extras: [{ key: 'bitrate_mode', label: 'Bitrate', values: ['standard', 'high'] }, { key: 'seed', label: 'Seed', type: 'number', min: 0, max: 2147483647, hint: 'blank = random' }] },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'The video to edit — describe the change in the prompt (@Video1).' }, { key: 'reference', label: 'Reference', hint: 'Optional images — @Image1… in the prompt.', multi: true }],
+  },
+  'seedance-2.5-extend': {
+    id: 'seedance-2.5-extend', label: 'Seedance 2.5 Extend', type: 'video',
+    provider: 'fal', model: 'bytedance/seedance-2.5/reference-to-video',
+    falInput: { video: 'video_urls', duration: 'str', resolution: true, audio: 'generate_audio', extra: { task: 'extension' } },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 8, 10], durationRange: { min: 4, max: 30 }, resolution: ['720p', '1080p', '480p'], audio: { type: 'toggle' } },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Continues from the last frame.' }],
+  },
+  'kling-motion': {
+    id: 'kling-motion', label: 'Kling Motion Control', type: 'video',
+    provider: 'fal', model: 'fal-ai/kling-video/v3/pro/motion-control',
+    falInput: { image: 'image_url', video: 'video_url', extra: { character_orientation: 'image' } }, // 길이·비율은 참조 영상을 따른다
+    costKey: null, enabled: true,
+    controls: { duration: [5], extras: [{ key: 'character_orientation', label: 'Orientation follows', values: ['image', 'video'] }, { key: 'keep_original_sound', label: 'Keep video sound', type: 'toggle', default: true }] },
+    imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'Who/what moves' }, { key: 'motionVideo', label: 'Motion video', hint: 'The movement to copy' }],
+  },
+  'kling-edit': {
+    id: 'kling-edit', label: 'Kling 3.0 Omni Edit', type: 'video',
+    provider: 'higgsfieldVideo', model: 'kling-video/omni/video-edit',
+    falInput: { video: 'video_urls' },
+    costKey: null, enabled: true,
+    controls: { duration: [5] },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Describe the edit in the prompt.' }],
+  },
+  'genjutsu': {
+    id: 'genjutsu', label: 'Higgsfield Genjutsu', type: 'video',
+    provider: 'higgsfieldVideo', model: 'higgsfield/genjutsu/motion-transfer/v1.0',
+    falInput: { video: 'video_url', image: 'image_urls', resolution: true },
+    costKey: null, enabled: true,
+    controls: { duration: [5], resolution: ['720p', '1080p', '480p'] },
+    imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'Who/what moves' }, { key: 'motionVideo', label: 'Motion video', hint: 'The movement to transfer' }],
+  },
   'gemini-omni': {
     id: 'gemini-omni', label: 'Gemini Omni Flash', type: 'video',
     provider: 'fal', model: 'fal-ai/gemini-omni-flash/image-to-video',
@@ -345,7 +388,7 @@ const PROVIDER_KEYS = {
   gemini: ['GEMINI_API_KEY'], openai: ['OPENAI_API_KEY'],
   fal: ['FAL_API_KEY'], seedream: ['FAL_API_KEY'], seedance: ['FAL_API_KEY'],
   replicate: ['REPLICATE_API_TOKEN'],
-  xai: ['XAI_API_KEY'], higgsfield: ['HIGGSFIELD_API_KEY'],
+  xai: ['XAI_API_KEY'], higgsfield: ['HIGGSFIELD_API_KEY'], higgsfieldVideo: ['HIGGSFIELD_API_KEY'],
   kling: ['KLING_ACCESS_KEY', 'KLING_SECRET_KEY'], runway: ['RUNWAY_API_KEY'], minimax: ['MINIMAX_API_KEY'],
   veo: ['GEMINI_API_KEY'], sora: ['OPENAI_API_KEY'],
 };
