@@ -34,6 +34,10 @@ export interface PlanItemVo {
   media_ids: string[];
   gen_status: string;
   gen_error: string | null;
+  gen_stage: string | null;
+  pack_id: string | null;
+  video_job_id: string | null;
+  updated_at: string;
   feedback: string | null;
   queue_id: string | null;
 }
@@ -109,7 +113,7 @@ export class BusinessPlanRepository {
 
   async updateItem(itemId: string, patch: Record<string, unknown>): Promise<PlanItemVo> {
     const allowed = ['post_at', 'format', 'theme', 'brief', 'caption', 'hashtags', 'media_ids',
-      'gen_status', 'gen_error', 'feedback', 'queue_id'];
+      'gen_status', 'gen_error', 'gen_stage', 'pack_id', 'video_job_id', 'feedback', 'queue_id'];
     const keys = Object.keys(patch).filter((k) => allowed.includes(k));
     if (!keys.length) return (await this.findItem(itemId)) as PlanItemVo;
     const sets = keys.map((k, i) => (k === 'media_ids' ? `${k} = $${i + 2}::uuid[]` : `${k} = $${i + 2}`));

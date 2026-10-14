@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGu
 import { AdminGuard } from '../auth/admin.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { BusinessPlanService } from './business-plan.service';
+import { BusinessPlanPackService } from './business-plan-pack.service';
 
 /**
  * 월간 운영 플랜 — `/api/admin/business/:id/plans/...` (관리자 전용).
@@ -11,7 +12,7 @@ import { BusinessPlanService } from './business-plan.service';
 @Controller('api/admin/business')
 @UseGuards(AdminGuard)
 export class BusinessPlanController {
-  constructor(private readonly plans: BusinessPlanService) {}
+  constructor(private readonly plans: BusinessPlanService, private readonly packs: BusinessPlanPackService) {}
 
   @Get(':id/plans')
   async list(@Param('id') id: string): Promise<ApiResponse<any>> {
@@ -64,6 +65,22 @@ export class BusinessPlanController {
   async removeItem(@Param('id') id: string, @Param('planId') planId: string, @Param('itemId') itemId: string): Promise<ApiResponse<null>> {
     await this.plans.removeItem(id, planId, itemId);
     return { success: true, data: null };
+  }
+
+  /** 칸 하나를 콘텐츠 팩으로 만든다(백그라운드). body.sourceMediaIds 없으면 사업체 기본 원본 */
+  @Post(':id/plans/:planId/items/:itemId/pack')
+  @HttpCode(200)
+  async packItem(
+    @Param('id') id: string, @Param('planId') planId: string, @Param('itemId') itemId: string, @Body() body: any, @Req() req: any,
+  ): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.packs.start(req.user, id, planId, itemId, body && body.sourceMediaIds) };
+  }
+
+  /** 콘텐츠가 없는 칸 전부를 한 칸씩 순서대로 팩으로 만든다 */
+  @Post(':id/plans/:planId/pack-all')
+  @HttpCode(200)
+  async packAll(@Param('id') id: string, @Param('planId') planId: string, @Body() body: any, @Req() req: any): Promise<ApiResponse<any>> {
+    return { success: true, data: await this.packs.startAll(req.user, id, planId, body && body.sourceMediaIds) };
   }
 
   /** 컨펌 단계 이동 — body.action = doppia_approve | send | customer_approve | request_changes */
