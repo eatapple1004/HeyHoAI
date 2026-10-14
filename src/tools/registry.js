@@ -350,7 +350,8 @@ const TOOLS = {
     falInput: { image: 'image_url', video: 'video_url', extra: { character_orientation: 'image' } }, // 길이·비율은 참조 영상을 따른다
     costKey: null, enabled: true,
     controls: { duration: [5], extras: [{ key: 'character_orientation', label: 'Orientation follows', values: ['image', 'video'] }, { key: 'keep_original_sound', label: 'Keep video sound', type: 'toggle', default: true }] },
-    imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'Who/what moves' }, { key: 'motionVideo', label: 'Motion video', hint: 'The movement to copy' }],
+    // (10-14 실측) 이미지·영상 모두 사람 상반신이 보여야 한다 — 제품 클립은 "No complete upper body detected" 로 거절. 사람 전용.
+    imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'A person, upper body visible' }, { key: 'motionVideo', label: 'Motion video', hint: 'A person moving, upper body visible' }],
   },
   'kling-edit': {
     id: 'kling-edit', label: 'Kling 3.0 Omni Edit', type: 'video',
@@ -366,7 +367,8 @@ const TOOLS = {
     falInput: { video: 'video_url', image: 'image_urls', resolution: true },
     costKey: null, enabled: true,
     controls: { duration: [5], resolution: ['720p', '1080p', '480p'] },
-    imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'Who/what moves' }, { key: 'motionVideo', label: 'Motion video', hint: 'The movement to transfer' }],
+    // (10-14 실측) 힉스필드 안전 필터가 엄격하다(속옷 차림 인물 이미지 = 거절). 플럼빙은 통과.
+    imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'A person (safe-for-work)' }, { key: 'motionVideo', label: 'Motion video', hint: 'The movement to transfer' }],
   },
   'gemini-omni': {
     id: 'gemini-omni', label: 'Gemini Omni Flash', type: 'video',
