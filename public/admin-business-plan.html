@@ -138,6 +138,10 @@ button:disabled{opacity:.5;cursor:default}
 .mtiles .mt2.on{border-color:var(--accent2)}
 .mtiles .mt2 .n{position:absolute;top:4px;right:4px;background:var(--accent2);color:#14102a;border-radius:50%;width:18px;height:18px;font-size:.66rem;font-weight:800;display:flex;align-items:center;justify-content:center}
 .mtiles .mt2 .v{position:absolute;bottom:4px;left:4px;background:rgba(20,16,34,.85);color:#fff;font-size:.6rem;padding:1px 5px;border-radius:8px}
+.stage{display:inline-block;margin-top:3px;font-size:.62rem;font-weight:700;color:var(--gold)}
+.stage.fail{color:var(--red)}
+.packbox{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--panel2)}
+.packbox .st2{font-size:.8rem;margin-top:8px;color:var(--dim)}
 @media(max-width:980px){.layout{grid-template-columns:1fr}.cal{grid-template-columns:repeat(2,1fr)}.cal .dh,.cal .day.out{display:none}}
 </style>
 </head>
@@ -201,6 +205,12 @@ button:disabled{opacity:.5;cursor:default}
     <div class="field"><label>제작 지시 (무엇을·어떤 장면으로)</label><textarea id="dBrief" rows="3"></textarea></div>
     <div class="field"><label>캡션</label><textarea id="dCaption" rows="4"></textarea></div>
     <div class="field"><label>해시태그 (공백 구분, # 없이)</label><input id="dTags" style="width:100%"></div>
+    <div class="packbox" id="dPackBox">
+      <label style="display:block;font-size:.78rem;color:var(--dim);margin-bottom:6px;font-weight:600">🎨 콘텐츠 팩으로 만들기 <span style="font-weight:400;color:var(--faint)">— 위 주제·제작 지시대로 팩을 돌려 결과를 이 칸에 붙입니다 (릴스 칸은 광고 영상 1편)</span></label>
+      <div class="prog" style="margin-bottom:6px">원본 사진 고르기 (최대 10장 · 안 고르면 ★대표 원본, 없으면 최근 원본 3장)</div>
+      <div class="mtiles" id="dSrc" style="max-height:170px"></div>
+      <div class="row" style="margin-top:8px"><button class="primary sm" onclick="runPack()" id="dPackBtn">🎨 이 칸 팩 돌리기</button><span class="st2" id="dPackSt"></span></div>
+    </div>
     <div class="field"><label id="dPickLbl">콘텐츠 고르기</label><div class="mtiles" id="dPicker"></div>
       <div class="prog" style="margin-top:6px">자동 생성은 다음 단계에서 붙습니다. 지금은 사업체에 올린 원본·생성물에서 고릅니다.</div></div>
     <div class="field"><label>수정 메모 (고객·내부 의견)</label><textarea id="dFeedback" rows="2" placeholder="예: 이 컷은 밝게, 가격 빼고"></textarea></div>
@@ -268,6 +278,8 @@ async function openPlan(planId) {
     document.querySelectorAll('.plans .pl').forEach((el) => el.classList.toggle('on', el.getAttribute('onclick').includes(planId)));
     $('planCard').style.display = ''; $('noPlan').style.display = 'none';
     renderPlan();
+    clearTimeout(pollTimer);
+    if (cur.items.some((x) => x.gen_status === 'generating')) pollTimer = setTimeout(() => refreshPlan().catch(() => {}), 10000);
   } catch (e) { flash('err', e.message); }
 }
 
@@ -300,6 +312,7 @@ function renderPlan() {
   if (draft) {
     A.push('<button class="primary" onclick="aiDraft()" id="aiBtn">✨ AI로 한 달 초안 짜기</button>');
     A.push('<button onclick="addItem()">+ 칸 추가</button>');
+    A.push('<button onclick="packAll()" id="packAllBtn">🎨 빈 칸 전부 팩으로</button>');
     A.push('<span style="flex:1"></span><button class="primary" onclick="move(\'doppia_approve\')">✓ Doppia 검수 완료</button>');
   } else if (p.status === 'doppia_approved') {
     A.push('<button onclick="requestChanges()">↩ 초안으로 (수정)</button><span style="flex:1"></span>');
@@ -338,6 +351,8 @@ function renderCal() {
       return '<div class="it" onclick="openItem(\'' + it.id + '\')">' + th + '<div class="mt"><span class="fmt ' + it.format + '">' + FMT_KO[it.format] + '</span>'
         + '<span class="okdot ' + (readiness(it) ? 'y' : 'n') + '" title="' + (readiness(it) ? '준비됨' : '콘텐츠·캡션 필요') + '"></span>'
         + (it.queue_id ? ' <span class="prog">예약됨</span>' : '')
+        + (it.gen_status === 'generating' ? '<div class="stage">⏳ ' + esc(stageKo(it.gen_stage)) + '</div>' : '')
+        + (it.gen_status === 'failed' ? '<div class="stage fail">⚠ 팩 실패</div>' : '')
         + '<div class="tt">' + esc(it.theme || '(주제 없음)') + '</div></div></div>';
     }).join('') + '</div>';
   }
@@ -429,6 +444,9 @@ function openItem(id) {
   ['dWhen', 'dFmt', 'dTheme', 'dBrief', 'dCaption', 'dTags'].forEach((k) => { $(k).disabled = !draft; });
   $('dDel').style.display = draft ? '' : 'none';
   renderPicker();
+  srcPicked = [];
+  $('dPackBox').style.display = draft ? '' : 'none';
+  renderSrc(); renderPackStatus();
   $('drawer').classList.add('show');
 }
 function closeItem() { $('drawer').classList.remove('show'); editing = null; }
@@ -469,6 +487,63 @@ async function deleteItem() {
   if (!confirm('이 칸을 삭제할까요?')) return;
   try { await api(base() + '/' + cur.plan.id + '/items/' + editing.id, { method: 'DELETE' }); closeItem(); await openPlan(cur.plan.id); }
   catch (e) { flash('err', e.message); }
+}
+
+// ── 콘텐츠 팩 ──
+const STAGE_KO = { queued: '차례 기다리는 중', classify: '원본 분석 중', ref: '기준 사진 굽는 중', cuts: '컷 만드는 중', video: '광고 영상 만드는 중', done: '완료', failed: '실패' };
+function stageKo(s) { return STAGE_KO[s] || '만드는 중'; }
+let srcPicked = [], pollTimer = null;
+function renderSrc() {
+  const pool = cur.media.filter((m) => m.media_type === 'image' && m.source === 'upload');
+  $('dSrc').innerHTML = pool.length ? pool.map((m) => {
+    const i = srcPicked.indexOf(m.id);
+    return '<div class="mt2' + (i >= 0 ? ' on' : '') + '" onclick="toggleSrc(\'' + m.id + '\')"><img src="' + esc(m.url) + '" alt="" loading="lazy">'
+      + (m.is_base ? '<span class="v">★대표</span>' : '') + (i >= 0 ? '<span class="n">' + (i + 1) + '</span>' : '') + '</div>';
+  }).join('') : '<div class="prog">원본 사진이 없습니다 — 사업체 화면에서 먼저 올리세요.</div>';
+}
+function toggleSrc(id) { const i = srcPicked.indexOf(id); if (i >= 0) srcPicked.splice(i, 1); else if (srcPicked.length < 10) srcPicked.push(id); renderSrc(); }
+function renderPackStatus() {
+  if (!editing) return;
+  const it = cur.items.find((x) => x.id === editing.id) || editing;
+  const draft = cur.plan.status === 'draft';
+  const busy = it.gen_status === 'generating';
+  $('dPackBtn').disabled = !draft || busy;
+  $('dPackBtn').textContent = it.pack_id && !busy ? '🎨 팩 다시 돌리기' : '🎨 이 칸 팩 돌리기';
+  $('dPackSt').innerHTML = busy ? '⏳ ' + esc(stageKo(it.gen_stage)) + (it.pack_id ? ' · 팩 #' + esc(it.pack_id) : '')
+    : it.gen_status === 'failed' ? '<span style="color:var(--red)">⚠ 실패: ' + esc(it.gen_error || '') + '</span>'
+    : it.pack_id ? '✓ 팩 #' + esc(it.pack_id) + '로 만들었습니다' : '';
+}
+async function runPack() {
+  clearMsg();
+  const it = editing; if (!it) return;
+  if (it.media_ids.length && !confirm('이미 붙은 콘텐츠가 있습니다. 팩 결과는 비어 있는 칸에만 자동으로 붙습니다 — 붙은 걸 빼고 돌릴까요?')) return;
+  try {
+    if (it.media_ids.length) await api(base() + '/' + cur.plan.id + '/items/' + it.id, { method: 'PATCH', body: JSON.stringify({ mediaIds: [] }) });
+    await api(base() + '/' + cur.plan.id + '/items/' + it.id + '/pack', { method: 'POST', body: JSON.stringify({ sourceMediaIds: srcPicked.length ? srcPicked : undefined }) });
+    flash('ok', '팩을 시작했습니다. 다 되면 이 칸에 자동으로 붙습니다(사진 5~10분, 릴스는 더 걸릴 수 있음).');
+    await refreshPlan();
+  } catch (e) { flash('err', e.message); }
+}
+async function packAll() {
+  clearMsg();
+  const empty = cur.items.filter((x) => !x.media_ids.length && x.gen_status !== 'generating').length;
+  if (!empty) return flash('err', '콘텐츠가 비어 있는 칸이 없습니다.');
+  if (!confirm('콘텐츠가 비어 있는 ' + empty + '칸을 한 칸씩 순서대로 팩으로 만듭니다(★대표 원본 사용). 시간이 오래 걸리고 생성 비용이 듭니다. 계속할까요?')) return;
+  $('packAllBtn').disabled = true;
+  try {
+    const { data } = await api(base() + '/' + cur.plan.id + '/pack-all', { method: 'POST', body: JSON.stringify({}) });
+    flash('ok', data.queued + '칸을 차례로 만듭니다. 이 화면은 10초마다 저절로 새로고침됩니다.');
+    await refreshPlan();
+  } catch (e) { flash('err', e.message); $('packAllBtn').disabled = false; }
+}
+/** 만드는 중인 칸이 있으면 10초마다 갱신(편집창은 열린 채로 상태만 바꾼다) */
+async function refreshPlan() {
+  const { data } = await api(base() + '/' + cur.plan.id);
+  cur = data;
+  if (editing) { editing = cur.items.find((x) => x.id === editing.id) || editing; renderPackStatus(); }
+  renderPlan();
+  clearTimeout(pollTimer);
+  if (cur.items.some((x) => x.gen_status === 'generating')) pollTimer = setTimeout(() => refreshPlan().catch(() => {}), 10000);
 }
 
 // 시작

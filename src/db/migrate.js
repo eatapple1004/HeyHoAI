@@ -518,6 +518,13 @@ async function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_plan_items_plan ON business_plan_items(plan_id, post_at);
   `);
+  // 칸별 콘텐츠 팩 자동 실행(2026-10-15) — 칸의 제작 지시로 팩을 돌려 결과를 칸에 붙인다.
+  //   pack_id: 이 칸 때문에 만든 팩 · video_job_id: 릴스 칸의 광고 영상 잡(ugc_jobs) · gen_stage: 화면용 진행 단계
+  await pool.query(`
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS pack_id      TEXT;
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS video_job_id TEXT;
+    ALTER TABLE business_plan_items ADD COLUMN IF NOT EXISTS gen_stage    VARCHAR(20);
+  `);
 
   // Meta 직결(Instagram Business Login)로 받은 액세스 토큰.
   //   ⚠️ social_accounts.metadata(JSONB)에 넣지 않는다 — 그 컬럼은 계정 목록 API가 통째로
