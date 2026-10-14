@@ -71,7 +71,7 @@ function applyTool(){const t=tool();if(!t)return;const c=t.controls||{};
   const durs=c.duration||[5];const dr=c.durationRange||null;
   if(dr){if(!(+st.dur>=dr.min&&+st.dur<=dr.max))st.dur=durs[0];}else if(!durs.map(String).includes(String(st.dur)))st.dur=durs[0];
   // 슬라이더: 범위 엔진은 min~max 1초, 고정값 엔진은 허용값 인덱스를 끌어 허용값에만 멈춘다. (칩 분기는 Sora 용이었는데 Sora 는 API 종료로 숨김 — 분기만 남겨둔다)
-  const useChips=false;$('#durs').hidden=!useChips;$('#durBar').hidden=useChips;
+  const useChips=false;$('#durs').hidden=!useChips;$('#durBar').hidden=useChips||(!dr&&durs.length<2); // 길이가 하나뿐인 툴(업스케일·편집)은 슬라이더를 안 보인다
   if(useChips){chips('#durs',durs,st.dur,v=>v+'s');$('#durHint').textContent='';}
   else{const r=$('#durRange');const steps=dr?null:durs.map(Number).sort((x,y)=>x-y);
     if(dr){r.min=dr.min;r.max=dr.max;r.step=1;r.value=+st.dur;$('#durHint').textContent=`· ${dr.min}–${dr.max}s`;}
