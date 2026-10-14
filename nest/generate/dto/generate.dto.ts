@@ -4,7 +4,7 @@
 export interface ToolDto {
   id: string;
   label: string;
-  type: 'image' | 'video' | 'upscale';
+  type: 'image' | 'video' | 'upscale' | 'removebg';
   /** 어댑터 키(src/images|videos/providers) — 프론트는 배지·설명 매핑에만 쓴다 */
   provider: string;
   model: string;
@@ -16,12 +16,16 @@ export interface ToolDto {
   refModel?: boolean;
   refInput?: { max: number } | null;
   t2vModel?: boolean;
+  /** 영상만: 프롬프트 없이 돌아가는 툴(업스케일) */
+  noPrompt?: boolean;
 }
 export interface ToolsDto {
   image: ToolDto[];
   video: ToolDto[];
   /** 업스케일 툴(Topaz). 키 없는 서버면 빈 배열 → 메가메뉴 Upscale 기능이 soon 으로 */
   upscale: ToolDto[];
+  /** 배경 제거 툴(BiRefNet). 키 없는 서버면 빈 배열 */
+  removebg: ToolDto[];
 }
 
 /** BGM 파일 */

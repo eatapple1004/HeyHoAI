@@ -903,16 +903,38 @@ const getCommunityHandler = async (req, res, next) => {
 };
 
 // ─── 내 결과물 공개/비공개 토글 (My creations에서 항목별 공개·재공개) ───
-// ─── POST /api/generate/upscale — 내 결과물 1장을 Topaz 로 업스케일해 새 creation 으로 저장 ───
-//   (2026-10-13) body: { resultIdx, factor: 2|4 }. 원본은 내(또는 활성 팀) 성공 결과물 사진만. 결과는 원본 공개범위를 물려받는다.
-//   과금 = IMG_CREDIT.upscale 1장. 실패 시 환불 + failed 행(기존 생성 경로와 같은 모양).
-const postUpscaleHandler = async (req, res, next) => {
+// ─── 결과물 후처리(업스케일·배경 제거) — 내 결과물 1장 → 새 creation ───
+//   (2026-10-13 업스케일, 10-14 배경 제거로 공통화) body: { resultIdx, ...op 별 인자 }. 원본은 내(또는 활성 팀) 성공 결과물 사진만.
+//   결과는 원본 공개범위를 물려받는다. 과금 = IMG_CREDIT[op.costKey] 1장. 실패 시 환불 + failed 행(기존 생성 경로와 같은 모양).
+//   op 정의: { type(registry 툴 type) · costKey · label · args(req)→{} · run(prov, tool, imageUrl, args)→{url} · tags(args) · meta(args) }
+const POST_OPS = {
+  upscale: {
+    type: 'upscale', costKey: 'upscale', label: 'Upscale',
+    args: (req) => ({ factor: parseInt(req.body && req.body.factor, 10) === 4 ? 4 : 2 }),
+    modelLabel: (a) => `topaz-upscale-x${a.factor}`,
+    desc: (a, idx) => `Upscale ×${a.factor} of #${idx}`,
+    tags: (a) => ['upscale', `x${a.factor}`],
+    run: (prov, tool, imageUrl, a) => prov.upscale({ model: tool.model, imageUrl, factor: a.factor }),
+    meta: (a, idx) => ({ upscale_of: idx, factor: a.factor }),
+  },
+  removebg: {
+    type: 'removebg', costKey: 'removebg', label: 'Remove background',
+    args: () => ({}),
+    modelLabel: () => 'birefnet-removebg',
+    desc: (a, idx) => `Remove background of #${idx}`,
+    tags: () => ['removebg'],
+    run: (prov, tool, imageUrl) => prov.removeBackground({ model: tool.model, imageUrl }),
+    meta: (a, idx) => ({ removebg_of: idx, transparent: true }),
+  },
+};
+
+async function postProcessImage(req, res, next, op) {
   try {
-    const tool = listTools({ type: 'upscale', enabledOnly: true, availableOnly: true })[0];
-    if (!tool) return res.status(400).json({ success: false, error: 'Upscale is not configured on this server' });
+    const tool = listTools({ type: op.type, enabledOnly: true, availableOnly: true })[0];
+    if (!tool) return res.status(400).json({ success: false, error: `${op.label} is not configured on this server` });
     const resultIdx = parseInt(req.body && req.body.resultIdx, 10);
     if (!resultIdx) return res.status(400).json({ success: false, error: 'resultIdx required' });
-    const factor = parseInt(req.body && req.body.factor, 10) === 4 ? 4 : 2;
+    const args = op.args(req);
 
     const teamId = await teamCredit.activeTeamId(req.user.id);
     const src = await query(
@@ -925,38 +947,38 @@ const postUpscaleHandler = async (req, res, next) => {
     const row = src.rows[0];
     if (!row || !row.file_path) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 없는 항목입니다.' });
     const srcName = path.basename(row.file_path);
-    if (!/\.(png|jpe?g|webp)$/i.test(srcName)) return res.status(400).json({ success: false, error: 'Only images can be upscaled' });
+    if (!/\.(png|jpe?g|webp)$/i.test(srcName)) return res.status(400).json({ success: false, error: 'Only images are supported' });
     const srcB64 = await readRefBase64(srcName);
     if (!srcB64) return res.status(404).json({ success: false, error: '원본 파일을 찾을 수 없습니다.' });
 
     // eslint-disable-next-line global-require
     const creditService = require('../credits/credit.service');
-    const cost = creditService.imageCost('upscale', 1, false);
+    const cost = creditService.imageCost(op.costKey, 1, false);
     let charge = null;
     try {
-      charge = await teamCredit.chargeGeneration(req.user, cost, `업스케일 ×${factor} (#${resultIdx})`);
+      charge = await teamCredit.chargeGeneration(req.user, cost, `${op.label} (#${resultIdx})`);
     } catch (e) {
       if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
       throw e;
     }
 
-    const modelLabel = `topaz-upscale-x${factor}`;
+    const modelLabel = op.modelLabel(args);
     const savedPrompt = await promptRepo.insert({
       userId: req.user.id, characterId: null,
-      promptText: `Upscale ×${factor} of #${resultIdx}`, model: modelLabel,
-      referenceImagePath: row.file_path, tags: ['upscale', `x${factor}`], stylePreset: null, teamId,
+      promptText: op.desc(args, resultIdx), model: modelLabel,
+      referenceImagePath: row.file_path, tags: op.tags(args), stylePreset: null, teamId,
     });
 
     try {
       // eslint-disable-next-line global-require
       const prov = require(`../images/providers/${tool.provider}.provider`);
       const mime = /\.jpe?g$/i.test(srcName) ? 'image/jpeg' : /\.webp$/i.test(srcName) ? 'image/webp' : 'image/png';
-      const out = await prov.upscale({ model: tool.model, imageUrl: `data:${mime};base64,${srcB64}`, factor });
+      const out = await op.run(prov, tool, `data:${mime};base64,${srcB64}`, args);
       const r = await fetch(out.url);
-      if (!r.ok) throw new Error(`upscale result download failed (${r.status})`);
+      if (!r.ok) throw new Error(`${op.label} result download failed (${r.status})`);
       // eslint-disable-next-line global-require
       const sharp = require('sharp');
-      const imageBuffer = await sharp(Buffer.from(await r.arrayBuffer())).png().toBuffer();
+      const imageBuffer = await sharp(Buffer.from(await r.arrayBuffer())).png().toBuffer(); // 공통 저장이 .png — 배경 제거는 알파가 그대로 남는다
       const meta = await sharp(imageBuffer).metadata();
 
       const outputDir = path.join(process.cwd(), 'tmp', 'images');
@@ -971,19 +993,21 @@ const postUpscaleHandler = async (req, res, next) => {
         filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(imageBuffer.length / 1024),
         width: meta.width, height: meta.height, model: modelLabel,
         visibility: row.visibility, templateName: row.template_name,
-        metadata: { upscale_of: resultIdx, factor, ...(srcMeta.model_name ? { model_name: srcMeta.model_name } : {}) },
+        metadata: { ...op.meta(args, resultIdx), ...(srcMeta.model_name ? { model_name: srcMeta.model_name } : {}) },
       });
       await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
       res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, model: modelLabel, width: meta.width, height: meta.height, cost } });
     } catch (err) {
       const errorMsg = String(err.message || err).slice(0, 200);
-      if (charge) await teamCredit.refundGeneration(req.user, cost, `업스케일 실패 환불 (#${resultIdx})`).catch(() => {});
+      if (charge) await teamCredit.refundGeneration(req.user, cost, `${op.label} 실패 환불 (#${resultIdx})`).catch(() => {});
       await resultRepo.insertFailed({ promptIdx: savedPrompt.idx, characterId: null, model: modelLabel, errorMessage: errorMsg }).catch(() => null);
-      logger.warn({ err: errorMsg, resultIdx, userId: req.user.id }, 'upscale failed');
-      res.status(502).json({ success: false, error: `Upscale failed: ${errorMsg}` });
+      logger.warn({ err: errorMsg, resultIdx, userId: req.user.id, op: op.type }, 'post-process failed');
+      res.status(502).json({ success: false, error: `${op.label} failed: ${errorMsg}` });
     }
   } catch (err) { next(err); }
-};
+}
+const postUpscaleHandler = (req, res, next) => postProcessImage(req, res, next, POST_OPS.upscale);
+const postRemovebgHandler = (req, res, next) => postProcessImage(req, res, next, POST_OPS.removebg);
 
 /** 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입(values·toggle·number·text)으로 통과시킨다. 이미지·영상 공용. */
 function pickExtras(tool, raw) {
@@ -2097,11 +2121,12 @@ const reads = {
       : { perImage: credit.imageCost(t.costKey || 'pro', 1, false) }); // image·upscale = 장당
     const pub = (t) => ({ id: t.id, label: t.label, type: t.type, provider: t.provider, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [], pricing: pricing(t),
       // (2026-10-13) 영상: 레퍼런스 줄(refModel 있으면 노출, refInput.max 장수) · 시작 프레임 없이도 가능(t2vModel). 엔드포인트 경로 자체는 프론트가 안 쓴다 — 불리언/장수만.
-      ...(t.type === 'video' ? { refModel: !!t.refModel, refInput: t.refInput ? { max: t.refInput.max || 10 } : null, t2vModel: !!t.t2vModel } : {}) });
+      ...(t.type === 'video' ? { refModel: !!t.refModel, refInput: t.refInput ? { max: t.refInput.max || 10 } : null, t2vModel: !!t.t2vModel, noPrompt: !!t.noPrompt } : {}) });
     return {
       image: listTools({ type: 'image', enabledOnly: true, availableOnly: true }).map(pub),
       video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).map(pub),
       upscale: listTools({ type: 'upscale', enabledOnly: true, availableOnly: true }).map(pub), // 비어 있으면 Upscale 기능 = soon
+      removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
     };
   },
 
@@ -2261,6 +2286,7 @@ const ops = {
   getCommunity: asOps(getCommunityHandler),
   patchResultsVisibility: asOps(patchResultsVisibilityHandler),
   postUpscale: asOps(postUpscaleHandler),
+  postRemovebg: asOps(postRemovebgHandler),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2302,6 +2328,7 @@ router.post('/caption', postCaptionHandler);
 router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
 router.post('/upscale', postUpscaleHandler);
+router.post('/removebg', postRemovebgHandler);
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);
 router.get('/prompts/:idx', getPrompts2Handler);

@@ -160,6 +160,13 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postUpscale', req));
   }
 
+  // POST /api/generate/removebg — 내 결과물 1장 배경 제거(BiRefNet) → 투명 PNG 새 creation
+  @Post('removebg')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postRemovebg(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postRemovebg', req));
+  }
+
   // POST /api/generate/video/async
   @UseInterceptors(FileFieldsInterceptor([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }, { name: 'sourceVideo', maxCount: 1 }, { name: 'motionVideo', maxCount: 1 }], VIDEO_UPLOAD_OPTIONS))
   @Post('video/async')

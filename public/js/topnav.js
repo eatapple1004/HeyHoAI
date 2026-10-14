@@ -63,7 +63,8 @@
       ['📷', 'Cinematic Cameras', 'Camera × lens picker', 'soon'], // 우리가 만들어야 하는 것 → soon (프롬프트 프리셋 8개는 image.html 에 숨겨둠)
       ['◌', 'Inpaint', 'Select an area, describe the change', 'soon'],
       ['☀', 'Relight', 'Light position · color · brightness', 'soon'],
-      ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'], // 'auto:<key>' = tools API 의 그 목록이 비어있지 않으면 live(키 없는 서버면 soon)
+      ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'],
+      ['✂', 'Remove background', 'BiRefNet · transparent PNG — hover a result', 'auto:removebg', '/image'], // 'auto:<key>' = tools API 의 그 목록이 비어있지 않으면 live(키 없는 서버면 soon)
       ['▦', 'Look set', 'One photo → a set in one aesthetic', 'soon'],
       ['👤', 'Virtual models', '80 licensed models', 'soon'],
       ['⇄', 'Face Swap', 'Our models + your face only', 'soon'],
@@ -86,7 +87,7 @@
       ['🎙', 'Lipsync', 'Own voice only', 'soon'],
       ['✍', 'Draw to video', 'Sketch turns into a shot', 'soon'],
       ['✍', 'Draw to edit', 'Sketch on frames to guide edits', 'soon'],
-      ['▲', 'Video upscale', 'Topaz Video', 'soon'],
+      ['▲', 'Video upscale', 'Topaz Video · ×2 · ×4', 'auto:tool:topaz-video', '/video?tool=topaz-video'],
       // (2026-10-13) 사용자 원칙 "일단 다 넣는다" — 처음에 뺐던 4개도 soon 으로. Click to Ad 만 제외(=폐기한 Ad Studio).
       ['▣', 'Faceless Studio', 'A faceless channel in one click', 'soon'],
       ['▤', 'Explainer', 'Any topic → explainer video', 'soon'],
@@ -117,7 +118,7 @@
       var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id)); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
-      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
+      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:tool:') === 0) st = (T.video || []).concat(T.image || []).some(function (t) { return t.id === st.slice(10); }) ? 'live' : 'soon'; else if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
       document.getElementById('tnMegaBox').innerHTML = '<div class="cols"><div><h4>Features</h4>' + feats + '</div><div><h4 class="k">Models</h4>' + live + soon + '</div></div>';
     });
   }

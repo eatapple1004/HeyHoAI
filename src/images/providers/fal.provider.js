@@ -124,4 +124,23 @@ falProvider.upscale = async function upscale(req) {
   return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, factor, width: image.width, height: image.height } };
 };
 
+/**
+ * 배경 제거(fal-ai/birefnet/v2). 제품 누끼 기본값: General Use (Light 2K) · 2048 연산 · PNG(알파). 결과 image.url.
+ * @param {{ model?: string, imageUrl: string }} req
+ */
+falProvider.removeBackground = async function removeBackground(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/birefnet/v2';
+  const { result, requestId } = await submitAndWait(model, {
+    image_url: req.imageUrl, model: 'General Use (Light 2K)', operating_resolution: '2048x2048', output_format: 'png', refine_foreground: true,
+  }, 120_000);
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal 배경 제거 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
+};
+
 module.exports = falProvider;

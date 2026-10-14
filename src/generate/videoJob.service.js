@@ -163,7 +163,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   if (typeof provider.isConfigured === 'function' && !provider.isConfigured()) {
     const e = new Error(`${engine} API key not configured`); e.statusCode = 400; throw e;
   }
-  if (!prompt) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; }
+  if (!prompt && !(tool && tool.noPrompt)) { const e = new Error('Prompt is required'); e.statusCode = 400; throw e; } // noPrompt = 업스케일처럼 프롬프트가 없는 툴
   const refPaths = (referenceImagePaths || []).filter(Boolean);
   // (2026-10-14) 영상 입력 툴 — imageSlots 에 sourceVideo/motionVideo 키가 있으면 그 파일이 필수
   const slotKeys = new Set(((tool && tool.imageSlots) || []).map((s) => s.key));
@@ -241,7 +241,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
       `INSERT INTO video_jobs (user_id, team_id, prompt, duration, mode, task_id, charge_amount, status, audio,
          visibility, template_id, template_source, template_name, engine, ctx)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'processing',$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
-      [user.id, teamId, String(prompt).slice(0, 2000), String(dur), 'pro', String(sub.providerJobId), chargeAmount, wantAudio,
+      [user.id, teamId, String(prompt || `${tool ? tool.label : engine}`).slice(0, 2000), String(dur), 'pro', String(sub.providerJobId), chargeAmount, wantAudio,
        vis, templateId || null, templateSource || null, templateName ? String(templateName).slice(0, 120) : null,
        engine, sub.metadata ? JSON.stringify(sub.metadata) : null]
     );

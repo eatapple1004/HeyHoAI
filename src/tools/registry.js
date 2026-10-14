@@ -182,6 +182,14 @@ const TOOLS = {
     controls: { upscaleFactor: [2, 4] }, // Topaz 'Standard V2' 고정 · 얼굴 보정 기본값(0.8) 그대로
     imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
   },
+  // (2026-10-14) 배경 제거 — type:'removebg', tools API removebg[] · POST /api/generate/removebg · 카드 버튼(✂). BiRefNet v2 는 제품 누끼용 기본값으로 고정.
+  'birefnet': {
+    id: 'birefnet', label: 'Remove background', type: 'removebg',
+    provider: 'fal', model: 'fal-ai/birefnet/v2',
+    costKey: 'removebg', enabled: true,
+    controls: {},
+    imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
+  },
   'soul': {
     id: 'soul', label: 'Higgsfield Soul 2', type: 'image',
     provider: 'higgsfield', model: 'higgsfield-ai/soul/v2/standard',
@@ -369,6 +377,15 @@ const TOOLS = {
     controls: { duration: [5], resolution: ['720p', '1080p', '480p'] },
     // (10-14 실측) 힉스필드 안전 필터가 엄격하다(속옷 차림 인물 이미지 = 거절). 플럼빙은 통과.
     imageSlots: [{ key: 'startFrame', label: 'Character image', hint: 'A person (safe-for-work)' }, { key: 'motionVideo', label: 'Motion video', hint: 'The movement to transfer' }],
+  },
+  // (2026-10-14) 영상 업스케일 — Topaz Video. 영상 입력 칸 재사용, 프롬프트 없음(noPrompt). 길이는 원본을 따르므로 과금은 자리값(5초 티어).
+  'topaz-video': {
+    id: 'topaz-video', label: 'Topaz Video Upscale', type: 'video',
+    provider: 'fal', model: 'fal-ai/topaz/upscale/video',
+    falInput: { video: 'video_url' }, noPrompt: true,
+    costKey: null, enabled: true,
+    controls: { duration: [5], extras: [{ key: 'upscale_factor', label: 'Scale', values: ['2', '4'] }, { key: 'model', label: 'Model', values: ['Proteus', 'Artemis HQ', 'Gaia HQ', 'Nyx', 'Nyx Fast'], hint: 'Proteus fits most footage' }] },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Upscales ×2 or ×4. Length follows the source.' }],
   },
   'gemini-omni': {
     id: 'gemini-omni', label: 'Gemini Omni Flash', type: 'video',
