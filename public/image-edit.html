@@ -56,6 +56,7 @@ body{background:var(--bg)}
 .ed-rail button{width:40px;height:40px;border-radius:11px;border:1px solid transparent;background:transparent;color:var(--dim);font-size:17px;cursor:pointer;position:relative}
 .ed-rail button:hover{background:var(--surface)}
 .ed-rail button.on{background:var(--surface2);border-color:var(--border2);color:var(--lime)}
+.ed-rail button:disabled{opacity:.25;cursor:not-allowed;background:transparent}
 .ed-rail hr{width:26px;border:0;border-top:1px solid var(--border);margin:4px 0}
 .ed-stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#0a0a10 radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/18px 18px;touch-action:none}
 .ed-stage canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -270,7 +271,10 @@ $('#rail').addEventListener('click',e=>{const b=e.target.closest('button');if(!b
   if(b.dataset.a==='clear')maskEdit(()=>mctx.clearRect(0,0,mask.width,mask.height));
   if(b.dataset.a==='invert')maskEdit(()=>{const t=canvasOf(mask.width,mask.height),tx=t.getContext('2d');tx.fillStyle='#ff2bd6';tx.fillRect(0,0,t.width,t.height);tx.globalCompositeOperation='destination-out';tx.drawImage(mask,0,0);mctx.clearRect(0,0,mask.width,mask.height);mctx.drawImage(t,0,0);});
 });
-function setMode(m){st.mode=m;$$('#rail [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('#brushBar').hidden=!(m==='brush'||m==='erase');cv.style.cursor=m==='move'?'grab':'none';hint();draw();}
+// 브러시·지우개·마스크 버튼은 마스크를 쓰는 도구(Background·Inpaint·Erase·Fix label)에서만 켠다
+const RAIL_TITLE={};$$('#rail button').forEach(b=>RAIL_TITLE[b.dataset.m||b.dataset.a]=b.title);
+function syncRail(){const on=usesMask(),t=toolDef();$$('#rail [data-m=brush],#rail [data-m=erase],#rail [data-a]').forEach(b=>{b.disabled=!on;b.title=on?RAIL_TITLE[b.dataset.m||b.dataset.a]:`${t?t.title:'This tool'} doesn't use a brush`;});}
+function setMode(m){if((m==='brush'||m==='erase')&&!usesMask())m='move';st.mode=m;$$('#rail [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('#brushBar').hidden=!(m==='brush'||m==='erase');cv.style.cursor=m==='move'?'grab':'none';hint();draw();}
 $('#bsize').oninput=e=>{st.brush=+e.target.value;$('#bsizeV').textContent=st.brush;draw();};
 
 // ── 뷰 ──
@@ -333,7 +337,7 @@ addEventListener('keydown',e=>{if($('#app').hidden||/INPUT|TEXTAREA|SELECT/.test
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?doRedo():doUndo();return;}
   if(e.code==='Space'&&!space){space=true;cv.style.cursor='grab';e.preventDefault();}
   if(e.key==='\\'){st.compare=true;draw();}
-  const k=e.key.toLowerCase();if(k==='v')setMode('move');if(k==='b')setMode('brush');if(k==='e')setMode('erase');
+  const k=e.key.toLowerCase();if(k==='v')setMode('move');if(k==='b'&&usesMask())setMode('brush');if(k==='e'&&usesMask())setMode('erase');
   if(k==='['){st.brush=Math.max(6,st.brush-8);$('#bsize').value=st.brush;$('#bsizeV').textContent=st.brush;draw();}
   if(k===']'){st.brush=Math.min(240,st.brush+8);$('#bsize').value=st.brush;$('#bsizeV').textContent=st.brush;draw();}});
 addEventListener('keyup',e=>{if(e.code==='Space'){space=false;cv.style.cursor=st.mode==='move'?'grab':'none';}if(e.key==='\\'){st.compare=false;draw();}});
@@ -358,7 +362,7 @@ function renderTools(){$('#tools').innerHTML=TOOLS.map(t=>{const off=t.ai&&!st.o
 $('#tools').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b||b.disabled)return;st.tool=b.dataset.t;preview=null;st.adj={b:0,c:0,s:0,w:0};
   if(st.tool==='expand'&&st.expand.mode==='crop')initCrop();
   if(usesMask()&&st.mode==='move')setMode('brush');else if(!usesMask())setMode('move');
-  renderTools();renderBody();st.fitted=false;fit();});
+  syncRail();renderTools();renderBody();st.fitted=false;fit();});
 function engineFor(op){const o=st.ops[op];if(!o)return null;const sel=st.engine[op]||'auto';if(sel!=='auto')return o.alternatives.find(a=>a.id===sel)||o.engine;
   if(op==='fix_text'&&o.engineNoMask&&!hasMask())return o.engineNoMask;return o.engine;}
 function engineBox(op){const o=st.ops[op];if(!o)return '';const e=engineFor(op),sel=st.engine[op]||'auto';
@@ -461,7 +465,7 @@ async function boot(){
   const T=window.DoppiaNav?await DoppiaNav.tools():{};st.T=T;(T.editor||[]).forEach(o=>st.ops[o.op]=o);
   $('#noEng').hidden=(T.editor||[]).length>0;
   if(!st.ops[st.tool])st.tool=(TOOLS.find(t=>!t.ai||st.ops[t.id])||TOOLS[TOOLS.length-1]).id;
-  renderTools();setMode('move');syncUndo();
+  renderTools();syncRail();setMode('move');syncUndo();
   const q=new URLSearchParams(location.search);if(q.get('u')&&/^\/images\/[\w.-]+$/.test(q.get('u')))openUrl(q.get('u'),+q.get('idx')||null,'Library');else loadRecent();
   new ResizeObserver(()=>{if(!$('#app').hidden)resize();}).observe($('#stage'));
 }
