@@ -187,7 +187,8 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
-const uploadVideo = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // (2026-10-14) /video/async — 영상 입력(편집·연장·모션) 50MB. nginx dev client_max_body_size 60M 안쪽.
+const uploadVideo = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+const editUpload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } }); // (2026-10-15) /edit — 캔버스 PNG(최대 4096px) + 마스크 // (2026-10-14) /video/async — 영상 입력(편집·연장·모션) 50MB. nginx dev client_max_body_size 60M 안쪽.
 
 /**
  * POST /api/generate
@@ -1008,6 +1009,116 @@ async function postProcessImage(req, res, next, op) {
 }
 const postUpscaleHandler = (req, res, next) => postProcessImage(req, res, next, POST_OPS.upscale);
 const postRemovebgHandler = (req, res, next) => postProcessImage(req, res, next, POST_OPS.removebg);
+
+// ─── Image Editor (2026-10-15) — 캔버스 1장(+마스크) → AI 편집 1장 → 새 creation ───
+//   multipart: image(필수, 지금 캔버스 PNG) · mask(선택, 같은 크기 흰색=편집) · op · prompt · text(fix_text) · engine('auto'|registry id) · factor · sourceIdx · privateMode
+//   엔진 선택·프롬프트·합성 = src/images/imageEdit.engine.js. 과금 = 고른 엔진의 costKey 1장(정본 IMG_CREDIT). 실패 시 환불 + failed 행.
+//   공개범위: sourceIdx(내 결과물)면 물려받고, 업로드면 생성과 같은 규칙(Private Mode 구독자만 비공개).
+async function postEditHandler(req, res, next) {
+  const files = req.files || {};
+  const imgFile = (files.image || [])[0];
+  const maskFile = (files.mask || [])[0];
+  const cleanup = () => [imgFile, maskFile].forEach((f) => { if (f && f.path) fs.unlink(f.path, () => {}); });
+  try {
+    // eslint-disable-next-line global-require
+    const editEngine = require('../images/imageEdit.engine');
+    const body = req.body || {};
+    const op = String(body.op || '');
+    const def = editEngine.EDIT_OPS[op];
+    if (!def) { cleanup(); return res.status(400).json({ success: false, error: 'Unknown edit op' }); }
+    const sourceIdx = parseInt(body.sourceIdx, 10) || null;
+    if (!imgFile && !sourceIdx) { cleanup(); return res.status(400).json({ success: false, error: 'image or sourceIdx required' }); }
+    if (def.mask === 'required' && !maskFile) { cleanup(); return res.status(400).json({ success: false, error: `${def.label} needs a mask — brush the area first` }); }
+    if (op === 'fix_text' && !String(body.text || '').trim()) { cleanup(); return res.status(400).json({ success: false, error: 'Type the exact label text' }); }
+
+    const maskBuf = maskFile ? fs.readFileSync(maskFile.path) : null;
+    const upBuf = imgFile ? fs.readFileSync(imgFile.path) : null;
+    cleanup();
+    const tool = editEngine.pickEngine(op, { hasMask: !!maskBuf, override: String(body.engine || 'auto') });
+    if (!tool) return res.status(400).json({ success: false, error: `${def.label} is not configured on this server` });
+
+    // 원본: 업로드(캔버스에서 손댄 버전)가 우선, 없으면 내 결과물(sourceIdx)을 서버에서 읽는다(R2 이미지는 브라우저 캔버스로 못 읽는 경우가 있어서).
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    let visibility = (wantsPrivate(body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    let srcRow = null;
+    if (sourceIdx) {
+      const src = await query(
+        `SELECT gr.visibility, gr.file_path FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+          WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false
+            AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
+        [sourceIdx, req.user.id, teamId || null]
+      );
+      srcRow = src.rows[0] || null;
+      if (srcRow) visibility = srcRow.visibility;
+    }
+    let srcBuf = upBuf;
+    if (!srcBuf) {
+      const name = srcRow && srcRow.file_path ? path.basename(srcRow.file_path) : '';
+      if (!/\.(png|jpe?g|webp)$/i.test(name)) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 이미지가 아닙니다.' });
+      const b64 = await readRefBase64(name);
+      if (!b64) return res.status(404).json({ success: false, error: '원본 파일을 찾을 수 없습니다.' });
+      srcBuf = Buffer.from(b64, 'base64');
+    }
+    // eslint-disable-next-line global-require
+    const sharp = require('sharp');
+    let original;
+    try { original = await sharp(srcBuf).rotate().png().toBuffer(); } catch (e) { return res.status(400).json({ success: false, error: 'Unsupported image file' }); }
+
+    // eslint-disable-next-line global-require
+    const creditService = require('../credits/credit.service');
+    // Auto 면 1순위 엔진이 장애·한도초과로 실패할 때 다음 후보로 넘어간다(사용자가 엔진을 직접 고른 경우는 그 엔진만).
+    const auto = !body.engine || body.engine === 'auto' || body.engine !== tool.id;
+    const tries = auto ? [tool].concat(editEngine.candidates(op, !!maskBuf).filter((t) => t.id !== tool.id)) : [tool];
+
+    const factor = parseInt(body.factor, 10) === 4 ? 4 : 2;
+    let savedPrompt = null;
+    const errors = [];
+    for (const t of tries) {
+      // 엔진마다 단가가 다를 수 있어 시도마다 그 엔진 값으로 차감 → 실패 시 환불
+      const cost = creditService.imageCost(t.costKey || 'pro', 1, false);
+      try {
+        await teamCredit.chargeGeneration(req.user, cost, `Editor · ${def.label}`);
+      } catch (e) {
+        if (e.statusCode && !errors.length) return res.status(e.statusCode).json({ success: false, error: e.message });
+        if (e.statusCode) break;
+        throw e;
+      }
+      const modelLabel = `editor-${op}:${t.id}`;
+      if (!savedPrompt) {
+        savedPrompt = await promptRepo.insert({
+          userId: req.user.id, characterId: null,
+          promptText: `${def.label}${body.prompt ? ` — ${String(body.prompt).slice(0, 500)}` : ''}${op === 'fix_text' ? ` — "${String(body.text).slice(0, 200)}"` : ''}`,
+          model: modelLabel, referenceImagePath: null, tags: ['editor', op], stylePreset: null, teamId,
+        });
+      }
+      try {
+        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor });
+        const meta = await sharp(out.buffer).metadata();
+        const outputDir = path.join(process.cwd(), 'tmp', 'images');
+        fs.mkdirSync(outputDir, { recursive: true });
+        const filename = `${crypto.randomUUID()}.png`;
+        fs.writeFileSync(path.join(outputDir, filename), out.buffer);
+        await mediaStore.put(filename, out.buffer);
+        const savedResult = await resultRepo.insert({
+          promptIdx: savedPrompt.idx, characterId: null,
+          filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(out.buffer.length / 1024),
+          width: meta.width, height: meta.height, model: modelLabel, visibility, templateName: 'Editor',
+          metadata: { editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
+        });
+        await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
+        return res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, op, engine: { id: t.id, label: t.label, provider: t.provider }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });
+      } catch (err) {
+        const errorMsg = String(err.message || err).slice(0, 200);
+        await teamCredit.refundGeneration(req.user, cost, `Editor · ${def.label} 실패 환불`).catch(() => {});
+        await resultRepo.insertFailed({ promptIdx: savedPrompt.idx, characterId: null, model: modelLabel, errorMessage: errorMsg }).catch(() => null);
+        logger.warn({ err: errorMsg, userId: req.user.id, op, engine: t.id }, 'editor op failed');
+        errors.push({ engine: t.id, label: t.label, error: errorMsg });
+      }
+    }
+    const last = errors[errors.length - 1] || { label: tool.label, error: 'no engine ran' };
+    res.status(502).json({ success: false, error: `${def.label} failed (${errors.map((x) => x.label).join(' → ') || last.label}): ${last.error}` });
+  } catch (err) { cleanup(); next(err); }
+}
 
 /** 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입(values·toggle·number·text)으로 통과시킨다. 이미지·영상 공용. */
 function pickExtras(tool, raw) {
@@ -2127,6 +2238,7 @@ const reads = {
       video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).map(pub),
       upscale: listTools({ type: 'upscale', enabledOnly: true, availableOnly: true }).map(pub), // 비어 있으면 Upscale 기능 = soon
       removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
+      editor: require('../images/imageEdit.engine').catalog(credit.imageCost), // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };
   },
 
@@ -2287,6 +2399,7 @@ const ops = {
   patchResultsVisibility: asOps(patchResultsVisibilityHandler),
   postUpscale: asOps(postUpscaleHandler),
   postRemovebg: asOps(postRemovebgHandler),
+  postEdit: asOps(postEditHandler),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2329,6 +2442,7 @@ router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
 router.post('/upscale', postUpscaleHandler);
 router.post('/removebg', postRemovebgHandler);
+router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), postEditHandler);
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);
 router.get('/prompts/:idx', getPrompts2Handler);

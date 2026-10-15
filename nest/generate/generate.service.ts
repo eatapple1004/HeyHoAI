@@ -33,6 +33,9 @@ export const GENERATE_UPLOAD_OPTIONS = {
 // (2026-10-14) /video/async — 영상 입력(편집·연장·모션 참조)까지 받으므로 50MB. 저장 방식은 GENERATE_UPLOAD_OPTIONS 와 같다.
 export const VIDEO_UPLOAD_OPTIONS = { ...GENERATE_UPLOAD_OPTIONS, limits: { fileSize: 50 * 1024 * 1024 } };
 
+// (2026-10-15) /edit — Image Editor 캔버스 PNG + 마스크. 저장 방식은 GENERATE_UPLOAD_OPTIONS 와 같다.
+export const EDIT_UPLOAD_OPTIONS = { ...GENERATE_UPLOAD_OPTIONS, limits: { fileSize: 25 * 1024 * 1024 } };
+
 // BGM 업로드 — tmp/bgm·원본 파일명(정규화)·50MB.
 const bgmDir = path.join(process.cwd(), 'tmp', 'bgm');
 fs.mkdirSync(bgmDir, { recursive: true });

@@ -26,6 +26,15 @@ export interface ToolsDto {
   upscale: ToolDto[];
   /** 배경 제거 툴(BiRefNet). 키 없는 서버면 빈 배열 */
   removebg: ToolDto[];
+  /** Image Editor op 별 자동 엔진·대안·단가(src/images/imageEdit.engine.js catalog). 비어 있으면 Editor = soon */
+  editor: EditorOpDto[];
+}
+
+/** Image Editor op 1개 — engine = 자동 선택(마스크 있을 때), engineNoMask = 마스크 없을 때 다른 경우만 */
+export interface EditorEngineDto { id: string; label: string; provider: string; perImage: number }
+export interface EditorOpDto {
+  id: string; op: string; label: string; mask: 'required' | 'optional' | 'none'; why: string;
+  engine: EditorEngineDto; engineNoMask: EditorEngineDto | null; alternatives: EditorEngineDto[];
 }
 
 /** BGM 파일 */

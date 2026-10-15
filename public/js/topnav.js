@@ -66,7 +66,7 @@
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'],
       ['✂', 'Remove background', 'Transparent PNG — hover a result', 'auto:removebg', '/image'],
       ['⇄', 'Face swap', 'Our models + your face only', 'soon'],
-      ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'soon'],
+      ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'auto:editor', '/image-edit', 'new'],
       ['👤', 'Brand model', 'One consistent virtual model for your brand', 'soon']
     ],
     video: [
