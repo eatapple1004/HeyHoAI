@@ -190,6 +190,14 @@ const TOOLS = {
     controls: {},
     imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
   },
+  // (2026-10-16) 마스크 채우기 — type:'edit' 라 생성 모델 목록엔 안 나오고 Editor(imageEdit.engine)만 쓴다. Inpaint·Erase·Expand 1순위(진짜 마스크).
+  'flux-fill': {
+    id: 'flux-fill', label: 'FLUX Fill', type: 'edit',
+    provider: 'fal', model: 'fal-ai/flux-pro/v1/fill',
+    costKey: 'flux-fill', enabled: true,
+    controls: {},
+    imageSlots: [{ key: 'source', label: 'Source image' }, { key: 'mask', label: 'Mask' }],
+  },
   'soul': {
     id: 'soul', label: 'Higgsfield Soul 2', type: 'image',
     provider: 'higgsfield', model: 'higgsfield-ai/soul/v2/standard',
