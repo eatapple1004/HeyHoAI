@@ -56,55 +56,43 @@
 
   // ── 메가메뉴 — 기능(live/soon 고정 목록) + 모델(카탈로그 = live, 나머지 soon) ──
   var ICON = { topaz: '▲', 'seedance-2.5': 'S', 'wan-3': 'W', 'hailuo-2.3': 'M', 'minimax-h3': 'M', 'grok-video': 'X', happyhorse: 'A', 'flux-3-video': 'F', 'gemini-omni': 'G', gemini: '🍌', openai: 'G', seedream: 'S', fal: 'F', replicate: 'R', xai: 'X', higgsfield: 'H', kling: 'K', veo: 'V', runway: 'R', minimax: 'M', sora: 'O', seedance: 'S' };
+  // (2026-10-15 확정) 전시 구조 = docs/Features_전시구조_2026-10-15.md 가 정본. 바꿀 땐 문서부터.
+  //   행 = [아이콘, 이름, 설명, 상태, href?, 배지?]. 상태: 'live' | 'soon' | 'auto:<tools키>'(목록 비어있지 않으면 live) | 'auto:tool:<id>' | 'auto:videoInput'. 배지: 'top'(무기) | 'new'.
+  //   원칙: 슬롯은 입력·결과물이 다를 때만(프롬프트만 다른 건 프리셋) · 무기는 집이 하나(여긴 링크) · 만들 계획 없는 건 안 건다.
   var FEAT = {
     image: [
-      ['✎', 'Reference + prompt', 'Up to 14 references, any engine', 'live', '/image'],
-      ['✎', 'Edit with words', 'Change one thing, keep the rest', 'live', '/image'],
-      ['📷', 'Cinematic Cameras', 'Camera × lens picker', 'soon'], // 우리가 만들어야 하는 것 → soon (프롬프트 프리셋 8개는 image.html 에 숨겨둠)
-      ['◌', 'Inpaint', 'Select an area, describe the change', 'soon'],
-      ['☀', 'Relight', 'Light position · color · brightness', 'soon'],
+      ['✎', 'Create Image', 'Text · references · edit with words — every engine', 'live', '/image'],
+      ['✦', 'Doppia Lens', 'Product shots · model shots — label kept. Product ID inside', 'soon', null, 'top'],
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'],
-      ['✂', 'Remove background', 'BiRefNet · transparent PNG — hover a result', 'auto:removebg', '/image'], // 'auto:<key>' = tools API 의 그 목록이 비어있지 않으면 live(키 없는 서버면 soon)
-      ['▦', 'Look set', 'One photo → a set in one aesthetic', 'soon'],
-      ['👤', 'Virtual models', '80 licensed models', 'soon'],
-      ['⇄', 'Face Swap', 'Our models + your face only', 'soon'],
-      ['✦', 'Doppia Lens', 'Model shots · product shots', 'soon'],
-      // (2026-10-13) 편집기 — 힉스필드 Layers 에 해당. 캔버스 하나에 도구 9개(레이어 분리·글자 편집·확장/자르기·배경 제거·색보정·피부 보정·릴라이트·앵글·업스케일). 우리도 만든다 → soon.
-      ['▣', 'Editor', 'Layers · remove background · expand & crop · color grading · edit text · angles', 'soon']
+      ['✂', 'Remove background', 'Transparent PNG — hover a result', 'auto:removebg', '/image'],
+      ['⇄', 'Face swap', 'Our models + your face only', 'soon'],
+      ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'soon'],
+      ['👤', 'Brand model', 'One consistent virtual model for your brand', 'soon']
     ],
-    // (2026-10-13) 영상 기능 카탈로그 = 힉스필드 Video 메뉴 전부(soon). 배선만으로 되는 것만 live. 17개 전부 포함.
     video: [
-      ['▶', 'Image to video', 'Start from any image result', 'live', '/video'],
-      ['♪', 'Sound', 'Native ambient sound (Veo · Kling)', 'live', '/video'],
-      ['✦', 'Product reveal', 'Motion presets for product shots', 'soon'],
-      ['🎬', 'Cinema Studio', 'Cinematic video with an AI director', 'soon'],
-      ['◇', '3D Jutsu', 'Build a 3D scene, turn it into video (previs)', 'soon'],
-      ['▭', 'Shorts Studio', 'Footage → ready-made shorts', 'soon'],
-      ['✎', 'Edit video', 'Seedance 2.5 Edit · Kling Omni Edit — upload a video, describe the change', 'auto:videoInput', '/video?tool=seedance-2.5-edit'],
-      ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
-      ['◐', 'Change color palette', 'Tones · mood', 'soon'],
-      ['☀', 'Relight video', 'Light position · color · brightness', 'soon'],
-      ['🎙', 'Lipsync', 'Own voice only', 'soon'],
-      ['✍', 'Draw to video', 'Sketch turns into a shot', 'soon'],
-      ['✍', 'Draw to edit', 'Sketch on frames to guide edits', 'soon'],
+      ['▶', 'Create Video', 'Image · text · references · sound — every engine', 'live', '/video'],
+      ['🎬', 'Spec Ad', 'Product photo → 5–15s VFX ad', 'soon', null, 'top'],
+      ['⇄', 'Product swap', 'Swap the product in any video for yours', 'soon'],
+      ['⤓', 'Platform export', 'Reels 1080×1920 · Coupang specs', 'soon', null, 'new'],
+      ['✎', 'Edit video', 'Upload a video, describe the change', 'auto:videoInput', '/video?tool=seedance-2.5-edit'],
+      ['⧉', 'Extend', 'Continue from the last frame', 'auto:tool:seedance-2.5-extend', '/video?tool=seedance-2.5-extend'],
       ['▲', 'Video upscale', 'Topaz Video · ×2 · ×4', 'auto:tool:topaz-video', '/video?tool=topaz-video'],
-      // (2026-10-13) 사용자 원칙 "일단 다 넣는다" — 처음에 뺐던 4개도 soon 으로. Click to Ad 만 제외(=폐기한 Ad Studio).
-      ['▣', 'Faceless Studio', 'A faceless channel in one click', 'soon'],
-      ['▤', 'Explainer', 'Any topic → explainer video', 'soon'],
-      ['⌗', 'Canvas', 'Visual ideation · repeatable workflows', 'soon'],
-      ['⧉', 'Mixed media', 'Mixed media projects', 'soon'],
-      ['⇥', 'Click to Ad', 'Product URL → video ad', 'soon'] // (2026-10-13) 사용자 지시로 soon 에 포함(옛 Ad Studio 자리)
+      ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
+      ['🎙', 'Lipsync', 'Own voice only', 'soon'],
+      ['T', 'Reels captions', 'Captions · text overlay', 'soon'],
+      ['↷', 'Motion transfer', 'People only — Kling Motion Control · Genjutsu', 'auto:tool:kling-motion', '/video?tool=kling-motion']
     ]
   };
+  // 키 없는 서버에서만 soon 으로 내려가는 모델(라벨이 tools API 와 같으면 live 로 올라가고 여기선 빠진다)
   var SOON_MODELS = {
-    // 카탈로그(힉스필드 Image 메뉴 기준). 라벨이 /api/generate/tools 의 라벨과 같으면 live 로 올라가고 여기선 빠진다 → 키가 없는 서버에선 자동으로 soon.
     image: [['X', 'Grok Imagine 2.0'], ['H', 'Higgsfield Soul 2'], ['▲', 'Topaz Upscale']],
-    // 영상 모델 카탈로그(힉스필드 Video 메뉴 기준). Seedance 2.5·Kling 3.0·Wan 3.0·HappyHorse·Hailuo 2.3·Genjutsu·DOP 는 힉스필드 API 한 키로도 붙는다(open.higgsfield.ai 모델 목록 85개, 10-13 확인).
-    video: [['H', 'Higgsfield DOP'], ['X', 'Grok Imagine 1.5 Lite'], ['G', 'Gemini Omni Flash']] // Kling Motion Control·Omni Edit·Genjutsu 는 10-14 live(영상 입력 칸) // Topaz Video 는 모델이 아니라 'Video upscale' 기능의 엔진 → 모델 열에서 뺌 // 나머지(Seedance 2.5·Wan 3.0·Hailuo 2.3·H3·Grok Video·HappyHorse·FLUX.3 Video·Gemini Omni)는 10-13 live 로
+    video: [['H', 'Higgsfield DOP'], ['X', 'Grok Imagine 1.5 Lite'], ['G', 'Gemini Omni Flash']]
   };
-  function item(ic, name, desc, st, href) {
+  var TOP_MODELS = { 'nano-banana-pro': 1, kling: 1 }; // Models 열 1번 = Doppia 기본값(TOP)
+  function item(ic, name, desc, st, href, badge) {
     var live = st === 'live';
-    return '<a class="it ' + (live ? '' : 'dis') + '" href="' + (live && href ? href : '#') + '"' + (live ? '' : ' onclick="return false"') + '><span class="ic">' + ic + '</span><span><b>' + esc(name) + '</b>' + (desc ? '<small>' + esc(desc) + '</small>' : '') + '</span><span class="scs"><span class="bd ' + (live ? 'live' : 'soon') + '">' + (live ? 'live' : 'soon') + '</span></span></a>';
+    var extra = badge ? '<span class="bd ' + badge + '">' + badge + '</span>' : '';
+    return '<a class="it ' + (live ? '' : 'dis') + '" href="' + (live && href ? href : '#') + '"' + (live ? '' : ' onclick="return false"') + '><span class="ic">' + ic + '</span><span><b>' + esc(name) + '</b>' + (desc ? '<small>' + esc(desc) + '</small>' : '') + '</span><span class="scs">' + extra + '<span class="bd ' + (live ? 'live' : 'soon') + '">' + (live ? 'live' : 'soon') + '</span></span></a>';
   }
   function price(t) {
     var p = t.pricing || {};
@@ -115,10 +103,10 @@
   function render(kind) {
     return tools().then(function (T) {
       var list = kind === 'image' ? (T.image || []).concat(T.upscale || []) : T.video; // 업스케일(Topaz)도 모델 열에 — 키 있으면 live
-      var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id)); }).join('');
+      var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id), TOP_MODELS[t.id] ? 'top' : undefined); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
-      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:tool:') === 0) st = (T.video || []).concat(T.image || []).some(function (t) { return t.id === st.slice(10); }) ? 'live' : 'soon'; else if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4]); }).join('');
+      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:tool:') === 0) st = (T.video || []).concat(T.image || []).some(function (t) { return t.id === st.slice(10); }) ? 'live' : 'soon'; else if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4], f[5]); }).join('');
       document.getElementById('tnMegaBox').innerHTML = '<div class="cols"><div><h4>Features</h4>' + feats + '</div><div><h4 class="k">Models</h4>' + live + soon + '</div></div>';
     });
   }
