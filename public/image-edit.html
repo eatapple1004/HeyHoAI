@@ -69,9 +69,9 @@ body{background:var(--bg)}
 .ed-zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;z-index:4}
 .ed-hint{position:absolute;left:12px;bottom:12px;font-size:11.5px;color:var(--faint);z-index:4;max-width:60%}
 .ed-panel{border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;min-height:0}
-.ed-tools{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px;border-bottom:1px solid var(--border)}
-.ed-tools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;border-radius:11px;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font:inherit;font-size:10.5px;line-height:1.2;text-align:center}
-.ed-tools button i{font-style:normal;font-size:17px;color:var(--text)}
+.ed-tools{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:10px;border-bottom:1px solid var(--border)}
+.ed-tools button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:11px;border:1px solid var(--border);background:var(--surface);color:var(--dim);cursor:pointer;font:inherit;font-size:10.5px;line-height:1.2;text-align:center}
+.ed-tools button i{font-style:normal;font-size:15px;color:var(--text)}
 .ed-tools button.on{border-color:var(--lime);color:#fff;background:rgba(217,255,74,.07)}
 .ed-tools button:disabled{opacity:.35;cursor:default}
 .ed-body{flex:1;overflow:auto;padding:14px 16px}
@@ -87,6 +87,11 @@ body{background:var(--bg)}
 .ed-row input[type=range]{flex:1;accent-color:var(--lime)}
 .ed-row output{width:36px;text-align:right;font-size:12px;color:var(--faint)}
 .ed-foot{padding:12px 16px;border-top:1px solid var(--border)}
+.ed-lpad{position:relative;height:210px;border-radius:14px;overflow:hidden;border:1px solid var(--border2);background:#0b0b12;touch-action:none;cursor:crosshair}
+.ed-lpad canvas{width:100%;height:100%;display:block}
+.ed-lpos{position:absolute;left:10px;bottom:8px;font-size:11px;color:var(--dim);pointer-events:none}
+.ed-sw{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);cursor:pointer;padding:0}
+.ed-sw.on{border-color:var(--lime);box-shadow:0 0 0 2px rgba(217,255,74,.25)}
 .ed-foot .note2{font-size:11.5px;color:var(--faint);margin-top:7px;text-align:center}
 .ed-strip{border-top:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;align-items:center;padding:10px 12px;overflow-x:auto}
 .ed-strip button{flex:0 0 auto;width:70px;height:70px;border-radius:10px;overflow:hidden;border:2px solid transparent;padding:0;background:var(--surface);cursor:pointer;position:relative}
@@ -174,10 +179,10 @@ const MAX_SIDE=4096, MASK_SIDE=1024;
 // ── 도구 정의 ── ai:true = 서버(/api/generate/edit) · 나머지는 브라우저 로컬(무료)
 const TOOLS=[
   {id:'replace_bg',ic:'▨',name:'Background',ai:true,title:'Replace background',d:'Describe the new scene. The product stays as it is and gets re-lit to match.',prompt:'e.g. on a white marble bathroom counter, soft morning window light',presets:[['White studio','pure white seamless studio backdrop, soft even light, gentle contact shadow'],['Marble','white marble countertop, blurred bright bathroom, soft window light'],['Café table','wooden café table, warm blurred café interior, morning light'],['Outdoor sun','outdoors on a stone ledge, bright natural sunlight, soft green bokeh'],['Pastel','smooth pastel gradient backdrop, soft studio light'],['Holiday','festive holiday table, warm fairy-light bokeh']],brush:'optional',brushHint:'Optional: brush the background to replace only that part.'},
-  {id:'inpaint',ic:'✎',name:'Inpaint',ai:true,title:'Inpaint',d:'Brush an area, then say what should be there. Only the brushed pixels change.',prompt:'e.g. add a small sprig of eucalyptus',brush:'required'},
-  {id:'erase',ic:'⌫',name:'Erase',ai:true,title:'Erase object',d:'Brush over anything you want gone — dust, a price tag, a stray hand. The background fills in.',brush:'required',noPrompt:true},
-  {id:'expand',ic:'⤢',name:'Expand & Crop',ai:true,title:'Expand & Crop',d:'Pick a platform size. Expand fills the new border with AI; Crop trims for free.'},
-  {id:'relight',ic:'☀',name:'Relight',ai:true,title:'Relight',d:'Change only the light — direction, shadows, color temperature.',prompt:'e.g. warm golden-hour light from the left, long soft shadows',presets:[['Golden hour','warm golden-hour sunlight from the side, long soft shadows'],['Softbox','clean soft studio softbox light from the front, minimal shadows'],['Dramatic','dramatic single side light, deep shadows, dark moody background'],['Backlit rim','backlit with a bright rim light outlining the product'],['Overcast','soft overcast daylight, very even, cool neutral tone'],['Neon night','neon pink and blue night lighting with colored reflections']]},
+  {id:'inpaint',ic:'✎',name:'Inpaint',ai:true,title:'Inpaint',d:'Say what should change. Brush an area to change only those pixels — or skip the brush to apply it to the whole photo.',prompt:'e.g. add a small sprig of eucalyptus',brush:'optional',brushHint:'Optional: brush to limit the change. No brush = whole photo.'},
+  {id:'erase',ic:'⌫',name:'Erase',ai:true,title:'Erase object',d:'Brush over anything you want gone — dust, a price tag, a stray hand. Or skip the brush and name it.',prompt:'Only without a brush: e.g. "the price tag on the left"',promptLabel:'What to remove <i>· only if you don\'t brush</i>',brush:'optional',brushHint:'Brush what should disappear. No brush = name it below and it is removed anywhere in the photo.'},
+  {id:'expand',ic:'⤢',name:'Expand',ai:true,title:'Expand & Crop',d:'Pick a platform size. Expand fills the new border with AI; Crop trims for free.'},
+  {id:'relight',ic:'☀',name:'Relight',ai:true,title:'Relight',d:'Drag the light around the subject. Set how hard, how warm and how bright — only the lighting changes.'},
   {id:'fix_text',ic:'T',name:'Fix label',ai:true,title:'Fix label text',d:'AI garbled the label? Type exactly what it should say. Brush the label to lock the rest.',brush:'optional',brushHint:'Recommended: brush over the label text only.'},
   {id:'removebg',ic:'✂',name:'Remove BG',ai:true,title:'Remove background',d:'Cut out the product as a transparent PNG.',noPrompt:true},
   {id:'upscale',ic:'▲',name:'Upscale',ai:true,title:'Upscale',d:'Enlarge with real detail — for print, Coupang detail pages, banners.',noPrompt:true},
@@ -187,7 +192,7 @@ const SIZES=[['Instagram feed','4:5',1080,1350],['Reels · Story','9:16',1080,19
 
 const st={T:null,ops:{},tool:'replace_bg',mode:'move',brush:56,versions:[],cur:-1,undo:[],redo:[],
   view:{s:1,x:0,y:0},fitted:false,busy:false,engine:{},compare:false,
-  adj:{b:0,c:0,s:0,w:0},expand:{size:0,mode:'expand',scale:1,ox:.5,oy:.5},crop:null,cropMode:false};
+  adj:{b:0,c:0,s:0,w:0},upF:2,light:{x:-.55,y:.45,behind:false,intensity:65,softness:55,kelvin:5200,ambient:40,color:'#ffffff'},expand:{size:0,mode:'expand',scale:1,ox:.5,oy:.5},crop:null,cropMode:false};
 const cv=$('#cv'),ctx=cv.getContext('2d');
 const mask=document.createElement('canvas'),mctx=mask.getContext('2d',{willReadFrequently:true});
 let preview=null; // 조정 미리보기 캔버스
@@ -303,6 +308,12 @@ function draw(){
   const src=st.compare?st.versions[0].img:(st.tool==='adjust'&&preview?preview:v.img);
   ctx.imageSmoothingQuality='high';ctx.drawImage(src,X,Y,iw*s,ih*s);
   if(!st.compare&&usesMask()){ctx.save();ctx.globalAlpha=.5;ctx.drawImage(mask,X,Y,iw*s,ih*s);ctx.restore();}
+  if(!st.compare&&st.tool==='relight'){const L=st.light,[r,g,b]=lightRGB(),W2=iw*s,H2=ih*s,gx=X+W2*(.5+L.x*.55),gy=Y+H2*(.5-L.y*.55),a=.25+L.intensity/100*.5,sh=(1-L.ambient/100)*.55;
+    // 미리보기 = 그늘(multiply: 빛 반대쪽을 어둡게) + 빛 색(multiply 로 색을 입힌 뒤 하이라이트) — 흰 배경에서도 보이게
+    const R2=Math.max(W2,H2)*(.6+L.softness/100*.7);ctx.save();ctx.beginPath();ctx.rect(X,Y,W2,H2);ctx.clip();
+    ctx.globalCompositeOperation='multiply';const sg=ctx.createRadialGradient(gx,gy,R2*.15,gx,gy,R2);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(1,`rgba(20,20,30,${(L.behind?sh+.25:sh)*(.5+L.intensity/200)})`);ctx.fillStyle=sg;ctx.fillRect(X,Y,W2,H2);
+    const tg=ctx.createRadialGradient(gx,gy,0,gx,gy,R2*.8);tg.addColorStop(0,`rgba(${r},${g},${b},${a*.9})`);tg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=tg;ctx.fillRect(X,Y,W2,H2);
+    ctx.globalCompositeOperation='screen';const hg=ctx.createRadialGradient(gx,gy,0,gx,gy,R2*(L.softness>50?.5:.3));hg.addColorStop(0,`rgba(${r},${g},${b},${a*.35})`);hg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=hg;ctx.fillRect(X,Y,W2,H2);ctx.restore();}
   if(st.tool==='expand'&&st.expand.mode==='crop'&&st.crop){const c=st.crop;ctx.save();ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.rect(X,Y,iw*s,ih*s);ctx.rect(X+c.x*s,Y+c.y*s,c.w*s,c.h*s);ctx.fill('evenodd');ctx.strokeStyle='#d9ff4a';ctx.lineWidth=1.5;ctx.strokeRect(X+c.x*s,Y+c.y*s,c.w*s,c.h*s);
     ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;for(let k=1;k<3;k++){ctx.beginPath();ctx.moveTo(X+(c.x+c.w*k/3)*s,Y+c.y*s);ctx.lineTo(X+(c.x+c.w*k/3)*s,Y+(c.y+c.h)*s);ctx.moveTo(X+c.x*s,Y+(c.y+c.h*k/3)*s);ctx.lineTo(X+(c.x+c.w)*s,Y+(c.y+c.h*k/3)*s);ctx.stroke();}
     ctx.fillStyle='#d9ff4a';[[0,0],[1,0],[0,1],[1,1]].forEach(([a,b])=>ctx.fillRect(X+(c.x+c.w*a)*s-5,Y+(c.y+c.h*b)*s-5,10,10));ctx.restore();}
@@ -364,48 +375,85 @@ $('#tools').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if
   if(usesMask()&&st.mode==='move')setMode('brush');else if(!usesMask())setMode('move');
   syncRail();renderTools();renderBody();st.fitted=false;fit();});
 function engineFor(op){const o=st.ops[op];if(!o)return null;const sel=st.engine[op]||'auto';if(sel!=='auto')return o.alternatives.find(a=>a.id===sel)||o.engine;
+  if(o.engineNoMask&&!hasMask())return o.engineNoMask;
   if(op==='fix_text'&&o.engineNoMask&&!hasMask())return o.engineNoMask;return o.engine;}
 function engineBox(op){const o=st.ops[op];if(!o)return '';const e=engineFor(op),sel=st.engine[op]||'auto';
   const opts=[`<option value="auto" ${sel==='auto'?'selected':''}>Auto · ${esc(e&&sel==='auto'?e.label:o.engine.label)}</option>`].concat(o.alternatives.length>1?o.alternatives.map(a=>`<option value="${esc(a.id)}" ${sel===a.id?'selected':''}>${esc(a.label)} · ◈${a.perImage}</option>`):[]).join('');
   return `<div class="ed-eng"><div class="lbl" style="margin:0 0 4px">Engine <i>· auto picks the best connected model</i></div><select id="engSel">${opts}</select><small>${esc(o.why)}</small></div>`;}
 function hint(){const t=toolDef();let h='';if(t&&t.brush)h=(t.brush==='required'?'Paint the area to change. ':'')+'B brush · E eraser · [ ] size · Space+drag pan · \\ compare';
-  else if(t&&t.id==='expand')h=st.expand.mode==='expand'?'Drag the photo to place it inside the new frame.':'Drag the box to move, corners to resize.';else h='Scroll to zoom · drag to pan · hold \\ to compare';$('#hint').textContent=h;}
+  else if(t&&t.id==='relight')h='Preview on the canvas is a rough guide — the AI result lights the actual product.';else if(t&&t.id==='expand')h=st.expand.mode==='expand'?'Drag the photo to place it inside the new frame.':'Drag the box to move, corners to resize.';else h='Scroll to zoom · drag to pan · hold \\ to compare';$('#hint').textContent=h;}
 function renderBody(soft){
   const t=toolDef();if(!t)return;hint();
-  if(soft){const r=$('#runNote');updateRun();if(st.tool==='fix_text'){const s=$('#engSel');if(s&&(st.engine.fix_text||'auto')==='auto')s.options[0].text=`Auto · ${engineFor('fix_text').label}`;}return;}
+  if(soft){const r=$('#runNote');updateRun();const s=$('#engSel'),e0=engineFor(st.tool);if(s&&e0&&(st.engine[st.tool]||'auto')==='auto')s.options[0].text=`Auto · ${e0.label}${usesMask()?(hasMask()?' · brushed area':' · whole photo'):''}`;return;}
   let h=`<h3>${esc(t.title)}</h3><div class="d">${esc(t.d)}</div>`;
   if(t.brush)h+=`<div class="note" style="font-size:12px;color:var(--accent2);margin:6px 0">🖌 ${esc(t.brushHint||'Brush the area on the canvas.')}</div>`;
   if(t.id==='fix_text')h+=`<div class="lbl">Exact label text</div><input class="ff" id="fxText" maxlength="200" placeholder='e.g. "HYDRA GLOW · Vitamin C Serum 30ml"'>`;
   if(t.prompt!==undefined||t.id==='fix_text'||t.id==='expand'){
-    if(!t.noPrompt&&t.id!=='expand')h+=`<div class="lbl">${t.id==='fix_text'?'Extra direction <i>· optional</i>':'Prompt'}</div><textarea class="ff" id="pr" maxlength="1000" placeholder="${esc(t.prompt||'')}"></textarea>`;
+    if(!t.noPrompt&&t.id!=='expand')h+=`<div class="lbl">${t.promptLabel||(t.id==='fix_text'?'Extra direction <i>· optional</i>':'Prompt')}</div><textarea class="ff" id="pr" maxlength="1000" placeholder="${esc(t.prompt||'')}"></textarea>`;
   }
   if(t.presets)h+=`<div class="lbl">Presets</div><div class="chips">${t.presets.map((p,i)=>`<button class="chip" data-p="${i}">${esc(p[0])}</button>`).join('')}</div>`;
   if(t.id==='expand'){h+=`<div class="lbl">Mode</div><div class="chips"><button class="chip ${st.expand.mode==='expand'?'on':''}" data-xm="expand">Expand · AI fill</button><button class="chip ${st.expand.mode==='crop'?'on':''}" data-xm="crop">Crop · free</button></div>`
     +`<div class="lbl">Platform size</div><div class="chips">${SIZES.map((z,i)=>`<button class="chip ${i===st.expand.size?'on':''}" data-sz="${i}">${esc(z[0])}${z[1]!=='orig'?` <span style="opacity:.6">${z[1]}</span>`:''}</button>`).join('')}</div>`;
     if(st.expand.mode==='expand')h+=`<div class="lbl">Extra room</div><div class="ed-row"><input type="range" id="xsc" min="1" max="2" step="0.05" value="${st.expand.scale}"><output id="xscV">${Math.round(st.expand.scale*100)}%</output></div><div class="lbl">Direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="1000" placeholder="e.g. continue the marble counter, add soft window light on the left"></textarea>`;
   }
-  if(t.id==='upscale')h+=`<div class="lbl">Factor</div><div class="chips"><button class="chip on" data-f="2">×2</button><button class="chip" data-f="4">×4</button></div>`;
+  if(t.id==='upscale'){const o=st.ops.upscale||{},v=cur(),L=Math.max(v.img.naturalWidth,v.img.naturalHeight),mx=o.maxSide||16384;if(!(o.factors||[2,4]).includes(st.upF)||L*st.upF>mx)st.upF=2;
+    h+=`<div class="lbl">Factor <i>· max ${mx.toLocaleString('en-US')}px</i></div><div class="chips">${(o.factors||[2,4]).map(f=>{const ok=L*f<=mx;return `<button class="chip ${f===st.upF?'on':''}" data-f="${f}" ${ok?'':`disabled style="opacity:.35;cursor:not-allowed" title="${L*f}px — over the ${mx}px limit"`}>×${f}</button>`;}).join('')}</div><div class="note" style="font-size:12px;color:var(--faint);margin-top:6px" id="upNote"></div>`;}
   if(t.id==='adjust'){h+=[['b','Brightness'],['c','Contrast'],['s','Saturation'],['w','Warmth']].map(([k,l])=>`<div class="ed-row"><label>${l}</label><input type="range" min="-100" max="100" value="${st.adj[k]}" data-adj="${k}"><output>${st.adj[k]}</output></div>`).join('')
     +`<div class="lbl">Orientation</div><div class="chips"><button class="chip" data-or="rl">⟲ 90°</button><button class="chip" data-or="rr">⟳ 90°</button><button class="chip" data-or="fh">⇋ Flip</button><button class="chip" data-or="fv">⇵ Flip</button></div>`;}
+  if(t.id==='relight'){const L=st.light;
+    h+=`<div class="lbl">Light position <i>· drag the light</i></div><div class="ed-lpad" id="lpadW"><canvas id="lpad"></canvas><span class="ed-lpos" id="lpos"></span></div>`
+      +`<div class="chips" style="margin-top:8px"><button class="chip ${!L.behind?'on':''}" data-lb="0">In front</button><button class="chip ${L.behind?'on':''}" data-lb="1">Behind · rim light</button></div>`
+      +LIGHT_ROWS.map(([k,l,mn,mx,stp])=>`<div class="ed-row"><label>${l}</label><input type="range" min="${mn}" max="${mx}" step="${stp}" value="${L[k]}" data-lt="${k}"><output>${k==='kelvin'?L[k]+'K':L[k]}</output></div>`).join('')
+      +`<div class="lbl">Light color</div><div class="chips">${LIGHT_COLORS.map(([c,n])=>`<button class="ed-sw ${L.color===c?'on':''}" data-lc="${c}" title="${n}" style="background:${c}"></button>`).join('')}</div>`
+      +`<div class="lbl">Presets</div><div class="chips">${LIGHT_PRESETS.map((p,i)=>`<button class="chip" data-lp="${i}">${esc(p[0])}</button>`).join('')}</div>`
+      +`<div class="lbl">Extra direction <i>· optional</i></div><textarea class="ff" id="pr" maxlength="600" placeholder="e.g. keep the window reflection on the bottle"></textarea>`;}
   if(t.ai)h+=engineBox(t.id);
-  $('#body').innerHTML=h;updateRun();
+  const bd=$('#body'),keep=bd.dataset.t===t.id?bd.scrollTop:0,prv=$('#pr')?$('#pr').value:'';bd.innerHTML=h;bd.dataset.t=t.id;bd.scrollTop=keep; // 같은 도구 안에서 다시 그릴 땐 스크롤·입력 유지
+  if(keep&&prv&&$('#pr'))$('#pr').value=prv;updateRun();
+  if(t.id==='relight')setupLightPad();
 }
+// ── Relight 조명 패드 (힉스필드 Relight 처럼 위치로 정한다) ── x:-1(왼)~1(오) · y:-1(아래)~1(위) · behind=피사체 뒤(림)
+const LIGHT_ROWS=[['intensity','Intensity',0,100,1],['softness','Softness',0,100,1],['kelvin','Color temp',2000,9000,100],['ambient','Ambient fill',0,100,1]];
+const LIGHT_COLORS=[['#ffffff','White'],['#ffd6a0','Warm'],['#ff9a4a','Sunset'],['#ff7eb6','Pink'],['#b18cff','Violet'],['#6aa8ff','Blue'],['#7dffcf','Mint']];
+const LIGHT_PRESETS=[['Golden hour',{x:-.85,y:.15,behind:false,intensity:70,softness:60,kelvin:3000,ambient:35,color:'#ffd6a0'}],['Softbox',{x:-.3,y:.45,behind:false,intensity:55,softness:92,kelvin:5500,ambient:65,color:'#ffffff'}],['Dramatic side',{x:-.95,y:.1,behind:false,intensity:90,softness:15,kelvin:4800,ambient:8,color:'#ffffff'}],['Top light',{x:0,y:.95,behind:false,intensity:70,softness:50,kelvin:5600,ambient:30,color:'#ffffff'}],['Rim light',{x:.25,y:.5,behind:true,intensity:85,softness:40,kelvin:6000,ambient:25,color:'#ffffff'}],['Neon',{x:.8,y:.2,behind:false,intensity:80,softness:45,kelvin:6500,ambient:20,color:'#ff7eb6'}]];
+function kelvinRGB(k){const t=k/100;let r,g,b;if(t<=66){r=255;g=99.47*Math.log(t)-161.12;b=t<=19?0:138.52*Math.log(t-10)-305.04;}else{r=329.7*Math.pow(t-60,-.1332);g=288.12*Math.pow(t-60,-.0755);b=255;}const c=v=>Math.max(0,Math.min(255,Math.round(v)));return[c(r),c(g),c(b)];}
+function lightRGB(){const L=st.light,[r,g,b]=kelvinRGB(L.kelvin),h=(L.color||'#ffffff').replace('#',''),cr=parseInt(h.slice(0,2),16),cg=parseInt(h.slice(2,4),16),cb=parseInt(h.slice(4,6),16);return[Math.round(r*cr/255),Math.round(g*cg/255),Math.round(b*cb/255)];}
+function lightLabel(){const L=st.light,az=Math.round(L.x*90),el=Math.round(L.y*75);return `${Math.abs(az)<12?'Center':(az<0?'Left ':'Right ')+Math.abs(az)+'°'} · ${Math.abs(el)<10?'Level':(el>0?'Up ':'Down ')+Math.abs(el)+'°'} · ${L.behind?'behind (rim)':'in front'}`;}
+function drawLightPad(){const c=$('#lpad');if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(c.width!==w*d){c.width=w*d;c.height=h*d;}const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);
+  const L=st.light,[r,g,b]=lightRGB(),cx=w/2,cy=h/2,R=Math.min(w,h)*.27,lx=cx+L.x*(w/2-16),ly=cy-L.y*(h/2-16);
+  x.strokeStyle='rgba(255,255,255,.06)';x.beginPath();x.moveTo(cx,8);x.lineTo(cx,h-8);x.moveTo(8,cy);x.lineTo(w-8,cy);x.stroke();x.beginPath();x.ellipse(cx,cy,w/2-16,h/2-16,0,0,Math.PI*2);x.stroke();
+  const amb=.12+L.ambient/100*.35,a=.35+L.intensity/100*.65;
+  x.fillStyle=`rgb(${Math.round(40*amb*2.5)},${Math.round(40*amb*2.5)},${Math.round(46*amb*2.5)})`;x.beginPath();x.arc(cx,cy,R,0,Math.PI*2);x.fill();
+  if(!L.behind){const hx=cx+L.x*R*.62,hy=cy-L.y*R*.62,gr=x.createRadialGradient(hx,hy,R*.05,hx,hy,R*(1.1+L.softness/100*.9));gr.addColorStop(0,`rgba(${r},${g},${b},${a})`);gr.addColorStop(L.softness>40?.55:.38,`rgba(${r},${g},${b},${a*.35})`);gr.addColorStop(1,'rgba(0,0,0,0)');x.save();x.beginPath();x.arc(cx,cy,R,0,Math.PI*2);x.clip();x.fillStyle=gr;x.fillRect(cx-R,cy-R,R*2,R*2);x.restore();}
+  else{const ang=Math.atan2(-(L.y||.0001),L.x||.0001);x.save();x.lineWidth=3+L.intensity/100*4;x.strokeStyle=`rgba(${r},${g},${b},${a})`;x.shadowColor=`rgb(${r},${g},${b})`;x.shadowBlur=14;x.beginPath();x.arc(cx,cy,R-1,ang-1.2,ang+1.2);x.stroke();x.restore();}
+  x.save();x.shadowColor=`rgb(${r},${g},${b})`;x.shadowBlur=18;x.fillStyle=`rgba(${r},${g},${b},${L.behind?.55:1})`;x.beginPath();x.arc(lx,ly,L.behind?7:10,0,Math.PI*2);x.fill();x.restore();
+  if(L.behind){x.setLineDash([3,3]);x.strokeStyle='rgba(255,255,255,.6)';x.beginPath();x.arc(lx,ly,12,0,Math.PI*2);x.stroke();x.setLineDash([]);}
+  x.strokeStyle='rgba(255,255,255,.18)';x.setLineDash([2,4]);x.beginPath();x.moveTo(lx,ly);x.lineTo(cx,cy);x.stroke();x.setLineDash([]);
+  const lp=$('#lpos');if(lp)lp.textContent=lightLabel();}
+function setupLightPad(){const wrap=$('#lpadW');let on=false;const set=e=>{const r=wrap.getBoundingClientRect();st.light.x=Math.max(-1,Math.min(1,((e.clientX-r.left)-r.width/2)/(r.width/2-16)));st.light.y=Math.max(-1,Math.min(1,-((e.clientY-r.top)-r.height/2)/(r.height/2-16)));drawLightPad();draw();};
+  wrap.addEventListener('pointerdown',e=>{on=true;wrap.setPointerCapture(e.pointerId);set(e);});wrap.addEventListener('pointermove',e=>{if(on)set(e);});wrap.addEventListener('pointerup',()=>{on=false;});drawLightPad();}
 $('#body').addEventListener('click',e=>{
   const p=e.target.closest('[data-p]');if(p){const pr=$('#pr');pr.value=toolDef().presets[+p.dataset.p][1];$$('#body [data-p]').forEach(b=>b.classList.toggle('on',b===p));return;}
   const xm=e.target.closest('[data-xm]');if(xm){st.expand.mode=xm.dataset.xm;if(st.expand.mode==='crop')initCrop();renderBody();setMode('move');st.fitted=false;fit();return;}
   const sz=e.target.closest('[data-sz]');if(sz){st.expand.size=+sz.dataset.sz;if(st.expand.mode==='crop')initCrop();$$('#body [data-sz]').forEach(b=>b.classList.toggle('on',b===sz));st.fitted=false;fit();updateRun();return;}
-  const f=e.target.closest('[data-f]');if(f){$$('#body [data-f]').forEach(b=>b.classList.toggle('on',b===f));return;}
+  const f=e.target.closest('[data-f]');if(f&&!f.disabled){st.upF=+f.dataset.f;$$('#body [data-f]').forEach(b=>b.classList.toggle('on',b===f));updateRun();return;}
+  const lp=e.target.closest('[data-lp]');if(lp){Object.assign(st.light,LIGHT_PRESETS[+lp.dataset.lp][1]);renderBody();draw();return;}
+  const lb=e.target.closest('[data-lb]');if(lb){st.light.behind=lb.dataset.lb==='1';renderBody();draw();return;}
+  const lc=e.target.closest('[data-lc]');if(lc){st.light.color=lc.dataset.lc;renderBody();draw();return;}
   const or=e.target.closest('[data-or]');if(or){orient(or.dataset.or);return;}
 });
 $('#body').addEventListener('input',e=>{
   if(e.target.id==='xsc'){st.expand.scale=+e.target.value;$('#xscV').textContent=Math.round(st.expand.scale*100)+'%';fit();return;}
+  if(e.target.dataset.lt){const k=e.target.dataset.lt;st.light[k]=+e.target.value;e.target.nextElementSibling.textContent=k==='kelvin'?e.target.value+'K':e.target.value;drawLightPad();draw();return;}
   if(e.target.dataset.adj){st.adj[e.target.dataset.adj]=+e.target.value;e.target.nextElementSibling.textContent=e.target.value;adjPreview();updateRun();return;}
 });
 $('#body').addEventListener('change',e=>{if(e.target.id==='engSel'){st.engine[st.tool]=e.target.value;updateRun();}});
 function updateRun(){const t=toolDef(),b=$('#run'),n=$('#runNote');if(!t)return;
   if(!t.ai){b.innerHTML='Apply · free';b.disabled=!Object.values(st.adj).some(Boolean);n.textContent='Saved as a new version — download or run AI tools on it.';return;}
   if(t.id==='expand'&&st.expand.mode==='crop'){b.innerHTML='Crop · free';b.disabled=!st.crop;n.textContent=SIZES[st.expand.size][2]?`Exports at up to ${SIZES[st.expand.size][2]}×${SIZES[st.expand.size][3]}`:'';return;}
-  const e=engineFor(t.id);b.disabled=!e||st.busy;b.innerHTML=`${esc(t.id==='expand'?'Expand':t.title)} <span class="c">◈ ${e?e.perImage:'—'}</span>`;n.textContent=e?`Runs on ${e.label} · saved to your Library`:'Not configured on this server';}
+  const e=engineFor(t.id),passes=t.id==='upscale'&&st.upF>4?2:1;b.disabled=!e||st.busy;b.innerHTML=`${esc(t.id==='expand'?'Expand':t.id==='upscale'?'Upscale ×'+st.upF:t.title)} <span class="c">◈ ${e?e.perImage*passes:'—'}</span>`;
+  n.textContent=e?`Runs on ${e.label}${passes>1?' · 2 passes (×4 then ×'+(st.upF/4)+')':''}${usesMask()?(hasMask()?' · brushed area only':' · whole photo'):''} · saved to your Library`:'Not configured on this server';
+  const un=$('#upNote');if(un&&cur()){const v=cur();un.textContent=`${v.img.naturalWidth}×${v.img.naturalHeight} → ${v.img.naturalWidth*st.upF}×${v.img.naturalHeight*st.upF}${v.img.naturalWidth*st.upF>8192||v.img.naturalHeight*st.upF>8192?' · saved as JPEG':''}`;}}
 
 // ── 로컬 조정(무료) ──
 function adjPixels(src,w,h,a){const c=canvasOf(w,h),x=c.getContext('2d');x.drawImage(src,0,0,w,h);const id=x.getImageData(0,0,w,h),d=id.data;
@@ -435,8 +483,10 @@ $('#run').onclick=async()=>{
   const fd=new FormData();fd.append('op',t.id);fd.append('engine',st.engine[t.id]||'auto');
   const pr=$('#pr');if(pr&&pr.value.trim())fd.append('prompt',pr.value.trim());
   if(t.id==='fix_text'){const tx=$('#fxText').value.trim();if(!tx){toast('Type the exact label text first.');$('#fxText').focus();return;}fd.append('text',tx);}
-  if(t.id==='upscale'){const f=document.querySelector('#body [data-f].on');fd.append('factor',f?f.dataset.f:'2');}
-  if(t.id==='inpaint'&&!(pr&&pr.value.trim())){toast('Say what should appear in the brushed area.');pr&&pr.focus();return;}
+  if(t.id==='upscale')fd.append('factor',String(st.upF));
+  if(t.id==='relight')fd.append('light',JSON.stringify(st.light));
+  if(t.id==='inpaint'&&!(pr&&pr.value.trim())){toast(hasMask()?'Say what should appear in the brushed area.':'Describe the change — it applies to the whole photo.');pr&&pr.focus();return;}
+  if(t.id==='erase'&&!hasMask()&&!(pr&&pr.value.trim())){toast('Brush what to erase, or name it in the box.');pr&&pr.focus();return;}
   try{
     if(t.id==='expand'){if(!ensureReadable())return;const b=await buildExpand();fd.append('image',b.img,'expand.png');fd.append('mask',b.mask,'mask.png');}
     else{

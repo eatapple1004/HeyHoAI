@@ -113,10 +113,10 @@ falProvider.upscale = async function upscale(req) {
     throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
   }
   const model = req.model || 'fal-ai/topaz/upscale/image';
-  const factor = req.factor === 4 ? 4 : 2;
+  const factor = [2, 3, 4].includes(req.factor) ? req.factor : 2; // Topaz 스키마 최대 ×4 — ×8·×16 은 호출부(imageEdit.engine)가 패스를 나눈다
   const { result, requestId } = await submitAndWait(model, {
-    image_url: req.imageUrl, upscale_factor: factor, model: 'Standard V2', output_format: 'png',
-  }, 300_000); // 4K 출력은 1~3분 걸린다
+    image_url: req.imageUrl, upscale_factor: factor, model: 'Standard V2', output_format: req.outputFormat === 'jpeg' ? 'jpeg' : 'png',
+  }, 420_000); // 4K 출력은 1~3분, 16K 는 더 걸린다
   const image = result.image || (result.images || [])[0];
   if (!image || !image.url) {
     throw new Error(`fal 업스케일 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
@@ -141,6 +141,25 @@ falProvider.removeBackground = async function removeBackground(req) {
     throw new Error(`fal 배경 제거 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
   }
   return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
+};
+
+/**
+ * (2026-10-16) 마스크 채우기 — FLUX.1 Fill [pro](fal-ai/flux-pro/v1/fill). mask 흰색 = 다시 그릴 곳. Editor 의 Inpaint·Erase·Expand 1순위.
+ * @param {{ model?: string, imageUrl: string, maskUrl: string, prompt: string }} req
+ */
+falProvider.fill = async function fill(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/flux-pro/v1/fill';
+  const { result, requestId } = await submitAndWait(model, {
+    prompt: req.prompt, image_url: req.imageUrl, mask_url: req.maskUrl, output_format: 'png', safety_tolerance: '2', num_images: 1,
+  }, 180_000);
+  const image = (result.images || [])[0] || result.image;
+  if (!image || !image.url) {
+    throw new Error(`fal fill 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: result.seed || null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
 };
 
 module.exports = falProvider;

@@ -925,6 +925,7 @@ async function postEditHandler(req, res, next) {
     const sourceIdx = parseInt(body.sourceIdx, 10) || null;
     if (!imgFile && !sourceIdx) { cleanup(); return res.status(400).json({ success: false, error: 'image or sourceIdx required' }); }
     if (def.mask === 'required' && !maskFile) { cleanup(); return res.status(400).json({ success: false, error: `${def.label} needs a mask — brush the area first` }); }
+    if ((op === 'inpaint' || op === 'erase') && !maskFile && !String(body.prompt || '').trim()) { cleanup(); return res.status(400).json({ success: false, error: op === 'erase' ? 'Brush what to erase, or name it (e.g. "the price tag")' : 'Brush an area, or describe the change for the whole photo' }); }
     if (op === 'fix_text' && !String(body.text || '').trim()) { cleanup(); return res.status(400).json({ success: false, error: 'Type the exact label text' }); }
 
     const maskBuf = maskFile ? fs.readFileSync(maskFile.path) : null;
@@ -966,12 +967,19 @@ async function postEditHandler(req, res, next) {
     const auto = !body.engine || body.engine === 'auto' || body.engine !== tool.id;
     const tries = auto ? [tool].concat(editEngine.candidates(op, !!maskBuf).filter((t) => t.id !== tool.id)) : [tool];
 
-    const factor = parseInt(body.factor, 10) === 4 ? 4 : 2;
+    const factor = [2, 4, 8, 16].includes(parseInt(body.factor, 10)) ? parseInt(body.factor, 10) : 2;
+    const passes = op === 'upscale' ? editEngine.upscalePasses(factor).length : 1; // ×8·×16 = Topaz 2패스 → 2장 값
+    if (op === 'upscale') {
+      const m0 = await sharp(original).metadata();
+      if (Math.max(m0.width, m0.height) * factor > editEngine.UPSCALE_MAX_SIDE) return res.status(400).json({ success: false, error: `×${factor} would be ${Math.max(m0.width, m0.height) * factor}px — max ${editEngine.UPSCALE_MAX_SIDE}px` });
+    }
+    let light = null;
+    try { light = body.light ? JSON.parse(body.light) : null; } catch (e) { light = null; }
     let savedPrompt = null;
     const errors = [];
     for (const t of tries) {
       // 엔진마다 단가가 다를 수 있어 시도마다 그 엔진 값으로 차감 → 실패 시 환불
-      const cost = creditService.imageCost(t.costKey || 'pro', 1, false);
+      const cost = creditService.imageCost(t.costKey || 'pro', 1, false) * passes;
       try {
         await teamCredit.chargeGeneration(req.user, cost, `Editor · ${def.label}`);
       } catch (e) {
@@ -988,18 +996,18 @@ async function postEditHandler(req, res, next) {
         });
       }
       try {
-        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor });
+        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor, light });
         const meta = await sharp(out.buffer).metadata();
         const outputDir = path.join(process.cwd(), 'tmp', 'images');
         fs.mkdirSync(outputDir, { recursive: true });
-        const filename = `${crypto.randomUUID()}.png`;
+        const filename = `${crypto.randomUUID()}.${out.ext || 'png'}`; // 8K 넘는 업스케일은 jpg
         fs.writeFileSync(path.join(outputDir, filename), out.buffer);
         await mediaStore.put(filename, out.buffer);
         const savedResult = await resultRepo.insert({
           promptIdx: savedPrompt.idx, characterId: null,
           filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(out.buffer.length / 1024),
           width: meta.width, height: meta.height, model: modelLabel, visibility, templateName: 'Editor',
-          metadata: { editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
+          metadata: { editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}), ...(op === 'relight' && light ? { light } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
         });
         await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
         return res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, op, engine: { id: t.id, label: t.label, provider: t.provider }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });
