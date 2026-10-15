@@ -14,7 +14,6 @@
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/topnav.js?v=21" defer></script>
-<script src="/js/models.roster.js?v=1" defer></script>
 <script src="/js/backgrounds.roster.js?v=1" defer></script>
 <style>
 /* (2026-10-16) Doppia Shoot — 옷입히기 게임 구조. 모델을 고르면(허브) 그 모델로 옷·소품 입히기, 장면 바꾸기, 자세 바꾸기(영상은 soon).
@@ -45,19 +44,24 @@
 .strip button{flex:none;width:72px;height:96px;border-radius:10px;overflow:hidden;border:1.5px solid transparent;padding:0;background:var(--bg2);cursor:pointer;position:relative}
 .strip button img{width:100%;height:100%;object-fit:cover;display:block}.strip button.on{border-color:var(--lime)}
 .strip button small{position:absolute;left:0;right:0;bottom:0;font-size:9px;padding:2px 4px;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sw{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pickg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.bubble{display:flex;gap:10px;align-items:flex-start;max-width:560px;margin:0 auto 14px}
+.bubble img{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;border:1px solid var(--border2)}
+.bubble .b{position:relative;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.5}
+.bubble .b:before{content:'';position:absolute;left:-7px;top:16px;border:7px solid transparent;border-right-color:var(--border2);border-left:0}
+.bubble .q{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bubble .q button{font-size:12px;padding:5px 10px}
+.stage .cur img.intro{animation:pop .35s ease}@keyframes pop{from{opacity:.2;transform:scale(.97)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
 <!-- (2026-10-16) Doppia Shoot — 사람이 주인공인 촬영(제품 주인공은 Lens). 사용자: "옷입히기 게임 같은 느낌. 들어오면 '반가워, 너의 모델을 골라줘'. 모델을 고르면 그걸로 자세·옷·소품·배경, 나중엔 영상."
      흐름: 환영 화면(모델 고르기/만들기) → 스테이지(현재 모델 사진) + 왼쪽 행동 패널(Outfit · Scene · Pose · Video soon). 행동마다 새 버전이 띠에 쌓이고, 어느 버전에서든 이어 간다.
      엔진(10-16 실측): 현재 버전 사진을 이미지 1로 넣고 "이 사람은 그대로, 이것만 바꿔라" — 옷·소품·수영복·배경·자세 전부 Nano Banana Pro 편집 한 번. 란제리는 얼굴 없이 생성 → FaceFusion 스왑 경로라 서버 워커 전까지 soon.
-     모델 사진은 기존 로스터(window.MODELS, 상반신 자리표시) — Soul ID 전신 뱅크로 교체 예정. 생성 API = POST /api/generate(Image 페이지와 동일), 피드 = template_name 'Doppia Shoot'. -->
+     모델 = 우리 모델만(유나 뱅크 /img/shoot/yuna, 장면 7). 로스터 200명은 기준 미달이라 제외. 새 모델은 Soul ID 학습 → 뱅크 공정(soon). 캐릭터가 인사하고 행동을 안내한다(말풍선). 생성 API = POST /api/generate(Image 페이지와 동일), 피드 = template_name 'Doppia Shoot'. -->
 <div id="hello" class="hello" hidden>
   <h1>Hi! Pick your model.</h1>
   <p>Dress them up, change the scene, strike a pose. Make a video with them soon.</p>
-  <div class="filt" id="mfilt"></div>
-  <div class="grid" id="mgrid"></div>
+  <div class="pickg" id="mgrid"></div>
 </div>
 <div class="split" id="app" hidden>
   <aside class="composer">
@@ -70,7 +74,7 @@
   </aside>
   <div class="stage">
     <div class="feedbar"><div class="tabs"><button class="on" data-f="stage">Stage</button><button data-f="mine">My results</button></div><span id="note" style="color:var(--faint);font-size:12px"></span></div>
-    <div id="stageView"><div class="cur" id="cur"></div><div class="strip" id="strip"></div></div>
+    <div id="stageView"><div class="bubble" id="bubble" hidden></div><div class="cur" id="cur"></div><div class="strip" id="strip"></div></div>
     <div id="feedView" hidden><div class="masonry" id="feed"></div><div class="empty" id="feedEmpty" hidden>No Shoot results yet.</div></div>
   </div>
 </div>
@@ -84,34 +88,46 @@ const ICON={gemini:'🍌',openai:'G',seedream:'S',fal:'F',xai:'X',higgsfield:'H'
 const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(template_name)
 
 // ── 정의 ──
-const MODEL_FILTERS=[['gender','Gender',[['','All'],['female','Women'],['male','Men']]],['group','Region',[['','All'],['East Asian','East Asian'],['Southeast Asian','SE Asian'],['South Asian','South Asian'],['White / European','European'],['Black / African','African'],['Hispanic / Latino','Latino'],['Middle Eastern / North African','MENA'],['Mixed / Multiracial','Mixed']]],['body_group','Body',[['','All'],['ideal','Ideal'],['slender','Slender'],['curvy','Curvy'],['fit','Fit']]]];
+// 우리 모델. bank = 같은 사람·같은 옷으로 미리 뽑아 둔 장면들(10-16 Soul 베이스 → Nano Banana Pro 장면 교체). 첫 장이 기본.
+//   기존 로스터 200명은 기준 미달(사용자)이라 안 쓴다. 새 모델은 "Create your model"(Soul ID 학습 → 같은 뱅크 공정)로 — soon.
+const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'/img/shoot/yuna/avatar.jpg',
+  bank:[['street','Street'],['studio','Studio'],['cafe','Cafe'],['rooftop','Rooftop'],['park','Park'],['night','Night'],['wall','Golden hour']].map(([k,l])=>({url:'/img/shoot/yuna/'+k+'.jpg',label:l}))}];
+// 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
+const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
+  outfit:'Drop a few item photos and I\'ll put them on — layers are fine.',scene:'Pick a place or describe one. I\'ll keep my outfit and pose.',pose:'Tell me how to stand, or just pick one.',
+  done:(l)=>`How\'s this? Keep going from here, or pick another version below.`,busy:'One sec…'};
 const ACTS=[['outfit','👗','Outfit'],['scene','🏙','Scene'],['pose','🧍','Pose'],['video','▶','Video']];
 // 품목 유형 → 프롬프트의 착용 문구. 란제리는 얼굴-없이-생성→FaceFusion 경로가 서버에 없어 soon.
 const TYPES=[['top','Top','worn as the top'],['bottom','Bottom','worn as the trousers/skirt'],['dress','Dress','worn as the dress'],['outer','Outer','worn open as the outer layer'],['shoes','Shoes','on the feet'],['socks','Socks','visible at the ankles'],['hat','Hat','worn on the head'],['hair','Hair accessory','in the hair'],['bag','Bag','carried on the shoulder or in hand'],['jewelry','Jewelry','worn'],['glasses','Glasses','worn on the face'],['swim','Swimwear','worn as swimwear'],['underwear','Underwear (soon)',null]];
 const POSES=[['Standing','standing naturally, weight on one leg'],['Walking','walking toward the camera, natural movement'],['Sitting','sitting down, relaxed'],['Leaning','leaning against the nearest wall or surface'],['Back','turned away, back to camera, looking over the shoulder'],['Close-up','close-up from the chest up, hand near the face']];
 const STUDIO={id:'studio',name:'Studio',category:'Default',scene:'a clean light-grey seamless studio cyclorama',light:'soft even studio light',img:'/img/accessories/concept-studio.png'};
 
-const st={model:null,versions:[],cur:-1,act:'outfit',items:[],scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,mf:{gender:'',group:'',body_group:''},busy:false};
+const st={model:null,versions:[],cur:-1,act:'outfit',items:[],scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,busy:false,intro:0};
 const tool=()=>st.tools.find(t=>t.id===st.tool)||st.tools[0];
 const cur=()=>st.versions[st.cur];
 function chipGroup(sel,onPick){$(sel).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));onPick(b.dataset.v);});}
 const chipsHtml=(arr,cur)=>arr.map(([v,n])=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${esc(v)}">${esc(n)}</button>`).join('');
 
 // ── 환영 화면: 모델 고르기 ──
-function models(){return (window.MODELS||[]).filter(m=>Object.keys(st.mf).every(k=>!st.mf[k]||m[k]===st.mf[k]));}
 function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;
-  $('#mfilt').innerHTML=MODEL_FILTERS.map(([k,l,opts])=>`<div><div class="lbl">${l}</div><div class="chips" data-k="${k}">${chipsHtml(opts,st.mf[k])}</div></div>`).join('');
-  $$('#mfilt .chips[data-k]').forEach(g=>chipGroup('#mfilt .chips[data-k='+g.dataset.k+']',v=>{st.mf[g.dataset.k]=v;renderModels();}));renderModels();}
-function renderModels(){$('#mgrid').innerHTML=`<button type="button" class="mc add" disabled><span class="bd soon">soon</span>Create your model<br><small>from your photos</small></button>`+models().map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.img}" loading="lazy" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.descent)} · ${m.age} · ${esc(m.body_group_label)}</small></span></button>`).join('');}
-$('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;pick((window.MODELS||[]).find(m=>m.id===b.dataset.id));});
-function pick(m){st.model=m;st.versions=[{url:m.img,label:'Original'}];st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();}
+  $('#mgrid').innerHTML=MODELS.map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.bank[0].url}" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.tag)}</small></span></button>`).join('')+`<button type="button" class="mc add" disabled><span class="bd soon">soon</span>Create your model<br><small>from your photos — trained once, then every scene and outfit</small></button>`;}
+$('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;pick(MODELS.find(m=>m.id===b.dataset.id));});
+function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();intro();}
+// 캐릭터 등장: 뱅크 장면을 랜덤으로 몇 장 훑고 기본 장면에 멈춘다 → 인사 + 첫 행동 고르기
+async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
+  for(const i of order){if(st.intro!==run)return;st.cur=i;renderStage(true);await new Promise(r=>setTimeout(r,650));}
+  if(st.intro!==run)return;st.cur=0;renderStage(true);
+  say(SAY.hello(st.model),[['outfit','Dress me up'],['scene','Take me somewhere'],['pose','Pose me']]);}
+function say(text,quick){const b=$('#bubble');b.hidden=false;b.innerHTML=`<img src="${st.model.avatar}" alt=""><div class="b">${esc(text)}${quick?`<div class="q">${quick.map(([a,l])=>`<button class="btn2" data-a="${a}">${esc(l)}</button>`).join('')}</div>`:''}</div>`;
+  b.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>setAct(x.dataset.a));}
 
 // ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──
-function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.img}" alt=""><div><b>${esc(m.name)}</b><small>${esc(m.descent)} · ${m.age} · ${esc(m.body_group_label)}</small></div><button class="btn2" id="swap">Change</button>`;
-  $('#swap').onclick=()=>renderHello();
+function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.avatar}" alt=""><div><b>${esc(m.name)}</b><small>${esc(m.tag)}</small></div><button class="btn2" id="swap">Change</button>`;
+  $('#swap').onclick=()=>{st.intro++;$('#bubble').hidden=true;renderHello();};
   $('#acts').innerHTML=ACTS.map(([k,ic,n])=>`<button type="button" data-a="${k}" class="${k===st.act?'on':''}" ${k==='video'?'disabled title="Coming soon"':''}><i>${ic}</i>${n}</button>`).join('');
   renderPanel();renderStage();}
-$('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;st.act=b.dataset.a;[...$('#acts').children].forEach(x=>x.classList.toggle('on',x===b));renderPanel();});
+function setAct(a){st.act=a;[...$('#acts').children].forEach(x=>x.classList.toggle('on',x.dataset.a===a));renderPanel();say(SAY[a]);}
+$('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;setAct(b.dataset.a);});
 function renderPanel(){({outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();renderSettings();renderGo();}
 
 // Outfit: 품목 여러 개(사진 + 유형)
@@ -147,10 +163,10 @@ function ready(){return st.act==='outfit'?st.items.length>0:st.act==='scene'?!!(
 function renderGo(){const t=tool(),L={outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act];$('#go').disabled=st.busy||!ready()||!t;$('#go').firstChild.textContent=L+' ';$('#cost').textContent=t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
-function renderStage(){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="">`;
+function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="" class="${anim?'intro':''}">`;
   $('#strip').innerHTML=st.versions.map((x,i)=>`<button type="button" class="${i===st.cur?'on':''}" data-i="${i}" title="${esc(x.label)}"><img src="${x.url}" alt=""><small>${esc(x.label)}</small></button>`).join('');
   $('#note').textContent=st.versions.length>1?`${st.versions.length} versions · pick one to continue from it`:'';}
-$('#strip').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||st.busy)return;st.cur=+b.dataset.i;renderStage();});
+$('#strip').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||st.busy)return;st.intro++;st.cur=+b.dataset.i;renderStage();});
 $$('.stage .tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.stage .tabs [data-f]').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;$('#stageView').hidden=f!=='stage';$('#feedView').hidden=f!=='mine';if(f==='mine')loadFeed();}));
 
 // ── 프롬프트(10-16 실측 틀): 이미지 1 = 현재 버전 보존, 바꿀 것만 ──
@@ -169,7 +185,7 @@ async function refs(){const base=await(await fetch(cur().url)).blob();const out=
   return out;}
 
 // ── 생성: Image 페이지와 같은 POST /api/generate → 새 버전으로 띠에 추가 ──
-$('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.busy)return;st.busy=true;renderGo();renderStage();
+$('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.busy)return;st.intro++;st.busy=true;renderGo();renderStage();say(SAY.busy);
   try{const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt());fd.append('model',t.model);fd.append('tool',t.id);fd.append('count','1');fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
     fd.append('aspectRatio',st.ratio);fd.append('imageSize','1K');fd.append('negativePrompt','extra fingers, deformed hands, warped or altered item, mannequin look, watermark, text');fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');
     (await refs()).forEach((b,i)=>fd.append('referenceImages',b,'ref'+i+'.png'));
@@ -177,8 +193,8 @@ $('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.b
     if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
     if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
     const r=(d.results||[]).find(x=>x.success&&x.url);if(!r)throw new Error((d.results||[])[0]&&d.results[0].error||'no result');
-    st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.items=[];DoppiaNav.refreshCredits();}
-  catch(e){toast(e.message||'failed')}
+    st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.items=[];DoppiaNav.refreshCredits();say(SAY.done());}
+  catch(e){toast(e.message||'failed');say(SAY[st.act])}
   finally{st.busy=false;renderStage();renderPanel();}});
 
 // ── 피드(이 페이지 결과만) ──
