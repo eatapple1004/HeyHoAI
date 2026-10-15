@@ -154,20 +154,6 @@ export class GenerateController {
     return this.send(res, await this.generate.op('deleteReviews', req));
   }
 
-  // POST /api/generate/upscale — 내 결과물 1장 업스케일(Topaz) → 새 creation
-  @Post('upscale')
-  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
-  async postUpscale(@Req() req: any, @Res({ passthrough: true }) res: any) {
-    return this.send(res, await this.generate.op('postUpscale', req));
-  }
-
-  // POST /api/generate/removebg — 내 결과물 1장 배경 제거(BiRefNet) → 투명 PNG 새 creation
-  @Post('removebg')
-  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
-  async postRemovebg(@Req() req: any, @Res({ passthrough: true }) res: any) {
-    return this.send(res, await this.generate.op('postRemovebg', req));
-  }
-
   // POST /api/generate/edit — Image Editor: 캔버스(+마스크) → op 별 자동 엔진 편집 → 새 creation
   @UseInterceptors(FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }], EDIT_UPLOAD_OPTIONS))
   @Post('edit')

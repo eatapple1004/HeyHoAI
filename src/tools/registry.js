@@ -174,7 +174,7 @@ const TOOLS = {
       extras: [{ key: 'enhance_prompt', label: 'Enhance prompt', type: 'toggle', hint: 'Higgsfield rewrites the prompt' }, { key: 'seed', label: 'Seed', type: 'number', min: 1, max: 1000000, hint: 'blank = random' }] },
   },
   // (2026-10-13) 업스케일 — 생성 툴이 아니라 "결과물 1장 → 더 큰 1장". type:'upscale' 로 따로 묶어 모델 목록엔 안 나오고
-  //   tools API 의 upscale[] 로 나간다(메가메뉴 Upscale 기능 = 이게 비어 있지 않으면 live). 경로는 POST /api/generate/upscale.
+  //   tools API 의 upscale[] 로 나간다. (2026-10-16) 실행 경로는 Editor 의 upscale op(POST /api/generate/edit) 하나 — 직결 /upscale 은 걷어냄.
   'topaz': {
     id: 'topaz', label: 'Topaz Upscale', type: 'upscale',
     provider: 'fal', model: 'fal-ai/topaz/upscale/image',
@@ -182,7 +182,7 @@ const TOOLS = {
     controls: { upscaleFactor: [2, 4] }, // Topaz 'Standard V2' 고정 · 얼굴 보정 기본값(0.8) 그대로
     imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
   },
-  // (2026-10-14) 배경 제거 — type:'removebg', tools API removebg[] · POST /api/generate/removebg · 카드 버튼(✂). BiRefNet v2 는 제품 누끼용 기본값으로 고정.
+  // (2026-10-14) 배경 제거 — type:'removebg', tools API removebg[]. (2026-10-16) 실행은 Editor 의 removebg op(POST /api/generate/edit). BiRefNet v2 는 제품 누끼용 기본값으로 고정.
   'birefnet': {
     id: 'birefnet', label: 'Remove background', type: 'removebg',
     provider: 'fal', model: 'fal-ai/birefnet/v2',

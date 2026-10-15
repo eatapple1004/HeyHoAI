@@ -904,111 +904,7 @@ const getCommunityHandler = async (req, res, next) => {
 };
 
 // ─── 내 결과물 공개/비공개 토글 (My creations에서 항목별 공개·재공개) ───
-// ─── 결과물 후처리(업스케일·배경 제거) — 내 결과물 1장 → 새 creation ───
-//   (2026-10-13 업스케일, 10-14 배경 제거로 공통화) body: { resultIdx, ...op 별 인자 }. 원본은 내(또는 활성 팀) 성공 결과물 사진만.
-//   결과는 원본 공개범위를 물려받는다. 과금 = IMG_CREDIT[op.costKey] 1장. 실패 시 환불 + failed 행(기존 생성 경로와 같은 모양).
-//   op 정의: { type(registry 툴 type) · costKey · label · args(req)→{} · run(prov, tool, imageUrl, args)→{url} · tags(args) · meta(args) }
-const POST_OPS = {
-  upscale: {
-    type: 'upscale', costKey: 'upscale', label: 'Upscale',
-    args: (req) => ({ factor: parseInt(req.body && req.body.factor, 10) === 4 ? 4 : 2 }),
-    modelLabel: (a) => `topaz-upscale-x${a.factor}`,
-    desc: (a, idx) => `Upscale ×${a.factor} of #${idx}`,
-    tags: (a) => ['upscale', `x${a.factor}`],
-    run: (prov, tool, imageUrl, a) => prov.upscale({ model: tool.model, imageUrl, factor: a.factor }),
-    meta: (a, idx) => ({ upscale_of: idx, factor: a.factor }),
-  },
-  removebg: {
-    type: 'removebg', costKey: 'removebg', label: 'Remove background',
-    args: () => ({}),
-    modelLabel: () => 'birefnet-removebg',
-    desc: (a, idx) => `Remove background of #${idx}`,
-    tags: () => ['removebg'],
-    run: (prov, tool, imageUrl) => prov.removeBackground({ model: tool.model, imageUrl }),
-    meta: (a, idx) => ({ removebg_of: idx, transparent: true }),
-  },
-};
-
-async function postProcessImage(req, res, next, op) {
-  try {
-    const tool = listTools({ type: op.type, enabledOnly: true, availableOnly: true })[0];
-    if (!tool) return res.status(400).json({ success: false, error: `${op.label} is not configured on this server` });
-    const resultIdx = parseInt(req.body && req.body.resultIdx, 10);
-    if (!resultIdx) return res.status(400).json({ success: false, error: 'resultIdx required' });
-    const args = op.args(req);
-
-    const teamId = await teamCredit.activeTeamId(req.user.id);
-    const src = await query(
-      `SELECT gr.idx, gr.file_path, gr.visibility, gr.template_name, gr.metadata, p.prompt_text
-         FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
-        WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false
-          AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
-      [resultIdx, req.user.id, teamId || null]
-    );
-    const row = src.rows[0];
-    if (!row || !row.file_path) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 없는 항목입니다.' });
-    const srcName = path.basename(row.file_path);
-    if (!/\.(png|jpe?g|webp)$/i.test(srcName)) return res.status(400).json({ success: false, error: 'Only images are supported' });
-    const srcB64 = await readRefBase64(srcName);
-    if (!srcB64) return res.status(404).json({ success: false, error: '원본 파일을 찾을 수 없습니다.' });
-
-    // eslint-disable-next-line global-require
-    const creditService = require('../credits/credit.service');
-    const cost = creditService.imageCost(op.costKey, 1, false);
-    let charge = null;
-    try {
-      charge = await teamCredit.chargeGeneration(req.user, cost, `${op.label} (#${resultIdx})`);
-    } catch (e) {
-      if (e.statusCode) return res.status(e.statusCode).json({ success: false, error: e.message });
-      throw e;
-    }
-
-    const modelLabel = op.modelLabel(args);
-    const savedPrompt = await promptRepo.insert({
-      userId: req.user.id, characterId: null,
-      promptText: op.desc(args, resultIdx), model: modelLabel,
-      referenceImagePath: row.file_path, tags: op.tags(args), stylePreset: null, teamId,
-    });
-
-    try {
-      // eslint-disable-next-line global-require
-      const prov = require(`../images/providers/${tool.provider}.provider`);
-      const mime = /\.jpe?g$/i.test(srcName) ? 'image/jpeg' : /\.webp$/i.test(srcName) ? 'image/webp' : 'image/png';
-      const out = await op.run(prov, tool, `data:${mime};base64,${srcB64}`, args);
-      const r = await fetch(out.url);
-      if (!r.ok) throw new Error(`${op.label} result download failed (${r.status})`);
-      // eslint-disable-next-line global-require
-      const sharp = require('sharp');
-      const imageBuffer = await sharp(Buffer.from(await r.arrayBuffer())).png().toBuffer(); // 공통 저장이 .png — 배경 제거는 알파가 그대로 남는다
-      const meta = await sharp(imageBuffer).metadata();
-
-      const outputDir = path.join(process.cwd(), 'tmp', 'images');
-      fs.mkdirSync(outputDir, { recursive: true });
-      const filename = `${crypto.randomUUID()}.png`;
-      fs.writeFileSync(path.join(outputDir, filename), imageBuffer);
-      await mediaStore.put(filename, imageBuffer);
-
-      const srcMeta = (row.metadata && typeof row.metadata === 'object') ? row.metadata : {};
-      const savedResult = await resultRepo.insert({
-        promptIdx: savedPrompt.idx, characterId: null,
-        filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(imageBuffer.length / 1024),
-        width: meta.width, height: meta.height, model: modelLabel,
-        visibility: row.visibility, templateName: row.template_name,
-        metadata: { ...op.meta(args, resultIdx), ...(srcMeta.model_name ? { model_name: srcMeta.model_name } : {}) },
-      });
-      await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
-      res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, model: modelLabel, width: meta.width, height: meta.height, cost } });
-    } catch (err) {
-      const errorMsg = String(err.message || err).slice(0, 200);
-      if (charge) await teamCredit.refundGeneration(req.user, cost, `${op.label} 실패 환불 (#${resultIdx})`).catch(() => {});
-      await resultRepo.insertFailed({ promptIdx: savedPrompt.idx, characterId: null, model: modelLabel, errorMessage: errorMsg }).catch(() => null);
-      logger.warn({ err: errorMsg, resultIdx, userId: req.user.id, op: op.type }, 'post-process failed');
-      res.status(502).json({ success: false, error: `${op.label} failed: ${errorMsg}` });
-    }
-  } catch (err) { next(err); }
-}
-const postUpscaleHandler = (req, res, next) => postProcessImage(req, res, next, POST_OPS.upscale);
-const postRemovebgHandler = (req, res, next) => postProcessImage(req, res, next, POST_OPS.removebg);
+// (2026-10-16) 업스케일·배경 제거 직결 엔드포인트(POST /upscale·/removebg)는 걷어냄 — Editor 의 op(POST /edit) 가 같은 어댑터(fal.provider upscale/removeBackground)로 한다.
 
 // ─── Image Editor (2026-10-15) — 캔버스 1장(+마스크) → AI 편집 1장 → 새 creation ───
 //   multipart: image(필수, 지금 캔버스 PNG) · mask(선택, 같은 크기 흰색=편집) · op · prompt · text(fix_text) · engine('auto'|registry id) · factor · sourceIdx · privateMode
@@ -2397,8 +2293,6 @@ const ops = {
   getResults: asOps(getResultsHandler),
   getCommunity: asOps(getCommunityHandler),
   patchResultsVisibility: asOps(patchResultsVisibilityHandler),
-  postUpscale: asOps(postUpscaleHandler),
-  postRemovebg: asOps(postRemovebgHandler),
   postEdit: asOps(postEditHandler),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
@@ -2440,8 +2334,6 @@ router.post('/', upload.array('referenceImages', 14), postRootHandler);
 router.post('/caption', postCaptionHandler);
 router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
-router.post('/upscale', postUpscaleHandler);
-router.post('/removebg', postRemovebgHandler);
 router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), postEditHandler);
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);

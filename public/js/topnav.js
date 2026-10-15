@@ -60,13 +60,14 @@
   //   행 = [아이콘, 이름, 설명, 상태, href?, 배지?]. 상태: 'live' | 'soon' | 'auto:<tools키>'(목록 비어있지 않으면 live) | 'auto:tool:<id>' | 'auto:videoInput'. 배지: 'top'(무기) | 'new'.
   //   원칙: 슬롯은 입력·결과물이 다를 때만(프롬프트만 다른 건 프리셋) · 무기는 집이 하나(여긴 링크) · 만들 계획 없는 건 안 건다.
   // 2026-10-16 분담 반영: Brand model·Platform export·Lipsync·Motion transfer 행 내림(docs/Features_전시구조_2026-10-15.md 「분담」)
+  //   Upscale·Remove background 는 개발자의 Editor(/image-edit) op 로 통일 — 카드 직결 버튼·POST /upscale·/removebg 는 걷어냄
   var FEAT = {
     image: [
       ['✎', 'Create Image', 'Text · references · edit with words — every engine', 'live', '/image'],
       ['✦', 'Doppia Lens', 'Product shots · model shots — label kept. Product ID inside', 'soon', null, 'top'],
       ['◈', 'Doppia Style', 'Coming soon', 'soon'],
-      ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'],
-      ['✂', 'Remove background', 'Transparent PNG — hover a result', 'auto:removebg', '/image'],
+      ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — opens in the Editor', 'auto:editor', '/image-edit?tool=upscale'],
+      ['✂', 'Remove background', 'Transparent PNG — opens in the Editor', 'auto:editor', '/image-edit?tool=removebg'],
       ['⇄', 'Face swap', 'Our models + your face only', 'soon'],
       ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'auto:editor', '/image-edit', 'new']
     ],
@@ -101,7 +102,9 @@
   function render(kind) {
     return tools().then(function (T) {
       var list = kind === 'image' ? (T.image || []).concat(T.upscale || []) : T.video; // 업스케일(Topaz)도 모델 열에 — 키 있으면 live
-      var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', '/' + kind + '?tool=' + encodeURIComponent(t.id), TOP_MODELS[t.id] ? 'top' : undefined); }).join('');
+      // (2026-10-16) 업스케일 툴은 Create Image 가 아니라 Editor 의 upscale op 로 간다(/image?tool=topaz 는 고를 수 없는 툴이었다)
+      var hrefOf = function (t) { return t.type === 'upscale' ? '/image-edit?tool=upscale' : '/' + kind + '?tool=' + encodeURIComponent(t.id); };
+      var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', hrefOf(t), TOP_MODELS[t.id] ? 'top' : undefined); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
       var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:tool:') === 0) st = (T.video || []).concat(T.image || []).some(function (t) { return t.id === st.slice(10); }) ? 'live' : 'soon'; else if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4], f[5]); }).join('');

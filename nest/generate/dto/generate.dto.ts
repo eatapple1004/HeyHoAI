@@ -22,7 +22,7 @@ export interface ToolDto {
 export interface ToolsDto {
   image: ToolDto[];
   video: ToolDto[];
-  /** 업스케일 툴(Topaz). 키 없는 서버면 빈 배열 → 메가메뉴 Upscale 기능이 soon 으로 */
+  /** 업스케일 툴(Topaz). 키 없는 서버면 빈 배열(실행은 editor[] 의 upscale op 가 한다) */
   upscale: ToolDto[];
   /** 배경 제거 툴(BiRefNet). 키 없는 서버면 빈 배열 */
   removebg: ToolDto[];
