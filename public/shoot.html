@@ -88,7 +88,7 @@ const ICON={gemini:'🍌',openai:'G',seedream:'S',fal:'F',xai:'X',higgsfield:'H'
 const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(template_name)
 
 // ── 정의 ──
-// 우리 모델. bank = 같은 사람·같은 옷으로 미리 뽑아 둔 장면들(10-16 Soul 베이스 → Nano Banana Pro 장면 교체). 첫 장이 기본.
+// 우리 모델. bank = 같은 사람·같은 옷으로 장면마다 Soul 2(유나 Soul ID)로 뽑아 둔 사진들(10-16, 장당 0.12cr). 첫 장이 기본.
 //   기존 로스터 200명은 기준 미달(사용자)이라 안 쓴다. 새 모델은 "Create your model"(Soul ID 학습 → 같은 뱅크 공정)로 — soon.
 const MODELS=[{id:'yuna',name:'Yuna',tag:'Doppia model · Korean · 24',avatar:'/img/shoot/yuna/avatar.jpg',
   bank:[['street','Street'],['studio','Studio'],['cafe','Cafe'],['rooftop','Rooftop'],['park','Park'],['night','Night'],['wall','Golden hour']].map(([k,l])=>({url:'/img/shoot/yuna/'+k+'.jpg',label:l}))}];
