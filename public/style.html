@@ -13,55 +13,80 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=19" defer></script>
+<script src="/js/topnav.js?v=20" defer></script>
+<script src="/js/models.roster.js?v=1" defer></script>
+<script src="/js/backgrounds.roster.js?v=1" defer></script>
 <style>
-/* (2026-10-16) Doppia Style 전용 — 컷 타일·배경 스와치만. 나머지는 base-ui(Image 페이지와 같은 컴포저/피드). */
-.stiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.stile{position:relative;padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer;overflow:hidden;text-align:left;font:inherit}
-.stile img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--bg2)}
-.stile div{padding:7px 9px 8px;font-size:12px;font-weight:600;line-height:1.3}
-.stile small{display:block;color:var(--faint);font-weight:400;font-size:11px;margin-top:2px}
-.stile.on{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
-.stile[disabled]{cursor:default;opacity:.55}
-.stile .bd{position:absolute;top:6px;right:6px}
+/* (2026-10-16) Doppia Style — 스타일룸 흐름(품목 → 모델 → 배경 → 생성). 전용 CSS 는 스텝·그리드·선택 바만, 칩·입력·카드는 base-ui 공용. */
+.st-wrap{max-width:1320px;margin:0 auto;padding:18px 20px 110px}
+.st-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.st-head .sub{font-size:12px;color:var(--faint)}
+.st-steps{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 16px;font-size:13px;color:var(--faint)}
+.st-steps span{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface)}
+.st-steps span i{font-style:normal;width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;background:var(--bg2);color:var(--dim)}
+.st-steps span.on{color:var(--text);border-color:var(--lime)}.st-steps span.on i{background:var(--lime);color:#111}
+.st-steps span.done{color:var(--dim)}.st-steps span.done i{background:var(--border2);color:var(--text)}
+.st-steps em{font-style:normal;color:var(--border2)}
+.st-body{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}
+.st-aside .lbl:first-child{margin-top:0}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.st-grid.bg{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.mc{position:relative;padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer;overflow:hidden;text-align:left;font:inherit}
+.mc img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--bg2)}
+.st-grid.bg .mc img{aspect-ratio:4/3}
+.mc .nm{position:absolute;left:0;right:0;bottom:0;padding:18px 9px 8px;font-size:12px;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff}
+.mc .nm small{display:block;opacity:.75;font-size:11px}
+.mc.on{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
+.mc[disabled]{cursor:default;opacity:.55}
+.mc .bd{position:absolute;top:6px;right:6px}
+.mc.add{display:grid;place-items:center;aspect-ratio:4/5;border-style:dashed;color:var(--faint);font-size:13px;text-align:center;padding:12px}
+.st-grid.bg .mc.add{aspect-ratio:4/3}
+.st-up{display:grid;place-items:center;min-height:220px;border:1px dashed var(--border2);border-radius:14px;background:var(--surface);color:var(--faint);text-align:center;padding:20px;cursor:pointer}
+.st-up b{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+.st-up img{max-height:360px;max-width:100%;border-radius:10px}
+.st-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,220px));gap:12px}
+.st-sum figure{margin:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.st-sum img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--bg2)}
+.st-sum figcaption{padding:7px 9px;font-size:12px;color:var(--dim)}
+.st-sum figure.em{display:grid;place-items:center;aspect-ratio:4/5;color:var(--faint);font-size:12px;border-style:dashed}
+.st-sel{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(10,10,16,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border)}
+.st-sel>div{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:10px}
+.st-sel .pick{display:flex;gap:6px;margin-right:auto}
+.st-sel .pick img,.st-sel .pick span{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--bg2);border:1px solid var(--border);display:block}
+.st-sel .pick span{border-style:dashed}
+.st-sel .gen{width:auto;min-width:200px;padding:0 22px}
 .sw{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sw button{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);cursor:pointer;padding:0}
 .sw button.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--lime)}
 .sw input[type=color]{width:30px;height:30px;border:1px solid var(--border2);border-radius:50%;background:none;padding:0;cursor:pointer}
 .sw .nm{font-size:12px;color:var(--faint);margin-left:4px}
+@media(max-width:860px){.st-body{grid-template-columns:1fr}.st-sel .pick{display:none}}
 </style>
 </head>
 <body>
-<!-- (2026-10-16) Doppia Style 1차 — 스타일룸 모방의 첫 칸. 옷 사진 1장 → 컷(플랫레이·고스트 마네킹, Studio 의 productcut 레시피 그대로) → 배경색 → 뷰 선택 → 생성.
-     모델 착용컷(스타일룸의 본체)은 이 안의 세 번째 타일로 자리만 잡아 두고 soon — 모델 자산·피팅 엔진(FASHN 등)은 다음 단계.
-     프롬프트는 POST /api/recipes/:cut/resolve 가 주는 jobs[] (뷰 1개 = 1장) · 생성은 Image 페이지와 같은 POST /api/generate · 피드는 template_name='Doppia Style' 만 -->
-<div class="split">
-  <aside class="composer">
-    <div class="cbody">
-      <div class="lbl">Garment <i id="garHint">· one photo · flat lay, ghost or on a hanger</i></div>
-      <div class="refs" id="refs"><button class="add" id="refAdd" type="button" title="Upload">+</button><button class="add" id="refLib" type="button" title="Pick from Library" style="font-size:12px">Lib</button></div>
-      <input type="file" id="refFile" accept="image/*" hidden>
-      <div class="refs" id="libPick" hidden></div>
-      <div class="lbl">Shot</div>
-      <div class="stiles" id="cuts"></div>
-      <div class="lbl">Views <i id="viewHint">· one image each</i></div><div class="chips" id="views"></div>
-      <div class="lbl">Background</div>
-      <div class="sw" id="bgs"></div>
-      <div class="lbl">Engine</div>
-      <div class="msel" id="msel"><span class="ic">…</span><span><b>Loading engines</b><small>GET /api/generate/tools</small></span></div>
-      <div class="lbl">Aspect ratio</div><div class="chips" id="ratios"></div>
-      <div class="lock" id="privLock"><div><b>Private Mode</b><small>Off = result goes to the public feed</small></div><span class="sw2"><i></i></span></div>
-    </div>
-    <div class="cfoot"><button class="gen" id="gen">Generate <span class="c">◈ <span id="cost">—</span></span></button></div>
-  </aside>
-  <div class="feed">
-    <div class="feedbar"><div class="tabs"><button class="on" data-f="mine">My results</button><button type="button" disabled title="Coming soon" style="opacity:.45;cursor:default">How it works <span class="bd soon">soon</span></button></div><span id="feedNote" style="color:var(--faint);font-size:12px"></span></div>
+<!-- (2026-10-16) Doppia Style — 스타일룸(style-room.ai) 모방. 사용자 지시: "UI 부터. 속옷·모델 선택/생성·배경 선택/생성·소품 전부 되는 걸로 가정하고 짜라."
+     모드 4: Model shot · Underwear · Accessories(품목 → 모델 → 배경 → 생성) / Garment only(품목 → 컷 → 생성, Studio productcut 레시피).
+     지금 배선: 모델·배경은 기존 로스터(window.MODELS 200 · window.BACKGROUNDS 40, 자리표시 — 전신 모델 자산으로 교체 예정),
+     착용 생성은 Image 엔진에 모델·품목·배경 사진을 레퍼런스로 넣는 한 줄 프롬프트(피팅 전용 엔진 FASHN 등은 다음 단계).
+     생성 API = POST /api/generate(Image 페이지와 동일) · 피드 = template_name 'Doppia Style'. -->
+<div class="wrap st-wrap">
+  <div class="st-head">
+    <div class="tabs" id="modes"></div>
+    <div class="tabs"><button class="on" data-v="create">Create</button><button data-v="results">My results</button></div>
+  </div>
+  <div id="create">
+    <div class="st-steps" id="steps"></div>
+    <div class="st-body" id="body"></div>
+  </div>
+  <div id="results" hidden>
     <div class="prog" id="prog" hidden><i id="bar"></i></div>
     <div class="resbar" id="resbar" hidden><b id="resN"></b><span id="resMeta" style="color:var(--faint)"></span><div class="acts"><button class="btn2 br" id="toVideo">Animate →</button><a class="btn2" href="/gallery">Open Library</a></div></div>
     <div class="masonry" id="feed"></div>
-    <div class="empty" id="feedEmpty" hidden>No Style results yet. Drop a garment photo and generate.</div>
+    <div class="empty" id="feedEmpty" hidden>No Style results yet.</div>
   </div>
 </div>
+<div class="st-sel"><div id="sel"></div></div>
+<input type="file" id="file" accept="image/*" hidden>
 <script>
 (function(){
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -69,76 +94,155 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
 const ICON={gemini:'🍌',openai:'G',seedream:'S',fal:'F',xai:'X',higgsfield:'H'};
 const TEMPLATE='Doppia Style'; // generate templateName = 피드 필터 키(template_name)
-// 컷 = Studio productcut 레시피 id. views 는 resolve 가 주는 jobs[] 순서(shot_0~3)의 사람용 라벨 — 시드(recipes.productcut.v2.js)의 shots 순서와 같아야 한다.
+
+// ── 정의 ──
+const WEAR=['Garment','Model','Background','Generate'];
+const MODES={
+  model:{name:'Model shot',sub:'Model + garment + background',steps:WEAR,item:{label:'Garment',types:['Top','Bottom','Dress','Outer','Set','Swim'],hint:'flat lay · ghost · on a hanger · worn by someone',verb:'wearing the garment'}},
+  underwear:{name:'Underwear',sub:'Bra · panty · bodysuit · swim',steps:WEAR,item:{label:'Underwear',types:['Bra','Panty','Set','Bodysuit','Swim'],hint:'flat lay or ghost — one piece or a set',verb:'wearing the underwear'}},
+  accessory:{name:'Accessories',sub:'Hat · shoes · bag · jewelry · glasses',steps:WEAR,item:{label:'Item',types:['Hat','Hair','Shoes','Bag','Accessory set','Earrings & necklace','Ring','Glasses'],hint:'one item, clean background works best',verb:'wearing or carrying the item'}},
+  garment:{name:'Garment only',sub:'Flat lay · ghost mannequin',steps:['Garment','Cut','Generate'],item:{label:'Garment',types:['Top','Bottom','Dress','Outer','Set','Swim'],hint:'flat lay · ghost · on a hanger'}}
+};
+// Garment only 의 컷 = Studio productcut 레시피 id. views 는 resolve jobs[](shot_0~3) 순서의 라벨 — 시드 shots 순서와 같아야 한다.
 const CUTS=[
   {id:'flat-lay-cut',name:'Flat lay',sub:'Top-down on a seamless surface',img:'/img/productcut/flat-lay-cut.png',views:['Front','Styled','Collar','Full']},
-  {id:'ghost-mannequin-cut',name:'Ghost mannequin',sub:'Hollow 3D shape, no model',img:'/img/productcut/ghost-mannequin-cut.png',views:['Front','3/4','Back','Collar']},
-  {id:'model',name:'Model shot',sub:'Pick a model · coming soon',img:'/img/studiomodel/model-cut.png',soon:true}
+  {id:'ghost-mannequin-cut',name:'Ghost mannequin',sub:'Hollow 3D shape, no model',img:'/img/productcut/ghost-mannequin-cut.png',views:['Front','3/4','Back','Collar']}
 ];
-const BGS=[['Light grey',null],['White','#ffffff'],['Beige','#f3e9d2'],['Black','#1b1b24']]; // null = 레시피 기본(light grey seamless)
-const st={tools:[],tool:null,ratio:null,ref:null,cut:CUTS[0].id,views:[0,1,2,3],bg:null,priv:false,lastRun:null,jobs:{}};
-const cut=()=>CUTS.find(c=>c.id===st.cut);
-// ── 툴 ──
-function tool(){return st.tools.find(t=>t.id===st.tool)||st.tools[0];}
-function renderSel(){const t=tool();if(!t){$('#msel').innerHTML='<span class="ic">!</span><span><b>No image engine available</b><small>No API key on this server</small></span>';return}
-  $('#msel').innerHTML=`<span class="ic">${ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perImage}/image</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(x.provider)}</small></span><span class="pc">◈${x.pricing.perImage}</span></div>`).join('')}</div>`;}
-$('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;applyTool();$('#msel').classList.remove('open');e.stopPropagation();return}$('#msel').classList.toggle('open')});
-document.addEventListener('click',e=>{if(!$('#msel').contains(e.target))$('#msel').classList.remove('open')});
-function chips(sel,arr,cur){$(sel).innerHTML=arr.map(v=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${v}">${v}</button>`).join('');}
-function applyTool(){const t=tool();if(!t)return;renderSel();const ratios=(t.controls||{}).aspectRatio||['4:5'];if(!ratios.includes(st.ratio))st.ratio=ratios.includes('4:5')?'4:5':ratios[0];chips('#ratios',ratios,st.ratio);cost();}
-$('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.ratio=b.dataset.v;chips('#ratios',tool().controls.aspectRatio,st.ratio)});
-function cost(){const t=tool();if(!t)return;$('#cost').textContent=(t.pricing.perImage*st.views.length).toLocaleString('en-US');}
-// ── 옷 사진(레퍼런스 1장) ──
-function renderRef(){const host=$('#refs');[...host.querySelectorAll('[data-i]')].forEach(x=>x.remove());if(st.ref)host.insertAdjacentHTML('beforeend',`<button type="button" data-i="0" title="remove"><img src="${st.ref.url}" alt=""><span class="x">×</span></button>`);}
-$('#refAdd').addEventListener('click',()=>$('#refFile').click());
-$('#refFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)st.ref={file:f,url:URL.createObjectURL(f)};renderRef();e.target.value=''});
-$('#refs').addEventListener('click',e=>{if(!e.target.closest('[data-i]'))return;st.ref=null;renderRef()});
-$('#refLib').addEventListener('click',async()=>{const p=$('#libPick');if(!p.hidden){p.hidden=true;return}p.hidden=false;p.innerHTML='<span class="note">loading…</span>';
-  try{const d=(await(await fetch('/api/generate/results?type=photo&limit=24')).json()).data||[];p.innerHTML=d.filter(r=>r.file_path).map(r=>`<button type="button" data-u="/images/${esc(r.file_path.split('/').pop())}"><img src="/images/${esc(r.file_path.split('/').pop())}" alt=""></button>`).join('')||'<span class="note">No results in Library yet.</span>';}catch(e){p.innerHTML='<span class="note">Library unavailable.</span>'}});
-$('#libPick').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;st.ref={url:b.dataset.u,remote:true};renderRef();$('#libPick').hidden=true;});
-// ── 컷 · 뷰 · 배경 ──
-function renderCuts(){$('#cuts').innerHTML=CUTS.map(c=>`<button type="button" class="stile ${c.id===st.cut?'on':''}" data-c="${c.id}" ${c.soon?'disabled':''}><img src="${c.img}" alt="">${c.soon?'<span class="bd soon">soon</span>':''}<div>${esc(c.name)}<small>${esc(c.sub)}</small></div></button>`).join('');}
-function renderViews(){const c=cut();$('#views').innerHTML=c.views.map((v,i)=>`<button type="button" class="chip ${st.views.includes(i)?'on':''}" data-v="${i}">${esc(v)}</button>`).join('');cost();}
-$('#cuts').addEventListener('click',e=>{const b=e.target.closest('.stile:not([disabled])');if(!b)return;st.cut=b.dataset.c;st.views=cut().views.map((_,i)=>i);renderCuts();renderViews();});
-$('#views').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const i=+b.dataset.v;st.views=st.views.includes(i)?st.views.filter(x=>x!==i):st.views.concat(i).sort();if(!st.views.length)st.views=[i];renderViews();});
-function renderBgs(){const custom=st.bg&&!BGS.some(b=>b[1]===st.bg);$('#bgs').innerHTML=BGS.map(b=>`<button type="button" class="${b[1]===st.bg?'on':''}" data-b="${b[1]||''}" title="${esc(b[0])}" style="background:${b[1]||'#d9d9d9'}"></button>`).join('')+`<input type="color" id="bgPick" value="${custom?st.bg:'#8ec5ff'}" title="Custom color" class="${custom?'on':''}"><span class="nm" id="bgName">${esc(custom?st.bg:(BGS.find(b=>b[1]===st.bg)||BGS[0])[0])}</span>`;}
-$('#bgs').addEventListener('click',e=>{const b=e.target.closest('button[data-b]');if(!b)return;st.bg=b.dataset.b||null;renderBgs();});
-$('#bgs').addEventListener('input',e=>{if(e.target.id!=='bgPick')return;st.bg=e.target.value;$('#bgName').textContent=st.bg;[...$('#bgs').querySelectorAll('button')].forEach(x=>x.classList.remove('on'));e.target.classList.add('on');});
-$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});
-// ── 프롬프트 = 레시피 resolve(컷당 1회 캐시) + 배경색 문구(Studio cutBgActive 와 같은 문장) ──
-async function jobsFor(cutId){if(st.jobs[cutId])return st.jobs[cutId];const r=await fetch('/api/recipes/'+cutId+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success||!d.data.jobs)throw new Error(d.error||'Could not load the cut');return st.jobs[cutId]=d.data.jobs;}
-const withBg=p=>st.bg?p+', set against a seamless solid-color background of exactly '+st.bg:p;
-// ── 피드(이 페이지 결과만) ──
+const BG_COLORS=[['Light grey',null],['White','#ffffff'],['Beige','#f3e9d2'],['Black','#1b1b24']]; // null = 레시피 기본
+const MODEL_FILTERS=[['gender','Gender',[['','All'],['female','Women'],['male','Men']]],['group','Region',[['','All'],['East Asian','East Asian'],['Southeast Asian','SE Asian'],['South Asian','South Asian'],['White / European','European'],['Black / African','African'],['Hispanic / Latino','Latino'],['Middle Eastern / North African','MENA'],['Mixed / Multiracial','Mixed']]],['body_group','Body',[['','All'],['ideal','Ideal'],['slender','Slender'],['curvy','Curvy'],['fit','Fit']]]];
+const SHOTS=[['Full body','full body shot, head to toe visible'],['3/4','three-quarter length shot'],['Close-up','close-up on the item, face out of frame'],['Back','back view']];
+const POSES=[['Auto',''],['Standing','standing naturally'],['Walking','walking toward camera, natural movement'],['Sitting','sitting, relaxed'],['Lean','leaning against the wall']];
+const STUDIO={id:'studio',name:'Studio',category:'Default',scene:'a clean light-grey seamless studio cyclorama',light:'soft even studio light',img:'/img/accessories/concept-studio.png'};
+
+const st={mode:'model',step:0,view:'create',tools:[],tool:null,ratio:null,priv:false,
+  item:null,itemType:null,model:null,bg:STUDIO,bgCustom:'',cut:CUTS[0].id,views:[0,1,2,3],bgColor:null,
+  shot:0,pose:0,count:2,mf:{gender:'',group:'',body_group:''},bgCat:'',lastRun:null,jobs:{}};
+const mode=()=>MODES[st.mode], cut=()=>CUTS.find(c=>c.id===st.cut), tool=()=>st.tools.find(t=>t.id===st.tool)||st.tools[0];
+const isWear=()=>mode().steps===WEAR;
+
+// ── 모드 · 스텝 · 뷰 ──
+function renderModes(){$('#modes').innerHTML=Object.keys(MODES).map(k=>`<button class="${k===st.mode?'on':''}" data-m="${k}">${esc(MODES[k].name)}</button>`).join('');}
+$('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;st.mode=b.dataset.m;st.step=0;st.item=null;st.itemType=null;render();});
+async function showView(v){st.view=v;$$('.st-head [data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));$('#create').hidden=v!=='create';$('#results').hidden=v!=='results';$('.st-sel').hidden=v!=='create';if(v==='results')await loadFeed();}
+$$('.st-head [data-v]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.v)));
+function renderSteps(){const S=mode().steps;$('#steps').innerHTML=S.map((s,i)=>`<span class="${i===st.step?'on':i<st.step?'done':''}" data-s="${i}"><i>${i<st.step?'✓':i+1}</i>${esc(s)}</span>${i<S.length-1?'<em>›</em>':''}`).join('');}
+$('#steps').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b||+b.dataset.s>=st.step)return;st.step=+b.dataset.s;render();});
+function render(){renderModes();renderSteps();const name=mode().steps[st.step];({Garment:stepItem,Model:stepModel,Background:stepBg,Cut:stepCut,Generate:stepGen})[name]();renderSel();window.scrollTo({top:0});}
+
+// ── 1 품목 ──
+function stepItem(){const it=mode().item;$('#body').innerHTML=`<aside class="st-aside"><div class="lbl">${esc(it.label)} type</div><div class="chips" id="itypes">${it.types.map(t=>`<button type="button" class="chip ${t===st.itemType?'on':''}" data-v="${t}">${esc(t)}</button>`).join('')}</div><div class="note" style="margin-top:12px">${esc(it.hint)}. The ${esc(it.label.toLowerCase())} stays exactly as photographed — color, print, seams.</div></aside>
+  <div><div class="st-up" id="drop">${st.item?`<img src="${st.item.url}" alt="">`:`<div><b>Drop the ${esc(it.label.toLowerCase())} photo</b>or click to upload · JPG · PNG</div>`}</div>
+  <div class="lbl" style="margin-top:14px">Or pick from Library</div><div class="refs" id="lib"><span class="note">loading…</span></div></div>`;
+  $('#itypes').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.itemType=b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));});
+  $('#drop').addEventListener('click',()=>$('#file').click());
+  $('#drop').addEventListener('dragover',e=>e.preventDefault());$('#drop').addEventListener('drop',e=>{e.preventDefault();const f=[...e.dataTransfer.files].find(f=>/^image\//.test(f.type));if(f)setItem({file:f,url:URL.createObjectURL(f)});});
+  fetch('/api/generate/results?type=photo&limit=24').then(r=>r.json()).then(d=>{const rows=(d.data||[]).filter(r=>r.file_path);$('#lib').innerHTML=rows.map(r=>`<button type="button" data-u="/images/${esc(r.file_path.split('/').pop())}"><img src="/images/${esc(r.file_path.split('/').pop())}" alt=""></button>`).join('')||'<span class="note">No results in Library yet.</span>';}).catch(()=>{$('#lib').innerHTML='<span class="note">Library unavailable.</span>'});
+  $('#lib').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(b)setItem({url:b.dataset.u,remote:true});});}
+function setItem(it){st.item=it;render();}
+$('#file').addEventListener('change',e=>{const f=e.target.files[0];if(f)setItem({file:f,url:URL.createObjectURL(f)});e.target.value='';});
+
+// ── 2 모델 (로스터 필터 = 실제 속성) ──
+function models(){return (window.MODELS||[]).filter(m=>Object.keys(st.mf).every(k=>!st.mf[k]||m[k]===st.mf[k]));}
+function stepModel(){$('#body').innerHTML=`<aside class="st-aside" id="mfilt">${MODEL_FILTERS.map(([k,l,opts])=>`<div class="lbl">${l}</div><div class="chips" data-k="${k}">${opts.map(([v,n])=>`<button type="button" class="chip ${st.mf[k]===v?'on':''}" data-v="${v}">${n}</button>`).join('')}</div>`).join('')}<div class="note" style="margin-top:14px">Doppia virtual models — licensed for commercial use. Brand model (your own exclusive model) coming soon.</div></aside><div class="st-grid" id="mgrid"></div>`;
+  renderModels();
+  $('#mfilt').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const g=b.closest('[data-k]');st.mf[g.dataset.k]=b.dataset.v;[...g.children].forEach(x=>x.classList.toggle('on',x===b));renderModels();});
+  $('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;st.model=models().find(m=>m.id===b.dataset.id)||st.model;renderModels();renderSel();});}
+function renderModels(){const rows=models();$('#mgrid').innerHTML=`<button type="button" class="mc add" disabled><span class="bd soon">soon</span>Brand model<br><small>your own exclusive model</small></button>`+rows.map(m=>`<button type="button" class="mc ${st.model&&st.model.id===m.id?'on':''}" data-id="${m.id}"><img src="${m.img}" loading="lazy" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.descent)} · ${m.age} · ${esc(m.body_group_label)}</small></span></button>`).join('')||'<span class="note">No model matches these filters.</span>';}
+
+// ── 3 배경 (로스터 8카테고리 + 스튜디오 기본 + 직접 묘사) ──
+function bgs(){return [STUDIO].concat((window.BACKGROUNDS||[]).filter(b=>!st.bgCat||b.category_key===st.bgCat));}
+function stepBg(){const cats=[...new Map((window.BACKGROUNDS||[]).map(b=>[b.category_key,b.category])).entries()];
+  $('#body').innerHTML=`<aside class="st-aside"><div class="lbl">Concept</div><div class="chips" id="bgcat"><button type="button" class="chip ${st.bgCat?'':'on'}" data-v="">All</button>${cats.map(([k,n])=>`<button type="button" class="chip ${st.bgCat===k?'on':''}" data-v="${k}">${esc(n)}</button>`).join('')}</div>
+  <div class="lbl" style="margin-top:14px">Or describe your own</div><input class="ff" id="bgText" maxlength="300" placeholder="e.g. rooftop at dusk, city lights, warm film look" value="${esc(st.bgCustom)}"><div class="note" style="margin-top:6px">A described scene is generated with the shot — no preset needed.</div></aside><div class="st-grid bg" id="bgrid"></div>`;
+  renderBgs();
+  $('#bgcat').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.bgCat=b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderBgs();});
+  $('#bgText').addEventListener('input',e=>{st.bgCustom=e.target.value.trim();if(st.bgCustom)st.bg=null;renderBgs();renderSel();});
+  $('#bgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;st.bg=bgs().find(x=>x.id===b.dataset.id)||st.bg;st.bgCustom='';$('#bgText').value='';renderBgs();renderSel();});}
+function renderBgs(){$('#bgrid').innerHTML=bgs().map(b=>`<button type="button" class="mc ${st.bg&&st.bg.id===b.id?'on':''}" data-id="${b.id}"><img src="${b.img}" loading="lazy" alt=""><span class="nm">${esc(b.name)}<small>${esc(b.category)}</small></span></button>`).join('');}
+
+// ── 2' 컷 (Garment only) ──
+function stepCut(){const c=cut();$('#body').innerHTML=`<aside class="st-aside"><div class="lbl">Views <i>· one image each</i></div><div class="chips" id="views">${c.views.map((v,i)=>`<button type="button" class="chip ${st.views.includes(i)?'on':''}" data-v="${i}">${esc(v)}</button>`).join('')}</div>
+  <div class="lbl" style="margin-top:14px">Background</div><div class="sw" id="bgs"></div></aside><div class="st-grid" id="cgrid">${CUTS.map(k=>`<button type="button" class="mc ${k.id===st.cut?'on':''}" data-id="${k.id}"><img src="${k.img}" alt=""><span class="nm">${esc(k.name)}<small>${esc(k.sub)}</small></span></button>`).join('')}</div>`;
+  renderColors();
+  $('#cgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;st.cut=b.dataset.id;st.views=cut().views.map((_,i)=>i);stepCut();renderSel();});
+  $('#views').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const i=+b.dataset.v;st.views=st.views.includes(i)?st.views.filter(x=>x!==i):st.views.concat(i).sort();if(!st.views.length)st.views=[i];[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',st.views.includes(+x.dataset.v)));renderSel();});
+  $('#bgs').addEventListener('click',e=>{const b=e.target.closest('button[data-b]');if(!b)return;st.bgColor=b.dataset.b||null;renderColors();});
+  $('#bgs').addEventListener('input',e=>{if(e.target.id!=='bgPick')return;st.bgColor=e.target.value;$('#bgName').textContent=st.bgColor;[...$('#bgs').querySelectorAll('button')].forEach(x=>x.classList.remove('on'));e.target.classList.add('on');});}
+function renderColors(){const custom=st.bgColor&&!BG_COLORS.some(b=>b[1]===st.bgColor);$('#bgs').innerHTML=BG_COLORS.map(b=>`<button type="button" class="${b[1]===st.bgColor?'on':''}" data-b="${b[1]||''}" title="${esc(b[0])}" style="background:${b[1]||'#d9d9d9'}"></button>`).join('')+`<input type="color" id="bgPick" value="${custom?st.bgColor:'#8ec5ff'}" title="Custom color" class="${custom?'on':''}"><span class="nm" id="bgName">${esc(custom?st.bgColor:(BG_COLORS.find(b=>b[1]===st.bgColor)||BG_COLORS[0])[0])}</span>`;}
+
+// ── 4 생성 설정 ──
+function stepGen(){const wear=isWear();
+  $('#body').innerHTML=`<aside class="st-aside">${wear?`<div class="lbl">Shot</div><div class="chips" id="shots">${SHOTS.map((s,i)=>`<button type="button" class="chip ${i===st.shot?'on':''}" data-v="${i}">${esc(s[0])}</button>`).join('')}</div>
+  <div class="lbl" style="margin-top:12px">Pose</div><div class="chips" id="poses">${POSES.map((p,i)=>`<button type="button" class="chip ${i===st.pose?'on':''}" data-v="${i}">${esc(p[0])}</button>`).join('')}</div>
+  <div class="lbl" style="margin-top:12px">Count</div><div class="chips" id="counts">${[1,2,4].map(n=>`<button type="button" class="chip ${n===st.count?'on':''}" data-v="${n}">× ${n}</button>`).join('')}</div>`:''}
+  <div class="lbl" style="margin-top:12px">Engine</div><div class="msel" id="msel"></div>
+  <div class="lbl">Aspect ratio</div><div class="chips" id="ratios"></div>
+  <div class="lock ${st.priv?'on':''}" id="privLock"><div><b>Private Mode</b><small>Off = result goes to the public feed</small></div><span class="sw2"><i></i></span></div></aside>
+  <div><div class="st-sum" id="sum"></div><div class="note" style="margin-top:12px">${wear?'Model face = Doppia virtual model (licensed). The item is kept exactly as photographed.':'Prompts come from the Studio product-cut recipes. One image per selected view.'}</div></div>`;
+  renderSum();renderSel2();
+  if(wear){$('#shots').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.shot=+b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));});
+    $('#poses').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.pose=+b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));});
+    $('#counts').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.count=+b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));renderSel();});}
+  $('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;renderSel2();$('#msel').classList.remove('open');e.stopPropagation();return}$('#msel').classList.toggle('open')});
+  $('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.ratio=b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));});
+  $('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
+function renderSum(){const fig=(src,cap)=>src?`<figure><img src="${src}" alt=""><figcaption>${esc(cap)}</figcaption></figure>`:`<figure class="em">${esc(cap)}</figure>`;
+  $('#sum').innerHTML=isWear()?fig(st.item&&st.item.url,mode().item.label+(st.itemType?' · '+st.itemType:''))+fig(st.model&&st.model.img,st.model?st.model.name:'No model')+fig(st.bg&&st.bg.img,st.bg?st.bg.name:(st.bgCustom||'No background')):fig(st.item&&st.item.url,mode().item.label)+fig(cut().img,cut().name+' · '+st.views.length+' views');}
+function renderSel2(){const t=tool();if(!t){$('#msel').innerHTML='<span class="ic">!</span><span><b>No image engine available</b><small>No API key on this server</small></span>';return}
+  $('#msel').innerHTML=`<span class="ic">${ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perImage}/image</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(x.provider)}</small></span><span class="pc">◈${x.pricing.perImage}</span></div>`).join('')}</div>`;
+  const ratios=(t.controls||{}).aspectRatio||['4:5'];if(!ratios.includes(st.ratio))st.ratio=ratios.includes('4:5')?'4:5':ratios[0];$('#ratios').innerHTML=ratios.map(v=>`<button type="button" class="chip ${v===st.ratio?'on':''}" data-v="${v}">${v}</button>`).join('');renderSel();}
+document.addEventListener('click',e=>{const m=$('#msel');if(m&&!m.contains(e.target))m.classList.remove('open')});
+
+// ── 선택 바 (하단 고정): 고른 것 · 뒤로 · 다음/생성 ──
+function nImages(){return isWear()?st.count:st.views.length;}
+function canNext(){const s=mode().steps[st.step];return s==='Garment'?!!st.item:s==='Model'?!!st.model:s==='Background'?!!(st.bg||st.bgCustom):true;}
+function renderSel(){const last=st.step===mode().steps.length-1,t=tool();const th=(src)=>src?`<img src="${src}" alt="">`:'<span></span>';
+  $('#sel').innerHTML=`<div class="pick">${th(st.item&&st.item.url)}${isWear()?th(st.model&&st.model.img)+th(st.bg&&st.bg.img):th(cut().img)}</div>
+  <span class="note" style="margin-right:6px">${esc(mode().name)} · ${esc(mode().steps[st.step])}</span>${st.step?'<button class="btn2" id="back">‹ Back</button>':''}
+  <button class="gen" id="next" ${canNext()?'':'disabled'}>${last?`Generate <span class="c">◈ ${t?(t.pricing.perImage*nImages()).toLocaleString('en-US'):'—'}</span>`:'Next ›'}</button>`;
+  const b=$('#back');if(b)b.onclick=()=>{st.step--;render();};
+  $('#next').onclick=()=>{if(!canNext())return;if(last)return generate();st.step++;render();};}
+
+// ── 생성 ──
 function url(r){return '/images/'+String(r.file_path||'').split('/').pop();}
 function card(r,extra){const u=typeof r==='string'?r:url(r);const idx=r&&r.idx;return `<div class="rt ${extra||''}" ${idx?`onclick="location.href='/creation?idx=${idx}'"`:''}><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r&&r.model||'')}</span><span class="a">${idx&&EDITOR?`<span title="Upscale in Editor" onclick="event.stopPropagation();location.href='/image-edit?tool=upscale&idx=${idx}&u=${encodeURIComponent(u)}'">⤢</span><span title="Remove background in Editor" onclick="event.stopPropagation();location.href='/image-edit?tool=removebg&idx=${idx}&u=${encodeURIComponent(u)}'">✂</span><span title="Open in Editor" onclick="event.stopPropagation();location.href='/image-edit?idx=${idx}&u=${encodeURIComponent(u)}'">✎</span>`:''}<span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
 let EDITOR=false;
 async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidden=true;try{const d=(await(await fetch('/api/generate/results?type=photo&limit=120')).json()).data||[];const rows=d.filter(r=>r.file_path&&r.template_name===TEMPLATE);if(!rows.length){$('#feedEmpty').hidden=false;return}f.innerHTML=rows.map(r=>card(r)).join('');}catch(e){$('#feedEmpty').hidden=false}}
-// ── 생성: 선택한 뷰마다 1장(각자 자기 shot 프롬프트) ──
 let progT=null;function progStart(){const el=$('#bar');$('#prog').hidden=false;let p=5;el.style.width='5%';progT=setInterval(()=>{p=Math.min(92,p+Math.random()*6);el.style.width=p+'%'},600)}function progStop(){clearInterval(progT);$('#bar').style.width='100%';setTimeout(()=>$('#prog').hidden=true,400)}
-$('#gen').addEventListener('click',async()=>{const t=tool();if(!t)return;if(!st.ref)return toast('Drop a garment photo first');
-  $('#gen').disabled=true;progStart();const f=$('#feed');$('#feedEmpty').hidden=true;const c=cut();const ph=[];
-  try{const jobs=await jobsFor(c.id);const blob=st.ref.file||await(await fetch(st.ref.url)).blob();
-    const views=st.views.filter(i=>jobs[i]);views.forEach(i=>{const id='ph'+Date.now()+i;ph.push(id);f.insertAdjacentHTML('afterbegin',`<div class="rt pend" id="${id}">generating · ${esc(c.views[i])}</div>`)});
-    const one=async(i)=>{const fd=new FormData();fd.append('characterId','');fd.append('prompt',withBg(jobs[i].prompt));fd.append('model',t.model);fd.append('tool',t.id);fd.append('count','1');fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
-      fd.append('aspectRatio',st.ratio||'4:5');fd.append('imageSize','1K');fd.append('negativePrompt',jobs[i].negativePrompt||'');fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');fd.append('referenceImages',blob,'garment.png');
-      const res=await fetch('/api/generate',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
-      if(res.status===402)throw Object.assign(new Error(d.error||'Not enough credits'),{c402:true});
-      if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
-      return (d.results||[]).map(r=>Object.assign({view:c.views[i]},r));};
-    const settled=await Promise.allSettled(views.map(one));
+const blobOf=async it=>it.file||await(await fetch(it.url)).blob();
+async function jobsFor(cutId){if(st.jobs[cutId])return st.jobs[cutId];const r=await fetch('/api/recipes/'+cutId+'/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.success||!d.data.jobs)throw new Error(d.error||'Could not load the cut');return st.jobs[cutId]=d.data.jobs;}
+// 착용 프롬프트: 레퍼런스 순서 = 1 모델 · 2 품목 · (3 배경). 장면은 프리셋(scene+light) 또는 직접 묘사.
+function wearPrompt(){const m=mode().item,s=SHOTS[st.shot][1],p=POSES[st.pose][1];const scene=st.bgCustom?st.bgCustom:st.bg.scene+', '+st.bg.light;
+  return `Image 1 is the model, image 2 is the ${m.label.toLowerCase()}${st.itemType?' ('+st.itemType.toLowerCase()+')':''}${st.bg&&st.bg.id!=='studio'?', image 3 is the location':''}. Photograph the same model ${m.verb} exactly as in image 2 — same color, print, seams, hardware and fit, nothing added or removed. Scene: ${scene}. ${s}${p?', '+p:''}, commercial e-commerce fashion photography, natural skin, sharp focus on the ${m.label.toLowerCase()}.`;}
+// 요청 1건 = 프롬프트 1개 + 레퍼런스들 (Image 페이지와 같은 필드)
+async function post(t,prompt,negative,count,refs,label){const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt);fd.append('model',t.model);fd.append('tool',t.id);fd.append('count',String(count));fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
+  fd.append('aspectRatio',st.ratio||'4:5');fd.append('imageSize','1K');fd.append('negativePrompt',negative||'');fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');refs.forEach((b,i)=>fd.append('referenceImages',b,'ref'+i+'.png'));
+  const res=await fetch('/api/generate',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
+  if(res.status===402)throw Object.assign(new Error(d.error||'Not enough credits'),{c402:true});
+  if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
+  return (d.results||[]).map(r=>Object.assign({label},r));}
+async function generate(){const t=tool();if(!t||!st.item)return;$('#next').disabled=true;await showView('results');progStart();const f=$('#feed');$('#feedEmpty').hidden=true;
+  const n=nImages(),ph=[];for(let i=0;i<n;i++){const id='ph'+Date.now()+i;ph.push(id);f.insertAdjacentHTML('afterbegin',`<div class="rt pend" id="${id}">generating · ${esc(mode().name)}</div>`)}
+  try{const item=await blobOf(st.item);let settled;
+    if(isWear()){const refs=[await blobOf({url:st.model.img}),item];if(st.bg&&st.bg.id!=='studio')refs.push(await blobOf({url:st.bg.img}));
+      settled=await Promise.allSettled([post(t,wearPrompt(),'extra fingers, deformed hands, warped or altered item, mismatched color or print, mannequin look, watermark, text',n,refs,mode().name+' · '+(st.model.name))]);}
+    else{const c=cut(),jobs=await jobsFor(c.id);const bg=p=>st.bgColor?p+', set against a seamless solid-color background of exactly '+st.bgColor:p;
+      settled=await Promise.allSettled(st.views.filter(i=>jobs[i]).map(i=>post(t,bg(jobs[i].prompt),jobs[i].negativePrompt,1,[item],c.name+' · '+c.views[i])));}
     ph.forEach(id=>{const el=document.getElementById(id);if(el)el.remove()});
     const ok=settled.filter(s=>s.status==='fulfilled').flatMap(s=>s.value).filter(r=>r.success&&r.url);
-    ok.forEach(r=>f.insertAdjacentHTML('afterbegin',card({file_path:r.url,model:c.name+' · '+r.view},'new')));
-    const err=settled.find(s=>s.status==='rejected');if(err&&err.reason.c402){toast(err.reason.message);setTimeout(()=>location.href='/billing',1200)}
-    else if(ok.length<views.length)toast((views.length-ok.length)+' failed'+(err?': '+err.reason.message:''));
-    if(ok.length){st.lastRun=ok;$('#resbar').hidden=false;$('#resN').textContent=ok.length+' result'+(ok.length>1?'s':'');$('#resMeta').textContent=c.name+' · '+t.label+' · '+st.ratio;}
+    ok.forEach(r=>f.insertAdjacentHTML('afterbegin',card({file_path:r.url,model:r.label},'new')));
+    const err=settled.find(s=>s.status==='rejected');
+    if(err&&err.reason.c402){toast(err.reason.message);setTimeout(()=>location.href='/billing',1200)}else if(ok.length<n)toast((n-ok.length)+' failed'+(err?': '+err.reason.message:''));
+    if(ok.length){st.lastRun=ok;$('#resbar').hidden=false;$('#resN').textContent=ok.length+' result'+(ok.length>1?'s':'');$('#resMeta').textContent=mode().name+' · '+t.label+' · '+st.ratio;}
     DoppiaNav.refreshCredits();}
   catch(e){ph.forEach(id=>{const el=document.getElementById(id);if(el)el.remove()});toast(e.message||'failed')}
-  finally{$('#gen').disabled=false;progStop()}});
+  finally{progStop();renderSel();}}
 $('#toVideo').addEventListener('click',()=>{const r=st.lastRun&&st.lastRun[0];if(r)location.href='/video?start='+encodeURIComponent(r.url)});
+
 // ── 부팅 ──
-function boot(){renderCuts();renderViews();renderBgs();DoppiaNav.tools().then(T=>{EDITOR=(T.editor||[]).length>0;st.tools=(T.image||[]).filter(t=>t.imageSlots&&t.imageSlots.length); // 옷 사진을 받는 엔진만
-    st.tool=st.tools.some(t=>t.id==='nano-banana-pro')?'nano-banana-pro':(st.tools[0]&&st.tools[0].id);applyTool();});loadFeed();}
+function boot(){const q=new URLSearchParams(location.search).get('mode');if(MODES[q])st.mode=q;render();
+  DoppiaNav.tools().then(T=>{EDITOR=(T.editor||[]).length>0;st.tools=(T.image||[]).filter(t=>t.imageSlots&&t.imageSlots.length); // 레퍼런스를 받는 엔진만
+    st.tool=st.tools.some(t=>t.id==='nano-banana-pro')?'nano-banana-pro':(st.tools[0]&&st.tools[0].id);renderSel();});}
 if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
 })();
 </script>
