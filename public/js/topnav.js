@@ -59,28 +59,26 @@
   // (2026-10-15 확정) 전시 구조 = docs/Features_전시구조_2026-10-15.md 가 정본. 바꿀 땐 문서부터.
   //   행 = [아이콘, 이름, 설명, 상태, href?, 배지?]. 상태: 'live' | 'soon' | 'auto:<tools키>'(목록 비어있지 않으면 live) | 'auto:tool:<id>' | 'auto:videoInput'. 배지: 'top'(무기) | 'new'.
   //   원칙: 슬롯은 입력·결과물이 다를 때만(프롬프트만 다른 건 프리셋) · 무기는 집이 하나(여긴 링크) · 만들 계획 없는 건 안 건다.
+  // 2026-10-16 분담 반영: Brand model·Platform export·Lipsync·Motion transfer 행 내림(docs/Features_전시구조_2026-10-15.md 「분담」)
   var FEAT = {
     image: [
       ['✎', 'Create Image', 'Text · references · edit with words — every engine', 'live', '/image'],
       ['✦', 'Doppia Lens', 'Product shots · model shots — label kept. Product ID inside', 'soon', null, 'top'],
+      ['◈', 'Doppia Style', 'Coming soon', 'soon'],
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — hover a result', 'auto:upscale', '/image'],
       ['✂', 'Remove background', 'Transparent PNG — hover a result', 'auto:removebg', '/image'],
       ['⇄', 'Face swap', 'Our models + your face only', 'soon'],
-      ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'auto:editor', '/image-edit', 'new'],
-      ['👤', 'Brand model', 'One consistent virtual model for your brand', 'soon']
+      ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'auto:editor', '/image-edit', 'new']
     ],
     video: [
       ['▶', 'Create Video', 'Image · text · references · sound — every engine', 'live', '/video'],
       ['🎬', 'Spec Ad', 'Product photo → 5–15s VFX ad', 'soon', null, 'top'],
       ['⇄', 'Product swap', 'Swap the product in any video for yours', 'soon'],
-      ['⤓', 'Platform export', 'Reels 1080×1920 · Coupang specs', 'soon', null, 'new'],
       ['✎', 'Edit video', 'Upload a video, describe the change', 'auto:videoInput', '/video?tool=seedance-2.5-edit'],
       ['⧉', 'Extend', 'Continue from the last frame', 'auto:tool:seedance-2.5-extend', '/video?tool=seedance-2.5-extend'],
       ['▲', 'Video upscale', 'Topaz Video · ×2 · ×4', 'auto:tool:topaz-video', '/video?tool=topaz-video'],
       ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
-      ['🎙', 'Lipsync', 'Own voice only', 'soon'],
-      ['T', 'Reels captions', 'Captions · text overlay', 'soon'],
-      ['↷', 'Motion transfer', 'People only — Kling Motion Control · Genjutsu', 'auto:tool:kling-motion', '/video?tool=kling-motion']
+      ['T', 'Reels captions', 'Captions · text overlay', 'soon']
     ]
   };
   // 키 없는 서버에서만 soon 으로 내려가는 모델(라벨이 tools API 와 같으면 live 로 올라가고 여기선 빠진다)
