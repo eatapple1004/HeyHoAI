@@ -190,6 +190,14 @@ const TOOLS = {
     controls: {},
     imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
   },
+  // (2026-10-16) 지우기 전용 — 프롬프트 없는 마스크 지우개. FLUX Fill 은 라벨 위를 지우면 가짜 글자를 그려 넣어서(dev 실측) Erase 1순위는 이것.
+  'bria-eraser': {
+    id: 'bria-eraser', label: 'Bria Eraser', type: 'edit',
+    provider: 'fal', model: 'fal-ai/bria/eraser',
+    costKey: 'bria-eraser', enabled: true,
+    controls: {},
+    imageSlots: [{ key: 'source', label: 'Source image' }, { key: 'mask', label: 'Mask' }],
+  },
   // (2026-10-16) 마스크 채우기 — type:'edit' 라 생성 모델 목록엔 안 나오고 Editor(imageEdit.engine)만 쓴다. Inpaint·Erase·Expand 1순위(진짜 마스크).
   'flux-fill': {
     id: 'flux-fill', label: 'FLUX Fill', type: 'edit',

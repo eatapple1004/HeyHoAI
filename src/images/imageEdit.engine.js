@@ -40,9 +40,10 @@ const EDIT_OPS = {
   },
   erase: {
     label: 'Erase object', mask: 'optional',
-    engines: ['flux-fill', 'gpt-image', 'gpt-image-2.5-flare', 'nano-banana-pro'],
+    // (10-16 dev 실측) FLUX Fill 은 라벨·포장 위를 지우면 가짜 글자를 그린다 → 프롬프트 없는 전용 지우개(Bria) 1순위, Nano(흐린 패치) 다음
+    engines: ['bria-eraser', 'nano-banana-pro', 'flux-fill', 'gpt-image'],
     enginesNoMask: ['nano-banana-pro', 'gpt-image', 'flux-3'],
-    why: 'Brushed: fills the area with the surrounding background. No brush: removes what you name, anywhere in the photo.',
+    why: 'Brushed: a dedicated eraser fills the area with background — it never invents text. No brush: removes what you name, anywhere in the photo.',
   },
   expand: {
     label: 'Expand', mask: 'required',
@@ -154,9 +155,9 @@ function buildPrompt(op, { prompt = '', text = '', hasMask = false, light = null
     case 'erase':
       return hasMask
         ? (patched
-          ? `Restore ${area} so it looks like natural, untouched background — continue the surrounding surface, texture, pattern and lighting through it. Do not add any object, text or logo. ${keep}`
-          : 'empty background, seamlessly continuing the surrounding surface, texture and lighting, nothing else')
-        : `Remove ${p || 'the distracting objects'} from this photo completely and fill where it was with a natural continuation of the background. Do not add anything new. ${keep}`;
+          ? `Restore ${area} so it looks like natural, untouched background — continue the surrounding surface, texture, pattern and lighting through it. Do not add any object, text, letters or logo there. ${keep}`
+          : 'clean plain surface that seamlessly continues the surrounding material, color, texture and lighting. No text, no letters, no numbers, no logos, no labels, no new objects — just the bare surface or background')
+        : `Remove ${p || 'the distracting objects'} from this photo completely and fill where it was with a natural continuation of the surface or background behind it. Do not add anything new — no new text, letters or logos — and do not rewrite any existing printed text. ${keep}`;
     case 'expand':
       return patched
         ? `This photo was placed on a larger canvas; the blurred border is empty space. Extend the existing scene into it naturally — same lighting, perspective, surfaces, background and photographic style. Do not add new products, people or text.${p ? ` ${p}.` : ''} Do not change the original photo area.`
@@ -291,6 +292,18 @@ async function runFluxFill(tool, original, mask, text, W, H) {
   return download(out.url);
 }
 
+/** Bria Eraser(fal) — 프롬프트 없는 지우개. 마스크를 살짝 넓혀(가장자리 잔상 방지) 긴 변 2048 사본으로 보낸다. */
+async function runBriaEraser(tool, original, mask, W, H) {
+  // eslint-disable-next-line global-require
+  const prov = require(`./providers/${tool.provider}.provider`);
+  const [w, h] = fitSide(W, H);
+  const img = await sharp(original).removeAlpha().resize(w, h, { fit: 'fill' }).jpeg({ quality: 93 }).toBuffer();
+  const grow = Math.max(2, Math.round(Math.min(w, h) / 200));
+  const m = await sharp(mask, { raw: { width: W, height: H, channels: 1 } }).resize(w, h, { fit: 'fill' }).blur(grow).threshold(16).extractChannel(0).png().toBuffer();
+  const out = await prov.erase({ model: tool.model, imageUrl: dataUrl(img, 'image/jpeg'), maskUrl: dataUrl(m, 'image/png') });
+  return download(out.url);
+}
+
 async function runExternal(tool, image, text, W, H) {
   // eslint-disable-next-line global-require
   const prov = require(`./providers/${tool.provider}.provider`);
@@ -338,12 +351,13 @@ async function runEdit({ op, tool, original, mask, prompt, text, factor, light }
 
   const m = mask ? await maskRaw(mask, W, H) : null;
   const hasMask = !!(m && m.some((v) => v > 0));
-  const trueMask = hasMask && (tool.provider === 'openai' || tool.id === 'flux-fill');
+  const trueMask = hasMask && (tool.provider === 'openai' || tool.id === 'flux-fill' || tool.id === 'bria-eraser');
   const patched = hasMask && !trueMask && (op === 'erase' || op === 'inpaint' || op === 'expand');
   const text2 = buildPrompt(op, { prompt, text, hasMask, light, patched });
 
   let raw;
-  if (tool.id === 'flux-fill') raw = await runFluxFill(tool, original, m, text2, W, H);
+  if (tool.id === 'bria-eraser') raw = await runBriaEraser(tool, original, m, W, H);
+  else if (tool.id === 'flux-fill') raw = await runFluxFill(tool, original, m, text2, W, H);
   else if (tool.provider === 'openai') raw = await runOpenAI(tool, original, hasMask ? m : null, text2, W, H);
   else {
     const [w, h] = fitSide(W, H);
@@ -355,7 +369,11 @@ async function runEdit({ op, tool, original, mask, prompt, text, factor, light }
   // 크기를 원본에 맞추고(비율은 가장 가까운 지원 비율이라 cover 로 미세 크롭), 마스크가 있으면 원본 위에 합성
   const fitted = await sharp(raw).resize(W, H, { fit: 'cover' }).png().toBuffer();
   raw = null;
-  const buffer = hasMask ? await compositeMasked(original, fitted, m, W, H) : fitted;
+  // 지우기는 브러시 가장자리에 물체 잔상이 남기 쉬워 합성 마스크를 살짝 넓힌다
+  const mc = hasMask && op === 'erase'
+    ? await sharp(m, { raw: { width: W, height: H, channels: 1 } }).blur(Math.max(2, Math.min(W, H) / 250)).threshold(16).extractChannel(0).raw().toBuffer()
+    : m;
+  const buffer = hasMask ? await compositeMasked(original, fitted, mc, W, H) : fitted;
   return { buffer, ext: 'png', engine: tool, prompt: text2 };
 }
 

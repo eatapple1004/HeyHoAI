@@ -162,4 +162,21 @@ falProvider.fill = async function fill(req) {
   return { url: image.url, seed: result.seed || null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
 };
 
+/**
+ * (2026-10-16) 지우기 전용 — Bria Eraser(fal-ai/bria/eraser). 프롬프트 없이 mask 흰색 영역을 배경으로 메운다(글자·물체를 지어내지 않는다).
+ * @param {{ model?: string, imageUrl: string, maskUrl: string }} req
+ */
+falProvider.erase = async function erase(req) {
+  if (!env.FAL_API_KEY) {
+    throw Object.assign(new Error('fal: FAL_API_KEY not configured'), { statusCode: 503 });
+  }
+  const model = req.model || 'fal-ai/bria/eraser';
+  const { result, requestId } = await submitAndWait(model, { image_url: req.imageUrl, mask_url: req.maskUrl, mask_type: 'manual' }, 120_000);
+  const image = result.image || (result.images || [])[0];
+  if (!image || !image.url) {
+    throw new Error(`fal eraser 응답에 이미지가 없습니다 (${model}) — ${JSON.stringify(result).slice(0, 300)}`);
+  }
+  return { url: image.url, seed: null, providerJobId: requestId, metadata: { model, width: image.width, height: image.height } };
+};
+
 module.exports = falProvider;
