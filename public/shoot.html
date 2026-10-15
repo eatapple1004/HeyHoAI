@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Shoot</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<script src="/js/flags.js" defer></script>
+<script src="/js/no-pip.js" defer></script>
+<script src="/js/i18n.js?v=27" defer></script>
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/topnav.js?v=21" defer></script>
+<script src="/js/models.roster.js?v=1" defer></script>
+<script src="/js/backgrounds.roster.js?v=1" defer></script>
+<style>
+/* (2026-10-16) Doppia Shoot — 옷입히기 게임 구조. 모델을 고르면(허브) 그 모델로 옷·소품 입히기, 장면 바꾸기, 자세 바꾸기(영상은 soon).
+   전용 CSS 는 환영 화면·썸네일 그리드·스테이지·버전 띠뿐, 칩·입력·카드·피드는 base-ui 공용. */
+.hello{max-width:1100px;margin:0 auto;padding:40px 20px 80px}
+.hello h1{font-family:'Sora',sans-serif;font-size:34px;margin:0 0 6px}.hello p{color:var(--dim);margin:0 0 22px}
+.hello .filt{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:16px}.hello .filt .lbl{margin:0 0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}.composer .grid{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.composer .grid.wide{grid-template-columns:repeat(2,1fr)}
+.mc{position:relative;padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);cursor:pointer;overflow:hidden;text-align:left;font:inherit}
+.mc img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--bg2)}.grid.wide .mc img{aspect-ratio:4/3}
+.mc .nm{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 7px;font-size:12px;line-height:1.3;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff}.mc .nm small{display:block;opacity:.75;font-size:10px}
+.mc.on{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}.mc[disabled]{cursor:default;opacity:.55}.mc .bd{position:absolute;top:6px;right:6px}
+.mc.add{display:grid;place-items:center;aspect-ratio:4/5;border-style:dashed;color:var(--faint);font-size:12px;text-align:center;padding:10px;line-height:1.4}
+.who{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:12px}
+.who img{width:42px;height:42px;border-radius:50%;object-fit:cover}.who b{display:block;font-size:13px}.who small{color:var(--faint);font-size:11px}.who button{margin-left:auto}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.acts button{padding:9px 4px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--dim);font:inherit;font-size:12px;cursor:pointer}
+.acts button.on{border-color:var(--lime);color:var(--text)}.acts button[disabled]{opacity:.5;cursor:default}.acts button i{display:block;font-style:normal;font-size:16px;margin-bottom:2px}
+.items{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.item img{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--bg2)}.item select{flex:1;min-width:0}.item .x{background:none;border:0;color:var(--faint);cursor:pointer;font-size:16px}
+.drop{display:grid;place-items:center;min-height:84px;border:1px dashed var(--border2);border-radius:12px;background:var(--surface);color:var(--faint);text-align:center;padding:10px;cursor:pointer;font-size:12px;line-height:1.5;margin-top:8px}.drop b{display:block;color:var(--text);font-size:13px}
+.stage{padding:16px 22px 60px}
+.stage .cur{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center}
+.stage .cur img{max-height:70vh;max-width:100%;border-radius:14px;border:1px solid var(--border);background:var(--bg2)}
+.stage .cur .pend{display:grid;place-items:center;width:min(100%,420px);aspect-ratio:3/4;border-radius:14px;border:1px dashed var(--border2);color:var(--faint)}
+.strip{display:flex;gap:8px;overflow:auto;padding:12px 0 4px}
+.strip button{flex:none;width:72px;height:96px;border-radius:10px;overflow:hidden;border:1.5px solid transparent;padding:0;background:var(--bg2);cursor:pointer;position:relative}
+.strip button img{width:100%;height:100%;object-fit:cover;display:block}.strip button.on{border-color:var(--lime)}
+.strip button small{position:absolute;left:0;right:0;bottom:0;font-size:9px;padding:2px 4px;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<!-- (2026-10-16) Doppia Shoot — 사람이 주인공인 촬영(제품 주인공은 Lens). 사용자: "옷입히기 게임 같은 느낌. 들어오면 '반가워, 너의 모델을 골라줘'. 모델을 고르면 그걸로 자세·옷·소품·배경, 나중엔 영상."
+     흐름: 환영 화면(모델 고르기/만들기) → 스테이지(현재 모델 사진) + 왼쪽 행동 패널(Outfit · Scene · Pose · Video soon). 행동마다 새 버전이 띠에 쌓이고, 어느 버전에서든 이어 간다.
+     엔진(10-16 실측): 현재 버전 사진을 이미지 1로 넣고 "이 사람은 그대로, 이것만 바꿔라" — 옷·소품·수영복·배경·자세 전부 Nano Banana Pro 편집 한 번. 란제리는 얼굴 없이 생성 → FaceFusion 스왑 경로라 서버 워커 전까지 soon.
+     모델 사진은 기존 로스터(window.MODELS, 상반신 자리표시) — Soul ID 전신 뱅크로 교체 예정. 생성 API = POST /api/generate(Image 페이지와 동일), 피드 = template_name 'Doppia Shoot'. -->
+<div id="hello" class="hello" hidden>
+  <h1>Hi! Pick your model.</h1>
+  <p>Dress them up, change the scene, strike a pose. Make a video with them soon.</p>
+  <div class="filt" id="mfilt"></div>
+  <div class="grid" id="mgrid"></div>
+</div>
+<div class="split" id="app" hidden>
+  <aside class="composer">
+    <div class="cbody">
+      <div class="who" id="who"></div>
+      <div class="acts" id="acts"></div>
+      <div id="panel"></div>
+    </div>
+    <div class="cfoot"><button class="gen" id="go">Go <span class="c">◈ <span id="cost">—</span></span></button></div>
+  </aside>
+  <div class="stage">
+    <div class="feedbar"><div class="tabs"><button class="on" data-f="stage">Stage</button><button data-f="mine">My results</button></div><span id="note" style="color:var(--faint);font-size:12px"></span></div>
+    <div id="stageView"><div class="cur" id="cur"></div><div class="strip" id="strip"></div></div>
+    <div id="feedView" hidden><div class="masonry" id="feed"></div><div class="empty" id="feedEmpty" hidden>No Shoot results yet.</div></div>
+  </div>
+</div>
+<input type="file" id="file" accept="image/*" multiple hidden>
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
+const ICON={gemini:'🍌',openai:'G',seedream:'S',fal:'F',xai:'X',higgsfield:'H'};
+const TEMPLATE='Doppia Shoot'; // generate templateName = 피드 필터 키(template_name)
+
+// ── 정의 ──
+const MODEL_FILTERS=[['gender','Gender',[['','All'],['female','Women'],['male','Men']]],['group','Region',[['','All'],['East Asian','East Asian'],['Southeast Asian','SE Asian'],['South Asian','South Asian'],['White / European','European'],['Black / African','African'],['Hispanic / Latino','Latino'],['Middle Eastern / North African','MENA'],['Mixed / Multiracial','Mixed']]],['body_group','Body',[['','All'],['ideal','Ideal'],['slender','Slender'],['curvy','Curvy'],['fit','Fit']]]];
+const ACTS=[['outfit','👗','Outfit'],['scene','🏙','Scene'],['pose','🧍','Pose'],['video','▶','Video']];
+// 품목 유형 → 프롬프트의 착용 문구. 란제리는 얼굴-없이-생성→FaceFusion 경로가 서버에 없어 soon.
+const TYPES=[['top','Top','worn as the top'],['bottom','Bottom','worn as the trousers/skirt'],['dress','Dress','worn as the dress'],['outer','Outer','worn open as the outer layer'],['shoes','Shoes','on the feet'],['socks','Socks','visible at the ankles'],['hat','Hat','worn on the head'],['hair','Hair accessory','in the hair'],['bag','Bag','carried on the shoulder or in hand'],['jewelry','Jewelry','worn'],['glasses','Glasses','worn on the face'],['swim','Swimwear','worn as swimwear'],['underwear','Underwear (soon)',null]];
+const POSES=[['Standing','standing naturally, weight on one leg'],['Walking','walking toward the camera, natural movement'],['Sitting','sitting down, relaxed'],['Leaning','leaning against the nearest wall or surface'],['Back','turned away, back to camera, looking over the shoulder'],['Close-up','close-up from the chest up, hand near the face']];
+const STUDIO={id:'studio',name:'Studio',category:'Default',scene:'a clean light-grey seamless studio cyclorama',light:'soft even studio light',img:'/img/accessories/concept-studio.png'};
+
+const st={model:null,versions:[],cur:-1,act:'outfit',items:[],scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,mf:{gender:'',group:'',body_group:''},busy:false};
+const tool=()=>st.tools.find(t=>t.id===st.tool)||st.tools[0];
+const cur=()=>st.versions[st.cur];
+function chipGroup(sel,onPick){$(sel).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));onPick(b.dataset.v);});}
+const chipsHtml=(arr,cur)=>arr.map(([v,n])=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${esc(v)}">${esc(n)}</button>`).join('');
+
+// ── 환영 화면: 모델 고르기 ──
+function models(){return (window.MODELS||[]).filter(m=>Object.keys(st.mf).every(k=>!st.mf[k]||m[k]===st.mf[k]));}
+function renderHello(){$('#hello').hidden=false;$('#app').hidden=true;
+  $('#mfilt').innerHTML=MODEL_FILTERS.map(([k,l,opts])=>`<div><div class="lbl">${l}</div><div class="chips" data-k="${k}">${chipsHtml(opts,st.mf[k])}</div></div>`).join('');
+  $$('#mfilt .chips[data-k]').forEach(g=>chipGroup('#mfilt .chips[data-k='+g.dataset.k+']',v=>{st.mf[g.dataset.k]=v;renderModels();}));renderModels();}
+function renderModels(){$('#mgrid').innerHTML=`<button type="button" class="mc add" disabled><span class="bd soon">soon</span>Create your model<br><small>from your photos</small></button>`+models().map(m=>`<button type="button" class="mc" data-id="${m.id}"><img src="${m.img}" loading="lazy" alt=""><span class="nm">${esc(m.name)}<small>${esc(m.descent)} · ${m.age} · ${esc(m.body_group_label)}</small></span></button>`).join('');}
+$('#mgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;pick((window.MODELS||[]).find(m=>m.id===b.dataset.id));});
+function pick(m){st.model=m;st.versions=[{url:m.img,label:'Original'}];st.cur=0;st.items=[];st.scene=null;st.sceneText='';$('#hello').hidden=true;$('#app').hidden=false;renderApp();}
+
+// ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──
+function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.img}" alt=""><div><b>${esc(m.name)}</b><small>${esc(m.descent)} · ${m.age} · ${esc(m.body_group_label)}</small></div><button class="btn2" id="swap">Change</button>`;
+  $('#swap').onclick=()=>renderHello();
+  $('#acts').innerHTML=ACTS.map(([k,ic,n])=>`<button type="button" data-a="${k}" class="${k===st.act?'on':''}" ${k==='video'?'disabled title="Coming soon"':''}><i>${ic}</i>${n}</button>`).join('');
+  renderPanel();renderStage();}
+$('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;st.act=b.dataset.a;[...$('#acts').children].forEach(x=>x.classList.toggle('on',x===b));renderPanel();});
+function renderPanel(){({outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();renderSettings();renderGo();}
+
+// Outfit: 품목 여러 개(사진 + 유형)
+function panelOutfit(){$('#panel').innerHTML=`<div class="lbl">Items to put on <i>· photos of clothes, shoes, bags, jewelry…</i></div><div class="items" id="items"></div><div class="drop" id="drop"><b>Drop item photos</b>or click to upload · several at once</div><div class="note">Each item is kept exactly as photographed — color, print, logo. Layering works (tee under an open cardigan).</div>`;
+  renderItems();$('#drop').onclick=()=>$('#file').click();$('#drop').addEventListener('dragover',e=>e.preventDefault());$('#drop').addEventListener('drop',e=>{e.preventDefault();addItems([...e.dataTransfer.files]);});}
+function renderItems(){const el=$('#items');if(!el)return;el.innerHTML=st.items.map((it,i)=>`<div class="item"><img src="${it.url}" alt=""><select class="ff" data-i="${i}">${TYPES.map(([v,n,p])=>`<option value="${v}" ${v===it.type?'selected':''} ${p?'':'disabled'}>${esc(n)}</option>`).join('')}</select><button type="button" class="x" data-x="${i}" title="remove">×</button></div>`).join('')||'';
+  el.querySelectorAll('select').forEach(s=>s.addEventListener('change',e=>{st.items[+s.dataset.i].type=e.target.value;}));
+  el.querySelectorAll('[data-x]').forEach(b=>b.addEventListener('click',()=>{st.items.splice(+b.dataset.x,1);renderItems();renderGo();}));renderGo();}
+function addItems(files){files.filter(f=>/^image\//.test(f.type)).slice(0,8-st.items.length).forEach(f=>st.items.push({file:f,url:URL.createObjectURL(f),type:'top'}));renderItems();}
+$('#file').addEventListener('change',e=>{addItems([...e.target.files]);e.target.value='';});
+
+// Scene: 배경 로스터 + 직접 묘사
+function bgs(){return [STUDIO].concat((window.BACKGROUNDS||[]).filter(b=>!st.bgCat||b.category_key===st.bgCat));}
+function panelScene(){const cats=[['','All']].concat([...new Map((window.BACKGROUNDS||[]).map(b=>[b.category_key,b.category])).entries()]);
+  $('#panel').innerHTML=`<div class="lbl">Concept</div><div class="chips" id="bgcat">${chipsHtml(cats,st.bgCat)}</div><div class="lbl">Or describe a place</div><input class="ff" id="bgText" maxlength="300" placeholder="e.g. rooftop at dusk, city lights" value="${esc(st.sceneText)}"><div class="grid wide" id="bgrid"></div>`;
+  renderBgs();chipGroup('#bgcat',v=>{st.bgCat=v;renderBgs();});
+  $('#bgText').addEventListener('input',e=>{st.sceneText=e.target.value.trim();if(st.sceneText)st.scene=null;renderBgs();renderGo();});
+  $('#bgrid').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;st.scene=bgs().find(x=>x.id===b.dataset.id);st.sceneText='';$('#bgText').value='';renderBgs();renderGo();});}
+function renderBgs(){$('#bgrid').innerHTML=bgs().map(b=>`<button type="button" class="mc ${st.scene&&st.scene.id===b.id?'on':''}" data-id="${b.id}"><img src="${b.img}" loading="lazy" alt=""><span class="nm">${esc(b.name)}<small>${esc(b.category)}</small></span></button>`).join('');}
+
+// Pose: 프리셋 + 직접 묘사
+function panelPose(){$('#panel').innerHTML=`<div class="lbl">Pose</div><div class="chips" id="poses">${chipsHtml(POSES.map((p,i)=>[i,p[0]]),st.pose)}</div><div class="lbl">Or describe it</div><input class="ff" id="poseText" maxlength="200" placeholder="e.g. crouching, looking up, hands in pockets" value="${esc(st.poseText)}"><div class="note">Same person, same outfit, same place — only the pose and framing change.</div>`;
+  chipGroup('#poses',v=>{st.pose=+v;st.poseText='';$('#poseText').value='';});$('#poseText').addEventListener('input',e=>{st.poseText=e.target.value.trim();});}
+
+// 공통 설정(엔진·비율·비공개) — 패널 아래
+function renderSettings(){const t=tool();$('#panel').insertAdjacentHTML('beforeend',`<div class="lbl" style="margin-top:16px">Engine</div><div class="msel" id="msel">${t?`<span class="ic">${ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${t.pricing.perImage}/image</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(x.provider)}</small></span><span class="pc">◈${x.pricing.perImage}</span></div>`).join('')}</div>`:'<span class="ic">!</span><span><b>No image engine available</b><small>No API key on this server</small></span>'}</div>
+  <div class="lbl">Aspect ratio</div><div class="chips" id="ratios">${chipsHtml(((t&&t.controls&&t.controls.aspectRatio)||['3:4']).map(v=>[v,v]),st.ratio)}</div>
+  <div class="lock ${st.priv?'on':''}" id="privLock" style="margin-top:12px"><div><b>Private Mode</b><small>Off = result goes to the public feed</small></div><span class="sw2"><i></i></span></div>`);
+  $('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;renderPanel();e.stopPropagation();return}$('#msel').classList.toggle('open')});
+  chipGroup('#ratios',v=>st.ratio=v);$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
+document.addEventListener('click',e=>{const m=$('#msel');if(m&&!m.contains(e.target))m.classList.remove('open')});
+function ready(){return st.act==='outfit'?st.items.length>0:st.act==='scene'?!!(st.scene||st.sceneText):true;}
+function renderGo(){const t=tool(),L={outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act];$('#go').disabled=st.busy||!ready()||!t;$('#go').firstChild.textContent=L+' ';$('#cost').textContent=t?t.pricing.perImage.toLocaleString('en-US'):'—';}
+
+// 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
+function renderStage(){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="">`;
+  $('#strip').innerHTML=st.versions.map((x,i)=>`<button type="button" class="${i===st.cur?'on':''}" data-i="${i}" title="${esc(x.label)}"><img src="${x.url}" alt=""><small>${esc(x.label)}</small></button>`).join('');
+  $('#note').textContent=st.versions.length>1?`${st.versions.length} versions · pick one to continue from it`:'';}
+$('#strip').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||st.busy)return;st.cur=+b.dataset.i;renderStage();});
+$$('.stage .tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.stage .tabs [data-f]').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;$('#stageView').hidden=f!=='stage';$('#feedView').hidden=f!=='mine';if(f==='mine')loadFeed();}));
+
+// ── 프롬프트(10-16 실측 틀): 이미지 1 = 현재 버전 보존, 바꿀 것만 ──
+const KEEP='Keep the person exactly as in image 1: same face, hair, body proportions and skin. Photorealistic, same image quality.';
+function prompt(){
+  if(st.act==='outfit'){const list=st.items.map((it,i)=>{const t=TYPES.find(x=>x[0]===it.type);return `image ${i+2} = ${t[1].toLowerCase()}, ${t[2]}`;}).join('; ');
+    return `Image 1 is the photo to edit. Dress the person in image 1 in these items, each reproduced faithfully from its photo — same color, print, logo placement and proportions: ${list}. Replace only what the items cover; keep the rest of the outfit, pose, background, lighting and camera. ${KEEP}`;}
+  if(st.act==='scene'){const where=st.sceneText||(st.scene.scene+', '+st.scene.light);const ref=st.scene&&st.scene.id!=='studio'?' Image 2 shows the location.':'';
+    return `Image 1 is the photo to edit.${ref} Place the same person, in the same outfit and pose, in this location: ${where}. Match the light and shadows to the new place. ${KEEP}`;}
+  const pose=st.poseText||POSES[st.pose][1];
+  return `Image 1 is the person. Same person, same outfit, same location and lighting; change only the pose and framing to: ${pose}. Natural hands, full outfit still visible where the framing allows. ${KEEP}`;}
+function label(){return st.act==='outfit'?st.items.map(it=>TYPES.find(x=>x[0]===it.type)[1]).join(' + '):st.act==='scene'?(st.sceneText||st.scene.name):(st.poseText||POSES[st.pose][0]);}
+async function refs(){const base=await(await fetch(cur().url)).blob();const out=[base];
+  if(st.act==='outfit')for(const it of st.items)out.push(it.file||await(await fetch(it.url)).blob());
+  if(st.act==='scene'&&st.scene&&st.scene.id!=='studio')out.push(await(await fetch(st.scene.img)).blob());
+  return out;}
+
+// ── 생성: Image 페이지와 같은 POST /api/generate → 새 버전으로 띠에 추가 ──
+$('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.busy)return;st.busy=true;renderGo();renderStage();
+  try{const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt());fd.append('model',t.model);fd.append('tool',t.id);fd.append('count','1');fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
+    fd.append('aspectRatio',st.ratio);fd.append('imageSize','1K');fd.append('negativePrompt','extra fingers, deformed hands, warped or altered item, mannequin look, watermark, text');fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');
+    (await refs()).forEach((b,i)=>fd.append('referenceImages',b,'ref'+i+'.png'));
+    const res=await fetch('/api/generate',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
+    if(res.status===402){toast(d.error||'Not enough credits');setTimeout(()=>location.href='/billing',1200);return}
+    if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
+    const r=(d.results||[]).find(x=>x.success&&x.url);if(!r)throw new Error((d.results||[])[0]&&d.results[0].error||'no result');
+    st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.items=[];DoppiaNav.refreshCredits();}
+  catch(e){toast(e.message||'failed')}
+  finally{st.busy=false;renderStage();renderPanel();}});
+
+// ── 피드(이 페이지 결과만) ──
+function card(r){const u='/images/'+String(r.file_path||'').split('/').pop();return `<div class="rt" onclick="location.href='/creation?idx=${r.idx}'"><img src="${esc(u)}" loading="lazy" alt="" onerror="this.closest('.rt').remove()"><div class="ov"><span>${esc(r.model||'')}</span><span class="a"><span title="Continue from this" data-u="${esc(u)}">↩</span><span onclick="event.stopPropagation();location.href='/video?start=${encodeURIComponent(u)}'">▶</span></span></div></div>`;}
+async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidden=true;try{const d=(await(await fetch('/api/generate/results?type=photo&limit=120')).json()).data||[];const rows=d.filter(r=>r.file_path&&r.template_name===TEMPLATE);if(!rows.length){$('#feedEmpty').hidden=false;return}f.innerHTML=rows.map(card).join('');}catch(e){$('#feedEmpty').hidden=false}}
+$('#feed').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;e.stopPropagation();st.versions.push({url:b.dataset.u,label:'From Library'});st.cur=st.versions.length-1;$$('.stage .tabs [data-f]')[0].click();renderStage();});
+
+// ── 부팅 ──
+function boot(){renderHello();DoppiaNav.tools().then(T=>{st.tools=(T.image||[]).filter(t=>t.imageSlots&&t.imageSlots.length);st.tool=st.tools.some(t=>t.id==='nano-banana-pro')?'nano-banana-pro':(st.tools[0]&&st.tools[0].id);if(st.model)renderPanel();});}
+if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+})();
+</script>
+</body>
+</html>
