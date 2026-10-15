@@ -65,7 +65,7 @@
     image: [
       ['✎', 'Create Image', 'Text · references · edit with words — every engine', 'live', '/image'],
       ['✦', 'Doppia Lens', 'Product shots · model shots — label kept. Product ID inside', 'soon', null, 'top'],
-      ['◈', 'Doppia Style', 'Coming soon', 'soon'],
+      ['◈', 'Doppia Style', 'Garment photo → flat lay · ghost mannequin. Model shots soon', 'live', '/style'],
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — opens in the Editor', 'auto:editor', '/image-edit?tool=upscale'],
       ['✂', 'Remove background', 'Transparent PNG — opens in the Editor', 'auto:editor', '/image-edit?tool=removebg'],
       ['⇄', 'Face swap', 'Our models + your face only', 'soon'],
