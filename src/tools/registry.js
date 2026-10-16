@@ -408,6 +408,16 @@ const TOOLS = {
     controls: { duration: [5] },
     imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Describe the edit in the prompt.' }],
   },
+  // (2026-10-16) Product swap — 힉스필드 video-to-video 의 "AI Object Swap" 과 같은 Kling 3.0 Omni(O3) Edit. 영상 + 참조 이미지(@Image1) 를 같이 받는다(fal 스키마 확인).
+  //   영상 3~15초 · 720px 이상 · 길이는 원본을 따른다(duration 필드 없음). 원래 소리 유지(keep_audio).
+  'kling-o3-edit': {
+    id: 'kling-o3-edit', label: 'Kling O3 Omni Edit', type: 'video',
+    provider: 'fal', model: 'fal-ai/kling-video/o3/pro/video-to-video/edit',
+    falInput: { video: 'video_url', refs: 'image_urls', extra: { keep_audio: true } },
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10], durationRange: { min: 3, max: 15 } },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'The video to edit (@Video1), 3–15s.' }, { key: 'reference', label: 'Reference', hint: 'Images — @Image1… in the prompt.', multi: true }],
+  },
   'genjutsu': {
     id: 'genjutsu', label: 'Higgsfield Genjutsu', type: 'video',
     provider: 'higgsfieldVideo', model: 'higgsfield/genjutsu/motion-transfer/v1.0',

@@ -1135,8 +1135,18 @@ const VIDEO_EDIT_OPS = {
   restyle: { label: 'Restyle', engines: ['seedance-2.5-edit', 'kling-edit'], slot: 'sourceVideo', min: 4, max: 15, why: 'Same edit engine with look presets — color, light, style.' },
   extend: { label: 'Extend', engines: ['seedance-2.5-extend'], slot: 'sourceVideo', min: 2, max: 15, why: 'Seedance 2.5 continues the shot from its last frame; the new part is added after the clip.' },
   upscale: { label: 'Upscale', engines: ['topaz-video'], slot: 'sourceVideo', min: 0.5, max: 30, why: 'Topaz Video sharpens real detail — ×2 or ×4.' },
+  // (2026-10-16) Product swap — 힉스필드 Video to Video "AI Object Swap"(REA 캡처) 처럼 영상 + 제품 사진 → 영상 속 제품만 내 제품으로
+  productswap: { label: 'Product swap', engines: ['kling-o3-edit', 'seedance-2.5-edit'], slot: 'sourceVideo', min: 3, max: 15, minShort: 720, why: 'Kling 3.0 Omni Edit swaps the product and keeps hands, motion and camera — the same engine Higgsfield uses.' },
   motion: { label: 'Motion transfer', engines: ['kling-motion', 'genjutsu'], slot: 'motionVideo', min: 3, max: 15, why: 'Kling Motion Control puts this clip’s movement onto a model photo (people only).' },
 };
+/** Product swap 지시문 — target(바꿀 대상, 비우면 화면의 주 제품) + 덧붙임 */
+function productSwapPrompt(target, note) {
+  const what = String(target || '').trim().slice(0, 200) || 'the main product';
+  const extra = String(note || '').trim().slice(0, 500);
+  return `Replace ${what} in @Video1 with the product shown in @Image1. Match @Image1 exactly — shape, proportions, colors, materials, label, logo and text. `
+    + 'Keep everything else in @Video1 the same: people, hands and how they hold it, motion, camera move, framing, background and timing. '
+    + `Relight the new product with the scene's light, reflections and shadows so it looks filmed in place.${extra ? ` ${extra}` : ''}`;
+}
 function videoEditEngines(op) {
   const def = VIDEO_EDIT_OPS[op];
   return def ? def.engines.map((id) => getTool(id)).filter((t) => t && t.enabled && isToolAvailable(t)) : [];
@@ -1200,9 +1210,10 @@ async function postVideoEditAiHandler(req, res, next) {
     if (!tool) return res.status(400).json({ success: false, error: `${def.label} is not configured on this server` });
     if ((op === 'edit' || op === 'restyle') && !String(b.prompt || '').trim()) return res.status(400).json({ success: false, error: 'Describe the change' });
     if (op === 'motion' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Pick a model photo for the motion to go onto' });
-    const c = await ve.cut(b.src, b.in, b.out, { minSec: def.min, maxSec: def.max });
+    if (op === 'productswap' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Add a photo of your product' });
+    const c = await ve.cut(b.src, b.in, b.out, { minSec: def.min, maxSec: def.max, minShort: def.minShort || 0 });
     cutFile = c.path;
-    if (op === 'motion') imgFile = await ve.copyImage(b.imageSrc);
+    if (op === 'motion' || op === 'productswap') imgFile = await ve.copyImage(b.imageSrc);
     const range = (tool.controls && tool.controls.durationRange) || null;
     let duration = Math.round(c.duration);
     if (op === 'extend') duration = Math.max(4, Math.min(15, parseInt(b.extendSec, 10) || 5));
@@ -1212,12 +1223,13 @@ async function postVideoEditAiHandler(req, res, next) {
     let prompt = String(b.prompt || '').trim();
     if (op === 'edit' || op === 'restyle') prompt = `Edit @Video1: ${prompt}. Keep the same framing, timing and camera motion; change only what is asked.`;
     if (op === 'extend') prompt = prompt || 'Continue the shot naturally — same scene, lighting and camera motion.';
+    if (op === 'productswap') prompt = productSwapPrompt(b.target, prompt);
     const visibility = (wantsPrivate(b) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const result = await videoJobService.submit({
       user: req.user, prompt, duration: String(duration), mode: 'pro', aspectRatio: b.aspectRatio || undefined, audio: b.audio === true || b.audio === 'true',
       engine: tool.provider, resolution: b.resolution, tool, extras: pickExtras(tool, JSON.stringify(extras)),
-      visibility, templateId: null, templateSource: null, templateName: 'Video Editor',
-      sourceImagePath: imgFile, endFramePath: null, referenceImagePaths: [],
+      visibility, templateId: null, templateSource: null, templateName: op === 'productswap' ? 'Product swap' : 'Video Editor', // Product swap 페이지의 '내 스왑' 목록이 이 이름으로 거른다
+      sourceImagePath: op === 'productswap' ? null : imgFile, endFramePath: null, referenceImagePaths: op === 'productswap' && imgFile ? [imgFile] : [], // 제품 사진 = 참조 @Image1
       sourceVideoPath: def.slot === 'sourceVideo' ? cutFile : null, motionVideoPath: def.slot === 'motionVideo' ? cutFile : null,
       isTemplate: false,
     });
@@ -2563,6 +2575,7 @@ const reads = {
       editor: require('../images/imageEdit.engine').catalog(credit.imageCost),
       faceswap: require('../images/faceSwap.engine').engines().map(pub), // (10-16) Face swap 엔진 — 비어 있으면(PAUSED 포함) 메뉴 soon
       faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크)
+      productswap: videoEditEngines('productswap').map(pub), // (10-16) Video Product swap 엔진 — 비어 있으면 메뉴 soon
       videoEditor: videoEditCatalog(), // (10-16) Video Editor AI 도구별 엔진 — 비어 있어도 편집기 자체는 동작(로컬 편집·내보내기) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };
   },

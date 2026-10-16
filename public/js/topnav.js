@@ -75,7 +75,7 @@
       ['▶', 'Create Video', 'Image · text · references · sound — every engine', 'live', '/video'],
       ['📣', 'Ad Video', 'Product photos → script, scenes, music & voice — one ready-to-post ad', 'live', '/ad-video', 'top'],
       ['🎬', 'Spec Ad', 'Product photo → 5–15s VFX ad', 'soon', null, 'top'],
-      ['⇄', 'Product swap', 'Swap the product in any video for yours', 'soon'],
+      ['⇄', 'Product swap', 'Swap the product in any video for yours — same hands, motion & camera', 'auto:productswap', '/product-swap', 'new'], // (10-16) Kling 3.0 Omni Edit + 제품 사진
       ['✎', 'Edit video', 'Timeline editor — trim · text · music · AI edit with words · captions', 'live', '/video-edit', 'new'],
       ['⧉', 'Extend', 'Continue from the last frame', 'auto:tool:seedance-2.5-extend', '/video?tool=seedance-2.5-extend'],
       ['▲', 'Video upscale', 'Topaz Video · ×2 · ×4', 'auto:tool:topaz-video', '/video?tool=topaz-video'],
