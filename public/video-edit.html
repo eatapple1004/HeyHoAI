@@ -104,7 +104,21 @@ body{background:var(--bg)}
 .ve-modal>div{width:min(860px,100%);max-height:84vh;overflow:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:18px}
 .ve-modal h3{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .ve-modal video{max-width:100%;max-height:60vh;border-radius:12px;display:block;margin:0 auto 12px;background:#000}
-@media (max-width:1000px){.ve-main{grid-template-columns:200px minmax(0,1fr)}.ve-right{display:none}}
+/* (10-16) 좁은 화면(태블릿·폰): 3단 고정 레이아웃이 잘려 미리보기·도구가 화면 밖이고, 1000px 이하에선 AI 도구(오른쪽)가 아예 숨던 것
+   → 세로로 쌓는다: 상단바 · 미리보기 · 타임라인 · AI 도구 · 미디어(페이지 스크롤) */
+@media (max-width:1000px){
+  .ve{display:flex;flex-direction:column;height:auto;overflow:visible}
+  .ve-main{display:contents}
+  .ve-top{order:0;flex-wrap:wrap;min-height:48px;padding:8px 12px;row-gap:6px}
+  .ve-stage{order:1;height:min(62vh,560px)}
+  .ve-tl{order:2;height:230px}
+  .ve-tlbar{overflow-x:auto;scrollbar-width:none}.ve-tlbar::-webkit-scrollbar{display:none}.ve-tlbar>*{flex-shrink:0}.ve-tlbar #selInfo{display:none}
+  .ve-right{order:3;border-left:0;border-top:1px solid var(--border)}
+  .ve-left{order:4;border-right:0;border-top:1px solid var(--border)}
+  .ve-pane,.ve-body{overflow:visible}
+  .ve-media{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:480px){.ve-ai{grid-template-columns:repeat(3,1fr)}.ve-ctrl .ve-tc{min-width:0}.ve-media{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>

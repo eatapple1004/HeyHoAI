@@ -726,6 +726,9 @@
   .priv-help:hover,.priv-help:focus-visible{color:var(--text)}
   .priv-tip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#15151f;color:var(--text);border:1px solid var(--border2);font-size:12px;font-weight:500;line-height:1.4;padding:7px 11px;border-radius:9px;box-shadow:0 14px 36px -12px rgba(0,0,0,.75);opacity:0;visibility:hidden;transition:opacity .14s ease,visibility .14s;z-index:70;pointer-events:none}
   .priv-tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#15151f}
+  /* (10-16) 오른쪽 끝 도움말이라 가운데 정렬 말풍선(한 줄 300px)이 화면 밖으로 → PC에도 가로 스크롤 53px. 오른쪽 기준·줄바꿈 */
+  .priv-tip{left:auto;right:-10px;transform:none;white-space:normal;width:max-content;max-width:260px}
+  .priv-tip::after{left:auto;right:14px;transform:none}
   .priv-help:hover .priv-tip,.priv-help:focus-visible .priv-tip{opacity:1;visibility:visible}
   .priv-switch{position:relative;width:40px;height:22px;flex-shrink:0;border:none;border-radius:999px;background:rgba(255,255,255,.16);cursor:pointer;padding:0;transition:background .18s}
   .priv-switch .priv-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.5);transition:left .18s}
