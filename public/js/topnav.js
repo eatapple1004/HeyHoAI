@@ -108,7 +108,9 @@
       var live = list.filter(function (t) { return t.id !== 'flux-pro'; }).map(function (t) { return item(ICON[t.id] || ICON[t.provider] || '•', t.label, price(t) + (t.provider ? ' · ' + t.provider : ''), 'live', hrefOf(t), TOP_MODELS[t.id] ? 'top' : undefined); }).join('');
       var liveIds = list.map(function (t) { return t.label.toLowerCase(); });
       var soon = SOON_MODELS[kind].filter(function (m) { return liveIds.indexOf(m[1].toLowerCase()) < 0; }).map(function (m) { return item(m[0], m[1], 'coming soon', 'soon'); }).join('');
-      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:tool:') === 0) st = (T.video || []).concat(T.image || []).some(function (t) { return t.id === st.slice(10); }) ? 'live' : 'soon'; else if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return item(f[0], f[1], f[2], st, f[4], f[5]); }).join('');
+      var feats = FEAT[kind].map(function (f) { var st = f[3]; if (st.indexOf('auto:tool:') === 0) st = (T.video || []).concat(T.image || []).some(function (t) { return t.id === st.slice(10); }) ? 'live' : 'soon'; else if (st === 'auto:videoInput') st = (T.video || []).some(function (t) { return (t.imageSlots || []).some(function (s) { return s.key === 'sourceVideo'; }); }) ? 'live' : 'soon'; else if (st.indexOf('auto:') === 0) st = (T[st.slice(5)] || []).length ? 'live' : 'soon'; return { st: st, html: item(f[0], f[1], f[2], st, f[4], f[5]) }; });
+      // (10-16) soon 항목은 아래로 — live 끼리·soon 끼리는 원래 순서 유지
+      feats = feats.filter(function (x) { return x.st === 'live'; }).concat(feats.filter(function (x) { return x.st !== 'live'; })).map(function (x) { return x.html; }).join('');
       document.getElementById('tnMegaBox').innerHTML = '<div class="cols"><div><h4>Features</h4>' + feats + '</div><div><h4 class="k">Models</h4>' + live + soon + '</div></div>';
     });
   }
