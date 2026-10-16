@@ -1261,6 +1261,7 @@ const getLensHandler = async (req, res, next) => {
     const L = require('../lens/lens.service');
     const row = await L.getRow(req.params.slug);
     if (!L.canView(row, req.user.id)) return res.status(404).json({ success: false, error: 'Lens not found' });
+    if (row.config && row.config.recipeId) { try { const rs = await L.recipeShots(row.config.recipeId, req.user.id); row.config = { ...row.config, recipeShots: rs.shots }; } catch (e) { /* 레시피 없음 — 이름만 비운다 */ } }
     res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
   } catch (err) { lensErr(res, err, next); }
 };
@@ -1283,6 +1284,18 @@ const patchLensHandler = async (req, res, next) => {
 const deleteLensHandler = async (req, res, next) => {
   // eslint-disable-next-line global-require
   try { await require('../lens/lens.service').remove(req.user.id, req.params.slug); res.json({ success: true }); } catch (err) { lensErr(res, err, next); }
+};
+// 렌즈 폴더(내 렌즈 정리) — GET 목록 · POST {path} 만들기 · PATCH {from,to} 이름 바꾸기/옮기기 · DELETE ?path= (안의 렌즈는 상위로)
+const lensFoldersHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const b = req.body || {};
+    if (req.method === 'POST') await L.addFolder(req.user.id, b.path);
+    else if (req.method === 'PATCH') await L.renameFolder(req.user.id, b.from, b.to);
+    else if (req.method === 'DELETE') await L.removeFolder(req.user.id, (req.query && req.query.path) || b.path);
+    res.json({ success: true, data: await L.listFolders(req.user.id) });
+  } catch (err) { lensErr(res, err, next); }
 };
 // 렌즈 참고 이미지 업로드 → /images/<uuid>.png
 const postLensUploadHandler = async (req, res, next) => {
@@ -1360,7 +1373,7 @@ async function postLensRunHandler(req, res, next) {
         sourceImagePath: copy(slots[0].path), endFramePath: null, referenceImagePaths: [], sourceVideoPath: null, motionVideoPath: null, isTemplate: !mine,
       });
       tmpFiles.length = 0; // 파이프라인이 가져갔다
-      await L.bumpUse(row, null, req.user.id);
+      await L.bumpUse(row, null, req.user.id, isAdminUser(req.user));
       return res.json({ success: true, data: { kind: 'video', jobId: result.jobId, engine: { id: tool.id, label: tool.label } } });
     }
 
@@ -1368,6 +1381,12 @@ async function postLensRunHandler(req, res, next) {
     if (!tool) return res.status(400).json({ success: false, error: 'No image engine is configured on this server' });
     const refPaths = [];
     for (const u of c.refs || []) { const p = await ve.localFile(u); if (p) refPaths.push(p); }
+    // 템플릿(레시피) 기반 렌즈 — 실행 때 레시피를 풀어 컷·네거티브를 얻는다(정본 = recipes)
+    let recipeNeg = '';
+    if (c.recipeId) {
+      const rs = await L.recipeShots(c.recipeId, req.user.id);
+      c.shots = rs.shots; recipeNeg = rs.negative;
+    }
     const shots = (c.shots && c.shots.length) ? c.shots : [null];
     const count = shots[0] ? 1 : Math.max(1, Math.min(c.count || 1, parseInt(b.count, 10) || c.count || 1));
     const results = [];
@@ -1378,7 +1397,7 @@ async function postLensRunHandler(req, res, next) {
         body: {
           prompt: L.buildImagePrompt(c, { slots: slots.map((s) => s.key), refCount: refPaths.length, shot, note }),
           model: tool.costKey || 'pro', tool: tool.id, count: String(count), aspectRatio: c.aspect, imageSize: c.imageSize || '',
-          negativePrompt: c.negative || '', extras: JSON.stringify(c.extras || {}), enhance: 'false', style: 'none',
+          negativePrompt: c.negative || recipeNeg || '', extras: JSON.stringify(c.extras || {}), enhance: 'false', style: 'none',
           billingMode: mine ? 'custom' : 'template', templateName, templateSource: 'lens', templateId: row.id, privateMode: b.privateMode,
         },
         files: [...slots.map((s) => s.path), ...refPaths].map((p) => ({ path: copy(p), originalname: path.basename(p) })),
@@ -1392,7 +1411,7 @@ async function postLensRunHandler(req, res, next) {
       credits = out.body.credits || credits;
       (out.body.results || []).filter((x) => x.success !== false && x.url).forEach((x) => results.push({ url: x.url, idx: x.resultIdx, shot: shot ? shot.name : null }));
     }
-    await L.bumpUse(row, results[0] && results[0].url, req.user.id);
+    await L.bumpUse(row, results[0] && results[0].url, req.user.id, isAdminUser(req.user));
     res.json({ success: true, data: { kind: 'image', results, credits, engine: { id: tool.id, label: tool.label }, partialError: firstErr } });
   } catch (err) { lensErr(res, err, next); } finally {
     tmpFiles.forEach((f) => fs.unlink(f, () => {}));
@@ -2715,6 +2734,7 @@ const ops = {
   deleteLens: asOps(deleteLensHandler),
   postLensUpload: asOps(postLensUploadHandler),
   getLensDraft: asOps(getLensDraftHandler),
+  lensFolders: asOps(lensFoldersHandler),
   postLensRun: asOps(asyncable(postLensRunHandler, 'lens')),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
@@ -2767,6 +2787,10 @@ router.get('/lens', getLensListHandler);
 router.post('/lens', postLensHandler);
 router.post('/lens-upload', upload.single('file'), postLensUploadHandler);
 router.get('/lens-draft/:idx', getLensDraftHandler);
+router.get('/lens-folders', lensFoldersHandler);
+router.post('/lens-folders', lensFoldersHandler);
+router.patch('/lens-folders', lensFoldersHandler);
+router.delete('/lens-folders', lensFoldersHandler);
 router.get('/lens/:slug', getLensHandler);
 router.patch('/lens/:slug', patchLensHandler);
 router.delete('/lens/:slug', deleteLensHandler);

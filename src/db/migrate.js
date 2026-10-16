@@ -1730,6 +1730,14 @@ async function migrateCredits() {
     );
     CREATE INDEX IF NOT EXISTS idx_lenses_owner ON lenses(owner_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_lenses_public ON lenses(visibility, status, uses_count DESC);
+    -- (10-16) 폴더 — 내 렌즈를 컴퓨터 폴더처럼 정리. folder = 'A/B' 경로('' = 미분류). 빈 폴더는 lens_folders 에 남긴다
+    ALTER TABLE lenses ADD COLUMN IF NOT EXISTS folder VARCHAR(160) NOT NULL DEFAULT '';
+    CREATE TABLE IF NOT EXISTS lens_folders (
+        owner_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        path       VARCHAR(160) NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (owner_id, path)
+    );
   `);
 }
 
