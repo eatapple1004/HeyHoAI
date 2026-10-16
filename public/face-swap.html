@@ -196,7 +196,7 @@ $('#go').onclick=async()=>{
   const fd=new FormData();fd.append('face',st.face,'face.jpg');fd.append('consent','true');fd.append('hair',st.hair);
   if(st.target.preset)fd.append('targetPreset',st.target.preset);else fd.append('targetIdx',st.target.idx);
   st.busy=true;sync();$('#busy').classList.add('on');$('#busyT').textContent='Checking photos…';
-  const t2=setTimeout(()=>{$('#busyT').textContent='Swapping your face…';},4000);
+  const t2=setTimeout(()=>{$('#busyT').textContent='Swapping your face… this takes 1–2 minutes';},4000);
   try{const r=await fetch('/api/generate/face-swap',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
     if(!r.ok||!j.success){toast((j&&(j.error||j.message))||('Face swap failed ('+r.status+')'));return;}
     st.result={...j.data,targetUrl:st.target.url};showPreview();
