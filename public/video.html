@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Video</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<style>/* (10-16) 결과 3열 — 좁은 화면 2열(인라인 columns:3 이 폰에서도 3열로 고정해 카드가 좁고 라벨·HD 가 겹치던 것) */
+#feed{columns:3}@media (max-width:1100px){#feed{columns:2}}
+#feed .rt>.badge:first-of-type{max-width:calc(100% - 66px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
+<script src="/js/flags.js" defer></script>
+<script src="/js/no-pip.js" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/topnav.js?v=31" defer></script>
+<script src="/js/thumbs.js?v=2"></script>
+</head>
+<body>
+<!-- (2026-10-13) 베이스 1차 — Video: 엔진 선택 + 시작 프레임 + 프롬프트 + 길이·비율·사운드. 제출은 POST /api/generate/video/async(tool=엔진) → GET /video/jobs/:id 폴링. -->
+<div class="split">
+  <aside class="composer">
+    <div class="cbody">
+      <div class="lbl">Model</div>
+      <div class="msel" id="msel"><span class="ic">…</span><span><b>Loading engines</b><small>GET /api/generate/tools</small></span></div>
+      <!-- (2026-10-14) 영상 입력 칸 — imageSlots 에 sourceVideo(편집·연장 대상) 또는 motionVideo(모션 참조) 가 있는 툴에서만 보인다. 업로드(≤50MB) 또는 Library 의 내 영상. -->
+      <div id="svWrap" hidden><div class="lbl" id="svLbl">Video <i id="svHint"></i></div><div class="row"><video id="sv" muted playsinline style="width:120px;height:92px;object-fit:cover;border-radius:12px;background:var(--surface2)"></video><div class="refs" style="flex:1"><button class="add" id="svAdd" type="button">+</button><button class="add" id="svLib" type="button" style="font-size:12px">Lib</button><button class="add" id="svClear" type="button" style="font-size:12px" title="Clear">✕</button></div></div><input type="file" id="svFile" accept="video/mp4,video/quicktime,video/webm" hidden><div class="refs" id="svPick" hidden style="margin-top:6px"></div></div>
+      <div id="sfWrap"><div class="lbl" id="sfLbl">Start frame <i id="sfHint">· from Image, Library or upload</i></div>
+      <div class="row"><img id="sf" alt="" style="width:92px;height:92px;object-fit:cover;border-radius:12px;background:var(--surface2)"><div class="refs" style="flex:1"><button class="add" id="sfAdd" type="button">+</button><button class="add" id="sfLib" type="button" style="font-size:12px">Lib</button><button class="add" id="sfClear" type="button" style="font-size:12px" title="Clear">✕</button></div></div>
+      <input type="file" id="sfFile" accept="image/*" hidden>
+      <div class="refs" id="libPick" hidden style="margin-top:6px"></div></div>
+      <!-- (2026-10-13) 레퍼런스 = "이렇게 생긴 것" 참고(구도 자유, 제품+모델 동시). 시작 프레임과 뜻이 다르다. refModel 있는 엔진에서만 보인다. -->
+      <div id="refWrap" hidden><div class="lbl">Reference <i id="vrefHint">· optional</i></div><div class="refs" id="vrefs"><button class="add" id="vrefAdd" type="button" title="Upload">+</button><button class="add" id="vrefLib" type="button" title="Pick from Library" style="font-size:12px">Lib</button></div><input type="file" id="vrefFile" accept="image/*" multiple hidden><div class="refs" id="vrefPick" hidden style="margin-top:6px"></div></div>
+      <div id="efWrap" hidden><div class="lbl">End frame <i>· optional</i></div><div class="row"><img id="ef" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--surface2)"><button class="btn2" id="efAdd" type="button">Upload</button><button class="btn2" id="efClear" type="button">Clear</button></div><input type="file" id="efFile" accept="image/*" hidden></div>
+      <div id="promptWrap"><div class="lbl">Prompt <i id="plen">0</i></div>
+      <textarea class="ff" id="prompt" maxlength="2000" placeholder="Slow push-in, droplets catch the light, label stays readable."></textarea></div>
+      <!-- (2026-10-13) 길이 = 드래그 슬라이더로 통일(힉스필드와 같은 모양). 범위 엔진은 1초 단위, 고정값 엔진(Kling 5/10 · Veo 4/6/8 …)은 허용값에만 멈춘다. -->
+      <div class="lbl">Duration <i id="durHint"></i></div>
+      <div class="durbar" id="durBar"><input type="range" id="durRange" aria-label="Duration"><b id="durVal">5s</b></div>
+      <div class="chips" id="durs" hidden></div>
+      <div id="extrasWrap"></div><!-- (2026-10-13) 엔진 고유 옵션(registry controls.extras) — 토글은 .lock, 값 목록은 칩 -->
+      <div id="ratioWrap"><div class="lbl">Aspect ratio</div><div class="chips" id="ratios"></div></div>
+      <div id="resWrap" hidden><div class="lbl">Resolution</div><div class="chips" id="ress"></div></div>
+      <div id="audioWrap" hidden><div class="lock" id="audioLock" style="margin-top:12px"><div><b>Sound</b><small>Native ambient sound (engine)</small></div><span class="sw2"><i></i></span></div></div>
+      <div class="lock" id="privLock" style="margin-top:8px"><div><b>Private Mode</b><small>Off = result goes to the public feed</small></div><span class="sw2"><i></i></span></div>
+      <div class="note" id="engNote"></div>
+    </div>
+    <div class="cfoot"><button class="gen" id="gen">Generate video <span class="c">◈ <span id="cost">—</span></span></button></div>
+  </aside>
+  <div class="feed">
+    <div class="feedbar"><div class="tabs"><button class="on" data-f="mine">My results</button><button type="button" disabled title="Coming soon" style="opacity:.45;cursor:default">How it works <span class="bd soon">soon</span></button><!-- (2026-10-13) Explore(커뮤니티) 탭 제거 — 사용자: 이 자리엔 나중에 How it works. 커뮤니티 피드는 /explore 하단에 있다 --></div><span id="feedNote" style="color:var(--faint);font-size:12px"></span></div>
+    <div class="prog" id="prog" hidden><i id="bar"></i></div>
+    <div class="masonry" id="feed"></div>
+    <div class="empty" id="feedEmpty" hidden>No videos yet. Start from an image result.</div>
+  </div>
+</div>
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
+const ICON={'seedance-2.5':'S','wan-3':'W','hailuo-2.3':'M','minimax-h3':'M','grok-video':'X',happyhorse:'A','flux-3-video':'F','gemini-omni':'G',kling:'K',veo:'V',runway:'R',minimax:'M',sora:'O',seedance:'S',fal:'F'}; // id 우선, 없으면 provider (topnav.js ICON 과 같은 표)
+const NOTE={kling:'Image → video · text → video · video-to-audio',veo:'Native sound. 1080p forces 8s.',runway:'Needs a start frame.',minimax:'Needs a start frame · 6s',sora:'Text or image → video',seedance:'4–15s · 720p/1080p'};
+const st={tools:[],tool:null,dur:null,ratio:null,res:null,audio:false,priv:false,sf:null,ef:null,vrefs:[],sv:null,feed:'mine'};
+function tool(){return st.tools.find(t=>t.id===st.tool)||st.tools[0];}
+function renderSel(){const t=tool();if(!t){$('#msel').innerHTML='<span class="ic">!</span><span><b>No video engine available</b><small>No API key on this server</small></span>';return}
+  $('#msel').innerHTML=`<span class="ic">${ICON[t.id]||ICON[t.provider]||'•'}</span><span><b>${esc(t.label)}</b><small>${esc(t.provider)} · ◈${costOf(t,st.dur)||'—'}/${st.dur}s</small></span><span class="ar">▾</span><div class="mlist">${st.tools.map(x=>`<div data-id="${x.id}"><span class="ic" style="width:28px;height:28px;font-size:12px">${ICON[x.provider]||'•'}</span><span><b style="font-size:13px">${esc(x.label)}</b><small>${esc(NOTE[x.provider]||x.provider)}</small></span><span class="pc">◈${Object.values(x.pricing.perDuration||{})[0]||'—'}</span></div>`).join('')}</div>`;}
+$('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;applyTool();$('#msel').classList.remove('open');e.stopPropagation();return}$('#msel').classList.toggle('open')});
+document.addEventListener('click',e=>{if(!$('#msel').contains(e.target))$('#msel').classList.remove('open')});
+function chips(sel,arr,cur,fmt){$(sel).innerHTML=arr.map(v=>`<button type="button" class="chip ${String(v)===String(cur)?'on':''}" data-v="${v}">${fmt?fmt(v):v}</button>`).join('');}
+function applyTool(){const t=tool();if(!t)return;const c=t.controls||{};
+  const durs=c.duration||[5];const dr=c.durationRange||null;
+  if(dr){if(!(+st.dur>=dr.min&&+st.dur<=dr.max))st.dur=durs[0];}else if(!durs.map(String).includes(String(st.dur)))st.dur=durs[0];
+  // 슬라이더: 범위 엔진은 min~max 1초, 고정값 엔진은 허용값 인덱스를 끌어 허용값에만 멈춘다. (칩 분기는 Sora 용이었는데 Sora 는 API 종료로 숨김 — 분기만 남겨둔다)
+  const useChips=false;$('#durs').hidden=!useChips;$('#durBar').hidden=useChips||(!dr&&durs.length<2); // 길이가 하나뿐인 툴(업스케일·편집)은 슬라이더를 안 보인다
+  if(useChips){chips('#durs',durs,st.dur,v=>v+'s');$('#durHint').textContent='';}
+  else{const r=$('#durRange');const steps=dr?null:durs.map(Number).sort((x,y)=>x-y);
+    if(dr){r.min=dr.min;r.max=dr.max;r.step=1;r.value=+st.dur;$('#durHint').textContent=`· ${dr.min}–${dr.max}s`;}
+    else{r.min=0;r.max=steps.length-1;r.step=1;r.value=Math.max(0,steps.indexOf(+st.dur));$('#durHint').textContent='· '+steps.join(' · ')+'s';}
+    r.oninput=()=>{st.dur=dr?+r.value:steps[+r.value];$('#durVal').textContent=st.dur+'s';};r.onchange=()=>{cost();renderSel();};$('#durVal').textContent=st.dur+'s';}
+  renderExtras($('#extrasWrap'),c.extras,st);
+  // 레퍼런스 줄(refModel 있는 엔진만). 시작 프레임과 동시에 넣으면 레퍼런스가 우선(reference-to-video).
+  const rmax=(t.refInput&&t.refInput.max)||10;$('#refWrap').hidden=!t.refModel;if(!t.refModel)st.vrefs=[];st.vrefs=st.vrefs.slice(0,rmax);renderVrefs();
+  $('#vrefHint').textContent=t.refModel?`· up to ${rmax} · "looks like this", free composition. Replaces the start frame.`:'· optional';
+  const ratios=c.aspectRatio||null;$('#ratioWrap').hidden=!ratios;if(ratios){if(!ratios.includes(st.ratio))st.ratio=ratios[0];chips('#ratios',ratios,st.ratio);}else st.ratio=null;
+  const ress=c.resolution||null;$('#resWrap').hidden=!ress;if(ress){if(!ress.includes(st.res))st.res=ress[0];chips('#ress',ress,st.res);}else st.res=null;
+  $('#audioWrap').hidden=!c.audio;if(!c.audio)st.audio=false;$('#audioLock').classList.toggle('on',st.audio);
+  $('#efWrap').hidden=!(t.imageSlots||[]).some(s=>s.key==='endFrame');
+  // 영상 칸 — sourceVideo(편집 대상) 또는 motionVideo(모션 참조). 시작 프레임 칸은 startFrame 슬롯이 있을 때만(라벨은 슬롯 라벨을 따른다: Kling Motion Control = "Character image").
+  const slots=t.imageSlots||[];const sv=slots.find(s=>s.key==='sourceVideo')||slots.find(s=>s.key==='motionVideo');const sfSlot=slots.find(s=>s.key==='startFrame');
+  $('#promptWrap')&&($('#promptWrap').hidden=!!t.noPrompt);
+  $('#svWrap').hidden=!sv;if(sv){$('#svLbl').firstChild.textContent=sv.label+' ';$('#svHint').textContent='· '+(sv.hint||'')+' · MP4 ≤ 50MB';}else st.sv=null;
+  $('#sfWrap').hidden=!sfSlot;if(sfSlot){$('#sfLbl').firstChild.textContent=sfSlot.label+' ';$('#sfHint').textContent='· '+(sfSlot.hint||'from Image, Library or upload');}
+  $('#engNote').textContent=NOTE[t.provider]||'';renderSel();cost();}
+$('#durs').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||!b.dataset.v)return;st.dur=b.dataset.v;applyTool()}); // 칩 모드(현재 미사용)
+$('#ratios').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.ratio=b.dataset.v;chips('#ratios',tool().controls.aspectRatio,st.ratio)});
+$('#ress').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.res=b.dataset.v;chips('#ress',tool().controls.resolution,st.res)});
+$('#audioLock').addEventListener('click',()=>{st.audio=!st.audio;$('#audioLock').classList.toggle('on',st.audio)});
+$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});
+// 길이별 단가 — 서버 videoCost 와 같은 규칙(표에 없는 길이는 5초 초과면 10초 티어, 아니면 5초 티어)
+function costOf(t,dur){const pd=(t&&t.pricing&&t.pricing.perDuration)||{};const keys=Object.keys(pd).map(Number).sort((a,b)=>a-b);let v=pd[String(dur)];if(v==null&&keys.length){const k=+dur>5?(keys.find(x=>x>=10)??keys[keys.length-1]):(keys.find(x=>x<=5)??keys[0]);v=pd[String(k)];}return v||0;}
+function cost(){const t=tool();if(!t)return;$('#cost').textContent=costOf(t,st.dur).toLocaleString('en-US');}
+// (2026-10-13) 엔진 고유 옵션 렌더 — registry controls.extras 정본. 타입: values(칩) · toggle(.lock) · number(입력) · text(입력). 값은 st.extras 에, 전송은 FormData 'extras' JSON.
+function renderExtras(host,defs,st){defs=defs||[];st.extras=st.extras||{};const keep={};defs.forEach(d=>{if(d.key in st.extras)keep[d.key]=st.extras[d.key];else if('default' in d)keep[d.key]=d.default;});st.extras=keep;
+  host.innerHTML=defs.map(d=>{const v=st.extras[d.key];
+    if(d.type==='toggle')return `<div class="lock ${v?'on':''}" data-x="${d.key}" style="margin-top:12px"><div><b>${esc(d.label)}</b><small>${esc(d.hint||'')}</small></div><span class="sw2"><i></i></span></div>`;
+    if(d.type==='number')return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><input class="ff" type="number" data-xn="${d.key}" min="${d.min??''}" max="${d.max??''}" step="${d.step??1}" value="${v??''}" placeholder="${d.default??''}">`;
+    if(d.type==='text')return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><input class="ff" type="text" data-xt="${d.key}" maxlength="${d.max||500}" value="${esc(v??'')}">`;
+    return `<div class="lbl" style="margin-top:12px">${esc(d.label)} <i>${esc(d.hint||'')}</i></div><div class="chips" data-xc="${d.key}">${(d.values||[]).map(x=>`<button type="button" class="chip ${String(v??d.values[0])===String(x)?'on':''}" data-v="${x}">${esc(x)}</button>`).join('')}</div>`;}).join('');
+  host.querySelectorAll('.lock[data-x]').forEach(el=>el.addEventListener('click',()=>{st.extras[el.dataset.x]=!st.extras[el.dataset.x];el.classList.toggle('on',!!st.extras[el.dataset.x]);}));
+  host.querySelectorAll('.chips[data-xc]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.extras[g.dataset.xc]=b.dataset.v;[...g.children].forEach(x=>x.classList.toggle('on',x===b));}));
+  host.querySelectorAll('[data-xn]').forEach(i=>i.addEventListener('change',e=>{const v=e.target.value;st.extras[i.dataset.xn]=v===''?undefined:Number(v);}));
+  host.querySelectorAll('[data-xt]').forEach(i=>i.addEventListener('input',e=>{st.extras[i.dataset.xt]=e.target.value;}));}
+// ── 프레임 ──
+function setSf(x){st.sf=x;$('#sf').src=x?x.url:'';}
+// ── 영상 입력 ──
+function setSv(x){st.sv=x;const v=$('#sv');v.src=x?x.url:'';if(x)v.load();}
+$('#svAdd').addEventListener('click',()=>$('#svFile').click());$('#svFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;if(f.size>50*1024*1024)return toast('Video must be under 50MB');setSv({file:f,url:URL.createObjectURL(f)});e.target.value=''});
+$('#svClear').addEventListener('click',()=>setSv(null));
+$('#svLib').addEventListener('click',async()=>{const p=$('#svPick');if(!p.hidden){p.hidden=true;return}p.hidden=false;p.innerHTML='<span class="note">loading…</span>';
+  try{const d=(await(await fetch('/api/generate/results?type=reel&limit=24')).json()).data||[];p.innerHTML=d.filter(r=>r.file_path).map(r=>`<button type="button" data-u="/images/${esc(r.file_path.split('/').pop())}"><video src="/images/${esc(r.file_path.split('/').pop())}" poster="${esc(DoppiaThumb.url('/images/'+r.file_path.split('/').pop(),240))}" muted playsinline preload="none"></video></button>`).join('')||'<span class="note">No videos in Library yet.</span>';}catch(e){p.innerHTML='<span class="note">Library unavailable.</span>'}});
+$('#svPick').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;setSv({url:b.dataset.u,remote:true});$('#svPick').hidden=true});
+// ── 레퍼런스 ──
+function renderVrefs(){const host=$('#vrefs');[...host.querySelectorAll('[data-i]')].forEach(x=>x.remove());st.vrefs.forEach((r,i)=>host.insertAdjacentHTML('beforeend',`<button type="button" data-i="${i}" title="remove"><img src="${r.url}" alt=""><span class="x">×</span></button>`));}
+$('#vrefAdd').addEventListener('click',()=>$('#vrefFile').click());
+$('#vrefFile').addEventListener('change',e=>{const t=tool();const m=(t&&t.refInput&&t.refInput.max)||10;[...e.target.files].slice(0,m-st.vrefs.length).forEach(f=>st.vrefs.push({file:f,url:URL.createObjectURL(f)}));renderVrefs();e.target.value=''});
+$('#vrefs').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b)return;st.vrefs.splice(+b.dataset.i,1);renderVrefs()});
+$('#vrefLib').addEventListener('click',async()=>{const p=$('#vrefPick');if(!p.hidden){p.hidden=true;return}p.hidden=false;p.innerHTML='<span class="note">loading…</span>';
+  try{const d=(await(await fetch('/api/generate/results?type=photo&limit=24')).json()).data||[];p.innerHTML=d.filter(r=>r.file_path).map(r=>`<button type="button" data-u="/images/${esc(r.file_path.split('/').pop())}"><img src="${esc(DoppiaThumb.url('/images/'+r.file_path.split('/').pop(),240))}" loading="lazy" alt=""></button>`).join('')||'<span class="note">No images in Library yet.</span>';}catch(e){p.innerHTML='<span class="note">Library unavailable.</span>'}});
+$('#vrefPick').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;const t=tool();const m=(t&&t.refInput&&t.refInput.max)||10;if(st.vrefs.length>=m)return;st.vrefs.push({url:b.dataset.u,remote:true});renderVrefs();$('#vrefPick').hidden=true;});
+$('#sfAdd').addEventListener('click',()=>$('#sfFile').click());$('#sfFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)setSf({file:f,url:URL.createObjectURL(f)});e.target.value=''});
+$('#sfClear').addEventListener('click',()=>setSf(null));
+$('#efAdd').addEventListener('click',()=>$('#efFile').click());$('#efFile').addEventListener('change',e=>{const f=e.target.files[0];if(f){st.ef={file:f,url:URL.createObjectURL(f)};$('#ef').src=st.ef.url}e.target.value=''});$('#efClear').addEventListener('click',()=>{st.ef=null;$('#ef').src=''});
+$('#sfLib').addEventListener('click',async()=>{const p=$('#libPick');if(!p.hidden){p.hidden=true;return}p.hidden=false;p.innerHTML='<span class="note">loading…</span>';
+  try{const d=(await(await fetch('/api/generate/results?type=photo&limit=24')).json()).data||[];p.innerHTML=d.filter(r=>r.file_path).map(r=>`<button type="button" data-u="/images/${esc(r.file_path.split('/').pop())}"><img src="${esc(DoppiaThumb.url('/images/'+r.file_path.split('/').pop(),240))}" loading="lazy" alt=""></button>`).join('')||'<span class="note">No images in Library yet.</span>';}catch(e){p.innerHTML='<span class="note">Library unavailable.</span>'}});
+$('#libPick').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;setSf({url:b.dataset.u});$('#libPick').hidden=true});
+$('#prompt').addEventListener('input',e=>$('#plen').textContent=e.target.value.length);
+// ── 피드 ──
+function url(r){return '/images/'+String(r.file_path||'').split('/').pop();}
+function vcard(u,idx,label,cls,r){const up=idx&&st.tools.some(t=>t.id==='topaz-video')?`<span class="badge" style="left:auto;right:8px;cursor:pointer" title="Upscale with Topaz" onclick="event.stopPropagation();location.href='/video?tool=topaz-video&video=${encodeURIComponent(u)}'">⤢ HD</span>`:'';return `<div class="rt ${cls||''}" ${idx?`onclick="location.href='/creation?idx=${idx}'"`:''}${r&&r.width&&r.height?` style="aspect-ratio:${r.width}/${r.height}"`:''}>${DoppiaThumb.video(u,'','.rt')}<span class="badge">▶ ${esc(label||'')}</span>${up}</div>`;}
+async function loadFeed(){const f=$('#feed');f.innerHTML='';$('#feedEmpty').hidden=true;try{const api=st.feed==='mine'?'/api/generate/results?type=reel&limit=30':'/api/generate/community?limit=60';const d=(await(await fetch(api)).json()).data||[];const rows=d.filter(r=>r.file_path&&/\.(mp4|webm|mov)$/i.test(r.file_path));if(!rows.length){$('#feedEmpty').hidden=false;return}f.innerHTML=rows.map(r=>vcard(url(r),r.idx,DoppiaThumb.label(r),'',r)).join('');DoppiaThumb.watch(f);}catch(e){$('#feedEmpty').hidden=false}}
+$$('.tabs [data-f]').forEach(b=>b.addEventListener('click',()=>{$$('.tabs [data-f]').forEach(x=>x.classList.toggle('on',x===b));st.feed=b.dataset.f;loadFeed()}));
+// ── 생성 ──
+let progT=null;function progStart(){const el=$('#bar');$('#prog').hidden=false;let p=3;el.style.width='3%';progT=setInterval(()=>{p=Math.min(95,p+Math.random()*2);el.style.width=p+'%'},1500)}function progStop(){clearInterval(progT);$('#bar').style.width='100%';setTimeout(()=>$('#prog').hidden=true,400)}
+const sjson=async r=>{try{return await r.json()}catch(e){return {}}};
+$('#gen').addEventListener('click',async()=>{const t=tool();if(!t)return;const prompt=$('#prompt').value.trim();if(!prompt&&!t.noPrompt)return toast('Write a prompt first');
+  const needsFrame=['runway','minimax'].includes(t.provider);if(needsFrame&&!st.sf)return toast(t.label+' needs a start frame');
+  const slotsNow=t.imageSlots||[];if(slotsNow.some(s=>s.key==='sourceVideo'||s.key==='motionVideo')&&!st.sv)return toast(t.label+' needs a video');if(slotsNow.some(s=>s.key==='motionVideo')&&!st.sf)return toast(t.label+' needs a character image');
+  const fd=new FormData();fd.append('prompt',prompt);fd.append('duration',String(st.dur));fd.append('mode','pro');if(st.ratio)fd.append('aspectRatio',st.ratio);if(st.res)fd.append('resolution',st.res);fd.append('audio',st.audio?'true':'false');fd.append('tool',t.id);if(st.extras&&Object.keys(st.extras).length)fd.append('extras',JSON.stringify(st.extras));
+  fd.append('billingMode','custom');fd.append('templateName','Video');fd.append('privateMode',st.priv?'true':'false');
+  if(st.sf){try{const b=st.sf.file||await(await fetch(st.sf.url)).blob();fd.append('sourceImage',b,'start.png')}catch(e){return toast('Start frame could not be read')}}
+  if(st.ef){try{const b=st.ef.file||await(await fetch(st.ef.url)).blob();fd.append('endFrame',b,'end.png')}catch(e){}}
+  for(const r of st.vrefs){try{const b=r.file||await(await fetch(r.url)).blob();fd.append('referenceImages',b,'ref.png');}catch(e){}}
+  if(st.sv){const slots=t.imageSlots||[];const field=slots.some(s=>s.key==='sourceVideo')?'sourceVideo':'motionVideo';try{const b=st.sv.file||await(await fetch(st.sv.url)).blob();fd.append(field,b,'input.mp4');}catch(e){return toast('Video could not be read')}}
+  $('#gen').disabled=true;progStart();const f=$('#feed');$('#feedEmpty').hidden=true;const id='ph'+Date.now();f.insertAdjacentHTML('afterbegin',`<div class="rt pend" id="${id}">rendering · ${esc(t.label)} · ${st.dur}s</div>`);
+  try{const res=await fetch('/api/generate/video/async',{method:'POST',body:fd});const d=await sjson(res);
+    if(res.status===402)throw Object.assign(new Error(d.error||'Not enough credits'),{c402:true});
+    if(!res.ok||!d.success)throw new Error(d.error||'video submit failed');
+    DoppiaNav.refreshCredits();
+    for(let i=0;i<90;i++){await new Promise(r=>setTimeout(r,8000));let j;try{j=(await(await fetch('/api/generate/video/jobs/'+d.jobId)).json()).data}catch(e){continue}
+      if(!j)continue;if(j.status==='succeeded'){const el=document.getElementById(id);if(el)el.remove();f.insertAdjacentHTML('afterbegin',vcard(j.url,j.resultIdx,t.label,'new'));DoppiaThumb.watch(f);toast('Video ready');return}
+      if(j.status==='failed')throw new Error(j.error||'Video generation failed');}
+    throw new Error('Still rendering — check your Library shortly.');}
+  catch(e){const el=document.getElementById(id);if(el)el.remove();toast(e.message||'failed');if(e.c402)setTimeout(()=>location.href='/billing',1200);DoppiaNav.refreshCredits()}
+  finally{$('#gen').disabled=false;progStop()}});
+// ── 부팅 ──
+function boot(){DoppiaNav.tools().then(T=>{st.tools=T.video||[];const q=new URLSearchParams(location.search);const qt=q.get('tool');st.tool=(qt&&st.tools.some(t=>t.id===qt))?qt:(st.tools[0]&&st.tools[0].id);const start=q.get('start');if(start&&start.startsWith('/'))setSf({url:start});const vid=q.get('video');if(vid&&vid.startsWith('/'))setSv({url:vid,remote:true});applyTool();});loadFeed();} // ?video= = Library/카드에서 넘어온 소스 영상(업스케일·편집)
+if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+})();
+</script>
+</body>
+</html>

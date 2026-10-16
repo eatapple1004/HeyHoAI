@@ -31,6 +31,9 @@ const page = (name: string) => path.join(PUBLIC_DIR, name);
 /** Meta 직결 스위치 — 꺼져 있으면 그 경로들이 존재하지 않는 것으로 취급한다. */
 const metaDirectOn = () => Boolean(cfg.env.META_DIRECT_ENABLED);
 
+/** (2026-10-16) 닫아 둔 기능 페이지 — 클린 URL·.html 어느 쪽으로 와도 public/coming-soon.html. 다시 열 땐 여기서 뺀다(src/index.js 도). */
+const CLOSED_PAGES = new Set(['pack']);
+
 @Controller()
 @UseFilters(PageExceptionFilter)
 export class PagesController {
@@ -150,6 +153,11 @@ export class PagesController {
   @Get('admin-stats')
   adminStats(@Res() res: any) { return res.sendFile(page('admin-stats.html')); }
 
+  /** (2026-10-16) 기능·엔진 사용량 — 결과물 출처(metadata.origin) 기준 */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-usage')
+  adminUsage(@Res() res: any) { return res.sendFile(page('admin-usage.html')); }
+
   @UseGuards(AdminPageGuard)
   @Get('admin-proposal')
   adminProposal(@Res() res: any) { return res.sendFile(page('admin-proposal.html')); }
@@ -167,6 +175,11 @@ export class PagesController {
   @UseGuards(AdminPageGuard)
   @Get('admin-business/:id')
   adminBusinessDetail(@Res() res: any) { return res.sendFile(page('admin-business-detail.html')); }
+
+  /** 월간 운영 플랜 — 한 달치 인스타 계획(AI 초안 → Doppia 검수 → 고객 승인 → 일괄 예약) */
+  @UseGuards(AdminPageGuard)
+  @Get('admin-business/:id/plan')
+  adminBusinessPlan(@Res() res: any) { return res.sendFile(page('admin-business-plan.html')); }
 
   /** 결제(환경 선택) — 조회 전용. 취소·환불은 /admin-refunds. */
   @UseGuards(AdminPageGuard)
@@ -220,6 +233,8 @@ export class PagesController {
     // 기능 스위치로 닫은 페이지는 클린 URL 로도 열리면 안 된다(위 핸들러와 이중으로 막는다).
     if (!metaDirectOn() && /^admin-business-meta(-detail)?$/i.test(base)) throw new NotFoundException();
     if (!CLEAN_URL_RE.test(base)) return next();
+    // (2026-10-16) 닫아 둔 기능 — 주소로 들어와도 Coming soon (src/index.js 에 같은 목록 — 한쪽만 고치지 말 것)
+    if (CLOSED_PAGES.has(base.toLowerCase())) return res.sendFile(page('coming-soon.html'));
     if (html) {
       const q = req.originalUrl.indexOf('?');
       return res.redirect(301, `/${base}${q >= 0 ? req.originalUrl.slice(q) : ''}`);

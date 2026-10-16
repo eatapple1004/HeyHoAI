@@ -91,6 +91,15 @@ function remoteUrl(filename) {
   return `${base}/${keyFor(filename)}`;
 }
 
+// (2026-10-16) 서명 GET URL — 외부 서비스(힉스필드 Soul ID 학습)가 사진을 가져갈 때. 공개 도메인(/images)은 클라우드플레어가 봇 fetcher 를 중간에 막아
+//   24장 중 4~8장만 도달하고 학습이 "사진 준비 실패"로 떨어졌다(nginx 로그 실측). R2 엔드포인트 직접이라 그 벽이 없다. 원격 미설정이면 null.
+async function signedUrl(filename, ttlSec = 24 * 3600) {
+  if (!isRemote()) return null;
+  const { GetObjectCommand } = require('@aws-sdk/client-s3');
+  const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+  return getSignedUrl(client(), new GetObjectCommand({ Bucket: env.MEDIA_S3_BUCKET, Key: keyFor(filename) }), { expiresIn: ttlSec });
+}
+
 // 비공개 버킷 프록시 스트리밍용 — GetObject 결과(Body=Readable, ContentType/Length, ContentRange 등) 반환.
 // range = 요청의 Range 헤더(예 'bytes=0-') 그대로 전달 → S3가 206 부분응답(영상 seek). 없거나 실패 시 null.
 async function getObject(filename, range) {
@@ -116,4 +125,4 @@ async function del(filename) {
   } catch (e) {}
 }
 
-module.exports = { isRemote, put, putFile, remoteUrl, getObject, del, keyFor, contentTypeFor };
+module.exports = { isRemote, put, putFile, remoteUrl, signedUrl, getObject, del, keyFor, contentTypeFor };

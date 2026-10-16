@@ -17,7 +17,7 @@
       title: 'Welcome to Doppia',
       steps: [
         ['📷', 'One product photo is all you need', 'Detail cuts, editorials, on-model shots and ad videos — everything starts from a single photo.'],
-        ['🗂', 'Three ways to create', 'Shots — catalog photos from templates. Ad Video — a 9:16 talking ad. Content Pack — a full planned set at once.'],
+        ['🗂', 'Three ways to create', 'Shots — catalog photos from templates. Ad Video — a 9:16 ad from one photo. Doppia Lens — a saved look you reuse every time.'],
         ['◈', 'Pay only for what comes out', 'You start with 1,500 free credits. Failed generations refund automatically.'],
       ],
     },

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppia · Product Swap</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="stylesheet" href="/css/theme.css?v=6" />
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<link rel="stylesheet" href="/css/base-ui.css?v=7" />
+<script src="/js/flags.js" defer></script>
+<script src="/js/no-pip.js" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
+<script src="/saas-auth.js?v=3" defer></script>
+<script src="/js/topnav.js?v=31" defer></script>
+<style>
+/* (2026-10-16) Video Product swap — 힉스필드 /apps/recast(영상·이미지 두 슬롯 + Generate, 우 큰 미리보기 + 이미지 인셋)와
+   video-to-video 의 "AI Object Swap"(Kling 3.0 Omni Edit) 을 REA 로 캡처해 따름.
+   흐름: 영상(업로드·Library) + 제품 사진 → POST /api/generate/video-edit/ai {op:'productswap'} → video job 폴링 → 전후 비교. */
+body{background:var(--bg)}
+.ps{max-width:1280px;margin:0 auto;padding:22px 22px 80px}
+.ps-crumb{font-size:13px;color:var(--faint);margin-bottom:14px}.ps-crumb a{color:var(--dim)}
+.ps-card{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:18px;border:1px solid var(--border);border-radius:22px;background:var(--bg2);padding:10px}
+.ps-l{padding:16px 16px 18px}
+.ps-l h1{font-family:'Sora';font-size:34px;line-height:1.05;letter-spacing:-.5px;text-transform:uppercase;margin-bottom:8px}
+.ps-l h1 span{color:var(--dim)}
+.ps-l .sub{color:var(--dim);margin-bottom:16px}
+.ps-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ps-slot{position:relative;aspect-ratio:4/5;border:1.5px dashed var(--border2);border-radius:16px;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:12px;overflow:hidden;color:var(--text);font:inherit}
+.ps-slot:hover{border-color:var(--accent2)}
+.ps-slot.on{border-style:solid;padding:0}
+.ps-slot img,.ps-slot video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ps-slot .ic{width:40px;height:40px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px}
+.ps-slot b{font-size:14px}.ps-slot small{color:var(--faint);font-size:12px;line-height:1.35}
+.ps-slot .chg{position:absolute;left:8px;bottom:8px;z-index:2;font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff}
+.ps-slot.drag{border-color:var(--lime)}
+.ps-slot .lib{position:absolute;right:8px;top:8px;z-index:2;font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;border:0;cursor:pointer}
+.ps-lbl{font-size:13px;color:var(--dim);margin:14px 0 6px}
+.ps-lbl i{color:var(--faint);font-style:normal}
+.ps-in{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:12px;color:var(--text);font:inherit;font-size:13.5px;padding:10px 12px}
+textarea.ps-in{min-height:64px;resize:vertical}
+.ps-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--dim)}
+.ps-row select{background:var(--surface);border:1px solid var(--border2);border-radius:10px;color:var(--text);font:inherit;font-size:13px;padding:7px 10px}
+.ps-range{margin-top:12px;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;background:var(--surface);font-size:12.5px;color:var(--dim)}
+.ps-range input{width:100%;accent-color:var(--lime)}
+.ps-go{margin-top:14px}
+.ps-note{font-size:11.5px;color:var(--faint);margin-top:8px;text-align:center}
+.ps-r{position:relative;border-radius:16px;overflow:hidden;background:#0b0b12 radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/18px 18px;min-height:560px;display:flex;align-items:center;justify-content:center}
+.ps-r .ph{color:var(--faint);text-align:center;padding:30px;font-size:14px}
+.ps-stage{display:flex;gap:10px;align-items:center;justify-content:center;width:100%;height:100%;padding:14px}
+.ps-stage figure{position:relative;margin:0;flex:1;display:flex;justify-content:center;max-height:74vh}
+.ps-stage video{max-width:100%;max-height:74vh;border-radius:12px;display:block;background:#000}
+.ps-stage figcaption{position:absolute;top:8px;left:8px;font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff}
+.ps-inset{position:absolute;left:14px;bottom:14px;width:92px;height:92px;border-radius:14px;overflow:hidden;border:3px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,.4);background:#fff;z-index:3}
+.ps-inset img{width:100%;height:100%;object-fit:contain}
+.ps-acts{position:absolute;right:12px;top:12px;display:flex;gap:6px;z-index:3;flex-wrap:wrap;justify-content:flex-end}
+.ps-view{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:3}
+.ps-seg{display:flex;background:rgba(19,19,29,.9);border:1px solid var(--border2);border-radius:12px;padding:3px;gap:3px}
+.ps-seg button{border:0;background:transparent;color:var(--dim);padding:6px 12px;border-radius:9px;cursor:pointer;font:inherit;font-size:12.5px}
+.ps-seg button.on{background:#fff;color:#111}
+.ps-busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(7,7,12,.66);z-index:5;text-align:center;padding:20px}
+.ps-busy.on{display:flex}
+.ps-busy .sp{width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--lime);animation:sp 1s linear infinite}
+.ps-busy small{color:var(--faint)}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ps-how{margin-top:46px}
+.ps-how h2,.ps-mine h2{font-family:'Sora';font-size:22px;text-transform:uppercase;margin-bottom:14px}
+.ps-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ps-steps div{border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--bg2)}
+.ps-steps i{font-style:normal;display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--lime);color:#111;font-weight:700;align-items:center;justify-content:center;font-size:13px;margin-bottom:8px}
+.ps-steps b{display:block;margin-bottom:4px}.ps-steps p{color:var(--dim);font-size:13px}
+.ps-tips{margin-top:12px;font-size:12.5px;color:var(--faint);line-height:1.6}
+.ps-mine{margin-top:40px}
+.ps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.ps-grid button{aspect-ratio:9/16;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--surface);cursor:pointer;padding:0;position:relative}
+.ps-grid video,.ps-grid img{width:100%;height:100%;object-fit:cover;display:block}
+.ps-grid button span{position:absolute;left:0;right:0;bottom:0;font-size:10.5px;background:rgba(0,0,0,.6);color:#fff;padding:3px 6px;text-align:left}
+.ps-empty{border:1px dashed var(--border2);border-radius:14px;padding:30px;text-align:center;color:var(--faint);font-size:13px}
+.ps-modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+.ps-modal>div{width:min(900px,100%);max-height:84vh;overflow:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:18px}
+.ps-modal h3{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ib{height:32px;min-width:32px;padding:0 10px;border-radius:9px;border:1px solid var(--border2);background:rgba(19,19,29,.85);color:var(--text);cursor:pointer;font:inherit;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+@media (max-width:900px){.ps-card{grid-template-columns:1fr}.ps-r{min-height:360px}.ps-steps{grid-template-columns:1fr}.ps-l h1{font-size:26px}.ps-stage{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="ps">
+  <div class="ps-crumb"><a href="/explore">Explore</a> / <a href="/video">Video</a> / Product Swap</div>
+  <div class="ps-card">
+    <div class="ps-l">
+      <h1>Product swap<br><span>in any video</span></h1>
+      <div class="sub">Drop in a video and a photo of your product — the product in the video becomes yours. Hands, motion and camera stay as shot.</div>
+      <div class="ps-slots">
+        <div class="ps-slot" id="vSlot" role="button" tabindex="0"><span class="ic">▶</span><b>Your video</b><small>3–15 seconds with the product to replace · MP4/MOV, up to 50MB</small><button class="lib" type="button" data-lib="video">Library</button></div>
+        <div class="ps-slot" id="pSlot" role="button" tabindex="0"><span class="ic">▣</span><b>Your product</b><small>A clear photo of your product — packshot or cut-out works best</small><button class="lib" type="button" data-lib="photo">Library</button></div>
+      </div>
+      <input type="file" id="vFile" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm,.m4v" hidden>
+      <input type="file" id="pFile" accept="image/*" hidden>
+      <div class="ps-range" id="rangeBox" hidden><div style="display:flex;justify-content:space-between"><span>Part to use</span><b id="rangeV" style="color:var(--text)"></b></div><input type="range" id="rangeIn" min="0" step="0.1" value="0"><div id="rangeHint"></div></div>
+      <div class="ps-lbl">What to replace <i>· optional</i></div>
+      <input class="ps-in" id="target" maxlength="200" placeholder="e.g. the white bottle in her hand (blank = the main product)">
+      <div class="ps-lbl">Extra direction <i>· optional</i></div>
+      <textarea class="ps-in" id="note" maxlength="500" placeholder="e.g. show the label facing the camera"></textarea>
+      <div class="ps-row"><span>Engine</span><select id="eng"></select></div>
+      <button class="gen ps-go" id="go" disabled>Swap product <span class="c">◈ <span id="cost">—</span></span></button>
+      <div class="ps-note" id="goNote">Takes 2–6 minutes. The result is saved to your Library — you can leave this page.</div>
+    </div>
+    <div class="ps-r" id="right">
+      <div class="ph" id="ph">Add a video and your product —<br>the swapped video shows up here.</div>
+      <div class="ps-busy" id="busy"><div class="sp"></div><div id="busyT">Uploading…</div><small id="busyS"></small></div>
+    </div>
+  </div>
+
+  <div class="ps-how">
+    <h2>How it works</h2>
+    <div class="ps-steps">
+      <div><i>1</i><b>Upload your video</b><p>A 3–15 second clip where a product is clearly visible — held, on a table, in use.</p></div>
+      <div><i>2</i><b>Add your product</b><p>One clear photo of your product. Say what to replace if there is more than one object.</p></div>
+      <div><i>3</i><b>Swap</b><p>Same motion, new product — lit with the scene's light. Open it in the Video Editor to trim, add text or music.</p></div>
+    </div>
+    <div class="ps-tips">Works best when the original and your product are a similar size and shape (bottle → bottle, box → box). Longer videos: pick the 15-second part to use. Credits are refunded if the swap fails.</div>
+  </div>
+
+  <div class="ps-mine">
+    <h2>My swaps</h2>
+    <div class="ps-grid" id="mine"></div>
+    <div class="ps-empty" id="mineEmpty" hidden>Your swapped videos will appear here.</div>
+  </div>
+</div>
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=m=>(window.DoppiaNav?DoppiaNav.toast(m):alert(m));
+const MIN=3,MAX=15;
+const st={T:null,video:null,product:null,busy:false,result:null,view:'side',job:null};
+const fileOf=r=>'/images/'+String(r.file_path||'').split('/').pop();
+const engines=()=>(st.T&&st.T.productswap)||[];
+
+// ── 영상 ──
+const vSlot=$('#vSlot'),pSlot=$('#pSlot');
+function slotDrop(el,re,fn){['dragenter','dragover'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();el.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>el.addEventListener(ev,()=>el.classList.remove('drag')));
+  el.addEventListener('drop',e=>{e.preventDefault();const f=[...e.dataTransfer.files].find(f=>re.test(f.type));if(f)fn(f);});}
+vSlot.addEventListener('click',e=>{if(e.target.closest('[data-lib]'))return;$('#vFile').click();});
+pSlot.addEventListener('click',e=>{if(e.target.closest('[data-lib]'))return;$('#pFile').click();});
+$('#vFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)uploadVideo(f);};
+$('#pFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)uploadProduct(f);};
+slotDrop(vSlot,/^video\//,uploadVideo);slotDrop(pSlot,/^image\//,uploadProduct);
+async function uploadVideo(f){
+  if(f.size>50*1024*1024){toast('Video is over 50MB — trim it first.');return;}
+  busy(true,'Uploading video…');
+  try{const fd=new FormData();fd.append('file',f,f.name||'video.mp4');const r=await fetch('/api/generate/video-edit/upload',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.success){toast(j.error||'Upload failed');return;}setVideo({url:j.data.url,duration:j.data.duration||0,width:j.data.width,height:j.data.height});}
+  catch(e){toast('Upload failed — network error');}finally{busy(false);}}
+function setVideo(v){if(v.duration&&v.duration<MIN){toast(`This video is ${v.duration.toFixed(1)}s — use at least ${MIN}s.`);return;}
+  st.video={...v,in:0};st.result=null;vSlot.classList.add('on');
+  vSlot.innerHTML=`<video src="${esc(v.url)}" muted loop autoplay playsinline></video><span class="chg">${v.duration?v.duration.toFixed(1)+'s · ':''}change</span><button class="lib" type="button" data-lib="video">Library</button>`;
+  const box=$('#rangeBox');box.hidden=!(v.duration>MAX);if(v.duration>MAX){const r=$('#rangeIn');r.max=(v.duration-MAX).toFixed(1);r.value=0;}
+  rangeText();showPreview();sync();}
+function rangeText(){const v=st.video;if(!v)return;const a=v.in,b=Math.min(v.duration||MAX,a+MAX);$('#rangeV').textContent=`${a.toFixed(1)}s – ${b.toFixed(1)}s`;$('#rangeHint').textContent=`Your video is ${v.duration.toFixed(1)}s — the swap uses ${MAX}s of it. Slide to pick which part.`;}
+$('#rangeIn').oninput=e=>{st.video.in=+e.target.value;rangeText();const pv=$('#srcV');if(pv){pv.currentTime=st.video.in;}};
+
+// ── 제품 사진 ──
+async function uploadProduct(f){
+  busy(true,'Uploading product photo…');
+  try{const fd=new FormData();fd.append('file',f,f.name||'product.png');const r=await fetch('/api/generate/lens-upload',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.success){toast(j.error||'Upload failed');return;}setProduct(j.data.url);}
+  catch(e){toast('Upload failed — network error');}finally{busy(false);}}
+function setProduct(url){st.product=url;st.result=null;pSlot.classList.add('on');
+  pSlot.innerHTML=`<img src="${esc(url)}" alt="" style="object-fit:contain;background:#fff"><span class="chg">Your product · change</span><button class="lib" type="button" data-lib="photo">Library</button>`;showPreview();sync();}
+
+// ── Library 에서 고르기 ──
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-lib]');if(!b)return;e.stopPropagation();const kind=b.dataset.lib;
+  const m=document.createElement('div');m.className='ps-modal';m.innerHTML=`<div><h3>${kind==='video'?'Pick a video':'Pick a product photo'} <button class="ib" data-x>✕</button></h3><div class="ps-grid" id="pick"><span class="note">loading…</span></div></div>`;document.body.appendChild(m);
+  m.addEventListener('click',ev=>{if(ev.target===m||ev.target.closest('[data-x]')){m.remove();return;}const g=ev.target.closest('[data-u]');if(!g)return;m.remove();
+    if(kind==='video')probeAndSet(g.dataset.u);else setProduct(g.dataset.u);});
+  try{const rows=((await(await fetch('/api/generate/results?type='+(kind==='video'?'reel':'photo')+'&limit=60')).json()).data||[]).filter(r=>r.file_path&&(kind==='video'?/\.(mp4|webm|mov)$/i:/\.(png|jpe?g|webp)$/i).test(r.file_path));
+    m.querySelector('#pick').innerHTML=rows.map(r=>{const u=fileOf(r);return `<button data-u="${esc(u)}">${kind==='video'?`<video src="${esc(u)}#t=0.5" muted preload="metadata"></video>`:`<img src="${esc(u)}" loading="lazy" alt="">`}<span>#${r.idx}</span></button>`;}).join('')||`<div class="ps-empty">Nothing in your Library yet.</div>`;}
+  catch(err){m.querySelector('#pick').innerHTML='<div class="ps-empty">Could not load your Library.</div>';}},true);
+function probeAndSet(url){const v=document.createElement('video');v.preload='metadata';v.muted=true;v.onloadedmetadata=()=>setVideo({url,duration:v.duration||0,width:v.videoWidth,height:v.videoHeight});v.onerror=()=>toast('Could not open that video.');v.src=url;}
+
+// ── 엔진·비용 ──
+function clipLen(){const v=st.video;return v?Math.min(MAX,(v.duration||MAX)-(v.in||0)):5;}
+function costOf(id){const e=engines().find(x=>x.id===id)||engines()[0];if(!e||!e.pricing||!e.pricing.perDuration)return null;const p=e.pricing.perDuration;return clipLen()>5.5?(p['10']||p['15']):p['5'];}
+function sync(){const has=engines().length;const ok=has&&st.video&&st.product&&!st.busy;$('#go').disabled=!ok;
+  const c=costOf($('#eng').value);$('#cost').textContent=c!=null?c.toLocaleString():'—';
+  const n=$('#goNote');if(!has)n.textContent='Product swap is not configured on this server yet.';else if(!st.video)n.textContent='Add a 3–15 second video first.';else if(!st.product)n.textContent='Add a photo of your product.';else n.textContent='Takes 2–6 minutes. The result is saved to your Library — you can leave this page.';}
+$('#eng').onchange=sync;
+
+// ── 미리보기 ──
+function showPreview(){const r=$('#right');r.querySelectorAll('.ps-stage,.ps-inset,.ps-acts,.ps-view').forEach(x=>x.remove());$('#ph').hidden=!!(st.video||st.result);
+  const ins=st.product?`<div class="ps-inset"><img src="${esc(st.product)}" alt=""></div>`:'';
+  if(st.result){const R=st.result,src=st.video;const before=`<figure><video id="srcV" src="${esc(src.url)}#t=${src.in||0}" muted loop playsinline autoplay></video><figcaption>Before</figcaption></figure>`,after=`<figure><video id="outV" src="${esc(R.url)}" loop playsinline autoplay controls></video><figcaption>After · ${esc(R.engine)}</figcaption></figure>`;
+    r.insertAdjacentHTML('afterbegin',`<div class="ps-stage">${st.view==='before'?before:st.view==='after'?after:before+after}</div>`);
+    r.insertAdjacentHTML('beforeend',ins+`<div class="ps-acts"><a class="ib" href="${esc(R.url)}" download="doppia-product-swap.mp4">⤓ Download</a><a class="ib" href="/video-edit?video=${encodeURIComponent(R.url)}">✎ Video Editor</a></div><div class="ps-view"><div class="ps-seg">${['side','before','after'].map(k=>`<button data-view="${k}" class="${st.view===k?'on':''}">${k==='side'?'Side by side':k[0].toUpperCase()+k.slice(1)}</button>`).join('')}</div></div>`);
+    const a=$('#srcV'),b=$('#outV');if(a&&b){b.addEventListener('play',()=>{a.currentTime=(src.in||0)+(b.currentTime||0);a.play().catch(()=>{});});b.addEventListener('pause',()=>a.pause());}
+    return;}
+  if(st.video){r.insertAdjacentHTML('afterbegin',`<div class="ps-stage"><figure><video id="srcV" src="${esc(st.video.url)}" muted loop playsinline autoplay></video><figcaption>Your video</figcaption></figure></div>`);
+    const v=$('#srcV');v.addEventListener('loadedmetadata',()=>{v.currentTime=st.video.in||0;});v.addEventListener('timeupdate',()=>{const a=st.video.in||0;if(v.currentTime>a+MAX||v.currentTime<a-0.3)v.currentTime=a;});}
+  r.insertAdjacentHTML('beforeend',ins);}
+$('#right').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b){st.view=b.dataset.view;showPreview();}});
+
+// ── 실행 ──
+function busy(on,t,s){$('#busy').classList.toggle('on',on);$('#busyT').textContent=t||'Working…';$('#busyS').textContent=s||'';}
+$('#go').onclick=()=>{if($('#go').disabled)return;const v=st.video;
+  submit({op:'productswap',engine:$('#eng').value||undefined,src:v.url,in:+(v.in||0).toFixed(2),out:+Math.min(v.duration||MAX,(v.in||0)+MAX).toFixed(2),imageSrc:st.product,target:$('#target').value.trim(),prompt:$('#note').value.trim(),tried:[]});};
+async function submit(body){
+  st.busy=true;sync();busy(true,'Sending to AI…');
+  try{const r=await fetch('/api/generate/video-edit/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));
+    if(r.status===402){toast(j.error||'Not enough credits.');done();return;}
+    if(!r.ok||!j.success){toast(j.error||'Swap request failed');done();return;}
+    if(window.DoppiaNav)DoppiaNav.refreshCredits();
+    st.job={id:j.data.jobId,engine:j.data.engine.label,engineId:j.data.engine.id,t0:Date.now(),body};
+    try{sessionStorage.setItem('doppia.productSwap.job',JSON.stringify({...st.job,video:st.video,product:st.product}));}catch(e){}
+    poll();
+  }catch(e){toast('Network error — try again.');done();}}
+function done(){st.busy=false;busy(false);sync();try{sessionStorage.removeItem('doppia.productSwap.job');}catch(e){}}
+async function poll(){const job=st.job;
+  while(st.job===job){const sec=Math.round((Date.now()-job.t0)/1000);busy(true,`Swapping on ${job.engine}…`,`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} · usually 2–6 minutes · saved to your Library when done`);
+    await new Promise(x=>setTimeout(x,5000));
+    let d={};try{d=((await(await fetch('/api/generate/video/jobs/'+encodeURIComponent(job.id))).json()).data)||{};}catch(e){continue;}
+    if(d.status==='succeeded'&&d.url){st.result={url:d.url,engine:job.engine};st.view='side';done();showPreview();toast(`Done on ${job.engine} — saved to your Library`);loadMine();return;}
+    if(d.status==='failed'){const err=String(d.error||'failed');
+      // 엔진 정책 거절(실제 사람 등)·입력 거절이면 다음 엔진으로 자동 재시도
+      const tried=[...(job.body.tried||[]),job.engineId],next=engines().map(e=>e.id).find(id=>!tried.includes(id));
+      if(next&&/content_policy|likeness|real people|policy|moderation|safety|unprocessable|invalid|422/i.test(err)){toast(`${job.engine} could not do this one — retrying on ${(engines().find(e=>e.id===next)||{}).label||next}`);st.job=null;submit({...job.body,engine:next,tried});return;}
+      st.job=null;done();toast(`Swap failed: ${err.slice(0,160)} (credits refunded)`);return;}
+    if(Date.now()-job.t0>25*60*1000){st.job=null;done();toast('Still running — check your Library later.');return;}}}
+
+// ── 내 스왑 ──
+async function loadMine(){try{const rows=((await(await fetch('/api/generate/results?type=reel&limit=60')).json()).data||[]).filter(r=>r.template_name==='Product swap'&&r.file_path);
+  $('#mine').innerHTML=rows.map(r=>`<button data-i="${r.idx}"><video src="${esc(fileOf(r))}#t=0.5" muted preload="metadata"></video><span>#${r.idx}</span></button>`).join('');$('#mineEmpty').hidden=rows.length>0;}catch(e){$('#mineEmpty').hidden=false;}}
+$('#mine').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b)location.href='/creation?idx='+b.dataset.i;});
+
+async function boot(){st.T=window.DoppiaNav?await DoppiaNav.tools():{};
+  $('#eng').innerHTML=engines().map((e,i)=>`<option value="${esc(e.id)}">${i===0?'Auto · ':''}${esc(e.label)}</option>`).join('')||'<option value="">Not available</option>';
+  const q=new URLSearchParams(location.search),v=q.get('video');if(v&&/^\/images\/[\w.-]+\.(mp4|webm|mov)$/i.test(v))probeAndSet(v);
+  // 새로고침해도 진행 중인 스왑을 이어서 기다린다
+  try{const s=JSON.parse(sessionStorage.getItem('doppia.productSwap.job')||'null');if(s&&s.id&&Date.now()-s.t0<25*60*1000){if(s.video)setVideo(s.video);if(s.product)setProduct(s.product);st.busy=true;st.job={id:s.id,engine:s.engine,engineId:s.engineId,t0:s.t0,body:s.body};sync();poll();}}catch(e){}
+  sync();loadMine();}
+if(window.DoppiaNav)boot();else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+})();
+</script>
+</body>
+</html>

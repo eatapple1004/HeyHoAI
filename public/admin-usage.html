@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기능·엔진 사용량 · Doppia Admin</title>
+<style>
+/* (2026-10-16) 결과물 출처(metadata.origin — src/generate/resultOrigin.js) 기준 기능·작업·엔진·페이지별 사용량. 스타일은 admin-stats 와 같은 톤. */
+:root{--accent:#6a40e0;--accent2:#a394ee;--bg:#0c0c14;--panel:#15151f;--panel2:#1c1c28;
+  --text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--border:#2a2a3a;--green:#4ade80;--red:#f87171;--gold:#ffce7a;--pink:#d9608f;--blue:#60a5fa;
+  --font:'Pretendard','Apple SD Gothic Neo','맑은 고딕',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);padding:32px;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1 .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink))}
+.sub{color:var(--dim);margin:6px 0 22px;font-size:.95rem}
+.sechead{font-size:.8rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--faint);margin:26px 2px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sechead .hint{font-size:.72rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--faint)}
+.tools{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.chip,.refresh{background:var(--panel);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:.8rem;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer}
+.chip:hover,.refresh:hover{color:var(--text);border-color:var(--accent2)}
+.chip.on{color:#fff;background:linear-gradient(180deg,#7c52e8,#5c33c2);border-color:transparent}
+.feat{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.fc{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.fc:hover{border-color:var(--accent2)}
+.fc.on{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2) inset}
+.fc .t{font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:7px}
+.fc .t i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.fc .v{font-size:1.8rem;font-weight:800;letter-spacing:-.5px;margin-top:8px}
+.fc .s{font-size:.74rem;color:var(--faint);margin-top:4px}
+.panelbox{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{color:var(--dim);font-weight:600;font-size:.76rem}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.f{color:var(--dim)}
+.bar-inline{display:inline-block;height:7px;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--pink));vertical-align:middle;margin-right:8px}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--dim)}
+.pill.fb{color:var(--gold);border-color:#5c4a24}
+.two{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}
+@media(max-width:900px){.two{grid-template-columns:1fr}body{padding:16px}}
+.chart{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 18px 12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.76rem;color:var(--dim)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.plot{display:flex;align-items:flex-end;gap:6px;height:220px;overflow-x:auto;padding-top:6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:34px;flex:1}
+.stack{display:flex;flex-direction:column-reverse;width:22px;height:170px;justify-content:flex-start}
+.stack b{display:block;width:100%;min-height:0}
+.stack b:last-child{border-radius:3px 3px 0 0}
+.day small{font-size:.64rem;color:var(--faint);font-variant-numeric:tabular-nums}
+.day em{font-style:normal;font-size:.64rem;color:var(--dim)}
+.err{background:rgba(248,113,113,.12);border:1px solid #5b2e2e;color:#fca5a5;padding:14px 16px;border-radius:12px;display:none;margin-bottom:16px}
+.err.show{display:block}
+.muted{color:var(--faint);font-size:.85rem}
+.note{font-size:.78rem;color:var(--faint);margin-top:10px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> 기능·엔진 사용량
+    <span class="tools" id="period">
+      <button class="chip" data-d="1">오늘</button><button class="chip" data-d="7">7일</button><button class="chip on" data-d="30">30일</button><button class="chip" data-d="90">90일</button><button class="chip" data-d="0">전체</button>
+      <button class="refresh" onclick="load()">↻ 새로고침</button>
+    </span>
+  </h1>
+  <div class="sub">결과물(사진·영상)마다 남긴 출처 기준 — 어떤 기능 · 어떤 작업 · 어떤 엔진 · 어느 페이지에서 만들어졌는지. 성공한 결과물만 셉니다. (관리자 전용, 읽기 전용)</div>
+  <div id="adminNav"></div>
+  <div class="err" id="err"></div>
+
+  <div class="sechead">기능별 <span class="hint">카드를 누르면 아래 엔진 표가 그 기능만 보여줍니다</span></div>
+  <div class="feat" id="feat"><div class="muted">불러오는 중…</div></div>
+
+  <div class="sechead">최근 14일 추이 <span class="hint">일별 · 기능별 결과물 수 (기간 선택과 무관)</span></div>
+  <div class="chart"><div class="legend" id="legend"></div><div class="plot" id="plot"></div></div>
+
+  <div class="two">
+    <div>
+      <div class="sechead">기능 · 작업 · 엔진 <span class="hint" id="engHint">전체 기능</span></div>
+      <div class="panelbox"><table><thead><tr><th>기능</th><th>작업</th><th>엔진</th><th class="num">결과물</th><th class="num">대체 엔진</th></tr></thead><tbody id="eng"></tbody></table></div>
+    </div>
+    <div>
+      <div class="sechead">페이지별 <span class="hint">어디서 만들었나</span></div>
+      <div class="panelbox"><table><thead><tr><th>페이지</th><th class="num">결과물</th></tr></thead><tbody id="page"></tbody></table></div>
+    </div>
+  </div>
+  <div class="note" id="foot"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const n=x=>(+x||0).toLocaleString('ko-KR');
+const COLORS=['#a394ee','#d9608f','#ffce7a','#4ade80','#60a5fa','#f87171','#2dd4bf','#f472b6','#c084fc','#fb923c','#94a3b8','#e2e8f0'];
+const OP={relight:'조명',angles:'앵글',erase:'지우기',inpaint:'부분 수정',expand:'확장',replace_bg:'배경 교체',fix_text:'라벨 글자',removebg:'배경 제거',upscale:'업스케일',productswap:'제품 교체',export:'내보내기',edit:'말로 편집',restyle:'스타일',extend:'연장',motion:'모션 전이','on-model-faceswap':'온모델 얼굴'};
+const PAGE={'/image':'Create Image','/image-edit':'Editor','/ad-video':'Ad Video','/studio':'Studio','/pack':'Content Pack','/lens':'Doppia Lens','/video-edit':'Video Editor','/product-swap':'Product swap','/face-swap':'Face swap','/shoot':'Doppia Shoot','/video':'Create Video'};
+let days=30,data=null,pick=null,colorOf={};
+document.getElementById('period').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;days=+b.dataset.d;document.querySelectorAll('#period [data-d]').forEach(x=>x.classList.toggle('on',x===b));load();});
+async function load(){const er=$('#err');er.classList.remove('show');
+  try{const r=await fetch('/api/admin/usage?days='+days);const j=await r.json().catch(()=>({}));if(!r.ok||!j.success)throw new Error(j.error||j.message||('HTTP '+r.status));data=j.data;render();}
+  catch(e){er.textContent='불러오기 실패: '+e.message;er.classList.add('show');}}
+function render(){const d=data;const feats=d.byFeature||[];
+  // 기능 색은 전체 기능 이름 순서로 고정(추이 차트와 같은 색)
+  const names=[...new Set([...feats.map(f=>f.feature),...(d.daily||[]).map(x=>x.feature)])];names.forEach((f,i)=>{if(!colorOf[f])colorOf[f]=COLORS[Object.keys(colorOf).length%COLORS.length];});
+  const total=feats.reduce((a,f)=>a+f.n,0);
+  $('#feat').innerHTML=`<button class="fc ${pick?'':'on'}" data-f=""><div class="t">전체</div><div class="v">${n(total)}</div><div class="s">사진 ${n(feats.reduce((a,f)=>a+f.images,0))} · 영상 ${n(feats.reduce((a,f)=>a+f.videos,0))}</div></button>`+
+    feats.map(f=>`<button class="fc ${pick===f.feature?'on':''}" data-f="${esc(f.feature)}"><div class="t"><i style="background:${colorOf[f.feature]}"></i>${esc(f.feature)}</div><div class="v">${n(f.n)}</div><div class="s">${f.images?'사진 '+n(f.images):''}${f.images&&f.videos?' · ':''}${f.videos?'영상 '+n(f.videos):''}${f.last_at?' · 최근 '+esc(ago(f.last_at)):''}</div></button>`).join('')||'<div class="muted">이 기간에 결과물이 없습니다.</div>';
+  renderEngines();
+  const pg=d.byPage||[],pmax=Math.max(1,...pg.map(p=>p.n));
+  $('#page').innerHTML=pg.map(p=>`<tr><td>${esc(p.page)}${PAGE[p.page]?` <span class="pill">${esc(PAGE[p.page])}</span>`:''}</td><td class="num"><span class="bar-inline" style="width:${Math.round(p.n/pmax*90)}px"></span>${n(p.n)}</td></tr>`).join('')||'<tr><td class="muted" colspan="2">기록 없음</td></tr>';
+  renderChart();
+  $('#foot').innerHTML=`· 페이지는 2026-10-16 이후 결과물부터 기록됩니다(그 전 결과물은 "(기록 전)").<br>· "대체 엔진" = 1순위 엔진이 실패해 다음 엔진으로 만들어진 결과물 수.${d.missing?`<br>· 출처 기록이 없는 결과물 ${n(d.missing)}개 — 서버에서 <code>node scripts/backfill_result_origin.js</code> 를 실행하면 채워집니다.`:''}`;}
+function renderEngines(){const rows=(data.byEngine||[]).filter(r=>!pick||r.feature===pick),max=Math.max(1,...rows.map(r=>r.n));
+  $('#engHint').textContent=pick?pick+'만':'전체 기능';
+  $('#eng').innerHTML=rows.map(r=>`<tr><td class="f"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${colorOf[r.feature]};margin-right:6px"></i>${esc(r.feature)}</td><td>${r.op?esc(OP[r.op]||r.op):'<span class="muted">—</span>'}</td><td>${esc(r.engine)}</td><td class="num"><span class="bar-inline" style="width:${Math.round(r.n/max*90)}px"></span>${n(r.n)}</td><td class="num">${r.fallbacks?`<span class="pill fb">${n(r.fallbacks)}</span>`:'<span class="muted">0</span>'}</td></tr>`).join('')||'<tr><td class="muted" colspan="5">기록 없음</td></tr>';}
+function renderChart(){const rows=data.daily||[];const days14=[];for(let i=13;i>=0;i--){const t=new Date(Date.now()+9*3600e3-i*864e5);days14.push(String(t.getUTCMonth()+1).padStart(2,'0')+'-'+String(t.getUTCDate()).padStart(2,'0'));}
+  const by={};rows.forEach(r=>{(by[r.d]=by[r.d]||{})[r.feature]=r.n;});
+  const tot=d=>Object.values(by[d]||{}).reduce((a,b)=>a+b,0),max=Math.max(1,...days14.map(tot));
+  const feats=[...new Set(rows.map(r=>r.feature))];
+  $('#legend').innerHTML=feats.map(f=>`<span><i style="background:${colorOf[f]}"></i>${esc(f)}</span>`).join('')||'<span>최근 14일 결과물 없음</span>';
+  $('#plot').innerHTML=days14.map(d=>`<div class="day" title="${esc(d)}: ${Object.entries(by[d]||{}).map(([f,v])=>f+' '+v).join(', ')}"><em>${tot(d)||''}</em><div class="stack">${feats.filter(f=>(by[d]||{})[f]).map(f=>`<b style="height:${(by[d][f]/max*170).toFixed(1)}px;background:${colorOf[f]}"></b>`).join('')}</div><small>${esc(d)}</small></div>`).join('');}
+function ago(t){const s=(Date.now()-new Date(t))/1000;return s<3600?Math.max(1,Math.round(s/60))+'분 전':s<86400?Math.round(s/3600)+'시간 전':Math.round(s/86400)+'일 전';}
+$('#feat').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;pick=b.dataset.f||null;document.querySelectorAll('#feat .fc').forEach(x=>x.classList.toggle('on',x===b));renderEngines();});
+load();
+</script>
+<script src="/js/admin-nav.js?v=3" defer></script>
+</body>
+</html>

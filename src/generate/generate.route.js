@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const resultOrigin = require('./resultOrigin'); // (10-16) 결과물 출처 기록
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -20,12 +21,21 @@ const styleRepo = require('./stylePreset.repository');
 const { assertCharacterOwned, assertPromptOwned, assertReviewOwned } = require('../middleware/ownership');
 const teamCredit = require('../teams/team.credit');
 const { query } = require('../db/client');
-const { getTool, listTools } = require('../tools/registry');
+const { getTool, listTools, isToolAvailable } = require('../tools/registry');
 const { entitlementsFor } = require('../lib/entitlements');
 const mediaStore = require('../storage/mediaStore');
 const personRouting = require('./personRouting');
 
 // GPT Image 캔버스(1:1·2:3·3:2)를 사용자가 고른 비율로 가운데 자른다. 비율 미지정·형식 오류면 원본 그대로.
+/** 비율 → 외부 프로바이더용 픽셀 크기(긴 변 1024 기준, 8의 배수). 지원 밖 비율은 1:1. */
+function aspectToSize(aspect) {
+  const m = /^(\d+):(\d+)$/.exec(String(aspect || ''));
+  if (!m) return [1024, 1024];
+  const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+  const r8 = (n) => Math.max(256, Math.round(n / 8) * 8);
+  return a >= b ? [1024, r8(1024 * b / a)] : [r8(1024 * a / b), 1024];
+}
+
 async function cropToAspect(buf, aspect) {
   const m = /^(\d+):(\d+)$/.exec(String(aspect || ''));
   if (!m) return buf;
@@ -178,6 +188,8 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const uploadVideo = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+const editUpload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } }); // (2026-10-15) /edit — 캔버스 PNG(최대 4096px) + 마스크 // (2026-10-14) /video/async — 영상 입력(편집·연장·모션) 50MB. nginx dev client_max_body_size 60M 안쪽.
 
 /**
  * POST /api/generate
@@ -220,6 +232,14 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
     if (toolDef && toolDef.type === 'image' && toolDef.costKey) {
       model = toolDef.costKey;
     }
+    // (2026-10-13) 베이스 1차 — 외부 프로바이더 디스패치. 레거시 model 키 경로(gemini·openai)에 없는 툴은
+    //   registry.provider(seedream·fal·replicate)로 src/images/providers 어댑터를 직접 부른다(아래 runExternal).
+    //   과금은 위에서 정한 model(=costKey) 그대로 — 어댑터는 그리기만 한다.
+    const EXTERNAL_IMAGE_PROVIDERS = ['seedream', 'fal', 'replicate', 'xai', 'higgsfield']; // (2026-10-13) xai·higgsfield 추가 — 키 없으면 isToolAvailable 이 막는다
+    const extProvider = (toolDef && toolDef.type === 'image' && EXTERNAL_IMAGE_PROVIDERS.includes(toolDef.provider)) ? toolDef.provider : null;
+    if (extProvider && !isToolAvailable(toolDef)) {
+      return res.status(400).json({ success: false, error: `${toolDef.label} is not configured on this server` });
+    }
 
     // ─── Custom 풀 컨트롤 (비율·해상도·네거티브) — 미지정 시 기존 동작 유지 ───
     // 비율: Gemini API 지원값 화이트리스트. 그 외/빈값 → 미적용.
@@ -227,7 +247,12 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
     const aspectRatio = ASPECT_ALLOW.includes(req.body.aspectRatio) ? req.body.aspectRatio : null;
     // 해상도: 2K·4K는 Nano Banana Pro(model=pro) 전용. 그 외 → 1K(미적용). (2026-07-27 4K 오픈)
     const reqSize = String(req.body.imageSize || '').toUpperCase();
-    const imageSize = (model === 'pro' && (reqSize === '2K' || reqSize === '4K')) ? reqSize : null;
+    // (2026-10-13) 툴이 imageSize 목록을 가지면 그 목록 기준(1K = 기본값 → null). 레거시 model 키 경로는 pro 2K/4K 그대로.
+    const sizeList = toolDef && toolDef.controls && toolDef.controls.imageSize;
+    const imageSize = sizeList
+      ? (sizeList.map((x) => String(x).toUpperCase()).includes(reqSize) && reqSize !== '1K' ? reqSize : null)
+      : ((model === 'pro' && (reqSize === '2K' || reqSize === '4K')) ? reqSize : null);
+    const extras = pickExtras(toolDef, req.body.extras) || {}; // 엔진 고유 옵션(registry 선언분만) — 어댑터/OpenAI 파라미터에 합친다
     // 네거티브: provider 관용(Avoid:)으로 finalPrompt에 합침. 길이 캡 1000(입력란 maxlength와 일치).
     const negativePrompt = String(req.body.negativePrompt || '').trim().slice(0, 1000);
 
@@ -402,15 +427,19 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
     const genModel = personRoute ? personRoute.model : model;
     if (personRoute) logger.info({ userId: req.user.id, reason: personRoute.reason, billedAs: model }, 'person route → GPT Image');
 
-    const isGpt = genModel.startsWith('gpt-');
+    // (2026-10-13) 레지스트리 툴이 gemini/openai 면 모델 id 는 registry.model 을 쓴다(costKey 는 과금 키일 뿐).
+    //   → gpt-image-2.5-sunburst/flare · gemini-nano-banana-2.1 처럼 새 세대는 registry 한 줄로 붙는다. 툴 미지정(레거시 model 키)은 기존 매핑 그대로.
+    const regOpenai = !!(toolDef && toolDef.provider === 'openai' && toolDef.model);
+    const regGemini = !!(toolDef && toolDef.provider === 'gemini' && toolDef.model);
+    const isGpt = genModel.startsWith('gpt-') || (regOpenai && !personRoute);
     const gptQuality = genModel === 'gpt-image-2-high' ? 'high' : 'medium';
-    const gptModelName = genModel.replace('-high', '');
+    const gptModelName = regOpenai ? toolDef.model.replace('-high', '') : genModel.replace('-high', '');
     // GPT 이미지는 size로만 비율 표현 (gemini의 imageConfig.aspectRatio 대체)
     //   4:5·5:4처럼 캔버스에 없는 비율은 가까운 세로/가로 캔버스로 그린 뒤 cropToAspect로 잘라 맞춘다.
     const gptSize = ['16:9', '3:2', '4:3', '21:9', '5:4'].includes(aspectRatio) ? '1536x1024'
       : ['9:16', '2:3', '3:4', '4:5'].includes(aspectRatio) ? '1024x1536'
       : '1024x1024';
-    const geminiFallbackId = model === 'flash' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
+    const geminiFallbackId = regGemini ? toolDef.model : (model === 'flash' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview');
     const modelId = isGpt ? gptModelName : geminiFallbackId;
 
     // ─── 유료 템플릿 게이트 + 사용당 로열티(하이브리드). ───
@@ -552,6 +581,7 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
                 { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
               ],
               ...(Object.keys(imageConfig).length ? { imageConfig } : {}),
+              ...(extras.thinking_level ? { thinkingConfig: { thinkingLevel: extras.thinking_level } } : {}), // (10-13) Nano Banana 2.1 — registry extras
             },
           });
 
@@ -568,14 +598,43 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
           description = textPart?.text || '';
         };
 
+        // 외부 프로바이더 경로 — 결과 URL을 받아 PNG로 정규화해 아래 공통 저장(파일+DB)으로 흘린다.
+        //   레퍼런스는 data URL로 넘긴다(어댑터가 공개 URL·data URL·로컬 경로 중 자기 방식으로 처리).
+        const runExternal = async () => {
+          // eslint-disable-next-line global-require
+          const prov = require(`../images/providers/${extProvider}.provider`);
+          const [w, h] = aspectToSize(aspectRatio || '1:1');
+          const refUrls = referenceImages.map((r) => `data:image/png;base64,${r.base64}`);
+          const out = await prov.generate({
+            prompt: finalPromptForImage, width: w, height: h, referenceImageUrls: refUrls,
+            // registry 가 정한 엔드포인트·입력 모양 — 어댑터(fal·seedream·xai·higgsfield)가 읽는다. 과금은 위 model(costKey) 그대로.
+            model: toolDef.model, editModel: toolDef.editModel, editSingle: !!toolDef.editSingle, sizing: toolDef.sizing,
+            aspectRatio: aspectRatio || '1:1', imageSize, negativePrompt, negative: !!(toolDef.controls && toolDef.controls.negative),
+            extras,
+          });
+          let buf;
+          if (String(out.url).startsWith('file://')) buf = fs.readFileSync(out.url.slice('file://'.length));
+          else {
+            const r = await fetch(out.url);
+            if (!r.ok) throw new Error(`${toolDef.label}: result download failed (${r.status})`);
+            buf = Buffer.from(await r.arrayBuffer());
+          }
+          usedModelId = (out.metadata && out.metadata.model) || toolDef.model;
+          // eslint-disable-next-line global-require
+          return require('sharp')(buf).png().toBuffer(); // 공통 저장이 .png로 쓰므로 포맷을 맞춘다(fal은 jpeg를 준다)
+        };
+
         let usedModelId = modelId;
-        if (isGpt) {
+        if (extProvider) {
+          imageBuffer = await runExternal();
+        } else if (isGpt) {
           try {
             // ─── GPT Image Generation ───
             const OpenAI = require('openai');
             const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-            const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: gptQuality };
+            const gptParams = { model: modelId, prompt: finalPromptForImage, n: 1, size: gptSize, quality: extras.quality || gptQuality,
+              ...(extras.background && { background: extras.background }), ...(extras.moderation && { moderation: extras.moderation }) }; // (10-13) registry extras
 
             // 레퍼런스 이미지가 있으면 편집 모드
             if (referenceImages.length > 0) {
@@ -591,7 +650,9 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
                 prompt: gptParams.prompt,
                 n: 1,
                 size: gptSize,
-                quality: gptQuality,
+                quality: extras.quality || gptQuality,
+                ...(extras.background && { background: extras.background }), ...(extras.moderation && { moderation: extras.moderation }),
+                ...(extras.input_fidelity && { input_fidelity: extras.input_fidelity }),
               });
               imageBuffer = Buffer.from(editResult.data[0].b64_json, 'base64');
             } else {
@@ -645,6 +706,7 @@ const postRootHandler = withUploadCleanup(async (req, res, next) => {
           //   피드는 원래 prompt_idx로 묶는데 쪼개면 prompt 행이 N개가 되어 새로고침 시 N줄로 흩어진다.
           //   형식 무관·표시용이 아니므로 길이만 자른다(JSONB 오염 방지).
           metadata: { description,
+            origin: { page: resultOrigin.pageOf(req), ...resultOrigin.engineOf(usedModelId), ...(toolDef && usedModelId !== toolDef.model ? { requested: toolDef.id } : {}) }, // 어디서·실제 엔진(폴백 시 requested)
             ...(pickedModelMeta ? { model_name: pickedModelMeta.name } : (autoModel ? { model_name: 'Auto' } : {})),
             ...(batchId ? { batch_id: batchId } : {}),
             ...(choices ? { choices } : {}) },
@@ -863,6 +925,586 @@ const getCommunityHandler = async (req, res, next) => {
 };
 
 // ─── 내 결과물 공개/비공개 토글 (My creations에서 항목별 공개·재공개) ───
+// (2026-10-16) 업스케일·배경 제거 직결 엔드포인트(POST /upscale·/removebg)는 걷어냄 — Editor 의 op(POST /edit) 가 같은 어댑터(fal.provider upscale/removeBackground)로 한다.
+
+// ─── Image Editor (2026-10-15) — 캔버스 1장(+마스크) → AI 편집 1장 → 새 creation ───
+//   multipart: image(필수, 지금 캔버스 PNG) · mask(선택, 같은 크기 흰색=편집) · op · prompt · text(fix_text) · engine('auto'|registry id) · factor · sourceIdx · privateMode
+//   엔진 선택·프롬프트·합성 = src/images/imageEdit.engine.js. 과금 = 고른 엔진의 costKey 1장(정본 IMG_CREDIT). 실패 시 환불 + failed 행.
+//   공개범위: sourceIdx(내 결과물)면 물려받고, 업로드면 생성과 같은 규칙(Private Mode 구독자만 비공개).
+async function postEditHandler(req, res, next) {
+  const files = req.files || {};
+  const imgFile = (files.image || [])[0];
+  const maskFile = (files.mask || [])[0];
+  const guideFile = (files.guide || [])[0]; // (10-16) relight 조명 가이드(화면 미리보기)
+  const cleanup = () => [imgFile, maskFile, guideFile].forEach((f) => { if (f && f.path) fs.unlink(f.path, () => {}); });
+  try {
+    // eslint-disable-next-line global-require
+    const editEngine = require('../images/imageEdit.engine');
+    const body = req.body || {};
+    const op = String(body.op || '');
+    const def = editEngine.EDIT_OPS[op];
+    if (!def) { cleanup(); return res.status(400).json({ success: false, error: 'Unknown edit op' }); }
+    const sourceIdx = parseInt(body.sourceIdx, 10) || null;
+    if (!imgFile && !sourceIdx) { cleanup(); return res.status(400).json({ success: false, error: 'image or sourceIdx required' }); }
+    if (def.mask === 'required' && !maskFile) { cleanup(); return res.status(400).json({ success: false, error: `${def.label} needs a mask — brush the area first` }); }
+    if ((op === 'inpaint' || op === 'erase') && !maskFile && !String(body.prompt || '').trim()) { cleanup(); return res.status(400).json({ success: false, error: op === 'erase' ? 'Brush what to erase, or name it (e.g. "the price tag")' : 'Brush an area, or describe the change for the whole photo' }); }
+    if (op === 'fix_text' && !String(body.text || '').trim()) { cleanup(); return res.status(400).json({ success: false, error: 'Type the exact label text' }); }
+
+    const maskBuf = maskFile ? fs.readFileSync(maskFile.path) : null;
+    const guideBuf = guideFile ? fs.readFileSync(guideFile.path) : null;
+    const upBuf = imgFile ? fs.readFileSync(imgFile.path) : null;
+    cleanup();
+    const tool = editEngine.pickEngine(op, { hasMask: !!maskBuf, override: String(body.engine || 'auto') });
+    if (!tool) return res.status(400).json({ success: false, error: `${def.label} is not configured on this server` });
+
+    // 원본: 업로드(캔버스에서 손댄 버전)가 우선, 없으면 내 결과물(sourceIdx)을 서버에서 읽는다(R2 이미지는 브라우저 캔버스로 못 읽는 경우가 있어서).
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    let visibility = (wantsPrivate(body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    let srcRow = null;
+    if (sourceIdx) {
+      const src = await query(
+        `SELECT gr.visibility, gr.file_path FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+          WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false
+            AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
+        [sourceIdx, req.user.id, teamId || null]
+      );
+      srcRow = src.rows[0] || null;
+      if (srcRow) visibility = srcRow.visibility;
+    }
+    let srcBuf = upBuf;
+    if (!srcBuf) {
+      const name = srcRow && srcRow.file_path ? path.basename(srcRow.file_path) : '';
+      if (!/\.(png|jpe?g|webp)$/i.test(name)) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 이미지가 아닙니다.' });
+      const b64 = await readRefBase64(name);
+      if (!b64) return res.status(404).json({ success: false, error: '원본 파일을 찾을 수 없습니다.' });
+      srcBuf = Buffer.from(b64, 'base64');
+    }
+    // eslint-disable-next-line global-require
+    const sharp = require('sharp');
+    let original;
+    try { original = await sharp(srcBuf).rotate().png().toBuffer(); } catch (e) { return res.status(400).json({ success: false, error: 'Unsupported image file' }); }
+
+    // eslint-disable-next-line global-require
+    const creditService = require('../credits/credit.service');
+    // Auto 면 1순위 엔진이 장애·한도초과로 실패할 때 다음 후보로 넘어간다(사용자가 엔진을 직접 고른 경우는 그 엔진만).
+    const auto = !body.engine || body.engine === 'auto' || body.engine !== tool.id;
+    const tries = auto ? [tool].concat(editEngine.candidates(op, !!maskBuf).filter((t) => t.id !== tool.id)) : [tool];
+
+    const factor = [2, 4, 8, 16].includes(parseInt(body.factor, 10)) ? parseInt(body.factor, 10) : 2;
+    const passes = op === 'upscale' ? editEngine.upscalePasses(factor).length : 1; // ×8·×16 = Topaz 2패스 → 2장 값
+    if (op === 'upscale') {
+      const m0 = await sharp(original).metadata();
+      if (Math.max(m0.width, m0.height) * factor > editEngine.UPSCALE_MAX_SIDE) return res.status(400).json({ success: false, error: `×${factor} would be ${Math.max(m0.width, m0.height) * factor}px — max ${editEngine.UPSCALE_MAX_SIDE}px` });
+    }
+    let light = null;
+    try { light = body.light ? JSON.parse(body.light) : null; } catch (e) { light = null; }
+    let angle = null;
+    try { angle = body.angle ? editEngine.cleanAngle(JSON.parse(body.angle)) : null; } catch (e) { angle = null; }
+    if (op === 'angles' && !angle) angle = editEngine.cleanAngle({ h: 45, v: 0, zoom: 5 });
+    let savedPrompt = null;
+    const errors = [];
+    for (const t of tries) {
+      // 엔진마다 단가가 다를 수 있어 시도마다 그 엔진 값으로 차감 → 실패 시 환불
+      const cost = creditService.imageCost(t.costKey || 'pro', 1, false) * passes;
+      try {
+        await teamCredit.chargeGeneration(req.user, cost, `Editor · ${def.label}`);
+      } catch (e) {
+        if (e.statusCode && !errors.length) return res.status(e.statusCode).json({ success: false, error: e.message });
+        if (e.statusCode) break;
+        throw e;
+      }
+      const modelLabel = `editor-${op}:${t.id}`;
+      if (!savedPrompt) {
+        savedPrompt = await promptRepo.insert({
+          userId: req.user.id, characterId: null,
+          promptText: `${def.label}${op === 'angles' ? ` — ${editEngine.describeAngle(angle)}` : ''}${body.prompt ? ` — ${String(body.prompt).slice(0, 500)}` : ''}${op === 'fix_text' ? ` — "${String(body.text).slice(0, 200)}"` : ''}`,
+          model: modelLabel, referenceImagePath: null, tags: ['editor', op], stylePreset: null, teamId,
+        });
+      }
+      try {
+        const out = await editEngine.runEdit({ op, tool: t, original, mask: maskBuf, prompt: body.prompt, text: body.text, factor, light, guide: guideBuf, angle });
+        const meta = await sharp(out.buffer).metadata();
+        const outputDir = path.join(process.cwd(), 'tmp', 'images');
+        fs.mkdirSync(outputDir, { recursive: true });
+        const filename = `${crypto.randomUUID()}.${out.ext || 'png'}`; // 8K 넘는 업스케일은 jpg
+        fs.writeFileSync(path.join(outputDir, filename), out.buffer);
+        await mediaStore.put(filename, out.buffer);
+        const savedResult = await resultRepo.insert({
+          promptIdx: savedPrompt.idx, characterId: null,
+          filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(out.buffer.length / 1024),
+          width: meta.width, height: meta.height, model: modelLabel, visibility, templateName: 'Editor',
+          metadata: { origin: { feature: 'editor', op, page: resultOrigin.pageOf(req), ...resultOrigin.engineOf(t.id) }, editor: { op, engine: t.id, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}), ...(sourceIdx ? { edit_of: sourceIdx } : {}), ...(op === 'upscale' ? { factor } : {}), ...(op === 'relight' && light ? { light } : {}), ...(op === 'angles' ? { angle } : {}) }, ...(op === 'removebg' ? { transparent: true } : {}) },
+        });
+        await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: savedPrompt.idx });
+        return res.json({ success: true, data: { idx: savedResult.idx, url: `/images/${filename}`, op, engine: { id: t.id, label: t.label, provider: t.provider }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });
+      } catch (err) {
+        const errorMsg = String(err.message || err).slice(0, 200);
+        await teamCredit.refundGeneration(req.user, cost, `Editor · ${def.label} 실패 환불`).catch(() => {});
+        await resultRepo.insertFailed({ promptIdx: savedPrompt.idx, characterId: null, model: modelLabel, errorMessage: errorMsg }).catch(() => null);
+        logger.warn({ err: errorMsg, userId: req.user.id, op, engine: t.id }, 'editor op failed');
+        errors.push({ engine: t.id, label: t.label, error: errorMsg });
+      }
+    }
+    const last = errors[errors.length - 1] || { label: tool.label, error: 'no engine ran' };
+    res.status(502).json({ success: false, error: `${def.label} failed (${errors.map((x) => x.label).join(' → ') || last.label}): ${last.error}` });
+  } catch (err) { cleanup(); next(err); }
+}
+
+// ─── Face swap (2026-10-16) — "우리 모델 + 본인 얼굴만". 정책·판별·엔진 = src/images/faceSwap.engine.js ───
+//   multipart: face(필수, 본인 얼굴) · consent('true' 필수) · targetPreset('yuna/cafe' 등) 또는 targetIdx(내 Library 생성 결과) · hair('model'|'mine')
+//   결과는 항상 비공개 · 얼굴 사진은 저장하지 않는다 · 과금 = IMG_CREDIT.faceswap, Auto 폴백(Easel → fal face-swap) 시도별 차감·환불.
+async function postFaceSwapHandler(req, res, next) {
+  const files = req.files || {};
+  const faceFile = (files.face || [])[0];
+  const cleanup = () => { if (faceFile && faceFile.path) fs.unlink(faceFile.path, () => {}); };
+  try {
+    // eslint-disable-next-line global-require
+    const fsw = require('../images/faceSwap.engine');
+    if (fsw.PAUSED) { cleanup(); return res.status(503).json({ success: false, error: 'Face swap is coming soon.' }); }
+    const body = req.body || {};
+    if (body.consent !== 'true') { cleanup(); return res.status(400).json({ success: false, error: 'Confirm that this is your own face and you are 18+.' }); }
+    if (!faceFile) return res.status(400).json({ success: false, error: 'Upload a photo of your face.' });
+    const face = fs.readFileSync(faceFile.path);
+    cleanup(); // 얼굴 사진은 디스크에 남기지 않는다
+    const tools = fsw.engines();
+    if (!tools.length) return res.status(400).json({ success: false, error: 'Face swap is not configured on this server' });
+
+    // 대상 — 프리셋(우리 모델) 또는 내 Library 의 생성 결과물만. 업로드·Editor 결과(외부 사진일 수 있음)는 받지 않는다.
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    let target = null, targetRef = null;
+    if (body.targetPreset) {
+      target = fsw.readPreset(String(body.targetPreset));
+      targetRef = { preset: String(body.targetPreset) };
+    } else if (parseInt(body.targetIdx, 10)) {
+      const idx = parseInt(body.targetIdx, 10);
+      const r = await query(
+        `SELECT gr.file_path, gr.model FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+          WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false
+            AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
+        [idx, req.user.id, teamId || null]
+      );
+      const row = r.rows[0];
+      if (!row) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 없는 항목입니다.' });
+      if (/^editor-|^faceswap/.test(row.model || '')) return res.status(400).json({ success: false, error: 'Pick a Doppia-generated model photo (edited uploads can’t be used).' });
+      const name = path.basename(row.file_path || '');
+      const b64 = /\.(png|jpe?g|webp)$/i.test(name) ? await readRefBase64(name) : null;
+      target = b64 ? Buffer.from(b64, 'base64') : null;
+      targetRef = { idx };
+    }
+    if (!target) return res.status(400).json({ success: false, error: 'Pick a Doppia model photo.' });
+
+    const [src, tgt] = await Promise.all([fsw.checkSourceFace(face), fsw.checkTarget(target)]);
+    if (src.error) return res.status(400).json({ success: false, error: src.error });
+    if (tgt.error) return res.status(400).json({ success: false, error: tgt.error });
+
+    // eslint-disable-next-line global-require
+    const creditService = require('../credits/credit.service');
+    const hair = body.hair === 'mine' ? 'mine' : 'model';
+    let savedPrompt = null;
+    const errors = [];
+    for (const t of tools) {
+      const cost = creditService.imageCost(t.costKey || 'faceswap', 1, false);
+      try {
+        await teamCredit.chargeGeneration(req.user, cost, 'Face swap');
+      } catch (e) {
+        if (e.statusCode && !errors.length) return res.status(e.statusCode).json({ success: false, error: e.message });
+        if (e.statusCode) break;
+        throw e;
+      }
+      const modelLabel = `faceswap:${t.id}`;
+      if (!savedPrompt) {
+        savedPrompt = await promptRepo.insert({
+          userId: req.user.id, characterId: null, promptText: `Face swap — ${targetRef.preset || `#${targetRef.idx}`} · hair: ${hair}`,
+          model: modelLabel, referenceImagePath: null, tags: ['faceswap'], stylePreset: null, teamId,
+        });
+      }
+      try {
+        // eslint-disable-next-line global-require
+        const sharp = require('sharp');
+        const buf = await fsw.runSwap({ tool: t, target, face, hair, gender: src.gender });
+        const meta = await sharp(buf).metadata();
+        const outputDir = path.join(process.cwd(), 'tmp', 'images');
+        fs.mkdirSync(outputDir, { recursive: true });
+        const filename = `${crypto.randomUUID()}.png`;
+        fs.writeFileSync(path.join(outputDir, filename), buf);
+        await mediaStore.put(filename, buf);
+        const saved = await resultRepo.insert({
+          promptIdx: savedPrompt.idx, characterId: null,
+          filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(buf.length / 1024),
+          width: meta.width, height: meta.height, model: modelLabel, visibility: 'private', templateName: 'Face swap',
+          metadata: { faceswap: { engine: t.id, target: targetRef, hair, consent: { self_face_adult: true, at: new Date().toISOString() }, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}) } },
+        });
+        await reviewRepo.insert({ resultIdx: saved.idx, promptIdx: savedPrompt.idx });
+        return res.json({ success: true, data: { idx: saved.idx, url: `/images/${filename}`, engine: { id: t.id, label: t.label }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });
+      } catch (err) {
+        const errorMsg = String(err.message || err).slice(0, 200);
+        await teamCredit.refundGeneration(req.user, cost, 'Face swap 실패 환불').catch(() => {});
+        await resultRepo.insertFailed({ promptIdx: savedPrompt.idx, characterId: null, model: modelLabel, errorMessage: errorMsg }).catch(() => null);
+        logger.warn({ err: errorMsg, userId: req.user.id, engine: t.id }, 'face swap failed');
+        errors.push({ engine: t.id, label: t.label, error: errorMsg });
+      }
+    }
+    const last = errors[errors.length - 1] || { error: 'no engine ran' };
+    res.status(502).json({ success: false, error: `Face swap failed (${errors.map((x) => x.label).join(' → ')}): ${last.error}` });
+  } catch (err) { cleanup(); next(err); }
+}
+
+// ─── Video Editor (2026-10-16) — /video-edit 타임라인 편집기. 렌더·자르기·자막 = src/videos/videoEditor.service.js ───
+//   AI 도구는 기존 영상 파이프라인(videoJobService.submit — 과금·잡·폴러·Library)을 그대로 쓴다: 클립의 선택 구간을 잘라 sourceVideo 로.
+const VIDEO_EDIT_OPS = {
+  edit: { label: 'Edit with words', engines: ['seedance-2.5-edit', 'kling-edit'], slot: 'sourceVideo', min: 4, max: 15, why: 'Seedance 2.5 Edit changes what you describe and keeps the rest of the shot.' },
+  restyle: { label: 'Restyle', engines: ['seedance-2.5-edit', 'kling-edit'], slot: 'sourceVideo', min: 4, max: 15, why: 'Same edit engine with look presets — color, light, style.' },
+  extend: { label: 'Extend', engines: ['seedance-2.5-extend'], slot: 'sourceVideo', min: 2, max: 15, why: 'Seedance 2.5 continues the shot from its last frame; the new part is added after the clip.' },
+  upscale: { label: 'Upscale', engines: ['topaz-video'], slot: 'sourceVideo', min: 0.5, max: 30, why: 'Topaz Video sharpens real detail — ×2 or ×4.' },
+  // (2026-10-16) Product swap — 힉스필드 Video to Video "AI Object Swap"(REA 캡처) 처럼 영상 + 제품 사진 → 영상 속 제품만 내 제품으로
+  productswap: { label: 'Product swap', engines: ['kling-o3-edit', 'seedance-2.5-edit'], slot: 'sourceVideo', min: 3, max: 15, minShort: 720, why: 'Kling 3.0 Omni Edit swaps the product and keeps hands, motion and camera — the same engine Higgsfield uses.' },
+  // (2026-10-16) Reframe — 힉스필드 Reframe(REA 캡처). 비율 바꾸고 빈 영역을 AI 로 채움. 엔진별 지원 비율이 달라 비율로 엔진을 고른다
+  // (10-16) Luma 뺌 — dev 실측 글자 깨짐·낙서 생성(사용자 결정). LTX 비율만(9:16·16:9·1:1·4:5·5:4)
+  reframe: { label: 'Reframe', engines: ['ltx-reframe'], slot: 'sourceVideo', min: 1, max: 60, why: 'LTX 2.3 Reframe changes the aspect ratio and generates the new area — nothing gets cropped out. Up to 60s.' },
+  motion: { label: 'Motion transfer', engines: ['kling-motion', 'genjutsu'], slot: 'motionVideo', min: 3, max: 15, why: 'Kling Motion Control puts this clip’s movement onto a model photo (people only).' },
+};
+/** Product swap 지시문 — target(바꿀 대상, 비우면 화면의 주 제품) + 덧붙임 */
+function productSwapPrompt(target, note) {
+  const what = String(target || '').trim().slice(0, 200) || 'the main product';
+  const extra = String(note || '').trim().slice(0, 500);
+  return `Replace ${what} in @Video1 with the product shown in @Image1. Match @Image1 exactly — shape, proportions, colors, materials, label, logo and text. `
+    + 'Keep everything else in @Video1 the same: people, hands and how they hold it, motion, camera move, framing, background and timing. '
+    + `Relight the new product with the scene's light, reflections and shadows so it looks filmed in place.${extra ? ` ${extra}` : ''}`;
+}
+function videoEditEngines(op) {
+  const def = VIDEO_EDIT_OPS[op];
+  return def ? def.engines.map((id) => getTool(id)).filter((t) => t && t.enabled && isToolAvailable(t)) : [];
+}
+function videoEditCatalog() {
+  // eslint-disable-next-line global-require
+  const credit = require('../credits/credit.service');
+  return Object.entries(VIDEO_EDIT_OPS).map(([op, d]) => {
+    const list = videoEditEngines(op);
+    if (!list.length) return null;
+    return { op, label: d.label, why: d.why, min: d.min, max: d.max,
+      engines: list.map((t) => ({ id: t.id, label: t.label, provider: t.provider, perDuration: { 5: credit.videoCost(5, 'pro', false), 10: credit.videoCost(10, 'pro', false) },
+        ...(op === 'reframe' ? { aspects: (t.controls && t.controls.aspectRatio) || [], resolutions: (t.controls && t.controls.resolution) || [], maxSec: t.controls && t.controls.durationRange ? t.controls.durationRange.max : d.max, billPer10s: !!t.billPer10s, noPrompt: !!t.noPrompt } : {}) })) };
+  }).filter(Boolean);
+}
+
+async function postVideoEditUploadHandler(req, res, next) {
+  const f = req.file || (req.files && (req.files.file || [])[0]);
+  try {
+    if (!f) return res.status(400).json({ success: false, error: 'file required' });
+    if (!/^(video|audio)\//.test(f.mimetype || '') && !/\.(mp4|mov|webm|m4v|mp3|wav|m4a|aac|ogg)$/i.test(f.originalname || '')) {
+      fs.unlink(f.path, () => {}); return res.status(400).json({ success: false, error: 'Upload a video or audio file' });
+    }
+    // eslint-disable-next-line global-require
+    const data = await require('../videos/videoEditor.service').saveUpload(f.path, f.originalname);
+    res.json({ success: true, data });
+  } catch (err) { if (f) fs.unlink(f.path, () => {}); if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+}
+
+async function postVideoEditRenderHandler(req, res, next) {
+  try {
+    // eslint-disable-next-line global-require
+    const ve = require('../videos/videoEditor.service');
+    const tl = (req.body && req.body.timeline) || {};
+    const out = await ve.render(tl);
+    const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    const savedPrompt = await promptRepo.insert({ userId: req.user.id, characterId: null, promptText: `Video Editor export — ${(tl.clips || []).length} clips`, model: 'video-editor', referenceImagePath: null, tags: ['video', 'editor'], stylePreset: null, teamId });
+    const st = fs.statSync(out.file);
+    const saved = await resultRepo.insert({ promptIdx: savedPrompt.idx, characterId: null, filePath: `tmp/images/${out.name}`, fileSizeKb: Math.round(st.size / 1024), width: out.width, height: out.height, model: 'video-editor', visibility, templateName: 'Video Editor',
+      metadata: { type: 'video', duration: out.duration, editor: { clips: (tl.clips || []).length, texts: (tl.texts || []).length, aspect: tl.aspect, bgm: !!(tl.audio && tl.audio.src) } } });
+    await reviewRepo.insert({ resultIdx: saved.idx, promptIdx: savedPrompt.idx });
+    res.json({ success: true, data: { idx: saved.idx, url: `/images/${out.name}`, duration: out.duration, width: out.width, height: out.height } });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    logger.warn({ err: err.message }, 'video editor render failed');
+    res.status(500).json({ success: false, error: `Export failed: ${String(err.message).slice(0, 200)}` });
+  }
+}
+
+async function postVideoEditAiHandler(req, res, next) {
+  let cutFile = null, imgFile = null;
+  try {
+    // eslint-disable-next-line global-require
+    const ve = require('../videos/videoEditor.service');
+    const b = req.body || {};
+    const op = String(b.op || '');
+    const def = VIDEO_EDIT_OPS[op];
+    if (!def) return res.status(400).json({ success: false, error: 'Unknown AI tool' });
+    let list = videoEditEngines(op);
+    if (op === 'reframe') { // 고른 비율을 지원하는 엔진만
+      if (!b.aspectRatio) return res.status(400).json({ success: false, error: 'Pick an aspect ratio' });
+      list = list.filter((t) => ((t.controls && t.controls.aspectRatio) || []).includes(String(b.aspectRatio)));
+      if (!list.length) return res.status(400).json({ success: false, error: `No engine supports ${b.aspectRatio}` });
+    }
+    const tool = list.find((t) => t.id === b.engine) || list[0];
+    if (!tool) return res.status(400).json({ success: false, error: `${def.label} is not configured on this server` });
+    if ((op === 'edit' || op === 'restyle') && !String(b.prompt || '').trim()) return res.status(400).json({ success: false, error: 'Describe the change' });
+    if (op === 'motion' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Pick a model photo for the motion to go onto' });
+    if (op === 'productswap' && !b.imageSrc) return res.status(400).json({ success: false, error: 'Add a photo of your product' });
+    const toolMax = tool.controls && tool.controls.durationRange ? tool.controls.durationRange.max : def.max;
+    const c = await ve.cut(b.src, b.in, b.out, { minSec: def.min, maxSec: Math.min(def.max, toolMax), minShort: def.minShort || 0 });
+    cutFile = c.path;
+    if (op === 'motion' || op === 'productswap') imgFile = await ve.copyImage(b.imageSrc);
+    const range = (tool.controls && tool.controls.durationRange) || null;
+    let duration = Math.round(c.duration);
+    if (op === 'extend') duration = Math.max(4, Math.min(15, parseInt(b.extendSec, 10) || 5));
+    if (range) duration = Math.max(range.min, Math.min(range.max, duration));
+    else if (tool.controls && Array.isArray(tool.controls.duration)) duration = tool.controls.duration.reduce((p, x) => (Math.abs(x - duration) < Math.abs(p - duration) ? x : p), tool.controls.duration[0]);
+    const extras = op === 'upscale' ? { upscale_factor: String(parseInt(b.factor, 10) === 4 ? 4 : 2) } : {};
+    let prompt = String(b.prompt || '').trim();
+    if (op === 'edit' || op === 'restyle') prompt = `Edit @Video1: ${prompt}. Keep the same framing, timing and camera motion; change only what is asked.`;
+    if (op === 'extend') prompt = prompt || 'Continue the shot naturally — same scene, lighting and camera motion.';
+    if (op === 'productswap') prompt = productSwapPrompt(b.target, prompt);
+    if (op === 'reframe') prompt = tool.noPrompt ? '' : (prompt ? `Extend the scene to the new frame: ${prompt}` : 'Extend the scene naturally into the new frame — same place, lighting and style; keep every person and the product fully in frame.');
+    const visibility = (wantsPrivate(b) && await canUsePrivate(req.user)) ? 'private' : 'public';
+    const result = await videoJobService.submit({
+      user: req.user, prompt, duration: String(duration), mode: 'pro', aspectRatio: b.aspectRatio || undefined, audio: b.audio === true || b.audio === 'true',
+      engine: tool.provider, resolution: b.resolution, tool, extras: pickExtras(tool, JSON.stringify(extras)),
+      origin: { feature: op === 'productswap' ? 'product-swap' : 'video-editor', op, page: resultOrigin.pageOf(req) },
+      visibility, templateId: null, templateSource: null, templateName: op === 'productswap' ? 'Product swap' : 'Video Editor', // Product swap 페이지의 '내 스왑' 목록이 이 이름으로 거른다
+      sourceImagePath: op === 'productswap' ? null : imgFile, endFramePath: null, referenceImagePaths: op === 'productswap' && imgFile ? [imgFile] : [], // 제품 사진 = 참조 @Image1
+      sourceVideoPath: def.slot === 'sourceVideo' ? cutFile : null, motionVideoPath: def.slot === 'motionVideo' ? cutFile : null,
+      isTemplate: false,
+    });
+    cutFile = null; imgFile = null; // 파이프라인이 가져갔다(정리도 거기서)
+    res.json({ success: true, data: { ...result, op, engine: { id: tool.id, label: tool.label }, duration } });
+  } catch (err) {
+    [cutFile, imgFile].forEach((f) => { if (f) fs.unlink(f, () => {}); });
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message });
+    next(err);
+  }
+}
+
+async function postVideoEditScenesHandler(req, res, next) {
+  try {
+    const b = req.body || {};
+    // eslint-disable-next-line global-require
+    const times = await require('../videos/videoEditor.service').scenes(b.src, b.in, b.out);
+    res.json({ success: true, data: { times } });
+  } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+}
+
+async function postVideoEditCaptionsHandler(req, res, next) {
+  try {
+    const b = req.body || {};
+    // eslint-disable-next-line global-require
+    const lines = await require('../videos/videoEditor.service').captions(b.src, b.in, b.out, b.lang);
+    res.json({ success: true, data: { lines } });
+  } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+}
+
+// ─── Doppia Lens (2026-10-16) — 재사용 템플릿. 데이터·프롬프트 = src/lens/lens.service.js, 생성 = 기존 핸들러(postRootHandler·videoJob) 재사용 ───
+const isAdminUser = (u) => !!(u && u.role === 'admin');
+const lensErr = (res, err, next) => (err.statusCode ? res.status(err.statusCode).json({ success: false, error: err.message }) : next(err));
+
+const getLensListHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const data = await require('../lens/lens.service').list({ userId: req.user.id, isAdmin: isAdminUser(req.user), scope: req.query.scope, category: req.query.category, q: req.query.q });
+    res.json({ success: true, data });
+  } catch (err) { lensErr(res, err, next); }
+};
+const getLensHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const row = await L.getRow(req.params.slug);
+    if (!L.canView(row, req.user.id)) return res.status(404).json({ success: false, error: 'Lens not found' });
+    if (row.config && row.config.recipeId) { try { const rs = await L.recipeShots(row.config.recipeId, req.user.id); row.config = { ...row.config, recipeShots: rs.shots }; } catch (e) { /* 레시피 없음 — 이름만 비운다 */ } }
+    res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
+  } catch (err) { lensErr(res, err, next); }
+};
+const postLensHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const row = await L.create(req.user.id, req.body || {});
+    res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
+  } catch (err) { lensErr(res, err, next); }
+};
+const patchLensHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const row = await L.update(req.user.id, isAdminUser(req.user), req.params.slug, req.body || {});
+    res.json({ success: true, data: L.publicView(row, req.user.id, isAdminUser(req.user)) });
+  } catch (err) { lensErr(res, err, next); }
+};
+const deleteLensHandler = async (req, res, next) => {
+  // eslint-disable-next-line global-require
+  try { await require('../lens/lens.service').remove(req.user.id, req.params.slug); res.json({ success: true }); } catch (err) { lensErr(res, err, next); }
+};
+// 렌즈 폴더(내 렌즈 정리) — GET 목록 · POST {path} 만들기 · PATCH {from,to} 이름 바꾸기/옮기기 · DELETE ?path= (안의 렌즈는 상위로)
+const lensFoldersHandler = async (req, res, next) => {
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    const b = req.body || {};
+    if (req.method === 'POST') await L.addFolder(req.user.id, b.path);
+    else if (req.method === 'PATCH') await L.renameFolder(req.user.id, b.from, b.to);
+    else if (req.method === 'DELETE') await L.removeFolder(req.user.id, (req.query && req.query.path) || b.path);
+    res.json({ success: true, data: await L.listFolders(req.user.id) });
+  } catch (err) { lensErr(res, err, next); }
+};
+// 렌즈 참고 이미지 업로드 → /images/<uuid>.png
+const postLensUploadHandler = async (req, res, next) => {
+  const f = req.file || (req.files && (req.files.file || [])[0]);
+  try {
+    if (!f) return res.status(400).json({ success: false, error: 'file required' });
+    // eslint-disable-next-line global-require
+    const sharp = require('sharp');
+    const buf = await sharp(fs.readFileSync(f.path)).rotate().resize(2048, 2048, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+    fs.unlink(f.path, () => {});
+    const name = `${crypto.randomUUID()}.png`;
+    fs.mkdirSync(path.join(process.cwd(), 'tmp', 'images'), { recursive: true });
+    fs.writeFileSync(path.join(process.cwd(), 'tmp', 'images', name), buf);
+    await mediaStore.put(name, buf);
+    res.json({ success: true, data: { url: `/images/${name}` } });
+  } catch (err) { if (f) fs.unlink(f.path, () => {}); lensErr(res, err, next); }
+};
+// 내 결과물 → 렌즈 초안(저장 전) — 그 결과의 프롬프트·엔진 + 결과 이미지를 스타일 참고로
+const getLensDraftHandler = async (req, res, next) => {
+  try {
+    const idx = parseInt(req.params.idx, 10);
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    const r = await query(
+      `SELECT gr.idx, gr.file_path, gr.model, gr.metadata, p.prompt_text FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+        WHERE gr.idx = $1 AND gr.status = 'success' AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
+      [idx, req.user.id, teamId || null]
+    );
+    const row = r.rows[0];
+    if (!row) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 없는 항목입니다.' });
+    const url = `/images/${path.basename(row.file_path || '')}`;
+    const isVideo = /\.(mp4|webm|mov)$/i.test(url);
+    const tool = listTools({ type: isVideo ? 'video' : 'image', enabledOnly: true }).find((t) => t.costKey === row.model || t.model === row.model || t.id === row.model);
+    res.json({ success: true, data: { title: '', prompt: String(row.prompt_text || '').slice(0, 3000), kind: isVideo ? 'video' : 'image', engine: tool ? tool.id : (isVideo ? 'seedance-2.5' : 'nano-banana-pro'), refs: isVideo ? [] : [url], coverUrl: isVideo ? null : url, fromResultIdx: idx } });
+  } catch (err) { lensErr(res, err, next); }
+};
+// 렌즈 실행 — multipart: product·person(파일) 또는 productSrc·personSrc(/images/..), note, count, privateMode
+async function postLensRunHandler(req, res, next) {
+  const tmpFiles = [];
+  const files = req.files || {};
+  const uploaded = Object.values(files).flat();
+  try {
+    // eslint-disable-next-line global-require
+    const L = require('../lens/lens.service');
+    // eslint-disable-next-line global-require
+    const ve = require('../videos/videoEditor.service');
+    const row = await L.getRow(req.params.slug);
+    if (!L.canView(row, req.user.id)) return res.status(404).json({ success: false, error: 'Lens not found' });
+    const c = row.config || {};
+    const b = req.body || {};
+    const mine = row.owner_id === req.user.id || (row.is_official && isAdminUser(req.user));
+    const copy = (src) => { const out = path.join(process.cwd(), 'tmp', 'uploads', `${crypto.randomUUID()}${path.extname(src) || '.png'}`); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.copyFileSync(src, out); tmpFiles.push(out); return out; };
+    // 입력 슬롯
+    const slots = [];
+    for (const inp of c.inputs || []) {
+      let p = (files[inp.key] || [])[0] ? files[inp.key][0].path : null;
+      if (!p && b[`${inp.key}Src`]) p = await ve.localFile(b[`${inp.key}Src`]);
+      if (!p) { if (inp.required) return res.status(400).json({ success: false, error: `Add ${inp.label}` }); continue; }
+      slots.push({ key: inp.key, path: p });
+    }
+    const note = String(b.note || '').trim();
+    const templateName = `Lens · ${row.title}`.slice(0, 120);
+
+    if (c.kind === 'video') {
+      const tool = L.videoEngine(c);
+      if (!tool) return res.status(400).json({ success: false, error: 'No video engine is configured on this server' });
+      if (!slots.length) return res.status(400).json({ success: false, error: 'Add a product photo' });
+      const visibility = (wantsPrivate(b) && await canUsePrivate(req.user)) ? 'private' : 'public';
+      const range = (tool.controls && tool.controls.durationRange) || null;
+      let duration = c.duration || 5;
+      if (range) duration = Math.max(range.min, Math.min(range.max, duration));
+      else if (tool.controls && Array.isArray(tool.controls.duration)) duration = tool.controls.duration.reduce((p2, x) => (Math.abs(x - duration) < Math.abs(p2 - duration) ? x : p2), tool.controls.duration[0]);
+      const result = await videoJobService.submit({
+        user: req.user, prompt: `${c.prompt}${note ? ` ${note}` : ''}`, duration: String(duration), mode: 'pro', aspectRatio: c.aspect, audio: false,
+        engine: tool.provider, tool, extras: {}, visibility, templateId: row.id, templateSource: 'lens', templateName,
+        sourceImagePath: copy(slots[0].path), endFramePath: null, referenceImagePaths: [], sourceVideoPath: null, motionVideoPath: null, isTemplate: !mine,
+      });
+      tmpFiles.length = 0; // 파이프라인이 가져갔다
+      await L.bumpUse(row, null, req.user.id, isAdminUser(req.user));
+      return res.json({ success: true, data: { kind: 'video', jobId: result.jobId, engine: { id: tool.id, label: tool.label } } });
+    }
+
+    const tool = L.imageEngine(c);
+    if (!tool) return res.status(400).json({ success: false, error: 'No image engine is configured on this server' });
+    const refPaths = [];
+    for (const u of c.refs || []) { const p = await ve.localFile(u); if (p) refPaths.push(p); }
+    // 템플릿(레시피) 기반 렌즈 — 실행 때 레시피를 풀어 컷·네거티브를 얻는다(정본 = recipes)
+    let recipeNeg = '';
+    if (c.recipeId) {
+      const rs = await L.recipeShots(c.recipeId, req.user.id);
+      c.shots = rs.shots; recipeNeg = rs.negative;
+    }
+    const shots = (c.shots && c.shots.length) ? c.shots : [null];
+    const count = shots[0] ? 1 : Math.max(1, Math.min(c.count || 1, parseInt(b.count, 10) || c.count || 1));
+    const results = [];
+    let credits = null, firstErr = null;
+    for (const shot of shots) {
+      const req2 = {
+        user: req.user,
+        body: {
+          prompt: L.buildImagePrompt(c, { slots: slots.map((s) => s.key), refCount: refPaths.length, shot, note }),
+          model: tool.costKey || 'pro', tool: tool.id, count: String(count), aspectRatio: c.aspect, imageSize: c.imageSize || '',
+          negativePrompt: c.negative || recipeNeg || '', extras: JSON.stringify(c.extras || {}), enhance: 'false', style: 'none',
+          billingMode: mine ? 'custom' : 'template', templateName, templateSource: 'lens', templateId: row.id, privateMode: b.privateMode,
+        },
+        files: [...slots.map((s) => s.path), ...refPaths].map((p) => ({ path: copy(p), originalname: path.basename(p) })),
+        query: {},
+      };
+      const out = await asOps(postRootHandler)(req2);
+      if (out.status !== 200 || !out.body || !out.body.success) {
+        if (!results.length) return res.status(out.status || 502).json(out.body || { success: false, error: 'Lens failed' });
+        firstErr = (out.body && out.body.error) || 'failed'; break;
+      }
+      credits = out.body.credits || credits;
+      (out.body.results || []).filter((x) => x.success !== false && x.url).forEach((x) => results.push({ url: x.url, idx: x.resultIdx, shot: shot ? shot.name : null }));
+    }
+    await L.bumpUse(row, results[0] && results[0].url, req.user.id, isAdminUser(req.user));
+    res.json({ success: true, data: { kind: 'image', results, credits, engine: { id: tool.id, label: tool.label }, partialError: firstErr } });
+  } catch (err) { lensErr(res, err, next); } finally {
+    tmpFiles.forEach((f) => fs.unlink(f, () => {}));
+    uploaded.forEach((f) => f && f.path && fs.unlink(f.path, () => {}));
+  }
+}
+
+// ─── 긴 작업 비동기화 (2026-10-16) — ?async=1 이면 jobId 를 바로 주고 처리는 계속(src/lib/asyncJobs.js). Cloudflare 100초 제한 회피 ───
+function asyncable(handler, kind) {
+  return (req, res, next) => {
+    if (!(req.query && req.query.async === '1')) return handler(req, res, next);
+    // eslint-disable-next-line global-require
+    const asyncJobs = require('../lib/asyncJobs');
+    const jobId = asyncJobs.start(req.user.id, kind, () => asOps(handler)(req));
+    return res.status(202).json({ success: true, data: { jobId } });
+  };
+}
+const getAsyncJobHandler = (req, res) => {
+  // eslint-disable-next-line global-require
+  const job = require('../lib/asyncJobs').get(req.user.id, req.params.id);
+  if (!job) return res.status(404).json({ success: false, error: 'Job not found — the server may have restarted. Check your Library.' });
+  return res.json({ success: true, data: job });
+};
+
+/** 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입(values·toggle·number·text)으로 통과시킨다. 이미지·영상 공용. */
+function pickExtras(tool, raw) {
+  const defs = tool && tool.controls && Array.isArray(tool.controls.extras) ? tool.controls.extras : [];
+  if (!defs.length || !raw) return null;
+  let obj = raw;
+  if (typeof raw === 'string') { try { obj = JSON.parse(raw); } catch { return null; } }
+  if (!obj || typeof obj !== 'object') return null;
+  const out = {};
+  for (const d of defs) {
+    if (!(d.key in obj)) continue;
+    const v = obj[d.key];
+    if (v === '' || v == null) continue; // 빈값 = 엔진 기본값
+    if (d.type === 'toggle') out[d.key] = v === true || v === 'true';
+    else if (d.type === 'number') { const n = Number(v); if (Number.isFinite(n)) out[d.key] = Math.min(d.max ?? n, Math.max(d.min ?? n, n)); }
+    else if (d.type === 'text') out[d.key] = String(v).slice(0, d.max || 500);
+    else if (Array.isArray(d.values) && d.values.includes(String(v))) out[d.key] = String(v);
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 const patchResultsVisibilityHandler = async (req, res, next) => {
   try {
     const idx = parseInt(req.params.idx, 10);
@@ -1098,12 +1740,28 @@ const postVideoAsyncHandler = async (req, res, next) => {
     const visibility = (wantsPrivate(req.body) && await canUsePrivate(req.user)) ? 'private' : 'public';
     const sourceFile = req.files?.sourceImage?.[0];
     const endFrameFile = req.files?.endFrame?.[0];
+    const refFiles = req.files?.referenceImages || []; // (2026-10-13) reference-to-video 엔진용(최대 10)
+    const sourceVideoFile = req.files?.sourceVideo?.[0]; // (2026-10-14) 편집·연장 대상 영상
+    const motionVideoFile = req.files?.motionVideo?.[0]; // (2026-10-14) 모션 참조 영상(Kling Motion Control · Genjutsu)
+    // (2026-10-13) 베이스 1차 — 영상 엔진 선택(tool). 미지정=kling(기존 경로 그대로). 모르는 툴·이미지 툴·키 없는 툴은 400.
+    const videoTool = req.body.tool ? getTool(req.body.tool) : null;
+    if (req.body.tool && (!videoTool || videoTool.type !== 'video' || !videoTool.enabled)) {
+      return res.status(400).json({ success: false, error: 'Unknown video tool' });
+    }
+    if (videoTool && !isToolAvailable(videoTool)) {
+      return res.status(400).json({ success: false, error: `${videoTool.label} is not configured on this server` });
+    }
     const result = await videoJobService.submit({
       user: req.user, prompt, duration, mode, aspectRatio, audio,
+      engine: videoTool ? videoTool.provider : 'kling', resolution: req.body.resolution, tool: videoTool,
+      extras: pickExtras(videoTool, req.body.extras), // 엔진 고유 옵션 — registry controls.extras 에 적힌 키만 통과
       visibility, templateId: req.body.templateId || null,
       templateSource: req.body.templateSource || null, templateName: req.body.templateName || null,
       sourceImagePath: sourceFile ? sourceFile.path : null,
       endFramePath: endFrameFile ? endFrameFile.path : null,
+      referenceImagePaths: refFiles.map((f) => f.path),
+      sourceVideoPath: sourceVideoFile ? sourceVideoFile.path : null,
+      motionVideoPath: motionVideoFile ? motionVideoFile.path : null,
       isTemplate: req.body.billingMode !== 'custom', // 'custom'=커스텀 릴(2~3배), 그 외=템플릿(4~6배)
     });
     res.json({ success: true, ...result });
@@ -1303,6 +1961,9 @@ const postUgcRenderHandler = async (req, res, next) => {
         speed: Number.isFinite(spd) ? spd : undefined,
       },
       visibility, isTemplate: false, quality: safeQuality, motionEngine: safeEngine,
+      // (10-16) /ad-video 는 완성 즉시 서버가 Library 저장(사용자가 페이지를 떠나도 유실 없음). studio.html 은 안 보내므로 기존 draft 흐름 그대로.
+      autoCommit: req.body && (req.body.autoCommit === 'true' || req.body.autoCommit === true),
+      page: resultOrigin.pageOf(req), // (10-16) 결과물 출처 — /ad-video · /studio
     });
     res.json({ success: true, jobId: result.jobId, cost: result.cost });
   } catch (err) {
@@ -1931,10 +2592,26 @@ function readError(statusCode, message) {
 const reads = {
   /** 사용 가능한 이미지·영상 도구(공개 필드만) */
   tools() {
-    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [] });
+    // (2026-10-13) 키 없는 툴은 목록에서 뺀다(availableOnly) + 단가(pricing)를 같이 내보낸다 — 새 Image·Video 페이지가 ◈를 그린다.
+    // eslint-disable-next-line global-require
+    const credit = require('../credits/credit.service');
+    const pricing = (t) => (t.type === 'video'
+      ? { perDuration: Object.fromEntries(((t.controls && t.controls.duration) || [5]).map((d) => [String(d), credit.videoCost(d, 'pro', false)])) }
+      : { perImage: credit.imageCost(t.costKey || 'pro', 1, false) }); // image·upscale = 장당
+    const pub = (t) => ({ id: t.id, label: t.label, type: t.type, provider: t.provider, model: t.costKey || t.id, controls: t.controls || {}, imageSlots: t.imageSlots || [], pricing: pricing(t),
+      // (2026-10-13) 영상: 레퍼런스 줄(refModel 있으면 노출, refInput.max 장수) · 시작 프레임 없이도 가능(t2vModel). 엔드포인트 경로 자체는 프론트가 안 쓴다 — 불리언/장수만.
+      ...(t.type === 'video' ? { refModel: !!t.refModel, refInput: t.refInput ? { max: t.refInput.max || 10 } : null, t2vModel: !!t.t2vModel, noPrompt: !!t.noPrompt } : {}) });
     return {
-      image: listTools({ type: 'image', enabledOnly: true }).map(pub),
-      video: listTools({ type: 'video', enabledOnly: true }).map(pub),
+      image: listTools({ type: 'image', enabledOnly: true, availableOnly: true }).map(pub),
+      video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).filter((t) => !t.editorOnly).map(pub), // editorOnly = Video Editor·Product swap 전용 엔진은 Create Video·모델 목록에서 뺀다
+      upscale: listTools({ type: 'upscale', enabledOnly: true, availableOnly: true }).map(pub), // 비어 있으면 Upscale 기능 = soon
+      removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
+      editor: require('../images/imageEdit.engine').catalog(credit.imageCost),
+      faceswap: require('../images/faceSwap.engine').engines().map(pub), // (10-16) Face swap 엔진 — 비어 있으면(PAUSED 포함) 메뉴 soon
+      faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크)
+      productswap: videoEditEngines('productswap').map(pub),
+      reframe: videoEditEngines('reframe').map(pub), // (10-16) Video Reframe 엔진 — 비어 있으면 메뉴 soon // (10-16) Video Product swap 엔진 — 비어 있으면 메뉴 soon
+      videoEditor: videoEditCatalog(), // (10-16) Video Editor AI 도구별 엔진 — 비어 있어도 편집기 자체는 동작(로컬 편집·내보내기) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };
   },
 
@@ -1995,6 +2672,7 @@ const reads = {
 
   /** 영상 작업 단건 */
   async videoJob(userId, id) {
+    if (env.DISABLE_VIDEO_POLLER) await videoJobService.pollJobNow(id).catch(() => {}); // (10-16) 폴러 꺼진 dev — 조회 때 즉석 폴링
     const job = await videoJobService.getJob(id, userId);
     if (!job) throw readError(404, 'Job not found');
     // (2026-07-30) resultIdx 노출 — 없으면 클라 릴 카드가 idx:null 로 채워져 다른 결과물과 달리
@@ -2093,6 +2771,23 @@ const ops = {
   getResults: asOps(getResultsHandler),
   getCommunity: asOps(getCommunityHandler),
   patchResultsVisibility: asOps(patchResultsVisibilityHandler),
+  postEdit: asOps(asyncable(postEditHandler, 'edit')),
+  postFaceSwap: asOps(asyncable(postFaceSwapHandler, 'faceswap')),
+  getAsyncJob: asOps(getAsyncJobHandler),
+  postVideoEditUpload: asOps(postVideoEditUploadHandler),
+  postVideoEditRender: asOps(asyncable(postVideoEditRenderHandler, 'video-render')),
+  postVideoEditAi: asOps(postVideoEditAiHandler),
+  postVideoEditCaptions: asOps(asyncable(postVideoEditCaptionsHandler, 'captions')),
+  postVideoEditScenes: asOps(postVideoEditScenesHandler),
+  getLensList: asOps(getLensListHandler),
+  getLens: asOps(getLensHandler),
+  postLens: asOps(postLensHandler),
+  patchLens: asOps(patchLensHandler),
+  deleteLens: asOps(deleteLensHandler),
+  postLensUpload: asOps(postLensUploadHandler),
+  getLensDraft: asOps(getLensDraftHandler),
+  lensFolders: asOps(lensFoldersHandler),
+  postLensRun: asOps(asyncable(postLensRunHandler, 'lens')),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2133,6 +2828,26 @@ router.post('/', upload.array('referenceImages', 14), postRootHandler);
 router.post('/caption', postCaptionHandler);
 router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
+router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }, { name: 'guide', maxCount: 1 }]), asyncable(postEditHandler, 'edit'));
+router.get('/jobs/:id', getAsyncJobHandler);
+router.post('/video-edit/upload', uploadVideo.single('file'), postVideoEditUploadHandler);
+router.post('/video-edit/render', asyncable(postVideoEditRenderHandler, 'video-render'));
+router.post('/video-edit/ai', postVideoEditAiHandler);
+router.post('/video-edit/captions', asyncable(postVideoEditCaptionsHandler, 'captions'));
+router.post('/video-edit/scenes', postVideoEditScenesHandler);
+router.get('/lens', getLensListHandler);
+router.post('/lens', postLensHandler);
+router.post('/lens-upload', upload.single('file'), postLensUploadHandler);
+router.get('/lens-draft/:idx', getLensDraftHandler);
+router.get('/lens-folders', lensFoldersHandler);
+router.post('/lens-folders', lensFoldersHandler);
+router.patch('/lens-folders', lensFoldersHandler);
+router.delete('/lens-folders', lensFoldersHandler);
+router.get('/lens/:slug', getLensHandler);
+router.patch('/lens/:slug', patchLensHandler);
+router.delete('/lens/:slug', deleteLensHandler);
+router.post('/lens/:slug/run', upload.fields([{ name: 'product', maxCount: 1 }, { name: 'person', maxCount: 1 }]), asyncable(postLensRunHandler, 'lens'));
+router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), asyncable(postFaceSwapHandler, 'faceswap'));
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);
 router.get('/prompts/:idx', getPrompts2Handler);
@@ -2149,7 +2864,7 @@ router.get('/creator-overview', getCreatorOverviewHandler);
 router.get('/reviews', getReviewsHandler);
 router.patch('/reviews/:idx', patchReviewsHandler);
 router.delete('/reviews/:idx', deleteReviewsHandler);
-router.post('/video/async', upload.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }]), postVideoAsyncHandler);
+router.post('/video/async', uploadVideo.fields([{ name: 'sourceImage', maxCount: 1 }, { name: 'endFrame', maxCount: 1 }, { name: 'referenceImages', maxCount: 10 }, { name: 'sourceVideo', maxCount: 1 }, { name: 'motionVideo', maxCount: 1 }]), postVideoAsyncHandler);
 router.get('/video/jobs', getVideoJobsHandler);
 router.get('/video/jobs/:id', getVideoJobs2Handler);
 router.get('/faceswap/jobs/:id', getFaceswapJobsHandler);

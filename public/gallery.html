@@ -11,33 +11,32 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
-<script src="/js/i18n.js?v=27" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<script src="/js/topnav.js?v=31" defer></script>
 <style>
-  .wrap{max-width:none;margin:0;padding:34px 24px 80px;position:relative;z-index:2}/* (2026-07-03) Leonardo식 full-bleed — 중앙 max-width 제거. 롤백: max-width:1080px;margin:0 auto 복원 */
-  .head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:26px}
-  h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px}
-  .head .sub{color:var(--dim);font-size:14px;margin-top:4px}
-  .head .count{font-size:13px;color:var(--dim)}
-  .head .count b{color:var(--accent2)}
-
-  .filter-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px}
-  .chip{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:30px;cursor:pointer;transition:all .2s}
-  .chip:hover{color:var(--text)}
-  .chip.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+  /* (2026-10-13) 로컬 프로토 Library 와 동일: 폭 1320 중앙, 알약 탭, 촘촘한 masonry(간격 10px·모서리 12px). 롤백: git 8122562. */
+  .wrap{max-width:1320px;margin:0 auto;padding:18px 22px 60px;position:relative;z-index:2}
+  .head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  .head .count{font-size:12.5px;color:var(--faint)}
+  .head .count b{color:var(--dim)}
+  .tabs{display:inline-flex;border:1px solid var(--border2);border-radius:999px;padding:3px;background:var(--bg2)}
+  .tabs button{padding:6px 15px;border-radius:999px;font-size:13px;color:var(--dim);border:0;background:none;cursor:pointer;font-family:inherit;transition:color .15s}
+  .tabs button:hover{color:var(--text)}
+  .tabs button.on{background:var(--surface2);color:#fff}
 
   .grid{column-count:2;column-gap:16px}  /* 좁은 화면=2칸 고정(세로 1줄 방지) */
   @media(min-width:600px){.grid{column-count:auto;columns:6 185px}}  /* 다른 탭(템플릿/구매/저장) 폴백 */
   /* My creations = 행 우선 masonry: 윗줄=최신, 아래로 갈수록 오래된 것 + 자연 비율(JS가 grid-row span 계산) */
-  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:16px}
+  #grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;column-gap:10px}
   @media(min-width:560px){#grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(min-width:700px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media(min-width:1200px){#grid{grid-template-columns:repeat(5,minmax(0,1fr))}}/* (2026-07-03) Library=넓은 화면 한 줄 5개(Community는 4개 유지). 롤백: 이 줄 제거 */
   #grid .card{margin:0;align-self:start;break-inside:auto}
   #scrollSentinel{height:1px;width:100%}
   /* Explore와 동일한 카드 양식 (평소 깔끔 → 호버 시 상단 생성자+하트, 하단 액션) */
-  .card{break-inside:avoid;margin:0 0 16px;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
+  .card{break-inside:avoid;margin:0 0 10px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--surface);position:relative;cursor:pointer}
   .card .media{display:block;width:100%;height:auto;background:#0c0c14}
   .card .reelbadge{position:absolute;bottom:9px;left:9px;z-index:3;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;padding-left:2px;pointer-events:none;backdrop-filter:blur(2px)}
   .card:hover .reelbadge{opacity:0;transition:opacity .15s}
@@ -57,6 +56,7 @@
   .card .rc-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:3}
   .card:hover .rc-tools,.card:focus-within .rc-tools{opacity:1;transform:none}
   @media(hover:none){.card .rc-tools{opacity:1;transform:none}}
+  .card .rc-btn.rc-up{width:auto;padding:0 7px 0 5px;gap:3px;font-size:10.5px;font-weight:700}.card .rc-btn.rc-up b{font-weight:700} /* 업스케일 ×2·×4 — 아이콘 + 배율 */
   .card .rc-btn{width:30px;height:30px;border-radius:9px;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .15s,transform .1s}
   .card .rc-btn:hover{background:rgba(0,0,0,.8)}
   .card .rc-btn:active{transform:scale(.9)}
@@ -134,15 +134,10 @@
   .lp-x{margin-top:8px;flex-shrink:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
   .card:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
   .card:focus-within .ovt{opacity:1}
-  @media(max-width:760px){.filter-row .chip{padding:9px 16px}}
 </style>
 </head>
-<body class="has-rail">
-<!-- (2026-07-27) 홈 배경 통일(홈/컷/광고영상/콘텐츠팩/라이브러리): home-glow 이식 + theme.css 기본배경(mesh·grain) 숨김 → home과 동일(--bg+home-glow만). 롤백: 이 div+style 제거. -->
-<div class="home-glow"></div>
-<style>.home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}.home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}.home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}.home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}.mesh,.grain{display:none}/* mesh·grain=theme.css 기본배경(home엔 없음) 숨김. 롤백: 이 규칙 삭제 */</style>
-<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
-<div class="grain"></div>
+<body>
+<!-- (2026-10-13) 배경 = 순수 --bg (explore·image·video 와 통일). 옛 home-glow·mesh·grain 제거. 롤백: git 8122562 의 이 자리 복원. -->
 
 <nav>
   <div class="nav-in">
@@ -159,9 +154,9 @@
 </nav>
 
 <div class="wrap">
+  <!-- (2026-10-13) 제목·부제 제거, 필터를 알약 탭으로 — 로컬 프로토 Library 와 같은 모양(탭 + 그리드만). 개수는 탭 오른쪽에 작게. -->
   <div class="head fade d1">
-    <!-- (2026-07-20) 스토어 숨김에 맞춰 '· discover more in the Store.' 제거 — 갈 수 없는 곳을 가리키던 문구. 롤백: js/rail.js 주석 복원과 함께 되돌릴 것. -->
-    <div><h1>Your Library</h1><div class="sub">Your creations. Manage templates in Shots.</div></div>
+    <div class="tabs" id="filterRow"></div>
     <div class="count"><b id="cnt">0</b> creations</div>
   </div>
 
@@ -172,7 +167,6 @@
       <span><b>Turn photos into Reels</b> — Reels reach far more people than photos.</span>
       <span class="nudge-hint">Open any photo and hit <b>▶ Make a Reel</b>.</span>
     </div>
-    <div class="filter-row fade d1" id="filterRow"></div>
     <div class="grid fade d2" id="grid"></div>
     <div id="scrollSentinel"></div>
     <div class="empty hidden" id="empty">
@@ -252,8 +246,7 @@
   .view-actions .btn{white-space:nowrap}
 </style>
 
-<!-- LOCAL-ONLY (do not push): 옛 기록 템플릿 추정용 시그니처 맵 -->
-<script src="/js/recipe_sig.local.js"></script>
+<!-- (10-16) recipe_sig.local.js(로컬 전용 시그니처 맵) 로드 제거 — 서버엔 파일이 없어 매번 404·콘솔 에러. 없으면 inferTemplate 는 원래대로 빈 값 -->
 <script src="/js/themes.js?v=7"></script>
 <script>
 // ═══ 실제 데이터 연결: GET /api/generate/results ═══
@@ -284,7 +277,7 @@ function inferTemplate(promptText){
 }
 
 // 무한 스크롤: offset 페이지네이션으로 200개 제한 제거. 최신순(백엔드 created_at DESC) 유지.
-let OFFSET=0; const PAGE=120; let LOADING=false, DONE=false;
+let OFFSET=0; const PAGE=40; // (10-16) 120 → 40 — 첫 화면에 필요한 만큼만(무한스크롤로 이어 받음) let LOADING=false, DONE=false;
 function mapRow(r){
   const fn=r.file_path.split('/').pop();
   return {
@@ -297,6 +290,7 @@ function mapRow(r){
     name:r.character_name||'',
     date:(r.created_at||'').slice(0,10),
     model:r.model||'',
+    w:r.width||0, h:r.height||0, // 카드 자리 비율을 미리 잡아 lazy 로딩이 화면 밖까지 한꺼번에 받지 않게
     visibility:r.visibility==='public'?'public':'private',
     takenDown:!!r.taken_down,
     prompt:r.prompt_text||'',                 // 사후 템플릿화용
@@ -371,7 +365,7 @@ function maybeOpenSave(){
   else { toast('Creation not found.'); }
 }
 function renderFilters(){
-  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<button type="button" class="chip ${filter===f?'active':''}" aria-pressed="${filter===f}" onclick="setFilter('${f}')">${f}</button>`).join('');
+  document.getElementById('filterRow').innerHTML=FILTERS.map(f=>`<button type="button" class="${filter===f?'on':''}" aria-pressed="${filter===f}" onclick="setFilter('${f}')">${f}</button>`).join('');
 }
 function match(it){
   if(filter==='Photos')return it.type==='photo';
@@ -383,20 +377,31 @@ const RC_SVG={
   dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>',
   priv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>'
 };
+// (2026-10-16) 사진 카드의 업스케일·배경 제거는 개발자의 Editor(/image-edit?tool=…) 로 넘긴다(직결 POST 는 걷어냄). 서버에 editor 엔진이 없으면 버튼이 안 뜬다.
+let EDITOR=false,VUPSCALE=false;
+fetch('/api/generate/tools').then(r=>r.json()).then(d=>{EDITOR=((d.data&&d.data.editor)||[]).length>0;VUPSCALE=((d.data&&d.data.video)||[]).some(t=>t.id==='topaz-video');if(EDITOR||VUPSCALE)try{render()}catch(e){}}).catch(()=>{}); // 첫 render 가 먼저 끝났으면 버튼을 달기 위해 한 번 더
+// /images/<uuid>.<ext> → /images/t/<w>/<uuid>.<ext> (서버가 줄인 사본을 만들어 캐시). 다른 형태 URL 은 그대로.
+function thumbUrl(u,w){const m=/^\/images\/([\w.-]+\.(png|jpe?g|webp|mp4|webm|mov))$/i.exec(u||'');return m?'/images/t/'+w+'/'+m[1]:u;}
 function cardHtml(it){
   // 릴스: preload=metadata(첫 프레임만)+hover 재생. 로드 실패 시 카드 제거(빈 카드 방지).
-  const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
+  // (10-16) 카드는 썸네일(/images/t/…: 사진 WebP ~50KB · 영상 첫 프레임 JPEG)만 — 원본(6~8MB PNG)은 상세에서. 영상은 hover 때 처음 로드.
+  const onerr=`onerror="var c=this.closest('.card');if(this.dataset.full&&this.src.indexOf('/images/t/')>=0){this.src=this.dataset.full;this.removeAttribute('srcset');}else if(c)c.remove()"`;
+  const ar=it.w&&it.h?` style="aspect-ratio:${it.w}/${it.h}"`:'';
   const media=it.type==='reel'
-    ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
-    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
+    ? `<video class="media" data-reel muted loop playsinline preload="none" poster="${esc(thumbUrl(it.url,480))}" data-src="${esc(String(it.url).replace(/^\/images\/(?=[\w.-]+\.(mp4|webm|mov)$)/i,'/images/v/'))}"${ar}></video>`
+    : `<img class="media" src="${esc(thumbUrl(it.url,480))}" srcset="${esc(thumbUrl(it.url,480))} 1x, ${esc(thumbUrl(it.url,960))} 2x" data-full="${esc(it.url)}" loading="lazy" decoding="async" alt=""${ar} ${onerr}>`;
   const vp=(it.visibility==='private');
   const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
   const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
   const editBtn=(it.type==='reel'&&GAL_EDITABLE.has(it.idx))?`<a class="rc-btn" href="/studio?mode=ugc&editVideo=${it.idx}" title="Edit video in Ad Video" onclick="event.stopPropagation()">${RC_SVG.edit}</a>`:'';
+  const bgBtn=(it.type==='photo'&&EDITOR)?`<a class="rc-btn rc-up" href="/image-edit?tool=removebg&idx=${it.idx}&u=${encodeURIComponent(it.url)}" title="Remove background in Editor" onclick="event.stopPropagation()"><b>✂</b></a>`:'';
+  const vupBtn=(it.type==='reel'&&VUPSCALE)?`<a class="rc-btn rc-up" href="/video?tool=topaz-video&video=${encodeURIComponent(it.url)}" title="Upscale video (Topaz)" onclick="event.stopPropagation()">${RC_SVG.up}<b>HD</b></a>`:'';
+  const upBtn=(it.type==='photo'&&EDITOR)?`<a class="rc-btn rc-up" href="/image-edit?tool=upscale&idx=${it.idx}&u=${encodeURIComponent(it.url)}" title="Upscale in Editor (Topaz ×2 · ×4)" onclick="event.stopPropagation()">${RC_SVG.up}</a>`:'';
   return `<div class="card" role="link" tabindex="0" aria-label="Open creation${it.name?' — '+esc(it.name):''}" onclick="location.href='/creation?idx=${it.idx}&from=library'" onkeydown="cardKey(event,${it.idx})">
-      <div class="rc-tools">${editBtn}${visBtn}${dlBtn}</div>
+      <div class="rc-tools">${upBtn}${bgBtn}${vupBtn}${editBtn}${visBtn}${dlBtn}</div>
       ${it.type==='reel'?'<span class="reelbadge">▶</span>':''}
       ${media}
     </div>`;
@@ -438,12 +443,15 @@ async function gotoMyTemplates(tid){
   setTimeout(()=>{ if(MYT.highlightId===target){ MYT.highlightId=null; renderMyTemplates(); } }, 2400);
 }
 // 행 우선 masonry(#grid 전용): 각 카드 자연 높이로 grid-row span 계산 → 윗줄=최신, 자연 비율·세로 gap 유지.
-function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+16); }
+function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4) card.style.gridRowEnd='span '+Math.round(h+10); } // +10 = .card margin-bottom(10px) — CSS 간격을 바꾸면 여기도 같이
 function layoutGridMasonry(){
   const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
   g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
-    if(m&&!m.__gmHooked){ m.__gmHooked=1; try{m.loading='eager';}catch(e){} const ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
-      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeGridCard(c); else m.addEventListener(ev,()=>sizeGridCard(c),{once:true}); }
+    // (10-16) eager 강제 제거 — 화면 밖 카드까지 원본을 전부 받던 원인. 비율(aspect-ratio)을 미리 잡아 lazy 그대로 둔다.
+    //   영상은 preload=none 이라 메타데이터 이벤트가 없다 → 포스터 이미지 크기로 비율을 잡는다.
+    if(m&&!m.__gmHooked){ m.__gmHooked=1;
+      if(m.tagName==='VIDEO'){ if(!m.style.aspectRatio&&m.poster){const pi=new Image();pi.onload=()=>{m.style.aspectRatio=pi.naturalWidth+'/'+pi.naturalHeight;sizeGridCard(c);};pi.src=m.poster;} }
+      else if(!m.complete) m.addEventListener('load',()=>sizeGridCard(c),{once:true}); }
     sizeGridCard(c); });
 }
 addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTimeout(layoutGridMasonry,150); });
@@ -452,6 +460,7 @@ addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTime
 let CURRENT_VID=null;
 function playOne(v){
   if(CURRENT_VID===v)return;
+  if(!v.getAttribute('src')&&v.dataset.src){ v.src=v.dataset.src; v.preload='auto'; } // 처음 hover 때 영상 로드
   if(CURRENT_VID){ try{CURRENT_VID.pause();}catch(e){} }
   v.muted=true; const p=v.play(); if(p&&p.catch)p.catch(()=>{}); CURRENT_VID=v;
 }
@@ -928,6 +937,6 @@ async function delTpl(id){
 loadReelCost();renderFilters();load();
 // (2026-07-03 A안) Library=크리에이션 전용 → 초기 템플릿 로드 제거. 롤백: `tplLoaded=true; loadMyTemplates();` 복원
 </script>
-<script src="/js/biz-footer.js?v=5"></script>
+<script src="/js/biz-footer.js?v=6"></script>
 </body>
 </html>

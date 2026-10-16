@@ -74,7 +74,7 @@ async function processJob(job) {
     filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(swapped.length / 1024),
     model: job.model_id, visibility: job.visibility,
     templateId: job.template_id, templateSource: job.template_source, templateName: job.template_name,
-    metadata: { faceswap: true, source_face: job.source_face_path, ...gm },
+    metadata: { faceswap: true, source_face: job.source_face_path, origin: { op: 'on-model-faceswap' }, ...gm }, // (10-16) 출처: 기능은 resultOrigin 이 템플릿/모델로 추정
   });
   await reviewRepo.insert({ resultIdx: savedResult.idx, promptIdx: job.prompt_idx, memo: 'faceswap on-model — needs human review' });
   await faceswapRepo.markSucceeded(job.id, { resultIdx: savedResult.idx, resultUrl: `/images/${filename}` });

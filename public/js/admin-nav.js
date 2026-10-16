@@ -22,6 +22,7 @@
     { href: '/admin-users',         label: '👥 사용자' },
     { href: '/admin-creations',     label: '🖼 크리에이션' },
     { href: '/admin-stats',         label: '📊 통계' },
+    { href: '/admin-usage',         label: '🧭 기능·엔진 사용량' },
     { href: '/admin-payments',      label: '💳 결제' },
     { href: '/admin-refunds',       label: '↩︎ 환불' },
     { href: '/admin-trials',        label: '🎟 체험 계정' },

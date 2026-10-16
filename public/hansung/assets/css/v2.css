@@ -1,0 +1,167 @@
+/* 메인 V2 — 색 토큰은 style.css 그대로. body.v2 에서만 적용된다 */
+/* 어두운 헤더 (KRONE) */
+.v2 .hd { background: color-mix(in srgb, var(--ink-2) 94%, transparent); color: var(--white); }
+.v2 .hd.is-scrolled { border-bottom-color: rgba(255,255,255,.08); }
+.v2 .hd-as small { color: var(--steel-2); }
+.v2 .lang-btn { background: transparent; border-color: rgba(255,255,255,.25); color: var(--white); }
+.v2 .mm, .v2 .lang-menu { color: var(--ink); }
+.v2 .hd-burger { color: var(--white); }
+
+.v2-label { font: 500 .74rem/1.6 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--steel); }
+.v2-tag { font: 500 .74rem/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; }
+.v2-ed-grid { display: grid; grid-template-columns: minmax(180px, 1fr) 3fr; gap: 20px clamp(24px, 4vw, 64px); }
+.v2-head { margin-bottom: clamp(28px, 4vw, 48px); align-items: end; }
+.v2-h2 { font-size: clamp(2rem, 4.6vw, 3.6rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.05; }
+html[lang="en"] :is(.v2-h2, .v2-h) { font-family: var(--f-display); font-stretch: 82%; letter-spacing: -.01em; }
+@media (max-width: 860px) { .v2-ed-grid { grid-template-columns: 1fr; } }
+
+/* 1. 사진 슬라이드 첫 화면 (Versus-Omega) */
+.v2-hero { position: relative; height: calc(100svh - var(--hd-h)); min-height: 560px; max-height: 920px; overflow: hidden; background: var(--ink-2); color: var(--white); }
+.v2-slides { position: absolute; inset: 0; }
+.v2-slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity 1s ease, visibility 1s; }
+.v2-slide.is-on { opacity: 1; visibility: visible; }
+.v2-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.06); transition: transform 7s linear; }
+.v2-slide.is-on img { transform: scale(1); }
+.v2-slide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(14,17,19,.86) 0%, rgba(14,17,19,.55) 45%, rgba(14,17,19,.05) 80%), linear-gradient(0deg, rgba(14,17,19,.7), transparent 40%); }
+.v2-slide-in { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding-bottom: 80px; }
+.v2-slide-in .v2-tag { color: var(--signal); }
+.v2-h { font-size: clamp(2.6rem, 7vw, 6rem); font-weight: 800; line-height: 1; letter-spacing: -.04em; max-width: 12em; }
+.v2-sub { max-width: 34em; font-size: clamp(1rem, 1.5vw, 1.2rem); color: rgba(255,255,255,.82); }
+.v2-sub b { color: var(--white); font-family: var(--f-display); font-stretch: 80%; font-size: 1.25em; }
+.v2-btns { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 10px; }
+.v2-btn-ghost { border-color: rgba(255,255,255,.55); color: var(--white); }
+.v2-btn-ghost:hover { background: var(--white); color: var(--ink); }
+.v2-ctrl { position: absolute; left: 0; right: 0; bottom: 28px; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.v2-dots { display: flex; gap: 18px; }
+.v2-dots button { display: flex; flex-direction: column; gap: 8px; color: rgba(255,255,255,.55); font-size: .78rem; }
+.v2-dots i { display: block; width: 64px; height: 2px; background: rgba(255,255,255,.25); position: relative; overflow: hidden; }
+.v2-dots i::after { content: ""; position: absolute; inset: 0; background: var(--signal); transform: scaleX(0); transform-origin: left; }
+.v2-dots [aria-selected="true"] { color: var(--white); }
+.v2-dots [aria-selected="true"] i::after { animation: v2bar var(--dur, 6s) linear forwards; }
+.v2-hero.is-paused .v2-dots [aria-selected="true"] i::after { animation-play-state: paused; }
+@keyframes v2bar { to { transform: scaleX(1); } }
+.v2-arrows { display: flex; gap: 8px; align-items: center; }
+.v2-arrows button { width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid rgba(255,255,255,.4); color: var(--white); transition: background .2s, color .2s; }
+.v2-arrows button:hover { background: var(--white); color: var(--ink); }
+.v2-arrows [data-prev] .i { transform: rotate(180deg); }
+@media (max-width: 760px) { .v2-dots i { width: 32px; } .v2-arrows button { width: 42px; height: 42px; } .v2-slide::after { background: linear-gradient(0deg, rgba(14,17,19,.92) 10%, rgba(14,17,19,.35) 70%); } .v2-slide-in { justify-content: flex-end; padding-bottom: 110px; } }
+
+/* 2. 편집형 소개 (Wingliner) */
+.v2-ed { padding-block: clamp(72px, 10vw, 140px); border-bottom: 1px solid var(--line); }
+.v2-big { font-size: clamp(1.4rem, 2.8vw, 2.35rem); line-height: 1.32; letter-spacing: -.02em; color: var(--steel-2); margin-bottom: 32px; }
+.v2-big b { color: var(--ink); font-weight: 700; }
+
+/* 3. 모델 카드 (KRONE) */
+.v2-models { padding-block: clamp(72px, 9vw, 120px); background: linear-gradient(180deg, var(--ink-2), #1B2126); color: var(--white); }
+.v2-models .v2-label { color: var(--steel-2); }
+.v2-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.v2-card { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 18px; background: linear-gradient(160deg, #262D33, #171B1F); border: 1px solid rgba(255,255,255,.07); transition: border-color .3s, translate .35s var(--ease-out); }
+.v2-card:hover { border-color: rgba(255,255,255,.3); translate: 0 -4px; }
+.v2-card.is-def { background: linear-gradient(160deg, #3A402A, #20241A); }
+.v2-chip { align-self: flex-start; font: 500 .68rem/1 var(--f-mono); letter-spacing: .08em; padding: 5px 8px; background: rgba(255,255,255,.1); }
+.v2-card-img { display: block; aspect-ratio: 3 / 2; overflow: hidden; }
+.v2-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease-out); }
+.v2-card:hover .v2-card-img img { transform: scale(1.05); }
+.v2-card h3 { font-family: var(--f-display); font-weight: 800; font-stretch: 82%; font-size: 1.35rem; text-transform: uppercase; letter-spacing: 0; line-height: 1.15; }
+html:not([lang="en"]) .v2-card h3 { font-family: var(--f-body); text-transform: none; letter-spacing: -.02em; }
+.v2-card-btns { display: flex; gap: 8px; margin-top: auto; }
+.v2-btn-w { background: var(--white); color: var(--ink); }
+.v2-btn-w:hover { background: var(--signal); color: var(--white); }
+.v2-btn-o { border-color: rgba(255,255,255,.45); color: var(--white); }
+.v2-btn-o:hover { background: var(--white); color: var(--ink); }
+
+/* 4. 빨간 제품군 타일 (Versus-Omega) */
+.v2-cats { padding-block: clamp(72px, 9vw, 120px); background: var(--tint); }
+.v2-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.v2-tile { position: relative; min-height: 220px; padding: 22px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; color: var(--white); background: linear-gradient(180deg, #D21E24, #8E1015); overflow: hidden; }
+.v2-tile-ic { position: absolute; top: 20px; left: 22px; width: 92px; height: 92px; background: linear-gradient(180deg, #fff, #C9CED1); display: grid; place-items: center; transition: transform .4s var(--ease-out); }
+.v2-tile-ic svg { width: 64px; height: 64px; fill: none; stroke: var(--signal); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.v2-tile-n { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 800; letter-spacing: -.02em; padding-right: 36px; }
+.v2-tile > .i { position: absolute; right: 22px; bottom: 26px; width: 1.4em; height: 1.4em; transition: transform .3s; }
+.v2-tile:hover .v2-tile-ic { transform: translateY(-4px) rotate(-3deg); }
+.v2-tile:hover > .i { transform: translateX(4px); }
+@media (max-width: 860px) { .v2-tiles { grid-template-columns: 1fr 1fr; } .v2-tile { min-height: 170px; } .v2-tile-ic { width: 70px; height: 70px; } .v2-tile-ic svg { width: 48px; height: 48px; } }
+
+/* 5. 큰 숫자 + 지도 (Wingliner) */
+.v2-num { padding-block: clamp(72px, 9vw, 120px); }
+.v2-num-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: clamp(28px, 5vw, 72px); align-items: center; margin-bottom: 40px; }
+.v2-map { margin: 0; } .v2-map svg { width: 100%; max-height: 560px; display: block; }
+.v2m-dot { fill: var(--signal); } .v2m-hq { fill: var(--ink); }
+.v2m-t { font-family: var(--f-body); font-weight: 800; font-size: 30px; fill: var(--ink); }
+.v2-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.v2-nums li { padding: 22px 0 26px; border-top: 2px solid var(--signal); display: flex; flex-direction: column; gap: 14px; }
+.v2-n { font-family: var(--f-mono); font-weight: 400; font-size: clamp(2.8rem, 6vw, 5rem); line-height: 1; color: var(--signal); letter-spacing: -.04em; }
+.v2-nl { font-size: .86rem; color: var(--steel); }
+@media (max-width: 860px) { .v2-num-grid { grid-template-columns: 1fr; } }
+
+/* 6. 검은 현장 기록 슬라이드 (Wingliner) */
+.v2-stories { padding-block: clamp(72px, 9vw, 120px); background: #000; color: var(--white); }
+.v2-stories .v2-label { color: var(--steel-2); }
+.v2-big-w { color: #8C959B; } .v2-big-w b { color: var(--white); }
+.v2-st-track { display: grid; grid-auto-flow: column; grid-auto-columns: min(560px, 82%); gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 8px 0 22px; padding-left: calc(25% + 16px); scroll-padding-left: calc(25% + 16px); }
+.v2-st-track::-webkit-scrollbar { display: none; }
+.v2-st { scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,.2); padding-top: 14px; }
+.v2-st-img { display: block; aspect-ratio: 16 / 10; overflow: hidden; margin-bottom: 8px; }
+.v2-st-img img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(.2); transition: transform .6s var(--ease-out), filter .4s; }
+.v2-st:hover img { transform: scale(1.04); filter: none; }
+.v2-st .v2-tag { color: var(--signal); }
+.v2-st b { font-size: 1.15rem; }
+.v2-st > span:last-child { color: #AEB5BA; font-size: .92rem; }
+.v2-arrows-w { gap: 10px; flex-wrap: wrap; }
+.v2-yt { display: inline-flex; align-items: center; gap: 8px; margin-left: 14px; font-size: .9rem; color: #AEB5BA; }
+.v2-yt:hover { color: var(--white); }
+@media (max-width: 860px) { .v2-st-track { padding-left: 0; scroll-padding-left: 0; } }
+
+/* 7. 360° 서비스 띠 (KRONE) */
+.v2-svc { padding-block: clamp(64px, 8vw, 104px); background: var(--ink); color: var(--white); }
+.v2-svc .v2-label { color: var(--steel-2); }
+.v2-svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid rgba(255,255,255,.15); }
+.v2-svc-i { display: flex; flex-direction: column; gap: 10px; padding: 26px 22px 30px; border-right: 1px solid rgba(255,255,255,.1); transition: background .25s; }
+.v2-svc-i:last-child { border-right: 0; }
+.v2-svc-i:hover { background: rgba(255,255,255,.05); }
+.v2-svc-ic { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--signal); margin-bottom: 8px; }
+.v2-svc-ic .i { width: 20px; height: 20px; }
+.v2-svc-i b { font-size: 1.1rem; } .v2-svc-i span:last-child { color: #AEB5BA; font-size: .9rem; }
+@media (max-width: 860px) { .v2-svc-grid { grid-template-columns: 1fr 1fr; } .v2-svc-i:nth-child(2) { border-right: 0; } .v2-svc-i:nth-child(n+3) { border-top: 1px solid rgba(255,255,255,.1); } }
+
+/* 8. 큰 소식 카드 (Versus-Omega) */
+.v2-news { padding-block: clamp(72px, 9vw, 120px); }
+.v2-feat { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: var(--white); position: relative; }
+.v2-feat::before { content: ""; position: absolute; z-index: 0; left: -16px; top: -16px; width: 55%; height: 100%; background: var(--tint); }
+.v2-feat-media { position: relative; z-index: 1; min-height: 340px; background: var(--ink); color: var(--white); padding: 28px; display: flex; flex-direction: column; justify-content: space-between; }
+.v2-feat-media .num { font-size: 1rem; color: var(--signal); }
+.v2-feat-media b { font-family: var(--f-display); font-weight: 800; font-stretch: 75%; font-size: clamp(2.6rem, 5vw, 4.4rem); line-height: .9; color: transparent; -webkit-text-stroke: 1.2px rgba(255,255,255,.8); }
+.v2-feat-body { position: relative; z-index: 1; padding: clamp(24px, 4vw, 48px); display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+.v2-feat-body .v2-tag { color: var(--signal); }
+.v2-feat-body h2 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); line-height: 1.3; color: var(--signal); }
+.v2-feat-body p:not(.v2-tag) { color: var(--steel); }
+.v2-news-list { margin-top: 28px; border-top: 2px solid var(--ink); }
+.v2-news-list li { display: grid; grid-template-columns: 120px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.v2-news-list .num { color: var(--steel); } .v2-news-list a { font-weight: 600; } .v2-news-list a:hover { color: var(--signal); }
+@media (max-width: 860px) { .v2-feat { grid-template-columns: 1fr; } .v2-feat-media { min-height: 200px; } .v2-feat::before { display: none; } .v2-news-list li { grid-template-columns: 1fr; gap: 4px; } }
+
+/* 버전 비교 페이지 */
+.vs-hd { border-bottom: 1px solid var(--line); background: var(--white); }
+.vs-hd-in { height: 68px; display: flex; align-items: center; justify-content: space-between; font-size: .78rem; color: var(--steel); }
+.vs-h1 { font-size: clamp(2rem, 4.4vw, 3.2rem); font-weight: 800; letter-spacing: -.03em; }
+.vs-lede { color: var(--steel); max-width: 44em; margin: 14px 0 40px; }
+.vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.vs-card { background: var(--white); border: 1px solid var(--line); display: flex; flex-direction: column; }
+.vs-shot { display: block; aspect-ratio: 16 / 10; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--tint); }
+.vs-shot img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform .6s var(--ease-out); }
+.vs-shot:hover img { transform: scale(1.03); }
+.vs-body { padding: 24px 26px 28px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.vs-meta { display: flex; align-items: center; gap: 10px; font-size: .82rem; color: var(--steel); }
+.vs-id { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; color: var(--signal); }
+.vs-state { padding: 3px 8px; border: 1px solid var(--line); font-weight: 600; color: var(--ink); }
+.vs-body h2 { font-size: 1.3rem; }
+.vs-langs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 10px; }
+.vs-log li { grid-template-columns: 130px 1fr; }
+.vs-note { margin-top: 24px; font-size: .88rem; }
+@media (max-width: 860px) { .vs-grid { grid-template-columns: 1fr; } }
+.v2-ed-grid > .btn, .v2-ed-grid > div > .btn { justify-self: start; }
+@media (max-width: 760px) {
+  .v2-card-grid { grid-auto-flow: column; grid-auto-columns: 78%; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: calc(var(--gutter) * -1); padding: 4px var(--gutter) 16px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+  .v2-card { scroll-snap-align: start; }
+  .v2-h { font-size: 2.4rem; }
+}

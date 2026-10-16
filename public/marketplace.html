@@ -10,9 +10,10 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="stylesheet" href="/css/theme.css?v=6" />
-<script src="/js/i18n.js?v=27" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/rail.js?v=18" defer></script>
+<link rel="stylesheet" href="/css/topnav.css?v=1" />
+<script src="/js/topnav.js?v=31" defer></script>
 <style>
   .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:2}
   h1{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
@@ -41,6 +42,9 @@
   .card{border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface);transition:.22s;display:flex;flex-direction:column}
   .card:hover{transform:translateY(-5px);border-color:var(--border2)}
   .card .preview{height:172px;display:flex;align-items:center;justify-content:center;font-size:46px;position:relative}
+  /* (10-16) 템플릿 대표 사진(thumb)이 있는데도 이모지만 그리던 것 → 사진을 덮고, 못 불러오면 이모지 그대로 */
+  .card .preview .pv-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .card .preview .badge{z-index:1}
   .card .badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;letter-spacing:.4px;padding:4px 9px;border-radius:8px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);color:#fff;text-transform:uppercase}
   .card .badge.excl{background:linear-gradient(120deg,var(--gold),#ff9a6b);color:#1a1a27}
   .card .meta{padding:14px 16px;display:flex;flex-direction:column;gap:7px;flex:1}
@@ -103,7 +107,7 @@
   <div class="filter-row fade d3" id="filterRow"></div>
   <div class="grid fade d3" id="grid"></div>
 
-  <div class="affil-link fade d4">Want to earn by referring others? <a onclick="location.href='/affiliate'">Join the affiliate program →</a></div>
+  <div class="affil-link fade d4" data-flag="affiliate">Want to earn by referring others? <a onclick="location.href='/affiliate'">Join the affiliate program →</a></div>
 </div>
 
 <!-- 템플릿 게시 모달 -->
@@ -174,7 +178,7 @@ function render(){
     if(!TEMPLATES.length){grid.innerHTML=`<div style="grid-column:1/-1;color:var(--faint);padding:40px 0;text-align:center">No templates yet.</div>`;return;}
     grid.innerHTML=TEMPLATES.map(t=>`
       <div class="card">
-        <div class="preview ${gradFor(t.id)}"><span class="badge">${t.type==='reel'?'Reel':'Photo'}</span>${esc(t.emoji||'🎨')}</div>
+        <div class="preview ${gradFor(t.id)}"><span class="badge">${t.type==='reel'?'Reel':'Photo'}</span>${t.thumb?`<img class="pv-img" src="${esc(t.thumb)}" loading="lazy" alt="" onerror="this.remove()">`:''}${esc(t.emoji||'🎨')}</div>
         <div class="meta">
           <div class="rname">${esc(t.name)}</div>
           <div class="creator">by <b>${esc(t.creator_handle)}</b>${t.is_official?' · ✓ official':''}${t.mine?' · Mine':''}</div>
@@ -234,6 +238,6 @@ async function publishTemplate(btn){
 
 loadBalance();loadMe();loadTemplates();
 </script>
-<script src="/js/biz-footer.js?v=5"></script>
+<script src="/js/biz-footer.js?v=6"></script>
 </body>
 </html>

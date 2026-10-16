@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- ⚠️ AUTO-GENERATED — 직접 고치지 마라. 고칠 곳은 둘:
+       영문 구조 → public/landing.html · ja 카피 → src/i18n/landing.ja.json
+     재생성: node scripts/build_landing_ko.js --lang ja -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doppia — AIフォトスタジオ。商品ショット・モデルショット・広告動画まで。</title>
+<meta name="description" content="Doppia Lensは保存したルックのまま商品を撮り、Doppia Shootは用意されたモデルや自分のモデルに着せます。Editorと広告動画、マーケティングを代わりに運用するチームまで。スタジオもプロンプトも不要。">
+<link rel="canonical" href="https://doppia.ai/ja">
+<link rel="alternate" hreflang="en" href="https://doppia.ai/">
+<link rel="alternate" hreflang="ko" href="https://doppia.ai/ko">
+<link rel="alternate" hreflang="ja" href="https://doppia.ai/ja">
+<link rel="alternate" hreflang="x-default" href="https://doppia.ai/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://doppia.ai/ja">
+<meta property="og:title" content="Doppia — AIフォトスタジオ。商品ショット・モデルショット・広告動画まで。">
+<meta property="og:description" content="Lensが商品を撮り、Shootがモデルに着せ、Editorが後から直します。スタジオもプロンプトも不要。">
+<meta property="og:image" content="https://doppia.ai/img/landing/e2e/s-hero.jpg">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<script>/*LP-LANGKEEP — 지금 보고 있는 랜딩의 언어를 선호로 저장한다.
+  이게 없으면 /ko(한국어 랜딩)를 봐도 doppia_lang이 비어 있고, 앱의 i18n.js는 저장값이 없으면 'en'이라
+  "랜딩은 한글인데 스튜디오는 영어"가 된다(실측: /ko → 무료로 시작 → /studio 가 html lang=en).
+  언어는 <html lang>에서 읽는다 — 이 스크립트는 ko.html에도 그대로 복사되고 거기선 lang="ko"이기 때문.
+  (LP-LANG 블록은 생성기가 /ko용으로 지우므로 여기에 얹으면 안 된다.)
+  저장소·키는 스위치(LP-LANGSW)와 동일 — 두 경로가 같은 값을 쓴다. */
+(function(){try{
+  if(window.__lpRedirect)return;   // /ko로 넘어가는 중이면 그쪽에서 쓴다
+  var dl=document.documentElement.lang; var l=(dl==='ko'||dl==='ja')?dl:'en';   // (2026-10-16) ja.html도 같은 스크립트를 쓴다
+  if(localStorage.getItem('doppia_lang')!==l)localStorage.setItem('doppia_lang',l);
+  document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax';
+}catch(e){}})();
+</script>
+<style>
+  /* 색 토큰 = home(css/theme.css)과 정합 — 배경·surface·border·accent·text 전부 일치 */
+  :root{--bg:#07070c;--surface:#13131d;--surface2:#1a1a27;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--accent:#6a40e0;--accent2:#a394ee;--pink:#d9608f;--text:#edecf5;--dim:#9a9ab2;--faint:#6a6a85;--good:#5ee0d6}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Pretendard,"Apple SD Gothic Neo","Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-x:hidden}
+  /* home과 동일한 앰비언트 글로우 (좌상 보라 + 우측 핑크) — 콘텐츠 뒤(z:-1). 훅도 이 배경 위에 얹힘(훅이 기존 배경에 맞춤) */
+  .home-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+  .home-glow::before,.home-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(130px);opacity:.5}
+  .home-glow::before{width:620px;height:620px;left:-160px;top:-220px;background:radial-gradient(circle,rgba(106,64,224,.55),transparent 70%)}
+  .home-glow::after{width:520px;height:520px;right:-140px;top:140px;background:radial-gradient(circle,rgba(217,96,143,.34),transparent 70%)}
+  html[lang="ja"] body{word-break:normal;overflow-wrap:anywhere} /* (10-17) 일본어는 띄어쓰기가 없어 keep-all 이면 줄이 안 끊겨 넘친다 — /ja 프리렌더에 그대로 복사된다 */
+  html[lang="ja"] .giant{font-size:clamp(30px,4.2vw,62px)}
+  img,video{display:block;max-width:100%}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+  .wrap{max-width:1220px;margin:0 auto;padding:0 40px}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:14px}
+  h2{font-size:clamp(30px,3.6vw,46px);line-height:1.12;letter-spacing:-.02em;font-weight:800}
+  h2 em,.grad{font-style:normal;background:linear-gradient(100deg,var(--accent2),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .lead{color:var(--dim);font-size:17px;margin-top:16px;max-width:56ch}
+  .btn{font-weight:700;font-size:14px;padding:12px 22px;border-radius:12px;border:0;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .btn-p{background:linear-gradient(100deg,var(--accent),var(--pink));color:#fff;box-shadow:0 10px 30px -12px rgba(124,82,232,.6)}
+  .btn-g{background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--text)}
+  .btn-lg{padding:15px 26px;font-size:15px}
+  section{padding:92px 0}
+  /* 라온젠식 섹션 구분 — 미세 구분선 + 여백 (section.wrap 이 .wrap 을 이김) */
+  section.wrap{padding-top:80px;padding-bottom:80px;border-top:1px solid var(--line)}
+  section.wrap>.eyebrow:first-child{margin-top:0}
+
+  /* NAV — 프로토(_hero_ring_orbit)와 동일: 히어로 안 오버레이 + navbg 그라디언트(카드가 nav 뒤로 지나감) */
+  nav.lab{position:relative;z-index:40;display:flex;align-items:center;gap:30px;max-width:1240px;margin:0 auto;width:100%;padding:26px 44px 0}
+  .navbg{position:absolute;left:0;right:0;top:0;height:112px;z-index:35;background:linear-gradient(180deg,var(--bg) 48%,transparent);pointer-events:none}
+  nav.lab .end{font-size:14px;color:var(--dim)}
+  .brand{font-weight:850;font-size:23px;letter-spacing:-.02em;background:linear-gradient(120deg,#fff,var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .toc{display:flex;gap:24px;font-size:14px;color:var(--dim);font-weight:500}
+  .toc a:hover{color:var(--text)}
+  nav .end{margin-left:auto;display:flex;gap:12px;align-items:center}
+  nav.lab a{cursor:pointer}
+  @media(max-width:820px){.toc{display:none}}
+
+  /* HERO — 궤도 캐러셀 (정본 _hero_ring_orbit 이식: 드래그로 잡고 휙 돌리기 + 호버 콜아웃) */
+  .pill{display:inline-block;font-size:12.5px;font-weight:600;color:var(--accent2);border:1px solid var(--line2);border-radius:999px;padding:7px 15px;margin-bottom:22px}
+  .fine{margin-top:20px;font-size:13px;color:var(--faint)}
+  .fine b{color:var(--dim)}
+  /* 확정 프로토(_hero_ring_orbit) 이식 — 히어로를 nav 뒤까지 끌어올려(margin-top:-76px) 프로토처럼 카드가 반투명 nav 뒤로 지나감. 좌표계 = 프로토와 동일(페이지 top 기준) */
+  .ver{position:relative;height:calc(100svh + 190px);min-height:950px;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+  .ver.dragging{cursor:grabbing}
+  .dotgrid{position:absolute;inset:0;z-index:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px;mask:radial-gradient(ellipse 84% 82% at 50% 46%,#000,transparent 94%);pointer-events:none}
+  /* 경계 페이드는 CSS 오버레이·마스크가 아니라 JS가 카드별 opacity로 직접 처리(frame() 참조) — 합성 GPU에서 오버레이/마스크가 안 먹히는 환경 실측 대응 */
+  .cctr{position:absolute;left:50%;top:calc(50svh + 30px);transform:translate(-50%,-50%);z-index:30;text-align:center;padding:0 44px;max-width:1000px;width:100%;pointer-events:none}
+  .cctr .btn,.cctr a{pointer-events:auto;cursor:pointer}
+  .cctr .pill{margin-bottom:18px;background:rgba(255,255,255,.03)}
+  .giant{font-size:clamp(34px,4.7vw,70px);font-weight:880;letter-spacing:-.045em;line-height:.98;text-shadow:0 3px 22px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  /* 강조 그라디언트 = home "create"(흰→라벤더→핑크) — 🔴text-shadow 제거 필수(투명 글자 뒤 그림자가 비쳐 탁해짐). 섹션용 전역 .grad와 별개 */
+  .giant .grad{background:linear-gradient(110deg,#fff 10%,var(--accent2) 55%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none}
+  .cctr .pill,.csub,.cfine{text-shadow:0 2px 12px rgba(0,0,0,.6)}
+  .csub{font-size:14px;color:var(--dim);margin:13px auto 20px;max-width:42ch;line-height:1.6}
+  .chcta{display:flex;justify-content:center}
+  .chcta .btn{padding:13px 24px;font-size:14px;border-radius:12px}
+  .cfine{margin-top:12px;font-size:12px;color:var(--faint)}
+  .horbit{position:absolute;inset:0}
+  .oc{position:absolute;left:0;top:0;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);box-shadow:0 24px 56px -34px rgba(0,0,0,.7);background:#0d0d14;cursor:grab;transition:box-shadow .3s;will-change:transform,opacity;backface-visibility:hidden}
+  .oc img,.oc video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+  .oc.focus{box-shadow:0 48px 90px -24px rgba(0,0,0,.96),0 0 0 2px var(--accent2)}
+  .oc .tag{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:4px 8px;backdrop-filter:blur(6px);z-index:2;letter-spacing:.02em}
+  .callout{position:absolute;left:0;top:0;width:322px;z-index:50;pointer-events:none;background:rgba(17,17,26,.95);backdrop-filter:blur(16px);border:1px solid var(--line2);border-radius:16px;padding:15px 16px;box-shadow:0 34px 80px -18px rgba(0,0,0,.96);opacity:0;transition:opacity .28s}
+  .callout.show{opacity:1}
+  .co-head{display:flex;gap:12px;align-items:center}
+  .co-thumb{width:46px;height:58px;border-radius:9px;object-fit:cover;border:1px solid var(--line2);flex:0 0 auto;box-shadow:0 6px 14px rgba(0,0,0,.5)}
+  .co-lead{font-size:11.5px;font-weight:700;color:var(--accent2);letter-spacing:.01em;margin-bottom:3px}
+  .co-name{font-size:16.5px;font-weight:850;letter-spacing:-.02em;color:#fff;line-height:1.15}
+  .co-desc{margin:11px 0 12px;font-size:13px;line-height:1.5;color:var(--dim)}
+  .co-cta{border-top:1px dashed rgba(255,255,255,.16);padding-top:11px;font-size:12.5px;font-weight:800;color:var(--accent2);display:flex;align-items:center;justify-content:space-between}
+  .co-cta .k{background:linear-gradient(100deg,var(--accent2),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:15px}
+  /* 모바일: 12장 궤도 불가 → 정적 그리드(타입별 4카드) + 세로 흐름 */
+  @media(max-width:860px){
+    .ver{height:auto;min-height:0;display:flex;flex-direction:column;padding:14px 20px 36px;cursor:default;touch-action:auto;user-select:text;-webkit-user-select:text}
+    nav.lab{order:-2;padding:10px 0 22px}
+    .navbg{display:none}
+    .cctr{position:static;transform:none;order:-1;max-width:none;padding:0;pointer-events:auto;margin-bottom:28px}
+    .giant{font-size:clamp(33px,8.8vw,44px)}
+    .horbit{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .oc{position:relative;width:auto!important;height:auto!important;aspect-ratio:4/5;transform:none!important;opacity:1!important;filter:none!important;z-index:auto!important;cursor:pointer}
+    .oc:nth-child(n+5){display:none}
+    .callout{display:none}
+  }
+
+  /* FEATURES (tab explorer) */
+  .exp{display:grid;grid-template-columns:288px 1fr;gap:22px;margin-top:44px}
+  .tabs{display:flex;flex-direction:column;gap:8px}
+  .tab{display:flex;gap:14px;align-items:center;text-align:left;background:transparent;border:1px solid transparent;border-radius:15px;padding:15px 16px;color:var(--dim);transition:.18s;position:relative}
+  .tab:hover{background:var(--surface)}
+  .tab.on{background:var(--surface);border-color:var(--line2);color:var(--text)}
+  .tab.on::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:linear-gradient(180deg,var(--accent),var(--pink))}
+  .tab .ic{width:40px;height:40px;flex:0 0 auto;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--line2);color:var(--accent2)}
+  .tab.on .ic{background:linear-gradient(135deg,rgba(124,92,255,.28),rgba(217,96,143,.22));border:0;color:#fff}
+  .tab .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .tab .tt b{display:block;font-size:16px;font-weight:750;letter-spacing:-.01em}
+  .tab .tt span{display:block;font-size:12.5px;color:var(--faint);margin-top:2px}
+  .tab.on .tt span{color:var(--dim)}
+  .tab .star{margin-left:auto;font-size:11px;color:var(--pink);font-weight:700}
+  .pane{background:linear-gradient(180deg,var(--surface),#0f0f18);border:1px solid var(--line2);border-radius:22px;padding:26px;min-height:560px;overflow:hidden}
+  .panel{display:none;grid-template-columns:1.16fr .84fr;gap:28px;height:100%}
+  .panel.on{display:grid;animation:fade .28s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .demo{display:flex;flex-direction:column;min-width:0}
+  .dpills{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .dpill{font-size:12.5px;font-weight:600;color:var(--dim);background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:8px 15px;transition:.15s}
+  .dpill.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border:0;padding:9px 16px}
+  .flow{flex:1;display:flex;align-items:center;gap:16px}
+  .inp{flex:0 0 128px;aspect-ratio:4/5;border-radius:14px;border:1px dashed var(--line2);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--faint);font-size:12px;padding:10px;gap:8px}
+  .inp svg{width:26px;height:26px;stroke:var(--dim);fill:none;stroke-width:1.6}
+  .inp b{color:var(--dim);font-size:12.5px;font-weight:650}
+  .arw{color:var(--accent2);font-size:22px}
+  .out{flex:1;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line2);background:#0d0d14}
+  .out>img,.out>video{width:100%;height:420px;object-fit:cover}
+  .badge{position:absolute;left:12px;bottom:12px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;backdrop-filter:blur(6px);display:flex;gap:6px;align-items:center}
+  .badge i{width:6px;height:6px;border-radius:50%;background:var(--good)}
+  /* 콘텐츠 팩: 결과물 24장 모자이크(원본 비율, 안 잘림) — 12장 때와 같은 크기(4단), 위아래로 쌓임 */
+  .setgrid{flex:1;columns:4;column-gap:8px;min-height:0}
+  .setgrid .g{break-inside:avoid;margin:0 0 8px;border-radius:12px;overflow:hidden;border:1px solid var(--line2);position:relative}
+  .setgrid .g img{width:100%;height:auto;display:block}
+  /* 콘텐츠 팩: 실제 입력사진 카드 */
+  .inp-photo{padding:0;overflow:hidden;border-style:solid;position:relative}
+  .inp-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .inp-photo span{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 8px;background:linear-gradient(transparent,rgba(0,0,0,.74));color:#fff;font-size:11.5px;font-weight:700}
+  /* 수정하기: 자연어 명령 바 + 예시 칩 */
+  .ed-bar{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;margin:0 auto 12px;background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:12px 16px}
+  .ed-bar svg{width:17px;height:17px;stroke:var(--accent2);stroke-width:1.8;fill:none;flex:none}
+  .ed-bar b{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+  .ed-bar .ed-go{margin-left:auto;flex:none;width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .ed-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;max-width:520px;margin:12px auto 0}
+  .ed-chips span{font-size:12px;color:var(--dim);border:1px dashed var(--line2);border-radius:999px;padding:5px 12px}
+  /* 수정하기: 라온젠식 전/후 슬라이더(드래그) */
+  .cmp{position:relative;align-self:center;width:100%;max-width:520px;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line2);cursor:ew-resize;user-select:none;-webkit-user-select:none;touch-action:none;box-shadow:0 34px 80px -44px rgba(0,0,0,.85)}
+  .cmp>img{width:100%;height:auto;display:block}
+  .cmp-bw{position:absolute;inset:0;clip-path:inset(0 0 0 50%)}
+  .cmp-bw img{width:100%;height:100%;object-fit:cover;display:block}
+  .cmp-lb{position:absolute;top:12px;font-size:11.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 11px;backdrop-filter:blur(6px)}
+  .cmp-hd{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 14px rgba(0,0,0,.7)}
+  .cmp-hd span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;color:#15151f;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .ba{flex:1;display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;min-height:420px}
+  .ba figure{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line2);height:420px}
+  .ba figure img{width:100%;height:100%;object-fit:cover}
+  .ba .lbl{position:absolute;top:10px;left:10px;font-size:10.5px;font-weight:700;background:rgba(0,0,0,.6);color:#fff;border-radius:7px;padding:4px 9px}
+  .ba .say{text-align:center;color:var(--accent2);font-size:12.5px;font-weight:600;max-width:110px}
+  .ba .say .q{display:block;color:var(--text);background:var(--surface2);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-weight:500}
+  .desc{display:flex;flex-direction:column;justify-content:center}
+  .desc h3{font-size:26px;font-weight:820;letter-spacing:-.02em}
+  .desc .tl{font-size:15px;color:var(--accent2);font-weight:600;margin:6px 0 16px}
+  .desc p{color:var(--dim);font-size:15px;line-height:1.7}
+  .desc ul{list-style:none;margin:20px 0 24px;display:flex;flex-direction:column;gap:11px}
+  .desc li{display:flex;gap:10px;font-size:14.5px}
+  .desc li::before{content:"";width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));margin-top:7px;flex:0 0 auto}
+  .desc .cta{align-self:flex-start}
+  /* Shots 서브탭(제품샷·룩북·화보·템플릿) — 라온젠식 배치: [작은 입력 스택 + →] 큰 결과 1장(원본 비율, 안 잘림) */
+  .sv{display:none;flex:1;align-items:center;justify-content:center;gap:24px;min-width:0}
+  .sv.on{display:flex;animation:fade .28s ease}
+  .sv-col{flex-direction:column;align-items:stretch}
+  .sv-stack{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .sv-in{margin:0;text-align:center;width:104px}
+  .sv-in img{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-in video{width:104px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line2);display:block;background:#0d0d14}
+  .sv-big video{width:100%;height:auto;max-height:585px;display:block;background:#000}
+  .sv-in figcaption{margin-top:7px;font-size:12px;color:var(--dim)}
+  .sv-plus{color:var(--faint);font-size:15px;line-height:1;margin:4px 0}
+  /* 룩북 모델 토글: 얼굴 2개 나란히, 클릭 시 결과 스왑 */
+  .sv-duo{display:flex;gap:6px;justify-content:center}
+  .sv-duo .sv-th{width:49px;height:60px;border-radius:10px;overflow:hidden;border:1.5px solid var(--line2);opacity:.55;cursor:pointer;display:block}
+  .sv-duo .sv-th img{width:100%;height:100%;object-fit:cover;display:block}
+  .sv-duo .sv-th.on{opacity:1;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(163,148,238,.35)}
+  .sv-colorbox{width:104px;height:128px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surface2);display:grid;grid-template-columns:repeat(3,1fr);place-items:center;padding:14px 10px}
+  .sv-colorbox i{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25)}
+  .sv-colorbox .sv-any{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px;font-weight:800;color:var(--accent2);background:transparent;border-color:var(--accent2)}
+  .sv-arw{font-size:24px;color:var(--accent2);flex:0 0 auto}
+  .sv-big{position:relative;flex:0 1 460px;min-width:0;margin:0;border-radius:18px;overflow:hidden;border:1px solid var(--line2);background:#0d0d14;box-shadow:0 34px 80px -44px rgba(0,0,0,.85)}
+  .sv-big img{width:100%;height:auto;max-height:585px;object-fit:contain;display:block}
+  .sv-big figcaption{position:absolute;left:12px;bottom:12px;font-size:11.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 11px;backdrop-filter:blur(6px);display:flex;gap:6px;align-items:center}
+  .sv-big figcaption i{width:6px;height:6px;border-radius:50%;background:var(--good)}
+  .sv-grid{columns:3;column-gap:10px}
+  .sv-grid figure{position:relative;break-inside:avoid;margin:0 0 10px;border-radius:12px;overflow:hidden;border:1px solid var(--line2)}
+  .sv-grid img{width:100%;height:auto;display:block}
+  .sv-grid figcaption{position:absolute;left:8px;top:8px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:6px;padding:3px 8px;backdrop-filter:blur(6px)}
+  /* Ad Video 릴스 플레이어: 5초 클립이 릴스처럼 아래→위로 한 편씩 전환 */
+  .reelbox{position:relative;flex:0 0 auto;width:236px;margin:0 auto}
+  .reelbox .rwrap{position:relative;width:236px;aspect-ratio:9/16;border-radius:16px;overflow:hidden;border:1px solid var(--line2);background:#000}
+  .reelbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:translateY(100%);transition:transform .55s cubic-bezier(.2,.7,.2,1)}
+  .reelbox video.on{transform:translateY(0)}
+  .reelbox video.up{transform:translateY(-100%)}
+  .reelbox .badge{position:absolute;left:12px;bottom:12px}
+  .sd{display:none}
+  .sd.on{display:block;animation:fade .28s ease}
+  .desc .sd ul{margin-bottom:0}
+  .desc .cta{margin-top:22px}
+  @media(max-width:980px){
+    .sv{flex-direction:column}
+    .sv-stack{flex-direction:row;align-items:center}
+    .sv-arw{transform:rotate(90deg)}
+    .sv-big{flex:none;width:100%;max-width:420px;margin:0 auto}
+    .sv-big img{max-height:420px}
+    .sv-grid{columns:2}
+  }
+  @media(max-width:980px){
+    .exp{grid-template-columns:1fr}.tabs{flex-direction:row;overflow-x:auto}.tab{flex:0 0 auto;min-width:230px}.tab .star{display:none}
+    .panel.on{grid-template-columns:1fr}.out>img,.out>video{height:300px}.ba figure{height:280px}.setgrid{columns:3}
+    .flow{flex-direction:column;align-items:stretch}.inp{flex:none;width:100%;aspect-ratio:auto;flex-direction:row;height:56px}.arw{transform:rotate(90deg);align-self:center}
+  }
+
+  /* §3 BREADTH — 무엇을 팔든 */
+  .cats{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}
+  .cat{font-size:13.5px;font-weight:650;color:var(--dim);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:9px 16px}
+  .cat.hi{color:#fff;background:linear-gradient(100deg,rgba(124,82,232,.26),rgba(217,96,143,.2));border-color:var(--accent)}
+  .wall{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+  .wall figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);position:relative;aspect-ratio:4/5}
+  .wall figure img{width:100%;height:100%;object-fit:cover;display:block}
+  .wall figcaption{position:absolute;left:10px;top:10px;font-size:10.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:3px 9px;backdrop-filter:blur(6px)}
+  .addbar{margin-top:16px;border-radius:16px;border:1.5px dashed var(--line2);background:linear-gradient(180deg,var(--surface),transparent);padding:20px 24px;display:flex;align-items:center;gap:16px;justify-content:center;text-align:center;flex-wrap:wrap}
+  .addbar .plus{width:42px;height:42px;flex:0 0 auto;border-radius:50%;border:1.5px dashed var(--accent2);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--accent2)}
+  .addbar b{font-size:15px;font-weight:750;color:var(--text)}
+  .addbar span{font-size:13.5px;color:var(--dim)}
+  @media(max-width:900px){.wall{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.wall{grid-template-columns:repeat(2,1fr)}}
+
+  /* §4 END-TO-END — 라온젠식 다이아몬드 흐름 (apex→부챗살→카드→수렴→라이브러리→활용) */
+  .e2e{margin-top:44px;display:flex;flex-direction:column;align-items:center}
+  /* apex: 글로우 제품사진 + 알약 배지 */
+  .e2e-apex{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:2px}
+  .e2e-apex .ph{width:172px;height:172px;border-radius:18px;overflow:hidden;border:2px solid var(--accent);box-shadow:0 0 0 1px rgba(163,148,238,.35),0 22px 60px -12px rgba(106,64,224,.65),0 0 46px rgba(106,64,224,.32)}
+  .e2e-apex .ph img{width:100%;height:100%;object-fit:cover}
+  .e2e-apex .pill{font-size:13.5px;font-weight:700;color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border-radius:999px;padding:9px 20px;box-shadow:0 10px 26px -8px rgba(124,82,232,.7)}
+  /* 곡선 점선 부챗살/수렴 (full-width라 카드 중심과 정렬) */
+  .e2e-fan{width:100%;height:58px;display:block;margin:4px 0}
+  .e2e-fan path{fill:none;stroke:var(--line2);stroke-width:1.5;stroke-dasharray:1.5 6;stroke-linecap:round;vector-effect:non-scaling-stroke}
+  /* base 4카드 */
+  .e2e-outs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%}
+  .e2e-card{border-radius:14px;overflow:hidden;border:1px solid var(--line2);background:var(--surface);display:flex;flex-direction:column}
+  .e2e-card .im{aspect-ratio:4/5;position:relative;overflow:hidden}
+  .e2e-card .im img,.e2e-card .im video{width:100%;height:100%;object-fit:cover}
+  .e2e-card .tag{position:absolute;top:9px;left:9px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:6px;padding:3px 8px;backdrop-filter:blur(6px)}
+  .e2e-card .cap{padding:11px 13px 13px}
+  .e2e-card .cap b{display:block;font-size:14px;font-weight:750}
+  .e2e-card .cap p{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+  /* 라이브러리(내 에셋) 카드 */
+  .e2e-lib{width:100%;max-width:760px;background:linear-gradient(100deg,rgba(124,82,232,.14),rgba(217,96,143,.08));border:1px solid var(--line2);border-radius:18px;padding:20px;display:flex;align-items:center;gap:22px}
+  .e2e-lib .thumbs{display:flex;gap:8px;flex:0 0 auto}
+  .e2e-lib .thumbs span{position:relative;width:72px;height:90px;border-radius:11px;overflow:hidden;border:1px solid var(--line2)}
+  .e2e-lib .thumbs img{width:100%;height:100%;object-fit:cover}
+  .e2e-lib .thumbs i{position:absolute;left:5px;top:5px;font-style:normal;font-size:9.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:5px;padding:2px 6px;backdrop-filter:blur(6px)}
+  .e2e-lib .tx .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--accent2);background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:4px 11px;margin-bottom:9px}
+  .e2e-lib .tx h4{font-size:20px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+  .e2e-lib .tx p{font-size:13.5px;color:var(--dim);margin-top:7px;line-height:1.6}
+  /* 굵은 그라디언트 화살표 */
+  .e2e-arrow{margin:16px 0}
+  .e2e-arrow svg{width:36px;height:48px;display:block;filter:drop-shadow(0 8px 18px rgba(124,82,232,.5))}
+  /* 활용/채널 */
+  .e2e-ch{text-align:center}
+  .e2e-ch .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--accent2);background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:4px 12px;margin-bottom:12px}
+  .e2e-ch h4{font-size:22px;font-weight:820;letter-spacing:-.015em}
+  .e2e-chips{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+  .e2e-chip{font-size:13.5px;font-weight:650;color:var(--text);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:10px 18px}
+  .e2e-chip.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border:0;padding:11px 19px}
+  /* 활용: 채널칩 국내/해외 그룹 + 클릭 시 목업 스왑(라온젠식, 로고 없이 색·레이아웃 암시만) */
+  .e2e-chgroups{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .e2e-chg{display:flex;align-items:center;gap:12px}
+  .e2e-chg>b{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--faint)}
+  .e2e-chg .e2e-chips{margin-top:0}
+  .e2e-stage{display:flex;justify-content:center;margin-top:26px;min-height:430px}
+  .chm{display:none}
+  .chm.on{display:block;animation:fade .28s ease}
+  .mk{border-radius:18px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 30px 70px -40px rgba(0,0,0,.8)}
+  .mk-light{width:330px;background:#fdfdfd;color:#1c1c24}
+  .mk-dark{width:330px;background:#101018;color:var(--text)}
+  .mk-img{width:100%;height:250px;object-fit:cover;display:block}
+  .mk-pad{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+  .sk{height:10px;border-radius:5px;background:rgba(20,20,30,.12)}
+  .skd{height:10px;border-radius:5px;background:rgba(255,255,255,.16)}
+  .sk.w90,.skd.w90{width:90%}.sk.w80,.skd.w80{width:80%}.sk.w70{width:70%}.sk.w60,.skd.w60{width:60%}.sk.w55,.skd.w55{width:55%}.sk.w50,.skd.w50{width:50%}.sk.w40,.skd.w40{width:40%}.sk.w30{width:30%}.skd.w25{width:25%}
+  .sk-price{height:14px;background:rgba(20,20,30,.28)}
+  .mk-btn{display:inline-block;margin-top:4px;font-size:12.5px;font-weight:800;color:#fff;border-radius:9px;padding:9px 16px}
+  .mk-btn-grad{background:linear-gradient(100deg,var(--accent),var(--pink))}
+  .mk-webbar{display:flex;gap:5px;padding:10px 12px;background:#eef0f4}
+  .mk-webbar i{width:8px;height:8px;border-radius:50%;background:#d3d7e0}
+  .mk-bar{height:8px}
+  .mk-stars{font-size:12px;color:#f0b429;font-weight:700}
+  .mk-stars span{color:#9aa0ae;font-weight:500;font-size:11px}
+  .mk-row{width:400px;display:flex;gap:12px;padding:14px;align-items:flex-start}
+  .mk-thumb{width:110px;height:110px;object-fit:cover;border-radius:10px;flex:0 0 auto}
+  .mk-rowtx{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:2px}
+  .mk-fast{font-size:11px;font-weight:800;color:#2f7ae5}
+  .mk-chat{width:330px;background:#9fbdd4}
+  .mk-chathd{background:#89a8c2;color:#22303c;font-size:12.5px;font-weight:700;padding:10px 14px;text-align:center}
+  .mk-msg{display:flex;gap:8px;padding:16px 14px 22px;align-items:flex-start}
+  .mk-av{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--pink));flex:0 0 auto}
+  .mk-bubble{background:#fff;border-radius:4px 14px 14px 14px;overflow:hidden;max-width:220px}
+  .mk-bubble img{width:100%;height:200px;object-fit:cover;display:block}
+  .mk-bubtx{font-size:12px;color:#222;padding:9px 11px}
+  .mk-ighd{display:flex;gap:10px;align-items:center;padding:11px 13px}
+  .mk-ighd>div{display:flex;flex-direction:column;gap:5px;flex:1}
+  .mk-igav{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));flex:0 0 auto}
+  .mk-igact{display:flex;gap:14px;padding:11px 13px 2px;font-size:17px}
+  .mk-igact b{margin-left:auto;font-weight:600}
+  .mk-phone{width:250px;position:relative;background:#000}
+  .mk-phone video{width:100%;height:444px;object-fit:cover;display:block}
+  .mk-rail{position:absolute;right:10px;bottom:64px;display:flex;flex-direction:column;gap:14px}
+  .mk-rail i{font-style:normal;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff}
+  .mk-cap{position:absolute;left:12px;bottom:14px;right:60px;display:flex;flex-direction:column;gap:6px}
+  .mk-banner{width:460px;display:flex;gap:14px;background:#101018;padding:14px;align-items:center}
+  .mk-banner img{width:120px;height:120px;object-fit:cover;border-radius:10px;flex:0 0 auto}
+  .mk-bantx{flex:1;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+  @media(max-width:560px){.mk-light,.mk-dark,.mk-chat{width:100%;max-width:330px}.mk-row,.mk-banner{width:100%;max-width:420px}}
+  /* 모바일 세로 점선 커넥터 (부챗살 대체) */
+  .e2e-conn{height:28px;display:flex;align-items:center;justify-content:center}
+  .e2e-conn::before{content:"";width:2px;height:100%;background:repeating-linear-gradient(180deg,var(--line2) 0 5px,transparent 5px 11px)}
+  .e2e-conn-m{display:none}
+  @media(max-width:820px){.e2e-fan{display:none}.e2e-conn-m{display:flex}.e2e-outs{grid-template-columns:repeat(2,1fr)}.e2e-lib{flex-direction:column;text-align:center;max-width:460px}.e2e-lib .thumbs{justify-content:center}}
+  @media(max-width:520px){.e2e-outs{grid-template-columns:1fr}}
+
+  /* PRICING */
+  .pcards3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+  .pc3{background:var(--surface);border:1px solid var(--line2);border-radius:16px;padding:24px}
+  .pc3 .pi{width:40px;height:40px;border-radius:11px;background:var(--surface2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--accent2);margin-bottom:14px}
+  .pc3 .pi svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .pc3 b{display:block;font-size:16px;font-weight:750;margin-bottom:8px}
+  .pc3 p{font-size:13.5px;color:var(--dim);line-height:1.6}
+  @media(max-width:820px){.pcards3{grid-template-columns:1fr}}
+  .pseg{display:flex;gap:4px;justify-content:center;margin:40px auto 0;background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:5px;width:max-content;max-width:100%}
+  .ps{font-size:14px;font-weight:650;color:var(--dim);background:transparent;border:0;border-radius:999px;padding:11px 24px;cursor:pointer}
+  .ps.on{color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink))}
+  .ptier{display:flex;gap:14px;margin-top:28px;align-items:stretch}
+  .tcard{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line2);border-radius:18px;padding:24px 20px;display:flex;flex-direction:column;position:relative}
+  .tcard.feat{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 24px 50px -30px rgba(124,82,232,.6)}
+  .tcard .fb{position:absolute;top:16px;right:16px;font-size:11px;font-weight:700;color:#fff;background:linear-gradient(100deg,var(--accent),var(--pink));border-radius:999px;padding:4px 11px}
+  .tcard .nm{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .tcard .pv{font-size:30px;font-weight:850;letter-spacing:-.03em;margin:12px 0 2px}
+  .tcard .pv small{font-size:13px;font-weight:500;color:var(--dim)}
+  .tcard .cr{font-size:14px;color:var(--accent2);font-weight:650;margin-bottom:16px}
+  .tcard .cr .bo{color:var(--faint);font-weight:600}
+  .tcard ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px;flex:1}
+  .tcard li{display:flex;gap:8px;font-size:13px;color:var(--text)}
+  .tcard li::before{content:"·";color:var(--accent2);font-weight:800}
+  .tcard .tb{margin-top:auto;display:block;text-decoration:none;text-align:center;font-weight:700;font-size:13.5px;padding:12px;border-radius:11px;background:var(--surface2);border:1px solid var(--line2);color:var(--text);cursor:pointer}
+  .tcard.feat .tb{background:linear-gradient(100deg,var(--accent),var(--pink));border:0;padding:13px;color:#fff}
+  @media(max-width:900px){.ptier{flex-wrap:wrap}.tcard{flex:1 1 calc(50% - 7px)}}
+  @media(max-width:560px){.tcard{flex:1 1 100%}}
+
+  /* FAQ */
+  .faq{max-width:840px;margin-top:36px}
+  .faq details{border-bottom:1px solid var(--line);padding:18px 2px}
+  .faq summary{cursor:pointer;font-weight:700;font-size:16px;list-style:none;display:flex;gap:12px;align-items:baseline}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::before{content:"+";color:var(--accent2);font-weight:800}
+  .faq details[open] summary::before{content:"−"}
+  .faq p{margin:12px 0 0 22px;color:var(--dim);font-size:15px;line-height:1.7;max-width:64ch}
+
+  /* CTA BAND */
+  .band{position:relative;overflow:hidden;text-align:center;border:1px solid var(--line2);border-radius:24px;padding:74px 28px;background:linear-gradient(180deg,var(--surface),#0d0b16)}
+  /* 예쁜 보라 글로우 — 상단 중앙에서 스포트라이트처럼 (콘텐츠 뒤) */
+  .band::before{content:'';position:absolute;top:-170px;left:50%;transform:translateX(-50%);width:680px;height:460px;background:radial-gradient(ellipse 56% 56% at 50% 42%,rgba(124,82,232,.52),rgba(106,64,224,.15) 46%,transparent 72%);filter:blur(42px);pointer-events:none}
+  .band>*{position:relative;z-index:1}
+  .band h2{max-width:none;margin:0 auto 12px}
+  .band .lead{margin:0 auto 26px;font-size:15px;max-width:none;line-height:1.65}
+
+  /* FOOTER — 기존(원본) 복원: n-foot 네비 행 + biz-footer.js(전자상거래법 사업자정보) */
+  .n-foot{padding:34px 0 56px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--dim);border-top:1px solid var(--line)}
+  .n-foot>b{color:var(--text);font-weight:800;font-size:16px}
+  .n-foot a{color:var(--dim);text-decoration:none}
+  .n-foot a:hover{color:var(--text)}
+  .n-foot .lang-sw a[aria-current="true"]{color:var(--text)}
+  nav .lang-sw a[aria-current="true"]{color:var(--text);font-weight:700}
+
+  /* (10-16) Shoot 데모: 얼굴 4 토글 · 행동 4 칩 · 각도 6 */
+  .sv-faces{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:104px}
+  .sv-faces .sv-th{width:49px;height:60px;border-radius:10px;overflow:hidden;border:1.5px solid var(--line2);opacity:.55;cursor:pointer;display:block}
+  .sv-faces .sv-th img{width:100%;height:100%;object-fit:cover;display:block}
+  .sv-faces .sv-th.on{opacity:1;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(163,148,238,.35)}
+  .sv-acts{width:104px;height:128px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surface2);display:flex;flex-direction:column;justify-content:center;gap:5px;padding:8px}
+  .sv-acts span{font-size:11px;font-weight:650;color:var(--dim);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:3px 8px;white-space:nowrap}
+  .sv-in-w{width:168px}
+  .sv-angles{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:168px}
+  .sv-angles img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#0d0d14;border-radius:8px;border:1px solid var(--line2);display:block}
+  /* (10-16) §5 SERVICES — 3단계 + 저널 박스 */
+  .wk-steps .pi{font-weight:850;font-size:15px;color:var(--accent2)}
+  .wk-journal{margin-top:16px;background:linear-gradient(100deg,rgba(124,82,232,.14),rgba(217,96,143,.08));border:1px solid var(--line2);border-radius:18px;padding:26px 28px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+  .wk-journal .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--accent2);background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:5px 11px}
+  .wk-journal h4{font-size:22px;font-weight:820;letter-spacing:-.015em;line-height:1.2}
+  .wk-journal p{font-size:14.5px;color:var(--dim);line-height:1.6;max-width:60ch}
+  .wk-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="home-glow"></div>
+<!-- 1. HERO — 궤도 캐러셀 (드래그로 잡고 휙 돌리기 · 호버 콜아웃 · 카드 클릭=해당 제품으로) · nav는 프로토처럼 히어로 안 오버레이 -->
+<header class="ver" id="hero">
+  <div class="dotgrid"></div>
+  <div class="horbit" id="horbit">
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/landing/shoot/seoyeon-street.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Lens · ディテール</span><img decoding="async" src="/img/landing/picked/serum-03.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/12.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · エディトリアル</span><img decoding="async" src="/img/landing/picked/sparkling-05.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/07.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · エディトリアル</span><img decoding="async" src="/img/landing/picked/chocolate-06.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/landing/shoot/jihoon-street.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Lens · ディテール</span><img decoding="async" src="/img/landing/picked/earbuds-04.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/10.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · エディトリアル</span><img decoding="async" src="/img/landing/picked/perfume-02.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/05.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · エディトリアル</span><img decoding="async" src="/img/landing/picked/handbag-03.jpg" alt="화보 예시"></div>
+  </div>
+  <div class="callout" id="callout"></div>
+  <div class="navbg"></div>
+  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features" data-i18n="nav.features">機能</a><a href="#gallery" data-i18n="nav.gallery">ショーケース</a><a href="#e2e" data-i18n="nav.e2e">ワークフロー</a><a href="#works" data-i18n="nav.works">サービス</a><a href="#pricing" data-i18n="nav.pricing">料金</a><a href="#faq">FAQ</a></span><span class="end"><span class="lang-sw" style="font-size:13px;color:var(--faint)"><a data-lang="en" href="/" hreflang="en">EN</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ko" href="/ko" hreflang="ko">KO</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ja" href="/ja" hreflang="ja" aria-current="true">JA</a></span><a href="/saas-login" data-i18n="nav.login">ログイン</a><a class="btn btn-p" href="/studio" data-i18n="nav.start">無料で始める</a></span></nav>
+  <div class="cctr">
+    <h1 class="giant" data-i18n="hero.title">AIフォトスタジオ —<br><span class="grad">商品ショット、モデルショット、広告動画</span>まで、写真1枚から。</h1>
+    <p class="csub" data-i18n="hero.sub">Doppia Lensが商品を撮り、Doppia Shootがモデルに着せ、Editorが後から直します — スタジオもプロンプトも不要。</p>
+    <div class="chcta"><a class="btn btn-p btn-lg" href="/explore" data-i18n="hero.cta">無料で始める</a></div>
+    <p class="cfine" data-i18n="hero.fine">カード登録不要 · 登録時に1,500クレジット</p>
+  </div>
+</header>
+
+<!-- 2. FEATURES -->
+<section class="wrap" id="features">
+  <div class="eyebrow">INSIDE THE STUDIO</div>
+  <h2 data-i18n="sec2.title">撮り方はふたつ。<br>スタジオは<em>ひとつ</em>。</h2>
+  <p class="lead" data-i18n="sec2.lead">カメラの前が商品ならLens、人ならDoppia Shoot。そのあとはEditor・広告動画・動画エディターが結果をさらに先へ運びます。タブを押して、何ができるか実際に見てください。</p>
+  <div class="exp">
+    <div class="tabs">
+      <button class="tab on" data-k="lens"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z"/></svg></span><span class="tt"><b>Doppia Lens</b><span data-i18n="tab.lens.sub">自分のルックを、どの商品にも</span></span><span class="star">TOP</span></button>
+      <button class="tab" data-k="shoot"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><span class="tt"><b>Doppia Shoot</b><span data-i18n="tab.shoot.sub">モデルを選んで、着せる</span></span><span class="star">NEW</span></button>
+      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b>Editor</b><span data-i18n="tab.edit.sub">ライティング · 消去 · 文字修正</span></span></button>
+      <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span data-i18n="tab.video.sub">写真1枚、一行</span></span><span class="star">TOP</span></button>
+      <button class="tab" data-k="vedit"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M8 6v4M16 6v4"/></svg></span><span class="tt"><b>Video Editor</b><span data-i18n="tab.vedit.sub">差し替え · リフレーム · 延長</span></span><span class="star">NEW</span></button>
+    </div>
+    <div class="pane">
+      <div class="panel" data-k="shoot">
+        <div class="demo">
+          <div class="dpills"><button class="dpill on" data-s="pick" data-i18n="dp.pick">モデルを選ぶ</button><button class="dpill" data-s="mine" data-i18n="dp.mine">自分のモデルを作る</button></div>
+
+          <!-- ① 모델 고르기: [얼굴 4 + 행동 4] → 결과 1장. 얼굴 클릭 = 그 모델의 거리컷으로 스왑 -->
+          <div class="sv on" data-v="pick">
+            <div class="sv-stack">
+              <div class="sv-in">
+                <div class="sv-faces">
+                  <span class="sv-th on" data-look="/img/landing/shoot/seoyeon-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/seoyeon-face.jpg" alt=""></span>
+                  <span class="sv-th" data-look="/img/landing/shoot/jihoon-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/jihoon-face.jpg" alt=""></span>
+                  <span class="sv-th" data-look="/img/landing/shoot/maya-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/maya-face.jpg" alt=""></span>
+                  <span class="sv-th" data-look="/img/landing/shoot/chidi-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/chidi-face.jpg" alt=""></span>
+                </div>
+                <figcaption data-i18n="cap.pickmodel">モデル — ひとり選ぶ</figcaption>
+              </div>
+              <span class="sv-plus">+</span>
+              <div class="sv-in">
+                <div class="sv-acts"><span>👗 Outfit</span><span>🏙 Scene</span><span>🧍 Pose</span><span>📸 Shoot</span></div>
+                <figcaption data-i18n="cap.acts">着せる · 移動 · ポーズ</figcaption>
+              </div>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/shoot/seoyeon-street.jpg" alt=""><figcaption data-i18n="cap.result"><i></i>生成結果</figcaption></figure>
+          </div>
+
+          <!-- ② 내 모델 만들기: [사진 1장 → 얼굴 24각도] → 학습된 모델의 컷 -->
+          <div class="sv" data-v="mine">
+            <div class="sv-stack">
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/shoot/minji-face.jpg" alt=""><figcaption data-i18n="cap.yourphoto">自分の写真 — 1枚で十分</figcaption></figure>
+              <span class="sv-plus">↓</span>
+              <div class="sv-in sv-in-w">
+                <div class="sv-angles"><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-1.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-2.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-3.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-4.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-5.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-6.jpg" alt=""></div>
+                <figcaption data-i18n="cap.angles">顔の24アングルは、こちらで作ります</figcaption>
+              </div>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/shoot/minji-street.jpg" alt=""><figcaption data-i18n="cap.trained"><i></i>自分のモデル — ここからどんなシーンでも</figcaption></figure>
+          </div>
+        </div>
+        <div class="desc">
+          <div class="sd on" data-v="pick"><h3 data-i18n="sd.pick.h3">Doppia Shoot</h3><div class="tl" data-i18n="sd.pick.tl">モデルを選び、着せて、動かして、ポーズをとらせる。</div><p data-i18n="sd.pick.p">用意されたモデルのロスター — 韓国とグローバル、20代から40代まで。ひとり選んで自分の服を着せ、シーンを変え、ポーズをとらせ、または一行で新しいショットを説明してください。結果はすべて同じ顔の本物の写真です。</p><ul data-i18n="sd.pick.ul"><li>用意されたモデル · または一行でショットを説明</li><li>服 · シーン · ポーズ — どのバージョンからでも続けられる</li><li>スタジオからパリの街角まで、28のショットプリセット</li></ul></div>
+          <div class="sd" data-v="mine"><h3 data-i18n="sd.mine.h3">自分のモデルを作る</h3><div class="tl" data-i18n="sd.mine.tl">自分の顔でも、ブランドのモデルでも — 写真から。</div><p data-i18n="sd.mine.p">モデルになることに同意した人の写真をアップロードしてください。1枚で十分 — モデルが学習する顔の24アングルはDoppiaが撮ります。一度学習すれば、その後はどんなシーン・どんな服でも、何度でも。</p><ul data-i18n="sd.mine.ul"><li>1枚で十分 — アングルはこちらで作成</li><li>一度学習、以後すべてのショットに</li><li>すべてのモデルに同意確認</li></ul></div>
+          <a class="btn btn-p cta" href="/shoot" data-i18n="cta.start">無料で始める →</a><p class="fine" data-i18n="cta.fine">◈ 1,500クレジット無料 · カード登録不要</p>
+        </div>
+      </div>
+      <div class="panel on" data-k="lens">
+        <div class="demo">
+          <div class="dpills"><button class="dpill on" data-s="any" data-i18n="dp.any">同じ商品、すべてのLens</button><button class="dpill" data-s="official" data-i18n="dp.official">公式Lens</button></div>
+          <div class="sv on" data-v="any">
+            <div class="sv-stack">
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/product.jpg" alt=""><figcaption>My product photo</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""><figcaption>Lens · Glacier Ice</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <div class="sv-grid" style="flex:1;min-width:0"><figure><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/gummy.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/marble.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/holiday.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/plinth.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/linen.webp" alt=""></figure></div>
+          </div>
+          <div class="sv sv-col" data-v="official">
+            <div class="sv-grid">
+              <figure><img loading="lazy" decoding="async" src="/img/landing/ghost-result.jpg" alt=""><figcaption data-i18n="lz.g1">商品カット</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-fashion.jpg" alt=""><figcaption data-i18n="lz.g2">モデルカット</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/hero-oxb-result.jpg" alt=""><figcaption data-i18n="lz.g3">商品ヒーロー</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-jstudio.jpg" alt=""><figcaption data-i18n="lz.g4">ジュエリー</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-dewy.jpg" alt=""><figcaption data-i18n="lz.g5">デューイビューティー</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-nail.jpg" alt=""><figcaption data-i18n="lz.g6">ネイル</figcaption></figure>
+            </div>
+          </div>
+        </div>
+        <div class="desc">
+          <div class="sd on" data-v="any"><h3 data-i18n="lz.h3">Doppia Lens</h3><div class="tl" data-i18n="lz.tl">ルックを一度保存。商品を入れ替えるだけ — 毎回同じコンセプト。</div><p data-i18n="lz.p">Lensはショットの作り方を記憶します — コンセプト、光、フレーミング、エンジン。公式Lensを選ぶか、どの結果からでも自分のLensとして保存し、新しい商品写真を入れるだけ。リンクで共有したり、コミュニティに公開したりできます。</p><ul data-i18n="lz.ul"><li>公式Lens: ベストセラーとトレンドのルック</li><li>どの結果からでも自分のLensに保存 — フォルダで整理</li><li>リンクで共有 · コミュニティに公開</li></ul></div>
+          <div class="sd" data-v="official"><h3 data-i18n="lz.o.h3">公式Lens</h3><div class="tl" data-i18n="lz.o.tl">商品カット、ゴースト、エディトリアル、ジュエリー — 今日すぐ。</div><p data-i18n="lz.o.p">スタジオで最も使われたルックをLensとして保存してあります。平置き・ゴーストマネキンの商品カット、台座の上のエディトリアル、ジュエリー、ビューティー、ネイル。ひとつ選んで写真を入れれば完了 — プロンプトなし。</p><ul data-i18n="lz.o.ul"><li>商品カット · ゴーストマネキン · エディトリアル</li><li>ジュエリー · ビューティー · ネイル ほか</li><li>選んで完了 — プロンプトなし</li></ul></div>
+          <a class="btn btn-p cta" href="/lens" data-i18n="cta.start">無料で始める →</a><p class="fine" data-i18n="cta.fine">◈ 1,500クレジット無料 · カード登録不要</p>
+        </div>
+      </div>
+      <div class="panel" data-k="video">
+        <div class="demo">
+          <div class="dpills"><span class="dpill on" data-i18n="dp.video">9:16 · Reels/TikTok</span></div>
+          <div class="flow">
+            <figure class="sv-in" style="align-self:center"><img loading="lazy" decoding="async" src="/img/landing/reels/figure-ref.jpg" alt=""><figcaption data-i18n="cap.photoline">自分の商品写真 + 一行</figcaption></figure>
+            <div class="arw">→</div>
+            <div class="reelbox">
+              <div class="rwrap" id="figReel">
+                <video class="ra on" muted playsinline preload="metadata"></video>
+                <video class="rb" muted playsinline preload="metadata"></video>
+              </div>
+              <span class="badge" data-i18n="badge.reel"><i></i>生成結果 · 5秒の広告リール</span>
+            </div>
+          </div>
+        </div>
+        <div class="desc"><h3 data-i18n="video.h3">広告動画</h3><div class="tl" data-i18n="video.tl">台本までおまかせ、そのまま動画に。</div><p data-i18n="video.p">写真と一行があれば十分 — Doppiaがコンセプトとすべてのショットを組み立て、音楽付きの9:16広告に仕上げます。TikTokとReelsにそのまま投稿。自分で決めたいなら、ショットの数と長さまで指定できます。</p><ul data-i18n="video.ul"><li>ショットリストは自動 — 自分で書くこともできる</li><li>9:16 · 1:1 · 16:9、音楽付き — すぐアップロード</li><li>生成できたものだけ課金、失敗は自動返金</li></ul><a class="btn btn-p cta" href="/ad-video" data-i18n="cta.start">無料で始める →</a><p class="fine" data-i18n="cta.fine">◈ 1,500クレジット無料 · カード登録不要</p></div>
+      </div>
+      <div class="panel" data-k="vedit">
+        <div class="demo">
+          <div class="dpills"><button class="dpill on" data-s="swap">Product swap</button><button class="dpill" data-s="reframe">Reframe</button></div>
+          <div class="sv on" data-v="swap">
+            <div class="sv-stack">
+              <figure class="sv-in"><video src="/img/landing/vedit/swap-before.mp4" poster="/img/landing/vedit/swap-before.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption>My video</figcaption></figure>
+              <span class="sv-plus">+</span>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/vedit/swap-product.jpg" alt=""><figcaption>My product photo</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big" style="flex-basis:380px"><video src="/img/landing/vedit/swap-after.mp4" poster="/img/landing/vedit/swap-after.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption><i></i>Generated · product swapped</figcaption></figure>
+          </div>
+          <div class="sv" data-v="reframe">
+            <div class="sv-stack">
+              <figure class="sv-in"><video src="/img/landing/vedit/swap-before.mp4" poster="/img/landing/vedit/swap-before.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption>My video · 4:5</figcaption></figure>
+            </div>
+            <span class="arw sv-arw">→</span>
+            <figure class="sv-big"><video src="/img/landing/vedit/reframe-169.mp4" poster="/img/landing/vedit/reframe-169.jpg" muted loop playsinline autoplay preload="metadata"></video><figcaption><i></i>Reframed · 16:9</figcaption></figure>
+          </div>
+        </div>
+        <div class="desc">
+          <div class="sd on" data-v="swap"><h3>Product swap</h3><div class="tl">Swap the product in any video for yours.</div><p>Upload a clip and a photo of your product — the product in the video becomes yours, while hands, motion and camera stay exactly as shot. Then trim, add text and music in the timeline editor.</p><ul><li>Same motion, new product — up to 15s per swap</li><li>Timeline editor: trim · text · music · captions</li><li>Extend · Upscale · Restyle · Motion transfer</li></ul></div>
+          <div class="sd" data-v="reframe"><h3>Reframe</h3><div class="tl">Any aspect ratio — nobody gets cropped out.</div><p>Turn a vertical clip into 16:9 (or the other way) and AI generates the missing area instead of cropping. 9:16, 16:9, 1:1, 4:5 and 5:4 — up to 60 seconds.</p><ul><li>AI fills the new area — no bars, no blur</li><li>9:16 · 16:9 · 1:1 · 4:5 · 5:4</li><li>Up to 60s, 1080p</li></ul></div>
+          <a class="btn btn-p cta" href="/video-edit" data-i18n="cta.start">無料で始める →</a><p class="fine" data-i18n="cta.fine">◈ 1,500クレジット無料 · カード登録不要</p>
+        </div>
+      </div>
+      <div class="panel" data-k="edit">
+        <div class="demo">
+          <div class="dpills"><span class="dpill on" data-i18n="dp.edit">言葉で直す</span></div>
+          <div class="ed-bar"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg><b data-i18n="ed.cmd">「背景だけゴールドにして」</b><span class="ed-go">↵</span></div>
+          <div class="cmp" id="cmp">
+            <img loading="lazy" decoding="async" src="/img/landing/edit-after-new.jpg" alt="">
+            <div class="cmp-bw"><img loading="lazy" decoding="async" src="/img/landing/edit-before-new.jpg" alt=""></div>
+            <span class="cmp-lb" style="left:12px" data-i18n="ed.after">修正後</span><span class="cmp-lb" style="right:12px" data-i18n="ed.before">修正前</span>
+            <div class="cmp-hd"><span>↔</span></div>
+          </div>
+          <div class="ed-chips"><span>Relight</span><span>Angles</span><span>Replace background</span><span>Erase</span><span>Expand</span><span>Upscale ×16</span><span>Remove background</span><span>Fix label text</span></div>
+        </div>
+        <div class="desc"><h3>Editor</h3><div class="tl">Fix any shot — no reshoot.</div><p>Relight with a light pad, turn the camera to a new angle, swap the background, erase or expand, and upscale up to ×16. Or just say what to change — the product itself stays intact.</p><ul><li>Relight · Angles · Replace background · Erase · Inpaint · Expand</li><li>Upscale up to ×16 · Remove background · Fix label text</li><li>Say it in words — the product is preserved</li></ul><a class="btn btn-p cta" href="/image-edit" data-i18n="cta.start">無料で始める →</a><p class="fine" data-i18n="cta.fine">◈ 1,500クレジット無料 · カード登録不要</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. BREADTH — 무엇을 팔든 -->
+<section class="wrap" id="gallery">
+  <div class="eyebrow">WHATEVER YOU SELL</div>
+  <h2 data-i18n="sec3.title">ブランドに必要なすべてを、<br><em>写真たった1枚から。</em></h2>
+  <p class="lead" data-i18n="sec3.lead">アパレル、ジュエリー、コスメは始まりにすぎません — 食品、生活雑貨、何でも。今売っているものが何であれ、写真1枚で十分。それを身につける人まで。</p>
+  <div class="cats">
+    <span class="cat hi" data-i18n="cat.apparel">アパレル</span><span class="cat hi" data-i18n="cat.jewelry">ジュエリー</span><span class="cat hi" data-i18n="cat.cosmetics">コスメ</span><span class="cat hi" data-i18n="cat.beauty">ビューティー</span><span class="cat hi" data-i18n="cat.food">食品</span><span class="cat hi" data-i18n="cat.cafe">カフェ</span><span class="cat hi" data-i18n="cat.home">ホーム</span><span class="cat hi" data-i18n="cat.tech">テック</span><span class="cat hi" data-i18n="cat.pets">ペット</span><span class="cat hi" data-i18n="cat.bodywear">ボディウェア</span><span class="cat hi" data-i18n="cat.anything">何でも</span>
+  </div>
+  <div class="wall">
+    <figure><figcaption data-i18n="cat.cosmetics">コスメ</figcaption><img loading="lazy" decoding="async" src="/img/landing/pool/cream-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.jewelry">ジュエリー</figcaption><img loading="lazy" decoding="async" src="/img/landing/wallcand/jw-4.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.apparel">アパレル</figcaption><img loading="lazy" decoding="async" src="/img/landing/wallcand/ap-4.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.beauty">ビューティー</figcaption><img loading="lazy" decoding="async" src="/img/landing/pool/nail-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.food">食品</figcaption><img loading="lazy" decoding="async" src="/img/landing/pool/hanwoo-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.cafe">カフェ</figcaption><img loading="lazy" decoding="async" src="/img/landing/wallcand/cf-4.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.home">ホーム</figcaption><img loading="lazy" decoding="async" src="/img/landing/pool/candle-02.jpg" alt=""></figure>
+    <figure><figcaption data-i18n="cat.tech">テック</figcaption><img loading="lazy" decoding="async" src="/img/landing/wallcand/tc-3.jpg" alt=""></figure>
+  </div>
+  <div class="addbar">
+    <span class="plus">＋</span>
+    <div style="text-align:left"><b data-i18n="add.b">あなたの商品もここに。</b> <span data-i18n="add.s">食品でも家電でも — 写真1枚で同じエディトリアルになります。</span></div>
+  </div>
+</section>
+
+<!-- 4. END-TO-END -->
+<section class="wrap" id="e2e">
+  <div class="eyebrow">END-TO-END</div>
+  <h2 data-i18n="sec4.title">商品写真を1枚アップロード。<br>残りの<em>チャネル素材すべて</em>はDoppiaが埋めます。</h2>
+  <p class="lead" data-i18n="sec4.lead">ディテールカット、モデルショット、エディトリアル、広告動画がひとつの流れで出てきます。結果はすべてライブラリに溜まり、次はもっと速く再利用できます。</p>
+  <div class="e2e">
+    <div class="e2e-apex">
+      <div class="ph"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-src.jpg" alt=""></div>
+      <span class="pill" data-i18n="apex.pill">商品写真1枚あればOK</span>
+    </div>
+    <svg class="e2e-fan" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M500 0 C500 50 125 50 125 100"/><path d="M500 0 C500 50 375 50 375 100"/><path d="M500 0 C500 50 625 50 625 100"/><path d="M500 0 C500 50 875 50 875 100"/>
+    </svg>
+    <div class="e2e-conn e2e-conn-m"></div>
+    <div class="e2e-outs">
+      <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-macro.jpg" alt=""></div><div class="cap"><b data-i18n="out.macro.b">ディテールカット</b><p data-i18n="out.macro.p">商品ページや広告向け、あらゆるムードの商品カット。</p></div></div>
+      <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""></div><div class="cap"><b data-i18n="out.wear.b">モデルショット</b><p data-i18n="out.wear.p">Doppia Shootのモデルが着用 — 本物の着こなし。</p></div></div>
+      <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-hero.jpg" alt=""></div><div class="cap"><b data-i18n="out.hero.b">エディトリアル</b><p data-i18n="out.hero.p">ブランドトーンを伝えるエディトリアル。</p></div></div>
+      <div class="e2e-card"><div class="im"><video src="/img/landing/e2e/s-reel.mp4" poster="/img/landing/e2e/s-reel-still.jpg" autoplay muted loop playsinline></video><span class="tag">9:16</span></div><div class="cap"><b data-i18n="out.video.b">広告動画</b><p data-i18n="out.video.p">Reels・Shorts・広告にそのまま使える縦動画。</p></div></div>
+    </div>
+    <svg class="e2e-fan" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M125 0 C125 50 500 50 500 100"/><path d="M375 0 C375 50 500 50 500 100"/><path d="M625 0 C625 50 500 50 500 100"/><path d="M875 0 C875 50 500 50 500 100"/>
+    </svg>
+    <div class="e2e-conn e2e-conn-m"></div>
+    <div class="e2e-lib">
+      <div class="thumbs">
+        <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-macro.jpg" alt=""><i data-i18n="out.macro.b">ディテールカット</i></span>
+        <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""><i data-i18n="out.wear.b">モデルショット</i></span>
+        <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-hero.jpg" alt=""><i data-i18n="out.hero.b">エディトリアル</i></span>
+      </div>
+      <div class="tx">
+        <span class="tag" data-i18n="lib.tag">マイライブラリ</span>
+        <h4 data-i18n="lib.h4">作った結果が、<em class="grad">そのままブランド資産</em>に。</h4>
+        <p data-i18n="lib.p">生成したカットと動画はすべてライブラリに保存され、いつでもワンクリックで呼び出せます。</p>
+      </div>
+    </div>
+    <div class="e2e-arrow"><svg viewBox="0 0 40 52" aria-hidden="true"><defs><linearGradient id="e2eag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a40e0"/><stop offset="1" stop-color="#d9608f"/></linearGradient></defs><path d="M14 2h12v27h8L20 50 6 29h8z" fill="url(#e2eag)"/></svg></div>
+    <div class="e2e-ch">
+      <span class="tag" data-i18n="ch.tag">チャネル</span>
+      <h4 data-i18n="ch.h4">そのまま<em class="grad">すべてのチャネル</em>へ、一度に。</h4>
+      <div class="e2e-chgroups">
+        <div class="e2e-chg"><b data-i18n="ch.kr">韓国</b><div class="e2e-chips"><button class="e2e-chip on" data-ch="detail" data-i18n="ch.detail">商品ページ</button><button class="e2e-chip" data-ch="smart" data-i18n="ch.smart">Naver Smart Store</button><button class="e2e-chip" data-ch="coupang" data-i18n="ch.coupang">Coupang</button><button class="e2e-chip" data-ch="kakao" data-i18n="ch.kakao">カカオトークチャンネル</button></div></div>
+        <div class="e2e-chg"><b data-i18n="ch.gl">グローバル</b><div class="e2e-chips"><button class="e2e-chip" data-ch="insta">Instagram</button><button class="e2e-chip" data-ch="tiktok">TikTok · Shorts</button><button class="e2e-chip" data-ch="banner">Display Ads</button><button class="e2e-chip" data-ch="amazon">Amazon</button></div></div>
+      </div>
+
+      <div class="e2e-stage">
+        <!-- 국내: 상세페이지(자사몰) -->
+        <div class="chm on" data-ch="detail"><div class="mk mk-light">
+          <div class="mk-webbar"><i></i><i></i><i></i></div>
+          <img loading="lazy" decoding="async" class="mk-img" src="/img/landing/e2e/s-hero.jpg" alt="">
+          <div class="mk-pad"><div class="sk w70"></div><div class="sk w40"></div><div class="sk sk-price w30"></div><span class="mk-btn mk-btn-grad">구매하기</span></div>
+        </div></div>
+        <!-- 국내: 스마트스토어 -->
+        <div class="chm" data-ch="smart"><div class="mk mk-light">
+          <div class="mk-bar" style="background:#12b76a"></div>
+          <img loading="lazy" decoding="async" class="mk-img" src="/img/landing/e2e/s-macro.jpg" alt="">
+          <div class="mk-pad"><div class="sk w70"></div><div class="mk-stars">★★★★★ <span>리뷰</span></div><div class="sk sk-price w30"></div><span class="mk-btn" style="background:#12b76a">스토어찜 · 구매하기</span></div>
+        </div></div>
+        <!-- 국내: 쿠팡(리스트 카드) -->
+        <div class="chm" data-ch="coupang"><div class="mk mk-light mk-row">
+          <img loading="lazy" decoding="async" class="mk-thumb" src="/img/landing/e2e/s-macro.jpg" alt="">
+          <div class="mk-rowtx"><div class="sk w90"></div><div class="sk w60"></div><div class="mk-fast">빠른배송</div><div class="sk sk-price w40"></div><div class="mk-stars">★★★★☆ <span>(999+)</span></div></div>
+        </div></div>
+        <!-- 국내: 카카오톡 채널 -->
+        <div class="chm" data-ch="kakao"><div class="mk mk-chat">
+          <div class="mk-chathd">내 브랜드 채널</div>
+          <div class="mk-msg"><span class="mk-av"></span><div class="mk-bubble"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""><div class="mk-bubtx">신제품이 나왔어요 ✨</div></div></div>
+        </div></div>
+        <!-- 해외: Instagram 포스트 -->
+        <div class="chm" data-ch="insta"><div class="mk mk-dark">
+          <div class="mk-ighd"><span class="mk-igav"></span><div><div class="skd w40"></div><div class="skd w25"></div></div></div>
+          <img loading="lazy" decoding="async" class="mk-img" src="/img/landing/e2e/s-onmodel.jpg" alt="">
+          <div class="mk-igact"><span>♡</span><span>💬</span><span>➤</span><b>⌗</b></div>
+          <div class="mk-pad"><div class="skd w80"></div><div class="skd w50"></div></div>
+        </div></div>
+        <!-- 해외: TikTok/Shorts 9:16 -->
+        <div class="chm" data-ch="tiktok"><div class="mk mk-phone">
+          <video src="/img/landing/e2e/s-reel.mp4" poster="/img/landing/e2e/s-reel-still.jpg" autoplay muted loop playsinline></video>
+          <div class="mk-rail"><i>♡</i><i>💬</i><i>➤</i></div>
+          <div class="mk-cap"><div class="skd w60"></div><div class="skd w40"></div></div>
+        </div></div>
+        <!-- 해외: Display Ads 배너 -->
+        <div class="chm" data-ch="banner"><div class="mk mk-banner">
+          <img loading="lazy" decoding="async" src="/img/landing/e2e/s-hero.jpg" alt="">
+          <div class="mk-bantx"><div class="skd w80"></div><div class="skd w55"></div><span class="mk-btn mk-btn-grad">Shop Now</span></div>
+        </div></div>
+        <!-- 해외: Amazon 상품 카드 -->
+        <div class="chm" data-ch="amazon"><div class="mk mk-light">
+          <img loading="lazy" decoding="async" class="mk-img" src="/img/landing/e2e/s-macro.jpg" alt="">
+          <div class="mk-pad"><div class="sk w80"></div><div class="mk-stars" style="color:#e8a33d">★★★★☆ <span>1,2--</span></div><div class="sk sk-price w30"></div><span class="mk-btn" style="background:#f7ca00;color:#111">Add to Cart</span></div>
+        </div></div>
+      </div>
+      <p class="fine" style="margin-top:22px" data-i18n="ch.fine">撮影1回分の価格で — これ全部を、毎回。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5. SERVICES — Doppia × USAsia Journal (10-16: Works 고객 전원 = 운영 + 저널 노출. "free" 는 쓰지 않는다 — 사용자) -->
+<section class="wrap" id="works">
+  <div class="eyebrow">RUN IT FOR ME</div>
+  <h2 data-i18n="wk.title">自分でやるより、任せたい?<br><em>Doppia × USAsia Journal.</em></h2>
+  <p class="lead" data-i18n="wk.lead">ブランドと店舗のためのマーケティング運用。6つの質問、実際のチャネルを確認した書面レポート、そしてプロモーションと広告の運用 — ブランドはUSAsia Journalに掲載されます。</p>
+  <div class="pcards3 wk-steps">
+    <div class="pc3"><div class="pi">1</div><b data-i18n="wk.s1.b">マーケティング診断</b><p data-i18n="wk.s1.p">何をどこで売り、今いちばん難しいことは何か。6つの質問、2分、入力なし。</p></div>
+    <div class="pc3"><div class="pi">2</div><b data-i18n="wk.s2.b">7〜10営業日以内に書面レポート</b><p data-i18n="wk.s2.p">回答だけでなく実際のチャネルを確認し、現状と次の一手を文章でお送りします。</p></div>
+    <div class="pc3"><div class="pi">3</div><b data-i18n="wk.s3.b">運用はおまかせ</b><p data-i18n="wk.s3.p">プロモーション・広告・リピーター管理 — 全体運用でも、ひとつの範囲でも。毎月レポート。</p></div>
+  </div>
+  <div class="wk-journal">
+    <span class="tag">USAsia Journal</span>
+    <h4 data-i18n="wk.j.h4">運用はDoppia。<em class="grad">露出はUSAsia Journal。</em></h4>
+    <p data-i18n="wk.j.p">ご契約の間ずっとUSAsia Journalに掲載されます。選ばれたブランドは特集記事で紹介されます。</p>
+    <div class="wk-cta"><a class="btn btn-p" href="/works" data-i18n="wk.cta">マーケティング診断</a><a class="btn btn-g" href="/works" data-i18n="wk.cta2">相談する →</a></div>
+  </div>
+</section>
+
+
+<!-- 6. PRICING -->
+<section class="wrap" id="pricing">
+  <div class="eyebrow">PRICING</div>
+  <h2 data-i18n="pr.title">必要な分だけ。<br><em>軽く</em>始めましょう。</h2>
+  <p class="lead" data-i18n="pr.lead">どのプランも同じ機能が使えます。毎月自動で補充されるサブスクリプションか、必要なときだけのチャージか — 支払い方だけ選んでください。</p>
+  <div class="pcards3">
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg></div><b data-i18n="pr.c1.b">サブスクリプション — 毎月自動で</b><p data-i18n="pr.c1.p">プランを選ぶと毎月クレジットが補充され、すべての機能が使えます。毎週コンテンツを出すセラーの基本です。</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><b data-i18n="pr.c2.b">チャージ — 必要なときだけ</b><p data-i18n="pr.c2.p">サブスクリプションなしで、必要なときだけクレジットを追加。1回の購入で12か月有効です。</p></div>
+    <div class="pc3"><div class="pi"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 00-4-12z"/></svg></div><b data-i18n="pr.c3.b">12か月有効</b><p data-i18n="pr.c3.p">クレジットは購入から12か月有効。未使用分は1年以内なら元のお支払い方法へ返金できます。</p></div>
+  </div>
+  <div class="pseg"><button class="ps on" data-seg="personal" data-i18n="ps.personal">個人 · 小規模チーム</button><button class="ps" data-seg="enterprise" data-i18n="ps.ent">企業</button><button class="ps" data-seg="pack" data-i18n="ps.pack">チャージ</button></div>
+  <div class="ptier" id="ptier"></div>
+  <p class="fine" style="margin-top:20px;text-align:center" data-i18n="pr.fine">VAT込み · クレジットは12か月有効 · 1年以内なら元のお支払い方法へ返金可 · 国内決済は1回のチャージ上限₩100,000</p>
+</section>
+
+<!-- 7. FAQ -->
+<section class="wrap" id="faq">
+  <div class="eyebrow">FAQ</div>
+  <h2 data-i18n="faq.title">始める前に — <em>よくある質問</em></h2>
+  <div class="faq">
+    <details open name="faq"><summary data-i18n="faq.q1">本当に無料で始められますか?</summary><p data-i18n="faq.a1">はい。登録した瞬間に1,500クレジットが付与されます — カード登録不要、いつでも解約可能。まず作ってみてから決めてください。</p></details>
+    <details name="faq"><summary data-i18n="faq.q2">自分が売っているものでも使えますか?</summary><p data-i18n="faq.a2">何を売っていても使えます。商品ショットはDoppia Lens、モデルショットはDoppia Shoot、エディトリアルと広告動画まで — どのカテゴリでも。</p></details>
+    <details name="faq"><summary data-i18n="faq.q3">何を用意すればいいですか?</summary><p data-i18n="faq.a3">商品写真1枚だけ — 別角度も参考資料も不要です。モデルショットは用意されたモデルを選ぶか自分の写真をアップロード。広告動画は商品について一行書くか、空欄のままにすればDoppiaが書きます。</p></details>
+    <details name="faq"><summary data-i18n="faq.q4">生成した画像を商用利用できますか?</summary><p data-i18n="faq.a4">はい — Freeを含むすべてのプランで商用利用できます。商品ページ、広告、SNS — どこでも。</p></details>
+    <details name="faq"><summary data-i18n="faq.q5">クレジットはどう消費されますか?</summary><p data-i18n="faq.a5">生成ごとに消費され、失敗した生成は自動で返金されます — できたものだけにお支払い。購入したクレジットは12か月有効です。</p></details>
+    <details name="faq"><summary data-i18n="faq.q6">サブスクリプションとチャージは何が違いますか？</summary><p data-i18n="faq.a6">サブスクリプションは毎月クレジットが自動で補充され、すべての機能が使えます。チャージはサブスクリプションなしで必要なときだけ追加し、1回の購入で12か月有効です。両方を併用しても構いません。</p></details>
+    <details name="faq"><summary data-i18n="faq.q7">自分の顔や、自社のモデルを使えますか?</summary><p data-i18n="faq.a7">はい。Doppia Shootで、同意した人の写真から自分のモデルを作ってください — 1枚で十分、学習用のアングルはDoppiaが作ります。以後のショットはすべてその顔で出てきます。</p></details>
+    <details name="faq"><summary data-i18n="faq.q8">Doppiaにマーケティングを任せられますか?</summary><p data-i18n="faq.a8">はい — Doppia × USAsia Journalです。6つの質問の診断から始めると、実際のチャネルを確認した書面レポートが届き、範囲を一緒に決めてこちらが運用します。お客様はご契約の間、USAsia Journalに掲載されます。</p></details>
+  </div>
+</section>
+
+<!-- 8. CTA BAND -->
+<section class="wrap">
+  <div class="band">
+    <h2 data-i18n="band.title">撮影なしで仕上げるブランドコンテンツ —<br>今日の<em>5分</em>で十分です。</h2>
+    <p class="lead" data-i18n="band.lead">今ある商品写真でそのまま始められます。<br>何かを決める前に、まず何ができるかを見てください。</p>
+    <a class="btn btn-p btn-lg" href="/explore" data-i18n="band.btn">無料で始める</a>
+    <p class="fine" style="margin-top:16px" data-i18n="band.fine">カード登録不要 · 登録時に1,500クレジット · いつでも解約可能</p>
+  </div>
+</section>
+
+<!-- 9. FOOTER — biz-footer.js 법적 사업자정보(PG 심사 필수, 삭제금지) -->
+<script src="/js/biz-footer.js?v=6"></script>
+
+<script>
+// HERO 궤도 캐러셀 (정본 _hero_ring_orbit 이식) — 데스크톱 전용, ≤860px는 정적 그리드(탭=이동)
+(function(){
+  var LANG=document.documentElement.lang;   // (2026-10-16) ko·ja 프리렌더가 <html lang>을 바꾼다 — tt(en,ko,ja)
+  function tt(en,k,j){return LANG==='ko'?k:(LANG==='ja'&&j!=null?j:en);}
+  var T={
+    shoot:{name:tt('Doppia Shoot · Model shots','Doppia Shoot · 모델컷','Doppia Shoot · モデルショット'),desc:tt('Pick a ready model — or train your own — then dress, move and pose them.','준비된 모델을 고르거나 내 모델을 만들고, 옷·장소·자세를 바꾼다.','用意されたモデルを選ぶか自分のモデルを作り、服・場所・ポーズを変える。'),base:'/img/landing/shoot/seoyeon-face.jpg'},
+    macro:{name:tt('Doppia Lens · Detail','Doppia Lens · 상세컷','Doppia Lens · ディテール'),desc:tt('Close-up detail cuts in a saved look — drop in your product.','저장된 룩 그대로 뽑는 클로즈업 상세컷 — 제품만 넣으면 된다.','保存したルックのままのクローズアップ — 商品を入れるだけ。'),base:'/img/accessories/jewelry-flat-lay.png'},
+    hero:{name:tt('Doppia Lens · Editorial','Doppia Lens · 화보','Doppia Lens · エディトリアル'),desc:tt('Premium brand editorials on plinths and sets — same concept every time.','배경·플린스 위에 올린 프리미엄 화보 — 매번 같은 콘셉트로.','台座やセットに載せたプレミアムなエディトリアル — 毎回同じコンセプトで。'),base:'/img/producthero/swatch-beside.jpg'},
+    video:{name:tt('Ad Video · 9:16','광고영상 · 9:16','広告動画 · 9:16'),desc:tt('A vertical ad video from a single product cut.','제품 한 컷으로 만드는 세로 광고 영상.','商品カット1枚から作る縦型の広告動画。'),base:'/img/producthero/gloss-mirror.jpg'}
+  };
+  // 실배선: Shots류=스튜디오 기본 진입, 광고영상=사이트 전역 딥링크 규약 /studio?mode=ugc (home·rail과 동일)
+  var DEST={shoot:'/shoot',macro:'/lens',hero:'/lens',video:'/ad-video'};
+  var MQ=window.matchMedia('(max-width:860px)');
+  var sec=document.querySelector('.ver');
+  var els=[].slice.call(document.querySelectorAll('.oc'));
+  var cats=els.map(function(el){return el.getAttribute('data-cat');});
+  var N=els.length, LOOP=70000, omega=2*Math.PI/LOOP;
+  var callout=document.getElementById('callout');
+  var giant=document.querySelector('.giant');
+  var phase=((Date.now()%LOOP)/LOOP)*2*Math.PI,lastT=null,hoverIdx=-1,focusIdx=-1,lift=0,dim=0,activeCat=null;   // 위상=벽시계 동기(어느 창이든 같은 순간=같은 배치)
+  var w=omega, dragging=false, moved=false, downIdx=-1, lastAng=0, lastMoveT=0, lastUpT=-1e9;
+  function nowMs(){return performance.now();}
+  function ctr(){var r=sec.getBoundingClientRect();return {r:r,cx:r.width*0.5,cy:window.innerHeight*0.475+50};}
+
+  var lastMoveMouse=-1e9;
+  sec.addEventListener('mousemove',function(){ if(!dragging) lastMoveMouse=nowMs(); });   // 커서가 실제로 움직인 시각
+  els.forEach(function(el,i){
+    // 커서를 방금 움직였을 때만 호버(=정지) 걸림. 손 가만히 있는데 도는 카드가 커서 밑 지나가는 건 무시 → 플릭 안 막힘
+    el.addEventListener('mouseenter',function(){if(!MQ.matches && !dragging && (nowMs()-lastUpT>220) && (nowMs()-lastMoveMouse<140)){hoverIdx=i;focusIdx=i;}});
+    el.addEventListener('mouseleave',function(){if(hoverIdx===i)hoverIdx=-1;});
+  });
+
+  // 잡고 휙 돌리기 (드래그 + 관성)
+  sec.addEventListener('pointerdown',function(e){
+    if(MQ.matches) return;
+    if(e.target.closest('a')) return;
+    var cd=e.target.closest('.oc'); downIdx=cd?els.indexOf(cd):-1;
+    dragging=true; moved=false; hoverIdx=-1;
+    var c=ctr(); lastAng=Math.atan2((e.clientY-c.r.top)-c.cy,(e.clientX-c.r.left)-c.cx); lastMoveT=nowMs();
+    sec.classList.add('dragging'); try{sec.setPointerCapture(e.pointerId);}catch(_){}
+  });
+  sec.addEventListener('pointermove',function(e){
+    if(!dragging) return;
+    var c=ctr();
+    var evs=(e.getCoalescedEvents&&e.getCoalescedEvents().length)?e.getCoalescedEvents():[e];  // 촘촘한 서브이벤트까지 처리 → 빠른 드래그도 매끈
+    for(var k=0;k<evs.length;k++){
+      var ev=evs[k], dx=(ev.clientX-c.r.left)-c.cx, dy=(ev.clientY-c.r.top)-c.cy;
+      var a=Math.atan2(dy,dx), tt=ev.timeStamp||nowMs();
+      if(dx*dx+dy*dy > 55*55){                                // 중심 특이점만 회피
+        var da=a-lastAng; if(da>Math.PI)da-=2*Math.PI; else if(da<-Math.PI)da+=2*Math.PI;
+        if(da>1.2)da=1.2; else if(da<-1.2)da=-1.2;            // 랩 스파이크만 컷(빠른 드래그는 통과)
+        phase+=da;
+        var d=tt-lastMoveT; if(d>0){ var vv=da/d, cap=omega*60; w=vv<-cap?-cap:(vv>cap?cap:vv); }
+        if(Math.abs(da)>0.006) moved=true;
+      }
+      lastAng=a; lastMoveT=tt;
+    }
+  });
+  function endDrag(){ if(!dragging)return; dragging=false; lastUpT=nowMs(); sec.classList.remove('dragging'); }   // w에 남은 속도가 physics에서 자연 감속(관성)
+  sec.addEventListener('pointerup',function(e){
+    endDrag();
+  });
+  sec.addEventListener('pointercancel',endDrag);
+
+  function setCallout(i){
+    if(activeCat===cats[i])return; activeCat=cats[i]; var t=T[cats[i]];
+    callout.innerHTML='<div class="co-head"><img class="co-thumb" src="'+t.base+'"><div><div class="co-lead">✨ '+tt('One product photo · no prompts','제품 사진 한 장 · 프롬프트 없이','商品写真1枚 · プロンプトなし')+'</div><div class="co-name">'+t.name+'</div></div></div><div class="co-desc">'+t.desc+'</div>';
+  }
+
+  function physics(dt){
+    if(dragging) return;
+    var target=(hoverIdx>=0)?0:omega;                     // 호버=정지, 그 외=관성/자동(같은 목표·같은 감속률)
+    var tau=(hoverIdx>=0)?300:950;                         // 감속률 일정 → 중간에 브레이크 밟듯 확 느려지는 것 없음, 관성 길게
+    w+=(target-w)*(1-Math.exp(-dt/tau));
+    phase+=dt*w;
+  }
+  // 호(arc-length) 균일화: 각도 대신 둘레를 일정 속도로 → 어느 지점이든 화면 속도 동일(원처럼 매끄럽게)
+  var lut=null, lutKey='';
+  function ellP(cx,cy,A,Bu,Bd,th){ var s=Math.sin(th); return [cx+A*Math.cos(th), cy+s*(Bu+(s>0?(Bd-Bu)*s:0))]; }
+  function buildLUT(cx,cy,A,Bu,Bd){
+    var STEPS=1200, cum=[0], ths=[0], total=0, prev=ellP(cx,cy,A,Bu,Bd,0);
+    for(var k=1;k<=STEPS;k++){
+      var th=k/STEPS*2*Math.PI, p=ellP(cx,cy,A,Bu,Bd,th), dx=p[0]-prev[0], dy=p[1]-prev[1];
+      total+=Math.sqrt(dx*dx+dy*dy); cum.push(total); ths.push(th); prev=p;
+    }
+    return {cum:cum,ths:ths,total:total};
+  }
+  function uToTheta(u){ var t=u*lut.total, cum=lut.cum, lo=0, hi=cum.length-1;
+    while(hi-lo>1){ var m=(lo+hi)>>1; if(cum[m]<t)lo=m; else hi=m; }
+    var seg=cum[hi]-cum[lo], f=seg>0?(t-cum[lo])/seg:0; return lut.ths[lo]+(lut.ths[hi]-lut.ths[lo])*f;
+  }
+  function frame(t){
+    if(lastT==null)lastT=t; var dt=Math.min(64,t-lastT); lastT=t;
+    if(MQ.matches){ callout.classList.remove('show'); requestAnimationFrame(frame); return; }  // 모바일=정적 그리드(CSS가 배치)
+    physics(dt);
+    var active=(hoverIdx>=0 && !dragging);
+    var lt=active?1:0; lift+=(lt-lift)*(1-Math.exp(-dt/170));
+    dim+=(lt-dim)*(1-Math.exp(-dt/200));                    // 주변 카드 어둡게(스포트라이트) 이징
+    if(active)focusIdx=hoverIdx;
+    var W=sec.clientWidth,H=sec.clientHeight;
+    // 링 기하: 중심=뷰포트 중앙(제목 정렬), 상단=nav 바로 아래. 하단 반경은 "뷰포트 비율"로 고정(섹션 높이에 비례시키면 타원이 길쭉해져 좁아 보임 — 반려됨).
+    // 섹션(+376px 배경)은 링보다 커서 하단에 숨쉴 여백이 남고, 카드는 섹션 안에 온전히(H-200-cy 캡으로 잘림 방지).
+    var VH=window.innerHeight;
+    var cx=W*0.5-40, cy=VH*0.475-10, A=Math.min(W*0.5-150,880);   // 사용자 보정: 회전축 왼쪽 40px·위 60px
+    var Bu=VH*0.40, Bd=VH*0.48;   // 세로 지름 살짝 축소(0.43/0.51→0.40/0.48, 사용자 튜닝)
+    var gr=giant.getBoundingClientRect(), sr=sec.getBoundingClientRect();     // 실제 제목 박스 측정(화면크기 무관)
+    var GTL=gr.left-sr.left, GTR=gr.right-sr.left, GTT=gr.top-sr.top, GTB=gr.bottom-sr.top;
+    var lk=Math.round(cx)+'_'+Math.round(cy)+'_'+Math.round(A)+'_'+Math.round(Bu)+'_'+Math.round(Bd);
+    if(lk!==lutKey){ lut=buildLUT(cx,cy,A,Bu,Bd); lutKey=lk; }
+    var pu=phase/(2*Math.PI), P=[],S=[];
+    for(var i=0;i<N;i++){
+      var u=pu+i/N; u=u-Math.floor(u);                 // 둘레 균일 분포(호길이)
+      var th=uToTheta(u), sn=Math.sin(th), depth=(sn+1)/2, s=0.467+depth*0.410;   // 스케일 ≤1(호버 포함): 네이티브를 1.41배 키우고 다운스케일만 → 업스케일 블러 제거
+      var p=ellP(cx,cy,A,Bu,Bd,th);
+      P.push({x:p[0],y:p[1],depth:depth}); S.push(s);
+    }
+    for(var i=0;i<N;i++){
+      var p=P[i], s=S[i], op=0.40+p.depth*0.60, z=Math.round(p.depth*20)+1, x=p.x, y=p.y, br=1;
+      if(i===focusIdx && lift>0.001){
+        s*=1+0.14*lift; op=op+(1-op)*lift; z=Math.min(34,Math.round(z+36*lift));   // 밝게·최상단, 제자리
+      } else {
+        op*=(1-dim*0.72); br=1-dim*0.55;          // 주변 카드만 어둡게(호버 시에만) — 회전 중엔 dim=0이라 filter 안 걸림
+      }
+      var el=els[i];
+      // 호버(포커스) 카드는 화면 위로 안 잘리게 — 상단 밖이면 lift 비율로 부드럽게 화면 안으로 내려옴
+      if(i===focusIdx && lift>0.001){
+        var hhF=el.offsetHeight*s/2, minY=(window.scrollY||0)+hhF+14;
+        if(y<minY){ y+=(minY-y)*lift; P[i].y=y; }
+      }
+      el.style.transform='translate3d('+x.toFixed(1)+'px,'+y.toFixed(1)+'px,0) scale('+s.toFixed(3)+') translate(-50%,-50%)';
+      el.style.opacity=op.toFixed(3); el.style.zIndex=z;
+      var fil=(br<0.999)?('brightness('+br.toFixed(3)+')'):'none';
+      if(el._fil!==fil){ el.style.filter=fil; el._fil=fil; }   // 값 바뀔 때만 filter 갱신
+      el.classList.toggle('focus', i===focusIdx && lift>0.4);
+    }
+    if(active && focusIdx>=0){
+      setCallout(focusIdx);
+      var ap=P[focusIdx], sAct=S[focusIdx]*(1+0.14*lift);
+      var shw=els[focusIdx].offsetWidth*sAct/2, shh=els[focusIdx].offsetHeight*sAct/2;
+      var clw=callout.offsetWidth||322, clh=callout.offsetHeight||150;
+      // 회피 박스 = 센터 콘텐츠 전체(제목+부제+CTA+fine) — 콜아웃이 절대 안 덮음
+      var cb=document.querySelector('.cctr').getBoundingClientRect();
+      var CBL=cb.left-sr.left, CBR=cb.right-sr.left, CBT=cb.top-sr.top, CBB=cb.bottom-sr.top;
+      function clampX(v){return Math.max(16,Math.min(W-clw-16,v));}
+      // 🔴세로 클램프 = 현재 뷰포트 안(스크롤 기준) — 프로토와 동일
+      var sy=window.scrollY||0, vTop=sy+(sy<40?70:16), vBot=Math.min(H-16,sy+VH-16)-clh;
+      function clampY(v){return Math.max(vTop,Math.min(vBot,v));}
+      function hits(l,t){return l<CBR+12 && l+clw>CBL-12 && t<CBB+12 && t+clh>CBT-12;}
+      // 호버된 카드 자체도 안 덮음 — 클램프에 밀려 카드 위에 얹히는 후보는 탈락 → 옆자리로
+      function hitsCard(l,t){return l<ap.x+shw+8 && l+clw>ap.x-shw-8 && t<ap.y+shh+8 && t+clh>ap.y-shh-8;}
+      // 후보 순서: ①카드 위 ②카드 옆 바깥쪽 ③카드 옆 안쪽 ④카드 아래 — 센터 블록과 안 겹치는 첫 후보 채택
+      var sideY=ap.y-clh/2;
+      var cands=[
+        [ap.x-clw/2, ap.y-shh-12-clh],
+        [(ap.x<cx)?(ap.x-shw-14-clw):(ap.x+shw+14), sideY],
+        [(ap.x<cx)?(ap.x+shw+14):(ap.x-shw-14-clw), sideY],
+        [ap.x-clw/2, ap.y+shh+12]
+      ];
+      var lx=null,ly=null;
+      for(var ci=0;ci<cands.length;ci++){
+        var tx2=clampX(cands[ci][0]), ty2=clampY(cands[ci][1]);
+        if(!hits(tx2,ty2) && !hitsCard(tx2,ty2)){ lx=tx2; ly=ty2; break; }
+      }
+      if(lx===null){ lx=clampX(ap.x-clw/2); ly=Math.max(vTop,CBT-clh-20); }   // 최후: 센터 블록 위쪽(뷰포트 안)
+      // 상단 카드 호버는 무조건 제목 위 영역으로(콜아웃 하단이 제목 상단-12를 절대 못 넘음)
+      if(ap.y<cy && ly+clh>CBT-12){ ly=Math.max(sy+80, CBT-12-clh); }
+      callout.style.left=lx+'px'; callout.style.top=ly+'px';
+      callout.classList.add('show');
+    } else { callout.classList.remove('show'); }
+    requestAnimationFrame(frame);
+  }
+  setCallout(0);
+  requestAnimationFrame(frame);
+})();
+</script>
+<script>
+  var LANG=document.documentElement.lang;   // (2026-10-16) ko·ja 프리렌더가 <html lang>을 바꾼다 — tt(en,ko,ja)
+  function tt(en,k,j){return LANG==='ko'?k:(LANG==='ja'&&j!=null?j:en);}
+  // tabs
+  var tabs=[].slice.call(document.querySelectorAll('.tab')), panels=[].slice.call(document.querySelectorAll('.panel'));
+  tabs.forEach(function(t){t.addEventListener('click',function(){var k=t.dataset.k;tabs.forEach(function(x){x.classList.toggle('on',x===t);});panels.forEach(function(p){p.classList.toggle('on',p.dataset.k===k);});});});
+  // shots 서브탭(제품샷·룩북·화보·템플릿): 데모(.sv)와 설명(.sd)을 같이 전환
+  // 서브탭(Shots: 제품샷·룩북·화보·템플릿 / Video Editor: 제품 교체·리프레임): 같은 패널 안의 데모(.sv)와 설명(.sd)만 전환
+  document.querySelectorAll('.panel .dpills').forEach(function(g){var panel=g.closest('.panel');g.querySelectorAll('button.dpill[data-s]').forEach(function(b){b.addEventListener('click',function(){
+    g.querySelectorAll('.dpill').forEach(function(x){x.classList.toggle('on',x===b);});
+    var v=b.dataset.s;
+    panel.querySelectorAll('.sv[data-v]').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+    panel.querySelectorAll('.sd[data-v]').forEach(function(p){p.classList.toggle('on',p.dataset.v===v);});
+  });});});
+  // Ad Video 릴스 플레이어 — 5초 클립 5편, ended(+5.6s 안전타이머) 시 아래→위 슬라이드 전환
+  (function(){
+    var wrap=document.getElementById('figReel'); if(!wrap) return;
+    var CLIPS=[1,2,3,4,5].map(function(n){return {src:'/img/landing/reels/fig-s'+n+'.mp4',poster:'/img/landing/reels/fig-s'+n+'.jpg'};});
+    var vids=[wrap.querySelector('.ra'),wrap.querySelector('.rb')], cur=0, idx=0, timer=null, busy=false;
+    function load(v,i){v.src=CLIPS[i].src;v.poster=CLIPS[i].poster;try{v.load();}catch(_){}}
+    function play(v){var p=v.play(); if(p&&p.catch)p.catch(function(){});}
+    function advance(){
+      if(busy) return; busy=true;
+      clearTimeout(timer);
+      var act=vids[cur], nxt=vids[1-cur];
+      idx=(idx+1)%CLIPS.length;
+      load(nxt,idx); nxt.classList.remove('up'); nxt.style.transition='none'; nxt.classList.remove('on');
+      void nxt.offsetHeight; nxt.style.transition='';
+      requestAnimationFrame(function(){
+        act.classList.add('up'); act.classList.remove('on');
+        nxt.classList.add('on'); play(nxt);
+        setTimeout(function(){ act.classList.remove('up'); busy=false; },600);
+        cur=1-cur; arm();
+      });
+    }
+    function arm(){ clearTimeout(timer); timer=setTimeout(advance,5600); }   // ended 불발 대비 안전타이머
+    vids.forEach(function(v){ v.addEventListener('ended',advance); });
+    load(vids[0],0); vids[0].classList.add('on'); play(vids[0]); arm();
+  })();
+  // 모델 토글(Shoot: 얼굴 클릭 → 같은 데모의 결과 스왑)
+  document.querySelectorAll('.sv-th[data-look]').forEach(function(t){t.addEventListener('click',function(){
+    var sv=t.closest('.sv'); if(!sv) return;
+    sv.querySelectorAll('.sv-th').forEach(function(x){x.classList.toggle('on',x===t);});
+    var out=sv.querySelector('.sv-big img'); if(out) out.src=t.dataset.look;
+  });});
+  // 활용 채널칩 → 목업 스왑
+  document.querySelectorAll('.e2e-chip[data-ch]').forEach(function(b){b.addEventListener('click',function(){
+    document.querySelectorAll('.e2e-chip[data-ch]').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.querySelectorAll('.chm').forEach(function(p){p.classList.toggle('on',p.dataset.ch===b.dataset.ch);});
+  });});
+  // EN 페이지(문서 언어 기준): 국내 채널 그룹 숨기고 해외만 + 상세페이지 칩을 해외 그룹으로 이동
+  if(!KO){
+    var dchip=document.querySelector('.e2e-chip[data-ch="detail"]');
+    var grps=document.querySelectorAll('.e2e-chg');
+    if(dchip&&grps[1]){ grps[1].querySelector('.e2e-chips').prepend(dchip); }
+    if(grps[0]) grps[0].style.display='none';
+    document.querySelectorAll('.e2e-chg>b').forEach(function(b){b.style.display='none';});
+    var buy=document.querySelector('.chm[data-ch="detail"] .mk-btn'); if(buy) buy.textContent='Buy now';
+  }
+  // 수정하기 전/후 슬라이더
+  var cmp=document.getElementById('cmp');
+  if(cmp){
+    var bw=cmp.querySelector('.cmp-bw'), hd=cmp.querySelector('.cmp-hd'), cdrag=false;
+    var setp=function(p){p=Math.max(6,Math.min(94,p));bw.style.clipPath='inset(0 0 0 '+p+'%)';hd.style.left=p+'%';};
+    setp(50);
+    var mv=function(e){var r=cmp.getBoundingClientRect();setp((e.clientX-r.left)/r.width*100);};
+    cmp.addEventListener('pointerdown',function(e){cdrag=true;mv(e);try{cmp.setPointerCapture(e.pointerId);}catch(_){}});
+    cmp.addEventListener('pointermove',function(e){if(cdrag)mv(e);});
+    cmp.addEventListener('pointerup',function(){cdrag=false;});
+    cmp.addEventListener('pointercancel',function(){cdrag=false;});
+  }
+  // pricing segments
+  // 구독 재개(2026-08-13) — 빌링 심사 포함 결정에 따라 personal/enterprise 세그먼트 복원.
+  //   pack 세그먼트는 국내 1회 충전 한도(10만원 미만) 적용본을 그대로 유지한다.
+  //   ⚠️ 이 파일은 pricing.js를 쓰지 않고 값을 하드코딩한다 — 가격 변경 시 여기도 고칠 것.
+  var SEG={
+    personal:[
+      {nm:'Free',pv:'₩0',u:tt(' /mo',' /월',' /月'),cr:tt('1,500 credits on sign-up','가입 즉시 1,500 크레딧','登録時に1,500クレジット'),li:[tt('All features · 2K quality','전 기능 · 2K 화질','全機能 · 2K画質'),tt('Results post to the public feed','결과가 공개 피드에 게시','結果は公開フィードに投稿')],cta:tt('Start free','무료로 시작','無料で始める')},
+      {nm:'Starter',pv:'₩31,000',u:tt(' /mo',' /월',' /月'),cr:tt('7,300 credits monthly','매달 7,300 크레딧','毎月7,300クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス')],cta:tt('Get started','시작하기','始める')},
+      {nm:'Standard',pv:'₩81,000',u:tt(' /mo',' /월',' /月'),cr:tt('20,300 credits monthly','매달 20,300 크레딧','毎月20,300クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス')],cta:tt('Get started','시작하기','始める'),feat:tt('Popular','추천','人気')},
+      {nm:'Pro',pv:'₩164,000',u:tt(' /mo',' /월',' /月'),cr:tt('44,000 credits monthly','매달 44,000 크레딧','毎月44,000クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス')],cta:tt('Get started','시작하기','始める')},
+      {nm:'Premium',pv:'₩329,000',u:tt(' /mo',' /월',' /月'),cr:tt('95,000 credits monthly','매달 95,000 크레딧','毎月95,000クレジット'),li:[tt('Private Mode — results stay private','Private Mode — 결과 비공개','Private Mode — 結果は非公開'),tt('All features · commercial license','전 기능 · 커머셜 라이선스','全機能 · 商用ライセンス'),tt('Highest volume','최대 볼륨','最大ボリューム')],cta:tt('Get started','시작하기','始める')}
+    ],
+    enterprise:[
+      {nm:'Team',pv:'₩990,000',u:tt(' /mo',' /월',' /月'),cr:tt('362,000 credits monthly','매달 362,000 크레딧','毎月362,000クレジット'),li:[tt('Shared team credit pool','팀 공유 크레딧 풀','チーム共有クレジットプール'),tt('10 concurrent jobs','동시 작업 10','同時ジョブ10'),tt('All features','전 기능','全機能')],cta:tt('Talk to us','상담 신청','相談する'),mail:1},
+      {nm:'Enterprise Pro',pv:'₩1,490,000',u:tt(' /mo',' /월',' /月'),cr:tt('575,000 credits monthly','매달 575,000 크레딧','毎月575,000クレジット'),li:[tt('15 concurrent jobs','동시 작업 15','同時ジョブ15'),tt('Priority support','우선 지원','優先サポート'),tt('All features','전 기능','全機能')],cta:tt('Talk to us','상담 신청','相談する'),feat:tt('Popular','추천','人気'),mail:1},
+      {nm:'Elite',pv:'₩1,990,000',u:tt(' /mo',' /월',' /月'),cr:tt('813,000 credits monthly','매달 813,000 크레딧','毎月813,000クレジット'),li:[tt('20 concurrent jobs','동시 작업 20','同時ジョブ20'),tt('Dedicated support','전담 지원','専任サポート'),tt('Highest volume','최대 볼륨','最大ボリューム')],cta:tt('Talk to us','상담 신청','相談する'),mail:1}
+    ],
+    pack:[
+      {nm:'Lite',pv:'₩15,000',u:'',cr:tt('3,000 credits <span class="bo">+400 bonus</span>','3,000 크레딧 <span class="bo">+400 보너스</span>','3,000クレジット <span class="bo">+400ボーナス</span>'),li:[tt('Valid 12 months','12개월 유효','12か月有効'),tt('Credited instantly','결제 즉시 충전','決済後すぐチャージ')],cta:tt('Top up','충전하기','チャージ')},
+      {nm:'Standard',pv:'₩81,000',u:'',cr:tt('17,000 credits <span class="bo">+2,200 bonus</span>','17,000 크레딧 <span class="bo">+2,200 보너스</span>','17,000クレジット <span class="bo">+2,200ボーナス</span>'),li:[tt('Valid 12 months','12개월 유효','12か月有効'),tt('Best value','가장 알찬 구성','いちばんお得')],cta:tt('Top up','충전하기','チャージ'),feat:tt('Popular','추천','人気')},
+      {nm:tt('Larger volume','대량 · 기업','大量 · 企業'),pv:tt('Contact','문의','お問い合わせ'),u:'',cr:tt('Set up for your team','팀 단위 · 대량 제작 상담','チーム単位 · 大量制作の相談'),li:[tt('Volume pricing','볼륨 단가','ボリューム単価'),tt('Dedicated support','전담 지원','専任サポート')],cta:tt('Talk to us','상담 신청','相談する'),mail:1}
+    ]
+  };
+
+  function renderTier(seg){
+    document.getElementById('ptier').innerHTML=SEG[seg].map(function(c){
+      return '<div class="tcard'+(c.feat?' feat':'')+'">'+(c.feat?'<span class="fb">'+c.feat+'</span>':'')+
+        '<div class="nm">'+c.nm+'</div><div class="pv">'+c.pv+'<small>'+c.u+'</small></div>'+
+        '<div class="cr">'+c.cr+'</div><ul>'+c.li.map(function(l){return '<li>'+l+'</li>';}).join('')+'</ul>'+
+        '<a class="tb" href="'+(c.mail?'mailto:support@doppia.ai':'/explore')+'">'+c.cta+'</a></div>';
+    }).join('');
+  }
+  renderTier('personal');
+  document.querySelectorAll('.ps').forEach(function(b){b.addEventListener('click',function(){
+    document.querySelectorAll('.ps').forEach(function(x){x.classList.toggle('on',x===b);});
+    renderTier(b.dataset.seg);
+  });});
+</script>
+<script>/*LP-LANGSW — setLang() 호출 금지(reload가 이동 덮음). 동일 저장소 2곳 직접 기록.*/
+(function(){
+  document.querySelectorAll('.lang-sw a[data-lang]').forEach(function(a){
+    a.addEventListener('click',function(){
+      var l=a.getAttribute('data-lang');
+      try{localStorage.setItem('doppia_lang',l);}catch(e){}
+      document.cookie='doppia_lang='+l+';path=/;max-age=31536000;samesite=lax';
+    });
+  });
+})();
+</script>
+</body>
+</html>

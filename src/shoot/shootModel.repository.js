@@ -1,0 +1,66 @@
+/**
+ * ─── Shoot 모델(내 캐릭터) 저장소 ───
+ * (2026-10-16) shoot_models — Doppia Shoot 의 "Create your model". 힉스필드 Soul ID(custom reference) 한 건 + 장면 뱅크.
+ *   status: training(Soul ID 학습 중) · bank(장면 생성 중) · ready · failed  (다각도는 학습 전 별도 잡 — service angleJobs)
+ *   photos = 학습에 넣은 공개 URL들 · bank = [{url,label}] (우리 /images 경로) · avatar = 얼굴 클로즈업
+ */
+const { query } = require('../db/client');
+
+const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, charged, profile, official, created_at, updated_at';
+
+async function insert({ userId, teamId, name, status, photos, charged, profile }) {
+  const r = await query(
+    `INSERT INTO shoot_models (user_id, team_id, name, status, photos, charged, profile) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${COLS}`,
+    [userId, teamId || null, name, status, JSON.stringify(photos || []), !!charged, JSON.stringify(profile || null)]
+  );
+  return r.rows[0];
+}
+
+async function findById(id) {
+  const r = await query(`SELECT ${COLS} FROM shoot_models WHERE id = $1`, [id]);
+  return r.rows[0] || null;
+}
+
+/** 개인이면 본인·비팀, 팀 컨텍스트면 팀 소유 */
+async function findMine(userId, teamId) {
+  const r = teamId
+    ? await query(`SELECT ${COLS} FROM shoot_models WHERE team_id = $1 ORDER BY created_at DESC`, [teamId])
+    : await query(`SELECT ${COLS} FROM shoot_models WHERE user_id = $1 AND team_id IS NULL ORDER BY created_at DESC`, [userId]);
+  return r.rows;
+}
+
+/** 공식 로스터(official) — 준비된 것만, 만든 순서 */
+async function findOfficial() {
+  const r = await query(`SELECT ${COLS} FROM shoot_models WHERE official AND status = 'ready' ORDER BY created_at ASC`);
+  return r.rows;
+}
+
+/** 부분 갱신 — 주어진 필드만. jsonb 는 문자열로 넘긴다. */
+async function update(id, fields) {
+  const keys = Object.keys(fields);
+  if (!keys.length) return findById(id);
+  const sets = keys.map((k, i) => `${k} = $${i + 2}`);
+  const vals = keys.map((k) => (k === 'photos' || k === 'bank' || k === 'profile') ? JSON.stringify(fields[k]) : fields[k]);
+  const r = await query(`UPDATE shoot_models SET ${sets.join(', ')}, updated_at = now() WHERE id = $1 RETURNING ${COLS}`, [id, ...vals]);
+  return r.rows[0] || null;
+}
+
+// ── 다각도 잡(shoot_angle_jobs) — 재시작 뒤에도 이어 가려고 DB 에 둔다 ──
+const JCOLS = 'id, user_id, source, results, skipped, error, done, charged, created_at';
+async function insertAngleJob({ userId, source, charged }) {
+  const r = await query(`INSERT INTO shoot_angle_jobs (user_id, source, charged) VALUES ($1, $2, $3) RETURNING ${JCOLS}`, [userId, source, !!charged]);
+  return r.rows[0];
+}
+async function findAngleJob(id) {
+  const r = await query(`SELECT ${JCOLS} FROM shoot_angle_jobs WHERE id = $1`, [id]);
+  return r.rows[0] || null;
+}
+async function updateAngleJob(id, fields) {
+  const keys = Object.keys(fields);
+  const sets = keys.map((k, i) => `${k} = $${i + 2}`);
+  const vals = keys.map((k) => (k === 'results' || k === 'skipped') ? JSON.stringify(fields[k]) : fields[k]);
+  const r = await query(`UPDATE shoot_angle_jobs SET ${sets.join(', ')}, updated_at = now() WHERE id = $1 RETURNING ${JCOLS}`, [id, ...vals]);
+  return r.rows[0] || null;
+}
+
+module.exports = { insert, findById, findMine, findOfficial, update, insertAngleJob, findAngleJob, updateAngleJob };

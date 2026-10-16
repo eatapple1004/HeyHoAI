@@ -156,6 +156,33 @@ export class AdminRepository {
          FROM generation_results GROUP BY 1 ORDER BY n DESC`);
   }
 
+  /**
+   * (2026-10-16) 기능·엔진 사용량 — generation_results.metadata.origin(src/generate/resultOrigin.js) 기준.
+   *   days=0 이면 전체 기간. 성공 산출물만.
+   */
+  async usage(days: number) {
+    const since = days > 0 ? `AND gr.created_at > now() - make_interval(days => ${Math.floor(days)})` : '';
+    const O = `gr.metadata->'origin'`;
+    const base = `FROM generation_results gr WHERE ${HAS_FILE} AND gr.status='success' ${since}`;
+    const [byFeature, byEngine, byPage, daily, missing] = await Promise.all([
+      this.many(`SELECT COALESCE(${O}->>'featureLabel','(기록 없음)') AS feature, COALESCE(${O}->>'feature','') AS key,
+          COUNT(*)::int AS n, COUNT(*) FILTER (WHERE ${VIDEO})::int AS videos, COUNT(*) FILTER (WHERE NOT ${VIDEO})::int AS images,
+          COUNT(DISTINCT gr.prompt_idx)::int AS requests, MAX(gr.created_at) AS last_at
+        ${base} GROUP BY 1,2 ORDER BY n DESC`),
+      this.many(`SELECT COALESCE(${O}->>'featureLabel','(기록 없음)') AS feature, COALESCE(${O}->>'op','') AS op,
+          COALESCE(${O}->>'engineLabel','(알 수 없음)') AS engine, COUNT(*)::int AS n,
+          COUNT(*) FILTER (WHERE ${O} ? 'fallbackFrom' OR ${O} ? 'requested')::int AS fallbacks
+        ${base} GROUP BY 1,2,3 ORDER BY 1, n DESC`),
+      this.many(`SELECT COALESCE(${O}->>'page','(기록 전)') AS page, COUNT(*)::int AS n ${base} GROUP BY 1 ORDER BY n DESC LIMIT 30`),
+      this.many(`SELECT to_char(date_trunc('day', gr.created_at AT TIME ZONE 'Asia/Seoul'),'MM-DD') AS d,
+          COALESCE(${O}->>'featureLabel','(기록 없음)') AS feature, COUNT(*)::int AS n
+        FROM generation_results gr WHERE ${HAS_FILE} AND gr.status='success' AND gr.created_at > now() - interval '14 days'
+        GROUP BY 1,2 ORDER BY 1`),
+      this.many(`SELECT COUNT(*)::int AS n ${base} AND NOT (COALESCE(gr.metadata,'{}'::jsonb) ? 'origin')`),
+    ]);
+    return { days, byFeature, byEngine, byPage, daily, missing: (missing[0] && missing[0].n) || 0 };
+  }
+
   topModels() {
     return this.many(`SELECT COALESCE(NULLIF(model,''),'(unknown)') AS model, COUNT(*)::int AS n
          FROM generation_results gr WHERE NOT ${VIDEO} AND ${HAS_FILE} GROUP BY 1 ORDER BY n DESC LIMIT 10`);

@@ -38,6 +38,12 @@ const veoProvider = {
     }
     const model = env.VEO_MODEL || 'veo-3.1-generate-preview';
     const image = req.sourceImageUrl ? await imageToBase64(req.sourceImageUrl) : null;
+    // (2026-10-13) 끝프레임(lastFrame) · 참조 이미지(최대 3, 8초 고정) · 해상도(1080p = 8초만) · registry extras(negativePrompt·seed)
+    const last = req.endImageUrl ? await imageToBase64(req.endImageUrl) : null;
+    const refs = await Promise.all((req.referenceImageUrls || []).filter(Boolean).slice(0, 3).map(imageToBase64));
+    const ex = (req.extras && typeof req.extras === 'object') ? req.extras : {};
+    const resolution = req.resolution === '1080p' ? '1080p' : (env.VEO_RESOLUTION || null);
+    const wantSec = (resolution === '1080p' || refs.length) ? 8 : req.durationSec;
 
     const res = await fetch(`${API}/models/${encodeURIComponent(model)}:predictLongRunning`, {
       method: 'POST',
@@ -49,15 +55,18 @@ const veoProvider = {
           //   `bytesBase64Encoded` + `mimeType`을 쓴다. inlineData로 보내면 400:
           //   "`inlineData` isn't supported by this model" (실측 2026-09-10).
           ...(image && { image: { bytesBase64Encoded: image.data, mimeType: image.mimeType } }),
+          ...(image && last && { lastFrame: { bytesBase64Encoded: last.data, mimeType: last.mimeType } }),
+          ...(refs.length && { referenceImages: refs.map((r) => ({ image: { bytesBase64Encoded: r.data, mimeType: r.mimeType }, referenceType: 'asset' })) }),
         }],
         parameters: {
           aspectRatio: aspectOf(req.width, req.height),
           // ⚠️ **숫자**여야 한다. 문자열로 보내면 400:
           //   "The value type for `durationSeconds` needs to be a number" (실측 2026-09-10).
           //   문서 예시는 "4"처럼 따옴표가 붙어 있어 그대로 따라 하면 틀린다.
-          durationSeconds: snapDuration(req.durationSec, ALLOWED_SEC),
-          ...(env.VEO_RESOLUTION && { resolution: env.VEO_RESOLUTION }),
-          ...(req.negativePrompt && { negativePrompt: req.negativePrompt }),
+          durationSeconds: snapDuration(wantSec, ALLOWED_SEC),
+          ...(resolution && { resolution }),
+          ...((ex.negativePrompt || req.negativePrompt) && { negativePrompt: ex.negativePrompt || req.negativePrompt }),
+          ...(ex.seed != null && { seed: Number(ex.seed) }),
         },
       }),
     });
