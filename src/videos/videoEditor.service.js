@@ -242,4 +242,16 @@ async function captions(src, inSec, outSec, lang) {
   }
 }
 
-module.exports = { render, cut, captions, saveUpload, copyImage, probe, localFile, frameSize, MAX_TOTAL_SEC };
+/** 장면 전환 감지 — 파일 기준 초 배열(in~out 안쪽). AI 편집은 한 장면 단위가 안전해서(Kling 이 여러 장면을 한 장면으로 뭉갰다, dev 실측) */
+async function scenes(src, inSec, outSec, threshold = 0.32) {
+  const f = await localFile(src);
+  if (!f) throw Object.assign(new Error('Clip not found'), { statusCode: 404 });
+  const meta = await probe(f);
+  const a = Math.max(0, +inSec || 0), b = Math.min(meta.duration, +outSec || meta.duration);
+  const { stderr } = await run('ffmpeg', ['-hide_banner', '-ss', a.toFixed(3), '-t', (b - a).toFixed(3), '-i', f, '-an', '-vf', `scale=160:-2,select='gt(scene,${threshold})',showinfo`, '-f', 'null', '-'], { timeoutMs: 120000 });
+  const times = [];
+  String(stderr).replace(/pts_time:([\d.]+)/g, (m, t) => { const x = a + parseFloat(t); if (x - a > 0.3 && b - x > 0.3 && (!times.length || x - times[times.length - 1] > 0.4)) times.push(+x.toFixed(3)); return m; });
+  return times;
+}
+
+module.exports = { scenes, render, cut, captions, saveUpload, copyImage, probe, localFile, frameSize, MAX_TOTAL_SEC };

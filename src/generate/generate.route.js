@@ -1224,6 +1224,15 @@ async function postVideoEditAiHandler(req, res, next) {
   }
 }
 
+async function postVideoEditScenesHandler(req, res, next) {
+  try {
+    const b = req.body || {};
+    // eslint-disable-next-line global-require
+    const times = await require('../videos/videoEditor.service').scenes(b.src, b.in, b.out);
+    res.json({ success: true, data: { times } });
+  } catch (err) { if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: err.message }); next(err); }
+}
+
 async function postVideoEditCaptionsHandler(req, res, next) {
   try {
     const b = req.body || {};
@@ -2538,6 +2547,7 @@ const ops = {
   postVideoEditRender: asOps(asyncable(postVideoEditRenderHandler, 'video-render')),
   postVideoEditAi: asOps(postVideoEditAiHandler),
   postVideoEditCaptions: asOps(asyncable(postVideoEditCaptionsHandler, 'captions')),
+  postVideoEditScenes: asOps(postVideoEditScenesHandler),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2584,6 +2594,7 @@ router.post('/video-edit/upload', uploadVideo.single('file'), postVideoEditUploa
 router.post('/video-edit/render', asyncable(postVideoEditRenderHandler, 'video-render'));
 router.post('/video-edit/ai', postVideoEditAiHandler);
 router.post('/video-edit/captions', asyncable(postVideoEditCaptionsHandler, 'captions'));
+router.post('/video-edit/scenes', postVideoEditScenesHandler);
 router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), asyncable(postFaceSwapHandler, 'faceswap'));
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);
