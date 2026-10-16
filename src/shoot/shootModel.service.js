@@ -50,6 +50,22 @@ const ANGLES = [
 const TRAIN_MAX_MS = 40 * 60 * 1000;
 
 const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
+
+/**
+ * 얼굴 사전검사 — 돈 쓰기 전에 거른다. (2026-10-16 실측: 건담 사진으로 다각도 10장($1.3)까지 만든 뒤 힉스필드가
+ * "Please upload clear photos where your face is visible" 로 거절) Gemini Flash 텍스트 판정, 장당 수 원.
+ */
+async function hasFace(absPath) {
+  // eslint-disable-next-line global-require
+  const { GoogleGenAI } = require('@google/genai');
+  const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  const mime = /\.png$/i.test(absPath) ? 'image/png' : /\.webp$/i.test(absPath) ? 'image/webp' : 'image/jpeg';
+  const r = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: [{ parts: [
+    { inlineData: { mimeType: mime, data: fs.readFileSync(absPath).toString('base64') } },
+    { text: 'Does this photo show exactly one real human person whose face is clearly visible (eyes and mouth, not covered, not a doll, figure, robot, drawing or mannequin)? Answer only YES or NO.' },
+  ] }] });
+  return /^\s*YES/i.test(String(r.text || (r.candidates && r.candidates[0] && r.candidates[0].content.parts.map((p) => p.text || '').join('')) || ''));
+}
 const hfHeaders = () => ({ Authorization: `Key ${env.HIGGSFIELD_API_KEY}`, 'Content-Type': 'application/json' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const publicUrl = (name) => `${env.PUBLIC_URL.replace(/\/$/, '')}/images/${name}`;
@@ -142,9 +158,11 @@ function kick(id) {
       const message = String(err.message || err).slice(0, 300);
       logger.warn({ err: message, modelId: id, status: row && row.status }, 'shoot model failed');
       await repo.update(id, { status: 'failed', error: message });
-      // eslint-disable-next-line global-require
-      const credit = require('../credits/credit.service');
-      await teamCredit.refundGeneration({ id: row.user_id }, credit.imageCost('shoot-train', 1, false), `Shoot model failed: ${row.name}`).catch(() => {});
+      if (row && row.charged) { // 과금된 건만 환불(10-16 실측: 관리자 건이 과금 없이 환불돼 1,500◈ 생김)
+        // eslint-disable-next-line global-require
+        const credit = require('../credits/credit.service');
+        await teamCredit.refundGeneration({ id: row.user_id }, credit.imageCost('shoot-train', 1, false), `Shoot model failed: ${row.name}`).catch(() => {});
+      }
     } finally { running.delete(id); }
   })();
 }
@@ -156,12 +174,14 @@ async function create(user, { name, files, consent }) {
   if (!env.PUBLIC_URL) throw httpError(400, 'Model training needs PUBLIC_URL (Higgsfield fetches the photos by URL)');
   if (!files || !files.length) throw httpError(400, 'Add at least one photo');
   const clean = String(name || '').trim().slice(0, 100) || 'My model';
+  const picked = files.slice(0, 20);
+  if (!(await hasFace(picked[0]).catch(() => true))) throw httpError(400, 'No clear human face found — Soul ID needs real photos of a person'); // 판정 실패(네트워크 등)는 통과시킨다
   const photos = [];
-  for (const f of files.slice(0, 20)) photos.push(publicUrl(await keep(f)));
+  for (const f of picked) photos.push(publicUrl(await keep(f)));
   // eslint-disable-next-line global-require
   const credit = require('../credits/credit.service');
-  await teamCredit.chargeGeneration(user, credit.imageCost('shoot-train', 1, false), `Shoot model: ${clean}`);
-  const row = await repo.insert({ userId: user.id, teamId: await teamCredit.activeTeamId(user.id), name: clean, status: photos.length === 1 ? 'angles' : 'training', photos });
+  const charge = await teamCredit.chargeGeneration(user, credit.imageCost('shoot-train', 1, false), `Shoot model: ${clean}`); // 관리자는 null(과금 없음)
+  const row = await repo.insert({ userId: user.id, teamId: await teamCredit.activeTeamId(user.id), name: clean, status: photos.length === 1 ? 'angles' : 'training', photos, charged: !!charge });
   kick(row.id);
   return pub(row);
 }
@@ -180,4 +200,4 @@ async function get(user, id) {
   return pub(row);
 }
 
-module.exports = { create, list, get, SCENES, ANGLES };
+module.exports = { create, list, get, hasFace, SCENES, ANGLES };

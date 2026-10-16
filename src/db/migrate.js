@@ -422,6 +422,7 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_shoot_models_user ON shoot_models(user_id);
     CREATE INDEX IF NOT EXISTS idx_shoot_models_team ON shoot_models(team_id);
   `);
+  await pool.query(`ALTER TABLE shoot_models ADD COLUMN IF NOT EXISTS charged BOOLEAN NOT NULL DEFAULT false;`); // (10-16) 관리자는 과금이 없으므로 환불도 없어야 한다
   await pool.query(CREATE_GENERATION_JOBS_TABLE);
   await pool.query(CREATE_IMAGE_ASSETS_TABLE);
   await pool.query(CREATE_VIDEO_GENERATION_JOBS_TABLE);

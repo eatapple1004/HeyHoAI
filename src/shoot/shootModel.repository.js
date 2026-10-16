@@ -6,12 +6,12 @@
  */
 const { query } = require('../db/client');
 
-const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, created_at, updated_at';
+const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, charged, created_at, updated_at';
 
-async function insert({ userId, teamId, name, status, photos }) {
+async function insert({ userId, teamId, name, status, photos, charged }) {
   const r = await query(
-    `INSERT INTO shoot_models (user_id, team_id, name, status, photos) VALUES ($1, $2, $3, $4, $5) RETURNING ${COLS}`,
-    [userId, teamId || null, name, status, JSON.stringify(photos || [])]
+    `INSERT INTO shoot_models (user_id, team_id, name, status, photos, charged) VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${COLS}`,
+    [userId, teamId || null, name, status, JSON.stringify(photos || []), !!charged]
   );
   return r.rows[0];
 }
