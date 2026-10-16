@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/css/base-ui.css?v=7" />
 <script src="/js/flags.js" defer></script>
 <script src="/js/no-pip.js" defer></script>
-<script src="/js/i18n.js?v=27" defer></script>
+<script src="/js/i18n.js?v=28" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
 <script src="/js/topnav.js?v=31" defer></script>
 <script src="/js/thumbs.js?v=1"></script>
@@ -91,6 +91,6 @@ window.__like=async function(idx,btn){const on=btn.classList.contains('on');btn.
 (async function load(){const grid=$('#grid'),empty=$('#empty');try{const d=(await(await fetch('/api/generate/community?limit=60')).json()).data||[];if(!d.length){empty.hidden=false;return}grid.innerHTML=d.map(card).join('');DoppiaThumb.watch(grid);}catch(e){empty.hidden=false}})();
 })();
 </script>
-<script src="/js/biz-footer.js?v=5"></script>
+<script src="/js/biz-footer.js?v=6"></script>
 </body>
 </html>
