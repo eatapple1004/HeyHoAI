@@ -210,8 +210,14 @@ function pub(row) {
   };
 }
 
+/** 힉스필드가 가져갈 URL — 우리 사진은 R2 서명 URL(클라우드플레어 봇 차단 우회, 10-16 실측: /images 는 24장 중 4~8장만 도달), 원격이 없으면 공개 URL 그대로 */
+async function fetchableUrl(u) {
+  return (isOurs(u) && await mediaStore.signedUrl(String(u).split('/').pop()).catch(() => null)) || u;
+}
+
 async function submitTraining(row) {
-  const r = await fetch(`${HF}/v1/custom-references`, { method: 'POST', headers: hfHeaders(), body: JSON.stringify({ name: row.name.slice(0, 100), model_version: 'v2', input_images: row.photos.map((u) => ({ type: 'image_url', image_url: u })) }) });
+  const input_images = await Promise.all(row.photos.map(async (u) => ({ type: 'image_url', image_url: await fetchableUrl(u) })));
+  const r = await fetch(`${HF}/v1/custom-references`, { method: 'POST', headers: hfHeaders(), body: JSON.stringify({ name: row.name.slice(0, 100), model_version: 'v2', input_images }) });
   if (!r.ok) throw new Error(`Soul ID submit failed (${r.status}): ${(await r.text()).slice(0, 300)}`);
   return (await r.json()).id;
 }
