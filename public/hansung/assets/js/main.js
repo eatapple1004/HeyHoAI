@@ -66,13 +66,12 @@
     Object.keys(map).forEach(function (id) { var el = document.getElementById(id); if (el) io.observe(el); });
   }
 
-  // 문의 폼: URL 파라미터로 제품·유형 미리 선택, 클라이언트 검증 (전송 기능은 미연결)
-  var form = $('#contact-form');
-  if (form) {
-    var q = new URLSearchParams(location.search);
+  // 폼: 문의·부품 문의·자료 요청 공통 — URL 파라미터로 미리 선택, 클라이언트 검증 (전송 기능은 미연결)
+  var q = new URLSearchParams(location.search);
+  $$('#contact-form, form[data-form]').forEach(function (form) {
     var prod = q.get('product'), type = q.get('type');
     if (prod && form.product) form.product.value = prod;
-    if (type) { var r = $('#type-' + type); if (r) r.checked = true; }
+    if (type) { var r = $('#type-' + type, form); if (r) r.checked = true; }
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var bad = null;
@@ -83,10 +82,67 @@
         if (!ok && !bad) bad = el;
       });
       if (bad) { bad.focus(); return; }
-      var done = $('.form-done', form);
-      done.hidden = false;
+      $('.form-done', form).hidden = false;
+      track('form_valid', { form: form.id });
     });
-  }
+  });
+
+  // 제품 상세 사양 탭 (기본 사양 · 선택 옵션 · 변형 모델)
+  $$('[data-tabs]').forEach(function (box) {
+    var tabs = $$('[role=tab]', box);
+    function select(tab) {
+      tabs.forEach(function (x) {
+        var on = x === tab;
+        x.setAttribute('aria-selected', on ? 'true' : 'false');
+        x.tabIndex = on ? 0 : -1;
+        document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+      });
+    }
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { select(tab); });
+      tab.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { var n = tabs[(i + d + tabs.length) % tabs.length]; select(n); n.focus(); }
+      });
+    });
+  });
+
+  // 제품 영상: 누르면 그 자리에서 재생 (JS가 없으면 YouTube로 이동)
+  $$('[data-yt]').forEach(function (box) {
+    var a = $('.yt-btn', box);
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + box.getAttribute('data-yt') + '?autoplay=1&rel=0';
+      f.title = ($('.vid-t', box) || {}).textContent || 'YouTube';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.allowFullscreen = true;
+      f.className = 'yt-frame';
+      a.replaceWith(f);
+    });
+  });
+
+  // 자료실 분류 필터
+  $$('[data-dl-filter]').forEach(function (bar) {
+    var rows = $$('.docs tbody tr');
+    $$('button', bar).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = b.getAttribute('data-cat');
+        $$('button', bar).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        rows.forEach(function (r) { r.hidden = c !== 'all' && r.getAttribute('data-cat') !== c; });
+      });
+    });
+  });
+
+  // 방문 분석 이벤트: GA4가 설정된 경우에만 기록 (상담·전화·자료·영상 클릭)
+  function track(name, params) { if (typeof window.gtag === 'function') window.gtag('event', name, params || {}); }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a, button'); if (!a) return;
+    var tag = a.getAttribute('data-track');
+    var href = a.getAttribute('href') || '';
+    if (!tag && href.indexOf('tel:') === 0) tag = 'call';
+    if (!tag && /contact\.html/.test(href)) tag = 'quote_click';
+    if (tag) track(tag, { href: href, page: location.pathname });
+  });
 
   // 휴대폰 하단 상담 버튼: 첫 화면을 지나면 나타나고, 페이지 맨 아래(상담 띠)에서는 숨긴다
   var mcta = $('.m-cta'), band = $('.cta-band'), h3 = $('#h3');
@@ -127,6 +183,8 @@
     [['main .sec-hd', 0], ['.track', 140], ['.fam', 90], ['.pcard', 90], ['.def-dev', 0], ['.news', 90], ['.vid', 70],
       ['.custom-copy', 0], ['.tl-h li', 70], ['.ms-list li', 80], ['.proof-grid li', 90], ['.ph-lede', 0]].forEach(function (g) { stagger(g[0], g[1], 'rv'); });
     stagger('.custom-media, .track, .fam-media, .pcard-media', 0, 'rv-img');
+    stagger('.g-map', 0, 'rv-map');
+    [['.g-stats li', 90], ['.faq', 50], ['.var', 60]].forEach(function (g) { stagger(g[0], g[1], 'rv'); });
   }
 
   // 수치 카운트업 (−2 → 음수도 그대로 센다)
