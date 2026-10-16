@@ -213,6 +213,14 @@ const TOOLS = {
     controls: {},
     imageSlots: [{ key: 'source', label: 'Source image' }, { key: 'mask', label: 'Mask' }],
   },
+  // (2026-10-16) 카메라 각도 바꾸기 — Higgsfield Angles 2.0 와 같은 축(Rotation 0~315 · Tilt -30~60 · Zoom 0~10). Editor Angles 1순위.
+  'qwen-angles': {
+    id: 'qwen-angles', label: 'Qwen Multi-Angle', type: 'edit',
+    provider: 'fal', model: 'fal-ai/qwen-image-edit-2511-multiple-angles',
+    costKey: 'qwen-angles', enabled: true,
+    controls: {},
+    imageSlots: [{ key: 'source', label: 'Source image' }],
+  },
   // (2026-10-16) 마스크 채우기 — type:'edit' 라 생성 모델 목록엔 안 나오고 Editor(imageEdit.engine)만 쓴다. Inpaint·Erase·Expand 1순위(진짜 마스크).
   'flux-fill': {
     id: 'flux-fill', label: 'FLUX Fill', type: 'edit',
