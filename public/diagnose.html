@@ -142,6 +142,7 @@
   .dg-fade{animation:dgfade .25s ease}
   @keyframes dgfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @media(prefers-reduced-motion:reduce){.dg-fade{animation:none}.prog .bar i{transition:none}}
+  html[lang="ja"] body{word-break:normal;overflow-wrap:anywhere} /* (10-17) 일본어는 keep-all 이면 넘친다 */
 </style>
 </head>
 <body>

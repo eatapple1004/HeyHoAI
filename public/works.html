@@ -70,6 +70,8 @@
   .sec-head{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
   .sec-head h2{max-width:22ch}
 
+  html[lang="ja"] body{word-break:normal;overflow-wrap:anywhere} /* (10-17) 일본어는 띄어쓰기가 없어 keep-all 이면 줄이 안 끊겨 넘친다 */
+  html[lang="ja"] .hero h1{font-size:clamp(28px,3.4vw,44px)}
   /* ── hero ── */
   .hero{position:relative;padding:96px 0 88px;overflow:hidden;background:linear-gradient(180deg,#fff 0%,var(--tint) 70%,#fff 100%)}
   .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
