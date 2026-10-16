@@ -1039,6 +1039,7 @@ async function postFaceSwapHandler(req, res, next) {
   try {
     // eslint-disable-next-line global-require
     const fsw = require('../images/faceSwap.engine');
+    if (fsw.PAUSED) { cleanup(); return res.status(503).json({ success: false, error: 'Face swap is coming soon.' }); }
     const body = req.body || {};
     if (body.consent !== 'true') { cleanup(); return res.status(400).json({ success: false, error: 'Confirm that this is your own face and you are 18+.' }); }
     if (!faceFile) return res.status(400).json({ success: false, error: 'Upload a photo of your face.' });
@@ -2560,7 +2561,7 @@ const reads = {
       upscale: listTools({ type: 'upscale', enabledOnly: true, availableOnly: true }).map(pub), // 비어 있으면 Upscale 기능 = soon
       removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
       editor: require('../images/imageEdit.engine').catalog(credit.imageCost),
-      faceswap: listTools({ type: 'faceswap', enabledOnly: true, availableOnly: true }).map(pub), // (10-16) Face swap 엔진 — 비어 있으면 메뉴 soon
+      faceswap: require('../images/faceSwap.engine').engines().map(pub), // (10-16) Face swap 엔진 — 비어 있으면(PAUSED 포함) 메뉴 soon
       faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크)
       videoEditor: videoEditCatalog(), // (10-16) Video Editor AI 도구별 엔진 — 비어 있어도 편집기 자체는 동작(로컬 편집·내보내기) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };

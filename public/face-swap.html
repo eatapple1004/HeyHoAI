@@ -13,7 +13,7 @@
 <script src="/js/no-pip.js" defer></script>
 <script src="/js/i18n.js?v=27" defer></script>
 <script src="/saas-auth.js?v=3" defer></script>
-<script src="/js/topnav.js?v=26" defer></script>
+<script src="/js/topnav.js?v=27" defer></script>
 <style>
 /* (2026-10-16) Face swap — 힉스필드 /apps/face-swap 구성(REA 캡처): 좌 카드(대상·내 얼굴 슬롯, 타입, 실행) + 우 큰 미리보기(얼굴 인셋) + 아래 3단계.
    Doppia 정책 "우리 모델 + 본인 얼굴만": 대상 = Yuna 뱅크·내 생성 결과만, 얼굴 = 본인(동의 체크 + 서버 판별), 결과 비공개, 얼굴 사진 미저장. API POST /api/generate/face-swap */
@@ -213,6 +213,9 @@ async function loadMine(){try{const rows=((await(await fetch('/api/generate/resu
 $('#mine').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(b)location.href='/creation?idx='+b.dataset.i;});
 
 async function boot(){st.T=window.DoppiaNav?await DoppiaNav.tools():{};
+  // (10-16) 잠시 막음 — 서버에 엔진이 없으면(PAUSED) 페이지 대신 Coming soon
+  if(!(st.T.faceswap||[]).length){const m=document.querySelector('.fs');m.style.display='none';
+    m.insertAdjacentHTML('afterend','<div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:40px 16px"><div style="font-size:44px">⇄</div><h1 style="margin:0;font-size:28px">Face swap · <span style="color:var(--lime,#d9ff4a)">Coming soon</span></h1><p style="margin:0;color:var(--dim,#aaa);max-width:420px">We are polishing this feature. Meanwhile, try Doppia Shoot or the Editor.</p><div style="display:flex;gap:8px;margin-top:6px"><a href="/shoot" style="padding:10px 16px;border-radius:10px;background:var(--lime,#d9ff4a);color:#000;font-weight:600;text-decoration:none">Doppia Shoot</a><a href="/image-edit" style="padding:10px 16px;border-radius:10px;border:1px solid var(--border2,#333);color:inherit;text-decoration:none">Editor</a></div></div>');return;}
   const eng=(st.T.faceswap||[])[0];$('#cost').textContent=eng&&eng.pricing?eng.pricing.perImage:'—';
   $('#hairRow').hidden=!(st.T.faceswap||[]).some(t=>t.id==='easel-faceswap');
   const q=new URLSearchParams(location.search),p=q.get('preset');const pr=(st.T.faceswapTargets||[]).find(x=>x.id===p);if(pr)setTarget({preset:pr.id,url:pr.url,label:pr.label});
