@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Doppia — One product photo. The ad, and the catalog.</title>
-<meta name="description" content="One product photo is the whole upload. Doppia plans and shoots your detail cuts, on-model shots, editorials and ad videos — for any product you sell.">
+<title>Doppia — Your AI photo studio. Product shots, model shots, ad video.</title>
+<meta name="description" content="Doppia Lens shoots your product in any saved look. Doppia Shoot puts it on a ready model — or your own. The Editor, ad video, and a team that can run your marketing. No studio, no prompts.">
 <link rel="canonical" href="https://doppia.ai/">
 <link rel="alternate" hreflang="en" href="https://doppia.ai/">
 <link rel="alternate" hreflang="ko" href="https://doppia.ai/ko">
 <link rel="alternate" hreflang="x-default" href="https://doppia.ai/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://doppia.ai/">
-<meta property="og:title" content="Doppia — One product photo. The ad, and the catalog.">
-<meta property="og:description" content="One product photo is the whole upload. Doppia plans and shoots your detail cuts, on-model shots, editorials and ad videos.">
+<meta property="og:title" content="Doppia — Your AI photo studio. Product shots, model shots, ad video.">
+<meta property="og:description" content="Doppia Lens shoots the product. Doppia Shoot dresses the model. The Editor fixes anything after. No studio, no prompts.">
 <meta property="og:image" content="https://doppia.ai/img/landing/e2e/s-hero.jpg">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ko_KR">
@@ -406,6 +406,30 @@
   .n-foot a:hover{color:var(--text)}
   .n-foot .lang-sw a[aria-current="true"]{color:var(--text)}
   nav .lang-sw a[aria-current="true"]{color:var(--text);font-weight:700}
+
+  /* (10-16) Shoot 데모: 얼굴 4 토글 · 행동 4 칩 · 각도 6 */
+  .sv-faces{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:104px}
+  .sv-faces .sv-th{width:49px;height:60px;border-radius:10px;overflow:hidden;border:1.5px solid var(--line2);opacity:.55;cursor:pointer;display:block}
+  .sv-faces .sv-th img{width:100%;height:100%;object-fit:cover;display:block}
+  .sv-faces .sv-th.on{opacity:1;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(163,148,238,.35)}
+  .sv-acts{width:104px;height:128px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surface2);display:flex;flex-direction:column;justify-content:center;gap:5px;padding:8px}
+  .sv-acts span{font-size:11px;font-weight:650;color:var(--dim);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:3px 8px;white-space:nowrap}
+  .sv-angles{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:104px}
+  .sv-angles img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:7px;border:1px solid var(--line2);display:block}
+  /* (10-16) §5 SERVICES — 3단계 + 저널 박스 */
+  .wk-steps .pi{font-weight:850;font-size:15px;color:var(--accent2)}
+  .wk-journal{margin-top:16px;background:linear-gradient(100deg,rgba(124,82,232,.14),rgba(217,96,143,.08));border:1px solid var(--line2);border-radius:18px;padding:26px 28px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+  .wk-journal .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--accent2);background:var(--surface2);border:1px solid var(--line2);border-radius:999px;padding:5px 11px}
+  .wk-journal h4{font-size:22px;font-weight:820;letter-spacing:-.015em;line-height:1.2}
+  .wk-journal p{font-size:14.5px;color:var(--dim);line-height:1.6;max-width:60ch}
+  .wk-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  /* (10-16) §6 COMING NEXT — soon 배지 카드 4 */
+  .soon4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
+  .sc{position:relative;background:var(--surface);border:1px dashed var(--line2);border-radius:16px;padding:22px 20px 20px}
+  .sc .bd{position:absolute;top:14px;right:14px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:999px;padding:3px 9px}
+  .sc b{display:block;font-size:16px;font-weight:750;margin-bottom:8px;padding-right:56px}
+  .sc p{font-size:13.5px;color:var(--dim);line-height:1.6}
+  @media(max-width:900px){.soon4{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.soon4{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -414,116 +438,94 @@
 <header class="ver" id="hero">
   <div class="dotgrid"></div>
   <div class="horbit" id="horbit">
-    <div class="oc" data-cat="wear" style="width:257px;height:322px"><span class="tag" data-i18n="tag.wear">On-Model</span><img decoding="async" src="/img/landing/picked/knit-04.jpg" alt="착용컷 예시"></div>
-    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Detail Cut</span><img decoding="async" src="/img/landing/picked/serum-03.jpg" alt="상세컷 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/sparkling-05.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/chocolate-06.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Detail Cut</span><img decoding="async" src="/img/landing/picked/earbuds-04.jpg" alt="상세컷 예시"></div>
-    <div class="oc" data-cat="wear" style="width:257px;height:322px"><span class="tag" data-i18n="tag.wear">On-Model</span><img decoding="async" src="/img/landing/picked/dress-07.jpg" alt="착용컷 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/perfume-02.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/vitamin-04.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Detail Cut</span><img decoding="async" src="/img/landing/picked/granola-03.jpg" alt="상세컷 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/handbag-03.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/pet-01.jpg" alt="화보 예시"></div>
-    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Editorial</span><img decoding="async" src="/img/landing/picked/serum-07.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/landing/shoot/seoyeon-street.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Lens · Detail</span><img decoding="async" src="/img/landing/picked/serum-03.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/12.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · Editorial</span><img decoding="async" src="/img/landing/picked/sparkling-05.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/07.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · Editorial</span><img decoding="async" src="/img/landing/picked/chocolate-06.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/landing/shoot/jihoon-street.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="macro" style="width:257px;height:322px"><span class="tag" data-i18n="tag.macro">Lens · Detail</span><img decoding="async" src="/img/landing/picked/earbuds-04.jpg" alt="상세컷 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/10.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · Editorial</span><img decoding="async" src="/img/landing/picked/perfume-02.jpg" alt="화보 예시"></div>
+    <div class="oc" data-cat="shoot" style="width:257px;height:322px"><span class="tag" data-i18n="tag.shoot">Doppia Shoot</span><img decoding="async" src="/img/shoot/tpl/05.jpg" alt="모델컷 예시"></div>
+    <div class="oc" data-cat="hero" style="width:257px;height:322px"><span class="tag" data-i18n="tag.hero">Lens · Editorial</span><img decoding="async" src="/img/landing/picked/handbag-03.jpg" alt="화보 예시"></div>
   </div>
   <div class="callout" id="callout"></div>
   <div class="navbg"></div>
-  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features" data-i18n="nav.features">Features</a><a href="#gallery" data-i18n="nav.gallery">Showcase</a><a href="#e2e" data-i18n="nav.e2e">Workflow</a><a href="#pricing" data-i18n="nav.pricing">Pricing</a><a href="#faq">FAQ</a></span><span class="end"><span class="lang-sw" style="font-size:13px;color:var(--faint)"><a data-lang="en" href="/" hreflang="en" aria-current="true">EN</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ko" href="/ko" hreflang="ko">KO</a></span><a href="/saas-login" data-i18n="nav.login">Log in</a><a class="btn btn-p" href="/studio" data-i18n="nav.start">Start free</a></span></nav>
+  <nav class="lab"><span class="brand">DOPPIA</span><span class="toc"><a href="#features" data-i18n="nav.features">Features</a><a href="#gallery" data-i18n="nav.gallery">Showcase</a><a href="#e2e" data-i18n="nav.e2e">Workflow</a><a href="#works" data-i18n="nav.works">Services</a><a href="#pricing" data-i18n="nav.pricing">Pricing</a><a href="#faq">FAQ</a></span><span class="end"><span class="lang-sw" style="font-size:13px;color:var(--faint)"><a data-lang="en" href="/" hreflang="en" aria-current="true">EN</a><span aria-hidden="true" style="opacity:.4;margin:0 5px">·</span><a data-lang="ko" href="/ko" hreflang="ko">KO</a></span><a href="/saas-login" data-i18n="nav.login">Log in</a><a class="btn btn-p" href="/studio" data-i18n="nav.start">Start free</a></span></nav>
   <div class="cctr">
-    <h1 class="giant" data-i18n="hero.title">One product photo —<br>the <span class="grad">plan, lookbook and ad video</span>, all done for you.</h1>
-    <p class="csub" data-i18n="hero.sub">Detail cuts, on-model shots, editorials and ad videos — the whole set. No shoots, no marketers, no prompts.</p>
-    <div class="chcta"><a class="btn btn-p btn-lg" href="/studio" data-i18n="hero.cta">Start free — upload one photo</a></div>
+    <h1 class="giant" data-i18n="hero.title">Your AI photo studio —<br><span class="grad">product shots, model shots and ad video</span>, from one photo.</h1>
+    <p class="csub" data-i18n="hero.sub">Doppia Lens shoots the product. Doppia Shoot dresses the model. The Editor fixes anything after — no studio, no prompts.</p>
+    <div class="chcta"><a class="btn btn-p btn-lg" href="/explore" data-i18n="hero.cta">Start free</a></div>
     <p class="cfine" data-i18n="hero.fine">No card required · 1,500 credits on sign-up</p>
   </div>
 </header>
 
 <!-- 2. FEATURES -->
 <section class="wrap" id="features">
-  <div class="eyebrow">ALL-IN-ONE</div>
-  <h2 data-i18n="sec2.title">What a studio team used to do,<br>now behind <em>one tab</em>.</h2>
-  <p class="lead" data-i18n="sec2.lead">One product photo gives you detail cuts, on-model shots, editorials and ad videos — and Lenses, the Editor and the Video Editor take it further. Tap a tab below and see exactly what comes out.</p>
+  <div class="eyebrow">INSIDE THE STUDIO</div>
+  <h2 data-i18n="sec2.title">Two ways to shoot.<br>One <em>studio</em>.</h2>
+  <p class="lead" data-i18n="sec2.lead">Product in front of the camera? That is a Lens. A person? That is Doppia Shoot. Then the Editor, Ad Video and the Video Editor take every result further. Tap a tab and see exactly what comes out.</p>
   <div class="exp">
     <div class="tabs">
-      <button class="tab on" data-k="shots"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-4 4 3 3-2 4 3"/></svg></span><span class="tt"><b>Shots</b><span data-i18n="tab.shots.sub">Catalog essentials</span></span></button>
-      <button class="tab" data-k="lens"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z"/></svg></span><span class="tt"><b>Doppia Lens</b><span>Your look, any product</span></span><span class="star">TOP</span></button>
-      <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span data-i18n="tab.video.sub">One photo, one line</span></span><span class="star">PUSH</span></button>
-      <button class="tab" data-k="vedit"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M8 6v4M16 6v4"/></svg></span><span class="tt"><b>Video Editor</b><span>Swap · Reframe · Extend</span></span><span class="star">NEW</span></button>
-      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b>Editor</b><span>Relight · Angles · Erase</span></span></button>
+      <button class="tab on" data-k="lens"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4z"/></svg></span><span class="tt"><b>Doppia Lens</b><span data-i18n="tab.lens.sub">Your look, any product</span></span><span class="star">TOP</span></button>
+      <button class="tab" data-k="shoot"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><span class="tt"><b>Doppia Shoot</b><span data-i18n="tab.shoot.sub">Pick a model, dress them up</span></span><span class="star">NEW</span></button>
+      <button class="tab" data-k="edit"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M13 5l3 3M14 6l4-4 2 2-4 4"/><path d="M6 15l-1 4 4-1"/></svg></span><span class="tt"><b>Editor</b><span data-i18n="tab.edit.sub">Relight · Erase · Fix text</span></span></button>
+      <button class="tab" data-k="video"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><span class="tt"><b>Ad Video</b><span data-i18n="tab.video.sub">One photo, one line</span></span><span class="star">TOP</span></button>
+      <button class="tab" data-k="vedit"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M8 6v4M16 6v4"/></svg></span><span class="tt"><b>Video Editor</b><span data-i18n="tab.vedit.sub">Swap · Reframe · Extend</span></span><span class="star">NEW</span></button>
     </div>
     <div class="pane">
-      <div class="panel on" data-k="shots">
+      <div class="panel" data-k="shoot">
         <div class="demo">
-          <div class="dpills" id="sp"><button class="dpill on" data-s="ghost" data-i18n="dp.ghost">Product Shots</button><button class="dpill" data-s="look" data-i18n="dp.look">Lookbook</button><button class="dpill" data-s="hero" data-i18n="dp.hero">Editorial</button><button class="dpill" data-s="tpl" data-i18n="dp.tpl">Templates</button></div>
+          <div class="dpills"><button class="dpill on" data-s="pick" data-i18n="dp.pick">Pick a model</button><button class="dpill" data-s="mine" data-i18n="dp.mine">Create your model</button></div>
 
-          <!-- ① 제품샷(고스트샷): [내 제품 사진 + 배경색] → 큰 결과 1장 (라온젠식 배치) -->
-          <div class="sv on" data-v="ghost">
-            <div class="sv-stack">
-              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/productcut/flat-lay-cut.png" alt=""><figcaption data-i18n="cap.myphoto">My product photo</figcaption></figure>
-              <span class="sv-plus">+</span>
-              <div class="sv-in">
-                <div class="sv-colorbox"><i style="background:#f4f1ec"></i><i style="background:#0e0e14"></i><i style="background:#e8b4c8"></i><i style="background:#9db8a1"></i><i style="background:#4a6cf7"></i><i class="sv-any">∞</i></div>
-                <figcaption data-i18n="cap.bg">Background · any color</figcaption>
-              </div>
-            </div>
-            <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/productcut/ghost-mannequin-cut.png" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
-          </div>
-
-          <!-- ② 룩북: [모델 + 코디 + 배경] → 큰 결과 1장 -->
-          <div class="sv" data-v="look">
+          <!-- ① 모델 고르기: [얼굴 4 + 행동 4] → 결과 1장. 얼굴 클릭 = 그 모델의 거리컷으로 스왑 -->
+          <div class="sv on" data-v="pick">
             <div class="sv-stack">
               <div class="sv-in">
-                <div class="sv-duo">
-                  <span class="sv-th on" data-look="/img/landing/bikini/onmodel-hayul-pose2-final.jpg"><img loading="lazy" decoding="async" src="/img/landing/bikini/face-hayul-1.jpg" alt=""></span>
-                  <span class="sv-th" data-look="/img/landing/bikini/onmodel-elara-pose2-final.jpg"><img loading="lazy" decoding="async" src="/img/landing/bikini/face-elara-6.jpg" alt=""></span>
+                <div class="sv-faces">
+                  <span class="sv-th on" data-look="/img/landing/shoot/seoyeon-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/seoyeon-face.jpg" alt=""></span>
+                  <span class="sv-th" data-look="/img/landing/shoot/jihoon-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/jihoon-face.jpg" alt=""></span>
+                  <span class="sv-th" data-look="/img/landing/shoot/maya-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/maya-face.jpg" alt=""></span>
+                  <span class="sv-th" data-look="/img/landing/shoot/chidi-street.jpg"><img loading="lazy" decoding="async" src="/img/landing/shoot/chidi-face.jpg" alt=""></span>
                 </div>
-                <figcaption data-i18n="cap.model">Model — pick one</figcaption>
+                <figcaption data-i18n="cap.pickmodel">Model — pick one</figcaption>
               </div>
               <span class="sv-plus">+</span>
-              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/bikini/design-1-ecru-navy.jpg" alt=""><figcaption data-i18n="cap.outfit">Outfit</figcaption></figure>
-              <span class="sv-plus">+</span>
-              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/bikini/bg-poolside.jpg" alt=""><figcaption data-i18n="cap.bgimg">Background</figcaption></figure>
+              <div class="sv-in">
+                <div class="sv-acts"><span>👗 Outfit</span><span>🏙 Scene</span><span>🧍 Pose</span><span>📸 Shoot</span></div>
+                <figcaption data-i18n="cap.acts">Dress · move · pose</figcaption>
+              </div>
             </div>
             <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img loading="lazy" decoding="async" id="lookOut" src="/img/landing/bikini/onmodel-hayul-pose2-final.jpg" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
+            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/shoot/seoyeon-street.jpg" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
           </div>
 
-          <!-- ③ 화보: [템플릿 레퍼런스 + 내 제품] → 큰 결과 1장 -->
-          <div class="sv" data-v="hero">
+          <!-- ② 내 모델 만들기: [사진 1장 → 얼굴 24각도] → 학습된 모델의 컷 -->
+          <div class="sv" data-v="mine">
             <div class="sv-stack">
-              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/producthero/bold-color-block.jpg" alt=""><figcaption data-i18n="cap.tplhero">Template · Product Hero</figcaption></figure>
-              <span class="sv-plus">+</span>
-              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/cand/lip-5.jpg" alt=""><figcaption data-i18n="cap.myphoto">My product photo</figcaption></figure>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/shoot/dohyun-face.jpg" alt=""><figcaption data-i18n="cap.yourphoto">Your photo — one is enough</figcaption></figure>
+              <span class="sv-plus">↓</span>
+              <div class="sv-in">
+                <div class="sv-angles"><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-1.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-2.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-3.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-4.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-5.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-6.jpg" alt=""></div>
+                <figcaption data-i18n="cap.angles">24 face angles, made for you</figcaption>
+              </div>
             </div>
             <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/tpl/hero-oxb-result.jpg" alt=""><figcaption data-i18n="cap.result"><i></i>Generated</figcaption></figure>
-          </div>
-
-          <!-- ④ 다양한 템플릿: 결과물 모자이크(원본 비율 그대로) -->
-          <div class="sv sv-col" data-v="tpl">
-            <div class="sv-grid">
-              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-fashion.jpg" alt=""><figcaption>Model Cut</figcaption></figure>
-              <figure><img loading="lazy" decoding="async" src="/img/landing/ghost-result.jpg" alt=""><figcaption>Product Cut</figcaption></figure>
-              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-dewy.jpg" alt=""><figcaption>Product Hero</figcaption></figure>
-              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-jstudio.jpg" alt=""><figcaption>Jewelry Product Cut</figcaption></figure>
-              <figure><img loading="lazy" decoding="async" src="/img/landing/bikini/onmodel-hayul-pose2-final.jpg" alt=""><figcaption>Bodywear On Model</figcaption></figure>
-              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-nail.jpg" alt=""><figcaption data-i18n="cap.nail2">Cute Lettering 2</figcaption></figure>
-            </div>
+            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/shoot/dohyun-street.jpg" alt=""><figcaption data-i18n="cap.trained"><i></i>Your model — every scene from here</figcaption></figure>
           </div>
         </div>
         <div class="desc">
-          <div class="sd on" data-v="ghost"><h3 data-i18n="sd.ghost.h3">Product Shots</h3><div class="tl" data-i18n="sd.ghost.tl">Ghost shots, any background color.</div><p data-i18n="sd.ghost.p">One flat photo comes alive as a 3D ghost shot. Pick any background color and it renders exactly — matched to your product page.</p><ul data-i18n="sd.ghost.ul"><li>Ghost mannequin · hanger · flat-lay cuts</li><li>Any background color</li><li>Product details stay intact</li></ul></div>
-          <div class="sd" data-v="look"><h3 data-i18n="sd.look.h3">Lookbook</h3><div class="tl" data-i18n="sd.look.tl">Pick outfit, model, background — lookbook done.</div><p data-i18n="sd.look.p">Choose a model and scene that suit your garment, and get lookbook cuts that feel truly worn. Fill a season lookbook without a shoot.</p><ul data-i18n="sd.look.ul"><li>Virtual models · scene picker</li><li>True worn-in lookbook cuts</li><li>Apparel · jewelry · cosmetics</li></ul></div>
-          <div class="sd" data-v="hero"><h3 data-i18n="sd.hero.h3">Editorial</h3><div class="tl" data-i18n="sd.hero.tl">Pick a template, get an editorial.</div><p data-i18n="sd.hero.p">Choose a reference template you love, and your product is shot in that exact mood. Concept templates are ready to go.</p><ul data-i18n="sd.hero.ul"><li>Pick from concept templates</li><li>Your brand tone, kept</li><li>4 shots per run — keep the best</li></ul></div>
-          <div class="sd" data-v="tpl"><h3 data-i18n="sd.tpl.h3">Templates</h3><div class="tl" data-i18n="sd.tpl.tl">Templates by category, always growing.</div><p data-i18n="sd.tpl.p">These are live templates, available today. Just pick the cut that fits your product.</p><ul data-i18n="sd.tpl.ul"><li>Fashion · beauty · jewelry · bodywear · nails</li><li>New templates keep coming</li><li>Pick and done — no prompts</li></ul></div>
-          <a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p>
+          <div class="sd on" data-v="pick"><h3 data-i18n="sd.pick.h3">Doppia Shoot</h3><div class="tl" data-i18n="sd.pick.tl">Pick a model. Dress them, move them, pose them.</div><p data-i18n="sd.pick.p">A roster of ready models — Korean and global, twenties to forties. Choose one, put your garment on them, change the scene, strike a pose, or describe a whole new shot in a line. Every result is a real photo of the same face.</p><ul data-i18n="sd.pick.ul"><li>Ready models · or describe the shot in a line</li><li>Outfit · Scene · Pose — keep going from any version</li><li>28 shot presets, from studio to a Paris street</li></ul></div>
+          <div class="sd" data-v="mine"><h3 data-i18n="sd.mine.h3">Create your model</h3><div class="tl" data-i18n="sd.mine.tl">Your face, or your brand's — from your photos.</div><p data-i18n="sd.mine.p">Upload photos of a person who agreed to be your model. One photo is enough — Doppia shoots the 24 face angles the model learns from. Trained once, then every scene and outfit, as many times as you like.</p><ul data-i18n="sd.mine.ul"><li>One photo is enough — we make the angles</li><li>Trained once, used for every shot after</li><li>Consent confirmed for every model</li></ul></div>
+          <a class="btn btn-p cta" href="/shoot" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p>
         </div>
       </div>
-      <div class="panel" data-k="lens">
+      <div class="panel on" data-k="lens">
         <div class="demo">
-          <div class="dpills"><span class="dpill on">Same product, every Lens</span></div>
-          <div class="sv on">
+          <div class="dpills"><button class="dpill on" data-s="any" data-i18n="dp.any">Same product, every Lens</button><button class="dpill" data-s="official" data-i18n="dp.official">Official Lenses</button></div>
+          <div class="sv on" data-v="any">
             <div class="sv-stack">
               <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/lens/product.jpg" alt=""><figcaption>My product photo</figcaption></figure>
               <span class="sv-plus">+</span>
@@ -532,8 +534,22 @@
             <span class="arw sv-arw">→</span>
             <div class="sv-grid" style="flex:1;min-width:0"><figure><img loading="lazy" decoding="async" src="/img/landing/lens/glacier.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/gummy.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/marble.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/holiday.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/plinth.webp" alt=""></figure><figure><img loading="lazy" decoding="async" src="/img/landing/lens/linen.webp" alt=""></figure></div>
           </div>
+          <div class="sv sv-col" data-v="official">
+            <div class="sv-grid">
+              <figure><img loading="lazy" decoding="async" src="/img/landing/ghost-result.jpg" alt=""><figcaption data-i18n="lz.g1">Product Cut</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-fashion.jpg" alt=""><figcaption data-i18n="lz.g2">Model Cut</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/hero-oxb-result.jpg" alt=""><figcaption data-i18n="lz.g3">Product Hero</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-jstudio.jpg" alt=""><figcaption data-i18n="lz.g4">Jewelry</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-dewy.jpg" alt=""><figcaption data-i18n="lz.g5">Dewy Beauty</figcaption></figure>
+              <figure><img loading="lazy" decoding="async" src="/img/landing/tpl/tpl-nail.jpg" alt=""><figcaption data-i18n="lz.g6">Nails</figcaption></figure>
+            </div>
+          </div>
         </div>
-        <div class="desc"><h3>Doppia Lens</h3><div class="tl">Save a look once. Drop in any product — same concept, every time.</div><p>A Lens remembers how a shot is made — concept, light, framing, engine. Pick an official Lens (best-selling templates and trending looks) or save your own from any result, then just drop in a new product photo. Share it by link or publish it to the community.</p><ul><li>Official Lenses: best-sellers &amp; trending looks</li><li>Save your own from any result — with folders</li><li>Share by link or publish to the community</li></ul><a class="btn btn-p cta" href="/lens" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
+        <div class="desc">
+          <div class="sd on" data-v="any"><h3 data-i18n="lz.h3">Doppia Lens</h3><div class="tl" data-i18n="lz.tl">Save a look once. Drop in any product — same concept, every time.</div><p data-i18n="lz.p">A Lens remembers how a shot is made — concept, light, framing, engine. Pick an official Lens or save your own from any result, then just drop in a new product photo. Share it by link or publish it to the community.</p><ul data-i18n="lz.ul"><li>Official Lenses: best-sellers &amp; trending looks</li><li>Save your own from any result — with folders</li><li>Share by link or publish to the community</li></ul></div>
+          <div class="sd" data-v="official"><h3 data-i18n="lz.o.h3">Official Lenses</h3><div class="tl" data-i18n="lz.o.tl">Product cut, ghost, editorial, jewelry — ready today.</div><p data-i18n="lz.o.p">The studio's best-selling looks, saved as Lenses: flat-lay and ghost-mannequin product cuts, editorials on plinths, jewelry, beauty, nails. Pick one, drop in your photo, done — no prompts.</p><ul data-i18n="lz.o.ul"><li>Product cuts · ghost mannequin · editorials</li><li>Jewelry · beauty · nails · and more</li><li>Pick and done — no prompts</li></ul></div>
+          <a class="btn btn-p cta" href="/lens" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p>
+        </div>
       </div>
       <div class="panel" data-k="video">
         <div class="demo">
@@ -550,7 +566,7 @@
             </div>
           </div>
         </div>
-        <div class="desc"><h3 data-i18n="video.h3">Ad Video</h3><div class="tl" data-i18n="video.tl">Script written for you, straight to video.</div><p data-i18n="video.p">A photo and one line is enough — Doppia plans the concept and every shot, then renders a 9:16 ad with music, ready for TikTok and Reels. Want control? Write the shot list yourself — how many shots and how long each one runs.</p><ul data-i18n="video.ul"><li>Shot list written for you — or write it yourself</li><li>9:16 · 1:1 · 16:9 with music — upload-ready</li><li>Pay only for what renders, failures auto-refund</li></ul><a class="btn btn-p cta" href="/studio" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
+        <div class="desc"><h3 data-i18n="video.h3">Ad Video</h3><div class="tl" data-i18n="video.tl">Script written for you, straight to video.</div><p data-i18n="video.p">A photo and one line is enough — Doppia plans the concept and every shot, then renders a 9:16 ad with music, ready for TikTok and Reels. Want control? Write the shot list yourself — how many shots and how long each one runs.</p><ul data-i18n="video.ul"><li>Shot list written for you — or write it yourself</li><li>9:16 · 1:1 · 16:9 with music — upload-ready</li><li>Pay only for what renders, failures auto-refund</li></ul><a class="btn btn-p cta" href="/ad-video" data-i18n="cta.start">Start free →</a><p class="fine" data-i18n="cta.fine">◈ 1,500 free credits · No card required</p></div>
       </div>
       <div class="panel" data-k="vedit">
         <div class="demo">
@@ -600,7 +616,7 @@
 <section class="wrap" id="gallery">
   <div class="eyebrow">WHATEVER YOU SELL</div>
   <h2 data-i18n="sec3.title">Everything your brand needs,<br><em>from one single photo.</em></h2>
-  <p class="lead" data-i18n="sec3.lead">Apparel, jewelry and cosmetics are just the start — food, home goods, anything. Whatever you sell right now, one photo is enough.</p>
+  <p class="lead" data-i18n="sec3.lead">Apparel, jewelry and cosmetics are just the start — food, home goods, anything. Whatever you sell right now, one photo is enough. And the person wearing it is covered too.</p>
   <div class="cats">
     <span class="cat hi" data-i18n="cat.apparel">Apparel</span><span class="cat hi" data-i18n="cat.jewelry">Jewelry</span><span class="cat hi" data-i18n="cat.cosmetics">Cosmetics</span><span class="cat hi" data-i18n="cat.beauty">Beauty</span><span class="cat hi" data-i18n="cat.food">Food</span><span class="cat hi" data-i18n="cat.cafe">Café</span><span class="cat hi" data-i18n="cat.home">Home</span><span class="cat hi" data-i18n="cat.tech">Tech</span><span class="cat hi" data-i18n="cat.pets">Pets</span><span class="cat hi" data-i18n="cat.bodywear">Bodywear</span><span class="cat hi" data-i18n="cat.anything">Anything</span>
   </div>
@@ -624,7 +640,7 @@
 <section class="wrap" id="e2e">
   <div class="eyebrow">END-TO-END</div>
   <h2 data-i18n="sec4.title">Upload one product photo.<br>Doppia fills in <em>every channel asset</em>.</h2>
-  <p class="lead" data-i18n="sec4.lead">Detail cuts, on-model shots, editorials and ad videos come out in one flow. Every result lands in your library, ready to reuse even faster next time.</p>
+  <p class="lead" data-i18n="sec4.lead">Detail cuts, model shots, editorials and ad videos come out in one flow. Every result lands in your library, ready to reuse even faster next time.</p>
   <div class="e2e">
     <div class="e2e-apex">
       <div class="ph"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-src.jpg" alt=""></div>
@@ -636,7 +652,7 @@
     <div class="e2e-conn e2e-conn-m"></div>
     <div class="e2e-outs">
       <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-macro.jpg" alt=""></div><div class="cap"><b data-i18n="out.macro.b">Detail cuts</b><p data-i18n="out.macro.p">Product cuts in every mood, for pages and ads.</p></div></div>
-      <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""></div><div class="cap"><b data-i18n="out.wear.b">On-model</b><p data-i18n="out.wear.p">Worn by a model — a true fitted look.</p></div></div>
+      <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""></div><div class="cap"><b data-i18n="out.wear.b">Model shot</b><p data-i18n="out.wear.p">Worn by a Doppia Shoot model — a true fitted look.</p></div></div>
       <div class="e2e-card"><div class="im"><img loading="lazy" decoding="async" src="/img/landing/e2e/s-hero.jpg" alt=""></div><div class="cap"><b data-i18n="out.hero.b">Editorial</b><p data-i18n="out.hero.p">An editorial that carries your brand tone.</p></div></div>
       <div class="e2e-card"><div class="im"><video src="/img/landing/e2e/s-reel.mp4" poster="/img/landing/e2e/s-reel-still.jpg" autoplay muted loop playsinline></video><span class="tag">9:16</span></div><div class="cap"><b data-i18n="out.video.b">Ad video</b><p data-i18n="out.video.p">Vertical video, ready for Reels, Shorts and ads.</p></div></div>
     </div>
@@ -647,7 +663,7 @@
     <div class="e2e-lib">
       <div class="thumbs">
         <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-macro.jpg" alt=""><i data-i18n="out.macro.b">Detail cuts</i></span>
-        <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""><i data-i18n="out.wear.b">On-model</i></span>
+        <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-onmodel.jpg" alt=""><i data-i18n="out.wear.b">Model shot</i></span>
         <span><img loading="lazy" decoding="async" src="/img/landing/e2e/s-hero.jpg" alt=""><i data-i18n="out.hero.b">Editorial</i></span>
       </div>
       <div class="tx">
@@ -717,7 +733,38 @@
   </div>
 </section>
 
-<!-- 5. PRICING -->
+<!-- 5. SERVICES — Doppia × USAsia Journal (10-16: Works 고객 전원 = 운영 + 저널 노출. "free" 는 쓰지 않는다 — 사용자) -->
+<section class="wrap" id="works">
+  <div class="eyebrow">RUN IT FOR ME</div>
+  <h2 data-i18n="wk.title">Rather have it run for you?<br><em>Doppia × USAsia Journal.</em></h2>
+  <p class="lead" data-i18n="wk.lead">Marketing operations for brands and local businesses. Six questions, a written report on your actual channels, then we run the promotion and ads — and your brand is listed in USAsia Journal.</p>
+  <div class="pcards3 wk-steps">
+    <div class="pc3"><div class="pi">1</div><b data-i18n="wk.s1.b">Marketing check-up</b><p data-i18n="wk.s1.p">Six questions about what you sell, where, and what is hardest right now. Two minutes, no typing.</p></div>
+    <div class="pc3"><div class="pi">2</div><b data-i18n="wk.s2.b">Written report in 7–10 business days</b><p data-i18n="wk.s2.p">We review your real channels — not just your answers — and send where you stand and what to do next.</p></div>
+    <div class="pc3"><div class="pi">3</div><b data-i18n="wk.s3.b">We run it</b><p data-i18n="wk.s3.p">Promotion, ads and customer loyalty — full operations, or one scope at a time. A report every month.</p></div>
+  </div>
+  <div class="wk-journal">
+    <span class="tag">USAsia Journal</span>
+    <h4 data-i18n="wk.j.h4">Run by Doppia. <em class="grad">Seen in USAsia Journal.</em></h4>
+    <p data-i18n="wk.j.p">Listed in USAsia Journal for as long as you are with us. Selected brands get a feature story.</p>
+    <div class="wk-cta"><a class="btn btn-p" href="/works" data-i18n="wk.cta">Marketing check-up</a><a class="btn btn-g" href="/works" data-i18n="wk.cta2">Talk to us →</a></div>
+  </div>
+</section>
+
+<!-- 6. COMING NEXT — 만들고 있는 것만, 클릭되는 건 위에만(거짓 금지) -->
+<section class="wrap" id="soon">
+  <div class="eyebrow">COMING NEXT</div>
+  <h2 data-i18n="sn.title">Next on the <em>roadmap</em>.</h2>
+  <p class="lead" data-i18n="sn.lead">Being built now. Not live yet — everything above is what you can click today.</p>
+  <div class="soon4">
+    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.1.b">Content Pack</b><p data-i18n="sn.1.p">The listing you actually upload — Coupang, Smart Store, Amazon, your own site. One ZIP.</p></div>
+    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.2.b">KakaoTalk</b><p data-i18n="sn.2.p">No app, no sign-up. Send the photo in the chat, get the shot back.</p></div>
+    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.3.b">Spec Ad</b><p data-i18n="sn.3.p">One product photo into a 5–15 second VFX spec ad.</p></div>
+    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.4.b">Doppia MCP</b><p data-i18n="sn.4.p">Generate from Claude and other agents — Doppia as a tool.</p></div>
+  </div>
+</section>
+
+<!-- 7. PRICING -->
 <section class="wrap" id="pricing">
   <div class="eyebrow">PRICING</div>
   <h2 data-i18n="pr.title">Only what you need.<br>Start <em>light</em>.</h2>
@@ -732,31 +779,33 @@
   <p class="fine" style="margin-top:20px;text-align:center" data-i18n="pr.fine">VAT included · Credits valid 12 months · Refundable within 1 year to the original payment method · One-time top-up capped at ₩100,000 for domestic payments</p>
 </section>
 
-<!-- 6. FAQ -->
+<!-- 8. FAQ -->
 <section class="wrap" id="faq">
   <div class="eyebrow">FAQ</div>
   <h2 data-i18n="faq.title">Before you start — <em>the questions everyone asks</em></h2>
   <div class="faq">
     <details open name="faq"><summary data-i18n="faq.q1">Can I really start for free?</summary><p data-i18n="faq.a1">Yes. You get 1,500 credits the moment you sign up — no card required, cancel anytime. Make something first, then decide.</p></details>
-    <details name="faq"><summary data-i18n="faq.q2">Will it work for what I sell?</summary><p data-i18n="faq.a2">Whatever you sell, yes. From one product photo we create detail cuts, on-model shots, editorials and ad videos — any category.</p></details>
-    <details name="faq"><summary data-i18n="faq.q3">What do I need to prepare?</summary><p data-i18n="faq.a3">Just one product photo — no extra angles, no references. For ad videos, add one line about your product, or leave it blank and Doppia writes it from the photo.</p></details>
+    <details name="faq"><summary data-i18n="faq.q2">Will it work for what I sell?</summary><p data-i18n="faq.a2">Whatever you sell, yes. Product shots through Doppia Lens, model shots through Doppia Shoot, editorials and ad videos — any category.</p></details>
+    <details name="faq"><summary data-i18n="faq.q3">What do I need to prepare?</summary><p data-i18n="faq.a3">Just one product photo — no extra angles, no references. For model shots, pick a ready model or upload photos of your own. For ad videos, add one line about your product, or leave it blank and Doppia writes it.</p></details>
     <details name="faq"><summary data-i18n="faq.q4">Can I use the images commercially?</summary><p data-i18n="faq.a4">Yes — every plan, including Free, comes with commercial use. Product pages, ads, social — anywhere.</p></details>
     <details name="faq"><summary data-i18n="faq.q5">How are credits charged?</summary><p data-i18n="faq.a5">Credits are spent per generation, and failed generations refund automatically — you only pay for what comes out. Purchased credits stay valid for 12 months.</p></details>
     <details name="faq"><summary data-i18n="faq.q6">Can I get a refund?</summary><p data-i18n="faq.a6">Unused credits are refundable within 1 year of purchase, to the original payment method. Credits already spent on completed generations are not refundable. See the refund policy for details.</p></details>
+    <details name="faq"><summary data-i18n="faq.q7">Can I use my own face, or my own model?</summary><p data-i18n="faq.a7">Yes. In Doppia Shoot, create your model from photos of a person who agreed — one photo is enough, Doppia makes the training angles. Every shot after that uses that face.</p></details>
+    <details name="faq"><summary data-i18n="faq.q8">Can Doppia run my marketing for me?</summary><p data-i18n="faq.a8">Yes — Doppia × USAsia Journal. Start with the six-question check-up; you get a written report on your real channels, then we agree a scope and run it. Customers are listed in USAsia Journal for as long as they are with us.</p></details>
   </div>
 </section>
 
-<!-- 7. CTA BAND -->
+<!-- 9. CTA BAND -->
 <section class="wrap">
   <div class="band">
     <h2 data-i18n="band.title">Brand content without a photo shoot —<br><em>5 minutes</em> today is enough.</h2>
     <p class="lead" data-i18n="band.lead">Start with the product photo you already have.<br>Before deciding anything — see what comes out first.</p>
-    <a class="btn btn-p btn-lg" href="/studio" data-i18n="band.btn">Start free</a>
+    <a class="btn btn-p btn-lg" href="/explore" data-i18n="band.btn">Start free</a>
     <p class="fine" style="margin-top:16px" data-i18n="band.fine">No card required · 1,500 credits on sign-up · Cancel anytime</p>
   </div>
 </section>
 
-<!-- 8. FOOTER — biz-footer.js 법적 사업자정보(PG 심사 필수, 삭제금지) -->
+<!-- 10. FOOTER — biz-footer.js 법적 사업자정보(PG 심사 필수, 삭제금지) -->
 <script src="/js/biz-footer.js?v=5"></script>
 
 <script>
@@ -765,13 +814,13 @@
   var KO=document.documentElement.lang==='ko';
   function tt(en,k){return KO?k:en;}
   var T={
-    wear:{name:tt('On-Model','착용컷 · On-Model'),desc:tt('Your product worn by a virtual model — pick model and scene, done.','버추얼 모델이 제품을 착용한 컷 — 모델·배경만 고르면 즉시.'),base:'/img/accessories/jewelry-product-cut.png'},
-    macro:{name:tt('Detail Macro','상세 매크로컷'),desc:tt('Close-up detail cuts across angles and lighting.','각도·조명을 바꿔가며 뽑는 클로즈업 디테일 컷.'),base:'/img/accessories/jewelry-flat-lay.png'},
-    hero:{name:tt('Editorial · Hero','화보 · Hero'),desc:tt('Premium brand editorials on plinths and sets.','배경·플린스 위에 올린 프리미엄 브랜드 화보.'),base:'/img/producthero/swatch-beside.jpg'},
+    shoot:{name:tt('Doppia Shoot · Model shots','Doppia Shoot · 모델컷'),desc:tt('Pick a ready model — or train your own — then dress, move and pose them.','준비된 모델을 고르거나 내 모델을 만들고, 옷·장소·자세를 바꾼다.'),base:'/img/landing/shoot/seoyeon-face.jpg'},
+    macro:{name:tt('Doppia Lens · Detail','Doppia Lens · 상세컷'),desc:tt('Close-up detail cuts in a saved look — drop in your product.','저장된 룩 그대로 뽑는 클로즈업 상세컷 — 제품만 넣으면 된다.'),base:'/img/accessories/jewelry-flat-lay.png'},
+    hero:{name:tt('Doppia Lens · Editorial','Doppia Lens · 화보'),desc:tt('Premium brand editorials on plinths and sets — same concept every time.','배경·플린스 위에 올린 프리미엄 화보 — 매번 같은 콘셉트로.'),base:'/img/producthero/swatch-beside.jpg'},
     video:{name:tt('Ad Video · 9:16','광고영상 · 9:16'),desc:tt('A vertical ad video from a single product cut.','제품 한 컷으로 만드는 세로 광고 영상.'),base:'/img/producthero/gloss-mirror.jpg'}
   };
   // 실배선: Shots류=스튜디오 기본 진입, 광고영상=사이트 전역 딥링크 규약 /studio?mode=ugc (home·rail과 동일)
-  var DEST={wear:'/studio',macro:'/studio',hero:'/studio',video:'/studio?mode=ugc'};
+  var DEST={shoot:'/shoot',macro:'/lens',hero:'/lens',video:'/ad-video'};
   var MQ=window.matchMedia('(max-width:860px)');
   var sec=document.querySelector('.ver');
   var els=[].slice.call(document.querySelectorAll('.oc'));
@@ -974,11 +1023,11 @@
     vids.forEach(function(v){ v.addEventListener('ended',advance); });
     load(vids[0],0); vids[0].classList.add('on'); play(vids[0]); arm();
   })();
-  // 룩북 모델 토글(하율↔ELARA) → 결과 스왑
-  var lookOut=document.getElementById('lookOut');
-  document.querySelectorAll('.sv-duo .sv-th').forEach(function(t){t.addEventListener('click',function(){
-    document.querySelectorAll('.sv-duo .sv-th').forEach(function(x){x.classList.toggle('on',x===t);});
-    if(lookOut) lookOut.src=t.dataset.look;
+  // 모델 토글(Shoot: 얼굴 클릭 → 같은 데모의 결과 스왑)
+  document.querySelectorAll('.sv-th[data-look]').forEach(function(t){t.addEventListener('click',function(){
+    var sv=t.closest('.sv'); if(!sv) return;
+    sv.querySelectorAll('.sv-th').forEach(function(x){x.classList.toggle('on',x===t);});
+    var out=sv.querySelector('.sv-big img'); if(out) out.src=t.dataset.look;
   });});
   // 활용 채널칩 → 목업 스왑
   document.querySelectorAll('.e2e-chip[data-ch]').forEach(function(b){b.addEventListener('click',function(){
@@ -1035,7 +1084,7 @@
       return '<div class="tcard'+(c.feat?' feat':'')+'">'+(c.feat?'<span class="fb">'+c.feat+'</span>':'')+
         '<div class="nm">'+c.nm+'</div><div class="pv">'+c.pv+'<small>'+c.u+'</small></div>'+
         '<div class="cr">'+c.cr+'</div><ul>'+c.li.map(function(l){return '<li>'+l+'</li>';}).join('')+'</ul>'+
-        '<a class="tb" href="'+(c.mail?'mailto:support@doppia.ai':'/studio')+'">'+c.cta+'</a></div>';
+        '<a class="tb" href="'+(c.mail?'mailto:support@doppia.ai':'/explore')+'">'+c.cta+'</a></div>';
     }).join('');
   }
   renderTier('personal');
