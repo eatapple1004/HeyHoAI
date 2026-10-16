@@ -68,7 +68,7 @@
       ['◈', 'Doppia Shoot', 'Pick a model — dress up · change scene · strike a pose', 'live', '/shoot'],
       ['⤢', 'Upscale', 'Topaz · ×2 · ×4 — opens in the Editor', 'auto:editor', '/image-edit?tool=upscale'],
       ['✂', 'Remove background', 'Transparent PNG — opens in the Editor', 'auto:editor', '/image-edit?tool=removebg'],
-      ['⇄', 'Face swap', 'Our models + your face only', 'soon'],
+      ['⇄', 'Face swap', 'Our models + your face only', 'auto:faceswap', '/face-swap', 'new'],
       ['▣', 'Editor', 'Replace background · Inpaint · Expand & Crop · Relight · Fix label text', 'auto:editor', '/image-edit', 'new']
     ],
     video: [

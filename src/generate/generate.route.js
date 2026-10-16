@@ -1024,6 +1024,104 @@ async function postEditHandler(req, res, next) {
   } catch (err) { cleanup(); next(err); }
 }
 
+// ─── Face swap (2026-10-16) — "우리 모델 + 본인 얼굴만". 정책·판별·엔진 = src/images/faceSwap.engine.js ───
+//   multipart: face(필수, 본인 얼굴) · consent('true' 필수) · targetPreset('yuna/cafe' 등) 또는 targetIdx(내 Library 생성 결과) · hair('model'|'mine')
+//   결과는 항상 비공개 · 얼굴 사진은 저장하지 않는다 · 과금 = IMG_CREDIT.faceswap, Auto 폴백(Easel → fal face-swap) 시도별 차감·환불.
+async function postFaceSwapHandler(req, res, next) {
+  const files = req.files || {};
+  const faceFile = (files.face || [])[0];
+  const cleanup = () => { if (faceFile && faceFile.path) fs.unlink(faceFile.path, () => {}); };
+  try {
+    // eslint-disable-next-line global-require
+    const fsw = require('../images/faceSwap.engine');
+    const body = req.body || {};
+    if (body.consent !== 'true') { cleanup(); return res.status(400).json({ success: false, error: 'Confirm that this is your own face and you are 18+.' }); }
+    if (!faceFile) return res.status(400).json({ success: false, error: 'Upload a photo of your face.' });
+    const face = fs.readFileSync(faceFile.path);
+    cleanup(); // 얼굴 사진은 디스크에 남기지 않는다
+    const tools = fsw.engines();
+    if (!tools.length) return res.status(400).json({ success: false, error: 'Face swap is not configured on this server' });
+
+    // 대상 — 프리셋(우리 모델) 또는 내 Library 의 생성 결과물만. 업로드·Editor 결과(외부 사진일 수 있음)는 받지 않는다.
+    const teamId = await teamCredit.activeTeamId(req.user.id);
+    let target = null, targetRef = null;
+    if (body.targetPreset) {
+      target = fsw.readPreset(String(body.targetPreset));
+      targetRef = { preset: String(body.targetPreset) };
+    } else if (parseInt(body.targetIdx, 10)) {
+      const idx = parseInt(body.targetIdx, 10);
+      const r = await query(
+        `SELECT gr.file_path, gr.model FROM generation_results gr JOIN prompts p ON p.idx = gr.prompt_idx
+          WHERE gr.idx = $1 AND gr.status = 'success' AND gr.taken_down = false
+            AND (p.user_id = $2 OR ($3::uuid IS NOT NULL AND p.team_id = $3::uuid))`,
+        [idx, req.user.id, teamId || null]
+      );
+      const row = r.rows[0];
+      if (!row) return res.status(404).json({ success: false, error: '내 결과물이 아니거나 없는 항목입니다.' });
+      if (/^editor-|^faceswap/.test(row.model || '')) return res.status(400).json({ success: false, error: 'Pick a Doppia-generated model photo (edited uploads can’t be used).' });
+      const name = path.basename(row.file_path || '');
+      const b64 = /\.(png|jpe?g|webp)$/i.test(name) ? await readRefBase64(name) : null;
+      target = b64 ? Buffer.from(b64, 'base64') : null;
+      targetRef = { idx };
+    }
+    if (!target) return res.status(400).json({ success: false, error: 'Pick a Doppia model photo.' });
+
+    const [src, tgt] = await Promise.all([fsw.checkSourceFace(face), fsw.checkTarget(target)]);
+    if (src.error) return res.status(400).json({ success: false, error: src.error });
+    if (tgt.error) return res.status(400).json({ success: false, error: tgt.error });
+
+    // eslint-disable-next-line global-require
+    const creditService = require('../credits/credit.service');
+    const hair = body.hair === 'mine' ? 'mine' : 'model';
+    let savedPrompt = null;
+    const errors = [];
+    for (const t of tools) {
+      const cost = creditService.imageCost(t.costKey || 'faceswap', 1, false);
+      try {
+        await teamCredit.chargeGeneration(req.user, cost, 'Face swap');
+      } catch (e) {
+        if (e.statusCode && !errors.length) return res.status(e.statusCode).json({ success: false, error: e.message });
+        if (e.statusCode) break;
+        throw e;
+      }
+      const modelLabel = `faceswap:${t.id}`;
+      if (!savedPrompt) {
+        savedPrompt = await promptRepo.insert({
+          userId: req.user.id, characterId: null, promptText: `Face swap — ${targetRef.preset || `#${targetRef.idx}`} · hair: ${hair}`,
+          model: modelLabel, referenceImagePath: null, tags: ['faceswap'], stylePreset: null, teamId,
+        });
+      }
+      try {
+        // eslint-disable-next-line global-require
+        const sharp = require('sharp');
+        const buf = await fsw.runSwap({ tool: t, target, face, hair, gender: src.gender });
+        const meta = await sharp(buf).metadata();
+        const outputDir = path.join(process.cwd(), 'tmp', 'images');
+        fs.mkdirSync(outputDir, { recursive: true });
+        const filename = `${crypto.randomUUID()}.png`;
+        fs.writeFileSync(path.join(outputDir, filename), buf);
+        await mediaStore.put(filename, buf);
+        const saved = await resultRepo.insert({
+          promptIdx: savedPrompt.idx, characterId: null,
+          filePath: `tmp/images/${filename}`, fileSizeKb: Math.round(buf.length / 1024),
+          width: meta.width, height: meta.height, model: modelLabel, visibility: 'private', templateName: 'Face swap',
+          metadata: { faceswap: { engine: t.id, target: targetRef, hair, consent: { self_face_adult: true, at: new Date().toISOString() }, ...(errors.length ? { fallback_from: errors.map((x) => x.engine) } : {}) } },
+        });
+        await reviewRepo.insert({ resultIdx: saved.idx, promptIdx: savedPrompt.idx });
+        return res.json({ success: true, data: { idx: saved.idx, url: `/images/${filename}`, engine: { id: t.id, label: t.label }, fallbackFrom: errors.map((x) => x.label), width: meta.width, height: meta.height, cost } });
+      } catch (err) {
+        const errorMsg = String(err.message || err).slice(0, 200);
+        await teamCredit.refundGeneration(req.user, cost, 'Face swap 실패 환불').catch(() => {});
+        await resultRepo.insertFailed({ promptIdx: savedPrompt.idx, characterId: null, model: modelLabel, errorMessage: errorMsg }).catch(() => null);
+        logger.warn({ err: errorMsg, userId: req.user.id, engine: t.id }, 'face swap failed');
+        errors.push({ engine: t.id, label: t.label, error: errorMsg });
+      }
+    }
+    const last = errors[errors.length - 1] || { error: 'no engine ran' };
+    res.status(502).json({ success: false, error: `Face swap failed (${errors.map((x) => x.label).join(' → ')}): ${last.error}` });
+  } catch (err) { cleanup(); next(err); }
+}
+
 /** 엔진 고유 옵션(body.extras JSON) 중 registry controls.extras 에 선언된 키만, 선언된 값/타입(values·toggle·number·text)으로 통과시킨다. 이미지·영상 공용. */
 function pickExtras(tool, raw) {
   const defs = tool && tool.controls && Array.isArray(tool.controls.extras) ? tool.controls.extras : [];
@@ -2142,7 +2240,9 @@ const reads = {
       video: listTools({ type: 'video', enabledOnly: true, availableOnly: true }).map(pub),
       upscale: listTools({ type: 'upscale', enabledOnly: true, availableOnly: true }).map(pub), // 비어 있으면 Upscale 기능 = soon
       removebg: listTools({ type: 'removebg', enabledOnly: true, availableOnly: true }).map(pub), // (10-14) 배경 제거
-      editor: require('../images/imageEdit.engine').catalog(credit.imageCost), // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
+      editor: require('../images/imageEdit.engine').catalog(credit.imageCost),
+      faceswap: listTools({ type: 'faceswap', enabledOnly: true, availableOnly: true }).map(pub), // (10-16) Face swap 엔진 — 비어 있으면 메뉴 soon
+      faceswapTargets: require('../images/faceSwap.engine').PRESETS, // 우리 모델 프리셋(Yuna 뱅크) // (10-15) Editor op 별 자동 엔진·대안·단가 — 비어 있으면 Editor = soon
     };
   },
 
@@ -2302,6 +2402,7 @@ const ops = {
   getCommunity: asOps(getCommunityHandler),
   patchResultsVisibility: asOps(patchResultsVisibilityHandler),
   postEdit: asOps(postEditHandler),
+  postFaceSwap: asOps(postFaceSwapHandler),
   postResultsReport: asOps(postResultsReportHandler),
   postResultsLike: asOps(postResultsLikeHandler),
   deleteResultsLike: asOps(deleteResultsLikeHandler),
@@ -2343,6 +2444,7 @@ router.post('/caption', postCaptionHandler);
 router.post('/enhance', postEnhanceHandler);
 router.get('/tools', getToolsHandler);
 router.post('/edit', editUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'mask', maxCount: 1 }]), postEditHandler);
+router.post('/face-swap', upload.fields([{ name: 'face', maxCount: 1 }]), postFaceSwapHandler);
 router.get('/styles', getStylesHandler);
 router.get('/prompts', getPromptsHandler);
 router.get('/prompts/:idx', getPrompts2Handler);

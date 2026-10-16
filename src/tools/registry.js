@@ -190,6 +190,21 @@ const TOOLS = {
     controls: {},
     imageSlots: [{ key: 'source', label: 'Source image', hint: 'A result from your library.' }],
   },
+  // (2026-10-16) Face swap — type:'faceswap'. "우리 모델 + 본인 얼굴만" 정책·검사는 src/images/faceSwap.engine.js. 1순위 Easel(머리카락 선택), 폴백 fal face-swap.
+  'easel-faceswap': {
+    id: 'easel-faceswap', label: 'Easel Face Swap', type: 'faceswap',
+    provider: 'fal', model: 'easel-ai/advanced-face-swap',
+    costKey: 'faceswap', enabled: true,
+    controls: { hair: ['model', 'mine'] },
+    imageSlots: [{ key: 'target', label: 'Doppia model' }, { key: 'face', label: 'Your face' }],
+  },
+  'fal-faceswap': {
+    id: 'fal-faceswap', label: 'Face Swap', type: 'faceswap',
+    provider: 'fal', model: 'fal-ai/face-swap',
+    costKey: 'faceswap', enabled: true,
+    controls: {},
+    imageSlots: [{ key: 'target', label: 'Doppia model' }, { key: 'face', label: 'Your face' }],
+  },
   // (2026-10-16) 지우기 전용 — 프롬프트 없는 마스크 지우개. FLUX Fill 은 라벨 위를 지우면 가짜 글자를 그려 넣어서(dev 실측) Erase 1순위는 이것.
   'bria-eraser': {
     id: 'bria-eraser', label: 'Bria Eraser', type: 'edit',
