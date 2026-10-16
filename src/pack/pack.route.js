@@ -172,6 +172,50 @@ async function normalizeUploads(req, res, next) {
   next();
 }
 
+/** R2에 있는 미디어를 로컬 경로로 내려받는다. 이미 있거나 R2 미설정·실패면 조용히 넘어간다. */
+async function restoreFromR2(name, dest) {
+  if (fs.existsSync(dest) || !mediaStore.isRemote()) return false;
+  try {
+    const obj = await mediaStore.getObject(name);
+    if (!obj || !obj.Body) return false;
+    const chunks = [];
+    for await (const c of obj.Body) chunks.push(Buffer.from(c));
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, Buffer.concat(chunks));
+    return true;
+  } catch (e) { logger.warn?.(`[pack] R2 복원 실패 ${name}: ${e.message}`); return false; }
+}
+
+/**
+ * 팩 후속 작업 전에 로컬에서 사라진 재료를 R2에서 되살린다(2026-10-17).
+ *
+ * 왜: 후속 기능(컷 생성·재생성·더 만들기·컨셉·영상·재굽기)은 캐논 레퍼(tmp/images)와 원본 사본
+ *   (tmp/pack/<share>/src_*)을 **로컬에서만** 읽는다. 그런데 tmp/images는 48h 크론이 지워서 prd 팩
+ *   137/137의 레퍼가 로컬에 없었다 → 48시간 지난 팩의 후속 기능이 전부 실패하던 상태.
+ *   레퍼·원본은 만들 때 R2에도 올라가 있으니(recordAsset·recordSource) 필요할 때 받아온다.
+ *   - 레퍼: 각 레퍼 키의 최신 버전만
+ *   - 원본: plan.sources의 src_<i> ← 같은 순번의 source 자산(pack_<share>_source_<i>_*)
+ */
+async function ensurePackLocal(pack) {
+  if (!pack) return;
+  const assets = pack.assets || [];
+  const latestRef = new Map();
+  assets.filter((a) => a.kind === 'ref' && a.url).forEach((a) => latestRef.set(a.cut_key || 'ref', a));
+  for (const a of latestRef.values()) {
+    const name = String(a.url).split('/').pop();
+    await restoreFromR2(name, path.join(imagesDir, name));
+  }
+  const plan = (pack.config && pack.config.plan) || {};
+  const srcPaths = new Set([...(plan.sources || []), ...((plan.states || []).flatMap((st) => st.sources || []))]);
+  for (const p of srcPaths) {
+    if (!p || fs.existsSync(p)) continue;
+    const m = /src_(\d+)\./.exec(path.basename(p));
+    if (!m) continue;
+    const src = assets.find((a) => a.kind === 'source' && a.url && a.cut_key === `source_${m[1]}`);
+    if (src) await restoreFromR2(String(src.url).split('/').pop(), path.resolve(process.cwd(), p));
+  }
+}
+
 /** /images/<name> URL → 로컬 파일 경로(재생성이 캐논 레퍼를 참조로 읽을 때). */
 function localPathForUrl(url) { return path.join(imagesDir, String(url || '').split('/').pop()); }
 
@@ -578,6 +622,7 @@ const getPackGetHandler = (req, res, next) => {
 const generateHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status !== 'ref_ready') return res.status(409).json({ error: '게이트 대기 상태가 아니에요' });
     const depth = Math.max(0, parseInt((req.body && req.body.depth) || 0, 10) || 0);
@@ -601,6 +646,7 @@ const generateHandler = async (req, res, next) => {
 const resumeHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status === 'done') return res.status(409).json({ error: '이미 완료된 팩이에요' });
     if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요(깊이를 고르고 생성하세요)' });
@@ -628,6 +674,7 @@ const resumeHandler = async (req, res, next) => {
 const extendHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요(깊이를 고르고 생성하세요)' });
     if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
@@ -661,6 +708,7 @@ const extendHandler = async (req, res, next) => {
 const moreLikeHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요' });
     if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
@@ -688,6 +736,7 @@ const moreLikeHandler = async (req, res, next) => {
 const conceptMoreHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     if (pack.status === 'ref_ready') return res.status(409).json({ error: '아직 게이트 대기예요' });
     if (pack.status === 'processing' && !repo.isStale(pack)) return res.status(409).json({ error: '아직 생성 중이에요' });
@@ -718,6 +767,7 @@ const videoHandler = async (req, res, next) => {
   try {
     if (!req.user || !req.user.id) return res.status(401).json({ error: '로그인이 필요해요' });
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     const plan = (pack.config && pack.config.plan) || {};
     if (!latestRefPath(pack)) return res.status(409).json({ error: '먼저 콘텐츠를 만들어 주세요(캐논 레퍼 없음)' });
@@ -760,6 +810,7 @@ const videoHandler = async (req, res, next) => {
 const regenerateCutHandler = async (req, res, next) => {
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     const cut = resolveCut(pack, String((req.body && req.body.cutKey) || ''));
     if (!cut) return res.status(400).json({ error: 'unknown cut' });
@@ -786,6 +837,7 @@ const rebakeRefHandler = async (req, res, next) => {
   let rbCharge = null;   // 굽기 실패 시 되돌리려면 catch에서 보여야 한다(try 안에 두면 스코프 밖)
   try {
     const pack = await repo.getPack({ id: Number(req.params.id) });
+    await ensurePackLocal(pack); // 로컬에서 정리된 레퍼·원본을 R2에서 되살림
     if (!pack) return res.status(404).json({ error: 'not found' });
     // 재굽기는 **굽기 전에 동기 차감**한다 — 컷을 안 뽑아도 무한 반복되는 경로라 402를 제대로 돌려줘야 한다.
     //   무료분 판정은 chargeRefBake 안에 있다(초기 굽기와 같은 규칙 = 한 곳).

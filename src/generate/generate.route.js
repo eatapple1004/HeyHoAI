@@ -194,7 +194,27 @@ const editUpload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } }); 
 /**
  * POST /api/generate
  */
+/**
+ * 응답이 끝나면 이 요청의 multer 업로드(tmp/uploads)를 지운다.
+ *   사진 생성(/)·동기 영상(/video)은 업로드를 요청 처리 중에 base64로 다 읽고 끝나는데 지우는 코드가 없어
+ *   prd tmp/uploads에 4월부터 2,500개(1.9GB)가 쌓였다(2026-10-16 실측). 응답 후 다시 읽는 비동기 경로
+ *   (video/async 등)는 각자 지우므로 여기 붙이지 않는다. Nest가 핸들러를 직접 부르므로 라우터 미들웨어가
+ *   아니라 핸들러 안에서 건다(세 환경 모두 적용).
+ */
+function cleanupUploadsOnFinish(req, res) {
+  const done = () => {
+    const list = [];
+    if (req.file) list.push(req.file);
+    if (Array.isArray(req.files)) list.push(...req.files);
+    else if (req.files && typeof req.files === 'object') Object.values(req.files).forEach((v) => { if (Array.isArray(v)) list.push(...v); });
+    list.forEach((f) => { if (f && f.path) fs.unlink(f.path, () => {}); });
+  };
+  res.once('finish', done);
+  res.once('close', done);
+}
+
 const postRootHandler = async (req, res, next) => {
+  cleanupUploadsOnFinish(req, res);
   try {
     let { characterId, prompt, model = 'pro', count = '1', style = 'none', templateName } = req.body;
     // enhance 토글(기본 ON): OFF면 인물 정체성 고정 프리픽스를 빼고 사용자 프롬프트 원문 그대로 생성(완전 raw)
@@ -2079,6 +2099,7 @@ const getUgcVoicePreviewHandler = async (req, res, next) => {
 
 // ─── 비디오 생성 (Kling V3) — 동기 (운영툴/오디오용, 기존 유지) ───
 const postVideoHandler = async (req, res, next) => {
+  cleanupUploadsOnFinish(req, res);
   const vlog = logger('Video');
   const alog = logger('Audio');
   const creditService = require('../credits/credit.service');
