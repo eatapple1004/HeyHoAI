@@ -130,12 +130,17 @@ function describeLight(light) {
   const inten = n(light.intensity, 60), soft = n(light.softness, 50), amb = n(light.ambient, 35);
   const kelvin = Math.round(n(light.kelvin, 5200));
   const warmth = kelvin < 3300 ? 'very warm tungsten' : kelvin < 4500 ? 'warm' : kelvin < 5800 ? 'neutral daylight' : kelvin < 7000 ? 'cool' : 'very cool blue';
-  const color = /^#[0-9a-f]{6}$/i.test(light.color || '') && light.color.toLowerCase() !== '#ffffff' ? ` tinted ${light.color}` : '';
+  // (10-16) 색 조명은 이름으로 — hex 만 주면 사진 전체를 그 색으로 물들이는(색감 보정) 결과가 나왔다(dev #199: 민트 전체 워시, 방향 없음).
+  const NAMED = { '#ffd6a0': 'warm amber', '#ff9a4a': 'orange sunset', '#ff7eb6': 'hot pink', '#b18cff': 'violet', '#6aa8ff': 'electric blue', '#7dffcf': 'mint green' };
+  const hex = String(light.color || '').toLowerCase();
+  const cname = /^#[0-9a-f]{6}$/.test(hex) && hex !== '#ffffff' ? (NAMED[hex] || `colored (${hex})`) : '';
+  const color = cname ? ` with a ${cname} colored gel` : '';
   return `One key light ${pos}. `
     + `Light quality: ${soft > 66 ? 'very soft and diffused (large softbox), feathered shadow edges' : soft > 33 ? 'medium-soft, defined but gentle shadow edges' : 'hard and direct, crisp sharp-edged shadows'}. `
     + `Intensity: ${inten > 75 ? 'strong, high contrast' : inten > 40 ? 'moderate' : 'subtle, low contrast'}. `
     + `Color: ${warmth} (~${kelvin}K)${color}. `
     + `Ambient fill: ${amb > 66 ? 'bright, shadows well filled' : amb > 33 ? 'medium' : 'low, deep moody shadows'}. `
+    + (cname ? `The ${cname} color comes ONLY from this key light: surfaces facing the light glow ${cname}, while the side facing away stays darker and close to neutral — it is a directional colored light, NOT a color filter or tint over the whole image. ` : '')
     + 'Cast shadows, highlights, specular reflections on glossy surfaces and the contact shadow must all follow this light direction consistently.';
 }
 
