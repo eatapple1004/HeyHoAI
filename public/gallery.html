@@ -278,7 +278,7 @@ function inferTemplate(promptText){
 }
 
 // 무한 스크롤: offset 페이지네이션으로 200개 제한 제거. 최신순(백엔드 created_at DESC) 유지.
-let OFFSET=0; const PAGE=120; let LOADING=false, DONE=false;
+let OFFSET=0; const PAGE=40; // (10-16) 120 → 40 — 첫 화면에 필요한 만큼만(무한스크롤로 이어 받음) let LOADING=false, DONE=false;
 function mapRow(r){
   const fn=r.file_path.split('/').pop();
   return {
@@ -291,6 +291,7 @@ function mapRow(r){
     name:r.character_name||'',
     date:(r.created_at||'').slice(0,10),
     model:r.model||'',
+    w:r.width||0, h:r.height||0, // 카드 자리 비율을 미리 잡아 lazy 로딩이 화면 밖까지 한꺼번에 받지 않게
     visibility:r.visibility==='public'?'public':'private',
     takenDown:!!r.taken_down,
     prompt:r.prompt_text||'',                 // 사후 템플릿화용
@@ -383,12 +384,16 @@ const RC_SVG={
 // (2026-10-16) 사진 카드의 업스케일·배경 제거는 개발자의 Editor(/image-edit?tool=…) 로 넘긴다(직결 POST 는 걷어냄). 서버에 editor 엔진이 없으면 버튼이 안 뜬다.
 let EDITOR=false,VUPSCALE=false;
 fetch('/api/generate/tools').then(r=>r.json()).then(d=>{EDITOR=((d.data&&d.data.editor)||[]).length>0;VUPSCALE=((d.data&&d.data.video)||[]).some(t=>t.id==='topaz-video');if(EDITOR||VUPSCALE)try{render()}catch(e){}}).catch(()=>{}); // 첫 render 가 먼저 끝났으면 버튼을 달기 위해 한 번 더
+// /images/<uuid>.<ext> → /images/t/<w>/<uuid>.<ext> (서버가 줄인 사본을 만들어 캐시). 다른 형태 URL 은 그대로.
+function thumbUrl(u,w){const m=/^\/images\/([\w.-]+\.(png|jpe?g|webp|mp4|webm|mov))$/i.exec(u||'');return m?'/images/t/'+w+'/'+m[1]:u;}
 function cardHtml(it){
   // 릴스: preload=metadata(첫 프레임만)+hover 재생. 로드 실패 시 카드 제거(빈 카드 방지).
-  const onerr=`onerror="var c=this.closest('.card');if(c)c.remove()"`;
+  // (10-16) 카드는 썸네일(/images/t/…: 사진 WebP ~50KB · 영상 첫 프레임 JPEG)만 — 원본(6~8MB PNG)은 상세에서. 영상은 hover 때 처음 로드.
+  const onerr=`onerror="var c=this.closest('.card');if(this.dataset.full&&this.src.indexOf('/images/t/')>=0){this.src=this.dataset.full;this.removeAttribute('srcset');}else if(c)c.remove()"`;
+  const ar=it.w&&it.h?` style="aspect-ratio:${it.w}/${it.h}"`:'';
   const media=it.type==='reel'
-    ? `<video class="media" data-reel muted loop playsinline preload="metadata" src="${esc(it.url)}#t=0.1" ${onerr}></video>`
-    : `<img class="media" src="${esc(it.url)}" loading="lazy" alt="" ${onerr}>`;
+    ? `<video class="media" data-reel muted loop playsinline preload="none" poster="${esc(thumbUrl(it.url,480))}" data-src="${esc(it.url)}"${ar}></video>`
+    : `<img class="media" src="${esc(thumbUrl(it.url,480))}" srcset="${esc(thumbUrl(it.url,480))} 1x, ${esc(thumbUrl(it.url,960))} 2x" data-full="${esc(it.url)}" loading="lazy" decoding="async" alt=""${ar} ${onerr}>`;
   const vp=(it.visibility==='private');
   const visBtn=`<button class="rc-btn${vp?' on':''}" type="button" aria-pressed="${vp?'true':'false'}" title="${vp?'Private — only you can see it':'Public — shows in Explore'}" onclick="event.stopPropagation();toggleVis(${it.idx},this)">${vp?RC_SVG.priv:RC_SVG.pub}</button>`;
   const dlBtn=`<a class="rc-btn" href="${esc(it.url)}" download title="Download" onclick="event.stopPropagation()">${RC_SVG.dl}</a>`;
@@ -443,8 +448,11 @@ function sizeGridCard(card){ const h=card.getBoundingClientRect().height; if(h>4
 function layoutGridMasonry(){
   const g=document.getElementById('grid'); if(!g||getComputedStyle(g).display!=='grid')return;
   g.querySelectorAll('.card').forEach(c=>{ const m=c.querySelector('.media');
-    if(m&&!m.__gmHooked){ m.__gmHooked=1; try{m.loading='eager';}catch(e){} const ev=m.tagName==='VIDEO'?'loadedmetadata':'load';
-      if((m.tagName==='IMG'&&m.complete)||(m.tagName==='VIDEO'&&m.readyState>=1)) sizeGridCard(c); else m.addEventListener(ev,()=>sizeGridCard(c),{once:true}); }
+    // (10-16) eager 강제 제거 — 화면 밖 카드까지 원본을 전부 받던 원인. 비율(aspect-ratio)을 미리 잡아 lazy 그대로 둔다.
+    //   영상은 preload=none 이라 메타데이터 이벤트가 없다 → 포스터 이미지 크기로 비율을 잡는다.
+    if(m&&!m.__gmHooked){ m.__gmHooked=1;
+      if(m.tagName==='VIDEO'){ if(!m.style.aspectRatio&&m.poster){const pi=new Image();pi.onload=()=>{m.style.aspectRatio=pi.naturalWidth+'/'+pi.naturalHeight;sizeGridCard(c);};pi.src=m.poster;} }
+      else if(!m.complete) m.addEventListener('load',()=>sizeGridCard(c),{once:true}); }
     sizeGridCard(c); });
 }
 addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTimeout(layoutGridMasonry,150); });
@@ -453,6 +461,7 @@ addEventListener('resize',()=>{ clearTimeout(window.__gmT); window.__gmT=setTime
 let CURRENT_VID=null;
 function playOne(v){
   if(CURRENT_VID===v)return;
+  if(!v.getAttribute('src')&&v.dataset.src){ v.src=v.dataset.src; v.preload='auto'; } // 처음 hover 때 영상 로드
   if(CURRENT_VID){ try{CURRENT_VID.pause();}catch(e){} }
   v.muted=true; const p=v.play(); if(p&&p.catch)p.catch(()=>{}); CURRENT_VID=v;
 }

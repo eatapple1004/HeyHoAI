@@ -56,6 +56,8 @@ const IMAGES_DIR = path.join(process.cwd(), 'tmp', 'images');
 // /images 파일은 전부 UUID(콘텐츠 주소) = 불변 → 장기 immutable 캐시. 편집/버전전환마다 같은 영상을
 //   다시 받지 않아 즉시 전환됨(프론트가 새 URL을 미리 로드하면 렌더가 브라우저 캐시에서 즉시 서빙). 파일명이 바뀌면 URL도 바뀌므로 스테일 없음.
 const IMG_CACHE_MS = 1000 * 60 * 60 * 24 * 30; // 30일
+// (2026-10-16) 카드용 썸네일 — 이미지는 WebP, 영상은 첫 프레임 JPEG. 원본은 아래 /images/:file 그대로. src/lib/thumbs.js
+app.get('/images/t/:w/:file', require('./lib/thumbs').handler);
 app.get('/images/:file', async (req, res, next) => {
   const name = path.basename(req.params.file); // path traversal 방지
   const local = path.join(IMAGES_DIR, name);
