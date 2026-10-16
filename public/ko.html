@@ -408,8 +408,9 @@
   .sv-faces .sv-th.on{opacity:1;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(163,148,238,.35)}
   .sv-acts{width:104px;height:128px;border-radius:12px;border:1.5px dashed var(--line2);background:var(--surface2);display:flex;flex-direction:column;justify-content:center;gap:5px;padding:8px}
   .sv-acts span{font-size:11px;font-weight:650;color:var(--dim);background:var(--surface);border:1px solid var(--line2);border-radius:999px;padding:3px 8px;white-space:nowrap}
-  .sv-angles{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:104px}
-  .sv-angles img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:7px;border:1px solid var(--line2);display:block}
+  .sv-in-w{width:168px}
+  .sv-angles{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:168px}
+  .sv-angles img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#0d0d14;border-radius:8px;border:1px solid var(--line2);display:block}
   /* (10-16) §5 SERVICES — 3단계 + 저널 박스 */
   .wk-steps .pi{font-weight:850;font-size:15px;color:var(--accent2)}
   .wk-journal{margin-top:16px;background:linear-gradient(100deg,rgba(124,82,232,.14),rgba(217,96,143,.08));border:1px solid var(--line2);border-radius:18px;padding:26px 28px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
@@ -417,13 +418,6 @@
   .wk-journal h4{font-size:22px;font-weight:820;letter-spacing:-.015em;line-height:1.2}
   .wk-journal p{font-size:14.5px;color:var(--dim);line-height:1.6;max-width:60ch}
   .wk-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-  /* (10-16) §6 COMING NEXT — soon 배지 카드 4 */
-  .soon4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
-  .sc{position:relative;background:var(--surface);border:1px dashed var(--line2);border-radius:16px;padding:22px 20px 20px}
-  .sc .bd{position:absolute;top:14px;right:14px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:999px;padding:3px 9px}
-  .sc b{display:block;font-size:16px;font-weight:750;margin-bottom:8px;padding-right:56px}
-  .sc p{font-size:13.5px;color:var(--dim);line-height:1.6}
-  @media(max-width:900px){.soon4{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.soon4{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -499,15 +493,15 @@
           <!-- ② 내 모델 만들기: [사진 1장 → 얼굴 24각도] → 학습된 모델의 컷 -->
           <div class="sv" data-v="mine">
             <div class="sv-stack">
-              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/shoot/dohyun-face.jpg" alt=""><figcaption data-i18n="cap.yourphoto">내 사진 — 한 장이면 충분</figcaption></figure>
+              <figure class="sv-in"><img loading="lazy" decoding="async" src="/img/landing/shoot/minji-face.jpg" alt=""><figcaption data-i18n="cap.yourphoto">내 사진 — 한 장이면 충분</figcaption></figure>
               <span class="sv-plus">↓</span>
-              <div class="sv-in">
+              <div class="sv-in sv-in-w">
                 <div class="sv-angles"><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-1.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-2.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-3.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-4.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-5.jpg" alt=""><img loading="lazy" decoding="async" src="/img/landing/shoot/angle-6.jpg" alt=""></div>
                 <figcaption data-i18n="cap.angles">얼굴 24각도, 저희가 만듭니다</figcaption>
               </div>
             </div>
             <span class="arw sv-arw">→</span>
-            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/shoot/dohyun-street.jpg" alt=""><figcaption data-i18n="cap.trained">내 모델 — 이제 어떤 장면이든</figcaption></figure>
+            <figure class="sv-big"><img loading="lazy" decoding="async" src="/img/landing/shoot/minji-street.jpg" alt=""><figcaption data-i18n="cap.trained">내 모델 — 이제 어떤 장면이든</figcaption></figure>
           </div>
         </div>
         <div class="desc">
@@ -745,20 +739,8 @@
   </div>
 </section>
 
-<!-- 6. COMING NEXT — 만들고 있는 것만, 클릭되는 건 위에만(거짓 금지) -->
-<section class="wrap" id="soon">
-  <div class="eyebrow">COMING NEXT</div>
-  <h2 data-i18n="sn.title">다음에 <em>나올 것</em>.</h2>
-  <p class="lead" data-i18n="sn.lead">지금 만들고 있습니다. 아직 열리지 않았고, 오늘 쓸 수 있는 건 위에 있는 것 전부입니다.</p>
-  <div class="soon4">
-    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.1.b">콘텐츠 팩</b><p data-i18n="sn.1.p">실제로 올리는 그 상품 등록 — 쿠팡, 스마트스토어, 아마존, 자사몰. ZIP 하나로.</p></div>
-    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.2.b">카카오톡</b><p data-i18n="sn.2.p">앱도 가입도 없이. 채팅에 사진을 보내면 컷이 돌아옵니다.</p></div>
-    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.3.b">스펙 광고</b><p data-i18n="sn.3.p">제품 사진 한 장을 5~15초 VFX 스펙 광고로.</p></div>
-    <div class="sc"><span class="bd">soon</span><b data-i18n="sn.4.b">Doppia MCP</b><p data-i18n="sn.4.p">Claude 같은 에이전트에서 바로 생성 — 도구로서의 Doppia.</p></div>
-  </div>
-</section>
 
-<!-- 7. PRICING -->
+<!-- 6. PRICING -->
 <section class="wrap" id="pricing">
   <div class="eyebrow">PRICING</div>
   <h2 data-i18n="pr.title">필요한 만큼만,<br><em>가볍게</em> 시작하세요.</h2>
@@ -773,7 +755,7 @@
   <p class="fine" style="margin-top:20px;text-align:center" data-i18n="pr.fine">VAT 포함 · 구독은 매월 자동결제 · 언제든 해지 · (표시 값은 예시)</p>
 </section>
 
-<!-- 8. FAQ -->
+<!-- 7. FAQ -->
 <section class="wrap" id="faq">
   <div class="eyebrow">FAQ</div>
   <h2 data-i18n="faq.title">시작 전, <em>가장 많이 묻는 질문</em></h2>
@@ -789,7 +771,7 @@
   </div>
 </section>
 
-<!-- 9. CTA BAND -->
+<!-- 8. CTA BAND -->
 <section class="wrap">
   <div class="band">
     <h2 data-i18n="band.title">촬영 없이 완성하는 브랜드 콘텐츠,<br>오늘 <em>5분</em>이면 충분해요.</h2>
@@ -799,7 +781,7 @@
   </div>
 </section>
 
-<!-- 10. FOOTER — biz-footer.js 법적 사업자정보(PG 심사 필수, 삭제금지) -->
+<!-- 9. FOOTER — biz-footer.js 법적 사업자정보(PG 심사 필수, 삭제금지) -->
 <script src="/js/biz-footer.js?v=5"></script>
 
 <script>
