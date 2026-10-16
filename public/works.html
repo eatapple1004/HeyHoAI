@@ -79,6 +79,7 @@
   @media(max-width:900px){.hero .in{grid-template-columns:1fr;gap:40px}}
   .hero h1{margin-top:22px;max-width:none;font-size:clamp(32px,4.1vw,52px);white-space:normal}
   .hero h1 .grad{white-space:normal}.hero h1 .nb{white-space:nowrap} /* 이름(Doppia × USAsia Journal)만 한 덩어리, 나머지는 줄바꿈 */
+  @media(max-width:600px){.hero h1 .nb{white-space:normal}} /* 폰 폭에선 이름도 줄바꿈 — 안 그러면 가로로 넘친다 */
   .hero .lead{margin-top:22px}
   .cta{margin-top:34px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .fine{color:var(--faint);font-size:13px;margin-top:14px}
