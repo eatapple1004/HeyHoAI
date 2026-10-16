@@ -194,7 +194,7 @@ const TOOLS = {
   'easel-faceswap': {
     id: 'easel-faceswap', label: 'Easel Face Swap', type: 'faceswap',
     provider: 'fal', model: 'easel-ai/advanced-face-swap',
-    costKey: 'faceswap', enabled: true,
+    costKey: 'faceswap', enabled: false, // (10-16 dev 실측) 공개 URL·data URL 모두 결과 조회 503 — fal 쪽 서비스 장애/접근 불가. 복구 확인되면 true(머리카락 선택이 다시 보인다)
     controls: { hair: ['model', 'mine'] },
     imageSlots: [{ key: 'target', label: 'Doppia model' }, { key: 'face', label: 'Your face' }],
   },
