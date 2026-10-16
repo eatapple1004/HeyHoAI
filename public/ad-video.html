@@ -134,10 +134,10 @@ const FORMATS=[['auto','✨ Auto',''],['ugc','UGC review','A real customer filmi
 const TPLS=[['💅','Nail art drop','ugc','New nail tips drop — show them on the hand in daylight, sparkle close-ups, cute everyday moments, "link in bio" ending.'],['🧴','Skincare morning','hero','Morning skincare ritual in a bright bathroom — dewy texture close-ups, fresh glow, calm luxury mood.'],['☕','Café pick','tiktok','Trendy café scene — the product on the table with latte art, friends reaching for it, upbeat Seoul vibe.'],['🎁','Gift idea','unbox','Perfect gift for her — a wrapped box, the reveal, a happy reaction, holiday warmth.'],['👜','Outfit match','ugc','A fashion creator styles the product with three outfits — mirror selfies, quick transitions, confident attitude.'],['🧼','Clean result','beforeafter','Before: messy and dull. After using the product: clean, bright and satisfying close-ups.'],['🍪','Snack craving','reasons','3 reasons this snack is your new favorite — crunch close-up, cozy sofa moment, sharing with a friend.'],['💡','Gadget explainer','hero','A sleek tech explainer — the product on a dark desk, light sweeps, features shown one by one, minimal and premium.']];
 const VOICES=[['n2fbxG88jqAoaVPUy3IG','Yooni — F, clear & calm'],['bQlkYuipD5BHEhntA5iz','JY — F, trendy & upbeat'],['YDseIkMzKtO5bK1Ehnev','Hanabad — F, confident'],['qWofGdsKN4woEPGCzrdX','Nara — F, warm & mature'],['SE9upoSoM2ipDUdAVW8q','Mono Beige — F, gentle'],['8lidWTlnwgjObqCImnE2','Juan — M, deep storyteller'],['rvVNwZozYG4hTIbVUvHi','Jin — M, warm & classy'],['8cOkLISXzLWeGEsu0cZC','Minjoon — M, warm & clear']];
 const MOODS=[['','Auto (AI)'],['upbeat, energetic, bright modern','Upbeat'],['calm, gentle, soft ambient','Calm'],['luxurious, elegant, cinematic premium','Luxury'],['warm, cozy, acoustic','Warm'],['high-energy, driving, punchy','Energetic'],['none','No music']];
-const st={fmt:'auto',products:[],aspect:'9:16',dur:15,quality:'low',engine:'seedance',mood:'',voice:false,voiceId:VOICES[0][0],speed:'1',lang:(document.documentElement.lang||navigator.language||'ko').startsWith('ko')?'ko':'en',review:false,
+const st={fmt:'auto',products:[],aspect:'9:16',dur:15,quality:'low',engine:'seedance',mood:'',voice:false,voiceId:VOICES[0][0],speed:'1',lang:(document.documentElement.lang||navigator.language||'ko').startsWith('ko')?'ko':'en',review:false,pace:'steady',
   costs:null,jobs:[],feed:[],busy:false};
 try{Object.assign(st,JSON.parse(localStorage.getItem(DRAFT)||'{}'),{products:[],jobs:[],feed:[],busy:false});}catch(e){}
-const save=()=>{try{const {fmt,aspect,dur,quality,engine,mood,voice,voiceId,speed,lang,review}=st;localStorage.setItem(DRAFT,JSON.stringify({fmt,aspect,dur,quality,engine,mood,voice,voiceId,speed,lang,review,concept:$('#concept').value}));}catch(e){}};
+const save=()=>{try{const {fmt,aspect,dur,quality,engine,mood,voice,voiceId,speed,lang,review,pace}=st;localStorage.setItem(DRAFT,JSON.stringify({fmt,aspect,dur,quality,engine,mood,voice,voiceId,speed,lang,review,pace,concept:$('#concept').value}));}catch(e){}};
 
 // ── 형식·템플릿 ──
 function renderFmts(){$('#fmts').innerHTML=FORMATS.map(f=>`<button class="${st.fmt===f[0]?'on':''}" data-f="${f[0]}">${esc(f[1])}</button>`).join('');}
@@ -148,7 +148,8 @@ $('#tpls').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;const t
 // ── 옵션 바(힉스필드: 스타일 · 비율 · 길이 · 개수 자리) ──
 const OPTS=()=>[
   ['aspect','▭',{'9:16':'9:16 Reels','1:1':'1:1 Feed','16:9':'16:9 YouTube'}[st.aspect],[['9:16','9:16 Reels / Shorts'],['1:1','1:1 Feed'],['16:9','16:9 YouTube']]],
-  ['dur','⏱',st.dur+'s',[[10,'10s','~2 scenes'],[15,'15s','~3 scenes'],[20,'20s','~4 scenes'],[30,'30s','~6 scenes']]],
+  ['dur','⏱',st.dur+'s',[[10,'10s'],[15,'15s'],[20,'20s'],[30,'30s']]],
+  ['pace','✂',{steady:'Steady cuts',fast:'Fast cuts',auto:'AI pacing'}[st.pace],[['steady','Steady cuts','5s scenes · exact price'],['fast','Fast cuts','3s scenes · more scenes'],['auto','AI pacing','AI picks 2–6 scenes · price varies']]],
   ['quality','◆',st.quality==='high'?'Premium':'Basic',[['low','Basic',`◈${scenePrice('low')}/scene`],['high','Premium',`◈${scenePrice('high')}/scene · 2K frames, pro motion`]]],
   ['engine','⚙',st.engine==='kling'?'Kling 3.0':'Seedance 2.5',[['seedance','Seedance 2.5','best motion · people → Kling'],['kling','Kling 3.0','reliable with people']]],
   ['mood','♪',(MOODS.find(m=>m[0]===st.mood)||MOODS[0])[1],MOODS.map(m=>[m[0],m[1]])],
@@ -157,9 +158,11 @@ const OPTS=()=>[
   ['review','✎',st.review?'Review script':'One-shot',[[false,'One-shot','render right away'],[true,'Review script first','edit scenes before rendering']]],
 ];
 function scenePrice(q){const c=st.costs&&st.costs.adVideo&&st.costs.adVideo[q];return c?c[5]:(q==='high'?945:625);}
-function estScenes(){return Math.max(1,Math.min(6,Math.round(st.dur/5)));}
+// 씬 수 = 과금 단위(씬당 단가). steady/fast 는 서버에 sceneCount·sceneDuration 을 고정해 보내 예상 = 실제가 되게 한다(10s 가 2초 씬 5개로 쪼개져 2.5배 과금된 dev 실측).
+function paceSpec(){if(st.pace==='fast')return{n:Math.max(2,Math.min(12,Math.round(st.dur/3))),d:3};if(st.pace==='auto')return null;return{n:Math.max(1,Math.min(12,Math.ceil(st.dur/5))),d:5};}
+function estScenes(){const p=paceSpec();return p?p.n:Math.max(1,Math.min(6,Math.round(st.dur/5)));}
 function renderOpts(){$('#opts').innerHTML=OPTS().map(([k,ic,label,items])=>`<div class="av-opt"><button data-o="${k}"><i>${ic}</i>${esc(label)}</button><div class="av-menu" data-m="${k}">${items.map(it=>`<button data-k="${k}" data-v='${esc(JSON.stringify(it[0]))}' class="${isSel(k,it[0])?'on':''}"><span>${esc(it[1])}</span>${it[2]?`<small>${esc(it[2])}</small>`:''}</button>`).join('')}</div></div>`).join('')+`<button class="av-suggest" id="suggest">✨ Write the concept for me</button>`;
-  $('#cost').textContent=`◈ ≈${(estScenes()*scenePrice(st.quality)).toLocaleString()}`;}
+  const ps=paceSpec(),pr=scenePrice(st.quality);$('#cost').textContent=ps?`◈ ${(ps.n*pr).toLocaleString()} · ${ps.n} scenes`:`◈ ${(Math.ceil(st.dur/5)*pr).toLocaleString()}–${(Math.min(6,Math.max(2,Math.ceil(st.dur/2)))*pr).toLocaleString()}`;}
 function isSel(k,v){if(k==='voice')return v===false?!st.voice:(st.voice&&st.voiceId===v);return st[k]===v;}
 $('#opts').addEventListener('click',e=>{const o=e.target.closest('[data-o]');if(o){const m=$(`[data-m="${o.dataset.o}"]`),on=!m.classList.contains('on');$$('.av-menu').forEach(x=>x.classList.remove('on'));if(on)m.classList.add('on');return;}
   const it=e.target.closest('[data-k]');if(it){const k=it.dataset.k,v=JSON.parse(it.dataset.v);if(k==='voice'){if(v===false)st.voice=false;else{st.voice=true;st.voiceId=v;}}else st[k]=v;save();renderOpts();return;}
@@ -192,10 +195,13 @@ async function suggest(){if(!st.products.length){toast('Add a product photo firs
 $('#go').onclick=async()=>{if(st.busy)return;if(!st.products.length){toast('Add your product photos.');$('#prod').click();return;}
   let concept=fullConcept();st.busy=true;$('#go').disabled=true;const go=$('#go');go.firstChild.textContent='WRITING…';
   try{if(!concept){const fd0=baseForm();const r0=await fetch('/api/generate/ugc/suggest-concept',{method:'POST',body:fd0});const j0=await r0.json().catch(()=>({}));concept=(j0&&j0.concept)||'A short, engaging product ad.';$('#concept').value=concept;}
-    const fd=baseForm();fd.append('concept',concept);fd.append('voiceover',st.voice?'true':'false');fd.append('durationSec',String(st.dur));
+    const fd=baseForm();fd.append('concept',concept);fd.append('voiceover',st.voice?'true':'false');fd.append('durationSec',String(st.dur));const ps=paceSpec();if(ps){fd.append('sceneCount',String(ps.n));fd.append('sceneDuration',String(ps.d));}
     const r=await fetch('/api/generate/ugc/script',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));if(!r.ok||!j.success){toast(j.error||'Script failed');return;}
     if(st.mood&&st.mood!=='none')j.script.musicVibe=st.mood;
     if(st.review)return reviewScript(j.script,concept);
+    // 실제 씬 수로 계산한 값이 버튼에 보인 값보다 크면 렌더 전에 확인(AI pacing 등)
+    const exact=sceneCost(j.script),shown=estScenes()*scenePrice(st.quality);
+    if(exact>shown&&!confirm(`AI wrote ${(j.script.scenes||[]).length} scenes for this ad — ◈${exact.toLocaleString()} (shown ◈${shown.toLocaleString()}). Render it?`))return;
     await render(j.script,concept);
   }catch(e){toast('Network error');}finally{st.busy=false;$('#go').disabled=false;go.firstChild.textContent='GENERATE';}};
 function sceneCost(script){return (script.scenes||[]).filter(s=>s.type!=='still').reduce((a,s)=>a+((s.durationSec||5)<=5?scenePrice(st.quality):(st.costs&&st.costs.adVideo?st.costs.adVideo[st.quality][10]:(st.quality==='high'?1705:1195))),0);}
