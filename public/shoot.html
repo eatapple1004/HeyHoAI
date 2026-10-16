@@ -119,9 +119,12 @@ const TRAIN_COST=1500,ANGLES_COST=4440; // credit.service IMG_CREDIT['shoot-trai
 const toModel=m=>({id:m.id,name:m.name,tag:'Your model · '+(m.profileLine||'a person'),profileLine:m.profileLine,avatar:m.avatar||(m.bank[0]&&m.bank[0].url),bank:m.bank});
 // 캐릭터 안내 대사(게임처럼). 행동별 힌트 + 결과 뒤 한마디.
 const SAY={hello:(m)=>`Hi, I'm ${m.name} 👋 Ready when you are. What shall we do first?`,
+  shot:'Tell me the scene, the outfit and the mood — I\'ll shoot it fresh. Soul makes these look like real photos.',
   outfit:'Drop a few item photos and I\'ll put them on — layers are fine.',scene:'Pick a place or describe one. I\'ll keep my outfit and pose.',pose:'Tell me how to stand, or just pick one.',
   done:(l)=>`How\'s this? Keep going from here, or pick another version below.`,busy:'One sec…'};
-const ACTS=[['outfit','👗','Outfit'],['scene','🏙','Scene'],['pose','🧍','Pose'],['video','▶','Video']];
+// 행동: Shoot = Soul 로 "찍기"(새 베이스, 사진 품질) · 나머지 셋 = 현재 버전을 Nano Banana Pro 로 "고치기" (사용자 10-16)
+const ACTS=[['shot','📸','Shoot'],['outfit','👗','Outfit'],['scene','🏙','Scene'],['pose','🧍','Pose'],['video','▶','Video']];
+const SHOT_ASPECTS=['3:4','9:16','1:1','4:3','16:9'];
 // 품목 유형 → 프롬프트의 착용 문구. 란제리는 얼굴-없이-생성→FaceFusion 경로가 서버에 없어 soon.
 // 옷입히기 슬롯(게임처럼 자리가 정해져 있다, 사용자 10-16). 머리→몸→발 순. [key, 라벨, 아이콘, 착용 문구(null = soon)]
 const SLOTS=[['hat','Hat','🧢','worn on the head'],['hair','Hair accessory','🎀','in the hair'],['glasses','Glasses','🕶','worn on the face'],['jewelry','Jewelry','💍','worn'],
@@ -131,7 +134,7 @@ const SLOTS=[['hat','Hat','🧢','worn on the head'],['hair','Hair accessory','�
 const POSES=[['Standing','standing naturally, weight on one leg'],['Walking','walking toward the camera, natural movement'],['Sitting','sitting down, relaxed'],['Leaning','leaning against the nearest wall or surface'],['Back','turned away, back to camera, looking over the shoulder'],['Close-up','close-up from the chest up, hand near the face']];
 const STUDIO={id:'studio',name:'Studio',category:'Default',scene:'a clean light-grey seamless studio cyclorama',light:'soft even studio light',img:'/img/accessories/concept-studio.png'};
 
-const st={model:null,versions:[],cur:-1,act:'outfit',slots:{},slotTarget:null,scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,busy:false,intro:0};
+const st={model:null,versions:[],cur:-1,act:'shot',shot:'',shotN:1,shotAspect:'3:4',slots:{},slotTarget:null,scene:null,sceneText:'',bgCat:'',pose:0,poseText:'',tools:[],tool:null,ratio:'3:4',priv:false,busy:false,intro:0};
 const tool=()=>st.tools.find(t=>t.id===st.tool)||st.tools[0];
 const cur=()=>st.versions[st.cur];
 function chipGroup(sel,onPick){$(sel).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));onPick(b.dataset.v);});}
@@ -202,7 +205,7 @@ function pick(m){st.model=m;st.versions=m.bank.map(v=>({...v}));st.cur=0;st.slot
 async function intro(){const run=++st.intro;const n=st.versions.length;const order=[...Array(n).keys()].sort(()=>Math.random()-.5).slice(0,5);
   for(const i of order){if(st.intro!==run)return;st.cur=i;renderStage(true);await new Promise(r=>setTimeout(r,650));}
   if(st.intro!==run)return;st.cur=0;renderStage(true);
-  say(SAY.hello(st.model),[['outfit','Dress me up'],['scene','Take me somewhere'],['pose','Pose me']]);}
+  say(SAY.hello(st.model),[['shot','Shoot me'],['outfit','Dress me up'],['scene','Take me somewhere'],['pose','Pose me']]);}
 function say(text,quick){const b=$('#bubble');b.hidden=false;b.innerHTML=`<img src="${st.model.avatar}" alt=""><div class="b">${esc(text)}${quick?`<div class="q">${quick.map(([a,l])=>`<button class="btn2" data-a="${a}">${esc(l)}</button>`).join('')}</div>`:''}</div>`;
   b.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>setAct(x.dataset.a));}
 // ── 앱: 허브(모델) + 행동 패널 + 스테이지 ──
@@ -212,7 +215,14 @@ function renderApp(){const m=st.model;$('#who').innerHTML=`<img src="${m.avatar}
   renderPanel();renderStage();}
 function setAct(a){st.act=a;[...$('#acts').children].forEach(x=>x.classList.toggle('on',x.dataset.a===a));renderPanel();say(SAY[a]);}
 $('#acts').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;setAct(b.dataset.a);});
-function renderPanel(){({outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();renderSettings();renderGo();}
+function renderPanel(){({shot:panelShot,outfit:panelOutfit,scene:panelScene,pose:panelPose})[st.act]();if(st.act!=='shot')renderSettings();renderGo();}
+// Shoot: 글 → Soul 2 + 내 모델. 엔진 선택 없음(Soul 고정), 장수·비율만
+function panelShot(){$('#panel').innerHTML=`<div class="lbl">Describe the shot <i id="slen">${st.shot.length}</i></div><textarea class="ff" id="shotText" maxlength="1000" placeholder="e.g. by a cafe window in a white shirt, holding a coffee, soft smile">${esc(st.shot)}</textarea>
+  <div class="lbl">Count</div><div class="chips" id="shotN">${chipsHtml([1,2,4].map(n=>[n,'× '+n]),st.shotN)}</div>
+  <div class="lbl">Aspect ratio</div><div class="chips" id="shotAspect">${chipsHtml(SHOT_ASPECTS.map(v=>[v,v]),st.shotAspect)}</div>
+  <div class="lock ${st.priv?'on':''}" id="privLock" style="margin-top:12px"><div><b>Private Mode</b><small>Off = result goes to the public feed</small></div><span class="sw2"><i></i></span></div>
+  <div class="note">Shot with Higgsfield Soul using your model\'s face — a fresh photo, not an edit. Pick a result below and dress it up or move it from there.</div>`;
+  $('#shotText').addEventListener('input',e=>{st.shot=e.target.value;$('#slen').textContent=st.shot.length;renderGo();});chipGroup('#shotN',v=>{st.shotN=+v;renderGo();});chipGroup('#shotAspect',v=>st.shotAspect=v);$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
 
 // Outfit: 품목 여러 개(사진 + 유형)
 function panelOutfit(){$('#panel').innerHTML=`<div class="lbl">Dress up <i>· tap a slot or drop a photo on it</i></div><div class="slots" id="slots"></div><div class="note">Each item is kept exactly as photographed — color, print, logo. Fill as many slots as you like; layers work (tee under an open outer).</div>`;renderSlots();}
@@ -247,8 +257,9 @@ function renderSettings(){const t=tool();$('#panel').insertAdjacentHTML('beforee
   $('#msel').addEventListener('click',e=>{const d=e.target.closest('[data-id]');if(d){st.tool=d.dataset.id;renderPanel();e.stopPropagation();return}$('#msel').classList.toggle('open')});
   chipGroup('#ratios',v=>st.ratio=v);$('#privLock').addEventListener('click',()=>{st.priv=!st.priv;$('#privLock').classList.toggle('on',st.priv)});}
 document.addEventListener('click',e=>{const m=$('#msel');if(m&&!m.contains(e.target))m.classList.remove('open')});
-function ready(){return st.act==='outfit'?filled().length>0:st.act==='scene'?!!(st.scene||st.sceneText):true;}
-function renderGo(){const t=tool(),L={outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act];$('#go').disabled=st.busy||!ready()||!t;$('#go').firstChild.textContent=L+' ';$('#cost').textContent=t?t.pricing.perImage.toLocaleString('en-US'):'—';}
+function ready(){return st.act==='shot'?!!st.shot.trim():st.act==='outfit'?filled().length>0:st.act==='scene'?!!(st.scene||st.sceneText):true;}
+const SHOT_COST=185; // credit.service IMG_CREDIT.soul 자리값과 같이 간다
+function renderGo(){const t=tool(),L={shot:'Shoot',outfit:'Dress up',scene:'Change scene',pose:'Strike the pose'}[st.act],shot=st.act==='shot';$('#go').disabled=st.busy||!ready()||(!shot&&!t);$('#go').firstChild.textContent=L+' ';$('#cost').textContent=shot?(SHOT_COST*st.shotN).toLocaleString('en-US'):t?t.pricing.perImage.toLocaleString('en-US'):'—';}
 
 // 스테이지: 현재 버전 + 버전 띠(어느 버전에서든 이어 가기)
 function renderStage(anim){const v=cur();$('#cur').innerHTML=st.busy?`<div class="pend">working on ${esc(st.model.name)}…</div>`:`<img src="${v.url}" alt="" class="${anim?'intro':''}">`;
@@ -274,8 +285,14 @@ async function refs(){const base=await(await fetch(cur().url)).blob();const out=
   return out;}
 
 // ── 생성: Image 페이지와 같은 POST /api/generate → 새 버전으로 띠에 추가 ──
-$('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.busy)return;st.intro++;st.busy=true;renderGo();renderStage();say(SAY.busy);
-  try{const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt());fd.append('model',t.model);fd.append('tool',t.id);fd.append('count','1');fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
+// Shoot: Soul 로 새 컷 1~4장 → 전부 버전 띠에, 첫 장이 현재
+async function shoot(){const res=await fetch('/api/shoot/models/'+encodeURIComponent(st.model.id)+'/shot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:st.shot.trim(),count:st.shotN,aspectRatio:st.shotAspect,privateMode:st.priv})});
+  const d=await res.json().catch(()=>({}));if(res.status===402)throw Object.assign(new Error(d.error||'Not enough credits'),{c402:true});if(!res.ok||!d.success)throw new Error(d.error||'shoot failed');
+  const ok=d.data.results.filter(r=>r.success&&r.url);if(!ok.length)throw new Error((d.data.results[0]&&d.data.results[0].error)||'no result');
+  const label=st.shot.trim().slice(0,24);ok.forEach(r=>st.versions.push({url:r.url,label}));st.cur=st.versions.length-ok.length;if(ok.length<d.data.results.length)toast((d.data.results.length-ok.length)+' failed');}
+$('#go').addEventListener('click',async()=>{const t=tool();if(!ready()||st.busy||(st.act!=='shot'&&!t))return;st.intro++;st.busy=true;renderGo();renderStage();say(SAY.busy);
+  try{if(st.act==='shot'){await shoot();DoppiaNav.refreshCredits();say(SAY.done());return}
+    const fd=new FormData();fd.append('characterId','');fd.append('prompt',prompt());fd.append('model',t.model);fd.append('tool',t.id);fd.append('count','1');fd.append('style','none');fd.append('brandKit','false');fd.append('templateName',TEMPLATE);
     fd.append('aspectRatio',st.ratio);fd.append('imageSize','1K');fd.append('negativePrompt','extra fingers, deformed hands, warped or altered item, mannequin look, watermark, text');fd.append('privateMode',st.priv?'true':'false');fd.append('enhance','false');fd.append('billingMode','custom');
     (await refs()).forEach((b,i)=>fd.append('referenceImages',b,'ref'+i+'.png'));
     const res=await fetch('/api/generate',{method:'POST',body:fd});const d=await res.json().catch(()=>({}));
@@ -283,7 +300,7 @@ $('#go').addEventListener('click',async()=>{const t=tool();if(!t||!ready()||st.b
     if(!res.ok||!d.success)throw new Error(d.error||'generation failed');
     const r=(d.results||[]).find(x=>x.success&&x.url);if(!r)throw new Error((d.results||[])[0]&&d.results[0].error||'no result');
     st.versions.push({url:r.url,label:label()});st.cur=st.versions.length-1;if(st.act==='outfit')st.slots={};DoppiaNav.refreshCredits();say(SAY.done());}
-  catch(e){toast(e.message||'failed');say(SAY[st.act])}
+  catch(e){toast(e.message||'failed');say(SAY[st.act]);if(e.c402)setTimeout(()=>location.href='/billing',1200)}
   finally{st.busy=false;renderStage();renderPanel();}});
 
 // ── 피드(이 페이지 결과만) ──

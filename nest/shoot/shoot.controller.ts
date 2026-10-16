@@ -4,7 +4,7 @@ import { ShootService } from './shoot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiResponse } from '../common/dto/api-response.dto';
 import { GENERATE_UPLOAD_OPTIONS } from '../generate/generate.service';
-import { ShootModelDto, CreateShootModelDto, AngleJobDto } from './dto/shoot.dto';
+import { ShootModelDto, CreateShootModelDto, AngleJobDto, ShotDto, ShotResultDto } from './dto/shoot.dto';
 
 // /api/shoot — Doppia Shoot 내 모델(Soul ID 학습 + 장면 뱅크). 전 엔드포인트 인증 필요.
 //   404·400·503 등 도메인 에러는 서비스가 statusCode 로 throw → LegacyErrorFilter 가 레거시와 동일 형식으로 응답.
@@ -39,6 +39,13 @@ export class ShootController {
   @Get('models')
   async list(@Req() req: any): Promise<ApiResponse<ShootModelDto[]>> {
     return { success: true, data: await this.shoot.list(req.user) };
+  }
+
+  // POST /api/shoot/models/:id/shot — 글로 새 컷(Soul 2 + 모델). id 는 내 모델 uuid 또는 공식 'yuna'
+  @Post('models/:id/shot')
+  @HttpCode(200)
+  async shot(@Req() req: any, @Param('id') id: string, @Body() body: ShotDto): Promise<ApiResponse<ShotResultDto>> {
+    return { success: true, data: await this.shoot.shot(req.user, id, body) };
   }
 
   // GET /api/shoot/models/:id — 진행 상태 폴링

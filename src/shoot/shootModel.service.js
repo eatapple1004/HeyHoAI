@@ -62,6 +62,9 @@ const ANGLES = [
 const ANGLE_PARALLEL = 20; // (10-16 사용자) 20장씩 — 다각도 24장이면 두 바퀴 약 40초, 뱅크 8장면은 한 바퀴
 const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
+const SHOT_ASPECTS = new Set(['3:4', '9:16', '1:1', '4:3', '16:9', '2:3', '3:2']);
+// 공식 모델 — Soul ID 는 dev 키 계정에 학습해 둔 것(10-16 얼굴 24컷). 프론트 MODELS 의 id 와 같다.
+const OFFICIAL = { yuna: { refId: '217633ee-74f5-4862-96e2-ddb9c93c1a43', name: 'Yuna', profile: { gender: 'woman', age: '20s', hair: 'long dark wavy hair', build: 'slim' } } };
 
 const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
 const hfHeaders = () => ({ Authorization: `Key ${env.HIGGSFIELD_API_KEY}`, 'Content-Type': 'application/json' });
@@ -291,4 +294,46 @@ async function get(user, id) {
   return pub(row);
 }
 
-module.exports = { create, list, get, startAngles, getAngles, describeProfile, profileLine, SCENES, ANGLES };
+// ── C. Shoot(새 컷) — 프롬프트만으로 Soul 2 + 내 모델. 편집(Nano Banana Pro)과 달리 "찍는" 쪽: 조명·포즈·장면이 진짜 사진 품질(사용자 10-16).
+//   결과는 /api/generate 와 같은 모양으로 저장(prompts·generation_results·reviews)해 Library·피드에 그대로 뜬다.
+async function shot(user, id, { prompt, count, aspectRatio, privateMode }) {
+  requireConfigured();
+  const text = String(prompt || '').trim().slice(0, 1000);
+  if (!text) throw httpError(400, 'Describe the shot');
+  const n = Math.min(4, Math.max(1, parseInt(count, 10) || 1));
+  const aspect = SHOT_ASPECTS.has(aspectRatio) ? aspectRatio : '3:4';
+  let refId; let profile; let name;
+  if (OFFICIAL[id]) ({ refId, profile, name } = OFFICIAL[id]);
+  else {
+    const row = await repo.findById(id);
+    const teamId = await teamCredit.activeTeamId(user.id);
+    if (!row || !(row.user_id === user.id || (teamId && row.team_id === teamId))) throw httpError(404, 'Model not found');
+    if (row.status !== 'ready' || !row.hf_reference_id) throw httpError(400, 'This model is not ready yet');
+    ({ hf_reference_id: refId, profile, name } = row);
+  }
+  const cost = credit().imageCost('soul', n, false);
+  const charge = await teamCredit.chargeGeneration(user, cost, `Shoot: ${name} ×${n}`);
+  const teamId = await teamCredit.activeTeamId(user.id);
+  // eslint-disable-next-line global-require
+  const soul = require('../images/providers/higgsfield.provider');
+  // eslint-disable-next-line global-require
+  const { promptRepo, resultRepo, reviewRepo, sharp } = { promptRepo: require('../generate/prompt.repository'), resultRepo: require('../generate/result.repository'), reviewRepo: require('../generate/review.repository'), sharp: require('sharp') };
+  const full = `photo of ${profileLine(profile)}, ${text}, photorealistic`;
+  const saved = await promptRepo.insert({ userId: user.id, characterId: null, promptText: full, model: 'soul-shot', referenceImagePath: null, tags: ['shoot', 'soul'], stylePreset: null, teamId });
+  const results = await mapLimit(Array.from({ length: n }), ANGLE_PARALLEL, async () => {
+    try {
+      const out = await soul.generate({ prompt: full, aspectRatio: aspect, imageSize: '1080p', model: SOUL_MODEL, customReferenceId: refId });
+      const buffer = await sharp(await download(out.url)).png().toBuffer();
+      const fileName = await keep(null, buffer);
+      const meta = await sharp(buffer).metadata();
+      const row = await resultRepo.insert({ promptIdx: saved.idx, characterId: null, filePath: `tmp/images/${fileName}`, fileSizeKb: Math.round(buffer.length / 1024), width: meta.width, height: meta.height, model: 'soul-shot', visibility: privateMode ? 'private' : 'public', templateName: 'Doppia Shoot', metadata: { shoot_model: id, shot: true } });
+      await reviewRepo.insert({ resultIdx: row.idx, promptIdx: saved.idx });
+      return { success: true, idx: row.idx, url: `/images/${fileName}` };
+    } catch (err) { return { success: false, error: String(err.message || err).slice(0, 200) }; }
+  });
+  const failed = results.filter((r) => !r.success).length;
+  if (charge && failed) await teamCredit.refundGeneration(user, credit().imageCost('soul', failed, false), `Shoot failed ×${failed}`).catch(() => {});
+  return { results, cost: cost - (failed ? credit().imageCost('soul', failed, false) : 0) };
+}
+
+module.exports = { create, list, get, shot, startAngles, getAngles, describeProfile, profileLine, SCENES, ANGLES };

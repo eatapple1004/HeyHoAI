@@ -37,3 +37,15 @@ export interface AngleJobDto {
   /** 원본 사진 공개 URL */
   source: string;
 }
+
+export class ShotDto {
+  prompt?: string;
+  count?: number;
+  aspectRatio?: string;
+  privateMode?: boolean;
+}
+/** 새 컷 결과 — /api/generate 결과 모양을 따른다 */
+export interface ShotResultDto {
+  results: Array<{ success: boolean; idx?: number; url?: string; error?: string }>;
+  cost: number;
+}
