@@ -512,7 +512,7 @@
   .rb-failed .rbf-ic{color:#ff8a8a;font-weight:700;font-size:13px;display:flex;align-items:center;gap:5px}
   .rb-failed .rbf-msg{color:var(--dim);font-size:11.5px;line-height:1.5}
   .rb-failed .rbf-del{margin-top:2px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--dim);border-radius:8px;padding:6px 13px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
-  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media{max-width:none}.rb-media .result-card{width:46%;height:auto;max-width:none}.rb-media .result-card:only-child{width:100%}}
+  @media(max-width:760px){.result-row{flex-direction:column;gap:14px}.rb-meta{width:100%}.rb-media{max-width:100%;width:100%}/* (10-16) 폭 고정: 결과 사진 원래 폭(460px)으로 늘어나 폰에서 화면 전체가 옆으로 밀리던 것 */.rb-media .result-card{width:46%;height:auto;max-width:none}.rb-media .result-card:only-child{width:100%}}
   /* ▲▲▲ 결과 피드 블록 끝 ▲▲▲ */
   /* 선택된 레퍼런스 = 선택기 아래 정사각 사진 타일(Leonardo식) */
   /* 이미지 추가 아이콘 버튼 + 툴별 슬롯 팝오버 */
@@ -1136,7 +1136,7 @@
     /* 필터 칩 탭타깃 ≥44px (기존 7px 16px → 약 36px) */
     .chip{min-height:44px;display:inline-flex;align-items:center;font-size:13px}
     /* 템플릿/결과 그리드 2열 (기존 minmax 192/220px → 모바일서 1열) */
-    .recipe-grid,.results-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .recipe-grid,.results-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .recipe-card .preview{font-size:34px}/* 모바일: 높이 고정 제거 — aspect-ratio:4/5 유지 */
     .recipe-card .cost,.recipe-card .rcat{font-size:12px}
     /* Generate / 🧪 1장 탭타깃 ≥44px (기존 ~41px) */
