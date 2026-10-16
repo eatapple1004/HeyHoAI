@@ -12,7 +12,7 @@
     { h: '/image', l: 'Image', m: ['/image'], mega: 'image' },
     { h: '/video', l: 'Video', m: ['/video'], mega: 'video' },
     { h: '/lens', l: 'Doppia Lens', m: ['/lens'], bd: 'top' }, // (10-16) Lens 오픈 — 스타일룸 대신 재사용 템플릿(src/lens)
-    { h: '/pack', l: 'Content Pack', m: ['/pack'], bd: 'soon' },
+    { h: null, l: 'Content Pack', m: [], bd: 'soon' }, // (10-16) 닫음 — 서버도 /pack 을 coming-soon 으로(CLOSED_PAGES)
     { h: '/gallery', l: 'Library', m: ['/gallery', '/library', '/creation'] },
     { h: null, l: 'KakaoTalk', m: [], bd: 'soon' }
   ];
@@ -74,7 +74,6 @@
     video: [
       ['▶', 'Create Video', 'Image · text · references · sound — every engine', 'live', '/video'],
       ['📣', 'Ad Video', 'Product photos → script, scenes, music & voice — one ready-to-post ad', 'live', '/ad-video', 'top'],
-      ['🎬', 'Spec Ad', 'Product photo → 5–15s VFX ad', 'soon', null, 'top'],
       ['⇄', 'Product swap', 'Swap the product in any video for yours — same hands, motion & camera', 'auto:productswap', '/product-swap', 'new'], // (10-16) Kling 3.0 Omni Edit + 제품 사진
       ['✎', 'Edit video', 'Timeline editor — trim · text · music · AI edit with words · captions', 'live', '/video-edit', 'new'],
       ['⧉', 'Extend', 'Continue from the last frame', 'auto:tool:seedance-2.5-extend', '/video?tool=seedance-2.5-extend'],
