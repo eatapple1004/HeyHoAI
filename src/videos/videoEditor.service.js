@@ -79,7 +79,7 @@ async function saveUpload(filePath, originalName) {
 }
 
 /** 구간 자르기(재인코딩 — 키프레임과 상관없이 정확). 반환 = tmp/uploads 경로(AI 파이프라인이 가져가 지운다) */
-async function cut(src, inSec, outSec, { minSec = 0, maxSec = 30 } = {}) {
+async function cut(src, inSec, outSec, { minSec = 0, maxSec = 30, minShort = 0 } = {}) {
   const f = await localFile(src);
   if (!f) throw Object.assign(new Error('Clip not found'), { statusCode: 404 });
   const meta = await probe(f);
@@ -89,7 +89,11 @@ async function cut(src, inSec, outSec, { minSec = 0, maxSec = 30 } = {}) {
   const dir = path.join(TMP, 'uploads');
   fs.mkdirSync(dir, { recursive: true });
   const out = path.join(dir, `${crypto.randomUUID()}.mp4`);
-  await run('ffmpeg', ['-y', '-ss', a.toFixed(3), '-i', f, '-t', (b - a).toFixed(3), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-movflags', '+faststart', out]);
+  // minShort: 짧은 변 하한(Kling O3 Edit = 720px 이상만 받는다) — 작으면 비율 유지 확대
+  const short = Math.min(meta.width || 0, meta.height || 0);
+  const vf = minShort && short && short < minShort
+    ? ['-vf', meta.width <= meta.height ? `scale=${minShort}:-2` : `scale=-2:${minShort}`] : [];
+  await run('ffmpeg', ['-y', '-ss', a.toFixed(3), '-i', f, '-t', (b - a).toFixed(3), ...vf, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-movflags', '+faststart', out]);
   return { path: out, duration: b - a };
 }
 

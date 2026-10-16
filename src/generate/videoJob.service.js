@@ -174,7 +174,7 @@ async function submitExternal({ user, prompt, duration, aspectRatio, audio, sour
   if (!wantsVideo && !sourceImagePath && !refPaths.length && !(tool && tool.t2vModel) && engine !== 'sora' && engine !== 'veo' && engine !== 'seedance') {
     const e = new Error(`${engine} needs a start frame`); e.statusCode = 400; throw e; // runway·minimax = image-to-video 전용
   }
-  if (refPaths.length && !(tool && tool.refModel)) {
+  if (refPaths.length && !(tool && (tool.refModel || (tool.falInput && tool.falInput.refs)))) { // 영상 편집 툴은 falInput.refs 로 참조를 같이 받는다(Product swap)
     const e = new Error(`${engine} does not take reference images`); e.statusCode = 400; throw e;
   }
   if (NEEDS_PUBLIC_URL.has(engine) && !env.PUBLIC_URL) {
