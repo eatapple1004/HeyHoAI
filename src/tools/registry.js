@@ -413,10 +413,29 @@ const TOOLS = {
   'kling-o3-edit': {
     id: 'kling-o3-edit', label: 'Kling O3 Omni Edit', type: 'video',
     provider: 'fal', model: 'fal-ai/kling-video/o3/pro/video-to-video/edit',
-    falInput: { video: 'video_url', refs: 'image_urls', extra: { keep_audio: true } },
+    falInput: { video: 'video_url', refs: 'image_urls', extra: { keep_audio: true } }, editorOnly: true, // Product swap 전용
     costKey: null, enabled: true,
     controls: { duration: [5, 10], durationRange: { min: 3, max: 15 } },
     imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'The video to edit (@Video1), 3–15s.' }, { key: 'reference', label: 'Reference', hint: 'Images — @Image1… in the prompt.', multi: true }],
+  },
+  // (2026-10-16) Reframe — 힉스필드 /ai/video/reframe(REA 캡처: 영상 4초~1분 · 비율 9:16·16:9·4:3·3:4·21:9·1:1 · 720p) 처럼
+  //   비율을 바꾸고 새로 드러난 영역을 AI 로 채운다(자르기 아님). 길이는 원본을 따른다(duration 필드 없음).
+  //   billPer10s: 10초 넘는 영상은 10초 단위로 과금(자리값 — 실원가 확정 전).
+  'ltx-reframe': {
+    id: 'ltx-reframe', label: 'LTX 2.3 Reframe', type: 'video',
+    provider: 'fal', model: 'fal-ai/ltx-2.3/reframe',
+    falInput: { video: 'video_url', aspect: true, resolution: true }, noPrompt: true, billPer10s: true, editorOnly: true, // editorOnly = Create Video·모델 목록에 안 보임(Video Editor 도구 전용)
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10], durationRange: { min: 1, max: 60 }, aspectRatio: ['9:16', '16:9', '1:1', '4:5', '5:4'], resolution: ['1080p', '720p'] },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Up to 60s. The new area is generated, not cropped.' }],
+  },
+  'luma-reframe': {
+    id: 'luma-reframe', label: 'Luma Ray 2 Reframe', type: 'video',
+    provider: 'fal', model: 'fal-ai/luma-dream-machine/ray-2/reframe',
+    falInput: { video: 'video_url', aspect: true }, billPer10s: true, editorOnly: true,
+    costKey: null, enabled: true,
+    controls: { duration: [5, 10], durationRange: { min: 1, max: 10 }, aspectRatio: ['9:16', '16:9', '1:1', '4:3', '3:4', '21:9'] },
+    imageSlots: [{ key: 'sourceVideo', label: 'Video', hint: 'Up to 10s. Describe the extended area (optional).' }],
   },
   'genjutsu': {
     id: 'genjutsu', label: 'Higgsfield Genjutsu', type: 'video',

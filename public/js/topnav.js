@@ -78,7 +78,7 @@
       ['✎', 'Edit video', 'Timeline editor — trim · text · music · AI edit with words · captions', 'live', '/video-edit', 'new'],
       ['⧉', 'Extend', 'Continue from the last frame', 'auto:tool:seedance-2.5-extend', '/video?tool=seedance-2.5-extend'],
       ['▲', 'Video upscale', 'Topaz Video · ×2 · ×4', 'auto:tool:topaz-video', '/video?tool=topaz-video'],
-      ['⤢', 'Reframe', '9:16 · 1:1 · 16:9', 'soon'],
+      ['⤢', 'Reframe', 'Any ratio — AI fills the new area, nobody gets cropped · in Video Editor', 'auto:reframe', '/video-edit?tool=reframe', 'new'],
       ['T', 'Reels captions', 'Captions · text overlay', 'soon']
     ]
   };
