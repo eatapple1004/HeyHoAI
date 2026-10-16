@@ -58,7 +58,7 @@ const ANGLES = [
   'Thirty degrees to the left at eye level. A chic half-smirk, one corner of the mouth lifted, a direct gaze.',
   'Fifteen degrees to the right at eye level. Lips parted very slightly, a soft relaxed expression, eyes to the lens.',
 ];
-const ANGLE_PARALLEL = 6;
+const ANGLE_PARALLEL = 20; // (10-16 사용자) 20장씩 — 24장이면 두 바퀴, 약 40초
 const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
 const ANGLE_JOB_TTL_MS = 2 * 60 * 60 * 1000;

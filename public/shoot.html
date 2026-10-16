@@ -160,7 +160,7 @@ function renderMk(){const n=mk.files.length,up=mk.files.filter(f=>f.file),j=mk.j
   $('#ugrid').innerHTML=`<button type="button" class="up" id="mkUp"><b>+</b>${n?'Upload more':'Upload photos'}</button>`+mk.files.map((f,i)=>`<div class="u ${f.remote?'ai':''}"><img src="${f.url}" alt=""><button type="button" class="x" data-x="${i}">×</button></div>`).join('');
   $('#mkUp').onclick=()=>$('#pfile').click();$$('#ugrid [data-x]').forEach(b=>b.onclick=()=>{mk.files.splice(+b.dataset.x,1);renderMk();});
   // 다각도 행: 업로드 사진이 있고 잡이 없을 때 제안 → 진행 중엔 n/10 → 끝나면 결과 수
-  const a=$('#angles');if(j&&!j.done)a.innerHTML=`<span><b>Shooting face angles ${j.urls.length}/${j.total}</b> — same face, the camera and expression move. About ${Math.max(1,Math.ceil((j.total-j.urls.length)/6*0.4))} min left.</span>`;
+  const a=$('#angles');if(j&&!j.done)a.innerHTML=`<span><b>Shooting face angles ${j.urls.length}/${j.total}</b> — same face, the camera and expression move. About ${Math.max(1,Math.ceil((j.total-j.urls.length)/20*0.4))} min left.</span>`;
   else if(j&&j.done)a.innerHTML=`<span><b>${j.urls.length} angles added</b>${j.error?' · '+esc(j.error):''}${j.urls.length?' — remove any you don\'t like, then Create.':''}</span><button class="btn2" id="mkAngles">Shoot again</button>`;
   else if(up.length)a.innerHTML=`<span><b>${up.length===1?'Only one photo?':'Want a stronger set?'}</b> We shoot 24 face close-ups from the first photo — front to full profile both ways, up and down, and eight expressions. Soul ID learns the face, so these are what matter.</span><button class="btn2" id="mkAngles">Shoot 24 face angles · ◈ ${ANGLES_COST.toLocaleString('en-US')}</button>`;
   else a.innerHTML='<span>Add a photo. Only one? We make the 24 face angles for you.</span>';
