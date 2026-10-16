@@ -191,6 +191,13 @@ export class GenerateController {
     return this.send(res, await this.generate.op('postVideoEditCaptions', req));
   }
 
+  // POST /api/generate/video-edit/scenes — 클립 구간의 장면 전환 시각(초) — 편집기 '장면 나누기'
+  @Post('video-edit/scenes')
+  @HttpCode(200) // 레거시 Express 기본값 200 — 핸들러가 res.status(201/202)를 쓰면 그쪽이 우선
+  async postVideoEditScenes(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    return this.send(res, await this.generate.op('postVideoEditScenes', req));
+  }
+
   // GET /api/generate/jobs/:id — ?async=1 로 시작한 긴 작업(edit·face-swap) 상태 { status:'running'|'done', result:{status,body} }
   @Get('jobs/:id')
   async getAsyncJob(@Req() req: any, @Res({ passthrough: true }) res: any) {
