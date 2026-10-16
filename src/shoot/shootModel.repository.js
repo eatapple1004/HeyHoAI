@@ -6,7 +6,7 @@
  */
 const { query } = require('../db/client');
 
-const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, charged, profile, created_at, updated_at';
+const COLS = 'id, user_id, team_id, name, status, hf_reference_id, photos, bank, avatar, error, charged, profile, official, created_at, updated_at';
 
 async function insert({ userId, teamId, name, status, photos, charged, profile }) {
   const r = await query(
@@ -26,6 +26,12 @@ async function findMine(userId, teamId) {
   const r = teamId
     ? await query(`SELECT ${COLS} FROM shoot_models WHERE team_id = $1 ORDER BY created_at DESC`, [teamId])
     : await query(`SELECT ${COLS} FROM shoot_models WHERE user_id = $1 AND team_id IS NULL ORDER BY created_at DESC`, [userId]);
+  return r.rows;
+}
+
+/** 공식 로스터(official) — 준비된 것만, 만든 순서 */
+async function findOfficial() {
+  const r = await query(`SELECT ${COLS} FROM shoot_models WHERE official AND status = 'ready' ORDER BY created_at ASC`);
   return r.rows;
 }
 
@@ -57,4 +63,4 @@ async function updateAngleJob(id, fields) {
   return r.rows[0] || null;
 }
 
-module.exports = { insert, findById, findMine, update, insertAngleJob, findAngleJob, updateAngleJob };
+module.exports = { insert, findById, findMine, findOfficial, update, insertAngleJob, findAngleJob, updateAngleJob };

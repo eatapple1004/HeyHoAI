@@ -15,6 +15,7 @@ const API = 'https://api.higgsfield.ai';
 const ASPECTS = new Set(['1:1', '9:16', '16:9', '4:3', '3:4', '2:3', '3:2']);
 const DONE = new Set(['completed']);
 const DEAD = new Set(['failed', 'error', 'cancelled', 'canceled', 'nsfw']);
+const CONCURRENCY_RETRIES = 30; // 한도 대기 최대 ≈ 30회 × 5~63초
 
 const authHeaders = () => ({
   Authorization: `Key ${env.HIGGSFIELD_API_KEY}`,
@@ -47,12 +48,15 @@ const higgsfieldProvider = {
       ...(req.seed != null && { seed: req.seed }),
       ...(req.extras && req.extras.seed != null && { seed: Number(req.extras.seed) }),
     };
-    const submit = await fetch(`${API}/${model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    if (!submit.ok) {
+    // (2026-10-16) 계정 동시요청 한도 — 400 "Maximum number of concurrent requests" 는 실패가 아니라 자리 대기. 뱅크 8장면·Shoot 여러 장이 겹치면 바로 걸린다.
+    let queued;
+    for (let attempt = 0; ; attempt += 1) {
+      const submit = await fetch(`${API}/${model}`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+      if (submit.ok) { queued = await submit.json(); break; }
       const text = await submit.text();
+      if (submit.status === 400 && /concurrent/i.test(text) && attempt < CONCURRENCY_RETRIES) { await new Promise((r) => setTimeout(r, 5000 + attempt * 2000)); continue; }
       throw new Error(`Higgsfield submit failed (${submit.status}): ${text.slice(0, 400)}`);
     }
-    const queued = await submit.json();
     const statusUrl = queued.status_url || `${API}/requests/${queued.request_id}/status`;
 
     const maxWaitMs = 180_000;

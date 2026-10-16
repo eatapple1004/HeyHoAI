@@ -9,6 +9,7 @@
  *      힉스필드 결과 URL 은 7일 뒤 사라진다) → 'ready'. 실패는 'failed' + error, 과금된 건만 환불.
  *      단계 진행은 프로세스 안 러너(kick) — GET 때 멈춘 모델이 보이면 다시 돌린다. dev 는 pm2 단일 프로세스라 충분하다.
  *
+ *   공식 로스터: official 행 — 모두에게 보이고 누구나 Shoot 할 수 있다(scripts/shoot_roster.js 가 같은 공정으로 만든다).
  * 과금(자리값): 다각도 = IMG_CREDIT.pro × 장수 · 학습 = IMG_CREDIT['shoot-train'] 1회. 실원가: Soul ID 학습 40cr=$2.50 + 장면 8장 × $0.006 · 다각도 10장 × $0.134.
  * ⚠️ 얼굴 사전검사는 두지 않는다(사용자 10-16: "어디까지 되는지 아직 모르니까") — 힉스필드가 거절하면 그 메시지가 그대로 카드에 뜬다.
  */
@@ -63,8 +64,7 @@ const ANGLE_PARALLEL = 20; // (10-16 사용자) 20장씩 — 다각도 24장이�
 const ANGLE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
 const TRAIN_MAX_MS = 40 * 60 * 1000;
 const SHOT_ASPECTS = new Set(['3:4', '9:16', '1:1', '4:3', '16:9', '2:3', '3:2']);
-// 공식 모델 — Soul ID 는 dev 키 계정에 학습해 둔 것(10-16 얼굴 24컷). 프론트 MODELS 의 id 와 같다.
-const OFFICIAL = { yuna: { refId: '217633ee-74f5-4862-96e2-ddb9c93c1a43', name: 'Yuna', profile: { gender: 'woman', age: '20s', hair: 'long dark wavy hair', build: 'slim' } } };
+// 공식 로스터 = shoot_models.official 행(10-16: 유나 + Soul 2 로 뽑은 앵커 얼굴 → scripts/shoot_roster.js 로 같은 공정(24컷→Soul ID→뱅크)). 모두에게 보이고 누구나 Shoot 할 수 있다.
 
 const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
 const hfHeaders = () => ({ Authorization: `Key ${env.HIGGSFIELD_API_KEY}`, 'Content-Type': 'application/json' });
@@ -204,7 +204,7 @@ async function getAngles(user, id) {
 function pub(row) {
   return {
     id: row.id, name: row.name, status: row.status, error: row.error || null,
-    avatar: row.avatar || null, bank: row.bank || [], photos: row.photos || [], profile: row.profile || null, profileLine: profileLine(row.profile),
+    avatar: row.avatar || null, bank: row.bank || [], photos: row.photos || [], profile: row.profile || null, profileLine: profileLine(row.profile), official: !!row.official,
     progress: row.status === 'bank' ? `${(row.bank || []).length}/${SCENES.length}` : null,
     createdAt: row.created_at,
   };
@@ -238,6 +238,7 @@ async function stepBank(row) {
     const out = await soul.generate({ prompt: `photo of ${profileLine(row.profile)}, ${OUTFIT}, ${scene}, the face clearly visible and looking at the camera, natural pose, photorealistic`, aspectRatio: '3:4', imageSize: '1080p', model: SOUL_MODEL, customReferenceId: row.hf_reference_id });
     const name = await keep(null, await download(out.url));
     const fresh = await repo.findById(row.id); // 동시 갱신 — 최신 행 위에 더한다
+    if (fresh.bank.some((b) => b.key === key)) return; // 러너가 둘(스크립트 + 서버 kick)이면 같은 장면이 두 번 — 먼저 온 것만
     await repo.update(row.id, { bank: fresh.bank.concat({ key, label, url: `/images/${name}` }) });
   });
   const order = SCENES.map(([key]) => key);
@@ -280,16 +281,24 @@ async function create(user, { name, files, photoUrls, consent }) {
   return pub(row);
 }
 
+/** 공식 로스터 + 내 것(공식은 한 번만 — 관리자가 만든 공식 행은 "내 것"에도 걸린다) */
 async function list(user) {
-  const rows = await repo.findMine(user.id, await teamCredit.activeTeamId(user.id));
-  rows.filter((r) => ['training', 'bank'].includes(r.status)).forEach((r) => kick(r.id)); // 재시작 뒤 멈춘 것 재개
-  return rows.map(pub);
+  const official = await repo.findOfficial();
+  const mine = (await repo.findMine(user.id, await teamCredit.activeTeamId(user.id))).filter((r) => !r.official);
+  mine.filter((r) => ['training', 'bank'].includes(r.status)).forEach((r) => kick(r.id)); // 재시작 뒤 멈춘 것 재개
+  return official.concat(mine).map(pub);
+}
+
+/** 볼 수 있는 행 — 공식이거나 내(팀) 것. 아니면 404(존재도 숨긴다) */
+async function visible(user, id) {
+  const row = await repo.findById(id);
+  const teamId = row && !row.official && await teamCredit.activeTeamId(user.id);
+  if (!row || !(row.official || row.user_id === user.id || (teamId && row.team_id === teamId))) throw httpError(404, 'Model not found');
+  return row;
 }
 
 async function get(user, id) {
-  const row = await repo.findById(id);
-  const teamId = await teamCredit.activeTeamId(user.id);
-  if (!row || !(row.user_id === user.id || (teamId && row.team_id === teamId))) throw httpError(404, 'Model not found');
+  const row = await visible(user, id);
   if (['training', 'bank'].includes(row.status)) kick(row.id);
   return pub(row);
 }
@@ -302,15 +311,9 @@ async function shot(user, id, { prompt, count, aspectRatio, privateMode }) {
   if (!text) throw httpError(400, 'Describe the shot');
   const n = Math.min(4, Math.max(1, parseInt(count, 10) || 1));
   const aspect = SHOT_ASPECTS.has(aspectRatio) ? aspectRatio : '3:4';
-  let refId; let profile; let name;
-  if (OFFICIAL[id]) ({ refId, profile, name } = OFFICIAL[id]);
-  else {
-    const row = await repo.findById(id);
-    const teamId = await teamCredit.activeTeamId(user.id);
-    if (!row || !(row.user_id === user.id || (teamId && row.team_id === teamId))) throw httpError(404, 'Model not found');
-    if (row.status !== 'ready' || !row.hf_reference_id) throw httpError(400, 'This model is not ready yet');
-    ({ hf_reference_id: refId, profile, name } = row);
-  }
+  const row = await visible(user, id);
+  if (row.status !== 'ready' || !row.hf_reference_id) throw httpError(400, 'This model is not ready yet');
+  const { hf_reference_id: refId, profile, name } = row;
   const cost = credit().imageCost('soul', n, false);
   const charge = await teamCredit.chargeGeneration(user, cost, `Shoot: ${name} ×${n}`);
   const teamId = await teamCredit.activeTeamId(user.id);

@@ -13,6 +13,8 @@ export interface ShootModelDto {
   profileLine: string;
   /** bank 단계 진행 "3/8", 그 외 null */
   progress: string | null;
+  /** 공식 로스터(모두에게 보이고 누구나 Shoot 할 수 있다) — 내 모델이면 false */
+  official: boolean;
   createdAt: string;
 }
 
